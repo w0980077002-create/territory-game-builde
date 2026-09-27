@@ -1,0 +1,15 @@
+/* Territory Game — canonical PvE flow presentation */
+.pve-flow-overlay{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);opacity:0;pointer-events:none;transition:opacity .18s ease}
+.pve-flow-overlay.show{opacity:1;pointer-events:auto}
+.pve-flow-sheet{width:min(94vw,620px);padding:18px;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:#11151a;box-shadow:0 20px 60px rgba(0,0,0,.5);color:#fff}
+.pve-flow-sheet header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pve-flow-sheet header small{opacity:.65}.pve-flow-sheet h2{margin:3px 0 0}
+.pve-flow-sheet header button{font-size:28px;background:none;border:0;color:#fff;cursor:pointer}
+.pve-track{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:22px 0}
+.pve-node{height:58px;display:grid;place-items:center;border-radius:12px;background:#242a31;border:1px solid rgba(255,255,255,.1);font-weight:700}
+.pve-node.current{outline:2px solid rgba(255,255,255,.5);transform:translateY(-2px)}
+.pve-node.done{background:#263d2b}
+.pve-status{min-height:42px;padding:12px;border-radius:10px;background:rgba(255,255,255,.06);text-align:center}
+.pve-actions{display:flex;gap:10px;margin-top:14px}.pve-actions button{flex:1;padding:13px;border:0;border-radius:10px;font-weight:700;cursor:pointer}
+
+.pve-milestone{margin-top:10px;padding:9px 11px;border-radius:10px;background:rgba(220,184,104,.08);border:1px solid rgba(220,184,104,.16);font-size:11px;color:#e7cf91;text-align:center}
