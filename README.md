@@ -1,14 +1,13 @@
-# TERRITORY — TOP BUTTONS HOTFIX 10062
+# TERRITORY HOME INPUT HOTFIX 10063
 
-Это точечный фикс после проверки видео на Android/Telegram.
+This overlay replaces `home-router.js`.
 
-Что исправлено:
-- верхняя строка: профиль, монеты, кристаллы, VIP/трофей, сообщения, настройки;
-- боковые кнопки: события, ежедневные, квесты, друзья, море;
-- правые кнопки: магазин, кузница, испытания, улицы, Arena;
-- добавлен 7-й слот экипировки;
-- убрана проблема кузницы, когда после открытия происходил лишний переход в магазин;
-- если экран отсутствует в конкретной HTML-сборке, вместо пустого экрана показывается понятная панель;
-- увеличен cache-bust до 10062.
+Fixes:
+- one tap is routed once (touch/pointer/click duplication is suppressed);
+- tap must stay within 14 px, so swipes/scrolls do not activate a neighboring button;
+- HOME hit zones no longer overlap between header, energy, chapter and side rails;
+- real DOM buttons/links are not stolen by the fallback router;
+- missing sections no longer redirect to an unrelated section;
+- keeps Arena/PvE/Forge/gear routing from the previous hotfix.
 
-Накладывать поверх текущей версии. Старые файлы не удалять.
+Overlay this `home-router.js` over the current project and replace the old file.
