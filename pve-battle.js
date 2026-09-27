@@ -68,7 +68,7 @@
     root=document.createElement('section');root.className='pve-battle';root.innerHTML=`
       <div class="pve-bg"></div><div class="pve-ground"></div>
       <div class="top">
-        <div class="topline"><button class="close" id="pveBattleClose">✕</button><div class="resources"><span class="res hot" id="pvePower">🔥 0</span><span class="res" id="pveCoins">🪙 0</span><span class="res" id="pveGems">💎 0</span></div><button class="close" id="pveMenu">⌄</button></div>
+        <div class="topline"><button class="close" id="pveBattleClose" type="button" aria-label="Назад">←</button><div class="resources"><span class="res hot" id="pvePower">🔥 0</span><span class="res" id="pveCoins">🪙 0</span><span class="res" id="pveGems">💎 0</span></div><button class="close" id="pveMenu">⌄</button></div>
         <div class="chapter" id="pveChapterTitle"></div><div class="stage-track" id="pveStageTrack"></div>
       </div>
       <div class="enemy">
@@ -90,7 +90,11 @@
         <div class="nav"><span>⚓ Порт</span><span>📜 Навыки</span><span id="pveNavCoins">🪙 0</span><span>🗺 Приключения</span><span>🛒 Магазин</span></div>
       </div>`;
     document.body.appendChild(root);
-    root.querySelector('#pveBattleClose').onclick=close;
+    const backBtn=root.querySelector('#pveBattleClose');
+    const safeBack=(e)=>{e?.preventDefault?.();e?.stopPropagation?.();e?.stopImmediatePropagation?.();close();};
+    backBtn.onclick=safeBack;
+    backBtn.addEventListener('pointerup',safeBack,{passive:false});
+    backBtn.addEventListener('touchend',safeBack,{passive:false});
     root.querySelector('#pveAttack').onclick=()=>attack('basic');
     root.querySelector('#pveSkill').onclick=()=>skill('power');
     root.querySelector('#pveAuto').onclick=()=>{if(!model||model.ended)return;model.auto=!model.auto;render();if(model.auto)queueAuto()};
@@ -102,7 +106,7 @@
   function start(stage){
     const s=ensure(); if(s.pve.progress>=100)return false;
     clear();
-    if((Number(s.battleStones)||0)<=0){return false;} s.battleStones=Math.max(0,(Number(s.battleStones)||0)-1); save();
+    if((Number(s.battleStonesBonus)||0)>0){s.battleStonesBonus=Math.max(0,(Number(s.battleStonesBonus)||0)-1);}else{if((Number(s.battleStones)||0)<=0){return false;} s.battleStones=Math.max(0,(Number(s.battleStones)||0)-1);} save();
     const index=Math.max(1,Math.min(4,Number(stage)||s.pve.stage));
     const baseEnemy=ENEMIES[index-1]; const chapter=Math.max(1,Number(s.currentChapter)||1); const scale=1+(chapter-1)*0.055; const enemy={...baseEnemy,hp:Math.round(baseEnemy.hp*scale),damage:Math.max(1,Math.round(baseEnemy.damage*(1+(chapter-1)*0.035)))}; const d=derived(); const follower=followerInfo();
     const maxHp=Math.max(1,(Number(s.maxHp)||100)+d.maxHp);
@@ -111,7 +115,7 @@
   }
   function startBoss(){
     const s=ensure();if(!s.pve.bossPending)return false;
-    clear();if((Number(s.battleStones)||0)<=0){return false;} s.battleStones=Math.max(0,(Number(s.battleStones)||0)-1);s.pve.bossActive=true;save();const d=derived(),follower=followerInfo();
+    clear();if((Number(s.battleStonesBonus)||0)>0){s.battleStonesBonus=Math.max(0,(Number(s.battleStonesBonus)||0)-1);}else{if((Number(s.battleStones)||0)<=0){return false;} s.battleStones=Math.max(0,(Number(s.battleStones)||0)-1);}s.pve.bossActive=true;save();const d=derived(),follower=followerInfo();
     const maxHp=Math.max(1,(Number(s.maxHp)||100)+d.maxHp);
     model={boss:true,stage:4,enemy:{...boss},enemyHp:boss.hp,hp:Math.max(1,Number(s.hp)||maxHp),maxHp,mp:0,auto:false,damage:Math.max(24,Math.floor(d.strength/4)),turn:0,startedAt:Date.now(),skillCooldown:0,follower,logs:[],bossTime:20,ended:false,attackLocked:false};
     ensureRoot().classList.add('show','boss');pushLog('Босс: Вождь Боевого Племени');render();startTicker();return true;
@@ -270,7 +274,7 @@
     const setIds=boss?['warchief']:['tide','gold','blackflag','sacred'];const setNames={tide:'Морской дозор',gold:'Золотой страж',blackflag:'Чёрный флаг',sacred:'Священные врата',warchief:'Вождь племени'};const setId=setIds[Math.max(0,Math.min(setIds.length-1,(Number(stage)||1)-1))];
     const affixPool={common:[],uncommon:['crit'],rare:['guard','crit'],epic:['guard','crit','xp'],legendary:['guard','crit','xp']};const aff=affixPool[rarity]||[];
     const item={id:`loot_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,name:`${names[rarity]} ${slot}`,title:`${names[rarity]} ${slot}`,slot,type,icon,rarity,level:Math.max(1,Number(S().level)||1),enhance:0,attack: type==='weapon'?power:0,defense:['armor','helmet','belt','boots'].includes(type)?power:0,agility:['boots','ring'].includes(type)?Math.max(1,Math.floor(power/2)):0,maxHp:type==='armor'?power*3:0,setId,setName:setNames[setId],source:'pve',critChance:aff.includes('crit')?(rarity==='legendary'?4:rarity==='epic'?3:2):0,damageReduction:aff.includes('guard')?(rarity==='legendary'?4:rarity==='epic'?3:2):0,bonusXp:aff.includes('xp')?(rarity==='legendary'?5:3):0};
-    const s=S();s.inventoryItems=Array.isArray(s.inventoryItems)?s.inventoryItems:[];s.lootFound=Math.max(0,Number(s.lootFound)||0)+1;s.inventoryItems.unshift(item);s.inventoryItems=s.inventoryItems.slice(0,100);
+    const s=S();s.inventoryItems=Array.isArray(s.inventoryItems)?s.inventoryItems:[];s.lootFound=Math.max(0,Number(s.lootFound)||0)+1;window.TerritoryStore?.trackProgress?.('loot');s.inventoryItems.unshift(item);s.inventoryItems=s.inventoryItems.slice(0,100);
     return item;
   }
   function equipLoot(item){
@@ -286,11 +290,9 @@
 
   function victory(){if(!model||model.ended)return;model.ended=true;model.attackLocked=true;clearTimeout(autoTimer);clearInterval(tickTimer);model.enemyHp=0;animate('enemy','defeat');pushLog('Победа!');render();
     const wasBoss=model.boss;
-    const sVictory=S();sVictory.pve=sVictory.pve||{};if(wasBoss)sVictory.pve.bossDefeated=Math.max(0,Number(sVictory.pve.bossDefeated)||0);else sVictory.pve.wins=Math.max(0,Number(sVictory.pve.wins)||0)+1;
+    const sVictory=S();sVictory.pve=sVictory.pve||{};if(wasBoss){sVictory.pve.bossDefeated=Math.max(0,Number(sVictory.pve.bossDefeated)||0);window.TerritoryStore?.trackProgress?.('bosses');}else{sVictory.pve.wins=Math.max(0,Number(sVictory.pve.wins)||0)+1;window.TerritoryStore?.trackProgress?.('wins');}
     const loot=generateLoot(model.stage,wasBoss);
     window.TerritoryStore?.state && (window.TerritoryStore.state.story=window.TerritoryStore.state.story||{step:0,progress:0,claimed:{},started:false});
-    if(wasBoss) window.TerritoryStore?.state && (window.TerritoryStore.state.daily.bosses=(Number(window.TerritoryStore.state.daily.bosses)||0)+1); else window.TerritoryStore?.state && (window.TerritoryStore.state.daily.wins=(Number(window.TerritoryStore.state.daily.wins)||0)+1);
-    window.TerritoryStore?.state && (window.TerritoryStore.state.daily.loot=(Number(window.TerritoryStore.state.daily.loot)||0)+1);
     if(window.TerritoryStore?.state){ const st=window.TerritoryStore.state; if(wasBoss) st.pve.bossDefeated=Math.max(0,Number(st.pve.bossDefeated)||0)+0; st.story.started=true; window.TerritoryStore.saveNow?.(); }
     root.classList.add(wasBoss?'boss-victory':'stage-victory');
     showResult(true,wasBoss?'БОСС ПОВЕРЖЕН!':'ПОБЕДА!',`${wasBoss?'Награды главы будут выданы при продолжении':'Следующий противник загружается…'} · 🎁 ${loot.name} · ${loot.rarity}`,'🏆');
@@ -311,7 +313,7 @@
       const continueBattle=()=>{clearTimeout(resultTimer);const s=ensure();hideResult();root.classList.remove('boss-victory','stage-victory');if(model?.boss){const completedChapter=Math.max(1,Number(s.currentChapter)||1);s.pve.bossActive=false;s.pve.bossPending=false;s.chapterBossUnlocked=false;s.chapterBossDefeated=true;s.pve.bossDefeated=(Number(s.pve.bossDefeated)||0)+1;window.TerritoryStore?.addXp?.(Math.round(60*(1+(Number(equipmentBonus().bonusXp)||0)/100)));s.coins=(Number(s.coins)||0)+250;
           s.chapterRewardsClaimed=s.chapterRewardsClaimed||{};
           if(!s.chapterRewardsClaimed[completedChapter]){const baseMat=10+completedChapter;const milestone=completedChapter%10===0;s.forge=s.forge||{materials:0,selectedId:null,successes:0};s.forge.materials=(Number(s.forge.materials)||0)+baseMat+(milestone?40:0);s.gems=(Number(s.gems)||0)+(milestone?25:5);s.coins=(Number(s.coins)||0)+(milestone?1000:250);s.chapterRewardsClaimed[completedChapter]=true;pushLog(`🎁 Награда главы ${completedChapter}: +${baseMat+(milestone?40:0)} материалов · +${milestone?25:5} 💎`);}
-          s.totalChaptersCompleted=Math.max(0,Number(s.totalChaptersCompleted)||0)+1;
+          s.totalChaptersCompleted=Math.max(0,Number(s.totalChaptersCompleted)||0)+1;window.TerritoryStore?.trackProgress?.('chapters');
           if(s.currentChapter<240){s.currentChapter++;s.pve.chapter=s.currentChapter;s.pve.stage=1;s.pve.progress=0;s.pve.bossPending=false;s.pve.bossActive=false;s.chapterStage=1;s.chapterProgress=0;s.chapterBossUnlocked=false;s.chapterBossDefeated=false;s.chapterCompleted=false;pushLog(`Глава ${s.currentChapter-1} завершена → Глава ${s.currentChapter}`)}else{s.chapterCompleted=true}
           save();close();return} s.pve.progress=Math.min(100,s.pve.progress+25);s.chapterProgress=s.pve.progress;s.pve.stage=Math.min(4,s.pve.stage+1);s.chapterStage=s.pve.stage;s.pve.bossPending=s.pve.progress>=100;s.chapterBossUnlocked=s.pve.bossPending;window.TerritoryStore?.addXp?.(Math.round(20*(1+(Number(equipmentBonus().bonusXp)||0)/100)));s.coins=(Number(s.coins)||0)+25;save();if(s.pve.progress>=100){close();return}start(s.pve.stage)};
       lootActions.querySelector('.loot-equip').onclick=()=>{equipLoot(loot);pushLog(`Надето: ${loot.name}`);lootActions.querySelector('.loot-equip').textContent='✓ Надето';render()};
@@ -322,7 +324,7 @@
   function defeat(){if(!model||model.ended)return;model.ended=true;model.attackLocked=true;clear();animate('hero','defeat');pushLog('Поражение.');render();showResult(false,'ПОРАЖЕНИЕ','Герой восстановит часть HP перед возвращением','☠️');clearTimeout(resultTimer);resultTimer=setTimeout(()=>{hideResult();root.classList.remove('boss-victory','stage-victory');const s=S();s.hp=Math.max(1,Math.floor((Number(s.maxHp)||100)*.35));save();close()},1100)}
   function render(){
     if(!root||!model)return;const s=ensure(),eq=equipment(),f=model.follower;const stats=equipmentBonus();
-    root.querySelector('#pvePower').textContent='🔥 '+Math.max(0,Number(s.battleStones)||0);root.querySelector('#pveCoins').textContent='🪙 '+Math.floor(Number(s.coins)||0).toLocaleString('ru-RU');root.querySelector('#pveGems').textContent='💎 '+Math.floor(Number(s.gems)||0).toLocaleString('ru-RU');root.querySelector('#pveNavCoins').textContent='🪙 '+Math.floor(Number(s.coins)||0).toLocaleString('ru-RU');
+    root.querySelector('#pvePower').textContent='🔥 '+(Math.max(0,Number(s.battleStones)||0)+Math.max(0,Number(s.battleStonesBonus)||0));root.querySelector('#pveCoins').textContent='🪙 '+Math.floor(Number(s.coins)||0).toLocaleString('ru-RU');root.querySelector('#pveGems').textContent='💎 '+Math.floor(Number(s.gems)||0).toLocaleString('ru-RU');root.querySelector('#pveNavCoins').textContent='🪙 '+Math.floor(Number(s.coins)||0).toLocaleString('ru-RU');
     root.querySelector('#pveChapterTitle').textContent=model.boss?'ВОЖДЬ БОЕВОГО ПЛЕМЕНИ':`ГЛАВА ${s.currentChapter} · ${s.currentChapter}-${model.stage}`;
     const tr=root.querySelector('#pveStageTrack');tr.innerHTML='';for(let i=1;i<=4;i++){const b=document.createElement('span');b.className='stage '+(s.pve.progress>=i*25?'done ':'')+(i===model.stage&&!model.boss?'current':'');b.textContent=s.pve.progress>=i*25?'✓':i;tr.appendChild(b)}
     root.querySelector('#pveEnemyName').textContent=model.enemy.name;setFighterVisual(root.querySelector('#pveEnemyFigure'),model.boss?'boss':`enemy-${model.stage}`,model.enemy.icon);root.querySelector('#pveEnemyFill').style.width=(model.enemyHp/model.enemy.hp*100)+'%';root.querySelector('#pveEnemyHp').textContent=`${Math.ceil(model.enemyHp).toLocaleString('ru-RU')} / ${model.enemy.hp.toLocaleString('ru-RU')}`;root.querySelector('#pveBossTimer').textContent=model.boss?`⌛ ${model.bossTime}s`:'';
@@ -337,6 +339,16 @@
     root.querySelector('#pveBossSkills').parentElement.style.display=model.boss?'block':'none';
   }
   function clear(){clearTimeout(autoTimer);clearInterval(tickTimer);clearTimeout(resultTimer);autoTimer=null;tickTimer=null;resultTimer=null}
-  function close(){clear();if(model?.boss){const s=S();s.pve.bossActive=false;save()}model=null;root?.classList.remove('show','boss');window.showScreen?.('home')}
+  function close(){
+    clear();
+    if(model?.boss){const s=S();s.pve.bossActive=false;save()}
+    model=null;
+    root?.classList.remove('show','boss','stage-victory','boss-victory');
+    const result=root?.querySelector('#pveResult');
+    if(result)result.classList.remove('show');
+    window.PvEFlow?.hide?.();
+    window.showScreen?.('home');
+    window.dispatchEvent(new CustomEvent('territory:screen',{detail:{screen:'home',source:'pve-back'}}));
+  }
   window.PvEBattle={start,startBoss,close,attack,skill};
 })();

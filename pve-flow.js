@@ -21,6 +21,6 @@
   function openBoss(){const s=ensure();if(!s.pve.bossPending){window.alert?.('☠️ Босс станет доступен после 4 побед.');return}map?.classList.remove('show');window.PvEBattle?.startBoss?.()}
   function open(){render()}
   function start(){startRunner()}
-  window.PvEFlow={open,start,startRunner,openBoss,stop:()=>window.PvEBattle?.close?.(),api:()=>null};
+  window.PvEFlow={open,start,startRunner,openBoss,stop:()=>window.PvEBattle?.close?.(),hide:()=>map?.classList.remove('show'),api:()=>null};
   window.HomeRebuild=window.HomeRebuild||{};window.HomeRebuild.startRunner=window.PvEFlow.startRunner;window.HomeRebuild.openBoss=window.PvEFlow.openBoss;
 })();

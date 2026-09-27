@@ -1,13 +1,15 @@
-# TERRITORY HOME INPUT HOTFIX 10063
+TERRITORY — BACK BUTTON HOTFIX 64
 
-This overlay replaces `home-router.js`.
+Based on HOME INPUT HOTFIX 63.
 
-Fixes:
-- one tap is routed once (touch/pointer/click duplication is suppressed);
-- tap must stay within 14 px, so swipes/scrolls do not activate a neighboring button;
-- HOME hit zones no longer overlap between header, energy, chapter and side rails;
-- real DOM buttons/links are not stolen by the fallback router;
-- missing sections no longer redirect to an unrelated section;
-- keeps Arena/PvE/Forge/gear routing from the previous hotfix.
+Fixes the back button inside PvE bot battle:
+- visible button changed to ←
+- pointer/touch/click all call the same safe close handler
+- stops duplicate/competing handlers
+- clears battle/result state
+- hides PvE flow overlay and returns to HOME
 
-Overlay this `home-router.js` over the current project and replace the old file.
+Overlay these 3 files over the current project:
+- home-router.js
+- pve-battle.js
+- pve-flow.js
