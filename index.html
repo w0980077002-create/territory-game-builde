@@ -56,9 +56,12 @@
 <input id="importFile" type="file" accept=".json" hidden>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
+const DEFAULT_HOME_URL='https://raw.githubusercontent.com/w0980077002-create/teritory-game/main/home-master.png';
 const KEY="territory-builder-v3";
 const base=()=>({project:{name:"Territory Game",start:"HOME",description:"Mobile Telegram RPG"},player:{name:"Эйнар",vip:5,level:1,coins:45000,gems:4500,energy:30,hp:100,xp:60,vipTimer:0},assets:[],zones:[{name:"Арена",x:12,y:43,w:27,h:11,action:"arena"},{name:"Лавка",x:64,y:43,w:27,h:11,action:"economy"}],combat:{mode:"1x1",timer:60,minTimer:30,auto:true,attack:["Head","Belt","Legs"],defense:["Head","Belt","Legs"]},items:[{name:"Зелье HP",qty:3},{name:"Эликсир энергии",qty:2}],shop:[{name:"Зелье HP",price:100},{name:"Эликсир энергии",price:250}],followers:[["Лиабро","Crit"],["Тералель","Defense"],["Король-коров","Healing"],["Морт","Evasion"],["Каменное Лицо","Control"]].map(x=>({name:x[0],role:x[1],level:1,awakening:0}))});
-let S=JSON.parse(localStorage.getItem(KEY)||"null")||base(), undoStack=[], redoStack=[], selected=-1, sceneMode="home", botHP=100, myHP=100;
+let S=JSON.parse(localStorage.getItem(KEY)||"null")||base();
+if(!S.assets.some(x=>x.role==="HOME")){S.assets.unshift({name:"home-master.png",data:DEFAULT_HOME_URL,role:"HOME"});localStorage.setItem(KEY,JSON.stringify(S));}
+let undoStack=[], redoStack=[], selected=-1, sceneMode="home", botHP=100, myHP=100;
 const $=id=>document.getElementById(id), clone=x=>JSON.parse(JSON.stringify(x));
 function snap(){undoStack.push(clone(S));if(undoStack.length>40)undoStack.shift();redoStack=[]}
 function save(){localStorage.setItem(KEY,JSON.stringify(S));render();toast("Сохранено")}
