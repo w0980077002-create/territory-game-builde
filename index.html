@@ -3,100 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>Territory Game Builder v3</title>
-<style>
-:root{--bg:#070a0e;--panel:#111720;--panel2:#171f2a;--line:#293443;--text:#f4f6f8;--muted:#8f9aaa;--gold:#f0c45c;--blue:#5c9cff;--green:#4ed68a;--red:#ff6b72}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif}button,input,select{font:inherit}button{border:1px solid var(--line);background:#18212c;color:#fff;border-radius:11px;padding:10px 13px}button.primary{background:var(--blue);border-color:var(--blue)}button.gold{background:#5a4318;border-color:#a87c2d;color:#ffe6a0}.app{min-height:100dvh}header{height:62px;position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:8px 13px;background:#090c11ed;border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}.logo{font-weight:950}.logo span{color:var(--gold)}.head{display:flex;gap:6px}main{display:grid;grid-template-columns:205px 1fr;min-height:calc(100dvh - 62px)}nav{border-right:1px solid var(--line);padding:9px;display:flex;flex-direction:column;gap:4px}nav button{text-align:left;background:transparent;border-color:transparent}.on{background:#1b2634!important;border-color:#304158!important}.content{padding:15px;overflow:auto;min-width:0}.view{display:none;max-width:1150px;margin:auto}.view.active{display:block}.title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.title h2{margin:0;font-size:20px}.muted,.sub{color:var(--muted);font-size:13px}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:13px}.field{display:grid;gap:6px;color:var(--muted);font-size:13px}.field input,.field select,.field textarea{width:100%;background:#0d1117;color:#fff;border:1px solid var(--line);border-radius:9px;padding:10px}.field textarea{min-height:85px}.phoneWrap{display:flex;justify-content:center}.phone{width:min(400px,100%);height:min(800px,78dvh);min-height:560px;border:7px solid #252c35;border-radius:34px;overflow:hidden;position:relative;background:#18322e;box-shadow:0 25px 90px #000a}.scene{position:absolute;inset:0;overflow:hidden;background:#315e59 center/cover no-repeat}.scene.home{background-image:linear-gradient(180deg,#3d7870,#182a28)}.scene.arena{background-image:linear-gradient(90deg,#293641,#101820)}.hud{position:absolute;top:0;left:0;right:0;height:72px;background:#0e1217dd;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;z-index:12}.name{font-weight:900}.name small{display:block;font-weight:500;color:#b8c1cb}.res{font-size:10px}.bars{position:absolute;top:76px;left:10px;right:10px;z-index:11}.bar{height:7px;background:#202731;border-radius:8px;margin:4px 0;overflow:hidden}.bar i{display:block;height:100%;width:60%;background:var(--green)}.bar.xp i{background:#62a1ff}.bar.en i{background:#edb34d}.center{position:absolute;inset:140px 0 75px;display:grid;place-items:center;text-align:center;color:#aeb9c5}.actors{position:absolute;top:180px;left:0;right:0;display:flex;justify-content:space-around;z-index:4}.actor{font-size:60px;text-align:center}.actor small{display:block;font-size:11px}.fightZones{position:absolute;bottom:82px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:13}.fightZones button{font-size:10px;padding:7px}.bottom{position:absolute;left:0;right:0;bottom:0;height:66px;background:#101215ee;display:flex;justify-content:space-around;align-items:center;z-index:15}.bottom button{border:0;background:transparent;padding:4px;font-size:10px}.bottom b{display:block;font-size:21px}.hz{position:absolute;border:2px dashed #75a9ffb8;background:#75a9ff16;border-radius:8px;display:grid;place-items:center;font-size:10px;z-index:9;touch-action:none}.hz.sel{border-color:#fff;background:#75a9ff35}.hz x{position:absolute}.list{display:grid;gap:8px;margin-top:10px}.item{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;justify-content:space-between;align-items:center;gap:10px}.item small{display:block;color:var(--muted);margin-top:3px}.drop{display:block;border:2px dashed #3b4655;border-radius:15px;padding:25px;text-align:center;color:var(--muted)}.drop input{display:none}.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{border:1px solid var(--line);padding:8px 10px;border-radius:10px}.chip.active{border-color:var(--blue);background:#162944}.log{min-height:130px;background:#0a0d12;border:1px solid var(--line);border-radius:12px;padding:10px;white-space:pre-wrap;font:12px ui-monospace,monospace;color:#bdc8d4}.step{display:flex;gap:7px;overflow:auto;margin-bottom:12px}.step button{white-space:nowrap}.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#202b38;border:1px solid #3a4859;padding:10px 14px;border-radius:10px;z-index:99}.bigAction{width:100%;padding:14px;font-weight:800}.danger{background:#36181b;border-color:#713237}@media(max-width:760px){header{height:auto;min-height:58px;flex-wrap:wrap}.head button:not(.primary){display:none}main{display:block}nav{height:52px;border-right:0;border-bottom:1px solid var(--line);display:flex;flex-direction:row;overflow:auto;position:sticky;top:0;background:#090c11;z-index:25}nav button{white-space:nowrap;font-size:12px}.content{padding:10px}.grid2,.grid3{grid-template-columns:1fr}.phone{height:calc(100dvh - 170px);min-height:540px}.title h2{font-size:18px}}
-</style>
+<title>Territory Game</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="app">
-<header><div class="logo">TERRITORY <span>GAME BUILDER v3</span></div><div class="head"><button id="undo">↶</button><button id="redo">↷</button><button id="save">Сохранить</button><button id="build" class="primary">Собрать игру</button></div></header>
-<main>
-<nav id="nav">
-<button class="on" data-view="preview">🎮 Игра</button>
-<button data-view="home">🏠 HOME</button>
-<button data-view="arena">⚔️ ARENA</button>
-<button data-view="economy">💰 Экономика</button>
-<button data-view="inventory">🎒 Предметы</button>
-<button data-view="followers">👥 Герои</button>
-<button data-view="assets">🖼️ Арт</button>
-<button data-view="project">⚙️ Проект</button>
-</nav>
-<section class="content">
+<div id="game">
+  <img id="homeArt" src="https://raw.githubusercontent.com/w0980077002-create/teritory-game/main/home-master.png" alt="">
+  <div class="hud">
+    <div class="player">
+      <b id="name">Эйнар</b>
+      <span>VIP <b id="vip">5</b> · LV <b id="level">1</b></span>
+    </div>
+    <div class="resources">
+      <span>🪙 <b id="coins">45 000</b></span>
+      <span>💎 <b id="gems">4 500</b></span>
+    </div>
+    <div class="bars">
+      <div class="bar xp"><i style="width:68%"></i></div>
+      <div class="bar energy"><i style="width:100%"></i></div>
+      <div class="bar hp"><i style="width:100%"></i></div>
+    </div>
+  </div>
 
-<div id="preview" class="view active">
-<div class="title"><div><h2>Игра</h2><div class="sub">Здесь ты играешь и сразу видишь изменения.</div></div><button class="gold" id="startBattle">⚔️ Начать бой</button></div>
-<div class="phoneWrap"><div class="phone"><div id="scene" class="scene home">
-<div class="hud"><div class="name"><span id="pname"></span><small>VIP <span id="pvip"></span> · LV <span id="plvl"></span></small></div><div class="res">🔥 <span id="pen"></span>　🪙 <span id="pcoins"></span>　💎 <span id="pgems"></span></div></div>
-<div class="bars"><div class="bar xp"><i id="xp"></i></div><div class="bar"><i id="hp"></i></div><div class="bar en"><i id="en"></i></div></div>
-<div id="center" class="center" aria-hidden="true"></div>
-<div id="zones"></div>
-<div id="actors" class="actors" style="display:none"><div class="actor">🛡️<small id="myHp">Эйнар · HP 100</small></div><div class="actor">⚔️<small id="botHp">BOT · HP 100</small></div></div>
-<div id="fightZones" class="fightZones" style="display:none"><button data-hit="Head">Голова</button><button data-hit="Belt">Пояс</button><button data-hit="Legs">Ноги</button></div>
-<div class="bottom"><button data-go="home"><b>🏠</b>Город</button><button data-go="inventory"><b>🎒</b>Инвентарь</button><button data-go="followers"><b>👤</b>Герой</button><button data-go="arena"><b>⚔️</b>Бой</button><button data-go="economy"><b>🛒</b>Лавка</button></div>
-</div></div></div>
+  <button class="hz arena" aria-label="Арена" data-screen="arena"></button>
+  <button class="hz shop" aria-label="Лавка" data-screen="shop"></button>
+  <button class="hz inventory" aria-label="Инвентарь" data-screen="inventory"></button>
+
+  <div class="screen" id="panel">
+    <button id="close">×</button>
+    <h2 id="panelTitle"></h2>
+    <p id="panelText"></p>
+  </div>
+
+  <nav class="bottom">
+    <button data-screen="home">🏠<small>Город</small></button>
+    <button data-screen="inventory">🎒<small>Инвентарь</small></button>
+    <button data-screen="hero">🧝<small>Герой</small></button>
+    <button data-screen="arena">⚔️<small>Бой</small></button>
+    <button data-screen="shop">🛒<small>Лавка</small></button>
+  </nav>
 </div>
-
-<div id="home" class="view"><div class="title"><div><h2>HOME</h2><div class="sub">Позиционирование интерактивных зон прямо пальцем.</div></div><button id="addZone">+ Зона</button></div><div class="grid2"><div class="card"><h3>Зоны</h3><div id="zoneList" class="list"></div></div><div class="card"><h3>Выбранная зона</h3><div id="zoneEditor" class="sub">Выбери зону.</div></div></div></div>
-
-<div id="arena" class="view"><div class="title"><div><h2>ARENA</h2><div class="sub">Редактор боевых правил.</div></div><button class="primary" id="battleTest">▶ Тест</button></div><div class="grid2"><div class="card"><div class="grid2"><label class="field">Режим<select id="mode"><option>1x1</option><option>3x3</option><option>CHAOS</option></select></label><label class="field">Ход, сек<input id="timer" type="number" min="30"></label><label class="field">Минимум, сек<input id="minTimer" type="number" min="30"></label><label class="field">Автобой<select id="auto"><option value="true">Да</option><option value="false">Нет</option></select></label></div><h3>Атака</h3><div id="attacks" class="chips"></div><h3>Защита</h3><div id="defenses" class="chips"></div></div><div class="card"><h3>Журнал</h3><div id="log" class="log">Бой не запущен.</div></div></div></div>
-
-<div id="economy" class="view"><div class="title"><h2>Экономика</h2><button class="primary" id="applyEconomy">Применить</button></div><div class="card"><div class="grid3"><label class="field">Имя<input id="name"></label><label class="field">VIP<input id="vip" type="number"></label><label class="field">Уровень<input id="lvl" type="number"></label><label class="field">Coins<input id="coins" type="number"></label><label class="field">Gems<input id="gems" type="number"></label><label class="field">Energy<input id="energy" type="number"></label><label class="field">HP<input id="health" type="number"></label><label class="field">XP<input id="experience" type="number"></label><label class="field">VIP timer<input id="vipTimer" type="number"></label></div></div></div>
-
-<div id="inventory" class="view"><div class="title"><h2>Предметы</h2><div><button id="addItem">+ Предмет</button><button id="addShop">+ Товар</button></div></div><div class="grid2"><div class="card"><h3>Инвентарь</h3><div id="items" class="list"></div></div><div class="card"><h3>Лавка</h3><div id="shop" class="list"></div></div></div></div>
-
-<div id="followers" class="view"><div class="title"><h2>Герои / Последователи</h2></div><div id="followersList" class="list"></div></div>
-
-<div id="assets" class="view"><div class="title"><div><h2>Оригинальный арт</h2><div class="sub">Оригинальная графика используется как источник истины.</div></div></div><label class="drop"><input id="assetInput" type="file" accept="image/*" multiple>Нажми и выбери изображения</label><div id="assetList" class="list"></div></div>
-
-<div id="project" class="view"><div class="title"><h2>Проект</h2></div><div class="grid2"><div class="card"><label class="field">Название<input id="projectName"></label><label class="field">Старт<select id="start"><option>HOME</option><option>ARENA</option></select></label><label class="field">Описание<textarea id="description"></textarea></label></div><div class="card"><h3>Один проект — одно состояние</h3><p class="sub">Все Coins, Gems, HP, Energy, XP, инвентарь, бой и герои находятся в TerritoryStore.state. Builder не создаёт отдельные localStorage-системы для игровых ресурсов.</p><button class="danger" id="reset">Сбросить проект</button></div></div></div>
-
-</section></main></div>
-<input id="importFile" type="file" accept=".json" hidden>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script>
-const DEFAULT_HOME_URL='https://raw.githubusercontent.com/w0980077002-create/teritory-game/main/home-master.png';
-const KEY="territory-builder-v3";
-const base=()=>({project:{name:"Territory Game",start:"HOME",description:"Mobile Telegram RPG"},player:{name:"Эйнар",vip:5,level:1,coins:45000,gems:4500,energy:30,hp:100,xp:60,vipTimer:0},assets:[],zones:[{name:"Арена",x:12,y:43,w:27,h:11,action:"arena"},{name:"Лавка",x:64,y:43,w:27,h:11,action:"economy"}],combat:{mode:"1x1",timer:60,minTimer:30,auto:true,attack:["Head","Belt","Legs"],defense:["Head","Belt","Legs"]},items:[{name:"Зелье HP",qty:3},{name:"Эликсир энергии",qty:2}],shop:[{name:"Зелье HP",price:100},{name:"Эликсир энергии",price:250}],followers:[["Лиабро","Crit"],["Тералель","Defense"],["Король-коров","Healing"],["Морт","Evasion"],["Каменное Лицо","Control"]].map(x=>({name:x[0],role:x[1],level:1,awakening:0}))});
-let S=JSON.parse(localStorage.getItem(KEY)||"null")||base();
-if(!S.assets.some(x=>x.role==="HOME")){S.assets.unshift({name:"home-master.png",data:DEFAULT_HOME_URL,role:"HOME"});localStorage.setItem(KEY,JSON.stringify(S));}
-let undoStack=[], redoStack=[], selected=-1, sceneMode="home", botHP=100, myHP=100;
-const $=id=>document.getElementById(id), clone=x=>JSON.parse(JSON.stringify(x));
-function snap(){undoStack.push(clone(S));if(undoStack.length>40)undoStack.shift();redoStack=[]}
-function save(){localStorage.setItem(KEY,JSON.stringify(S));render();toast("Сохранено")}
-function toast(t){let d=document.createElement("div");d.className="toast";d.textContent=t;document.body.append(d);setTimeout(()=>d.remove(),1300)}
-function show(v){document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===v));document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("on",x.dataset.view===v))}
-document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>show(b.dataset.view));
-function go(v){show("preview");sceneMode=v==="arena"?"arena":"home";renderPreview()}
-function renderPreview(){const p=S.player; $("pname").textContent=p.name;$("pvip").textContent=p.vip;$("plvl").textContent=p.level;$("pen").textContent=p.energy;$("pcoins").textContent=p.coins.toLocaleString("ru-RU");$("pgems").textContent=p.gems.toLocaleString("ru-RU");$("xp").style.width=Math.min(100,p.xp%100)+"%";$("hp").style.width=Math.max(0,Math.min(100,p.hp))+"%";$("en").style.width=Math.max(0,Math.min(100,p.energy))+"%";$("scene").className="scene "+sceneMode; $("center").style.display=sceneMode==="home"?"grid":"none";$("actors").style.display=sceneMode==="arena"?"flex":"none";$("fightZones").style.display=sceneMode==="arena"?"flex":"none";const a=S.assets.find(x=>x.role==="HOME");if(a&&sceneMode==="home")$("scene").style.backgroundImage=`url(${a.data})`;else if(sceneMode==="home")$("scene").style.backgroundImage="";renderZones();$("myHp").textContent=p.name+" · HP "+myHP;$("botHp").textContent="BOT · HP "+botHP}
-function renderZones(){$("zones").innerHTML="";S.zones.forEach((z,i)=>{let d=document.createElement("div");d.className="hz"+(i===selected?" sel":"");d.textContent=z.name;d.style.cssText=`left:${z.x}%;top:${z.y}%;width:${z.w}%;height:${z.h}%;`;d.onpointerdown=e=>{selected=i;let r=$("scene").getBoundingClientRect(),sx=e.clientX,sy=e.clientY,ox=z.x,oy=z.y;d.setPointerCapture(e.pointerId);d.onpointermove=ev=>{z.x=Math.max(0,Math.min(100,ox+(ev.clientX-sx)/r.width*100));z.y=Math.max(0,Math.min(85,oy+(ev.clientY-sy)/r.height*100));d.style.left=z.x+"%";d.style.top=z.y+"%";renderZoneEditor()};d.onpointerup=()=>{d.onpointermove=null;save()};renderZoneEditor()};$("zones").append(d)});$("zoneList").innerHTML=S.zones.map((z,i)=>`<div class="item"><div><b>${z.name}</b><small>${z.action} · ${Math.round(z.x)}%, ${Math.round(z.y)}%</small></div><button onclick="selectZone(${i})">Изменить</button></div>`).join("")}
-window.selectZone=i=>{selected=i;show("home");renderZoneEditor()}
-function renderZoneEditor(){if(selected<0){$("zoneEditor").textContent="Выбери зону на Preview.";return}let z=S.zones[selected];$("zoneEditor").innerHTML=`<div class="grid2"><label class="field">Название<input id="zn" value="${z.name}"></label><label class="field">Действие<select id="za"><option>home</option><option>arena</option><option>economy</option><option>inventory</option><option>followers</option></select></label><label class="field">X<input id="zx" type="number" value="${z.x}"></label><label class="field">Y<input id="zy" type="number" value="${z.y}"></label><label class="field">W<input id="zw" type="number" value="${z.w}"></label><label class="field">H<input id="zh" type="number" value="${z.h}"></label></div><button class="primary bigAction" id="applyZone">Применить</button>`;$("za").value=z.action;$("applyZone").onclick=()=>{snap();z.name=$("zn").value;z.action=$("za").value;z.x=+$("zx").value;z.y=+$("zy").value;z.w=+$("zw").value;z.h=+$("zh").value;save()}}
-$("addZone").onclick=()=>{snap();S.zones.push({name:"Новая зона",x:35,y:45,w:25,h:10,action:"home"});selected=S.zones.length-1;save();show("home")}
-document.querySelectorAll(".bottom button").forEach(b=>b.onclick=()=>go(b.dataset.go));
-$("startBattle").onclick=$("battleTest").onclick=()=>startBattle();
-function startBattle(){sceneMode="arena";show("preview");botHP=100;myHP=S.player.hp;renderPreview();$("log").textContent=`Бой ${S.combat.mode} запущен. Таймер ${S.combat.timer} сек.\\nБот появляется справа.`;toast("Бой начат")}
-document.querySelectorAll("[data-hit]").forEach(b=>b.onclick=()=>{if(sceneMode!=="arena")return;let dmg=10+Math.floor(Math.random()*16);botHP=Math.max(0,botHP-dmg);$("log").textContent+=`\\nАтака ${b.dataset.hit}: -${dmg} HP`;renderPreview();if(botHP<=0){$("log").textContent+="\\nПобеда: бот повержен.";toast("Победа!")}})
-function renderArena(){ $("mode").value=S.combat.mode;$("timer").value=S.combat.timer;$("minTimer").value=S.combat.min;$("auto").value=String(S.combat.auto);$("attacks").innerHTML=S.combat.attack.map((x,i)=>`<button class="chip ${x?'active':''}" onclick="toggleCombat('attack',${i})">${x||'—'}</button>`).join("");$("defenses").innerHTML=S.combat.defense.map((x,i)=>`<button class="chip ${x?'active':''}" onclick="toggleCombat('defense',${i})">${x||'—'}</button>`).join("")}
-window.toggleCombat=(t,i)=>{snap();S.combat[t][i]=S.combat[t][i]?null:["Head","Belt","Legs"][i];save()}
-["mode","timer","minTimer","auto"].forEach(id=>$(id).onchange=()=>{snap();S.combat.mode=$("mode").value;S.combat.timer=+$("timer").value;S.combat.min=+$("minTimer").value;S.combat.auto=$("auto").value==="true";save()});
-function renderEconomy(){let p=S.player;["name","vip","lvl","coins","gems","energy","health","experience","vipTimer"].forEach(id=>$(id).value={name:p.name,vip:p.vip,lvl:p.level,coins:p.coins,gems:p.gems,energy:p.energy,health:p.hp,experience:p.xp,vipTimer:p.vipTimer}[id])}
-$("applyEconomy").onclick=()=>{snap();let p=S.player;p.name=$("name").value;p.vip=+$("vip").value;p.level=+$("lvl").value;p.coins=+$("coins").value;p.gems=+$("gems").value;p.energy=+$("energy").value;p.hp=+$("health").value;p.xp=+$("experience").value;p.vipTimer=+$("vipTimer").value;save()}
-function renderLists(){ $("items").innerHTML=S.items.map((x,i)=>`<div class="item"><div><b>${x.name}</b><small>Количество: ${x.qty}</small></div><button onclick="removeItem(${i})">Удалить</button></div>`).join("");$("shop").innerHTML=S.shop.map((x,i)=>`<div class="item"><div><b>${x.name}</b><small>${x.price} 🪙</small></div><button onclick="removeShop(${i})">Удалить</button></div>`).join("")}
-window.removeItem=i=>{snap();S.items.splice(i,1);save()};window.removeShop=i=>{snap();S.shop.splice(i,1);save()}
-$("addItem").onclick=()=>{snap();S.items.push({name:"Новый предмет",qty:1});save()};$("addShop").onclick=()=>{snap();S.shop.push({name:"Новый товар",price:100});save()}
-function renderFollowers(){$("followersList").innerHTML=S.followers.map((f,i)=>`<div class="item"><div><b>${f.name}</b><small>${f.role} · LV ${f.level} · Awakening ${f.awakening}</small></div><button onclick="levelFollower(${i})">+ LV</button></div>`).join("")}
-window.levelFollower=i=>{snap();S.followers[i].level=Math.min(100,S.followers[i].level+1);save()}
-$("assetInput").onchange=e=>[...e.target.files].forEach(file=>{let r=new FileReader();r.onload=()=>{snap();S.assets.push({name:file.name,data:r.result,role:"OTHER"});save()};r.readAsDataURL(file)});
-function renderAssets(){$("assetList").innerHTML=S.assets.map((a,i)=>`<div class="item"><div><b>${a.name}</b><small>${a.role}</small></div><button onclick="homeAsset(${i})">${a.role==="HOME"?"HOME":"Сделать HOME"}</button></div>`).join("")||"<div class='sub'>Нет изображений.</div>"}
-window.homeAsset=i=>{snap();S.assets.forEach(x=>x.role="OTHER");S.assets[i].role="HOME";save()}
-$("projectName").onchange=e=>{S.project.name=e.target.value;save()};$("start").onchange=e=>{S.project.start=e.target.value;save()};$("description").onchange=e=>{S.project.description=e.target.value;save()}
-$("save").onclick=save;$("undo").onclick=()=>{if(!undoStack.length)return;redoStack.push(clone(S));S=undoStack.pop();save()};$("redo").onclick=()=>{if(!redoStack.length)return;undoStack.push(clone(S));S=redoStack.pop();save()}
-$("reset").onclick=()=>{if(confirm("Сбросить проект?")){snap();S=base();save()}}
-function render(){renderPreview();renderZones();renderArena();renderEconomy();renderLists();renderFollowers();renderAssets();$("projectName").value=S.project.name;$("start").value=S.project.start;$("description").value=S.project.description}
-$("build").onclick=async()=>{const zip=new JSZip();const cfg=JSON.stringify(S,null,2);const game=`<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${S.project.name}</title><style>html,body{margin:0;height:100%;background:#111;color:#fff;font-family:system-ui}body{display:grid;place-items:center}.game{width:min(420px,100vw);height:100dvh;background:#18322e;position:relative;overflow:hidden}.hud{padding:12px;background:#101318dd}.art{position:absolute;inset:70px 0 66px;background:#315e59 center/cover no-repeat}.bottom{position:absolute;bottom:0;left:0;right:0;height:66px;background:#111c;display:flex;align-items:center;justify-content:space-around}</style><div class="game"><div class="hud"><b>${S.player.name}</b> · VIP ${S.player.vip}<br>🪙 ${S.player.coins}　💎 ${S.player.gems}　🔥 ${S.player.energy}</div><div class="art"></div><div class="bottom">🏠 HOME　🎒 ИНВЕНТАРЬ　👤 ГЕРОЙ　⚔️ БОЙ　🛒 ЛАВКА</div></div><script>window.TerritoryStore={state:${cfg}}<\/script></html>`;zip.file("index.html",game);zip.file("territory-store.json",cfg);zip.file("README.txt","Built by Territory Game Builder v3");S.assets.forEach((a,i)=>zip.file("assets/"+i+"-"+a.name,a.data.split(",")[1],{base64:true}));let blob=await zip.generateAsync({type:"blob"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="territory-game-build-v3.zip";a.click();toast("Готово: ZIP игры создан")}
-render();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
