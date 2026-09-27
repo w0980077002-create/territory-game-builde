@@ -8,40 +8,32 @@
 </head>
 <body>
 <div id="game">
-  <img id="homeArt" src="https://raw.githubusercontent.com/w0980077002-create/teritory-game/main/home-master.png" alt="">
-  <div class="hud">
-    <div class="player">
-      <b id="name">Эйнар</b>
-      <span>VIP <b id="vip">5</b> · LV <b id="level">1</b></span>
-    </div>
-    <div class="resources">
-      <span>🪙 <b id="coins">45 000</b></span>
-      <span>💎 <b id="gems">4 500</b></span>
-    </div>
-    <div class="bars">
-      <div class="bar xp"><i style="width:68%"></i></div>
-      <div class="bar energy"><i style="width:100%"></i></div>
-      <div class="bar hp"><i style="width:100%"></i></div>
-    </div>
-  </div>
-
-  <button class="hz arena" aria-label="Арена" data-screen="arena"></button>
-  <button class="hz shop" aria-label="Лавка" data-screen="shop"></button>
-  <button class="hz inventory" aria-label="Инвентарь" data-screen="inventory"></button>
-
-  <div class="screen" id="panel">
-    <button id="close">×</button>
-    <h2 id="panelTitle"></h2>
-    <p id="panelText"></p>
-  </div>
-
+  <img id="homeArt" src="https://raw.githubusercontent.com/w0980077002-create/teritory-game/main/home-master.png">
+  <div id="zones"></div>
   <nav class="bottom">
     <button data-screen="home">🏠<small>Город</small></button>
     <button data-screen="inventory">🎒<small>Инвентарь</small></button>
     <button data-screen="hero">🧝<small>Герой</small></button>
     <button data-screen="arena">⚔️<small>Бой</small></button>
     <button data-screen="shop">🛒<small>Лавка</small></button>
+    <button id="editorBtn">⚙️<small>Редактор</small></button>
   </nav>
+  <section id="gamePanel" class="panel">
+    <button class="x" id="closePanel">×</button><h2 id="panelTitle"></h2><div id="panelBody"></div>
+  </section>
+</div>
+
+<div id="editor" class="editor hidden">
+  <header><b>TERRITORY GAME — РЕДАКТОР</b><button id="closeEditor">✕ Играть</button></header>
+  <div class="tabs">
+    <button data-tab="zones" class="active">🏠 Зоны</button>
+    <button data-tab="economy">💰 Экономика</button>
+    <button data-tab="items">🎒 Предметы</button>
+    <button data-tab="shop">🛒 Лавка</button>
+    <button data-tab="followers">👥 Герои</button>
+    <button data-tab="assets">🖼️ Арт</button>
+  </div>
+  <main id="editorContent"></main>
 </div>
 <script src="app.js"></script>
 </body>
