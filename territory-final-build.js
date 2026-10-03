@@ -1,17 +1,12 @@
-/* TERRITORY FINAL BUILD — unified integration layer */
-(function(){
-'use strict';
-if(window.TerritoryFinalBuild)return;
-const alias={market:'shop',casino:'games',districts:'quests',profile:'hero',roadmap:'map'};
-const ids=['home','map','inventory','hero','quests','games','shop','clan'];
-const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
-function idOf(v){v=alias[v]||v||'home';return ids.includes(v)?v:'home'}
-function active(){if($('#runnerScreen,.pve-battle.show'))return'battle';if($('#territory-live-arena,.arena-modal.show'))return'arena';return idOf(document.body.dataset.screen||location.hash.slice(1)||'home')}
-function isolate(id){const overlay=id==='battle'||id==='arena';id=overlay?idOf(document.body.dataset.baseScreen||location.hash.slice(1)||'home'):idOf(id);ids.forEach(x=>{const e=document.getElementById(x);if(e){e.classList.toggle('active',x===id);e.setAttribute('aria-hidden',String(x!==id))}});document.body.dataset.screen=id}
-function sync(){const a=active();if(a!=='battle'&&a!=='arena')document.body.dataset.baseScreen=a;isolate(a);const n=$('#territoryNav');if(n){n.classList.toggle('hidden',active()==='home');$$('button[data-screen]',n).forEach(b=>b.classList.toggle('active',b.dataset.screen===active()))}const h=$('#home');if(h){$$('.home-life,.vip-personality-badge,.vip-scene-aura',h).forEach(x=>x.remove());const img=$('.territory-home-art,.home-reference-image',h);if(img)img.src='home-master.png'}try{window.TerritoryLiveHomeHUD02?.refresh?.()}catch(_){}try{window.TerritoryTelegramProfileUI19?.render?.()}catch(_){}try{window.TerritoryCompletePass?.updateStoneLabels?.()}catch(_){} }
-function go(v){v=idOf(v);if(v==='battle'){window.PvEFlow?.startRunner?.();setTimeout(sync,0);return}if(v==='arena'){try{window.PvEFlow?.stop?.()}catch(_){};if(window.TerritoryTelegramAuth?.state==='authenticated'&&window.TerritoryLiveArena?.open)window.TerritoryLiveArena.open();else window.ArenaGame?.open?.();setTimeout(sync,0);return}try{window.PvEFlow?.stop?.()}catch(_){};try{window.ArenaGame?.close?.()}catch(_){};window.TerritoryNavigation?.go?.(v)||window.showScreen?.(v);setTimeout(sync,0)}
-function repairStones(){const layer=$('.territory-home-hit-layer,.home-hit-layer');if(!layer||layer.querySelector('[data-stone-open]'))return;const speed=layer.querySelector('.home-hit.speed');if(!speed)return;const b=document.createElement('button');b.type='button';b.className='home-hit territory-home-stone';b.dataset.homeAction='battle-stones';b.dataset.stoneOpen='';b.innerHTML='<span>🪨</span><b data-battle-stones>0</b>';speed.insertAdjacentElement('beforebegin',b)}
-function boot(){repairStones();sync();document.addEventListener('click',e=>{const t=e.target.closest?.('[data-home-action],[data-action]');if(!t||!$('#home.active')||t.closest('#territoryNav'))return;const a=t.dataset.homeAction||t.dataset.action;if(a==='battle-stones'){e.preventDefault();e.stopImmediatePropagation();window.TerritoryCompletePass?.openStoneModal?.();return}const map={home:'home',inventory:'inventory',hero:'hero',battle:'battle',quests:'quests',games:'games',clan:'clan',shop:'shop',arena:'arena',forge:'forge',chapter:'map',trials:'map',capture:'clan',daily:'quests'};if(map[a]){e.preventDefault();e.stopImmediatePropagation();go(map[a])}},true);window.addEventListener('territory:screen',sync);window.addEventListener('territory:state-changed',sync);window.addEventListener('territory:telegram-authenticated',sync);window.addEventListener('pageshow',()=>setTimeout(sync,100));new MutationObserver(()=>{repairStones();sync()}).observe(document.body,{childList:true,subtree:true});setInterval(()=>{repairStones();sync()},1500)}
-window.TerritoryFinalBuild={sync,go,active};
+(function(){'use strict';
+function boot(){
+  const alias={market:'shop',casino:'games',districts:'quests'};
+  const ids=['home','map','inventory','hero','quests','games','shop','clan'];
+  function norm(id){return alias[id]||id||'home'}
+  function isolate(id){id=norm(id);ids.forEach(x=>{const e=document.getElementById(x);if(e){e.classList.toggle('active',x===id);e.setAttribute('aria-hidden',x!==id)}});document.body.dataset.screen=id}
+  function sync(){const id=norm(document.body.dataset.screen||'home');isolate(id);const home=document.getElementById('home');if(home){const img=home.querySelector('.home-reference-image,.territory-home-art');if(img)img.src=window.TERRITORY_ASSET_BASE+'home-master.png'} }
+  window.TerritoryFinalBuild={sync,go:(id)=>{try{window.TerritoryNavigation?.go?.(norm(id))||window.showScreen?.(norm(id))}finally{setTimeout(sync,0)}}};
+  sync();window.addEventListener('territory:screen',sync);window.addEventListener('hashchange',sync);window.addEventListener('pageshow',()=>setTimeout(sync,50));
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
