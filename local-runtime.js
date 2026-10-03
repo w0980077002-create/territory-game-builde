@@ -1,7 +1,7 @@
 (function(){'use strict';
 function ready(){
  const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
- const show=id=>{id=({market:'shop',casino:'games',districts:'quests'}[id]||id||'home');$$('.screen').forEach(x=>{x.classList.toggle('active',x.id===id);x.setAttribute('aria-hidden',x.id!==id)});document.body.dataset.screen=id;window.dispatchEvent(new CustomEvent('territory:screen',{detail:id}));};
+ const show=id=>{if(id==='battle'){arena();return}id=({market:'shop',casino:'games',districts:'quests'}[id]||id||'home');$$('.screen').forEach(x=>{x.classList.toggle('active',x.id===id);x.setAttribute('aria-hidden',x.id!==id)});document.body.dataset.screen=id;window.dispatchEvent(new CustomEvent('territory:screen',{detail:id}));};
  window.showScreen=window.showScreen||show;
  document.addEventListener('click',e=>{
   const b=e.target.closest('[data-screen]'); if(b){e.preventDefault();show(b.dataset.screen);return;}
