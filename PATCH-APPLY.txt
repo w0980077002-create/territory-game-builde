@@ -1,0 +1,7 @@
+Territory FINAL BUILD
+
+This package is a single root-level consolidation patch for the current teritory-game repository. Upload/replace these files at the repository root: index.html, territory-final-build.js, territory-final-build.css.
+
+It consolidates the current canonical Home, screen isolation, stable global navigation, Battle Stones access, and final event routing without replacing the existing gameplay modules.
+
+Important: the package intentionally does not duplicate the existing unchanged game assets/dependencies. Keep the rest of the current repository intact.
