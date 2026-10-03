@@ -1,0 +1,39 @@
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;background:#07111b;color:#f4f5f6;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+body{overflow:hidden}
+button,input{font:inherit}
+button{color:inherit}
+#app{height:100%;max-width:520px;margin:auto;position:relative;overflow:hidden;background:#08111a}
+.topbar{height:58px;position:fixed;left:50%;top:0;transform:translateX(-50%);width:min(520px,100%);z-index:50;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(7,14,22,.86);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.09)}
+.profile-mini{border:0;background:transparent;display:flex;align-items:center;gap:8px;min-width:0;padding:4px}
+.profile-mini>span:first-child{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#8b6a32,#2a1c0c);overflow:hidden}
+.profile-mini img{width:100%;height:100%;object-fit:cover}
+.profile-mini #miniName{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
+.wallets{display:flex;gap:7px;font-size:11px;white-space:nowrap}.wallets span{padding:6px 8px;border-radius:10px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08)}
+.screen{height:100%;overflow:auto;padding:68px 10px 86px;scrollbar-width:none;background:#07111b}.screen::-webkit-scrollbar{display:none}
+.home{min-height:100%;position:relative;overflow:hidden;border-radius:18px;background-image:linear-gradient(180deg,rgba(5,10,15,.14),rgba(5,10,15,.65)),url("https://raw.githubusercontent.com/w0980077002-create/teritory-game/main/home-master.png");background-size:cover;background-position:center top}
+.home-content{padding:14px 12px 110px;min-height:100%}
+.panel{background:rgba(9,14,19,.76);border:1px solid rgba(226,193,123,.18);border-radius:16px;padding:12px;margin-bottom:10px;box-shadow:0 8px 30px rgba(0,0,0,.28)}
+.hero-row{display:flex;align-items:center;gap:10px}.hero-avatar{width:74px;height:74px;border-radius:18px;display:grid;place-items:center;font-size:42px;background:linear-gradient(145deg,#55401e,#15100a);border:1px solid rgba(239,198,105,.4)}
+h1,h2,h3,p{margin-top:0}.title{font-size:21px;font-weight:900;margin:0}.muted{color:#9ca7ad;font-size:12px}
+.bar{height:8px;border-radius:99px;background:#10171d;overflow:hidden;border:1px solid rgba(255,255,255,.06)}.bar i{display:block;height:100%;background:linear-gradient(90deg,#d5a747,#f5d26e);border-radius:99px}
+.res-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.res{padding:9px;text-align:center;border-radius:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.07);font-size:12px}
+.section-title{font-weight:900;font-size:12px;letter-spacing:.08em;color:#d8bd7a;text-transform:uppercase;margin:4px 0 9px}
+.btn{border:0;border-radius:12px;padding:11px 13px;font-weight:900;cursor:pointer}.gold{background:linear-gradient(180deg,#e0b856,#9a6b1c);color:#1a1307}.dark{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)}.red{background:linear-gradient(180deg,#d85245,#8e221c)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(520px,100%);height:76px;z-index:60;display:grid;grid-template-columns:repeat(5,1fr);padding:7px 7px calc(7px + env(safe-area-inset-bottom));background:rgba(8,12,17,.94);backdrop-filter:blur(14px);border-top:1px solid rgba(231,197,118,.22)}
+.bottom-nav button{border:0;background:transparent;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#7f898f}.bottom-nav button span{font-size:22px;line-height:1}.bottom-nav button small{font-size:10px;font-weight:800}.bottom-nav button.active{background:linear-gradient(180deg,rgba(215,171,77,.2),rgba(215,171,77,.06));color:#f1cf72;border:1px solid rgba(215,171,77,.24)}
+.stones{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:12px;background:linear-gradient(90deg,rgba(65,50,20,.75),rgba(16,14,10,.72));border:1px solid rgba(231,193,92,.28)}.stone-count{font-size:20px;font-weight:900;color:#e9cf79}
+.enemy-card{display:grid;grid-template-columns:80px 1fr;gap:10px;align-items:center;padding:10px;border-radius:14px;background:rgba(0,0,0,.34);border:1px solid rgba(255,255,255,.08);margin-bottom:8px}.enemy-art{width:80px;height:80px;object-fit:contain}.hpbar{height:10px;background:#1b1111;border-radius:99px;overflow:hidden}.hpbar i{display:block;height:100%;background:linear-gradient(90deg,#e74d43,#8d1e1b)}
+.combat-stage{min-height:310px;border-radius:18px;position:relative;overflow:hidden;background:center/cover url("https://raw.githubusercontent.com/w0980077002-create/teritory-game/main/arena-night-approved.png");border:1px solid rgba(235,198,113,.22);padding:12px}
+.fighter{position:absolute;bottom:34px;width:42%;text-align:center}.fighter.player{left:3%}.fighter.bot{right:3%}.fighter-icon{font-size:78px;filter:drop-shadow(0 10px 8px rgba(0,0,0,.7));}.fighter .name{font-weight:900}.versus{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);font-size:25px;font-weight:1000;color:#e9c96e}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.zone{padding:10px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.25);font-size:11px;font-weight:900}.zone.selected{background:rgba(212,168,71,.22);border-color:#d7ad4d;color:#f4d57f}
+.arena-stage{min-height:340px;border-radius:18px;position:relative;overflow:hidden;background:center/cover url("https://raw.githubusercontent.com/w0980077002-create/teritory-game/main/arena-night-approved.png");border:1px solid rgba(235,198,113,.22)}.arena-stage .fighter{bottom:65px}
+.arena-actions{position:absolute;left:10px;right:10px;bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.tabs{display:flex;gap:6px;overflow:auto;margin-bottom:10px}.tabs button{white-space:nowrap}.item{display:flex;align-items:center;gap:9px;padding:10px;border-radius:13px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}.item .ico{font-size:28px}
+.shop-card{padding:11px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.stat{padding:9px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}.stat b{display:block;font-size:16px}.stat small{color:#8d999f}
+.modal-bg{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.72);display:grid;place-items:end center}.modal{width:min(520px,100%);max-height:88%;overflow:auto;background:#10171e;border:1px solid rgba(224,186,102,.3);border-radius:20px 20px 0 0;padding:15px}.close{float:right;border:0;background:transparent;font-size:28px}.toast{position:fixed;z-index:120;left:50%;bottom:92px;transform:translateX(-50%);background:#111a21;border:1px solid rgba(255,255,255,.14);padding:10px 14px;border-radius:12px;box-shadow:0 8px 30px #0009;font-weight:800}
+.log{height:90px;overflow:auto;background:#080d12;border-radius:10px;padding:8px;font-size:11px;color:#b8c0c4}.log div{margin-bottom:3px}
+@media(max-width:380px){.wallets{gap:3px}.wallets span{padding:5px;font-size:10px}.fighter-icon{font-size:62px}}

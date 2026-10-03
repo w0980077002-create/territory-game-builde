@@ -1,0 +1,15 @@
+{
+  "build": "Territory-MERGED",
+  "source_logic": "territory-bolt-game",
+  "source_visual": "teritory-game",
+  "fixed_bottom_nav": 5,
+  "battle_stones_no_auto_regen": true,
+  "arena_bot_fallback": true,
+  "test_level": 1,
+  "files": [
+    "index.html",
+    "styles.css",
+    "app.js",
+    "README.md"
+  ]
+}
