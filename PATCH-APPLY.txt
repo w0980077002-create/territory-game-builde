@@ -1,7 +1,24 @@
-Territory FINAL BUILD
+TERRITORY ECONOMY FOUNDATION — UPLOAD OVER THE GAME ROOT
 
-This package is a single root-level consolidation patch for the current teritory-game repository. Upload/replace these files at the repository root: index.html, territory-final-build.js, territory-final-build.css.
+Files to copy/overwrite:
+- index.html
+- territory-home-modular.js
+- local-runtime.js
+- territory-economy.js (new)
+- territory-economy.css (new)
 
-It consolidates the current canonical Home, screen isolation, stable global navigation, Battle Stones access, and final event routing without replacing the existing gameplay modules.
+What is laid in now:
+- resource-world foundation with 5 resource regions;
+- player resource inventory model;
+- four professions, level 1–300;
+- permanent crafted gear model;
+- resource runs with bot encounter hooks (anti-idle foundation);
+- player auction/listing/sale model with 10% default market fee;
+- player-to-master craft contracts;
+- red/blue diamond separation;
+- pending withdrawal ledger with 5-day review policy and 7% default withdrawal fee;
+- license/reputation/economy ledger structures for future server implementation;
+- a new World Resources screen opened from the left-side home button.
 
-Important: the package intentionally does not duplicate the existing unchanged game assets/dependencies. Keep the rest of the current repository intact.
+IMPORTANT:
+This patch deliberately does NOT fake real-money payouts in the browser. Withdrawals are recorded as pending-review ledger entries; final money movement must be server-side with anti-fraud/payment verification.
