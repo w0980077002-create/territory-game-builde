@@ -1,35 +1,13 @@
-TERRITORY — PUBLIC PROFILE FINAL PATCH
+TERRITORY UI / BUTTONS / BACKGROUND FIX
 
-Upload these files to the ROOT of:
-territory-game-builde
+Что исправлено:
+1. Включён Telegram WebApp SDK — серверная синхронизация снова может авторизоваться в Mini App.
+2. Подключён pve-core.css — экран боя больше не открывается без стилей.
+3. Полностью восстановлен мобильный слой главного экрана: фон assets/home-background.png, боковые кнопки, верхние кнопки, 7 нижних кнопок, экипировка, зелья и боевые камни.
+4. Исправлены действия кнопок: Назад, Глава, Бой, x2, Автобой и закрытые ячейки. x2/Автобой больше не запускают новый бой сами по себе.
+5. Восстановлен полный CSS профиля/салона, который был перезаписан последним минимальным privacy-патчем.
 
-Files:
-- territory-profile-public-fix.js
-- territory-profile.css
+Загрузка:
+Залить все файлы из этого архива в КОРЕНЬ territory-game-builde с заменой существующих. Никаких папок создавать не нужно.
 
-index.html already loads both files in the current repository, so no index.html replacement is required.
-
-Public profile hides:
-- player ID
-- Telegram username
-- online/offline status
-- coins
-- gems/red gems
-- battle stones/resources unless explicitly exposed as a public combat statistic by the supplied profile data
-- personal account balances
-
-Public profile keeps:
-- name/avatar
-- level/VIP/rank
-- clan and public role
-- profession/profession level
-- hero appearance
-- equipped items
-- five characteristics
-- specialization
-- combat parameters
-- achievements
-- follower
-
-Own profile is not changed by this patch.
-PvE and Arena are not changed.
+PvE и Arena не удалялись и не менялись по логике.
