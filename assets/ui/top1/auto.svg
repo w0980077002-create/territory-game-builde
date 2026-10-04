@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 130">
-<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a2a17"/><stop offset="1" stop-color="#17100b"/></linearGradient></defs>
-<rect x="4" y="4" width="122" height="122" rx="24" fill="url(#g)" stroke="#e2c069" stroke-width="6"/>
-<rect x="12" y="12" width="106" height="106" rx="18" fill="none" stroke="#7a5425" stroke-width="3"/>
-<path d="M62 82c0-24 24-44 54-44s54 20 54 44-24 44-54 44-54-20-54-44z" fill="#6c4a22" stroke="#f6d46f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M95 58l32 24-32 24z" fill="#f3cf6a"/><path d="M150 58a38 38 0 0 1 0 48" stroke="#f6d46f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<text x="65.0" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="18px" font-weight="900" fill="#fff1c3" stroke="#1b1008" stroke-width="5" paint-order="stroke" >АВТО</text>
-
-</svg>
