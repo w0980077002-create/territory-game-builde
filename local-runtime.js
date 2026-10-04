@@ -8,6 +8,7 @@ function ready(){
   const b=e.target.closest('[data-screen]');if(b){e.preventDefault();show(b.dataset.screen);return}
   const a=e.target.closest('[data-home-action]');if(!a)return;const k=a.dataset.homeAction;
   const map={home:'home',inventory:'inventory',hero:'hero',shop:'shop',forge:'inventory',trials:'quests',capture:'map',boss:'map',quests:'quests',games:'games',clan:'clan',daily:'quests',events:'quests',invite:'clan',sea:'world'};
+  if(k==='arena'){window.ArenaGame?.open?.();return}
   if(k==='battle'||k==='chapter'||k==='speed'||k==='auto'){show('map');window.PvEFlow?.startRunner?.();return}
   if(k==='boss'){show('map');window.PvEFlow?.openBoss?.();return}
   if(/^gear/.test(k)){show('hero');return}if(/^potion/.test(k)){show('shop');return}

@@ -4,7 +4,7 @@ if(window.TerritoryHomeModular)return;
 const $=s=>document.querySelector(s),n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const state=()=>window.TerritoryStore?.state||{};
 const LEFT=['events','daily','quests','invite','sea'];
-const RIGHT=['shop','forge','trials','capture','boss'];
+const RIGHT=['shop','forge','trials','capture','arena'];
 function render(){
  const h=$('#home');if(!h)return;
  h.classList.add('territory-home-modular');
