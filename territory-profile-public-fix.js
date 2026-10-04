@@ -35,8 +35,7 @@ function combat(d,c){
   const block=(3+Number(c?.resilience||0)*.35).toFixed(1);
   const resistance=(4+Number(c?.resilience||0)*.4).toFixed(1);
   const speed=Math.round(100+Number(c?.agility||0)*.7);
-  const stone=Number(d?.battleStones||d?.battle_stones);
-  const rows=[['❤️','Здоровье',hp],['⚡','Энергия',energy],['🪨','Боевые камни',Number.isFinite(stone)?stone:'—'],['⚔️','Атака',attack],['🛡️','Защита',defense],['💥','Крит. шанс',crit+'%'],['💥','Крит. урон',critDamage+'%'],['💨','Уклонение',dodge+'%'],['🛡️','Блок',block+'%'],['🧱','Сопротивление',resistance+'%'],['⚡','Скорость',speed]];
+  const rows=[['❤️','Здоровье',hp],['⚡','Энергия',energy],['⚔️','Атака',attack],['🛡️','Защита',defense],['💥','Крит. шанс',crit+'%'],['💥','Крит. урон',critDamage+'%'],['💨','Уклонение',dodge+'%'],['🛡️','Блок',block+'%'],['🧱','Сопротивление',resistance+'%'],['⚡','Скорость',speed]];
   return `<section class="tp-section"><div class="tp-section-title">⚔️ Параметры боя</div><div class="tp-stat-grid">${rows.map(r=>`<div class="tp-stat"><span>${r[0]} ${r[1]}</span><b>${r[2]}</b></div>`).join('')}</div></section>`;
 }
 function achievements(d){

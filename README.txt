@@ -1,13 +1,23 @@
-TERRITORY UI / BUTTONS / BACKGROUND FIX
+TERRITORY HOME FINAL PATCH — 2026-10-04
 
-Что исправлено:
-1. Включён Telegram WebApp SDK — серверная синхронизация снова может авторизоваться в Mini App.
-2. Подключён pve-core.css — экран боя больше не открывается без стилей.
-3. Полностью восстановлен мобильный слой главного экрана: фон assets/home-background.png, боковые кнопки, верхние кнопки, 7 нижних кнопок, экипировка, зелья и боевые камни.
-4. Исправлены действия кнопок: Назад, Глава, Бой, x2, Автобой и закрытые ячейки. x2/Автобой больше не запускают новый бой сами по себе.
-5. Восстановлен полный CSS профиля/салона, который был перезаписан последним минимальным privacy-патчем.
+Replace these files in the ROOT of territory-game-builde:
+- territory-home-modular.js
+- territory-home-modular.css
+- pve-core.js
+- pve-core.css
+- local-runtime.js
+- territory-profile-public-fix.js
 
-Загрузка:
-Залить все файлы из этого архива в КОРЕНЬ territory-game-builde с заменой существующих. Никаких папок создавать не нужно.
+What this patch fixes:
+- Home is the main live PvE battle screen.
+- Battle starts and continues on Home; it no longer redirects the fight to the Map screen.
+- Bot -> bot -> bot -> bot -> boss flow stays on Home.
+- Map is a separate permanent button and opens chapter/location selection.
+- Left/right Home buttons remain fixed.
+- Bottom navigation is fixed and aligned; the Battle button starts PvE on Home.
+- x2 / Auto / Battle Stones work with the active PvE battle.
+- Home background uses cover instead of stretching.
+- Profile/privacy fix keeps Battle Stones hidden from public player profiles.
 
-PvE и Arena не удалялись и не менялись по логике.
+Do NOT delete Arena or Salon files.
+Do not replace the existing assets folder; keep the current repo assets.

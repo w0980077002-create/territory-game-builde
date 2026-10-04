@@ -1,51 +1,105 @@
 (function(){
 'use strict';
 const Store=window.TerritoryStore;
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const S=()=>Store?.state||{};
-const enemyNames=[
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const enemies=[
  {name:'Лесной разбойник',icon:'🗡️',hp:180,atk:18,def:5,coins:45},
  {name:'Рудничный голем',icon:'🗿',hp:270,atk:23,def:12,coins:65},
  {name:'Рунный страж',icon:'🔮',hp:390,atk:29,def:18,coins:90},
  {name:'Элитный вождь',icon:'⚔️',hp:540,atk:36,def:24,coins:125}
 ];
-let overlay=null, battle=null, busy=false;
+let battle=null,busy=false,autoTimer=null;
 function ensureState(){
- const s=S();s.pve=s.pve||{chapter:s.currentChapter||1,stage:s.chapterStage||1,progress:s.chapterProgress||0,bossPending:false,bossDefeated:0,wins:0};
- s.currentChapter=Math.max(1,Math.min(240,Number(s.currentChapter)||1));s.chapterProgress=Math.max(0,Math.min(100,Number(s.chapterProgress)||0));
+ const s=S(); s.pve=s.pve||{};
+ s.currentChapter=Math.max(1,Math.min(240,Number(s.currentChapter)||1));
+ s.chapterProgress=Math.max(0,Math.min(100,Number(s.chapterProgress)||0));
  s.chapterStage=Math.max(1,Math.min(4,Number(s.chapterStage)||Math.floor(s.chapterProgress/25)+1));
- s.pve.chapter=s.currentChapter;s.pve.stage=s.chapterStage;s.pve.progress=s.chapterProgress;s.chapterBossUnlocked=!!(s.chapterBossUnlocked||s.pve.bossPending||s.chapterProgress>=100);return s;
+ s.pve.chapter=s.currentChapter;s.pve.stage=s.chapterStage;s.pve.progress=s.chapterProgress;
+ s.chapterBossUnlocked=!!(s.chapterBossUnlocked||s.pve.bossPending||s.chapterProgress>=100);
+ return s;
 }
-function stats(){const s=S(),eq=Array.isArray(s.equipment)?s.equipment:[];let atk=125+(Number(s.level)||1)*2,def=98+(Number(s.level)||1),agi=101+(Number(s.level)||1),hp=Number(s.maxHp)||100,crit=8,dodge=5;
- for(const it of eq){if(!it||typeof it!=='object')continue;atk+=Number(it.attack??it.strength??it.damage??it.atk)||0;def+=Number(it.defense??it.def??it.armor??it.guard)||0;agi+=Number(it.agility??it.agi??it.speed)||0;hp+=Number(it.maxHp??it.hp??it.health)||0;crit+=Number(it.critChance)||0;dodge+=Number(it.dodgeChance)||0}
- return {atk,def,agi,hp,crit,dodge};}
-function mount(){if(overlay)return overlay;overlay=document.createElement('div');overlay.id='territoryPve';overlay.innerHTML=`<div class="pve-card"><header><button data-pve-close>‹</button><div><small id="pveChapter"></small><h2 id="pveTitle">БОЙ</h2></div><div class="pve-stones">🪨 <b id="pveStones">0</b></div></header><div class="pve-track" id="pveTrack"></div><section class="pve-arena"><div class="pve-enemy"><div class="fighter"><span id="pveEnemyIcon">🗡️</span></div><b id="pveEnemyName"></b><div class="bar"><i id="pveEnemyBar"></i></div><small id="pveEnemyHp"></small><em id="pvePhase"></em></div><div class="pve-vs">VS</div><div class="pve-hero"><div class="fighter hero"><span>🧔</span></div><b>Герой</b><div class="bar"><i id="pveHeroBar"></i></div><small id="pveHeroHp"></small><em id="pveHeroStats"></em></div></section><div class="pve-log" id="pveLog"></div><div class="pve-actions"><button class="pve-main" id="pveAttack">⚔️ АТАКА</button><button id="pveSkill">✦ УДАР</button><button id="pvePotion">🧪 HP</button><button id="pveAuto">AUTO</button><button id="pveX2">x2</button></div><div class="pve-hint" id="pveHint"></div></div>`;document.body.appendChild(overlay);overlay.querySelector('[data-pve-close]').onclick=close;overlay.querySelector('#pveAttack').onclick=()=>action('attack');overlay.querySelector('#pveSkill').onclick=()=>action('skill:power');overlay.querySelector('#pvePotion').onclick=()=>action('elixir_hp');overlay.querySelector('#pveAuto').onclick=()=>{if(battle)battle.auto=!battle.auto;paint()};overlay.querySelector('#pveX2').onclick=()=>{if(battle)battle.speed=battle.speed===2?1:2;paint()};return overlay}
-function log(x){const el=overlay?.querySelector('#pveLog');if(!el)return;const p=document.createElement('p');p.textContent=x;el.prepend(p);while(el.children.length>8)el.lastChild.remove()}
-function paint(){if(!overlay||!battle)return;const s=S(),t=stats(),e=battle.enemy;overlay.classList.add('show');overlay.querySelector('#pveChapter').textContent=battle.boss?'ГЛАВА '+s.currentChapter+' · БОСС':'ГЛАВА '+s.currentChapter+' · '+battle.stage+'/4';overlay.querySelector('#pveTitle').textContent=battle.boss?'ВОЖДЬ БОЕВОГО ПЛЕМЕНИ':'БОЙ С БОТОМ';overlay.querySelector('#pveStones').textContent=Math.max(0,(+s.battleStones||0)+(+s.battleStonesBonus||0));overlay.querySelector('#pveEnemyIcon').textContent=e.icon;overlay.querySelector('#pveEnemyName').textContent=e.name;overlay.querySelector('#pveEnemyBar').style.width=Math.max(0,e.hp/e.maxHp*100)+'%';overlay.querySelector('#pveEnemyHp').textContent=Math.ceil(e.hp)+' / '+e.maxHp;overlay.querySelector('#pveHeroBar').style.width=Math.max(0,battle.hp/battle.maxHp*100)+'%';overlay.querySelector('#pveHeroHp').textContent=Math.ceil(battle.hp)+' / '+battle.maxHp;overlay.querySelector('#pveHeroStats').textContent='⚔ '+t.atk+' · 🛡 '+t.def+' · ⚡ '+t.agi+' · 💥 '+t.crit+'%';overlay.querySelector('#pvePhase').textContent=battle.boss?'Фаза '+battle.phase+(battle.phase===3?' · ЯРОСТЬ':''):'';overlay.querySelector('#pveHint').textContent=battle.auto?'Автобой включён · x'+battle.speed:'Выбери действие. Камень уже списан за этот бой.';const tr=overlay.querySelector('#pveTrack');tr.innerHTML=[1,2,3,4].map(i=>`<span class="${i<=Math.floor(s.chapterProgress/25)?'done ':''}${i===battle.stage&&!battle.boss?'current':''}">${i<=Math.floor(s.chapterProgress/25)?'✓':i}</span>`).join('');overlay.querySelectorAll('.pve-actions button').forEach(b=>b.disabled=busy||!!battle.ended);}
+function heroStats(){
+ const s=S(), c=s.character||{}, eq=Array.isArray(s.equipment)?s.equipment:[];
+ let atk=100+(+s.level||1)*2+(+c.strength||10)*3, def=80+(+s.level||1)+(+c.resilience||10)*3, hp=+s.maxHp||100, crit=8+(+c.intuition||10)*.55, dodge=5+(+c.agility||10)*.5;
+ for(const it of eq){if(!it||typeof it!=='object')continue;atk+=+(it.attack??it.atk??it.damage??0);def+=+(it.defense??it.def??it.armor??0);hp+=+(it.maxHp??it.hp??it.health??0);crit+=+(it.critChance||0);dodge+=+(it.dodgeChance||0)}
+ return {atk,def,hp,crit,dodge};
+}
+function home(){return document.querySelector('#home');}
+function mount(){
+ const h=home(); if(!h)return null;
+ h.classList.add('battle-ready');
+ return h;
+}
+function text(t){const el=document.querySelector('#homeBattleText');if(el)el.textContent=t||'';}
+function pop(t,crit=false){const el=document.querySelector('#homeBattlePop');if(!el)return;el.textContent=t;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');el.style.color=crit?'#ff9a65':'#ffe082';}
+function paint(){
+ const h=mount(); if(!h||!battle)return;
+ const s=S(), c=heroStats(), e=battle.enemy;
+ h.classList.toggle('battle-running',!battle.ended);
+ const name=document.querySelector('#homeEnemyName');if(name)name.textContent=e.name;
+ const art=document.querySelector('#homeEnemyArt');if(art)art.textContent=e.icon;
+ const ebar=document.querySelector('#homeEnemyBar');if(ebar)ebar.style.width=Math.max(0,e.hp/e.maxHp*100)+'%';
+ const ehp=document.querySelector('#homeEnemyHp');if(ehp)ehp.textContent=Math.max(0,Math.ceil(e.hp))+' / '+e.maxHp;
+ const hbar=document.querySelector('#homeHeroBar');if(hbar)hbar.style.width=Math.max(0,battle.hp/battle.maxHp*100)+'%';
+ const hhp=document.querySelector('#homeHeroHp');if(hhp)hhp.textContent=Math.max(0,Math.ceil(battle.hp))+' / '+battle.maxHp;
+ const track=document.querySelector('.thm-battle-track');
+ if(track)track.innerHTML=[1,2,3,4,'☠'].map((x,i)=>`<span class="${battle.boss?(i===4?'done':'done'):i<Math.floor((+s.chapterProgress||0)/25)?'done':''}${!battle.boss&&i+1===battle.stage?' current':''}">${x}</span>`).join('');
+ const st=document.querySelector('.stone-count');if(st)st.textContent=Math.max(0,(+s.battleStones||0)+(+s.battleStonesBonus||0));
+ const auto=document.querySelector('[data-home-action="auto"]');if(auto)auto.dataset.active=battle.auto?'1':'0';
+ const speed=document.querySelector('[data-home-action="speed"]');if(speed)speed.dataset.speed=String(battle.speed||1);
+ const start=document.querySelector('[data-home-action="battle"]');if(start)start.textContent=battle.ended?'⚔️ БОЙ':(battle.auto?'⏸ ПАУЗА':'▶ ПРОДОЛЖИТЬ');
+ text(battle.boss?`Босс · фаза ${battle.phase}${battle.phase===3?' · ЯРОСТЬ':''}`:(battle.auto?`Бой идёт · ×${battle.speed}`:`Готов: ${e.name}`));
+}
 function takeStone(s){if((+s.battleStones||0)>0){s.battleStones--;return true}if((+s.battleStonesBonus||0)>0){s.battleStonesBonus--;return true}return false}
-function makeEnemy(stage,boss){const s=S(),lv=+s.level||1;if(boss){const hp=2600+lv*22;return {name:'Вождь Боевого Племени',icon:'👑',maxHp:hp,hp,atk:32+lv,def:20+Math.floor(lv/3),coins:500,boss:true}}const b=enemyNames[Math.max(0,Math.min(3,stage-1))],scale=1+(Math.max(0,+s.currentChapter-1)*.055);return {...b,maxHp:Math.round(b.hp*scale+lv*8),hp:Math.round(b.hp*scale+lv*8),atk:Math.round(b.atk*scale+lv*.6),def:Math.round(b.def+lv*.25),boss:false}}
-async function start(stage,boss=false){const s=ensureState();stage=Math.max(1,Math.min(4,Number(stage)||s.chapterStage));if(!boss&&s.chapterProgress>=100){openBoss();return}if(boss&&!s.chapterBossUnlocked){alert('Сначала победи 4 ботов этой главы.');return}mount();overlay.querySelector('#pveLog').innerHTML='';
+function makeEnemy(stage,boss){const s=S(),lv=+s.level||1;if(boss){const hp=2600+lv*22;return{name:'Вождь Боевого Племени',icon:'👑',maxHp:hp,hp,atk:32+lv,def:20+Math.floor(lv/3),coins:500,boss:true}}const b=enemies[Math.max(0,Math.min(3,stage-1))],scale=1+(Math.max(0,+s.currentChapter-1)*.055),hp=Math.round(b.hp*scale+lv*8);return{...b,maxHp:hp,hp,atk:Math.round(b.atk*scale+lv*.6),def:Math.round(b.def+lv*.25),boss:false};}
+async function start(stage,boss=false){
+ if(battle&&!battle.ended){battle.auto=!battle.auto;paint();schedule();return battle;}
+ const s=ensureState(); stage=Math.max(1,Math.min(4,Number(stage)||s.chapterStage));
+ if(!boss&&s.chapterProgress>=100){openBoss();return;}
+ if(boss&&!s.chapterBossUnlocked){text('Сначала победи 4 ботов главы');return;}
+ if(!takeStone(s)){text('🪨 Боевые камни закончились');paint();return;}
+ Store.saveNow?.('pve-start'); mount();
+ busy=true; battle={stage,boss,server:false,enemy:makeEnemy(stage,boss),hp:Math.max(1,Number(s.hp)||Number(s.maxHp)||100),maxHp:Number(s.maxHp)||100,phase:1,turn:0,auto:true,speed:Number(s.battleSpeed??s.speed)||1,ended:false};
  if(window.TerritoryServer?.available?.()){
-  overlay.classList.add('show');log('🔐 Подключение к серверному бою…');busy=true;paint();
-  try{const r=await window.TerritoryServer.start(s.currentChapter,stage,boss);const c=r.combat||{};battle={stage,boss,server:true,session_id:r.session_id,nonce:r.nonce,enemy:makeEnemy(stage,boss),hp:Number(c.heroHp)||Number(s.hp)||100,maxHp:Number(c.maxHp)||Number(s.maxHp)||100,phase:1,turn:Number(c.turn)||0,auto:false,speed:1,ended:false};battle.enemy.maxHp=Number(c.enemyMaxHp)||battle.enemy.maxHp;battle.enemy.hp=Number(c.enemyHp)||battle.enemy.hp;Object.assign(Store.state,r.state||{});Store.saveNow?.();busy=false;log(boss?'👑 Сервер подтвердил босса.':'⚔️ Сервер подтвердил бой: '+battle.enemy.name);paint();return}catch(e){busy=false;showInfo('⚠️ Не удалось начать бой',e.message||'Ошибка сервера');return}
- }
- if(!takeStone(s)){showInfo('🪨 Боевые камни закончились','Получи их за ежедневные задания, награды, магазин и события.');return}Store.saveNow?.();battle={stage,boss,server:false,enemy:makeEnemy(stage,boss),hp:Math.max(1,Number(s.hp)||Number(s.maxHp)||100),maxHp:Number(s.maxHp)||100,phase:1,turn:0,auto:false,speed:1,ended:false};log(boss?'👑 Босс вышел на поле.':'⚔️ Бой начался: '+battle.enemy.name);paint();}
-async function action(kind){if(!battle||battle.ended||busy)return;busy=true;
- if(battle.server){try{const r=await window.TerritoryServer.action(battle.session_id,battle.nonce,kind);const c=r.combat||{};battle.hp=Number(c.heroHp)||battle.hp;battle.maxHp=Number(c.maxHp)||battle.maxHp;battle.enemy.hp=Number(c.enemyHp)||battle.enemy.hp;battle.enemy.maxHp=Number(c.enemyMaxHp)||battle.enemy.maxHp;battle.turn=Number(c.turn)||battle.turn;if(kind.startsWith('elixir_'))log('🧪 '+kind.slice(8));else log(kind==='attack'?'⚔️ Атака':'✦ Умение');if(c.result==='win'||c.result==='lose'||c.ended){finish(c.result==='win');return}busy=false;paint();if(battle.auto)setTimeout(()=>action('attack'),battle.speed===2?250:650);return}catch(e){busy=false;log('⚠️ '+(e.message||'Серверный бой недоступен'));paint();return}}
- const s=S(),t=stats(),e=battle.enemy;let dmg=0;
- if(kind==='elixir_hp'){const n=Number(s.consumables?.elixir_hp||0);if(!n){log('🧪 Зелья HP закончились');busy=false;return}s.consumables.elixir_hp=n-1;battle.hp=Math.min(battle.maxHp,battle.hp+Math.round(battle.maxHp*.3));log('🧪 Герой восстановил HP');Store.saveNow?.();busy=false;paint();return}
- const crit=Math.random()<t.crit/100, dodge=Math.random()<Math.min(.3,e.def/700), base=Math.max(5,Math.round(t.atk*.72-e.def*.28+Math.random()*12));dmg=Math.round(base*(crit?1.8:1));if(kind==='skill:power')dmg=Math.round(dmg*1.7);if(!dodge)e.hp=Math.max(0,e.hp-dmg);log(dodge?'🛡 Бот уклонился.':'⚔️ Герой нанёс '+dmg+(crit?' · КРИТ!':''));battle.turn++;
- if(e.hp<=0){finish(true);return}
- if(battle.boss){const pct=e.hp/e.maxHp;if(battle.phase===1&&pct<=.66){battle.phase=2;e.atk=Math.round(e.atk*1.2);e.def+=8;log('🔥 Фаза 2: вождь усилился!')}if(battle.phase===2&&pct<=.33){battle.phase=3;e.atk=Math.round(e.atk*1.25);log('☠️ Фаза 3: ВОЖДЬ В ЯРОСТИ!')}}
- const guard=kind==='skill:guard'?.25:0;const enemyCrit=Math.random()<(.08+(battle.boss&&battle.phase===3?.07:0));const incoming=Math.max(3,Math.round(e.atk*.45-t.def*.12+Math.random()*7))*(enemyCrit?1.6:1);battle.hp=Math.max(0,battle.hp-Math.round(incoming*(1-guard)));log('💢 '+e.name+' нанёс '+Math.round(incoming*(1-guard))+(enemyCrit?' · крит!':''));
- if(battle.hp<=0||battle.turn>=30)finish(false);else{busy=false;paint();if(battle.auto)setTimeout(()=>action('attack'),battle.speed===2?250:650)}
+  try{const r=await window.TerritoryServer.start(s.currentChapter,stage,boss);const c=r.combat||{};Object.assign(Store.state,r.state||{});battle.server=true;battle.session_id=r.session_id;battle.nonce=r.nonce;battle.hp=Number(c.heroHp)||battle.hp;battle.maxHp=Number(c.maxHp)||battle.maxHp;battle.enemy.maxHp=Number(c.enemyMaxHp)||battle.enemy.maxHp;battle.enemy.hp=Number(c.enemyHp)||battle.enemy.hp;}catch(e){text('⚠️ Серверный бой недоступен — локальный бой продолжен');}}
+ busy=false; paint();schedule(); return battle;
 }
-async function finish(win){battle.ended=true;busy=false;const s=S();if(battle.server){if(!win){s.hp=Math.max(1,Math.floor((s.maxHp||100)*.35));Store.saveNow?.();result(false);return}try{const r=await window.TerritoryServer.complete(battle.session_id);Object.assign(Store.state,r.state||{});if(r.economy){s.coins=Number(r.economy.coins)||s.coins;s.gems=Number(r.economy.gems)||s.gems}Store.saveNow?.();if(r.loot){s.inventoryItems=Array.isArray(s.inventoryItems)?s.inventoryItems:[];const exists=s.inventoryItems.some(x=>x&&x.id===r.loot.id);if(!exists)s.inventoryItems.unshift(r.loot);s.lootFound=Math.max(Number(s.lootFound)||0,Number(s.lootFound||0));}window.dispatchEvent(new CustomEvent('territory:pve-finished',{detail:{win:true,boss:!!battle.boss}}));result(true);return}catch(e){log('⚠️ Награда сервера не подтверждена: '+(e.message||'ошибка'));battle.ended=false;paint();return}}
-if(win){s.hp=Math.max(1,Math.floor(battle.hp));if(battle.boss){s.coins=(+s.coins||0)+battle.enemy.coins;s.gems=(+s.gems||0)+5;s.pve.bossDefeated=(+s.pve.bossDefeated||0)+1;s.chapterBossUnlocked=false;s.chapterCompleted=true;s.currentChapter=Math.min(240,(+s.currentChapter||1)+1);s.chapterStage=1;s.chapterProgress=0;s.pve={...(s.pve||{}),chapter:s.currentChapter,stage:1,progress:0,bossPending:false};s.forge=s.forge||{materials:0};s.forge.materials=(+s.forge.materials||0)+10;Store.trackProgress?.('bosses',1);Store.trackProgress?.('chapters',1);Store.addXp?.(60);log('🏆 БОСС ПОВЕРЖЕН · +'+battle.enemy.coins+' 🪙 · +5 💎');rewardLoot(true)}else{const coins=battle.enemy.coins;s.coins=(+s.coins||0)+coins;s.pve.wins=(+s.pve.wins||0)+1;s.chapterProgress=Math.min(100,(+s.chapterProgress||0)+25);s.pve.progress=s.chapterProgress;s.chapterStage=s.chapterProgress>=100?4:Math.min(4,(+s.chapterStage||1)+1);if(s.chapterProgress>=100){s.chapterBossUnlocked=true;s.pve.bossPending=true}Store.trackProgress?.('wins',1);Store.addXp?.(25+battle.stage*5);s.hp=Math.max(1,Math.floor(battle.hp));log('🏆 ПОБЕДА · +'+coins+' 🪙 · +'+(25+battle.stage*5)+' XP');rewardLoot(false)}}else{s.hp=Math.max(1,Math.floor((s.maxHp||100)*.35));log('☠️ ПОРАЖЕНИЕ · HP восстановлено до '+s.hp)}Store.saveNow?.();window.dispatchEvent(new CustomEvent('territory:pve-finished',{detail:{win,boss:!!battle.boss}}));paint();setTimeout(()=>result(win),500)}
-function rewardLoot(boss){const s=S();s.inventoryItems=Array.isArray(s.inventoryItems)?s.inventoryItems:[];const stage=battle.stage,slot=['weapon','helmet','armor','belt'][Math.max(0,stage-1)],names=['Воинский клинок','Воинский шлем','Воинский доспех','Воинский пояс'];const item={id:'pve_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),name:boss?'Героический '+names[Math.min(3,stage-1)]:names[Math.min(3,stage-1)],slot,type:'equipment',rarity:boss?'epic':'rare',level:+s.level||1,enhance:0,attack:stage*4+(boss?18:0),defense:stage*3,setId:boss?'warchief':'tide',source:'pve',icon:['⚔️','🪖','🛡️','🎗️'][Math.min(3,stage-1)]};s.inventoryItems.unshift(item);s.inventoryItems=s.inventoryItems.slice(0,100);s.lootFound=(+s.lootFound||0)+1;Store.trackProgress?.('loot',1);return item}
-function result(win){if(!overlay||!battle)return;const s=S();const loot=Array.isArray(s.inventoryItems)?s.inventoryItems[0]:null;const card=overlay.querySelector('.pve-card');const old=overlay.querySelector('.pve-result');if(old)old.remove();const r=document.createElement('div');r.className='pve-result';r.innerHTML=`<div><div class="big">${win?(battle.boss?'👑':'🏆'):'☠️'}</div><h2>${win?(battle.boss?'БОСС ПОВЕРЖЕН':'ПОБЕДА'):'ПОРАЖЕНИЕ'}</h2><p>${win?(loot?`🎁 ${esc(loot.name)} · ${loot.rarity}`:'Награда получена.'):'Подготовь героя и попробуй снова.'}</p><div class="result-actions">${win&&!battle.boss&&s.chapterProgress<100?'<button data-next>▶ Следующий бот</button>':''}${win&&battle.boss?'<button data-next>▶ Следующая глава</button>':''}<button data-close>К карте</button></div></div>`;card.appendChild(r);r.querySelector('[data-close]').onclick=close;r.querySelector('[data-next]')?.addEventListener('click',()=>{r.remove();if(battle.boss){close();showScreen('map')}else start(Math.min(4,(+S().chapterStage||1)),false)});}
-function close(){if(!overlay)return;overlay.classList.remove('show');battle=null;busy=false;window.showScreen?.('map')}
-function openBoss(){const s=ensureState();if(!s.chapterBossUnlocked){showInfo('☠️ Босс закрыт','Сначала победи 4 обычных ботов главы.');return}start(4,true)}
-function showInfo(t,b){mount();const card=overlay.querySelector('.pve-card');const r=document.createElement('div');r.className='pve-result';r.innerHTML=`<div><div class="big">ℹ️</div><h2>${esc(t)}</h2><p>${esc(b)}</p><div class="result-actions"><button data-close>Понятно</button></div></div>`;card.appendChild(r);overlay.classList.add('show');r.querySelector('[data-close]').onclick=()=>r.remove()}
-window.PvEFlow={open:()=>showScreen('map'),startRunner:()=>start(ensureState().chapterStage,false),openBoss,stop:close};window.PvEBattle={start, startBoss:()=>start(4,true),close,attack:()=>action('attack'),skill:(x)=>action('skill:'+(x||'power'))};
+function schedule(){clearTimeout(autoTimer);if(!battle||battle.ended||!battle.auto)return;autoTimer=setTimeout(()=>action('attack'),battle.speed===2?260:700);}
+async function action(kind){
+ if(!battle||battle.ended||busy)return;busy=true;
+ if(battle.server){
+  try{const r=await window.TerritoryServer.action(battle.session_id,battle.nonce,kind),c=r.combat||{};battle.hp=Number(c.heroHp)||battle.hp;battle.maxHp=Number(c.maxHp)||battle.maxHp;battle.enemy.hp=Number(c.enemyHp)||battle.enemy.hp;battle.enemy.maxHp=Number(c.enemyMaxHp)||battle.enemy.maxHp;battle.turn=Number(c.turn)||battle.turn;pop(c.result==='win'?'ПОБЕДА':'⚔️');
+   if(c.result==='win'||c.result==='lose'||c.ended){busy=false;await finish(c.result==='win');return;}
+   busy=false;paint();schedule();return;
+  }catch(e){battle.server=false;text('Локальный режим: '+(e.message||'ошибка'))}
+ }
+ const s=S(),t=heroStats(),e=battle.enemy;
+ if(kind==='elixir_hp'){const n=Number(s.consumables?.elixir_hp||0);if(!n){busy=false;text('🧪 Зелья HP закончились');return;}s.consumables.elixir_hp=n-1;battle.hp=Math.min(battle.maxHp,battle.hp+Math.round(battle.maxHp*.3));Store.saveNow?.();busy=false;paint();schedule();return;}
+ const crit=Math.random()<t.crit/100,dodge=Math.random()<Math.min(.3,e.def/700),base=Math.max(5,Math.round(t.atk*.72-e.def*.28+Math.random()*12));let dmg=Math.round(base*(crit?1.8:1));
+ if(kind==='skill:power')dmg=Math.round(dmg*1.7);
+ if(!dodge){e.hp=Math.max(0,e.hp-dmg);pop('-'+dmg+(crit?' КРИТ!':'') ,crit);}else pop('УВОРОТ');
+ battle.turn++;
+ if(e.hp<=0){busy=false;await finish(true);return;}
+ if(battle.boss){const pct=e.hp/e.maxHp;if(battle.phase===1&&pct<=.66){battle.phase=2;e.atk=Math.round(e.atk*1.2);e.def+=8;pop('🔥 ФАЗА 2');}if(battle.phase===2&&pct<=.33){battle.phase=3;e.atk=Math.round(e.atk*1.25);pop('☠️ ЯРОСТЬ');}}
+ const incoming=Math.max(3,Math.round(e.atk*.45-t.def*.12+Math.random()*7));battle.hp=Math.max(0,battle.hp-incoming);if(battle.hp<=0||battle.turn>=30){busy=false;await finish(false);return;}
+ busy=false;paint();schedule();
+}
+async function finish(win){clearTimeout(autoTimer);busy=false;const s=S();battle.ended=true;
+ if(battle.server&&win){try{const r=await window.TerritoryServer.complete(battle.session_id);Object.assign(Store.state,r.state||{});if(r.economy){s.coins=Number(r.economy.coins)||s.coins;s.gems=Number(r.economy.gems)||s.gems;}Store.saveNow?.();}catch(e){}}
+ if(win){s.hp=Math.max(1,Math.floor(battle.hp));
+  if(battle.boss){s.coins=(+s.coins||0)+battle.enemy.coins;s.gems=(+s.gems||0)+5;s.pve.bossDefeated=(+s.pve.bossDefeated||0)+1;s.chapterBossUnlocked=false;s.chapterCompleted=true;s.currentChapter=Math.min(240,(+s.currentChapter||1)+1);s.chapterStage=1;s.chapterProgress=0;s.pve.chapter=s.currentChapter;s.pve.stage=1;s.pve.progress=0;s.pve.bossPending=false;Store.trackProgress?.('bosses',1);Store.trackProgress?.('chapters',1);Store.addXp?.(60);text('👑 БОСС ПОВЕРЖЕН · следующая глава открыта');
+  }else{s.pve.wins=(+s.pve.wins||0)+1;s.chapterProgress=Math.min(100,(+s.chapterProgress||0)+25);s.pve.progress=s.chapterProgress;s.chapterStage=s.chapterProgress>=100?4:Math.min(4,(+s.chapterStage||1)+1);if(s.chapterProgress>=100){s.chapterBossUnlocked=true;s.pve.bossPending=true;}Store.trackProgress?.('wins',1);Store.addXp?.(25+battle.stage*5);s.coins=(+s.coins||0)+battle.enemy.coins;Store.saveNow?.();text('🏆 ПОБЕДА · следующий противник');
+  }
+ }else{s.hp=Math.max(1,Math.floor((s.maxHp||100)*.35));text('☠️ Поражение · подготовь героя и повтори');}
+ Store.saveNow?.();window.dispatchEvent(new CustomEvent('territory:pve-finished',{detail:{win,boss:!!battle.boss}}));paint();
+ if(win&&!battle.boss){setTimeout(()=>{if((+S().battleStones||0)+(+S().battleStonesBonus||0)>0){battle=null;start(ensureState().chapterStage,false);}else{text('🏆 Победа · боевые камни закончились');}},900);}else if(win&&battle.boss){setTimeout(()=>{battle=null;paint();},1200)}
+}
+function openBoss(){const s=ensureState();if(!s.chapterBossUnlocked){text('☠️ Босс откроется после 4 побед');return;}start(4,true);}
+function close(){clearTimeout(autoTimer);battle=null;busy=false;home()?.classList.remove('battle-running');paintIdle();}
+function paintIdle(){const s=S();text('Готов к бою');const name=document.querySelector('#homeEnemyName');if(name)name.textContent='Следующий противник';const art=document.querySelector('#homeEnemyArt');if(art)art.textContent='🗡️';const ebar=document.querySelector('#homeEnemyBar');if(ebar)ebar.style.width='100%';const ehp=document.querySelector('#homeEnemyHp');if(ehp)ehp.textContent='—';const hbar=document.querySelector('#homeHeroBar');if(hbar)hbar.style.width=Math.max(0,(+s.hp||+s.maxHp||100)/(+s.maxHp||100)*100)+'%';}
+window.PvEFlow={open:()=>window.showScreen?.('home'),startRunner:()=>start(ensureState().chapterStage,false),openBoss,stop:close};
+window.PvEBattle={start, startBoss:()=>start(4,true), close, attack:()=>action('attack'), skill:x=>action('skill:'+(x||'power')), potion:()=>action('elixir_hp'), toggleAuto:()=>{if(battle){battle.auto=!battle.auto;paint();schedule();}},toggleSpeed:()=>{if(battle){battle.speed=battle.speed===2?1:2;paint();schedule();}}};
+window.addEventListener('territory:state-changed',()=>{if(!battle)paintIdle();else paint();});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintIdle,{once:true});else paintIdle();
 })();
