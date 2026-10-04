@@ -3,7 +3,7 @@
 if(window.TerritoryHomeModular)return;
 const $=s=>document.querySelector(s), n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const state=()=>window.TerritoryStore?.state||{};
-const A='assets/ui/top1/';
+const A='assets/ui/top1/png/';
 const side=[['events','side-events.svg'],['daily','side-daily.svg'],['quests','side-quests.svg'],['invite','side-invite.svg'],['sea','side-sea.svg']];
 const right=[['shop','side-shop.svg'],['forge','side-forge.svg'],['trials','side-trials.svg'],['capture','side-capture.svg'],['arena','side-arena.svg']];
 const bottom=[['home','bottom-home.svg'],['inventory','bottom-inventory.svg'],['hero','bottom-hero.svg'],['battle','bottom-battle.svg'],['quests','bottom-quests.svg'],['games','bottom-games.svg'],['clan','bottom-clan.svg']];
