@@ -8,14 +8,14 @@ function ready(){
  const toggleSpeed=()=>{const s=window.TerritoryStore?.state||{};const cur=Number(s.battleSpeed??s.speed)||1;const next=cur===2?1:2;s.battleSpeed=next;s.speed=next;window.TerritoryStore?.saveNow?.('home-speed');window.dispatchEvent(new CustomEvent('territory:state-changed',{detail:{source:'home-speed',speed:next}}));window.dispatchEvent(new CustomEvent('territory:home-speed',{detail:{speed:next}}));};
  document.addEventListener('click',e=>{
   const back=e.target.closest('[data-back]');if(back){e.preventDefault();show('home');return}
-  const b=e.target.closest('[data-screen]');if(b){e.preventDefault();show(b.dataset.screen);if(b.dataset.screen==='battle')setTimeout(()=>window.PvEBattle?.startCurrent?.(),0);return}
+  const b=e.target.closest('[data-screen]');if(b){e.preventDefault();const target=b.dataset.screen;if(target==='battle'){show('home');setTimeout(()=>window.PvEBattle?.startCurrent?.(),0);return}show(target);return}
   const a=e.target.closest('[data-home-action]');if(!a)return;const k=a.dataset.homeAction;
   const map={home:'home',inventory:'inventory',hero:'hero',shop:'shop',forge:'inventory',trials:'quests',capture:'map',boss:'map',quests:'quests',games:'games',clan:'clan',daily:'quests',events:'quests',invite:'clan',sea:'world',map:'map'};
   if(k==='arena'){window.ArenaGame?.open?.();return}
   if(k==='battle'){show('home');setTimeout(()=>window.PvEBattle?.startCurrent?.(),0);return}
   if(k==='chapter'||k==='map'){show('map');return}
   if(k==='speed'){toggleSpeed();return}
-  if(k==='auto'){toggleAuto(); return}
+  if(k==='auto'){toggleAuto();return}
   if(/^gear/.test(k)){show('hero');return}
   if(/^potion/.test(k)){show('shop');return}
   if(/^locked/.test(k)){info('🔒 Ячейка закрыта','Этот слот откроется по мере развития героя.');return}
