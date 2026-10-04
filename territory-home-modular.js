@@ -26,49 +26,50 @@ function render(){
     <button class="thm-act-btn" data-home-action="settings">${img('assets/ui/settings.png')}</button>
    </div>
   </header>
-  <button class="thm-chapter" data-home-action="chapter"><span class="arr">‹</span><div><b class="dynamic">Глава 1 · Северные земли 1-1</b><small class="thm-chapter-hint">Нажми, чтобы открыть Карту</small></div><span class="arr">›</span></button>
+
+  <button class="thm-chapter" data-home-action="chapter"><span class="arr">‹</span><div><b class="dynamic">Глава 1 · Северные земли 1-1</b><small>Карта мира</small></div><span class="arr">›</span></button>
   <button class="thm-map-btn" data-home-action="map">${img('assets/ui/chapter.png')}<span>КАРТА</span></button>
   <div class="thm-progress" aria-hidden="true"><span class="p done">1</span><span class="line"></span><span class="p">2</span><span class="line"></span><span class="p">3</span><span class="line"></span><span class="p">4</span><span class="line"></span><span class="p boss">☠</span></div>
+
   <aside class="thm-side thm-left">${LEFT.map((x,i)=>`<button class="thm-side-btn" data-home-action="${x}">${img(`assets/ui/left-${i+1}.png`)}</button>`).join('')}</aside>
   <aside class="thm-side thm-right">${RIGHT.map((x,i)=>`<button class="thm-side-btn" data-home-action="${x}">${img(`assets/ui/right-${i+1}.png`)}</button>`).join('')}</aside>
 
   <section class="thm-battle" aria-label="PvE бой">
    <div class="battle-location"><span class="wave-label">PvE</span><b class="battle-stage-label">БОЙ С БОТОМ</b><small class="battle-sub">Следующий противник</small></div>
-   <div class="thm-combatant thm-enemy"><div class="nameplate"><span class="enemy-name">Противник</span><em class="enemy-hp">100/100</em></div><div class="battle-sprite enemy-sprite"><span class="enemy-glow"></span><img class="enemy-img" src="assets/skins/battle-enemy.svg" alt="Противник"></div><div class="fighter-tag enemy-tag">БОТ</div></div>
-   <div class="thm-vs">VS</div>
    <div class="thm-combatant thm-hero"><div class="nameplate"><span class="hero-name">Герой</span><em class="hero-hp">100/100</em></div><div class="battle-sprite hero-sprite"><img class="hero-img" src="assets/skins/battle-hero.svg" alt="Герой"><div class="follower-chip"><span>🐯</span><b>Последователь</b></div></div><div class="fighter-tag hero-tag">ГЕРОЙ</div></div>
+   <div class="thm-vs">VS</div>
+   <div class="thm-combatant thm-enemy"><div class="nameplate"><span class="enemy-name">Противник</span><em class="enemy-hp">100/100</em></div><div class="battle-sprite enemy-sprite"><img class="enemy-img" src="assets/skins/battle-enemy.svg" alt="Противник"></div><div class="fighter-tag enemy-tag">БОТ</div></div>
    <div class="battle-effects" id="thmBattleEffects"></div>
    <div class="thm-battle-status" id="thmBattleStatus">Готов к бою</div>
-   <button class="thm-battle-start" id="thmBattleStart">⚔️ НАЧАТЬ БОЙ</button>
    <div class="thm-result" id="thmBattleResult" hidden></div>
   </section>
 
-  <section class="thm-combat-ui">
+  <section class="thm-combat-ui" aria-label="Боевые действия">
    <div class="thm-top-bars">
-    <div class="thm-unit-bar hero-bar"><span></span><b>1000/1000</b></div>
-    <div class="thm-unit-bar enemy-bar"><span></span><b>100/100</b></div>
+    <div class="thm-unit-wrap hero-bar"><span class="unit-fill"></span><b>100/100</b></div>
+    <div class="thm-unit-wrap enemy-bar"><span class="unit-fill"></span><b>100/100</b></div>
    </div>
    <div class="thm-gear">${[1,2,3,4,5,6].map(i=>`<button data-home-action="gear${i}">${img(`assets/ui/gear-${i}.png`)}</button>`).join('')}</div>
    <div class="thm-potions">${[1,2,3,4].map(i=>`<button data-home-action="potion${i}">${img(`assets/ui/potion-${i}.png`)}</button>`).join('')}</div>
    <div class="thm-locks">${[1,2,3].map(i=>`<button data-home-action="locked${i}">${img(`assets/ui/locked-${i}.png`)}</button>`).join('')}</div>
-   <div class="thm-orbs">
-    <button class="orb orb-red" id="thmAttack" aria-label="Атака"><b>⚔</b></button>
-    <button class="orb orb-blue" id="thmSkill" aria-label="Умение"><b>✦</b></button>
-   </div>
-   <div class="thm-controls">
-    <button class="thm-stones-btn" data-home-action="stones"><span>🪨</span><b class="stone-count">0</b></button>
-    <button data-home-action="speed"><img src="assets/ui/speed-x2.png" alt="x2"></button>
-    <button data-home-action="auto"><img src="assets/ui/auto-battle.png" alt="Автобой"></button>
-    <button class="thm-action-mini" data-home-action="honor">☀</button>
-    <button class="thm-action-mini" data-home-action="quest">!</button>
+   <div class="thm-control-row">
+    <button class="orb orb-red" id="thmAttack" aria-label="Атака"><span>⚔</span><small>АТАКА</small></button>
+    <div class="thm-middle-controls">
+      <button class="combat-tool stones" data-home-action="stones"><span>🪨</span><b class="stone-count">0</b></button>
+      <button class="combat-tool" data-home-action="speed"><img src="assets/ui/speed-x2.png" alt="x2"><small>x2</small></button>
+      <button class="combat-tool" data-home-action="auto"><img src="assets/ui/auto-battle.png" alt="Автобой"><small>АВТО</small></button>
+      <button class="combat-tool mini" data-home-action="honor">☀</button>
+      <button class="combat-tool mini" data-home-action="quest">!</button>
+    </div>
+    <button class="orb orb-blue" id="thmSkill" aria-label="Умение"><span>✦</span><small>УМЕНИЕ</small></button>
    </div>
   </section>
-  <nav class="thm-bottom">${['home','inventory','hero','battle','quests','games','clan'].map((x,i)=>`<button class="thm-bottom-btn" data-screen="${x}">${img(`assets/ui/bottom-${i+1}.png`)}${x==='battle'?'<span class="active-glow"></span>':''}</button>`).join('')}</nav>
+
+  <nav class="thm-bottom">${['home','inventory','hero','battle','quests','games','clan'].map((x,i)=>`<button class="thm-bottom-btn${x==='battle'?' active':''}" ${x==='battle'?'data-home-action="battle"':'data-screen="'+x+'"'}>${img(`assets/ui/bottom-${i+1}.png`)}</button>`).join('')}</nav>
  </div>`;
- bindBattleStart(); paint();
+ bindBattle(); paint();
 }
-function bindBattleStart(){
- $('#thmBattleStart')?.addEventListener('click',()=>window.PvEBattle?.startCurrent?.());
+function bindBattle(){
  $('#thmAttack')?.addEventListener('click',()=>window.PvEBattle?.attack?.());
  $('#thmSkill')?.addEventListener('click',()=>window.PvEBattle?.skill?.('power'));
 }
