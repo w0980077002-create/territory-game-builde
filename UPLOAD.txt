@@ -1,0 +1,18 @@
+TERRITORY — UI PATCH: REFERENCE LAYOUT + CLAN + ARENA
+
+Replace these files in the ROOT of territory-game-builde:
+  index.html
+  territory-home-modular.js
+  territory-home-modular.css
+
+What this patch does:
+- Fixes the broken assets/ui/top1/png/ path.
+- Uses the real active SVG UI assets from assets/ui/top1/.
+- Replaces the second left-side button with CLAN.
+- Keeps ARENA as the bottom button on the right side.
+- Keeps Arena as a separate PvP mode.
+- Keeps the existing Territory background, hero, follower and enemy as separate layers.
+- Does NOT import reference-game numbers, levels, currencies, names or progression.
+
+Important:
+Do NOT delete existing files/assets. This patch is intentionally limited to the UI layout/path fixes.

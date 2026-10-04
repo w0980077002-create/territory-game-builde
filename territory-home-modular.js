@@ -3,8 +3,10 @@
 if(window.TerritoryHomeModular)return;
 const $=s=>document.querySelector(s), n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const state=()=>window.TerritoryStore?.state||{};
-const A='assets/ui/top1/png/';
-const side=[['events','side-events.svg'],['daily','side-daily.svg'],['quests','side-quests.svg'],['invite','side-invite.svg'],['sea','side-sea.svg']];
+// Active Territory UI assets live directly in assets/ui/top1/.
+const A='assets/ui/top1/';
+// Reference-like side layout: Clan replaces the old refund/daily slot; Arena stays on the right.
+const side=[['events','side-events.svg'],['clan','bottom-clan.svg'],['quests','side-quests.svg'],['invite','side-invite.svg'],['sea','side-sea.svg']];
 const right=[['shop','side-shop.svg'],['forge','side-forge.svg'],['trials','side-trials.svg'],['capture','side-capture.svg'],['arena','side-arena.svg']];
 const bottom=[['home','bottom-home.svg'],['inventory','bottom-inventory.svg'],['hero','bottom-hero.svg'],['battle','bottom-battle.svg'],['quests','bottom-quests.svg'],['games','bottom-games.svg'],['clan','bottom-clan.svg']];
 function img(src,alt=''){return `<img src="${src}" alt="${alt}" draggable="false">`}
@@ -15,7 +17,7 @@ function render(){
  <div class="thm-stage">
   <div class="thm-bg"></div><div class="thm-vignette"></div><div class="thm-grain"></div>
   <header class="thm-header">
-   <button class="thm-profile-btn" data-home-action="hero">${img(A+'profile.svg')}<span><b class="thm-name">Игрок</b><small>Lv. <b class="thm-level">1</b> · VIP <b class="thm-vip">0</b></small></span></button>
+   <button class="thm-profile-btn" data-home-action="hero">${img('assets/ui/profile.png','Профиль')}<span><b class="thm-name">Игрок</b><small>Lv. <b class="thm-level">1</b> · VIP <b class="thm-vip">0</b></small></span></button>
    <div class="thm-wallet">
     <button data-home-action="coins"><i class="ico coin">◉</i><b data-home-value="coins">0</b><em>+</em></button>
     <button data-home-action="gems"><i class="ico gem">◆</i><b data-home-value="gems">0</b><em>+</em></button>
@@ -26,11 +28,11 @@ function render(){
   </header>
 
   <button class="thm-chapter" data-home-action="chapter"><span>‹</span><div><b class="dynamic">Глава 1 · Северные земли 1-1</b><small>Основной путь</small></div><span>›</span></button>
-  <button class="thm-map" data-home-action="map">${img(A+'map.svg')}<b>КАРТА</b></button>
+  <button class="thm-map" data-home-action="map">${img(A+'map.svg','Карта')}<b>КАРТА</b></button>
   <div class="thm-progress"><i class="done">1</i><span></span><i>2</i><span></span><i>3</i><span></span><i>4</i><span></span><i class="boss">☠</i></div>
 
-  <aside class="thm-side left">${side.map(([k,f])=>`<button data-home-action="${k}">${img(A+f)}</button>`).join('')}</aside>
-  <aside class="thm-side right">${right.map(([k,f])=>`<button data-home-action="${k}">${img(A+f)}</button>`).join('')}</aside>
+  <aside class="thm-side left" aria-label="Боковое меню">${side.map(([k,f])=>`<button data-home-action="${k}">${img(A+f)}</button>`).join('')}</aside>
+  <aside class="thm-side right" aria-label="Боковое меню">${right.map(([k,f])=>`<button class="${k==='arena'?'arena-side-btn':''}" data-home-action="${k}">${img(A+f)}</button>`).join('')}</aside>
 
   <section class="thm-battle" aria-label="PvE">
    <div class="battle-title"><span>⚔ PvE</span><b class="battle-stage-label">БОЙ С БОТОМ</b><small class="battle-sub">Следующий противник</small></div>
@@ -59,7 +61,7 @@ function render(){
     <div class="main-quest"><div><b>Пройти основную главу</b><strong class="quest-chapter">1-1</strong><small>Победа откроет следующего противника</small></div><span>🪙 <b>1000</b></span><em>0/1</em></div>
   </section>
 
-  <nav class="thm-bottom">${bottom.map(([k,f])=>`<button class="${k==='battle'?'active':''}" data-screen="${k}">${img(A+f)}</button>`).join('')}</nav>
+  <nav class="thm-bottom" aria-label="Нижняя навигация">${bottom.map(([k,f])=>`<button class="${k==='battle'?'active':''}" data-screen="${k}">${img(A+f)}</button>`).join('')}</nav>
  </div>`;
  bind(); paint();
 }
