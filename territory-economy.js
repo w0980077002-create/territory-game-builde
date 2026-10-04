@@ -1,172 +1,34 @@
-(function(){
-'use strict';
-if(window.TerritoryEconomyFoundation)return;
-const Store=window.TerritoryStore;
-if(!Store)return;
-
-const DEFAULT={
- version:3, resources:{},
- professions:{
-  blacksmith:{level:1,xp:0},leatherworker:{level:1,xp:0},
-  jeweler:{level:1,xp:0},runesmith:{level:1,xp:0}
- },
- permanentGear:[],resourceRuns:{active:null,history:[]},
- auction:{listings:[],sales:[]},
- contracts:{orders:[],completed:[]},
- ledger:{entries:[],pendingWithdrawals:[]},
- policy:{marketFeePct:10,withdrawalFeePct:7,reviewDays:5,minWithdrawal:5}
-};
-
-const MAP=[
- {id:'greenwood',name:'Зелёный лес',icon:'🌲',risk:'Низкий',resources:[['Древесина','wood'],['Смола','resin'],['Кожа','leather']],stoneCost:1},
- {id:'ironmine',name:'Железные рудники',icon:'⛏️',risk:'Низкий',resources:[['Железная руда','iron_ore'],['Уголь','coal'],['Камень','stone']],stoneCost:1},
- {id:'silverpeak',name:'Серебряные вершины',icon:'🏔️',risk:'Средний',resources:[['Серебро','silver_ore'],['Кристалл','crystal'],['Уголь','coal']],stoneCost:1},
- {id:'runewastes',name:'Рунические пустоши',icon:'🔮',risk:'Высокий',resources:[['Осколок руны','rune_shard'],['Мана-кристалл','mana_crystal'],['Древняя пыль','ancient_dust']],stoneCost:1},
- {id:'dragonvale',name:'Долина драконов',icon:'🐉',risk:'Очень высокий',resources:[['Чешуя дракона','dragon_scale'],['Кость дракона','dragon_bone'],['Огненное ядро','fire_core']],stoneCost:2}
+(()=>{const S=window.TerritoryStore;if(!S||window.TerritoryEconomyFoundation)return;
+const P={blacksmith:{name:"Кузнец",i:"⚒️",l:1,x:0},leatherworker:{name:"Кожевник",i:"🪡",l:1,x:0},jeweler:{name:"Ювелир",i:"💍",l:1,x:0},runesmith:{name:"Рунописец",i:"🔮",l:1,x:0}};
+const M=[
+["greenwood","Зелёный лес","🌲","Низкий",[["Древесина","wood"],["Смола","resin"],["Кожа","leather"]],1],
+["ironmine","Железные рудники","⛏️","Низкий",[["Железная руда","iron_ore"],["Уголь","coal"],["Камень","stone"]],1],
+["silverpeak","Серебряные вершины","🏔️","Средний",[["Серебро","silver_ore"],["Кристалл","crystal"],["Уголь","coal"]],1],
+["runewastes","Рунические пустоши","🔮","Высокий",[["Осколок руны","rune_shard"],["Мана-кристалл","mana_crystal"],["Древняя пыль","ancient_dust"]],1],
+["dragonvale","Долина драконов","🐉","Очень высокий",[["Чешуя дракона","dragon_scale"],["Кость дракона","dragon_bone"],["Огненное ядро","fire_core"]],2]
 ];
-
-const PROFESSIONS={
- blacksmith:{name:'Кузнец',icon:'⚒️',recipes:'оружие · броня · щиты'},
- leatherworker:{name:'Кожевник',icon:'🪡',recipes:'кожа · сапоги · перчатки'},
- jeweler:{name:'Ювелир',icon:'💍',recipes:'кольца · амулеты · аксессуары'},
- runesmith:{name:'Рунописец',icon:'🔮',recipes:'руны · улучшения · наборы'}
-};
-
-const RECIPES=[
- {id:'iron_blade',profession:'blacksmith',name:'Железный клинок',icon:'⚔️',level:1,xp:35,needs:{iron_ore:4,coal:2},stats:{attack:8}},
- {id:'iron_guard',profession:'blacksmith',name:'Железный щит',icon:'🛡️',level:3,xp:45,needs:{iron_ore:5,stone:2},stats:{defense:10}},
- {id:'forest_boots',profession:'leatherworker',name:'Лесные сапоги',icon:'🥾',level:1,xp:35,needs:{leather:5,resin:2},stats:{hp:12}},
- {id:'crystal_ring',profession:'jeweler',name:'Кристальное кольцо',icon:'💍',level:5,xp:60,needs:{silver_ore:3,crystal:3},stats:{crit:4}},
- {id:'mana_rune',profession:'runesmith',name:'Руна маны',icon:'🔮',level:8,xp:70,needs:{rune_shard:3,mana_crystal:2},stats:{attack:5,defense:5}}
+const R=[
+["iron_blade","⚔️","Железный клинок","blacksmith",1,{iron_ore:4,coal:2},{attack:8},35],
+["iron_guard","🛡️","Железный щит","blacksmith",3,{iron_ore:5,stone:2},{defense:10},45],
+["forest_boots","🥾","Лесные сапоги","leatherworker",1,{leather:5,resin:2},{hp:12},35],
+["crystal_ring","💍","Кристальное кольцо","jeweler",5,{silver_ore:3,crystal:3},{crit:4},60],
+["mana_rune","🔮","Руна маны","runesmith",8,{rune_shard:3,mana_crystal:2},{attack:5,defense:5},70]
 ];
-
-function ensure(){
- const s=Store.state,e=s.economy=Object.assign({},DEFAULT,s.economy||{});
- e.version=3;e.resources=Object.assign({},e.resources||{});
- e.professions=Object.assign({},DEFAULT.professions,e.professions||{});
- Object.keys(PROFESSIONS).forEach(k=>e.professions[k]=Object.assign({},DEFAULT.professions[k],e.professions[k]||{}));
- e.permanentGear=Array.isArray(e.permanentGear)?e.permanentGear:[];
- e.resourceRuns=Object.assign({},DEFAULT.resourceRuns,e.resourceRuns||{});
- e.resourceRuns.history=Array.isArray(e.resourceRuns.history)?e.resourceRuns.history:[];
- e.auction=Object.assign({},DEFAULT.auction,e.auction||{});
- e.auction.listings=Array.isArray(e.auction.listings)?e.auction.listings:[];
- e.auction.sales=Array.isArray(e.auction.sales)?e.auction.sales:[];
- e.contracts=Object.assign({},DEFAULT.contracts,e.contracts||{});
- e.contracts.orders=Array.isArray(e.contracts.orders)?e.contracts.orders:[];
- e.contracts.completed=Array.isArray(e.contracts.completed)?e.contracts.completed:[];
- e.ledger=Object.assign({},DEFAULT.ledger,e.ledger||{});
- e.ledger.entries=Array.isArray(e.ledger.entries)?e.ledger.entries:[];
- e.ledger.pendingWithdrawals=Array.isArray(e.ledger.pendingWithdrawals)?e.ledger.pendingWithdrawals:[];
- e.policy=Object.assign({},DEFAULT.policy,e.policy||{});
- return e;
-}
-function save(){Store.saveNow?.();window.dispatchEvent(new CustomEvent('territory:economy-changed'))}
-function addResource(id,n){const e=ensure(),q=Math.max(0,Math.floor(Number(n)||0));if(!q)return;e.resources[id]=(Number(e.resources[id])||0)+q}
-function addProfessionXp(id,n){const e=ensure(),p=e.professions[id];if(!p)return false;p.xp+=Math.max(0,Math.floor(Number(n)||0));let ups=0;while(p.level<300&&p.xp>=p.level*100){p.xp-=p.level*100;p.level++;ups++}save();return ups}
-function spendResources(needs){
- const e=ensure();for(const [id,q] of Object.entries(needs||{}))if((Number(e.resources[id])||0)<q)return false;
- for(const [id,q] of Object.entries(needs||{}))e.resources[id]-=q;
- return true;
-}
-function startRun(id){
- const e=ensure();if(e.resourceRuns.active)return false;
- const loc=MAP.find(x=>x.id===id);if(!loc)return false;
- e.resourceRuns.active={id:'run_'+Date.now(),locationId:id,startedAt:Date.now(),encounterPending:false,collected:{},paused:false};
- save();render();return true;
-}
-function collect(){
- const e=ensure(),r=e.resourceRuns.active;if(!r)return{ok:false,reason:'no_run'};
- if(r.encounterPending)return{ok:false,reason:'encounter'};
- if(r.paused)r.paused=false;
- const loc=MAP.find(x=>x.id===r.locationId);if(!loc)return{ok:false,reason:'location'};
- const gained={};
- loc.resources.forEach(([,id],i)=>{const q=1+Math.floor(Math.random()*(i===0?4:3));gained[id]=q;addResource(id,q);r.collected[id]=(r.collected[id]||0)+q});
- if(Math.random()<0.38)r.encounterPending=true;
- save();render();return{ok:true,gained,encounter:r.encounterPending};
-}
-function resolveEncounter(win){
- const e=ensure(),r=e.resourceRuns.active;if(!r)return false;
- const loc=MAP.find(x=>x.id===r.locationId),cost=loc?.stoneCost||1;
- if(win){
-  const stones=Number(Store.state.battleStones)||0;
-  if(stones<cost){modal('Нужны боевые камни','Для этой встречи нужно '+cost+' боевой камень. Получай их из заданий и наград.');return false}
-  Store.state.battleStones=stones-cost;
-  r.encounterPending=false;r.paused=false;
-  addResource('battle_token',1);
-  addProfessionXp('blacksmith',10);
- }else{r.encounterPending=false;r.paused=true}
- save();render();return true;
-}
-function stopRun(){
- const e=ensure();if(!e.resourceRuns.active)return false;
- e.resourceRuns.history.push(e.resourceRuns.active);e.resourceRuns.history=e.resourceRuns.history.slice(-30);
- e.resourceRuns.active=null;save();render();return true;
-}
-function craft(recipeId){
- const e=ensure(),recipe=RECIPES.find(x=>x.id===recipeId);if(!recipe)return{ok:false,reason:'recipe'};
- const p=e.professions[recipe.profession];if(!p||p.level<recipe.level)return{ok:false,reason:'level'};
- if(!spendResources(recipe.needs)){modal('Не хватает ресурсов','Для '+recipe.name+' не хватает материалов.');return{ok:false,reason:'materials'}}
- const gear=createPermanentGear({name:recipe.name,icon:recipe.icon,stats:recipe.stats,rarity:recipe.level>=8?'epic':recipe.level>=5?'rare':'common'},recipe.profession);
- addProfessionXp(recipe.profession,recipe.xp);
- save();render();return{ok:true,gear};
-}
-function createPermanentGear(item,profession){
- const e=ensure(),g=Object.assign({},JSON.parse(JSON.stringify(item||{})),{id:item?.id||'gear_'+Date.now(),permanent:true,profession,upgradeLevel:Number(item?.upgradeLevel)||0,createdAt:new Date().toISOString()});
- e.permanentGear.push(g);e.permanentGear=e.permanentGear.slice(-200);return g;
-}
-function createListing(itemId,price,currency='coins'){
- const e=ensure(),p=Math.max(1,Number(price)||0);
- if(!itemId||!['coins','blueDiamonds'].includes(currency))return null;
- const item=e.permanentGear.find(x=>x.id===String(itemId));if(!item)return null;
- const l={id:'lst_'+Date.now(),itemId:String(itemId),price:p,currency,status:'active',sellerId:'player',createdAt:new Date().toISOString()};
- e.auction.listings.push(l);save();return l;
-}
-function recordSale(listingId,buyerId='player'){
- const e=ensure(),l=e.auction.listings.find(x=>x.id===listingId);
- if(!l||l.status!=='active')return null;
- const fee=l.price*Number(e.policy.marketFeePct||10)/100,net=l.price-fee;
- l.status='sold';l.buyerId=buyerId;
- const sale={id:'sale_'+Date.now(),listingId,buyerId,gross:l.price,fee,net,currency:l.currency,createdAt:new Date().toISOString()};
- e.auction.sales.push(sale);e.ledger.entries.push(Object.assign({type:'market_sale'},sale));save();return sale;
-}
-function requestWithdrawal(amount){
- const e=ensure(),gross=Number(amount)||0;if(gross<Number(e.policy.minWithdrawal||5))return{ok:false,reason:'minimum'};
- const fee=gross*Number(e.policy.withdrawalFeePct||7)/100;
- const req={id:'wd_'+Date.now(),gross,fee,net:gross-fee,status:'pending_review',reviewDays:Number(e.policy.reviewDays||5),createdAt:new Date().toISOString()};
- e.ledger.pendingWithdrawals.push(req);save();return req;
-}
-function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function fmtNeeds(needs){return Object.entries(needs).map(([k,v])=>esc(k)+' × '+v).join(' · ')}
-function render(){
- const h=document.getElementById('world');if(!h)return;const e=ensure(),r=e.resourceRuns.active;
- const resourceRows=Object.entries(e.resources).filter(([,v])=>v>0).slice(0,16).map(([k,v])=>'<span>'+esc(k)+'</span><b>'+Math.floor(v)+'</b>').join('');
- const recipes=RECIPES.map(x=>{const p=e.professions[x.profession],ok=p&&p.level>=x.level;return '<div class="eco-row"><span>'+x.icon+' <b>'+esc(x.name)+'</b><small> · '+PROFESSIONS[x.profession].name+' '+x.level+'+</small><br><small>'+fmtNeeds(x.needs)+'</small></span><button class="eco-btn" data-craft="'+x.id+'" '+(ok?'':'disabled')+'>Создать</button></div>'}).join('');
- h.innerHTML=
- '<header class="eco-head"><div><h1>🗺️ Мир Territory</h1><p>Добыча → бот → материалы → мастер → постоянный шмот</p></div><div class="eco-balance">🪙 '+Math.floor(Store.state.coins||0)+' · 🔵 '+Math.floor(Store.state.gems||0)+' · 🔴 '+Math.floor(Store.state.redGems||0)+' · 🪨 '+Math.floor(Store.state.battleStones||0)+'</div></header>'+
- '<div class="eco-note">Боевые камни расходуются на опасные встречи. Ресурсы не пропадают после выхода: их можно накопить и превратить в постоянное снаряжение.</div>'+
- '<div class="eco-map">'+MAP.map(loc=>'<button type="button" class="eco-location" data-location="'+loc.id+'"><strong>'+loc.icon+' '+loc.name+'</strong><small>'+loc.resources.map(x=>x[0]).join(' · ')+'</small><em>Опасность: '+loc.risk+' · 🪨 '+loc.stoneCost+'</em></button>').join('')+'</div>'+
- '<section class="eco-card"><h2>⛏️ Текущая добыча</h2>'+(r?'<p><b>'+esc(MAP.find(x=>x.id===r.locationId)?.name||'Локация')+'</b></p><div class="eco-actions"><button class="eco-btn" data-collect>⛏️ Добыть</button><button class="eco-btn" data-stop>⏹ Остановить</button></div>'+(r.encounterPending?'<div class="eco-danger"><b>⚠️ Бот прервал добычу!</b><p>Победи его и заплати боевые камни, чтобы продолжить.</p><button class="eco-btn" data-win>⚔️ Убить бота</button></div>':''):'<p>Добыча не запущена. Выбери локацию выше.</p>')+'</section>'+
- '<section class="eco-grid"><div class="eco-card"><h2>📦 Ресурсы</h2><div class="eco-resources">'+(resourceRows||'<small>Пока пусто</small>')+'</div></div>'+
- '<div class="eco-card"><h2>🔨 Профессии</h2>'+Object.entries(PROFESSIONS).map(([id,p])=>{const q=e.professions[id];return '<div class="eco-row"><span>'+p.icon+' '+p.name+'<small> · '+p.recipes+'</small></span><b>'+q.level+'/300</b></div>'}).join('')+'</div></section>'+
- '<section class="eco-card"><h2>⚒️ Мастерская</h2><p>Созданный предмет становится постоянным. Чем выше профессия, тем сильнее рецепты.</p>'+recipes+'</section>'+
- '<section class="eco-grid"><div class="eco-card"><h2>🏪 Аукцион</h2><p>Комиссия сделки: <b>'+e.policy.marketFeePct+'%</b>. Продажа между игроками будет серверной, предмет нельзя продать дважды.</p><button class="eco-btn" data-demo-sale>Как работает продажа</button></div>'+
- '<div class="eco-card"><h2>💼 Заказ мастеру</h2><p>Следующий слой: заказ → материалы заказчика → цена → срок → репутация мастера → выдача предмета.</p><button class="eco-btn" data-contract>Открыть механику</button></div></section>'+
- '<section class="eco-card"><h2>💰 Будущий вывод</h2><p>Проверка: до '+e.policy.reviewDays+' дней · комиссия: '+e.policy.withdrawalFeePct+'%.</p><small>Деньги не создаются браузером: финальное движение средств только через сервер.</small></section>';
- h.querySelectorAll('[data-location]').forEach(b=>b.onclick=()=>startRun(b.dataset.location));
- h.querySelector('[data-collect]')?.addEventListener('click',collect);
- h.querySelector('[data-stop]')?.addEventListener('click',stopRun);
- h.querySelector('[data-win]')?.addEventListener('click',()=>resolveEncounter(true));
- h.querySelectorAll('[data-craft]').forEach(b=>b.addEventListener('click',()=>craft(b.dataset.craft)));
- h.querySelector('[data-demo-sale]')?.addEventListener('click',()=>modal('Аукцион','Игрок выставляет постоянный предмет. Покупатель оплачивает его, система удерживает 10%, а продавцу начисляется чистая сумма.'));
- h.querySelector('[data-contract]')?.addEventListener('click',()=>modal('Заказ мастеру','Следующий слой подключит серверные заказы: материалы игрока, цена мастера, срок, репутация и безопасная выдача результата.'));
-}
-function modal(t,b){const m=document.getElementById('modal'),x=document.getElementById('modalBody');if(!m||!x)return;x.innerHTML='<h2>'+t+'</h2><p>'+b+'</p>';m.classList.add('show')}
-function init(){
- ensure();
- window.TerritoryEconomyFoundation={MAP,PROFESSIONS,RECIPES,ensure,startRun,collect,resolveEncounter,stopRun,addResource,addProfessionXp,craft,createPermanentGear,createListing,recordSale,requestWithdrawal,render};
- document.addEventListener('click',e=>{const b=e.target.closest('[data-home-action="sea"]');if(b){e.preventDefault();window.showScreen?.('world')}},true);
- window.addEventListener('territory:screen',e=>{if(e.detail==='world')render()});
- window.addEventListener('territory:economy-changed',()=>{if(document.body.dataset.screen==='world')render()});
-}
-init();
+const E=()=>S.state.economy||(S.state.economy={v:4,res:{},prof:JSON.parse(JSON.stringify(P)),gear:[],runs:{active:null,history:[]},auction:{listings:[],sales:[]},contracts:[],ledger:[]});
+const save=()=>{S.saveNow?.();window.dispatchEvent(new CustomEvent("territory:economy-changed"))};
+const esc=x=>String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function xp(id,n){let e=E(),p=e.prof[id];if(!p)return;p.x+=n;while(p.l<300&&p.x>=p.l*100){p.x-=p.l*100;p.l++}}
+function add(id,n){let e=E();e.res[id]=(e.res[id]||0)+n}
+function spend(o){let e=E();for(let k in o)if((e.res[k]||0)<o[k])return false;for(let k in o)e.res[k]-=o[k];return true}
+function start(id){let e=E();if(e.runs.active)return;let m=M.find(x=>x[0]==id);if(!m)return;e.runs.active={loc:id,got:{},enc:false};save();render()}
+function collect(){let e=E(),r=e.runs.active;if(!r||r.enc)return;let m=M.find(x=>x[0]==r.loc);m[4].forEach((x,i)=>{let q=1+Math.floor(Math.random()*(i?3:4));add(x[1],q);r.got[x[1]]=(r.got[x[1]]||0)+q});if(Math.random()<.38)r.enc=true;save();render()}
+function fight(){let e=E(),r=e.runs.active;if(!r||!r.enc)return;let m=M.find(x=>x[0]==r.loc),idx=M.indexOf(m),cost=m[5],st=+S.state.battleStones||0;if(st<cost){alert("Нужен боевой камень: "+cost);return}S.state.battleStones=st-cost;let enemy=[["Лесной разбойник",90,12,18],["Рудничный голем",130,15,28],["Рунный страж",180,20,45],["Драконий страж",260,28,80]][Math.min(idx,3)],hp=+S.state.hp||100,eh=enemy[1],pow=+S.state.level||1;for(let i=0;i<20&&hp>0&&eh>0;i++){eh-=Math.max(4,8+pow*1.2-(idx*4)+Math.random()*8);if(eh>0)hp-=Math.max(3,enemy[2]-Math.floor(pow/4)+Math.random()*5)}if(hp<=0){S.state.hp=Math.max(1,Math.floor((S.state.maxHp||100)*.35));r.enc=false;r.paused=true}else{S.state.hp=Math.floor(hp);S.state.coins=(+S.state.coins||0)+enemy[3];r.enc=false;r.paused=false;add("battle_token",1);xp("blacksmith",10+idx*5)}save();render()}
+function craft(id){let e=E(),q=R.find(x=>x[0]==id);if(!q||e.prof[q[3]].l<q[4]||!spend(q[5]))return;let g={id:"gear_"+Date.now(),name:q[2],icon:q[1],profession:q[3],stats:q[6],permanent:true,rarity:q[4]>=8?"epic":q[4]>=5?"rare":"common"};e.gear.push(g);xp(q[3],q[7]);save();render()}
+function list(id,price,c="coins"){let e=E(),g=e.gear.find(x=>x.id==id);if(!g)return;let l={id:"lst_"+Date.now(),itemId:id,price:+price,currency:c,status:"active"};e.auction.listings.push(l);save();return l}
+function sell(id){let e=E(),l=e.auction.listings.find(x=>x.id==id&&x.status=="active");if(!l)return;let fee=l.price*.1;l.status="sold";e.auction.sales.push({listingId:id,gross:l.price,fee,net:l.price-fee});save()}
+function render(){let h=document.getElementById("world");if(!h)return;let e=E(),r=e.runs.active,res=Object.entries(e.res).filter(x=>x[1]>0).map(x=>`<span>${esc(x[0])}</span><b>${x[1]|0}</b>`).join("");h.innerHTML=`<header class="eco-head"><div><h1>🗺️ Мир Territory</h1><p>Добыча → бот → ресурсы → мастер → постоянный шмот</p></div><div class="eco-balance">🪙 ${S.state.coins||0} · 🔵 ${S.state.gems||0} · 🔴 ${S.state.redGems||0} · 🪨 ${S.state.battleStones||0}</div></header><div class="eco-note">Боевые камни расходуются только на опасные встречи. Предметы, созданные мастером, постоянные.</div><div class="eco-map">${M.map(x=>`<button class="eco-location" data-l="${x[0]}"><strong>${x[2]} ${x[1]}</strong><small>${x[4].map(y=>y[0]).join(" · ")}</small><em>Опасность: ${x[3]} · 🪨 ${x[5]}</em></button>`).join("")}</div><section class="eco-card"><h2>⛏️ Добыча</h2>${r?`<b>${M.find(x=>x[0]==r.loc)[1]}</b><div class="eco-actions"><button class="eco-btn" data-c>⛏️ Добыть</button><button class="eco-btn" data-stop>⏹ Остановить</button></div>${r.enc?`<div class="eco-danger"><b>⚠️ Нападение бота!</b><p>Победи его, чтобы продолжить.</p><button class="eco-btn" data-f>⚔️ Вступить в бой</button></div>`:""}`:"<p>Выбери локацию выше.</p>"}</section><section class="eco-grid"><div class="eco-card"><h2>📦 Ресурсы</h2><div class="eco-resources">${res||"Пока пусто"}</div></div><div class="eco-card"><h2>🔨 Профессии</h2>${Object.entries(P).map(([k,p])=>`<div class="eco-row"><span>${p.i} ${p.name}</span><b>${e.prof[k].l}/300</b></div>`).join("")}</div></section><section class="eco-card"><h2>⚒️ Мастерская</h2>${R.map(q=>`<div class="eco-row"><span>${q[1]} <b>${q[2]}</b><small> · ${P[q[3]].name} ${q[4]}+<br>${Object.entries(q[5]).map(x=>x[0]+" × "+x[1]).join(" · ")}</small></span><button class="eco-btn" data-r="${q[0]}" ${e.prof[q[3]].l<q[4]?"disabled":""}>Создать</button></div>`).join("")}</section><section class="eco-grid"><div class="eco-card"><h2>🏪 Аукцион</h2><p>Комиссия сделки: 10%. Предмет нельзя продать дважды.</p></div><div class="eco-card"><h2>💼 Заказ мастеру</h2><p>Серверный заказ: материалы → цена → срок → репутация → готовый предмет.</p></div></section>`;h.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>start(b.dataset.l));h.querySelector("[data-c]")?.addEventListener("click",collect);h.querySelector("[data-f]")?.addEventListener("click",fight);h.querySelector("[data-stop]")?.addEventListener("click",()=>{e.runs.history.push(r);e.runs.active=null;save();render()});h.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>craft(b.dataset.r))}
+E().prof=Object.assign(JSON.parse(JSON.stringify(P)),E().prof||{});E().res=E().res||{};E().gear=E().gear||[];E().runs=E().runs||{active:null,history:[]};E().auction=E().auction||{listings:[],sales:[]};
+window.TerritoryEconomyFoundation={MAP:M,PROFESSIONS:P,RECIPES:R,startRun:start,collect,resolveEncounter:fight,stopRun:()=>{let e=E();e.runs.active=null;save();render()},addResource:add,addProfessionXp:xp,craft,createListing:list,recordSale:sell,render};
+document.addEventListener("click",e=>{let b=e.target.closest('[data-home-action="sea"]');if(b){e.preventDefault();window.showScreen?.("world")}},true);
+window.addEventListener("territory:screen",e=>{if(e.detail=="world")render()});
 })();
