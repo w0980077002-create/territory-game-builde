@@ -1,18 +1,15 @@
-TERRITORY — UI PATCH: REFERENCE LAYOUT + CLAN + ARENA
+TERRITORY — FINAL HUD BUTTON PATCH
 
-Replace these files in the ROOT of territory-game-builde:
-  index.html
-  territory-home-modular.js
-  territory-home-modular.css
+Upload these files/folders over the ROOT of territory-game-builde.
 
-What this patch does:
-- Fixes the broken assets/ui/top1/png/ path.
-- Uses the real active SVG UI assets from assets/ui/top1/.
-- Replaces the second left-side button with CLAN.
-- Keeps ARENA as the bottom button on the right side.
-- Keeps Arena as a separate PvP mode.
-- Keeps the existing Territory background, hero, follower and enemy as separate layers.
-- Does NOT import reference-game numbers, levels, currencies, names or progression.
+This patch:
+- Adds new reference-style side buttons as real PNG assets.
+- Puts CLAN on the left where the old refund/SOS slot was.
+- Keeps ARENA/PVP as a separate right-side button.
+- Uses a 5-button bottom navigation similar to the reference layout.
+- Keeps Hero / Follower / Bot separate from the background.
+- Removes all broken image placeholders from the modular Home UI by replacing missing-image dependencies with local PNG/CSS elements.
+- Does not delete old project files or old assets.
+- Does not import reference-game stats or balances.
 
-Important:
-Do NOT delete existing files/assets. This patch is intentionally limited to the UI layout/path fixes.
+After upload, hard-refresh/reopen the GitHub Pages game so the v=20261004-5 cache-bust is applied.

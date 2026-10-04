@@ -1,17 +1,36 @@
 (function(){
 'use strict';
 if(window.TerritoryHomeModular)return;
-const $=s=>document.querySelector(s), n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
+const $=s=>document.querySelector(s);
+const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const state=()=>window.TerritoryStore?.state||{};
-// Active Territory UI assets live directly in assets/ui/top1/.
-const A='assets/ui/top1/';
-// Reference-like side layout: Clan replaces the old refund/daily slot; Arena stays on the right.
-const side=[['events','side-events.svg'],['clan','bottom-clan.svg'],['quests','side-quests.svg'],['invite','side-invite.svg'],['sea','side-sea.svg']];
-const right=[['shop','side-shop.svg'],['forge','side-forge.svg'],['trials','side-trials.svg'],['capture','side-capture.svg'],['arena','side-arena.svg']];
-const bottom=[['home','bottom-home.svg'],['inventory','bottom-inventory.svg'],['hero','bottom-hero.svg'],['battle','bottom-battle.svg'],['quests','bottom-quests.svg'],['games','bottom-games.svg'],['clan','bottom-clan.svg']];
+const A='assets/ui/territory-hud/';
+
+const side=[
+ ['events','side-events.png'],
+ ['clan','side-clan.png'],
+ ['quests','side-quests.png'],
+ ['invite','side-invite.png'],
+ ['sea','side-rewards.png']
+];
+const right=[
+ ['shop','side-shop.png'],
+ ['forge','side-forge.png'],
+ ['trials','side-trials.png'],
+ ['capture','side-capture.png'],
+ ['arena','side-arena.png']
+];
+const bottom=[
+ ['home','bottom-home.png','Главная'],
+ ['hero','bottom-hero.png','Герой'],
+ ['battle','bottom-battle.png','Бой'],
+ ['quests','bottom-quests.png','Квесты'],
+ ['shop','bottom-shop.png','Магазин']
+];
+
 function img(src,alt=''){return `<img src="${src}" alt="${alt}" draggable="false">`}
 function render(){
- const h=$('#home'); if(!h)return;
+ const h=$('#home');if(!h)return;
  h.className='screen active territory-home-modular';
  h.innerHTML=`
  <div class="thm-stage">
@@ -28,7 +47,7 @@ function render(){
   </header>
 
   <button class="thm-chapter" data-home-action="chapter"><span>‹</span><div><b class="dynamic">Глава 1 · Северные земли 1-1</b><small>Основной путь</small></div><span>›</span></button>
-  <button class="thm-map" data-home-action="map">${img(A+'map.svg','Карта')}<b>КАРТА</b></button>
+  <button class="thm-map" data-home-action="map"><span class="map-icon">🗺️</span><b>КАРТА</b></button>
   <div class="thm-progress"><i class="done">1</i><span></span><i>2</i><span></span><i>3</i><span></span><i>4</i><span></span><i class="boss">☠</i></div>
 
   <aside class="thm-side left" aria-label="Боковое меню">${side.map(([k,f])=>`<button data-home-action="${k}">${img(A+f)}</button>`).join('')}</aside>
@@ -51,19 +70,25 @@ function render(){
       <div class="hp-center"><div class="hp-bar hero-bar"><span class="unit-fill"></span><b>100/100</b></div><div class="hp-caption"><b class="hero-name">Герой</b><span>Ход <b id="turnNo">0</b></span><b class="enemy-name">Лесной разбойник</b></div></div>
       <button class="big-orb skill" id="thmSkill" aria-label="Умение">✦<small>УМЕНИЕ</small></button>
     </div>
-
     <div class="enemy-hp-row"><div class="hp-bar enemy-bar"><span class="unit-fill"></span><b class="enemy-hp">180/180</b></div></div>
-
-    <div class="gear-row">${['weapon','helm','armor','boots','ring','amulet'].map((k)=>`<button data-home-action="gear-${k}">${img(A+'equip-'+k+'.svg')}</button>`).join('')}</div>
-    <div class="consumables-row"><div class="potions">${[1,2,3,4].map(i=>`<button data-home-action="potion${i}">${img(A+'potion-'+i+'.svg')}</button>`).join('')}</div><div class="locks">${[1,2,3].map(i=>`<button data-home-action="locked${i}">${img(A+'lock-'+i+'.svg')}</button>`).join('')}</div></div>
-
-    <div class="combat-controls"><button class="small-control stones" data-home-action="stones">${img(A+'stones.svg')}<b class="stone-count">0</b></button><button class="small-control" data-home-action="speed">${img(A+'speed.svg')}</button><button class="small-control" data-home-action="auto">${img(A+'auto.svg')}</button><button class="small-control" data-home-action="honor">☀</button><button class="small-control" data-home-action="quest">!</button></div>
+    <div class="gear-row">${[1,2,3,4,5,6].map(i=>`<button data-home-action="gear-${i}">${img(A+`gear-${i}.png`,`Экипировка ${i}`)}</button>`).join('')}</div>
+    <div class="consumables-row"><div class="potions">${['🧪','🧪','🧪','🧪'].map((x,i)=>`<button class="hud-slot potion-slot" data-home-action="potion${i+1}"><span>${x}</span></button>`).join('')}</div><div class="locks">${[1,2,3].map(i=>`<button class="hud-slot lock-slot" data-home-action="locked${i}"><span>🔒</span></button>`).join('')}</div></div>
+    <div class="combat-controls">
+      <button class="small-control stones" data-home-action="stones">${img(A+'stones.png','Боевые камни')}<b class="stone-count">0</b></button>
+      <button class="small-control text-control" data-home-action="speed"><b>x2</b></button>
+      <button class="small-control text-control" data-home-action="auto"><b>AUTO</b></button>
+      <button class="small-control text-control" data-home-action="honor"><b>☀</b></button>
+      <button class="small-control text-control" data-home-action="quest"><b>!</b></button>
+    </div>
     <div class="main-quest"><div><b>Пройти основную главу</b><strong class="quest-chapter">1-1</strong><small>Победа откроет следующего противника</small></div><span>🪙 <b>1000</b></span><em>0/1</em></div>
   </section>
 
-  <nav class="thm-bottom" aria-label="Нижняя навигация">${bottom.map(([k,f])=>`<button class="${k==='battle'?'active':''}" data-screen="${k}">${img(A+f)}</button>`).join('')}</nav>
+  <nav class="thm-bottom" aria-label="Нижняя навигация">${bottom.map(([k,f,label])=>{
+    const action=k==='battle'?`data-home-action="battle"`:`data-screen="${k}"`;
+    return `<button class="${k==='battle'?'active':''}" ${action}><img class="nav-icon" src="${A+f}" alt=""><span class="nav-label">${label}</span></button>`;
+  }).join('')}</nav>
  </div>`;
- bind(); paint();
+ bind();paint();
 }
 function bind(){
  $('#thmAttack')?.addEventListener('click',()=>window.PvEBattle?.attack?.());
