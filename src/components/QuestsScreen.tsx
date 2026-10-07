@@ -1,3 +1,4 @@
+import { assetUrl } from '@/game/assets';
 import { useStore } from '@/game/store';
 import { useGame, claimQuest, claimAchievement } from '@/game/actions';
 import { CheckCircle2, Lock } from 'lucide-react';
@@ -19,7 +20,7 @@ export function QuestsScreen() {
       <div className="relative rounded-2xl overflow-hidden border border-amber-500/20 p-4">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-900/35 via-[#16130d] to-[#0f1115]" />
         <div className="relative flex items-center gap-3">
-          <img src="/ic-quests.webp" alt="" className="w-12 h-12 object-contain" />
+          <img src={assetUrl('/ic-quests.webp')} alt="" className="w-12 h-12 object-contain" />
           <div className="flex-1">
             <h2 className="text-lg font-bold text-amber-100">Задания</h2>
             <p className="text-xs text-gray-400">{ready ? `Готово к получению: ${ready}` : 'Выполняй задания и получай боевые камни'}</p>
@@ -110,7 +111,7 @@ function AchievementCard({ ach, onClaim }: { ach: Achievement; onClaim: () => vo
   return (
     <div className={`rounded-2xl border p-3 ${complete && !ach.claimed ? 'border-amber-400/40 bg-amber-950/20' : 'border-white/10 bg-black/25'}`}>
       <div className="flex items-center gap-3">
-        <img src="/ic-trophy.webp" alt="" className={`w-10 h-10 object-contain shrink-0 ${complete ? '' : 'grayscale opacity-50'}`} />
+        <img src={assetUrl('/ic-trophy.webp')} alt="" className={`w-10 h-10 object-contain shrink-0 ${complete ? '' : 'grayscale opacity-50'}`} />
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-semibold text-white">{ach.title}</h4>
           <p className="text-xs text-gray-400">{ach.description}</p>

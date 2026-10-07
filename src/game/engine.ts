@@ -9,6 +9,7 @@ import type {
   Follower,
   ShopItem,
 } from './types';
+import { assetUrl } from './assets';
 
 const RARITY_COLORS: Record<string, string> = {
   common: '#9ca3af',
@@ -116,11 +117,11 @@ function makeEnemy(
 }
 
 const ENEMY_NAMES = [
-  { name: 'Гоблин-разведчик', art: '/enemy-goblin.webp' },
-  { name: 'Дикий кабан', art: '/enemy-boar.webp' },
-  { name: 'Лесной разбойник', art: '/enemy-bandit.webp' },
-  { name: 'Тёмный волк', art: '/enemy-wolf.webp' },
-  { name: 'Пещерный тролль', art: '/enemy-troll.webp' },
+  { name: 'Гоблин-разведчик', art: assetUrl('/enemy-goblin.webp') },
+  { name: 'Дикий кабан', art: assetUrl('/enemy-boar.webp') },
+  { name: 'Лесной разбойник', art: assetUrl('/enemy-bandit.webp') },
+  { name: 'Тёмный волк', art: assetUrl('/enemy-wolf.webp') },
+  { name: 'Пещерный тролль', art: assetUrl('/enemy-troll.webp') },
 ];
 
 const BOSS_NAMES = [

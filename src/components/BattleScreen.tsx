@@ -1,3 +1,4 @@
+import { assetUrl } from '@/game/assets';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, ShoppingBag } from 'lucide-react';
 import { useStore } from '@/game/store';
@@ -108,7 +109,7 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
       {view === 'campaign' ? (
         <>
           <div className="relative rounded-2xl overflow-hidden border border-amber-500/20">
-            <img src="/city-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
+            <img src={assetUrl('/city-bg.webp')} alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
             <div className="relative p-4">
               <p className="text-[11px] uppercase tracking-[0.2em] text-amber-300">Глава {chapter.number}</p>
@@ -183,7 +184,7 @@ function TrialPanel({ level, onFight }: { level: number; onFight: () => void }) 
   return (
     <div className="space-y-3">
       <div className="relative rounded-2xl overflow-hidden border border-sky-400/25">
-        <img src="/arena-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={assetUrl('/arena-bg.webp')} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
         <div className="relative p-4 flex items-end gap-3 min-h-[180px]">
           <img src={enemy.art} alt={enemy.name} className="w-28 h-36 object-contain object-bottom drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] animate-idle" />

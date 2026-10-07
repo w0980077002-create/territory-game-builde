@@ -1,3 +1,4 @@
+import { assetUrl } from '@/game/assets';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shield, Sword, Check, Flag, Loader2 } from 'lucide-react';
 import { useStore } from '@/game/store';
@@ -213,7 +214,7 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
       </div>
 
       <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black/40">
-        <img src="/arena-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={assetUrl('/arena-bg.webp')} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/85" />
 
         <div className="relative grid grid-cols-[52px_1fr_52px] gap-1.5 p-2 pt-3">
@@ -230,7 +231,7 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
               <div className="relative flex-1 mt-1">
                 {follower && (
                   <img
-                    src="/follower-shield.webp"
+                    src={assetUrl('/follower-shield.webp')}
                     alt={follower.name}
                     draggable={false}
                     className={`absolute -left-3 bottom-1 h-[56%] w-auto max-w-none object-contain select-none drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] ${hero.hp > 0 ? 'opacity-90 animate-idle' : 'grayscale opacity-40'}`}
@@ -238,7 +239,7 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
                   />
                 )}
                 <FighterFigure
-                  src="/hero-viking.webp"
+                  src={assetUrl('/hero-viking.webp')}
                   name={hero.name}
                   dir={1}
                   alive={hero.hp > 0}

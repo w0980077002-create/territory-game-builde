@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { isSupabaseConfigured, supabase } from './supabase';
+import { supabase } from './supabase';
 import { getTelegramInitData, initTelegramWebApp, getTelegramUser } from './telegram';
 
 export interface AuthUser {
@@ -14,30 +14,8 @@ type AuthState =
   | { status: 'guest'; error?: string }
   | { status: 'authenticated'; user: AuthUser };
 
-const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL ?? '').trim();
-const SUPABASE_ANON_KEY = String(import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '').trim();
-const LOCAL_AUTH_KEY = 'territory_local_auth_v1';
-
-function readLocalAuth(): AuthUser | null {
-  try {
-    const raw = localStorage.getItem(LOCAL_AUTH_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as AuthUser;
-    if (!parsed?.id || !parsed.displayName) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function writeLocalAuth(user: AuthUser | null) {
-  try {
-    if (user) localStorage.setItem(LOCAL_AUTH_KEY, JSON.stringify(user));
-    else localStorage.removeItem(LOCAL_AUTH_KEY);
-  } catch {
-    // Ignore local storage failures; the game can still run in memory.
-  }
-}
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 async function profileFor(userId: string, fallbackName: string): Promise<AuthUser> {
   const { data } = await supabase
@@ -75,21 +53,6 @@ export function useAuth() {
   const restore = useCallback(async () => {
     const tgUser = getTelegramUser();
     const initData = getTelegramInitData();
-
-    if (!isSupabaseConfigured) {
-      const local = readLocalAuth();
-      if (local) {
-        if (tgUser && local.telegramId && local.telegramId !== tgUser.id) {
-          writeLocalAuth(null);
-        } else {
-          setAuthState({ status: 'authenticated', user: local });
-          return;
-        }
-      }
-      setAuthState({ status: 'guest' });
-      return;
-    }
-
     const { data } = await supabase.auth.getSession();
     const session = data.session;
 
@@ -119,20 +82,6 @@ export function useAuth() {
 
   const startAsGuest = useCallback(async (heroName: string) => {
     const name = heroName.trim().slice(0, 20) || 'Герой';
-
-    if (!isSupabaseConfigured) {
-      const tgUser = getTelegramUser();
-      const user: AuthUser = {
-        id: tgUser ? `telegram:${tgUser.id}` : `local:${crypto.randomUUID()}`,
-        telegramId: tgUser?.id ?? null,
-        photoUrl: tgUser?.photo_url ?? null,
-        displayName: tgUser ? (tgUser.first_name || tgUser.username || name) : name,
-      };
-      writeLocalAuth(user);
-      setAuthState({ status: 'authenticated', user });
-      return;
-    }
-
     setAuthState({ status: 'loading' });
     const email = `guest_${crypto.randomUUID()}@territory.game`;
     const password = `${crypto.randomUUID()}Aa1!`;
@@ -148,8 +97,7 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
-    if (isSupabaseConfigured) await supabase.auth.signOut();
-    writeLocalAuth(null);
+    await supabase.auth.signOut();
     setAuthState({ status: 'guest' });
   }, []);
 

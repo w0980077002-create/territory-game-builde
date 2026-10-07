@@ -1,3 +1,4 @@
+import { assetUrl } from '@/game/assets';
 import { useEffect, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useGame, buyItem } from '@/game/actions';
@@ -67,7 +68,7 @@ export function ShopScreen() {
       <div className="relative rounded-2xl overflow-hidden border border-amber-500/20 p-4">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-900/40 via-[#16130d] to-[#0f1115]" />
         <div className="relative flex items-center gap-3">
-          <img src="/ic-shop.webp" alt="" className="w-12 h-12 object-contain" />
+          <img src={assetUrl('/ic-shop.webp')} alt="" className="w-12 h-12 object-contain" />
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-bold text-amber-100">Лавка</h2>
             <p className="text-xs text-gray-400">Зелья, снаряжение и боевые камни</p>

@@ -1,4 +1,4 @@
-import { isSupabaseConfigured, supabase } from './supabase';
+import { supabase } from './supabase';
 import type { GameState } from './types';
 import { createInitialGame, getComputedStats } from './engine';
 
@@ -9,33 +9,6 @@ export interface CloudProfile {
   arenaLosses: number;
   vip: number;
   photoUrl: string | null;
-}
-
-function localSaveKey(userId: string) {
-  return `territory_local_save_v1:${userId}`;
-}
-
-function localProfileKey(userId: string) {
-  return `territory_local_profile_v1:${userId}`;
-}
-
-function readLocalProfile(userId: string): CloudProfile | null {
-  try {
-    const raw = localStorage.getItem(localProfileKey(userId));
-    if (!raw) return null;
-    return JSON.parse(raw) as CloudProfile;
-  } catch {
-    return null;
-  }
-}
-
-function writeLocalProfile(userId: string, profile: CloudProfile) {
-  try {
-    localStorage.setItem(localSaveKey(userId), JSON.stringify(profile.state));
-    localStorage.setItem(localProfileKey(userId), JSON.stringify(profile));
-  } catch {
-    // Ignore local storage failures.
-  }
 }
 
 function mergeWithDefaults(saved: Partial<GameState> | null, name: string): GameState {
@@ -65,26 +38,6 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
 }
 
 export async function loadCloudSave(userId: string, displayName: string): Promise<CloudProfile> {
-  if (!isSupabaseConfigured) {
-    const stored = readLocalProfile(userId);
-    if (stored?.state) {
-      return {
-        ...stored,
-        state: mergeWithDefaults(stored.state, stored.state.player?.name || displayName),
-      };
-    }
-    const profile: CloudProfile = {
-      state: mergeWithDefaults(null, displayName),
-      arenaRating: 1000,
-      arenaWins: 0,
-      arenaLosses: 0,
-      vip: 0,
-      photoUrl: null,
-    };
-    writeLocalProfile(userId, profile);
-    return profile;
-  }
-
   const { data, error } = await supabase
     .from('players')
     .select('game_state, arena_rating, arena_wins, arena_losses, display_name, vip_level, photo_url')
@@ -136,19 +89,6 @@ function summaryColumns(state: GameState) {
 }
 
 export async function saveCloudSave(userId: string, state: GameState): Promise<boolean> {
-  if (!isSupabaseConfigured) {
-    const current = readLocalProfile(userId) ?? {
-      state,
-      arenaRating: 1000,
-      arenaWins: 0,
-      arenaLosses: 0,
-      vip: 0,
-      photoUrl: null,
-    };
-    writeLocalProfile(userId, { ...current, state });
-    return true;
-  }
-
   const { error } = await supabase.from('players').update(summaryColumns(state)).eq('id', userId);
   if (error) console.error('Save failed:', error.message);
   return !error;
@@ -165,8 +105,6 @@ export interface LeaderRow {
 }
 
 export async function getLeaderboard(limit = 100, orderBy: 'arena_rating' | 'total_battles_won' = 'arena_rating'): Promise<LeaderRow[]> {
-  if (!isSupabaseConfigured) return [];
-
   const { data, error } = await supabase
     .from('leaderboard')
     .select('player_id, display_name, level, arena_rating, arena_wins, total_battles_won, photo_url')
@@ -208,8 +146,6 @@ export interface PublicProfile {
 }
 
 export async function getPublicProfile(playerId: string): Promise<PublicProfile | null> {
-  if (!isSupabaseConfigured) return null;
-
   const { data, error } = await supabase.rpc('public_player_profile', { p_player: playerId });
   if (error) throw new Error(error.message);
   if (!data || typeof data !== 'object' || !('id' in data)) return null;

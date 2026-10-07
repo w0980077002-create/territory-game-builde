@@ -1,3 +1,4 @@
+import { assetUrl } from '@/game/assets';
 import { Shield, Sword, Loader2, Check, Lock, RotateCcw, Skull, Bot, Hourglass } from 'lucide-react';
 import { ZONES, type ArenaFighter, type Zone } from '@/game/arenaApi';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
@@ -90,7 +91,7 @@ export function BattleScene(props: Props) {
 
   return (
     <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black/40">
-      <img src="/arena-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <img src={assetUrl('/arena-bg.webp')} alt="" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/85" />
 
       <div className="relative grid grid-cols-[56px_1fr_56px] gap-2 p-2 pt-3">
@@ -113,7 +114,7 @@ export function BattleScene(props: Props) {
             <Plate fighter={me} side="ally" />
             <div className="relative flex-1 mt-1">
               <img
-                src="/follower-shield.webp"
+                src={assetUrl('/follower-shield.webp')}
                 alt={followerName}
                 title={followerName}
                 draggable={false}
@@ -121,7 +122,7 @@ export function BattleScene(props: Props) {
                 style={{ animationDuration: '3.7s', animationDelay: '-1.2s' }}
               />
               <FighterFigure
-                src="/hero-viking.webp"
+                src={assetUrl('/hero-viking.webp')}
                 name={me.name}
                 dir={1}
                 alive={alive}
@@ -139,7 +140,7 @@ export function BattleScene(props: Props) {
                 <div className="relative flex-1 mt-1">
                   <FighterFigure
                     key={enemy.id}
-                    src="/enemy-viking.webp"
+                    src={assetUrl('/enemy-viking.webp')}
                     name={enemy.name}
                     dir={-1}
                     alive={enemy.hp > 0}
