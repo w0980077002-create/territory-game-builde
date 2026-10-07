@@ -1,3 +1,4 @@
+import { assetUrl } from './assets';
 import type {
   GameState,
   Chapter,
@@ -9,7 +10,6 @@ import type {
   Follower,
   ShopItem,
 } from './types';
-import { assetUrl } from './assets';
 
 const RARITY_COLORS: Record<string, string> = {
   common: '#9ca3af',
@@ -178,7 +178,7 @@ export function generateChapter(num: number): Chapter {
   const boss = makeEnemy(
     `ch${num}_boss`,
     BOSS_NAMES[(num - 1) % BOSS_NAMES.length],
-    '/enemy-boss.webp',
+    assetUrl('/enemy-boss.webp'),
     Math.floor(baseHp * 2.2),
     Math.floor(baseAtk * 1.15),
     Math.floor(baseDef * 2),
@@ -206,7 +206,7 @@ export function generateTrial(num: number): Enemy {
   return makeEnemy(
     `trial_${num}`,
     'Страж испытаний',
-    '/enemy-viking.webp',
+    assetUrl('/enemy-viking.webp'),
     Math.floor(baseHp * 1.8),
     Math.floor(baseAtk * 1.2),
     Math.floor(baseDef * 1.5),

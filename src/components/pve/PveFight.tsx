@@ -1,6 +1,6 @@
-import { assetUrl } from '@/game/assets';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shield, Sword, Check, Flag, Loader2 } from 'lucide-react';
+import { assetUrl } from '@/game/assets';
 import { useStore } from '@/game/store';
 import { useGame, useArena } from '@/game/actions';
 import { ZONES, type Zone } from '@/game/arenaApi';
@@ -114,7 +114,6 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
       setOutcome({ won: false, gold: 0, xp: 0, gems: 0 });
       return;
     }
-
     setClaiming(true);
     try {
       const result = await claimPveWin(battleId);
@@ -157,7 +156,7 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
     setBlocks([]);
     if (res.enemy.hp <= 0) finish(true);
     else if (res.hero.hp <= 0) finish(false);
-  }, [busy, outcome, claiming, follower, finish]);
+  }, [busy, outcome, follower, finish]);
 
   useEffect(() => {
     if (!auto || busy || outcome || claiming) return;
@@ -181,7 +180,7 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
     const item = state.belt[i];
     if (!open) return setToast('Этот слот пояса ещё закрыт');
     if (!item) return setToast('Слот пуст — положи эликсир из инвентаря');
-    if (busy || outcome) return;
+    if (busy || outcome || claiming) return;
     const r = applyPotion(heroRef.current, item);
     setToast(r.text);
     if (!r.ok) return;

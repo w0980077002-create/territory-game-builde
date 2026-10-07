@@ -1,5 +1,5 @@
-import { assetUrl } from '@/game/assets';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { assetUrl } from '@/game/assets';
 import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, ShoppingBag } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
@@ -36,14 +36,12 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
       setError('Нет боевых камней. Получи их за ежедневную награду, задания или купи в Лавке.');
       return;
     }
-
+    hapticImpact('medium');
+    setError(null);
     const ch = generateChapter(s.currentChapter);
     const enemy = kind === 'trial'
       ? generateTrial(s.trialLevel)
       : s.chapterWins >= ch.enemies.length ? ch.boss : ch.enemies[s.chapterWins];
-
-    hapticImpact('medium');
-    setError(null);
     try {
       const battle = await beginPveBattle(enemy.id, kind);
       useGame.set({ ...useGame.get(), battleStones: battle.battleStones });

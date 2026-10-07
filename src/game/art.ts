@@ -1,5 +1,5 @@
-import type { Equipment, InventoryItem, ShopItem } from './types';
 import { assetUrl } from './assets';
+import type { Equipment, InventoryItem, ShopItem } from './types';
 
 export const SLOT_ART: Record<Equipment['slot'], string> = {
   helmet: assetUrl('/item-helmet.webp'),

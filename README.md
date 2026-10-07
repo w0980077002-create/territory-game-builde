@@ -1,3 +1,5 @@
-# territory-bolt-game
+# Territory
 
-[![Open in Bolt](https://bolt.new/static/open-in-bolt.svg)](https://bolt.new/~/sb1-ugicwqtr)
+Telegram Mini App game Territory.
+
+This package is the project root for GitHub upload/workflow deployment.
