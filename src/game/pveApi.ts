@@ -1,5 +1,9 @@
-import { supabase } from './supabase';
-import type { GameState, InventoryItem } from './types';
+import { isSupabaseConfigured, supabase } from './supabase';
+import type { GameState, InventoryItem, Enemy } from './types';
+import { generateChapter, generateTrial } from './engine';
+import { recordBattleResult, useGame } from './actions';
+import { recordTrialWin, trialReward } from './progression';
+import { PVE_STONE_COST } from './engine';
 
 export interface BeginPveBattleResult {
   battleId: string;
@@ -15,7 +19,25 @@ export interface ClaimPveWinResult {
   loot: InventoryItem | null;
 }
 
+const localBattles = new Map<string, { enemyId: string; kind: 'stage' | 'trial' }>();
+
+function findEnemy(enemyId: string, kind: 'stage' | 'trial', state: GameState): Enemy | null {
+  if (kind === 'trial') return generateTrial(state.trialLevel);
+  const chapter = generateChapter(state.currentChapter);
+  return [...chapter.enemies, chapter.boss].find((e) => e.id === enemyId) ?? null;
+}
+
 export async function beginPveBattle(enemyId: string, kind: 'stage' | 'trial'): Promise<BeginPveBattleResult> {
+  if (!isSupabaseConfigured) {
+    const state = useGame.get();
+    if (state.battleStones < PVE_STONE_COST) throw new Error('Нет боевых камней');
+    const battleId = crypto.randomUUID();
+    localBattles.set(battleId, { enemyId, kind });
+    const battleStones = state.battleStones - PVE_STONE_COST;
+    useGame.set((s) => ({ ...s, battleStones }));
+    return { battleId, battleStones };
+  }
+
   const battleId = crypto.randomUUID();
   const { data, error } = await supabase.rpc('begin_pve_battle', {
     p_enemy_id: enemyId,
@@ -33,6 +55,39 @@ export async function beginPveBattle(enemyId: string, kind: 'stage' | 'trial'): 
 }
 
 export async function claimPveWin(battleId: string): Promise<ClaimPveWinResult> {
+  if (!isSupabaseConfigured) {
+    const battle = localBattles.get(battleId);
+    if (!battle) throw new Error('Бой не найден');
+    localBattles.delete(battleId);
+
+    const state = useGame.get();
+    const enemy = findEnemy(battle.enemyId, battle.kind, state);
+    if (!enemy) throw new Error('Враг не найден');
+
+    if (battle.kind === 'trial') {
+      const reward = trialReward(state.trialLevel);
+      const gameState = recordTrialWin(state, enemy);
+      return {
+        gameState,
+        gold: reward.gold ?? 0,
+        xp: enemy.rewardXp,
+        gems: reward.gems ?? 0,
+        forgeMaterials: gameState.forgeMaterials - state.forgeMaterials,
+        loot: null,
+      };
+    }
+
+    const gameState = recordBattleResult(state, enemy, { gold: enemy.rewardGold, xp: enemy.rewardXp, loot: enemy.rewardLoot });
+    return {
+      gameState,
+      gold: enemy.rewardGold,
+      xp: enemy.rewardXp,
+      gems: 0,
+      forgeMaterials: gameState.forgeMaterials - state.forgeMaterials,
+      loot: enemy.rewardLoot ?? null,
+    };
+  }
+
   const { data, error } = await supabase.rpc('claim_pve_win', { p_battle_id: battleId });
   if (error) throw new Error(error.message);
   if (!data || typeof data !== 'object') throw new Error('Сервер не вернул награду');
