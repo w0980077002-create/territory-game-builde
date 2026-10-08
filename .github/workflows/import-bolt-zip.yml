@@ -1,12 +1,6 @@
 name: Import Bolt ZIP
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - "bolt-project.zip.part*"
-      - ".github/workflows/import-bolt-zip.yml"
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 
 permissions:
   contents: write
@@ -16,26 +10,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Import current Bolt project
+      - name: Import Bolt project
         shell: bash
         run: |
           set -euo pipefail
 
-          echo "=== Rebuilding ZIP ==="
-          cat bolt-project.zip.part* > bolt-project.zip
+          echo "Rebuilding ZIP..."
+          cat bolt-project.zip.part01 bolt-project.zip.part02 > bolt-project.zip
 
-          echo "=== Checking ZIP ==="
+          echo "Checking ZIP..."
           unzip -tq bolt-project.zip
 
-          echo "=== Extracting ZIP ==="
+          echo "Extracting..."
           rm -rf /tmp/bolt
           mkdir -p /tmp/bolt
           unzip -q bolt-project.zip -d /tmp/bolt
 
-          echo "=== Detecting project root ==="
           root="/tmp/bolt/project"
 
           if [ ! -d "$root" ]; then
@@ -44,22 +36,15 @@ jobs:
 
           echo "Project root: $root"
 
-          if [ ! -d "$root" ]; then
-            echo "Project root not found"
-            exit 1
-          fi
-
-          echo "=== Replacing repository files ==="
-
           find . -mindepth 1 -maxdepth 1 \
             ! -name ".git" \
             ! -name ".github" \
-            ! -name "bolt-project.zip.part*" \
+            ! -name "bolt-project.zip.part01" \
+            ! -name "bolt-project.zip.part02" \
             -exec rm -rf {} +
 
           cp -a "$root"/. .
 
-          echo "=== Removing environment file ==="
           rm -f .env
 
           cat > .env.example <<'EOF'
@@ -67,15 +52,13 @@ VITE_SUPABASE_URL=YOUR_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 EOF
 
-          echo "=== Removing temporary ZIP parts ==="
           rm -f bolt-project.zip
-          rm -f bolt-project.zip.part*
-
-          echo "=== Commit imported project ==="
+          rm -f bolt-project.zip.part01
+          rm -f bolt-project.zip.part02
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add -A
-          git commit -m "Import current Bolt project" || echo "No changes to commit"
+          git commit -m "Import current Bolt project" || true
           git push
