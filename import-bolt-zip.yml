@@ -1,0 +1,58 @@
+name: Import current Bolt ZIP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "*.zip"
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack Bolt ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          zip_file="$(find . -maxdepth 1 -type f -name '*.zip' | head -n 1)"
+          test -n "$zip_file"
+
+          rm -rf /tmp/bolt-project
+          mkdir -p /tmp/bolt-project
+          unzip -q "$zip_file" -d /tmp/bolt-project
+
+          root="/tmp/bolt-project"
+          first_dir="$(find /tmp/bolt-project -mindepth 1 -maxdepth 1 -type d | head -n 1 || true)"
+          if [ -n "$first_dir" ] && [ "$(find /tmp/bolt-project -mindepth 1 -maxdepth 1 | wc -l)" -eq 1 ]; then
+            root="$first_dir"
+          fi
+
+          find . -mindepth 1 -maxdepth 1             ! -name '.git'             ! -name '.github'             ! -name '*.zip'             -exec rm -rf {} +
+
+          cp -a "$root"/. .
+
+          # Do not publish local secrets from Bolt.
+          rm -f .env
+
+          cat > .env.example <<'EOF'
+VITE_SUPABASE_URL=YOUR_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+EOF
+
+          rm -f "$zip_file"
+
+      - name: Commit imported project
+        shell: bash
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Import current Bolt project" || echo "No changes to commit"
+          git push
