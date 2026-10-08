@@ -1,9 +1,7 @@
 name: Import Bolt ZIP
 
 on:
-  paths:
-  - "bolt-project.zip.part*"
-  - ".github/workflows/import-bolt-zip.yml"
+  push:
     branches: [main]
     paths:
       - "bolt-project.zip.part*"
@@ -18,11 +16,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Import project
+        shell: bash
         run: |
-          set -e
+          set -euo pipefail
+
           cat bolt-project.zip.part* > bolt-project.zip
+
           rm -rf /tmp/bolt
-          mkdir /tmp/bolt
+          mkdir -p /tmp/bolt
           unzip -q bolt-project.zip -d /tmp/bolt
 
           root="/tmp/bolt/project"
@@ -37,10 +38,17 @@ jobs:
             -exec rm -rf {} +
 
           cp -a "$root"/. .
-          rm -f .env bolt-project.zip bolt-project.zip.part*
+
+          rm -f .env
+          cat > .env.example <<'EOF'
+VITE_SUPABASE_URL=YOUR_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+EOF
+
+          rm -f bolt-project.zip bolt-project.zip.part*
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Import current Bolt project"
+          git commit -m "Import current Bolt project" || echo "No changes to commit"
           git push
