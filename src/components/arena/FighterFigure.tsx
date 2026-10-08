@@ -3,6 +3,13 @@ import type { StrikeEvent } from '@/game/useStrikeQueue';
 
 interface Props {
   src: string;
+  combatFrames?: {
+    idle: string;
+    attack: string;
+    block: string;
+    hit: string;
+    death: string;
+  };
   name: string;
   dir: 1 | -1;
   alive: boolean;
@@ -11,7 +18,7 @@ interface Props {
   className: string;
 }
 
-export function FighterFigure({ src, name, dir, alive, strike, idleSeconds, className }: Props) {
+export function FighterFigure({ src, combatFrames, name, dir, alive, strike, idleSeconds, className }: Props) {
   const role = !strike ? null : strike.attacker === name ? 'attacker' : strike.target === name ? 'target' : null;
   const tone = strike?.tone;
   const motion = role === 'attacker' ? 'animate-lunge'
@@ -19,14 +26,17 @@ export function FighterFigure({ src, name, dir, alive, strike, idleSeconds, clas
     : tone === 'dodge' ? 'animate-dodge'
     : tone === 'block' ? 'animate-guard'
     : 'animate-recoil';
-
   const style = { '--dir': dir } as CSSProperties;
 
   return (
     <div className="absolute inset-0" style={style}>
       <div key={role ? `${strike?.key}-${role}` : 'still'} className={`absolute inset-0 ${motion}`}>
         <img
-          src={src}
+          src={!alive ? combatFrames?.death ?? src
+            : role === 'attacker' ? combatFrames?.attack ?? src
+            : role === 'target' && tone === 'block' ? combatFrames?.block ?? src
+            : role === 'target' && tone !== 'dodge' ? combatFrames?.hit ?? src
+            : combatFrames?.idle ?? src}
           alt={name}
           draggable={false}
           className={`${className} select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] transition-[filter,opacity] duration-500 ${

@@ -1,4 +1,3 @@
-import { assetUrl } from './assets';
 import type {
   GameState,
   Chapter,
@@ -96,6 +95,7 @@ export function createInitialGame(): GameState {
     dailyReward: { streak: 0, lastDay: '' },
     mailClaimed: [],
     trialLevel: 1,
+    appearance: 'm2',
     quests: createInitialQuests(),
     achievements: createInitialAchievements(),
   };
@@ -117,11 +117,11 @@ function makeEnemy(
 }
 
 const ENEMY_NAMES = [
-  { name: 'Гоблин-разведчик', art: assetUrl('/enemy-goblin.webp') },
-  { name: 'Дикий кабан', art: assetUrl('/enemy-boar.webp') },
-  { name: 'Лесной разбойник', art: assetUrl('/enemy-bandit.webp') },
-  { name: 'Тёмный волк', art: assetUrl('/enemy-wolf.webp') },
-  { name: 'Пещерный тролль', art: assetUrl('/enemy-troll.webp') },
+  { name: 'Гоблин-разведчик', art: '/enemy-goblin.webp' },
+  { name: 'Дикий кабан', art: '/enemy-boar.webp' },
+  { name: 'Лесной разбойник', art: '/enemy-bandit.webp' },
+  { name: 'Тёмный волк', art: '/enemy-wolf.webp' },
+  { name: 'Пещерный тролль', art: '/enemy-troll.webp' },
 ];
 
 const BOSS_NAMES = [
@@ -178,7 +178,7 @@ export function generateChapter(num: number): Chapter {
   const boss = makeEnemy(
     `ch${num}_boss`,
     BOSS_NAMES[(num - 1) % BOSS_NAMES.length],
-    assetUrl('/enemy-boss.webp'),
+    '/enemy-boss.webp',
     Math.floor(baseHp * 2.2),
     Math.floor(baseAtk * 1.15),
     Math.floor(baseDef * 2),
@@ -206,7 +206,7 @@ export function generateTrial(num: number): Enemy {
   return makeEnemy(
     `trial_${num}`,
     'Страж испытаний',
-    assetUrl('/enemy-viking.webp'),
+    '/enemy-viking.webp',
     Math.floor(baseHp * 1.8),
     Math.floor(baseAtk * 1.2),
     Math.floor(baseDef * 1.5),

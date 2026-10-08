@@ -203,3 +203,9 @@
 .side-btn {
   @apply relative flex flex-col items-center justify-center w-[58px] h-[58px] rounded-2xl border border-amber-400/25 bg-gradient-to-b from-[#2a2416]/85 to-[#120f0a]/90 shadow-[0_4px_10px_rgba(0,0,0,0.5)] transition-all duration-200 active:scale-90 hover:border-amber-300/60;
 }
+.home-side {
+  @apply relative flex-1 min-h-0 max-h-[48px] w-full flex flex-col items-center justify-center gap-px rounded-xl border border-amber-400/30 bg-gradient-to-b from-[#2a2416]/85 to-[#120f0a]/90 shadow-[0_4px_10px_rgba(0,0,0,0.5)] backdrop-blur-[2px] transition-all duration-200 active:scale-90 hover:border-amber-300/70;
+}
+.nav-btn {
+  @apply relative flex-1 min-w-0 h-full flex flex-col items-center justify-end gap-0.5 pb-1 rounded-xl border transition-all duration-200 active:scale-95;
+}

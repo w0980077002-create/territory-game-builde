@@ -19,7 +19,7 @@ import { Loader2, LogOut, Timer, WifiOff, Skull, Trophy } from 'lucide-react';
 
 const MODE_LABEL = { duel: 'Дуэль 1х1', team: 'Отряд 3х3', chaos: 'Хаос' } as const;
 
-export function ArenaRoom({ roomId, onExit }: { roomId: string; onExit: () => void }) {
+export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; onExit: () => void; onActiveChange?: (active: boolean) => void }) {
   const { view, messages, offline, clockOffset, refresh } = useArenaRoom(roomId, onExit);
   const game = useStore(useGame);
   const arenaStats = useStore(useArena);
@@ -50,6 +50,11 @@ export function ArenaRoom({ roomId, onExit }: { roomId: string; onExit: () => vo
   const alive = !!me && me.hp > 0;
   const isActive = room?.status === 'active';
   const round = room?.round ?? 0;
+
+  useEffect(() => {
+    onActiveChange?.(isActive);
+    return () => onActiveChange?.(false);
+  }, [isActive, onActiveChange]);
   const myHp = me?.hp ?? null;
   const strikeEvent = useStrikeQueue(messages, !!view, [me?.name ?? '', shownEnemy?.name ?? '']);
 

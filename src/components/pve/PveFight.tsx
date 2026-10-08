@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shield, Sword, Check, Flag, Loader2 } from 'lucide-react';
-import { assetUrl } from '@/game/assets';
 import { useStore } from '@/game/store';
-import { useGame, useArena } from '@/game/actions';
+import { useGame, useArena, recordBattleResult } from '@/game/actions';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
-import { claimPveWin } from '@/game/pveApi';
+import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, type PveSide } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy, InventoryItem } from '@/game/types';
+import { getCombatAppearance } from '@/game/appearance';
 import { hapticImpact } from '@/game/telegram';
 import { FighterFigure } from '@/components/arena/FighterFigure';
 import { FoldSection } from '@/components/arena/FoldSection';
@@ -22,7 +22,6 @@ export type FightKind = 'stage' | 'trial';
 interface Props {
   enemy: Enemy;
   kind: FightKind;
-  battleId: string;
   onExit: () => void;
   onNext?: () => void;
 }
@@ -76,7 +75,7 @@ function ZoneBtn({ label, sub, on, tone, disabled, onClick }: { label: string; s
   );
 }
 
-export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
+export function PveFight({ enemy, kind, onExit, onNext }: Props) {
   const state = useStore(useGame);
   const arena = useStore(useArena);
   const follower = state.followers.find((f) => f.unlocked);
@@ -90,7 +89,6 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [gearOpen, setGearOpen] = useState(false);
-  const [claiming, setClaiming] = useState(false);
   const alive = useRef(true);
   const done = useRef(false);
   const keyRef = useRef(0);
@@ -107,34 +105,27 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
 
   const pushLog = (line: string) => setLog((l) => [line, ...l].slice(0, 30));
 
-  const finish = useCallback(async (won: boolean) => {
+  const finish = useCallback((won: boolean) => {
     if (done.current) return;
     done.current = true;
     if (!won) {
       setOutcome({ won: false, gold: 0, xp: 0, gems: 0 });
       return;
     }
-    setClaiming(true);
-    try {
-      const result = await claimPveWin(battleId);
-      useGame.set(result.gameState);
-      setOutcome({
-        won: true,
-        gold: result.gold,
-        xp: result.xp,
-        gems: result.gems,
-        loot: result.loot ?? undefined,
-      });
-    } catch (err) {
-      done.current = false;
-      setToast(err instanceof Error ? err.message : 'Не удалось получить награду. Нажми УДАР ещё раз.');
-    } finally {
-      setClaiming(false);
+    const s = useGame.get();
+    if (kind === 'trial') {
+      const r = trialReward(s.trialLevel);
+      useGame.set(recordTrialWin(s, enemy));
+      setOutcome({ won: true, gold: r.gold ?? 0, xp: enemy.rewardXp, gems: r.gems ?? 0 });
+      return;
     }
-  }, [battleId]);
+    const gold = blessedGold(s, enemy.rewardGold);
+    useGame.set(recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp, loot: enemy.rewardLoot }));
+    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0, loot: enemy.rewardLoot });
+  }, [enemy, kind]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
-    if (busy || outcome || claiming) return;
+    if (busy || outcome) return;
     setBusy(true);
     hapticImpact('light');
     const res = playRound(heroRef.current, foeRef.current, atk, blk, follower?.attack ?? 0, follower?.name ?? '');
@@ -159,13 +150,13 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
   }, [busy, outcome, follower, finish]);
 
   useEffect(() => {
-    if (!auto || busy || outcome || claiming) return;
+    if (!auto || busy || outcome) return;
     const t = setTimeout(() => {
       const z = randomZones();
       runRound(z.attack, z.blocks);
     }, 350 / speed);
     return () => clearTimeout(t);
-  }, [auto, busy, outcome, claiming, speed, runRound]);
+  }, [auto, busy, outcome, speed, runRound]);
 
   useEffect(() => {
     if (!toast) return;
@@ -180,7 +171,7 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
     const item = state.belt[i];
     if (!open) return setToast('Этот слот пояса ещё закрыт');
     if (!item) return setToast('Слот пуст — положи эликсир из инвентаря');
-    if (busy || outcome || claiming) return;
+    if (busy || outcome) return;
     const r = applyPotion(heroRef.current, item);
     setToast(r.text);
     if (!r.ok) return;
@@ -189,7 +180,7 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
     useGame.set((s) => consumeBelt(s, i));
   };
 
-  const controls = !busy && !outcome && !auto && !claiming;
+  const controls = !busy && !outcome && !auto;
   const ready = controls && !!attack && blocks.length === 2;
   const hint = auto ? 'Автобой: зоны выбираются сами'
     : blocks.length < 2 ? `Защита: выбери ещё ${2 - blocks.length}` : !attack ? 'Выбери зону удара' : 'Жми УДАР';
@@ -213,7 +204,7 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
       </div>
 
       <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black/40">
-        <img src={assetUrl('/arena-bg.webp')} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src="/arena-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/85" />
 
         <div className="relative grid grid-cols-[52px_1fr_52px] gap-1.5 p-2 pt-3">
@@ -230,7 +221,7 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
               <div className="relative flex-1 mt-1">
                 {follower && (
                   <img
-                    src={assetUrl('/follower-shield.webp')}
+                    src="/follower-shield.webp"
                     alt={follower.name}
                     draggable={false}
                     className={`absolute -left-3 bottom-1 h-[56%] w-auto max-w-none object-contain select-none drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] ${hero.hp > 0 ? 'opacity-90 animate-idle' : 'grayscale opacity-40'}`}
@@ -238,7 +229,8 @@ export function PveFight({ enemy, kind, battleId, onExit, onNext }: Props) {
                   />
                 )}
                 <FighterFigure
-                  src={assetUrl('/hero-viking.webp')}
+                  src="/hero-viking.webp"
+                  combatFrames={getCombatAppearance(state.appearance)}
                   name={hero.name}
                   dir={1}
                   alive={hero.hp > 0}

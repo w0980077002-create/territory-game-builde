@@ -4,7 +4,7 @@ import { currentArenaRoom } from '@/game/arenaApi';
 import { ArenaLobby } from './arena/ArenaLobby';
 import { ArenaRoom } from './arena/ArenaRoom';
 
-export function ArenaScreen() {
+export function ArenaScreen({ onActiveChange }: { onActiveChange?: (active: boolean) => void }) {
   const [roomId, setRoomId] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
 
@@ -23,6 +23,6 @@ export function ArenaScreen() {
     );
   }
 
-  if (roomId) return <ArenaRoom key={roomId} roomId={roomId} onExit={() => setRoomId(null)} />;
+  if (roomId) return <ArenaRoom key={roomId} roomId={roomId} onExit={() => setRoomId(null)} onActiveChange={onActiveChange} />;
   return <ArenaLobby onJoined={setRoomId} />;
 }

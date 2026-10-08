@@ -1,38 +1,46 @@
 import { useState, useEffect } from 'react';
 import { useAuth, type AuthUser } from '@/game/auth';
-import { useGame, useArena, applyTimeEffects } from '@/game/actions';
+import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
 import { HomeScreen } from '@/components/HomeScreen';
-import { BattleScreen } from '@/components/BattleScreen';
+import { BattleScreen, type BattleView } from '@/components/BattleScreen';
+import type { SaveStatus } from '@/components/home/HomeSheets';
 import { InventoryScreen } from '@/components/InventoryScreen';
 import { ShopScreen } from '@/components/ShopScreen';
+import { MapScreen } from '@/components/MapScreen';
 import { QuestsScreen } from '@/components/QuestsScreen';
 import { ProfileScreen } from '@/components/ProfileScreen';
 import { ArenaScreen } from '@/components/ArenaScreen';
 import { ForgeScreen } from '@/components/ForgeScreen';
 import { LeaderboardScreen } from '@/components/LeaderboardScreen';
-import { Home, Swords, Backpack, ShoppingCart, Scroll, User, Trophy, Hammer, Medal, Cloud, CloudOff, Shield } from 'lucide-react';
+import { ChevronLeft, Shield } from 'lucide-react';
 
-type Tab = 'home' | 'battle' | 'arena' | 'inventory' | 'shop' | 'forge' | 'quests' | 'leaderboard' | 'profile';
+type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
+type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests';
+type Screen = Exclude<NavId, 'games' | 'clan'> | SubScreen;
 
-const TABS: { id: Tab; label: string; icon: typeof Home }[] = [
-  { id: 'home', label: 'Дом', icon: Home },
-  { id: 'battle', label: 'Бой', icon: Swords },
-  { id: 'arena', label: 'Арена', icon: Trophy },
-  { id: 'inventory', label: 'Сумка', icon: Backpack },
-  { id: 'shop', label: 'Лавка', icon: ShoppingCart },
-  { id: 'forge', label: 'Кузница', icon: Hammer },
-  { id: 'quests', label: 'Квесты', icon: Scroll },
-  { id: 'leaderboard', label: 'Топ', icon: Medal },
-  { id: 'profile', label: 'Профиль', icon: User },
+const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
+  { id: 'city', label: 'Город', icon: '/nav-city.webp' },
+  { id: 'inventory', label: 'Инвентарь', icon: '/nav-inventory.webp' },
+  { id: 'hero', label: 'Герой', icon: '/nav-hero.webp' },
+  { id: 'battle', label: 'Бой', icon: '/nav-battle.webp' },
+  { id: 'map', label: 'Карта', icon: '/nav-map.webp' },
+  { id: 'games', label: 'Игры', icon: '/nav-games.webp', soon: true },
+  { id: 'clan', label: 'Клан', icon: '/nav-clan.webp', soon: true },
 ];
 
-type SaveStatus = 'saved' | 'saving' | 'error';
+const SUB_SCREENS: Record<SubScreen, { title: string; icon: string }> = {
+  shop: { title: 'Лавка', icon: '/ic-shop.webp' },
+  forge: { title: 'Кузница', icon: '/ic-forge.webp' },
+  arena: { title: 'Арена', icon: '/ic-arena.webp' },
+  leaderboard: { title: 'Топ игроков', icon: '/ic-trophy.webp' },
+  quests: { title: 'Задания', icon: '/ic-quests.webp' },
+};
 
 function Splash({ text }: { text: string }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: 'var(--color-bg)' }}>
-      <div className="text-5xl mb-4 animate-float">⚔️</div>
+      <img src="/hero-viking.webp" alt="" className="w-28 h-28 object-contain mb-4 animate-float" />
       <h1 className="text-2xl font-bold text-white mb-2">Territory</h1>
       <p className="text-gray-400 text-sm">{text}</p>
     </div>
@@ -73,10 +81,23 @@ function Welcome({ onStart, error }: { onStart: (name: string) => void; error?: 
 }
 
 function GameShell({ user }: { user: AuthUser }) {
-  const [tab, setTab] = useState<Tab>('home');
+  const [screen, setScreen] = useState<Screen>('city');
+  const [battleView, setBattleView] = useState<BattleView>('campaign');
+  const [autoStart, setAutoStart] = useState(false);
+  const [inventoryTab, setInventoryTab] = useState<'items' | 'equipment'>('items');
+  const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
+  const [battleLocked, setBattleLocked] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2400);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const notify = (text: string) => setToast({ id: Date.now(), text });
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +106,7 @@ function GameShell({ user }: { user: AuthUser }) {
         if (cancelled) return;
         useGame.set(applyTimeEffects(profile.state));
         useArena.set({ rating: profile.arenaRating, wins: profile.arenaWins, losses: profile.arenaLosses });
+        useAccount.set({ vip: profile.vip });
         setLoaded(true);
       })
       .catch(() => !cancelled && setLoadError('Не удалось загрузить прогресс. Проверь интернет и обнови страницу.'));
@@ -121,64 +143,103 @@ function GameShell({ user }: { user: AuthUser }) {
   if (loadError) return <Splash text={loadError} />;
   if (!loaded) return <Splash text="Загрузка героя..." />;
 
-  return (
-    <div className="min-h-screen flex flex-col max-w-md mx-auto" style={{ background: 'var(--color-bg)' }}>
-      <header
-        className="sticky top-0 z-30 px-4 py-3 flex items-center justify-between backdrop-blur-md"
-        style={{ background: 'rgba(12, 17, 23, 0.85)', borderBottom: '1px solid var(--color-border)' }}
-      >
-        <h1 className="text-lg font-bold text-white tracking-tight">Territory</h1>
-        <div className="flex items-center gap-2">
-          <span title={saveStatus === 'error' ? 'Ошибка сохранения' : 'Сохранено'}>
-            {saveStatus === 'error' ? (
-              <CloudOff className="w-4 h-4 text-red-400" />
-            ) : (
-              <Cloud className={`w-4 h-4 ${saveStatus === 'saving' ? 'text-gray-500 animate-pulse' : 'text-teal-400'}`} />
-            )}
-          </span>
-          {user.photoUrl ? (
-            <img src={user.photoUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
-          ) : (
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-teal-700 flex items-center justify-center text-sm">🦸</div>
-          )}
-        </div>
-      </header>
+  const sub = SUB_SCREENS[screen as SubScreen];
+  const navActive: NavId = sub ? 'city' : (screen as NavId);
 
-      <main className="flex-1 px-3 py-3 overflow-y-auto scrollbar-hide" style={{ paddingBottom: '80px' }}>
-        {tab === 'home' && <HomeScreen />}
-        {tab === 'battle' && <BattleScreen />}
-        {tab === 'arena' && <ArenaScreen />}
-        {tab === 'inventory' && <InventoryScreen />}
-        {tab === 'shop' && <ShopScreen />}
-        {tab === 'forge' && <ForgeScreen />}
-        {tab === 'quests' && <QuestsScreen />}
-        {tab === 'leaderboard' && <LeaderboardScreen user={user} />}
-        {tab === 'profile' && <ProfileScreen />}
+  const goNav = (id: NavId) => {
+    if (id === 'games' || id === 'clan') return notify(`${id === 'games' ? 'Мини-игры' : 'Кланы'} откроются в следующих обновлениях`);
+    if (id === 'battle') setBattleView('campaign');
+    setScreen(id);
+  };
+
+  return (
+    <div className="h-[100dvh] flex flex-col max-w-md mx-auto overflow-hidden relative" style={{ background: 'var(--color-bg)' }}>
+      {sub && (
+        <header className="shrink-0 z-30 h-12 px-2 flex items-center gap-2 border-b border-amber-500/20 bg-[#0c1117]/95">
+          <button disabled={battleLocked} onClick={() => setScreen('city')} className="h-9 pl-1.5 pr-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 text-sm font-semibold text-amber-100 bg-white/5 border border-white/10 active:scale-95 transition-transform">
+            <ChevronLeft className="w-4 h-4" /> Город
+          </button>
+          <img src={sub.icon} alt="" className="w-7 h-7 object-contain" />
+          <h1 className="text-base font-bold text-white truncate">{sub.title}</h1>
+        </header>
+      )}
+
+      <main className={`flex-1 min-h-0 ${screen === 'city' ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden scrollbar-hide px-3 py-3'}`}>
+        {screen === 'city' && (
+          <HomeScreen
+            user={user}
+            saveStatus={saveStatus}
+            notify={notify}
+            onOpen={setScreen}
+            onBattle={(view, auto) => {
+              setBattleView(view);
+              setAutoStart(!!auto);
+              setScreen('battle');
+            }}
+            onInventory={(tab) => {
+              setInventoryTab(tab);
+              setScreen('inventory');
+            }}
+          />
+        )}
+        {screen === 'battle' && (
+          <BattleScreen
+            view={battleView}
+            onView={setBattleView}
+            autoStart={autoStart}
+            onAutoStartHandled={() => setAutoStart(false)}
+            onShop={() => setScreen('shop')}
+            onActiveChange={setBattleLocked}
+          />
+        )}
+        {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} />}
+        {screen === 'hero' && <ProfileScreen />}
+        {screen === 'map' && <MapScreen />}
+        {screen === 'shop' && <ShopScreen />}
+        {screen === 'forge' && <ForgeScreen />}
+        {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} />}
+        {screen === 'leaderboard' && <LeaderboardScreen user={user} />}
+        {screen === 'quests' && <QuestsScreen />}
       </main>
 
-      <nav
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-30 backdrop-blur-md"
-        style={{ background: 'rgba(12, 17, 23, 0.9)', borderTop: '1px solid var(--color-border)' }}
-      >
-        <div className="flex items-center py-1.5 px-1 overflow-x-auto scrollbar-hide gap-1">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const active = tab === t.id;
+      <nav className="shrink-0 z-30 border-t border-amber-500/25 bg-gradient-to-b from-[#161b24] to-[#0a0d12] px-1 pt-1 pb-[max(4px,env(safe-area-inset-bottom))]">
+        <div className="flex items-end gap-0.5 h-[60px]">
+          {NAV.map((t) => {
+            const active = navActive === t.id;
+            const center = t.id === 'battle';
             return (
               <button
                 key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg transition-all shrink-0 ${
-                  active ? 'text-teal-400 bg-teal-500/10' : 'text-gray-500 hover:text-gray-300'
+                disabled={battleLocked}
+                onClick={() => goNav(t.id)}
+                aria-current={active ? 'page' : undefined}
+                className={`nav-btn disabled:opacity-40 disabled:cursor-not-allowed ${
+                  center
+                    ? `-mt-3 h-[70px] border-sky-300/60 bg-gradient-to-b from-sky-600/60 to-[#0d1a33] shadow-[0_0_14px_rgba(56,189,248,0.35)] ${active ? 'ring-2 ring-sky-300/70' : ''}`
+                    : active
+                      ? 'border-amber-400/60 bg-gradient-to-b from-amber-500/25 to-amber-900/20'
+                      : 'border-white/5 bg-white/[0.03]'
                 }`}
               >
-                <Icon className={`w-5 h-5 transition-transform ${active ? 'scale-110' : ''}`} />
-                <span className="text-[10px] font-medium">{t.label}</span>
+                <img
+                  src={t.icon}
+                  alt=""
+                  draggable={false}
+                  className={`object-contain transition-transform duration-200 ${center ? 'w-10 h-10' : 'w-8 h-8'} ${active ? 'scale-110' : ''} ${t.soon ? 'opacity-60 grayscale-[40%]' : ''}`}
+                />
+                <span className={`text-[9px] tracking-tight font-bold leading-none truncate max-w-full ${active || center ? 'text-white' : 'text-gray-400'}`}>{t.label}</span>
+                {t.soon && <span className="absolute top-0.5 right-0.5 rounded bg-slate-700 px-0.5 text-[7px] font-bold uppercase text-gray-300">скоро</span>}
               </button>
             );
           })}
         </div>
       </nav>
+
+      {toast && (
+        <div key={toast.id} className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[84px] z-[60] w-[calc(100%-32px)] max-w-sm rounded-xl border border-amber-400/40 bg-[#1a1610]/95 px-3 py-2 text-center text-xs font-semibold text-amber-50 shadow-2xl animate-sheet-up">
+          {toast.text}
+        </div>
+      )}
     </div>
   );
 }

@@ -153,4 +153,5 @@ export interface GameState {
   dailyReward: { streak: number; lastDay: string };
   mailClaimed: string[];
   trialLevel: number;
+  appearance: string;
 }

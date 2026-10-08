@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { assetUrl } from '@/game/assets';
 import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, ShoppingBag } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { generateChapter, generateTrial, PVE_STONE_COST } from '@/game/engine';
-import { trialReward, blessedGold } from '@/game/progression';
-import { beginPveBattle } from '@/game/pveApi';
+import { spendStones, trialReward, blessedGold } from '@/game/progression';
 import { hapticImpact } from '@/game/telegram';
 import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
@@ -19,36 +17,34 @@ interface Props {
   autoStart: boolean;
   onAutoStartHandled: () => void;
   onShop: () => void;
+  onActiveChange?: (active: boolean) => void;
 }
 
-export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onShop }: Props) {
+export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onShop, onActiveChange }: Props) {
   const state = useStore(useGame);
-  const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; battleId: string } | null>(null);
+  const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const chapter = useMemo(() => generateChapter(state.currentChapter), [state.currentChapter]);
   const stages = [...chapter.enemies, chapter.boss];
   const nextIndex = Math.min(state.chapterWins, chapter.enemies.length);
   const autoHandled = useRef(false);
 
-  const start = async (kind: FightKind) => {
+  const start = (kind: FightKind) => {
     const s = useGame.get();
-    if (s.battleStones < PVE_STONE_COST) {
+    const paid = spendStones(s, PVE_STONE_COST);
+    if (!paid) {
       setError('Нет боевых камней. Получи их за ежедневную награду, задания или купи в Лавке.');
       return;
     }
     hapticImpact('medium');
     setError(null);
-    const ch = generateChapter(s.currentChapter);
+    useGame.set(paid);
+    const ch = generateChapter(paid.currentChapter);
     const enemy = kind === 'trial'
-      ? generateTrial(s.trialLevel)
-      : s.chapterWins >= ch.enemies.length ? ch.boss : ch.enemies[s.chapterWins];
-    try {
-      const battle = await beginPveBattle(enemy.id, kind);
-      useGame.set({ ...useGame.get(), battleStones: battle.battleStones });
-      setFight({ enemy, kind, battleId: battle.battleId });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось начать бой. Проверь интернет.');
-    }
+      ? generateTrial(paid.trialLevel)
+      : paid.chapterWins >= ch.enemies.length ? ch.boss : ch.enemies[paid.chapterWins];
+    setFight({ enemy, kind, id: Date.now() });
+    onActiveChange?.(true);
   };
 
   useEffect(() => {
@@ -61,11 +57,13 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
   if (fight) {
     return (
       <PveFight
-        key={fight.battleId}
+        key={fight.id}
         enemy={fight.enemy}
         kind={fight.kind}
-        battleId={fight.battleId}
-        onExit={() => setFight(null)}
+        onExit={() => {
+          setFight(null);
+          onActiveChange?.(false);
+        }}
         onNext={() => start(fight.kind)}
       />
     );
@@ -107,7 +105,7 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
       {view === 'campaign' ? (
         <>
           <div className="relative rounded-2xl overflow-hidden border border-amber-500/20">
-            <img src={assetUrl('/city-bg.webp')} alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
+            <img src="/city-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
             <div className="relative p-4">
               <p className="text-[11px] uppercase tracking-[0.2em] text-amber-300">Глава {chapter.number}</p>
@@ -182,7 +180,7 @@ function TrialPanel({ level, onFight }: { level: number; onFight: () => void }) 
   return (
     <div className="space-y-3">
       <div className="relative rounded-2xl overflow-hidden border border-sky-400/25">
-        <img src={assetUrl('/arena-bg.webp')} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src="/arena-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
         <div className="relative p-4 flex items-end gap-3 min-h-[180px]">
           <img src={enemy.art} alt={enemy.name} className="w-28 h-36 object-contain object-bottom drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] animate-idle" />

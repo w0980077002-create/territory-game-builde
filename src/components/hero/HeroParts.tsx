@@ -1,4 +1,3 @@
-import { assetUrl } from '@/game/assets';
 import { useState } from 'react';
 import { Heart, Shield, Sword, Star, Flame } from 'lucide-react';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
@@ -88,9 +87,9 @@ export function PaperDoll({ gear, followerUnlocked }: { gear: GearMap; followerU
         <div className="relative h-[188px]">
           <div className="absolute inset-x-2 bottom-1 h-6 rounded-[50%] bg-black/60 blur-md" />
           {followerUnlocked && (
-            <img src={assetUrl('/follower-shield.webp')} alt="" className="absolute left-0 bottom-1 h-[62%] object-contain opacity-90" />
+            <img src="/follower-shield.webp" alt="" className="absolute left-0 bottom-1 h-[62%] object-contain opacity-90" />
           )}
-          <img src={assetUrl('/hero-viking.webp')} alt="" className="absolute right-0 bottom-0 h-full w-[85%] object-contain object-bottom animate-idle" />
+          <img src="/hero-viking.webp" alt="" className="absolute right-0 bottom-0 h-full w-[85%] object-contain object-bottom animate-idle" />
         </div>
         <div className="flex flex-col gap-2">{right.map((s) => <Slot key={s.id} slot={s.id} gear={gear[s.id]} active={picked === s.id} onTap={() => tap(s.id)} />)}</div>
       </div>
