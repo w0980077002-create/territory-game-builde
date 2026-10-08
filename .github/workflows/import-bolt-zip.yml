@@ -6,30 +6,50 @@ on:
     paths:
       - "bolt-project.zip.part*"
       - ".github/workflows/import-bolt-zip.yml"
+  workflow_dispatch:
+
 permissions:
   contents: write
 
 jobs:
   import:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Import project
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Import current Bolt project
         shell: bash
         run: |
           set -euo pipefail
 
+          echo "=== Rebuilding ZIP ==="
           cat bolt-project.zip.part* > bolt-project.zip
 
+          echo "=== Checking ZIP ==="
+          unzip -tq bolt-project.zip
+
+          echo "=== Extracting ZIP ==="
           rm -rf /tmp/bolt
           mkdir -p /tmp/bolt
           unzip -q bolt-project.zip -d /tmp/bolt
 
+          echo "=== Detecting project root ==="
           root="/tmp/bolt/project"
+
           if [ ! -d "$root" ]; then
             root="$(find /tmp/bolt -mindepth 1 -maxdepth 1 -type d | head -n 1)"
           fi
+
+          echo "Project root: $root"
+
+          if [ ! -d "$root" ]; then
+            echo "Project root not found"
+            exit 1
+          fi
+
+          echo "=== Replacing repository files ==="
 
           find . -mindepth 1 -maxdepth 1 \
             ! -name ".git" \
@@ -39,16 +59,23 @@ jobs:
 
           cp -a "$root"/. .
 
+          echo "=== Removing environment file ==="
           rm -f .env
+
           cat > .env.example <<'EOF'
 VITE_SUPABASE_URL=YOUR_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 EOF
 
-          rm -f bolt-project.zip bolt-project.zip.part*
+          echo "=== Removing temporary ZIP parts ==="
+          rm -f bolt-project.zip
+          rm -f bolt-project.zip.part*
+
+          echo "=== Commit imported project ==="
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add -A
           git commit -m "Import current Bolt project" || echo "No changes to commit"
           git push
