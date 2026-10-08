@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - "bolt-project.zip.part*"
-
+      - ".github/workflows/import-bolt-zip.yml"
 permissions:
   contents: write
 
