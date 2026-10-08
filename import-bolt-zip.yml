@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "*.zip"
+      - "bolt-project.zip.part*"
+      - "import-bolt-zip.yml"
 
 permissions:
   contents: write
@@ -15,17 +16,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Rebuild Bolt ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -lh bolt-project.zip.part*
+          cat bolt-project.zip.part* > bolt-project.zip
+          unzip -tq bolt-project.zip
+
       - name: Unpack Bolt ZIP
         shell: bash
         run: |
           set -euo pipefail
 
-          zip_file="$(find . -maxdepth 1 -type f -name '*.zip' | head -n 1)"
-          test -n "$zip_file"
-
           rm -rf /tmp/bolt-project
           mkdir -p /tmp/bolt-project
-          unzip -q "$zip_file" -d /tmp/bolt-project
+          unzip -q bolt-project.zip -d /tmp/bolt-project
 
           root="/tmp/bolt-project"
           first_dir="$(find /tmp/bolt-project -mindepth 1 -maxdepth 1 -type d | head -n 1 || true)"
@@ -33,11 +39,16 @@ jobs:
             root="$first_dir"
           fi
 
-          find . -mindepth 1 -maxdepth 1             ! -name '.git'             ! -name '.github'             ! -name '*.zip'             -exec rm -rf {} +
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name '.git' \
+            ! -name '.github' \
+            ! -name '*.zip.part*' \
+            ! -name 'bolt-project.zip' \
+            -exec rm -rf {} +
 
           cp -a "$root"/. .
 
-          # Do not publish local secrets from Bolt.
+          # Never publish Bolt's local environment/secrets.
           rm -f .env
 
           cat > .env.example <<'EOF'
@@ -45,7 +56,8 @@ VITE_SUPABASE_URL=YOUR_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 EOF
 
-          rm -f "$zip_file"
+          rm -f bolt-project.zip
+          rm -f bolt-project.zip.part*
 
       - name: Commit imported project
         shell: bash
