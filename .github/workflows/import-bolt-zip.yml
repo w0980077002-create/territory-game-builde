@@ -1,7 +1,9 @@
 name: Import Bolt ZIP
 
 on:
-  push:
+  paths:
+  - "bolt-project.zip.part*"
+  - ".github/workflows/import-bolt-zip.yml"
     branches: [main]
     paths:
       - "bolt-project.zip.part*"
