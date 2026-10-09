@@ -7,6 +7,7 @@ import { beltContext } from '@/game/belt';
 import { getAppearanceIcon } from '@/game/appearance';
 import { MAIL, blessingReady, claimBlessing, dailyStatus } from '@/game/progression';
 import type { AuthUser } from '@/game/auth';
+import { useLive } from '@/game/live';
 import type { BattleView } from '@/components/BattleScreen';
 import { EquipCells } from '@/components/ui/EquipCells';
 import { BeltCells } from '@/components/ui/BeltCells';
@@ -88,7 +89,8 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
   const stats = getComputedStats(state);
   const follower = state.followers.find((f) => f.unlocked);
   const xpPct = Math.min(100, (player.xp / player.xpToNext) * 100);
-  const unreadMail = MAIL.filter((l) => !state.mailClaimed.includes(l.id)).length;
+  const adminMail = useStore(useLive).mail.length;
+  const unreadMail = MAIL.filter((l) => !state.mailClaimed.includes(l.id)).length + adminMail;
   const blessReady = blessingReady(state);
   const quest = state.quests.find((q) => !q.claimed && q.current < q.target) ?? state.quests.find((q) => !q.claimed);
 

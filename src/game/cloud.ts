@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import type { GameState } from './types';
 import { createInitialGame, getComputedStats } from './engine';
+import { EQUIPMENT_BALANCE_VERSION, migrateGameStateBalance } from './equipmentBalance';
 
 export interface CloudProfile {
   state: GameState;
@@ -9,32 +10,36 @@ export interface CloudProfile {
   arenaLosses: number;
   vip: number;
   photoUrl: string | null;
+  balanceMigrated?: boolean;
 }
 
 function mergeWithDefaults(saved: Partial<GameState> | null, name: string): GameState {
   const defaults = createInitialGame();
   if (!saved) return { ...defaults, player: { ...defaults.player, name } };
+  const migrated = migrateGameStateBalance(saved);
   return {
     ...defaults,
-    ...saved,
+    ...migrated,
     player: {
       ...defaults.player,
-      ...saved.player,
-      stats: { ...defaults.player.stats, ...saved.player?.stats },
-      equipped: saved.player?.equipped ?? {},
+      ...migrated.player,
+      stats: { ...defaults.player.stats, ...migrated.player?.stats },
+      equipped: migrated.player?.equipped ?? {},
     },
-    quests: saved.quests?.length ? saved.quests : defaults.quests,
-    achievements: saved.achievements?.length ? saved.achievements : defaults.achievements,
-    followers: saved.followers?.length ? saved.followers : defaults.followers,
-    belt: Array.from({ length: 7 }, (_, i) => saved.belt?.[i] ?? null),
-    activeDays: saved.activeDays ?? 1,
-    battleStones: saved.battleStones ?? defaults.battleStones,
-    settings: { ...defaults.settings, ...saved.settings },
-    blessing: saved.blessing ?? defaults.blessing,
-    dailyReward: saved.dailyReward ?? defaults.dailyReward,
-    mailClaimed: saved.mailClaimed ?? [],
-    trialLevel: saved.trialLevel ?? 1,
-    appearance: saved.appearance === 'm2' ? saved.appearance : 'm2',
+    quests: migrated.quests?.length ? migrated.quests : defaults.quests,
+    achievements: migrated.achievements?.length ? migrated.achievements : defaults.achievements,
+    followers: migrated.followers?.length ? migrated.followers : defaults.followers,
+    belt: Array.from({ length: 7 }, (_, i) => migrated.belt?.[i] ?? null),
+    activeDays: migrated.activeDays ?? 1,
+    battleStones: migrated.battleStones ?? defaults.battleStones,
+    settings: { ...defaults.settings, ...migrated.settings },
+    blessing: migrated.blessing ?? defaults.blessing,
+    dailyReward: migrated.dailyReward ?? defaults.dailyReward,
+    mailClaimed: migrated.mailClaimed ?? [],
+    trialLevel: migrated.trialLevel ?? 1,
+    appearance: migrated.appearance === 'm2' ? migrated.appearance : 'm2',
+    dailyStonesBought: migrated.dailyStonesBought ?? 0,
+    dailyStonesDate: migrated.dailyStonesDate ?? defaults.dailyStonesDate,
   };
 }
 
@@ -56,8 +61,11 @@ export async function loadCloudSave(userId: string, displayName: string): Promis
     return { state, arenaRating: 1000, arenaWins: 0, arenaLosses: 0, vip: 0, photoUrl: null };
   }
 
+  const savedState = data.game_state as Partial<GameState> | null;
+  const balanceMigrated = !savedState || (savedState.balanceVersion ?? 0) < EQUIPMENT_BALANCE_VERSION;
   return {
-    state: mergeWithDefaults(data.game_state as Partial<GameState> | null, data.display_name || displayName),
+    state: mergeWithDefaults(savedState, data.display_name || displayName),
+    balanceMigrated,
     arenaRating: data.arena_rating,
     arenaWins: data.arena_wins,
     arenaLosses: data.arena_losses,

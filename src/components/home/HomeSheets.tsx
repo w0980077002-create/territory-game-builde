@@ -4,6 +4,17 @@ import { useGame } from '@/game/actions';
 import { DAILY_REWARDS, MAIL, claimDaily, claimMail, dailyStatus, type Reward } from '@/game/progression';
 import { Modal } from '@/components/ui/Modal';
 import { Currency } from '@/components/ui/Currency';
+import { useLive, claimMailGrant, type GrantPayload } from '@/game/live';
+import { generateShopItems } from '@/game/engine';
+import { useRef, useState } from 'react';
+
+function grantItemsText(p: GrantPayload) {
+  const shop = generateShopItems(1);
+  return Object.entries(p.items ?? {})
+    .filter(([, q]) => q > 0)
+    .map(([id, q]) => `${shop.find((s) => s.id === id)?.name ?? id} x${q}`)
+    .join(', ');
+}
 
 export type SaveStatus = 'saved' | 'saving' | 'error';
 
@@ -63,6 +74,15 @@ export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (
 
 export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t: string) => void }) {
   const state = useStore(useGame);
+  const { mail: adminMail } = useStore(useLive);
+  const [claiming, setClaiming] = useState<string | null>(null);
+
+  const claimAdmin = async (id: string) => {
+    setClaiming(id);
+    const ok = await claimMailGrant(id);
+    setClaiming(null);
+    notify(ok ? 'Награда из письма получена' : 'Не удалось забрать награду');
+  };
 
   const claim = (id: string) => {
     const next = claimMail(useGame.get(), id);
@@ -74,6 +94,28 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
   return (
     <Modal title="Почта" icon="/ic-mail.webp" onClose={onClose}>
       <div className="space-y-3">
+        {adminMail.map((m) => {
+          const extra = grantItemsText(m.payload);
+          const reward = { gold: Math.max(0, m.payload.gold ?? 0), gems: Math.max(0, m.payload.gems ?? 0), redGems: Math.max(0, m.payload.redGems ?? 0), stones: Math.max(0, m.payload.stones ?? 0) };
+          return (
+            <div key={m.id} className="rounded-2xl border border-sky-400/40 bg-sky-500/5 p-3 shadow-[0_0_12px_rgba(56,189,248,0.15)]">
+              <div className="text-[11px] text-sky-300/90">Администрация</div>
+              <div className="text-sm font-bold text-white mb-1">{m.subject}</div>
+              <p className="text-xs text-gray-300 leading-relaxed mb-2.5 whitespace-pre-line break-words">{m.body}</p>
+              {extra && <p className="text-[11px] text-amber-200 mb-2">{extra}</p>}
+              <div className="flex items-center justify-between gap-2">
+                <RewardLine reward={reward} />
+                <button
+                  onClick={() => claimAdmin(m.id)}
+                  disabled={claiming === m.id}
+                  className="shrink-0 h-8 px-3 rounded-lg text-xs font-bold bg-sky-400 text-black disabled:opacity-50 transition-colors"
+                >
+                  {claiming === m.id ? '...' : 'Забрать награду'}
+                </button>
+              </div>
+            </div>
+          );
+        })}
         {MAIL.map((l) => {
           const claimed = state.mailClaimed.includes(l.id);
           return (
@@ -116,13 +158,21 @@ function Toggle({ label, hint, on, onChange }: { label: string; hint: string; on
 export function SettingsSheet({ onClose, saveStatus }: { onClose: () => void; saveStatus: SaveStatus }) {
   const { settings } = useStore(useGame);
   const update = (patch: Partial<typeof settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
+  const taps = useRef({ count: 0, last: 0 });
+
+  const secretTap = () => {
+    const now = Date.now();
+    taps.current.count = now - taps.current.last < 600 ? taps.current.count + 1 : 1;
+    taps.current.last = now;
+    if (taps.current.count >= 5) window.location.href = '/admin';
+  };
 
   return (
     <Modal title="Настройки" icon="/ic-settings.webp" onClose={onClose}>
       <div className="space-y-2">
         <Toggle label="Скорость боя x2" hint="Ускоряет бои в походе и Испытаниях" on={settings.speed === 2} onChange={() => update({ speed: settings.speed === 2 ? 1 : 2 })} />
         <Toggle label="Автобой" hint="Герой сам выбирает зоны удара и защиты" on={settings.auto} onChange={() => update({ auto: !settings.auto })} />
-        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm">
+        <div onClick={secretTap} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm select-none">
           {saveStatus === 'error' ? <CloudOff className="w-4 h-4 text-red-400" /> : <Cloud className={`w-4 h-4 ${saveStatus === 'saving' ? 'text-gray-400 animate-pulse' : 'text-emerald-400'}`} />}
           <span className="text-gray-300">
             {saveStatus === 'error' ? 'Не удалось сохранить, повторим позже' : saveStatus === 'saving' ? 'Сохраняем прогресс...' : 'Прогресс сохранён'}

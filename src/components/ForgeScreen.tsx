@@ -7,6 +7,7 @@ import { hapticNotify } from '@/game/telegram';
 import { SLOT_ART } from '@/game/art';
 import { ItemArt } from './ui/ItemArt';
 import type { Equipment, InventoryItem } from '@/game/types';
+import { upgradeEquipment } from '@/game/equipmentBalance';
 
 const UPGRADE_COST = (level: number) => ({
   gold: 50 + level * 30,
@@ -26,6 +27,14 @@ export function ForgeScreen() {
   const tryUpgrade = (item: InventoryItem) => {
     if (!item.equipment) return;
     const eq = item.equipment;
+
+    if (eq.level >= state.player.level) {
+      setError('Достигнут максимальный уровень для вашего текущего лвл');
+      hapticNotify('error');
+      setTimeout(() => setError(null), 2000);
+      return;
+    }
+
     const cost = UPGRADE_COST(eq.level);
 
     if (state.player.gold < cost.gold) {
@@ -50,13 +59,7 @@ export function ForgeScreen() {
       const isSuccess = Math.random() < successRate;
 
       if (isSuccess) {
-        const upgradedEq: Equipment = {
-          ...eq,
-          level: eq.level + 1,
-          attack: eq.attack ? eq.attack + Math.ceil(eq.attack * 0.15) : undefined,
-          defense: eq.defense ? eq.defense + Math.ceil(eq.defense * 0.15) : undefined,
-          hp: eq.hp ? eq.hp + Math.ceil(eq.hp * 0.15) : undefined,
-        };
+        const upgradedEq: Equipment = upgradeEquipment(eq);
 
         const isEquipped = item.id.startsWith('equipped_');
         const newInventory = isEquipped ? state.inventory : state.inventory.map((i) =>
@@ -254,23 +257,36 @@ export function ForgeScreen() {
             </div>
 
             {/* Upgrade cost */}
-            <div className="bg-black/20 rounded-lg p-3 mb-3">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Стоимость улучшения</p>
-              <div className="flex justify-between text-sm">
-                <span className="text-amber-400">🪙 {UPGRADE_COST(selected.equipment.level).gold}</span>
-                <span className="text-orange-400">🔩 {UPGRADE_COST(selected.equipment.level).materials}</span>
+            {selected.equipment.level >= state.player.level ? (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3 text-center">
+                <p className="text-sm text-red-300 font-medium">
+                  Достигнут максимальный уровень для вашего текущего лвл
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Повысьте уровень персонажа, чтобы улучшить предмет дальше
+                </p>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Шанс успеха: {Math.round(Math.max(50, 90 - selected.equipment.level * 5))}%
-              </p>
-            </div>
+            ) : (
+              <div className="bg-black/20 rounded-lg p-3 mb-3">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Стоимость улучшения</p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-amber-400">🪙 {UPGRADE_COST(selected.equipment.level).gold}</span>
+                  <span className="text-orange-400">🔩 {UPGRADE_COST(selected.equipment.level).materials}</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Шанс успеха: {Math.round(Math.max(50, 90 - selected.equipment.level * 5))}%
+                </p>
+              </div>
+            )}
 
             <button
               className="btn-accent w-full"
               onClick={() => tryUpgrade(selected)}
-              disabled={upgrading}
+              disabled={upgrading || selected.equipment.level >= state.player.level}
             >
-              {upgrading ? 'Кузнец работает...' : (
+              {upgrading ? 'Кузнец работает...' : selected.equipment.level >= state.player.level ? (
+                'Максимальный уровень'
+              ) : (
                 <><ArrowUp className="w-4 h-4 inline mr-1" /> Улучшить</>
               )}
             </button>

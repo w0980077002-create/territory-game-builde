@@ -1,4 +1,5 @@
 import { create } from './store';
+import { prepareNewEquipment } from './equipmentBalance';
 import type { GameState } from './types';
 import {
   createInitialGame,
@@ -95,48 +96,88 @@ export function addXp(state: GameState, amount: number): Partial<GameState> {
   };
 }
 
-export function buyItem(state: GameState, shopItem: ShopItem): GameState | null {
-  if (shopItem.priceGold && state.player.gold < shopItem.priceGold) return null;
-  if (shopItem.priceGems && state.player.gems < shopItem.priceGems) return null;
+export const DAILY_STONE_LIMIT = 25;
+
+function getStoneBoughtToday(state: GameState, now = new Date()): number {
+  const today = now.toDateString();
+  return state.dailyStonesDate === today ? state.dailyStonesBought : 0;
+}
+
+export function stonesRemainingToday(state: GameState, now = new Date()): number {
+  return Math.max(0, DAILY_STONE_LIMIT - getStoneBoughtToday(state, now));
+}
+
+export function maxStoneQty(state: GameState, item: ShopItem, now = new Date()): number {
+  const perUnit = item.amount ?? 1;
+  const remaining = stonesRemainingToday(state, now);
+  return Math.floor(remaining / perUnit);
+}
+
+export function buyItem(state: GameState, shopItem: ShopItem, qty: number = 1): GameState | null {
+  if (qty < 1) return null;
+
+  const now = new Date();
+  const today = now.toDateString();
+  const isStone = shopItem.type === 'stone';
+  const stonePerUnit = isStone ? (shopItem.amount ?? 1) : 0;
+  const stoneTotal = stonePerUnit * qty;
+  const currentBought = isStone ? getStoneBoughtToday(state, now) : 0;
+
+  if (isStone && currentBought + stoneTotal > DAILY_STONE_LIMIT) return null;
+
+  const totalGold = (shopItem.priceGold ?? 0) * qty;
+  const totalGems = (shopItem.priceGems ?? 0) * qty;
+
+  if (shopItem.priceGold && state.player.gold < totalGold) return null;
+  if (shopItem.priceGems && state.player.gems < totalGems) return null;
 
   let gold = state.player.gold;
   let gems = state.player.gems;
   let inventory = [...state.inventory];
   let forgeMaterials = state.forgeMaterials;
   let battleStones = state.battleStones;
+  let dailyStonesBought = state.dailyStonesBought;
+  let dailyStonesDate = state.dailyStonesDate;
 
-  if (shopItem.priceGold) gold -= shopItem.priceGold;
-  if (shopItem.priceGems) gems -= shopItem.priceGems;
+  if (isStone) {
+    dailyStonesDate = today;
+    dailyStonesBought = currentBought + stoneTotal;
+  }
+
+  if (shopItem.priceGold) gold -= totalGold;
+  if (shopItem.priceGems) gems -= totalGems;
 
   if (shopItem.type === 'gem_pack') {
-    gems += shopItem.amount ?? 0;
+    gems += (shopItem.amount ?? 0) * qty;
   } else if (shopItem.type === 'stone') {
-    battleStones += shopItem.amount ?? 1;
+    battleStones += (shopItem.amount ?? 1) * qty;
   } else if (shopItem.type === 'material') {
-    forgeMaterials += 1;
+    forgeMaterials += qty;
   } else if (shopItem.type === 'equipment') {
     if (!shopItem.equipment) return null;
-    const newEquipment: Equipment = {
-      ...shopItem.equipment,
-      id: `inv_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-    };
-    inventory.push({
-      id: newEquipment.id,
-      name: shopItem.name,
-      icon: shopItem.icon,
-      type: 'equipment',
-      rarity: shopItem.rarity,
-      qty: 1,
-      description: `Уровень ${newEquipment.level} · ${newEquipment.rarity}`,
-      equipment: newEquipment,
-    });
+    for (let i = 0; i < qty; i++) {
+      const newEquipment: Equipment = prepareNewEquipment({
+        ...shopItem.equipment,
+        id: `inv_${Date.now()}_${Math.random().toString(36).slice(2)}_${i}`,
+      });
+      inventory.push({
+        id: newEquipment.id,
+        name: shopItem.name,
+        icon: shopItem.icon,
+        type: 'equipment',
+        rarity: shopItem.rarity,
+        qty: 1,
+        description: `Уровень ${newEquipment.level} · ${newEquipment.rarity}`,
+        equipment: newEquipment,
+      });
+    }
   } else {
     const existing = inventory.find(
       (i) => i.name === shopItem.name && i.type !== 'equipment',
     );
     if (existing) {
       inventory = inventory.map((i) =>
-        i.id === existing.id ? { ...i, qty: i.qty + 1 } : i,
+        i.id === existing.id ? { ...i, qty: i.qty + qty } : i,
       );
     } else {
       const newItem: InventoryItem = {
@@ -145,7 +186,7 @@ export function buyItem(state: GameState, shopItem: ShopItem): GameState | null 
         icon: shopItem.icon,
         type: shopItem.type as InventoryItem['type'],
         rarity: shopItem.rarity,
-        qty: 1,
+        qty,
         description: shopItem.description,
         effect: shopItem.effect,
         arenaEffect: shopItem.arenaEffect,
@@ -160,8 +201,10 @@ export function buyItem(state: GameState, shopItem: ShopItem): GameState | null 
     inventory,
     forgeMaterials,
     battleStones,
+    dailyStonesBought,
+    dailyStonesDate,
   };
-  return shopItem.priceGold ? updateProgress(next, 'gold_spent', shopItem.priceGold) : next;
+  return shopItem.priceGold ? updateProgress(next, 'gold_spent', totalGold) : next;
 }
 
 export function equipItem(state: GameState, item: InventoryItem): GameState {

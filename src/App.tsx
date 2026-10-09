@@ -13,11 +13,17 @@ import { ProfileScreen } from '@/components/ProfileScreen';
 import { ArenaScreen } from '@/components/ArenaScreen';
 import { ForgeScreen } from '@/components/ForgeScreen';
 import { LeaderboardScreen } from '@/components/LeaderboardScreen';
-import { ChevronLeft, Shield } from 'lucide-react';
+import { GamesScreen } from '@/components/GamesScreen';
+import { MonopolyScreen } from '@/components/MonopolyScreen';
+import { MaintenanceScreen, BannedScreen } from '@/components/ServiceScreens';
+import { useLive, useLiveSync, fetchMaintenance } from '@/game/live';
+import { useStore } from '@/game/store';
+import { isVerifiedAdmin } from '@/admin/api';
+import { ChevronLeft, Shield, Wrench } from 'lucide-react';
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
-type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests';
-type Screen = Exclude<NavId, 'games' | 'clan'> | SubScreen;
+type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'monopoly';
+type Screen = Exclude<NavId, 'clan'> | SubScreen;
 
 const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
   { id: 'city', label: 'Город', icon: '/nav-city.webp' },
@@ -25,11 +31,11 @@ const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
   { id: 'hero', label: 'Герой', icon: '/nav-hero.webp' },
   { id: 'battle', label: 'Бой', icon: '/nav-battle.webp' },
   { id: 'map', label: 'Карта', icon: '/nav-map.webp' },
-  { id: 'games', label: 'Игры', icon: '/nav-games.webp', soon: true },
+  { id: 'games', label: 'Игры', icon: '/nav-games.webp' },
   { id: 'clan', label: 'Клан', icon: '/nav-clan.webp', soon: true },
 ];
 
-const SUB_SCREENS: Record<SubScreen, { title: string; icon: string }> = {
+const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> = {
   shop: { title: 'Лавка', icon: '/ic-shop.webp' },
   forge: { title: 'Кузница', icon: '/ic-forge.webp' },
   arena: { title: 'Арена', icon: '/ic-arena.webp' },
@@ -80,7 +86,7 @@ function Welcome({ onStart, error }: { onStart: (name: string) => void; error?: 
   );
 }
 
-function GameShell({ user }: { user: AuthUser }) {
+function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [screen, setScreen] = useState<Screen>('city');
   const [battleView, setBattleView] = useState<BattleView>('campaign');
   const [autoStart, setAutoStart] = useState(false);
@@ -90,6 +96,8 @@ function GameShell({ user }: { user: AuthUser }) {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
+  const live = useStore(useLive);
+  useLiveSync(loaded);
 
   useEffect(() => {
     if (!toast) return;
@@ -102,9 +110,17 @@ function GameShell({ user }: { user: AuthUser }) {
   useEffect(() => {
     let cancelled = false;
     loadCloudSave(user.id, user.displayName)
-      .then((profile) => {
+      .then(async (profile) => {
         if (cancelled) return;
-        useGame.set(applyTimeEffects(profile.state));
+        const loadedState = applyTimeEffects(profile.state);
+        useGame.set(loadedState);
+        if (profile.balanceMigrated) {
+          const migratedSaveOk = await saveCloudSave(user.id, loadedState);
+          if (!migratedSaveOk) {
+            console.error('Equipment balance migration save failed; scheduling a retry.');
+            window.setTimeout(() => { void saveCloudSave(user.id, useGame.get()); }, 5000);
+          }
+        }
         useArena.set({ rating: profile.arenaRating, wins: profile.arenaWins, losses: profile.arenaLosses });
         useAccount.set({ vip: profile.vip });
         setLoaded(true);
@@ -140,20 +156,27 @@ function GameShell({ user }: { user: AuthUser }) {
     };
   }, [loaded, user.id]);
 
+  if (live.banned) return <BannedScreen />;
+  if (live.maintenance && !isAdmin) return <MaintenanceScreen />;
   if (loadError) return <Splash text={loadError} />;
   if (!loaded) return <Splash text="Загрузка героя..." />;
 
   const sub = SUB_SCREENS[screen as SubScreen];
-  const navActive: NavId = sub ? 'city' : (screen as NavId);
+  const navActive: NavId = sub ? 'city' : screen === 'monopoly' ? 'games' : (screen as NavId);
 
   const goNav = (id: NavId) => {
-    if (id === 'games' || id === 'clan') return notify(`${id === 'games' ? 'Мини-игры' : 'Кланы'} откроются в следующих обновлениях`);
+    if (id === 'clan') return notify('Кланы откроются в следующих обновлениях');
     if (id === 'battle') setBattleView('campaign');
     setScreen(id);
   };
 
   return (
     <div className="h-[100dvh] flex flex-col max-w-md mx-auto overflow-hidden relative" style={{ background: 'var(--color-bg)' }}>
+      {live.maintenance && (
+        <div className="shrink-0 z-40 flex items-center justify-center gap-1.5 bg-amber-500 py-1 text-[11px] font-bold text-black">
+          <Wrench className="w-3 h-3" /> Техработы включены — вы вошли как админ
+        </div>
+      )}
       {sub && (
         <header className="shrink-0 z-30 h-12 px-2 flex items-center gap-2 border-b border-amber-500/20 bg-[#0c1117]/95">
           <button disabled={battleLocked} onClick={() => setScreen('city')} className="h-9 pl-1.5 pr-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 text-sm font-semibold text-amber-100 bg-white/5 border border-white/10 active:scale-95 transition-transform">
@@ -164,7 +187,7 @@ function GameShell({ user }: { user: AuthUser }) {
         </header>
       )}
 
-      <main className={`flex-1 min-h-0 ${screen === 'city' ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden scrollbar-hide px-3 py-3'}`}>
+      <main className={`flex-1 min-h-0 ${screen === 'city' || screen === 'monopoly' ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden scrollbar-hide px-3 py-3'}`}>
         {screen === 'city' && (
           <HomeScreen
             user={user}
@@ -200,6 +223,10 @@ function GameShell({ user }: { user: AuthUser }) {
         {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} />}
         {screen === 'leaderboard' && <LeaderboardScreen user={user} />}
         {screen === 'quests' && <QuestsScreen />}
+        {screen === 'games' && (
+          <GamesScreen onPlay={(gameId) => gameId === 'monopoly' && setScreen('monopoly')} />
+        )}
+        {screen === 'monopoly' && <MonopolyScreen onBack={() => setScreen('games')} />}
       </main>
 
       <nav className="shrink-0 z-30 border-t border-amber-500/25 bg-gradient-to-b from-[#161b24] to-[#0a0d12] px-1 pt-1 pb-[max(4px,env(safe-area-inset-bottom))]">
@@ -228,7 +255,7 @@ function GameShell({ user }: { user: AuthUser }) {
                   className={`object-contain transition-transform duration-200 ${center ? 'w-10 h-10' : 'w-8 h-8'} ${active ? 'scale-110' : ''} ${t.soon ? 'opacity-60 grayscale-[40%]' : ''}`}
                 />
                 <span className={`text-[9px] tracking-tight font-bold leading-none truncate max-w-full ${active || center ? 'text-white' : 'text-gray-400'}`}>{t.label}</span>
-                {t.soon && <span className="absolute top-0.5 right-0.5 rounded bg-slate-700 px-0.5 text-[7px] font-bold uppercase text-gray-300">скоро</span>}
+{t.id === 'clan' && <span className="absolute top-0.5 right-0.5 rounded bg-slate-700 px-0.5 text-[7px] font-bold uppercase text-gray-300">скоро</span>}
               </button>
             );
           })}
@@ -246,10 +273,18 @@ function GameShell({ user }: { user: AuthUser }) {
 
 function App() {
   const { authState, startAsGuest } = useAuth();
+  const { maintenance } = useStore(useLive);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
-  if (authState.status === 'loading') return <Splash text="Загрузка..." />;
+  useEffect(() => {
+    isVerifiedAdmin().then(setIsAdmin);
+    fetchMaintenance().then((on) => useLive.set((s) => ({ ...s, maintenance: on })));
+  }, []);
+
+  if (authState.status === 'loading' || isAdmin === null) return <Splash text="Загрузка..." />;
+  if (maintenance && !isAdmin) return <MaintenanceScreen />;
   if (authState.status === 'guest') return <Welcome onStart={startAsGuest} error={authState.error} />;
-  return <GameShell key={authState.user.id} user={authState.user} />;
+  return <GameShell key={authState.user.id} user={authState.user} isAdmin={isAdmin} />;
 }
 
 export default App;

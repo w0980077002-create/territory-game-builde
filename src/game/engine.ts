@@ -1,3 +1,5 @@
+import { EQUIPMENT_BALANCE_VERSION, prepareNewEquipment } from './equipmentBalance';
+import { createBossLootEquipment, SHOP_EQUIPMENT_ITEMS } from './equipmentCatalog';
 import type {
   GameState,
   Chapter,
@@ -35,6 +37,7 @@ export function xpForLevel(level: number): number {
 
 export function createInitialGame(): GameState {
   return {
+    balanceVersion: EQUIPMENT_BALANCE_VERSION,
     player: {
       name: 'Герой',
       level: 1,
@@ -96,6 +99,8 @@ export function createInitialGame(): GameState {
     mailClaimed: [],
     trialLevel: 1,
     appearance: 'm2',
+    dailyStonesBought: 0,
+    dailyStonesDate: new Date().toDateString(),
     quests: createInitialQuests(),
     achievements: createInitialAchievements(),
   };
@@ -157,7 +162,7 @@ export function chapterTitle(num: number): string {
 }
 
 export function generateChapter(num: number): Chapter {
-  const baseHp = 60 + num * 20;
+  const baseHp = 75 + num * 25;
   const baseAtk = 12 + num * 4;
   const baseDef = 3 + num * 2;
 
@@ -200,7 +205,7 @@ export function generateChapter(num: number): Chapter {
 }
 
 export function generateTrial(num: number): Enemy {
-  const baseHp = 60 + num * 20;
+  const baseHp = 75 + num * 25;
   const baseAtk = 12 + num * 4;
   const baseDef = 3 + num * 2;
   return makeEnemy(
@@ -217,20 +222,13 @@ export function generateTrial(num: number): Enemy {
 }
 
 function generateLoot(chapter: number): InventoryItem {
-  const rarities: Array<'common' | 'rare' | 'epic' | 'legendary'> = ['common', 'rare', 'epic', 'legendary'];
-  const rarity = rarities[Math.min(Math.floor(chapter / 10), 3)];
   const isWeapon = Math.random() > 0.5;
-  const eq: Equipment = {
-    id: `loot_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-    slot: isWeapon ? 'weapon' : 'armor',
-    name: isWeapon ? 'Клинок победителя' : 'Доспех воина',
-    icon: isWeapon ? '⚔️' : '🛡️',
-    rarity,
-    attack: isWeapon ? 10 + chapter * 3 : 0,
-    defense: !isWeapon ? 5 + chapter * 2 : 0,
-    hp: !isWeapon ? 20 + chapter * 5 : 0,
-    level: chapter,
-  };
+  const eq: Equipment = prepareNewEquipment(createBossLootEquipment(
+    chapter,
+    isWeapon,
+    `loot_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+  ));
+  const rarity = eq.rarity;
   return {
     id: eq.id,
     name: eq.name,
@@ -375,203 +373,8 @@ let shopEquipmentCache: ShopItem[] | null = null;
 function generateShopEquipment(): ShopItem[] {
   if (shopEquipmentCache) return shopEquipmentCache;
 
-  const items: ShopItem[] = [
-    {
-      id: 'shop_weapon_warrior',
-      name: 'Меч воина',
-      icon: '⚔️',
-      type: 'equipment',
-      rarity: 'common',
-      priceGold: 100,
-      description: 'Надёжный стальной меч. +8 к атаке.',
-      equipment: {
-        id: 'shop_weapon_warrior_eq',
-        slot: 'weapon',
-        name: 'Меч воина',
-        icon: '⚔️',
-        rarity: 'common',
-        attack: 8,
-        level: 1,
-      },
-    },
-    {
-      id: 'shop_weapon_knight',
-      name: 'Клинок рыцаря',
-      icon: '🗡️',
-      type: 'equipment',
-      rarity: 'rare',
-      priceGold: 300,
-      description: 'Острый клинок. +18 к атаке, +3% крит.',
-      equipment: {
-        id: 'shop_weapon_knight_eq',
-        slot: 'weapon',
-        name: 'Клинок рыцаря',
-        icon: '🗡️',
-        rarity: 'rare',
-        attack: 18,
-        critChance: 3,
-        level: 3,
-      },
-    },
-    {
-      id: 'shop_weapon_hero',
-      name: 'Героический меч',
-      icon: '🔱',
-      type: 'equipment',
-      rarity: 'epic',
-      priceGems: 30,
-      priceGold: 0,
-      description: 'Легендарное оружие. +35 к атаке, +8% крит.',
-      equipment: {
-        id: 'shop_weapon_hero_eq',
-        slot: 'weapon',
-        name: 'Героический меч',
-        icon: '🔱',
-        rarity: 'epic',
-        attack: 35,
-        critChance: 8,
-        level: 5,
-      },
-    },
-    {
-      id: 'shop_armor_leather',
-      name: 'Кожаная броня',
-      icon: '🦺',
-      type: 'equipment',
-      rarity: 'common',
-      priceGold: 100,
-      description: 'Базовая защита. +5 к защите, +30 HP.',
-      equipment: {
-        id: 'shop_armor_leather_eq',
-        slot: 'armor',
-        name: 'Кожаная броня',
-        icon: '🦺',
-        rarity: 'common',
-        defense: 5,
-        hp: 30,
-        level: 1,
-      },
-    },
-    {
-      id: 'shop_armor_plate',
-      name: 'Латные доспехи',
-      icon: '🛡️',
-      type: 'equipment',
-      rarity: 'rare',
-      priceGold: 350,
-      description: 'Тяжёлая броня. +12 к защите, +80 HP.',
-      equipment: {
-        id: 'shop_armor_plate_eq',
-        slot: 'armor',
-        name: 'Латные доспехи',
-        icon: '🛡️',
-        rarity: 'rare',
-        defense: 12,
-        hp: 80,
-        level: 3,
-      },
-    },
-    {
-      id: 'shop_helmet_iron',
-      name: 'Железный шлем',
-      icon: '⛑️',
-      type: 'equipment',
-      rarity: 'common',
-      priceGold: 80,
-      description: 'Защита головы. +3 к защите, +20 HP.',
-      equipment: {
-        id: 'shop_helmet_iron_eq',
-        slot: 'helmet',
-        name: 'Железный шлем',
-        icon: '⛑️',
-        rarity: 'common',
-        defense: 3,
-        hp: 20,
-        level: 1,
-      },
-    },
-    {
-      id: 'shop_boots_swift',
-      name: 'Сапоги скорости',
-      icon: '🥾',
-      type: 'equipment',
-      rarity: 'rare',
-      priceGold: 200,
-      description: 'Лёгкие сапоги. +4 к защите, +40 HP, +2% крит.',
-      equipment: {
-        id: 'shop_boots_swift_eq',
-        slot: 'boots',
-        name: 'Сапоги скорости',
-        icon: '🥾',
-        rarity: 'rare',
-        defense: 4,
-        hp: 40,
-        critChance: 2,
-        level: 2,
-      },
-    },
-    {
-      id: 'shop_ring_power',
-      name: 'Кольцо силы',
-      icon: '💍',
-      type: 'equipment',
-      rarity: 'epic',
-      priceGems: 50,
-      priceGold: 0,
-      description: 'Магическое кольцо. +15 к атаке, +5% крит.',
-      equipment: {
-        id: 'shop_ring_power_eq',
-        slot: 'ring',
-        name: 'Кольцо силы',
-        icon: '💍',
-        rarity: 'epic',
-        attack: 15,
-        critChance: 5,
-        level: 5,
-      },
-    },
-    {
-      id: 'shop_shield_oak',
-      name: 'Дубовый щит',
-      icon: '🛡️',
-      type: 'equipment',
-      rarity: 'common',
-      priceGold: 120,
-      description: 'Окованный железом щит. +5 к защите, +25 HP.',
-      equipment: {
-        id: 'shop_shield_oak_eq',
-        slot: 'shield',
-        name: 'Дубовый щит',
-        icon: '🛡️',
-        rarity: 'common',
-        defense: 5,
-        hp: 25,
-        level: 2,
-      },
-    },
-    {
-      id: 'shop_amulet_raven',
-      name: 'Амулет ворона',
-      icon: '📿',
-      type: 'equipment',
-      rarity: 'rare',
-      priceGold: 260,
-      description: 'Оберег из кости ворона. +6 к атаке, +3% крит.',
-      equipment: {
-        id: 'shop_amulet_raven_eq',
-        slot: 'amulet',
-        name: 'Амулет ворона',
-        icon: '📿',
-        rarity: 'rare',
-        attack: 6,
-        critChance: 3,
-        level: 3,
-      },
-    },
-  ];
-
-  shopEquipmentCache = items;
-  return items;
+  shopEquipmentCache = SHOP_EQUIPMENT_ITEMS;
+  return shopEquipmentCache;
 }
 
 export function generateShopItems(chapter: number): ShopItem[] {

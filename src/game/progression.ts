@@ -1,6 +1,7 @@
 import type { GameState } from './types';
 import { grantRewards, updateProgress } from './actions';
 import type { Enemy } from './types';
+import { useLive } from './live';
 
 export const dayKey = (now = Date.now()) => new Date(now).toDateString();
 
@@ -97,7 +98,8 @@ export function claimBlessing(state: GameState, now = Date.now()): GameState | n
 }
 
 export function blessedGold(state: GameState, gold: number) {
-  return state.blessing.charges > 0 ? Math.round(gold * (1 + BLESSING_BONUS)) : gold;
+  const boosted = useLive.get().goldX2 ? gold * 2 : gold;
+  return state.blessing.charges > 0 ? Math.round(boosted * (1 + BLESSING_BONUS)) : boosted;
 }
 
 export function consumeBlessing(state: GameState): GameState {

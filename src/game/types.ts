@@ -9,6 +9,13 @@ export interface PlayerStats {
 
 export type ArenaEffect = 'time' | 'adrenaline';
 
+export interface EquipmentBaseStats {
+  attack?: number;
+  defense?: number;
+  hp?: number;
+  critChance?: number;
+}
+
 export interface Equipment {
   id: string;
   slot: 'helmet' | 'amulet' | 'armor' | 'weapon' | 'shield' | 'ring' | 'boots';
@@ -20,6 +27,12 @@ export interface Equipment {
   hp?: number;
   critChance?: number;
   level: number;
+  /** Original item level before forge upgrades; optional for legacy saves. */
+  baseLevel?: number;
+  /** Immutable stats before forge upgrades; optional for legacy saves. */
+  baseStats?: EquipmentBaseStats;
+  /** Number of successful forge upgrades. */
+  upgradeCount?: number;
 }
 
 export interface InventoryItem {
@@ -120,6 +133,8 @@ export interface ShopItem {
 }
 
 export interface GameState {
+  /** Version of save-data migrations already applied. */
+  balanceVersion?: number;
   player: {
     name: string;
     level: number;
@@ -154,4 +169,6 @@ export interface GameState {
   mailClaimed: string[];
   trialLevel: number;
   appearance: string;
+  dailyStonesBought: number;
+  dailyStonesDate: string;
 }
