@@ -14,7 +14,7 @@ import { BeltCells } from '@/components/ui/BeltCells';
 import { Currency, formatAmount } from '@/components/ui/Currency';
 import { DailySheet, MailSheet, SettingsSheet, StonesSheet, type SaveStatus } from '@/components/home/HomeSheets';
 
-export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions';
+export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction';
 
 interface Props {
   user: AuthUser;
@@ -169,6 +169,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
       </div>
       <div className="absolute z-10 right-1.5 top-[calc(max(8px,env(safe-area-inset-top))+90px)] bottom-[200px] w-[44px] flex flex-col gap-1">
         <SideButton icon="/ic-shop.webp" label="Лавка" onClick={() => onOpen('shop')} />
+        <SideButton icon="/ic-shop.webp" label="Аукцион" onClick={() => onOpen('auction')} />
         <SideButton icon="/ic-forge.webp" label="Кузница" onClick={() => onOpen('forge')} />
         <SideButton icon="/ic-forge.webp" label="Профессии" onClick={() => onOpen('professions')} />
         <SideButton icon="/ic-trials.webp" label="Испытания" onClick={() => onBattle('trial')} />

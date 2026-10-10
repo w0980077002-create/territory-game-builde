@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "test:balance": "node scripts/check-equipment-balance.mjs",
-    "test:professions": "node scripts/check-professions.mjs"
+    "test:professions": "node scripts/check-professions.mjs",
+    "test:feature-separation": "node scripts/check-feature-separation.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

@@ -4,6 +4,8 @@ import { Lock, Sparkles, Crown, Check } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { APPEARANCE_PRESETS, MALE_PRESETS, FEMALE_PRESETS, getPlayableAppearance, type AppearancePreset } from '@/game/appearance';
+import type { InventoryItem, ProfessionProgress } from '@/game/types';
+import { RESOURCE_DEFINITIONS, type ResourceId } from '@/game/professions';
 
 type RegionId = 'forest' | 'mountain' | 'herbs' | 'hunting' | 'rare';
 type LocationId = RegionId | 'chamber';
@@ -13,10 +15,9 @@ interface Region {
   name: string;
   icon: string;
   desc: string;
-  resources: { name: string; icon: string }[];
+  resources: { id: ResourceId; name: string; icon: string }[];
   accent: string;
   glow: string;
-  profession: string;
 }
 
 const REGIONS: Region[] = [
@@ -26,13 +27,11 @@ const REGIONS: Region[] = [
     icon: '/map-forest.webp',
     desc: 'Густые чащи скрывают древнюю древесину и дикорастущие корни.',
     resources: [
-      { name: 'Древесина', icon: '🪵' },
-      { name: 'Корни', icon: '🌿' },
-      { name: 'Янтарь', icon: '🟡' },
+      { id: 'gather-wood', name: 'Древесина', icon: '🪵' },
+      { id: 'gather-herb', name: 'Лекарственные травы', icon: '🌿' },
     ],
     accent: 'from-emerald-700/40 to-emerald-950/60',
     glow: 'emerald',
-    profession: 'Лесоруб',
   },
   {
     id: 'mountain',
@@ -40,13 +39,11 @@ const REGIONS: Region[] = [
     icon: '/map-mountain.webp',
     desc: 'Холодные пики хранят руду, камень и драгоценные минералы.',
     resources: [
-      { name: 'Железная руда', icon: '⛏️' },
-      { name: 'Медь', icon: '🟠' },
-      { name: 'Серебро', icon: '⚪' },
+      { id: 'gather-ore', name: 'Железная руда', icon: '⛏️' },
+      { id: 'gather-crystal', name: 'Магический кристалл', icon: '💎' },
     ],
     accent: 'from-stone-600/40 to-stone-900/60',
     glow: 'stone',
-    profession: 'Шахтёр',
   },
   {
     id: 'herbs',
@@ -54,13 +51,10 @@ const REGIONS: Region[] = [
     icon: '/map-herbs.webp',
     desc: 'Туманные луга с лечебными травами и алхимическими ингредиентами.',
     resources: [
-      { name: 'Целебные травы', icon: '🍃' },
-      { name: 'Грибы', icon: '🍄' },
-      { name: 'Коренья', icon: '🫚' },
+      { id: 'gather-herb', name: 'Лекарственные травы', icon: '🌿' },
     ],
     accent: 'from-lime-700/40 to-green-950/60',
     glow: 'lime',
-    profession: 'Травник',
   },
   {
     id: 'hunting',
@@ -68,13 +62,10 @@ const REGIONS: Region[] = [
     icon: '/map-hunting.webp',
     desc: 'Дикие земли, где добывают шкуры, кости и охотничьи трофеи.',
     resources: [
-      { name: 'Шкуры', icon: '🐾' },
-      { name: 'Кости', icon: '🦴' },
-      { name: 'Клыки', icon: '🐺' },
+      { id: 'gather-hide', name: 'Шкура', icon: '🐾' },
     ],
     accent: 'from-amber-800/40 to-amber-950/60',
     glow: 'amber',
-    profession: 'Охотник',
   },
   {
     id: 'rare',
@@ -82,13 +73,10 @@ const REGIONS: Region[] = [
     icon: '/map-rare.webp',
     desc: 'Опасные глубины с редкими кристаллами и древними артефактами.',
     resources: [
-      { name: 'Кристаллы', icon: '💎' },
-      { name: 'Мифрил', icon: '🔮' },
-      { name: 'Древние осколки', icon: '📜' },
+      { id: 'gather-crystal', name: 'Магический кристалл', icon: '💎' },
     ],
     accent: 'from-sky-700/40 to-indigo-950/60',
     glow: 'sky',
-    profession: 'Мастер',
   },
 ];
 
@@ -108,8 +96,45 @@ const GLOW_BORDER: Record<string, string> = {
   sky: 'border-sky-500/40',
 };
 
+const EMPTY_PROFESSION_PROGRESS: ProfessionProgress = {
+  active: null,
+  masteryLevel: 1,
+  masteryXp: 0,
+  lastGatherAt: 0,
+};
+
 export function MapScreen() {
   const [selected, setSelected] = useState<LocationId | null>(null);
+  const [notice, setNotice] = useState('');
+  const game = useStore(useGame);
+
+  const gatherResource = (regionResource: Region['resources'][number]) => {
+    const current = useGame.get();
+    const progress = current.professions ?? EMPTY_PROFESSION_PROGRESS;
+    const now = Date.now();
+    if (now - progress.lastGatherAt < 2500) {
+      setNotice('Нужно подождать пару секунд перед следующей добычей.');
+      return;
+    }
+    const resource = RESOURCE_DEFINITIONS.find((item) => item.id === regionResource.id);
+    if (!resource) return;
+    const found = current.inventory.find((item) => item.id === resource.id && item.type === 'material');
+    const inventory: InventoryItem[] = found
+      ? current.inventory.map((item) => item.id === resource.id && item.type === 'material'
+        ? { ...item, qty: item.qty + 1, name: resource.name, icon: resource.icon }
+        : item)
+      : [...current.inventory, {
+        id: resource.id,
+        name: resource.name,
+        icon: resource.icon,
+        type: 'material',
+        rarity: resource.rarity,
+        qty: 1,
+        description: 'Ресурс, добытый на карте мира. Подходит для ремесла и торговли.',
+      }];
+    useGame.set({ ...current, inventory, professions: { ...progress, lastGatherAt: now } });
+    setNotice(`Добыто: ${resource.name}. Ресурс добавлен в инвентарь.`);
+  };
 
   return (
     <div className="relative min-h-full animate-fade-in pb-2">
@@ -138,7 +163,7 @@ export function MapScreen() {
         <div>
           <div className="flex items-baseline justify-between px-1 mb-2">
             <h3 className="text-xs font-semibold text-amber-200/80 uppercase tracking-wider">Ресурсные земли</h3>
-            <span className="text-[11px] text-gray-500">Скоро: профессии</span>
+            <span className="text-[11px] text-emerald-300">Добыча уже доступна</span>
           </div>
           <div className="space-y-2.5">
             {REGIONS.map((r) => (
@@ -163,10 +188,8 @@ export function MapScreen() {
                   </div>
                 </div>
                 <div className="relative shrink-0 flex flex-col items-center gap-1">
-                  <span className="rounded-lg bg-black/50 border border-white/10 px-2 py-1 text-[9px] font-bold text-amber-200/90">{r.profession}</span>
-                  <span className="flex items-center gap-0.5 text-[9px] text-gray-400">
-                    <Lock className="w-3 h-3" /> Скоро
-                  </span>
+                  <span className="rounded-lg bg-black/50 border border-white/10 px-2 py-1 text-[9px] font-bold text-amber-200/90">Ресурсы</span>
+                  <span className="flex items-center gap-0.5 text-[9px] text-emerald-300">Добыча доступна</span>
                 </div>
               </button>
             ))}
@@ -209,20 +232,31 @@ export function MapScreen() {
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Добываемые ресурсы</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {r.resources.map((res) => (
-                    <div key={res.name} className="rounded-xl border border-white/10 bg-black/30 p-3 flex flex-col items-center gap-1">
-                      <span className="text-2xl">{res.icon}</span>
-                      <span className="text-[11px] font-semibold text-gray-200 text-center leading-tight">{res.name}</span>
-                    </div>
-                  ))}
+                  {r.resources.map((res) => {
+                    const count = game.inventory.find((item) => item.id === res.id && item.type === 'material')?.qty ?? 0;
+                    return (
+                      <button
+                        key={res.id}
+                        type="button"
+                        onClick={() => gatherResource(res)}
+                        className="rounded-xl border border-emerald-400/20 bg-black/30 p-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+                      >
+                        <span className="text-2xl">{res.icon}</span>
+                        <span className="text-[11px] font-semibold text-gray-200 text-center leading-tight">{res.name}</span>
+                        <span className="text-[10px] text-gray-400">В сумке: {count}</span>
+                        <span className="mt-1 rounded-lg bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-white">Собрать</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              <div className="rounded-xl border border-amber-500/20 bg-amber-950/20 p-3 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-                <p className="text-xs text-amber-200/80">
-                  Регион откроется с системой профессий. Ресурсы будут нужны для крафта и улучшений.
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-3 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-300 shrink-0" />
+                <p className="text-xs text-emerald-100/80">
+                  Добыча доступна каждому игроку — профессия не нужна. Между попытками общий перерыв 2,5 секунды; ресурсы сразу сохраняются в инвентаре.
                 </p>
               </div>
+              {notice && <p role="status" className="rounded-lg border border-sky-400/20 bg-sky-500/10 p-2 text-xs text-sky-100">{notice}</p>}
             </div>
           </Modal>
         );

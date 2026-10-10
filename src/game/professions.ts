@@ -19,6 +19,7 @@ export const RESOURCE_DEFINITIONS = [
   { id: 'gather-herb', name: 'Лекарственная трава', icon: '🌿', rarity: 'common' as const, value: 7 },
   { id: 'gather-wood', name: 'Древесина', icon: '🪵', rarity: 'common' as const, value: 6 },
   { id: 'gather-crystal', name: 'Магический кристалл', icon: '💎', rarity: 'rare' as const, value: 20 },
+  { id: 'gather-hide', name: 'Шкура', icon: '🐾', rarity: 'common' as const, value: 9 },
 ] as const;
 
 export type ResourceId = typeof RESOURCE_DEFINITIONS[number]['id'];
@@ -51,7 +52,7 @@ const gear = (slot: Equipment['slot'], rarity: Equipment['rarity'], level: numbe
 export const PROFESSION_RECIPES: CraftRecipe[] = [
   // Smith: combat gear deliberately matches existing shop gear stat budgets.
   { id: 'smith_apprentice_blade', profession: 'smith', name: 'Меч подмастерья', icon: '⚔️', description: 'Надёжный клинок для начинающего героя.', requiredLevel: 1, masteryXp: 30, ingredients: [{ id: 'gather-ore', qty: 5 }, { id: 'gather-wood', qty: 2 }], output: { name: 'Меч подмастерья', icon: '⚔️', type: 'equipment', rarity: 'common', description: 'Кованый меч. +8 к атаке.', equipment: { ...gear('weapon', 'common', 1, { attack: 8 }), name: 'Меч подмастерья', icon: '⚔️' } } },
-  { id: 'smith_leather_armor', profession: 'smith', name: 'Кожаная броня', icon: '🦺', description: 'Базовая броня для путешествий.', requiredLevel: 1, masteryXp: 35, ingredients: [{ id: 'gather-ore', qty: 3 }, { id: 'gather-wood', qty: 5 }], output: { name: 'Кожаная броня', icon: '🦺', type: 'equipment', rarity: 'common', description: 'Защита +5, здоровье +30.', equipment: { ...gear('armor', 'common', 1, { defense: 5, hp: 30 }), name: 'Кожаная броня', icon: '🦺' } } },
+  { id: 'smith_leather_armor', profession: 'smith', name: 'Кожаная броня', icon: '🦺', description: 'Базовая броня для путешествий.', requiredLevel: 1, masteryXp: 35, ingredients: [{ id: 'gather-ore', qty: 3 }, { id: 'gather-hide', qty: 2 }], output: { name: 'Кожаная броня', icon: '🦺', type: 'equipment', rarity: 'common', description: 'Защита +5, здоровье +30.', equipment: { ...gear('armor', 'common', 1, { defense: 5, hp: 30 }), name: 'Кожаная броня', icon: '🦺' } } },
   { id: 'smith_knight_blade', profession: 'smith', name: 'Клинок рыцаря', icon: '🗡️', description: 'Редкий клинок с усиленным балансом.', requiredLevel: 50, masteryXp: 120, ingredients: [{ id: 'gather-ore', qty: 20 }, { id: 'gather-wood', qty: 10 }, { id: 'gather-crystal', qty: 3 }], output: { name: 'Клинок рыцаря', icon: '🗡️', type: 'equipment', rarity: 'rare', description: 'Атака +18, шанс критического удара +3%.', equipment: { ...gear('weapon', 'rare', 3, { attack: 18, critChance: 3 }), name: 'Клинок рыцаря', icon: '🗡️' } } },
   { id: 'smith_ancient_blade', profession: 'smith', name: 'Клинок древних', icon: '🔱', description: 'Рецепт мастера 300-го уровня.', requiredLevel: 300, masteryXp: 500, ingredients: [{ id: 'gather-ore', qty: 80 }, { id: 'gather-wood', qty: 30 }, { id: 'gather-crystal', qty: 20 }], output: { name: 'Клинок древних', icon: '🔱', type: 'equipment', rarity: 'legendary', description: 'Атака +35, критический шанс +8%. Сила легендарной экипировки масштабируется по общему балансу игры.', equipment: { ...gear('weapon', 'legendary', 5, { attack: 35, critChance: 8 }), name: 'Клинок древних', icon: '🔱' } } },
 

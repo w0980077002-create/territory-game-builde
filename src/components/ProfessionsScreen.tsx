@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Hammer, FlaskConical, Gem, Cog, Pickaxe, ShoppingBag, Lock, Leaf, Package, ScrollText, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Hammer, FlaskConical, Gem, Cog, Lock, Package, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useGame } from '@/game/actions';
 import { useStore } from '@/game/store';
-import type { InventoryItem, ProfessionId, ProfessionProgress } from '@/game/types';
+import type { ProfessionId, ProfessionProgress } from '@/game/types';
 import {
   PROFESSION_DEFINITIONS,
   PROFESSION_RECIPES,
@@ -28,7 +28,7 @@ const INITIAL_PROFESSION_PROGRESS: ProfessionProgress = {
   lastGatherAt: 0,
 };
 
-type Tab = 'profession' | 'gather' | 'craft' | 'auction';
+type Tab = 'profession' | 'craft';
 
 export function ProfessionsScreen() {
   const game = useStore(useGame);
@@ -37,9 +37,6 @@ export function ProfessionsScreen() {
   const [message, setMessage] = useState('');
   const [busyRecipe, setBusyRecipe] = useState<string | null>(null);
 
-  const resourceCounts = useMemo(() => new Map(
-    RESOURCE_DEFINITIONS.map((resource) => [resource.id, countResource(game.inventory, resource.id)]),
-  ), [game.inventory]);
   const availableRecipes = useMemo(
     () => PROFESSION_RECIPES.filter((recipe) => recipe.profession === progress.active),
     [progress.active],
@@ -60,33 +57,6 @@ export function ProfessionsScreen() {
     }
     updateProgress({ ...currentProgress, active: id });
     setMessage('Профессия выбрана для тестирования. Постоянная лицензия и платёж будут подключены только перед запуском игры.');
-  };
-
-  const gather = (resource: typeof RESOURCE_DEFINITIONS[number]) => {
-    const current = useGame.get();
-    const currentProgress = current.professions ?? INITIAL_PROFESSION_PROGRESS;
-    if (Date.now() - currentProgress.lastGatherAt < 2500) {
-      setMessage('Небольшая передышка: попробуй собрать ресурс через пару секунд.');
-      return;
-    }
-    const found = current.inventory.find((item) => item.id === resource.id);
-    let inventory: InventoryItem[];
-    if (found) {
-      inventory = current.inventory.map((item) => item.id === resource.id ? { ...item, qty: item.qty + 1 } : item);
-    } else {
-      const item: InventoryItem = {
-        id: resource.id,
-        name: resource.name,
-        icon: resource.icon,
-        type: 'material',
-        rarity: resource.rarity,
-        qty: 1,
-        description: 'Ресурс для ремесла и торговли.',
-      };
-      inventory = [...current.inventory, item];
-    }
-    updateProgress({ ...currentProgress, lastGatherAt: Date.now() }, inventory);
-    setMessage(`Собрано: ${resource.name}. Теперь в сумке: ${(found?.qty ?? 0) + 1}.`);
   };
 
   const craft = (recipeId: string) => {
@@ -116,8 +86,8 @@ export function ProfessionsScreen() {
         <div className="flex items-center gap-2">
           <Hammer className="h-7 w-7 shrink-0 text-amber-300" />
           <div className="min-w-0">
-            <h2 className="text-lg font-black">Профессии и торговля</h2>
-            <p className="text-xs text-slate-300">Сбор ресурсов, рецепты и развитие мастерства</p>
+            <h2 className="text-lg font-black">Профессии и ремесло</h2>
+            <p className="text-xs text-slate-300">Выбор профессии, рецепты и развитие мастерства</p>
           </div>
         </div>
         <div className="mt-3 grid grid-cols-3 gap-2 text-center">
@@ -129,11 +99,11 @@ export function ProfessionsScreen() {
         {progress.active && <div className="mt-2 text-xs text-amber-200">Твоя профессия: {PROFESSION_DEFINITIONS.find((p) => p.id === progress.active)?.name}</div>}
       </section>
 
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         {([
-          ['profession', 'Профессии'], ['gather', 'Сбор'], ['craft', 'Крафт'], ['auction', 'Аукцион'],
+          ['profession', 'Профессии'], ['craft', 'Крафт'],
         ] as const).map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} className={`rounded-xl border px-1 py-3 text-[11px] font-bold ${tab === id ? 'border-amber-400 bg-amber-500/20 text-amber-100' : 'border-white/10 bg-white/5 text-slate-300'}`}>
+          <button key={id} onClick={() => setTab(id)} className={`rounded-xl border px-2 py-3 text-xs font-bold ${tab === id ? 'border-amber-400 bg-amber-500/20 text-amber-100' : 'border-white/10 bg-white/5 text-slate-300'}`}>
             {label}
           </button>
         ))}
@@ -158,20 +128,8 @@ export function ProfessionsScreen() {
         <p className="text-[11px] text-slate-500">У каждого персонажа будет только одна профессия. Смена профессии отдельно не предусмотрена.</p>
       </>}
 
-      {tab === 'gather' && <>
-        <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-3 text-xs text-emerald-100"><Leaf className="mr-1 inline h-3.5 w-3.5" />Ресурсы может собирать каждый игрок — лицензия и профессия не нужны.</div>
-        <div className="grid grid-cols-2 gap-2">
-          {RESOURCE_DEFINITIONS.map((resource) => <article key={resource.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-            <div className="text-2xl">{resource.icon}</div><b className="text-sm">{resource.name}</b>
-            <p className="mt-1 text-xs text-slate-400">В сумке: {resourceCounts.get(resource.id) ?? 0}</p>
-            <p className="text-[10px] text-slate-500">Ориентир рынка: {resource.value} золота</p>
-            <button onClick={() => gather(resource)} className="mt-2 w-full rounded-lg bg-emerald-700/80 px-3 py-2 text-xs font-bold active:scale-[0.98]"><Pickaxe className="mr-1 inline h-3.5 w-3.5" />Собрать</button>
-          </article>)}
-        </div>
-      </>}
-
       {tab === 'craft' && <>
-        {!progress.active ? <div className="rounded-xl border border-amber-400/20 bg-amber-500/5 p-4 text-sm text-amber-100">Сначала выбери одну профессию во вкладке «Профессии». Собирать ресурсы можно уже сейчас.</div> : <>
+        {!progress.active ? <div className="rounded-xl border border-amber-400/20 bg-amber-500/5 p-4 text-sm text-amber-100">Сначала выбери одну профессию во вкладке «Профессии». Для добычи ресурсов открой «Карту мира».</div> : <>
           <p className="text-xs text-slate-400">Созданные предметы попадают в обычный инвентарь и сохраняются вместе с прогрессом игры.</p>
           {availableRecipes.map((recipe) => {
             const unlocked = progress.masteryLevel >= recipe.requiredLevel;
@@ -183,15 +141,6 @@ export function ProfessionsScreen() {
             </article>;
           })}
         </>}
-      </>}
-
-      {tab === 'auction' && <>
-        <section className="rounded-xl border border-amber-400/20 bg-amber-500/5 p-4">
-          <div className="flex items-center gap-2"><ShoppingBag className="h-6 w-6 text-amber-300"/><h3 className="font-bold">Общий аукцион игроков</h3></div>
-          <p className="mt-2 text-sm text-slate-300">Правила рынка подготовлены: игроки смогут выставлять ресурсы и созданные предметы, покупать чужие лоты, а с успешной продажи будет удерживаться комиссия 10% в игровом золоте.</p>
-          <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3 text-xs text-slate-300"><ScrollText className="mr-1 inline h-4 w-4 text-amber-300"/>Общий рынок нельзя безопасно имитировать на одном телефоне: для реальных сделок нужен серверный учёт лотов, баланса и предметов. Здесь предметы пока не списываются и золото за фиктивную продажу не начисляется.</div>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-center"><div className="rounded-lg bg-black/25 p-3"><b className="block text-lg text-amber-200">10%</b><span className="text-[10px] text-slate-400">Комиссия с продажи</span></div><div className="rounded-lg bg-black/25 p-3"><b className="block text-lg text-amber-200">0</b><span className="text-[10px] text-slate-400">Фиктивных сделок</span></div></div>
-        </section>
       </>}
 
       {message && <div role="status" className="rounded-xl border border-sky-400/20 bg-sky-500/10 p-3 text-sm text-sky-100">{message}<button onClick={() => setMessage('')} className="ml-2 font-bold">×</button></div>}
