@@ -31,8 +31,8 @@ type Sheet = 'daily' | 'mail' | 'settings' | 'stones' | null;
 function SideButton({ icon, label, onClick, soon, badge }: { icon: string; label: string; onClick: () => void; soon?: boolean; badge?: boolean }) {
   return (
     <button onClick={onClick} className="home-side group" aria-label={label}>
-      <img src={icon} alt="" draggable={false} className={`w-[78%] max-h-[62%] object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.7)] transition-transform group-hover:scale-110 ${soon ? 'opacity-70 grayscale-[35%]' : ''}`} />
-      <span className="text-[7.5px] leading-[1.05] font-bold text-amber-50 text-center whitespace-normal break-words line-clamp-2 max-w-full px-px [text-shadow:0_1px_2px_#000]">{label}</span>
+      <img src={icon} alt="" draggable={false} className={`w-[80%] max-h-[60%] object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] saturate-125 transition-transform duration-200 group-hover:scale-110 ${soon ? 'opacity-70 grayscale-[25%]' : ''}`} />
+      <span className="text-[clamp(6.8px,1.95vw,8px)] leading-[1.04] font-extrabold tracking-[-0.02em] text-amber-50 text-center whitespace-normal break-words line-clamp-2 max-w-full px-px [text-shadow:0_1px_2px_#000,0_0_4px_rgba(0,0,0,0.95)]">{label}</span>
       {soon && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-slate-400 border border-black" aria-hidden />}
       {badge && <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-pulse" />}
     </button>
@@ -41,7 +41,7 @@ function SideButton({ icon, label, onClick, soon, badge }: { icon: string; label
 
 function HudIcon({ icon, label, onClick, badge }: { icon: string; label: string; onClick: () => void; badge?: number }) {
   return (
-    <button onClick={onClick} aria-label={label} className="relative w-8 h-8 rounded-lg border border-amber-400/30 bg-black/55 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
+    <button onClick={onClick} aria-label={label} className="hud-utility-button relative w-8 h-8 rounded-lg border border-amber-300/55 bg-gradient-to-b from-[#3d3019]/90 to-[#080b11]/95 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
       <img src={icon} alt="" className="w-6 h-6 object-contain" />
       {!!badge && <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center">{badge}</span>}
     </button>
@@ -111,14 +111,15 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
   };
 
   return (
-    <div className="relative h-full w-full overflow-hidden select-none animate-fade-in">
-      <img src="/city-bg.webp" alt="" draggable={false} className="absolute inset-0 w-full h-full object-cover" />
-      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-[260px] bg-gradient-to-t from-[#07090d] via-[#07090d]/85 to-transparent pointer-events-none" />
+    <div className="home-game-scene relative h-full w-full overflow-hidden select-none animate-fade-in">
+      <img src="/city-bg-vibrant.webp" alt="" draggable={false} className="home-background-art absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-sky-500/[0.05] via-transparent to-amber-500/[0.04]" />
+      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-[230px] bg-gradient-to-t from-[#07090d] via-[#07090d]/65 to-transparent pointer-events-none" />
 
       <div className="absolute inset-x-0 top-0 z-20 px-2 pt-[max(8px,env(safe-area-inset-top))] flex items-start gap-2">
-        <button onClick={() => onOpen('hero')} className="flex items-center gap-1.5 min-w-0 shrink-0 rounded-2xl border border-amber-400/30 bg-black/55 backdrop-blur-sm p-1 pr-2 active:scale-95 transition-transform" aria-label={t('profile')}>
-          <span className="relative w-11 h-11 rounded-xl overflow-hidden border-2 border-amber-400/70 bg-[#1b1a16] shrink-0">
+        <button onClick={() => onOpen('hero')} className="home-profile-chip flex items-center gap-1.5 min-w-0 shrink-0 rounded-2xl border border-amber-300/55 bg-gradient-to-br from-[#17202b]/90 via-[#090d12]/90 to-[#241706]/90 backdrop-blur-sm p-1 pr-2 active:scale-95 transition-transform" aria-label={t('profile')}>
+          <span className="relative w-11 h-11 rounded-xl overflow-hidden border-2 border-amber-300/90 bg-[#1b1a16] shadow-[0_0_9px_rgba(245,158,11,0.24)] shrink-0">
             <img src={getAppearanceIcon(state.appearance)} alt="" className="w-full h-full object-contain object-top" />
           </span>
           <span className="flex flex-col items-start min-w-0 w-[64px]">
@@ -143,7 +144,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
             <HudIcon icon="/ic-trophy.webp" label={t('leaderboard')} onClick={() => onOpen('leaderboard')} />
             <HudIcon icon="/ic-mail.webp" label={t('mail')} badge={unreadMail} onClick={() => setSheet('mail')} />
             <HudIcon icon="/ic-settings.webp" label={t('settings')} onClick={() => setSheet('settings')} />
-            <button type="button" onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')} aria-label={t('language')} className="h-8 min-w-8 px-1.5 rounded-lg border border-sky-300/40 bg-black/65 text-[10px] font-black text-sky-100 shadow-sm active:scale-90">{language.toUpperCase()}</button>
+            <button type="button" onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')} aria-label={t('language')} className="h-8 min-w-8 px-1.5 rounded-lg border border-sky-200/65 bg-gradient-to-b from-[#173a54]/95 to-[#08111d]/95 text-[10px] font-black text-sky-100 shadow-[0_0_9px_rgba(56,189,248,0.18)] active:scale-90">{language.toUpperCase()}</button>
           </div>
         </div>
       </div>
@@ -163,18 +164,18 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
         </span>
       </button>
 
-      <div className="absolute z-10 left-1.5 top-[calc(max(8px,env(safe-area-inset-top))+90px)] bottom-[200px] w-[44px] flex flex-col gap-1">
+      <div className="home-side-stack absolute z-10 left-1.5 top-[calc(max(8px,env(safe-area-inset-top))+90px)] bottom-[200px] w-[44px] flex flex-col gap-1">
         <SideButton icon="/ic-events.webp" label={t('events')} soon onClick={() => soon(t('events'))} />
         <SideButton icon="/ic-daily.webp" label={t('rewards')} badge={!dailyStatus(state).claimedToday} onClick={() => setSheet('daily')} />
         <SideButton icon="/ic-quests.webp" label={t('quests')} onClick={() => onOpen('quests')} />
         <SideButton icon="/ic-invite.webp" label={t('friends')} soon onClick={() => soon(t('friends'))} />
         <SideButton icon="/ic-sea.webp" label={t('sea')} soon onClick={() => soon(t('sea'))} />
       </div>
-      <div className="absolute z-10 right-1.5 top-[calc(max(8px,env(safe-area-inset-top))+90px)] bottom-[200px] w-[44px] flex flex-col gap-1">
+      <div className="home-side-stack absolute z-10 right-1.5 top-[calc(max(8px,env(safe-area-inset-top))+90px)] bottom-[200px] w-[44px] flex flex-col gap-1">
         <SideButton icon="/ic-shop.webp" label={t('shop')} onClick={() => onOpen('shop')} />
-        <SideButton icon="/ic-shop.webp" label={t('auction')} onClick={() => onOpen('auction')} />
+        <SideButton icon="/ic-auction.svg" label={t('auction')} onClick={() => onOpen('auction')} />
         <SideButton icon="/ic-forge.webp" label={t('forge')} onClick={() => onOpen('forge')} />
-        <SideButton icon="/ic-forge.webp" label={t('professions')} onClick={() => onOpen('professions')} />
+        <SideButton icon="/ic-professions.svg" label={t('professions')} onClick={() => onOpen('professions')} />
         <SideButton icon="/ic-trials.webp" label={t('trials')} onClick={() => onBattle('trial')} />
         <SideButton icon="/ic-capture.webp" label={t('capture')} soon onClick={() => soon(t('capture'))} />
         <SideButton icon="/ic-arena.webp" label={t('arena')} onClick={() => onOpen('arena')} />

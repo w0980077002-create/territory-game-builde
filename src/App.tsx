@@ -44,8 +44,8 @@ const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> =
   arena: { title: 'Арена', icon: '/ic-arena.webp' },
   leaderboard: { title: 'Топ игроков', icon: '/ic-trophy.webp' },
   quests: { title: 'Задания', icon: '/ic-quests.webp' },
-  professions: { title: 'Профессии и ремесло', icon: '/ic-forge.webp' },
-  auction: { title: 'Аукцион и чат', icon: '/ic-shop.webp' },
+  professions: { title: 'Профессии и ремесло', icon: '/ic-professions.svg' },
+  auction: { title: 'Аукцион и чат', icon: '/ic-auction.svg' },
 };
 
 function Splash({ text }: { text: string }) {

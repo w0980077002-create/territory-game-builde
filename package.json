@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "test:balance": "node scripts/check-equipment-balance.mjs",
     "test:professions": "node scripts/check-professions.mjs",
-    "test:feature-separation": "node scripts/check-feature-separation.mjs"
+    "test:feature-separation": "node scripts/check-feature-separation.mjs",
+    "test:mobile-home": "node scripts/check-mobile-home-ui.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
