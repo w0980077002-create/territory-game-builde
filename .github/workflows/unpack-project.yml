@@ -3,7 +3,9 @@ name: Install uploaded project ZIP
 on:
   push:
     paths:
-      - '**.zip'
+      - '*.zip'
+      - '*.zip.part*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,7 +18,6 @@ concurrency:
 jobs:
   unpack:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,18 +30,46 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
           ZIP_FILES=( *.zip )
+          PART_FILES=( *.zip.part* )
+          ZIP_FILE=""
 
-          if [ "${#ZIP_FILES[@]}" -ne 1 ]; then
-            echo "::error::В корне репозитория должен находиться ровно один ZIP-файл."
+          if [ "${#ZIP_FILES[@]}" -eq 1 ] && [ "${#PART_FILES[@]}" -eq 0 ]; then
+            ZIP_FILE="${ZIP_FILES[0]}"
+          elif [ "${#ZIP_FILES[@]}" -eq 0 ] && [ "${#PART_FILES[@]}" -ge 2 ]; then
+            for part in "${PART_FILES[@]}"; do
+              if [[ ! "$part" =~ \.part[0-9]{2,}$ ]]; then
+                echo "::error::Неверное имя части: $part. Формат: project.zip.part01, project.zip.part02 и т.д."
+                exit 1
+              fi
+            done
+            mapfile -t PART_FILES < <(printf '%s\n' "${PART_FILES[@]}" | sort -V)
+            mapfile -t BASE_NAMES < <(printf '%s\n' "${PART_FILES[@]}" | sed -E 's/\.part[0-9]+$//' | sort -u)
+            if [ "${#BASE_NAMES[@]}" -ne 1 ]; then
+              echo "::error::Найдены части нескольких разных архивов. Оставь один набор частей."
+              exit 1
+            fi
+            expected=1
+            for part in "${PART_FILES[@]}"; do
+              suffix="${part##*.part}"
+              number=$((10#$suffix))
+              if [ "$number" -ne "$expected" ]; then
+                printf '::error::Пропущена часть архива: ожидалась part%02d, получена %s\n' "$expected" "$part"
+                exit 1
+              fi
+              expected=$((expected + 1))
+            done
+            ZIP_FILE="${BASE_NAMES[0]}"
+            echo "Собираем ZIP из ${#PART_FILES[@]} частей: $ZIP_FILE"
+            cat -- "${PART_FILES[@]}" > "$ZIP_FILE"
+          else
+            echo "::error::В корне нужен один .zip или части одного архива: project.zip.part01, project.zip.part02 и т.д."
             exit 1
           fi
 
-          ZIP_FILE="${ZIP_FILES[0]}"
-          echo "Обрабатываем архив: $ZIP_FILE"
-          unzip -t "$ZIP_FILE"
-
+          echo "Проверяем архив: $ZIP_FILE"
+          unzip -tq "$ZIP_FILE"
           while IFS= read -r entry; do
-            if [[ "$entry" == /* || "$entry" =~ (^|/)\.\.(/|$) ]]; then
+            if [[ "$entry" == /* || "$entry" =~ (^|/)\.\.(/|$) || "$entry" =~ ^[A-Za-z]:[\\/] ]]; then
               echo "::error::Архив содержит небезопасный путь: $entry"
               exit 1
             fi
@@ -49,52 +78,50 @@ jobs:
           TEMP_DIR="$(mktemp -d)"
           trap 'rm -rf "$TEMP_DIR"' EXIT
           unzip -q "$ZIP_FILE" -d "$TEMP_DIR"
-
-          mapfile -t TOP_LEVEL < <(find "$TEMP_DIR" -mindepth 1 -maxdepth 1 -printf '%f\n')
-
-          if [ "${#TOP_LEVEL[@]}" -eq 1 ] && [ -d "$TEMP_DIR/${TOP_LEVEL[0]}" ]; then
-            SOURCE_DIR="$TEMP_DIR/${TOP_LEVEL[0]}"
-          else
+          if [ -f "$TEMP_DIR/package.json" ] && [ -d "$TEMP_DIR/src" ]; then
             SOURCE_DIR="$TEMP_DIR"
+          else
+            mapfile -t PROJECT_ROOTS < <(
+              find "$TEMP_DIR" -mindepth 2 -maxdepth 5 -type f -name package.json -printf '%h\n' |
+              while IFS= read -r candidate; do
+                [ -d "$candidate/src" ] && printf '%s\n' "$candidate"
+              done | sort -u
+            )
+            if [ "${#PROJECT_ROOTS[@]}" -ne 1 ]; then
+              echo "::error::Не найден единственный корень проекта с package.json и папкой src."
+              exit 1
+            fi
+            SOURCE_DIR="${PROJECT_ROOTS[0]}"
           fi
+          echo "Корень проекта: $SOURCE_DIR"
 
-          if [ ! -f "$SOURCE_DIR/package.json" ] || [ ! -d "$SOURCE_DIR/src" ]; then
-            echo "::error::В архиве не найдены package.json и папка src в корне проекта."
-            exit 1
-          fi
-
+          # Keep automation and environment files in the repository; replace only project files.
           rsync -a --delete \
             --exclude='/.git/' \
-            --exclude='/.github/workflows/unpack-project.yml' \
+            --exclude='/.github/' \
+            --exclude='/.env' \
+            --exclude='/.env.*.local' \
             "$SOURCE_DIR/" ./
-
-          rm -f "$ZIP_FILE"
-
+          rm -f -- "$ZIP_FILE" "${PART_FILES[@]}"
           test -f package.json
           test -d src
-
-          echo "Распаковка завершена."
+          echo "Проверка структуры пройдена; ZIP распакован."
 
       - name: Commit project files
         id: commit
         shell: bash
         run: |
           set -euo pipefail
-
           git config user.name "GitHub Action Bot"
           git config user.email "action@github.com"
-
           git add -A
-
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Изменений нет."
             exit 0
           fi
-
           git commit -m "Auto-unpack uploaded project ZIP"
           git push origin HEAD:main
-
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Start GitHub Pages deployment
