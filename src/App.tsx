@@ -15,6 +15,7 @@ import { ForgeScreen } from '@/components/ForgeScreen';
 import { LeaderboardScreen } from '@/components/LeaderboardScreen';
 import { GamesScreen } from '@/components/GamesScreen';
 import { MonopolyScreen } from '@/components/MonopolyScreen';
+import { ProfessionsScreen } from '@/components/ProfessionsScreen';
 import { MaintenanceScreen, BannedScreen } from '@/components/ServiceScreens';
 import { useLive, useLiveSync, fetchMaintenance } from '@/game/live';
 import { useStore } from '@/game/store';
@@ -22,7 +23,7 @@ import { isVerifiedAdmin } from '@/admin/api';
 import { ChevronLeft, Shield, Wrench } from 'lucide-react';
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
-type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'monopoly';
+type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'monopoly' | 'professions';
 type Screen = Exclude<NavId, 'clan'> | SubScreen;
 
 const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
@@ -41,6 +42,7 @@ const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> =
   arena: { title: 'Арена', icon: '/ic-arena.webp' },
   leaderboard: { title: 'Топ игроков', icon: '/ic-trophy.webp' },
   quests: { title: 'Задания', icon: '/ic-quests.webp' },
+  professions: { title: 'Профессии и аукцион', icon: '/ic-forge.webp' },
 };
 
 function Splash({ text }: { text: string }) {
@@ -227,6 +229,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           <GamesScreen onPlay={(gameId) => gameId === 'monopoly' && setScreen('monopoly')} />
         )}
         {screen === 'monopoly' && <MonopolyScreen onBack={() => setScreen('games')} />}
+        {screen === 'professions' && <ProfessionsScreen />}
       </main>
 
       <nav className="shrink-0 z-30 border-t border-amber-500/25 bg-gradient-to-b from-[#161b24] to-[#0a0d12] px-1 pt-1 pb-[max(4px,env(safe-area-inset-bottom))]">

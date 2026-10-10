@@ -132,9 +132,20 @@ export interface ShopItem {
   equipment?: Equipment;
 }
 
+export type ProfessionId = 'smith' | 'alchemist' | 'artisan' | 'jeweler' | 'engineer';
+
+export interface ProfessionProgress {
+  active: ProfessionId | null;
+  masteryLevel: number;
+  masteryXp: number;
+  lastGatherAt: number;
+}
+
 export interface GameState {
   /** Version of save-data migrations already applied. */
   balanceVersion?: number;
+  /** Optional for backward compatibility with saves created before professions. */
+  professions?: ProfessionProgress;
   player: {
     name: string;
     level: number;
