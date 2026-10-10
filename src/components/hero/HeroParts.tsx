@@ -4,6 +4,7 @@ import { EQUIPMENT_SLOTS } from '@/game/engine';
 import { SLOT_ART } from '@/game/art';
 import { rarityColor } from '@/game/ui';
 import type { Equipment } from '@/game/types';
+import { useLanguage, localizeText } from '@/game/i18n';
 
 export interface GearView {
   name: string;
@@ -25,22 +26,23 @@ export interface StatView {
   critDamage?: number;
 }
 
-export function gearStatLine(g: GearView) {
+export function gearStatLine(g: GearView, language: 'ru' | 'en' = 'ru') {
   return [
-    g.attack ? `+${g.attack} сила` : '',
-    g.defense ? `+${g.defense} стойкость` : '',
+    g.attack ? `+${g.attack} ${language === 'en' ? 'strength' : 'сила'}` : '',
+    g.defense ? `+${g.defense} ${language === 'en' ? 'defense' : 'стойкость'}` : '',
     g.hp ? `+${g.hp} HP` : '',
-    g.critChance ? `+${g.critChance}% крит` : '',
+    g.critChance ? `+${g.critChance}% ${language === 'en' ? 'crit' : 'крит'}` : '',
   ].filter(Boolean).join(' · ');
 }
 
 export function StatGrid({ stats }: { stats: StatView }) {
+  const { language, t } = useLanguage();
   const rows = [
-    { label: 'Сила', value: stats.attack, icon: Sword, tone: 'text-orange-300' },
-    { label: 'Стойкость', value: stats.defense, icon: Shield, tone: 'text-sky-300' },
-    { label: 'Здоровье', value: stats.maxHp, icon: Heart, tone: 'text-red-300' },
-    { label: 'Шанс крита', value: `${stats.critChance}%`, icon: Star, tone: 'text-yellow-300' },
-    ...(stats.critDamage !== undefined ? [{ label: 'Сила крита', value: `+${stats.critDamage}%`, icon: Flame, tone: 'text-amber-300' }] : []),
+    { label: language === 'en' ? 'Strength' : 'Сила', value: stats.attack, icon: Sword, tone: 'text-orange-300' },
+    { label: language === 'en' ? 'Defense' : 'Стойкость', value: stats.defense, icon: Shield, tone: 'text-sky-300' },
+    { label: language === 'en' ? 'Health' : 'Здоровье', value: stats.maxHp, icon: Heart, tone: 'text-red-300' },
+    { label: language === 'en' ? 'Critical chance' : 'Шанс крита', value: `${stats.critChance}%`, icon: Star, tone: 'text-yellow-300' },
+    ...(stats.critDamage !== undefined ? [{ label: language === 'en' ? 'Critical damage' : 'Сила крита', value: `+${stats.critDamage}%`, icon: Flame, tone: 'text-amber-300' }] : []),
   ];
   return (
     <div className="grid grid-cols-2 gap-2">
@@ -72,6 +74,7 @@ function Slot({ slot, gear, active, onTap }: { slot: Equipment['slot']; gear?: G
 }
 
 export function PaperDoll({ gear, followerUnlocked }: { gear: GearMap; followerUnlocked: boolean }) {
+  const { language } = useLanguage();
   const [picked, setPicked] = useState<Equipment['slot'] | null>(null);
   const left = EQUIPMENT_SLOTS.slice(0, 3);
   const right = EQUIPMENT_SLOTS.slice(3, 6);
@@ -100,14 +103,14 @@ export function PaperDoll({ gear, followerUnlocked }: { gear: GearMap; followerU
         {picked ? (
           g ? (
             <span className="animate-fade-in">
-              <span className="font-semibold" style={{ color: rarityColor(g.rarity) }}>{g.name}</span>
-              <span className="text-gray-400"> · ур. {g.level}{gearStatLine(g) ? ` · ${gearStatLine(g)}` : ''}</span>
+              <span className="font-semibold" style={{ color: rarityColor(g.rarity) }}>{localizeText(g.name, language)}</span>
+              <span className="text-gray-400"> · {language === 'en' ? 'Lv.' : 'ур.'} {g.level}{gearStatLine(g) ? ` · ${gearStatLine(g, language)}` : ''}</span>
             </span>
           ) : (
-            <span className="text-gray-500">{slotName}: пусто</span>
+            <span className="text-gray-500">{language === 'en' ? `${({ helmet: 'Head', amulet: 'Amulet', armor: 'Armor', weapon: 'Weapon', shield: 'Shield', ring: 'Ring', boots: 'Boots' } as Record<string, string>)[picked!] || slotName}: empty` : `${slotName}: пусто`}</span>
           )
         ) : (
-          <span className="text-gray-500">Нажми на ячейку, чтобы увидеть предмет</span>
+          <span className="text-gray-500">{language === 'en' ? 'Tap a slot to view its item' : 'Нажми на ячейку, чтобы увидеть предмет'}</span>
         )}
       </p>
     </div>

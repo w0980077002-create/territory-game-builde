@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Ban, Wrench } from 'lucide-react';
+import { useLanguage } from '@/game/i18n';
 
 function ServiceScreen({ icon, title, text, tone }: { icon: ReactNode; title: string; text: string; tone: string }) {
   return (
@@ -15,23 +16,25 @@ function ServiceScreen({ icon, title, text, tone }: { icon: ReactNode; title: st
 }
 
 export function MaintenanceScreen() {
+  const { language } = useLanguage();
   return (
     <ServiceScreen
       icon={<Wrench className="w-8 h-8 text-white animate-pulse" />}
       tone="bg-gradient-to-br from-amber-400 to-amber-700"
-      title="Идут технические работы"
-      text="Мы улучшаем игру. Пожалуйста, зайдите немного позже — ваш прогресс в безопасности."
+      title={language === 'en' ? 'Maintenance in progress' : 'Идут технические работы'}
+      text={language === 'en' ? 'We are improving the game. Please come back later — your progress is safe.' : 'Мы улучшаем игру. Пожалуйста, зайдите немного позже — ваш прогресс в безопасности.'}
     />
   );
 }
 
 export function BannedScreen() {
+  const { language } = useLanguage();
   return (
     <ServiceScreen
       icon={<Ban className="w-8 h-8 text-white" />}
       tone="bg-gradient-to-br from-red-500 to-red-800"
-      title="Аккаунт заблокирован"
-      text="Ваш аккаунт заблокирован администрацией за нарушение правил игры."
+      title={language === 'en' ? 'Account suspended' : 'Аккаунт заблокирован'}
+      text={language === 'en' ? 'Your account has been suspended by the administrators for violating the game rules.' : 'Ваш аккаунт заблокирован администрацией за нарушение правил игры.'}
     />
   );
 }

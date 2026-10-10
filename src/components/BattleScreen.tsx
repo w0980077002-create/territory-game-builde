@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, ShoppingBag } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
+import { useLanguage } from '@/game/i18n';
 import { generateChapter, generateTrial, PVE_STONE_COST } from '@/game/engine';
 import { spendStones, trialReward, blessedGold } from '@/game/progression';
 import { hapticImpact } from '@/game/telegram';
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onShop, onActiveChange }: Props) {
+  const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
     const s = useGame.get();
     const paid = spendStones(s, PVE_STONE_COST);
     if (!paid) {
-      setError('Нет боевых камней. Получи их за ежедневную награду, задания или купи в Лавке.');
+      setError(t('noBattleStones'))
       return;
     }
     hapticImpact('medium');
@@ -73,8 +75,8 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
     <div className="space-y-3 animate-fade-in pb-2">
       <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10">
         {([
-          { id: 'campaign', label: 'Поход', icon: Swords },
-          { id: 'trial', label: 'Испытания', icon: Mountain },
+          { id: 'campaign', label: t('campaign'), icon: Swords },
+          { id: 'trial', label: t('trials'), icon: Mountain },
         ] as const).map((t) => (
           <button
             key={t.id}
@@ -89,7 +91,7 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
       </div>
 
       <div className="flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11">
-        <span className="text-xs text-gray-400">Один бой стоит {PVE_STONE_COST} камень</span>
+        <span className="text-xs text-gray-400">{t('oneFightCost')} {PVE_STONE_COST} {t('stone')}</span>
         <Currency kind="stones" value={state.battleStones} size={20} className="text-sm text-amber-100" />
       </div>
 
@@ -97,7 +99,7 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
         <div className="rounded-xl border border-red-400/30 bg-red-950/40 p-3 animate-fade-in">
           <p className="text-xs text-red-200">{error}</p>
           <button onClick={onShop} className="mt-2 h-9 px-3 rounded-lg bg-amber-500 text-black text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform">
-            <ShoppingBag className="w-3.5 h-3.5" /> В Лавку
+            <ShoppingBag className="w-3.5 h-3.5" /> {t('toShop')}
           </button>
         </div>
       )}
@@ -108,7 +110,7 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
             <img src="/city-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
             <div className="relative p-4">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-amber-300">Глава {chapter.number}</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-amber-300">{t('chapter')} {chapter.number}</p>
               <h2 className="text-xl font-bold text-white mt-0.5">{chapter.title}</h2>
               <div className="mt-3 flex items-center gap-2">
                 <div className="flex-1 h-2 rounded-full bg-black/50 overflow-hidden">
@@ -116,7 +118,7 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
                 </div>
                 <span className="text-xs text-amber-100 tabular-nums">{nextIndex}/{stages.length}</span>
               </div>
-              <p className="text-[11px] text-gray-300 mt-2">Победи всех врагов и босса, чтобы открыть главу {chapter.number + 1}.</p>
+              <p className="text-[11px] text-gray-300 mt-2">{t('chapterUnlock')} {chapter.number + 1}.</p>
             </div>
           </div>
 
@@ -125,6 +127,8 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
               <StageRow
                 key={e.id}
                 enemy={e}
+                t={t}
+                language={language}
                 index={i}
                 status={i < nextIndex ? 'done' : i === nextIndex ? 'current' : 'locked'}
                 gold={blessedGold(state, e.rewardGold)}
@@ -134,13 +138,13 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
           </div>
         </>
       ) : (
-        <TrialPanel level={state.trialLevel} onFight={() => start('trial')} />
+        <TrialPanel level={state.trialLevel} onFight={() => start('trial')} t={t} />
       )}
     </div>
   );
 }
 
-function StageRow({ enemy, index, status, gold, onFight }: { enemy: Enemy; index: number; status: 'done' | 'current' | 'locked'; gold: number; onFight: () => void }) {
+function StageRow({ enemy, index, status, gold, onFight, t, language }: { enemy: Enemy; index: number; status: 'done' | 'current' | 'locked'; gold: number; onFight: () => void; t: (key: string) => string; language: 'ru' | 'en' }) {
   const current = status === 'current';
   return (
     <div
@@ -155,7 +159,7 @@ function StageRow({ enemy, index, status, gold, onFight }: { enemy: Enemy; index
         {enemy.isBoss && <Crown className="absolute top-0.5 left-0.5 w-3.5 h-3.5 text-amber-300 drop-shadow" />}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] uppercase tracking-wider text-gray-500">{enemy.isBoss ? 'Босс' : `Этап ${index + 1}`}</p>
+        <p className="text-[10px] uppercase tracking-wider text-gray-500">{enemy.isBoss ? t('bossLabel') : `${t('stage')} ${index + 1}`}</p>
         <p className="text-sm font-semibold text-white truncate">{enemy.name}</p>
         <div className="flex items-center gap-2.5 text-[11px] text-gray-400 mt-0.5">
           <span className="flex items-center gap-0.5"><Heart className="w-3 h-3 text-red-400" />{enemy.maxHp}</span>
@@ -174,7 +178,7 @@ function StageRow({ enemy, index, status, gold, onFight }: { enemy: Enemy; index
   );
 }
 
-function TrialPanel({ level, onFight }: { level: number; onFight: () => void }) {
+function TrialPanel({ level, onFight, t }: { level: number; onFight: () => void; t: (key: string) => string }) {
   const enemy = generateTrial(level);
   const upcoming = Array.from({ length: 5 }, (_, i) => level + i);
   return (
@@ -185,8 +189,8 @@ function TrialPanel({ level, onFight }: { level: number; onFight: () => void }) 
         <div className="relative p-4 flex items-end gap-3 min-h-[180px]">
           <img src={enemy.art} alt={enemy.name} className="w-28 h-36 object-contain object-bottom drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] animate-idle" />
           <div className="flex-1 min-w-0 pb-1">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-sky-300">Башня испытаний</p>
-            <h2 className="text-lg font-bold text-white">Этаж {level}</h2>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-sky-300">{t('trialTower')}</p>
+            <h2 className="text-lg font-bold text-white">{t('floor')} {level}</h2>
             <p className="text-xs text-gray-300">{enemy.name}</p>
             <div className="flex items-center gap-2.5 text-[11px] text-gray-300 mt-1">
               <span className="flex items-center gap-0.5"><Heart className="w-3 h-3 text-red-400" />{enemy.maxHp}</span>
@@ -197,17 +201,17 @@ function TrialPanel({ level, onFight }: { level: number; onFight: () => void }) 
       </div>
 
       <button onClick={onFight} className="w-full h-12 rounded-2xl bg-gradient-to-b from-sky-400 to-sky-700 border border-sky-200/30 text-white font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
-        <Swords className="w-5 h-5" /> Начать испытание
+        <Swords className="w-5 h-5" /> {t('startTrial')}
       </button>
 
       <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-        <p className="text-xs font-semibold text-gray-300 mb-2">Награды этажей</p>
+        <p className="text-xs font-semibold text-gray-300 mb-2">{t('floorRewards')}</p>
         <div className="space-y-1.5">
           {upcoming.map((l) => {
             const r = trialReward(l);
             return (
               <div key={l} className={`flex items-center justify-between h-9 px-2.5 rounded-lg ${l === level ? 'bg-sky-500/15 border border-sky-400/30' : 'bg-white/[0.03]'}`}>
-                <span className="text-xs text-gray-200">Этаж {l}</span>
+                <span className="text-xs text-gray-200">{t('floor')} {l}</span>
                 <span className="flex items-center gap-3 text-xs">
                   <Currency kind="gold" value={r.gold ?? 0} size={14} className="text-amber-200" />
                   <Currency kind="gems" value={r.gems ?? 0} size={14} className="text-sky-200" />

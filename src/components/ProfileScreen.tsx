@@ -1,11 +1,13 @@
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
+import { useLanguage, localizeText } from '@/game/i18n';
 import { getComputedStats, EQUIPMENT_SLOTS } from '@/game/engine';
 import { rarityColor } from '@/game/ui';
 import { User, Heart, Sword, Shield, Star, Zap, Coins, Gem } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export function ProfileScreen() {
+  const { t, language } = useLanguage();
   const state = useStore(useGame);
   const computed = getComputedStats(state);
 
@@ -19,7 +21,7 @@ export function ProfileScreen() {
             🦸
           </div>
           <h2 className="text-xl font-bold text-white">{state.player.name}</h2>
-          <p className="text-sm text-gray-400">Уровень {state.player.level}</p>
+          <p className="text-sm text-gray-400">{t('levelWord')} {state.player.level}</p>
           <div className="flex gap-3 mt-3 text-sm">
             <span className="flex items-center gap-1 text-amber-400">
               <Coins className="w-4 h-4" /> {state.player.gold}
@@ -36,29 +38,29 @@ export function ProfileScreen() {
 
       {/* Base stats */}
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">Базовые характеристики</h3>
+        <h3 className="text-sm font-semibold text-gray-400 mb-3">{t('baseStats')}</h3>
         <div className="grid grid-cols-2 gap-3">
-          <StatBox icon={<Heart className="w-4 h-4 text-red-400" />} label="Здоровье" value={`${state.player.stats.maxHp}`} />
-          <StatBox icon={<Sword className="w-4 h-4 text-orange-400" />} label="Атака" value={state.player.stats.attack} />
-          <StatBox icon={<Shield className="w-4 h-4 text-blue-400" />} label="Защита" value={state.player.stats.defense} />
-          <StatBox icon={<Star className="w-4 h-4 text-yellow-400" />} label="Крит шанс" value={`${state.player.stats.critChance}%`} />
+          <StatBox icon={<Heart className="w-4 h-4 text-red-400" />} label={t('heroHealth')} value={`${state.player.stats.maxHp}`} />
+          <StatBox icon={<Sword className="w-4 h-4 text-orange-400" />} label={t('attack')} value={state.player.stats.attack} />
+          <StatBox icon={<Shield className="w-4 h-4 text-blue-400" />} label={t('defense')} value={state.player.stats.defense} />
+          <StatBox icon={<Star className="w-4 h-4 text-yellow-400" />} label={t('critChance')} value={`${state.player.stats.critChance}%`} />
         </div>
       </div>
 
       {/* Computed stats (with equipment) */}
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">С учётом экипировки</h3>
+        <h3 className="text-sm font-semibold text-gray-400 mb-3">{t('withEquipment')}</h3>
         <div className="grid grid-cols-2 gap-3">
-          <StatBox icon={<Heart className="w-4 h-4 text-red-400" />} label="Здоровье" value={`${computed.maxHp}`} />
-          <StatBox icon={<Sword className="w-4 h-4 text-orange-400" />} label="Атака" value={computed.attack} />
-          <StatBox icon={<Shield className="w-4 h-4 text-blue-400" />} label="Защита" value={computed.defense} />
-          <StatBox icon={<Star className="w-4 h-4 text-yellow-400" />} label="Крит шанс" value={`${computed.critChance}%`} />
+          <StatBox icon={<Heart className="w-4 h-4 text-red-400" />} label={t('heroHealth')} value={`${computed.maxHp}`} />
+          <StatBox icon={<Sword className="w-4 h-4 text-orange-400" />} label={t('attack')} value={computed.attack} />
+          <StatBox icon={<Shield className="w-4 h-4 text-blue-400" />} label={t('defense')} value={computed.defense} />
+          <StatBox icon={<Star className="w-4 h-4 text-yellow-400" />} label={t('critChance')} value={`${computed.critChance}%`} />
         </div>
       </div>
 
       {/* Equipment */}
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">Экипировка</h3>
+        <h3 className="text-sm font-semibold text-gray-400 mb-3">{t('equipment')}</h3>
         <div className="space-y-2">
           {EQUIPMENT_SLOTS.map(({ id: slot, name }) => {
             const eq = state.player.equipped[slot];
@@ -70,13 +72,13 @@ export function ProfileScreen() {
                   {eq ? eq.icon : '⬜'}
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs text-gray-500">{name}</p>
+                  <p className="text-xs text-gray-500">{language === 'en' ? ({ helmet: 'Helmet', amulet: 'Amulet', armor: 'Armor', weapon: 'Weapon', shield: 'Shield', ring: 'Ring', boots: 'Boots' } as Record<string, string>)[slot] ?? name : name}</p>
                   {eq ? (
                     <p className="text-sm font-medium" style={{ color: rarityColor(eq.rarity) }}>
-                      {eq.name}
+                      {localizeText(eq.name, language)}
                     </p>
                   ) : (
-                    <p className="text-sm text-gray-600">Пусто</p>
+                    <p className="text-sm text-gray-600">{t('empty')}</p>
                   )}
                 </div>
                 {eq && (
@@ -94,19 +96,19 @@ export function ProfileScreen() {
 
       {/* Battle record */}
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">Боевой путь</h3>
+        <h3 className="text-sm font-semibold text-gray-400 mb-3">{t('battlePath')}</h3>
         <div className="grid grid-cols-3 gap-3 text-center">
           <div>
             <div className="text-2xl font-bold text-white">{state.totalBattlesWon}</div>
-            <div className="text-xs text-gray-500">Побед</div>
+            <div className="text-xs text-gray-500">{t('wins')}</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-amber-400">{state.totalBossesDefeated}</div>
-            <div className="text-xs text-gray-500">Боссов</div>
+            <div className="text-xs text-gray-500">{t('bosses')}</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-teal-400">{state.currentChapter}</div>
-            <div className="text-xs text-gray-500">Глава</div>
+            <div className="text-xs text-gray-500">{t('chapter')}</div>
           </div>
         </div>
       </div>

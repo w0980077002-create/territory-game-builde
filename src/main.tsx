@@ -2,6 +2,7 @@ import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { LanguageProvider } from '@/game/i18n';
 
 const AdminApp = lazy(() => import('@/admin/AdminApp').then((m) => ({ default: m.AdminApp })));
 const isAdminRoute =
@@ -16,7 +17,7 @@ createRoot(document.getElementById('root')!).render(
         <AdminApp />
       </Suspense>
     ) : (
-      <App />
+      <LanguageProvider><App /></LanguageProvider>
     )}
   </StrictMode>
 );

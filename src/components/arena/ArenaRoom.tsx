@@ -16,10 +16,13 @@ import { GearStrip } from './GearStrip';
 import { BeltBar } from './BeltBar';
 import { FoldSection } from './FoldSection';
 import { Loader2, LogOut, Timer, WifiOff, Skull, Trophy } from 'lucide-react';
+import { useLanguage, localizeText } from '@/game/i18n';
 
-const MODE_LABEL = { duel: 'Дуэль 1х1', team: 'Отряд 3х3', chaos: 'Хаос' } as const;
 
 export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; onExit: () => void; onActiveChange?: (active: boolean) => void }) {
+  const { language } = useLanguage();
+  const modeLabel = { duel: language === 'en' ? 'Duel 1v1' : 'Дуэль 1х1', team: language === 'en' ? 'Squad 3v3' : 'Отряд 3х3', chaos: language === 'en' ? 'Chaos' : 'Хаос' } as const;
+  const teamLabel = (team: number | null | undefined) => team === 1 ? (language === 'en' ? 'Wolves' : TEAM_NAMES[1]) : team === 2 ? (language === 'en' ? 'Ravens' : TEAM_NAMES[2]) : '';
   const { view, messages, offline, clockOffset, refresh } = useArenaRoom(roomId, onExit);
   const game = useStore(useGame);
   const arenaStats = useStore(useArena);
@@ -100,7 +103,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
       after?.();
       refresh();
     } catch (e) {
-      setActionError((e as Error).message);
+      setActionError(localizeText((e as Error).message, language));
     }
     setBusy(false);
   };
@@ -138,12 +141,12 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const pressBeltSlot = (index: number) => {
     const item = game.belt[index];
     const action = item ? beltAction(item) : null;
-    if (!action) return setActionError('Этот предмет нельзя использовать в бою');
-    if (!isActive || !alive) return setActionError('Пояс работает только во время боя, пока ты в строю');
+    if (!action) return setActionError(language === 'en' ? 'This item cannot be used in battle' : 'Этот предмет нельзя использовать в бою');
+    if (!isActive || !alive) return setActionError(language === 'en' ? 'The belt works only during battle while you are alive' : 'Пояс работает только во время боя, пока ты в строю');
     hapticImpact('light');
     if (action.kind === 'time') return runBelt(index, () => applyTimePotion(roomId));
     if (action.kind === 'item') return runBelt(index, () => drinkArenaItem(roomId, action.code));
-    if (room?.mode === 'duel') return setActionError('Адреналин работает только в командных боях');
+    if (room?.mode === 'duel') return setActionError(language === 'en' ? 'Adrenaline works only in team battles' : 'Адреналин работает только в командных боях');
     setActionError(null);
     setAlliesOpen(true);
   };
@@ -159,7 +162,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
     return (
       <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-teal-400" />
-        <p className="text-sm">{offline ? 'Нет связи с ареной, переподключаюсь...' : 'Вход на арену...'}</p>
+        <p className="text-sm">{offline ? (language === 'en' ? 'Arena connection lost, reconnecting...' : 'Нет связи с ареной, переподключаюсь...') : (language === 'en' ? 'Entering arena...' : 'Вход на арену...')}</p>
       </div>
     );
   }
@@ -170,25 +173,25 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const won = room.winnerTeam !== null && room.winnerTeam === me.team;
   const draw = room.status === 'finished' && room.winnerTeam === null;
   const isDuel = room.mode === 'duel';
-  const followerName = game.followers[0]?.name ?? 'Последователь';
+  const followerName = game.followers[0]?.name ?? (language === 'en' ? 'Follower' : 'Последователь');
 
   return (
     <div className="space-y-2 animate-fade-in pb-4">
       <div className="flex items-center gap-2 h-9 px-2.5 rounded-xl border border-white/10 bg-gray-900/70">
         <p className="flex-1 min-w-0 text-[11px] truncate">
-          <span className="text-gray-500 uppercase tracking-wide">{MODE_LABEL[room.mode]}</span>
-          <span className="text-white font-semibold"> · {room.status === 'waiting' ? 'Сбор бойцов' : room.status === 'active' ? `Раунд ${room.round}` : 'Бой окончен'}</span>
-          {me.team && !isDuel && <span className="text-teal-300"> · «{TEAM_NAMES[me.team]}»</span>}
+          <span className="text-gray-500 uppercase tracking-wide">{modeLabel[room.mode]}</span>
+          <span className="text-white font-semibold"> · {room.status === 'waiting' ? (language === 'en' ? 'Waiting for fighters' : 'Сбор бойцов') : room.status === 'active' ? (language === 'en' ? `Round ${room.round}` : `Раунд ${room.round}`) : (language === 'en' ? 'Battle ended' : 'Бой окончен')}</span>
+          {me.team && !isDuel && <span className="text-teal-300"> · «{teamLabel(me.team)}»</span>}
         </p>
         {offline && <WifiOff className="w-3.5 h-3.5 text-red-400 shrink-0" />}
         {room.status !== 'finished' && (
           <div
-            title={isActive ? `Тайм на ход: ${room.timeout} сек.` : undefined}
+            title={isActive ? (language === 'en' ? `Turn timer: ${room.timeout} sec.` : `Тайм на ход: ${room.timeout} сек.`) : undefined}
             className={`flex items-center gap-1 h-6 px-2 rounded-lg text-xs font-bold tabular-nums shrink-0 ${
               isActive && countdown <= 10 ? 'bg-red-500/20 text-red-300 animate-pulse' : 'bg-black/40 text-white'
             }`}
           >
-            <Timer className="w-3 h-3" /> {countdown}с
+            <Timer className="w-3 h-3" /> {countdown}{language === 'en' ? 's' : 'с'}
             {isActive && <span className="text-[9px] font-normal text-gray-500">/{room.timeout}</span>}
           </div>
         )}
@@ -197,10 +200,10 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
       {room.status === 'waiting' && (
         <div className="card text-center py-6">
           <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
-          <p className="text-white font-semibold">Ищем соперников...</p>
-          <p className="text-sm text-gray-400 mt-1">Бой начнётся через {countdown} сек.</p>
-          <p className="text-xs text-gray-500 mt-3">На арене: {view.participants.map((p) => p.name).join(', ')}</p>
-          <button disabled={busy} onClick={leave} className="btn-ghost text-sm mt-4">Отменить поиск</button>
+          <p className="text-white font-semibold">{language === 'en' ? 'Searching for opponents...' : 'Ищем соперников...'}</p>
+          <p className="text-sm text-gray-400 mt-1">{language === 'en' ? `Battle starts in ${countdown} sec.` : `Бой начнётся через ${countdown} сек.`}</p>
+          <p className="text-xs text-gray-500 mt-3">{language === 'en' ? 'Arena:' : 'На арене:'} {view.participants.map((p) => p.name).join(', ')}</p>
+          <button disabled={busy} onClick={leave} className="btn-ghost text-sm mt-4">{language === 'en' ? 'Cancel search' : 'Отменить поиск'}</button>
         </div>
       )}
 
@@ -210,23 +213,23 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
           <div className="relative">
             {won ? <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-2" /> : <Skull className="w-12 h-12 text-gray-400 mx-auto mb-2" />}
             <h2 className={`text-2xl font-bold ${won ? 'text-emerald-400' : draw ? 'text-amber-400' : 'text-red-400'}`}>
-              {won ? 'Победа!' : draw ? 'Ничья' : 'Поражение'}
+              {won ? (language === 'en' ? 'Victory!' : 'Победа!') : draw ? (language === 'en' ? 'Draw' : 'Ничья') : (language === 'en' ? 'Defeat' : 'Поражение')}
             </h2>
             {reward ? (
               <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm mt-3">
-                <span className="text-amber-400">+{reward.gold} золота</span>
-                <span className="text-teal-400">+{reward.xp} опыта</span>
+                <span className="text-amber-400">{language === 'en' ? `+${reward.gold} gold` : `+${reward.gold} золота`}</span>
+                <span className="text-teal-400">{language === 'en' ? `+${reward.xp} XP` : `+${reward.xp} опыта`}</span>
                 <span className={reward.ratingChange >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-                  {reward.ratingChange >= 0 ? '+' : ''}{reward.ratingChange} рейтинга
+                  {reward.ratingChange >= 0 ? '+' : ''}{reward.ratingChange} {language === 'en' ? 'rating' : 'рейтинга'}
                 </span>
-                {reward.kills > 0 && <span className="text-gray-300">убийств: {reward.kills}</span>}
+                {reward.kills > 0 && <span className="text-gray-300">{language === 'en' ? `Kills: ${reward.kills}` : `убийств: ${reward.kills}`}</span>}
               </div>
             ) : (
               view.me.ratingChange !== null && (
-                <p className="text-sm text-gray-400 mt-2">Рейтинг: {view.me.ratingChange >= 0 ? '+' : ''}{view.me.ratingChange}</p>
+                <p className="text-sm text-gray-400 mt-2">{language === 'en' ? 'Rating:' : 'Рейтинг:'} {view.me.ratingChange >= 0 ? '+' : ''}{view.me.ratingChange}</p>
               )
             )}
-            <p className="text-xs text-gray-500 mt-3">Чат открыт, пока ты в комнате</p>
+            <p className="text-xs text-gray-500 mt-3">{language === 'en' ? 'Chat stays open while you are in the room' : 'Чат открыт, пока ты в комнате'}</p>
             <button disabled={busy} onClick={leave} className="btn-primary mt-3 inline-flex items-center gap-2">
               <LogOut className="w-4 h-4" /> Покинуть комнату
             </button>
@@ -262,7 +265,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
       {room.status !== 'waiting' && (
         <div className="space-y-1.5">
           <FoldSection
-            title="Снаряжение"
+            title={language === 'en' ? 'Equipment' : 'Снаряжение'}
             open={gearOpen}
             onToggle={() => setGearOpen((o) => !o)}
             summary={
@@ -277,7 +280,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
             <GearStrip equipped={game.player.equipped} />
           </FoldSection>
           <FoldSection
-            title="Эликсиры и предметы"
+            title={language === 'en' ? 'Elixirs and items' : 'Эликсиры и предметы'}
             open={beltOpen}
             onToggle={() => setBeltOpen((o) => !o)}
             summary={
@@ -291,7 +294,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
             <BeltBar
               belt={game.belt}
               ctx={beltContext(game, arenaStats.wins)}
-              actionLabel={isActive && alive ? 'Нажми на зелье, чтобы выпить (одно за раунд)' : 'Пояс с зельями — собирается в сумке'}
+              actionLabel={isActive && alive ? (language === 'en' ? 'Tap a potion to drink (one per round)' : 'Нажми на зелье, чтобы выпить (одно за раунд)') : (language === 'en' ? 'Manage your potion belt in inventory' : 'Пояс с зельями — собирается в сумке')}
               disabled={!isActive || !alive || busy}
               busyIndex={beltBusy}
               onAction={pressBeltSlot}
@@ -304,14 +307,14 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
 
       {isActive && !alive && !isDuel && (
         <div className="card text-center py-3 border-red-500/30">
-          <p className="text-xs text-gray-400">Союзник может вернуть тебя адреналином. Следи за боем в чате.</p>
+          <p className="text-xs text-gray-400">{language === 'en' ? 'An ally can revive you with adrenaline. Follow the battle in chat.' : 'Союзник может вернуть тебя адреналином. Следи за боем в чате.'}</p>
         </div>
       )}
 
       {room.status !== 'waiting' && !isDuel && (
         <div className="space-y-1.5">
           <FighterList
-            title={`Противники · ${TEAM_NAMES[me.team === 1 ? 2 : 1]}`}
+            title={`${language === 'en' ? 'Enemies' : 'Противники'} · ${teamLabel(me.team === 1 ? 2 : 1)}`}
             accent="enemy"
             fighters={enemies}
             meId={me.id}
@@ -322,7 +325,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
             onToggle={() => setEnemiesOpen((o) => !o)}
           />
           <FighterList
-            title={`Твоя команда · ${TEAM_NAMES[me.team ?? 1]}`}
+            title={`${language === 'en' ? 'Your team' : 'Твоя команда'} · ${teamLabel(me.team ?? 1)}`}
             accent="ally"
             fighters={allies}
             meId={me.id}
@@ -337,17 +340,17 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
       <ArenaChat roomId={roomId} messages={messages} myName={me.name} />
 
       {isActive && (
-        <button onClick={() => setConfirmLeave(true)} className="btn-ghost w-full text-xs text-gray-500">Покинуть бой</button>
+        <button onClick={() => setConfirmLeave(true)} className="btn-ghost w-full text-xs text-gray-500">{language === 'en' ? 'Leave battle' : 'Покинуть бой'}</button>
       )}
 
       {confirmLeave && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={() => setConfirmLeave(false)}>
           <div className="card w-full max-w-sm text-center animate-pop" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-white mb-2">Покинуть бой?</h3>
-            <p className="text-sm text-gray-400 mb-4">{alive ? 'Ты будешь считаться павшим, и бой может быть проигран.' : 'Ты больше не увидишь чат этого боя.'}</p>
+            <h3 className="text-lg font-bold text-white mb-2">{language === 'en' ? 'Leave battle?' : 'Покинуть бой?'}</h3>
+            <p className="text-sm text-gray-400 mb-4">{alive ? (language === 'en' ? 'You will count as defeated, and your team may lose.' : 'Ты будешь считаться павшим, и бой может быть проигран.') : (language === 'en' ? 'You will no longer see this battle chat.' : 'Ты больше не увидишь чат этого боя.')}</p>
             <div className="grid grid-cols-2 gap-2">
-              <button className="btn-ghost" onClick={() => setConfirmLeave(false)}>Остаться</button>
-              <button className="btn-danger" disabled={busy} onClick={() => { setConfirmLeave(false); leave(); }}>Выйти</button>
+              <button className="btn-ghost" onClick={() => setConfirmLeave(false)}>{language === 'en' ? 'Stay' : 'Остаться'}</button>
+              <button className="btn-danger" disabled={busy} onClick={() => { setConfirmLeave(false); leave(); }}>{language === 'en' ? 'Leave' : 'Выйти'}</button>
             </div>
           </div>
         </div>

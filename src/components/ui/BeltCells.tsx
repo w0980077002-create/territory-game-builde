@@ -1,3 +1,4 @@
+import { useLanguage } from '@/game/i18n';
 import { Lock } from 'lucide-react';
 import { BELT_RULES, type BeltContext } from '@/game/belt';
 import { rarityColor } from '@/game/ui';
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function BeltCells({ belt, ctx, disabled, onTap }: Props) {
+  const { language } = useLanguage();
   return (
     <div className="grid grid-cols-7 gap-1.5">
       {BELT_RULES.map((rule, i) => {
@@ -22,7 +24,7 @@ export function BeltCells({ belt, ctx, disabled, onTap }: Props) {
           <button
             key={i}
             onClick={() => onTap(i, open)}
-            aria-label={item ? item.name : open ? `Слот ${i + 1} пуст` : `Слот ${i + 1} закрыт`}
+            aria-label={item ? item.name : open ? `${language === 'en' ? 'Slot' : 'Слот'} ${i + 1} ${language === 'en' ? 'empty' : 'пуст'}` : `${language === 'en' ? 'Slot' : 'Слот'} ${i + 1} ${language === 'en' ? 'locked' : 'закрыт'}`}
             className={`relative aspect-square rounded-xl border flex items-center justify-center transition-all duration-200 active:scale-90 ${
               !open
                 ? 'bg-black/60 border-white/5'

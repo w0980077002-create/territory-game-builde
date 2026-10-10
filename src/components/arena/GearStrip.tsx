@@ -2,17 +2,19 @@ import { useState } from 'react';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
 import { rarityColor } from '@/game/ui';
 import type { Equipment, GameState } from '@/game/types';
+import { useLanguage, localizeText } from '@/game/i18n';
 
-function statLine(eq: Equipment) {
+function statLine(eq: Equipment, language: 'ru' | 'en') {
   return [
-    eq.attack ? `+${eq.attack} атк` : '',
-    eq.defense ? `+${eq.defense} защ` : '',
+    eq.attack ? `+${eq.attack} ${language === 'en' ? 'atk' : 'атк'}` : '',
+    eq.defense ? `+${eq.defense} ${language === 'en' ? 'def' : 'защ'}` : '',
     eq.hp ? `+${eq.hp} HP` : '',
-    eq.critChance ? `+${eq.critChance}% крит` : '',
+    eq.critChance ? `+${eq.critChance}% ${language === 'en' ? 'crit' : 'крит'}` : '',
   ].filter(Boolean).join(' · ');
 }
 
 export function GearStrip({ equipped }: { equipped: GameState['player']['equipped'] }) {
+  const { language } = useLanguage();
   const [picked, setPicked] = useState<Equipment['slot'] | null>(null);
   const slot = EQUIPMENT_SLOTS.find((s) => s.id === picked);
   const eq = picked ? equipped[picked] : undefined;
@@ -34,7 +36,7 @@ export function GearStrip({ equipped }: { equipped: GameState['player']['equippe
               style={{ borderColor: color ? `${color}aa` : 'rgba(255,255,255,0.12)', boxShadow: color ? `inset 0 0 12px ${color}33` : undefined }}
             >
               <span className={`text-xl leading-none ${item ? '' : 'opacity-25 grayscale'}`}>{item ? item.icon : s.icon}</span>
-              <span className="text-[9px] text-gray-400 leading-none">{s.name}</span>
+              <span className="text-[9px] text-gray-400 leading-none">{language === 'en' ? ({ helmet: 'Head', amulet: 'Amulet', armor: 'Armor', weapon: 'Weapon', shield: 'Shield', ring: 'Ring', boots: 'Boots' } as Record<string, string>)[s.id] || s.name : s.name}</span>
             </button>
           );
         })}
@@ -43,11 +45,11 @@ export function GearStrip({ equipped }: { equipped: GameState['player']['equippe
         <p className="text-[11px] mt-1.5 px-1 animate-fade-in">
           {eq ? (
             <>
-              <span className="font-semibold" style={{ color: rarityColor(eq.rarity) }}>{eq.name}</span>
-              <span className="text-gray-400"> · ур. {eq.level}{statLine(eq) ? ` · ${statLine(eq)}` : ''}</span>
+              <span className="font-semibold" style={{ color: rarityColor(eq.rarity) }}>{localizeText(eq.name, language)}</span>
+              <span className="text-gray-400"> · {language === 'en' ? 'Lv.' : 'ур.'} {eq.level}{statLine(eq, language) ? ` · ${statLine(eq, language)}` : ''}</span>
             </>
           ) : (
-            <span className="text-gray-500">{slot.name}: пусто — загляни в магазин или кузницу</span>
+            <span className="text-gray-500">{language === 'en' ? 'Empty — check the Shop or Forge' : `${slot.name}: пусто — загляни в магазин или кузницу`}</span>
           )}
         </p>
       )}

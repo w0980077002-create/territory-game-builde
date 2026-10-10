@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
+import { useLanguage, localizeText } from '@/game/i18n';
 import { rarityColor, rarityGlow } from '@/game/ui';
 import { Hammer, ArrowUp, X } from 'lucide-react';
 import { hapticNotify } from '@/game/telegram';
@@ -15,6 +16,7 @@ const UPGRADE_COST = (level: number) => ({
 });
 
 export function ForgeScreen() {
+  const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const [upgrading, setUpgrading] = useState(false);
@@ -29,7 +31,7 @@ export function ForgeScreen() {
     const eq = item.equipment;
 
     if (eq.level >= state.player.level) {
-      setError('Достигнут максимальный уровень для вашего текущего лвл');
+      setError(t('upgradeMaxLevel'));
       hapticNotify('error');
       setTimeout(() => setError(null), 2000);
       return;
@@ -38,13 +40,13 @@ export function ForgeScreen() {
     const cost = UPGRADE_COST(eq.level);
 
     if (state.player.gold < cost.gold) {
-      setError('Недостаточно золота');
+      setError(t('notEnoughGold'));
       hapticNotify('error');
       setTimeout(() => setError(null), 2000);
       return;
     }
     if (state.forgeMaterials < cost.materials) {
-      setError('Недостаточно материалов кузницы');
+      setError(t('notEnoughForgeMaterials'));
       hapticNotify('error');
       setTimeout(() => setError(null), 2000);
       return;
@@ -67,7 +69,7 @@ export function ForgeScreen() {
             ? {
                 ...i,
                 equipment: upgradedEq,
-                description: `Уровень ${upgradedEq.level} · ${upgradedEq.rarity}`,
+                description: `${language === 'en' ? 'Level' : 'Уровень'} ${upgradedEq.level} · ${upgradedEq.rarity}`,
               }
             : i,
         );
@@ -99,7 +101,7 @@ export function ForgeScreen() {
           },
           forgeMaterials: state.forgeMaterials - cost.materials,
         });
-        setError('Неудача! Предмет не улучшился, но материалы потрачены.');
+        setError(t('upgradeFailed'));
         hapticNotify('error');
         setTimeout(() => setError(null), 3000);
       }
@@ -116,7 +118,7 @@ export function ForgeScreen() {
       type: 'equipment' as const,
       rarity: eq.rarity,
       qty: 1,
-      description: `Надето · Уровень ${eq.level} · ${eq.rarity}`,
+      description: `${language === 'en' ? 'Equipped · Level' : 'Надето · Уровень'} ${eq.level} · ${eq.rarity}`,
       equipment: eq,
     })),
     ...equipment,
@@ -127,9 +129,9 @@ export function ForgeScreen() {
       <div className="card text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Hammer className="w-6 h-6 text-orange-400" />
-          <h2 className="text-xl font-bold text-white">Кузница</h2>
+          <h2 className="text-xl font-bold text-white">{t('forgeTitle')}</h2>
         </div>
-        <p className="text-sm text-gray-400">Улучшай экипировку за золото и материалы</p>
+        <p className="text-sm text-gray-400">{language === 'en' ? 'Upgrade gear using gold and materials' : 'Улучшай экипировку за золото и материалы'}</p>
         <div className="flex justify-center gap-4 mt-3 text-sm">
           <span className="text-amber-400">🪙 {state.player.gold}</span>
           <span className="text-orange-400">🔩 {state.forgeMaterials}</span>
@@ -144,14 +146,14 @@ export function ForgeScreen() {
 
       {success && (
         <div className="card text-center text-teal-400 text-sm animate-pop">
-          Улучшение успешно! Предмет стал сильнее!
+          {language === 'en' ? 'Upgrade successful! The item is now stronger.' : 'Улучшение успешно! Предмет стал сильнее!'}
         </div>
       )}
 
       {/* Equipped items */}
       {equippedList.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">Надетая экипировка</h3>
+          <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">{t('equippedGear')}</h3>
           <div className="grid grid-cols-2 gap-2">
             {equippedList.map((eq) => (
               <button
@@ -165,7 +167,7 @@ export function ForgeScreen() {
                   type: 'equipment',
                   rarity: eq.rarity,
                   qty: 1,
-                  description: `Надето · Уровень ${eq.level}`,
+                  description: `${language === 'en' ? 'Equipped · Level' : 'Надето · Уровень'} ${eq.level}`,
                   equipment: eq,
                 })}
               >
@@ -175,9 +177,9 @@ export function ForgeScreen() {
                   <img src={SLOT_ART[eq.slot]} alt="" className="w-11 h-11 object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.7)]" />
                 </div>
                 <p className="text-xs font-medium truncate w-full text-center" style={{ color: rarityColor(eq.rarity) }}>
-                  {eq.name}
+                  {localizeText(eq.name, language)}
                 </p>
-                <p className="text-xs text-gray-500">Ур. {eq.level}</p>
+                <p className="text-xs text-gray-500">{t('level')} {eq.level}</p>
               </button>
             ))}
           </div>
@@ -187,7 +189,7 @@ export function ForgeScreen() {
       {/* Inventory equipment */}
       {equipment.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">В сумке</h3>
+          <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">{t('inInventory')}</h3>
           <div className="grid grid-cols-2 gap-2">
             {equipment.map((item) => (
               <button
@@ -202,9 +204,9 @@ export function ForgeScreen() {
                   <ItemArt item={item} size={44} />
                 </div>
                 <p className="text-xs font-medium truncate w-full text-center" style={{ color: rarityColor(item.rarity) }}>
-                  {item.name}
+                  {localizeText(item.name, language)}
                 </p>
-                <p className="text-xs text-gray-500">Ур. {item.equipment?.level || 1}</p>
+                <p className="text-xs text-gray-500">{t('level')} {item.equipment?.level || 1}</p>
               </button>
             ))}
           </div>
@@ -214,8 +216,8 @@ export function ForgeScreen() {
       {allEquipment.length === 0 && (
         <div className="card text-center py-8 text-gray-500">
           <Hammer className="w-12 h-12 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">Нет экипировки для улучшения</p>
-          <p className="text-xs mt-1">Побеждай боссов, чтобы получить предметы!</p>
+          <p className="text-sm">{t('noUpgradeGear')}</p>
+          <p className="text-xs mt-1">{t('bossesHint')}</p>
         </div>
       )}
 
@@ -239,9 +241,9 @@ export function ForgeScreen() {
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-base" style={{ color: rarityColor(selected.rarity) }}>
-                  {selected.name}
+                  {localizeText(selected.name, language)}
                 </h3>
-                <p className="text-xs text-gray-400">Уровень {selected.equipment.level} · {selected.rarity}</p>
+                <p className="text-xs text-gray-400">{t('level')} {selected.equipment.level} · {selected.rarity}</p>
               </div>
               <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-white">
                 <X className="w-5 h-5" />
@@ -250,31 +252,31 @@ export function ForgeScreen() {
 
             {/* Current stats */}
             <div className="space-y-1 mb-3">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Сейчас</p>
-              {selected.equipment.attack ? <StatRow label="Атака" value={selected.equipment.attack} /> : null}
-              {selected.equipment.defense ? <StatRow label="Защита" value={selected.equipment.defense} /> : null}
-              {selected.equipment.hp ? <StatRow label="Здоровье" value={selected.equipment.hp} /> : null}
+              <p className="text-xs text-gray-500 uppercase tracking-wider">{t('current')}</p>
+              {selected.equipment.attack ? <StatRow label={t('attack')} value={selected.equipment.attack} /> : null}
+              {selected.equipment.defense ? <StatRow label={t('defense')} value={selected.equipment.defense} /> : null}
+              {selected.equipment.hp ? <StatRow label={t('health')} value={selected.equipment.hp} /> : null}
             </div>
 
             {/* Upgrade cost */}
             {selected.equipment.level >= state.player.level ? (
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3 text-center">
                 <p className="text-sm text-red-300 font-medium">
-                  Достигнут максимальный уровень для вашего текущего лвл
+                  {t('upgradeMaxLevel')}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  Повысьте уровень персонажа, чтобы улучшить предмет дальше
+                  {language === 'en' ? 'Level up your hero to upgrade this item further.' : 'Повысьте уровень персонажа, чтобы улучшить предмет дальше'}
                 </p>
               </div>
             ) : (
               <div className="bg-black/20 rounded-lg p-3 mb-3">
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Стоимость улучшения</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">{t('upgradeCost')}</p>
                 <div className="flex justify-between text-sm">
                   <span className="text-amber-400">🪙 {UPGRADE_COST(selected.equipment.level).gold}</span>
                   <span className="text-orange-400">🔩 {UPGRADE_COST(selected.equipment.level).materials}</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Шанс успеха: {Math.round(Math.max(50, 90 - selected.equipment.level * 5))}%
+                  {language === 'en' ? 'Success chance' : 'Шанс успеха'}: {Math.round(Math.max(50, 90 - selected.equipment.level * 5))}%
                 </p>
               </div>
             )}
@@ -284,10 +286,10 @@ export function ForgeScreen() {
               onClick={() => tryUpgrade(selected)}
               disabled={upgrading || selected.equipment.level >= state.player.level}
             >
-              {upgrading ? 'Кузнец работает...' : selected.equipment.level >= state.player.level ? (
-                'Максимальный уровень'
+              {upgrading ? t('blacksmithWorking') : selected.equipment.level >= state.player.level ? (
+                t('maxLevel')
               ) : (
-                <><ArrowUp className="w-4 h-4 inline mr-1" /> Улучшить</>
+                <><ArrowUp className="w-4 h-4 inline mr-1" /> {t('upgrade')}</>
               )}
             </button>
           </div>

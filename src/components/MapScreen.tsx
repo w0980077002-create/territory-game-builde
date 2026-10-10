@@ -3,6 +3,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Lock, Sparkles, Crown, Check } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
+import { useLanguage, localizeText } from '@/game/i18n';
 import { APPEARANCE_PRESETS, MALE_PRESETS, FEMALE_PRESETS, getPlayableAppearance, type AppearancePreset } from '@/game/appearance';
 import type { InventoryItem, ProfessionProgress } from '@/game/types';
 import { RESOURCE_DEFINITIONS, type ResourceId } from '@/game/professions';
@@ -107,13 +108,14 @@ export function MapScreen() {
   const [selected, setSelected] = useState<LocationId | null>(null);
   const [notice, setNotice] = useState('');
   const game = useStore(useGame);
+  const { t, language } = useLanguage();
 
   const gatherResource = (regionResource: Region['resources'][number]) => {
     const current = useGame.get();
     const progress = current.professions ?? EMPTY_PROFESSION_PROGRESS;
     const now = Date.now();
     if (now - progress.lastGatherAt < 2500) {
-      setNotice('Нужно подождать пару секунд перед следующей добычей.');
+      setNotice(t('waitGather'));
       return;
     }
     const resource = RESOURCE_DEFINITIONS.find((item) => item.id === regionResource.id);
@@ -130,10 +132,10 @@ export function MapScreen() {
         type: 'material',
         rarity: resource.rarity,
         qty: 1,
-        description: 'Ресурс, добытый на карте мира. Подходит для ремесла и торговли.',
+        description: t('resourceDescription'),
       }];
     useGame.set({ ...current, inventory, professions: { ...progress, lastGatherAt: now } });
-    setNotice(`Добыто: ${resource.name}. Ресурс добавлен в инвентарь.`);
+    setNotice(`${t('gathered')}: ${localizeText(resource.name, language)}. ${t('resourceAdded')}`);
   };
 
   return (
@@ -153,8 +155,8 @@ export function MapScreen() {
               <img src="/nav-map.webp" alt="" className="w-9 h-9 object-contain" />
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold text-amber-100">Карта мира</h2>
-              <p className="text-xs text-gray-400">Исследуй земли, добывай ресурсы и меняй облик героя</p>
+              <h2 className="text-lg font-bold text-amber-100">{t('mapTitle')}</h2>
+              <p className="text-xs text-gray-400">{t('mapHint')}</p>
             </div>
           </div>
         </div>
@@ -162,8 +164,8 @@ export function MapScreen() {
         {/* Resource Regions */}
         <div>
           <div className="flex items-baseline justify-between px-1 mb-2">
-            <h3 className="text-xs font-semibold text-amber-200/80 uppercase tracking-wider">Ресурсные земли</h3>
-            <span className="text-[11px] text-emerald-300">Добыча уже доступна</span>
+            <h3 className="text-xs font-semibold text-amber-200/80 uppercase tracking-wider">{t('resourceLands')}</h3>
+            <span className="text-[11px] text-emerald-300">{t('gatheringReady')}</span>
           </div>
           <div className="space-y-2.5">
             {REGIONS.map((r) => (
@@ -177,19 +179,19 @@ export function MapScreen() {
                   <img src={r.icon} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div className="relative flex-1 min-w-0">
-                  <h4 className="text-sm font-bold text-white truncate">{r.name}</h4>
-                  <p className="text-[11px] text-gray-300/80 truncate">{r.desc}</p>
+                  <h4 className="text-sm font-bold text-white truncate">{language === 'en' ? ({ forest: t('gatherForest'), mountain: t('gatherMines'), herbs: t('gatherHerbs'), hunting: t('gatherHunting'), rare: t('gatherCaves') } as Record<string, string>)[r.id] : r.name}</h4>
+                  <p className="text-[11px] text-gray-300/80 truncate">{language === 'en' ? ({ forest: t('gatherForestDesc'), mountain: t('gatherMinesDesc'), herbs: t('gatherHerbsDesc'), hunting: t('gatherHuntingDesc'), rare: t('gatherCavesDesc') } as Record<string, string>)[r.id] : r.desc}</p>
                   <div className="flex items-center gap-1.5 mt-1.5">
                     {r.resources.map((res) => (
-                      <span key={res.name} className="inline-flex items-center gap-0.5 rounded-md bg-black/40 border border-white/10 px-1.5 py-0.5 text-[9px] font-semibold text-gray-200">
-                        <span className="text-[10px]">{res.icon}</span> {res.name}
+                      <span key={language === 'en' ? ({ 'gather-wood': t('wood'), 'gather-herb': t('healingHerbs'), 'gather-ore': t('ironOre'), 'gather-crystal': t('magicCrystal'), 'gather-hide': t('hide') } as Record<string, string>)[res.id] : res.name} className="inline-flex items-center gap-0.5 rounded-md bg-black/40 border border-white/10 px-1.5 py-0.5 text-[9px] font-semibold text-gray-200">
+                        <span className="text-[10px]">{res.icon}</span> {language === 'en' ? ({ 'gather-wood': t('wood'), 'gather-herb': t('healingHerbs'), 'gather-ore': t('ironOre'), 'gather-crystal': t('magicCrystal'), 'gather-hide': t('hide') } as Record<string, string>)[res.id] : res.name}
                       </span>
                     ))}
                   </div>
                 </div>
                 <div className="relative shrink-0 flex flex-col items-center gap-1">
-                  <span className="rounded-lg bg-black/50 border border-white/10 px-2 py-1 text-[9px] font-bold text-amber-200/90">Ресурсы</span>
-                  <span className="flex items-center gap-0.5 text-[9px] text-emerald-300">Добыча доступна</span>
+                  <span className="rounded-lg bg-black/50 border border-white/10 px-2 py-1 text-[9px] font-bold text-amber-200/90">{t('resources')}</span>
+                  <span className="flex items-center gap-0.5 text-[9px] text-emerald-300">{t('gatheringReady')}</span>
                 </div>
               </button>
             ))}
@@ -199,7 +201,7 @@ export function MapScreen() {
         {/* Chamber of Appearance */}
         <div>
           <div className="flex items-baseline justify-between px-1 mb-2">
-            <h3 className="text-xs font-semibold text-amber-200/80 uppercase tracking-wider">Особые места</h3>
+            <h3 className="text-xs font-semibold text-amber-200/80 uppercase tracking-wider">{t('specialPlaces')}</h3>
           </div>
           <button
             onClick={() => setSelected('chamber')}
@@ -211,8 +213,8 @@ export function MapScreen() {
               <img src="/map-chamber.webp" alt="" className="w-full h-full object-cover" />
             </div>
             <div className="relative flex-1 min-w-0">
-              <h4 className="text-sm font-bold text-purple-100 truncate">Чертог Облика</h4>
-              <p className="text-[11px] text-purple-200/70 truncate">Смени облик героя. Внешность не влияет на боевые характеристики.</p>
+              <h4 className="text-sm font-bold text-purple-100 truncate">{t('appearanceHall')}</h4>
+              <p className="text-[11px] text-purple-200/70 truncate">{language === 'en' ? 'Change your hero’s appearance. It does not affect combat stats.' : 'Смени облик героя. Внешность не влияет на боевые характеристики.'}</p>
             </div>
             <Sparkles className="relative w-5 h-5 text-purple-300 shrink-0" />
           </button>
@@ -223,14 +225,14 @@ export function MapScreen() {
       {selected && selected !== 'chamber' && (() => {
         const r = REGIONS.find((reg) => reg.id === selected)!;
         return (
-          <Modal title={r.name} icon={r.icon} onClose={() => setSelected(null)}>
+          <Modal title={language === 'en' ? ({ forest: t('gatherForest'), mountain: t('gatherMines'), herbs: t('gatherHerbs'), hunting: t('gatherHunting'), rare: t('gatherCaves') } as Record<string, string>)[r.id] : r.name} icon={r.icon} onClose={() => setSelected(null)}>
             <div className="space-y-4">
               <div className="rounded-xl overflow-hidden border border-white/10">
                 <img src={r.icon} alt="" className="w-full h-32 object-cover" />
               </div>
-              <p className="text-sm text-gray-300">{r.desc}</p>
+              <p className="text-sm text-gray-300">{language === 'en' ? ({ forest: t('gatherForestDesc'), mountain: t('gatherMinesDesc'), herbs: t('gatherHerbsDesc'), hunting: t('gatherHuntingDesc'), rare: t('gatherCavesDesc') } as Record<string, string>)[r.id] : r.desc}</p>
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Добываемые ресурсы</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t('gatherResources')}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {r.resources.map((res) => {
                     const count = game.inventory.find((item) => item.id === res.id && item.type === 'material')?.qty ?? 0;
@@ -242,9 +244,9 @@ export function MapScreen() {
                         className="rounded-xl border border-emerald-400/20 bg-black/30 p-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
                       >
                         <span className="text-2xl">{res.icon}</span>
-                        <span className="text-[11px] font-semibold text-gray-200 text-center leading-tight">{res.name}</span>
-                        <span className="text-[10px] text-gray-400">В сумке: {count}</span>
-                        <span className="mt-1 rounded-lg bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-white">Собрать</span>
+                        <span className="text-[11px] font-semibold text-gray-200 text-center leading-tight">{language === 'en' ? ({ 'gather-wood': t('wood'), 'gather-herb': t('healingHerbs'), 'gather-ore': t('ironOre'), 'gather-crystal': t('magicCrystal'), 'gather-hide': t('hide') } as Record<string, string>)[res.id] : res.name}</span>
+                        <span className="text-[10px] text-gray-400">{t('inBag')}: {count}</span>
+                        <span className="mt-1 rounded-lg bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-white">{t('gather')}</span>
                       </button>
                     );
                   })}
@@ -253,7 +255,7 @@ export function MapScreen() {
               <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-3 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-emerald-300 shrink-0" />
                 <p className="text-xs text-emerald-100/80">
-                  Добыча доступна каждому игроку — профессия не нужна. Между попытками общий перерыв 2,5 секунды; ресурсы сразу сохраняются в инвентаре.
+                  {language === 'en' ? 'Gathering is available to every player — no profession required. There is a 2.5-second cooldown between attempts; resources are saved to your inventory immediately.' : 'Добыча доступна каждому игроку — профессия не нужна. Между попытками общий перерыв 2,5 секунды; ресурсы сразу сохраняются в инвентаре.'}
                 </p>
               </div>
               {notice && <p role="status" className="rounded-lg border border-sky-400/20 bg-sky-500/10 p-2 text-xs text-sky-100">{notice}</p>}
@@ -271,6 +273,7 @@ export function MapScreen() {
 }
 
 function ChamberModal({ onClose }: { onClose: () => void }) {
+  const { t, language } = useLanguage();
   const [tab, setTab] = useState<'male' | 'female' | 'unique'>('male');
   const state = useStore(useGame);
   const currentAppearance = getPlayableAppearance(state.appearance);
@@ -281,16 +284,16 @@ function ChamberModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal title="Чертог Облика" icon="/map-chamber.webp" onClose={onClose}>
+    <Modal title={t('appearanceHall')} icon="/map-chamber.webp" onClose={onClose}>
       <div className="space-y-4">
-        <p className="text-sm text-gray-300">Выбери облик героя. Внешность — это косметика: она не влияет на боевые характеристики.</p>
+        <p className="text-sm text-gray-300">{language === 'en' ? 'Choose your hero appearance. It is cosmetic and does not affect combat stats.' : 'Выбери облик героя. Внешность — это косметика: она не влияет на боевые характеристики.'}</p>
 
         {/* Tabs */}
         <div className="flex gap-1.5">
-          <TabBtn active={tab === 'male'} onClick={() => setTab('male')}>Мужские</TabBtn>
-          <TabBtn active={tab === 'female'} onClick={() => setTab('female')}>Женские</TabBtn>
+          <TabBtn active={tab === 'male'} onClick={() => setTab('male')}>{t('male')}</TabBtn>
+          <TabBtn active={tab === 'female'} onClick={() => setTab('female')}>{t('female')}</TabBtn>
           <TabBtn active={tab === 'unique'} onClick={() => setTab('unique')}>
-            <Crown className="w-3.5 h-3.5 inline mr-1" /> Уникальный
+            <Crown className="w-3.5 h-3.5 inline mr-1" /> {t('unique')}
           </TabBtn>
         </div>
 
@@ -310,22 +313,19 @@ function ChamberModal({ onClose }: { onClose: () => void }) {
                   <Crown className="w-8 h-8 text-amber-300" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-sm font-bold text-amber-100">Уникальный облик</h4>
-                  <p className="text-[11px] text-amber-200/70">Полностью настраиваемая внешность — лицо, тело, детали. Премиум-косметика.</p>
+                  <h4 className="text-sm font-bold text-amber-100">{t('uniqueAppearance')}</h4>
+                  <p className="text-[11px] text-amber-200/70">{language === 'en' ? 'Fully customizable appearance — face, body, details. Premium cosmetics.' : 'Полностью настраиваемая внешность — лицо, тело, детали. Премиум-косметика.'}</p>
                 </div>
               </div>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/30 p-3">
               <p className="text-xs text-gray-400 leading-relaxed">
-                Уникальный облик позволит тонко настроить черты лица, телосложение и детали внешности героя.
-                Это исключительно косметическая функция — она не даёт преимуществ в бою.
+                {language === 'en' ? 'Customize your hero’s facial features, body shape, and appearance details. This is cosmetic only and provides no combat advantage.' : 'Уникальный облик позволит тонко настроить черты лица, телосложение и детали внешности героя. Это исключительно косметическая функция — она не даёт преимуществ в бою.'}
               </p>
             </div>
             <div className="rounded-xl border border-amber-500/20 bg-amber-950/20 p-3 flex items-center gap-2">
               <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-              <p className="text-xs text-amber-200/80">
-                Премиум-косметика. Доступ будет добавлен в одном из следующих обновлений.
-              </p>
+              <p className="text-xs text-amber-200/80">{t('premiumCosmetics')}</p>
             </div>
           </div>
         )}

@@ -5,6 +5,7 @@ import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { getCombatAppearance } from '@/game/appearance';
 import { FighterFigure } from './FighterFigure';
+import { useLanguage } from '@/game/i18n';
 
 interface Props {
   me: ArenaFighter;
@@ -30,13 +31,14 @@ interface Props {
 }
 
 function Plate({ fighter, side }: { fighter: ArenaFighter; side: 'ally' | 'enemy' }) {
+  const { language } = useLanguage();
   const pct = Math.max(0, (fighter.hp / fighter.maxHp) * 100);
   const low = pct <= 30;
   return (
     <div className="w-full rounded-lg bg-black/55 backdrop-blur-sm px-2 py-1 border border-white/10">
       <div className="flex items-center justify-between gap-1">
         <span className={`text-[11px] font-semibold truncate ${side === 'ally' ? 'text-teal-200' : 'text-red-200'}`}>{fighter.name}</span>
-        <span className="text-[10px] text-gray-300 shrink-0">{fighter.level} ур.</span>
+        <span className="text-[10px] text-gray-300 shrink-0">{fighter.level} {language === 'en' ? 'Lv.' : 'ур.'}</span>
       </div>
       <div className="h-1.5 rounded-full bg-black/60 overflow-hidden mt-0.5">
         <div
@@ -79,18 +81,19 @@ export function BattleScene(props: Props) {
     movedCount, aliveCount, strike, canRepeat, onAttack, onToggleBlock, onStrike, onRepeat, onToggleAuto,
   } = props;
   const game = useStore(useGame);
+  const { language } = useLanguage();
   const alive = me.hp > 0;
   const controls = active && alive && !moved && !auto;
   const ready = controls && !!attack && blocks.length === 2 && !!enemy && enemy.hp > 0;
 
   const status = !active ? null
-    : !alive ? { icon: Skull, text: 'Ты пал', tone: 'text-gray-200' }
-    : auto ? { icon: Bot, text: 'Автобой', tone: 'text-amber-200' }
-    : moved ? { icon: Hourglass, text: `Ждём ${movedCount}/${aliveCount}`, tone: 'text-emerald-200' }
+    : !alive ? { icon: Skull, text: language === 'en' ? 'You fell' : 'Ты пал', tone: 'text-gray-200' }
+    : auto ? { icon: Bot, text: language === 'en' ? 'Auto-battle' : 'Автобой', tone: 'text-amber-200' }
+    : moved ? { icon: Hourglass, text: language === 'en' ? `Waiting ${movedCount}/${aliveCount}` : `Ждём ${movedCount}/${aliveCount}`, tone: 'text-emerald-200' }
     : null;
 
-  const hint = !controls ? '' : !enemy ? 'Выбери цель' : blocks.length < 2
-    ? `Защита: выбери ещё ${2 - blocks.length}` : !attack ? 'Выбери зону удара' : `Удар по ${enemy.name}`;
+  const hint = !controls ? '' : !enemy ? (language === 'en' ? 'Choose a target' : 'Выбери цель') : blocks.length < 2
+    ? (language === 'en' ? `Choose ${2 - blocks.length} more defense zone(s)` : `Защита: выбери ещё ${2 - blocks.length}`) : !attack ? (language === 'en' ? 'Choose an attack zone' : 'Выбери зону удара') : (language === 'en' ? `Attack ${enemy.name}` : `Удар по ${enemy.name}`);
 
   return (
     <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black/40">
@@ -99,9 +102,9 @@ export function BattleScene(props: Props) {
 
       <div className="relative grid grid-cols-[56px_1fr_56px] gap-2 p-2 pt-3">
         <div className="flex flex-col gap-1.5 pt-6">
-          <p className="text-[9px] uppercase tracking-wider text-sky-200 text-center font-semibold">Защита {blocks.length}/2</p>
+          <p className="text-[9px] uppercase tracking-wider text-sky-200 text-center font-semibold">{language === 'en' ? 'DEFENSE' : 'Защита'} {blocks.length}/2</p>
           {ZONES.map((z) => (
-            <ZoneButton key={z.id} label={z.label} tone="def" selected={blocks.includes(z.id)} disabled={!controls} onClick={() => onToggleBlock(z.id)} />
+            <ZoneButton key={z.id} label={language === 'en' ? ({ head: 'Head', chest: 'Chest', belly: 'Belly', legs: 'Legs' } as Record<string, string>)[z.id] : z.label} tone="def" selected={blocks.includes(z.id)} disabled={!controls} onClick={() => onToggleBlock(z.id)} />
           ))}
         </div>
 
@@ -155,17 +158,17 @@ export function BattleScene(props: Props) {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-[11px] text-gray-300">Противников нет</div>
+              <div className="flex-1 flex items-center justify-center text-[11px] text-gray-300">{language === 'en' ? 'No enemies' : 'Противников нет'}</div>
             )}
           </div>
         </div>
 
         <div className="flex flex-col gap-1.5 pt-6">
-          <p className="text-[9px] uppercase tracking-wider text-red-200 text-center font-semibold">Удар</p>
+          <p className="text-[9px] uppercase tracking-wider text-red-200 text-center font-semibold">{language === 'en' ? 'ATTACK' : 'Удар'}</p>
           {ZONES.map((z) => (
             <ZoneButton
               key={z.id}
-              label={z.label}
+              label={language === 'en' ? ({ head: 'Head', chest: 'Chest', belly: 'Belly', legs: 'Legs' } as Record<string, string>)[z.id] : z.label}
               sub={z.mult !== 1 ? `×${z.mult}` : undefined}
               tone="atk"
               selected={attack === z.id}
@@ -183,14 +186,14 @@ export function BattleScene(props: Props) {
             <button
               onClick={onToggleAuto}
               disabled={busy || (autoLocked && !auto)}
-              title={autoLocked ? `Автобой доступен с VIP ${autoMinVip}` : 'Сервер будет бить за тебя'}
+              title={autoLocked ? (language === 'en' ? `Auto-battle requires VIP ${autoMinVip}` : `Автобой доступен с VIP ${autoMinVip}`) : (language === 'en' ? 'The server will fight for you' : 'Сервер будет бить за тебя')}
               className="shrink-0 flex items-center gap-1.5 h-11 px-2 rounded-xl bg-black/55 border border-white/15 backdrop-blur-sm transition-colors hover:border-amber-300/50 disabled:opacity-50"
             >
               <span className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${auto ? 'bg-amber-400 border-amber-400' : 'border-white/40'}`}>
                 {auto && <Check className="w-3 h-3 text-black" strokeWidth={3} />}
               </span>
               <span className="text-[10px] font-semibold text-gray-100 leading-tight text-left">
-                Авто<br />бой
+                {language === 'en' ? <>Auto<br />battle</> : <>Авто<br />бой</>}
               </span>
               {autoLocked && <Lock className="w-3 h-3 text-amber-300" />}
             </button>
@@ -202,13 +205,13 @@ export function BattleScene(props: Props) {
                 ready && !busy ? 'animate-strike-ready' : ''
               }`}
             >
-              {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sword className="w-5 h-5" />} УДАР
+              {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sword className="w-5 h-5" />} {language === 'en' ? 'STRIKE' : 'УДАР'}
             </button>
 
             <button
               onClick={onRepeat}
               disabled={!controls || !canRepeat}
-              title="Повторить прошлый выбор зон"
+              title={language === 'en' ? 'Repeat the previous zone selection' : 'Повторить прошлый выбор зон'}
               className="shrink-0 w-11 h-11 rounded-xl bg-black/55 border border-white/15 flex items-center justify-center text-gray-100 transition-colors hover:border-white/40 disabled:opacity-40"
             >
               <RotateCcw className="w-4 h-4" />

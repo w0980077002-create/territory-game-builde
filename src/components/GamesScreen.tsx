@@ -1,5 +1,6 @@
 import { Dice5, Lock, Sparkles, Dices, Swords, Target, Trophy } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useLanguage } from '@/game/i18n';
 
 interface GameCard {
   id: string;
@@ -59,6 +60,7 @@ const GAMES: GameCard[] = [
 ];
 
 export function GamesScreen({ onPlay }: { onPlay: (gameId: string) => void }) {
+  const { t, language } = useLanguage();
   return (
     <div className="space-y-4 animate-fade-in pb-2">
       <div className="relative rounded-2xl overflow-hidden border border-emerald-500/20 p-4">
@@ -68,8 +70,8 @@ export function GamesScreen({ onPlay }: { onPlay: (gameId: string) => void }) {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-emerald-100">Игровой зал</h2>
-            <p className="text-xs text-gray-400">Мини-игры и ивент-пассы</p>
+            <h2 className="text-lg font-bold text-emerald-100">{t('gameHall')}</h2>
+            <p className="text-xs text-gray-400">{t('gameHallHint')}</p>
           </div>
         </div>
       </div>
@@ -91,16 +93,16 @@ export function GamesScreen({ onPlay }: { onPlay: (gameId: string) => void }) {
                 </div>
                 {game.locked && (
                   <div className="flex items-center gap-1 rounded-full bg-black/40 px-2 py-1 text-[10px] font-bold uppercase text-gray-400">
-                    <Lock className="w-3 h-3" /> Скоро
+                    <Lock className="w-3 h-3" /> {t('comingSoon')}
                   </div>
                 )}
               </div>
               <div>
-                <h3 className={`font-bold ${isLarge ? 'text-xl' : 'text-sm'} text-white`}>{game.title}</h3>
-                <p className="text-xs text-gray-400 mt-0.5">{game.subtitle}</p>
+                <h3 className={`font-bold ${isLarge ? 'text-xl' : 'text-sm'} text-white`}>{t(({ monopoly: 'gameMonopoly', 'dice-duel': 'gameDice', tower: 'gameTower', targets: 'gameTargets', jackpot: 'gameJackpot' } as Record<string, string>)[game.id] ?? game.title)}</h3>
+                <p className="text-xs text-gray-400 mt-0.5">{t(({ monopoly: 'gameMonopolyHint', 'dice-duel': 'gameDiceHint', tower: 'gameTowerHint', targets: 'gameTargetsHint', jackpot: 'gameJackpotHint' } as Record<string, string>)[game.id] ?? game.subtitle)}</p>
                 {!game.locked && (
                   <span className={`mt-2 inline-flex items-center gap-1 text-xs font-bold ${game.accent}`}>
-                    Играть <Dice5 className="w-3.5 h-3.5" />
+                    {t('play')} <Dice5 className="w-3.5 h-3.5" />
                   </span>
                 )}
               </div>

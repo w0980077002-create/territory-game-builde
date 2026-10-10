@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useStore } from '@/game/store';
+import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, buyItem, DAILY_STONE_LIMIT, stonesRemainingToday, maxStoneQty } from '@/game/actions';
 import { generateShopItems } from '@/game/engine';
 import { rarityColor } from '@/game/ui';
@@ -14,10 +15,10 @@ const discount = (price: number | undefined) => (price ? Math.max(1, Math.ceil(p
 
 type Tab = 'potions' | 'equipment' | 'resources';
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'potions', label: 'Зелья' },
-  { id: 'equipment', label: 'Снаряжение' },
-  { id: 'resources', label: 'Ресурсы' },
+const TABS: { id: Tab; labelKey: string }[] = [
+  { id: 'potions', labelKey: 'potions' },
+  { id: 'equipment', labelKey: 'equipment' },
+  { id: 'resources', labelKey: 'resources' },
 ];
 
 const inTab = (item: ShopItem, tab: Tab) =>
@@ -37,12 +38,12 @@ function Price({ item, size = 14 }: { item: ShopItem; size?: number }) {
     : <Currency kind="gold" value={item.priceGold} size={size} />;
 }
 
-function resultText(item: ShopItem, qty: number) {
-  if (item.type === 'stone') return `+${(item.amount ?? 1) * qty} боевых камней`;
-  if (item.type === 'gem_pack') return `+${(item.amount ?? 0) * qty} синих кристаллов`;
-  if (item.type === 'material') return `+${qty} материал(ов) для кузницы`;
-  if (item.type === 'equipment') return `Предметы добавлены в инвентарь (${qty})`;
-  return `Добавлено в инвентарь: ${qty}`;
+function resultText(item: ShopItem, qty: number, language: 'ru' | 'en') {
+  if (item.type === 'stone') return language === 'en' ? `+${(item.amount ?? 1) * qty} battle stones` : `+${(item.amount ?? 1) * qty} боевых камней`;
+  if (item.type === 'gem_pack') return language === 'en' ? `+${(item.amount ?? 0) * qty} blue crystals` : `+${(item.amount ?? 0) * qty} синих кристаллов`;
+  if (item.type === 'material') return language === 'en' ? `+${qty} forge material(s)` : `+${qty} материал(ов) для кузницы`;
+  if (item.type === 'equipment') return language === 'en' ? `Gear added to inventory (${qty})` : `Предметы добавлены в инвентарь (${qty})`;
+  return language === 'en' ? `Added to inventory: ${qty}` : `Добавлено в инвентарь: ${qty}`;
 }
 
 function useMidnightCountdown() {
@@ -70,6 +71,7 @@ function formatDuration(ms: number): string {
 }
 
 export function ShopScreen() {
+  const { t, language } = useLanguage();
   const state = useStore(useGame);
   const { shopSale } = useStore(useLive);
   const allItems = generateShopItems(state.currentChapter).map((i) =>
@@ -91,7 +93,7 @@ export function ShopScreen() {
     if (!next) return;
     useGame.set(next);
     setPicked(null);
-    setResult({ item, text: resultText(item, qty) });
+    setResult({ item, text: resultText(item, qty, language) });
   };
 
   return (
@@ -101,8 +103,8 @@ export function ShopScreen() {
         <div className="relative flex items-center gap-3">
           <img src="/ic-shop.webp" alt="" className="w-12 h-12 object-contain" />
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-amber-100">Лавка</h2>
-            <p className="text-xs text-gray-400">Зелья, снаряжение и боевые камни</p>
+            <h2 className="text-lg font-bold text-amber-100">{t('shop')}</h2>
+            <p className="text-xs text-gray-400">{t('shopDescription')}</p>
           </div>
           {shopSale && (
             <span className="shrink-0 rounded-lg bg-gradient-to-b from-red-500 to-rose-700 px-2 py-1 text-xs font-bold text-white shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse">-20%</span>
@@ -116,13 +118,13 @@ export function ShopScreen() {
       </div>
 
       <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10">
-        {TABS.map((t) => (
+        {TABS.map((tabItem) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`h-9 rounded-xl text-xs font-semibold transition-all ${tab === t.id ? 'bg-gradient-to-b from-amber-400 to-amber-600 text-black' : 'text-gray-400'}`}
+            key={tabItem.id}
+            onClick={() => setTab(tabItem.id)}
+            className={`h-9 rounded-xl text-xs font-semibold transition-all ${tab === tabItem.id ? 'bg-gradient-to-b from-amber-400 to-amber-600 text-black' : 'text-gray-400'}`}
           >
-            {t.label}
+            {t(tabItem.labelKey)}
           </button>
         ))}
       </div>
@@ -141,7 +143,7 @@ export function ShopScreen() {
               <div className="h-20 flex items-center justify-center rounded-xl bg-black/30 mb-2">
                 <ItemArt item={item} size={64} />
               </div>
-              <p className="text-xs font-semibold leading-tight line-clamp-2 min-h-[30px]" style={{ color }}>{item.name}</p>
+              <p className="text-xs font-semibold leading-tight line-clamp-2 min-h-[30px]" style={{ color }}>{localizeText(item.name, language)}</p>
               {item.amount && item.type !== 'equipment' && (
                 <p className="text-[10px] text-gray-400">x{item.amount}</p>
               )}
@@ -163,7 +165,7 @@ export function ShopScreen() {
         <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-50 w-[calc(100%-32px)] max-w-sm rounded-2xl border border-emerald-400/40 bg-[#0f1f1a]/95 backdrop-blur-md px-3 py-2.5 flex items-center gap-3 shadow-2xl animate-sheet-up">
           <ItemArt item={result.item} size={36} />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-emerald-200 flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> Куплено</p>
+            <p className="text-sm font-semibold text-emerald-200 flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> {t('purchased')}</p>
             <p className="text-xs text-gray-300 truncate">{result.text}</p>
           </div>
         </div>
@@ -173,6 +175,7 @@ export function ShopScreen() {
 }
 
 function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameState; onBuy: (qty: number) => void }) {
+  const { t, language } = useLanguage();
   const isStone = item.type === 'stone';
   const stonePerUnit = isStone ? (item.amount ?? 1) : 0;
   const stonesLeft = isStone ? stonesRemainingToday(state) : 0;
@@ -206,28 +209,28 @@ function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameStat
         </div>
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wider" style={{ color: rarityColor(item.rarity) }}>{item.rarity}</p>
-          <p className="text-sm text-gray-300 mt-1 leading-relaxed">{item.description}</p>
+          <p className="text-sm text-gray-300 mt-1 leading-relaxed">{localizeText(item.description, language)}</p>
         </div>
       </div>
       {item.equipment && (
         <div className="grid grid-cols-2 gap-2 text-xs">
-          {item.equipment.attack ? <span className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 h-8 text-orange-300"><Sword className="w-3.5 h-3.5" /> Атака +{item.equipment.attack}</span> : null}
-          {item.equipment.defense ? <span className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 h-8 text-sky-300"><Shield className="w-3.5 h-3.5" /> Защита +{item.equipment.defense}</span> : null}
-          {item.equipment.hp ? <span className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 h-8 text-red-300"><Heart className="w-3.5 h-3.5" /> Здоровье +{item.equipment.hp}</span> : null}
-          {item.equipment.critChance ? <span className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 h-8 text-yellow-300"><Star className="w-3.5 h-3.5" /> Крит +{item.equipment.critChance}%</span> : null}
+          {item.equipment.attack ? <span className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 h-8 text-orange-300"><Sword className="w-3.5 h-3.5" />{language === 'en' ? 'Attack' : 'Атака'} +{item.equipment.attack}</span> : null}
+          {item.equipment.defense ? <span className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 h-8 text-sky-300"><Shield className="w-3.5 h-3.5" />{language === 'en' ? 'Defense' : 'Защита'} +{item.equipment.defense}</span> : null}
+          {item.equipment.hp ? <span className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 h-8 text-red-300"><Heart className="w-3.5 h-3.5" />{language === 'en' ? 'Health' : 'Здоровье'} +{item.equipment.hp}</span> : null}
+          {item.equipment.critChance ? <span className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 h-8 text-yellow-300"><Star className="w-3.5 h-3.5" />{language === 'en' ? 'Crit' : 'Крит'} +{item.equipment.critChance}%</span> : null}
         </div>
       )}
 
       <div className="flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11 text-sm">
-        <span className="text-gray-400">Цена за шт.</span>
+        <span className="text-gray-400">{t('perItem')}</span>
         <span className="text-white"><Price item={item} size={18} /></span>
       </div>
-      <p className="text-xs text-gray-500 -mt-2 px-1">У тебя: {balance}</p>
+      <p className="text-xs text-gray-500 -mt-2 px-1">{t('youHave')}: {balance}</p>
 
       {isStone && (
         <div className="space-y-2 rounded-xl bg-black/30 border border-amber-500/20 p-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-gray-400">Доступно сегодня</span>
+            <span className="text-gray-400">{t('dailyAvailable')}</span>
             <span className="font-bold text-amber-200">{stonesLeft}/{DAILY_STONE_LIMIT} шт</span>
           </div>
           <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
@@ -237,7 +240,7 @@ function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameStat
             />
           </div>
           <div className="flex items-center justify-between text-xs pt-0.5">
-            <span className="text-gray-400 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Обновление через</span>
+            <span className="text-gray-400 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {t('refreshIn')}</span>
             <span className="font-bold tabular-nums text-gray-200">{formatDuration(countdownMs)}</span>
           </div>
         </div>
@@ -246,7 +249,7 @@ function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameStat
       {maxQty >= 1 ? (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-gray-400">
-            <span>Количество{isStone ? ` (по ${stonePerUnit} шт)` : ''}</span>
+            <span>{t('quantity')}{isStone ? ` (${language === 'en' ? `${stonePerUnit} each` : `по ${stonePerUnit} шт`})` : ''}</span>
             <span className="text-amber-200 font-bold">x{qtyClamped}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -274,22 +277,22 @@ function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameStat
             </button>
           </div>
           <div className="flex items-center justify-between rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 h-9 text-xs">
-            <span className="text-gray-400">Итого</span>
+            <span className="text-gray-400">{t('total')}</span>
             <span className="text-amber-100 font-bold">
               <Currency kind={item.priceGems ? 'gems' : 'gold'} value={totalCost} size={16} />
-              {isStone && <span className="text-gray-400 ml-2">· {totalStones} камней</span>}
+              {isStone && <span className="text-gray-400 ml-2">· {totalStones} {t('stones')}</span>}
             </span>
           </div>
           <div className="flex justify-between text-[10px] text-gray-500 px-1">
             <button onClick={() => setQty(1)} className="hover:text-amber-300 transition-colors">1</button>
             <button onClick={() => setQty(clamp(Math.floor(maxQty / 4)))} className="hover:text-amber-300 transition-colors">¼</button>
             <button onClick={() => setQty(clamp(Math.floor(maxQty / 2)))} className="hover:text-amber-300 transition-colors">½</button>
-            <button onClick={() => setQty(maxQty)} className="hover:text-amber-300 transition-colors">Макс ({maxQty})</button>
+            <button onClick={() => setQty(maxQty)} className="hover:text-amber-300 transition-colors">{t('max')} ({maxQty})</button>
           </div>
         </div>
       ) : isStone ? (
         <div className="rounded-xl bg-red-500/10 border border-red-500/30 px-3 py-3 text-center text-xs text-red-300">
-          Дневной лимит боевых камней исчерпан
+          {t('stonesLimitGone')}
         </div>
       ) : null}
 
@@ -298,7 +301,7 @@ function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameStat
         onClick={() => onBuy(qtyClamped)}
         className="w-full h-12 rounded-2xl bg-gradient-to-b from-amber-400 to-amber-600 text-black font-bold active:scale-[0.98] transition-transform disabled:opacity-40 disabled:bg-none disabled:bg-white/10 disabled:text-gray-400"
       >
-        {ok ? `Купить x${qtyClamped}` : isStone ? 'Лимит исчерпан' : 'Не хватает средств'}
+        {ok ? `${language === 'en' ? 'Buy' : 'Купить'} x${qtyClamped}` : isStone ? t('limitReached') : t('notEnoughFunds')}
       </button>
     </div>
   );

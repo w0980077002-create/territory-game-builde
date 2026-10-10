@@ -1,5 +1,6 @@
 import { Skull, Check, Crosshair, Syringe, LogOut, ChevronDown } from 'lucide-react';
 import type { ArenaFighter } from '@/game/arenaApi';
+import { useLanguage } from '@/game/i18n';
 
 interface Props {
   title: string;
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function FighterList({ title, accent, fighters, meId, active, selectedId, onSelect, onRevive, open, onToggle }: Props) {
+  const { language } = useLanguage();
   const alive = fighters.filter((f) => f.hp > 0).length;
   const sorted = [...fighters].sort((a, b) => Number(b.hp > 0) - Number(a.hp > 0));
   const ally = accent === 'ally';
@@ -58,20 +60,20 @@ export function FighterList({ title, accent, fighters, meId, active, selectedId,
                     <span className="text-[9px] font-bold text-gray-300">{f.level}</span>}
                 </span>
                 <span className={`text-[11px] font-semibold truncate w-[34%] ${isMe ? 'text-teal-300' : 'text-white'}`}>
-                  {f.name}{isMe && <span className="text-teal-400 font-normal"> (ты)</span>}
+                  {f.name}{isMe && <span className="text-teal-400 font-normal"> {language === 'en' ? '(you)' : '(ты)'}</span>}
                 </span>
                 <span className="flex-1 h-1 rounded-full bg-black/50 overflow-hidden">
                   <span className={`block h-full ${barTone} transition-all duration-300`} style={{ width: `${pct}%` }} />
                 </span>
                 <span className="text-[9px] text-gray-400 tabular-nums shrink-0 w-[46px] text-right">{f.hp}/{f.maxHp}</span>
                 {f.kills > 0 && <span className="text-[9px] text-amber-400 shrink-0 flex items-center"><Skull className="w-2.5 h-2.5" />{f.kills}</span>}
-                {active && !dead && f.moved && <Check className="w-3 h-3 text-emerald-400 shrink-0" aria-label="Ход сделан" />}
+                {active && !dead && f.moved && <Check className="w-3 h-3 text-emerald-400 shrink-0" aria-label={language === 'en' ? 'Turn completed' : 'Ход сделан'} />}
                 {onRevive && dead && !f.left && !isMe && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onRevive(f.id); }}
                     className="shrink-0 text-[10px] font-semibold px-1.5 h-5 rounded bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 flex items-center gap-0.5 transition-colors"
                   >
-                    <Syringe className="w-2.5 h-2.5" /> Оживить
+                    <Syringe className="w-2.5 h-2.5" /> {language === 'en' ? 'Revive' : 'Оживить'}
                   </button>
                 )}
               </div>

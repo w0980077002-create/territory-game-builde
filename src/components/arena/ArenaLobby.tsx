@@ -5,6 +5,7 @@ import { joinArena, type ArenaMode } from '@/game/arenaApi';
 import { beltContext, takeFromBelt } from '@/game/belt';
 import { hapticImpact } from '@/game/telegram';
 import { BeltBar } from './BeltBar';
+import { useLanguage, localizeText } from '@/game/i18n';
 import { Swords, Users, Flame, Trophy, Zap, Info, X, Loader2 } from 'lucide-react';
 
 const ENERGY_COST = 1;
@@ -16,6 +17,7 @@ const MODES: { id: ArenaMode; title: string; size: string; desc: string; bonus: 
 ];
 
 export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void }) {
+  const { language } = useLanguage();
   const state = useStore(useGame);
   const arena = useStore(useArena);
   const [joining, setJoining] = useState<ArenaMode | null>(null);
@@ -33,7 +35,7 @@ export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void })
       useGame.set((s) => ({ ...s, player: { ...s.player, energy: Math.max(0, s.player.energy - ENERGY_COST) } }));
       onJoined(roomId);
     } catch (e) {
-      setError((e as Error).message);
+      setError(localizeText((e as Error).message, language));
       setJoining(null);
     }
   };
@@ -46,16 +48,16 @@ export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void })
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Swords className="w-6 h-6 text-red-400" />
-              <h2 className="text-xl font-bold text-white">Арена</h2>
+              <h2 className="text-xl font-bold text-white">{language === 'en' ? 'Arena' : 'Арена'}</h2>
             </div>
             <button onClick={() => setShowRules(true)} className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors">
-              <Info className="w-4 h-4" /> Правила
+              <Info className="w-4 h-4" /> {language === 'en' ? 'Rules' : 'Правила'}
             </button>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <Stat label="Рейтинг" value={arena.rating} className="text-amber-400" />
-            <Stat label="Победы" value={arena.wins} className="text-emerald-400" />
-            <Stat label="Поражения" value={arena.losses} className="text-red-400" />
+            <Stat label={language === 'en' ? 'Rating' : 'Рейтинг'} value={arena.rating} className="text-amber-400" />
+            <Stat label={language === 'en' ? 'Wins' : 'Победы'} value={arena.wins} className="text-emerald-400" />
+            <Stat label={language === 'en' ? 'Losses' : 'Поражения'} value={arena.losses} className="text-red-400" />
           </div>
           <div className="flex justify-center gap-4 mt-3 text-xs text-gray-400">
             <span className="flex items-center gap-1 text-yellow-400"><Zap className="w-3 h-3" /> {state.player.energy}/{state.player.maxEnergy}</span>
@@ -65,19 +67,19 @@ export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void })
 
       <div className="card p-3">
         <div className="flex items-center justify-between mb-2 px-0.5">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-300">Пояс с зельями</h3>
-          <span className="text-[10px] text-gray-500">в бою доступно только то, что на поясе</span>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-300">{language === 'en' ? 'Potion belt' : 'Пояс с зельями'}</h3>
+          <span className="text-[10px] text-gray-500">{language === 'en' ? 'Only belt items can be used in battle' : 'в бою доступно только то, что на поясе'}</span>
         </div>
         <BeltBar
           belt={state.belt}
           ctx={beltContext(state, arena.wins)}
-          actionLabel="Нажми на зелье, чтобы вернуть его в сумку. Положить — в инвентаре."
+          actionLabel={language === 'en' ? 'Tap a potion to return it to your bag. Add items from the inventory.' : 'Нажми на зелье, чтобы вернуть его в сумку. Положить — в инвентаре.'}
           onAction={(i) => useGame.set((s) => takeFromBelt(s, i))}
         />
       </div>
 
       {noEnergy && (
-        <div className="card text-center text-sm text-amber-400">Не хватает энергии. 1 единица восстанавливается каждые 5 минут.</div>
+        <div className="card text-center text-sm text-amber-400">{language === 'en' ? 'Not enough energy. 1 point regenerates every 5 minutes.' : 'Не хватает энергии. 1 единица восстанавливается каждые 5 минут.'}</div>
       )}
       {error && <div className="card text-center text-sm text-red-400">{error}</div>}
 
@@ -98,11 +100,11 @@ export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void })
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2">
-                    <h3 className="text-lg font-bold text-white">{m.title}</h3>
+                    <h3 className="text-lg font-bold text-white">{language === 'en' ? ({ duel: 'Duel', team: 'Squad', chaos: 'Chaos' } as Record<string, string>)[m.id] : m.title}</h3>
                     <span className="text-sm font-semibold">{m.size}</span>
                   </div>
-                  <p className="text-xs text-gray-300 leading-relaxed">{m.desc}</p>
-                  <p className="text-[11px] text-gray-400 mt-1">{m.bonus} · {ENERGY_COST} энергия</p>
+                  <p className="text-xs text-gray-300 leading-relaxed">{language === 'en' ? ({ duel: 'Classic one-on-one duel', team: 'Team fight: protect allies and choose targets', chaos: 'Random teams and all-out chaos' } as Record<string, string>)[m.id] : m.desc}</p>
+                  <p className="text-[11px] text-gray-400 mt-1">{m.bonus.replace('Награда', language === 'en' ? 'Reward' : 'Награда')} · {ENERGY_COST} {language === 'en' ? 'energy' : 'энергия'}</p>
                 </div>
               </div>
             </button>
@@ -125,6 +127,7 @@ function Stat({ label, value, className }: { label: string; value: number; class
 }
 
 function RulesModal({ onClose }: { onClose: () => void }) {
+  const { language } = useLanguage();
   const rules = [
     'Каждый раунд выбери цель, 2 из 4 зон защиты слева и 1 зону удара справа, затем жми «УДАР».',
     'Удар в заблокированную зону не проходит. Критический удар пробивает блок, но слабее.',
@@ -141,14 +144,25 @@ function RulesModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in" onClick={onClose}>
       <div className="card w-full max-w-md animate-slide-up" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2"><Trophy className="w-5 h-5 text-amber-400" /> Как проходит бой</h3>
+          <h3 className="text-lg font-bold text-white flex items-center gap-2"><Trophy className="w-5 h-5 text-amber-400" /> {language === 'en' ? 'How combat works' : 'Как проходит бой'}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
         <ol className="space-y-2">
           {rules.map((r, i) => (
             <li key={i} className="flex gap-3 text-sm text-gray-300 leading-relaxed">
               <span className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-300 text-xs flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-              {r}
+              {language === 'en' ? ([
+                'Each round, choose a target, 2 of 4 defense zones on the left, and 1 attack zone on the right, then press STRIKE.',
+                'A strike against a blocked zone does not land. Critical strikes pierce blocks but deal less damage.',
+                'Head strikes deal more damage (×1.25); leg strikes deal less (×0.85).',
+                'You have 60 seconds per turn. If you do not act in time, you are eliminated.',
+                'The Time Potion reduces the timer by 10 seconds, down to a minimum of 30 seconds.',
+                'Only items on your belt can be used in battle: up to 5 per slot, one potion per round, each elixir once per battle.',
+                'Sometimes a fighter dodges an attack even when the zone is unguarded.',
+                'A fallen fighter stays in the room until battle ends. An ally can revive them with Adrenaline.',
+                'Auto-battle: the server fights for you even while the game is minimized.',
+                'The chat remains after the battle until you leave the room.'
+              ] as string[])[i] : r}
             </li>
           ))}
         </ol>

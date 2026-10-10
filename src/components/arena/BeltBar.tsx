@@ -3,6 +3,7 @@ import { Lock, Loader2 } from 'lucide-react';
 import { BELT_RULES, BELT_STACK, type BeltContext } from '@/game/belt';
 import { rarityColor } from '@/game/ui';
 import type { InventoryItem } from '@/game/types';
+import { useLanguage, localizeText } from '@/game/i18n';
 
 interface Props {
   belt: (InventoryItem | null)[];
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function BeltBar({ belt, ctx, actionLabel, disabled, busyIndex, onAction }: Props) {
+  const { language } = useLanguage();
   const [info, setInfo] = useState<number | null>(null);
   const shown = info !== null ? { rule: BELT_RULES[info], check: BELT_RULES[info].check(ctx), item: belt[info] } : null;
 
@@ -56,7 +58,7 @@ export function BeltBar({ belt, ctx, actionLabel, disabled, busyIndex, onAction 
                   <span className="text-[8px] text-gray-400 leading-none truncate w-full px-1 text-center">{item.name}</span>
                 </>
               ) : (
-                <span className="text-[9px] text-gray-500">пусто</span>
+                <span className="text-[9px] text-gray-500">{language === 'en' ? 'empty' : 'пусто'}</span>
               )}
             </button>
           );
@@ -66,13 +68,13 @@ export function BeltBar({ belt, ctx, actionLabel, disabled, busyIndex, onAction 
         {shown ? (
           shown.check.open ? (
             shown.item ? (
-              <span><span className="text-white font-semibold">{shown.item.name}</span> · {shown.item.description}</span>
+              <span><span className="text-white font-semibold">{localizeText(shown.item.name, language)}</span> · {localizeText(shown.item.description, language)}</span>
             ) : (
-              <span>Слот {info! + 1} свободен — положи сюда зелье из сумки (до {BELT_STACK} шт.)</span>
+              <span>{language === 'en' ? `Slot ${info! + 1} is free — move a potion here from inventory (up to ${BELT_STACK})` : `Слот ${info! + 1} свободен — положи сюда зелье из сумки (до ${BELT_STACK} шт.)`}</span>
             )
           ) : (
             <span className="animate-fade-in">
-              <span className="text-amber-300 font-semibold">Слот {info! + 1}: {shown.rule.title}</span>
+              <span className="text-amber-300 font-semibold">{language === 'en' ? `Slot ${info! + 1}: ${localizeText(shown.rule.title, language)}` : `Слот ${info! + 1}: ${shown.rule.title}`}</span>
               <span> · {shown.check.progress}</span>
             </span>
           )

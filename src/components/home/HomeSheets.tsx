@@ -7,6 +7,7 @@ import { Currency } from '@/components/ui/Currency';
 import { useLive, claimMailGrant, type GrantPayload } from '@/game/live';
 import { generateShopItems } from '@/game/engine';
 import { useRef, useState } from 'react';
+import { useLanguage, localizeText } from '@/game/i18n';
 
 function grantItemsText(p: GrantPayload) {
   const shop = generateShopItems(1);
@@ -30,6 +31,7 @@ function RewardLine({ reward, size = 16 }: { reward: Reward; size?: number }) {
 }
 
 export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (t: string) => void }) {
+  const { t, language } = useLanguage();
   const state = useStore(useGame);
   const { claimedToday, dayIndex } = dailyStatus(state);
 
@@ -37,12 +39,12 @@ export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (
     const next = claimDaily(useGame.get());
     if (!next) return;
     useGame.set(next);
-    notify('Ежедневная награда получена');
+    notify(language === 'en' ? 'Daily reward claimed' : 'Ежедневная награда получена');
   };
 
   return (
-    <Modal title="Ежедневные награды" icon="/ic-daily.webp" onClose={onClose}>
-      <p className="text-xs text-gray-400 mb-3 leading-relaxed">Заходи каждый день подряд, чтобы награды росли. Пропуск дня начинает серию заново.</p>
+    <Modal title={t('dailyRewards')} icon="/ic-daily.webp" onClose={onClose}>
+      <p className="text-xs text-gray-400 mb-3 leading-relaxed">{t('dailyRewardsHint')}</p>
       <div className="grid grid-cols-4 gap-2 mb-4">
         {DAILY_REWARDS.map((r, i) => {
           const done = claimedToday ? i <= dayIndex : i < dayIndex;
@@ -54,7 +56,7 @@ export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (
                 i === 6 ? 'col-span-2' : ''
               } ${current ? 'border-amber-400/80 bg-amber-500/10 shadow-[0_0_12px_rgba(251,191,36,0.25)]' : done ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/10 bg-black/30'}`}
             >
-              <span className="text-[10px] font-bold text-gray-300">День {i + 1}</span>
+              <span className="text-[10px] font-bold text-gray-300">{t('day')} {i + 1}</span>
               <RewardLine reward={r} size={14} />
               {done && (
                 <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
@@ -66,13 +68,14 @@ export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (
         })}
       </div>
       <button onClick={claim} disabled={claimedToday} className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
-        {claimedToday ? 'Сегодня уже получено' : `Забрать награду дня ${dayIndex + 1}`}
+        {claimedToday ? t('alreadyClaimedToday') : `${t('claimDayReward')} ${dayIndex + 1}`}
       </button>
     </Modal>
   );
 }
 
 export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t: string) => void }) {
+  const { t, language } = useLanguage();
   const state = useStore(useGame);
   const { mail: adminMail } = useStore(useLive);
   const [claiming, setClaiming] = useState<string | null>(null);
@@ -81,25 +84,25 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
     setClaiming(id);
     const ok = await claimMailGrant(id);
     setClaiming(null);
-    notify(ok ? 'Награда из письма получена' : 'Не удалось забрать награду');
+    notify(ok ? t('claimLetterRewardOk') : t('claimLetterRewardFail'));
   };
 
   const claim = (id: string) => {
     const next = claimMail(useGame.get(), id);
     if (!next) return;
     useGame.set(next);
-    notify('Подарок из письма получен');
+    notify(language === 'en' ? 'Mail gift claimed' : 'Подарок из письма получен');
   };
 
   return (
-    <Modal title="Почта" icon="/ic-mail.webp" onClose={onClose}>
+    <Modal title={t('mail')} icon="/ic-mail.webp" onClose={onClose}>
       <div className="space-y-3">
         {adminMail.map((m) => {
           const extra = grantItemsText(m.payload);
           const reward = { gold: Math.max(0, m.payload.gold ?? 0), gems: Math.max(0, m.payload.gems ?? 0), redGems: Math.max(0, m.payload.redGems ?? 0), stones: Math.max(0, m.payload.stones ?? 0) };
           return (
             <div key={m.id} className="rounded-2xl border border-sky-400/40 bg-sky-500/5 p-3 shadow-[0_0_12px_rgba(56,189,248,0.15)]">
-              <div className="text-[11px] text-sky-300/90">Администрация</div>
+              <div className="text-[11px] text-sky-300/90">{t('administration')}</div>
               <div className="text-sm font-bold text-white mb-1">{m.subject}</div>
               <p className="text-xs text-gray-300 leading-relaxed mb-2.5 whitespace-pre-line break-words">{m.body}</p>
               {extra && <p className="text-[11px] text-amber-200 mb-2">{extra}</p>}
@@ -110,7 +113,7 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
                   disabled={claiming === m.id}
                   className="shrink-0 h-8 px-3 rounded-lg text-xs font-bold bg-sky-400 text-black disabled:opacity-50 transition-colors"
                 >
-                  {claiming === m.id ? '...' : 'Забрать награду'}
+                  {claiming === m.id ? '...' : t('claimReward')}
                 </button>
               </div>
             </div>
@@ -130,7 +133,7 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
                   disabled={claimed}
                   className="shrink-0 h-8 px-3 rounded-lg text-xs font-bold bg-amber-500 text-black disabled:bg-white/10 disabled:text-gray-400 transition-colors"
                 >
-                  {claimed ? 'Получено' : 'Забрать'}
+                  {claimed ? t('claimed') : t('claim')}
                 </button>
               </div>
             </div>
@@ -156,6 +159,7 @@ function Toggle({ label, hint, on, onChange }: { label: string; hint: string; on
 }
 
 export function SettingsSheet({ onClose, saveStatus }: { onClose: () => void; saveStatus: SaveStatus }) {
+  const { t, language } = useLanguage();
   const { settings } = useStore(useGame);
   const update = (patch: Partial<typeof settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
   const taps = useRef({ count: 0, last: 0 });
@@ -168,14 +172,14 @@ export function SettingsSheet({ onClose, saveStatus }: { onClose: () => void; sa
   };
 
   return (
-    <Modal title="Настройки" icon="/ic-settings.webp" onClose={onClose}>
+    <Modal title={t('settings')} icon="/ic-settings.webp" onClose={onClose}>
       <div className="space-y-2">
-        <Toggle label="Скорость боя x2" hint="Ускоряет бои в походе и Испытаниях" on={settings.speed === 2} onChange={() => update({ speed: settings.speed === 2 ? 1 : 2 })} />
-        <Toggle label="Автобой" hint="Герой сам выбирает зоны удара и защиты" on={settings.auto} onChange={() => update({ auto: !settings.auto })} />
+        <Toggle label={t('battleSpeed')} hint={t('speedHint')} on={settings.speed === 2} onChange={() => update({ speed: settings.speed === 2 ? 1 : 2 })} />
+        <Toggle label={t('autoBattle')} hint={t('autoBattleHint')} on={settings.auto} onChange={() => update({ auto: !settings.auto })} />
         <div onClick={secretTap} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm select-none">
           {saveStatus === 'error' ? <CloudOff className="w-4 h-4 text-red-400" /> : <Cloud className={`w-4 h-4 ${saveStatus === 'saving' ? 'text-gray-400 animate-pulse' : 'text-emerald-400'}`} />}
           <span className="text-gray-300">
-            {saveStatus === 'error' ? 'Не удалось сохранить, повторим позже' : saveStatus === 'saving' ? 'Сохраняем прогресс...' : 'Прогресс сохранён'}
+            {saveStatus === 'error' ? t('saveRetry') : saveStatus === 'saving' ? t('savingProgress') : t('progressSaved')}
           </span>
         </div>
       </div>
@@ -184,23 +188,24 @@ export function SettingsSheet({ onClose, saveStatus }: { onClose: () => void; sa
 }
 
 export function StonesSheet({ onClose, onShop, onDaily }: { onClose: () => void; onShop: () => void; onDaily: () => void }) {
+  const { t, language } = useLanguage();
   const stones = useStore(useGame).battleStones;
   return (
-    <Modal title="Боевые камни" icon="/battle-stone.webp" onClose={onClose}>
+    <Modal title={t('battleStones')} icon="/battle-stone.webp" onClose={onClose}>
       <div className="flex items-center justify-center gap-2 mb-3">
         <Currency kind="stones" value={stones} size={36} className="text-2xl text-white" />
       </div>
       <p className="text-xs text-gray-400 leading-relaxed mb-3 text-center">
-        Каждый бой в походе и в Испытаниях стоит 1 камень. Камни не восстанавливаются сами.
+        {t('stonesExplain')}
       </p>
       <ul className="text-xs text-gray-300 space-y-1.5 mb-4">
-        <li className="rounded-lg bg-black/30 border border-white/10 px-3 py-2">Ежедневная награда за вход</li>
-        <li className="rounded-lg bg-black/30 border border-white/10 px-3 py-2">Ежедневные задания</li>
-        <li className="rounded-lg bg-black/30 border border-white/10 px-3 py-2">Лавка, раздел «Ресурсы», за синие кристаллы</li>
+        <li className="rounded-lg bg-black/30 border border-white/10 px-3 py-2">{t('dailyLoginReward')}</li>
+        <li className="rounded-lg bg-black/30 border border-white/10 px-3 py-2">{t('dailyQuests')}</li>
+        <li className="rounded-lg bg-black/30 border border-white/10 px-3 py-2">{t('shopResources')}</li>
       </ul>
       <div className="grid grid-cols-2 gap-2">
-        <button onClick={onDaily} className="btn-ghost">Награда дня</button>
-        <button onClick={onShop} className="btn-primary">В Лавку</button>
+        <button onClick={onDaily} className="btn-ghost">{t('dailyRewardButton')}</button>
+        <button onClick={onShop} className="btn-primary">{t('toShop')}</button>
       </div>
     </Modal>
   );

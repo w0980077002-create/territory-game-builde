@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { ChevronRight, Repeat, Swords } from 'lucide-react';
+import { ChevronRight, Repeat, Crown } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame, useArena, useAccount } from '@/game/actions';
 import { generateChapter, getComputedStats } from '@/game/engine';
@@ -13,6 +13,7 @@ import { EquipCells } from '@/components/ui/EquipCells';
 import { BeltCells } from '@/components/ui/BeltCells';
 import { Currency, formatAmount } from '@/components/ui/Currency';
 import { DailySheet, MailSheet, SettingsSheet, StonesSheet, type SaveStatus } from '@/components/home/HomeSheets';
+import { useLanguage, localizeText } from '@/game/i18n';
 
 export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction';
 
@@ -31,7 +32,7 @@ function SideButton({ icon, label, onClick, soon, badge }: { icon: string; label
   return (
     <button onClick={onClick} className="home-side group" aria-label={label}>
       <img src={icon} alt="" draggable={false} className={`w-[78%] max-h-[62%] object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.7)] transition-transform group-hover:scale-110 ${soon ? 'opacity-70 grayscale-[35%]' : ''}`} />
-      <span className="text-[7.5px] leading-[1.05] font-bold text-amber-50 text-center truncate max-w-full px-px [text-shadow:0_1px_2px_#000]">{label}</span>
+      <span className="text-[7.5px] leading-[1.05] font-bold text-amber-50 text-center whitespace-normal break-words line-clamp-2 max-w-full px-px [text-shadow:0_1px_2px_#000]">{label}</span>
       {soon && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-slate-400 border border-black" aria-hidden />}
       {badge && <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-pulse" />}
     </button>
@@ -80,6 +81,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
   const arena = useStore(useArena);
   const { vip } = useStore(useAccount);
   const [sheet, setSheet] = useState<Sheet>(null);
+  const { language, setLanguage, t } = useLanguage();
 
   const { player } = state;
   const chapter = generateChapter(state.currentChapter);
@@ -94,7 +96,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
   const blessReady = blessingReady(state);
   const quest = state.quests.find((q) => !q.claimed && q.current < q.target) ?? state.quests.find((q) => !q.claimed);
 
-  const soon = (label: string) => notify(`${label} откроется в следующих обновлениях`);
+  const soon = (label: string) => notify(language === 'en' ? `${label} will be available in a future update` : `${label} откроется в следующих обновлениях`);
 
   const setSettings = (patch: Partial<typeof state.settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
 
@@ -115,15 +117,15 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
       <div className="absolute inset-x-0 bottom-0 h-[260px] bg-gradient-to-t from-[#07090d] via-[#07090d]/85 to-transparent pointer-events-none" />
 
       <div className="absolute inset-x-0 top-0 z-20 px-2 pt-[max(8px,env(safe-area-inset-top))] flex items-start gap-2">
-        <button onClick={() => onOpen('hero')} className="flex items-center gap-1.5 min-w-0 shrink-0 rounded-2xl border border-amber-400/30 bg-black/55 backdrop-blur-sm p-1 pr-2 active:scale-95 transition-transform" aria-label="Профиль героя">
+        <button onClick={() => onOpen('hero')} className="flex items-center gap-1.5 min-w-0 shrink-0 rounded-2xl border border-amber-400/30 bg-black/55 backdrop-blur-sm p-1 pr-2 active:scale-95 transition-transform" aria-label={t('profile')}>
           <span className="relative w-11 h-11 rounded-xl overflow-hidden border-2 border-amber-400/70 bg-[#1b1a16] shrink-0">
             <img src={getAppearanceIcon(state.appearance)} alt="" className="w-full h-full object-contain object-top" />
           </span>
           <span className="flex flex-col items-start min-w-0 w-[64px]">
             <span className="text-[12px] font-bold text-white truncate w-full text-left leading-tight">{player.name}</span>
             <span className="flex items-center gap-1 text-[10px] leading-tight">
-              <span className="text-amber-200 font-semibold">Ур. {player.level}</span>
-              <span className="px-1 rounded bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold text-[9px]">VIP {vip}</span>
+              <span className="text-amber-200 font-semibold">{t('level')} {player.level}</span>
+              <span className="inline-flex items-center gap-0.5 px-1 rounded bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold text-[9px]"><Crown className="h-2.5 w-2.5" strokeWidth={2.8} />VIP {vip}</span>
             </span>
             <span className="mt-1 h-1 w-full rounded-full bg-white/10 overflow-hidden">
               <span className="block h-full bg-gradient-to-r from-emerald-400 to-emerald-600" style={{ width: `${xpPct}%` }} />
@@ -138,9 +140,10 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
             <span className="hud-chip min-w-0"><Currency kind="redGems" value={formatAmount(player.redGems)} size={20} className="text-[11px] text-white" /></span>
           </div>
           <div className="flex items-center gap-1.5">
-            <HudIcon icon="/ic-trophy.webp" label="Топ игроков" onClick={() => onOpen('leaderboard')} />
-            <HudIcon icon="/ic-mail.webp" label="Почта" badge={unreadMail} onClick={() => setSheet('mail')} />
-            <HudIcon icon="/ic-settings.webp" label="Настройки" onClick={() => setSheet('settings')} />
+            <HudIcon icon="/ic-trophy.webp" label={t('leaderboard')} onClick={() => onOpen('leaderboard')} />
+            <HudIcon icon="/ic-mail.webp" label={t('mail')} badge={unreadMail} onClick={() => setSheet('mail')} />
+            <HudIcon icon="/ic-settings.webp" label={t('settings')} onClick={() => setSheet('settings')} />
+            <button type="button" onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')} aria-label={t('language')} className="h-8 min-w-8 px-1.5 rounded-lg border border-sky-300/40 bg-black/65 text-[10px] font-black text-sky-100 shadow-sm active:scale-90">{language.toUpperCase()}</button>
           </div>
         </div>
       </div>
@@ -148,33 +151,33 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
       <button
         onClick={() => onBattle('campaign')}
         className="absolute z-10 left-1/2 -translate-x-1/2 top-[calc(max(8px,env(safe-area-inset-top))+92px)] max-w-[calc(100%-112px)] h-5 flex items-center gap-1.5 rounded-full border border-amber-500/50 bg-gradient-to-b from-[#5a3a1c]/90 to-[#2a1a0c]/90 pl-2 pr-1 shadow-[0_2px_6px_rgba(0,0,0,0.6)] active:scale-95 transition-transform"
-        aria-label="Открыть поход"
+        aria-label={language === 'en' ? 'Open campaign' : 'Открыть поход'}
       >
-        <span className="shrink-0 text-[9px] font-semibold text-amber-300 leading-none">Гл. {chapter.number}</span>
-        <span className="min-w-0 truncate text-[10px] font-bold text-amber-50 leading-none">{chapter.title}</span>
+        <span className="shrink-0 text-[9px] font-semibold text-amber-300 leading-none">{language === 'en' ? 'Ch.' : 'Гл.'} {chapter.number}</span>
+        <span className="min-w-0 truncate text-[10px] font-bold text-amber-50 leading-none">{localizeText(chapter.title, language)}</span>
         <span className="shrink-0 flex items-center gap-0.5">
           {chapter.enemies.map((e, i) => (
             <span key={e.id} className={`w-1.5 h-1.5 rounded-full border ${i < wins ? 'bg-amber-400 border-amber-200' : 'bg-black/60 border-amber-200/30'}`} />
           ))}
-          <img src="/enemy-boss.webp" alt="Босс" className={`w-3.5 h-3.5 rounded-full object-cover object-top border ${bossReady ? 'border-red-400 animate-pulse' : 'border-white/20 grayscale opacity-70'}`} />
+          <img src="/enemy-boss.webp" alt={language === 'en' ? 'Boss' : 'Босс'} className={`w-3.5 h-3.5 rounded-full object-cover object-top border ${bossReady ? 'border-red-400 animate-pulse' : 'border-white/20 grayscale opacity-70'}`} />
         </span>
       </button>
 
       <div className="absolute z-10 left-1.5 top-[calc(max(8px,env(safe-area-inset-top))+90px)] bottom-[200px] w-[44px] flex flex-col gap-1">
-        <SideButton icon="/ic-events.webp" label="События" soon onClick={() => soon('События')} />
-        <SideButton icon="/ic-daily.webp" label="Награды" badge={!dailyStatus(state).claimedToday} onClick={() => setSheet('daily')} />
-        <SideButton icon="/ic-quests.webp" label="Задания" onClick={() => onOpen('quests')} />
-        <SideButton icon="/ic-invite.webp" label="Друзья" soon onClick={() => soon('Приглашение друзей')} />
-        <SideButton icon="/ic-sea.webp" label="Море" soon onClick={() => soon('Морской поход')} />
+        <SideButton icon="/ic-events.webp" label={t('events')} soon onClick={() => soon(t('events'))} />
+        <SideButton icon="/ic-daily.webp" label={t('rewards')} badge={!dailyStatus(state).claimedToday} onClick={() => setSheet('daily')} />
+        <SideButton icon="/ic-quests.webp" label={t('quests')} onClick={() => onOpen('quests')} />
+        <SideButton icon="/ic-invite.webp" label={t('friends')} soon onClick={() => soon(t('friends'))} />
+        <SideButton icon="/ic-sea.webp" label={t('sea')} soon onClick={() => soon(t('sea'))} />
       </div>
       <div className="absolute z-10 right-1.5 top-[calc(max(8px,env(safe-area-inset-top))+90px)] bottom-[200px] w-[44px] flex flex-col gap-1">
-        <SideButton icon="/ic-shop.webp" label="Лавка" onClick={() => onOpen('shop')} />
-        <SideButton icon="/ic-shop.webp" label="Аукцион" onClick={() => onOpen('auction')} />
-        <SideButton icon="/ic-forge.webp" label="Кузница" onClick={() => onOpen('forge')} />
-        <SideButton icon="/ic-forge.webp" label="Профессии" onClick={() => onOpen('professions')} />
-        <SideButton icon="/ic-trials.webp" label="Испытания" onClick={() => onBattle('trial')} />
-        <SideButton icon="/ic-capture.webp" label="Захват" soon onClick={() => soon('Захват территорий')} />
-        <SideButton icon="/ic-arena.webp" label="Арена" onClick={() => onOpen('arena')} />
+        <SideButton icon="/ic-shop.webp" label={t('shop')} onClick={() => onOpen('shop')} />
+        <SideButton icon="/ic-shop.webp" label={t('auction')} onClick={() => onOpen('auction')} />
+        <SideButton icon="/ic-forge.webp" label={t('forge')} onClick={() => onOpen('forge')} />
+        <SideButton icon="/ic-forge.webp" label={t('professions')} onClick={() => onOpen('professions')} />
+        <SideButton icon="/ic-trials.webp" label={t('trials')} onClick={() => onBattle('trial')} />
+        <SideButton icon="/ic-capture.webp" label={t('capture')} soon onClick={() => soon(t('capture'))} />
+        <SideButton icon="/ic-arena.webp" label={t('arena')} onClick={() => onOpen('arena')} />
       </div>
 
       <div className="absolute z-0 left-[48px] right-[48px] top-[calc(max(8px,env(safe-area-inset-top))+150px)] bottom-[196px] flex items-end justify-center pointer-events-none">
@@ -190,16 +193,13 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
         <button
           onClick={() => onBattle('campaign', true)}
           className="relative h-[70%] w-[34%] flex flex-col items-center justify-end pointer-events-auto group"
-          aria-label={`В бой: ${nextEnemy.name}`}
+          aria-label={`${t('fight')}: ${nextEnemy.name}`}
         >
           <span className="mb-1 max-w-full rounded-md bg-black/70 border border-red-500/40 px-1.5 py-0.5 text-[9px] font-bold text-red-100 truncate">
-            {nextEnemy.isBoss ? 'Босс: ' : ''}{nextEnemy.name}
+            {nextEnemy.isBoss ? t('boss') : ''}{localizeText(nextEnemy.name, language)}
           </span>
           <span className="absolute bottom-0 w-[80%] h-2.5 rounded-[50%] bg-black/50 blur-[3px]" />
           <img src={nextEnemy.art} alt="" className="relative min-h-0 flex-1 max-w-full object-contain object-bottom -scale-x-100 drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] transition-transform group-active:scale-95" />
-          <span className="absolute bottom-1 right-0 flex items-center gap-0.5 rounded-full bg-red-600 border border-red-300 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-lg">
-            <Swords className="w-3 h-3" /> В бой
-          </span>
         </button>
       </div>
 
@@ -212,7 +212,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
               {player.xp} / {player.xpToNext}
             </span>
           </div>
-          <span className="h-5 px-2 rounded-full border border-amber-400/30 bg-black/70 text-[10px] font-bold text-amber-100 flex items-center">Ур. {player.level}</span>
+          <span className="h-5 px-2 rounded-full border border-amber-400/30 bg-black/70 text-[10px] font-bold text-amber-100 flex items-center">{t('level')} {player.level}</span>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -220,7 +220,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
           <div className="flex-1 min-w-0">
             <BeltCells belt={state.belt} ctx={beltContext(state, arena.wins)} onTap={() => onInventory('items')} />
           </div>
-          <Orb tone="energy" value={`${player.energy}/${player.maxEnergy}`} label="Энергия" />
+          <Orb tone="energy" value={`${player.energy}/${player.maxEnergy}`} label={t('energy')} />
         </div>
 
         <EquipCells equipped={player.equipped} onTap={() => onInventory('equipment')} />
@@ -232,7 +232,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
           >
             <img src="/ic-quests.webp" alt="" className="w-8 h-8 object-contain shrink-0" />
             <span className="flex-1 min-w-0 text-left">
-              <span className="block text-[10px] font-semibold text-amber-50 truncate leading-tight">{quest ? quest.title : 'Все задания выполнены'}</span>
+              <span className="block text-[10px] font-semibold text-amber-50 truncate leading-tight">{quest ? quest.title : t('allQuestsDone')}</span>
               {quest && (
                 <span className="flex items-center gap-1 mt-0.5">
                   <span className="flex-1 h-1.5 rounded-full bg-black/60 overflow-hidden">
@@ -246,19 +246,19 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
           </button>
           <button
             onClick={() => setSheet('stones')}
-            aria-label="Боевые камни"
+            aria-label={t('battleStones')}
             className={`h-10 shrink-0 flex items-center gap-1 rounded-xl border bg-black/60 pl-1 pr-2 active:scale-90 transition-transform ${state.battleStones > 0 ? 'border-amber-400/25' : 'border-red-500/60'}`}
           >
             <img src="/battle-stone.webp" alt="" className="w-7 h-7 object-contain" />
             <span className={`text-xs font-bold tabular-nums ${state.battleStones > 0 ? 'text-white' : 'text-red-300'}`}>{state.battleStones}</span>
           </button>
-          <ControlButton label="Скорость боя x2" active={state.settings.speed === 2} onClick={() => setSettings({ speed: state.settings.speed === 2 ? 1 : 2 })}>
+          <ControlButton label={t('battleSpeed')} active={state.settings.speed === 2} onClick={() => setSettings({ speed: state.settings.speed === 2 ? 1 : 2 })}>
             x2
           </ControlButton>
-          <ControlButton label="Автобой" active={state.settings.auto} onClick={() => setSettings({ auto: !state.settings.auto })}>
+          <ControlButton label={t('autoBattle')} active={state.settings.auto} onClick={() => setSettings({ auto: !state.settings.auto })}>
             <Repeat className="w-4 h-4" />
           </ControlButton>
-          <ControlButton label="Благословение" active={state.blessing.charges > 0} onClick={bless}>
+          <ControlButton label={t('blessing')} active={state.blessing.charges > 0} onClick={bless}>
             <img src="/ic-blessing.webp" alt="" className="w-7 h-7 object-contain" />
             {blessReady && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-pulse" />}
             {state.blessing.charges > 0 && <span className="absolute -bottom-1 -right-1 rounded-full bg-amber-400 text-black text-[9px] font-bold px-1">{state.blessing.charges}</span>}

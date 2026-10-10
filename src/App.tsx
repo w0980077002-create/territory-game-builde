@@ -21,7 +21,8 @@ import { MaintenanceScreen, BannedScreen } from '@/components/ServiceScreens';
 import { useLive, useLiveSync, fetchMaintenance } from '@/game/live';
 import { useStore } from '@/game/store';
 import { isVerifiedAdmin } from '@/admin/api';
-import { ChevronLeft, Shield, Wrench } from 'lucide-react';
+import { ChevronLeft, Shield, Wrench, Smartphone } from 'lucide-react';
+import { useLanguage } from '@/game/i18n';
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
 type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'monopoly' | 'professions' | 'auction';
@@ -59,6 +60,7 @@ function Splash({ text }: { text: string }) {
 
 function Welcome({ onStart, error }: { onStart: (name: string) => void; error?: string }) {
   const [name, setName] = useState('');
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden" style={{ background: 'var(--color-bg)' }}>
       <div className="absolute inset-0 bg-gradient-to-b from-teal-900/20 via-transparent to-amber-900/10 pointer-events-none" />
@@ -73,24 +75,31 @@ function Welcome({ onStart, error }: { onStart: (name: string) => void; error?: 
           <Shield className="w-8 h-8 text-white" />
         </div>
         <h1 className="text-3xl font-bold text-white mb-2">Territory</h1>
-        <p className="text-sm text-gray-400 mb-6">Сражайся с монстрами, побеждай на арене и стань легендой</p>
-        <label className="block text-left text-xs text-gray-400 mb-1">Имя героя</label>
+        <p className="text-sm text-gray-400 mb-6">{t('startDescription')}</p>
+        <label className="block text-left text-xs text-gray-400 mb-1">{t('heroName')}</label>
         <input
           className="w-full rounded-lg bg-black/30 border border-white/10 px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-teal-500 transition-colors mb-4"
-          placeholder="Например, Рагнар"
+          placeholder={t('startPlaceholder')}
           maxLength={20}
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
         {error && <p className="text-sm text-red-400 mb-3">{error}</p>}
-        <button type="submit" className="btn-primary w-full text-lg">Начать игру</button>
-        <p className="text-xs text-gray-500 mt-4">Прогресс сохраняется автоматически</p>
+        <button type="submit" className="btn-primary w-full text-lg">{t('start')}</button>
+        <p className="text-xs text-gray-500 mt-4">{t('autosave')}</p>
       </form>
     </div>
   );
 }
 
+function tNav(translate: (key: string) => string, label: string) {
+  const keyByLabel: Record<string, string> = { 'Город': 'city', 'Инвентарь': 'inventory', 'Герой': 'hero', 'Бой': 'battle', 'Карта': 'map', 'Игры': 'games', 'Клан': 'clan' };
+  return translate(keyByLabel[label] ?? label);
+}
+
 function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
+  const { language, setLanguage, t: translate } = useLanguage();
+  const [isLandscapePhone, setIsLandscapePhone] = useState(false);
   const [screen, setScreen] = useState<Screen>('city');
   const [battleView, setBattleView] = useState<BattleView>('campaign');
   const [autoStart, setAutoStart] = useState(false);
@@ -102,6 +111,21 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const live = useStore(useLive);
   useLiveSync(loaded);
+
+  useEffect(() => {
+    const orientation = window.matchMedia('(orientation: landscape)');
+    const coarsePointer = window.matchMedia('(pointer: coarse)');
+    const updateOrientation = () => setIsLandscapePhone(orientation.matches && (coarsePointer.matches || Math.min(window.innerWidth, window.innerHeight) < 600));
+    updateOrientation();
+    orientation.addEventListener?.('change', updateOrientation);
+    coarsePointer.addEventListener?.('change', updateOrientation);
+    window.addEventListener('resize', updateOrientation);
+    return () => {
+      orientation.removeEventListener?.('change', updateOrientation);
+      coarsePointer.removeEventListener?.('change', updateOrientation);
+      window.removeEventListener('resize', updateOrientation);
+    };
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -129,7 +153,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         useAccount.set({ vip: profile.vip });
         setLoaded(true);
       })
-      .catch(() => !cancelled && setLoadError('Не удалось загрузить прогресс. Проверь интернет и обнови страницу.'));
+      .catch(() => !cancelled && setLoadError('failedLoad'));
     return () => {
       cancelled = true;
     };
@@ -162,14 +186,14 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   if (live.banned) return <BannedScreen />;
   if (live.maintenance && !isAdmin) return <MaintenanceScreen />;
-  if (loadError) return <Splash text={loadError} />;
-  if (!loaded) return <Splash text="Загрузка героя..." />;
+  if (loadError) return <Splash text={loadError === 'failedLoad' ? translate('failedLoad') : loadError} />;
+  if (!loaded) return <Splash text={translate('loadingHero')} />;
 
   const sub = SUB_SCREENS[screen as SubScreen];
   const navActive: NavId = sub ? 'city' : screen === 'monopoly' ? 'games' : (screen as NavId);
 
   const goNav = (id: NavId) => {
-    if (id === 'clan') return notify('Кланы откроются в следующих обновлениях');
+    if (id === 'clan') return notify(language === 'en' ? 'Clans will be available in a future update.' : 'Кланы откроются в следующих обновлениях');
     if (id === 'battle') setBattleView('campaign');
     setScreen(id);
   };
@@ -178,16 +202,16 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     <div className="h-[100dvh] flex flex-col max-w-md mx-auto overflow-hidden relative" style={{ background: 'var(--color-bg)' }}>
       {live.maintenance && (
         <div className="shrink-0 z-40 flex items-center justify-center gap-1.5 bg-amber-500 py-1 text-[11px] font-bold text-black">
-          <Wrench className="w-3 h-3" /> Техработы включены — вы вошли как админ
+          <Wrench className="w-3 h-3" /> {translate('maintenance')}
         </div>
       )}
       {sub && (
         <header className="shrink-0 z-30 h-12 px-2 flex items-center gap-2 border-b border-amber-500/20 bg-[#0c1117]/95">
           <button disabled={battleLocked} onClick={() => setScreen('city')} className="h-9 pl-1.5 pr-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 text-sm font-semibold text-amber-100 bg-white/5 border border-white/10 active:scale-95 transition-transform">
-            <ChevronLeft className="w-4 h-4" /> Город
+            <ChevronLeft className="w-4 h-4" /> {translate('cityBack')}
           </button>
           <img src={sub.icon} alt="" className="w-7 h-7 object-contain" />
-          <h1 className="text-base font-bold text-white truncate">{sub.title}</h1>
+          <h1 className="text-base font-bold text-white truncate">{translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction' } as Record<string, string>)[screen] ?? sub.title)}</h1>
         </header>
       )}
 
@@ -260,13 +284,27 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
                   draggable={false}
                   className={`object-contain transition-transform duration-200 ${center ? 'w-10 h-10' : 'w-8 h-8'} ${active ? 'scale-110' : ''} ${t.soon ? 'opacity-60 grayscale-[40%]' : ''}`}
                 />
-                <span className={`text-[9px] tracking-tight font-bold leading-none truncate max-w-full ${active || center ? 'text-white' : 'text-gray-400'}`}>{t.label}</span>
-{t.id === 'clan' && <span className="absolute top-0.5 right-0.5 rounded bg-slate-700 px-0.5 text-[7px] font-bold uppercase text-gray-300">скоро</span>}
+                <span className={`text-[9px] tracking-tight font-bold leading-none truncate max-w-full ${active || center ? 'text-white' : 'text-gray-400'}`}>{tNav(translate, t.label)}</span>
+{t.id === 'clan' && <span className="absolute top-0.5 right-0.5 rounded bg-slate-700 px-0.5 text-[7px] font-bold uppercase text-gray-300">{translate('soon')}</span>}
               </button>
             );
           })}
         </div>
       </nav>
+
+      {isLandscapePhone && (
+        <div role="alertdialog" aria-modal="true" className="fixed inset-0 z-[100] flex items-center justify-center bg-[#070b12]/95 p-6 text-center backdrop-blur-md" style={{ paddingTop: 'max(24px, env(safe-area-inset-top))', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+          <div className="w-full max-w-sm rounded-3xl border border-sky-400/35 bg-gradient-to-b from-[#14283b] to-[#090f18] px-6 py-8 shadow-[0_0_50px_rgba(14,165,233,0.12)]">
+            <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl border border-sky-300/40 bg-sky-500/10 text-sky-200"><Smartphone className="h-12 w-12 rotate-90" strokeWidth={1.7} /></div>
+            <h2 className="mb-3 text-xl font-extrabold leading-tight text-white">{translate('rotateTitle')}</h2>
+            <p className="text-sm leading-relaxed text-slate-300">{translate('rotateBody')}</p>
+            <div className="mt-5 inline-flex rounded-full border border-white/10 bg-black/30 p-1">
+              <button onClick={() => setLanguage('ru')} className={`rounded-full px-4 py-1.5 text-sm font-bold ${language === 'ru' ? 'bg-amber-400 text-black' : 'text-slate-300'}`}>RU</button>
+              <button onClick={() => setLanguage('en')} className={`rounded-full px-4 py-1.5 text-sm font-bold ${language === 'en' ? 'bg-amber-400 text-black' : 'text-slate-300'}`}>EN</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div key={toast.id} className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[84px] z-[60] w-[calc(100%-32px)] max-w-sm rounded-xl border border-amber-400/40 bg-[#1a1610]/95 px-3 py-2 text-center text-xs font-semibold text-amber-50 shadow-2xl animate-sheet-up">
@@ -279,6 +317,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
 function App() {
   const { authState, startAsGuest } = useAuth();
+  const { t } = useLanguage();
   const { maintenance } = useStore(useLive);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
@@ -287,7 +326,7 @@ function App() {
     fetchMaintenance().then((on) => useLive.set((s) => ({ ...s, maintenance: on })));
   }, []);
 
-  if (authState.status === 'loading' || isAdmin === null) return <Splash text="Загрузка..." />;
+  if (authState.status === 'loading' || isAdmin === null) return <Splash text={t('loadingHero')} />;
   if (maintenance && !isAdmin) return <MaintenanceScreen />;
   if (authState.status === 'guest') return <Welcome onStart={startAsGuest} error={authState.error} />;
   return <GameShell key={authState.user.id} user={authState.user} isAdmin={isAdmin} />;

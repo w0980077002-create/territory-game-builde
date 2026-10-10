@@ -16,6 +16,7 @@ import { GearStrip } from '@/components/arena/GearStrip';
 import { BeltCells } from '@/components/ui/BeltCells';
 import { Currency } from '@/components/ui/Currency';
 import { ItemArt } from '@/components/ui/ItemArt';
+import { useLanguage, localizeText } from '@/game/i18n';
 
 export type FightKind = 'stage' | 'trial';
 
@@ -76,6 +77,7 @@ function ZoneBtn({ label, sub, on, tone, disabled, onClick }: { label: string; s
 }
 
 export function PveFight({ enemy, kind, onExit, onNext }: Props) {
+  const { language } = useLanguage();
   const state = useStore(useGame);
   const arena = useStore(useArena);
   const follower = state.followers.find((f) => f.unlocked);
@@ -85,7 +87,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
   const [blocks, setBlocks] = useState<Zone[]>([]);
   const [busy, setBusy] = useState(false);
   const [strike, setStrike] = useState<StrikeEvent | null>(null);
-  const [log, setLog] = useState<string[]>([`Бой начался: ${enemy.name}`]);
+  const [log, setLog] = useState<string[]>([language === 'en' ? `Battle started: ${localizeText(enemy.name, language)}` : `Бой начался: ${enemy.name}`]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [gearOpen, setGearOpen] = useState(false);
@@ -169,8 +171,8 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
 
   const drinkPotion = (i: number, open: boolean) => {
     const item = state.belt[i];
-    if (!open) return setToast('Этот слот пояса ещё закрыт');
-    if (!item) return setToast('Слот пуст — положи эликсир из инвентаря');
+    if (!open) return setToast(language === 'en' ? 'This belt slot is still locked' : 'Этот слот пояса ещё закрыт');
+    if (!item) return setToast(language === 'en' ? 'Empty slot — move an elixir from inventory' : 'Слот пуст — положи эликсир из инвентаря');
     if (busy || outcome) return;
     const r = applyPotion(heroRef.current, item);
     setToast(r.text);
@@ -182,8 +184,8 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
 
   const controls = !busy && !outcome && !auto;
   const ready = controls && !!attack && blocks.length === 2;
-  const hint = auto ? 'Автобой: зоны выбираются сами'
-    : blocks.length < 2 ? `Защита: выбери ещё ${2 - blocks.length}` : !attack ? 'Выбери зону удара' : 'Жми УДАР';
+  const hint = auto ? (language === 'en' ? 'Auto-battle: zones are selected automatically' : 'Автобой: зоны выбираются сами')
+    : blocks.length < 2 ? (language === 'en' ? `Choose ${2 - blocks.length} more defense zone(s)` : `Защита: выбери ещё ${2 - blocks.length}`) : !attack ? (language === 'en' ? 'Choose an attack zone' : 'Выбери зону удара') : (language === 'en' ? 'Press STRIKE' : 'Жми УДАР');
 
   return (
     <div className="space-y-2 animate-fade-in">
@@ -192,10 +194,10 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
           onClick={() => (outcome ? onExit() : finish(false))}
           className="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-200 flex items-center gap-1.5 active:scale-95 transition-transform"
         >
-          <Flag className="w-3.5 h-3.5" /> {outcome ? 'К карте' : 'Сдаться'}
+          <Flag className="w-3.5 h-3.5" /> {outcome ? (language === 'en' ? 'Map' : 'К карте') : (language === 'en' ? 'Surrender' : 'Сдаться')}
         </button>
         <div className="flex-1 min-w-0 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-amber-300/80">{kind === 'trial' ? `Испытание ${state.trialLevel}` : enemy.isBoss ? 'Босс главы' : `Глава ${state.currentChapter}`}</p>
+          <p className="text-[10px] uppercase tracking-wider text-amber-300/80">{kind === 'trial' ? (language === 'en' ? `Trial ${state.trialLevel}` : `Испытание ${state.trialLevel}`) : enemy.isBoss ? (language === 'en' ? 'Chapter boss' : 'Босс главы') : (language === 'en' ? `Chapter ${state.currentChapter}` : `Глава ${state.currentChapter}`)}</p>
           <p className="text-sm font-bold text-white truncate">{enemy.name}</p>
         </div>
         <span className="h-9 px-2.5 rounded-xl bg-black/40 border border-white/10 flex items-center">
@@ -209,9 +211,9 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
 
         <div className="relative grid grid-cols-[52px_1fr_52px] gap-1.5 p-2 pt-3">
           <div className="flex flex-col gap-1.5 pt-5">
-            <p className="text-[9px] uppercase tracking-wider text-sky-200 text-center font-semibold">Защита</p>
+            <p className="text-[9px] uppercase tracking-wider text-sky-200 text-center font-semibold">{language === 'en' ? 'DEFENSE' : 'Защита'}</p>
             {ZONES.map((z) => (
-              <ZoneBtn key={z.id} label={z.label} tone="def" on={blocks.includes(z.id)} disabled={!controls} onClick={() => toggleBlock(z.id)} />
+              <ZoneBtn key={z.id} label={language === 'en' ? ({ head: 'Head', chest: 'Chest', belly: 'Belly', legs: 'Legs' } as Record<string, string>)[z.id] : z.label} tone="def" on={blocks.includes(z.id)} disabled={!controls} onClick={() => toggleBlock(z.id)} />
             ))}
           </div>
 
@@ -257,9 +259,9 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
           </div>
 
           <div className="flex flex-col gap-1.5 pt-5">
-            <p className="text-[9px] uppercase tracking-wider text-red-200 text-center font-semibold">Удар</p>
+            <p className="text-[9px] uppercase tracking-wider text-red-200 text-center font-semibold">{language === 'en' ? 'ATTACK' : 'Удар'}</p>
             {ZONES.map((z) => (
-              <ZoneBtn key={z.id} label={z.label} sub={z.mult !== 1 ? `×${z.mult}` : undefined} tone="atk" on={attack === z.id} disabled={!controls} onClick={() => setAttack(z.id)} />
+              <ZoneBtn key={z.id} label={language === 'en' ? ({ head: 'Head', chest: 'Chest', belly: 'Belly', legs: 'Legs' } as Record<string, string>)[z.id] : z.label} sub={z.mult !== 1 ? `×${z.mult}` : undefined} tone="atk" on={attack === z.id} disabled={!controls} onClick={() => setAttack(z.id)} />
             ))}
           </div>
         </div>
@@ -275,18 +277,18 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
                 <span className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${auto ? 'bg-amber-400 border-amber-400' : 'border-white/40'}`}>
                   {auto && <Check className="w-3 h-3 text-black" strokeWidth={3} />}
                 </span>
-                <span className="text-[10px] font-semibold text-gray-100 leading-tight text-left">Авто<br />бой</span>
+                <span className="text-[10px] font-semibold text-gray-100 leading-tight text-left">{language === 'en' ? <>Auto<br />battle</> : <>Авто<br />бой</>}</span>
               </button>
               <button
                 disabled={!ready}
                 onClick={() => attack && runRound(attack, blocks)}
                 className={`flex-1 min-w-0 h-11 rounded-xl font-black tracking-[0.2em] text-base flex items-center justify-center gap-2 transition-all active:scale-[0.97] disabled:opacity-40 bg-gradient-to-b from-red-500 to-red-700 text-white border border-red-300/40 ${ready ? 'animate-strike-ready' : ''}`}
               >
-                {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sword className="w-5 h-5" />} УДАР
+                {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sword className="w-5 h-5" />} {language === 'en' ? 'STRIKE' : 'УДАР'}
               </button>
               <button
                 onClick={() => setSettings({ speed: speed === 1 ? 2 : 1 })}
-                aria-label="Скорость боя"
+                aria-label={language === 'en' ? 'Battle speed' : 'Скорость боя'}
                 className={`shrink-0 w-11 h-11 rounded-xl border text-sm font-black transition-colors ${speed === 2 ? 'bg-amber-400 text-black border-amber-300' : 'bg-black/55 text-gray-100 border-white/15'}`}
               >
                 x2
@@ -300,12 +302,12 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
 
       {!outcome && (
         <div className="rounded-xl border border-amber-500/15 bg-gray-900/70 p-2">
-          <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1.5">Пояс с эликсирами</p>
+          <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1.5">{language === 'en' ? 'Elixir belt' : 'Пояс с эликсирами'}</p>
           <BeltCells belt={state.belt} ctx={beltContext(state, arena.wins)} disabled={busy} onTap={drinkPotion} />
         </div>
       )}
 
-      <FoldSection title="Снаряжение" summary={`${Object.keys(state.player.equipped).length}/7`} open={gearOpen} onToggle={() => setGearOpen((v) => !v)}>
+      <FoldSection title={language === 'en' ? 'Equipment' : 'Снаряжение'} summary={`${Object.keys(state.player.equipped).length}/7`} open={gearOpen} onToggle={() => setGearOpen((v) => !v)}>
         <GearStrip equipped={state.player.equipped} />
       </FoldSection>
 
@@ -319,14 +321,15 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
 }
 
 function OutcomePanel({ outcome, kind, onExit, onNext }: { outcome: Outcome; kind: FightKind; onExit: () => void; onNext?: () => void }) {
+  const { language } = useLanguage();
   return (
     <div className="relative px-3 pb-3 pt-1 animate-pop">
       <div className={`rounded-2xl border p-3 text-center backdrop-blur-md ${outcome.won ? 'bg-amber-950/70 border-amber-400/40' : 'bg-red-950/70 border-red-400/40'}`}>
-        <p className={`text-xl font-black tracking-wide ${outcome.won ? 'text-amber-300' : 'text-red-300'}`}>{outcome.won ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ'}</p>
+        <p className={`text-xl font-black tracking-wide ${outcome.won ? 'text-amber-300' : 'text-red-300'}`}>{outcome.won ? (language === 'en' ? 'VICTORY' : 'ПОБЕДА') : (language === 'en' ? 'DEFEAT' : 'ПОРАЖЕНИЕ')}</p>
         {outcome.won ? (
           <div className="flex flex-wrap items-center justify-center gap-3 mt-2 text-sm text-white">
             <Currency kind="gold" value={`+${outcome.gold}`} size={18} />
-            <span className="font-semibold text-sky-200">+{outcome.xp} опыта</span>
+            <span className="font-semibold text-sky-200">+{outcome.xp} {language === 'en' ? 'XP' : 'опыта'}</span>
             {outcome.gems > 0 && <Currency kind="gems" value={`+${outcome.gems}`} size={18} />}
             {outcome.loot && (
               <span className="flex items-center gap-1 text-amber-100">
@@ -335,11 +338,11 @@ function OutcomePanel({ outcome, kind, onExit, onNext }: { outcome: Outcome; kin
             )}
           </div>
         ) : (
-          <p className="text-xs text-gray-300 mt-1.5">Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.</p>
+          <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>
         )}
         <div className="flex gap-2 mt-3">
           <button onClick={onExit} className="flex-1 h-10 rounded-xl bg-white/10 border border-white/15 text-sm font-semibold text-white active:scale-95 transition-transform">
-            {kind === 'trial' ? 'К испытаниям' : 'К карте'}
+            {kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Map' : 'К карте')}
           </button>
           {outcome.won && onNext && (
             <button onClick={onNext} className="flex-1 h-10 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-sm font-bold text-black active:scale-95 transition-transform">

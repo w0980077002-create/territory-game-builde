@@ -1,3 +1,4 @@
+import { useLanguage } from '@/game/i18n';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
 import { SLOT_ART } from '@/game/art';
 import { rarityColor } from '@/game/ui';
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function EquipCells({ equipped, onTap }: Props) {
+  const { language } = useLanguage();
   return (
     <div className="grid grid-cols-7 gap-1.5">
       {EQUIPMENT_SLOTS.map((s) => {
@@ -18,7 +20,7 @@ export function EquipCells({ equipped, onTap }: Props) {
           <button
             key={s.id}
             onClick={() => onTap(s.id)}
-            aria-label={eq ? eq.name : `${s.name}: пусто`}
+            aria-label={eq ? eq.name : `${language === 'en' ? s.name : s.name}: ${language === 'en' ? 'empty' : 'пусто'}`}
             className={`relative aspect-square rounded-xl border flex items-center justify-center overflow-hidden transition-all duration-200 active:scale-90 ${
               eq ? 'bg-gradient-to-b from-[#2b2a24] to-[#100f0c]' : 'bg-black/45 border-white/10'
             }`}

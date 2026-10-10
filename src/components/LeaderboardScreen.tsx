@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getLeaderboard } from '@/game/cloud';
 import { Trophy, Crown, Medal } from 'lucide-react';
 import type { AuthUser } from '@/game/auth';
+import { useLanguage } from '@/game/i18n';
 
 interface LeaderboardEntry {
   player_id: string;
@@ -14,6 +15,7 @@ interface LeaderboardEntry {
 }
 
 export function LeaderboardScreen({ user }: { user: AuthUser }) {
+  const { t, language } = useLanguage();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -43,37 +45,37 @@ export function LeaderboardScreen({ user }: { user: AuthUser }) {
       <div className="card text-center">
         <div className="flex items-center justify-center gap-2 mb-3">
           <Trophy className="w-6 h-6 text-amber-400" />
-          <h2 className="text-xl font-bold text-white">Топ игроков</h2>
+          <h2 className="text-xl font-bold text-white">{t('leaderboard')}</h2>
         </div>
         <div className="flex gap-2">
           <button
             className={`flex-1 btn text-sm ${tab === 'rating' ? 'btn-accent' : 'btn-ghost'}`}
             onClick={() => setTab('rating')}
           >
-            По рейтингу
+            {language === 'en' ? 'By rating' : 'По рейтингу'}
           </button>
           <button
             className={`flex-1 btn text-sm ${tab === 'wins' ? 'btn-accent' : 'btn-ghost'}`}
             onClick={() => setTab('wins')}
           >
-            По победам
+            {language === 'en' ? 'By wins' : 'По победам'}
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="card text-center text-sm text-red-400">Не удалось загрузить рейтинг. Проверь связь.</div>
+        <div className="card text-center text-sm text-red-400">{t('leaderboardLoadError')}</div>
       )}
 
       {loading ? (
         <div className="card text-center py-8 text-gray-500">
-          <p className="text-sm">Загрузка...</p>
+          <p className="text-sm">{t('loading')}</p>
         </div>
       ) : sorted.length === 0 ? (
         <div className="card text-center py-8 text-gray-500">
           <Trophy className="w-12 h-12 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">Пока нет игроков в рейтинге</p>
-          <p className="text-xs mt-1">Сыграй на арене, чтобы попасть в топ!</p>
+          <p className="text-sm">{t('noLeaderboard')}</p>
+          <p className="text-xs mt-1">{t('playArenaForRank')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -113,14 +115,14 @@ export function LeaderboardScreen({ user }: { user: AuthUser }) {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <h4 className={`text-sm font-semibold truncate ${isMe ? 'text-teal-400' : 'text-white'}`}>
-                    {entry.display_name} {isMe && '(ты)'}
+                    {entry.display_name} {isMe && (language === 'en' ? '(you)' : '(ты)')}
                   </h4>
                   <div className="flex gap-3 text-xs text-gray-400">
-                    <span>Ур. {entry.level}</span>
+                    <span>{t('level')} {entry.level}</span>
                     {tab === 'rating' ? (
-                      <span className="text-amber-400">{entry.arena_rating} рейтинг</span>
+                      <span className="text-amber-400">{entry.arena_rating} {language === 'en' ? 'rating' : 'рейтинг'}</span>
                     ) : (
-                      <span className="text-teal-400">{entry.arena_wins} побед</span>
+                      <span className="text-teal-400">{entry.arena_wins} {language === 'en' ? 'wins' : 'побед'}</span>
                     )}
                   </div>
                 </div>
@@ -131,7 +133,7 @@ export function LeaderboardScreen({ user }: { user: AuthUser }) {
       )}
 
       <button className="btn-ghost w-full text-sm" onClick={loadLeaderboard}>
-        Обновить
+        {language === 'en' ? 'Refresh' : 'Обновить'}
       </button>
     </div>
   );

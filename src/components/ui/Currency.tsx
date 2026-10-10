@@ -1,4 +1,5 @@
 import { CURRENCY_ART } from '@/game/art';
+import { useLanguage } from '@/game/i18n';
 
 export type CurrencyKind = keyof typeof CURRENCY_ART;
 
@@ -11,9 +12,11 @@ export const CURRENCY_NAME: Record<CurrencyKind, string> = {
 };
 
 export function Currency({ kind, value, size = 16, className = '' }: { kind: CurrencyKind; value: number | string; size?: number; className?: string }) {
+  const { language } = useLanguage();
+  const names = language === 'en' ? { gold: 'Coins', gems: 'Blue crystals', redGems: 'Red crystals', stones: 'Battle stones', material: 'Materials' } : CURRENCY_NAME;
   return (
     <span className={`inline-flex items-center gap-1 tabular-nums font-semibold ${className}`}>
-      <img src={CURRENCY_ART[kind]} alt={CURRENCY_NAME[kind]} style={{ width: size, height: size }} className="object-contain shrink-0" />
+      <img src={CURRENCY_ART[kind]} alt={names[kind]} style={{ width: size, height: size }} className="object-contain shrink-0" />
       {value}
     </span>
   );
