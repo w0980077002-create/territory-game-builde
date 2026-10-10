@@ -7,32 +7,98 @@ on:
 
 permissions:
   contents: write
+  actions: write
+
+concurrency:
+  group: unpack-uploaded-zip
+  cancel-in-progress: false
 
 jobs:
   unpack:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: main
 
-      - name: Unpack project
+      - name: Validate and unpack project ZIP
+        shell: bash
         run: |
-          set -e
-          ZIP_FILE=$(ls *.zip 2>/dev/null | head -n 1)
-          
-          if [ -z "$ZIP_FILE" ]; then
-            echo "Ошибка: ZIP-файл не найден!"
+          set -euo pipefail
+          shopt -s nullglob
+          ZIP_FILES=( *.zip )
+
+          if [ "${#ZIP_FILES[@]}" -ne 1 ]; then
+            echo "::error::В корне репозитория должен находиться ровно один ZIP-файл."
             exit 1
           fi
-          
-          echo "Распаковка файла: $ZIP_FILE"
-          unzip -o "$ZIP_FILE" -d ./
-          rm "$ZIP_FILE"
 
-      - name: Commit changes
+          ZIP_FILE="${ZIP_FILES[0]}"
+          echo "Обрабатываем архив: $ZIP_FILE"
+          unzip -t "$ZIP_FILE"
+
+          while IFS= read -r entry; do
+            if [[ "$entry" == /* || "$entry" =~ (^|/)\.\.(/|$) ]]; then
+              echo "::error::Архив содержит небезопасный путь: $entry"
+              exit 1
+            fi
+          done < <(unzip -Z1 "$ZIP_FILE")
+
+          TEMP_DIR="$(mktemp -d)"
+          trap 'rm -rf "$TEMP_DIR"' EXIT
+          unzip -q "$ZIP_FILE" -d "$TEMP_DIR"
+
+          mapfile -t TOP_LEVEL < <(find "$TEMP_DIR" -mindepth 1 -maxdepth 1 -printf '%f\n')
+
+          if [ "${#TOP_LEVEL[@]}" -eq 1 ] && [ -d "$TEMP_DIR/${TOP_LEVEL[0]}" ]; then
+            SOURCE_DIR="$TEMP_DIR/${TOP_LEVEL[0]}"
+          else
+            SOURCE_DIR="$TEMP_DIR"
+          fi
+
+          if [ ! -f "$SOURCE_DIR/package.json" ] || [ ! -d "$SOURCE_DIR/src" ]; then
+            echo "::error::В архиве не найдены package.json и папка src в корне проекта."
+            exit 1
+          fi
+
+          rsync -a --delete \
+            --exclude='/.git/' \
+            --exclude='/.github/workflows/unpack-project.yml' \
+            "$SOURCE_DIR/" ./
+
+          rm -f "$ZIP_FILE"
+
+          test -f package.json
+          test -d src
+
+          echo "Распаковка завершена."
+
+      - name: Commit project files
+        id: commit
+        shell: bash
         run: |
-          git config --global user.name "GitHub Action Bot"
-          git config --global user.email "action@github.com"
-          git add .
-          git commit -m "Auto-unzip from mobile" || exit 0
-          git push origin main
+          set -euo pipefail
+
+          git config user.name "GitHub Action Bot"
+          git config user.email "action@github.com"
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Изменений нет."
+            exit 0
+          fi
+
+          git commit -m "Auto-unpack uploaded project ZIP"
+          git push origin HEAD:main
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Start GitHub Pages deployment
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
