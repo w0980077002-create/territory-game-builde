@@ -70,6 +70,15 @@ export function useAuth() {
         setAuthState({ status: 'authenticated', user: await profileFor(userId, tgName) });
         return;
       }
+
+      // Do not silently fall back to a previously saved session for a different
+      // account when Telegram has supplied an identity but Telegram auth failed.
+      // That can load another player's save and make Telegram data look missing.
+      setAuthState({
+        status: 'guest',
+        error: 'Не удалось подтвердить вход через Telegram. Открой игру из Telegram и попробуй ещё раз.',
+      });
+      return;
     }
 
     if (session) {
