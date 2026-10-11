@@ -158,9 +158,12 @@ export function calculateEquipmentStats(
 ): EquipmentBaseStats {
   const count = Math.max(0, Math.floor(Number.isFinite(upgradeCount) ? upgradeCount : 0));
   const growth = FORGE_STAT_GROWTH[slot][rarity];
+  // Use a cumulative ceiling for positive growth: even small defensive gains
+  // become visible on the first successful upgrade instead of rounding to zero.
+  // The result is still derived from immutable base stats, so upgrades never compound.
   const grow = (value: number | undefined, perLevel: number) => value === undefined
     ? undefined
-    : value <= 0 ? value : value + Math.round(perLevel * count);
+    : value <= 0 ? value : value + (count > 0 && perLevel > 0 ? Math.ceil(perLevel * count) : 0);
   return {
     ...(baseStats.attack !== undefined ? { attack: grow(baseStats.attack, growth.attack) } : {}),
     ...(baseStats.defense !== undefined ? { defense: grow(baseStats.defense, growth.defense) } : {}),

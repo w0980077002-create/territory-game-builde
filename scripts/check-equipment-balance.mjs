@@ -54,8 +54,9 @@ for (const shopItem of catalog.SHOP_EQUIPMENT_ITEMS) {
     ...(shopItem.equipment.critChance !== undefined ? { critChance: shopItem.equipment.critChance } : {}),
   }, `${shopItem.name} baseline must match its catalog stats`);
 }
-assert.equal(catalog.createBossLootEquipment(24, true, 'loot_test').attack, 82, 'chapter loot should use the canonical base-stat factory');
-assert.equal(catalog.createBossLootEquipment(58, false, 'loot_armor').defense, 121, 'high-chapter armor should be generated from the shared formula');
+assert.equal(catalog.createBossLootEquipment(24, true, 'loot_test').attack, 56, 'chapter loot should use the canonical balanced base-stat factory');
+assert.equal(catalog.createBossLootEquipment(58, false, 'loot_armor').defense, 61, 'high-chapter armor should stay within the balanced defensive budget');
+assert.equal(catalog.createBossLootEquipment(58, false, 'loot_armor').hp, 189, 'high-chapter armor HP should stay within the balanced defensive budget');
 assert.equal(catalog.rarityForChapter(1), 'common');
 assert.equal(catalog.rarityForChapter(10), 'rare');
 assert.equal(catalog.rarityForChapter(20), 'epic');
@@ -167,6 +168,19 @@ const alreadyCurrentCustom = {
   player: { equipped: { weapon: { ...preserved, attack: 888, baseLevel: 25, baseStats: { attack: 777 }, upgradeCount: 5, level: 30 } } },
 };
 assert.equal(balance.migrateGameStateBalance(alreadyCurrentCustom).player.equipped.weapon.attack, 888, 'current-version custom crafted stats should not be reinterpreted on each load');
+
+
+// Fractional stat growth must never produce a successful forge level with no visible gain.
+const smallArmor = balance.prepareNewEquipment({ id: 'test-small-armor', slot: 'armor', name: 'Тестовая броня', icon: '🛡️', rarity: 'common', defense: 5, hp: 30, level: 1 });
+const firstSmallArmorUpgrade = balance.upgradeEquipment(smallArmor);
+assert.ok(firstSmallArmorUpgrade.defense > smallArmor.defense || firstSmallArmorUpgrade.hp > smallArmor.hp, 'a successful upgrade must visibly improve at least one stat');
+assert.ok(firstSmallArmorUpgrade.defense > smallArmor.defense, 'small positive defense growth must be visible on first upgrade');
+
+// Boss loot is intentionally weaker than a comparable level legendary crafted weapon.
+const bossWeapon58 = balance.prepareNewEquipment(catalog.createBossLootEquipment(58, true, 'loot_balance_compare'));
+const craftedLegendary = balance.prepareNewEquipment({ id: 'crafted-legendary-test', slot: 'weapon', name: 'Клинок древних', icon: '🔱', rarity: 'legendary', attack: 35, critChance: 8, level: 5 });
+const forgedCraftedLegendary = balance.setEquipmentLevel(craftedLegendary, 58);
+assert.ok(bossWeapon58.attack < forgedCraftedLegendary.attack, 'level-58 boss loot weapon should not outclass a level-58 forged mastery-300 legendary weapon');
 
 // Level-58 worst-case single strike check: a full epic damage kit must not one-shot the weakest chapter enemy.
 const baseState = engine.createInitialGame();

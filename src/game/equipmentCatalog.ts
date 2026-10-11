@@ -60,9 +60,11 @@ export function createBossLootEquipment(chapter: number, isWeapon: boolean, id: 
     name: isWeapon ? 'Клинок победителя' : 'Доспех воина',
     icon: isWeapon ? '⚔️' : '🛡️',
     rarity: rarityForChapter(level),
-    attack: isWeapon ? 10 + level * 3 : 0,
-    defense: isWeapon ? 0 : 5 + level * 2,
-    hp: isWeapon ? 0 : 20 + level * 5,
+    // Boss loot should be useful for immediate progression, but remain below
+    // a well-forged profession-made legendary item at comparable levels.
+    attack: isWeapon ? 8 + level * 2 : 0,
+    defense: isWeapon ? 0 : 3 + level,
+    hp: isWeapon ? 0 : 15 + level * 3,
     level,
   };
 }
