@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Shield, Sword, Loader2, Check, Lock, RotateCcw, Skull, Bot, Hourglass } from 'lucide-react';
 import { ZONES, type ArenaFighter, type Zone } from '@/game/arenaApi';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
@@ -28,6 +29,7 @@ interface Props {
   onStrike: () => void;
   onRepeat: () => void;
   onToggleAuto: () => void;
+  resultPanel?: ReactNode;
 }
 
 function Plate({ fighter, side }: { fighter: ArenaFighter; side: 'ally' | 'enemy' }) {
@@ -78,7 +80,7 @@ function ZoneButton({ label, sub, selected, tone, disabled, onClick }: {
 export function BattleScene(props: Props) {
   const {
     me, enemy, followerName, active, moved, auto, autoLocked, autoMinVip, attack, blocks, busy,
-    movedCount, aliveCount, strike, canRepeat, onAttack, onToggleBlock, onStrike, onRepeat, onToggleAuto,
+    movedCount, aliveCount, strike, canRepeat, onAttack, onToggleBlock, onStrike, onRepeat, onToggleAuto, resultPanel,
   } = props;
   const game = useStore(useGame);
   const { language } = useLanguage();
@@ -219,6 +221,8 @@ export function BattleScene(props: Props) {
           </div>
         </div>
       )}
+
+      {resultPanel && <div className="relative p-2 pt-0 animate-pop">{resultPanel}</div>}
     </div>
   );
 }

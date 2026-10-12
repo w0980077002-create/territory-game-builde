@@ -15,7 +15,7 @@ import { ArenaChat } from './ArenaChat';
 import { GearStrip } from './GearStrip';
 import { BeltBar } from './BeltBar';
 import { FoldSection } from './FoldSection';
-import { Loader2, LogOut, Timer, WifiOff, Skull, Trophy } from 'lucide-react';
+import { Loader2, LogOut, Timer, WifiOff } from 'lucide-react';
 import { useLanguage, localizeText } from '@/game/i18n';
 
 
@@ -174,6 +174,28 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const draw = room.status === 'finished' && room.winnerTeam === null;
   const isDuel = room.mode === 'duel';
   const followerName = game.followers[0]?.name ?? (language === 'en' ? 'Follower' : 'Последователь');
+  const resultPanel = room.status === 'finished' ? (
+    <div className={`rounded-2xl border p-3 text-center backdrop-blur-md ${won ? 'bg-amber-950/70 border-amber-400/40' : draw ? 'bg-amber-950/70 border-amber-400/40' : 'bg-red-950/70 border-red-400/40'}`}>
+      <p className={`text-xl font-black tracking-wide ${won ? 'text-amber-300' : draw ? 'text-amber-300' : 'text-red-300'}`}>
+        {won ? (language === 'en' ? 'VICTORY' : 'ПОБЕДА') : draw ? (language === 'en' ? 'DRAW' : 'НИЧЬЯ') : (language === 'en' ? 'DEFEAT' : 'ПОРАЖЕНИЕ')}
+      </p>
+      {reward ? (
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-2 text-sm">
+          <span className="text-amber-300">{language === 'en' ? `+${reward.gold} gold` : `+${reward.gold} золота`}</span>
+          <span className="text-sky-200">{language === 'en' ? `+${reward.xp} XP` : `+${reward.xp} опыта`}</span>
+          <span className={reward.ratingChange >= 0 ? 'text-emerald-300' : 'text-red-300'}>
+            {reward.ratingChange >= 0 ? '+' : ''}{reward.ratingChange} {language === 'en' ? 'rating' : 'рейтинга'}
+          </span>
+          {reward.kills > 0 && <span className="text-gray-300">{language === 'en' ? `Kills: ${reward.kills}` : `убийств: ${reward.kills}`}</span>}
+        </div>
+      ) : view.me.ratingChange !== null ? (
+        <p className="text-sm text-gray-300 mt-1.5">{language === 'en' ? 'Rating:' : 'Рейтинг:'} {view.me.ratingChange >= 0 ? '+' : ''}{view.me.ratingChange}</p>
+      ) : null}
+      <button disabled={busy} onClick={leave} className="mt-3 w-full h-10 rounded-xl bg-white/10 border border-white/15 text-sm font-semibold text-white active:scale-95 transition-transform disabled:opacity-50">
+        <span className="inline-flex items-center justify-center gap-2"><LogOut className="w-4 h-4" />{language === 'en' ? 'Leave room' : 'Покинуть комнату'}</span>
+      </button>
+    </div>
+  ) : null;
 
   return (
     <div className="space-y-2 animate-fade-in pb-4">
@@ -207,36 +229,6 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
         </div>
       )}
 
-      {room.status === 'finished' && (
-        <div className={`card text-center py-5 animate-pop relative overflow-hidden ${won ? 'border-emerald-500/40' : draw ? 'border-amber-500/40' : 'border-red-500/40'}`}>
-          <div className={`absolute inset-0 pointer-events-none bg-gradient-to-b ${won ? 'from-emerald-500/15' : draw ? 'from-amber-500/15' : 'from-red-500/15'} to-transparent`} />
-          <div className="relative">
-            {won ? <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-2" /> : <Skull className="w-12 h-12 text-gray-400 mx-auto mb-2" />}
-            <h2 className={`text-2xl font-bold ${won ? 'text-emerald-400' : draw ? 'text-amber-400' : 'text-red-400'}`}>
-              {won ? (language === 'en' ? 'Victory!' : 'Победа!') : draw ? (language === 'en' ? 'Draw' : 'Ничья') : (language === 'en' ? 'Defeat' : 'Поражение')}
-            </h2>
-            {reward ? (
-              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm mt-3">
-                <span className="text-amber-400">{language === 'en' ? `+${reward.gold} gold` : `+${reward.gold} золота`}</span>
-                <span className="text-teal-400">{language === 'en' ? `+${reward.xp} XP` : `+${reward.xp} опыта`}</span>
-                <span className={reward.ratingChange >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-                  {reward.ratingChange >= 0 ? '+' : ''}{reward.ratingChange} {language === 'en' ? 'rating' : 'рейтинга'}
-                </span>
-                {reward.kills > 0 && <span className="text-gray-300">{language === 'en' ? `Kills: ${reward.kills}` : `убийств: ${reward.kills}`}</span>}
-              </div>
-            ) : (
-              view.me.ratingChange !== null && (
-                <p className="text-sm text-gray-400 mt-2">{language === 'en' ? 'Rating:' : 'Рейтинг:'} {view.me.ratingChange >= 0 ? '+' : ''}{view.me.ratingChange}</p>
-              )
-            )}
-            <p className="text-xs text-gray-500 mt-3">{language === 'en' ? 'Chat stays open while you are in the room' : 'Чат открыт, пока ты в комнате'}</p>
-            <button disabled={busy} onClick={leave} className="btn-primary mt-3 inline-flex items-center gap-2">
-              <LogOut className="w-4 h-4" /> Покинуть комнату
-            </button>
-          </div>
-        </div>
-      )}
-
       {room.status !== 'waiting' && (
         <BattleScene
           me={me}
@@ -259,6 +251,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
           onStrike={strike}
           onRepeat={repeatMove}
           onToggleAuto={toggleAuto}
+          resultPanel={resultPanel}
         />
       )}
 
