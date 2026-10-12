@@ -222,7 +222,7 @@ export function BattleScene(props: Props) {
         </div>
       )}
 
-      {resultPanel && <div className="relative p-2 pt-0 animate-pop">{resultPanel}</div>}
+      {resultPanel}
     </div>
   );
 }

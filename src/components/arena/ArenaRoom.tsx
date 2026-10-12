@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore } from '@/game/store';
 import { useGame, useArena, grantRewards, updateProgress } from '@/game/actions';
 import {
@@ -15,7 +16,7 @@ import { ArenaChat } from './ArenaChat';
 import { GearStrip } from './GearStrip';
 import { BeltBar } from './BeltBar';
 import { FoldSection } from './FoldSection';
-import { Loader2, LogOut, Timer, WifiOff } from 'lucide-react';
+import { Loader2, LogOut, Timer, WifiOff, Coins, Sparkles, Trophy, Skull, Swords } from 'lucide-react';
 import { useLanguage, localizeText } from '@/game/i18n';
 
 
@@ -174,27 +175,52 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const draw = room.status === 'finished' && room.winnerTeam === null;
   const isDuel = room.mode === 'duel';
   const followerName = game.followers[0]?.name ?? (language === 'en' ? 'Follower' : 'Последователь');
-  const resultPanel = room.status === 'finished' ? (
-    <div className={`rounded-2xl border p-3 text-center backdrop-blur-md ${won ? 'bg-amber-950/70 border-amber-400/40' : draw ? 'bg-amber-950/70 border-amber-400/40' : 'bg-red-950/70 border-red-400/40'}`}>
-      <p className={`text-xl font-black tracking-wide ${won ? 'text-amber-300' : draw ? 'text-amber-300' : 'text-red-300'}`}>
-        {won ? (language === 'en' ? 'VICTORY' : 'ПОБЕДА') : draw ? (language === 'en' ? 'DRAW' : 'НИЧЬЯ') : (language === 'en' ? 'DEFEAT' : 'ПОРАЖЕНИЕ')}
-      </p>
-      {reward ? (
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-2 text-sm">
-          <span className="text-amber-300">{language === 'en' ? `+${reward.gold} gold` : `+${reward.gold} золота`}</span>
-          <span className="text-sky-200">{language === 'en' ? `+${reward.xp} XP` : `+${reward.xp} опыта`}</span>
-          <span className={reward.ratingChange >= 0 ? 'text-emerald-300' : 'text-red-300'}>
-            {reward.ratingChange >= 0 ? '+' : ''}{reward.ratingChange} {language === 'en' ? 'rating' : 'рейтинга'}
-          </span>
-          {reward.kills > 0 && <span className="text-gray-300">{language === 'en' ? `Kills: ${reward.kills}` : `убийств: ${reward.kills}`}</span>}
+  const resultPanel = room.status === 'finished' ? createPortal(
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/75 px-4 py-6 backdrop-blur-[3px]">
+      <div className={`relative w-full max-w-[300px] overflow-hidden rounded-[22px] border-2 bg-gradient-to-b from-[#071526] via-[#040d19] to-[#020711] p-3 shadow-2xl ${won || draw ? 'border-amber-400/80 shadow-amber-500/20' : 'border-amber-400/60 shadow-red-500/20'}`}>
+        <div className={`pointer-events-none absolute inset-x-7 top-0 h-px ${won || draw ? 'bg-cyan-300 shadow-[0_0_12px_3px_rgba(34,211,238,0.45)]' : 'bg-red-400 shadow-[0_0_12px_3px_rgba(248,113,113,0.45)]'}`} />
+        <div className="pointer-events-none absolute -top-12 left-1/2 h-20 w-36 -translate-x-1/2 rounded-full bg-cyan-500/10 blur-2xl" />
+        <div className="relative mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-amber-300/80 bg-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.22)]">
+          <Swords className={`h-6 w-6 ${won || draw ? 'text-amber-300' : 'text-red-300'}`} strokeWidth={2.2} />
         </div>
-      ) : view.me.ratingChange !== null ? (
-        <p className="text-sm text-gray-300 mt-1.5">{language === 'en' ? 'Rating:' : 'Рейтинг:'} {view.me.ratingChange >= 0 ? '+' : ''}{view.me.ratingChange}</p>
-      ) : null}
-      <button disabled={busy} onClick={leave} className="mt-3 w-full h-10 rounded-xl bg-white/10 border border-white/15 text-sm font-semibold text-white active:scale-95 transition-transform disabled:opacity-50">
-        <span className="inline-flex items-center justify-center gap-2"><LogOut className="w-4 h-4" />{language === 'en' ? 'Leave room' : 'Покинуть комнату'}</span>
-      </button>
-    </div>
+        <div className="mt-1 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-[0.28em] text-sky-300/80">
+          <span className="h-px w-7 bg-gradient-to-r from-transparent to-amber-400/80" />
+          {language === 'en' ? 'ARENA' : 'АРЕНА'}
+          <span className="h-px w-7 bg-gradient-to-l from-transparent to-amber-400/80" />
+        </div>
+        <h2 className={`mt-1 text-center text-xl font-black tracking-wide drop-shadow-[0_0_12px_rgba(0,0,0,0.8)] ${won ? 'text-amber-300' : draw ? 'text-amber-300' : 'text-red-400'}`}>
+          {won ? (language === 'en' ? 'VICTORY!' : 'ПОБЕДА!') : draw ? (language === 'en' ? 'DRAW' : 'НИЧЬЯ') : (language === 'en' ? 'DEFEAT!' : 'ПОРАЖЕНИЕ!')}
+        </h2>
+        <div className="mt-3 grid grid-cols-3 overflow-hidden rounded-xl border border-sky-800/70 bg-slate-950/90 shadow-inner shadow-black/50">
+          <div className="flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2.5">
+            <Coins className="h-6 w-6 text-amber-300 drop-shadow-[0_0_7px_rgba(251,191,36,0.3)]" />
+            <span className="text-[10px] text-sky-100/90">{language === 'en' ? 'Gold' : 'Монеты'}</span>
+            <span className="text-sm font-black tabular-nums text-amber-300">{reward ? `+${reward.gold}` : '—'}</span>
+          </div>
+          <div className="flex min-w-0 flex-col items-center justify-center gap-1 border-x border-sky-900/70 px-1 py-2.5">
+            <Sparkles className="h-6 w-6 text-emerald-300 drop-shadow-[0_0_7px_rgba(52,211,153,0.28)]" />
+            <span className="text-[10px] text-sky-100/90">{language === 'en' ? 'XP' : 'Опыт'}</span>
+            <span className="text-sm font-black tabular-nums text-emerald-300">{reward ? `+${reward.xp}` : '—'}</span>
+          </div>
+          <div className="flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2.5">
+            <Trophy className={`h-6 w-6 ${(reward?.ratingChange ?? view.me.ratingChange ?? 0) >= 0 ? 'text-sky-300' : 'text-red-400'}`} />
+            <span className="text-[10px] text-sky-100/90">{language === 'en' ? 'Rating' : 'Рейтинг'}</span>
+            <span className={`text-sm font-black tabular-nums ${(reward?.ratingChange ?? view.me.ratingChange ?? 0) >= 0 ? 'text-sky-300' : 'text-red-400'}`}>
+              {reward ? `${reward.ratingChange > 0 ? '+' : ''}${reward.ratingChange}` : view.me.ratingChange !== null ? `${view.me.ratingChange > 0 ? '+' : ''}${view.me.ratingChange}` : '—'}
+            </span>
+          </div>
+        </div>
+        <div className="mt-2 flex items-center justify-between rounded-xl border border-sky-900/70 bg-slate-950/90 px-3 py-2">
+          <span className="flex items-center gap-2 text-xs text-slate-200"><Skull className="h-5 w-5 text-slate-300" />{language === 'en' ? 'Kills' : 'Убийства'}</span>
+          <span className="text-sm font-black tabular-nums text-white">{reward ? reward.kills : '—'}</span>
+        </div>
+        <button disabled={busy} onClick={leave} className={`mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-full border text-sm font-extrabold text-white shadow-lg transition active:scale-[0.98] disabled:opacity-50 ${won || draw ? 'border-sky-300 bg-gradient-to-b from-blue-500 to-blue-800 shadow-blue-950/70' : 'border-red-300/90 bg-gradient-to-b from-red-500 to-red-900 shadow-red-950/70'}`}>
+          <LogOut className="h-4 w-4" />{language === 'en' ? 'Leave arena' : 'Покинуть арену'}
+        </button>
+        <div className={`pointer-events-none absolute inset-x-8 bottom-0 h-px ${won || draw ? 'bg-cyan-300/90' : 'bg-red-400/90'}`} />
+      </div>
+    </div>,
+    document.body,
   ) : null;
 
   return (
