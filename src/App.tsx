@@ -21,7 +21,7 @@ import { MaintenanceScreen, BannedScreen } from '@/components/ServiceScreens';
 import { useLive, useLiveSync, fetchMaintenance } from '@/game/live';
 import { useStore } from '@/game/store';
 import { isVerifiedAdmin } from '@/admin/api';
-import { ChevronLeft, Shield, Wrench, Smartphone } from 'lucide-react';
+import { ChevronLeft, Send, Wrench, Smartphone } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
@@ -58,36 +58,18 @@ function Splash({ text }: { text: string }) {
   );
 }
 
-function Welcome({ onStart, error }: { onStart: (name: string) => void; error?: string }) {
-  const [name, setName] = useState('');
-  const { t } = useLanguage();
+function TelegramPrompt({ error }: { error?: string }) {
   return (
     <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden" style={{ background: 'var(--color-bg)' }}>
       <div className="absolute inset-0 bg-gradient-to-b from-teal-900/20 via-transparent to-amber-900/10 pointer-events-none" />
-      <form
-        className="relative w-full max-w-sm card text-center py-8 animate-fade-in"
-        onSubmit={(e) => {
-          e.preventDefault();
-          onStart(name);
-        }}
-      >
+      <div className="relative w-full max-w-sm card text-center py-8 animate-fade-in">
         <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-teal-400 to-teal-700 flex items-center justify-center mb-4 animate-float">
-          <Shield className="w-8 h-8 text-white" />
+          <Send className="w-8 h-8 text-white" />
         </div>
         <h1 className="text-3xl font-bold text-white mb-2">Territory</h1>
-        <p className="text-sm text-gray-400 mb-6">{t('startDescription')}</p>
-        <label className="block text-left text-xs text-gray-400 mb-1">{t('heroName')}</label>
-        <input
-          className="w-full rounded-lg bg-black/30 border border-white/10 px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-teal-500 transition-colors mb-4"
-          placeholder={t('startPlaceholder')}
-          maxLength={20}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+        <p className="text-sm text-gray-400 mb-6">Откройте игру через Telegram, чтобы войти в существующего героя или создать нового.</p>
         {error && <p className="text-sm text-red-400 mb-3">{error}</p>}
-        <button type="submit" className="btn-primary w-full text-lg">{t('start')}</button>
-        <p className="text-xs text-gray-500 mt-4">{t('autosave')}</p>
-      </form>
+      </div>
     </div>
   );
 }
@@ -244,7 +226,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           />
         )}
         {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} />}
-        {screen === 'hero' && <ProfileScreen />}
+        {screen === 'hero' && <ProfileScreen user={user} />}
         {screen === 'map' && <MapScreen />}
         {screen === 'shop' && <ShopScreen />}
         {screen === 'forge' && <ForgeScreen />}
@@ -316,7 +298,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 }
 
 function App() {
-  const { authState, startAsGuest } = useAuth();
+  const { authState } = useAuth();
   const { t } = useLanguage();
   const { maintenance } = useStore(useLive);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -328,7 +310,7 @@ function App() {
 
   if (authState.status === 'loading' || isAdmin === null) return <Splash text={t('loadingHero')} />;
   if (maintenance && !isAdmin) return <MaintenanceScreen />;
-  if (authState.status === 'guest') return <Welcome onStart={startAsGuest} error={authState.error} />;
+  if (authState.status === 'guest') return <TelegramPrompt error={authState.error} />;
   return <GameShell key={authState.user.id} user={authState.user} isAdmin={isAdmin} />;
 }
 
