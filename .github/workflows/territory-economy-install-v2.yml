@@ -1,0 +1,297 @@
+name: Territory economy - 4h and 1000 gems (fixed CI)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/territory-economy-install-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: territory-economy-install-v2
+  cancel-in-progress: false
+
+jobs:
+  install:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout existing Territory
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Prepare economy update
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/territory-economy-patch.py <<'PY'
+          #!/usr/bin/env python3
+          """Apply guarded Territory economy placeholder changes to current GitHub source."""
+          from pathlib import Path
+          import re
+          
+          # GitHub Actions runs in a fresh checkout of Territory.
+          ROOT=Path.cwd()
+          
+          def modify(path, fn):
+              p=ROOT/path
+              orig=p.read_text(encoding='utf-8')
+              updated=fn(orig)
+              if updated == orig:
+                  raise RuntimeError(f'{path}: no modifications; unexpected source version or already applied')
+              p.write_text(updated, encoding='utf-8')
+              print('UPDATED',path)
+          
+          def replace_once(s, old, new, tag):
+              n=s.count(old)
+              if n!=1:
+                  raise RuntimeError(f'{tag}: expected exactly one match, found {n}')
+              return s.replace(old,new,1)
+          
+          def map_screen(s):
+              s=replace_once(s,"import { useState } from 'react';","import { useEffect, useState } from 'react';",'Map React')
+              s=replace_once(s,"import { useGame } from '@/game/actions';","import { useGame } from '@/game/actions';\nimport { supabase } from '@/game/supabase';",'Map Supabase')
+              s=replace_once(s,"type RegionId = 'forest' | 'mountain' | 'herbs' | 'hunting' | 'rare';",'''type GatherStatus = {
+            active: { resource_id: string; finishes_at: string } | null;
+            wallet: Record<string, number>;
+            server_now: string;
+          };
+          
+          function timeRemaining(ms: number): string {
+            const seconds = Math.max(0, Math.ceil(ms / 1000));
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+          }
+          
+          type RegionId = 'forest' | 'mountain' | 'herbs' | 'hunting' | 'rare';''','Map types')
+              s=replace_once(s,"  const game = useStore(useGame);\n  const { t, language } = useLanguage();",'''  const { t, language } = useLanguage();
+            const [gather, setGather] = useState<GatherStatus | null>(null);
+            const [gatherBusy, setGatherBusy] = useState(false);
+            const [clock, setClock] = useState(Date.now());
+            const [serverOffset, setServerOffset] = useState(0);
+          
+            const refreshGather = async () => {
+              const { data, error } = await supabase.rpc('territory_gather_status');
+              if (error || !data || typeof data !== 'object') throw new Error('server_unavailable');
+              const status = data as GatherStatus;
+              setGather(status);
+              setServerOffset(Date.parse(status.server_now) - Date.now());
+              return status;
+            };
+          
+            useEffect(() => {
+              let cancelled = false;
+              void (async () => {
+                try {
+                  const { data, error } = await supabase.rpc('territory_gather_status');
+                  if (!cancelled && !error && data && typeof data === 'object') {
+                    const status = data as GatherStatus;
+                    setGather(status);
+                    setServerOffset(Date.parse(status.server_now) - Date.now());
+                  }
+                } catch { /* Keep resource actions disabled if server is not configured. */ }
+              })();
+              const timer = window.setInterval(() => setClock(Date.now()), 1000);
+              return () => { cancelled = true; window.clearInterval(timer); };
+            }, []);
+          
+            const remainingMs = gather?.active
+              ? Math.max(0, Date.parse(gather.active.finishes_at) - (clock + serverOffset))
+              : 0;
+          
+            const resourceButtonLabel = (id: ResourceId): string => {
+              if (!gather) return language === 'en' ? 'Server unavailable' : 'Сервер недоступен';
+              if (!gather.active) return language === 'en' ? 'Start · 4h' : 'Начать · 4 ч';
+              if (gather.active.resource_id !== id) return language === 'en' ? 'Occupied' : 'Занято';
+              if (remainingMs === 0) return language === 'en' ? 'Claim' : 'Забрать';
+              return timeRemaining(remainingMs);
+            };''','Map state')
+          
+              pat=r"  const gatherResource = \(regionResource: Region\['resources'\]\[number\]\) => \{[\s\S]*?\n  \};\n\n  return \("
+              match=re.search(pat,s)
+              if not match: raise RuntimeError('Map gathering handler not found')
+              new='''  const gatherResource = async (regionResource: Region['resources'][number]) => {
+              if (!gather || gatherBusy) return;
+              setGatherBusy(true);
+              try {
+                const resource = RESOURCE_DEFINITIONS.find((item) => item.id === regionResource.id);
+                if (!resource) return;
+                if (!gather.active) {
+                  const { data, error } = await supabase.rpc('territory_gather_start', { p_resource_id: resource.id });
+                  if (error || data?.error) throw new Error('start_failed');
+                  setNotice(language === 'en' ? 'Gathering started. Return in 4 hours.' : 'Добыча началась. Вернитесь через 4 часа.');
+                } else if (gather.active.resource_id !== resource.id) {
+                  setNotice(language === 'en' ? 'Only one gathering action at a time.' : 'Можно добывать только один ресурс одновременно.');
+                } else if (remainingMs > 0) {
+                  setNotice(`${language === 'en' ? 'Time left' : 'Осталось'}: ${timeRemaining(remainingMs)}`);
+                } else {
+                  const { data, error } = await supabase.rpc('territory_gather_claim');
+                  if (error || data?.error || data?.resource_id !== resource.id) throw new Error('claim_failed');
+                  const quantity = Number(data.quantity);
+                  if (!Number.isSafeInteger(quantity) || quantity < 1) throw new Error('invalid_reward');
+                  // Mirror the server-confirmed resource count to the existing game inventory.
+                  // The protected wallet remains the authority for gathering rewards.
+                  const current = useGame.get();
+                  const inventory = current.inventory.filter((item) => !(item.id === resource.id && item.type === 'material'));
+                  const refreshed: InventoryItem[] = [...inventory, {
+                    id: resource.id, name: resource.name, icon: resource.icon,
+                    type: 'material', rarity: resource.rarity, qty: quantity,
+                    description: t('resourceDescription'),
+                  }];
+                  useGame.set({ ...current, inventory: refreshed });
+                  setNotice(`${t('gathered')}: ${localizeText(resource.name, language)} ×1`);
+                }
+                await refreshGather();
+              } catch {
+                setNotice(language === 'en'
+                  ? 'Server protection is not ready. Nothing was charged or awarded.'
+                  : 'Серверная защита ещё не готова. Ничего не списано и не начислено.');
+              } finally {
+                setGatherBusy(false);
+              }
+            };
+          
+            return ('''
+              s=s[:match.start()]+new+s[match.end():]
+              s=replace_once(s,"const count = game.inventory.find((item) => item.id === res.id && item.type === 'material')?.qty ?? 0;","const count = gather?.wallet?.[res.id] ?? 0;",'Map wallet')
+              s=replace_once(s,'onClick={() => gatherResource(res)}','onClick={() => gatherResource(res)}\n                        disabled={!gather || gatherBusy || (!!gather.active && gather.active.resource_id !== res.id)}','Map button')
+              s=replace_once(s,'''<span className="mt-1 rounded-lg bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-white">{t('gather')}</span>''','''<span className="mt-1 rounded-lg bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-white">{resourceButtonLabel(res.id)}</span>''','Map label')
+              s=replace_once(s,'''{language === 'en' ? 'Gathering is available to every player — no profession required. There is a 2.5-second cooldown between attempts; resources are saved to your inventory immediately.' : 'Добыча доступна каждому игроку — профессия не нужна. Между попытками общий перерыв 2,5 секунды; ресурсы сразу сохраняются в инвентаре.'}''','''{language === 'en' ? 'One gathering action takes 4 hours. Only one resource may be gathered at a time. The server checks time and pays once after claiming.' : 'Одна добыча длится 4 часа. Одновременно можно добывать только один ресурс. Сервер проверяет время и начисляет награду один раз после получения.'}''','Map explanatory text')
+              # Remove unused old progress code; do not modify type other screens depend on.
+              s=replace_once(s,"import type { InventoryItem, ProfessionProgress } from '@/game/types';","import type { InventoryItem } from '@/game/types';",'Map imported Progress')
+              s=replace_once(s,'''const EMPTY_PROFESSION_PROGRESS: ProfessionProgress = {
+            active: null,
+            masteryLevel: 1,
+            masteryXp: 0,
+            lastGatherAt: 0,
+          };
+          
+          ''','', 'Map old cooldown const')
+              return s
+          
+          def profession_screen(s):
+              s=replace_once(s,"import { useGame } from '@/game/actions';","import { useGame } from '@/game/actions';\nimport { supabase } from '@/game/supabase';",'Prof Supabase')
+              s=replace_once(s,"  const [busyRecipe, setBusyRecipe] = useState<string | null>(null);","  const [busyRecipe, setBusyRecipe] = useState<string | null>(null);\n  const [buying, setBuying] = useState(false);",'Prof buying')
+              old='''  const updateProgress = (nextProgress: ProfessionProgress, inventory = game.inventory) => {
+              useGame.set({ ...useGame.get(), inventory, professions: nextProgress });
+            };
+          
+            const chooseProfession = (id: ProfessionId) => {
+              const current = useGame.get();
+              const currentProgress = current.professions ?? INITIAL_PROFESSION_PROGRESS;
+              if (currentProgress.active) {
+                setMessage(currentProgress.active === id ? t('alreadyChosen') : t('onlyOneProfession'));
+                return;
+              }
+              updateProgress({ ...currentProgress, active: id });
+              setMessage(t('professionChosen'));
+            };'''
+              new='''  const chooseProfession = async (id: ProfessionId) => {
+              if (buying) return;
+              const current = useGame.get();
+              const currentProgress = current.professions ?? INITIAL_PROFESSION_PROGRESS;
+              if (currentProgress.active) {
+                setMessage(currentProgress.active === id ? t('alreadyChosen') : t('onlyOneProfession'));
+                return;
+              }
+              if (current.player.gems < 1000) {
+                setMessage(language === 'en' ? 'Need 1000 blue gems.' : 'Не хватает 1000 синих алмазов.');
+                return;
+              }
+              setBuying(true);
+              try {
+                const { data, error } = await supabase.rpc('territory_profession_unlock', { p_profession: id });
+                if (error || !data?.success || data.profession !== id) {
+                  setMessage(language === 'en' ? 'Server verification unavailable. No gems were spent.' : 'Серверная проверка недоступна. Алмазы не списаны.');
+                  return;
+                }
+                const after = Number(data.gems_after);
+                if (!Number.isSafeInteger(after) || after < 0) throw new Error('invalid_currency');
+                const latest = useGame.get();
+                useGame.set({
+                  ...latest,
+                  player: { ...latest.player, gems: after },
+                  professions: { ...(latest.professions ?? INITIAL_PROFESSION_PROGRESS), active: id },
+                });
+                setMessage(language === 'en' ? 'Profession unlocked forever!' : 'Профессия открыта навсегда!');
+              } catch {
+                setMessage(language === 'en' ? 'Server is unavailable. Nothing was charged.' : 'Сервер недоступен. Алмазы не списаны.');
+              } finally {
+                setBuying(false);
+              }
+            };'''
+              s=replace_once(s,old,new,'Prof chooseProfession')
+              s=replace_once(s,'if (currentProgress.masteryLevel < recipe.requiredLevel) {','''if (recipe.requiredLevel >= 300) {
+                setMessage(language === 'en' ? 'Master license — coming soon!' : 'Лицензия мастера — скоро!');
+                return;
+              }
+              if (currentProgress.masteryLevel < recipe.requiredLevel) {''','Prof master craft guard')
+              s=replace_once(s,"<div className=\"rounded-xl bg-black/30 p-2\"><div className=\"text-xs text-slate-400\">{t('gold')}</div><b>{game.player.gold.toLocaleString('ru-RU')}</b></div>","<div className=\"rounded-xl bg-black/30 p-2\"><div className=\"text-xs text-slate-400\">💎 {language === 'en' ? 'Blue gems' : 'Синие алмазы'}</div><b>{game.player.gems.toLocaleString('ru-RU')}</b></div>",'Prof gems header')
+              s=replace_once(s,"""          {t('professionTestNotice')}
+          """, """          {language === 'en' ? 'Unlock one profession forever for 1000 blue gems. The 300-level Master license will become available later for real money; payments are not enabled.' : 'Открой одну профессию навсегда за 1000 синих алмазов. Лицензия мастера 300-го уровня появится позже за реальные деньги; оплаты пока нет.'}
+          """,'Prof explanatory text')
+              s=replace_once(s,'''onClick={() => chooseProfession(profession.id)}''','''onClick={() => { void chooseProfession(profession.id); }}''','Prof onclick')
+              s=replace_once(s,'''disabled={lockedByChoice || active}''','''disabled={lockedByChoice || active || buying}''','Prof disable')
+              s=replace_once(s," : t('choose')}"," : `${t('choose')} · 1000 💎`}",'Prof button cost')
+              s=replace_once(s,
+                  "      <div className=\"grid grid-cols-2 gap-1.5\">",
+                  """      {progress.active && progress.masteryLevel >= 300 && (
+                  <div className=\"rounded-xl border border-amber-400/30 bg-amber-500/10 p-4\">
+                    <p className=\"font-bold text-amber-200\">👑 {language === 'en' ? 'Master license' : 'Лицензия мастера'}</p>
+                    <p className=\"mt-1 text-xs text-slate-300\">{language === 'en' ? 'Exclusive recipes will be unlocked by a permanent paid license later. Payments are not enabled.' : 'Эксклюзивные рецепты откроются после покупки постоянной лицензии в будущем. Оплата пока не подключена.'}</p>
+                    <button type=\"button\" disabled className=\"mt-3 w-full rounded-lg bg-amber-700/60 p-2.5 text-sm font-bold text-amber-100 opacity-70\">{language === 'en' ? 'Master license — coming soon' : 'Лицензия мастера — скоро'}</button>
+                  </div>
+                )}
+                <div className=\"grid grid-cols-2 gap-1.5\">""",
+                  'Prof master license placeholder')
+              s=replace_once(s,'const unlocked = progress.masteryLevel >= recipe.requiredLevel;','const unlocked = recipe.requiredLevel < 300 && progress.masteryLevel >= recipe.requiredLevel;', 'Prof exclusive guard')
+              s=replace_once(s,
+                  "{unlocked ? `+${recipe.masteryXp} ${t('masteryXp')}` : `${t('needLevel')} ${recipe.requiredLevel}`}",
+                  "{unlocked ? `+${recipe.masteryXp} ${t('masteryXp')}` : recipe.requiredLevel >= 300 ? (language === 'en' ? 'Master license · Soon' : 'Лицензия мастера · Скоро') : `${t('needLevel')} ${recipe.requiredLevel}`}",
+                  'Prof status label')
+              s=replace_once(s,
+                  "{unlocked ? hasMaterials ? t('craftItem') : t('notEnoughResourcesButton') : `${t('needLevel')} ${recipe.requiredLevel}`}",
+                  "{unlocked ? hasMaterials ? t('craftItem') : t('notEnoughResourcesButton') : recipe.requiredLevel >= 300 ? (language === 'en' ? 'Master license · Soon' : 'Лицензия мастера · Скоро') : `${t('needLevel')} ${recipe.requiredLevel}`}",
+                  'Prof button label')
+              return s
+          
+          if __name__ == '__main__':
+              modify('src/components/MapScreen.tsx',map_screen)
+              modify('src/components/ProfessionsScreen.tsx',profession_screen)
+          PY
+          python3 /tmp/territory-economy-patch.py
+      - name: Install dependencies
+        run: npm ci
+      - name: Check TypeScript
+        run: npm run typecheck
+      - name: Build full game
+        run: npm run build
+      - name: Verify professions and game
+        run: |
+          npm run test:professions
+          npm run test:balance
+          npm run test:feature-separation
+          npm run test:mobile-home
+      - name: Publish update only after tests pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/MapScreen.tsx src/components/ProfessionsScreen.tsx
+          git diff --cached --check
+          git diff --cached --quiet && { echo "No new changes to publish"; exit 0; }
+          git commit -m "Territory: 4h server-gated gathering and 1000-gem professions"
+          git push origin HEAD:main
