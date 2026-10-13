@@ -1,12 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Lock, Sparkles, Crown, Check } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
+import { supabase } from '@/game/supabase';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { APPEARANCE_PRESETS, MALE_PRESETS, FEMALE_PRESETS, getPlayableAppearance, type AppearancePreset } from '@/game/appearance';
-import type { InventoryItem, ProfessionProgress } from '@/game/types';
+import type { InventoryItem } from '@/game/types';
 import { RESOURCE_DEFINITIONS, type ResourceId } from '@/game/professions';
+
+type GatherStatus = {
+  active: { resource_id: string; finishes_at: string } | null;
+  wallet: Record<string, number>;
+  server_now: string;
+};
+
+function timeRemaining(ms: number): string {
+  const seconds = Math.max(0, Math.ceil(ms / 1000));
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
 
 type RegionId = 'forest' | 'mountain' | 'herbs' | 'hunting' | 'rare';
 type LocationId = RegionId | 'chamber';
@@ -97,45 +112,91 @@ const GLOW_BORDER: Record<string, string> = {
   sky: 'border-sky-500/40',
 };
 
-const EMPTY_PROFESSION_PROGRESS: ProfessionProgress = {
-  active: null,
-  masteryLevel: 1,
-  masteryXp: 0,
-  lastGatherAt: 0,
-};
-
 export function MapScreen() {
   const [selected, setSelected] = useState<LocationId | null>(null);
   const [notice, setNotice] = useState('');
-  const game = useStore(useGame);
   const { t, language } = useLanguage();
+  const [gather, setGather] = useState<GatherStatus | null>(null);
+  const [gatherBusy, setGatherBusy] = useState(false);
+  const [clock, setClock] = useState(Date.now());
+  const [serverOffset, setServerOffset] = useState(0);
 
-  const gatherResource = (regionResource: Region['resources'][number]) => {
-    const current = useGame.get();
-    const progress = current.professions ?? EMPTY_PROFESSION_PROGRESS;
-    const now = Date.now();
-    if (now - progress.lastGatherAt < 2500) {
-      setNotice(t('waitGather'));
-      return;
+  const refreshGather = async () => {
+    const { data, error } = await supabase.rpc('territory_gather_status');
+    if (error || !data || typeof data !== 'object') throw new Error('server_unavailable');
+    const status = data as GatherStatus;
+    setGather(status);
+    setServerOffset(Date.parse(status.server_now) - Date.now());
+    return status;
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data, error } = await supabase.rpc('territory_gather_status');
+        if (!cancelled && !error && data && typeof data === 'object') {
+          const status = data as GatherStatus;
+          setGather(status);
+          setServerOffset(Date.parse(status.server_now) - Date.now());
+        }
+      } catch { /* Keep resource actions disabled if server is not configured. */ }
+    })();
+    const timer = window.setInterval(() => setClock(Date.now()), 1000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, []);
+
+  const remainingMs = gather?.active
+    ? Math.max(0, Date.parse(gather.active.finishes_at) - (clock + serverOffset))
+    : 0;
+
+  const resourceButtonLabel = (id: ResourceId): string => {
+    if (!gather) return language === 'en' ? 'Server unavailable' : 'Сервер недоступен';
+    if (!gather.active) return language === 'en' ? 'Start · 4h' : 'Начать · 4 ч';
+    if (gather.active.resource_id !== id) return language === 'en' ? 'Occupied' : 'Занято';
+    if (remainingMs === 0) return language === 'en' ? 'Claim' : 'Забрать';
+    return timeRemaining(remainingMs);
+  };
+
+  const gatherResource = async (regionResource: Region['resources'][number]) => {
+    if (!gather || gatherBusy) return;
+    setGatherBusy(true);
+    try {
+      const resource = RESOURCE_DEFINITIONS.find((item) => item.id === regionResource.id);
+      if (!resource) return;
+      if (!gather.active) {
+        const { data, error } = await supabase.rpc('territory_gather_start', { p_resource_id: resource.id });
+        if (error || data?.error) throw new Error('start_failed');
+        setNotice(language === 'en' ? 'Gathering started. Return in 4 hours.' : 'Добыча началась. Вернитесь через 4 часа.');
+      } else if (gather.active.resource_id !== resource.id) {
+        setNotice(language === 'en' ? 'Only one gathering action at a time.' : 'Можно добывать только один ресурс одновременно.');
+      } else if (remainingMs > 0) {
+        setNotice(`${language === 'en' ? 'Time left' : 'Осталось'}: ${timeRemaining(remainingMs)}`);
+      } else {
+        const { data, error } = await supabase.rpc('territory_gather_claim');
+        if (error || data?.error || data?.resource_id !== resource.id) throw new Error('claim_failed');
+        const quantity = Number(data.quantity);
+        if (!Number.isSafeInteger(quantity) || quantity < 1) throw new Error('invalid_reward');
+        // Mirror the server-confirmed resource count to the existing game inventory.
+        // The protected wallet remains the authority for gathering rewards.
+        const current = useGame.get();
+        const inventory = current.inventory.filter((item) => !(item.id === resource.id && item.type === 'material'));
+        const refreshed: InventoryItem[] = [...inventory, {
+          id: resource.id, name: resource.name, icon: resource.icon,
+          type: 'material', rarity: resource.rarity, qty: quantity,
+          description: t('resourceDescription'),
+        }];
+        useGame.set({ ...current, inventory: refreshed });
+        setNotice(`${t('gathered')}: ${localizeText(resource.name, language)} ×1`);
+      }
+      await refreshGather();
+    } catch {
+      setNotice(language === 'en'
+        ? 'Server protection is not ready. Nothing was charged or awarded.'
+        : 'Серверная защита ещё не готова. Ничего не списано и не начислено.');
+    } finally {
+      setGatherBusy(false);
     }
-    const resource = RESOURCE_DEFINITIONS.find((item) => item.id === regionResource.id);
-    if (!resource) return;
-    const found = current.inventory.find((item) => item.id === resource.id && item.type === 'material');
-    const inventory: InventoryItem[] = found
-      ? current.inventory.map((item) => item.id === resource.id && item.type === 'material'
-        ? { ...item, qty: item.qty + 1, name: resource.name, icon: resource.icon }
-        : item)
-      : [...current.inventory, {
-        id: resource.id,
-        name: resource.name,
-        icon: resource.icon,
-        type: 'material',
-        rarity: resource.rarity,
-        qty: 1,
-        description: t('resourceDescription'),
-      }];
-    useGame.set({ ...current, inventory, professions: { ...progress, lastGatherAt: now } });
-    setNotice(`${t('gathered')}: ${localizeText(resource.name, language)}. ${t('resourceAdded')}`);
   };
 
   return (
@@ -235,18 +296,19 @@ export function MapScreen() {
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t('gatherResources')}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {r.resources.map((res) => {
-                    const count = game.inventory.find((item) => item.id === res.id && item.type === 'material')?.qty ?? 0;
+                    const count = gather?.wallet?.[res.id] ?? 0;
                     return (
                       <button
                         key={res.id}
                         type="button"
                         onClick={() => gatherResource(res)}
+                        disabled={!gather || gatherBusy || (!!gather.active && gather.active.resource_id !== res.id)}
                         className="rounded-xl border border-emerald-400/20 bg-black/30 p-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
                       >
                         <span className="text-2xl">{res.icon}</span>
                         <span className="text-[11px] font-semibold text-gray-200 text-center leading-tight">{language === 'en' ? ({ 'gather-wood': t('wood'), 'gather-herb': t('healingHerbs'), 'gather-ore': t('ironOre'), 'gather-crystal': t('magicCrystal'), 'gather-hide': t('hide') } as Record<string, string>)[res.id] : res.name}</span>
                         <span className="text-[10px] text-gray-400">{t('inBag')}: {count}</span>
-                        <span className="mt-1 rounded-lg bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-white">{t('gather')}</span>
+                        <span className="mt-1 rounded-lg bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-white">{resourceButtonLabel(res.id)}</span>
                       </button>
                     );
                   })}
@@ -255,7 +317,7 @@ export function MapScreen() {
               <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-3 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-emerald-300 shrink-0" />
                 <p className="text-xs text-emerald-100/80">
-                  {language === 'en' ? 'Gathering is available to every player — no profession required. There is a 2.5-second cooldown between attempts; resources are saved to your inventory immediately.' : 'Добыча доступна каждому игроку — профессия не нужна. Между попытками общий перерыв 2,5 секунды; ресурсы сразу сохраняются в инвентаре.'}
+                  {language === 'en' ? 'One gathering action takes 4 hours. Only one resource may be gathered at a time. The server checks time and pays once after claiming.' : 'Одна добыча длится 4 часа. Одновременно можно добывать только один ресурс. Сервер проверяет время и начисляет награду один раз после получения.'}
                 </p>
               </div>
               {notice && <p role="status" className="rounded-lg border border-sky-400/20 bg-sky-500/10 p-2 text-xs text-sky-100">{notice}</p>}
