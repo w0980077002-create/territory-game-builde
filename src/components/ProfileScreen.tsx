@@ -1,15 +1,36 @@
+import { useState } from 'react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
+import { getTelegramInitData } from '@/game/telegram';
+import { linkTelegram, type AuthUser } from '@/game/auth';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { getComputedStats, EQUIPMENT_SLOTS } from '@/game/engine';
 import { rarityColor } from '@/game/ui';
-import { User, Heart, Sword, Shield, Star, Zap, Coins, Gem } from 'lucide-react';
+import { User, Heart, Sword, Shield, Star, Zap, Coins, Gem, Send, Check, Link2, Loader2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-export function ProfileScreen() {
+export function ProfileScreen({ user }: { user: AuthUser }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const computed = getComputedStats(state);
+  const [linking, setLinking] = useState(false);
+  const [linkResult, setLinkResult] = useState<string | null>(null);
+  const canLink = user.telegramId === null && !!getTelegramInitData();
+
+  const handleLink = async () => {
+    const initData = getTelegramInitData();
+    if (!initData || linking) return;
+    setLinking(true);
+    setLinkResult(null);
+    try {
+      const result = await linkTelegram(initData);
+      setLinkResult(result.success
+        ? 'Telegram привязан! Перезапусти игру, чтобы обновить профиль.'
+        : result.error || 'Не удалось привязать Telegram.');
+    } finally {
+      setLinking(false);
+    }
+  };
 
   return (
     <div className="space-y-4 animate-fade-in pb-4">
@@ -34,6 +55,30 @@ export function ProfileScreen() {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Telegram account linkage: only verified Edge Functions can link identities. */}
+      <div className="card">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-400/30 flex items-center justify-center shrink-0">
+            <Send className="w-5 h-5 text-sky-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white">Telegram</p>
+            {user.telegramId !== null ? (
+              <p className="text-xs text-emerald-400 flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" /> Привязан (ID: {user.telegramId})
+              </p>
+            ) : <p className="text-xs text-gray-400">Аккаунт ещё не привязан</p>}
+          </div>
+          {canLink && (
+            <button onClick={handleLink} disabled={linking} className="rounded-xl bg-sky-500/20 border border-sky-400/40 px-3 py-2 text-xs font-bold text-sky-100 disabled:opacity-50 flex items-center gap-1.5">
+              {linking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+              Привязать
+            </button>
+          )}
+        </div>
+        {linkResult && <p role="status" className="mt-3 text-xs text-sky-200">{linkResult}</p>}
       </div>
 
       {/* Base stats */}
