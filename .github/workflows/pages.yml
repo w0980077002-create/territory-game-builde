@@ -18,6 +18,8 @@ jobs:
   build:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    outputs:
+      economy_ready: ${{ steps.economy_release.outputs.ready }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,6 +39,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Typecheck and regression checks
+        run: |
+          npm run typecheck
+          npm run test:economy
+          npm run test:professions
+          npm run test:balance
+          npm run test:feature-separation
+          npm run test:mobile-home
+          node scripts/auth-mock-tests.cjs
+          node scripts/edge-initdata-tests.cjs
+          node scripts/edge-identity-tests.cjs
+
+      - name: Economy release gate
+        id: economy_release
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const gate = JSON.parse(fs.readFileSync('economy-release.json', 'utf8'));
+          const ready = gate.ready === true;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `ready=${ready}\n`);
+          if (!ready) console.log(`Pages publication blocked: ${gate.reason}`);
+          JS
+
       - name: Build
         run: npm run build
 
@@ -46,6 +72,7 @@ jobs:
           path: ./dist
 
   deploy:
+    if: needs.build.outputs.economy_ready == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
