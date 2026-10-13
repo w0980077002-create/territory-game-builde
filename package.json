@@ -12,7 +12,9 @@
     "test:balance": "node scripts/check-equipment-balance.mjs",
     "test:professions": "node scripts/check-professions.mjs",
     "test:feature-separation": "node scripts/check-feature-separation.mjs",
-    "test:mobile-home": "node scripts/check-mobile-home-ui.mjs"
+    "test:mobile-home": "node scripts/check-mobile-home-ui.mjs",
+    "test:economy": "node scripts/check-economy.mjs",
+    "test:saves": "node scripts/check-economy.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
@@ -21,6 +23,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.9",
     "@eslint/js": "^9.9.1",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",

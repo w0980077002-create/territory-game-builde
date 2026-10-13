@@ -1,0 +1,4 @@
+{
+  "ready": false,
+  "reason": "Server action validation and production migration approval are still required. Existing client-authored gems/game_state remain forgeable. See ECONOMY_SECURITY_RU.md."
+}
