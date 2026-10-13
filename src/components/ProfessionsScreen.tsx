@@ -64,7 +64,7 @@ export function ProfessionsScreen() {
     try {
       const { data, error } = await supabase.rpc('territory_profession_unlock', { p_profession: id });
       if (error || !data?.success || data.profession !== id) {
-        setMessage(language === 'en' ? 'Server verification unavailable. No gems were spent.' : 'Серверная проверка недоступна. Алмазы не списаны.');
+        setMessage(language === 'en' ? 'Could not confirm the result. Reopen the game to check your balance and profession.' : 'Не удалось подтвердить результат. Откройте игру заново, чтобы проверить баланс и профессию.');
         return;
       }
       const after = Number(data.gems_after);
@@ -77,7 +77,7 @@ export function ProfessionsScreen() {
       });
       setMessage(language === 'en' ? 'Profession unlocked forever!' : 'Профессия открыта навсегда!');
     } catch {
-      setMessage(language === 'en' ? 'Server is unavailable. Nothing was charged.' : 'Сервер недоступен. Алмазы не списаны.');
+      setMessage(language === 'en' ? 'Connection lost. The operation may have completed; reopen the game to check.' : 'Связь прервалась. Операция могла завершиться; откройте игру заново для проверки.');
     } finally {
       setBuying(false);
     }

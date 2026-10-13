@@ -192,8 +192,8 @@ export function MapScreen() {
       await refreshGather();
     } catch {
       setNotice(language === 'en'
-        ? 'Server protection is not ready. Nothing was charged or awarded.'
-        : 'Серверная защита ещё не готова. Ничего не списано и не начислено.');
+        ? 'Could not confirm the result. Reopen the map to check the server status.'
+        : 'Не удалось подтвердить результат. Откройте карту заново, чтобы проверить состояние на сервере.');
     } finally {
       setGatherBusy(false);
     }
