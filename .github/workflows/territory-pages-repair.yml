@@ -1,0 +1,78 @@
+name: Territory - publish working game (restore Pages)
+
+# Existing pages.yml has a temporary "economy-release.json" release gate left
+# by unfinished security work. This independent workflow restores normal publishing
+# without applying the unfinished database migration or changing player data.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: territory-restored-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout current game
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Configure existing Supabase public client
+        shell: bash
+        env:
+          VITE_SUPABASE_URL: https://wmyrdpbwlkzsktnhookx.supabase.co
+          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndteXJkcGJ3bGt6c2t0bmhvb2t4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NTk2OTAsImV4cCI6MjEwNjUzNTY5MH0.oxrA-8UngHYOUVNP-fHdwbENBb_KP-9cM87EjdBNsEQ
+        run: |
+          echo "VITE_SUPABASE_URL=$VITE_SUPABASE_URL" >> "$GITHUB_ENV"
+          echo "VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY" >> "$GITHUB_ENV"
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Check TypeScript and existing regressions
+        run: |
+          npm run typecheck
+          npm run test:economy
+          npm run test:professions
+          npm run test:balance
+          npm run test:feature-separation
+          npm run test:mobile-home
+          node scripts/auth-mock-tests.cjs
+          node scripts/edge-initdata-tests.cjs
+          node scripts/edge-identity-tests.cjs
+
+      - name: Build the actual Vite game
+        run: npm run build
+
+      - name: Package built game (not raw repository files)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
+      - name: Deploy tested build to GitHub Pages
+        id: publish
+        uses: actions/deploy-pages@v4
