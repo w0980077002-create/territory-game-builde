@@ -1,5 +1,6 @@
 import { create } from './store';
 import { prepareNewEquipment } from './equipmentBalance';
+import { weeklyQuestKey } from './weeklyQuests';
 import { canBuyShopItem, shopStonesBoughtToday, SHOP_STONES_PER_DAY, MAX_SHOP_PURCHASE_QTY } from './purchaseGuard';
 import type { GameState } from './types';
 import {
@@ -50,6 +51,24 @@ export function applyTimeEffects(state: GameState, now = Date.now()): GameState 
       quests: next.quests.map((q) =>
         q.type === 'daily' ? (fresh.find((f) => f.id === q.id) ?? q) : q,
       ).concat(fresh.filter((f) => !next.quests.some((q) => q.id === f.id))),
+    };
+  }
+  // Weekly quests were previously never reset. A legacy save without a week
+  // marker is anchored to the current week without discarding earned progress.
+  // Subsequent Sunday UTC boundaries reset only weekly quests, never story/achievements.
+  const thisWeek = weeklyQuestKey(now);
+  if (!state.weeklyResetWeek) {
+    next = { ...next, weeklyResetWeek: thisWeek };
+  } else if (state.weeklyResetWeek !== thisWeek) {
+    const weeklyDefaults = createInitialQuests().filter((q) => q.type === 'weekly');
+    const known = new Set(next.quests.map((q) => q.id));
+    next = {
+      ...next,
+      weeklyResetWeek: thisWeek,
+      quests: next.quests.map((q) => q.type === 'weekly'
+        ? (weeklyDefaults.find((fresh) => fresh.id === q.id) ?? q)
+        : q,
+      ).concat(weeklyDefaults.filter((q) => !known.has(q.id))),
     };
   }
   return next;

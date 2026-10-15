@@ -1,4 +1,6 @@
 import { EQUIPMENT_BALANCE_VERSION, prepareNewEquipment } from './equipmentBalance';
+import { weeklyQuestKey } from './weeklyQuests';
+import { chapterEnemyMultipliers, trialEnemyMultipliers } from './pveBalance';
 import { createBossLootEquipment, SHOP_EQUIPMENT_ITEMS } from './equipmentCatalog';
 import type {
   GameState,
@@ -91,6 +93,7 @@ export function createInitialGame(): GameState {
     storyProgress: 0,
     lastEnergyAt: Date.now(),
     dailyResetDay: new Date().toDateString(),
+    weeklyResetWeek: weeklyQuestKey(),
     belt: Array(7).fill(null),
     activeDays: 1,
     battleStones: 10,
@@ -166,15 +169,16 @@ export function generateChapter(num: number): Chapter {
   const baseHp = 75 + num * 25;
   const baseAtk = 12 + num * 4;
   const baseDef = 3 + num * 2;
+  const difficulty = chapterEnemyMultipliers(num);
 
   const enemies: Enemy[] = ENEMY_NAMES.map((e, i) =>
     makeEnemy(
       `ch${num}_enemy_${i}`,
       e.name,
       e.art,
-      Math.floor(baseHp * (0.8 + i * 0.1)),
-      Math.floor(baseAtk * (0.8 + i * 0.1)),
-      Math.floor(baseDef * (0.8 + i * 0.1)),
+      Math.floor(baseHp * (0.8 + i * 0.1) * difficulty.hp),
+      Math.floor(baseAtk * (0.8 + i * 0.1) * difficulty.attack),
+      Math.floor(baseDef * (0.8 + i * 0.1) * difficulty.defense),
       false,
       15 + num * 5,
       20 + num * 8,
@@ -185,9 +189,9 @@ export function generateChapter(num: number): Chapter {
     `ch${num}_boss`,
     BOSS_NAMES[(num - 1) % BOSS_NAMES.length],
     '/enemy-boss.webp',
-    Math.floor(baseHp * 2.2),
-    Math.floor(baseAtk * 1.15),
-    Math.floor(baseDef * 2),
+    Math.floor(baseHp * 2.2 * difficulty.hp),
+    Math.floor(baseAtk * 1.15 * difficulty.attack),
+    Math.floor(baseDef * 2 * difficulty.defense),
     true,
     50 + num * 15,
     80 + num * 20,
@@ -209,13 +213,14 @@ export function generateTrial(num: number): Enemy {
   const baseHp = 75 + num * 25;
   const baseAtk = 12 + num * 4;
   const baseDef = 3 + num * 2;
+  const difficulty = trialEnemyMultipliers(num);
   return makeEnemy(
     `trial_${num}`,
     'Страж испытаний',
     '/enemy-viking.webp',
-    Math.floor(baseHp * 1.8),
-    Math.floor(baseAtk * 1.2),
-    Math.floor(baseDef * 1.5),
+    Math.floor(baseHp * 1.8 * difficulty.hp),
+    Math.floor(baseAtk * 1.2 * difficulty.attack),
+    Math.floor(baseDef * 1.5 * difficulty.defense),
     false,
     40 + num * 12,
     40 + num * 10,

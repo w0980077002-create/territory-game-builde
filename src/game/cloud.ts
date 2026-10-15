@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import type { GameState } from './types';
 import { createInitialGame, getComputedStats } from './engine';
 import { EQUIPMENT_BALANCE_VERSION, migrateGameStateBalance } from './equipmentBalance';
-import { createSequentialWriter } from './saveQueue';
+import { createCoalescingWriter } from './saveQueue';
 
 export interface CloudProfile {
   state: GameState;
@@ -98,7 +98,7 @@ function summaryColumns(state: GameState) {
   };
 }
 
-/** One queue per authenticated player within this browser session. */
+/** One coalescing queue per authenticated player within this browser session. */
 const saveWriters = new Map<string, (snapshot: ReturnType<typeof summaryColumns>) => Promise<boolean>>();
 
 export function saveCloudSave(userId: string, state: GameState): Promise<boolean> {
@@ -107,7 +107,7 @@ export function saveCloudSave(userId: string, state: GameState): Promise<boolean
   const snapshot = summaryColumns(state);
   let writer = saveWriters.get(userId);
   if (!writer) {
-    writer = createSequentialWriter(async (columns: ReturnType<typeof summaryColumns>) => {
+    writer = createCoalescingWriter(async (columns: ReturnType<typeof summaryColumns>) => {
       const { error } = await supabase.from('players').update(columns).eq('id', userId);
       if (error) console.error('Save failed:', error.message);
       return !error;

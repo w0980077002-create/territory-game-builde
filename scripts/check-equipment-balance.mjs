@@ -19,7 +19,7 @@ try {
 
 const root = process.cwd();
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'territory-balance-'));
-const sources = ['types.ts', 'equipmentCatalog.ts', 'equipmentBalance.ts', 'engine.ts'];
+const sources = ['types.ts', 'equipmentCatalog.ts', 'equipmentBalance.ts', 'weeklyQuests.ts', 'pveBalance.ts', 'engine.ts'];
 
 for (const file of sources) {
   const sourcePath = path.join(root, 'src/game', file);
@@ -180,8 +180,8 @@ baseState.player.equipped = { weapon: forgedHeroic, ring: forgedRing, amulet: fo
 const heroStats = engine.getComputedStats(baseState);
 assert.equal(heroStats.attack, 535, 'slot-specific growth should keep a level-58 epic damage kit within the intended range');
 const lateChapter = engine.generateChapter(58);
-assert.equal(lateChapter.enemies[0].maxHp, 1220, 'chapter enemy HP should receive the 25% balancing increase');
-assert.equal(lateChapter.boss.maxHp, 3355, 'boss HP should use the same adjusted chapter baseline');
+assert.equal(lateChapter.enemies[0].maxHp, Math.floor((75 + 58 * 25) * 0.8 * require(path.join(out, 'pveBalance.js')).chapterEnemyMultipliers(58).hp), 'chapter enemy HP should track gradual difficulty');
+assert.equal(lateChapter.boss.maxHp, Math.floor((75 + 58 * 25) * 2.2 * require(path.join(out, 'pveBalance.js')).chapterEnemyMultipliers(58).hp), 'boss HP should use the same difficulty curve');
 const weakestEnemy = lateChapter.enemies[0];
 const worstCriticalHeadHit = (heroStats.attack - weakestEnemy.defense / 2) * 1.25 * 1.1 * (1 + heroStats.critDamage / 100);
 assert.ok(worstCriticalHeadHit < weakestEnemy.maxHp, 'the strongest theoretical head critical should not one-shot a normal chapter-58 enemy');

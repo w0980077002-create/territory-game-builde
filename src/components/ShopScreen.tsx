@@ -90,11 +90,20 @@ export function ShopScreen() {
   }, [result]);
 
   const buy = (item: ShopItem, qty: number) => {
-    const next = buyItem(useGame.get(), item, qty);
+    // Never trust the modal's old item snapshot if an admin sale ended or
+    // the chapter changed while it was open. Re-evaluate the live catalog.
+    const liveState = useGame.get();
+    const liveSale = useLive.get().shopSale;
+    const current = generateShopItems(liveState.currentChapter).find((i) => i.id === item.id);
+    if (!current) { setPicked(null); return; }
+    const upToDate = liveSale
+      ? { ...current, priceGold: discount(current.priceGold) ?? 0, priceGems: discount(current.priceGems) }
+      : current;
+    const next = buyItem(liveState, upToDate, qty);
     if (!next) return;
     useGame.set(next);
     setPicked(null);
-    setResult({ item, text: resultText(item, qty, language) });
+    setResult({ item: upToDate, text: resultText(upToDate, qty, language) });
   };
 
   return (

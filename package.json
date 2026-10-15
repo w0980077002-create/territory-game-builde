@@ -13,9 +13,11 @@
     "test:professions": "node scripts/check-professions.mjs",
     "test:feature-separation": "node scripts/check-feature-separation.mjs",
     "test:mobile-home": "node scripts/check-mobile-home-ui.mjs",
-    "test:economy": "node scripts/check-economy.mjs && node scripts/economy-client-guard-tests.mjs",
+    "test:economy": "node scripts/check-economy.mjs && node scripts/economy-client-guard-tests.mjs && node scripts/check-stage2.mjs && node scripts/progression-audit.mjs",
     "test:saves": "node scripts/check-economy.mjs",
-    "test:client-guard": "node scripts/economy-client-guard-tests.mjs"
+    "test:client-guard": "node scripts/economy-client-guard-tests.mjs",
+    "test:stage2": "node scripts/check-stage2.mjs",
+    "test:progression": "node scripts/progression-audit.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

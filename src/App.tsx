@@ -124,12 +124,18 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         if (cancelled) return;
         const loadedState = applyTimeEffects(profile.state);
         useGame.set(loadedState);
-        if (profile.balanceMigrated) {
-          const migratedSaveOk = await saveCloudSave(user.id, loadedState);
-          if (!migratedSaveOk) {
-            console.error('Equipment balance migration save failed; scheduling a retry.');
-            window.setTimeout(() => { void saveCloudSave(user.id, useGame.get()); }, 5000);
-          }
+        const hasNewTimeEffects = loadedState.dailyResetDay !== profile.state.dailyResetDay
+          || loadedState.weeklyResetWeek !== profile.state.weeklyResetWeek
+          || loadedState.player.energy !== profile.state.player.energy;
+        if (profile.balanceMigrated || hasNewTimeEffects) {
+          // Migration/time-effect write is queued but must not hold the loading splash open
+          // during a slow mobile connection. Never assume a failed response
+          // means the server did not commit; simply retry current state later.
+          void saveCloudSave(user.id, loadedState).then((ok) => {
+            if (!ok && !cancelled) {
+              window.setTimeout(() => { if (!cancelled) void saveCloudSave(user.id, useGame.get()); }, 5000);
+            }
+          }).catch((error) => console.error('Migration save failed:', error));
         }
         useArena.set({ rating: profile.arenaRating, wins: profile.arenaWins, losses: profile.arenaLosses });
         useAccount.set({ vip: profile.vip });
@@ -146,6 +152,18 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let active = true;
     let changeId = 0;
+    // Telegram mobile webviews may suspend shortly after backgrounding. Flush
+    // the current state immediately instead of waiting for the 1.5s debounce.
+    const flushWhenHidden = () => {
+      if (document.visibilityState !== 'hidden' || !timer) return;
+      clearTimeout(timer);
+      timer = undefined;
+      const pendingId = changeId;
+      void saveCloudSave(user.id, useGame.get()).then((ok) => {
+        if (active && changeId === pendingId) setSaveStatus(ok ? 'saved' : 'error');
+      }).catch(() => { if (active && changeId === pendingId) setSaveStatus('error'); });
+    };
+    document.addEventListener('visibilitychange', flushWhenHidden);
     const unsubscribe = useGame.subscribe(() => {
       changeId += 1;
       setSaveStatus('saving');
@@ -166,13 +184,14 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     const tick = setInterval(() => {
       const current = useGame.get();
       const next = applyTimeEffects(current);
-      if (next.player.energy !== current.player.energy || next.dailyResetDay !== current.dailyResetDay) {
+      if (next.player.energy !== current.player.energy || next.dailyResetDay !== current.dailyResetDay || next.weeklyResetWeek !== current.weeklyResetWeek) {
         useGame.set(next);
       }
     }, 30000);
     return () => {
       active = false;
       unsubscribe();
+      document.removeEventListener('visibilitychange', flushWhenHidden);
       clearTimeout(timer);
       clearInterval(tick);
     };

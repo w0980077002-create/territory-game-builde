@@ -130,7 +130,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
     if (busy || outcome) return;
     setBusy(true);
     hapticImpact('light');
-    const res = playRound(heroRef.current, foeRef.current, atk, blk, follower?.attack ?? 0, follower?.name ?? '');
+    const res = playRound(heroRef.current, foeRef.current, atk, blk, follower?.attack ?? 0, follower?.name ?? '', follower?.defense ?? 0);
     const pace = 1 / useGame.get().settings.speed;
     for (const hit of res.hits) {
       if (!alive.current || done.current) return;

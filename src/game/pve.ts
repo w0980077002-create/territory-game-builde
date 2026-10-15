@@ -1,6 +1,7 @@
 import { ZONES, type Zone } from './arenaApi';
 import type { Enemy, GameState, InventoryItem } from './types';
 import { getComputedStats } from './engine';
+import { eliteRoundDamageCap, followerGuardDamage } from './pveBalance';
 
 export interface PveSide {
   name: string;
@@ -10,6 +11,9 @@ export interface PveSide {
   defense: number;
   critChance: number;
   critDamage: number;
+  /** PvE-only enemy metadata; optional on hero and existing test fixtures. */
+  enemyId?: string;
+  isBoss?: boolean;
 }
 
 export interface PveHit {
@@ -26,7 +30,12 @@ const zoneOf = (z: Zone) => ZONES.find((x) => x.id === z)!;
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
 export function randomZones(): { attack: Zone; blocks: Zone[] } {
-  const ids = ZONES.map((z) => z.id).sort(() => Math.random() - 0.5);
+  // Fisher-Yates: sort(() => Math.random() - 0.5) biases probabilities.
+  const ids = ZONES.map((z) => z.id);
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
   return { attack: pick(ZONES).id, blocks: ids.slice(0, 2) };
 }
 
@@ -36,7 +45,7 @@ export function heroSide(state: GameState): PveSide {
 }
 
 export function enemySide(e: Enemy): PveSide {
-  return { name: e.name, hp: e.maxHp, maxHp: e.maxHp, attack: e.attack, defense: e.defense, critChance: e.isBoss ? 8 : 4, critDamage: 50 };
+  return { name: e.name, hp: e.maxHp, maxHp: e.maxHp, attack: e.attack, defense: e.defense, critChance: e.isBoss ? 8 : 4, critDamage: 50, enemyId: e.id, isBoss: e.isBoss };
 }
 
 function strike(from: PveSide, to: PveSide, targetSide: PveHit['targetSide'], zone: Zone, blocked: Zone[]): PveHit {
@@ -58,20 +67,30 @@ export interface RoundResult {
   enemy: PveSide;
 }
 
-export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string): RoundResult {
+export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0): RoundResult {
   const ai = randomZones();
   const hits: PveHit[] = [];
-  const h1 = strike(hero, enemy, 'enemy', attack, ai.blocks.slice(0, 1));
+  const cap = eliteRoundDamageCap(enemy.enemyId ?? '', !!enemy.isBoss, enemy.maxHp);
+  let damageBudget = cap ?? Number.POSITIVE_INFINITY;
+  const rawHit = strike(hero, enemy, 'enemy', attack, ai.blocks.slice(0, 1));
+  const firstDamage = Math.min(rawHit.amount, damageBudget, enemy.hp);
+  const h1 = { ...rawHit, amount: firstDamage };
   hits.push(h1);
-  let enemyHp = Math.max(0, enemy.hp - h1.amount);
-  if (enemyHp > 0 && followerAttack > 0) {
-    const f: PveHit = { attacker: followerName, target: enemy.name, targetSide: 'enemy', zone: pick(ZONES).id, tone: 'hit', amount: followerAttack };
-    hits.push(f);
-    enemyHp = Math.max(0, enemyHp - f.amount);
+  damageBudget -= firstDamage;
+  let enemyHp = Math.max(0, enemy.hp - firstDamage);
+  if (enemyHp > 0 && followerAttack > 0 && damageBudget > 0) {
+    const companionDamage = Math.min(Math.max(0, Math.floor(followerAttack)), damageBudget, enemyHp);
+    if (companionDamage > 0) {
+      const f: PveHit = { attacker: followerName, target: enemy.name, targetSide: 'enemy', zone: pick(ZONES).id, tone: 'hit', amount: companionDamage };
+      hits.push(f);
+      enemyHp = Math.max(0, enemyHp - companionDamage);
+    }
   }
   let heroHp = hero.hp;
   if (enemyHp > 0) {
-    const h2 = strike(enemy, hero, 'hero', ai.attack, blocks);
+    const rawEnemyHit = strike(enemy, hero, 'hero', ai.attack, blocks);
+    const mitigated = rawEnemyHit.amount > 0 ? followerGuardDamage(rawEnemyHit.amount, followerDefense) : 0;
+    const h2 = { ...rawEnemyHit, amount: mitigated };
     hits.push(h2);
     heroHp = Math.max(0, heroHp - h2.amount);
   }
@@ -85,7 +104,7 @@ export type PotionUse =
 export function applyPotion(hero: PveSide, item: InventoryItem): PotionUse {
   if (item.arenaEffect) return { ok: false, text: `${item.name} действует только на арене` };
   const e = item.effect;
-  if (!e) return { ok: false, text: 'Этот предмет нельзя выпить в бою' };
+  if (!e || !Number.isFinite(e.value) || e.value <= 0 || e.value > 1000000) return { ok: false, text: 'Этот предмет нельзя выпить в бою' };
   if (e.stat === 'hp') {
     if (hero.hp >= hero.maxHp) return { ok: false, text: 'Здоровье уже полное' };
     const hp = Math.min(hero.maxHp, hero.hp + e.value);

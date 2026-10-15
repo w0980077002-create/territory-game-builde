@@ -30,12 +30,18 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
   const stages = [...chapter.enemies, chapter.boss];
   const nextIndex = Math.min(state.chapterWins, chapter.enemies.length);
   const autoHandled = useRef(false);
+  const fightStartLocked = useRef(false);
 
   const start = (kind: FightKind) => {
+    // One user gesture = at most one stone. Prevent overlapping taps/autostart
+    // callbacks from charging twice before React commits setFight.
+    if (fightStartLocked.current) return;
+    fightStartLocked.current = true;
     const s = useGame.get();
     const paid = spendStones(s, PVE_STONE_COST);
     if (!paid) {
-      setError(t('noBattleStones'))
+      fightStartLocked.current = false;
+      setError(t('noBattleStones'));
       return;
     }
     hapticImpact('medium');
@@ -63,10 +69,11 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
         enemy={fight.enemy}
         kind={fight.kind}
         onExit={() => {
+          fightStartLocked.current = false;
           setFight(null);
           onActiveChange?.(false);
         }}
-        onNext={() => start(fight.kind)}
+        onNext={() => { fightStartLocked.current = false; start(fight.kind); }}
       />
     );
   }

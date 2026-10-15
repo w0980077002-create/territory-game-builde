@@ -171,6 +171,8 @@ export interface GameState {
   storyProgress: number;
   lastEnergyAt: number;
   dailyResetDay: string;
+  /** Week anchor for weekly quest reset. Missing on legacy saves; initialized without resetting progress. */
+  weeklyResetWeek?: string;
   belt: (InventoryItem | null)[];
   activeDays: number;
   battleStones: number;
