@@ -102,12 +102,21 @@ async function claim(id: string): Promise<GrantPayload | null> {
   return data as GrantPayload;
 }
 
+// Ignore overlapping button taps in this tab. The backend claim is atomic,
+// but the UI must never silently remove a letter after a failed request.
+const grantClaimsInFlight = new Set<string>();
 export async function claimMailGrant(id: string): Promise<boolean> {
-  const payload = await claim(id);
-  useLive.set((s) => ({ ...s, mail: s.mail.filter((m) => m.id !== id) }));
-  if (!payload) return false;
-  useGame.set(applyGrantPayload(useGame.get(), payload));
-  return true;
+  if (!id || grantClaimsInFlight.has(id)) return false;
+  grantClaimsInFlight.add(id);
+  try {
+    const payload = await claim(id);
+    if (!payload) return false;
+    useGame.set(applyGrantPayload(useGame.get(), payload));
+    useLive.set((s) => ({ ...s, mail: s.mail.filter((m) => m.id !== id) }));
+    return true;
+  } finally {
+    grantClaimsInFlight.delete(id);
+  }
 }
 
 interface HeartbeatGrant extends MailGrant {

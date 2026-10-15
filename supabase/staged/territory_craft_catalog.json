@@ -1,0 +1,505 @@
+[
+  {
+    "id": "smith_apprentice_blade",
+    "profession": "smith",
+    "requiredLevel": 1,
+    "masteryXp": 30,
+    "ingredients": [
+      {
+        "id": "gather-ore",
+        "qty": 5
+      },
+      {
+        "id": "gather-wood",
+        "qty": 2
+      }
+    ],
+    "output": {
+      "name": "Меч подмастерья",
+      "icon": "⚔️",
+      "type": "equipment",
+      "rarity": "common",
+      "description": "Кованый меч. +8 к атаке.",
+      "equipment": {
+        "slot": "weapon",
+        "rarity": "common",
+        "level": 1,
+        "attack": 8,
+        "name": "Меч подмастерья",
+        "icon": "⚔️"
+      }
+    }
+  },
+  {
+    "id": "smith_leather_armor",
+    "profession": "smith",
+    "requiredLevel": 1,
+    "masteryXp": 35,
+    "ingredients": [
+      {
+        "id": "gather-ore",
+        "qty": 3
+      },
+      {
+        "id": "gather-hide",
+        "qty": 2
+      }
+    ],
+    "output": {
+      "name": "Кожаная броня",
+      "icon": "🦺",
+      "type": "equipment",
+      "rarity": "common",
+      "description": "Защита +5, здоровье +30.",
+      "equipment": {
+        "slot": "armor",
+        "rarity": "common",
+        "level": 1,
+        "defense": 5,
+        "hp": 30,
+        "name": "Кожаная броня",
+        "icon": "🦺"
+      }
+    }
+  },
+  {
+    "id": "smith_knight_blade",
+    "profession": "smith",
+    "requiredLevel": 50,
+    "masteryXp": 120,
+    "ingredients": [
+      {
+        "id": "gather-ore",
+        "qty": 20
+      },
+      {
+        "id": "gather-wood",
+        "qty": 10
+      },
+      {
+        "id": "gather-crystal",
+        "qty": 3
+      }
+    ],
+    "output": {
+      "name": "Клинок рыцаря",
+      "icon": "🗡️",
+      "type": "equipment",
+      "rarity": "rare",
+      "description": "Атака +18, шанс критического удара +3%.",
+      "equipment": {
+        "slot": "weapon",
+        "rarity": "rare",
+        "level": 3,
+        "attack": 18,
+        "critChance": 3,
+        "name": "Клинок рыцаря",
+        "icon": "🗡️"
+      }
+    }
+  },
+  {
+    "id": "smith_ancient_blade",
+    "profession": "smith",
+    "requiredLevel": 300,
+    "masteryXp": 500,
+    "ingredients": [
+      {
+        "id": "gather-ore",
+        "qty": 80
+      },
+      {
+        "id": "gather-wood",
+        "qty": 30
+      },
+      {
+        "id": "gather-crystal",
+        "qty": 20
+      }
+    ],
+    "output": {
+      "name": "Клинок древних",
+      "icon": "🔱",
+      "type": "equipment",
+      "rarity": "legendary",
+      "description": "Атака +35, критический шанс +8%. Сила легендарной экипировки масштабируется по общему балансу игры.",
+      "equipment": {
+        "slot": "weapon",
+        "rarity": "legendary",
+        "level": 5,
+        "attack": 35,
+        "critChance": 8,
+        "name": "Клинок древних",
+        "icon": "🔱"
+      }
+    }
+  },
+  {
+    "id": "alchemist_health_potion",
+    "profession": "alchemist",
+    "requiredLevel": 1,
+    "masteryXp": 20,
+    "ingredients": [
+      {
+        "id": "gather-herb",
+        "qty": 3
+      }
+    ],
+    "output": {
+      "name": "Зелье здоровья мастера",
+      "icon": "🧪",
+      "type": "potion",
+      "rarity": "common",
+      "description": "Восстанавливает 50 HP мгновенно.",
+      "effect": {
+        "stat": "hp",
+        "value": 50,
+        "duration": "instant"
+      }
+    }
+  },
+  {
+    "id": "alchemist_strength",
+    "profession": "alchemist",
+    "requiredLevel": 5,
+    "masteryXp": 50,
+    "ingredients": [
+      {
+        "id": "gather-herb",
+        "qty": 5
+      },
+      {
+        "id": "gather-crystal",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "name": "Эликсир силы мастера",
+      "icon": "💪",
+      "type": "elixir",
+      "rarity": "rare",
+      "description": "+10 к атаке на один бой.",
+      "effect": {
+        "stat": "attack",
+        "value": 10,
+        "duration": "battle"
+      }
+    }
+  },
+  {
+    "id": "alchemist_greater_potion",
+    "profession": "alchemist",
+    "requiredLevel": 25,
+    "masteryXp": 90,
+    "ingredients": [
+      {
+        "id": "gather-herb",
+        "qty": 10
+      },
+      {
+        "id": "gather-crystal",
+        "qty": 3
+      }
+    ],
+    "output": {
+      "name": "Большое зелье мастера",
+      "icon": "⚗️",
+      "type": "potion",
+      "rarity": "rare",
+      "description": "Восстанавливает 150 HP мгновенно.",
+      "effect": {
+        "stat": "hp",
+        "value": 150,
+        "duration": "instant"
+      }
+    }
+  },
+  {
+    "id": "alchemist_legendary_elixir",
+    "profession": "alchemist",
+    "requiredLevel": 300,
+    "masteryXp": 500,
+    "ingredients": [
+      {
+        "id": "gather-herb",
+        "qty": 50
+      },
+      {
+        "id": "gather-crystal",
+        "qty": 20
+      }
+    ],
+    "output": {
+      "name": "Эликсир легенды",
+      "icon": "🧬",
+      "type": "elixir",
+      "rarity": "legendary",
+      "description": "+20 к атаке на один бой.",
+      "effect": {
+        "stat": "attack",
+        "value": 20,
+        "duration": "battle"
+      }
+    }
+  },
+  {
+    "id": "artisan_toolkit",
+    "profession": "artisan",
+    "requiredLevel": 1,
+    "masteryXp": 25,
+    "ingredients": [
+      {
+        "id": "gather-wood",
+        "qty": 4
+      },
+      {
+        "id": "gather-ore",
+        "qty": 2
+      }
+    ],
+    "output": {
+      "name": "Набор ремесленника",
+      "icon": "🧰",
+      "type": "material",
+      "rarity": "common",
+      "description": "Ремесленный товар. Предназначен для торговли и будущих рецептов."
+    }
+  },
+  {
+    "id": "artisan_supply_crate",
+    "profession": "artisan",
+    "requiredLevel": 25,
+    "masteryXp": 80,
+    "ingredients": [
+      {
+        "id": "gather-wood",
+        "qty": 15
+      },
+      {
+        "id": "gather-herb",
+        "qty": 8
+      }
+    ],
+    "output": {
+      "name": "Ящик припасов",
+      "icon": "📦",
+      "type": "material",
+      "rarity": "rare",
+      "description": "Ценный ремесленный товар для торговли."
+    }
+  },
+  {
+    "id": "artisan_royal_chest",
+    "profession": "artisan",
+    "requiredLevel": 300,
+    "masteryXp": 500,
+    "ingredients": [
+      {
+        "id": "gather-wood",
+        "qty": 50
+      },
+      {
+        "id": "gather-ore",
+        "qty": 30
+      },
+      {
+        "id": "gather-crystal",
+        "qty": 15
+      }
+    ],
+    "output": {
+      "name": "Королевский ларец",
+      "icon": "🗝️",
+      "type": "material",
+      "rarity": "legendary",
+      "description": "Легендарный ремесленный товар для будущего общего аукциона."
+    }
+  },
+  {
+    "id": "jeweler_raven_amulet",
+    "profession": "jeweler",
+    "requiredLevel": 1,
+    "masteryXp": 45,
+    "ingredients": [
+      {
+        "id": "gather-crystal",
+        "qty": 2
+      },
+      {
+        "id": "gather-ore",
+        "qty": 5
+      }
+    ],
+    "output": {
+      "name": "Амулет ворона мастера",
+      "icon": "📿",
+      "type": "equipment",
+      "rarity": "rare",
+      "description": "Атака +6 и шанс крита +3%.",
+      "equipment": {
+        "slot": "amulet",
+        "rarity": "rare",
+        "level": 3,
+        "attack": 6,
+        "critChance": 3,
+        "name": "Амулет ворона мастера",
+        "icon": "📿"
+      }
+    }
+  },
+  {
+    "id": "jeweler_power_ring",
+    "profession": "jeweler",
+    "requiredLevel": 50,
+    "masteryXp": 125,
+    "ingredients": [
+      {
+        "id": "gather-crystal",
+        "qty": 8
+      },
+      {
+        "id": "gather-ore",
+        "qty": 12
+      }
+    ],
+    "output": {
+      "name": "Кольцо силы мастера",
+      "icon": "💍",
+      "type": "equipment",
+      "rarity": "epic",
+      "description": "Атака +15 и шанс крита +5%.",
+      "equipment": {
+        "slot": "ring",
+        "rarity": "epic",
+        "level": 5,
+        "attack": 15,
+        "critChance": 5,
+        "name": "Кольцо силы мастера",
+        "icon": "💍"
+      }
+    }
+  },
+  {
+    "id": "jeweler_ancient_ring",
+    "profession": "jeweler",
+    "requiredLevel": 300,
+    "masteryXp": 500,
+    "ingredients": [
+      {
+        "id": "gather-crystal",
+        "qty": 25
+      },
+      {
+        "id": "gather-ore",
+        "qty": 60
+      }
+    ],
+    "output": {
+      "name": "Кольцо древних",
+      "icon": "💍",
+      "type": "equipment",
+      "rarity": "legendary",
+      "description": "Атака +15 и шанс крита +5%. Сохраняет базовый баланс аксессуаров.",
+      "equipment": {
+        "slot": "ring",
+        "rarity": "legendary",
+        "level": 5,
+        "attack": 15,
+        "critChance": 5,
+        "name": "Кольцо древних",
+        "icon": "💍"
+      }
+    }
+  },
+  {
+    "id": "engineer_oak_shield",
+    "profession": "engineer",
+    "requiredLevel": 1,
+    "masteryXp": 40,
+    "ingredients": [
+      {
+        "id": "gather-wood",
+        "qty": 5
+      },
+      {
+        "id": "gather-ore",
+        "qty": 4
+      }
+    ],
+    "output": {
+      "name": "Укреплённый щит",
+      "icon": "🛡️",
+      "type": "equipment",
+      "rarity": "common",
+      "description": "Защита +5 и здоровье +25.",
+      "equipment": {
+        "slot": "shield",
+        "rarity": "common",
+        "level": 2,
+        "defense": 5,
+        "hp": 25,
+        "name": "Укреплённый щит",
+        "icon": "🛡️"
+      }
+    }
+  },
+  {
+    "id": "engineer_guard_helmet",
+    "profession": "engineer",
+    "requiredLevel": 25,
+    "masteryXp": 85,
+    "ingredients": [
+      {
+        "id": "gather-ore",
+        "qty": 12
+      },
+      {
+        "id": "gather-crystal",
+        "qty": 2
+      }
+    ],
+    "output": {
+      "name": "Шлем стража",
+      "icon": "⛑️",
+      "type": "equipment",
+      "rarity": "rare",
+      "description": "Защита +3 и здоровье +20.",
+      "equipment": {
+        "slot": "helmet",
+        "rarity": "rare",
+        "level": 3,
+        "defense": 3,
+        "hp": 20,
+        "name": "Шлем стража",
+        "icon": "⛑️"
+      }
+    }
+  },
+  {
+    "id": "engineer_ancient_device",
+    "profession": "engineer",
+    "requiredLevel": 300,
+    "masteryXp": 500,
+    "ingredients": [
+      {
+        "id": "gather-ore",
+        "qty": 60
+      },
+      {
+        "id": "gather-wood",
+        "qty": 40
+      },
+      {
+        "id": "gather-crystal",
+        "qty": 20
+      }
+    ],
+    "output": {
+      "name": "Древний механизм",
+      "icon": "⚙️",
+      "type": "material",
+      "rarity": "legendary",
+      "description": "Легендарный инженерный товар для будущего общего аукциона."
+    }
+  }
+]

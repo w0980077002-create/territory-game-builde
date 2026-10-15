@@ -127,11 +127,13 @@ export interface LeaderRow {
   photo_url: string | null;
 }
 
-export async function getLeaderboard(limit = 100, orderBy: 'arena_rating' | 'total_battles_won' = 'arena_rating'): Promise<LeaderRow[]> {
+export async function getLeaderboard(limit = 100, orderBy: 'arena_rating' | 'arena_wins' | 'total_battles_won' = 'arena_rating'): Promise<LeaderRow[]> {
   const { data, error } = await supabase
     .from('leaderboard')
     .select('player_id, display_name, level, arena_rating, arena_wins, total_battles_won, photo_url')
     .order(orderBy, { ascending: false })
+    .order('arena_rating', { ascending: false })
+    .order('player_id', { ascending: true })
     .limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []) as LeaderRow[];

@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getLeaderboard } from '@/game/cloud';
 import { Trophy, Crown, Medal } from 'lucide-react';
 import type { AuthUser } from '@/game/auth';
 import { useLanguage } from '@/game/i18n';
+import { SeasonScreen } from './SeasonScreen';
 
 interface LeaderboardEntry {
   player_id: string;
@@ -19,26 +20,33 @@ export function LeaderboardScreen({ user }: { user: AuthUser }) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [tab, setTab] = useState<'rating' | 'wins'>('rating');
+  const [tab, setTab] = useState<'rating' | 'wins' | 'season'>('rating');
+  const requestId = useRef(0);
 
   useEffect(() => {
-    loadLeaderboard();
-  }, []);
+    if (tab !== 'season') void loadLeaderboard(tab);
+    return () => { requestId.current += 1; };
+  }, [tab]);
 
-  const loadLeaderboard = async () => {
+  const loadLeaderboard = async (kind: 'rating' | 'wins') => {
+    const ticket = ++requestId.current;
     setLoading(true);
     setError(false);
     try {
-      setEntries((await getLeaderboard(50)) as LeaderboardEntry[]);
+      const result = await getLeaderboard(50, kind === 'rating' ? 'arena_rating' : 'arena_wins');
+      if (ticket !== requestId.current) return;
+      setEntries(result as LeaderboardEntry[]);
     } catch {
+      if (ticket !== requestId.current) return;
       setError(true);
+    } finally {
+      if (ticket === requestId.current) setLoading(false);
     }
-    setLoading(false);
   };
 
-  const sorted = tab === 'rating'
-    ? [...entries].sort((a, b) => b.arena_rating - a.arena_rating)
-    : [...entries].sort((a, b) => b.arena_wins - a.arena_wins);
+  // The database orders the entire leaderboard before limiting to the top 50.
+  // Sorting only the fifty highest-rated players would exclude real win leaders.
+  const sorted = entries;
 
   return (
     <div className="space-y-4 animate-fade-in pb-4">
@@ -60,9 +68,16 @@ export function LeaderboardScreen({ user }: { user: AuthUser }) {
           >
             {language === 'en' ? 'By wins' : 'По победам'}
           </button>
+          <button
+            className={`flex-1 btn text-sm ${tab === 'season' ? 'btn-accent' : 'btn-ghost'}`}
+            onClick={() => setTab('season')}
+          >
+            {language === 'en' ? 'Seasons' : 'Сезоны'}
+          </button>
         </div>
       </div>
 
+      {tab === 'season' ? <SeasonScreen user={user} /> : <>
       {error && (
         <div className="card text-center text-sm text-red-400">{t('leaderboardLoadError')}</div>
       )}
@@ -132,9 +147,10 @@ export function LeaderboardScreen({ user }: { user: AuthUser }) {
         </div>
       )}
 
-      <button className="btn-ghost w-full text-sm" onClick={loadLeaderboard}>
+      <button className="btn-ghost w-full text-sm" onClick={() => void loadLeaderboard(tab === 'wins' ? 'wins' : 'rating')}>
         {language === 'en' ? 'Refresh' : 'Обновить'}
       </button>
+      </>}
     </div>
   );
 }
