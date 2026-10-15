@@ -218,6 +218,13 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           <Wrench className="w-3 h-3" /> {translate('maintenance')}
         </div>
       )}
+      {saveStatus === 'error' && (
+        <div role="alert" className="shrink-0 z-40 border-b border-red-500/60 bg-red-950 px-3 py-2 text-center text-[11px] font-semibold leading-tight text-red-100">
+          {language === 'en'
+            ? 'Progress not saved. Check connection and other open sessions before closing the game.'
+            : 'Прогресс не сохранён! Проверьте сеть и другие открытые окна игры перед выходом.'}
+        </div>
+      )}
       {sub && (
         <header className="shrink-0 z-30 h-12 px-2 flex items-center gap-2 border-b border-amber-500/20 bg-[#0c1117]/95">
           <button disabled={battleLocked} onClick={() => setScreen('city')} className="h-9 pl-1.5 pr-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 text-sm font-semibold text-amber-100 bg-white/5 border border-white/10 active:scale-95 transition-transform">

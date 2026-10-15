@@ -5,6 +5,7 @@ import { supabase } from '@/game/supabase';
 import { useGame } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
 import { useStore } from '@/game/store';
+import { fetchAuctionOverview, submitAuctionAction, type AuctionAction, type AuctionOverview } from '@/game/auctionApi';
 
 type AuctionTab = 'lots' | 'mine' | 'chat';
 interface ChatMessage {
@@ -27,6 +28,51 @@ export function AuctionScreen() {
   const [chatError, setChatError] = useState('');
   const channelRef = useRef<RealtimeChannel | null>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
+  const [auction, setAuction] = useState<AuctionOverview | null>(null);
+  const [auctionLoading, setAuctionLoading] = useState(true);
+  const [auctionError, setAuctionError] = useState('');
+  const [tradeBusy, setTradeBusy] = useState(false);
+  const [askPrice, setAskPrice] = useState('100');
+  const [pendingOperation, setPendingOperation] = useState<{ action: AuctionAction; id: string } | null>(null);
+
+  const refreshAuction = async () => {
+    const latest = await fetchAuctionOverview();
+    setAuction(latest);
+    return latest;
+  };
+
+  useEffect(() => {
+    let alive = true;
+    void fetchAuctionOverview().then((latest) => {
+      if (alive) { setAuction(latest); setAuctionError(''); }
+    }).catch(() => { if (alive) setAuctionError(language === 'en' ? 'Market unavailable.' : 'Аукцион временно недоступен.');
+    }).finally(() => { if (alive) setAuctionLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  const trade = async (action: AuctionAction, pending?: { action: AuctionAction; id: string }) => {
+    if (tradeBusy || !auction?.enabled) return;
+    if (pendingOperation && !pending) return; // Never abandon an uncertain operation.
+    const op = pending || { action, id: crypto.randomUUID() };
+    setTradeBusy(true);
+    setAuctionError('');
+    try {
+      await submitAuctionAction(op.action, op.id);
+      setPendingOperation(null);
+      await refreshAuction();
+    } catch {
+      // The network may have timed out AFTER a committed transaction.
+      // Keep the SAME operation UUID for a safe retry, don't double-charge.
+      setPendingOperation(op);
+      setAuctionError(language === 'en'
+        ? 'Result unconfirmed. Retry the same operation; do not make another trade.'
+        : 'Результат операции не подтверждён. Повтори её с тем же номером, не создавай новую.');
+    } finally { setTradeBusy(false); }
+  };
+
+  const ru = language !== 'en';
+  const formatGold = (n: number) => n.toLocaleString(ru ? 'ru-RU' : 'en-US');
+
 
   useEffect(() => {
     let mounted = true;
@@ -132,19 +178,71 @@ export function AuctionScreen() {
             {tab === 'mine' ? <Package className="h-5 w-5 text-sky-300" /> : <ShoppingBag className="h-5 w-5 text-amber-300" />}
             <h3 className="font-bold">{tab === 'mine' ? t('myListedItems') : t('playerLots')}</h3>
           </div>
-          <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
-            <p className="text-sm font-semibold text-slate-100">{t('tradingDisabled')}</p>
-            <p className="mt-1 text-xs leading-relaxed text-slate-300">
-              {t('noFakeLots')}
-            </p>
-          </div>
+          {!auction?.enabled ? (
+            <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
+              <p className="text-sm font-semibold text-slate-100">{auctionLoading ? t('connecting') : t('tradingDisabled')}</p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-300">{t('noFakeLots')}</p>
+            </div>
+          ) : (
+            <>
+              <p className="mt-2 text-xs text-emerald-300">{ru ? 'Подтверждённые сервером предметы · ' : 'Server-verified items · '}{ru ? 'Золото' : 'Gold'}: {auction.myGold === null ? '—' : formatGold(auction.myGold)}</p>
+              <div className="mt-3 space-y-2">
+                {(tab === 'mine' ? auction.mine : auction.lots).map((lot) => (
+                  <div key={lot.id} className="rounded-xl border border-white/10 bg-black/25 p-3">
+                    <div className="flex justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-amber-100">{lot.item.icon || '📦'} {lot.item.name || (ru ? 'Предмет' : 'Item')}</div>
+                        <p className="text-[10px] text-slate-400">{lot.item.rarity || '—'} {'seller' in lot ? ` · ${lot.seller}` : ''}</p>
+                      </div>
+                      <span className="shrink-0 text-sm font-black text-amber-300">{formatGold(lot.price_gold)} 🪙</span>
+                    </div>
+                    {tab === 'mine' ? (
+                      <button disabled={tradeBusy || !!pendingOperation} onClick={() => void trade({ action: 'cancel', listingId: lot.id })}
+                        className="mt-2 w-full rounded-lg border border-rose-500/40 py-2 text-xs text-rose-200 disabled:opacity-40">{ru ? 'Снять с продажи' : 'Cancel listing'}</button>
+                    ) : !auction.mine.some((mine) => mine.id === lot.id) && (
+                      <button disabled={tradeBusy || !!pendingOperation || auction.myGold === null || auction.myGold < lot.price_gold}
+                        onClick={() => void trade({ action: 'buy', listingId: lot.id })}
+                        className="mt-2 w-full rounded-lg bg-amber-600 py-2 text-xs font-bold disabled:opacity-40">{ru ? 'Купить' : 'Buy'}</button>
+                    )}
+                  </div>
+                ))}
+                {(tab === 'mine' ? auction.mine : auction.lots).length === 0 && (
+                  <p className="text-xs text-slate-400">{ru ? 'Пока нет доступных лотов.' : 'No listings yet.'}</p>
+                )}
+              </div>
+              {tab === 'mine' && auction.items.length > 0 && (
+                <div className="mt-3 rounded-xl border border-white/10 p-3">
+                  <h4 className="text-sm font-bold">{ru ? 'Выставить предмет мастера' : 'List a crafted item'}</h4>
+                  <label className="mb-2 mt-2 block text-xs text-slate-300">{ru ? 'Цена в золоте' : 'Price in gold'}
+                    <input type="number" min="1" max="2147483647" step="1" inputMode="numeric" value={askPrice}
+                      onChange={(event) => setAskPrice(event.target.value)} className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 p-2 text-white" />
+                  </label>
+                  {auction.items.map((item) => (
+                    <button key={item.item_id} disabled={tradeBusy || !!pendingOperation || !Number.isSafeInteger(Number(askPrice)) || Number(askPrice) < 1 || Number(askPrice) > 2147483647}
+                      onClick={() => void trade({ action: 'list', itemId: item.item_id, priceGold: Number(askPrice) })}
+                      className="mb-1.5 w-full rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-left text-xs text-amber-100 disabled:opacity-40">
+                      {item.item.icon || '📦'} {item.item.name || (ru ? 'Предмет' : 'Item')} · + {ru ? 'выставить' : 'list'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
           <div className="mt-3 grid grid-cols-2 gap-2 text-center">
             <div className="rounded-lg bg-black/25 p-3"><b className="block text-lg text-amber-200">10%</b><span className="text-[10px] text-slate-400">{t('saleFee')}</span></div>
-            <div className="rounded-lg bg-black/25 p-3"><b className="block text-lg text-amber-200">0</b><span className="text-[10px] text-slate-400">{t('fakeTrades')}</span></div>
+            <div className="rounded-lg bg-black/25 p-3"><b className="block text-lg text-amber-200">{auction?.enabled ? auction.lots.length : 0}</b><span className="text-[10px] text-slate-400">{ru ? 'Лоты' : 'Listings'}</span></div>
           </div>
-          <button disabled className="mt-3 w-full cursor-not-allowed rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-xs font-bold text-slate-500">
-            {tab === 'mine' ? `${t('listSoon')}` : `${t('buySoon')}`}
-          </button>
+          {auctionError && <p role="alert" className="mt-2 text-xs text-rose-300">{auctionError}</p>}
+          {pendingOperation && (
+            <button disabled={tradeBusy} onClick={() => void trade(pendingOperation.action, pendingOperation)}
+              className="mt-2 w-full rounded-lg bg-amber-600 p-2.5 text-sm font-bold disabled:opacity-40">
+              {ru ? 'Безопасно повторить операцию' : 'Retry same operation'}
+            </button>
+          )}
+          {auction?.enabled && !pendingOperation && (
+            <button disabled={tradeBusy} onClick={() => void refreshAuction().catch(() => setAuctionError(ru ? 'Ошибка обновления' : 'Refresh failed'))}
+              className="mt-2 w-full rounded-lg border border-white/10 p-2 text-xs text-slate-300 disabled:opacity-40">{ru ? 'Обновить' : 'Refresh'}</button>
+          )}
         </section>
       )}
 

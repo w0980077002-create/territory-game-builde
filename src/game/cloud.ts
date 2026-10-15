@@ -4,6 +4,7 @@ import { createInitialGame, getComputedStats } from './engine';
 import { EQUIPMENT_BALANCE_VERSION, migrateGameStateBalance } from './equipmentBalance';
 import { createCoalescingWriter } from './saveQueue';
 import { reconcileFollowers } from './followers';
+import { nextSaveTimestamp, validSaveToken } from './saveToken';
 
 export interface CloudProfile {
   state: GameState;
@@ -50,7 +51,7 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
 export async function loadCloudSave(userId: string, displayName: string): Promise<CloudProfile> {
   const { data, error } = await supabase
     .from('players')
-    .select('game_state, arena_rating, arena_wins, arena_losses, display_name, vip_level, photo_url')
+    .select('game_state, arena_rating, arena_wins, arena_losses, display_name, vip_level, photo_url, updated_at')
     .eq('id', userId)
     .maybeSingle();
 
@@ -58,13 +59,20 @@ export async function loadCloudSave(userId: string, displayName: string): Promis
 
   if (!data) {
     const state = mergeWithDefaults(null, displayName);
-    const { error: insertError } = await supabase
+    const { data: inserted, error: insertError } = await supabase
       .from('players')
-      .insert({ id: userId, display_name: displayName, ...summaryColumns(state) });
-    if (insertError) throw new Error(insertError.message);
+      .insert({ id: userId, display_name: displayName, ...summaryColumns(state) })
+      .select('updated_at')
+      .single();
+    if (insertError || !validSaveToken(inserted?.updated_at)) throw new Error(insertError?.message || 'Missing save revision');
+    saveTokens.set(userId, inserted.updated_at);
+    saveBlocked.delete(userId);
     return { state, arenaRating: 1000, arenaWins: 0, arenaLosses: 0, vip: 0, photoUrl: null };
   }
 
+  if (!validSaveToken(data.updated_at)) throw new Error('Missing save revision');
+  saveTokens.set(userId, data.updated_at);
+  saveBlocked.delete(userId);
   const savedState = data.game_state as Partial<GameState> | null;
   const balanceMigrated = !savedState || (savedState.balanceVersion ?? 0) < EQUIPMENT_BALANCE_VERSION;
   return {
@@ -102,6 +110,13 @@ function summaryColumns(state: GameState) {
   };
 }
 
+/** Version is anchored to the exact row loaded from Supabase (no schema change).
+ * Different devices cannot blindly overwrite a newer server snapshot.
+ * This is only a safety net, NOT economic protection from forged API updates.
+ */
+const saveTokens = new Map<string, string>();
+const saveBlocked = new Set<string>();
+
 /** One coalescing queue per authenticated player within this browser session. */
 const saveWriters = new Map<string, (snapshot: ReturnType<typeof summaryColumns>) => Promise<boolean>>();
 
@@ -112,9 +127,28 @@ export function saveCloudSave(userId: string, state: GameState): Promise<boolean
   let writer = saveWriters.get(userId);
   if (!writer) {
     writer = createCoalescingWriter(async (columns: ReturnType<typeof summaryColumns>) => {
-      const { error } = await supabase.from('players').update(columns).eq('id', userId);
-      if (error) console.error('Save failed:', error.message);
-      return !error;
+      if (saveBlocked.has(userId)) return false;
+      const expected = saveTokens.get(userId);
+      if (!validSaveToken(expected)) return false;
+      const { data, error } = await supabase.from('players')
+        .update({ ...columns, updated_at: nextSaveTimestamp(expected) })
+        .eq('id', userId)
+        .eq('updated_at', expected)
+        .select('updated_at')
+        .maybeSingle();
+      if (error) {
+        console.error('Save failed:', error.message);
+        return false;
+      }
+      if (!validSaveToken(data?.updated_at)) {
+        // Another device or a background server operation moved the row.
+        // Never overwrite it with a stale snapshot. A blind retry is unsafe.
+        saveBlocked.add(userId);
+        console.warn('Save conflict: refusing stale snapshot to protect player progress');
+        return false;
+      }
+      saveTokens.set(userId, data.updated_at);
+      return true;
     });
     saveWriters.set(userId, writer);
   }
