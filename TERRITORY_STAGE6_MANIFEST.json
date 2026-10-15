@@ -1,0 +1,29 @@
+{
+  "project": "TERRITORY",
+  "stage": "STAGE6",
+  "baseline_commit": "4e8cb34072ec8d765e143b12e3d6d7ee167cbbfd",
+  "repository": "w0980077002-create/territory-game-builde",
+  "src_changes": [
+    "src/game/cloud.ts",
+    "src/game/walletVersion.ts",
+    "src/game/craftApi.ts",
+    "src/game/shopApi.ts",
+    "src/components/ProfessionsScreen.tsx",
+    "src/components/ShopScreen.tsx",
+    "scripts/check-stage5.mjs",
+    "scripts/check-stage6.mjs",
+    "package.json",
+    "supabase/staged/territory_stage6_craft_status.sql",
+    "supabase/staged/territory_stage6_shop_status.sql",
+    "supabase/staged/territory_stage6_security_preflight.sql",
+    "supabase/staged/territory_stage6_production_cutover_GATE.sql.example",
+    "TERRITORY_STAGE6_RU.md",
+    ".github/workflows/territory-pages-repair.yml"
+  ],
+  "live_database_writes": false,
+  "player_data_reset": false,
+  "server_authoritative_economy_active": false,
+  "release_gate_ready": false,
+  "workflow_patch_in_zip_will_be_ignored_by_existing_unpack": true,
+  "note": "GitHub ZIP installer excludes .github. Alternative unsafe Pages deploy still needs separately authorized workflow update."
+}

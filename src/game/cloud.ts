@@ -5,6 +5,7 @@ import { EQUIPMENT_BALANCE_VERSION, migrateGameStateBalance } from './equipmentB
 import { createCoalescingWriter } from './saveQueue';
 import { reconcileFollowers } from './followers';
 import { nextSaveTimestamp, validSaveToken } from './saveToken';
+import { safeWalletVersion, walletMatchesVersion, type WalletVersion } from './walletVersion';
 
 export interface CloudProfile {
   state: GameState;
@@ -51,7 +52,7 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
 export async function loadCloudSave(userId: string, displayName: string): Promise<CloudProfile> {
   const { data, error } = await supabase
     .from('players')
-    .select('game_state, arena_rating, arena_wins, arena_losses, display_name, vip_level, photo_url, updated_at')
+    .select('game_state, gold, gems, arena_rating, arena_wins, arena_losses, display_name, vip_level, photo_url, updated_at')
     .eq('id', userId)
     .maybeSingle();
 
@@ -62,16 +63,18 @@ export async function loadCloudSave(userId: string, displayName: string): Promis
     const { data: inserted, error: insertError } = await supabase
       .from('players')
       .insert({ id: userId, display_name: displayName, ...summaryColumns(state) })
-      .select('updated_at')
+      .select('updated_at,gold,gems')
       .single();
     if (insertError || !validSaveToken(inserted?.updated_at)) throw new Error(insertError?.message || 'Missing save revision');
     saveTokens.set(userId, inserted.updated_at);
+    walletVersions.set(userId, safeWalletVersion(inserted, state.player));
     saveBlocked.delete(userId);
     return { state, arenaRating: 1000, arenaWins: 0, arenaLosses: 0, vip: 0, photoUrl: null };
   }
 
   if (!validSaveToken(data.updated_at)) throw new Error('Missing save revision');
   saveTokens.set(userId, data.updated_at);
+  walletVersions.set(userId, safeWalletVersion(data, (data.game_state as Partial<GameState> | null)?.player));
   saveBlocked.delete(userId);
   const savedState = data.game_state as Partial<GameState> | null;
   const balanceMigrated = !savedState || (savedState.balanceVersion ?? 0) < EQUIPMENT_BALANCE_VERSION;
@@ -115,6 +118,7 @@ function summaryColumns(state: GameState) {
  * This is only a safety net, NOT economic protection from forged API updates.
  */
 const saveTokens = new Map<string, string>();
+const walletVersions = new Map<string, WalletVersion>();
 const saveBlocked = new Set<string>();
 
 /** One coalescing queue per authenticated player within this browser session. */
@@ -129,12 +133,17 @@ export function saveCloudSave(userId: string, state: GameState): Promise<boolean
     writer = createCoalescingWriter(async (columns: ReturnType<typeof summaryColumns>) => {
       if (saveBlocked.has(userId)) return false;
       const expected = saveTokens.get(userId);
-      if (!validSaveToken(expected)) return false;
+      const wallet = walletVersions.get(userId);
+      if (!validSaveToken(expected) || !wallet) return false;
+      // Guard server-side currency changes that may not bump updated_at.
+      // Example: profession RPC spends gems independently of this browser.
       const { data, error } = await supabase.from('players')
         .update({ ...columns, updated_at: nextSaveTimestamp(expected) })
         .eq('id', userId)
         .eq('updated_at', expected)
-        .select('updated_at')
+        .eq('gold', wallet.gold)
+        .eq('gems', wallet.gems)
+        .select('updated_at,gold,gems')
         .maybeSingle();
       if (error) {
         console.error('Save failed:', error.message);
@@ -147,6 +156,13 @@ export function saveCloudSave(userId: string, state: GameState): Promise<boolean
         console.warn('Save conflict: refusing stale snapshot to protect player progress');
         return false;
       }
+      const nextWallet = safeWalletVersion(data, columns.game_state.player);
+      if (!walletMatchesVersion(nextWallet, columns.game_state.player)) {
+        saveBlocked.add(userId);
+        console.error('Save acknowledgement differs from submitted wallet; reload required');
+        return false;
+      }
+      walletVersions.set(userId, nextWallet);
       saveTokens.set(userId, data.updated_at);
       return true;
     });

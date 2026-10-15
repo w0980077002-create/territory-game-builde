@@ -11,6 +11,7 @@ import { ItemArt } from './ui/ItemArt';
 import { Currency, formatAmount } from './ui/Currency';
 import { Modal } from './ui/Modal';
 import { useLive, SHOP_SALE_FACTOR } from '@/game/live';
+import { fetchShopStatus, purchaseServerStones, readPendingShop, keepPendingShop, type ShopStatus, type PendingShop } from '@/game/shopApi';
 
 const discount = (price: number | undefined) => (price ? Math.max(1, Math.ceil(price * SHOP_SALE_FACTOR)) : price);
 
@@ -75,9 +76,23 @@ export function ShopScreen() {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const { shopSale } = useStore(useLive);
-  const allItems = generateShopItems(state.currentChapter).map((i) =>
-    shopSale ? { ...i, priceGold: discount(i.priceGold) ?? 0, priceGems: discount(i.priceGems) } : i,
-  );
+  const [shopStatus, setShopStatus] = useState<ShopStatus | null>(null);
+  const [shopCheck, setShopCheck] = useState<'checking'|'ready'|'error'>('checking');
+  const [pendingShop, setPendingShop] = useState<PendingShop | null>(null);
+  const [buying, setBuying] = useState(false);
+  const [purchaseError, setPurchaseError] = useState('');
+  useEffect(() => {
+    let mounted = true;
+    void fetchShopStatus().then(async (status) => {
+      const pending = status?.enabled ? await readPendingShop() : null;
+      if (mounted) {setShopStatus(status);setPendingShop(pending);setShopCheck('ready');}
+    }).catch(() => {if(mounted)setShopCheck('error');});
+    return () => {mounted=false;};
+  }, []);
+  const allItems = generateShopItems(state.currentChapter).map((i) => {
+    if (shopStatus?.enabled && i.type === 'stone') return {...i, priceGems:i.id==='shop_stone_1'?2:8, priceGold:0};
+    return shopSale ? { ...i, priceGold: discount(i.priceGold) ?? 0, priceGems: discount(i.priceGems) } : i;
+  });
   const [tab, setTab] = useState<Tab>('potions');
   const [picked, setPicked] = useState<ShopItem | null>(null);
   const [result, setResult] = useState<{ item: ShopItem; text: string } | null>(null);
@@ -89,21 +104,66 @@ export function ShopScreen() {
     return () => clearTimeout(t);
   }, [result]);
 
-  const buy = (item: ShopItem, qty: number) => {
-    // Never trust the modal's old item snapshot if an admin sale ended or
-    // the chapter changed while it was open. Re-evaluate the live catalog.
-    const liveState = useGame.get();
-    const liveSale = useLive.get().shopSale;
-    const current = generateShopItems(liveState.currentChapter).find((i) => i.id === item.id);
-    if (!current) { setPicked(null); return; }
-    const upToDate = liveSale
-      ? { ...current, priceGold: discount(current.priceGold) ?? 0, priceGems: discount(current.priceGems) }
-      : current;
-    const next = buyItem(liveState, upToDate, qty);
-    if (!next) return;
-    useGame.set(next);
+  const buy = async (item: ShopItem, qty: number) => {
+    if (buying || pendingShop) return;
+    setBuying(true);
+    setPurchaseError('');
+    try {
+      // Never choose the unverified local purchase path if the server cannot be reached.
+      const server = await fetchShopStatus();
+      if (server?.enabled) {
+        setShopStatus(server);
+        if (item.type !== 'stone' || (item.id !== 'shop_stone_1' && item.id !== 'shop_stone_5')) {
+          setPurchaseError(language==='en'?'This item needs a verified server shop.':'Этот товар пока нельзя купить через защищённый сервер.');return;
+        }
+        const pending: PendingShop = {itemId:item.id,quantity:qty,operationId:crypto.randomUUID()};
+        await keepPendingShop(pending);
+        setPendingShop(pending);
+        await finishServerPurchase(pending,item);
+        return;
+      }
+      // Historical local shop stays functional before the server cutover.
+      const liveState = useGame.get();
+      const liveSale = useLive.get().shopSale;
+      const current = generateShopItems(liveState.currentChapter).find((i) => i.id === item.id);
+      if (!current) { setPicked(null); return; }
+      const upToDate = liveSale
+        ? { ...current, priceGold: discount(current.priceGold) ?? 0, priceGems: discount(current.priceGems) }
+        : current;
+      const next = buyItem(liveState, upToDate, qty);
+      if (!next) return;
+      useGame.set(next);
+      setPicked(null);
+      setResult({ item: upToDate, text: resultText(upToDate, qty, language) });
+    } catch {
+      setPurchaseError(language === 'en' ? 'Could not verify the purchase. Do not repeat with a new transaction.' : 'Сервер не подтвердил покупку. Не повторяйте её новым платежом.');
+    } finally {setBuying(false);}
+  };
+
+  const finishServerPurchase = async (pending: PendingShop, item?: ShopItem) => {
+    const receipt = await purchaseServerStones(pending);
+    const status = await fetchShopStatus();
+    if (!status?.enabled) throw new Error('shop_disabled');
+    // Server wallet, not a client-provided price or timestamp, determines result.
+    // Do not mirror until both receipt and authoritative status are confirmed.
+    if (status.gems !== receipt.gemsAfter || status.stones !== receipt.stonesAfter) throw new Error('shop_wallet_changed');
+    const current = useGame.get();
+    useGame.set({ ...current, player:{ ...current.player,gems:status.gems },battleStones:status.stones,
+      dailyStonesBought:status.boughtToday,dailyStonesDate:new Date().toDateString() });
+    setShopStatus(status);
+    await keepPendingShop(null);
+    setPendingShop(null);
     setPicked(null);
-    setResult({ item: upToDate, text: resultText(upToDate, qty, language) });
+    const display = item ?? generateShopItems(current.currentChapter).find(i=>i.id===pending.itemId);
+    if (display) setResult({item:display,text:resultText(display,pending.quantity,language)});
+  };
+
+  const retryServerPurchase = async () => {
+    if (!pendingShop || buying) return;
+    setBuying(true);setPurchaseError('');
+    try {await finishServerPurchase(pendingShop);}
+    catch {setPurchaseError(language==='en'?'Still unconfirmed; retry the pending operation later.':'Операция ещё не подтверждена. Повторите тот же запрос позже.');}
+    finally {setBuying(false);}
   };
 
   return (
@@ -116,12 +176,12 @@ export function ShopScreen() {
             <h2 className="text-lg font-bold text-amber-100">{t('shop')}</h2>
             <p className="text-xs text-gray-400">{t('shopDescription')}</p>
           </div>
-          {shopSale && (
+          {shopSale && !shopStatus?.enabled && (
             <span className="shrink-0 rounded-lg bg-gradient-to-b from-red-500 to-rose-700 px-2 py-1 text-xs font-bold text-white shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse">-20%</span>
           )}
         </div>
         <div className="relative flex flex-wrap gap-2 mt-3">
-          {([['gold', state.player.gold], ['gems', state.player.gems], ['stones', state.battleStones]] as const).map(([k, v]) => (
+          {([['gold', state.player.gold], ['gems', shopStatus?.enabled ? shopStatus.gems : state.player.gems], ['stones', shopStatus?.enabled ? shopStatus.stones : state.battleStones]] as const).map(([k, v]) => (
             <span key={k} className="hud-chip pl-1.5"><Currency kind={k} value={formatAmount(v)} size={16} className="text-xs text-white" /></span>
           ))}
         </div>
@@ -142,7 +202,7 @@ export function ShopScreen() {
       <div className="grid grid-cols-2 gap-2">
         {items.map((item) => {
           const color = rarityColor(item.rarity);
-          const ok = canAfford(state, item) && (item.type !== 'stone' || stonesRemainingToday(state) >= (item.amount ?? 1));
+          const ok = shopCheck === 'ready' && !buying && !pendingShop && (shopStatus?.enabled ? (item.type==='stone' && shopStatus.gems >= (item.priceGems??0) && (25-shopStatus.boughtToday)>=(item.amount??1)) : (canAfford(state, item) && (item.type !== 'stone' || stonesRemainingToday(state) >= (item.amount ?? 1))));
           return (
             <button
               key={item.id}
@@ -165,9 +225,12 @@ export function ShopScreen() {
         })}
       </div>
 
+      {purchaseError && <p role="alert" className="rounded-lg border border-red-500/40 bg-red-950/30 p-3 text-xs text-red-200">{purchaseError}</p>}
+      {shopCheck==='error' && <p role="alert" className="rounded-lg border border-red-500/40 bg-red-950/30 p-3 text-xs text-red-200">{language==='en'?'Shop server unavailable. Purchases paused.':'Сервер магазина недоступен. Покупки остановлены.'}</p>}
+      {pendingShop && <button className="w-full rounded-xl border border-amber-400/40 bg-amber-500/10 p-3 text-sm font-bold text-amber-200 disabled:opacity-50" onClick={()=>{void retryServerPurchase();}} disabled={buying}>{language==='en'?'Retry pending purchase (same transaction)':'Повторить неподтверждённую покупку (тот же запрос)'}</button>}
       {picked && (
         <Modal title={picked.name} onClose={() => setPicked(null)}>
-          <PurchaseSheet item={picked} state={state} onBuy={(qty) => buy(picked, qty)} />
+          <PurchaseSheet item={picked} state={shopStatus?.enabled ? {...state, player:{...state.player,gems:shopStatus.gems},battleStones:shopStatus.stones,dailyStonesBought:shopStatus.boughtToday,dailyStonesDate:new Date().toDateString()} : state} onBuy={(qty) => {void buy(picked, qty);}} />
         </Modal>
       )}
 

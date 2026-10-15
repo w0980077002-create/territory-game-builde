@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Hammer, FlaskConical, Gem, Cog, Lock, Package, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useGame } from '@/game/actions';
 import { supabase } from '@/game/supabase';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { useStore } from '@/game/store';
 import type { ProfessionId, ProfessionProgress } from '@/game/types';
+import { fetchCraftStatus, submitVerifiedCraft, receiptDisplayItem, mirrorCraftResources, keepPendingCraft, readPendingCraft, type CraftStatus } from '@/game/craftApi';
 import {
   PROFESSION_DEFINITIONS,
   PROFESSION_RECIPES,
@@ -40,13 +41,26 @@ export function ProfessionsScreen() {
   const [message, setMessage] = useState('');
   const [busyRecipe, setBusyRecipe] = useState<string | null>(null);
   const [buying, setBuying] = useState(false);
+  const [craftStatus, setCraftStatus] = useState<CraftStatus | null>(null);
+  const [craftCheck, setCraftCheck] = useState<'checking'|'ready'|'error'>('checking');
+  const [pendingCraft, setPendingCraft] = useState<{ recipeId: string; operationId: string } | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    void fetchCraftStatus().then(async (status) => {
+      const pending = status?.enabled ? await readPendingCraft() : null;
+      if (mounted) {setCraftStatus(status);setPendingCraft(pending);setCraftCheck('ready');}
+    }).catch(() => {if (mounted) setCraftCheck('error');});
+    return () => {mounted=false;};
+  }, []);
 
   const availableRecipes = useMemo(
     () => PROFESSION_RECIPES.filter((recipe) => recipe.profession === progress.active),
     [progress.active],
   );
-  const nextXp = masteryXpToNext(progress.masteryLevel);
-  const xpPercent = nextXp ? Math.min(100, Math.round((progress.masteryXp / nextXp) * 100)) : 100;
+  const nextXp = masteryXpToNext(craftStatus?.enabled ? craftStatus.masteryLevel : progress.masteryLevel);
+  const displayedLevel = craftStatus?.enabled ? craftStatus.masteryLevel : progress.masteryLevel;
+  const displayedXp = craftStatus?.enabled ? craftStatus.masteryXp : progress.masteryXp;
+  const xpPercent = nextXp ? Math.min(100, Math.round((displayedXp / nextXp) * 100)) : 100;
 
   const chooseProfession = async (id: ProfessionId) => {
     if (buying) return;
@@ -83,29 +97,78 @@ export function ProfessionsScreen() {
     }
   };
 
-  const craft = (recipeId: string) => {
+  const craft = async (recipeId: string) => {
+    if (busyRecipe || pendingCraft || craftCheck !== 'ready') return;
     const current = useGame.get();
     const currentProgress = current.professions ?? INITIAL_PROFESSION_PROGRESS;
     const recipe = PROFESSION_RECIPES.find((item) => item.id === recipeId);
     if (!recipe || !currentProgress.active || recipe.profession !== currentProgress.active) return;
-    if (recipe.requiredLevel >= 300) {
-      setMessage(language === 'en' ? 'Master license — coming soon!' : 'Лицензия мастера — скоро!');
+    if (recipe.requiredLevel >= 300) {setMessage(language === 'en' ? 'Master license is unavailable.' : 'Лицензия мастера пока недоступна.');return;}
+
+    if (craftStatus?.enabled) {
+      if (craftStatus.profession !== recipe.profession || craftStatus.masteryLevel < recipe.requiredLevel) {
+        setMessage(language === 'en' ? 'Server profession or mastery is not confirmed.' : 'Сервер не подтвердил профессию или мастерство.');return;
+      }
+      const canAfford = recipe.ingredients.every((r) => (craftStatus.resources[r.id] ?? 0) >= r.qty);
+      if (!canAfford) {setMessage(t('notEnoughResources'));return;}
+      setBusyRecipe(recipeId);
+      const operationId = crypto.randomUUID();
+      try {
+        await keepPendingCraft({recipeId,operationId});
+        setPendingCraft({recipeId,operationId});
+        const receipt = await submitVerifiedCraft(recipeId, operationId);
+        const displayItem = receiptDisplayItem(receipt);
+        // Keep idempotency across a timeout: re-fetch the authoritative status
+        // before mirroring a verified item or updating mastery.
+        const server = await fetchCraftStatus();
+        if (!server?.enabled) throw new Error('craft_server_disabled');
+        const latest = useGame.get();
+        const found = latest.inventory.some((it) => it.id === displayItem.id);
+        const inventory = mirrorCraftResources(latest.inventory,server.resources);
+        useGame.set({ ...latest, inventory: found ? inventory : [...inventory, displayItem],
+          professions: { ...(latest.professions ?? INITIAL_PROFESSION_PROGRESS), active: currentProgress.active,
+            masteryLevel: server.masteryLevel, masteryXp: server.masteryXp } });
+        setCraftStatus(server);
+        await keepPendingCraft(null);
+        setPendingCraft(null);
+        setMessage(language === 'en' ? 'Server-verified item crafted!' : 'Сервер подтвердил создание предмета!');
+      } catch {
+        setMessage(language === 'en'
+          ? 'Server response uncertain. Do not craft again; retry the pending transaction.'
+          : 'Нет подтверждения сервера. Не создавайте предмет повторно — повторите прежнюю операцию.');
+      } finally {setBusyRecipe(null);}
       return;
     }
+    // Legacy local crafting: NOT exchangeable on the server auction and NOT
+    // an authoritative economic operation. This path is removed at cutover.
     if (currentProgress.masteryLevel < recipe.requiredLevel) {
-      setMessage(`${t('needMastery')} ${recipe.requiredLevel}.`);
-      return;
+      setMessage(`${t('needMastery')} ${recipe.requiredLevel}.`);return;
     }
-    const nextInventory = craftItem(current.inventory, recipe);
-    if (!nextInventory) {
-      setMessage(t('notEnoughResources'));
-      return;
-    }
+    const nextInventory = craftItem(current.inventory,recipe);
+    if (!nextInventory) {setMessage(t('notEnoughResources'));return;}
     setBusyRecipe(recipeId);
-    const nextProgress = addMasteryXp(currentProgress, recipe.masteryXp);
-    useGame.set({ ...current, inventory: nextInventory, professions: nextProgress });
+    useGame.set({ ...current, inventory: nextInventory,professions:addMasteryXp(currentProgress,recipe.masteryXp) });
     setMessage(language === 'en' ? `Crafted: ${localizeText(recipe.output.name, language)}. Gained ${recipe.masteryXp} mastery XP.` : `Создано: ${recipe.output.name}. Получено ${recipe.masteryXp} опыта мастерства.`);
-    window.setTimeout(() => setBusyRecipe((old) => old === recipeId ? null : old), 250);
+    window.setTimeout(()=>setBusyRecipe((old)=>old===recipeId?null:old),250);
+  };
+
+  const retryPendingCraft = async () => {
+    if (!pendingCraft || busyRecipe || !craftStatus?.enabled) return;
+    setBusyRecipe(pendingCraft.recipeId);
+    try {
+      const receipt = await submitVerifiedCraft(pendingCraft.recipeId,pendingCraft.operationId);
+      const display = receiptDisplayItem(receipt);
+      const status = await fetchCraftStatus();
+      if (!status?.enabled) throw new Error('server_disabled');
+      const game = useGame.get();
+      const items = mirrorCraftResources(game.inventory,status.resources);
+      useGame.set({ ...game, inventory: items.some((item)=>item.id===display.id)?items:[...items,display],
+        professions: { ...(game.professions ?? INITIAL_PROFESSION_PROGRESS),
+          active: status.profession as ProfessionId,masteryLevel:status.masteryLevel,masteryXp:status.masteryXp } });
+      setCraftStatus(status);await keepPendingCraft(null);setPendingCraft(null);
+      setMessage(language==='en'?'Craft confirmed.':'Предмет подтверждён сервером.');
+    } catch {setMessage(language==='en'?'Still unconfirmed. Please retry later.':'Нет подтверждения. Повторите позже.');}
+    finally {setBusyRecipe(null);}
   };
 
   return (
@@ -119,8 +182,8 @@ export function ProfessionsScreen() {
           </div>
         </div>
         <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-xl bg-black/30 p-2"><div className="text-xs text-slate-400">{t('mastery')}</div><b>{progress.masteryLevel}/300</b></div>
-          <div className="rounded-xl bg-black/30 p-2"><div className="text-xs text-slate-400">{t('experience')}</div><b>{nextXp ? `${progress.masteryXp}/${nextXp}` : 'MAX'}</b></div>
+          <div className="rounded-xl bg-black/30 p-2"><div className="text-xs text-slate-400">{t('mastery')}</div><b>{displayedLevel}/300</b></div>
+          <div className="rounded-xl bg-black/30 p-2"><div className="text-xs text-slate-400">{t('experience')}</div><b>{nextXp ? `${displayedXp}/${nextXp}` : 'MAX'}</b></div>
           <div className="rounded-xl bg-black/30 p-2"><div className="text-xs text-slate-400">💎 {language === 'en' ? 'Blue gems' : 'Синие алмазы'}</div><b>{game.player.gems.toLocaleString('ru-RU')}</b></div>
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/40"><div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-yellow-200" style={{ width: `${xpPercent}%` }} /></div>
@@ -165,19 +228,21 @@ export function ProfessionsScreen() {
 
       {tab === 'craft' && <>
         {!progress.active ? <div className="rounded-xl border border-amber-400/20 bg-amber-500/5 p-4 text-sm text-amber-100">{t('chooseProfessionFirst')}</div> : <>
-          <p className="text-xs text-slate-400">{t('craftedItemsSave')}</p>
+          <p className="text-xs text-slate-400">{craftStatus?.enabled ? (language === 'en' ? 'Server-confirmed crafting: protected resources and real items.' : 'Серверное ремесло: проверенные ресурсы и настоящие предметы.') : t('craftedItemsSave')}</p>
+          {craftCheck === 'error' && <p className="rounded-lg border border-red-500/30 p-2 text-xs text-red-200">{language==='en'?'Crafting server cannot be checked. Crafting is paused.':'Не удалось проверить сервер. Ремесло временно остановлено.'}</p>}
           {availableRecipes.map((recipe) => {
-            const unlocked = recipe.requiredLevel < 300 && progress.masteryLevel >= recipe.requiredLevel;
-            const hasMaterials = canCraft(game.inventory, recipe);
+            const unlocked = recipe.requiredLevel < 300 && displayedLevel >= recipe.requiredLevel && (!craftStatus?.enabled || craftStatus.profession === recipe.profession);
+            const hasMaterials = craftStatus?.enabled ? recipe.ingredients.every((r) => (craftStatus.resources[r.id] ?? 0)>=r.qty) : canCraft(game.inventory, recipe);
             return <article key={recipe.id} className={`rounded-xl border p-3 ${unlocked ? 'border-white/10 bg-white/[0.04]' : 'border-white/5 bg-black/20 opacity-70'}`}>
               <div className="flex items-start gap-3"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-2xl">{recipe.icon}</div><div className="min-w-0 flex-1"><div className="flex items-center gap-1"><b className="text-sm">{localizeText(recipe.name, language)}</b>{recipe.requiredLevel >= 300 && <Sparkles className="h-3.5 w-3.5 text-amber-300" />}</div><p className="mt-0.5 text-xs text-slate-400">{localizeText(recipe.description, language)}</p><p className="mt-1 text-[11px] text-amber-200">{unlocked ? `+${recipe.masteryXp} ${t('masteryXp')}` : recipe.requiredLevel >= 300 ? (language === 'en' ? 'Master license · Soon' : 'Лицензия мастера · Скоро') : `${t('needLevel')} ${recipe.requiredLevel}`}</p></div></div>
-              <div className="mt-3 flex flex-wrap gap-1.5">{recipe.ingredients.map((ingredient) => { const resource = RESOURCE_DEFINITIONS.find((r) => r.id === ingredient.id)!; const count = countResource(game.inventory, ingredient.id); return <span key={ingredient.id} className={`rounded-md border px-2 py-1 text-[10px] ${count >= ingredient.qty ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-200' : 'border-red-500/20 bg-red-500/5 text-red-200'}`}>{resource.icon} {localizeText(resource.name, language)} {count}/{ingredient.qty}</span>; })}</div>
-              <button disabled={!unlocked || !hasMaterials || busyRecipe === recipe.id} onClick={() => craft(recipe.id)} className="mt-3 w-full rounded-lg bg-amber-600 px-3 py-2.5 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="mr-1 inline h-3.5 w-3.5" />{unlocked ? hasMaterials ? t('craftItem') : t('notEnoughResourcesButton') : recipe.requiredLevel >= 300 ? (language === 'en' ? 'Master license · Soon' : 'Лицензия мастера · Скоро') : `${t('needLevel')} ${recipe.requiredLevel}`}</button>
+              <div className="mt-3 flex flex-wrap gap-1.5">{recipe.ingredients.map((ingredient) => { const resource = RESOURCE_DEFINITIONS.find((r) => r.id === ingredient.id)!; const count = craftStatus?.enabled ? (craftStatus.resources[ingredient.id] ?? 0) : countResource(game.inventory, ingredient.id); return <span key={ingredient.id} className={`rounded-md border px-2 py-1 text-[10px] ${count >= ingredient.qty ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-200' : 'border-red-500/20 bg-red-500/5 text-red-200'}`}>{resource.icon} {localizeText(resource.name, language)} {count}/{ingredient.qty}</span>; })}</div>
+              <button disabled={craftCheck !== 'ready' || !!pendingCraft || !unlocked || !hasMaterials || busyRecipe === recipe.id} onClick={() => {void craft(recipe.id);}} className="mt-3 w-full rounded-lg bg-amber-600 px-3 py-2.5 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="mr-1 inline h-3.5 w-3.5" />{unlocked ? hasMaterials ? t('craftItem') : t('notEnoughResourcesButton') : recipe.requiredLevel >= 300 ? (language === 'en' ? 'Master license · Soon' : 'Лицензия мастера · Скоро') : `${t('needLevel')} ${recipe.requiredLevel}`}</button>
             </article>;
           })}
         </>}
       </>}
 
+      {pendingCraft && <button onClick={() => {void retryPendingCraft();}} disabled={!!busyRecipe} className="w-full rounded-lg border border-amber-400/40 bg-amber-500/10 p-3 text-sm font-bold text-amber-200 disabled:opacity-50">{language==='en'?'Retry pending transaction — no double charge':'Повторить неподтверждённую операцию — без двойного списания'}</button>}
       {message && <div role="status" className="rounded-xl border border-sky-400/20 bg-sky-500/10 p-3 text-sm text-sky-100">{message}<button onClick={() => setMessage('')} className="ml-2 font-bold">×</button></div>}
     </div>
   );

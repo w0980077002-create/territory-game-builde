@@ -1,0 +1,17 @@
+-- TEMPLATE ONLY, INTENTIONALLY NON-EXECUTABLE.
+-- Complete SERVER-AUTHORITATIVE handoff requires vetted server actions for
+-- ALL player progression. A direct REVOKE before these actions exist breaks
+-- the production game, so do not execute this template.
+-- The owner must authorize separately after tested rollback+backup.
+DO $$ BEGIN
+  RAISE EXCEPTION 'STAGE6 CUTOVER IS BLOCKED: server-authored PvE rewards, shop, quest, equipment, VIP, payment and save APIs incomplete';
+END $$;
+-- Required final rollout actions (not yet authorized):
+--  1) Backup all 41+ players; test RESTORE on isolated project.
+--  2) Reconcile saved gold/gems, all inventory UUIDs, professions, VIP & PvP.
+--  3) Server-owned receipts per PvE/shop/quest/forge/trade/season action.
+--  4) Prove parallel calls cannot grant two rewards per logical action.
+--  5) Move ALL browser game_state writes to a restrictive non-economic RPC.
+--  6) REVOKE untrusted INSERT/UPDATE on all economic player columns.
+--  7) Test both Android and iOS Telegram with existing player accounts.
+--  8) Confirm remaining direct grants = 0, only then enable release gate.

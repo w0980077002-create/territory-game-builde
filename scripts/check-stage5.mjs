@@ -113,17 +113,23 @@ const baseState={player:{name:'Hero',level:20,xp:5,gold:900,gems:2500,energy:3,m
 server.state=baseState;
 const db={
  from:()=>({
-   select(_columns){return {eq(){return {maybeSingle: async()=>({data:{game_state:server.state, arena_rating:1000,arena_wins:0,arena_losses:0,display_name:'Hero',vip_level:3,photo_url:null,updated_at:server.stamp},error:null})};}};},
+   select(_columns){return {eq(){return {maybeSingle: async()=>({data:{game_state:server.state, gold:server.state.player.gold,gems:server.state.player.gems, arena_rating:1000,arena_wins:0,arena_losses:0,display_name:'Hero',vip_level:3,photo_url:null,updated_at:server.stamp},error:null})};}};},
    update(payload){const filters=[];return {eq(col,val){filters.push([col,val]); return this;},select(){return this;}, async maybeSingle(){
      const compare=filters.find(([key])=>key==='updated_at');
-     if (compare?.[1]!==server.stamp) return {data:null,error:null};
+     if (compare?.[1]!==server.stamp || filters.find(([key])=>key==='gold')?.[1]!==server.state.player.gold || filters.find(([key])=>key==='gems')?.[1]!==server.state.player.gems) return {data:null,error:null};
      server.state=payload.game_state;server.stamp=payload.updated_at;server.writes++;
-     return {data:{updated_at:server.stamp},error:null};
+     return {data:{updated_at:server.stamp,gold:server.state.player.gold,gems:server.state.player.gems},error:null};
    }};}
  })
 };
 const saveQ= {createCoalescingWriter: (write)=>write};
+const walletParsed=ts.transpileModule(read('src/game/walletVersion.ts'),{
+ fileName:'src/game/walletVersion.ts',compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020},reportDiagnostics:true,
+});
+const walletModule={exports:{}};
+vm.runInNewContext(walletParsed.outputText,{module:walletModule,exports:walletModule.exports,Number,Error});
 const cloudMods={
+ './walletVersion':walletModule.exports,
  './supabase':{supabase:db}, './engine':{createInitialGame:()=>baseState,getComputedStats:()=>({attack:10,defense:10,maxHp:200,critChance:5})},
  './equipmentBalance':{EQUIPMENT_BALANCE_VERSION:1,migrateGameStateBalance:s=>s},
  './saveQueue':saveQ, './followers':{reconcileFollowers:f=>f}, './saveToken':tokenLib,
