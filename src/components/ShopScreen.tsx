@@ -3,6 +3,7 @@ import { useStore } from '@/game/store';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, buyItem, DAILY_STONE_LIMIT, stonesRemainingToday, maxStoneQty } from '@/game/actions';
 import { generateShopItems } from '@/game/engine';
+import { MAX_SHOP_PURCHASE_QTY } from '@/game/purchaseGuard';
 import { rarityColor } from '@/game/ui';
 import { CheckCircle2, Sword, Shield, Heart, Star, Minus, Plus, Clock } from 'lucide-react';
 import type { GameState, ShopItem } from '@/game/types';
@@ -185,7 +186,7 @@ function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameStat
   const balance = item.priceGems ? state.player.gems : state.player.gold;
   const maxByBalance = priceEach > 0 ? Math.floor(balance / priceEach) : 1;
   const maxByStoneLimit = isStone ? maxStoneQty(state, item) : Infinity;
-  const maxQty = Math.max(1, Math.min(maxByBalance, maxByStoneLimit));
+  const maxQty = Math.max(1, Math.min(MAX_SHOP_PURCHASE_QTY, maxByBalance, maxByStoneLimit));
 
   const countdownMs = useMidnightCountdown();
 

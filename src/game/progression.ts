@@ -108,7 +108,9 @@ export function consumeBlessing(state: GameState): GameState {
 }
 
 export function spendStones(state: GameState, amount: number): GameState | null {
-  if (state.battleStones < amount) return null;
+  // Invalid/negative amounts must never become stone credits.
+  if (!Number.isSafeInteger(amount) || amount <= 0 || !Number.isSafeInteger(state.battleStones)
+    || state.battleStones < amount) return null;
   return { ...state, battleStones: state.battleStones - amount };
 }
 

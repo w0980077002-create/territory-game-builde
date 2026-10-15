@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import type { GameState } from './types';
 import { createInitialGame, getComputedStats } from './engine';
 import { EQUIPMENT_BALANCE_VERSION, migrateGameStateBalance } from './equipmentBalance';
+import { createSequentialWriter } from './saveQueue';
 
 export interface CloudProfile {
   state: GameState;
@@ -97,10 +98,23 @@ function summaryColumns(state: GameState) {
   };
 }
 
-export async function saveCloudSave(userId: string, state: GameState): Promise<boolean> {
-  const { error } = await supabase.from('players').update(summaryColumns(state)).eq('id', userId);
-  if (error) console.error('Save failed:', error.message);
-  return !error;
+/** One queue per authenticated player within this browser session. */
+const saveWriters = new Map<string, (snapshot: ReturnType<typeof summaryColumns>) => Promise<boolean>>();
+
+export function saveCloudSave(userId: string, state: GameState): Promise<boolean> {
+  // Capture an immutable-by-convention snapshot BEFORE the asynchronous queue.
+  // Without this, later state mutations can change the contents of a queued save.
+  const snapshot = summaryColumns(state);
+  let writer = saveWriters.get(userId);
+  if (!writer) {
+    writer = createSequentialWriter(async (columns: ReturnType<typeof summaryColumns>) => {
+      const { error } = await supabase.from('players').update(columns).eq('id', userId);
+      if (error) console.error('Save failed:', error.message);
+      return !error;
+    });
+    saveWriters.set(userId, writer);
+  }
+  return writer(snapshot);
 }
 
 export interface LeaderRow {

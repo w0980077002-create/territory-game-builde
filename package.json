@@ -13,8 +13,9 @@
     "test:professions": "node scripts/check-professions.mjs",
     "test:feature-separation": "node scripts/check-feature-separation.mjs",
     "test:mobile-home": "node scripts/check-mobile-home-ui.mjs",
-    "test:economy": "node scripts/check-economy.mjs",
-    "test:saves": "node scripts/check-economy.mjs"
+    "test:economy": "node scripts/check-economy.mjs && node scripts/economy-client-guard-tests.mjs",
+    "test:saves": "node scripts/check-economy.mjs",
+    "test:client-guard": "node scripts/economy-client-guard-tests.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

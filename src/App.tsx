@@ -144,12 +144,23 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   useEffect(() => {
     if (!loaded) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let active = true;
+    let changeId = 0;
     const unsubscribe = useGame.subscribe(() => {
+      changeId += 1;
       setSaveStatus('saving');
       clearTimeout(timer);
       timer = setTimeout(async () => {
-        const ok = await saveCloudSave(user.id, useGame.get());
-        setSaveStatus(ok ? 'saved' : 'error');
+        const savingChangeId = changeId;
+        const snapshot = useGame.get();
+        let ok = false;
+        try {
+          ok = await saveCloudSave(user.id, snapshot);
+        } catch (error) {
+          console.error('Save failed:', error);
+        }
+        // The older save response must not mark more recent changes as saved.
+        if (active && savingChangeId === changeId) setSaveStatus(ok ? 'saved' : 'error');
       }, 1500);
     });
     const tick = setInterval(() => {
@@ -160,6 +171,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
       }
     }, 30000);
     return () => {
+      active = false;
       unsubscribe();
       clearTimeout(timer);
       clearInterval(tick);

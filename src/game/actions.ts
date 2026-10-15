@@ -1,5 +1,6 @@
 import { create } from './store';
 import { prepareNewEquipment } from './equipmentBalance';
+import { canBuyShopItem, shopStonesBoughtToday, SHOP_STONES_PER_DAY, MAX_SHOP_PURCHASE_QTY } from './purchaseGuard';
 import type { GameState } from './types';
 import {
   createInitialGame,
@@ -96,11 +97,10 @@ export function addXp(state: GameState, amount: number): Partial<GameState> {
   };
 }
 
-export const DAILY_STONE_LIMIT = 25;
+export const DAILY_STONE_LIMIT = SHOP_STONES_PER_DAY;
 
 function getStoneBoughtToday(state: GameState, now = new Date()): number {
-  const today = now.toDateString();
-  return state.dailyStonesDate === today ? state.dailyStonesBought : 0;
+  return shopStonesBoughtToday(state, now);
 }
 
 export function stonesRemainingToday(state: GameState, now = new Date()): number {
@@ -109,12 +109,13 @@ export function stonesRemainingToday(state: GameState, now = new Date()): number
 
 export function maxStoneQty(state: GameState, item: ShopItem, now = new Date()): number {
   const perUnit = item.amount ?? 1;
+  if (!Number.isSafeInteger(perUnit) || perUnit < 1 || perUnit > DAILY_STONE_LIMIT) return 0;
   const remaining = stonesRemainingToday(state, now);
-  return Math.floor(remaining / perUnit);
+  return Math.min(MAX_SHOP_PURCHASE_QTY, Math.floor(remaining / perUnit));
 }
 
 export function buyItem(state: GameState, shopItem: ShopItem, qty: number = 1): GameState | null {
-  if (qty < 1) return null;
+  if (!canBuyShopItem(state, shopItem, qty)) return null;
 
   const now = new Date();
   const today = now.toDateString();
