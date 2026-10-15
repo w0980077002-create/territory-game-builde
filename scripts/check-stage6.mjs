@@ -106,5 +106,6 @@ assert(screen.includes("craftCheck !== 'ready'"),'do not craft while backend sta
 parse('src/game/cloud.ts',{
  './supabase':{supabase},'./engine':{},'./equipmentBalance':{},
  './saveQueue':{},'./followers':{},'./saveToken':{},'./walletVersion':version,
+  './economyInvariant':{validEconomySnapshot:()=>true},
 });
 console.log('Stage6: release gate checked, staged-only SQL, client code syntactically valid: PASS');

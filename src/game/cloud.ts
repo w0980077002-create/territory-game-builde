@@ -6,6 +6,7 @@ import { createCoalescingWriter } from './saveQueue';
 import { reconcileFollowers } from './followers';
 import { nextSaveTimestamp, validSaveToken } from './saveToken';
 import { safeWalletVersion, walletMatchesVersion, type WalletVersion } from './walletVersion';
+import { validEconomySnapshot } from './economyInvariant';
 
 export interface CloudProfile {
   state: GameState;
@@ -125,6 +126,12 @@ const saveBlocked = new Set<string>();
 const saveWriters = new Map<string, (snapshot: ReturnType<typeof summaryColumns>) => Promise<boolean>>();
 
 export function saveCloudSave(userId: string, state: GameState): Promise<boolean> {
+  // The SQL guard rejects malformed/contradictory snapshots. Fail locally first
+  // so we never poison a pending save queue with invalid currency values.
+  if (!validEconomySnapshot(state)) {
+    console.error('Refusing invalid economy snapshot: no cloud write attempted');
+    return Promise.resolve(false);
+  }
   // Capture an immutable-by-convention snapshot BEFORE the asynchronous queue.
   // Without this, later state mutations can change the contents of a queued save.
   const snapshot = summaryColumns(state);

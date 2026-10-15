@@ -1,0 +1,22 @@
+{
+  "repository": "w0980077002-create/territory-game-builde",
+  "baseline_commit": "dc767e76b569a63a386453fe5fb784f15f181bdb",
+  "production_sql_applied": true,
+  "production_supabase_project": "wmyrdpbwlkzsktnhookx",
+  "migration": "territory_economy_live_guard_audit_20261015",
+  "players_preserved": 41,
+  "reset_player_data": false,
+  "full_server_authority_enabled": false,
+  "pages_release_gate_ready": false,
+  "github_workflows_can_update_from_zip": false,
+  "changes": [
+    "src/game/economyInvariant.ts",
+    "src/game/cloud.ts",
+    "supabase/production/territory_economy_guard_20261015.sql",
+    "scripts/check-stage7.mjs",
+    "scripts/check-stage5.mjs",
+    "scripts/check-stage6.mjs",
+    "package.json",
+    "SECURITY_LIVE_REPORT_RU.md"
+  ]
+}

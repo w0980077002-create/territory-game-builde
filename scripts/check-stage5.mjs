@@ -109,7 +109,7 @@ assert.equal(tokenLib.validSaveToken('garbage'), false);
 const server={stamp:t0, state:null, writes:0};
 const baseState={player:{name:'Hero',level:20,xp:5,gold:900,gems:2500,energy:3,maxEnergy:10,stats:{},equipped:{}},
  currentChapter:2,chapterWins:3,totalBattlesWon:5,totalBossesDefeated:1,forgeMaterials:1,
- inventory:[],followers:[],quests:[],achievements:[],settings:{},belt:[],dailyStonesDate:''};
+ inventory:[],followers:[],quests:[],achievements:[],settings:{},belt:[],dailyStonesDate:'',battleStones:15,dailyStonesBought:0};
 server.state=baseState;
 const db={
  from:()=>({
@@ -129,7 +129,7 @@ const walletParsed=ts.transpileModule(read('src/game/walletVersion.ts'),{
 const walletModule={exports:{}};
 vm.runInNewContext(walletParsed.outputText,{module:walletModule,exports:walletModule.exports,Number,Error});
 const cloudMods={
- './walletVersion':walletModule.exports,
+ './walletVersion':walletModule.exports, './economyInvariant':{validEconomySnapshot: () => true},
  './supabase':{supabase:db}, './engine':{createInitialGame:()=>baseState,getComputedStats:()=>({attack:10,defense:10,maxHp:200,critChance:5})},
  './equipmentBalance':{EQUIPMENT_BALANCE_VERSION:1,migrateGameStateBalance:s=>s},
  './saveQueue':saveQ, './followers':{reconcileFollowers:f=>f}, './saveToken':tokenLib,
