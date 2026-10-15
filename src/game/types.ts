@@ -103,6 +103,8 @@ export interface Achievement {
 }
 
 export interface Follower {
+  /** Companion role added in release 4; old saves omit it safely. */
+  role?: 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage';
   id: string;
   name: string;
   icon: string;
@@ -165,6 +167,8 @@ export interface GameState {
   totalBattlesWon: number;
   totalBossesDefeated: number;
   followers: Follower[];
+  /** Exactly one companion is active in PvE; old saves use the first unlocked. */
+  activeFollowerId?: string | null;
   quests: Quest[];
   achievements: Achievement[];
   forgeMaterials: number;

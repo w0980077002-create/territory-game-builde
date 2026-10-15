@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { ChevronRight, Repeat, Crown } from 'lucide-react';
 import { useStore } from '@/game/store';
+import { selectedFollower } from '@/game/followers';
 import { useGame, useArena, useAccount } from '@/game/actions';
 import { generateChapter, getComputedStats } from '@/game/engine';
 import { beltContext } from '@/game/belt';
@@ -89,7 +90,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
   const bossReady = wins >= chapter.winsNeeded;
   const nextEnemy = bossReady ? chapter.boss : chapter.enemies[wins];
   const stats = getComputedStats(state);
-  const follower = state.followers.find((f) => f.unlocked);
+  const follower = selectedFollower(state);
   const xpPct = Math.min(100, (player.xp / player.xpToNext) * 100);
   const adminMail = useStore(useLive).mail.length;
   const unreadMail = MAIL.filter((l) => !state.mailClaimed.includes(l.id)).length + adminMail;
@@ -184,7 +185,9 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
       <div className="absolute z-0 left-[48px] right-[48px] top-[calc(max(8px,env(safe-area-inset-top))+150px)] bottom-[196px] flex items-end justify-center pointer-events-none">
         <div className="relative h-[62%] w-[26%] flex items-end justify-center">
           {follower && (
-            <img src="/follower-shield.webp" alt={follower.name} className="max-h-full max-w-full object-contain object-bottom drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] animate-idle" />
+            follower.id === 'follower_1'
+              ? <img src="/follower-shield.webp" alt={follower.name} className="max-h-full max-w-full object-contain object-bottom drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] animate-idle" />
+              : <span title={follower.name} className="text-5xl drop-shadow-lg animate-idle">{follower.icon}</span>
           )}
         </div>
         <div className="relative h-full w-[44%] flex items-end justify-center -ml-[6%]">

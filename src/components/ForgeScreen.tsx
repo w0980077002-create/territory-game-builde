@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { useLanguage, localizeText } from '@/game/i18n';
@@ -9,11 +9,8 @@ import { SLOT_ART } from '@/game/art';
 import { ItemArt } from './ui/ItemArt';
 import type { Equipment, InventoryItem } from '@/game/types';
 import { upgradeEquipment } from '@/game/equipmentBalance';
-
-const UPGRADE_COST = (level: number) => ({
-  gold: 50 + level * 30,
-  materials: 1 + Math.floor(level / 3),
-});
+import { forgeAttempt, forgeCost, forgeSetBonus, forgeSuccessRate } from '@/game/forge';
+import { EQUIPMENT_SLOTS } from '@/game/engine';
 
 export function ForgeScreen() {
   const { t, language } = useLanguage();
@@ -26,89 +23,52 @@ export function ForgeScreen() {
   const equipment = state.inventory.filter((i) => i.type === 'equipment' && i.equipment);
   const equippedList = Object.values(state.player.equipped).filter(Boolean) as Equipment[];
 
-  const tryUpgrade = (item: InventoryItem) => {
-    if (!item.equipment) return;
-    const eq = item.equipment;
+  const lock = useRef(false);
+  const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (pending.current) clearTimeout(pending.current); }, []);
 
-    if (eq.level >= state.player.level) {
+  const tryUpgrade = (item: InventoryItem) => {
+    if (lock.current || !item.equipment) return;
+    // Validate against the freshest state; modal snapshots can become stale while
+    // the shop, mail, daily rewards or auto-save change the player's resources.
+    const now = useGame.get();
+    const eq = item.equipment;
+    if (eq.level >= now.player.level) {
       setError(t('upgradeMaxLevel'));
       hapticNotify('error');
-      setTimeout(() => setError(null), 2000);
       return;
     }
+    const cost = forgeCost(eq.level);
+    if (now.player.gold < cost.gold) { setError(t('notEnoughGold')); hapticNotify('error'); return; }
+    if (now.forgeMaterials < cost.materials) { setError(t('notEnoughForgeMaterials')); hapticNotify('error'); return; }
 
-    const cost = UPGRADE_COST(eq.level);
-
-    if (state.player.gold < cost.gold) {
-      setError(t('notEnoughGold'));
-      hapticNotify('error');
-      setTimeout(() => setError(null), 2000);
-      return;
-    }
-    if (state.forgeMaterials < cost.materials) {
-      setError(t('notEnoughForgeMaterials'));
-      hapticNotify('error');
-      setTimeout(() => setError(null), 2000);
-      return;
-    }
-
+    lock.current = true; // synchronous guard against two taps before React render
     setUpgrading(true);
     setError(null);
-
-    setTimeout(() => {
-      // 80% success rate, decreases with level
-      const successRate = Math.max(0.5, 0.9 - eq.level * 0.05);
-      const isSuccess = Math.random() < successRate;
-
-      if (isSuccess) {
-        const upgradedEq: Equipment = upgradeEquipment(eq);
-
-        const isEquipped = item.id.startsWith('equipped_');
-        const newInventory = isEquipped ? state.inventory : state.inventory.map((i) =>
-          i.id === item.id
-            ? {
-                ...i,
-                equipment: upgradedEq,
-                description: `${language === 'en' ? 'Level' : 'Уровень'} ${upgradedEq.level} · ${upgradedEq.rarity}`,
-              }
-            : i,
-        );
-        const equipped = isEquipped
-          ? { ...state.player.equipped, [upgradedEq.slot]: upgradedEq }
-          : state.player.equipped;
-
-        useGame.set({
-          ...state,
-          player: {
-            ...state.player,
-            gold: state.player.gold - cost.gold,
-            equipped,
-          },
-          forgeMaterials: state.forgeMaterials - cost.materials,
-          inventory: newInventory,
-        });
-
+    pending.current = setTimeout(() => {
+      const outcome: { status: ReturnType<typeof forgeAttempt>['status'] } = { status: 'invalid' };
+      useGame.set((latest) => {
+        const attempt = forgeAttempt(latest, item.id, eq.level, Math.random());
+        outcome.status = attempt.status;
+        return attempt.next;
+      });
+      lock.current = false;
+      pending.current = null;
+      setUpgrading(false);
+      if (outcome.status === 'success') {
         setSelected(null);
         setSuccess(true);
         hapticNotify('success');
-        setTimeout(() => setSuccess(false), 2000);
+        setTimeout(() => setSuccess(false), 2200);
       } else {
-        useGame.set({
-          ...state,
-          player: {
-            ...state.player,
-            gold: state.player.gold - cost.gold,
-          },
-          forgeMaterials: state.forgeMaterials - cost.materials,
-        });
-        setError(t('upgradeFailed'));
+        setError(outcome.status === 'failed' ? t('upgradeFailed') : (language === 'en' ? 'Equipment or resources changed. Please try again.' : 'Экипировка или ресурсы изменились. Попробуй ещё раз.'));
         hapticNotify('error');
-        setTimeout(() => setError(null), 3000);
+        setSelected(null);
       }
-
-      setUpgrading(false);
-    }, 1200);
+    }, 1000);
   };
+
+  const setBonus = forgeSetBonus(state.player.equipped);
 
   const allEquipment = [
     ...equippedList.map((eq) => ({
@@ -136,6 +96,26 @@ export function ForgeScreen() {
           <span className="text-amber-400">🪙 {state.player.gold}</span>
           <span className="text-orange-400">🔩 {state.forgeMaterials}</span>
         </div>
+      </div>
+
+      {/* Full set rewards apply only in PvE; never inflate Arena stats. */}
+      <div className="card border-amber-500/25 bg-gradient-to-br from-amber-950/30 to-slate-950/50">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <p className="font-bold text-amber-200 text-sm">{language === 'en' ? 'Forged set' : 'Комплект кузнеца'}</p>
+          <p className="font-bold text-amber-300 text-sm">{setBonus.slots}/7</p>
+        </div>
+        <div className="grid grid-cols-7 gap-1.5 mb-2">
+          {EQUIPMENT_SLOTS.map(({ id, icon, name }) => {
+            const forged = !!state.player.equipped[id] && (state.player.equipped[id]?.upgradeCount ?? 0) > 0;
+            return <div key={id} title={name} className={`rounded-lg text-center py-2 text-lg border ${forged ? 'border-amber-400/70 bg-amber-500/25' : 'border-white/10 bg-black/20 opacity-45'}`}>{icon}</div>;
+          })}
+        </div>
+        <p className="text-xs text-gray-300 leading-relaxed">
+          {language === 'en'
+            ? 'Upgrade different EQUIPPED slots: 3/7 +2% HP · 5/7 +3% defense · 7/7 +4% attack in PvE only.'
+            : 'Улучшай РАЗНЫЕ надетые предметы: 3/7 +2% HP · 5/7 +3% защиты · 7/7 +4% атаки только в PvE.'}
+        </p>
+        <p className="text-[10px] text-amber-300/80 mt-1">{language === 'en' ? 'Arena stats do not change.' : 'Характеристики на Арене не меняются.'}</p>
       </div>
 
       {error && (
@@ -225,7 +205,7 @@ export function ForgeScreen() {
       {selected && selected.equipment && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
-          onClick={() => setSelected(null)}
+          onClick={() => { if (!upgrading) setSelected(null); }}
         >
           <div
             className="card w-full max-w-sm m-2 animate-slide-up"
@@ -245,7 +225,7 @@ export function ForgeScreen() {
                 </h3>
                 <p className="text-xs text-gray-400">{t('level')} {selected.equipment.level} · {selected.rarity}</p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-white">
+              <button onClick={() => { if (!upgrading) setSelected(null); }} className="text-gray-500 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -257,6 +237,20 @@ export function ForgeScreen() {
               {selected.equipment.defense ? <StatRow label={t('defense')} value={selected.equipment.defense} /> : null}
               {selected.equipment.hp ? <StatRow label={t('health')} value={selected.equipment.hp} /> : null}
             </div>
+
+            {/* Exact deterministic preview from current item template. */}
+            {selected.equipment.level < state.player.level && (
+              <div className="rounded-xl border border-emerald-500/25 bg-emerald-950/20 p-3 mb-3">
+                <p className="text-xs font-semibold text-emerald-300 mb-2">{language === 'en' ? 'Next level (if successful)' : 'Следующий уровень (при успехе)'}</p>
+                {(['attack', 'defense', 'hp', 'critChance'] as const).map((key) => {
+                  const current = selected.equipment?.[key] ?? 0;
+                  const next = upgradeEquipment(selected.equipment!)[key] ?? 0;
+                  if (current <= 0 && next <= 0) return null;
+                  const label = key === 'attack' ? t('attack') : key === 'defense' ? t('defense') : key === 'hp' ? t('health') : t('critChance');
+                  return <div key={key} className="flex justify-between text-xs py-0.5"><span className="text-gray-300">{label}</span><span className="text-emerald-200">{current} → {next}{key === 'critChance' ? '%' : ''}</span></div>;
+                })}
+              </div>
+            )}
 
             {/* Upgrade cost */}
             {selected.equipment.level >= state.player.level ? (
@@ -272,11 +266,11 @@ export function ForgeScreen() {
               <div className="bg-black/20 rounded-lg p-3 mb-3">
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">{t('upgradeCost')}</p>
                 <div className="flex justify-between text-sm">
-                  <span className="text-amber-400">🪙 {UPGRADE_COST(selected.equipment.level).gold}</span>
-                  <span className="text-orange-400">🔩 {UPGRADE_COST(selected.equipment.level).materials}</span>
+                  <span className="text-amber-400">🪙 {forgeCost(selected.equipment.level).gold}</span>
+                  <span className="text-orange-400">🔩 {forgeCost(selected.equipment.level).materials}</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  {language === 'en' ? 'Success chance' : 'Шанс успеха'}: {Math.round(Math.max(50, 90 - selected.equipment.level * 5))}%
+                  {language === 'en' ? 'Success chance' : 'Шанс успеха'}: {Math.round(forgeSuccessRate(selected.equipment.level) * 100)}%
                 </p>
               </div>
             )}

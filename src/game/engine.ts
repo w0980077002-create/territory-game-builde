@@ -1,4 +1,5 @@
 import { EQUIPMENT_BALANCE_VERSION, prepareNewEquipment } from './equipmentBalance';
+import { initialFollowers } from './followers';
 import { weeklyQuestKey } from './weeklyQuests';
 import { chapterEnemyMultipliers, trialEnemyMultipliers } from './pveBalance';
 import { createBossLootEquipment, SHOP_EQUIPMENT_ITEMS } from './equipmentCatalog';
@@ -77,18 +78,8 @@ export function createInitialGame(): GameState {
     chapterWins: 0,
     totalBattlesWon: 0,
     totalBossesDefeated: 0,
-    followers: [
-      {
-        id: 'follower_1',
-        name: 'Верный щит',
-        icon: '🛡️',
-        level: 1,
-        attack: 5,
-        defense: 10,
-        unlocked: false,
-        description: 'Спутник, который помогает в бою. Открывается на 3 уровне.',
-      },
-    ],
+    followers: initialFollowers(),
+    activeFollowerId: null,
     forgeMaterials: 0,
     storyProgress: 0,
     lastEnergyAt: Date.now(),

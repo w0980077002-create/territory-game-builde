@@ -5,6 +5,7 @@ import { useGame, useArena, recordBattleResult } from '@/game/actions';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
+import { selectedFollower, followerCombat } from '@/game/followers';
 import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, type PveSide } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy, InventoryItem } from '@/game/types';
@@ -80,7 +81,8 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
   const { language } = useLanguage();
   const state = useStore(useGame);
   const arena = useStore(useArena);
-  const follower = state.followers.find((f) => f.unlocked);
+  const follower = selectedFollower(state);
+  const followerBonus = followerCombat(follower);
   const [hero, setHero] = useState<PveSide>(() => heroSide(useGame.get()));
   const [foe, setFoe] = useState<PveSide>(() => enemySide(enemy));
   const [attack, setAttack] = useState<Zone | null>(null);
@@ -130,7 +132,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
     if (busy || outcome) return;
     setBusy(true);
     hapticImpact('light');
-    const res = playRound(heroRef.current, foeRef.current, atk, blk, follower?.attack ?? 0, follower?.name ?? '', follower?.defense ?? 0);
+    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus);
     const pace = 1 / useGame.get().settings.speed;
     for (const hit of res.hits) {
       if (!alive.current || done.current) return;
@@ -143,13 +145,17 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
       await wait(620 * pace);
     }
     if (!alive.current) return;
+    if (res.healAmount > 0) {
+      setHero((h) => ({ ...h, hp: Math.min(h.maxHp, h.hp + res.healAmount) }));
+      pushLog(language === 'en' ? `Companion healed ${res.healAmount} HP` : `Спутник восстановил ${res.healAmount} HP`);
+    }
     setStrike(null);
     setBusy(false);
     setAttack(null);
     setBlocks([]);
     if (res.enemy.hp <= 0) finish(true);
     else if (res.hero.hp <= 0) finish(false);
-  }, [busy, outcome, follower, finish]);
+  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language]);
 
   useEffect(() => {
     if (!auto || busy || outcome) return;
@@ -222,13 +228,13 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
               <Plate side={hero} tone="ally" />
               <div className="relative flex-1 mt-1">
                 {follower && (
-                  <img
+                  follower.id === 'follower_1' ? <img
                     src="/follower-shield.webp"
                     alt={follower.name}
                     draggable={false}
                     className={`absolute -left-3 bottom-1 h-[56%] w-auto max-w-none object-contain select-none drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] ${hero.hp > 0 ? 'opacity-90 animate-idle' : 'grayscale opacity-40'}`}
                     style={{ animationDuration: '3.7s' }}
-                  />
+                  /> : <span title={follower.name} className="absolute -left-1 bottom-5 text-4xl drop-shadow-lg">{follower.icon}</span>
                 )}
                 <FighterFigure
                   src="/hero-viking.webp"

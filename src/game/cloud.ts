@@ -3,6 +3,7 @@ import type { GameState } from './types';
 import { createInitialGame, getComputedStats } from './engine';
 import { EQUIPMENT_BALANCE_VERSION, migrateGameStateBalance } from './equipmentBalance';
 import { createCoalescingWriter } from './saveQueue';
+import { reconcileFollowers } from './followers';
 
 export interface CloudProfile {
   state: GameState;
@@ -12,6 +13,7 @@ export interface CloudProfile {
   vip: number;
   photoUrl: string | null;
   balanceMigrated?: boolean;
+  rosterMigrated?: boolean;
 }
 
 function mergeWithDefaults(saved: Partial<GameState> | null, name: string): GameState {
@@ -29,7 +31,8 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
     },
     quests: migrated.quests?.length ? migrated.quests : defaults.quests,
     achievements: migrated.achievements?.length ? migrated.achievements : defaults.achievements,
-    followers: migrated.followers?.length ? migrated.followers : defaults.followers,
+    followers: reconcileFollowers(migrated.followers, migrated.player?.level ?? defaults.player.level),
+    activeFollowerId: migrated.activeFollowerId ?? null,
     belt: Array.from({ length: 7 }, (_, i) => migrated.belt?.[i] ?? null),
     activeDays: migrated.activeDays ?? 1,
     battleStones: migrated.battleStones ?? defaults.battleStones,
@@ -67,6 +70,7 @@ export async function loadCloudSave(userId: string, displayName: string): Promis
   return {
     state: mergeWithDefaults(savedState, data.display_name || displayName),
     balanceMigrated,
+    rosterMigrated: !savedState || !savedState.followers?.some((f) => f.id === 'follower_5'),
     arenaRating: data.arena_rating,
     arenaWins: data.arena_wins,
     arenaLosses: data.arena_losses,

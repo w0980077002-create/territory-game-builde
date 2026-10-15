@@ -2,6 +2,8 @@ import { ZONES, type Zone } from './arenaApi';
 import type { Enemy, GameState, InventoryItem } from './types';
 import { getComputedStats } from './engine';
 import { eliteRoundDamageCap, followerGuardDamage } from './pveBalance';
+import { followerCombat, selectedFollower } from './followers';
+import { forgeSetBonus } from './forge';
 
 export interface PveSide {
   name: string;
@@ -41,7 +43,10 @@ export function randomZones(): { attack: Zone; blocks: Zone[] } {
 
 export function heroSide(state: GameState): PveSide {
   const s = getComputedStats(state);
-  return { name: state.player.name, hp: s.maxHp, maxHp: s.maxHp, attack: s.attack, defense: s.defense, critChance: s.critChance, critDamage: s.critDamage };
+  const forge = forgeSetBonus(state.player.equipped);
+  const follower = followerCombat(selectedFollower(state));
+  const hp = Math.max(1, Math.round(s.maxHp * (1 + forge.hp)));
+  return { name: state.player.name, hp, maxHp: hp, attack: Math.round(s.attack * (1 + forge.attack)), defense: Math.round(s.defense * (1 + forge.defense)), critChance: Math.min(95, s.critChance + follower.crit), critDamage: s.critDamage };
 }
 
 export function enemySide(e: Enemy): PveSide {
@@ -65,14 +70,16 @@ export interface RoundResult {
   hits: PveHit[];
   hero: PveSide;
   enemy: PveSide;
+  healAmount: number;
 }
 
-export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0): RoundResult {
+export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null): RoundResult {
   const ai = randomZones();
   const hits: PveHit[] = [];
   const cap = eliteRoundDamageCap(enemy.enemyId ?? '', !!enemy.isBoss, enemy.maxHp);
   let damageBudget = cap ?? Number.POSITIVE_INFINITY;
-  const rawHit = strike(hero, enemy, 'enemy', attack, ai.blocks.slice(0, 1));
+  const piercedEnemy = bonus?.pierce ? { ...enemy, defense: Math.max(0, Math.floor(enemy.defense * (1 - bonus.pierce))) } : enemy;
+  const rawHit = strike(hero, piercedEnemy, 'enemy', attack, ai.blocks.slice(0, 1));
   const firstDamage = Math.min(rawHit.amount, damageBudget, enemy.hp);
   const h1 = { ...rawHit, amount: firstDamage };
   hits.push(h1);
@@ -94,7 +101,8 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
     hits.push(h2);
     heroHp = Math.max(0, heroHp - h2.amount);
   }
-  return { hits, hero: { ...hero, hp: heroHp }, enemy: { ...enemy, hp: enemyHp } };
+  const healAmount = heroHp > 0 && enemyHp > 0 && bonus?.heal ? Math.min(Math.max(0, hero.maxHp - heroHp), bonus.heal) : 0;
+  return { hits, hero: { ...hero, hp: heroHp + healAmount }, enemy: { ...enemy, hp: enemyHp }, healAmount };
 }
 
 export type PotionUse =

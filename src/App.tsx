@@ -127,7 +127,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         const hasNewTimeEffects = loadedState.dailyResetDay !== profile.state.dailyResetDay
           || loadedState.weeklyResetWeek !== profile.state.weeklyResetWeek
           || loadedState.player.energy !== profile.state.player.energy;
-        if (profile.balanceMigrated || hasNewTimeEffects) {
+        if (profile.balanceMigrated || profile.rosterMigrated || hasNewTimeEffects) {
           // Migration/time-effect write is queued but must not hold the loading splash open
           // during a slow mobile connection. Never assume a failed response
           // means the server did not commit; simply retry current state later.

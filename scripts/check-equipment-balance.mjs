@@ -19,7 +19,7 @@ try {
 
 const root = process.cwd();
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'territory-balance-'));
-const sources = ['types.ts', 'equipmentCatalog.ts', 'equipmentBalance.ts', 'weeklyQuests.ts', 'pveBalance.ts', 'engine.ts'];
+const sources = ['types.ts', 'equipmentCatalog.ts', 'equipmentBalance.ts', 'weeklyQuests.ts', 'pveBalance.ts', 'followers.ts', 'engine.ts'];
 
 for (const file of sources) {
   const sourcePath = path.join(root, 'src/game', file);

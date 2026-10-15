@@ -1,0 +1,27 @@
+-- TERRITORY — DRAFT ONLY. NO PRODUCTION MIGRATION. DO NOT RUN.
+-- This intentionally FAILS CLOSED before any SQL mutations. It is not a
+-- complete cutover; do not strip the guard without full verified RPC coverage.
+BEGIN;
+DO $$ BEGIN
+  RAISE EXCEPTION 'TERRITORY CUTOVER NOT APPROVED: verify wallet reconciliation, client server-actions and backups first';
+END $$;
+
+-- WHEN ALL PURCHASES, BATTLES, TRIALS, DAILY/WEEKLY REWARDS, ARENA SETTLEMENT,
+-- CRAFTING, ADMIN GRANTS, VIP, PROFESSION UNLOCKS, FORGE and ITEM EQUIPPING
+-- are processed via server-validated operations, the approved migration will
+-- revoke direct writes to protected columns of players and game_state.
+-- Critical: current browser saveCloudSave() still updates these columns.
+-- Removing direct grants NOW will prevent ordinary gameplay saves and onboarding.
+-- Until server actions cover EVERY reward source, releases remain vulnerable.
+
+-- Skeleton ONLY for later review (not sufficient to deploy):
+-- REVOKE UPDATE (game_state,gems,gold,level,xp,forge_materials,attack,defense,
+--                energy,max_energy,current_chapter,chapter_wins,
+--                total_battles_won,total_bosses_defeated) ON public.players
+--   FROM authenticated;
+-- REVOKE INSERT ON public.players FROM authenticated;
+-- GRANT EXECUTE ON FUNCTION public.territory_bootstrap_player_v2() TO authenticated;
+-- GRANT EXECUTE ON FUNCTION public.territory_game_action_v2(jsonb,uuid) TO authenticated;
+-- Server must validate the action + immutable catalogue and commit balances,
+-- inventory, receipts, versions and event history in ONE transaction.
+ROLLBACK;

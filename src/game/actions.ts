@@ -1,6 +1,7 @@
 import { create } from './store';
 import { prepareNewEquipment } from './equipmentBalance';
 import { weeklyQuestKey } from './weeklyQuests';
+import { reconcileFollowers } from './followers';
 import { canBuyShopItem, shopStonesBoughtToday, SHOP_STONES_PER_DAY, MAX_SHOP_PURCHASE_QTY } from './purchaseGuard';
 import type { GameState } from './types';
 import {
@@ -97,11 +98,7 @@ export function addXp(state: GameState, amount: number): Partial<GameState> {
     maxEnergy += 1;
   }
 
-  const followers = state.followers.map((f) =>
-    f.id === 'follower_1' && level >= 3 && !f.unlocked
-      ? { ...f, unlocked: true }
-      : f,
-  );
+  const followers = reconcileFollowers(state.followers, level);
 
   return {
     player: {

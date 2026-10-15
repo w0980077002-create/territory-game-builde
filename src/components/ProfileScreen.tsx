@@ -8,6 +8,7 @@ import { getComputedStats, EQUIPMENT_SLOTS } from '@/game/engine';
 import { rarityColor } from '@/game/ui';
 import { User, Heart, Sword, Shield, Star, Zap, Coins, Gem, Send, Check, Link2, Loader2 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { FollowersPanel } from './FollowersPanel';
 
 export function ProfileScreen({ user }: { user: AuthUser }) {
   const { t, language } = useLanguage();
@@ -138,6 +139,9 @@ export function ProfileScreen({ user }: { user: AuthUser }) {
           })}
         </div>
       </div>
+
+      {/* Follower progression: legacy shield retained, four new roles available. */}
+      <FollowersPanel />
 
       {/* Battle record */}
       <div className="card">
