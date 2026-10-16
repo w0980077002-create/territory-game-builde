@@ -133,6 +133,7 @@ const cloudMods={
  './supabase':{supabase:db}, './engine':{createInitialGame:()=>baseState,getComputedStats:()=>({attack:10,defense:10,maxHp:200,critChance:5})},
  './equipmentBalance':{EQUIPMENT_BALANCE_VERSION:1,migrateGameStateBalance:s=>s},
  './saveQueue':saveQ, './followers':{reconcileFollowers:f=>f}, './saveToken':tokenLib,
+  './appearance':{getPlayableAppearance:id=> ['m1','m2','f1','f2'].includes(id) ? id : 'm2'},
 };
 const cloudParsed=ts.transpileModule(read('src/game/cloud.ts'),{
  fileName:'src/game/cloud.ts',compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020},reportDiagnostics:true,
