@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
+import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
 import { HomeScreen } from '@/components/HomeScreen';
 import { BattleScreen, type BattleView } from '@/components/BattleScreen';
@@ -122,12 +123,16 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     loadCloudSave(user.id, user.displayName)
       .then(async (profile) => {
         if (cancelled) return;
-        const loadedState = applyTimeEffects(profile.state);
+        const timedState = applyTimeEffects(profile.state);
+        // Historic belt slots can become locked by harder win requirements.
+        // Return their consumables to the inventory before showing or saving.
+        const loadedState = reconcileLockedBelt(timedState, profile.arenaWins);
+        const beltReconciled = loadedState !== timedState;
         useGame.set(loadedState);
         const hasNewTimeEffects = loadedState.dailyResetDay !== profile.state.dailyResetDay
           || loadedState.weeklyResetWeek !== profile.state.weeklyResetWeek
           || loadedState.player.energy !== profile.state.player.energy;
-        if (profile.balanceMigrated || profile.rosterMigrated || hasNewTimeEffects) {
+        if (profile.balanceMigrated || profile.rosterMigrated || hasNewTimeEffects || beltReconciled) {
           // Migration/time-effect write is queued but must not hold the loading splash open
           // during a slow mobile connection. Never assume a failed response
           // means the server did not commit; simply retry current state later.
