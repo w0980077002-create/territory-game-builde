@@ -6,14 +6,13 @@ import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { getCombatAppearance } from '@/game/appearance';
 import { selectedFollower } from '@/game/followers';
-import { getFollowerArt } from '@/game/combatArt';
+import { getFollowerArt, getFollowerCombatFrames } from '@/game/combatArt';
 import { FighterFigure } from './FighterFigure';
 import { useLanguage } from '@/game/i18n';
 
 interface Props {
   me: ArenaFighter;
   enemy: ArenaFighter | null;
-  followerName: string;
   active: boolean;
   moved: boolean;
   auto: boolean;
@@ -81,7 +80,7 @@ function ZoneButton({ label, sub, selected, tone, disabled, onClick }: {
 
 export function BattleScene(props: Props) {
   const {
-    me, enemy, followerName, active, moved, auto, autoLocked, autoMinVip, attack, blocks, busy,
+    me, enemy, active, moved, auto, autoLocked, autoMinVip, attack, blocks, busy,
     movedCount, aliveCount, strike, canRepeat, onAttack, onToggleBlock, onStrike, onRepeat, onToggleAuto, resultPanel,
   } = props;
   const game = useStore(useGame);
@@ -104,7 +103,7 @@ export function BattleScene(props: Props) {
     <div className="arena-battle relative rounded-2xl overflow-hidden border border-amber-400/40 shadow-xl shadow-black/50">
       <img
         src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'}
-        onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/arena-bg.webp'; }}
+        onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = import.meta.env.BASE_URL + 'arena-bg.webp'; }}
         alt=""
         draggable={false}
         className="arena-battle-art absolute inset-0 w-full h-full object-cover pointer-events-none"
@@ -131,24 +130,32 @@ export function BattleScene(props: Props) {
             <Plate fighter={me} side="ally" />
             <div className="relative flex-1 mt-1">
               <span aria-hidden="true" className="absolute left-[6%] right-0 bottom-[1%] h-[7%] rounded-full bg-black/60 blur-md pointer-events-none" />
-              <img
-                src={getFollowerArt(portraitFollower?.id)}
-                alt={followerName}
-                title={followerName}
-                draggable={false}
-                className={`absolute -left-4 bottom-[2%] h-[53%] w-auto max-w-[85%] object-contain select-none drop-shadow-[0_7px_8px_rgba(0,0,0,0.8)] ${alive ? 'opacity-95 animate-idle' : 'grayscale opacity-40'}`}
-                style={{ animationDuration: '3.7s', animationDelay: '-1.2s' }}
-              />
-              <FighterFigure
-                src="/hero-viking.webp"
-                combatFrames={getCombatAppearance(game.appearance)}
-                name={me.name}
-                dir={1}
-                alive={alive}
-                strike={strike}
-                idleSeconds={3.1}
-                className="absolute right-0 bottom-0 h-[98%] w-full object-contain object-right-bottom"
-              />
+              {portraitFollower && (
+                <div className="absolute -left-[8%] bottom-0 z-10 h-[52%] w-[48%] pointer-events-none">
+                  <FighterFigure
+                    src={getFollowerArt(portraitFollower.id)}
+                    combatFrames={getFollowerCombatFrames(portraitFollower.id)}
+                    name={portraitFollower.name}
+                    dir={1}
+                    alive={alive}
+                    strike={null}
+                    idleSeconds={3.7}
+                    className="absolute left-0 bottom-0 h-full w-full object-contain object-left-bottom"
+                  />
+                </div>
+              )}
+              <div className="absolute inset-0 z-20 pointer-events-none">
+                <FighterFigure
+                  src={import.meta.env.BASE_URL + 'hero-viking.webp'}
+                  combatFrames={getCombatAppearance(game.appearance)}
+                  name={me.name}
+                  dir={1}
+                  alive={alive}
+                  strike={strike}
+                  idleSeconds={3.1}
+                  className="absolute right-0 bottom-0 h-[98%] w-full object-contain object-right-bottom"
+                />
+              </div>
             </div>
           </div>
 
@@ -160,7 +167,10 @@ export function BattleScene(props: Props) {
                   <span aria-hidden="true" className="absolute left-0 right-[8%] bottom-[1%] h-[7%] rounded-full bg-black/60 blur-md pointer-events-none" />
                   <FighterFigure
                     key={enemy.id}
-                    src="/enemy-viking.webp"
+                    src={import.meta.env.BASE_URL + 'enemy-viking.webp'}
+                    // The arena API does not yet expose the opponent's saved appearance.
+                    // Render the canonical animated Viking instead of a static image.
+                    combatFrames={getCombatAppearance('m2')}
                     name={enemy.name}
                     dir={-1}
                     alive={enemy.hp > 0}
