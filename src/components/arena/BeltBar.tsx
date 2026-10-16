@@ -77,8 +77,8 @@ export function BeltBar({ belt, ctx, actionLabel, compact = false, disabled, bus
             )
           ) : (
             <span className="animate-fade-in">
-              <span className="text-amber-300 font-semibold">{language === 'en' ? `Slot ${info! + 1}: ${localizeText(shown.rule.title, language)}` : `Слот ${info! + 1}: ${shown.rule.title}`}</span>
-              <span> · {shown.check.progress}</span>
+              <span className="text-amber-300 font-semibold">{language === 'en' ? `Slot ${info! + 1}: ${shown.rule.titleEn}` : `Слот ${info! + 1}: ${shown.rule.title}`}</span>
+              <span> · {language === 'en' ? shown.check.progressEn : shown.check.progress}</span>
             </span>
           )
         ) : (

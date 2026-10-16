@@ -10,47 +10,41 @@ export interface BeltContext {
 
 interface SlotRule {
   title: string;
-  check: (c: BeltContext) => { open: boolean; progress: string };
+  titleEn: string;
+  check: (c: BeltContext) => { open: boolean; progress: string; progressEn: string };
 }
 
-const need = (have: number, goal: number) => `${Math.min(have, goal)}/${goal}`;
+/** Each later slot is earned only through confirmed arena victories.
+ * No level, active-day, VIP, or clan requirement.
+ */
+export const BELT_WIN_GOALS = [0, 100, 500, 1000, 2000, 3500, 5000] as const;
 
-export const BELT_RULES: SlotRule[] = [
-  { title: 'Открыт сразу', check: () => ({ open: true, progress: '' }) },
-  {
-    title: 'Уровень 5',
-    check: (c) => ({ open: c.level >= 5, progress: `уровень ${need(c.level, 5)}` }),
-  },
-  {
-    title: 'Уровень 12 и 5 дней в игре',
-    check: (c) => ({
-      open: c.level >= 12 && c.activeDays >= 5,
-      progress: `уровень ${need(c.level, 12)} · дни ${need(c.activeDays, 5)}`,
-    }),
-  },
-  {
-    title: 'Уровень 20 и 14 дней в игре',
-    check: (c) => ({
-      open: c.level >= 20 && c.activeDays >= 14,
-      progress: `уровень ${need(c.level, 20)} · дни ${need(c.activeDays, 14)}`,
-    }),
-  },
-  {
-    title: '150 побед на арене',
-    check: (c) => ({ open: c.arenaWins >= 150, progress: `победы ${need(c.arenaWins, 150)}` }),
-  },
-  {
-    title: 'Клановый квест «Сага рода»',
-    check: () => ({ open: false, progress: 'откроется вместе с кланами' }),
-  },
-  {
-    title: 'Легенда Вальхаллы: уровень 40 и 500 побед на арене',
-    check: (c) => ({
-      open: c.level >= 40 && c.arenaWins >= 500,
-      progress: `уровень ${need(c.level, 40)} · победы ${need(c.arenaWins, 500)}`,
-    }),
-  },
-];
+const need = (have: number, goal: number) => `${Math.min(Math.max(0, have), goal)}/${goal}`;
+
+export const BELT_RULES: SlotRule[] = BELT_WIN_GOALS.map((requiredWins) => ({
+  title: requiredWins === 0 ? 'Открыт сразу' : `${requiredWins} побед на арене`,
+  titleEn: requiredWins === 0 ? 'Unlocked from the start' : `${requiredWins} arena wins`,
+  check: (c) => ({
+    open: requiredWins === 0 || c.arenaWins >= requiredWins,
+    progress: requiredWins === 0 ? '' : `победы ${need(c.arenaWins, requiredWins)}`,
+    progressEn: requiredWins === 0 ? '' : `wins ${need(c.arenaWins, requiredWins)}`,
+  }),
+}));
+
+/** Returning items in newly locked slots happens exactly once at save loading.
+ * Copies of the same consumable are stacked if possible; nothing is destroyed.
+ * The validated arena win count comes from players.arena_wins, not game_state.
+ */
+export function reconcileLockedBelt(state: GameState, arenaWins: number): GameState {
+  const c = beltContext(state, arenaWins);
+  let next = state;
+  for (let i = 0; i < BELT_WIN_GOALS.length; i++) {
+    if (next.belt[i] && !isSlotOpen(i, c)) {
+      next = takeFromBelt(next, i);
+    }
+  }
+  return next;
+}
 
 export const beltContext = (state: GameState, arenaWins: number): BeltContext => ({
   level: state.player.level,
@@ -103,7 +97,10 @@ export function takeFromBelt(state: GameState, index: number): GameState {
   const slot = state.belt[index];
   if (!slot) return state;
   const belt = state.belt.map((s, i) => (i === index ? null : s));
-  const existing = state.inventory.find((i) => i.name === slot.name && i.type !== 'equipment');
+  const existing = state.inventory.find((i) =>
+    i.type === slot.type && i.name === slot.name && i.rarity === slot.rarity
+    && i.arenaEffect === slot.arenaEffect && JSON.stringify(i.effect ?? null) === JSON.stringify(slot.effect ?? null)
+  );
   const inventory = existing
     ? state.inventory.map((i) => (i.id === existing.id ? { ...i, qty: i.qty + slot.qty } : i))
     : [...state.inventory, { ...slot, id: `inv_${Date.now()}_${Math.random().toString(36).slice(2)}` }];
