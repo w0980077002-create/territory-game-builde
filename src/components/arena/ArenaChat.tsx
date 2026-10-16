@@ -51,9 +51,9 @@ export function ArenaChat({ roomId, messages, myName }: { roomId: string; messag
   };
 
   return (
-    <div className="card p-3">
+    <div className="card p-3 border border-sky-400/40 bg-[#071223]/95 shadow-[0_0_12px_rgba(30,64,175,0.1)]">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" />{language === 'en' ? 'Battle log and chat' : 'Лог боя и чат'}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-sky-100 flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" />{language === 'en' ? 'Battle log and chat' : 'Лог боя и чат'}</h3>
         <div className="flex bg-black/30 rounded-lg p-0.5 text-[11px]">
           {(['all', 'chat'] as const).map((f) => (
             <button key={f} onClick={() => setFilter(f)} className={`px-2 py-0.5 rounded-md transition-colors ${filter === f ? 'bg-white/10 text-white' : 'text-gray-500'}`}>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
+import { SLOT_ART } from '@/game/art';
 import { rarityColor } from '@/game/ui';
 import type { Equipment, GameState } from '@/game/types';
 import { useLanguage, localizeText } from '@/game/i18n';
@@ -35,7 +36,7 @@ export function GearStrip({ equipped }: { equipped: GameState['player']['equippe
               } ${on ? 'ring-2 ring-amber-300/70' : ''}`}
               style={{ borderColor: color ? `${color}aa` : 'rgba(255,255,255,0.12)', boxShadow: color ? `inset 0 0 12px ${color}33` : undefined }}
             >
-              <span className={`text-xl leading-none ${item ? '' : 'opacity-25 grayscale'}`}>{item ? item.icon : s.icon}</span>
+              <img src={SLOT_ART[s.id]} draggable={false} alt="" className={`w-10 h-10 object-contain select-none ${item ? '' : 'opacity-25 grayscale'}`} />
               <span className="text-[9px] text-gray-400 leading-none">{language === 'en' ? ({ helmet: 'Head', amulet: 'Amulet', armor: 'Armor', weapon: 'Weapon', shield: 'Shield', ring: 'Ring', boots: 'Boots' } as Record<string, string>)[s.id] || s.name : s.name}</span>
             </button>
           );

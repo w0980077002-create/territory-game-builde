@@ -16,6 +16,8 @@ import { ArenaChat } from './ArenaChat';
 import { GearStrip } from './GearStrip';
 import { BeltBar } from './BeltBar';
 import { FoldSection } from './FoldSection';
+import { SLOT_ART } from '@/game/art';
+import { ItemArt } from '@/components/ui/ItemArt';
 import { Loader2, LogOut, Timer, WifiOff, Coins, Sparkles, Trophy, Skull, Swords } from 'lucide-react';
 import { useLanguage, localizeText } from '@/game/i18n';
 
@@ -291,8 +293,8 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
             onToggle={() => setBeltOpen((o) => !o)}
             summary={
               <>
-                {game.belt.map((s, i) => s && (
-                  <span key={i} className="text-sm leading-none">{s.icon}<span className="text-[9px] text-gray-400">{s.qty}</span></span>
+                {game.belt.map((s, i) => s && i < 3 && (
+                  <ItemArt key={i} item={s} size={20} />
                 ))}
                 <span className="text-[10px] text-gray-500 tabular-nums ml-1">{game.belt.filter(Boolean).length}/7</span>
               </>
@@ -313,8 +315,8 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
             onToggle={() => setGearOpen((o) => !o)}
             summary={
               <>
-                {Object.values(game.player.equipped).filter(Boolean).slice(0, 7).map((eq) => (
-                  <span key={eq!.id} className="text-sm leading-none">{eq!.icon}</span>
+                {Object.values(game.player.equipped).filter((eq) => !!eq).slice(0, 3).map((eq) => (
+                  <img key={eq!.id} src={SLOT_ART[eq!.slot]} alt="" className="h-5 w-5 object-contain" />
                 ))}
                 <span className="text-[10px] text-gray-500 tabular-nums ml-1">{Object.values(game.player.equipped).filter(Boolean).length}/7</span>
               </>

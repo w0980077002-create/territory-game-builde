@@ -1,13 +1,18 @@
 import type { Equipment, InventoryItem, ShopItem } from './types';
 
+const ui = import.meta.env.BASE_URL + 'assets/territory/ui/';
+const eq = (slot: string) => ui + 'equipment/' + slot + '.webp';
+const itemIcon = (name: string) => ui + 'items/' + name + '.webp';
+
+// Static cosmetic art only: item identities, equip slots and stats are unchanged.
 export const SLOT_ART: Record<Equipment['slot'], string> = {
-  helmet: '/item-helmet.webp',
-  amulet: '/item-amulet.webp',
-  armor: '/item-armor.webp',
-  weapon: '/item-weapon.webp',
-  shield: '/item-shield.webp',
-  ring: '/item-ring.webp',
-  boots: '/item-boots.webp',
+  helmet: eq('helmet'),
+  amulet: eq('amulet'),
+  armor: eq('armor'),
+  weapon: eq('weapon'),
+  shield: eq('shield'),
+  ring: eq('ring'),
+  boots: eq('boots'),
 };
 
 export const CURRENCY_ART = {
@@ -25,12 +30,12 @@ export function itemArt(item: ArtSource): string {
   if (item.type === 'gem_pack') return '/gem-pack.webp';
   if (item.type === 'stone') return CURRENCY_ART.stones;
   if (item.type === 'material') return CURRENCY_ART.material;
-  if (item.arenaEffect === 'time') return '/potion-time.webp';
-  if (item.arenaEffect === 'adrenaline') return '/potion-adrenaline.webp';
+  if (item.arenaEffect === 'time') return itemIcon('potion-energy');
+  if (item.arenaEffect === 'adrenaline') return itemIcon('potion-fire');
   const e = item.effect;
-  if (e?.stat === 'hp') return e.value >= 150 ? '/potion-hp-large.webp' : '/potion-hp.webp';
-  if (e?.stat === 'attack') return '/elixir-attack.webp';
-  if (e?.stat === 'defense') return '/elixir-defense.webp';
-  if (e?.stat === 'critChance') return '/elixir-crit.webp';
-  return '/potion-hp.webp';
+  if (e?.stat === 'hp') return itemIcon('potion-hp');
+  if (e?.stat === 'attack') return itemIcon('potion-fire');
+  if (e?.stat === 'defense') return itemIcon('potion-mana');
+  if (e?.stat === 'critChance') return itemIcon('potion-energy');
+  return itemIcon('potion-green');
 }
