@@ -50,6 +50,7 @@ jobs:
           node scripts/check-combat-visuals.mjs
           node scripts/check-arena-postfight.mjs
           node scripts/check-belt-victory-milestones.mjs
+          node scripts/check-arena-matchmaking.mjs
           node scripts/auth-mock-tests.cjs
           node scripts/edge-initdata-tests.cjs
           node scripts/edge-identity-tests.cjs
