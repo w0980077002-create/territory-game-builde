@@ -174,7 +174,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION public.territory_gear_guard_v4()
-RETURNS trigger LANGUAGE plpgsql SET search_path TO 'pg_catalog'
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'pg_catalog'
 AS $$
 DECLARE v_stats jsonb;
 BEGIN
