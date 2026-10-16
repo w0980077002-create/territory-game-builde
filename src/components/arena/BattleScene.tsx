@@ -168,8 +168,6 @@ export function BattleScene(props: Props) {
                   <FighterFigure
                     key={enemy.id}
                     src={import.meta.env.BASE_URL + 'enemy-viking.webp'}
-                    // The arena API does not yet expose the opponent's saved appearance.
-                    // Render the canonical animated Viking instead of a static image.
                     combatFrames={getCombatAppearance('m2')}
                     name={enemy.name}
                     dir={-1}
