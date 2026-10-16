@@ -19,7 +19,10 @@ assert.match(room, /resultPanel=\{finished \? \(/, 'Result must be passed INTO t
 assert.match(battle, /\{resultPanel\}/, 'Battlefield must render result in the arena canvas');
 assert.match(room, /finished=\{finished\}/, 'Finished fights must hide battle action controls');
 assert.match(battle, /!finished && <div className="flex flex-col gap-1\.5 pt-6">/, 'Unused controls must disappear after the fight');
-assert.match(result, /absolute inset-x-2 bottom-1\.5/, 'Compact result must overlay the battlefield without extending the page');
+assert.match(result, /arena-result-footbar absolute inset-x-2 bottom-1\.5/, 'Slim bottom reward rail must remain inside the arena');
+assert.match(result, /arena-result-banner absolute left-1\/2 top-\[68px\]/, 'Victory title must float above the fighters, not obscure them');
+assert.match(result, /arena-result-stage.*absolute inset-0 z-40 pointer-events-none/, 'Overlay must not steal events from battlefield or chat');
+assert.match(result, /arena-result-leave pointer-events-auto/, 'Leave button must be clickable inside transparent overlay');
 assert.doesNotMatch(result, /rounded-\[22px\]|mt-3 grid grid-cols-4/, 'Oversized victory cards must not return');
 assert.match(room, /chatExpired = finished && postFightDeadline !== null && chatSeconds === 0/, 'Use server-backed deadline, not a fresh client timer');
 assert.match(room, /\(!view\?\.me\.rewarded && !reward\)/, 'Auto-exit must not discard unclaimed rewards');
@@ -29,14 +32,18 @@ assert.match(chat, /canSend/, 'Chat expiry gating missing');
 assert.match(lobby, /30 минут/, 'Arena rules must announce the time limit');
 assert.match(result, /VictorySparks/, 'Victory artwork and effects missing');
 assert.match(result, /formatPostFightTime/, 'Result countdown missing');
-assert.match(result, /arena-result-lux/, 'Fantasy arena result styling must stay compact');
+assert.match(result, /arena-result-banner-title/, 'Illustrated victory title is missing');
+assert.match(result, /arena-result-wing/, 'Winged championship emblem missing');
+assert.match(result, /arena-result-radiance/, 'Magical backlighting missing');
 assert.match(result, /alreadyRewarded/, 'Already claimed rewards should not show perpetual dots');
 assert.match(room, /alreadyRewarded=\{view\.me\.rewarded\}/, 'Keep reward display accurate on returning');
 const css = read('src/index.css');
-for (const style of ['arena-result-lux-win', 'arena-result-lux-loss', 'arena-result-lux-draw', 'arena-result-lux-reward-gold', 'arena-result-lux-reward-xp', 'arena-result-lux-reward-rating', 'arena-result-lux-reward-kills']) {
-  assert(css.includes('.' + style), 'Missing distinct fantasy art treatment: ' + style);
+for (const style of ['arena-result-stage-win', 'arena-result-stage-loss', 'arena-result-stage-draw',
+  'arena-result-banner', 'arena-result-wing', 'arena-result-footbar',
+  'arena-result-gem-gold', 'arena-result-gem-xp', 'arena-result-gem-rating', 'arena-result-gem-kills']) {
+  assert(css.includes('.' + style), 'Missing illustrated result artwork: ' + style);
 }
-assert.match(css, /\.arena-result-lux-sheen \{ animation:none !important; \}/, 'Respect reduced-motion settings for shimmer');
+assert.match(css, /\.arena-result-radiance \{animation:none!important;\}/, 'Respect reduced motion for the magical glow');
 assert.match(result, /Покинуть арену/, 'Manual leave must remain available');
 assert.match(pve, /kind === 'trial' \? 'map-chamber\.webp'/, 'Trials must have a separate backdrop');
 assert(existsSync('public/map-chamber.webp'), 'Trial backdrop asset does not exist');
@@ -48,4 +55,4 @@ assert.match(server, /RAISE EXCEPTION 'chat_expired'/, 'Post-deadline messages m
 assert.match(server, /p\.rewarded IS TRUE/, 'Only credited results can be lazily expired on login');
 assert.match(server, /CREATE OR REPLACE FUNCTION public\.arena_current_room/, 'Stale room cleanup missing');
 assert(!server.includes('arena_claim_reward('), 'Do not alter payout logic or reward amounts');
-console.log('Arena postfight checks OK: 30-minute server deadline, chat access, claim safeguard, vivid result and trial background.');
+console.log('Arena postfight checks OK: winged title, visible fighters, slim rewards, live chat and 30-minute deadline.');
