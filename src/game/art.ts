@@ -25,8 +25,24 @@ export const CURRENCY_ART = {
 
 type ArtSource = Pick<InventoryItem, 'type' | 'effect' | 'arenaEffect' | 'equipment'> | Pick<ShopItem, 'type' | 'effect' | 'arenaEffect' | 'equipment'>;
 
+/** Match the icon to the actual weapon; a sword must not appear as an axe.
+ * Keep the old generic weapon icon for legacy/unrecognized weapons.
+ * Cosmetic only — no item properties or combat statistics are altered.
+ */
+export function equipmentArt(equipment: Equipment): string {
+  if (equipment.slot !== 'weapon') return SLOT_ART[equipment.slot];
+  const name = equipment.name.toLowerCase();
+  if (/топор|секир|axe|hatchet/.test(name)) return SLOT_ART.weapon;
+  if (/лук|арбалет|bow|crossbow/.test(name) || equipment.icon === '🏹') return itemIcon('bow');
+  if (/посох|жезл|staff|wand/.test(name) || equipment.icon === '🪄') return itemIcon('staff');
+  if (/меч|клинок|сабл|рапир|sword|blade|saber|sabre|rapier/.test(name) || ['⚔️', '🗡️', '🔱'].includes(equipment.icon)) {
+    return itemIcon('sword');
+  }
+  return SLOT_ART.weapon;
+}
+
 export function itemArt(item: ArtSource): string {
-  if (item.equipment) return SLOT_ART[item.equipment.slot];
+  if (item.equipment) return equipmentArt(item.equipment);
   if (item.type === 'gem_pack') return '/gem-pack.webp';
   if (item.type === 'stone') return CURRENCY_ART.stones;
   if (item.type === 'material') return CURRENCY_ART.material;

@@ -42,6 +42,9 @@ export function FighterFigure({ src, combatFrames, name, dir, alive, strike, idl
             : combatFrames?.idle ?? src}
           alt={name}
           draggable={false}
+          onError={(event) => {
+            if (event.currentTarget.getAttribute('src') !== src) event.currentTarget.src = src;
+          }}
           className={`${className} motion-reduce:animate-none select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] transition-[filter,opacity] duration-500 ${
             alive ? 'animate-idle' : 'grayscale opacity-40 translate-y-2'
           }`}
@@ -76,6 +79,10 @@ function Impact({ strike }: { strike: StrikeEvent }) {
   }
   return (
     <>
+      <span
+        aria-hidden="true"
+        className={`arena-impact-burst absolute left-1/2 top-[40%] h-16 w-16 rounded-full pointer-events-none ${crit ? 'arena-impact-crit' : 'arena-impact-normal'}`}
+      />
       <span
         className={`absolute left-[12%] right-[12%] top-[40%] rounded-full pointer-events-none animate-slash ${
           crit

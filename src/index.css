@@ -364,6 +364,43 @@
 }
 
 
+/* Visual battle feedback; never changes HP, damage, loot or combat timing. */
+@keyframes arenaImpactBurst {
+  0%, 27% { opacity: 0; transform: translate(-50%, -50%) scale(.15) rotate(-16deg); }
+  45% { opacity: .95; transform: translate(-50%, -50%) scale(.88) rotate(16deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.6) rotate(42deg); }
+}
+.arena-impact-burst {
+  z-index: 25;
+  border: 2px solid rgba(255,246,212,.9);
+  background: radial-gradient(circle, rgba(255,255,255,.72) 0, rgba(255,175,85,.44) 25%, transparent 69%);
+  box-shadow: 0 0 16px 5px rgba(250,149,49,.52);
+  animation: arenaImpactBurst .8s ease-out .28s both;
+}
+.arena-impact-crit {
+  background: radial-gradient(circle, rgba(255,255,255,.95) 0, rgba(252,211,77,.68) 36%, transparent 70%);
+  box-shadow: 0 0 23px 7px rgba(252,211,77,.7);
+}
+@keyframes arenaWinSpark {
+  0% { opacity: 0; transform: translate3d(0, 10px, 0) scale(.3) rotate(0deg); }
+  22% { opacity: 1; }
+  82% { opacity: .9; }
+  100% { opacity: 0; transform: translate3d(14px, -65px, 0) scale(.7) rotate(170deg); }
+}
+@keyframes arenaWinHalo {
+  0% { opacity: 0; transform: translateX(-50%) scale(.3); }
+  35% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+  100% { opacity: .4; transform: translateX(-50%) scale(1); }
+}
+.arena-win-spark { opacity: 0; animation: arenaWinSpark 2s ease-out both; }
+.arena-win-halo { animation: arenaWinHalo 2.2s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .arena-win-spark, .arena-win-halo, .arena-impact-burst {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+}
+
 /* Arena visuals only: fighter foot placement and controls preserve combat mechanics. */
 .arena-battle-art { object-position: center 62%; }
 .arena-battle { background-color: #1b263c; }

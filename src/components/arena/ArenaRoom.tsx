@@ -12,11 +12,12 @@ import { beltAction, beltContext, consumeBelt } from '@/game/belt';
 import { hapticImpact, hapticNotify } from '@/game/telegram';
 import { FighterList } from './FighterList';
 import { BattleScene } from './BattleScene';
+import { VictorySparks } from './VictorySparks';
 import { ArenaChat } from './ArenaChat';
 import { GearStrip } from './GearStrip';
 import { BeltBar } from './BeltBar';
 import { FoldSection } from './FoldSection';
-import { SLOT_ART } from '@/game/art';
+import { equipmentArt } from '@/game/art';
 import { ItemArt } from '@/components/ui/ItemArt';
 import { Loader2, LogOut, Timer, WifiOff, Coins, Sparkles, Trophy, Skull, Swords } from 'lucide-react';
 import { useLanguage, localizeText } from '@/game/i18n';
@@ -176,14 +177,14 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const won = room.winnerTeam !== null && room.winnerTeam === me.team;
   const draw = room.status === 'finished' && room.winnerTeam === null;
   const isDuel = room.mode === 'duel';
-  const followerName = game.followers[0]?.name ?? (language === 'en' ? 'Follower' : 'Последователь');
   const resultPanel = room.status === 'finished' ? createPortal(
     <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/75 px-4 py-6 backdrop-blur-[3px]">
       <div className={`relative w-full max-w-[300px] overflow-hidden rounded-[22px] border-2 bg-gradient-to-b from-[#071526] via-[#040d19] to-[#020711] p-3 shadow-2xl ${won || draw ? 'border-amber-400/80 shadow-amber-500/20' : 'border-amber-400/60 shadow-red-500/20'}`}>
+        {won && <VictorySparks />}
         <div className={`pointer-events-none absolute inset-x-7 top-0 h-px ${won || draw ? 'bg-cyan-300 shadow-[0_0_12px_3px_rgba(34,211,238,0.45)]' : 'bg-red-400 shadow-[0_0_12px_3px_rgba(248,113,113,0.45)]'}`} />
         <div className="pointer-events-none absolute -top-12 left-1/2 h-20 w-36 -translate-x-1/2 rounded-full bg-cyan-500/10 blur-2xl" />
         <div className="relative mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-amber-300/80 bg-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.22)]">
-          <Swords className={`h-6 w-6 ${won || draw ? 'text-amber-300' : 'text-red-300'}`} strokeWidth={2.2} />
+          {won ? <Trophy className="h-6 w-6 text-amber-300" strokeWidth={2.2} /> : <Swords className={`h-6 w-6 ${draw ? 'text-amber-300' : 'text-red-300'}`} strokeWidth={2.2} />}
         </div>
         <div className="mt-1 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-[0.28em] text-sky-300/80">
           <span className="h-px w-7 bg-gradient-to-r from-transparent to-amber-400/80" />
@@ -261,7 +262,6 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
         <BattleScene
           me={me}
           enemy={shownEnemy}
-          followerName={followerName}
           active={isActive}
           moved={view.me.moved}
           auto={view.me.auto}
@@ -316,7 +316,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
             summary={
               <>
                 {Object.values(game.player.equipped).filter((eq) => !!eq).slice(0, 3).map((eq) => (
-                  <img key={eq!.id} src={SLOT_ART[eq!.slot]} alt="" className="h-5 w-5 object-contain" />
+                  <img key={eq!.id} src={equipmentArt(eq!)} alt="" className="h-5 w-5 object-contain" />
                 ))}
                 <span className="text-[10px] text-gray-500 tabular-nums ml-1">{Object.values(game.player.equipped).filter(Boolean).length}/7</span>
               </>
