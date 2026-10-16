@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { transform } from 'esbuild';
 
 const read = (path) => readFileSync(path, 'utf8');
 
@@ -54,6 +55,14 @@ for (const mode of [0, 1, 2]) {
 assert.match(pve, /src=\{resolveCombatArtUrl\(enemy\.art\)\}/, 'PvE may double-prefix a public asset path');
 assert.match(enemyArt, /url\.startsWith\(base\)/, 'Combat art prefix must be idempotent');
 assert.match(engine, /characters\/bosses\/barrow_guardian\/idle\.webp/, 'Trial guardian needs a six-pose art set');
+
+// Run the actual exported resolver in both URL forms that occur in deployed builds.
+const base = '/territory-game-builde/';
+const transpiled = await transform(enemyArt.replaceAll('import.meta.env.BASE_URL', JSON.stringify(base)), { loader: 'ts', format: 'esm' });
+const { resolveCombatArtUrl } = await import('data:text/javascript;base64,' + Buffer.from(transpiled.code).toString('base64'));
+const trialPath = 'assets/territory/characters/bosses/barrow_guardian/idle.webp';
+assert.equal(resolveCombatArtUrl('/' + trialPath), base + trialPath, 'Bare trial art gets one prefix');
+assert.equal(resolveCombatArtUrl(base + trialPath), base + trialPath, 'Already-prefixed art must not get a second prefix');
 assert(existsSync('public/assets/territory/characters/bosses/barrow_guardian/death.webp'), 'Trial guardian poses missing');
 assert.match(strikes, /STRIKE_MS = 920/, 'Faster strike FX queue timing missing');
 
