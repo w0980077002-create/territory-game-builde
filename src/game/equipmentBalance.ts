@@ -2,7 +2,7 @@ import type { Equipment, EquipmentBaseStats, GameState, InventoryItem } from './
 import { EQUIPMENT_TEMPLATES, rarityForChapter } from './equipmentCatalog';
 
 /** Save-data version. Bump only when a new persistent migration is introduced. */
-export const EQUIPMENT_BALANCE_VERSION = 3;
+export const EQUIPMENT_BALANCE_VERSION = 4;
 /**
  * Fixed, slot- and rarity-aware stat growth per successful forge level.
  * Accessories grow more slowly than weapons; defensive slots have separate budgets
@@ -221,6 +221,50 @@ export function upgradeEquipment(eq: Equipment): Equipment {
   return setEquipmentLevel(prepared, prepared.level + 1);
 }
 
+/** Identical ceilings to the server's territory_normalize_gear_v4.
+ * Existing levels, item IDs, slots, rarities and ownership are retained.
+ * Shop catalog items always follow the non-compounding forge growth table.
+ * Generated loot or custom gear only changes if above generous slot caps.
+ */
+export function normalizeEquipmentV4(eq: Equipment): Equipment {
+  const template = EQUIPMENT_TEMPLATES.find(
+    (x) => x.name === eq.name && x.slot === eq.slot && x.rarity === eq.rarity,
+  );
+  if (template) {
+    const baseStats = onlyStats(template);
+    return setEquipmentLevel({
+      ...eq,
+      baseLevel: template.level,
+      baseStats,
+      upgradeCount: Math.max(0, Math.floor(eq.level) - template.level),
+    }, eq.level);
+  }
+  const lvl = Math.max(1, Math.min(500, Math.floor(Number.isFinite(eq.level) ? eq.level : 1)));
+  const attackCap = eq.slot === 'weapon' ? 40 + 6 * lvl
+    : eq.slot === 'ring' || eq.slot === 'amulet' ? 20 + 4 * lvl : 10 + 2 * lvl;
+  const defenseCap = ['armor', 'shield', 'helmet', 'boots'].includes(eq.slot) ? 10 + 5 * lvl : 10 + 3 * lvl;
+  const hpCap = eq.slot === 'armor' ? 50 + 12 * lvl
+    : ['boots', 'shield', 'helmet'].includes(eq.slot) ? 40 + 10 * lvl : 25 + 5 * lvl;
+  const capped: Equipment = {
+    ...eq,
+    ...(eq.attack !== undefined ? { attack: Math.max(0, Math.min(eq.attack, attackCap)) } : {}),
+    ...(eq.defense !== undefined ? { defense: Math.max(0, Math.min(eq.defense, defenseCap)) } : {}),
+    ...(eq.hp !== undefined ? { hp: Math.max(0, Math.min(eq.hp, hpCap)) } : {}),
+    ...(eq.critChance !== undefined ? { critChance: Math.max(0, Math.min(eq.critChance, 25)) } : {}),
+  };
+  const poisonedBaseline = !!eq.baseStats && (
+    (eq.baseStats.attack ?? 0) > attackCap
+    || (eq.baseStats.defense ?? 0) > defenseCap
+    || (eq.baseStats.hp ?? 0) > hpCap
+    || (eq.baseStats.critChance ?? 0) > 25
+  );
+  if (capped.attack !== eq.attack || capped.defense !== eq.defense
+    || capped.hp !== eq.hp || capped.critChance !== eq.critChance || poisonedBaseline) {
+    return { ...capped, baseLevel: lvl, baseStats: onlyStats(capped), upgradeCount: 0 };
+  }
+  return migrateEquipment(capped);
+}
+
 function migrateEquipment(eq: Equipment): Equipment {
   // Recalculate already-migrated items too. This also safely moves saves from an
   // earlier balance version onto the current curve without compounding rounding.
@@ -248,7 +292,7 @@ function migrateEquipment(eq: Equipment): Equipment {
 }
 
 function migrateInventoryItem(item: InventoryItem): InventoryItem {
-  return item.equipment ? { ...item, equipment: migrateEquipment(item.equipment) } : item;
+  return item.equipment ? { ...item, equipment: normalizeEquipmentV4(item.equipment) } : item;
 }
 
 export function migrateGameStateBalance(saved: Partial<GameState>): Partial<GameState> {
@@ -265,7 +309,7 @@ export function migrateGameStateBalance(saved: Partial<GameState>): Partial<Game
     player: player ? {
       ...player,
       equipped: player.equipped ? Object.fromEntries(
-        Object.entries(player.equipped).map(([slot, eq]) => [slot, eq ? migrateEquipment(eq) : eq]),
+        Object.entries(player.equipped).map(([slot, eq]) => [slot, eq ? normalizeEquipmentV4(eq) : eq]),
       ) as NonNullable<GameState['player']['equipped']> : player.equipped,
     } : player,
   };
@@ -273,5 +317,5 @@ export function migrateGameStateBalance(saved: Partial<GameState>): Partial<Game
 
 /** Test helper kept out of the UI; does not mutate the supplied equipment. */
 export function normalizeEquipmentForTests(eq: Equipment): Equipment {
-  return migrateEquipment(eq);
+  return normalizeEquipmentV4(eq);
 }
