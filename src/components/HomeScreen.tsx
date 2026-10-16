@@ -6,6 +6,7 @@ import { useGame, useArena, useAccount } from '@/game/actions';
 import { generateChapter, getComputedStats } from '@/game/engine';
 import { beltContext } from '@/game/belt';
 import { getAppearanceIcon } from '@/game/appearance';
+import { getFollowerArt } from '@/game/combatArt';
 import { MAIL, blessingReady, claimBlessing, dailyStatus } from '@/game/progression';
 import type { AuthUser } from '@/game/auth';
 import { useLive } from '@/game/live';
@@ -161,7 +162,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
           {chapter.enemies.map((e, i) => (
             <span key={e.id} className={`w-1.5 h-1.5 rounded-full border ${i < wins ? 'bg-amber-400 border-amber-200' : 'bg-black/60 border-amber-200/30'}`} />
           ))}
-          <img src="/enemy-boss.webp" alt={language === 'en' ? 'Boss' : 'Босс'} className={`w-3.5 h-3.5 rounded-full object-cover object-top border ${bossReady ? 'border-red-400 animate-pulse' : 'border-white/20 grayscale opacity-70'}`} />
+          <img src={chapter.boss.art} alt={language === 'en' ? 'Boss' : 'Босс'} className={`w-3.5 h-3.5 rounded-full object-cover object-top border ${bossReady ? 'border-red-400 animate-pulse' : 'border-white/20 grayscale opacity-70'}`} />
         </span>
       </button>
 
@@ -185,9 +186,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
       <div className="absolute z-0 left-[48px] right-[48px] top-[calc(max(8px,env(safe-area-inset-top))+150px)] bottom-[196px] flex items-end justify-center pointer-events-none">
         <div className="relative h-[62%] w-[26%] flex items-end justify-center">
           {follower && (
-            follower.id === 'follower_1'
-              ? <img src="/follower-shield.webp" alt={follower.name} className="max-h-full max-w-full object-contain object-bottom drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] animate-idle" />
-              : <span title={follower.name} className="text-5xl drop-shadow-lg animate-idle">{follower.icon}</span>
+            <img src={getFollowerArt(follower.id)} alt={follower.name} className="max-h-full max-w-full object-contain object-bottom drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] animate-idle" />
           )}
         </div>
         <div className="relative h-full w-[44%] flex items-end justify-center -ml-[6%]">
@@ -203,7 +202,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
             {nextEnemy.isBoss ? t('boss') : ''}{localizeText(nextEnemy.name, language)}
           </span>
           <span className="absolute bottom-0 w-[80%] h-2.5 rounded-[50%] bg-black/50 blur-[3px]" />
-          <img src={nextEnemy.art} alt="" className="relative min-h-0 flex-1 max-w-full object-contain object-bottom -scale-x-100 drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] transition-transform group-active:scale-95" />
+          <img src={nextEnemy.art} alt="" className="relative min-h-0 flex-1 max-w-full object-contain object-bottom drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] transition-transform group-active:scale-95" />
         </button>
       </div>
 

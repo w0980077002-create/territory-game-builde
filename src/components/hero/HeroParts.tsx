@@ -8,6 +8,8 @@ import { useLanguage, localizeText } from '@/game/i18n';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { getAppearanceIcon } from '@/game/appearance';
+import { selectedFollower } from '@/game/followers';
+import { getFollowerArt } from '@/game/combatArt';
 
 export interface GearView {
   name: string;
@@ -78,7 +80,9 @@ function Slot({ slot, gear, active, onTap }: { slot: Equipment['slot']; gear?: G
 
 export function PaperDoll({ gear, followerUnlocked }: { gear: GearMap; followerUnlocked: boolean }) {
   const { language } = useLanguage();
-  const appearance = useStore(useGame).appearance;
+  const state = useStore(useGame);
+  const appearance = state.appearance;
+  const follower = selectedFollower(state);
   const [picked, setPicked] = useState<Equipment['slot'] | null>(null);
   const left = EQUIPMENT_SLOTS.slice(0, 3);
   const right = EQUIPMENT_SLOTS.slice(3, 6);
@@ -94,7 +98,7 @@ export function PaperDoll({ gear, followerUnlocked }: { gear: GearMap; followerU
         <div className="relative h-[188px]">
           <div className="absolute inset-x-2 bottom-1 h-6 rounded-[50%] bg-black/60 blur-md" />
           {followerUnlocked && (
-            <img src="/follower-shield.webp" alt="" className="absolute left-0 bottom-1 h-[62%] object-contain opacity-90" />
+            <img src={getFollowerArt(follower?.id)} alt={follower?.name ?? ""} className="absolute left-0 bottom-1 h-[62%] object-contain opacity-90" />
           )}
           <img src={getAppearanceIcon(appearance)} alt="" className="absolute right-0 bottom-0 h-full w-[85%] object-contain object-bottom animate-idle" />
         </div>
