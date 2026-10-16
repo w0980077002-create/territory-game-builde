@@ -97,7 +97,10 @@ export function takeFromBelt(state: GameState, index: number): GameState {
   const slot = state.belt[index];
   if (!slot) return state;
   const belt = state.belt.map((s, i) => (i === index ? null : s));
-  const existing = state.inventory.find((i) => i.name === slot.name && i.type !== 'equipment');
+  const existing = state.inventory.find((i) =>
+    i.type === slot.type && i.name === slot.name && i.rarity === slot.rarity
+    && i.arenaEffect === slot.arenaEffect && JSON.stringify(i.effect ?? null) === JSON.stringify(slot.effect ?? null)
+  );
   const inventory = existing
     ? state.inventory.map((i) => (i.id === existing.id ? { ...i, qty: i.qty + slot.qty } : i))
     : [...state.inventory, { ...slot, id: `inv_${Date.now()}_${Math.random().toString(36).slice(2)}` }];
