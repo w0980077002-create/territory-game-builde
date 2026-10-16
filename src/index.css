@@ -469,6 +469,15 @@
   }
 }
 
+/* Separate arcane Trial scene: subtle lighting only; no animated overlays on fighters. */
+@keyframes trialMagicPulse {
+  0%, 100% { opacity: .38; transform: scale(.96); }
+  50% { opacity: .78; transform: scale(1.08); }
+}
+.trial-magic-glow { animation: trialMagicPulse 5.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .trial-magic-glow { animation: none !important; }
+}
 /* Arena visuals only: fighter foot placement and controls preserve combat mechanics. */
 .arena-battle-art { object-position: center 62%; }
 .arena-battle { background-color: #1b263c; }
