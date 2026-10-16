@@ -168,13 +168,13 @@ export function BattleScene(props: Props) {
                   <FighterFigure
                     key={enemy.id}
                     src={import.meta.env.BASE_URL + 'enemy-viking.webp'}
-                    combatFrames={getCombatAppearance('m2')}
+                    combatFrames={getCombatAppearance(enemy.appearance)}
                     name={enemy.name}
                     dir={-1}
                     alive={enemy.hp > 0}
                     strike={strike}
                     idleSeconds={2.8}
-                    className="absolute left-0 bottom-0 h-[78%] w-[80%] object-contain object-left-bottom"
+                    className="absolute left-0 bottom-0 h-[96%] w-full object-contain object-left-bottom"
                   />
                 </div>
               </>
