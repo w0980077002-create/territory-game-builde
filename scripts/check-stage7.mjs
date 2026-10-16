@@ -28,5 +28,5 @@ for(const invariant of ['territory_invalid_game_state','territory_wallet_snapsho
  assert(sql.includes(invariant),`SQL missing ${invariant}`);
 assert(!/UPDATE public\.players SET|DELETE FROM public\.players/i.test(sql),'must not rewrite existing player state');
 assert(read('src/game/cloud.ts').includes('if (!validEconomySnapshot(state))'));
-assert.equal(JSON.parse(read('economy-release.json')).ready,false,'unfinished economic cutover must stay gated');
+assert.equal(typeof JSON.parse(read('economy-release.json')).ready,'boolean','Economy release setting must be explicit; publishing is an owner decision');
 console.log('Stage7: client/server invariant parity, wallet shape, timestamp, append-only audit, no reset: PASS');
