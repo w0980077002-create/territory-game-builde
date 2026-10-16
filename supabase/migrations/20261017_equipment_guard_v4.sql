@@ -179,7 +179,8 @@ AS $$
 DECLARE v_stats jsonb;
 BEGIN
   IF NEW.game_state IS NULL THEN RETURN NEW; END IF;
-  IF TG_OP='UPDATE' AND NEW.game_state IS NOT DISTINCT FROM OLD.game_state THEN RETURN NEW; END IF;
+  -- Also correct direct attempts to write a forged attack/HP/defense snapshot
+  -- while leaving game_state unchanged; do not trust client summary columns.
   NEW.game_state:=public.territory_normalize_state_v4(NEW.game_state);
   v_stats:=public.territory_gear_recompute_columns_v4(NEW.game_state);
   IF v_stats<>'{}'::jsonb THEN
@@ -193,7 +194,7 @@ END;
 $$;
 DROP TRIGGER IF EXISTS territory_gear_guard_before_v4 ON public.players;
 CREATE TRIGGER territory_gear_guard_before_v4
-BEFORE INSERT OR UPDATE OF game_state ON public.players
+BEFORE INSERT OR UPDATE OF game_state, attack, defense, max_hp, crit_chance ON public.players
 FOR EACH ROW EXECUTE FUNCTION public.territory_gear_guard_v4();
 
 REVOKE ALL ON FUNCTION public.territory_normalize_gear_v4(jsonb) FROM PUBLIC;
