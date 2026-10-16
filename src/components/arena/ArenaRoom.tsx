@@ -17,7 +17,6 @@ import { GearStrip } from './GearStrip';
 import { BeltBar } from './BeltBar';
 import { FoldSection } from './FoldSection';
 import { equipmentArt } from '@/game/art';
-import { ItemArt } from '@/components/ui/ItemArt';
 import { Loader2, Timer, WifiOff } from 'lucide-react';
 import { useLanguage, localizeText } from '@/game/i18n';
 
@@ -41,7 +40,6 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const [enemiesOpen, setEnemiesOpen] = useState(false);
   const [alliesOpen, setAlliesOpen] = useState(false);
   const [gearOpen, setGearOpen] = useState(false);
-  const [beltOpen, setBeltOpen] = useState(false);
   const claiming = useRef(false);
   const prevHp = useRef<number | null>(null);
   const autoLeaving = useRef(false);
@@ -282,6 +280,29 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
         />
       )}
 
+      {/* Battle essentials belong between the arena and the chat — always visible.
+          A compact seven-slot row avoids both vertical searching and horizontal swiping. */}
+      {room.status !== 'waiting' && (
+        <section aria-label={language === 'en' ? 'Battle elixirs' : 'Боевые эликсиры'}
+          className="rounded-xl border border-amber-400/40 bg-gradient-to-b from-[#241a19]/95 to-[#080e1c]/95 px-2 py-1.5 shadow-[0_3px_12px_rgba(0,0,0,0.45)]">
+          <div className="mb-1 flex items-center justify-between gap-2 px-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-amber-200">
+              {language === 'en' ? 'Elixirs & items' : 'Эликсиры и предметы'}
+            </span>
+            <span className="text-[10px] font-semibold tabular-nums text-amber-100/75">{game.belt.filter(Boolean).length}/7</span>
+          </div>
+          <BeltBar
+            compact
+            belt={game.belt}
+            ctx={beltContext(game, arenaStats.wins)}
+            actionLabel={isActive && alive ? (language === 'en' ? 'Tap to use · one potion per round' : 'Нажми для использования · одно зелье за раунд') : (language === 'en' ? 'Equip potions from inventory' : 'Пополняй зелья в инвентаре')}
+            disabled={!isActive || !alive || busy}
+            busyIndex={beltBusy}
+            onAction={pressBeltSlot}
+          />
+        </section>
+      )}
+
       <ArenaChat
         roomId={roomId}
         messages={messages}
@@ -291,28 +312,6 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
 
       {room.status !== 'waiting' && (
         <div className="space-y-1.5">
-          <FoldSection
-            title={language === 'en' ? 'Elixirs and items' : 'Эликсиры и предметы'}
-            open={beltOpen}
-            onToggle={() => setBeltOpen((o) => !o)}
-            summary={
-              <>
-                {game.belt.map((s, i) => s && i < 3 && (
-                  <ItemArt key={i} item={s} size={20} />
-                ))}
-                <span className="text-[10px] text-gray-500 tabular-nums ml-1">{game.belt.filter(Boolean).length}/7</span>
-              </>
-            }
-          >
-            <BeltBar
-              belt={game.belt}
-              ctx={beltContext(game, arenaStats.wins)}
-              actionLabel={isActive && alive ? (language === 'en' ? 'Tap a potion to drink (one per round)' : 'Нажми на зелье, чтобы выпить (одно за раунд)') : (language === 'en' ? 'Manage your potion belt in inventory' : 'Пояс с зельями — собирается в сумке')}
-              disabled={!isActive || !alive || busy}
-              busyIndex={beltBusy}
-              onAction={pressBeltSlot}
-            />
-          </FoldSection>
           <FoldSection
             title={language === 'en' ? 'Equipment' : 'Снаряжение'}
             open={gearOpen}
