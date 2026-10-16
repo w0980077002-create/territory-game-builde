@@ -109,6 +109,44 @@ jobs:
             mkdir -p public/assets/territory/characters/heroes
             cp -a "$TEMP_DIR/public/assets/territory/characters/heroes/." public/assets/territory/characters/heroes/
             echo "Installed four heroes without touching the rest of TERRITORY."
+          elif [ -f "$TEMP_DIR/NPC_MANIFEST.json" ]; then
+            # Overlay only the 20 approved NPCs and the optional Trial guardian.
+            python3 - "$TEMP_DIR" <<'PY'
+          import json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          expected_groups = {
+              'enemies': {'goblin','boar','bandit','wolf','troll'},
+              'bosses': {'bandit_chief','northern_jarl','dark_priest','undead_king','barrow_guardian','abyss_demon','giant_king','storm_lord','fire_lord','chaos_shadow'},
+              'followers': {'loyal_shield','northern_warrior','forest_healer','moon_hunter','rune_mage'},
+          }
+          poses = ('idle', 'attack', 'block', 'dodge', 'hit', 'death')
+          prefix = 'public/assets/territory/characters'
+          expected = {f'{prefix}/{category}/{name}/{pose}.webp'
+                      for category, names in expected_groups.items()
+                      for name in names for pose in poses}
+          expected.add(f'{prefix}/trial/guardian_idle.webp')
+          actual = {str(p.relative_to(root)) for p in root.rglob('*') if p.is_file()}
+          if actual != expected | {'NPC_MANIFEST.json'}:
+              sys.exit('NPC ZIP has missing or unexpected files')
+          manifest = json.loads((root / 'NPC_MANIFEST.json').read_text('utf-8'))
+          if manifest.get('pack_id') != 'territory-npc-20':
+              sys.exit('Unexpected NPC pack')
+          for category, names in expected_groups.items():
+              if {c['id'] for c in manifest.get('characters', []) if c.get('category')==category} != names:
+                  sys.exit('Unexpected NPC roster: ' + category)
+          for name in expected:
+              sprite = root / name
+              if sprite.is_symlink() or not (1024 <= sprite.stat().st_size <= 1024*1024):
+                  sys.exit('Invalid NPC file: ' + name)
+              with sprite.open('rb') as f:
+                  h = f.read(12)
+              if h[:4] != b'RIFF' or h[8:12] != b'WEBP':
+                  sys.exit('Not WebP: ' + name)
+          print('All 120 NPC frames and guardian portrait verified')
+          PY
+            mkdir -p public/assets/territory/characters
+            cp -a "$TEMP_DIR/public/assets/territory/characters/." public/assets/territory/characters/
+            echo "Installed 20 NPCs without modifying source code or saved data."
           else
             if [ -f "$TEMP_DIR/package.json" ] && [ -d "$TEMP_DIR/src" ]; then
               SOURCE_DIR="$TEMP_DIR"
