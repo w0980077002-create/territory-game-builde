@@ -18,7 +18,7 @@ const KIND_STYLE: Record<ArenaMessage['kind'], string> = {
   chat: 'text-white',
 };
 
-export function ArenaChat({ roomId, messages, myName }: { roomId: string; messages: ArenaMessage[]; myName: string }) {
+export function ArenaChat({ roomId, messages, myName, canSend = true }: { roomId: string; messages: ArenaMessage[]; myName: string; canSend?: boolean }) {
   const { language } = useLanguage();
   const [filter, setFilter] = useState<'all' | 'chat'>('all');
   const [text, setText] = useState('');
@@ -37,7 +37,7 @@ export function ArenaChat({ roomId, messages, myName }: { roomId: string; messag
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     const value = text.trim();
-    if (!value || sending) return;
+    if (!value || sending || !canSend) return;
     setSending(true);
     setError(null);
     try {
@@ -88,10 +88,13 @@ export function ArenaChat({ roomId, messages, myName }: { roomId: string; messag
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={200}
-          placeholder={language === 'en' ? 'Write a message...' : 'Написать в чат...'}
+          disabled={!canSend}
+          placeholder={!canSend
+            ? (language === 'en' ? 'Post-battle chat has ended' : 'Время общения после боя истекло')
+            : (language === 'en' ? 'Write a message...' : 'Написать в чат...')}
           className="flex-1 min-w-0 rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-teal-500 transition-colors"
         />
-        <button type="submit" disabled={!text.trim() || sending} className="btn-primary px-3 py-2" aria-label={language === 'en' ? 'Send' : 'Отправить'}>
+        <button type="submit" disabled={!canSend || !text.trim() || sending} className="btn-primary px-3 py-2" aria-label={language === 'en' ? 'Send' : 'Отправить'}>
           <Send className="w-4 h-4" />
         </button>
       </form>
