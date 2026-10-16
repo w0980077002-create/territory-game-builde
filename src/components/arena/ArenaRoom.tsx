@@ -271,6 +271,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
               won={won}
               draw={draw}
               reward={reward}
+              alreadyRewarded={view.me.rewarded}
               ratingChange={view.me.ratingChange}
               deadlineReady={postFightDeadline !== null}
               remainingSeconds={chatSeconds}

@@ -29,6 +29,14 @@ assert.match(chat, /canSend/, 'Chat expiry gating missing');
 assert.match(lobby, /30 минут/, 'Arena rules must announce the time limit');
 assert.match(result, /VictorySparks/, 'Victory artwork and effects missing');
 assert.match(result, /formatPostFightTime/, 'Result countdown missing');
+assert.match(result, /arena-result-lux/, 'Fantasy arena result styling must stay compact');
+assert.match(result, /alreadyRewarded/, 'Already claimed rewards should not show perpetual dots');
+assert.match(room, /alreadyRewarded=\{view\.me\.rewarded\}/, 'Keep reward display accurate on returning');
+const css = read('src/index.css');
+for (const style of ['arena-result-lux-win', 'arena-result-lux-loss', 'arena-result-lux-draw', 'arena-result-lux-reward-gold', 'arena-result-lux-reward-xp', 'arena-result-lux-reward-rating', 'arena-result-lux-reward-kills']) {
+  assert(css.includes('.' + style), 'Missing distinct fantasy art treatment: ' + style);
+}
+assert.match(css, /\.arena-result-lux-sheen \{ animation:none !important; \}/, 'Respect reduced-motion settings for shimmer');
 assert.match(result, /Покинуть арену/, 'Manual leave must remain available');
 assert.match(pve, /kind === 'trial' \? 'map-chamber\.webp'/, 'Trials must have a separate backdrop');
 assert(existsSync('public/map-chamber.webp'), 'Trial backdrop asset does not exist');
