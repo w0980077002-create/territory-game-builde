@@ -77,10 +77,12 @@ function Impact({ strike }: { strike: StrikeEvent }) {
   const crit = strike.tone === 'crit';
   if (strike.tone === 'dodge') {
     return (
-      <span aria-hidden="true" className="battle-dodge-echo absolute left-[12%] top-[31%] h-[48%] w-[65%] rounded-full border border-cyan-200/50 bg-cyan-300/10 blur-sm pointer-events-none" />
-      <span className="absolute left-1/2 top-[22%] z-30 animate-dmg text-base font-black text-cyan-200 whitespace-nowrap [text-shadow:0_2px_6px_rgba(0,0,0,0.9)]">
-        {language === 'en' ? 'DODGE!' : 'Уклон!'}
-      </span>
+      <>
+        <span aria-hidden="true" className="battle-dodge-echo absolute left-[12%] top-[31%] h-[48%] w-[65%] rounded-full border border-cyan-200/50 bg-cyan-300/10 blur-sm pointer-events-none" />
+        <span className="absolute left-1/2 top-[22%] z-30 animate-dmg text-base font-black text-cyan-200 whitespace-nowrap [text-shadow:0_2px_6px_rgba(0,0,0,0.9)]">
+          {language === 'en' ? 'DODGE!' : 'Уклон!'}
+        </span>
+      </>
     );
   }
   if (strike.tone === 'block') {
