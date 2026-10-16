@@ -33,6 +33,17 @@ assert.match(lobby, /30 минут/, 'Arena rules must announce the time limit')
 assert.match(result, /VictorySparks/, 'Victory artwork and effects missing');
 assert.match(result, /formatPostFightTime/, 'Result countdown missing');
 assert.match(result, /arena-result-banner-title/, 'Illustrated victory title is missing');
+assert(!result.includes('СЛАВА ПОБЕДИТЕЛЮ') && !result.includes('GLORY TO THE CHAMPION'), 'Remove the distracting victory caption in both languages');
+assert(!result.includes('titleCaption'), 'No extra banner caption may remain');
+const belt = read('src/components/arena/BeltBar.tsx');
+assert.match(room, /<BeltBar\s+compact/, 'Compact elixir slots must be visible without expanding a fold');
+assert(room.indexOf('<BeltBar') < room.indexOf('<ArenaChat'), 'Elixirs must be above the arena chat, below the battle');
+assert(room.indexOf('<BeltBar') > room.indexOf('<BattleScene'), 'Elixirs must follow the fight');
+assert.equal((room.match(/<BeltBar/g) ?? []).length, 1, 'Do not duplicate the elixir belt below chat');
+assert(!room.includes('beltOpen'), 'Avoid hidden or collapsed elixirs while fighting');
+assert.match(belt, /grid grid-cols-7 gap-1/, 'Seven slots must fit across the Android arena without horizontal scrolling');
+assert.match(room, /onAction=\{pressBeltSlot\}/, 'Keep potions wired to existing battle actions');
+assert.match(room, /disabled=\{!isActive \|\| !alive \|\| busy\}/, 'Keep existing potion use restrictions');
 assert.match(result, /arena-result-wing/, 'Winged championship emblem missing');
 assert.match(result, /arena-result-radiance/, 'Magical backlighting missing');
 assert.match(result, /alreadyRewarded/, 'Already claimed rewards should not show perpetual dots');
