@@ -36,7 +36,7 @@ assert.match(pve, /getFollowerCombatFrames\(follower\.id\)/, 'PvE companion anim
 assert.match(art, /return itemIcon\('sword'\)/, 'Sword art mapping missing');
 assert.match(art, /if \(item\.equipment\) return equipmentArt\(item\.equipment\)/, 'Inventory still shows generic weapon');
 assert.match(gear, /equipmentArt\(item\)/, 'Arena gear still shows generic weapon');
-assert.match(room, /<ArenaChat roomId=\{roomId\}/, 'Persistent arena chat missing');
+assert.match(room, /<ArenaChat\s+roomId=\{roomId\}/, 'Persistent arena chat missing');
 assert.match(room, /<BeltBar/, 'Seven-slot item belt missing');
 assert.match(room, /<GearStrip/, 'Seven-slot gear missing');
 assert.match(effects, /prefers-reduced-motion: reduce/, 'Motion accessibility safeguards missing');
