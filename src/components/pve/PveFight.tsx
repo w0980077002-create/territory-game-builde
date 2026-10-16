@@ -10,7 +10,7 @@ import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, 
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy, InventoryItem } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
-import { getEnemyCombatFrames, getFollowerArt, getFollowerCombatFrames } from '@/game/combatArt';
+import { getEnemyCombatFrames, getFollowerArt, getFollowerCombatFrames, resolveCombatArtUrl } from '@/game/combatArt';
 import { hapticImpact } from '@/game/telegram';
 import { FighterFigure } from '@/components/arena/FighterFigure';
 import { VictorySparks } from '@/components/arena/VictorySparks';
@@ -261,7 +261,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
               <Plate side={foe} tone="enemy" />
               <div className="relative flex-1 mt-1">
                 <FighterFigure
-                  src={enemy.art.startsWith('/') ? import.meta.env.BASE_URL + enemy.art.slice(1) : enemy.art}
+                  src={resolveCombatArtUrl(enemy.art)}
                   combatFrames={getEnemyCombatFrames(enemy.art)}
                   name={foe.name}
                   dir={-1}
