@@ -1,6 +1,15 @@
 import type { CombatAppearance } from './appearance';
 
 // Cosmetic-only assets; import.meta.env.BASE_URL handles GitHub Pages subpaths.
+/** Engine art paths may already be prefixed by Vite's post-build public asset rewrite.
+ * Prefixing them twice makes enemies invisible on GitHub Pages.
+ */
+export function resolveCombatArtUrl(url: string): string {
+  const base = import.meta.env.BASE_URL;
+  if (/^(?:https?:|data:|blob:)/i.test(url)) return url;
+  if (url.startsWith(base)) return url;
+  return base + url.replace(/^[/]+/, '');
+}
 const root = import.meta.env.BASE_URL + 'assets/territory/characters/';
 
 function frames(category: 'enemies' | 'bosses' | 'followers', id: string): CombatAppearance {

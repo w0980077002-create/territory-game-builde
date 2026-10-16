@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { transform } from 'esbuild';
 
 const read = (path) => readFileSync(path, 'utf8');
 
@@ -39,5 +40,30 @@ assert.match(room, /<ArenaChat roomId=\{roomId\}/, 'Persistent arena chat missin
 assert.match(room, /<BeltBar/, 'Seven-slot item belt missing');
 assert.match(room, /<GearStrip/, 'Seven-slot gear missing');
 assert.match(effects, /prefers-reduced-motion: reduce/, 'Motion accessibility safeguards missing');
+
+// Regression coverage for the reported Android arena/trials defects.
+const figure = read('src/components/arena/FighterFigure.tsx');
+const enemyArt = read('src/game/combatArt.ts');
+const engine = read('src/game/engine.ts');
+const strikes = read('src/game/useStrikeQueue.ts');
+assert.match(arena, /dir=\{-1\}\s+mirror\s+alive=\{enemy\.hp > 0\}/, 'PvP enemy must be mirrored toward the hero');
+assert.match(figure, /mirror \? 'battle-mirror-art'/, 'Mirroring must affect only the fighter artwork');
+assert.match(figure, /battle-swing-\$\{swing\}/, 'Three combat gestures disconnected');
+for (const mode of [0, 1, 2]) {
+  assert.match(effects, new RegExp('\\.battle-swing-' + mode + '\\s*\\{'), 'Attack movement ' + mode + ' missing');
+}
+assert.match(pve, /src=\{resolveCombatArtUrl\(enemy\.art\)\}/, 'PvE may double-prefix a public asset path');
+assert.match(enemyArt, /url\.startsWith\(base\)/, 'Combat art prefix must be idempotent');
+assert.match(engine, /characters\/bosses\/barrow_guardian\/idle\.webp/, 'Trial guardian needs a six-pose art set');
+
+// Run the actual exported resolver in both URL forms that occur in deployed builds.
+const base = '/territory-game-builde/';
+const transpiled = await transform(enemyArt.replaceAll('import.meta.env.BASE_URL', JSON.stringify(base)), { loader: 'ts', format: 'esm' });
+const { resolveCombatArtUrl } = await import('data:text/javascript;base64,' + Buffer.from(transpiled.code).toString('base64'));
+const trialPath = 'assets/territory/characters/bosses/barrow_guardian/idle.webp';
+assert.equal(resolveCombatArtUrl('/' + trialPath), base + trialPath, 'Bare trial art gets one prefix');
+assert.equal(resolveCombatArtUrl(base + trialPath), base + trialPath, 'Already-prefixed art must not get a second prefix');
+assert(existsSync('public/assets/territory/characters/bosses/barrow_guardian/death.webp'), 'Trial guardian poses missing');
+assert.match(strikes, /STRIKE_MS = 920/, 'Faster strike FX queue timing missing');
 
 console.log('Battle visuals OK: all character poses/assets, opponent, companion, sword, chat and seven-slot UI.');

@@ -10,7 +10,7 @@ import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, 
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy, InventoryItem } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
-import { getEnemyCombatFrames, getFollowerArt, getFollowerCombatFrames } from '@/game/combatArt';
+import { getEnemyCombatFrames, getFollowerArt, getFollowerCombatFrames, resolveCombatArtUrl } from '@/game/combatArt';
 import { hapticImpact } from '@/game/telegram';
 import { FighterFigure } from '@/components/arena/FighterFigure';
 import { VictorySparks } from '@/components/arena/VictorySparks';
@@ -139,12 +139,12 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
     for (const hit of res.hits) {
       if (!alive.current || done.current) return;
       setStrike({ key: ++keyRef.current, attacker: hit.attacker, target: hit.target, tone: hit.tone, amount: hit.amount || null });
-      await wait(420 * pace);
+      await wait(350 * pace);
       if (!alive.current) return;
       if (hit.targetSide === 'enemy') setFoe((f) => ({ ...f, hp: Math.max(0, f.hp - hit.amount) }));
       else setHero((h) => ({ ...h, hp: Math.max(0, h.hp - hit.amount) }));
       pushLog(describeHit(hit));
-      await wait(620 * pace);
+      await wait(520 * pace);
     }
     if (!alive.current) return;
     if (res.healAmount > 0) {
@@ -261,7 +261,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
               <Plate side={foe} tone="enemy" />
               <div className="relative flex-1 mt-1">
                 <FighterFigure
-                  src={enemy.art.startsWith('/') ? import.meta.env.BASE_URL + enemy.art.slice(1) : enemy.art}
+                  src={resolveCombatArtUrl(enemy.art)}
                   combatFrames={getEnemyCombatFrames(enemy.art)}
                   name={foe.name}
                   dir={-1}
