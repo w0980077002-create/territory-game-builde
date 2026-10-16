@@ -101,9 +101,15 @@ export function BattleScene(props: Props) {
     ? (language === 'en' ? `Choose ${2 - blocks.length} more defense zone(s)` : `Защита: выбери ещё ${2 - blocks.length}`) : !attack ? (language === 'en' ? 'Choose an attack zone' : 'Выбери зону удара') : (language === 'en' ? `Attack ${enemy.name}` : `Удар по ${enemy.name}`);
 
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black/40">
-      <img src="/arena-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/85" />
+    <div className="arena-battle relative rounded-2xl overflow-hidden border border-amber-400/40 shadow-xl shadow-black/50">
+      <img
+        src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'}
+        onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/arena-bg.webp'; }}
+        alt=""
+        draggable={false}
+        className="arena-battle-art absolute inset-0 w-full h-full object-cover pointer-events-none"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/50 pointer-events-none" />
 
       <div className="relative grid grid-cols-[56px_1fr_56px] gap-2 p-2 pt-3">
         <div className="flex flex-col gap-1.5 pt-6">
@@ -124,12 +130,13 @@ export function BattleScene(props: Props) {
           <div className="flex flex-col min-w-0">
             <Plate fighter={me} side="ally" />
             <div className="relative flex-1 mt-1">
+              <span aria-hidden="true" className="absolute left-[6%] right-0 bottom-[1%] h-[7%] rounded-full bg-black/60 blur-md pointer-events-none" />
               <img
                 src={getFollowerArt(portraitFollower?.id)}
                 alt={followerName}
                 title={followerName}
                 draggable={false}
-                className={`absolute -left-3 bottom-1 h-[58%] w-auto max-w-none object-contain select-none drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] ${alive ? 'opacity-90 animate-idle' : 'grayscale opacity-40'}`}
+                className={`absolute -left-4 bottom-[2%] h-[53%] w-auto max-w-[85%] object-contain select-none drop-shadow-[0_7px_8px_rgba(0,0,0,0.8)] ${alive ? 'opacity-95 animate-idle' : 'grayscale opacity-40'}`}
                 style={{ animationDuration: '3.7s', animationDelay: '-1.2s' }}
               />
               <FighterFigure
@@ -150,6 +157,7 @@ export function BattleScene(props: Props) {
               <>
                 <Plate fighter={enemy} side="enemy" />
                 <div className="relative flex-1 mt-1">
+                  <span aria-hidden="true" className="absolute left-0 right-[8%] bottom-[1%] h-[7%] rounded-full bg-black/60 blur-md pointer-events-none" />
                   <FighterFigure
                     key={enemy.id}
                     src="/enemy-viking.webp"
@@ -206,7 +214,7 @@ export function BattleScene(props: Props) {
             <button
               disabled={!ready || busy}
               onClick={onStrike}
-              className={`flex-1 h-11 rounded-xl font-black tracking-[0.2em] text-base flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.97] disabled:opacity-40 disabled:active:scale-100 bg-gradient-to-b from-red-500 to-red-700 text-white border border-red-300/40 ${
+              className={`arena-attack-button flex-1 h-11 rounded-xl font-black tracking-[0.2em] text-base flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.97] disabled:opacity-40 disabled:active:scale-100 bg-gradient-to-b from-red-500 to-red-700 text-white border border-red-300/40 ${
                 ready && !busy ? 'animate-strike-ready' : ''
               }`}
             >

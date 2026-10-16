@@ -362,3 +362,19 @@
   .live-city-ship, .live-city-banner, .live-city-waterfall,
   .live-city-water-sparkles, .live-city-flame { opacity: 0 !important; }
 }
+
+
+/* Arena visuals only: fighter foot placement and controls preserve combat mechanics. */
+.arena-battle-art { object-position: center 62%; }
+.arena-battle { background-color: #1b263c; }
+.arena-attack-button {
+  box-shadow: inset 0 1px rgba(255,255,255,.28), 0 3px 11px rgba(144,15,15,.42);
+}
+@media (prefers-reduced-motion: reduce) {
+  .arena-battle .animate-idle,
+  .arena-battle .animate-lunge,
+  .arena-battle .animate-dodge,
+  .arena-battle .animate-guard,
+  .arena-battle .animate-recoil,
+  .arena-battle .animate-slash { animation: none !important; }
+}

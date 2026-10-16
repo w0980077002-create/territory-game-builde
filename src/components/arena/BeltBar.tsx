@@ -4,6 +4,7 @@ import { BELT_RULES, BELT_STACK, type BeltContext } from '@/game/belt';
 import { rarityColor } from '@/game/ui';
 import type { InventoryItem } from '@/game/types';
 import { useLanguage, localizeText } from '@/game/i18n';
+import { ItemArt } from '@/components/ui/ItemArt';
 
 interface Props {
   belt: (InventoryItem | null)[];
@@ -53,7 +54,7 @@ export function BeltBar({ belt, ctx, actionLabel, disabled, busyIndex, onAction 
                 <Loader2 className="w-5 h-5 animate-spin text-amber-200" />
               ) : item ? (
                 <>
-                  <span className={`text-xl leading-none ${disabled ? 'opacity-50' : ''}`}>{item.icon}</span>
+                  <ItemArt item={item} size={33} dim={!!disabled} />
                   <span className="text-[10px] font-bold text-white tabular-nums leading-tight mt-0.5">x{item.qty}</span>
                   <span className="text-[8px] text-gray-400 leading-none truncate w-full px-1 text-center">{item.name}</span>
                 </>
