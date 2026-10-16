@@ -10,6 +10,7 @@ import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, 
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy, InventoryItem } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
+import { getEnemyCombatFrames, getFollowerArt, getFollowerCombatFrames } from '@/game/combatArt';
 import { hapticImpact } from '@/game/telegram';
 import { FighterFigure } from '@/components/arena/FighterFigure';
 import { FoldSection } from '@/components/arena/FoldSection';
@@ -228,13 +229,18 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
               <Plate side={hero} tone="ally" />
               <div className="relative flex-1 mt-1">
                 {follower && (
-                  follower.id === 'follower_1' ? <img
-                    src="/follower-shield.webp"
-                    alt={follower.name}
-                    draggable={false}
-                    className={`absolute -left-3 bottom-1 h-[56%] w-auto max-w-none object-contain select-none drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] ${hero.hp > 0 ? 'opacity-90 animate-idle' : 'grayscale opacity-40'}`}
-                    style={{ animationDuration: '3.7s' }}
-                  /> : <span title={follower.name} className="absolute -left-1 bottom-5 text-4xl drop-shadow-lg">{follower.icon}</span>
+                  <div className="absolute -left-4 bottom-0 z-10 h-[62%] w-[70%] pointer-events-none">
+                    <FighterFigure
+                      src={getFollowerArt(follower.id)}
+                      combatFrames={getFollowerCombatFrames(follower.id)}
+                      name={follower.name}
+                      dir={1}
+                      alive={hero.hp > 0}
+                      strike={strike}
+                      idleSeconds={3.7}
+                      className="absolute left-0 bottom-0 h-full w-full object-contain object-left-bottom"
+                    />
+                  </div>
                 )}
                 <FighterFigure
                   src="/hero-viking.webp"
@@ -253,6 +259,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
               <div className="relative flex-1 mt-1">
                 <FighterFigure
                   src={enemy.art}
+                  combatFrames={getEnemyCombatFrames(enemy.art)}
                   name={foe.name}
                   dir={-1}
                   alive={foe.hp > 0}

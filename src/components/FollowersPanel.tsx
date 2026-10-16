@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
+import { getFollowerArt } from '@/game/combatArt';
 import {
   FOLLOWER_TEMPLATES, followerTrainingCost, MAX_FOLLOWER_LEVEL,
   selectedFollower, selectFollower, trainFollower,
@@ -53,7 +54,7 @@ export function FollowersPanel() {
           return (
             <div key={follower.id} className={`rounded-xl border p-3 ${selected ? 'border-amber-400/60 bg-amber-500/10' : 'border-white/10 bg-black/20'}`}>
               <div className="flex items-start gap-2">
-                <span className="text-2xl shrink-0" aria-hidden="true">{template.icon}</span>
+                <img src={getFollowerArt(template.id)} alt="" loading="lazy" className="h-20 w-16 shrink-0 object-contain object-bottom" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-semibold text-white">{en ? template.nameEn : template.name}</p>

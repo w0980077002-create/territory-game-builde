@@ -117,11 +117,11 @@ function makeEnemy(
 }
 
 const ENEMY_NAMES = [
-  { name: 'Гоблин-разведчик', art: '/enemy-goblin.webp' },
-  { name: 'Дикий кабан', art: '/enemy-boar.webp' },
-  { name: 'Лесной разбойник', art: '/enemy-bandit.webp' },
-  { name: 'Тёмный волк', art: '/enemy-wolf.webp' },
-  { name: 'Пещерный тролль', art: '/enemy-troll.webp' },
+  { name: 'Гоблин-разведчик', art: '/assets/territory/characters/enemies/goblin/idle.webp' },
+  { name: 'Дикий кабан', art: '/assets/territory/characters/enemies/boar/idle.webp' },
+  { name: 'Лесной разбойник', art: '/assets/territory/characters/enemies/bandit/idle.webp' },
+  { name: 'Тёмный волк', art: '/assets/territory/characters/enemies/wolf/idle.webp' },
+  { name: 'Пещерный тролль', art: '/assets/territory/characters/enemies/troll/idle.webp' },
 ];
 
 const BOSS_NAMES = [
@@ -135,6 +135,19 @@ const BOSS_NAMES = [
   'Повелитель бурь',
   'Огненный лорд',
   'Тень хаоса',
+];
+
+const BOSS_ARTS = [
+  '/assets/territory/characters/bosses/bandit_chief/idle.webp',
+  '/assets/territory/characters/bosses/northern_jarl/idle.webp',
+  '/assets/territory/characters/bosses/dark_priest/idle.webp',
+  '/assets/territory/characters/bosses/undead_king/idle.webp',
+  '/assets/territory/characters/bosses/barrow_guardian/idle.webp',
+  '/assets/territory/characters/bosses/abyss_demon/idle.webp',
+  '/assets/territory/characters/bosses/giant_king/idle.webp',
+  '/assets/territory/characters/bosses/storm_lord/idle.webp',
+  '/assets/territory/characters/bosses/fire_lord/idle.webp',
+  '/assets/territory/characters/bosses/chaos_shadow/idle.webp',
 ];
 
 const CHAPTER_TITLES = [
@@ -179,7 +192,7 @@ export function generateChapter(num: number): Chapter {
   const boss = makeEnemy(
     `ch${num}_boss`,
     BOSS_NAMES[(num - 1) % BOSS_NAMES.length],
-    '/enemy-boss.webp',
+    BOSS_ARTS[(num - 1) % BOSS_ARTS.length],
     Math.floor(baseHp * 2.2 * difficulty.hp),
     Math.floor(baseAtk * 1.15 * difficulty.attack),
     Math.floor(baseDef * 2 * difficulty.defense),
@@ -208,7 +221,7 @@ export function generateTrial(num: number): Enemy {
   return makeEnemy(
     `trial_${num}`,
     'Страж испытаний',
-    '/enemy-viking.webp',
+    '/assets/territory/characters/trial/guardian_idle.webp',
     Math.floor(baseHp * 1.8 * difficulty.hp),
     Math.floor(baseAtk * 1.2 * difficulty.attack),
     Math.floor(baseDef * 1.5 * difficulty.defense),

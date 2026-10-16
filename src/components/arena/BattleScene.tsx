@@ -5,6 +5,8 @@ import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { getCombatAppearance } from '@/game/appearance';
+import { selectedFollower } from '@/game/followers';
+import { getFollowerArt } from '@/game/combatArt';
 import { FighterFigure } from './FighterFigure';
 import { useLanguage } from '@/game/i18n';
 
@@ -83,6 +85,7 @@ export function BattleScene(props: Props) {
     movedCount, aliveCount, strike, canRepeat, onAttack, onToggleBlock, onStrike, onRepeat, onToggleAuto, resultPanel,
   } = props;
   const game = useStore(useGame);
+  const portraitFollower = selectedFollower(game);
   const { language } = useLanguage();
   const alive = me.hp > 0;
   const controls = active && alive && !moved && !auto;
@@ -122,7 +125,7 @@ export function BattleScene(props: Props) {
             <Plate fighter={me} side="ally" />
             <div className="relative flex-1 mt-1">
               <img
-                src="/follower-shield.webp"
+                src={getFollowerArt(portraitFollower?.id)}
                 alt={followerName}
                 title={followerName}
                 draggable={false}
