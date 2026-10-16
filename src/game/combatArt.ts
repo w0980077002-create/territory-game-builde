@@ -8,7 +8,7 @@ export function resolveCombatArtUrl(url: string): string {
   const base = import.meta.env.BASE_URL;
   if (/^(?:https?:|data:|blob:)/i.test(url)) return url;
   if (url.startsWith(base)) return url;
-  return base + url.replace(/^\\/+/, '');
+  return base + url.replace(/^[/]+/, '');
 }
 const root = import.meta.env.BASE_URL + 'assets/territory/characters/';
 
