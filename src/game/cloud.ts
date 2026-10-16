@@ -7,6 +7,7 @@ import { reconcileFollowers } from './followers';
 import { nextSaveTimestamp, validSaveToken } from './saveToken';
 import { safeWalletVersion, walletMatchesVersion, type WalletVersion } from './walletVersion';
 import { validEconomySnapshot } from './economyInvariant';
+import { getPlayableAppearance } from './appearance';
 
 export interface CloudProfile {
   state: GameState;
@@ -44,7 +45,7 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
     dailyReward: migrated.dailyReward ?? defaults.dailyReward,
     mailClaimed: migrated.mailClaimed ?? [],
     trialLevel: migrated.trialLevel ?? 1,
-    appearance: migrated.appearance === 'm2' ? migrated.appearance : 'm2',
+    appearance: getPlayableAppearance(migrated.appearance),
     dailyStonesBought: migrated.dailyStonesBought ?? 0,
     dailyStonesDate: migrated.dailyStonesDate ?? defaults.dailyStonesDate,
   };

@@ -8,6 +8,7 @@ interface Props {
     idle: string;
     attack: string;
     block: string;
+    dodge?: string;
     hit: string;
     death: string;
   };
@@ -35,12 +36,13 @@ export function FighterFigure({ src, combatFrames, name, dir, alive, strike, idl
         <img
           src={!alive ? combatFrames?.death ?? src
             : role === 'attacker' ? combatFrames?.attack ?? src
+            : role === 'target' && tone === 'dodge' ? combatFrames?.dodge ?? combatFrames?.idle ?? src
             : role === 'target' && tone === 'block' ? combatFrames?.block ?? src
             : role === 'target' && tone !== 'dodge' ? combatFrames?.hit ?? src
             : combatFrames?.idle ?? src}
           alt={name}
           draggable={false}
-          className={`${className} select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] transition-[filter,opacity] duration-500 ${
+          className={`${className} motion-reduce:animate-none select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] transition-[filter,opacity] duration-500 ${
             alive ? 'animate-idle' : 'grayscale opacity-40 translate-y-2'
           }`}
           style={{ animationDuration: `${idleSeconds}s` }}

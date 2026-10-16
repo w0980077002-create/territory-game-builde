@@ -9,6 +9,7 @@ import { rarityColor } from '@/game/ui';
 import { User, Heart, Sword, Shield, Star, Zap, Coins, Gem, Send, Check, Link2, Loader2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { FollowersPanel } from './FollowersPanel';
+import { APPEARANCE_PRESETS, getPlayableAppearance, getAppearanceIcon } from '@/game/appearance';
 
 export function ProfileScreen({ user }: { user: AuthUser }) {
   const { t, language } = useLanguage();
@@ -39,8 +40,8 @@ export function ProfileScreen({ user }: { user: AuthUser }) {
       <div className="card relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-teal-900/30 to-transparent" />
         <div className="relative flex flex-col items-center text-center py-2">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-teal-400 to-teal-700 flex items-center justify-center text-4xl mb-3 animate-float">
-            🦸
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-teal-400 to-teal-700 flex items-center justify-center mb-3">
+            <img src={getAppearanceIcon(state.appearance)} alt="" className="h-full w-full object-contain" />
           </div>
           <h2 className="text-xl font-bold text-white">{state.player.name}</h2>
           <p className="text-sm text-gray-400">{t('levelWord')} {state.player.level}</p>
@@ -57,6 +58,30 @@ export function ProfileScreen({ user }: { user: AuthUser }) {
           </div>
         </div>
       </div>
+
+      {/* Cosmetic selection; existing stats and gear are untouched. */}
+      <section className="card">
+        <h3 className="text-sm font-semibold text-amber-200 mb-1">{language === 'en' ? 'Choose your hero' : 'Выбери героя'}</h3>
+        <p className="text-xs text-gray-400 mb-3">{language === 'en' ? 'Appearance only. Your level and equipment stay the same.' : 'Меняется только внешность. Уровень и экипировка сохраняются.'}</p>
+        <div className="grid grid-cols-2 gap-2">
+          {APPEARANCE_PRESETS.map((preset) => {
+            const active = getPlayableAppearance(state.appearance) === preset.id;
+            return (
+              <button
+                type="button"
+                key={preset.id}
+                aria-pressed={active}
+                onClick={() => useGame.set((prev) => prev.appearance === preset.id ? prev : { ...prev, appearance: preset.id })}
+                className={`relative flex flex-col items-center rounded-xl border p-2 transition-colors active:scale-[0.98] ${active ? 'border-amber-300 bg-amber-300/15' : 'border-white/10 bg-black/25'}`}
+              >
+                {active && <Check className="absolute right-2 top-2 h-4 w-4 text-amber-300" />}
+                <img src={preset.icon} alt="" draggable={false} loading="lazy" className="h-28 w-full object-contain object-bottom" />
+                <span className="mt-1 text-xs font-semibold text-white">{preset.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Telegram account linkage: only verified Edge Functions can link identities. */}
       <div className="card">

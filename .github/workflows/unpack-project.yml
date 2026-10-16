@@ -80,30 +80,60 @@ jobs:
           TEMP_DIR="$(mktemp -d)"
           trap 'rm -rf "$TEMP_DIR"' EXIT
           unzip -q "$ZIP_FILE" -d "$TEMP_DIR"
-          if [ -f "$TEMP_DIR/package.json" ] && [ -d "$TEMP_DIR/src" ]; then
-            SOURCE_DIR="$TEMP_DIR"
+          if [ -f "$TEMP_DIR/HEROES_MANIFEST.json" ]; then
+            # Character-only ZIP: verify exact asset paths and overlay without deleting project files.
+            python3 - "$TEMP_DIR" <<'PY'
+          import json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          names = ('male_viking', 'male_rogue', 'female_warrior', 'female_archer')
+          poses = ('idle', 'attack', 'block', 'dodge', 'hit', 'death')
+          prefix = 'public/assets/territory/characters/heroes'
+          expected = {f'{prefix}/{name}/{pose}.webp' for name in names for pose in poses}
+          allowed = expected | {'HEROES_MANIFEST.json', 'CODEX_TASK_4_HEROES_RU.txt'}
+          actual = {str(p.relative_to(root)) for p in root.rglob('*') if p.is_file()}
+          if not expected.issubset(actual) or not actual.issubset(allowed):
+              sys.exit('Character ZIP has missing/unexpected files')
+          data = json.loads((root / 'HEROES_MANIFEST.json').read_text('utf-8'))
+          if {p['id'] for p in data['characters']} != set(names):
+              sys.exit('Hero manifest does not match expected heroes')
+          for path in expected:
+              sprite = root / path
+              if sprite.is_symlink() or sprite.stat().st_size > 1024 * 1024:
+                  sys.exit('Invalid hero asset: '+ path)
+              with sprite.open('rb') as fh:
+                  header = fh.read(12)
+              if header[:4] != b'RIFF' or header[8:12] != b'WEBP':
+                  sys.exit('Not a WebP sprite: '+ path)
+          print('All 24 hero frames validated')
+          PY
+            mkdir -p public/assets/territory/characters/heroes
+            cp -a "$TEMP_DIR/public/assets/territory/characters/heroes/." public/assets/territory/characters/heroes/
+            echo "Installed four heroes without touching the rest of TERRITORY."
           else
-            mapfile -t PROJECT_ROOTS < <(
-              find "$TEMP_DIR" -mindepth 2 -maxdepth 5 -type f -name package.json -printf '%h\n' |
-              while IFS= read -r candidate; do
-                [ -d "$candidate/src" ] && printf '%s\n' "$candidate"
-              done | sort -u
-            )
-            if [ "${#PROJECT_ROOTS[@]}" -ne 1 ]; then
-              echo "::error::Не найден единственный корень проекта с package.json и папкой src."
-              exit 1
+            if [ -f "$TEMP_DIR/package.json" ] && [ -d "$TEMP_DIR/src" ]; then
+              SOURCE_DIR="$TEMP_DIR"
+            else
+              mapfile -t PROJECT_ROOTS < <(
+                find "$TEMP_DIR" -mindepth 2 -maxdepth 5 -type f -name package.json -printf '%h\n' |
+                while IFS= read -r candidate; do
+                  [ -d "$candidate/src" ] && printf '%s\n' "$candidate"
+                done | sort -u
+              )
+              if [ "${#PROJECT_ROOTS[@]}" -ne 1 ]; then
+                echo "::error::Не найден единственный корень проекта с package.json и папкой src."
+                exit 1
+              fi
+              SOURCE_DIR="${PROJECT_ROOTS[0]}"
             fi
-            SOURCE_DIR="${PROJECT_ROOTS[0]}"
+            echo "Корень проекта: $SOURCE_DIR"
+            # Keep automation and environment files in the repository; replace only project files.
+            rsync -a --delete \
+              --exclude='/.git/' \
+              --exclude='/.github/' \
+              --exclude='/.env' \
+              --exclude='/.env.*.local' \
+              "$SOURCE_DIR/" ./
           fi
-          echo "Корень проекта: $SOURCE_DIR"
-
-          # Keep automation and environment files in the repository; replace only project files.
-          rsync -a --delete \
-            --exclude='/.git/' \
-            --exclude='/.github/' \
-            --exclude='/.env' \
-            --exclude='/.env.*.local' \
-            "$SOURCE_DIR/" ./
           rm -f -- "$ZIP_FILE" "${PART_FILES[@]}"
           test -f package.json
           test -d src

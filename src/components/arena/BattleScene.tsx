@@ -137,7 +137,7 @@ export function BattleScene(props: Props) {
                 alive={alive}
                 strike={strike}
                 idleSeconds={3.1}
-                className="absolute right-0 bottom-0 h-[88%] w-[86%] object-contain object-right-bottom"
+                className="absolute right-0 bottom-0 h-[98%] w-full object-contain object-right-bottom"
               />
             </div>
           </div>
@@ -155,7 +155,7 @@ export function BattleScene(props: Props) {
                     alive={enemy.hp > 0}
                     strike={strike}
                     idleSeconds={2.8}
-                    className="absolute left-0 bottom-0 h-[88%] w-[92%] object-contain object-left-bottom"
+                    className="absolute left-0 bottom-0 h-[78%] w-[80%] object-contain object-left-bottom"
                   />
                 </div>
               </>

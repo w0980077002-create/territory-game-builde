@@ -5,6 +5,9 @@ import { SLOT_ART } from '@/game/art';
 import { rarityColor } from '@/game/ui';
 import type { Equipment } from '@/game/types';
 import { useLanguage, localizeText } from '@/game/i18n';
+import { useStore } from '@/game/store';
+import { useGame } from '@/game/actions';
+import { getAppearanceIcon } from '@/game/appearance';
 
 export interface GearView {
   name: string;
@@ -75,6 +78,7 @@ function Slot({ slot, gear, active, onTap }: { slot: Equipment['slot']; gear?: G
 
 export function PaperDoll({ gear, followerUnlocked }: { gear: GearMap; followerUnlocked: boolean }) {
   const { language } = useLanguage();
+  const appearance = useStore(useGame).appearance;
   const [picked, setPicked] = useState<Equipment['slot'] | null>(null);
   const left = EQUIPMENT_SLOTS.slice(0, 3);
   const right = EQUIPMENT_SLOTS.slice(3, 6);
@@ -92,7 +96,7 @@ export function PaperDoll({ gear, followerUnlocked }: { gear: GearMap; followerU
           {followerUnlocked && (
             <img src="/follower-shield.webp" alt="" className="absolute left-0 bottom-1 h-[62%] object-contain opacity-90" />
           )}
-          <img src="/hero-viking.webp" alt="" className="absolute right-0 bottom-0 h-full w-[85%] object-contain object-bottom animate-idle" />
+          <img src={getAppearanceIcon(appearance)} alt="" className="absolute right-0 bottom-0 h-full w-[85%] object-contain object-bottom animate-idle" />
         </div>
         <div className="flex flex-col gap-2">{right.map((s) => <Slot key={s.id} slot={s.id} gear={gear[s.id]} active={picked === s.id} onTap={() => tap(s.id)} />)}</div>
       </div>
