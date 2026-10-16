@@ -17,7 +17,8 @@ import { GearStrip } from './GearStrip';
 import { BeltBar } from './BeltBar';
 import { FoldSection } from './FoldSection';
 import { equipmentArt } from '@/game/art';
-import { Loader2, Timer, WifiOff } from 'lucide-react';
+import { ItemArt } from '@/components/ui/ItemArt';
+import { ChevronDown, Loader2, Timer, WifiOff } from 'lucide-react';
 import { useLanguage, localizeText } from '@/game/i18n';
 
 
@@ -37,6 +38,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const [reward, setReward] = useState<ArenaReward | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [beltBusy, setBeltBusy] = useState<number | null>(null);
+  const [beltOpen, setBeltOpen] = useState(true);
   const [enemiesOpen, setEnemiesOpen] = useState(false);
   const [alliesOpen, setAlliesOpen] = useState(false);
   const [gearOpen, setGearOpen] = useState(false);
@@ -50,6 +52,13 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const finished = room?.status === 'finished';
   const chatSeconds = useCountdown(finished ? postFightDeadline : null, clockOffset);
   const chatExpired = finished && postFightDeadline !== null && chatSeconds === 0;
+
+  // Elixirs stay open during combat. Once the duel ends, collapse them
+  // automatically to reveal more chat; the arrow can reopen at any time.
+  useEffect(() => {
+    if (finished) setBeltOpen(false);
+    else if (room?.status === 'active') setBeltOpen(true);
+  }, [finished, room?.status]);
 
   useEffect(() => {
     if (!finished) return;
@@ -280,26 +289,44 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
         />
       )}
 
-      {/* Battle essentials belong between the arena and the chat — always visible.
-          A compact seven-slot row avoids both vertical searching and horizontal swiping. */}
+      {/* A slim, collapsible quick belt immediately between the fight and chat.
+          Its state is independent of equipment and item usage restrictions. */}
       {room.status !== 'waiting' && (
         <section aria-label={language === 'en' ? 'Battle elixirs' : 'Боевые эликсиры'}
-          className="rounded-xl border border-amber-400/40 bg-gradient-to-b from-[#241a19]/95 to-[#080e1c]/95 px-2 py-1.5 shadow-[0_3px_12px_rgba(0,0,0,0.45)]">
-          <div className="mb-1 flex items-center justify-between gap-2 px-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-amber-200">
+          className="overflow-hidden rounded-xl border border-amber-400/35 bg-gradient-to-b from-[#241a19]/95 to-[#080e1c]/95 shadow-[0_3px_10px_rgba(0,0,0,0.4)]">
+          <button
+            type="button"
+            aria-expanded={beltOpen}
+            aria-controls="arena-quick-belt"
+            onClick={() => setBeltOpen((open) => !open)}
+            className="flex h-7 w-full items-center gap-2 px-2 text-left transition-colors hover:bg-white/5"
+          >
+            <span className="shrink-0 truncate text-[10px] font-bold uppercase tracking-[0.08em] text-amber-200">
               {language === 'en' ? 'Elixirs & items' : 'Эликсиры и предметы'}
             </span>
-            <span className="text-[10px] font-semibold tabular-nums text-amber-100/75">{game.belt.filter(Boolean).length}/7</span>
-          </div>
-          <BeltBar
-            compact
-            belt={game.belt}
-            ctx={beltContext(game, arenaStats.wins)}
-            actionLabel={isActive && alive ? (language === 'en' ? 'Tap to use · one potion per round' : 'Нажми для использования · одно зелье за раунд') : (language === 'en' ? 'Equip potions from inventory' : 'Пополняй зелья в инвентаре')}
-            disabled={!isActive || !alive || busy}
-            busyIndex={beltBusy}
-            onAction={pressBeltSlot}
-          />
+            <span className="flex min-w-0 flex-1 items-center justify-end gap-1 overflow-hidden">
+              {!beltOpen && game.belt.map((item, index) =>
+                item && index < 3 ? <ItemArt key={index} item={item} size={19} /> : null
+              )}
+              <span className="shrink-0 text-[10px] font-semibold tabular-nums text-amber-100/75">
+                {game.belt.filter(Boolean).length}/7
+              </span>
+            </span>
+            <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-amber-200 transition-transform duration-200 ${beltOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {beltOpen && (
+            <div id="arena-quick-belt" className="px-1.5 pb-1 pt-0.5">
+              <BeltBar
+                compact
+                belt={game.belt}
+                ctx={beltContext(game, arenaStats.wins)}
+                actionLabel={isActive && alive ? (language === 'en' ? 'Tap to use · one potion per round' : 'Нажми для использования · одно зелье за раунд') : (language === 'en' ? 'Equip potions from inventory' : 'Пополняй зелья в инвентаре')}
+                disabled={!isActive || !alive || busy}
+                busyIndex={beltBusy}
+                onAction={pressBeltSlot}
+              />
+            </div>
+          )}
         </section>
       )}
 
