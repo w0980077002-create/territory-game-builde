@@ -16,6 +16,8 @@ export const TEAM_NAMES: Record<number, string> = { 1: 'Волки', 2: 'Вор�
 export interface ArenaFighter {
   id: string;
   name: string;
+  /** Optional cosmetic ID when supplied by a future arena_state response. */
+  appearance?: string;
   level: number;
   rating: number;
   hp: number;
