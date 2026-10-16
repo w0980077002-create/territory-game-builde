@@ -17,7 +17,7 @@ export interface CombatAppearance {
 }
 
 function frames(hero: string): CombatAppearance {
-  const folder = '/assets/territory/characters/heroes/' + hero + '/';
+  const folder = import.meta.env.BASE_URL + 'assets/territory/characters/heroes/' + hero + '/';
   return {
     idle: folder + 'idle.webp',
     attack: folder + 'attack.webp',
