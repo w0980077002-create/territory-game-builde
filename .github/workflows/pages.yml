@@ -47,6 +47,8 @@ jobs:
           npm run test:balance
           npm run test:feature-separation
           npm run test:mobile-home
+          node scripts/check-combat-visuals.mjs
+          node scripts/check-arena-postfight.mjs
           node scripts/auth-mock-tests.cjs
           node scripts/edge-initdata-tests.cjs
           node scripts/edge-identity-tests.cjs
