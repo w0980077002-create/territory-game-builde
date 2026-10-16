@@ -261,7 +261,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
               <Plate side={foe} tone="enemy" />
               <div className="relative flex-1 mt-1">
                 <FighterFigure
-                  src={enemy.art}
+                  src={enemy.art.startsWith('/') ? import.meta.env.BASE_URL + enemy.art.slice(1) : enemy.art}
                   combatFrames={getEnemyCombatFrames(enemy.art)}
                   name={foe.name}
                   dir={-1}
