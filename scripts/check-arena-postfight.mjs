@@ -40,8 +40,15 @@ assert.match(room, /<BeltBar\s+compact/, 'Compact elixir slots must be visible w
 assert(room.indexOf('<BeltBar') < room.indexOf('<ArenaChat'), 'Elixirs must be above the arena chat, below the battle');
 assert(room.indexOf('<BeltBar') > room.indexOf('<BattleScene'), 'Elixirs must follow the fight');
 assert.equal((room.match(/<BeltBar/g) ?? []).length, 1, 'Do not duplicate the elixir belt below chat');
-assert(!room.includes('beltOpen'), 'Avoid hidden or collapsed elixirs while fighting');
+assert.match(room, /const \[beltOpen, setBeltOpen\] = useState\(true\)/, 'Show quick elixirs by default during combat');
+assert.match(room, /aria-expanded=\{beltOpen\}/, 'Restore accessible collapse/expand arrow for elixirs');
+assert.match(room, /onClick=\{\(\) => setBeltOpen\(\(open\) => !open\)\}/, 'Elixir fold control must work');
+assert.match(room, /if \(finished\) setBeltOpen\(false\)/, 'After the duel, collapse elixirs to reveal chat');
+assert.match(room, /\{beltOpen && \(/, 'Only render expanded quick slots when requested');
 assert.match(belt, /grid grid-cols-7 gap-1/, 'Seven slots must fit across the Android arena without horizontal scrolling');
+assert.match(belt, /min-w-0 w-full h-11 rounded-lg/, 'Quick slots must be compact without losing touch targets');
+assert.match(room, /<ChevronDown/, 'Fold arrow must be visible');
+assert.match(room, /id="arena-quick-belt"/, 'Collapsible section must have accessible control target');
 assert.match(room, /onAction=\{pressBeltSlot\}/, 'Keep potions wired to existing battle actions');
 assert.match(room, /disabled=\{!isActive \|\| !alive \|\| busy\}/, 'Keep existing potion use restrictions');
 assert.match(result, /arena-result-wing/, 'Winged championship emblem missing');
