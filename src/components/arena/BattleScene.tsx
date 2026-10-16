@@ -131,8 +131,28 @@ export function BattleScene(props: Props) {
             <Plate fighter={me} side="ally" />
             <div className="relative flex-1 mt-1">
               <span aria-hidden="true" className="absolute left-[6%] right-0 bottom-[1%] h-[7%] rounded-full bg-black/60 blur-md pointer-events-none" />
+              {/* A companion is a cosmetic PvP spectator, not a damage source.
+                  It used to sit behind the hero in a 48%-wide/52%-tall box;
+                  the hero hid it almost entirely on narrow Telegram screens.
+                  Keep it in its own foreground lane to make both faces visible. */}
+              <div className="absolute inset-0 z-20 pointer-events-none">
+                <FighterFigure
+                  src={import.meta.env.BASE_URL + 'hero-viking.webp'}
+                  combatFrames={getCombatAppearance(game.appearance)}
+                  name={me.name}
+                  dir={1}
+                  alive={alive}
+                  strike={strike}
+                  idleSeconds={3.1}
+                  className={`absolute bottom-0 h-[98%] w-full object-contain object-right-bottom ${portraitFollower ? '-right-[12%]' : 'right-0'}`}
+                />
+              </div>
               {portraitFollower && (
-                <div className="absolute -left-[8%] bottom-0 z-10 h-[52%] w-[48%] pointer-events-none">
+                <div
+                  data-testid="arena-visible-follower"
+                  title={portraitFollower.name}
+                  className="absolute left-0 bottom-0 z-30 h-[68%] w-[66%] pointer-events-none"
+                >
                   <FighterFigure
                     src={getFollowerArt(portraitFollower.id)}
                     combatFrames={getFollowerCombatFrames(portraitFollower.id)}
@@ -145,18 +165,6 @@ export function BattleScene(props: Props) {
                   />
                 </div>
               )}
-              <div className="absolute inset-0 z-20 pointer-events-none">
-                <FighterFigure
-                  src={import.meta.env.BASE_URL + 'hero-viking.webp'}
-                  combatFrames={getCombatAppearance(game.appearance)}
-                  name={me.name}
-                  dir={1}
-                  alive={alive}
-                  strike={strike}
-                  idleSeconds={3.1}
-                  className="absolute right-0 bottom-0 h-[98%] w-full object-contain object-right-bottom"
-                />
-              </div>
             </div>
           </div>
 
