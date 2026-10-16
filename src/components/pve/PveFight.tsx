@@ -139,7 +139,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
     for (const hit of res.hits) {
       if (!alive.current || done.current) return;
       setStrike({ key: ++keyRef.current, attacker: hit.attacker, target: hit.target, tone: hit.tone, amount: hit.amount || null });
-      await wait(420 * pace);
+      await wait(350 * pace);
       if (!alive.current) return;
       if (hit.targetSide === 'enemy') setFoe((f) => ({ ...f, hp: Math.max(0, f.hp - hit.amount) }));
       else setHero((h) => ({ ...h, hp: Math.max(0, h.hp - hit.amount) }));
