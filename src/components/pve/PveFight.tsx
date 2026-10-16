@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Shield, Sword, Check, Flag, Loader2 } from 'lucide-react';
+import { Shield, Sword, Check, Flag, Loader2, Trophy } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame, useArena, recordBattleResult } from '@/game/actions';
 import { ZONES, type Zone } from '@/game/arenaApi';
@@ -13,6 +13,7 @@ import { getCombatAppearance } from '@/game/appearance';
 import { getEnemyCombatFrames, getFollowerArt, getFollowerCombatFrames } from '@/game/combatArt';
 import { hapticImpact } from '@/game/telegram';
 import { FighterFigure } from '@/components/arena/FighterFigure';
+import { VictorySparks } from '@/components/arena/VictorySparks';
 import { FoldSection } from '@/components/arena/FoldSection';
 import { GearStrip } from '@/components/arena/GearStrip';
 import { BeltCells } from '@/components/ui/BeltCells';
@@ -213,7 +214,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
       </div>
 
       <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black/40">
-        <img src="/arena-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = import.meta.env.BASE_URL + 'arena-bg.webp'; }} alt="" className="absolute inset-0 w-full h-full object-cover object-[center_62%]" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/85" />
 
         <div className="relative grid grid-cols-[52px_1fr_52px] gap-1.5 p-2 pt-3">
@@ -229,7 +230,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
               <Plate side={hero} tone="ally" />
               <div className="relative flex-1 mt-1">
                 {follower && (
-                  <div className="absolute -left-4 bottom-0 z-10 h-[62%] w-[70%] pointer-events-none">
+                  <div className="absolute -left-[8%] bottom-0 z-10 h-[52%] w-[48%] pointer-events-none">
                     <FighterFigure
                       src={getFollowerArt(follower.id)}
                       combatFrames={getFollowerCombatFrames(follower.id)}
@@ -242,16 +243,18 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
                     />
                   </div>
                 )}
-                <FighterFigure
-                  src="/hero-viking.webp"
-                  combatFrames={getCombatAppearance(state.appearance)}
-                  name={hero.name}
-                  dir={1}
-                  alive={hero.hp > 0}
-                  strike={strike}
-                  idleSeconds={3.1}
-                  className="absolute right-0 bottom-0 h-[98%] w-full object-contain object-right-bottom"
-                />
+                <div className="absolute inset-0 z-20 pointer-events-none">
+                  <FighterFigure
+                    src={import.meta.env.BASE_URL + 'hero-viking.webp'}
+                    combatFrames={getCombatAppearance(state.appearance)}
+                    name={hero.name}
+                    dir={1}
+                    alive={hero.hp > 0}
+                    strike={strike}
+                    idleSeconds={3.1}
+                    className="absolute right-0 bottom-0 h-[98%] w-full object-contain object-right-bottom"
+                  />
+                </div>
               </div>
             </div>
             <div className="flex flex-col min-w-0">
@@ -337,8 +340,10 @@ function OutcomePanel({ outcome, kind, onExit, onNext }: { outcome: Outcome; kin
   const { language } = useLanguage();
   return (
     <div className="relative px-3 pb-3 pt-1 animate-pop">
-      <div className={`rounded-2xl border p-3 text-center backdrop-blur-md ${outcome.won ? 'bg-amber-950/70 border-amber-400/40' : 'bg-red-950/70 border-red-400/40'}`}>
-        <p className={`text-xl font-black tracking-wide ${outcome.won ? 'text-amber-300' : 'text-red-300'}`}>{outcome.won ? (language === 'en' ? 'VICTORY' : 'ПОБЕДА') : (language === 'en' ? 'DEFEAT' : 'ПОРАЖЕНИЕ')}</p>
+      <div className={`relative overflow-hidden rounded-2xl border p-3 text-center backdrop-blur-md ${outcome.won ? 'bg-amber-950/80 border-amber-400/60 shadow-[0_0_22px_rgba(245,158,11,0.15)]' : 'bg-red-950/70 border-red-400/40'}`}>
+        {outcome.won && <VictorySparks />}
+        {outcome.won && <Trophy aria-hidden="true" className="relative mx-auto mb-1.5 h-9 w-9 text-amber-300 drop-shadow-[0_0_12px_rgba(251,191,36,0.7)]" />}
+        <p className={`relative text-[22px] font-black tracking-[0.08em] ${outcome.won ? 'text-amber-300' : 'text-red-300'}`}>{outcome.won ? (language === 'en' ? 'VICTORY' : 'ПОБЕДА') : (language === 'en' ? 'DEFEAT' : 'ПОРАЖЕНИЕ')}</p>
         {outcome.won ? (
           <div className="flex flex-wrap items-center justify-center gap-3 mt-2 text-sm text-white">
             <Currency kind="gold" value={`+${outcome.gold}`} size={18} />
@@ -359,7 +364,7 @@ function OutcomePanel({ outcome, kind, onExit, onNext }: { outcome: Outcome; kin
           </button>
           {outcome.won && onNext && (
             <button onClick={onNext} className="flex-1 h-10 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-sm font-bold text-black active:scale-95 transition-transform">
-              Следующий бой
+              {language === 'en' ? 'Next fight' : 'Следующий бой'}
             </button>
           )}
         </div>
