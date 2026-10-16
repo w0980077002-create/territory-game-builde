@@ -144,7 +144,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
       if (hit.targetSide === 'enemy') setFoe((f) => ({ ...f, hp: Math.max(0, f.hp - hit.amount) }));
       else setHero((h) => ({ ...h, hp: Math.max(0, h.hp - hit.amount) }));
       pushLog(describeHit(hit));
-      await wait(620 * pace);
+      await wait(520 * pace);
     }
     if (!alive.current) return;
     if (res.healAmount > 0) {
