@@ -42,22 +42,22 @@ export function BeltBar({ belt, ctx, actionLabel, compact = false, disabled, bus
                   setInfo(info === i ? null : i);
                 }
               }}
-              className={`relative flex flex-col items-center justify-center border transition-all duration-200 active:scale-90 ${compact ? 'min-w-0 w-full h-[55px] rounded-lg' : 'snap-start shrink-0 w-[58px] h-[62px] rounded-xl'} ${
+              className={`relative flex flex-col items-center justify-center border transition-all duration-200 active:scale-90 ${compact ? 'min-w-0 w-full h-11 rounded-lg' : 'snap-start shrink-0 w-[58px] h-[62px] rounded-xl'} ${
                 !open ? 'bg-black/50 border-white/5' : item ? 'bg-gradient-to-b from-white/10 to-black/50' : 'bg-black/30 border-dashed border-white/15'
               } ${info === i ? 'ring-2 ring-amber-300/60' : ''}`}
               style={color ? { borderColor: `${color}cc`, boxShadow: `0 0 12px ${color}40` } : undefined}
             >
               {!open ? (
                 <span className="flex flex-col items-center text-gray-500">
-                  <Lock className="w-4 h-4" />
-                  <span className="text-[9px] font-semibold mt-0.5">{i + 1}</span>
+                  <Lock className={compact ? 'h-3.5 w-3.5' : 'w-4 h-4'} />
+                  <span className={compact ? 'text-[8px] font-semibold' : 'text-[9px] font-semibold mt-0.5'}>{i + 1}</span>
                 </span>
               ) : busy ? (
                 <Loader2 className="w-5 h-5 animate-spin text-amber-200" />
               ) : item ? (
                 <>
-                  <ItemArt item={item} size={compact ? 26 : 33} dim={!!disabled} />
-                  <span className={compact ? "absolute bottom-0.5 right-0.5 rounded bg-black/85 px-0.5 text-[10px] font-black text-white tabular-nums leading-none" : "text-[10px] font-bold text-white tabular-nums leading-tight mt-0.5"}>x{item.qty}</span>
+                  <ItemArt item={item} size={compact ? 22 : 33} dim={!!disabled} />
+                  <span className={compact ? "absolute bottom-0 right-0 rounded bg-black/85 px-0.5 text-[9px] font-black text-white tabular-nums leading-none" : "text-[10px] font-bold text-white tabular-nums leading-tight mt-0.5"}>x{item.qty}</span>
                   {!compact && <span className="text-[8px] text-gray-400 leading-none truncate w-full px-1 text-center">{item.name}</span>}
                 </>
               ) : (
