@@ -39,3 +39,4 @@ jobs:
       - run: npm run test:mobile-home
       - run: node scripts/check-combat-visuals.mjs
       - run: node scripts/check-arena-postfight.mjs
+      - run: node scripts/check-belt-victory-milestones.mjs
