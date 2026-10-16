@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useStore } from '@/game/store';
 import { useGame, useArena, grantRewards, updateProgress } from '@/game/actions';
 import {
   TEAM_NAMES, claimArenaReward, leaveArena, reviveAlly, submitArenaMove, applyTimePotion, drinkArenaItem,
-  setArenaAuto, type ArenaReward, type Zone,
+  setArenaAuto, arenaPostFightDeadline, type ArenaReward, type Zone,
 } from '@/game/arenaApi';
 import { useArenaRoom, useCountdown } from '@/game/useArenaRoom';
 import { useStrikeQueue } from '@/game/useStrikeQueue';
@@ -12,14 +11,14 @@ import { beltAction, beltContext, consumeBelt } from '@/game/belt';
 import { hapticImpact, hapticNotify } from '@/game/telegram';
 import { FighterList } from './FighterList';
 import { BattleScene } from './BattleScene';
-import { VictorySparks } from './VictorySparks';
+import { ArenaResultCard, formatPostFightTime } from './ArenaResultCard';
 import { ArenaChat } from './ArenaChat';
 import { GearStrip } from './GearStrip';
 import { BeltBar } from './BeltBar';
 import { FoldSection } from './FoldSection';
 import { equipmentArt } from '@/game/art';
 import { ItemArt } from '@/components/ui/ItemArt';
-import { Loader2, LogOut, Timer, WifiOff, Coins, Sparkles, Trophy, Skull, Swords } from 'lucide-react';
+import { Loader2, Timer, WifiOff } from 'lucide-react';
 import { useLanguage, localizeText } from '@/game/i18n';
 
 
@@ -45,9 +44,29 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const [beltOpen, setBeltOpen] = useState(false);
   const claiming = useRef(false);
   const prevHp = useRef<number | null>(null);
+  const autoLeaving = useRef(false);
+  const [postFightDeadline, setPostFightDeadline] = useState<number | null>(null);
 
   const room = view?.room;
   const countdown = useCountdown(room ? (room.status === 'waiting' ? room.startsAt : room.deadline) : null, clockOffset);
+  const finished = room?.status === 'finished';
+  const chatSeconds = useCountdown(finished ? postFightDeadline : null, clockOffset);
+  const chatExpired = finished && postFightDeadline !== null && chatSeconds === 0;
+
+  useEffect(() => {
+    if (!finished) return;
+    let cancelled = false;
+    arenaPostFightDeadline(roomId)
+      .then((deadline) => {
+        if (!cancelled && typeof deadline === 'number' && Number.isFinite(deadline) && deadline > 0) {
+          setPostFightDeadline(deadline);
+        }
+      })
+      .catch(() => {
+        // A missing network response must never invent or reset a 30-minute timer.
+      });
+    return () => { cancelled = true; };
+  }, [roomId, finished]);
   const me = view?.participants.find((p) => p.id === view.me.id) ?? null;
   const allies = view && me ? view.participants.filter((p) => p.team === me.team) : [];
   const enemies = view && me ? view.participants.filter((p) => p.team !== null && p.team !== me.team) : [];
@@ -162,6 +181,21 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
 
   const leave = () => run(() => leaveArena(roomId), onExit);
 
+  useEffect(() => {
+    // Claim the result before auto-exiting: a player away during the chat window
+    // must not silently forfeit gold or experience upon reconnecting.
+    if (!chatExpired || autoLeaving.current || (!view?.me.rewarded && !reward) || busy) return;
+    autoLeaving.current = true;
+    leaveArena(roomId)
+      .then(onExit)
+      .catch(() => {
+        autoLeaving.current = false;
+        setActionError(language === 'en'
+          ? 'Could not leave the arena. Please tap Leave arena.'
+          : 'Не удалось выйти автоматически. Нажми «Покинуть арену».');
+      });
+  }, [chatExpired, view?.me.rewarded, reward, busy, roomId, onExit, language]);
+
   if (!view || !room || !me) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-3">
@@ -177,54 +211,6 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const won = room.winnerTeam !== null && room.winnerTeam === me.team;
   const draw = room.status === 'finished' && room.winnerTeam === null;
   const isDuel = room.mode === 'duel';
-  const resultPanel = room.status === 'finished' ? createPortal(
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/75 px-4 py-6 backdrop-blur-[3px]">
-      <div className={`relative w-full max-w-[300px] overflow-hidden rounded-[22px] border-2 bg-gradient-to-b from-[#071526] via-[#040d19] to-[#020711] p-3 shadow-2xl ${won || draw ? 'border-amber-400/80 shadow-amber-500/20' : 'border-amber-400/60 shadow-red-500/20'}`}>
-        {won && <VictorySparks />}
-        <div className={`pointer-events-none absolute inset-x-7 top-0 h-px ${won || draw ? 'bg-cyan-300 shadow-[0_0_12px_3px_rgba(34,211,238,0.45)]' : 'bg-red-400 shadow-[0_0_12px_3px_rgba(248,113,113,0.45)]'}`} />
-        <div className="pointer-events-none absolute -top-12 left-1/2 h-20 w-36 -translate-x-1/2 rounded-full bg-cyan-500/10 blur-2xl" />
-        <div className="relative mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-amber-300/80 bg-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.22)]">
-          {won ? <Trophy className="h-6 w-6 text-amber-300" strokeWidth={2.2} /> : <Swords className={`h-6 w-6 ${draw ? 'text-amber-300' : 'text-red-300'}`} strokeWidth={2.2} />}
-        </div>
-        <div className="mt-1 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-[0.28em] text-sky-300/80">
-          <span className="h-px w-7 bg-gradient-to-r from-transparent to-amber-400/80" />
-          {language === 'en' ? 'ARENA' : 'АРЕНА'}
-          <span className="h-px w-7 bg-gradient-to-l from-transparent to-amber-400/80" />
-        </div>
-        <h2 className={`mt-1 text-center text-xl font-black tracking-wide drop-shadow-[0_0_12px_rgba(0,0,0,0.8)] ${won ? 'text-amber-300' : draw ? 'text-amber-300' : 'text-red-400'}`}>
-          {won ? (language === 'en' ? 'VICTORY!' : 'ПОБЕДА!') : draw ? (language === 'en' ? 'DRAW' : 'НИЧЬЯ') : (language === 'en' ? 'DEFEAT!' : 'ПОРАЖЕНИЕ!')}
-        </h2>
-        <div className="mt-3 grid grid-cols-3 overflow-hidden rounded-xl border border-sky-800/70 bg-slate-950/90 shadow-inner shadow-black/50">
-          <div className="flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2.5">
-            <Coins className="h-6 w-6 text-amber-300 drop-shadow-[0_0_7px_rgba(251,191,36,0.3)]" />
-            <span className="text-[10px] text-sky-100/90">{language === 'en' ? 'Gold' : 'Монеты'}</span>
-            <span className="text-sm font-black tabular-nums text-amber-300">{reward ? `+${reward.gold}` : '—'}</span>
-          </div>
-          <div className="flex min-w-0 flex-col items-center justify-center gap-1 border-x border-sky-900/70 px-1 py-2.5">
-            <Sparkles className="h-6 w-6 text-emerald-300 drop-shadow-[0_0_7px_rgba(52,211,153,0.28)]" />
-            <span className="text-[10px] text-sky-100/90">{language === 'en' ? 'XP' : 'Опыт'}</span>
-            <span className="text-sm font-black tabular-nums text-emerald-300">{reward ? `+${reward.xp}` : '—'}</span>
-          </div>
-          <div className="flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2.5">
-            <Trophy className={`h-6 w-6 ${(reward?.ratingChange ?? view.me.ratingChange ?? 0) >= 0 ? 'text-sky-300' : 'text-red-400'}`} />
-            <span className="text-[10px] text-sky-100/90">{language === 'en' ? 'Rating' : 'Рейтинг'}</span>
-            <span className={`text-sm font-black tabular-nums ${(reward?.ratingChange ?? view.me.ratingChange ?? 0) >= 0 ? 'text-sky-300' : 'text-red-400'}`}>
-              {reward ? `${reward.ratingChange > 0 ? '+' : ''}${reward.ratingChange}` : view.me.ratingChange !== null ? `${view.me.ratingChange > 0 ? '+' : ''}${view.me.ratingChange}` : '—'}
-            </span>
-          </div>
-        </div>
-        <div className="mt-2 flex items-center justify-between rounded-xl border border-sky-900/70 bg-slate-950/90 px-3 py-2">
-          <span className="flex items-center gap-2 text-xs text-slate-200"><Skull className="h-5 w-5 text-slate-300" />{language === 'en' ? 'Kills' : 'Убийства'}</span>
-          <span className="text-sm font-black tabular-nums text-white">{reward ? reward.kills : '—'}</span>
-        </div>
-        <button disabled={busy} onClick={leave} className={`mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-full border text-sm font-extrabold text-white shadow-lg transition active:scale-[0.98] disabled:opacity-50 ${won || draw ? 'border-sky-300 bg-gradient-to-b from-blue-500 to-blue-800 shadow-blue-950/70' : 'border-red-300/90 bg-gradient-to-b from-red-500 to-red-900 shadow-red-950/70'}`}>
-          <LogOut className="h-4 w-4" />{language === 'en' ? 'Leave arena' : 'Покинуть арену'}
-        </button>
-        <div className={`pointer-events-none absolute inset-x-8 bottom-0 h-px ${won || draw ? 'bg-cyan-300/90' : 'bg-red-400/90'}`} />
-      </div>
-    </div>,
-    document.body,
-  ) : null;
 
   return (
     <div className="space-y-2 animate-fade-in pb-4">
@@ -235,6 +221,16 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
           {me.team && !isDuel && <span className="text-teal-300"> · «{teamLabel(me.team)}»</span>}
         </p>
         {offline && <WifiOff className="w-3.5 h-3.5 text-red-400 shrink-0" />}
+        {finished && (
+          <span className={`shrink-0 flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold tabular-nums ${
+            chatSeconds < 300 && postFightDeadline !== null
+              ? 'border-rose-400/40 bg-rose-950/50 text-rose-200'
+              : 'border-cyan-400/35 bg-sky-950/50 text-cyan-200'
+          }`}>
+            <Timer className="h-3.5 w-3.5" />
+            {postFightDeadline === null ? '--:--' : formatPostFightTime(chatSeconds)}
+          </span>
+        )}
         {room.status !== 'finished' && (
           <div
             title={isActive ? (language === 'en' ? `Turn timer: ${room.timeout} sec.` : `Тайм на ход: ${room.timeout} сек.`) : undefined}
@@ -279,11 +275,28 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
           onStrike={strike}
           onRepeat={repeatMove}
           onToggleAuto={toggleAuto}
-          resultPanel={resultPanel}
         />
       )}
 
-      <ArenaChat roomId={roomId} messages={messages} myName={me.name} />
+      {finished && (
+        <ArenaResultCard
+          won={won}
+          draw={draw}
+          reward={reward}
+          ratingChange={view.me.ratingChange}
+          deadlineReady={postFightDeadline !== null}
+          remainingSeconds={chatSeconds}
+          busy={busy || autoLeaving.current}
+          onLeave={leave}
+        />
+      )}
+
+      <ArenaChat
+        roomId={roomId}
+        messages={messages}
+        myName={me.name}
+        canSend={!chatExpired}
+      />
 
       {room.status !== 'waiting' && (
         <div className="space-y-1.5">
