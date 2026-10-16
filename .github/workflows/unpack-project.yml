@@ -147,6 +147,33 @@ jobs:
             mkdir -p public/assets/territory/characters
             cp -a "$TEMP_DIR/public/assets/territory/characters/." public/assets/territory/characters/
             echo "Installed 20 NPCs without modifying source code or saved data."
+          elif [ -f "$TEMP_DIR/CITY_MANIFEST.json" ]; then
+            # The live-city package is an image-only overlay: keep code and saves untouched.
+            python3 - "$TEMP_DIR" <<'PY'
+          import json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          prefix = 'public/assets/territory/scenes/'
+          expected = {prefix + 'live-city-bg.webp', prefix + 'live-city-ship.webp'}
+          permitted = expected | {'CITY_MANIFEST.json', 'README_RU.txt'}
+          found = {str(p.relative_to(root)) for p in root.rglob('*') if p.is_file()}
+          if found != permitted:
+              sys.exit('City ZIP contains missing or unexpected files')
+          manifest = json.loads((root / 'CITY_MANIFEST.json').read_text('utf-8'))
+          if manifest.get('pack_id') != 'territory-live-city-v1' or set(manifest.get('assets',[])) != expected:
+              sys.exit('City asset manifest invalid')
+          for name in expected:
+              path = root / name
+              if path.is_symlink() or not (1024 < path.stat().st_size < 2*1024*1024):
+                  sys.exit('Invalid city asset: '+name)
+              with path.open('rb') as file:
+                  header = file.read(12)
+              if header[:4] != b'RIFF' or header[8:12] != b'WEBP':
+                  sys.exit('Invalid WebP: '+name)
+          print('Verified approved portrait city background and ship overlay')
+          PY
+            mkdir -p public/assets/territory/scenes
+            cp -a "$TEMP_DIR/public/assets/territory/scenes/." public/assets/territory/scenes/
+            echo "Installed live city art without changing gameplay files."
           else
             if [ -f "$TEMP_DIR/package.json" ] && [ -d "$TEMP_DIR/src" ]; then
               SOURCE_DIR="$TEMP_DIR"
