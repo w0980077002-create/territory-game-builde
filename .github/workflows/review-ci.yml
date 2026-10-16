@@ -38,3 +38,4 @@ jobs:
       - run: npm run test:feature-separation
       - run: npm run test:mobile-home
       - run: node scripts/check-combat-visuals.mjs
+      - run: node scripts/check-arena-postfight.mjs

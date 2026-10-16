@@ -214,8 +214,27 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
       </div>
 
       <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black/40">
-        <img src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = import.meta.env.BASE_URL + 'arena-bg.webp'; }} alt="" className="absolute inset-0 w-full h-full object-cover object-[center_62%]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/85" />
+        <img
+          src={import.meta.env.BASE_URL + (kind === 'trial' ? 'map-chamber.webp' : 'assets/territory/scenes/arena-viking.webp')}
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = import.meta.env.BASE_URL + 'arena-bg.webp';
+          }}
+          alt=""
+          className={`absolute inset-0 h-full w-full object-cover ${kind === 'trial' ? 'object-center saturate-[1.18] contrast-[1.08]' : 'object-[center_62%]'}`}
+        />
+        <div className={`absolute inset-0 pointer-events-none ${
+          kind === 'trial'
+            ? 'bg-gradient-to-b from-[#07122b]/45 via-[#182356]/20 to-[#100d28]/80'
+            : 'bg-gradient-to-b from-black/30 via-black/10 to-black/85'
+        }`} />
+        {kind === 'trial' && (
+          <>
+            <span aria-hidden="true" className="trial-magic-glow absolute inset-x-[18%] top-[22%] h-[28%] rounded-full bg-cyan-400/20 blur-3xl pointer-events-none" />
+            <span aria-hidden="true" className="trial-magic-glow absolute inset-x-[25%] bottom-0 h-[18%] rounded-full bg-violet-400/20 blur-2xl pointer-events-none" />
+            <div className="pointer-events-none absolute inset-0 border-2 border-violet-300/20 rounded-2xl" />
+          </>
+        )}
 
         <div className="relative grid grid-cols-[52px_1fr_52px] gap-1.5 p-2 pt-3">
           <div className="flex flex-col gap-1.5 pt-5">

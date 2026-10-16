@@ -90,6 +90,7 @@ const ERRORS: Record<string, string> = {
   vip_required: 'Автобой доступен с VIP 3 уровня',
   item_round: 'Только одно зелье за раунд',
   full_hp: 'Здоровье и так полное',
+  chat_expired: '30 минут после боя истекли. Чат арены закрыт.',
   buff_active: 'Этот эликсир уже действует в этом бою',
 };
 
@@ -104,6 +105,9 @@ async function call<T>(fn: string, args: Record<string, unknown> = {}): Promise<
   if (error) throw new Error(friendly(error));
   return data as T;
 }
+
+/** Fixed server deadline, shared by all participants; unaffected by page reload. */
+export const arenaPostFightDeadline = (room: string) => call<number | null>('arena_postfight_deadline', { p_room: room });
 
 export const currentArenaRoom = () => call<string | null>('arena_current_room');
 export const joinArena = (mode: ArenaMode) => call<string>('arena_join', { p_mode: mode });
