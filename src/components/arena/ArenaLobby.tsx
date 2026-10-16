@@ -138,7 +138,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
     'Иногда боец успевает увернуться от удара — даже если зона не закрыта.',
     'Павший остаётся в комнате до конца боя. Союзник может вернуть его адреналином.',
     'Автобой: сервер бьёт за тебя, даже если ты свернул игру.',
-    'После боя чат остаётся, пока ты не покинешь комнату.',
+    'После боя у игроков есть 30 минут на общение в чате. Затем арена закроется автоматически.',
   ];
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in" onClick={onClose}>
@@ -161,7 +161,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                 'Sometimes a fighter dodges an attack even when the zone is unguarded.',
                 'A fallen fighter stays in the room until battle ends. An ally can revive them with Adrenaline.',
                 'Auto-battle: the server fights for you even while the game is minimized.',
-                'The chat remains after the battle until you leave the room.'
+                'After the battle, you have 30 minutes to chat. The arena then closes automatically.'
               ] as string[])[i] : r}
             </li>
           ))}
