@@ -11,7 +11,7 @@ import { beltAction, beltContext, consumeBelt } from '@/game/belt';
 import { hapticImpact, hapticNotify } from '@/game/telegram';
 import { FighterList } from './FighterList';
 import { BattleScene } from './BattleScene';
-import { ArenaResultCard, formatPostFightTime } from './ArenaResultCard';
+import { ArenaResultCard } from './ArenaResultCard';
 import { ArenaChat } from './ArenaChat';
 import { GearStrip } from './GearStrip';
 import { BeltBar } from './BeltBar';
@@ -221,16 +221,6 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
           {me.team && !isDuel && <span className="text-teal-300"> · «{teamLabel(me.team)}»</span>}
         </p>
         {offline && <WifiOff className="w-3.5 h-3.5 text-red-400 shrink-0" />}
-        {finished && (
-          <span className={`shrink-0 flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold tabular-nums ${
-            chatSeconds < 300 && postFightDeadline !== null
-              ? 'border-rose-400/40 bg-rose-950/50 text-rose-200'
-              : 'border-cyan-400/35 bg-sky-950/50 text-cyan-200'
-          }`}>
-            <Timer className="h-3.5 w-3.5" />
-            {postFightDeadline === null ? '--:--' : formatPostFightTime(chatSeconds)}
-          </span>
-        )}
         {room.status !== 'finished' && (
           <div
             title={isActive ? (language === 'en' ? `Turn timer: ${room.timeout} sec.` : `Тайм на ход: ${room.timeout} сек.`) : undefined}
@@ -259,6 +249,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
           me={me}
           enemy={shownEnemy}
           active={isActive}
+          finished={finished}
           moved={view.me.moved}
           auto={view.me.auto}
           autoLocked={view.me.vip < view.me.autoMinVip}
@@ -275,19 +266,18 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
           onStrike={strike}
           onRepeat={repeatMove}
           onToggleAuto={toggleAuto}
-        />
-      )}
-
-      {finished && (
-        <ArenaResultCard
-          won={won}
-          draw={draw}
-          reward={reward}
-          ratingChange={view.me.ratingChange}
-          deadlineReady={postFightDeadline !== null}
-          remainingSeconds={chatSeconds}
-          busy={busy || autoLeaving.current}
-          onLeave={leave}
+          resultPanel={finished ? (
+            <ArenaResultCard
+              won={won}
+              draw={draw}
+              reward={reward}
+              ratingChange={view.me.ratingChange}
+              deadlineReady={postFightDeadline !== null}
+              remainingSeconds={chatSeconds}
+              busy={busy || autoLeaving.current}
+              onLeave={leave}
+            />
+          ) : undefined}
         />
       )}
 

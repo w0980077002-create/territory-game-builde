@@ -14,6 +14,7 @@ interface Props {
   me: ArenaFighter;
   enemy: ArenaFighter | null;
   active: boolean;
+  finished: boolean;
   moved: boolean;
   auto: boolean;
   autoLocked: boolean;
@@ -80,7 +81,7 @@ function ZoneButton({ label, sub, selected, tone, disabled, onClick }: {
 
 export function BattleScene(props: Props) {
   const {
-    me, enemy, active, moved, auto, autoLocked, autoMinVip, attack, blocks, busy,
+    me, enemy, active, finished, moved, auto, autoLocked, autoMinVip, attack, blocks, busy,
     movedCount, aliveCount, strike, canRepeat, onAttack, onToggleBlock, onStrike, onRepeat, onToggleAuto, resultPanel,
   } = props;
   const game = useStore(useGame);
@@ -110,13 +111,13 @@ export function BattleScene(props: Props) {
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/50 pointer-events-none" />
 
-      <div className="relative grid grid-cols-[56px_1fr_56px] gap-2 p-2 pt-3">
-        <div className="flex flex-col gap-1.5 pt-6">
+      <div className={`relative grid gap-2 p-2 pt-3 ${finished ? 'grid-cols-1' : 'grid-cols-[56px_1fr_56px]'}`}>
+        {!finished && <div className="flex flex-col gap-1.5 pt-6">
           <p className="text-[9px] uppercase tracking-wider text-sky-200 text-center font-semibold">{language === 'en' ? 'DEFENSE' : 'Защита'} {blocks.length}/2</p>
           {ZONES.map((z) => (
             <ZoneButton key={z.id} label={language === 'en' ? ({ head: 'Head', chest: 'Chest', belly: 'Belly', legs: 'Legs' } as Record<string, string>)[z.id] : z.label} tone="def" selected={blocks.includes(z.id)} disabled={!controls} onClick={() => onToggleBlock(z.id)} />
           ))}
-        </div>
+        </div>}
 
         <div className="relative grid grid-cols-2 gap-1 min-h-[260px]">
           {status && (
@@ -185,7 +186,7 @@ export function BattleScene(props: Props) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5 pt-6">
+        {!finished && <div className="flex flex-col gap-1.5 pt-6">
           <p className="text-[9px] uppercase tracking-wider text-red-200 text-center font-semibold">{language === 'en' ? 'ATTACK' : 'Удар'}</p>
           {ZONES.map((z) => (
             <ZoneButton
@@ -198,7 +199,7 @@ export function BattleScene(props: Props) {
               onClick={() => onAttack(z.id)}
             />
           ))}
-        </div>
+        </div>}
       </div>
 
       {active && alive && (
