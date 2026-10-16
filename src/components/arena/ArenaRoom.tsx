@@ -39,7 +39,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const [enemiesOpen, setEnemiesOpen] = useState(false);
   const [alliesOpen, setAlliesOpen] = useState(false);
   const [gearOpen, setGearOpen] = useState(false);
-  const [beltOpen, setBeltOpen] = useState(true);
+  const [beltOpen, setBeltOpen] = useState(false);
   const claiming = useRef(false);
   const prevHp = useRef<number | null>(null);
 
@@ -281,8 +281,32 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
         />
       )}
 
+      <ArenaChat roomId={roomId} messages={messages} myName={me.name} />
+
       {room.status !== 'waiting' && (
         <div className="space-y-1.5">
+          <FoldSection
+            title={language === 'en' ? 'Elixirs and items' : 'Эликсиры и предметы'}
+            open={beltOpen}
+            onToggle={() => setBeltOpen((o) => !o)}
+            summary={
+              <>
+                {game.belt.map((s, i) => s && (
+                  <span key={i} className="text-sm leading-none">{s.icon}<span className="text-[9px] text-gray-400">{s.qty}</span></span>
+                ))}
+                <span className="text-[10px] text-gray-500 tabular-nums ml-1">{game.belt.filter(Boolean).length}/7</span>
+              </>
+            }
+          >
+            <BeltBar
+              belt={game.belt}
+              ctx={beltContext(game, arenaStats.wins)}
+              actionLabel={isActive && alive ? (language === 'en' ? 'Tap a potion to drink (one per round)' : 'Нажми на зелье, чтобы выпить (одно за раунд)') : (language === 'en' ? 'Manage your potion belt in inventory' : 'Пояс с зельями — собирается в сумке')}
+              disabled={!isActive || !alive || busy}
+              busyIndex={beltBusy}
+              onAction={pressBeltSlot}
+            />
+          </FoldSection>
           <FoldSection
             title={language === 'en' ? 'Equipment' : 'Снаряжение'}
             open={gearOpen}
@@ -297,27 +321,6 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
             }
           >
             <GearStrip equipped={game.player.equipped} />
-          </FoldSection>
-          <FoldSection
-            title={language === 'en' ? 'Elixirs and items' : 'Эликсиры и предметы'}
-            open={beltOpen}
-            onToggle={() => setBeltOpen((o) => !o)}
-            summary={
-              <>
-                {game.belt.map((s, i) => s && (
-                  <span key={i} className="text-sm leading-none">{s.icon}<span className="text-[9px] text-gray-400">{s.qty}</span></span>
-                ))}
-              </>
-            }
-          >
-            <BeltBar
-              belt={game.belt}
-              ctx={beltContext(game, arenaStats.wins)}
-              actionLabel={isActive && alive ? (language === 'en' ? 'Tap a potion to drink (one per round)' : 'Нажми на зелье, чтобы выпить (одно за раунд)') : (language === 'en' ? 'Manage your potion belt in inventory' : 'Пояс с зельями — собирается в сумке')}
-              disabled={!isActive || !alive || busy}
-              busyIndex={beltBusy}
-              onAction={pressBeltSlot}
-            />
           </FoldSection>
         </div>
       )}
@@ -355,8 +358,6 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
           />
         </div>
       )}
-
-      <ArenaChat roomId={roomId} messages={messages} myName={me.name} />
 
       {isActive && (
         <button onClick={() => setConfirmLeave(true)} className="btn-ghost w-full text-xs text-gray-500">{language === 'en' ? 'Leave battle' : 'Покинуть бой'}</button>
