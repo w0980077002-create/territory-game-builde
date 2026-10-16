@@ -174,6 +174,38 @@ jobs:
             mkdir -p public/assets/territory/scenes
             cp -a "$TEMP_DIR/public/assets/territory/scenes/." public/assets/territory/scenes/
             echo "Installed live city art without changing gameplay files."
+          elif [ -f "$TEMP_DIR/ARENA_MANIFEST.json" ]; then
+            # Art-only ZIP; validate exact names before applying. Never replace game code.
+            python3 - "$TEMP_DIR" <<'PY'
+          import json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          gear = ('helmet','amulet','armor','weapon','shield','ring','boots')
+          items = ('belt','sword','bow','staff','potion-hp','potion-mana','potion-fire',
+                   'bomb','scroll','potion-green','food','net','potion-energy')
+          prefix = 'public/assets/territory/'
+          expected = {prefix+'ui/equipment/'+s+'.webp' for s in gear}
+          expected |= {prefix+'ui/items/'+s+'.webp' for s in items}
+          expected.add(prefix+'scenes/arena-viking.webp')
+          actual = {str(p.relative_to(root)) for p in root.rglob('*') if p.is_file()}
+          if actual != expected | {'ARENA_MANIFEST.json'}:
+              sys.exit('Arena ZIP has missing or unexpected files')
+          m = json.loads((root/'ARENA_MANIFEST.json').read_text('utf-8'))
+          if m.get('pack_id') != 'territory-arena-final-v1' or set(m.get('assets',[])) != expected:
+              sys.exit('Arena manifest mismatch')
+          for name in expected:
+              file = root/name
+              if file.is_symlink() or not (1024 < file.stat().st_size < 2*1024*1024):
+                  sys.exit('Invalid arena art: '+name)
+              with file.open('rb') as fp:
+                  header=fp.read(12)
+              if header[:4] != b'RIFF' or header[8:12] != b'WEBP':
+                  sys.exit('Not WEBP: '+name)
+          print('Validated arena illustration and 20 transparent icons.')
+          PY
+            mkdir -p public/assets/territory/scenes public/assets/territory/ui
+            cp -a "$TEMP_DIR/public/assets/territory/scenes/." public/assets/territory/scenes/
+            cp -a "$TEMP_DIR/public/assets/territory/ui/." public/assets/territory/ui/
+            echo "Installed the approved arena artwork only."
           else
             if [ -f "$TEMP_DIR/package.json" ] && [ -d "$TEMP_DIR/src" ]; then
               SOURCE_DIR="$TEMP_DIR"
