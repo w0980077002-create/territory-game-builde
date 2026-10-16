@@ -10,19 +10,21 @@ interface Props {
   belt: (InventoryItem | null)[];
   ctx: BeltContext;
   actionLabel: string;
+  /** Show all seven slots at once on a narrow Telegram arena screen. */
+  compact?: boolean;
   disabled?: boolean;
   busyIndex?: number | null;
   onAction: (index: number) => void;
 }
 
-export function BeltBar({ belt, ctx, actionLabel, disabled, busyIndex, onAction }: Props) {
+export function BeltBar({ belt, ctx, actionLabel, compact = false, disabled, busyIndex, onAction }: Props) {
   const { language } = useLanguage();
   const [info, setInfo] = useState<number | null>(null);
   const shown = info !== null ? { rule: BELT_RULES[info], check: BELT_RULES[info].check(ctx), item: belt[info] } : null;
 
   return (
     <div>
-      <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-0.5 py-0.5 touch-pan-x">
+      <div className={compact ? "grid grid-cols-7 gap-1 min-w-0 px-0.5 py-0.5" : "flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-0.5 py-0.5 touch-pan-x"}>
         {BELT_RULES.map((rule, i) => {
           const open = rule.check(ctx).open;
           const item = open ? belt[i] : null;
@@ -40,7 +42,7 @@ export function BeltBar({ belt, ctx, actionLabel, disabled, busyIndex, onAction 
                   setInfo(info === i ? null : i);
                 }
               }}
-              className={`relative snap-start shrink-0 w-[58px] h-[62px] rounded-xl flex flex-col items-center justify-center border transition-all duration-200 active:scale-90 ${
+              className={`relative flex flex-col items-center justify-center border transition-all duration-200 active:scale-90 ${compact ? 'min-w-0 w-full h-[55px] rounded-lg' : 'snap-start shrink-0 w-[58px] h-[62px] rounded-xl'} ${
                 !open ? 'bg-black/50 border-white/5' : item ? 'bg-gradient-to-b from-white/10 to-black/50' : 'bg-black/30 border-dashed border-white/15'
               } ${info === i ? 'ring-2 ring-amber-300/60' : ''}`}
               style={color ? { borderColor: `${color}cc`, boxShadow: `0 0 12px ${color}40` } : undefined}
@@ -54,9 +56,9 @@ export function BeltBar({ belt, ctx, actionLabel, disabled, busyIndex, onAction 
                 <Loader2 className="w-5 h-5 animate-spin text-amber-200" />
               ) : item ? (
                 <>
-                  <ItemArt item={item} size={33} dim={!!disabled} />
-                  <span className="text-[10px] font-bold text-white tabular-nums leading-tight mt-0.5">x{item.qty}</span>
-                  <span className="text-[8px] text-gray-400 leading-none truncate w-full px-1 text-center">{item.name}</span>
+                  <ItemArt item={item} size={compact ? 26 : 33} dim={!!disabled} />
+                  <span className={compact ? "absolute bottom-0.5 right-0.5 rounded bg-black/85 px-0.5 text-[10px] font-black text-white tabular-nums leading-none" : "text-[10px] font-bold text-white tabular-nums leading-tight mt-0.5"}>x{item.qty}</span>
+                  {!compact && <span className="text-[8px] text-gray-400 leading-none truncate w-full px-1 text-center">{item.name}</span>}
                 </>
               ) : (
                 <span className="text-[9px] text-gray-500">{language === 'en' ? 'empty' : 'пусто'}</span>
@@ -65,7 +67,7 @@ export function BeltBar({ belt, ctx, actionLabel, disabled, busyIndex, onAction 
           );
         })}
       </div>
-      <p className="text-[11px] mt-1.5 px-1 min-h-[16px] text-gray-400">
+      {(shown || !compact) && <p className="text-[11px] mt-1.5 px-1 min-h-[16px] text-gray-400">
         {shown ? (
           shown.check.open ? (
             shown.item ? (
@@ -82,7 +84,7 @@ export function BeltBar({ belt, ctx, actionLabel, disabled, busyIndex, onAction 
         ) : (
           <span>{actionLabel}</span>
         )}
-      </p>
+      </p>}
     </div>
   );
 }

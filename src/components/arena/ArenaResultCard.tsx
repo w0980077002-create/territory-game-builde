@@ -34,9 +34,6 @@ export function ArenaResultCard({
   const title = won ? (language === 'en' ? 'VICTORY!' : 'ПОБЕДА!')
     : draw ? (language === 'en' ? 'DRAW!' : 'НИЧЬЯ!')
       : (language === 'en' ? 'DEFEAT!' : 'ПОРАЖЕНИЕ!');
-  const titleCaption = won ? (language === 'en' ? 'GLORY TO THE CHAMPION' : 'СЛАВА ПОБЕДИТЕЛЮ')
-    : draw ? (language === 'en' ? 'WORTHY RIVALS' : 'ДОСТОЙНЫЕ СОПЕРНИКИ')
-      : (language === 'en' ? 'THE BATTLE IS OVER' : 'БИТВА ОКОНЧЕНА');
   const shownRating = reward?.ratingChange ?? ratingChange;
   const pending = alreadyRewarded ? '✓' : '…';
   const rewards = [
@@ -63,8 +60,7 @@ export function ArenaResultCard({
           </span>
           <div className="min-w-0 text-center">
             <h2 className="arena-result-banner-title whitespace-nowrap text-[clamp(20px,6.3vw,29px)] font-black leading-[1.05] tracking-wide">{title}</h2>
-            <p className="arena-result-banner-caption mt-0.5 whitespace-nowrap text-[8px] font-extrabold tracking-[0.1em]">{titleCaption}</p>
-          </div>
+                      </div>
         </div>
         <span aria-hidden="true" className="arena-result-wing arena-result-wing-right" />
       </div>
