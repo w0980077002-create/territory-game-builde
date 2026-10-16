@@ -221,7 +221,9 @@ export function generateTrial(num: number): Enemy {
   return makeEnemy(
     `trial_${num}`,
     'Страж испытаний',
-    '/assets/territory/characters/trial/guardian_idle.webp',
+    // Use the fully animated six-pose guardian rather than the old idle-only
+    // trial image. Visual replacement only: trial HP, attack and loot unchanged.
+    '/assets/territory/characters/bosses/barrow_guardian/idle.webp',
     Math.floor(baseHp * 1.8 * difficulty.hp),
     Math.floor(baseAtk * 1.2 * difficulty.attack),
     Math.floor(baseDef * 1.5 * difficulty.defense),
