@@ -490,6 +490,7 @@
   --arena-result-glow: rgba(255,199,51,.9);
   --arena-result-ink: #3b1408;
 }
+.arena-result-stage-win .arena-result-banner-center { border-color:#fff0aa; }
 .arena-result-stage-loss {
   --arena-result-metal: #ff849d;
   --arena-result-light: #ffe0ea;
