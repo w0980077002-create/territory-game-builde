@@ -9,7 +9,7 @@ export interface StrikeEvent {
   amount: number | null;
 }
 
-const STRIKE_MS = 1050;
+const STRIKE_MS = 920;
 const MAX_QUEUE = 6;
 const PAIR_RE = /^(.+?) → (.+?): /;
 const DMG_RE = /−(\d+) \[/;
