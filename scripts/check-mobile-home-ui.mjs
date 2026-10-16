@@ -13,8 +13,8 @@ const [home, app, css, html, city, sheets] = await Promise.all([
 ]);
 
 assert.match(home, /<LiveCityBackdrop animated=\{cityMotion\}/, 'Home must render the approved layered city backdrop');
-assert.match(city, /live-city-bg\\.webp/, 'Portrait Viking harbour backdrop must be installed');
-assert.match(city, /live-city-ship\\.webp/, 'Viking ships must have a subtle motion overlay');
+assert.match(city, /live-city-bg\.webp/, 'Portrait Viking harbour backdrop must be installed');
+assert.match(city, /live-city-ship\.webp/, 'Viking ships must have a subtle motion overlay');
 assert.match(city, /live-city-waterfall/, 'Waterfalls must have visual motion');
 assert.match(sheets, /Живой город/, 'Animated city must have an on/off setting');
 assert.match(css, /prefers-reduced-motion/, 'City motion must respect accessibility setting');
