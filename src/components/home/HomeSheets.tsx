@@ -158,7 +158,7 @@ function Toggle({ label, hint, on, onChange }: { label: string; hint: string; on
   );
 }
 
-export function SettingsSheet({ onClose, saveStatus }: { onClose: () => void; saveStatus: SaveStatus }) {
+export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMotion }: { onClose: () => void; saveStatus: SaveStatus; cityMotion: boolean; onToggleCityMotion: () => void }) {
   const { t, language } = useLanguage();
   const { settings } = useStore(useGame);
   const update = (patch: Partial<typeof settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
@@ -176,6 +176,7 @@ export function SettingsSheet({ onClose, saveStatus }: { onClose: () => void; sa
       <div className="space-y-2">
         <Toggle label={t('battleSpeed')} hint={t('speedHint')} on={settings.speed === 2} onChange={() => update({ speed: settings.speed === 2 ? 1 : 2 })} />
         <Toggle label={t('autoBattle')} hint={t('autoBattleHint')} on={settings.auto} onChange={() => update({ auto: !settings.auto })} />
+        <Toggle label={language === 'en' ? 'Living city' : 'Живой город'} hint={language === 'en' ? 'Animated ships, waterfalls and fire. Disable to save battery.' : 'Движение кораблей, водопадов и огня. Можно отключить для экономии заряда.'} on={cityMotion} onChange={onToggleCityMotion} />
         <div onClick={secretTap} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm select-none">
           {saveStatus === 'error' ? <CloudOff className="w-4 h-4 text-red-400" /> : <Cloud className={`w-4 h-4 ${saveStatus === 'saving' ? 'text-gray-400 animate-pulse' : 'text-emerald-400'}`} />}
           <span className="text-gray-300">

@@ -15,6 +15,7 @@ import { EquipCells } from '@/components/ui/EquipCells';
 import { BeltCells } from '@/components/ui/BeltCells';
 import { Currency, formatAmount } from '@/components/ui/Currency';
 import { DailySheet, MailSheet, SettingsSheet, StonesSheet, type SaveStatus } from '@/components/home/HomeSheets';
+import { LiveCityBackdrop, CITY_MOTION_KEY, initialCityMotion } from '@/components/home/LiveCityBackdrop';
 import { useLanguage, localizeText } from '@/game/i18n';
 
 export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction';
@@ -83,6 +84,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
   const arena = useStore(useArena);
   const { vip } = useStore(useAccount);
   const [sheet, setSheet] = useState<Sheet>(null);
+  const [cityMotion, setCityMotion] = useState(initialCityMotion);
   const { language, setLanguage, t } = useLanguage();
 
   const { player } = state;
@@ -101,6 +103,11 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
   const soon = (label: string) => notify(language === 'en' ? `${label} will be available in a future update` : `${label} откроется в следующих обновлениях`);
 
   const setSettings = (patch: Partial<typeof state.settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
+  const toggleCityMotion = () => setCityMotion((previous) => {
+    const next = !previous;
+    try { window.localStorage.setItem(CITY_MOTION_KEY, next ? 'on' : 'off'); } catch { /* storage may be disabled */ }
+    return next;
+  });
 
   const bless = () => {
     const next = claimBlessing(useGame.get());
@@ -114,7 +121,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
 
   return (
     <div className="home-game-scene relative h-full w-full overflow-hidden select-none animate-fade-in">
-      <img src="/city-bg-vibrant.webp" alt="" draggable={false} className="home-background-art absolute inset-0 w-full h-full object-cover" />
+      <LiveCityBackdrop animated={cityMotion} />
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-sky-500/[0.05] via-transparent to-amber-500/[0.04]" />
       <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 to-transparent pointer-events-none" />
       <div className="absolute inset-x-0 bottom-0 h-[230px] bg-gradient-to-t from-[#07090d] via-[#07090d]/65 to-transparent pointer-events-none" />
@@ -271,7 +278,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
 
       {sheet === 'daily' && <DailySheet onClose={() => setSheet(null)} notify={notify} />}
       {sheet === 'mail' && <MailSheet onClose={() => setSheet(null)} notify={notify} />}
-      {sheet === 'settings' && <SettingsSheet onClose={() => setSheet(null)} saveStatus={saveStatus} />}
+      {sheet === 'settings' && <SettingsSheet onClose={() => setSheet(null)} saveStatus={saveStatus} cityMotion={cityMotion} onToggleCityMotion={toggleCityMotion} />}
       {sheet === 'stones' && (
         <StonesSheet
           onClose={() => setSheet(null)}
