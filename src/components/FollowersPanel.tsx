@@ -8,7 +8,7 @@ import {
   selectedFollower, selectFollower, trainFollower,
 } from '@/game/followers';
 
-/** In-profile follower selection/training; one active in PvE, zero effects in Arena. */
+/** Inventory companions tab: existing training/selection, one active in PvE, never Arena. */
 export function FollowersPanel() {
   const { language } = useLanguage();
   const en = language === 'en';
@@ -39,6 +39,23 @@ export function FollowersPanel() {
           {en ? '1 active / PvE only' : '1 активный / только PvE'}
         </span>
       </div>
+      {active ? (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-600/15 to-violet-700/15 p-3">
+          <img src={getFollowerArt(active.id)} alt="" className="w-20 h-24 shrink-0 object-contain object-bottom" loading="lazy" />
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] font-bold text-emerald-300 uppercase">{en ? 'Your active companion' : 'Твой активный последователь'}</span>
+            <p className="text-base font-bold text-amber-100">{en
+              ? (FOLLOWER_TEMPLATES.find((f) => f.id === active.id)?.nameEn ?? active.name)
+              : active.name}</p>
+            <p className="text-xs text-sky-200 mt-1">{en ? 'Level' : 'Уровень'} {active.level}</p>
+            <p className="text-xs text-gray-300 mt-1">⚔️ {active.attack} · 🛡️ {active.defense}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-gray-300">
+          {en ? 'Your first companion unlocks at hero level 3.' : 'Первый последователь откроется на 3 уровне героя.'}
+        </div>
+      )}
       <p className="text-xs text-slate-300">{en
         ? 'Unlock allies as your hero levels up. Train with gold and forge materials. Only one companion can assist in battles.'
         : 'Открывай спутников с ростом уровня героя. Обучай за золото и материалы кузницы. В бою помогает только один.'}</p>

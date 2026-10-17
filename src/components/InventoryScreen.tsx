@@ -6,12 +6,13 @@ import { BELT_STACK, beltContext, canBelt, putInBelt, takeFromBelt } from '@/gam
 import { ItemArt } from './ui/ItemArt';
 import { BeltCells } from './ui/BeltCells';
 import { GearShowcase } from './GearShowcase';
+import { FollowersPanel } from './FollowersPanel';
 import { rarityColor, rarityGlow } from '@/game/ui';
 import type { InventoryItem } from '@/game/types';
-import { Package, X, ArrowDownUp } from 'lucide-react';
+import { Package, X, ArrowDownUp, UsersRound } from 'lucide-react';
 
-/** Two tabs share the existing inventory. Equipment uses the hero stage;
- * consumables keep their battle belt and original use flow unchanged. */
+/** Equipment, consumables/belt and companions share the inventory route.
+ * The follower model is unchanged: training and PvE selection stay in the global store. */
 export function InventoryScreen({ initialTab = 'items', userId }: {
   initialTab?: 'items' | 'equipment';
   userId: string;
@@ -19,14 +20,14 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const arena = useStore(useArena);
-  const [tab, setTab] = useState<'items' | 'equipment'>(initialTab);
+  const [tab, setTab] = useState<'items' | 'equipment' | 'followers'>(initialTab);
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const [beltNote, setBeltNote] = useState<string | null>(null);
 
   const consumables = state.inventory.filter((i) => i.type === 'potion' || i.type === 'elixir' || i.type === 'arena');
   const materials = state.inventory.filter((i) => i.type === 'material');
 
-  const switchTab = (to: 'items' | 'equipment') => {
+  const switchTab = (to: 'items' | 'equipment' | 'followers') => {
     setTab(to);
     setSelected(null);
     setBeltNote(null);
@@ -46,26 +47,35 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
 
   return (
     <div className="space-y-2 animate-fade-in pb-2">
-      <div className="grid grid-cols-2 gap-2 rounded-xl border border-violet-500/30 bg-[#170f25] p-1.5">
-        <button type="button" aria-pressed={tab === 'equipment'}
-          className={'rounded-lg py-2 text-xs font-bold transition-all ' + (tab === 'equipment'
+      <div className="grid grid-cols-3 gap-1.5 rounded-xl border border-violet-500/30 bg-[#170f25] p-1.5"
+        role="tablist" aria-label={language === 'en' ? 'Inventory sections' : 'Разделы инвентаря'}>
+        <button type="button" role="tab" aria-selected={tab === 'equipment'} aria-controls="inventory-current-section"
+          className={'min-w-0 rounded-lg py-2 px-1.5 text-[11px] sm:text-xs font-bold transition-colors flex flex-col sm:flex-row items-center justify-center gap-1 ' + (tab === 'equipment'
             ? 'border border-amber-400/60 bg-gradient-to-b from-amber-500/30 to-amber-900/30 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,.15)]'
-            : 'border border-transparent text-violet-200/70')}
+            : 'border border-transparent text-violet-200/75')}
           onClick={() => switchTab('equipment')}>
-          <ArrowDownUp className="w-4 h-4 inline mr-1"/>{language === 'en' ? 'Equipment' : 'Снаряжение'}
+          <ArrowDownUp className="w-4 h-4 shrink-0" />{language === 'en' ? 'Equipment' : 'Снаряжение'}
         </button>
-        <button type="button" aria-pressed={tab === 'items'}
-          className={'rounded-lg py-2 text-xs font-bold transition-all ' + (tab === 'items'
+        <button type="button" role="tab" aria-selected={tab === 'items'} aria-controls="inventory-current-section"
+          className={'min-w-0 rounded-lg py-2 px-1.5 text-[11px] sm:text-xs font-bold transition-colors flex flex-col sm:flex-row items-center justify-center gap-1 ' + (tab === 'items'
             ? 'border border-amber-400/60 bg-gradient-to-b from-amber-500/30 to-amber-900/30 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,.15)]'
-            : 'border border-transparent text-violet-200/70')}
+            : 'border border-transparent text-violet-200/75')}
           onClick={() => switchTab('items')}>
-          <Package className="w-4 h-4 inline mr-1"/>{language === 'en' ? 'Items / Belt' : 'Предметы / пояс'}
+          <Package className="w-4 h-4 shrink-0" />{language === 'en' ? 'Items' : 'Предметы'}
+        </button>
+        <button type="button" role="tab" aria-selected={tab === 'followers'} aria-controls="inventory-current-section"
+          className={'min-w-0 rounded-lg py-2 px-1.5 text-[11px] sm:text-xs font-bold transition-colors flex flex-col sm:flex-row items-center justify-center gap-1 ' + (tab === 'followers'
+            ? 'border border-amber-400/60 bg-gradient-to-b from-amber-500/30 to-amber-900/30 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,.15)]'
+            : 'border border-transparent text-violet-200/75')}
+          onClick={() => switchTab('followers')}>
+          <UsersRound className="w-4 h-4 shrink-0" />{language === 'en' ? 'Companions' : 'Спутники'}
         </button>
       </div>
 
+      <div id="inventory-current-section" role="tabpanel" className="min-w-0">
       {tab === 'equipment' ? (
         <GearShowcase userId={userId}/>
-      ) : (
+      ) : tab === 'items' ? (
         <>
           <div className="rounded-2xl border border-amber-500/15 bg-gray-900/70 p-3">
             <div className="flex items-center justify-between mb-2">
@@ -101,7 +111,10 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
             </div>
           )}
         </>
+      ) : (
+        <FollowersPanel />
       )}
+      </div>
 
       {tab === 'items' && selected && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"

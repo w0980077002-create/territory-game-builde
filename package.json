@@ -26,7 +26,8 @@
     "test:pve": "node scripts/check-pve-balance.mjs",
     "test:inventory-cleanup": "node scripts/check-inventory-cleanup.mjs",
     "test:gear-recycle": "node scripts/check-gear-recycle.mjs",
-    "test:gear-showcase": "node scripts/check-gear-showcase.mjs"
+    "test:gear-showcase": "node scripts/check-gear-showcase.mjs",
+    "test:companion-navigation": "node scripts/check-companion-navigation.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
