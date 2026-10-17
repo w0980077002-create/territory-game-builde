@@ -9,7 +9,7 @@ import {
 import { Currency } from './ui/Currency';
 import {
   friendReward, getReferralBotUsername, getReferralStatus, referralLink,
-  redeemReferrals, type ReferralStatus
+  redeemReferrals, getReferralFriends, type ReferralFriend, type ReferralStatus
 } from '@/game/referrals';
 
 const milestones = [
@@ -30,6 +30,10 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [friends, setFriends] = useState<ReferralFriend[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(isLinked);
+  const [friendsError, setFriendsError] = useState(false);
+  const [showAllFriends, setShowAllFriends] = useState(false);
 
   const load = useCallback(async () => {
     if (!isLinked) {
@@ -50,13 +54,21 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
     }
   }, [en, isLinked]);
 
+  const loadFriends = useCallback(async () => {
+    if (!isLinked) { setFriends([]); setFriendsLoading(false); return; }
+    setFriendsLoading(true);
+    try { setFriends(await getReferralFriends()); setFriendsError(false); }
+    catch { setFriendsError(true); }
+    finally { setFriendsLoading(false); }
+  }, [isLinked]);
+
   const loadBot = useCallback(async () => {
     setBotLoading(true);
     try { setBot(await getReferralBotUsername()); }
     finally { setBotLoading(false); }
   }, []);
 
-  useEffect(() => { void load(); void loadBot(); }, [load, loadBot]);
+  useEffect(() => { void load(); void loadBot(); void loadFriends(); }, [load, loadBot, loadFriends]);
 
   const url = status ? referralLink(bot, status.code) : null;
   const active = status?.qualified ?? 0;
@@ -91,7 +103,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
       setMessage(en
         ? 'Rewards claimed! +' + reward.gold + ' gold, +' + reward.gems + ' gems, +' + reward.stones + ' stones, +' + reward.materials + ' forge materials, +' + reward.red_gems + ' red gems.'
         : 'Награды получены! +' + reward.gold + ' золота, +' + reward.gems + ' алмазов, +' + reward.stones + ' камней, +' + reward.materials + ' материалов, +' + reward.red_gems + ' красных алмазов.');
-      await load();
+      await Promise.all([load(), loadFriends()]);
     } catch (err) {
       setError(err instanceof Error && err.message.includes('referral_nothing_to_claim')
         ? (en ? 'No rewards to claim yet.' : 'Пока нечего забирать.')
@@ -218,6 +230,72 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
             </section>
           )}
 
+
+          <section className="rounded-xl border border-violet-400/25 bg-[#19182b] p-3" data-testid="referral-friend-list">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-black text-amber-100 flex items-center gap-2">
+                <UsersRound size={17} />{en ? 'My invited friends' : 'Мои друзья'}
+                <span className="text-xs text-amber-300">({status.registered})</span>
+              </h3>
+              <button type="button" onClick={() => void loadFriends()}
+                className="text-xs text-violet-200 border border-violet-300/20 rounded-lg px-2 py-1.5"
+                aria-label={en ? 'Refresh friends' : 'Обновить друзей'}><RefreshCw size={15}/></button>
+            </div>
+            {friendsLoading ? <p className="mt-3 text-xs text-gray-400">{en ? 'Loading friends…' : 'Загружаем друзей…'}</p> :
+            friendsError ? (
+              <div className="mt-2 text-xs text-amber-200">
+                {en ? 'Could not load friends.' : 'Не удалось загрузить список друзей.'}
+                <button type="button" onClick={() => void loadFriends()} className="ml-2 underline">{en ? 'Retry' : 'Повторить'}</button>
+              </div>
+            ) : friends.length === 0 ? (
+              <p className="mt-3 text-xs text-gray-300">
+                {en ? 'No friends yet. Send your link and the first one will appear here!' :
+                'Пока никого нет. Отправь ссылку — здесь появятся приглашённые герои!'}
+              </p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {(showAllFriends ? friends : friends.slice(0,5)).map((friend, index) => {
+                  const wins = Math.min(10,friend.wins);
+                  const level = Math.min(5,friend.level);
+                  const progress = friend.qualified ? 100 : Math.min(99,Math.round(
+                    50 * (wins / 10) + 50 * (Math.max(0,level-1) / 4)));
+                  return (
+                    <div key={friend.joined_at + index} className="rounded-xl border border-white/10 bg-black/25 p-2.5">
+                      <div className="flex gap-2 items-center">
+                        <div className="h-9 w-9 rounded-lg bg-violet-900/45 border border-violet-400/25 flex items-center justify-center text-amber-200 shrink-0">
+                          <UsersRound size={19}/>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <strong className="text-xs truncate text-white">{friend.name}</strong>
+                            {friend.qualified ? <CheckCircle2 size={15} className="text-emerald-400 shrink-0"/> : null}
+                          </div>
+                          <p className="text-[11px] text-violet-200/80">
+                            {en ? 'Level' : 'Уровень'} {level}/5 · {wins}/10 {en ? 'verified fights' : 'учтённых побед'}
+                          </p>
+                        </div>
+                        <span className={'text-[10px] font-bold shrink-0 ' + (friend.qualified ? 'text-emerald-300' : 'text-amber-200')}>
+                          {friend.qualified ? (en ? 'Qualified' : 'Засчитан') : (en ? 'In progress' : 'В процессе')}
+                        </span>
+                      </div>
+                      {!friend.qualified && <div className="mt-2 h-1.5 bg-black/50 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-amber-400" style={{width:progress+'%'}}/>
+                      </div>}
+                    </div>
+                  );
+                })}
+                {friends.length>5 && <button type="button" onClick={()=>setShowAllFriends(v=>!v)}
+                   className="w-full text-xs font-bold text-amber-200 py-2">
+                   {showAllFriends ? (en?'Show less':'Свернуть') : (en?'Show all friends':'Показать всех')} ({friends.length})
+                </button>}
+              </div>
+            )}
+            <p className="mt-2 text-[10px] text-gray-400">
+              {en ? 'A referral qualifies at level 5 with 10 recorded PvE victories; no 24-hour wait.' :
+              'Друг засчитывается на 5-м уровне после 10 учтённых побед в походе или испытаниях. Сутки ждать не нужно.'}
+            </p>
+          </section>
+
           {readyToClaim && <button type="button" onClick={() => void claim()} disabled={busy} className="btn-primary w-full py-3.5 flex items-center justify-center gap-2 font-black">
             {busy ? <LoaderCircle size={19} className="animate-spin"/> : <Gift size={19}/>}
             {en ? 'CLAIM REWARDS' : 'ЗАБРАТЬ НАГРАДЫ'}
@@ -262,7 +340,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
           </div>
           {status?.welcome_pending && <p className="text-xs text-emerald-200">{en ? 'Starter gift ready: 600 gold, 3 battle stones and 2 elixirs.' : 'Подарок новичка: 600 золота, 3 боевых камня и 2 эликсира.'}</p>}
           <div className="space-y-1 text-xs text-gray-300">
-            <p className="flex gap-2"><HelpCircle size={16} className="shrink-0 text-amber-300"/>{en ? 'How it works: share your link → friend logs in → comes back after 24h → claim rewards.' : 'Как работает: отправь ссылку → друг зайдёт → вернётся через 24 часа → забери награду.'}</p>
+            <p className="flex gap-2"><HelpCircle size={16} className="shrink-0 text-amber-300"/>{en ? 'How it works: share your link → friend logs in → reaches level 5 and 10 recorded wins → claim rewards.' : 'Как работает: отправь ссылку → друг зайдёт → достигнет 5-го уровня и 10 учтённых побед → забери награду.'}</p>
             <p className="text-[11px] text-gray-400">{en ? 'Only verified Telegram accounts count. No rewards for clicks or self-invites.' : 'Учитываются только подтверждённые аккаунты Telegram. За клики и приглашение самого себя наград нет.'}</p>
             <p className="text-[11px] text-amber-300/80">{en ? 'Visual titles and cosmetics will arrive in a future season event.' : 'Визуальные титулы и облики появятся в будущем событии сезона.'}</p>
           </div>
