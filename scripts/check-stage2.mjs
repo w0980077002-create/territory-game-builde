@@ -51,7 +51,7 @@ for(let c of [1,2,3]){
 }
 const ch1=engine.generateChapter(1), ch20=engine.generateChapter(20), ch100=engine.generateChapter(100);
 assert.equal(ch1.enemies[0].maxHp,Math.floor((75+25)*.8));
-assert.equal(ch1.boss.maxHp,Math.floor((75+25)*2.2));
+assert.equal(ch1.boss.maxHp,Math.floor((75+25)*2.55*balance.bossEnemyMultipliers(1).hp),'tutorial boss should use the new stronger base without a milestone bonus');
 assert.ok(ch20.enemies[0].attack>Math.floor((12+20*4)*.8),'stronger attack at chapter20');
 assert.ok(ch100.enemies[0].maxHp>Math.floor((75+100*25)*.8)*1.30,'stronger HP at chapter100');
 assert.ok(engine.generateTrial(60).maxHp > Math.floor((75+60*25)*1.8)*1.3, 'trials should scale faster');
