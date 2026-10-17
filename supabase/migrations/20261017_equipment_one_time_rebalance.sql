@@ -36,8 +36,8 @@ BEGIN
       IS DISTINCT FROM
       (s.level,s.xp,s.gold,s.gems,s.arena_wins,s.arena_losses,s.arena_rating,
         s.current_chapter,s.total_battles_won,s.total_bosses_defeated)
-      OR (p.game_state->'player' - 'equipped' - 'stats')
-        IS DISTINCT FROM (s.game_state->'player' - 'equipped' - 'stats')
+      OR ((p.game_state->'player') - 'equipped'::text - 'stats'::text)
+        IS DISTINCT FROM ((s.game_state->'player') - 'equipped'::text - 'stats'::text)
       OR (p.game_state - 'player' - 'inventory' - 'belt' - 'balanceVersion')
         IS DISTINCT FROM (s.game_state - 'player' - 'inventory' - 'belt' - 'balanceVersion')
       OR jsonb_array_length(p.game_state->'inventory') <>
