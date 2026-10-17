@@ -168,7 +168,13 @@ export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMot
     const now = Date.now();
     taps.current.count = now - taps.current.last < 600 ? taps.current.count + 1 : 1;
     taps.current.last = now;
-    if (taps.current.count >= 5) window.location.href = '/admin';
+    if (taps.current.count >= 5) {
+      // GitHub Pages hosts this mini-app under /territory-game-builde/.
+      // A root-level /admin path is a GitHub 404. Keep the current path
+      // and use the admin hash supported by src/main.tsx instead.
+      window.location.hash = 'admin';
+      window.location.reload();
+    }
   };
 
   return (

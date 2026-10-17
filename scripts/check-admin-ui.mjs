@@ -34,4 +34,11 @@ assert.match(edge,/exp \+ "\." \+ await sign\(exp\)/,'Original admin session sig
 assert.match(edge,/parts\.length !== 2 && parts\.length !== 3/,'Existing old and new tokens remain recognized');
 assert.match(edge,/credential\.version === 1 &&/,'Old tokens are invalidated when owner eventually rotates password');
 assert.match(edge,/matchesPassword\(String\(body\.password \?\? ""\),credential\)/,'Keep old login backed by the current verified hash');
+const settings=readFileSync('src/components/home/HomeSheets.tsx','utf8');
+const entry=readFileSync('src/main.tsx','utf8');
+assert.match(settings,/taps\.current\.count >= 5/,'Five taps on saved progress still unlock admin');
+assert.match(settings,/window\.location\.hash = 'admin'/,'Use a GitHub Pages compatible hash route');
+assert.match(settings,/window\.location\.reload\(\)/,'Reload entrypoint into AdminApp after hash changes');
+assert.doesNotMatch(settings,/window\.location\.href = '\/admin'/,'Never navigate to root /admin, GitHub Pages serves 404');
+assert.match(entry,/window\.location\.hash === '#admin'/,'Entry point must support the restored secret admin route');
 console.log('Admin UI PASS: existing functions kept, owner-only ticket ops and audits, rotation without plaintext.');
