@@ -127,3 +127,4 @@
 @media(prefers-reduced-motion:reduce){.territory-monopoly *,.mono-overlay *{animation:none!important;transition:none!important}
 }
 
+.mono-extra-rewards{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin:7px 0}.mono-extra-rewards>span{padding:4px 6px;background:#122b4b;border:1px solid #bba4f755;border-radius:7px;font-size:12px;color:#c7ffed}.mono-extra-rewards small{font-size:9px}.mono-pending{padding:12px;border:1px solid #b3ffde88;border-radius:12px;margin-bottom:12px;background:#0c3a4f}.mono-pending>b{font-size:13px}.mono-reward-row .mono-extra-rewards{justify-content:flex-start}.mono-cell>div>span{font-size:20px}

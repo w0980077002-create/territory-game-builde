@@ -9,7 +9,7 @@ const rpc=async(action='status',value=1,token=null)=>(await q('SELECT public.ter
 try{
  await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE SCHEMA auth; CREATE SCHEMA territory_private;
  CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS 'SELECT nullif(current_setting(''request.jwt.claim.sub'',true),'''')::uuid';
- CREATE TABLE public.players(id uuid PRIMARY KEY,banned boolean DEFAULT false,updated_at timestamptz DEFAULT now(),gold integer DEFAULT 100,gems integer DEFAULT 7,game_state jsonb);`);
+ CREATE TABLE public.players(id uuid PRIMARY KEY,banned boolean DEFAULT false,updated_at timestamptz DEFAULT now(),gold integer DEFAULT 100,gems integer DEFAULT 7,forge_materials integer DEFAULT 9,game_state jsonb);`);
  await q('INSERT INTO public.players(id) VALUES($1),($2)',[A,B]);
  await db.exec(readFileSync('supabase/migrations/20261017_game_hall_five_v1.sql','utf8'));
  // Match the live admin wallet extension without modifying its implementation.
@@ -78,12 +78,27 @@ try{
  await assert.rejects(rpc('roll'),/monopoly_other_game/);
  assert.equal((await rpc()).hall.active.game,'tower');
  await q('DELETE FROM territory_private.hall_sessions_v1 WHERE player_id=$1',[A]);
- const before=(await rpc()).hall;
+ const beforeData=await rpc();const before=beforeData.hall;
  await q("UPDATE territory_private.monopoly_v2 SET ends_at=now()-interval '1 second' WHERE player_id=$1",[A]);
- d=await rpc();assert.equal(d.progress.laps,0);assert.equal(d.progress.rolls,0);assert.equal(d.progress.claimed.length,0);assert.equal(d.hall.tickets,before.tickets);assert.equal(d.hall.pending_gold,before.pending_gold);
+ d=await rpc();assert.equal(d.progress.laps,0);assert.equal(d.progress.rolls,0);assert.equal(d.progress.claimed.length,0);assert.equal(d.hall.tickets,before.tickets);assert.equal(d.hall.pending_gold,before.pending_gold);assert.deepEqual(d.progress.pending_rewards,beforeData.progress.pending_rewards,'season must preserve uncollected resources');
  await as(B);d=await rpc();assert.equal(d.progress.rolls,0);assert.equal(d.hall.tickets,4);
  await as(A);
- const inventory=[{id:'test-sword',type:'equipment',count:1},{id:'potion',type:'consumable',count:3}];
+ // Exercise every non-gold landing prize with actual server dice selection.
+ const keys=['gems','stones','materials','potions','elixirs'];
+ const amounts=[2,5,3,1,1];
+ for(let i=1;i<=5;i++){
+  await q('UPDATE territory_private.hall_accounts_v1 SET position=0,tickets=20,daily_gold=0 WHERE player_id=$1',[A]);
+  await q('UPDATE territory_private.monopoly_v2 SET lucky_next=true,double_next=false WHERE player_id=$1',[A]);
+  const prior=(await rpc()).progress.pending_rewards;
+  const turn=await rpc('roll',100+i);const token=turn.hall.active.token;
+  const done=await rpc('finish',1,token);
+  assert.equal(done.progress.pending_rewards[keys[i-1]],prior[keys[i-1]]+amounts[i-1]);
+  assert.deepEqual((await rpc('finish',1,token)).progress.pending_rewards,done.progress.pending_rewards);
+  const ten=(await q('SELECT territory_private.monopoly_cell_prize_v2($1,10) AS r',[i]))[0].r;
+  assert.equal(ten[keys[i-1]],amounts[i-1]*10);
+ }
+ const potion={id:'potion',name:'Зелье здоровья',type:'potion',qty:3,rarity:'common',icon:'🧪',description:'Восстанавливает 50 HP мгновенно',effect:{stat:'hp',value:50,duration:'instant'}};
+ const inventory=[{id:'test-sword',type:'equipment',qty:1},potion];
  const save={player:{gold:100,gems:7,redGems:13,level:4},inventory,battleStones:42,forgeMaterials:9};
  await q('UPDATE public.players SET game_state=$2 WHERE id=$1',[A,save]);
  const account=(await rpc()).hall;
@@ -95,5 +110,24 @@ try{
  assert.equal(credited.game_state.player.redGems,13);assert.equal(credited.game_state.player.gems,7);
  assert.equal(credited.game_state.battleStones,42);assert.equal(credited.game_state.forgeMaterials,9);
  await assert.rejects(q('SELECT public.territory_hall_claim_v1($1)',[revision]),/hall_nothing_to_claim/);
- console.log('Monopoly v2 PASS: persistence, ownership, replay safety, ticket costs, dice choice, double move, laps, event buffs, gifts, quests, milestones, daily cap, season rollover and other-game isolation.');
+ const pending=(await rpc()).progress.pending_rewards;
+ let current=(await q('SELECT game_state,updated_at FROM public.players WHERE id=$1',[A]))[0];
+ const redeem=async(revision,snapshot)=>(await q('SELECT public.territory_monopoly_claim_v2($1,$2) AS r',[revision,snapshot]))[0].r;
+ await assert.rejects(redeem(current.updated_at,{...current.game_state,forgeMaterials:99999}),/monopoly_reload_required/);
+ assert.deepEqual((await rpc()).progress.pending_rewards,pending,'failed claim retains all rewards');
+ const receipt=await redeem(current.updated_at,current.game_state);assert.equal(receipt.success,true);
+ const updated=(await q('SELECT game_state,gems,forge_materials,updated_at FROM public.players WHERE id=$1',[A]))[0];
+ assert.equal((await q('UPDATE public.players SET game_state=$2 WHERE id=$1 AND updated_at=$3 RETURNING id',[A,current.game_state,current.updated_at])).length,0,'stale autosave cannot overwrite redeemed inventory');
+ assert.equal(updated.gems,7+pending.gems);assert.equal(updated.game_state.player.gems,updated.gems);
+ assert.equal(updated.game_state.battleStones,42+pending.stones);
+ assert.equal(updated.game_state.forgeMaterials,9+pending.materials);assert.equal(updated.forge_materials,9+pending.materials);
+ assert.equal(updated.game_state.player.redGems,13);assert.equal(updated.game_state.player.gold,credited.game_state.player.gold);
+ assert.deepEqual(updated.game_state.inventory[0],inventory[0]);
+ assert.equal(updated.game_state.inventory.find(i=>i.id==='potion').qty,3+pending.potions,'canonical potion stacks into existing inventory');
+ const elixir=updated.game_state.inventory.find(i=>i.type==='elixir');assert.equal(elixir.qty,pending.elixirs);assert.deepEqual(elixir.effect,{stat:'attack',value:10,duration:'battle'});
+ await assert.rejects(redeem(current.updated_at,current.game_state),/monopoly_reload_required/);
+ await assert.rejects(redeem(updated.updated_at,updated.game_state),/monopoly_nothing_to_claim/);
+ assert.ok(Object.values((await rpc()).progress.pending_rewards).every(n=>n===0));
+ assert.equal((await q("SELECT has_function_privilege('anon','public.territory_monopoly_claim_v2(timestamp with time zone,jsonb)','execute') AS x"))[0].x,false);
+ console.log('Monopoly v2 PASS: persistence, ownership, replay safety, ticket costs, dice choice, double move, laps, event buffs, gifts, quests, milestones, daily cap, season rollover, real gems/resources/items redemption, CAS against stale autosaves and other-game isolation.');
 }finally{await db.close();}

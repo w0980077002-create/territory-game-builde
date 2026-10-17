@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Gift, ScrollText, Sparkles, Trophy, X, Info, Ticket } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { hallError } from '@/game/gameHall';
-import { monopoly, boardPoint, cellGold, type MonopolyData, type MonopolyQuestion } from './api';
+import { monopoly, boardPoint, cellGold, cellPrize, bundlePrize, prizeIcons, prizeLabels, claimMonopolyRewards, type Prize, type MonopolyData, type MonopolyQuestion } from './api';
 import './monopoly.css';
 const milestones=[5,10,15,20,25];
 const faces=['⚀','⚁','⚂','⚃','⚄','⚅'];
@@ -13,9 +13,14 @@ const eventCopy:Record<string,[string,string,string,string]>={
  double:['Шаг по облакам','Следующий бросок переместит героя вдвое дальше.','Cloud step','Your next roll moves the hero twice as far.'],
  lucky:['Руна удачи','Выбери число на кубике для следующего хода.','Lucky rune','Choose the dice value on your next turn.'],
 };
+function Prizes({prize,en}:{prize?:Prize;en:boolean}){
+ return <div className="mono-extra-rewards">{Object.entries(prize??{}).filter(([,n])=>n>0).map(([key,n])=><span key={key} title={prizeLabels[key as keyof Prize][en?1:0]}>{prizeIcons[key as keyof Prize]} +{n} <small>{prizeLabels[key as keyof Prize][en?1:0]}</small></span>)}</div>;
+}
 function monopolyError(e:unknown,en:boolean){
  const t=(ru:string,english:string)=>en?english:ru;
   const msg=e instanceof Error?e.message:'';
+  if(msg.includes('monopoly_reload_required'))return t('Сохранение изменилось. Перезапусти игру и повтори получение; награды сохранятся.','Your save changed. Reload and collect again; rewards are retained.');
+  if(msg.includes('monopoly_nothing_to_claim'))return t('Эти награды уже получены.','These rewards have already been collected.');
   if(msg.includes('monopoly_test_only'))return t('Закрытое тестирование: этот аккаунт ещё не приглашён.','Closed test: this account has not been invited yet.');
   if(/territory_monopoly_v2|schema cache/.test(msg))return t('Обновление Монополии ещё не установлено на сервере.','The Monopoly server update has not been installed yet.');
   if(msg.includes('monopoly_already_claimed'))return t('Эта награда уже получена.','This reward has already been claimed.');
@@ -28,7 +33,7 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
  const [data,setData]=useState<MonopolyData|null>(null),[error,setError]=useState('');
  const [busy,setBusy]=useState(false),[moving,setMoving]=useState(false),[position,setPosition]=useState(0);
  const [face,setFace]=useState(5),[fast,setFast]=useState(false),[ten,setTen]=useState(false);
- const [panel,setPanel]=useState<Panel>(null),[reward,setReward]=useState<{gold?:number;tickets?:number;event?:string}|null>(null);
+ const [panel,setPanel]=useState<Panel>(null),[reward,setReward]=useState<{gold?:number;tickets?:number;event?:string;awards?:Prize}|null>(null);
  const [now,setNow]=useState(Date.now()),[notice,setNotice]=useState('');
  const lock=useRef(false),mounted=useRef(true),generation=useRef(0);
  const t=(ru:string,english:string)=>en?english:ru;
@@ -61,8 +66,8 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
  const request=async(action:string,value=1)=>{
   if(lock.current)return;lock.current=true;setBusy(true);setError('');
   try{const d=await monopoly(action,value);if(!mounted.current)return;setData(d);
-   if(action==='gift'){setReward({tickets:2});setPanel(null);}
-   else if(d.added){setReward({tickets:d.added});setPanel(null);}
+   if(action==='gift'){setReward({tickets:2,awards:d.awards});setPanel(null);}
+   else if(d.added){setReward({tickets:d.added,awards:d.awards});setPanel(null);}
   }catch(e){if(mounted.current)setError(describe(e));}
   finally{lock.current=false;if(mounted.current)setBusy(false);}
  };
@@ -88,10 +93,15 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
    if(!alive())return;setFace(turn.roll??1);setPosition(turn.new_position??0);
    const finished=await monopoly('finish',1,session.token);
    if(!alive())return;
-   setData(finished);setReward({gold:finished.result?.earned_gold??0,event:finished.result?.event});
+   setData(finished);setReward({gold:finished.result?.earned_gold??0,event:finished.result?.event,awards:finished.result?.awards});
    setNotice(t('Награда зачислена в золото игрового зала.','Reward added to your Game Hall gold.'));
   }catch(e){if(alive())setError(describe(e));}
   finally{lock.current=false;if(alive()){setBusy(false);setMoving(false);}}
+ };
+ const redeem=async()=>{
+  if(lock.current)return;lock.current=true;setBusy(true);setError('');
+  try{await claimMonopolyRewards();}catch(e){if(mounted.current)setError(describe(e));}
+  finally{lock.current=false;if(mounted.current)setBusy(false);}
  };
  const point=boardPoint(position);
  const remaining=Math.max(0,Date.parse(p?.ends_at??'')-now)||0;
@@ -125,8 +135,8 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
    </svg>
    <div className="mono-center"><div className="mono-orbit"/><img src="/monopoly/ship.webp" alt={t('Корабль TERRITORY','TERRITORY ship')}/><span>{t('Круг','Lap')} <b>{p?.laps??0}</b> · {t('Клетка','Space')} {position+1}</span></div>
    <div className="mono-board">
-    {Array.from({length:28},(_,i)=>{const pos=boardPoint(i),mystery=[6,14,21].includes(i);return <div key={i} className={`mono-cell ${i===0?'start':mystery?'mystery':`tone-${i%3}`} ${position===i?'current':''}`} style={{left:`${pos.x}%`,top:`${pos.y}%`}} title={i===0?t('Старт · 100 золота','Start · 100 gold'):mystery?t('Случайное событие','Random event'):`${cellGold(i)} ${t('золота','gold')}`}>
-     <div>{i===0?'➜':mystery?'?':<img src="/monopoly/gold-coin.webp" alt=""/>}</div><small>{i===0?t('СТАРТ','START'):mystery?'✦':cellGold(i)*(ten?10:1)}</small>
+    {Array.from({length:28},(_,i)=>{const pos=boardPoint(i),mystery=[6,14,21].includes(i),prize=cellPrize(i,ten?10:1),kind=Object.keys(prize)[0] as keyof Prize|undefined;return <div key={i} className={`mono-cell ${i===0?'start':mystery?'mystery':`tone-${i%3}`} ${position===i?'current':''}`} style={{left:`${pos.x}%`,top:`${pos.y}%`}} title={i===0?t('Старт · 100 золота','Start · 100 gold'):mystery?t('Случайное событие','Random event'):`${cellGold(i)} ${t('золота','gold')}`}>
+     <div>{i===0?'➜':mystery?'?':kind?<span title={prizeLabels[kind][en?1:0]}>{prizeIcons[kind]}</span>:<img src="/monopoly/gold-coin.webp" alt=""/>}</div><small>{i===0?t('СТАРТ','START'):mystery?'✦':(kind?prize[kind]:cellGold(i)*(ten?10:1))}</small>
     </div>;})}
     <div className={`mono-hero ${moving?'moving':''}`} style={{left:`${point.x}%`,top:`${point.y}%`}} aria-label={t(`Герой на клетке ${position+1}`,`Hero on space ${position+1}`)}><img src="/monopoly/hero.webp" alt=""/><span>▼</span></div>
    </div>
@@ -138,6 +148,7 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
    <button onClick={()=>setPanel('quests')}><ScrollText/><span>{t('Задания','Quests')}</span>{quests.some((v,i)=>v.current>=v.target&&!claimed(`quest:${i+1}`))&&<i/>}</button>
   </nav>
   <section className="mono-controls">
+   {Object.values(p?.pending_rewards??{}).some(n=>n>0)&&<div className="mono-pending"><b>{t('Награды для героя','Hero rewards')}</b><Prizes prize={p?.pending_rewards} en={en}/><button className="mono-cta" disabled={busy} onClick={()=>void redeem()}>{t('Получить в баланс и инвентарь','Collect to wallet and inventory')}</button></div>}
    <div className="mono-roll-row"><div className="mono-wallet"><Ticket size={18}/><b>{h?.tickets??'—'}</b><button aria-label={t('Получить билеты','Get tickets')} onClick={()=>setPanel('gifts')}>+</button></div>
     <button className={`mono-dice ${moving?'rolling':''}`} disabled={disabled||(!active&&(h?.tickets??0)<(ten?10:1))||!!(h?.active&&h.active.game!=='monopoly')} onClick={()=>void roll()} aria-label={active?t('Продолжить бросок','Resume roll'):t('Бросить кубик','Roll dice')}><span>{faces[face-1]}</span></button>
     <div className="mono-lap-stat"><b>{p?.rolls??0}</b><small>{t('бросков','rolls')}</small></div>
@@ -152,12 +163,12 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
   {panel&&<div className="mono-overlay" role="dialog" aria-modal="true" aria-labelledby="mono-panel-title" onClick={()=>setPanel(null)}><section className="mono-panel" onClick={e=>e.stopPropagation()}>
    <header><h3 id="mono-panel-title">{panel==='rewards'?t('Награды за круги','Lap rewards'):panel==='gifts'?t('Подарки лагуны','Lagoon gifts'):panel==='quests'?t('Задания Монополии','Monopoly quests'):panel==='offers'?t('Предложения хранителя','Guardian offers'):t('Как играть','How to play')}</h3><button autoFocus aria-label={t('Закрыть','Close')} onClick={()=>setPanel(null)}><X/></button></header>
    <div className="mono-panel-body">{error&&<p className="mono-error" role="alert">{error}</p>}
-    {panel==='rewards'&&<><p>{t('Пройди круги до конца события и забери билеты. Каждая награда доступна один раз.','Complete laps before the event ends. Each reward can be collected once.')}</p>{milestones.map((lap,i)=><article className="mono-reward-row" key={lap}><span className="mono-prize-icon">{['✦','🎒','💎','🏰','👑'][i]}</span><div><b>{t('Круги','Laps')} {i*5+1}–{lap}</b><small>{Math.min(p?.laps??0,lap)}/{lap} · +{lap/5+1} 🎟</small></div><button disabled={disabled||(p?.laps??0)<lap||claimed(`milestone:${lap}`)} onClick={()=>void request('milestone',lap)}>{claimed(`milestone:${lap}`)?'✓':t('Забрать','Claim')}</button></article>)}</>}
-    {panel==='gifts'&&<><div className="mono-banner"><Gift size={46}/><b>{t('Подарок нового дня','A new day’s gift')}</b><span>{t('2 бесплатных билета каждый день','2 free tickets every day')}</span></div><article className="mono-reward-row"><span className="mono-prize-icon">🎟</span><div><b>+2 {t('билета','tickets')}</b><small>{t('Общий подарок игрового зала','Shared Game Hall daily gift')}</small></div><button disabled={disabled||!h?.free_ready} onClick={()=>void request('gift')}>{h?.free_ready?t('Бесплатно','Free'):t('Получено','Collected')}</button></article><p>{t('Обновление в 00:00 UTC. В кошельке должно быть не больше 18 билетов.','Resets at 00:00 UTC. Your wallet must contain at most 18 tickets.')}</p></>}
-    {(panel==='quests'||panel==='offers')&&<><div className="mono-banner"><img src="/monopoly/guardian.webp" alt=""/><b>{panel==='quests'?t('Путь искателя','The explorer’s path'):t('Награды за приключения','Adventure rewards')}</b><span>{t('Больше играешь — больше открываешь','Play more, discover more')}</span></div>{(panel==='quests'?quests:offers).map((v,i)=>{const key=`${panel==='quests'?'quest':'offer'}:${i+1}`;return <article className="mono-quest" key={key}><b>{en?v.en:v.ru}</b><div className="mono-progress"><span style={{width:`${v.target?Math.min(100,v.current/v.target*100):100}%`}}/></div><div><span>{Math.min(v.current,v.target)}/{v.target} · +{v.reward} 🎟</span><button disabled={disabled||v.current<v.target||claimed(key)} onClick={()=>void request(panel==='quests'?'quest':'offer',i+1)}>{claimed(key)?t('Получено','Claimed'):v.current<v.target?t('Недоступно','Locked'):t('Забрать','Claim')}</button></div></article>;})}</>}
-    {panel==='help'&&<div className="mono-rules"><p>{t('Один бросок стоит 1 билет. Кубик и награду определяет сервер. Герой получает золото клетки, на которой остановился.','A roll costs 1 ticket. The server determines the dice and prize. Your hero earns gold from the landing space.')}</p><p>{t('Призы ×10 стоят 10 билетов: один бросок, десятикратная награда. Суточный лимит золота сохраняется.','Prizes ×10 costs 10 tickets: one roll, ten times the reward. The daily gold cap still applies.')}</p>{Object.entries(eventCopy).map(([key,v])=><p key={key}><b>{v[en?2:0]}.</b> {v[en?3:1]}</p>)}<p>{t('Каждый переход через старт засчитывает круг. Прогресс и бонусы хранятся на сервере. Событие длится 72 часа; затем круги, задания и предложения обновляются. Билеты и золото сохраняются.','Crossing start completes a lap. Progress and bonuses are saved on the server. The event lasts 72 hours, then laps, quests and offers reset. Tickets and gold are retained.')}</p></div>}
+    {panel==='rewards'&&<><p>{t('Пройди круги до конца события и забери билеты. Каждая награда доступна один раз.','Complete laps before the event ends. Each reward can be collected once.')}</p>{milestones.map((lap,i)=><article className="mono-reward-row" key={lap}><span className="mono-prize-icon">{['✦','🎒','💎','🏰','👑'][i]}</span><div><b>{t('Круги','Laps')} {i*5+1}–{lap}</b><small>{Math.min(p?.laps??0,lap)}/{lap} · +{lap/5+1} 🎟</small><Prizes prize={bundlePrize('milestone',lap)} en={en}/></div><button disabled={disabled||(p?.laps??0)<lap||claimed(`milestone:${lap}`)} onClick={()=>void request('milestone',lap)}>{claimed(`milestone:${lap}`)?'✓':t('Забрать','Claim')}</button></article>)}</>}
+    {panel==='gifts'&&<><div className="mono-banner"><Gift size={46}/><b>{t('Подарок нового дня','A new day’s gift')}</b><span>{t('2 билета и зелье здоровья каждый день','2 tickets and a health potion every day')}</span></div><article className="mono-reward-row"><span className="mono-prize-icon">🎟</span><div><b>+2 {t('билета','tickets')}</b><small>{t('Общий подарок игрового зала','Shared Game Hall daily gift')}</small></div><button disabled={disabled||!h?.free_ready} onClick={()=>void request('gift')}>{h?.free_ready?t('Бесплатно','Free'):t('Получено','Collected')}</button></article><p>{t('Обновление в 00:00 UTC. В кошельке должно быть не больше 18 билетов.','Resets at 00:00 UTC. Your wallet must contain at most 18 tickets.')}</p></>}
+    {(panel==='quests'||panel==='offers')&&<><div className="mono-banner"><img src="/monopoly/guardian.webp" alt=""/><b>{panel==='quests'?t('Путь искателя','The explorer’s path'):t('Награды за приключения','Adventure rewards')}</b><span>{t('Больше играешь — больше открываешь','Play more, discover more')}</span></div>{(panel==='quests'?quests:offers).map((v,i)=>{const key=`${panel==='quests'?'quest':'offer'}:${i+1}`;return <article className="mono-quest" key={key}><b>{en?v.en:v.ru}</b><Prizes prize={bundlePrize(panel==='quests'?'quest':'offer',i+1)} en={en}/><div className="mono-progress"><span style={{width:`${v.target?Math.min(100,v.current/v.target*100):100}%`}}/></div><div><span>{Math.min(v.current,v.target)}/{v.target} · +{v.reward} 🎟</span><button disabled={disabled||v.current<v.target||claimed(key)} onClick={()=>void request(panel==='quests'?'quest':'offer',i+1)}>{claimed(key)?t('Получено','Claimed'):v.current<v.target?t('Недоступно','Locked'):t('Забрать','Claim')}</button></div></article>;})}</>}
+    {panel==='help'&&<div className="mono-rules"><p>{t('Один бросок стоит 1 билет. Кубик и награду определяет сервер. Герой получает золото и указанный приз клетки: алмазы, камни, материалы, зелье или эликсир. Ресурсы получаются кнопкой под полем в настоящий баланс и инвентарь.','A roll costs 1 ticket. The server determines the dice and prize. Your hero earns gold and the shown cell prize: gems, stones, materials, potion or elixir. Collect resources below the board to your real wallet and inventory.')}</p><p>{t('Призы ×10 стоят 10 билетов: один бросок, десятикратная награда. Суточный лимит золота сохраняется.','Prizes ×10 costs 10 tickets: one roll, ten times the reward. The daily gold cap still applies.')}</p>{Object.entries(eventCopy).map(([key,v])=><p key={key}><b>{v[en?2:0]}.</b> {v[en?3:1]}</p>)}<p>{t('Каждый переход через старт засчитывает круг. Прогресс и бонусы хранятся на сервере. Событие длится 72 часа; затем круги, задания и предложения обновляются. Билеты и золото сохраняются.','Crossing start completes a lap. Progress and bonuses are saved on the server. The event lasts 72 hours, then laps, quests and offers reset. Tickets and gold are retained.')}</p></div>}
    </div>
   </section></div>}
-  {reward&&<div className="mono-overlay mono-celebration" role="dialog" aria-modal="true" aria-labelledby="mono-reward-title" onClick={()=>setReward(null)}><section onClick={e=>e.stopPropagation()}><div className="mono-burst">✦</div><small>TERRITORY</small><h3 id="mono-reward-title">{t('Награда получена!','Reward received!')}</h3><div className="mono-winnings"><>{reward.tickets?<Ticket size={64} className="text-amber-200"/>:<img src="/monopoly/gold-coin.webp" alt=""/>}</><strong>+{reward.tickets??reward.gold} {reward.tickets?'🎟':'🪙'}</strong></div>{reward.event&&eventCopy[reward.event]&&<div className="mono-event"><Sparkles/><b>{eventCopy[reward.event][en?2:0]}</b><p>{eventCopy[reward.event][en?3:1]}</p></div>}<p>{reward.tickets?t('Билеты уже в кошельке','Tickets are already in your wallet'):t('Золото ожидает в игровом зале','Gold awaits collection in the Game Hall')}</p><button autoFocus className="mono-cta" onClick={()=>setReward(null)}>{t('Продолжить','Continue')}</button></section></div>}
+  {reward&&<div className="mono-overlay mono-celebration" role="dialog" aria-modal="true" aria-labelledby="mono-reward-title" onClick={()=>setReward(null)}><section onClick={e=>e.stopPropagation()}><div className="mono-burst">✦</div><small>TERRITORY</small><h3 id="mono-reward-title">{t('Награда получена!','Reward received!')}</h3><div className="mono-winnings"><>{reward.tickets?<Ticket size={64} className="text-amber-200"/>:<img src="/monopoly/gold-coin.webp" alt=""/>}</><strong>+{reward.tickets??reward.gold} {reward.tickets?'🎟':'🪙'}</strong></div>{reward.event&&eventCopy[reward.event]&&<div className="mono-event"><Sparkles/><b>{eventCopy[reward.event][en?2:0]}</b><p>{eventCopy[reward.event][en?3:1]}</p></div>}<Prizes prize={reward.awards} en={en}/>{Object.values(reward.awards??{}).some(n=>n>0)&&<p>{t('Ресурсы готовы к получению: кнопка под полем.','Resources await collection below the board.')}</p>}<p>{reward.tickets?t('Билеты уже в кошельке','Tickets are already in your wallet'):t('Золото ожидает в игровом зале','Gold awaits collection in the Game Hall')}</p><button autoFocus className="mono-cta" onClick={()=>setReward(null)}>{t('Продолжить','Continue')}</button></section></div>}
  </div>;
 }

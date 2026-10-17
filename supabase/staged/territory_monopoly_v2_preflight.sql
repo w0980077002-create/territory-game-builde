@@ -15,3 +15,6 @@ WHERE n.nspname='territory_private' AND c.relname IN('hall_accounts_v1','hall_se
 SELECT to_regclass('territory_private.monopoly_v2') AS existing_progress,
  to_regclass('territory_private.monopoly_testers_v2') AS existing_allowlist,
  to_regprocedure('public.territory_monopoly_v2(text,integer,uuid)') AS existing_rpc;
+
+SELECT to_regprocedure('public.territory_monopoly_claim_v2(timestamptz,jsonb)') AS existing_reward_claim;
+SELECT column_name,data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='players' AND column_name IN('gems','game_state','updated_at','forge_materials');
