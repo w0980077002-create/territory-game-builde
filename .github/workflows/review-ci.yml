@@ -41,6 +41,7 @@ jobs:
       - run: npm run test:companion-navigation
       - run: npm run test:founders
       - run: npm run test:referral-activity
+      - run: npm run test:hall
       - run: npm run test:economy
       - run: node scripts/check-equipment-safety-v4.mjs
       - run: npm run test:professions

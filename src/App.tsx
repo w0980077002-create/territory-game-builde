@@ -15,7 +15,8 @@ import { ArenaScreen } from '@/components/ArenaScreen';
 import { ForgeScreen } from '@/components/ForgeScreen';
 import { LeaderboardScreen } from '@/components/LeaderboardScreen';
 import { GamesScreen } from '@/components/GamesScreen';
-import { MonopolyScreen } from '@/components/MonopolyScreen';
+import { HallPlayScreen } from '@/components/HallPlayScreen';
+import type { HallGame } from '@/game/gameHall';
 import { ProfessionsScreen } from '@/components/ProfessionsScreen';
 import { AuctionScreen } from '@/components/AuctionScreen';
 import { FriendsScreen } from '@/components/FriendsScreen';
@@ -27,7 +28,7 @@ import { ChevronLeft, Send, Wrench, Smartphone } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
-type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'monopoly' | 'professions' | 'auction' | 'friends';
+type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends';
 type Screen = Exclude<NavId, 'clan'> | SubScreen;
 
 const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
@@ -86,6 +87,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const { language, setLanguage, t: translate } = useLanguage();
   const [isLandscapePhone, setIsLandscapePhone] = useState(false);
   const [screen, setScreen] = useState<Screen>('city');
+  const [hallGame, setHallGame] = useState<HallGame>('monopoly');
   const [battleView, setBattleView] = useState<BattleView>('campaign');
   const [autoStart, setAutoStart] = useState(false);
   const [inventoryTab, setInventoryTab] = useState<'items' | 'equipment'>('equipment');
@@ -210,7 +212,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   if (!loaded) return <Splash text={translate('loadingHero')} />;
 
   const sub = SUB_SCREENS[screen as SubScreen];
-  const navActive: NavId = sub ? 'city' : screen === 'monopoly' ? 'games' : (screen as NavId);
+  const navActive: NavId = screen === 'hall-play' ? 'games' : sub ? 'city' : (screen as NavId);
 
   const goNav = (id: NavId) => {
     if (id === 'clan') return notify(language === 'en' ? 'Clans will be available in a future update.' : 'Кланы откроются в следующих обновлениях');
@@ -242,7 +244,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         </header>
       )}
 
-      <main className={`flex-1 min-h-0 ${screen === 'city' || screen === 'monopoly' ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden scrollbar-hide px-3 py-3'}`}>
+      <main className={`flex-1 min-h-0 ${screen === 'city' ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden scrollbar-hide px-3 py-3'}`}>
         {screen === 'city' && (
           <HomeScreen
             user={user}
@@ -279,9 +281,9 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'leaderboard' && <LeaderboardScreen user={user} />}
         {screen === 'quests' && <QuestsScreen />}
         {screen === 'games' && (
-          <GamesScreen onPlay={(gameId) => gameId === 'monopoly' && setScreen('monopoly')} />
+          <GamesScreen userId={user.id} onPlay={(gameId) => { setHallGame(gameId); setScreen('hall-play'); }} />
         )}
-        {screen === 'monopoly' && <MonopolyScreen onBack={() => setScreen('games')} />}
+        {screen === 'hall-play' && <HallPlayScreen game={hallGame} onBack={() => setScreen('games')} />}
         {screen === 'professions' && <ProfessionsScreen />}
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} />}
