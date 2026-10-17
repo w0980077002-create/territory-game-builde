@@ -52,7 +52,7 @@ try {
  assert.equal((await q("SELECT public.territory_referral_fight_finish_v2($1,true,$2::jsonb) AS x",
   [invalid.ticket,JSON.stringify([{attack:'head',blocks:['head','head']}])]))[0].x.credited,false);
  assert.equal((await q("SELECT public.territory_referral_fight_finish_v2($1,false,'[]'::jsonb) AS x",[invalid.ticket]))[0].x.credited,false);
- for(let n=0;n<11;n++){
+ for(let n=0;n<10;n++){
   const chapter=n<6?1:2,idx=n<6?n:n-6;
   const enemy='ch'+chapter+'_'+(idx===5?'boss':'enemy_'+idx);
   const started=await rpc('territory_referral_fight_start_v2',['stage',enemy]);
@@ -73,7 +73,7 @@ try {
  assert.equal(state.qualified,1,'Ten wins and level five qualify on day one');
  assert.equal(state.sealed_chests,1);
  roster=await rpc('territory_referral_friends_v2');
- assert.equal(roster[0].wins,11);assert.equal(roster[0].level,5);assert.equal(roster[0].qualified,true);
+ assert.equal(roster[0].wins,10);assert.equal(roster[0].level,5);assert.equal(roster[0].qualified,true);
  await as(uid(2));assert.deepEqual(await rpc('territory_referral_friends_v2'),[]);
  console.log('Referral v2 PASS: 5th-level / 10+ recorded PvE battles on first day, no replay, owner-only friend list, single chest.');
 } finally {await db.close();}
