@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { ArrowLeft, Ban, Hammer, Minus, Plus, Search, ShieldAlert, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowLeft, Ban, Hammer, Minus, Plus, Search, ShieldAlert, ShieldCheck, UserRound, Ticket, RotateCcw, Trash2 } from 'lucide-react';
 import { RESOURCES, adminCall, payloadFor, type PlayerSummary } from '@/admin/api';
 import { Empty, ErrorLine, Loading, Panel, fmt, fmtDate, inputCls, type Confirm } from '@/admin/ui';
 
@@ -31,12 +31,18 @@ function PlayerRow({ p, onOpen, extra }: { p: PlayerSummary; onOpen: () => void;
   );
 }
 
+interface PendingGrant { id:string;kind:'adjust'|'mail';subject:string;payload:Record<string,unknown>;created_at:string; }
+interface HallAccount {tickets:number;played:number;wins:number;points:number;pendingGold:number;claimedGold:number;activeGame:string|null;activeSince:string|null;}
 function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; onBack: () => void }) {
   const [p, setP] = useState<PlayerSummary | null>(null);
   const [pending, setPending] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [levels, setLevels] = useState<Record<string, string>>({});
+  const [grants, setGrants] = useState<PendingGrant[]>([]);
+  const [hall, setHall] = useState<HallAccount | null>(null);
+  const [ticketQty, setTicketQty] = useState('20');
+  const [reason, setReason] = useState('Награда за тестирование');
 
   const load = useCallback(() => {
     adminCall<{ player: PlayerSummary; pendingAdjustments: number }>('player', { playerId: id })
@@ -47,7 +53,13 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
       .catch((e: Error) => setError(e.message));
   }, [id]);
 
-  useEffect(load, [load]);
+  const loadExtra = useCallback(() => {
+    void adminCall<{rows:PendingGrant[]}>('pending_grants',{playerId:id})
+      .then(r=>setGrants(r.rows)).catch((e:Error)=>setError(e.message));
+    void adminCall<HallAccount>('hall_player',{playerId:id})
+      .then(setHall).catch((e:Error)=>setError(e.message));
+  },[id]);
+  useEffect(() => {load();loadExtra();},[load,loadExtra]);
 
   if (!p) return error ? <ErrorLine text={error} /> : <Loading />;
 
@@ -83,6 +95,27 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
     });
   };
 
+  const giveTickets = () => {
+    const count=Number(ticketQty),note=reason.trim();
+    if(!Number.isSafeInteger(count)||count===0||Math.abs(count)>250)
+      return setError('Разрешено от −250 до +250 билетов за операцию.');
+    if(note.length<3||note.length>140)return setError('Напиши причину выдачи.');
+    setError(null);
+    confirm((count>0?'Выдать ':'Списать ')+Math.abs(count)+' билетов игроку '+p.name+'? Причина: '+note,async()=>{
+      const r=await adminCall<{affected:number;balance:number}>('hall_grant',{
+        scope:'one',playerId:p.id,amount:count,reason:note,requestId:crypto.randomUUID(),
+      });
+      loadExtra();
+      return 'Билеты изменены. Новый баланс: '+r.balance+' 🎟️';
+    });
+  };
+  const cancel = (grant:PendingGrant) => {
+    confirm('Отменить ещё не полученную выдачу игроку '+p.name+'? ('+grant.kind+')',async()=>{
+      await adminCall('cancel_pending',{playerId:p.id,grantId:grant.id});
+      load();loadExtra();
+      return 'Неполученная выдача отменена.';
+    });
+  };
   const slots = Object.keys(p.equipped);
 
   return (
@@ -144,6 +177,46 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
         </div>
       </Panel>
 
+
+      <Panel title="Билеты игрового зала" icon={<Ticket className="w-4 h-4"/>} right={
+        <button onClick={loadExtra} type="button" title="Обновить билеты"><RotateCcw size={16}/></button>
+      }>
+        <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+          {([['Билеты',hall?.tickets],['Партий',hall?.played],['Побед',hall?.wins]] as const)
+            .map(([label,value])=><div key={label} className="rounded-lg bg-slate-950/60 p-2">
+              <strong className="block text-lg text-white">{value??'—'}</strong>
+              <span className="text-[11px] text-slate-400">{label}</span>
+            </div>)}
+        </div>
+        <div className="grid grid-cols-[90px_1fr] gap-2">
+          <input type="number" step={1} min={-250} max={250} className={inputCls}
+            value={ticketQty} onChange={e=>setTicketQty(e.target.value)}/>
+          <input type="text" className={inputCls} value={reason} maxLength={140}
+            onChange={e=>setReason(e.target.value)} placeholder="Причина"/>
+        </div>
+        <button type="button" onClick={giveTickets}
+          className="mt-2 h-11 rounded-xl bg-sky-600 w-full font-bold text-sm text-white">
+          {Number(ticketQty)<0?'Списать':'Выдать'} билеты этому игроку
+        </button>
+        <p className="text-xs text-slate-400 mt-2">
+          Изменяется сразу на сервере. У игрока максимум 1000 билетов.
+        </p>
+      </Panel>
+      <Panel title="Неполученные награды" icon={<Trash2 size={17}/>}>
+        {grants.length===0?<Empty text="Ожидающих наград и писем нет."/>:
+         <div className="space-y-2">{grants.map(grant=><div key={grant.id}
+           className="rounded-xl border border-slate-700/60 bg-slate-950/45 px-3 py-2.5 flex gap-2 items-center">
+           <div className="min-w-0 flex-1">
+             <p className="text-xs font-bold">{grant.kind==='mail'?'Письмо: '+(grant.subject||'без темы'):'Корректировка ресурсов'}</p>
+             <p className="text-[11px] text-slate-400">{fmtDate(grant.created_at)}</p>
+             <p className="text-[10px] text-slate-400 break-all">{JSON.stringify(grant.payload).slice(0,190)}</p>
+           </div>
+           <button type="button" onClick={()=>cancel(grant)} title="Отменить до получения"
+             className="rounded-lg border border-red-500/40 bg-red-950/30 text-red-300 h-9 w-9 shrink-0 flex justify-center items-center">
+             <Trash2 size={16}/>
+           </button>
+         </div>)}</div>}
+      </Panel>
       <Panel title="Экипировка (Кузница)" icon={<Hammer className="w-4 h-4" />}>
         {slots.length === 0 ? <Empty text="Нет надетой экипировки" /> : (
           <div className="space-y-2">
