@@ -46,6 +46,7 @@ jobs:
           npm run test:professions
           npm run test:balance
           npm run test:pve
+          npm run test:inventory-cleanup
           node scripts/check-equipment-safety-v4.mjs
           npm run test:feature-separation
           npm run test:mobile-home
