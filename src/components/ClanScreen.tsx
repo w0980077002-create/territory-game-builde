@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   fetchClanDirectory, fetchClanState, fetchClanRankings,
   createClan, contributeClan, claimClanBoss, claimClanQuest,
+  CLAN_CREATION_RED_GEMS_COST,
   clanApply, clanCancelApplication, clanAcceptInvite, clanDeclineInvite,
   clanLeave, clanKick, clanSetRole, clanTransfer,
   clanAcceptApp, clanRejectApp, clanChatSend, clanChatMute,
@@ -10,6 +11,7 @@ import {
   type ClanDirectory, type ClanState, type SimpleResult, type WalletReceipt,
 } from '@/game/clanApi';import { unblockSave } from '@/game/cloudInt';
 import { useGame } from '@/game/actions';
+import { useStore } from '@/game/store';
 import { validEconomySnapshot } from '@/game/economyInvariant';
 import { Users, Swords, Crown, Shield, Coins, ChevronLeft, Send, ScrollText, Gem } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
@@ -22,6 +24,7 @@ type Props = { userId: string; notify: (text: string) => void };
 
 function errKey(error: string): string {
   const key = error.split('\n')[0].trim();
+  if (/clan_not_enough_red_gems/.test(key)) return 'clanErrRedGems';
   if (/clan_not_enough_gold/.test(key)) return 'clanErrGold';
   if (/clan_bad_name/.test(key)) return 'clanErrName';
   if (/clan_bad_tag/.test(key)) return 'clanErrTag';
@@ -182,7 +185,7 @@ export function ClanScreen({ userId, notify }: Props) {
     await loadDirectory('');
   });
 
-  const gold = useGame.get().player.gold;
+  const redGems = useStore(useGame).player.redGems;
   if (busy && !state && !dir) {
     return <div className="py-16 text-center text-sm text-gray-400">{t('loadingHero')}</div>;
   }
@@ -352,10 +355,10 @@ export function ClanScreen({ userId, notify }: Props) {
               </div>
             </div>
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-300">
-              <Coins className="w-3.5 h-3.5" /> 100 000 — {t('clanCost')} ({t('clanYourGold')}: {gold.toLocaleString()})
+              <Gem className="w-3.5 h-3.5 text-red-400" /> {CLAN_CREATION_RED_GEMS_COST} — {t('clanCost')} ({t('clanYourRedGems')}: {redGems.toLocaleString()})
             </p>
             <button
-              disabled={busy || form.name.trim().length < 3 || form.tag.trim().length < 2 || gold < 100000}
+              disabled={busy || form.name.trim().length < 3 || form.tag.trim().length < 2 || redGems < CLAN_CREATION_RED_GEMS_COST}
               onClick={doCreate}
               className="w-full rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 py-2.5 text-sm font-extrabold text-black shadow-lg active:scale-95 transition-transform disabled:opacity-40"
             >

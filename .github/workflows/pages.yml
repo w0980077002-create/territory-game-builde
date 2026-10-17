@@ -47,6 +47,7 @@ jobs:
           npm run test:balance
           node scripts/check-social-quests.mjs
           node scripts/check-quest-attention.mjs
+          node scripts/check-clan-red-gem-price.mjs
           npm run test:pve
           npm run test:inventory-cleanup
           npm run test:gear-recycle

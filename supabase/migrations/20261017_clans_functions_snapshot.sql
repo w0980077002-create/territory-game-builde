@@ -348,8 +348,12 @@ IF NOT FOUND THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF p.updated_at <> p_expected THEN RAISE EXCEPTION 'clan_reload_save'; END IF;
 IF p.level < 15 THEN RAISE EXCEPTION 'clan_level_required'; END IF;
 IF EXISTS (SELECT 1 FROM clan_members WHERE player_id = v_uid) THEN RAISE EXCEPTION 'clan_already_member'; END IF;
-IF (p.game_state->'player'->>'gold') !~ '^[0-9]{1,10}$' OR p.gold <> (p.game_state->'player'->>'gold')::integer
-OR p.gold < 100000 THEN RAISE EXCEPTION 'clan_not_enough_gold'; END IF;
+IF (p.game_state->'player'->>'gold') !~ '^[0-9]{1,10}$'
+  OR p.gold <> (p.game_state->'player'->>'gold')::integer
+  OR (p.game_state->'player'->>'redGems') !~ '^[0-9]{1,10}$'
+THEN RAISE EXCEPTION 'clan_invalid_wallet'; END IF;
+IF (p.game_state->'player'->>'redGems')::bigint < 30
+THEN RAISE EXCEPTION 'clan_not_enough_red_gems'; END IF;
 v_name := regexp_replace(trim(coalesce(p_name, '')), '[[:space:]]+', ' ', 'g');
 v_tag := upper(regexp_replace(trim(coalesce(p_tag, '')), '[[:space:]]', '', 'g'));
 v_desc := left(regexp_replace(trim(coalesce(p_description, '')), E'[[:cntrl:]]', '', 'g'), 500);
@@ -361,8 +365,8 @@ IF p_min_level IS NULL OR p_min_level < 1 OR p_min_level > 50 THEN RAISE EXCEPTI
 IF p_emblem IS NULL OR p_emblem NOT BETWEEN 1 AND 12 THEN RAISE EXCEPTION 'clan_bad_emblem'; END IF;
 IF p_color1 !~ '^#[0-9a-fA-F]{6}$' OR p_color2 !~ '^#[0-9a-fA-F]{6}$' THEN RAISE EXCEPTION 'clan_bad_color'; END IF;
 UPDATE players SET
-game_state = jsonb_set(p.game_state, '{player,gold}', to_jsonb(p.gold - 100000)),
-gold = p.gold - 100000
+game_state = jsonb_set(p.game_state, '{player,redGems}',
+  to_jsonb((p.game_state->'player'->>'redGems')::integer - 30))
 WHERE id = v_uid RETURNING * INTO p;
 INSERT INTO clans(name, tag, emblem, color1, color2, description, join_mode, min_level, leader_id, buildings)
 VALUES (v_name, v_tag, p_emblem, lower(p_color1), lower(p_color2), v_desc, p_join_mode, p_min_level, v_uid,
@@ -372,7 +376,8 @@ jsonb_build_object('hall', jsonb_build_object('lvl',1), 'forge', jsonb_build_obj
 RETURNING id INTO v_clan;
 INSERT INTO clan_members(clan_id, player_id, role, display_name, level, power)
 VALUES (v_clan, v_uid, 'leader', coalesce(p.display_name, 'Hero'), p.level, p.attack + p.defense + p.level * 10);
-INSERT INTO clan_treasury_log(clan_id, player_id, kind, gold, note) VALUES (v_clan, v_uid, 'spend', -100000, 'create');
+INSERT INTO clan_treasury_log(clan_id, player_id, kind, gold, note)
+VALUES (v_clan, v_uid, 'spend', 0, 'create_30_red_gems');
 PERFORM clan_event(v_clan, 'create', 'clan_created');
 RETURN jsonb_build_object('success', true, 'clan_id', v_clan, 'updated_at', p.updated_at,
 'wallet_gold', p.gold, 'wallet_gems', p.gems, 'game_state', p.game_state);

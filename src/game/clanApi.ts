@@ -3,6 +3,9 @@ import { getSaveToken, adoptServerWallet, unblockSave } from './cloudInt';
 import { validEconomySnapshot } from './economyInvariant';
 import type { GameState } from './types';
 
+export const CLAN_CREATION_RED_GEMS_COST = 30;
+
+
 export interface ClanSummary {
   id: string;
   name: string;
