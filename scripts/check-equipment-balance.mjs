@@ -39,6 +39,17 @@ const balance = testRequire(path.join(out, 'equipmentBalance.js'));
 const catalog = testRequire(path.join(out, 'equipmentCatalog.js'));
 const engine = testRequire(path.join(out, 'engine.js'));
 
+// PvE combat must never mint new equipment: neither boss generation nor victory processing.
+for (const chapterNum of [1, 10, 58, 3000]) {
+  const chapter = engine.generateChapter(chapterNum);
+  assert.equal(chapter.boss.rewardLoot, undefined, `chapter ${chapterNum} boss must not drop gear`);
+  assert(chapter.enemies.every((enemy) => enemy.rewardLoot === undefined), 'normal enemies must not drop gear');
+}
+const actionsSource = fs.readFileSync(path.join(root, 'src/game/actions.ts'), 'utf8');
+const pveSource = fs.readFileSync(path.join(root, 'src/components/pve/PveFight.tsx'), 'utf8');
+assert.doesNotMatch(actionsSource, /rewards\.loot/, 'battle rewards must never add equipment to inventory');
+assert.doesNotMatch(pveSource, /enemy\.rewardLoot|outcome\.loot/, 'PvE UI must not promise disabled equipment drops');
+
 assert.equal(catalog.EQUIPMENT_TEMPLATES.length, 10, 'all current shop equipment templates should be in the canonical catalog');
 assert.equal(catalog.SHOP_EQUIPMENT_ITEMS.length, 10, 'shop availability should remain separate from the base stats catalog');
 assert.equal(new Set(catalog.EQUIPMENT_TEMPLATES.map((item) => item.id)).size, catalog.EQUIPMENT_TEMPLATES.length, 'equipment template IDs must be unique');

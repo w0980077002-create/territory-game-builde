@@ -8,7 +8,7 @@ import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/gam
 import { selectedFollower, followerCombat } from '@/game/followers';
 import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, type PveSide } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
-import type { Enemy, InventoryItem } from '@/game/types';
+import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
 import { getEnemyCombatFrames, getFollowerArt, getFollowerCombatFrames, resolveCombatArtUrl } from '@/game/combatArt';
 import { hapticImpact } from '@/game/telegram';
@@ -18,7 +18,6 @@ import { FoldSection } from '@/components/arena/FoldSection';
 import { GearStrip } from '@/components/arena/GearStrip';
 import { BeltCells } from '@/components/ui/BeltCells';
 import { Currency } from '@/components/ui/Currency';
-import { ItemArt } from '@/components/ui/ItemArt';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { beginReferralFight, finishReferralFight, type ReferralRound } from '@/game/referrals';
 
@@ -36,7 +35,6 @@ interface Outcome {
   gold: number;
   xp: number;
   gems: number;
-  loot?: InventoryItem;
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -139,8 +137,8 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
       return;
     }
     const gold = blessedGold(s, enemy.rewardGold);
-    useGame.set(recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp, loot: enemy.rewardLoot }));
-    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0, loot: enemy.rewardLoot });
+    useGame.set(recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp }));
+    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0 });
   }, [enemy, kind]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
@@ -391,11 +389,6 @@ function OutcomePanel({ outcome, kind, onExit, onNext }: { outcome: Outcome; kin
             <Currency kind="gold" value={`+${outcome.gold}`} size={18} />
             <span className="font-semibold text-sky-200">+{outcome.xp} {language === 'en' ? 'XP' : 'опыта'}</span>
             {outcome.gems > 0 && <Currency kind="gems" value={`+${outcome.gems}`} size={18} />}
-            {outcome.loot && (
-              <span className="flex items-center gap-1 text-amber-100">
-                <ItemArt item={outcome.loot} size={26} /> {outcome.loot.name}
-              </span>
-            )}
           </div>
         ) : (
           <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>

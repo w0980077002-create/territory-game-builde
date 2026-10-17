@@ -1,14 +1,13 @@
-import { EQUIPMENT_BALANCE_VERSION, prepareNewEquipment } from './equipmentBalance';
+import { EQUIPMENT_BALANCE_VERSION } from './equipmentBalance';
 import { initialFollowers } from './followers';
 import { weeklyQuestKey } from './weeklyQuests';
 import { bossEnemyMultipliers, chapterEnemyMultipliers, trialEnemyMultipliers } from './pveBalance';
-import { createBossLootEquipment, SHOP_EQUIPMENT_ITEMS } from './equipmentCatalog';
+import { SHOP_EQUIPMENT_ITEMS } from './equipmentCatalog';
 import type {
   GameState,
   Chapter,
   Enemy,
   Equipment,
-  InventoryItem,
   Quest,
   Achievement,
   Follower,
@@ -112,9 +111,8 @@ function makeEnemy(
   isBoss: boolean,
   rewardGold: number,
   rewardXp: number,
-  rewardLoot?: InventoryItem,
 ): Enemy {
-  return { id, name, art, hp, maxHp: hp, attack, defense, isBoss, rewardGold, rewardXp, rewardLoot };
+  return { id, name, art, hp, maxHp: hp, attack, defense, isBoss, rewardGold, rewardXp };
 }
 
 const ENEMY_NAMES = [
@@ -201,7 +199,6 @@ export function generateChapter(num: number): Chapter {
     true,
     50 + num * 15,
     80 + num * 20,
-    generateLoot(num),
   );
 
   return {
@@ -224,7 +221,7 @@ export function generateTrial(num: number): Enemy {
     `trial_${num}`,
     'Страж испытаний',
     // Use the fully animated six-pose guardian rather than the old idle-only
-    // trial image. Visual replacement only: trial HP, attack and loot unchanged.
+    // Use the trial guardian art without changing trial combat or rewards.
     '/assets/territory/characters/bosses/barrow_guardian/idle.webp',
     Math.floor(baseHp * 1.8 * difficulty.hp),
     Math.floor(baseAtk * 1.2 * difficulty.attack),
@@ -233,26 +230,6 @@ export function generateTrial(num: number): Enemy {
     40 + num * 12,
     40 + num * 10,
   );
-}
-
-function generateLoot(chapter: number): InventoryItem {
-  const isWeapon = Math.random() > 0.5;
-  const eq: Equipment = prepareNewEquipment(createBossLootEquipment(
-    chapter,
-    isWeapon,
-    `loot_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-  ));
-  const rarity = eq.rarity;
-  return {
-    id: eq.id,
-    name: eq.name,
-    icon: eq.icon,
-    type: 'equipment',
-    rarity,
-    qty: 1,
-    description: `Уровень ${chapter} · ${rarity}`,
-    equipment: eq,
-  };
 }
 
 export function createInitialQuests(): Quest[] {

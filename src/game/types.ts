@@ -63,7 +63,6 @@ export interface Enemy {
   isBoss: boolean;
   rewardGold: number;
   rewardXp: number;
-  rewardLoot?: InventoryItem;
 }
 
 export interface Chapter {

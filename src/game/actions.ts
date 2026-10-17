@@ -361,7 +361,7 @@ export function updateProgress(
 export function recordBattleResult(
   state: GameState,
   enemy: Enemy,
-  rewards: { gold: number; xp: number; loot?: InventoryItem },
+  rewards: { gold: number; xp: number },
 ): GameState {
   let newState: GameState = {
     ...state,
@@ -376,13 +376,6 @@ export function recordBattleResult(
 
   const xpResult = addXp(newState, rewards.xp);
   newState = { ...newState, ...xpResult } as GameState;
-
-  if (rewards.loot) {
-    newState = {
-      ...newState,
-      inventory: [...newState.inventory, rewards.loot],
-    };
-  }
 
   // Update chapter progress
   if (!enemy.isBoss) {
