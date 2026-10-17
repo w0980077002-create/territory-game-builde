@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { ArrowLeft, Ban, Hammer, Minus, Plus, Search, ShieldAlert, ShieldCheck, UserRound, Ticket, RotateCcw, Trash2 } from 'lucide-react';
 import { RESOURCES, adminCall, payloadFor, type PlayerSummary } from '@/admin/api';
+import { ActivityPanel } from '@/admin/tabs/ActivityPanel';
 import { Empty, ErrorLine, Loading, Panel, fmt, fmtDate, inputCls, type Confirm } from '@/admin/ui';
 
 const SLOT_LABELS: Record<string, string> = {
@@ -279,6 +280,7 @@ export function PlayersTab({ confirm }: { confirm: Confirm }) {
 
   return (
     <div className="space-y-4">
+      <ActivityPanel onOpen={setOpenId} />
       <Panel title="Поиск игрока" icon={<Search className="w-4 h-4" />}>
         <form onSubmit={search} className="flex gap-2">
           <input className={inputCls} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Telegram ID или @username" />

@@ -12,7 +12,7 @@ import { AuditAdminTab } from '@/admin/tabs/AuditAdminTab';
 
 const TABS = [
   { id: 'main', label: 'Главная & Управление', icon: BarChart3 },
-  { id: 'players', label: 'Игроки & Anti-cheat', icon: ShieldAlert },
+  { id: 'players', label: 'Игроки & Онлайн', icon: ShieldAlert },
   { id: 'mail', label: 'Почта & Рассылки', icon: Mail },
   { id: 'finance', label: 'Финансы & Лавка', icon: Wallet },
   { id: 'top', label: 'Топ-100', icon: Trophy },

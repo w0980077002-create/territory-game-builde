@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Activity, Bot, DollarSign, RefreshCw, Settings2, Users, Wifi } from 'lucide-react';
+import { Activity, Bot, CalendarDays, Clock3, DollarSign, RefreshCw, Settings2, Users, Wifi } from 'lucide-react';
 import { adminCall, type Settings } from '@/admin/api';
 import { ErrorLine, Loading, Panel, Switch, fmt, type Confirm } from '@/admin/ui';
 
 interface Stats {
   totalPlayers: number;
   onlinePlayers: number;
+  todayPlayers: number;
+  weekPlayers: number;
   todayPurchasesUsd: number;
   settings: Settings;
 }
@@ -50,11 +52,14 @@ export function DashboardTab({ confirm }: { confirm: Confirm }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
         <StatCard label="Всего игроков" value={fmt(stats.totalPlayers)} icon={<Users className="w-5 h-5 text-sky-300" />} tone="bg-sky-500/15" />
-        <StatCard label="Онлайн (5 мин)" value={fmt(stats.onlinePlayers)} icon={<Wifi className="w-5 h-5 text-emerald-300" />} tone="bg-emerald-500/15" />
+        <StatCard label="Сейчас (5 мин)" value={fmt(stats.onlinePlayers)} icon={<Wifi className="w-5 h-5 text-emerald-300" />} tone="bg-emerald-500/15" />
+        <StatCard label="Заходили сегодня" value={fmt(stats.todayPlayers)} icon={<Clock3 className="w-5 h-5 text-cyan-300" />} tone="bg-cyan-500/15" />
+        <StatCard label="Заходили за 7 дней" value={fmt(stats.weekPlayers)} icon={<CalendarDays className="w-5 h-5 text-violet-300" />} tone="bg-violet-500/15" />
         <StatCard label="Покупки сегодня" value={`$${stats.todayPurchasesUsd.toFixed(2)}`} icon={<DollarSign className="w-5 h-5 text-amber-300" />} tone="bg-amber-500/15" />
       </div>
+      <p className="text-[11px] text-slate-400">Сегодня — с 00:00 по Киеву; 7 дней — последние 168 часов. Списки и время визитов — во вкладке «Игроки & Онлайн».</p>
       <ErrorLine text={error} />
 
       <Panel title="Управление игрой" icon={<Settings2 className="w-4 h-4" />} right={

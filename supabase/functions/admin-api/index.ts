@@ -154,6 +154,22 @@ const startOfDayIso = () => {
   return d.toISOString();
 };
 
+// "Today" in the owner dashboard follows Kyiv local midnight, including DST.
+function kyivTodayStartIso(): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const value = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  const utcMidnight = Date.UTC(value("year"), value("month") - 1, value("day"));
+  const zone = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Kyiv", timeZoneName: "shortOffset",
+  }).formatToParts(new Date(utcMidnight)).find((p) => p.type === "timeZoneName")?.value ?? "";
+  const offset = /^GMT([+-])(\d{1,2})(?::(\d{2}))?$/.exec(zone);
+  if (!offset) throw new HttpError(500, "db_error");
+  const minutes = (Number(offset[2]) * 60 + Number(offset[3] ?? 0)) * (offset[1] === "+" ? 1 : -1);
+  return new Date(utcMidnight - minutes * 60_000).toISOString();
+}
+
 type Row = Record<string, unknown>;
 
 function summarize(p: Row) {
@@ -194,19 +210,62 @@ function summarize(p: Row) {
 }
 
 const PLAYER_COLS = "id, telegram_id, username, display_name, level, gold, gems, forge_materials, banned, created_at, updated_at, last_seen_at, game_state";
+const ACTIVITY_COLS = "id, telegram_id, username, display_name, level, banned, last_seen_at";
 
 async function handle(action: string, body: Row) {
   switch (action) {
     case "stats": {
-      const [total, online, todayDon, settings] = await Promise.all([
+      const [total, online, today, week, todayDon, settings] = await Promise.all([
         db.from("players").select("id", { count: "exact", head: true }),
         db.from("players").select("id", { count: "exact", head: true }).gte("last_seen_at", sinceIso(ONLINE_WINDOW_MS)),
+        db.from("players").select("id", { count: "exact", head: true }).gte("last_seen_at", kyivTodayStartIso()),
+        db.from("players").select("id", { count: "exact", head: true }).gte("last_seen_at", sinceIso(7 * 24 * 60 * 60 * 1000)),
         db.from("donations").select("amount_usd").gte("created_at", startOfDayIso()),
         db.from("game_settings").select("*").eq("id", 1).maybeSingle(),
       ]);
-      if (total.error || online.error || todayDon.error || settings.error) throw new HttpError(500, "db_error");
+      if (total.error || online.error || today.error || week.error || todayDon.error || settings.error) {
+        throw new HttpError(500, "db_error");
+      }
       const todaySum = (todayDon.data ?? []).reduce((s, r) => s + Number(r.amount_usd), 0);
-      return { totalPlayers: total.count ?? 0, onlinePlayers: online.count ?? 0, todayPurchasesUsd: todaySum, settings: settings.data };
+      return {
+        totalPlayers: total.count ?? 0,
+        onlinePlayers: online.count ?? 0,
+        todayPlayers: today.count ?? 0,
+        weekPlayers: week.count ?? 0,
+        todayPurchasesUsd: todaySum,
+        settings: settings.data,
+      };
+    }
+    case "activity": {
+      const period = body.period;
+      if (period !== "online" && period !== "today" && period !== "week") {
+        throw new HttpError(400, "invalid_request");
+      }
+      const offset = Number(body.offset ?? 0);
+      if (!Number.isSafeInteger(offset) || offset < 0 || offset > 5000) {
+        throw new HttpError(400, "invalid_request");
+      }
+      const cutoff = period === "online" ? sinceIso(ONLINE_WINDOW_MS)
+        : period === "today" ? kyivTodayStartIso()
+        : sinceIso(7 * 24 * 60 * 60 * 1000);
+      // Read-only, owner-authorized and paginated: never download full player game_state.
+      const { data, error } = await db.from("players")
+        .select(ACTIVITY_COLS)
+        .gte("last_seen_at", cutoff)
+        .order("last_seen_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(offset, offset + 50);
+      if (error) throw new HttpError(500, "db_error");
+      const players = (data ?? []).slice(0, 50).map((p) => ({
+        id: p.id,
+        telegramId: p.telegram_id,
+        username: p.username,
+        name: p.display_name,
+        level: p.level,
+        banned: p.banned,
+        lastSeenAt: p.last_seen_at,
+      }));
+      return { players, hasMore: (data?.length ?? 0) > 50 };
     }
     case "set_setting": {
       const key = body.key as string;
