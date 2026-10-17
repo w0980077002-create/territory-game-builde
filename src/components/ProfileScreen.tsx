@@ -3,12 +3,10 @@ import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { getTelegramInitData } from '@/game/telegram';
 import { linkTelegram, type AuthUser } from '@/game/auth';
-import { useLanguage, localizeText } from '@/game/i18n';
-import { getComputedStats, EQUIPMENT_SLOTS } from '@/game/engine';
-import { rarityColor } from '@/game/ui';
+import { useLanguage } from '@/game/i18n';
+import { getComputedStats } from '@/game/engine';
 import { User, Heart, Sword, Shield, Star, Zap, Coins, Gem, Send, Check, Link2, Loader2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { FollowersPanel } from './FollowersPanel';
 import { APPEARANCE_PRESETS, getPlayableAppearance, getAppearanceIcon } from '@/game/appearance';
 
 export function ProfileScreen({ user }: { user: AuthUser }) {
@@ -59,10 +57,14 @@ export function ProfileScreen({ user }: { user: AuthUser }) {
         </div>
       </div>
 
-      {/* Cosmetic selection; existing stats and gear are untouched. */}
-      <section className="card">
-        <h3 className="text-sm font-semibold text-amber-200 mb-1">{language === 'en' ? 'Choose your hero' : 'Выбери героя'}</h3>
-        <p className="text-xs text-gray-400 mb-3">{language === 'en' ? 'Appearance only. Your level and equipment stay the same.' : 'Меняется только внешность. Уровень и экипировка сохраняются.'}</p>
+      {/* Appearance is optional; keep the profile compact until requested. */}
+      <details className="card group" data-testid="profile-appearance">
+        <summary className="cursor-pointer list-none flex items-center justify-between gap-3 text-sm font-semibold text-amber-200">
+          <span>{language === 'en' ? 'Change hero appearance' : 'Сменить внешность героя'}</span>
+          <span className="text-xs text-gray-400 group-open:hidden">{language === 'en' ? 'Show' : 'Открыть'} ▾</span>
+          <span className="text-xs text-gray-400 hidden group-open:inline">{language === 'en' ? 'Hide' : 'Свернуть'} ▴</span>
+        </summary>
+        <p className="text-xs text-gray-400 mt-3 mb-3">{language === 'en' ? 'Appearance only. Your level and equipment stay the same.' : 'Меняется только внешность. Уровень и экипировка сохраняются.'}</p>
         <div className="grid grid-cols-2 gap-2">
           {APPEARANCE_PRESETS.map((preset) => {
             const active = getPlayableAppearance(state.appearance) === preset.id;
@@ -81,7 +83,7 @@ export function ProfileScreen({ user }: { user: AuthUser }) {
             );
           })}
         </div>
-      </section>
+      </details>
 
       {/* Telegram account linkage: only verified Edge Functions can link identities. */}
       <div className="card">
@@ -107,16 +109,21 @@ export function ProfileScreen({ user }: { user: AuthUser }) {
         {linkResult && <p role="status" className="mt-3 text-xs text-sky-200">{linkResult}</p>}
       </div>
 
-      {/* Base stats */}
-      <div className="card">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">{t('baseStats')}</h3>
+      {/* Keep original base attributes accessible without duplicating the main stats. */}
+      <details className="card group" data-testid="profile-base-stats">
+        <summary className="cursor-pointer text-sm font-semibold text-gray-300">
+          {t('baseStats')} <span className="float-right text-gray-500 text-xs group-open:hidden">▾</span>
+          <span className="float-right text-gray-500 text-xs hidden group-open:inline">▴</span>
+        </summary>
+        <div className="mt-3">
         <div className="grid grid-cols-2 gap-3">
           <StatBox icon={<Heart className="w-4 h-4 text-red-400" />} label={t('heroHealth')} value={`${state.player.stats.maxHp}`} />
           <StatBox icon={<Sword className="w-4 h-4 text-orange-400" />} label={t('attack')} value={state.player.stats.attack} />
           <StatBox icon={<Shield className="w-4 h-4 text-blue-400" />} label={t('defense')} value={state.player.stats.defense} />
           <StatBox icon={<Star className="w-4 h-4 text-yellow-400" />} label={t('critChance')} value={`${state.player.stats.critChance}%`} />
         </div>
-      </div>
+        </div>
+      </details>
 
       {/* Computed stats (with equipment) */}
       <div className="card">
@@ -128,45 +135,6 @@ export function ProfileScreen({ user }: { user: AuthUser }) {
           <StatBox icon={<Star className="w-4 h-4 text-yellow-400" />} label={t('critChance')} value={`${computed.critChance}%`} />
         </div>
       </div>
-
-      {/* Equipment */}
-      <div className="card">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">{t('equipment')}</h3>
-        <div className="space-y-2">
-          {EQUIPMENT_SLOTS.map(({ id: slot, name }) => {
-            const eq = state.player.equipped[slot];
-            return (
-              <div key={slot} className="flex items-center gap-3 py-1">
-                <div className="w-10 h-10 rounded-lg bg-black/30 flex items-center justify-center text-lg shrink-0"
-                  style={eq ? { border: `1px solid ${rarityColor(eq.rarity)}` } : undefined}
-                >
-                  {eq ? eq.icon : '⬜'}
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-gray-500">{language === 'en' ? ({ helmet: 'Helmet', amulet: 'Amulet', armor: 'Armor', weapon: 'Weapon', shield: 'Shield', ring: 'Ring', boots: 'Boots' } as Record<string, string>)[slot] ?? name : name}</p>
-                  {eq ? (
-                    <p className="text-sm font-medium" style={{ color: rarityColor(eq.rarity) }}>
-                      {localizeText(eq.name, language)}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-gray-600">{t('empty')}</p>
-                  )}
-                </div>
-                {eq && (
-                  <div className="text-xs text-gray-400 text-right">
-                    {eq.attack ? <div>⚔️ +{eq.attack}</div> : null}
-                    {eq.defense ? <div>🛡️ +{eq.defense}</div> : null}
-                    {eq.hp ? <div>❤️ +{eq.hp}</div> : null}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Follower progression: legacy shield retained, four new roles available. */}
-      <FollowersPanel />
 
       {/* Battle record */}
       <div className="card">
