@@ -30,6 +30,9 @@ with sync_playwright() as p:
         page.get_by_role('button',name=label,exact=True).click()
         page.get_by_role('dialog').wait_for()
         page.wait_for_timeout(300)
+        if label=='Задания':
+            last=page.locator('.mono-panel .mono-quest').last.bounding_box()
+            assert last['y']+last['height']<=844-10, 'quest button below mobile viewport'
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         page.screenshot(path=str(out/filename),full_page=False)
         page.get_by_role('button',name='Закрыть',exact=True).click()

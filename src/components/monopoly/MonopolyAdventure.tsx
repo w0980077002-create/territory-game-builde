@@ -14,7 +14,7 @@ const eventCopy:Record<string,[string,string,string,string]>={
  lucky:['Руна удачи','Выбери число на кубике для следующего хода.','Lucky rune','Choose the dice value on your next turn.'],
 };
 function Prizes({prize,en}:{prize?:Prize;en:boolean}){
- return <div className="mono-extra-rewards">{Object.entries(prize??{}).filter(([,n])=>n>0).map(([key,n])=><span className="mono-resource" key={key}><Art name={key as keyof Prize}/><b>+{n}</b><small>{prizeLabels[key as keyof Prize][en?1:0]}</small></span>)}</div>;
+ return <div className="mono-extra-rewards">{Object.entries(prize??{}).filter(([,n])=>n>0).map(([key,n])=><span className="mono-resource" key={key} role="img" aria-label={`${prizeLabels[key as keyof Prize][en?1:0]} +${n}`}><Art name={key as keyof Prize}/><b>+{n}</b><small>{prizeLabels[key as keyof Prize][en?1:0]}</small></span>)}</div>;
 }
 function monopolyError(e:unknown,en:boolean){
  const t=(ru:string,english:string)=>en?english:ru;
@@ -130,9 +130,9 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
      <Art name={i===0?'start':mystery?'mystery':'tile'} className="mono-cell-base"/>
      {i!==0&&!mystery&&<Art name={kind??'gold'} className="mono-cell-prize"/>}
      <small className="mono-cell-amount">{i===0?t('СТАРТ','START'):mystery?'?':kind?prize[kind]:cellGold(i)*(ten?10:1)}</small>
-     <b className="mono-cell-number">{i+1}</b>
     </div>;})}
     <div className={`mono-hero ${moving?'moving':''}`} style={{left:`${point.x}%`,top:`${point.y}%`}} aria-label={t(`Герой на клетке ${position+1}`,`Hero on space ${position+1}`)}><div className="mono-hero-ring"/><span className="mono-hero-sprite" style={{backgroundImage:`url("${import.meta.env.BASE_URL}monopoly/hero-frames.png")`}}/></div>
+    {Array.from({length:28},(_,i)=>{const pos=boardPoint(i);return <b key={i} style={{left:`${pos.x}%`,top:`${pos.y}%`}} className="mono-cell-number">{i+1}</b>;})}
    </div>
    <div className="mono-lap-plaque">{t('КРУГ','LAP')} <b>{p?.laps??0}</b><span>{t('Клетка','Space')} {position+1}/28</span></div>
    <div className="mono-buffs">{p?.double_next&&<span><Art name="elixirs"/>{t('Следующий ход ×2','Next move ×2')}</span>}{p?.lucky_next&&<span><Art name="gems"/>{t('Выбор кубика','Choose your roll')}</span>}</div>
@@ -143,7 +143,7 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
     <div className="mono-lap-stat"><Art name="crown"/><b>{p?.rolls??0}</b><small>{t('бросков','rolls')}</small></div>
    </div>
    <button className="mono-roll-caption" disabled={disabled||(!active&&(h?.tickets??0)<(ten?10:1))||!!(h?.active&&h.active.game!=='monopoly')} onClick={()=>void roll()}>{moving?t('Герой в пути…','Hero on the move…'):active?t('Продолжить ход','Resume turn'):t(`БРОСИТЬ · ${ten?10:1} ${ten?'билетов':'билет'}`,`ROLL · ${ten?10:1} ticket${ten?'s':''}`)}</button>
-   <div className="mono-toggles"><label className="mono-multiplier"><input type="checkbox" checked={ten} disabled={busy||!!active} onChange={e=>setTen(e.target.checked)}/><span className={!ten?'selected':''}>×1</span><span className={ten?'selected':''}>×10</span></label><label className="mono-skip"><input type="checkbox" checked={fast} disabled={busy} onChange={e=>setFast(e.target.checked)}/>{t('Пропустить анимацию','Skip animation')}</label></div>
+   <div className="mono-toggles"><div className="mono-multiplier" role="group" aria-label={t('Множитель награды','Reward multiplier')}><button type="button" aria-pressed={!ten} className={!ten?'selected':''} disabled={busy||!!active} onClick={()=>setTen(false)}>×1</button><button type="button" aria-pressed={ten} className={ten?'selected':''} disabled={busy||!!active} onClick={()=>setTen(true)}>×10</button></div><label className="mono-skip"><input type="checkbox" checked={fast} disabled={busy} onChange={e=>setFast(e.target.checked)}/>{t('Пропустить анимацию','Skip animation')}</label></div>
    {p?.lucky_next&&!active&&<div className="mono-choose"><small>{t('Выбери число — 1 билет','Choose a value — 1 ticket')}</small><div>{faces.map((n,i)=><button disabled={disabled||!h?.tickets} key={n} onClick={()=>void roll(101+i)} aria-label={String(n)}><Dice value={n}/></button>)}</div></div>}
    {Object.values(p?.pending_rewards??{}).some(n=>n>0)&&<div className="mono-pending"><b>{t('Твои сокровища','Your treasures')}</b><Prizes prize={p?.pending_rewards} en={en}/><button className="mono-cta" disabled={busy} onClick={()=>void redeem()}>{t('Получить награды','Collect rewards')}</button></div>}
   </section>

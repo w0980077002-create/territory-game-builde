@@ -37,7 +37,7 @@
 .mono-hero-sprite{display:block;width:100%;height:100%;background-size:400% 100%;background-position:0 0;background-repeat:no-repeat;filter:drop-shadow(0 3px 2px #06313899);animation:mono-idle 2.4s steps(1) infinite}
 .mono-hero.moving .mono-hero-sprite{animation:mono-walk .3s steps(1) infinite,mono-hop .155s ease-in-out infinite}
 .mono-hero-ring{position:absolute;left:20%;right:15%;height:12%;bottom:0;border:2px solid #f6ffa1;border-radius:50%;background:#95f5d755;box-shadow:0 0 10px #b1ffe8}
-.mono-lap-plaque{position:absolute;z-index:4;left:50%;top:68%;transform:translateX(-50%);border:1.5px solid #f6ce77;border-radius:8px;background:linear-gradient(#854520,#412919);padding:4px 15px;box-shadow:0 2px 4px #0008;font-size:11px;white-space:nowrap;color:#ffe4a0}
+.mono-lap-plaque{position:absolute;z-index:4;left:50%;top:83%;transform:translateX(-50%);border:1.5px solid #f6ce77;border-radius:8px;background:linear-gradient(#854520,#412919);padding:4px 15px;box-shadow:0 2px 4px #0008;font-size:11px;white-space:nowrap;color:#ffe4a0}
 .mono-lap-plaque b{font:900 15px Arial,sans-serif;margin-left:5px}
 .mono-lap-plaque span{display:block;text-align:center;font:9px Arial,sans-serif;color:#e8d6ac;margin-top:2px}
 .mono-buffs{position:absolute;bottom:10%;left:3%;right:3%;display:flex;justify-content:center;gap:5px;z-index:5}
@@ -223,3 +223,16 @@
 @keyframes mono-ship-bob{50%{transform:translate(-50%,-53%) rotate(1.5deg)}
 }
 .mono-dice:disabled{opacity:1;filter:none}.mono-dice:disabled:not(.rolling){opacity:.5}
+
+.mono-cell-number{bottom:auto;right:auto;transform:translate(14px,12px);z-index:10;pointer-events:none}
+.mono-multiplier button{padding:6px 11px;border:0;border-radius:5px;background:transparent;color:#b8d6d4;font:bold 12px Arial,sans-serif}
+:is(.panel-quests,.panel-offers) .mono-banner{min-height:88px;padding:8px;margin-bottom:9px}
+:is(.panel-quests,.panel-offers) .mono-banner>.mono-art{width:70px}
+:is(.panel-quests,.panel-offers) .mono-banner b{font-size:20px}
+:is(.panel-quests,.panel-offers) .mono-quest{padding:9px;margin:7px 0}
+:is(.panel-quests,.panel-offers) .mono-quest-heading>.mono-art{width:28px}
+:is(.panel-quests,.panel-offers) .mono-extra-rewards{margin:6px 0;gap:6px}
+:is(.panel-quests,.panel-offers) .mono-resource{display:flex;align-items:center;gap:3px;min-width:62px;max-width:none;padding:3px 5px}
+:is(.panel-quests,.panel-offers) .mono-resource>.mono-art{width:32px}
+:is(.panel-quests,.panel-offers) .mono-resource small{display:none}
+:is(.panel-quests,.panel-offers) .mono-resource b{font-size:13px;margin:0}
