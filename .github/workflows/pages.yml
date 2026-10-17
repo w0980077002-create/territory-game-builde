@@ -52,6 +52,7 @@ jobs:
           npm run test:companion-navigation
           npm run test:founders
           npm run test:referral-activity
+          npm run test:hall
           node scripts/check-equipment-safety-v4.mjs
           npm run test:feature-separation
           npm run test:mobile-home
