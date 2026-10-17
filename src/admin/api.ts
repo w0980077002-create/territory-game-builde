@@ -17,6 +17,8 @@ const ERRORS: Record<string, string> = {
   admin_auth_conflict: 'Пароль уже был изменён. Войди заново',
   weak_password: 'Новый пароль: минимум 14 символов, буквы и цифры',
   grant_already_claimed: 'Награда уже получена или была отменена',
+  invalid_schedule_time: 'Укажи время рассылки от 2 минут до года вперёд',
+  schedule_already_processed: 'Рассылка уже отправлена или отменена. Обнови список',
 };
 
 export class AdminError extends Error {
