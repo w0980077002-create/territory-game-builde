@@ -179,6 +179,41 @@ export function saveCloudSave(userId: string, state: GameState): Promise<boolean
   return writer(snapshot);
 }
 
+/** One verified server-side inventory mutation. Call after awaiting saveCloudSave
+ * for the EXACT current state; old snapshots must never resurrect consumed gear. */
+export async function recycleCloudEquipment(
+  userId: string,
+  itemId: string,
+  action: 'discard' | 'salvage',
+): Promise<{ state: GameState; remainingToday: number; awarded: number }> {
+  const revision = saveTokens.get(userId);
+  if (!validSaveToken(revision) || saveBlocked.has(userId) || !itemId || itemId.length > 150) {
+    throw new Error('recycle_reload_required');
+  }
+  const { data, error } = await supabase.rpc('territory_inventory_recycle_v1', {
+    p_item: itemId, p_action: action, p_expected: revision,
+  });
+  if (error) throw new Error(error.message || 'recycle_unavailable');
+  if (!data || typeof data !== 'object' || data.success !== true
+      || data.item_id !== itemId || data.action !== action
+      || !validSaveToken(data.updated_at)
+      || !Number.isSafeInteger(data.remaining_today)
+      || data.remaining_today < 0 || data.remaining_today > 3
+      || data.awarded !== (action === 'salvage' ? 1 : 0)
+      || !validEconomySnapshot(data.game_state as GameState)) {
+    throw new Error('recycle_invalid_receipt');
+  }
+  const state = data.game_state as GameState;
+  if (state.inventory.some((item) => item.id === itemId)) throw new Error('recycle_item_still_present');
+  const wallet = safeWalletVersion({ gold: data.gold, gems: data.gems }, state.player);
+  if (!walletMatchesVersion(wallet, state.player)) throw new Error('recycle_wallet_mismatch');
+  // CAS token must follow the server's atomic update, not a guessed timestamp.
+  saveTokens.set(userId, data.updated_at);
+  walletVersions.set(userId, wallet);
+  saveBlocked.delete(userId);
+  return { state, remainingToday: data.remaining_today, awarded: data.awarded };
+}
+
 export interface LeaderRow {
   player_id: string;
   display_name: string;

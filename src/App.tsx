@@ -268,7 +268,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             onActiveChange={setBattleLocked}
           />
         )}
-        {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} />}
+        {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} userId={user.id} />}
         {screen === 'hero' && <ProfileScreen user={user} />}
         {screen === 'map' && <MapScreen />}
         {screen === 'shop' && <ShopScreen />}

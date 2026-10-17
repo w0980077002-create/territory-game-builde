@@ -41,6 +41,7 @@ export function xpForLevel(level: number): number {
 export function createInitialGame(): GameState {
   return {
     balanceVersion: EQUIPMENT_BALANCE_VERSION,
+    inventoryCleanupVersion: 1,
     professions: { active: null, masteryLevel: 1, masteryXp: 0, lastGatherAt: 0 },
     player: {
       name: 'Герой',
