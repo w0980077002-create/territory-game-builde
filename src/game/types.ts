@@ -146,6 +146,8 @@ export interface ProfessionProgress {
 export interface GameState {
   /** Version of save-data migrations already applied. */
   balanceVersion?: number;
+  /** Completed one-time cleanup schema marker, required for protected server recycling. */
+  inventoryCleanupVersion?: number;
   /** Optional for backward compatibility with saves created before professions. */
   professions?: ProfessionProgress;
   player: {
