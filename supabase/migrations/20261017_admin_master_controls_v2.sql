@@ -111,3 +111,46 @@ END $$;
 REVOKE ALL ON FUNCTION public.territory_admin_rotate_v2(text,text,integer)
 FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_admin_rotate_v2(text,text,integer) TO service_role;
+
+
+-- Private reporting published ONLY to service role.
+CREATE OR REPLACE FUNCTION public.territory_hall_admin_overview_v2()
+RETURNS jsonb LANGUAGE sql SECURITY DEFINER SET search_path='pg_catalog'
+AS $$
+ SELECT jsonb_build_object(
+  'wallets',(SELECT count(*) FROM territory_private.hall_accounts_v1),
+  'tickets',(SELECT coalesce(sum(tickets),0) FROM territory_private.hall_accounts_v1),
+  'games',(SELECT coalesce(sum(played),0) FROM territory_private.hall_accounts_v1),
+  'wins',(SELECT coalesce(sum(wins),0) FROM territory_private.hall_accounts_v1),
+  'pendingGold',(SELECT coalesce(sum(pending_gold),0) FROM territory_private.hall_accounts_v1),
+  'activeSessions',(SELECT count(*) FROM territory_private.hall_sessions_v1),
+  'recent',(SELECT coalesce(jsonb_agg(jsonb_build_object(
+     'name',coalesce(p.display_name,'Герой'),
+     'game',h.game,'won',h.won,'gold',h.earned_gold,'at',h.played_at
+   ) ORDER BY h.played_at DESC),'[]'::jsonb)
+   FROM (SELECT player_id,game,won,earned_gold,played_at
+     FROM territory_private.hall_history_v1 ORDER BY played_at DESC LIMIT 20) h
+   LEFT JOIN public.players p ON p.id=h.player_id)
+ )
+$$;
+REVOKE ALL ON FUNCTION public.territory_hall_admin_overview_v2() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.territory_hall_admin_overview_v2() TO service_role;
+
+CREATE OR REPLACE FUNCTION public.territory_hall_admin_player_v2(p_player uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='pg_catalog'
+AS $$
+DECLARE a territory_private.hall_accounts_v1%ROWTYPE;
+ v_game text; v_since timestamptz;
+BEGIN
+ IF p_player IS NULL OR NOT EXISTS(SELECT 1 FROM public.players WHERE id=p_player)
+ THEN RAISE EXCEPTION 'admin_player_missing'; END IF;
+ SELECT * INTO a FROM territory_private.hall_accounts_v1 WHERE player_id=p_player;
+ SELECT game,created_at INTO v_game,v_since FROM territory_private.hall_sessions_v1 WHERE player_id=p_player;
+ RETURN jsonb_build_object('tickets',coalesce(a.tickets,4),
+   'played',coalesce(a.played,0),'wins',coalesce(a.wins,0),
+   'points',coalesce(a.points,0),'pendingGold',coalesce(a.pending_gold,0),
+   'claimedGold',coalesce(a.claimed_gold,0),
+   'activeGame',v_game,'activeSince',v_since);
+END $$;
+REVOKE ALL ON FUNCTION public.territory_hall_admin_player_v2(uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.territory_hall_admin_player_v2(uuid) TO service_role;
