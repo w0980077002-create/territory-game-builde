@@ -1,0 +1,23 @@
+{
+  "renderer": "Chromium / Playwright",
+  "fixtures": true,
+  "production_network": false,
+  "cells": 28,
+  "widths": [
+    390,
+    375,
+    320
+  ],
+  "horizontal_overflow": false,
+  "page_errors": [],
+  "screenshots": [
+    "04-laps-390.png",
+    "05-offers-390.png",
+    "07-board-320.png",
+    "03-quests-390.png",
+    "07-board-375.png",
+    "02-gifts-390.png",
+    "06-reward-390.png",
+    "01-board-390.png"
+  ]
+}
