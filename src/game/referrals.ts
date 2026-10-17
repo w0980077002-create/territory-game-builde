@@ -21,6 +21,56 @@ export type ReferralReceipt = {
   gold: number; gems: number; stones: number; materials: number;
   red_gems: number; welcome_elixirs: number; friends_claimed: number;
 };
+
+export type ReferralFriend = {
+  name: string;
+  level: number;
+  wins: number;
+  verified_xp: number;
+  qualified: boolean;
+  joined_at: string;
+};
+export type ReferralRound = { attack: 'head' | 'chest' | 'belly' | 'legs'; blocks: string[] };
+
+export async function getReferralFriends(): Promise<ReferralFriend[]> {
+ const {data,error}=await supabase.rpc('territory_referral_friends_v2');
+ if(error) throw new Error(error.message);
+ if(!Array.isArray(data)) throw new Error('referral_friend_list_invalid');
+ return data.filter((x:unknown):x is ReferralFriend=>{
+  if(!x || typeof x!=='object')return false;
+  const row=x as Record<string,unknown>;
+  return typeof row.name==='string' && row.name.length<=32
+   && Number.isSafeInteger(row.level) && (row.level as number)>=1
+   && Number.isSafeInteger(row.wins) && (row.wins as number)>=0
+   && Number.isSafeInteger(row.verified_xp) && (row.verified_xp as number)>=0
+   && typeof row.qualified==='boolean' && typeof row.joined_at==='string';
+ });
+}
+
+/** Optional referral activity logging. Does not change how PvE resolves or pays. */
+export async function beginReferralFight(kind:'stage'|'trial',enemyId:string):Promise<string|null>{
+ const {data,error}=await supabase.rpc('territory_referral_fight_start_v2',{
+  p_kind:kind,p_enemy_id:enemyId
+ });
+ if(error) {
+  console.warn('Referral battle start unavailable:',error.message);
+  return null;
+ }
+ if(!data?.tracked || typeof data.ticket!=='string' ||
+   !/^[0-9a-f-]{36}$/.test(data.ticket))return null;
+ return data.ticket;
+}
+export async function finishReferralFight(ticket:string,won:boolean,rounds:ReferralRound[]):Promise<boolean>{
+ const {data,error}=await supabase.rpc('territory_referral_fight_finish_v2',{
+  p_ticket:ticket,p_won:won,p_rounds:rounds
+ });
+ if(error) {
+  console.warn('Referral battle receipt unavailable:',error.message);
+  return false;
+ }
+ return data?.credited===true;
+}
+
 export const founderRewardLimit = 10;
 export const firstFounderSeasonLimit = 300;
 export const friendReward = { gold: 1500, gems: 10, materials: 2, stones: 1, redTenths: 2, chest: 1 };
