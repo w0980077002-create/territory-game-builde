@@ -110,7 +110,9 @@ BEGIN
  THEN RAISE EXCEPTION 'referral_verified_telegram_required'; END IF;
  -- Profile sequence is private, immutable and seeded for existing verified players.
  INSERT INTO territory_private.referral_profiles_v1(player_id)
- VALUES(v_uid) ON CONFLICT(player_id) DO NOTHING;
+ SELECT v_uid WHERE NOT EXISTS(
+   SELECT 1 FROM territory_private.referral_profiles_v1 WHERE player_id=v_uid
+ ) ON CONFLICT(player_id) DO NOTHING;
  SELECT code,founder_number INTO v_code,v_founder
  FROM territory_private.referral_profiles_v1 WHERE player_id=v_uid;
  SELECT count(*),count(*) FILTER(WHERE qualified_at IS NOT NULL),
