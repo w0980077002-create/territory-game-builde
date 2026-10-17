@@ -1,0 +1,48 @@
+"""Real Chromium screenshots of the isolated production component with offline fixtures."""
+from pathlib import Path
+import json
+import sys
+from playwright.sync_api import sync_playwright
+source = Path(sys.argv[1] if len(sys.argv)>1 else '/tmp/monopoly-visual-review.html').resolve()
+out = Path(sys.argv[2] if len(sys.argv)>2 else '/tmp/monopoly-screenshots')
+out.mkdir(parents=True, exist_ok=True)
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+    page = browser.new_page(viewport={'width':390,'height':844}, device_scale_factor=1)
+    errors=[]
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    # External network is forbidden even though the fixture already replaces fetch.
+    page.route('https://**/*', lambda route: route.abort())
+    page.goto(source.as_uri())
+    page.locator('[data-cell-index="27"]').wait_for()
+    page.wait_for_function('document.images.length > 0 && Array.from(document.images).every(i => i.complete && i.naturalWidth > 0)')
+    page.wait_for_timeout(1200)
+    assert page.locator('[data-cell-index]').count()==28
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'horizontal overflow'
+    scene=page.locator('.mono-scene').bounding_box()
+    for tile in page.locator('[data-cell-index]').all():
+        box=tile.bounding_box()
+        assert box['x']>=scene['x'] and box['x']+box['width']<=scene['x']+scene['width'], 'tile outside scene'
+        assert box['y']>=scene['y'] and box['y']+box['height']<=scene['y']+scene['height'], 'tile outside scene'
+    page.screenshot(path=str(out/'01-board-390.png'), full_page=True)
+    for label,filename in [('Подарки','02-gifts-390.png'),('Задания','03-quests-390.png'),('Награды за круги','04-laps-390.png'),('Спецпредложения','05-offers-390.png')]:
+        page.get_by_role('button',name=label,exact=True).click()
+        page.get_by_role('dialog').wait_for()
+        page.wait_for_timeout(300)
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.screenshot(path=str(out/filename),full_page=True)
+        page.get_by_role('button',name='Закрыть',exact=True).click()
+    page.get_by_role('button',name='Подарки',exact=True).click()
+    page.get_by_role('button',name='ЗАБРАТЬ БЕСПЛАТНО',exact=True).click()
+    page.get_by_role('heading',name='Сокровище твоё!',exact=True).wait_for()
+    page.wait_for_timeout(1100)
+    page.screenshot(path=str(out/'06-reward-390.png'),full_page=True)
+    page.get_by_role('button',name='ПРОДОЛЖИТЬ',exact=True).click()
+    for width,height in [(375,812),(320,740)]:
+        page.set_viewport_size({'width':width,'height':height})
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.screenshot(path=str(out/f'07-board-{width}.png'),full_page=True)
+    assert not errors,errors
+    (out/'verification.json').write_text(json.dumps({'renderer':'Chromium / Playwright','fixtures':True,'production_network':False,'cells':28,'widths':[390,375,320],'horizontal_overflow':False,'page_errors':errors,'screenshots':[p.name for p in out.glob('*.png')]},ensure_ascii=False,indent=2))
+    browser.close()
+print('Real browser screenshots saved to',out)

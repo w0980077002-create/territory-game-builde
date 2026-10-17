@@ -25,6 +25,7 @@ jobs:
       - run: npx eslint src/components/monopoly/*.tsx src/components/monopoly/api.ts
       - run: node scripts/check-monopoly-v2.mjs
       - run: node scripts/check-monopoly-test-build.mjs
+      - run: node scripts/check-monopoly-visuals.mjs
       - run: npm run test:hall
       - run: npm run test:admin-master
       - run: npm run test:feature-separation
@@ -32,6 +33,30 @@ jobs:
         env:
           VITE_SUPABASE_URL: https://offline-monopoly-test.supabase.co
           VITE_SUPABASE_ANON_KEY: offline-build-only
+  visual-review:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.55.0
+      - run: python -m playwright install --with-deps chromium
+      - run: node scripts/build-monopoly-visual-preview.mjs /tmp/monopoly-visual-review.html
+      - run: python scripts/capture-monopoly-visuals.py /tmp/monopoly-visual-review.html /tmp/monopoly-screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: monopoly-mobile-screenshots
+          path: /tmp/monopoly-screenshots/
+          retention-days: 7
   test-artifact:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/review/monopoly-safe-test-20261017'
     needs: verify
