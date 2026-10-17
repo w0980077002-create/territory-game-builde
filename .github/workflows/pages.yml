@@ -45,6 +45,7 @@ jobs:
           npm run test:economy
           npm run test:professions
           npm run test:balance
+          node scripts/check-equipment-safety-v4.mjs
           npm run test:feature-separation
           npm run test:mobile-home
           node scripts/check-combat-visuals.mjs

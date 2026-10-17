@@ -89,42 +89,42 @@ const lootLegacy = {
   rarity: 'epic', attack: 9923, defense: 0, hp: 0, level: 58,
 };
 const loot = balance.normalizeEquipmentForTests(lootLegacy);
-assert.equal(loot.baseLevel, 24, 'legacy boss-drop origin chapter should be inferred');
-assert.equal(loot.attack, 150, 'legacy boss loot should normalize to rarity-based linear growth');
+assert.equal(loot.baseLevel, 58, 'overpowered unknown boss loot is capped at its saved level');
+assert.equal(loot.attack, 388, 'huge boss loot is capped to a generous level-relative maximum');
 
 const adminScaledLoot = {
   id: 'loot_admin_scaled', slot: 'weapon', name: 'Клинок победителя', icon: '⚔️',
   rarity: 'epic', attack: Math.round(82 * Math.pow(1.15, 34)), defense: 0, hp: 0, level: 58,
 };
 const adminNormalized = balance.normalizeEquipmentForTests(adminScaledLoot);
-assert.equal(adminNormalized.baseLevel, 24, 'migration should also recognize legacy admin level grants');
-assert.equal(adminNormalized.attack, 150, 'admin-scaled legacy equipment should normalize onto the same curve');
+assert.equal(adminNormalized.baseLevel, 58, 'admin-inflated loot cannot keep exponential baselines');
+assert.equal(adminNormalized.attack, 388, 'admin-scaled legacy equipment is capped on the server and client');
 
 const armorLegacy = {
   id: 'loot_armor_test', slot: 'armor', name: 'Доспех воина', icon: '🛡️',
   rarity: 'epic', attack: 0, defense: oldForge(53, 34), hp: oldForge(140, 34), level: 58,
 };
 const armor = balance.normalizeEquipmentForTests(armorLegacy);
-assert.equal(armor.baseLevel, 24);
-assert.equal(armor.defense, 79);
-assert.equal(armor.hp, 208);
+assert.equal(armor.baseLevel, 58);
+assert.equal(armor.defense, 300);
+assert.equal(armor.hp, 746);
 
 const unknown = {
   id: 'custom-admin-item', slot: 'weapon', name: 'Неизвестный клинок', icon: '⚔️',
   rarity: 'legendary', attack: 777, level: 30,
 };
 const preserved = balance.normalizeEquipmentForTests(unknown);
-assert.equal(preserved.attack, 777, 'unknown legacy equipment should be preserved rather than destructively guessed');
-assert.equal(balance.upgradeEquipment(preserved).attack, 780, 'unknown legendary gear should use fixed legendary growth for future upgrades');
+assert.equal(preserved.attack, 220, 'suspiciously large custom equipment must be capped without deleting the item');
+assert.equal(balance.upgradeEquipment(preserved).attack, 223, 'custom equipment retains linear forge growth after normalization');
 
 const customSameName = {
   id: 'custom-crafted-heroic', slot: 'weapon', name: 'Героический меч', icon: '🔱',
   rarity: 'epic', attack: 999, critChance: 12, level: 30,
 };
 const preservedSameName = balance.normalizeEquipmentForTests(customSameName);
-assert.equal(preservedSameName.attack, 999, 'custom equipment sharing a shop name must not be reset to the shop template');
-assert.equal(preservedSameName.baseLevel, 30, 'unrecognized custom equipment must retain its current level as the baseline');
-assert.equal(balance.upgradeEquipment(preservedSameName).attack, 1001, 'custom same-name equipment must use controlled growth only for future upgrades');
+assert.equal(preservedSameName.attack, 85, 'fake huge stats on recognizable shop gear must not survive');
+assert.equal(preservedSameName.baseLevel, 5, 'recognized shop gear is rebuilt from catalog baseline');
+assert.equal(balance.upgradeEquipment(preservedSameName).attack, 87, 'known-name equipment uses controlled canonical growth');
 
 const lowerLevel = balance.setEquipmentLevel(heroic, 2);
 assert.equal(lowerLevel.level, 5, 'level grants should not drop an item below its original template level');
@@ -138,7 +138,7 @@ const migrated = balance.migrateGameStateBalance({
 });
 assert.equal(migrated.balanceVersion, balance.EQUIPMENT_BALANCE_VERSION);
 assert.equal(migrated.player.equipped.weapon.attack, 141);
-assert.equal(migrated.inventory[0].equipment.attack, 150);
+assert.equal(migrated.inventory[0].equipment.attack, 388);
 
 // A save produced by the earlier v2 development formula must be recalculated
 // from its immutable baseline when moving to v3, not skipped as already current.
@@ -160,7 +160,7 @@ assert.equal(migratedV2.player.equipped.weapon.critChance, 8, 'migration must pr
 const migratedBelt = balance.migrateGameStateBalance({
   belt: [null, { id: 'belt-loot', name: lootLegacy.name, icon: lootLegacy.icon, type: 'equipment', rarity: lootLegacy.rarity, qty: 1, description: '', equipment: lootLegacy }],
 });
-assert.equal(migratedBelt.belt[1].equipment.attack, 150, 'legacy equipment in belt slots must also migrate');
+assert.equal(migratedBelt.belt[1].equipment.attack, 388, 'inflated equipment in belt slots must also migrate');
 assert.equal(migratedBelt.belt.length, 2, 'migration must preserve belt shape instead of padding/truncating');
 const alreadyCurrentCustom = {
   balanceVersion: balance.EQUIPMENT_BALANCE_VERSION,

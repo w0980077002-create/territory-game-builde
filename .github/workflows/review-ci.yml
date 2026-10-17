@@ -34,6 +34,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm run test:balance
+      - run: node scripts/check-equipment-safety-v4.mjs
       - run: npm run test:professions
       - run: npm run test:feature-separation
       - run: npm run test:mobile-home
