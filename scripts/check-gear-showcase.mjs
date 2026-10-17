@@ -60,7 +60,7 @@ assert.match(component, /const miniHero = selection\?\.kind === 'bag' && !heroEx
 assert.match(component, /setHeroExpanded\(true\)/, 'The player must be able to expand hero');
 assert.match(component, /setHeroExpanded\(false\)/, 'The player must be able to minimize hero');
 assert.match(component, /getAppearanceIcon\(state\.appearance\)/,
-  'Compact hero must be the player's real selected appearance');
+  'Compact hero must follow the selected playable appearance');
 assert.match(component, /scrollIntoView\(\{ behavior: 'smooth', block: 'nearest' \}\)/,
   'Compare the tapped item without excessive scrolling');
 assert.match(css, /\.gear-mini-bar \{/, 'Collapsed hero strip style must be present');
