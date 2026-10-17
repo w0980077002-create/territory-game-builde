@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const ADMIN_LOGIN = "owner";
-const ADMIN_PASSWORD = "W2257700";
+const PASSWORD_ITERATIONS = 150_000;
 const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
 const MAX_FAILED_LOGINS = 8;
 
@@ -49,16 +49,47 @@ function safeEqual(a: string, b: string) {
   return r === 0;
 }
 
-async function issueToken() {
+
+function encodeHex(bytes: Uint8Array): string {
+ return Array.from(bytes).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function decodeHex(hex:string):Uint8Array{
+ if(!/^[0-9a-f]{32}$/.test(hex))throw new HttpError(503,'admin_not_configured');
+ const bytes=new Uint8Array(hex.length/2);
+ for(let i=0;i<bytes.length;i++)bytes[i]=parseInt(hex.slice(i*2,i*2+2),16);
+ return bytes;
+}
+async function hashPassword(password:string,salt:string):Promise<string> {
+ const key=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveBits']);
+ const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:decodeHex(salt),iterations:PASSWORD_ITERATIONS,hash:'SHA-256'},key,256);
+ return encodeHex(new Uint8Array(bits));
+}
+async function currentCredential():Promise<{salt:string;verifier:string;version:number}> {
+ const {data,error}=await db.rpc('territory_admin_credential_v2');
+ if(error||!data||typeof data!=='object'||!Number.isSafeInteger(data.version))
+  throw new HttpError(503,'admin_not_configured');
+ return data;
+}
+async function matchesPassword(password:string,record:{salt:string;verifier:string}):Promise<boolean> {
+ if(typeof password!=='string'||password.length<1||password.length>256)return false;
+ const digest=await hashPassword(password,record.salt);
+ return safeEqual(digest,record.verifier);
+}
+
+async function issueToken(version: number) {
   const exp = String(Date.now() + TOKEN_TTL_MS);
-  return { token: `${exp}.${await sign(exp)}`, expiresAt: Number(exp) };
+  return { token: `${exp}.${version}.${await sign(exp+":"+version)}`, expiresAt: Number(exp) };
 }
 
 async function verifyToken(token: unknown) {
   if (typeof token !== "string") return false;
-  const [exp, sig] = token.split(".");
-  if (!exp || !sig || Number(exp) < Date.now()) return false;
-  return safeEqual(sig, await sign(exp));
+  const [exp,version,signature,...extra] = token.split(".");
+  if(extra.length||!exp||!version||!signature||!/^\d{13}$/.test(exp)||
+    Number(exp)<Date.now()||Number(exp)>Date.now()+TOKEN_TTL_MS||
+    !/^\d{1,10}$/.test(version))return false;
+  const current=await currentCredential();
+  return Number(version)===current.version &&
+    safeEqual(signature,await sign(exp+":"+version));
 }
 
 async function audit(action: string, details: Record<string, unknown> = {}) {
@@ -218,6 +249,39 @@ async function handle(action: string, body: Row) {
       await audit(banned ? "ban" : "unban", { playerId: id });
       return { ok: true, banned };
     }
+    case "link_telegram": {
+      const id = playerId(body.playerId);
+      const tgId = Number(body.telegramId);
+      if (!Number.isSafeInteger(tgId) || tgId <= 0) throw new HttpError(400, "invalid_number");
+      const { data: target, error: tErr } = await db.from("players").select("id, telegram_id").eq("id", id).maybeSingle();
+      if (tErr) throw new HttpError(500, "db_error");
+      if (!target) throw new HttpError(404, "not_found");
+      if (target.telegram_id !== null && Number(target.telegram_id) !== tgId) throw new HttpError(409, "player_already_linked");
+
+      const tgEmail = `tg_${tgId}@territory.game`;
+      const { data: other, error: oErr } = await db.from("players").select("id").eq("telegram_id", tgId).neq("id", id).maybeSingle();
+      if (oErr) throw new HttpError(500, "db_error");
+      const { data: list, error: lErr } = await db.auth.admin.listUsers({ perPage: 1000 });
+      if (lErr) throw new HttpError(500, "auth_error");
+      const holder = list.users.find((u) => u.email === tgEmail && u.id !== id);
+      // The other account is detached, never deleted, so it can be restored if needed.
+      if (holder) {
+        const { error } = await db.auth.admin.updateUserById(holder.id, {
+          email: `detached_${tgId}_${Date.now()}@territory.game`, email_confirm: true,
+        });
+        if (error) throw new HttpError(500, "auth_error");
+      }
+      if (other) {
+        const { error } = await db.from("players").update({ telegram_id: null }).eq("id", other.id);
+        if (error) throw new HttpError(500, "db_error");
+      }
+      const { error: aErr } = await db.auth.admin.updateUserById(id, { email: tgEmail, email_confirm: true });
+      if (aErr) throw new HttpError(500, "auth_error");
+      const { error: pErr } = await db.from("players").update({ telegram_id: tgId }).eq("id", id);
+      if (pErr) throw new HttpError(500, "db_error");
+      await audit("link_telegram", { playerId: id, telegramId: tgId, detachedPlayerId: other?.id ?? null, detachedAuthId: holder?.id ?? null });
+      return { ok: true, telegramId: tgId, detachedPlayerId: other?.id ?? null };
+    }
     case "suspicious": {
       const { data, error } = await db.from("players").select(PLAYER_COLS).order("level", { ascending: false }).limit(1000);
       if (error) throw new HttpError(500, "db_error");
@@ -267,6 +331,100 @@ async function handle(action: string, body: Row) {
       await audit("mail", { target, recipients: ids.length, subject, payload });
       return { sent: ids.length };
     }
+
+    case "hall_stats": {
+      const [wallets, sessions, history] = await Promise.all([
+        db.schema('territory_private').from('hall_accounts_v1').select('player_id,tickets,points,played,wins,pending_gold,daily_gold'),
+        db.schema('territory_private').from('hall_sessions_v1').select('player_id', {count:'exact',head:true}),
+        db.schema('territory_private').from('hall_history_v1').select('game,won,earned_gold,played_at')
+          .order('played_at',{ascending:false}).limit(30),
+      ]);
+      // Rest access to private schema is disabled by default on Supabase.
+      // Use the public service-role-only projection instead of exposing it.
+      if(wallets.error||sessions.error||history.error) {
+        const {data,error}=await db.rpc('territory_hall_admin_overview_v2');
+        if(error)throw new HttpError(500,'db_error');
+        return data;
+      }
+      const a=wallets.data??[], h=history.data??[];
+      return {wallets:a.length, tickets:a.reduce((n,x)=>n+Number(x.tickets),0),
+        games:a.reduce((n,x)=>n+Number(x.played),0),
+        pendingGold:a.reduce((n,x)=>n+Number(x.pending_gold),0),
+        activeSessions:sessions.count??0, recent:h};
+    }
+    case "hall_player": {
+      const id=playerId(body.playerId);
+      const {data,error}=await db.rpc('territory_hall_admin_player_v2',{p_player:id});
+      if(error)throw new HttpError(500,'db_error');
+      return data;
+    }
+    case "hall_grant": {
+      const scope=String(body.scope??'');
+      if(scope!=='one'&&scope!=='active'&&scope!=='all')throw new HttpError(400,'invalid_target');
+      const player=scope==='one'?playerId(body.playerId):null;
+      const amount=intIn(body.amount,-250,250);
+      if(amount===0)throw new HttpError(400,'invalid_number');
+      const reason=text(body.reason,140);
+      if(reason.length<3)throw new HttpError(400,'invalid_reason');
+      const request=String(body.requestId??'');
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(request))
+        throw new HttpError(400,'invalid_request');
+      const {data,error}=await db.rpc('territory_hall_admin_adjust_v2',{
+        p_request:request,p_scope:scope,p_player:player,p_delta:amount,p_reason:reason,
+      });
+      if(error) {
+        if(error.message.includes('admin_player_missing'))throw new HttpError(404,'not_found');
+        if(error.message.includes('admin_request_conflict'))throw new HttpError(409,'invalid_request');
+        throw new HttpError(500,'db_error');
+      }
+      await audit('hall_grant',{scope,playerId:player,amount,reason,request,affected:data.affected,replayed:data.replayed});
+      return data;
+    }
+    case "audit_recent": {
+      const {data,error}=await db.from('admin_audit_log').select('id,action,details,created_at')
+        .order('created_at',{ascending:false}).limit(100);
+      if(error)throw new HttpError(500,'db_error');
+      return {rows:(data??[]).filter(x=>x.action!=='login_failed')};
+    }
+    case "pending_grants": {
+      const id=playerId(body.playerId);
+      const {data,error}=await db.from('admin_grants')
+        .select('id,kind,subject,payload,created_at')
+        .eq('player_id',id).is('claimed_at',null)
+        .order('created_at',{ascending:false}).limit(40);
+      if(error)throw new HttpError(500,'db_error');
+      return {rows:data??[]};
+    }
+    case "cancel_pending": {
+      const id=playerId(body.playerId);
+      const grantId=String(body.grantId??'');
+      if(!/^[0-9a-f-]{36}$/i.test(grantId))throw new HttpError(400,'invalid_request');
+      const {data,error}=await db.from('admin_grants').delete()
+        .eq('id',grantId).eq('player_id',id).is('claimed_at',null)
+        .select('id,kind,payload').maybeSingle();
+      if(error)throw new HttpError(500,'db_error');
+      if(!data)throw new HttpError(409,'grant_already_claimed');
+      await audit('cancel_pending',{playerId:id,grantId,kind:data.kind,payload:data.payload});
+      return {ok:true};
+    }
+    case "change_password": {
+      const oldPassword=String(body.oldPassword??'');
+      const nextPassword=String(body.newPassword??'');
+      if(nextPassword.length<14||nextPassword.length>128||
+       !/[A-Za-zА-Яа-я]/u.test(nextPassword)||!/[0-9]/.test(nextPassword))
+        throw new HttpError(400,'weak_password');
+      const current=await currentCredential();
+      if(!await matchesPassword(oldPassword,current))throw new HttpError(403,'invalid_credentials');
+      if(safeEqual(oldPassword,nextPassword))throw new HttpError(400,'weak_password');
+      const salt=encodeHex(crypto.getRandomValues(new Uint8Array(16)));
+      const verifier=await hashPassword(nextPassword,salt);
+      const {data,error}=await db.rpc('territory_admin_rotate_v2',{
+        p_salt:salt,p_verifier:verifier,p_expected_version:current.version,
+      });
+      if(error||!Number.isSafeInteger(data))throw new HttpError(409,'admin_auth_conflict');
+      await audit('password_changed',{version:data});
+      return {ok:true};
+    }
     case "donations": {
       const { data, error } = await db.from("donations")
         .select("id, player_id, red_gems, amount_usd, created_at, players(telegram_id, display_name)")
@@ -314,13 +472,15 @@ Deno.serve(async (req: Request) => {
       const { count } = await db.from("admin_audit_log").select("id", { count: "exact", head: true })
         .eq("action", "login_failed").gte("created_at", sinceIso(15 * 60 * 1000));
       if ((count ?? 0) >= MAX_FAILED_LOGINS) return json({ error: "too_many_attempts" }, 429);
-      const ok = safeEqual(String(body.username ?? ""), ADMIN_LOGIN) && safeEqual(String(body.password ?? ""), ADMIN_PASSWORD);
+      const credential=await currentCredential();
+      const ok = safeEqual(String(body.username ?? ""), ADMIN_LOGIN) &&
+        await matchesPassword(String(body.password ?? ""),credential);
       if (!ok) {
         await audit("login_failed");
         return json({ error: "invalid_credentials" }, 401);
       }
       await audit("login");
-      return json(await issueToken());
+      return json(await issueToken(credential.version));
     }
 
     if (!(await verifyToken(body.token))) return json({ error: "unauthorized" }, 401);
