@@ -205,3 +205,12 @@ CREATE TABLE clan_season_archive (
   created_at timestamp with time zone NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX clan_season_archive_pkey ON clan_season_archive USING btree (id);
+
+-- RLS (mirrors live DB; needed for the harness's member-visibility check)
+ALTER TABLE clan_members ENABLE ROW LEVEL SECURITY;
+CREATE FUNCTION clan_member_of(p_clan uuid, p_player uuid) RETURNS boolean
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path TO 'public' AS
+'SELECT EXISTS (SELECT 1 FROM clan_members WHERE clan_id = p_clan AND player_id = p_player);';
+CREATE POLICY members_select_roster ON clan_members FOR SELECT TO authenticated
+USING (player_id = auth.uid() OR clan_member_of(clan_id, auth.uid()));
+GRANT SELECT ON clan_members TO authenticated;

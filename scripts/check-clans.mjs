@@ -129,7 +129,10 @@ try {
 
   // ---------- RLS: non-member sees nothing ----------
   await as(C);
+  await q('BEGIN');
+  await q('SET LOCAL ROLE authenticated');
   const visible = await q('SELECT count(*)::int AS n FROM clan_members WHERE clan_id=$1', [clanId]);
+  await q('COMMIT');
   assert.equal(visible[0].n, 0, 'non-member sees no roster rows');
 
   console.log('clans anti-cheat: all checks passed');

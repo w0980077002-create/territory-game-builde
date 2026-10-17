@@ -354,25 +354,22 @@ v_name := regexp_replace(trim(coalesce(p_name, '')), '[[:space:]]+', ' ', 'g');
 v_tag := upper(regexp_replace(trim(coalesce(p_tag, '')), '[[:space:]]', '', 'g'));
 v_desc := left(regexp_replace(trim(coalesce(p_description, '')), E'[[:cntrl:]]', '', 'g'), 500);
 IF char_length(v_name) < 3 OR char_length(v_name) > 20
-OR v_name !~ '^[[:alpha:]][[:alnum:] ''-]*[[:alnum:]]
+OR v_name !~ '^[[:alpha:]][[:alnum:] ''-]*[[:alnum:]]$' THEN RAISE EXCEPTION 'clan_bad_name'; END IF;
 IF char_length(v_tag) < 2 OR char_length(v_tag) > 5 OR v_tag !~ '^[A-ZА-ЯЁ0-9]+$' THEN RAISE EXCEPTION 'clan_bad_tag'; END IF;
 IF p_join_mode NOT IN ('open','apply','closed') THEN RAISE EXCEPTION 'clan_bad_join_mode'; END IF;
 IF p_min_level IS NULL OR p_min_level < 1 OR p_min_level > 50 THEN RAISE EXCEPTION 'clan_bad_min_level'; END IF;
 IF p_emblem IS NULL OR p_emblem NOT BETWEEN 1 AND 12 THEN RAISE EXCEPTION 'clan_bad_emblem'; END IF;
 IF p_color1 !~ '^#[0-9a-fA-F]{6}$' OR p_color2 !~ '^#[0-9a-fA-F]{6}$' THEN RAISE EXCEPTION 'clan_bad_color'; END IF;
-
 UPDATE players SET
 game_state = jsonb_set(p.game_state, '{player,gold}', to_jsonb(p.gold - 100000)),
 gold = p.gold - 100000
 WHERE id = v_uid RETURNING * INTO p;
-
 INSERT INTO clans(name, tag, emblem, color1, color2, description, join_mode, min_level, leader_id, buildings)
 VALUES (v_name, v_tag, p_emblem, lower(p_color1), lower(p_color2), v_desc, p_join_mode, p_min_level, v_uid,
 jsonb_build_object('hall', jsonb_build_object('lvl',1), 'forge', jsonb_build_object('lvl',0),
 'library', jsonb_build_object('lvl',0), 'treasury', jsonb_build_object('lvl',0),
 'tower', jsonb_build_object('lvl',0), 'heroes', jsonb_build_object('lvl',0)))
 RETURNING id INTO v_clan;
-
 INSERT INTO clan_members(clan_id, player_id, role, display_name, level, power)
 VALUES (v_clan, v_uid, 'leader', coalesce(p.display_name, 'Hero'), p.level, p.attack + p.defense + p.level * 10);
 INSERT INTO clan_treasury_log(clan_id, player_id, kind, gold, note) VALUES (v_clan, v_uid, 'spend', -100000, 'create');
