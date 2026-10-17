@@ -51,6 +51,7 @@ jobs:
           npm run test:gear-showcase
           npm run test:companion-navigation
           npm run test:founders
+          npm run test:referral-activity
           node scripts/check-equipment-safety-v4.mjs
           npm run test:feature-separation
           npm run test:mobile-home

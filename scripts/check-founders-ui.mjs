@@ -16,7 +16,7 @@ assert.match(screen,/pending_claims/,'Reward claims require server status');
 assert.match(screen,/onClick=\{share\}/);
 assert.match(screen,/onClick=\{\(\) => void copy\(\)\}/);
 assert.match(screen,/first 10 active friends|первых 10 активных друзей/);
-assert.match(screen,/24 часа/);
+assert.match(screen,/10 учтённых побед/,'Referral qualifications should be level five and ten fights');
 assert.match(status,/status_v1/);
 assert.match(status,/^export function referralLink/m);
 assert.match(status,/\?startapp=ref_/,'Use Telegram miniapp deep link');
@@ -52,3 +52,19 @@ assert.match(app,/onHero=\{\(\) => setScreen\('hero'\)\}/,'Offer real hero profi
 assert.doesNotMatch(screen,/status\?\.registered/,'Do not paint dashes/zeros for missing server data');
 
 console.log('Founders UI PASS: signed invite, real bot link, 5 red shards, sealed chests, exact-once server payout, RU/EN.');
+
+const activitySql=readFileSync('supabase/migrations/20261017_referral_activity_level5_10wins_v2.sql','utf8');
+const fight=readFileSync('src/components/pve/PveFight.tsx','utf8');
+assert.match(screen,/referral-friend-list/,'Invitees with level/wins must show in Friends');
+assert.match(screen,/getReferralFriends/);
+assert.match(screen,/setShowAllFriends/,'Long lists must stay compact on mobile');
+assert.match(status,/territory_referral_friends_v2/,'Friend roster must use server-scoped RPC');
+assert.match(status,/territory_referral_fight_start_v2/,'Real game must record a server attempt');
+assert.match(status,/territory_referral_fight_finish_v2/,'Real game must close its server attempt');
+assert.match(fight,/beginReferralFight\(kind, enemy\.id\)/,'Ticket created when PvE fight starts');
+assert.match(fight,/finishReferralFight\(ticket, won, referralRounds\.current\)/,'Battle result tied to unique ticket');
+assert.match(activitySql,/credited_wins,0\)<10|coalesce\(v_wins,0\)<10/,'10 recorded wins required');
+assert.match(activitySql,/credited_xp|v_xp/,'Do not trust arbitrary client level alone');
+assert.match(activitySql,/coalesce\(v_level,0\)<5/,'Level five also required');
+assert.doesNotMatch(activitySql,/created_at<=clock_timestamp\(\)-interval '24 hours'/,'No day-long invite delay');
+assert.match(activitySql,/REVOKE ALL ON FUNCTION territory_private\.referral_try_qualify_v2/);
