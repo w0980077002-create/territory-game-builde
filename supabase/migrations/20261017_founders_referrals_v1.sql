@@ -69,7 +69,7 @@ GRANT EXECUTE ON FUNCTION public.territory_referral_attach_v1(uuid,text) TO serv
 CREATE OR REPLACE FUNCTION public.territory_referral_qualify_v1(
  p_invited uuid,p_telegram_id bigint,p_auth_date bigint)
 RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path='pg_catalog'
-AS $
+AS $$
 DECLARE v_updated int;
 BEGIN
  IF p_invited IS NULL OR p_telegram_id IS NULL OR p_auth_date IS NULL
@@ -91,7 +91,7 @@ BEGIN
  WHERE invited_id=p_invited AND qualified_at IS NOT NULL
  ON CONFLICT(invited_id) DO NOTHING;
  RETURN v_updated>0;
-END $;
+END $$;
 REVOKE ALL ON FUNCTION public.territory_referral_qualify_v1(uuid,bigint,bigint) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_referral_qualify_v1(uuid,bigint,bigint) TO service_role;
 
