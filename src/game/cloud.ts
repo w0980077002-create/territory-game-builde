@@ -214,6 +214,25 @@ export async function recycleCloudEquipment(
   return { state, remainingToday: data.remaining_today, awarded: data.awarded };
 }
 
+/** Server-only Game Hall payouts. Consume the exact cloud revision before
+ * reflecting earned gold in local state, so autosaves never mint hall rewards. */
+export async function claimHallGoldCloud(userId: string): Promise<{state:GameState;gold:number}> {
+ const expected=saveTokens.get(userId);
+ if(!validSaveToken(expected) || saveBlocked.has(userId))throw new Error('hall_reload_required');
+ const {data,error}=await supabase.rpc('territory_hall_claim_v1',{p_expected:expected});
+ if(error)throw new Error(error.message);
+ if(!data || data.success!==true || !validSaveToken(data.updated_at) ||
+  !Number.isSafeInteger(data.awarded) || data.awarded<1 ||
+  !validEconomySnapshot(data.game_state as GameState))throw new Error('hall_invalid_receipt');
+ const state=data.game_state as GameState;
+ const wallet=safeWalletVersion({gold:data.wallet_gold,gems:data.wallet_gems},state.player);
+ if(!walletMatchesVersion(wallet,state.player))throw new Error('hall_wallet_mismatch');
+ saveTokens.set(userId,data.updated_at);
+ walletVersions.set(userId,wallet);
+ saveBlocked.delete(userId);
+ return {state,gold:data.awarded};
+}
+
 /** Referral payouts are accepted only as server-verified, revisioned receipts.
  * All shards and sealed chests live in the private server ledger, not a user-editable save. */
 export async function claimReferralCloud(userId: string): Promise<{
