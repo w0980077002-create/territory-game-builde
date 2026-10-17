@@ -18,7 +18,7 @@ import { DailySheet, MailSheet, SettingsSheet, StonesSheet, type SaveStatus } fr
 import { LiveCityBackdrop, CITY_MOTION_KEY, initialCityMotion } from '@/components/home/LiveCityBackdrop';
 import { useLanguage, localizeText } from '@/game/i18n';
 
-export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction';
+export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends';
 
 interface Props {
   user: AuthUser;
@@ -177,7 +177,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
         <SideButton icon="/ic-events.webp" label={t('events')} soon onClick={() => soon(t('events'))} />
         <SideButton icon="/ic-daily.webp" label={t('rewards')} badge={!dailyStatus(state).claimedToday} onClick={() => setSheet('daily')} />
         <SideButton icon="/ic-quests.webp" label={t('quests')} onClick={() => onOpen('quests')} />
-        <SideButton icon="/ic-invite.webp" label={t('friends')} soon onClick={() => soon(t('friends'))} />
+        <SideButton icon="/ic-invite.webp" label={t('friends')} onClick={() => onOpen('friends')} />
         <SideButton icon="/ic-sea.webp" label={t('sea')} soon onClick={() => soon(t('sea'))} />
       </div>
       <div className="home-side-stack absolute z-10 right-1.5 top-[calc(max(8px,env(safe-area-inset-top))+90px)] bottom-[200px] w-[44px] flex flex-col gap-1">

@@ -18,6 +18,7 @@ import { GamesScreen } from '@/components/GamesScreen';
 import { MonopolyScreen } from '@/components/MonopolyScreen';
 import { ProfessionsScreen } from '@/components/ProfessionsScreen';
 import { AuctionScreen } from '@/components/AuctionScreen';
+import { FriendsScreen } from '@/components/FriendsScreen';
 import { MaintenanceScreen, BannedScreen } from '@/components/ServiceScreens';
 import { useLive, useLiveSync, fetchMaintenance } from '@/game/live';
 import { useStore } from '@/game/store';
@@ -26,7 +27,7 @@ import { ChevronLeft, Send, Wrench, Smartphone } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
-type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'monopoly' | 'professions' | 'auction';
+type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'monopoly' | 'professions' | 'auction' | 'friends';
 type Screen = Exclude<NavId, 'clan'> | SubScreen;
 
 const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
@@ -47,6 +48,7 @@ const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> =
   quests: { title: 'Задания', icon: '/ic-quests.webp' },
   professions: { title: 'Профессии и ремесло', icon: '/ic-professions.svg' },
   auction: { title: 'Аукцион и чат', icon: '/ic-auction.svg' },
+  friends: { title: 'Друзья', icon: '/ic-invite.webp' },
 };
 
 function Splash({ text }: { text: string }) {
@@ -236,7 +238,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             <ChevronLeft className="w-4 h-4" /> {translate('cityBack')}
           </button>
           <img src={sub.icon} alt="" className="w-7 h-7 object-contain" />
-          <h1 className="text-base font-bold text-white truncate">{translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction' } as Record<string, string>)[screen] ?? sub.title)}</h1>
+          <h1 className="text-base font-bold text-white truncate">{translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction', friends: 'friends' } as Record<string, string>)[screen] ?? sub.title)}</h1>
         </header>
       )}
 
@@ -282,6 +284,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'monopoly' && <MonopolyScreen onBack={() => setScreen('games')} />}
         {screen === 'professions' && <ProfessionsScreen />}
         {screen === 'auction' && <AuctionScreen />}
+        {screen === 'friends' && <FriendsScreen user={user} />}
       </main>
 
       <nav className="shrink-0 z-30 border-t border-amber-500/25 bg-gradient-to-b from-[#161b24] to-[#0a0d12] px-1 pt-1 pb-[max(4px,env(safe-area-inset-bottom))]">
