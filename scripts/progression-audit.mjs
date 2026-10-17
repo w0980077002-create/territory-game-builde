@@ -17,7 +17,7 @@ const balanceSource = readFileSync(new URL('../src/game/pveBalance.ts', import.m
 const transpiled = ts.transpileModule(balanceSource, {compilerOptions:{module:ts.ModuleKind.CommonJS, target:ts.ScriptTarget.ES2022}});
 const module={exports:{}};
 vm.runInNewContext(transpiled.outputText,{module,exports:module.exports,require});
-const { chapterEnemyMultipliers, trialEnemyMultipliers, eliteRoundDamageCap } = module.exports;
+const { chapterEnemyMultipliers, bossEnemyMultipliers, trialEnemyMultipliers, eliteRoundDamageCap } = module.exports;
 const enemyCount = (source.match(/const ENEMY_NAMES = \[([\s\S]*?)\];/)?.[1] ?? '').split('\n').filter((line) => line.includes('name:')).length;
 assert.equal(enemyCount,5);
 const xp = (level) => Math.floor(100 * Math.pow(1.15, level - 1));
@@ -25,14 +25,15 @@ const totalXp = (level) => Array.from({length:level-1}, (_,i)=>xp(i+1)).reduce((
 const stage = (c) => {
   const mult=chapterEnemyMultipliers(c), trialMult=trialEnemyMultipliers(c);
   const hp=75+c*25, atk=12+c*4;
-  const bossHp=Math.floor(hp*2.2*mult.hp), trialHp=Math.floor(hp*1.8*trialMult.hp);
+  const bossBonus=bossEnemyMultipliers(c);
+  const bossHp=Math.floor(hp*2.55*mult.hp*bossBonus.hp), trialHp=Math.floor(hp*1.8*trialMult.hp);
   return {
     chapterOrFloor:c,
     weakestEnemyHp:Math.floor(hp*.8*mult.hp),
     bossHp,
     trialHp,
     weakestEnemyAttack:Math.floor(atk*.8*mult.attack),
-    bossAttack:Math.floor(atk*1.15*mult.attack),
+    bossAttack:Math.floor(atk*1.30*mult.attack*bossBonus.attack),
     eliteBossRoundCap:eliteRoundDamageCap(`ch${c}_boss`,true,bossHp),
     trialRoundCap:eliteRoundDamageCap(`trial_${c}`,false,trialHp),
     xpFromFiveEnemies:5*(20+c*8),
@@ -43,4 +44,4 @@ const stage = (c) => {
 for (const level of [5,20,50,81]) console.log(`Level ${level}: cumulative XP ${totalXp(level).toLocaleString('en-US')}`);
 console.log('Base 25 purchased stones/day / 6 battles per chapter = 4 complete chapters/day, without daily/quest stones.');
 for (const c of [1,5,20,58,81,3000]) console.log(JSON.stringify(stage(c)));
-console.log('PvE audit PASS: new enemies/trials scaling from 4th chapter, XP & stone cost unchanged; not an anti-cheat audit.');
+console.log('PvE audit PASS: boss milestones, endless floors, XP & stone cost unchanged; not an anti-cheat audit.');

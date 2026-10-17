@@ -1,7 +1,7 @@
 import { EQUIPMENT_BALANCE_VERSION, prepareNewEquipment } from './equipmentBalance';
 import { initialFollowers } from './followers';
 import { weeklyQuestKey } from './weeklyQuests';
-import { chapterEnemyMultipliers, trialEnemyMultipliers } from './pveBalance';
+import { bossEnemyMultipliers, chapterEnemyMultipliers, trialEnemyMultipliers } from './pveBalance';
 import { createBossLootEquipment, SHOP_EQUIPMENT_ITEMS } from './equipmentCatalog';
 import type {
   GameState,
@@ -174,6 +174,7 @@ export function generateChapter(num: number): Chapter {
   const baseAtk = 12 + num * 4;
   const baseDef = 3 + num * 2;
   const difficulty = chapterEnemyMultipliers(num);
+  const bossDifficulty = bossEnemyMultipliers(num);
 
   const enemies: Enemy[] = ENEMY_NAMES.map((e, i) =>
     makeEnemy(
@@ -193,9 +194,9 @@ export function generateChapter(num: number): Chapter {
     `ch${num}_boss`,
     BOSS_NAMES[(num - 1) % BOSS_NAMES.length],
     BOSS_ARTS[(num - 1) % BOSS_ARTS.length],
-    Math.floor(baseHp * 2.2 * difficulty.hp),
-    Math.floor(baseAtk * 1.15 * difficulty.attack),
-    Math.floor(baseDef * 2 * difficulty.defense),
+    Math.floor(baseHp * 2.55 * difficulty.hp * bossDifficulty.hp),
+    Math.floor(baseAtk * 1.30 * difficulty.attack * bossDifficulty.attack),
+    Math.floor(baseDef * 2.15 * difficulty.defense * bossDifficulty.defense),
     true,
     50 + num * 15,
     80 + num * 20,
