@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { MonopolyAdventure } from './monopoly/MonopolyAdventure';
 import { ArrowLeft, Coins, Dice5, Dices, DoorOpen, Gift, Loader2, RefreshCw, ShieldCheck, Target, Ticket, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { hallStatus, hallStart, hallFinish, hallError, type HallGame, type HallSession, type HallState, type HallResult } from '@/game/gameHall';
@@ -81,7 +82,7 @@ function Question({session,onPick,busy,en}:{session:HallSession;onPick:(i:number
   {game==='dice'&&<p className="text-[11px] text-gray-400 text-center">{en?'If tied, choose the pair on the left.':'При равенстве выбирай крайнюю левую пару.'}</p>}
  </div>;
 }
-export function HallPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
+function HallOtherPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
  const {language}=useLanguage();const en=language==='en',Icon=icons[game];
  const [session,setSession]=useState<HallSession|null>(null);
  const [wallet,setWallet]=useState<HallState|null>(null);
@@ -159,4 +160,8 @@ export function HallPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
   {error&&<div className="rounded-xl border border-rose-500/40 bg-rose-950/30 p-3 text-sm text-rose-200" role="alert">{error}
    <button type="button" onClick={()=>void init()} className="ml-2 underline flex-inline items-center"><RefreshCw className="inline" size={14}/>{en?'Refresh':'Обновить'}</button></div>}
  </div>;
+}
+
+export function HallPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
+ return game==='monopoly'?<MonopolyAdventure onBack={onBack}/>:<HallOtherPlayScreen game={game} onBack={onBack}/>;
 }
