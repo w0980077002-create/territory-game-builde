@@ -172,6 +172,13 @@ BEGIN
  THEN RAISE EXCEPTION 'referral_nothing_to_claim'; END IF;
  v_valid:=least(greatest(10-v_cursor.claimed_friends,0),v_unpaid);
  v_gold:=v_valid*1500; v_gems:=v_valid*10;v_mats:=v_valid*2;
+ -- Founding milestones are credited exactly once, using the immutable cursor.
+ IF v_cursor.claimed_friends<3 AND v_cursor.claimed_friends+v_unpaid>=3 THEN
+   v_gold:=v_gold+2000;
+ END IF;
+ IF v_cursor.claimed_friends<5 AND v_cursor.claimed_friends+v_unpaid>=5 THEN
+   v_gold:=v_gold+3000; v_gems:=v_gems+10;
+ END IF;
  v_red:=greatest(0,v_total/5-v_cursor.red_paid);
  IF v_welcome THEN
   v_gold:=v_gold+600; v_stones:=3;
