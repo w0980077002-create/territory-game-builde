@@ -15,6 +15,7 @@ with sync_playwright() as p:
     page.route('https://**/*', lambda route: route.abort())
     page.goto(source.as_uri())
     page.locator('[data-cell-index="27"]').wait_for()
+    page.wait_for_function("document.querySelector('.mono-wallet b')?.textContent === '16'")
     page.wait_for_function('document.images.length > 0 && Array.from(document.images).every(i => i.complete && i.naturalWidth > 0)')
     page.wait_for_timeout(1200)
     assert page.locator('[data-cell-index]').count()==28
@@ -30,13 +31,13 @@ with sync_playwright() as p:
         page.get_by_role('dialog').wait_for()
         page.wait_for_timeout(300)
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-        page.screenshot(path=str(out/filename),full_page=True)
+        page.screenshot(path=str(out/filename),full_page=False)
         page.get_by_role('button',name='Закрыть',exact=True).click()
     page.get_by_role('button',name='Подарки',exact=True).click()
     page.get_by_role('button',name='ЗАБРАТЬ БЕСПЛАТНО',exact=True).click()
     page.get_by_role('heading',name='Сокровище твоё!',exact=True).wait_for()
     page.wait_for_timeout(1100)
-    page.screenshot(path=str(out/'06-reward-390.png'),full_page=True)
+    page.screenshot(path=str(out/'06-reward-390.png'),full_page=False)
     page.get_by_role('button',name='ПРОДОЛЖИТЬ',exact=True).click()
     for width,height in [(375,812),(320,740)]:
         page.set_viewport_size({'width':width,'height':height})

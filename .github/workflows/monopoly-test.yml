@@ -34,11 +34,16 @@ jobs:
           VITE_SUPABASE_URL: https://offline-monopoly-test.supabase.co
           VITE_SUPABASE_ANON_KEY: offline-build-only
   visual-review:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'review/monopoly-safe-test-20261017'
+    permissions:
+      contents: write
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: review/monopoly-safe-test-20261017
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -51,6 +56,17 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: node scripts/build-monopoly-visual-preview.mjs /tmp/monopoly-visual-review.html
       - run: python scripts/capture-monopoly-visuals.py /tmp/monopoly-visual-review.html /tmp/monopoly-screenshots
+      - name: Save screenshots only to the existing Monopoly review branch
+        run: |
+          mkdir -p docs/monopoly/screenshots
+          cp /tmp/monopoly-screenshots/*.png /tmp/monopoly-screenshots/verification.json docs/monopoly/screenshots/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/monopoly/screenshots
+          if ! git diff --cached --quiet; then
+            git commit -m "Record Chromium mobile screenshots for Monopoly review"
+            git push origin HEAD:refs/heads/review/monopoly-safe-test-20261017
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
