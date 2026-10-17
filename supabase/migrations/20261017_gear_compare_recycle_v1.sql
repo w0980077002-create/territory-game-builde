@@ -47,7 +47,6 @@ BEGIN
   IF v_item->>'type' IS DISTINCT FROM 'equipment'
      OR jsonb_typeof(v_eq) IS DISTINCT FROM 'object'
      OR v_item->>'qty' IS DISTINCT FROM '1'
-     OR v_eq->>'id' IS DISTINCT FROM p_item
   THEN RAISE EXCEPTION 'recycle_not_spare_equipment'; END IF;
 
   v_mat := CASE WHEN (v_row.game_state->>'forgeMaterials') ~ '^[0-9]{1,10}$'
