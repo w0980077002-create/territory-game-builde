@@ -200,6 +200,16 @@ Deno.serve(async (req: Request) => {
       return resp({ error: "session_identity_mismatch" }, 409);
     }
 
+    // Credit only a REAL second-day Telegram login with fresh HMAC-signed
+    // auth_date. Browser status calls and replayed old sessions cannot earn gifts.
+    const signedAuthDate = Number(new URLSearchParams(initData).get("auth_date"));
+    if (Number.isSafeInteger(signedAuthDate)) {
+      const {error: qualifiedError}=await adminClient.rpc("territory_referral_qualify_v1",{
+        p_invited:playerId,p_telegram_id:tgUser.id,p_auth_date:signedAuthDate,
+      });
+      if (qualifiedError) console.error("Referral qualification unavailable",qualifiedError.message);
+    }
+
     return resp({
       success: true,
       access_token: verifyData.session.access_token,
