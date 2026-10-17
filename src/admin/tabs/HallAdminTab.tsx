@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useState,type FormEvent} from 'react';
-import {Ticket,Users,Gift,RefreshCw,Search,Activity,Coins,ShieldCheck} from 'lucide-react';
+import {Ticket,Gift,RefreshCw,Activity,ShieldCheck} from 'lucide-react';
 import {adminCall,type PlayerSummary} from '@/admin/api';
 import {Panel,Loading,Empty,ErrorLine,fmt,fmtDate,inputCls,type Confirm} from '@/admin/ui';
 type Scope='one'|'active'|'all';

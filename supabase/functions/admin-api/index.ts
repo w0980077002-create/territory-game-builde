@@ -214,7 +214,8 @@ async function handle(action: string, body: Row) {
       const q = text(body.query, 64).replace(/^@/, "");
       if (!q) return { players: [] };
       let query = db.from("players").select(PLAYER_COLS).limit(20);
-      if (/^\d+$/.test(q)) query = query.eq("telegram_id", Number(q));
+      if (/^[0-9a-f-]{36}$/i.test(q)) query = query.eq("id", q);
+      else if (/^\d+$/.test(q)) query = query.eq("telegram_id", Number(q));
       else {
         const pattern = `%${q.replace(/[%_,()]/g, "")}%`;
         query = query.or(`username.ilike.${pattern},display_name.ilike.${pattern}`);

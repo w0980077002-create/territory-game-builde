@@ -10,6 +10,13 @@ const ERRORS: Record<string, string> = {
   empty_payload: 'Не указаны изменения',
   empty_mail: 'Заполните тему и текст письма',
   invalid_number: 'Некорректное число',
+  invalid_reason: 'Укажи причину выдачи',
+  invalid_request: 'Некорректный запрос. Обнови страницу',
+  invalid_target: 'Выбери получателя',
+  admin_not_configured: 'Защита админки не настроена. Обратись к владельцу',
+  admin_auth_conflict: 'Пароль уже был изменён. Войди заново',
+  weak_password: 'Новый пароль: минимум 14 символов, буквы и цифры',
+  grant_already_claimed: 'Награда уже получена или была отменена',
 };
 
 export class AdminError extends Error {
