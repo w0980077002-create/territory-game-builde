@@ -64,10 +64,16 @@ try {
   assert.equal((await q("SELECT public.territory_referral_fight_finish_v2($1,true,$2::jsonb) AS x",[started.ticket,rounds]))[0].x.credited,false);
   await q("UPDATE territory_private.referral_activity_v2 SET last_win_at=clock_timestamp()-interval '10 seconds' WHERE player_id=$1",[uid(2)]);
   if(n===8){
-   await q("UPDATE public.players SET game_state=jsonb_set(game_state,'{player,level}','5'::jsonb) WHERE id=$1",[uid(2)]);
-   assert.equal((await q('SELECT qualified_at FROM territory_private.referral_invites_v1 WHERE invited_id=$1',[uid(2)]))[0].qualified_at,null);
+   assert.equal((await q('SELECT qualified_at FROM territory_private.referral_invites_v1 WHERE invited_id=$1',[uid(2)]))[0].qualified_at,null,
+     'Nine battles are not enough even if the player levels quickly');
   }
  }
+ // Ten recorded wins without a saved level-5 character must NOT create loot.
+ await as(uid(1));
+ assert.equal((await rpc('territory_referral_status_v1')).qualified,0,'Cannot trust battles alone');
+ await as(uid(2));
+ await q("UPDATE public.players SET game_state=jsonb_set(game_state,'{player,level}','5'::jsonb) WHERE id=$1",[uid(2)]);
+ await rpc('territory_referral_status_v1'); // Qualification after delayed cloud save.
  await as(uid(1));
  const state=await rpc('territory_referral_status_v1');
  assert.equal(state.qualified,1,'Ten wins and level five qualify on day one');
