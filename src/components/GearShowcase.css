@@ -4,7 +4,7 @@
   --gear-purple: #8b5cf6;
   width: 100%;
   min-width: 0;
-  padding-bottom: 14px;
+  padding-bottom: 8px;
   color: #fff;
 }
 
@@ -43,8 +43,8 @@
   z-index: -1;
 }
 .gear-stage-heading {
-  height: 49px;
-  padding: 5px 11px;
+  height: 40px;
+  padding: 3px 11px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -78,7 +78,7 @@
 }
 .gear-stage-ring {
   position: relative;
-  height: clamp(228px, 61vw, 272px);
+  height: clamp(208px, 55vw, 250px);
   max-width: 420px;
   margin: 0 auto;
 }
@@ -98,11 +98,11 @@
 }
 .gear-hero-wrap {
   position: absolute;
-  bottom: 1%;
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   width: 58%;
-  height: 80%;
+  height: 82%;
   z-index: 1;
   display: flex;
   align-items: end;
@@ -122,7 +122,7 @@
   position: absolute;
   z-index: 0;
   width: 92%;
-  height: 22px;
+  height: 16px;
   border-radius: 50%;
   bottom: -4px;
   border: 3px solid #9c83bc;
@@ -132,13 +132,13 @@
 .gear-equipped-slot {
   position: absolute;
   z-index: 3;
-  width: clamp(60px, 17.5vw, 75px);
-  min-height: 70px;
+  width: clamp(56px, 15vw, 68px);
+  min-height: 62px;
   display: flex;
   align-items: center;
   flex-direction: column;
-  gap: 1px;
-  padding: 2px;
+  gap: 0;
+  padding: 1px;
   border: none;
   color: #f9eaf9;
   background: transparent;
@@ -151,8 +151,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(44px, 12vw, 55px);
-  height: clamp(44px, 12vw, 55px);
+  width: clamp(42px, 11vw, 50px);
+  height: clamp(42px, 11vw, 50px);
   border: 2px solid #534567;
   border-radius: 12px;
   background: linear-gradient(155deg, #5c3979, #2e223f 60%, #151528);
@@ -177,13 +177,13 @@
   box-shadow: 0 0 5px #fff7;
 }
 .gear-slot-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   line-height: 1;
   text-shadow: 1px 2px 3px #000, -1px -1px 2px #000;
 }
 .gear-slot-level {
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1.1;
   font-weight: 900;
   color: #fff1bc;
@@ -191,15 +191,15 @@
 }
 .gear-slot-helmet { left: 50%; top: 0; transform: translateX(-50%); }
 .gear-slot-helmet:active { transform: translateX(-50%) scale(.96); }
-.gear-slot-weapon { left: 16%; top: 7%; }
-.gear-slot-amulet { right: 16%; top: 7%; }
-.gear-slot-shield { left: 1%; top: 36%; }
-.gear-slot-armor { right: 1%; top: 36%; }
-.gear-slot-boots { left: 11%; bottom: 3%; }
-.gear-slot-ring { right: 11%; bottom: 3%; }
+.gear-slot-weapon { left: 16%; top: 6%; }
+.gear-slot-amulet { right: 16%; top: 6%; }
+.gear-slot-shield { left: 1%; top: 31%; }
+.gear-slot-armor { right: 1%; top: 31%; }
+.gear-slot-boots { left: 11%; bottom: 1%; }
+.gear-slot-ring { right: 11%; bottom: 1%; }
 .gear-stage-footer {
-  padding: 5px 13px 7px;
-  font-size: 11px;
+  padding: 3px 11px 4px;
+  font-size: 10px;
   font-weight: 900;
   display: flex;
   justify-content: space-between;
@@ -215,19 +215,19 @@
   border-top: none;
   border-radius: 0 0 15px 15px;
   background: linear-gradient(180deg, #30203f, #171426);
-  padding: 10px 8px 9px;
+  padding: 8px 7px 7px;
   box-shadow: inset 0 1px 1px #f6d9ff2e, 0 7px 13px #0006;
 }
 .gear-two-cards { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; }
 .gear-compare-side {
   position: relative;
   min-width: 0;
-  min-height: 156px;
+  min-height: 136px;
   border: 1px solid #756187;
   border-radius: 10px;
   background: linear-gradient(140deg, #352840, #151725 85%);
   box-shadow: inset 0 1px 0 #fff2;
-  padding: 14px 7px 8px;
+  padding: 12px 6px 6px;
 }
 .gear-compare-target { border-color: #9863c9; background: linear-gradient(140deg, #43205a, #1b1630 85%); }
 .gear-compare-banner {
@@ -253,14 +253,14 @@
   background: linear-gradient(#783eb0, #482261);
   border-color: #b185eb;
 }
-.gear-compare-item { display: flex; gap: 6px; align-items: center; min-height: 55px; }
+.gear-compare-item { display: flex; gap: 5px; align-items: center; min-height: 48px; }
 .gear-compare-art {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  height: 52px;
-  width: 52px;
+  height: 46px;
+  width: 46px;
   border-radius: 10px;
   border: 1px solid #8f74a4;
   background: #0c0919bb;
@@ -278,13 +278,13 @@
 }
 .gear-compare-rarity, .gear-compare-level { font-size: 10px; line-height: 1.25; }
 .gear-compare-level { color: #bfb0c8; font-weight: 800; }
-.gear-simple-stats { margin-top: 4px; border-top: 1px solid #ffffff20; padding-top: 4px; }
+.gear-simple-stats { margin-top: 2px; border-top: 1px solid #ffffff20; padding-top: 3px; }
 .gear-simple-stats > div {
   display: flex;
   justify-content: space-between;
   gap: 3px;
   font-size: 10px;
-  line-height: 1.48;
+  line-height: 1.35;
   border-bottom: 1px solid #ffffff0a;
 }
 .gear-simple-stats span { color: #b6aac5; }
@@ -298,7 +298,7 @@
 .gear-empty-compare { min-height: 125px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; font-size: 12px; color: #aaa0b8; }
 
 .gear-diff-block {
-  margin-top: 9px;
+  margin-top: 6px;
   padding: 8px;
   border-radius: 9px;
   background: #090c1ba8;
@@ -320,13 +320,13 @@
 .gear-stat-delta { font-size: 10px; min-width: 36px; text-align: right; opacity: .9; }
 .gear-positive { color: #70ed9b; }
 .gear-negative { color: #ff777e; }
-.gear-weight-hint { margin-top: 6px; font-size: 10px; color: #b4a8c5; line-height: 1.35; }
+.gear-weight-hint { margin-top: 3px; font-size: 10px; color: #b4a8c5; line-height: 1.25; }
 .gear-compact-hint { padding: 0 3px; }
-.gear-compare-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.gear-compare-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
 .gear-compare-actions button {
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;
-  flex: 1 0 auto; border-radius: 9px; min-height: 37px;
-  padding: 5px 8px; font-size: 11px; font-weight: 900;
+  flex: 1 0 auto; border-radius: 9px; min-height: 36px;
+  padding: 4px 7px; font-size: 11px; font-weight: 900;
   border: 1px solid; box-shadow: inset 0 1px 0 #fff4, 0 3px 5px #0007;
 }
 .gear-compare-actions button:disabled { opacity: .45; }
@@ -367,15 +367,15 @@
 .gear-recycle-error button { font-weight: 900; white-space: nowrap; border-radius: 6px; background: #974455; padding: 6px; }
 
 .gear-bag {
-  margin-top: 8px;
-  padding: 10px 7px 12px;
+  margin-top: 4px;
+  padding: 7px 7px 9px;
   border: 2px solid #b78d58;
   border-radius: 12px;
   background: linear-gradient(180deg, #f5dcaf 0%, #dfb989 100%);
   color: #423021;
   box-shadow: inset 0 1px #fff5, inset 0 -2px #83563777, 0 8px 15px #0005;
 }
-.gear-bag-toolbar { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.gear-bag-toolbar { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
 .gear-bag-salvage {
   flex: 0 0 auto;
   min-height: 36px;
@@ -400,9 +400,9 @@
 .gear-bag-sort select { color: #5e3c23; outline: none; border: none; appearance: none; background: transparent; font-weight: 900; font-size: 11px; padding: 3px 19px 2px 3px; max-width: 120px; }
 .gear-bag-sort svg { position: absolute; right: 5px; bottom: 9px; pointer-events: none; }
 
-.gear-filter-strip { display: flex; overflow-x: auto; scrollbar-width: none; gap: 5px; padding: 1px 0 9px; overscroll-behavior-x: contain; }
+.gear-filter-strip { display: flex; overflow-x: auto; scrollbar-width: none; gap: 5px; padding: 1px 0 6px; overscroll-behavior-x: contain; }
 .gear-filter-strip::-webkit-scrollbar { display:none; }
-.gear-filter-chip { flex: 0 0 auto; white-space: nowrap; font-size: 11px; font-weight: 900; border: 1px solid #ba9067; border-radius: 7px; padding: 7px 10px; background: linear-gradient(#e4c19a,#d1a477); color: #644424; box-shadow: 0 2px 2px #76512b3a; }
+.gear-filter-chip { flex: 0 0 auto; white-space: nowrap; font-size: 11px; font-weight: 900; border: 1px solid #ba9067; border-radius: 7px; padding: 6px 9px; background: linear-gradient(#e4c19a,#d1a477); color: #644424; box-shadow: 0 2px 2px #76512b3a; }
 .gear-filter-on { color: #592e0f; background: linear-gradient(#ffe58b,#ffb73f); border-color: #bd7724; box-shadow: inset 0 1px #fffad4, 0 0 0 1px #edb34b; }
 
 .gear-bag-grid {
@@ -455,9 +455,9 @@
 
 @media (max-width: 370px) {
   .gear-showcase { padding-bottom: 5px; }
-  .gear-stage-ring { height: 226px; }
-  .gear-equipped-slot { width: 60px; }
-  .gear-slot-icon { width: 44px; height: 44px; }
+  .gear-stage-ring { height: 208px; }
+  .gear-equipped-slot { width: 56px; }
+  .gear-slot-icon { width: 42px; height: 42px; }
   .gear-slot-weapon, .gear-slot-amulet { top: 9%; }
   .gear-slot-weapon { left: 14%; }
   .gear-slot-amulet { right: 14%; }
@@ -473,4 +473,48 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .gear-equipped-slot,.gear-bag-tile { transition: none; }
+}
+
+/* Only while a bag item is selected: preserve a miniature of the player's REAL
+   hero above the comparison, instead of forcing a second full-height stage.
+   Expanding is always possible, and never changes equipment or save state. */
+.gear-stage-minimized { border-radius: 12px 12px 0 0; }
+.gear-mini-bar {
+  min-height: 63px;
+  padding: 4px 9px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: radial-gradient(ellipse at 35% 50%, #8554bb66, transparent 65%), #261835;
+}
+.gear-mini-bar > img {
+  display: block;
+  width: 48px;
+  height: 53px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px #000) drop-shadow(0 0 6px #a276e580);
+}
+.gear-mini-identity { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.gear-mini-identity strong { font-size: 12px; color: #ffe4b0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.gear-mini-identity span { font-size: 10px; color: #cdbbdd; }
+.gear-mini-expand, .gear-stage-collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 1px solid #d5ac7e75;
+  border-radius: 9px;
+  background: #553a56b8;
+  color: #ffdbac;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 7px;
+  flex: 0 0 auto;
+}
+.gear-stage-collapse { margin: -4px -8px -5px 0; border-color: #cba6d444; padding: 5px 7px; }
+.gear-compare-panel { scroll-margin-top: 72px; }
+@media (max-width: 370px) {
+  .gear-stage-ring { height: 208px; }
+  .gear-slot-weapon, .gear-slot-amulet { top: 7%; }
+  .gear-mini-bar { min-height: 61px; }
 }
