@@ -214,6 +214,36 @@ export async function recycleCloudEquipment(
   return { state, remainingToday: data.remaining_today, awarded: data.awarded };
 }
 
+/** Referral payouts are accepted only as server-verified, revisioned receipts.
+ * All shards and sealed chests live in the private server ledger, not a user-editable save. */
+export async function claimReferralCloud(userId: string): Promise<{
+  state: GameState;
+  receipt: {
+    gold:number; gems:number; stones:number; materials:number;
+    red_gems:number; welcome_elixirs:number; friends_claimed:number;
+  };
+}> {
+ const expected=saveTokens.get(userId);
+ if(!validSaveToken(expected) || saveBlocked.has(userId))throw new Error('referral_reload_required');
+ const {data,error}=await supabase.rpc('territory_referral_claim_v1',{p_expected:expected});
+ if(error) throw new Error(error.message);
+ if(!data || typeof data!=='object' || data.success!==true || !validSaveToken(data.updated_at)
+   || !validEconomySnapshot(data.game_state as GameState)) throw new Error('referral_invalid_receipt');
+ const keys=['gold','gems','stones','materials','red_gems','welcome_elixirs','friends_claimed'] as const;
+ for(const key of keys) {
+   if(!Number.isSafeInteger(data[key]) || data[key]<0)throw new Error('referral_invalid_award');
+ }
+ const wallet=safeWalletVersion({gold:data.wallet_gold,gems:data.wallet_gems},(data.game_state as GameState).player);
+ if(!walletMatchesVersion(wallet,(data.game_state as GameState).player))throw new Error('referral_wallet_mismatch');
+ saveTokens.set(userId,data.updated_at);
+ walletVersions.set(userId,wallet);
+ saveBlocked.delete(userId);
+ return {state:data.game_state as GameState,receipt:{
+  gold:data.gold,gems:data.gems,stones:data.stones,materials:data.materials,
+  red_gems:data.red_gems,welcome_elixirs:data.welcome_elixirs,friends_claimed:data.friends_claimed
+ }};
+}
+
 export interface LeaderRow {
   player_id: string;
   display_name: string;
