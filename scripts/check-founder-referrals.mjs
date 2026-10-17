@@ -70,13 +70,13 @@ try {
  assert.equal(ready.red_fragments,0);assert.equal(ready.red_pending,1);assert.equal(ready.red_earned_tenths,10);
  const initial=await by(inviter);
  const receipt=await claim(initial.updated_at);
- assert.equal(receipt.gold,7500);
- assert.equal(receipt.gems,50);
+ assert.equal(receipt.gold,12500);
+ assert.equal(receipt.gems,60);
  assert.equal(receipt.stones,5);
  assert.equal(receipt.materials,10);
  assert.equal(receipt.red_gems,1,'five fifths make exactly one integer red gem');
  const after=await by(inviter);
- assert.equal(after.gold,7600);assert.equal(after.gems,60);
+ assert.equal(after.gold,12600);assert.equal(after.gems,70);
  assert.equal(after.game_state.player.redGems,1);assert.equal(after.game_state.forgeMaterials,10);
  assert.equal(after.game_state.battleStones,15);
  assert.equal((await status()).sealed_chests,5);
