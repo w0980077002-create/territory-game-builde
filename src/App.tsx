@@ -279,7 +279,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'forge' && <ForgeScreen />}
         {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} />}
         {screen === 'leaderboard' && <LeaderboardScreen user={user} />}
-        {screen === 'quests' && <QuestsScreen />}
+        {screen === 'quests' && <QuestsScreen userId={user.id} />}
         {screen === 'games' && (
           <GamesScreen userId={user.id} onPlay={(gameId) => { setHallGame(gameId); setScreen('hall-play'); }} />
         )}

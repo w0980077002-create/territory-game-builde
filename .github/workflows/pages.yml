@@ -45,6 +45,7 @@ jobs:
           npm run test:economy
           npm run test:professions
           npm run test:balance
+          node scripts/check-social-quests.mjs
           npm run test:pve
           npm run test:inventory-cleanup
           npm run test:gear-recycle

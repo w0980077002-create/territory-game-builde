@@ -4,6 +4,7 @@ import { CheckCircle2, Lock } from 'lucide-react';
 import type { Achievement, Quest } from '@/game/types';
 import { Currency } from './ui/Currency';
 import { useLanguage } from '@/game/i18n';
+import { SocialQuestsSection } from './SocialQuestsSection';
 
 const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
   { type: 'daily', titleKey: 'daily', hintKey: 'dailyHint' },
@@ -11,7 +12,7 @@ const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
   { type: 'story', titleKey: 'story', hintKey: 'storyHint' },
 ];
 
-export function QuestsScreen() {
+export function QuestsScreen({ userId }: { userId: string }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const ready = state.quests.filter((q) => !q.claimed && q.current >= q.target).length;
@@ -28,6 +29,8 @@ export function QuestsScreen() {
           </div>
         </div>
       </div>
+
+      <SocialQuestsSection userId={userId} />
 
       {SECTIONS.map((sec) => {
         const list = state.quests.filter((q) => q.type === sec.type);
