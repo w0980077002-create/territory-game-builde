@@ -284,7 +284,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'monopoly' && <MonopolyScreen onBack={() => setScreen('games')} />}
         {screen === 'professions' && <ProfessionsScreen />}
         {screen === 'auction' && <AuctionScreen />}
-        {screen === 'friends' && <FriendsScreen user={user} />}
+        {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} />}
       </main>
 
       <nav className="shrink-0 z-30 border-t border-amber-500/25 bg-gradient-to-b from-[#161b24] to-[#0a0d12] px-1 pt-1 pb-[max(4px,env(safe-area-inset-bottom))]">
