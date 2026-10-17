@@ -45,7 +45,7 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
   const close = () => { setSelected(null); setBeltNote(null); };
 
   return (
-    <div className="space-y-3 animate-fade-in pb-3">
+    <div className="space-y-2 animate-fade-in pb-2">
       <div className="grid grid-cols-2 gap-2 rounded-xl border border-violet-500/30 bg-[#170f25] p-1.5">
         <button type="button" aria-pressed={tab === 'equipment'}
           className={'rounded-lg py-2 text-xs font-bold transition-all ' + (tab === 'equipment'

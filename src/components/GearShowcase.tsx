@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useStore } from '@/game/store';
 import { useGame, equipItem, unequipItem } from '@/game/actions';
 import { useLanguage, localizeText } from '@/game/i18n';
@@ -10,7 +10,7 @@ import { GEAR_STATS, gearScore, canSalvageEquipment } from '@/game/gearTools';
 import { recycleCloudEquipment, saveCloudSave } from '@/game/cloud';
 import { ItemArt } from './ui/ItemArt';
 import type { Equipment, InventoryItem } from '@/game/types';
-import { Check, ChevronDown, Hammer, Info, Recycle, RotateCcw, ShieldCheck, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Hammer, Info, Recycle, RotateCcw, ShieldCheck, Trash2, X } from 'lucide-react';
 import './GearShowcase.css';
 
 type Slot = Equipment['slot'];
@@ -64,7 +64,7 @@ function GearPortrait({ equipped, candidate, label, language, isCandidate }: {
         <>
           <div className="gear-compare-item">
             <span className="gear-compare-art" style={{ borderColor: rarityColor(eq.rarity) }}>
-              <ItemArt item={eqToItem(eq)} size={47} />
+              <ItemArt item={eqToItem(eq)} size={42} />
             </span>
             <div className="gear-compare-name-wrap">
               <p className="gear-compare-name">{localizeText(eq.name, language)}</p>
@@ -114,6 +114,17 @@ export function GearShowcase({ userId }: { userId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [mustReload, setMustReload] = useState(false);
   const [remainingToday, setRemainingToday] = useState<number | null>(null);
+  const [heroExpanded, setHeroExpanded] = useState(false);
+  const compareRef = useRef<HTMLElement | null>(null);
+
+  // A spare item should reveal its comparison immediately without a large scroll.
+  useEffect(() => {
+    if (selection?.kind !== 'bag') return;
+    const frame = window.requestAnimationFrame(() => {
+      compareRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [selection]);
 
   const equipment = state.inventory.filter((item) => item.type === 'equipment' && !!item.equipment);
   const displayed = equipment.filter((item) => filter === 'all' || item.equipment?.slot === filter);
@@ -124,7 +135,8 @@ export function GearShowcase({ userId }: { userId: string }) {
   });
   const chosen = selection?.kind === 'bag' ? equipment.find((item) => item.id === selection.id) : undefined;
   const chosenVisible = chosen && (filter === 'all' || chosen.equipment?.slot === filter);
-  const selectedItem = chosenVisible ? chosen : selection?.kind === 'worn' ? undefined : displayed[0];
+  // Do not auto-select the first item: keep the bag visible when opening the tab.
+  const selectedItem = chosenVisible ? chosen : undefined;
   const selectedWornSlot: Slot | undefined = selection?.kind === 'worn' ? selection.slot : undefined;
   const worn = selectedWornSlot ? state.player.equipped[selectedWornSlot] : selectedItem?.equipment
     ? state.player.equipped[selectedItem.equipment.slot] : undefined;
@@ -132,15 +144,16 @@ export function GearShowcase({ userId }: { userId: string }) {
   const canSalvage = !!bag && canSalvageEquipment(bag);
   const candidate = bag?.equipment;
   const isComparing = !!candidate;
+  const miniHero = selection?.kind === 'bag' && !heroExpanded;
   const slotLabel = (slot: Slot) => slotNames[slot][language];
 
   const chooseBag = (id: string) => {
     if (busy) return;
-    setSelection({ kind: 'bag', id }); setConfirm(null); setError(null);
+    setSelection({ kind: 'bag', id }); setHeroExpanded(false); setConfirm(null); setError(null);
   };
   const chooseSlot = (slot: Slot) => {
     if (busy) return;
-    setSelection({ kind: 'worn', slot }); setConfirm(null); setError(null);
+    setSelection({ kind: 'worn', slot }); setHeroExpanded(true); setConfirm(null); setError(null);
   };
 
   const equip = () => {
@@ -196,7 +209,21 @@ export function GearShowcase({ userId }: { userId: string }) {
 
   return (
     <div className="gear-showcase">
-      <div className="gear-stage">
+      <div className={'gear-stage' + (miniHero ? ' gear-stage-minimized' : '')}>
+        {miniHero ? (
+          <div className="gear-mini-bar">
+            <img src={getAppearanceIcon(state.appearance)}
+              alt={language === 'en' ? 'Your hero' : 'Твой герой'} draggable={false}/>
+            <div className="gear-mini-identity">
+              <strong>{state.player.name}</strong>
+              <span>{language === 'en' ? 'Level ' : 'Уровень '}{state.player.level}</span>
+            </div>
+            <button type="button" onClick={() => setHeroExpanded(true)} aria-expanded={false}
+              className="gear-mini-expand">
+              {language === 'en' ? 'Show hero' : 'Показать героя'} <ChevronDown size={16}/>
+            </button>
+          </div>
+        ) : (<>
         <div className="gear-stage-heading">
           <span className="gear-stage-crest">◆</span>
           <div><strong>TERRITORY</strong><span>{language === 'en' ? 'Hero equipment' : 'Снаряжение героя'}</span></div>
@@ -230,10 +257,17 @@ export function GearShowcase({ userId }: { userId: string }) {
         <div className="gear-stage-footer">
           <span>{state.player.name}</span>
           <span>{language === 'en' ? 'Level ' : 'Уровень '}{state.player.level}</span>
+          {selection?.kind === 'bag' && (
+            <button type="button" className="gear-stage-collapse" aria-expanded={true}
+              onClick={() => setHeroExpanded(false)}>
+              {language === 'en' ? 'Compact' : 'Свернуть'} <ChevronUp size={13}/>
+            </button>
+          )}
         </div>
+        </>)}
       </div>
 
-      <section className="gear-compare-panel" aria-live="polite">
+      {selection && <section ref={compareRef} className="gear-compare-panel" aria-live="polite">
         {isComparing ? (
           <>
             <div className="gear-two-cards">
@@ -316,7 +350,7 @@ export function GearShowcase({ userId }: { userId: string }) {
             {language === 'en' ? 'Reload' : 'Перезапустить'}
           </button>}
         </div>}
-      </section>
+      </section>}
 
       <section className="gear-bag" aria-label={language === 'en' ? 'Equipment inventory' : 'Инвентарь экипировки'}>
         <div className="gear-bag-toolbar">

@@ -47,4 +47,23 @@ assert.match(css, /@media \(prefers-reduced-motion: reduce\)/, 'Accessibility re
 console.log('Hero gear showcase: 7 slots, selected hero, real compare, filter, sorting, mobile UI, belt and atomic recycle integration PASS');
 
 assert.doesNotMatch(component, /gear-diff-block/, 'Do not duplicate the stat rows below comparison cards');
-assert.match(css, /clamp\(228px, 61vw, 272px\)/, 'Mobile gear scene should leave room for the bag');
+assert.match(css, /clamp\(208px, 55vw, 250px\)/, 'Mobile gear scene should leave room for the bag');
+
+assert.match(component, /const selectedItem = chosenVisible \? chosen : undefined;/,
+  'Opening equipment must not preselect the first item or hide the inventory behind comparison');
+assert.doesNotMatch(component, /displayed\[0\]/,
+  'Never silently compare the first item from the bag');
+assert.match(component, /\{selection && <section ref=\{compareRef\}/,
+  'Comparison pane should appear only when a player selects gear');
+assert.match(component, /const miniHero = selection\?\.kind === 'bag' && !heroExpanded;/,
+  'Selecting spare gear should compact the full hero stage');
+assert.match(component, /setHeroExpanded\(true\)/, 'The player must be able to expand hero');
+assert.match(component, /setHeroExpanded\(false\)/, 'The player must be able to minimize hero');
+assert.match(component, /getAppearanceIcon\(state\.appearance\)/,
+  'Compact hero must follow the selected playable appearance');
+assert.match(component, /scrollIntoView\(\{ behavior: 'smooth', block: 'nearest' \}\)/,
+  'Compare the tapped item without excessive scrolling');
+assert.match(css, /\.gear-mini-bar \{/, 'Collapsed hero strip style must be present');
+assert.match(css, /\.gear-compare-panel \{ scroll-margin-top: 72px; \}/,
+  'Preserve context around comparison when scrolling');
+assert.match(inventory, /space-y-2 animate-fade-in pb-2/, 'Shorten tabs-to-stage spacing');
