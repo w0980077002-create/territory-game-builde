@@ -20,6 +20,7 @@ import { BeltCells } from '@/components/ui/BeltCells';
 import { Currency } from '@/components/ui/Currency';
 import { ItemArt } from '@/components/ui/ItemArt';
 import { useLanguage, localizeText } from '@/game/i18n';
+import { beginReferralFight, finishReferralFight, type ReferralRound } from '@/game/referrals';
 
 export type FightKind = 'stage' | 'trial';
 
@@ -100,6 +101,10 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
   const keyRef = useRef(0);
   const heroRef = useRef(hero);
   const foeRef = useRef(foe);
+  // Only a newly invited Telegram account receives server-recorded battle receipts.
+  const referralRounds = useRef<ReferralRound[]>([]);
+  const referralStart = useRef<Promise<string | null> | null>(null);
+  const referralFinish = useRef<Promise<unknown>>(Promise.resolve());
   heroRef.current = hero;
   foeRef.current = foe;
 
@@ -107,13 +112,20 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
   const setSettings = (patch: Partial<typeof state.settings>) =>
     useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
 
-  useEffect(() => () => { alive.current = false; }, []);
+  useEffect(() => {
+    referralStart.current = beginReferralFight(kind, enemy.id);
+    return () => { alive.current = false; };
+  }, [kind, enemy.id]);
 
   const pushLog = (line: string) => setLog((l) => [line, ...l].slice(0, 30));
 
   const finish = useCallback((won: boolean) => {
     if (done.current) return;
     done.current = true;
+    referralFinish.current = (referralStart.current ?? Promise.resolve(null))
+      .then(ticket => ticket
+        ? finishReferralFight(ticket, won, referralRounds.current).catch(() => false)
+        : false);
     if (!won) {
       setOutcome({ won: false, gold: 0, xp: 0, gems: 0 });
       return;
@@ -133,6 +145,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
     if (busy || outcome) return;
     setBusy(true);
+    referralRounds.current.push({ attack: atk, blocks: [...blk] });
     hapticImpact('light');
     const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus);
     const pace = 1 / useGame.get().settings.speed;
@@ -332,7 +345,8 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
           </div>
         )}
 
-        {outcome && <OutcomePanel outcome={outcome} kind={kind} onExit={onExit} onNext={onNext} />}
+        {outcome && <OutcomePanel outcome={outcome} kind={kind} onExit={onExit}
+          onNext={onNext ? () => { void referralFinish.current.finally(onNext); } : undefined} />}
       </div>
 
       {!outcome && (
