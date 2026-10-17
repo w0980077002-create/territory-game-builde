@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const app=readFileSync('src/admin/AdminApp.tsx','utf8');
+const edge=readFileSync('supabase/functions/admin-api/index.ts','utf8');
+const user=readFileSync('src/admin/tabs/PlayersTab.tsx','utf8');
+const panel=readFileSync('src/admin/tabs/HallAdminTab.tsx','utf8');
+const audit=readFileSync('src/admin/tabs/AuditAdminTab.tsx','utf8');
+const sql=readFileSync('supabase/migrations/20261017_admin_master_controls_v2.sql','utf8');
+for(const action of ['hall_stats','hall_player','hall_grant','audit_recent','pending_grants','cancel_pending','change_password','link_telegram','adjust','mail','ban','set_setting']){
+ assert.ok(edge.includes('case "'+action+'":'), 'Legacy admin action lost: '+action);
+}
+for(const id of ['hall','audit'])assert.match(app,new RegExp("id: '"+id+"'"));
+assert.match(app,/HallAdminTab confirm=/);
+assert.match(app,/AuditAdminTab confirm=/);
+for(const action of ['hall_grant','hall_stats','hall_player'])assert.match(panel,new RegExp(action));
+assert.match(panel,/requestId:crypto.randomUUID/);
+assert.match(panel,/scope==='active'/);
+assert.match(panel,/scope==='all'/);
+assert.match(user,/pending_grants/);
+assert.match(user,/cancel_pending/);
+assert.match(user,/hall_grant/);
+assert.match(audit,/change_password/);
+assert.match(audit,/audit_recent/);
+assert.match(edge,/PBKDF2/);
+assert.match(edge,/PASSWORD_ITERATIONS = 150_000/);
+assert.doesNotMatch(edge,/const ADMIN_PASSWORD\s*=/,'No plaintext administrator password in new Edge source');
+assert.match(edge,/territory_admin_credential_v2/);
+assert.match(edge,/territory_admin_rotate_v2/);
+assert.match(sql,/CREATE TABLE territory_private.admin_auth_v2/);
+assert.match(sql,/CREATE OR REPLACE FUNCTION public.territory_hall_admin_adjust_v2/);
+assert.match(sql,/REVOKE ALL ON FUNCTION public.territory_admin_credential_v2/);
+console.log('Admin UI PASS: existing functions kept, owner-only ticket ops and audits, rotation without plaintext.');
