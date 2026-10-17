@@ -69,6 +69,18 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Verified by Bot API. Expose only public bot username, never its token.
+    if (req.method === "GET") {
+      const token=(Deno.env.get("TELEGRAM_BOT_TOKEN") || Deno.env.get("BOT_TOKEN") || "").trim();
+      if (!token) return resp({error:"bot_token_not_configured"},503);
+      const check=await fetch("https://api.telegram.org/bot"+token+"/getMe");
+      const result=await check.json().catch(()=>null);
+      const username=result?.ok===true ? result.result?.username : null;
+      if(typeof username!=="string" || !/^[a-zA-Z0-9_]{5,32}$/.test(username))
+        return resp({error:"bot_name_unavailable"},503);
+      return resp({bot_username:username},200);
+    }
+    if (req.method !== "POST") return resp({error:"method_not_allowed"},405);
     const { initData } = await req.json();
     if (!initData) return resp({ error: "missing_init_data" }, 400);
 
@@ -152,6 +164,18 @@ Deno.serve(async (req: Request) => {
       ]);
     }
 
+    // The start_param is included in HMAC-verified Telegram initData.
+    // A client-supplied query string or start_param on an existing account
+    // cannot create referral rewards. Retry is safe within the 20-minute gate.
+    const signedStartParam = new URLSearchParams(initData).get("start_param") || "";
+    if (/^ref_[0-9a-f]{14}$/.test(signedStartParam)) {
+      const {error: referralError}=await adminClient.rpc("territory_referral_attach_v1",{
+        p_invited:playerId,p_code:signedStartParam,
+      });
+      // Never break verified Telegram login because of referral setup.
+      if(referralError) console.error("Referral attachment unavailable",referralError.message);
+    }
+
     // Generate a one-time magic link token (no password, no email sent)
     const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
       type: "magiclink",
@@ -174,6 +198,16 @@ Deno.serve(async (req: Request) => {
 
     if (verifyData.session.user.id !== playerId) {
       return resp({ error: "session_identity_mismatch" }, 409);
+    }
+
+    // Credit only a REAL second-day Telegram login with fresh HMAC-signed
+    // auth_date. Browser status calls and replayed old sessions cannot earn gifts.
+    const signedAuthDate = Number(new URLSearchParams(initData).get("auth_date"));
+    if (Number.isSafeInteger(signedAuthDate)) {
+      const {error: qualifiedError}=await adminClient.rpc("territory_referral_qualify_v1",{
+        p_invited:playerId,p_telegram_id:tgUser.id,p_auth_date:signedAuthDate,
+      });
+      if (qualifiedError) console.error("Referral qualification unavailable",qualifiedError.message);
     }
 
     return resp({

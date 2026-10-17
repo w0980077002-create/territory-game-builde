@@ -14,6 +14,7 @@ async function run(endpoint, options = {}) {
   const calls = [];
   const results = [...(options.results || [])];
   const admin = {
+    async rpc(name, params) { calls.push({ rpc: name, params }); return { data: false, error: null }; },
     from(table) {
       const query = { table, filters: [] };
       calls.push(query);
@@ -57,6 +58,8 @@ async function run(endpoint, options = {}) {
   assert.equal(r.body.user.id, 'old');
   assert.equal(r.calls.find(c => c.generateLink).generateLink.email, 'original-guest@example.test');
   assert.ok(!r.calls.some(c => c.update || c.insert || c.createUser));
+  assert.ok(r.calls.some(c => c.rpc === 'territory_referral_qualify_v1' && c.params.p_telegram_id === 111));
+  assert.ok(!r.calls.some(c => c.rpc === 'territory_referral_attach_v1'), 'Absent referral code never attaches');
   console.log('PASS linked login preserves old UUID, email and character');
 
   r = await run('telegram-auth', { results: [{ data: null, error: { message: 'offline failure' } }] });
