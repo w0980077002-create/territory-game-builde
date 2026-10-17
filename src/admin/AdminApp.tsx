@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { BarChart3, CheckCircle2, Crown, Eye, EyeOff, Gamepad2, Lock, LogOut, Mail, ShieldAlert, Trophy, Wallet, XCircle } from 'lucide-react';
+import { BarChart3, CheckCircle2, Crown, Eye, EyeOff, Gamepad2, Lock, LogOut, Mail, ShieldAlert, Trophy, Wallet, Ticket, ScrollText, XCircle } from 'lucide-react';
 import { adminLogin, clearAdminToken, getAdminToken } from '@/admin/api';
 import { ConfirmDialog, ErrorLine, inputCls, type Confirm } from '@/admin/ui';
 import { DashboardTab } from '@/admin/tabs/DashboardTab';
@@ -7,6 +7,8 @@ import { PlayersTab } from '@/admin/tabs/PlayersTab';
 import { MailTab } from '@/admin/tabs/MailTab';
 import { FinanceTab } from '@/admin/tabs/FinanceTab';
 import { TopTab } from '@/admin/tabs/TopTab';
+import { HallAdminTab } from '@/admin/tabs/HallAdminTab';
+import { AuditAdminTab } from '@/admin/tabs/AuditAdminTab';
 
 const TABS = [
   { id: 'main', label: 'Главная & Управление', icon: BarChart3 },
@@ -14,6 +16,8 @@ const TABS = [
   { id: 'mail', label: 'Почта & Рассылки', icon: Mail },
   { id: 'finance', label: 'Финансы & Лавка', icon: Wallet },
   { id: 'top', label: 'Топ-100', icon: Trophy },
+  { id: 'hall', label: 'Игровой зал', icon: Ticket },
+  { id: 'audit', label: 'Журнал & Защита', icon: ScrollText },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -154,6 +158,8 @@ export function AdminApp() {
         {tab === 'mail' && <MailTab confirm={confirm} />}
         {tab === 'finance' && <FinanceTab confirm={confirm} />}
         {tab === 'top' && <TopTab />}
+        {tab === 'hall' && <HallAdminTab confirm={confirm} />}
+        {tab === 'audit' && <AuditAdminTab confirm={confirm} onLogout={logout} />}
       </main>
 
       {pending && <ConfirmDialog question={pending.question} busy={busy} onYes={run} onNo={() => setPending(null)} />}
