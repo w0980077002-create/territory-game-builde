@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, useArena, equipItem, unequipItem } from '@/game/actions';
-import { EQUIPMENT_SLOTS } from '@/game/engine';
 import { BELT_STACK, beltContext, canBelt, putInBelt, takeFromBelt } from '@/game/belt';
-import { SLOT_ART } from '@/game/art';
 import { ItemArt } from './ui/ItemArt';
 import { BeltCells } from './ui/BeltCells';
 import { rarityColor, rarityGlow } from '@/game/ui';
 import type { Equipment, InventoryItem } from '@/game/types';
 import { GEAR_STATS, gearScore, canSalvageEquipment } from '@/game/gearTools';
+import { GearShowcase } from './GearShowcase';
 import { saveCloudSave, recycleCloudEquipment } from '@/game/cloud';
 import { Package, Check, X, ArrowDownUp, Recycle, Trash2, AlertTriangle } from 'lucide-react';
 
@@ -27,7 +26,6 @@ export function InventoryScreen({ initialTab = 'items', userId }: { initialTab?:
   const [remainingToday, setRemainingToday] = useState<number | null>(null);
 
   const consumables = state.inventory.filter((i) => i.type === 'potion' || i.type === 'elixir' || i.type === 'arena');
-  const equipment = state.inventory.filter((i) => i.type === 'equipment');
   const materials = state.inventory.filter((i) => i.type === 'material');
 
   const toBelt = (item: InventoryItem) => {
@@ -145,71 +143,7 @@ export function InventoryScreen({ initialTab = 'items', userId }: { initialTab?:
         </>
       )}
 
-      {tab === 'equipment' && (
-        <>
-          {/* Equipped slots */}
-          <div className="card">
-            <h3 className="text-sm font-semibold text-gray-400 mb-3">{t('equipped')}</h3>
-            <div className="space-y-2">
-              {EQUIPMENT_SLOTS.map(({ id: slot, name }) => {
-                const eq = state.player.equipped[slot];
-                return (
-                  <div key={slot} className="flex items-center gap-3">
-                    <div
-                      className="w-11 h-11 rounded-lg bg-black/30 flex items-center justify-center shrink-0 border border-white/10"
-                      style={eq ? { borderColor: rarityColor(eq.rarity) } : undefined}
-                    >
-                      <img src={SLOT_ART[slot]} alt="" className={`w-9 h-9 object-contain ${eq ? '' : 'opacity-20 grayscale'}`} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500">{localizeText(name, language)}</p>
-                      {eq ? (
-                        <>
-                          <p className="text-sm font-medium" style={{ color: rarityColor(eq.rarity) }}>
-                            {localizeText(eq.name, language)} <span className="text-gray-400 text-xs">+{eq.level}</span>
-                          </p>
-                          <p className="text-[11px] text-gray-400 break-words">
-                            {GEAR_STATS.filter((s) => (eq[s.key] ?? 0) > 0).map((s) =>
-                              `${s.icon} ${eq[s.key]}${s.key === 'critChance' ? '%' : ''}`
-                            ).join('  ')}
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-sm text-gray-600">{t('empty')}</p>
-                      )}
-                    </div>
-                    {eq && (
-                      <button
-                        className="btn-ghost text-xs px-2 py-1"
-                        onClick={() => useGame.set(unequipItem(state, slot))}
-                      >
-                        {language === 'en' ? 'Unequip' : 'Снять'}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Equipment in inventory */}
-          {equipment.length > 0 ? (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">{t('inInventory')}</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {equipment.map((item) => (
-                  <ItemCard key={item.id} item={item} worn={item.equipment ? state.player.equipped[item.equipment.slot] : undefined} onClick={() => { setSelected(item); setConfirmRecycle(null); setRecycleError(null); }} />
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="card text-center py-6 text-gray-500">
-              <p className="text-sm">{t('noEquipmentInBag')}</p>
-              <p className="text-xs mt-1">{t('noGearHint')}</p>
-            </div>
-          )}
-        </>
-      )}
+      {tab === 'equipment' && <GearShowcase userId={userId} />}
 
       {/* Item detail modal */}
       {selected && (

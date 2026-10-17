@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useStore } from '@/game/store';
 import { useGame, equipItem, unequipItem } from '@/game/actions';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { getAppearanceIcon } from '@/game/appearance';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
-import { equipmentArt } from '@/game/art';
+import { equipmentArt, SLOT_ART } from '@/game/art';
 import { rarityColor } from '@/game/ui';
 import { GEAR_STATS, gearScore, canSalvageEquipment } from '@/game/gearTools';
 import { recycleCloudEquipment, saveCloudSave } from '@/game/cloud';
@@ -146,7 +146,8 @@ export function GearShowcase({ userId }: { userId: string }) {
     ? state.player.equipped[selectedItem.equipment.slot] : undefined;
   const bag = selectedWornSlot ? undefined : selectedItem;
   const canSalvage = !!bag && canSalvageEquipment(bag);
-  const isComparing = !!bag?.equipment;
+  const candidate = bag?.equipment;
+  const isComparing = !!candidate;
   const slotLabel = (slot: Slot) => slotNames[slot][language];
 
   const chooseBag = (id: string) => {
@@ -232,9 +233,8 @@ export function GearShowcase({ userId }: { userId: string }) {
                 onClick={() => chooseSlot(id)} aria-pressed={selectedWornSlot === id}
                 aria-label={(language === 'en' ? 'Equipped ' : 'Надето: ') + slotLabel(id) + (eq ? ' — ' + localizeText(eq.name, language) : '')}>
                 <span className="gear-slot-icon" style={{ borderColor: eq ? rarityColor(eq.rarity) : undefined, boxShadow: eq ? '0 0 9px ' + rarityColor(eq.rarity) + '55' : undefined }}>
-                  <img src={eq ? equipmentArt(eq) : undefined} alt="" draggable={false}
-                    className={'gear-slot-image ' + (!eq ? 'gear-slot-empty' : '')}
-                    style={!eq ? { content: 'url(' + (import.meta.env.BASE_URL + 'assets/territory/ui/equipment/' + id + '.webp') + ')' } : undefined}/>
+                  <img src={eq ? equipmentArt(eq) : SLOT_ART[id]} alt="" draggable={false}
+                    className={'gear-slot-image ' + (!eq ? 'gear-slot-empty' : '')}/>
                   {eq && <span className="gear-slot-rarity" style={{ background: rarityColor(eq.rarity) }} />}
                 </span>
                 <span className="gear-slot-label">{slotLabel(id)}</span>
@@ -254,15 +254,15 @@ export function GearShowcase({ userId }: { userId: string }) {
           <>
             <div className="gear-two-cards">
               <GearPortrait equipped={worn} label={language === 'en' ? 'EQUIPPED' : 'НАДЕТО'} language={language}/>
-              <GearPortrait candidate={bag.equipment} label={language === 'en' ? 'SELECTED' : 'ВЫБРАНО'} language={language} isCandidate />
+              <GearPortrait candidate={candidate} label={language === 'en' ? 'SELECTED' : 'ВЫБРАНО'} language={language} isCandidate />
             </div>
             <div className="gear-diff-block">
               <p className="gear-diff-title"><ArrowDownUp size={14}/>
                 {language === 'en' ? 'What changes if equipped' : 'Что изменится после замены'}
               </p>
-              <StatRows equipped={worn} candidate={bag.equipment} language={language} />
+              <StatRows equipped={worn} candidate={candidate} language={language} />
               <p className="gear-weight-hint">
-                {gearScore(bag.equipment) > gearScore(worn)
+                {gearScore(candidate) > gearScore(worn)
                   ? (language === 'en' ? 'Higher weighted stats — check each bonus' : 'Суммарно сильнее — проверь каждый бонус')
                   : gearScore(bag.equipment) < gearScore(worn)
                     ? (language === 'en' ? 'Lower weighted stats — may still suit your build' : 'Суммарно слабее — но может подойти под твой стиль')
@@ -377,7 +377,7 @@ export function GearShowcase({ userId }: { userId: string }) {
               return (
                 <button type="button" key={item.id}
                   className={'gear-bag-tile ' + (selected ? 'gear-bag-tile-active' : '')}
-                  style={{ '--tile-rarity': rarityColor(item.rarity) } as React.CSSProperties}
+                  style={{ '--tile-rarity': rarityColor(item.rarity) } as CSSProperties}
                   onClick={() => chooseBag(item.id)}
                   aria-pressed={!!selected}
                   aria-label={localizeText(item.name, language) + ', ' + slotLabel(eq.slot) + ', ' + (language === 'en' ? 'level ' : 'уровень ') + eq.level}>
