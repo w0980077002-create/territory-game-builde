@@ -10,7 +10,13 @@ try {
     CREATE TABLE public.players(id uuid primary key, game_state jsonb not null,
       updated_at timestamptz not null default now());
     CREATE FUNCTION public.territory_normalize_state_v4(s jsonb)
-      RETURNS jsonb LANGUAGE sql IMMUTABLE AS 'SELECT s';`);
+      RETURNS jsonb LANGUAGE sql IMMUTABLE AS 'SELECT s';
+    CREATE FUNCTION public.fixture_save_timestamp() RETURNS trigger LANGUAGE plpgsql AS
+      'BEGIN IF NEW.game_state IS DISTINCT FROM OLD.game_state THEN
+        NEW.updated_at := GREATEST(clock_timestamp(),OLD.updated_at + interval ''1 microsecond'');
+       END IF; RETURN NEW; END';
+    CREATE TRIGGER fixture_save_timestamp BEFORE UPDATE OF game_state ON public.players
+      FOR EACH ROW EXECUTE FUNCTION public.fixture_save_timestamp();`);
   await db.exec(prep);
   const gear=(id,slot,name,attack=0,defense=0,hp=0,upgradeCount=0,level=1,baseLevel=level,rarity='common')=>({
     id,qty:1,type:'equipment',name,rarity, equipment:{id,slot,name,attack,defense,hp,upgradeCount,baseLevel,level,rarity}
