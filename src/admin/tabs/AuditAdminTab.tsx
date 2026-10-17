@@ -11,6 +11,9 @@ const NAMES:Record<string,string>={
  reset_bots:'Сброс ботов',hall_grant:'Билеты игрового зала',
  cancel_pending:'Отмена выдачи',link_telegram:'Привязка Telegram',
  password_changed:'Смена пароля',
+ warn:'Ручное предупреждение игроку',mail_scheduled:'Запланирована рассылка',
+ mail_schedule_cancelled:'Отмена запланированной рассылки',
+ mail_scheduled_sent:'Автоматическая отправка письма',
 };
 const describe=(v:Audit)=>{
  const d=v.details??{};
