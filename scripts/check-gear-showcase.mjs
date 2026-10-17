@@ -16,8 +16,9 @@ assert.match(component, /state\.player\.equipped\[id\]/, 'Stage must display act
 assert.match(component, /chooseSlot\(id\)/, 'Equipped slots must open own stats');
 assert.match(component, /chooseBag\(item\.id\)/, 'Bag item selection must compare');
 assert.match(component, /<GearPortrait equipped=\{worn\}/, 'Current equipped gear must show on left');
-assert.match(component, /<GearPortrait candidate=\{candidate\}/, 'Selected bag gear must show on right');
-assert.match(component, /<StatRows equipped=\{worn\} candidate=\{candidate\}/, 'Stat deltas must reflect real current gear');
+assert.match(component, /<GearPortrait equipped=\{worn\} candidate=\{candidate\}/, 'Selected bag gear must show on right');
+assert.match(component, /value - \(equipped\?\.\[s\.key\] \?\? 0\)/, 'Stat deltas must reflect real worn stats');
+assert.match(component, /gear-card-delta/, 'Comparison deltas must be shown inside selected card');
 assert.match(component, /GEAR_STATS\.map/, 'All four item stats must be present');
 assert.match(component, /aria-pressed=\{filter === slot\}/, 'Inventory filter accessible state');
 assert.match(component, /filters\.map/, 'All inventory filters');
@@ -44,3 +45,6 @@ assert.match(css, /grid-template-columns: repeat\(5/, 'Compact bag grid required
 assert.match(css, /@media \(max-width: 370px\)/, 'Small Android layout required');
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)/, 'Accessibility reduced motion required');
 console.log('Hero gear showcase: 7 slots, selected hero, real compare, filter, sorting, mobile UI, belt and atomic recycle integration PASS');
+
+assert.doesNotMatch(component, /gear-diff-block/, 'Do not duplicate the stat rows below comparison cards');
+assert.match(css, /clamp\(228px, 61vw, 272px\)/, 'Mobile gear scene should leave room for the bag');
