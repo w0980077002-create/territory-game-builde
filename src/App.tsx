@@ -18,6 +18,7 @@ import { GamesScreen } from '@/components/GamesScreen';
 import { HallPlayScreen } from '@/components/HallPlayScreen';
 import type { HallGame } from '@/game/gameHall';
 import { ProfessionsScreen } from '@/components/ProfessionsScreen';
+import { ClanScreen } from '@/components/ClanScreen';
 import { AuctionScreen } from '@/components/AuctionScreen';
 import { FriendsScreen } from '@/components/FriendsScreen';
 import { MaintenanceScreen, BannedScreen } from '@/components/ServiceScreens';
@@ -29,7 +30,7 @@ import { useLanguage } from '@/game/i18n';
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
 type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends';
-type Screen = Exclude<NavId, 'clan'> | SubScreen;
+type Screen = NavId | SubScreen;
 
 const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
   { id: 'city', label: 'Город', icon: '/nav-city.webp' },
@@ -38,7 +39,7 @@ const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
   { id: 'battle', label: 'Бой', icon: '/nav-battle.webp' },
   { id: 'map', label: 'Карта', icon: '/nav-map.webp' },
   { id: 'games', label: 'Игры', icon: '/nav-games.webp' },
-  { id: 'clan', label: 'Клан', icon: '/nav-clan.webp', soon: true },
+  { id: 'clan', label: 'Клан', icon: '/nav-clan.webp' },
 ];
 
 const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> = {
@@ -215,7 +216,6 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const navActive: NavId = screen === 'hall-play' ? 'games' : sub ? 'city' : (screen as NavId);
 
   const goNav = (id: NavId) => {
-    if (id === 'clan') return notify(language === 'en' ? 'Clans will be available in a future update.' : 'Кланы откроются в следующих обновлениях');
     if (id === 'battle') setBattleView('campaign');
     setScreen(id);
   };
@@ -287,6 +287,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'professions' && <ProfessionsScreen />}
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} />}
+        {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} />}
       </main>
 
       <nav className="shrink-0 z-30 border-t border-amber-500/25 bg-gradient-to-b from-[#161b24] to-[#0a0d12] px-1 pt-1 pb-[max(4px,env(safe-area-inset-bottom))]">
@@ -312,10 +313,9 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
                   src={t.icon}
                   alt=""
                   draggable={false}
-                  className={`object-contain transition-transform duration-200 ${center ? 'w-10 h-10' : 'w-8 h-8'} ${active ? 'scale-110' : ''} ${t.soon ? 'opacity-60 grayscale-[40%]' : ''}`}
+                  className={`object-contain transition-transform duration-200 ${center ? 'w-10 h-10' : 'w-8 h-8'} ${active ? 'scale-110' : ''} `}
                 />
                 <span className={`text-[9px] tracking-tight font-bold leading-none truncate max-w-full ${active || center ? 'text-white' : 'text-gray-400'}`}>{tNav(translate, t.label)}</span>
-{t.id === 'clan' && <span className="absolute top-0.5 right-0.5 rounded bg-slate-700 px-0.5 text-[7px] font-bold uppercase text-gray-300">{translate('soon')}</span>}
               </button>
             );
           })}

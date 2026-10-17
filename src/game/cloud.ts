@@ -123,6 +123,8 @@ const saveTokens = new Map<string, string>();
 const walletVersions = new Map<string, WalletVersion>();
 const saveBlocked = new Set<string>();
 
+export { saveTokens, walletVersions, saveBlocked };
+
 /** One coalescing queue per authenticated player within this browser session. */
 const saveWriters = new Map<string, (snapshot: ReturnType<typeof summaryColumns>) => Promise<boolean>>();
 
