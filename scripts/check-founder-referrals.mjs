@@ -12,7 +12,7 @@ const as=async(user)=>{await q("SELECT set_config('request.jwt.claim.sub',$1,fal
 const status=async()=> (await q('SELECT public.territory_referral_status_v1() AS data'))[0].data;
 const claim=async(rev)=> (await q('SELECT public.territory_referral_claim_v1($1::timestamptz) AS data',[rev]))[0].data;
 try {
- await db.exec(\`
+ await db.exec(`
  CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role;
  CREATE SCHEMA auth;
  CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
@@ -34,7 +34,7 @@ try {
     END IF;RETURN NEW;END';
  CREATE TRIGGER fixture_timestamp BEFORE UPDATE ON public.players
  FOR EACH ROW EXECUTE FUNCTION public.fixture_timestamp();
- \`);
+ `);
  await q('INSERT INTO public.players(id,telegram_id,game_state) VALUES ($1,111,$2)',[inviter,template()]);
  const others=[2,3,4,5,6];
  for(const n of others)await q('INSERT INTO public.players(id,telegram_id,game_state) VALUES ($1,$2,$3)',[id(n),100+n,template()]);
