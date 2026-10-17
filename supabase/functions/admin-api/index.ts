@@ -76,20 +76,35 @@ async function matchesPassword(password:string,record:{salt:string;verifier:stri
  return safeEqual(digest,record.verifier);
 }
 
+// Keep the original two-part owner session while the game is in development.
+// Credentials are still checked against the server-side PBKDF2 verifier.
+// If the owner rotates the password, the version increases and all original
+// two-part sessions stop working; the three-part rotation-safe format remains.
 async function issueToken(version: number) {
   const exp = String(Date.now() + TOKEN_TTL_MS);
-  return { token: `${exp}.${version}.${await sign(exp+":"+version)}`, expiresAt: Number(exp) };
+  if (version === 1) {
+    return { token: exp + "." + await sign(exp), expiresAt: Number(exp) };
+  }
+  return { token: exp + "." + version + "." + await sign(exp + ":" + version), expiresAt: Number(exp) };
 }
 
 async function verifyToken(token: unknown) {
   if (typeof token !== "string") return false;
-  const [exp,version,signature,...extra] = token.split(".");
-  if(extra.length||!exp||!version||!signature||!/^\d{13}$/.test(exp)||
-    Number(exp)<Date.now()||Number(exp)>Date.now()+TOKEN_TTL_MS||
-    !/^\d{1,10}$/.test(version))return false;
-  const current=await currentCredential();
-  return Number(version)===current.version &&
-    safeEqual(signature,await sign(exp+":"+version));
+  const parts = token.split(".");
+  if (parts.length !== 2 && parts.length !== 3) return false;
+  const [exp, second, third] = parts;
+  if (!/^\d{13}$/.test(exp) || Number(exp) < Date.now() ||
+      Number(exp) > Date.now() + TOKEN_TTL_MS) return false;
+  const credential = await currentCredential();
+  if (parts.length === 2) {
+    // Previous login tokens remain valid until their normal 12-hour expiry.
+    // Changing the password disables compatibility immediately.
+    return credential.version === 1 && /^[0-9a-f]{64}$/.test(second) &&
+      safeEqual(second, await sign(exp));
+  }
+  return /^\d{1,10}$/.test(second) && /^[0-9a-f]{64}$/.test(third) &&
+    Number(second) === credential.version &&
+    safeEqual(third, await sign(exp + ":" + second));
 }
 
 async function audit(action: string, details: Record<string, unknown> = {}) {
