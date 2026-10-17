@@ -16,7 +16,7 @@ try{
  'CREATE SCHEMA territory_private;CREATE SCHEMA auth;',
  "CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS 'SELECT nullif(current_setting(''request.jwt.claim.sub'',true),'''')::uuid';",
  'CREATE TABLE public.players(id uuid PRIMARY KEY,telegram_id bigint,display_name text,banned boolean NOT NULL DEFAULT false,last_seen_at timestamptz,created_at timestamptz DEFAULT clock_timestamp());',
- 'CREATE TABLE territory_private.hall_accounts_v1(player_id uuid PRIMARY KEY REFERENCES public.players(id),tickets integer NOT NULL DEFAULT 4 CHECK(tickets BETWEEN 0 AND 20),points int DEFAULT 0,played int DEFAULT 0,wins int DEFAULT 0,pending_gold int DEFAULT 0,daily_gold int DEFAULT 0);',
+ 'CREATE TABLE territory_private.hall_accounts_v1(player_id uuid PRIMARY KEY REFERENCES public.players(id),tickets integer NOT NULL DEFAULT 4 CHECK(tickets BETWEEN 0 AND 20),points int DEFAULT 0,played int DEFAULT 0,wins int DEFAULT 0,pending_gold int DEFAULT 0,claimed_gold int DEFAULT 0,daily_gold int DEFAULT 0);',
  'CREATE TABLE territory_private.hall_sessions_v1(player_id uuid PRIMARY KEY REFERENCES public.players(id),game text,created_at timestamptz DEFAULT clock_timestamp());',
  'CREATE TABLE territory_private.hall_history_v1(player_id uuid,game text,won boolean,earned_gold int,played_at timestamptz DEFAULT clock_timestamp());'
  ].join('\n'));
