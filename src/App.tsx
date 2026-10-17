@@ -86,7 +86,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [screen, setScreen] = useState<Screen>('city');
   const [battleView, setBattleView] = useState<BattleView>('campaign');
   const [autoStart, setAutoStart] = useState(false);
-  const [inventoryTab, setInventoryTab] = useState<'items' | 'equipment'>('items');
+  const [inventoryTab, setInventoryTab] = useState<'items' | 'equipment'>('equipment');
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const [battleLocked, setBattleLocked] = useState(false);
   const [loaded, setLoaded] = useState(false);

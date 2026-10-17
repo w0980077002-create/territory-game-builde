@@ -25,7 +25,8 @@
     "test:stage7": "node scripts/check-stage7.mjs",
     "test:pve": "node scripts/check-pve-balance.mjs",
     "test:inventory-cleanup": "node scripts/check-inventory-cleanup.mjs",
-    "test:gear-recycle": "node scripts/check-gear-recycle.mjs"
+    "test:gear-recycle": "node scripts/check-gear-recycle.mjs",
+    "test:gear-showcase": "node scripts/check-gear-showcase.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
