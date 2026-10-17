@@ -22,7 +22,7 @@ try {
     gear('loot_top','weapon','Клинок победителя',60),
     gear('loot_mid','weapon','Клинок победителя',45),
     gear('loot_armor','armor','Доспех воина',0,10,30),
-    gear('loot_helmet1','helmet','Доспех воина',0,1,10),
+    gear('loot_armor_low','armor','Доспех воина',0,1,10),
     gear('inv_upgrade','weapon','Меч воина',35,0,0,5,6,1),
     gear('custom_relic','amulet','Реликвия ярла',25,0,0,0,6,6,'legendary'),
     potion,
