@@ -38,6 +38,7 @@ jobs:
       - run: npm run test:inventory-cleanup
       - run: npm run test:gear-recycle
       - run: npm run test:gear-showcase
+      - run: npm run test:companion-navigation
       - run: npm run test:economy
       - run: node scripts/check-equipment-safety-v4.mjs
       - run: npm run test:professions

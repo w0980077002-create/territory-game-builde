@@ -49,6 +49,7 @@ jobs:
           npm run test:inventory-cleanup
           npm run test:gear-recycle
           npm run test:gear-showcase
+          npm run test:companion-navigation
           node scripts/check-equipment-safety-v4.mjs
           npm run test:feature-separation
           npm run test:mobile-home
