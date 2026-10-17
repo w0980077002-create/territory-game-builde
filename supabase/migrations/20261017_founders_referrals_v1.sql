@@ -64,7 +64,39 @@ END $$;
 REVOKE ALL ON FUNCTION public.territory_referral_attach_v1(uuid,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_referral_attach_v1(uuid,text) TO service_role;
 
--- Signed-in visit: qualifies only the invited player's own second-day return.
+-- A verified Telegram login (not a browser RPC) qualifies the invited friend.
+-- auth_date is signed by Telegram; it must be FRESH (10min) for credit.
+CREATE OR REPLACE FUNCTION public.territory_referral_qualify_v1(
+ p_invited uuid,p_telegram_id bigint,p_auth_date bigint)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path='pg_catalog'
+AS $
+DECLARE v_updated int;
+BEGIN
+ IF p_invited IS NULL OR p_telegram_id IS NULL OR p_auth_date IS NULL
+  OR p_auth_date < extract(epoch from clock_timestamp()-interval '10 minutes')
+  OR p_auth_date > extract(epoch from clock_timestamp()+interval '1 minute')
+ THEN RETURN false; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.players
+  WHERE id=p_invited AND telegram_id=p_telegram_id AND NOT banned)
+ THEN RETURN false; END IF;
+ UPDATE territory_private.referral_invites_v1 a
+ SET qualified_at=clock_timestamp()
+ WHERE a.invited_id=p_invited AND qualified_at IS NULL
+   AND a.created_at<=clock_timestamp()-interval '24 hours'
+   AND (a.created_at AT TIME ZONE 'UTC')::date
+      < (clock_timestamp() AT TIME ZONE 'UTC')::date;
+ GET DIAGNOSTICS v_updated=ROW_COUNT;
+ INSERT INTO territory_private.referral_chests_v1(invited_id,inviter_id)
+ SELECT invited_id,inviter_id FROM territory_private.referral_invites_v1
+ WHERE invited_id=p_invited AND qualified_at IS NOT NULL
+ ON CONFLICT(invited_id) DO NOTHING;
+ RETURN v_updated>0;
+END $;
+REVOKE ALL ON FUNCTION public.territory_referral_qualify_v1(uuid,bigint,bigint) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.territory_referral_qualify_v1(uuid,bigint,bigint) TO service_role;
+
+-- Status only reads qualification; the client cannot confer it on itself.
+
 -- No browser-supplied counts/levels/XP/attribution are considered.
 CREATE OR REPLACE FUNCTION public.territory_referral_status_v1()
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='pg_catalog'
@@ -81,17 +113,6 @@ BEGIN
  VALUES(v_uid) ON CONFLICT(player_id) DO NOTHING;
  SELECT code,founder_number INTO v_code,v_founder
  FROM territory_private.referral_profiles_v1 WHERE player_id=v_uid;
- -- Qualification can occur only on the actual referred account, a different UTC
- -- calendar day and >=24 hours after registration.
- UPDATE territory_private.referral_invites_v1 a SET qualified_at=clock_timestamp()
- WHERE a.invited_id=v_uid AND a.qualified_at IS NULL
-   AND a.created_at <= clock_timestamp()-interval '24 hours'
-   AND (a.created_at AT TIME ZONE 'UTC')::date <
-       (clock_timestamp() AT TIME ZONE 'UTC')::date;
- INSERT INTO territory_private.referral_chests_v1(invited_id,inviter_id)
- SELECT invited_id,inviter_id FROM territory_private.referral_invites_v1
- WHERE invited_id=v_uid AND qualified_at IS NOT NULL
- ON CONFLICT(invited_id) DO NOTHING;
  SELECT count(*),count(*) FILTER(WHERE qualified_at IS NOT NULL),
    count(*) FILTER(WHERE qualified_at IS NOT NULL AND reward_claimed_at IS NULL)
  INTO v_total,v_active,v_unclaimed FROM territory_private.referral_invites_v1 WHERE inviter_id=v_uid;
