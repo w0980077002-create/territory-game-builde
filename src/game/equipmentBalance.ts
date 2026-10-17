@@ -1,5 +1,5 @@
 import type { Equipment, EquipmentBaseStats, GameState, InventoryItem } from './types';
-import { EQUIPMENT_TEMPLATES, rarityForChapter } from './equipmentCatalog';
+import { EQUIPMENT_TEMPLATES, rarityForChapter, createBossLootEquipment } from './equipmentCatalog';
 
 /** Save-data version. Bump only when a new persistent migration is introduced. */
 export const EQUIPMENT_BALANCE_VERSION = 4;
@@ -196,6 +196,52 @@ export function setEquipmentLevel(eq: Equipment, targetLevel: number): Equipment
     upgradeCount,
     level,
   };
+}
+
+
+/**
+ * Owner-only correction path for old over-levelled gear.
+ * Regular forge and shop upgrades still use setEquipmentLevel and cannot lower
+ * below an item's natural base level. Historic boss loot often has
+ * baseLevel=164/165, which previously made admin reductions a no-op.
+ */
+export function setAdminEquipmentLevel(eq: Equipment, targetLevel: number): Equipment {
+  if (!Number.isSafeInteger(targetLevel) || targetLevel < 1 || targetLevel > 500) return eq;
+  const baseLevel = Math.max(1, Math.floor(Number.isFinite(eq.baseLevel ?? eq.level) ? (eq.baseLevel ?? eq.level) : 1));
+  if (targetLevel >= baseLevel) return setEquipmentLevel(eq, targetLevel);
+
+  // Keep shop equipment at its canonical template baseline.
+  if (EQUIPMENT_TEMPLATES.some((t) => t.name === eq.name && t.slot === eq.slot && t.rarity === eq.rarity)) {
+    return setEquipmentLevel(normalizeEquipmentV4(eq), targetLevel);
+  }
+
+  // A high-chapter boss item is a new lower-chapter item after an owner correction:
+  // reconstruct its LEVEL-APPROPRIATE base stats instead of retaining inflated
+  // stats from e.g. a chapter-165 drop.
+  const isBossWeapon = eq.slot === 'weapon' && eq.name === 'Клинок победителя';
+  const isBossArmor = eq.slot === 'armor' && eq.name === 'Доспех воина';
+  if (isBossWeapon || isBossArmor) {
+    const canonical = createBossLootEquipment(targetLevel, isBossWeapon, eq.id);
+    const baseStats = onlyStats(canonical);
+    return normalizeEquipmentV4({
+      ...eq, ...baseStats, level: targetLevel, baseLevel: targetLevel,
+      baseStats, upgradeCount: 0,
+    });
+  }
+
+  // Unknown/custom gear: never preserve higher-level stats as the new baseline.
+  // Scale its current values down, then apply the same slot caps as the server.
+  const ratio = Math.min(1, targetLevel / Math.max(1, eq.level));
+  const scaled: EquipmentBaseStats = {};
+  for (const stat of ['attack', 'defense', 'hp'] as const) {
+    const value = eq[stat];
+    if (value !== undefined) scaled[stat] = Math.max(0, Math.floor(value * ratio));
+  }
+  if (eq.critChance !== undefined) scaled.critChance = Math.max(0, Math.min(25, eq.critChance));
+  return normalizeEquipmentV4({
+    ...eq, ...scaled, level: targetLevel, baseLevel: targetLevel,
+    baseStats: scaled, upgradeCount: 0,
+  });
 }
 
 export function upgradeEquipment(eq: Equipment): Equipment {

@@ -137,6 +137,43 @@ assert.equal(preservedSameName.attack, 85, 'fake huge stats on recognizable shop
 assert.equal(preservedSameName.baseLevel, 5, 'recognized shop gear is rebuilt from catalog baseline');
 assert.equal(balance.upgradeEquipment(preservedSameName).attack, 87, 'known-name equipment uses controlled canonical growth');
 
+// The owner must be able to lower historic boss gear whose base level was
+// originally the chapter number. This action must DECREASE stats, not merely
+// relabel an old powerful item.
+const highBossSword = balance.prepareNewEquipment(catalog.createBossLootEquipment(165, true, 'historic-sword'));
+const fixedBossSword = balance.setAdminEquipmentLevel(highBossSword, 82);
+assert.equal(fixedBossSword.id, highBossSword.id, 'admin correction keeps item identity');
+assert.equal(fixedBossSword.level, 82, 'admin correction must lower a historic boss sword');
+assert.equal(fixedBossSword.baseLevel, 82, 'corrected boss sword baseline must match target');
+assert.equal(fixedBossSword.upgradeCount, 0, 'correction resets high-chapter upgrade baseline');
+assert.equal(fixedBossSword.attack, 10 + 82 * 3, 'sword attack must drop to level-82 boss formula');
+assert.equal(balance.normalizeEquipmentForTests(fixedBossSword).attack, fixedBossSword.attack,
+  'server-compatible normalization must not restore old strength');
+const highBossArmor = balance.prepareNewEquipment(catalog.createBossLootEquipment(164, false, 'historic-armor'));
+const fixedBossArmor = balance.setAdminEquipmentLevel(highBossArmor, 82);
+assert.equal(fixedBossArmor.id, highBossArmor.id);
+assert.equal(fixedBossArmor.level, 82, 'admin correction must lower historic boss armor');
+assert.equal(fixedBossArmor.defense, 5 + 82 * 2, 'level-82 boss armor defense');
+assert.equal(fixedBossArmor.hp, 20 + 82 * 5, 'level-82 boss armor HP');
+const customHigh = {
+  id: 'custom-overlevel', name: 'Custom blade', slot: 'weapon', rarity: 'legendary',
+  level: 164, attack: 900, baseLevel: 164, baseStats: { attack: 900 }, upgradeCount: 0,
+};
+const customDown = balance.setAdminEquipmentLevel(customHigh, 82);
+assert.equal(customDown.level, 82);
+assert(customDown.attack < customHigh.attack, 'custom gear must lose high-level attack');
+assert(customDown.attack <= 40 + 6 * 82, 'custom correction respects server attack cap');
+assert.equal(balance.setAdminEquipmentLevel(heroic, 2).level, 5,
+  'shop gear may not be reduced below its original template level');
+assert.equal(balance.setAdminEquipmentLevel(highBossSword, 501).level, 165,
+  'out-of-range admin correction must be ignored');
+const liveSource = fs.readFileSync(path.join(root, 'src/game/live.ts'), 'utf8');
+const adminUiSource = fs.readFileSync(path.join(root, 'src/admin/tabs/PlayersTab.tsx'), 'utf8');
+assert.match(liveSource, /setAdminEquipmentLevel\(eq, level\)/,
+  'owner correction must use the dedicated decrease-safe helper');
+assert.match(adminUiSource, /Корректировка до уровня/,
+  'admin panel must not claim queued grants were already applied');
+
 const lowerLevel = balance.setEquipmentLevel(heroic, 2);
 assert.equal(lowerLevel.level, 5, 'level grants should not drop an item below its original template level');
 assert.equal(lowerLevel.attack, 35, 'lower target level should not change the base stats');

@@ -131,7 +131,7 @@ function cleanPayload(raw: unknown) {
   if (Object.keys(cleanItems).length) out.items = cleanItems;
   const levels = (src.equipLevels && typeof src.equipLevels === "object" ? src.equipLevels : {}) as Record<string, unknown>;
   const cleanLevels: Record<string, number> = {};
-  for (const s of SLOTS) if (levels[s] !== undefined) cleanLevels[s] = intIn(levels[s], 1, 1000);
+  for (const s of SLOTS) if (levels[s] !== undefined) cleanLevels[s] = intIn(levels[s], 1, 500);
   if (Object.keys(cleanLevels).length) out.equipLevels = cleanLevels;
   return out;
 }

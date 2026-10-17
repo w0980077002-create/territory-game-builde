@@ -79,12 +79,14 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
 
   const saveLevel = (slot: string) => {
     const level = Math.floor(Number(levels[slot]));
-    if (!level || level < 1 || level > 1000) return setError('Уровень должен быть от 1 до 1000');
+    if (!level || level < 1 || level > 500) return setError('Уровень должен быть от 1 до 500');
     setError(null);
     confirm(`Установить уровень ${level} для «${p.equipped[slot].name}» (${SLOT_LABELS[slot]})`, async () => {
       await adminCall('adjust', { playerId: p.id, payload: { equipLevels: { [slot]: level } } });
       load();
-      return `Уровень экипировки изменён на ${level}`;
+      loadExtra();
+      setLevels((current) => ({ ...current, [slot]: '' }));
+      return `Корректировка до уровня ${level} отправлена игроку. Применится при входе или следующей синхронизации (до 20 секунд онлайн).`;
     });
   };
 
@@ -241,6 +243,7 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
          </div>)}</div>}
       </Panel>
       <Panel title="Экипировка (Кузница)" icon={<Hammer className="w-4 h-4" />}>
+        <p className="text-[11px] text-amber-200/90 mb-2">Изменение уровня отправляется игроку и применяется при входе в игру либо следующей синхронизации (обычно до 20 секунд онлайн). Для старого клинка и доспеха характеристики пересчитываются под указанный уровень.</p>
         {slots.length === 0 ? <Empty text="Нет надетой экипировки" /> : (
           <div className="space-y-2">
             {slots.map((slot) => (
@@ -253,6 +256,7 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
                   type="number"
                   inputMode="numeric"
                   min={1}
+                  max={500}
                   value={levels[slot] ?? ''}
                   onChange={(e) => setLevels((l) => ({ ...l, [slot]: e.target.value }))}
                   placeholder={String(p.equipped[slot].level)}
