@@ -105,6 +105,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
   const referralRounds = useRef<ReferralRound[]>([]);
   const referralStart = useRef<Promise<string | null> | null>(null);
   const referralFinish = useRef<Promise<unknown>>(Promise.resolve());
+  const nextRequested = useRef(false);
   heroRef.current = hero;
   foeRef.current = foe;
 
@@ -346,7 +347,11 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
         )}
 
         {outcome && <OutcomePanel outcome={outcome} kind={kind} onExit={onExit}
-          onNext={onNext ? () => { void referralFinish.current.finally(onNext); } : undefined} />}
+          onNext={onNext ? () => {
+            if (nextRequested.current) return;
+            nextRequested.current = true;
+            void referralFinish.current.catch(() => false).then(onNext);
+          } : undefined} />}
       </div>
 
       {!outcome && (
