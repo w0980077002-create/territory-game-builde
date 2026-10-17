@@ -97,6 +97,18 @@ export interface PlayerSummary {
   reasons?: string[];
 }
 
+export type ActivityPeriod = 'online' | 'today' | 'week';
+
+export interface PlayerActivity {
+  id: string;
+  telegramId: number | null;
+  username: string | null;
+  name: string;
+  level: number;
+  banned: boolean;
+  lastSeenAt: string | null;
+}
+
 export interface GrantPayload {
   gold?: number;
   gems?: number;
