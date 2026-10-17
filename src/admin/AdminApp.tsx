@@ -134,7 +134,7 @@ export function AdminApp() {
             <span className="block text-sm font-bold leading-tight">Админ-панель</span>
             <span className="block text-[11px] text-slate-400 leading-tight">owner</span>
           </span>
-          <a href="/" className="h-9 px-3 rounded-lg border border-slate-700 text-xs text-slate-300 hover:text-white hover:border-slate-500 flex items-center gap-1.5 transition-colors">
+          <a href={import.meta.env.BASE_URL} className="h-9 px-3 rounded-lg border border-slate-700 text-xs text-slate-300 hover:text-white hover:border-slate-500 flex items-center gap-1.5 transition-colors">
             <Gamepad2 className="w-4 h-4" /> <span className="hidden sm:inline">В игру</span>
           </a>
           <button onClick={logout} className="h-9 px-3 rounded-lg border border-slate-700 text-xs text-slate-300 hover:text-red-300 hover:border-red-500/50 flex items-center gap-1.5 transition-colors">
