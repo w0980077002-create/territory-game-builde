@@ -43,7 +43,7 @@
   z-index: -1;
 }
 .gear-stage-heading {
-  height: 55px;
+  height: 49px;
   padding: 5px 11px;
   display: flex;
   justify-content: center;
@@ -78,7 +78,7 @@
 }
 .gear-stage-ring {
   position: relative;
-  height: clamp(276px, 77vw, 338px);
+  height: clamp(228px, 61vw, 272px);
   max-width: 420px;
   margin: 0 auto;
 }
@@ -215,14 +215,14 @@
   border-top: none;
   border-radius: 0 0 15px 15px;
   background: linear-gradient(180deg, #30203f, #171426);
-  padding: 12px 8px 11px;
+  padding: 10px 8px 9px;
   box-shadow: inset 0 1px 1px #f6d9ff2e, 0 7px 13px #0006;
 }
 .gear-two-cards { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; }
 .gear-compare-side {
   position: relative;
   min-width: 0;
-  min-height: 171px;
+  min-height: 156px;
   border: 1px solid #756187;
   border-radius: 10px;
   background: linear-gradient(140deg, #352840, #151725 85%);
@@ -278,17 +278,23 @@
 }
 .gear-compare-rarity, .gear-compare-level { font-size: 10px; line-height: 1.25; }
 .gear-compare-level { color: #bfb0c8; font-weight: 800; }
-.gear-simple-stats { margin-top: 8px; border-top: 1px solid #ffffff20; padding-top: 5px; }
+.gear-simple-stats { margin-top: 4px; border-top: 1px solid #ffffff20; padding-top: 4px; }
 .gear-simple-stats > div {
   display: flex;
   justify-content: space-between;
   gap: 3px;
   font-size: 10px;
-  line-height: 1.6;
+  line-height: 1.48;
   border-bottom: 1px solid #ffffff0a;
 }
 .gear-simple-stats span { color: #b6aac5; }
 .gear-simple-stats strong { font-size: 10px; text-align: right; color: #f6f0fb; font-variant-numeric: tabular-nums; }
+.gear-card-delta { font-size: 10px; min-width: 31px; text-align: right; font-weight: 900; font-style: normal; font-variant-numeric: tabular-nums; }
+.gear-card-delta.gear-positive { color: #70ed9b; }
+.gear-card-delta.gear-negative { color: #ff777e; }
+.gear-compare-target .gear-simple-stats > div { gap: 2px; }
+.gear-compare-target .gear-simple-stats > div span { flex: 1; min-width: 0; }
+
 .gear-empty-compare { min-height: 125px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; font-size: 12px; color: #aaa0b8; }
 
 .gear-diff-block {
@@ -315,7 +321,8 @@
 .gear-positive { color: #70ed9b; }
 .gear-negative { color: #ff777e; }
 .gear-weight-hint { margin-top: 6px; font-size: 10px; color: #b4a8c5; line-height: 1.35; }
-.gear-compare-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.gear-compact-hint { padding: 0 3px; }
+.gear-compare-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
 .gear-compare-actions button {
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   flex: 1 0 auto; border-radius: 9px; min-height: 37px;
@@ -448,7 +455,7 @@
 
 @media (max-width: 370px) {
   .gear-showcase { padding-bottom: 5px; }
-  .gear-stage-ring { height: 274px; }
+  .gear-stage-ring { height: 226px; }
   .gear-equipped-slot { width: 60px; }
   .gear-slot-icon { width: 44px; height: 44px; }
   .gear-slot-weapon, .gear-slot-amulet { top: 9%; }

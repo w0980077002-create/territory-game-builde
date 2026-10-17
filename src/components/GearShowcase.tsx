@@ -10,7 +10,7 @@ import { GEAR_STATS, gearScore, canSalvageEquipment } from '@/game/gearTools';
 import { recycleCloudEquipment, saveCloudSave } from '@/game/cloud';
 import { ItemArt } from './ui/ItemArt';
 import type { Equipment, InventoryItem } from '@/game/types';
-import { ArrowDownUp, Check, ChevronDown, Hammer, Info, Recycle, RotateCcw, ShieldCheck, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, Hammer, Info, Recycle, RotateCcw, ShieldCheck, Trash2, X } from 'lucide-react';
 import './GearShowcase.css';
 
 type Slot = Equipment['slot'];
@@ -49,30 +49,6 @@ const eqToItem = (eq: Equipment): InventoryItem => ({
   qty: 1, description: '', equipment: eq,
 });
 
-function StatRows({ equipped, candidate, language }: {
-  equipped?: Equipment; candidate?: Equipment; language: 'ru' | 'en';
-}) {
-  return (
-    <div className="gear-stat-rows">
-      {GEAR_STATS.map((s) => {
-        const previous = equipped?.[s.key] ?? 0;
-        const next = candidate?.[s.key] ?? 0;
-        const delta = next - previous;
-        return (
-          <div className="gear-stat-row" key={s.key}>
-            <span className="gear-stat-label">{language === 'en' ? s.en : s.ru}</span>
-            <span className="gear-stat-old">{previous}{s.key === 'critChance' ? '%' : ''}</span>
-            <span className={'gear-stat-new ' + (delta > 0 ? 'gear-positive' : delta < 0 ? 'gear-negative' : '')}>
-              {next}{s.key === 'critChance' ? '%' : ''}
-              <span className="gear-stat-delta">{delta > 0 ? '▲ +' + delta : delta < 0 ? '▼ ' + delta : '—'}</span>
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function GearPortrait({ equipped, candidate, label, language, isCandidate }: {
   equipped?: Equipment;
   candidate?: Equipment;
@@ -99,12 +75,20 @@ function GearPortrait({ equipped, candidate, label, language, isCandidate }: {
             </div>
           </div>
           <div className="gear-simple-stats">
-            {GEAR_STATS.map((s) => (
-              <div key={s.key}>
-                <span>{language === 'en' ? s.en : s.ru}</span>
-                <strong>{eq[s.key] ?? 0}{s.key === 'critChance' ? '%' : ''}</strong>
-              </div>
-            ))}
+            {GEAR_STATS.map((s) => {
+              const value = eq[s.key] ?? 0;
+              const delta = value - (equipped?.[s.key] ?? 0);
+              return (
+                <div key={s.key}>
+                  <span>{language === 'en' ? s.en : s.ru}</span>
+                  <strong>{value}{s.key === 'critChance' ? '%' : ''}</strong>
+                  {isCandidate && <em className={'gear-card-delta ' + (delta > 0 ? 'gear-positive' : delta < 0 ? 'gear-negative' : '')}>
+                    {delta > 0 ? '▲+' + delta : delta < 0 ? '▼' + delta : '—'}
+                    {s.key === 'critChance' && delta !== 0 ? '%' : ''}
+                  </em>}
+                </div>
+              );
+            })}
           </div>
         </>
       ) : (
@@ -254,21 +238,15 @@ export function GearShowcase({ userId }: { userId: string }) {
           <>
             <div className="gear-two-cards">
               <GearPortrait equipped={worn} label={language === 'en' ? 'EQUIPPED' : 'НАДЕТО'} language={language}/>
-              <GearPortrait candidate={candidate} label={language === 'en' ? 'SELECTED' : 'ВЫБРАНО'} language={language} isCandidate />
+              <GearPortrait equipped={worn} candidate={candidate} label={language === 'en' ? 'SELECTED' : 'ВЫБРАНО'} language={language} isCandidate />
             </div>
-            <div className="gear-diff-block">
-              <p className="gear-diff-title"><ArrowDownUp size={14}/>
-                {language === 'en' ? 'What changes if equipped' : 'Что изменится после замены'}
-              </p>
-              <StatRows equipped={worn} candidate={candidate} language={language} />
-              <p className="gear-weight-hint">
-                {gearScore(candidate) > gearScore(worn)
-                  ? (language === 'en' ? 'Higher weighted stats — check each bonus' : 'Суммарно сильнее — проверь каждый бонус')
-                  : gearScore(bag.equipment) < gearScore(worn)
-                    ? (language === 'en' ? 'Lower weighted stats — may still suit your build' : 'Суммарно слабее — но может подойти под твой стиль')
-                    : (language === 'en' ? 'Same overall score — inspect the individual bonuses' : 'Одинаковая оценка — сравни отдельные бонусы')}
-              </p>
-            </div>
+            <p className="gear-weight-hint gear-compact-hint">
+              {gearScore(candidate) > gearScore(worn)
+                ? (language === 'en' ? 'Overall stronger — compare individual stats.' : 'В целом сильнее — сравни каждый бонус.')
+                : gearScore(candidate) < gearScore(worn)
+                  ? (language === 'en' ? 'Overall weaker — may still suit your build.' : 'В целом слабее — но может подойти под твой стиль.')
+                  : (language === 'en' ? 'Same overall rating — compare individual stats.' : 'Общая оценка равна — сравни бонусы.')}
+            </p>
             <div className="gear-compare-actions">
               <button type="button" onClick={equip} disabled={busy || mustReload} className="gear-action-equip">
                 <Check size={17}/>{language === 'en' ? 'Equip' : 'Надеть'}
