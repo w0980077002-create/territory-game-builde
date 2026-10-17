@@ -29,8 +29,7 @@ export function HallAdminTab({confirm}:{confirm:Confirm}){
    catch(e){setError((e as Error).message)}
  },[]);
  useEffect(()=>{void refresh();},[refresh]);
- const search=async(e:FormEvent)=>{
-  e.preventDefault();if(!query.trim())return;
+ const search=async()=>{if(!query.trim())return;
   setSearching(true);setError(null);
   try{
    const result=await adminCall<{players:PlayerSummary[]}>('search',{query:query.trim()});
@@ -84,7 +83,7 @@ export function HallAdminTab({confirm}:{confirm:Confirm}){
      <div className="flex gap-2">
       <input className={inputCls} placeholder="Telegram ID, UUID или @ник"
        value={query} onChange={e=>setQuery(e.target.value)}/>
-      <button type="button" disabled={searching} onClick={search as unknown as React.MouseEventHandler<HTMLButtonElement>}
+      <button type="button" disabled={searching} onClick={()=>void search()}
         className="h-11 px-3 rounded-xl bg-sky-600 text-sm font-bold disabled:opacity-50">Найти</button>
      </div>
      {players.length>1&&<div className="max-h-44 overflow-y-auto space-y-1">
