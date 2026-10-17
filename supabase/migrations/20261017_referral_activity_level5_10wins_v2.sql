@@ -168,6 +168,24 @@ END $$;
 REVOKE ALL ON FUNCTION territory_private.referral_try_qualify_v2(uuid) FROM PUBLIC,anon,authenticated;
 -- No public grants; invoked internally by the definer functions only.
 
+-- Finalize a reward on the actual server cloud SAVE of level five; do not
+-- require the newcomer to open their own Friends page after winning.
+CREATE OR REPLACE FUNCTION territory_private.referral_after_save_v2()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='pg_catalog'
+AS $$
+BEGIN
+ IF NEW.game_state IS DISTINCT FROM OLD.game_state
+    AND EXISTS(SELECT 1 FROM territory_private.referral_invites_v1
+      WHERE invited_id=NEW.id AND qualified_at IS NULL)
+ THEN PERFORM territory_private.referral_try_qualify_v2(NEW.id); END IF;
+ RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION territory_private.referral_after_save_v2() FROM PUBLIC,anon,authenticated;
+DROP TRIGGER IF EXISTS territory_referral_after_save_v2 ON public.players;
+CREATE TRIGGER territory_referral_after_save_v2
+ AFTER UPDATE OF game_state ON public.players
+ FOR EACH ROW EXECUTE FUNCTION territory_private.referral_after_save_v2();
+
 -- Preserve existing HMAC Telegram verification but drop 24-hour eligibility gate.
 CREATE OR REPLACE FUNCTION public.territory_referral_qualify_v1(
  p_invited uuid,p_telegram_id bigint,p_auth_date bigint
