@@ -30,7 +30,8 @@
     "test:companion-navigation": "node scripts/check-companion-navigation.mjs",
     "test:founders": "node scripts/check-founder-referrals.mjs && node scripts/check-founders-ui.mjs",
     "test:referral-activity": "node scripts/check-referral-activity.mjs",
-    "test:hall": "node scripts/check-game-hall.mjs && node scripts/check-game-hall-ui.mjs"
+    "test:hall": "node scripts/check-game-hall.mjs && node scripts/check-game-hall-ui.mjs",
+    "test:admin-master": "node scripts/check-admin-master.mjs && node scripts/check-admin-ui.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

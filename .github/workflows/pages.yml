@@ -53,6 +53,7 @@ jobs:
           npm run test:founders
           npm run test:referral-activity
           npm run test:hall
+          npm run test:admin-master
           node scripts/check-equipment-safety-v4.mjs
           npm run test:feature-separation
           npm run test:mobile-home
