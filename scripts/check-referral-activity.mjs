@@ -8,6 +8,7 @@ const as=async(id) => { await q("SELECT set_config('request.jwt.claim.sub',$1,fa
 const sample=name=>({player:{name,level:1,gold:100,gems:10,redGems:0},inventory:[],forgeMaterials:0,battleStones:10});
 const rpc=async(fn,args=[]) => (await q('SELECT public.'+fn+'('+args.map((_,i)=>'$'+(i+1)).join(',')+') AS value',args))[0].value;
 const rounds=JSON.stringify([{attack:'head',blocks:['chest','legs']},{attack:'belly',blocks:['head','legs']}]);
+const bossRounds=JSON.stringify([{attack:'head',blocks:['chest','legs']},{attack:'belly',blocks:['head','legs']},{attack:'legs',blocks:['head','chest']}]);
 try {
  await db.exec(`
  CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
@@ -57,7 +58,8 @@ try {
   const started=await rpc('territory_referral_fight_start_v2',['stage',enemy]);
   assert.equal(started.tracked,true,'ticket '+n);
   await q("UPDATE territory_private.referral_fight_tickets_v2 SET started_at=clock_timestamp()-interval '10 seconds' WHERE player_id=$1",[uid(2)]);
-  const done=(await q("SELECT public.territory_referral_fight_finish_v2($1,true,$2::jsonb) AS x",[started.ticket,rounds]))[0].x;
+  const actions=idx===5?bossRounds:rounds;
+  const done=(await q("SELECT public.territory_referral_fight_finish_v2($1,true,$2::jsonb) AS x",[started.ticket,actions]))[0].x;
   assert.equal(done.credited,true,'win '+n);
   assert.equal((await q("SELECT public.territory_referral_fight_finish_v2($1,true,$2::jsonb) AS x",[started.ticket,rounds]))[0].x.credited,false);
   await q("UPDATE territory_private.referral_activity_v2 SET last_win_at=clock_timestamp()-interval '10 seconds' WHERE player_id=$1",[uid(2)]);
