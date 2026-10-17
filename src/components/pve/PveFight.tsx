@@ -350,7 +350,11 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
           onNext={onNext ? () => {
             if (nextRequested.current) return;
             nextRequested.current = true;
-            void referralFinish.current.catch(() => false).then(onNext);
+            // Never hold up normal combat if Supabase is temporarily offline.
+            void Promise.race([
+              referralFinish.current.catch(() => false),
+              new Promise(resolve => setTimeout(resolve, 1400)),
+            ]).then(onNext);
           } : undefined} />}
       </div>
 
