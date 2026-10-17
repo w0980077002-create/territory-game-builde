@@ -11,7 +11,7 @@ const cards: { task: SocialTask; ru: string; en: string; ruDesc: string; enDesc:
     ruDesc: 'Подпишись на новостной канал', enDesc: 'Subscribe to our news channel' },
 ];
 
-export function SocialQuestsSection({ userId }: { userId: string }) {
+export function SocialQuestsSection({ userId, onStatusChange }: { userId: string; onStatusChange?: (next: SocialStatus) => void }) {
   const { language } = useLanguage();
   const en = language === 'en';
   const [status, setStatus] = useState<SocialStatus | null>(null);
@@ -21,11 +21,11 @@ export function SocialQuestsSection({ userId }: { userId: string }) {
 
   useEffect(() => {
     let active = true;
-    socialStatus().then((result) => { if (active) setStatus(result); })
+    socialStatus().then((result) => { if (active) { setStatus(result); onStatusChange?.(result); } })
       .catch(() => { if (active) setError(en ? 'Restart to load community quests.' : 'Перезапусти игру, чтобы загрузить задания.'); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [en]);
+  }, [en, onStatusChange]);
 
   async function verify(task: SocialTask) {
     if (busy || !status || status[task]) return;
@@ -33,7 +33,9 @@ export function SocialQuestsSection({ userId }: { userId: string }) {
     setError('');
     try {
       await claimSocial(userId, task);
-      setStatus((prev) => prev ? { ...prev, [task]: true } : prev);
+      const updated = { ...status, [task]: true };
+      setStatus(updated);
+      onStatusChange?.(updated);
     } catch (e) {
       const code = e instanceof Error ? e.message : '';
       setError(code === 'not_subscribed'
@@ -63,7 +65,7 @@ export function SocialQuestsSection({ userId }: { userId: string }) {
             <div className="flex gap-3 items-start">
               <Gift className="w-6 h-6 shrink-0 text-amber-300" />
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-bold text-white">{en ? item.en : item.ru}</h4>
+                <h4 className="flex items-center gap-1.5 text-sm font-bold text-white">{!claimed && <span aria-hidden="true" className="w-2 h-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_7px_rgba(239,68,68,0.8)]" />}{en ? item.en : item.ru}</h4>
                 <p className="text-xs text-gray-400 mt-1">{en ? item.enDesc : item.ruDesc}</p>
                 <p className="text-xs text-sky-300 mt-1 truncate">{SOCIAL_LINKS[item.task].replace('https://', '')}</p>
                 <div className="flex gap-3 mt-2">

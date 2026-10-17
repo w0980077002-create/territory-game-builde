@@ -9,6 +9,7 @@ import { getAppearanceIcon } from '@/game/appearance';
 import { getFollowerArt } from '@/game/combatArt';
 import { MAIL, blessingReady, claimBlessing, dailyStatus } from '@/game/progression';
 import type { AuthUser } from '@/game/auth';
+import type { QuestAlerts } from '@/game/questAttention';
 import { useLive } from '@/game/live';
 import type { BattleView } from '@/components/BattleScreen';
 import { EquipCells } from '@/components/ui/EquipCells';
@@ -23,6 +24,7 @@ export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leade
 interface Props {
   user: AuthUser;
   saveStatus: SaveStatus;
+  questAlerts: QuestAlerts;
   onOpen: (to: HomeTarget) => void;
   onBattle: (view: BattleView, autoStart?: boolean) => void;
   onInventory: (tab: 'items' | 'equipment') => void;
@@ -79,7 +81,7 @@ function ControlButton({ active, label, onClick, children }: { active?: boolean;
   );
 }
 
-export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, notify }: Props) {
+export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, onInventory, notify }: Props) {
   const state = useStore(useGame);
   const arena = useStore(useArena);
   const { vip } = useStore(useAccount);
@@ -98,7 +100,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
   const adminMail = useStore(useLive).mail.length;
   const unreadMail = MAIL.filter((l) => !state.mailClaimed.includes(l.id)).length + adminMail;
   const blessReady = blessingReady(state);
-  const quest = state.quests.find((q) => !q.claimed && q.current < q.target) ?? state.quests.find((q) => !q.claimed);
+  const quest = state.quests.find((q) => !q.claimed && q.current >= q.target) ?? state.quests.find((q) => !q.claimed);
 
   const soon = (label: string) => notify(language === 'en' ? `${label} will be available in a future update` : `${label} откроется в следующих обновлениях`);
 
@@ -176,7 +178,7 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
       <div className="home-side-stack absolute z-10 left-1.5 top-[calc(max(8px,env(safe-area-inset-top))+90px)] bottom-[200px] w-[44px] flex flex-col gap-1">
         <SideButton icon="/ic-events.webp" label={t('events')} soon onClick={() => soon(t('events'))} />
         <SideButton icon="/ic-daily.webp" label={t('rewards')} badge={!dailyStatus(state).claimedToday} onClick={() => setSheet('daily')} />
-        <SideButton icon="/ic-quests.webp" label={t('quests')} onClick={() => onOpen('quests')} />
+        <SideButton icon="/ic-quests.webp" label={t('quests')} badge={questAlerts.count > 0} onClick={() => onOpen('quests')} />
         <SideButton icon="/ic-invite.webp" label={t('friends')} onClick={() => onOpen('friends')} />
         <SideButton icon="/ic-sea.webp" label={t('sea')} soon onClick={() => soon(t('sea'))} />
       </div>
@@ -238,11 +240,12 @@ export function HomeScreen({ user, saveStatus, onOpen, onBattle, onInventory, no
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => onOpen('quests')}
-            className="flex-1 min-w-0 h-10 flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-[#3a2a16]/95 to-[#1a130a]/95 pl-1 pr-1.5 active:scale-[0.98] transition-transform"
+            className={`relative flex-1 min-w-0 h-10 flex items-center gap-1.5 rounded-xl border bg-gradient-to-r from-[#3a2a16]/95 to-[#1a130a]/95 pl-1 pr-1.5 active:scale-[0.98] transition-transform ${questAlerts.count ? 'border-red-400/80 shadow-[0_0_12px_rgba(239,68,68,0.25)]' : 'border-amber-500/40'}`}
           >
             <img src="/ic-quests.webp" alt="" className="w-8 h-8 object-contain shrink-0" />
+            {questAlerts.count > 0 && <span aria-label={language === 'en' ? 'Quests need attention' : 'Есть новые задания или награды'} className="absolute -top-1 -left-1 rounded-full bg-red-600 border border-white/80 text-white text-[9px] font-black min-w-4 h-4 px-0.5 flex items-center justify-center shadow-[0_0_8px_rgba(239,68,68,0.7)] animate-pulse">{questAlerts.count > 9 ? '9+' : questAlerts.count}</span>}
             <span className="flex-1 min-w-0 text-left">
-              <span className="block text-[10px] font-semibold text-amber-50 truncate leading-tight">{quest ? quest.title : t('allQuestsDone')}</span>
+              <span className="block text-[10px] font-semibold text-amber-50 truncate leading-tight">{questAlerts.readyCount > 0 ? (language === 'en' ? 'Claim quest rewards!' : 'Забери награды!') : quest ? quest.title : questAlerts.newCount > 0 ? (language === 'en' ? 'New quests available!' : 'Новые задания!') : t('allQuestsDone')}</span>
               {quest && (
                 <span className="flex items-center gap-1 mt-0.5">
                   <span className="flex-1 h-1.5 rounded-full bg-black/60 overflow-hidden">

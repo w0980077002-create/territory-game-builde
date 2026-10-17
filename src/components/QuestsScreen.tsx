@@ -5,6 +5,7 @@ import type { Achievement, Quest } from '@/game/types';
 import { Currency } from './ui/Currency';
 import { useLanguage } from '@/game/i18n';
 import { SocialQuestsSection } from './SocialQuestsSection';
+import type { SocialStatus } from '@/game/socialQuests';
 
 const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
   { type: 'daily', titleKey: 'daily', hintKey: 'dailyHint' },
@@ -12,7 +13,7 @@ const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
   { type: 'story', titleKey: 'story', hintKey: 'storyHint' },
 ];
 
-export function QuestsScreen({ userId }: { userId: string }) {
+export function QuestsScreen({ userId, onSocialStatusChange }: { userId: string; onSocialStatusChange: (status: SocialStatus) => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const ready = state.quests.filter((q) => !q.claimed && q.current >= q.target).length;
@@ -30,7 +31,7 @@ export function QuestsScreen({ userId }: { userId: string }) {
         </div>
       </div>
 
-      <SocialQuestsSection userId={userId} />
+      <SocialQuestsSection userId={userId} onStatusChange={onSocialStatusChange} />
 
       {SECTIONS.map((sec) => {
         const list = state.quests.filter((q) => q.type === sec.type);
@@ -78,11 +79,12 @@ function ClaimState({ complete, claimed, onClaim, claimLabel }: { complete: bool
 function QuestCard({ quest: q, onClaim, language, t }: { quest: Quest; onClaim: () => void; language: 'ru' | 'en'; t: (key: string) => string }) {
   const complete = q.current >= q.target;
   return (
-    <div className={`rounded-2xl border p-3 transition-colors ${complete && !q.claimed ? 'border-amber-400/40 bg-amber-950/20' : 'border-white/10 bg-[#161b26]'} ${q.claimed ? 'opacity-60' : ''}`}>
+    <div className={`relative rounded-2xl border p-3 transition-colors ${complete && !q.claimed ? 'border-amber-400/65 bg-amber-950/25 shadow-[0_0_13px_rgba(245,158,11,0.14)]' : !q.claimed ? 'border-sky-400/25 bg-[#161b26]' : 'border-white/10 bg-[#161b26] opacity-60'}`}>
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-white">{language === 'en' ? ({ q_daily_1: t('questKill3'), q_daily_2: t('questSpend50'), q_daily_3: t('questGladiator'), q_weekly_1: t('questBoss'), q_story_1: t('questChapters') } as Record<string, string>)[q.id] ?? q.title : q.title}</h4>
+          <h4 className="text-sm font-semibold text-white flex items-center gap-1.5">{!q.claimed && <span aria-hidden="true" className={`w-2 h-2 shrink-0 rounded-full ${complete ? 'bg-red-500 animate-pulse shadow-[0_0_7px_rgba(239,68,68,0.9)]' : 'bg-sky-400'}`} />}{language === 'en' ? ({ q_daily_1: t('questKill3'), q_daily_2: t('questSpend50'), q_daily_3: t('questGladiator'), q_weekly_1: t('questBoss'), q_story_1: t('questChapters') } as Record<string, string>)[q.id] ?? q.title : q.title}</h4>
           <p className="text-xs text-gray-400">{language === 'en' ? ({ q_daily_1: t('questKill3Desc'), q_daily_2: t('questSpend50Desc'), q_daily_3: t('questGladiatorDesc'), q_weekly_1: t('questBossDesc'), q_story_1: t('questChaptersDesc') } as Record<string, string>)[q.id] ?? q.description : q.description}</p>
+          {complete && !q.claimed && <p className="text-[10px] text-amber-300 font-bold mt-1">{language === 'en' ? 'REWARD READY!' : 'НАГРАДА ГОТОВА!'}</p>}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs">
             {q.rewardGold > 0 && <Currency kind="gold" value={`+${q.rewardGold}`} size={14} className="text-amber-200" />}
             {q.rewardGems > 0 && <Currency kind="gems" value={`+${q.rewardGems}`} size={14} className="text-sky-200" />}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { reconcileLockedBelt } from '@/game/belt';
@@ -27,6 +27,8 @@ import { useStore } from '@/game/store';
 import { isVerifiedAdmin } from '@/admin/api';
 import { ChevronLeft, Send, Wrench, Smartphone } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
+import { socialStatus, type SocialStatus } from '@/game/socialQuests';
+import { getQuestAlerts, readSeenQuests, rememberSeenQuests } from '@/game/questAttention';
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
 type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends';
@@ -98,7 +100,28 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const live = useStore(useLive);
+  const game = useStore(useGame);
+  const [socialClaims, setSocialClaims] = useState<SocialStatus | null>(null);
+  const [seenQuestKeys, setSeenQuestKeys] = useState<string[]>(() => readSeenQuests(user.id));
+  const questAlerts = getQuestAlerts(game, socialClaims, seenQuestKeys);
+  const onSocialStatusChange = useCallback((next: SocialStatus) => setSocialClaims(next), []);
   useLiveSync(loaded);
+
+  // Social rewards are stored on the server, never inferred from local quest progress.
+  useEffect(() => {
+    if (!loaded) return;
+    let active = true;
+    socialStatus().then((result) => {
+      if (active) setSocialClaims(result);
+    }).catch(() => { /* Normal quests still show alerts if Telegram is temporarily unavailable. */ });
+    return () => { active = false; };
+  }, [loaded, user.id]);
+
+  // A first visit dismisses "new" dots, but earned unclaimed rewards stay highlighted.
+  useEffect(() => {
+    if (!loaded || screen !== 'quests') return;
+    setSeenQuestKeys(rememberSeenQuests(user.id, game, socialClaims));
+  }, [loaded, screen, user.id, game.quests, game.dailyResetDay, game.weeklyResetWeek, socialClaims]);
 
   useEffect(() => {
     const orientation = window.matchMedia('(orientation: landscape)');
@@ -251,6 +274,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             saveStatus={saveStatus}
             notify={notify}
             onOpen={setScreen}
+            questAlerts={questAlerts}
             onBattle={(view, auto) => {
               setBattleView(view);
               setAutoStart(!!auto);
@@ -279,7 +303,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'forge' && <ForgeScreen />}
         {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} />}
         {screen === 'leaderboard' && <LeaderboardScreen user={user} />}
-        {screen === 'quests' && <QuestsScreen userId={user.id} />}
+        {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} />}
         {screen === 'games' && (
           <GamesScreen userId={user.id} onPlay={(gameId) => { setHallGame(gameId); setScreen('hall-play'); }} />
         )}
