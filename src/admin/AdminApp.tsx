@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { BarChart3, CheckCircle2, Crown, Eye, EyeOff, Gamepad2, Lock, LogOut, Mail, ShieldAlert, Trophy, Wallet, Ticket, ScrollText, XCircle } from 'lucide-react';
-import { adminLogin, clearAdminToken, getAdminToken } from '@/admin/api';
+import { adminLogin, adminCall, clearAdminToken, getAdminToken } from '@/admin/api';
 import { ConfirmDialog, ErrorLine, inputCls, type Confirm } from '@/admin/ui';
 import { DashboardTab } from '@/admin/tabs/DashboardTab';
 import { PlayersTab } from '@/admin/tabs/PlayersTab';
@@ -88,6 +88,12 @@ export function AdminApp() {
 
   useEffect(() => {
     document.title = 'Админ-панель · Территория';
+  }, []);
+  useEffect(() => {
+    if (!getAdminToken()) return;
+    void adminCall('verify').catch(() => {
+      if (!getAdminToken()) setAuthed(false);
+    });
   }, []);
 
   useEffect(() => {

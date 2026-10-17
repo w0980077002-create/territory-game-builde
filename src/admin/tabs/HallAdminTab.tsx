@@ -30,11 +30,11 @@ export function HallAdminTab({confirm}:{confirm:Confirm}){
  },[]);
  useEffect(()=>{void refresh();},[refresh]);
  const search=async()=>{if(!query.trim())return;
-  setSearching(true);setError(null);
+  setSearching(true);setError(null);setSelected(null);setWallet(null);
   try{
    const result=await adminCall<{players:PlayerSummary[]}>('search',{query:query.trim()});
    setPlayers(result.players);
-   if(result.players.length===1){setSelected(result.players[0]);void readWallet(result.players[0].id);}
+   if(result.players.length===1){setSelected(result.players[0]);setWallet(null);void readWallet(result.players[0].id);}
   }catch(e){setError((e as Error).message);}finally{setSearching(false);}
  };
  const submit=(e:FormEvent)=>{
@@ -82,12 +82,12 @@ export function HallAdminTab({confirm}:{confirm:Confirm}){
     {scope==='one'&&<div className="rounded-xl border border-slate-700/60 bg-slate-950/40 p-2.5 space-y-2">
      <div className="flex gap-2">
       <input className={inputCls} placeholder="Telegram ID, UUID или @ник"
-       value={query} onChange={e=>setQuery(e.target.value)}/>
+       value={query} onChange={e=>{setQuery(e.target.value);setSelected(null);setWallet(null);}}/>
       <button type="button" disabled={searching} onClick={()=>void search()}
         className="h-11 px-3 rounded-xl bg-sky-600 text-sm font-bold disabled:opacity-50">Найти</button>
      </div>
      {players.length>1&&<div className="max-h-44 overflow-y-auto space-y-1">
-      {players.map(p=><button type="button" key={p.id} onClick={()=>{setSelected(p);void readWallet(p.id);}}
+      {players.map(p=><button type="button" key={p.id} onClick={()=>{setSelected(p);setWallet(null);void readWallet(p.id);}}
         className="w-full text-left rounded-lg bg-slate-800/70 px-2 py-2 text-xs">{p.name} · ур.{p.level} · TG {p.telegramId??'—'}</button>)}
      </div>}
      {selected&&<div className="rounded-xl border border-emerald-600/40 p-2.5 bg-emerald-900/15">

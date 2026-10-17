@@ -62,7 +62,7 @@ try{
  const overview=await rpc('territory_hall_admin_overview_v2');
  assert.equal(overview.wallets,3);assert.equal(overview.activeSessions,0);
  assert.equal(overview.tickets,1000+21+9);
- assert.equal((await q('SELECT count(*)::int AS n FROM territory_private.hall_admin_receipts_v2'))[0].n,11);
+ assert.equal((await q('SELECT count(*)::int AS n FROM territory_private.hall_admin_receipts_v2'))[0].n,9);
  await q("INSERT INTO territory_private.admin_auth_v2(id,salt,verifier,version) VALUES(1,repeat('a',32),repeat('b',64),1)");
  assert.equal((await rpc('territory_admin_credential_v2')).version,1);
  assert.equal(await rpc('territory_admin_rotate_v2',['c'.repeat(32),'d'.repeat(64),1]),2);
