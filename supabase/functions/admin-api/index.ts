@@ -333,24 +333,9 @@ async function handle(action: string, body: Row) {
     }
 
     case "hall_stats": {
-      const [wallets, sessions, history] = await Promise.all([
-        db.schema('territory_private').from('hall_accounts_v1').select('player_id,tickets,points,played,wins,pending_gold,daily_gold'),
-        db.schema('territory_private').from('hall_sessions_v1').select('player_id', {count:'exact',head:true}),
-        db.schema('territory_private').from('hall_history_v1').select('game,won,earned_gold,played_at')
-          .order('played_at',{ascending:false}).limit(30),
-      ]);
-      // Rest access to private schema is disabled by default on Supabase.
-      // Use the public service-role-only projection instead of exposing it.
-      if(wallets.error||sessions.error||history.error) {
-        const {data,error}=await db.rpc('territory_hall_admin_overview_v2');
-        if(error)throw new HttpError(500,'db_error');
-        return data;
-      }
-      const a=wallets.data??[], h=history.data??[];
-      return {wallets:a.length, tickets:a.reduce((n,x)=>n+Number(x.tickets),0),
-        games:a.reduce((n,x)=>n+Number(x.played),0),
-        pendingGold:a.reduce((n,x)=>n+Number(x.pending_gold),0),
-        activeSessions:sessions.count??0, recent:h};
+      const {data,error}=await db.rpc('territory_hall_admin_overview_v2');
+      if(error||!data)throw new HttpError(500,'db_error');
+      return data;
     }
     case "hall_player": {
       const id=playerId(body.playerId);
