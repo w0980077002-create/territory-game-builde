@@ -61,14 +61,14 @@ try {
   assert.equal(done.credited,true,'win '+n);
   assert.equal((await q("SELECT public.territory_referral_fight_finish_v2($1,true,$2::jsonb) AS x",[started.ticket,rounds]))[0].x.credited,false);
   await q("UPDATE territory_private.referral_activity_v2 SET last_win_at=clock_timestamp()-interval '10 seconds' WHERE player_id=$1",[uid(2)]);
-  if(n===9){
+  if(n===8){
    await q("UPDATE public.players SET game_state=jsonb_set(game_state,'{player,level}','5'::jsonb) WHERE id=$1",[uid(2)]);
    assert.equal((await q('SELECT qualified_at FROM territory_private.referral_invites_v1 WHERE invited_id=$1',[uid(2)]))[0].qualified_at,null);
   }
  }
  await as(uid(1));
  const state=await rpc('territory_referral_status_v1');
- assert.equal(state.qualified,1,'10 wins, level five and verified XP qualify on day one');
+ assert.equal(state.qualified,1,'Ten wins and level five qualify on day one');
  assert.equal(state.sealed_chests,1);
  roster=await rpc('territory_referral_friends_v2');
  assert.equal(roster[0].wins,11);assert.equal(roster[0].level,5);assert.equal(roster[0].qualified,true);

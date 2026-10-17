@@ -144,7 +144,7 @@ BEGIN
    CASE WHEN a.boss_wins>=1 THEN 80 ELSE 0 END
  INTO v_wins,v_xp,v_bonus
  FROM territory_private.referral_activity_v2 a WHERE a.player_id=p_uid;
- IF coalesce(v_wins,0)<10 OR coalesce(v_xp,0)+coalesce(v_bonus,0)<498
+ IF coalesce(v_wins,0)<10 OR coalesce(v_xp,0)+coalesce(v_bonus,0)<450
  THEN RETURN false; END IF;
  SELECT CASE WHEN (game_state->'player'->>'level') ~ '^[0-9]{1,5}$'
    THEN (game_state->'player'->>'level')::integer ELSE 0 END
