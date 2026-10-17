@@ -49,6 +49,7 @@ jobs:
           npm run typecheck
           npm run test:economy
           npm run test:hall
+          npm run test:admin-master
           npm run test:professions
           npm run test:balance
           npm run test:feature-separation
