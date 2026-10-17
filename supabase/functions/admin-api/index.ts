@@ -407,6 +407,75 @@ async function handle(action: string, body: Row) {
       return { sent: ids.length };
     }
 
+    case "warn": {
+      // Anti-cheat NEVER bans automatically. Warnings are explicit owner actions.
+      const id = playerId(body.playerId);
+      const message = text(body.message, 1000);
+      if (message.length < 5) throw new HttpError(400, "invalid_request");
+      const { data: player, error: lookupError } = await db.from("players").select("id").eq("id", id).maybeSingle();
+      if (lookupError) throw new HttpError(500, "db_error");
+      if (!player) throw new HttpError(404, "not_found");
+      const { error } = await db.from("admin_grants").insert({
+        player_id: id, kind: "mail", subject: "Предупреждение администрации", body: message, payload: {},
+      });
+      if (error) throw new HttpError(500, "db_error");
+      await audit("warn", { playerId: id, message });
+      return { ok: true };
+    }
+    case "mail_schedule": {
+      const subject = text(body.subject, 80);
+      const message = text(body.body, 1000);
+      if (!subject || !message) throw new HttpError(400, "empty_mail");
+      const payload = cleanPayload(body.payload);
+      const target = String(body.target ?? "");
+      if (target !== "one" && target !== "all" && target !== "active") {
+        throw new HttpError(400, "invalid_target");
+      }
+      const sendAt = new Date(String(body.sendAt ?? ""));
+      if (!Number.isFinite(sendAt.getTime()) ||
+        sendAt.getTime() <= Date.now() + 60_000 ||
+        sendAt.getTime() > Date.now() + 365 * 86_400_000) {
+        throw new HttpError(400, "invalid_schedule_time");
+      }
+      let recipient: string | null = null;
+      if (target === "one") {
+        const raw = text(body.recipient, 64).replace(/^@/, "");
+        if (!raw) throw new HttpError(400, "invalid_target");
+        let q = db.from("players").select("id").limit(1);
+        q = /^\d+$/.test(raw) ? q.eq("telegram_id", Number(raw))
+          : /^[0-9a-f-]{36}$/i.test(raw) ? q.eq("id", raw) : q.eq("username", raw);
+        const { data, error } = await q;
+        if (error) throw new HttpError(500, "db_error");
+        recipient = data?.[0]?.id ?? null;
+        if (!recipient) throw new HttpError(404, "recipient_not_found");
+      }
+      const { data, error } = await db.rpc("territory_admin_mail_schedule_v1", {
+        p_target: target,
+        p_recipient: recipient,
+        p_subject: subject,
+        p_body: message,
+        p_payload: payload,
+        p_send_at: sendAt.toISOString(),
+      });
+      if (error || typeof data !== "string") {
+        console.error("mail_schedule:", error);
+        throw new HttpError(500, "db_error");
+      }
+      return { ok: true, id: data };
+    }
+    case "mail_schedules": {
+      const { data, error } = await db.rpc("territory_admin_mail_schedules_v1");
+      if (error) throw new HttpError(500, "db_error");
+      return { rows: Array.isArray(data) ? data : [] };
+    }
+    case "mail_schedule_cancel": {
+      const id = playerId(body.id);
+      const { data, error } = await db.rpc("territory_admin_mail_cancel_v1", { p_id: id });
+      if (error) throw new HttpError(500, "db_error");
+      if (data !== true) throw new HttpError(409, "schedule_already_processed");
+      return { ok: true };
+    }
+
     case "hall_stats": {
       const {data,error}=await db.rpc('territory_hall_admin_overview_v2');
       if(error||!data)throw new HttpError(500,'db_error');

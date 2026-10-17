@@ -44,6 +44,7 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
   const [hall, setHall] = useState<HallAccount | null>(null);
   const [ticketQty, setTicketQty] = useState('20');
   const [reason, setReason] = useState('Награда за тестирование');
+  const [warningText, setWarningText] = useState('');
 
   const load = useCallback(() => {
     adminCall<{ player: PlayerSummary; pendingAdjustments: number }>('player', { playerId: id })
@@ -96,6 +97,17 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
     });
   };
 
+  const warnPlayer = () => {
+    const message = warningText.trim();
+    if (message.length < 5) return setError('Напиши текст предупреждения (минимум 5 символов).');
+    setError(null);
+    confirm(`Отправить игроку ${p.name} предупреждение без блокировки? Текст: ${message}`, async () => {
+      await adminCall('warn', { playerId: p.id, message });
+      setWarningText('');
+      loadExtra();
+      return 'Предупреждение отправлено в игровую почту. Игрок не заблокирован.';
+    });
+  };
   const giveTickets = () => {
     const count=Number(ticketQty),note=reason.trim();
     if(!Number.isSafeInteger(count)||count===0||Math.abs(count)>250)
@@ -143,6 +155,16 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
         </div>
       </Panel>
 
+      <Panel title="Предупреждение без блокировки" icon={<ShieldAlert className="w-4 h-4 text-amber-300" />}>
+        <p className="text-xs text-slate-400 mb-3">Подозрительная активность не доказывает нарушение. Решение предупредить или забанить всегда принимаешь только ты. Это действие не блокирует игрока.</p>
+        <textarea className={`${inputCls} h-28 py-2.5 resize-none`} maxLength={1000}
+          value={warningText} onChange={(e) => setWarningText(e.target.value)}
+          placeholder="Здравствуйте! Мы заметили необычную активность и просим уточнить обстоятельства..." />
+        <button type="button" onClick={warnPlayer}
+          className="mt-2 h-11 rounded-xl bg-amber-500/15 border border-amber-500/50 text-amber-200 w-full font-semibold text-sm">
+          Отправить предупреждение (без бана)
+        </button>
+      </Panel>
       <ErrorLine text={error} />
       {pending > 0 && (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
@@ -295,7 +317,7 @@ export function PlayersTab({ confirm }: { confirm: Confirm }) {
 
       <Panel title="Подозрительные игроки" icon={<ShieldAlert className="w-4 h-4 text-amber-400" />}>
         <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
-          Помечаются игроки, у которых монеты растут быстрее 5 000 в час с момента регистрации, уровень растёт быстрее 15 в день, или слишком много алмазов.
+          Это сигналы для ручной проверки, а не доказательства нарушений. Автоматических банов нет. Только ты решаешь: ничего не делать, предупредить через почту или заблокировать игрока. Помечаются необычно быстрый рост монет и уровней, большие запасы алмазов.
         </p>
         {!suspicious ? <Loading /> : suspicious.length === 0 ? <Empty text="Подозрительных игроков нет" /> : (
           <div className="space-y-2">
