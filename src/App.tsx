@@ -26,8 +26,9 @@ import { MaintenanceScreen, BannedScreen } from '@/components/ServiceScreens';
 import { useLive, useLiveSync, fetchMaintenance } from '@/game/live';
 import { useStore } from '@/game/store';
 import { isVerifiedAdmin } from '@/admin/api';
-import { ChevronLeft, Send, Wrench, Smartphone } from 'lucide-react';
+import { ChevronLeft, Send, Wrench, Smartphone, BellRing } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
+import { useGatherReady } from '@/game/gatherNotice';
 import { socialStatus, type SocialStatus } from '@/game/socialQuests';
 import { getQuestAlerts, readSeenQuests, rememberSeenQuests } from '@/game/questAttention';
 
@@ -98,6 +99,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const [battleLocked, setBattleLocked] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const gatherReady = useGatherReady(loaded);
   const needsInitialSave = useRef(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
@@ -313,7 +315,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
                 disabled={battleLocked}
                 onClick={() => goNav(t.id)}
                 aria-current={active ? 'page' : undefined}
-                className={`nav-btn disabled:opacity-40 disabled:cursor-not-allowed ${
+                aria-label={t.id === 'map' && gatherReady ? `${tNav(translate, t.label)} — ${language === 'en' ? 'resources ready' : 'ресурсы готовы'}` : tNav(translate, t.label)}
+                className={`nav-btn relative disabled:opacity-40 disabled:cursor-not-allowed ${
                   center
                     ? `-mt-3 h-[70px] border-sky-300/60 bg-gradient-to-b from-sky-600/60 to-[#0d1a33] shadow-[0_0_14px_rgba(56,189,248,0.35)] ${active ? 'ring-2 ring-sky-300/70' : ''}`
                     : active
@@ -327,6 +330,11 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
                   draggable={false}
                   className={`object-contain transition-transform duration-200 ${center ? 'w-10 h-10' : 'w-8 h-8'} ${active ? 'scale-110' : ''} `}
                 />
+                {t.id === 'map' && gatherReady && (
+                  <span aria-hidden="true" className="absolute right-0 top-0 w-4 h-4 rounded-full bg-emerald-500 border border-emerald-200 flex items-center justify-center shadow-[0_0_10px_rgba(52,211,153,0.9)] animate-pulse">
+                    <BellRing className="w-2.5 h-2.5 text-white" />
+                  </span>
+                )}
                 <span className={`text-[9px] tracking-tight font-bold leading-none truncate max-w-full ${active || center ? 'text-white' : 'text-gray-400'}`}>{tNav(translate, t.label)}</span>
               </button>
             );
