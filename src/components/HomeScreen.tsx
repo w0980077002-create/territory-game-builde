@@ -3,7 +3,7 @@ import { ChevronRight, Repeat, Crown } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { selectedFollower } from '@/game/followers';
 import { useGame, useArena, useAccount } from '@/game/actions';
-import { generateChapter, getComputedStats } from '@/game/engine';
+import { generateChapter, getComputedStats, HERO_MAX_LEVEL } from '@/game/engine';
 import { beltContext } from '@/game/belt';
 import { getAppearanceIcon } from '@/game/appearance';
 import { getFollowerArt } from '@/game/combatArt';
@@ -96,7 +96,8 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
   const nextEnemy = bossReady ? chapter.boss : chapter.enemies[wins];
   const stats = getComputedStats(state);
   const follower = selectedFollower(state);
-  const xpPct = Math.min(100, (player.xp / player.xpToNext) * 100);
+  const atMaxLevel = player.level >= HERO_MAX_LEVEL;
+  const xpPct = atMaxLevel ? 100 : Math.min(100, (player.xp / Math.max(1, player.xpToNext)) * 100);
   const adminMail = useStore(useLive).mail.length;
   const unreadMail = MAIL.filter((l) => !state.mailClaimed.includes(l.id)).length + adminMail;
   const blessReady = blessingReady(state);
@@ -221,7 +222,7 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
             <span className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-lime-400 transition-[width] duration-500" style={{ width: `${xpPct}%` }} />
             <span className="absolute left-1.5 inset-y-0 flex items-center text-[9px] font-black text-amber-200 [text-shadow:0_1px_2px_#000]">EXP</span>
             <span className="relative flex h-full items-center justify-center text-[10px] font-bold text-white tabular-nums [text-shadow:0_1px_2px_#000]">
-              {player.xp} / {player.xpToNext}
+              {atMaxLevel ? 'MAX' : `${player.xp.toLocaleString()} / ${player.xpToNext.toLocaleString()}`}
             </span>
           </div>
           <span className="h-5 px-2 rounded-full border border-amber-400/30 bg-black/70 text-[10px] font-bold text-amber-100 flex items-center">{t('level')} {player.level}</span>

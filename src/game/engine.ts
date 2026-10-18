@@ -33,8 +33,20 @@ export const EQUIPMENT_SLOTS: { id: Equipment['slot']; name: string; icon: strin
   { id: 'boots', name: 'Сапоги', icon: '🥾' },
 ];
 
+/** Hard cap: hero level never exceeds 100. Forge/profession levels remain independent. */
+export const HERO_MAX_LEVEL = 100;
+/** Existing progression through level 82 is unchanged, so players can catch up. */
+export const HERO_SLOW_GROWTH_FROM = 83;
+
 export function xpForLevel(level: number): number {
-  return Math.floor(100 * Math.pow(1.15, level - 1));
+  if (!Number.isFinite(level)) return 0;
+  const current = Math.max(1, Math.floor(level));
+  if (current >= HERO_MAX_LEVEL) return 0;
+  const original = Math.floor(100 * Math.pow(1.15, current - 1));
+  if (current < HERO_SLOW_GROWTH_FROM) return original;
+  // From hero level 83 onward each promotion takes substantially longer.
+  // Preserve the old XP requirement for 82 -> 83, to avoid changing live saves.
+  return Math.floor(original * (3 + 0.12 * (current - HERO_SLOW_GROWTH_FROM)));
 }
 
 export function createInitialGame(): GameState {

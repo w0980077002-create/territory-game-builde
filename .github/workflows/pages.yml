@@ -49,6 +49,7 @@ jobs:
           node scripts/check-quest-attention.mjs
           node scripts/check-clan-red-gem-price.mjs
           node scripts/check-daily-potions.mjs
+          node scripts/check-hero-level-and-underdog.mjs
           npm run test:pve
           npm run test:inventory-cleanup
           npm run test:gear-recycle

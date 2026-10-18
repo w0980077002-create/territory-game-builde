@@ -8,6 +8,7 @@ import {
   createInitialGame,
   createInitialQuests,
   xpForLevel,
+  HERO_MAX_LEVEL,
 } from './engine';
 import type { InventoryItem, ShopItem, Equipment, Enemy } from './types';
 
@@ -81,13 +82,18 @@ export function msUntilNextEnergy(state: GameState, now = Date.now()): number | 
 }
 
 export function addXp(state: GameState, amount: number): Partial<GameState> {
+  // At level 100 no more experience or base stats can be farmed.
+  if (state.player.level >= HERO_MAX_LEVEL) {
+    return { player: { ...state.player, level: HERO_MAX_LEVEL, xp: 0, xpToNext: 0 } };
+  }
+
   let xp = state.player.xp + amount;
   let level = state.player.level;
-  let xpToNext = state.player.xpToNext;
+  let xpToNext = state.player.xpToNext > 0 ? state.player.xpToNext : xpForLevel(level);
   let stats = { ...state.player.stats };
   let maxEnergy = state.player.maxEnergy;
 
-  while (xp >= xpToNext) {
+  while (level < HERO_MAX_LEVEL && xp >= xpToNext) {
     xp -= xpToNext;
     level++;
     xpToNext = xpForLevel(level);
@@ -96,6 +102,10 @@ export function addXp(state: GameState, amount: number): Partial<GameState> {
     stats.attack += 5;
     stats.defense += 2;
     maxEnergy += 1;
+  }
+  if (level >= HERO_MAX_LEVEL) {
+    xp = 0;
+    xpToNext = 0;
   }
 
   const followers = reconcileFollowers(state.followers, level);

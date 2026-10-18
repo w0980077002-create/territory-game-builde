@@ -53,6 +53,7 @@ jobs:
           npm run test:professions
           npm run test:balance
           node scripts/check-daily-potions.mjs
+          node scripts/check-hero-level-and-underdog.mjs
           npm run test:feature-separation
           npm run test:mobile-home
           node scripts/auth-mock-tests.cjs
