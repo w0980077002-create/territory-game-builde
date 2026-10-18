@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MonopolyAdventure } from './monopoly/MonopolyAdventure';
+import { ClassicMonopoly } from './monopoly/ClassicMonopoly';
 import { ArrowLeft, Coins, Dice5, Dices, DoorOpen, Gift, Loader2, RefreshCw, ShieldCheck, Target, Ticket, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { hallStatus, hallStart, hallFinish, hallError, type HallGame, type HallSession, type HallState, type HallResult } from '@/game/gameHall';
@@ -163,5 +163,5 @@ function HallOtherPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
 }
 
 export function HallPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
- return game==='monopoly'?<MonopolyAdventure onBack={onBack}/>:<HallOtherPlayScreen game={game} onBack={onBack}/>;
+ return game==='monopoly'?<ClassicMonopoly onBack={onBack}/>:<HallOtherPlayScreen game={game} onBack={onBack}/>;
 }
