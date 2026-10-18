@@ -67,6 +67,46 @@ async function telegramSignIn(initData: string): Promise<AuthUser | null> {
   return profile;
 }
 
+// Telegram iOS WebViews can lose their persisted Supabase session while the
+// React game is still mounted. A PATCH made with the anon key then returns 401.
+// Restore the verified session BEFORE saving, never by trusting Telegram's
+// unsigned initDataUnsafe fields or by creating an anonymous character.
+const sessionRecovery = new Map<string, Promise<boolean>>();
+
+export function ensurePlayerSession(playerId: string): Promise<boolean> {
+  const existing = sessionRecovery.get(playerId);
+  if (existing) return existing;
+
+  const task = (async (): Promise<boolean> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user.id === playerId) {
+        if (session.expires_at && session.expires_at > Math.floor(Date.now() / 1000) + 30) {
+          return true;
+        }
+        // A valid refresh token can recover without another Telegram login.
+        const { data, error } = await supabase.auth.refreshSession();
+        if (!error && data.session?.user.id === playerId) return true;
+      }
+      // No usable Supabase session: revalidate Telegram initData server-side.
+      // The returned authenticated account must match the loaded hero.
+      const initData = getTelegramInitData();
+      if (!initData) return false;
+      const verified = await telegramSignIn(initData);
+      return verified?.id === playerId;
+    } catch (error) {
+      console.error('Unable to restore player save session:', error);
+      return false;
+    }
+  })();
+
+  sessionRecovery.set(playerId, task);
+  void task.finally(() => {
+    if (sessionRecovery.get(playerId) === task) sessionRecovery.delete(playerId);
+  });
+  return task;
+}
+
 export async function linkTelegram(initData: string): Promise<{ success: boolean; error?: string; code?: string }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { success: false, error: 'Нет активной сессии' };

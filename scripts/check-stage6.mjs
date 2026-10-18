@@ -104,7 +104,7 @@ assert(screen.includes('submitVerifiedCraft') && screen.includes('keepPendingCra
 assert(screen.includes("craftCheck !== 'ready'"),'do not craft while backend status unknown');
 { const file='src/components/ProfessionsScreen.tsx'; const v=ts.transpileModule(read(file),{fileName:file,reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.ESNext,jsx:ts.JsxEmit.ReactJSX}});assert.equal((v.diagnostics??[]).filter(x=>x.category===ts.DiagnosticCategory.Error).length,0); }
 parse('src/game/cloud.ts',{
- './supabase':{supabase},'./engine':{},'./equipmentBalance':{},
+ './supabase':{supabase},'./auth':{ensurePlayerSession:async()=>true},'./engine':{},'./equipmentBalance':{},
  './saveQueue':{},'./followers':{},'./saveToken':{},'./walletVersion':version,
   './economyInvariant':{validEconomySnapshot:()=>true}, './appearance':{getPlayableAppearance:id=>id},
 });

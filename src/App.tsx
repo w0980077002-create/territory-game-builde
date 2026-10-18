@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
+import { createImmediateSaveController } from '@/game/immediateSave';
 import { HomeScreen } from '@/components/HomeScreen';
 import { BattleScreen, type BattleView } from '@/components/BattleScreen';
 import type { SaveStatus } from '@/components/home/HomeSheets';
@@ -97,6 +98,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const [battleLocked, setBattleLocked] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const needsInitialSave = useRef(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const live = useStore(useLive);
@@ -160,16 +162,9 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         const hasNewTimeEffects = loadedState.dailyResetDay !== profile.state.dailyResetDay
           || loadedState.weeklyResetWeek !== profile.state.weeklyResetWeek
           || loadedState.player.energy !== profile.state.player.energy;
-        if (profile.balanceMigrated || profile.rosterMigrated || hasNewTimeEffects || beltReconciled) {
-          // Migration/time-effect write is queued but must not hold the loading splash open
-          // during a slow mobile connection. Never assume a failed response
-          // means the server did not commit; simply retry current state later.
-          void saveCloudSave(user.id, loadedState).then((ok) => {
-            if (!ok && !cancelled) {
-              window.setTimeout(() => { if (!cancelled) void saveCloudSave(user.id, useGame.get()); }, 5000);
-            }
-          }).catch((error) => console.error('Migration save failed:', error));
-        }
+        // Start the first migration save through the same tracked autosave queue.
+        // A separate fire-and-forget write could collide with iOS gameplay saves.
+        needsInitialSave.current = !!(profile.balanceMigrated || profile.rosterMigrated || hasNewTimeEffects || beltReconciled);
         useArena.set({ rating: profile.arenaRating, wins: profile.arenaWins, losses: profile.arenaLosses });
         useAccount.set({ vip: profile.vip });
         setLoaded(true);
@@ -182,38 +177,24 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   useEffect(() => {
     if (!loaded) return;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let active = true;
-    let changeId = 0;
-    // Telegram mobile webviews may suspend shortly after backgrounding. Flush
-    // the current state immediately instead of waiting for the 1.5s debounce.
-    const flushWhenHidden = () => {
-      if (document.visibilityState !== 'hidden' || !timer) return;
-      clearTimeout(timer);
-      timer = undefined;
-      const pendingId = changeId;
-      void saveCloudSave(user.id, useGame.get()).then((ok) => {
-        if (active && changeId === pendingId) setSaveStatus(ok ? 'saved' : 'error');
-      }).catch(() => { if (active && changeId === pendingId) setSaveStatus('error'); });
-    };
-    document.addEventListener('visibilitychange', flushWhenHidden);
-    const unsubscribe = useGame.subscribe(() => {
-      changeId += 1;
-      setSaveStatus('saving');
-      clearTimeout(timer);
-      timer = setTimeout(async () => {
-        const savingChangeId = changeId;
-        const snapshot = useGame.get();
-        let ok = false;
-        try {
-          ok = await saveCloudSave(user.id, snapshot);
-        } catch (error) {
-          console.error('Save failed:', error);
-        }
-        // The older save response must not mark more recent changes as saved.
-        if (active && savingChangeId === changeId) setSaveStatus(ok ? 'saved' : 'error');
-      }, 1500);
-    });
+    // Important actions (battle wins, shop purchases, forge upgrades, rewards)
+    // start a cloud write immediately. Only one is in flight; newer changes
+    // are sent as soon as its confirmed response arrives.
+    const controller = createImmediateSaveController(
+      () => saveCloudSave(user.id, useGame.get()),
+      setSaveStatus,
+    );
+    const unsubscribe = useGame.subscribe(controller.changed);
+    // iOS Telegram WebViews can suspend on close before an old debounce fires.
+    const flush = () => controller.flush();
+    document.addEventListener('visibilitychange', flush);
+    window.addEventListener('pagehide', flush);
+    window.addEventListener('pageshow', flush);
+    window.addEventListener('online', flush);
+    if (needsInitialSave.current) {
+      needsInitialSave.current = false;
+      controller.changed();
+    }
     const tick = setInterval(() => {
       const current = useGame.get();
       const next = applyTimeEffects(current);
@@ -222,11 +203,13 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
       }
     }, 30000);
     return () => {
-      active = false;
       unsubscribe();
-      document.removeEventListener('visibilitychange', flushWhenHidden);
-      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', flush);
+      window.removeEventListener('pagehide', flush);
+      window.removeEventListener('pageshow', flush);
+      window.removeEventListener('online', flush);
       clearInterval(tick);
+      controller.stop();
     };
   }, [loaded, user.id]);
 
@@ -253,8 +236,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
       {saveStatus === 'error' && (
         <div role="alert" className="shrink-0 z-40 border-b border-red-500/60 bg-red-950 px-3 py-2 text-center text-[11px] font-semibold leading-tight text-red-100">
           {language === 'en'
-            ? 'Progress not saved. Check connection and other open sessions before closing the game.'
-            : 'Прогресс не сохранён! Проверьте сеть и другие открытые окна игры перед выходом.'}
+            ? 'Progress is NOT saved yet. Keep the game open, check your connection, and contact support if this warning persists.'
+            : 'Прогресс НЕ сохранён! Не закрывайте игру. Проверьте интернет и сообщите администрации, если ошибка не исчезает.'}
         </div>
       )}
       {sub && (
