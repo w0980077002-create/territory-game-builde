@@ -118,7 +118,7 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
    <div><small>TERRITORY</small><h2>{t('Монополия','Monopoly')}</h2></div>
    <button className="mono-nav-button" aria-label={t('Правила','Rules')} onClick={()=>setPanel('help')}>?</button>
   </header>
-  <div className="mono-clock"><span>{t('ЛАГУНА СОКРОВИЩ','TREASURE LAGOON')}</span><strong>{data?duration:'…'}</strong></div>
+  <div className="mono-clock"><span>{t('ЛАГУНА СОКРОВИЩ','TREASURE LAGOON')}</span><strong>{data?duration:'…'}</strong><button type="button" className="mono-jackpot-link" onClick={()=>setPanel('jackpot')}><Art name="openChest"/>{t('Джекпот','Jackpot')}</button></div>
   <nav className="mono-milestones" aria-label={t('Награды за круги','Lap rewards')}>
    {milestones.map((lap,i)=><button key={lap} aria-label={t(`Награды за ${lap} кругов`,`Rewards for ${lap} laps`)} onClick={()=>setPanel('rewards')} className={claimed(`milestone:${lap}`)?'claimed':''}><small>{t('Круг','Lap')} {lap}</small><Art name={milestoneArt[i]}/><strong>{claimed(`milestone:${lap}`)?t('Получено','Claimed'):`${lap/5+1}`}<Art name="ticket"/></strong></button>)}
   </nav>
@@ -132,24 +132,23 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
      <small className="mono-cell-amount">{i===0?t('СТАРТ','START'):mystery?'?':kind?prize[kind]:cellGold(i)*(ten?10:1)}</small>
     </div>;})}
     <div className={`mono-hero ${moving?'moving':''}`} style={{left:`${point.x}%`,top:`${point.y}%`}} aria-label={t(`Герой на клетке ${position+1}`,`Hero on space ${position+1}`)}><div className="mono-hero-ring"/><span className="mono-hero-sprite" style={{backgroundImage:`url("${import.meta.env.BASE_URL}monopoly/hero-frames.png")`}}/></div>
-    {Array.from({length:28},(_,i)=>{const pos=boardPoint(i);return <b key={i} style={{left:`${pos.x}%`,top:`${pos.y}%`}} className="mono-cell-number">{i+1}</b>;})}
    </div>
-   <div className="mono-lap-plaque">{t('КРУГ','LAP')} <b>{p?.laps??0}</b><span>{t('Клетка','Space')} {position+1}/28</span></div>
+   <div className="mono-lap-plaque">{t('КРУГ','LAP')} <b>{p?.laps??0}</b></div>
    <div className="mono-buffs">{p?.double_next&&<span><Art name="elixirs"/>{t('Следующий ход ×2','Next move ×2')}</span>}{p?.lucky_next&&<span><Art name="gems"/>{t('Выбор кубика','Choose your roll')}</span>}</div>
-  </div>
+  <nav className="mono-scene-shortcuts" aria-label={t('Быстрые действия Монополии','Monopoly quick actions')}>
+   {([{panel:'offers',art:'chest',ru:'Спецпредложения',en:'Offers',badge:!claimed('offer:1')},{panel:'gifts',art:'gift',ru:'Подарки',en:'Gifts',badge:h?.free_ready},{panel:'quests',art:'quests',ru:'Задания',en:'Quests',badge:quests.some((v,i)=>v.current>=v.target&&!claimed(`quest:${i+1}`))}] as const).map(item=><button type="button" key={item.panel} data-shortcut={item.panel} onClick={()=>setPanel(item.panel)} aria-label={en?item.en:item.ru}><Art name={item.art}/><span>{en?item.en:item.ru}</span>{item.badge&&<i aria-hidden="true"/>}</button>)}
+  </nav>
   <section className="mono-controls">
    <div className="mono-roll-row"><div className="mono-wallet"><Art name="ticket"/><span><small>{t('БИЛЕТЫ','TICKETS')}</small><b>{h?.tickets??'—'}</b></span><button aria-label={t('Получить билеты','Get tickets')} onClick={()=>setPanel('gifts')}>+</button></div>
-    <button className={`mono-dice ${moving?'rolling':''}`} disabled={disabled||(!active&&(h?.tickets??0)<(ten?10:1))||!!(h?.active&&h.active.game!=='monopoly')} onClick={()=>void roll()} aria-label={active?t('Продолжить бросок','Resume roll'):t('Бросить кубик','Roll dice')}><span className="mono-dice-glow"/><Dice value={face}/></button>
-    <div className="mono-lap-stat"><Art name="crown"/><b>{p?.rolls??0}</b><small>{t('бросков','rolls')}</small></div>
+    <button className={`mono-dice ${moving?'rolling':''}`} disabled={disabled||(!active&&(h?.tickets??0)<(ten?10:1))||!!(h?.active&&h.active.game!=='monopoly')} onClick={()=>void roll()} aria-label={active?t('Продолжить бросок','Resume roll'):t('Бросить кубик','Roll dice')}><span className="mono-dice-glow"/><Dice value={face}/><span className="mono-dice-cta">{moving?t('Ход…','Moving…'):active?t('Продолжить','Resume'):t(`БРОСИТЬ · ${ten?10:1}`,`ROLL · ${ten?10:1}`)}</span></button>
    </div>
-   <button className="mono-roll-caption" disabled={disabled||(!active&&(h?.tickets??0)<(ten?10:1))||!!(h?.active&&h.active.game!=='monopoly')} onClick={()=>void roll()}>{moving?t('Герой в пути…','Hero on the move…'):active?t('Продолжить ход','Resume turn'):t(`БРОСИТЬ · ${ten?10:1} ${ten?'билетов':'билет'}`,`ROLL · ${ten?10:1} ticket${ten?'s':''}`)}</button>
    <div className="mono-toggles"><div className="mono-multiplier" role="group" aria-label={t('Множитель награды','Reward multiplier')}><button type="button" aria-pressed={!ten} className={!ten?'selected':''} disabled={busy||!!active} onClick={()=>setTen(false)}>×1</button><button type="button" aria-pressed={ten} className={ten?'selected':''} disabled={busy||!!active} onClick={()=>setTen(true)}>×10</button></div><label className="mono-skip"><input type="checkbox" checked={fast} disabled={busy} onChange={e=>setFast(e.target.checked)}/>{t('Пропустить анимацию','Skip animation')}</label></div>
+  </section>
+  </div>
+  <div className="mono-after-scene">
    {p?.lucky_next&&!active&&<div className="mono-choose"><small>{t('Выбери число — 1 билет','Choose a value — 1 ticket')}</small><div>{faces.map((n,i)=><button disabled={disabled||!h?.tickets} key={n} onClick={()=>void roll(101+i)} aria-label={String(n)}><Dice value={n}/></button>)}</div></div>}
    {Object.values(p?.pending_rewards??{}).some(n=>n>0)&&<div className="mono-pending"><b>{t('Твои сокровища','Your treasures')}</b><Prizes prize={p?.pending_rewards} en={en}/><button className="mono-cta" disabled={busy} onClick={()=>void redeem()}>{t('Получить награды','Collect rewards')}</button></div>}
-  </section>
-  <nav className="mono-actions" aria-label={t('Меню Монополии','Monopoly menu')}>
-   {([{panel:'gifts',art:'gift',ru:'Подарки',en:'Gifts',badge:h?.free_ready},{panel:'quests',art:'quests',ru:'Задания',en:'Quests',badge:quests.some((v,i)=>v.current>=v.target&&!claimed(`quest:${i+1}`))},{panel:'rewards',art:'crown',ru:'Награды за круги',en:'Lap rewards'},{panel:'offers',art:'chest',ru:'Спецпредложения',en:'Special offers',badge:!claimed('offer:1')},{panel:'jackpot',art:'openChest',ru:'Джекпот',en:'Jackpot'},{panel:'help',art:'dice',ru:'Правила',en:'Rules'}] as const).map(item=><button key={item.panel} onClick={()=>setPanel(item.panel)}><Art name={item.art}/><span>{en?item.en:item.ru}</span>{'badge' in item&&item.badge&&<i/>}</button>)}
-  </nav>
+  </div>
   <p className="mono-note" aria-live="polite">{notice||t('Золото ждёт в игровом зале · лимит 1000 в сутки','Gold awaits in the Game Hall · daily cap 1,000')}</p>
   {h?.active&&h.active.game!=='monopoly'&&<button className="mono-cta" onClick={onBack}>{t('Завершить другую игру в зале','Finish the other game in the hall')}</button>}
   {error&&<div className="mono-error" role="alert">{error}<button disabled={busy} onClick={()=>void request('status')}>{t('Обновить','Refresh')}</button></div>}

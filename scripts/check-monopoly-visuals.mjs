@@ -9,10 +9,15 @@ const js=rendered.outputFiles.find(f=>f.path.endsWith('.js')).text;
 const mod={exports:{}};new Function('require','module','exports',js)(require,mod,mod.exports);const html=mod.exports;
 const indices=[...html.matchAll(/data-cell-index="(\d+)"/g)].map(m=>+m[1]);
 assert.deepEqual(indices,Array.from({length:28},(_,i)=>i),'exactly 28 rendered cells use real indices');
-const labels=[...html.matchAll(/class="mono-cell-number">(\d+)</g)].map(m=>+m[1]);assert.deepEqual(labels,Array.from({length:28},(_,i)=>i+1),'all cells numbered 1–28');
+assert.ok(!html.includes('mono-cell-number'),'no duplicate numbered overlay');
 for(const label of ['Подарки','Задания','Награды за круги','Спецпредложения','Джекпот','Правила'])assert.ok(html.includes(label),'missing menu '+label);
+assert.ok(html.includes('mono-scene-shortcuts'),'quick actions on board');
+for(const panel of ['gifts','quests','offers'])assert.ok(html.includes('data-shortcut="'+panel+'"'),'missing shortcut '+panel);
+assert.ok(html.includes('mono-dice-cta'),'roll from dice');
+assert.ok(!html.includes('mono-actions'),'no big cards below');
+assert.ok(!html.includes('mono-roll-caption'),'no duplicate roll button');
 assert.ok(!/lucide|🎟|💎|🪨|⚒|🧪|💪|🎒|🏰|👑|⚀|⚁|⚂/.test(html),'no emoji or stock game icons in rendered screen');
 for(const path of ['art-atlas.png','hero-frames.png']){const b=readFileSync('public/monopoly/'+path);assert.equal(b[25],6,'generated atlas must have RGBA alpha');}
 const component=readFileSync('src/components/monopoly/MonopolyAdventure.tsx','utf8');assert.match(component,/Серверной механики джекпота нет/);
 const css=readFileSync('src/components/monopoly/monopoly.css','utf8');assert.match(css,/prefers-reduced-motion/);assert.match(css,/100dvh/);
-console.log('Monopoly visual structure PASS: actual component SSR, 28 numbered cells, 6 menu entries, illustrated assets, transparent atlases, honest jackpot, safe-area/reduced-motion rules. NOT a browser screenshot or device validation.');
+console.log('Monopoly visual structure PASS: actual component SSR, 28 unnumbered cells, compact quick actions, illustrated assets, transparent atlases, honest jackpot, safe-area/reduced-motion rules. NOT a browser screenshot or device validation.');
