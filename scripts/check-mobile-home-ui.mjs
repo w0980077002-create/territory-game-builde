@@ -29,6 +29,11 @@ assert.match(app, /ic-auction\.svg/, 'Auction sub-screen must use its unique ico
 assert.match(app, /ic-professions\.svg/, 'Professions sub-screen must use its unique icon');
 assert.match(html, /viewport-fit=cover/, 'Viewport must respect modern mobile safe areas');
 assert.match(app, /env\(safe-area-inset-bottom\)/, 'Bottom navigation must respect mobile safe areas');
+assert.match(app, /--tg-viewport-stable-height, 100dvh/, 'Telegram iOS viewport must not hide the game behind its native header');
+assert(home.includes('w-[clamp(74px,23vw,96px)]'), 'Hero name must have responsive width on iPhone');
+assert.match(home, /whitespace-nowrap/, 'Hero level and VIP must stay on one line');
+assert.match(app, /Прогресс не сохранён! Не закрывайте игру, проверьте сеть/, 'Save failure must remain clearly visible in compact mobile layout');
+
 for (const asset of ['public/city-bg-vibrant.webp', 'public/ic-auction.svg', 'public/ic-professions.svg', 'public/territory-mark.svg']) {
   await access(new URL(asset, root));
 }

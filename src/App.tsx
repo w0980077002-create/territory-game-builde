@@ -227,17 +227,22 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   };
 
   return (
-    <div className="h-[100dvh] flex flex-col max-w-md mx-auto overflow-hidden relative" style={{ background: 'var(--color-bg)' }}>
+    <div
+      className="flex flex-col max-w-md mx-auto overflow-hidden relative"
+      // The stable Telegram viewport excludes its own native iPhone header.
+      // 100dvh is a fallback for regular browsers and older Telegram clients.
+      style={{ background: 'var(--color-bg)', height: 'var(--tg-viewport-stable-height, 100dvh)' }}
+    >
       {live.maintenance && (
         <div className="shrink-0 z-40 flex items-center justify-center gap-1.5 bg-amber-500 py-1 text-[11px] font-bold text-black">
           <Wrench className="w-3 h-3" /> {translate('maintenance')}
         </div>
       )}
       {saveStatus === 'error' && (
-        <div role="alert" className="shrink-0 z-40 border-b border-red-500/60 bg-red-950 px-3 py-2 text-center text-[11px] font-semibold leading-tight text-red-100">
+        <div role="alert" className="shrink-0 z-40 border-b border-red-500/60 bg-red-950 px-2 py-1 text-center text-[10px] font-semibold leading-tight text-red-100">
           {language === 'en'
-            ? 'Progress is NOT saved yet. Keep the game open, check your connection, and contact support if this warning persists.'
-            : 'Прогресс НЕ сохранён! Не закрывайте игру. Проверьте интернет и сообщите администрации, если ошибка не исчезает.'}
+            ? 'Progress not saved! Stay in the game; check connection.'
+            : 'Прогресс не сохранён! Не закрывайте игру, проверьте сеть.'}
         </div>
       )}
       {sub && (
