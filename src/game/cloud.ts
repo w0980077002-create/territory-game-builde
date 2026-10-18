@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { ensurePlayerSession } from './auth';
 import type { GameState } from './types';
 import { createInitialGame, getComputedStats } from './engine';
 import { EQUIPMENT_BALANCE_VERSION, migrateGameStateBalance } from './equipmentBalance';
@@ -145,6 +146,12 @@ export function saveCloudSave(userId: string, state: GameState): Promise<boolean
       const expected = saveTokens.get(userId);
       const wallet = walletVersions.get(userId);
       if (!validSaveToken(expected) || !wallet) return false;
+      // Prevent anonymous 401 writes after iOS Telegram WebView loses the
+      // persisted Supabase session; restore only this hero's verified identity.
+      if (!await ensurePlayerSession(userId)) {
+        console.warn('Save postponed: Telegram session could not be verified');
+        return false;
+      }
       // Guard server-side currency changes that may not bump updated_at.
       // Example: profession RPC spends gems independently of this browser.
       const { data, error } = await supabase.from('players')
