@@ -1,5 +1,5 @@
 import { create } from './store';
-import { prepareNewEquipment } from './equipmentBalance';
+import { prepareNewEquipment, capEquipmentToHeroLevel } from './equipmentBalance';
 import { weeklyQuestKey } from './weeklyQuests';
 import { reconcileFollowers } from './followers';
 import { canBuyShopItem, shopStonesBoughtToday, SHOP_STONES_PER_DAY, MAX_SHOP_PURCHASE_QTY } from './purchaseGuard';
@@ -183,10 +183,10 @@ export function buyItem(state: GameState, shopItem: ShopItem, qty: number = 1): 
   } else if (shopItem.type === 'equipment') {
     if (!shopItem.equipment) return null;
     for (let i = 0; i < qty; i++) {
-      const newEquipment: Equipment = prepareNewEquipment({
+      const newEquipment: Equipment = capEquipmentToHeroLevel(prepareNewEquipment({
         ...shopItem.equipment,
         id: `inv_${Date.now()}_${Math.random().toString(36).slice(2)}_${i}`,
-      });
+      }), state.player.level);
       inventory.push({
         id: newEquipment.id,
         name: shopItem.name,
@@ -236,7 +236,7 @@ export function buyItem(state: GameState, shopItem: ShopItem, qty: number = 1): 
 
 export function equipItem(state: GameState, item: InventoryItem): GameState {
   if (!item.equipment) return state;
-  const eq = item.equipment;
+  const eq = capEquipmentToHeroLevel(item.equipment, state.player.level);
   const slot = eq.slot;
   const currentEquipped = state.player.equipped[slot];
 
