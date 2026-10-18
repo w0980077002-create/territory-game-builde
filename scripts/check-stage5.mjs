@@ -130,7 +130,7 @@ const walletModule={exports:{}};
 vm.runInNewContext(walletParsed.outputText,{module:walletModule,exports:walletModule.exports,Number,Error});
 const cloudMods={
  './walletVersion':walletModule.exports, './economyInvariant':{validEconomySnapshot: () => true},
- './supabase':{supabase:db}, './engine':{createInitialGame:()=>baseState,getComputedStats:()=>({attack:10,defense:10,maxHp:200,critChance:5})},
+ './supabase':{supabase:db}, './auth':{ensurePlayerSession:async()=>true}, './engine':{createInitialGame:()=>baseState,getComputedStats:()=>({attack:10,defense:10,maxHp:200,critChance:5})},
  './equipmentBalance':{EQUIPMENT_BALANCE_VERSION:1,migrateGameStateBalance:s=>s},
  './saveQueue':saveQ, './followers':{reconcileFollowers:f=>f}, './saveToken':tokenLib,
   './appearance':{getPlayableAppearance:id=> ['m1','m2','f1','f2'].includes(id) ? id : 'm2'},
