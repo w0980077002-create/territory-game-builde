@@ -256,7 +256,7 @@
 .mono-cell-amount{font-size:clamp(9px,2.5vw,12px)}
 .mono-scene-ship{left:50%;top:43%;width:43%;height:28%}
 .mono-hero{width:23%}
-.mono-lap-plaque{top:72%;padding:3px 11px;font:700 11px Arial,sans-serif;pointer-events:none}
+.mono-lap-plaque{top:62%;padding:3px 11px;font:700 11px Arial,sans-serif;pointer-events:none}
 .mono-lap-plaque b{font-size:13px}
 .mono-buffs{bottom:23%;left:1%;right:1%}
 .mono-buffs>span{font:700 9px Arial,sans-serif}
