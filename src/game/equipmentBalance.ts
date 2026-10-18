@@ -244,7 +244,63 @@ export function setAdminEquipmentLevel(eq: Equipment, targetLevel: number): Equi
   });
 }
 
+
+/**
+ * One rule for every gear source: an item can never exceed its owner's hero level.
+ * For boss drops, reconstruct chapter-based stats at the NEW level.
+ * For catalog gear, use the canonical linear growth curve (proportional below the
+ * catalog's minimum level). Custom items are scaled and slot-capped.
+ * The production server independently enforces the same ceiling on EVERY save.
+ */
+export function capEquipmentToHeroLevel(eq: Equipment, heroLevel: number): Equipment {
+  if (!Number.isSafeInteger(eq.level) || eq.level < 1) return eq;
+  const hero = Number.isSafeInteger(heroLevel) ? Math.max(1, Math.min(500, heroLevel)) : 1;
+  const level = Math.min(eq.level, hero);
+  const template = EQUIPMENT_TEMPLATES.find(
+    (t) => t.name === eq.name && t.slot === eq.slot && t.rarity === eq.rarity,
+  );
+  if (template) {
+    if (level < template.level) {
+      const ratio = level / template.level;
+      const scaled: EquipmentBaseStats = {};
+      for (const key of STAT_KEYS) {
+        const value = template[key];
+        if (typeof value === 'number') scaled[key] = Math.max(0, Math.round(value * ratio));
+      }
+      return { ...eq, ...scaled, level, baseLevel: level, baseStats: scaled, upgradeCount: 0 };
+    }
+    return level < eq.level ? normalizeEquipmentV4({ ...eq, level }) : eq;
+  }
+  if (level === eq.level) return eq;
+  if ((eq.slot === 'weapon' && eq.name === 'Клинок победителя')
+    || (eq.slot === 'armor' && eq.name === 'Доспех воина')) {
+    const canonical = createBossLootEquipment(level, eq.slot === 'weapon', eq.id);
+    const baseStats = onlyStats(canonical);
+    return normalizeEquipmentV4({
+      ...eq, ...baseStats, level, baseLevel: level, baseStats, upgradeCount: 0,
+    });
+  }
+  const source = normalizeEquipmentV4(eq);
+  const ratio = level / Math.max(1, eq.level);
+  const scaled: EquipmentBaseStats = {};
+  for (const key of STAT_KEYS) {
+    const value = source[key];
+    if (typeof value === 'number') scaled[key] = Math.max(0, Math.round(value * ratio));
+  }
+  return normalizeEquipmentV4({
+    ...source, ...scaled, level, baseLevel: level, baseStats: scaled, upgradeCount: 0,
+  });
+}
+
 export function upgradeEquipment(eq: Equipment): Equipment {
+  const shopTemplate = EQUIPMENT_TEMPLATES.find(
+    (t) => t.name === eq.name && t.slot === eq.slot && t.rarity === eq.rarity,
+  );
+  if (shopTemplate && eq.level < shopTemplate.level) {
+    // A catalog item capped below its original minimum must grow proportionally
+    // until the hero reaches that minimum, never jump back to its original level.
+    return capEquipmentToHeroLevel({ ...eq, level: eq.level + 1 }, eq.level + 1);
+  }
   const prepared = eq.baseStats && eq.baseLevel !== undefined && eq.upgradeCount !== undefined
     ? eq
     : (() => {
