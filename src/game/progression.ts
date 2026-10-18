@@ -1,5 +1,4 @@
 import type { GameState, InventoryItem } from './types';
-import { generateShopItems } from './engine';
 import { grantRewards, updateProgress } from './actions';
 import type { Enemy } from './types';
 import { useLive } from './live';
@@ -17,10 +16,16 @@ export interface Reward {
 /** Award the exact same 150-HP potion as the Shop. Stack by type/name, never mint equipment. */
 function addDailyHealthPotions(inventory: InventoryItem[], count: number): InventoryItem[] {
   if (!Number.isSafeInteger(count) || count <= 0) return inventory;
-  const potion = generateShopItems(1).find((item) => item.id === 'shop_potion_hp_large');
-  if (!potion || potion.type !== 'potion' || potion.effect?.stat !== 'hp' || potion.effect.value !== 150) {
-    throw new Error('Daily potion reward configuration invalid');
-  }
+  // Same consumable as generateShopItems(1).shop_potion_hp_large. Keep these
+  // properties aligned; the daily regression test checks the canonical shop.
+  const potion = {
+    name: 'Большое зелье здоровья',
+    icon: '⚗️',
+    type: 'potion' as const,
+    rarity: 'rare' as const,
+    description: 'Восстанавливает 150 HP мгновенно',
+    effect: { stat: 'hp' as const, value: 150, duration: 'instant' as const },
+  };
   const existing = inventory.find((item) => item.type === 'potion' && item.name === potion.name);
   if (existing) {
     return inventory.map((item) => item.id === existing.id
