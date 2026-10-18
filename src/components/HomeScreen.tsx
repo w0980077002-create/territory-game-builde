@@ -134,11 +134,11 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
           <span className="relative w-11 h-11 rounded-xl overflow-hidden border-2 border-amber-300/90 bg-[#1b1a16] shadow-[0_0_9px_rgba(245,158,11,0.24)] shrink-0">
             <img src={getAppearanceIcon(state.appearance)} alt="" className="w-full h-full object-contain object-top" />
           </span>
-          <span className="flex flex-col items-start min-w-0 w-[64px]">
-            <span className="text-[12px] font-bold text-white truncate w-full text-left leading-tight">{player.name}</span>
-            <span className="flex items-center gap-1 text-[10px] leading-tight">
-              <span className="text-amber-200 font-semibold">{t('level')} {player.level}</span>
-              <span className="inline-flex items-center gap-0.5 px-1 rounded bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold text-[9px]"><Crown className="h-2.5 w-2.5" strokeWidth={2.8} />VIP {vip}</span>
+          <span className="flex flex-col items-start min-w-0 w-[clamp(74px,23vw,96px)]">
+            <span className="block text-[12px] font-bold text-white truncate w-full text-left leading-tight" title={player.name}>{player.name}</span>
+            <span className="flex flex-nowrap items-center gap-1 text-[10px] leading-tight whitespace-nowrap">
+              <span className="text-amber-200 font-semibold shrink-0 whitespace-nowrap">{t('level')} {player.level}</span>
+              <span className="inline-flex shrink-0 items-center gap-0.5 px-1 rounded bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold text-[9px]"><Crown className="h-2.5 w-2.5" strokeWidth={2.8} />VIP {vip}</span>
             </span>
             <span className="mt-1 h-1 w-full rounded-full bg-white/10 overflow-hidden">
               <span className="block h-full bg-gradient-to-r from-emerald-400 to-emerald-600" style={{ width: `${xpPct}%` }} />
