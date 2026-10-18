@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { Lock, Sparkles, Crown, Check } from 'lucide-react';
+import { Lock, Sparkles, Crown, Check, BellRing } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { supabase } from '@/game/supabase';
+import { notifyGatherStatusChanged } from '@/game/gatherNotice';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { APPEARANCE_PRESETS, MALE_PRESETS, FEMALE_PRESETS, getPlayableAppearance, type AppearancePreset } from '@/game/appearance';
 import type { InventoryItem } from '@/game/types';
@@ -127,6 +128,7 @@ export function MapScreen() {
     const status = data as GatherStatus;
     setGather(status);
     setServerOffset(Date.parse(status.server_now) - Date.now());
+    notifyGatherStatusChanged();
     return status;
   };
 
@@ -149,6 +151,10 @@ export function MapScreen() {
   const remainingMs = gather?.active
     ? Math.max(0, Date.parse(gather.active.finishes_at) - (clock + serverOffset))
     : 0;
+
+  const readyRegion = gather?.active && remainingMs === 0
+    ? REGIONS.find((region) => region.resources.some((resource) => resource.id === gather.active?.resource_id))
+    : undefined;
 
   const resourceButtonLabel = (id: ResourceId): string => {
     if (!gather) return language === 'en' ? 'Server unavailable' : 'Сервер недоступен';
@@ -222,18 +228,35 @@ export function MapScreen() {
           </div>
         </div>
 
+        {readyRegion && (
+          <div role="status">
+            <button
+              type="button"
+              onClick={() => setSelected(readyRegion.id)}
+              className="w-full rounded-xl border border-emerald-300/80 bg-emerald-950/80 px-3 py-3 text-left flex items-center gap-3 shadow-[0_0_14px_rgba(52,211,153,0.28)] active:scale-[0.98] transition-transform"
+            >
+              <BellRing className="w-6 h-6 shrink-0 text-emerald-300 animate-pulse" />
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-extrabold text-emerald-100">{language === 'en' ? 'Resources are ready!' : 'Ресурсы готовы!'}</span>
+                <span className="block text-[11px] text-emerald-200/80">{language === 'en' ? 'Open the location and claim your resource' : 'Открой локацию и забери добычу'}</span>
+              </span>
+              <span className="text-xs font-extrabold text-white whitespace-nowrap">{language === 'en' ? 'Claim →' : 'Забрать →'}</span>
+            </button>
+          </div>
+        )}
+
         {/* Resource Regions */}
         <div>
           <div className="flex items-baseline justify-between px-1 mb-2">
             <h3 className="text-xs font-semibold text-amber-200/80 uppercase tracking-wider">{t('resourceLands')}</h3>
-            <span className="text-[11px] text-emerald-300">{t('gatheringReady')}</span>
+            <span className={`text-[11px] ${readyRegion ? 'text-emerald-200 font-bold' : 'text-emerald-300'}`}>{readyRegion ? (language === 'en' ? 'Ready to claim!' : 'Можно забрать!') : gather?.active ? (language === 'en' ? 'Gathering…' : 'Идёт добыча…') : gather ? (language === 'en' ? 'Available' : 'Доступно') : '…'}</span>
           </div>
           <div className="space-y-2.5">
             {REGIONS.map((r) => (
               <button
                 key={r.id}
                 onClick={() => setSelected(r.id)}
-                className={`group relative w-full rounded-2xl border ${GLOW_BORDER[r.glow]} bg-gradient-to-r ${r.accent} ${GLOW_RING[r.glow]} overflow-hidden p-3 flex items-center gap-3 text-left active:scale-[0.98] transition-transform`}
+                className={`group relative w-full rounded-2xl border ${GLOW_BORDER[r.glow]} bg-gradient-to-r ${r.accent} ${GLOW_RING[r.glow]} ${readyRegion?.id === r.id || (readyRegion && r.resources.some((resource) => resource.id === gather?.active?.resource_id)) ? 'ring-2 ring-emerald-400/90' : ''} overflow-hidden p-3 flex items-center gap-3 text-left active:scale-[0.98] transition-transform`}
               >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
                 <div className="relative w-16 h-16 rounded-xl border border-white/10 bg-black/30 overflow-hidden shrink-0">
@@ -252,7 +275,11 @@ export function MapScreen() {
                 </div>
                 <div className="relative shrink-0 flex flex-col items-center gap-1">
                   <span className="rounded-lg bg-black/50 border border-white/10 px-2 py-1 text-[9px] font-bold text-amber-200/90">{t('resources')}</span>
-                  <span className="flex items-center gap-0.5 text-[9px] text-emerald-300">{t('gatheringReady')}</span>
+                  <span className={`flex items-center gap-0.5 text-[9px] ${readyRegion && r.resources.some((resource) => resource.id === gather?.active?.resource_id) ? 'text-emerald-200 font-bold animate-pulse' : 'text-emerald-300'}`}>
+                    {gather?.active && r.resources.some((resource) => resource.id === gather.active?.resource_id)
+                      ? remainingMs === 0 ? (language === 'en' ? 'Ready to claim!' : 'Забрать!') : timeRemaining(remainingMs)
+                      : gather?.active ? (language === 'en' ? 'Occupied' : 'Занято') : gather ? (language === 'en' ? 'Available' : 'Доступно') : '…'}
+                  </span>
                 </div>
               </button>
             ))}
@@ -308,7 +335,7 @@ export function MapScreen() {
                         <span className="text-2xl">{res.icon}</span>
                         <span className="text-[11px] font-semibold text-gray-200 text-center leading-tight">{language === 'en' ? ({ 'gather-wood': t('wood'), 'gather-herb': t('healingHerbs'), 'gather-ore': t('ironOre'), 'gather-crystal': t('magicCrystal'), 'gather-hide': t('hide') } as Record<string, string>)[res.id] : res.name}</span>
                         <span className="text-[10px] text-gray-400">{t('inBag')}: {count}</span>
-                        <span className="mt-1 rounded-lg bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-white">{resourceButtonLabel(res.id)}</span>
+                        <span className={`mt-1 rounded-lg bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-white ${gather?.active?.resource_id === res.id && remainingMs === 0 ? 'ring-2 ring-emerald-300 animate-pulse' : ''}`}>{resourceButtonLabel(res.id)}</span>
                       </button>
                     );
                   })}
