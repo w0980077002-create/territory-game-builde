@@ -235,5 +235,50 @@ const weakestEnemy = lateChapter.enemies[0];
 const worstCriticalHeadHit = (heroStats.attack - weakestEnemy.defense / 2) * 1.25 * 1.1 * (1 + heroStats.critDamage / 100);
 assert.ok(worstCriticalHeadHit < weakestEnemy.maxHp, 'the strongest theoretical head critical should not one-shot a normal chapter-58 enemy');
 
+
+// Permanent hero-level gear rule: old loot, shop, custom gear, player gear slots and grants.
+const heroLevel47Sword = balance.capEquipmentToHeroLevel(
+  catalog.createBossLootEquipment(85, true, 'old-loot-85'), 47);
+assert.equal(heroLevel47Sword.level, 47);
+assert.equal(heroLevel47Sword.attack, 151);
+assert.equal(heroLevel47Sword.id, 'old-loot-85');
+const heroLevel47Armor = balance.capEquipmentToHeroLevel(
+  catalog.createBossLootEquipment(87, false, 'old-loot-87'), 47);
+assert.equal(heroLevel47Armor.level, 47);
+assert.equal(heroLevel47Armor.defense, 99);
+assert.equal(heroLevel47Armor.hp, 255);
+const levelOneEpic = balance.capEquipmentToHeroLevel(
+  catalog.EQUIPMENT_TEMPLATES.find((t) => t.name === 'Героический меч'), 1);
+assert.equal(levelOneEpic.level, 1);
+assert.equal(levelOneEpic.attack, 7);
+assert.equal(levelOneEpic.critChance, 2);
+assert.deepEqual(balance.capEquipmentToHeroLevel(levelOneEpic, 1), levelOneEpic,
+  'Repeated saves cannot resurrect catalog stats');
+const upgradedEpic = balance.upgradeEquipment(levelOneEpic);
+assert.equal(upgradedEpic.level, 2);
+assert.equal(upgradedEpic.attack, 14,
+  'Forging an item below its catalog minimum must never jump back to level 5');
+const levelThreePlate = balance.capEquipmentToHeroLevel(
+  catalog.EQUIPMENT_TEMPLATES.find((t) => t.name === 'Латные доспехи'), 2);
+assert.equal(levelThreePlate.level, 2);
+assert.equal(levelThreePlate.defense, 8);
+assert.equal(levelThreePlate.hp, 53);
+const customReduced = balance.capEquipmentToHeroLevel(
+  { id:'custom-high', name:'Custom', slot:'shield', rarity:'legendary',
+    level:100, defense:250, hp:500 }, 8);
+assert.equal(customReduced.level, 8);
+assert.equal(customReduced.defense, 20);
+assert.equal(customReduced.hp, 40);
+const actionsAfter = fs.readFileSync(path.join(root, 'src/game/actions.ts'), 'utf8');
+const cloudAfter = fs.readFileSync(path.join(root, 'src/game/cloud.ts'), 'utf8');
+const liveAfter = fs.readFileSync(path.join(root, 'src/game/live.ts'), 'utf8');
+const guardSql = fs.readFileSync(path.join(root, 'supabase/migrations/20261018_permanent_gear_level_rule.sql'), 'utf8');
+assert.match(actionsAfter, /capEquipmentToHeroLevel\(prepareNewEquipment/, 'shop caps every new purchased item');
+assert.match(actionsAfter, /capEquipmentToHeroLevel\(item\.equipment, state\.player\.level\)/, 'equipping never bypasses hero-level cap');
+assert.match(cloudAfter, /capEquipmentToHeroLevel\(eq, heroLevel\)/, 'cloud loaded equipment is capped');
+assert.match(liveAfter, /capEquipmentToHeroLevel\(setAdminEquipmentLevel\(eq, level\), heroLevel\)/, 'admin raises cannot bypass cap');
+assert.match(guardSql, /BEFORE INSERT OR UPDATE OF game_state, attack, defense, max_hp, crit_chance/);
+assert.match(guardSql, /cap_overlevel_state_20261018\(/);
+
 console.log('Balance checks passed: canonical item data, legacy normalization, old admin-level grants, idempotency, unknown-item safety, and a chapter-58 one-shot guard.');
 fs.rmSync(out, { recursive: true, force: true });

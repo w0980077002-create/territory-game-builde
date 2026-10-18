@@ -4,7 +4,7 @@ import { create } from './store';
 import { useGame } from './actions';
 import { generateShopItems } from './engine';
 import type { Equipment, GameState, InventoryItem } from './types';
-import { setAdminEquipmentLevel } from './equipmentBalance';
+import { setAdminEquipmentLevel, capEquipmentToHeroLevel } from './equipmentBalance';
 
 export interface GrantPayload {
   gold?: number;
@@ -38,8 +38,8 @@ export const SHOP_SALE_FACTOR = 0.8;
 
 const nonNeg = (n: number) => Math.max(0, n);
 
-function setLevel(eq: Equipment, level: number): Equipment {
-  return setAdminEquipmentLevel(eq, level);
+function setLevel(eq: Equipment, level: number, heroLevel: number): Equipment {
+  return capEquipmentToHeroLevel(setAdminEquipmentLevel(eq, level), heroLevel);
 }
 
 export function applyGrantPayload(state: GameState, p: GrantPayload): GameState {
@@ -78,7 +78,7 @@ export function applyGrantPayload(state: GameState, p: GrantPayload): GameState 
   const equipped = { ...state.player.equipped };
   for (const [slot, level] of Object.entries(p.equipLevels ?? {}) as [Equipment['slot'], number][]) {
     const eq = equipped[slot];
-    if (eq && level) equipped[slot] = setLevel(eq, level);
+    if (eq && level) equipped[slot] = setLevel(eq, level, state.player.level);
   }
 
   return {
