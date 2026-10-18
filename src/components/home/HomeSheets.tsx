@@ -4,6 +4,7 @@ import { useGame } from '@/game/actions';
 import { DAILY_REWARDS, MAIL, claimDaily, claimMail, dailyStatus, type Reward } from '@/game/progression';
 import { Modal } from '@/components/ui/Modal';
 import { Currency } from '@/components/ui/Currency';
+import { ItemArt } from '@/components/ui/ItemArt';
 import { useLive, claimMailGrant, type GrantPayload } from '@/game/live';
 import { generateShopItems } from '@/game/engine';
 import { useRef, useState } from 'react';
@@ -19,12 +20,21 @@ function grantItemsText(p: GrantPayload) {
 
 export type SaveStatus = 'saved' | 'saving' | 'error';
 
+const LARGE_HEALTH_POTION = generateShopItems(1).find((item) => item.id === 'shop_potion_hp_large');
+
 function RewardLine({ reward, size = 16 }: { reward: Reward; size?: number }) {
+  const { language } = useLanguage();
   return (
     <span className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-xs text-amber-50">
       {!!reward.gold && <Currency kind="gold" value={reward.gold} size={size} />}
       {!!reward.gems && <Currency kind="gems" value={reward.gems} size={size} />}
       {!!reward.redGems && <Currency kind="redGems" value={reward.redGems} size={size} />}
+      {!!reward.largeHealthPotions && LARGE_HEALTH_POTION && (
+        <span className="inline-flex items-center gap-0.5 font-semibold" title={localizeText(LARGE_HEALTH_POTION.name, language)}>
+          <ItemArt item={LARGE_HEALTH_POTION} size={size + 3} />
+          ×{reward.largeHealthPotions}
+        </span>
+      )}
       {!!reward.stones && <Currency kind="stones" value={reward.stones} size={size} />}
     </span>
   );

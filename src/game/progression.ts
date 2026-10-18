@@ -1,4 +1,5 @@
-import type { GameState } from './types';
+import type { GameState, InventoryItem } from './types';
+import { generateShopItems } from './engine';
 import { grantRewards, updateProgress } from './actions';
 import type { Enemy } from './types';
 import { useLive } from './live';
@@ -10,11 +11,39 @@ export interface Reward {
   gems?: number;
   redGems?: number;
   stones?: number;
+  largeHealthPotions?: number;
+}
+
+/** Award the exact same 150-HP potion as the Shop. Stack by type/name, never mint equipment. */
+function addDailyHealthPotions(inventory: InventoryItem[], count: number): InventoryItem[] {
+  if (!Number.isSafeInteger(count) || count <= 0) return inventory;
+  const potion = generateShopItems(1).find((item) => item.id === 'shop_potion_hp_large');
+  if (!potion || potion.type !== 'potion' || potion.effect?.stat !== 'hp' || potion.effect.value !== 150) {
+    throw new Error('Daily potion reward configuration invalid');
+  }
+  const existing = inventory.find((item) => item.type === 'potion' && item.name === potion.name);
+  if (existing) {
+    return inventory.map((item) => item.id === existing.id
+      ? { ...item, qty: item.qty + count } : item);
+  }
+  return [...inventory, {
+    id: `inv_daily_hp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+    name: potion.name,
+    icon: potion.icon,
+    type: 'potion',
+    rarity: potion.rarity,
+    qty: count,
+    description: potion.description,
+    effect: potion.effect,
+  }];
 }
 
 export function applyReward(state: GameState, r: Reward): GameState {
   return {
     ...state,
+    inventory: r.largeHealthPotions
+      ? addDailyHealthPotions(state.inventory, r.largeHealthPotions)
+      : state.inventory,
     battleStones: state.battleStones + (r.stones ?? 0),
     player: {
       ...state.player,
@@ -32,7 +61,7 @@ export const DAILY_REWARDS: Reward[] = [
   { gold: 400, stones: 3 },
   { gems: 8, stones: 3 },
   { gold: 600, stones: 4 },
-  { gems: 15, stones: 5, redGems: 1 },
+  { gems: 15, stones: 5, largeHealthPotions: 5 },
 ];
 
 export function dailyStatus(state: GameState, now = Date.now()) {

@@ -52,6 +52,7 @@ jobs:
           npm run test:admin-master
           npm run test:professions
           npm run test:balance
+          node scripts/check-daily-potions.mjs
           npm run test:feature-separation
           npm run test:mobile-home
           node scripts/auth-mock-tests.cjs
