@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { ensurePlayerSession } from './auth';
 import type { GameState } from './types';
 import { createInitialGame, getComputedStats } from './engine';
-import { EQUIPMENT_BALANCE_VERSION, migrateGameStateBalance } from './equipmentBalance';
+import { EQUIPMENT_BALANCE_VERSION, migrateGameStateBalance, capEquipmentToHeroLevel } from './equipmentBalance';
 import { createCoalescingWriter } from './saveQueue';
 import { reconcileFollowers } from './followers';
 import { nextSaveTimestamp, validSaveToken } from './saveToken';
@@ -25,6 +25,15 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
   const defaults = createInitialGame();
   if (!saved) return { ...defaults, player: { ...defaults.player, name } };
   const migrated = migrateGameStateBalance(saved);
+  const heroLevel = migrated.player?.level ?? defaults.player.level;
+  // Match the server's permanent item-level rule, even for old locally cached saves.
+  const equipped = Object.fromEntries(Object.entries(migrated.player?.equipped ?? {}).map(
+    ([slot, eq]) => [slot, eq ? capEquipmentToHeroLevel(eq, heroLevel) : eq],
+  )) as GameState['player']['equipped'];
+  const inventory = migrated.inventory?.map((item) => item.equipment
+    ? { ...item, equipment: capEquipmentToHeroLevel(item.equipment, heroLevel) } : item);
+  const belt = migrated.belt?.map((item) => item?.equipment
+    ? { ...item, equipment: capEquipmentToHeroLevel(item.equipment, heroLevel) } : item);
   return {
     ...defaults,
     ...migrated,
@@ -32,13 +41,14 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
       ...defaults.player,
       ...migrated.player,
       stats: { ...defaults.player.stats, ...migrated.player?.stats },
-      equipped: migrated.player?.equipped ?? {},
+      equipped,
     },
     quests: migrated.quests?.length ? migrated.quests : defaults.quests,
     achievements: migrated.achievements?.length ? migrated.achievements : defaults.achievements,
-    followers: reconcileFollowers(migrated.followers, migrated.player?.level ?? defaults.player.level),
+    inventory: inventory ?? defaults.inventory,
+    followers: reconcileFollowers(migrated.followers, heroLevel),
     activeFollowerId: migrated.activeFollowerId ?? null,
-    belt: Array.from({ length: 7 }, (_, i) => migrated.belt?.[i] ?? null),
+    belt: Array.from({ length: 7 }, (_, i) => belt?.[i] ?? null),
     activeDays: migrated.activeDays ?? 1,
     battleStones: migrated.battleStones ?? defaults.battleStones,
     settings: { ...defaults.settings, ...migrated.settings },
