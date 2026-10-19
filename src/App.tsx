@@ -273,7 +273,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         </header>
       )}
 
-      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
+      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
         {screen === 'city' && (
           <HomeScreen
             user={user}

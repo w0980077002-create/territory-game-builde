@@ -79,10 +79,18 @@ let viewportListenersAttached = false;
 
 function updateTelegramViewport(tg: TelegramWebApp) {
   const root = document.documentElement;
-  // Telegram's stable height excludes the native header in sheet mode.
-  // It also updates when the user expands the sheet or enters fullscreen.
-  if (Number.isFinite(tg.viewportStableHeight) && tg.viewportStableHeight > 0) {
-    root.style.setProperty('--territory-viewport-height', `${tg.viewportStableHeight}px`);
+  // Stable Telegram height is ideal for pinned controls, but some WebViews
+  // report a stale/larger value after expansion or when system UI changes.
+  // Never allow the game's bottom navigation beyond the *visible* viewport.
+  const candidates = [
+    tg.viewportStableHeight,
+    window.innerHeight,
+    window.visualViewport?.height,
+    root.clientHeight,
+  ].filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0);
+  if (candidates.length) {
+    const height = Math.floor(Math.min(...candidates));
+    root.style.setProperty('--territory-viewport-height', `${height}px`);
   } else {
     root.style.removeProperty('--territory-viewport-height');
   }
@@ -129,6 +137,9 @@ export function initTelegramWebApp() {
       // Older Telegram versions may not expose all events.
     }
     window.addEventListener('resize', refresh);
+    // A Telegram/keyboard resize may change only the visual viewport.
+    window.visualViewport?.addEventListener('resize', refresh);
+    window.addEventListener('pageshow', refresh);
   }
 
   // Fullscreen is an enhancement, not a requirement: unsupported iOS/Android

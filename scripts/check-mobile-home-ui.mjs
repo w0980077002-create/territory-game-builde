@@ -34,6 +34,20 @@ assert.match(css, /\.home-side-stack \.home-side/, 'Home side buttons must keep 
 assert.match(css, /overscroll-behavior-y: contain/, 'Small phone side controls must scroll internally');
 assert.match(css, /\.territory-nav-label/, 'Bottom nav labels must wrap instead of clipping');
 assert.match(app, /territory-city-screen/, 'City must support very short phone screens');
+assert.match(app, /territory-city-screen overflow-y-auto overflow-x-hidden/,
+  'City can scroll within its own pane when Telegram's usable height is short');
+assert.match(css, /container-name: territory-city;/,
+  'Measure usable city pane instead of relying only on device height');
+assert.match(css, /@container territory-city \(max-height: 560px\)/,
+  'Enable compact city fallback based on actual available height');
+assert.match(telegram, /window\.visualViewport\?\.height/,
+  'Clamp game viewport against the actually visible WebView');
+assert.match(telegram, /Math\.floor\(Math\.min\(\.\.\.candidates\)\)/,
+  'Never size game larger than the smallest supported viewport');
+assert.match(telegram, /window\.visualViewport\?\.addEventListener\('resize', refresh\)/,
+  'Recalculate game height when the WebView visual viewport changes');
+assert.match(css, /padding-bottom: max\(6px, env\(safe-area-inset-bottom/,
+  'Keep a visible bottom gutter below the navigation');
 assert.match(app, /onContextMenuCapture/, 'Android WebView image and button menus must be blocked');
 assert.match(app, /onDragStartCapture/, 'Dragging game pictures must not open image URLs');
 assert.match(css, /-webkit-touch-callout: none/, 'iOS native image callouts must be disabled');

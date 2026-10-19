@@ -674,7 +674,8 @@ html.territory-telegram-webapp #root {
   box-sizing: border-box;
   overscroll-behavior: none;
   padding-top: max(env(safe-area-inset-top, 0px), var(--territory-top-inset, 0px));
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--territory-bottom-inset, 0px));
+  /* A small visible gutter protects the nav from a home indicator / sheet edge. */
+  padding-bottom: max(6px, env(safe-area-inset-bottom, 0px), var(--territory-bottom-inset, 0px));
 }
 .territory-screen {
   min-width: 0;
@@ -682,6 +683,17 @@ html.territory-telegram-webapp #root {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
   overflow-wrap: break-word;
+}
+/* Query the height *inside* the game (after Telegram header and bottom nav).
+   Window-height media queries alone miss short Telegram sheets on tall phones. */
+.territory-city-screen {
+  container-name: territory-city;
+  container-type: size;
+}
+@container territory-city (max-height: 560px) {
+  .home-game-scene {
+    min-height: 540px;
+  }
 }
 .territory-nav { min-width: 0; }
 .territory-nav .nav-btn { min-width: 0; }
