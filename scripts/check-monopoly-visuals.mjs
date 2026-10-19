@@ -44,3 +44,11 @@ assert.ok(!shareUI.includes('monopoly-referral-task'),'no referral qualification
 assert.match(shareClient,/language==='ru'/,'language switching is explicit');
 assert.match(shareClient,/shareDailyPromo/,'Telegram picker is used');
 assert.ok(shareClient.includes('referralLink(bot,ref.code)'),'share must link directly to Telegram bot, not GitHub Pages');
+
+
+const monopolyCss=readFileSync('src/components/monopoly/monopoly.css','utf8');
+const monopolyUi=readFileSync('src/components/monopoly/MonopolyAdventure.tsx','utf8');
+assert.match(monopolyCss,/\.mono-panel\.panel-rewards/,'lap rewards must have compact sizing');
+assert.match(monopolyCss,/max-height:min\(59dvh,430px\)/,'lap rewards cannot cover the full phone');
+assert.match(monopolyCss,/\.mono-panel-return/,'return action is fixed outside scrolling rewards');
+assert.match(monopolyUi,/← В Монополию/,'always-visible return to Monopoly is required');

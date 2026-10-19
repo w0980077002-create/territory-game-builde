@@ -41,6 +41,16 @@ with sync_playwright() as p:
     for label,filename in [('Подарки','02-gifts-390.png'),('Задания','03-quests-390.png'),('Награды за круги','04-laps-390.png'),('Спецпредложения','05-offers-390.png')]:
         (page.locator('.mono-milestones button').first if label=='Награды за круги' else page.get_by_role('button',name=label,exact=True)).click()
         page.get_by_role('dialog').wait_for()
+        if label=='Награды за круги':
+            panel=page.locator('.mono-panel').bounding_box()
+            assert panel and panel['width']<=355 and panel['height']<=430, 'lap rewards must be a compact popup'
+            assert panel['y']>=110 and panel['y']+panel['height']<=844-75, 'lap popup cannot hide behind Telegram header or bottom nav'
+            leave=page.get_by_role('button',name='← В Монополию',exact=True)
+            assert leave.is_visible(), 'lap popup must have an obvious return button'
+            back=leave.bounding_box()
+            assert back and back['y']>=110 and back['y']+back['height']<=844-75, 'return button must stay tappable'
+            reward_list=page.locator('.panel-rewards .mono-panel-body')
+            assert reward_list.evaluate('(el)=>el.scrollHeight>el.clientHeight'), 'milestone prizes should scroll inside the popup'
         if label in ('Подарки','Задания','Спецпредложения'):
             panel=page.locator('.mono-panel').bounding_box()
             assert panel and panel['width']<=350 and panel['height']<=470, 'compact panel should not cover entire phone'
@@ -75,7 +85,8 @@ with sync_playwright() as p:
             assert last and last['y']>=0 and last['y']+last['height']<=844-10, 'quest must be reachable by scrolling compact panel'
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         page.screenshot(path=str(out/filename),full_page=False)
-        page.get_by_role('button',name='Закрыть',exact=True).click()
+        (page.get_by_role('button',name='← В Монополию',exact=True) if label=='Награды за круги' else page.get_by_role('button',name='Закрыть',exact=True)).click()
+        assert page.locator('.mono-overlay').count()==0, 'must return to game board without exiting Telegram'
     page.get_by_role('button',name='Подарки',exact=True).click()
     page.get_by_role('button',name='ЗАБРАТЬ БЕСПЛАТНО',exact=True).click()
     page.get_by_role('heading',name='Сокровище твоё!',exact=True).wait_for()
