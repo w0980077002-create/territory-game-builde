@@ -153,7 +153,7 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
                 <p className="text-xs text-gray-400 capitalize">{selected.rarity}</p>
               </div>
               <button type="button" aria-label={language === 'en' ? 'Close' : 'Закрыть'}
-                onClick={close} className="text-gray-500 hover:text-white"><X className="w-5 h-5"/></button>
+                onClick={close} className="ml-auto shrink-0 inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-300 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"><X className="w-5 h-5"/></button>
             </div>
             <p className="text-sm text-gray-300 mb-3">{localizeText(selected.description, language)}</p>
             {selected.effect && (
