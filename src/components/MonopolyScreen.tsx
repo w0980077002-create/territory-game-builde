@@ -3,7 +3,7 @@ import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { Dices, Gift, Ticket, CheckCircle2, ChevronLeft, ArrowRight, Clock } from 'lucide-react';
 import { CURRENCY_ART } from '@/game/art';
-import { Modal } from './ui/Modal';
+import { Modal, IosGamePortal } from './ui/Modal';
 import { useLanguage } from '@/game/i18n';
 
 const GRID_N = 8;
@@ -445,13 +445,15 @@ export function MonopolyScreen({ onBack }: { onBack: () => void }) {
 
       {/* Reward popup */}
       {rewardModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setRewardModal(null)}>
+        <IosGamePortal>
+        <div className="monopoly-reward-overlay fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setRewardModal(null)}>
           <div className="card w-full max-w-xs m-4 text-center animate-pop" onClick={(e) => e.stopPropagation()}>
             <img src={rewardModal.icon} alt="" className="w-16 h-16 mx-auto mb-2 object-contain animate-float" />
             <p className="text-lg font-bold text-emerald-300">{rewardModal.text}</p>
             <button onClick={() => setRewardModal(null)} className="btn-accent w-full mt-4">{language === 'en' ? 'Claim' : 'Забрать'}</button>
           </div>
         </div>
+        </IosGamePortal>
       )}
 
       {/* Mystery event modal */}
