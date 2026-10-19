@@ -23,7 +23,8 @@ export async function dailyShareStatus():Promise<ShareStatus>{
 export async function prepareDailyShareLink(language:'ru'|'en'):Promise<string>{
  const [ref,bot]=await Promise.all([getReferralStatus(),getReferralBotUsername()]);
  if(!bot||!/^[a-zA-Z0-9_]{5,32}$/.test(bot)||!/^[a-f0-9]{14}$/.test(ref.code))throw new Error('daily_share_no_bot');
- return window.location.origin+import.meta.env.BASE_URL+'promo/'+language+'/?'+new URLSearchParams({ref:ref.code,bot});
+ const origin=window.location.protocol==='https:'?window.location.origin:'https://w0980077002-create.github.io';
+ return origin+import.meta.env.BASE_URL+'promo/'+language+'/?'+new URLSearchParams({ref:ref.code,bot});
 }
 export function shareDailyPromo(url:string,language:'ru'|'en'):boolean{
  if(!/^https:\/\/[^/?#]+\/[^?#]*\/promo\/(ru|en)\/\?/.test(url))return false;
