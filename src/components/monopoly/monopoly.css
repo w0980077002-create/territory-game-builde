@@ -411,12 +411,12 @@
 :is(.panel-quests,.panel-offers) .mono-invite-actions button{min-width:87px}
 
 
-/* 2026-10-19: modal overlays must fit BELOW the native Telegram mini-app
- * header and ABOVE the game bottom navigation. All non-celebration dialogs
- * are compact, with their own scrolling body and an always-visible exit. */
-.mono-overlay:not(.mono-celebration){
- padding-top:max(105px,calc(var(--territory-top-inset,0px) + 30px),env(safe-area-inset-top,0px));
- padding-bottom:max(84px,calc(var(--territory-bottom-inset,0px) + 68px),env(safe-area-inset-bottom,0px));
+/* Fit dialogs to the ACTUAL WebView instead of reserving hard-coded
+ * 105px/84px bands. Native Telegram header insets are already handled by
+ * the shell; excessive fixed offsets made content inaccessible on phones. */
+.mono-overlay:not(.mono-celebration) {
+ padding-top: max(10px, env(safe-area-inset-top, 0px), var(--territory-top-inset, 0px));
+ padding-bottom: max(10px, env(safe-area-inset-bottom, 0px), var(--territory-bottom-inset, 0px));
 }
 .mono-panel.panel-rewards,.mono-panel.panel-help,.mono-panel.panel-jackpot{
  width:min(90vw,355px);
@@ -485,10 +485,10 @@
 }
 
 
-/* Actual Monopoly v2: iPhone panels are portalled directly under the game
+/* Actual Monopoly v2: native phone panels are portalled directly under the game
    shell so native Telegram chrome and the in-game nav never cover their buttons.
-   Android/desktop layouts and game mechanics are unaffected. */
-html.territory-ios-webapp .territory-shell > .mono-overlay {
+   Desktop layout and game mechanics are unaffected. */
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .mono-overlay {
   position: absolute;
   inset: 0;
   z-index: 110;
@@ -502,8 +502,24 @@ html.territory-ios-webapp .territory-shell > .mono-overlay {
   justify-content: center;
   overflow: hidden;
 }
-html.territory-ios-webapp .territory-shell > .mono-overlay .mono-panel,
-html.territory-ios-webapp .territory-shell > .mono-celebration > section {
+/* A dialog's title, close button, tabs and balance must remain visible.
+   Only its contents should scroll; all heights are relative to the shell. */
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .mono-overlay .mono-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(460px, 100%);
+  overflow: hidden;
+}
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .mono-overlay .mono-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .mono-celebration > section {
   min-height: 0;
   max-height: 100%;
   overflow-y: auto;
@@ -512,66 +528,114 @@ html.territory-ios-webapp .territory-shell > .mono-celebration > section {
 }
 
 
-/* iPhone compact reward dialog: a short, readable congratulations card rather
-   than a full-screen splash. This changes presentation only, never rewards. */
-html.territory-ios-webapp .territory-shell > .mono-celebration > section {
-  width: min(100%, 330px);
-  max-width: 330px;
-  max-height: min(420px, 100%);
-  padding: 12px 12px 13px;
+/* Compact treasure confirmation on ALL devices, especially Android Telegram.
+   The old Android card could exceed the usable sheet and hide CONTINUE behind
+   the game's bottom bar. Width/height are intentionally independent of device
+   model and all winnings/event/prize data remains fully rendered. */
+.mono-celebration > section {
+  box-sizing: border-box;
+  width: min(100%, 350px);
+  max-width: 350px;
+  max-height: min(410px, calc(100% - 8px));
+  min-height: 0;
+  padding: 10px 11px 10px;
   border-width: 2px;
   border-radius: 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
-html.territory-ios-webapp .mono-celebration > section > small {
-  font-size: 8px;
-  letter-spacing: 2px;
-}
-html.territory-ios-webapp .mono-celebration h3 {
-  font-size: 20px;
+.mono-celebration > section > small { font-size: 8px; letter-spacing: 2px; }
+.mono-celebration h3 {
+  font-size: clamp(17px, 5vw, 21px);
   line-height: 1.12;
-  margin: 4px 0 2px;
+  margin: 3px 0 1px;
 }
-html.territory-ios-webapp .mono-celebration .mono-opening-chest {
-  width: 112px;
-  max-height: 124px;
+.mono-celebration .mono-opening-chest {
+  width: 102px;
+  max-height: 110px;
   margin: 0 auto -4px;
 }
-html.territory-ios-webapp .mono-celebration .mono-prize-rays {
-  top: 20px;
-  width: 190px;
-  height: 190px;
+.mono-celebration .mono-prize-rays {
+  top: 15px;
+  width: 175px;
+  height: 175px;
 }
-html.territory-ios-webapp .mono-celebration .mono-winnings {
-  margin: 2px 0 3px;
+.mono-celebration .mono-winnings { margin: 0 0 2px; }
+.mono-celebration .mono-winnings .mono-art { width: 27px; }
+.mono-celebration .mono-winnings strong { font-size: 21px; }
+.mono-celebration .mono-extra-rewards {
+  position: relative;
+  gap: 4px;
+  margin: 5px 0 2px;
 }
-html.territory-ios-webapp .mono-celebration .mono-winnings .mono-art { width: 29px; }
-html.territory-ios-webapp .mono-celebration .mono-winnings strong { font-size: 23px; }
-html.territory-ios-webapp .mono-celebration .mono-extra-rewards { gap: 4px; }
-html.territory-ios-webapp .mono-celebration .mono-resource {
-  min-width: 44px;
-  max-width: 66px;
+.mono-celebration .mono-resource {
+  min-width: 40px;
+  max-width: 68px;
+  padding: 2px 4px 3px;
+  border-radius: 7px;
 }
-html.territory-ios-webapp .mono-celebration > section > p {
+.mono-celebration .mono-resource .mono-art { width: 28px; }
+.mono-celebration .mono-resource b { font-size: 11px; margin-top: -3px; }
+.mono-celebration .mono-resource small { font-size: 9px; margin-top: 1px; }
+.mono-celebration > section > p {
+  font: 10px/1.3 Arial,sans-serif;
+  margin: 3px 0;
+}
+.mono-celebration .mono-event {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 7px;
+  padding: 6px 8px;
   margin: 5px 0;
-  font-size: 10px;
-  line-height: 1.25;
+  text-align: left;
+  border-radius: 9px;
 }
-html.territory-ios-webapp .mono-celebration .mono-event {
-  padding: 6px;
-  margin: 4px 0;
+.mono-celebration .mono-event > .mono-art {
+  grid-row: 1 / 3;
+  width: 28px;
+  margin: 0;
 }
-html.territory-ios-webapp .mono-celebration .mono-event p { margin: 2px 0; }
-html.territory-ios-webapp .mono-celebration .mono-cta {
+.mono-celebration .mono-event b { font-size: 13px; line-height: 1.2; }
+.mono-celebration .mono-event p {
+  grid-column: 2;
+  font: 10px/1.25 Arial,sans-serif;
+  margin: 1px 0 0;
+}
+.mono-celebration .mono-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   min-height: 44px;
-  margin-top: 7px;
-  padding: 9px 12px;
+  margin-top: 6px;
+  padding: 7px 12px;
   font-size: 13px;
+  background: linear-gradient(#ffe9a2,#edbe4c 50%,#d19332);
+}
+
+/* The popup should sit ABOVE the seven-button game navigation, not underneath.
+   The translucent backdrop still covers the whole shell to block stray taps. */
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .mono-celebration {
+  padding: 8px 9px max(76px, calc(70px + env(safe-area-inset-bottom, 0px)));
+}
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .mono-celebration > section {
+  max-height: min(410px, 100%);
+}
+@media (max-height: 650px) {
+  .mono-celebration > section { max-height: min(390px, 100%); }
 }
 
 /* The actual Telegram sheet height is smaller than the full iPhone viewport.
    Make the board a little shorter so dice and quick actions remain reachable. */
 html.territory-ios-webapp .territory-monopoly .mono-scene {
-  height: clamp(340px, calc(var(--territory-viewport-height, 100dvh) - 325px), 425px);
+  height: clamp(280px, calc(var(--territory-viewport-height, 100dvh) - 270px), 460px);
   min-height: 0;
   max-height: none;
 }
@@ -579,3 +643,45 @@ html.territory-ios-webapp .territory-monopoly .mono-board { inset: 10% 6% 29% 6%
 html.territory-ios-webapp .territory-monopoly .mono-buffs { bottom: 27%; }
 html.territory-ios-webapp .territory-monopoly .mono-scene-shortcuts { bottom: 4px; }
 html.territory-ios-webapp .territory-monopoly .mono-controls { bottom: 0; }
+
+/* Keep the primary reward confirmation visible while short iPhone panels
+   scroll, including when large prizes or localized text take extra space. */
+html.territory-ios-webapp .mono-celebration .mono-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+
+/* The whole roll control spans the scene; the die is centered on the board
+   independently of wallet and action shortcuts on ALL phones and PC. */
+.territory-monopoly .mono-controls {
+  right: 0;
+  left: 0;
+  padding-inline: 0;
+  pointer-events: none;
+}
+.territory-monopoly .mono-roll-row {
+  position: relative;
+  justify-content: center;
+  pointer-events: none;
+}
+.territory-monopoly .mono-wallet {
+  position: absolute;
+  left: 5px;
+  bottom: 2px;
+  pointer-events: auto;
+}
+.territory-monopoly .mono-dice {
+  pointer-events: auto;
+}
+.territory-monopoly .mono-toggles {
+  pointer-events: auto;
+  justify-content: center;
+  padding-inline: 5px;
+  max-width: 70%;
+}
+@media (max-width: 359px) {
+  .territory-monopoly .mono-toggles { max-width: 69%; }
+  .territory-monopoly .mono-wallet > .mono-art { width: 22px; }
+  .territory-monopoly .mono-wallet b { font-size: 15px; }
+}

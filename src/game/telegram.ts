@@ -85,6 +85,9 @@ function updateTelegramViewport(tg: TelegramWebApp) {
   // report a stale/larger value after expansion or when system UI changes.
   // Never allow the game's bottom navigation beyond the *visible* viewport.
   const candidates = [
+    // viewportHeight changes while Telegram resizes its native sheet. The
+    // stable value alone can leave buttons below the *current* visible edge.
+    tg.viewportHeight,
     tg.viewportStableHeight,
     window.innerHeight,
     window.visualViewport?.height,

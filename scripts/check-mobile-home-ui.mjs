@@ -82,14 +82,16 @@ assert.match(css, /@container territory-city \(max-height: 620px\)/,
   'Compact native iPhone scene must respond to usable pane height');
 
 
-/* iOS modal regression guards: important actions must not disappear under the
-   permanent bottom navigation. Android and desktop remain unchanged. */
-assert.match(modal, /classList\.contains\('territory-ios-webapp'\)/,
-  'Only native iOS may move overlays into the game shell');
+/* Native mobile regression guards: iOS AND Android dialog controls must stay
+   inside the measured Telegram shell; desktop retains its document dialogs. */
+assert.match(modal, /classList\.contains\('territory-telegram-webapp'\)/,
+  'Native Android and iPhone dialogs must anchor to the Telegram game shell');
+assert.match(modal, /!document\.documentElement\.classList\.contains\('territory-desktop-webapp'\)/,
+  'Desktop Telegram must keep its original dialog tree');
 assert.match(modal, /createPortal\(children, host\)/,
   'iPhone dialogs must render above bottom navigation');
 assert.match(modal, /host \? createPortal\(children, host\) : <>\{children\}<\/>/,
-  'Android and desktop must preserve their existing dialog tree');
+  'Desktop and standalone browsers must preserve their original dialog tree');
 assert.match(forge, /<IosGamePortal>/,
   'Forge dialog must render above the bottom navigation');
 assert.match(forge, /className="forge-upgrade-panel /,
@@ -98,7 +100,7 @@ assert.match(forge, /className="forge-upgrade-scroll"/,
   'Forge stats and costs must scroll inside the dialog');
 assert.match(forge, /className="forge-upgrade-actions"/,
   'Upgrade action must be reachable at the dialog bottom');
-assert.match(css, /html\.territory-ios-webapp \.forge-upgrade-actions\s*\{[\s\S]*?flex:\s*0 0 auto/,
+assert.match(css, /html\.territory-telegram-webapp:not\(\.territory-desktop-webapp\) \.forge-upgrade-actions\s*\{[\s\S]*?flex:\s*0 0 auto/,
   'Upgrade button must stay visible when stats scroll');
 for (const [name, source] of [
   ['inventory', inventory], ['arena rules', arenaLobby],
@@ -106,9 +108,9 @@ for (const [name, source] of [
 ]) {
   assert.match(source, /<IosGamePortal>/, name + ' must also overlay the navigation');
 }
-assert.match(css, /html\.territory-ios-webapp \.territory-shell > \.territory-modal/,
+assert.match(css, /html\.territory-telegram-webapp:not\(\.territory-desktop-webapp\) \.territory-shell > \.territory-modal/,
   'iOS dialogs must be bounded by the shell, not the external Telegram header');
-assert.match(css, /html\.territory-ios-webapp \.inventory-item-overlay > \.card/,
+assert.match(css, /html\.territory-telegram-webapp:not\(\.territory-desktop-webapp\) \.inventory-item-overlay > \.card/,
   'iOS inventory actions must scroll inside a bounded dialog');
 assert.match(monopolyAdventure, /\{panel&&<IosGamePortal>/,
   'Actual Monopoly v2 panels must portal above bottom navigation');
@@ -135,10 +137,10 @@ const [monopolyCss, gearCss] = await Promise.all([
   read('src/components/monopoly/monopoly.css'),
   read('src/components/GearShowcase.css'),
 ]);
-assert.match(monopolyCss, /html\.territory-ios-webapp \.territory-shell > \.mono-celebration > section\s*\{[\s\S]*?max-height: min\(420px, 100%\)/,
-  'iPhone treasure reward must be a compact dialog rather than filling the screen');
-assert.match(monopolyCss, /html\.territory-ios-webapp \.mono-celebration \.mono-opening-chest\s*\{[\s\S]*?width: 112px/,
-  'iPhone treasure chest artwork must be compact without changing the reward');
+assert.match(monopolyCss, /\.mono-celebration > section\s*\{[\s\S]*?max-height: min\(410px, calc\(100% - 8px\)\)/,
+  'Android and iPhone treasure reward must stay compact inside the game shell');
+assert.match(monopolyCss, /\.mono-celebration \.mono-opening-chest\s*\{[\s\S]*?width: 102px/,
+  'Android and iPhone treasure chest must remain compact without changing rewards');
 assert.match(monopolyCss, /html\.territory-ios-webapp \.territory-monopoly \.mono-scene\s*\{[\s\S]*?--territory-viewport-height/,
   'iPhone Monopoly board should respect available Telegram height');
 assert.match(gearCss, /html\.territory-ios-webapp \.gear-stage-ring\s*\{[\s\S]*?height: clamp/,

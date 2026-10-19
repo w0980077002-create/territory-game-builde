@@ -955,14 +955,14 @@ html.territory-ios-webapp .home-bottom-controls {
 }
 
 
-/* iOS Telegram: dialogs are portal children of the game shell, ABOVE bottom
+/* Native Telegram mobile: dialogs are portal children of the game shell, ABOVE bottom
    navigation. They are bounded by the game's actual rendered height, NOT 100dvh
    (which can include Telegram's own toolbar on iPhone). Android/PC unchanged. */
-html.territory-ios-webapp .territory-shell > .territory-modal,
-html.territory-ios-webapp .territory-shell > .forge-upgrade-overlay,
-html.territory-ios-webapp .territory-shell > .inventory-item-overlay,
-html.territory-ios-webapp .territory-shell > .arena-modal-overlay,
-html.territory-ios-webapp .territory-shell > .monopoly-reward-overlay {
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .territory-modal,
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .forge-upgrade-overlay,
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .inventory-item-overlay,
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .arena-modal-overlay,
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .monopoly-reward-overlay {
   position: absolute;
   inset: 0;
   z-index: 110;
@@ -975,19 +975,19 @@ html.territory-ios-webapp .territory-shell > .monopoly-reward-overlay {
   overflow: hidden;
   overscroll-behavior: contain;
 }
-html.territory-ios-webapp .territory-shell > .territory-modal .territory-modal-panel {
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .territory-modal .territory-modal-panel {
   max-height: 100%;
   min-height: 0;
   margin: 0;
   overflow: hidden;
 }
-html.territory-ios-webapp .territory-modal-panel > div:last-child {
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-modal-panel > div:last-child {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
-html.territory-ios-webapp .forge-upgrade-panel {
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .forge-upgrade-panel {
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -995,11 +995,11 @@ html.territory-ios-webapp .forge-upgrade-panel {
   margin: 0;
   overflow: hidden;
 }
-html.territory-ios-webapp .forge-upgrade-panel > div:first-child {
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .forge-upgrade-panel > div:first-child {
   flex: 0 0 auto;
   min-width: 0;
 }
-html.territory-ios-webapp .forge-upgrade-scroll {
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .forge-upgrade-scroll {
   min-height: 0;
   flex: 1 1 auto;
   overflow-y: auto;
@@ -1007,18 +1007,18 @@ html.territory-ios-webapp .forge-upgrade-scroll {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
-html.territory-ios-webapp .forge-upgrade-actions {
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .forge-upgrade-actions {
   flex: 0 0 auto;
   padding-top: 8px;
   border-top: 1px solid rgba(255,255,255,0.1);
   background: #161b26;
 }
-html.territory-ios-webapp .forge-upgrade-actions .btn-accent {
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .forge-upgrade-actions .btn-accent {
   min-height: 44px;
 }
-html.territory-ios-webapp .inventory-item-overlay > .card,
-html.territory-ios-webapp .arena-modal-overlay > .card,
-html.territory-ios-webapp .monopoly-reward-overlay > .card {
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .inventory-item-overlay > .card,
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .arena-modal-overlay > .card,
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .monopoly-reward-overlay > .card {
   max-height: 100%;
   min-height: 0;
   margin: 0;
@@ -1045,4 +1045,31 @@ html.territory-ios-webapp .territory-nav-label {
   text-overflow: ellipsis;
   letter-spacing: -0.045em;
   font-size: clamp(7.5px, 1.95vw, 8.5px);
+}
+
+/* Shared responsive contract for every game screen (iPhone, Android, PC).
+   Keep scrolling inside the screen, not on the root Telegram document.
+   Flex/grid children must be allowed to shrink instead of pushing controls
+   outside the game frame. No game state, inventory or navigation is changed. */
+.territory-shell { min-width: 0; }
+.territory-screen > :where(div, section, article) {
+  min-width: 0;
+  max-width: 100%;
+}
+.territory-screen :where(.card, section, article, form) { min-width: 0; }
+.territory-screen :where(input, select, textarea) { max-width: 100%; }
+.territory-shell :where(button, [role="button"]) { touch-action: manipulation; }
+.territory-modal-panel > div:last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+@media (max-width: 359px) {
+  /* Prevent a long translated title from stealing the back button on SE-size phones. */
+  .territory-shell > header h1 { min-width: 0; font-size: 14px; }
+  .territory-shell > header > button,
+  .territory-shell > header > img { flex-shrink: 0; }
+  .territory-nav .nav-btn { padding-inline: 0; }
 }

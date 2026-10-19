@@ -221,13 +221,13 @@ export function ForgeScreen() {
               >
                 <ItemArt item={selected} size={48} />
               </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-base" style={{ color: rarityColor(selected.rarity) }}>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-base break-words" style={{ color: rarityColor(selected.rarity) }}>
                   {localizeText(selected.name, language)}
                 </h3>
                 <p className="text-xs text-gray-400">{t('level')} {selected.equipment.level} · {selected.rarity}</p>
               </div>
-              <button onClick={() => { if (!upgrading) setSelected(null); }} className="text-gray-500 hover:text-white">
+              <button type="button" aria-label={language === "en" ? "Close upgrade" : "Закрыть улучшение"} onClick={() => { if (!upgrading) setSelected(null); }} className="shrink-0 inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-300 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400">
                 <X className="w-5 h-5" />
               </button>
             </div>
