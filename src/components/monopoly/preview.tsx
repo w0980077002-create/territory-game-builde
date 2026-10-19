@@ -5,11 +5,20 @@ import {LanguageProvider} from '@/game/i18n';
 import type {MonopolyData,Prize} from './api';
 const cellPrize=(i:number):Prize=>i===0||[6,14,21].includes(i)?{}:i%6===1?{gems:2}:i%6===2?{stones:5}:i%6===3?{materials:3}:i%6===4?{potions:1}:i%6===5?{elixirs:1}:{};
 const fixture:MonopolyData={hall:{tickets:16,points:70,played:7,wins:7,pending_gold:150,claimed_gold:0,position:11,daily_remaining:850,free_ready:true,active:null},progress:{laps:5,rolls:7,events:3,double_next:false,lucky_next:false,claimed:[],pending_rewards:{gems:0,stones:0,materials:0,potions:0,elixirs:0},ends_at:new Date(Date.now()+64*3600000).toISOString()},result:null,added:0};
+let shareNext:string|null=null;
 window.fetch=async(input,init)=>{
  const url=typeof input==='string'?input:input instanceof Request?input.url:input.toString();
  if(url.endsWith('/rpc/territory_referral_status_v1'))return new Response(JSON.stringify({code:'0123456789abcd',founder_number:1,places_left:299,registered:1,qualified:0,pending_claims:0,red_fragments:0,red_pending:0,red_earned_tenths:0,sealed_chests:0,welcome_pending:false,rank:'recruit'}),{headers:{'Content-Type':'application/json'}});
  if(url.endsWith('/functions/v1/telegram-auth'))return new Response(JSON.stringify({bot_username:'TestTerritoryBot'}),{headers:{'Content-Type':'application/json'}});
- if(url.endsWith('/rpc/territory_daily_share_v1'))return new Response(JSON.stringify({server_time:new Date().toISOString(),tickets:16,tasks:[{task:'monopoly',reward_kind:'tickets',reward_amount:2,enabled:true,ready:true,next_at:null},{task:'trials',reward_kind:'stones',reward_amount:2,enabled:true,ready:true,next_at:null}]}),{headers:{'Content-Type':'application/json'}});
+ if(url.endsWith('/rpc/territory_daily_share_v1')){
+  const action=JSON.parse(String(init?.body??'{}'));
+  if(action.p_action==='claim'){
+   if(shareNext)return new Response(JSON.stringify({message:'daily_share_cooldown'}),{status:400,headers:{'Content-Type':'application/json'}});
+   shareNext=new Date(Date.now()+86400000).toISOString();fixture.hall.tickets+=2;
+   return new Response(JSON.stringify({success:true,task:'monopoly',added:2,next_at:shareNext,tickets:fixture.hall.tickets}),{headers:{'Content-Type':'application/json'}});
+  }
+  return new Response(JSON.stringify({server_time:new Date().toISOString(),tickets:fixture.hall.tickets,tasks:[{task:'monopoly',reward_kind:'tickets',reward_amount:2,enabled:true,ready:!shareNext,next_at:shareNext},{task:'trials',reward_kind:'stones',reward_amount:2,enabled:true,ready:true,next_at:null}]}),{headers:{'Content-Type':'application/json'}});
+ }
  if(!url.endsWith('/rpc/territory_monopoly_v2'))return new Response(JSON.stringify({message:'Offline visual preview: network disabled'}),{status:403,headers:{'Content-Type':'application/json'}});
  const args=JSON.parse(String(init?.body??'{}'));fixture.result=null;fixture.added=0;fixture.awards={};
  if(args.p_action==='roll'&&!fixture.hall.active){

@@ -26,6 +26,7 @@ jobs:
       - run: node scripts/check-monopoly-v2.mjs
       - run: node scripts/check-monopoly-test-build.mjs
       - run: node scripts/check-monopoly-visuals.mjs
+      - run: node scripts/check-monopoly-quality.mjs
       - run: npm run test:hall
       - run: npm run test:admin-master
       - run: npm run test:feature-separation

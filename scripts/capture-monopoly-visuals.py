@@ -49,7 +49,7 @@ with sync_playwright() as p:
         page.wait_for_timeout(300)
         if label=='Задания':
             page.locator('[data-testid="daily-share-monopoly"]').wait_for()
-            invite=page.locator('[data-testid="daily-share-monopoly"]').get_by_role('button',name='Поделиться в Telegram',exact=True)
+            invite=page.locator('[data-testid="share-button-monopoly"]')
             invite.wait_for(state='visible')
             page.wait_for_function("!document.querySelector('[data-testid=daily-share-monopoly] button')?.disabled")
             page.evaluate("""() => {
@@ -67,6 +67,8 @@ with sync_playwright() as p:
             })"""))
             assert 'https://t.me/TestTerritoryBot?startapp=ref_0123456789abcd' in unquote(shared), 'share must contain personal Telegram bot deep link'
             assert 'github.io' not in unquote(shared), 'never send the GitHub Pages URL'
+            page.locator('[data-testid="daily-share-monopoly"] [role="status"]').wait_for()
+            assert page.locator('[data-testid="daily-share-monopoly"] [role="alert"]').count()==0, 'share fixture must show a successful bonus, not an error'
 
             assert page.locator('.mono-panel .mono-quest button').count()>=3, 'existing three quest actions must remain'
             last_task=page.locator('.mono-panel .mono-quest').last
