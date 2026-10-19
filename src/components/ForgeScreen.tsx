@@ -7,6 +7,7 @@ import { Hammer, ArrowUp, X } from 'lucide-react';
 import { hapticNotify } from '@/game/telegram';
 import { SLOT_ART } from '@/game/art';
 import { ItemArt } from './ui/ItemArt';
+import { IosGamePortal } from './ui/Modal';
 import type { Equipment, InventoryItem } from '@/game/types';
 import { upgradeEquipment } from '@/game/equipmentBalance';
 import { forgeAttempt, forgeCost, forgeSetBonus, forgeSuccessRate } from '@/game/forge';
@@ -203,12 +204,13 @@ export function ForgeScreen() {
 
       {/* Upgrade modal */}
       {selected && selected.equipment && (
+        <IosGamePortal>
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+          className="forge-upgrade-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
           onClick={() => { if (!upgrading) setSelected(null); }}
         >
           <div
-            className="card w-full max-w-sm m-2 animate-slide-up"
+            className="forge-upgrade-panel card w-full max-w-sm m-2 animate-slide-up"
             style={{ border: `1px solid ${rarityColor(selected.rarity)}` }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -230,6 +232,7 @@ export function ForgeScreen() {
               </button>
             </div>
 
+            <div className="forge-upgrade-scroll">
             {/* Current stats */}
             <div className="space-y-1 mb-3">
               <p className="text-xs text-gray-500 uppercase tracking-wider">{t('current')}</p>
@@ -275,6 +278,8 @@ export function ForgeScreen() {
               </div>
             )}
 
+            </div>
+            <div className="forge-upgrade-actions">
             <button
               className="btn-accent w-full"
               onClick={() => tryUpgrade(selected)}
@@ -286,8 +291,10 @@ export function ForgeScreen() {
                 <><ArrowUp className="w-4 h-4 inline mr-1" /> {t('upgrade')}</>
               )}
             </button>
+            </div>
           </div>
         </div>
+        </IosGamePortal>
       )}
     </div>
   );
