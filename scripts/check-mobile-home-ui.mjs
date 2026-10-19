@@ -128,6 +128,24 @@ assert(home.includes('w-[clamp(74px,23vw,96px)]'), 'Hero name must have responsi
 assert.match(home, /whitespace-nowrap/, 'Hero level and VIP must stay on one line');
 assert.match(app, /Прогресс не сохранён! Не закрывайте игру, проверьте сеть/, 'Save failure must remain clearly visible in compact mobile layout');
 
+
+/* Real iPhone 15 screenshots: avoid the oversized Monopoly reward panel
+   and preserve access to dice + inventory filters inside Telegram's sheet. */
+const [monopolyCss, gearCss] = await Promise.all([
+  read('src/components/monopoly/monopoly.css'),
+  read('src/components/GearShowcase.css'),
+]);
+assert.match(monopolyCss, /html\.territory-ios-webapp \.territory-shell > \.mono-celebration > section\s*\{[\s\S]*?max-height: min\(420px, 100%\)/,
+  'iPhone treasure reward must be a compact dialog rather than filling the screen');
+assert.match(monopolyCss, /html\.territory-ios-webapp \.mono-celebration \.mono-opening-chest\s*\{[\s\S]*?width: 112px/,
+  'iPhone treasure chest artwork must be compact without changing the reward');
+assert.match(monopolyCss, /html\.territory-ios-webapp \.territory-monopoly \.mono-scene\s*\{[\s\S]*?--territory-viewport-height/,
+  'iPhone Monopoly board should respect available Telegram height');
+assert.match(gearCss, /html\.territory-ios-webapp \.gear-stage-ring\s*\{[\s\S]*?height: clamp/,
+  'iPhone gear layout must reserve space for the bag');
+assert.match(gearCss, /html\.territory-ios-webapp \.gear-filter-strip/,
+  'Gear item filters must remain discoverably scrollable on iPhone');
+
 for (const asset of ['public/city-bg-vibrant.webp', 'public/ic-auction.svg', 'public/ic-professions.svg', 'public/territory-mark.svg']) {
   await access(new URL(asset, root));
 }
