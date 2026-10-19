@@ -52,11 +52,19 @@ with sync_playwright() as p:
             invite=page.locator('[data-testid="daily-share-monopoly"]').get_by_role('button',name='Поделиться в Telegram',exact=True)
             invite.wait_for(state='visible')
             page.wait_for_function("!document.querySelector('[data-testid=daily-share-monopoly] button')?.disabled")
-            page.evaluate("window.__capturedInvite=null;window.open=(url)=>{window.__capturedInvite=url;return null}")
+            page.evaluate("""() => {
+                window.__capturedInvite=null;
+                window.open=(url)=>{window.__capturedInvite=url;return null;};
+                if(window.Telegram?.WebApp)window.Telegram.WebApp.openTelegramLink=(url)=>{window.__capturedInvite=url;};
+            }""")
             invite.click()
             shared=page.evaluate("window.__capturedInvite")
             from urllib.parse import unquote
-            assert shared and shared.startswith('https://t.me/share/url?'), 'invite must open Telegram share picker'
+            assert shared and shared.startswith('https://t.me/share/url?'), 'share picker failed; debug='+str(page.evaluate("""() => ({
+              origin:location.origin, telegram:!!window.Telegram?.WebApp, captured:window.__capturedInvite,
+              button:document.querySelector('[data-testid=daily-share-monopoly] button')?.outerHTML,
+              alert:document.querySelector('[data-testid=daily-share-monopoly] [role=alert]')?.textContent
+            })"""))
             assert 'promo/ru/' in unquote(shared) and 'ref=0123456789abcd' in unquote(shared), 'share must use Russian promo and personal code'
 
             assert page.locator('.mono-panel .mono-quest button').count()>=3, 'existing three quest actions must remain'
