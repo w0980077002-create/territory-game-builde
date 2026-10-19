@@ -35,7 +35,7 @@ assert.match(css, /overscroll-behavior-y: contain/, 'Small phone side controls m
 assert.match(css, /\.territory-nav-label/, 'Bottom nav labels must wrap instead of clipping');
 assert.match(app, /territory-city-screen/, 'City must support very short phone screens');
 assert.match(app, /territory-city-screen overflow-y-auto overflow-x-hidden/,
-  'City can scroll within its own pane when Telegram's usable height is short');
+  'City can scroll within its own pane when the Telegram viewport is short');
 assert.match(css, /container-name: territory-city;/,
   'Measure usable city pane instead of relying only on device height');
 assert.match(css, /@container territory-city \(max-height: 560px\)/,
