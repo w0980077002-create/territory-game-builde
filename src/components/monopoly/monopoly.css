@@ -409,3 +409,77 @@
 .mono-invite-error{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-top:5px;color:#7f2431;font:700 9px Arial,sans-serif}
 .mono-invite-error button{font-size:9px!important;padding:4px 6px!important}
 :is(.panel-quests,.panel-offers) .mono-invite-actions button{min-width:87px}
+
+
+/* 2026-10-19: modal overlays must fit BELOW the native Telegram mini-app
+ * header and ABOVE the game bottom navigation. All non-celebration dialogs
+ * are compact, with their own scrolling body and an always-visible exit. */
+.mono-overlay:not(.mono-celebration){
+ padding-top:max(105px,calc(var(--territory-top-inset,0px) + 30px),env(safe-area-inset-top,0px));
+ padding-bottom:max(84px,calc(var(--territory-bottom-inset,0px) + 68px),env(safe-area-inset-bottom,0px));
+}
+.mono-panel.panel-rewards,.mono-panel.panel-help,.mono-panel.panel-jackpot{
+ width:min(90vw,355px);
+ max-width:355px;
+ max-height:min(59dvh,430px);
+ border-width:2px;
+ border-radius:13px;
+}
+:is(.panel-rewards,.panel-help,.panel-jackpot)>header{
+ min-height:46px;
+ padding:5px 8px;
+ gap:5px;
+ border-bottom-width:1px;
+}
+:is(.panel-rewards,.panel-help,.panel-jackpot)>header>.mono-art{width:28px}
+:is(.panel-rewards,.panel-help,.panel-jackpot) h3{font-size:15px;line-height:1.12}
+:is(.panel-rewards,.panel-help,.panel-jackpot) .mono-close{min-width:32px;width:32px;height:32px}
+:is(.panel-rewards,.panel-help,.panel-jackpot) .mono-panel-body{
+ flex:1 1 auto;
+ min-height:0;
+ padding:6px 8px 10px;
+ overflow-y:auto;
+ -webkit-overflow-scrolling:touch;
+ overscroll-behavior:contain;
+}
+.mono-panel-return{
+ display:flex;
+ flex:none;
+ width:100%;
+ align-items:center;
+ justify-content:center;
+ min-height:35px;
+ padding:5px 9px;
+ border:0;
+ border-bottom:1px solid #be9959;
+ background:linear-gradient(#386173,#164655);
+ font:800 12px/1.1 Arial,sans-serif!important;
+ color:#fff4ce!important;
+}
+.panel-rewards .mono-panel-body>p{font:11px/1.35 Arial,sans-serif;margin:2px 2px 7px}
+.panel-rewards .mono-reward-row{
+ gap:5px;padding:6px 5px;margin:6px 0;
+ border-radius:9px;align-items:center;
+}
+.panel-rewards .mono-reward-row>.mono-prize-icon{width:39px;margin:0}
+.panel-rewards .mono-reward-row b{font-size:12px}
+.panel-rewards .mono-reward-row small{font-size:9px;margin-top:1px}
+.panel-rewards .mono-reward-row .mono-extra-rewards{margin:4px 0 0;gap:3px}
+.panel-rewards .mono-reward-row .mono-resource{min-width:25px;max-width:35px;padding:2px}
+.panel-rewards .mono-reward-row .mono-resource .mono-art{width:24px}
+.panel-rewards .mono-reward-row .mono-resource b{font-size:9px}
+.panel-rewards .mono-reward-row button{
+ flex:0 0 auto;align-self:center;
+ padding:5px 6px;min-width:65px;min-height:34px;
+ font:800 10px Arial,sans-serif!important;
+ border-radius:7px;
+}
+@media(max-width:350px){
+ .mono-panel.panel-rewards,.mono-panel.panel-help,.mono-panel.panel-jackpot{width:92vw;max-height:min(57dvh,385px)}
+ .panel-rewards .mono-reward-row{gap:4px}
+ .panel-rewards .mono-reward-row>.mono-prize-icon{width:30px}
+ .panel-rewards .mono-reward-row button{min-width:58px;padding:4px}
+}
+@media(max-height:680px){
+ .mono-panel.panel-rewards,.mono-panel.panel-help,.mono-panel.panel-jackpot{max-height:min(55dvh,350px)}
+}
