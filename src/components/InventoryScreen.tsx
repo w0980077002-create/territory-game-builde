@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
@@ -23,11 +23,14 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
   const [tab, setTab] = useState<'items' | 'equipment' | 'followers'>(initialTab);
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const [beltNote, setBeltNote] = useState<string | null>(null);
+  const inventoryRootRef = useRef<HTMLDivElement>(null);
 
   const consumables = state.inventory.filter((i) => i.type === 'potion' || i.type === 'elixir' || i.type === 'arena');
   const materials = state.inventory.filter((i) => i.type === 'material');
 
   const switchTab = (to: 'items' | 'equipment' | 'followers') => {
+    // Keep navigation accessible even after scrolling through a large bag.
+    inventoryRootRef.current?.closest<HTMLElement>('.territory-screen')?.scrollTo({ top: 0, behavior: 'auto' });
     setTab(to);
     setSelected(null);
     setBeltNote(null);
@@ -46,29 +49,29 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
   const close = () => { setSelected(null); setBeltNote(null); };
 
   return (
-    <div className="space-y-2 animate-fade-in pb-2">
-      <div className="grid grid-cols-3 gap-1.5 rounded-xl border border-violet-500/30 bg-[#170f25] p-1.5"
+    <div ref={inventoryRootRef} className="space-y-2 animate-fade-in pb-2">
+      <div className="sticky top-0 z-20 grid grid-cols-3 gap-1 rounded-xl border border-violet-500/30 bg-[#170f25]/95 p-1 shadow-[0_5px_14px_rgba(0,0,0,0.4)] backdrop-blur-sm"
         role="tablist" aria-label={language === 'en' ? 'Inventory sections' : 'Разделы инвентаря'}>
         <button type="button" role="tab" aria-selected={tab === 'equipment'} aria-controls="inventory-current-section"
-          className={'min-w-0 rounded-lg py-2 px-1.5 text-[11px] sm:text-xs font-bold transition-colors flex flex-col sm:flex-row items-center justify-center gap-1 ' + (tab === 'equipment'
+          className={'flex min-h-10 min-w-0 items-center justify-center gap-1 rounded-lg px-1 py-1 text-[10px] font-bold leading-tight transition-colors sm:text-xs ' + (tab === 'equipment'
             ? 'border border-amber-400/60 bg-gradient-to-b from-amber-500/30 to-amber-900/30 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,.15)]'
             : 'border border-transparent text-violet-200/75')}
           onClick={() => switchTab('equipment')}>
-          <ArrowDownUp className="w-4 h-4 shrink-0" />{language === 'en' ? 'Equipment' : 'Снаряжение'}
+          <ArrowDownUp className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />{language === 'en' ? 'Equipment' : 'Снаряжение'}
         </button>
         <button type="button" role="tab" aria-selected={tab === 'items'} aria-controls="inventory-current-section"
-          className={'min-w-0 rounded-lg py-2 px-1.5 text-[11px] sm:text-xs font-bold transition-colors flex flex-col sm:flex-row items-center justify-center gap-1 ' + (tab === 'items'
+          className={'flex min-h-10 min-w-0 items-center justify-center gap-1 rounded-lg px-1 py-1 text-[10px] font-bold leading-tight transition-colors sm:text-xs ' + (tab === 'items'
             ? 'border border-amber-400/60 bg-gradient-to-b from-amber-500/30 to-amber-900/30 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,.15)]'
             : 'border border-transparent text-violet-200/75')}
           onClick={() => switchTab('items')}>
-          <Package className="w-4 h-4 shrink-0" />{language === 'en' ? 'Items' : 'Предметы'}
+          <Package className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />{language === 'en' ? 'Items' : 'Предметы'}
         </button>
         <button type="button" role="tab" aria-selected={tab === 'followers'} aria-controls="inventory-current-section"
-          className={'min-w-0 rounded-lg py-2 px-1.5 text-[11px] sm:text-xs font-bold transition-colors flex flex-col sm:flex-row items-center justify-center gap-1 ' + (tab === 'followers'
+          className={'flex min-h-10 min-w-0 items-center justify-center gap-1 rounded-lg px-1 py-1 text-[10px] font-bold leading-tight transition-colors sm:text-xs ' + (tab === 'followers'
             ? 'border border-amber-400/60 bg-gradient-to-b from-amber-500/30 to-amber-900/30 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,.15)]'
             : 'border border-transparent text-violet-200/75')}
           onClick={() => switchTab('followers')}>
-          <UsersRound className="w-4 h-4 shrink-0" />{language === 'en' ? 'Companions' : 'Спутники'}
+          <UsersRound className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />{language === 'en' ? 'Companions' : 'Спутники'}
         </button>
       </div>
 
