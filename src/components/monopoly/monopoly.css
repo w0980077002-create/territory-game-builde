@@ -605,35 +605,35 @@ html.territory-ios-webapp .mono-celebration .mono-cta {
 }
 
 /* The whole roll control spans the scene; the die is centered on the board
-   independently of wallet and action shortcuts (previously left-shifted). */
-html.territory-ios-webapp .territory-monopoly .mono-controls {
+   independently of wallet and action shortcuts on ALL phones and PC. */
+.territory-monopoly .mono-controls {
   right: 0;
   left: 0;
   padding-inline: 0;
   pointer-events: none;
 }
-html.territory-ios-webapp .territory-monopoly .mono-roll-row {
+.territory-monopoly .mono-roll-row {
   position: relative;
   justify-content: center;
   pointer-events: none;
 }
-html.territory-ios-webapp .territory-monopoly .mono-wallet {
+.territory-monopoly .mono-wallet {
   position: absolute;
   left: 5px;
   bottom: 2px;
   pointer-events: auto;
 }
-html.territory-ios-webapp .territory-monopoly .mono-dice {
+.territory-monopoly .mono-dice {
   pointer-events: auto;
 }
-html.territory-ios-webapp .territory-monopoly .mono-toggles {
+.territory-monopoly .mono-toggles {
   pointer-events: auto;
   justify-content: center;
   padding-inline: 5px;
   max-width: 70%;
 }
 @media (max-width: 359px) {
-  html.territory-ios-webapp .territory-monopoly .mono-toggles { max-width: 69%; }
-  html.territory-ios-webapp .territory-monopoly .mono-wallet > .mono-art { width: 22px; }
-  html.territory-ios-webapp .territory-monopoly .mono-wallet b { font-size: 15px; }
+  .territory-monopoly .mono-toggles { max-width: 69%; }
+  .territory-monopoly .mono-wallet > .mono-art { width: 22px; }
+  .territory-monopoly .mono-wallet b { font-size: 15px; }
 }
