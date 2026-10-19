@@ -95,3 +95,31 @@ jobs:
           name: monopoly-android-test-${{ github.sha }}
           path: dist-monopoly-test/
           retention-days: 7
+
+  compact-mobile-preview:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'review/monopoly-compact-mobile-20261018'
+    permissions:
+      contents: read
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.55.0
+      - run: python -m playwright install --with-deps chromium
+      - run: node scripts/build-monopoly-visual-preview.mjs /tmp/monopoly-visual-review.html
+      - run: python scripts/capture-monopoly-visuals.py /tmp/monopoly-visual-review.html /tmp/monopoly-screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: monopoly-compact-mobile-preview
+          path: /tmp/monopoly-screenshots/
+          retention-days: 7

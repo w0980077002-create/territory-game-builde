@@ -25,9 +25,17 @@ with sync_playwright() as p:
         box=tile.bounding_box()
         assert box['x']>=scene['x'] and box['x']+box['width']<=scene['x']+scene['width'], 'tile outside scene'
         assert box['y']>=scene['y'] and box['y']+box['height']<=scene['y']+scene['height'], 'tile outside scene'
+    for control in page.locator('.mono-scene-shortcuts button, .mono-dice, .mono-milestones button').all():
+        rect=control.bounding_box()
+        assert rect is not None and 0<=rect['x'] and rect['x']+rect['width']<=390, 'offscreen horizontal control'
+        assert 0<=rect['y'] and rect['y']+rect['height']<=844, 'offscreen vertical control'
+    assert page.locator('.mono-cell-number').count()==0, 'second numbered diamond present'
+    lap=page.locator('.mono-lap-plaque').bounding_box()
+    dice=page.locator('.mono-dice').bounding_box()
+    assert lap is not None and dice is not None and lap['y']+lap['height'] < dice['y'], 'lap counter covered by dice'
     page.screenshot(path=str(out/'01-board-390.png'), full_page=True)
     for label,filename in [('Подарки','02-gifts-390.png'),('Задания','03-quests-390.png'),('Награды за круги','04-laps-390.png'),('Спецпредложения','05-offers-390.png')]:
-        page.get_by_role('button',name=label,exact=True).click()
+        (page.locator('.mono-milestones button').first if label=='Награды за круги' else page.get_by_role('button',name=label,exact=True)).click()
         page.get_by_role('dialog').wait_for()
         page.wait_for_timeout(300)
         if label=='Задания':
