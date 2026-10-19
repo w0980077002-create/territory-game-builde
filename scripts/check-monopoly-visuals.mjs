@@ -21,3 +21,9 @@ for(const path of ['art-atlas.png','hero-frames.png']){const b=readFileSync('pub
 const component=readFileSync('src/components/monopoly/MonopolyAdventure.tsx','utf8');assert.match(component,/Серверной механики джекпота нет/);
 const css=readFileSync('src/components/monopoly/monopoly.css','utf8');assert.match(css,/prefers-reduced-motion/);assert.match(css,/100dvh/);
 console.log('Monopoly visual structure PASS: actual component SSR, 28 unnumbered cells, compact quick actions, illustrated assets, transparent atlases, honest jackpot, safe-area/reduced-motion rules. NOT a browser screenshot or device validation.');
+
+const redeemApi=readFileSync('src/components/monopoly/api.ts','utf8');
+assert.ok(!redeemApi.includes('window.location.reload('),'Monopoly rewards must not restart Telegram');
+assert.match(redeemApi,/acceptMonopolyClaimReceipt/,'redeem must adopt verified server revision');
+const giftUi=readFileSync('src/components/monopoly/MonopolyAdventure.tsx','utf8');
+assert.match(giftUi,/setData\(current=>current\?/,'Monopoly gifts should update in place');

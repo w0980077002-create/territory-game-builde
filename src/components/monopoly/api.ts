@@ -1,5 +1,5 @@
 import {useGame} from '@/game/actions';
-import {saveCloudSave} from '@/game/cloud';
+import {saveCloudSave,acceptMonopolyClaimReceipt} from '@/game/cloud';
 import { supabase } from '@/game/supabase';
 import type { HallState, HallResult, HallQuestion } from '@/game/gameHall';
 export type MonopolyQuestion = HallQuestion & { steps?:number; event?:string; laps?:number; multiplier?:number; gold?:number; prize?:Prize; doubled?:boolean };
@@ -42,10 +42,9 @@ export function bundlePrize(action:'quest'|'offer'|'milestone',value:number):Pri
  return {gems:value*3,elixirs:1};
 }
 
-// Keep shared autosave code unchanged. Save exact state, redeem with CAS, then
-// reload before accepting a new revision in this tab. Stale saves retain the old
-// token and therefore cannot overwrite the server's gems/inventory credit.
-export async function claimMonopolyRewards(){
+// A verified receipt contains the post-credit game state and revision, so no
+// Telegram Mini App reload is needed after gifting resources to the player.
+export async function claimMonopolyRewards():Promise<Prize>{
  const {data:{user},error:authError}=await supabase.auth.getUser();
  if(authError||!user)throw new Error('hall_login_required');
  const snapshot=useGame.get();
@@ -54,6 +53,7 @@ export async function claimMonopolyRewards(){
  if(readError||!row?.updated_at||useGame.get()!==snapshot)throw new Error('monopoly_reload_required');
  const {data,error}=await supabase.rpc('territory_monopoly_claim_v2',{p_expected:row.updated_at,p_snapshot:snapshot});
  if(error)throw new Error(error.message);
- if(data?.success!==true)throw new Error('monopoly_reload_required');
- window.location.reload();
+ const newState=acceptMonopolyClaimReceipt(user.id,data);
+ useGame.set(newState);
+ return (data?.awards??{}) as Prize;
 }

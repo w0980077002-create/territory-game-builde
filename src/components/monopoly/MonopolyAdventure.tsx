@@ -100,7 +100,16 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
  };
  const redeem=async()=>{
   if(lock.current)return;lock.current=true;setBusy(true);setError('');
-  try{await claimMonopolyRewards();}catch(e){if(mounted.current)setError(describe(e));}
+  try{
+   const awards=await claimMonopolyRewards();
+   if(!mounted.current)return;
+   // The credit is committed to the game state; do not restart the Mini App.
+   setData(current=>current?{...current,progress:{...current.progress,pending_rewards:{}}}:current);
+   setNotice(t('Сокровища в инвентаре!','Treasures added to inventory!'));
+   setReward({awards});
+   try{const refreshed=await monopoly();if(mounted.current)setData(refreshed);}
+   catch{ /* No second award request: the previous claim already succeeded. */ }
+  }catch(e){if(mounted.current)setError(describe(e));}
   finally{lock.current=false;if(mounted.current)setBusy(false);}
  };
  const point=boardPoint(position);
@@ -162,6 +171,6 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
     {panel==='help'&&<div className="mono-rules"><p>{t('На поле ровно 28 клеток. Один бросок стоит 1 билет. Герой получает золото и показанный приз клетки. Алмазы, камни, материалы, зелья и эликсиры забираются кнопкой под полем в настоящий баланс и инвентарь.','The circuit has exactly 28 spaces. A roll costs 1 ticket. Gold and the shown prize await on the landing space. Collect gems, stones, materials and potions below the board.')}</p><p>{t('×10 стоит 10 билетов и умножает награду. Суточный лимит золота сохраняется.','×10 costs 10 tickets and multiplies the prize. The daily gold cap still applies.')}</p>{Object.entries(eventCopy).map(([key,v])=><p key={key}><b>{v[en?2:0]}.</b> {v[en?3:1]}</p>)}<p>{t('Каждый переход через старт засчитывает круг. Прогресс сохраняется на сервере. Событие длится 72 часа, затем круги и задания обновляются. Кошелёк и неполученные ресурсы сохраняются.','Crossing start completes a lap. Progress is saved on the server. The event lasts 72 hours. Your wallet and uncollected resources are retained.')}</p></div>}
    </div>
   </section></div>}
-  {reward&&<div className="mono-overlay mono-celebration" role="dialog" aria-modal="true" aria-labelledby="mono-reward-title" onClick={()=>setReward(null)}><section onClick={e=>e.stopPropagation()}><div className="mono-prize-rays"/><div className="mono-sparkles">{Array.from({length:12},(_,i)=><i key={i} style={{'--i':i} as import('react').CSSProperties}/>)}</div><small>TERRITORY</small><h3 id="mono-reward-title">{t('Сокровище твоё!','Treasure is yours!')}</h3><Art name="openChest" className="mono-opening-chest"/><div className="mono-winnings"><Art name={reward.tickets?'ticket':'gold'}/><strong>+{reward.tickets??reward.gold}</strong></div>{reward.event&&eventCopy[reward.event]&&<div className="mono-event"><Art name="gems"/><b>{eventCopy[reward.event][en?2:0]}</b><p>{eventCopy[reward.event][en?3:1]}</p></div>}<Prizes prize={reward.awards} en={en}/>{Object.values(reward.awards??{}).some(n=>n>0)&&<p>{t('Ресурсы готовы к получению под полем.','Collect your resources below the board.')}</p>}<p>{reward.tickets?t('Билеты уже в кошельке','Tickets are already in your wallet'):t('Золото ожидает в игровом зале','Gold awaits in the Game Hall')}</p><button autoFocus className="mono-cta" onClick={()=>setReward(null)}>{t('ПРОДОЛЖИТЬ','CONTINUE')}</button></section></div>}
+  {reward&&<div className="mono-overlay mono-celebration" role="dialog" aria-modal="true" aria-labelledby="mono-reward-title" onClick={()=>setReward(null)}><section onClick={e=>e.stopPropagation()}><div className="mono-prize-rays"/><div className="mono-sparkles">{Array.from({length:12},(_,i)=><i key={i} style={{'--i':i} as import('react').CSSProperties}/>)}</div><small>TERRITORY</small><h3 id="mono-reward-title">{t('Сокровище твоё!','Treasure is yours!')}</h3><Art name="openChest" className="mono-opening-chest"/>{(reward.tickets!==undefined||reward.gold!==undefined)&&<div className="mono-winnings"><Art name={reward.tickets!==undefined?'ticket':'gold'}/><strong>+{reward.tickets??reward.gold}</strong></div>}{reward.event&&eventCopy[reward.event]&&<div className="mono-event"><Art name="gems"/><b>{eventCopy[reward.event][en?2:0]}</b><p>{eventCopy[reward.event][en?3:1]}</p></div>}<Prizes prize={reward.awards} en={en}/>{Object.values(reward.awards??{}).some(n=>n>0)&&<p>{t('Ресурсы готовы к получению под полем.','Collect your resources below the board.')}</p>}<p>{reward.tickets!==undefined?t('Билеты уже в кошельке','Tickets are already in your wallet'):reward.gold!==undefined?t('Золото ожидает в игровом зале','Gold awaits in the Game Hall'):t('Сокровища зачислены в инвентарь','Treasures added to your inventory')}</p><button autoFocus className="mono-cta" onClick={()=>setReward(null)}>{t('ПРОДОЛЖИТЬ','CONTINUE')}</button></section></div>}
  </div>;
 }

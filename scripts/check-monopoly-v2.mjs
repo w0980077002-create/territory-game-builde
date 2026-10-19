@@ -22,6 +22,7 @@ try{
  assert.deepEqual(await q('SELECT * FROM territory_private.hall_accounts_v1 ORDER BY player_id'),walletBefore,'installation must not mutate wallets');
  await assert.rejects(db.exec(readFileSync('supabase/staged/territory_monopoly_v2.sql','utf8')),/monopoly_already_installed_review_required/);
  await db.exec('ROLLBACK');
+ await db.exec(readFileSync('supabase/staged/territory_monopoly_claim_receipt_v3.sql','utf8'));
  await as(A);await assert.rejects(rpc(),/monopoly_test_only/);
  await q('INSERT INTO territory_private.monopoly_testers_v2(player_id) VALUES($1),($2)',[A,B]);
  await as('');
@@ -116,9 +117,15 @@ try{
  await assert.rejects(redeem(current.updated_at,{...current.game_state,forgeMaterials:99999}),/monopoly_reload_required/);
  assert.deepEqual((await rpc()).progress.pending_rewards,pending,'failed claim retains all rewards');
  const receipt=await redeem(current.updated_at,current.game_state);assert.equal(receipt.success,true);
+ assert.ok(receipt.updated_at,'atomic receipt must contain updated save revision');
+ assert.ok(receipt.game_state,'atomic receipt must contain new game state');
+ assert.equal(receipt.wallet_gems,7+pending.gems);
+ assert.equal(receipt.wallet_gold,credited.game_state.player.gold);
  const updated=(await q('SELECT game_state,gems,forge_materials,updated_at FROM public.players WHERE id=$1',[A]))[0];
  assert.equal((await q('UPDATE public.players SET game_state=$2 WHERE id=$1 AND updated_at=$3 RETURNING id',[A,current.game_state,current.updated_at])).length,0,'stale autosave cannot overwrite redeemed inventory');
  assert.equal(updated.gems,7+pending.gems);assert.equal(updated.game_state.player.gems,updated.gems);
+ assert.equal(new Date(receipt.updated_at).getTime(),new Date(updated.updated_at).getTime());
+ assert.deepEqual(receipt.game_state,updated.game_state);
  assert.equal(updated.game_state.battleStones,42+pending.stones);
  assert.equal(updated.game_state.forgeMaterials,9+pending.materials);assert.equal(updated.forge_materials,9+pending.materials);
  assert.equal(updated.game_state.player.redGems,13);assert.equal(updated.game_state.player.gold,credited.game_state.player.gold);
