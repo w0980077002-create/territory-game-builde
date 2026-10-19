@@ -133,11 +133,14 @@ function summaryColumns(state: GameState) {
 const saveTokens = new Map<string, string>();
 const walletVersions = new Map<string, WalletVersion>();
 const saveBlocked = new Set<string>();
+// Invalidate queued pre-award saves before installing a server-credited state.
+const saveGenerations = new Map<string,number>();
 
 export { saveTokens, walletVersions, saveBlocked };
 
 /** One coalescing queue per authenticated player within this browser session. */
-const saveWriters = new Map<string, (snapshot: ReturnType<typeof summaryColumns>) => Promise<boolean>>();
+type PendingSave={columns:ReturnType<typeof summaryColumns>;generation:number};
+const saveWriters = new Map<string, (request:PendingSave) => Promise<boolean>>();
 
 export function saveCloudSave(userId: string, state: GameState): Promise<boolean> {
   // The SQL guard rejects malformed/contradictory snapshots. Fail locally first
@@ -148,11 +151,11 @@ export function saveCloudSave(userId: string, state: GameState): Promise<boolean
   }
   // Capture an immutable-by-convention snapshot BEFORE the asynchronous queue.
   // Without this, later state mutations can change the contents of a queued save.
-  const snapshot = summaryColumns(state);
+  const snapshot:PendingSave={columns:summaryColumns(state),generation:saveGenerations.get(userId)??0};
   let writer = saveWriters.get(userId);
   if (!writer) {
-    writer = createCoalescingWriter(async (columns: ReturnType<typeof summaryColumns>) => {
-      if (saveBlocked.has(userId)) return false;
+    writer = createCoalescingWriter(async ({columns,generation}:PendingSave) => {
+      if (saveBlocked.has(userId)||generation!==(saveGenerations.get(userId)??0)) return false;
       const expected = saveTokens.get(userId);
       const wallet = walletVersions.get(userId);
       if (!validSaveToken(expected) || !wallet) return false;
@@ -162,6 +165,7 @@ export function saveCloudSave(userId: string, state: GameState): Promise<boolean
         console.warn('Save postponed: Telegram session could not be verified');
         return false;
       }
+      if (generation!==(saveGenerations.get(userId)??0)) return false;
       // Guard server-side currency changes that may not bump updated_at.
       // Example: profession RPC spends gems independently of this browser.
       const { data, error } = await supabase.from('players')
@@ -172,6 +176,7 @@ export function saveCloudSave(userId: string, state: GameState): Promise<boolean
         .eq('gems', wallet.gems)
         .select('updated_at,gold,gems')
         .maybeSingle();
+      if (generation!==(saveGenerations.get(userId)??0)) return false;
       if (error) {
         console.error('Save failed:', error.message);
         return false;
@@ -196,6 +201,28 @@ export function saveCloudSave(userId: string, state: GameState): Promise<boolean
     saveWriters.set(userId, writer);
   }
   return writer(snapshot);
+}
+
+
+/** Accept a server-authoritative Monopoly claim without restarting Telegram.
+ * Invalidate queued old writes, then install the exact server revision and wallet
+ * before subscribers are notified of the new game state. */
+export function acceptMonopolyClaimReceipt(userId:string,response:unknown):GameState{
+ if(!response||typeof response!=='object')throw new Error('monopoly_invalid_receipt');
+ const receipt=response as Record<string,unknown>;
+ const state=receipt.game_state as GameState;
+ if(receipt.success!==true||!validSaveToken(receipt.updated_at)||
+   !validEconomySnapshot(state)||!Array.isArray(state.inventory)||
+   !Number.isSafeInteger(state.forgeMaterials))throw new Error('monopoly_invalid_receipt');
+ const wallet=safeWalletVersion({gold:receipt.wallet_gold,gems:receipt.wallet_gems},state.player);
+ if(!walletMatchesVersion(wallet,state.player))throw new Error('monopoly_invalid_receipt');
+ const previous=saveTokens.get(userId);
+ if(!validSaveToken(previous)||Date.parse(receipt.updated_at)<=Date.parse(previous))throw new Error('monopoly_invalid_receipt');
+ saveGenerations.set(userId,(saveGenerations.get(userId)??0)+1);
+ saveTokens.set(userId,receipt.updated_at);
+ walletVersions.set(userId,wallet);
+ saveBlocked.delete(userId);
+ return state;
 }
 
 /** One verified server-side inventory mutation. Call after awaiting saveCloudSave
