@@ -59,7 +59,7 @@ with sync_playwright() as p:
             assert shared and shared.startswith('https://t.me/share/url?'), 'invite must open Telegram share picker'
             assert 'startapp=ref_0123456789abcd' in unquote(shared), 'share must include correct personal code'
 
-            assert page.locator('.mono-panel .mono-quest button').count()==3, 'each quest must retain an actionable button'
+            assert page.locator('.mono-panel .mono-quest button').count()>=4, 'three tasks and an invite action must be present'
             last=page.locator('.mono-panel .mono-quest').last.bounding_box()
             assert last['y']+last['height']<=844-10, 'quest button below mobile viewport'
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
