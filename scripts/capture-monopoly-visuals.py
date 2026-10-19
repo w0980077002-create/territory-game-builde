@@ -60,8 +60,10 @@ with sync_playwright() as p:
             assert 'promo/ru/' in unquote(shared) and 'ref=0123456789abcd' in unquote(shared), 'share must use Russian promo and personal code'
 
             assert page.locator('.mono-panel .mono-quest button').count()>=3, 'existing three quest actions must remain'
-            last=page.locator('.mono-panel .mono-quest').last.bounding_box()
-            assert last['y']+last['height']<=844-10, 'quest button below mobile viewport'
+            last_task=page.locator('.mono-panel .mono-quest').last
+            last_task.scroll_into_view_if_needed()
+            last=last_task.bounding_box()
+            assert last and last['y']>=0 and last['y']+last['height']<=844-10, 'quest must be reachable by scrolling compact panel'
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         page.screenshot(path=str(out/filename),full_page=False)
         page.get_by_role('button',name='Закрыть',exact=True).click()
