@@ -48,7 +48,7 @@ with sync_playwright() as p:
             assert page.locator('.mono-panel-status').is_visible(), 'claim state and refresh must be visible'
         page.wait_for_timeout(300)
         if label=='Задания':
-            assert page.get_by_role('button',name='Перейти').count()>=1, 'incomplete tasks must navigate to die'
+            assert page.locator('.mono-panel .mono-quest button').count()==3, 'each quest must retain an actionable button'
             last=page.locator('.mono-panel .mono-quest').last.bounding_box()
             assert last['y']+last['height']<=844-10, 'quest button below mobile viewport'
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
