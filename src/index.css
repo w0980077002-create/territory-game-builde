@@ -1046,3 +1046,30 @@ html.territory-ios-webapp .territory-nav-label {
   letter-spacing: -0.045em;
   font-size: clamp(7.5px, 1.95vw, 8.5px);
 }
+
+/* Shared responsive contract for every game screen (iPhone, Android, PC).
+   Keep scrolling inside the screen, not on the root Telegram document.
+   Flex/grid children must be allowed to shrink instead of pushing controls
+   outside the game frame. No game state, inventory or navigation is changed. */
+.territory-shell { min-width: 0; }
+.territory-screen > :where(div, section, article) {
+  min-width: 0;
+  max-width: 100%;
+}
+.territory-screen :where(.card, section, article, form) { min-width: 0; }
+.territory-screen :where(input, select, textarea) { max-width: 100%; }
+.territory-shell :where(button, [role="button"]) { touch-action: manipulation; }
+.territory-modal-panel > div:last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+@media (max-width: 359px) {
+  /* Prevent a long translated title from stealing the back button on SE-size phones. */
+  .territory-shell > header h1 { min-width: 0; font-size: 14px; }
+  .territory-shell > header > button,
+  .territory-shell > header > img { flex-shrink: 0; }
+  .territory-nav .nav-btn { padding-inline: 0; }
+}
