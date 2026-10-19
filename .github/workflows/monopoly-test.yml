@@ -97,7 +97,7 @@ jobs:
           retention-days: 7
 
   compact-mobile-preview:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.head.ref == 'review/monopoly-compact-mobile-20261018' || github.event.pull_request.head.ref == 'fix/monopoly-mini-dice-compact-panels-20261019' || github.event.pull_request.head.ref == 'review/monopoly-referral-share-antispam-20261019')
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.head.ref == 'review/monopoly-compact-mobile-20261018' || github.event.pull_request.head.ref == 'fix/monopoly-mini-dice-compact-panels-20261019' || github.event.pull_request.head.ref == 'review/monopoly-referral-share-antispam-20261019' || github.event.pull_request.head.ref == 'review/territory-daily-share-ru-en-20261019')
     permissions:
       contents: read
     needs: verify

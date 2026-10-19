@@ -37,11 +37,10 @@ assert.match(component,/goToDice/,'incomplete quests must navigate back to the p
 assert.match(component,/claimAllReady/,'multiple ready rewards must be claimable with server checks');
 assert.ok(!component.includes('window.location.reload('),'panels must not reload the Mini App');
 
-const referralUI=readFileSync('src/components/monopoly/MonopolyAdventure.tsx','utf8');
-const referralSrc=readFileSync('src/game/referrals.ts','utf8');
-assert.match(referralUI,/monopoly-referral-task/,'show invitation in Monopoly quests');
-assert.match(referralUI,/getReferralStatus/,'qualifications must come from server');
-assert.match(referralUI,/shareReferralInvite\(inviteUrl,en\)/,'invites use share picker');
-assert.match(referralSrc,/getTelegramWebApp\(\)/,'Telegram uses native picker');
-assert.match(referralSrc,/startapp=ref_/,'verified bot deep links are used');
-assert.ok(!referralUI.includes('navigator.clipboard'),'no referral link copying in Monopoly');
+const shareUI=readFileSync('src/components/monopoly/MonopolyAdventure.tsx','utf8');
+const shareClient=readFileSync('src/game/dailyShare.ts','utf8');
+assert.match(shareUI,/DailyShareCard task="monopoly"/,'Monopoly shares are daily');
+assert.ok(!shareUI.includes('monopoly-referral-task'),'no referral qualification needed');
+assert.match(shareClient,/language==='ru'/,'language switching is explicit');
+assert.match(shareClient,/shareDailyPromo/,'Telegram picker is used');
+assert.ok(shareClient.includes("'promo/'+language"),'localized preview URL');

@@ -294,6 +294,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         )}
         {screen === 'battle' && (
           <BattleScreen
+            userId={user.id}
             view={battleView}
             onView={setBattleView}
             autoStart={autoStart}
@@ -313,7 +314,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'games' && (
           <GamesScreen userId={user.id} onPlay={(gameId) => { setHallGame(gameId); setScreen('hall-play'); }} />
         )}
-        {screen === 'hall-play' && <HallPlayScreen game={hallGame} onBack={() => setScreen('games')} />}
+        {screen === 'hall-play' && <HallPlayScreen game={hallGame} userId={user.id} onBack={() => setScreen('games')} />}
         {screen === 'professions' && <ProfessionsScreen />}
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} />}

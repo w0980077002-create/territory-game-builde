@@ -162,6 +162,6 @@ function HallOtherPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
  </div>;
 }
 
-export function HallPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
- return game==='monopoly'?<MonopolyAdventure onBack={onBack}/>:<HallOtherPlayScreen game={game} onBack={onBack}/>;
+export function HallPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void;userId:string}){
+ return game==='monopoly'?<MonopolyAdventure onBack={onBack} userId={userId}/>:<HallOtherPlayScreen game={game} onBack={onBack}/>;
 }

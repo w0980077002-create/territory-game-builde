@@ -9,6 +9,7 @@ window.fetch=async(input,init)=>{
  const url=typeof input==='string'?input:input instanceof Request?input.url:input.toString();
  if(url.endsWith('/rpc/territory_referral_status_v1'))return new Response(JSON.stringify({code:'0123456789abcd',founder_number:1,places_left:299,registered:1,qualified:0,pending_claims:0,red_fragments:0,red_pending:0,red_earned_tenths:0,sealed_chests:0,welcome_pending:false,rank:'recruit'}),{headers:{'Content-Type':'application/json'}});
  if(url.endsWith('/functions/v1/telegram-auth'))return new Response(JSON.stringify({bot_username:'TestTerritoryBot'}),{headers:{'Content-Type':'application/json'}});
+ if(url.endsWith('/rpc/territory_daily_share_v1'))return new Response(JSON.stringify({server_time:new Date().toISOString(),tickets:16,tasks:[{task:'monopoly',reward_kind:'tickets',reward_amount:2,enabled:true,ready:true,next_at:null},{task:'trials',reward_kind:'stones',reward_amount:2,enabled:true,ready:true,next_at:null}]}),{headers:{'Content-Type':'application/json'}});
  if(!url.endsWith('/rpc/territory_monopoly_v2'))return new Response(JSON.stringify({message:'Offline visual preview: network disabled'}),{status:403,headers:{'Content-Type':'application/json'}});
  const args=JSON.parse(String(init?.body??'{}'));fixture.result=null;fixture.added=0;fixture.awards={};
  if(args.p_action==='roll'&&!fixture.hall.active){
@@ -28,4 +29,4 @@ window.fetch=async(input,init)=>{
  }
  return new Response(JSON.stringify(fixture),{headers:{'Content-Type':'application/json'}});
 };
-void import('./MonopolyAdventure').then(({MonopolyAdventure})=>createRoot(document.getElementById('root')!).render(<LanguageProvider><div className="visual-review-label">Визуальный просмотр · тестовые данные · без сервера</div><MonopolyAdventure onBack={()=>window.scrollTo({top:0})}/></LanguageProvider>));
+void import('./MonopolyAdventure').then(({MonopolyAdventure})=>createRoot(document.getElementById('root')!).render(<LanguageProvider><div className="visual-review-label">Визуальный просмотр · тестовые данные · без сервера</div><MonopolyAdventure userId="11111111-1111-4111-8111-111111111111" onBack={()=>window.scrollTo({top:0})}/></LanguageProvider>));
