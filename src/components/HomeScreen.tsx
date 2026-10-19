@@ -183,7 +183,7 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
         <SideButton icon="/ic-invite.webp" label={t('friends')} onClick={() => onOpen('friends')} />
         <SideButton icon="/ic-sea.webp" label={t('sea')} soon onClick={() => soon(t('sea'))} />
       </div>
-      <div className="home-side-stack absolute z-10 right-1.5 w-[48px] flex flex-col gap-1">
+      <div className="home-side-stack home-side-stack-right absolute z-10 right-1.5 w-[48px] flex flex-col gap-1">
         <SideButton icon="/ic-shop.webp" label={t('shop')} onClick={() => onOpen('shop')} />
         <SideButton icon="/ic-auction.svg" label={t('auction')} onClick={() => onOpen('auction')} />
         <SideButton icon="/ic-forge.webp" label={t('forge')} onClick={() => onOpen('forge')} />
