@@ -83,21 +83,16 @@ jobs:
           if (!ready) console.log(`Pages publication blocked: ${gate.reason}`);
           JS
 
-      - name: Configure Python for localized Telegram previews
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Render RU/EN promo images
-        run: |
-          python -m pip install --quiet Pillow==11.3.0
-          python scripts/generate-promo-banners.py
       - name: Build
         run: npm run build
 
+      - name: Verify approved Telegram RU/EN banners
+        run: node scripts/check-approved-telegram-promo.mjs
+
       - name: Verify public promo previews
         run: |
-          test -s dist/promo/og-ru.jpg
-          test -s dist/promo/og-en.jpg
+          test -s dist/promo/og-ru-v2.jpg
+          test -s dist/promo/og-en-v2.jpg
           test -s dist/promo/ru/index.html
           test -s dist/promo/en/index.html
 
