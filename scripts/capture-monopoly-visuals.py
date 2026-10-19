@@ -30,6 +30,10 @@ with sync_playwright() as p:
         assert rect is not None and 0<=rect['x'] and rect['x']+rect['width']<=390, 'offscreen horizontal control'
         assert 0<=rect['y'] and rect['y']+rect['height']<=844, 'offscreen vertical control'
     assert page.locator('.mono-cell-number').count()==0, 'second numbered diamond present'
+    small_die=page.locator('.mono-dice .mono-dice-perspective').bounding_box()
+    tap_die=page.locator('.mono-dice').bounding_box()
+    assert small_die and 19<=small_die['width']<=23, 'visual die must be one-third of the original 64px'
+    assert tap_die and tap_die['width']>=48 and tap_die['height']>=50, 'keep the small die tappable'
     lap=page.locator('.mono-lap-plaque').bounding_box()
     dice=page.locator('.mono-dice').bounding_box()
     assert lap is not None and dice is not None and lap['y']+lap['height'] < dice['y'], 'lap counter covered by dice'
@@ -37,8 +41,14 @@ with sync_playwright() as p:
     for label,filename in [('Подарки','02-gifts-390.png'),('Задания','03-quests-390.png'),('Награды за круги','04-laps-390.png'),('Спецпредложения','05-offers-390.png')]:
         (page.locator('.mono-milestones button').first if label=='Награды за круги' else page.get_by_role('button',name=label,exact=True)).click()
         page.get_by_role('dialog').wait_for()
+        if label in ('Подарки','Задания','Спецпредложения'):
+            panel=page.locator('.mono-panel').bounding_box()
+            assert panel and panel['width']<=350 and panel['height']<=470, 'compact panel should not cover entire phone'
+            assert page.locator('.mono-panel-tabs button').count()==3, 'missing gifts/quests/offers navigation'
+            assert page.locator('.mono-panel-status').is_visible(), 'claim state and refresh must be visible'
         page.wait_for_timeout(300)
         if label=='Задания':
+            assert page.locator('.mono-panel .mono-quest button').count()==3, 'each quest must retain an actionable button'
             last=page.locator('.mono-panel .mono-quest').last.bounding_box()
             assert last['y']+last['height']<=844-10, 'quest button below mobile viewport'
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')

@@ -27,3 +27,12 @@ assert.ok(!redeemApi.includes('window.location.reload('),'Monopoly rewards must 
 assert.match(redeemApi,/acceptMonopolyClaimReceipt/,'redeem must adopt verified server revision');
 const giftUi=readFileSync('src/components/monopoly/MonopolyAdventure.tsx','utf8');
 assert.match(giftUi,/setData\(current=>current\?/,'Monopoly gifts should update in place');
+
+const panelsCss=readFileSync('src/components/monopoly/monopoly.css','utf8');
+assert.match(panelsCss,/scale\(\.333333\)/,'main die should be 1/3 visual size');
+assert.match(panelsCss,/max-height:min\(61dvh,470px\)/,'panels stay compact on phones');
+assert.match(component,/mono-panel-tabs/,'gift, quest and offer tabs must be available');
+assert.match(component,/mono-panel-status/,'panels must show current state and refresh');
+assert.match(component,/goToDice/,'incomplete quests must navigate back to the playable board');
+assert.match(component,/claimAllReady/,'multiple ready rewards must be claimable with server checks');
+assert.ok(!component.includes('window.location.reload('),'panels must not reload the Mini App');
