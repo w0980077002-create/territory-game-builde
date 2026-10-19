@@ -215,7 +215,7 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
         </button>
       </div>
 
-      <div className="absolute z-20 inset-x-0 bottom-0 px-2 pb-1.5 flex flex-col gap-1.5">
+      <div className="home-bottom-controls absolute z-20 inset-x-0 bottom-0 px-2 pb-1.5 flex flex-col gap-1.5">
         <div className="flex items-center gap-1.5">
           <div className="relative flex-1 h-5 rounded-full border border-amber-400/30 bg-black/70 overflow-hidden">
             <span className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-lime-400 transition-[width] duration-500" style={{ width: `${xpPct}%` }} />
