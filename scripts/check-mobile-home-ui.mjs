@@ -62,6 +62,15 @@ assert.match(telegram, /tg.isFullscreen && \(iosTelegram \|\| !phoneTelegram\)/,
 assert.match(css, /html\.territory-ios-webapp \.home-side-stack-right \.home-side:last-child/,
   'iPhone must keep Arena visible as the first city shortcut');
 
+assert.match(css, /html\.territory-ios-webapp \.territory-city-screen \.home-game-scene\s*\{[\s\S]*?min-height: 0;/,
+  'Native iPhone sheet must override the 540px scene minimum');
+assert.match(css, /html\.territory-ios-webapp \.home-bottom-controls\s*\{[\s\S]*?position: relative;/,
+  'iPhone bottom controls must stay inside the visible city canvas');
+assert.match(home, /className="home-bottom-controls absolute z-20/,
+  'Home bottom controls need an iOS-only positioning hook');
+assert.match(css, /@container territory-city \(max-height: 620px\)/,
+  'Compact native iPhone scene must respond to usable pane height');
+
 assert.match(telegram, /disableVerticalSwipes\?/, 'Telegram SDK typing must expose native swipe control');
 assert.match(telegram, /tg\.disableVerticalSwipes\(\)/, 'Telegram must disable sheet drag gestures on supported clients');
 assert.match(telegram, /isVersionAtLeast\('7\.7'\)/, 'Swipe setting must be guarded for older Telegram clients');
