@@ -52,7 +52,12 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
     <div className="flex h-full min-h-0 flex-col gap-2 animate-fade-in">
       <div ref={inventoryContentRef} id="inventory-current-section" role="tabpanel" className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide pb-2">
       {tab === 'equipment' ? (
-        <GearShowcase userId={userId}/>
+        <div data-testid="equipment-responsive-layout" className="flex min-h-full w-full min-w-0 flex-col">
+          {/* Center short inventories on tall phones; auto margins collapse for long inventories. */}
+          <div className="my-auto w-full min-w-0 pt-3 pb-4">
+            <GearShowcase userId={userId}/>
+          </div>
+        </div>
       ) : tab === 'items' ? (
         <>
           {consumables.length > 0 && (
