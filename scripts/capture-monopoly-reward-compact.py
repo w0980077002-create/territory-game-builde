@@ -42,10 +42,17 @@ with sync_playwright() as p:
                         const root=document.getElementById('root');
                         const host=document.createElement('div');
                         host.className='territory-shell';
-                        host.style.cssText='position:relative;width:100%;margin:0 auto;overflow:hidden;box-sizing:border-box;';
+                        host.style.cssText='position:relative;width:100%;margin:0 auto;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;';
                         host.style.height=sheet+'px';
+                        const scroll=document.createElement('main');
+                        scroll.style.cssText='flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;';
+                        const nav=document.createElement('nav');
+                        nav.style.cssText='flex:0 0 70px;min-height:70px;background:#101923;border-top:1px solid #d9b36a44;';
+                        nav.setAttribute('aria-label','Game navigation fixture');
                         root.parentNode.insertBefore(host,root);
-                        host.appendChild(root);
+                        host.appendChild(scroll);
+                        scroll.appendChild(root);
+                        host.appendChild(nav);
                     }""", {"platform":platform,"sheet":sheet_height})
                     # Ignore entrance animation keyframes when measuring the final layout.
                     page.add_style_tag(content="*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important}")
