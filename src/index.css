@@ -637,6 +637,24 @@
 }
 
 
+/* Keep Android/iOS native image menus from revealing asset links when a player
+   holds a decorative picture. Pointer events pass through icon art to its
+   actual button, so regular taps, swipes and keyboard button events survive.
+   Do NOT disable text selection for chat messages or input controls. */
+.territory-shell img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.territory-shell button img,
+.territory-shell [role="button"] img {
+  pointer-events: none;
+}
+.territory-shell button {
+  -webkit-touch-callout: none;
+}
+
 /* Responsive Telegram shell.
    The native sheet already excludes Telegram's header; fullscreen alone needs
    explicit safe + content insets, provided by game/telegram.ts. */
