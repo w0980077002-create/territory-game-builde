@@ -25,7 +25,7 @@ export async function prepareDailyShareLink(language:'ru'|'en'):Promise<string>{
  if(!bot||!/^[a-zA-Z0-9_]{5,32}$/.test(bot)||!/^[a-f0-9]{14}$/.test(ref.code))throw new Error('daily_share_no_bot');
  const origin=window.location.protocol==='https:'?window.location.origin:'https://w0980077002-create.github.io';
  const base=import.meta.env.BASE_URL.startsWith('/')?import.meta.env.BASE_URL:'/territory-game-builde/';
- return origin+base+'promo/'+language+'/?'+new URLSearchParams({ref:ref.code,bot});
+ return origin+base+'promo/'+language+'/?'+new URLSearchParams({ref:ref.code,bot,v:'2'});
 }
 export function shareDailyPromo(url:string,language:'ru'|'en'):boolean{
  // Validate the intended locale and destination before opening Telegram.
