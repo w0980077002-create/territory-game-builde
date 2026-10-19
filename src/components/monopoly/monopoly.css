@@ -411,12 +411,12 @@
 :is(.panel-quests,.panel-offers) .mono-invite-actions button{min-width:87px}
 
 
-/* 2026-10-19: modal overlays must fit BELOW the native Telegram mini-app
- * header and ABOVE the game bottom navigation. All non-celebration dialogs
- * are compact, with their own scrolling body and an always-visible exit. */
-.mono-overlay:not(.mono-celebration){
- padding-top:max(105px,calc(var(--territory-top-inset,0px) + 30px),env(safe-area-inset-top,0px));
- padding-bottom:max(84px,calc(var(--territory-bottom-inset,0px) + 68px),env(safe-area-inset-bottom,0px));
+/* Fit dialogs to the ACTUAL WebView instead of reserving hard-coded
+ * 105px/84px bands. Native Telegram header insets are already handled by
+ * the shell; excessive fixed offsets made content inaccessible on phones. */
+.mono-overlay:not(.mono-celebration) {
+ padding-top: max(10px, env(safe-area-inset-top, 0px), var(--territory-top-inset, 0px));
+ padding-bottom: max(10px, env(safe-area-inset-bottom, 0px), var(--territory-bottom-inset, 0px));
 }
 .mono-panel.panel-rewards,.mono-panel.panel-help,.mono-panel.panel-jackpot{
  width:min(90vw,355px);
@@ -502,7 +502,23 @@ html.territory-ios-webapp .territory-shell > .mono-overlay {
   justify-content: center;
   overflow: hidden;
 }
-html.territory-ios-webapp .territory-shell > .mono-overlay .mono-panel,
+/* A dialog's title, close button, tabs and balance must remain visible.
+   Only its contents should scroll; all heights are relative to the shell. */
+html.territory-ios-webapp .territory-shell > .mono-overlay .mono-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(460px, 100%);
+  overflow: hidden;
+}
+html.territory-ios-webapp .territory-shell > .mono-overlay .mono-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
 html.territory-ios-webapp .territory-shell > .mono-celebration > section {
   min-height: 0;
   max-height: 100%;
@@ -571,7 +587,7 @@ html.territory-ios-webapp .mono-celebration .mono-cta {
 /* The actual Telegram sheet height is smaller than the full iPhone viewport.
    Make the board a little shorter so dice and quick actions remain reachable. */
 html.territory-ios-webapp .territory-monopoly .mono-scene {
-  height: clamp(340px, calc(var(--territory-viewport-height, 100dvh) - 325px), 425px);
+  height: clamp(280px, calc(var(--territory-viewport-height, 100dvh) - 270px), 460px);
   min-height: 0;
   max-height: none;
 }
@@ -579,3 +595,45 @@ html.territory-ios-webapp .territory-monopoly .mono-board { inset: 10% 6% 29% 6%
 html.territory-ios-webapp .territory-monopoly .mono-buffs { bottom: 27%; }
 html.territory-ios-webapp .territory-monopoly .mono-scene-shortcuts { bottom: 4px; }
 html.territory-ios-webapp .territory-monopoly .mono-controls { bottom: 0; }
+
+/* Keep the primary reward confirmation visible while short iPhone panels
+   scroll, including when large prizes or localized text take extra space. */
+html.territory-ios-webapp .mono-celebration .mono-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+
+/* The whole roll control spans the scene; the die is centered on the board
+   independently of wallet and action shortcuts (previously left-shifted). */
+html.territory-ios-webapp .territory-monopoly .mono-controls {
+  right: 0;
+  left: 0;
+  padding-inline: 0;
+  pointer-events: none;
+}
+html.territory-ios-webapp .territory-monopoly .mono-roll-row {
+  position: relative;
+  justify-content: center;
+  pointer-events: none;
+}
+html.territory-ios-webapp .territory-monopoly .mono-wallet {
+  position: absolute;
+  left: 5px;
+  bottom: 2px;
+  pointer-events: auto;
+}
+html.territory-ios-webapp .territory-monopoly .mono-dice {
+  pointer-events: auto;
+}
+html.territory-ios-webapp .territory-monopoly .mono-toggles {
+  pointer-events: auto;
+  justify-content: center;
+  padding-inline: 5px;
+  max-width: 70%;
+}
+@media (max-width: 359px) {
+  html.territory-ios-webapp .territory-monopoly .mono-toggles { max-width: 69%; }
+  html.territory-ios-webapp .territory-monopoly .mono-wallet > .mono-art { width: 22px; }
+  html.territory-ios-webapp .territory-monopoly .mono-wallet b { font-size: 15px; }
+}
