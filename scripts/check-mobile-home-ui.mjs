@@ -13,13 +13,14 @@ const [home, app, css, html, city, sheets, telegram] = await Promise.all([
   read('src/game/telegram.ts'),
 ]);
 
-const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly] = await Promise.all([
+const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventure] = await Promise.all([
   read('src/components/ForgeScreen.tsx'),
   read('src/components/ui/Modal.tsx'),
   read('src/components/InventoryScreen.tsx'),
   read('src/components/arena/ArenaLobby.tsx'),
   read('src/components/arena/ArenaRoom.tsx'),
   read('src/components/MonopolyScreen.tsx'),
+  read('src/components/monopoly/MonopolyAdventure.tsx'),
 ]);
 
 assert.match(home, /<LiveCityBackdrop animated=\{cityMotion\}/, 'Home must render the approved layered city backdrop');
@@ -109,6 +110,10 @@ assert.match(css, /html\.territory-ios-webapp \.territory-shell > \.territory-mo
   'iOS dialogs must be bounded by the shell, not the external Telegram header');
 assert.match(css, /html\.territory-ios-webapp \.inventory-item-overlay > \.card/,
   'iOS inventory actions must scroll inside a bounded dialog');
+assert.match(monopolyAdventure, /\{panel&&<IosGamePortal>/,
+  'Actual Monopoly v2 panels must portal above bottom navigation');
+assert.match(monopolyAdventure, /\{reward&&<IosGamePortal>/,
+  'Actual Monopoly v2 celebrations must portal above bottom navigation');
 
 
 assert.match(telegram, /disableVerticalSwipes\?/, 'Telegram SDK typing must expose native swipe control');
