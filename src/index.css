@@ -1035,3 +1035,14 @@ html.territory-ios-webapp #inventory-current-section {
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
 }
+
+
+/* On iPhone keep the 7 bottom labels on one line: do not split 'Инвентарь'
+   after the final letter. Android retains its current wrapping rules. */
+html.territory-ios-webapp .territory-nav-label {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  letter-spacing: -0.045em;
+  font-size: clamp(7.5px, 1.95vw, 8.5px);
+}
