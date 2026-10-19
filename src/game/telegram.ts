@@ -102,7 +102,13 @@ function updateTelegramViewport(tg: TelegramWebApp) {
   const inset = (edge: 'top' | 'bottom') => tg.isFullscreen
     ? Math.max(0, (tg.safeAreaInset?.[edge] ?? 0) + (tg.contentSafeAreaInset?.[edge] ?? 0))
     : 0;
-  root.style.setProperty('--territory-top-inset', `${inset('top')}px`);
+  // Safety fallback while iOS is exiting a previously requested fullscreen:
+  // old Telegram iOS WebViews may briefly report zero safe-area insets.
+  // This fallback NEVER affects normal expanded iOS sheets or Android.
+  const topInset = tg.platform === 'ios' && tg.isFullscreen
+    ? Math.max(104, inset('top'))
+    : inset('top');
+  root.style.setProperty('--territory-top-inset', `${topInset}px`);
   root.style.setProperty('--territory-bottom-inset', `${inset('bottom')}px`);
 }
 
@@ -117,6 +123,9 @@ export function initTelegramWebApp() {
   const desktopTelegram = !['android', 'android_x', 'ios'].includes(tg.platform ?? '')
     && window.matchMedia('(any-pointer: fine)').matches;
   document.documentElement.classList.toggle('territory-desktop-webapp', desktopTelegram);
+  // Isolate iOS fixes from Android and the desktop Telegram layout.
+  const iosTelegram = tg.platform === 'ios';
+  document.documentElement.classList.toggle('territory-ios-webapp', iosTelegram);
 
   tg.ready();
   // Only native phone Telegram should auto-expand. Desktop, laptop and tablet
@@ -125,8 +134,10 @@ export function initTelegramWebApp() {
     && Math.min(window.innerWidth, window.innerHeight) < 600;
   if (phoneTelegram) {
     tg.expand();
-  } else if (tg.isFullscreen) {
-    // Restore the usual Telegram window for desktop users coming back to the game.
+  }
+  // On iOS a fullscreen header can cover the hero HUD even after safe-area
+  // events. Use Telegram's native expanded sheet instead, as on normal Mini Apps.
+  if (tg.isFullscreen && (iosTelegram || !phoneTelegram)) {
     try { tg.exitFullscreen?.(); } catch { /* Telegram may refuse this. */ }
   }
   // Prevent dragging/minimizing the Telegram Mini App by swiping on the game.
@@ -158,10 +169,11 @@ export function initTelegramWebApp() {
     window.addEventListener('pageshow', refresh);
   }
 
-  // Fullscreen is only for native phones; desktop and tablets keep their
-  // Telegram-managed window. Unsupported mobile clients use the normal sheet.
+  // Android keeps its current fullscreen behavior. On iOS we deliberately use
+  // the native expanded Telegram sheet so the close/header bar cannot overlap
+  // the hero HUD on iPhone 14 Pro and other notched iPhones.
   try {
-    if (phoneTelegram && tg.requestFullscreen && tg.isVersionAtLeast?.('8.0') && !tg.isFullscreen) {
+    if (phoneTelegram && !iosTelegram && tg.requestFullscreen && tg.isVersionAtLeast?.('8.0') && !tg.isFullscreen) {
       tg.requestFullscreen();
     }
   } catch {
