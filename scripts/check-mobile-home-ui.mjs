@@ -53,6 +53,15 @@ assert.match(app, /onDragStartCapture/, 'Dragging game pictures must not open im
 assert.match(css, /-webkit-touch-callout: none/, 'iOS native image callouts must be disabled');
 assert.match(css, /\.territory-shell button img/, 'Artwork inside interactive buttons must pass presses to the button');
 assert.match(telegram, /requestFullscreen/, 'Telegram should request fullscreen when supported');
+assert.match(telegram, /const iosTelegram = tg.platform === 'ios'/,
+  'iOS must use a separate Telegram layout path');
+assert.match(telegram, /phoneTelegram && !iosTelegram && tg.requestFullscreen/,
+  'iPhone must not force native Telegram into fullscreen under its header');
+assert.match(telegram, /tg.isFullscreen && \(iosTelegram \|\| !phoneTelegram\)/,
+  'Previously fullscreen iPhones must return to the native expanded window');
+assert.match(css, /html\.territory-ios-webapp \.home-side-stack-right \.home-side:last-child/,
+  'iPhone must keep Arena visible as the first city shortcut');
+
 assert.match(telegram, /disableVerticalSwipes\?/, 'Telegram SDK typing must expose native swipe control');
 assert.match(telegram, /tg\.disableVerticalSwipes\(\)/, 'Telegram must disable sheet drag gestures on supported clients');
 assert.match(telegram, /isVersionAtLeast\('7\.7'\)/, 'Swipe setting must be guarded for older Telegram clients');
