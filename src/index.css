@@ -677,19 +677,98 @@ html.territory-telegram-webapp #root {
   /* A small visible gutter protects the nav from a home indicator / sheet edge. */
   padding-bottom: max(6px, env(safe-area-inset-bottom, 0px), var(--territory-bottom-inset, 0px));
 }
-/* A phone-sized, centered game inside the regular resizable desktop Telegram
-   window. The native Telegram frame remains in control of window resizing. */
-@media (min-width: 600px) and (hover: hover) and (pointer: fine) {
-  html.territory-telegram-webapp #root {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-  .territory-shell {
-    max-height: min(820px, 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.36);
+/* Desktop Telegram only: centered phone-width game, no forced full-screen.
+   The native iOS/Android layouts above and below remain unchanged. */
+.territory-desktop-quicknav { display: none; }
+html.territory-desktop-webapp #root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+html.territory-desktop-webapp .territory-shell {
+  width: min(100%, 448px);
+  max-height: min(820px, 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.36);
+}
+html.territory-desktop-webapp .territory-desktop-quicknav {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px;
+  padding: 4px 5px;
+  background: linear-gradient(180deg, #1c2030, #0b101a);
+  border-top: 1px solid rgba(245, 158, 11, 0.25);
+}
+html.territory-desktop-webapp .territory-desktop-quicknav button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 45px;
+  padding: 3px 1px;
+  color: #fef3c7;
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+html.territory-desktop-webapp .territory-desktop-quicknav button:hover,
+html.territory-desktop-webapp .territory-desktop-quicknav button:focus-visible {
+  background: rgba(245, 158, 11, 0.2);
+  outline-color: #fbbf24;
+}
+html.territory-desktop-webapp .territory-desktop-quicknav button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+html.territory-desktop-webapp .territory-desktop-quicknav img {
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
+  pointer-events: none;
+}
+html.territory-desktop-webapp .territory-desktop-quicknav span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+/* Mouse-wheel scrolling is discoverable on every long PC game screen. */
+html.territory-desktop-webapp .territory-screen,
+html.territory-desktop-webapp #inventory-current-section,
+html.territory-desktop-webapp .home-side-stack {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(251,191,36,0.5) transparent;
+}
+html.territory-desktop-webapp .territory-screen::-webkit-scrollbar,
+html.territory-desktop-webapp #inventory-current-section::-webkit-scrollbar,
+html.territory-desktop-webapp .home-side-stack::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+}
+html.territory-desktop-webapp .territory-screen::-webkit-scrollbar-thumb,
+html.territory-desktop-webapp #inventory-current-section::-webkit-scrollbar-thumb,
+html.territory-desktop-webapp .home-side-stack::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background: rgba(251, 191, 36, 0.5);
+}
+/* Put Arena first on PC. Phone side-panel order is completely preserved. */
+html.territory-desktop-webapp .home-side-stack-right .home-side:last-child { order: -1; }
+html.territory-desktop-webapp .home-side-stack .home-side {
+  flex-basis: 40px;
+  min-height: 40px;
+}
+@media (max-width: 370px) {
+  html.territory-desktop-webapp .territory-desktop-quicknav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
