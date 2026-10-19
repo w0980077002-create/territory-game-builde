@@ -40,11 +40,11 @@ export function Modal({ title, icon, onClose, children }: Props) {
       <div className="territory-modal-panel relative w-full max-w-md flex flex-col rounded-t-3xl sm:rounded-3xl border border-amber-500/25 bg-gradient-to-b from-[#1d2330] to-[#11151d] shadow-2xl shadow-black animate-sheet-up">
         <div className="flex items-center gap-2.5 px-4 h-14 border-b border-white/10 shrink-0">
           {icon && <img src={icon} alt="" className="w-8 h-8 object-contain" />}
-          <h2 className="flex-1 text-base font-bold text-amber-100 truncate">{title}</h2>
+          <h2 className="flex-1 min-w-0 text-base font-bold text-amber-100 truncate">{title}</h2>
           <button
             onClick={onClose}
             aria-label={language === 'en' ? 'Close' : 'Закрыть'}
-            className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+            className="w-11 h-11 shrink-0 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
           >
             <X className="w-4 h-4" />
           </button>
