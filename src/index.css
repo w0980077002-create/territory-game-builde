@@ -1026,3 +1026,12 @@ html.territory-ios-webapp .monopoly-reward-overlay > .card {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
+
+
+/* iOS equipment/items list is deliberately the scrollable region between
+   the always-visible section tabs and the main game nav. */
+html.territory-ios-webapp #inventory-current-section {
+  min-height: 0;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
