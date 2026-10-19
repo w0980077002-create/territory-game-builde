@@ -43,4 +43,4 @@ assert.match(shareUI,/DailyShareCard task="monopoly"/,'Monopoly shares are daily
 assert.ok(!shareUI.includes('monopoly-referral-task'),'no referral qualification needed');
 assert.match(shareClient,/language==='ru'/,'language switching is explicit');
 assert.match(shareClient,/shareDailyPromo/,'Telegram picker is used');
-assert.match(shareClient,/promo\/'+language/,'localized preview URL');
+assert.ok(shareClient.includes("'promo/'+language"),'localized preview URL');
