@@ -97,7 +97,50 @@ with sync_playwright() as p:
         page.set_viewport_size({'width':width,'height':height})
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         page.screenshot(path=str(out/f'07-board-{width}.png'),full_page=True)
+    # Recreate the Telegram iOS game shell rather than only screenshotting
+    # the browser's full-height standalone preview. Native Safari is still
+    # required for final sign-off; this catches portal and clipping regressions.
+    for width, height, sheet in [(320, 740, 560), (375, 812, 650), (393, 852, 690), (430, 932, 770)]:
+        page.set_viewport_size({'width': width, 'height': height})
+        page.evaluate("""(sheetHeight) => {
+            const html = document.documentElement;
+            html.classList.add('territory-ios-webapp');
+            html.style.setProperty('--territory-viewport-height', sheetHeight + 'px');
+            const root = document.getElementById('root');
+            let shell = document.querySelector('.territory-shell');
+            if (!shell) {
+                shell = document.createElement('div');
+                shell.className = 'territory-shell';
+                root.parentNode.insertBefore(shell, root);
+                shell.appendChild(root);
+            }
+            Object.assign(shell.style, {
+                position: 'relative', height: sheetHeight + 'px',
+                width: '100%', overflow: 'hidden', margin: '0 auto'
+            });
+        }""", sheet)
+        scene = page.locator('.mono-scene').bounding_box()
+        die = page.locator('.mono-dice').bounding_box()
+        assert scene and die, 'Telegram iOS board and dice must exist'
+        die_mid = die['x'] + die['width'] / 2
+        scene_mid = scene['x'] + scene['width'] / 2
+        assert abs(die_mid - scene_mid) < 5, 'dice must be centered on iPhone scene'
+        page.get_by_role('button', name='Подарки', exact=True).click()
+        panel = page.locator('.mono-panel').bounding_box()
+        host = page.locator('.territory-shell').bounding_box()
+        assert panel and host, 'iOS portal must use game shell'
+        assert panel['y'] >= host['y'] - 1, 'popup hides above game shell'
+        assert panel['y'] + panel['height'] <= host['y'] + host['height'] + 1, 'popup hides below game shell'
+        close = page.get_by_role('button', name='Закрыть', exact=True)
+        assert close.is_visible(), 'iPhone popup must have a visible close button'
+        close_rect = close.bounding_box()
+        assert close_rect and close_rect['y'] >= host['y'], 'close button must not leave Telegram panel'
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'iOS horizontal overflow'
+        page.screenshot(path=str(out / f'08-telegram-ios-{width}.png'), full_page=False)
+        close.click()
+        assert page.locator('.mono-overlay').count() == 0, 'closing a popup must not exit the game'
+    document_checks = ['390','375','320','393','430']
     assert not errors,errors
-    (out/'verification.json').write_text(json.dumps({'renderer':'Chromium / Playwright','fixtures':True,'production_network':False,'cells':28,'widths':[390,375,320],'horizontal_overflow':False,'page_errors':errors,'screenshots':[p.name for p in out.glob('*.png')]},ensure_ascii=False,indent=2))
+    (out/'verification.json').write_text(json.dumps({'renderer':'Chromium / Playwright','fixtures':True,'production_network':False,'cells':28,'widths':[390,375,320,393,430],'horizontal_overflow':False,'page_errors':errors,'screenshots':[p.name for p in out.glob('*.png')]},ensure_ascii=False,indent=2))
     browser.close()
 print('Real browser screenshots saved to',out)
