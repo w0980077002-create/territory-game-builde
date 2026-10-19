@@ -56,13 +56,15 @@ export async function hallStart(game:HallGame):Promise<HallSession>{
  if(!validSession(data))throw new Error('hall_invalid_session');
  return data;
 }
+// Admin grants and Monopoly rewards share the server wallet (maximum 1,000).
+// The daily free gift still has its separate 20-ticket ceiling.
 export async function hallFinish(session:HallSession,choice:number):Promise<HallResult>{
  if(!validSession(session)||!natural(choice,2))throw new Error('hall_invalid_choice');
  const {data,error}=await supabase.rpc('territory_hall_finish_v1',{p_token:session.token,p_choice:choice});
  if(error)throw new Error(error.message);
  const d=ensureRecord(data);
  if(typeof d.won!=='boolean' || !natural(d.earned_gold,160) ||
-  !natural(d.points,10) || !natural(d.tickets,20) || !GAME_IDS.includes(d.game as HallGame))throw new Error('hall_invalid_result');
+  !natural(d.points,10) || !natural(d.tickets,1000) || !GAME_IDS.includes(d.game as HallGame))throw new Error('hall_invalid_result');
  return d as HallResult;
 }
 export async function hallClaimGold(userId:string):Promise<number>{

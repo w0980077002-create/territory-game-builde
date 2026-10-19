@@ -74,7 +74,7 @@ export function GamesScreen({onPlay,userId}:{onPlay:(id:HallGame)=>void;userId:s
    </button>}
   <div className="grid grid-cols-2 gap-2.5">
    {GAMES.map((game,index)=>{
-    const Icon=game.icon,featured=index===0,locked=!state||state.tickets<1;
+    const Icon=game.icon,featured=index===0,locked=game.id!=='monopoly'&&(!state||state.tickets<1);
     return <button key={game.id} type="button" onClick={()=>onPlay(state?.active?.game??game.id)}
       disabled={loading||!state || (locked&&!state.active)}
       data-testid={'hall-game-'+game.id}
