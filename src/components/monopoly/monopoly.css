@@ -485,10 +485,10 @@
 }
 
 
-/* Actual Monopoly v2: iPhone panels are portalled directly under the game
+/* Actual Monopoly v2: native phone panels are portalled directly under the game
    shell so native Telegram chrome and the in-game nav never cover their buttons.
-   Android/desktop layouts and game mechanics are unaffected. */
-html.territory-ios-webapp .territory-shell > .mono-overlay {
+   Desktop layout and game mechanics are unaffected. */
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .mono-overlay {
   position: absolute;
   inset: 0;
   z-index: 110;
@@ -504,14 +504,14 @@ html.territory-ios-webapp .territory-shell > .mono-overlay {
 }
 /* A dialog's title, close button, tabs and balance must remain visible.
    Only its contents should scroll; all heights are relative to the shell. */
-html.territory-ios-webapp .territory-shell > .mono-overlay .mono-panel {
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .mono-overlay .mono-panel {
   display: flex;
   flex-direction: column;
   min-height: 0;
   max-height: min(460px, 100%);
   overflow: hidden;
 }
-html.territory-ios-webapp .territory-shell > .mono-overlay .mono-panel-body {
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .mono-overlay .mono-panel-body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -519,7 +519,7 @@ html.territory-ios-webapp .territory-shell > .mono-overlay .mono-panel-body {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
-html.territory-ios-webapp .territory-shell > .mono-celebration > section {
+html.territory-telegram-webapp:not(.territory-desktop-webapp) .territory-shell > .mono-celebration > section {
   min-height: 0;
   max-height: 100%;
   overflow-y: auto;
