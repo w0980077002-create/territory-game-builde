@@ -12,7 +12,9 @@ assert.match(inv,/import \{ FollowersPanel \} from '\.\/FollowersPanel'/);
 assert.match(inv,/<FollowersPanel \/>/);
 assert.match(inv,/useState<'items' \| 'equipment' \| 'followers'>\(initialTab\)/);
 assert.match(inv,/switchTab = \(to: 'items' \| 'equipment' \| 'followers'\)/);
-assert.match(inv,/grid grid-cols-3/);
+assert.match(inv,/grid shrink-0 grid-cols-3/,'Three inventory section tabs must stay in the bottom bar');
+assert.ok(inv.indexOf('role="tablist"') > inv.indexOf('role="tabpanel"'),
+  'Companion tab must be reached from the bottom panel');
 assert.match(inv,/role="tablist"/);
 for(const tab of ['equipment','items','followers']){
   assert.match(inv,new RegExp("aria-selected=\\{tab === '"+tab+"'\\}"),"Missing tab state "+tab);
