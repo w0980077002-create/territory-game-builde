@@ -217,7 +217,7 @@ export function acceptMonopolyClaimReceipt(userId:string,response:unknown):GameS
  const wallet=safeWalletVersion({gold:receipt.wallet_gold,gems:receipt.wallet_gems},state.player);
  if(!walletMatchesVersion(wallet,state.player))throw new Error('monopoly_invalid_receipt');
  const previous=saveTokens.get(userId);
- if(!validSaveToken(previous)||Date.parse(receipt.updated_at)<=Date.parse(previous))throw new Error('monopoly_invalid_receipt');
+ if(!validSaveToken(previous)||Date.parse(receipt.updated_at)<Date.parse(previous))throw new Error('monopoly_invalid_receipt');
  saveGenerations.set(userId,(saveGenerations.get(userId)??0)+1);
  saveTokens.set(userId,receipt.updated_at);
  walletVersions.set(userId,wallet);
