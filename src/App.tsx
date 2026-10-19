@@ -129,15 +129,16 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   useEffect(() => {
     const orientation = window.matchMedia('(orientation: landscape)');
-    const coarsePointer = window.matchMedia('(pointer: coarse)');
-    const updateOrientation = () => setIsLandscapePhone(orientation.matches && (coarsePointer.matches || Math.min(window.innerWidth, window.innerHeight) < 600));
+    // Only compact phones need the portrait warning. Tablets and desktop
+    // windows must remain usable in landscape even with a touch screen.
+    const updateOrientation = () => setIsLandscapePhone(
+      orientation.matches && Math.min(window.innerWidth, window.innerHeight) < 520
+    );
     updateOrientation();
     orientation.addEventListener?.('change', updateOrientation);
-    coarsePointer.addEventListener?.('change', updateOrientation);
     window.addEventListener('resize', updateOrientation);
     return () => {
       orientation.removeEventListener?.('change', updateOrientation);
-      coarsePointer.removeEventListener?.('change', updateOrientation);
       window.removeEventListener('resize', updateOrientation);
     };
   }, []);
