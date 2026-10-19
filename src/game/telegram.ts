@@ -112,6 +112,11 @@ export function initTelegramWebApp() {
 
   // The game scrolls inside its own panels, not the outer browser page.
   document.documentElement.classList.add('territory-telegram-webapp');
+  // A desktop-only CSS hook. Native Android/iOS (including tablets) never
+  // receives it, even when connected to an external mouse or keyboard.
+  const desktopTelegram = !['android', 'android_x', 'ios'].includes(tg.platform ?? '')
+    && window.matchMedia('(any-pointer: fine)').matches;
+  document.documentElement.classList.toggle('territory-desktop-webapp', desktopTelegram);
 
   tg.ready();
   // Only native phone Telegram should auto-expand. Desktop, laptop and tablet
