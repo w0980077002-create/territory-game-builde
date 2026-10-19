@@ -230,10 +230,10 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   return (
     <div
-      className="flex flex-col max-w-md mx-auto overflow-hidden relative"
-      // The stable Telegram viewport excludes its own native iPhone header.
-      // 100dvh is a fallback for regular browsers and older Telegram clients.
-      style={{ background: 'var(--color-bg)', height: 'var(--tg-viewport-stable-height, 100dvh)' }}
+      className="territory-shell flex flex-col max-w-md mx-auto overflow-hidden relative"
+      // JS receives the stable viewport from Telegram; CSS falls back to its
+      // native variable, then to the browser's dynamic viewport height.
+      style={{ background: 'var(--color-bg)', height: 'var(--territory-viewport-height, var(--tg-viewport-stable-height, 100dvh))' }}
     >
       {live.maintenance && (
         <div className="shrink-0 z-40 flex items-center justify-center gap-1.5 bg-amber-500 py-1 text-[11px] font-bold text-black">
@@ -257,7 +257,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         </header>
       )}
 
-      <main className={`flex-1 min-h-0 ${screen === 'city' ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden scrollbar-hide px-3 py-3'}`}>
+      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
         {screen === 'city' && (
           <HomeScreen
             user={user}
@@ -304,7 +304,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} />}
       </main>
 
-      <nav className="shrink-0 z-30 border-t border-amber-500/25 bg-gradient-to-b from-[#161b24] to-[#0a0d12] px-1 pt-1 pb-[max(4px,env(safe-area-inset-bottom))]">
+      <nav className="territory-nav shrink-0 z-30 border-t border-amber-500/25 bg-gradient-to-b from-[#161b24] to-[#0a0d12] px-1 pt-1 pb-1">
         <div className="flex items-end gap-0.5 h-[60px]">
           {NAV.map((t) => {
             const active = navActive === t.id;
@@ -335,7 +335,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
                     <BellRing className="w-2.5 h-2.5 text-white" />
                   </span>
                 )}
-                <span className={`text-[9px] tracking-tight font-bold leading-none truncate max-w-full ${active || center ? 'text-white' : 'text-gray-400'}`}>{tNav(translate, t.label)}</span>
+                <span className={`territory-nav-label text-[9px] tracking-tight font-bold max-w-full ${active || center ? 'text-white' : 'text-gray-400'}`}>{tNav(translate, t.label)}</span>
               </button>
             );
           })}
