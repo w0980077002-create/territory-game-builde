@@ -189,7 +189,6 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
         <SideButton icon="/ic-forge.webp" label={t('forge')} onClick={() => onOpen('forge')} />
         <SideButton icon="/ic-professions.svg" label={t('professions')} onClick={() => onOpen('professions')} />
         <SideButton icon="/ic-trials.webp" label={t('trials')} onClick={() => onBattle('trial')} />
-        <SideButton icon="/ic-capture.webp" label={t('capture')} soon onClick={() => soon(t('capture'))} />
         <SideButton icon="/ic-arena.webp" label={t('arena')} onClick={() => onOpen('arena')} />
       </div>
 
