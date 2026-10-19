@@ -100,7 +100,16 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
  };
  const redeem=async()=>{
   if(lock.current)return;lock.current=true;setBusy(true);setError('');
-  try{await claimMonopolyRewards();}catch(e){if(mounted.current)setError(describe(e));}
+  try{
+   const awards=await claimMonopolyRewards();
+   if(!mounted.current)return;
+   // The credit is committed to the game state; do not restart the Mini App.
+   setData(current=>current?{...current,progress:{...current.progress,pending_rewards:{}}}:current);
+   setNotice(t('Сокровища в инвентаре!','Treasures added to inventory!'));
+   setReward({awards});
+   try{const refreshed=await monopoly();if(mounted.current)setData(refreshed);}
+   catch{ /* No second award request: the previous claim already succeeded. */ }
+  }catch(e){if(mounted.current)setError(describe(e));}
   finally{lock.current=false;if(mounted.current)setBusy(false);}
  };
  const point=boardPoint(position);
