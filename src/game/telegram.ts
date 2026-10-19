@@ -42,9 +42,11 @@ interface TelegramWebApp {
   themeParams: Record<string, string>;
   viewportHeight: number;
   viewportStableHeight: number;
+  platform?: string;
   isFullscreen?: boolean;
   isVersionAtLeast?: (version: string) => boolean;
   requestFullscreen?: () => void;
+  exitFullscreen?: () => void;
   // Telegram Mini Apps 7.7+: control native sheet swipe gestures.
   disableVerticalSwipes?: () => void;
   safeAreaInset?: { top: number; bottom: number; left: number; right: number };
@@ -112,11 +114,20 @@ export function initTelegramWebApp() {
   document.documentElement.classList.add('territory-telegram-webapp');
 
   tg.ready();
-  tg.expand();
+  // Only native phone Telegram should auto-expand. Desktop, laptop and tablet
+  // players keep Telegram's resizable window instead of forced fullscreen.
+  const phoneTelegram = ['android', 'android_x', 'ios'].includes(tg.platform ?? '')
+    && Math.min(window.innerWidth, window.innerHeight) < 600;
+  if (phoneTelegram) {
+    tg.expand();
+  } else if (tg.isFullscreen) {
+    // Restore the usual Telegram window for desktop users coming back to the game.
+    try { tg.exitFullscreen?.(); } catch { /* Telegram may refuse this. */ }
+  }
   // Prevent dragging/minimizing the Telegram Mini App by swiping on the game.
   // In-game inventory, sidebars and chat remain scrollable as usual.
   try {
-    if (tg.disableVerticalSwipes && (!tg.isVersionAtLeast || tg.isVersionAtLeast('7.7'))) {
+    if (phoneTelegram && tg.disableVerticalSwipes && (!tg.isVersionAtLeast || tg.isVersionAtLeast('7.7'))) {
       tg.disableVerticalSwipes();
     }
   } catch {
@@ -142,10 +153,10 @@ export function initTelegramWebApp() {
     window.addEventListener('pageshow', refresh);
   }
 
-  // Fullscreen is an enhancement, not a requirement: unsupported iOS/Android
-  // clients continue using the stable-height, scrollable layout.
+  // Fullscreen is only for native phones; desktop and tablets keep their
+  // Telegram-managed window. Unsupported mobile clients use the normal sheet.
   try {
-    if (tg.requestFullscreen && tg.isVersionAtLeast?.('8.0') && !tg.isFullscreen) {
+    if (phoneTelegram && tg.requestFullscreen && tg.isVersionAtLeast?.('8.0') && !tg.isFullscreen) {
       tg.requestFullscreen();
     }
   } catch {
