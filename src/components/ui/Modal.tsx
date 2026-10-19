@@ -1,6 +1,20 @@
 import { useLanguage } from '@/game/i18n';
 import { useEffect, type ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+
+/**
+ * A native iPhone WebView can place fixed descendants of a scrolling main pane
+ * underneath the game's persistent footer. Portal dialogs directly into the
+ * relative game shell on iOS only; keep Android and desktop DOM unchanged.
+ */
+export function IosGamePortal({ children }: { children: ReactNode }) {
+  const host = typeof document !== 'undefined'
+    && document.documentElement.classList.contains('territory-ios-webapp')
+      ? document.querySelector<HTMLElement>('.territory-shell')
+      : null;
+  return host ? createPortal(children, host) : <>{children}</>;
+}
 
 interface Props {
   title: string;
@@ -18,6 +32,7 @@ export function Modal({ title, icon, onClose, children }: Props) {
   }, [onClose]);
 
   return (
+    <IosGamePortal>
     <div className="territory-modal fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true">
       <button aria-label={language === 'en' ? 'Close' : 'Закрыть'} className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose} />
       <div className="territory-modal-panel relative w-full max-w-md flex flex-col rounded-t-3xl sm:rounded-3xl border border-amber-500/25 bg-gradient-to-b from-[#1d2330] to-[#11151d] shadow-2xl shadow-black animate-sheet-up">
@@ -35,5 +50,6 @@ export function Modal({ title, icon, onClose, children }: Props) {
         <div className="overflow-y-auto scrollbar-hide p-4 pb-[max(16px,env(safe-area-inset-bottom))]">{children}</div>
       </div>
     </div>
+    </IosGamePortal>
   );
 }
