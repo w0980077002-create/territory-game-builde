@@ -13,6 +13,15 @@ const [home, app, css, html, city, sheets, telegram] = await Promise.all([
   read('src/game/telegram.ts'),
 ]);
 
+const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly] = await Promise.all([
+  read('src/components/ForgeScreen.tsx'),
+  read('src/components/ui/Modal.tsx'),
+  read('src/components/InventoryScreen.tsx'),
+  read('src/components/arena/ArenaLobby.tsx'),
+  read('src/components/arena/ArenaRoom.tsx'),
+  read('src/components/MonopolyScreen.tsx'),
+]);
+
 assert.match(home, /<LiveCityBackdrop animated=\{cityMotion\}/, 'Home must render the approved layered city backdrop');
 assert.match(city, /live-city-bg\.webp/, 'Portrait Viking harbour backdrop must be installed');
 assert.match(city, /live-city-ship\.webp/, 'Viking ships must have a subtle motion overlay');
@@ -70,6 +79,37 @@ assert.match(home, /className="home-bottom-controls absolute z-20/,
   'Home bottom controls need an iOS-only positioning hook');
 assert.match(css, /@container territory-city \(max-height: 620px\)/,
   'Compact native iPhone scene must respond to usable pane height');
+
+
+/* iOS modal regression guards: important actions must not disappear under the
+   permanent bottom navigation. Android and desktop remain unchanged. */
+assert.match(modal, /classList\.contains\('territory-ios-webapp'\)/,
+  'Only native iOS may move overlays into the game shell');
+assert.match(modal, /createPortal\(children, host\)/,
+  'iPhone dialogs must render above bottom navigation');
+assert.match(modal, /host \? createPortal\(children, host\) : <>\{children\}<\/>/,
+  'Android and desktop must preserve their existing dialog tree');
+assert.match(forge, /<IosGamePortal>/,
+  'Forge dialog must render above the bottom navigation');
+assert.match(forge, /className="forge-upgrade-panel /,
+  'Forge panel must be height-bounded on iPhone');
+assert.match(forge, /className="forge-upgrade-scroll"/,
+  'Forge stats and costs must scroll inside the dialog');
+assert.match(forge, /className="forge-upgrade-actions"/,
+  'Upgrade action must be reachable at the dialog bottom');
+assert.match(css, /html\.territory-ios-webapp \.forge-upgrade-actions\s*\{[\s\S]*?flex:\s*0 0 auto/,
+  'Upgrade button must stay visible when stats scroll');
+for (const [name, source] of [
+  ['inventory', inventory], ['arena rules', arenaLobby],
+  ['arena confirmation', arenaRoom], ['Monopoly reward', monopoly],
+]) {
+  assert.match(source, /<IosGamePortal>/, name + ' must also overlay the navigation');
+}
+assert.match(css, /html\.territory-ios-webapp \.territory-shell > \.territory-modal/,
+  'iOS dialogs must be bounded by the shell, not the external Telegram header');
+assert.match(css, /html\.territory-ios-webapp \.inventory-item-overlay > \.card/,
+  'iOS inventory actions must scroll inside a bounded dialog');
+
 
 assert.match(telegram, /disableVerticalSwipes\?/, 'Telegram SDK typing must expose native swipe control');
 assert.match(telegram, /tg\.disableVerticalSwipes\(\)/, 'Telegram must disable sheet drag gestures on supported clients');
