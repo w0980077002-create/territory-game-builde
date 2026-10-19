@@ -36,6 +36,7 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
  const [panel,setPanel]=useState<Panel>(null),[reward,setReward]=useState<{gold?:number;tickets?:number;event?:string;awards?:Prize}|null>(null);
  const [now,setNow]=useState(Date.now()),[notice,setNotice]=useState('');
  const lock=useRef(false),mounted=useRef(true),generation=useRef(0);
+ const diceButton=useRef<HTMLButtonElement>(null);
  const t=(ru:string,english:string)=>en?english:ru;
  const p=data?.progress,h=data?.hall;
  const active=h?.active?.game==='monopoly'?h.active:null;
@@ -71,6 +72,29 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
   }catch(e){if(mounted.current)setError(describe(e));}
   finally{lock.current=false;if(mounted.current)setBusy(false);}
  };
+
+ // Claimed in order and always checked by the server; no speculative prizes.
+ const claimAllReady=async(kind:'quest'|'offer')=>{
+  if(lock.current||!data)return;
+  lock.current=true;setBusy(true);setError('');
+  let last=data;let sum=0;const aggregated:Prize={};
+  const target=(i:number)=>kind==='quest'?([5,3,1][i]):([0,3,10][i]);
+  const progress=(i:number,d:MonopolyData)=>kind==='quest'
+   ?([d.progress.rolls,d.progress.events,d.progress.laps][i])
+   :([d.progress.rolls,d.progress.laps,d.progress.rolls][i]);
+  try{
+   for(let i=0;i<3;i++){
+    if(last.progress.claimed.includes(`${kind}:${i+1}`)||progress(i,last)<target(i))continue;
+    last=await monopoly(kind,i+1);
+    sum+=last.added??0;
+    for(const [key,value] of Object.entries(last.awards??{}))aggregated[key as keyof Prize]=(aggregated[key as keyof Prize]??0)+value;
+    if(mounted.current)setData(last);
+   }
+   if(mounted.current&&sum>0){setPanel(null);setReward({tickets:sum,awards:aggregated});}
+  }catch(e){if(mounted.current){if(sum>0){setPanel(null);setReward({tickets:sum,awards:aggregated});}setError(describe(e));}}
+  finally{lock.current=false;if(mounted.current)setBusy(false);}
+ };
+ const goToDice=()=>{setPanel(null);window.requestAnimationFrame(()=>diceButton.current?.focus());};
  const roll=async(value=ten?10:1)=>{
   if(lock.current||!data)return;lock.current=true;setBusy(true);setMoving(true);setError('');setReward(null);
   const currentGeneration=generation.current;
@@ -119,7 +143,14 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
  const disabled=busy||!data;
  const quests=[{ru:'Сделай 5 бросков',en:'Roll 5 times',current:p?.rolls??0,target:5,reward:2},{ru:'Открой 3 события',en:'Discover 3 events',current:p?.events??0,target:3,reward:2},{ru:'Пройди полный круг',en:'Complete a lap',current:p?.laps??0,target:1,reward:3}];
  const offers=[{ru:'Приветствие хранителя',en:'Guardian’s welcome',current:p?.rolls??0,target:0,reward:1},{ru:'Мастер трёх кругов',en:'Three-lap master',current:p?.laps??0,target:3,reward:2},{ru:'Десять приключений',en:'Ten adventures',current:p?.rolls??0,target:10,reward:3}];
+
  const milestoneArt:ArtName[]=['chest','gift','gems','openChest','crown'];
+ const readyQuests=quests.filter((v,i)=>v.current>=v.target&&!claimed(`quest:${i+1}`)).length;
+ const readyOffers=offers.filter((v,i)=>v.current>=v.target&&!claimed(`offer:${i+1}`)).length;
+ const utcResetMs=86400000-((now%86400000+86400000)%86400000);
+ const resetTime=`${String(Math.floor(utcResetMs/3600000)).padStart(2,'0')}:${String(Math.floor(utcResetMs/60000)%60).padStart(2,'0')}`;
+ const quickPanels=[{key:'gifts' as const,art:'gift' as const,ru:'Подарки',en:'Gifts',count:h?.free_ready?1:0},{key:'quests' as const,art:'quests' as const,ru:'Задания',en:'Quests',count:readyQuests},{key:'offers' as const,art:'chest' as const,ru:'Предложения',en:'Offers',count:readyOffers}];
+
  const panelTitle=panel==='rewards'?t('Награды за круги','Lap rewards'):panel==='gifts'?t('Подарки лагуны','Lagoon gifts'):panel==='quests'?t('Задания Монополии','Monopoly quests'):panel==='offers'?t('Спецпредложения','Special offers'):panel==='jackpot'?t('Джекпот','Jackpot'):t('Правила приключения','Adventure rules');
  return <div className="territory-monopoly" data-testid="hall-play-monopoly">
   <header className="mono-header">
@@ -149,7 +180,7 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
   </nav>
   <section className="mono-controls">
    <div className="mono-roll-row"><div className="mono-wallet"><Art name="ticket"/><span><small>{t('БИЛЕТЫ','TICKETS')}</small><b>{h?.tickets??'—'}</b></span><button aria-label={t('Получить билеты','Get tickets')} onClick={()=>setPanel('gifts')}>+</button></div>
-    <button className={`mono-dice ${moving?'rolling':''}`} disabled={disabled||(!active&&(h?.tickets??0)<(ten?10:1))||!!(h?.active&&h.active.game!=='monopoly')} onClick={()=>void roll()} aria-label={active?t('Продолжить бросок','Resume roll'):t('Бросить кубик','Roll dice')}><span className="mono-dice-glow"/><Dice value={face}/><span className="mono-dice-cta">{moving?t('Ход…','Moving…'):active?t('Продолжить','Resume'):t(`БРОСИТЬ · ${ten?10:1}`,`ROLL · ${ten?10:1}`)}</span></button>
+    <button ref={diceButton} className={`mono-dice ${moving?'rolling':''}`} disabled={disabled||(!active&&(h?.tickets??0)<(ten?10:1))||!!(h?.active&&h.active.game!=='monopoly')} onClick={()=>void roll()} aria-label={active?t('Продолжить бросок','Resume roll'):t('Бросить кубик','Roll dice')}><span className="mono-dice-glow"/><Dice value={face}/><span className="mono-dice-cta">{moving?t('Ход…','Moving…'):active?t('Продолжить','Resume'):t(`БРОСИТЬ · ${ten?10:1}`,`ROLL · ${ten?10:1}`)}</span></button>
    </div>
    <div className="mono-toggles"><div className="mono-multiplier" role="group" aria-label={t('Множитель награды','Reward multiplier')}><button type="button" aria-pressed={!ten} className={!ten?'selected':''} disabled={busy||!!active} onClick={()=>setTen(false)}>×1</button><button type="button" aria-pressed={ten} className={ten?'selected':''} disabled={busy||!!active} onClick={()=>setTen(true)}>×10</button></div><label className="mono-skip"><input type="checkbox" checked={fast} disabled={busy} onChange={e=>setFast(e.target.checked)}/>{t('Пропустить анимацию','Skip animation')}</label></div>
   </section>
@@ -162,11 +193,15 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
   {h?.active&&h.active.game!=='monopoly'&&<button className="mono-cta" onClick={onBack}>{t('Завершить другую игру в зале','Finish the other game in the hall')}</button>}
   {error&&<div className="mono-error" role="alert">{error}<button disabled={busy} onClick={()=>void request('status')}>{t('Обновить','Refresh')}</button></div>}
   {panel&&<div className="mono-overlay" role="dialog" aria-modal="true" aria-labelledby="mono-panel-title" onClick={()=>setPanel(null)}><section className={`mono-panel panel-${panel}`} onClick={e=>e.stopPropagation()}>
+
    <header><Art name={panel==='gifts'?'gift':panel==='quests'?'quests':panel==='offers'?'chest':'crown'}/><h3 id="mono-panel-title">{panelTitle}</h3><button autoFocus className="mono-close" aria-label={t('Закрыть','Close')} onClick={()=>setPanel(null)}><span/></button></header>
+   {['gifts','quests','offers'].includes(panel)&&<><nav className="mono-panel-tabs" aria-label={t('Разделы Монополии','Monopoly sections')}>{quickPanels.map(item=><button type="button" key={item.key} aria-current={panel===item.key?'page':undefined} onClick={()=>{setPanel(item.key);setError('');}}><Art name={item.art}/><span>{en?item.en:item.ru}</span>{item.count>0&&<b>{item.count}</b>}</button>)}</nav>
+    <div className="mono-panel-status"><span><Art name="ticket"/> {h?.tickets??'—'}</span><span>{panel==='gifts'?t(`До обновления ${resetTime}`,`Resets in ${resetTime}`):panel==='quests'?t(`Можно забрать: ${readyQuests}`,`Ready to claim: ${readyQuests}`):t(`Доступно: ${readyOffers}`,`Available: ${readyOffers}`)}</span><button type="button" disabled={busy} onClick={()=>void request('status')}>{t('Обновить','Refresh')}</button></div>
+   </>}
    <div className="mono-panel-body">{error&&<p className="mono-error" role="alert">{error}</p>}
     {panel==='rewards'&&<><p>{t('Каждый круг приближает тебя к сокровищам. Каждая награда доступна один раз.','Each lap brings you closer to treasure. Each reward can be collected once.')}</p>{milestones.map((lap,i)=><article className="mono-reward-row" key={lap}><Art name={milestoneArt[i]} className="mono-prize-icon"/><div><b>{t('Круги','Laps')} {i*5+1}–{lap}</b><small>{Math.min(p?.laps??0,lap)}/{lap} · {lap/5+1} {t('билетов','tickets')}</small><Prizes prize={bundlePrize('milestone',lap)} en={en}/></div><button disabled={disabled||(p?.laps??0)<lap||claimed(`milestone:${lap}`)} onClick={()=>void request('milestone',lap)}>{claimed(`milestone:${lap}`)?t('Получено','Claimed'):t('Забрать','Claim')}</button></article>)}</>}
-    {panel==='gifts'&&<><div className="mono-banner"><Art name="gift"/><div><small>{t('ДАР ХРАНИТЕЛЯ','GUARDIAN’S GIFT')}</small><b>{t('Новый день — новый подарок','A new day, a new gift')}</b><span>{t('Забирай сокровища каждый день','Collect your daily treasures')}</span></div></div><article className="mono-gift-card"><Art name="openChest"/><h4>{t('Ежедневный подарок','Daily gift')}</h4><div className="mono-gift-items"><span><Art name="ticket"/><b>2</b></span><span><Art name="potions"/><b>1</b></span></div><button className="mono-cta" disabled={disabled||!h?.free_ready} onClick={()=>void request('gift')}>{h?.free_ready?t('ЗАБРАТЬ БЕСПЛАТНО','COLLECT FREE'):t('Подарок получен','Gift collected')}</button></article><p>{t('Общий подарок игрового зала. Обновление в 00:00 UTC; доступен при 18 билетах или меньше.','Shared Game Hall gift. Resets at 00:00 UTC; available with 18 tickets or fewer.')}</p></>}
-    {(panel==='quests'||panel==='offers')&&<><div className="mono-banner"><Art name={panel==='quests'?'quests':'chest'}/><div><small>TERRITORY</small><b>{panel==='quests'?t('Путь искателя','The explorer’s path'):t('Сокровища хранителя','Guardian treasures')}</b><span>{t('Смелость заслуживает награды','Adventure deserves a reward')}</span></div></div>{(panel==='quests'?quests:offers).map((v,i)=>{const key=`${panel==='quests'?'quest':'offer'}:${i+1}`;return <article className="mono-quest" key={key}><div className="mono-quest-heading"><Art name={panel==='quests'?'quests':i===0?'chest':i===1?'gift':'openChest'}/><b>{en?v.en:v.ru}</b></div><Prizes prize={bundlePrize(panel==='quests'?'quest':'offer',i+1)} en={en}/><div className="mono-progress"><span style={{width:`${v.target?Math.min(100,v.current/v.target*100):100}%`}}/></div><div><span>{Math.min(v.current,v.target)}/{v.target} · {v.reward} {t('билета','tickets')}</span><button disabled={disabled||v.current<v.target||claimed(key)} onClick={()=>void request(panel==='quests'?'quest':'offer',i+1)}>{claimed(key)?t('Получено','Claimed'):v.current<v.target?t('Недоступно','Locked'):t('Забрать','Claim')}</button></div></article>;})}</>}
+    {panel==='gifts'&&<><div className="mono-banner"><Art name="gift"/><div><small>{t('ДАР ХРАНИТЕЛЯ','GUARDIAN’S GIFT')}</small><b>{t('Ежедневные сокровища','Daily treasures')}</b><span>{t('Бесплатно • обновляется каждый день','Free • renewed daily')}</span></div></div><article className="mono-gift-card"><Art name="openChest"/><div className="mono-gift-info"><h4>{t('Подарок дня','Daily gift')}</h4><div className="mono-gift-items"><span><Art name="ticket"/><b>2</b></span><span><Art name="potions"/><b>1</b></span></div><button className="mono-cta" disabled={disabled||!h?.free_ready} onClick={()=>void request('gift')}>{h?.free_ready?t('ЗАБРАТЬ БЕСПЛАТНО','COLLECT FREE'):(h?.tickets??0)>18?t('Сначала потрать билеты','Use tickets first'):t('Уже получено','Already collected')}</button></div></article><p className="mono-gift-foot">{t('Один подарок на весь игровой зал. Доступен при 18 билетах или меньше. Следующее обновление через','One shared daily gift for all Game Hall games. Available at 18 tickets or fewer. Next reset in')} <b>{resetTime}</b> UTC.</p></>}
+    {(panel==='quests'||panel==='offers')&&<><div className="mono-banner"><Art name={panel==='quests'?'quests':'chest'}/><div><small>TERRITORY</small><b>{panel==='quests'?t('Путь искателя','The explorer’s path'):t('Сокровища хранителя','Guardian treasures')}</b><span>{t('Выполняй задания, забирай настоящие награды','Complete objectives to earn real rewards')}</span></div></div>{(panel==='quests'?quests:offers).map((v,i)=>{const key=`${panel==='quests'?'quest':'offer'}:${i+1}`,done=claimed(key),ready=v.current>=v.target&&!done;return <article className={`mono-quest ${done?'mono-quest-done':''} ${ready?'mono-quest-ready':''}`} key={key}><div className="mono-quest-heading"><Art name={panel==='quests'?'quests':i===0?'chest':i===1?'gift':'openChest'}/><b>{en?v.en:v.ru}</b>{done&&<span className="mono-quest-done-mark">✓</span>}</div><Prizes prize={bundlePrize(panel==='quests'?'quest':'offer',i+1)} en={en}/><div className="mono-progress" role="progressbar" aria-label={en?v.en:v.ru} aria-valuemin={0} aria-valuemax={v.target||1} aria-valuenow={Math.min(v.current,v.target)||0}><span style={{width:`${v.target?Math.min(100,v.current/v.target*100):100}%`}}/></div><div><span>{Math.min(v.current,v.target)}/{v.target} · +{v.reward} {t('билета','tickets')}</span><button type="button" disabled={disabled||done} onClick={()=>ready?void request(panel==='quests'?'quest':'offer',i+1):goToDice()}>{done?t('Получено','Claimed'):ready?t('Забрать','Claim'):t('Перейти','Go')}</button></div></article>;})}{(panel==='quests'?readyQuests:readyOffers)>1&&<button className="mono-claim-all" type="button" disabled={disabled} onClick={()=>void claimAllReady(panel==='quests'?'quest':'offer')}>{t('Забрать все доступные','Claim all available')} ({panel==='quests'?readyQuests:readyOffers})</button>}</>}
     {panel==='jackpot'&&<div className="mono-jackpot"><Art name="openChest"/><h4>{t('Джекпот пока недоступен','Jackpot is not available yet')}</h4><p>{t('Серверной механики джекпота нет. Здесь нет розыгрыша, списания билетов или обещания выигрыша. Рабочие награды доступны в разделе «Награды за круги».','There is no server jackpot mechanic. No drawing or ticket spending takes place here. Visit Lap rewards for available prizes.')}</p><button className="mono-cta" onClick={()=>setPanel('rewards')}>{t('Посмотреть награды за круги','View lap rewards')}</button></div>}
     {panel==='help'&&<div className="mono-rules"><p>{t('На поле ровно 28 клеток. Один бросок стоит 1 билет. Герой получает золото и показанный приз клетки. Алмазы, камни, материалы, зелья и эликсиры забираются кнопкой под полем в настоящий баланс и инвентарь.','The circuit has exactly 28 spaces. A roll costs 1 ticket. Gold and the shown prize await on the landing space. Collect gems, stones, materials and potions below the board.')}</p><p>{t('×10 стоит 10 билетов и умножает награду. Суточный лимит золота сохраняется.','×10 costs 10 tickets and multiplies the prize. The daily gold cap still applies.')}</p>{Object.entries(eventCopy).map(([key,v])=><p key={key}><b>{v[en?2:0]}.</b> {v[en?3:1]}</p>)}<p>{t('Каждый переход через старт засчитывает круг. Прогресс сохраняется на сервере. Событие длится 72 часа, затем круги и задания обновляются. Кошелёк и неполученные ресурсы сохраняются.','Crossing start completes a lap. Progress is saved on the server. The event lasts 72 hours. Your wallet and uncollected resources are retained.')}</p></div>}
    </div>
