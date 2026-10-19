@@ -28,10 +28,12 @@ export function DailyShareCard({task,userId,onClaimed}:{task:DailyShareTask;user
  const share=()=>{
   if(!ready||!url||busy)return;
   setBusy(true);setError('');setNotice('');
-  // Start claiming on this direct user tap, before Telegram suspends the WebView.
-  const result=claimDailyShare(task,userId);
-  if(!shareDailyPromo(url,en?'en':'ru')){setBusy(false);setError(en?'Cannot open Telegram':'Не удалось открыть Telegram');return;}
-  void result.then(async()=>{
+  // Attempt to open the Telegram picker synchronously on the user click.
+  // Only then request the reward, so invalid links never award tickets/stones.
+  let opened=false;
+  try{opened=shareDailyPromo(url,en?'en':'ru');}catch{opened=false;}
+  if(!opened){setBusy(false);setError(en?'Cannot open Telegram':'Не удалось открыть Telegram');return;}
+  void claimDailyShare(task,userId).then(async()=>{
    setNotice(en?'+2 reward credited!':'Награда +2 зачислена!');
    onClaimed?.();
    try{setStatus(await dailyShareStatus());}catch{/* Credited reward remains safe. */}
