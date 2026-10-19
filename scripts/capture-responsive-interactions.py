@@ -7,6 +7,8 @@ import json
 import sys
 from pathlib import Path
 from urllib.parse import urlencode
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from threading import Thread
 from playwright.sync_api import sync_playwright
 
 html = Path(sys.argv[1] if len(sys.argv) > 1 else "public/qa-responsive-visual.html").resolve()
@@ -14,7 +16,16 @@ out = Path(sys.argv[2] if len(sys.argv) > 2 else "/tmp/responsive-screen-shots")
 out.mkdir(parents=True, exist_ok=True)
 if not html.exists():
     raise SystemExit(f"Missing offline preview: {html}")
-url = html.as_uri()
+# Serve the project-local public/ folder so the real game art/icons load.
+# Loopback-only server; network/API calls from the fixture remain disabled.
+class QuietHandler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=str(html.parent), **kwargs)
+    def log_message(self, format, *args):
+        pass
+server = ThreadingHTTPServer(('127.0.0.1', 0), QuietHandler)
+Thread(target=server.serve_forever, daemon=True).start()
+url = f'http://127.0.0.1:{server.server_address[1]}/{html.name}'
 
 screens = ["city","equipment","items","forge","shop","profile","map","quests","games"]
 sizes = [(320,740,560),(375,812,650),(393,852,690),(430,932,770)]
@@ -46,7 +57,17 @@ def hit_button(page, locator, label):
     }""")
 
 def action(page,screen,shell):
-    if screen=="forge":
+    if screen=="city":
+        page.get_by_role("button",name="Настройки").click(timeout=4500)
+        assert_rect(page,".territory-modal-panel","city settings modal",shell,60)
+        hit_button(page,page.locator(".territory-modal-panel button[aria-label=\"Закрыть\"]"),"settings close")
+        page.screenshot(path=str(out/"city-settings.png"))
+        page.locator(".territory-modal-panel button[aria-label=\"Закрыть\"]").click()
+        page.get_by_role("button",name="Почта").click(timeout=4500)
+        assert_rect(page,".territory-modal-panel","city mail modal",shell,60)
+        page.screenshot(path=str(out/"city-mail.png"))
+        page.locator(".territory-modal-panel button[aria-label=\"Закрыть\"]").click()
+    elif screen=="forge":
         page.locator('[data-screen-root] button.card').first.click(timeout=4500)
         assert_rect(page,'.forge-upgrade-panel','forge panel',shell,60)
         hit_button(page,page.locator('.forge-upgrade-actions button'),'forge upgrade')
@@ -131,6 +152,7 @@ with sync_playwright() as p:
                     page.close()
             context.close()
     browser.close()
+server.shutdown()
 
 report=dict(cases=len(records),passed=sum(x['status']=='pass' for x in records),failures=failures,results=records)
 (out/'results.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
