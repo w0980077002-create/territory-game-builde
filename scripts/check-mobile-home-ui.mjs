@@ -3,13 +3,14 @@ import { access, readFile } from 'node:fs/promises';
 
 const root = new URL('../', import.meta.url);
 const read = (relative) => readFile(new URL(relative, root), 'utf8');
-const [home, app, css, html, city, sheets] = await Promise.all([
+const [home, app, css, html, city, sheets, telegram] = await Promise.all([
   read('src/components/HomeScreen.tsx'),
   read('src/App.tsx'),
   read('src/index.css'),
   read('index.html'),
   read('src/components/home/LiveCityBackdrop.tsx'),
   read('src/components/home/HomeSheets.tsx'),
+  read('src/game/telegram.ts'),
 ]);
 
 assert.match(home, /<LiveCityBackdrop animated=\{cityMotion\}/, 'Home must render the approved layered city backdrop');
@@ -28,7 +29,13 @@ assert.match(home, /<BeltCells/, 'Potion belt must remain on the home screen');
 assert.match(app, /ic-auction\.svg/, 'Auction sub-screen must use its unique icon');
 assert.match(app, /ic-professions\.svg/, 'Professions sub-screen must use its unique icon');
 assert.match(html, /viewport-fit=cover/, 'Viewport must respect modern mobile safe areas');
-assert.match(app, /env\(safe-area-inset-bottom\)/, 'Bottom navigation must respect mobile safe areas');
+assert.match(css, /env\(safe-area-inset-bottom/, 'Telegram shell must respect the iPhone home indicator');
+assert.match(css, /\.home-side-stack \.home-side/, 'Home side buttons must keep a tappable height');
+assert.match(css, /overscroll-behavior-y: contain/, 'Small phone side controls must scroll internally');
+assert.match(css, /\.territory-nav-label/, 'Bottom nav labels must wrap instead of clipping');
+assert.match(app, /territory-city-screen/, 'City must support very short phone screens');
+assert.match(telegram, /requestFullscreen/, 'Telegram should request fullscreen when supported');
+assert.match(telegram, /contentSafeAreaInset/, 'Fullscreen must account for Telegram header overlays');
 assert.match(app, /--tg-viewport-stable-height, 100dvh/, 'Telegram iOS viewport must not hide the game behind its native header');
 assert(home.includes('w-[clamp(74px,23vw,96px)]'), 'Hero name must have responsive width on iPhone');
 assert.match(home, /whitespace-nowrap/, 'Hero level and VIP must stay on one line');
@@ -37,4 +44,4 @@ assert.match(app, /Прогресс не сохранён! Не закрывай
 for (const asset of ['public/city-bg-vibrant.webp', 'public/ic-auction.svg', 'public/ic-professions.svg', 'public/territory-mark.svg']) {
   await access(new URL(asset, root));
 }
-console.log('Mobile home UI checks passed: living portrait city, reduced-motion toggle, unique icons, language, gear and safe-area.');
+console.log('Mobile home UI checks passed: living city, responsive sides and nav, Telegram fullscreen, safe-area, language, gear.');

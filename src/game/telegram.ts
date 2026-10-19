@@ -42,7 +42,14 @@ interface TelegramWebApp {
   themeParams: Record<string, string>;
   viewportHeight: number;
   viewportStableHeight: number;
+  isFullscreen?: boolean;
+  isVersionAtLeast?: (version: string) => boolean;
+  requestFullscreen?: () => void;
+  safeAreaInset?: { top: number; bottom: number; left: number; right: number };
+  contentSafeAreaInset?: { top: number; bottom: number; left: number; right: number };
+  onEvent?: (event: string, callback: () => void) => void;
 }
+
 
 declare global {
   interface Window {
@@ -66,12 +73,59 @@ export function getTelegramUser(): TelegramWebAppUser | null {
   return tg?.initDataUnsafe?.user || null;
 }
 
+let viewportListenersAttached = false;
+
+function updateTelegramViewport(tg: TelegramWebApp) {
+  const root = document.documentElement;
+  // Telegram's stable height excludes the native header in sheet mode.
+  // It also updates when the user expands the sheet or enters fullscreen.
+  if (Number.isFinite(tg.viewportStableHeight) && tg.viewportStableHeight > 0) {
+    root.style.setProperty('--territory-viewport-height', `${tg.viewportStableHeight}px`);
+  } else {
+    root.style.removeProperty('--territory-viewport-height');
+  }
+
+  // Insets are only subtracted for actual fullscreen: outside fullscreen,
+  // Telegram has already reserved the area occupied by its native header.
+  const inset = (edge: 'top' | 'bottom') => tg.isFullscreen
+    ? Math.max(0, (tg.safeAreaInset?.[edge] ?? 0) + (tg.contentSafeAreaInset?.[edge] ?? 0))
+    : 0;
+  root.style.setProperty('--territory-top-inset', `${inset('top')}px`);
+  root.style.setProperty('--territory-bottom-inset', `${inset('bottom')}px`);
+}
+
 export function initTelegramWebApp() {
   const tg = getTelegramWebApp();
   if (!tg) return;
 
   tg.ready();
   tg.expand();
+  updateTelegramViewport(tg);
+
+  if (!viewportListenersAttached) {
+    viewportListenersAttached = true;
+    const refresh = () => updateTelegramViewport(tg);
+    try {
+      tg.onEvent?.('viewportChanged', refresh);
+      tg.onEvent?.('fullscreenChanged', refresh);
+      tg.onEvent?.('fullscreenFailed', refresh);
+      tg.onEvent?.('safeAreaChanged', refresh);
+      tg.onEvent?.('contentSafeAreaChanged', refresh);
+    } catch {
+      // Older Telegram versions may not expose all events.
+    }
+    window.addEventListener('resize', refresh);
+  }
+
+  // Fullscreen is an enhancement, not a requirement: unsupported iOS/Android
+  // clients continue using the stable-height, scrollable layout.
+  try {
+    if (tg.requestFullscreen && tg.isVersionAtLeast?.('8.0') && !tg.isFullscreen) {
+      tg.requestFullscreen();
+    }
+  } catch {
+    // Telegram can refuse fullscreen (e.g. older clients); layout still works.
+  }
 
   try {
     tg.setHeaderColor('#0c1117');

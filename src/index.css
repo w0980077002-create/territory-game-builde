@@ -635,3 +635,132 @@
   .arena-battle .animate-recoil,
   .arena-battle .animate-slash { animation: none !important; }
 }
+
+
+/* Responsive Telegram shell.
+   The native sheet already excludes Telegram's header; fullscreen alone needs
+   explicit safe + content insets, provided by game/telegram.ts. */
+.territory-shell {
+  width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  padding-top: max(env(safe-area-inset-top, 0px), var(--territory-top-inset, 0px));
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--territory-bottom-inset, 0px));
+}
+.territory-screen {
+  min-width: 0;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+  overflow-wrap: break-word;
+}
+.territory-nav { min-width: 0; }
+.territory-nav .nav-btn { min-width: 0; }
+.territory-nav-label {
+  display: block;
+  width: 100%;
+  max-height: 22px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.08;
+}
+
+/* Scene geometry is relative to the available content, not the phone model. */
+.home-game-scene {
+  --home-hud-top: 8px;
+  --home-chapter-top: 100px;
+  --home-side-top: 98px;
+  --home-side-bottom: 196px;
+  --home-character-top: 158px;
+  --home-character-bottom: 196px;
+}
+.home-top-hud { top: var(--home-hud-top); }
+.home-chapter { top: var(--home-chapter-top); }
+.home-character-stage {
+  top: var(--home-character-top);
+  bottom: var(--home-character-bottom);
+}
+.home-side-stack {
+  top: var(--home-side-top);
+  bottom: var(--home-side-bottom);
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 1px 0 3px;
+}
+.home-side-stack::-webkit-scrollbar { display: none; }
+.home-side-stack .home-side {
+  /* Never squash seven right-side buttons into unreadable slivers. */
+  flex: 0 0 46px;
+  min-height: 46px;
+  max-height: none;
+}
+.home-top-hud .home-profile-chip { min-width: 0; }
+.home-hud-actions { min-width: 0; }
+.home-wallet-row .hud-chip {
+  min-width: 0;
+  padding-right: 4px;
+  gap: 1px;
+}
+.home-wallet-row .hud-chip > span { min-width: 0; gap: 2px; }
+.home-wallet-row .hud-chip img {
+  width: clamp(15px, 4vw, 20px) !important;
+  height: clamp(15px, 4vw, 20px) !important;
+}
+
+/* Modal content scrolls inside Telegram's usable rectangle. */
+.territory-modal {
+  box-sizing: border-box;
+  padding-top: max(8px, env(safe-area-inset-top, 0px), var(--territory-top-inset, 0px));
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px), var(--territory-bottom-inset, 0px));
+}
+.territory-modal-panel {
+  max-height: min(86dvh, calc(100dvh - var(--territory-top-inset, 0px) - var(--territory-bottom-inset, 0px) - 16px));
+  min-height: 0;
+}
+.territory-modal-panel > div:last-child { min-height: 0; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 400px) {
+  .home-top-hud { gap: 4px; }
+  .home-top-hud .home-profile-chip { padding-right: 4px; gap: 4px; }
+  .home-profile-chip > span:last-child { width: clamp(66px, 20vw, 85px); }
+  .home-wallet-row { gap: 3px; }
+  .home-wallet-row .hud-chip { padding-right: 2px; }
+  .home-wallet-row .hud-chip > span { font-size: 10px; }
+  .home-hud-actions > div:last-child { gap: 4px; }
+  .home-hud-actions .hud-utility-button { width: 30px; height: 30px; }
+  .home-hud-actions > div:last-child > button:last-child { height: 30px; min-width: 30px; }
+  .territory-nav-label { font-size: 9px; }
+}
+@media (max-width: 350px) {
+  .home-game-scene {
+    --home-side-top: 106px;
+    --home-character-top: 164px;
+  }
+  .home-side-stack { width: 41px; }
+  .home-character-stage { left: 42px; right: 42px; }
+  .home-side-stack .home-side { flex-basis: 44px; min-height: 44px; }
+  .home-top-hud .home-profile-chip > span:first-child { width: 38px; height: 38px; }
+  .home-profile-chip > span:last-child { width: 63px; }
+  .home-wallet-row .hud-chip > span { font-size: 9px; }
+  .home-wallet-row .hud-chip img { width: 14px !important; height: 14px !important; }
+  .territory-nav-label { font-size: 8.5px; }
+}
+@media (max-height: 730px) {
+  .home-game-scene {
+    --home-side-bottom: 187px;
+    --home-character-bottom: 192px;
+  }
+  .home-side-stack .home-side { flex-basis: 44px; min-height: 44px; }
+}
+@media (max-height: 610px) {
+  /* Tiny Telegram sheets: allow the city itself to scroll instead of clipping
+     the HP/energy belt and quest actions behind the fixed navigation. */
+  .territory-city-screen { overflow-y: auto; overflow-x: hidden; }
+  .territory-city-screen .home-game-scene { min-height: 540px; height: 100%; }
+}
