@@ -518,3 +518,23 @@
   .gear-slot-weapon, .gear-slot-amulet { top: 7%; }
   .gear-mini-bar { min-height: 61px; }
 }
+
+
+/* On iPhone reserve a little more of the scrollable equipment page for items.
+   Keep all equipped slots and the character art intact. */
+html.territory-ios-webapp .gear-stage-ring {
+  height: clamp(188px, 49vw, 208px);
+}
+html.territory-ios-webapp .gear-filter-strip {
+  scrollbar-width: thin;
+  scrollbar-color: #b68a54 transparent;
+  padding-bottom: 5px;
+}
+html.territory-ios-webapp .gear-filter-strip::-webkit-scrollbar {
+  display: block;
+  height: 3px;
+}
+html.territory-ios-webapp .gear-filter-strip::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: #b68a54;
+}
