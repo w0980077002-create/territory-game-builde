@@ -18,6 +18,7 @@ import { BeltBar } from './BeltBar';
 import { FoldSection } from './FoldSection';
 import { equipmentArt } from '@/game/art';
 import { ItemArt } from '@/components/ui/ItemArt';
+import { IosGamePortal } from '@/components/ui/Modal';
 import { ChevronDown, Loader2, Timer, WifiOff } from 'lucide-react';
 import { useLanguage, localizeText } from '@/game/i18n';
 
@@ -396,7 +397,8 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
       )}
 
       {confirmLeave && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={() => setConfirmLeave(false)}>
+        <IosGamePortal>
+        <div className="arena-modal-overlay fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={() => setConfirmLeave(false)}>
           <div className="card w-full max-w-sm text-center animate-pop" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-white mb-2">{language === 'en' ? 'Leave battle?' : 'Покинуть бой?'}</h3>
             <p className="text-sm text-gray-400 mb-4">{alive ? (language === 'en' ? 'You will count as defeated, and your team may lose.' : 'Ты будешь считаться павшим, и бой может быть проигран.') : (language === 'en' ? 'You will no longer see this battle chat.' : 'Ты больше не увидишь чат этого боя.')}</p>
@@ -406,6 +408,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
             </div>
           </div>
         </div>
+        </IosGamePortal>
       )}
     </div>
   );
