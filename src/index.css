@@ -772,6 +772,26 @@ html.territory-desktop-webapp .home-side-stack .home-side {
   }
 }
 
+
+/* iPhone-specific: the Arena shortcut must not disappear below the city
+   controls. No rules in this section apply to Android or Telegram Desktop. */
+@media (max-width: 480px) {
+  html.territory-ios-webapp .home-side-stack-right .home-side:last-child {
+    order: -1;
+  }
+  html.territory-ios-webapp .home-side-stack {
+    gap: 3px;
+  }
+  html.territory-ios-webapp .home-side-stack .home-side {
+    flex: 0 0 42px;
+    min-height: 42px;
+  }
+  html.territory-ios-webapp .territory-nav-label {
+    font-size: 8px;
+    letter-spacing: -0.025em;
+  }
+}
+
 .territory-screen {
   min-width: 0;
   min-height: 0;
