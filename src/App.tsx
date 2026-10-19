@@ -232,6 +232,21 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   return (
     <div
       className="territory-shell flex flex-col max-w-md mx-auto overflow-hidden relative"
+      // Android Chrome/WebView displays the public image URL on long-press.
+      // Block native context menus only on game art and controls, never on
+      // chat messages, input fields, or other selectable player content.
+      onContextMenuCapture={(event) => {
+        const target = event.target;
+        if (target instanceof Element && target.closest('img, button, [role="button"]')) {
+          event.preventDefault();
+        }
+      }}
+      onDragStartCapture={(event) => {
+        const target = event.target;
+        if (target instanceof Element && target.closest('img')) {
+          event.preventDefault();
+        }
+      }}
       // JS receives the stable viewport from Telegram; CSS falls back to its
       // native variable, then to the browser's dynamic viewport height.
       style={{ background: 'var(--color-bg)', height: 'var(--territory-viewport-height, var(--tg-viewport-stable-height, 100dvh))' }}
