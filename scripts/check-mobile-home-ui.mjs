@@ -37,7 +37,7 @@ assert.match(app, /territory-city-screen/, 'City must support very short phone s
 assert.match(app, /onContextMenuCapture/, 'Android WebView image and button menus must be blocked');
 assert.match(app, /onDragStartCapture/, 'Dragging game pictures must not open image URLs');
 assert.match(css, /-webkit-touch-callout: none/, 'iOS native image callouts must be disabled');
-assert.match(css, /\\.territory-shell button img/, 'Artwork inside interactive buttons must pass presses to the button');
+assert.match(css, /\.territory-shell button img/, 'Artwork inside interactive buttons must pass presses to the button');
 assert.match(telegram, /requestFullscreen/, 'Telegram should request fullscreen when supported');
 assert.match(telegram, /contentSafeAreaInset/, 'Fullscreen must account for Telegram header overlays');
 assert.match(app, /--tg-viewport-stable-height, 100dvh/, 'Telegram iOS viewport must not hide the game behind its native header');
