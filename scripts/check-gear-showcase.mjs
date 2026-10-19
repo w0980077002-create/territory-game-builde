@@ -66,4 +66,14 @@ assert.match(component, /scrollIntoView\(\{ behavior: 'smooth', block: 'nearest'
 assert.match(css, /\.gear-mini-bar \{/, 'Collapsed hero strip style must be present');
 assert.match(css, /\.gear-compare-panel \{ scroll-margin-top: 72px; \}/,
   'Preserve context around comparison when scrolling');
-assert.match(inventory, /space-y-2 animate-fade-in pb-2/, 'Shorten tabs-to-stage spacing');
+// The inventory sections now live in a separate bottom bar above the main nav.
+assert.match(inventory, /flex h-full min-h-0 flex-col gap-2 animate-fade-in/,
+  'Inventory must keep scrollable content and pinned tabs in a full-height flex column');
+assert.match(inventory, /ref=\{inventoryContentRef\} id="inventory-current-section"[^>]*overflow-y-auto/,
+  'Inventory content must scroll independently of the bottom navigation');
+assert.match(inventory, /grid shrink-0 grid-cols-3/,
+  'All three inventory tabs must remain fixed below content');
+assert.ok(inventory.indexOf('role="tablist"') > inventory.indexOf('role="tabpanel"'),
+  'The inventory tab bar belongs below the scrollable content');
+assert.match(app, /screen === 'inventory' \? 'overflow-hidden px-3 pt-3 pb-1'/,
+  'App must reserve a separate non-scrolling space for the inventory bottom tabs');
