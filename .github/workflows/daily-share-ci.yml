@@ -34,5 +34,5 @@ jobs:
       - run: |
           test -s dist/promo/ru/index.html
           test -s dist/promo/en/index.html
-          test -s dist/promo/og-ru-v2.jpg
-          test -s dist/promo/og-en-v2.jpg
+          test -s dist/promo/og-ru-v3.jpg
+          test -s dist/promo/og-en-v3.jpg
