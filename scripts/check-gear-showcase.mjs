@@ -37,6 +37,12 @@ assert.match(component, /setRemainingToday\(receipt\.remainingToday\)/, 'Server 
 assert.match(component, /window\.location\.reload\(\)/, 'Save conflicts must prompt reload');
 assert.match(inventory, /<GearShowcase userId=\{userId\}\/>/, 'Equipment tab must use redesigned stage');
 assert.match(inventory, /<BeltCells/, 'Existing consumable belt preserved');
+assert.equal((inventory.match(/<BeltCells/g) || []).length, 1, 'Render exactly one consumable belt');
+assert.match(inventory, /\{tab === 'items' && \(\s*<section\s+data-testid="inventory-pinned-belt"/,
+  'Belt must be rendered only on the Items tab in its own fixed section');
+assert.ok(inventory.indexOf('data-testid="inventory-pinned-belt"') > inventory.indexOf('role="tabpanel"') &&
+  inventory.indexOf('data-testid="inventory-pinned-belt"') < inventory.indexOf('role="tablist"'),
+  'Belt must sit between scrollable items and the bottom section navigation');
 assert.match(inventory, /putInBelt/, 'Existing consumable use preserved');
 assert.doesNotMatch(inventory, /<GearComparison/, 'Remove legacy equipment modal');
 assert.match(app, /useState<'items' \| 'equipment'>\('equipment'\)/, 'Equipment should open by default');

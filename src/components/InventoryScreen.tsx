@@ -55,17 +55,6 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
         <GearShowcase userId={userId}/>
       ) : tab === 'items' ? (
         <>
-          <div className="rounded-2xl border border-amber-500/15 bg-gray-900/70 p-3">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-gray-300">{t('belt')}</h3>
-              <span className="text-[11px] text-gray-500">{t('tapSlotToUnequip')}</span>
-            </div>
-            <BeltCells
-              belt={state.belt}
-              ctx={beltContext(state, arena.wins)}
-              onTap={(i, open) => open && useGame.set((current) => takeFromBelt(current, i))}
-            />
-          </div>
           {consumables.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">{t('consumables')}</h3>
@@ -93,6 +82,25 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
         <FollowersPanel />
       )}
       </div>
+
+      {/* Keep the consumable belt visible and reachable while items are scrolled. */}
+      {tab === 'items' && (
+        <section
+          data-testid="inventory-pinned-belt"
+          aria-label={t('belt')}
+          className="shrink-0 rounded-2xl border border-amber-500/30 bg-[#171c29]/95 px-2.5 py-2 shadow-[0_-4px_18px_rgba(0,0,0,0.4)]"
+        >
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-amber-100">{t('belt')}</h3>
+            <span className="text-right text-[10px] leading-tight text-gray-400">{t('tapSlotToUnequip')}</span>
+          </div>
+          <BeltCells
+            belt={state.belt}
+            ctx={beltContext(state, arena.wins)}
+            onTap={(i, open) => open && useGame.set((current) => takeFromBelt(current, i))}
+          />
+        </section>
+      )}
 
       {/* Always visible directly above the game's main navigation. */}
       <div className="z-20 grid shrink-0 grid-cols-3 gap-1.5 rounded-2xl border border-violet-500/40 bg-[#170f25] p-1.5 shadow-[0_-4px_18px_rgba(0,0,0,0.45)]"
