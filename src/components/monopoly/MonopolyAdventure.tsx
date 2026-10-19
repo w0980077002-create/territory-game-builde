@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { getReferralStatus, getReferralBotUsername, referralLink, shareReferralInvite, type ReferralStatus } from '@/game/referrals';
 import {Art,Dice,type ArtName} from './visuals';
 import { useLanguage } from '@/game/i18n';
 import { hallError } from '@/game/gameHall';
@@ -35,6 +36,10 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
  const [face,setFace]=useState(5),[fast,setFast]=useState(false),[ten,setTen]=useState(false);
  const [panel,setPanel]=useState<Panel>(null),[reward,setReward]=useState<{gold?:number;tickets?:number;event?:string;awards?:Prize}|null>(null);
  const [now,setNow]=useState(Date.now()),[notice,setNotice]=useState('');
+ const [referrals,setReferrals]=useState<ReferralStatus|null>(null);
+ const [inviteUrl,setInviteUrl]=useState<string|null>(null);
+ const [inviteLoading,setInviteLoading]=useState(false);
+ const [inviteError,setInviteError]=useState('');
  const lock=useRef(false),mounted=useRef(true),generation=useRef(0);
  const diceButton=useRef<HTMLButtonElement>(null);
  const t=(ru:string,english:string)=>en?english:ru;
@@ -63,6 +68,26 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
   window.addEventListener('keydown',onTab);
   return()=>{window.removeEventListener('keydown',onTab);previous?.focus();};
  },[panel,reward]);
+
+ const loadInvite=useCallback(async()=>{
+  setInviteLoading(true);setInviteError('');
+  try{
+   // Both endpoints are server-backed. Never guess Telegram bot addresses.
+   const [status,bot]=await Promise.all([getReferralStatus(),getReferralBotUsername()]);
+   const link=referralLink(bot,status.code);
+   setReferrals(status);setInviteUrl(link);
+   if(!link)setInviteError(en?'Telegram invitation is temporarily unavailable.':'Пока не удалось открыть приглашения Telegram.');
+  }catch{
+   setReferrals(null);setInviteUrl(null);
+   setInviteError(en?'Could not load referral status. Try again.':'Не удалось проверить друзей. Нажми «Обновить».');
+  }finally{setInviteLoading(false);}
+ },[en]);
+ useEffect(()=>{if(panel==='quests')void loadInvite();},[panel,loadInvite]);
+ const openInvite=()=>{
+  if(inviteUrl)shareReferralInvite(inviteUrl,en);
+  else setInviteError(en?'Refresh the invitation first.':'Сначала обнови приглашение.');
+ };
+
  const describe=(e:unknown)=>monopolyError(e,en);
  const request=async(action:string,value=1)=>{
   if(lock.current)return;lock.current=true;setBusy(true);setError('');
@@ -201,7 +226,19 @@ export function MonopolyAdventure({onBack}:{onBack:()=>void}){
    <div className="mono-panel-body">{error&&<p className="mono-error" role="alert">{error}</p>}
     {panel==='rewards'&&<><p>{t('Каждый круг приближает тебя к сокровищам. Каждая награда доступна один раз.','Each lap brings you closer to treasure. Each reward can be collected once.')}</p>{milestones.map((lap,i)=><article className="mono-reward-row" key={lap}><Art name={milestoneArt[i]} className="mono-prize-icon"/><div><b>{t('Круги','Laps')} {i*5+1}–{lap}</b><small>{Math.min(p?.laps??0,lap)}/{lap} · {lap/5+1} {t('билетов','tickets')}</small><Prizes prize={bundlePrize('milestone',lap)} en={en}/></div><button disabled={disabled||(p?.laps??0)<lap||claimed(`milestone:${lap}`)} onClick={()=>void request('milestone',lap)}>{claimed(`milestone:${lap}`)?t('Получено','Claimed'):t('Забрать','Claim')}</button></article>)}</>}
     {panel==='gifts'&&<><div className="mono-banner"><Art name="gift"/><div><small>{t('ДАР ХРАНИТЕЛЯ','GUARDIAN’S GIFT')}</small><b>{t('Ежедневные сокровища','Daily treasures')}</b><span>{t('Бесплатно • обновляется каждый день','Free • renewed daily')}</span></div></div><article className="mono-gift-card"><Art name="openChest"/><div className="mono-gift-info"><h4>{t('Подарок дня','Daily gift')}</h4><div className="mono-gift-items"><span><Art name="ticket"/><b>2</b></span><span><Art name="potions"/><b>1</b></span></div><button className="mono-cta" disabled={disabled||!h?.free_ready} onClick={()=>void request('gift')}>{h?.free_ready?t('ЗАБРАТЬ БЕСПЛАТНО','COLLECT FREE'):(h?.tickets??0)>18?t('Сначала потрать билеты','Use tickets first'):t('Уже получено','Already collected')}</button></div></article><p className="mono-gift-foot">{t('Один подарок на весь игровой зал. Доступен при 18 билетах или меньше. Следующее обновление через','One shared daily gift for all Game Hall games. Available at 18 tickets or fewer. Next reset in')} <b>{resetTime}</b> UTC.</p></>}
-    {(panel==='quests'||panel==='offers')&&<><div className="mono-banner"><Art name={panel==='quests'?'quests':'chest'}/><div><small>TERRITORY</small><b>{panel==='quests'?t('Путь искателя','The explorer’s path'):t('Сокровища хранителя','Guardian treasures')}</b><span>{t('Выполняй задания, забирай настоящие награды','Complete objectives to earn real rewards')}</span></div></div>{(panel==='quests'?quests:offers).map((v,i)=>{const key=`${panel==='quests'?'quest':'offer'}:${i+1}`,done=claimed(key),ready=v.current>=v.target&&!done;return <article className={`mono-quest ${done?'mono-quest-done':''} ${ready?'mono-quest-ready':''}`} key={key}><div className="mono-quest-heading"><Art name={panel==='quests'?'quests':i===0?'chest':i===1?'gift':'openChest'}/><b>{en?v.en:v.ru}</b>{done&&<span className="mono-quest-done-mark">✓</span>}</div><Prizes prize={bundlePrize(panel==='quests'?'quest':'offer',i+1)} en={en}/><div className="mono-progress" role="progressbar" aria-label={en?v.en:v.ru} aria-valuemin={0} aria-valuemax={v.target||1} aria-valuenow={Math.min(v.current,v.target)||0}><span style={{width:`${v.target?Math.min(100,v.current/v.target*100):100}%`}}/></div><div><span>{Math.min(v.current,v.target)}/{v.target} · +{v.reward} {t('билета','tickets')}</span><button type="button" disabled={disabled||done} onClick={()=>ready?void request(panel==='quests'?'quest':'offer',i+1):goToDice()}>{done?t('Получено','Claimed'):ready?t('Забрать','Claim'):t('Перейти','Go')}</button></div></article>;})}{(panel==='quests'?readyQuests:readyOffers)>1&&<button className="mono-claim-all" type="button" disabled={disabled} onClick={()=>void claimAllReady(panel==='quests'?'quest':'offer')}>{t('Забрать все доступные','Claim all available')} ({panel==='quests'?readyQuests:readyOffers})</button>}</>}
+    {(panel==='quests'||panel==='offers')&&<><div className="mono-banner"><Art name={panel==='quests'?'quests':'chest'}/><div><small>TERRITORY</small><b>{panel==='quests'?t('Путь искателя','The explorer’s path'):t('Сокровища хранителя','Guardian treasures')}</b><span>{t('Выполняй задания, забирай настоящие награды','Complete objectives to earn real rewards')}</span></div></div>{(panel==='quests'?quests:offers).map((v,i)=>{const key=`${panel==='quests'?'quest':'offer'}:${i+1}`,done=claimed(key),ready=v.current>=v.target&&!done;return <article className={`mono-quest ${done?'mono-quest-done':''} ${ready?'mono-quest-ready':''}`} key={key}><div className="mono-quest-heading"><Art name={panel==='quests'?'quests':i===0?'chest':i===1?'gift':'openChest'}/><b>{en?v.en:v.ru}</b>{done&&<span className="mono-quest-done-mark">✓</span>}</div><Prizes prize={bundlePrize(panel==='quests'?'quest':'offer',i+1)} en={en}/><div className="mono-progress" role="progressbar" aria-label={en?v.en:v.ru} aria-valuemin={0} aria-valuemax={v.target||1} aria-valuenow={Math.min(v.current,v.target)||0}><span style={{width:`${v.target?Math.min(100,v.current/v.target*100):100}%`}}/></div><div><span>{Math.min(v.current,v.target)}/{v.target} · +{v.reward} {t('билета','tickets')}</span><button type="button" disabled={disabled||done} onClick={()=>ready?void request(panel==='quests'?'quest':'offer',i+1):goToDice()}>{done?t('Получено','Claimed'):ready?t('Забрать','Claim'):t('Перейти','Go')}</button></div></article>;})}
+    {panel==='quests'&&<article className="mono-quest mono-invite-quest" data-testid="monopoly-referral-task">
+     <div className="mono-quest-heading"><Art name="gift"/><b>{t('Пригласи друга в TERRITORY','Invite a friend to TERRITORY')}</b>{(referrals?.qualified??0)>0&&<span className="mono-quest-done-mark">✓</span>}</div>
+     <p className="mono-invite-hint">{t('Пригласи лично через Telegram. Друг засчитается после 5 уровня и 10 подтверждённых побед. Награда — по действующей программе друзей.','Send a private Telegram invitation. A friend counts after level 5 and 10 verified wins. Earn rewards through the existing Friends program.')}</p>
+     <div className="mono-progress" role="progressbar" aria-label={t('Подтверждённые друзья','Qualified friends')} aria-valuemin={0} aria-valuemax={1} aria-valuenow={(referrals?.qualified??0)>0?1:0}><span style={{width:(referrals?.qualified??0)>0?'100%':'0%'}}/></div>
+     <div className="mono-invite-actions">
+      <span>{referrals?Math.min(referrals.qualified,1):'—'}/1 · {t('засчитано','qualified')}{referrals&&<small>{t('Всего приглашено','Registered')}: {referrals.registered}</small>}</span>
+      <button type="button" disabled={inviteLoading||!inviteUrl} onClick={openInvite}>{inviteLoading?t('Подождите','Wait…'):(referrals?.qualified??0)>0?t('Пригласить ещё','Invite another'):t('Пригласить','Invite')}</button>
+     </div>
+     {inviteError&&<div className="mono-invite-error" role="status">{inviteError}<button type="button" onClick={()=>void loadInvite()} disabled={inviteLoading}>{t('Обновить','Retry')}</button></div>}
+     <small className="mono-invite-privacy">{t('Отправка только выбранному тобой адресату. В игровой чат ссылка не публикуется.','Sent only to the recipient you choose. Nothing is posted to the game chat.')}</small>
+    </article>}
+    {(panel==='quests'?readyQuests:readyOffers)>1&&<button className="mono-claim-all" type="button" disabled={disabled} onClick={()=>void claimAllReady(panel==='quests'?'quest':'offer')}>{t('Забрать все доступные','Claim all available')} ({panel==='quests'?readyQuests:readyOffers})</button>}</>}
     {panel==='jackpot'&&<div className="mono-jackpot"><Art name="openChest"/><h4>{t('Джекпот пока недоступен','Jackpot is not available yet')}</h4><p>{t('Серверной механики джекпота нет. Здесь нет розыгрыша, списания билетов или обещания выигрыша. Рабочие награды доступны в разделе «Награды за круги».','There is no server jackpot mechanic. No drawing or ticket spending takes place here. Visit Lap rewards for available prizes.')}</p><button className="mono-cta" onClick={()=>setPanel('rewards')}>{t('Посмотреть награды за круги','View lap rewards')}</button></div>}
     {panel==='help'&&<div className="mono-rules"><p>{t('На поле ровно 28 клеток. Один бросок стоит 1 билет. Герой получает золото и показанный приз клетки. Алмазы, камни, материалы, зелья и эликсиры забираются кнопкой под полем в настоящий баланс и инвентарь.','The circuit has exactly 28 spaces. A roll costs 1 ticket. Gold and the shown prize await on the landing space. Collect gems, stones, materials and potions below the board.')}</p><p>{t('×10 стоит 10 билетов и умножает награду. Суточный лимит золота сохраняется.','×10 costs 10 tickets and multiplies the prize. The daily gold cap still applies.')}</p>{Object.entries(eventCopy).map(([key,v])=><p key={key}><b>{v[en?2:0]}.</b> {v[en?3:1]}</p>)}<p>{t('Каждый переход через старт засчитывает круг. Прогресс сохраняется на сервере. Событие длится 72 часа, затем круги и задания обновляются. Кошелёк и неполученные ресурсы сохраняются.','Crossing start completes a lap. Progress is saved on the server. The event lasts 72 hours. Your wallet and uncollected resources are retained.')}</p></div>}
    </div>

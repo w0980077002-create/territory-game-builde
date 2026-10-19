@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getTelegramWebApp } from './telegram';
 import { saveCloudSave } from './cloud';
 import { useGame } from './actions';
 import { claimReferralCloud } from './cloud';
@@ -107,6 +108,19 @@ export async function getReferralBotUsername():Promise<string | null>{
 export function referralLink(bot:string|null,code:string):string|null{
  if(!bot || !/^[a-zA-Z0-9_]{5,32}$/.test(bot) || !/^[0-9a-f]{14}$/.test(code))return null;
  return 'https://t.me/'+bot+'?startapp=ref_'+code;
+}
+
+
+/** Telegram's native picker is user-initiated: never auto-send to a chat.
+ * Only share a validated link generated from the verified bot username. */
+export function shareReferralInvite(url:string,en:boolean):boolean{
+ if(!/^https:\/\/t\.me\/[a-zA-Z0-9_]{5,32}\?startapp=ref_[a-f0-9]{14}$/.test(url))return false;
+ const caption=en?'Join me in TERRITORY! Start your adventure and collect the welcome gift.':'Заходи ко мне в TERRITORY! Играй вместе со мной и получи подарок новичка.';
+ const shareUrl='https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(caption);
+ const webapp=getTelegramWebApp();
+ if(webapp?.openTelegramLink)webapp.openTelegramLink(shareUrl);
+ else window.open(shareUrl,'_blank','noopener,noreferrer');
+ return true;
 }
 
 /** First flush local changes, then redeem at exact saved revision. */

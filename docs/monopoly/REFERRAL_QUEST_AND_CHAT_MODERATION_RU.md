@@ -1,0 +1,5 @@
+# Referral quest and anti-spam policy (2026-10-19)
+
+Monopoly > Quests displays **Invite a friend** based on the existing founders referral RPC. On a direct user tap it opens Telegram's native share recipient picker with the inviting player's own verified bot deep link. The game never automatically posts or sends to contacts or groups. Pressing Share does **not** earn an award. Progress counts only an already qualified referral (level 5 and 10 server-recorded PvE wins), and the existing Friends reward ledger remains the sole source of referral rewards. The bot username comes from the trusted GET of telegram-auth, not a hardcoded name. Errors must not display fabricated URLs.
+
+The battle chat additionally refuses referral / URL spam in the server-side arena_chat RPC (and shows an explanation), without silently muting/banning players. This does **not** moderate the independently hosted Telegram group https://t.me/Territory_Chat — that would require separate bot admin permissions and a Telegram group-moderation workflow. No group's Telegram message is deleted by this change.

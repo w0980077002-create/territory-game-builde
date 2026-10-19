@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLanguage } from '@/game/i18n';
-import { getTelegramWebApp } from '@/game/telegram';
 import type { AuthUser } from '@/game/auth';
 import {
   CheckCircle2, ChevronDown, Copy, Crown, Gift, Gem, HelpCircle, Link2,
@@ -8,7 +7,7 @@ import {
 } from 'lucide-react';
 import { Currency } from './ui/Currency';
 import {
-  friendReward, getReferralBotUsername, getReferralStatus, referralLink,
+  friendReward, getReferralBotUsername, getReferralStatus, referralLink, shareReferralInvite,
   redeemReferrals, getReferralFriends, type ReferralFriend, type ReferralStatus
 } from '@/game/referrals';
 
@@ -73,10 +72,6 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
   const url = status ? referralLink(bot, status.code) : null;
   const active = status?.qualified ?? 0;
   const next = milestones.find(m => active < m.count);
-  const text = en
-    ? 'Come play TERRITORY with me! Join the founder season and earn a starter gift.'
-    : 'Заходи играть со мной в TERRITORY! Получи подарок новичка и стань одним из основателей игры.';
-
   const copy = async () => {
     if (!url) return;
     try {
@@ -87,13 +82,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
     }
   };
 
-  const share = () => {
-    if (!url) return;
-    const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
-    const webapp = getTelegramWebApp();
-    if (webapp?.openTelegramLink) webapp.openTelegramLink(shareUrl);
-    else window.open(shareUrl, '_blank', 'noopener,noreferrer');
-  };
+  const share = () => { if(url) shareReferralInvite(url,en); };
 
   const claim = async () => {
     if (busy) return;
