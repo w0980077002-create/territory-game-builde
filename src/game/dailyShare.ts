@@ -28,7 +28,15 @@ export async function prepareDailyShareLink(language:'ru'|'en'):Promise<string>{
  return origin+base+'promo/'+language+'/?'+new URLSearchParams({ref:ref.code,bot});
 }
 export function shareDailyPromo(url:string,language:'ru'|'en'):boolean{
- if(!/^https:\/\/[^/?#]+\/[^?#]*\/promo\/(ru|en)\/\?/.test(url))return false;
+ // Validate the intended locale and destination before opening Telegram.
+ try{
+  const parsed=new URL(url);
+  if(parsed.protocol!=='https:' ||
+     !['w0980077002-create.github.io',window.location.hostname].includes(parsed.hostname) ||
+     !parsed.pathname.endsWith('/promo/'+language+'/') ||
+     !/^[a-f0-9]{14}$/.test(parsed.searchParams.get('ref')??'') ||
+     !/^[a-zA-Z0-9_]{5,32}$/.test(parsed.searchParams.get('bot')??''))return false;
+ }catch{return false;}
  const caption=language==='ru'
  ?'⚔️ Привет! Заходи в TERRITORY: бои на арене, сокровища, Монополия, кланы и приключения. 🏆 Начни играть со мной!'
  :'⚔️ Hey friend! Join TERRITORY for arena battles, treasure, Monopoly, clans and exciting adventures. 🏆 Come play with me!';
