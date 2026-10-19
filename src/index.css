@@ -921,3 +921,35 @@ html.territory-desktop-webapp .home-side-stack .home-side {
   .territory-city-screen { overflow-y: auto; overflow-x: hidden; }
   .territory-city-screen .home-game-scene { min-height: 540px; height: 100%; }
 }
+
+
+/* iPhone native Telegram sheet: keep game controls within the actual viewport,
+   instead of the legacy 540px minimum-height canvas that hides controls.
+   Android and desktop layouts are intentionally unaffected. */
+html.territory-ios-webapp .territory-city-screen {
+  overflow-y: hidden;
+}
+html.territory-ios-webapp .territory-city-screen .home-game-scene {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+}
+html.territory-ios-webapp .home-bottom-controls {
+  position: relative;
+  inset: auto;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+/* Compact upper scene on short native iPhone Telegram sheets. */
+@container territory-city (max-height: 620px) {
+  html.territory-ios-webapp .home-game-scene {
+    --home-chapter-top: 86px;
+    --home-side-top: 88px;
+    --home-side-bottom: 188px;
+    --home-character-top: 138px;
+    --home-character-bottom: 188px;
+  }
+}
