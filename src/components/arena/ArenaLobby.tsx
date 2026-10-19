@@ -5,6 +5,7 @@ import { joinArena, type ArenaMode } from '@/game/arenaApi';
 import { beltContext, takeFromBelt } from '@/game/belt';
 import { hapticImpact } from '@/game/telegram';
 import { BeltBar } from './BeltBar';
+import { IosGamePortal } from '@/components/ui/Modal';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { Swords, Users, Flame, Trophy, Zap, Info, X, Loader2 } from 'lucide-react';
 
@@ -141,7 +142,8 @@ function RulesModal({ onClose }: { onClose: () => void }) {
     'После боя у игроков есть 30 минут на общение в чате. Затем арена закроется автоматически.',
   ];
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+    <IosGamePortal>
+    <div className="arena-modal-overlay fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in" onClick={onClose}>
       <div className="card w-full max-w-md animate-slide-up" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-bold text-white flex items-center gap-2"><Trophy className="w-5 h-5 text-amber-400" /> {language === 'en' ? 'How combat works' : 'Как проходит бой'}</h3>
@@ -168,5 +170,6 @@ function RulesModal({ onClose }: { onClose: () => void }) {
         </ol>
       </div>
     </div>
+    </IosGamePortal>
   );
 }
