@@ -4,13 +4,15 @@ import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
 /**
- * A native iPhone WebView can place fixed descendants of a scrolling main pane
- * underneath the game's persistent footer. Portal dialogs directly into the
- * relative game shell on iOS only; keep Android and desktop DOM unchanged.
+ * Native Telegram on iOS AND Android may report a WebView height larger than
+ * its usable Mini App sheet. Dialogs must be children of the measured game shell,
+ * not viewport-fixed descendants of a scrolling pane. Desktop remains unchanged.
+ * Keep this component's name for existing imports and preserve modal state.
  */
 export function IosGamePortal({ children }: { children: ReactNode }) {
   const host = typeof document !== 'undefined'
-    && document.documentElement.classList.contains('territory-ios-webapp')
+    && document.documentElement.classList.contains('territory-telegram-webapp')
+    && !document.documentElement.classList.contains('territory-desktop-webapp')
       ? document.querySelector<HTMLElement>('.territory-shell')
       : null;
   return host ? createPortal(children, host) : <>{children}</>;
