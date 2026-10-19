@@ -92,6 +92,10 @@ with sync_playwright() as p:
                 params=urlencode(dict(screen=screen,platform=platform,sheet=sheet,language='ru'))
                 try:
                     page.goto(url+'?'+params,wait_until='load',timeout=15000)
+                    # Test stable reachability, not an intermediate keyframe of
+                    # slide-up/scale transitions. Motion itself is covered by
+                    # separate visual checks and must not create false failures.
+                    page.add_style_tag(content='*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;scroll-behavior:auto!important}')
                     root=page.locator('[data-testid="offline-qa"]')
                     root.wait_for(state='visible',timeout=9000)
                     page.wait_for_timeout(220)
