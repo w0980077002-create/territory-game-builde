@@ -65,7 +65,8 @@ with sync_playwright() as p:
               button:document.querySelector('[data-testid=daily-share-monopoly] button')?.outerHTML,
               alert:document.querySelector('[data-testid=daily-share-monopoly] [role=alert]')?.textContent
             })"""))
-            assert 'promo/ru/' in unquote(shared) and 'ref=0123456789abcd' in unquote(shared), 'share must use Russian promo and personal code'
+            assert 'https://t.me/TestTerritoryBot?startapp=ref_0123456789abcd' in unquote(shared), 'share must contain personal Telegram bot deep link'
+            assert 'github.io' not in unquote(shared), 'never send the GitHub Pages URL'
 
             assert page.locator('.mono-panel .mono-quest button').count()>=3, 'existing three quest actions must remain'
             last_task=page.locator('.mono-panel .mono-quest').last

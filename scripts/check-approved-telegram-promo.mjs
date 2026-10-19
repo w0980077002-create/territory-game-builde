@@ -8,7 +8,9 @@ for(const [lang,[hash,length]] of Object.entries(expected)){
  const html=readFileSync('public/promo/'+lang+'/index.html','utf8');
  assert(html.includes('og-'+lang+'-v3.jpg'));assert(html.includes('startapp=ref_'));
 }
-assert(readFileSync('src/game/dailyShare.ts','utf8').includes("v:'3'"));
+const gameShare=readFileSync('src/game/dailyShare.ts','utf8');
+assert(gameShare.includes('referralLink(bot,ref.code)'),'daily shares must open Telegram bot');
+assert(!gameShare.includes("'promo/'+language"),'do not broadcast GitHub Pages links');
 for(const file of ['.github/workflows/pages.yml','.github/workflows/territory-pages-repair.yml','.github/workflows/daily-share-ci.yml']){
  const s=readFileSync(file,'utf8');
  assert(!s.includes('python scripts/generate-promo-banners.py'));

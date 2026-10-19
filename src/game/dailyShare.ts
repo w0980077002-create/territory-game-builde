@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { getTelegramWebApp } from './telegram';
-import { getReferralStatus, getReferralBotUsername } from './referrals';
+import { getReferralStatus, getReferralBotUsername, referralLink } from './referrals';
 import { useGame } from './actions';
 import { saveCloudSave, saveTokens, acceptMonopolyClaimReceipt } from './cloud';
 
@@ -20,23 +20,18 @@ export async function dailyShareStatus():Promise<ShareStatus>{
   throw new Error('daily_share_invalid_status');
  return data as ShareStatus;
 }
-export async function prepareDailyShareLink(language:'ru'|'en'):Promise<string>{
+/** Share the real Telegram bot, not the public GitHub Pages host.
+ * Language only localizes the caption; bot deep links are universal.
+ * Reuse the same referral deep link as the Friends screen. */
+export async function prepareDailyShareLink(_language:'ru'|'en'):Promise<string>{
  const [ref,bot]=await Promise.all([getReferralStatus(),getReferralBotUsername()]);
- if(!bot||!/^[a-zA-Z0-9_]{5,32}$/.test(bot)||!/^[a-f0-9]{14}$/.test(ref.code))throw new Error('daily_share_no_bot');
- const origin=window.location.protocol==='https:'?window.location.origin:'https://w0980077002-create.github.io';
- const base=import.meta.env.BASE_URL.startsWith('/')?import.meta.env.BASE_URL:'/territory-game-builde/';
- return origin+base+'promo/'+language+'/?'+new URLSearchParams({ref:ref.code,bot,v:'3'});
+ const link=referralLink(bot,ref.code);
+ if(!link)throw new Error('daily_share_no_bot');
+ return link;
 }
 export function shareDailyPromo(url:string,language:'ru'|'en'):boolean{
- // Validate the intended locale and destination before opening Telegram.
- try{
-  const parsed=new URL(url);
-  if(parsed.protocol!=='https:' ||
-     !['w0980077002-create.github.io',window.location.hostname].includes(parsed.hostname) ||
-     !parsed.pathname.endsWith('/promo/'+language+'/') ||
-     !/^[a-f0-9]{14}$/.test(parsed.searchParams.get('ref')??'') ||
-     !/^[a-zA-Z0-9_]{5,32}$/.test(parsed.searchParams.get('bot')??''))return false;
- }catch{return false;}
+ // Never send website/Pages links in the Telegram promotional message.
+ if(!/^https:\/\/t\.me\/[a-zA-Z0-9_]{5,32}\?startapp=ref_[a-f0-9]{14}$/.test(url))return false;
  const caption=language==='ru'
  ?'⚔️ Привет! Заходи в TERRITORY: бои на арене, сокровища, Монополия, кланы и приключения. 🏆 Начни играть со мной!'
  :'⚔️ Hey friend! Join TERRITORY for arena battles, treasure, Monopoly, clans and exciting adventures. 🏆 Come play with me!';

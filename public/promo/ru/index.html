@@ -33,5 +33,8 @@ small{display:block;color:#becbd4;margin:12px 4px}
 const ref=params.get('ref'),bot=params.get('bot');
 if(!/^[a-f0-9]{14}$/.test(ref||'')||!/^[a-zA-Z0-9_]{5,32}$/.test(bot||''))return;
 document.getElementById('play').href='https://t.me/'+encodeURIComponent(bot)+'?startapp=ref_'+encodeURIComponent(ref);
+ // Old website-share links continue opening the real Telegram Mini App.
+ // Telegram preview crawlers do not execute JavaScript, so OG images remain intact.
+ try{window.location.replace(document.getElementById('play').href);}catch{ /* The visible Play button remains usable. */ }
 })();
 </script></body></html>
