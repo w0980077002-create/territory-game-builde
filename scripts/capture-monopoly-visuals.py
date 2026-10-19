@@ -48,6 +48,17 @@ with sync_playwright() as p:
             assert page.locator('.mono-panel-status').is_visible(), 'claim state and refresh must be visible'
         page.wait_for_timeout(300)
         if label=='Задания':
+            page.locator('[data-testid="monopoly-referral-task"]').wait_for()
+            invite=page.locator('[data-testid="monopoly-referral-task"]').get_by_role('button',name='Пригласить',exact=True)
+            invite.wait_for(state='visible')
+            page.wait_for_function("!document.querySelector('[data-testid=monopoly-referral-task] button')?.disabled")
+            page.evaluate("window.__capturedInvite=null;window.open=(url)=>{window.__capturedInvite=url;return null}")
+            invite.click()
+            shared=page.evaluate("window.__capturedInvite")
+            from urllib.parse import unquote
+            assert shared and shared.startswith('https://t.me/share/url?'), 'invite must open Telegram share picker'
+            assert 'startapp=ref_0123456789abcd' in unquote(shared), 'share must include correct personal code'
+
             assert page.locator('.mono-panel .mono-quest button').count()==3, 'each quest must retain an actionable button'
             last=page.locator('.mono-panel .mono-quest').last.bounding_box()
             assert last['y']+last['height']<=844-10, 'quest button below mobile viewport'
