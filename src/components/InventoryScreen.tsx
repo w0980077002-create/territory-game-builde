@@ -4,6 +4,7 @@ import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
 import { BELT_STACK, beltContext, canBelt, putInBelt, takeFromBelt } from '@/game/belt';
 import { ItemArt } from './ui/ItemArt';
+import { IosGamePortal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
 import { GearShowcase } from './GearShowcase';
 import { FollowersPanel } from './FollowersPanel';
@@ -134,7 +135,8 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
       </div>
 
       {tab === 'items' && selected && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+        <IosGamePortal>
+        <div className="inventory-item-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
           onClick={close}>
           <div className="card w-full max-w-sm m-2 animate-slide-up max-h-[88dvh] overflow-y-auto overscroll-contain"
             style={{ border: '1px solid ' + rarityColor(selected.rarity), boxShadow: rarityGlow(selected.rarity) }}
@@ -178,6 +180,7 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
             </div>
           </div>
         </div>
+        </IosGamePortal>
       )}
     </div>
   );
