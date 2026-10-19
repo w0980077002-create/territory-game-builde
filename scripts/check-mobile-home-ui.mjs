@@ -39,6 +39,12 @@ assert.match(app, /onDragStartCapture/, 'Dragging game pictures must not open im
 assert.match(css, /-webkit-touch-callout: none/, 'iOS native image callouts must be disabled');
 assert.match(css, /\.territory-shell button img/, 'Artwork inside interactive buttons must pass presses to the button');
 assert.match(telegram, /requestFullscreen/, 'Telegram should request fullscreen when supported');
+assert.match(telegram, /disableVerticalSwipes\?/, 'Telegram SDK typing must expose native swipe control');
+assert.match(telegram, /tg\.disableVerticalSwipes\(\)/, 'Telegram must disable sheet drag gestures on supported clients');
+assert.match(telegram, /isVersionAtLeast\('7\.7'\)/, 'Swipe setting must be guarded for older Telegram clients');
+assert.match(telegram, /classList\.add\('territory-telegram-webapp'\)/, 'Scope no-page-scroll behavior to the game Mini App');
+assert.match(css, /html\.territory-telegram-webapp body/, 'Prevent document rubber-band only in the Telegram game');
+assert.match(css, /\.territory-screen \{[\s\S]*?overscroll-behavior-y: contain/, 'Keep touch scrolling inside game screens');
 assert.match(telegram, /contentSafeAreaInset/, 'Fullscreen must account for Telegram header overlays');
 assert.match(app, /--tg-viewport-stable-height, 100dvh/, 'Telegram iOS viewport must not hide the game behind its native header');
 assert(home.includes('w-[clamp(74px,23vw,96px)]'), 'Hero name must have responsive width on iPhone');

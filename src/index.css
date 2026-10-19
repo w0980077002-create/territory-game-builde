@@ -655,6 +655,16 @@
   -webkit-touch-callout: none;
 }
 
+/* Keep the document from rubber-banding behind Telegram's game.
+   Apply only inside the Telegram Mini App: admin/standalone pages retain scrolling. */
+html.territory-telegram-webapp,
+html.territory-telegram-webapp body,
+html.territory-telegram-webapp #root {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* Responsive Telegram shell.
    The native sheet already excludes Telegram's header; fullscreen alone needs
    explicit safe + content insets, provided by game/telegram.ts. */
@@ -662,6 +672,7 @@
   width: 100%;
   min-height: 0;
   box-sizing: border-box;
+  overscroll-behavior: none;
   padding-top: max(env(safe-area-inset-top, 0px), var(--territory-top-inset, 0px));
   padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--territory-bottom-inset, 0px));
 }
@@ -669,6 +680,7 @@
   min-width: 0;
   min-height: 0;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   overflow-wrap: break-word;
 }
 .territory-nav { min-width: 0; }

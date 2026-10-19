@@ -45,6 +45,8 @@ interface TelegramWebApp {
   isFullscreen?: boolean;
   isVersionAtLeast?: (version: string) => boolean;
   requestFullscreen?: () => void;
+  // Telegram Mini Apps 7.7+: control native sheet swipe gestures.
+  disableVerticalSwipes?: () => void;
   safeAreaInset?: { top: number; bottom: number; left: number; right: number };
   contentSafeAreaInset?: { top: number; bottom: number; left: number; right: number };
   onEvent?: (event: string, callback: () => void) => void;
@@ -98,8 +100,20 @@ export function initTelegramWebApp() {
   const tg = getTelegramWebApp();
   if (!tg) return;
 
+  // The game scrolls inside its own panels, not the outer browser page.
+  document.documentElement.classList.add('territory-telegram-webapp');
+
   tg.ready();
   tg.expand();
+  // Prevent dragging/minimizing the Telegram Mini App by swiping on the game.
+  // In-game inventory, sidebars and chat remain scrollable as usual.
+  try {
+    if (tg.disableVerticalSwipes && (!tg.isVersionAtLeast || tg.isVersionAtLeast('7.7'))) {
+      tg.disableVerticalSwipes();
+    }
+  } catch {
+    // Older Telegram versions may not support this setting.
+  }
   updateTelegramViewport(tg);
 
   if (!viewportListenersAttached) {
