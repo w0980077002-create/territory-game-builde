@@ -9,10 +9,12 @@ import { hapticImpact } from '@/game/telegram';
 import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
 import { Currency } from './ui/Currency';
+import { DailyShareCard } from '@/game/DailyShareCard';
 
 export type BattleView = 'campaign' | 'trial';
 
 interface Props {
+  userId:string;
   view: BattleView;
   onView: (v: BattleView) => void;
   autoStart: boolean;
@@ -21,7 +23,7 @@ interface Props {
   onActiveChange?: (active: boolean) => void;
 }
 
-export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onShop, onActiveChange }: Props) {
+export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onActiveChange }: Props) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
@@ -145,7 +147,10 @@ export function BattleScreen({ view, onView, autoStart, onAutoStartHandled, onSh
           </div>
         </>
       ) : (
-        <TrialPanel level={state.trialLevel} onFight={() => start('trial')} t={t} />
+        <div className="space-y-3">
+          <DailyShareCard task="trials" userId={userId}/>
+          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} t={t} />
+        </div>
       )}
     </div>
   );
