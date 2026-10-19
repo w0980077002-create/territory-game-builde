@@ -28,6 +28,9 @@ jobs:
       - run: npm run typecheck
       - run: node scripts/check-daily-share.mjs
       - run: npm run build
+      - name: Verify approved Telegram RU/EN banners
+        run: node scripts/check-approved-telegram-promo.mjs
+
       - run: |
           test -s dist/promo/ru/index.html
           test -s dist/promo/en/index.html

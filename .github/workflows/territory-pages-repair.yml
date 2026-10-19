@@ -63,6 +63,9 @@ jobs:
       - name: Build the actual Vite game
         run: npm run build
 
+      - name: Verify approved Telegram RU/EN banners
+        run: node scripts/check-approved-telegram-promo.mjs
+
       - name: Verify public promo previews
         run: |
           test -s dist/promo/og-ru-v2.jpg
