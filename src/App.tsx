@@ -321,6 +321,27 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} />}
       </main>
 
+      {/* Computer-only shortcuts: visible without scrolling the city's side
+          panels. CSS keeps this entire bar hidden on phones and tablets. */}
+      {screen === 'city' && (
+        <nav className="territory-desktop-quicknav shrink-0" aria-label={language === 'en' ? 'Quick access' : 'Быстрый доступ'}>
+          {[
+            { id: 'arena', icon: '/ic-arena.webp', label: translate('arena'), action: () => setScreen('arena') },
+            { id: 'trial', icon: '/ic-trials.webp', label: translate('trials'), action: () => { setBattleView('trial'); setAutoStart(false); setScreen('battle'); } },
+            { id: 'quests', icon: '/ic-quests.webp', label: translate('quests'), action: () => setScreen('quests') },
+            { id: 'shop', icon: '/ic-shop.webp', label: translate('shop'), action: () => setScreen('shop') },
+            { id: 'forge', icon: '/ic-forge.webp', label: translate('forge'), action: () => setScreen('forge') },
+            { id: 'professions', icon: '/ic-professions.svg', label: translate('professions'), action: () => setScreen('professions') },
+          ].map((item) => (
+            <button type="button" key={item.id} disabled={battleLocked} onClick={item.action}
+              aria-label={item.label} title={item.label}>
+              <img src={item.icon} alt="" draggable={false} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
+
       <nav className="territory-nav shrink-0 z-30 border-t border-amber-500/25 bg-gradient-to-b from-[#161b24] to-[#0a0d12] px-1 pt-1 pb-1">
         <div className="flex items-end gap-0.5 h-[60px]">
           {NAV.map((t) => {
