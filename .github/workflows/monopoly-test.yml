@@ -117,6 +117,7 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: node scripts/build-monopoly-visual-preview.mjs /tmp/monopoly-visual-review.html
       - run: python scripts/capture-monopoly-visuals.py /tmp/monopoly-visual-review.html /tmp/monopoly-screenshots
+      - run: python scripts/capture-monopoly-reward-compact.py /tmp/monopoly-visual-review.html /tmp/monopoly-screenshots
       - uses: actions/upload-artifact@v4
         if: always()
         with:
