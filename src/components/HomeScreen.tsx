@@ -129,7 +129,7 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
       <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 to-transparent pointer-events-none" />
       <div className="absolute inset-x-0 bottom-0 h-[230px] bg-gradient-to-t from-[#07090d] via-[#07090d]/65 to-transparent pointer-events-none" />
 
-      <div className="absolute inset-x-0 top-0 z-20 px-2 pt-[max(8px,env(safe-area-inset-top))] flex items-start gap-2">
+      <div className="home-top-hud absolute inset-x-0 z-20 px-2 flex items-start gap-2">
         <button onClick={() => onOpen('hero')} className="home-profile-chip flex items-center gap-1.5 min-w-0 shrink-0 rounded-2xl border border-amber-300/55 bg-gradient-to-br from-[#17202b]/90 via-[#090d12]/90 to-[#241706]/90 backdrop-blur-sm p-1 pr-2 active:scale-95 transition-transform" aria-label={t('profile')}>
           <span className="relative w-11 h-11 rounded-xl overflow-hidden border-2 border-amber-300/90 bg-[#1b1a16] shadow-[0_0_9px_rgba(245,158,11,0.24)] shrink-0">
             <img src={getAppearanceIcon(state.appearance)} alt="" className="w-full h-full object-contain object-top" />
@@ -146,8 +146,8 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
           </span>
         </button>
 
-        <div className="flex-1 min-w-0 flex flex-col items-end gap-1.5">
-          <div className="flex items-center gap-1 w-full justify-end">
+        <div className="home-hud-actions flex-1 min-w-0 flex flex-col items-end gap-1.5">
+          <div className="home-wallet-row flex items-center gap-1 w-full justify-end">
             <span className="hud-chip min-w-0"><Currency kind="gold" value={formatAmount(player.gold)} size={20} className="text-[11px] text-white" /></span>
             <span className="hud-chip min-w-0"><Currency kind="gems" value={formatAmount(player.gems)} size={20} className="text-[11px] text-white" /></span>
             <span className="hud-chip min-w-0"><Currency kind="redGems" value={formatAmount(player.redGems)} size={20} className="text-[11px] text-white" /></span>
@@ -163,7 +163,7 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
 
       <button
         onClick={() => onBattle('campaign')}
-        className="absolute z-10 left-1/2 -translate-x-1/2 top-[calc(max(8px,env(safe-area-inset-top))+92px)] max-w-[calc(100%-112px)] h-5 flex items-center gap-1.5 rounded-full border border-amber-500/50 bg-gradient-to-b from-[#5a3a1c]/90 to-[#2a1a0c]/90 pl-2 pr-1 shadow-[0_2px_6px_rgba(0,0,0,0.6)] active:scale-95 transition-transform"
+        className="home-chapter absolute z-10 left-1/2 -translate-x-1/2 max-w-[calc(100%-112px)] h-5 flex items-center gap-1.5 rounded-full border border-amber-500/50 bg-gradient-to-b from-[#5a3a1c]/90 to-[#2a1a0c]/90 pl-2 pr-1 shadow-[0_2px_6px_rgba(0,0,0,0.6)] active:scale-95 transition-transform"
         aria-label={language === 'en' ? 'Open campaign' : 'Открыть поход'}
       >
         <span className="shrink-0 text-[9px] font-semibold text-amber-300 leading-none">{language === 'en' ? 'Ch.' : 'Гл.'} {chapter.number}</span>
@@ -176,14 +176,14 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
         </span>
       </button>
 
-      <div className="home-side-stack absolute z-10 left-1.5 top-[calc(max(8px,env(safe-area-inset-top))+90px)] bottom-[200px] w-[44px] flex flex-col gap-1">
+      <div className="home-side-stack absolute z-10 left-1.5 w-[48px] flex flex-col gap-1">
         <SideButton icon="/ic-events.webp" label={t('events')} soon onClick={() => soon(t('events'))} />
         <SideButton icon="/ic-daily.webp" label={t('rewards')} badge={!dailyStatus(state).claimedToday} onClick={() => setSheet('daily')} />
         <SideButton icon="/ic-quests.webp" label={t('quests')} badge={questAlerts.count > 0} onClick={() => onOpen('quests')} />
         <SideButton icon="/ic-invite.webp" label={t('friends')} onClick={() => onOpen('friends')} />
         <SideButton icon="/ic-sea.webp" label={t('sea')} soon onClick={() => soon(t('sea'))} />
       </div>
-      <div className="home-side-stack absolute z-10 right-1.5 top-[calc(max(8px,env(safe-area-inset-top))+90px)] bottom-[200px] w-[44px] flex flex-col gap-1">
+      <div className="home-side-stack absolute z-10 right-1.5 w-[48px] flex flex-col gap-1">
         <SideButton icon="/ic-shop.webp" label={t('shop')} onClick={() => onOpen('shop')} />
         <SideButton icon="/ic-auction.svg" label={t('auction')} onClick={() => onOpen('auction')} />
         <SideButton icon="/ic-forge.webp" label={t('forge')} onClick={() => onOpen('forge')} />
@@ -193,7 +193,7 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
         <SideButton icon="/ic-arena.webp" label={t('arena')} onClick={() => onOpen('arena')} />
       </div>
 
-      <div className="absolute z-0 left-[48px] right-[48px] top-[calc(max(8px,env(safe-area-inset-top))+150px)] bottom-[196px] flex items-end justify-center pointer-events-none">
+      <div className="home-character-stage absolute z-0 left-[50px] right-[50px] flex items-end justify-center pointer-events-none">
         <div className="relative h-[62%] w-[26%] flex items-end justify-center">
           {follower && (
             <img src={getFollowerArt(follower.id)} alt={follower.name} className="max-h-full max-w-full object-contain object-bottom drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] animate-idle" />
