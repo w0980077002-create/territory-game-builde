@@ -1,4 +1,5 @@
 import { refreshFortuneVip } from './fortuneVip';
+import { HALL_TICKET_MAX } from './gameHall';
 import { supabase } from './supabase';
 import { useAccount, useGame } from './actions';
 import { acceptMonopolyClaimReceipt, protectFortuneSave, saveCloudSave, saveTokens } from './cloud';
@@ -41,7 +42,7 @@ async function call(action:string,key?:string,expected?:string):Promise<FortuneS
    ['gold','gems','potion','elixir','stone','materials'].includes(r.prize)&&r.quantity<=100)&&
   (!r.refunded||(r.action==='spin'&&r.prize==='level')));
  if(!data||data.success!==true||!['tickets','common','rare','golden_key','vip'].every(k=>Number.isSafeInteger(data[k])&&data[k]>=0)||
-  data.tickets>20||data.vip>10||!validReceipt||
+  data.tickets>HALL_TICKET_MAX||data.vip>10||!validReceipt||
   !(data.vip_until===null||Number.isFinite(Date.parse(data.vip_until)))||
   !Number.isFinite(Date.parse(data.server_now)))throw new Error('fortune_invalid_receipt');
  return data;
