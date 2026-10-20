@@ -1,3 +1,21 @@
+/** Game-wide calendar day; not for personal cooldown timers. */
+export function calendarDayKey(now: number = Date.now()): string {
+  const date = new Date(now);
+  if (!Number.isFinite(date.getTime())) throw new RangeError('Invalid date');
+  const opts: Intl.DateTimeFormatOptions = { year:'numeric', month:'2-digit', day:'2-digit', timeZone:'Europe/Kyiv' };
+  let formatter: Intl.DateTimeFormat;
+  try { formatter = new Intl.DateTimeFormat('en-GB', opts); }
+  catch { formatter = new Intl.DateTimeFormat('en-GB', {...opts, timeZone:'Europe/Kiev'}); }
+  const parts = formatter.formatToParts(date);
+  const n = (type: string) => Number(parts.find(p => p.type === type)?.value);
+  const [y,m,d] = [n('year'),n('month'),n('day')];
+  if (![y,m,d].every(Number.isInteger)) throw new RangeError('Invalid date');
+  return `${String(y).padStart(4,'0')}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+export function previousCalendarDayKey(now: number = Date.now()): string {
+  const [y,m,d] = calendarDayKey(now).split('-').map(Number);
+  return new Date(Date.UTC(y,m-1,d-1)).toISOString().slice(0,10);
+}
 /**
  * Weekly quests change on Sunday at 00:00 Europe/Kyiv, the same week boundary
  * planned for Territory seasons. Intl handles daylight-saving transitions.
