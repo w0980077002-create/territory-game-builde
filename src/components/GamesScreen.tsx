@@ -138,7 +138,7 @@ export function GamesScreen({
 
   return (
     <div className="territory-game-hall" data-testid="game-hall">
-      <header className="hall-marquee" aria-label={en ? 'TERRITORY Game Hall' : 'TERRITORY Игровой зал'}>
+      <header className="hall-marquee" style={{backgroundImage: `url("${base}hall-art/marquee.svg")`}} aria-label={en ? 'TERRITORY Game Hall' : 'TERRITORY Игровой зал'}>
         <span className="hall-marquee__sr">{en ? 'TERRITORY GAME HALL' : 'TERRITORY ИГРОВОЙ ЗАЛ'}</span>
         {en && <span className="hall-marquee__en-neon">GAME HALL</span>}
       </header>
