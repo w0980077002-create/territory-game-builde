@@ -33,6 +33,7 @@
     "test:hall": "node scripts/check-game-hall.mjs && node scripts/check-game-hall-ui.mjs",
     "test:admin-master": "node scripts/check-admin-master.mjs && node scripts/check-admin-ui.mjs",
     "test:admin-mail": "node scripts/check-admin-mail.mjs",
+    "test:admin-geography": "node scripts/check-admin-geography.mjs",
     "test:clans": "node scripts/check-clans.mjs",
     "test:wheel": "node scripts/check-fortune.mjs && node scripts/check-fortune-client.mjs",
     "test:wheel:browser": "node scripts/build-fortune-preview.mjs && python scripts/check-fortune-browser.py"

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { BarChart3, CheckCircle2, Crown, Eye, EyeOff, Gamepad2, Lock, LogOut, Mail, ShieldAlert, Trophy, Wallet, Ticket, ScrollText, XCircle } from 'lucide-react';
+import { BarChart3, CheckCircle2, Crown, Eye, EyeOff, Gamepad2, Lock, LogOut, Mail, ShieldAlert, Trophy, Wallet, Ticket, ScrollText, Globe2, XCircle } from 'lucide-react';
 import { adminLogin, adminCall, clearAdminToken, getAdminToken } from '@/admin/api';
 import { ConfirmDialog, ErrorLine, inputCls, type Confirm } from '@/admin/ui';
 import { DashboardTab } from '@/admin/tabs/DashboardTab';
@@ -9,10 +9,12 @@ import { FinanceTab } from '@/admin/tabs/FinanceTab';
 import { TopTab } from '@/admin/tabs/TopTab';
 import { HallAdminTab } from '@/admin/tabs/HallAdminTab';
 import { AuditAdminTab } from '@/admin/tabs/AuditAdminTab';
+import { GeographyTab } from '@/admin/tabs/GeographyTab';
 
 const TABS = [
   { id: 'main', label: 'Главная & Управление', icon: BarChart3 },
   { id: 'players', label: 'Игроки & Онлайн', icon: ShieldAlert },
+  { id: 'geography', label: 'География', icon: Globe2 },
   { id: 'mail', label: 'Почта & Рассылки', icon: Mail },
   { id: 'finance', label: 'Финансы & Лавка', icon: Wallet },
   { id: 'top', label: 'Топ-100', icon: Trophy },
@@ -161,6 +163,7 @@ export function AdminApp() {
       <main key={tab} className="max-w-3xl mx-auto px-4 py-4 pb-24 animate-[fadeIn_.25s_ease-out]">
         {tab === 'main' && <DashboardTab confirm={confirm} />}
         {tab === 'players' && <PlayersTab confirm={confirm} />}
+        {tab === 'geography' && <GeographyTab />}
         {tab === 'mail' && <MailTab confirm={confirm} />}
         {tab === 'finance' && <FinanceTab confirm={confirm} />}
         {tab === 'top' && <TopTab />}
