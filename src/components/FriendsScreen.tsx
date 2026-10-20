@@ -6,6 +6,8 @@ import {
   LoaderCircle, LockKeyhole, RefreshCw, Send, ShieldCheck, Sparkles, Trophy, UsersRound
 } from 'lucide-react';
 import { Currency } from './ui/Currency';
+import { prepareRichShareMessage } from '@/game/dailyShare';
+import { getTelegramWebApp } from '@/game/telegram';
 import {
   friendReward, getReferralBotUsername, getReferralStatus, referralLink, shareReferralInvite,
   redeemReferrals, getReferralFriends, type ReferralFriend, type ReferralStatus
@@ -24,6 +26,8 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
   const isLinked = user.telegramId !== null;
   const [status, setStatus] = useState<ReferralStatus | null>(null);
   const [bot, setBot] = useState<string | null>(null);
+  const [preparedId,setPreparedId]=useState<string|null>(null);
+  const [preparing,setPreparing]=useState(false);
   const [loading, setLoading] = useState(isLinked);
   const [botLoading, setBotLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -68,6 +72,15 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
   }, []);
 
   useEffect(() => { void load(); void loadBot(); void loadFriends(); }, [load, loadBot, loadFriends]);
+  useEffect(()=>{
+    const tg=getTelegramWebApp();
+    if(!isLinked||!tg?.shareMessage||(tg.isVersionAtLeast&&!tg.isVersionAtLeast('8.0')))return;
+    let active=true;setPreparing(true);setPreparedId(null);
+    void prepareRichShareMessage(en?'en':'ru').then(id=>{if(active)setPreparedId(id);})
+      .catch(()=>{if(active)setPreparedId(null);})
+      .finally(()=>{if(active)setPreparing(false);});
+    return()=>{active=false;};
+  },[en,isLinked]);
 
   const url = status ? referralLink(bot, status.code) : null;
   const active = status?.qualified ?? 0;
@@ -82,7 +95,16 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
     }
   };
 
-  const share = () => { if(url) shareReferralInvite(url,en); };
+  const share = () => {
+    if(preparing)return;
+    const tg=getTelegramWebApp();
+    if(preparedId&&tg?.shareMessage){
+      try{tg.shareMessage(preparedId);}
+      catch{setMessage(en?'Could not open the picture invitation. Please retry.':'Не удалось открыть открытку. Попробуй ещё раз.');}
+      return;
+    }
+    if(url)shareReferralInvite(url,en);
+  };
 
   const claim = async () => {
     if (busy) return;
@@ -153,7 +175,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
           </div>
         ) : url ? (
           <>
-            <button type="button" className="btn-primary w-full py-3.5 text-base font-black flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(245,158,11,.22)]" onClick={share}>
+            <button type="button" className="btn-primary w-full py-3.5 text-base font-black flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(245,158,11,.22)]" onClick={share} disabled={preparing}>
               <Send size={20}/>{en ? 'INVITE A FRIEND' : 'ПРИГЛАСИТЬ ДРУГА'}
             </button>
             <button type="button" onClick={() => void copy()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm font-bold text-gray-200">
