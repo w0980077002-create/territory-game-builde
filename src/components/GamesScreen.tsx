@@ -27,27 +27,27 @@ const GAMES: GameCard[] = [
   {
     id: 'monopoly', ru: 'Монополия', en: 'Monopoly',
     ruHint: 'Поле, кубик, события, награды', enHint: 'Board, dice, events and prizes',
-    scene: 'monopoly/lagoon.png', foreground: 'nav-games.webp', color: 'green',
+    scene: 'hall-art/monopoly.svg', foreground: '', color: 'green',
   },
   {
     id: 'treasury', ru: 'Сокровищница', en: 'Treasury',
     ruHint: 'Открывай сундуки, получай награды', enHint: 'Open chests and collect prizes',
-    scene: 'map-rare.webp', foreground: 'ic-events.webp', color: 'blue',
+    scene: 'hall-art/treasury.svg', foreground: '', color: 'blue',
   },
   {
     id: 'dice', ru: 'Кости судьбы', en: 'Dice of Fate',
     ruHint: 'Рискни и сорви куш', enHint: 'Take a chance and win big',
-    scene: 'assets/territory/scenes/arena-viking.webp', foreground: 'nav-games.webp', color: 'violet',
+    scene: 'hall-art/dice.svg', foreground: '', color: 'violet',
   },
   {
     id: 'tower', ru: 'Башня испытаний', en: 'Trial Tower',
     ruHint: 'Проверь свою удачу и навыки', enHint: 'Test your luck and skills',
-    scene: 'map-chamber.webp', foreground: 'ic-trials.webp', color: 'red',
+    scene: 'hall-art/tower.svg', foreground: '', color: 'red',
   },
   {
     id: 'wheel', ru: 'Колесо фортуны', en: 'Wheel of Fortune',
     ruHint: 'Вращай колесо и получай награды', enHint: 'Spin the wheel and collect prizes',
-    scene: 'assets/territory/scenes/arena-viking.webp', foreground: '', color: 'gold',
+    scene: 'hall-art/wheel.svg', foreground: '', color: 'gold',
     comingSoon: true,
   },
 ];
@@ -139,19 +139,8 @@ export function GamesScreen({
   return (
     <div className="territory-game-hall" data-testid="game-hall">
       <header className="hall-marquee" aria-label={en ? 'TERRITORY Game Hall' : 'TERRITORY Игровой зал'}>
-        <div className="hall-marquee__art" style={{
-          backgroundImage: `linear-gradient(90deg,rgba(10,7,18,.11),rgba(13,6,23,.45)),url("${base}promo/${en ? 'og-en-v3.jpg' : 'og-ru-v3.jpg'}")`,
-        }} />
-        <div className="hall-marquee__sparks" aria-hidden="true" />
-        <img className="hall-marquee__hero" src={base + 'appearance-f1.webp'} alt="" aria-hidden="true" loading="eager" />
-        <div className="hall-marquee__sign">
-          <span className="hall-marquee__crown" aria-hidden="true">♛</span>
-          <div className="hall-marquee__title">TERRITORY</div>
-          <div className="hall-marquee__neon">{en ? 'GAME HALL' : 'ИГРОВОЙ ЗАЛ'}</div>
-        </div>
-        <div className="hall-marquee__chest" aria-hidden="true">
-          <span>👑</span><span>💎</span><span>🪙</span>
-        </div>
+        <span className="hall-marquee__sr">{en ? 'TERRITORY GAME HALL' : 'TERRITORY ИГРОВОЙ ЗАЛ'}</span>
+        {en && <span className="hall-marquee__en-neon">GAME HALL</span>}
       </header>
 
       <section className="hall-cashier" aria-label={en ? 'Game Hall wallet' : 'Касса игрового зала'}>
@@ -222,7 +211,7 @@ export function GamesScreen({
               <span className="hall-game__shimmer" aria-hidden="true" />
               {featured && <span className="hall-game__ribbon">{en ? 'POPULAR' : 'ПОПУЛЯРНО'}</span>}
               {game.foreground && <img className="hall-game__art" src={base + game.foreground} alt="" draggable={false} loading="lazy" />}
-              {game.id === 'wheel' && <span className="hall-game__wheel" aria-hidden="true"><span>★</span></span>}
+              
               <span className="hall-game__price">{game.comingSoon
                 ? (en ? 'SOON' : 'СКОРО')
                 : <><Ticket size={15} /> 1</>}</span>
