@@ -46,5 +46,17 @@ mode='normal';const retry=await api.recoverFortune('A');assert.equal(retry.recei
 // A definitive SQL rollback clears the marker only after status reconciliation.
 mode='reject';await assert.rejects(api.playFortune('A','spin'),/hall_no_tickets/);assert.equal(tickets,1);assert.equal(storage.size,0);assert.equal(fixture.blocked,false);
 assert.equal((await api.recoverFortune('A')).receipt,null);
+// Regression: admin-issued / accumulated Hall balances can exceed the 20-ticket
+// daily-claim threshold. The production wallet constraint allows up to 1000.
+mode='normal';tickets=128;
+assert.equal((await api.recoverFortune('A')).tickets,128);
+const largeWallet=await api.playFortune('A','spin');
+assert.equal(largeWallet.tickets,127);
+assert.equal(state.player.gold,500);
+await api.acknowledgeFortune('A',largeWallet.receipt.id);
+tickets=1000;
+assert.equal((await api.recoverFortune('A')).tickets,1000);
+tickets=1001;
+await assert.rejects(api.recoverFortune('A'),/fortune_invalid_receipt/);
 assert.ok(calls.every(c=>!('prize'in c)&&!('quantity'in c)&&!('reward'in c)));
-console.log('Wheel client PASS: double click mutex, blocked old saves, network failures before/after commit, persisted key, module restart, same-key recovery, definitive rollback reconciliation, no reward payload.');
+console.log('Wheel client PASS: double click mutex, blocked old saves, network failures before/after commit, persisted key, module restart, same-key recovery, definitive rollback reconciliation, Hall balances 128/1000, invalid 1001 rejected, no reward payload.');
