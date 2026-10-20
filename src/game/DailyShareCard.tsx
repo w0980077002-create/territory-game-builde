@@ -13,18 +13,15 @@ export function DailyShareCard({task,userId,onClaimed}:{task:DailyShareTask;user
   void Promise.all([dailyShareStatus(),prepareDailyShareLink(en?'en':'ru')]).then(([state,link])=>{
    if(alive){setStatus(state);setUrl(link);setError('');}
   }).catch(e=>{if(alive)setError(shareError(e,en));});
-  const timer=window.setInterval(()=>setNow(Date.now()),1000);
+  const timer=window.setInterval(()=>setNow(Date.now()),15000);
   const resume=()=>{if(!document.hidden)void refresh();};
   document.addEventListener('visibilitychange',resume);
   return()=>{alive=false;window.clearInterval(timer);document.removeEventListener('visibilitychange',resume);};
  },[task,en]);
  const entry=status?.tasks.find(t=>t.task===task);
  const remaining=entry?.next_at?Math.max(0,Date.parse(entry.next_at)-now):0;
- const hh=String(Math.floor(remaining/3600000)).padStart(2,'0'),
-  mm=String(Math.floor(remaining/60000)%60).padStart(2,'0'),
-  ss=String(Math.floor(remaining/1000)%60).padStart(2,'0');
  const full=task==='monopoly'&&(status?.tickets??0)>18;
- const ready=!!entry?.enabled&&!!entry.ready&&remaining===0&&!full;
+ const ready=!!entry?.enabled&&(!!entry.ready||(entry.next_at!==null&&remaining===0))&&!full;
  const share=()=>{
   if(!ready||!url||busy)return;
   setBusy(true);setError('');setNotice('');
@@ -49,7 +46,7 @@ export function DailyShareCard({task,userId,onClaimed}:{task:DailyShareTask;user
    {busy?<Loader2 size={18} className="animate-spin"/>:<Send size={18}/>}
    {busy?(en?'Opening Telegram…':'Открываем Telegram…'):full?(en?'Use tickets first':'Сначала потрать билеты'):remaining>0?(en?'Claimed today':'Получено сегодня'):en?'Share in Telegram':'Поделиться в Telegram'}
   </button>
-  <div className="flex gap-1 items-center text-[10px] text-amber-200 mt-2"><Clock3 size={12}/>{remaining>0?(en?'Next reward in ':'Следующая награда через ')+hh+':'+mm+':'+ss:(en?'Once every 24 hours, per task':'Раз в 24 часа на каждое задание')}</div>
+  <div className="flex gap-1 items-center text-[10px] text-amber-200 mt-2"><Clock3 size={12}/>{en?'Daily reset at 00:00':'Ежедневное обновление в 00:00'}</div>
   {notice&&<p role="status" className="text-xs text-emerald-300 mt-1">{notice}</p>}
   {error&&<p role="alert" className="text-xs text-rose-200 mt-1">{error} <button type="button" onClick={()=>{setError('');void refresh();}} className="underline">{en?'Refresh':'Обновить'}</button></p>}
   <p className="text-[10px] text-slate-300 mt-1">{en?'You choose the recipient. Telegram cannot confirm delivery; nothing is sent automatically.':'Ты сам выбираешь получателя. Telegram не подтверждает доставку; рассылка не автоматическая.'}</p>
