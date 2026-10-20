@@ -1,27 +1,27 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { Suspense, lazy, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
 import { createImmediateSaveController } from '@/game/immediateSave';
 import { HomeScreen } from '@/components/HomeScreen';
-import { BattleScreen, type BattleView } from '@/components/BattleScreen';
+import type { BattleView } from '@/components/BattleScreen';
 import type { SaveStatus } from '@/components/home/HomeSheets';
-import { InventoryScreen } from '@/components/InventoryScreen';
-import { ShopScreen } from '@/components/ShopScreen';
-import { MapScreen } from '@/components/MapScreen';
-import { QuestsScreen } from '@/components/QuestsScreen';
-import { ProfileScreen } from '@/components/ProfileScreen';
-import { ArenaScreen } from '@/components/ArenaScreen';
-import { ForgeScreen } from '@/components/ForgeScreen';
-import { LeaderboardScreen } from '@/components/LeaderboardScreen';
-import { GamesScreen } from '@/components/GamesScreen';
-import { HallPlayScreen } from '@/components/HallPlayScreen';
+
+
+
+
+
+
+
+
+
+
 import type { HallGame } from '@/game/gameHall';
-import { ProfessionsScreen } from '@/components/ProfessionsScreen';
-import { ClanScreen } from '@/components/ClanScreen';
-import { AuctionScreen } from '@/components/AuctionScreen';
-import { FriendsScreen } from '@/components/FriendsScreen';
+
+
+
+
 import { MaintenanceScreen, BannedScreen } from '@/components/ServiceScreens';
 import { useLive, useLiveSync, fetchMaintenance } from '@/game/live';
 import { useStore } from '@/game/store';
@@ -31,6 +31,24 @@ import { useLanguage } from '@/game/i18n';
 import { useGatherReady } from '@/game/gatherNotice';
 import { socialStatus, type SocialStatus } from '@/game/socialQuests';
 import { getQuestAlerts, readSeenQuests, rememberSeenQuests } from '@/game/questAttention';
+
+// Only City is downloaded for initial login; other screens load on demand.
+// Never prefetch every game mode on a mobile connection.
+const BattleScreen = lazy(() => import('@/components/BattleScreen').then(m => ({ default: m.BattleScreen })));
+const InventoryScreen = lazy(() => import('@/components/InventoryScreen').then(m => ({ default: m.InventoryScreen })));
+const ShopScreen = lazy(() => import('@/components/ShopScreen').then(m => ({ default: m.ShopScreen })));
+const MapScreen = lazy(() => import('@/components/MapScreen').then(m => ({ default: m.MapScreen })));
+const QuestsScreen = lazy(() => import('@/components/QuestsScreen').then(m => ({ default: m.QuestsScreen })));
+const ProfileScreen = lazy(() => import('@/components/ProfileScreen').then(m => ({ default: m.ProfileScreen })));
+const ArenaScreen = lazy(() => import('@/components/ArenaScreen').then(m => ({ default: m.ArenaScreen })));
+const ForgeScreen = lazy(() => import('@/components/ForgeScreen').then(m => ({ default: m.ForgeScreen })));
+const LeaderboardScreen = lazy(() => import('@/components/LeaderboardScreen').then(m => ({ default: m.LeaderboardScreen })));
+const GamesScreen = lazy(() => import('@/components/GamesScreen').then(m => ({ default: m.GamesScreen })));
+const HallPlayScreen = lazy(() => import('@/components/HallPlayScreen').then(m => ({ default: m.HallPlayScreen })));
+const ProfessionsScreen = lazy(() => import('@/components/ProfessionsScreen').then(m => ({ default: m.ProfessionsScreen })));
+const ClanScreen = lazy(() => import('@/components/ClanScreen').then(m => ({ default: m.ClanScreen })));
+const AuctionScreen = lazy(() => import('@/components/AuctionScreen').then(m => ({ default: m.AuctionScreen })));
+const FriendsScreen = lazy(() => import('@/components/FriendsScreen').then(m => ({ default: m.FriendsScreen })));
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
 type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends';
@@ -274,6 +292,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
       )}
 
       <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
+        <Suspense fallback={<div role="status" className="flex min-h-32 items-center justify-center text-center text-sm text-amber-100/80">{language === 'en' ? 'Opening section…' : 'Открываем раздел…'}</div>}>
         {screen === 'city' && (
           <HomeScreen
             user={user}
@@ -319,6 +338,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} />}
         {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} />}
+        </Suspense>
       </main>
 
       {/* Computer-only shortcuts: visible without scrolling the city's side
