@@ -579,3 +579,57 @@ html.territory-ios-webapp .territory-monopoly .mono-board { inset: 10% 6% 29% 6%
 html.territory-ios-webapp .territory-monopoly .mono-buffs { bottom: 27%; }
 html.territory-ios-webapp .territory-monopoly .mono-scene-shortcuts { bottom: 4px; }
 html.territory-ios-webapp .territory-monopoly .mono-controls { bottom: 0; }
+
+
+/* Shared daily referral card: visually identical in density to Monopoly quests. */
+.panel-quests .mono-share-quest{
+ padding:7px 8px;
+ margin:4px 0;
+ border-color:#d7b270;
+ background:linear-gradient(130deg,#f3e2b6,#dac592);
+ color:#4d321c;
+ opacity:1;
+}
+.panel-quests .mono-share-quest .mono-quest-heading{
+ display:flex;align-items:center;min-width:0;gap:5px;
+}
+.panel-quests .mono-share-quest .mono-quest-heading b{
+ flex:1;min-width:0;font:800 12px/1.2 Georgia,'Times New Roman',serif;
+ color:#52331a;
+}
+.panel-quests .mono-share-symbol{flex-shrink:0;color:#8d501f}
+.panel-quests .mono-share-check{flex-shrink:0;color:#20834a}
+.panel-quests .mono-share-bottom{
+ display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:5px;
+}
+.panel-quests .mono-share-details{
+ display:flex;flex:1;min-width:0;align-items:center;flex-wrap:wrap;gap:3px 7px;
+ font:700 10px/1.25 Arial,sans-serif;
+}
+.panel-quests .mono-share-prize{
+ display:inline-flex;align-items:center;gap:3px;white-space:nowrap;color:#57361c;
+}
+.panel-quests .mono-share-prize svg{color:#ad701b}
+.panel-quests .mono-share-details small{
+ color:#6c5032;font:9px/1.25 Arial,sans-serif;
+}
+.panel-quests .mono-share-quest button.mono-share-button{
+ display:inline-flex;align-items:center;justify-content:center;gap:4px;
+ flex-shrink:0;white-space:nowrap;min-width:89px;min-height:32px;
+ padding:6px 8px;border-radius:7px;font:800 11px Arial,sans-serif;
+ background:linear-gradient(#ffe9a2,#edbe4c 50%,#d19332);color:#432713!important;
+ border:1px solid #fff0b0;box-shadow:inset 0 1px #fff5c6,0 2px #875222;
+}
+.panel-quests .mono-share-quest .mono-share-notice,
+.panel-quests .mono-share-quest .mono-share-error{
+ margin:5px 0 0;font:10px/1.35 Arial,sans-serif;color:#25623a;
+}
+.panel-quests .mono-share-quest .mono-share-error{color:#9b2e2e}
+.panel-quests .mono-share-quest .mono-share-error button{
+ text-decoration:underline;background:none;border:0;box-shadow:none;
+ color:inherit!important;padding:0;min-height:0;min-width:0;
+}
+@media(max-width:350px){
+ .panel-quests .mono-share-details small{font-size:8px}
+ .panel-quests .mono-share-quest button.mono-share-button{min-width:75px;padding:5px}
+}
