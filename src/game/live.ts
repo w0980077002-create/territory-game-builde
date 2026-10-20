@@ -155,9 +155,18 @@ async function heartbeat() {
 export function useLiveSync(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
-    heartbeat();
-    const t = setInterval(heartbeat, 20000);
-    return () => clearInterval(t);
+    // A hidden Mini App is not online. Stop spending database calls while
+    // Telegram is backgrounded and resync mail, settings and grants on resume.
+    const syncVisible = () => {
+      if (document.visibilityState === 'visible') void heartbeat();
+    };
+    syncVisible();
+    const t = window.setInterval(syncVisible, 20_000);
+    document.addEventListener('visibilitychange', syncVisible);
+    return () => {
+      window.clearInterval(t);
+      document.removeEventListener('visibilitychange', syncVisible);
+    };
   }, [enabled]);
 }
 
