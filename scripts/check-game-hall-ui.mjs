@@ -6,10 +6,16 @@ const play=readFileSync('src/components/HallPlayScreen.tsx','utf8');
 const api=readFileSync('src/game/gameHall.ts','utf8');
 const cloud=readFileSync('src/game/cloud.ts','utf8');
 const sql=readFileSync('supabase/migrations/20261017_game_hall_five_v1.sql','utf8');
-for(const game of ['monopoly','dice','tower','targets','treasury']) {
- assert.match(hall,new RegExp("id\\s*:\\s*'"+game+"'"),'Hall card missing '+game);
+for(const game of ['monopoly','dice','tower','treasury']) {
+ assert.match(hall,new RegExp("id\\s*:\\s*'"+game+"'"),'Live Hall card missing '+game);
  assert.match(api,new RegExp("'"+game+"'"),'Server game type missing '+game);
 }
+assert.match(hall,/id:\s*'wheel'/,'Approved visual contains Wheel of Fortune');
+assert.match(hall,/comingSoon:\s*true/,'Wheel must not charge tickets before secure backend exists');
+assert.match(hall,/if \(game\.comingSoon\)/,'Wheel must not call a different game endpoint');
+assert.match(api,/'targets'/,'Preserve existing sharpshooter server route for existing sessions');
+assert.match(hall,/loading="lazy"/,'Large scenic art must lazy load on phones');
+assert.doesNotMatch(hall,/Смотреть рекламу|Watch ad/,'Do not promise an unconnected ad provider');
 assert.match(hall,/Сокровищница/);assert.doesNotMatch(hall,/Джекпот/);
 assert.match(hall,/data-testid="game-hall"/);
 assert.match(hall,/hallClaimGold/);
@@ -49,4 +55,4 @@ assert.match(hall,/promo\//);
 assert.match(sql,/REVOKE ALL ON FUNCTION public\.territory_hall_start_v1/);
 assert.match(sql,/REVOKE ALL ON territory_private\.hall_accounts_v1/);
 assert.doesNotMatch(sql,/redGems|red_gems|p_reward_gold/,'No premium debit or caller-driven gold');
-console.log('Game Hall UI PASS: 5 real routes, Treasury replaces Jackpot, no fake tickets/premium buys, server-owned rewards.');
+console.log('Game Hall UI PASS: 4 live showcase games plus disabled Wheel preview, old sessions preserved, lazy art, no fake ad rewards, server-owned wallet.');
