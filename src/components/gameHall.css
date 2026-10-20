@@ -1,626 +1,222 @@
-/* TERRITORY Game Hall. Real DOM controls over optimized existing local fantasy art.
-   Intentionally scoped: other screens and the main Telegram nav are unchanged. */
+/* Game Hall only. Static local artwork; all controls and balances are real DOM. */
 .territory-game-hall {
-  --hall-gold: #ffd46f;
-  --hall-glow: #faaf22;
+  --hall-gold: #ffda83;
   position: relative;
   isolation: isolate;
+  min-width: 0;
   margin: -12px -12px 0;
-  padding: 0 10px 16px;
+  padding: 0 9px 12px;
+  color: #fff4d7;
+  background:
+    radial-gradient(ellipse at 0 45%, #63347532, transparent 60%),
+    radial-gradient(ellipse at 100% 80%, #af5d1529, transparent 60%),
+    linear-gradient(#231023, #0a0d1a 50%, #0b111c);
+  -webkit-tap-highlight-color: transparent;
+}
+.territory-game-hall *, .territory-game-hall *::before,
+.territory-game-hall *::after { box-sizing: border-box; }
+.hall-marquee {
+  position: relative;
+  margin: 0 -9px;
+  aspect-ratio: 620 / 190;
+  background-color: #291225;
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid #e5b35c;
+  box-shadow: 0 4px 18px #0008;
+}
+.hall-marquee__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse 95% 40% at 50% 9%, rgba(193,44,250,.19), transparent 77%),
-    radial-gradient(ellipse 60% 36% at 100% 56%, rgba(246,113,20,.16), transparent 80%),
-    radial-gradient(ellipse 80% 60% at 0% 85%, rgba(36,94,215,.13), transparent 80%),
-    linear-gradient(180deg,#1d0e25 0%,#090a18 54%,#080d18 100%);
-  color: #fff6da;
+  clip-path: inset(50%);
 }
-.territory-game-hall::before{
-  position:absolute;content:"";top:1px;left:0;right:0;height:520px;pointer-events:none;opacity:.3;
-  background:repeating-linear-gradient(115deg,transparent 0 42px,rgba(255,209,90,.035) 43px,transparent 44px 93px);
-}
-.hall-marquee{
-  position:relative;height:180px;margin:0 -10px;overflow:hidden;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:12px 12px 12px 36%;
-  border-bottom:2px solid #ba742a;
-  box-shadow:0 9px 20px rgba(0,0,0,.55),inset 0 -5px 12px rgba(255,143,22,.19);
-}
-.hall-marquee__art{
-  position:absolute;inset:0;
-  background-size:cover;background-position:center 25%;
-  filter:saturate(1.24) contrast(1.08);
-}
-.hall-marquee__art::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,rgba(10,4,21,.56) 49%,rgba(10,4,21,.55) 100%),linear-gradient(0deg,#1b0b20,transparent 32%)}
-.hall-marquee__sparks{position:absolute;inset:0;pointer-events:none;background:
-  radial-gradient(circle at 8% 12%,#ffdc86 0 1px,transparent 3px),
-  radial-gradient(circle at 95% 19%,#f3a9ff 0 1px,transparent 3px),
-  radial-gradient(circle at 69% 92%,#ffd570 0 2px,transparent 4px),
-  radial-gradient(circle at 41% 41%,#ffd3ab 0 1px,transparent 3px);
-  background-size:137px 117px;animation:hall-twinkle 6s ease-in-out infinite alternate;
-}
-.hall-marquee__crown{
-  position:relative;z-index:1;font-size:21px;line-height:1;color:#ffe089;
-  filter:drop-shadow(0 0 10px #fb8c23);text-shadow:0 2px #65340a;
-}
-.hall-marquee__title{
-  position:relative;z-index:1;width:100%;
-  text-align:center;font:1000 clamp(24px,7.1vw,37px)/1.05 Georgia,'Times New Roman',serif;
-  letter-spacing:-1.3px;-webkit-text-stroke:.5px #713912;
-  color:#ffe6a3;
-  text-shadow:0 2px 0 #8b430b,0 4px 0 #492314,2px 6px 2px #120800,0 0 19px #f9a823;
-}
-.hall-marquee__neon{
-  position:relative;z-index:1;text-align:center;margin-top:8px;white-space:nowrap;
-  padding:6px 12px;border-radius:14px;border:2px solid #f0a3ff;
-  background:linear-gradient(180deg,#3a0e62ee,#50116be6);
-  box-shadow:0 0 9px #f453ff,inset 0 0 16px #bb25da,0 0 22px #b320ff;
-  font:1000 clamp(14px,4.7vw,20px)/1.1 system-ui,sans-serif;letter-spacing:.6px;
-  color:#fff5ff;text-shadow:0 0 8px #ff9aff;
-}
-.hall-cashier{
-  position:relative;z-index:2;margin:-5px 0 12px;padding:7px 8px 9px;
-  border:2px solid #d9a252;border-radius:15px 15px 19px 19px;
-  background:linear-gradient(145deg,rgba(75,27,48,.97),rgba(11,14,35,.98) 67%);
-  box-shadow:0 3px 0 #704016,0 5px 24px #000a,inset 0 1px 0 #fff3bd70,0 0 20px #c6792233;
-}
-.hall-cashier__stats{
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;
-}
-.hall-cashier__stat{
-  min-width:0;min-height:68px;display:grid;grid-template-columns:24px minmax(0,1fr);
-  grid-template-rows:30px 20px;align-items:center;column-gap:3px;
-  padding:8px 4px 6px;border-radius:10px;border:1px solid #e8bd6849;
-  background:radial-gradient(ellipse at 50% -10%,#76502066,transparent 65%),#070d1dcf;
-  box-shadow:inset 0 -8px 14px #01020740;
-}
-.hall-cashier__stat--tickets{border-color:#ffa94a80}
-.hall-cashier__stat--points{border-color:#b38bfa76}
-.hall-cashier__stat--gold{border-color:#ffc76b79}
-.hall-cashier__stat-icon{width:22px;height:22px;color:#ffbf4b;filter:drop-shadow(0 0 5px #ff8f18)}
-.hall-cashier__stat--points .hall-cashier__stat-icon{color:#e2b2ff;filter:drop-shadow(0 0 5px #b54eff)}
-.hall-cashier__value{
-  display:block;min-width:0;font-size:clamp(14px,4vw,21px);
-  font-weight:1000;line-height:1.2;letter-spacing:-.6px;color:#fff;
-  text-shadow:0 1px 7px #d0acff40;font-variant-numeric:tabular-nums;
-}
-.hall-cashier__label{
-  grid-column:1/-1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  color:#ffe19b;font-size:clamp(9px,2.5vw,12px);font-weight:800;
-}
-.hall-cashier__stat--points .hall-cashier__label{color:#e9c4ff}
-.hall-cashier__actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
-.hall-action{
-  position:relative;display:flex;align-items:center;justify-content:center;gap:7px;
-  min-width:0;min-height:51px;padding:7px 5px;border-radius:13px;
-  border:2px solid #fff1b8;cursor:pointer;overflow:hidden;
-  color:white;text-shadow:0 2px 3px #0008;
-  transition:transform .16s ease,filter .16s ease;
-}
-.hall-action::after{
-  content:"";position:absolute;inset:-15px auto -15px -60%;width:40%;
-  background:linear-gradient(100deg,transparent,#fff6,transparent);transform:skewX(-21deg);
-  animation:hall-sheen 6s ease-in-out infinite;
-  pointer-events:none;
-}
-.hall-action--gift{
-  border-color:#fca8fb;background:linear-gradient(150deg,#a025c4,#5b0b8f 70%);
-  box-shadow:inset 0 1px 1px #ffdfff,0 0 11px #df41f5a0,0 3px #541070;
-}
-.hall-action--gold{
-  border-color:#ffdf7e;background:linear-gradient(145deg,#c47b19,#8c3c09 90%);
-  box-shadow:inset 0 1px 2px #fff2be,0 0 12px #ff9d35b0,0 3px #673308;
-}
-.hall-action b{font-size:clamp(10px,3vw,14px);line-height:1.15;white-space:nowrap}
-.hall-action small{display:block;font-size:9px;font-weight:600;color:#fdf1e4;line-height:1.2;white-space:nowrap}
-.hall-action__end{color:#ffd369;flex:none}
-.hall-action:disabled{cursor:default;opacity:.61;filter:saturate(.55)}
-.hall-action:disabled::after{animation:none}
-.hall-action:not(:disabled):active{transform:scale(.97)}
-.hall-action:focus-visible,.hall-game:focus-visible,.hall-resume:focus-visible{outline:3px solid #fff2ae;outline-offset:3px}
-.hall-cashier__rule{
-  display:flex;justify-content:center;align-items:center;gap:4px;margin-top:10px;
-  color:#ddc9e6;font-size:10px;line-height:1.35;text-align:center;
-}
-.hall-cashier__rule svg{color:#ffcd66;flex:none}
-.hall-games{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
-  position:relative;z-index:1;
-}
-.hall-game{
-  position:relative;display:block;min-width:0;width:100%;height:171px;overflow:hidden;
-  border-radius:16px;border:2px solid #f4ad50;padding:0;color:white;
-  text-align:left;cursor:pointer;isolation:isolate;
-  background-color:#1b2541;background-position:center;background-size:cover;
-  box-shadow:inset 0 0 0 2px #38180c,0 3px 0 #713610,0 5px 13px #0009,0 0 11px #b46c2e66;
-  transition:transform .15s ease,filter .15s ease;
-}
-.hall-game--featured{grid-column:1/-1;height:188px;border-color:#ffd47c;border-width:3px}
-.hall-game__glow{position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:linear-gradient(180deg,#0000 2%,#0c08103b 37%,#000c 80%,#020411f0 100%),
-   radial-gradient(circle at 8% 10%,#ffc46446,transparent 70%);
-}
-.hall-game--blue .hall-game__glow{background:linear-gradient(180deg,#0c6ab220,#070b2380 44%,#030b21ef),radial-gradient(ellipse at 34% 0%,#22aefd66,transparent 69%)}
-.hall-game--violet .hall-game__glow{background:linear-gradient(180deg,#330c6220,#1a07387a 40%,#10021ff2),radial-gradient(ellipse at 53% 0%,#e634ff80,transparent 70%)}
-.hall-game--red .hall-game__glow{background:linear-gradient(180deg,#e85e1815,#2f09065c 47%,#170604ec),radial-gradient(ellipse at 30% 0%,#ff480077,transparent 67%)}
-.hall-game--gold .hall-game__glow{background:linear-gradient(180deg,#dfa01e1a,#19120a75 40%,#140e04f0),radial-gradient(ellipse at 66% 0%,#ffd23377,transparent 75%)}
-.hall-game__shimmer{position:absolute;inset:0;pointer-events:none;z-index:1;
-  border-radius:inherit;box-shadow:inset 0 0 17px #e7a33966,inset 0 0 0 1px #fff4a46b;
-}
-.hall-game__art{
-  position:absolute;top:2px;left:6px;width:93px;height:100px;object-fit:contain;
-  z-index:1;filter:drop-shadow(0 5px 6px #000b) drop-shadow(0 0 12px #fff47d99);
-  transform:rotate(-10deg);
-}
-.hall-game--featured .hall-game__art{
-  width:126px;height:124px;top:12px;left:14px;transform:rotate(-13deg);
-  filter:drop-shadow(3px 7px 5px #000a) drop-shadow(0 0 16px #fbd04eb3);
-}
-.hall-game--blue .hall-game__art{filter:drop-shadow(0 0 12px #00d9ff)}
-.hall-game--violet .hall-game__art{filter:drop-shadow(0 0 12px #cd60ff)}
-.hall-game--red .hall-game__art{filter:drop-shadow(0 0 12px #fa5314)}
-.hall-game--gold .hall-game__art{filter:drop-shadow(0 0 11px #ffe55b)}
-.hall-game__ribbon{
-  position:absolute;top:9px;left:-24px;width:139px;transform:rotate(-29deg);z-index:3;
-  padding:4px 8px;background:linear-gradient(180deg,#ff4b31,#af100e);
-  border:1px solid #ffbd68;text-align:center;
-  font-weight:1000;font-size:11px;text-shadow:0 1px #7f0709;box-shadow:0 2px 8px #210309af;
-}
-.hall-game__price{
-  position:absolute;right:8px;top:9px;display:flex;align-items:center;gap:4px;z-index:3;
-  padding:4px 8px;min-width:50px;justify-content:center;
-  background:linear-gradient(135deg,#0a0c15ed,#020207ee);
-  border:1px solid #ffcd73;border-radius:999px;
-  font-size:13px;font-weight:1000;color:#fffbe8;
-  box-shadow:0 0 8px #000b,0 0 8px #ffad3270;
-}
-.hall-game__price svg{color:#ffbf56}
-.hall-game__info{
-  position:absolute;left:9px;right:6px;bottom:53px;z-index:3;display:block;
-  text-shadow:0 2px 4px #000,0 0 6px #000;
-}
-.hall-game__name{
-  display:block;max-width:100%;color:#ffe49d;
-  font:1000 clamp(16px,4.4vw,22px)/1.03 Georgia,'Times New Roman',serif;
-  letter-spacing:-.6px;-webkit-text-stroke:.2px #562914;
-  text-shadow:0 2px #76340f,0 4px #170707,0 0 12px #ef9a2a;
-}
-.hall-game__hint{
-  display:block;margin-top:4px;color:#fff4e7;max-width:95%;
-  font:600 10px/1.2 system-ui,sans-serif;
-  text-shadow:0 2px 5px #000,0 0 3px #000;
-}
-.hall-game__play{
-  position:absolute;z-index:3;right:8px;bottom:10px;
-  display:flex;align-items:center;justify-content:center;
-  min-width:79px;min-height:34px;padding:7px 10px;border-radius:11px;border:2px solid #acfdbd;
-  color:white;font-size:15px;font-weight:1000;letter-spacing:-.3px;text-align:center;
-  background:linear-gradient(180deg,#40f67e,#009b39 65%,#00713a);
-  box-shadow:inset 0 1px #ffffffa0,0 0 13px #2bfa73d4,0 3px 0 #075624;
-  text-shadow:0 1px 3px #05471e;
-}
-.hall-game--blue .hall-game__play{background:linear-gradient(#37d9ff,#087cdb);border-color:#a4edff;box-shadow:0 0 14px #08a7ff}
-.hall-game--violet .hall-game__play{background:linear-gradient(#e84dff,#8224cb);border-color:#fbc7ff;box-shadow:0 0 14px #cd20ff}
-.hall-game--red .hall-game__play{background:linear-gradient(#ff7849,#bd211a);border-color:#ffd3ac;box-shadow:0 0 14px #ff5113}
-.hall-game--gold .hall-game__play{background:linear-gradient(#fed55d,#b9790c);border-color:#fff2a3;box-shadow:0 0 14px #fac138}
-.hall-game--featured .hall-game__price{top:16px;right:13px;padding:7px 11px}
-.hall-game--featured .hall-game__info{left:12px;bottom:14px;right:110px}
-.hall-game--featured .hall-game__name{font-size:clamp(24px,7.2vw,36px)}
-.hall-game--featured .hall-game__hint{font-size:11px;line-height:1.25}
-.hall-game--featured .hall-game__play{right:11px;bottom:14px;min-height:45px;min-width:98px;font-size:19px}
-.hall-game--no-tickets{filter:saturate(.64)}
-.hall-game:disabled{cursor:default;filter:saturate(.62) brightness(.84)}
-.hall-game:not(:disabled):active{transform:scale(.985)}
-.hall-game:not(:disabled):active .hall-game__play{filter:brightness(1.2)}
-.hall-resume{
-  width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
-  border:1px solid #ffdb79;border-radius:12px;background:linear-gradient(90deg,#76451d,#251122);
-  color:#fff1cb;padding:11px 9px;margin:0 0 10px;font-size:12px;font-weight:800;
-  box-shadow:0 0 12px #ffaa4542;
-}
-.hall-resume span{flex:1;text-align:left}
-.hall-safety{display:flex;align-items:flex-start;justify-content:center;gap:5px;padding:12px 9px 2px;
- color:#baa9b8;text-align:center;font-size:10px;line-height:1.3}
-.hall-safety svg{color:#77d7aa;flex:none}
-.hall-toast{margin:10px 0 0;padding:12px;border-radius:12px;border:1px solid;text-align:center;font-size:12px;line-height:1.3}
-.hall-toast--success{background:#123921d9;border-color:#53de9f;color:#c9ffe4}
-.hall-toast--error{display:flex;align-items:center;gap:7px;background:#451a27e0;border-color:#ff738f;color:#ffdfec}
-.hall-toast--error span{flex:1}
-.hall-toast--error button{padding:5px 8px;border-radius:7px;background:#ffe0ad;color:#3c1720;font-weight:bold}
-@media(min-width:600px){
- .territory-game-hall{padding-left:14px;padding-right:14px}
- .hall-marquee{height:205px;margin-left:-14px;margin-right:-14px}
- .hall-cashier__stat{min-height:76px}
- .hall-game{height:195px}
- .hall-game--featured{height:210px}
-}
-@media(max-width:360px){
- .territory-game-hall{padding-left:7px;padding-right:7px}
- .hall-marquee{height:158px;margin-left:-7px;margin-right:-7px}
- .hall-games{gap:7px}
- .hall-game{height:161px;border-radius:13px}
- .hall-game--featured{height:175px}
- .hall-game__name{font-size:15px}
- .hall-game__hint{font-size:9px}
- .hall-game__price{font-size:11px;padding:3px 6px}
- .hall-game__play{min-width:73px;min-height:31px;font-size:13px}
- .hall-game--featured .hall-game__name{font-size:25px}
- .hall-game--featured .hall-game__play{min-width:88px;font-size:16px}
- .hall-cashier__stat{grid-template-columns:20px minmax(0,1fr)}
- .hall-cashier__stat-icon{width:19px;height:19px}
- .hall-action{gap:5px}
-}
-@keyframes hall-twinkle{from{opacity:.25;transform:translateY(2px)}to{opacity:.75;transform:translateY(-3px)}}
-@keyframes hall-sheen{0%,60%{left:-60%}74%,100%{left:130%}}
-@media(prefers-reduced-motion:reduce){
- .hall-marquee__sparks,.hall-action::after{animation:none}
- .hall-action,.hall-game{transition:none}
-}
-
-/* Approved casino mock: illustrated marquee, jewel-toned cards, working native controls.
-   Every image is an existing local asset. Text and controls remain separate DOM elements.
-   Lazy <img> scenes avoid eagerly downloading five heavy game backgrounds at once. */
-.territory-game-hall {
-  width:100%;max-width:100%;min-width:0;
-  overflow-x:clip;
-  -webkit-tap-highlight-color:transparent;
-}
-.hall-marquee {
-  min-height:170px;
-  padding:11px 13px 13px 29%;
-  background:
-    radial-gradient(ellipse at 17% 45%,rgba(255,137,37,.45),transparent 55%),
-    radial-gradient(ellipse at 88% 21%,rgba(255,61,22,.28),transparent 48%),
-    linear-gradient(135deg,#420e2e,#13102f 54%,#34122b);
-}
-.hall-marquee__art {filter:saturate(1.3) contrast(1.1) brightness(.73)}
-.hall-marquee__art::after {
-  background:linear-gradient(90deg,rgba(10,3,17,.06),rgba(16,4,23,.57) 36%,rgba(24,8,26,.52) 70%,rgba(28,5,18,.29)),linear-gradient(0deg,#1b0b20,transparent 38%);
-}
-.hall-marquee__hero {
-  position:absolute;z-index:2;
-  left:-4%;bottom:-12%;height:113%;width:44%;
-  object-fit:contain;object-position:center bottom;
-  filter:drop-shadow(4px 6px 9px #150312dd) drop-shadow(0 0 19px #ffa439aa);
-  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 83%,transparent 100%);
-  mask-image:linear-gradient(180deg,#000 0%,#000 83%,transparent 100%);
-  pointer-events:none;
-}
-.hall-marquee__sign {
-  position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;
-  width:min(100%,390px);min-width:0;margin:0 auto;
-  padding:8px 7px 13px;
-  border:3px ridge #f7bb56;border-radius:22px 22px 13px 13px;
-  background:
-    repeating-linear-gradient(5deg,transparent 0 14px,#ee96490b 15px,transparent 17px),
-    linear-gradient(180deg,rgba(101,39,19,.97),rgba(62,25,23,.97) 56%,rgba(30,14,27,.98));
-  box-shadow:inset 0 2px 0 #ffebadbb,inset 0 -7px 10px #070412a1,0 4px 0 #64310b,0 6px 14px #09000ade,0 0 18px #f8ad4666;
-}
-.hall-marquee__sign::before,.hall-marquee__sign::after {
-  content:"";position:absolute;top:30%;width:12px;height:12px;
-  transform:rotate(45deg);background:radial-gradient(circle at 35% 25%,#fffbd3,#ffad25 46%,#9c3c00);
-  border:1px solid #ffdf9a;box-shadow:0 0 12px #ff9428;
-}
-.hall-marquee__sign::before{left:-8px}
-.hall-marquee__sign::after{right:-8px}
-.hall-marquee__title{
-  font-size:clamp(25px,7vw,39px);letter-spacing:-1.3px;
-  -webkit-text-stroke:.7px #683409;
-  white-space:nowrap;max-width:100%;
-}
-.hall-marquee__crown{font-size:26px;line-height:.9}
-.hall-marquee__neon{
-  font-size:clamp(13px,4.2vw,20px);
-  padding:6px 11px;margin-top:9px;
-  max-width:calc(100% + 10px);
-}
-.hall-marquee__chest {
-  position:absolute;z-index:3;right:1%;bottom:-8px;
-  width:74px;height:58px;display:flex;align-items:flex-end;justify-content:center;
-  border:3px ridge #fcd178;border-radius:9px 9px 12px 12px;
-  background:radial-gradient(ellipse at 45% 20%,#ffa92e,#9f3c0b 68%,#40120b);
-  box-shadow:inset 0 3px 5px #ffe9a3aa,0 3px 6px #150610,0 0 19px #ff9b24a1;
-  transform:rotate(5deg);pointer-events:none;
-}
-.hall-marquee__chest::before {
-  content:"";position:absolute;left:-5px;right:-5px;top:-15px;height:18px;
-  border:3px solid #ffcc70;border-radius:12px 12px 6px 6px;
-  background:linear-gradient(#8a3f12,#d88c2b,#512208);
-}
-.hall-marquee__chest span{font-size:24px;margin:0 -5px 5px;filter:drop-shadow(0 0 6px #ffdb5f)}
-.hall-marquee__chest span:first-child{transform:translateY(-20px)}
-.hall-marquee__chest span:nth-child(2){transform:translateY(-12px)}
-.hall-cashier{border-color:#ffd175;box-shadow:0 4px 0 #633019,0 7px 19px #000b,inset 0 2px #fff4b181}
-.hall-cashier__stat{background:radial-gradient(ellipse at 35% 0%,#ffe59717,transparent 60%),linear-gradient(155deg,#181124,#090b17);border-color:#b58e6285}
-.hall-cashier__stat-icon{color:#ffd04f}
-.hall-cashier__value{font-size:clamp(17px,4.8vw,24px);color:#fff8f1}
-.hall-cashier__info {
-  position:absolute;z-index:5;right:12px;top:43px;
-  display:grid;place-items:center;width:24px;height:24px;
-  border-radius:50%;border:2px solid #e3b87e;
-  background:linear-gradient(#8d5925,#4c2b16);
-  color:#fff3d4;font:bold italic 15px Georgia,serif;
-  box-shadow:0 2px 4px #000a;
-}
-.hall-cashier__details{
-  margin:9px 2px 3px;padding:9px 11px;
-  border-radius:9px;border:1px solid #c99b59;
-  background:#090c1ced;font-size:11px;line-height:1.5;
-  color:#f9e7bf;
-}
-.hall-games{gap:10px}
-.hall-game{
-  background-image:radial-gradient(circle at 35% 5%,#f7d65b55,transparent 58%);
-  contain:paint;
-}
-.hall-game__scene{
-  position:absolute;z-index:0;inset:0;display:block;
-  width:100%;height:100%;object-fit:cover;object-position:center;
-  pointer-events:none;filter:saturate(1.3) contrast(1.08);
-}
-.hall-game--featured .hall-game__scene{filter:saturate(1.4) brightness(1.13)}
-.hall-game--blue .hall-game__scene{filter:saturate(1.6) hue-rotate(8deg)}
-.hall-game--violet .hall-game__scene{filter:saturate(1.5) hue-rotate(23deg)}
-.hall-game--red .hall-game__scene{filter:saturate(1.5) sepia(.13)}
-.hall-game--gold .hall-game__scene{filter:saturate(1.4) hue-rotate(-25deg)}
-.hall-game__art{top:6px;left:7px}
-.hall-game__glow{
-  background:linear-gradient(180deg,rgba(0,0,0,.04) 0%,rgba(0,0,0,.1) 23%,rgba(3,1,13,.60) 58%,#07050dcf 100%),
-   radial-gradient(circle at 20% 10%,#ffdb8b55,transparent 66%);
-}
-.hall-game--featured .hall-game__glow{
-  background:linear-gradient(90deg,#02071919,#03060a11 35%,#07102124),linear-gradient(0deg,#050411d9,transparent 48%);
-}
-.hall-game__name{overflow-wrap:break-word}
-.hall-game__hint{overflow-wrap:break-word}
-.hall-game__play{
-  min-height:42px;font-size:clamp(13px,3.5vw,16px);
-  border-radius:13px;touch-action:manipulation;
-}
-.hall-game--featured .hall-game__play{min-height:49px}
-.hall-game--gold .hall-game__play{background:linear-gradient(#33f371,#039a49);border-color:#b4ffc0;box-shadow:0 0 13px #18f977}
-.hall-game--coming-soon{cursor:pointer}
-.hall-game--coming-soon .hall-game__play{
-  color:#ffe9b5;background:linear-gradient(#77562a,#513020);
-  border-color:#cda66f;box-shadow:0 0 9px #f6be4d7a;
-  font-size:12px;
-}
-.hall-game--coming-soon .hall-game__price{border-color:#d1af6f;font-size:10px}
-.hall-game__wheel{
-  position:absolute;z-index:2;top:7px;left:8%;width:min(77%,140px);aspect-ratio:1;
-  display:grid;place-items:center;
-  border:8px ridge #ffce59;border-radius:50%;
-  background:conic-gradient(#ed4b36 0deg 45deg,#ffbe34 45deg 90deg,#0ac6cb 90deg 135deg,#ad47ee 135deg 180deg,#f9a12f 180deg 225deg,#49d77b 225deg 270deg,#d83490 270deg 315deg,#3c88eb 315deg 360deg);
-  box-shadow:0 4px 14px #050012c7,inset 0 0 0 4px #fce38b,0 0 20px #ffbc3f;
-  transform:rotate(-15deg);
-  pointer-events:none;
-}
-.hall-game__wheel::before{
-  content:"";position:absolute;inset:-13px;
-  border:3px dotted #ffe48c;border-radius:50%;
-  filter:drop-shadow(0 0 6px #f9b95b);
-}
-.hall-game__wheel::after{
-  content:"";position:absolute;top:-21px;left:calc(50% - 9px);
-  border-left:9px solid transparent;border-right:9px solid transparent;
-  border-top:22px solid #fff4ae;
-  filter:drop-shadow(0 2px 3px #492409);
-}
-.hall-game__wheel span{
-  display:grid;place-items:center;width:38%;aspect-ratio:1;
-  border:4px solid #ffeb99;border-radius:50%;background:radial-gradient(circle,#c67a1c,#773710);
-  color:#fff2aa;font-size:22px;box-shadow:0 0 9px #ffe399;
-}
-.hall-game--coming-soon .hall-game__art{display:none}
-@media(max-width:390px){
- .hall-marquee{padding-left:29%;padding-right:7px}
- .hall-marquee__sign{padding:8px 5px 12px}
- .hall-marquee__title{font-size:clamp(23px,7vw,29px)}
- .hall-marquee__hero{left:-6%;width:45%}
- .hall-marquee__chest{width:55px;height:45px;right:0;bottom:-7px}
- .hall-marquee__chest span{font-size:18px}
- .hall-game__wheel{border-width:6px;top:17px}
- .hall-game__price{right:5px;top:7px;min-width:42px}
- .hall-game__info{bottom:53px;left:7px}
- .hall-game__name{font-size:clamp(14px,4.1vw,17px)}
- .hall-game__hint{font-size:9px;line-height:1.18}
- .hall-game__play{min-height:40px;right:6px;bottom:7px;min-width:74px;padding:5px 8px}
- .hall-game--featured .hall-game__name{font-size:clamp(24px,7vw,28px)}
- .hall-game--featured .hall-game__hint{font-size:10px}
- .hall-game--featured .hall-game__info{left:12px;bottom:16px}
- .hall-game--featured .hall-game__play{right:9px;min-width:89px}
-}
-@media(prefers-reduced-motion:reduce){
- .hall-game__wheel{animation:none}
-}
-
-/* 20 Oct — approved photo artwork, not stand-in stock assets.
-   Small vector wrappers contain optimized picture crops from the user's mock;
-   all amounts, labels, buttons and payouts are still real DOM/server data. */
-.territory-game-hall {
- --hall-gold:#ffe09a;
- padding:0 7px 10px;
- margin:-12px -12px 0;
- background:linear-gradient(180deg,#13091e,#0c0c1e 37%,#0b1220);
-}
-.hall-marquee {
- display:block;position:relative;overflow:hidden;
- width:calc(100% + 14px);margin:0 -7px 0;
- height:auto;min-height:0;aspect-ratio:620 / 178;padding:0;
- border:0;border-bottom:2px solid #dca049;border-radius:0;
- background-color:#270919;
- background-size:100% 100%;background-position:center;background-repeat:no-repeat;
- box-shadow:inset 0 -8px 16px #0004,0 4px 12px #04020ac9;
-}
-.hall-marquee__sr{
- position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden
-}
-.hall-marquee__en-neon{
- position:absolute;z-index:4;left:34%;top:59%;width:42%;
- display:flex;align-items:center;justify-content:center;
- min-height:25%;padding:1px 3px;
- border:2px solid #ff65fb;border-radius:8px;
- background:linear-gradient(#42085c,#7c0c9b);
- box-shadow:inset 0 0 8px #bb30f5,0 0 8px #da37ff;
- color:#fff8ff;text-shadow:0 0 4px #fff,0 0 8px #ef85fc;
- font:900 clamp(10px,3.2vw,17px)/1.1 system-ui,sans-serif;
- letter-spacing:.4px;
+.hall-marquee__en-neon {
+  position: absolute;
+  left: 34%; top: 59%; width: 42%; min-height: 25%;
+  display: grid; place-items: center;
+  border: 1px solid #fb9cff; border-radius: 12px;
+  background: linear-gradient(#5e0875, #810ea7);
+  box-shadow: 0 0 9px #d523f8, inset 0 0 8px #c533ee;
+  color: #fff; font-size: clamp(12px, 3.5vw, 22px); font-weight: 900;
+  text-shadow: 0 0 5px #ffb6ff;
 }
 .hall-cashier {
- margin:0 0 8px;padding:5px 6px 6px;
- border-radius:0 0 15px 15px;border:2px solid #e4ac50;border-top:0;
- box-shadow:0 3px 10px #000a,inset 0 2px #fff3aa44;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin: -1px 0 10px;
+  padding: 10px 9px;
+  border: 1px solid #efc16d;
+  border-radius: 5px 5px 13px 13px;
+  background: linear-gradient(120deg, #121624, #140f24 70%, #281233);
+  box-shadow: inset 0 0 0 3px #79502540, inset 0 1px #fff2bb, 0 4px 12px #0007;
 }
-.hall-cashier__stats{gap:4px}
-.hall-cashier__stat{
- min-height:51px;grid-template-columns:20px minmax(0,1fr);
- grid-template-rows:24px 14px;gap:1px;
- padding:5px 4px 2px;border-radius:9px;
+.hall-cashier::before, .hall-cashier::after {
+  content: ''; position: absolute; top: 6px; width: 6px; height: 6px;
+  border: 1px solid #ffdb82; background: #2f96d9; transform: rotate(45deg);
+  box-shadow: 0 0 5px #efb251;
 }
-.hall-cashier__stat-icon{width:20px;height:20px}
-.hall-cashier__value{font-size:clamp(16px,5vw,22px)}
-.hall-cashier__label{font-size:clamp(8px,2.4vw,11px)}
-.hall-cashier__actions{gap:7px;margin-top:6px}
-.hall-action{min-height:41px;padding:4px;border-radius:11px}
-.hall-action b{font-size:clamp(9px,2.8vw,13px)}
-.hall-action small{font-size:9px}
-.hall-cashier__info{
- top:29px;right:6px;width:20px;height:20px;font-size:12px;
+.hall-cashier::before { left: -3px; }
+.hall-cashier::after { right: -3px; }
+.hall-cashier__stats, .hall-cashier__actions { min-width: 0; }
+.hall-cashier__stat {
+  display: grid;
+  grid-template-columns: 24px minmax(0, auto) minmax(0, 1fr);
+  align-items: center; gap: 6px;
+  min-height: 42px;
 }
-.hall-cashier__rule{margin-top:5px;font-size:9px}
-.hall-games{
- gap:7px;grid-template-columns:repeat(2,minmax(0,1fr));
+.hall-cashier__stat-icon {
+  width: 25px; height: 25px;
+  color: #ffb193; fill: #c72f3a;
+  transform: rotate(-18deg);
+  filter: drop-shadow(0 0 5px #e9433655);
 }
-.hall-game{
- height:130px;min-width:0;border-width:2px;border-radius:13px;
- background:#161026;isolation:isolate;
- box-shadow:inset 0 0 0 1px #522219,0 2px 0 #8a511f,0 3px 9px #0008;
+.hall-cashier__value {
+  font-size: clamp(25px, 7.3vw, 40px);
+  font-weight: 900; line-height: 1; letter-spacing: -1px;
+  color: #fff0bc; font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
-.hall-game--featured{height:142px;border:3px solid #ffdc87}
-.hall-game__scene{
- position:absolute;inset:0 0 auto 0;left:0;
- width:100%;height:73%;
- object-fit:cover;object-position:center top;
- filter:none!important;z-index:0;
+.hall-cashier__label {
+  font-size: clamp(9px, 2.6vw, 13px);
+  line-height: 1.2; color: #f4d98e; font-weight: 700;
 }
-.hall-game--featured .hall-game__scene{height:90%}
-.hall-game__glow,
-.hall-game--blue .hall-game__glow,
-.hall-game--violet .hall-game__glow,
-.hall-game--red .hall-game__glow,
-.hall-game--gold .hall-game__glow {
- background:linear-gradient(180deg,#03061100 12%,#06081631 41%,#060413c7 73%,#070610f5 100%);
+.hall-action {
+  display: flex; align-items: center; justify-content: center;
+  gap: 5px; width: 100%; min-height: 42px; padding: 5px;
+  border: 1px solid #f9acff; border-radius: 10px;
+  color: #fff; cursor: pointer; text-align: left;
+  background: linear-gradient(#8b19b6, #4c086f);
+  box-shadow: inset 0 0 0 2px #c83aeb55, inset 0 1px #ffe1ff, 0 0 10px #c323f75e;
+  text-shadow: 0 1px 3px #31073d;
+  touch-action: manipulation;
 }
-.hall-game--featured .hall-game__glow{
- background:linear-gradient(180deg,#02030c00 8%,#0c08252b 42%,#0807169c 75%,#060416ed 100%);
+.hall-action > svg:first-child { flex-shrink: 0; width: 21px; color: #ffda70; }
+.hall-action span { min-width: 0; }
+.hall-action b { display: block; font-size: clamp(10px, 2.9vw, 15px); line-height: 1.15; }
+.hall-action small { display: block; margin-top: 2px; font-size: clamp(8px, 2.2vw, 11px); color: #efd4fa; line-height: 1.15; }
+.hall-action__end { flex-shrink: 0; color: #f8d3fc; }
+.hall-action:disabled { opacity: .6; cursor: default; }
+.hall-games { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.hall-game {
+  --play-top: #258849; --play-bottom: #064b29; --play-light: #a8ffb0; --play-glow: #42ee7866;
+  position: relative; isolation: isolate; display: block;
+  width: 100%; min-width: 0; min-height: 153px; aspect-ratio: 1.13;
+  overflow: hidden; padding: 0; text-align: left; cursor: pointer;
+  border: 2px solid #e9b254; border-radius: 13px;
+  color: #fff; background: #101323;
+  box-shadow: 0 2px 0 #754219, 0 3px 10px #0008, 0 0 8px #e9a84325;
+  touch-action: manipulation;
+  transition: transform .15s ease;
 }
-.hall-game__art,.hall-game__wheel{display:none}
-.hall-game__price{
- top:7px;right:6px;font-size:11px;
- padding:4px 7px;min-width:42px;
- border-color:#fed575;background:#080911e8;
+.hall-game--featured { grid-column: 1 / -1; aspect-ratio: 2.65; min-height: 142px; }
+.hall-game__scene { position: absolute; inset: 0; width: 100%; height: 80%; object-fit: cover; object-position: center 38%; pointer-events: none; }
+.hall-game__glow {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, #05081200 28%, #05081438 43%, #070a18dc 68%, #060816fa 100%);
 }
-.hall-game__ribbon{top:7px;left:-27px;font-size:10px}
-.hall-game__info{left:8px;right:7px;bottom:41px;max-width:calc(100% - 16px)}
-.hall-game__name{
- font-size:clamp(14px,4vw,18px);line-height:1.06;
- text-shadow:0 2px 3px #07030a,0 0 7px #16040f;
+.hall-game--featured .hall-game__scene { height: 100%; }
+.hall-game--featured .hall-game__glow { background: linear-gradient(180deg, #05081200 25%, #05081210 40%, #060c1ba8 72%, #050813f0); }
+.hall-game__shimmer {
+  position: absolute; z-index: 1; inset: 2px; border-radius: 9px; pointer-events: none;
+  border: 1px solid #ffdf855e;
+  box-shadow: inset 0 0 8px #ffc55744;
 }
-.hall-game__hint{font-size:9px;line-height:1.14;margin-top:2px}
-.hall-game__play{
- bottom:7px;right:7px;
- min-width:73px;min-height:32px;
- padding:5px 8px;font-size:clamp(12px,3vw,15px);
- border-radius:10px;
+.hall-game__shimmer::before, .hall-game__shimmer::after {
+  content: ''; position: absolute; width: 7px; height: 7px;
+  border: 1px solid #ffe6a0; background: linear-gradient(135deg, #fff4ad, #c88928 55%, #724419);
+  transform: rotate(45deg); box-shadow: 0 0 5px #ffcf78;
 }
-.hall-game--featured .hall-game__price{top:10px;right:11px}
-.hall-game--featured .hall-game__info{
- left:11px;bottom:11px;right:100px;
+.hall-game__shimmer::before { top: 1px; left: 1px; }
+.hall-game__shimmer::after { right: 1px; bottom: 1px; }
+.hall-game__ribbon {
+  position: absolute; z-index: 2; top: 9px; left: -25px; width: 126px;
+  padding: 3px 0; transform: rotate(-24deg); text-align: center;
+  border-block: 1px solid #ffc777; background: linear-gradient(#f85537, #a51318);
+  color: #fff3ce; font-size: 11px; font-weight: 800;
+  text-shadow: 0 1px 2px #4f0710; box-shadow: 0 2px 5px #0007;
 }
-.hall-game--featured .hall-game__name{
- font-size:clamp(22px,6.8vw,31px);
- color:#ffe2a3;
+.hall-game__price {
+  position: absolute; z-index: 2; top: 7px; right: 7px;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  min-width: 41px; padding: 3px 7px;
+  border: 1px solid #f4d082; border-radius: 20px;
+  background: #080c18e6; color: #fff3d2; font-size: 12px; font-weight: 800;
+  box-shadow: 0 2px 5px #0007;
 }
-.hall-game--featured .hall-game__hint{font-size:10px}
-.hall-game--featured .hall-game__play{
- right:9px;bottom:11px;min-width:86px;min-height:40px;font-size:17px;
+.hall-game__price svg { color: #ff9b87; fill: #b52d3f; transform: rotate(-14deg); }
+.hall-game__info { position: absolute; z-index: 2; left: 8px; right: 7px; bottom: 43px; }
+.hall-game__name {
+  display: block; color: #ffe6a1;
+  font: 900 clamp(13px, 4.1vw, 23px)/1.12 system-ui, sans-serif;
+  letter-spacing: -.65px; overflow-wrap: normal;
+  text-shadow: 0 2px 2px #211007, 0 0 6px #000;
 }
-.hall-game--coming-soon .hall-game__play{
- min-width:70px;font-size:10px;padding:4px 3px;
+.hall-game__hint { display: block; margin-top: 3px; color: #f2e8ec; font: 400 clamp(9px, 2.6vw, 13px)/1.25 system-ui, sans-serif; text-shadow: 0 1px 3px #000; }
+.hall-game__play {
+  position: absolute; z-index: 2; bottom: 8px; right: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 2px;
+  min-width: 72px; height: 29px; padding: 4px 8px;
+  border: 1px solid var(--play-light); border-radius: 8px;
+  background: linear-gradient(var(--play-top), var(--play-bottom));
+  box-shadow: inset 0 0 0 2px #ffffff18, inset 0 1px #ffffff70, 0 0 8px var(--play-glow), 0 2px 3px #0007;
+  color: #fffbe9; font: 800 13px/1 system-ui, sans-serif; text-shadow: 0 1px 2px #0008;
 }
-.hall-safety{padding:8px 7px 1px;font-size:9px}
-.hall-marquee__sparks,.hall-action::after{
- animation:none!important;
+.hall-game--blue { --play-top: #128fc3; --play-bottom: #054f83; --play-light: #9be9ff; --play-glow: #00c3ff77; }
+.hall-game--violet { --play-top: #b332db; --play-bottom: #59118c; --play-light: #f1b0ff; --play-glow: #d239ff77; }
+.hall-game--red { --play-top: #df4b2c; --play-bottom: #901b19; --play-light: #ffbd8e; --play-glow: #ff572477; }
+.hall-game--gold { --play-top: #a77521; --play-bottom: #664011; --play-light: #ffe09b; --play-glow: #e9aa3877; }
+.hall-game--featured .hall-game__info { left: 12px; right: 97px; bottom: 11px; }
+.hall-game--featured .hall-game__name { font-size: clamp(24px, 7vw, 40px); letter-spacing: -1px; }
+.hall-game--featured .hall-game__hint { font-size: clamp(9px, 2.6vw, 14px); }
+.hall-game--featured .hall-game__play { right: 10px; bottom: 11px; height: 32px; min-width: 80px; font-size: 15px; }
+.hall-game--featured .hall-game__price { top: auto; bottom: 51px; right: 11px; }
+.hall-game:disabled { cursor: default; }
+.hall-game:disabled .hall-game__play { opacity: .6; }
+.hall-game:not(:disabled):active, .hall-action:not(:disabled):active { transform: scale(.985); }
+.territory-game-hall button:focus-visible { outline: 2px solid #fff0ac; outline-offset: 3px; }
+.hall-resume { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 10px; padding: 10px; border: 1px solid #ae874c; border-radius: 9px; color: #ffe6b2; background: #231a30; font-size: 12px; cursor: pointer; }
+.hall-resume span { flex: 1; text-align: left; }
+.hall-payout-recovery { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 7px; font-size: 11px; line-height: 1.4; color: #f9dfb3; }
+.hall-payout-recovery button, .hall-toast button { min-height: 34px; padding: 6px 10px; border: 1px solid #ad8b56; border-radius: 7px; background: #2c203b; color: #ffedc1; cursor: pointer; }
+.hall-toast { margin: 10px 0 0; padding: 10px; border: 1px solid #6fbc9b; border-radius: 10px; background: #122e2a; color: #d2ffe5; font-size: 12px; line-height: 1.4; }
+.hall-toast--error { display: flex; align-items: center; gap: 8px; border-color: #c76583; background: #391e30; color: #ffe1eb; }
+.hall-toast--error span { flex: 1; }
+/* This rule applies only while the lobby is mounted, and only to its active tab. */
+.territory-shell:has(.territory-game-hall) .territory-nav .nav-btn[aria-current="page"]:has(img[src$="nav-games.webp"]) {
+  border-color: #ffc45f;
+  background: linear-gradient(#6d3a14, #2d1c12);
+  box-shadow: inset 0 0 10px #f8b74d40, 0 0 10px #f9a82d70;
 }
-@media(min-width:600px){
- .territory-game-hall{max-width:580px;margin-left:auto;margin-right:auto}
- .hall-game{height:170px}
- .hall-game--featured{height:205px}
- .hall-game__name{font-size:23px}
- .hall-game__hint{font-size:12px}
- .hall-game__play{min-height:41px}
- .hall-game--featured .hall-game__play{min-height:48px}
- .hall-cashier__stat{min-height:65px}
- .hall-cashier__label{font-size:12px}
+@media (min-width: 600px) {
+  .territory-game-hall { max-width: 580px; margin-inline: auto; }
+  .hall-cashier { padding: 12px; }
+  .hall-game { min-height: 215px; }
+  .hall-game--featured { min-height: 205px; }
+  .hall-game__info { bottom: 49px; left: 11px; }
+  .hall-game__play { height: 32px; min-width: 80px; }
 }
-@media(max-width:360px){
- .territory-game-hall{padding-left:5px;padding-right:5px}
- .hall-marquee{width:calc(100% + 10px);margin-left:-5px;margin-right:-5px;min-height:0;height:auto}
- .hall-game{height:123px}
- .hall-game--featured{height:133px}
- .hall-game__info{bottom:39px}
- .hall-game__name{font-size:14px}
- .hall-game--featured .hall-game__name{font-size:23px}
- .hall-game__hint{font-size:8px}
- .hall-game__play{min-height:31px}
+@media (max-width: 360px) {
+  .territory-game-hall { padding-inline: 7px; }
+  .hall-marquee { margin-inline: -7px; }
+  .hall-cashier { gap: 6px; padding-inline: 7px; }
+  .hall-cashier__stat { grid-template-columns: 20px minmax(0, auto) minmax(0, 1fr); gap: 4px; }
+  .hall-cashier__stat-icon { width: 21px; height: 21px; }
+  .hall-action { gap: 4px; }
+  .hall-action__end { display: none; }
+  .hall-games { gap: 7px; }
+  .hall-game { min-height: 149px; }
+  .hall-game--featured { min-height: 139px; }
+  .hall-game__info { left: 6px; right: 6px; }
+  .hall-game__name { letter-spacing: -.6px; }
+  .hall-game--featured .hall-game__info { left: 9px; right: 89px; }
+  .hall-game--featured .hall-game__play { min-width: 72px; right: 8px; }
 }
-
-/* Cashier simplification: tickets are the only player-facing Hall currency.
-   Points stay in the historical server ledger, gold is claimed automatically. */
-.territory-game-hall .hall-cashier__stats--tickets-only{
- display:grid;
- grid-template-columns:minmax(0,1fr);
-}
-.territory-game-hall .hall-cashier__stats--tickets-only .hall-cashier__stat{
- display:flex;align-items:center;justify-content:center;
- gap:12px;min-width:0;min-height:58px;padding:9px 12px;
- border:1px solid #ffdc8a;border-radius:11px;
- background:linear-gradient(130deg,#261021,#120c22 53%,#301623);
-}
-.territory-game-hall .hall-cashier__stats--tickets-only .hall-cashier__stat-icon{
- width:30px;height:30px;flex-shrink:0;color:#ffbd63;
-}
-.territory-game-hall .hall-cashier__stats--tickets-only .hall-cashier__value{
- font-size:clamp(22px,7vw,30px);line-height:1.1;
-}
-.territory-game-hall .hall-cashier__stats--tickets-only .hall-cashier__label{
- grid-column:auto;font-size:clamp(12px,3.4vw,15px);
- overflow:visible;text-overflow:clip;white-space:normal;text-align:left;
-}
-.territory-game-hall .hall-cashier__actions--single{
- display:grid;grid-template-columns:minmax(0,1fr);
- max-width:none;gap:0;margin-top:7px;
-}
-.territory-game-hall .hall-cashier__actions--single .hall-action{
- min-height:47px;
-}
-.hall-payout-recovery{
- display:flex;align-items:center;justify-content:center;
- gap:9px;flex-wrap:wrap;
- padding:9px 7px;margin-top:8px;
- font-size:11px;line-height:1.35;text-align:center;
- color:#fff0c4;
-}
-.hall-payout-recovery button{
- min-height:34px;padding:7px 10px;border-radius:9px;
- border:1px solid #ffdc98;background:#2b1e36;
- color:#fff1c6;font-weight:800;
-}
-.hall-payout-recovery button:disabled{opacity:.55}
-@media(max-width:360px){
- .territory-game-hall .hall-cashier__stats--tickets-only .hall-cashier__stat{
-  gap:8px;min-height:54px;padding:8px;
- }
- .territory-game-hall .hall-cashier__stats--tickets-only .hall-cashier__stat-icon{width:25px;height:25px}
- .territory-game-hall .hall-cashier__stats--tickets-only .hall-cashier__label{font-size:11px}
+@media (prefers-reduced-motion: reduce) {
+  .hall-game { transition: none; }
 }
