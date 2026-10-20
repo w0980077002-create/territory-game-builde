@@ -433,3 +433,143 @@
 @media(prefers-reduced-motion:reduce){
  .hall-game__wheel{animation:none}
 }
+
+/* 20 Oct — approved photo artwork, not stand-in stock assets.
+   Small vector wrappers contain optimized picture crops from the user's mock;
+   all amounts, labels, buttons and payouts are still real DOM/server data. */
+.territory-game-hall {
+ --hall-gold:#ffe09a;
+ padding:0 7px 10px;
+ margin:-12px -12px 0;
+ background:linear-gradient(180deg,#13091e,#0c0c1e 37%,#0b1220);
+}
+.hall-marquee {
+ display:block;position:relative;overflow:hidden;
+ width:calc(100% + 14px);margin:0 -7px 0;
+ height:auto;min-height:0;aspect-ratio:620 / 178;padding:0;
+ border:0;border-bottom:2px solid #dca049;border-radius:0;
+ background:#270919 url("/hall-art/marquee.svg") center / 100% 100% no-repeat;
+ box-shadow:inset 0 -8px 16px #0004,0 4px 12px #04020ac9;
+}
+.hall-marquee__sr{
+ position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden
+}
+.hall-marquee__en-neon{
+ position:absolute;z-index:4;left:34%;top:59%;width:42%;
+ display:flex;align-items:center;justify-content:center;
+ min-height:25%;padding:1px 3px;
+ border:2px solid #ff65fb;border-radius:8px;
+ background:linear-gradient(#42085c,#7c0c9b);
+ box-shadow:inset 0 0 8px #bb30f5,0 0 8px #da37ff;
+ color:#fff8ff;text-shadow:0 0 4px #fff,0 0 8px #ef85fc;
+ font:900 clamp(10px,3.2vw,17px)/1.1 system-ui,sans-serif;
+ letter-spacing:.4px;
+}
+.hall-cashier {
+ margin:0 0 8px;padding:5px 6px 6px;
+ border-radius:0 0 15px 15px;border:2px solid #e4ac50;border-top:0;
+ box-shadow:0 3px 10px #000a,inset 0 2px #fff3aa44;
+}
+.hall-cashier__stats{gap:4px}
+.hall-cashier__stat{
+ min-height:51px;grid-template-columns:20px minmax(0,1fr);
+ grid-template-rows:24px 14px;gap:1px;
+ padding:5px 4px 2px;border-radius:9px;
+}
+.hall-cashier__stat-icon{width:20px;height:20px}
+.hall-cashier__value{font-size:clamp(16px,5vw,22px)}
+.hall-cashier__label{font-size:clamp(8px,2.4vw,11px)}
+.hall-cashier__actions{gap:7px;margin-top:6px}
+.hall-action{min-height:41px;padding:4px;border-radius:11px}
+.hall-action b{font-size:clamp(9px,2.8vw,13px)}
+.hall-action small{font-size:9px}
+.hall-cashier__info{
+ top:29px;right:6px;width:20px;height:20px;font-size:12px;
+}
+.hall-cashier__rule{margin-top:5px;font-size:9px}
+.hall-games{
+ gap:7px;grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.hall-game{
+ height:130px;min-width:0;border-width:2px;border-radius:13px;
+ background:#161026;isolation:isolate;
+ box-shadow:inset 0 0 0 1px #522219,0 2px 0 #8a511f,0 3px 9px #0008;
+}
+.hall-game--featured{height:142px;border:3px solid #ffdc87}
+.hall-game__scene{
+ position:absolute;inset:0 0 auto 0;left:0;
+ width:100%;height:73%;
+ object-fit:cover;object-position:center top;
+ filter:none!important;z-index:0;
+}
+.hall-game--featured .hall-game__scene{height:90%}
+.hall-game__glow,
+.hall-game--blue .hall-game__glow,
+.hall-game--violet .hall-game__glow,
+.hall-game--red .hall-game__glow,
+.hall-game--gold .hall-game__glow {
+ background:linear-gradient(180deg,#03061100 12%,#06081631 41%,#060413c7 73%,#070610f5 100%);
+}
+.hall-game--featured .hall-game__glow{
+ background:linear-gradient(180deg,#02030c00 8%,#0c08252b 42%,#0807169c 75%,#060416ed 100%);
+}
+.hall-game__art,.hall-game__wheel{display:none}
+.hall-game__price{
+ top:7px;right:6px;font-size:11px;
+ padding:4px 7px;min-width:42px;
+ border-color:#fed575;background:#080911e8;
+}
+.hall-game__ribbon{top:7px;left:-27px;font-size:10px}
+.hall-game__info{left:8px;right:7px;bottom:41px;max-width:calc(100% - 16px)}
+.hall-game__name{
+ font-size:clamp(14px,4vw,18px);line-height:1.06;
+ text-shadow:0 2px 3px #07030a,0 0 7px #16040f;
+}
+.hall-game__hint{font-size:9px;line-height:1.14;margin-top:2px}
+.hall-game__play{
+ bottom:7px;right:7px;
+ min-width:73px;min-height:32px;
+ padding:5px 8px;font-size:clamp(12px,3vw,15px);
+ border-radius:10px;
+}
+.hall-game--featured .hall-game__price{top:10px;right:11px}
+.hall-game--featured .hall-game__info{
+ left:11px;bottom:11px;right:100px;
+}
+.hall-game--featured .hall-game__name{
+ font-size:clamp(22px,6.8vw,31px);
+ color:#ffe2a3;
+}
+.hall-game--featured .hall-game__hint{font-size:10px}
+.hall-game--featured .hall-game__play{
+ right:9px;bottom:11px;min-width:86px;min-height:40px;font-size:17px;
+}
+.hall-game--coming-soon .hall-game__play{
+ min-width:70px;font-size:10px;padding:4px 3px;
+}
+.hall-safety{padding:8px 7px 1px;font-size:9px}
+.hall-marquee__sparks,.hall-action::after{
+ animation:none!important;
+}
+@media(min-width:600px){
+ .territory-game-hall{max-width:580px;margin-left:auto;margin-right:auto}
+ .hall-game{height:170px}
+ .hall-game--featured{height:205px}
+ .hall-game__name{font-size:23px}
+ .hall-game__hint{font-size:12px}
+ .hall-game__play{min-height:41px}
+ .hall-game--featured .hall-game__play{min-height:48px}
+ .hall-cashier__stat{min-height:65px}
+ .hall-cashier__label{font-size:12px}
+}
+@media(max-width:360px){
+ .territory-game-hall{padding-left:5px;padding-right:5px}
+ .hall-marquee{width:calc(100% + 10px);margin-left:-5px;margin-right:-5px;min-height:0;height:auto}
+ .hall-game{height:123px}
+ .hall-game--featured{height:133px}
+ .hall-game__info{bottom:39px}
+ .hall-game__name{font-size:14px}
+ .hall-game--featured .hall-game__name{font-size:23px}
+ .hall-game__hint{font-size:8px}
+ .hall-game__play{min-height:31px}
+}
