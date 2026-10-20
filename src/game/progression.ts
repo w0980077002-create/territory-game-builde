@@ -2,8 +2,9 @@ import type { GameState, InventoryItem } from './types';
 import { grantRewards, updateProgress } from './actions';
 import type { Enemy } from './types';
 import { useLive } from './live';
+import { calendarDayKey, previousCalendarDayKey } from './weeklyQuests';
 
-export const dayKey = (now = Date.now()) => new Date(now).toDateString();
+export const dayKey = calendarDayKey;
 
 export interface Reward {
   gold?: number;
@@ -71,10 +72,11 @@ export const DAILY_REWARDS: Reward[] = [
 
 export function dailyStatus(state: GameState, now = Date.now()) {
   const today = dayKey(now);
-  const yesterday = dayKey(now - 86400000);
+  const yesterday = previousCalendarDayKey(now);
   const { streak, lastDay } = state.dailyReward;
-  const claimedToday = lastDay === today;
-  const continues = lastDay === yesterday;
+  // Respect a saved device-local receipt during the calendar migration.
+  const claimedToday = lastDay === today || lastDay === new Date(now).toDateString();
+  const continues = lastDay === yesterday || lastDay === new Date(now - 86400000).toDateString();
   const nextIndex = claimedToday ? (streak - 1) % 7 : continues ? streak % 7 : 0;
   return { claimedToday, dayIndex: nextIndex };
 }
@@ -82,8 +84,9 @@ export function dailyStatus(state: GameState, now = Date.now()) {
 export function claimDaily(state: GameState, now = Date.now()): GameState | null {
   const { claimedToday, dayIndex } = dailyStatus(state, now);
   if (claimedToday) return null;
-  const yesterday = dayKey(now - 86400000);
-  const streak = state.dailyReward.lastDay === yesterday ? state.dailyReward.streak + 1 : 1;
+  const yesterday = previousCalendarDayKey(now);
+  const last = state.dailyReward.lastDay;
+  const streak = last === yesterday || last === new Date(now - 86400000).toDateString() ? state.dailyReward.streak + 1 : 1;
   return {
     ...applyReward(state, DAILY_REWARDS[dayIndex]),
     dailyReward: { streak, lastDay: dayKey(now) },
