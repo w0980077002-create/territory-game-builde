@@ -5,7 +5,7 @@
   isolation: isolate;
   min-width: 0;
   margin: -12px -12px 0;
-  padding: 0 9px 12px;
+  padding: 0 9px calc(84px + max(env(safe-area-inset-bottom, 0px), var(--territory-bottom-inset, 0px)));
   color: #fff4d7;
   background:
     radial-gradient(ellipse at 0 45%, #63347532, transparent 60%),
@@ -115,13 +115,14 @@
   transition: transform .15s ease;
 }
 .hall-game--featured { grid-column: 1 / -1; aspect-ratio: 2.65; min-height: 142px; }
-.hall-game__scene { position: absolute; inset: 0; width: 100%; height: 80%; object-fit: cover; object-position: center 38%; pointer-events: none; }
+.hall-game__scene { position: absolute; inset: 0; width: 100%; height: 78%; pointer-events: none; }
+.hall-game__scene img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: center top; }
 .hall-game__glow {
   position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, #05081200 28%, #05081438 43%, #070a18dc 68%, #060816fa 100%);
+  background: linear-gradient(180deg, #05081200 44%, #05081418 54%, #070a18a6 75%, #060816ed 100%);
 }
 .hall-game--featured .hall-game__scene { height: 100%; }
-.hall-game--featured .hall-game__glow { background: linear-gradient(180deg, #05081200 25%, #05081210 40%, #060c1ba8 72%, #050813f0); }
+.hall-game--featured .hall-game__glow { background: linear-gradient(180deg, #05081200 48%, #05081208 60%, #060c1b6b 80%, #050813d9); }
 .hall-game__shimmer {
   position: absolute; z-index: 1; inset: 2px; border-radius: 9px; pointer-events: none;
   border: 1px solid #ffdf855e;
@@ -162,9 +163,9 @@
   position: absolute; z-index: 2; bottom: 8px; right: 8px;
   display: flex; align-items: center; justify-content: center; gap: 2px;
   min-width: 72px; height: 29px; padding: 4px 8px;
-  border: 1px solid var(--play-light); border-radius: 8px;
+  border: 1px solid #f2d28a; border-radius: 8px;
   background: linear-gradient(var(--play-top), var(--play-bottom));
-  box-shadow: inset 0 0 0 2px #ffffff18, inset 0 1px #ffffff70, 0 0 8px var(--play-glow), 0 2px 3px #0007;
+  box-shadow: inset 0 0 0 1px var(--play-light), inset 0 2px #ffffff45, 0 0 6px var(--play-glow), 0 2px 3px #0007;
   color: #fffbe9; font: 800 13px/1 system-ui, sans-serif; text-shadow: 0 1px 2px #0008;
 }
 .hall-game--blue { --play-top: #128fc3; --play-bottom: #054f83; --play-light: #9be9ff; --play-glow: #00c3ff77; }
@@ -188,7 +189,7 @@
 .hall-toast--error { display: flex; align-items: center; gap: 8px; border-color: #c76583; background: #391e30; color: #ffe1eb; }
 .hall-toast--error span { flex: 1; }
 /* This rule applies only while the lobby is mounted, and only to its active tab. */
-.territory-shell:has(.territory-game-hall) .territory-nav .nav-btn[aria-current="page"]:has(img[src$="nav-games.webp"]) {
+.territory-hall-open .territory-nav .nav-btn[aria-current="page"] {
   border-color: #ffc45f;
   background: linear-gradient(#6d3a14, #2d1c12);
   box-shadow: inset 0 0 10px #f8b74d40, 0 0 10px #f9a82d70;
@@ -219,4 +220,29 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .hall-game { transition: none; }
+}
+
+/* The shell marker exists only while GamesScreen is mounted. Keep the scroll
+   region inside the flex shell; reserve a full nav height after the final card. */
+.territory-hall-open .territory-screen {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+}
+/* Battle has a permanent blue spotlight in the shared nav. Neutralize it here
+   without changing navigation behavior or any other screen's appearance. */
+.territory-hall-open .territory-nav .nav-btn:not([aria-current="page"]) {
+  margin-top: 0;
+  height: 100%;
+  border-color: #ffffff0d;
+  background: #ffffff08;
+  box-shadow: none;
+}
+.territory-hall-open .territory-nav .nav-btn:not([aria-current="page"]) img {
+  width: 32px; height: 32px;
+}
+.territory-hall-open .territory-nav .nav-btn:not([aria-current="page"]) .territory-nav-label {
+  color: #9ca3af;
 }
