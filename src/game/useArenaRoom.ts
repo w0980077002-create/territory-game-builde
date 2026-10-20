@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchArenaView, type ArenaMessage, type ArenaView } from './arenaApi';
 
-const POLL_MS = 1500;
+const POLL_MS = 2200;
 const MAX_MESSAGES = 500;
 
 export function useArenaRoom(roomId: string, onGone: () => void) {
@@ -37,7 +37,7 @@ export function useArenaRoom(roomId: string, onGone: () => void) {
     }
   }, [roomId]);
 
-  // Keep the 1.5-second refresh for live fights, but slow the waiting / finished
+  // Keep the 2.2-second refresh for live fights, but slow the waiting / finished
   // room and NEVER poll a hidden Telegram Mini App. This prevents inactive
   // arena sessions from saturating the shared Supabase connection pool.
   const roomStatus = view?.room.status;

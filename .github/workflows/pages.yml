@@ -86,6 +86,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Optimize approved Monopoly artwork for Telegram Android
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          node scripts/optimize-monopoly-images.mjs
+          node scripts/check-monopoly-performance.mjs --verify-assets
+
       - name: Verify approved Telegram RU/EN banners
         run: node scripts/check-approved-telegram-promo.mjs
 

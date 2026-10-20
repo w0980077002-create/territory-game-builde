@@ -122,9 +122,21 @@ export const submitArenaMove = (room: string, target: string, attack: Zone, bloc
   call<void>('arena_move', { p_room: room, p_target: target, p_attack: attack, p_blocks: blocks });
 
 export async function fetchArenaView(room: string, after: number): Promise<ArenaView | null> {
-  const data = await call<ArenaView | { error: string }>('arena_state', { p_room: room, p_after: after });
-  if (!data || 'error' in data) return null;
-  return data;
+  // Long-held HTTP calls (some exceeded 10s in live logs) must not block
+  // all future updates in useArenaRoom's single-flight polling loop.
+  // Abort the GET/POST at the client rather than allowing overlapping requests.
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 10_000);
+  try {
+    const { data, error } = await supabase.rpc('arena_state', {
+      p_room: room, p_after: after,
+    }).abortSignal(controller.signal);
+    if (error) throw new Error(friendly(error));
+    if (!data || typeof data !== 'object' || 'error' in data) return null;
+    return data as ArenaView;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 export async function claimArenaReward(room: string): Promise<ArenaReward | null> {
