@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Megaphone, Send, Clock3, Ticket, Gem, Loader2 } from 'lucide-react';
 import { useLanguage } from './i18n';
-import { claimDailyShare, dailyShareStatus, prepareDailyShareLink, shareDailyPromo, shareError, type DailyShareTask, type ShareStatus } from './dailyShare';
+import { getTelegramWebApp } from './telegram';
+import { claimDailyShare, dailyShareStatus, prepareDailyShareLink, prepareRichShareMessage, shareDailyPromo, shareError, type DailyShareTask, type ShareStatus } from './dailyShare';
 
 /** One daily award per task, but the referral link remains shareable indefinitely. */
 export function DailyShareCard({task,userId,onClaimed}:{task:DailyShareTask;userId:string;onClaimed?:()=>void}){
  const {language}=useLanguage(),en=language==='en';
  const [status,setStatus]=useState<ShareStatus|null>(null),[url,setUrl]=useState<string|null>(null);
+ const [richId,setRichId]=useState<string|null>(null),[richLoading,setRichLoading]=useState(false);
+ const tg=getTelegramWebApp();
+ const supportsRich=!!tg?.shareMessage&&(tg.isVersionAtLeast?.('8.0')??true);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[now,setNow]=useState(Date.now());
  const refresh=async()=>{try{setStatus(await dailyShareStatus());}catch(e){setError(shareError(e,en));}};
  useEffect(()=>{
@@ -15,6 +19,12 @@ export function DailyShareCard({task,userId,onClaimed}:{task:DailyShareTask;user
   // after claiming, at a full ticket wallet, and while reward status is offline.
   void prepareDailyShareLink(en?'en':'ru').then(link=>{if(alive)setUrl(link);})
    .catch(e=>{if(alive)setError(shareError(e,en));});
+  if(supportsRich){
+   setRichLoading(true);setRichId(null);
+   void prepareRichShareMessage(en?'en':'ru').then(id=>{if(alive)setRichId(id);})
+    .catch(()=>{if(alive)setRichId(null);})
+    .finally(()=>{if(alive)setRichLoading(false);});
+  }
   void dailyShareStatus().then(state=>{if(alive)setStatus(state);})
    .catch(e=>{if(alive)setError(shareError(e,en));});
   const timer=window.setInterval(()=>setNow(Date.now()),15000);
@@ -27,35 +37,53 @@ export function DailyShareCard({task,userId,onClaimed}:{task:DailyShareTask;user
  const full=task==='monopoly'&&(status?.tickets??0)>18;
  const claimedToday=!!entry?.next_at && remaining>0;
  const rewardReady=!!entry?.enabled&&(!!entry.ready||(entry.next_at!==null&&remaining===0))&&!full;
- const share=()=>{
-  if(!url||busy)return;
-  setError('');setNotice('');
-  // Telegram's share picker must open synchronously from the real button press.
-  let opened=false;
-  try{opened=shareDailyPromo(url,en?'en':'ru');}catch{opened=false;}
-  if(!opened){setError(en?'Cannot open Telegram':'Не удалось открыть Telegram');return;}
+ // A native Telegram share must be confirmed before any daily award is requested.
+ const afterShare=()=>{
   if(!rewardReady){
-   // No claim request: the link remains freely shareable after the daily reward.
+   setBusy(false);
    setNotice(claimedToday
-    ? (en?'Link ready to share — today’s reward already claimed.':'Ссылку можно отправлять — награда сегодня уже получена.')
+    ? (en?'Invitation sent — reward already claimed today.':'Приглашение отправлено — награда сегодня уже получена.')
     : full
-      ? (en?'Link ready to share — spend tickets to collect the bonus.':'Ссылку можно отправлять — для получения награды сначала потрать билеты.')
-      : (en?'Link ready to share.':'Ссылка готова к отправке.'));
+      ? (en?'Invitation sent — spend tickets to collect the bonus.':'Приглашение отправлено — сначала потрать билеты для награды.')
+      : (en?'Invitation shared.':'Приглашение отправлено.'));
    return;
   }
   setBusy(true);
   void claimDailyShare(task,userId).then(async receipt=>{
    setNotice(en?'+2 reward credited!':'Награда +2 зачислена!');
-   // Immediately prevent a second award attempt even if status refresh fails.
    setStatus(current=>current?{...current,
     tickets:task==='monopoly'?(receipt.tickets??current.tickets):current.tickets,
     tasks:current.tasks.map(t=>t.task===task?{...t,ready:false,next_at:receipt.next_at}:t),
    }:current);
    onClaimed?.();
-   try{setStatus(await dailyShareStatus());}catch{/* Server receipt remains authoritative. */}
+   try{setStatus(await dailyShareStatus());}catch{/* Server receipt is authoritative. */}
   }).catch(e=>{setError(shareError(e,en));void refresh();}).finally(()=>setBusy(false));
  };
- const buttonLabel=busy?(en?'Opening…':'Открываем…'):en?'Share':'Поделиться';
+ const share=()=>{
+  if(busy||richLoading||(!url&&!richId))return;
+  setError('');setNotice('');
+  if(supportsRich&&richId){
+   // Open Telegram's photo + caption + Play-button picker on this click.
+   setBusy(true);
+   try{
+    tg?.shareMessage?.(richId,(sent:boolean)=>{
+     if(!sent){setBusy(false);return;} // Cancelled, no reward.
+     afterShare();
+    });
+   }catch{
+    setBusy(false);
+    setError(en?'Could not open the Telegram photo card. Try again.':'Не удалось открыть открытку Telegram. Попробуй ещё раз.');
+   }
+   return;
+  }
+  // Older Telegram clients: keep the existing verified bot deep-link fallback.
+  if(!url){setError(en?'Invitation link unavailable':'Ссылка приглашения недоступна');return;}
+  let opened=false;
+  try{opened=shareDailyPromo(url,en?'en':'ru');}catch{opened=false;}
+  if(!opened){setError(en?'Cannot open Telegram':'Не удалось открыть Telegram');return;}
+  afterShare(); // Legacy share/url cannot confirm actual delivery.
+ };
+ const buttonLabel=richLoading?(en?'Preparing card…':'Готовим открытку…'):busy?(en?'Opening…':'Открываем…'):en?'Share':'Поделиться';
  // Monopoly task: reuse the same dense parchment card as Roll 5 / Events / Lap.
  if(task==='monopoly')return (
   <article data-testid="daily-share-monopoly" className={`mono-quest mono-share-quest ${claimedToday?'mono-share-claimed':''}`}>
@@ -69,7 +97,7 @@ export function DailyShareCard({task,userId,onClaimed}:{task:DailyShareTask;user
      <span className="mono-share-prize"><Ticket aria-hidden="true" size={16}/><b>+2</b> {en?'tickets':'билета'}</span>
      <small>{claimedToday?(en?'Reward claimed today':'Награда сегодня получена'):full?(en?'Ticket wallet full':'Лимит билетов'):en?'Daily bonus · 00:00':'Ежедневно · 00:00'}</small>
     </div>
-    <button type="button" data-testid="share-button-monopoly" onClick={share} disabled={!url||busy}
+    <button type="button" data-testid="share-button-monopoly" onClick={share} disabled={richLoading||(!url&&!richId)||busy}
      className="mono-share-button">
      {busy?<Loader2 aria-hidden="true" size={14} className="animate-spin"/>:<Send aria-hidden="true" size={14}/>}
      {buttonLabel}
@@ -86,7 +114,7 @@ export function DailyShareCard({task,userId,onClaimed}:{task:DailyShareTask;user
    <div className="flex-1 min-w-0"><h4 className="text-sm font-black text-amber-100">{en?'Share TERRITORY':'Поделись TERRITORY'}</h4><p className="text-[11px] leading-snug text-slate-200">{en?'Tell friends about the game.':'Расскажи друзьям об игре.'}</p></div>
    <div className="text-center text-xs font-black text-amber-200 shrink-0"><Gem size={23} className="mx-auto"/>+2</div>
   </div>
-  <button type="button" data-testid="share-button-trials" onClick={share} disabled={!url||busy} className="w-full mt-3 min-h-11 rounded-lg border border-sky-200/50 bg-gradient-to-b from-sky-500 to-blue-800 text-white text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50">
+  <button type="button" data-testid="share-button-trials" onClick={share} disabled={richLoading||(!url&&!richId)||busy} className="w-full mt-3 min-h-11 rounded-lg border border-sky-200/50 bg-gradient-to-b from-sky-500 to-blue-800 text-white text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50">
    {busy?<Loader2 size={18} className="animate-spin"/>:<Send size={18}/>}
    {buttonLabel}
   </button>
