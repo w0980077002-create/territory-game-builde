@@ -10,8 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = Path('/tmp/fortune-screenshots')
 OUT.mkdir(exist_ok=True)
 ORIGIN = 'http://127.0.0.1:4173'
+SLOTS=[11,0,6,8,9,2,3,10,1,5,4,7]
 PRIZES = [('gold',100),('gems',1),('gems',3),('gems',5),('potion',1),('elixir',1),('stone',1),('common',1),('rare',1),('golden_key',1),('vip',1),('level',1)]
-report={'environment':'Chromium, production components/CSS/navigation; intercepted offline fixture transport','devices':'Desktop mobile viewports; not physical Telegram devices','viewports':[],'landing_sectors':[]}
+report={'environment':'Chromium, production components/CSS/navigation; intercepted offline fixture transport','devices':'Desktop mobile viewports; not physical Telegram devices','viewports':[],'landing_sectors':[],'artwork':'Original attachment extracted with masks/retouch, no generated art','bottom_rewards_panel':False}
 def serve(route):
     path=urlparse(route.request.url).path
     f=Path('/tmp/fortune-preview.html') if path=='/' else ROOT/'public'/path.lstrip('/')
@@ -29,7 +30,7 @@ def load(browser,width,height,reduced=True,english=False):
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path=shutil.which('chromium') or shutil.which('google-chrome'),headless=True,args=['--no-sandbox'])
     errors=[]
-    for width,height in [(320,740),(360,780),(390,844),(430,844),(320,640),(430,644)]:
+    for width,height in [(320,640),(360,700),(390,650),(430,740),(320,568),(430,644),(390,844),(430,844)]:
         page=load(browser,width,height)
         page.on('pageerror',lambda error:errors.append(str(error)))
         spin=page.get_by_role('button',name='КРУТИТЬ — 1 БИЛЕТ',exact=True)
@@ -39,6 +40,7 @@ with sync_playwright() as p:
         for i,(prize,qty) in enumerate(PRIZES):
             sector=page.locator(f'[data-fortune-sector="{i}"]')
             assert sector.get_attribute('data-prize')==prize and sector.get_attribute('data-quantity')==str(qty)
+            assert sector.get_attribute('data-angle-slot')==str(SLOTS[i])
         nav=page.locator('.territory-nav').bounding_box()
         box=spin.bounding_box()
         assert box['y']>=0 and box['y']+box['height']<=nav['y'],f'spin obscured on initial {width}x{height}: {box}, nav={nav}'
@@ -48,8 +50,10 @@ with sync_playwright() as p:
         wheel=page.locator('.fortune-wheel').bounding_box()
         assert wheel['x']>=0 and wheel['x']+wheel['width']<=width and wheel['width']>=270
         pointer=page.locator('.fortune-pointer').bounding_box()
-        assert abs(pointer['x']+pointer['width']/2-wheel['x']-wheel['width']/2)<1
-        assert page.locator('.fortune-wheel-frame').get_attribute('href').endswith('approved-wheel.webp')
+        assert abs(pointer['x']+pointer['width']*(52/108)-wheel['x']-wheel['width']/2)<1
+        assert page.locator('.fortune-original-wheel').get_attribute('href').endswith('original-wheel.webp')
+        assert page.locator('.fortune-prizes').count()==0
+        assert 'Возможные награды' not in page.locator('[data-testid=wheel-of-fortune]').inner_text()
         assert page.locator('.fortune-title').bounding_box()['height']<175,'oversized title'
         active=page.locator('.territory-nav [aria-current="page"]')
         assert active.count()==1 and active.get_attribute('aria-label')=='Игры'
@@ -66,15 +70,9 @@ with sync_playwright() as p:
         db=dialog.bounding_box();assert db['x']>=0 and db['x']+db['width']<=width and db['y']>=0 and db['y']+db['height']<=height
         if width==390:page.screenshot(path=str(OUT/'rules-390.png'))
         page.keyboard.press('Escape')
-        # Gallery is one row, independently scrollable, and reachable above nav.
-        gallery=page.locator('.fortune-prizes>div')
-        gallery.scroll_into_view_if_needed()
-        assert gallery.evaluate('(el)=>el.scrollWidth>el.clientWidth')
-        assert len(set(page.locator('.fortune-prizes article').evaluate_all('(items)=>items.map(el=>el.offsetTop)')))==1
-        gallery.evaluate('(el)=>el.scrollLeft=el.scrollWidth')
-        assert gallery.evaluate('(el)=>el.scrollLeft>0')
-        page.locator('.fortune-back').scroll_into_view_if_needed()
-        back=page.locator('.fortune-back').bounding_box();assert back['y']+back['height']<=nav['y']
+        # The panel/gallery is entirely gone; Back is a discreet top control.
+        back=page.locator('.fortune-back').bounding_box()
+        assert back['y']+back['height']<=nav['y']
         # Scroll the entire primary button into view and verify true hit testing.
         spin.scroll_into_view_if_needed()
         assert spin.evaluate('(el)=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))}')
@@ -102,7 +100,7 @@ with sync_playwright() as p:
         matrix=page.locator('.fortune-wheel').evaluate('el=>getComputedStyle(el).transform')
         a,b=[float(x) for x in matrix.removeprefix('matrix(').removesuffix(')').split(',')[:2]]
         angle=math.degrees(math.atan2(b,a))%360
-        target=(-index*30)%360
+        target=(-SLOTS[index]*30)%360
         assert abs(((angle-target+180)%360)-180)<.01,(index,angle,target)
         report['landing_sectors'].append({'sector':index,'prize':prize,'quantity':quantity,'pointer_alignment_degrees':angle})
         page.get_by_role('dialog').get_by_role('button',name='OK',exact=True).click()
@@ -112,11 +110,12 @@ with sync_playwright() as p:
     assert 'gradient' in page.get_by_role('button',name='Бой',exact=True).evaluate('el=>getComputedStyle(el).backgroundImage')
     page.close()
     # Non-reduced animation and skip only affect presentation.
-    page=load(browser,390,844,reduced=False)
+    page=load(browser,390,650,reduced=False)
     page.locator('.fortune-spin').click()
     page.get_by_role('button',name='Пропустить анимацию').wait_for()
     page.wait_for_timeout(300)
     assert page.get_by_role('dialog').count()==0
+    page.screenshot(path=str(OUT/'wheel-spinning-390.png'))
     assert page.locator('.fortune-wheel').evaluate('el=>getComputedStyle(el).transform')!='none'
     page.get_by_role('button',name='Пропустить анимацию').click()
     page.get_by_role('dialog').wait_for()
@@ -129,15 +128,27 @@ with sync_playwright() as p:
     assert '3 синих самоцвета' in page.get_by_role('dialog').inner_text()
     matrix=page.locator('.fortune-wheel').evaluate('el=>getComputedStyle(el).transform')
     a,b=[float(x) for x in matrix.removeprefix('matrix(').removesuffix(')').split(',')[:2]]
-    assert abs((math.degrees(math.atan2(b,a))%360)-300)<.01
+    assert abs((math.degrees(math.atan2(b,a))%360)-180)<.01
     assert page.locator('.fortune-pointer').evaluate('el=>getComputedStyle(el).animationName')=='none'
     page.close()
     page=load(browser,390,844,english=True)
-    assert page.locator('.fortune-title>img').get_attribute('src').endswith('approved-title-en.webp')
+    assert page.locator('.fortune-title>img').get_attribute('src').endswith('original-title.webp')
     page.get_by_role('button',name='Rules',exact=True).click()
     assert page.get_by_role('dialog').locator('tr').count()==12
+    page.close()
+    # Simulated Telegram/iPhone safe-area variables; no physical device claim.
+    page=load(browser,390,650)
+    page.evaluate("document.documentElement.style.setProperty('--territory-bottom-inset','34px');document.documentElement.style.setProperty('--territory-top-inset','20px')")
+    nav=page.locator('.territory-nav').bounding_box()
+    button=page.locator('.fortune-spin').bounding_box()
+    assert button['y']>=0 and button['y']+button['height']<=nav['y']
+    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+    assert page.locator('.fortune-ticket').bounding_box()['y']>=20
+    assert page.locator('.fortune-rules').bounding_box()['y']>=20
+    report['simulated_safe_area']={'top':20,'bottom':34,'spin_accessible':True}
+    page.screenshot(path=str(OUT/'wheel-safe-area-390.png'))
     page.close()
     assert not errors,errors
     browser.close()
 (OUT/'verification.json').write_text(json.dumps(report,indent=2))
-print('Wheel browser PASS: six mobile/short viewports, 128 tickets, all twelve sector mappings and exact landing angles, no obscured Spin button, Games-only gold navigation, gallery scrolling, rules/results, remount recovery, golden chest, reduced motion, skip and English. Offline fixtures; not physical-device verification.')
+print('Wheel browser PASS: eight mobile/short viewports, 128 tickets, all twelve sector mappings and exact landing angles, no obscured Spin button, Games-only gold navigation, no bottom rewards panel, rules/results, remount recovery, golden chest, reduced motion, skip and English. Offline fixtures; not physical-device verification.')

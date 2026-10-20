@@ -49,5 +49,5 @@ let js=out.outputFiles.find(f=>f.path.endsWith('.js')).text;
 
 const shellCss=(await postcss([tailwindcss(),autoprefixer()]).process(readFileSync('src/index.css','utf8'),{from:'src/index.css'})).css;
 const css=shellCss+'\n'+out.outputFiles.find(f=>f.path.endsWith('.css')).text;
-writeFileSync('/tmp/fortune-preview.html',`<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;background:#080d22}${css}</style><div id="root"></div><script>${js.replace(/<\/script/gi,'<\\/script')}</script></html>`);
+writeFileSync('/tmp/fortune-preview.html',`<!doctype html><html lang="ru" class="territory-telegram-webapp"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;background:#080d22}${css}</style><div id="root"></div><script>${js.replace(/<\/script/gi,'<\\/script')}</script></html>`);
 console.log('Offline fixture: /tmp/fortune-preview.html');

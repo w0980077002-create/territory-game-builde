@@ -1,67 +1,93 @@
-# Approved Wheel of Fortune — visual correction
+# Original Wheel artwork restoration — PR #58
 
-Visual-only correction against published `main` (`7d1a528`). This replaces the
-purple rectangular title, realistic hostess, plain wheel/empty fleur-de-lis
-center and vertical reward grid with layers created from the owner's approved
-reference. It is a working animated game, not a screenshot with invisible buttons.
+This visual correction uses the **owner’s actual attached image**, not generated
+replacement art. The source is [fortune-reference.jpg](../../scripts/artwork/fortune-reference.jpg)
+(853 × 1280), SHA-256
+`6407eea43395cdb84603b882d3b4d03cab0f361072a9925b2e02dbd65af7926b`.
 
-- New ruby-and-gold curved title plaque, crown, purple ribbons and gemstones;
-  Russian and English artwork, with accessible DOM headings.
-- Reference-directed smiling blonde Viking hostess and sapphire treasure chamber.
-- Transparent, engraved gold wheel rim with inset jewels and a sculpted golden
-  lion medallion. The live twelve SVG sectors, resource icons, quantities, rim
-  and lion rotate together. The separate gold-and-amethyst pointer stays above
-  the wheel. No obsolete reference prize quantities are baked into these assets.
-- Red enamel/gold Spin button with live disabled/loading states and standard
-  one-ticket cost. Ticket balance is upper left, Rules upper right; Back is a
-  subtle control beneath the gallery.
-- A framed horizontal reward gallery replaces the tall grid. Its twelve entries
-  retain the actual approved names/quantities and can be swiped or keyboard-scrolled.
-- Wheel width adapts to narrow and short WebViews. Main content remains in the
-  existing flex scroll pane, with bottom/safe-area spacing. Rules begin at their
-  heading instead of auto-scrolling to the final OK button.
-- Only the Wheel receives the existing lobby's gold Games-tab treatment and
-  inactive Battle treatment. The lobby/card artwork is unchanged. Battle's
-  existing blue appearance remains unchanged outside the Wheel.
+![Actual working screen, Chromium 390 × 650](wheel-390x650.webp)
 
-## Preserved behavior and economy
+## Original artwork layers
 
-No files under `src/game/` or `supabase/` were changed. There are no database
-migrations, backend deployments, probability/quantity changes, ticket-wallet
-changes or changes to payouts, receipts, recovery, VIP, hero levels or chest loot.
-The published `HALL_TICKET_MAX` validation is retained; tests use the existing
-128-ticket balance and the existing client suite also covers 1000 tickets.
+`scripts/extract-fortune-art.py` produces optimized transparent WebP layers from
+the source using manually traced masks and source-texture retouching. No image
+generation was used for this restoration. The rejected generated assets were deleted.
 
-The spin/recovery/acknowledgement handlers and `fortuneRotation` mapping are
-unchanged. The illustrated title/frame/button are separate assets; the SVG still
-has twelve individually mapped live sectors. Existing Game Hall cards, Monopoly,
-admin, authentication and saved progress are untouched.
+- Original smiling hostess and castle/torch/treasure scenery remain stationary.
+- The original ornate title plaque is independently masked, including its actual
+  gold lettering, crown, purple ribbons and gems.
+- The original wheel rim, jewels, sector paintings and blue-eyed golden lion
+  rotate together. The original pointer is a separate stationary layer.
+- Original ticket, Rules and Spin frames are extracted. Their live balance,
+  labels, cost and disabled/loading states are real accessible controls.
+- The entire bottom possible-rewards panel is removed, without a replacement
+  gallery/list/grid. Rules retain the twelve exact probabilities.
 
-## Actual Chromium screenshots
+The old numerical labels and their shadows are removed with neighboring texture
+from the same painted sectors. Live SVG text supplies approved quantities.
+The original VIP “1 ДЕНЬ” remains because it is already correct. The obsolete
+scroll is removed completely and replaced with the existing canonical battle
+stone image; all other prize illustrations remain original source art.
 
-These show the production Wheel component, production CSS, and the navigation
-markup extracted from `src/App.tsx`, inside its actual flex/scroll/nav structure.
-The backend is an explicitly isolated test transport: no production accounts,
-keys, balances or tickets were accessed. Screenshots are desktop Chromium mobile
-viewports, not physical Telegram-device screenshots.
+The presentation order follows the original painting, clockwise from the top:
+gem ×1, rare chest, strength elixir, battle stone, VIP, key, gems ×3, +1 level,
+gems ×5, health potion, common chest, gold ×100. A presentation-only mapping
+converts server outcome indices to those painted slots. Probabilities and
+server outcome order are unchanged.
 
-| 320 × 740 | 360 × 780 |
+The flattened image occludes small rim areas beneath the pointer, fingers and
+button. These are repaired using engraved rim pixels from the same source.
+The old static wheel is removed from the background, with concealed castle
+areas reconstructed using original source textures. There is no second static
+wheel underneath the rotating wheel. The original platform remains below Spin;
+taller viewports extend the subdued source stone floor to the existing navigation.
+
+## Provenance and visual limits
+
+`python scripts/check-fortune-original-art.py` verifies 41,545 unchanged central
+lion pixels, exact opaque title/pointer pixels, and the original hostess face.
+It also checks retouched obsolete labels/scroll, cleared background and absence
+of generated-art/gallery references. The manifest is
+[original-art.json](../../public/fortune/original-art.json).
+
+The lion, hostess, title and decorations are recognizable original source pixels.
+Repaired occlusions, background reconstruction and replacement numerical text
+cannot be pixel-identical to the flattened reference. The original supplied file
+is 853px wide; it is not enlarged into higher-resolution invented artwork.
+The original Russian title/VIP lettering stays embedded in the artwork in English
+mode too; accessible headings, controls, live level text and Rules are translated.
+
+## Mobile and interaction verification
+
+Actual production React components, CSS and App navigation markup are rendered
+in Chromium with an isolated intercepted transport. No live player tickets,
+balances, credentials or saves are used. These are browser viewport screenshots,
+**not physical Android/iPhone Telegram tests**.
+
+| 320 × 640 | 360 × 700 |
 |---|---|
-| ![320px wheel](wheel-320x740.webp) | ![360px wheel](wheel-360x780.webp) |
+| ![320px](wheel-320x640.webp) | ![360px](wheel-360x700.webp) |
 
-| 390 × 844 | 430 × 844 |
+| 390 × 650 | 430 × 740 |
 |---|---|
-| ![390px wheel](wheel-390x844.webp) | ![430px wheel](wheel-430x844.webp) |
+| ![390px](wheel-390x650.webp) | ![430px](wheel-430x740.webp) |
 
-Short WebViews also pass: [320 × 640](wheel-320x640.webp),
-[430 × 644](wheel-430x644.webp). Content below the initial viewport can scroll
-above the navigation, including the gallery and Back control.
+Additional screenshots: [320 × 568](wheel-320x568.webp),
+[430 × 644](wheel-430x644.webp), [390 × 844](wheel-390x844.webp),
+[430 × 844](wheel-430x844.webp), [simulated safe area](wheel-safe-area-390.webp),
+[rotating original wheel](wheel-spinning-390.webp),
+[Rules](rules-390.webp), [confirmed reward](reward-390.webp).
 
-[Rules dialog](rules-390.webp) · [Confirmed reward dialog](reward-390.webp)
+Browser checks cover eight narrow/short/tall viewports, a simulated 20px top /
+34px bottom safe area, a fully accessible Spin button above navigation, no
+horizontal overflow, all twelve quantity/sector mappings and exact stopping
+angles, 128 existing tickets, Games-only gold highlight, restored Battle styling
+outside the Wheel, absent bottom rewards panel, Rules/results, double-click
+protection, remount recovery, golden chest opening, reduced motion, skip,
+a complete normal spin and English controls/Rules.
+Measurements are in [verification.json](verification.json).
 
-## Verification
-
-Passed:
+## Checks
 
 - `npm run typecheck`
 - `npm run build`
@@ -69,33 +95,19 @@ Passed:
 - `npm run test:hall`
 - `npm run test:mobile-home`
 - `npm run test:feature-separation`
-- `node scripts/check-monopoly-visuals.mjs`
 - `npm run test:wheel:browser`
+- `node scripts/check-monopoly-visuals.mjs`
+- `python scripts/check-fortune-original-art.py`
 - `git diff --check`
 
-The browser suite now renders the real persistent navigation, uses an intercepted
-HTTP test origin instead of file URLs, and wraps components in the production
-language provider. It verifies all four required widths plus two short viewports,
-no horizontal overflow, complete initial Spin-button visibility and hit testing,
-128 tickets, all twelve exact sector-to-outcome mappings and landing angles,
-centered pointer, ornate/lion asset layer, compact title, Games-only active nav,
-restoration of Battle's original styling outside the Wheel, horizontal gallery
-scrolling, reachable Back, Rules/results, recovery after remount, golden opening,
-reduced motion, animation skip, a complete natural spin and English title/rules.
+## Preserved systems
 
-Measured layout and all twelve landing angles are in
-[verification.json](verification.json). Tests of payouts and resource economy
-remain the existing unchanged backend/client regression suites.
+No changes to `src/game/`, Supabase migrations/RPCs, admin, Monopoly or Game Hall
+card artwork. No new migrations need applying. Existing one-ticket spending,
+all twelve approved probabilities/quantities, payouts, save revisions, VIP,
+levels, inventory, chest/key mechanics, idempotency and recovery remain intact.
+Only the rendered sector index is remapped to match the original painting.
+The existing ticket validation supports 128 and 1000 tickets; no old 20-ticket
+limit was introduced. Existing focus/scroll fixes keep Rules usable.
 
-The optional targeted ESLint check reports zero errors and the pre-existing
-`recover` effect-dependency warning in `WheelOfFortune.tsx`; the effect's spin and
-recovery logic was deliberately preserved.
-
-## Remaining visual limits
-
-The artwork is newly rendered from the approved reference, so engraving,
-individual jewels and character details are not pixel-identical to it. It uses
-optimized WebP/transparent SVG layers and the game's canonical resource icons.
-Short WebViews scroll to reach the entire gallery/Back control. Physical
-Android/iPhone Telegram testing remains unperformed; no device verification is
-claimed. No merge or deployment was performed.
+PR #58 remains for owner review. No merge or deployment is performed.
