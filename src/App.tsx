@@ -438,14 +438,18 @@ function App() {
   const { authState } = useAuth();
   const { t } = useLanguage();
   const { maintenance } = useStore(useLive);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    isVerifiedAdmin().then(setIsAdmin);
-    fetchMaintenance().then((on) => useLive.set((s) => ({ ...s, maintenance: on })));
+    // Owner verification must still happen server-side, but it should not hold
+    // the loading screen for ALL players while the admin API is slow.
+    // Until verified the client has NO admin privileges, including maintenance
+    // bypass. Never infer admin status from a cached token.
+    void isVerifiedAdmin().then(setIsAdmin).catch(() => setIsAdmin(false));
+    void fetchMaintenance().then((on) => useLive.set((s) => ({ ...s, maintenance: on }))).catch(() => {});
   }, []);
 
-  if (authState.status === 'loading' || isAdmin === null) return <Splash text={t('loadingHero')} />;
+  if (authState.status === 'loading') return <Splash text={t('loadingHero')} />;
   if (maintenance && !isAdmin) return <MaintenanceScreen />;
   if (authState.status === 'guest') return <TelegramPrompt error={authState.error} />;
   return <GameShell key={authState.user.id} user={authState.user} isAdmin={isAdmin} />;

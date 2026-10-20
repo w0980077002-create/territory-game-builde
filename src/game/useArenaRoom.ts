@@ -37,11 +37,25 @@ export function useArenaRoom(roomId: string, onGone: () => void) {
     }
   }, [roomId]);
 
+  // Keep the 1.5-second refresh for live fights, but slow the waiting / finished
+  // room and NEVER poll a hidden Telegram Mini App. This prevents inactive
+  // arena sessions from saturating the shared Supabase connection pool.
+  const roomStatus = view?.room.status;
   useEffect(() => {
-    refresh();
-    const timer = setInterval(refresh, POLL_MS);
-    return () => clearInterval(timer);
-  }, [refresh]);
+    if (document.visibilityState !== 'hidden') void refresh();
+    const intervalMs = roomStatus === 'active' ? POLL_MS : roomStatus === 'finished' ? 4_000 : 2_500;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== 'hidden') void refresh();
+    }, intervalMs);
+    const resumed = () => {
+      if (document.visibilityState === 'visible') void refresh();
+    };
+    document.addEventListener('visibilitychange', resumed);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', resumed);
+    };
+  }, [refresh, roomStatus]);
 
   return { view, messages, offline, clockOffset, refresh };
 }
@@ -49,9 +63,20 @@ export function useArenaRoom(roomId: string, onGone: () => void) {
 export function useCountdown(target: number | null, clockOffset: number): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 250);
-    return () => clearInterval(t);
-  }, []);
+    // The display shows whole seconds: 250ms React updates are wasted work,
+    // especially when both arena clocks have no target.
+    if (!target) return;
+    const tick = () => {
+      if (document.visibilityState === 'visible') setNow(Date.now());
+    };
+    tick();
+    const t = window.setInterval(tick, 1_000);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      window.clearInterval(t);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, [target]);
   if (!target) return 0;
   return Math.max(0, Math.ceil((target - (now + clockOffset)) / 1000));
 }
