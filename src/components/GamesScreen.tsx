@@ -11,7 +11,7 @@ import {
 import './gameHall.css';
 
 interface GameCard {
-  id: HallGame;
+  id: HallGame | 'wheel';
   ru: string;
   en: string;
   ruHint: string;
@@ -19,34 +19,36 @@ interface GameCard {
   scene: string;
   foreground: string;
   color: 'green' | 'blue' | 'violet' | 'red' | 'gold';
+  comingSoon?: boolean;
 }
 
 const base = import.meta.env.BASE_URL;
 const GAMES: GameCard[] = [
   {
     id: 'monopoly', ru: 'Монополия', en: 'Monopoly',
-    ruHint: 'Кубики, приключения и призы', enHint: 'Dice, adventures and prizes',
+    ruHint: 'Поле, кубик, события, награды', enHint: 'Board, dice, events and prizes',
     scene: 'monopoly/lagoon.png', foreground: 'nav-games.webp', color: 'green',
   },
   {
     id: 'treasury', ru: 'Сокровищница', en: 'Treasury',
-    ruHint: 'Открывай сундуки', enHint: 'Open treasure chests',
+    ruHint: 'Открывай сундуки, получай награды', enHint: 'Open chests and collect prizes',
     scene: 'map-rare.webp', foreground: 'ic-events.webp', color: 'blue',
   },
   {
     id: 'dice', ru: 'Кости судьбы', en: 'Dice of Fate',
-    ruHint: 'Испытай удачу', enHint: 'Try your luck',
+    ruHint: 'Рискни и сорви куш', enHint: 'Take a chance and win big',
     scene: 'assets/territory/scenes/arena-viking.webp', foreground: 'nav-games.webp', color: 'violet',
   },
   {
     id: 'tower', ru: 'Башня испытаний', en: 'Trial Tower',
-    ruHint: 'Выбери верные ворота', enHint: 'Choose the right gate',
+    ruHint: 'Проверь свою удачу и навыки', enHint: 'Test your luck and skills',
     scene: 'map-chamber.webp', foreground: 'ic-trials.webp', color: 'red',
   },
   {
-    id: 'targets', ru: 'Меткий стрелок', en: 'Sharpshooter',
-    ruHint: 'Попади в цель', enHint: 'Hit the target',
-    scene: 'map-forest.webp', foreground: 'assets/territory/ui/items/bow.webp', color: 'gold',
+    id: 'wheel', ru: 'Колесо фортуны', en: 'Wheel of Fortune',
+    ruHint: 'Вращай колесо и получай награды', enHint: 'Spin the wheel and collect prizes',
+    scene: 'assets/territory/scenes/arena-viking.webp', foreground: '', color: 'gold',
+    comingSoon: true,
   },
 ];
 
@@ -60,6 +62,7 @@ export function GamesScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [showRules, setShowRules] = useState(false);
 
   const refresh = async () => {
     try {
@@ -109,7 +112,12 @@ export function GamesScreen({
     } finally { setBusy(false); }
   };
 
-  const play = (id: HallGame) => {
+  const play = (game: GameCard) => {
+    if (game.comingSoon) {
+      setNotice(en ? 'Wheel of Fortune is being prepared. No tickets were used.' : 'Колесо фортуны готовится к запуску. Билеты не списаны.');
+      return;
+    }
+    const id = game.id as HallGame;
     if (!state || loading || busy) return;
     if (state.active) {
       onPlay(state.active.game);
@@ -135,9 +143,15 @@ export function GamesScreen({
           backgroundImage: `linear-gradient(90deg,rgba(10,7,18,.11),rgba(13,6,23,.45)),url("${base}promo/${en ? 'og-en-v3.jpg' : 'og-ru-v3.jpg'}")`,
         }} />
         <div className="hall-marquee__sparks" aria-hidden="true" />
-        <span className="hall-marquee__crown" aria-hidden="true">♛</span>
-        <div className="hall-marquee__title">TERRITORY</div>
-        <div className="hall-marquee__neon">{en ? 'GAME HALL' : 'ИГРОВОЙ ЗАЛ'}</div>
+        <img className="hall-marquee__hero" src={base + 'appearance-f1.webp'} alt="" aria-hidden="true" loading="eager" />
+        <div className="hall-marquee__sign">
+          <span className="hall-marquee__crown" aria-hidden="true">♛</span>
+          <div className="hall-marquee__title">TERRITORY</div>
+          <div className="hall-marquee__neon">{en ? 'GAME HALL' : 'ИГРОВОЙ ЗАЛ'}</div>
+        </div>
+        <div className="hall-marquee__chest" aria-hidden="true">
+          <span>👑</span><span>💎</span><span>🪙</span>
+        </div>
       </header>
 
       <section className="hall-cashier" aria-label={en ? 'Game Hall wallet' : 'Касса игрового зала'}>
@@ -169,6 +183,10 @@ export function GamesScreen({
             <b>{en ? 'CLAIM GOLD' : 'ЗАБРАТЬ ЗОЛОТО'}</b>
           </button>
         </div>
+        <button className="hall-cashier__info" type="button" aria-label={en ? 'About tickets and prizes' : 'О билетах и наградах'} aria-expanded={showRules} onClick={() => setShowRules(v => !v)}>i</button>
+        {showRules && <p className="hall-cashier__details">{en
+          ? 'Games use one ticket per round. Two free tickets are available once per day. Ad rewards will be added later.'
+          : 'Игры расходуют по одному билету за раунд. Два бесплатных билета можно получить раз в сутки. Рекламные награды появятся позже.'}</p>}
         <div className="hall-cashier__rule">
           <Sparkles size={13} aria-hidden="true" />
           <span>{en ? 'One ticket per game · Play and win rewards' : '1 билет за игру · Играй и получай награды'}</span>
@@ -195,22 +213,25 @@ export function GamesScreen({
               type="button"
               data-testid={`hall-game-${game.id}`}
               aria-label={`${en ? game.en : game.ru} · ${en ? '1 ticket' : '1 билет'}`}
-              onClick={() => play(game.id)}
-              disabled={loading || !state || busy || otherActive}
-              className={`hall-game hall-game--${game.color} ${featured ? 'hall-game--featured' : ''} ${locked ? 'hall-game--no-tickets' : ''}`}
-              style={{ backgroundImage: `url("${base}${game.scene}")` }}
+              onClick={() => play(game)}
+              disabled={!game.comingSoon && (loading || !state || busy || otherActive)}
+              className={`hall-game hall-game--${game.color} ${featured ? 'hall-game--featured' : ''} ${locked && !game.comingSoon ? 'hall-game--no-tickets' : ''} ${game.comingSoon ? 'hall-game--coming-soon' : ''}`}
             >
+              <img className="hall-game__scene" src={base + game.scene} alt="" loading="lazy" draggable={false} />
               <span className="hall-game__glow" aria-hidden="true" />
               <span className="hall-game__shimmer" aria-hidden="true" />
               {featured && <span className="hall-game__ribbon">{en ? 'POPULAR' : 'ПОПУЛЯРНО'}</span>}
-              <img className="hall-game__art" src={base + game.foreground} alt="" draggable={false} loading="lazy" />
-              <span className="hall-game__price"><Ticket size={15} /> 1</span>
+              {game.foreground && <img className="hall-game__art" src={base + game.foreground} alt="" draggable={false} loading="lazy" />}
+              {game.id === 'wheel' && <span className="hall-game__wheel" aria-hidden="true"><span>★</span></span>}
+              <span className="hall-game__price">{game.comingSoon
+                ? (en ? 'SOON' : 'СКОРО')
+                : <><Ticket size={15} /> 1</>}</span>
               <span className="hall-game__info">
                 <strong className="hall-game__name">{en ? game.en : game.ru}</strong>
                 <small className="hall-game__hint">{en ? game.enHint : game.ruHint}</small>
               </span>
-              <span className="hall-game__play">{state?.active?.game === game.id
-                ? (en ? 'Resume' : 'Продолжить')
+              <span className="hall-game__play">{game.comingSoon ? (en ? 'COMING SOON' : 'СКОРО')
+                : state?.active?.game === game.id ? (en ? 'Resume' : 'Продолжить')
                 : (en ? 'Play' : 'Играть')}</span>
             </button>
           );
