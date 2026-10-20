@@ -19,6 +19,16 @@ const eventCopy:Record<string,[string,string,string,string]>={
 function Prizes({prize,en}:{prize?:Prize;en:boolean}){
  return <div className="mono-extra-rewards">{Object.entries(prize??{}).filter(([,n])=>n>0).map(([key,n])=><span className="mono-resource" key={key} role="img" aria-label={`${prizeLabels[key as keyof Prize][en?1:0]} +${n}`}><Art name={key as keyof Prize}/><b>+{n}</b><small>{prizeLabels[key as keyof Prize][en?1:0]}</small></span>)}</div>;
 }
+function MonopolyClock({end,en}:{end?:string;en:boolean}){
+ const [now,setNow]=useState(()=>Date.now());
+ useEffect(()=>{
+  const id=window.setInterval(()=>setNow(Date.now()),1000);
+  return ()=>window.clearInterval(id);
+ },[]);
+ const remaining=Math.max(0,Date.parse(end??'')-now)||0;
+ const duration=`${Math.floor(remaining/86400000)}${en?'d':'д'} ${String(Math.floor(remaining/3600000)%24).padStart(2,'0')}:${String(Math.floor(remaining/60000)%60).padStart(2,'0')}:${String(Math.floor(remaining/1000)%60).padStart(2,'0')}`;
+ return <strong>{end?duration:'…'}</strong>;
+}
 function monopolyError(e:unknown,en:boolean){
  const t=(ru:string,english:string)=>en?english:ru;
   const msg=e instanceof Error?e.message:'';
@@ -37,7 +47,7 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
  const [busy,setBusy]=useState(false),[moving,setMoving]=useState(false),[position,setPosition]=useState(0);
  const [face,setFace]=useState(5),[fast,setFast]=useState(false),[ten,setTen]=useState(false);
  const [panel,setPanel]=useState<Panel>(null),[reward,setReward]=useState<{gold?:number;tickets?:number;event?:string;awards?:Prize}|null>(null);
- const [now,setNow]=useState(Date.now()),[notice,setNotice]=useState('');
+ const [today,setToday]=useState(()=>calendarDayKey(Date.now())),[notice,setNotice]=useState('');
  const lock=useRef(false),mounted=useRef(true),generation=useRef(0);
  const diceButton=useRef<HTMLButtonElement>(null);
  const t=(ru:string,english:string)=>en?english:ru;
@@ -46,7 +56,8 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
  useEffect(()=>{
   mounted.current=true;
   const epoch=++generation.current;
-  const timer=window.setInterval(()=>setNow(Date.now()),1000);
+  // Refresh daily calendar once a minute: the 28-cell board must not re-render every second.
+  const timer=window.setInterval(()=>setToday(calendarDayKey(Date.now())),60000);
   void monopoly().then(d=>{if(mounted.current){setData(d);setPosition(d.hall.active?.game==='monopoly'?(d.hall.active.question.old_position??d.hall.position):d.hall.position);}}).catch(e=>{if(mounted.current)setError(monopolyError(e,en));});
   return()=>{mounted.current=false;generation.current=epoch+1;window.clearInterval(timer);};
  },[en]);
@@ -114,9 +125,9 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
    const steps=turn.steps??turn.roll??1;
    setPosition(turn.old_position??0);
    if(!fast&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-    for(let tick=0;tick<10;tick++){if(!alive())return;setFace(tick%6+1);await pause(65);}
-    if(!alive())return;setFace(turn.roll??1);await pause(220);
-    for(let step=1;step<=steps;step++){if(!alive())return;setPosition(((turn.old_position??0)+step)%28);await pause(155);}
+    for(let tick=0;tick<5;tick++){if(!alive())return;setFace(tick%6+1);await pause(45);}
+    if(!alive())return;setFace(turn.roll??1);await pause(90);
+    for(let step=1;step<=steps;step++){if(!alive())return;setPosition(((turn.old_position??0)+step)%28);await pause(70);}
    }
    if(!alive())return;setFace(turn.roll??1);setPosition(turn.new_position??0);
    const finished=await monopoly('finish',1,session.token);
@@ -140,11 +151,8 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
   }catch(e){if(mounted.current)setError(describe(e));}
   finally{lock.current=false;if(mounted.current)setBusy(false);}
  };
- const today = calendarDayKey(now);
  useEffect(()=>{if(mounted.current)void request('status');},[today]);
  const point=boardPoint(position);
- const remaining=Math.max(0,Date.parse(p?.ends_at??'')-now)||0;
- const duration=`${Math.floor(remaining/86400000)}${t('д','d')} ${String(Math.floor(remaining/3600000)%24).padStart(2,'0')}:${String(Math.floor(remaining/60000)%60).padStart(2,'0')}:${String(Math.floor(remaining/1000)%60).padStart(2,'0')}`;
  const claimed=(key:string)=>p?.claimed.includes(key)??false;
  const disabled=busy||!data;
  const quests=[{ru:'Сделай 5 бросков',en:'Roll 5 times',current:p?.rolls??0,target:5,reward:2},{ru:'Открой 3 события',en:'Discover 3 events',current:p?.events??0,target:3,reward:2},{ru:'Пройди полный круг',en:'Complete a lap',current:p?.laps??0,target:1,reward:3}];
@@ -163,7 +171,7 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
    <div><small>TERRITORY</small><h2>{t('Монополия','Monopoly')}</h2></div>
    <button className="mono-nav-button" aria-label={t('Правила','Rules')} onClick={()=>setPanel('help')}>?</button>
   </header>
-  <div className="mono-clock"><span>{t('ЛАГУНА СОКРОВИЩ','TREASURE LAGOON')}</span><strong>{data?duration:'…'}</strong><button type="button" className="mono-jackpot-link" onClick={()=>setPanel('jackpot')}><Art name="openChest"/>{t('Джекпот','Jackpot')}</button></div>
+  <div className="mono-clock"><span>{t('ЛАГУНА СОКРОВИЩ','TREASURE LAGOON')}</span><strong><MonopolyClock end={p?.ends_at} en={en}/></strong><button type="button" className="mono-jackpot-link" onClick={()=>setPanel('jackpot')}><Art name="openChest"/>{t('Джекпот','Jackpot')}</button></div>
   <nav className="mono-milestones" aria-label={t('Награды за круги','Lap rewards')}>
    {milestones.map((lap,i)=><button key={lap} aria-label={t(`Награды за ${lap} кругов`,`Rewards for ${lap} laps`)} onClick={()=>setPanel('rewards')} className={claimed(`milestone:${lap}`)?'claimed':''}><small>{t('Круг','Lap')} {lap}</small><Art name={milestoneArt[i]}/><strong>{claimed(`milestone:${lap}`)?t('Получено','Claimed'):`${lap/5+1}`}<Art name="ticket"/></strong></button>)}
   </nav>
