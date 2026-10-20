@@ -195,7 +195,7 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
   <nav className="mono-milestones" aria-label={t('Награды за круги','Lap rewards')}>
    {milestones.map((lap,i)=><button key={lap} aria-label={t(`Награды за ${lap} кругов`,`Rewards for ${lap} laps`)} onClick={()=>setPanel('rewards')} className={claimed(`milestone:${lap}`)?'claimed':''}><small>{t('Круг','Lap')} {lap}</small><Art name={milestoneArt[i]}/><strong>{claimed(`milestone:${lap}`)?t('Получено','Claimed'):`${lap/5+1}`}<Art name="ticket"/></strong></button>)}
   </nav>
-  <div className="mono-scene" style={{backgroundImage:`url("${import.meta.env.BASE_URL}monopoly/lagoon.png")`}}>
+  <div className="mono-scene" style={{backgroundImage:`url("${import.meta.env.BASE_URL}monopoly/lagoon.${import.meta.env.DEV?'png':'webp'}")`}}>
    <div className="mono-water-shimmer"/><div className="mono-fairy-lights">{Array.from({length:8},(_,i)=><i key={i} style={{left:`${14+i*11}%`,top:`${30+i%3*18}%`,animationDelay:`${i*.6}s`}}/>)}</div>
    <img className="mono-scene-ship" src={`${import.meta.env.BASE_URL}monopoly/ship.webp`} alt={t('Корабль TERRITORY в центре лагуны','TERRITORY ship at the heart of the lagoon')}/>
    <div className="mono-board" aria-label={t('Поле из 28 клеток','Board of 28 spaces')}>
@@ -204,7 +204,7 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
      {i!==0&&!mystery&&<Art name={kind??'gold'} className="mono-cell-prize"/>}
      <small className="mono-cell-amount">{i===0?t('СТАРТ','START'):mystery?'?':kind?prize[kind]:cellGold(i)*(ten?10:1)}</small>
     </div>;})}
-    <div className={`mono-hero ${moving?'moving':''}`} style={{left:`${point.x}%`,top:`${point.y}%`}} aria-label={t(`Герой на клетке ${position+1}`,`Hero on space ${position+1}`)}><div className="mono-hero-ring"/><span className="mono-hero-sprite" style={{backgroundImage:`url("${import.meta.env.BASE_URL}monopoly/hero-frames.png")`}}/></div>
+    <div className={`mono-hero ${moving?'moving':''}`} style={{left:`${point.x}%`,top:`${point.y}%`}} aria-label={t(`Герой на клетке ${position+1}`,`Hero on space ${position+1}`)}><div className="mono-hero-ring"/><span className="mono-hero-sprite" style={{backgroundImage:`url("${import.meta.env.BASE_URL}monopoly/hero-frames.${import.meta.env.DEV?'png':'webp'}")`}}/></div>
    </div>
    <div className="mono-lap-plaque">{t('КРУГ','LAP')} <b>{p?.laps??0}</b></div>
    <div className="mono-buffs">{p?.double_next&&<span><Art name="elixirs"/>{t('Следующий ход ×2','Next move ×2')}</span>}{p?.lucky_next&&<span><Art name="gems"/>{t('Выбор кубика','Choose your roll')}</span>}</div>
