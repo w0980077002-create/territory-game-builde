@@ -7,16 +7,9 @@ import { Currency } from '@/components/ui/Currency';
 import { ItemArt } from '@/components/ui/ItemArt';
 import { useLive, claimMailGrant, type GrantPayload } from '@/game/live';
 import { generateShopItems } from '@/game/engine';
+import { mailRewardVisuals } from '@/game/mailRewardVisuals';
 import { useRef, useState } from 'react';
 import { useLanguage, localizeText } from '@/game/i18n';
-
-function grantItemsText(p: GrantPayload) {
-  const shop = generateShopItems(1);
-  return Object.entries(p.items ?? {})
-    .filter(([, q]) => q > 0)
-    .map(([id, q]) => `${shop.find((s) => s.id === id)?.name ?? id} x${q}`)
-    .join(', ');
-}
 
 export type SaveStatus = 'saved' | 'saving' | 'error';
 
@@ -108,16 +101,31 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
     <Modal title={t('mail')} icon="/ic-mail.webp" onClose={onClose}>
       <div className="space-y-3">
         {adminMail.map((m) => {
-          const extra = grantItemsText(m.payload);
-          const reward = { gold: Math.max(0, m.payload.gold ?? 0), gems: Math.max(0, m.payload.gems ?? 0), redGems: Math.max(0, m.payload.redGems ?? 0), stones: Math.max(0, m.payload.stones ?? 0) };
+          const rewards = mailRewardVisuals(m.payload);
           return (
             <div key={m.id} className="rounded-2xl border border-sky-400/40 bg-sky-500/5 p-3 shadow-[0_0_12px_rgba(56,189,248,0.15)]">
               <div className="text-[11px] text-sky-300/90">{t('administration')}</div>
               <div className="text-sm font-bold text-white mb-1">{m.subject}</div>
               <p className="text-xs text-gray-300 leading-relaxed mb-2.5 whitespace-pre-line break-words">{m.body}</p>
-              {extra && <p className="text-[11px] text-amber-200 mb-2">{extra}</p>}
-              <div className="flex items-center justify-between gap-2">
-                <RewardLine reward={reward} />
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                {rewards.length > 0 && (
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5" aria-label={language === 'en' ? 'Mail rewards' : 'Награды письма'}>
+                    {rewards.map((reward) => {
+                      const name = language === 'en' ? reward.nameEn : reward.name;
+                      return (
+                        <span
+                          key={reward.key}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-300/15 bg-black/20 px-1.5 py-1 text-xs font-bold text-amber-50 tabular-nums"
+                          title={name}
+                          aria-label={`${name}: ${reward.amount}`}
+                        >
+                          <img src={import.meta.env.BASE_URL + reward.image} alt="" width={22} height={22} className="h-[22px] w-[22px] shrink-0 object-contain" />
+                          <span>×{reward.amount.toLocaleString(language === 'en' ? 'en-US' : 'ru-RU')}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
                 <button
                   onClick={() => claimAdmin(m.id)}
                   disabled={claiming === m.id}

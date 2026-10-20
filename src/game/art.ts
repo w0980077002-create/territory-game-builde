@@ -49,6 +49,9 @@ export function itemArt(item: ArtSource): string {
   if (item.arenaEffect === 'time') return itemIcon('potion-energy');
   if (item.arenaEffect === 'adrenaline') return itemIcon('potion-fire');
   const e = item.effect;
+  // Large healing potions must have their own art in inventory and the shop,
+  // matching the exact icon shown for the same item in the in-game mail.
+  if (e?.stat === 'hp' && e.value >= 150) return import.meta.env.BASE_URL + 'potion-hp-large.webp';
   if (e?.stat === 'hp') return itemIcon('potion-hp');
   if (e?.stat === 'attack') return itemIcon('potion-fire');
   if (e?.stat === 'defense') return itemIcon('potion-mana');
