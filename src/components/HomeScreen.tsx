@@ -84,7 +84,9 @@ function ControlButton({ active, label, onClick, children }: { active?: boolean;
 export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, onInventory, notify }: Props) {
   const state = useStore(useGame);
   const arena = useStore(useArena);
-  const { vip } = useStore(useAccount);
+  const account = useStore(useAccount);
+  const remainingVip = Math.max(0,account.vipRemaining-(performance.now()-account.vipCheckedAt));
+  const vip = Math.max(account.permanentVip,remainingVip>0?account.vip:0);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [cityMotion, setCityMotion] = useState(initialCityMotion);
   const { language, setLanguage, t } = useLanguage();
@@ -138,7 +140,7 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
             <span className="block text-[12px] font-bold text-white truncate w-full text-left leading-tight" title={player.name}>{player.name}</span>
             <span className="flex flex-nowrap items-center gap-1 text-[10px] leading-tight whitespace-nowrap">
               <span className="text-amber-200 font-semibold shrink-0 whitespace-nowrap">{t('level')} {player.level}</span>
-              <span className="inline-flex shrink-0 items-center gap-0.5 px-1 rounded bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold text-[9px]"><Crown className="h-2.5 w-2.5" strokeWidth={2.8} />VIP {vip}</span>
+              <span className="inline-flex shrink-0 items-center gap-0.5 px-1 rounded bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold text-[9px]"><Crown className="h-2.5 w-2.5" strokeWidth={2.8} />VIP {vip}{remainingVip>0&&<span title={account.vipUntil??undefined}> · {Math.ceil(remainingVip/3600000)}h</span>}</span>
             </span>
             <span className="mt-1 h-1 w-full rounded-full bg-white/10 overflow-hidden">
               <span className="block h-full bg-gradient-to-r from-emerald-400 to-emerald-600" style={{ width: `${xpPct}%` }} />

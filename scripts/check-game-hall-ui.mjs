@@ -13,8 +13,8 @@ for(const game of ['monopoly','dice','tower','treasury']) {
  assert.match(api,new RegExp("'"+game+"'"),'Server game type missing '+game);
 }
 assert.match(hall,/id:\s*'wheel'/,'Approved visual contains Wheel of Fortune');
-assert.match(hall,/comingSoon:\s*true/,'Wheel must not charge tickets before secure backend exists');
-assert.match(hall,/if \(game\.comingSoon\)/,'Wheel must not call a different game endpoint');
+assert.doesNotMatch(hall,/comingSoon:\s*true/,'Wheel now has a secure backend');
+assert.match(play,/game==='wheel'.*WheelOfFortune/,'Wheel has its own server-authoritative screen');
 assert.match(api,/'targets'/,'Preserve existing sharpshooter server route for existing sessions');
 assert.match(hall,/loading="lazy"/,'Large scenic art must lazy load on phones');
 assert.doesNotMatch(hall,/Смотреть рекламу|Watch ad/,'Do not promise an unconnected ad provider');

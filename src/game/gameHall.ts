@@ -2,7 +2,10 @@ import { supabase } from './supabase';
 import { useGame } from './actions';
 import { saveCloudSave, claimHallGoldCloud } from './cloud';
 
-export type HallGame = 'monopoly' | 'dice' | 'tower' | 'targets' | 'treasury';
+/** Maximum stored Hall tickets allowed by the production database constraint. */
+export const HALL_TICKET_MAX = 1000;
+
+export type HallGame = 'monopoly' | 'dice' | 'tower' | 'targets' | 'treasury' | 'wheel';
 export const GAME_IDS: HallGame[] = ['monopoly','dice','tower','targets','treasury'];
 export type HallQuestion = {
   roll?:number; old_position?:number; new_position?:number;board_size?:number;
@@ -38,7 +41,7 @@ export async function hallStatus():Promise<HallState> {
  if(error)throw new Error(error.message);
  const s=ensureRecord(data);
  for(const key of ['tickets','points','played','wins','pending_gold','claimed_gold','position','daily_remaining']){
-  if(!natural(s[key]))throw new Error('hall_invalid_status_'+key);
+  if(!natural(s[key],key==='tickets'?HALL_TICKET_MAX:1e8))throw new Error('hall_invalid_status_'+key);
  }
  if(typeof s.free_ready!=='boolean'|| (s.active!==null && !validSession(s.active)))throw new Error('hall_invalid_status');
  return s as HallState;
@@ -46,6 +49,8 @@ export async function hallStatus():Promise<HallState> {
 export async function hallDaily():Promise<number>{
  const {data,error}=await supabase.rpc('territory_hall_daily_v1');
  if(error)throw new Error(error.message);
+ // The +2 daily claim itself is server-restricted to a 20-ticket wallet;
+ // this is not the maximum for all Hall tickets (e.g., admin-issued tickets).
  if(!natural(data?.tickets,20)||data?.added!==2)throw new Error('hall_invalid_daily');
  return data.tickets;
 }
@@ -62,7 +67,7 @@ export async function hallFinish(session:HallSession,choice:number):Promise<Hall
  if(error)throw new Error(error.message);
  const d=ensureRecord(data);
  if(typeof d.won!=='boolean' || !natural(d.earned_gold,160) ||
-  !natural(d.points,10) || !natural(d.tickets,20) || !GAME_IDS.includes(d.game as HallGame))throw new Error('hall_invalid_result');
+  !natural(d.points,10) || !natural(d.tickets,HALL_TICKET_MAX) || !GAME_IDS.includes(d.game as HallGame))throw new Error('hall_invalid_result');
  return d as HallResult;
 }
 export async function hallClaimGold(userId:string):Promise<number>{

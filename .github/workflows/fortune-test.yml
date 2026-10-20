@@ -1,0 +1,33 @@
+name: Wheel of Fortune verification
+on:
+  pull_request:
+    paths:
+      - 'src/game/**'
+      - 'src/components/**'
+      - 'src/App.tsx'
+      - 'supabase/migrations/**'
+      - 'scripts/*fortune*'
+      - 'package*.json'
+      - '.github/workflows/fortune-test.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run test:wheel
+      - run: npm run test:hall
+      - run: npm run test:economy
+      - run: npm run test:saves
+      - run: npm run test:progression
+      - run: npm run test:professions
+      - run: npm run build
