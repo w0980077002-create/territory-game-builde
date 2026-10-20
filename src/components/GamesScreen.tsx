@@ -212,7 +212,7 @@ export function GamesScreen({
               key={game.id}
               type="button"
               data-testid={`hall-game-${game.id}`}
-              aria-label={`${en ? game.en : game.ru} · ${en ? '1 ticket' : '1 билет'}`}
+              aria-label={`${en ? game.en : game.ru} · ${game.comingSoon ? (en ? 'Coming soon, no tickets used' : 'Скоро, билеты не списываются') : (en ? '1 ticket' : '1 билет')}`}
               onClick={() => play(game)}
               disabled={!game.comingSoon && (loading || !state || busy || otherActive)}
               className={`hall-game hall-game--${game.color} ${featured ? 'hall-game--featured' : ''} ${locked && !game.comingSoon ? 'hall-game--no-tickets' : ''} ${game.comingSoon ? 'hall-game--coming-soon' : ''}`}
