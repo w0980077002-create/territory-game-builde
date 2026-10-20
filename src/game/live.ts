@@ -123,9 +123,20 @@ interface HeartbeatGrant extends MailGrant {
   kind: 'adjust' | 'mail';
 }
 
+// Best-effort country attribution for owner analytics, independent of gameplay.
+ // Never send an IP, user-provided country or locale. A missing Edge Function
+ // must not affect the existing heartbeat, online detection or player rewards.
+let lastGeographyPingAt = 0;
+function pingGeography() {
+  if (Date.now() - lastGeographyPingAt < 10 * 60_000) return;
+  lastGeographyPingAt = Date.now();
+  void supabase.functions.invoke('player-geography', { body: {} }).catch(() => {});
+}
+
 async function heartbeat() {
   const { data, error } = await supabase.rpc('player_heartbeat');
   if (error || !data || typeof data !== 'object') return;
+  pingGeography();
   const hb = data as { banned?: boolean; settings?: { maintenance?: boolean; shop_sale?: boolean; gold_x2?: boolean }; grants?: HeartbeatGrant[] };
   const grants = Array.isArray(hb.grants) ? hb.grants : [];
   for (const g of grants.filter((g) => g.kind === 'adjust')) {
