@@ -4,7 +4,7 @@ import { calendarDayKey } from '@/game/weeklyQuests';
 import { IosGamePortal } from '@/components/ui/Modal';
 import {Art,Dice,type ArtName} from './visuals';
 import { useLanguage } from '@/game/i18n';
-import { hallError } from '@/game/gameHall';
+import { autoClaimHallGold, hallError } from '@/game/gameHall';
 import { monopoly, boardPoint, cellGold, cellPrize, bundlePrize, prizeLabels, claimMonopolyRewards, type Prize, type MonopolyData, type MonopolyQuestion } from './api';
 import './monopoly.css';
 const milestones=[5,10,15,20,25];
@@ -79,9 +79,28 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
  },[panel,reward]);
 
  const describe=(e:unknown)=>monopolyError(e,en);
+ // Revision-checked payouts. Failed credits remain in the protected server ledger.
+ const settleWinnings=async(d:MonopolyData)=>{
+  let gold=0,items=false,unpaid=false;
+  if(d.hall.pending_gold>0){
+   try{gold=await autoClaimHallGold(userId,d.hall.pending_gold);}
+   catch{unpaid=true;}
+  }
+  if(Object.values(d.progress.pending_rewards).some(n=>n>0)){
+   try{
+    await claimMonopolyRewards();
+    items=true;
+    if(mounted.current)setData(current=>current?{...current,progress:{...current.progress,pending_rewards:{}}}:current);
+   }catch{unpaid=true;}
+  }
+  if(!mounted.current)return;
+  if(unpaid)setNotice(t('Награды сохранены на сервере. Повторим зачисление при следующем входе.','Rewards are safely saved. We will retry crediting on your next visit.'));
+  else if(gold>0||items)setNotice(t('Выигрыш автоматически зачислен персонажу!','Prizes were automatically credited to your hero!'));
+ };
  const request=async(action:string,value=1)=>{
   if(lock.current)return;lock.current=true;setBusy(true);setError('');
   try{const d=await monopoly(action,value);if(!mounted.current)return;setData(d);
+   await settleWinnings(d);
    if(action==='gift'){setReward({tickets:2,awards:d.awards});setPanel(null);}
    else if(d.added){setReward({tickets:d.added,awards:d.awards});setPanel(null);}
   }catch(e){if(mounted.current)setError(describe(e));}
@@ -106,6 +125,7 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
     if(mounted.current)setData(last);
    }
    if(mounted.current&&sum>0){setPanel(null);setReward({tickets:sum,awards:aggregated});}
+    await settleWinnings(last);
   }catch(e){if(mounted.current){if(sum>0){setPanel(null);setReward({tickets:sum,awards:aggregated});}setError(describe(e));}}
   finally{lock.current=false;if(mounted.current)setBusy(false);}
  };
@@ -133,7 +153,7 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
    const finished=await monopoly('finish',1,session.token);
    if(!alive())return;
    setData(finished);setReward({gold:finished.result?.earned_gold??0,event:finished.result?.event,awards:finished.result?.awards});
-   setNotice(t('Награда зачислена в золото игрового зала.','Reward added to your Game Hall gold.'));
+   await settleWinnings(finished);
   }catch(e){if(alive())setError(describe(e));}
   finally{lock.current=false;if(alive()){setBusy(false);setMoving(false);}}
  };
@@ -202,7 +222,7 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
    {p?.lucky_next&&!active&&<div className="mono-choose"><small>{t('Выбери число — 1 билет','Choose a value — 1 ticket')}</small><div>{faces.map((n,i)=><button disabled={disabled||!h?.tickets} key={n} onClick={()=>void roll(101+i)} aria-label={String(n)}><Dice value={n}/></button>)}</div></div>}
    {Object.values(p?.pending_rewards??{}).some(n=>n>0)&&<div className="mono-pending"><b>{t('Твои сокровища','Your treasures')}</b><Prizes prize={p?.pending_rewards} en={en}/><button className="mono-cta" disabled={busy} onClick={()=>void redeem()}>{t('Получить награды','Collect rewards')}</button></div>}
   </div>
-  <p className="mono-note" aria-live="polite">{notice||t('Золото ждёт в игровом зале','Gold awaits in the Game Hall')}</p>
+  <p className="mono-note" aria-live="polite">{notice||t('Награды начисляются персонажу автоматически','Prizes are credited to your hero automatically')}</p>
   {h?.active&&h.active.game!=='monopoly'&&<button className="mono-cta" onClick={onBack}>{t('Завершить другую игру в зале','Finish the other game in the hall')}</button>}
   {error&&<div className="mono-error" role="alert">{error}<button disabled={busy} onClick={()=>void request('status')}>{t('Обновить','Refresh')}</button></div>}
   {panel&&<IosGamePortal><div className="mono-overlay" role="dialog" aria-modal="true" aria-labelledby="mono-panel-title" onClick={()=>setPanel(null)}><section className={`mono-panel panel-${panel}`} onClick={e=>e.stopPropagation()}>
