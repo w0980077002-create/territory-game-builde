@@ -270,12 +270,9 @@ export async function claimHallGoldCloud(userId: string): Promise<{state:GameSta
  if(!data || data.success!==true || !validSaveToken(data.updated_at) ||
   !Number.isSafeInteger(data.awarded) || data.awarded<1 ||
   !validEconomySnapshot(data.game_state as GameState))throw new Error('hall_invalid_receipt');
- const state=data.game_state as GameState;
- const wallet=safeWalletVersion({gold:data.wallet_gold,gems:data.wallet_gems},state.player);
- if(!walletMatchesVersion(wallet,state.player))throw new Error('hall_wallet_mismatch');
- saveTokens.set(userId,data.updated_at);
- walletVersions.set(userId,wallet);
- saveBlocked.delete(userId);
+ // A verified payout must also invalidate queued pre-payout auto-saves,
+ // otherwise an old snapshot could race the newly credited gold.
+ const state=acceptMonopolyClaimReceipt(userId,data);
  return {state,gold:data.awarded};
 }
 
