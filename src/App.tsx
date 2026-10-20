@@ -260,7 +260,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   return (
     <div
-      className="territory-shell flex flex-col max-w-md mx-auto overflow-hidden relative"
+      className={`territory-shell flex flex-col max-w-md mx-auto overflow-hidden relative ${screen === 'hall-play' && hallGame === 'wheel' ? 'territory-wheel-open' : ''}`}
       // Android Chrome/WebView displays the public image URL on long-press.
       // Block native context menus only on game art and controls, never on
       // chat messages, input fields, or other selectable player content.

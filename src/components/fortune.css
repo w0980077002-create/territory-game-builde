@@ -1,9 +1,123 @@
-.fortune-screen{position:relative;isolation:isolate;overflow:hidden;max-width:480px;margin:auto;padding:12px 10px calc(24px + env(safe-area-inset-bottom,0px));border:1px solid #c9a34a88;border-radius:24px;background-color:#10102d;background-size:100% auto;background-position:center top;background-repeat:no-repeat;color:#fff1c6;text-align:center;box-shadow:inset 0 0 40px #08051b,0 12px 35px #0006}
-.fortune-toolbar{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:6px}.fortune-toolbar button,.fortune-toolbar strong{border:1px solid #eac967;border-radius:20px;background:linear-gradient(#16294c,#080e22);padding:10px 12px;font-weight:800;min-height:44px;font-size:12px;box-shadow:inset 0 0 0 2px #76502055}.fortune-toolbar strong{font-size:20px;white-space:nowrap}.fortune-title{position:relative;margin:18px auto 0;max-width:320px;padding:8px 14px;border:2px solid #e8b951;border-radius:40% 40% 16px 16px;background:linear-gradient(140deg,#43124be8,#1a124ae0,#551229ee);box-shadow:0 0 25px #ab3cf53d,inset 0 0 12px #fdc55750}.fortune-title span{font-size:10px;letter-spacing:3px;color:#ffd76c}.fortune-title h1{font-family:Georgia,serif;font-weight:900;font-size:clamp(22px,7vw,33px);line-height:1.05;color:#ffe488;text-shadow:0 3px #541707,0 0 14px #ffbf4055;margin:5px 0}.fortune-title p{font-size:11px;margin:8px 0;color:#ece6ff}.fortune-wheel-stage{position:relative;width:100%;max-width:440px;margin:44px auto 14px;aspect-ratio:1;filter:drop-shadow(0 6px 13px #0009)}.fortune-wheel{display:block;width:100%;height:auto;transition-property:transform;transition-timing-function:cubic-bezier(.32,0,.12,1);position:relative;z-index:1}.fortune-wheel image{filter:drop-shadow(0 2px 2px #000a)}.fortune-wheel text{font-family:Georgia,serif}.fortune-pointer{position:absolute;z-index:4;top:-28px;left:calc(50% - 22px);width:44px;height:67px;clip-path:polygon(50% 100%,0 22%,50% 0,100% 22%);background:linear-gradient(100deg,#7b3a08,#ffed99 45%,#a8640c);color:#e857ef;text-shadow:0 0 8px #6300ff;font-size:32px;line-height:48px;filter:drop-shadow(0 3px 3px #000)}.fortune-wheel-aura{position:absolute;inset:8%;z-index:0;border-radius:50%;box-shadow:0 0 50px #7d32e975,0 0 25px #00c6ff88;pointer-events:none}.is-spinning .fortune-pointer{animation:fortune-tick .16s ease-in-out infinite}.is-spinning .fortune-wheel-aura{animation:fortune-glow 1.1s ease-in-out infinite alternate}.fortune-controls{position:relative;z-index:2;margin:0 auto;max-width:390px}.fortune-button{border:2px solid #ffd981;border-radius:18px;padding:13px 18px;min-height:48px;color:#fff0b7;font-weight:900;background:linear-gradient(#f13130,#9e0b21 55%,#670a1d);box-shadow:inset 0 0 0 3px #9f671b,0 0 15px #d2842f44;text-shadow:0 2px 2px #270306;cursor:pointer}.fortune-spin{width:100%;font-size:clamp(15px,4.5vw,22px)}.fortune-screen button:disabled,.fortune-treasury button:disabled{opacity:.55;cursor:default}.fortune-controls p,.fortune-treasury p{font-size:12px;line-height:1.55;margin:10px 0;color:#e2d8ed}.fortune-controls p button{text-decoration:underline;min-height:44px;color:#ffe18c}.fortune-skip{padding:10px;font-size:12px;text-decoration:underline;min-height:44px;color:#f7d78a}.fortune-prizes{margin-top:18px;padding:12px 8px;border:1px solid #d5ad5e;border-radius:16px;background:linear-gradient(#171932e8,#080e22);box-shadow:inset 0 0 18px #87592333}.fortune-prizes h2,.fortune-treasury h2{font-family:Georgia,serif;font-size:19px;font-weight:800;color:#ffe19a;margin:0 0 12px}.fortune-prizes>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.fortune-prizes article{border:1px solid #9c78574d;border-radius:10px;padding:5px 2px;background:radial-gradient(at top,#55468b66,#080f24)}.fortune-prizes img,.fortune-prizes article>span{display:block;width:38px;height:38px;object-fit:contain;margin:auto;font-size:28px}.fortune-prizes small{font-size:9px;line-height:1.25;display:block;margin-top:4px;min-height:24px}.fortune-dialog{width:calc(100% - 24px);max-width:420px;max-height:85dvh;overflow:auto;overscroll-behavior:contain;padding:22px 18px;border:2px solid #edca73;border-radius:22px;background:radial-gradient(at top,#49246a,#11182e 70%);color:#fff1cb;text-align:center;box-shadow:inset 0 0 0 4px #a7793533,0 0 60px #c091f455}.fortune-dialog::backdrop{background:#060817dc;backdrop-filter:blur(5px)}.fortune-dialog h2{font-family:Georgia,serif;font-weight:900;font-size:23px;color:#ffe29b;margin:0 0 18px}.fortune-dialog h3{font-size:23px;font-weight:900;margin:15px 0}.fortune-dialog p{font-size:13px;line-height:1.65;margin:12px 0}.fortune-dialog table{font-size:12px;width:100%;text-align:left;margin:16px 0}.fortune-dialog td{padding:6px 4px;border-bottom:1px solid #f4c87333}.fortune-dialog td:last-child{text-align:right;white-space:nowrap}.fortune-dialog>.fortune-button{margin-top:14px;min-width:140px}.fortune-reveal{position:relative;padding:18px 0}.fortune-reveal img{width:118px;height:118px;object-fit:contain;margin:auto;filter:drop-shadow(0 0 24px #f9bf43)}.fortune-reveal>span{font-size:90px;display:block;line-height:1.3}.fortune-reveal--rare:before,.fortune-reveal--rare:after{content:'✦ · ✧ · ✦';position:absolute;left:5%;right:5%;color:#f4d771;letter-spacing:14px;pointer-events:none;animation:fortune-confetti 1.8s ease-out 2}.fortune-reveal--rare:after{animation-delay:.4s;color:#e3a6fa}.fortune-treasury{padding:16px;border:1px solid #c49a4e99;border-radius:20px;background:radial-gradient(at top,#352650,#11192b);color:#ffe7b0;text-align:center}.fortune-chests{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:15px 0}.fortune-chests button{min-width:0;border:1px solid #caa95e;border-radius:15px;background:linear-gradient(#47345b,#10172a);padding:12px 4px;display:flex;align-items:center;flex-direction:column;gap:5px;min-height:130px}.fortune-chests button:last-child{background:linear-gradient(#755014,#25142f);box-shadow:inset 0 0 15px #fcca3a22}.fortune-chests span{font-size:32px}.fortune-chests strong{font-size:20px}.fortune-chests small{font-size:10px}.fortune-chest-reveal{font-size:40px;position:relative;padding:20px}.fortune-chest-reveal span{display:block;font-size:100px;filter:drop-shadow(0 0 12px #c697ec)}.fortune-chest-reveal.is-golden span{filter:drop-shadow(0 0 30px #ffcc3b)}.fortune-chest-reveal.is-opening{animation:fortune-chest .4s alternate 4}.fortune-screen button:focus-visible,.fortune-dialog button:focus-visible,.fortune-treasury button:focus-visible{outline:3px solid #68e0ff;outline-offset:3px}
-@keyframes fortune-tick{50%{transform:rotate(-7deg);transform-origin:50% 0}}@keyframes fortune-glow{to{opacity:.5;box-shadow:0 0 65px #c98bfa,0 0 20px #ffc646}}@keyframes fortune-confetti{from{top:0;opacity:1;transform:scale(.7)}to{top:90%;opacity:0;transform:scale(1.2)}}@keyframes fortune-chest{to{transform:rotate(5deg) scale(1.05)}}
-@media(max-width:350px){.fortune-screen{padding:10px 6px 20px}.fortune-toolbar button{padding:9px;font-size:11px}.fortune-title{margin-top:12px}.fortune-wheel-stage{margin-top:36px}.fortune-prizes small{font-size:8px}}
-@media(prefers-reduced-motion:reduce){.fortune-screen *,.fortune-dialog *,.fortune-treasury *{animation:none!important;transition:none!important}}
-
-.fortune-chests img{width:52px;height:52px;object-fit:contain}.fortune-chest-reveal img{width:140px;height:140px;display:block;margin:auto;filter:drop-shadow(0 0 18px #b86cff)}.fortune-chest-reveal.is-golden img{filter:drop-shadow(0 0 28px #ffca3c)}.is-spinning:after{content:'✦ · ✧ ✦ · ✧';position:absolute;inset:0;z-index:3;pointer-events:none;color:#ffe394;text-shadow:0 0 9px #ffc72d;letter-spacing:15px;font-size:22px;animation:fortune-sparks 1.6s ease-in-out infinite alternate}@keyframes fortune-sparks{to{transform:translateY(35px);opacity:.25}}
-
-.fortune-title{width:72%;min-height:128px;display:flex;flex-direction:column;justify-content:center;margin:20px 0 0 auto;padding:10px 8px}.fortune-title h1{font-size:clamp(22px,6.4vw,30px)}.fortune-wheel-stage{margin-top:34px}@media(max-width:350px){.fortune-title{min-height:120px;margin-top:16px}.fortune-title h1{font-size:23px}}
+/* Reference-matched wheel. Illustrated art is layered over live SVG sectors;
+   only .fortune-wheel rotates, including its sculpted rim and lion medallion. */
+.fortune-screen {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  width: calc(100% + 24px);
+  max-width: 480px;
+  margin: -12px -12px 0;
+  padding: 8px 7px calc(28px + max(env(safe-area-inset-bottom, 0px), var(--territory-bottom-inset, 0px)));
+  color: #fff1c6;
+  text-align: center;
+  background-color: #10102d;
+  background-size: 100% auto;
+  background-position: center top;
+  background-repeat: no-repeat;
+  -webkit-tap-highlight-color: transparent;
+}
+.fortune-screen *, .fortune-screen *::before, .fortune-screen *::after { box-sizing: border-box; }
+.fortune-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.fortune-toolbar { position: relative; z-index: 4; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.fortune-ticket, .fortune-rules {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 44px; padding: 5px 12px;
+  border: 2px solid #f6d37c; border-radius: 24px;
+  background: linear-gradient(#16283e, #07111f 70%);
+  box-shadow: inset 0 0 0 2px #6b471d, inset 0 2px 5px #fff2ad44, 0 3px 7px #000b;
+  color: #ffedb0; font-weight: 900; white-space: nowrap;
+}
+.fortune-ticket { max-width: 57%; font-size: clamp(19px, 6vw, 25px); font-variant-numeric: tabular-nums; }
+.fortune-ticket img { width: 29px; height: 24px; flex-shrink: 0; transform: rotate(-9deg); }
+.fortune-rules { font-size: clamp(12px, 3.4vw, 16px); cursor: pointer; }
+.fortune-rules > span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(#ffe7a6, #c88a1e); color: #35220e; font-size: 18px; font-family: Georgia, serif; }
+.fortune-title { position: relative; z-index: 2; width: 78%; max-width: 342px; margin: -25px 0 0 auto; padding: 0; }
+.fortune-title > img { display: block; width: 100%; height: auto; pointer-events: none; }
+.fortune-wheel-stage { position: relative; z-index: 2; width: min(92%, max(270px, calc(var(--territory-viewport-height, 100svh) - 440px)), 380px); aspect-ratio: 1; margin: -1px auto 0; filter: drop-shadow(0 5px 8px #02041eaa); }
+.fortune-wheel { position: relative; z-index: 1; display: block; width: 100%; height: auto; transform-origin: 50% 50%; transition-property: transform; transition-timing-function: cubic-bezier(.32, 0, .12, 1); }
+.fortune-wheel image:not(.fortune-wheel-frame) { filter: drop-shadow(0 2px 3px #070520cc); }
+.fortune-wheel text { font-family: Georgia, serif; }
+.fortune-pointer { position: absolute; z-index: 4; width: 13%; height: auto; top: -6%; left: 43.5%; transform-origin: 50% 15%; filter: drop-shadow(0 2px 3px #270523); pointer-events: none; }
+.fortune-wheel-aura { position: absolute; z-index: 0; inset: 9%; border-radius: 50%; box-shadow: 0 0 28px #8d30f880, 0 0 20px #0879ff77; pointer-events: none; }
+.is-spinning .fortune-pointer { animation: fortune-tick .16s ease-in-out infinite; }
+.is-spinning .fortune-wheel-aura { animation: fortune-glow 1.1s ease-in-out infinite alternate; }
+.is-spinning::after { content: '✦ · ✧ ✦ · ✧'; position: absolute; inset: 0; z-index: 3; pointer-events: none; color: #ffe394; text-shadow: 0 0 9px #ffc72d; letter-spacing: 15px; font-size: 22px; animation: fortune-sparks 1.6s ease-in-out infinite alternate; }
+.fortune-controls { position: relative; z-index: 3; max-width: 420px; margin: -7px auto 0; scroll-margin-block: 16px 100px; }
+.fortune-button { min-height: 48px; border: 2px solid #ffd981; border-radius: 18px; padding: 13px 18px; color: #fff0b7; font-weight: 900; background: linear-gradient(#f13130, #9e0b21 55%, #670a1d); box-shadow: inset 0 0 0 3px #9f671b, 0 0 15px #d2842f44; text-shadow: 0 2px 2px #270306; cursor: pointer; }
+.fortune-spin {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 84%; aspect-ratio: 3.3; min-height: 76px; margin: 0 auto; padding: 10px 22px;
+  border: 0; border-radius: 0; background-color: transparent; background-size: 100% 100%; background-repeat: no-repeat;
+  box-shadow: none; filter: drop-shadow(0 4px 8px #07041f); transition: transform .15s, filter .15s;
+}
+.fortune-spin__label { display: block; font: 900 clamp(24px, 7vw, 32px)/1.1 Arial, sans-serif; color: #fff2c4; text-shadow: 0 3px 2px #4f1004, 0 0 7px #7a1e04; }
+.fortune-spin__label--busy { font-size: clamp(12px, 3.5vw, 16px); }
+.fortune-spin__cost { display: flex; align-items: center; gap: 4px; font-size: 17px; line-height: 1.1; font-weight: 900; }
+.fortune-spin__cost img { width: 27px; height: 19px; transform: rotate(-9deg); }
+.fortune-spin:not(:disabled):active { transform: translateY(2px) scale(.98); filter: brightness(1.15); }
+.fortune-screen button:disabled, .fortune-treasury button:disabled { opacity: .65; cursor: default; }
+.fortune-spin:disabled { filter: saturate(.65) brightness(.85); }
+.fortune-spin[aria-busy='true'] { filter: brightness(.9); }
+.fortune-controls p, .fortune-treasury p { font-size: 12px; line-height: 1.55; margin: 8px 0; color: #f0e6f3; }
+.fortune-controls p button { text-decoration: underline; min-height: 44px; color: #ffe18c; }
+.fortune-skip, .fortune-back { min-height: 44px; padding: 8px 12px; font-size: 12px; color: #ffe6b2; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.fortune-back { display: block; margin: 2px auto 0; font-size: 11px; text-decoration: none; color: #e8d1a4; }
+.fortune-prizes { position: relative; margin: 14px 1px 0; padding: 14px 8px 8px; border: 2px solid #d9ae61; border-radius: 12px; background: linear-gradient(110deg, #060f1eeb, #14223be8 50%, #090e20f5); box-shadow: inset 0 0 0 3px #634621, inset 0 0 18px #9b682322, 0 2px 10px #000a; }
+.fortune-prizes::before, .fortune-prizes::after { content: '◆'; position: absolute; top: -9px; font-size: 14px; color: #ffdf80; text-shadow: 0 0 5px #e18919; }
+.fortune-prizes::before { left: 6px; }.fortune-prizes::after { right: 6px; }
+.fortune-prizes h2 { position: relative; z-index: 1; width: max-content; max-width: 90%; margin: -24px auto 7px; padding: 0 9px; background: #0a1427; font-size: 15px; font-weight: 900; color: #ffe08e; text-shadow: 0 2px #3f1a06; }
+.fortune-prizes > div { display: grid; grid-auto-flow: column; grid-auto-columns: 62px; gap: 7px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #aa7f3c #101725; padding: 2px 1px 6px; }
+.fortune-prizes article { min-width: 0; padding: 3px; border: 1px solid #e3b85e; border-radius: 8px; background: radial-gradient(at center, #29395d, #071020 75%); box-shadow: inset 0 0 0 1px #4f2c10, inset 0 0 7px #a16a222e; }
+.fortune-prizes img, .fortune-prizes article > span { display: block; width: 40px; height: 40px; object-fit: contain; margin: auto; font-size: 28px; }
+.fortune-prizes small { display: block; margin-top: 3px; min-height: 24px; font-size: 9px; line-height: 1.2; color: #fff1c5; }
+.fortune-screen button:focus-visible, .fortune-screen [tabindex]:focus-visible, .fortune-dialog button:focus-visible, .fortune-treasury button:focus-visible { outline: 3px solid #68e0ff; outline-offset: 3px; }
+.fortune-dialog{width:calc(100% - 24px);max-width:420px;max-height:85dvh;overflow:auto;overscroll-behavior:contain;padding:22px 18px;border:2px solid #edca73;border-radius:22px;background:radial-gradient(at top,#49246a,#11182e 70%);color:#fff1cb;text-align:center;box-shadow:inset 0 0 0 4px #a7793533,0 0 60px #c091f455}
+.fortune-dialog::backdrop{background:#060817dc;backdrop-filter:blur(5px)}
+.fortune-dialog h2{font-family:Georgia,serif;font-weight:900;font-size:23px;color:#ffe29b;margin:0 0 18px}
+.fortune-dialog h3{font-size:23px;font-weight:900;margin:15px 0}
+.fortune-dialog p{font-size:13px;line-height:1.65;margin:12px 0}
+.fortune-dialog table{font-size:12px;width:100%;text-align:left;margin:16px 0}
+.fortune-dialog td{padding:6px 4px;border-bottom:1px solid #f4c87333}
+.fortune-dialog td:last-child{text-align:right;white-space:nowrap}
+.fortune-dialog>.fortune-button{margin-top:14px;min-width:140px}
+.fortune-reveal{position:relative;padding:18px 0}
+.fortune-reveal img{width:118px;height:118px;object-fit:contain;margin:auto;filter:drop-shadow(0 0 24px #f9bf43)}
+.fortune-reveal>span{font-size:90px;display:block;line-height:1.3}
+.fortune-reveal--rare:before,.fortune-reveal--rare:after{content:'✦ · ✧ · ✦';position:absolute;left:5%;right:5%;color:#f4d771;letter-spacing:14px;pointer-events:none;animation:fortune-confetti 1.8s ease-out 2}
+.fortune-reveal--rare:after{animation-delay:.4s;color:#e3a6fa}
+.fortune-treasury{padding:16px;border:1px solid #c49a4e99;border-radius:20px;background:radial-gradient(at top,#352650,#11192b);color:#ffe7b0;text-align:center}
+.fortune-chests{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:15px 0}
+.fortune-chests button{min-width:0;border:1px solid #caa95e;border-radius:15px;background:linear-gradient(#47345b,#10172a);padding:12px 4px;display:flex;align-items:center;flex-direction:column;gap:5px;min-height:130px}
+.fortune-chests button:last-child{background:linear-gradient(#755014,#25142f);box-shadow:inset 0 0 15px #fcca3a22}
+.fortune-chests span{font-size:32px}
+.fortune-chests strong{font-size:20px}
+.fortune-chests small{font-size:10px}
+.fortune-chest-reveal{font-size:40px;position:relative;padding:20px}
+.fortune-chest-reveal span{display:block;font-size:100px;filter:drop-shadow(0 0 12px #c697ec)}
+.fortune-chest-reveal.is-golden span{filter:drop-shadow(0 0 30px #ffcc3b)}
+.fortune-chest-reveal.is-opening{animation:fortune-chest .4s alternate 4}
+.fortune-chests img { width: 52px; height: 52px; object-fit: contain; }
+.fortune-chest-reveal img { width: 140px; height: 140px; display: block; margin: auto; filter: drop-shadow(0 0 18px #b86cff); }
+.fortune-chest-reveal.is-golden img { filter: drop-shadow(0 0 28px #ffca3c); }
+@keyframes fortune-tick { 50% { transform: rotate(-7deg); } }
+@keyframes fortune-glow { to { opacity: .5; box-shadow: 0 0 45px #c98bfa, 0 0 20px #ffc646; } }
+@keyframes fortune-confetti { from { top: 0; opacity: 1; transform: scale(.7); } to { top: 90%; opacity: 0; transform: scale(1.2); } }
+@keyframes fortune-chest { to { transform: rotate(5deg) scale(1.05); } }
+@keyframes fortune-sparks { to { transform: translateY(35px); opacity: .25; } }
+@media (max-width: 350px) {
+  .fortune-screen { padding-inline: 5px; }
+  .fortune-toolbar { gap: 5px; }
+  .fortune-ticket, .fortune-rules { padding-inline: 9px; }
+  .fortune-title { width: 79%; margin-top: -18px; }
+  .fortune-spin { width: 91%; }
+  .fortune-prizes > div { grid-auto-columns: 60px; gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fortune-screen *, .fortune-screen *::before, .fortune-screen *::after, .fortune-dialog *, .fortune-treasury * { animation: none !important; transition: none !important; }
+}
+/* Telegram's controls can leave a short WebView even on a wide phone. Keep
+   the initial Spin action above the persistent navigation in that case. */
+@media (max-height: 700px) {
+  .fortune-title { width: 72%; margin-top: -24px; }
+  .fortune-spin { width: 84%; }
+}
