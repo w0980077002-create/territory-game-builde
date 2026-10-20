@@ -38,7 +38,6 @@ export function SeasonScreen({ user }: { user: AuthUser }) {
           <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-amber-400/10 border border-amber-400/20"><Crown className="text-amber-300" /></div>
           <div>
             <h3 className="font-black text-amber-100 text-lg">{en ? 'Weekly Championship' : 'Недельный чемпионат'}</h3>
-            <p className="text-xs text-slate-300">{en ? 'Sunday — Sunday · Kyiv time' : 'Воскресенье — воскресенье · время Киева'}</p>
           </div>
         </div>
         <div className="relative grid grid-cols-2 gap-2 mt-4">
