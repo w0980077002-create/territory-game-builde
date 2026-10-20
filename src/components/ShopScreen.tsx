@@ -4,6 +4,8 @@ import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, buyItem, DAILY_STONE_LIMIT, stonesRemainingToday, maxStoneQty } from '@/game/actions';
 import { generateShopItems } from '@/game/engine';
 import { MAX_SHOP_PURCHASE_QTY } from '@/game/purchaseGuard';
+import { calendarDayKey } from '@/game/weeklyQuests';
+import { kyivMidnightUtc } from '@/game/seasonCalendar';
 import { rarityColor } from '@/game/ui';
 import { CheckCircle2, Sword, Shield, Heart, Star, Minus, Plus, Clock } from 'lucide-react';
 import type { GameState, ShopItem } from '@/game/types';
@@ -58,10 +60,10 @@ function useMidnightCountdown() {
 }
 
 function msUntilMidnight(): number {
-  const now = new Date();
-  const midnight = new Date(now);
-  midnight.setHours(24, 0, 0, 0);
-  return midnight.getTime() - now.getTime();
+  const now = Date.now();
+  const [year, month, day] = calendarDayKey(now).split('-').map(Number);
+  const tomorrow = new Date(Date.UTC(year, month - 1, day + 1)).toISOString().slice(0, 10);
+  return Math.max(0, kyivMidnightUtc(tomorrow) - now);
 }
 
 function formatDuration(ms: number): string {
@@ -88,6 +90,19 @@ export function ShopScreen() {
       if (mounted) {setShopStatus(status);setPendingShop(pending);setShopCheck('ready');}
     }).catch(() => {if(mounted)setShopCheck('error');});
     return () => {mounted=false;};
+  }, []);
+  // After midnight fetch the authoritative quota; the browser never grants purchases.
+  useEffect(() => {
+    let previous = calendarDayKey();
+    const timer = window.setInterval(() => {
+      const current = calendarDayKey();
+      if (current === previous) return;
+      previous = current;
+      void fetchShopStatus().then(fresh => {
+        if (fresh?.enabled) { setShopStatus(fresh); setShopCheck('ready'); }
+      }).catch(() => { /* Wait for the next authoritative status. */ });
+    }, 15_000);
+    return () => window.clearInterval(timer);
   }, []);
   const allItems = generateShopItems(state.currentChapter).map((i) => {
     if (shopStatus?.enabled && i.type === 'stone') return {...i, priceGems:i.id==='shop_stone_1'?2:8, priceGold:0};
@@ -149,7 +164,7 @@ export function ShopScreen() {
     if (status.gems !== receipt.gemsAfter || status.stones !== receipt.stonesAfter) throw new Error('shop_wallet_changed');
     const current = useGame.get();
     useGame.set({ ...current, player:{ ...current.player,gems:status.gems },battleStones:status.stones,
-      dailyStonesBought:status.boughtToday,dailyStonesDate:new Date().toDateString() });
+      dailyStonesBought:status.boughtToday,dailyStonesDate:calendarDayKey() });
     setShopStatus(status);
     await keepPendingShop(null);
     setPendingShop(null);
@@ -230,7 +245,7 @@ export function ShopScreen() {
       {pendingShop && <button className="w-full rounded-xl border border-amber-400/40 bg-amber-500/10 p-3 text-sm font-bold text-amber-200 disabled:opacity-50" onClick={()=>{void retryServerPurchase();}} disabled={buying}>{language==='en'?'Retry pending purchase (same transaction)':'Повторить неподтверждённую покупку (тот же запрос)'}</button>}
       {picked && (
         <Modal title={picked.name} onClose={() => setPicked(null)}>
-          <PurchaseSheet item={picked} state={shopStatus?.enabled ? {...state, player:{...state.player,gems:shopStatus.gems},battleStones:shopStatus.stones,dailyStonesBought:shopStatus.boughtToday,dailyStonesDate:new Date().toDateString()} : state} onBuy={(qty) => {void buy(picked, qty);}} />
+          <PurchaseSheet item={picked} state={shopStatus?.enabled ? {...state, player:{...state.player,gems:shopStatus.gems},battleStones:shopStatus.stones,dailyStonesBought:shopStatus.boughtToday,dailyStonesDate:calendarDayKey()} : state} onBuy={(qty) => {void buy(picked, qty);}} />
         </Modal>
       )}
 
