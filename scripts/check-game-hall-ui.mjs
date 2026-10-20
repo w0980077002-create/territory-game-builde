@@ -7,7 +7,7 @@ const api=readFileSync('src/game/gameHall.ts','utf8');
 const cloud=readFileSync('src/game/cloud.ts','utf8');
 const sql=readFileSync('supabase/migrations/20261017_game_hall_five_v1.sql','utf8');
 for(const game of ['monopoly','dice','tower','targets','treasury']) {
- assert.match(hall,new RegExp("id\\\\s*:\\\\s*'"+game+"'"),'Hall card missing '+game);
+ assert.match(hall,new RegExp("id\\s*:\\s*'"+game+"'"),'Hall card missing '+game);
  assert.match(api,new RegExp("'"+game+"'"),'Server game type missing '+game);
 }
 assert.match(hall,/Сокровищница/);assert.doesNotMatch(hall,/Джекпот/);
@@ -34,18 +34,18 @@ assert.match(sql,/CREATE TABLE territory_private\.hall_accounts_v1/);
 assert.match(sql,/CREATE TABLE territory_private\.hall_sessions_v1/);
 assert.match(sql,/correct_answer integer/);
 assert.match(sql,/pending_gold/);
-assert.match(sql,/least\\(s\\.gold_reward,greatest\\(0,1000-v_total_today\\)\\)/); // historical migration remains immutable
+assert.match(sql,/least\(s\.gold_reward,greatest\(0,1000-v_total_today\)\)/); // historical migration remains immutable
 const uncapped=readFileSync('supabase/migrations/20261020084500_hall_gold_no_daily_cap.sql','utf8');
 assert.match(uncapped,/territory_hall_finish_v1/);
 assert.match(uncapped,/territory_monopoly_v2/);
 assert.match(uncapped,/territory_hall_status_v1/);
-assert.match(uncapped,/100000-a\\.pending_gold/);
+assert.match(uncapped,/100000-a\.pending_gold/);
 assert.match(uncapped,/DROP CONSTRAINT hall_accounts_v1_daily_gold_check/);
 assert.doesNotMatch(hall,/лимит выигрыша 1000 золота|daily gold cap:/i);
 const skin=readFileSync('src/components/gameHall.css','utf8');
 assert.match(skin,/hall-game--featured/);
 assert.match(skin,/prefers-reduced-motion/);
-assert.match(hall,/promo\\//);
+assert.match(hall,/promo\//);
 assert.match(sql,/REVOKE ALL ON FUNCTION public\.territory_hall_start_v1/);
 assert.match(sql,/REVOKE ALL ON territory_private\.hall_accounts_v1/);
 assert.doesNotMatch(sql,/redGems|red_gems|p_reward_gold/,'No premium debit or caller-driven gold');
