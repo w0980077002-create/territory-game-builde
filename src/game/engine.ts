@@ -1,6 +1,6 @@
 import { EQUIPMENT_BALANCE_VERSION } from './equipmentBalance';
 import { initialFollowers } from './followers';
-import { weeklyQuestKey } from './weeklyQuests';
+import { calendarDayKey, weeklyQuestKey } from './weeklyQuests';
 import { bossEnemyMultipliers, chapterEnemyMultipliers, trialEnemyMultipliers } from './pveBalance';
 import { SHOP_EQUIPMENT_ITEMS } from './equipmentCatalog';
 import type {
@@ -95,7 +95,7 @@ export function createInitialGame(): GameState {
     forgeMaterials: 0,
     storyProgress: 0,
     lastEnergyAt: Date.now(),
-    dailyResetDay: new Date().toDateString(),
+    dailyResetDay: calendarDayKey(),
     weeklyResetWeek: weeklyQuestKey(),
     belt: Array(7).fill(null),
     activeDays: 1,
@@ -107,7 +107,7 @@ export function createInitialGame(): GameState {
     trialLevel: 1,
     appearance: 'm2',
     dailyStonesBought: 0,
-    dailyStonesDate: new Date().toDateString(),
+    dailyStonesDate: calendarDayKey(),
     quests: createInitialQuests(),
     achievements: createInitialAchievements(),
   };
