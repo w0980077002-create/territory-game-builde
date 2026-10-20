@@ -236,6 +236,13 @@ async function handle(action: string, body: Row) {
         settings: settings.data,
       };
     }
+    case "geo_stats": {
+      // Only available through the existing owner-authenticated admin-api handler.
+      // Read an aggregated RPC; do not expose player IDs, IPs or location history.
+      const { data, error } = await db.rpc("territory_admin_geography_v1");
+      if (error || !data || typeof data !== "object") throw new HttpError(503, "geo_unavailable");
+      return data;
+    }
     case "activity": {
       const period = body.period;
       if (period !== "online" && period !== "today" && period !== "week") {
