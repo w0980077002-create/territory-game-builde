@@ -54,10 +54,6 @@ export function SocialQuestsSection({ userId, onStatusChange }: { userId: string
       <h3 className="flex items-center gap-2 px-1 text-sm font-bold uppercase tracking-wider text-amber-200">
         <UsersRound className="w-4 h-4" /> {en ? 'Community quests' : 'Задания сообщества'}
       </h3>
-      <p className="px-1 text-xs text-gray-400">
-        {en ? 'Each verified subscription: 150 gold + 3 battle stones. Once per player.'
-          : 'За каждую подтверждённую подписку: 150 золота и 3 боевых камня. Один раз для игрока.'}
-      </p>
       {cards.map((item) => {
         const claimed = status?.[item.task] ?? false;
         return (
