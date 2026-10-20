@@ -256,3 +256,180 @@
  .hall-marquee__sparks,.hall-action::after{animation:none}
  .hall-action,.hall-game{transition:none}
 }
+
+/* Approved casino mock: illustrated marquee, jewel-toned cards, working native controls.
+   Every image is an existing local asset. Text and controls remain separate DOM elements.
+   Lazy <img> scenes avoid eagerly downloading five heavy game backgrounds at once. */
+.territory-game-hall {
+  width:100%;max-width:100%;min-width:0;
+  overflow-x:clip;
+  -webkit-tap-highlight-color:transparent;
+}
+.hall-marquee {
+  min-height:170px;
+  padding:11px 13px 13px 29%;
+  background:
+    radial-gradient(ellipse at 17% 45%,rgba(255,137,37,.45),transparent 55%),
+    radial-gradient(ellipse at 88% 21%,rgba(255,61,22,.28),transparent 48%),
+    linear-gradient(135deg,#420e2e,#13102f 54%,#34122b);
+}
+.hall-marquee__art {filter:saturate(1.3) contrast(1.1) brightness(.73)}
+.hall-marquee__art::after {
+  background:linear-gradient(90deg,rgba(10,3,17,.06),rgba(16,4,23,.57) 36%,rgba(24,8,26,.52) 70%,rgba(28,5,18,.29)),linear-gradient(0deg,#1b0b20,transparent 38%);
+}
+.hall-marquee__hero {
+  position:absolute;z-index:2;
+  left:-4%;bottom:-12%;height:113%;width:44%;
+  object-fit:contain;object-position:center bottom;
+  filter:drop-shadow(4px 6px 9px #150312dd) drop-shadow(0 0 19px #ffa439aa);
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 83%,transparent 100%);
+  mask-image:linear-gradient(180deg,#000 0%,#000 83%,transparent 100%);
+  pointer-events:none;
+}
+.hall-marquee__sign {
+  position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;
+  width:min(100%,390px);min-width:0;margin:0 auto;
+  padding:8px 7px 13px;
+  border:3px ridge #f7bb56;border-radius:22px 22px 13px 13px;
+  background:
+    repeating-linear-gradient(5deg,transparent 0 14px,#ee96490b 15px,transparent 17px),
+    linear-gradient(180deg,rgba(101,39,19,.97),rgba(62,25,23,.97) 56%,rgba(30,14,27,.98));
+  box-shadow:inset 0 2px 0 #ffebadbb,inset 0 -7px 10px #070412a1,0 4px 0 #64310b,0 6px 14px #09000ade,0 0 18px #f8ad4666;
+}
+.hall-marquee__sign::before,.hall-marquee__sign::after {
+  content:"";position:absolute;top:30%;width:12px;height:12px;
+  transform:rotate(45deg);background:radial-gradient(circle at 35% 25%,#fffbd3,#ffad25 46%,#9c3c00);
+  border:1px solid #ffdf9a;box-shadow:0 0 12px #ff9428;
+}
+.hall-marquee__sign::before{left:-8px}
+.hall-marquee__sign::after{right:-8px}
+.hall-marquee__title{
+  font-size:clamp(25px,7vw,39px);letter-spacing:-1.3px;
+  -webkit-text-stroke:.7px #683409;
+  white-space:nowrap;max-width:100%;
+}
+.hall-marquee__crown{font-size:26px;line-height:.9}
+.hall-marquee__neon{
+  font-size:clamp(13px,4.2vw,20px);
+  padding:6px 11px;margin-top:9px;
+  max-width:calc(100% + 10px);
+}
+.hall-marquee__chest {
+  position:absolute;z-index:3;right:1%;bottom:-8px;
+  width:74px;height:58px;display:flex;align-items:flex-end;justify-content:center;
+  border:3px ridge #fcd178;border-radius:9px 9px 12px 12px;
+  background:radial-gradient(ellipse at 45% 20%,#ffa92e,#9f3c0b 68%,#40120b);
+  box-shadow:inset 0 3px 5px #ffe9a3aa,0 3px 6px #150610,0 0 19px #ff9b24a1;
+  transform:rotate(5deg);pointer-events:none;
+}
+.hall-marquee__chest::before {
+  content:"";position:absolute;left:-5px;right:-5px;top:-15px;height:18px;
+  border:3px solid #ffcc70;border-radius:12px 12px 6px 6px;
+  background:linear-gradient(#8a3f12,#d88c2b,#512208);
+}
+.hall-marquee__chest span{font-size:24px;margin:0 -5px 5px;filter:drop-shadow(0 0 6px #ffdb5f)}
+.hall-marquee__chest span:first-child{transform:translateY(-20px)}
+.hall-marquee__chest span:nth-child(2){transform:translateY(-12px)}
+.hall-cashier{border-color:#ffd175;box-shadow:0 4px 0 #633019,0 7px 19px #000b,inset 0 2px #fff4b181}
+.hall-cashier__stat{background:radial-gradient(ellipse at 35% 0%,#ffe59717,transparent 60%),linear-gradient(155deg,#181124,#090b17);border-color:#b58e6285}
+.hall-cashier__stat-icon{color:#ffd04f}
+.hall-cashier__value{font-size:clamp(17px,4.8vw,24px);color:#fff8f1}
+.hall-cashier__info {
+  position:absolute;z-index:5;right:12px;top:43px;
+  display:grid;place-items:center;width:24px;height:24px;
+  border-radius:50%;border:2px solid #e3b87e;
+  background:linear-gradient(#8d5925,#4c2b16);
+  color:#fff3d4;font:bold italic 15px Georgia,serif;
+  box-shadow:0 2px 4px #000a;
+}
+.hall-cashier__details{
+  margin:9px 2px 3px;padding:9px 11px;
+  border-radius:9px;border:1px solid #c99b59;
+  background:#090c1ced;font-size:11px;line-height:1.5;
+  color:#f9e7bf;
+}
+.hall-games{gap:10px}
+.hall-game{
+  background-image:radial-gradient(circle at 35% 5%,#f7d65b55,transparent 58%);
+  contain:paint;
+}
+.hall-game__scene{
+  position:absolute;z-index:0;inset:0;display:block;
+  width:100%;height:100%;object-fit:cover;object-position:center;
+  pointer-events:none;filter:saturate(1.3) contrast(1.08);
+}
+.hall-game--featured .hall-game__scene{filter:saturate(1.4) brightness(1.13)}
+.hall-game--blue .hall-game__scene{filter:saturate(1.6) hue-rotate(8deg)}
+.hall-game--violet .hall-game__scene{filter:saturate(1.5) hue-rotate(23deg)}
+.hall-game--red .hall-game__scene{filter:saturate(1.5) sepia(.13)}
+.hall-game--gold .hall-game__scene{filter:saturate(1.4) hue-rotate(-25deg)}
+.hall-game__art{top:6px;left:7px}
+.hall-game__glow{
+  background:linear-gradient(180deg,rgba(0,0,0,.04) 0%,rgba(0,0,0,.1) 23%,rgba(3,1,13,.60) 58%,#07050dcf 100%),
+   radial-gradient(circle at 20% 10%,#ffdb8b55,transparent 66%);
+}
+.hall-game--featured .hall-game__glow{
+  background:linear-gradient(90deg,#02071919,#03060a11 35%,#07102124),linear-gradient(0deg,#050411d9,transparent 48%);
+}
+.hall-game__name{overflow-wrap:break-word}
+.hall-game__hint{overflow-wrap:break-word}
+.hall-game__play{
+  min-height:42px;font-size:clamp(13px,3.5vw,16px);
+  border-radius:13px;touch-action:manipulation;
+}
+.hall-game--featured .hall-game__play{min-height:49px}
+.hall-game--gold .hall-game__play{background:linear-gradient(#33f371,#039a49);border-color:#b4ffc0;box-shadow:0 0 13px #18f977}
+.hall-game--coming-soon{cursor:pointer}
+.hall-game--coming-soon .hall-game__play{
+  color:#ffe9b5;background:linear-gradient(#77562a,#513020);
+  border-color:#cda66f;box-shadow:0 0 9px #f6be4d7a;
+  font-size:12px;
+}
+.hall-game--coming-soon .hall-game__price{border-color:#d1af6f;font-size:10px}
+.hall-game__wheel{
+  position:absolute;z-index:2;top:7px;left:8%;width:min(77%,140px);aspect-ratio:1;
+  display:grid;place-items:center;
+  border:8px ridge #ffce59;border-radius:50%;
+  background:conic-gradient(#ed4b36 0deg 45deg,#ffbe34 45deg 90deg,#0ac6cb 90deg 135deg,#ad47ee 135deg 180deg,#f9a12f 180deg 225deg,#49d77b 225deg 270deg,#d83490 270deg 315deg,#3c88eb 315deg 360deg);
+  box-shadow:0 4px 14px #050012c7,inset 0 0 0 4px #fce38b,0 0 20px #ffbc3f;
+  transform:rotate(-15deg);
+  pointer-events:none;
+}
+.hall-game__wheel::before{
+  content:"";position:absolute;inset:-13px;
+  border:3px dotted #ffe48c;border-radius:50%;
+  filter:drop-shadow(0 0 6px #f9b95b);
+}
+.hall-game__wheel::after{
+  content:"";position:absolute;top:-21px;left:calc(50% - 9px);
+  border-left:9px solid transparent;border-right:9px solid transparent;
+  border-top:22px solid #fff4ae;
+  filter:drop-shadow(0 2px 3px #492409);
+}
+.hall-game__wheel span{
+  display:grid;place-items:center;width:38%;aspect-ratio:1;
+  border:4px solid #ffeb99;border-radius:50%;background:radial-gradient(circle,#c67a1c,#773710);
+  color:#fff2aa;font-size:22px;box-shadow:0 0 9px #ffe399;
+}
+.hall-game--coming-soon .hall-game__art{display:none}
+@media(max-width:390px){
+ .hall-marquee{padding-left:29%;padding-right:7px}
+ .hall-marquee__sign{padding:8px 5px 12px}
+ .hall-marquee__title{font-size:clamp(23px,7vw,29px)}
+ .hall-marquee__hero{left:-6%;width:45%}
+ .hall-marquee__chest{width:55px;height:45px;right:0;bottom:-7px}
+ .hall-marquee__chest span{font-size:18px}
+ .hall-game__wheel{border-width:6px;top:17px}
+ .hall-game__price{right:5px;top:7px;min-width:42px}
+ .hall-game__info{bottom:53px;left:7px}
+ .hall-game__name{font-size:clamp(14px,4.1vw,17px)}
+ .hall-game__hint{font-size:9px;line-height:1.18}
+ .hall-game__play{min-height:40px;right:6px;bottom:7px;min-width:74px;padding:5px 8px}
+ .hall-game--featured .hall-game__name{font-size:clamp(24px,7vw,28px)}
+ .hall-game--featured .hall-game__hint{font-size:10px}
+ .hall-game--featured .hall-game__info{left:12px;bottom:16px}
+ .hall-game--featured .hall-game__play{right:9px;min-width:89px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hall-game__wheel{animation:none}
+}
