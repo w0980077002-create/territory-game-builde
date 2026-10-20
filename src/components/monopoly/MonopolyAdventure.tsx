@@ -49,6 +49,7 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
  const [panel,setPanel]=useState<Panel>(null),[reward,setReward]=useState<{gold?:number;tickets?:number;event?:string;awards?:Prize}|null>(null);
  const [today,setToday]=useState(()=>calendarDayKey(Date.now())),[notice,setNotice]=useState('');
  const lock=useRef(false),mounted=useRef(true),generation=useRef(0);
+ const statusDay=useRef(today);
  const diceButton=useRef<HTMLButtonElement>(null);
  const t=(ru:string,english:string)=>en?english:ru;
  const p=data?.progress,h=data?.hall;
@@ -171,7 +172,13 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
   }catch(e){if(mounted.current)setError(describe(e));}
   finally{lock.current=false;if(mounted.current)setBusy(false);}
  };
- useEffect(()=>{if(mounted.current)void request('status');},[today]);
+ // Initial state is already loaded by monopoly() above. Refresh only when the
+ // calendar day actually changes; avoid two simultaneous startup RPC calls.
+ useEffect(()=>{
+  if(today===statusDay.current)return;
+  statusDay.current=today;
+  if(mounted.current)void request('status');
+ },[today]);
  const point=boardPoint(position);
  const claimed=(key:string)=>p?.claimed.includes(key)??false;
  const disabled=busy||!data;
