@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { MonopolyAdventure } from './monopoly/MonopolyAdventure';
 import { ArrowLeft, Coins, Dice5, Dices, DoorOpen, Gift, Loader2, RefreshCw, ShieldCheck, Target, Ticket, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
-import { hallStatus, hallStart, hallFinish, hallError, type HallGame, type HallSession, type HallState, type HallResult } from '@/game/gameHall';
+import { hallStatus, hallStart, hallFinish, autoClaimHallGold, hallError, type HallGame, type HallSession, type HallState, type HallResult } from '@/game/gameHall';
 
 const names:Record<HallGame,[string,string]>={
  monopoly:['Монополия','Monopoly'],dice:['Кости судьбы','Dice of Fate'],
@@ -82,7 +82,7 @@ function Question({session,onPick,busy,en}:{session:HallSession;onPick:(i:number
   {game==='dice'&&<p className="text-[11px] text-gray-400 text-center">{en?'If tied, choose the pair on the left.':'При равенстве выбирай крайнюю левую пару.'}</p>}
  </div>;
 }
-function HallOtherPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
+function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void;userId:string}){
  const {language}=useLanguage();const en=language==='en',Icon=icons[game];
  const [session,setSession]=useState<HallSession|null>(null);
  const [wallet,setWallet]=useState<HallState|null>(null);
@@ -90,6 +90,7 @@ function HallOtherPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
  const [busy,setBusy]=useState(false);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
+ const [payoutState,setPayoutState]=useState<'credited'|'pending'|null>(null);
  const init=async()=>{
   try{
    const status=await hallStatus();
@@ -101,7 +102,7 @@ function HallOtherPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
  useEffect(()=>{void init();},[game,en]);
  const start=async()=>{
   if(busy)return;setBusy(true);setError('');setResult(null);
-  try{const data=await hallStart(game);setSession(data);setWallet(await hallStatus());}
+  try{const data=await hallStart(game);setSession(data);setPayoutState(null);setWallet(await hallStatus());}
   catch(e){setError(hallError(e,en));}
   finally{setBusy(false);}
  };
@@ -110,7 +111,19 @@ function HallOtherPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
   setBusy(true);setError('');
   try{
    const prize=await hallFinish(session,answer);
-   setResult(prize);setSession(null);setWallet(await hallStatus());
+   setResult(prize);
+   setSession(null);
+   if(prize.earned_gold>0){
+     try{
+       await autoClaimHallGold(userId,prize.earned_gold);
+       setPayoutState('credited');
+     }catch{
+       // The round is already settled; the gold stays pending on the server.
+       // Opening the Game Hall retries it without charging another ticket.
+       setPayoutState('pending');
+     }
+   }else setPayoutState(null);
+   setWallet(await hallStatus());
   }catch(e){setError(hallError(e,en));}
   finally{setBusy(false);}
  };
@@ -135,10 +148,13 @@ function HallOtherPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
     <Trophy size={45} className={'mx-auto '+(result.won?'text-amber-300':'text-gray-500')}/>
     <h3 className="text-xl font-black text-white">{result.won?(en?'Victory!':'Победа!'):(en?'Try another round!':'Попробуй ещё!')}</h3>
     <p className="font-black text-lg text-amber-200">{result.won?'+'+result.earned_gold+' 🪙':'0 🪙'}</p>
-    <p className="text-sm text-violet-100">{'+'+result.points+' '}{en?'hall points':'очков зала'}</p>
-    <p className="text-xs text-gray-300">{en?'Gold awaits collection in the hall.':'Золото можно забрать в игровом зале.'}</p>
+    {result.earned_gold>0&&<p className="text-xs text-gray-300">{payoutState==='credited'
+      ? (en?'Gold has been credited to your hero automatically.':'Золото автоматически зачислено персонажу.')
+      : payoutState==='pending'
+        ? (en?'Gold is saved. It will be credited automatically when you return to the hall.':'Золото сохранено. Начисление повторится автоматически при возвращении в зал.')
+        : (en?'Crediting gold…':'Зачисляем золото…')}</p>}
     <div className="grid grid-cols-2 gap-2">
-     <button type="button" onClick={onBack} className="rounded-xl bg-white/10 border border-white/20 text-amber-100 py-3 font-bold">{en?'To hall':'В зал'}</button>
+     <button type="button" onClick={onBack} disabled={busy} className="rounded-xl bg-white/10 border border-white/20 text-amber-100 py-3 font-bold disabled:opacity-50">{en?'To hall':'В зал'}</button>
      <button type="button" disabled={busy||!wallet?.tickets} onClick={()=>void start()} className="btn-primary py-3 font-bold disabled:opacity-40">{en?'Play again':'Ещё раз'}</button>
     </div>
    </section>:
@@ -150,7 +166,7 @@ function HallOtherPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
     </section>:
     <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-b from-violet-950/35 to-[#151a28] p-5 text-center space-y-4">
      <Icon size={58} className="mx-auto text-amber-300 drop-shadow-[0_0_13px_#fbbf24]"/>
-     <p className="text-gray-200 text-sm">{en?'One ticket opens a round. Earn gold and Hall points by completing the challenge.':'Один билет открывает раунд. Выполни задание, чтобы получить золото и очки зала.'}</p>
+     <p className="text-gray-200 text-sm">{en?'One ticket opens a round. Complete the challenge to win gold.':'Один билет открывает раунд. Выполни задание, чтобы выиграть золото.'}</p>
      <button disabled={busy||!wallet?.tickets} onClick={()=>void start()} className="btn-primary w-full py-3.5 font-black flex items-center gap-2 justify-center disabled:opacity-40">
       {busy?<Loader2 size={19} className="animate-spin"/>:<Ticket size={19}/>}
       {en?'START — 1 TICKET':'НАЧАТЬ — 1 БИЛЕТ'}
@@ -163,5 +179,5 @@ function HallOtherPlayScreen({game,onBack}:{game:HallGame;onBack:()=>void}){
 }
 
 export function HallPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void;userId:string}){
- return game==='monopoly'?<MonopolyAdventure onBack={onBack} userId={userId}/>:<HallOtherPlayScreen game={game} onBack={onBack}/>;
+ return game==='monopoly'?<MonopolyAdventure onBack={onBack} userId={userId}/>:<HallOtherPlayScreen game={game} onBack={onBack} userId={userId}/>;
 }
