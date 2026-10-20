@@ -13,10 +13,27 @@ for (const name of files) {
   if (!existsSync(from)) throw new Error('Original Monopoly image missing: ' + from);
   mkdirSync(join('dist', 'monopoly'), { recursive: true });
   try {
+    // Large decoded textures can exhaust Android Telegram WebView GPU memory.
+    // Keep every approved image, but bound its resolution to what a phone can
+    // meaningfully display. Atlas/hero dimensions stay divisible by 4 so the
+    // original 4-column animation and sprite grid remain pixel-aligned.
+    const dimensions = execFileSync('ffprobe', [
+      '-v', 'error', '-select_streams', 'v:0',
+      '-show_entries', 'stream=width,height', '-of', 'csv=p=0:s=x', from,
+    ], { encoding: 'utf8', timeout: 15_000 }).trim();
+    const [width, height] = dimensions.split('x').map(Number);
+    if (![width, height].every(n => Number.isSafeInteger(n) && n > 0)) {
+      throw new Error('Cannot inspect dimensions: ' + name);
+    }
+    const maxSide = name === 'lagoon' ? 1600 : 2048;
+    const factor = Math.min(1, maxSide / Math.max(width, height));
+    const scaledW = factor < 1 ? Math.max(4, Math.floor(width * factor / 4) * 4) : width;
+    const scaledH = factor < 1 ? Math.max(4, Math.floor(height * factor / 4) * 4) : height;
+    const resized = factor < 1 ? ['-vf', `scale=${scaledW}:${scaledH}:flags=lanczos`] : [];
     // WebP supports alpha. Use high quality to preserve approved icon details.
     execFileSync('ffmpeg', [
       '-hide_banner', '-loglevel', 'error', '-nostdin', '-y',
-      '-i', from, '-frames:v', '1', '-c:v', 'libwebp',
+      '-i', from, ...resized, '-frames:v', '1', '-c:v', 'libwebp',
       '-q:v', '87', '-compression_level', '6', dest,
     ], { timeout: 120_000, stdio: 'pipe' });
   } catch (error) {
