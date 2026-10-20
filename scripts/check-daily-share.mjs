@@ -46,5 +46,16 @@ assert(!api.includes("window.location.origin"),'never share the public Pages URL
 assert(!api.includes("promo/'+language"),'outbound share must not use a website promo link');
 assert(api.includes('https://t.me/share/url?url='),'native Telegram recipient chooser is retained');
 assert(api.includes('acceptMonopolyClaimReceipt'));
+const card=readFileSync('src/game/DailyShareCard.tsx','utf8');
+const css=readFileSync('src/components/monopoly/monopoly.css','utf8');
+assert(card.includes('mono-quest mono-share-quest'),'Monopoly uses the same compact card as other tasks');
+assert(css.includes('.panel-quests .mono-share-bottom'),'compact share styling exists');
+assert(card.includes('if(!url||busy)return;'),'link sharing must not depend on reward availability');
+assert(card.includes('if(!rewardReady)'),'repeated shares must bypass the reward RPC');
+assert(card.indexOf('if(!rewardReady)') < card.indexOf('void claimDailyShare(task,userId)'),
+ 'eligible rewards alone may call the server award');
+assert(card.includes('disabled={!url||busy}'),'share button remains active after claiming and with full wallet');
+assert(!card.includes('Ты сам выбираешь получателя.'),'unnecessary explanatory text removed');
+assert(card.includes('setStatus(current=>current?'),'successful award locally updates next available time');
 await db.close();
 console.log('Daily sharing PASS: separate 24h rewards, ticket cap, CAS game stones, no duplicate awards, locked RPC');
