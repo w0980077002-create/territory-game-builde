@@ -16,7 +16,7 @@ export const useGame = create<GameState>(createInitialGame());
 
 export const useArena = create({ rating: 1000, wins: 0, losses: 0 });
 
-export const useAccount = create({ vip: 0, username: null as string | null });
+export const useAccount = create({ vip: 0, vipUntil: null as string|null, permanentVip:0, vipRemaining:0, vipCheckedAt:0, username: null as string | null });
 
 export function grantRewards(state: GameState, gold: number, xp: number): GameState {
   const withGold = { ...state, player: { ...state.player, gold: state.player.gold + gold } };

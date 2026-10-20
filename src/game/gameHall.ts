@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { useGame } from './actions';
 import { saveCloudSave, claimHallGoldCloud } from './cloud';
 
-export type HallGame = 'monopoly' | 'dice' | 'tower' | 'targets' | 'treasury';
+export type HallGame = 'monopoly' | 'dice' | 'tower' | 'targets' | 'treasury' | 'wheel';
 export const GAME_IDS: HallGame[] = ['monopoly','dice','tower','targets','treasury'];
 export type HallQuestion = {
   roll?:number; old_position?:number; new_position?:number;board_size?:number;

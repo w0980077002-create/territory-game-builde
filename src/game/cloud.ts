@@ -136,6 +136,12 @@ const saveBlocked = new Set<string>();
 // Invalidate queued pre-award saves before installing a server-credited state.
 const saveGenerations = new Map<string,number>();
 
+/** Freeze old queued writes while an atomic fortune operation is uncertain. */
+export function protectFortuneSave(userId:string):void {
+  saveGenerations.set(userId,(saveGenerations.get(userId)??0)+1);
+  saveBlocked.add(userId);
+}
+
 export { saveTokens, walletVersions, saveBlocked };
 
 /** One coalescing queue per authenticated player within this browser session. */

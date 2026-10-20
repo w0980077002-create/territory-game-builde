@@ -1,3 +1,5 @@
+import { WheelOfFortune } from './WheelOfFortune';
+import { TreasuryInventory } from './TreasuryInventory';
 import { useEffect, useState } from 'react';
 import { MonopolyAdventure } from './monopoly/MonopolyAdventure';
 import { ArrowLeft, Coins, Dice5, Dices, DoorOpen, Gift, Loader2, RefreshCw, ShieldCheck, Target, Ticket, Trophy } from 'lucide-react';
@@ -7,10 +9,10 @@ import { hallStatus, hallStart, hallFinish, autoClaimHallGold, hallError, type H
 const names:Record<HallGame,[string,string]>={
  monopoly:['Монополия','Monopoly'],dice:['Кости судьбы','Dice of Fate'],
  tower:['Башня испытаний','Trial Tower'],targets:['Меткий стрелок','Sharpshooter'],
- treasury:['Сокровищница','Treasury'],
+ treasury:['Сокровищница','Treasury'],wheel:['Колесо фортуны','Wheel of Fortune'],
 };
 const icons:Record<HallGame,typeof Dice5>={
- monopoly:Dice5,dice:Dices,tower:DoorOpen,targets:Target,treasury:Gift,
+ monopoly:Dice5,dice:Dices,tower:DoorOpen,targets:Target,treasury:Gift,wheel:Gift,
 };
 function cellPos(i:number):{row:number;col:number}{
  const side=7;
@@ -143,6 +145,7 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
     </div>
    </div>
   </section>
+  {game==='treasury'&&<TreasuryInventory userId={userId}/>}
   {loading?<p className="text-sm text-gray-400 text-center py-8"><Loader2 className="animate-spin inline mr-2" size={17}/>{en?'Loading game…':'Загрузка игры…'}</p>:
    result?<section className={'rounded-2xl border text-center p-5 space-y-3 '+(result.won?'border-emerald-400/40 bg-emerald-950/25':'border-rose-400/35 bg-rose-950/20')}>
     <Trophy size={45} className={'mx-auto '+(result.won?'text-amber-300':'text-gray-500')}/>
@@ -179,5 +182,6 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
 }
 
 export function HallPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void;userId:string}){
+ if(game==='wheel')return <WheelOfFortune userId={userId} onBack={onBack}/>;
  return game==='monopoly'?<MonopolyAdventure onBack={onBack} userId={userId}/>:<HallOtherPlayScreen game={game} onBack={onBack} userId={userId}/>;
 }

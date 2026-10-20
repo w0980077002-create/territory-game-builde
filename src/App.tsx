@@ -1,3 +1,4 @@
+import { refreshFortuneVip } from '@/game/fortuneVip';
 import { Suspense, lazy, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
@@ -129,6 +130,15 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const onSocialStatusChange = useCallback((next: SocialStatus) => setSocialClaims(next), []);
   useLiveSync(loaded);
 
+  // Expiring VIP is refreshed against server time, including WebView resume.
+  useEffect(()=>{
+    if(!loaded)return;
+    const refresh=()=>{if(document.visibilityState!=='hidden')void refreshFortuneVip();};
+    const timer=setInterval(refresh,60000);
+    document.addEventListener('visibilitychange',refresh);
+    return ()=>{clearInterval(timer);document.removeEventListener('visibilitychange',refresh);};
+  },[loaded,user.id]);
+
   // Social rewards are stored on the server, never inferred from local quest progress.
   useEffect(() => {
     if (!loaded) return;
@@ -187,7 +197,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         // A separate fire-and-forget write could collide with iOS gameplay saves.
         needsInitialSave.current = !!(profile.balanceMigrated || profile.rosterMigrated || hasNewTimeEffects || beltReconciled);
         useArena.set({ rating: profile.arenaRating, wins: profile.arenaWins, losses: profile.arenaLosses });
-        useAccount.set({ vip: profile.vip });
+        useAccount.set({ vip: profile.vip, permanentVip:profile.vip, vipUntil:null, vipRemaining:0, vipCheckedAt:performance.now() });
+        void refreshFortuneVip();
         setLoaded(true);
       })
       .catch(() => !cancelled && setLoadError('failedLoad'));

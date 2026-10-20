@@ -47,7 +47,6 @@ const GAMES: GameCard[] = [
     id: 'wheel', ru: 'Колесо фортуны', en: 'Wheel of Fortune',
     ruHint: 'Вращай колесо и получай награды', enHint: 'Spin the wheel and collect prizes',
     scene: 'hall-art/wheel.svg', artwork: 'hall-art/wheel-hd.webp', color: 'gold',
-    comingSoon: true,
   },
 ];
 
@@ -118,10 +117,6 @@ export function GamesScreen({
   };
 
   const play = (game: GameCard) => {
-    if (game.comingSoon) {
-      setNotice(en ? 'Wheel of Fortune is being prepared. No tickets were used.' : 'Колесо фортуны готовится к запуску. Билеты не списаны.');
-      return;
-    }
     const id = game.id as HallGame;
     if (!state || loading || busy) return;
     if (state.active) {
@@ -129,7 +124,7 @@ export function GamesScreen({
       onPlay(state.active.game);
       return;
     }
-    if (state.tickets < 1) {
+    if (state.tickets < 1 && id !== 'treasury' && id !== 'wheel') {
       setNotice(en ? 'Collect tickets to play.' : 'Получи билеты, чтобы играть.');
       return;
     }
