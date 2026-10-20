@@ -183,13 +183,13 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
   <nav className="mono-scene-shortcuts" aria-label={t('Быстрые действия Монополии','Monopoly quick actions')}>
    {([{panel:'offers',art:'chest',ru:'Спецпредложения',en:'Offers',badge:!claimed('offer:1')},{panel:'gifts',art:'gift',ru:'Подарки',en:'Gifts',badge:h?.free_ready},{panel:'quests',art:'quests',ru:'Задания',en:'Quests',badge:quests.some((v,i)=>v.current>=v.target&&!claimed(`quest:${i+1}`))}] as const).map(item=><button type="button" key={item.panel} data-shortcut={item.panel} onClick={()=>setPanel(item.panel)} aria-label={en?item.en:item.ru}><Art name={item.art}/><span>{en?item.en:item.ru}</span>{item.badge&&<i aria-hidden="true"/>}</button>)}
   </nav>
+  </div>
   <section className="mono-controls">
    <div className="mono-roll-row"><div className="mono-wallet"><Art name="ticket"/><span><small>{t('БИЛЕТЫ','TICKETS')}</small><b>{h?.tickets??'—'}</b></span><button aria-label={t('Получить билеты','Get tickets')} onClick={()=>setPanel('gifts')}>+</button></div>
     <button ref={diceButton} className={`mono-dice ${moving?'rolling':''}`} disabled={disabled||(!active&&(h?.tickets??0)<(ten?10:1))||!!(h?.active&&h.active.game!=='monopoly')} onClick={()=>void roll()} aria-label={active?t('Продолжить бросок','Resume roll'):t('Бросить кубик','Roll dice')}><span className="mono-dice-glow"/><Dice value={face}/><span className="mono-dice-cta">{moving?t('Ход…','Moving…'):active?t('Продолжить','Resume'):t(`БРОСИТЬ · ${ten?10:1}`,`ROLL · ${ten?10:1}`)}</span></button>
    </div>
    <div className="mono-toggles"><div className="mono-multiplier" role="group" aria-label={t('Множитель награды','Reward multiplier')}><button type="button" aria-pressed={!ten} className={!ten?'selected':''} disabled={busy||!!active} onClick={()=>setTen(false)}>×1</button><button type="button" aria-pressed={ten} className={ten?'selected':''} disabled={busy||!!active} onClick={()=>setTen(true)}>×10</button></div><label className="mono-skip"><input type="checkbox" checked={fast} disabled={busy} onChange={e=>setFast(e.target.checked)}/>{t('Пропустить анимацию','Skip animation')}</label></div>
   </section>
-  </div>
   <div className="mono-after-scene">
    {p?.lucky_next&&!active&&<div className="mono-choose"><small>{t('Выбери число — 1 билет','Choose a value — 1 ticket')}</small><div>{faces.map((n,i)=><button disabled={disabled||!h?.tickets} key={n} onClick={()=>void roll(101+i)} aria-label={String(n)}><Dice value={n}/></button>)}</div></div>}
    {Object.values(p?.pending_rewards??{}).some(n=>n>0)&&<div className="mono-pending"><b>{t('Твои сокровища','Your treasures')}</b><Prizes prize={p?.pending_rewards} en={en}/><button className="mono-cta" disabled={busy} onClick={()=>void redeem()}>{t('Получить награды','Collect rewards')}</button></div>}
