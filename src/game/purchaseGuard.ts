@@ -1,4 +1,5 @@
 import type { GameState, ShopItem } from './types';
+import { calendarDayKey } from './weeklyQuests';
 
 // Guard malformed/oversized UI requests. Server validation remains mandatory.
 export const MAX_SHOP_PURCHASE_QTY = 1000;
@@ -10,7 +11,7 @@ function validNonNegativeInteger(value: unknown): value is number {
 }
 
 export function shopStonesBoughtToday(state: GameState, now = new Date()): number {
-  if (state.dailyStonesDate !== now.toDateString()) return 0;
+  if (state.dailyStonesDate !== calendarDayKey(now.getTime()) && state.dailyStonesDate !== now.toDateString()) return 0;
   // Corrupt or forged counters must not silently remove the local limit.
   return validNonNegativeInteger(state.dailyStonesBought) && state.dailyStonesBought <= SHOP_STONES_PER_DAY
     ? state.dailyStonesBought
