@@ -36,7 +36,11 @@ export function DailyShareCard({task,userId,onClaimed}:{task:DailyShareTask;user
   if(!opened){setError(en?'Cannot open Telegram':'Не удалось открыть Telegram');return;}
   if(!rewardReady){
    // No claim request: the link remains freely shareable after the daily reward.
-   setNotice(en?'Share opened — no additional daily reward.':'Ссылка открыта — без повторной награды.');
+   setNotice(claimedToday
+    ? (en?'Link ready to share — today’s reward already claimed.':'Ссылку можно отправлять — награда сегодня уже получена.')
+    : full
+      ? (en?'Link ready to share — spend tickets to collect the bonus.':'Ссылку можно отправлять — для получения награды сначала потрать билеты.')
+      : (en?'Link ready to share.':'Ссылка готова к отправке.'));
    return;
   }
   setBusy(true);
