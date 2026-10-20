@@ -20,6 +20,8 @@ interface TelegramWebApp {
   expand: () => void;
   close: () => void;
   openTelegramLink?: (url: string) => void;
+  /** Telegram Mini Apps 8.0+: user-confirmed bot-prepared photo/card share. */
+  shareMessage?: (messageId: string, callback?: (sent: boolean) => void) => void;
   MainButton: {
     text: string;
     show: () => void;
