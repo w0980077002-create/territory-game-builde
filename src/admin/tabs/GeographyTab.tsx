@@ -11,11 +11,15 @@ type GeoCountry = {
   week: number;
 };
 type GeoData = { trackedPlayers: number; countries: GeoCountry[] };
-const names = new Intl.DisplayNames(['ru'], { type: 'region' });
+type RegionNames = { of(code: string): string | undefined };
+const DisplayNames = (Intl as unknown as {
+  DisplayNames?: new (locales: string[], options: { type: 'region' }) => RegionNames;
+}).DisplayNames;
+const names = DisplayNames ? new DisplayNames(['ru'], { type: 'region' }) : null;
 
 function countryName(code: string) {
   if (!/^[A-Z]{2}$/.test(code)) return 'Неизвестно';
-  return names.of(code) ?? code;
+  return names?.of(code) ?? code;
 }
 function flag(code: string) {
   if (!/^[A-Z]{2}$/.test(code)) return '🌍';
