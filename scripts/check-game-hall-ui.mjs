@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,statSync} from 'node:fs';
 const app=readFileSync('src/App.tsx','utf8');
 const hall=readFileSync('src/components/GamesScreen.tsx','utf8');
 const play=readFileSync('src/components/HallPlayScreen.tsx','utf8');
@@ -56,7 +56,16 @@ assert.doesNotMatch(hall,/лимит выигрыша 1000 золота|daily go
 const skin=readFileSync('src/components/gameHall.css','utf8');
 assert.match(skin,/hall-game--featured/);
 assert.match(skin,/prefers-reduced-motion/);
-assert.match(hall,/promo\//);
+assert.match(hall,/hall-art\/marquee\.svg/,'Approved header art must be loaded with the actual Vite base');
+for(const art of ['marquee','monopoly','treasury','dice','tower','wheel']){
+ const p='public/hall-art/'+art+'.svg';
+ const svg=readFileSync(p,'utf8');
+ assert.match(svg,/data:image\/webp;base64,/,'Embedded optimized illustration missing for '+art);
+ assert.ok(statSync(p).size<65_000,'Illustration too large for Telegram: '+art);
+ assert.doesNotMatch(svg,/<script|javascript:|https?:\/\//i,'Untrusted or external asset in '+art);
+}
+for(const name of ['monopoly','treasury','dice','tower','wheel'])assert.match(hall,new RegExp('hall-art/'+name+'\\\\.svg'));
+
 assert.match(sql,/REVOKE ALL ON FUNCTION public\.territory_hall_start_v1/);
 assert.match(sql,/REVOKE ALL ON territory_private\.hall_accounts_v1/);
 assert.doesNotMatch(sql,/redGems|red_gems|p_reward_gold/,'No premium debit or caller-driven gold');
