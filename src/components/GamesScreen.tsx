@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  ArrowRight, Gift, Loader2, RefreshCw, ShieldCheck,
-  Sparkles, Ticket,
+  ArrowRight, ChevronRight, Gift, Loader2, RefreshCw, Ticket,
 } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import {
@@ -17,7 +16,6 @@ interface GameCard {
   ruHint: string;
   enHint: string;
   scene: string;
-  foreground: string;
   color: 'green' | 'blue' | 'violet' | 'red' | 'gold';
   comingSoon?: boolean;
 }
@@ -27,27 +25,27 @@ const GAMES: GameCard[] = [
   {
     id: 'monopoly', ru: 'Монополия', en: 'Monopoly',
     ruHint: 'Поле, кубик, события, награды', enHint: 'Board, dice, events and prizes',
-    scene: 'hall-art/monopoly.svg', foreground: '', color: 'green',
+    scene: 'hall-art/monopoly.svg', color: 'green',
   },
   {
     id: 'treasury', ru: 'Сокровищница', en: 'Treasury',
     ruHint: 'Открывай сундуки, получай награды', enHint: 'Open chests and collect prizes',
-    scene: 'hall-art/treasury.svg', foreground: '', color: 'blue',
+    scene: 'hall-art/treasury.svg', color: 'blue',
   },
   {
     id: 'dice', ru: 'Кости судьбы', en: 'Dice of Fate',
     ruHint: 'Рискни и сорви куш', enHint: 'Take a chance and win big',
-    scene: 'hall-art/dice.svg', foreground: '', color: 'violet',
+    scene: 'hall-art/dice.svg', color: 'violet',
   },
   {
     id: 'tower', ru: 'Башня испытаний', en: 'Trial Tower',
     ruHint: 'Проверь свою удачу и навыки', enHint: 'Test your luck and skills',
-    scene: 'hall-art/tower.svg', foreground: '', color: 'red',
+    scene: 'hall-art/tower.svg', color: 'red',
   },
   {
     id: 'wheel', ru: 'Колесо фортуны', en: 'Wheel of Fortune',
     ruHint: 'Вращай колесо и получай награды', enHint: 'Spin the wheel and collect prizes',
-    scene: 'hall-art/wheel.svg', foreground: '', color: 'gold',
+    scene: 'hall-art/wheel.svg', color: 'gold',
     comingSoon: true,
   },
 ];
@@ -62,7 +60,6 @@ export function GamesScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [showRules, setShowRules] = useState(false);
   const [payoutRecovery, setPayoutRecovery] = useState(false);
 
   const refresh = async (isCurrent:()=>boolean=()=>true) => {
@@ -120,6 +117,7 @@ export function GamesScreen({
     const id = game.id as HallGame;
     if (!state || loading || busy) return;
     if (state.active) {
+      if (state.active.game !== id) return;
       onPlay(state.active.game);
       return;
     }
@@ -150,24 +148,16 @@ export function GamesScreen({
             disabled={busy||loading||!state?.free_ready} data-testid="hall-free-tickets">
             {busy?<Loader2 className="animate-spin" size={18}/>:<Gift size={22}/>}
             <span>
-              <b>{en?'FREE +2':'БЕСПЛАТНО +2'}</b>
-              <small>{state?.free_ready?(en?'Daily tickets':'Бонус дня'):(en?'Back after 00:00':'После 00:00')}</small>
+              <b>{en?'Free +2':'Бесплатно +2'}</b>
+              <small>{loading ? (en ? 'Loading…' : 'Загрузка…') : !state ? (en ? 'Daily bonus' : 'Ежедневный бонус') : state.free_ready ? (en ? 'Daily bonus' : 'Ежедневный бонус') : (en ? 'Back after 00:00' : 'После 00:00')}</small>
             </span>
-            <Ticket className="hall-action__end" size={20}/>
+            <ChevronRight className="hall-action__end" size={16} aria-hidden="true"/>
           </button>
         </div>
         {payoutRecovery&&<div className="hall-payout-recovery" role="status">
           <span>{en?'Your gold is saved; automatic credit is delayed.':'Выигранное золото сохранено. Автоматическое зачисление пока не удалось.'}</span>
           <button type="button" disabled={busy} onClick={()=>void refresh()}>{en?'Retry credit':'Повторить зачисление'}</button>
         </div>}
-        <button className="hall-cashier__info" type="button" aria-label={en ? 'About tickets and prizes' : 'О билетах и наградах'} aria-expanded={showRules} onClick={() => setShowRules(v => !v)}>i</button>
-        {showRules && <p className="hall-cashier__details">{en
-          ? 'Games use one ticket per round. Two free tickets are available once per day. Ad rewards will be added later.'
-          : 'Игры расходуют по одному билету за раунд. Два бесплатных билета можно получить раз в сутки. Рекламные награды появятся позже.'}</p>}
-        <div className="hall-cashier__rule">
-          <Sparkles size={13} aria-hidden="true" />
-          <span>{en ? 'One ticket per game · Play and win rewards' : '1 билет за игру · Играй и получай награды'}</span>
-        </div>
       </section>
 
       {state?.active && (
@@ -197,30 +187,19 @@ export function GamesScreen({
               <img className="hall-game__scene" src={base + game.scene} alt="" loading="lazy" draggable={false} />
               <span className="hall-game__glow" aria-hidden="true" />
               <span className="hall-game__shimmer" aria-hidden="true" />
-              {featured && <span className="hall-game__ribbon">{en ? 'POPULAR' : 'ПОПУЛЯРНО'}</span>}
-              {game.foreground && <img className="hall-game__art" src={base + game.foreground} alt="" draggable={false} loading="lazy" />}
+              {featured && <span className="hall-game__ribbon">{en ? 'Popular' : 'Популярно'}</span>}
               
-              <span className="hall-game__price">{game.comingSoon
-                ? (en ? 'SOON' : 'СКОРО')
-                : <><Ticket size={15} /> 1</>}</span>
+              {!game.comingSoon && <span className="hall-game__price" aria-label={en ? '1 ticket' : '1 билет'}><Ticket size={13} aria-hidden="true" /> 1</span>}
               <span className="hall-game__info">
                 <strong className="hall-game__name">{en ? game.en : game.ru}</strong>
                 <small className="hall-game__hint">{en ? game.enHint : game.ruHint}</small>
               </span>
-              <span className="hall-game__play">{game.comingSoon ? (en ? 'COMING SOON' : 'СКОРО')
-                : state?.active?.game === game.id ? (en ? 'Resume' : 'Продолжить')
-                : (en ? 'Play' : 'Играть')}</span>
+              <span className="hall-game__play">{en ? 'Play' : 'Играть'}<ChevronRight size={14} aria-hidden="true" /></span>
             </button>
           );
         })}
       </section>
 
-      <p className="hall-safety">
-        <ShieldCheck size={15} aria-hidden="true" />
-        {en
-          ? 'Tickets and rewards are protected by the game server.'
-          : 'Билеты и награды защищены игровым сервером.'}
-      </p>
       {notice && <p role="status" className="hall-toast hall-toast--success">{notice}</p>}
       {error && (
         <div role="alert" className="hall-toast hall-toast--error">
