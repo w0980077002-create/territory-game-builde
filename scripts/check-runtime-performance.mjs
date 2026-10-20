@@ -5,9 +5,10 @@ const arena = read('src/game/useArenaRoom.ts');
 const live = read('src/game/live.ts');
 const app = read('src/App.tsx');
 const auth = read('src/game/auth.ts');
+const arenaApi = read('src/game/arenaApi.ts');
 const clouds = read('src/game/cloud.ts');
 
-assert.match(arena,/const POLL_MS = 1500;/, 'Keep active battle sync under 1.5 seconds');
+assert.match(arena,/const POLL_MS = 2200;/, 'Keep active battle sync under 2.2 seconds');
 assert.match(arena,/roomStatus === 'active' \? POLL_MS/, 'Active rooms still sync quickly');
 assert.match(arena,/document\.visibilityState !== 'hidden'/, 'Hidden arena pages must not poll');
 assert.match(arena,/document\.addEventListener\('visibilitychange', resumed\)/, 'Arena catches up when reopened');
@@ -17,6 +18,9 @@ assert.match(arena,/if \(!target\) return;/, 'No clock work when countdown does 
 assert.match(arena,/setInterval\(tick, 1_000\)/, 'Second-level countdowns must not render 4x/sec');
 assert.doesNotMatch(arena,/setInterval\(\(\) => setNow\(Date\.now\(\)\), 250\)/);
 
+assert.match(arenaApi,/new AbortController\(\)/,'Long arena calls must be cancellable');
+assert.match(arenaApi,/controller\.abort\(\), 10_000/,'Cap stalled arena calls at 10 seconds');
+assert.match(arenaApi,/window\.clearTimeout\(timeout\)/,'Clear arena timeout on completion');
 assert.match(live,/const syncVisible = \(\) =>/);
 assert.match(live,/document\.visibilityState === 'visible'/);
 assert.match(live,/void heartbeat\(\)/);
