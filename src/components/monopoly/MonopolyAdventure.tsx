@@ -194,7 +194,7 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
    {p?.lucky_next&&!active&&<div className="mono-choose"><small>{t('Выбери число — 1 билет','Choose a value — 1 ticket')}</small><div>{faces.map((n,i)=><button disabled={disabled||!h?.tickets} key={n} onClick={()=>void roll(101+i)} aria-label={String(n)}><Dice value={n}/></button>)}</div></div>}
    {Object.values(p?.pending_rewards??{}).some(n=>n>0)&&<div className="mono-pending"><b>{t('Твои сокровища','Your treasures')}</b><Prizes prize={p?.pending_rewards} en={en}/><button className="mono-cta" disabled={busy} onClick={()=>void redeem()}>{t('Получить награды','Collect rewards')}</button></div>}
   </div>
-  <p className="mono-note" aria-live="polite">{notice||t('Золото ждёт в игровом зале · лимит 1000 в сутки','Gold awaits in the Game Hall · daily cap 1,000')}</p>
+  <p className="mono-note" aria-live="polite">{notice||t('Золото ждёт в игровом зале','Gold awaits in the Game Hall')}</p>
   {h?.active&&h.active.game!=='monopoly'&&<button className="mono-cta" onClick={onBack}>{t('Завершить другую игру в зале','Finish the other game in the hall')}</button>}
   {error&&<div className="mono-error" role="alert">{error}<button disabled={busy} onClick={()=>void request('status')}>{t('Обновить','Refresh')}</button></div>}
   {panel&&<IosGamePortal><div className="mono-overlay" role="dialog" aria-modal="true" aria-labelledby="mono-panel-title" onClick={()=>setPanel(null)}><section className={`mono-panel panel-${panel}`} onClick={e=>e.stopPropagation()}>
