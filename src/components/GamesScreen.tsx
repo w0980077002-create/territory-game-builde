@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight, ChevronRight, Gift, Loader2, RefreshCw, Ticket,
 } from 'lucide-react';
@@ -16,6 +16,7 @@ interface GameCard {
   ruHint: string;
   enHint: string;
   scene: string;
+  artwork: string;
   color: 'green' | 'blue' | 'violet' | 'red' | 'gold';
   comingSoon?: boolean;
 }
@@ -25,27 +26,27 @@ const GAMES: GameCard[] = [
   {
     id: 'monopoly', ru: 'Монополия', en: 'Monopoly',
     ruHint: 'Поле, кубик, события, награды', enHint: 'Board, dice, events and prizes',
-    scene: 'hall-art/monopoly.svg', color: 'green',
+    scene: 'hall-art/monopoly.svg', artwork: 'hall-art/monopoly-hd.webp', color: 'green',
   },
   {
     id: 'treasury', ru: 'Сокровищница', en: 'Treasury',
     ruHint: 'Открывай сундуки, получай награды', enHint: 'Open chests and collect prizes',
-    scene: 'hall-art/treasury.svg', color: 'blue',
+    scene: 'hall-art/treasury.svg', artwork: 'hall-art/treasury-hd.webp', color: 'blue',
   },
   {
     id: 'dice', ru: 'Кости судьбы', en: 'Dice of Fate',
     ruHint: 'Рискни и сорви куш', enHint: 'Take a chance and win big',
-    scene: 'hall-art/dice.svg', color: 'violet',
+    scene: 'hall-art/dice.svg', artwork: 'hall-art/dice-hd.webp', color: 'violet',
   },
   {
     id: 'tower', ru: 'Башня испытаний', en: 'Trial Tower',
     ruHint: 'Проверь свою удачу и навыки', enHint: 'Test your luck and skills',
-    scene: 'hall-art/tower.svg', color: 'red',
+    scene: 'hall-art/tower.svg', artwork: 'hall-art/tower-hd.webp', color: 'red',
   },
   {
     id: 'wheel', ru: 'Колесо фортуны', en: 'Wheel of Fortune',
     ruHint: 'Вращай колесо и получай награды', enHint: 'Spin the wheel and collect prizes',
-    scene: 'hall-art/wheel.svg', color: 'gold',
+    scene: 'hall-art/wheel.svg', artwork: 'hall-art/wheel-hd.webp', color: 'gold',
     comingSoon: true,
   },
 ];
@@ -55,6 +56,13 @@ export function GamesScreen({
 }: { onPlay: (id: HallGame) => void; userId: string }) {
   const { language } = useLanguage();
   const en = language === 'en';
+  const hallRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const shell = hallRef.current?.closest('.territory-shell');
+    shell?.classList.add('territory-hall-open');
+    return () => { shell?.classList.remove('territory-hall-open'); };
+  }, []);
   const [state, setState] = useState<HallState | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -129,7 +137,7 @@ export function GamesScreen({
   };
 
   return (
-    <div className="territory-game-hall" data-testid="game-hall">
+    <div ref={hallRef} className="territory-game-hall" data-testid="game-hall">
       <header className="hall-marquee" style={{backgroundImage: `url("${base}hall-art/marquee.svg")`}} aria-label={en ? 'TERRITORY Game Hall' : 'TERRITORY Игровой зал'}>
         <span className="hall-marquee__sr">{en ? 'TERRITORY GAME HALL' : 'TERRITORY ИГРОВОЙ ЗАЛ'}</span>
         {en && <span className="hall-marquee__en-neon">GAME HALL</span>}
@@ -179,12 +187,23 @@ export function GamesScreen({
               key={game.id}
               type="button"
               data-testid={`hall-game-${game.id}`}
-              aria-label={`${en ? game.en : game.ru} · ${game.comingSoon ? (en ? 'Coming soon, no tickets used' : 'Скоро, билеты не списываются') : (en ? '1 ticket' : '1 билет')}`}
+              aria-label={`${en ? game.en : game.ru} · ${game.comingSoon ? (en ? 'Play, no tickets used' : 'Играть, билеты не списываются') : (en ? '1 ticket' : '1 билет')}`}
               onClick={() => play(game)}
               disabled={!game.comingSoon && (loading || !state || busy || otherActive)}
               className={`hall-game hall-game--${game.color} ${featured ? 'hall-game--featured' : ''} ${locked && !game.comingSoon ? 'hall-game--no-tickets' : ''} ${game.comingSoon ? 'hall-game--coming-soon' : ''}`}
             >
-              <img className="hall-game__scene" src={base + game.scene} alt="" loading="lazy" draggable={false} />
+              <picture className="hall-game__scene">
+                <source
+                  type="image/webp"
+                  srcSet={featured
+                    ? `${base + game.artwork} 1774w`
+                    : `${base + game.artwork.replace('-hd.webp', '-mobile.webp')} 768w, ${base + game.artwork} 1536w`}
+                  sizes={featured
+                    ? '(max-width: 448px) calc(100vw - 18px), 430px'
+                    : '(max-width: 360px) calc((100vw - 21px) / 2), (max-width: 448px) calc((100vw - 27px) / 2), 211px'}
+                />
+                <img src={base + game.scene} alt="" loading="lazy" decoding="async" draggable={false} />
+              </picture>
               <span className="hall-game__glow" aria-hidden="true" />
               <span className="hall-game__shimmer" aria-hidden="true" />
               {featured && <span className="hall-game__ribbon">{en ? 'Popular' : 'Популярно'}</span>}
