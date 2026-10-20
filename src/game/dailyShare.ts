@@ -64,7 +64,7 @@ export async function claimDailyShare(task:DailyShareTask,userId:string):Promise
 }
 export function shareError(e:unknown,en:boolean):string{
  const m=e instanceof Error?e.message:'';
- if(m.includes('daily_share_cooldown'))return en?'Already rewarded. Return after 24 hours.':'Награда получена. Возвращайся через 24 часа.';
+ if(m.includes('daily_share_cooldown'))return en?'Already rewarded today. Return after 00:00.':'Награда сегодня получена. Возвращайся после 00:00.';
  if(m.includes('daily_share_ticket_wallet_full'))return en?'Spend tickets first (20 maximum).':'Сначала потрать билеты (максимум 20).';
  if(m.includes('daily_share_reload_required'))return en?'Save changed. Reopen the game and retry.':'Сохранение изменилось. Открой игру заново.';
  if(m.includes('daily_share_no_bot'))return en?'Telegram invitation temporarily unavailable.':'Сейчас не удалось получить ссылку на бота.';
