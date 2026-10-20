@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
-  ArrowRight, Coins, Gift, Loader2, RefreshCw, ShieldCheck,
-  Sparkles, Ticket, Trophy,
+  ArrowRight, Gift, Loader2, RefreshCw, ShieldCheck,
+  Sparkles, Ticket,
 } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import {
-  hallStatus, hallDaily, hallClaimGold, hallError,
+  hallStatus, hallDaily, autoClaimHallGold, hallError,
   type HallGame, type HallState,
 } from '@/game/gameHall';
 import './gameHall.css';
@@ -63,53 +63,53 @@ export function GamesScreen({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [showRules, setShowRules] = useState(false);
+  const [payoutRecovery, setPayoutRecovery] = useState(false);
 
-  const refresh = async () => {
+  const refresh = async (isCurrent:()=>boolean=()=>true) => {
     try {
-      setState(await hallStatus());
+      const next=await hallStatus();
+      if(!isCurrent())return;
+      setState(next);
       setError('');
-    } catch (cause) {
-      setError(hallError(cause, en));
-    } finally {
       setLoading(false);
+      if(next.pending_gold>0){
+        try {
+          const amount=await autoClaimHallGold(userId,next.pending_gold);
+          if(!isCurrent())return;
+          // The server has consumed the pending payout; never synthesize player gold.
+          setPayoutRecovery(false);
+          if(amount>0)setNotice(en ? `+${amount} gold credited automatically!` : `+${amount} золота автоматически зачислено персонажу!`);
+          const settled=await hallStatus();
+          if(isCurrent())setState(settled);
+        }catch {
+          if(isCurrent())setPayoutRecovery(true); // Payout is safely retained on the server.
+        }
+      }else{
+        setPayoutRecovery(false);
+      }
+    }catch(cause){
+      if(isCurrent())setError(hallError(cause,en));
+    }finally{
+      if(isCurrent())setLoading(false);
     }
   };
 
-  useEffect(() => {
-    let mounted = true;
-    // Never create a new wallet or infer rewards while fetching the real status.
-    void hallStatus().then((result) => {
-      if (mounted) { setState(result); setError(''); }
-    }).catch((cause) => {
-      if (mounted) setError(hallError(cause, en));
-    }).finally(() => {
-      if (mounted) setLoading(false);
-    });
-    return () => { mounted = false; };
-  }, [en]);
+  useEffect(()=>{
+    let mounted=true;
+    void refresh(()=>mounted);
+    return ()=>{mounted=false;};
+  },[en,userId]);
 
-  const takeDaily = async () => {
-    if (busy || loading || !state?.free_ready) return;
-    setBusy(true); setError(''); setNotice('');
-    try {
+  const takeDaily=async()=>{
+    if(busy||loading||!state?.free_ready)return;
+    setBusy(true);setError('');setNotice('');
+    try{
       await hallDaily();
-      setNotice(en ? 'Two free tickets collected!' : 'Получено 2 бесплатных билета!');
+      setNotice(en?'Two free tickets collected!':'Получено 2 бесплатных билета!');
       await refresh();
-    } catch (cause) {
-      setError(hallError(cause, en));
-    } finally { setBusy(false); }
-  };
-
-  const claim = async () => {
-    if (busy || loading || !state || state.pending_gold < 1) return;
-    setBusy(true); setError(''); setNotice('');
-    try {
-      const amount = await hallClaimGold(userId);
-      setNotice(en ? `+${amount} gold credited to your hero!` : `+${amount} золота зачислено герою!`);
-      await refresh();
-    } catch (cause) {
-      setError(hallError(cause, en));
-    } finally { setBusy(false); }
+    }catch(cause){
+      setError(hallError(cause,en));
+    }finally{setBusy(false);}
   };
 
   const play = (game: GameCard) => {
@@ -130,12 +130,6 @@ export function GamesScreen({
     onPlay(id);
   };
 
-  const numbers = [
-    { key: 'tickets', value: state?.tickets, ru: 'Билеты', en: 'Tickets', icon: Ticket, style: 'tickets' },
-    { key: 'points', value: state?.points, ru: 'Очки зала', en: 'Hall points', icon: Trophy, style: 'points' },
-    { key: 'gold', value: state?.pending_gold, ru: 'Золото', en: 'Gold', icon: Coins, style: 'gold' },
-  ] as const;
-
   return (
     <div className="territory-game-hall" data-testid="game-hall">
       <header className="hall-marquee" style={{backgroundImage: `url("${base}hall-art/marquee.svg")`}} aria-label={en ? 'TERRITORY Game Hall' : 'TERRITORY Игровой зал'}>
@@ -144,34 +138,28 @@ export function GamesScreen({
       </header>
 
       <section className="hall-cashier" aria-label={en ? 'Game Hall wallet' : 'Касса игрового зала'}>
-        <div className="hall-cashier__stats">
-          {numbers.map((counter) => {
-            const Icon = counter.icon;
-            return (
-              <div key={counter.key} className={`hall-cashier__stat hall-cashier__stat--${counter.style}`}>
-                <Icon aria-hidden="true" className="hall-cashier__stat-icon" />
-                <strong className="hall-cashier__value tabular-nums">{loading ? '…' : counter.value ?? '—'}</strong>
-                <span className="hall-cashier__label">{en ? counter.en : counter.ru}</span>
-              </div>
-            );
-          })}
+        <div className="hall-cashier__stats hall-cashier__stats--tickets-only">
+          <div className="hall-cashier__stat hall-cashier__stat--tickets">
+            <Ticket className="hall-cashier__stat-icon" aria-hidden="true" />
+            <strong className="hall-cashier__value tabular-nums">{loading?'…':state?.tickets??'—'}</strong>
+            <span className="hall-cashier__label">{en?'Tickets available':'Билеты для игр'}</span>
+          </div>
         </div>
-        <div className="hall-cashier__actions">
-          <button type="button" className="hall-action hall-action--gift" onClick={() => void takeDaily()}
-            disabled={busy || loading || !state?.free_ready} data-testid="hall-free-tickets">
-            {busy ? <Loader2 className="animate-spin" size={18} /> : <Gift size={22} />}
+        <div className="hall-cashier__actions hall-cashier__actions--single">
+          <button type="button" className="hall-action hall-action--gift" onClick={()=>void takeDaily()}
+            disabled={busy||loading||!state?.free_ready} data-testid="hall-free-tickets">
+            {busy?<Loader2 className="animate-spin" size={18}/>:<Gift size={22}/>}
             <span>
-              <b>{en ? 'FREE +2' : 'БЕСПЛАТНО +2'}</b>
-              <small>{state?.free_ready ? (en ? 'Daily tickets' : 'Бонус дня') : (en ? 'Back after 00:00' : 'После 00:00')}</small>
+              <b>{en?'FREE +2':'БЕСПЛАТНО +2'}</b>
+              <small>{state?.free_ready?(en?'Daily tickets':'Бонус дня'):(en?'Back after 00:00':'После 00:00')}</small>
             </span>
-            <Ticket className="hall-action__end" size={20} />
-          </button>
-          <button type="button" className="hall-action hall-action--gold" onClick={() => void claim()}
-            disabled={busy || loading || !state || state.pending_gold < 1} data-testid="hall-claim-gold">
-            <Coins size={23} />
-            <b>{en ? 'CLAIM GOLD' : 'ЗАБРАТЬ ЗОЛОТО'}</b>
+            <Ticket className="hall-action__end" size={20}/>
           </button>
         </div>
+        {payoutRecovery&&<div className="hall-payout-recovery" role="status">
+          <span>{en?'Your gold is saved; automatic credit is delayed.':'Выигранное золото сохранено. Автоматическое зачисление пока не удалось.'}</span>
+          <button type="button" disabled={busy} onClick={()=>void refresh()}>{en?'Retry credit':'Повторить зачисление'}</button>
+        </div>}
         <button className="hall-cashier__info" type="button" aria-label={en ? 'About tickets and prizes' : 'О билетах и наградах'} aria-expanded={showRules} onClick={() => setShowRules(v => !v)}>i</button>
         {showRules && <p className="hall-cashier__details">{en
           ? 'Games use one ticket per round. Two free tickets are available once per day. Ad rewards will be added later.'
