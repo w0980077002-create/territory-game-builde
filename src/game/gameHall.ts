@@ -75,6 +75,19 @@ export async function hallClaimGold(userId:string):Promise<number>{
  useGame.set(claim.state);
  return claim.gold;
 }
+// A single server-verified payout operation shared by the hall and game screens.
+// Multiple mounted screens must never issue concurrent wallet mutations.
+const autoClaims=new Map<string,Promise<number>>();
+export function autoClaimHallGold(userId:string,pendingGold:number):Promise<number>{
+ if(!Number.isSafeInteger(pendingGold)||pendingGold<=0)return Promise.resolve(0);
+ const inflight=autoClaims.get(userId);
+ if(inflight)return inflight;
+ const claim=hallClaimGold(userId);
+ autoClaims.set(userId,claim);
+ void claim.finally(()=>{if(autoClaims.get(userId)===claim)autoClaims.delete(userId);}).catch(()=>{});
+ return claim;
+}
+
 export function hallError(e:unknown,en:boolean):string {
  const msg=e instanceof Error?e.message:'';
  if(msg.includes('hall_no_tickets'))return en?'No tickets left. Claim free tickets tomorrow.':'Билеты закончились. Забери бесплатные завтра.';
