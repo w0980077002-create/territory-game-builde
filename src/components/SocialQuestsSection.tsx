@@ -62,30 +62,39 @@ export function SocialQuestsSection({ userId, onStatusChange }: { userId: string
         const claimed = status?.[item.task] ?? false;
         return (
           <div key={item.task} className={`rounded-2xl border p-3 ${claimed ? 'border-emerald-400/40 bg-emerald-950/20' : 'border-amber-400/30 bg-[#161b26]'}`}>
-            <div className="flex gap-3 items-start">
-              <Gift className="w-6 h-6 shrink-0 text-amber-300" />
-              <div className="flex-1 min-w-0">
-                <h4 className="flex items-center gap-1.5 text-sm font-bold text-white">{!claimed && <span aria-hidden="true" className="w-2 h-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_7px_rgba(239,68,68,0.8)]" />}{en ? item.en : item.ru}</h4>
-                <p className="text-xs text-gray-400 mt-1">{en ? item.enDesc : item.ruDesc}</p>
-                <p className="text-xs text-sky-300 mt-1 truncate">{SOCIAL_LINKS[item.task].replace('https://', '')}</p>
-                <div className="flex gap-3 mt-2">
-                  <Currency kind="gold" value="+150" size={15} />
-                  <Currency kind="stones" value="+3" size={15} />
-                </div>
+            <div className="flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <h4 className="flex items-center gap-1.5 text-sm font-semibold leading-5 text-white">
+                  {!claimed && <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_7px_rgba(239,68,68,0.8)]" />}
+                  {en ? item.en : item.ru}
+                </h4>
+                <p className="mt-0.5 text-xs leading-4 text-gray-400">{en ? item.enDesc : item.ruDesc}</p>
               </div>
-              {claimed && <CheckCircle2 className="w-6 h-6 text-emerald-400" />}
+              {claimed && <CheckCircle2 aria-label={en ? 'Completed' : 'Выполнено'} className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />}
             </div>
-            <div className="grid grid-cols-2 gap-2 mt-3">
-              <button type="button" onClick={() => openSocialLink(item.task)}
-                className="h-10 rounded-xl border border-sky-400/40 bg-sky-900/50 text-sky-100 text-xs font-bold flex items-center justify-center gap-1">
-                <ExternalLink className="w-4 h-4" /> {en ? 'Open' : 'Перейти'}
-              </button>
-              <button type="button" onClick={() => void verify(item.task)}
-                disabled={loading || !status || !!busy || claimed}
-                className="h-10 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-black text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-1">
-                {busy === item.task ? <Loader2 className="w-4 h-4 animate-spin" /> : claimed ? <CheckCircle2 className="w-4 h-4" /> : <Gift className="w-4 h-4" />}
-                {claimed ? (en ? 'Claimed' : 'Получено') : (en ? 'Verify & claim' : 'Проверить')}
-              </button>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+              <div className="flex shrink-0 items-center gap-2 text-xs">
+                <Currency kind="gold" value="+150" size={13} />
+                <Currency kind="stones" value="+3" size={13} />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button type="button" onClick={() => openSocialLink(item.task)}
+                  className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-sky-400/40 bg-sky-900/50 px-2 text-[11px] font-bold text-sky-100">
+                  <ExternalLink className="h-3.5 w-3.5" /> {en ? 'Open' : 'Перейти'}
+                </button>
+                {claimed ? (
+                  <span className="inline-flex h-8 items-center justify-center gap-1 rounded-lg bg-amber-500/20 px-2 text-[11px] font-semibold text-amber-200">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> {en ? 'Claimed' : 'Получено'}
+                  </span>
+                ) : (
+                  <button type="button" onClick={() => void verify(item.task)}
+                    disabled={loading || !status || !!busy}
+                    className="inline-flex h-8 items-center justify-center gap-1 rounded-lg bg-gradient-to-b from-amber-400 to-amber-600 px-2 text-[11px] font-bold text-black disabled:opacity-50">
+                    {busy === item.task ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Gift className="h-3.5 w-3.5" />}
+                    {en ? 'Verify' : 'Проверить'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         );
