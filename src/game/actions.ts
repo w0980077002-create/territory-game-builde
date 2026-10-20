@@ -1,6 +1,6 @@
 import { create } from './store';
 import { prepareNewEquipment, capEquipmentToHeroLevel } from './equipmentBalance';
-import { weeklyQuestKey } from './weeklyQuests';
+import { calendarDayKey, weeklyQuestKey } from './weeklyQuests';
 import { reconcileFollowers } from './followers';
 import { canBuyShopItem, shopStonesBoughtToday, SHOP_STONES_PER_DAY, MAX_SHOP_PURCHASE_QTY } from './purchaseGuard';
 import type { GameState } from './types';
@@ -43,8 +43,10 @@ export function applyTimeEffects(state: GameState, now = Date.now()): GameState 
     }
   }
 
-  const today = new Date(now).toDateString();
-  if (state.dailyResetDay !== today) {
+  const today = calendarDayKey(now);
+  if (state.dailyResetDay === new Date(now).toDateString() && state.dailyResetDay !== today) {
+    next = { ...next, dailyResetDay: today };
+  } else if (state.dailyResetDay !== today) {
     const fresh = createInitialQuests();
     next = {
       ...next,
@@ -57,7 +59,7 @@ export function applyTimeEffects(state: GameState, now = Date.now()): GameState 
   }
   // Weekly quests were previously never reset. A legacy save without a week
   // marker is anchored to the current week without discarding earned progress.
-  // Subsequent Sunday UTC boundaries reset only weekly quests, never story/achievements.
+  // Subsequent Sunday calendar boundaries reset only weekly quests, never story/achievements.
   const thisWeek = weeklyQuestKey(now);
   if (!state.weeklyResetWeek) {
     next = { ...next, weeklyResetWeek: thisWeek };
@@ -144,7 +146,7 @@ export function buyItem(state: GameState, shopItem: ShopItem, qty: number = 1): 
   if (!canBuyShopItem(state, shopItem, qty)) return null;
 
   const now = new Date();
-  const today = now.toDateString();
+  const today = calendarDayKey(now.getTime());
   const isStone = shopItem.type === 'stone';
   const stonePerUnit = isStone ? (shopItem.amount ?? 1) : 0;
   const stoneTotal = stonePerUnit * qty;
