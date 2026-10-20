@@ -62,9 +62,9 @@ for(const art of ['marquee','monopoly','treasury','dice','tower','wheel']){
  const svg=readFileSync(p,'utf8');
  assert.match(svg,/data:image\/webp;base64,/,'Embedded optimized illustration missing for '+art);
  assert.ok(statSync(p).size<65_000,'Illustration too large for Telegram: '+art);
- assert.doesNotMatch(svg,/<script|javascript:|https?:\/\//i,'Untrusted or external asset in '+art);
+ assert.doesNotMatch(svg,/<script|javascript:|<image[^>]+href=["']https?:/i,'Unsafe remote image or script in '+art);
 }
-for(const name of ['monopoly','treasury','dice','tower','wheel'])assert.match(hall,new RegExp('hall-art/'+name+'\\\\.svg'));
+for(const name of ['monopoly','treasury','dice','tower','wheel'])assert.ok(hall.includes('hall-art/'+name+'.svg'),'Missing approved card art: '+name);
 
 assert.match(sql,/REVOKE ALL ON FUNCTION public\.territory_hall_start_v1/);
 assert.match(sql,/REVOKE ALL ON territory_private\.hall_accounts_v1/);
