@@ -10,6 +10,7 @@ import { TopTab } from '@/admin/tabs/TopTab';
 import { HallAdminTab } from '@/admin/tabs/HallAdminTab';
 import { AuditAdminTab } from '@/admin/tabs/AuditAdminTab';
 import { GeographyTab } from '@/admin/tabs/GeographyTab';
+import { getTelegramWebApp } from '@/game/telegram';
 
 const TABS = [
   { id: 'main', label: 'Главная & Управление', icon: BarChart3 },
@@ -23,6 +24,19 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
+
+// Unlike the gameplay route, the admin route intentionally does not call
+// initTelegramWebApp(): it must remain scrollable and must not request fullscreen.
+// If the game previously entered Telegram fullscreen, however, its native close
+// bar overlaps the page until the admin header respects the content-safe inset.
+function getAdminHeaderInset(): number {
+  const tg = getTelegramWebApp();
+  if (!tg?.isFullscreen) return 0;
+  const top = Math.max(0, (tg.safeAreaInset?.top ?? 0) + (tg.contentSafeAreaInset?.top ?? 0));
+  // Older Android Telegram SDKs sometimes initially report zero insets in
+  // fullscreen. A small fallback keeps the page title/buttons below the bar.
+  return Math.max(top, tg.platform === 'ios' ? 104 : 72);
+}
 
 function LoginForm({ onDone }: { onDone: () => void }) {
   const [username, setUsername] = useState('');
@@ -83,6 +97,7 @@ interface Toast { ok: boolean; text: string }
 
 export function AdminApp() {
   const [authed, setAuthed] = useState(() => !!getAdminToken());
+  const [adminHeaderInset, setAdminHeaderInset] = useState(getAdminHeaderInset);
   const [tab, setTab] = useState<TabId>('main');
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
@@ -90,6 +105,16 @@ export function AdminApp() {
 
   useEffect(() => {
     document.title = 'Админ-панель · Территория';
+    const tg = getTelegramWebApp();
+    const updateInsets = () => setAdminHeaderInset(getAdminHeaderInset());
+    updateInsets();
+    // Telegram can report safe-area values after the app has mounted.
+    tg?.onEvent?.('safeAreaChanged', updateInsets);
+    tg?.onEvent?.('contentSafeAreaChanged', updateInsets);
+    tg?.onEvent?.('fullscreenChanged', updateInsets);
+    tg?.onEvent?.('viewportChanged', updateInsets);
+    window.addEventListener('resize', updateInsets);
+    return () => { window.removeEventListener('resize', updateInsets); };
   }, []);
   useEffect(() => {
     if (!getAdminToken()) return;
@@ -129,7 +154,7 @@ export function AdminApp() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/90 backdrop-blur" style={adminHeaderInset ? { paddingTop: `${adminHeaderInset}px` } : undefined}>
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
           <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-sky-700 flex items-center justify-center"><Crown className="w-4 h-4 text-white" /></span>
           <span className="flex-1 min-w-0">
