@@ -24,6 +24,14 @@ const dependencies = {
   './engine': { generateShopItems: () => [potion] },
   './actions': { grantRewards: () => { throw new Error('unrelated'); }, updateProgress: () => { throw new Error('unrelated'); } },
   './live': { useLive: { get: () => ({ goldX2: false }) } },
+  './weeklyQuests': {
+    calendarDayKey: (at) => new Intl.DateTimeFormat('sv-SE', {timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(at)),
+    previousCalendarDayKey: (at) => {
+      const date = new Intl.DateTimeFormat('sv-SE', {timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(at));
+      const [year, month, day] = date.split('-').map(Number);
+      return new Date(Date.UTC(year,month-1,day-1)).toISOString().slice(0,10);
+    }
+  },
 };
 vm.runInNewContext(result.outputText, {
   module: { exports }, exports,
