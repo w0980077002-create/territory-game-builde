@@ -29,6 +29,16 @@ export async function prepareDailyShareLink(_language:'ru'|'en'):Promise<string>
  if(!link)throw new Error('daily_share_no_bot');
  return link;
 }
+/** The backend binds the prepared image, CTA and referral code to the authenticated player.
+ * No Telegram bot token, arbitrary bot name or referral code is sent from this client.
+ */
+export async function prepareRichShareMessage(language: 'ru'|'en'): Promise<string> {
+ const {data,error}=await supabase.functions.invoke('share-promo',{body:{language}});
+ if(error || typeof data?.message_id!=='string' || data.message_id.length<1 ||
+    data.message_id.length>256) throw new Error('rich_share_unavailable');
+ return data.message_id;
+}
+
 export function shareDailyPromo(url:string,language:'ru'|'en'):boolean{
  // Never send website/Pages links in the Telegram promotional message.
  if(!/^https:\/\/t\.me\/[a-zA-Z0-9_]{5,32}\?startapp=ref_[a-f0-9]{14}$/.test(url))return false;
