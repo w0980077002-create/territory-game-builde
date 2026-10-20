@@ -7,9 +7,11 @@ let serverState=structuredClone(state),serverRevision=revision,receipt=null,tick
 const seen=new Map();
 const data=()=>({success:true,updated_at:serverRevision,game_state:structuredClone(serverState),wallet_gold:serverState.player.gold,wallet_gems:serverState.player.gems,tickets,common:0,rare:0,golden_key:0,vip:0,vip_until:null,server_now:serverRevision,receipt});
 const fixture={useGame:{get:()=>state,set:s=>{state=s;}},useAccount:{set:()=>{}},saveTokens:new Map([['A',revision]]),blocked:false,saves:0,installs:0,
- saveCloudSave:async()=>{fixture.saves++;return true;},protectFortuneSave:()=>{fixture.blocked=true;},acceptMonopolyClaimReceipt:(id,r)=>{fixture.installs++;fixture.blocked=false;fixture.saveTokens.set(id,r.updated_at);return r.game_state;},
+ saveCloudSave:async()=>{fixture.saves++;return true;},claimHallGoldCloud:async()=>({state,gold:0}),protectFortuneSave:()=>{fixture.blocked=true;},acceptMonopolyClaimReceipt:(id,r)=>{fixture.installs++;fixture.blocked=false;fixture.saveTokens.set(id,r.updated_at);return r.game_state;},
  supabase:{rpc:async(name,args)=>{
   if(name==='territory_fortune_entitlement_v1')return {data:{vip:0,permanent_vip:0,server_now:serverRevision,vip_until:null}};
+  if(name==='territory_hall_status_v1')return {data:{tickets,points:0,played:0,wins:0,pending_gold:0,claimed_gold:0,position:0,daily_remaining:0,free_ready:false,active:null}};
+  if(name==='territory_hall_finish_v1')return {data:{won:true,earned_gold:100,points:10,daily_remaining:0,tickets,game:'treasury',new_position:null}};
   calls.push({...args});if(mode==='defer'&&args.p_action==='spin')await new Promise(resolve=>{deferred=resolve;});
   if(mode==='before'&&args.p_action==='spin')throw new Error('Network disconnected before request');
   if(args.p_action==='ack'){receipt=null;return {data:data()};}
@@ -24,7 +26,7 @@ const fixture={useGame:{get:()=>state,set:s=>{state=s;}},useAccount:{set:()=>{}}
   return {data:data()};
  }}};
 globalThis.__fortuneFixture=fixture;
-const stub=`const f=globalThis.__fortuneFixture;export const {useGame,useAccount,saveTokens,saveCloudSave,protectFortuneSave,acceptMonopolyClaimReceipt,supabase}=f;`;
+const stub=`const f=globalThis.__fortuneFixture;export const {useGame,useAccount,saveTokens,saveCloudSave,claimHallGoldCloud,protectFortuneSave,acceptMonopolyClaimReceipt,supabase}=f;`;
 const result=await build({entryPoints:['src/game/fortune.ts'],bundle:true,write:false,format:'esm',platform:'node',plugins:[{name:'client-fixtures',setup(b){b.onResolve({filter:/^\.\/(cloud|actions|supabase)$/},()=>({path:'stub',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:stub}));}}]});
 let moduleCount=0;const load=()=>import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64')+'#'+(++moduleCount));
 let api=await load();
@@ -58,5 +60,18 @@ tickets=1000;
 assert.equal((await api.recoverFortune('A')).tickets,1000);
 tickets=1001;
 await assert.rejects(api.recoverFortune('A'),/fortune_invalid_receipt/);
+// Exercise the real shared Hall response validators, not only Fortune's.
+const hallBuild=await build({entryPoints:['src/game/gameHall.ts'],bundle:true,write:false,format:'esm',platform:'node',plugins:[{name:'hall-fixtures',setup(b){b.onResolve({filter:/^\.\/(cloud|actions|supabase)$/},()=>({path:'stub',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:stub}));}}]});
+const hall=await import('data:text/javascript;base64,'+Buffer.from(hallBuild.outputFiles[0].text).toString('base64'));
+const session={token:'10000000-0000-0000-0000-000000000001',game:'treasury',question:{}};
+tickets=128;
+assert.equal((await hall.hallStatus()).tickets,128);
+assert.equal((await hall.hallFinish(session,0)).tickets,128);
+tickets=1000;
+assert.equal((await hall.hallStatus()).tickets,1000);
+assert.equal((await hall.hallFinish(session,0)).tickets,1000);
+tickets=1001;
+await assert.rejects(hall.hallStatus(),/hall_invalid_status_tickets/);
+await assert.rejects(hall.hallFinish(session,0),/hall_invalid_result/);
 assert.ok(calls.every(c=>!('prize'in c)&&!('quantity'in c)&&!('reward'in c)));
-console.log('Wheel client PASS: double click mutex, blocked old saves, network failures before/after commit, persisted key, module restart, same-key recovery, definitive rollback reconciliation, Hall balances 128/1000, invalid 1001 rejected, no reward payload.');
+console.log('Wheel client PASS: double click mutex, blocked old saves, network failures before/after commit, persisted key, module restart, same-key recovery, definitive rollback reconciliation, Hall and Wheel balances 128/1000, invalid 1001 rejected, no reward payload.');
