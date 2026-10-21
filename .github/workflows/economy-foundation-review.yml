@@ -1,0 +1,30 @@
+name: TERRITORY economy foundation - isolated tests
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/staged/territory_economy_*'
+      - 'scripts/check-economy-receipts-foundation.mjs'
+      - '.github/workflows/economy-foundation-review.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  receipts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Test receipts in disposable PostgreSQL-compatible PGlite
+        run: node scripts/check-economy-receipts-foundation.mjs
+      - name: Existing economy, save, and admin mail regressions
+        run: |
+          npm run typecheck
+          npm run test:economy
+          npm run test:admin-mail
