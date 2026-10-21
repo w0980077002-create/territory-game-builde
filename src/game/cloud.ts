@@ -142,6 +142,14 @@ export function protectFortuneSave(userId:string):void {
   saveBlocked.add(userId);
 }
 
+/** The database definitively rolled back a rejected arena RPC (P0001).
+ * Its pre-action CAS save was already acknowledged; only in this specific
+ * case may subsequent ordinary saves be re-enabled without a reload.
+ * Network timeouts and invalid receipts stay blocked as their outcome is unknown. */
+export function releaseArenaRejectedAction(userId: string): void {
+  saveBlocked.delete(userId);
+}
+
 export { saveTokens, walletVersions, saveBlocked };
 
 /** One coalescing queue per authenticated player within this browser session. */
