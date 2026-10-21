@@ -74,7 +74,7 @@ export function WheelOfFortune({userId,onBack}:{userId:string;onBack:()=>void}){
   catch{setError(en?'Could not confirm receipt. Retry safely.':'Не удалось подтвердить получение. Повтори безопасно.');}
   finally{lock.current=false;setBusy(false);}
  };
- return <div className="fortune-screen" data-testid="wheel-of-fortune" style={{backgroundImage:`linear-gradient(transparent 60%, #050a13d9),url(${base}fortune/original-floor.webp)`}}>
+ return <div className="fortune-screen" data-testid="wheel-of-fortune" style={{backgroundImage:`url(${base}fortune/original-floor.webp)`}}>
   <div className="fortune-original-scene" style={{backgroundImage:`url(${base}fortune/original-scene.webp)`}}>
    <div className="fortune-toolbar">
     <strong className="fortune-ticket" aria-label={en?'Ticket balance':'Баланс билетов'} style={{backgroundImage:`url(${base}fortune/original-ticket-panel.webp)`}}><span>{status?.tickets.toLocaleString(en?'en-US':'ru-RU')??'—'}</span></strong>
@@ -97,6 +97,9 @@ export function WheelOfFortune({userId,onBack}:{userId:string;onBack:()=>void}){
   {spinning&&<button className="fortune-skip" onClick={done}>{en?'Skip animation':'Пропустить анимацию'}</button>}
   {status?.tickets===0&&<p className="fortune-status">{en?'Collect +2 daily tickets in the Hall.':'Забери +2 ежедневных билета в зале.'}</p>}
   {error&&<p className="fortune-status" role="alert">{error} <button onClick={()=>void recover()} disabled={busy}>{en?'Recover':'Восстановить'}</button></p>}
+  <div className="fortune-scene-tail" aria-hidden="true">
+   <div className="fortune-scene-tail__reflection" style={{backgroundImage:`url(${base}fortune/original-scene.webp)`}}/>
+  </div>
   {rules&&<FortuneDialog title={en?'Rules & exact chances':'Правила и точные шансы'} onClose={()=>setRules(false)}>
    <p>{en?'One spin costs 1 standard ticket. Free and purchased tickets have identical chances. Sectors are illustrated equally; real odds are listed below.':'Одно вращение стоит 1 обычный билет. Бесплатные и купленные билеты имеют одинаковые шансы. Размеры секторов условные; реальные шансы указаны ниже.'}</p>
    <table><tbody>{FORTUNE_PRIZES.map((p,i)=><tr key={i}><td>{en?p.en:p.ru}</td><td>{(p.weight/100).toFixed(2)}%</td></tr>)}</tbody></table>

@@ -55,6 +55,16 @@ with sync_playwright() as p:
         assert page.locator('.fortune-prizes').count()==0
         assert 'Возможные награды' not in page.locator('[data-testid=wheel-of-fortune]').inner_text()
         assert page.locator('.fortune-title').bounding_box()['height']<175,'oversized title'
+        # The original stage remains proportional; the former blank black floor
+        # must instead be a decoration fitted inside the real Telegram play area.
+        scene=page.locator('.fortune-original-scene').bounding_box()
+        tail=page.locator('.fortune-scene-tail').bounding_box()
+        assert abs(tail['y']-(scene['y']+scene['height']))<2, f'gap below original scene at {width}x{height}'
+        assert tail['height']>=0, 'missing ambient floor'
+        if height>=740:
+            assert tail['height']>35, f'tall phone has no filled floor: {width}x{height}'
+            assert abs(tail['y']+tail['height']-nav['y'])<3, f'floor misses persistent navigation at {width}x{height}'
+            assert page.locator('.territory-screen').evaluate('el=>el.scrollHeight<=el.clientHeight+3'), f'unexpected scrolling on tall phone {width}x{height}'
         active=page.locator('.territory-nav [aria-current="page"]')
         assert active.count()==1 and active.get_attribute('aria-label')=='Игры'
         battle=page.get_by_role('button',name='Бой',exact=True)
