@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useStore } from '@/game/store';
 import { useGame, useArena } from '@/game/actions';
-import { joinArena, type ArenaMode } from '@/game/arenaApi';
+import type { ArenaMode } from '@/game/arenaApi';
+import { secureArenaJoin } from '@/game/arenaSecure';
 import { beltContext, takeFromBelt } from '@/game/belt';
 import { hapticImpact } from '@/game/telegram';
 import { BeltBar } from './BeltBar';
@@ -32,8 +33,8 @@ export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void })
     setJoining(mode);
     setError(null);
     try {
-      const roomId = await joinArena(mode);
-      useGame.set((s) => ({ ...s, player: { ...s.player, energy: Math.max(0, s.player.energy - ENERGY_COST) } }));
+      // The room membership and single energy debit commit together on the server.
+      const roomId = await secureArenaJoin(mode);
       onJoined(roomId);
     } catch (e) {
       setError(localizeText((e as Error).message, language));
