@@ -1,0 +1,35 @@
+{
+  "source": "scripts/artwork/fortune-reference.jpg",
+  "source_sha256": "6407eea43395cdb84603b882d3b4d03cab0f361072a9925b2e02dbd65af7926b",
+  "source_size": [
+    853,
+    1280
+  ],
+  "method": "Original source pixels, hand-drawn alpha masks, same-sector texture retouch, panel inpainting, same-source cloned rim/background repair. No generated artwork.",
+  "wheel_center": [
+    426,
+    595
+  ],
+  "wheel_crop": [
+    66,
+    235,
+    786,
+    955
+  ],
+  "server_index_to_original_slot": [
+    11,
+    0,
+    6,
+    8,
+    9,
+    2,
+    3,
+    10,
+    1,
+    5,
+    4,
+    7
+  ],
+  "background_original_wheel_removed": true,
+  "bottom_gallery_removed": true
+}

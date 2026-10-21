@@ -4,7 +4,14 @@ import { FORTUNE_PRIZES, acknowledgeFortune, playFortune, recoverFortune, fortun
 import { FortuneDialog } from './FortuneDialog';
 import './fortune.css';
 const base=import.meta.env.BASE_URL;
-const colors=['#ab3114','#034f99','#2744ad','#086288','#8c1555','#632394','#107964','#62459d','#0e4d98','#a8790d','#7b185f','#187d72'];
+// Presentation order of the original painting, clockwise from its top sector.
+// Server order/weights and transaction logic remain unchanged.
+const ORIGINAL_SLOT=[11,0,6,8,9,2,3,10,1,5,4,7] as const;
+const ORIGINAL_LABELS=[
+ [326,445,34,0],[426,419,36,0],[426,859,34,0],[224,750,32,0],
+ [226,625,32,0],[644,526,32,0],[642,628,30,0],[231,529,28,0],
+ [548,441,28,0],[548,822,30,0],[600,733,28,0],[307,820,23,20],
+] as const;
 function haptic(kind:'tick'|'win'){
  try{
   const tg=(window as unknown as {Telegram?:{WebApp?:{HapticFeedback?:{selectionChanged:()=>void;notificationOccurred:(s:string)=>void}}}}).Telegram?.WebApp?.HapticFeedback;
@@ -15,28 +22,20 @@ function PrizeArt({prize}:{prize:string;quantity:number}){
  const p=FORTUNE_PRIZES.find(p=>p.prize===prize);
  return p?<img src={base+p.icon} alt=""/>:<span>{prize==='materials'?'⚒️':'✦'}</span>;
 }
-function Wheel({rotation,spinning,reduced,onDone}:{rotation:number;spinning:boolean;reduced:boolean;onDone:()=>void}){
- const xy=(a:number,r:number)=>[200+Math.cos(a*Math.PI/180)*r,200+Math.sin(a*Math.PI/180)*r];
+function Wheel({rotation,spinning,reduced,onDone,en}:{rotation:number;spinning:boolean;reduced:boolean;onDone:()=>void;en:boolean}){
  return <div className={`fortune-wheel-stage ${spinning?'is-spinning':''}`}>
-  <div className="fortune-pointer" aria-hidden="true">◆</div>
-  <svg viewBox="0 0 400 400" className="fortune-wheel" role="img" aria-label="TERRITORY" style={{transform:`rotate(${rotation}deg)`,transitionDuration:reduced||!spinning?'0ms':'5200ms'}} onTransitionEnd={onDone}>
-   <defs><radialGradient id="fortune-metal"><stop stopColor="#fff7b7"/><stop offset=".4" stopColor="#c88919"/><stop offset=".7" stopColor="#ffe985"/><stop offset="1" stopColor="#6a310b"/></radialGradient></defs>
-   <circle cx="200" cy="200" r="197" fill="url(#fortune-metal)" stroke="#fff0a5" strokeWidth="2"/>
+  <svg viewBox="0 0 720 720" className="fortune-wheel" role="img" aria-label={en?'Twelve original illustrated prize sectors and golden lion':'Двенадцать оригинальных призовых секторов и золотой лев'} style={{transform:`rotate(${rotation}deg)`,transitionDuration:reduced||!spinning?'0ms':'5200ms'}} onTransitionEnd={onDone}>
+   <image className="fortune-original-wheel" href={base+'fortune/original-wheel.webp'} x="0" y="0" width="720" height="720"/>
    {FORTUNE_PRIZES.map((p,i)=>{
-    const a=xy(i*30-105,182),b=xy(i*30-75,182),c=xy(i*30-90,137),t=xy(i*30-90,100),gem=xy(i*30-105,190);
-    return <g key={i}>
-     <path d={`M200 200 L${a.join(' ')} A182 182 0 0 1 ${b.join(' ')} Z`} fill={colors[i]} stroke="#eac464" strokeWidth="2"/>
-     <image href={base+p.icon} x={c[0]-21} y={c[1]-21} width="42" height="42"/>
-     <text x={t[0]} y={t[1]+5} textAnchor="middle" fill="#fff6c6" stroke="#100c23" strokeWidth="3" paintOrder="stroke" fontSize="16" fontWeight="900">{p.prize==='vip'?'24h':p.prize==='level'?'+1':p.quantity}</text>
-     <path d={`M${gem[0]} ${gem[1]-5} l5 5 -5 5 -5 -5 Z`} fill={i%2?'#d946ef':'#38bdf8'} stroke="#fff2a6"/>
+    const [sx,sy,size,tilt]=ORIGINAL_LABELS[i],x=sx-66,y=sy-235;
+    return <g key={i} data-fortune-sector={i} data-angle-slot={ORIGINAL_SLOT[i]} data-prize={p.prize} data-quantity={p.quantity}>
+     <title>{en?p.en:p.ru}</title>
+     {p.prize==='stone'&&<image href={base+p.icon} x="507" y="312" width="82" height="82"/>}
+     {/* VIP's original '1 ДЕНЬ' is already correct and is preserved pixel-for-pixel. */}
+     {p.prize!=='vip'&&<text x={x} y={y} transform={tilt?`rotate(${tilt} ${x} ${y})`:undefined} textAnchor="middle" fill="#fff9e8" stroke="#211005" strokeWidth="4" paintOrder="stroke" fontFamily="Arial, sans-serif" fontSize={size} fontWeight="900">{p.prize==='level'?(en?'+1 LEVEL':'+1 УРОВЕНЬ'):p.quantity}</text>}
     </g>;
    })}
-   <circle cx="200" cy="200" r="53" fill="url(#fortune-metal)" stroke="#fff2b1" strokeWidth="3"/>
-   <circle cx="200" cy="200" r="44" fill="#172b59" stroke="#d7a64a" strokeWidth="3"/>
-   <text x="200" y="217" textAnchor="middle" fontSize="48">⚜</text>
-   <circle cx="200" cy="200" r="184" fill="none" stroke="#ffd879" strokeWidth="3"/>
   </svg>
-  <div className="fortune-wheel-aura" aria-hidden="true"/>
  </div>;
 }
 export function WheelOfFortune({userId,onBack}:{userId:string;onBack:()=>void}){
@@ -53,7 +52,7 @@ export function WheelOfFortune({userId,onBack}:{userId:string;onBack:()=>void}){
   setStatus(data);setReceipt(data.receipt);
   if(data.receipt){
    const index=fortuneIndex(data.receipt);
-   if(index>=0)setRotation(old=>fortuneRotation(old,index));
+   if(index>=0)setRotation(old=>fortuneRotation(old,ORIGINAL_SLOT[index]));
    if(animate&&!reduced){setSpinning(true);timer.current=setTimeout(done,5400);tick.current=setInterval(()=>haptic('tick'),220);}
    else{setReveal(true);haptic('win');}
   }
@@ -75,18 +74,29 @@ export function WheelOfFortune({userId,onBack}:{userId:string;onBack:()=>void}){
   catch{setError(en?'Could not confirm receipt. Retry safely.':'Не удалось подтвердить получение. Повтори безопасно.');}
   finally{lock.current=false;setBusy(false);}
  };
- return <div className="fortune-screen" data-testid="wheel-of-fortune" style={{backgroundImage:`linear-gradient(180deg,#110d2866,#100d2b33 35%,#090e27 88%),url(${base}hall-art/fortune-chamber.webp)`}}>
-  <div className="fortune-toolbar"><button onClick={onBack} disabled={busy||spinning}>← {en?'Hall':'В зал'}</button><strong>🎟 {status?.tickets??'—'}</strong><button onClick={()=>setRules(true)}>{en?'Rules':'Правила'} ?</button></div>
-  <header className="fortune-title"><span>✦ TERRITORY ✦</span><h1>{en?'WHEEL OF FORTUNE':'КОЛЕСО ФОРТУНЫ'}</h1><p>{en?'A treasure awaits your hero':'Сокровища ждут своего героя'}</p></header>
-  <Wheel rotation={rotation} spinning={spinning} reduced={reduced} onDone={()=>{if(spinning)done();}}/>
-  <div className="fortune-controls">
-   <button className="fortune-button fortune-spin" disabled={busy||spinning||!!receipt||!status||!status.tickets||!!error} onClick={()=>void spin()}>{busy?(en?'CONNECTING…':'СВЯЗЬ С СЕРВЕРОМ…'):spinning?(en?'FORTUNE IS SPINNING…':'ФОРТУНА ВРАЩАЕТСЯ…'):(en?'SPIN — 1 TICKET':'КРУТИТЬ — 1 БИЛЕТ')}</button>
-   {spinning&&<button className="fortune-skip" onClick={done}>{en?'Skip animation':'Пропустить анимацию'}</button>}
-   {status?.tickets===0&&<p>{en?'Collect +2 daily tickets in the Hall.':'Забери +2 ежедневных билета в зале.'}</p>}
-   {error&&<p role="alert">{error} <button onClick={()=>void recover()} disabled={busy}>{en?'Recover':'Восстановить'}</button></p>}
-   {status?.vip_until&&<p>{en?'Temporary VIP until':'Временный VIP до'} {new Date(status.vip_until).toLocaleString(en?'en-GB':'ru-RU')} ({Date.parse(status.vip_until)>Date.parse(status.server_now)?en?'active':'активен':en?'expired':'истёк'})</p>}
+ return <div className="fortune-screen" data-testid="wheel-of-fortune" style={{backgroundImage:`linear-gradient(transparent 60%, #050a13d9),url(${base}fortune/original-floor.webp)`}}>
+  <div className="fortune-original-scene" style={{backgroundImage:`url(${base}fortune/original-scene.webp)`}}>
+   <div className="fortune-toolbar">
+    <strong className="fortune-ticket" aria-label={en?'Ticket balance':'Баланс билетов'} style={{backgroundImage:`url(${base}fortune/original-ticket-panel.webp)`}}><span>{status?.tickets.toLocaleString(en?'en-US':'ru-RU')??'—'}</span></strong>
+    <button className="fortune-rules" onClick={()=>setRules(true)} style={{backgroundImage:`url(${base}fortune/original-rules-panel.webp)`}}>{en?'Rules':'Правила'}</button>
+   </div>
+   <button className="fortune-back" aria-label={en?'Back to Game Hall':'В игровой зал'} onClick={onBack} disabled={busy||spinning}>‹</button>
+   <header className="fortune-title">
+    <img src={base+'fortune/original-title.webp'} width={447} height={235} alt="" aria-hidden="true" draggable={false}/>
+    <h1 className="fortune-sr-only">{en?'WHEEL OF FORTUNE':'КОЛЕСО ФОРТУНЫ'}</h1>
+   </header>
+   <Wheel rotation={rotation} spinning={spinning} reduced={reduced} en={en} onDone={()=>{if(spinning)done();}}/>
+   <img className="fortune-pointer" src={base+'fortune/original-pointer.webp'} width={108} height={124} alt="" aria-hidden="true" draggable={false}/>
+   <div className="fortune-controls">
+    <button className="fortune-button fortune-spin" aria-label={busy?(en?'Connecting':'Связь с сервером'):spinning?(en?'Fortune is spinning':'Фортуна вращается'):(en?'SPIN — 1 TICKET':'КРУТИТЬ — 1 БИЛЕТ')} aria-busy={busy} disabled={busy||spinning||!!receipt||!status||!status.tickets||!!error} onClick={()=>void spin()} style={{backgroundImage:`url(${base}fortune/original-spin-frame.webp)`}}>
+     <span className={`fortune-spin__label ${busy||spinning?'fortune-spin__label--busy':''}`}>{busy?(en?'CONNECTING…':'СВЯЗЬ…'):spinning?(en?'SPINNING…':'ВРАЩАЕТСЯ…'):(en?'Spin':'Крутить')}</span>
+     <span className="fortune-spin__cost" aria-hidden="true"><img src={base+'fortune/original-ticket.webp'} alt=""/> 1</span>
+    </button>
+   </div>
   </div>
-  <section className="fortune-prizes"><h2>{en?'Possible prizes':'Возможные награды'}</h2><div>{FORTUNE_PRIZES.map((p,i)=><article key={i}><PrizeArt prize={p.prize} quantity={p.quantity}/><small>{en?p.en:p.ru}</small></article>)}</div></section>
+  {spinning&&<button className="fortune-skip" onClick={done}>{en?'Skip animation':'Пропустить анимацию'}</button>}
+  {status?.tickets===0&&<p className="fortune-status">{en?'Collect +2 daily tickets in the Hall.':'Забери +2 ежедневных билета в зале.'}</p>}
+  {error&&<p className="fortune-status" role="alert">{error} <button onClick={()=>void recover()} disabled={busy}>{en?'Recover':'Восстановить'}</button></p>}
   {rules&&<FortuneDialog title={en?'Rules & exact chances':'Правила и точные шансы'} onClose={()=>setRules(false)}>
    <p>{en?'One spin costs 1 standard ticket. Free and purchased tickets have identical chances. Sectors are illustrated equally; real odds are listed below.':'Одно вращение стоит 1 обычный билет. Бесплатные и купленные билеты имеют одинаковые шансы. Размеры секторов условные; реальные шансы указаны ниже.'}</p>
    <table><tbody>{FORTUNE_PRIZES.map((p,i)=><tr key={i}><td>{en?p.en:p.ru}</td><td>{(p.weight/100).toFixed(2)}%</td></tr>)}</tbody></table>

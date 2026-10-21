@@ -188,8 +188,9 @@
 .hall-toast { margin: 10px 0 0; padding: 10px; border: 1px solid #6fbc9b; border-radius: 10px; background: #122e2a; color: #d2ffe5; font-size: 12px; line-height: 1.4; }
 .hall-toast--error { display: flex; align-items: center; gap: 8px; border-color: #c76583; background: #391e30; color: #ffe1eb; }
 .hall-toast--error span { flex: 1; }
-/* This rule applies only while the lobby is mounted, and only to its active tab. */
-.territory-hall-open .territory-nav .nav-btn[aria-current="page"] {
+/* The lobby and wheel share the approved Games tab treatment. */
+.territory-hall-open .territory-nav .nav-btn[aria-current="page"],
+.territory-wheel-open .territory-nav .nav-btn[aria-current="page"] {
   border-color: #ffc45f;
   background: linear-gradient(#6d3a14, #2d1c12);
   box-shadow: inset 0 0 10px #f8b74d40, 0 0 10px #f9a82d70;
@@ -222,9 +223,10 @@
   .hall-game { transition: none; }
 }
 
-/* The shell marker exists only while GamesScreen is mounted. Keep the scroll
+/* Hall/wheel shell markers keep the scroll
    region inside the flex shell; reserve a full nav height after the final card. */
-.territory-hall-open .territory-screen {
+.territory-hall-open .territory-screen,
+.territory-wheel-open .territory-screen {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -233,16 +235,19 @@
 }
 /* Battle has a permanent blue spotlight in the shared nav. Neutralize it here
    without changing navigation behavior or any other screen's appearance. */
-.territory-hall-open .territory-nav .nav-btn:not([aria-current="page"]) {
+.territory-hall-open .territory-nav .nav-btn:not([aria-current="page"]),
+.territory-wheel-open .territory-nav .nav-btn:not([aria-current="page"]) {
   margin-top: 0;
   height: 100%;
   border-color: #ffffff0d;
   background: #ffffff08;
   box-shadow: none;
 }
-.territory-hall-open .territory-nav .nav-btn:not([aria-current="page"]) img {
+.territory-hall-open .territory-nav .nav-btn:not([aria-current="page"]) img,
+.territory-wheel-open .territory-nav .nav-btn:not([aria-current="page"]) img {
   width: 32px; height: 32px;
 }
-.territory-hall-open .territory-nav .nav-btn:not([aria-current="page"]) .territory-nav-label {
+.territory-hall-open .territory-nav .nav-btn:not([aria-current="page"]) .territory-nav-label,
+.territory-wheel-open .territory-nav .nav-btn:not([aria-current="page"]) .territory-nav-label {
   color: #9ca3af;
 }
