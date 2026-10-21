@@ -74,7 +74,7 @@ export function WheelOfFortune({userId,onBack}:{userId:string;onBack:()=>void}){
   catch{setError(en?'Could not confirm receipt. Retry safely.':'Не удалось подтвердить получение. Повтори безопасно.');}
   finally{lock.current=false;setBusy(false);}
  };
- return <div className="fortune-screen" data-testid="wheel-of-fortune" style={{backgroundImage:`linear-gradient(transparent 60%, #050a13d9),url(${base}fortune/original-floor.webp)`}}>
+ return <div className="fortune-screen" data-testid="wheel-of-fortune" style={{backgroundImage:`url(${base}fortune/original-floor.webp)`}}>
   <div className="fortune-original-scene" style={{backgroundImage:`url(${base}fortune/original-scene.webp)`}}>
    <div className="fortune-toolbar">
     <strong className="fortune-ticket" aria-label={en?'Ticket balance':'Баланс билетов'} style={{backgroundImage:`url(${base}fortune/original-ticket-panel.webp)`}}><span>{status?.tickets.toLocaleString(en?'en-US':'ru-RU')??'—'}</span></strong>
@@ -93,6 +93,9 @@ export function WheelOfFortune({userId,onBack}:{userId:string;onBack:()=>void}){
      <span className="fortune-spin__cost" aria-hidden="true"><img src={base+'fortune/original-ticket.webp'} alt=""/> 1</span>
     </button>
    </div>
+  </div>
+  <div className="fortune-scene-tail" aria-hidden="true">
+   <div className="fortune-scene-tail__reflection" style={{backgroundImage:`url(${base}fortune/original-scene.webp)`}}/>
   </div>
   {spinning&&<button className="fortune-skip" onClick={done}>{en?'Skip animation':'Пропустить анимацию'}</button>}
   {status?.tickets===0&&<p className="fortune-status">{en?'Collect +2 daily tickets in the Hall.':'Забери +2 ежедневных билета в зале.'}</p>}
