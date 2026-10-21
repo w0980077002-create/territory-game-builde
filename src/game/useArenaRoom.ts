@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchArenaView, type ArenaMessage, type ArenaView } from './arenaApi';
 
 const POLL_MS = 2200;
-const MAX_MESSAGES = 500;
+// Only a short on-screen log is needed; old messages are deleted server-side.
+const MAX_MESSAGES = 250;
 
 export function useArenaRoom(roomId: string, onGone: () => void) {
   const [view, setView] = useState<ArenaView | null>(null);
