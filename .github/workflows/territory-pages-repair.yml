@@ -47,6 +47,7 @@ jobs:
       - name: Check TypeScript and existing regressions
         run: |
           npm run typecheck
+          node scripts/check-arena-secure.mjs
           npm run test:economy
           npm run test:hall
           npm run test:admin-master
