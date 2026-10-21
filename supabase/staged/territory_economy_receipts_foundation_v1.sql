@@ -62,8 +62,7 @@ BEGIN
 
  SELECT * INTO v_saved
  FROM territory_private.economy_receipts_v1
- WHERE player_id=p_player AND operation_id=p_operation
- FOR UPDATE;
+ WHERE player_id=p_player AND operation_id=p_operation;
 
  IF NOT FOUND
   OR v_saved.operation_kind IS DISTINCT FROM p_kind
