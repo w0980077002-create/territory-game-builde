@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
-import { useGame, useArena, grantRewards, updateProgress } from '@/game/actions';
+import { useGame, useArena } from '@/game/actions';
+import { secureArenaClaim, secureArenaItem } from '@/game/arenaSecure';
 import {
-  TEAM_NAMES, claimArenaReward, leaveArena, reviveAlly, submitArenaMove, applyTimePotion, drinkArenaItem,
+  TEAM_NAMES, leaveArena, submitArenaMove,
   setArenaAuto, arenaPostFightDeadline, type ArenaReward, type Zone,
 } from '@/game/arenaApi';
 import { useArenaRoom, useCountdown } from '@/game/useArenaRoom';
 import { useStrikeQueue } from '@/game/useStrikeQueue';
-import { beltAction, beltContext, consumeBelt } from '@/game/belt';
+import { beltAction, beltContext } from '@/game/belt';
 import { hapticImpact, hapticNotify } from '@/game/telegram';
 import { FighterList } from './FighterList';
 import { BattleScene } from './BattleScene';
@@ -111,12 +112,11 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   useEffect(() => {
     if (!view || view.room.status !== 'finished' || view.me.rewarded || claiming.current) return;
     claiming.current = true;
-    claimArenaReward(roomId)
-      .then((r) => {
-        if (!r) return;
-        let next = grantRewards(useGame.get(), r.gold, r.xp);
-        if (r.won) next = updateProgress(next, 'arena_win', 1);
-        useGame.set(next);
+    secureArenaClaim(roomId)
+      .then(({ reward: r, alreadyClaimed }) => {
+        if (alreadyClaimed) return;
+        if (!r) { claiming.current = false; return; }
+        // No local gold/XP award. Server transaction already credited the saved profile.
         useArena.set({ rating: r.rating, wins: r.wins, losses: r.losses });
         setReward(r);
         hapticNotify(r.won ? 'success' : r.draw ? 'warning' : 'error');
@@ -165,7 +165,8 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
 
   const runBelt = async (index: number, fn: () => Promise<unknown>) => {
     setBeltBusy(index);
-    await run(fn, () => useGame.set((s) => consumeBelt(s, index)));
+    // The RPC validates/debits this precise belt slot with the combat action.
+    await run(fn);
     setBeltBusy(null);
   };
 
@@ -175,8 +176,8 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
     if (!action) return setActionError(language === 'en' ? 'This item cannot be used in battle' : 'Этот предмет нельзя использовать в бою');
     if (!isActive || !alive) return setActionError(language === 'en' ? 'The belt works only during battle while you are alive' : 'Пояс работает только во время боя, пока ты в строю');
     hapticImpact('light');
-    if (action.kind === 'time') return runBelt(index, () => applyTimePotion(roomId));
-    if (action.kind === 'item') return runBelt(index, () => drinkArenaItem(roomId, action.code));
+    if (action.kind === 'time') return runBelt(index, () => secureArenaItem(roomId, index, 'time'));
+    if (action.kind === 'item') return runBelt(index, () => secureArenaItem(roomId, index, action.code));
     if (room?.mode === 'duel') return setActionError(language === 'en' ? 'Adrenaline works only in team battles' : 'Адреналин работает только в командных боях');
     setActionError(null);
     setAlliesOpen(true);
@@ -184,7 +185,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
 
   const revive = (id: string) => {
     if (adrenalineSlot < 0) return;
-    runBelt(adrenalineSlot, () => reviveAlly(roomId, id));
+    runBelt(adrenalineSlot, () => secureArenaItem(roomId, adrenalineSlot, 'adrenaline', id));
   };
 
   const leave = () => run(() => leaveArena(roomId), onExit);
