@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { Send, MessageCircle } from 'lucide-react';
 import { sendArenaChat, type ArenaMessage } from '@/game/arenaApi';
 import { useLanguage, localizeText } from '@/game/i18n';
@@ -18,7 +18,7 @@ const KIND_STYLE: Record<ArenaMessage['kind'], string> = {
   chat: 'text-white',
 };
 
-export function ArenaChat({ roomId, messages, myName, canSend = true }: { roomId: string; messages: ArenaMessage[]; myName: string; canSend?: boolean }) {
+export const ArenaChat = memo(function ArenaChat({ roomId, messages, myName, canSend = true }: { roomId: string; messages: ArenaMessage[]; myName: string; canSend?: boolean }) {
   const { language } = useLanguage();
   const [filter, setFilter] = useState<'all' | 'chat'>('all');
   const [text, setText] = useState('');
@@ -101,4 +101,4 @@ export function ArenaChat({ roomId, messages, myName, canSend = true }: { roomId
       {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
     </div>
   );
-}
+});
