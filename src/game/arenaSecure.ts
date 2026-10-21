@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { useGame } from './actions';
-import { acceptMonopolyClaimReceipt, protectFortuneSave, saveBlocked, saveCloudSave, saveTokens } from './cloud';
+import { acceptMonopolyClaimReceipt, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave, saveTokens } from './cloud';
 import type { ArenaMode, ArenaReward } from './arenaApi';
 import type { ArenaItemCode } from './belt';
 
@@ -45,7 +45,12 @@ async function transact(args: {
     const { data, error } = await supabase.rpc('arena_secure_v1', {
       ...args, p_expected: expected,
     });
-    if (error) throw new Error(error.message || 'Не удалось подтвердить действие на сервере');
+    if (error) {
+      // A PostgreSQL RAISE EXCEPTION (P0001) guarantees a rolled-back
+      // transaction. An HTTP/network failure does not: keep saves frozen then.
+      if (error.code === 'P0001') releaseArenaRejectedAction(id);
+      throw new Error(error.message || 'Не удалось подтвердить действие на сервере');
+    }
     const receipt = data as ArenaSecureReceipt;
     if (!receipt?.success || !receipt.updated_at || !receipt.game_state)
       throw new Error('Не удалось проверить ответ арены');
