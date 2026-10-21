@@ -1,10 +1,38 @@
 /* Runtime layers are extracted from scripts/artwork/fortune-reference.jpg.
    Source coordinates are retained, so the stationary scene cannot contain
    another wheel, and every artwork layer keeps the owner's proportions. */
-.fortune-screen { position: relative; isolation: isolate; min-width: 0; width: calc(100% + 24px); max-width: 480px; margin: -12px -12px 0; min-height: calc(var(--territory-viewport-height, 100svh) - 87px); background-size: 100% 100%, 100% auto; background-repeat: no-repeat, repeat-y; background-position: center; padding: 0 0 max(12px, env(safe-area-inset-bottom, 0px), var(--territory-bottom-inset, 0px)); color: #fff1c6; text-align: center; -webkit-tap-highlight-color: transparent; }
+/* Only Wheel owns this full bleed canvas; other game screens retain normal padding.
+   Its height comes from the real scroll pane above the persistent navigation,
+   never the outer Telegram viewport including browser chrome. */
+.territory-wheel-open .territory-screen { padding: 0; }
+.fortune-screen { position: relative; isolation: isolate; display: flex; flex-direction: column; min-width: 0; width: 100%; max-width: 480px; margin: 0; min-height: 100%; background-color: #071023; background-size: 100% auto; background-repeat: repeat-y; background-position: center top; color: #fff1c6; text-align: center; -webkit-tap-highlight-color: transparent; }
 .fortune-screen *, .fortune-screen *::before, .fortune-screen *::after { box-sizing: border-box; }
 .fortune-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.fortune-original-scene { position: relative; width: 100%; aspect-ratio: 853 / 1080; background-size: 100% 100%; background-position: center top; background-repeat: no-repeat; }
+.fortune-original-scene { position: relative; flex: 0 0 auto; width: 100%; aspect-ratio: 853 / 1080; background-size: 100% 100%; background-position: center top; background-repeat: no-repeat; }
+/* Tall Telegram displays previously showed an empty, almost-black strip after
+   the stage: it was a 12px floor texture repeated across surplus viewport.
+   Fill the available area with a subdued reflection of the SAME approved stage.
+   This is visual only: no wheel geometry, button positions or payout changes. */
+.fortune-scene-tail {
+  position: relative; flex: 1 0 auto; width: 100%; min-height: 0;
+  overflow: hidden; pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 80% at 50% -8%, #2474bc75 0%, transparent 82%),
+    radial-gradient(ellipse 35% 75% at 5% -5%, #e59b3d55 0%, transparent 88%),
+    radial-gradient(ellipse 35% 75% at 95% -5%, #e59b3d55 0%, transparent 88%),
+    linear-gradient(180deg, #102343d9 0%, #091629d9 57%, #060d1bee 100%);
+}
+.fortune-scene-tail__reflection {
+  position: absolute; inset: 0;
+  background-position: center bottom; background-size: 100% auto; background-repeat: no-repeat;
+  transform: scaleY(-1); opacity: .28;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 93%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 93%);
+}
+.fortune-scene-tail::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 0%, #050a13a0 100%);
+}
 .fortune-toolbar { position: absolute; z-index: 5; inset: 0 0 auto; display: flex; align-items: flex-start; justify-content: space-between; pointer-events: none; }
 .fortune-ticket, .fortune-rules { position: relative; display: flex; align-items: center; justify-content: center; min-height: 44px; border: 0; padding: 0; background-color: transparent; background-size: 100% auto; background-position: center; background-repeat: no-repeat; color: #fff4d6; font-weight: 900; white-space: nowrap; text-shadow: 0 1px 2px #090b16; pointer-events: auto; }
 .fortune-ticket { width: 25.1%; margin-left: .6%; font: 900 clamp(18px, 5.8vw, 26px)/1 Arial, sans-serif; font-variant-numeric: tabular-nums; }
