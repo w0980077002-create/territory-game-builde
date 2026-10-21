@@ -5,6 +5,8 @@ on:
     paths:
       - 'supabase/staged/territory_economy_*'
       - 'scripts/check-economy-receipts-foundation.mjs'
+      - 'scripts/check-inventory-acl-contract.mjs'
+      - 'supabase/migrations/20261021032140_territory_inventory_legacy_direct_write_lock_20261021.sql'
       - '.github/workflows/economy-foundation-review.yml'
 
 permissions:
@@ -23,6 +25,8 @@ jobs:
       - run: npm ci
       - name: Test receipts in disposable PostgreSQL-compatible PGlite
         run: node scripts/check-economy-receipts-foundation.mjs
+      - name: Test live inventory privilege lock on isolated PGlite
+        run: node scripts/check-inventory-acl-contract.mjs
       - name: Existing economy, save, and admin mail regressions
         run: |
           npm run typecheck
