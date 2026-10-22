@@ -47,7 +47,7 @@ export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void })
   return (
     <div className="arena-lobby animate-fade-in">
       <section className="arena-lobby-stage">
-        <div className="arena-lobby-stage-art" aria-hidden="true" />
+        <div className="arena-lobby-stage-art" aria-hidden="true" style={{ backgroundImage: `linear-gradient(180deg,rgba(0,12,27,.15) 12%,rgba(10,12,21,.04) 49%,rgba(3,10,17,.98) 100%),url("${import.meta.env.BASE_URL}assets/territory/scenes/arena-viking.webp")` }} />
         <div className="arena-lobby-heading">
           <span className="arena-lobby-title"><Swords aria-hidden="true" />{en ? 'ARENA' : 'АРЕНА'}</span>
           <button type="button" className="arena-lobby-rules" onClick={() => setShowRules(true)}>
