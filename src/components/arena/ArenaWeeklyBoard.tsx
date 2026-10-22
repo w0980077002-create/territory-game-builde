@@ -35,8 +35,8 @@ export function ArenaWeeklyBoard() {
     return () => { mounted = false; window.clearInterval(ticker); };
   }, []);
 
-  const window = seasonWindow(now);
-  const current = status && Date.parse(status.starts_at) === window.startsAt && Date.parse(status.ends_at) === window.endsAt;
+  const week = seasonWindow(now);
+  const current = status && Date.parse(status.starts_at) === week.startsAt && Date.parse(status.ends_at) === week.endsAt;
   const rows = current ? status.leaders : [];
   const visible = expanded ? rows : rows.slice(0, 3);
 
@@ -47,7 +47,7 @@ export function ArenaWeeklyBoard() {
           <Crown className="h-5 w-5 text-yellow-300 shrink-0" />
           <h3>{en ? 'WEEKLY TOP 50' : 'ТОП-50 АРЕНЫ ЗА НЕДЕЛЮ'}</h3>
         </div>
-        <div className="arena-weekly-timer"><Timer className="h-3.5 w-3.5" /><time>{seasonCountdown(window.remainingMs, en ? 'en' : 'ru')}</time></div>
+        <div className="arena-weekly-timer"><Timer className="h-3.5 w-3.5" /><time>{seasonCountdown(week.remainingMs, en ? 'en' : 'ru')}</time></div>
       </div>
       {loading && !status ? <p className="arena-weekly-empty">{en ? 'Loading verified wins…' : 'Загружаем подтверждённые победы…'}</p> : null}
       {failed && !current ? <div className="arena-weekly-empty">
