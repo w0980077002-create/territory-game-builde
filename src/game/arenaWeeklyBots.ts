@@ -93,7 +93,11 @@ export function arenaWeeklyWithBots(
     // Different for each bot and each day, stable on reload and across devices.
     let victories = 0;
     for (let day = 0; day <= currentDay; day += 1) {
-      victories += 17 + stableHash(week + ':' + name + ':' + day) % 9;
+      // Mix the hash bits so daily growth varies rather than stepping
+      // through an accidental +1 sequence for some Cyrillic bot names.
+      const hash = stableHash(week + ':' + name + ':' + day + ':arena');
+      const mixed = Math.imul(hash ^ (hash >>> 16), 0x7feb352d);
+      victories += 17 + ((mixed ^ (mixed >>> 15)) >>> 0) % 9;
     }
     const female = FEMALE_BOT_NAMES.has(name);
     return {
