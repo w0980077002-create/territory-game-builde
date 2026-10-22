@@ -48,3 +48,4 @@ console.log('Weekly Arena top: 40 canonical PvP bot names, player-only top 9 and
 
 // Run daily NPC score and weekly reset tests alongside existing Arena regression checks.
 await import('./check-arena-bot-leaderboard.mjs');
+await import('./check-arena-goal.mjs');
