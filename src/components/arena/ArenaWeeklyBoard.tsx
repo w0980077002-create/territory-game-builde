@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ChevronRight, Crown, RefreshCw, Timer, Trophy } from 'lucide-react';
+import { ChevronRight, Crown, RefreshCw, Swords, Timer, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { getAppearanceIcon } from '@/game/appearance';
 import { getArenaWeeklyStatus, type ArenaWeeklyStatus } from '@/game/arenaWeekly';
 import { seasonWindow, seasonCountdown } from '@/game/seasonCalendar';
 import { arenaWeeklyWithBots } from '@/game/arenaWeeklyBots';
+import { arenaNextGoal } from '@/game/arenaProgress';
 
 export function ArenaWeeklyBoard() {
   const { language } = useLanguage();
@@ -41,6 +42,8 @@ export function ArenaWeeklyBoard() {
   const display = current ? arenaWeeklyWithBots(status, now) : null;
   const rows = display?.leaders ?? [];
   const visible = expanded ? rows : rows.slice(0, 3);
+  const goal = current && status ? arenaNextGoal(rows, display?.displayRank ?? null, status.my_wins) : null;
+  const isLeader = !!display && display.displayRank === 1;
 
   return (
     <section className="arena-weekly" aria-label={en ? 'Arena weekly top 50' : 'Топ 50 арены за неделю'}>
@@ -87,6 +90,25 @@ export function ArenaWeeklyBoard() {
           )}
         </div>
       )}
+      {(goal || isLeader) && <div className="arena-weekly-chase" aria-live="polite">
+        <div className="arena-weekly-chase-top">
+          <span className="arena-weekly-chase-heading">
+            {isLeader ? <Crown aria-hidden="true" /> : <Swords aria-hidden="true" />}
+            {isLeader
+              ? (en ? 'LEADER OF THE WEEK' : 'ЛИДЕР НЕДЕЛИ')
+              : (en ? `NEXT GOAL: #${goal!.nextRank}` : `СЛЕДУЮЩАЯ ЦЕЛЬ — №${goal!.nextRank}`)}
+          </span>
+          <strong>{isLeader
+            ? (en ? 'KEEP YOUR LEAD!' : 'ДЕРЖИ ПЕРВОЕ МЕСТО!')
+            : (en ? `+${goal!.winsNeeded} wins` : `+${goal!.winsNeeded} побед`)}</strong>
+        </div>
+        {goal && <>
+          <div className="arena-weekly-chase-track" role="progressbar" aria-label={en ? 'Progress toward next place' : 'Прогресс до следующего места'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={goal.progressPercent}>
+            <span style={{ width: `${goal.progressPercent}%` }} />
+          </div>
+          <span className="arena-weekly-chase-note">{en ? 'Based on current standings · results may change' : 'По текущему ТОПу · соперники продолжают побеждать'}</span>
+        </>}
+      </div>}
       {failed && current ? <span className="arena-weekly-note"><RefreshCw className="inline h-3 w-3 mr-1" />{en ? 'Showing last verified results' : 'Последние подтверждённые результаты'}</span> : null}
       <p className="arena-weekly-note">{en ? 'New season every Sunday (Kyiv time). Lifetime wins remain.' : 'Каждое воскресенье — новый сезон. Общие победы сохраняются.'}</p>
     </section>
