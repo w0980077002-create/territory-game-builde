@@ -67,7 +67,7 @@ for (const npc of second.leaders.filter(x => x.arenaBot)) {
 let previous = new Map(second.leaders.filter(x => x.arenaBot).map(x => [x.player_id, x.wins]));
 const increments = new Set();
 for (let day = 2; day <= 6; day++) {
-  const current = arenaWeeklyWithBots(verified, firstStart + day * 86400000 + 3600000);
+  const current = arenaWeeklyWithBots(verified, firstStart + day * 86400000 + 15 * 3600000);
   for (const npc of current.leaders.filter(x => x.arenaBot)) {
     const delta = npc.wins - previous.get(npc.player_id);
     assert(delta >= 17 && delta <= 25, 'Daily NPC increment must stay in 17–25');
