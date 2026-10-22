@@ -11,7 +11,17 @@ export function initialCityMotion(): boolean {
     const saved = window.localStorage.getItem(CITY_MOTION_KEY);
     if (saved === 'off') return false;
     if (saved === 'on') return true;
-    return !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    // The harbour uses layered gradient, blur and blend animations. On
+    // memory-constrained phones the effects can force full-screen repaints.
+    // Default those devices to the static (identical artwork) scene; players
+    // can still enable all animations explicitly from Settings.
+    const device = navigator as Navigator & { deviceMemory?: number };
+    const mobile = window.matchMedia('(max-width: 640px)').matches;
+    const constrained = mobile && (
+      (typeof device.deviceMemory === 'number' && device.deviceMemory <= 4) ||
+      (device.deviceMemory === undefined && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4)
+    );
+    return !constrained && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   } catch {
     return false;
   }
