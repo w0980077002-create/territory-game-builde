@@ -15,7 +15,7 @@ const ART = import.meta.env.BASE_URL + 'assets/territory/characters/';
 const MODES: { id: ArenaMode; title: string; english: string; size: string; desc: string; descEn: string; bonus: string; icon: typeof Swords; art: string; accent: string }[] = [
   { id: 'duel', title: 'Дуэль', english: 'Duel', size: '1 на 1', desc: 'Один на один', descEn: 'One on one', bonus: '×1', icon: Swords, art: ART + 'heroes/male_viking/idle.webp', accent: 'gold' },
   { id: 'team', title: 'Отряд', english: 'Squad', size: '3 на 3', desc: 'Бой команд', descEn: 'Team combat', bonus: '×1.2', icon: Users, art: ART + 'heroes/female_warrior/idle.webp', accent: 'blue' },
-  { id: 'chaos', title: 'Хаос', english: 'Chaos', size: 'до 20 на 20', desc: 'Большая битва', descEn: 'Mass battle', bonus: '×1.5', icon: Flame, art: ART + 'bosses/northern_jarl/idle.webp', accent: 'red' },
+  { id: 'chaos', title: 'Хаос', english: 'Chaos', size: 'до 20 на 20', desc: 'Большая битва', descEn: 'Mass battle', bonus: '×1.5', icon: Flame, art: ART + 'enemies/goblin/idle.webp', accent: 'red' },
 ];
 
 export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void }) {
@@ -56,7 +56,7 @@ export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void })
         </div>
         <div className="arena-lobby-characters" aria-hidden="true">
           <img className="arena-lobby-character arena-lobby-character-hero" src={ART + 'heroes/male_viking/idle.webp'} alt="" />
-          <img className="arena-lobby-character arena-lobby-character-enemy" src={ART + 'bosses/northern_jarl/idle.webp'} alt="" />
+          <img className="arena-lobby-character arena-lobby-character-enemy" src={ART + 'bosses/bandit_chief/idle.webp'} alt="" />
         </div>
         <div className="arena-lobby-stats" aria-label={en ? 'Arena record' : 'Статистика арены'}>
           <div className="arena-lobby-stat arena-lobby-stat-rating">
