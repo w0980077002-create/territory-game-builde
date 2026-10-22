@@ -173,8 +173,12 @@ assert.match(liveSource, /setAdminEquipmentLevel\(eq, level\)/,
   'owner correction must use the dedicated decrease-safe helper');
 assert.match(adminUiSource, /set_test_gear_level/,
   'admin panel must route owner testing through the secured server action');
-assert.match(adminUiSource, /Тестовый уровень .*разрешён сервером/,
-  'admin panel must describe authorization and not falsely claim a grant was applied to the browser');
+assert.match(adminUiSource, /Уровень .*и характеристики сохранены на сервере/,
+  'admin panel must confirm actual server-calculated equipment stats, not only a changed level');
+assert.match(adminUiSource, /result\.gear\?\.level !== level/,
+  'admin UI must reject an unconfirmed or mismatched equipment update');
+assert.match(adminUiSource, /p\.equipped\[slot\]\.attack/,
+  'admin UI must show the saved equipment damage alongside the item level');
 
 const lowerLevel = balance.setEquipmentLevel(heroic, 2);
 assert.equal(lowerLevel.level, 5, 'level grants should not drop an item below its original template level');
