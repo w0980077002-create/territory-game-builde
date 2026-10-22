@@ -171,8 +171,10 @@ const liveSource = fs.readFileSync(path.join(root, 'src/game/live.ts'), 'utf8');
 const adminUiSource = fs.readFileSync(path.join(root, 'src/admin/tabs/PlayersTab.tsx'), 'utf8');
 assert.match(liveSource, /setAdminEquipmentLevel\(eq, level\)/,
   'owner correction must use the dedicated decrease-safe helper');
-assert.match(adminUiSource, /Корректировка до уровня/,
-  'admin panel must not claim queued grants were already applied');
+assert.match(adminUiSource, /set_test_gear_level/,
+  'admin panel must route owner testing through the secured server action');
+assert.match(adminUiSource, /Тестовый уровень .*разрешён сервером/,
+  'admin panel must describe authorization and not falsely claim a grant was applied to the browser');
 
 const lowerLevel = balance.setEquipmentLevel(heroic, 2);
 assert.equal(lowerLevel.level, 5, 'level grants should not drop an item below its original template level');
