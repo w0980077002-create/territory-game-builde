@@ -59,15 +59,15 @@ export function ArenaScreen({ onActiveChange, onBack, backDisabled }: Props) {
             onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')} className="arena-global-lang">{language.toUpperCase()}</button>
         </div>
       </div>
-      <div className="arena-global-subnav">
+      {(checking || roomId) && <div className="arena-global-subnav">
         <button type="button" disabled={backDisabled} onClick={onBack} className="arena-global-back"><ChevronLeft className="h-4 w-4" />{language === 'en' ? 'City' : 'Город'}</button>
         <span className="arena-global-subtitle">{language === 'en' ? 'VIKING ARENA' : 'АРЕНА ВИКИНГОВ'}</span>
-      </div>
+      </div>}
       {checking ? (
         <div className="flex justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-amber-300" /></div>
       ) : roomId ? (
         <div className="px-3 py-2"><ArenaRoom key={roomId} roomId={roomId} onExit={() => setRoomId(null)} onActiveChange={onActiveChange} /></div>
-      ) : <ArenaLobby onJoined={setRoomId} />}
+      ) : <ArenaLobby onJoined={setRoomId} onBack={onBack} backDisabled={backDisabled} />}
     </div>
   );
 }
