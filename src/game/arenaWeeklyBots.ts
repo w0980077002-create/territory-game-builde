@@ -89,10 +89,12 @@ export function arenaWeeklyWithBots(
     };
   });
 
-  // Real players always win equal-score ties, so a human can displace a bot.
+  // Fill only the vacant slots. Once 50 real players qualify, no NPCs remain.
+  // Real players always win equal-score ties, so they can displace opponents.
+  const vacancies = Math.max(0, 50 - Math.max(9, humans.length));
   const remaining = [
     ...humans.filter((p) => p.rank > 9).map((p) => ({ ...p, arenaBot: false })),
-    ...bots,
+    ...bots.slice(0, vacancies),
   ];
   remaining.sort((a, b) => b.wins - a.wins
     || Number(Boolean(a.arenaBot)) - Number(Boolean(b.arenaBot))
