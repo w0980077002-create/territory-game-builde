@@ -39,7 +39,9 @@ assert.match(roster, /rank <= 9/, 'Player-only first nine positions must be prot
 assert.match(roster, /remaining\.slice\(0, 41\)/, 'NPC fillers cannot extend beyond place 50');
 assert.match(roster, /50 - Math\.max\(9, humans\.length\)/, 'NPCs must vacate rankings as 50 real players arrive');
 assert.match(weeklyUI, /arenaWeeklyWithBots/, 'Weekly ranking should merge verified players with NPC placeholders');
-assert.match(weeklyUI, /боты арены/, 'NPC origin must not be hidden in the public UI');
+assert.match(weeklyUI, /Боец арены: игровой бот/, 'NPC identity must be available on the actual leaderboard entry');
+assert.match(weeklyUI, /Соперник арены/, 'NPC entry must have a concise label instead of the removed explanatory footer');
+assert.doesNotMatch(weeklyUI, /Места 10–50 могут занимать боты арены/, 'Removed verbose NPC footer must not reappear');
 assert.doesNotMatch(roster, /supabase\.(?:from|rpc)|update\(|insert\(|delete\(/i,
   'Leaderboard filler may never mutate authoritative PvP game state');
 console.log('Weekly Arena top: 40 canonical PvP bot names, player-only top 9 and safe visual 10–50 fillers.');
