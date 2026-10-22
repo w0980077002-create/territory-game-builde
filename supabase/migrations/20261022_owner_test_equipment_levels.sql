@@ -44,8 +44,19 @@ BEGIN
     v_stats:=jsonb_build_object('attack',0,'defense',5+v_approved*2,'hp',20+v_approved*5);
     v_item:=v_item||v_stats||jsonb_build_object('baseLevel',v_approved,'baseStats',v_stats,'upgradeCount',0);
   END IF;
-  -- Reapply the existing stat ceilings and catalog balancing even for owner tests.
-  RETURN public.territory_normalize_gear_v4(v_item)||jsonb_build_object('adminTestLevel',true);
+  -- Reapply existing stat ceilings and balance. Low-level catalog items need
+  -- the same proportional scaling as ordinary level-capped epic equipment.
+  v_item:=public.territory_normalize_gear_v4(v_item);
+  IF (v_slot='weapon' AND v_item->>'name'='Героический меч' AND v_approved<5)
+    OR (v_slot='ring' AND v_item->>'name'='Кольцо силы' AND v_approved<5)
+    OR (v_slot='weapon' AND v_item->>'name'='Клинок рыцаря' AND v_approved<3)
+    OR (v_slot='amulet' AND v_item->>'name'='Амулет ворона' AND v_approved<3)
+    OR (v_slot='armor' AND v_item->>'name'='Латные доспехи' AND v_approved<3)
+    OR (v_slot='shield' AND v_item->>'name'='Дубовый щит' AND v_approved<2)
+    OR (v_slot='boots' AND v_item->>'name'='Сапоги скорости' AND v_approved<2) THEN
+    v_item:=territory_private.cap_overlevel_item_20261018(v_item,v_approved);
+  END IF;
+  RETURN v_item||jsonb_build_object('adminTestLevel',true);
 END;
 $owner$;
 
