@@ -201,3 +201,32 @@
  .arena-approved-modes{gap:3px;}
 }
 @media(prefers-reduced-motion:reduce){.arena-approved-mode{transition:none;}}
+
+/* Approved gold-edged navigation is intentionally active only on Arena screens. */
+.territory-arena-theme .territory-nav{
+  background:linear-gradient(180deg,#061221 0%,#071629 30%,#030911 100%);
+  border-top:2px solid #af814d;
+  box-shadow:0 -4px 14px #050c1dbb,inset 0 1px 0 #d4a0524a;
+}
+.territory-arena-theme .territory-nav .nav-btn{
+  border:1px solid #4a586b;
+  background:linear-gradient(155deg,#172f4a 0%,#0b182b 49%,#050d1b 100%);
+  border-radius:12px;
+  box-shadow:inset 0 1px 0 #91a9bf3d,inset 0 0 0 1px #06111c,0 3px 7px #0008;
+  color:#e4ecfa;
+}
+.territory-arena-theme .territory-nav .nav-btn:has([aria-hidden="true"]){isolation:isolate;}
+.territory-arena-theme .territory-nav .nav-btn[aria-current="page"]{
+  border:2px solid #75dfff;
+  background:linear-gradient(145deg,#0e619b,#103a75 55%,#05162e);
+  box-shadow:inset 0 1px 0 #baf6ff90,0 0 13px #2fb5ffb8;
+}
+.territory-arena-theme .territory-nav .nav-btn img{
+  filter:drop-shadow(0 2px 3px #000c) saturate(1.22) contrast(1.08);
+}
+.territory-arena-theme .territory-nav .territory-nav-label{
+  color:#e6eaf5;
+  font-weight:900;
+  text-shadow:0 1px 3px #000c;
+}
+.territory-arena-theme .territory-nav .nav-btn[aria-current="page"] .territory-nav-label{color:#fff;}
