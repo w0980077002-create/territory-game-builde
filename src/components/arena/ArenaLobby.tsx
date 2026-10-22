@@ -6,7 +6,7 @@ import { secureArenaJoin } from '@/game/arenaSecure';
 import { hapticImpact } from '@/game/telegram';
 import { IosGamePortal } from '@/components/ui/Modal';
 import { useLanguage, localizeText } from '@/game/i18n';
-import { ChevronLeft, Crown, Flame, Info, Loader2, Skull, Swords, Trophy, Users, X } from 'lucide-react';
+import { ChevronLeft, Flame, Info, Loader2, Swords, Trophy, Users, X } from 'lucide-react';
 import { ArenaWeeklyBoard } from './ArenaWeeklyBoard';
 import './arenaLobby.css';
 
@@ -80,9 +80,9 @@ export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
           </div>
         )}
         <div className="arena-approved-stats" style={{ backgroundImage: `url("${APPROVED}arena-stats-ornament.svg")` }} aria-label={en ? 'Arena statistics' : 'Статистика арены'}>
-          <div className="arena-approved-stat arena-approved-stat-rating"><Trophy aria-hidden="true" /><strong>{arena.rating.toLocaleString('ru-RU')}</strong><span>{en ? 'RATING' : 'РЕЙТИНГ'}</span></div>
-          <div className="arena-approved-stat arena-approved-stat-wins"><Crown aria-hidden="true" /><strong>{arena.wins.toLocaleString('ru-RU')}</strong><span>{en ? 'WINS' : 'ПОБЕДЫ'}</span></div>
-          <div className="arena-approved-stat arena-approved-stat-losses"><Skull aria-hidden="true" /><strong>{arena.losses.toLocaleString('ru-RU')}</strong><span>{en ? 'LOSSES' : 'ПОРАЖЕНИЯ'}</span></div>
+          <div className="arena-approved-stat arena-approved-stat-rating"><img className="arena-approved-stat-icon" src={APPROVED + 'icon-trophy.svg'} alt="" aria-hidden="true" /><span className="arena-approved-stat-info"><strong>{arena.rating.toLocaleString('ru-RU')}</strong><span>{en ? 'RATING' : 'РЕЙТИНГ'}</span></span></div>
+          <div className="arena-approved-stat arena-approved-stat-wins"><img className="arena-approved-stat-icon" src={APPROVED + 'icon-laurel.svg'} alt="" aria-hidden="true" /><span className="arena-approved-stat-info"><strong>{arena.wins.toLocaleString('ru-RU')}</strong><span>{en ? 'WINS' : 'ПОБЕДЫ'}</span></span></div>
+          <div className="arena-approved-stat arena-approved-stat-losses"><img className="arena-approved-stat-icon" src={APPROVED + 'icon-skull.svg'} alt="" aria-hidden="true" /><span className="arena-approved-stat-info"><strong>{arena.losses.toLocaleString('ru-RU')}</strong><span>{en ? 'LOSSES' : 'ПОРАЖЕНИЯ'}</span></span></div>
         </div>
       </section>
 
