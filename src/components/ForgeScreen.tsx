@@ -23,6 +23,16 @@ export function ForgeScreen() {
 
   const equipment = state.inventory.filter((i) => i.type === 'equipment' && i.equipment);
   const equippedList = Object.values(state.player.equipped).filter(Boolean) as Equipment[];
+  // Keep the open item panel linked to live equipment; owner updates arrive while
+  // the modal is open, and a stale useState snapshot used to hide the new stats.
+  const chosenId = selected?.equipment?.id;
+  const freshEquipment = chosenId
+    ? equippedList.find((eq) => eq.id === chosenId)
+      ?? equipment.find((item) => item.equipment?.id === chosenId)?.equipment
+    : null;
+  const selectedCurrent = selected && freshEquipment
+    ? { ...selected, equipment: freshEquipment }
+    : null;
 
   const lock = useRef(false);
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -203,7 +213,7 @@ export function ForgeScreen() {
       )}
 
       {/* Upgrade modal */}
-      {selected && selected.equipment && (
+      {selectedCurrent && selectedCurrent.equipment && (
         <IosGamePortal>
         <div
           className="forge-upgrade-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
@@ -211,21 +221,21 @@ export function ForgeScreen() {
         >
           <div
             className="forge-upgrade-panel card w-full max-w-sm m-2 animate-slide-up"
-            style={{ border: `1px solid ${rarityColor(selected.rarity)}` }}
+            style={{ border: `1px solid ${rarityColor(selectedCurrent.rarity)}` }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-3 mb-4">
               <div
                 className="w-14 h-14 rounded-xl bg-black/30 flex items-center justify-center text-3xl shrink-0"
-                style={{ border: `1px solid ${rarityColor(selected.rarity)}` }}
+                style={{ border: `1px solid ${rarityColor(selectedCurrent.rarity)}` }}
               >
-                <ItemArt item={selected} size={48} />
+                <ItemArt item={selectedCurrent} size={48} />
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-base" style={{ color: rarityColor(selected.rarity) }}>
-                  {localizeText(selected.name, language)}
+                <h3 className="font-bold text-base" style={{ color: rarityColor(selectedCurrent.rarity) }}>
+                  {localizeText(selectedCurrent.name, language)}
                 </h3>
-                <p className="text-xs text-gray-400">{t('level')} {selected.equipment.level} · {selected.rarity}</p>
+                <p className="text-xs text-gray-400">{t('level')} {selectedCurrent.equipment.level} · {selectedCurrent.rarity}</p>
               </div>
               <button onClick={() => { if (!upgrading) setSelected(null); }} className="text-gray-500 hover:text-white">
                 <X className="w-5 h-5" />
@@ -236,18 +246,18 @@ export function ForgeScreen() {
             {/* Current stats */}
             <div className="space-y-1 mb-3">
               <p className="text-xs text-gray-500 uppercase tracking-wider">{t('current')}</p>
-              {selected.equipment.attack ? <StatRow label={t('attack')} value={selected.equipment.attack} /> : null}
-              {selected.equipment.defense ? <StatRow label={t('defense')} value={selected.equipment.defense} /> : null}
-              {selected.equipment.hp ? <StatRow label={t('health')} value={selected.equipment.hp} /> : null}
+              {selectedCurrent.equipment.attack ? <StatRow label={t('attack')} value={selectedCurrent.equipment.attack} /> : null}
+              {selectedCurrent.equipment.defense ? <StatRow label={t('defense')} value={selectedCurrent.equipment.defense} /> : null}
+              {selectedCurrent.equipment.hp ? <StatRow label={t('health')} value={selectedCurrent.equipment.hp} /> : null}
             </div>
 
             {/* Exact deterministic preview from current item template. */}
-            {selected.equipment.level < state.player.level && (
+            {selectedCurrent.equipment.level < state.player.level && (
               <div className="rounded-xl border border-emerald-500/25 bg-emerald-950/20 p-3 mb-3">
                 <p className="text-xs font-semibold text-emerald-300 mb-2">{language === 'en' ? 'Next level (if successful)' : 'Следующий уровень (при успехе)'}</p>
                 {(['attack', 'defense', 'hp', 'critChance'] as const).map((key) => {
-                  const current = selected.equipment?.[key] ?? 0;
-                  const next = upgradeEquipment(selected.equipment!)[key] ?? 0;
+                  const current = selectedCurrent.equipment?.[key] ?? 0;
+                  const next = upgradeEquipment(selectedCurrent.equipment!)[key] ?? 0;
                   if (current <= 0 && next <= 0) return null;
                   const label = key === 'attack' ? t('attack') : key === 'defense' ? t('defense') : key === 'hp' ? t('health') : t('critChance');
                   return <div key={key} className="flex justify-between text-xs py-0.5"><span className="text-gray-300">{label}</span><span className="text-emerald-200">{current} → {next}{key === 'critChance' ? '%' : ''}</span></div>;
@@ -256,7 +266,7 @@ export function ForgeScreen() {
             )}
 
             {/* Upgrade cost */}
-            {selected.equipment.level >= state.player.level ? (
+            {selectedCurrent.equipment.level >= state.player.level ? (
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3 text-center">
                 <p className="text-sm text-red-300 font-medium">
                   {t('upgradeMaxLevel')}
@@ -269,11 +279,11 @@ export function ForgeScreen() {
               <div className="bg-black/20 rounded-lg p-3 mb-3">
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">{t('upgradeCost')}</p>
                 <div className="flex justify-between text-sm">
-                  <span className="text-amber-400">🪙 {forgeCost(selected.equipment.level).gold}</span>
-                  <span className="text-orange-400">🔩 {forgeCost(selected.equipment.level).materials}</span>
+                  <span className="text-amber-400">🪙 {forgeCost(selectedCurrent.equipment.level).gold}</span>
+                  <span className="text-orange-400">🔩 {forgeCost(selectedCurrent.equipment.level).materials}</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  {language === 'en' ? 'Success chance' : 'Шанс успеха'}: {Math.round(forgeSuccessRate(selected.equipment.level) * 100)}%
+                  {language === 'en' ? 'Success chance' : 'Шанс успеха'}: {Math.round(forgeSuccessRate(selectedCurrent.equipment.level) * 100)}%
                 </p>
               </div>
             )}
@@ -282,10 +292,10 @@ export function ForgeScreen() {
             <div className="forge-upgrade-actions">
             <button
               className="btn-accent w-full"
-              onClick={() => tryUpgrade(selected)}
-              disabled={upgrading || selected.equipment.level >= state.player.level}
+              onClick={() => tryUpgrade(selectedCurrent)}
+              disabled={upgrading || selectedCurrent.equipment.level >= state.player.level}
             >
-              {upgrading ? t('blacksmithWorking') : selected.equipment.level >= state.player.level ? (
+              {upgrading ? t('blacksmithWorking') : selectedCurrent.equipment.level >= state.player.level ? (
                 t('maxLevel')
               ) : (
                 <><ArrowUp className="w-4 h-4 inline mr-1" /> {t('upgrade')}</>
