@@ -254,6 +254,9 @@ export function setAdminEquipmentLevel(eq: Equipment, targetLevel: number): Equi
  */
 export function capEquipmentToHeroLevel(eq: Equipment, heroLevel: number): Equipment {
   if (!Number.isSafeInteger(eq.level) || eq.level < 1) return eq;
+  // The server adds this hint only for a specific owner-authorized item ID.
+  // It independently enforces the approval on every save, even if a client forges this field.
+  if (eq.adminTestLevel === true && eq.level <= 500) return eq;
   const hero = Number.isSafeInteger(heroLevel) ? Math.max(1, Math.min(500, heroLevel)) : 1;
   const level = Math.min(eq.level, hero);
   const template = EQUIPMENT_TEMPLATES.find(
