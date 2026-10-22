@@ -3,37 +3,39 @@ import { useStore } from '@/game/store';
 import { useGame, useArena } from '@/game/actions';
 import type { ArenaMode } from '@/game/arenaApi';
 import { secureArenaJoin } from '@/game/arenaSecure';
-import { beltContext, takeFromBelt } from '@/game/belt';
 import { hapticImpact } from '@/game/telegram';
-import { BeltBar } from './BeltBar';
 import { IosGamePortal } from '@/components/ui/Modal';
 import { useLanguage, localizeText } from '@/game/i18n';
-import { Swords, Users, Flame, Trophy, Zap, Info, X, Loader2 } from 'lucide-react';
+import { Crown, Flame, Info, Loader2, Shield, Swords, Trophy, Users, X } from 'lucide-react';
+import { ArenaWeeklyBoard } from './ArenaWeeklyBoard';
+import './arenaLobby.css';
 
 const ENERGY_COST = 1;
-
-const MODES: { id: ArenaMode; title: string; size: string; desc: string; bonus: string; icon: typeof Swords; tint: string }[] = [
-  { id: 'duel', title: 'Дуэль', size: '1 на 1', desc: 'Классический поединок один на один', bonus: 'Награда x1', icon: Swords, tint: 'from-amber-500/25 to-orange-700/10 border-amber-500/30 text-amber-300' },
-  { id: 'team', title: 'Отряд', size: '3 на 3', desc: 'Командный бой: прикрывай союзников и выбирай цели', bonus: 'Награда x1.2', icon: Users, tint: 'from-sky-500/25 to-sky-800/10 border-sky-500/30 text-sky-300' },
-  { id: 'chaos', title: 'Хаос', size: 'до 20 на 20', desc: 'Случайные команды и настоящая мясорубка', bonus: 'Награда x1.5', icon: Flame, tint: 'from-red-500/25 to-red-900/10 border-red-500/30 text-red-300' },
+const ART = import.meta.env.BASE_URL + 'assets/territory/characters/';
+const MODES: { id: ArenaMode; title: string; english: string; size: string; desc: string; descEn: string; bonus: string; icon: typeof Swords; art: string; accent: string }[] = [
+  { id: 'duel', title: 'Дуэль', english: 'Duel', size: '1 на 1', desc: 'Один на один', descEn: 'One on one', bonus: '×1', icon: Swords, art: ART + 'heroes/male_viking/idle.webp', accent: 'gold' },
+  { id: 'team', title: 'Отряд', english: 'Squad', size: '3 на 3', desc: 'Бой команд', descEn: 'Team combat', bonus: '×1.2', icon: Users, art: ART + 'heroes/female_warrior/idle.webp', accent: 'blue' },
+  { id: 'chaos', title: 'Хаос', english: 'Chaos', size: 'до 20 на 20', desc: 'Большая битва', descEn: 'Mass battle', bonus: '×1.5', icon: Flame, art: ART + 'bosses/northern_jarl/idle.webp', accent: 'red' },
 ];
 
 export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void }) {
   const { language } = useLanguage();
+  const en = language === 'en';
   const state = useStore(useGame);
   const arena = useStore(useArena);
+  const [mode, setMode] = useState<ArenaMode>('duel');
   const [joining, setJoining] = useState<ArenaMode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showRules, setShowRules] = useState(false);
   const noEnergy = state.player.energy < ENERGY_COST;
 
-  const join = async (mode: ArenaMode) => {
+  const join = async () => {
     if (noEnergy || joining) return;
     hapticImpact('medium');
     setJoining(mode);
     setError(null);
     try {
-      // The room membership and single energy debit commit together on the server.
+      // Preserve the atomic server-side join and one-energy debit.
       const roomId = await secureArenaJoin(mode);
       onJoined(roomId);
     } catch (e) {
@@ -43,87 +45,68 @@ export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void })
   };
 
   return (
-    <div className="space-y-4 animate-fade-in pb-4">
-      <div className="card relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-900/30 via-transparent to-amber-900/20 pointer-events-none" />
-        <div className="relative">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Swords className="w-6 h-6 text-red-400" />
-              <h2 className="text-xl font-bold text-white">{language === 'en' ? 'Arena' : 'Арена'}</h2>
-            </div>
-            <button onClick={() => setShowRules(true)} className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors">
-              <Info className="w-4 h-4" /> {language === 'en' ? 'Rules' : 'Правила'}
-            </button>
+    <div className="arena-lobby animate-fade-in">
+      <section className="arena-lobby-stage">
+        <div className="arena-lobby-stage-art" aria-hidden="true" />
+        <div className="arena-lobby-heading">
+          <span className="arena-lobby-title"><Swords aria-hidden="true" />{en ? 'ARENA' : 'АРЕНА'}</span>
+          <button type="button" className="arena-lobby-rules" onClick={() => setShowRules(true)}>
+            <Info className="h-4 w-4" />{en ? 'Rules' : 'Правила'}
+          </button>
+        </div>
+        <div className="arena-lobby-characters" aria-hidden="true">
+          <img className="arena-lobby-character arena-lobby-character-hero" src={ART + 'heroes/male_viking/idle.webp'} alt="" />
+          <img className="arena-lobby-character arena-lobby-character-enemy" src={ART + 'bosses/northern_jarl/idle.webp'} alt="" />
+        </div>
+        <div className="arena-lobby-stats" aria-label={en ? 'Arena record' : 'Статистика арены'}>
+          <div className="arena-lobby-stat arena-lobby-stat-rating">
+            <Trophy className="arena-lobby-stat-icon" aria-hidden="true" />
+            <strong>{arena.rating.toLocaleString()}</strong><span>{en ? 'RATING' : 'РЕЙТИНГ'}</span>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <Stat label={language === 'en' ? 'Rating' : 'Рейтинг'} value={arena.rating} className="text-amber-400" />
-            <Stat label={language === 'en' ? 'Wins' : 'Победы'} value={arena.wins} className="text-emerald-400" />
-            <Stat label={language === 'en' ? 'Losses' : 'Поражения'} value={arena.losses} className="text-red-400" />
+          <div className="arena-lobby-stat arena-lobby-stat-wins">
+            <Crown className="arena-lobby-stat-icon" aria-hidden="true" />
+            <strong>{arena.wins.toLocaleString()}</strong><span>{en ? 'WINS' : 'ПОБЕДЫ'}</span>
           </div>
-          <div className="flex justify-center gap-4 mt-3 text-xs text-gray-400">
-            <span className="flex items-center gap-1 text-yellow-400"><Zap className="w-3 h-3" /> {state.player.energy}/{state.player.maxEnergy}</span>
+          <div className="arena-lobby-stat arena-lobby-stat-losses">
+            <Shield className="arena-lobby-stat-icon" aria-hidden="true" />
+            <strong>{arena.losses.toLocaleString()}</strong><span>{en ? 'LOSSES' : 'ПОРАЖЕНИЯ'}</span>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="card p-3">
-        <div className="flex items-center justify-between mb-2 px-0.5">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-300">{language === 'en' ? 'Potion belt' : 'Пояс с зельями'}</h3>
-          <span className="text-[10px] text-gray-500">{language === 'en' ? 'Only belt items can be used in battle' : 'в бою доступно только то, что на поясе'}</span>
-        </div>
-        <BeltBar
-          belt={state.belt}
-          ctx={beltContext(state, arena.wins)}
-          actionLabel={language === 'en' ? 'Tap a potion to return it to your bag. Add items from the inventory.' : 'Нажми на зелье, чтобы вернуть его в сумку. Положить — в инвентаре.'}
-          onAction={(i) => useGame.set((s) => takeFromBelt(s, i))}
-        />
-      </div>
+      <ArenaWeeklyBoard />
 
-      {noEnergy && (
-        <div className="card text-center text-sm text-amber-400">{language === 'en' ? 'Not enough energy. 1 point regenerates every 5 minutes.' : 'Не хватает энергии. 1 единица восстанавливается каждые 5 минут.'}</div>
-      )}
-      {error && <div className="card text-center text-sm text-red-400">{error}</div>}
-
-      <div className="space-y-3">
-        {MODES.map((m) => {
-          const Icon = m.icon;
-          const isJoining = joining === m.id;
+      <div className="arena-lobby-modes" role="group" aria-label={en ? 'Choose battle mode' : 'Выбери режим боя'}>
+        {MODES.map((option) => {
+          const Icon = option.icon;
+          const active = option.id === mode;
           return (
             <button
-              key={m.id}
-              disabled={noEnergy || !!joining}
-              onClick={() => join(m.id)}
-              className={`w-full text-left rounded-2xl p-4 border bg-gradient-to-br ${m.tint} transition-all hover:brightness-125 active:scale-[0.98] disabled:opacity-50 disabled:hover:brightness-100`}
+              key={option.id}
+              type="button"
+              className={`arena-mode-card arena-mode-${option.accent} ${active ? 'arena-mode-active' : ''}`}
+              aria-pressed={active}
+              onClick={() => { hapticImpact('light'); setMode(option.id); setError(null); }}
+              disabled={!!joining}
             >
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-black/30 flex items-center justify-center shrink-0">
-                  {isJoining ? <Loader2 className="w-7 h-7 animate-spin" /> : <Icon className="w-7 h-7" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2">
-                    <h3 className="text-lg font-bold text-white">{language === 'en' ? ({ duel: 'Duel', team: 'Squad', chaos: 'Chaos' } as Record<string, string>)[m.id] : m.title}</h3>
-                    <span className="text-sm font-semibold">{m.size}</span>
-                  </div>
-                  <p className="text-xs text-gray-300 leading-relaxed">{language === 'en' ? ({ duel: 'Classic one-on-one duel', team: 'Team fight: protect allies and choose targets', chaos: 'Random teams and all-out chaos' } as Record<string, string>)[m.id] : m.desc}</p>
-                  <p className="text-[11px] text-gray-400 mt-1">{m.bonus.replace('Награда', language === 'en' ? 'Reward' : 'Награда')} · {ENERGY_COST} {language === 'en' ? 'energy' : 'энергия'}</p>
-                </div>
-              </div>
+              <span className="arena-mode-art" aria-hidden="true"><img src={option.art} alt="" loading="lazy" /></span>
+              <span className="arena-mode-name"><Icon aria-hidden="true" />{en ? option.english : option.title}</span>
+              <span className="arena-mode-size">{en && option.id === 'duel' ? '1 vs 1' : en && option.id === 'team' ? '3 vs 3' : en && option.id === 'chaos' ? 'up to 20 vs 20' : option.size}</span>
+              <span className="arena-mode-description">{en ? option.descEn : option.desc}</span>
+              <span className="arena-mode-reward">{en ? 'Reward' : 'Награда'} {option.bonus}</span>
             </button>
           );
         })}
       </div>
 
+      <button type="button" className="arena-lobby-fight" onClick={() => void join()} disabled={noEnergy || !!joining}>
+        {joining ? <Loader2 className="h-7 w-7 animate-spin" /> : <Swords className="h-7 w-7" />}
+        {joining ? (en ? 'FINDING A FIGHT...' : 'ИЩЕМ СОПЕРНИКА...') : (en ? 'TO BATTLE' : 'В БОЙ')}
+      </button>
+      {noEnergy && <p className="arena-lobby-warning">{en ? 'Not enough energy to enter. One point regenerates every 5 minutes.' : 'Недостаточно энергии для входа. 1 единица восстанавливается каждые 5 минут.'}</p>}
+      {error && <p role="alert" className="arena-lobby-warning">{error}</p>}
+      <p className="arena-lobby-footer">{en ? 'Choose a mode and enter a real server battle' : 'Выбери режим и вступай в настоящий бой'}</p>
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
-    </div>
-  );
-}
-
-function Stat({ label, value, className }: { label: string; value: number; className: string }) {
-  return (
-    <div className="bg-black/25 rounded-lg py-2">
-      <div className={`text-lg font-bold ${className}`}>{value}</div>
-      <div className="text-[10px] text-gray-500 uppercase tracking-wide">{label}</div>
     </div>
   );
 }
