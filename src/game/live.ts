@@ -14,6 +14,8 @@ export interface GrantPayload {
   forgeMaterials?: number;
   items?: Record<string, number>;
   equipLevels?: Partial<Record<Equipment['slot'], number>>;
+  adminTestLevel?: boolean;
+  adminTestGearId?: string;
 }
 
 export interface MailGrant {
@@ -38,8 +40,9 @@ export const SHOP_SALE_FACTOR = 0.8;
 
 const nonNeg = (n: number) => Math.max(0, n);
 
-function setLevel(eq: Equipment, level: number, heroLevel: number): Equipment {
-  return capEquipmentToHeroLevel(setAdminEquipmentLevel(eq, level), heroLevel);
+function setLevel(eq: Equipment, level: number, heroLevel: number, ownerApproved = false): Equipment {
+  const item = setAdminEquipmentLevel(eq, level);
+  return ownerApproved ? { ...item, adminTestLevel: true } : capEquipmentToHeroLevel(item, heroLevel);
 }
 
 export function applyGrantPayload(state: GameState, p: GrantPayload): GameState {
@@ -78,7 +81,12 @@ export function applyGrantPayload(state: GameState, p: GrantPayload): GameState 
   const equipped = { ...state.player.equipped };
   for (const [slot, level] of Object.entries(p.equipLevels ?? {}) as [Equipment['slot'], number][]) {
     const eq = equipped[slot];
-    if (eq && level) equipped[slot] = setLevel(eq, level, state.player.level);
+    if (eq && level) {
+      // A grant only carries the owner marker for the exact equipped item it authorized.
+      // The server separately verifies the item ID and enforces its approved level.
+      const ownerApproved = p.adminTestLevel === true && p.adminTestGearId === eq.id;
+      equipped[slot] = setLevel(eq, level, state.player.level, ownerApproved);
+    }
   }
 
   return {
