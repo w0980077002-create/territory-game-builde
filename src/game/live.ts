@@ -16,6 +16,8 @@ export interface GrantPayload {
   equipLevels?: Partial<Record<Equipment['slot'], number>>;
   adminTestLevel?: boolean;
   adminTestGearId?: string;
+  /** Canonical level and stats from the owner-authorized server transaction. */
+  adminTestEquipment?: Equipment;
 }
 
 export interface MailGrant {
@@ -85,7 +87,11 @@ export function applyGrantPayload(state: GameState, p: GrantPayload): GameState 
       // A grant only carries the owner marker for the exact equipped item it authorized.
       // The server separately verifies the item ID and enforces its approved level.
       const ownerApproved = p.adminTestLevel === true && p.adminTestGearId === eq.id;
-      equipped[slot] = setLevel(eq, level, state.player.level, ownerApproved);
+      const trusted = p.adminTestEquipment;
+      equipped[slot] = ownerApproved && trusted?.id === eq.id
+        && trusted.slot === slot && trusted.level === level
+        && trusted.adminTestLevel === true
+        ? trusted : setLevel(eq, level, state.player.level, ownerApproved);
     }
   }
 
