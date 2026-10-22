@@ -3,12 +3,15 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { LanguageProvider } from '@/game/i18n';
+import { captureGameOpen } from '@/game/analytics';
 
 const AdminApp = lazy(() => import('@/admin/AdminApp').then((m) => ({ default: m.AdminApp })));
 const isAdminRoute =
   window.location.pathname.replace(/\/+$/, '') === '/admin' ||
   window.location.hash === '#admin' ||
   new URLSearchParams(window.location.search).has('admin');
+
+if (!isAdminRoute) captureGameOpen();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
