@@ -96,7 +96,8 @@ export interface PlayerSummary {
   lastSeenAt: string | null;
   resources: Record<'gold' | 'gems' | 'redGems' | 'stones' | 'forgeMaterials', number>;
   items: Record<string, number>;
-  equipped: Record<string, { name: string; level: number }>;
+  equipped: Record<string, { name: string; level: number; attack: number; defense: number; hp: number; critChance: number; adminTestLevel?: boolean }>;
+  combatStats?: { attack: number; defense: number; hp: number; critChance: number };
   reasons?: string[];
 }
 
