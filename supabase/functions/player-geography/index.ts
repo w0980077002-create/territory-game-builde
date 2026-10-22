@@ -10,7 +10,7 @@ const cors = {
 };
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("", { status: 204, headers: cors });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return Response.json({ error: "method_not_allowed" }, { status: 405, headers: cors });
 
   const bearer = req.headers.get("authorization") ?? "";
