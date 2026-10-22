@@ -611,3 +611,162 @@
   .arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-avatar{width:29px;height:34px;}
   .arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-player-name{font-size:10px;}
 }
+
+/* Arena finish: the empty strip below the weekly ranking becomes a low-cost,
+   continuous stone-floor backdrop. No other game's background is altered. */
+.territory-arena-theme .territory-screen {
+  background:
+    radial-gradient(ellipse 83% 46% at 50% 98%, rgba(126,79,32,.22), transparent 80%),
+    repeating-linear-gradient(173deg, rgba(255,211,139,.035) 0 1px, transparent 1px 35px),
+    linear-gradient(180deg,#0d2236 0%,#101f2c 68%,#242329 100%);
+}
+.territory-arena-theme .arena-screen-shell {
+  display:flex;
+  flex-direction:column;
+  min-height:100%;
+  background:transparent;
+}
+.territory-arena-theme .arena-approved-entry {
+  display:flex;
+  flex:1;
+  flex-direction:column;
+  min-height:100%;
+  background:linear-gradient(180deg, #102840 0%, #11283c 71%, #25242a 100%);
+}
+.territory-arena-theme .arena-approved-entry::after {
+  content:"";
+  flex:1 1 auto;
+  display:block;
+  min-height:6px;
+  pointer-events:none;
+  background:
+    linear-gradient(180deg,transparent,rgba(132,82,42,.18)),
+    repeating-linear-gradient(100deg,transparent 0 52px,rgba(222,162,87,.06) 53px 54px,transparent 55px 107px);
+}
+/* Subtle stadium torch-glow, not a large animated video or CPU-heavy filter. */
+.territory-arena-theme .arena-approved-stadium::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse 10% 45% at 5% 74%,rgba(255,175,61,.46),rgba(255,83,8,.08) 60%,transparent 80%),
+    radial-gradient(ellipse 10% 45% at 95% 74%,rgba(255,175,61,.46),rgba(255,83,8,.08) 60%,transparent 80%);
+  mix-blend-mode:screen;
+  animation:arena-torches 3.6s ease-in-out infinite alternate;
+}
+.territory-arena-theme .arena-approved-stats::before {
+  content:"";
+  position:absolute;
+  inset:6px 16px;
+  pointer-events:none;
+  background:linear-gradient(105deg, transparent 0%,rgba(255,236,179,.1) 38%,rgba(255,221,136,.21) 49%,transparent 64%);
+  border-radius:6px;
+  opacity:.5;
+  animation:arena-stat-glimmer 8s ease-in-out infinite alternate;
+}
+.territory-arena-theme .arena-weekly-podium::before {
+  content:"";
+  position:absolute;
+  inset:1px;
+  border-radius:9px;
+  pointer-events:none;
+  background:linear-gradient(115deg,rgba(255,235,169,.17),transparent 38%);
+  opacity:.9;
+}
+.arena-approved-entry .arena-weekly-chase {
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin:8px 0 3px;
+  padding:9px 10px 8px;
+  border:1px solid #b58b4c;
+  border-radius:10px;
+  background:
+    radial-gradient(ellipse at 50% 0%,rgba(232,154,52,.18),transparent 78%),
+    linear-gradient(180deg,#24394b,#10233a);
+  box-shadow:inset 0 1px 0 rgba(255,230,155,.35),0 2px 5px rgba(0,5,13,.5);
+}
+.arena-approved-entry .arena-weekly-chase-top {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-width:0;
+}
+.arena-approved-entry .arena-weekly-chase-heading {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  min-width:0;
+  color:#ffdf9d;
+  font-weight:950;
+  font-size:clamp(10px,2.8vw,12px);
+  line-height:1.2;
+  white-space:nowrap;
+}
+.arena-approved-entry .arena-weekly-chase-heading svg {
+  flex-shrink:0;
+  width:17px;
+  height:17px;
+  color:#ffc35d;
+  filter:drop-shadow(0 2px 2px #000b);
+}
+.arena-approved-entry .arena-weekly-chase-top strong {
+  flex-shrink:0;
+  color:#85f5bc;
+  font-size:clamp(11px,3.1vw,14px);
+  font-weight:1000;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+  text-shadow:0 2px 3px #031a18;
+}
+.arena-approved-entry .arena-weekly-chase-track {
+  position:relative;
+  width:100%;
+  height:9px;
+  border:1px solid #725129;
+  border-radius:99px;
+  background:linear-gradient(180deg,#070e19,#091624);
+  overflow:hidden;
+  box-shadow:inset 0 2px 4px #0009;
+}
+.arena-approved-entry .arena-weekly-chase-track > span {
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:0;
+  display:block;
+  min-width:2%;
+  border-radius:99px;
+  background:linear-gradient(180deg,#fff1aa,#f6bd38 50%,#c87920);
+  box-shadow:inset 0 1px 0 #fffcd3c4,1px 0 5px #ffd0676b;
+  transition:width .3s ease-out;
+}
+.arena-approved-entry .arena-weekly-chase-note {
+  font-size:9px;
+  line-height:1.2;
+  color:#9fb5cd;
+}
+@keyframes arena-torches {
+  from{opacity:.42;transform:translateY(0);}
+  to{opacity:1;transform:translateY(-2px);}
+}
+@keyframes arena-stat-glimmer {from{opacity:.18}to{opacity:.52}}
+@media(max-width:365px) {
+  .arena-approved-entry .arena-weekly-chase {padding:7px 8px;}
+  .arena-approved-entry .arena-weekly-chase-top {gap:4px;}
+  .arena-approved-entry .arena-weekly-chase-heading {font-size:9px;gap:3px;}
+  .arena-approved-entry .arena-weekly-chase-top strong {font-size:10px;}
+  .arena-approved-entry .arena-weekly-chase-heading svg {width:14px;height:14px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .territory-arena-theme .arena-approved-stadium::before,
+  .territory-arena-theme .arena-approved-stats::before {
+    animation:none;
+    opacity:.4;
+  }
+  .arena-approved-entry .arena-weekly-chase-track > span {transition:none;}
+}
