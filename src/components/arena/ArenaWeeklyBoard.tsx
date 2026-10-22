@@ -61,14 +61,18 @@ export function ArenaWeeklyBoard() {
       {visible.length > 0 && (
         <div className={expanded ? 'arena-weekly-rows arena-weekly-rows-expanded' : 'arena-weekly-rows'}>
           {visible.map((player) => (
-            <div className="arena-weekly-player" key={player.player_id}>
+            <div
+              className={`arena-weekly-player ${player.rank <= 3 ? 'arena-weekly-podium' : ''} ${player.arenaBot ? 'arena-weekly-npc' : ''} ${!player.arenaBot && player.rank === display?.displayRank ? 'arena-weekly-mine' : ''}`}
+              key={player.player_id}
+              aria-label={`${player.rank}. ${player.display_name}: ${player.wins} ${en ? 'wins' : 'побед'}`}
+            >
               <span className={`arena-weekly-rank arena-weekly-rank-${Math.min(4, player.rank)}`}>{player.rank}</span>
               <span className="arena-weekly-avatar"><img src={getAppearanceIcon(player.appearance)} alt="" loading="lazy" /></span>
               <span className="arena-weekly-player-name" title={player.arenaBot ? (en ? 'Arena AI opponent' : 'Боец арены: игровой бот') : player.display_name}>
-                {player.display_name}
+                <span className="arena-weekly-name-text">{player.display_name}</span>
                 {player.arenaBot ? <small>{en ? 'Arena rival' : 'Соперник арены'}</small> : <small>{en ? 'Lv.' : 'Ур.'} {player.level}</small>}
               </span>
-              <span className="arena-weekly-wins"><Trophy className="h-3 w-3" />{player.wins}</span>
+              <span className="arena-weekly-wins"><Trophy aria-hidden="true" />{player.wins.toLocaleString('ru-RU')}</span>
             </div>
           ))}
         </div>
