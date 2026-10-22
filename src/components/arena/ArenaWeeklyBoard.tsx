@@ -4,6 +4,7 @@ import { useLanguage } from '@/game/i18n';
 import { getAppearanceIcon } from '@/game/appearance';
 import { getArenaWeeklyStatus, type ArenaWeeklyStatus } from '@/game/arenaWeekly';
 import { seasonWindow, seasonCountdown } from '@/game/seasonCalendar';
+import { arenaWeeklyWithBots } from '@/game/arenaWeeklyBots';
 
 export function ArenaWeeklyBoard() {
   const { language } = useLanguage();
@@ -37,7 +38,8 @@ export function ArenaWeeklyBoard() {
 
   const week = seasonWindow(now);
   const current = status && Date.parse(status.starts_at) === week.startsAt && Date.parse(status.ends_at) === week.endsAt;
-  const rows = current ? status.leaders : [];
+  const display = current ? arenaWeeklyWithBots(status, now) : null;
+  const rows = display?.leaders ?? [];
   const visible = expanded ? rows : rows.slice(0, 3);
 
   return (
@@ -62,7 +64,10 @@ export function ArenaWeeklyBoard() {
             <div className="arena-weekly-player" key={player.player_id}>
               <span className={`arena-weekly-rank arena-weekly-rank-${Math.min(4, player.rank)}`}>{player.rank}</span>
               <span className="arena-weekly-avatar"><img src={getAppearanceIcon(player.appearance)} alt="" loading="lazy" /></span>
-              <span className="arena-weekly-player-name" title={player.display_name}>{player.display_name}<small>{en ? 'Lv.' : 'Ур.'} {player.level}</small></span>
+              <span className="arena-weekly-player-name" title={player.arenaBot ? (en ? 'Arena AI opponent' : 'Боец арены: игровой бот') : player.display_name}>
+                {player.display_name}
+                {player.arenaBot ? <small>{en ? 'Arena rival' : 'Соперник арены'}</small> : <small>{en ? 'Lv.' : 'Ур.'} {player.level}</small>}
+              </span>
               <span className="arena-weekly-wins"><Trophy className="h-3 w-3" />{player.wins}</span>
             </div>
           ))}
@@ -70,7 +75,7 @@ export function ArenaWeeklyBoard() {
       )}
       {current && (
         <div className="arena-weekly-foot">
-          <span>{status.my_rank ? (en ? `Your place: #${status.my_rank} · ${status.my_wins} wins` : `Твоё место: №${status.my_rank} · ${status.my_wins} побед`) : (en ? `Your wins: ${status.my_wins}` : `Твои победы: ${status.my_wins}`)}</span>
+          <span>{display?.displayRank ? (en ? `Your place: #${display.displayRank} · ${status.my_wins} wins` : `Твоё место: №${display.displayRank} · ${status.my_wins} побед`) : status.my_rank ? (en ? `Real-player rank: #${status.my_rank} · ${status.my_wins} wins` : `Среди игроков: №${status.my_rank} · ${status.my_wins} побед`) : (en ? `Your wins: ${status.my_wins}` : `Твои победы: ${status.my_wins}`)}</span>
           {rows.length > 3 && (
             <button type="button" className="arena-weekly-expand" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
               {expanded ? (en ? 'Collapse' : 'Свернуть') : (en ? 'All leaders' : 'Весь ТОП')} <ChevronRight className="h-4 w-4" />
@@ -79,7 +84,8 @@ export function ArenaWeeklyBoard() {
         </div>
       )}
       {failed && current ? <span className="arena-weekly-note"><RefreshCw className="inline h-3 w-3 mr-1" />{en ? 'Showing last verified results' : 'Последние подтверждённые результаты'}</span> : null}
-      <p className="arena-weekly-note">{en ? 'Wins reset every Sunday (Kyiv time). Lifetime wins are preserved.' : 'Каждое воскресенье — новая неделя. Общие победы сохраняются.'}</p>
+      <p className="arena-weekly-note">{en ? 'Positions 10–50 may include Arena AI opponents with seasonal target scores. Real player wins and rewards remain server-verified.' : 'Места 10–50 могут занимать боты арены с условными сезонными победами. Настоящие победы и награды игроков подтверждает сервер.'}</p>
+      <p className="arena-weekly-note">{en ? 'New season every Sunday (Kyiv time). Lifetime wins remain.' : 'Каждое воскресенье — новый сезон. Общие победы сохраняются.'}</p>
     </section>
   );
 }
