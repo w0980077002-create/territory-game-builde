@@ -6,7 +6,7 @@ import { secureArenaJoin } from '@/game/arenaSecure';
 import { hapticImpact } from '@/game/telegram';
 import { IosGamePortal } from '@/components/ui/Modal';
 import { useLanguage, localizeText } from '@/game/i18n';
-import { ChevronLeft, Crown, Flame, Info, Loader2, Shield, Swords, Trophy, Users, X } from 'lucide-react';
+import { ChevronLeft, Crown, Flame, Info, Loader2, Skull, Swords, Trophy, Users, X } from 'lucide-react';
 import { ArenaWeeklyBoard } from './ArenaWeeklyBoard';
 import './arenaLobby.css';
 
@@ -79,10 +79,10 @@ export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
             <button type="button" onClick={() => setShowRules(true)} className="arena-lobby-rules"><Info className="h-4 w-4" />{en ? 'Rules' : 'Правила'}</button>
           </div>
         )}
-        <div className="arena-approved-stats" aria-label={en ? 'Arena statistics' : 'Статистика арены'}>
+        <div className="arena-approved-stats" style={{ backgroundImage: `url("${APPROVED}arena-stats-ornament.svg")` }} aria-label={en ? 'Arena statistics' : 'Статистика арены'}>
           <div className="arena-approved-stat arena-approved-stat-rating"><Trophy aria-hidden="true" /><strong>{arena.rating.toLocaleString('ru-RU')}</strong><span>{en ? 'RATING' : 'РЕЙТИНГ'}</span></div>
           <div className="arena-approved-stat arena-approved-stat-wins"><Crown aria-hidden="true" /><strong>{arena.wins.toLocaleString('ru-RU')}</strong><span>{en ? 'WINS' : 'ПОБЕДЫ'}</span></div>
-          <div className="arena-approved-stat arena-approved-stat-losses"><Shield aria-hidden="true" /><strong>{arena.losses.toLocaleString('ru-RU')}</strong><span>{en ? 'LOSSES' : 'ПОРАЖЕНИЯ'}</span></div>
+          <div className="arena-approved-stat arena-approved-stat-losses"><Skull aria-hidden="true" /><strong>{arena.losses.toLocaleString('ru-RU')}</strong><span>{en ? 'LOSSES' : 'ПОРАЖЕНИЯ'}</span></div>
         </div>
       </section>
 
