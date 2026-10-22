@@ -338,7 +338,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'map' && <MapScreen />}
         {screen === 'shop' && <ShopScreen />}
         {screen === 'forge' && <ForgeScreen />}
-        {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} />}
+        {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => setScreen('leaderboard')} notify={notify} saveStatus={saveStatus} />}
         {screen === 'leaderboard' && <LeaderboardScreen user={user} />}
         {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} />}
         {screen === 'games' && (
