@@ -292,7 +292,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             : 'Прогресс не сохранён! Не закрывайте игру, проверьте сеть.'}
         </div>
       )}
-      {sub && (
+      {sub && screen !== 'arena' && (
         <header className="shrink-0 z-30 h-12 px-2 flex items-center gap-2 border-b border-amber-500/20 bg-[#0c1117]/95">
           <button disabled={battleLocked} onClick={() => setScreen('city')} className="h-9 pl-1.5 pr-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 text-sm font-semibold text-amber-100 bg-white/5 border border-white/10 active:scale-95 transition-transform">
             <ChevronLeft className="w-4 h-4" /> {translate('cityBack')}
@@ -338,7 +338,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'map' && <MapScreen />}
         {screen === 'shop' && <ShopScreen />}
         {screen === 'forge' && <ForgeScreen />}
-        {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} />}
+        {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} />}
         {screen === 'leaderboard' && <LeaderboardScreen user={user} />}
         {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} />}
         {screen === 'games' && (
