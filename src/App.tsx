@@ -254,15 +254,13 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const navActive: NavId = screen === 'hall-play' ? 'games' : screen === 'arena' ? 'battle' : sub ? 'city' : (screen as NavId);
 
   const goNav = (id: NavId) => {
-    // Battle icon is the active tab while visiting the Arena entrance.
-    if (screen === 'arena' && id === 'battle') return;
     if (id === 'battle') setBattleView('campaign');
     setScreen(id);
   };
 
   return (
     <div
-      className={`territory-shell flex flex-col max-w-md mx-auto overflow-hidden relative ${screen === 'hall-play' && hallGame === 'wheel' ? 'territory-wheel-open' : ''}`}
+      className={`territory-shell flex flex-col max-w-md mx-auto overflow-hidden relative ${screen === 'hall-play' && hallGame === 'wheel' ? 'territory-wheel-open' : ''} ${screen === 'arena' ? 'territory-arena-theme' : ''}`}
       // Android Chrome/WebView displays the public image URL on long-press.
       // Block native context menus only on game art and controls, never on
       // chat messages, input fields, or other selectable player content.
@@ -380,16 +378,13 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           {NAV.map((t) => {
             const active = navActive === t.id;
             const center = t.id === 'battle';
-            const navLabel = screen === 'arena' && t.id === 'battle'
-              ? (language === 'en' ? 'Arena' : 'Арена')
-              : tNav(translate, t.label);
             return (
               <button
                 key={t.id}
                 disabled={battleLocked}
                 onClick={() => goNav(t.id)}
                 aria-current={active ? 'page' : undefined}
-                aria-label={t.id === 'map' && gatherReady ? `${navLabel} — ${language === 'en' ? 'resources ready' : 'ресурсы готовы'}` : navLabel}
+                aria-label={t.id === 'map' && gatherReady ? `${tNav(translate, t.label)} — ${language === 'en' ? 'resources ready' : 'ресурсы готовы'}` : tNav(translate, t.label)}
                 className={`nav-btn relative disabled:opacity-40 disabled:cursor-not-allowed ${
                   center
                     ? `-mt-3 h-[70px] border-sky-300/60 bg-gradient-to-b from-sky-600/60 to-[#0d1a33] shadow-[0_0_14px_rgba(56,189,248,0.35)] ${active ? 'ring-2 ring-sky-300/70' : ''}`
@@ -409,7 +404,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
                     <BellRing className="w-2.5 h-2.5 text-white" />
                   </span>
                 )}
-                <span className={`territory-nav-label text-[9px] tracking-tight font-bold max-w-full ${active || center ? 'text-white' : 'text-gray-400'}`}>{navLabel}</span>
+                <span className={`territory-nav-label text-[9px] tracking-tight font-bold max-w-full ${active || center ? 'text-white' : 'text-gray-400'}`}>{tNav(translate, t.label)}</span>
               </button>
             );
           })}
