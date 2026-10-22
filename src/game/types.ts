@@ -33,6 +33,8 @@ export interface Equipment {
   baseStats?: EquipmentBaseStats;
   /** Number of successful forge upgrades. */
   upgradeCount?: number;
+  /** Display hint only. The database independently validates owner-approved test gear by item ID. */
+  adminTestLevel?: boolean;
 }
 
 export interface InventoryItem {
