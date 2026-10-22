@@ -37,6 +37,7 @@ for (const name of canonicalNames) {
 assert.match(roster, /arenaBot: true/, 'Leaderboard entries must be distinguishable from people');
 assert.match(roster, /rank <= 9/, 'Player-only first nine positions must be protected');
 assert.match(roster, /remaining\.slice\(0, 41\)/, 'NPC fillers cannot extend beyond place 50');
+assert.match(roster, /50 - Math\.max\(9, humans\.length\)/, 'NPCs must vacate rankings as 50 real players arrive');
 assert.match(weeklyUI, /arenaWeeklyWithBots/, 'Weekly ranking should merge verified players with NPC placeholders');
 assert.match(weeklyUI, /боты арены/, 'NPC origin must not be hidden in the public UI');
 assert.doesNotMatch(roster, /supabase\.(?:from|rpc)|update\(|insert\(|delete\(/i,
