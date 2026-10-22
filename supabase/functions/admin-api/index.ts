@@ -334,6 +334,25 @@ async function handle(action: string, body: Row) {
       const id = playerId(body.playerId);
       const payload = cleanPayload(body.payload);
       if (!Object.keys(payload).length) throw new HttpError(400, "empty_payload");
+      // Existing deployed/cached admin UI still posts equipLevels via adjust.
+      // Route exactly one equipment-only edit through the same owner-authorized
+      // server pathway as the new UI. Never create an ordinary capped gear grant.
+      const legacyLevels = payload.equipLevels as Record<string, number> | undefined;
+      const legacySlots = legacyLevels ? Object.keys(legacyLevels) : [];
+      if (Object.keys(payload).length === 1 && legacySlots.length === 1) {
+        const slot = legacySlots[0];
+        const level = legacyLevels![slot];
+        const { data, error } = await db.rpc("territory_owner_authorize_test_gear_v1", {
+          p_player: id, p_slot: slot, p_level: level,
+        });
+        if (error) {
+          if (error.message.includes("admin_player_missing")) throw new HttpError(404, "not_found");
+          if (error.message.includes("admin_equipment_missing")) throw new HttpError(409, "invalid_request");
+          throw new HttpError(500, "db_error");
+        }
+        await audit("set_test_gear_level", { playerId: id, slot, level, legacy: true, grantId: data?.grantId });
+        return { ok: true, ...data };
+      }
       const { error } = await db.from("admin_grants").insert({ player_id: id, kind: "adjust", payload });
       if (error) throw new HttpError(500, "db_error");
       await audit("adjust", { playerId: id, payload });
