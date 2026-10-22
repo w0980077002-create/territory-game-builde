@@ -55,6 +55,30 @@ type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan'
 type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends';
 type Screen = NavId | SubScreen;
 
+/** Warm only the navigation chunks people are most likely to open.
+ * React.lazy and these import() calls share the same browser module cache.
+ * No server requests, game state writes, or speculative mini-game sessions.
+ */
+const sectionPreloaders: Partial<Record<Screen, () => Promise<unknown>>> = {
+  inventory: () => import('@/components/InventoryScreen'),
+  battle: () => import('@/components/BattleScreen'),
+  map: () => import('@/components/MapScreen'),
+  games: () => import('@/components/GamesScreen'),
+  hero: () => import('@/components/ProfileScreen'),
+  arena: () => import('@/components/ArenaScreen'),
+  clan: () => import('@/components/ClanScreen'),
+  shop: () => import('@/components/ShopScreen'),
+  forge: () => import('@/components/ForgeScreen'),
+  quests: () => import('@/components/QuestsScreen'),
+  leaderboard: () => import('@/components/LeaderboardScreen'),
+  friends: () => import('@/components/FriendsScreen'),
+};
+
+function preloadSection(screen: Screen): Promise<unknown> {
+  const load = sectionPreloaders[screen];
+  return load ? load().catch(() => undefined) : Promise.resolve();
+}
+
 const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
   { id: 'city', label: 'Город', icon: '/nav-city.webp' },
   { id: 'inventory', label: 'Инвентарь', icon: '/nav-inventory.webp' },
@@ -129,6 +153,35 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const questAlerts = getQuestAlerts(game, socialClaims, seenQuestKeys);
   const onSocialStatusChange = useCallback((next: SocialStatus) => setSocialClaims(next), []);
   useLiveSync(loaded);
+
+  // Idle, sequential chunk warming removes Telegram WebView's first-tap
+  // JavaScript download delay. Avoid flooding constrained/mobile data.
+  useEffect(() => {
+    if (!loaded) return;
+    const connection = (navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+    }).connection;
+    if (connection?.saveData || /2g/.test(connection?.effectiveType ?? '')) return;
+    const fast = !connection?.effectiveType || connection.effectiveType === '4g';
+    const screens: Screen[] = fast
+      ? ['inventory', 'battle', 'map', 'games', 'hero', 'arena', 'clan', 'shop', 'forge', 'quests', 'leaderboard', 'friends']
+      : ['inventory', 'battle', 'map', 'games'];
+    let cancelled = false;
+    let timer = 0;
+    let nextIndex = 0;
+    const warmNext = async () => {
+      if (cancelled || nextIndex >= screens.length) return;
+      if (document.visibilityState === 'hidden') {
+        timer = window.setTimeout(() => { void warmNext(); }, 1_500);
+        return;
+      }
+      await preloadSection(screens[nextIndex++]);
+      if (!cancelled) timer = window.setTimeout(() => { void warmNext(); }, 950);
+    };
+    timer = window.setTimeout(() => { void warmNext(); }, 1_000);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [loaded]);
+
 
   // Expiring VIP is refreshed against server time, including WebView resume.
   useEffect(()=>{
