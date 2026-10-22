@@ -319,7 +319,7 @@ async function handle(action: string, body: Row) {
       const slot = String(body.slot ?? "");
       if (!(SLOTS as readonly string[]).includes(slot)) throw new HttpError(400, "invalid_request");
       const level = intIn(body.level, 1, 500);
-      const { data, error } = await db.rpc("territory_owner_authorize_test_gear_v1", {
+      const { data, error } = await db.rpc("territory_owner_apply_test_gear_v2", {
         p_player: id, p_slot: slot, p_level: level,
       });
       if (error) {
@@ -342,7 +342,7 @@ async function handle(action: string, body: Row) {
       if (Object.keys(payload).length === 1 && legacySlots.length === 1) {
         const slot = legacySlots[0];
         const level = legacyLevels![slot];
-        const { data, error } = await db.rpc("territory_owner_authorize_test_gear_v1", {
+        const { data, error } = await db.rpc("territory_owner_apply_test_gear_v2", {
           p_player: id, p_slot: slot, p_level: level,
         });
         if (error) {
