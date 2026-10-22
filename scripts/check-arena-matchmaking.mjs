@@ -43,3 +43,6 @@ assert.match(weeklyUI, /боты арены/, 'NPC origin must not be hidden in 
 assert.doesNotMatch(roster, /supabase\.(?:from|rpc)|update\(|insert\(|delete\(/i,
   'Leaderboard filler may never mutate authoritative PvP game state');
 console.log('Weekly Arena top: 40 canonical PvP bot names, player-only top 9 and safe visual 10–50 fillers.');
+
+// Run daily NPC score and weekly reset tests alongside existing Arena regression checks.
+await import('./check-arena-bot-leaderboard.mjs');
