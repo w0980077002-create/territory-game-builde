@@ -1,4 +1,5 @@
 import type { ArenaWeeklyPlayer, ArenaWeeklyStatus } from './arenaWeekly';
+import { seasonWindow } from './seasonCalendar';
 
 /**
  * Arena's existing SQL bot-name pool (arena_start_room, production database).
@@ -41,12 +42,11 @@ function stableHash(text: string): number {
 }
 
 /**
- * Place canonical arena bots only at 10..50 (the first nine slots are
- * exclusively server-confirmed players). Server-confirmed users compete
- * against the seasonal bot targets for the remaining positions.
- *
- * Bot scores rise gently as the week advances and never touch Supabase.
- * Use a fixed week start so all users see the same roster and scores.
+ * Real PvP bot names fill vacant TOP-50 slots, never ranks 1–9.
+ * Display-only wins accumulate 17–25 each Kyiv calendar day (Sunday included).
+ * All viewers see exactly the same per-bot totals throughout a day; the
+ * Sunday reset is computed from the authoritative weekly start/end.
+ * No timers, accounts, database writes, payouts or real-user score edits.
  */
 export function arenaWeeklyWithBots(
   verified: ArenaWeeklyStatus,
@@ -65,18 +65,36 @@ export function arenaWeeklyWithBots(
     return { leaders: humans, displayRank: verified.my_rank, isDisplayRankVerified: true };
   }
 
-  const currentDay = Math.min(6, Math.floor((now - start) / 86_400_000));
-  const week = verified.starts_at.slice(0, 10);
-  // Fixed, attainable tournament targets, rising over a Sunday-Sunday season.
-  let ceiling = 6 + currentDay * 3;
-  const lastProtected = humans.find((p) => p.rank === 9);
-  if (lastProtected) ceiling = Math.min(ceiling, Math.max(1, lastProtected.wins));
-  ceiling = Math.max(1, ceiling);
+  const season = seasonWindow(now);
+  if (season.startsAt !== start || season.endsAt !== end) {
+    return { leaders: humans, displayRank: verified.my_rank, isDisplayRankVerified: true };
+  }
+  // Kyiv-local midnight, not the device's time zone and not UTC midnight.
+  // Civil calendar day difference remains correct during daylight-saving changes.
+  let dayParts: Intl.DateTimeFormatPart[];
+  try {
+    dayParts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(new Date(now));
+  } catch {
+    dayParts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Kiev', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(new Date(now));
+  }
+  const datePart = (type: string) => Number(dayParts.find((p) => p.type === type)?.value);
+  const dayUtc = Date.UTC(datePart('year'), datePart('month') - 1, datePart('day'));
+  const [startYear, startMonth, startDay] = season.weekKey.split('-').map(Number);
+  const startDayUtc = Date.UTC(startYear, startMonth - 1, startDay);
+  const currentDay = Math.min(6, Math.max(0, Math.round((dayUtc - startDayUtc) / 86_400_000)));
+  const week = season.weekKey;
 
-  const bots: ArenaWeeklyDisplayPlayer[] = ARENA_PVP_BOT_NAMES.map((name, index) => {
+  const bots: ArenaWeeklyDisplayPlayer[] = ARENA_PVP_BOT_NAMES.map((name) => {
     const seed = stableHash(week + ':' + name);
-    const sequence = (index + seed % 41) % 41;
-    const victories = Math.max(1, ceiling - Math.floor(sequence * ceiling / 41));
+    // Different for each bot and each day, stable on reload and across devices.
+    let victories = 0;
+    for (let day = 0; day <= currentDay; day += 1) {
+      victories += 17 + stableHash(week + ':' + name + ':' + day) % 9;
+    }
     const female = FEMALE_BOT_NAMES.has(name);
     return {
       player_id: 'arena-npc:' + name,
