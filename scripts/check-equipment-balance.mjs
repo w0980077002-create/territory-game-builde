@@ -278,7 +278,13 @@ const guardSql = fs.readFileSync(path.join(root, 'supabase/migrations/20261018_p
 assert.match(actionsAfter, /capEquipmentToHeroLevel\(prepareNewEquipment/, 'shop caps every new purchased item');
 assert.match(actionsAfter, /capEquipmentToHeroLevel\(item\.equipment, state\.player\.level\)/, 'equipping never bypasses hero-level cap');
 assert.match(cloudAfter, /capEquipmentToHeroLevel\(eq, heroLevel\)/, 'cloud loaded equipment is capped');
-assert.match(liveAfter, /capEquipmentToHeroLevel\(setAdminEquipmentLevel\(eq, level\), heroLevel\)/, 'admin raises cannot bypass cap');
+assert.match(liveAfter, /ownerApproved \? \{ \.\.\.item, adminTestLevel: true \} : capEquipmentToHeroLevel\(item, heroLevel\)/,
+  'only the explicit owner test grant may bypass the local hero-level cap');
+assert.match(liveAfter, /p\.adminTestLevel === true && p\.adminTestGearId === eq\.id/,
+  'owner test grants must bind to the exact equipped item ID');
+const ownerTestSql = fs.readFileSync(path.join(root, 'supabase/migrations/20261022_owner_test_equipment_levels.sql'), 'utf8');
+assert.match(ownerTestSql, /REVOKE ALL ON FUNCTION public\.territory_owner_authorize_test_gear_v1/,
+  'ordinary accounts cannot authorize over-level gear on the server');
 assert.match(guardSql, /BEFORE INSERT OR UPDATE OF game_state, attack, defense, max_hp, crit_chance/);
 assert.match(guardSql, /cap_overlevel_state_20261018\(/);
 
