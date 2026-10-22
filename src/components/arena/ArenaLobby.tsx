@@ -3,13 +3,11 @@ import { useStore } from '@/game/store';
 import { useGame, useArena } from '@/game/actions';
 import type { ArenaMode } from '@/game/arenaApi';
 import { secureArenaJoin } from '@/game/arenaSecure';
-import { beltContext, takeFromBelt } from '@/game/belt';
 import { hapticImpact } from '@/game/telegram';
 import { IosGamePortal } from '@/components/ui/Modal';
 import { useLanguage, localizeText } from '@/game/i18n';
-import { ChevronLeft, Crown, Flame, Info, Loader2, Shield, Swords, Trophy, Users, X, Zap } from 'lucide-react';
+import { ChevronLeft, Crown, Flame, Info, Loader2, Shield, Swords, Trophy, Users, X } from 'lucide-react';
 import { ArenaWeeklyBoard } from './ArenaWeeklyBoard';
-import { BeltBar } from './BeltBar';
 import './arenaLobby.css';
 
 const ENERGY_COST = 1;
@@ -86,15 +84,6 @@ export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
           <div className="arena-approved-stat arena-approved-stat-wins"><Crown aria-hidden="true" /><strong>{arena.wins.toLocaleString('ru-RU')}</strong><span>{en ? 'WINS' : 'ПОБЕДЫ'}</span></div>
           <div className="arena-approved-stat arena-approved-stat-losses"><Shield aria-hidden="true" /><strong>{arena.losses.toLocaleString('ru-RU')}</strong><span>{en ? 'LOSSES' : 'ПОРАЖЕНИЯ'}</span></div>
         </div>
-        <div className="arena-approved-energy"><Zap className="h-4 w-4" aria-hidden="true" /><span>{state.player.energy}/{state.player.maxEnergy}</span></div>
-      </section>
-
-      <section className="arena-approved-belt" aria-label={en ? 'Combat potions' : 'Пояс с зельями'}>
-        <div className="arena-approved-belt-title"><strong>{en ? 'POTION BELT' : 'ПОЯС С ЗЕЛЬЯМИ'}</strong>
-          <span>{en ? 'Only equipped potions work in Arena battles' : 'В бою доступно только то, что на поясе'}</span></div>
-        <BeltBar belt={state.belt} ctx={beltContext(state, arena.wins)}
-          actionLabel={en ? 'Tap an item to return it to the bag; add potions from inventory.' : 'Нажми на зелье, чтобы вернуть его в сумку. Положить — в инвентаре.'}
-          onAction={(i) => useGame.set((s) => takeFromBelt(s, i))} />
       </section>
 
       <section className="arena-approved-modes" aria-label={en ? 'Battle modes' : 'Режимы боя'}>
