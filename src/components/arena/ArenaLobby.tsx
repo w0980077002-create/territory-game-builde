@@ -6,36 +6,73 @@ import { secureArenaJoin } from '@/game/arenaSecure';
 import { hapticImpact } from '@/game/telegram';
 import { IosGamePortal } from '@/components/ui/Modal';
 import { useLanguage, localizeText } from '@/game/i18n';
-import { Crown, Flame, Info, Loader2, Shield, Swords, Trophy, Users, X } from 'lucide-react';
+import { ChevronLeft, Crown, Flame, Info, Loader2, Shield, Swords, Trophy, Users, X } from 'lucide-react';
 import { ArenaWeeklyBoard } from './ArenaWeeklyBoard';
 import './arenaLobby.css';
 
 const ENERGY_COST = 1;
 const ART = import.meta.env.BASE_URL + 'assets/territory/characters/';
-const MODES: { id: ArenaMode; title: string; english: string; size: string; desc: string; descEn: string; bonus: string; icon: typeof Swords; art: string; accent: string }[] = [
-  { id: 'duel', title: 'Дуэль', english: 'Duel', size: '1 на 1', desc: 'Один на один', descEn: 'One on one', bonus: '×1', icon: Swords, art: ART + 'heroes/male_viking/idle.webp', accent: 'gold' },
-  { id: 'team', title: 'Отряд', english: 'Squad', size: '3 на 3', desc: 'Бой команд', descEn: 'Team combat', bonus: '×1.2', icon: Users, art: ART + 'heroes/female_warrior/idle.webp', accent: 'blue' },
-  { id: 'chaos', title: 'Хаос', english: 'Chaos', size: 'до 20 на 20', desc: 'Большая битва', descEn: 'Mass battle', bonus: '×1.5', icon: Flame, art: ART + 'enemies/goblin/idle.webp', accent: 'red' },
+const SCENE = import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp';
+
+const MODES: {
+  id: ArenaMode;
+  title: string;
+  english: string;
+  size: string;
+  englishSize: string;
+  desc: string;
+  englishDesc: string;
+  bonus: string;
+  icon: typeof Swords;
+  primary: string;
+  secondary?: string;
+  accent: string;
+}[] = [
+  {
+    id: 'duel', title: 'Дуэль', english: 'Duel', size: '1 на 1', englishSize: '1 vs 1',
+    desc: 'Один на один', englishDesc: 'One on one', bonus: '×1', icon: Swords,
+    primary: ART + 'heroes/male_viking/idle.webp',
+    secondary: ART + 'bosses/bandit_chief/idle.webp', accent: 'gold',
+  },
+  {
+    id: 'team', title: 'Отряд', english: 'Squad', size: '3 на 3', englishSize: '3 vs 3',
+    desc: 'Командный бой', englishDesc: 'Team combat', bonus: '×1.2', icon: Users,
+    primary: ART + 'heroes/female_warrior/idle.webp',
+    secondary: ART + 'heroes/female_archer/idle.webp', accent: 'blue',
+  },
+  {
+    id: 'chaos', title: 'Хаос', english: 'Chaos', size: 'до 20 на 20', englishSize: 'up to 20 vs 20',
+    desc: 'Массовая битва', englishDesc: 'Mass battle', bonus: '×1.5', icon: Flame,
+    primary: ART + 'enemies/goblin/idle.webp',
+    secondary: ART + 'bosses/fire_lord/idle.webp', accent: 'red',
+  },
 ];
 
-export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void }) {
+export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
+  onJoined: (roomId: string) => void;
+  onBack?: () => void;
+  backDisabled?: boolean;
+}) {
   const { language } = useLanguage();
   const en = language === 'en';
   const state = useStore(useGame);
   const arena = useStore(useArena);
-  const [mode, setMode] = useState<ArenaMode>('duel');
   const [joining, setJoining] = useState<ArenaMode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showRules, setShowRules] = useState(false);
   const noEnergy = state.player.energy < ENERGY_COST;
 
-  const join = async () => {
-    if (noEnergy || joining) return;
+  const join = async (mode: ArenaMode) => {
+    if (joining) return;
+    if (noEnergy) {
+      setError(en ? 'Not enough energy to enter. One point regenerates every 5 minutes.' : 'Недостаточно энергии для входа. 1 единица восстанавливается каждые 5 минут.');
+      return;
+    }
     hapticImpact('medium');
     setJoining(mode);
     setError(null);
     try {
-      // Preserve the atomic server-side join and one-energy debit.
+      // The room and one-energy debit are committed atomically on the server.
       const roomId = await secureArenaJoin(mode);
       onJoined(roomId);
     } catch (e) {
@@ -46,66 +83,72 @@ export function ArenaLobby({ onJoined }: { onJoined: (roomId: string) => void })
 
   return (
     <div className="arena-lobby animate-fade-in">
-      <section className="arena-lobby-stage">
-        <div className="arena-lobby-stage-art" aria-hidden="true" style={{ backgroundImage: `linear-gradient(180deg,rgba(0,12,27,.15) 12%,rgba(10,12,21,.04) 49%,rgba(3,10,17,.98) 100%),url("${import.meta.env.BASE_URL}assets/territory/scenes/arena-viking.webp")` }} />
-        <div className="arena-lobby-heading">
-          <span className="arena-lobby-title"><Swords aria-hidden="true" />{en ? 'ARENA' : 'АРЕНА'}</span>
+      <section className="arena-lobby-stage" aria-label={en ? 'Viking Arena' : 'Арена викингов'}>
+        <div className="arena-lobby-stage-art" aria-hidden="true" style={{ backgroundImage: `linear-gradient(180deg,rgba(0,11,23,.27) 0%,rgba(0,10,22,.02) 50%,rgba(5,13,23,.65) 100%),url("${SCENE}")` }} />
+        <div className="arena-lobby-top">
+          <button type="button" className="arena-lobby-back" onClick={onBack} disabled={backDisabled}>
+            <ChevronLeft className="h-4 w-4" />{en ? 'City' : 'Город'}
+          </button>
           <button type="button" className="arena-lobby-rules" onClick={() => setShowRules(true)}>
             <Info className="h-4 w-4" />{en ? 'Rules' : 'Правила'}
           </button>
         </div>
-        <div className="arena-lobby-characters" aria-hidden="true">
-          <img className="arena-lobby-character arena-lobby-character-hero" src={ART + 'heroes/male_viking/idle.webp'} alt="" />
-          <img className="arena-lobby-character arena-lobby-character-enemy" src={ART + 'bosses/bandit_chief/idle.webp'} alt="" />
+        <div className="arena-lobby-banner">
+          <Swords className="arena-lobby-banner-blades" aria-hidden="true" />
+          <span>{en ? 'ARENA' : 'АРЕНА'}</span>
+          <span className="arena-lobby-banner-crest" aria-hidden="true">◆</span>
         </div>
         <div className="arena-lobby-stats" aria-label={en ? 'Arena record' : 'Статистика арены'}>
           <div className="arena-lobby-stat arena-lobby-stat-rating">
             <Trophy className="arena-lobby-stat-icon" aria-hidden="true" />
-            <strong>{arena.rating.toLocaleString()}</strong><span>{en ? 'RATING' : 'РЕЙТИНГ'}</span>
+            <strong>{arena.rating.toLocaleString('ru-RU')}</strong>
+            <span>{en ? 'RATING' : 'РЕЙТИНГ'}</span>
           </div>
           <div className="arena-lobby-stat arena-lobby-stat-wins">
             <Crown className="arena-lobby-stat-icon" aria-hidden="true" />
-            <strong>{arena.wins.toLocaleString()}</strong><span>{en ? 'WINS' : 'ПОБЕДЫ'}</span>
+            <strong>{arena.wins.toLocaleString('ru-RU')}</strong>
+            <span>{en ? 'WINS' : 'ПОБЕДЫ'}</span>
           </div>
           <div className="arena-lobby-stat arena-lobby-stat-losses">
             <Shield className="arena-lobby-stat-icon" aria-hidden="true" />
-            <strong>{arena.losses.toLocaleString()}</strong><span>{en ? 'LOSSES' : 'ПОРАЖЕНИЯ'}</span>
+            <strong>{arena.losses.toLocaleString('ru-RU')}</strong>
+            <span>{en ? 'LOSSES' : 'ПОРАЖЕНИЯ'}</span>
           </div>
         </div>
       </section>
 
-      <ArenaWeeklyBoard />
-
-      <div className="arena-lobby-modes" role="group" aria-label={en ? 'Choose battle mode' : 'Выбери режим боя'}>
+      <section className="arena-lobby-modes" aria-label={en ? 'Battle modes' : 'Режимы боя'}>
         {MODES.map((option) => {
           const Icon = option.icon;
-          const active = option.id === mode;
+          const isJoining = joining === option.id;
           return (
-            <button
-              key={option.id}
-              type="button"
-              className={`arena-mode-card arena-mode-${option.accent} ${active ? 'arena-mode-active' : ''}`}
-              aria-pressed={active}
-              onClick={() => { hapticImpact('light'); setMode(option.id); setError(null); }}
-              disabled={!!joining}
-            >
-              <span className="arena-mode-art" aria-hidden="true"><img src={option.art} alt="" loading="lazy" /></span>
-              <span className="arena-mode-name"><Icon aria-hidden="true" />{en ? option.english : option.title}</span>
-              <span className="arena-mode-size">{en && option.id === 'duel' ? '1 vs 1' : en && option.id === 'team' ? '3 vs 3' : en && option.id === 'chaos' ? 'up to 20 vs 20' : option.size}</span>
-              <span className="arena-mode-description">{en ? option.descEn : option.desc}</span>
-              <span className="arena-mode-reward">{en ? 'Reward' : 'Награда'} {option.bonus}</span>
-            </button>
+            <div className={`arena-mode-card arena-mode-${option.accent}`} key={option.id}>
+              <div className="arena-mode-illustration" aria-hidden="true"
+                style={{ backgroundImage: `linear-gradient(180deg,transparent,rgba(5,11,22,.36)),url("${SCENE}")` }}>
+                {option.secondary && <img src={option.secondary} alt="" className="arena-mode-support" loading="lazy" />}
+                <img src={option.primary} alt="" className="arena-mode-primary" loading="lazy" />
+              </div>
+              <div className="arena-mode-caption">
+                <div className="arena-mode-name"><Icon className="h-4 w-4 shrink-0" aria-hidden="true" />{en ? option.english : option.title}</div>
+                <div className="arena-mode-size">{en ? option.englishSize : option.size}</div>
+                <div className="arena-mode-description">{en ? option.englishDesc : option.desc}</div>
+                <div className="arena-mode-reward">{en ? 'Reward' : 'Награда'} {option.bonus} · {en ? '1 energy' : '1 энергия'}</div>
+                <button
+                  type="button"
+                  className="arena-mode-start"
+                  aria-label={en ? `Start ${option.english}` : `Начать бой: ${option.title}`}
+                  onClick={() => void join(option.id)}
+                  disabled={!!joining}
+                >
+                  {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : (en ? 'START' : 'НАЧАТЬ БОЙ')}
+                </button>
+              </div>
+            </div>
           );
         })}
-      </div>
-
-      <button type="button" className="arena-lobby-fight" onClick={() => void join()} disabled={noEnergy || !!joining}>
-        {joining ? <Loader2 className="h-7 w-7 animate-spin" /> : <Swords className="h-7 w-7" />}
-        {joining ? (en ? 'FINDING A FIGHT...' : 'ИЩЕМ СОПЕРНИКА...') : (en ? 'TO BATTLE' : 'В БОЙ')}
-      </button>
-      {noEnergy && <p className="arena-lobby-warning">{en ? 'Not enough energy to enter. One point regenerates every 5 minutes.' : 'Недостаточно энергии для входа. 1 единица восстанавливается каждые 5 минут.'}</p>}
+      </section>
       {error && <p role="alert" className="arena-lobby-warning">{error}</p>}
-      <p className="arena-lobby-footer">{en ? 'Choose a mode and enter a real server battle' : 'Выбери режим и вступай в настоящий бой'}</p>
+      <ArenaWeeklyBoard />
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
     </div>
   );
