@@ -323,3 +323,291 @@
   .arena-approved-entry .arena-approved-stat strong{font-size:clamp(16px,5.6vw,20px);}
   .arena-approved-entry .arena-approved-stat span{font-size:7px;}
 }
+
+/* Arena finishing pass: equal stats, ornate icons, refined and responsive TOP-50. */
+.arena-approved-entry .arena-approved-stats {
+  height: clamp(67px, 17.7vw, 76px);
+  padding: 6px 13px 7px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin-top: -2px;
+  align-items: center;
+}
+.arena-approved-entry .arena-approved-stat {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(29px, .43fr) minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  gap: 2px;
+  align-items: center;
+  justify-items: center;
+  padding: 3px 7px 3px 4px;
+  text-align: center;
+}
+.arena-approved-entry .arena-approved-stat > .arena-approved-stat-icon {
+  display: block;
+  grid-column: 1;
+  grid-row: 1;
+  width: clamp(29px, 8vw, 42px);
+  height: clamp(31px, 8.5vw, 44px);
+  max-width: 100%;
+  object-fit: contain;
+  margin: 0 auto;
+  filter: drop-shadow(0 3px 2px rgba(0,0,0,.6));
+}
+.arena-approved-entry .arena-approved-stat > .arena-approved-stat-info {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-width: 0;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+}
+.arena-approved-entry .arena-approved-stat .arena-approved-stat-info strong {
+  display: block;
+  grid-row: auto;
+  grid-column: auto;
+  align-self: center;
+  width: 100%;
+  color: inherit;
+  text-align: center;
+  font-size: clamp(19px, 5.8vw, 29px);
+  line-height: 1;
+  font-weight: 1000;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 2px #02060d, 0 0 5px #02060daa;
+}
+.arena-approved-entry .arena-approved-stat .arena-approved-stat-info > span {
+  display: block;
+  align-self: center;
+  grid-row: auto;
+  grid-column: auto;
+  width: 100%;
+  font-size: clamp(8px, 2.3vw, 11px);
+  font-weight: 950;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: #fff0d1;
+  white-space: nowrap;
+  text-align: center;
+  text-shadow: 0 1px 3px #000;
+}
+.arena-approved-entry .arena-approved-stat-rating {color: #ffdc79;}
+.arena-approved-entry .arena-approved-stat-wins {color: #62ffba;}
+.arena-approved-entry .arena-approved-stat-losses {color: #ff8c9d;}
+
+/* Tournament plaque is a single inset hand-finished game panel. */
+.arena-approved-entry .arena-weekly {
+  margin: 10px 0 3px;
+  padding: 10px 10px 9px;
+  border: 2px solid #e9b55e;
+  border-radius: 13px;
+  background: radial-gradient(ellipse at 50% 0, #25496d 0, transparent 72%),
+              linear-gradient(180deg, #173c5d 0%, #0c2540 30%, #07162a 100%);
+  box-shadow: inset 0 0 0 1px #67401d, inset 0 2px 0 #ffeda949,
+              0 3px 12px #030d1cc4;
+}
+.arena-approved-entry .arena-weekly-head {
+  padding: 1px 0 9px;
+  gap: 7px;
+}
+.arena-approved-entry .arena-weekly-heading {min-width: 0;gap: 6px;}
+.arena-approved-entry .arena-weekly-heading svg {width:21px;height:21px;flex-shrink:0;filter:drop-shadow(0 2px 2px #000);}
+.arena-approved-entry .arena-weekly-heading h3 {
+  color: #ffe3a2;
+  font-size: clamp(11px, 3.2vw, 14px);
+  line-height: 1.15;
+  font-weight: 1000;
+  letter-spacing: -.012em;
+  text-shadow: 0 2px 2px #030814;
+}
+.arena-approved-entry .arena-weekly-timer {
+  padding: 5px 7px;
+  gap: 4px;
+  font-size: 11px;
+  border: 1px solid #d5a14f;
+  border-radius: 9px;
+  background: linear-gradient(#152a43, #071322);
+  color: #ffdc88;
+  box-shadow: inset 0 1px 0 #ffe09f38;
+}
+/* Three podium entries in the collapsed state, then clean scrollable pairs. */
+.arena-approved-entry .arena-weekly-rows {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+.arena-approved-entry .arena-weekly-rows-expanded {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  max-height: min(47vh, 360px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #be8d42 #09192b;
+  padding: 1px 2px 4px;
+}
+.arena-approved-entry .arena-weekly-player {
+  position: relative;
+  display: grid;
+  grid-template-columns: 25px 31px minmax(0, 1fr);
+  grid-template-rows: 19px 19px;
+  align-items: center;
+  gap: 0 3px;
+  min-width: 0;
+  height: 56px;
+  padding: 7px 4px;
+  border: 1px solid #54738f;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #214460, #102941 52%, #091b2e);
+  box-shadow: inset 0 1px 0 #b3cbe343, 0 2px 4px #0007;
+}
+.arena-approved-entry .arena-weekly-podium {
+  border-color: #ac8550;
+  background: linear-gradient(150deg, #253e57, #10273d 70%, #0a1a2d);
+  box-shadow: inset 0 1px 0 #f5d49f6e, 0 2px 4px #0009;
+}
+.arena-approved-entry .arena-weekly-podium:has(.arena-weekly-rank-1) {border-color:#f4c45e;}
+.arena-approved-entry .arena-weekly-podium:has(.arena-weekly-rank-2) {border-color:#b1cce5;}
+.arena-approved-entry .arena-weekly-podium:has(.arena-weekly-rank-3) {border-color:#d59562;}
+.arena-approved-entry .arena-weekly-mine {border-color:#5ed7fc;box-shadow:inset 0 0 0 1px #5ed7fc55,0 0 7px #28bafc66;}
+.arena-approved-entry .arena-weekly-rank {
+  display: grid;
+  place-items: center;
+  grid-column: 1;
+  grid-row: 1/3;
+  width: 25px;
+  height: 35px;
+  border: 1px solid #647c93;
+  border-radius: 7px;
+  background: linear-gradient(#61748a, #304158);
+  color: #f3f5ff;
+  font-weight: 1000;
+  font-size: 15px;
+  text-shadow: 0 1px 2px #000b;
+  box-shadow: inset 0 2px 0 #ffffff3a;
+  font-variant-numeric: tabular-nums;
+}
+.arena-approved-entry .arena-weekly-rank-1 {border-color:#f9dc93;background:linear-gradient(#fff0aa,#e5a52d 53%,#a46115);color:#48250b;text-shadow:0 1px #fff8c080;}
+.arena-approved-entry .arena-weekly-rank-2 {border-color:#e9f5ff;background:linear-gradient(#fff,#aec9df 53%,#60768c);color:#20344b;text-shadow:none;}
+.arena-approved-entry .arena-weekly-rank-3 {border-color:#f4c8a1;background:linear-gradient(#ffdbba,#cf895c 53%,#8a492d);color:#432619;text-shadow:none;}
+.arena-approved-entry .arena-weekly-avatar,
+.arena-approved-entry .arena-weekly-rows:not(.arena-weekly-rows-expanded) .arena-weekly-avatar {
+  grid-column: 2;
+  grid-row: 1/3;
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 38px;
+  border: 1.5px solid #e6bb66;
+  border-radius: 8px;
+  background: radial-gradient(circle at 40% 25%,#294767,#061728);
+  box-shadow: inset 0 1px 0 #fff5bd52;
+  overflow: hidden;
+}
+.arena-approved-entry .arena-weekly-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+.arena-approved-entry .arena-weekly-player-name {
+  grid-column: 3;
+  grid-row: 1;
+  display: block;
+  min-width: 0;
+  width: 100%;
+  line-height: 1.2;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff8ee;
+}
+.arena-approved-entry .arena-weekly-name-text {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.arena-approved-entry .arena-weekly-player-name small {display:none;}
+.arena-approved-entry .arena-weekly-wins,
+.arena-approved-entry .arena-weekly-rows:not(.arena-weekly-rows-expanded) .arena-weekly-wins {
+  position: static;
+  transform: none;
+  margin: 0;
+  display: flex;
+  grid-column: 3;
+  grid-row: 2;
+  gap: 3px;
+  align-items: center;
+  align-self: center;
+  font-size: 11px;
+  line-height: 1;
+  color: #ffe29d;
+  font-weight: 1000;
+  font-variant-numeric: tabular-nums;
+}
+.arena-approved-entry .arena-weekly-wins svg {width: 13px;height: 13px;flex-shrink:0;color:#ffd477;}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-player {
+  grid-template-columns: 30px 38px minmax(0,1fr);
+  grid-template-rows: 19px 19px;
+  min-height: 57px;
+  height: 57px;
+  padding: 7px 6px;
+  gap: 0 5px;
+}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-rank {width:29px;height:36px;}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-avatar {width:38px;height:40px;}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-player-name {font-size:11px;}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-wins {font-size:11px;}
+.arena-approved-entry .arena-weekly-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 9px 1px 1px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffdda0;
+}
+.arena-approved-entry .arena-weekly-expand {
+  padding: 7px 10px;
+  min-height: 31px;
+  border: 1.5px solid #89e3ff;
+  border-radius: 9px;
+  color: #f4fcff;
+  background: linear-gradient(180deg,#289fe7,#1264aa 60%,#083664);
+  box-shadow: inset 0 1px 0 #fff8, 0 2px 0 #123553, 0 0 7px #15a9ec4c;
+  font-size: 11px;
+  font-weight: 950;
+}
+.arena-approved-entry .arena-weekly-note {
+  margin-top: 6px;
+  color: #95b1cc;
+  font-size: 10px;
+  line-height: 1.25;
+}
+@media(max-width:365px) {
+  .arena-approved-entry .arena-approved-stats{height:61px;padding:5px 11px 7px;}
+  .arena-approved-entry .arena-approved-stat{grid-template-columns: 27px minmax(0,1fr);padding:2px 4px 2px 2px;gap:1px;}
+  .arena-approved-entry .arena-approved-stat > .arena-approved-stat-icon{width:26px;height:28px;}
+  .arena-approved-entry .arena-approved-stat .arena-approved-stat-info strong{font-size:clamp(17px,5.4vw,20px);}
+  .arena-approved-entry .arena-approved-stat .arena-approved-stat-info > span{font-size:7px;}
+  .arena-approved-entry .arena-weekly{padding:8px 7px;}
+  .arena-approved-entry .arena-weekly-rows{gap:3px;}
+  .arena-approved-entry .arena-weekly-player{grid-template-columns:20px 24px minmax(0,1fr);gap:0 2px;height:50px;padding:5px 2px;}
+  .arena-approved-entry .arena-weekly-rank{width:20px;height:30px;font-size:12px;border-radius:5px;}
+  .arena-approved-entry .arena-weekly-avatar,
+  .arena-approved-entry .arena-weekly-rows:not(.arena-weekly-rows-expanded) .arena-weekly-avatar{width:24px;height:34px;}
+  .arena-approved-entry .arena-weekly-player-name{font-size:9px;}
+  .arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-player{grid-template-columns:24px 29px minmax(0,1fr);gap:0 3px;padding:5px 3px;}
+  .arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-rank{width:23px;height:31px;}
+  .arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-avatar{width:29px;height:34px;}
+  .arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-player-name{font-size:10px;}
+}
