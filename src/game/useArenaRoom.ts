@@ -12,6 +12,9 @@ export function useArenaRoom(roomId: string, onGone: () => void) {
   const [clockOffset, setClockOffset] = useState(0);
   const lastId = useRef(0);
   const inFlight = useRef(false);
+  // The server clock changes every poll, but unchanged fighters must not
+  // re-render the full animated battle scene on every network response.
+  const lastCombatSignature = useRef('');
   const onGoneRef = useRef(onGone);
   onGoneRef.current = onGone;
 
@@ -25,8 +28,13 @@ export function useArenaRoom(roomId: string, onGone: () => void) {
         return;
       }
       setOffline(false);
-      setClockOffset(next.now - Date.now());
-      setView(next);
+      const offset = next.now - Date.now();
+      setClockOffset((previous) => Math.abs(previous - offset) > 1_000 ? offset : previous);
+      const signature = JSON.stringify([next.room, next.me, next.participants]);
+      if (signature !== lastCombatSignature.current) {
+        lastCombatSignature.current = signature;
+        setView(next);
+      }
       if (next.messages.length) {
         lastId.current = next.messages[next.messages.length - 1].id;
         setMessages((prev) => [...prev, ...next.messages].slice(-MAX_MESSAGES));
