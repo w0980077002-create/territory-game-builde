@@ -203,13 +203,21 @@ function summarize(p: Row) {
       shop_arena_time: qtyByName("Зелье времени"),
       shop_arena_adrenaline: qtyByName("Адреналин"),
     },
+    combatStats: {
+      attack: Number(p.attack ?? 0), defense: Number(p.defense ?? 0),
+      hp: Number(p.max_hp ?? 0), critChance: Number(p.crit_chance ?? 0),
+    },
     equipped: Object.fromEntries(
-      Object.entries(equipped).filter(([, e]) => e).map(([slot, e]) => [slot, { name: e.name, level: e.level }]),
+      Object.entries(equipped).filter(([, e]) => e).map(([slot, e]) => [slot, {
+        name: e.name, level: Number(e.level ?? 0), attack: Number(e.attack ?? 0),
+        defense: Number(e.defense ?? 0), hp: Number(e.hp ?? 0),
+        critChance: Number(e.critChance ?? 0), adminTestLevel: e.adminTestLevel === true,
+      }]),
     ),
   };
 }
 
-const PLAYER_COLS = "id, telegram_id, username, display_name, level, gold, gems, forge_materials, banned, created_at, updated_at, last_seen_at, game_state";
+const PLAYER_COLS = "id, telegram_id, username, display_name, level, gold, gems, forge_materials, attack, defense, max_hp, crit_chance, banned, created_at, updated_at, last_seen_at, game_state";
 const ACTIVITY_COLS = "id, telegram_id, username, display_name, level, banned, last_seen_at";
 
 async function handle(action: string, body: Row) {
