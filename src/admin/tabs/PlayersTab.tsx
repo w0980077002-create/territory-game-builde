@@ -82,11 +82,13 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
     if (!Number.isSafeInteger(level) || level < 1 || level > 500) return setError('Уровень должен быть от 1 до 500');
     setError(null);
     confirm(`Установить уровень ${level} для «${p.equipped[slot].name}» (${SLOT_LABELS[slot]})`, async () => {
-      await adminCall('set_test_gear_level', { playerId: p.id, slot, level });
+      const result = await adminCall<{ applied: boolean; gear: { level: number; attack: number; defense: number; hp: number; critChance: number } }>('set_test_gear_level', { playerId: p.id, slot, level });
+      if (!result.applied || result.gear?.level !== level) throw new Error('Сервер не подтвердил новый уровень и характеристики. Обнови данные игрока.');
       load();
       loadExtra();
       setLevels((current) => ({ ...current, [slot]: '' }));
-      return `Тестовый уровень ${level} разрешён сервером для этого предмета и отправлен игроку. Применится при входе или синхронизации (обычно до 20 секунд онлайн).`;
+      const current = result.gear;
+      return `Уровень ${level} и характеристики сохранены на сервере: атака +${current.attack}, защита +${current.defense}, HP +${current.hp}, крит +${current.critChance}%. В открытой игре обновится при синхронизации.`;
     });
   };
 
@@ -243,14 +245,21 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
          </div>)}</div>}
       </Panel>
       <Panel title="Экипировка (Кузница)" icon={<Hammer className="w-4 h-4" />}>
-        <p className="text-[11px] text-amber-200/90 mb-2">Режим владельца для тестов: уровень предмета 1–500 независимо от уровня героя. Сервер разрешает исключение только выбранному предмету и игроку. Изменение доставляется при следующей синхронизации (обычно до 20 секунд онлайн). Обычный античит не отключается.</p>
+        <p className="text-[11px] text-amber-200/90 mb-2">Режим владельца: уровень предмета 1–500 независимо от героя. При сохранении сервер сразу пересчитывает атаку, защиту и HP предмета и характеристики персонажа. В открытой игре обновится при синхронизации; для обычных игроков античит остаётся включённым.</p>
+        {p.combatStats && <p className="text-[11px] text-emerald-200 mb-2">Боевые статы персонажа: ⚔️ {p.combatStats.attack} · 🛡️ {p.combatStats.defense} · ❤️ {p.combatStats.hp} · ⭐ {p.combatStats.critChance}%</p>}
         {slots.length === 0 ? <Empty text="Нет надетой экипировки" /> : (
           <div className="space-y-2">
             {slots.map((slot) => (
               <div key={slot} className="flex items-center gap-2 rounded-xl bg-slate-950/50 border border-slate-800 px-2.5 py-2">
                 <span className="flex-1 min-w-0">
                   <span className="block text-xs font-semibold text-slate-100 truncate">{p.equipped[slot].name}</span>
-                  <span className="block text-[11px] text-slate-400">{SLOT_LABELS[slot] ?? slot} · ур. {p.equipped[slot].level}</span>
+                  <span className="block text-[11px] text-slate-400">{SLOT_LABELS[slot] ?? slot} · ур. {p.equipped[slot].level}{p.equipped[slot].adminTestLevel ? ' · Тест' : ''}</span>
+                  <span className="block text-[11px] text-emerald-200/90">{[
+                    p.equipped[slot].attack > 0 ? `⚔️ +${p.equipped[slot].attack}` : '',
+                    p.equipped[slot].defense > 0 ? `🛡️ +${p.equipped[slot].defense}` : '',
+                    p.equipped[slot].hp > 0 ? `❤️ +${p.equipped[slot].hp}` : '',
+                    p.equipped[slot].critChance > 0 ? `⭐ +${p.equipped[slot].critChance}%` : '',
+                  ].filter(Boolean).join(' · ')}</span>
                 </span>
                 <input
                   type="number"
