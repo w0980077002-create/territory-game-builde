@@ -314,6 +314,22 @@ async function handle(action: string, body: Row) {
         .eq("player_id", id).eq("kind", "adjust").is("claimed_at", null);
       return { player: summarize(data), pendingAdjustments: count ?? 0 };
     }
+    case "set_test_gear_level": {
+      const id = playerId(body.playerId);
+      const slot = String(body.slot ?? "");
+      if (!(SLOTS as readonly string[]).includes(slot)) throw new HttpError(400, "invalid_request");
+      const level = intIn(body.level, 1, 500);
+      const { data, error } = await db.rpc("territory_owner_authorize_test_gear_v1", {
+        p_player: id, p_slot: slot, p_level: level,
+      });
+      if (error) {
+        if (error.message.includes("admin_player_missing")) throw new HttpError(404, "not_found");
+        if (error.message.includes("admin_equipment_missing")) throw new HttpError(409, "invalid_request");
+        throw new HttpError(500, "db_error");
+      }
+      await audit("set_test_gear_level", { playerId: id, slot, level, grantId: data?.grantId });
+      return { ok: true, ...data };
+    }
     case "adjust": {
       const id = playerId(body.playerId);
       const payload = cleanPayload(body.payload);
