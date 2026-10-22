@@ -66,11 +66,21 @@ export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
   return (
     <div className="arena-lobby arena-approved-entry animate-fade-in">
       <section className="arena-approved-hero" aria-label={en ? 'Viking Arena' : 'Арена викингов'}>
-        {!en && !artFailed ? (
-          <div className="arena-approved-stadium">
-            <img src={APPROVED + 'stadium.webp'} alt="Арена — праздничные трибуны викингов" onError={() => setArtFailed(true)} />
-            <button type="button" onClick={onBack} disabled={backDisabled} className="arena-approved-hotspot arena-approved-hotspot-city" aria-label="Город"><span className="sr-only">Город</span></button>
-            <button type="button" onClick={() => setShowRules(true)} className="arena-approved-hotspot arena-approved-hotspot-rules" aria-label="Правила"><span className="sr-only">Правила</span></button>
+        {!artFailed ? (
+          <div className={`arena-approved-stadium ${en ? 'arena-approved-stadium-en' : ''}`}>
+            <img src={APPROVED + 'stadium.webp'} alt={en ? 'Colorful Viking Arena with cheering crowds' : 'Арена — праздничные трибуны викингов'} onError={() => setArtFailed(true)} />
+            {en ? (
+              <>
+                <span className="arena-approved-en-banner" aria-hidden="true">ARENA</span>
+                <button type="button" onClick={onBack} disabled={backDisabled} className="arena-approved-en-city" aria-label="City"><ChevronLeft aria-hidden="true" /> CITY</button>
+                <button type="button" onClick={() => setShowRules(true)} className="arena-approved-en-rules" aria-label="Rules"><Info aria-hidden="true" /> RULES</button>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={onBack} disabled={backDisabled} className="arena-approved-hotspot arena-approved-hotspot-city" aria-label="Город"><span className="sr-only">Город</span></button>
+                <button type="button" onClick={() => setShowRules(true)} className="arena-approved-hotspot arena-approved-hotspot-rules" aria-label="Правила"><span className="sr-only">Правила</span></button>
+              </>
+            )}
           </div>
         ) : (
           <div className="arena-approved-stadium arena-approved-stadium-fallback" style={{ backgroundImage: `url("${BACKUP_SCENE}")` }}>
@@ -98,14 +108,16 @@ export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
               onClick={() => void join(m.id)}
               aria-label={en ? `Start ${m.english}, ${m.sizeEn}` : `Начать бой: ${m.title}, ${m.size}`}
             >
-              {en ? (
-                <div className="arena-approved-en-mode">
-                  <strong><Icon className="h-4 w-4" />{m.english}<small>{m.sizeEn}</small></strong>
-                  <img src={m.fallback} alt="" />
-                  <span>{m.descEn}</span>
-                  <span className="arena-approved-en-start">{busy ? 'SEARCHING...' : 'START BATTLE'}</span>
-                </div>
-              ) : <img className="arena-approved-mode-image" src={m.picture} alt={`${m.title} — ${m.desc}. Начать бой`} />}
+              <img
+                className="arena-approved-mode-image"
+                src={m.picture}
+                alt={en ? `${m.english} — ${m.descEn}` : `${m.title} — ${m.desc}. Начать бой`}
+              />
+              {en && <div className="arena-approved-en-overlay" aria-hidden="true">
+                <span className="arena-approved-en-card-title">{m.english}<small>{m.sizeEn}</small></span>
+                <span className="arena-approved-en-card-desc"><Icon />{m.descEn}</span>
+                <span className="arena-approved-en-card-cta">{busy ? 'MATCHING…' : 'START BATTLE'}</span>
+              </div>}
               {busy && <span className="arena-approved-mode-loading"><Loader2 className="h-6 w-6 animate-spin" />{en ? 'Matching...' : 'Ищем бой...'}</span>}
             </button>
           );
