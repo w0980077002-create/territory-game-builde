@@ -147,7 +147,12 @@ function pingGeography() {
   void supabase.functions.invoke('player-geography', { body: {} }).catch(() => {});
 }
 
+let heartbeatInFlight = false;
 async function heartbeat() {
+  // Slow mobile networks must not create overlapping heartbeat RPCs.
+  if (heartbeatInFlight) return;
+  heartbeatInFlight = true;
+  try {
   const { data, error } = await supabase.rpc('player_heartbeat');
   if (error || !data || typeof data !== 'object') return;
   pingGeography();
@@ -164,6 +169,9 @@ async function heartbeat() {
     goldX2: !!hb.settings?.gold_x2,
     mail: grants.filter((g) => g.kind === 'mail'),
   });
+  } finally {
+    heartbeatInFlight = false;
+  }
 }
 
 export function useLiveSync(enabled: boolean) {
