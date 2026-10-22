@@ -251,7 +251,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   if (!loaded) return <Splash text={translate('loadingHero')} />;
 
   const sub = SUB_SCREENS[screen as SubScreen];
-  const navActive: NavId = screen === 'hall-play' ? 'games' : sub ? 'city' : (screen as NavId);
+  const navActive: NavId = screen === 'hall-play' ? 'games' : screen === 'arena' ? 'battle' : sub ? 'city' : (screen as NavId);
 
   const goNav = (id: NavId) => {
     if (id === 'battle') setBattleView('campaign');
