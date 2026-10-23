@@ -119,7 +119,11 @@ assert(friday.leaders[0].wins - friday.leaders.at(-1).wins >= 100,
 // Repeat the uniqueness check at different times over the last two days
 // (including midnight), rather than validating only one snapshot.
 for (const date of ['2026-10-23', '2026-10-24']) {
-  for (const hour of [0, 3, 6, 9, 12, 15, 18, 21, 23]) {
+  // Saturday 21:00Z is already Sunday 00:00 Kyiv (next season).
+  const hours = date === '2026-10-24'
+    ? [0, 3, 6, 9, 12, 15, 18, 20]
+    : [0, 3, 6, 9, 12, 15, 18, 21, 23];
+  for (const hour of hours) {
     const utcHour = String(hour).padStart(2, '0');
     const snapshot = at(date + 'T' + utcHour + ':00:00Z', []);
     checkRanks(snapshot.leaders);
