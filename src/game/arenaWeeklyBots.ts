@@ -84,11 +84,12 @@ export function arenaWeeklyWithBots(
   const currentDay = Math.min(6, Math.max(0, Math.round((dayUtc - startDayUtc) / 86_400_000)));
   const week = season.weekKey;
 
-  // PvP SQL picks 40 canonical bot names and may append _10…_99.
-  // Use the very same supported naming pattern to allow a full 50-bot ranking.
+  // Exactly 50 synthetic Arena rivals: 40 canonical PvP names plus only
+  // 10 SQL-compatible numbered variants. This is a fixed pool, not 80 bots.
+  // Real players overtake and replace these rivals in the displayed TOP-50.
   const botNames = [
     ...ARENA_PVP_BOT_NAMES,
-    ...ARENA_PVP_BOT_NAMES.map((name) => name + '_' + (10 + stableHash(name + ':arena-variant') % 90)),
+    ...ARENA_PVP_BOT_NAMES.slice(0, 10).map((name) => name + '_' + (10 + stableHash(name + ':arena-variant') % 90)),
   ];
   const bots: ArenaWeeklyDisplayPlayer[] = botNames.map((name) => {
     const seed = stableHash(week + ':' + name);
@@ -101,7 +102,7 @@ export function arenaWeeklyWithBots(
       const mixed = Math.imul(hash ^ (hash >>> 16), 0x7feb352d);
       victories += 17 + ((mixed ^ (mixed >>> 15)) >>> 0) % 9;
     }
-    const female = FEMALE_BOT_NAMES.has(name);
+    const female = FEMALE_BOT_NAMES.has(name.split('_')[0]);
     return {
       player_id: 'arena-npc:' + name,
       display_name: name,
