@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+<defs><linearGradient id="wood" x1="0" x2=".9" y2="1"><stop stop-color="#8b5070"/><stop offset=".55" stop-color="#493054"/><stop offset="1" stop-color="#201e36"/></linearGradient><linearGradient id="metal" x1="0" x2=".8" y2="1"><stop stop-color="#ffefaa"/><stop offset=".55" stop-color="#d6953c"/><stop offset="1" stop-color="#855222"/></linearGradient><radialGradient id="light"><stop stop-color="#9dfaff" stop-opacity=".85"/><stop offset="1" stop-color="#70deeb" stop-opacity="0"/></radialGradient></defs>
+<ellipse cx="80" cy="143" rx="74" ry="14" fill="#151020" opacity=".6"/>
+<path d="M13 66Q13 24 80 19Q147 24 147 66V92H13Z" fill="url(#wood)" stroke="url(#metal)" stroke-width="7"/>
+<path d="M21 61Q32 35 80 35Q128 35 139 61" fill="none" stroke="#ffdf88" stroke-width="8" stroke-opacity=".8"/>
+<rect x="10" y="77" width="140" height="65" rx="12" fill="url(#wood)" stroke="url(#metal)" stroke-width="7"/>
+<path d="M24 79V137M136 79V137M39 83V139M121 83V139" stroke="#bb842b" stroke-width="7"/>
+<path d="M58 80V133H102V80" stroke="#f4d77c" stroke-width="6" fill="none"/>
+<path d="M80 65 99 85 80 111 61 85Z" fill="#96f9ff" stroke="#fff1ac" stroke-width="5"/>
+<circle cx="80" cy="86" r="35" fill="url(#light)" opacity=".65"/>
+<path d="M77 78 83 78 86 89 80 98 74 89Z" fill="#225285"/>
+</svg>
