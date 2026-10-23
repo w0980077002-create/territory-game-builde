@@ -134,8 +134,8 @@ assert.match(ui,/resolveBonusTile/,'Bonus selection must use revealed fixed tile
 assert.doesNotMatch(ui,/const roll = fairDemoInt\(10\)/,'Do not use random-on-click fake choices');
 assert.match(ui,/vslot-adventure-backdrop/,'Bonus games must be immersive and independent');
 assert.match(ui,/vslot-win-path/,'Winning payline must be rendered on reels');
-assert.match(ui,/soundOn, setSoundOn\] = useState\(false\)/,'Sound must start muted');
-assert.match(ui,/hapticsOn, setHapticsOn\] = useState\(false\)/,'Vibration must be opt-in');
+assert.match(ui,/soundOn, setSoundOn\] = useState\(restored\?\.soundOn \?\? false\)/,'Sound must default to muted');
+assert.match(ui,/hapticsOn, setHapticsOn\] = useState\(restored\?\.hapticsOn \?\? false\)/,'Vibration must be opt-in');
 assert.match(ui,/950 \+ i\*320/,'Reel click sound follows staggered animation stop');
 assert.match(ui,/hapticImpact/,'Use Telegram-native haptics when enabled');
 assert.match(ui,/vslot-fx-toggles/,'Effects controls must be visible');
