@@ -278,7 +278,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
                 )}
                 <div className="absolute inset-0 z-20 pointer-events-none">
                   <FighterFigure
-                    src={import.meta.env.BASE_URL + 'hero-viking.webp'}
+                    src={import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp'}
                     combatFrames={getCombatAppearance(state.appearance)}
                     name={hero.name}
                     dir={1}

@@ -104,7 +104,7 @@ const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> =
 function Splash({ text }: { text: string }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: 'var(--color-bg)' }}>
-      <img src="/hero-viking.webp" alt="" className="w-28 h-28 object-contain mb-4 animate-float" />
+      <img src={import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp'} alt="" className="w-28 h-28 object-contain mb-4 animate-float" />
       <h1 className="text-2xl font-bold text-white mb-2">Territory</h1>
       <p className="text-gray-400 text-sm">{text}</p>
     </div>
