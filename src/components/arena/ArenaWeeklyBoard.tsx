@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, Crown, RefreshCw, Swords, Timer, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { getAppearanceIcon } from '@/game/appearance';
@@ -15,6 +15,7 @@ export function ArenaWeeklyBoard() {
   const [failed, setFailed] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const rowsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -45,6 +46,12 @@ export function ArenaWeeklyBoard() {
   const goal = current && status ? arenaNextGoal(rows, display?.displayRank ?? null, status.my_wins) : null;
   const isLeader = !!display && display.displayRank === 1;
 
+  // A freshly expanded leaderboard must always start at rank 1, not at
+  // an old scroll position (which made some players see rank 5 first).
+  useEffect(() => {
+    if (expanded && rowsRef.current) rowsRef.current.scrollTop = 0;
+  }, [expanded]);
+
   return (
     <section className="arena-weekly" aria-label={en ? 'Arena weekly top 50' : 'Топ 50 арены за неделю'}>
       <div className="arena-weekly-head">
@@ -62,7 +69,7 @@ export function ArenaWeeklyBoard() {
         {en ? 'No confirmed arena wins this week yet. Be the first!' : 'На этой неделе ещё нет подтверждённых побед. Стань первым!'}
       </p> : null}
       {visible.length > 0 && (
-        <div className={expanded ? 'arena-weekly-rows arena-weekly-rows-expanded' : 'arena-weekly-rows'}>
+        <div ref={rowsRef} className={expanded ? 'arena-weekly-rows arena-weekly-rows-expanded' : 'arena-weekly-rows'}>
           {visible.map((player) => (
             <div
               className={`arena-weekly-player ${player.rank <= 3 ? 'arena-weekly-podium' : ''} ${player.arenaBot ? 'arena-weekly-npc' : ''} ${!player.arenaBot && player.rank === display?.displayRank ? 'arena-weekly-mine' : ''}`}
