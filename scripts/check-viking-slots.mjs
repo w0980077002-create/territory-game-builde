@@ -88,6 +88,40 @@ assert.equal(riskDeck.filter(x=>!x.wins).length,2,'Exactly two choices lose');
 assert.throws(()=>prepareBonusTiles(0));
 assert.throws(()=>prepareSuperChests(101));
 
+const savedSource = readFileSync('src/game/slotDemoSave.ts','utf8');
+const savedJS = ts.transpileModule(savedSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
+const savedExports={};
+const store = new Map();
+runInNewContext(savedJS, {exports:savedExports,window:{localStorage:{
+  getItem:key=>store.get(key)??null,
+  setItem:(key,value)=>store.set(key,value),
+}}});
+const {parseSlotDemo,slotSaveKey,saveSlotDemo,loadSlotDemo} = savedExports;
+const saveSnapshot = {
+  balance:491,lines:9,bet:1,phase:'bonus',wagerAtSpin:9,pending:36,
+  field:filled('gold'),recent:null,bonusLeft:3,bonusShield:1,
+  bonusDeck:shuffled,bonusOpened:[0,2],superDeck:[],superOpened:null,
+  riskDeck:[],riskOpened:null,riskSteps:0,auto:0,soundOn:false,hapticsOn:false,
+};
+saveSlotDemo('user-A',saveSnapshot);
+const loaded = loadSlotDemo('user-A');
+assert.equal(loaded?.phase,'bonus','Bonus must resume after re-opening Telegram');
+assert.equal(loaded?.pending,36,'Unclaimed demo prizes must survive a reload');
+assert.equal(loaded?.bonusOpened.length,2,'Already-revealed runes must stay revealed');
+assert.equal(loadSlotDemo('user-B'),null,'Demo credits must not spill across players');
+assert.ok(slotSaveKey('a')!==slotSaveKey('b'));
+assert.equal(parseSlotDemo(null),null,'No saved session must start fresh');
+assert.equal(parseSlotDemo('not-json'),null,'Corrupt session must fail safely');
+assert.equal(parseSlotDemo(JSON.stringify({version:99,state:saveSnapshot})),null,'Legacy formats must not leak balances');
+assert.equal(parseSlotDemo(JSON.stringify({version:3,state:{...saveSnapshot,field:[]}})),null,'Bad grids must fail safely');
+const interrupted = parseSlotDemo(JSON.stringify({version:3,state:{...saveSnapshot,
+  phase:'spinning',balance:470,wagerAtSpin:9,pending:0
+}}));
+assert.equal(interrupted?.phase,'ready','Interrupted spin must restore ready mode');
+assert.equal(interrupted?.balance,479,'Interrupted spin must refund only its test stake');
+assert.equal(interrupted?.pending,0);
+assert.equal(interrupted?.auto,0,'Auto play must not restart unexpectedly after reload');
+
 const ui=readFileSync('src/components/VikingSlots.tsx','utf8');
 assert.match(ui,/INITIAL_BALANCE = 500/);
 assert.match(ui,/setBalance\(v => v - wager\)/);
@@ -105,6 +139,11 @@ assert.match(ui,/hapticsOn, setHapticsOn\] = useState\(false\)/,'Vibration must 
 assert.match(ui,/950 \+ i\*320/,'Reel click sound follows staggered animation stop');
 assert.match(ui,/hapticImpact/,'Use Telegram-native haptics when enabled');
 assert.match(ui,/vslot-fx-toggles/,'Effects controls must be visible');
+assert.match(ui,/loadSlotDemo\(userId\)/,'Demo session must restore per player');
+assert.match(ui,/saveSlotDemo\(userId,snapshot\)/,'Demo state must persist');
+const hallScreen = readFileSync('src/components/HallPlayScreen.tsx','utf8');
+assert.match(hallScreen,/key=\{userId\} userId=\{userId\}/,'Slot state must isolate Telegram players');
+
 for (const file of ['rune-sealed.svg','chest-sealed.svg','card-sealed.svg']) {
   assert.ok(existsSync('public/slots/'+file),'Original sealed mini-game art is required: '+file);
   const svg = readFileSync('public/slots/'+file,'utf8');
