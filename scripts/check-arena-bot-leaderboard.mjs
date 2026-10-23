@@ -30,8 +30,20 @@ vm.runInNewContext(compiled, {
 }, { filename: 'arenaWeeklyBots.transpiled.js', timeout: 5000 });
 const { arenaWeeklyWithBots } = loaded.exports;
 assert.equal(typeof arenaWeeklyWithBots, 'function');
-assert.match(source, /ARENA_PVP_BOT_NAMES\.slice\(0, 10\)\.map/, 'Weekly bot roster should use only 10 numbered variants, not 40');
-assert.doesNotMatch(source, /\.\.\.ARENA_PVP_BOT_NAMES\.map\(/, 'Do not generate 80 virtual rivals');
+function readBotNames(constName) {
+  const block = source.match(new RegExp('const ' + constName + ' = \\\\[([\\\\s\\\\S]*?)\\\\] as const;'));
+  assert(block, 'Missing curated bot names: ' + constName);
+  return [...block[1].matchAll(/'([^']+)'/g)].map(x => x[1]);
+}
+const ruNames = readBotNames('RUSSIAN_ARENA_BOT_NAMES');
+const enNames = readBotNames('ENGLISH_ARENA_BOT_NAMES');
+assert.equal(ruNames.length, 25, 'Exactly 25 Cyrillic bot names required');
+assert.equal(enNames.length, 25, 'Exactly 25 Latin bot names required');
+assert(ruNames.every(name => /^[А-Яа-яЁё]+$/.test(name)), 'Russian names may not contain numbers or suffixes');
+assert(enNames.every(name => /^[A-Za-z]+$/.test(name)), 'English names may not contain numbers or suffixes');
+assert.equal(new Set([...ruNames, ...enNames].map(name => name.toLowerCase())).size, 50,
+  'Each Arena bot must have a unique, non-repeated readable name');
+assert.doesNotMatch(source, /name \+ '_' \+|ARENA_PVP_BOT_NAMES\.slice/, 'Never generate numeric bot aliases');
 
 const players = Array.from({ length: 12 }, (_, idx) => ({
   player_id: 'real-' + idx, display_name: 'Игрок' + idx,
@@ -59,10 +71,12 @@ assert(first.leaders.every((x, idx) => idx === 0 || first.leaders[idx - 1].wins 
 const botOnly = arenaWeeklyWithBots(
   state(firstStart, secondStart, []), Date.parse('2026-10-18T12:00:00Z'),
 );
-assert.equal(botOnly.leaders.length, 50, 'The fixed pool of 40 PvP names plus 10 numbered variants must fill exactly 50 places');
+assert.equal(botOnly.leaders.length, 50, 'The curated 25 Russian + 25 English bot names must fill all 50 ranks');
 assert(botOnly.leaders.every(x => x.arenaBot), 'All 50 places must be open to bots');
 assert.equal(new Set(botOnly.leaders.map(x => x.player_id)).size, 50, 'Bot identities must not repeat');
-assert.equal(botOnly.leaders.filter(x => x.display_name.includes('_')).length, 10, 'Exactly 10 bot names should use SQL-compatible numbered variants');
+assert.equal(botOnly.leaders.filter(x => /^[А-Яа-яЁё]+$/.test(x.display_name)).length, 25);
+assert.equal(botOnly.leaders.filter(x => /^[A-Za-z]+$/.test(x.display_name)).length, 25);
+assert(botOnly.leaders.every(x => !/[0-9_]/.test(x.display_name)), 'No digits or suffixes in the visible ranking');
 assert.equal(botOnly.leaders[0].rank, 1, 'Bots must be allowed to lead the ranking');
 
 const lowHumans = Array.from({ length: 50 }, (_, idx) => ({
@@ -120,4 +134,4 @@ assert.equal(full.leaders.filter(x => x.arenaBot).length, 0,
   'All 50 higher-scoring real players must outrank lower-scoring bots');
 assert(!source.includes('supabase.rpc(') && !source.includes('supabase.from('),
   'NPC scores may not write to the actual PvP database');
-console.log('Arena TOP-50: exactly 50 virtual rivals, ranks 1–50 shared with humans and sorted by wins, daily 17–25 NPC growth, Sunday reset, no real-player data writes: PASS');
+console.log('Arena TOP-50: 25 unique Russian + 25 unique English NPC names, no digits, ranked with humans by wins; daily growth and Sunday reset: PASS');
