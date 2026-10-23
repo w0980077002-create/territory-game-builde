@@ -838,6 +838,38 @@ html.territory-desktop-webapp .home-side-stack .home-side {
   top: var(--home-character-top);
   bottom: var(--home-character-bottom);
 }
+
+/* Emphasize city characters without changing the animated harbour backdrop.
+   Scale containers rather than images: idle animations still work correctly. */
+.home-character-stage::before {
+  content: "";
+  position: absolute;
+  inset: 12% 7% 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 58% 42% at 44% 84%, rgba(7, 13, 25, 0.27), rgba(7, 13, 25, 0.10) 62%, transparent 100%);
+}
+.home-hero-figure {
+  transform: scale(1.25);
+  transform-origin: center bottom;
+}
+.home-follower-figure {
+  transform: scale(1.20);
+  transform-origin: 65% 100%;
+}
+.home-hero-art {
+  filter: drop-shadow(0 7px 7px rgba(0, 0, 0, 0.80)) drop-shadow(0 0 2px rgba(100, 176, 255, 0.55));
+}
+.home-follower-art {
+  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.82)) drop-shadow(0 0 2px rgba(136, 205, 255, 0.60));
+}
+/* Short narrow Telegram screens still need room for both side menus. */
+@media (max-width: 350px) {
+  .home-hero-figure { transform: scale(1.14); }
+  .home-follower-figure { transform: scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-character-stage .animate-idle { animation: none; }
+}
 .home-side-stack {
   top: var(--home-side-top);
   bottom: var(--home-side-bottom);
