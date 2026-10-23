@@ -1,5 +1,5 @@
 import type { ArenaWeeklyPlayer, ArenaWeeklyStatus } from './arenaWeekly';
-import { seasonWindow } from './seasonCalendar';
+import { kyivMidnightUtc, seasonWindow } from './seasonCalendar';
 
 /**
  * Exactly 50 named virtual Arena contenders for the weekly scoreboard:
@@ -48,9 +48,10 @@ function stableHash(text: string): number {
 
 /**
  * Real PvP bot names compete for ANY of the TOP-50 slots (ranks 1–50).
- * Display-only wins accumulate 17–25 each Kyiv calendar day (Sunday included).
- * All viewers see exactly the same per-bot totals throughout a day; the
- * Sunday reset is computed from the authoritative weekly start/end.
+ * Bot-only preview scores follow 50 distinct weekly activity profiles.
+ * Every bot has separately scheduled single-win events across each Kyiv day,
+ * never a shared midnight jump or an instant award of 17–25 victories.
+ * The schedule is deterministic across viewers, reloads, and DST changes.
  * No timers, accounts, database writes, payouts or real-user score edits.
  */
 export function arenaWeeklyWithBots(
@@ -90,19 +91,51 @@ export function arenaWeeklyWithBots(
   const currentDay = Math.min(6, Math.max(0, Math.round((dayUtc - startDayUtc) / 86_400_000)));
   const week = season.weekKey;
 
-  // Fixed 25/25 name pool. All 50 names are unique, legible and without
-  // underscores/numbers; human competitors still enter by their real wins.
+  // 25 Cyrillic + 25 Latin bot identities, no duplicated or numbered names.
   const botNames = [...RUSSIAN_ARENA_BOT_NAMES, ...ENGLISH_ARENA_BOT_NAMES];
+
+  // Each week reshuffle activity profiles, but keep them identical across
+  // all players. A leader can earn about 21 wins/day, while casual rivals
+  // gain only a few each week. Spacing targets prevents crowded score ties
+  // and lets a new real player enter the bottom of the TOP-50.
+  const skillOrder = [...botNames].sort((a, b) =>
+    stableHash(week + ':' + a + ':skill') - stableHash(week + ':' + b + ':skill')
+    || a.localeCompare(b));
+  const skillIndex = new Map(skillOrder.map((name, index) => [name, index]));
+
+  // The date is Kyiv-local; utc elapsed time is monotonic even when autumn
+  // daylight-saving time repeats the local 03:00 hour.
+  const today = [
+    datePart('year'),
+    String(datePart('month')).padStart(2, '0'),
+    String(datePart('day')).padStart(2, '0'),
+  ].join('-');
+  const tomorrow = new Date(dayUtc + 86_400_000).toISOString().slice(0, 10);
+  const midnight = kyivMidnightUtc(today);
+  const nextMidnight = kyivMidnightUtc(tomorrow);
+  const availableMinutes = (nextMidnight - midnight) / 60_000;
+  const elapsedMinutes = Math.max(0, Math.min(availableMinutes, (now - midnight) / 60_000));
+
   const bots: ArenaWeeklyDisplayPlayer[] = botNames.map((name) => {
     const seed = stableHash(week + ':' + name);
-    // Different for each bot and each day, stable on reload and across devices.
-    let victories = 0;
-    for (let day = 0; day <= currentDay; day += 1) {
-      // Mix the hash bits so daily growth varies rather than stepping
-      // through an accidental +1 sequence for some Cyrillic bot names.
-      const hash = stableHash(week + ':' + name + ':' + day + ':arena');
-      const mixed = Math.imul(hash ^ (hash >>> 16), 0x7feb352d);
-      victories += 17 + ((mixed ^ (mixed >>> 15)) >>> 0) % 9;
+    const index = skillIndex.get(name)!;
+    // Unique-ish lifetime *weekly* goals (roughly 1–150), from weak to
+    // strong. The +/-1 tune avoids an obviously perfect numerical ladder.
+    const weeklyGoal = Math.max(1,
+      2 + (49 - index) * 3 + (stableHash(week + ':' + name + ':tune') % 3 - 1));
+    const winsBeforeToday = Math.floor(weeklyGoal * currentDay / 7);
+    const winsAtDayEnd = Math.floor(weeklyGoal * (currentDay + 1) / 7);
+    const todayWins = winsAtDayEnd - winsBeforeToday;
+    let victories = winsBeforeToday;
+
+    // Divide the daylight-saving-aware day into personal win slots. Each
+    // event is at a distinct pseudo-random minute, with 15-minute quiet
+    // margins around midnight. No lump-sum wins or app-side interval jobs.
+    for (let event = 0; event < todayWins; event += 1) {
+      const slotHash = stableHash(week + ':' + name + ':' + currentDay + ':' + event + ':time');
+      const jitter = slotHash / 4_294_967_296;
+      const eventMinute = 15 + (event + jitter) * (availableMinutes - 30) / todayWins;
+      if (elapsedMinutes >= eventMinute) victories += 1;
     }
     const female = FEMALE_BOT_NAMES.has(name);
     return {
