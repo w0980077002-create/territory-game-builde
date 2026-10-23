@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BookOpen, Crown, FastForward, Play, RotateCcw, Shield, Sparkles, Ticket, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { fairDemoInt, SLOT_BET_CHOICES, SLOT_ICONS, SLOT_LINE_CHOICES, SLOT_PAYTABLE, spinVikingSlots, type SlotGrid, type SlotOutcome, type SlotSymbol } from '@/game/vikingSlots';
+import { prepareBonusTiles, prepareSuperChests, prepareRiskCards, resolveBonusTile, type BonusTile, type SuperChest, type RiskCard } from '@/game/slotAdventure';
 import './vikingSlots.css';
 
 const root = import.meta.env.BASE_URL;
@@ -10,7 +11,7 @@ const INITIAL_BALANCE = 500;
 const FILLER_PER_REEL = 12;
 const REEL_SPIN_MS = 2320;
 const REEL_SYMBOLS = Object.keys(SLOT_ICONS) as SlotSymbol[];
-type Phase = 'ready' | 'spinning' | 'decision' | 'bonus' | 'risk' | 'superbonus';
+type Phase = 'ready' | 'spinning' | 'decision' | 'bonus' | 'bonus-ended' | 'bonus-complete' | 'risk' | 'risk-reveal' | 'superbonus' | 'superbonus-reveal';
 const START_GRID: SlotGrid = [
   ['helmet','gem','gold'],['follower','wild','sword'],['boss','hero','gold'],
   ['wolf','gem','helmet'],['sword','gold','follower'],
@@ -36,14 +37,38 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
   const [bonusShield, setBonusShield] = useState(0);
   const [bonusLog, setBonusLog] = useState<string[]>([]);
   const [riskSteps, setRiskSteps] = useState(0);
+  const [bonusDeck, setBonusDeck] = useState<BonusTile[]>([]);
+  const [bonusOpened, setBonusOpened] = useState<number[]>([]);
+  const [superDeck, setSuperDeck] = useState<SuperChest[]>([]);
+  const [superOpened, setSuperOpened] = useState<number | null>(null);
+  const [riskDeck, setRiskDeck] = useState<RiskCard[]>([]);
+  const [riskOpened, setRiskOpened] = useState<number | null>(null);
+  const [winningLineIndex, setWinningLineIndex] = useState(0);
+  const openedRef = useRef(new Set<number>());
   const activeSpin = useRef<SlotOutcome | null>(null);
   const spinTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const spinLock = useRef(false);
   const wager = lines * bet;
+  const visibleLine = recent?.lines[winningLineIndex % (recent?.lines.length || 1)];
   const winningPositions = useMemo(() => new Set(
-    (recent?.lines ?? []).flatMap(line => line.positions.map(([r,c]) => r + ':' + c)),
-  ), [recent]);
+    (visibleLine?.positions ?? []).map(([r,c]) => r + ':' + c),
+  ), [visibleLine]);
+  const linePoints = visibleLine
+    ? visibleLine.positions.slice().sort((a,b) => a[0]-b[0]).map(([col,row]) => (col*100+50) + ',' + (row*100+50)).join(' ')
+    : '';
   useEffect(() => () => { if (spinTimer.current) clearTimeout(spinTimer.current); }, []);
+  // Reuse decoded assets to prevent empty tiles on the first reel spin.
+  useEffect(() => {
+    const images = Object.values(SLOT_ICONS).map(({image}) => {
+      const img = new Image(); img.src = root + image; return img;
+    });
+    return () => { images.forEach(img => { img.onload = null; }); };
+  }, []);
+  useEffect(() => {
+    if (!recent || recent.lines.length <= 1 || phase === 'spinning') return;
+    const timer = setInterval(() => setWinningLineIndex(v => (v + 1) % recent.lines.length), 1250);
+    return () => clearInterval(timer);
+  }, [recent,phase]);
 
   const finishSpin = useCallback(() => {
     const outcome = activeSpin.current;
@@ -56,11 +81,16 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
     setRecent(outcome);
     setPending(outcome.payout);
     setRiskSteps(0);
+    setWinningLineIndex(0);
     if (outcome.bonusSymbols >= 3) {
       setAuto(0);
-      setBonusLeft(Math.max(2,5-(outcome.bonusSymbols-3)));
+      setBonusLeft(5);
       setBonusShield(outcome.bonusSymbols >= 4 ? 1 : 0);
       setBonusLog([]);
+      setBonusOpened([]);
+      openedRef.current = new Set();
+      // Sealed prizes are assigned to locations BEFORE players pick a rune.
+      setBonusDeck(prepareBonusTiles(wager));
       setNotice(en ? 'Hero symbols! Treasure quest unlocked.' : 'Герои на барабанах! Бонусная сокровищница открыта!');
       setPhase('bonus');
     } else if (outcome.payout > 0) {
@@ -70,7 +100,7 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
       setNotice(en ? 'No winning combination.' : 'Без выигрыша. Попробуй ещё!');
       setPhase('ready');
     }
-  }, [en]);
+  }, [en,wager]);
 
   const spin = useCallback(() => {
     if (phase !== 'ready' || spinLock.current || balance < wager || wager <= 0) return;
@@ -117,49 +147,59 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
     return () => clearTimeout(timer);
   },[auto,phase,help,balance,wager,spin,take,en]);
   const pickBonus = (choice:number) => {
-    if (phase !== 'bonus' || choice < 0 || choice > 4) return;
-    const roll = fairDemoInt(10);
-    if (roll < 2 && bonusShield === 0) {
-      setBonusLog(v => [...v,en ? 'A trap ends the adventure.' : 'Ловушка! Поход завершён.']);
-      setNotice(en ? 'Trap! Collect your treasure.' : 'Ловушка! Забирай собранные сокровища.');
-      setPhase(pending > 0 ? 'decision' : 'ready');
-      return;
+    if (phase !== 'bonus' || choice < 0 || choice >= bonusDeck.length || openedRef.current.has(choice)) return;
+    openedRef.current.add(choice);
+    const tile = bonusDeck[choice];
+    const outcome = resolveBonusTile({picksLeft:bonusLeft,shields:bonusShield,total:pending},tile);
+    setBonusOpened(v => [...v,choice]);
+    setPending(outcome.next.total);
+    setBonusShield(outcome.next.shields);
+    setBonusLeft(outcome.next.picksLeft);
+    const message = tile.kind === 'treasure'
+      ? (en ? 'Treasure +' : 'Сокровище +') + outcome.credited
+      : tile.kind === 'shield'
+        ? (en ? 'Protective shield found!' : 'Найден защитный щит!')
+        : outcome.blockedTrap
+          ? (en ? 'A shield blocked the trap!' : 'Щит защитил от ловушки!')
+          : (en ? 'Trap! The quest ends.' : 'Ловушка! Поход завершён.');
+    setBonusLog(v => [...v,message]);
+    if (outcome.endedByTrap) {
+      setPhase('bonus-ended');
+    } else if (outcome.superReady) {
+      // This choice is sealed, too: picking another chest changes the payout.
+      setSuperDeck(prepareSuperChests(wager));
+      setSuperOpened(null);
+      setPhase('bonus-complete');
     }
-    if (roll < 2 && bonusShield > 0) {
-      setBonusShield(v => v-1);
-      setBonusLog(v => [...v,en ? 'Shield blocked a trap!' : 'Щит защитил от ловушки!']);
-    } else if (roll === 2) {
-      setBonusShield(v => v+1);
-      setBonusLog(v => [...v,en ? 'A protective rune!' : 'Найдена защитная руна!']);
-    } else {
-      const prize = wager * (1 + fairDemoInt(3));
-      setPending(v => v+prize);
-      setBonusLog(v => [...v,(en ? 'Treasure +' : 'Сокровище +') + prize]);
-    }
-    if (bonusLeft <= 1) {
-      setPhase('superbonus');
-      setNotice(en ? 'All seals broken! Choose a super prize.' : 'Все печати сняты! Выбери суперприз.');
-    } else setBonusLeft(v => v-1);
   };
+  const finishBonus = () => setPhase(pending > 0 ? 'decision' : 'ready');
   const takeSuper = (choice:number) => {
-    if (phase !== 'superbonus' || choice < 0 || choice > 2) return;
-    const prize = wager * (3 + fairDemoInt(10));
-    setPending(v => v+prize);
+    if (phase !== 'superbonus' || superOpened !== null || choice < 0 || choice >= superDeck.length) return;
+    const prize = superDeck[choice].payout;
+    setSuperOpened(choice);
+    setPending(v => v + prize);
     setNotice((en ? 'Super prize: +' : 'Суперприз: +') + prize);
-    setPhase('decision');
+    setPhase('superbonus-reveal');
+  };
+  const beginRisk = () => {
+    if (phase !== 'decision' || pending <= 0 || riskSteps >= 5) return;
+    setRiskDeck(prepareRiskCards());
+    setRiskOpened(null);
+    setAuto(0);
+    setPhase('risk');
   };
   const pickRisk = (choice:number) => {
-    if (phase !== 'risk' || choice < 0 || choice > 3) return;
-    if (fairDemoInt(2) === 0) {
-      setPending(v => v*2);
-      setRiskSteps(v => v+1);
-      setNotice(en ? 'Success! Prize doubled.' : 'Повезло! Приз удвоен!');
-      setPhase('decision');
+    if (phase !== 'risk' || riskOpened !== null || choice < 0 || choice >= riskDeck.length) return;
+    setRiskOpened(choice);
+    if (riskDeck[choice].wins) {
+      setPending(v => v * 2);
+      setRiskSteps(v => v + 1);
+      setNotice(en ? 'Win! Your demo prize doubles.' : 'Победа! Приз удвоен.');
     } else {
       setPending(0);
-      setNotice(en ? 'The risk did not pay off.' : 'Риск не оправдался. Выигрыш потерян.');
-      setPhase('ready');
+      setNotice(en ? 'Wrong card. The demo prize is lost.' : 'Не та карта. Приз потерян.');
     }
+    setPhase('risk-reveal');
   };
   const reset = () => {
     if (phase !== 'ready' || auto > 0) return;
