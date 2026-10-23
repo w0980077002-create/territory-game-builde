@@ -853,19 +853,19 @@ html.territory-desktop-webapp .home-side-stack .home-side {
   transform-origin: center bottom;
 }
 .home-follower-figure {
-  transform: scale(1.20);
+  transform: scale(1.32);
   transform-origin: 65% 100%;
 }
 .home-hero-art {
   filter: drop-shadow(0 7px 7px rgba(0, 0, 0, 0.80)) drop-shadow(0 0 2px rgba(100, 176, 255, 0.55));
 }
 .home-follower-art {
-  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.82)) drop-shadow(0 0 2px rgba(136, 205, 255, 0.60));
+  filter: drop-shadow(0 7px 8px rgba(0, 0, 0, 0.88)) drop-shadow(0 0 4px rgba(150, 220, 255, 0.80));
 }
 /* Short narrow Telegram screens still need room for both side menus. */
 @media (max-width: 350px) {
   .home-hero-figure { transform: scale(1.14); }
-  .home-follower-figure { transform: scale(1.12); }
+  .home-follower-figure { transform: scale(1.18); }
 }
 @media (prefers-reduced-motion: reduce) {
   .home-character-stage .animate-idle { animation: none; }
