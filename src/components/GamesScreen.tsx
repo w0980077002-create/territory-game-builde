@@ -20,6 +20,7 @@ interface GameCard {
   artwork: string;
   color: 'green' | 'blue' | 'violet' | 'red' | 'gold';
   comingSoon?: boolean;
+  demo?: boolean;
 }
 
 const base = import.meta.env.BASE_URL;
@@ -48,6 +49,11 @@ const GAMES: GameCard[] = [
     id: 'wheel', ru: 'Колесо фортуны', en: 'Wheel of Fortune',
     ruHint: 'Вращай колесо и получай награды', enHint: 'Spin the wheel and collect prizes',
     scene: 'hall-art/wheel.svg', artwork: 'hall-art/wheel-hd.webp', color: 'gold',
+  },
+  {
+    id: 'slots', ru: 'Сокровища викингов', en: 'Viking Treasures',
+    ruHint: 'Автомат с бонусами и риском · демо', enHint: 'Reels, bonuses and double-up · demo',
+    scene: 'hall-art/slots.svg', artwork: 'hall-art/slots.svg', color: 'gold', demo: true,
   },
 ];
 
@@ -120,6 +126,8 @@ export function GamesScreen({
 
   const play = (game: GameCard) => {
     const id = game.id as HallGame;
+    // Preview has no server ticket debits, no gold payouts, and works offline from the Hall API.
+    if (id === 'slots') { onPlay('slots'); return; }
     if (!state || loading || busy) return;
     if (state.active) {
       if (state.active.game !== id) return;
@@ -203,10 +211,10 @@ export function GamesScreen({
               key={game.id}
               type="button"
               data-testid={`hall-game-${game.id}`}
-              aria-label={`${en ? game.en : game.ru} · ${game.comingSoon ? (en ? 'Play, no tickets used' : 'Играть, билеты не списываются') : (en ? '1 ticket' : '1 билет')}`}
+              aria-label={`${en ? game.en : game.ru} · ${game.demo ? (en ? 'Demo, no real rewards' : 'Демо, без реальных наград') : game.comingSoon ? (en ? 'Play, no tickets used' : 'Играть, билеты не списываются') : (en ? '1 ticket' : '1 билет')}`}
               onClick={() => play(game)}
-              disabled={!game.comingSoon && (loading || !state || busy || otherActive)}
-              className={`hall-game hall-game--${game.color} ${featured ? 'hall-game--featured' : ''} ${locked && !game.comingSoon ? 'hall-game--no-tickets' : ''} ${game.comingSoon ? 'hall-game--coming-soon' : ''}`}
+              disabled={!game.demo && !game.comingSoon && (loading || !state || busy || otherActive)}
+              className={`hall-game hall-game--${game.color} ${featured ? 'hall-game--featured' : ''} ${locked && !game.comingSoon && !game.demo ? 'hall-game--no-tickets' : ''} ${game.comingSoon ? 'hall-game--coming-soon' : ''}`}
             >
               <picture className="hall-game__scene">
                 <source
@@ -224,12 +232,12 @@ export function GamesScreen({
               <span className="hall-game__shimmer" aria-hidden="true" />
               {featured && <span className="hall-game__ribbon">{en ? 'Popular' : 'Популярно'}</span>}
               
-              {!game.comingSoon && <span className="hall-game__price" aria-label={en ? '1 ticket' : '1 билет'}><Ticket size={13} aria-hidden="true" /> 1</span>}
+              {!game.comingSoon && !game.demo && <span className="hall-game__price" aria-label={en ? '1 ticket' : '1 билет'}><Ticket size={13} aria-hidden="true" /> 1</span>}
               <span className="hall-game__info">
                 <strong className="hall-game__name">{en ? game.en : game.ru}</strong>
                 <small className="hall-game__hint">{en ? game.enHint : game.ruHint}</small>
               </span>
-              <span className="hall-game__play">{en ? 'Play' : 'Играть'}<ChevronRight size={14} aria-hidden="true" /></span>
+              <span className="hall-game__play">{game.demo ? (en ? 'Try demo' : 'Демо') : (en ? 'Play' : 'Играть')}<ChevronRight size={14} aria-hidden="true" /></span>
             </button>
           );
         })}

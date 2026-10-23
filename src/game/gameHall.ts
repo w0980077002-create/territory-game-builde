@@ -5,7 +5,7 @@ import { saveCloudSave, claimHallGoldCloud } from './cloud';
 /** Maximum stored Hall tickets allowed by the production database constraint. */
 export const HALL_TICKET_MAX = 1000;
 
-export type HallGame = 'monopoly' | 'dice' | 'tower' | 'targets' | 'treasury' | 'wheel';
+export type HallGame = 'monopoly' | 'dice' | 'tower' | 'targets' | 'treasury' | 'wheel' | 'slots';
 export const GAME_IDS: HallGame[] = ['monopoly','dice','tower','targets','treasury'];
 export type HallQuestion = {
   roll?:number; old_position?:number; new_position?:number;board_size?:number;
