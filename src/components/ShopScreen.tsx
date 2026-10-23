@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, buyItem, DAILY_STONE_LIMIT, stonesRemainingToday, maxStoneQty } from '@/game/actions';
+import { captureGameEvent } from '@/game/analytics';
 import { generateShopItems } from '@/game/engine';
 import { MAX_SHOP_PURCHASE_QTY } from '@/game/purchaseGuard';
 import { calendarDayKey } from '@/game/weeklyQuests';
@@ -148,6 +149,7 @@ export function ShopScreen() {
       const next = buyItem(liveState, upToDate, qty);
       if (!next) return;
       useGame.set(next);
+      captureGameEvent('territory_shop_purchase', { screen: 'shop', outcome: 'success' });
       setPicked(null);
       setResult({ item: upToDate, text: resultText(upToDate, qty, language) });
     } catch {
@@ -167,6 +169,7 @@ export function ShopScreen() {
       dailyStonesBought:status.boughtToday,dailyStonesDate:calendarDayKey() });
     setShopStatus(status);
     await keepPendingShop(null);
+    captureGameEvent('territory_shop_purchase', { screen: 'shop', outcome: 'success' });
     setPendingShop(null);
     setPicked(null);
     const display = item ?? generateShopItems(current.currentChapter).find(i=>i.id===pending.itemId);
