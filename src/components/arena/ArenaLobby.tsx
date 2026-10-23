@@ -3,6 +3,7 @@ import { useStore } from '@/game/store';
 import { useGame, useArena } from '@/game/actions';
 import type { ArenaMode } from '@/game/arenaApi';
 import { secureArenaJoin } from '@/game/arenaSecure';
+import { captureGameEvent } from '@/game/analytics';
 import { hapticImpact } from '@/game/telegram';
 import { IosGamePortal } from '@/components/ui/Modal';
 import { useLanguage, localizeText } from '@/game/i18n';
@@ -56,6 +57,7 @@ export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
     try {
       // Do not touch the server-authoritative matchmaking, wallet or room state.
       const roomId = await secureArenaJoin(mode);
+      captureGameEvent('territory_arena_fight_start', { mode });
       onJoined(roomId);
     } catch (e) {
       setError(localizeText((e as Error).message, language));
