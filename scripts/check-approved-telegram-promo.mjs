@@ -11,7 +11,9 @@ for(const [lang,[hash,length]] of Object.entries(expected)){
 const gameShare=readFileSync('src/game/dailyShare.ts','utf8');
 assert(gameShare.includes('referralLink(bot,ref.code)'),'daily shares must open Telegram bot');
 assert(!gameShare.includes("'promo/'+language"),'do not broadcast GitHub Pages links');
-for(const file of ['.github/workflows/pages.yml','.github/workflows/territory-pages-repair.yml','.github/workflows/daily-share-ci.yml']){
+assert(!existsSync('.github/workflows/territory-pages-repair.yml'),
+ 'Secondary publishing workflow must not return');
+for(const file of ['.github/workflows/pages.yml','.github/workflows/daily-share-ci.yml']){
  const s=readFileSync(file,'utf8');
  assert(!s.includes('python scripts/generate-promo-banners.py'));
  assert(s.includes('dist/promo/og-ru-v3.jpg')&&s.includes('dist/promo/og-en-v3.jpg'));

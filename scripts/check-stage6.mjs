@@ -93,12 +93,8 @@ const gate=JSON.parse(read('economy-release.json'));
 assert.equal(typeof gate.ready,'boolean','Economy release setting must be explicit; publishing is an owner decision');
 const pages=read('.github/workflows/pages.yml');
 assert(pages.includes('economy_ready') && pages.includes("'true'"));
-const repair=read('.github/workflows/territory-pages-repair.yml');
-if (/uses: actions\/deploy-pages@/i.test(repair) || /pages:\s*write/i.test(repair)) {
-  console.warn('Stage6 WARNING: legacy alternative deployment bypass still exists in the actual repository; ZIP importer excludes .github.');
-} else {
-  assert(!/branches:\s*\[main\]/i.test(repair),'diagnostic workflow must not launch on push');
-}
+assert(!fs.existsSync(new URL('../.github/workflows/territory-pages-repair.yml', import.meta.url)),
+  'Legacy second Pages publisher must stay deleted; only gated pages.yml may deploy');
 const screen=read('src/components/ProfessionsScreen.tsx');
 assert(screen.includes('submitVerifiedCraft') && screen.includes('keepPendingCraft') && screen.includes('mirrorCraftResources'));
 assert(screen.includes("craftCheck !== 'ready'"),'do not craft while backend status unknown');
