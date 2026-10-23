@@ -181,9 +181,11 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     }).connection;
     if (connection?.saveData || /2g/.test(connection?.effectiveType ?? '')) return;
     const fast = !connection?.effectiveType || connection.effectiveType === '4g';
+    // On mobile, eager loading twelve sections competed with artwork.
+    // Other sections still load normally when the player navigates to them.
     const screens: Screen[] = fast
-      ? ['inventory', 'battle', 'map', 'games', 'hero', 'arena', 'clan', 'shop', 'forge', 'quests', 'leaderboard', 'friends']
-      : ['inventory', 'battle', 'map', 'games'];
+      ? ['battle', 'inventory', 'games', 'arena', 'hero']
+      : ['battle', 'inventory'];
     let cancelled = false;
     let timer = 0;
     let nextIndex = 0;
@@ -194,9 +196,9 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         return;
       }
       await preloadSection(screens[nextIndex++]);
-      if (!cancelled) timer = window.setTimeout(() => { void warmNext(); }, 950);
+      if (!cancelled) timer = window.setTimeout(() => { void warmNext(); }, 1_500);
     };
-    timer = window.setTimeout(() => { void warmNext(); }, 1_000);
+    timer = window.setTimeout(() => { void warmNext(); }, 1_800);
     return () => { cancelled = true; window.clearTimeout(timer); };
   }, [loaded]);
 

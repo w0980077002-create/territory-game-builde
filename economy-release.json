@@ -1,4 +1,5 @@
 {
   "ready": true,
-  "reason": "GitHub Pages publication explicitly authorized by repository owner on 2026-10-16. This does not certify economy security; outstanding risks are documented in ECONOMY_SECURITY_RU.md."
+  "reason": "Owner-authorized test release; not a certification of server-authoritative economy. No real-money payouts until economy cutover is independently verified.",
+  "economy_hardened": false
 }
