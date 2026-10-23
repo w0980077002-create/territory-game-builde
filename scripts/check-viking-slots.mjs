@@ -105,6 +105,22 @@ assert.match(ui,/hapticsOn, setHapticsOn\] = useState\(false\)/,'Vibration must 
 assert.match(ui,/950 \+ i\*320/,'Reel click sound follows staggered animation stop');
 assert.match(ui,/hapticImpact/,'Use Telegram-native haptics when enabled');
 assert.match(ui,/vslot-fx-toggles/,'Effects controls must be visible');
+for (const file of ['rune-sealed.svg','chest-sealed.svg','card-sealed.svg']) {
+  assert.ok(existsSync('public/slots/'+file),'Original sealed mini-game art is required: '+file);
+  const svg = readFileSync('public/slots/'+file,'utf8');
+  assert.ok(svg.length<8000,'Keep bonus art lightweight for Telegram');
+  assert.doesNotMatch(svg,/<script|javascript:|<image[^>]+href=["']https?:/i,'No remote or unsafe SVG contents');
+  assert.ok(ui.includes(file),'Bonus mini-game must render its own original art: '+file);
+}
+for (const path of [
+ 'assets/territory/characters/enemies/wolf/idle.webp',
+ 'assets/territory/ui/items/sword.webp',
+ 'assets/territory/ui/equipment/helmet.webp',
+]) {
+  assert.ok(existsSync('public/'+path),'Approved slot symbol missing: '+path);
+  assert.ok(raw.includes(path),'Slots must use current TERRITORY symbol: '+path);
+}
+
 
 const app = readFileSync('src/App.tsx','utf8');
 assert.match(app,/slotImmersive/,'Slot view must suppress obstructing game navigation');
