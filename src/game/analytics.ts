@@ -8,6 +8,7 @@ const EVENT_NAMES = new Set([
   'territory_hall_game_open', 'territory_hall_ticket_claim',
   'territory_hall_no_tickets', 'territory_hall_round_start',
   'territory_hall_round_end', 'territory_newcomer_fight_click',
+  'territory_pve_fight_start', 'territory_pve_fight_end',
 ]);
 const SCREENS = new Set([
   'city','inventory','hero','battle','map','games','clan','shop',
@@ -33,7 +34,8 @@ function sessionId(): string | null {
 type GameEvent = 'territory_screen_open' | 'territory_battle_open'
   | 'territory_hall_game_open' | 'territory_hall_ticket_claim'
   | 'territory_hall_no_tickets' | 'territory_hall_round_start'
-  | 'territory_hall_round_end' | 'territory_newcomer_fight_click';
+  | 'territory_hall_round_end' | 'territory_newcomer_fight_click'
+  | 'territory_pve_fight_start' | 'territory_pve_fight_end';
 type GameEventProps = { screen?: string; mode?: string; outcome?: 'won' | 'lost' | 'error' | 'success' };
 
 // Only allow enumerated event names and enumerated public properties.
