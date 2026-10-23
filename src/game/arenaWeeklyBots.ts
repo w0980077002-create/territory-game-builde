@@ -171,17 +171,11 @@ export function arenaWeeklyWithBots(
     ...player,
     rank: index + 1,
   }));
-  // The backend gives our verified rank among ALL real players, including
-  // real players beyond its top-50 slice. Every synthetic bot with strictly
-  // MORE wins is placed ahead of us; real players win equal-score bot ties.
-  // This produces our precise combined position even when it is #51 or worse.
-  const displayRank = verified.my_rank == null ? null
-    : verified.my_rank + bots.filter((bot) => bot.wins > verified.my_wins).length;
+  const myPlayer = verified.my_rank == null ? null : humans.find((p) => p.rank === verified.my_rank);
+  const displayedMe = myPlayer && leaders.find((p) => p.player_id === myPlayer.player_id);
   return {
     leaders,
-    displayRank,
-    isDisplayRankVerified: displayRank != null && displayRank <= 50
-      && leaders.some((p) => !p.arenaBot && p.rank === displayRank
-        && p.player_id === humans.find((human) => human.rank === verified.my_rank)?.player_id),
+    displayRank: displayedMe?.rank ?? null,
+    isDisplayRankVerified: !!displayedMe && !displayedMe.arenaBot,
   };
 }
