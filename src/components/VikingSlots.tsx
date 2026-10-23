@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BookOpen, Crown, FastForward, Play, RotateCcw, Shield, Sparkles, Ticket, Trophy, Volume2, VolumeX, Vibrate } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { hapticImpact } from '@/game/telegram';
-import { fairDemoInt, SLOT_BET_CHOICES, SLOT_ICONS, SLOT_LINE_CHOICES, SLOT_PAYTABLE, spinVikingSlots, type SlotGrid, type SlotOutcome, type SlotSymbol } from '@/game/vikingSlots';
+import { reelSpinTrail, SLOT_BET_CHOICES, SLOT_ICONS, SLOT_LINE_CHOICES, SLOT_PAYTABLE, spinVikingSlots, type SlotGrid, type SlotOutcome, type SlotSymbol } from '@/game/vikingSlots';
 import { prepareBonusTiles, prepareSuperChests, prepareRiskCards, resolveBonusTile, type BonusTile, type SuperChest, type RiskCard } from '@/game/slotAdventure';
 import { loadSlotDemo, saveSlotDemo, type SlotDemoState } from '@/game/slotDemoSave';
 import './vikingSlots.css';
@@ -12,7 +12,6 @@ const INITIAL_BALANCE = 500;
 // Each reel travels across twelve actual symbols before landing on three results.
 const FILLER_PER_REEL = 12;
 const REEL_SPIN_MS = 2320;
-const REEL_SYMBOLS = Object.keys(SLOT_ICONS) as SlotSymbol[];
 type Phase = 'ready' | 'spinning' | 'decision' | 'bonus' | 'bonus-ended' | 'bonus-complete' | 'risk' | 'risk-reveal' | 'superbonus' | 'superbonus-reveal';
 const START_GRID: SlotGrid = [
   ['helmet','gem','gold'],['follower','wild','sword'],['boss','hero','gold'],
@@ -167,7 +166,7 @@ export function VikingSlots({ onBack, userId }: { onBack: () => void; userId: st
     activeSpin.current = outcome;
     setReelTracks(field.map((column, index) => [
       ...column,
-      ...Array.from({length: FILLER_PER_REEL}, () => REEL_SYMBOLS[fairDemoInt(REEL_SYMBOLS.length)]),
+      ...reelSpinTrail(index,outcome.stops?.[index] ?? 0,FILLER_PER_REEL),
       ...outcome.grid[index],
     ]));
     setSpinSerial(v => v + 1);
