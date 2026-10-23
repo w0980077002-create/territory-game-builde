@@ -21,6 +21,17 @@ import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 
 export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends';
+// All five follower images use 512x512 canvases but have different amounts of
+// transparent space above the character. Normalize visible silhouettes in the
+// home city without changing original artwork, combat sprites or player saves.
+const HOME_FOLLOWER_ART_SCALE: Readonly<Record<string, number>> = {
+  follower_1: 1.00, // Loyal shield: tall silhouette
+  follower_2: 1.42, // Northern warrior: short wide silhouette
+  follower_3: 1.40, // Forest healer: extra transparent top
+  follower_4: 1.14, // Moon hunter: taller silhouette
+  follower_5: 1.48, // Rune mage: most top padding
+};
+
 
 interface Props {
   user: AuthUser;
@@ -203,7 +214,12 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
           {follower && (
             <>
               <span aria-hidden="true" className="home-follower-ground-shadow absolute bottom-0 w-[78%] h-[10px] rounded-[50%] bg-black/70 blur-[4px]" />
-              <img src={getFollowerArt(follower.id)} alt={follower.name} className="home-follower-art relative max-h-full max-w-full object-contain object-bottom animate-idle" />
+              <span
+                className="home-follower-art-frame absolute inset-x-0 bottom-0 flex items-end justify-center"
+                style={{ transform: `scale(${HOME_FOLLOWER_ART_SCALE[follower.id] ?? 1})` }}
+              >
+                <img src={getFollowerArt(follower.id)} alt={follower.name} className="home-follower-art relative w-full h-auto object-contain object-bottom animate-idle" />
+              </span>
             </>
           )}
         </div>
