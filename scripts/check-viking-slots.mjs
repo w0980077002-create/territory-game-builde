@@ -56,4 +56,18 @@ assert.match(ui,/INITIAL_BALANCE = 500/);
 assert.match(ui,/setBalance\(v => v - wager\)/);
 assert.doesNotMatch(ui,/supabase\.rpc|saveCloudSave|useGame\.set|hallStart|hallFinish/,'Preview must not mutate the player wallet');
 assert.match(ui,/setAuto\(0\)/,'Bonus/risk must break auto mode');
+const cabinetCss = readFileSync('src/components/vikingSlots.css','utf8');
+assert.match(ui,/FILLER_PER_REEL = 12/,'Reels must include moving intermediate symbols');
+assert.match(ui,/REEL_SPIN_MS = 2320/,'Outcome must wait until all reels stop');
+assert.match(ui,/setReelTracks\(field\.map/,'Each reel must have a long animated strip');
+assert.match(ui,/\.\.\.outcome\.grid\[index\]/,'Animation must land on its real final grid');
+assert.match(ui,/animationDelay: \(r \* 100\)/,'Reels must stop in sequence, not simultaneously');
+assert.match(ui,/vslot-reel-window/,'Five visible reel windows required');
+assert.doesNotMatch(ui,/vslot-reel--moving/,'Do not regress to wobbling the old static tiles');
+assert.match(cabinetCss,/@keyframes vslot-real-reel-roll/,'Must animate vertical symbol travel');
+assert.match(cabinetCss,/translateY\(-83\.333333%\)/,'Travel must land on final three symbols of 18');
+assert.match(cabinetCss,/vslot-reel-track--rolling[^{]*\{/,'Rolling track class is required');
+assert.match(cabinetCss,/max-width:430px/,'Mobile cabinet must be compact');
+assert.match(cabinetCss,/\.vslot-action-bar button\{height:42px/,'Spin controls must fit on mobile');
+
 console.log('Viking slots PASS: 9 lines, both-edge pay, wild, bonus, bet guard, spin RNG, preview wallet isolation.');
