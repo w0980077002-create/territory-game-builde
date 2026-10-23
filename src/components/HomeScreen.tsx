@@ -199,9 +199,12 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
       </div>
 
       <div className="home-character-stage absolute z-0 left-[50px] right-[50px] flex items-end justify-center pointer-events-none">
-        <div className="home-follower-figure relative h-[62%] w-[26%] flex items-end justify-center">
+        <div className="home-follower-figure relative h-[66%] w-[28%] flex items-end justify-center">
           {follower && (
-            <img src={getFollowerArt(follower.id)} alt={follower.name} className="home-follower-art max-h-full max-w-full object-contain object-bottom animate-idle" />
+            <>
+              <span aria-hidden="true" className="home-follower-ground-shadow absolute bottom-0 w-[78%] h-[10px] rounded-[50%] bg-black/70 blur-[4px]" />
+              <img src={getFollowerArt(follower.id)} alt={follower.name} className="home-follower-art relative max-h-full max-w-full object-contain object-bottom animate-idle" />
+            </>
           )}
         </div>
         <div className="home-hero-figure relative h-full w-[44%] flex items-end justify-center -ml-[6%]">
