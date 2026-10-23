@@ -51,11 +51,59 @@ for(let i=0;i<100;i++){
  assert.equal(result.grid.length,5);
  assert.ok(result.payout>=0);
 }
+// Exercise the actual bonus game implementation, including deterministic sealed picks.
+const bonusSource = readFileSync('src/game/slotAdventure.ts','utf8');
+const compiledBonus = ts.transpileModule(bonusSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
+const bonusExports = {};
+runInNewContext(compiledBonus,{exports:bonusExports,require(name){assert.equal(name,'./vikingSlots');return {fairDemoInt};}});
+const {prepareBonusTiles,prepareSuperChests,prepareRiskCards,resolveBonusTile} = bonusExports;
+const shuffled = prepareBonusTiles(9, () => 0);
+assert.equal(shuffled.length,5);
+assert.equal(shuffled.filter(t=>t.kind==='trap').length,1);
+assert.equal(shuffled.filter(t=>t.kind==='shield').length,1);
+assert.equal(shuffled.filter(t=>t.kind==='treasure').length,3);
+assert.equal(shuffled.reduce((sum,t)=>sum+t.payout,0),54,'Bonus prizes stay fixed at setup');
+assert.equal(prepareBonusTiles(9,()=>0).map(t=>t.kind+':'+t.payout).join('|'),
+ shuffled.map(t=>t.kind+':'+t.payout).join('|'),'Same seeded shuffle must preserve the sealed locations');
+const basic = {picksLeft:5,shields:0,total:20};
+const treasure = resolveBonusTile(basic,shuffled.find(t=>t.kind==='treasure'));
+assert.ok(treasure.next.total>basic.total);
+const death = resolveBonusTile(basic,shuffled.find(t=>t.kind==='trap'));
+assert.equal(death.endedByTrap,true);
+assert.equal(death.next.total,basic.total,'Trap does not fabricate or destroy collected winnings');
+const saved = resolveBonusTile({...basic,shields:1},shuffled.find(t=>t.kind==='trap'));
+assert.equal(saved.blockedTrap,true);
+assert.equal(saved.endedByTrap,false);
+assert.equal(saved.next.shields,0);
+const shield = resolveBonusTile(basic,shuffled.find(t=>t.kind==='shield'));
+assert.equal(shield.next.shields,1);
+assert.equal(resolveBonusTile({picksLeft:1,shields:1,total:40},shuffled[0]).superReady,true);
+const chestDeck = prepareSuperChests(9,()=>0);
+assert.equal(chestDeck.length,3);
+assert.equal(new Set(chestDeck.map(x=>x.payout)).size,3,'All three sealed chests have distinct prizes');
+const riskDeck = prepareRiskCards(()=>0);
+assert.equal(riskDeck.length,4);
+assert.equal(riskDeck.filter(x=>x.wins).length,2,'Exactly two choices win');
+assert.equal(riskDeck.filter(x=>!x.wins).length,2,'Exactly two choices lose');
+assert.throws(()=>prepareBonusTiles(0));
+assert.throws(()=>prepareSuperChests(101));
+
 const ui=readFileSync('src/components/VikingSlots.tsx','utf8');
 assert.match(ui,/INITIAL_BALANCE = 500/);
 assert.match(ui,/setBalance\(v => v - wager\)/);
 assert.doesNotMatch(ui,/supabase\.rpc|saveCloudSave|useGame\.set|hallStart|hallFinish/,'Preview must not mutate the player wallet');
 assert.match(ui,/setAuto\(0\)/,'Bonus/risk must break auto mode');
+assert.match(ui,/prepareBonusTiles\(wager\)/,'Sealed rune rewards must be prepared before player choice');
+assert.match(ui,/prepareSuperChests\(wager\)/,'Super chest outcomes must be fixed before selection');
+assert.match(ui,/prepareRiskCards\(\)/,'Risk cards must be prepared before the reveal');
+assert.match(ui,/resolveBonusTile/,'Bonus selection must use revealed fixed tile');
+assert.doesNotMatch(ui,/const roll = fairDemoInt\(10\)/,'Do not use random-on-click fake choices');
+assert.match(ui,/vslot-adventure-backdrop/,'Bonus games must be immersive and independent');
+assert.match(ui,/vslot-win-path/,'Winning payline must be rendered on reels');
+const app = readFileSync('src/App.tsx','utf8');
+assert.match(app,/slotImmersive/,'Slot view must suppress obstructing game navigation');
+assert.match(app,/!slotImmersive && <nav/,'Bottom navigation must not overlay immersive reels');
+
 const cabinetCss = readFileSync('src/components/vikingSlots.css','utf8');
 assert.match(ui,/FILLER_PER_REEL = 12/,'Reels must include moving intermediate symbols');
 assert.match(ui,/REEL_SPIN_MS = 2320/,'Outcome must wait until all reels stop');
