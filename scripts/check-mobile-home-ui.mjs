@@ -26,6 +26,19 @@ const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventu
 assert.match(home, /<LiveCityBackdrop animated=\{cityMotion\}/, 'Home must render the approved layered city backdrop');
 assert.match(home, /className="home-hero-figure/, 'City hero must have a separate sizing wrapper');
 assert.match(home, /className="home-follower-figure/, 'City follower must have a separate sizing wrapper');
+for (const [id, scale] of [
+  ['follower_1', '1.00'],
+  ['follower_2', '1.42'],
+  ['follower_3', '1.40'],
+  ['follower_4', '1.14'],
+  ['follower_5', '1.48'],
+]) {
+  assert.ok(home.includes(`${id}: ${scale}`), `Companion ${id} must be visually normalized for its sprite padding`);
+}
+assert.match(home, /HOME_FOLLOWER_ART_SCALE\[follower\.id\]/, 'The selected companion must use its own display scale');
+assert.match(home, /home-follower-art-frame absolute inset-x-0 bottom-0/, 'Companions must remain grounded regardless of their sprite');
+assert.match(css, /\.home-follower-art-frame\s*\{\s*transform-origin: center bottom;/, 'Sprite scaling must be foot-anchored');
+
 assert.match(css, /\.home-hero-figure\s*\{\s*transform: scale\(1\.25\)/, 'Main hero grows by 25%');
 assert.match(css, /\.home-follower-figure\s*\{[\s\S]*?transform: scale\(1\.60\)/, 'Companion is enlarged enough to see at normal phone size');
 assert.match(css, /\.home-follower-figure \{ transform: scale\(1\.33\); \}/, 'Keep companion visible without side-menu overlap on very narrow screens');
