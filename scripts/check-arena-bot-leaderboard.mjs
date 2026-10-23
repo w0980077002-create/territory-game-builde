@@ -30,6 +30,8 @@ vm.runInNewContext(compiled, {
 }, { filename: 'arenaWeeklyBots.transpiled.js', timeout: 5000 });
 const { arenaWeeklyWithBots } = loaded.exports;
 assert.equal(typeof arenaWeeklyWithBots, 'function');
+assert.match(source, /ARENA_PVP_BOT_NAMES\.slice\(0, 10\)\.map/, 'Weekly bot roster should use only 10 numbered variants, not 40');
+assert.doesNotMatch(source, /\.\.\.ARENA_PVP_BOT_NAMES\.map\(/, 'Do not generate 80 virtual rivals');
 
 const players = Array.from({ length: 12 }, (_, idx) => ({
   player_id: 'real-' + idx, display_name: 'Игрок' + idx,
@@ -57,8 +59,10 @@ assert(first.leaders.every((x, idx) => idx === 0 || first.leaders[idx - 1].wins 
 const botOnly = arenaWeeklyWithBots(
   state(firstStart, secondStart, []), Date.parse('2026-10-18T12:00:00Z'),
 );
-assert.equal(botOnly.leaders.length, 50, 'Canonical NPC names and SQL-style suffixes must fill all 50 places');
+assert.equal(botOnly.leaders.length, 50, 'The fixed pool of 40 PvP names plus 10 numbered variants must fill exactly 50 places');
 assert(botOnly.leaders.every(x => x.arenaBot), 'All 50 places must be open to bots');
+assert.equal(new Set(botOnly.leaders.map(x => x.player_id)).size, 50, 'Bot identities must not repeat');
+assert.equal(botOnly.leaders.filter(x => x.display_name.includes('_')).length, 10, 'Exactly 10 bot names should use SQL-compatible numbered variants');
 assert.equal(botOnly.leaders[0].rank, 1, 'Bots must be allowed to lead the ranking');
 
 const lowHumans = Array.from({ length: 50 }, (_, idx) => ({
@@ -116,4 +120,4 @@ assert.equal(full.leaders.filter(x => x.arenaBot).length, 0,
   'All 50 higher-scoring real players must outrank lower-scoring bots');
 assert(!source.includes('supabase.rpc(') && !source.includes('supabase.from('),
   'NPC scores may not write to the actual PvP database');
-console.log('Arena TOP-50: all ranks 1–50 open to humans and bots, sorted by wins, daily 17–25 NPC growth, Sunday reset, no real-player data writes: PASS');
+console.log('Arena TOP-50: exactly 50 virtual rivals, ranks 1–50 shared with humans and sorted by wins, daily 17–25 NPC growth, Sunday reset, no real-player data writes: PASS');
