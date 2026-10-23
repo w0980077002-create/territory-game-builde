@@ -27,9 +27,10 @@ assert.match(home, /<LiveCityBackdrop animated=\{cityMotion\}/, 'Home must rende
 assert.match(home, /className="home-hero-figure/, 'City hero must have a separate sizing wrapper');
 assert.match(home, /className="home-follower-figure/, 'City follower must have a separate sizing wrapper');
 assert.match(css, /\.home-hero-figure\s*\{\s*transform: scale\(1\.25\)/, 'Main hero grows by 25%');
-assert.match(css, /\.home-follower-figure\s*\{\s*transform: scale\(1\.32\)/, 'Companion is polished to 1.32 scale');
-assert.match(css, /\.home-follower-figure \{ transform: scale\(1\.18\); \}/, 'Keep companion appropriately scaled on narrow screens');
+assert.match(css, /\.home-follower-figure\s*\{[\s\S]*?transform: scale\(1\.60\)/, 'Companion is enlarged enough to see at normal phone size');
+assert.match(css, /\.home-follower-figure \{ transform: scale\(1\.33\); \}/, 'Keep companion visible without side-menu overlap on very narrow screens');
 assert.match(home, /home-follower-ground-shadow/, 'Companion must have a separate ground shadow');
+assert.match(css, /\.home-follower-figure\s*\{[\s\S]*?z-index: 1;/, 'Companion must not disappear behind the hero');
 assert.match(home, /home-follower-figure relative h-\[66%\] w-\[28%\]/, 'Companion has increased stage room');
 assert.match(css, /\.home-character-stage::before/, 'Background contrast must stay local to characters');
 assert.match(css, /\.home-hero-art\s*\{[\s\S]*?drop-shadow/, 'Hero must remain legible over the harbor');
