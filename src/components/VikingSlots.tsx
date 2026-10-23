@@ -242,18 +242,98 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
             </div>
           </div>;
         })}
+        {!!visibleLine && phase!=='spinning' && <svg className="vslot-win-path" viewBox="0 0 500 300" preserveAspectRatio="none" aria-hidden="true">
+          <polyline points={linePoints} stroke="#ffde55" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+          {visibleLine.positions.map(([col,row]) => <circle key={col+'-'+row} cx={col*100+50} cy={row*100+50} r="10" fill="#fff3bd" stroke="#ad51c8" strokeWidth="4"/>)}
+        </svg>}
       </div>
       <span className="vslot-board-caption">{phase==='spinning'?(en?'SPINNING…':'ВРАЩЕНИЕ…'):(en ? lines + ' ACTIVE LINES' : lines + ' АКТИВНЫХ ЛИНИЙ')}</span>
     </div>
-    {recent && recent.lines.length>0 && phase!=='spinning'&&<div className="vslot-winning-lines"><Sparkles size={15}/>{en?'Winning lines':'Выигрышные линии'}: {recent.lines.map(l=>l.number+' (×'+l.payout+')').join(' · ')}</div>}
+    {visibleLine && phase!=='spinning' && <div className="vslot-winning-lines" role="status"><Sparkles size={15}/>{en?'Line':'Линия'} {visibleLine.number} · {visibleLine.count} × {SLOT_ICONS[visibleLine.symbol][en?'en':'ru']} · +{visibleLine.payout} <span>({winningLineIndex+1}/{recent?.lines.length})</span></div>}
     {notice&&<p className="vslot-notice" role="status">{notice}</p>}
-    {phase==='bonus'&&<div className="vslot-challenge"><h2>⚔️ {en?'TREASURE QUEST':'ПОХОД ЗА СОКРОВИЩАМИ'}</h2><p>{en?'Choose a rune. Beware traps!':'Выбери руну. Берегись ловушек!'}</p><p>{en?'Seals left':'Осталось печатей'}: <strong>{bonusLeft}</strong> · {en?'Shields':'Щиты'}: <strong>{bonusShield}</strong></p><div className="vslot-choice-row">{[0,1,2,3,4].map(i=><button type="button" key={i} onClick={()=>pickBonus(i)} aria-label={(en?'Rune ':'Руна ')+(i+1)}>ᛟ</button>)}</div><small>{bonusLog[bonusLog.length-1]}</small></div>}
-    {phase==='superbonus'&&<div className="vslot-challenge"><h2>🏆 {en?'SUPER BONUS':'СУПЕРБОНУС'}</h2><p>{en?'Choose a legendary chest.':'Выбери легендарный сундук.'}</p><div className="vslot-choice-row">{[0,1,2].map(i=><button type="button" key={i} onClick={()=>takeSuper(i)} aria-label={(en?'Chest ':'Сундук ')+(i+1)}>🎁</button>)}</div></div>}
-    {phase==='risk'&&<div className="vslot-challenge"><h2>🃏 {en?'DOUBLE OR LOSE':'УДВОИТЬ ИЛИ ПОТЕРЯТЬ'}</h2><p>{en?'Pick a card: 50% chance to double.':'Выбери карту: шанс удвоения — 50%. При неудаче выигрыш сгорит.'}</p><div className="vslot-choice-row">{[0,1,2,3].map(i=><button type="button" key={i} onClick={()=>pickRisk(i)} aria-label={(en?'Card ':'Карта ')+(i+1)}>♠</button>)}</div><button type="button" className="vslot-subtle" onClick={()=>setPhase('decision')}>{en?'Return without risking':'Вернуться без риска'}</button></div>}
+    {(['bonus','bonus-ended','bonus-complete','superbonus','superbonus-reveal','risk','risk-reveal'] as Phase[]).includes(phase) && (
+      <div className="vslot-adventure-backdrop">
+        <section className="vslot-adventure" role="dialog" aria-modal="true" aria-label={en?'Bonus challenge':'Бонусная игра'}>
+          <div className="vslot-adventure-title">
+            <Crown size={24}/>
+            <h2>{phase.startsWith('risk') ? (en?'CHOOSE YOUR FATE':'ИСПЫТАНИЕ УДАЧИ')
+              : phase.startsWith('superbonus') ? (en?'LEGENDARY CHESTS':'ЛЕГЕНДАРНЫЕ СУНДУКИ')
+              : (en?'VIKING TREASURE QUEST':'СОКРОВИЩНИЦА ВИКИНГОВ')}</h2>
+            <p>{en?'Preview · play coins only':'Демо · только тестовые фишки'}</p>
+          </div>
+          {(phase==='bonus'||phase==='bonus-ended'||phase==='bonus-complete') && <>
+            <div className="vslot-adventure-totals">
+              <span>{en?'Treasure':'Сокровища'} <b>{pending}</b></span>
+              <span>{en?'Moves':'Ходы'} <b>{bonusLeft}</b></span>
+              <span>{en?'Shields':'Щиты'} <b>{bonusShield}</b></span>
+            </div>
+            <p className="vslot-adventure-instruction">
+              {phase==='bonus' ? (en?'Select a sealed rune. Each hides a different prize, shield or trap.':'Выбери закрытую руну. За каждой — своё сокровище, щит или ловушка.')
+                : phase==='bonus-ended' ? (en?'The trap ended the quest. Your revealed prizes are shown below.':'Ловушка завершила поход. Ниже раскрыты награды.')
+                : (en?'All runes opened! A legendary chest awaits.':'Все руны открыты! Впереди легендарный сундук.')}
+            </p>
+            <div className="vslot-adventure-tiles">
+              {bonusDeck.map((tile,i) => {
+                const chosen = bonusOpened.includes(i);
+                const revealed = chosen || phase!=='bonus';
+                return <button type="button" key={tile.id}
+                  className={'vslot-adventure-tile '+(chosen?'vslot-adventure-tile--chosen ':'')+(revealed?'vslot-adventure-tile--revealed':'')}
+                  onClick={()=>pickBonus(i)} disabled={phase!=='bonus'||chosen}
+                  aria-label={(en?'Rune ':'Руна ')+(i+1)+(revealed?', '+tile.kind:'')}>
+                  <span className="vslot-adventure-glyph">{revealed
+                    ? (tile.kind==='trap'?'☠️':tile.kind==='shield'?'🛡️':'💰')
+                    : 'ᛟ'}</span>
+                  <span>{revealed ? (tile.kind==='treasure'?'+'+tile.payout:tile.kind==='trap'?(en?'TRAP':'ЛОВУШКА'):(en?'SHIELD':'ЩИТ')) : (i+1)}</span>
+                </button>;
+              })}
+            </div>
+            <p className="vslot-adventure-feedback" role="status">{bonusLog[bonusLog.length-1] || (en?'Choose wisely.':'Выбирай внимательно.')}</p>
+            {phase==='bonus' && pending>0 && <button type="button" className="vslot-adventure-subtle" onClick={finishBonus}>{en?'Finish quest and collect':'Завершить и забрать'}</button>}
+            {phase==='bonus-ended' && <button type="button" className="vslot-adventure-cta" onClick={finishBonus}>{pending>0 ? (en?'COLLECT TREASURE':'ЗАБРАТЬ СОКРОВИЩА') : (en?'TO THE REELS':'К БАРАБАНАМ')}</button>}
+            {phase==='bonus-complete' && <button type="button" className="vslot-adventure-cta" onClick={()=>setPhase('superbonus')}>{en?'OPEN THE SUPER BONUS':'ОТКРЫТЬ СУПЕРБОНУС'}</button>}
+          </>}
+          {(phase==='superbonus'||phase==='superbonus-reveal') && <>
+            <p className="vslot-adventure-instruction">{en?'Three different sealed prizes. Choose one chest.':'За сундуками спрятаны три разных приза. Выбери один.'}</p>
+            <div className="vslot-adventure-tiles vslot-adventure-tiles--three">
+              {superDeck.map((chest,i) => <button type="button" key={chest.id} onClick={()=>takeSuper(i)}
+                className={'vslot-adventure-tile '+(superOpened===i?'vslot-adventure-tile--chosen':'')}
+                disabled={phase!=='superbonus'} aria-label={(en?'Chest ':'Сундук ')+(i+1)}>
+                <span className="vslot-adventure-glyph">{superOpened===null?'🎁':'💎'}</span>
+                <span>{superOpened===null ? (i+1) : '+'+chest.payout}</span>
+              </button>)}
+            </div>
+            {phase==='superbonus-reveal' && <>
+              <p className="vslot-adventure-feedback" role="status">{en?'Your prize was added to the demo balance.':'Приз добавлен к тестовому выигрышу.'}</p>
+              <button type="button" className="vslot-adventure-cta" onClick={()=>setPhase('decision')}>{en?'COLLECT YOUR PRIZE':'ЗАБРАТЬ ПРИЗ'}</button>
+            </>}
+          </>}
+          {(phase==='risk'||phase==='risk-reveal') && <>
+            <p className="vslot-adventure-instruction">{en?'Two cards double the prize, two make it zero. Pick one.':'Две карты удваивают приз, две обнуляют. Выбери одну.'}</p>
+            <div className="vslot-adventure-totals">
+              <span>{en?'At stake':'На кону'} <b>{phase==='risk'?pending: (riskDeck[riskOpened??-1]?.wins?pending/2:0)}</b></span>
+              <span>{en?'Doubles left':'Удвоений осталось'} <b>{5-riskSteps}</b></span>
+            </div>
+            <div className="vslot-adventure-tiles vslot-adventure-tiles--four">
+              {riskDeck.map((card,i) => <button type="button" key={card.id} onClick={()=>pickRisk(i)}
+                disabled={phase!=='risk'}
+                className={'vslot-adventure-tile '+(riskOpened===i?'vslot-adventure-tile--chosen':'')}
+                aria-label={(en?'Card ':'Карта ')+(i+1)}>
+                <span className="vslot-adventure-glyph">{riskOpened===null?'🂠':card.wins?'👑':'☠️'}</span>
+                <span>{riskOpened===null ? (i+1) : (card.wins?'×2':'×0')}</span>
+              </button>)}
+            </div>
+            {phase==='risk-reveal' ? <>
+              <p className="vslot-adventure-feedback" role="status">{riskDeck[riskOpened??-1]?.wins ? (en?'You doubled your winnings!':'Выигрыш удвоен!') : (en?'The stake is lost.':'Выигрыш потерян.')}</p>
+              <button type="button" className="vslot-adventure-cta" onClick={()=>setPhase(pending>0?'decision':'ready')}>{en?'CONTINUE':'ПРОДОЛЖИТЬ'}</button>
+            </> : <button type="button" className="vslot-adventure-subtle" onClick={()=>setPhase('decision')}>{en?'Keep my winnings':'Сохранить выигрыш'}</button>}
+          </>}
+        </section>
+      </div>
+    )}
     <div className="vslot-controls">
       <div className="vslot-selection"><label>{en?'ACTIVE LINES':'ЛИНИИ'}</label><div>{SLOT_LINE_CHOICES.map(n=><button className={lines===n?'selected':''} type="button" key={n} onClick={()=>setLines(n)} disabled={phase!=='ready'||auto>0}>{n}</button>)}</div></div>
       <div className="vslot-selection"><label>{en?'STAKE PER LINE':'СТАВКА НА ЛИНИЮ'}</label><div>{SLOT_BET_CHOICES.map(n=><button className={bet===n?'selected':''} type="button" key={n} onClick={()=>setBet(n)} disabled={phase!=='ready'||auto>0}>{n}</button>)}</div></div>
-      {phase==='decision'?<div className="vslot-action-bar"><button type="button" className="vslot-main" onClick={take}><Trophy size={19}/>{en?'COLLECT':'ЗАБРАТЬ'} {pending}</button><button type="button" className="vslot-secondary" onClick={()=>{if(pending>0 && riskSteps<5){setAuto(0);setPhase('risk');}}} disabled={pending<=0||riskSteps>=5}><Sparkles size={16}/>{en?'DOUBLE':'РИСК ×2'}</button></div>:
+      {phase==='decision'?<div className="vslot-action-bar"><button type="button" className="vslot-main" onClick={take}><Trophy size={19}/>{en?'COLLECT':'ЗАБРАТЬ'} {pending}</button><button type="button" className="vslot-secondary" onClick={beginRisk} disabled={pending<=0||riskSteps>=5}><Sparkles size={16}/>{en?'DOUBLE':'РИСК ×2'}</button></div>:
       <div className="vslot-action-bar"><button type="button" className="vslot-main" onClick={spin} disabled={phase!=='ready'||balance<wager||auto>0}><Play size={18} fill="currentColor"/>{en?'SPIN':'КРУТИТЬ'}</button><button type="button" className="vslot-secondary" onClick={skip} disabled={phase!=='spinning'}><FastForward size={16}/>{en?'SKIP':'ПРОПУСТИТЬ'}</button></div>}
       <div className="vslot-bottom-actions"><button type="button" disabled={auto===0 && phase!=='ready' && phase!=='decision'} onClick={()=>setAuto(v=>v>0?0:10)}>{auto>0?(en?'STOP AUTO (':'СТОП АВТО (')+auto+')':(en?'AUTO ×10':'АВТО ×10')}</button><button type="button" disabled={phase!=='ready'||auto>0} onClick={reset}><RotateCcw size={14}/>{en?'RESET DEMO':'ПОПОЛНИТЬ ДЕМО'}</button></div>
     </div>
