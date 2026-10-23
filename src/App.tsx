@@ -83,9 +83,9 @@ function preloadSection(screen: Screen): Promise<unknown> {
 const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
   { id: 'city', label: 'Город', icon: '/nav-city.webp' },
   { id: 'inventory', label: 'Инвентарь', icon: '/nav-inventory.webp' },
-  { id: 'hero', label: 'Герой', icon: '/nav-hero.webp' },
+  { id: 'hero', label: 'Герой', icon: '/nav-hero-crown.webp' },
   { id: 'battle', label: 'Бой', icon: '/nav-battle.webp' },
-  { id: 'map', label: 'Карта', icon: '/nav-map.webp' },
+  { id: 'map', label: 'Карта', icon: '/nav-map-parchment.webp' },
   { id: 'games', label: 'Игры', icon: '/nav-games.webp' },
   { id: 'clan', label: 'Клан', icon: '/nav-clan.webp' },
 ];
@@ -478,7 +478,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
                   src={t.icon}
                   alt=""
                   draggable={false}
-                  className={`object-contain transition-transform duration-200 ${center ? 'w-10 h-10' : 'w-8 h-8'} ${active ? 'scale-110' : ''} `}
+                  className={`object-contain transition-transform duration-200 ${center ? 'w-10 h-10' : t.id === 'hero' || t.id === 'map' ? 'w-9 h-9' : 'w-8 h-8'} ${active ? 'scale-110' : ''} `}
                 />
                 {t.id === 'map' && gatherReady && (
                   <span aria-hidden="true" className="absolute right-0 top-0 w-4 h-4 rounded-full bg-emerald-500 border border-emerald-200 flex items-center justify-center shadow-[0_0_10px_rgba(52,211,153,0.9)] animate-pulse">

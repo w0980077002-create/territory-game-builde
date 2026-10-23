@@ -62,6 +62,10 @@ assert.match(home, /setLanguage\(language === 'ru' \? 'en' : 'ru'\)/, 'Language 
 assert.match(home, /<EquipCells/, 'Equipment slots must remain on the home screen');
 assert.match(home, /<BeltCells/, 'Potion belt must remain on the home screen');
 assert.match(app, /ic-auction\.svg/, 'Auction sub-screen must use its unique icon');
+assert.ok(app.includes("icon: '/nav-hero-crown.webp'"), 'Approved muted gold/blue crown icon must appear in Hero navigation');
+assert.ok(app.includes("icon: '/nav-map-parchment.webp'"), 'Approved parchment and compass icon must appear in Map navigation');
+assert.ok(app.includes("t.id === 'hero' || t.id === 'map' ? 'w-9 h-9'"), 'Both new icons must be readable without changing the button layout');
+
 assert.match(app, /ic-professions\.svg/, 'Professions sub-screen must use its unique icon');
 assert.match(html, /viewport-fit=cover/, 'Viewport must respect modern mobile safe areas');
 assert.match(css, /env\(safe-area-inset-bottom/, 'Telegram shell must respect the iPhone home indicator');
@@ -171,7 +175,7 @@ assert.match(gearCss, /html\.territory-ios-webapp \.gear-stage-ring\s*\{[\s\S]*?
 assert.match(gearCss, /html\.territory-ios-webapp \.gear-filter-strip/,
   'Gear item filters must remain discoverably scrollable on iPhone');
 
-for (const asset of ['public/city-bg-vibrant.webp', 'public/ic-auction.svg', 'public/ic-professions.svg', 'public/territory-mark.svg']) {
+for (const asset of ['public/city-bg-vibrant.webp', 'public/ic-auction.svg', 'public/ic-professions.svg', 'public/territory-mark.svg', 'public/nav-hero-crown.webp', 'public/nav-map-parchment.webp']) {
   await access(new URL(asset, root));
 }
 console.log('Mobile home UI checks passed: living city, responsive sides and nav, Telegram fullscreen, safe-area, language, gear.');
