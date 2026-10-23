@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Hammer, FlaskConical, Gem, Cog, Lock, Package, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useGame } from '@/game/actions';
 import { supabase } from '@/game/supabase';
+import { captureGameEvent } from '@/game/analytics';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { useStore } from '@/game/store';
 import type { ProfessionId, ProfessionProgress } from '@/game/types';
@@ -90,6 +91,7 @@ export function ProfessionsScreen() {
         professions: { ...(latest.professions ?? INITIAL_PROFESSION_PROGRESS), active: id },
       });
       setMessage(language === 'en' ? 'Profession unlocked forever!' : 'Профессия открыта навсегда!');
+      captureGameEvent('territory_profession_unlock', { outcome: 'success' });
     } catch {
       setMessage(language === 'en' ? 'Connection lost. The operation may have completed; reopen the game to check.' : 'Связь прервалась. Операция могла завершиться; откройте игру заново для проверки.');
     } finally {
@@ -132,6 +134,7 @@ export function ProfessionsScreen() {
         await keepPendingCraft(null);
         setPendingCraft(null);
         setMessage(language === 'en' ? 'Server-verified item crafted!' : 'Сервер подтвердил создание предмета!');
+        captureGameEvent('territory_craft_completed', { outcome: 'success' });
       } catch {
         setMessage(language === 'en'
           ? 'Server response uncertain. Do not craft again; retry the pending transaction.'
@@ -148,6 +151,7 @@ export function ProfessionsScreen() {
     if (!nextInventory) {setMessage(t('notEnoughResources'));return;}
     setBusyRecipe(recipeId);
     useGame.set({ ...current, inventory: nextInventory,professions:addMasteryXp(currentProgress,recipe.masteryXp) });
+    captureGameEvent('territory_craft_completed', { outcome: 'success' });
     setMessage(language === 'en' ? `Crafted: ${localizeText(recipe.output.name, language)}. Gained ${recipe.masteryXp} mastery XP.` : `Создано: ${recipe.output.name}. Получено ${recipe.masteryXp} опыта мастерства.`);
     window.setTimeout(()=>setBusyRecipe((old)=>old===recipeId?null:old),250);
   };
