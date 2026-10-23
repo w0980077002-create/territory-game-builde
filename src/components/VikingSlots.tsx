@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BookOpen, Crown, FastForward, Play, RotateCcw, Shield, Sparkles, Ticket, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
-import { fairDemoInt, SLOT_BET_CHOICES, SLOT_ICONS, SLOT_LINE_CHOICES, SLOT_PAYTABLE, spinVikingSlots, type SlotGrid, type SlotOutcome } from '@/game/vikingSlots';
+import { fairDemoInt, SLOT_BET_CHOICES, SLOT_ICONS, SLOT_LINE_CHOICES, SLOT_PAYTABLE, spinVikingSlots, type SlotGrid, type SlotOutcome, type SlotSymbol } from '@/game/vikingSlots';
 import './vikingSlots.css';
 
 const root = import.meta.env.BASE_URL;
 const INITIAL_BALANCE = 500;
+// Each reel travels across twelve actual symbols before landing on three results.
+const FILLER_PER_REEL = 12;
+const REEL_SPIN_MS = 2320;
+const REEL_SYMBOLS = Object.keys(SLOT_ICONS) as SlotSymbol[];
 type Phase = 'ready' | 'spinning' | 'decision' | 'bonus' | 'risk' | 'superbonus';
 const START_GRID: SlotGrid = [
   ['helmet','gem','gold'],['follower','wild','sword'],['boss','hero','gold'],
@@ -20,6 +24,8 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
   const [lines, setLines] = useState<(typeof SLOT_LINE_CHOICES)[number]>(9);
   const [bet, setBet] = useState<(typeof SLOT_BET_CHOICES)[number]>(1);
   const [field, setField] = useState<SlotGrid>(START_GRID);
+  const [reelTracks, setReelTracks] = useState<SlotSymbol[][] | null>(null);
+  const [spinSerial, setSpinSerial] = useState(0);
   const [phase, setPhase] = useState<Phase>('ready');
   const [pending, setPending] = useState(0);
   const [recent, setRecent] = useState<SlotOutcome | null>(null);
@@ -46,6 +52,7 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
     spinLock.current = false;
     if (!outcome) return;
     setField(outcome.grid);
+    setReelTracks(null);
     setRecent(outcome);
     setPending(outcome.payout);
     setRiskSteps(0);
@@ -72,10 +79,18 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
     setPending(0);
     setRecent(null);
     setNotice('');
-    activeSpin.current = spinVikingSlots(lines, bet);
+    const outcome = spinVikingSlots(lines, bet);
+    activeSpin.current = outcome;
+    setReelTracks(field.map((column, index) => [
+      ...column,
+      ...Array.from({length: FILLER_PER_REEL}, () => REEL_SYMBOLS[fairDemoInt(REEL_SYMBOLS.length)]),
+      ...outcome.grid[index],
+    ]));
+    setSpinSerial(v => v + 1);
     setPhase('spinning');
-    spinTimer.current = setTimeout(finishSpin,1150);
-  }, [phase,balance,wager,lines,bet,finishSpin]);
+    // Last reel stops at 2230 ms, then finalize exactly the server-independent demo result.
+    spinTimer.current = setTimeout(finishSpin, REEL_SPIN_MS);
+  }, [phase,balance,wager,lines,bet,field,finishSpin]);
   const skip = () => {
     if (phase !== 'spinning') return;
     if (spinTimer.current) clearTimeout(spinTimer.current);
@@ -157,24 +172,38 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
       <div><span className="vslot-eyebrow">TERRITORY · {en?'GAME HALL':'ИГРОВОЙ ЗАЛ'}</span><h1>{en?'VIKING TREASURES':'СОКРОВИЩА ВИКИНГОВ'}</h1></div>
       <button type="button" onClick={() => setHelp(v=>!v)} className="vslot-icon-button" aria-label={en?'Paytable':'Таблица выплат'}><BookOpen size={18}/></button>
     </div>
-    <div className="vslot-preview-label"><Shield size={14}/>{en?'PLAY-MONEY PREVIEW · NO REAL REWARDS':'ТЕСТОВЫЙ РЕЖИМ · БЕЗ НАСТОЯЩИХ НАГРАД'}</div>
+    <div className="vslot-preview-label"><Shield size={12}/>{en?'PLAY-MONEY PREVIEW · NO REAL REWARDS':'ТЕСТОВЫЙ РЕЖИМ · БЕЗ НАСТОЯЩИХ НАГРАД'}</div>
     <div className="vslot-art"><img src={root+'assets/territory/characters/heroes/female_warrior/idle.webp'} alt=""/><div><Crown size={25}/><strong>{en?'FATE OF THE NORTH':'УДАЧА СЕВЕРА'}</strong><span>{en?'Treasures, runes and legendary heroes':'Сокровища, руны и герои легенд'}</span></div><img src={root+'assets/territory/characters/bosses/northern_jarl/idle.webp'} alt=""/></div>
     <div className="vslot-stats">
-      <div><small>{en?'PLAY COINS':'ИГРОВЫЕ МОНЕТЫ'}</small><strong>{balance.toLocaleString('ru-RU')}</strong></div>
-      <div><small>{en?'TOTAL STAKE':'ОБЩАЯ СТАВКА'}</small><strong>{wager}</strong></div>
-      <div><small>{en?'UNCLAIMED':'ВЫИГРЫШ'}</small><strong className="vslot-gold">{pending.toLocaleString('ru-RU')}</strong></div>
+      <div><small>{en?'PLAY COINS':'ФИШКИ'}</small><strong>{balance.toLocaleString('ru-RU')}</strong></div>
+      <div><small>{en?'TOTAL STAKE':'СТАВКА'}</small><strong>{wager}</strong></div>
+      <div><small>{en?'UNCLAIMED':'ПРИЗ'}</small><strong className="vslot-gold">{pending.toLocaleString('ru-RU')}</strong></div>
     </div>
     <div className="vslot-board">
       <div className="vslot-line-marker">{[1,2,3,4,5,6,7,8,9].filter(i=>i<=lines).map(i=><span key={i}>{i}</span>)}</div>
-      <div className="vslot-reels">
-        {field.map((reel,r)=><div className={'vslot-reel '+(phase==='spinning'?'vslot-reel--moving':'')} key={r}>
-          {reel.map((sym,c)=><div className={'vslot-symbol '+(winningPositions.has(r+':'+c)?'vslot-symbol--win':'')} key={c}>
-            <img src={root+SLOT_ICONS[sym].image} alt={en?SLOT_ICONS[sym].en:SLOT_ICONS[sym].ru} draggable={false}/>
-            {sym==='wild'&&<b>WILD</b>}{sym==='hero'&&<b>BONUS</b>}
-          </div>)}
-        </div>)}
+      <div className="vslot-reels" aria-label={en ? 'Five animated reels' : 'Пять вращающихся барабанов'}>
+        {field.map((reel, r) => {
+          const sequence = reelTracks?.[r] ?? reel;
+          const animating = phase === 'spinning' && !!reelTracks;
+          return <div className="vslot-reel-window" key={r}>
+            <div key={animating ? 'spin-' + spinSerial + '-' + r : 'rest-' + r}
+              className={'vslot-reel-track ' + (animating ? 'vslot-reel-track--rolling' : '')}
+              style={animating ? {
+                animationDelay: (r * 100) + 'ms',
+                animationDuration: (950 + r * 220) + 'ms',
+              } : undefined}>
+              {sequence.map((sym, idx) => <div
+                className={'vslot-symbol ' + (!animating && winningPositions.has(r+':'+idx) ? 'vslot-symbol--win' : '')}
+                key={idx}>
+                <img src={root + SLOT_ICONS[sym].image}
+                  alt={en ? SLOT_ICONS[sym].en : SLOT_ICONS[sym].ru} draggable={false}/>
+                {sym==='wild'&&<b>WILD</b>}{sym==='hero'&&<b>BONUS</b>}
+              </div>)}
+            </div>
+          </div>;
+        })}
       </div>
-      <span className="vslot-board-caption">{phase==='spinning'?(en?'SPINNING…':'ВРАЩЕНИЕ…'):(en?'9 WINNING LINES · BOTH DIRECTIONS':'9 ЛИНИЙ · В ОБЕ СТОРОНЫ')}</span>
+      <span className="vslot-board-caption">{phase==='spinning'?(en?'SPINNING…':'ВРАЩЕНИЕ…'):(en ? lines + ' ACTIVE LINES' : lines + ' АКТИВНЫХ ЛИНИЙ')}</span>
     </div>
     {recent && recent.lines.length>0 && phase!=='spinning'&&<div className="vslot-winning-lines"><Sparkles size={15}/>{en?'Winning lines':'Выигрышные линии'}: {recent.lines.map(l=>l.number+' (×'+l.payout+')').join(' · ')}</div>}
     {notice&&<p className="vslot-notice" role="status">{notice}</p>}
