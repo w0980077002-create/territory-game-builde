@@ -1,4 +1,5 @@
 import { refreshFortuneVip } from '@/game/fortuneVip';
+import { captureGameEvent } from '@/game/analytics';
 import { Suspense, lazy, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
@@ -153,6 +154,13 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const questAlerts = getQuestAlerts(game, socialClaims, seenQuestKeys);
   const onSocialStatusChange = useCallback((next: SocialStatus) => setSocialClaims(next), []);
   useLiveSync(loaded);
+  // Anonymously count successful navigation after the cloud save has loaded.
+  // No user ID, character name or gameplay data is sent to analytics.
+  useEffect(() => {
+    if (!loaded) return;
+    captureGameEvent('territory_screen_open', { screen });
+  }, [loaded, screen]);
+
 
   // Idle, sequential chunk warming removes Telegram WebView's first-tap
   // JavaScript download delay. Avoid flooding constrained/mobile data.
@@ -365,6 +373,10 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             onOpen={setScreen}
             questAlerts={questAlerts}
             onBattle={(view, auto) => {
+              captureGameEvent('territory_battle_open', { mode: view });
+              if (game.player.level <= 2 && game.totalBattlesWon === 0 && view === 'campaign') {
+                captureGameEvent('territory_newcomer_fight_click', { mode: 'campaign' });
+              }
               setBattleView(view);
               setAutoStart(!!auto);
               setScreen('battle');
@@ -395,7 +407,11 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'leaderboard' && <LeaderboardScreen user={user} />}
         {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} />}
         {screen === 'games' && (
-          <GamesScreen userId={user.id} onPlay={(gameId) => { setHallGame(gameId); setScreen('hall-play'); }} />
+          <GamesScreen userId={user.id} onPlay={(gameId) => {
+            captureGameEvent('territory_hall_game_open', { mode: gameId });
+            setHallGame(gameId);
+            setScreen('hall-play');
+          }} />
         )}
         {screen === 'hall-play' && <HallPlayScreen game={hallGame} userId={user.id} onBack={() => setScreen('games')} />}
         {screen === 'professions' && <ProfessionsScreen />}
