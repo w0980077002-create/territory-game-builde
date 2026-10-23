@@ -18,6 +18,7 @@ import { Currency, formatAmount } from '@/components/ui/Currency';
 import { DailySheet, MailSheet, SettingsSheet, StonesSheet, type SaveStatus } from '@/components/home/HomeSheets';
 import { LiveCityBackdrop, CITY_MOTION_KEY, initialCityMotion } from '@/components/home/LiveCityBackdrop';
 import { useLanguage, localizeText } from '@/game/i18n';
+import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 
 export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends';
 
@@ -155,7 +156,7 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
             <span className="hud-chip min-w-0"><Currency kind="redGems" value={formatAmount(player.redGems)} size={20} className="text-[11px] text-white" /></span>
           </div>
           <div className="flex items-center gap-1.5">
-            <HudIcon icon="/ic-trophy.webp" label={t('leaderboard')} onClick={() => onOpen('leaderboard')} />
+            {SHOW_TOP_LEADERBOARD_SHORTCUT && <HudIcon icon="/ic-trophy.webp" label={t('leaderboard')} onClick={() => onOpen('leaderboard')} />}
             <HudIcon icon="/ic-mail.webp" label={t('mail')} badge={unreadMail} onClick={() => setSheet('mail')} />
             <HudIcon icon="/ic-settings.webp" label={t('settings')} onClick={() => setSheet('settings')} />
             <button type="button" onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')} aria-label={t('language')} className="h-8 min-w-8 px-1.5 rounded-lg border border-sky-200/65 bg-gradient-to-b from-[#173a54]/95 to-[#08111d]/95 text-[10px] font-black text-sky-100 shadow-[0_0_9px_rgba(56,189,248,0.18)] active:scale-90">{language.toUpperCase()}</button>
