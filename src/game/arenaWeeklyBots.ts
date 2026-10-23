@@ -2,23 +2,29 @@ import type { ArenaWeeklyPlayer, ArenaWeeklyStatus } from './arenaWeekly';
 import { seasonWindow } from './seasonCalendar';
 
 /**
- * Arena's existing SQL bot-name pool (arena_start_room, production database).
- * These are the SAME names as the PvP filler opponents, not invented fake users.
- * Non-player entries are visual tournament rivals only: no account, no wallet,
- * no claimable rewards and no modification to server-verified weekly wins.
+ * Exactly 50 named virtual Arena contenders for the weekly scoreboard:
+ * 25 distinct Cyrillic names and 25 distinct Latin names. Most existing PvP
+ * arena names are preserved; additional Latin names are curated, never made by
+ * appending number suffixes. Visual-only rivals are not player accounts:
+ * no wallets, rewards, or changes to server-verified weekly victories.
  */
-const ARENA_PVP_BOT_NAMES = [
+const RUSSIAN_ARENA_BOT_NAMES = [
   'Рагнар', 'Сигурд', 'Хельга', 'Бьорн', 'Ивар', 'Астрид', 'Торвальд', 'Фрейя',
   'Улаф', 'Лагерта', 'Хротгар', 'Эйрик', 'Сольвейг', 'Гуннар', 'Кнуд',
-  'Ингрид', 'Харальд', 'Тюр', 'Вали', 'Сван', 'ВолкСевера', 'Берсерк',
-  'ТёмныйЯрл', 'Ледоруб', 'Медведь', 'Skald', 'Valkyr', 'Drakkar',
-  'Fenrir', 'NordKing', 'Wolfhart', 'Grimnir', 'Тордис', 'Хаук',
-  'Агнар', 'Ярослав', 'Мстислав', 'Дружинник', 'СтальнойКулак', 'Варяг',
-  // SQL also generates numbered variants (10–99) from these base names.
+  'Ингрид', 'Харальд', 'Тюр', 'Вали', 'Сван', 'Тордис', 'Хаук',
+  'Агнар', 'Ярослав', 'Мстислав',
+] as const;
+
+const ENGLISH_ARENA_BOT_NAMES = [
+  'Skald', 'Valkyr', 'Drakkar', 'Fenrir', 'NordKing', 'Wolfhart', 'Grimnir',
+  'Leif', 'Hakon', 'Halfdan', 'Arne', 'Sten', 'Finn', 'Sven',
+  'Torsten', 'Einar', 'Roald', 'Sigmund', 'Asger', 'Arvid', 'Rollo',
+  'Vidar', 'Sigrid', 'Brynhild', 'Freydis',
 ] as const;
 
 const FEMALE_BOT_NAMES = new Set([
-  'Хельга', 'Астрид', 'Фрейя', 'Лагерта', 'Сольвейг', 'Ингрид', 'Valkyr', 'Тордис',
+  'Хельга', 'Астрид', 'Фрейя', 'Лагерта', 'Сольвейг', 'Ингрид', 'Тордис',
+  'Valkyr', 'Sigrid', 'Brynhild', 'Freydis',
 ]);
 
 export type ArenaWeeklyDisplayPlayer = ArenaWeeklyPlayer & {
@@ -84,13 +90,9 @@ export function arenaWeeklyWithBots(
   const currentDay = Math.min(6, Math.max(0, Math.round((dayUtc - startDayUtc) / 86_400_000)));
   const week = season.weekKey;
 
-  // Exactly 50 synthetic Arena rivals: 40 canonical PvP names plus only
-  // 10 SQL-compatible numbered variants. This is a fixed pool, not 80 bots.
-  // Real players overtake and replace these rivals in the displayed TOP-50.
-  const botNames = [
-    ...ARENA_PVP_BOT_NAMES,
-    ...ARENA_PVP_BOT_NAMES.slice(0, 10).map((name) => name + '_' + (10 + stableHash(name + ':arena-variant') % 90)),
-  ];
+  // Fixed 25/25 name pool. All 50 names are unique, legible and without
+  // underscores/numbers; human competitors still enter by their real wins.
+  const botNames = [...RUSSIAN_ARENA_BOT_NAMES, ...ENGLISH_ARENA_BOT_NAMES];
   const bots: ArenaWeeklyDisplayPlayer[] = botNames.map((name) => {
     const seed = stableHash(week + ':' + name);
     // Different for each bot and each day, stable on reload and across devices.
@@ -102,7 +104,7 @@ export function arenaWeeklyWithBots(
       const mixed = Math.imul(hash ^ (hash >>> 16), 0x7feb352d);
       victories += 17 + ((mixed ^ (mixed >>> 15)) >>> 0) % 9;
     }
-    const female = FEMALE_BOT_NAMES.has(name.split('_')[0]);
+    const female = FEMALE_BOT_NAMES.has(name);
     return {
       player_id: 'arena-npc:' + name,
       display_name: name,
