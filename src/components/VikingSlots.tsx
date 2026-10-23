@@ -4,6 +4,7 @@ import { useLanguage } from '@/game/i18n';
 import { hapticImpact } from '@/game/telegram';
 import { fairDemoInt, SLOT_BET_CHOICES, SLOT_ICONS, SLOT_LINE_CHOICES, SLOT_PAYTABLE, spinVikingSlots, type SlotGrid, type SlotOutcome, type SlotSymbol } from '@/game/vikingSlots';
 import { prepareBonusTiles, prepareSuperChests, prepareRiskCards, resolveBonusTile, type BonusTile, type SuperChest, type RiskCard } from '@/game/slotAdventure';
+import { loadSlotDemo, saveSlotDemo, type SlotDemoState } from '@/game/slotDemoSave';
 import './vikingSlots.css';
 
 const root = import.meta.env.BASE_URL;
@@ -19,40 +20,51 @@ const START_GRID: SlotGrid = [
 ];
 
 /** Preview-only slot; never submits a wallet transaction or pays real game currency. */
-export function VikingSlots({ onBack }: { onBack: () => void }) {
+export function VikingSlots({ onBack, userId }: { onBack: () => void; userId: string }) {
+  const restored = useMemo(() => loadSlotDemo(userId), [userId]);
   const { language } = useLanguage();
   const en = language === 'en';
-  const [balance, setBalance] = useState(INITIAL_BALANCE);
-  const [lines, setLines] = useState<(typeof SLOT_LINE_CHOICES)[number]>(9);
-  const [bet, setBet] = useState<(typeof SLOT_BET_CHOICES)[number]>(1);
-  const [field, setField] = useState<SlotGrid>(START_GRID);
+  const [balance, setBalance] = useState(restored?.balance ?? INITIAL_BALANCE);
+  const [lines, setLines] = useState<(typeof SLOT_LINE_CHOICES)[number]>(restored?.lines ?? 9);
+  const [bet, setBet] = useState<(typeof SLOT_BET_CHOICES)[number]>(restored?.bet ?? 1);
+  const [field, setField] = useState<SlotGrid>(restored?.field ?? START_GRID);
   const [reelTracks, setReelTracks] = useState<SlotSymbol[][] | null>(null);
   const [spinSerial, setSpinSerial] = useState(0);
-  const [phase, setPhase] = useState<Phase>('ready');
-  const [pending, setPending] = useState(0);
-  const [recent, setRecent] = useState<SlotOutcome | null>(null);
+  const [phase, setPhase] = useState<Phase>(restored?.phase ?? 'ready');
+  const [pending, setPending] = useState(restored?.pending ?? 0);
+  const [recent, setRecent] = useState<SlotOutcome | null>(restored?.recent ?? null);
   const [auto, setAuto] = useState(0);
   const [help, setHelp] = useState(false);
   const [notice, setNotice] = useState('');
-  const [bonusLeft, setBonusLeft] = useState(5);
-  const [bonusShield, setBonusShield] = useState(0);
+  const [bonusLeft, setBonusLeft] = useState(restored?.bonusLeft ?? 5);
+  const [bonusShield, setBonusShield] = useState(restored?.bonusShield ?? 0);
   const [bonusLog, setBonusLog] = useState<string[]>([]);
-  const [riskSteps, setRiskSteps] = useState(0);
-  const [bonusDeck, setBonusDeck] = useState<BonusTile[]>([]);
-  const [bonusOpened, setBonusOpened] = useState<number[]>([]);
-  const [superDeck, setSuperDeck] = useState<SuperChest[]>([]);
-  const [superOpened, setSuperOpened] = useState<number | null>(null);
-  const [riskDeck, setRiskDeck] = useState<RiskCard[]>([]);
-  const [riskOpened, setRiskOpened] = useState<number | null>(null);
+  const [riskSteps, setRiskSteps] = useState(restored?.riskSteps ?? 0);
+  const [bonusDeck, setBonusDeck] = useState<BonusTile[]>(restored?.bonusDeck ?? []);
+  const [bonusOpened, setBonusOpened] = useState<number[]>(restored?.bonusOpened ?? []);
+  const [superDeck, setSuperDeck] = useState<SuperChest[]>(restored?.superDeck ?? []);
+  const [superOpened, setSuperOpened] = useState<number | null>(restored?.superOpened ?? null);
+  const [riskDeck, setRiskDeck] = useState<RiskCard[]>(restored?.riskDeck ?? []);
+  const [riskOpened, setRiskOpened] = useState<number | null>(restored?.riskOpened ?? null);
   const [winningLineIndex, setWinningLineIndex] = useState(0);
-  const [soundOn, setSoundOn] = useState(false);
-  const [hapticsOn, setHapticsOn] = useState(false);
+  const [soundOn, setSoundOn] = useState(restored?.soundOn ?? false);
+  const [hapticsOn, setHapticsOn] = useState(restored?.hapticsOn ?? false);
   const audioRef = useRef<AudioContext | null>(null);
-  const openedRef = useRef(new Set<number>());
+  const openedRef = useRef(new Set<number>(restored?.bonusOpened ?? []));
   const activeSpin = useRef<SlotOutcome | null>(null);
   const spinTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const spinLock = useRef(false);
   const wager = lines * bet;
+  useEffect(() => {
+    const snapshot: SlotDemoState = {
+      balance,lines,bet,phase,wagerAtSpin:wager,pending,field,recent,
+      bonusLeft,bonusShield,bonusDeck,bonusOpened,superDeck,superOpened,
+      riskDeck,riskOpened,riskSteps,auto:0,soundOn,hapticsOn,
+    };
+    saveSlotDemo(userId,snapshot);
+  },[userId,balance,lines,bet,phase,wager,pending,field,recent,bonusLeft,bonusShield,
+    bonusDeck,bonusOpened,superDeck,superOpened,riskDeck,riskOpened,riskSteps,soundOn,hapticsOn]);
+
   const visibleLine = recent?.lines[winningLineIndex % (recent?.lines.length || 1)];
   const winningPositions = useMemo(() => new Set(
     (visibleLine?.positions ?? []).map(([r,c]) => r + ':' + c),
