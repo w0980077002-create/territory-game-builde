@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { LanguageProvider } from '@/game/i18n';
-import { captureGameOpen } from '@/game/analytics';
+import { captureGameOpen, captureGameEvent } from '@/game/analytics';
 
 const AdminApp = lazy(() => import('@/admin/AdminApp').then((m) => ({ default: m.AdminApp })));
 const isAdminRoute =
@@ -11,7 +11,19 @@ const isAdminRoute =
   window.location.hash === '#admin' ||
   new URLSearchParams(window.location.search).has('admin');
 
-if (!isAdminRoute) captureGameOpen();
+if (!isAdminRoute) {
+  captureGameOpen();
+  // One generic, anonymous failure signal per session view. Never send
+  // exception text, stack traces, URLs, session data or player identifiers.
+  let errorCaptured = false;
+  const noteError = () => {
+    if (errorCaptured) return;
+    errorCaptured = true;
+    captureGameEvent('territory_client_error');
+  };
+  window.addEventListener('error', noteError);
+  window.addEventListener('unhandledrejection', noteError);
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
