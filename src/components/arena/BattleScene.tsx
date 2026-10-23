@@ -137,7 +137,7 @@ export function BattleScene(props: Props) {
                   Keep it in its own foreground lane to make both faces visible. */}
               <div className="absolute inset-0 z-20 pointer-events-none">
                 <FighterFigure
-                  src={import.meta.env.BASE_URL + 'hero-viking.webp'}
+                  src={import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp'}
                   combatFrames={getCombatAppearance(game.appearance)}
                   name={me.name}
                   dir={1}

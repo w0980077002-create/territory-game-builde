@@ -13,4 +13,4 @@ console.log('Monopoly build guard PASS: absent settings, existing projects, secr
 
 for(const file of ['gold-coin.webp','guardian.webp','hero.webp','ship.webp'])assert.ok(existsSync('public/monopoly/'+file),'Missing scoped Monopoly asset: '+file);
 const screen=readFileSync('src/components/monopoly/MonopolyAdventure.tsx','utf8');
-assert.doesNotMatch(screen,/\/assets\/territory\/|src="\/(?:gold-coin|hero-viking)\.webp/,'Monopoly must not depend on shared assets removed from main');
+assert.doesNotMatch(screen,/\/assets\/territory\/|src="\/(?:gold-coin|hero)\.webp/,'Monopoly must not depend on shared assets removed from main');

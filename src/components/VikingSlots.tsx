@@ -158,7 +158,7 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
       <button type="button" onClick={() => setHelp(v=>!v)} className="vslot-icon-button" aria-label={en?'Paytable':'Таблица выплат'}><BookOpen size={18}/></button>
     </div>
     <div className="vslot-preview-label"><Shield size={14}/>{en?'PLAY-MONEY PREVIEW · NO REAL REWARDS':'ТЕСТОВЫЙ РЕЖИМ · БЕЗ НАСТОЯЩИХ НАГРАД'}</div>
-    <div className="vslot-art"><img src={root+'hero-viking.webp'} alt=""/><div><Crown size={25}/><strong>{en?'FATE OF THE NORTH':'УДАЧА СЕВЕРА'}</strong><span>{en?'Treasures, runes and legendary heroes':'Сокровища, руны и герои легенд'}</span></div><img src={root+'enemy-boss.webp'} alt=""/></div>
+    <div className="vslot-art"><img src={root+'assets/territory/characters/heroes/female_warrior/idle.webp'} alt=""/><div><Crown size={25}/><strong>{en?'FATE OF THE NORTH':'УДАЧА СЕВЕРА'}</strong><span>{en?'Treasures, runes and legendary heroes':'Сокровища, руны и герои легенд'}</span></div><img src={root+'assets/territory/characters/bosses/northern_jarl/idle.webp'} alt=""/></div>
     <div className="vslot-stats">
       <div><small>{en?'PLAY COINS':'ИГРОВЫЕ МОНЕТЫ'}</small><strong>{balance.toLocaleString('ru-RU')}</strong></div>
       <div><small>{en?'TOTAL STAKE':'ОБЩАЯ СТАВКА'}</small><strong>{wager}</strong></div>

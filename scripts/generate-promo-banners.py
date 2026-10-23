@@ -35,7 +35,7 @@ for lang,tag,sub,caption in [
 ]:
     im=base.copy()
     paste_obj(im,PUBLIC/'monopoly'/'ship.webp',(775,125),(365,360))
-    paste_obj(im,PUBLIC/'hero-viking.webp',(805,218),(330,410))
+    paste_obj(im,PUBLIC/'assets'/'territory'/'characters'/'heroes'/'female_warrior'/'idle.webp',(805,218),(330,410))
     d=ImageDraw.Draw(im)
     d.rounded_rectangle((15,15,W-15,H-15),radius=28,outline='#fbd488',width=8)
     # Shadow for title and subtitle

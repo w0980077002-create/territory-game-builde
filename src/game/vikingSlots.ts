@@ -10,9 +10,9 @@ export type WinningLine = { number: number; count: number; symbol: SlotSymbol; p
 export type SlotOutcome = { grid: SlotGrid; lines: WinningLine[]; payout: number; bonusSymbols: number };
 
 export const SLOT_ICONS: Record<SlotSymbol, { image: string; ru: string; en: string }> = {
-  hero: { image: 'hero-viking.webp', ru: 'Герой — бонус', en: 'Hero — bonus' },
+  hero: { image: 'assets/territory/characters/heroes/female_warrior/idle.webp', ru: 'Герой — бонус', en: 'Hero — bonus' },
   wild: { image: 'territory-mark.svg', ru: 'Руна WILD', en: 'Wild rune' },
-  boss: { image: 'enemy-boss.webp', ru: 'Босс', en: 'Boss' },
+  boss: { image: 'assets/territory/characters/bosses/northern_jarl/idle.webp', ru: 'Босс', en: 'Boss' },
   wolf: { image: 'enemy-wolf.webp', ru: 'Волк', en: 'Wolf' },
   follower: { image: 'follower-shield.webp', ru: 'Спутник', en: 'Companion' },
   sword: { image: 'item-weapon.webp', ru: 'Оружие', en: 'Weapon' },
