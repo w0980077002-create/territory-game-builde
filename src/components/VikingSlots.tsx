@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Crown, FastForward, Play, RotateCcw, Shield, Sparkles, Ticket, Trophy } from 'lucide-react';
+import { ArrowLeft, BookOpen, Crown, FastForward, Play, RotateCcw, Shield, Sparkles, Ticket, Trophy, Volume2, VolumeX, Vibrate } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
+import { hapticImpact } from '@/game/telegram';
 import { fairDemoInt, SLOT_BET_CHOICES, SLOT_ICONS, SLOT_LINE_CHOICES, SLOT_PAYTABLE, spinVikingSlots, type SlotGrid, type SlotOutcome, type SlotSymbol } from '@/game/vikingSlots';
 import { prepareBonusTiles, prepareSuperChests, prepareRiskCards, resolveBonusTile, type BonusTile, type SuperChest, type RiskCard } from '@/game/slotAdventure';
 import './vikingSlots.css';
@@ -44,6 +45,9 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
   const [riskDeck, setRiskDeck] = useState<RiskCard[]>([]);
   const [riskOpened, setRiskOpened] = useState<number | null>(null);
   const [winningLineIndex, setWinningLineIndex] = useState(0);
+  const [soundOn, setSoundOn] = useState(false);
+  const [hapticsOn, setHapticsOn] = useState(false);
+  const audioRef = useRef<AudioContext | null>(null);
   const openedRef = useRef(new Set<number>());
   const activeSpin = useRef<SlotOutcome | null>(null);
   const spinTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -56,7 +60,41 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
   const linePoints = visibleLine
     ? visibleLine.positions.slice().sort((a,b) => a[0]-b[0]).map(([col,row]) => (col*100+50) + ',' + (row*100+50)).join(' ')
     : '';
-  useEffect(() => () => { if (spinTimer.current) clearTimeout(spinTimer.current); }, []);
+  useEffect(() => () => {
+    if (spinTimer.current) clearTimeout(spinTimer.current);
+    const audio = audioRef.current;
+    audioRef.current = null;
+    if (audio) void audio.close().catch(()=>{});
+  }, []);
+  const playTone = useCallback((hz: number) => {
+    if (!soundOn || typeof window.AudioContext !== 'function') return;
+    try {
+      const audio = audioRef.current ?? new window.AudioContext();
+      audioRef.current = audio;
+      if (audio.state === 'suspended') void audio.resume().catch(()=>{});
+      const note = audio.createOscillator();
+      const volume = audio.createGain();
+      note.type = 'sine';
+      note.frequency.setValueAtTime(hz,audio.currentTime);
+      volume.gain.setValueAtTime(0.0001,audio.currentTime);
+      volume.gain.exponentialRampToValueAtTime(0.055,audio.currentTime+0.015);
+      volume.gain.exponentialRampToValueAtTime(0.0001,audio.currentTime+0.16);
+      note.connect(volume); volume.connect(audio.destination);
+      note.start(); note.stop(audio.currentTime+0.17);
+    } catch { /* Audio is optional; do not interrupt the game. */ }
+  },[soundOn]);
+  const touchFeedback = useCallback((heavy = false) => {
+    if (!hapticsOn) return;
+    try { hapticImpact(heavy ? 'medium' : 'light'); } catch { /* unsupported Telegram client */ }
+  },[hapticsOn]);
+  useEffect(() => {
+    if (phase !== 'spinning') return;
+    const timers = [0,1,2,3,4].map(i => setTimeout(() => {
+      playTone(330 + i*45);
+      touchFeedback(false);
+    },950 + i*320));
+    return () => timers.forEach(clearTimeout);
+  },[phase,playTone,touchFeedback,spinSerial]);
   // Reuse decoded assets to prevent empty tiles on the first reel spin.
   useEffect(() => {
     const images = Object.values(SLOT_ICONS).map(({image}) => {
@@ -78,6 +116,8 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
     if (!outcome) return;
     setField(outcome.grid);
     setReelTracks(null);
+    playTone(outcome.payout>0 ? 810 : 280);
+    if (outcome.payout>0 || outcome.bonusSymbols >= 3) touchFeedback(true);
     setRecent(outcome);
     setPending(outcome.payout);
     setRiskSteps(0);
@@ -100,11 +140,13 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
       setNotice(en ? 'No winning combination.' : 'Без выигрыша. Попробуй ещё!');
       setPhase('ready');
     }
-  }, [en,wager]);
+  }, [en,wager,playTone,touchFeedback]);
 
   const spin = useCallback(() => {
     if (phase !== 'ready' || spinLock.current || balance < wager || wager <= 0) return;
     spinLock.current = true;
+    playTone(280);
+    touchFeedback();
     setBalance(v => v - wager);
     setPending(0);
     setRecent(null);
@@ -120,7 +162,7 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
     setPhase('spinning');
     // Last reel stops at 2230 ms, then finalize exactly the server-independent demo result.
     spinTimer.current = setTimeout(finishSpin, REEL_SPIN_MS);
-  }, [phase,balance,wager,lines,bet,field,finishSpin]);
+  }, [phase,balance,wager,lines,bet,field,finishSpin,playTone,touchFeedback]);
   const skip = () => {
     if (phase !== 'spinning') return;
     if (spinTimer.current) clearTimeout(spinTimer.current);
@@ -150,6 +192,8 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
     if (phase !== 'bonus' || choice < 0 || choice >= bonusDeck.length || openedRef.current.has(choice)) return;
     openedRef.current.add(choice);
     const tile = bonusDeck[choice];
+    playTone(tile.kind === 'trap' ? 190 : tile.kind === 'shield' ? 480 : 675);
+    touchFeedback(tile.kind === 'treasure');
     const outcome = resolveBonusTile({picksLeft:bonusLeft,shields:bonusShield,total:pending},tile);
     setBonusOpened(v => [...v,choice]);
     setPending(outcome.next.total);
@@ -176,6 +220,8 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
   const takeSuper = (choice:number) => {
     if (phase !== 'superbonus' || superOpened !== null || choice < 0 || choice >= superDeck.length) return;
     const prize = superDeck[choice].payout;
+    playTone(880);
+    touchFeedback(true);
     setSuperOpened(choice);
     setPending(v => v + prize);
     setNotice((en ? 'Super prize: +' : 'Суперприз: +') + prize);
@@ -191,6 +237,8 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
   const pickRisk = (choice:number) => {
     if (phase !== 'risk' || riskOpened !== null || choice < 0 || choice >= riskDeck.length) return;
     setRiskOpened(choice);
+    playTone(riskDeck[choice].wins ? 760 : 180);
+    touchFeedback(riskDeck[choice].wins);
     if (riskDeck[choice].wins) {
       setPending(v => v * 2);
       setRiskSteps(v => v + 1);
@@ -336,6 +384,16 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
       {phase==='decision'?<div className="vslot-action-bar"><button type="button" className="vslot-main" onClick={take}><Trophy size={19}/>{en?'COLLECT':'ЗАБРАТЬ'} {pending}</button><button type="button" className="vslot-secondary" onClick={beginRisk} disabled={pending<=0||riskSteps>=5}><Sparkles size={16}/>{en?'DOUBLE':'РИСК ×2'}</button></div>:
       <div className="vslot-action-bar"><button type="button" className="vslot-main" onClick={spin} disabled={phase!=='ready'||balance<wager||auto>0}><Play size={18} fill="currentColor"/>{en?'SPIN':'КРУТИТЬ'}</button><button type="button" className="vslot-secondary" onClick={skip} disabled={phase!=='spinning'}><FastForward size={16}/>{en?'SKIP':'ПРОПУСТИТЬ'}</button></div>}
       <div className="vslot-bottom-actions"><button type="button" disabled={auto===0 && phase!=='ready' && phase!=='decision'} onClick={()=>setAuto(v=>v>0?0:10)}>{auto>0?(en?'STOP AUTO (':'СТОП АВТО (')+auto+')':(en?'AUTO ×10':'АВТО ×10')}</button><button type="button" disabled={phase!=='ready'||auto>0} onClick={reset}><RotateCcw size={14}/>{en?'RESET DEMO':'ПОПОЛНИТЬ ДЕМО'}</button></div>
+      <div className="vslot-fx-toggles" aria-label={en?'Optional effects':'Необязательные эффекты'}>
+        <button type="button" aria-pressed={soundOn} onClick={()=>setSoundOn(v=>!v)}>
+          {soundOn?<Volume2 size={15}/>:<VolumeX size={15}/>}
+          {en?'Sound':'Звук'}: {soundOn?(en?'on':'вкл'):(en?'off':'выкл')}
+        </button>
+        <button type="button" aria-pressed={hapticsOn} onClick={()=>setHapticsOn(v=>!v)}>
+          <Vibrate size={15}/>
+          {en?'Haptics':'Вибрация'}: {hapticsOn?(en?'on':'вкл'):(en?'off':'выкл')}
+        </button>
+      </div>
     </div>
     <p className="vslot-disclaimer"><Ticket size={14}/>{en?'Demo coins cannot be bought, transferred or cashed out. No player tickets or hero gold are affected.':'Это только тестовые фишки: их нельзя купить, обменять или вывести. Билеты и золото персонажа не меняются.'}</p>
     {help&&<div className="vslot-help-backdrop" role="dialog" aria-modal="true" aria-label={en?'Rules':'Правила'}><div className="vslot-help"><h2>{en?'PAYTABLE AND RULES':'ТАБЛИЦА ВЫПЛАТ И ПРАВИЛА'}</h2><p>{en?'3–5 matching symbols from either edge on an active line. Wild substitutes; 3+ heroes start the bonus.':'Совпадения от 3 до 5 символов от любого края активной линии. WILD заменяет символы; 3+ героя запускают бонус.'}</p><table><thead><tr><th>{en?'Symbol':'Символ'}</th><th>×3</th><th>×4</th><th>×5</th></tr></thead><tbody>{Object.entries(SLOT_PAYTABLE).map(([sym,pays])=><tr key={sym}><td>{en?SLOT_ICONS[sym as keyof typeof SLOT_ICONS].en:SLOT_ICONS[sym as keyof typeof SLOT_ICONS].ru}</td>{pays?.map((p,i)=><td key={i}>{p}×</td>)}</tr>)}</tbody></table><p>{en?'Original preview coefficients; not the Igrosoft paytable. Real prizes are disabled.':'Коэффициенты придуманы для TERRITORY и не копируют таблицу Crazy Monkey. Настоящие награды отключены.'}</p><button type="button" onClick={()=>setHelp(false)}>{en?'CLOSE':'ЗАКРЫТЬ'}</button></div></div>}
