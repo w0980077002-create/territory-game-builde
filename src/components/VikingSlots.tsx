@@ -330,7 +330,7 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
                   aria-label={(en?'Rune ':'Руна ')+(i+1)+(revealed?', '+tile.kind:'')}>
                   <span className="vslot-adventure-glyph">{revealed
                     ? (tile.kind==='trap'?'☠️':tile.kind==='shield'?'🛡️':'💰')
-                    : 'ᛟ'}</span>
+                    : <img src={root+'slots/rune-sealed.svg'} alt=""/>}</span>
                   <span>{revealed ? (tile.kind==='treasure'?'+'+tile.payout:tile.kind==='trap'?(en?'TRAP':'ЛОВУШКА'):(en?'SHIELD':'ЩИТ')) : (i+1)}</span>
                 </button>;
               })}
@@ -346,7 +346,7 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
               {superDeck.map((chest,i) => <button type="button" key={chest.id} onClick={()=>takeSuper(i)}
                 className={'vslot-adventure-tile '+(superOpened===i?'vslot-adventure-tile--chosen':'')}
                 disabled={phase!=='superbonus'} aria-label={(en?'Chest ':'Сундук ')+(i+1)}>
-                <span className="vslot-adventure-glyph">{superOpened===null?'🎁':'💎'}</span>
+                <span className="vslot-adventure-glyph">{superOpened===null?<img src={root+'slots/chest-sealed.svg'} alt=""/>:'💎'}</span>
                 <span>{superOpened===null ? (i+1) : '+'+chest.payout}</span>
               </button>)}
             </div>
@@ -366,7 +366,7 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
                 disabled={phase!=='risk'}
                 className={'vslot-adventure-tile '+(riskOpened===i?'vslot-adventure-tile--chosen':'')}
                 aria-label={(en?'Card ':'Карта ')+(i+1)}>
-                <span className="vslot-adventure-glyph">{riskOpened===null?'🂠':card.wins?'👑':'☠️'}</span>
+                <span className="vslot-adventure-glyph">{riskOpened===null?<img src={root+'slots/card-sealed.svg'} alt=""/>:card.wins?'👑':'☠️'}</span>
                 <span>{riskOpened===null ? (i+1) : (card.wins?'×2':'×0')}</span>
               </button>)}
             </div>
