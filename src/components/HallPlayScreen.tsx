@@ -1,6 +1,7 @@
 import { WheelOfFortune } from './WheelOfFortune';
 import { TreasuryInventory } from './TreasuryInventory';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
+const VikingSlots = lazy(() => import('./VikingSlots').then(m => ({default: m.VikingSlots})));
 import { MonopolyAdventure } from './monopoly/MonopolyAdventure';
 import { ArrowLeft, Coins, Dice5, Dices, DoorOpen, Gift, Loader2, RefreshCw, ShieldCheck, Target, Ticket, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
@@ -11,9 +12,10 @@ const names:Record<HallGame,[string,string]>={
  monopoly:['Монополия','Monopoly'],dice:['Кости судьбы','Dice of Fate'],
  tower:['Башня испытаний','Trial Tower'],targets:['Меткий стрелок','Sharpshooter'],
  treasury:['Сокровищница','Treasury'],wheel:['Колесо фортуны','Wheel of Fortune'],
+ slots:['Сокровища викингов','Viking Treasures'],
 };
 const icons:Record<HallGame,typeof Dice5>={
- monopoly:Dice5,dice:Dices,tower:DoorOpen,targets:Target,treasury:Gift,wheel:Gift,
+ monopoly:Dice5,dice:Dices,tower:DoorOpen,targets:Target,treasury:Gift,wheel:Gift,slots:Trophy,
 };
 function cellPos(i:number):{row:number;col:number}{
  const side=7;
@@ -185,5 +187,6 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
 
 export function HallPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void;userId:string}){
  if(game==='wheel')return <WheelOfFortune userId={userId} onBack={onBack}/>;
+ if(game==='slots')return <Suspense fallback={<div className="p-4 text-amber-200">Загружаем автомат…</div>}><VikingSlots onBack={onBack}/></Suspense>;
  return game==='monopoly'?<MonopolyAdventure onBack={onBack} userId={userId}/>:<HallOtherPlayScreen game={game} onBack={onBack} userId={userId}/>;
 }
