@@ -111,8 +111,27 @@ assert.equal(full.leaders.filter(p => p.arenaBot).length, 0,
 
 const friday = at('2026-10-23T02:58:00Z', []);
 checkRanks(friday.leaders);
-assert(new Set(friday.leaders.map(p => p.wins)).size >= 45,
-  'Friday scores should not have the old suspicious 121/122/123 clustering');
+assert.equal(new Set(friday.leaders.map(p => p.wins)).size, 50,
+  'Friday: every one of the 50 bots must have a different win total');
+assert(friday.leaders[0].wins - friday.leaders.at(-1).wins >= 100,
+  'The virtual weekly scores must span a wide enough range');
+
+// Repeat the uniqueness check at different times over the last two days
+// (including midnight), rather than validating only one snapshot.
+for (const date of ['2026-10-23', '2026-10-24']) {
+  for (const hour of [0, 3, 6, 9, 12, 15, 18, 21, 23]) {
+    const utcHour = String(hour).padStart(2, '0');
+    const snapshot = at(date + 'T' + utcHour + ':00:00Z', []);
+    checkRanks(snapshot.leaders);
+    assert.equal(new Set(snapshot.leaders.map(p => p.wins)).size, 50,
+      date + ' ' + utcHour + ': the 50 bot victory totals must not repeat');
+  }
+}
+// Across the whole season, each bot has its own activity profile;
+// the strongest weekly target never exceeds 175 (25 per day).
+assert.match(source, /1 \+ strength \* 3/, 'The unique, spaced weekly goals must be retained');
+assert.match(source, /Math\.round\(27 \* \(strength \/ 49\) \*\* 2\)/,
+  'Nonlinear spread between strong and casual bots must be retained');
 assert(friday.leaders[0].wins >= 90, 'Strong virtual opponents should remain challenging');
 assert(friday.leaders.at(-1).wins <= 15, 'A 15-win real player must be able to approach the TOP-50');
 const realFifteen = [{
@@ -165,4 +184,4 @@ for (const [id, wins] of dstBefore) {
 
 assert(!source.includes('supabase.rpc(') && !source.includes('supabase.from('),
   'NPC scores must never write to real-player data');
-console.log('Arena weekly TOP-50: independent win times, diverse scores, achievable entry, no midnight jumps, 25/25 names, Sunday/DST reset, no DB writes: PASS');
+console.log('Arena weekly TOP-50: 50 distinct Fri/Sat bot scores, wider 1..175 weekly targets, gradual single wins, Sunday/DST reset, no DB writes: PASS');
