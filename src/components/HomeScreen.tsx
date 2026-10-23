@@ -199,14 +199,14 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
       </div>
 
       <div className="home-character-stage absolute z-0 left-[50px] right-[50px] flex items-end justify-center pointer-events-none">
-        <div className="relative h-[62%] w-[26%] flex items-end justify-center">
+        <div className="home-follower-figure relative h-[62%] w-[26%] flex items-end justify-center">
           {follower && (
-            <img src={getFollowerArt(follower.id)} alt={follower.name} className="max-h-full max-w-full object-contain object-bottom drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] animate-idle" />
+            <img src={getFollowerArt(follower.id)} alt={follower.name} className="home-follower-art max-h-full max-w-full object-contain object-bottom animate-idle" />
           )}
         </div>
-        <div className="relative h-full w-[44%] flex items-end justify-center -ml-[6%]">
-          <span className="absolute bottom-0 w-[80%] h-3 rounded-[50%] bg-black/50 blur-[3px]" />
-          <img src={getAppearanceIcon(state.appearance)} alt={player.name} className="relative max-h-full max-w-full object-contain object-bottom drop-shadow-[0_8px_10px_rgba(0,0,0,0.7)] animate-idle" />
+        <div className="home-hero-figure relative h-full w-[44%] flex items-end justify-center -ml-[6%]">
+          <span aria-hidden="true" className="absolute bottom-0 w-[85%] h-3 rounded-[50%] bg-black/65 blur-[3px]" />
+          <img src={getAppearanceIcon(state.appearance)} alt={player.name} className="home-hero-art relative max-h-full max-w-full object-contain object-bottom animate-idle" />
         </div>
         <button
           onClick={() => onBattle('campaign', true)}
