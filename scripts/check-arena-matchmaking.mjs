@@ -31,9 +31,24 @@ const pool = arenaSql.match(/v_names text\[\] := ARRAY\[([\s\S]*?)\];/);
 assert(pool, 'Production Arena bot-name pool missing');
 const canonicalNames = [...pool[1].matchAll(/'([^']+)'/g)].map(m => m[1]);
 assert.equal(canonicalNames.length, 40, 'Arena source-of-truth changed: update the leaderboard roster deliberately');
-for (const name of canonicalNames) {
-  assert(roster.includes("'" + name + "'"), 'Leaderboard NPC must reuse an actual PvP bot: ' + name);
-}
+// The weekly TOP uses the existing PvP naming style, but is curated
+// separately from combat matchmaking to stay 25/25 without numeric aliases.
+const blockNames = (constName) => {
+  const start = roster.indexOf('const ' + constName + ' = [');
+  assert(start >= 0, 'Missing bot name array ' + constName);
+  const end = roster.indexOf('] as const;', start);
+  assert(end > start, 'Unterminated bot name array ' + constName);
+  return [...roster.slice(start, end).matchAll(/'([^']+)'/g)].map(x => x[1]);
+};
+const ruNames = blockNames('RUSSIAN_ARENA_BOT_NAMES');
+const enNames = blockNames('ENGLISH_ARENA_BOT_NAMES');
+assert.equal(ruNames.length, 25);
+assert.equal(enNames.length, 25);
+assert.equal(new Set([...ruNames, ...enNames]).size, 50);
+assert(ruNames.every(x => canonicalNames.includes(x) && /^[А-Яа-яЁё]+$/.test(x)),
+  'Existing Cyrillic PvP names must be curated without variants');
+assert(enNames.every(x => /^[A-Za-z]+$/.test(x)), 'English Arena aliases must be Latin-only and digit-free');
+assert(enNames.some(x => canonicalNames.includes(x)), 'Preserve existing English PvP bot names too');
 assert.match(roster, /arenaBot: true/, 'Leaderboard entries must be distinguishable from people');
 assert.match(roster, /const candidates: ArenaWeeklyDisplayPlayer\[\]/, 'Everyone must compete in one shared ranking');
 assert.match(roster, /candidates\.sort\(\(a, b\) => b\.wins - a\.wins/, 'Weekly placements must follow victory totals');
@@ -46,7 +61,7 @@ assert.match(weeklyUI, /Соперник арены/, 'NPC entry must have a con
 assert.doesNotMatch(weeklyUI, /Места 10–50 могут занимать боты арены/, 'Removed verbose NPC footer must not reappear');
 assert.doesNotMatch(roster, /supabase\.(?:from|rpc)|update\(|insert\(|delete\(/i,
   'Leaderboard filler may never mutate authoritative PvP game state');
-console.log('Weekly Arena top: 40 canonical PvP bot names, SQL suffixes, unrestricted top 1–50 by victories.');
+console.log('Weekly Arena TOP: 25 Cyrillic + 25 Latin unique names without numerical variants; real players and bots ranked by victories.');
 
 // Run daily NPC score and weekly reset tests alongside existing Arena regression checks.
 await import('./check-arena-bot-leaderboard.mjs');
