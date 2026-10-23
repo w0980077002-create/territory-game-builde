@@ -8,7 +8,7 @@ const raw = readFileSync('src/game/vikingSlots.ts','utf8');
 const compiled = ts.transpileModule(raw, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
 const exports = {};
 runInNewContext(compiled, { exports, crypto: webcrypto });
-const { SLOT_LINES, SLOT_PAYTABLE, fairDemoInt, scoreSlotGrid, spinVikingSlots } = exports;
+const { SLOT_LINES, SLOT_PAYTABLE, SLOT_REEL_STRIPS, fairDemoInt, scoreSlotGrid, spinVikingSlots, gridFromReelStops, reelSpinTrail } = exports;
 
 // Retired generic sprite must never return: neither on disk nor in render mappings.
 const retired = 'follower-' + 'shield.webp';
@@ -20,6 +20,49 @@ assert.match(artMapping,/followers\/moon_hunter\/idle\.webp/,'Fallback must use 
 for (const name of ['loyal_shield','northern_warrior','forest_healer','moon_hunter','rune_mage']) {
   assert.ok(existsSync('public/assets/territory/characters/followers/' + name + '/idle.webp'), 'Approved follower missing: ' + name);
 }
+assert.equal(SLOT_REEL_STRIPS.length,5,'Exactly five independent virtual reels');
+for (let r=0;r<5;r++) {
+  const strip=SLOT_REEL_STRIPS[r];
+  assert.equal(strip.length,40,'Fixed reel strip length is 40');
+  assert.equal(strip.filter(x=>x==='hero').length,2,'Bonus rarity per reel must be stable');
+  assert.equal(strip.filter(x=>x==='wild').length,1,'Wild rarity per reel must be stable');
+  for(let stop=0;stop<strip.length;stop++){
+    const ends=[0,0,0,0,0];ends[r]=stop;
+    const result=gridFromReelStops(ends);
+    assert.equal(result[r].join('|'),[strip[stop],strip[(stop+1)%40],strip[(stop+2)%40]].join('|'),
+      'Three visible symbols MUST be adjacent positions on the same reel strip');
+    const trail=reelSpinTrail(r,stop,12);
+    assert.equal(trail.length,12);
+    assert.equal(trail[11],strip[(stop-1+40)%40],'Animated reel must roll into the winning stop');
+  }
+}
+const realSpin=spinVikingSlots(9,1);
+assert.equal(realSpin.stops.length,5,'Each game spin must expose exactly five genuine stop positions');
+assert.equal(realSpin.grid.map(x=>x.join(',')).join('|'),
+ gridFromReelStops(realSpin.stops).map(x=>x.join(',')).join('|'),
+ 'Rendered symbols must match real reel stops exactly');
+
+// Seeded deterministic statistical *DEMO only* smoke audit. Do not confuse with
+// real-money fairness certification or reward economy release approval.
+let randomSeed=0xC0FFEE;
+const seededStop=(max)=>{randomSeed ^= randomSeed<<13;randomSeed ^= randomSeed>>>17;randomSeed ^= randomSeed<<5;return (randomSeed>>>0)%max;};
+let samplePayout=0, bonusTriggers=0, wins=0;
+const samples=18000;
+for(let n=0;n<samples;n++){
+ const stops=SLOT_REEL_STRIPS.map(strip=>seededStop(strip.length));
+ const game=scoreSlotGrid(gridFromReelStops(stops),9,1);
+ samplePayout+=game.payout;
+ if(game.payout>0)wins++;
+ if(game.bonusSymbols>=3)bonusTriggers++;
+}
+const baseReturn=samplePayout/(samples*9);
+const bonusRate=bonusTriggers/samples;
+assert.ok(baseReturn>0.2&&baseReturn<1.15,'Demo reel base payouts changed drastically: '+baseReturn);
+assert.ok(bonusRate>0.001&&bonusRate<0.15,'Demo bonus trigger rate changed drastically: '+bonusRate);
+assert.ok(wins>0,'Some virtual reel spins should win');
+console.log('Slots DEMO sample only:',{spins:samples,baseReturn:Number(baseReturn.toFixed(4)),
+ bonusRate:Number(bonusRate.toFixed(4)),hitRate:Number((wins/samples).toFixed(4))});
+
 assert.equal(SLOT_LINES.length,9);
 assert.ok(SLOT_LINES.every(line=>line.length===5 && line.every(x=>[0,1,2].includes(x))));
 const filled = symbol => Array.from({length:5},()=>Array.from({length:3},()=>symbol));
@@ -167,6 +210,7 @@ assert.match(app,/!slotImmersive && <nav/,'Bottom navigation must not overlay im
 
 const cabinetCss = readFileSync('src/components/vikingSlots.css','utf8');
 assert.match(ui,/FILLER_PER_REEL = 12/,'Reels must include moving intermediate symbols');
+assert.match(ui,/reelSpinTrail\(index,outcome\.stops\?\.\[index\] \?\? 0,FILLER_PER_REEL\)/,'Animated strips must follow actual stop strips');
 assert.match(ui,/REEL_SPIN_MS = 2320/,'Outcome must wait until all reels stop');
 assert.match(ui,/setReelTracks\(field\.map/,'Each reel must have a long animated strip');
 assert.match(ui,/\.\.\.outcome\.grid\[index\]/,'Animation must land on its real final grid');
