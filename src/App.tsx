@@ -325,6 +325,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   const sub = SUB_SCREENS[screen as SubScreen];
   const navActive: NavId = screen === 'hall-play' ? 'games' : screen === 'arena' ? 'battle' : sub ? 'city' : (screen as NavId);
+  const slotImmersive = screen === 'hall-play' && hallGame === 'slots';
 
   const goNav = (id: NavId) => {
     if (id === 'battle') setBattleView('campaign');
@@ -333,7 +334,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   return (
     <div
-      className={`territory-shell flex flex-col max-w-md mx-auto overflow-hidden relative ${screen === 'hall-play' && hallGame === 'wheel' ? 'territory-wheel-open' : ''} ${screen === 'arena' ? 'territory-arena-theme' : ''}`}
+      className={`territory-shell flex flex-col max-w-md mx-auto overflow-hidden relative ${screen === 'hall-play' && hallGame === 'wheel' ? 'territory-wheel-open' : ''} ${slotImmersive ? 'territory-slots-open' : ''} ${screen === 'arena' ? 'territory-arena-theme' : ''}`}
       // Android Chrome/WebView displays the public image URL on long-press.
       // Block native context menus only on game art and controls, never on
       // chat messages, input fields, or other selectable player content.
@@ -375,7 +376,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         </header>
       )}
 
-      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
+      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : slotImmersive ? 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide !px-0 !py-0' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
         <Suspense fallback={<div role="status" className="flex min-h-32 items-center justify-center text-center text-sm text-amber-100/80">{language === 'en' ? 'Opening section…' : 'Открываем раздел…'}</div>}>
         {screen === 'city' && (
           <HomeScreen
@@ -454,7 +455,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         </nav>
       )}
 
-      <nav className="territory-nav shrink-0 z-30 border-t border-amber-500/25 bg-gradient-to-b from-[#161b24] to-[#0a0d12] px-1 pt-1 pb-1">
+      {!slotImmersive && <nav className="territory-nav shrink-0 z-30 border-t border-amber-500/25 bg-gradient-to-b from-[#161b24] to-[#0a0d12] px-1 pt-1 pb-1">
         <div className="flex items-end gap-0.5 h-[60px]">
           {NAV.map((t) => {
             const active = navActive === t.id;
@@ -490,7 +491,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             );
           })}
         </div>
-      </nav>
+      </nav>}
 
       {isLandscapePhone && (
         <div role="alertdialog" aria-modal="true" className="fixed inset-0 z-[100] flex items-center justify-center bg-[#070b12]/95 p-6 text-center backdrop-blur-md" style={{ paddingTop: 'max(24px, env(safe-area-inset-top))', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
