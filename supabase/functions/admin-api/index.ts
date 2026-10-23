@@ -408,8 +408,49 @@ async function handle(action: string, body: Row) {
       return { ok: true, telegramId: tgId, detachedPlayerId: other?.id ?? null };
     }
     case "suspicious": {
-      const { data, error } = await db.from("players").select(PLAYER_COLS).order("level", { ascending: false }).limit(1000);
+      // Read-only screening: flags are NEVER sanctions, not evidence of abuse.
+      // Include the audit log so owner can inspect unusual stone/gem awards.
+      const since = sinceIso(7 * 86_400_000);
+      const [{ data, error }, auditReply] = await Promise.all([
+        db.from("players").select(PLAYER_COLS).order("level", { ascending: false }).limit(1000),
+        db.from("territory_economy_audit_v1")
+          .select("player_id,reason,changed_at")
+          .eq("suspicious", true).gte("changed_at", since)
+          .order("changed_at", { ascending: false }).limit(400),
+      ]);
       if (error) throw new HttpError(500, "db_error");
+      const auditRows = auditReply.error ? [] : (auditReply.data ?? []) as Array<{
+        player_id: string; reason: string; changed_at: string;
+      }>;
+      const byId = new Map<string, { count: number; types: Set<string>; times: number[]; nearGrant: boolean }>();
+      for (const row of auditRows) {
+        const value = byId.get(row.player_id) ?? { count: 0, types: new Set<string>(), times: [], nearGrant: false };
+        value.count += 1;
+        value.types.add(row.reason);
+        value.times.push(new Date(row.changed_at).getTime());
+        byId.set(row.player_id, value);
+      }
+      // Grants may explain some changes. A time overlap is a clue, NOT proof
+      // that an admin action caused the signal or that the player is innocent.
+      const ids = [...byId.keys()];
+      if (ids.length) {
+        const grants = await db.from("admin_grants")
+          .select("player_id,created_at").in("player_id", ids)
+          .gte("created_at", sinceIso(8 * 86_400_000)).limit(1200);
+        if (!grants.error) for (const grant of grants.data ?? []) {
+          const entry = byId.get(String(grant.player_id));
+          if (!entry) continue;
+          const created = new Date(String(grant.created_at)).getTime();
+          if (entry.times.some(t => Number.isFinite(t) && Math.abs(created - t) <= 30 * 60_000)) {
+            entry.nearGrant = true;
+          }
+        }
+      }
+      const auditLabels: Record<string, string> = {
+        large_stone_gain: "Крупное начисление камней",
+        large_gem_gain: "Крупное начисление алмазов",
+        large_gold_gain: "Крупное начисление золота",
+      };
       const flagged = (data ?? []).map((p) => {
         const s = summarize(p);
         const hours = Math.max(1, (Date.now() - new Date(String(p.created_at)).getTime()) / 3_600_000);
@@ -421,9 +462,23 @@ async function handle(action: string, body: Row) {
         if (hours < 6 && Number(p.level ?? 1) > 15) reasons.push(`Уровень ${p.level} за ${hours.toFixed(1)} ч`);
         if (s.resources.gems > 5000) reasons.push(`Алмазов ${s.resources.gems}`);
         if (s.resources.redGems > 500) reasons.push(`Красных алмазов ${s.resources.redGems}`);
-        return { ...s, goldPerHour: Math.round(goldPerHour), reasons };
-      }).filter((p) => p.reasons.length);
-      return { players: flagged.slice(0, 100) };
+        const events = byId.get(String(p.id));
+        if (events) {
+          reasons.push(`Аудит за 7 дней: ${events.count} сигналов`);
+          for (const type of events.types) reasons.push(auditLabels[type] ?? "Необычное изменение экономики");
+          if (events.nearGrant) reasons.push("Рядом по времени есть письмо админа — сверить вручную");
+        }
+        return { ...s, goldPerHour: Math.round(goldPerHour), auditCount: events?.count ?? 0, reasons };
+      }).filter((p) => p.reasons.length)
+        .sort((a, b) => b.auditCount - a.auditCount || b.goldPerHour - a.goldPerHour);
+      return {
+        players: flagged.slice(0, 100),
+        auditSummary: {
+          events: auditRows.length, players: byId.size,
+          nearAdminGrant: [...byId.values()].filter(v => v.nearGrant).length,
+          available: !auditReply.error,
+        },
+      };
     }
     case "mail": {
       const subject = text(body.subject, 80);

@@ -68,6 +68,7 @@ jobs:
           node scripts/check-arena-postfight.mjs
           node scripts/check-belt-victory-milestones.mjs
           node scripts/check-arena-matchmaking.mjs
+          node scripts/check-activity-audit.mjs
           node scripts/auth-mock-tests.cjs
           node scripts/edge-initdata-tests.cjs
           node scripts/edge-identity-tests.cjs

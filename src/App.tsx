@@ -159,6 +159,16 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   useEffect(() => {
     if (!loaded) return;
     captureGameEvent('territory_screen_open', { screen });
+    // Session-only anonymous dwell time; no account identity or user actions.
+    const opened = performance.now();
+    return () => {
+      const elapsed = performance.now() - opened;
+      if (elapsed < 1000) return; // ignore React StrictMode/re-render noise
+      captureGameEvent('territory_screen_dwell', {
+        screen,
+        duration: elapsed < 10_000 ? 'under_10s' : elapsed < 60_000 ? '10_60s' : 'over_60s',
+      });
+    };
   }, [loaded, screen]);
 
 

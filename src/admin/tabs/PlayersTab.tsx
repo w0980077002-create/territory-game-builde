@@ -287,13 +287,19 @@ export function PlayersTab({ confirm }: { confirm: Confirm }) {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [suspicious, setSuspicious] = useState<(PlayerSummary & { goldPerHour: number })[] | null>(null);
-
-  useEffect(() => {
-    adminCall<{ players: (PlayerSummary & { goldPerHour: number })[] }>('suspicious')
-      .then((r) => setSuspicious(r.players))
-      .catch(() => setSuspicious([]));
+  const [suspicious, setSuspicious] = useState<(PlayerSummary & { goldPerHour: number; auditCount?: number })[] | null>(null);
+  const [auditSummary, setAuditSummary] = useState<{ events: number; players: number; nearAdminGrant: number; available: boolean } | null>(null);
+  const [auditError, setAuditError] = useState(false);
+  const loadSuspicious = useCallback(() => {
+    setAuditError(false);
+    void adminCall<{
+      players: (PlayerSummary & { goldPerHour: number; auditCount?: number })[];
+      auditSummary?: { events: number; players: number; nearAdminGrant: number; available: boolean };
+    }>('suspicious')
+      .then((r) => { setSuspicious(r.players); setAuditSummary(r.auditSummary ?? null); })
+      .catch(() => { setAuditError(true); });
   }, []);
+  useEffect(() => { loadSuspicious(); }, [loadSuspicious]);
 
   const search = async (e: FormEvent) => {
     e.preventDefault();
@@ -329,9 +335,19 @@ export function PlayersTab({ confirm }: { confirm: Confirm }) {
       </Panel>
 
       <Panel title="Подозрительные игроки" icon={<ShieldAlert className="w-4 h-4 text-amber-400" />}>
-        <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
-          Это сигналы для ручной проверки, а не доказательства нарушений. Автоматических банов нет. Только ты решаешь: ничего не делать, предупредить через почту или заблокировать игрока. Помечаются необычно быстрый рост монет и уровней, большие запасы алмазов.
+        <p className="text-[11px] text-slate-400 mb-2 leading-relaxed">
+          Сигналы для ручной проверки, а НЕ доказательство нарушения. Автоматических банов нет. Результаты включают аномальный рост ресурсов и журнал подозрительных начислений за последние 7 суток. Прежде чем предупредить игрока, сверяй награды и рассылки.
         </p>
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-amber-500/25 bg-amber-950/20 px-2.5 py-2">
+          <span className="text-xs text-amber-100">
+            {auditSummary?.available
+              ? `Аудит: ${auditSummary.events} сигналов у ${auditSummary.players} игроков · совпадений по времени с письмами: ${auditSummary.nearAdminGrant}`
+              : 'Аудит начислений: нет подтверждённых данных'}
+          </span>
+          <button type="button" onClick={loadSuspicious}
+            className="shrink-0 rounded-lg border border-amber-400/40 px-2 py-1 text-[11px] font-semibold text-amber-200">Обновить</button>
+        </div>
+        {auditError && <p className="mb-2 text-xs text-rose-300">Не удалось обновить сигналы. Старый список сохранён.</p>}
         {!suspicious ? <Loading /> : suspicious.length === 0 ? <Empty text="Подозрительных игроков нет" /> : (
           <div className="space-y-2">
             {suspicious.map((p) => (

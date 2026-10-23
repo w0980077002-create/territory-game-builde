@@ -13,6 +13,7 @@ const EVENT_NAMES = new Set([
   'territory_referral_reward_claim', 'territory_profession_unlock',
   'territory_craft_completed', 'territory_shop_purchase', 'territory_salvage_completed',
   'territory_arena_fight_start', 'territory_quest_claim', 'territory_client_error',
+  'territory_screen_dwell',
 ]);
 const SCREENS = new Set([
   'city','inventory','hero','battle','map','games','clan','shop',
@@ -43,8 +44,14 @@ type GameEvent = 'territory_screen_open' | 'territory_battle_open'
   | 'territory_referral_share_click' | 'territory_referral_link_copy'
   | 'territory_referral_reward_claim' | 'territory_profession_unlock'
   | 'territory_craft_completed' | 'territory_shop_purchase' | 'territory_salvage_completed'
-  | 'territory_arena_fight_start' | 'territory_quest_claim' | 'territory_client_error';
-type GameEventProps = { screen?: string; mode?: string; outcome?: 'won' | 'lost' | 'error' | 'success' };
+  | 'territory_arena_fight_start' | 'territory_quest_claim' | 'territory_client_error'
+  | 'territory_screen_dwell';
+type GameEventProps = {
+  screen?: string;
+  mode?: string;
+  outcome?: 'won' | 'lost' | 'error' | 'success';
+  duration?: 'under_10s' | '10_60s' | 'over_60s';
+};
 
 // Only allow enumerated event names and enumerated public properties.
 export function captureGameEvent(name: GameEvent, details: GameEventProps = {}): void {
@@ -57,6 +64,9 @@ export function captureGameEvent(name: GameEvent, details: GameEventProps = {}):
   if (details.mode && MODES.has(details.mode)) properties.mode = details.mode;
   if (details.outcome && ['won', 'lost', 'error', 'success'].includes(details.outcome)) {
     properties.outcome = details.outcome;
+  }
+  if (details.duration && ['under_10s', '10_60s', 'over_60s'].includes(details.duration)) {
+    properties.duration = details.duration;
   }
   sendEvent(name, properties);
 }

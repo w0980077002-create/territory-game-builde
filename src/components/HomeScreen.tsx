@@ -99,6 +99,9 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
   const nextEnemy = bossReady ? chapter.boss : chapter.enemies[wins];
   const stats = getComputedStats(state);
   const follower = selectedFollower(state);
+  // A first-time hero needs one unmistakable action, not an intrusive tour.
+  // Already active players never see onboarding overlays.
+  const firstFightHelp = player.level <= 2 && state.totalBattlesWon === 0;
   const atMaxLevel = player.level >= HERO_MAX_LEVEL;
   const xpPct = atMaxLevel ? 100 : Math.min(100, (player.xp / Math.max(1, player.xpToNext)) * 100);
   const adminMail = useStore(useLive).mail.length;
@@ -210,6 +213,11 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
           className="relative h-[70%] w-[34%] flex flex-col items-center justify-end pointer-events-auto group"
           aria-label={`${t('fight')}: ${nextEnemy.name}`}
         >
+          {firstFightHelp && (
+            <span className="mb-1 max-w-full rounded-lg border border-amber-300/80 bg-amber-600/90 px-2 py-1 text-center text-[10px] font-black leading-tight text-black shadow-lg shadow-amber-400/30 animate-pulse">
+              {language === 'en' ? 'TAP ENEMY — FIRST FIGHT' : 'НАЖМИ НА ВРАГА — ПЕРВЫЙ БОЙ'}
+            </span>
+          )}
           <span className="mb-1 max-w-full rounded-md bg-black/70 border border-red-500/40 px-1.5 py-0.5 text-[9px] font-bold text-red-100 truncate">
             {nextEnemy.isBoss ? t('boss') : ''}{localizeText(nextEnemy.name, language)}
           </span>
