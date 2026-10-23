@@ -340,3 +340,19 @@
  .vslot-win-path{animation:none}
  .vslot-reel-track--rolling{animation-duration:.01ms!important;animation-delay:0ms!important}
 }
+.vslot-fx-toggles{
+  display:flex;gap:7px;justify-content:center;align-items:center;
+  border-top:1px solid #6c537a55;padding-top:6px;margin-top:2px;
+}
+.vslot-fx-toggles button{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  border:1px solid #907aa1;
+  background:#25253e;
+  color:#d4cde0;
+  border-radius:9px;
+  min-height:36px;
+  width:50%;
+  font-size:10px;
+  font-weight:800;
+}
+.vslot-fx-toggles button[aria-pressed="true"]{border-color:#ffd280;background:#40344f;color:#ffe8b5}
