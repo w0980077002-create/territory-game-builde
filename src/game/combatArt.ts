@@ -38,7 +38,8 @@ export function getFollowerCombatFrames(id: string): CombatAppearance | undefine
 }
 
 export function getFollowerArt(id: string | null | undefined): string {
-  return id ? getFollowerCombatFrames(id)?.idle ?? '/follower-shield.webp' : '/follower-shield.webp';
+  const defaultArt = root + 'followers/moon_hunter/idle.webp';
+  return id ? getFollowerCombatFrames(id)?.idle ?? defaultArt : defaultArt;
 }
 
 /** Determine the six poses from the existing enemy art without touching combat balance. */

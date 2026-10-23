@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { webcrypto } from 'node:crypto';
 import ts from 'typescript';
@@ -10,6 +10,16 @@ const exports = {};
 runInNewContext(compiled, { exports, crypto: webcrypto });
 const { SLOT_LINES, SLOT_PAYTABLE, fairDemoInt, scoreSlotGrid, spinVikingSlots } = exports;
 
+// Retired generic sprite must never return: neither on disk nor in render mappings.
+const retired = 'follower-' + 'shield.webp';
+assert.equal(existsSync('public/' + retired), false, 'Retired follower image must be deleted');
+const artMapping = readFileSync('src/game/combatArt.ts','utf8');
+assert.ok(!raw.includes(retired) && !artMapping.includes(retired), 'No retired companion references');
+assert.match(raw,/followers\/rune_mage\/idle\.webp/,'Slot must use an approved bright companion');
+assert.match(artMapping,/followers\/moon_hunter\/idle\.webp/,'Fallback must use an approved companion');
+for (const name of ['loyal_shield','northern_warrior','forest_healer','moon_hunter','rune_mage']) {
+  assert.ok(existsSync('public/assets/territory/characters/followers/' + name + '/idle.webp'), 'Approved follower missing: ' + name);
+}
 assert.equal(SLOT_LINES.length,9);
 assert.ok(SLOT_LINES.every(line=>line.length===5 && line.every(x=>[0,1,2].includes(x))));
 const filled = symbol => Array.from({length:5},()=>Array.from({length:3},()=>symbol));

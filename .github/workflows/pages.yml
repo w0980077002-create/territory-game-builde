@@ -59,6 +59,7 @@ jobs:
           npm run test:founders
           npm run test:referral-activity
           npm run test:hall
+          npm run test:slots
           npm run test:admin-master
           npm run test:admin-mail
           node scripts/check-equipment-safety-v4.mjs

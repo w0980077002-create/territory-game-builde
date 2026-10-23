@@ -14,7 +14,7 @@ export const SLOT_ICONS: Record<SlotSymbol, { image: string; ru: string; en: str
   wild: { image: 'territory-mark.svg', ru: 'Руна WILD', en: 'Wild rune' },
   boss: { image: 'assets/territory/characters/bosses/northern_jarl/idle.webp', ru: 'Босс', en: 'Boss' },
   wolf: { image: 'enemy-wolf.webp', ru: 'Волк', en: 'Wolf' },
-  follower: { image: 'follower-shield.webp', ru: 'Спутник', en: 'Companion' },
+  follower: { image: 'assets/territory/characters/followers/rune_mage/idle.webp', ru: 'Спутник', en: 'Companion' },
   sword: { image: 'item-weapon.webp', ru: 'Оружие', en: 'Weapon' },
   helmet: { image: 'item-helmet.webp', ru: 'Шлем', en: 'Helmet' },
   gem: { image: 'blue-gem.webp', ru: 'Алмаз', en: 'Gem' },
