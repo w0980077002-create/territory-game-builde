@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useStore } from '@/game/store';
 import { useGame, equipItem, unequipItem } from '@/game/actions';
+import { captureGameEvent } from '@/game/analytics';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { getAppearanceIcon } from '@/game/appearance';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
@@ -193,6 +194,7 @@ export function GearShowcase({ userId }: { userId: string }) {
         return;
       }
       useGame.set(receipt.state);
+      if (action === 'salvage') captureGameEvent('territory_salvage_completed', { outcome: 'success' });
       setRemainingToday(receipt.remainingToday);
       setSelection(null);
       setConfirm(null);
