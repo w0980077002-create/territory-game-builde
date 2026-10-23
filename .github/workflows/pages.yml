@@ -91,13 +91,16 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Optimize approved Monopoly artwork for Telegram Android
+      - name: Setup fast image tooling
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Optimize approved game images for Telegram
         shell: bash
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg
-          node scripts/optimize-monopoly-images.mjs
-          node scripts/optimize-mobile-map.mjs
+          python -m pip install --disable-pip-version-check --quiet Pillow==11.3.0
+          python scripts/optimize-pages-images.py
           node scripts/check-monopoly-performance.mjs --verify-assets
 
       - name: Verify approved Telegram RU/EN banners
