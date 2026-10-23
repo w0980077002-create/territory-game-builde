@@ -12,6 +12,7 @@ const EVENT_NAMES = new Set([
   'territory_referral_share_click', 'territory_referral_link_copy',
   'territory_referral_reward_claim', 'territory_profession_unlock',
   'territory_craft_completed', 'territory_shop_purchase', 'territory_salvage_completed',
+  'territory_arena_fight_start', 'territory_quest_claim', 'territory_client_error',
 ]);
 const SCREENS = new Set([
   'city','inventory','hero','battle','map','games','clan','shop',
@@ -41,7 +42,8 @@ type GameEvent = 'territory_screen_open' | 'territory_battle_open'
   | 'territory_pve_fight_start' | 'territory_pve_fight_end'
   | 'territory_referral_share_click' | 'territory_referral_link_copy'
   | 'territory_referral_reward_claim' | 'territory_profession_unlock'
-  | 'territory_craft_completed' | 'territory_shop_purchase' | 'territory_salvage_completed';
+  | 'territory_craft_completed' | 'territory_shop_purchase' | 'territory_salvage_completed'
+  | 'territory_arena_fight_start' | 'territory_quest_claim' | 'territory_client_error';
 type GameEventProps = { screen?: string; mode?: string; outcome?: 'won' | 'lost' | 'error' | 'success' };
 
 // Only allow enumerated event names and enumerated public properties.
