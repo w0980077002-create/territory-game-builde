@@ -47,10 +47,29 @@ const verified = state(firstStart, secondStart);
 const first = arenaWeeklyWithBots(verified, Date.parse('2026-10-18T12:00:00Z'));
 const initialNpc = first.leaders.filter(x => x.arenaBot);
 assert.equal(first.leaders.length, 50);
-assert.equal(initialNpc.length, 38, 'Only unused slots, from 10 to 50, get bots');
-assert(initialNpc.every(x => x.rank >= 10 && x.rank <= 50));
+assert.equal(initialNpc.length, 41, 'Low-scoring real players must not be protected by fixed rank slots');
 assert(first.leaders.slice(0, 9).every((x, idx) => x.player_id === players[idx].player_id));
 assert(initialNpc.every(x => x.wins >= 17 && x.wins <= 25));
+assert(first.leaders.every((x, idx) => x.rank === idx + 1), 'Ranking must always be sequential 1–50');
+assert(first.leaders.every((x, idx) => idx === 0 || first.leaders[idx - 1].wins >= x.wins),
+  'All displayed victories must be sorted descending, with no bot-only section');
+
+const botOnly = arenaWeeklyWithBots(
+  state(firstStart, secondStart, []), Date.parse('2026-10-18T12:00:00Z'),
+);
+assert.equal(botOnly.leaders.length, 50, 'Canonical NPC names and SQL-style suffixes must fill all 50 places');
+assert(botOnly.leaders.every(x => x.arenaBot), 'All 50 places must be open to bots');
+assert.equal(botOnly.leaders[0].rank, 1, 'Bots must be allowed to lead the ranking');
+
+const lowHumans = Array.from({ length: 50 }, (_, idx) => ({
+  ...players[0], player_id: 'low-real-' + idx, rank: idx + 1, wins: 2,
+}));
+const botsBeatHumans = arenaWeeklyWithBots(
+  state(firstStart, secondStart, lowHumans), Date.parse('2026-10-18T12:00:00Z'),
+);
+assert(botsBeatHumans.leaders[0].arenaBot, 'A bot with more wins must outrank real players');
+assert(botsBeatHumans.leaders.every(x => x.arenaBot),
+  'Bots should not be excluded when 50 humans have fewer wins');
 
 const firstAgain = arenaWeeklyWithBots(verified, Date.parse('2026-10-18T20:59:00Z'));
 assert.deepEqual(
@@ -61,14 +80,16 @@ assert.deepEqual(
 const second = arenaWeeklyWithBots(verified, Date.parse('2026-10-18T21:01:00Z'));
 const firstScores = new Map(initialNpc.map(x => [x.player_id, x.wins]));
 for (const npc of second.leaders.filter(x => x.arenaBot)) {
+  if (!firstScores.has(npc.player_id)) continue;
   const gained = npc.wins - firstScores.get(npc.player_id);
-  assert(gained >= 17 && gained <= 25, 'Every bot must gain 17–25 at midnight Kyiv');
+  assert(gained >= 17 && gained <= 25, 'Every retained bot must gain 17–25 at midnight Kyiv');
 }
 let previous = new Map(second.leaders.filter(x => x.arenaBot).map(x => [x.player_id, x.wins]));
 const increments = new Set();
 for (let day = 2; day <= 6; day++) {
   const current = arenaWeeklyWithBots(verified, firstStart + day * 86400000 + 15 * 3600000);
   for (const npc of current.leaders.filter(x => x.arenaBot)) {
+    if (!previous.has(npc.player_id)) continue;
     const delta = npc.wins - previous.get(npc.player_id);
     assert(delta >= 17 && delta <= 25, 'Daily NPC increment must stay in 17–25');
     increments.add(delta);
@@ -91,7 +112,8 @@ const full = arenaWeeklyWithBots(
   Date.parse('2026-10-19T12:00:00Z'),
 );
 assert.equal(full.leaders.length, 50);
-assert.equal(full.leaders.filter(x => x.arenaBot).length, 0, 'All 50 real players must evict bot fillers');
+assert.equal(full.leaders.filter(x => x.arenaBot).length, 0,
+  'All 50 higher-scoring real players must outrank lower-scoring bots');
 assert(!source.includes('supabase.rpc(') && !source.includes('supabase.from('),
   'NPC scores may not write to the actual PvP database');
-console.log('Arena TOP-50: real top nine, existing NPC fillers, random 17-25 each Kyiv day, Sunday reset, no real-player displacement when full: PASS');
+console.log('Arena TOP-50: all ranks 1–50 open to humans and bots, sorted by wins, daily 17–25 NPC growth, Sunday reset, no real-player data writes: PASS');
