@@ -20,6 +20,7 @@ import { BeltCells } from '@/components/ui/BeltCells';
 import { Currency } from '@/components/ui/Currency';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { beginReferralFight, finishReferralFight, type ReferralRound } from '@/game/referrals';
+import { captureGameEvent } from '@/game/analytics';
 
 export type FightKind = 'stage' | 'trial';
 
@@ -121,6 +122,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
   const finish = useCallback((won: boolean) => {
     if (done.current) return;
     done.current = true;
+    captureGameEvent('territory_pve_fight_end', { mode: kind === 'trial' ? 'trial' : 'campaign', outcome: won ? 'won' : 'lost' });
     referralFinish.current = (referralStart.current ?? Promise.resolve(null))
       .then(ticket => ticket
         ? finishReferralFight(ticket, won, referralRounds.current).catch(() => false)
