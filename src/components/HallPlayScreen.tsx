@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { MonopolyAdventure } from './monopoly/MonopolyAdventure';
 import { ArrowLeft, Coins, Dice5, Dices, DoorOpen, Gift, Loader2, RefreshCw, ShieldCheck, Target, Ticket, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
+import { captureGameEvent } from '@/game/analytics';
 import { hallStatus, hallStart, hallFinish, autoClaimHallGold, hallError, type HallGame, type HallSession, type HallState, type HallResult } from '@/game/gameHall';
 
 const names:Record<HallGame,[string,string]>={
@@ -104,7 +105,7 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
  useEffect(()=>{void init();},[game,en]);
  const start=async()=>{
   if(busy)return;setBusy(true);setError('');setResult(null);
-  try{const data=await hallStart(game);setSession(data);setPayoutState(null);setWallet(await hallStatus());}
+  try{const data=await hallStart(game);captureGameEvent('territory_hall_round_start', { mode: game });setSession(data);setPayoutState(null);setWallet(await hallStatus());}
   catch(e){setError(hallError(e,en));}
   finally{setBusy(false);}
  };
@@ -113,6 +114,7 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
   setBusy(true);setError('');
   try{
    const prize=await hallFinish(session,answer);
+   captureGameEvent('territory_hall_round_end', { mode: game, outcome: prize.won ? 'won' : 'lost' });
    setResult(prize);
    setSession(null);
    if(prize.earned_gold>0){
