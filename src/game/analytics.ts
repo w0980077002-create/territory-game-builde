@@ -9,6 +9,9 @@ const EVENT_NAMES = new Set([
   'territory_hall_no_tickets', 'territory_hall_round_start',
   'territory_hall_round_end', 'territory_newcomer_fight_click',
   'territory_pve_fight_start', 'territory_pve_fight_end',
+  'territory_referral_share_click', 'territory_referral_link_copy',
+  'territory_referral_reward_claim', 'territory_profession_unlock',
+  'territory_craft_completed', 'territory_shop_purchase', 'territory_salvage_completed',
 ]);
 const SCREENS = new Set([
   'city','inventory','hero','battle','map','games','clan','shop',
@@ -35,7 +38,10 @@ type GameEvent = 'territory_screen_open' | 'territory_battle_open'
   | 'territory_hall_game_open' | 'territory_hall_ticket_claim'
   | 'territory_hall_no_tickets' | 'territory_hall_round_start'
   | 'territory_hall_round_end' | 'territory_newcomer_fight_click'
-  | 'territory_pve_fight_start' | 'territory_pve_fight_end';
+  | 'territory_pve_fight_start' | 'territory_pve_fight_end'
+  | 'territory_referral_share_click' | 'territory_referral_link_copy'
+  | 'territory_referral_reward_claim' | 'territory_profession_unlock'
+  | 'territory_craft_completed' | 'territory_shop_purchase' | 'territory_salvage_completed';
 type GameEventProps = { screen?: string; mode?: string; outcome?: 'won' | 'lost' | 'error' | 'success' };
 
 // Only allow enumerated event names and enumerated public properties.
