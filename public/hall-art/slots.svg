@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 640" role="img" aria-label="Сокровища викингов">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#162e46"/><stop offset=".7" stop-color="#3c2f38"/><stop offset="1" stop-color="#7f4525"/></linearGradient><linearGradient id="gold" x2=".4" y2="1"><stop stop-color="#ffe8a2"/><stop offset=".55" stop-color="#bf7a32"/><stop offset="1" stop-color="#77451c"/></linearGradient><radialGradient id="glow"><stop stop-color="#ffd979" stop-opacity=".7"/><stop offset="1" stop-color="#e5ac47" stop-opacity="0"/></radialGradient></defs>
+<rect width="768" height="640" fill="url(#sky)"/><circle cx="382" cy="286" r="284" fill="url(#glow)"/><path d="M0 600L0 150l64-40 63 50 52-95 84 95 109-100 100 100 74-86 63 86 64-54 99 46V640H0" fill="#112a2f" opacity=".4"/>
+<path d="M126 150h516l34 44v323l-34 46H126l-36-46V194z" fill="#1b252b" stroke="url(#gold)" stroke-width="20"/><rect x="125" y="218" width="518" height="268" rx="17" fill="#d4c6a7" stroke="#915725" stroke-width="14"/>
+<g stroke="#7a572f" stroke-width="8"><line x1="296" y1="220" x2="296" y2="480"/><line x1="470" y1="220" x2="470" y2="480"/></g>
+<g fill="#1b4b50" stroke="#aa813f" stroke-width="6"><rect x="146" y="237" width="130" height="215" rx="14"/><rect x="316" y="237" width="132" height="215" rx="14"/><rect x="490" y="237" width="130" height="215" rx="14"/></g>
+<g fill="#e8c77d" text-anchor="middle" font-family="serif" font-weight="bold" font-size="98"><text x="210" y="381">ᛟ</text><text x="382" y="381">⚔</text><text x="555" y="381">ᚷ</text></g>
+<g text-anchor="middle" font-family="Arial,sans-serif" font-weight="900"><text x="385" y="205" font-size="49" fill="#ffe09d" stroke="#704b22" stroke-width="2">TERRITORY</text><text x="383" y="540" fill="#fff0ba" font-size="36" letter-spacing="3">VIKING SLOTS</text></g>
+<path d="M76 95l36 32 47-28-14 51H91zM610 99l47 28 36-32-14 55h-54z" fill="url(#gold)"/>
+</svg>
