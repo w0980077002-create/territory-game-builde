@@ -1,38 +1,77 @@
+// Privacy-preserving, best-effort product events. Never attach Telegram IDs,
+// account identifiers, messages, currencies, URLs, or gameplay state.
 const ANALYTICS_URL = 'https://eu.i.posthog.com/i/v0/e/';
 const SESSION_KEY = 'territory_analytics_session_v1';
 const PROJECT_TOKEN = 'phc_C53PmJMEtNSmHTj5aJi6VYXtZzZHTi2obKFkAt5Zkq8t';
+const EVENT_NAMES = new Set([
+  'territory_app_open', 'territory_screen_open', 'territory_battle_open',
+  'territory_hall_game_open', 'territory_hall_ticket_claim',
+  'territory_hall_no_tickets', 'territory_hall_round_start',
+  'territory_hall_round_end', 'territory_newcomer_fight_click',
+]);
+const SCREENS = new Set([
+  'city','inventory','hero','battle','map','games','clan','shop',
+  'forge','arena','leaderboard','quests','hall-play',
+  'professions','auction','friends',
+]);
+const MODES = new Set(['campaign','trial','duel','team','chaos','monopoly','treasury','dice','tower','targets','wheel']);
 
-// Counts browser sessions, not registered players; Supabase stays the source of truth.
-// No Telegram identity, player ID, game state, URL or account details are transmitted.
-export function captureGameOpen(): void {
-  if (!import.meta.env.PROD || !globalThis.crypto?.randomUUID) return;
-
-  let sessionId: string;
+// One anonymous session per webview tab. Distinct IDs never contain player IDs.
+function sessionId(): string | null {
+  if (!import.meta.env.PROD || !globalThis.crypto?.randomUUID) return null;
   try {
-    const saved = sessionStorage.getItem(SESSION_KEY);
-    sessionId = saved && /^[0-9a-f-]{36}$/i.test(saved) ? saved : crypto.randomUUID();
-    if (sessionId !== saved) sessionStorage.setItem(SESSION_KEY, sessionId);
+    const existing = sessionStorage.getItem(SESSION_KEY);
+    if (existing && /^[0-9a-f-]{36}$/i.test(existing)) return existing;
+    const created = crypto.randomUUID();
+    sessionStorage.setItem(SESSION_KEY, created);
+    return created;
   } catch {
-    sessionId = crypto.randomUUID();
+    return crypto.randomUUID();
   }
+}
 
-  const event = {
-    api_key: PROJECT_TOKEN,
-    event: 'territory_app_open',
-    distinct_id: `territory_session_${sessionId}`,
-    properties: {
-      $process_person_profile: false,
-      source: 'territory_web_client',
-    },
+type GameEvent = 'territory_screen_open' | 'territory_battle_open'
+  | 'territory_hall_game_open' | 'territory_hall_ticket_claim'
+  | 'territory_hall_no_tickets' | 'territory_hall_round_start'
+  | 'territory_hall_round_end' | 'territory_newcomer_fight_click';
+type GameEventProps = { screen?: string; mode?: string; outcome?: 'won' | 'lost' | 'error' | 'success' };
+
+// Only allow enumerated event names and enumerated public properties.
+export function captureGameEvent(name: GameEvent, details: GameEventProps = {}): void {
+  if (!EVENT_NAMES.has(name)) return;
+  const properties: Record<string, string | boolean> = {
+    $process_person_profile: false,
+    source: 'territory_web_client',
   };
+  if (details.screen && SCREENS.has(details.screen)) properties.screen = details.screen;
+  if (details.mode && MODES.has(details.mode)) properties.mode = details.mode;
+  if (details.outcome && ['won', 'lost', 'error', 'success'].includes(details.outcome)) {
+    properties.outcome = details.outcome;
+  }
+  sendEvent(name, properties);
+}
 
-  // Best-effort telemetry must never delay login, saving or the game UI.
-  void fetch(ANALYTICS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    mode: 'cors',
-    credentials: 'omit',
-    keepalive: true,
-    body: JSON.stringify(event),
-  }).catch(() => undefined);
+function sendEvent(event: string, properties: Record<string, string | boolean>): void {
+  const id = sessionId();
+  if (!id || !EVENT_NAMES.has(event)) return;
+  // Events must never block UI, login, the save queue or critical requests.
+  try {
+    void fetch(ANALYTICS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      credentials: 'omit',
+      keepalive: false,
+      body: JSON.stringify({
+        api_key: PROJECT_TOKEN,
+        event,
+        distinct_id: `territory_session_${id}`,
+        properties,
+      }),
+    }).catch(() => undefined);
+  } catch { /* Telemetry is optional, especially in Telegram WebView. */ }
+}
+
+export function captureGameOpen(): void {
+  sendEvent('territory_app_open', { $process_person_profile: false, source: 'territory_web_client' });
 }
