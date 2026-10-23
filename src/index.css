@@ -858,6 +858,12 @@ html.territory-desktop-webapp .home-side-stack .home-side {
   transform: scale(1.60);
   transform-origin: 65% 100%;
 }
+/* Artwork-only scale compensates for each sprite's transparent margins.
+   Bottom anchoring keeps every companion's feet on the same dock surface. */
+.home-follower-art-frame {
+  transform-origin: center bottom;
+  pointer-events: none;
+}
 .home-hero-art {
   filter: drop-shadow(0 7px 7px rgba(0, 0, 0, 0.80)) drop-shadow(0 0 2px rgba(100, 176, 255, 0.55));
 }
