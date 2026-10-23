@@ -5,6 +5,7 @@ import { useGame, useAccount } from '@/game/actions';
 import { getAppearanceIcon } from '@/game/appearance';
 import { Currency, formatAmount } from '@/components/ui/Currency';
 import { useLanguage } from '@/game/i18n';
+import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 import { currentArenaRoom } from '@/game/arenaApi';
 import { ArenaLobby } from './arena/ArenaLobby';
 import { ArenaRoom } from './arena/ArenaRoom';
@@ -68,9 +69,11 @@ export function ArenaScreen({ onActiveChange, onBack, backDisabled, onLeaderboar
             <span><Currency kind="redGems" value={formatAmount(player.redGems)} size={17} className="text-white" /></span>
           </div>
           <div className="arena-global-toolbar">
-            <button type="button" className="arena-global-utility" aria-label={language === 'en' ? 'Leaderboard' : 'Рейтинг игроков'} onClick={onLeaderboard} disabled={!onLeaderboard}>
-              <img src={import.meta.env.BASE_URL + 'ic-trophy.webp'} alt="" />
-            </button>
+            {SHOW_TOP_LEADERBOARD_SHORTCUT && (
+              <button type="button" className="arena-global-utility" aria-label={language === 'en' ? 'Leaderboard' : 'Рейтинг игроков'} onClick={onLeaderboard} disabled={!onLeaderboard}>
+                <img src={import.meta.env.BASE_URL + 'ic-trophy.webp'} alt="" />
+              </button>
+            )}
             <button type="button" className="arena-global-utility" aria-label={language === 'en' ? 'Mail' : 'Почта'} onClick={() => setSheet('mail')}>
               <img src={import.meta.env.BASE_URL + 'ic-mail.webp'} alt="" />
             </button>
