@@ -117,7 +117,7 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
       setBonusShield(v => v+1);
       setBonusLog(v => [...v,en ? 'A protective rune!' : 'Найдена защитная руна!']);
     } else {
-      const prize = wager * (2 + fairDemoInt(7));
+      const prize = wager * (1 + fairDemoInt(3));
       setPending(v => v+prize);
       setBonusLog(v => [...v,(en ? 'Treasure +' : 'Сокровище +') + prize]);
     }
@@ -128,7 +128,7 @@ export function VikingSlots({ onBack }: { onBack: () => void }) {
   };
   const takeSuper = (choice:number) => {
     if (phase !== 'superbonus' || choice < 0 || choice > 2) return;
-    const prize = wager * (10 + fairDemoInt(21));
+    const prize = wager * (3 + fairDemoInt(10));
     setPending(v => v+prize);
     setNotice((en ? 'Super prize: +' : 'Суперприз: +') + prize);
     setPhase('decision');
