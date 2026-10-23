@@ -3,6 +3,7 @@ import {
   ArrowRight, ChevronRight, Gift, Loader2, RefreshCw, Ticket,
 } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
+import { captureGameEvent } from '@/game/analytics';
 import {
   hallStatus, hallDaily, autoClaimHallGold, hallError,
   type HallGame, type HallState,
@@ -109,6 +110,7 @@ export function GamesScreen({
     setBusy(true);setError('');setNotice('');
     try{
       await hallDaily();
+      captureGameEvent('territory_hall_ticket_claim', { outcome: 'success' });
       setNotice(en?'Two free tickets collected!':'Получено 2 бесплатных билета!');
       await refresh();
     }catch(cause){
@@ -126,6 +128,7 @@ export function GamesScreen({
     }
     if (state.tickets < 1 && id !== 'treasury' && id !== 'wheel') {
       setNotice(en ? 'Collect tickets to play.' : 'Получи билеты, чтобы играть.');
+      captureGameEvent('territory_hall_no_tickets', { mode: id });
       return;
     }
     onPlay(id);
@@ -162,6 +165,24 @@ export function GamesScreen({
           <button type="button" disabled={busy} onClick={()=>void refresh()}>{en?'Retry credit':'Повторить зачисление'}</button>
         </div>}
       </section>
+
+      {!loading && state?.tickets === 0 && (
+        <div className="rounded-xl border border-amber-400/40 bg-amber-950/25 p-3 text-sm text-amber-100" role="status">
+          <strong className="block font-bold">{en ? 'Out of game tickets?' : 'Закончились игровые билеты?'}</strong>
+          <span className="block mt-1">
+            {state.free_ready
+              ? (en ? 'Your 2 daily free tickets are ready. Claim them above.' : 'Твои 2 бесплатных билета на сегодня готовы. Забери их в кассе выше.')
+              : (en ? 'The next 2 free tickets can be claimed after midnight Kyiv time. No purchase required.'
+                : 'Следующие 2 бесплатных билета можно забрать после полуночи по Киеву. Покупка не нужна.')}
+          </span>
+          {state.free_ready && (
+            <button type="button" disabled={busy} onClick={() => void takeDaily()}
+              className="mt-2 rounded-lg border border-amber-300/50 bg-amber-600/25 px-3 py-2 font-bold disabled:opacity-50">
+              {en ? 'Claim 2 free tickets' : 'Забрать 2 билета'}
+            </button>
+          )}
+        </div>
+      )}
 
       {state?.active && (
         <button className="hall-resume" type="button" onClick={() => onPlay(state.active!.game)}
