@@ -408,7 +408,7 @@ export function GearShowcase({ userId }: { userId: string }) {
           <div className="gear-bag-empty"><Info size={20}/>{language === 'en' ? 'No gear in this category yet.' : 'Пока нет вещей этого типа.'}</div>
         )}
         <div className="gear-bag-footer">
-          <span>{language === 'en' ? 'Tap a bag item to compare it with equipped gear.' : 'Нажми на вещь снизу, чтобы сравнить её с надетой.'}</span>
+          <span>{language === 'en' ? 'Tap a spare item to compare or salvage it (+1 material, up to 3 daily).' : 'Нажми на запасную вещь: сравни или разбери за +1 материал (до 3 в сутки).'}</span>
           <span><Hammer size={12}/>{state.forgeMaterials}
             {remainingToday !== null && <small>{language === 'en' ? ' • ' + remainingToday + '/3 left today' : ' • ' + remainingToday + '/3 сегодня'}</small>}</span>
         </div>
