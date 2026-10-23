@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Currency } from './ui/Currency';
 import { prepareRichShareMessage } from '@/game/dailyShare';
+import { captureGameEvent } from '@/game/analytics';
 import { getTelegramWebApp } from '@/game/telegram';
 import {
   friendReward, getReferralBotUsername, getReferralStatus, referralLink, shareReferralInvite,
@@ -89,6 +90,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
     if (!url) return;
     try {
       await navigator.clipboard.writeText(url);
+      captureGameEvent('territory_referral_link_copy', { outcome: 'success' });
       setMessage(en ? 'Link copied! Send it to a friend.' : 'Ссылка скопирована! Отправь её другу.');
     } catch {
       setMessage(en ? 'Copy unavailable. Use the Telegram share button.' : 'Не удалось скопировать. Используй кнопку Telegram.');
@@ -97,6 +99,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
 
   const share = () => {
     if(preparing)return;
+    if(preparedId || url) captureGameEvent('territory_referral_share_click');
     const tg=getTelegramWebApp();
     if(preparedId&&tg?.shareMessage){
       try{tg.shareMessage(preparedId);}
@@ -111,6 +114,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
     setBusy(true); setError(''); setMessage('');
     try {
       const reward = await redeemReferrals(user.id);
+      captureGameEvent('territory_referral_reward_claim', { outcome: 'success' });
       setMessage(en
         ? 'Rewards claimed! +' + reward.gold + ' gold, +' + reward.gems + ' gems, +' + reward.stones + ' stones, +' + reward.materials + ' forge materials, +' + reward.red_gems + ' red gems.'
         : 'Награды получены! +' + reward.gold + ' золота, +' + reward.gems + ' алмазов, +' + reward.stones + ' камней, +' + reward.materials + ' материалов, +' + reward.red_gems + ' красных алмазов.');
