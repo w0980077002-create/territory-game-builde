@@ -13,10 +13,10 @@ export const SLOT_ICONS: Record<SlotSymbol, { image: string; ru: string; en: str
   hero: { image: 'assets/territory/characters/heroes/female_warrior/idle.webp', ru: 'Герой — бонус', en: 'Hero — bonus' },
   wild: { image: 'territory-mark.svg', ru: 'Руна WILD', en: 'Wild rune' },
   boss: { image: 'assets/territory/characters/bosses/northern_jarl/idle.webp', ru: 'Босс', en: 'Boss' },
-  wolf: { image: 'enemy-wolf.webp', ru: 'Волк', en: 'Wolf' },
+  wolf: { image: 'assets/territory/characters/enemies/wolf/idle.webp', ru: 'Волк', en: 'Wolf' },
   follower: { image: 'assets/territory/characters/followers/rune_mage/idle.webp', ru: 'Спутник', en: 'Companion' },
-  sword: { image: 'item-weapon.webp', ru: 'Оружие', en: 'Weapon' },
-  helmet: { image: 'item-helmet.webp', ru: 'Шлем', en: 'Helmet' },
+  sword: { image: 'assets/territory/ui/items/sword.webp', ru: 'Оружие', en: 'Weapon' },
+  helmet: { image: 'assets/territory/ui/equipment/helmet.webp', ru: 'Шлем', en: 'Helmet' },
   gem: { image: 'blue-gem.webp', ru: 'Алмаз', en: 'Gem' },
   gold: { image: 'gold-coin.webp', ru: 'Монеты', en: 'Gold' },
 };
