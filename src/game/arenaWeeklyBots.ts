@@ -94,10 +94,13 @@ export function arenaWeeklyWithBots(
   // 25 Cyrillic + 25 Latin bot identities, no duplicated or numbered names.
   const botNames = [...RUSSIAN_ARENA_BOT_NAMES, ...ENGLISH_ARENA_BOT_NAMES];
 
-  // Each week reshuffle activity profiles, but keep them identical across
-  // all players. A leader can earn about 21 wins/day, while casual rivals
-  // gain only a few each week. Spacing targets prevents crowded score ties
-  // and lets a new real player enter the bottom of the TOP-50.
+  // Shuffle the 50 profiles each week (the same for every viewer).
+  // Distinct nonlinear weekly goals span 1..175: casuals barely participate,
+  // regulars progress steadily, leaders approach 25 wins/day.
+  // The minimum 3-win gap between neighbouring weekly targets produces
+  // distinct, widely spaced Friday/Saturday scores without changing any
+  // real-player victories or granting bot wins in bulk.
+  // Early on Sunday there can legitimately be score ties near zero.
   const skillOrder = [...botNames].sort((a, b) =>
     stableHash(week + ':' + a + ':skill') - stableHash(week + ':' + b + ':skill')
     || a.localeCompare(b));
@@ -119,10 +122,12 @@ export function arenaWeeklyWithBots(
   const bots: ArenaWeeklyDisplayPlayer[] = botNames.map((name) => {
     const seed = stableHash(week + ':' + name);
     const index = skillIndex.get(name)!;
-    // Unique-ish lifetime *weekly* goals (roughly 1–150), from weak to
-    // strong. The +/-1 tune avoids an obviously perfect numerical ladder.
-    const weeklyGoal = Math.max(1,
-      2 + (49 - index) * 3 + (stableHash(week + ':' + name + ':tune') % 3 - 1));
+    // Broad, strictly distinct WEEKLY goals rather than near-equal scores:
+    // bottom 1, middle roughly 80, top 175. No bot exceeds 25/day.
+    // Names exchange activity tiers every Sunday via skillOrder.
+    const strength = 49 - index;
+    const weeklyGoal = 1 + strength * 3
+      + Math.round(27 * (strength / 49) ** 2);
     const winsBeforeToday = Math.floor(weeklyGoal * currentDay / 7);
     const winsAtDayEnd = Math.floor(weeklyGoal * (currentDay + 1) / 7);
     const todayWins = winsAtDayEnd - winsBeforeToday;
