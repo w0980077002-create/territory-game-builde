@@ -31,9 +31,9 @@ export const SLOT_LINE_CHOICES = [1,3,5,7,9] as const;
 export const SLOT_BET_CHOICES = [1,2,5,10] as const;
 /** Multipliers for 3, 4 and 5 matching icons; this is NOT the Igrosoft paytable. */
 export const SLOT_PAYTABLE: Partial<Record<SlotSymbol, readonly [number,number,number]>> = {
-  wild: [30,100,300], boss: [20,65,190], wolf: [15,45,140],
-  follower: [12,38,110], sword: [10,30,90], helmet: [8,23,70],
-  gem: [6,17,55], gold: [5,13,40],
+  wild: [24,80,240], boss: [16,52,152], wolf: [12,36,112],
+  follower: [10,30,88], sword: [8,24,72], helmet: [6,18,56],
+  gem: [5,14,44], gold: [4,10,32],
 };
 // Weighted, independent draws. Demo-only; payout return is NOT calibrated for production.
 const WEIGHTS: readonly [SlotSymbol, number][] = [
