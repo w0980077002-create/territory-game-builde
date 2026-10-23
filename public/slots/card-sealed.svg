@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="168" viewBox="0 0 128 168">
+<defs><linearGradient id="card" x1="0" x2="1" y2="1"><stop stop-color="#6848a7"/><stop offset=".5" stop-color="#322b66"/><stop offset="1" stop-color="#1b274b"/></linearGradient><linearGradient id="gold" x1="0" x2="1" y2="1"><stop stop-color="#fce69b"/><stop offset=".65" stop-color="#c78b3b"/><stop offset="1" stop-color="#774a29"/></linearGradient></defs>
+<rect x="7" y="6" width="114" height="155" rx="13" fill="url(#card)" stroke="url(#gold)" stroke-width="6"/>
+<rect x="20" y="19" width="88" height="129" rx="7" fill="none" stroke="#f9d788" stroke-width="2"/>
+<path d="M64 28 100 84 64 140 28 84Z" fill="#452978" stroke="#e8bd66" stroke-width="4"/>
+<path d="M64 45 88 84 64 123 40 84Z" fill="#2e356e" stroke="#a3dafa" stroke-width="3"/>
+<path d="M64 52 64 116M42 84H86M48 63 80 105M80 63 48 105" fill="none" stroke="#e9c579" stroke-width="4"/>
+<circle cx="64" cy="84" r="9" fill="#a6eafd" stroke="#fff6c7" stroke-width="3"/>
+<circle cx="28" cy="28" r="3" fill="#ffde93"/><circle cx="100" cy="140" r="3" fill="#ffde93"/>
+</svg>

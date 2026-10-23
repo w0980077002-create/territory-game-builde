@@ -180,3 +180,185 @@
 @media(prefers-reduced-motion:reduce){
  .vslot-reel-track--rolling{animation-duration:.01ms!important;animation-delay:0ms!important}
 }
+
+/* TERRITORY Viking Slots stage 3: clear, touch-friendly, immersive, mobile-first. */
+.territory-slots-open .territory-screen{padding:0!important;overscroll-behavior:contain}
+.vslot{padding:8px 10px 12px;position:relative}
+.vslot-heading{padding:0 2px}
+.vslot-heading h1{text-shadow:0 1px #8e441c,0 0 12px rgba(254,191,62,.72)}
+.vslot-icon-button{min-width:39px;flex-basis:39px;min-height:39px}
+.vslot-art{position:relative}
+.vslot-art::after{content:"";position:absolute;inset:-1px;pointer-events:none;border-radius:14px;box-shadow:inset 0 0 11px #ffde8b70}
+.vslot-stats>div{min-height:51px}
+.vslot-stats strong{font-size:18px;font-weight:900}
+.vslot-selection button{min-height:37px;height:37px;border-radius:9px;font-size:13px;box-shadow:inset 0 1px 2px #fff1}
+.vslot-action-bar button{min-height:49px;height:49px}
+.vslot-bottom-actions button{min-height:39px;padding:6px 11px;font-size:11px}
+.vslot-notice{font-size:12px}
+.vslot-board{margin:3px 0 0}
+.vslot-symbol img{contain:paint;backface-visibility:hidden;user-select:none;-webkit-user-drag:none}
+.vslot-reel-track{backface-visibility:hidden}
+.vslot-reel-track--rolling{transform:translate3d(0,0,0)}
+.vslot-win-path{
+  position:absolute;
+  z-index:7;
+  top:0;left:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  filter:drop-shadow(0 0 5px #ffae00);
+  animation:vslot-winline-in .2s ease-out;
+}
+@keyframes vslot-winline-in{from{opacity:0;filter:blur(3px)}to{opacity:1;filter:drop-shadow(0 0 5px #ffae00)}}
+.vslot-winning-lines{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  justify-content:center;
+  border-radius:9px;
+  border:1px solid #dbab5980;
+  background:linear-gradient(90deg,#331c4c,#483021,#331c4c);
+  margin-top:5px;
+  min-height:28px;
+  padding:4px 8px;
+  font-size:10px;
+  color:#ffde89;
+  font-weight:800;
+  text-align:center;
+}
+.vslot-winning-lines span{color:#b5a5d7;font-size:9px;white-space:nowrap}
+.vslot-adventure-backdrop{
+  position:fixed;
+  z-index:110;
+  top:0;bottom:0;left:0;right:0;
+  width:100%;
+  min-height:100dvh;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  padding:max(12px,env(safe-area-inset-top)) 10px max(18px,env(safe-area-inset-bottom));
+  background:radial-gradient(ellipse at 50% 22%,#69427c,#251d46 42%,#0e1121 82%);
+}
+.vslot-adventure{
+  width:100%;
+  max-width:410px;
+  max-height:calc(100dvh - 25px);
+  overflow-y:auto;
+  border:2px solid #e8b858;
+  border-radius:24px;
+  background:
+    radial-gradient(ellipse at top,#57346780,transparent 42%),
+    linear-gradient(165deg,#291839,#252f4d 52%,#1c1c35);
+  color:#fff2cf;
+  box-shadow:0 0 0 4px #5f3562,0 0 30px #d58d6b77,inset 0 0 45px #161126cc;
+  padding:18px 13px 20px;
+  text-align:center;
+}
+.vslot-adventure-title{display:flex;flex-direction:column;gap:6px;align-items:center;margin-bottom:15px}
+.vslot-adventure-title>svg{color:#ffe38b;width:30px;height:30px;filter:drop-shadow(0 0 10px #ffd75a)}
+.vslot-adventure-title h2{color:#ffe4a2;text-shadow:0 1px 2px #32120b,0 0 12px #f4ad70;font-size:clamp(16px,4.8vw,23px);font-weight:1000;line-height:1.1}
+.vslot-adventure-title p{font-size:10px;color:#ddc4ec;font-weight:700}
+.vslot-adventure-totals{display:flex;gap:5px;align-items:center;justify-content:center}
+.vslot-adventure-totals span{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  min-width:0;
+  background:#132733c7;
+  border:1px solid #dbad65;
+  border-radius:10px;
+  padding:7px 4px;
+  font-size:11px;color:#dcd3d6;
+}
+.vslot-adventure-totals b{font-size:19px;color:#ffe07c;font-variant-numeric:tabular-nums}
+.vslot-adventure-instruction{font-size:12px;line-height:1.35;color:#efdcbe;margin:14px 3px 12px}
+.vslot-adventure-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:10px auto 14px}
+.vslot-adventure-tiles--three{grid-template-columns:repeat(3,minmax(0,1fr));max-width:310px}
+.vslot-adventure-tiles--four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.vslot-adventure-tile{
+  min-width:0;
+  height:90px;
+  border-radius:11px;
+  border:2px solid #ffde85;
+  background:radial-gradient(ellipse at top,#b27c56,#542a54 85%);
+  box-shadow:inset 0 0 12px #ffc16f4c,0 3px #2c1835;
+  display:flex;
+  align-items:center;
+  flex-direction:column;
+  justify-content:center;
+  gap:7px;
+  color:#fff2bd;
+  font-size:10px;
+  font-weight:1000;
+}
+.vslot-adventure-tile:not(:disabled):active{transform:translateY(2px)}
+.vslot-adventure-tile--chosen{border-color:#7cf6d8;background:linear-gradient(#287861,#1b3747);box-shadow:0 0 10px #81ffc88c,inset 0 0 16px #73e8c532}
+.vslot-adventure-tile--revealed:not(.vslot-adventure-tile--chosen){background:linear-gradient(#6b5671,#392e55)}
+.vslot-adventure-glyph{font-family:serif;font-size:33px;line-height:1;filter:drop-shadow(0 0 6px #e8b75d)}
+.vslot-adventure-feedback{font-weight:800;font-size:13px;line-height:1.35;color:#ffe4a0;min-height:20px;margin:11px auto}
+.vslot-adventure-cta{
+  width:100%;
+  min-height:49px;
+  background:linear-gradient(#ffe6a0,#edaa42,#b86426);
+  color:#392316;
+  font-size:14px;
+  font-weight:1000;
+  border:2px solid #ffefb1;
+  border-radius:13px;
+  box-shadow:0 3px #753b24,0 0 14px #ffc86455;
+  padding:9px 7px;
+}
+.vslot-adventure-subtle{
+  display:block;
+  margin:13px auto 0;
+  min-height:42px;
+  width:100%;
+  color:#e8ddeb;
+  border:1px solid #ab96c6;
+  border-radius:12px;
+  background:#34304f;
+  font-size:12px;
+  font-weight:750;
+  padding:8px;
+}
+@media(max-width:355px){
+ .vslot-selection button{min-height:34px;height:34px}
+ .vslot-action-bar button{min-height:44px;height:44px}
+ .vslot-adventure-tile{height:75px;gap:4px;font-size:9px}
+ .vslot-adventure-glyph{font-size:25px}
+ .vslot-adventure{padding:11px 9px}
+}
+@media(max-height:600px){
+ .vslot-adventure{padding:9px 10px;max-height:calc(100dvh - 6px)}
+ .vslot-adventure-title{margin-bottom:8px}
+ .vslot-adventure-tiles{margin:5px auto}
+ .vslot-adventure-tile{height:64px}
+ .vslot-adventure-glyph{font-size:25px}
+}
+@media(prefers-reduced-motion:reduce){
+ .vslot-win-path{animation:none}
+ .vslot-reel-track--rolling{animation-duration:.01ms!important;animation-delay:0ms!important}
+}
+.vslot-fx-toggles{
+  display:flex;gap:7px;justify-content:center;align-items:center;
+  border-top:1px solid #6c537a55;padding-top:6px;margin-top:2px;
+}
+.vslot-fx-toggles button{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  border:1px solid #907aa1;
+  background:#25253e;
+  color:#d4cde0;
+  border-radius:9px;
+  min-height:36px;
+  width:50%;
+  font-size:10px;
+  font-weight:800;
+}
+.vslot-fx-toggles button[aria-pressed="true"]{border-color:#ffd280;background:#40344f;color:#ffe8b5}
+
+.vslot-adventure-glyph{width:100%;height:48px;display:flex;align-items:center;justify-content:center}
+.vslot-adventure-glyph img{width:100%;height:100%;max-width:72px;object-fit:contain;filter:drop-shadow(0 0 5px #ffcf89bb)}
+.vslot-adventure-tiles--three .vslot-adventure-glyph{height:58px}
+.vslot-adventure-tiles--four .vslot-adventure-glyph{height:57px}
+@media(max-width:360px){.vslot-adventure-glyph{height:40px}.vslot-adventure-tiles--three .vslot-adventure-glyph,.vslot-adventure-tiles--four .vslot-adventure-glyph{height:45px}}

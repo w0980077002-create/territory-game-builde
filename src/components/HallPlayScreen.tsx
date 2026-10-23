@@ -187,6 +187,6 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
 
 export function HallPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void;userId:string}){
  if(game==='wheel')return <WheelOfFortune userId={userId} onBack={onBack}/>;
- if(game==='slots')return <Suspense fallback={<div className="p-4 text-amber-200">Загружаем автомат…</div>}><VikingSlots onBack={onBack}/></Suspense>;
+ if(game==='slots')return <Suspense fallback={<div className="p-4 text-amber-200">Загружаем автомат…</div>}><VikingSlots key={userId} userId={userId} onBack={onBack}/></Suspense>;
  return game==='monopoly'?<MonopolyAdventure onBack={onBack} userId={userId}/>:<HallOtherPlayScreen game={game} onBack={onBack} userId={userId}/>;
 }
