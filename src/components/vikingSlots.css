@@ -356,3 +356,9 @@
   font-weight:800;
 }
 .vslot-fx-toggles button[aria-pressed="true"]{border-color:#ffd280;background:#40344f;color:#ffe8b5}
+
+.vslot-adventure-glyph{width:100%;height:48px;display:flex;align-items:center;justify-content:center}
+.vslot-adventure-glyph img{width:100%;height:100%;max-width:72px;object-fit:contain;filter:drop-shadow(0 0 5px #ffcf89bb)}
+.vslot-adventure-tiles--three .vslot-adventure-glyph{height:58px}
+.vslot-adventure-tiles--four .vslot-adventure-glyph{height:57px}
+@media(max-width:360px){.vslot-adventure-glyph{height:40px}.vslot-adventure-tiles--three .vslot-adventure-glyph,.vslot-adventure-tiles--four .vslot-adventure-glyph{height:45px}}
