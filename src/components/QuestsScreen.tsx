@@ -1,5 +1,6 @@
 import { useStore } from '@/game/store';
 import { useGame, claimQuest, claimAchievement } from '@/game/actions';
+import { captureGameEvent } from '@/game/analytics';
 import { CheckCircle2, Lock } from 'lucide-react';
 import type { Achievement, Quest } from '@/game/types';
 import { Currency } from './ui/Currency';
@@ -44,7 +45,14 @@ export function QuestsScreen({ userId, onSocialStatusChange }: { userId: string;
             </div>
             <div className="space-y-2">
               {list.map((q) => (
-                <QuestCard key={q.id} quest={q} language={language} t={t} onClaim={() => useGame.set(claimQuest(useGame.get(), q.id))} />
+                <QuestCard key={q.id} quest={q} language={language} t={t} onClaim={() => {
+                  const previous = useGame.get();
+                  const next = claimQuest(previous, q.id);
+                  if (next !== previous) {
+                    useGame.set(next);
+                    captureGameEvent('territory_quest_claim', { screen: 'quests', outcome: 'success' });
+                  }
+                }} />
               ))}
             </div>
           </section>
@@ -107,7 +115,14 @@ export function AchievementList() {
   return (
     <div className="space-y-2">
       {state.achievements.map((a) => (
-        <AchievementCard key={a.id} ach={a} language={language} t={t} onClaim={() => useGame.set(claimAchievement(useGame.get(), a.id))} />
+        <AchievementCard key={a.id} ach={a} language={language} t={t} onClaim={() => {
+          const previous = useGame.get();
+          const next = claimAchievement(previous, a.id);
+          if (next !== previous) {
+            useGame.set(next);
+            captureGameEvent('territory_quest_claim', { screen: 'quests', outcome: 'success' });
+          }
+        }} />
       ))}
     </div>
   );
