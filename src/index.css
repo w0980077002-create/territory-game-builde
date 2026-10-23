@@ -853,19 +853,21 @@ html.territory-desktop-webapp .home-side-stack .home-side {
   transform-origin: center bottom;
 }
 .home-follower-figure {
-  transform: scale(1.32);
+  /* Noticeable companion silhouette next to the hero, feet fixed on the dock. */
+  z-index: 1;
+  transform: scale(1.60);
   transform-origin: 65% 100%;
 }
 .home-hero-art {
   filter: drop-shadow(0 7px 7px rgba(0, 0, 0, 0.80)) drop-shadow(0 0 2px rgba(100, 176, 255, 0.55));
 }
 .home-follower-art {
-  filter: drop-shadow(0 7px 8px rgba(0, 0, 0, 0.88)) drop-shadow(0 0 4px rgba(150, 220, 255, 0.80));
+  filter: drop-shadow(0 7px 8px rgba(0, 0, 0, 0.90)) drop-shadow(0 0 3px rgba(195, 235, 255, 0.90)) drop-shadow(0 0 6px rgba(75, 160, 240, 0.38));
 }
 /* Short narrow Telegram screens still need room for both side menus. */
 @media (max-width: 350px) {
   .home-hero-figure { transform: scale(1.14); }
-  .home-follower-figure { transform: scale(1.18); }
+  .home-follower-figure { transform: scale(1.33); }
 }
 @media (prefers-reduced-motion: reduce) {
   .home-character-stage .animate-idle { animation: none; }
