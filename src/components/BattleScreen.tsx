@@ -3,6 +3,7 @@ import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, Shoppi
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
+import { captureGameEvent } from '@/game/analytics';
 import { generateChapter, generateTrial, PVE_STONE_COST } from '@/game/engine';
 import { spendStones, trialReward, blessedGold } from '@/game/progression';
 import { hapticImpact } from '@/game/telegram';
@@ -47,6 +48,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       return;
     }
     hapticImpact('medium');
+    captureGameEvent('territory_pve_fight_start', { mode: kind === 'trial' ? 'trial' : 'campaign' });
     setError(null);
     useGame.set(paid);
     const ch = generateChapter(paid.currentChapter);
@@ -115,6 +117,16 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
 
       {view === 'campaign' ? (
         <>
+          {state.totalBattlesWon === 0 && (
+            <div className="rounded-xl border border-amber-400/40 bg-amber-950/30 p-3 text-sm text-amber-100" role="note">
+              <strong className="block font-bold">{language === 'en' ? 'Your first victory starts here!' : 'Первая победа начинается здесь!'}</strong>
+              <span className="block mt-1 text-xs leading-relaxed">
+                {language === 'en'
+                  ? 'Press Fight on the highlighted enemy below. Win the battle to gain experience and unlock the next stage.'
+                  : 'Нажми «Бой» у выделенного противника ниже. Победи, получи опыт и открой следующий этап.'}
+              </span>
+            </div>
+          )}
           <div className="relative rounded-2xl overflow-hidden border border-amber-500/20">
             <img src="/city-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
