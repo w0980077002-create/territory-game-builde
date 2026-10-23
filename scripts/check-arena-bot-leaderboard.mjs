@@ -31,9 +31,11 @@ vm.runInNewContext(compiled, {
 const { arenaWeeklyWithBots } = loaded.exports;
 assert.equal(typeof arenaWeeklyWithBots, 'function');
 function readBotNames(constName) {
-  const block = source.match(new RegExp('const ' + constName + ' = \\\\[([\\\\s\\\\S]*?)\\\\] as const;'));
-  assert(block, 'Missing curated bot names: ' + constName);
-  return [...block[1].matchAll(/'([^']+)'/g)].map(x => x[1]);
+  const start = source.indexOf('const ' + constName + ' = [');
+  assert(start >= 0, 'Missing curated bot names: ' + constName);
+  const end = source.indexOf('] as const;', start);
+  assert(end > start, 'Unterminated bot name list: ' + constName);
+  return [...source.slice(start, end).matchAll(/'([^']+)'/g)].map(x => x[1]);
 }
 const ruNames = readBotNames('RUSSIAN_ARENA_BOT_NAMES');
 const enNames = readBotNames('ENGLISH_ARENA_BOT_NAMES');
