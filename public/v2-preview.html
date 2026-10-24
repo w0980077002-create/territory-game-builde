@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
+  <meta name="theme-color" content="#132131"/>
+  <title>TERRITORY 2.0 — изолированный макет</title>
+  <link rel="stylesheet" href="./v2-preview.css"/>
+</head>
+<body>
+  <div class="v2-app" id="app">
+    <div class="v2-flag">TERRITORY 2.0 · ТЕСТОВЫЙ МАКЕТ · БЕЗ СОХРАНЕНИЙ</div>
+    <header class="v2-top">
+      <div class="v2-avatar" id="profile"><img src="./assets/territory/characters/heroes/male_viking/idle.webp" alt="Герой"/><span>85</span></div>
+      <div class="v2-top-info"><div class="v2-name">Викинг <span class="v2-vip">VIP 5</span></div><div class="v2-power">⚔ 124 500</div></div>
+      <div class="v2-currencies">
+        <div><img src="./gold-coin.webp" alt="Золото"/>12.4M</div>
+        <div><img src="./blue-gem.webp" alt="Алмазы"/>3 280</div>
+        <div><img src="./red-gem.webp" alt="Красные алмазы"/>850</div>
+      </div>
+    </header>
+
+    <div class="v2-battle">
+      <div class="v2-stage-bar" aria-label="Прогресс главы">
+        <span>Глава 6 · Северные руины</span>
+        <div class="v2-progress"><i class="passed"></i><i class="passed"></i><i class="current"></i><i></i><i class="boss">☠</i></div>
+        <strong>6-12 · Каменный великан</strong>
+      </div>
+      <aside class="v2-side v2-side-left" aria-label="Быстрые разделы">
+        <button data-view="Задания"><img src="./ic-quests.webp" alt=""/><span>Задания</span></button>
+        <button data-view="События"><img src="./ic-events.webp" alt=""/><span>События</span></button>
+        <button data-view="Друзья"><img src="./ic-invite.webp" alt=""/><span>Друзья</span></button>
+        <button data-view="Награды"><img src="./ic-daily.webp" alt=""/><span>Награды</span></button>
+      </aside>
+      <aside class="v2-side v2-side-right" aria-label="Специальные разделы">
+        <button data-view="Меню"><span class="v2-icon">▦</span><span>Меню</span></button>
+        <button data-view="Рынок"><img src="./ic-shop.webp" alt=""/><span>Рынок</span></button>
+        <button data-view="Испытания"><img src="./ic-trials.webp" alt=""/><span>Испытания</span></button>
+        <button data-view="Игры"><span class="v2-icon">🎲</span><span>Игры</span></button>
+        <button data-view="Почта"><img src="./ic-mail.webp" alt=""/><span>Почта</span></button>
+      </aside>
+
+      <div class="v2-ground">
+        <div class="v2-combatant v2-companion" title="Спутник — временная модель"><img src="./assets/territory/characters/followers/loyal_shield/idle.webp" alt="Спутник"/></div>
+        <div class="v2-combatant v2-hero"><img src="./assets/territory/characters/heroes/male_viking/idle.webp" alt="Герой"/></div>
+        <div class="v2-combatant v2-enemy v2-enemy-small"><img src="./assets/territory/characters/enemies/goblin/idle.webp" alt="Гоблин"/><div class="v2-enemy-hp"></div></div>
+        <div class="v2-combatant v2-enemy v2-enemy-big"><img src="./assets/territory/characters/enemies/troll/idle.webp" alt="Тролль"/><div class="v2-enemy-hp"></div></div>
+        <div class="v2-swing" aria-hidden="true"></div>
+        <span class="v2-hit" aria-hidden="true">−1 250</span>
+      </div>
+      <button class="v2-arena" data-view="Арена" aria-label="Арена"><img src="./ic-arena.webp" alt=""/><strong>Арена</strong></button>
+    </div>
+
+    <section class="v2-life" aria-label="HP и энергия">
+      <div class="v2-orb v2-orb-red" aria-label="Здоровье"></div>
+      <div class="v2-health"><span class="v2-level">85</span><div class="v2-health-track"><div class="v2-health-fill"></div><b>6 450 / 8 500 HP</b></div></div>
+      <button class="v2-stats" data-view="Характеристики" title="Характеристики">▥</button>
+      <div class="v2-orb v2-orb-blue" aria-label="Энергия"></div>
+    </section>
+
+    <section class="v2-equipment" aria-label="Экипировка">
+      <button data-view="Склад" class="v2-item v2-weapon"><img src="./item-weapon.webp" alt="Оружие"/><small>Ур. 85</small></button>
+      <button data-view="Герой" class="v2-item"><img src="./item-helmet.webp" alt="Шлем"/><small>Ур. 85</small></button>
+      <button data-view="Герой" class="v2-item"><img src="./item-armor.webp" alt="Броня"/><small>Ур. 85</small></button>
+      <button data-view="Герой" class="v2-item"><img src="./item-boots.webp" alt="Сапоги"/><small>Ур. 85</small></button>
+      <button data-view="Герой" class="v2-item"><img src="./item-ring.webp" alt="Кольцо"/><small>Ур. 85</small></button>
+      <button data-view="Последователи" class="v2-item v2-comp-card"><img src="./assets/territory/characters/followers/loyal_shield/idle.webp" alt="Последователь"/><small>Спутник</small></button>
+      <button data-view="Герой" class="v2-item"><img src="./item-shield.webp" alt="Щит"/><small>Ур. 85</small></button>
+      <button data-view="Герой" class="v2-item"><img src="./item-amulet.webp" alt="Амулет"/><small>Ур. 85</small></button>
+      <button data-view="Руны" class="v2-item v2-rune"><span>ᚱ</span><small>Руна</small></button>
+      <button data-view="Навыки" class="v2-item v2-skill"><span>⚡</span><small>Навык</small></button>
+    </section>
+
+    <div class="v2-actions">
+      <button class="v2-task" data-view="Задания"><small>Задание главы</small><b>Победи каменного великана</b><em>0 / 1</em></button>
+      <button class="v2-speed" id="speed" aria-pressed="false">×2</button>
+      <button class="v2-repeat" id="auto" aria-pressed="true" title="Автобой">⟳</button>
+      <button class="v2-rank" data-view="Рейтинг" title="Рейтинг">♛</button>
+    </div>
+
+    <footer class="v2-nav" aria-label="Основная навигация">
+      <button data-view="Порт"><span>⚓</span>Порт</button>
+      <button data-view="Навыки"><span>📕</span>Навыки</button>
+      <button class="v2-nav-center active" data-view="Бой" aria-label="Бой"><span>⚒</span><small id="stoneCount">237</small></button>
+      <button data-view="Приключение"><span>🗺</span>Приключение</button>
+      <button data-view="Магазин"><span>🎁</span>Магазин</button>
+    </footer>
+
+    <div class="v2-overlay hidden" id="overlay" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
+      <div class="v2-sheet">
+        <header><button id="back" aria-label="Назад">‹</button><h2 id="overlayTitle">Раздел</h2><button id="close" aria-label="Закрыть">×</button></header>
+        <div class="v2-sheet-body" id="sheetBody"></div>
+        <p class="v2-demo-notice">Демонстрация интерфейса · без подключения к кошельку и базе игроков</p>
+      </div>
+    </div>
+  </div>
+  <script src="./v2-preview.js" defer></script>
+</body>
+</html>
