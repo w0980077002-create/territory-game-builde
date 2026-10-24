@@ -65,6 +65,40 @@
     speed.textContent = fast ? '×1' : '×2';
     battle.classList.toggle('fast', fast);
   });
+  // Local visual combat simulation. IMPORTANT: this never awards XP/items/currency,
+  // never spends Battle Stones and never represents real player progression.
+  const stageText = document.querySelector('.v2-stage-bar strong');
+  const mission = document.querySelector('.v2-task b');
+  const enemyHit = document.querySelector('.v2-hit');
+  const stageIcons = Array.from(document.querySelectorAll('.v2-progress i')).slice(0, 4);
+  let visualStage = 12;
+  let visualWave = 2;
+  let visualTicks = 0;
+  let lastPanel = null;
+  window.setInterval(() => {
+    if (!playing || document.hidden) return;
+    visualTicks += fast ? 2 : 1;
+    if (visualTicks % 3 === 0) {
+      // Deterministic preview number; real damage comes from the future combat engine.
+      enemyHit.textContent = '−' + (1140 + (visualTicks % 6) * 105).toLocaleString('ru-RU');
+    }
+    if (visualTicks < 8) return;
+    visualTicks = 0;
+    visualWave += 1;
+    if (visualWave > 4) {
+      visualWave = 1;
+      visualStage += 1;
+    }
+    stageText.textContent = '6-' + visualStage + ' · ' +
+      (visualWave === 4 ? 'Встреча с боссом' : 'Новая волна врагов');
+    mission.textContent = visualWave === 4
+      ? 'Победи главного босса' : 'Победи врагов на пути';
+    stageIcons.forEach((icon, index) => {
+      icon.classList.toggle('passed', index + 1 < visualWave);
+      icon.classList.toggle('current', index + 1 === visualWave);
+    });
+  }, 950);
+
   let playing = true;
   auto.addEventListener('click', () => {
     playing = !playing;
