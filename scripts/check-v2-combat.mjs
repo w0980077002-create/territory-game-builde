@@ -5,7 +5,8 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 const code = readFileSync('src/v2/core/autoBattle.ts', 'utf8');
-assert(!/\bsupabase\b|\bfetch\s*\(|grantGold|walletVersion|saveCloudSave/.test(code),
+const executableCode = code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+assert(!/\bsupabase\b|\bfetch\s*\(|grantGold|walletVersion|saveCloudSave/.test(executableCode),
   'Preview combat must never access production database, wallet or rewards');
 const output = ts.transpileModule(code, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
