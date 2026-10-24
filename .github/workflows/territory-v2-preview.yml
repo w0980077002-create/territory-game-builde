@@ -1,0 +1,45 @@
+name: TERRITORY 2.0 — isolated preview and safety checks
+
+on:
+  push:
+    branches:
+      - territory-2.0
+    paths:
+      - 'src/v2/**'
+      - 'public/v2-preview.*'
+      - 'scripts/check-v2-preview.mjs'
+      - '.github/workflows/territory-v2-preview.yml'
+      - 'docs/TERRITORY_2_0_*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: territory-v2-safe-checks
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: node scripts/check-v2-preview.mjs
+      - name: Build with dummy offline backend configuration
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://offline-territory-v2-test.supabase.co
+          VITE_SUPABASE_ANON_KEY: dummy-for-offline-build-only
+      - name: Confirm preview copied but no deployment configured
+        run: |
+          test -s dist/v2-preview.html
+          test -s dist/v2-preview.js
+          test -s dist/v2-preview.css
+          echo 'V2 offline preview built, no production publication.'
