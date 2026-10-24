@@ -8,6 +8,7 @@ on:
       - 'src/v2/**'
       - 'public/v2-preview.*'
       - 'scripts/check-v2-preview.mjs'
+      - 'scripts/check-v2-combat.mjs'
       - '.github/workflows/territory-v2-preview.yml'
       - 'docs/TERRITORY_2_0_*.md'
   workflow_dispatch:
@@ -32,6 +33,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: node scripts/check-v2-preview.mjs
+      - run: node scripts/check-v2-combat.mjs
       - name: Build with dummy offline backend configuration
         run: npm run build
         env:
