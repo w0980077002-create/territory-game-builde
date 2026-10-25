@@ -40,7 +40,11 @@ assert.match(arena, /getFollowerArt\(portraitFollower\.id\)/, 'Use the selected 
 assert(!arena.includes('h-[52%] w-[48%]'), 'Do not restore the invisible follower layout');
 assert.match(pve, /getEnemyCombatFrames\(enemy\.art\)/, 'PvE enemy animations disconnected');
 assert.match(pve, /getFollowerCombatFrames\(follower\.id\)/, 'PvE companion animation frames missing');
-assert.match(art, /return itemIcon\('sword'\)/, 'Sword art mapping missing');
+for (const image of ['helmet', 'amulet', 'armor', 'weapon', 'shield', 'ring', 'boots', 'sword', 'knight-blade', 'hero-sword', 'plate-armor']) {
+  assert(existsSync(`public/assets/territory/ui/equipment-cartoon/${image}.webp`), `Missing approved cartoon gear: ${image}`);
+}
+assert.match(art, /equipment-cartoon\//, 'Cartoon shared equipment catalog missing');
+assert.match(art, /return eq\('sword'\)/, 'Sword art mapping missing');
 assert.match(art, /if \(item\.equipment\) return equipmentArt\(item\.equipment\)/, 'Inventory still shows generic weapon');
 assert.match(gear, /equipmentArt\(item\)/, 'Arena gear still shows generic weapon');
 assert.match(room, /<ArenaChat\s+roomId=\{roomId\}/, 'Persistent arena chat missing');
