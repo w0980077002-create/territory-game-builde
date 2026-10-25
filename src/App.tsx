@@ -50,7 +50,9 @@ const HallPlayScreen = lazy(() => import('@/components/HallPlayScreen').then(m =
 const ProfessionsScreen = lazy(() => import('@/components/ProfessionsScreen').then(m => ({ default: m.ProfessionsScreen })));
 // OFF by default. Client opt-in never overrides the server-side stage8 release gate.
 const Stage8ProfessionsScreen = lazy(() => import('@/components/ProfessionsStage8Screen').then(m => ({ default: m.ProfessionsStage8Screen })));
-const STAGE8_CLIENT_OPT_IN = import.meta.env.VITE_TERRITORY_PROFESSIONS_STAGE8 === 'true';
+// Owner-approved TERRITORY 1.0 professions cutover, 2026-10-25.
+// Emergency stop is still possible with VITE_TERRITORY_PROFESSIONS_STAGE8=false.
+const STAGE8_CLIENT_OPT_IN = import.meta.env.VITE_TERRITORY_PROFESSIONS_STAGE8 !== 'false';
 const ClanScreen = lazy(() => import('@/components/ClanScreen').then(m => ({ default: m.ClanScreen })));
 const AuctionScreen = lazy(() => import('@/components/AuctionScreen').then(m => ({ default: m.AuctionScreen })));
 const FriendsScreen = lazy(() => import('@/components/FriendsScreen').then(m => ({ default: m.FriendsScreen })));

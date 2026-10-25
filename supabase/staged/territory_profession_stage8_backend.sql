@@ -7,6 +7,21 @@
 
 BEGIN;
 
+-- The live V1 database predates the optional Stage3 mastery table. Reserve
+-- its protected, EMPTY compatibility shape so checked legacy conversions
+-- compile; real historical mastery is imported via the reviewed save bridge.
+-- Never infer historical levels from a missing Stage3 row.
+CREATE TABLE IF NOT EXISTS public.territory_profession_mastery_v1 (
+  player_id uuid PRIMARY KEY REFERENCES public.players(id) ON DELETE CASCADE,
+  profession text NOT NULL CHECK (profession IN ('smith','alchemist','artisan','jeweler','engineer')),
+  mastery_level integer NOT NULL CHECK (mastery_level BETWEEN 1 AND 300),
+  mastery_xp integer NOT NULL DEFAULT 0 CHECK (mastery_xp>=0),
+  verified boolean NOT NULL DEFAULT false,
+  updated_at timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+ALTER TABLE public.territory_profession_mastery_v1 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.territory_profession_mastery_v1 FROM PUBLIC, anon, authenticated;
+
 -- Fresh, versioned tables leave historic receipts, items and mastery untouched.
 CREATE TABLE IF NOT EXISTS public.territory_profession_stage8_release (
   id integer PRIMARY KEY CHECK (id = 1),
@@ -205,10 +220,11 @@ $$;
 REVOKE ALL ON FUNCTION public.territory_profession_stage8_reconcile(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_profession_stage8_reconcile(uuid) TO service_role;
 
--- Conservative release preflight: neither anon nor authenticated may directly
--- mint gems, resources or unlocks, and the old purchase RPC must be revoked.
--- A denied RLS policy alone does NOT count as enough here; the ACL must be
--- hardened so no legacy client can restore server-spent currency.
+-- Profession-specific preflight. The legacy PvE snapshot and gems column are
+-- currently client-writable; their wider redesign is independent of the
+-- profession release. Stage8 mastery, crafting output, ingredients and
+-- resource wallet MUST remain server-only. Legacy purchase RPC is revoked at
+-- cutover so stale clients cannot produce unmatched profession unlocks.
 CREATE OR REPLACE FUNCTION public.territory_profession_stage8_economy_ready()
 RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
 DECLARE
@@ -216,9 +232,7 @@ DECLARE
   v_role text;
 BEGIN
   FOREACH v_role IN ARRAY ARRAY['anon','authenticated'] LOOP
-    IF pg_catalog.has_column_privilege(v_role,'public.players','gems','INSERT')
-      OR pg_catalog.has_column_privilege(v_role,'public.players','gems','UPDATE')
-      OR pg_catalog.has_column_privilege(v_role,'public.territory_resource_wallet','quantity','INSERT')
+    IF pg_catalog.has_column_privilege(v_role,'public.territory_resource_wallet','quantity','INSERT')
       OR pg_catalog.has_column_privilege(v_role,'public.territory_resource_wallet','quantity','UPDATE')
       OR pg_catalog.has_table_privilege(v_role,'public.territory_resource_wallet','DELETE')
       OR pg_catalog.has_table_privilege(v_role,'public.territory_profession_unlocks','INSERT')
@@ -229,6 +243,10 @@ BEGIN
       OR pg_catalog.has_column_privilege(v_role,'public.territory_profession_mastery_v1','mastery_level','UPDATE')
       OR pg_catalog.has_column_privilege(v_role,'public.territory_profession_mastery_v1','mastery_xp','UPDATE')
       OR pg_catalog.has_column_privilege(v_role,'public.territory_profession_mastery_v1','verified','UPDATE')
+      OR pg_catalog.has_table_privilege(v_role,'public.territory_profession_stage8_progress','INSERT')
+      OR pg_catalog.has_table_privilege(v_role,'public.territory_profession_stage8_progress','UPDATE')
+      OR pg_catalog.has_table_privilege(v_role,'public.territory_profession_stage8_receipts','INSERT')
+      OR pg_catalog.has_table_privilege(v_role,'public.territory_profession_stage8_daily_xp','UPDATE')
       OR (v_old_rpc IS NOT NULL AND pg_catalog.has_function_privilege(v_role,v_old_rpc,'EXECUTE'))
     THEN RETURN false; END IF;
   END LOOP;
@@ -238,10 +256,11 @@ $$;
 REVOKE ALL ON FUNCTION public.territory_profession_stage8_economy_ready() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_profession_stage8_economy_ready() TO service_role;
 
--- Atomic purchase for genuinely NEW accounts only. Existing accounts go through
--- the audited v1 reconciliation path. Never infer "new" from absent mastery:
--- the player creation timestamp MUST be after the signed-off cutover instant.
--- Refuse purchase while authenticated users can UPDATE players.gems directly.
+-- Atomic purchase for accounts without ANY historical profession: this also
+-- includes existing players who have never selected a profession. Historical
+-- unlocked professions must go through the one-time reviewed reconciliation.
+-- Legacy gems can still be client-writable in V1, but NEVER grant mastery XP
+-- or resources from that client-owned state; purchase itself is serialized.
 CREATE OR REPLACE FUNCTION public.territory_profession_stage8_purchase(p_profession text,p_operation uuid)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO '' AS $$
 DECLARE
@@ -273,14 +292,23 @@ BEGIN
     THEN RAISE EXCEPTION 'economy_not_server_authoritative'; END IF;
   SELECT * INTO v_player FROM public.players WHERE id=v_uid FOR UPDATE;
   IF NOT FOUND OR v_player.banned THEN RAISE EXCEPTION 'player_unavailable'; END IF;
-  IF v_player.created_at<v_cutover THEN RAISE EXCEPTION 'legacy_account_requires_review'; END IF;
   IF EXISTS(SELECT 1 FROM public.territory_profession_mastery_v1 WHERE player_id=v_uid)
     OR EXISTS(SELECT 1 FROM public.territory_profession_stage8_progress WHERE player_id=v_uid)
     OR EXISTS(SELECT 1 FROM public.territory_profession_unlocks WHERE player_id=v_uid)
     THEN RAISE EXCEPTION 'existing_profession_requires_review'; END IF;
+  IF v_player.game_state->'professions'->>'active' IS NOT NULL
+    THEN RAISE EXCEPTION 'legacy_profession_requires_review'; END IF;
   IF v_player.gems IS NULL OR v_player.gems<1000 THEN RAISE EXCEPTION 'insufficient_gems'; END IF;
 
-  UPDATE public.players SET gems=gems-1000 WHERE id=v_uid AND gems>=1000
+  -- Keep both snapshots consistent with the installed V1 economy guard.
+  UPDATE public.players SET gems=gems-1000,
+    game_state=pg_catalog.jsonb_set(
+      pg_catalog.jsonb_set(COALESCE(game_state,'{}'::jsonb),'{player}',
+        COALESCE(game_state->'player','{}'::jsonb)||
+          pg_catalog.jsonb_build_object('gems',gems-1000),true),
+      '{professions}',COALESCE(game_state->'professions','{}'::jsonb)||
+        pg_catalog.jsonb_build_object('active',p_profession),true)
+    WHERE id=v_uid AND gems>=1000
     RETURNING gems INTO v_after;
   IF NOT FOUND THEN RAISE EXCEPTION 'insufficient_gems'; END IF;
   INSERT INTO public.territory_profession_unlocks(player_id,profession)
@@ -389,12 +417,13 @@ BEGIN
       THEN RETURN jsonb_build_object('enabled',false,
         'version','profession-stage8-draft-20261025-r2','reason','mastery_not_reconciled'); END IF;
     SELECT created_at INTO v_created FROM public.players WHERE id=v_uid;
-    IF v_cutover IS NULL OR v_created<v_cutover THEN
+    -- An old or new player with NO server unlock can see the chooser. If an
+    -- unverified old client save already asserts a profession, require review.
+    IF EXISTS(SELECT 1 FROM public.players WHERE id=v_uid
+      AND game_state->'professions'->>'active' IS NOT NULL) THEN
       RETURN jsonb_build_object('enabled',false,
-        'version','profession-stage8-draft-20261025-r2','reason','legacy_account_requires_review');
+        'version','profession-stage8-draft-20261025-r2','reason','legacy_profession_requires_review');
     END IF;
-    -- Clean post-cutover player with NO unlock can see the chooser, but must
-    -- use the atomic Stage8 purchase RPC; status never creates a profession.
     SELECT COALESCE(jsonb_object_agg(resource_id,quantity),'{}'::jsonb) INTO v_resources
       FROM public.territory_resource_wallet WHERE player_id=v_uid;
     RETURN jsonb_build_object('enabled',true,'version','profession-stage8-draft-20261025-r2',

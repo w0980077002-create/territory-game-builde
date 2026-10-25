@@ -119,10 +119,11 @@ assert.equal(await api.readStage8PurchasePending(),null);
 
 const app=await readFile(new URL('../src/App.tsx',import.meta.url),'utf8');
 const screen=await readFile(new URL('../src/components/ProfessionsStage8Screen.tsx',import.meta.url),'utf8');
-assert.match(app,/VITE_TERRITORY_PROFESSIONS_STAGE8 === 'true'/);
+assert.match(app,/VITE_TERRITORY_PROFESSIONS_STAGE8 !== 'false'/,
+  'Owner approved Stage8 for release with a reversible explicit false switch');
 assert.match(screen,/!status\?\.enabled/);
 assert.match(screen,/purchaseStage8\(/);
 assert.doesNotMatch(screen,/territory_profession_unlock/,'Stage8 must never use the legacy gem-debit RPC');
 assert.doesNotMatch(screen,/craftItem\(|addMasteryXp\(/,'Stage8 must not grant local rewards');
 assert.doesNotMatch(code,/craftItem\(|addMasteryXp\(/,'Stage8 API must not grant local rewards');
-console.log('Stage8 client PASS: server-only status, strict version, XP cap, item/practice receipts, atomic purchase and reload-safe server inventory, persisted UUID retry, account isolation, disabled-by-default UI.');
+console.log('Stage8 client PASS: server-only status, strict version, XP cap, item/practice receipts, atomic purchase and reload-safe server inventory, persisted UUID retry, account isolation, owner-enabled UI with emergency disable.');

@@ -390,9 +390,8 @@ try {
   assert.equal((await status()).enabled,false,'Existing account without verified Stage8 status stays locked');
   await denied(()=>exec('s8_smith_practice_1',operations[17]),/mastery|reconcil|verified/i);
 
-  // Post-cutover new player purchases the one permanent profession atomically:
-  // server currency (-1000), unlock, event and Stage8 verified level 1 appear
-  // together under one idempotent receipt. Existing old accounts are excluded.
+  // Any account WITHOUT a historical profession (including older accounts)
+  // may buy one profession. A historical unlock/progress still requires review.
   await role();
   await db.exec(`INSERT INTO public.players(id,gold,gems,game_state,created_at)
     VALUES('${newcomer}',10,1500,'{"do":"not-overwrite"}',clock_timestamp()),
@@ -438,9 +437,10 @@ try {
   assert.equal((await asOwner(()=>one('SELECT gems FROM public.players WHERE id=$1',[insufficientNew]))).gems,999);
   assert.equal((await asOwner(()=>rows('SELECT * FROM public.territory_profession_stage8_progress WHERE player_id=$1',[insufficientNew]))).length,0);
   await useUser(oldWithoutUnlock);
-  await denied(()=>purchase('smith',operations[19]),/legacy|old|cutover|new_player|not.*eligible/i,
-    'Pre-cutover account with no prior unlock is NOT reclassified as a brand new player');
-  assert.equal((await asOwner(()=>one('SELECT gems FROM public.players WHERE id=$1',[oldWithoutUnlock]))).gems,5000);
+  assert.equal((await status()).enabled,true,'Existing unassigned player sees the chooser');
+  const olderPurchase=await purchase('smith',operations[19]);
+  assert.equal(olderPurchase.success,true,'Existing clean account can buy one profession');
+  assert.equal((await asOwner(()=>one('SELECT gems FROM public.players WHERE id=$1',[oldWithoutUnlock]))).gems,4000);
   await useUser(oldUnverified);
   await denied(()=>purchase('jeweler',operations[19]),/legacy|old|cutover|already|profession|mastery/i,
     'Unverified old player cannot reset into a new profession');
@@ -485,15 +485,12 @@ try {
   await denied(()=>rows('SELECT public.territory_profession_stage8_initialize()'),/legacy|cutover|old/i,
     'Pre-cutover player cannot be initialized even with a trusted purchase event');
 
-  // A legacy API/column grant would let clients mint backing currencies or
-  // unlocks. Stage8 must fail CLOSED if an operator inadvertently restores it.
+  // The existing V1 game grants gems update for unrelated PvE saves. That
+  // legacy debt must NOT block protected profession mastery and resource XP.
   await role();
   await db.exec('GRANT UPDATE(gems) ON public.players TO authenticated');
   await useUser(insufficientNew);
-  const unsafeGems=await status();
-  assert.equal(unsafeGems.enabled,false);
-  assert.match(unsafeGems.reason,/economy_not_server_authoritative/);
-  await denied(()=>purchase('smith',operations[14]),/economy_not_server_authoritative/);
+  assert.equal((await status()).enabled,true,'Existing gem ACL does not disable professions');
   await role();
   await db.exec('REVOKE UPDATE(gems) ON public.players FROM authenticated');
   await db.exec(`CREATE FUNCTION public.territory_profession_unlock(text) RETURNS boolean
@@ -504,10 +501,15 @@ try {
   await denied(()=>purchase('smith',operations[14]),/economy_not_server_authoritative/);
   await role();
   await db.exec('REVOKE ALL ON FUNCTION public.territory_profession_unlock(text) FROM PUBLIC, authenticated');
+  await db.exec('GRANT UPDATE(quantity) ON public.territory_resource_wallet TO authenticated');
   await useUser(insufficientNew);
-  assert.equal((await status()).enabled,true,'Stage8 is ready again once the unsafe grant is removed');
+  assert.equal((await status()).enabled,false,'Direct material mint permission must still block professions');
   await role();
-  console.log('Stage8 SQL PASS: 72 recipes/XP bands, release OFF/RLS/ACL, audited legacy v1→stage8, atomic 1000-gem purchase, insufficient/cutover defenses, trusted initialize only, unsafe-economy fail-close, atomic resources, replay/UUID collision, Kyiv-day 300-XP cap, per-account isolation, licensed prestige, server inventory and 7-day potion expiry; all in local PGlite.');
+  await db.exec('REVOKE UPDATE(quantity) ON public.territory_resource_wallet FROM authenticated');
+  await useUser(insufficientNew);
+  assert.equal((await status()).enabled,true,'Stage8 resumes only after the unsafe material grant is removed');
+  await role();
+  console.log('Stage8 SQL PASS: 72 recipes/XP bands, RLS/ACL, reviewed legacy levels, 1000-gem purchase for unassigned accounts, strict resource preflight, atomic XP/materials, replay, Kyiv-day cap, license, inventory and 7-day expiry in local PGlite.');
 }finally{
   await db.close();
 }
