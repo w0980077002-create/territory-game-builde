@@ -87,18 +87,22 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
               </div>
             </div>
           )}
-          {materials.length > 0 && (
+          {(materials.length > 0 || state.forgeMaterials > 0) && (
             <div>
               <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">{t('materials')}</h3>
               <div className="grid grid-cols-2 gap-2">
                 {materials.map((item) => <ItemCard key={item.id} item={item} now={now} onClick={() => setSelected(item)}/>)}
+                {state.forgeMaterials > 0 && (
+                  <div className="card flex flex-col items-center p-3 border border-amber-500/30" aria-label={language === 'en' ? 'Forge materials' : 'Материалы кузницы'}>
+                    <div className="mb-1 flex h-14 w-14 items-center justify-center rounded-lg bg-black/30 shadow-[0_0_12px_rgba(245,158,11,0.18)]">
+                      <img src={import.meta.env.BASE_URL + 'forge-material.webp'} alt="" className="h-12 w-12 object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.7)]" loading="lazy" draggable={false} />
+                    </div>
+                    <p className="w-full truncate text-center text-xs font-medium text-amber-200">{language === 'en' ? 'Forge materials' : 'Материалы кузницы'}</p>
+                    <span className="mt-0.5 text-xs text-gray-500">x{state.forgeMaterials}</span>
+                    <span className="mt-1 text-[10px] leading-tight text-amber-300">⏳ {forgeMaterialTimeLeftLabel(state, language, now)}</span>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-          {state.forgeMaterials > 0 && (
-            <div className="mt-2 rounded-xl border border-amber-400/25 bg-amber-950/20 px-3 py-2 text-xs text-amber-200">
-              🔩 {language === 'en' ? 'Forge materials' : 'Материалы кузницы'}: {state.forgeMaterials}
-              <span className="ml-2 text-amber-300">⏳ {forgeMaterialTimeLeftLabel(state, language, now)}</span>
             </div>
           )}
           {consumables.length === 0 && materials.length === 0 && state.forgeMaterials === 0 && (
