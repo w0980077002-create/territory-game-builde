@@ -7,3 +7,21 @@
 - `territory_craft_catalog.json`: снимок 17 рецептов из действующего `src/game/professions.ts`. Тест `scripts/check-stage3.mjs` предупреждает о расхождении.
 
 НЕ переносить эти SQL в migrations и НЕ применять в рабочем Supabase без резервной копии, отдельной проверки и подтверждения владельца. Особенно важно: существующий `players.game_state` остаётся клиентским, поэтому новая серверная инфраструктура сама по себе не закрывает накрутку.
+
+## Этап 8: защищённые профессии (проект, выключен)
+
+`territory_profession_stage8_backend.sql` — отдельная серверная модель для 55 рецептов из `territory_profession_stage8_catalog.json`. Она **требует** ранее проверенные таблицы Stage3, ничего не запускает автоматически и создаёт флаг `territory_profession_stage8_release.enabled=false`.
+
+- `territory_profession_stage8_status()` возвращает `enabled=false` до включения и для несверенного аккаунта; не выдаёт авторитетных балансов из клиентского сохранения.
+- `territory_profession_stage8_execute(recipe,operation_id)` списывает только серверные ресурсы; блокировка игрока/кошелька, суточный лимит 300 XP по Киеву, квитанция повторного запроса, проверка профессии/уровня/лицензии.
+- `practice` начисляет опыт без предмета. `item` создаёт уникальную серверную вещь; 7 суток действуют на созданные зелья и эликсиры, но **не** на добытые ресурсы.
+- Новая шкала XP несовместима со старой. Поэтому используется отдельная `territory_profession_stage8_progress`, старые `territory_profession_mastery_v1` и `players.game_state` не переписываются. `territory_profession_stage8_reconcile(player_id)` разрешён только `service_role` после проверки старого серверного состояния; сохраняет уровень, долю XP и снимок прежнего прогресса.
+- `territory_profession_stage8_purchase(profession,operation_id)` — атомарная покупка новой профессии: сервер списывает 1000 синих алмазов, создаёт unlock, Stage8 lvl1 и квитанцию; повтор того же UUID не списывает повторно. Требуются `players.created_at >= release.cutover_at`, отсутствие старых unlock/mastery и уже закрытый прямой UPDATE для `players.gems`.
+- `territory_profession_stage8_initialize()` допускает и альтернативную *доверенную* покупку, если service_role заранее записал immutable `new_unlock_events`. Он не превращает старого игрока без записи v1 в «новичка».
+- Флаг `enabled=true` требует `cutover_at`; Stage8 отклоняет операции, если `authenticated` может напрямую менять валюту, ресурсы, unlocks или вызывать старый RPC покупки. Сначала завершить единый экономический cutover.
+
+**Нельзя** включать stage8 на реальных игроках до удаления client-local crafting, защищённой сверки прогресса, тестов двух устройств/повторов/DST/RLS, резервной копии и отдельного разрешения владельца.
+
+Также перед любым реальным развёртыванием необходимо сверить **фактический Supabase project ref из опубликованного Telegram/GitHub Pages клиента** с выбранной базой: одноимённые проекты могут содержать разные таблицы. Stage8 требует существования проверенных `territory_resource_wallet`, `territory_profession_unlocks`, `territory_profession_mastery_v1`; отсутствие любой таблицы — жёсткий стоп, а не повод создать пустую копию или автоматически импортировать клиентский `game_state`.
+
+Проверка **25.10.2026** (только чтение): публичный JS на GitHub Pages содержит endpoint `wmyrdpbwlkzsktnhookx.supabase.co` (проект `bolt-native-database-71669285`). У отдельного проекта `territory-game-builde` (`ksikzkrvuuhermhnbycn`) таблиц `public.territory_resource_wallet`/`public.territory_profession_unlocks` нет. Это подтверждение текущей сборки, а не разрешение менять legacy-БД. Перед выпуском проверить опубликованную сборку заново. В доступных проектах нет подтверждённого отдельного стенда для безопасного удалённого тестирования; текущие интеграционные тесты идут в локальном PGLite.
