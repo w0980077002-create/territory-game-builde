@@ -5,6 +5,7 @@ const ui = import.meta.env.BASE_URL + 'assets/territory/ui/';
 const eq = (slot: string) => ui + 'equipment/' + slot + '.webp';
 const itemIcon = (name: string) => ui + 'items/' + name + '.webp';
 const materialIcon = (name: string) => ui + 'materials/' + name + '.webp';
+const shopIcon = (name: string) => ui + 'shop/' + name + '.webp';
 
 // Static cosmetic art only: item identities, equip slots and stats are unchanged.
 export const SLOT_ART: Record<Equipment['slot'], string> = {
@@ -112,8 +113,11 @@ function inventoryMaterialArt(item: ArtSource): string {
  * Cosmetic only — no item properties or combat statistics are altered.
  */
 export function equipmentArt(equipment: Equipment): string {
-  if (equipment.slot !== 'weapon') return SLOT_ART[equipment.slot];
   const name = equipment.name.toLowerCase();
+  if (equipment.slot === 'armor' && /латные доспехи|plate armor/.test(name)) return shopIcon('plate-armor');
+  if (equipment.slot !== 'weapon') return SLOT_ART[equipment.slot];
+  if (/клинок рыцаря|knight.*blade/.test(name)) return shopIcon('knight-blade');
+  if (/героический меч|heroic sword/.test(name)) return shopIcon('hero-sword');
   if (/топор|секир|axe|hatchet/.test(name)) return SLOT_ART.weapon;
   if (/лук|арбалет|bow|crossbow/.test(name) || equipment.icon === '🏹') return itemIcon('bow');
   if (/посох|жезл|staff|wand/.test(name) || equipment.icon === '🪄') return itemIcon('staff');
@@ -123,7 +127,15 @@ export function equipmentArt(equipment: Equipment): string {
   return SLOT_ART.weapon;
 }
 
+const SHOP_BUNDLE_ART: Record<string, string> = {
+  shop_stone_5: 'stone-bundle',
+  shop_gem_pack_1: 'gem-pouch-small',
+  shop_gem_pack_2: 'gem-chest-large',
+};
+
 export function itemArt(item: ArtSource): string {
+  const bundle = SHOP_BUNDLE_ART[item.id];
+  if (bundle) return shopIcon(bundle);
   if (item.equipment) return equipmentArt(item.equipment);
   if (item.type === 'gem_pack') return '/gem-pack.webp';
   if (item.type === 'stone') return CURRENCY_ART.stones;
