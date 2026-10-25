@@ -1,0 +1,1800 @@
+{
+  "version": "profession-stage8-draft-20261025-r2",
+  "enabled": false,
+  "requiresServerAuthority": true,
+  "supportsClientLocalCraftFallback": false,
+  "dailyXpCapKyiv": 300,
+  "levelCap": 300,
+  "gatherHoursPerUnit": 4,
+  "gatheredResourcesExpire": false,
+  "masteryBands": [
+    {
+      "from": 1,
+      "to": 24,
+      "xpToNext": 26,
+      "trainingXp": 30,
+      "trainingCost": 1,
+      "name": "Ученик"
+    },
+    {
+      "from": 25,
+      "to": 49,
+      "xpToNext": 67,
+      "trainingXp": 80,
+      "trainingCost": 2,
+      "name": "Подмастерье"
+    },
+    {
+      "from": 50,
+      "to": 99,
+      "xpToNext": 90,
+      "trainingXp": 100,
+      "trainingCost": 2,
+      "name": "Ремесленник"
+    },
+    {
+      "from": 100,
+      "to": 149,
+      "xpToNext": 162,
+      "trainingXp": 180,
+      "trainingCost": 3,
+      "name": "Опытный мастер"
+    },
+    {
+      "from": 150,
+      "to": 199,
+      "xpToNext": 270,
+      "trainingXp": 225,
+      "trainingCost": 3,
+      "name": "Знаток"
+    },
+    {
+      "from": 200,
+      "to": 249,
+      "xpToNext": 383,
+      "trainingXp": 255,
+      "trainingCost": 3,
+      "name": "Старший мастер"
+    },
+    {
+      "from": 250,
+      "to": 299,
+      "xpToNext": 513,
+      "trainingXp": 285,
+      "trainingCost": 3,
+      "name": "Великий мастер"
+    }
+  ],
+  "professions": [
+    {
+      "id": "smith",
+      "name": "Кузнец"
+    },
+    {
+      "id": "alchemist",
+      "name": "Алхимик"
+    },
+    {
+      "id": "artisan",
+      "name": "Ремесленник"
+    },
+    {
+      "id": "jeweler",
+      "name": "Ювелир"
+    },
+    {
+      "id": "engineer",
+      "name": "Инженер"
+    }
+  ],
+  "recipes": [
+    {
+      "id": "s8_smith_practice_1",
+      "profession": "smith",
+      "requiredLevel": 1,
+      "kind": "practice",
+      "name": "Кузнец: Ученик",
+      "masteryXp": 30,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 1
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_smith_practice_25",
+      "profession": "smith",
+      "requiredLevel": 25,
+      "kind": "practice",
+      "name": "Кузнец: Подмастерье",
+      "masteryXp": 80,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 2
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_smith_practice_50",
+      "profession": "smith",
+      "requiredLevel": 50,
+      "kind": "practice",
+      "name": "Кузнец: Ремесленник",
+      "masteryXp": 100,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 2
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_smith_practice_100",
+      "profession": "smith",
+      "requiredLevel": 100,
+      "kind": "practice",
+      "name": "Кузнец: Опытный мастер",
+      "masteryXp": 180,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_smith_practice_150",
+      "profession": "smith",
+      "requiredLevel": 150,
+      "kind": "practice",
+      "name": "Кузнец: Знаток",
+      "masteryXp": 225,
+      "ingredients": [
+        {
+          "id": "gather-hide",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_smith_practice_200",
+      "profession": "smith",
+      "requiredLevel": 200,
+      "kind": "practice",
+      "name": "Кузнец: Старший мастер",
+      "masteryXp": 255,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_smith_practice_250",
+      "profession": "smith",
+      "requiredLevel": 250,
+      "kind": "practice",
+      "name": "Кузнец: Великий мастер",
+      "masteryXp": 285,
+      "ingredients": [
+        {
+          "id": "gather-crystal",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_alchemist_practice_1",
+      "profession": "alchemist",
+      "requiredLevel": 1,
+      "kind": "practice",
+      "name": "Алхимик: Ученик",
+      "masteryXp": 30,
+      "ingredients": [
+        {
+          "id": "gather-herb",
+          "qty": 1
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_alchemist_practice_25",
+      "profession": "alchemist",
+      "requiredLevel": 25,
+      "kind": "practice",
+      "name": "Алхимик: Подмастерье",
+      "masteryXp": 80,
+      "ingredients": [
+        {
+          "id": "gather-herb",
+          "qty": 2
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_alchemist_practice_50",
+      "profession": "alchemist",
+      "requiredLevel": 50,
+      "kind": "practice",
+      "name": "Алхимик: Ремесленник",
+      "masteryXp": 100,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 2
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_alchemist_practice_100",
+      "profession": "alchemist",
+      "requiredLevel": 100,
+      "kind": "practice",
+      "name": "Алхимик: Опытный мастер",
+      "masteryXp": 180,
+      "ingredients": [
+        {
+          "id": "gather-herb",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_alchemist_practice_150",
+      "profession": "alchemist",
+      "requiredLevel": 150,
+      "kind": "practice",
+      "name": "Алхимик: Знаток",
+      "masteryXp": 225,
+      "ingredients": [
+        {
+          "id": "gather-crystal",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_alchemist_practice_200",
+      "profession": "alchemist",
+      "requiredLevel": 200,
+      "kind": "practice",
+      "name": "Алхимик: Старший мастер",
+      "masteryXp": 255,
+      "ingredients": [
+        {
+          "id": "gather-herb",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_alchemist_practice_250",
+      "profession": "alchemist",
+      "requiredLevel": 250,
+      "kind": "practice",
+      "name": "Алхимик: Великий мастер",
+      "masteryXp": 285,
+      "ingredients": [
+        {
+          "id": "gather-crystal",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_artisan_practice_1",
+      "profession": "artisan",
+      "requiredLevel": 1,
+      "kind": "practice",
+      "name": "Ремесленник: Ученик",
+      "masteryXp": 30,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 1
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_artisan_practice_25",
+      "profession": "artisan",
+      "requiredLevel": 25,
+      "kind": "practice",
+      "name": "Ремесленник: Подмастерье",
+      "masteryXp": 80,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 2
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_artisan_practice_50",
+      "profession": "artisan",
+      "requiredLevel": 50,
+      "kind": "practice",
+      "name": "Ремесленник: Ремесленник",
+      "masteryXp": 100,
+      "ingredients": [
+        {
+          "id": "gather-hide",
+          "qty": 2
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_artisan_practice_100",
+      "profession": "artisan",
+      "requiredLevel": 100,
+      "kind": "practice",
+      "name": "Ремесленник: Опытный мастер",
+      "masteryXp": 180,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_artisan_practice_150",
+      "profession": "artisan",
+      "requiredLevel": 150,
+      "kind": "practice",
+      "name": "Ремесленник: Знаток",
+      "masteryXp": 225,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_artisan_practice_200",
+      "profession": "artisan",
+      "requiredLevel": 200,
+      "kind": "practice",
+      "name": "Ремесленник: Старший мастер",
+      "masteryXp": 255,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_artisan_practice_250",
+      "profession": "artisan",
+      "requiredLevel": 250,
+      "kind": "practice",
+      "name": "Ремесленник: Великий мастер",
+      "masteryXp": 285,
+      "ingredients": [
+        {
+          "id": "gather-crystal",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_jeweler_practice_1",
+      "profession": "jeweler",
+      "requiredLevel": 1,
+      "kind": "practice",
+      "name": "Ювелир: Ученик",
+      "masteryXp": 30,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 1
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_jeweler_practice_25",
+      "profession": "jeweler",
+      "requiredLevel": 25,
+      "kind": "practice",
+      "name": "Ювелир: Подмастерье",
+      "masteryXp": 80,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 2
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_jeweler_practice_50",
+      "profession": "jeweler",
+      "requiredLevel": 50,
+      "kind": "practice",
+      "name": "Ювелир: Ремесленник",
+      "masteryXp": 100,
+      "ingredients": [
+        {
+          "id": "gather-crystal",
+          "qty": 2
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_jeweler_practice_100",
+      "profession": "jeweler",
+      "requiredLevel": 100,
+      "kind": "practice",
+      "name": "Ювелир: Опытный мастер",
+      "masteryXp": 180,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_jeweler_practice_150",
+      "profession": "jeweler",
+      "requiredLevel": 150,
+      "kind": "practice",
+      "name": "Ювелир: Знаток",
+      "masteryXp": 225,
+      "ingredients": [
+        {
+          "id": "gather-crystal",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_jeweler_practice_200",
+      "profession": "jeweler",
+      "requiredLevel": 200,
+      "kind": "practice",
+      "name": "Ювелир: Старший мастер",
+      "masteryXp": 255,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_jeweler_practice_250",
+      "profession": "jeweler",
+      "requiredLevel": 250,
+      "kind": "practice",
+      "name": "Ювелир: Великий мастер",
+      "masteryXp": 285,
+      "ingredients": [
+        {
+          "id": "gather-crystal",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_engineer_practice_1",
+      "profession": "engineer",
+      "requiredLevel": 1,
+      "kind": "practice",
+      "name": "Инженер: Ученик",
+      "masteryXp": 30,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 1
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_engineer_practice_25",
+      "profession": "engineer",
+      "requiredLevel": 25,
+      "kind": "practice",
+      "name": "Инженер: Подмастерье",
+      "masteryXp": 80,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 2
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_engineer_practice_50",
+      "profession": "engineer",
+      "requiredLevel": 50,
+      "kind": "practice",
+      "name": "Инженер: Ремесленник",
+      "masteryXp": 100,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 2
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_engineer_practice_100",
+      "profession": "engineer",
+      "requiredLevel": 100,
+      "kind": "practice",
+      "name": "Инженер: Опытный мастер",
+      "masteryXp": 180,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_engineer_practice_150",
+      "profession": "engineer",
+      "requiredLevel": 150,
+      "kind": "practice",
+      "name": "Инженер: Знаток",
+      "masteryXp": 225,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_engineer_practice_200",
+      "profession": "engineer",
+      "requiredLevel": 200,
+      "kind": "practice",
+      "name": "Инженер: Старший мастер",
+      "masteryXp": 255,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_engineer_practice_250",
+      "profession": "engineer",
+      "requiredLevel": 250,
+      "kind": "practice",
+      "name": "Инженер: Великий мастер",
+      "masteryXp": 285,
+      "ingredients": [
+        {
+          "id": "gather-crystal",
+          "qty": 3
+        }
+      ],
+      "output": null
+    },
+    {
+      "id": "s8_smith_watch_blade",
+      "profession": "smith",
+      "requiredLevel": 25,
+      "masteryXp": 100,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 5
+        },
+        {
+          "id": "gather-wood",
+          "qty": 2
+        }
+      ],
+      "output": {
+        "name": "Клинок дозорного",
+        "icon": "🗡️",
+        "type": "equipment",
+        "rarity": "rare",
+        "description": "Ремесленная экипировка: Клинок дозорного.",
+        "equipment": {
+          "slot": "weapon",
+          "rarity": "rare",
+          "level": 3,
+          "attack": 17,
+          "critChance": 2,
+          "name": "Клинок дозорного",
+          "icon": "🗡️"
+        }
+      }
+    },
+    {
+      "id": "s8_smith_north_armor",
+      "profession": "smith",
+      "requiredLevel": 100,
+      "masteryXp": 180,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 9
+        },
+        {
+          "id": "gather-hide",
+          "qty": 6
+        }
+      ],
+      "output": {
+        "name": "Латы северянина",
+        "icon": "🛡️",
+        "type": "equipment",
+        "rarity": "rare",
+        "description": "Ремесленная экипировка: Латы северянина.",
+        "equipment": {
+          "slot": "armor",
+          "rarity": "rare",
+          "level": 3,
+          "defense": 11,
+          "hp": 70,
+          "name": "Латы северянина",
+          "icon": "🛡️"
+        }
+      }
+    },
+    {
+      "id": "s8_smith_storm_axe",
+      "profession": "smith",
+      "requiredLevel": 200,
+      "masteryXp": 255,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 14
+        },
+        {
+          "id": "gather-wood",
+          "qty": 8
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 4
+        }
+      ],
+      "output": {
+        "name": "Секира бури",
+        "icon": "🪓",
+        "type": "equipment",
+        "rarity": "epic",
+        "description": "Ремесленная экипировка: Секира бури.",
+        "equipment": {
+          "slot": "weapon",
+          "rarity": "epic",
+          "level": 5,
+          "attack": 33,
+          "critChance": 7,
+          "name": "Секира бури",
+          "icon": "🪓"
+        }
+      }
+    },
+    {
+      "id": "s8_smith_jarl_blade",
+      "profession": "smith",
+      "requiredLevel": 300,
+      "masteryXp": 1,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 30
+        },
+        {
+          "id": "gather-wood",
+          "qty": 20
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 12
+        }
+      ],
+      "output": {
+        "name": "Клинок первого ярла",
+        "icon": "⚔️",
+        "type": "equipment",
+        "rarity": "legendary",
+        "description": "Ремесленная экипировка: Клинок первого ярла.",
+        "equipment": {
+          "slot": "weapon",
+          "rarity": "legendary",
+          "level": 5,
+          "attack": 35,
+          "critChance": 8,
+          "name": "Клинок первого ярла",
+          "icon": "⚔️"
+        }
+      }
+    },
+    {
+      "id": "s8_jeweler_spark_ring",
+      "profession": "jeweler",
+      "requiredLevel": 25,
+      "masteryXp": 100,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 4
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 3
+        }
+      ],
+      "output": {
+        "name": "Кольцо искры",
+        "icon": "💍",
+        "type": "equipment",
+        "rarity": "rare",
+        "description": "Ремесленная экипировка: Кольцо искры.",
+        "equipment": {
+          "slot": "ring",
+          "rarity": "rare",
+          "level": 3,
+          "attack": 8,
+          "critChance": 2,
+          "name": "Кольцо искры",
+          "icon": "💍"
+        }
+      }
+    },
+    {
+      "id": "s8_jeweler_guard_amulet",
+      "profession": "jeweler",
+      "requiredLevel": 100,
+      "masteryXp": 180,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 6
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 7
+        }
+      ],
+      "output": {
+        "name": "Оберег северных врат",
+        "icon": "📿",
+        "type": "equipment",
+        "rarity": "rare",
+        "description": "Ремесленная экипировка: Оберег северных врат.",
+        "equipment": {
+          "slot": "amulet",
+          "rarity": "rare",
+          "level": 3,
+          "attack": 5,
+          "critChance": 3,
+          "name": "Оберег северных врат",
+          "icon": "📿"
+        }
+      }
+    },
+    {
+      "id": "s8_jeweler_sapphire_ring",
+      "profession": "jeweler",
+      "requiredLevel": 200,
+      "masteryXp": 255,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 12
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 12
+        }
+      ],
+      "output": {
+        "name": "Сапфировое кольцо",
+        "icon": "💎",
+        "type": "equipment",
+        "rarity": "epic",
+        "description": "Ремесленная экипировка: Сапфировое кольцо.",
+        "equipment": {
+          "slot": "ring",
+          "rarity": "epic",
+          "level": 5,
+          "attack": 14,
+          "critChance": 4,
+          "name": "Сапфировое кольцо",
+          "icon": "💎"
+        }
+      }
+    },
+    {
+      "id": "s8_jeweler_jarl_seal",
+      "profession": "jeweler",
+      "requiredLevel": 300,
+      "masteryXp": 1,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 25
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 20
+        }
+      ],
+      "output": {
+        "name": "Печать ярла",
+        "icon": "💍",
+        "type": "equipment",
+        "rarity": "legendary",
+        "description": "Ремесленная экипировка: Печать ярла.",
+        "equipment": {
+          "slot": "ring",
+          "rarity": "legendary",
+          "level": 5,
+          "attack": 15,
+          "critChance": 5,
+          "name": "Печать ярла",
+          "icon": "💍"
+        }
+      }
+    },
+    {
+      "id": "s8_engineer_guard_helm",
+      "profession": "engineer",
+      "requiredLevel": 25,
+      "masteryXp": 100,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 4
+        },
+        {
+          "id": "gather-wood",
+          "qty": 3
+        }
+      ],
+      "output": {
+        "name": "Шлем дозорного",
+        "icon": "⛑️",
+        "type": "equipment",
+        "rarity": "common",
+        "description": "Ремесленная экипировка: Шлем дозорного.",
+        "equipment": {
+          "slot": "helmet",
+          "rarity": "common",
+          "level": 1,
+          "defense": 3,
+          "hp": 20,
+          "name": "Шлем дозорного",
+          "icon": "⛑️"
+        }
+      }
+    },
+    {
+      "id": "s8_engineer_path_boots",
+      "profession": "engineer",
+      "requiredLevel": 100,
+      "masteryXp": 180,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 7
+        },
+        {
+          "id": "gather-hide",
+          "qty": 6
+        }
+      ],
+      "output": {
+        "name": "Сапоги следопыта",
+        "icon": "🥾",
+        "type": "equipment",
+        "rarity": "rare",
+        "description": "Ремесленная экипировка: Сапоги следопыта.",
+        "equipment": {
+          "slot": "boots",
+          "rarity": "rare",
+          "level": 2,
+          "defense": 4,
+          "hp": 36,
+          "critChance": 1,
+          "name": "Сапоги следопыта",
+          "icon": "🥾"
+        }
+      }
+    },
+    {
+      "id": "s8_engineer_north_shield",
+      "profession": "engineer",
+      "requiredLevel": 200,
+      "masteryXp": 255,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 13
+        },
+        {
+          "id": "gather-wood",
+          "qty": 10
+        }
+      ],
+      "output": {
+        "name": "Щит северной стражи",
+        "icon": "🛡️",
+        "type": "equipment",
+        "rarity": "rare",
+        "description": "Ремесленная экипировка: Щит северной стражи.",
+        "equipment": {
+          "slot": "shield",
+          "rarity": "rare",
+          "level": 2,
+          "defense": 5,
+          "hp": 25,
+          "name": "Щит северной стражи",
+          "icon": "🛡️"
+        }
+      }
+    },
+    {
+      "id": "s8_engineer_jarl_plate",
+      "profession": "engineer",
+      "requiredLevel": 300,
+      "masteryXp": 1,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 30
+        },
+        {
+          "id": "gather-hide",
+          "qty": 15
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 8
+        }
+      ],
+      "output": {
+        "name": "Доспех мастера механизмов",
+        "icon": "🛡️",
+        "type": "equipment",
+        "rarity": "legendary",
+        "description": "Ремесленная экипировка: Доспех мастера механизмов.",
+        "equipment": {
+          "slot": "armor",
+          "rarity": "legendary",
+          "level": 3,
+          "defense": 12,
+          "hp": 80,
+          "name": "Доспех мастера механизмов",
+          "icon": "🛡️"
+        }
+      }
+    },
+    {
+      "id": "s8_artisan_messenger_boots",
+      "profession": "artisan",
+      "requiredLevel": 25,
+      "masteryXp": 100,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 4
+        },
+        {
+          "id": "gather-hide",
+          "qty": 3
+        }
+      ],
+      "output": {
+        "name": "Сапоги гонца",
+        "icon": "🥾",
+        "type": "equipment",
+        "rarity": "rare",
+        "description": "Ремесленная экипировка: Сапоги гонца.",
+        "equipment": {
+          "slot": "boots",
+          "rarity": "rare",
+          "level": 2,
+          "defense": 3,
+          "hp": 35,
+          "critChance": 1,
+          "name": "Сапоги гонца",
+          "icon": "🥾"
+        }
+      }
+    },
+    {
+      "id": "s8_artisan_trader_armor",
+      "profession": "artisan",
+      "requiredLevel": 100,
+      "masteryXp": 180,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-hide",
+          "qty": 8
+        },
+        {
+          "id": "gather-wood",
+          "qty": 6
+        }
+      ],
+      "output": {
+        "name": "Броня караванщика",
+        "icon": "🦺",
+        "type": "equipment",
+        "rarity": "rare",
+        "description": "Ремесленная экипировка: Броня караванщика.",
+        "equipment": {
+          "slot": "armor",
+          "rarity": "rare",
+          "level": 3,
+          "defense": 10,
+          "hp": 65,
+          "name": "Броня караванщика",
+          "icon": "🦺"
+        }
+      }
+    },
+    {
+      "id": "s8_artisan_north_helm",
+      "profession": "artisan",
+      "requiredLevel": 200,
+      "masteryXp": 255,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 15
+        },
+        {
+          "id": "gather-hide",
+          "qty": 8
+        }
+      ],
+      "output": {
+        "name": "Шлем старейшины",
+        "icon": "⛑️",
+        "type": "equipment",
+        "rarity": "rare",
+        "description": "Ремесленная экипировка: Шлем старейшины.",
+        "equipment": {
+          "slot": "helmet",
+          "rarity": "rare",
+          "level": 1,
+          "defense": 3,
+          "hp": 20,
+          "name": "Шлем старейшины",
+          "icon": "⛑️"
+        }
+      }
+    },
+    {
+      "id": "s8_artisan_jarl_boots",
+      "profession": "artisan",
+      "requiredLevel": 300,
+      "masteryXp": 1,
+      "kind": "item",
+      "ingredients": [
+        {
+          "id": "gather-hide",
+          "qty": 28
+        },
+        {
+          "id": "gather-wood",
+          "qty": 20
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 7
+        }
+      ],
+      "output": {
+        "name": "Сапоги великого мастера",
+        "icon": "🥾",
+        "type": "equipment",
+        "rarity": "legendary",
+        "description": "Ремесленная экипировка: Сапоги великого мастера.",
+        "equipment": {
+          "slot": "boots",
+          "rarity": "legendary",
+          "level": 2,
+          "defense": 4,
+          "hp": 40,
+          "critChance": 2,
+          "name": "Сапоги великого мастера",
+          "icon": "🥾"
+        }
+      }
+    },
+    {
+      "id": "s8_alchemist_herbal_mix",
+      "profession": "alchemist",
+      "kind": "item",
+      "requiredLevel": 25,
+      "masteryXp": 100,
+      "ingredients": [
+        {
+          "id": "gather-herb",
+          "qty": 5
+        },
+        {
+          "id": "gather-wood",
+          "qty": 2
+        }
+      ],
+      "output": {
+        "name": "Травяной настой",
+        "icon": "🧪",
+        "type": "potion",
+        "rarity": "common",
+        "description": "Травяной настой: 50 hp.",
+        "effect": {
+          "stat": "hp",
+          "value": 50,
+          "duration": "instant"
+        }
+      }
+    },
+    {
+      "id": "s8_alchemist_focus",
+      "profession": "alchemist",
+      "kind": "item",
+      "requiredLevel": 100,
+      "masteryXp": 180,
+      "ingredients": [
+        {
+          "id": "gather-herb",
+          "qty": 9
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 4
+        }
+      ],
+      "output": {
+        "name": "Эликсир точности",
+        "icon": "✨",
+        "type": "elixir",
+        "rarity": "rare",
+        "description": "Эликсир точности: 3 critChance.",
+        "effect": {
+          "stat": "critChance",
+          "value": 3,
+          "duration": "battle"
+        }
+      }
+    },
+    {
+      "id": "s8_alchemist_health",
+      "profession": "alchemist",
+      "kind": "item",
+      "requiredLevel": 200,
+      "masteryXp": 255,
+      "ingredients": [
+        {
+          "id": "gather-herb",
+          "qty": 18
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 5
+        }
+      ],
+      "output": {
+        "name": "Зелье северного здоровья",
+        "icon": "⚗️",
+        "type": "potion",
+        "rarity": "epic",
+        "description": "Зелье северного здоровья: 150 hp.",
+        "effect": {
+          "stat": "hp",
+          "value": 150,
+          "duration": "instant"
+        }
+      }
+    },
+    {
+      "id": "s8_alchemist_jarl_elixir",
+      "profession": "alchemist",
+      "kind": "item",
+      "requiredLevel": 300,
+      "masteryXp": 1,
+      "ingredients": [
+        {
+          "id": "gather-herb",
+          "qty": 30
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 16
+        }
+      ],
+      "output": {
+        "name": "Эликсир стойкости ярла",
+        "icon": "🧬",
+        "type": "elixir",
+        "rarity": "epic",
+        "description": "Эликсир стойкости ярла: 15 defense.",
+        "effect": {
+          "stat": "defense",
+          "value": 15,
+          "duration": "battle"
+        }
+      }
+    },
+    {
+      "id": "smith_apprentice_blade",
+      "profession": "smith",
+      "requiredLevel": 1,
+      "masteryXp": 30,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 5
+        },
+        {
+          "id": "gather-wood",
+          "qty": 2
+        }
+      ],
+      "output": {
+        "name": "Меч подмастерья",
+        "icon": "⚔️",
+        "type": "equipment",
+        "rarity": "common",
+        "description": "Кованый меч. +8 к атаке.",
+        "equipment": {
+          "slot": "weapon",
+          "rarity": "common",
+          "level": 1,
+          "attack": 8,
+          "name": "Меч подмастерья",
+          "icon": "⚔️"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "smith_leather_armor",
+      "profession": "smith",
+      "requiredLevel": 1,
+      "masteryXp": 35,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 3
+        },
+        {
+          "id": "gather-hide",
+          "qty": 2
+        }
+      ],
+      "output": {
+        "name": "Кожаная броня",
+        "icon": "🦺",
+        "type": "equipment",
+        "rarity": "common",
+        "description": "Защита +5, здоровье +30.",
+        "equipment": {
+          "slot": "armor",
+          "rarity": "common",
+          "level": 1,
+          "defense": 5,
+          "hp": 30,
+          "name": "Кожаная броня",
+          "icon": "🦺"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "smith_knight_blade",
+      "profession": "smith",
+      "requiredLevel": 50,
+      "masteryXp": 120,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 20
+        },
+        {
+          "id": "gather-wood",
+          "qty": 10
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 3
+        }
+      ],
+      "output": {
+        "name": "Клинок рыцаря",
+        "icon": "🗡️",
+        "type": "equipment",
+        "rarity": "rare",
+        "description": "Атака +18, шанс критического удара +3%.",
+        "equipment": {
+          "slot": "weapon",
+          "rarity": "rare",
+          "level": 3,
+          "attack": 18,
+          "critChance": 3,
+          "name": "Клинок рыцаря",
+          "icon": "🗡️"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "smith_ancient_blade",
+      "profession": "smith",
+      "requiredLevel": 300,
+      "masteryXp": 1,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 80
+        },
+        {
+          "id": "gather-wood",
+          "qty": 30
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 20
+        }
+      ],
+      "output": {
+        "name": "Клинок древних",
+        "icon": "🔱",
+        "type": "equipment",
+        "rarity": "legendary",
+        "description": "Атака +35, критический шанс +8%. Сила легендарной экипировки масштабируется по общему балансу игры.",
+        "equipment": {
+          "slot": "weapon",
+          "rarity": "legendary",
+          "level": 5,
+          "attack": 35,
+          "critChance": 8,
+          "name": "Клинок древних",
+          "icon": "🔱"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "alchemist_health_potion",
+      "profession": "alchemist",
+      "requiredLevel": 1,
+      "masteryXp": 20,
+      "ingredients": [
+        {
+          "id": "gather-herb",
+          "qty": 3
+        }
+      ],
+      "output": {
+        "name": "Зелье здоровья мастера",
+        "icon": "🧪",
+        "type": "potion",
+        "rarity": "common",
+        "description": "Восстанавливает 50 HP мгновенно.",
+        "effect": {
+          "stat": "hp",
+          "value": 50,
+          "duration": "instant"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "alchemist_strength",
+      "profession": "alchemist",
+      "requiredLevel": 5,
+      "masteryXp": 50,
+      "ingredients": [
+        {
+          "id": "gather-herb",
+          "qty": 5
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 1
+        }
+      ],
+      "output": {
+        "name": "Эликсир силы мастера",
+        "icon": "💪",
+        "type": "elixir",
+        "rarity": "rare",
+        "description": "+10 к атаке на один бой.",
+        "effect": {
+          "stat": "attack",
+          "value": 10,
+          "duration": "battle"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "alchemist_greater_potion",
+      "profession": "alchemist",
+      "requiredLevel": 25,
+      "masteryXp": 90,
+      "ingredients": [
+        {
+          "id": "gather-herb",
+          "qty": 10
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 3
+        }
+      ],
+      "output": {
+        "name": "Большое зелье мастера",
+        "icon": "⚗️",
+        "type": "potion",
+        "rarity": "rare",
+        "description": "Восстанавливает 150 HP мгновенно.",
+        "effect": {
+          "stat": "hp",
+          "value": 150,
+          "duration": "instant"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "alchemist_legendary_elixir",
+      "profession": "alchemist",
+      "requiredLevel": 300,
+      "masteryXp": 1,
+      "ingredients": [
+        {
+          "id": "gather-herb",
+          "qty": 50
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 20
+        }
+      ],
+      "output": {
+        "name": "Эликсир легенды",
+        "icon": "🧬",
+        "type": "elixir",
+        "rarity": "legendary",
+        "description": "+20 к атаке на один бой.",
+        "effect": {
+          "stat": "attack",
+          "value": 20,
+          "duration": "battle"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "artisan_toolkit",
+      "profession": "artisan",
+      "requiredLevel": 1,
+      "masteryXp": 25,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 4
+        },
+        {
+          "id": "gather-ore",
+          "qty": 2
+        }
+      ],
+      "output": {
+        "name": "Набор ремесленника",
+        "icon": "🧰",
+        "type": "material",
+        "rarity": "common",
+        "description": "Ремесленный товар. Предназначен для торговли и будущих рецептов."
+      },
+      "kind": "item"
+    },
+    {
+      "id": "artisan_supply_crate",
+      "profession": "artisan",
+      "requiredLevel": 25,
+      "masteryXp": 80,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 15
+        },
+        {
+          "id": "gather-herb",
+          "qty": 8
+        }
+      ],
+      "output": {
+        "name": "Ящик припасов",
+        "icon": "📦",
+        "type": "material",
+        "rarity": "rare",
+        "description": "Ценный ремесленный товар для торговли."
+      },
+      "kind": "item"
+    },
+    {
+      "id": "artisan_royal_chest",
+      "profession": "artisan",
+      "requiredLevel": 300,
+      "masteryXp": 1,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 50
+        },
+        {
+          "id": "gather-ore",
+          "qty": 30
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 15
+        }
+      ],
+      "output": {
+        "name": "Королевский ларец",
+        "icon": "🗝️",
+        "type": "material",
+        "rarity": "legendary",
+        "description": "Легендарный ремесленный товар для будущего общего аукциона."
+      },
+      "kind": "item"
+    },
+    {
+      "id": "jeweler_raven_amulet",
+      "profession": "jeweler",
+      "requiredLevel": 1,
+      "masteryXp": 45,
+      "ingredients": [
+        {
+          "id": "gather-crystal",
+          "qty": 2
+        },
+        {
+          "id": "gather-ore",
+          "qty": 5
+        }
+      ],
+      "output": {
+        "name": "Амулет ворона мастера",
+        "icon": "📿",
+        "type": "equipment",
+        "rarity": "rare",
+        "description": "Атака +6 и шанс крита +3%.",
+        "equipment": {
+          "slot": "amulet",
+          "rarity": "rare",
+          "level": 3,
+          "attack": 6,
+          "critChance": 3,
+          "name": "Амулет ворона мастера",
+          "icon": "📿"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "jeweler_power_ring",
+      "profession": "jeweler",
+      "requiredLevel": 50,
+      "masteryXp": 125,
+      "ingredients": [
+        {
+          "id": "gather-crystal",
+          "qty": 8
+        },
+        {
+          "id": "gather-ore",
+          "qty": 12
+        }
+      ],
+      "output": {
+        "name": "Кольцо силы мастера",
+        "icon": "💍",
+        "type": "equipment",
+        "rarity": "epic",
+        "description": "Атака +15 и шанс крита +5%.",
+        "equipment": {
+          "slot": "ring",
+          "rarity": "epic",
+          "level": 5,
+          "attack": 15,
+          "critChance": 5,
+          "name": "Кольцо силы мастера",
+          "icon": "💍"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "jeweler_ancient_ring",
+      "profession": "jeweler",
+      "requiredLevel": 300,
+      "masteryXp": 1,
+      "ingredients": [
+        {
+          "id": "gather-crystal",
+          "qty": 25
+        },
+        {
+          "id": "gather-ore",
+          "qty": 60
+        }
+      ],
+      "output": {
+        "name": "Кольцо древних",
+        "icon": "💍",
+        "type": "equipment",
+        "rarity": "legendary",
+        "description": "Атака +15 и шанс крита +5%. Сохраняет базовый баланс аксессуаров.",
+        "equipment": {
+          "slot": "ring",
+          "rarity": "legendary",
+          "level": 5,
+          "attack": 15,
+          "critChance": 5,
+          "name": "Кольцо древних",
+          "icon": "💍"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "engineer_oak_shield",
+      "profession": "engineer",
+      "requiredLevel": 1,
+      "masteryXp": 40,
+      "ingredients": [
+        {
+          "id": "gather-wood",
+          "qty": 5
+        },
+        {
+          "id": "gather-ore",
+          "qty": 4
+        }
+      ],
+      "output": {
+        "name": "Укреплённый щит",
+        "icon": "🛡️",
+        "type": "equipment",
+        "rarity": "common",
+        "description": "Защита +5 и здоровье +25.",
+        "equipment": {
+          "slot": "shield",
+          "rarity": "common",
+          "level": 2,
+          "defense": 5,
+          "hp": 25,
+          "name": "Укреплённый щит",
+          "icon": "🛡️"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "engineer_guard_helmet",
+      "profession": "engineer",
+      "requiredLevel": 25,
+      "masteryXp": 85,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 12
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 2
+        }
+      ],
+      "output": {
+        "name": "Шлем стража",
+        "icon": "⛑️",
+        "type": "equipment",
+        "rarity": "rare",
+        "description": "Защита +3 и здоровье +20.",
+        "equipment": {
+          "slot": "helmet",
+          "rarity": "rare",
+          "level": 3,
+          "defense": 3,
+          "hp": 20,
+          "name": "Шлем стража",
+          "icon": "⛑️"
+        }
+      },
+      "kind": "item"
+    },
+    {
+      "id": "engineer_ancient_device",
+      "profession": "engineer",
+      "requiredLevel": 300,
+      "masteryXp": 1,
+      "ingredients": [
+        {
+          "id": "gather-ore",
+          "qty": 60
+        },
+        {
+          "id": "gather-wood",
+          "qty": 40
+        },
+        {
+          "id": "gather-crystal",
+          "qty": 20
+        }
+      ],
+      "output": {
+        "name": "Древний механизм",
+        "icon": "⚙️",
+        "type": "material",
+        "rarity": "legendary",
+        "description": "Легендарный инженерный товар для будущего общего аукциона."
+      },
+      "kind": "item"
+    }
+  ]
+}

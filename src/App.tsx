@@ -48,6 +48,11 @@ const LeaderboardScreen = lazy(() => import('@/components/LeaderboardScreen').th
 const GamesScreen = lazy(() => import('@/components/GamesScreen').then(m => ({ default: m.GamesScreen })));
 const HallPlayScreen = lazy(() => import('@/components/HallPlayScreen').then(m => ({ default: m.HallPlayScreen })));
 const ProfessionsScreen = lazy(() => import('@/components/ProfessionsScreen').then(m => ({ default: m.ProfessionsScreen })));
+// OFF by default. Client opt-in never overrides the server-side stage8 release gate.
+const Stage8ProfessionsScreen = lazy(() => import('@/components/ProfessionsStage8Screen').then(m => ({ default: m.ProfessionsStage8Screen })));
+// Owner-approved TERRITORY 1.0 professions cutover, 2026-10-25.
+// Emergency stop is still possible with VITE_TERRITORY_PROFESSIONS_STAGE8=false.
+const STAGE8_CLIENT_OPT_IN = import.meta.env.VITE_TERRITORY_PROFESSIONS_STAGE8 !== 'false';
 const ClanScreen = lazy(() => import('@/components/ClanScreen').then(m => ({ default: m.ClanScreen })));
 const AuctionScreen = lazy(() => import('@/components/AuctionScreen').then(m => ({ default: m.AuctionScreen })));
 const FriendsScreen = lazy(() => import('@/components/FriendsScreen').then(m => ({ default: m.FriendsScreen })));
@@ -437,7 +442,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           }} />
         )}
         {screen === 'hall-play' && <HallPlayScreen game={hallGame} userId={user.id} onBack={() => setScreen('games')} />}
-        {screen === 'professions' && <ProfessionsScreen />}
+        {screen === 'professions' && (STAGE8_CLIENT_OPT_IN ? <Stage8ProfessionsScreen /> : <ProfessionsScreen />)}
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} />}
         {screen === 'messages' && <MessagesScreen notify={notify} />}
