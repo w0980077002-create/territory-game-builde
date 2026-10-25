@@ -48,6 +48,7 @@ jobs:
       - run: npm run test:economy
       - run: node scripts/check-equipment-safety-v4.mjs
       - run: npm run test:professions
+      - run: npm run test:master-license
       - run: npm run test:feature-separation
       - run: npm run test:mobile-home
       - run: node scripts/check-combat-visuals.mjs
