@@ -232,6 +232,7 @@ export function ShopScreen() {
                 <ItemArt item={item} size={64} />
               </div>
               <p className="text-xs font-semibold leading-tight line-clamp-2 min-h-[30px]" style={{ color }}>{localizeText(item.name, language)}</p>
+              {item.type === 'elixir' && <p className="text-[10px] text-amber-300">⏳ {language === 'en' ? '7-day shelf life' : 'Срок 7 суток'}</p>}
               {item.amount && item.type !== 'equipment' && (
                 <p className="text-[10px] text-gray-400">x{item.amount}</p>
               )}
@@ -301,6 +302,7 @@ function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameStat
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wider" style={{ color: rarityColor(item.rarity) }}>{item.rarity}</p>
           <p className="text-sm text-gray-300 mt-1 leading-relaxed">{localizeText(item.description, language)}</p>
+          {item.type === 'elixir' && <p className="mt-1 text-xs text-amber-300">⏳ {language === 'en' ? 'Expires 7 days after purchase' : 'Срок годности — 7 суток после покупки'}</p>}
         </div>
       </div>
       {item.equipment && (

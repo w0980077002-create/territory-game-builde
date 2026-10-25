@@ -28,6 +28,7 @@ const memory={};const sessionStorage={getItem:k=>memory[k]??null,setItem:(k,v)=>
 const craft=parse('src/game/craftApi.ts',{
  './supabase':{supabase},'./professions':{RESOURCE_DEFINITIONS:resources},
  './equipmentBalance':{prepareNewEquipment:x=>x},
+ './elixirExpiry':{newElixirExpiry:()=>new Date().toISOString()},
 },{sessionStorage});
 assert.equal(await craft.fetchCraftStatus(),null,'legacy RPC missing is safe');
 supabase.rpc=async()=>({data:{enabled:false},error:null});
