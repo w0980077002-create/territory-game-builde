@@ -63,14 +63,14 @@ CREATE TABLE IF NOT EXISTS public.territory_profession_stage8_progress (
   mastery_level integer NOT NULL CHECK (mastery_level BETWEEN 1 AND 300),
   mastery_xp integer NOT NULL CHECK (mastery_xp BETWEEN 0 AND 100000),
   verified boolean NOT NULL DEFAULT false,
-  origin text NOT NULL DEFAULT 'verified_v1' CHECK(origin IN ('verified_v1','new_unlock')),
+  origin text NOT NULL DEFAULT 'verified_v1' CHECK(origin IN ('verified_v1','new_unlock','reviewed_legacy_save')),
   original_v1_level integer CHECK (original_v1_level BETWEEN 1 AND 300),
   original_v1_xp integer CHECK (original_v1_xp BETWEEN 0 AND 100000),
   reconciled_at timestamptz,
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   CONSTRAINT stage8_verified_requires_audit CHECK (NOT verified OR reconciled_at IS NOT NULL),
   CONSTRAINT stage8_progress_origin_check CHECK (
-    (origin='verified_v1' AND original_v1_level IS NOT NULL AND original_v1_xp IS NOT NULL)
+    (origin IN ('verified_v1','reviewed_legacy_save') AND original_v1_level IS NOT NULL AND original_v1_xp IS NOT NULL)
     OR (origin='new_unlock' AND original_v1_level IS NULL AND original_v1_xp IS NULL)
   )
 );
@@ -551,6 +551,37 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.territory_profession_stage8_execute(text,uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_profession_stage8_execute(text,uuid) TO authenticated, service_role;
+
+-- A device must be able to reconstruct every server-minted item after restart.
+-- Never treat the legacy game_state inventory as proof of ownership. This is a
+-- read-only bridge; before live release, item use/trading/equipping must also
+-- have the appropriate authoritative server ownership checks.
+CREATE OR REPLACE FUNCTION public.territory_profession_stage8_inventory()
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE
+  v_uid uuid := (SELECT auth.uid());
+  v_items jsonb;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'not_authenticated' USING ERRCODE='28000'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.territory_profession_stage8_release WHERE id=1 AND enabled)
+    THEN RAISE EXCEPTION 'profession_stage8_disabled'; END IF;
+  IF NOT public.territory_profession_stage8_economy_ready()
+    THEN RAISE EXCEPTION 'economy_not_server_authoritative'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.players WHERE id=v_uid AND banned=false)
+    THEN RAISE EXCEPTION 'player_unavailable'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.territory_profession_stage8_progress
+    WHERE player_id=v_uid AND verified=true) THEN RAISE EXCEPTION 'mastery_not_reconciled'; END IF;
+  SELECT COALESCE(pg_catalog.jsonb_agg(
+    pg_catalog.jsonb_build_object('item_id',i.item_id,'recipe_id',i.recipe_id,
+      'item_output',i.item_output,'expires_at',i.expires_at)
+    ORDER BY i.created_at,i.item_id),'[]'::jsonb) INTO v_items
+  FROM public.territory_profession_stage8_items i
+  WHERE i.player_id=v_uid AND (i.expires_at IS NULL OR i.expires_at>pg_catalog.clock_timestamp());
+  RETURN pg_catalog.jsonb_build_object('success',true,'items',v_items);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.territory_profession_stage8_inventory() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.territory_profession_stage8_inventory() TO authenticated, service_role;
 
 -- IMPORTANT: release flag remains false. Manual cutover requires separate
 -- approval, production backup, security audit and verified player migration.

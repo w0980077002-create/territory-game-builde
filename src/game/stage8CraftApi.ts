@@ -5,7 +5,8 @@
  */
 import { supabase } from './supabase';
 import blueprint from '../../supabase/staged/territory_profession_stage8_catalog.json';
-import type { ProfessionId } from './types';
+import { receiptDisplayItem } from './craftApi';
+import type { InventoryItem, ProfessionId } from './types';
 
 export type Stage8Resource = { id: string; qty: number };
 export type Stage8Recipe = {
@@ -63,6 +64,12 @@ export interface Stage8PurchaseReceipt {
   profession: ProfessionId;
   gemsAfter: number;
 }
+export type Stage8OwnedItem = {
+  itemId: string;
+  recipeId: string;
+  output: Record<string, unknown>;
+  expiresAt: string | null;
+};
 
 const obj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 const int = (v: unknown, max: number): v is number => Number.isSafeInteger(v) && (v as number) >= 0 && (v as number) <= max;
@@ -125,6 +132,44 @@ export async function purchaseStage8(profession: ProfessionId, operationId: stri
     throw new Error('stage8_purchase_not_confirmed');
   }
   return {profession,gemsAfter:data.gems_after};
+}
+
+/** Restore server-owned items on every device. Legacy game_state is not an ownership ledger. */
+export async function fetchStage8Items(): Promise<Stage8OwnedItem[]> {
+  const {data,error}=await supabase.rpc('territory_profession_stage8_inventory');
+  if (error || !obj(data) || data.success!==true || !Array.isArray(data.items)
+      || data.items.length>2000) throw new Error('stage8_inventory_unavailable');
+  return data.items.map((row:unknown)=>{
+    if (!obj(row) || !uuid(row.item_id) || typeof row.recipe_id!=='string' || !obj(row.item_output))
+      throw new Error('stage8_inventory_invalid');
+    const recipe=STAGE8_RECIPES.find((entry)=>entry.id===row.recipe_id && entry.kind==='item');
+    if (!recipe?.output || row.item_output.name!==recipe.output.name
+        || row.item_output.type!==recipe.output.type || row.item_output.rarity!==recipe.output.rarity)
+      throw new Error('stage8_inventory_catalog_mismatch');
+    const perishable=recipe.output.type==='potion'||recipe.output.type==='elixir';
+    if (perishable !== (typeof row.expires_at==='string' && Number.isFinite(Date.parse(row.expires_at))))
+      throw new Error('stage8_inventory_expiry_invalid');
+    if (!perishable && row.expires_at!==null) throw new Error('stage8_inventory_expiry_invalid');
+    return {itemId:row.item_id,recipeId:row.recipe_id,output:row.item_output,expiresAt:row.expires_at as string|null};
+  });
+}
+
+export function mirrorStage8Items(items: InventoryItem[],owned: readonly Stage8OwnedItem[]): InventoryItem[] {
+  const byId = new Map<string, InventoryItem>();
+  for (const item of items) if (!item.id.startsWith('stage8_')) byId.set(item.id,item);
+  for (const item of owned) {
+    const copy=receiptDisplayItem({itemId:item.itemId,recipeId:item.recipeId,output:item.output,
+      masteryLevel:1,masteryXp:0});
+    const id=`stage8_${item.itemId}`;
+    copy.id=id;
+    if (copy.equipment) copy.equipment.id=id;
+    if (copy.type==='elixir'||copy.type==='potion') {
+      if (!item.expiresAt) throw new Error('stage8_display_expiry_missing');
+      copy.expiresAt=item.expiresAt;
+    }
+    byId.set(id,copy);
+  }
+  return [...byId.values()];
 }
 
 const PENDING_KEY='territory_stage8_pending_operation_v1';

@@ -9,6 +9,7 @@ import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 
 const source = await readFile(new URL('../supabase/staged/territory_profession_stage8_backend.sql',import.meta.url),'utf8');
+const legacyBridge = await readFile(new URL('../supabase/staged/territory_profession_stage8_legacy_bridge.sql',import.meta.url),'utf8');
 const catalog = JSON.parse(await readFile(new URL('../supabase/staged/territory_profession_stage8_catalog.json',import.meta.url),'utf8'));
 const db = new PGlite();
 const smith='11111111-1111-4111-8111-111111111111';
@@ -22,6 +23,7 @@ const insufficientNew='99999999-9999-4999-8999-999999999999';
 const oldWithoutUnlock='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const adapterNew='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const eventMismatch='cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const auditedLegacy='dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const operations=Array.from({length:20},(_,i)=>`33333333-3333-4333-8333-${String(i+1).padStart(12,'0')}`);
 
 const setup = `
@@ -34,6 +36,7 @@ const setup = `
   CREATE TABLE public.players(id uuid PRIMARY KEY,gold int NOT NULL DEFAULT 0,
     gems int NOT NULL DEFAULT 0,banned boolean NOT NULL DEFAULT false,
     created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     game_state jsonb NOT NULL DEFAULT '{}'::jsonb);
   CREATE TABLE public.territory_profession_unlocks(
     player_id uuid PRIMARY KEY REFERENCES public.players(id),
@@ -53,10 +56,11 @@ const setup = `
     VALUES ('${smith}',300,77,'{"keep":"old-save","inventory":[{"id":"gather-ore","qty":9999999}]}'),
            ('${second}',500,88,'{"keep":"other-save"}'),
            ('${legacy}',900,99,'{"keep":"legacy-save"}'),
-           ('${alchemist}',800,66,'{"keep":"alchemist-save"}');
+           ('${alchemist}',800,66,'{"keep":"alchemist-save"}'),
+           ('${auditedLegacy}',500,250,'{"professions":{"active":"smith","masteryLevel":6,"masteryXp":45},"inventory":[{"id":"old-equipped","qty":1}]}');
   INSERT INTO public.territory_profession_unlocks(player_id,profession)
     VALUES ('${smith}','smith'),('${second}','smith'),('${legacy}','smith'),
-           ('${alchemist}','alchemist');
+           ('${alchemist}','alchemist'),('${auditedLegacy}','smith');
   INSERT INTO public.territory_profession_mastery_v1(player_id,profession,mastery_level,mastery_xp,verified)
     VALUES ('${smith}','smith',1,0,true),('${second}','smith',1,0,true),
            ('${legacy}','smith',50,300,true),('${alchemist}','alchemist',25,0,true);
@@ -73,6 +77,7 @@ const one = async(sql,values=[]) => (await rows(sql,values))[0];
 const exec = async(recipe,operation) => (await one('SELECT public.territory_profession_stage8_execute($1::text,$2::uuid) AS result',[recipe,operation])).result;
 const purchase = async(profession,operation) => (await one('SELECT public.territory_profession_stage8_purchase($1::text,$2::uuid) AS result',[profession,operation])).result;
 const status = async() => (await one('SELECT public.territory_profession_stage8_status() AS result')).result;
+const inventory = async() => (await one('SELECT public.territory_profession_stage8_inventory() AS result')).result;
 let currentRole=null;
 const role = async(name) => {await db.exec('RESET ROLE');if(name) await db.exec(`SET ROLE ${name}`);currentRole=name??null;};
 const asOwner = async(fn) => {
@@ -92,8 +97,38 @@ try {
   await db.exec(setup);
   const beforePlayers=await rows('SELECT id,gold,gems,game_state FROM public.players ORDER BY id');
   await db.exec(source);
+  await db.exec(legacyBridge);
   assert.deepEqual(await rows('SELECT id,gold,gems,game_state FROM public.players ORDER BY id'),beforePlayers,
     'Installing an inactive backend must not mutate player records');
+  await useUser(auditedLegacy);
+  await denied(()=>rows('SELECT public.territory_profession_stage8_legacy_preview($1::uuid)',[auditedLegacy]),
+    /permission denied/i,'Clients cannot inspect private migration review data');
+  await role('service_role');
+  const firstPreview=(await one('SELECT public.territory_profession_stage8_legacy_preview($1::uuid) AS result',[auditedLegacy])).result;
+  assert.equal(firstPreview.eligible,true);
+  assert.equal(firstPreview.mastery_level,6);
+  assert.equal(firstPreview.mastery_xp,45);
+  await role();
+  await db.exec(`UPDATE public.players SET created_at=created_at,
+    updated_at=clock_timestamp()+interval '1 second' WHERE id='${auditedLegacy}';`);
+  await role('service_role');
+  await denied(()=>rows('SELECT public.territory_profession_stage8_legacy_approve($1::uuid,$2::text,$3::text)',
+    [auditedLegacy,firstPreview.source_digest,'Reviewed old profession and unlock; preserve old gear.']),
+    /stale_legacy_snapshot/i,'A changed save cannot be imported from a stale approval');
+  const nextPreview=(await one('SELECT public.territory_profession_stage8_legacy_preview($1::uuid) AS result',[auditedLegacy])).result;
+  const reviewed=(await one('SELECT public.territory_profession_stage8_legacy_approve($1::uuid,$2::text,$3::text) AS result',
+    [auditedLegacy,nextPreview.source_digest,'Reviewed profession and previous items; no suspicious level jump.'])).result;
+  assert.equal(reviewed.success,true);
+  assert.equal(reviewed.mastery_level,6,'Grandfathered legacy levels must not be reset');
+  assert.equal(reviewed.mastery_xp,5,'Fractional legacy XP maps to the new scale');
+  assert.equal((await asOwner(()=>one('SELECT origin FROM public.territory_profession_stage8_progress WHERE player_id=$1',[auditedLegacy]))).origin,
+    'reviewed_legacy_save','Historical browser snapshots cannot pretend to be verified Stage3 data');
+  await denied(()=>rows('SELECT public.territory_profession_stage8_legacy_approve($1::uuid,$2::text,$3::text)',
+    [auditedLegacy,nextPreview.source_digest,'Trying an unauthorized second conversion.']),
+    /legacy_review_failed|already_reconciled/i,'One-time review must be non-repeatable');
+  await role();
+  assert.deepEqual(await rows('SELECT id,gold,gems,game_state FROM public.players ORDER BY id'),beforePlayers,
+    'Reviewed reconciliation must not modify the original client save or currencies');
   // The real cutover must reconcile existing mastery with an audit. These two
   // rows emulate an already completed, owner-reviewed reconciliation in tests.
   await db.exec(`INSERT INTO public.territory_profession_stage8_progress
@@ -261,6 +296,14 @@ try {
   assert.deepEqual(await exec('s8_smith_jarl_blade',operations[1]),prestige);
   assert.deepEqual(await mastery(second),{mastery_level:300,mastery_xp:0},
     'Mastery must never overflow the level-300 cap');
+  const secondItems=await inventory();
+  assert.equal(secondItems.success,true);
+  assert.equal(secondItems.items.length,1);
+  assert.equal(secondItems.items[0].item_id,prestige.item_id);
+  assert.equal(secondItems.items[0].item_output.name,'Клинок первого ярла');
+  await useUser(smith);
+  assert.deepEqual((await inventory()).items,[],
+    'Another hero must never receive server-owned crafted items');
   await role();
   await db.exec(`UPDATE public.territory_profession_stage8_progress SET mastery_level=100,mastery_xp=0 WHERE player_id='${second}';`);
   await db.exec(`UPDATE public.territory_profession_stage8_daily_xp SET xp_used=250 WHERE player_id='${second}';`);
@@ -279,6 +322,15 @@ try {
   assert.ok(potion.item_id);
   const lifetime=(Date.parse(potion.expires_at)-Date.now())/86400000;
   assert.ok(lifetime>6.99 && lifetime<=7.001,'Potion must expire in seven days');
+  const alchemistItems=await inventory();
+  assert.equal(alchemistItems.items.length,1);
+  assert.equal(alchemistItems.items[0].expires_at,potion.expires_at);
+  await role();
+  await db.exec(`UPDATE public.territory_profession_stage8_items
+    SET expires_at=clock_timestamp()-interval '1 second' WHERE item_id='${potion.item_id}';`);
+  await useUser(alchemist);
+  assert.deepEqual((await inventory()).items,[],
+    'Expired consumables must disappear from authoritative inventory response');
   assert.equal(await wallet(alchemist,'gather-herb'),5);
   assert.equal(await wallet(alchemist,'gather-wood'),8);
 
@@ -436,7 +488,7 @@ try {
   await useUser(insufficientNew);
   assert.equal((await status()).enabled,true,'Stage8 is ready again once the unsafe grant is removed');
   await role();
-  console.log('Stage8 SQL PASS: 55 recipes/XP bands, release OFF/RLS/ACL, audited v1→v2, atomic 1000-gem purchase, insufficient/cutover defenses, trusted initialize only, unsafe-economy fail-close, atomic resources, replay/UUID collision, Kyiv-day 300-XP cap, per-account isolation, licensed prestige, 7-day potion; all in local PGlite.');
+  console.log('Stage8 SQL PASS: 55 recipes/XP bands, release OFF/RLS/ACL, audited v1→v2, atomic 1000-gem purchase, insufficient/cutover defenses, trusted initialize only, unsafe-economy fail-close, atomic resources, replay/UUID collision, Kyiv-day 300-XP cap, per-account isolation, licensed prestige, server inventory and 7-day potion expiry; all in local PGlite.');
 }finally{
   await db.close();
 }

@@ -17,6 +17,11 @@ const client={
 const module={exports:{}};
 new Function('require','module','exports',compiled)((name)=>{
   if(name==='./supabase') return {supabase:client};
+  if(name==='./craftApi') return {receiptDisplayItem:({itemId,output})=>({
+    id:`craft_${itemId}`,name:output.name,icon:output.icon,type:output.type,
+    rarity:output.rarity,qty:1,description:output.description,
+    equipment:output.type==='equipment'?{...output.equipment,id:`craft_${itemId}`}:undefined,
+  })};
   if(name.endsWith('territory_profession_stage8_catalog.json')) return catalog;
   throw new Error(`Unexpected Stage8 import: ${name}`);
 },module,module.exports);
@@ -78,6 +83,23 @@ response={data:null,error:{message:'currency_not_server_authoritative'}};
 await assert.rejects(()=>api.purchaseStage8('smith',uuid),/purchase_not_confirmed/);
 await assert.rejects(()=>api.purchaseStage8('wrong_profession',uuid),/invalid_purchase/);
 
+response={data:{success:true,items:[{
+  item_id:uuid,recipe_id:itemId,
+  item_output:{name:'Клинок дозорного',icon:'🗡️',type:'equipment',rarity:'rare',
+    description:'Ремесленная экипировка: Клинок дозорного.',equipment:{slot:'weapon',attack:17}},expires_at:null,
+}]},error:null};
+const owned=await api.fetchStage8Items();
+assert.equal(lastRpc[0],'territory_profession_stage8_inventory');
+assert.equal(owned.length,1);
+const mirrored=api.mirrorStage8Items([{id:'legacy-sword',qty:1},{id:'stage8_fake',qty:1}],owned);
+assert.deepEqual(mirrored.map(i=>i.id),['legacy-sword',`stage8_${uuid}`]);
+assert.equal(mirrored[1].equipment.id,`stage8_${uuid}`);
+response={data:{success:true,items:[{...response.data.items[0],item_id:'not-a-uuid'}]},error:null};
+await assert.rejects(()=>api.fetchStage8Items(),/inventory_invalid/);
+response={data:{success:true,items:[{...owned[0],item_id:uuid,recipe_id:itemId,
+  item_output:{name:'Cheat sword',type:'equipment',rarity:'rare'},expires_at:null}]},error:null};
+await assert.rejects(()=>api.fetchStage8Items(),/catalog_mismatch/);
+
 const values=new Map();
 globalThis.sessionStorage={setItem:(key,value)=>values.set(key,value),getItem:(key)=>values.get(key)??null,removeItem:(key)=>values.delete(key)};
 await api.setStage8Pending({recipeId:practiceId,operationId:uuid});
@@ -101,4 +123,4 @@ assert.match(screen,/purchaseStage8\(/);
 assert.doesNotMatch(screen,/territory_profession_unlock/,'Stage8 must never use the legacy gem-debit RPC');
 assert.doesNotMatch(screen,/craftItem\(|addMasteryXp\(/,'Stage8 must not grant local rewards');
 assert.doesNotMatch(code,/craftItem\(|addMasteryXp\(/,'Stage8 API must not grant local rewards');
-console.log('Stage8 client PASS: server-only status, strict version, XP cap, item/practice receipts, atomic purchase bridge, persisted UUID retry, account isolation, disabled-by-default UI.');
+console.log('Stage8 client PASS: server-only status, strict version, XP cap, item/practice receipts, atomic purchase and reload-safe server inventory, persisted UUID retry, account isolation, disabled-by-default UI.');

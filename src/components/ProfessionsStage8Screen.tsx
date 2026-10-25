@@ -4,9 +4,10 @@ import { useGame } from '@/game/actions';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { resourceArt } from '@/game/art';
 import { PROFESSION_DEFINITIONS, RESOURCE_DEFINITIONS } from '@/game/professions';
-import { receiptDisplayItem, mirrorCraftResources } from '@/game/craftApi';
+import { mirrorCraftResources } from '@/game/craftApi';
 import {
-  fetchStage8Status, executeStage8, purchaseStage8, readStage8Pending, setStage8Pending,
+  fetchStage8Status, fetchStage8Items, mirrorStage8Items,
+  executeStage8, purchaseStage8, readStage8Pending, setStage8Pending,
   readStage8PurchasePending, setStage8PurchasePending, stage8XpToNext, STAGE8_RECIPES,
   type Stage8Status, type Stage8PendingOperation, type Stage8PurchaseOperation,
 } from '@/game/stage8CraftApi';
@@ -30,6 +31,14 @@ export function ProfessionsStage8Screen() {
       const next=await fetchStage8Status();
       const waiting=await readStage8Pending();
       const purchaseWaiting=await readStage8PurchasePending();
+      if (next.enabled && next.profession) {
+        const owned=await fetchStage8Items();
+        const latest=useGame.get();
+        useGame.set({...latest,inventory:mirrorStage8Items(
+          mirrorCraftResources(latest.inventory,next.resources),owned),
+          professions:{...(latest.professions??{active:null,masteryLevel:1,masteryXp:0,lastGatherAt:0}),
+            active:next.profession,masteryLevel:next.masteryLevel,masteryXp:next.masteryXp}});
+      }
       setStatus(next);setPending(waiting);setPurchasePending(purchaseWaiting);
     }catch{setStatus(null);setError(language==='en'?'Verified crafting is unavailable. Check saved pending operations before attempting another.':'Нет связи с защищённым ремеслом. Сначала проверь сохранённую операцию — повторную пока не начинай.');}
     finally{setLoading(false);}
@@ -44,25 +53,20 @@ export function ProfessionsStage8Screen() {
     setBusy(true);setNotice('');
     try {
       const receipt=await executeStage8(recipeId,operationId);
-      const display=receipt.kind==='item' && receipt.itemId && receipt.itemOutput
-        ? receiptDisplayItem({itemId:receipt.itemId,recipeId:receipt.recipeId,output:receipt.itemOutput,
-          masteryLevel:receipt.masteryLevel,masteryXp:receipt.masteryXp}) : null;
-      if (display && (display.type==='elixir'||display.type==='potion')) {
-        if (!receipt.expiresAt) throw new Error('missing_server_expiry');
-        display.expiresAt=receipt.expiresAt;
-      }
       const verified=await fetchStage8Status();
       if (!verified.enabled || !verified.profession || verified.masteryLevel<receipt.masteryLevel) throw new Error('stage8_status_not_confirmed');
+      const owned=await fetchStage8Items();
+      if (receipt.kind==='item' && !owned.some((item)=>item.itemId===receipt.itemId))
+        throw new Error('stage8_item_not_in_server_inventory');
       const latest=useGame.get();
-      const inventory=mirrorCraftResources(latest.inventory,verified.resources);
       useGame.set({...latest,
-        inventory:display && !inventory.some((i)=>i.id===display.id)?[...inventory,display]:inventory,
+        inventory:mirrorStage8Items(mirrorCraftResources(latest.inventory,verified.resources),owned),
         professions:{...(latest.professions??{active:null,masteryLevel:1,masteryXp:0,lastGatherAt:0}),
           active:verified.profession,masteryLevel:verified.masteryLevel,masteryXp:verified.masteryXp},
       });
       await setStage8Pending(null);
       setPending(null);setStatus(verified);
-      setNotice(language==='en'?(display?'Verified item crafted.':'Mastery training confirmed.'):(display?'Предмет создан и подтверждён сервером.':'Обучение подтверждено сервером.'));
+      setNotice(language==='en'?(receipt.kind==='item'?'Verified item crafted.':'Mastery training confirmed.'):(receipt.kind==='item'?'Предмет создан и подтверждён сервером.':'Обучение подтверждено сервером.'));
     }catch{
       setNotice(language==='en'?'Response uncertain. Retry the SAME operation; never start another.':'Сервер не подтвердил результат. Повтори ЭТУ ЖЕ операцию, чтобы не списать ресурсы дважды.');
     }finally{setBusy(false);}
