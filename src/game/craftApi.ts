@@ -71,7 +71,7 @@ export function receiptDisplayItem(receipt: CraftReceipt): InventoryItem {
   const display: InventoryItem = {
     id: `craft_${receipt.itemId}`, name: item.name, icon: item.icon,
     type: kind, rarity, qty: 1, description: typeof item.description === 'string' ? item.description.slice(0, 300) : '',
-    expiresAt: kind === 'elixir' ? newElixirExpiry() : undefined,
+    expiresAt: kind === 'elixir' || kind === 'potion' ? newElixirExpiry() : undefined,
   };
   if (kind === 'equipment') {
     if (!record(item.equipment) || !['helmet','amulet','armor','weapon','shield','ring','boots'].includes(String(item.equipment.slot))) throw new Error('invalid_equipment');

@@ -271,7 +271,9 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           || loadedState.player.energy !== profile.state.player.energy
           || loadedState.inventory !== profile.state.inventory
           || loadedState.belt !== profile.state.belt
-          || loadedState.elixirExpiryStartedAt !== profile.state.elixirExpiryStartedAt;
+          || loadedState.elixirExpiryStartedAt !== profile.state.elixirExpiryStartedAt
+          || loadedState.forgeMaterials !== profile.state.forgeMaterials
+          || loadedState.forgeMaterialBatches !== profile.state.forgeMaterialBatches;
         // Start the first migration save through the same tracked autosave queue.
         // A separate fire-and-forget write could collide with iOS gameplay saves.
         needsInitialSave.current = !!(profile.balanceMigrated || profile.rosterMigrated || hasNewTimeEffects || beltReconciled);
@@ -310,7 +312,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
       const current = useGame.get();
       const next = applyTimeEffects(current);
       if (next.player.energy !== current.player.energy || next.dailyResetDay !== current.dailyResetDay || next.weeklyResetWeek !== current.weeklyResetWeek
-        || next.inventory !== current.inventory || next.belt !== current.belt || next.elixirExpiryStartedAt !== current.elixirExpiryStartedAt) {
+        || next.inventory !== current.inventory || next.belt !== current.belt || next.elixirExpiryStartedAt !== current.elixirExpiryStartedAt
+        || next.forgeMaterials !== current.forgeMaterials || next.forgeMaterialBatches !== current.forgeMaterialBatches) {
         useGame.set(next);
       }
     }, 30000);

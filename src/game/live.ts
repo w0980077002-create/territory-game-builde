@@ -87,18 +87,18 @@ export function applyGrantPayload(state: GameState, p: GrantPayload): GameState 
       battleStones = nonNeg(battleStones + (def.amount ?? 1) * qty);
       continue;
     }
-    if (def.type === 'elixir') {
+    if (def.type === 'elixir' || def.type === 'potion' || def.type === 'arena') {
       if (qty > 0) {
         inventory.push({
           id: `inv_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-          name: def.name, icon: def.icon, type: 'elixir', rarity: def.rarity,
-          qty, description: def.description, effect: def.effect,
+          name: def.name, icon: def.icon, type: def.type, rarity: def.rarity,
+          qty, description: def.description, effect: def.effect, arenaEffect: def.arenaEffect,
           expiresAt: newElixirExpiry(),
         });
       } else {
         // Admin corrections remove the oldest matching stock first.
         let toRemove = -qty;
-        for (const item of inventory.filter((i) => i.type === 'elixir' && i.name === def.name)
+        for (const item of inventory.filter((i) => i.type === def.type && i.name === def.name)
           .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))) {
           if (toRemove <= 0) break;
           const used = Math.min(item.qty, toRemove);

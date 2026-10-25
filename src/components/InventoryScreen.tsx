@@ -9,7 +9,7 @@ import { BeltCells } from './ui/BeltCells';
 import { GearShowcase } from './GearShowcase';
 import { FollowersPanel } from './FollowersPanel';
 import { rarityColor, rarityGlow } from '@/game/ui';
-import { elixirExpiryTime, elixirTimeLeftLabel } from '@/game/elixirExpiry';
+import { elixirExpiryTime, elixirTimeLeftLabel, forgeMaterialTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
 import { Package, X, ArrowDownUp, UsersRound } from 'lucide-react';
 
@@ -33,8 +33,8 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
     return () => clearInterval(tick);
   }, []);
 
-  const consumables = state.inventory.filter((i) => i.type === 'potion' || i.type === 'elixir' || i.type === 'arena')
-    .sort((a, b) => (a.type === 'elixir' && b.type === 'elixir') ? elixirExpiryTime(a) - elixirExpiryTime(b) : 0);
+  const consumables = state.inventory.filter(isPerishableItem)
+    .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b));
   const materials = state.inventory.filter((i) => i.type === 'material');
 
   const switchTab = (to: 'items' | 'equipment' | 'followers') => {
@@ -85,7 +85,13 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
               </div>
             </div>
           )}
-          {consumables.length === 0 && materials.length === 0 && (
+          {state.forgeMaterials > 0 && (
+            <div className="mt-2 rounded-xl border border-amber-400/25 bg-amber-950/20 px-3 py-2 text-xs text-amber-200">
+              🔩 {language === 'en' ? 'Forge materials' : 'Материалы кузницы'}: {state.forgeMaterials}
+              <span className="ml-2 text-amber-300">⏳ {forgeMaterialTimeLeftLabel(state, language, now)}</span>
+            </div>
+          )}
+          {consumables.length === 0 && materials.length === 0 && state.forgeMaterials === 0 && (
             <div className="card text-center py-8 text-gray-500">
               <Package className="w-12 h-12 mx-auto mb-2 opacity-30"/>
               <p>{t('inventoryEmpty')}</p>
@@ -164,11 +170,11 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
                 onClick={close} className="text-gray-500 hover:text-white"><X className="w-5 h-5"/></button>
             </div>
             <p className="text-sm text-gray-300 mb-3">{localizeText(selected.description, language)}</p>
-            {selected.type === 'elixir' && (
+            {isPerishableItem(selected) && (
               <p className={`mb-3 text-xs font-semibold ${elixirExpiryTime(selected) - now < 24 * 60 * 60 * 1000 ? 'text-red-300' : 'text-amber-300'}`}>
                 ⏳ {language === 'en' ? 'Shelf life' : 'Срок годности'}: {elixirTimeLeftLabel(selected, language, now)}
                 <span className="block pt-1 font-normal text-gray-400">{language === 'en'
-                  ? '7 days from receipt. The closest expiry goes on the belt first.'
+                  ? '7 days from receipt. The earliest expiry goes on the belt first.'
                   : '7 суток с получения. На пояс сначала идёт самый ранний срок.'}</span>
               </p>
             )}
@@ -217,7 +223,7 @@ function ItemCard({ item, now, onClick }: { item: InventoryItem; now: number; on
         {localizeText(item.name, language)}
       </p>
       {item.qty > 1 && <span className="text-xs text-gray-500 mt-0.5">x{item.qty}</span>}
-      {item.type === 'elixir' && <span className={`mt-1 text-[10px] leading-tight ${elixirExpiryTime(item) - now <= 24 * 60 * 60 * 1000 ? 'text-red-300' : 'text-amber-300'}`}>
+      {isPerishableItem(item) && <span className={`mt-1 text-[10px] leading-tight ${elixirExpiryTime(item) - now <= 24 * 60 * 60 * 1000 ? 'text-red-300' : 'text-amber-300'}`}>
         ⏳ {elixirTimeLeftLabel(item, language, now)}
       </span>}
     </button>

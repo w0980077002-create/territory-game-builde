@@ -12,6 +12,7 @@ import type { Equipment, InventoryItem } from '@/game/types';
 import { upgradeEquipment } from '@/game/equipmentBalance';
 import { forgeAttempt, forgeCost, forgeSetBonus, forgeSuccessRate } from '@/game/forge';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
+import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
 
 export function ForgeScreen() {
   const { t, language } = useLanguage();
@@ -107,6 +108,7 @@ export function ForgeScreen() {
           <span className="text-amber-400">🪙 {state.player.gold}</span>
           <span className="text-orange-400">🔩 {state.forgeMaterials}</span>
         </div>
+        {state.forgeMaterials > 0 && <p className="mt-1 text-[11px] text-amber-300">⏳ {language === 'en' ? 'Materials expire in' : 'До истечения материалов'}: {forgeMaterialTimeLeftLabel(state, language)}</p>}
       </div>
 
       {/* Full set rewards apply only in PvE; never inflate Arena stats. */}

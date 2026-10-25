@@ -20,7 +20,8 @@ function loadTs(file, dependencies = {}) {
   return module.exports;
 }
 
-const followers = loadTs('src/game/followers.ts');
+const expiryMock = { reconcileElixirExpiry: (state) => state };
+const followers = loadTs('src/game/followers.ts', { './elixirExpiry': expiryMock });
 assert.equal(followers.FOLLOWER_TEMPLATES.length, 5);
 assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.role)).size, 5);
 assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.id)).size, 5);
@@ -65,7 +66,7 @@ assert.equal(fee.gold, 205);
 console.log('Stage4: 5 follower roles, legacy migration, one active, level-gated training, bounded PvE bonuses: PASS');
 
 const equipBalance = loadTs('src/game/equipmentBalance.ts', { './equipmentCatalog': { EQUIPMENT_TEMPLATES: [], rarityForChapter: () => 'common' } });
-const forge = loadTs('src/game/forge.ts', { './equipmentBalance': equipBalance });
+const forge = loadTs('src/game/forge.ts', { './equipmentBalance': equipBalance, './elixirExpiry': expiryMock });
 const eq = { id: 'ring-old', name: 'Ring', slot: 'ring', icon: '💍', rarity: 'rare', level: 1, baseLevel: 1, baseStats: { attack: 10 }, upgradeCount: 0, attack: 10 };
 const item = { id: eq.id, name: 'Ring', icon: '💍', rarity: 'rare', qty: 1, type: 'equipment', description: 'ring', equipment: eq };
 const input = { player: { level: 20, gold: 2000, equipped: {} }, forgeMaterials: 50, inventory: [item] };

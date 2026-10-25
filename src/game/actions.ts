@@ -3,7 +3,7 @@ import { prepareNewEquipment, capEquipmentToHeroLevel } from './equipmentBalance
 import { calendarDayKey, weeklyQuestKey } from './weeklyQuests';
 import { reconcileFollowers } from './followers';
 import { canBuyShopItem, shopStonesBoughtToday, SHOP_STONES_PER_DAY, MAX_SHOP_PURCHASE_QTY } from './purchaseGuard';
-import { newElixirExpiry, reconcileElixirExpiry } from './elixirExpiry';
+import { isPerishableItem, newElixirExpiry, reconcileElixirExpiry } from './elixirExpiry';
 import type { GameState } from './types';
 import {
   createInitialGame,
@@ -13,7 +13,18 @@ import {
 } from './engine';
 import type { InventoryItem, ShopItem, Equipment, Enemy } from './types';
 
-export const useGame = create<GameState>(createInitialGame());
+const backingGame = create<GameState>(createInitialGame());
+/** Normalize every changed inventory or wallet immediately, including server receipts. */
+export const useGame = {
+  get: backingGame.get,
+  subscribe: backingGame.subscribe,
+  set: (updater: Partial<GameState> | ((prev: GameState) => GameState)) => backingGame.set((prev) => {
+    const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+    return next.inventory !== prev.inventory || next.belt !== prev.belt
+      || next.forgeMaterials !== prev.forgeMaterials || next.forgeMaterialBatches !== prev.forgeMaterialBatches
+      ? reconcileElixirExpiry(next) : next;
+  }),
+};
 
 export const useArena = create({ rating: 1000, wins: 0, losses: 0 });
 
@@ -203,7 +214,7 @@ export function buyItem(state: GameState, shopItem: ShopItem, qty: number = 1): 
     }
   } else {
     const existing = inventory.find(
-      (i) => i.name === shopItem.name && i.type !== 'equipment' && i.type !== 'elixir',
+      (i) => i.name === shopItem.name && i.type !== 'equipment' && !isPerishableItem(i),
     );
     if (existing) {
       inventory = inventory.map((i) =>
@@ -220,7 +231,7 @@ export function buyItem(state: GameState, shopItem: ShopItem, qty: number = 1): 
         description: shopItem.description,
         effect: shopItem.effect,
         arenaEffect: shopItem.arenaEffect,
-        expiresAt: shopItem.type === 'elixir' ? newElixirExpiry(now.getTime()) : undefined,
+        expiresAt: shopItem.type === 'elixir' || shopItem.type === 'potion' || shopItem.type === 'arena' ? newElixirExpiry(now.getTime()) : undefined,
       };
       inventory.push(newItem);
     }

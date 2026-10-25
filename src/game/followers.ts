@@ -1,4 +1,5 @@
 import type { Follower, GameState } from './types';
+import { reconcileElixirExpiry } from './elixirExpiry';
 
 /** PvE-only companions. An account can have several unlocked companions but
  * exactly one active companion. PvP Arena snapshots never use these bonuses.
@@ -70,6 +71,7 @@ export const MAX_FOLLOWER_LEVEL = 60;
 /** Atomic pure update: call against the latest store state, never a stale render.
  * No cap bypass by negative/NaN amounts, and train only one companion at a time. */
 export function trainFollower(state: GameState, followerId: string): GameState | null {
+  state = reconcileElixirExpiry(state);
   const found = state.followers.find((f) => f.id === followerId && f.unlocked);
   if (!found || !FOLLOWER_TEMPLATES.some((f) => f.id === followerId)) return null;
   if (!Number.isSafeInteger(found.level) || found.level < 1 || found.level >= MAX_FOLLOWER_LEVEL || found.level >= state.player.level) return null;

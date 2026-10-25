@@ -1,5 +1,6 @@
 import type { Equipment, GameState, InventoryItem } from './types';
 import { upgradeEquipment } from './equipmentBalance';
+import { reconcileElixirExpiry } from './elixirExpiry';
 
 /** A single forge transaction, against the CURRENT state. Never use a delayed
  * captured copy of the user's wallet or equipment after another game action.
@@ -15,6 +16,7 @@ export function forgeSuccessRate(level: number): number {
 export type ForgeOutcome = { next: GameState; status: 'success' | 'failed' | 'invalid' };
 
 export function forgeAttempt(state: GameState, itemId: string, expectedLevel: number, roll: number): ForgeOutcome {
+  state = reconcileElixirExpiry(state);
   if (!Number.isFinite(roll) || roll < 0 || roll >= 1 || !Number.isSafeInteger(expectedLevel) || expectedLevel < 1) return { next: state, status: 'invalid' };
   const equippedMode = itemId.startsWith('equipped_');
   const actualId = equippedMode ? itemId.slice('equipped_'.length) : itemId;

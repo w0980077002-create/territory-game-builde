@@ -14,7 +14,7 @@ function load(relativePath, deps={}) {
   return module.exports;
 }
 const weekly=load('../src/game/weeklyQuests.ts');
-const followers=load('../src/game/followers.ts');
+const followers=load('../src/game/followers.ts', {'./elixirExpiry':{reconcileElixirExpiry:(state)=>state}});
 const balance=load('../src/game/pveBalance.ts');
 const equipment={ EQUIPMENT_BALANCE_VERSION:3, prepareNewEquipment:(x)=>x };
 const catalog={ createBossLootEquipment:(chapter, weapon, id)=>({id,slot:weapon?'weapon':'armor',name:'reward',icon:'⚔️',rarity:'common',level:chapter}), SHOP_EQUIPMENT_ITEMS: [] };

@@ -124,11 +124,11 @@ export function craftItem(inventory: InventoryItem[], recipe: CraftRecipe): Inve
     qty: 1,
     description: recipe.output.description,
     effect: recipe.output.effect,
-    expiresAt: recipe.output.type === 'elixir' ? newElixirExpiry() : undefined,
+    expiresAt: recipe.output.type === 'elixir' || recipe.output.type === 'potion' ? newElixirExpiry() : undefined,
     equipment,
   };
 
-  if (outputItem.type !== 'equipment' && outputItem.type !== 'elixir') {
+  if (outputItem.type !== 'equipment' && outputItem.type !== 'elixir' && outputItem.type !== 'potion') {
     const existing = nextInventory.find((item) => item.name === outputItem.name && item.type === outputItem.type && item.rarity === outputItem.rarity);
     if (existing) nextInventory = nextInventory.map((item) => item.id === existing.id ? { ...item, qty: item.qty + 1 } : item);
     else nextInventory = [...nextInventory, outputItem];

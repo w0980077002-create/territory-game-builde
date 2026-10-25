@@ -1,5 +1,5 @@
 import type { GameState, InventoryItem } from './types';
-import { elixirExpiryTime, isElixirExpired } from './elixirExpiry';
+import { elixirExpiryTime, isElixirExpired, isPerishableItem } from './elixirExpiry';
 
 export const BELT_STACK = 5;
 
@@ -81,9 +81,9 @@ export function beltAction(item: InventoryItem): BeltAction | null {
 export function putInBelt(state: GameState, itemId: string, c: BeltContext): GameState | null {
   const requested = state.inventory.find((i) => i.id === itemId);
   if (!requested || !canBelt(requested)) return null;
-  // Elixirs are selected oldest-first, regardless of which dated stack was tapped.
-  const item = requested.type === 'elixir'
-    ? state.inventory.filter((i) => i.type === 'elixir' && i.name === requested.name
+  // All potions/elixirs go on the belt earliest-expiry first, regardless of tapped stack.
+  const item = isPerishableItem(requested)
+    ? state.inventory.filter((i) => i.type === requested.type && i.name === requested.name
       && i.rarity === requested.rarity && JSON.stringify(i.effect ?? null) === JSON.stringify(requested.effect ?? null)
       && !isElixirExpired(i))
       .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0]
@@ -92,7 +92,7 @@ export function putInBelt(state: GameState, itemId: string, c: BeltContext): Gam
   const belt = [...state.belt];
   let index = belt.findIndex((s, i) => s?.name === item.name && s.type === item.type
     && s.qty < BELT_STACK && isSlotOpen(i, c)
-    && (item.type !== 'elixir' || s.expiresAt === item.expiresAt));
+    && (!isPerishableItem(item) || s.expiresAt === item.expiresAt));
   if (index < 0) index = belt.findIndex((s, i) => !s && isSlotOpen(i, c));
   if (index < 0) return null;
 
@@ -113,7 +113,7 @@ export function takeFromBelt(state: GameState, index: number): GameState {
   const existing = state.inventory.find((i) =>
     i.type === slot.type && i.name === slot.name && i.rarity === slot.rarity
     && i.arenaEffect === slot.arenaEffect && JSON.stringify(i.effect ?? null) === JSON.stringify(slot.effect ?? null)
-    && (slot.type !== 'elixir' || i.expiresAt === slot.expiresAt)
+    && (!isPerishableItem(slot) || i.expiresAt === slot.expiresAt)
   );
   const inventory = existing
     ? state.inventory.map((i) => (i.id === existing.id ? { ...i, qty: i.qty + slot.qty } : i))

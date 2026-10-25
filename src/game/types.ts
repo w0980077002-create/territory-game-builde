@@ -169,6 +169,8 @@ export interface GameState {
   inventory: InventoryItem[];
   /** Marks that legacy elixir stacks have received their one-time 7-day grace. */
   elixirExpiryStartedAt?: string;
+  /** Dated lots of forge materials; the sum mirrors forgeMaterials. */
+  forgeMaterialBatches?: { qty: number; expiresAt: string }[];
   currentChapter: number;
   chapterWins: number;
   totalBattlesWon: number;
