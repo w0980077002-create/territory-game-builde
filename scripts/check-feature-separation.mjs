@@ -10,7 +10,8 @@ const [app, home, map, professions, auction] = await Promise.all([
 ]);
 
 assert.match(app, /screen === 'map' && <MapScreen \/>/, 'Map must remain a standalone screen');
-assert.match(app, /screen === 'professions' && <ProfessionsScreen \/>/, 'Professions must remain a standalone screen');
+assert.match(app, /screen === 'professions' && \(STAGE8_CLIENT_OPT_IN \? <Stage8ProfessionsScreen \/> : <ProfessionsScreen \/>\)/,
+  'Owner-enabled secure professions must keep the same standalone screen and a rollback path');
 assert.match(app, /screen === 'auction' && <AuctionScreen \/>/, 'Auction must have its own route');
 assert.match(home, /label=\{t\('auction'\)\} onClick=\{\(\) => onOpen\('auction'\)\}/, 'City must expose a separate auction shortcut');
 assert.match(map, /onClick=\{\(\) => gatherResource\(res\)\}/, 'Map resource nodes must gather resources');
