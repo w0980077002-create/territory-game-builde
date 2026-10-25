@@ -44,6 +44,8 @@ export interface InventoryItem {
   type: 'potion' | 'elixir' | 'material' | 'equipment' | 'arena';
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   qty: number;
+  /** UTC expiry of this batch of elixirs. Non-elixirs do not expire. */
+  expiresAt?: string;
   arenaEffect?: ArenaEffect;
   description: string;
   effect?: {
@@ -165,6 +167,8 @@ export interface GameState {
     equipped: Partial<Record<Equipment['slot'], Equipment>>;
   };
   inventory: InventoryItem[];
+  /** Marks that legacy elixir stacks have received their one-time 7-day grace. */
+  elixirExpiryStartedAt?: string;
   currentChapter: number;
   chapterWins: number;
   totalBattlesWon: number;

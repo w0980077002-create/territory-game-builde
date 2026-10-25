@@ -57,7 +57,7 @@ for(const n of [a,b,c,pvp.normalizePvpEntry(Infinity,Infinity),pvp.normalizePvpE
 assert.ok(c.attack<=Math.round(a.attack*1.05));
 console.log('Stage3 staged PvP entry budgets: overpowered level 81 capped at ~5%: PASS');
 
-const recipes=load('src/game/professions.ts',{'./equipmentBalance':{prepareNewEquipment:x=>x}}).PROFESSION_RECIPES;
+const recipes=load('src/game/professions.ts',{'./equipmentBalance':{prepareNewEquipment:x=>x}, './elixirExpiry':{newElixirExpiry:()=>new Date().toISOString()}}).PROFESSION_RECIPES;
 const canonical=JSON.parse(read('supabase/staged/territory_craft_catalog.json'));
 assert.equal(recipes.length,17);
 assert.equal(canonical.length,recipes.length);

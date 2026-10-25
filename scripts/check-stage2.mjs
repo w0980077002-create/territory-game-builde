@@ -19,7 +19,8 @@ const balance=load('../src/game/pveBalance.ts');
 const equipment={ EQUIPMENT_BALANCE_VERSION:3, prepareNewEquipment:(x)=>x };
 const catalog={ createBossLootEquipment:(chapter, weapon, id)=>({id,slot:weapon?'weapon':'armor',name:'reward',icon:'⚔️',rarity:'common',level:chapter}), SHOP_EQUIPMENT_ITEMS: [] };
 const engine=load('../src/game/engine.ts', {'./equipmentBalance':equipment, './equipmentCatalog': catalog, './weeklyQuests':weekly, './pveBalance':balance, './followers':followers});
-const actions=load('../src/game/actions.ts', {'./store':{create:(initial)=>({get:()=>initial,set:()=>{},subscribe:()=>()=>{}})}, './equipmentBalance':equipment, './weeklyQuests':weekly, './purchaseGuard':{ canBuyShopItem:()=>true, shopStonesBoughtToday:()=>0, SHOP_STONES_PER_DAY:25 }, './engine':engine, './followers':followers});
+const elixirExpiry=load('../src/game/elixirExpiry.ts');
+const actions=load('../src/game/actions.ts', {'./store':{create:(initial)=>({get:()=>initial,set:()=>{},subscribe:()=>()=>{}})}, './equipmentBalance':equipment, './weeklyQuests':weekly, './purchaseGuard':{ canBuyShopItem:()=>true, shopStonesBoughtToday:()=>0, SHOP_STONES_PER_DAY:25 }, './engine':engine, './followers':followers, './elixirExpiry':elixirExpiry});
 assert.equal(weekly.weeklyQuestKey(Date.parse('2026-10-17T20:59:59Z')),'2026-10-11');
 assert.equal(weekly.weeklyQuestKey(Date.parse('2026-10-17T21:00:00Z')),'2026-10-18');
 assert.equal(weekly.weeklyQuestKey(Date.parse('2026-01-01T00:00:00Z')),'2025-12-28');
@@ -60,7 +61,7 @@ for(const n of [1,3,5,20,81,100,1000,3000]){
     for(const k of ['maxHp','attack','defense']) assert.ok(Number.isSafeInteger(unit[k])&&unit[k]>0,`${k} invalid for ${unit.id}`);
   }
 }
-const pve=load('../src/game/pve.ts',{'./arenaApi':{ZONES:[{id:'head',label:'Голова',mult:1.25},{id:'chest',label:'Грудь',mult:1},{id:'belly',label:'Живот',mult:1},{id:'legs',label:'Ноги',mult:.85}]}, './engine':{getComputedStats:(s)=>s.player.stats}, './pveBalance':balance, './followers':followers, './forge':{forgeSetBonus:()=>({hp:0,attack:0,defense:0})}});
+const pve=load('../src/game/pve.ts',{'./arenaApi':{ZONES:[{id:'head',label:'Голова',mult:1.25},{id:'chest',label:'Грудь',mult:1},{id:'belly',label:'Живот',mult:1},{id:'legs',label:'Ноги',mult:.85}]}, './engine':{getComputedStats:(s)=>s.player.stats}, './pveBalance':balance, './followers':followers, './forge':{forgeSetBonus:()=>({hp:0,attack:0,defense:0})}, './elixirExpiry':elixirExpiry});
 const hero={name:'hero',hp:1000000,maxHp:1000000,attack:10000000,defense:1000000,critChance:0,critDamage:50};
 for(const elite of [ch1.boss,engine.generateTrial(1)]){
   const enemy=pve.enemySide(elite);

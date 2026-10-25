@@ -3,6 +3,7 @@ import { prepareNewEquipment, capEquipmentToHeroLevel } from './equipmentBalance
 import { calendarDayKey, weeklyQuestKey } from './weeklyQuests';
 import { reconcileFollowers } from './followers';
 import { canBuyShopItem, shopStonesBoughtToday, SHOP_STONES_PER_DAY, MAX_SHOP_PURCHASE_QTY } from './purchaseGuard';
+import { newElixirExpiry, reconcileElixirExpiry } from './elixirExpiry';
 import type { GameState } from './types';
 import {
   createInitialGame,
@@ -75,7 +76,7 @@ export function applyTimeEffects(state: GameState, now = Date.now()): GameState 
       ).concat(weeklyDefaults.filter((q) => !known.has(q.id))),
     };
   }
-  return next;
+  return reconcileElixirExpiry(next, now);
 }
 
 export function msUntilNextEnergy(state: GameState, now = Date.now()): number | null {
@@ -202,7 +203,7 @@ export function buyItem(state: GameState, shopItem: ShopItem, qty: number = 1): 
     }
   } else {
     const existing = inventory.find(
-      (i) => i.name === shopItem.name && i.type !== 'equipment',
+      (i) => i.name === shopItem.name && i.type !== 'equipment' && i.type !== 'elixir',
     );
     if (existing) {
       inventory = inventory.map((i) =>
@@ -219,6 +220,7 @@ export function buyItem(state: GameState, shopItem: ShopItem, qty: number = 1): 
         description: shopItem.description,
         effect: shopItem.effect,
         arenaEffect: shopItem.arenaEffect,
+        expiresAt: shopItem.type === 'elixir' ? newElixirExpiry(now.getTime()) : undefined,
       };
       inventory.push(newItem);
     }

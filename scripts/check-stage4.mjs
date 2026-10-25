@@ -109,6 +109,7 @@ const pve = loadTs('src/game/pve.ts', {
   './pveBalance': pveBalance,
   './followers': followers,
   './forge': forge,
+  './elixirExpiry': loadTs('src/game/elixirExpiry.ts'),
 });
 const fullSet = Object.fromEntries(slots.map((slot) => [slot, { ...eq, slot, upgradeCount: 1 }]));
 const hero = pve.heroSide({ player: { name: 'Test', equipped: fullSet }, followers: roster, activeFollowerId: 'follower_4' });

@@ -268,7 +268,10 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         useGame.set(loadedState);
         const hasNewTimeEffects = loadedState.dailyResetDay !== profile.state.dailyResetDay
           || loadedState.weeklyResetWeek !== profile.state.weeklyResetWeek
-          || loadedState.player.energy !== profile.state.player.energy;
+          || loadedState.player.energy !== profile.state.player.energy
+          || loadedState.inventory !== profile.state.inventory
+          || loadedState.belt !== profile.state.belt
+          || loadedState.elixirExpiryStartedAt !== profile.state.elixirExpiryStartedAt;
         // Start the first migration save through the same tracked autosave queue.
         // A separate fire-and-forget write could collide with iOS gameplay saves.
         needsInitialSave.current = !!(profile.balanceMigrated || profile.rosterMigrated || hasNewTimeEffects || beltReconciled);
@@ -306,7 +309,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     const tick = setInterval(() => {
       const current = useGame.get();
       const next = applyTimeEffects(current);
-      if (next.player.energy !== current.player.energy || next.dailyResetDay !== current.dailyResetDay || next.weeklyResetWeek !== current.weeklyResetWeek) {
+      if (next.player.energy !== current.player.energy || next.dailyResetDay !== current.dailyResetDay || next.weeklyResetWeek !== current.weeklyResetWeek
+        || next.inventory !== current.inventory || next.belt !== current.belt || next.elixirExpiryStartedAt !== current.elixirExpiryStartedAt) {
         useGame.set(next);
       }
     }, 30000);

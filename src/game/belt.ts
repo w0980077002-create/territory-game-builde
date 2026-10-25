@@ -1,4 +1,5 @@
 import type { GameState, InventoryItem } from './types';
+import { elixirExpiryTime, isElixirExpired } from './elixirExpiry';
 
 export const BELT_STACK = 5;
 
@@ -55,7 +56,7 @@ export const beltContext = (state: GameState, arenaWins: number): BeltContext =>
 export const isSlotOpen = (i: number, c: BeltContext) => BELT_RULES[i].check(c).open;
 
 export const canBelt = (item: InventoryItem) =>
-  item.type === 'potion' || item.type === 'elixir' || item.type === 'arena';
+  (item.type === 'potion' || item.type === 'elixir' || item.type === 'arena') && !isElixirExpired(item);
 
 export type ArenaItemCode = 'heal_small' | 'heal_large' | 'attack' | 'defense' | 'crit';
 
@@ -65,6 +66,7 @@ export type BeltAction =
   | { kind: 'item'; code: ArenaItemCode };
 
 export function beltAction(item: InventoryItem): BeltAction | null {
+  if (isElixirExpired(item)) return null;
   if (item.arenaEffect === 'time') return { kind: 'time' };
   if (item.arenaEffect === 'adrenaline') return { kind: 'revive' };
   const e = item.effect;
@@ -77,10 +79,20 @@ export function beltAction(item: InventoryItem): BeltAction | null {
 }
 
 export function putInBelt(state: GameState, itemId: string, c: BeltContext): GameState | null {
-  const item = state.inventory.find((i) => i.id === itemId);
-  if (!item || !canBelt(item)) return null;
+  const requested = state.inventory.find((i) => i.id === itemId);
+  if (!requested || !canBelt(requested)) return null;
+  // Elixirs are selected oldest-first, regardless of which dated stack was tapped.
+  const item = requested.type === 'elixir'
+    ? state.inventory.filter((i) => i.type === 'elixir' && i.name === requested.name
+      && i.rarity === requested.rarity && JSON.stringify(i.effect ?? null) === JSON.stringify(requested.effect ?? null)
+      && !isElixirExpired(i))
+      .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0]
+    : requested;
+  if (!item) return null;
   const belt = [...state.belt];
-  let index = belt.findIndex((s, i) => s?.name === item.name && s.qty < BELT_STACK && isSlotOpen(i, c));
+  let index = belt.findIndex((s, i) => s?.name === item.name && s.type === item.type
+    && s.qty < BELT_STACK && isSlotOpen(i, c)
+    && (item.type !== 'elixir' || s.expiresAt === item.expiresAt));
   if (index < 0) index = belt.findIndex((s, i) => !s && isSlotOpen(i, c));
   if (index < 0) return null;
 
@@ -88,7 +100,7 @@ export function putInBelt(state: GameState, itemId: string, c: BeltContext): Gam
   const moved = Math.min(BELT_STACK - current, item.qty);
   belt[index] = { ...item, id: `belt_${index}`, qty: current + moved };
   const inventory = state.inventory
-    .map((i) => (i.id === itemId ? { ...i, qty: i.qty - moved } : i))
+    .map((i) => (i.id === item.id ? { ...i, qty: i.qty - moved } : i))
     .filter((i) => i.qty > 0);
   return { ...state, belt, inventory };
 }
@@ -97,9 +109,11 @@ export function takeFromBelt(state: GameState, index: number): GameState {
   const slot = state.belt[index];
   if (!slot) return state;
   const belt = state.belt.map((s, i) => (i === index ? null : s));
+  if (isElixirExpired(slot)) return { ...state, belt };
   const existing = state.inventory.find((i) =>
     i.type === slot.type && i.name === slot.name && i.rarity === slot.rarity
     && i.arenaEffect === slot.arenaEffect && JSON.stringify(i.effect ?? null) === JSON.stringify(slot.effect ?? null)
+    && (slot.type !== 'elixir' || i.expiresAt === slot.expiresAt)
   );
   const inventory = existing
     ? state.inventory.map((i) => (i.id === existing.id ? { ...i, qty: i.qty + slot.qty } : i))
@@ -110,6 +124,7 @@ export function takeFromBelt(state: GameState, index: number): GameState {
 export function consumeBelt(state: GameState, index: number): GameState {
   const slot = state.belt[index];
   if (!slot) return state;
+  if (isElixirExpired(slot)) return { ...state, belt: state.belt.map((s, i) => i === index ? null : s) };
   const belt = state.belt.map((s, i) => (i !== index || !s ? s : s.qty > 1 ? { ...s, qty: s.qty - 1 } : null));
   return { ...state, belt };
 }

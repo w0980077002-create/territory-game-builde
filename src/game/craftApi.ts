@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import type { InventoryItem } from './types';
 import { RESOURCE_DEFINITIONS } from './professions';
 import { prepareNewEquipment } from './equipmentBalance';
+import { newElixirExpiry } from './elixirExpiry';
 
 /** Stage6 bridge: the old client-only craft path remains for older servers.
  * When craft_enabled is true, only a server receipt can create a verified item.
@@ -70,6 +71,7 @@ export function receiptDisplayItem(receipt: CraftReceipt): InventoryItem {
   const display: InventoryItem = {
     id: `craft_${receipt.itemId}`, name: item.name, icon: item.icon,
     type: kind, rarity, qty: 1, description: typeof item.description === 'string' ? item.description.slice(0, 300) : '',
+    expiresAt: kind === 'elixir' ? newElixirExpiry() : undefined,
   };
   if (kind === 'equipment') {
     if (!record(item.equipment) || !['helmet','amulet','armor','weapon','shield','ring','boots'].includes(String(item.equipment.slot))) throw new Error('invalid_equipment');

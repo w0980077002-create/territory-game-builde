@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
@@ -9,6 +9,7 @@ import { BeltCells } from './ui/BeltCells';
 import { GearShowcase } from './GearShowcase';
 import { FollowersPanel } from './FollowersPanel';
 import { rarityColor, rarityGlow } from '@/game/ui';
+import { elixirExpiryTime, elixirTimeLeftLabel } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
 import { Package, X, ArrowDownUp, UsersRound } from 'lucide-react';
 
@@ -24,9 +25,16 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
   const [tab, setTab] = useState<'items' | 'equipment' | 'followers'>(initialTab);
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const [beltNote, setBeltNote] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const inventoryContentRef = useRef<HTMLDivElement>(null);
 
-  const consumables = state.inventory.filter((i) => i.type === 'potion' || i.type === 'elixir' || i.type === 'arena');
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(tick);
+  }, []);
+
+  const consumables = state.inventory.filter((i) => i.type === 'potion' || i.type === 'elixir' || i.type === 'arena')
+    .sort((a, b) => (a.type === 'elixir' && b.type === 'elixir') ? elixirExpiryTime(a) - elixirExpiryTime(b) : 0);
   const materials = state.inventory.filter((i) => i.type === 'material');
 
   const switchTab = (to: 'items' | 'equipment' | 'followers') => {
@@ -65,7 +73,7 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
             <div>
               <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">{t('consumables')}</h3>
               <div className="grid grid-cols-2 gap-2">
-                {consumables.map((item) => <ItemCard key={item.id} item={item} onClick={() => setSelected(item)}/>)}
+                {consumables.map((item) => <ItemCard key={item.id} item={item} now={now} onClick={() => setSelected(item)}/>)}
               </div>
             </div>
           )}
@@ -73,7 +81,7 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
             <div>
               <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">{t('materials')}</h3>
               <div className="grid grid-cols-2 gap-2">
-                {materials.map((item) => <ItemCard key={item.id} item={item} onClick={() => setSelected(item)}/>)}
+                {materials.map((item) => <ItemCard key={item.id} item={item} now={now} onClick={() => setSelected(item)}/>)}
               </div>
             </div>
           )}
@@ -156,6 +164,14 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
                 onClick={close} className="text-gray-500 hover:text-white"><X className="w-5 h-5"/></button>
             </div>
             <p className="text-sm text-gray-300 mb-3">{localizeText(selected.description, language)}</p>
+            {selected.type === 'elixir' && (
+              <p className={`mb-3 text-xs font-semibold ${elixirExpiryTime(selected) - now < 24 * 60 * 60 * 1000 ? 'text-red-300' : 'text-amber-300'}`}>
+                ⏳ {language === 'en' ? 'Shelf life' : 'Срок годности'}: {elixirTimeLeftLabel(selected, language, now)}
+                <span className="block pt-1 font-normal text-gray-400">{language === 'en'
+                  ? '7 days from receipt. The closest expiry goes on the belt first.'
+                  : '7 суток с получения. На пояс сначала идёт самый ранний срок.'}</span>
+              </p>
+            )}
             {selected.effect && (
               <div className="text-sm text-teal-400 mb-3">
                 {language === 'en' ? 'Effect' : 'Эффект'}: +{selected.effect.value} {localizeText(selected.effect.stat, language)}
@@ -186,7 +202,7 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
   );
 }
 
-function ItemCard({ item, onClick }: { item: InventoryItem; onClick: () => void }) {
+function ItemCard({ item, now, onClick }: { item: InventoryItem; now: number; onClick: () => void }) {
   const { language } = useLanguage();
   const color = rarityColor(item.rarity);
   return (
@@ -201,6 +217,9 @@ function ItemCard({ item, onClick }: { item: InventoryItem; onClick: () => void 
         {localizeText(item.name, language)}
       </p>
       {item.qty > 1 && <span className="text-xs text-gray-500 mt-0.5">x{item.qty}</span>}
+      {item.type === 'elixir' && <span className={`mt-1 text-[10px] leading-tight ${elixirExpiryTime(item) - now <= 24 * 60 * 60 * 1000 ? 'text-red-300' : 'text-amber-300'}`}>
+        ⏳ {elixirTimeLeftLabel(item, language, now)}
+      </span>}
     </button>
   );
 }

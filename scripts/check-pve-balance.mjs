@@ -57,12 +57,14 @@ assert.equal(eliteRoundDamageCap('trial_100', false, Number.POSITIVE_INFINITY), 
 assert.equal(followerGuardDamage(100, 1000), 88, 'guardian mitigation remains capped at 12%');
 
 const zones = ['head', 'chest', 'belly', 'legs'].map((id) => ({ id, label: id, mult: 1 }));
+const elixirExpiry = load(source('../src/game/elixirExpiry.ts'));
 const pve = load(source('../src/game/pve.ts'), {
   './arenaApi': { ZONES: zones },
   './engine': { getComputedStats: () => { throw Error('not needed'); } },
   './pveBalance': balance,
   './followers': { followerCombat: () => ({}), selectedFollower: () => null },
   './forge': { forgeSetBonus: () => ({ hp: 0, attack: 0, defense: 0 }) },
+  './elixirExpiry': elixirExpiry,
 });
 const hero = { name: 'Hero', hp: 1000, maxHp: 1000, attack: 100000, defense: 100, critChance: 100, critDamage: 50 };
 function checkRound(id, isBoss, expectedCap) {

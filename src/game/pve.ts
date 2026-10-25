@@ -4,6 +4,7 @@ import { getComputedStats } from './engine';
 import { eliteRoundDamageCap, followerGuardDamage } from './pveBalance';
 import { followerCombat, selectedFollower } from './followers';
 import { forgeSetBonus } from './forge';
+import { isElixirExpired } from './elixirExpiry';
 
 export interface PveSide {
   name: string;
@@ -110,6 +111,7 @@ export type PotionUse =
   | { ok: false; text: string };
 
 export function applyPotion(hero: PveSide, item: InventoryItem): PotionUse {
+  if (isElixirExpired(item)) return { ok: false, text: 'Срок годности эликсира истёк' };
   if (item.arenaEffect) return { ok: false, text: `${item.name} действует только на арене` };
   const e = item.effect;
   if (!e || !Number.isFinite(e.value) || e.value <= 0 || e.value > 1000000) return { ok: false, text: 'Этот предмет нельзя выпить в бою' };

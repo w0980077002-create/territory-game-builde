@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 const ts = require('typescript');
 
 try {
-  const files = ['types.ts', 'equipmentCatalog.ts', 'equipmentBalance.ts', 'professions.ts'];
+  const files = ['types.ts', 'equipmentCatalog.ts', 'equipmentBalance.ts', 'elixirExpiry.ts', 'professions.ts'];
   const outDir = path.join(temp, 'src', 'game');
   await mkdir(outDir, { recursive: true });
 
