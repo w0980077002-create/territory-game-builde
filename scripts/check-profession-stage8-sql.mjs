@@ -34,7 +34,7 @@ const setup = `
   CREATE SCHEMA auth;
   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
     $$ SELECT NULLIF(current_setting('test.uid',true),'')::uuid $$;
-  CREATE TABLE public.players(id uuid PRIMARY KEY,gold int NOT NULL DEFAULT 0,
+  CREATE TABLE public.players(id uuid PRIMARY KEY,telegram_id bigint,gold int NOT NULL DEFAULT 0,
     gems int NOT NULL DEFAULT 0,banned boolean NOT NULL DEFAULT false,
     created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -508,8 +508,31 @@ try {
   await db.exec('REVOKE UPDATE(quantity) ON public.territory_resource_wallet FROM authenticated');
   await useUser(insufficientNew);
   assert.equal((await status()).enabled,true,'Stage8 resumes only after the unsafe material grant is removed');
+
+  // Only an exact admin identity with a time-bounded private grant can train
+  // repeatedly; all ordinary users remain limited to 300 XP per Kyiv day.
   await role();
-  console.log('Stage8 SQL PASS: 72 recipes/XP bands, RLS/ACL, reviewed legacy levels, 1000-gem purchase for unassigned accounts, strict resource preflight, atomic XP/materials, replay, Kyiv-day cap, license, inventory and 7-day expiry in local PGlite.');
+  await db.exec(`UPDATE public.players SET telegram_id=987654321 WHERE id='${smith}';
+    INSERT INTO territory_private.territory_profession_stage8_test_access
+      (player_id,verified_telegram_id,expires_at,purpose)
+      VALUES('${smith}',987654321,clock_timestamp()+interval '7 days','Owner-only complete progression review');
+    INSERT INTO public.territory_profession_stage8_daily_xp(player_id,local_day,xp_used)
+      VALUES('${smith}',(clock_timestamp() AT TIME ZONE 'Europe/Kyiv')::date,300)
+      ON CONFLICT(player_id,local_day) DO UPDATE SET xp_used=300;`);
+  await useUser(smith);
+  assert.equal((await status()).daily_xp_used,0,'Approved tester sees available manual training');
+  const testCraft=await exec('s8_smith_practice_1','f0000000-0000-4000-8000-000000000001');
+  assert.equal(testCraft.success,true);
+  assert.equal(testCraft.daily_xp_used,0);
+  assert.equal(await dailyUsed(smith),300,'Private test mode must not alter the real daily quota ledger');
+  await role();
+  await db.exec(`UPDATE territory_private.territory_profession_stage8_test_access
+    SET expires_at=clock_timestamp()-interval '1 second' WHERE player_id='${smith}';`);
+  await useUser(smith);
+  assert.equal((await status()).daily_xp_used,300,'Expired grant restores the normal visible daily quota');
+  await denied(()=>exec('s8_smith_practice_1','f0000000-0000-4000-8000-000000000002'),/daily_mastery_xp_limit/);
+  await role();
+  console.log('Stage8 SQL PASS: 72 recipes/XP bands, RLS/ACL, reviewed legacy levels, 1000-gem purchase, atomic XP/materials, protected 300/day limit, isolated expiring owner test mode, replay, license, inventory and 7-day expiry in local PGlite.');
 }finally{
   await db.close();
 }

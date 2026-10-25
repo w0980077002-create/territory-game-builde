@@ -121,6 +121,19 @@ CREATE TABLE IF NOT EXISTS public.territory_profession_stage8_daily_xp (
 ALTER TABLE public.territory_profession_stage8_daily_xp ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.territory_profession_stage8_daily_xp FROM PUBLIC, anon, authenticated;
 
+-- Short-lived admin-only manual progression test. This table is in the
+-- unexposed private schema, with no client grants. Unlike real players, a
+-- reviewed tester can exercise the entire 1–300 recipe chain in one session.
+CREATE SCHEMA IF NOT EXISTS territory_private;
+CREATE TABLE IF NOT EXISTS territory_private.territory_profession_stage8_test_access (
+  player_id uuid PRIMARY KEY REFERENCES public.players(id) ON DELETE CASCADE,
+  verified_telegram_id bigint NOT NULL,
+  expires_at timestamptz NOT NULL,
+  purpose text NOT NULL CHECK (length(purpose) BETWEEN 10 AND 250)
+);
+ALTER TABLE territory_private.territory_profession_stage8_test_access ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON territory_private.territory_profession_stage8_test_access FROM PUBLIC, anon, authenticated;
+
 -- Each item is a unique, non-transferable (until future verified market) server
 -- instance. Consumable expiry is server-stamped; gathered resources never expire.
 CREATE TABLE IF NOT EXISTS public.territory_profession_stage8_items (
@@ -395,6 +408,7 @@ DECLARE
   v_cutover timestamptz;
   v_resources jsonb := '{}'::jsonb;
   v_used integer := 0;
+  v_test_mode boolean := false;
   v_day date := (clock_timestamp() AT TIME ZONE 'Europe/Kyiv')::date;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'not_authenticated' USING ERRCODE='28000'; END IF;
@@ -438,11 +452,17 @@ BEGIN
     FROM public.territory_resource_wallet WHERE player_id=v_uid;
   SELECT xp_used INTO v_used FROM public.territory_profession_stage8_daily_xp
     WHERE player_id=v_uid AND local_day=v_day;
+  SELECT EXISTS(SELECT 1
+    FROM territory_private.territory_profession_stage8_test_access t
+    JOIN public.players p ON p.id=t.player_id AND p.telegram_id=t.verified_telegram_id
+    WHERE t.player_id=v_uid AND t.expires_at>clock_timestamp()) INTO v_test_mode;
+  -- Do not touch the real Kyiv-day counter for an approved temporary tester.
+  IF v_test_mode THEN v_used:=0; END IF;
   RETURN jsonb_build_object(
     'enabled',true,'version','profession-stage8-draft-20261025-r2',
     'profession',v_progress.profession,'mastery_level',v_progress.mastery_level,
     'mastery_xp',v_progress.mastery_xp,'daily_xp_used',COALESCE(v_used,0),
-    'daily_xp_cap',300,'master_license',COALESCE(v_license,false),
+    'daily_xp_cap',300,'test_mode',v_test_mode,'master_license',COALESCE(v_license,false),
     'resources',v_resources);
 END;
 $$;
@@ -464,6 +484,7 @@ DECLARE
   v_threshold integer;
   v_day date := (clock_timestamp() AT TIME ZONE 'Europe/Kyiv')::date;
   v_used integer;
+  v_test_mode boolean := false;
   v_item uuid;
   v_expires_at timestamptz;
   v_result jsonb;
@@ -509,7 +530,12 @@ BEGIN
     VALUES(v_uid,v_day,0) ON CONFLICT(player_id,local_day) DO NOTHING;
   SELECT xp_used INTO v_used FROM public.territory_profession_stage8_daily_xp
     WHERE player_id=v_uid AND local_day=v_day FOR UPDATE;
-  IF v_used+v_recipe.mastery_xp>300 THEN RAISE EXCEPTION 'daily_mastery_xp_limit'; END IF;
+  SELECT EXISTS(SELECT 1
+    FROM territory_private.territory_profession_stage8_test_access t
+    JOIN public.players p ON p.id=t.player_id AND p.telegram_id=t.verified_telegram_id
+    WHERE t.player_id=v_uid AND t.expires_at>clock_timestamp()) INTO v_test_mode;
+  IF v_test_mode THEN v_used:=0;
+  ELSIF v_used+v_recipe.mastery_xp>300 THEN RAISE EXCEPTION 'daily_mastery_xp_limit'; END IF;
 
   -- Validate and sum each ingredient before debiting anything. Resource IDs
   -- come solely from the protected catalogue, never from client parameters.
@@ -565,14 +591,16 @@ BEGIN
   UPDATE public.territory_profession_stage8_progress
     SET mastery_level=v_level,mastery_xp=v_xp,updated_at=clock_timestamp()
     WHERE player_id=v_uid;
-  UPDATE public.territory_profession_stage8_daily_xp
-    SET xp_used=xp_used+v_recipe.mastery_xp
-    WHERE player_id=v_uid AND local_day=v_day;
+  IF NOT v_test_mode THEN
+    UPDATE public.territory_profession_stage8_daily_xp
+      SET xp_used=xp_used+v_recipe.mastery_xp
+      WHERE player_id=v_uid AND local_day=v_day;
+  END IF;
 
   v_result:=jsonb_build_object('success',true,'recipe_id',p_recipe,
     'kind',v_recipe.kind,'item_id',v_item,'item_output',v_recipe.item_output,
     'expires_at',v_expires_at,'mastery_level',v_level,'mastery_xp',v_xp,
-    'daily_xp_used',v_used+v_recipe.mastery_xp);
+    'daily_xp_used',CASE WHEN v_test_mode THEN 0 ELSE v_used+v_recipe.mastery_xp END);
   INSERT INTO public.territory_profession_stage8_receipts(player_id,operation_id,recipe_id,result)
     VALUES(v_uid,p_operation,p_recipe,v_result);
   RETURN v_result;
