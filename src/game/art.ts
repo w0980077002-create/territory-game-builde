@@ -3,6 +3,7 @@ import type { Equipment, InventoryItem, ShopItem } from './types';
 const ui = import.meta.env.BASE_URL + 'assets/territory/ui/';
 const eq = (slot: string) => ui + 'equipment/' + slot + '.webp';
 const itemIcon = (name: string) => ui + 'items/' + name + '.webp';
+const materialIcon = (name: string) => ui + 'materials/' + name + '.webp';
 
 // Static cosmetic art only: item identities, equip slots and stats are unchanged.
 export const SLOT_ART: Record<Equipment['slot'], string> = {
@@ -23,7 +24,62 @@ export const CURRENCY_ART = {
   material: '/forge-material.webp',
 } as const;
 
-type ArtSource = Pick<InventoryItem, 'type' | 'effect' | 'arenaEffect' | 'equipment'> | Pick<ShopItem, 'type' | 'effect' | 'arenaEffect' | 'equipment'>;
+// Each profession resource and crafted trade good has its own artwork.
+// Resource IDs are stable for existing saves and server-mirrored inventory.
+const MATERIAL_BY_ID: Record<string, string> = {
+  'gather-ore': 'iron-ore',
+  'gather-herb': 'healing-herbs',
+  'gather-wood': 'wood-logs',
+  'gather-crystal': 'magic-crystal',
+  'gather-hide': 'animal-hide',
+};
+const MATERIAL_BY_NAME: Record<string, string> = {
+  'железная руда': 'iron-ore',
+  'iron ore': 'iron-ore',
+  'лекарственная трава': 'healing-herbs',
+  'healing herbs': 'healing-herbs',
+  'древесина': 'wood-logs',
+  'wood': 'wood-logs',
+  'магический кристалл': 'magic-crystal',
+  'magic crystal': 'magic-crystal',
+  'шкура': 'animal-hide',
+  'hide': 'animal-hide',
+  'набор ремесленника': 'craftsman-toolkit',
+  'craftsman toolkit': 'craftsman-toolkit',
+  'ящик припасов': 'supply-crate',
+  'supply crate': 'supply-crate',
+  'королевский ларец': 'royal-chest',
+  'royal chest': 'royal-chest',
+  'древний механизм': 'ancient-mechanism',
+  'ancient mechanism': 'ancient-mechanism',
+};
+const MATERIAL_BY_EMOJI: Record<string, string> = {
+  '⛏️': 'iron-ore',
+  '🌿': 'healing-herbs',
+  '🪵': 'wood-logs',
+  '💎': 'magic-crystal',
+  '🐾': 'animal-hide',
+  '🧰': 'craftsman-toolkit',
+  '📦': 'supply-crate',
+  '🗝️': 'royal-chest',
+  '⚙️': 'ancient-mechanism',
+};
+
+export function resourceArt(resourceId: string): string {
+  const asset = MATERIAL_BY_ID[resourceId];
+  return asset ? materialIcon(asset) : CURRENCY_ART.material;
+}
+
+type ArtSource = Pick<InventoryItem, 'id' | 'name' | 'icon' | 'type' | 'effect' | 'arenaEffect' | 'equipment'>
+  | Pick<ShopItem, 'id' | 'name' | 'icon' | 'type' | 'effect' | 'arenaEffect' | 'equipment'>;
+
+function inventoryMaterialArt(item: ArtSource): string {
+  const asset = MATERIAL_BY_ID[item.id]
+    ?? MATERIAL_BY_NAME[item.name.trim().toLocaleLowerCase()]
+    ?? MATERIAL_BY_EMOJI[item.icon];
+  // Keep the generic forge icon for unknown/shop materials.
+  return asset ? materialIcon(asset) : CURRENCY_ART.material;
+}
 
 /** Match the icon to the actual weapon; a sword must not appear as an axe.
  * Keep the old generic weapon icon for legacy/unrecognized weapons.
@@ -45,7 +101,7 @@ export function itemArt(item: ArtSource): string {
   if (item.equipment) return equipmentArt(item.equipment);
   if (item.type === 'gem_pack') return '/gem-pack.webp';
   if (item.type === 'stone') return CURRENCY_ART.stones;
-  if (item.type === 'material') return CURRENCY_ART.material;
+  if (item.type === 'material') return inventoryMaterialArt(item);
   if (item.arenaEffect === 'time') return itemIcon('potion-energy');
   if (item.arenaEffect === 'adrenaline') return itemIcon('potion-fire');
   const e = item.effect;

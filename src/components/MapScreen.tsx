@@ -9,6 +9,7 @@ import { useLanguage, localizeText } from '@/game/i18n';
 import { APPEARANCE_PRESETS, MALE_PRESETS, FEMALE_PRESETS, getPlayableAppearance, type AppearancePreset } from '@/game/appearance';
 import type { InventoryItem } from '@/game/types';
 import { RESOURCE_DEFINITIONS, type ResourceId } from '@/game/professions';
+import { resourceArt } from '@/game/art';
 
 type GatherStatus = {
   active: { resource_id: string; finishes_at: string } | null;
@@ -268,7 +269,7 @@ export function MapScreen() {
                   <div className="flex items-center gap-1.5 mt-1.5">
                     {r.resources.map((res) => (
                       <span key={language === 'en' ? ({ 'gather-wood': t('wood'), 'gather-herb': t('healingHerbs'), 'gather-ore': t('ironOre'), 'gather-crystal': t('magicCrystal'), 'gather-hide': t('hide') } as Record<string, string>)[res.id] : res.name} className="inline-flex items-center gap-0.5 rounded-md bg-black/40 border border-white/10 px-1.5 py-0.5 text-[9px] font-semibold text-gray-200">
-                        <span className="text-[10px]">{res.icon}</span> {language === 'en' ? ({ 'gather-wood': t('wood'), 'gather-herb': t('healingHerbs'), 'gather-ore': t('ironOre'), 'gather-crystal': t('magicCrystal'), 'gather-hide': t('hide') } as Record<string, string>)[res.id] : res.name}
+                        <img src={resourceArt(res.id)} alt="" className="h-4 w-4 object-contain" /> {language === 'en' ? ({ 'gather-wood': t('wood'), 'gather-herb': t('healingHerbs'), 'gather-ore': t('ironOre'), 'gather-crystal': t('magicCrystal'), 'gather-hide': t('hide') } as Record<string, string>)[res.id] : res.name}
                       </span>
                     ))}
                   </div>
@@ -332,7 +333,7 @@ export function MapScreen() {
                         disabled={!gather || gatherBusy || (!!gather.active && gather.active.resource_id !== res.id)}
                         className="rounded-xl border border-emerald-400/20 bg-black/30 p-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
                       >
-                        <span className="text-2xl">{res.icon}</span>
+                        <img src={resourceArt(res.id)} alt="" className="h-10 w-10 object-contain" />
                         <span className="text-[11px] font-semibold text-gray-200 text-center leading-tight">{language === 'en' ? ({ 'gather-wood': t('wood'), 'gather-herb': t('healingHerbs'), 'gather-ore': t('ironOre'), 'gather-crystal': t('magicCrystal'), 'gather-hide': t('hide') } as Record<string, string>)[res.id] : res.name}</span>
                         <span className="text-[10px] text-gray-400">{t('inBag')}: {count}</span>
                         <span className={`mt-1 rounded-lg bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-white ${gather?.active?.resource_id === res.id && remainingMs === 0 ? 'ring-2 ring-emerald-300 animate-pulse' : ''}`}>{resourceButtonLabel(res.id)}</span>
