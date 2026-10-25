@@ -1,4 +1,5 @@
 import type { Equipment, InventoryItem, ShopItem } from './types';
+import { MAIL_ITEM_VISUALS } from './mailRewardVisuals';
 
 const ui = import.meta.env.BASE_URL + 'assets/territory/ui/';
 const eq = (slot: string) => ui + 'equipment/' + slot + '.webp';
@@ -73,6 +74,31 @@ export function resourceArt(resourceId: string): string {
 type ArtSource = Pick<InventoryItem, 'id' | 'name' | 'icon' | 'type' | 'effect' | 'arenaEffect' | 'equipment'>
   | Pick<ShopItem, 'id' | 'name' | 'icon' | 'type' | 'effect' | 'arenaEffect' | 'equipment'>;
 
+const rootItemArt = (filename: string): string => import.meta.env.BASE_URL + filename;
+const CONSUMABLE_ART_BY_NAME: Record<string, string> = {};
+for (const entry of Object.values(MAIL_ITEM_VISUALS)) {
+  CONSUMABLE_ART_BY_NAME[entry.name.toLocaleLowerCase()] = entry.image;
+  CONSUMABLE_ART_BY_NAME[entry.nameEn.toLocaleLowerCase()] = entry.image;
+}
+
+/** Stable item identity wins over generic stat icons.
+ * Purchased, gifted and saved copies can have different IDs but share the same name. */
+function consumableArt(item: ArtSource): string | null {
+  const canonical = MAIL_ITEM_VISUALS[item.id]?.image
+    ?? CONSUMABLE_ART_BY_NAME[item.name.trim().toLocaleLowerCase()];
+  if (canonical) return rootItemArt(canonical);
+
+  // Crafted master recipes have their own looks, separate from shop consumables.
+  if (/зелье здоровья мастера|master.*health potion/i.test(item.name)) return itemIcon('potion-green');
+  if (/эликсир силы мастера|master.*strength elixir/i.test(item.name)) return itemIcon('potion-fire');
+  if (/большое зелье мастера|master.*large health potion/i.test(item.name)) return itemIcon('potion-hp');
+  if (/эликсир легенды|legendary elixir/i.test(item.name)) return itemIcon('potion-energy');
+
+  if (item.arenaEffect === 'time') return rootItemArt('potion-time.webp');
+  if (item.arenaEffect === 'adrenaline') return rootItemArt('potion-adrenaline.webp');
+  return null;
+}
+
 function inventoryMaterialArt(item: ArtSource): string {
   const asset = MATERIAL_BY_ID[item.id]
     ?? MATERIAL_BY_NAME[item.name.trim().toLocaleLowerCase()]
@@ -102,8 +128,8 @@ export function itemArt(item: ArtSource): string {
   if (item.type === 'gem_pack') return '/gem-pack.webp';
   if (item.type === 'stone') return CURRENCY_ART.stones;
   if (item.type === 'material') return inventoryMaterialArt(item);
-  if (item.arenaEffect === 'time') return itemIcon('potion-energy');
-  if (item.arenaEffect === 'adrenaline') return itemIcon('potion-fire');
+  const uniqueArt = consumableArt(item);
+  if (uniqueArt) return uniqueArt;
   const e = item.effect;
   // Large healing potions must have their own art in inventory and the shop,
   // matching the exact icon shown for the same item in the in-game mail.
