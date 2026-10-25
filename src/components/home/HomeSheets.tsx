@@ -1,4 +1,4 @@
-import { Check, Cloud, CloudOff } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Cloud, CloudOff } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { DAILY_REWARDS, MAIL, claimDaily, claimMail, dailyStatus, type Reward } from '@/game/progression';
@@ -77,12 +77,14 @@ export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (
   );
 }
 
-export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t: string) => void }) {
+/** Compact inbox for the dedicated Messages screen; never overlays the city. */
+export function MailInbox({ notify }: { notify: (t: string) => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const { mail: adminMail } = useStore(useLive);
   const [claiming, setClaiming] = useState<string | null>(null);
   const [tab, setTab] = useState<'new' | 'received'>('new');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [history, setHistory] = useState<ClaimedMailGrant[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState(false);
@@ -119,6 +121,7 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
       const ok = await claimMailGrant(id);
       if (ok) {
         setTab('received');
+        setExpandedId(`admin:${id}`);
         void loadHistory();
       }
       notify(ok ? t('claimLetterRewardOk') : t('claimLetterRewardFail'));
@@ -134,6 +137,7 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
     if (!next) return;
     useGame.set(next);
     setTab('received');
+    setExpandedId(`game:${id}`);
     notify(language === 'en' ? 'Mail gift claimed' : 'Подарок из письма получен');
   };
 
@@ -143,23 +147,22 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
   const newCount = adminMail.length + MAIL.filter((letter) => !state.mailClaimed.includes(letter.id)).length;
 
   return (
-    <Modal title={t('mail')} icon="/ic-mail.webp" onClose={onClose}>
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-2" role="tablist" aria-label={language === 'en' ? 'Mail folders' : 'Разделы почты'}>
+    <section className="space-y-1.5" aria-label={language === 'en' ? 'Messages' : 'Сообщения'}>
+        <div className="flex gap-1.5" role="tablist" aria-label={language === 'en' ? 'Mail folders' : 'Разделы почты'}>
           <button type="button" role="tab" aria-selected={!received} onClick={() => setTab('new')}
-            className={`rounded-xl border px-3 py-2 text-sm font-bold transition-colors ${!received ? 'border-sky-400/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-black/20 text-gray-400'}`}>
+            className={`rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors ${!received ? 'border-sky-400/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-black/20 text-gray-400'}`}>
             {language === 'en' ? 'New' : 'Новые'} {newCount > 0 ? `(${newCount})` : ''}
           </button>
           <button type="button" role="tab" aria-selected={received} onClick={() => setTab('received')}
-            className={`rounded-xl border px-3 py-2 text-sm font-bold transition-colors ${received ? 'border-sky-400/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-black/20 text-gray-400'}`}>
+            className={`rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors ${received ? 'border-sky-400/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-black/20 text-gray-400'}`}>
             {language === 'en' ? 'Received' : 'Полученные'}
           </button>
         </div>
         {received && historyLoading && history.length === 0 && (
-          <p className="py-4 text-center text-sm text-gray-400">{t('loading')}</p>
+          <p className="py-2 text-center text-xs text-gray-400">{t('loading')}</p>
         )}
         {received && historyError && (
-          <div className="rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-center text-sm text-red-200">
+          <div className="rounded-md border border-red-400/25 bg-red-500/10 p-2 text-center text-xs text-red-200">
             <p>{language === 'en' ? 'Could not load mail history.' : 'Не удалось загрузить историю писем.'}</p>
             <button type="button" className="mt-2 text-sky-300 underline" onClick={() => void loadHistory(history.length)}>
               {language === 'en' ? 'Try again' : 'Повторить'}
@@ -168,27 +171,35 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
         )}
         {shownAdminMail.map((m) => {
           const rewards = mailRewardVisuals(m.payload);
+          const expanded = expandedId === `admin:${m.id}`;
           return (
-            <div key={m.id} className={`rounded-2xl border p-3 ${received ? 'border-white/15 bg-black/20' : 'border-sky-400/40 bg-sky-500/5 shadow-[0_0_12px_rgba(56,189,248,0.15)]'}`}>
-              <div className={`text-[11px] ${received ? 'text-gray-400' : 'text-sky-300/90'}`}>{t('administration')}</div>
-              <div className="text-sm font-bold text-white mb-1">{m.subject}</div>
-              <p className="text-xs text-gray-300 leading-relaxed mb-2.5 whitespace-pre-line break-words">{m.body}</p>
-              {received && <p className="mb-2 text-[10px] text-gray-500">
+            <article key={m.id} className={`rounded-lg border ${received ? 'border-white/10 bg-black/20' : 'border-sky-400/30 bg-sky-500/5'}`}>
+              <button type="button" className="flex w-full items-center gap-2 px-2 py-1.5 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `admin:${m.id}`)}>
+                <img src={import.meta.env.BASE_URL + 'ic-mail.webp'} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[11px] font-bold text-white">{m.subject}</span>
+                  <span className="block truncate text-[9px] text-slate-400">{t('administration')}{received ? ` · ${new Date((m as ClaimedMailGrant).claimed_at).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU')}` : ''}</span>
+                </span>
+                {expanded ? <ChevronDown className="h-3.5 w-3.5 text-amber-200" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-400" />}
+              </button>
+              {expanded && <div className="border-t border-white/10 px-2 pb-2 pt-1.5">
+              <p className="text-[11px] text-gray-300 leading-snug mb-2 whitespace-pre-line break-words">{m.body}</p>
+              {received && <p className="mb-1 text-[9px] text-gray-500">
                 {language === 'en' ? 'Claimed' : 'Получено'}: {new Date((m as ClaimedMailGrant).claimed_at).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU')}
               </p>}
-              <div className="flex flex-wrap items-end justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
                 {rewards.length > 0 && (
-                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5" aria-label={language === 'en' ? 'Mail rewards' : 'Награды письма'}>
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1" aria-label={language === 'en' ? 'Mail rewards' : 'Награды письма'}>
                     {rewards.map((reward) => {
                       const name = language === 'en' ? reward.nameEn : reward.name;
                       return (
                         <span
                           key={reward.key}
-                          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-300/15 bg-black/20 px-1.5 py-1 text-xs font-bold text-amber-50 tabular-nums"
+                          className="inline-flex shrink-0 items-center gap-0.5 rounded border border-amber-300/15 bg-black/20 px-1 py-0.5 text-[10px] font-bold text-amber-50 tabular-nums"
                           title={name}
                           aria-label={`${name}: ${reward.amount}`}
                         >
-                          <img src={import.meta.env.BASE_URL + reward.image} alt="" width={22} height={22} className="h-[22px] w-[22px] shrink-0 object-contain" />
+                          <img src={import.meta.env.BASE_URL + reward.image} alt="" width={15} height={15} className="h-[15px] w-[15px] shrink-0 object-contain" />
                           <span>×{reward.amount.toLocaleString(language === 'en' ? 'en-US' : 'ru-RU')}</span>
                         </span>
                       );
@@ -196,55 +207,61 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
                   </div>
                 )}
                 {received ? (
-                  <span className="shrink-0 rounded-lg bg-white/10 px-3 py-2 text-xs font-bold text-gray-400">✓ {t('claimed')}</span>
+                  <span className="shrink-0 text-[10px] text-emerald-300">✓ {t('claimed')}</span>
                 ) : (
                   <button
                     onClick={() => void claimAdmin(m.id)}
                     disabled={claiming === m.id}
-                    className="shrink-0 h-8 px-3 rounded-lg text-xs font-bold bg-sky-400 text-black disabled:opacity-50 transition-colors"
+                    className="shrink-0 h-6 px-2 rounded text-[10px] font-bold bg-sky-400 text-black disabled:opacity-50 transition-colors"
                   >
                     {claiming === m.id ? '...' : t('claimReward')}
                   </button>
                 )}
               </div>
-            </div>
+              </div>}
+            </article>
           );
         })}
         {shownGameMail.map((l) => {
           const claimed = state.mailClaimed.includes(l.id);
+          const expanded = expandedId === `game:${l.id}`;
           return (
-            <div key={l.id} className={`rounded-2xl border p-3 ${claimed ? 'border-white/5 bg-black/20 opacity-70' : 'border-amber-500/25 bg-black/30'}`}>
-              <div className="text-[11px] text-amber-300/80">{l.from}</div>
-              <div className="text-sm font-bold text-white mb-1">{l.title}</div>
-              <p className="text-xs text-gray-400 leading-relaxed mb-2.5">{l.body}</p>
-              <div className="flex items-center justify-between gap-2">
-                <RewardLine reward={l.reward} />
+            <article key={l.id} className={`rounded-lg border ${claimed ? 'border-white/10 bg-black/20' : 'border-amber-500/25 bg-black/30'}`}>
+              <button type="button" className="flex w-full items-center gap-2 px-2 py-1.5 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `game:${l.id}`)}>
+                <img src={import.meta.env.BASE_URL + 'ic-mail.webp'} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                <span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-white">{l.title}</span><span className="block truncate text-[9px] text-slate-400">{l.from}</span></span>
+                {expanded ? <ChevronDown className="h-3.5 w-3.5 text-amber-200" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-400" />}
+              </button>
+              {expanded && <div className="border-t border-white/10 px-2 pb-2 pt-1.5">
+              <p className="text-[11px] text-gray-400 leading-snug mb-2">{l.body}</p>
+              <div className="flex items-center justify-between gap-1.5">
+                <RewardLine reward={l.reward} size={13} />
                 <button
                   onClick={() => claim(l.id)}
                   disabled={claimed}
-                  className="shrink-0 h-8 px-3 rounded-lg text-xs font-bold bg-amber-500 text-black disabled:bg-white/10 disabled:text-gray-400 transition-colors"
+                  className="shrink-0 h-6 px-2 rounded text-[10px] font-bold bg-amber-500 text-black disabled:bg-white/10 disabled:text-gray-400 transition-colors"
                 >
                   {claimed ? t('claimed') : t('claim')}
                 </button>
               </div>
-            </div>
+              </div>}
+            </article>
           );
         })}
         {received && historyHasMore && !historyLoading && !historyError && (
-          <button type="button" className="btn-ghost w-full text-sm" onClick={() => void loadHistory(history.length)}>
+          <button type="button" className="btn-ghost w-full text-xs" onClick={() => void loadHistory(history.length)}>
             {language === 'en' ? 'Show more letters' : 'Показать ещё письма'}
           </button>
         )}
         {received && historyLoading && history.length > 0 && <p className="text-center text-xs text-gray-400">{t('loading')}</p>}
         {!historyLoading && !historyError && shownAdminMail.length === 0 && shownGameMail.length === 0 && (
-          <p className="py-5 text-center text-sm text-gray-400">
+          <p className="py-2 text-center text-xs text-gray-400">
             {received
               ? (language === 'en' ? 'No received letters yet.' : 'Полученных писем пока нет.')
               : (language === 'en' ? 'No new letters.' : 'Новых писем нет.')}
           </p>
         )}
-      </div>
-    </Modal>
+    </section>
   );
 }
 

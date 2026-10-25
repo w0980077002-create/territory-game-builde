@@ -15,12 +15,12 @@ import type { BattleView } from '@/components/BattleScreen';
 import { EquipCells } from '@/components/ui/EquipCells';
 import { BeltCells } from '@/components/ui/BeltCells';
 import { Currency, formatAmount } from '@/components/ui/Currency';
-import { DailySheet, MailSheet, SettingsSheet, StonesSheet, type SaveStatus } from '@/components/home/HomeSheets';
+import { DailySheet, SettingsSheet, StonesSheet, type SaveStatus } from '@/components/home/HomeSheets';
 import { LiveCityBackdrop, CITY_MOTION_KEY, initialCityMotion } from '@/components/home/LiveCityBackdrop';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 
-export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends';
+export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages';
 // All five follower images use 512x512 canvases but have different amounts of
 // transparent space above the character. Normalize visible silhouettes in the
 // home city without changing original artwork, combat sprites or player saves.
@@ -43,7 +43,7 @@ interface Props {
   notify: (text: string) => void;
 }
 
-type Sheet = 'daily' | 'mail' | 'settings' | 'stones' | null;
+type Sheet = 'daily' | 'settings' | 'stones' | null;
 
 function SideButton({ icon, label, onClick, soon, badge }: { icon: string; label: string; onClick: () => void; soon?: boolean; badge?: boolean }) {
   return (
@@ -171,7 +171,7 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
           </div>
           <div className="flex items-center gap-1.5">
             {SHOW_TOP_LEADERBOARD_SHORTCUT && <HudIcon icon="/ic-trophy.webp" label={t('leaderboard')} onClick={() => onOpen('leaderboard')} />}
-            <HudIcon icon="/ic-mail.webp" label={t('mail')} badge={unreadMail} onClick={() => setSheet('mail')} />
+            <HudIcon icon="/ic-mail.webp" label={t('messages')} badge={unreadMail} onClick={() => onOpen('messages')} />
             <HudIcon icon="/ic-settings.webp" label={t('settings')} onClick={() => setSheet('settings')} />
             <button type="button" onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')} aria-label={t('language')} className="h-8 min-w-8 px-1.5 rounded-lg border border-sky-200/65 bg-gradient-to-b from-[#173a54]/95 to-[#08111d]/95 text-[10px] font-black text-sky-100 shadow-[0_0_9px_rgba(56,189,248,0.18)] active:scale-90">{language.toUpperCase()}</button>
           </div>
@@ -310,7 +310,6 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
       </div>
 
       {sheet === 'daily' && <DailySheet onClose={() => setSheet(null)} notify={notify} />}
-      {sheet === 'mail' && <MailSheet onClose={() => setSheet(null)} notify={notify} />}
       {sheet === 'settings' && <SettingsSheet onClose={() => setSheet(null)} saveStatus={saveStatus} cityMotion={cityMotion} onToggleCityMotion={toggleCityMotion} />}
       {sheet === 'stones' && (
         <StonesSheet

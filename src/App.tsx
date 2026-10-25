@@ -51,9 +51,10 @@ const ProfessionsScreen = lazy(() => import('@/components/ProfessionsScreen').th
 const ClanScreen = lazy(() => import('@/components/ClanScreen').then(m => ({ default: m.ClanScreen })));
 const AuctionScreen = lazy(() => import('@/components/AuctionScreen').then(m => ({ default: m.AuctionScreen })));
 const FriendsScreen = lazy(() => import('@/components/FriendsScreen').then(m => ({ default: m.FriendsScreen })));
+const MessagesScreen = lazy(() => import('@/components/MessagesScreen').then(m => ({ default: m.MessagesScreen })));
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
-type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends';
+type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages';
 type Screen = NavId | SubScreen;
 
 /** Warm only the navigation chunks people are most likely to open.
@@ -73,6 +74,7 @@ const sectionPreloaders: Partial<Record<Screen, () => Promise<unknown>>> = {
   quests: () => import('@/components/QuestsScreen'),
   leaderboard: () => import('@/components/LeaderboardScreen'),
   friends: () => import('@/components/FriendsScreen'),
+  messages: () => import('@/components/MessagesScreen'),
 };
 
 function preloadSection(screen: Screen): Promise<unknown> {
@@ -99,6 +101,7 @@ const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> =
   professions: { title: 'Профессии и ремесло', icon: '/ic-professions.svg' },
   auction: { title: 'Аукцион и чат', icon: '/ic-auction.svg' },
   friends: { title: 'Друзья', icon: '/ic-invite.webp' },
+  messages: { title: 'Сообщения', icon: '/ic-mail.webp' },
 };
 
 function Splash({ text }: { text: string }) {
@@ -372,7 +375,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             <ChevronLeft className="w-4 h-4" /> {translate('cityBack')}
           </button>
           <img src={sub.icon} alt="" className="w-7 h-7 object-contain" />
-          <h1 className="text-base font-bold text-white truncate">{translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction', friends: 'friends' } as Record<string, string>)[screen] ?? sub.title)}</h1>
+          <h1 className="text-base font-bold text-white truncate">{translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction', friends: 'friends', messages: 'messages' } as Record<string, string>)[screen] ?? sub.title)}</h1>
         </header>
       )}
 
@@ -416,7 +419,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'map' && <MapScreen />}
         {screen === 'shop' && <ShopScreen />}
         {screen === 'forge' && <ForgeScreen />}
-        {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => setScreen('leaderboard')} notify={notify} saveStatus={saveStatus} />}
+        {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => setScreen('leaderboard')} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
         {screen === 'leaderboard' && <LeaderboardScreen user={user} />}
         {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} />}
         {screen === 'games' && (
@@ -430,6 +433,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'professions' && <ProfessionsScreen />}
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} />}
+        {screen === 'messages' && <MessagesScreen notify={notify} />}
         {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} />}
         </Suspense>
       </main>

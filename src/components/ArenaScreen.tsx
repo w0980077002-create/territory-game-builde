@@ -9,7 +9,7 @@ import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 import { currentArenaRoom } from '@/game/arenaApi';
 import { ArenaLobby } from './arena/ArenaLobby';
 import { ArenaRoom } from './arena/ArenaRoom';
-import { MailSheet, SettingsSheet, type SaveStatus } from './home/HomeSheets';
+import { SettingsSheet, type SaveStatus } from './home/HomeSheets';
 import { CITY_MOTION_KEY, initialCityMotion } from './home/LiveCityBackdrop';
 import './arena/arenaLobby.css';
 
@@ -18,17 +18,17 @@ interface Props {
   onBack?: () => void;
   backDisabled?: boolean;
   onLeaderboard?: () => void;
-  notify?: (message: string) => void;
+  onMessages?: () => void;
   saveStatus?: SaveStatus;
 }
 
-export function ArenaScreen({ onActiveChange, onBack, backDisabled, onLeaderboard, notify, saveStatus = 'saved' }: Props) {
+export function ArenaScreen({ onActiveChange, onBack, backDisabled, onLeaderboard, onMessages, saveStatus = 'saved' }: Props) {
   const state = useStore(useGame);
   const account = useStore(useAccount);
   const { language, setLanguage } = useLanguage();
   const [roomId, setRoomId] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
-  const [sheet, setSheet] = useState<'mail' | 'settings' | null>(null);
+  const [sheet, setSheet] = useState<'settings' | null>(null);
   const [cityMotion, setCityMotion] = useState(initialCityMotion);
   const toggleCityMotion = () => setCityMotion((previous) => {
     const next = !previous;
@@ -74,7 +74,7 @@ export function ArenaScreen({ onActiveChange, onBack, backDisabled, onLeaderboar
                 <img src={import.meta.env.BASE_URL + 'ic-trophy.webp'} alt="" />
               </button>
             )}
-            <button type="button" className="arena-global-utility" aria-label={language === 'en' ? 'Mail' : 'Почта'} onClick={() => setSheet('mail')}>
+            <button type="button" className="arena-global-utility" aria-label={language === 'en' ? 'Messages' : 'Сообщения'} onClick={onMessages} disabled={backDisabled || !onMessages}>
               <img src={import.meta.env.BASE_URL + 'ic-mail.webp'} alt="" />
             </button>
             <button type="button" className="arena-global-utility" aria-label={language === 'en' ? 'Settings' : 'Настройки'} onClick={() => setSheet('settings')}>
@@ -94,7 +94,6 @@ export function ArenaScreen({ onActiveChange, onBack, backDisabled, onLeaderboar
       ) : roomId ? (
         <div className="px-3 py-2"><ArenaRoom key={roomId} roomId={roomId} onExit={() => setRoomId(null)} onActiveChange={onActiveChange} /></div>
       ) : <ArenaLobby onJoined={setRoomId} onBack={onBack} backDisabled={backDisabled} />}
-      {sheet === 'mail' && <MailSheet onClose={() => setSheet(null)} notify={notify ?? (() => {})} />}
       {sheet === 'settings' && <SettingsSheet onClose={() => setSheet(null)} saveStatus={saveStatus} cityMotion={cityMotion} onToggleCityMotion={toggleCityMotion} />}
     </div>
   );
