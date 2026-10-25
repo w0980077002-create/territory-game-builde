@@ -3,18 +3,26 @@ import { useStore } from '@/game/store';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, buyItem, DAILY_STONE_LIMIT, stonesRemainingToday, maxStoneQty } from '@/game/actions';
 import { captureGameEvent } from '@/game/analytics';
+import {acceptMasterLicenseReceipt} from '@/game/cloud';
+import {supabase} from '@/game/supabase';
 import { generateShopItems } from '@/game/engine';
 import { MAX_SHOP_PURCHASE_QTY } from '@/game/purchaseGuard';
 import { calendarDayKey } from '@/game/weeklyQuests';
 import { kyivMidnightUtc } from '@/game/seasonCalendar';
 import { rarityColor } from '@/game/ui';
-import { CheckCircle2, Sword, Shield, Heart, Star, Minus, Plus, Clock } from 'lucide-react';
+import { CheckCircle2, Sword, Shield, Heart, Star, Minus, Plus, Clock, Crown, Sparkles, LockKeyhole } from 'lucide-react';
 import type { GameState, ShopItem } from '@/game/types';
 import { ItemArt } from './ui/ItemArt';
 import { Currency, formatAmount } from './ui/Currency';
 import { Modal } from './ui/Modal';
 import { useLive, SHOP_SALE_FACTOR } from '@/game/live';
 import { fetchShopStatus, purchaseServerStones, readPendingShop, keepPendingShop, type ShopStatus, type PendingShop } from '@/game/shopApi';
+import {
+  MASTER_LICENSE_ART, MASTER_LICENSE_PRICE_RED,
+  fetchMasterLicenseShopStatus, buyMasterLicense,
+  readMasterLicensePending, keepMasterLicensePending,
+  type MasterLicenseShopStatus,
+} from '@/game/masterLicenseShopApi';
 
 const discount = (price: number | undefined) => (price ? Math.max(1, Math.ceil(price * SHOP_SALE_FACTOR)) : price);
 
@@ -84,6 +92,21 @@ export function ShopScreen() {
   const [pendingShop, setPendingShop] = useState<PendingShop | null>(null);
   const [buying, setBuying] = useState(false);
   const [purchaseError, setPurchaseError] = useState('');
+  const [licenseStatus,setLicenseStatus] = useState<MasterLicenseShopStatus|null>(null);
+  const [licenseError,setLicenseError] = useState('');
+  const [licenseOpen,setLicenseOpen] = useState(false);
+  const [licenseBusy,setLicenseBusy] = useState(false);
+  const [licensePending,setLicensePending] = useState<string|null>(null);
+  const [licenseNotice,setLicenseNotice] = useState('');
+  useEffect(()=>{
+    let mounted=true;
+    void Promise.all([fetchMasterLicenseShopStatus(),readMasterLicensePending()])
+      .then(async ([status,pending])=>{
+        if(status.owned && pending){await keepMasterLicensePending(null);pending=null;}
+        if(mounted){setLicenseStatus(status);setLicensePending(pending);}
+      }).catch(()=>{if(mounted)setLicenseError(language==='en'?'License server unavailable.':'Сервер лицензий временно недоступен.');});
+    return ()=>{mounted=false;};
+  },[]);
   useEffect(() => {
     let mounted = true;
     void fetchShopStatus().then(async (status) => {
@@ -184,6 +207,46 @@ export function ShopScreen() {
     finally {setBuying(false);}
   };
 
+  const finishLicensePurchase = async(operationId:string)=>{
+    const receipt=await buyMasterLicense(operationId);
+    const current=await fetchMasterLicenseShopStatus();
+    if(!current.owned || current.redBalance!==receipt.redBalance)
+      throw new Error('master_license_status_not_confirmed');
+    const {data:{user},error}=await supabase.auth.getUser();
+    if(error||!user?.id)throw new Error('master_license_login_required');
+    // Adopt the exact save revision: queued old saves cannot restore 50 gems.
+    const verifiedState=acceptMasterLicenseReceipt(user.id,receipt);
+    useGame.set(verifiedState);
+    setLicenseStatus(current);
+    await keepMasterLicensePending(null);
+    setLicensePending(null);
+    setLicenseOpen(false);
+    setLicenseNotice(language==='en'?'Master License purchased permanently!':'👑 Лицензия мастера куплена навсегда!');
+    captureGameEvent('territory_shop_purchase',{screen:'shop',outcome:'success'});
+  };
+  const purchaseLicense = async()=>{
+    if(licenseBusy || !licenseStatus?.verifiedTelegram || !licenseStatus.hasProfession
+      || licenseStatus.owned || licenseStatus.redBalance<MASTER_LICENSE_PRICE_RED)return;
+    setLicenseBusy(true);setLicenseError('');
+    try{
+      const operationId=licensePending??crypto.randomUUID();
+      if(!licensePending){await keepMasterLicensePending(operationId);setLicensePending(operationId);}
+      await finishLicensePurchase(operationId);
+    }catch(error){
+      const message=error instanceof Error?error.message:'';
+      setLicenseError(message.includes('license_insufficient_red_gems')
+        ?(language==='en'?'Not enough red gems.':'Не хватает красных алмазов.')
+        :(language==='en'?'Purchase unconfirmed. Retry the saved transaction.':'Покупка не подтверждена. Повтори сохранённую операцию без нового списания.'));
+    }finally{setLicenseBusy(false);}
+  };
+  const retryLicense=async()=>{
+    if(!licensePending||licenseBusy)return;
+    setLicenseBusy(true);setLicenseError('');
+    try{await finishLicensePurchase(licensePending);}
+    catch{setLicenseError(language==='en'?'Still unconfirmed; retry the same transaction.':'Пока не подтверждено — повтори ту же операцию.');}
+    finally{setLicenseBusy(false);}
+  };
+
   return (
     <div className="space-y-3 animate-fade-in pb-2">
       <div className="relative rounded-2xl overflow-hidden border border-amber-500/20 p-4">
@@ -199,10 +262,36 @@ export function ShopScreen() {
           )}
         </div>
         <div className="relative flex flex-wrap gap-2 mt-3">
-          {([['gold', state.player.gold], ['gems', shopStatus?.enabled ? shopStatus.gems : state.player.gems], ['stones', shopStatus?.enabled ? shopStatus.stones : state.battleStones]] as const).map(([k, v]) => (
+          {([['gold', state.player.gold], ['gems', shopStatus?.enabled ? shopStatus.gems : state.player.gems], ['redGems',licenseStatus?.redBalance??state.player.redGems], ['stones', shopStatus?.enabled ? shopStatus.stones : state.battleStones]] as const).map(([k, v]) => (
             <span key={k} className="hud-chip pl-1.5"><Currency kind={k} value={formatAmount(v)} size={16} className="text-xs text-white" /></span>
           ))}
         </div>
+      </div>
+
+      <div className="relative overflow-hidden rounded-2xl border border-amber-300/60 bg-gradient-to-br from-[#423017] via-[#24192a] to-[#131c2f] p-3 shadow-[0_0_25px_rgba(245,158,11,0.12)]">
+        <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-amber-400/15 blur-2xl" />
+        <div className="relative flex items-center gap-3">
+          <div className="flex h-[94px] w-[94px] shrink-0 items-center justify-center rounded-2xl border border-amber-400/30 bg-black/30">
+            <img src={MASTER_LICENSE_ART} loading="lazy" alt={language==='en'?'Master License':'Лицензия мастера'} className="h-[88px] w-[88px] object-contain drop-shadow-[0_3px_12px_rgba(251,191,36,0.3)]" />
+          </div>
+          <div className="min-w-0 flex-1 space-y-1">
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-300/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-200"><Sparkles className="h-3 w-3" /> {language==='en'?'Legendary':'Легендарное'}</span>
+            <p className="flex items-center gap-1.5 text-sm font-extrabold text-amber-100"><Crown className="h-4 w-4 text-amber-300" />{language==='en'?'Master License':'Лицензия мастера'}</p>
+            <p className="text-[11px] leading-snug text-slate-300">{language==='en'?'Permanent access to level 300 recipes.':'Навсегда открывает рецепты 300-го уровня.'}</p>
+            <div className="inline-flex items-center gap-1 rounded-lg bg-rose-950/40 px-2 py-1 text-sm font-black text-rose-100">
+              {licenseStatus?.owned?<span className="text-emerald-300">✓ {language==='en'?'Owned forever':'Куплено навсегда'}</span>:<Currency kind="redGems" value={MASTER_LICENSE_PRICE_RED} size={18}/>}
+            </div>
+          </div>
+        </div>
+        <button type="button" onClick={()=>setLicenseOpen(true)} disabled={!licenseStatus||licenseBusy||licenseStatus.owned||!!licensePending}
+          className="relative mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-yellow-200/50 bg-gradient-to-b from-yellow-300 via-amber-400 to-amber-600 text-sm font-black text-[#32200b] shadow-[0_3px_0_#9a5816] transition active:translate-y-0.5 disabled:opacity-60">
+          {licenseStatus?.owned?<><CheckCircle2 className="h-4 w-4"/>{language==='en'?'Purchased':'Уже куплена'}</>
+            :<><Crown className="h-4 w-4"/>{language==='en'?'Buy permanent license':'Купить навсегда'}</>}
+        </button>
+        {!licenseStatus && !licenseError&&<p className="mt-2 text-center text-[11px] text-amber-200">{language==='en'?'Checking the shop server…':'Проверяем сервер лавки…'}</p>}
+        {licensePending&&<button disabled={licenseBusy} onClick={()=>{void retryLicense();}} className="mt-2 w-full rounded-lg border border-sky-400/40 bg-sky-500/10 p-2 text-xs font-bold text-sky-200 disabled:opacity-40">{language==='en'?'Retry saved license purchase':'Повторить сохранённую покупку без двойного списания'}</button>}
+        {licenseError&&<p role="alert" className="mt-2 rounded-lg bg-red-950/50 p-2 text-xs text-red-200">{licenseError}</p>}
+        {licenseNotice&&<p role="status" className="mt-2 rounded-lg bg-emerald-950/50 p-2 text-xs text-emerald-200">{licenseNotice}</p>}
       </div>
 
       <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10">
@@ -252,6 +341,20 @@ export function ShopScreen() {
           <PurchaseSheet item={picked} state={shopStatus?.enabled ? {...state, player:{...state.player,gems:shopStatus.gems},battleStones:shopStatus.stones,dailyStonesBought:shopStatus.boughtToday,dailyStonesDate:calendarDayKey()} : state} onBuy={(qty) => {void buy(picked, qty);}} />
         </Modal>
       )}
+
+      {licenseOpen&&licenseStatus&&<Modal title={language==='en'?'Master License':'Лицензия мастера'} onClose={()=>{if(!licenseBusy)setLicenseOpen(false);}}>
+        <div className="space-y-3 text-center">
+          <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-2xl border border-amber-400/25 bg-gradient-to-b from-amber-900/30 to-slate-900/60"><img src={MASTER_LICENSE_ART} alt="" className="h-32 w-32 object-contain" /></div>
+          <p className="font-bold text-amber-100">{language==='en'?'Lifetime Master License':'Постоянная лицензия мастера'}</p>
+          <p className="text-xs leading-relaxed text-slate-300">{language==='en'?'Unlocks exclusive recipes at profession level 300. One purchase per hero, no expiry.':'Открывает эксклюзивные рецепты на 300-м уровне профессии. Одна покупка на героя, без срока годности.'}</p>
+          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 p-3 text-xs"><span className="text-slate-300">{language==='en'?'Price':'Цена'}</span><Currency kind="redGems" value={MASTER_LICENSE_PRICE_RED} size={20}/></div>
+          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 p-3 text-xs"><span className="text-slate-300">{language==='en'?'Your red gems (server)':'Твои красные алмазы (сервер)'}</span><Currency kind="redGems" value={licenseStatus.redBalance} size={20}/></div>
+          <button disabled={licenseBusy||!licenseStatus.verifiedTelegram||!licenseStatus.hasProfession||licenseStatus.owned||licenseStatus.redBalance<MASTER_LICENSE_PRICE_RED||!!licensePending}
+            onClick={()=>{void purchaseLicense();}} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-yellow-300 to-amber-600 text-sm font-black text-[#30200d] disabled:opacity-40">
+            {licenseBusy?language==='en'?'Confirming…':'Подтверждаем…':!licenseStatus.verifiedTelegram?<><LockKeyhole className="h-4 w-4"/>{language==='en'?'Telegram login required':'Нужен вход Telegram'}</>:!licenseStatus.hasProfession?language==='en'?'Choose profession first':'Сначала открой профессию':licenseStatus.redBalance<MASTER_LICENSE_PRICE_RED?language==='en'?'Not enough red gems':'Не хватает красных алмазов':language==='en'?'Buy for 50 red gems':'Купить за 50 красных алмазов'}
+          </button>
+        </div>
+      </Modal>}
 
       {result && (
         <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-50 w-[calc(100%-32px)] max-w-sm rounded-2xl border border-emerald-400/40 bg-[#0f1f1a]/95 backdrop-blur-md px-3 py-2.5 flex items-center gap-3 shadow-2xl animate-sheet-up">

@@ -239,6 +239,28 @@ export function acceptMonopolyClaimReceipt(userId:string,response:unknown):GameS
  return state;
 }
 
+/** Adopt a permanent license debit without letting a queued stale cloud save
+ * restore the previous red-gem count or overwrite newer server game_state. */
+export function acceptMasterLicenseReceipt(userId:string,receipt:{
+  redBalance:number;gameState:GameState;updatedAt:string;gold:number;gems:number;
+}):GameState{
+  const state=receipt.gameState;
+  if (!validSaveToken(receipt.updatedAt) || !validEconomySnapshot(state)
+    || !Array.isArray(state.inventory) || state.player.redGems!==receipt.redBalance
+    || !Number.isSafeInteger(receipt.redBalance) || receipt.redBalance<0)
+    throw new Error('master_license_receipt_invalid');
+  const wallet=safeWalletVersion({gold:receipt.gold,gems:receipt.gems},state.player);
+  if(!walletMatchesVersion(wallet,state.player))throw new Error('master_license_wallet_mismatch');
+  const previous=saveTokens.get(userId);
+  if(!validSaveToken(previous)||Date.parse(receipt.updatedAt)<Date.parse(previous))
+    throw new Error('master_license_reload_required');
+  saveGenerations.set(userId,(saveGenerations.get(userId)??0)+1);
+  saveTokens.set(userId,receipt.updatedAt);
+  walletVersions.set(userId,wallet);
+  saveBlocked.delete(userId);
+  return state;
+}
+
 /** One verified server-side inventory mutation. Call after awaiting saveCloudSave
  * for the EXACT current state; old snapshots must never resurrect consumed gear. */
 export async function recycleCloudEquipment(
