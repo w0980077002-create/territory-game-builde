@@ -45,6 +45,7 @@ jobs:
           node scripts/check-arena-secure.mjs
           npm run test:economy
           npm run test:professions
+          npm run test:elixir-expiry
           npm run test:balance
           node scripts/check-social-quests.mjs
           node scripts/check-quest-attention.mjs

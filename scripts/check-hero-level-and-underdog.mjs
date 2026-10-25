@@ -29,6 +29,7 @@ const actions = loadTs('src/game/actions.ts', {
   './equipmentBalance': {}, './weeklyQuests': {},
   './followers': { reconcileFollowers: (followers) => followers },
   './purchaseGuard': {}, './engine': { ...engine, createInitialGame: () => ({}) },
+  './elixirExpiry': { reconcileElixirExpiry: (state) => state, newElixirExpiry: () => new Date().toISOString() },
 });
 assert.equal(engine.HERO_MAX_LEVEL, 100);
 assert.equal(engine.HERO_SLOW_GROWTH_FROM, 83);
