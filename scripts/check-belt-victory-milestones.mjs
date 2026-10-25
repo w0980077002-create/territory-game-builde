@@ -9,8 +9,14 @@ const src = read('src/game/belt.ts');
 const js = ts.transpileModule(src, {
   fileName: 'belt.ts', compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
+const expiryJs = ts.transpileModule(read('src/game/elixirExpiry.ts'), {
+  fileName: 'elixirExpiry.ts', compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+const expiryMod = { exports: {} };
+vm.runInNewContext(expiryJs, { module: expiryMod, exports: expiryMod.exports, Date, Math, JSON });
 const mod = { exports: {} };
-vm.runInNewContext(js, { module: mod, exports: mod.exports, Date, Math, JSON });
+vm.runInNewContext(js, { module: mod, exports: mod.exports, Date, Math, JSON,
+  require: (name) => { assert.equal(name, './elixirExpiry'); return expiryMod.exports; } });
 const { BELT_WIN_GOALS, BELT_RULES, isSlotOpen, reconcileLockedBelt, putInBelt } = mod.exports;
 
 const goals = [0, 100, 500, 1000, 2000, 3500, 5000];
