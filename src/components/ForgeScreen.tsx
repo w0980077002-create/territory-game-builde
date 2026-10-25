@@ -17,6 +17,13 @@ import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
 export function ForgeScreen() {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const tick = setInterval(() => { if (!document.hidden) setNow(Date.now()); }, 1000);
+    const refresh = () => setNow(Date.now());
+    document.addEventListener('visibilitychange', refresh);
+    return () => { clearInterval(tick); document.removeEventListener('visibilitychange', refresh); };
+  }, []);
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -108,7 +115,7 @@ export function ForgeScreen() {
           <span className="text-amber-400">🪙 {state.player.gold}</span>
           <span className="text-orange-400">🔩 {state.forgeMaterials}</span>
         </div>
-        {state.forgeMaterials > 0 && <p className="mt-1 text-[11px] text-amber-300">⏳ {language === 'en' ? 'Materials expire in' : 'До истечения материалов'}: {forgeMaterialTimeLeftLabel(state, language)}</p>}
+        {state.forgeMaterials > 0 && <p className="mt-1 text-[11px] tabular-nums text-amber-300">⏳ {language === 'en' ? 'Materials expire in' : 'До истечения материалов'}: {forgeMaterialTimeLeftLabel(state, language, now)}</p>}
       </div>
 
       {/* Full set rewards apply only in PvE; never inflate Arena stats. */}

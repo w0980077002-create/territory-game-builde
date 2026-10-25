@@ -29,13 +29,23 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
   const inventoryContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const tick = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(tick);
-  }, []);
+    if (tab !== 'items') return;
+    const tick = setInterval(() => {
+      if (!document.hidden) setNow(Date.now());
+    }, 1000);
+    const refresh = () => setNow(Date.now());
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      clearInterval(tick);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [tab]);
 
   const consumables = state.inventory.filter(isPerishableItem)
     .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b));
   const materials = state.inventory.filter((i) => i.type === 'material');
+  const earliestOnBelt = state.belt.filter((item): item is InventoryItem => !!item && isPerishableItem(item))
+    .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0];
 
   const switchTab = (to: 'items' | 'equipment' | 'followers') => {
     // The content scrolls independently; the bottom tabs stay within reach.
@@ -111,7 +121,10 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
           className="shrink-0 rounded-2xl border border-amber-500/30 bg-[#171c29]/95 px-2.5 py-2 shadow-[0_-4px_18px_rgba(0,0,0,0.4)]"
         >
           <div className="mb-1.5 flex items-center justify-between gap-2">
-            <h3 className="text-sm font-bold text-amber-100">{t('belt')}</h3>
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-amber-100">{t('belt')}</h3>
+              {earliestOnBelt && <span className="text-[10px] font-semibold text-amber-300 tabular-nums">⏳ {elixirTimeLeftLabel(earliestOnBelt, language, now)}</span>}
+            </div>
             <span className="text-right text-[10px] leading-tight text-gray-400">{t('tapSlotToUnequip')}</span>
           </div>
           <BeltCells

@@ -17,6 +17,9 @@ const start = Date.parse('2026-10-25T12:00:00.000Z');
 const elixir = (id, qty, expiresAt) => ({ id, qty, name: 'Эликсир силы', icon: '💪', type: 'elixir', rarity: 'common',
   description: '+10 атаки', effect: { stat: 'attack', value: 10, duration: 'battle' }, ...(expiresAt ? { expiresAt } : {}) });
 const elixirAt = (days) => new Date(start + days * 24 * 60 * 60 * 1000).toISOString();
+assert.equal(expiry.elixirTimeLeftLabel(elixir('timer', 1, elixirAt(7)), 'ru', start), '7д 00:00:00');
+assert.equal(expiry.elixirTimeLeftLabel(elixir('timer', 1, elixirAt(7)), 'ru', start + 1000), '6д 23:59:59');
+assert.equal(expiry.elixirTimeLeftLabel(elixir('timer', 1, elixirAt(7)), 'en', start + 7000), '6d 23:59:53');
 const initial = actions.useGame.get();
 const potion = { ...elixir('health', 33), name: 'Зелье', type: 'potion' };
 const timePotion = { ...elixir('time', 4), name: 'Зелье времени', type: 'arena', arenaEffect: 'time' };

@@ -106,13 +106,15 @@ export function reconcileElixirExpiry(state: GameState, now = Date.now()): GameS
 export function elixirTimeLeftLabel(item: InventoryItem, language: string, now = Date.now()): string {
   if (!isPerishableItem(item)) return '';
   const milliseconds = Math.max(0, elixirExpiryTime(item) - now);
-  if (!Number.isFinite(milliseconds)) return language === 'en' ? '7 days' : '7 суток';
+  if (!Number.isFinite(milliseconds)) return language === 'en' ? '7d 00:00:00' : '7д 00:00:00';
   if (milliseconds === 0) return language === 'en' ? 'Expired' : 'Просрочен';
-  const hours = Math.ceil(milliseconds / (60 * 60 * 1000));
-  if (hours <= 24) return language === 'en' ? `${hours}h left` : `${hours} ч осталось`;
-  const days = Math.floor(hours / 24);
-  const remainder = hours % 24;
-  return language === 'en' ? `${days}d ${remainder}h left` : `${days} д ${remainder} ч`;
+  const seconds = Math.ceil(milliseconds / 1000);
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const restSeconds = seconds % 60;
+  const clock = [hours, minutes, restSeconds].map((n) => String(n).padStart(2, '0')).join(':');
+  return language === 'en' ? `${days}d ${clock}` : `${days}д ${clock}`;
 }
 
 export function forgeMaterialTimeLeftLabel(state: GameState, language: string, now = Date.now()): string {
