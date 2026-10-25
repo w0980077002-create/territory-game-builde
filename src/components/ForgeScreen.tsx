@@ -5,7 +5,7 @@ import { useLanguage, localizeText } from '@/game/i18n';
 import { rarityColor, rarityGlow } from '@/game/ui';
 import { Hammer, ArrowUp, X } from 'lucide-react';
 import { hapticNotify } from '@/game/telegram';
-import { SLOT_ART } from '@/game/art';
+import { equipmentArt } from '@/game/art';
 import { ItemArt } from './ui/ItemArt';
 import { IosGamePortal } from './ui/Modal';
 import type { Equipment, InventoryItem } from '@/game/types';
@@ -174,7 +174,7 @@ export function ForgeScreen() {
                 <div className="w-12 h-12 rounded-lg bg-black/30 flex items-center justify-center text-2xl mb-1"
                   style={{ boxShadow: rarityGlow(eq.rarity) }}
                 >
-                  <img src={SLOT_ART[eq.slot]} alt="" className="w-11 h-11 object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.7)]" />
+                  <img src={equipmentArt(eq)} alt="" className="w-11 h-11 object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.7)]" />
                 </div>
                 <p className="text-xs font-medium truncate w-full text-center" style={{ color: rarityColor(eq.rarity) }}>
                   {localizeText(eq.name, language)}

@@ -2,7 +2,7 @@ import type { Equipment, InventoryItem, ShopItem } from './types';
 import { MAIL_ITEM_VISUALS } from './mailRewardVisuals';
 
 const ui = import.meta.env.BASE_URL + 'assets/territory/ui/';
-const eq = (slot: string) => ui + 'equipment/' + slot + '.webp';
+const eq = (slot: string) => ui + 'equipment-cartoon/' + slot + '.webp';
 const itemIcon = (name: string) => ui + 'items/' + name + '.webp';
 const materialIcon = (name: string) => ui + 'materials/' + name + '.webp';
 const shopIcon = (name: string) => ui + 'shop/' + name + '.webp';
@@ -114,15 +114,15 @@ function inventoryMaterialArt(item: ArtSource): string {
  */
 export function equipmentArt(equipment: Equipment): string {
   const name = equipment.name.toLowerCase();
-  if (equipment.slot === 'armor' && /латные доспехи|plate armor/.test(name)) return shopIcon('plate-armor');
+  if (equipment.slot === 'armor' && /латные доспехи|plate armor/.test(name)) return eq('plate-armor');
   if (equipment.slot !== 'weapon') return SLOT_ART[equipment.slot];
-  if (/клинок рыцаря|knight.*blade/.test(name)) return shopIcon('knight-blade');
-  if (/героический меч|heroic sword/.test(name)) return shopIcon('hero-sword');
+  if (/клинок рыцаря|knight.*blade/.test(name)) return eq('knight-blade');
+  if (/героический меч|heroic sword/.test(name)) return eq('hero-sword');
   if (/топор|секир|axe|hatchet/.test(name)) return SLOT_ART.weapon;
   if (/лук|арбалет|bow|crossbow/.test(name) || equipment.icon === '🏹') return itemIcon('bow');
   if (/посох|жезл|staff|wand/.test(name) || equipment.icon === '🪄') return itemIcon('staff');
   if (/меч|клинок|сабл|рапир|sword|blade|saber|sabre|rapier/.test(name) || ['⚔️', '🗡️', '🔱'].includes(equipment.icon)) {
-    return itemIcon('sword');
+    return eq('sword');
   }
   return SLOT_ART.weapon;
 }

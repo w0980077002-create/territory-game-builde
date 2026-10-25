@@ -1,6 +1,6 @@
 import { useLanguage } from '@/game/i18n';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
-import { SLOT_ART } from '@/game/art';
+import { SLOT_ART, equipmentArt } from '@/game/art';
 import { rarityColor } from '@/game/ui';
 import type { Equipment, GameState } from '@/game/types';
 
@@ -27,7 +27,7 @@ export function EquipCells({ equipped, onTap }: Props) {
             style={color ? { borderColor: `${color}cc`, boxShadow: `inset 0 0 12px ${color}40, 0 0 8px ${color}30` } : undefined}
           >
             <img
-              src={SLOT_ART[s.id]}
+              src={eq ? equipmentArt(eq) : SLOT_ART[s.id]}
               alt=""
               draggable={false}
               className={`w-[78%] h-[78%] object-contain select-none ${eq ? 'drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]' : 'opacity-[0.18] grayscale'}`}
