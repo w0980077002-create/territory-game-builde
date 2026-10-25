@@ -28,6 +28,33 @@ export interface MailGrant {
   created_at: string;
 }
 
+export interface ClaimedMailGrant extends MailGrant {
+  claimed_at: string;
+}
+
+/** Claimed letters stay in admin_grants. RLS only permits reading your own letters. */
+export async function getClaimedMailHistory(offset = 0, pageSize = 30): Promise<{
+  letters: ClaimedMailGrant[];
+  hasMore: boolean;
+}> {
+  const start = Math.max(0, Math.floor(offset));
+  const size = Math.max(1, Math.min(50, Math.floor(pageSize)));
+  const { data, error } = await supabase.from('admin_grants')
+    .select('id, subject, body, payload, created_at, claimed_at')
+    .eq('kind', 'mail')
+    .not('claimed_at', 'is', null)
+    .order('claimed_at', { ascending: false })
+    .order('id', { ascending: false })
+    .range(start, start + size);
+  if (error) throw new Error('mail_history_unavailable');
+  const rows = (data ?? []).filter((row): row is ClaimedMailGrant =>
+    typeof row.id === 'string' && typeof row.subject === 'string'
+    && typeof row.body === 'string' && typeof row.claimed_at === 'string'
+    && !!row.payload && typeof row.payload === 'object'
+    && typeof row.created_at === 'string');
+  return { letters: rows.slice(0, size), hasMore: rows.length > size };
+}
+
 interface LiveState {
   maintenance: boolean;
   shopSale: boolean;

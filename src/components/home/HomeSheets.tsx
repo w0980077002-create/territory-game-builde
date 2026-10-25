@@ -5,10 +5,10 @@ import { DAILY_REWARDS, MAIL, claimDaily, claimMail, dailyStatus, type Reward } 
 import { Modal } from '@/components/ui/Modal';
 import { Currency } from '@/components/ui/Currency';
 import { ItemArt } from '@/components/ui/ItemArt';
-import { useLive, claimMailGrant, type GrantPayload } from '@/game/live';
+import { useLive, claimMailGrant, getClaimedMailHistory, type ClaimedMailGrant } from '@/game/live';
 import { generateShopItems } from '@/game/engine';
 import { mailRewardVisuals } from '@/game/mailRewardVisuals';
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage, localizeText } from '@/game/i18n';
 
 export type SaveStatus = 'saved' | 'saving' | 'error';
@@ -82,31 +82,100 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
   const state = useStore(useGame);
   const { mail: adminMail } = useStore(useLive);
   const [claiming, setClaiming] = useState<string | null>(null);
+  const [tab, setTab] = useState<'new' | 'received'>('new');
+  const [history, setHistory] = useState<ClaimedMailGrant[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState(false);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
+  const historyRequest = useRef(0);
+
+  const loadHistory = useCallback(async (offset = 0) => {
+    const request = ++historyRequest.current;
+    setHistoryLoading(true);
+    setHistoryError(false);
+    try {
+      const result = await getClaimedMailHistory(offset);
+      if (request !== historyRequest.current) return;
+      setHistory((previous) => offset === 0 ? result.letters : [
+        ...previous,
+        ...result.letters.filter((letter) => !previous.some((old) => old.id === letter.id)),
+      ]);
+      setHistoryHasMore(result.hasMore);
+    } catch {
+      if (request === historyRequest.current) setHistoryError(true);
+    } finally {
+      if (request === historyRequest.current) setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadHistory();
+    return () => { historyRequest.current += 1; };
+  }, [loadHistory]);
 
   const claimAdmin = async (id: string) => {
     setClaiming(id);
-    const ok = await claimMailGrant(id);
-    setClaiming(null);
-    notify(ok ? t('claimLetterRewardOk') : t('claimLetterRewardFail'));
+    try {
+      const ok = await claimMailGrant(id);
+      if (ok) {
+        setTab('received');
+        void loadHistory();
+      }
+      notify(ok ? t('claimLetterRewardOk') : t('claimLetterRewardFail'));
+    } catch {
+      notify(t('claimLetterRewardFail'));
+    } finally {
+      setClaiming(null);
+    }
   };
 
   const claim = (id: string) => {
     const next = claimMail(useGame.get(), id);
     if (!next) return;
     useGame.set(next);
+    setTab('received');
     notify(language === 'en' ? 'Mail gift claimed' : 'Подарок из письма получен');
   };
+
+  const received = tab === 'received';
+  const shownAdminMail = received ? history : adminMail;
+  const shownGameMail = MAIL.filter((letter) => state.mailClaimed.includes(letter.id) === received);
+  const newCount = adminMail.length + MAIL.filter((letter) => !state.mailClaimed.includes(letter.id)).length;
 
   return (
     <Modal title={t('mail')} icon="/ic-mail.webp" onClose={onClose}>
       <div className="space-y-3">
-        {adminMail.map((m) => {
+        <div className="grid grid-cols-2 gap-2" role="tablist" aria-label={language === 'en' ? 'Mail folders' : 'Разделы почты'}>
+          <button type="button" role="tab" aria-selected={!received} onClick={() => setTab('new')}
+            className={`rounded-xl border px-3 py-2 text-sm font-bold transition-colors ${!received ? 'border-sky-400/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-black/20 text-gray-400'}`}>
+            {language === 'en' ? 'New' : 'Новые'} {newCount > 0 ? `(${newCount})` : ''}
+          </button>
+          <button type="button" role="tab" aria-selected={received} onClick={() => setTab('received')}
+            className={`rounded-xl border px-3 py-2 text-sm font-bold transition-colors ${received ? 'border-sky-400/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-black/20 text-gray-400'}`}>
+            {language === 'en' ? 'Received' : 'Полученные'}
+          </button>
+        </div>
+        {received && historyLoading && history.length === 0 && (
+          <p className="py-4 text-center text-sm text-gray-400">{t('loading')}</p>
+        )}
+        {received && historyError && (
+          <div className="rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-center text-sm text-red-200">
+            <p>{language === 'en' ? 'Could not load mail history.' : 'Не удалось загрузить историю писем.'}</p>
+            <button type="button" className="mt-2 text-sky-300 underline" onClick={() => void loadHistory(history.length)}>
+              {language === 'en' ? 'Try again' : 'Повторить'}
+            </button>
+          </div>
+        )}
+        {shownAdminMail.map((m) => {
           const rewards = mailRewardVisuals(m.payload);
           return (
-            <div key={m.id} className="rounded-2xl border border-sky-400/40 bg-sky-500/5 p-3 shadow-[0_0_12px_rgba(56,189,248,0.15)]">
-              <div className="text-[11px] text-sky-300/90">{t('administration')}</div>
+            <div key={m.id} className={`rounded-2xl border p-3 ${received ? 'border-white/15 bg-black/20' : 'border-sky-400/40 bg-sky-500/5 shadow-[0_0_12px_rgba(56,189,248,0.15)]'}`}>
+              <div className={`text-[11px] ${received ? 'text-gray-400' : 'text-sky-300/90'}`}>{t('administration')}</div>
               <div className="text-sm font-bold text-white mb-1">{m.subject}</div>
               <p className="text-xs text-gray-300 leading-relaxed mb-2.5 whitespace-pre-line break-words">{m.body}</p>
+              {received && <p className="mb-2 text-[10px] text-gray-500">
+                {language === 'en' ? 'Claimed' : 'Получено'}: {new Date((m as ClaimedMailGrant).claimed_at).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU')}
+              </p>}
               <div className="flex flex-wrap items-end justify-between gap-2">
                 {rewards.length > 0 && (
                   <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5" aria-label={language === 'en' ? 'Mail rewards' : 'Награды письма'}>
@@ -126,18 +195,22 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
                     })}
                   </div>
                 )}
-                <button
-                  onClick={() => claimAdmin(m.id)}
-                  disabled={claiming === m.id}
-                  className="shrink-0 h-8 px-3 rounded-lg text-xs font-bold bg-sky-400 text-black disabled:opacity-50 transition-colors"
-                >
-                  {claiming === m.id ? '...' : t('claimReward')}
-                </button>
+                {received ? (
+                  <span className="shrink-0 rounded-lg bg-white/10 px-3 py-2 text-xs font-bold text-gray-400">✓ {t('claimed')}</span>
+                ) : (
+                  <button
+                    onClick={() => void claimAdmin(m.id)}
+                    disabled={claiming === m.id}
+                    className="shrink-0 h-8 px-3 rounded-lg text-xs font-bold bg-sky-400 text-black disabled:opacity-50 transition-colors"
+                  >
+                    {claiming === m.id ? '...' : t('claimReward')}
+                  </button>
+                )}
               </div>
             </div>
           );
         })}
-        {MAIL.map((l) => {
+        {shownGameMail.map((l) => {
           const claimed = state.mailClaimed.includes(l.id);
           return (
             <div key={l.id} className={`rounded-2xl border p-3 ${claimed ? 'border-white/5 bg-black/20 opacity-70' : 'border-amber-500/25 bg-black/30'}`}>
@@ -157,6 +230,19 @@ export function MailSheet({ onClose, notify }: { onClose: () => void; notify: (t
             </div>
           );
         })}
+        {received && historyHasMore && !historyLoading && !historyError && (
+          <button type="button" className="btn-ghost w-full text-sm" onClick={() => void loadHistory(history.length)}>
+            {language === 'en' ? 'Show more letters' : 'Показать ещё письма'}
+          </button>
+        )}
+        {received && historyLoading && history.length > 0 && <p className="text-center text-xs text-gray-400">{t('loading')}</p>}
+        {!historyLoading && !historyError && shownAdminMail.length === 0 && shownGameMail.length === 0 && (
+          <p className="py-5 text-center text-sm text-gray-400">
+            {received
+              ? (language === 'en' ? 'No received letters yet.' : 'Полученных писем пока нет.')
+              : (language === 'en' ? 'No new letters.' : 'Новых писем нет.')}
+          </p>
+        )}
       </div>
     </Modal>
   );
@@ -213,7 +299,7 @@ export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMot
 }
 
 export function StonesSheet({ onClose, onShop, onDaily }: { onClose: () => void; onShop: () => void; onDaily: () => void }) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const stones = useStore(useGame).battleStones;
   return (
     <Modal title={t('battleStones')} icon="/battle-stone.webp" onClose={onClose}>
