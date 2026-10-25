@@ -97,14 +97,14 @@ export function buildRigMarkup() {
         ${imageMarkup('part-06',-24,-12,91,93)}
         <g id="champion-shield-elbow" transform="translate(49 65)">
           ${imageMarkup('part-07',-38,-4,93,90)}
-          <g id="champion-shield-wrist" transform="translate(30 51)">
-            ${imageMarkup('tool-01',-38,-66,93,90)}
-          </g>
         </g>
       </g>
       <g id="champion-torso" transform="rotate(-1)">
         ${imageMarkup('part-03',-82,53,165,108)}
         ${imageMarkup('part-01',-84,-104,169,178)}
+        <g id="champion-shield-wrist" transform="translate(-82 9)">
+          ${imageMarkup('tool-01',-47,-45,92,92)}
+        </g>
         <g id="champion-scarf" transform="translate(-9 -99)">
           ${imageMarkup('part-02',-83,-24,174,96)}
         </g>
@@ -139,7 +139,7 @@ function drawPose(pose, now) {
   translateRotate('champion-front-knee', -15, 79, pose.kneeL);
   translateRotate('champion-rear-arm', -68, -60, pose.shieldArm);
   translateRotate('champion-shield-elbow', 49, 65, pose.shieldElbow);
-  translateRotate('champion-shield-wrist', 30, 51, pose.shieldWrist);
+  translateRotate('champion-shield-wrist', -82, 9, pose.shieldWrist + pose.shieldArm * .55 + pose.shieldElbow * .2);
   rotate('champion-torso', pose.torso + breathing * .35);
   translateRotate('champion-head', 19, -88, pose.head - breathing * .3);
   translateRotate('champion-scarf', -9, -99, pose.scarf - breathing * 1.3);
