@@ -34,8 +34,9 @@ export function ProfessionsStage8Screen() {
       if (next.enabled && next.profession) {
         const owned=await fetchStage8Items();
         const latest=useGame.get();
+        const equippedIds=new Set(Object.values(latest.player.equipped).flatMap((item)=>item?[item.id]:[]));
         useGame.set({...latest,inventory:mirrorStage8Items(
-          mirrorCraftResources(latest.inventory,next.resources),owned),
+          mirrorCraftResources(latest.inventory,next.resources),owned,equippedIds),
           professions:{...(latest.professions??{active:null,masteryLevel:1,masteryXp:0,lastGatherAt:0}),
             active:next.profession,masteryLevel:next.masteryLevel,masteryXp:next.masteryXp}});
       }
@@ -59,8 +60,9 @@ export function ProfessionsStage8Screen() {
       if (receipt.kind==='item' && !owned.some((item)=>item.itemId===receipt.itemId))
         throw new Error('stage8_item_not_in_server_inventory');
       const latest=useGame.get();
+      const equippedIds=new Set(Object.values(latest.player.equipped).flatMap((item)=>item?[item.id]:[]));
       useGame.set({...latest,
-        inventory:mirrorStage8Items(mirrorCraftResources(latest.inventory,verified.resources),owned),
+        inventory:mirrorStage8Items(mirrorCraftResources(latest.inventory,verified.resources),owned,equippedIds),
         professions:{...(latest.professions??{active:null,masteryLevel:1,masteryXp:0,lastGatherAt:0}),
           active:verified.profession,masteryLevel:verified.masteryLevel,masteryXp:verified.masteryXp},
       });

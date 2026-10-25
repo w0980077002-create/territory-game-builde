@@ -30,7 +30,7 @@ const uuid='22222222-2222-4222-8222-222222222222';
 
 assert.equal(api.STAGE8_CATALOG_VERSION,catalog.version);
 assert.equal(api.STAGE8_DAILY_XP_CAP,300);
-assert.equal(api.STAGE8_RECIPES.length,55);
+assert.equal(api.STAGE8_RECIPES.length,72);
 assert.equal(api.stage8XpToNext(1),26);
 assert.equal(api.stage8XpToNext(300),0);
 
@@ -94,6 +94,8 @@ assert.equal(owned.length,1);
 const mirrored=api.mirrorStage8Items([{id:'legacy-sword',qty:1},{id:'stage8_fake',qty:1}],owned);
 assert.deepEqual(mirrored.map(i=>i.id),['legacy-sword',`stage8_${uuid}`]);
 assert.equal(mirrored[1].equipment.id,`stage8_${uuid}`);
+const equippedCopy=api.mirrorStage8Items([{id:'legacy-sword',qty:1}],owned,new Set([`stage8_${uuid}`]));
+assert.deepEqual(equippedCopy.map(i=>i.id),['legacy-sword'],'Equipped server item must not be duplicated in the backpack');
 response={data:{success:true,items:[{...response.data.items[0],item_id:'not-a-uuid'}]},error:null};
 await assert.rejects(()=>api.fetchStage8Items(),/inventory_invalid/);
 response={data:{success:true,items:[{...owned[0],item_id:uuid,recipe_id:itemId,

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import {
   STAGE8_VERSION, MAX_MASTERY_LEVEL, DAILY_SERVER_XP_CAP, GATHER_HOURS_PER_UNIT,
   MASTERY_BANDS, PROFESSION_TRACKS, STAGE8_RECIPES, STAGE8_PRACTICE_RECIPES,
-  STAGE8_EQUIPMENT, STAGE8_CONSUMABLES, masteryXpToNext, totalXpForLevel,
+  STAGE8_EQUIPMENT, STAGE8_CONSUMABLES, STAGE8_LEGACY_RECIPES, masteryXpToNext, totalXpForLevel,
   practiceFor, simulateProgression,
 } from './professions/stage8-model.mjs';
 
@@ -27,7 +27,8 @@ assert.equal(MASTERY_BANDS.length,7);
 assert.equal(STAGE8_PRACTICE_RECIPES.length,35);
 assert.equal(STAGE8_EQUIPMENT.length,16);
 assert.equal(STAGE8_CONSUMABLES.length,4);
-assert.equal(STAGE8_RECIPES.length,55);
+assert.equal(STAGE8_LEGACY_RECIPES.length,17);
+assert.equal(STAGE8_RECIPES.length,72);
 assert.equal(new Set(STAGE8_RECIPES.map((r)=>r.id)).size,STAGE8_RECIPES.length);
 
 for(let level=1;level<300;level++){
@@ -62,9 +63,14 @@ for(const recipe of STAGE8_RECIPES){
       assert.ok((eq[stat]??0)>=0,recipe.id);
     }
     assert.equal(eq.rarity,recipe.output.rarity);
-  }else{
-    assert.ok(['potion','elixir'].includes(recipe.output.type),recipe.id);
+  }else if(recipe.output.type==='potion'||recipe.output.type==='elixir'){
     assert.ok(recipe.output.effect.value>0&&recipe.output.effect.value<=150,recipe.id);
+  }else if(recipe.output.type==='material'){
+    assert.ok(recipe.output.name&&recipe.output.description,recipe.id);
+    assert.equal(recipe.output.effect,undefined,recipe.id);
+    assert.equal(recipe.output.equipment,undefined,recipe.id);
+  }else{
+    assert.fail(`Unexpected crafted output type in ${recipe.id}: ${recipe.output.type}`);
   }
   if(recipe.requiredLevel===300) assert.equal(recipe.kind,'item','Master license must guard prestige item recipes only');
 }
@@ -74,6 +80,12 @@ const professions = await readFile(new URL('../src/game/professions.ts',import.m
 const expiry = await readFile(new URL('../src/game/elixirExpiry.ts',import.meta.url),'utf8');
 const screen = await readFile(new URL('../src/components/ProfessionsScreen.tsx',import.meta.url),'utf8');
 const exported = JSON.parse(await readFile(new URL('../supabase/staged/territory_profession_stage8_catalog.json',import.meta.url),'utf8'));
+const originalRecipes = JSON.parse(await readFile(new URL('../supabase/staged/territory_craft_catalog.json',import.meta.url),'utf8'));
+assert.deepEqual(STAGE8_LEGACY_RECIPES,originalRecipes.map((recipe)=>({
+  ...recipe,kind:'item',masteryXp:recipe.requiredLevel===300?1:recipe.masteryXp,
+})),'All 17 existing recipes and their outputs/costs must survive the cutover');
+assert.equal(STAGE8_LEGACY_RECIPES.filter((r)=>r.requiredLevel===300).length,5);
+assert.ok(STAGE8_LEGACY_RECIPES.every((r)=>r.masteryXp<=DAILY_SERVER_XP_CAP));
 assert.equal(exported.version,STAGE8_VERSION);
 assert.equal(exported.enabled,false);
 assert.equal(exported.requiresServerAuthority,true);

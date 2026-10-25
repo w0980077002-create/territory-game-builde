@@ -20,7 +20,7 @@ export type Stage8Recipe = {
   output: null | {
     name: string;
     icon: string;
-    type: 'equipment' | 'potion' | 'elixir';
+    type: 'equipment' | 'potion' | 'elixir' | 'material';
     rarity: 'common' | 'rare' | 'epic' | 'legendary';
     description: string;
     equipment?: Record<string, unknown>;
@@ -154,13 +154,16 @@ export async function fetchStage8Items(): Promise<Stage8OwnedItem[]> {
   });
 }
 
-export function mirrorStage8Items(items: InventoryItem[],owned: readonly Stage8OwnedItem[]): InventoryItem[] {
+export function mirrorStage8Items(items: InventoryItem[],owned: readonly Stage8OwnedItem[],equippedItemIds: ReadonlySet<string> = new Set()): InventoryItem[] {
   const byId = new Map<string, InventoryItem>();
   for (const item of items) if (!item.id.startsWith('stage8_')) byId.set(item.id,item);
   for (const item of owned) {
+    const id=`stage8_${item.itemId}`;
+    // An equipped item is not also a backpack item in the legacy view.
+    // Final cutover still requires the server to verify this equip ownership.
+    if (equippedItemIds.has(id)) continue;
     const copy=receiptDisplayItem({itemId:item.itemId,recipeId:item.recipeId,output:item.output,
       masteryLevel:1,masteryXp:0});
-    const id=`stage8_${item.itemId}`;
     copy.id=id;
     if (copy.equipment) copy.equipment.id=id;
     if (copy.type==='elixir'||copy.type==='potion') {

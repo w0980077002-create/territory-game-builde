@@ -5,7 +5,16 @@
  * Single source for the progression simulation and versioned draft catalogue.
  * Publishing requires a separately tested server-authoritative cutover.
  */
-export const STAGE8_VERSION = 'profession-stage8-draft-20261025';
+import { readFileSync } from 'node:fs';
+
+// The 17 existing V1 recipes are the authoritative historical catalog. Never
+// retype or silently drop them when offering a new Stage8 progression: their
+// names, ingredients, item outputs and equipment stats stay byte-for-byte
+// equivalent to the old server catalog. Only the XP of level-300 recipes must
+// be capped because the new daily ceiling is 300 XP.
+const legacyCatalogue = JSON.parse(readFileSync(new URL('../../supabase/staged/territory_craft_catalog.json',import.meta.url),'utf8'));
+
+export const STAGE8_VERSION = 'profession-stage8-draft-20261025-r2';
 export const MAX_MASTERY_LEVEL = 300;
 export const DAILY_SERVER_XP_CAP = 300;
 export const GATHER_HOURS_PER_UNIT = 4;
@@ -74,6 +83,12 @@ export const STAGE8_CONSUMABLES = Object.freeze([
   consumable('s8_alchemist_jarl_elixir',300,'Эликсир стойкости ярла','🧬',[gather('gather-herb',30),gather('gather-crystal',16)],'elixir','defense',15,1),
 ]);
 
+export const STAGE8_LEGACY_RECIPES = Object.freeze(legacyCatalogue.map((recipe) => Object.freeze({
+  ...recipe,
+  kind:'item',
+  masteryXp:recipe.requiredLevel===300 ? 1 : recipe.masteryXp,
+})));
+
 export function bandForLevel(level) {
   return MASTERY_BANDS.find((band) => level >= band.from && level <= band.to) ?? null;
 }
@@ -103,7 +118,9 @@ export function practiceFor(professionId, level) {
 export const STAGE8_PRACTICE_RECIPES = Object.freeze(
   PROFESSION_TRACKS.flatMap((track) => MASTERY_BANDS.map((band) => practiceFor(track.id,band.from))),
 );
-export const STAGE8_RECIPES = Object.freeze([...STAGE8_PRACTICE_RECIPES,...STAGE8_EQUIPMENT,...STAGE8_CONSUMABLES]);
+export const STAGE8_RECIPES = Object.freeze([
+  ...STAGE8_PRACTICE_RECIPES,...STAGE8_EQUIPMENT,...STAGE8_CONSUMABLES,...STAGE8_LEGACY_RECIPES,
+]);
 
 export function totalXpForLevel(target) {
   if (!Number.isSafeInteger(target) || target < 1 || target > 300) throw new Error('invalid target level');

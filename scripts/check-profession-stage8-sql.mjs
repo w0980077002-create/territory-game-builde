@@ -24,6 +24,7 @@ const oldWithoutUnlock='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const adapterNew='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const eventMismatch='cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const auditedLegacy='dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const artisan='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 const operations=Array.from({length:20},(_,i)=>`33333333-3333-4333-8333-${String(i+1).padStart(12,'0')}`);
 
 const setup = `
@@ -57,18 +58,22 @@ const setup = `
            ('${second}',500,88,'{"keep":"other-save"}'),
            ('${legacy}',900,99,'{"keep":"legacy-save"}'),
            ('${alchemist}',800,66,'{"keep":"alchemist-save"}'),
+           ('${artisan}',500,150,'{"keep":"artisan-save"}'),
            ('${auditedLegacy}',500,250,'{"professions":{"active":"smith","masteryLevel":6,"masteryXp":45},"inventory":[{"id":"old-equipped","qty":1}]}');
   INSERT INTO public.territory_profession_unlocks(player_id,profession)
     VALUES ('${smith}','smith'),('${second}','smith'),('${legacy}','smith'),
-           ('${alchemist}','alchemist'),('${auditedLegacy}','smith');
+           ('${alchemist}','alchemist'),('${auditedLegacy}','smith'),
+           ('${artisan}','artisan');
   INSERT INTO public.territory_profession_mastery_v1(player_id,profession,mastery_level,mastery_xp,verified)
     VALUES ('${smith}','smith',1,0,true),('${second}','smith',1,0,true),
-           ('${legacy}','smith',50,300,true),('${alchemist}','alchemist',25,0,true);
+           ('${legacy}','smith',50,300,true),('${alchemist}','alchemist',25,0,true),
+           ('${artisan}','artisan',1,0,true);
   INSERT INTO public.territory_resource_wallet(player_id,resource_id,quantity)
     VALUES ('${smith}','gather-ore',50),('${smith}','gather-crystal',100),
            ('${smith}','gather-wood',100),('${smith}','gather-hide',100),
            ('${second}','gather-ore',40),
-           ('${alchemist}','gather-herb',10),('${alchemist}','gather-wood',10);
+           ('${alchemist}','gather-herb',10),('${alchemist}','gather-wood',10),
+           ('${artisan}','gather-wood',10),('${artisan}','gather-ore',10);
   UPDATE public.players SET created_at=clock_timestamp()-interval '30 days';
   SELECT set_config('test.uid','${smith}',false);
 `;
@@ -135,7 +140,8 @@ try {
       (player_id,profession,mastery_level,mastery_xp,verified,original_v1_level,original_v1_xp,reconciled_at)
     VALUES ('${smith}','smith',1,0,true,1,0,clock_timestamp()),
            ('${second}','smith',1,0,true,1,0,clock_timestamp()),
-           ('${alchemist}','alchemist',25,0,true,25,0,clock_timestamp());`);
+           ('${alchemist}','alchemist',25,0,true,25,0,clock_timestamp()),
+           ('${artisan}','artisan',1,0,true,1,0,clock_timestamp());`);
 
   // Versioned, immutable 55-recipe catalog, including training-without-item.
   const serverCatalog=await rows('SELECT id,profession,kind,required_level,mastery_xp,ingredients,item_output FROM public.territory_profession_stage8_catalog ORDER BY id');
@@ -334,6 +340,18 @@ try {
   assert.equal(await wallet(alchemist,'gather-herb'),5);
   assert.equal(await wallet(alchemist,'gather-wood'),8);
 
+  // A legacy recipe must still craft its canonical output and spend its
+  // ORIGINAL resource cost, not vanish when switching to the new interface.
+  await useUser(artisan);
+  const tradeGood=await exec('artisan_toolkit',operations[17]);
+  assert.equal(tradeGood.success,true);
+  assert.equal(tradeGood.item_output.type,'material');
+  assert.equal(tradeGood.item_output.name,'Набор ремесленника');
+  assert.equal(tradeGood.expires_at,null,'Durable crafted trade goods do not expire');
+  assert.equal(await wallet(artisan,'gather-wood'),6);
+  assert.equal(await wallet(artisan,'gather-ore'),8);
+  assert.equal((await inventory()).items[0].item_id,tradeGood.item_id);
+
   // A failed transaction cannot debit the wallet even if later checks fail.
   await role();
   assert.deepEqual(await rows('SELECT id,gold,gems,game_state FROM public.players ORDER BY id'),beforePlayers,
@@ -343,6 +361,7 @@ try {
     {player_id:second,profession:'smith',mastery_level:1,mastery_xp:0},
     {player_id:legacy,profession:'smith',mastery_level:50,mastery_xp:300},
     {player_id:alchemist,profession:'alchemist',mastery_level:25,mastery_xp:0},
+    {player_id:artisan,profession:'artisan',mastery_level:1,mastery_xp:0},
   ],'Stage8 must never mutate legacy mastery');
 
   // Do not silently grant level 1 to an OLD player whose mastery history is
@@ -488,7 +507,7 @@ try {
   await useUser(insufficientNew);
   assert.equal((await status()).enabled,true,'Stage8 is ready again once the unsafe grant is removed');
   await role();
-  console.log('Stage8 SQL PASS: 55 recipes/XP bands, release OFF/RLS/ACL, audited v1→v2, atomic 1000-gem purchase, insufficient/cutover defenses, trusted initialize only, unsafe-economy fail-close, atomic resources, replay/UUID collision, Kyiv-day 300-XP cap, per-account isolation, licensed prestige, server inventory and 7-day potion expiry; all in local PGlite.');
+  console.log('Stage8 SQL PASS: 72 recipes/XP bands, release OFF/RLS/ACL, audited legacy v1→stage8, atomic 1000-gem purchase, insufficient/cutover defenses, trusted initialize only, unsafe-economy fail-close, atomic resources, replay/UUID collision, Kyiv-day 300-XP cap, per-account isolation, licensed prestige, server inventory and 7-day potion expiry; all in local PGlite.');
 }finally{
   await db.close();
 }
