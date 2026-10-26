@@ -7,7 +7,7 @@ for (let attempt = 0; attempt < 12; attempt++) {
     const response = await fetch(base, { signal: AbortSignal.timeout(20_000), cache: 'no-store' });
     assert.equal(response.status, 200, 'Published homepage must respond successfully');
     const html = await response.text();
-    const entry = /<script\b[^>]*\bsrc=["']([^"']+)["']/i.exec(html)?.[1];
+    const entry = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)].map(match => match[1]).find(src => { const url = new URL(src, base); return url.origin === new URL(base).origin && /\/assets\/.*\.js$/.test(url.pathname); });
     assert.ok(entry, 'Published page must reference a JavaScript entry');
     const url = new URL(entry, base);
     assert.equal(url.origin, new URL(base).origin, 'Entry must use the Pages origin');
