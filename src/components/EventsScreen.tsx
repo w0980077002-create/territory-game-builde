@@ -18,7 +18,7 @@ type CardStatus = 'ready' | 'done' | 'active' | 'unknown';
 
 function EventCard({ icon: Icon, image, name, description, detail, status, action, actionId, onClick, en }: {
   icon: typeof Gift; image?: string; name: string; description: string; detail?: string;
-  status: CardStatus; action: string; actionId: string; onClick: () => void; en: boolean;
+  status: CardStatus; action?: string; actionId?: string; onClick?: () => void; en: boolean;
 }) {
   const statuses: Record<CardStatus, string> = {
     ready: en ? 'READY' : 'ГОТОВО', done: en ? 'DONE' : 'ГОТОВО ✓',
@@ -32,13 +32,13 @@ function EventCard({ icon: Icon, image, name, description, detail, status, actio
       <div className="territory-event__heading"><h3>{name}</h3><span className="territory-event__status">{status === 'done' && <Check size={10}/>} {statuses[status]}</span></div>
       <p>{description}</p>
       {detail && <span className="territory-event__detail">{detail}</span>}
-      <button type="button" className="territory-event__action" onClick={() => { captureGameEvent('territory_events_action', { screen: 'events', mode: actionId }); onClick(); }}>{action}<ChevronRight size={14}/></button>
+      {action && onClick && <button type="button" className="territory-event__action" onClick={() => { captureGameEvent('territory_events_action', { screen: 'events', mode: actionId }); onClick(); }}>{action}<ChevronRight size={14}/></button>}
     </div>
   </article>;
 }
 
 /** Real existing bonuses and competition progress; zero synthetic payouts. */
-export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
+export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
   onNavigate: (screen: EventDestination) => void;
   onDaily: () => void;
   onSeason: () => void;
@@ -177,7 +177,7 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
       <EventCard icon={Crown} image="ic-trophy.webp" name={en ? 'Weekly championship' : 'Недельный чемпионат'}
         description={weeklySeasonLive && season ? (en ? `Your points: ${format(season.my_points)} · place ${season.my_rank ? '#' + season.my_rank : '—'}` : `Твои очки: ${format(season.my_points)} · место ${season.my_rank ? '№' + season.my_rank : '—'}`)
           : (en ? 'Points and prizes start only when the server enables the championship.' : 'Очки и призы появятся после запуска чемпионата на сервере.')}
-        status={weeklySeasonLive ? 'active' : 'unknown'} action={en ? 'Open ranking' : 'Посмотреть рейтинг'} actionId="championship" onClick={onSeason} en={en}/>
+        status={weeklySeasonLive ? 'active' : 'unknown'} en={en}/>
       <EventCard icon={Shield} image="nav-clan.webp" name={en ? 'Clan missions' : 'Клановые испытания'}
         description={en ? 'Contributions, quests, clan boss and wars.' : 'Взносы, задания, клановый босс и войны.'}
         status="active" action={en ? 'Open Clan' : 'Войти в клан'} actionId="clan" onClick={visit('clan')} en={en}/>
