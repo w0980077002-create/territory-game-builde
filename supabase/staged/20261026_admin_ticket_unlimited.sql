@@ -111,4 +111,24 @@ REVOKE ALL ON FUNCTION public.territory_hall_admin_adjust_v2(uuid,text,uuid,int,
 GRANT EXECUTE ON FUNCTION public.territory_hall_admin_adjust_v2(uuid,text,uuid,int,text)
   TO service_role;
 
+-- Monopoly quests/offers/milestones used to assume that every hall wallet
+-- must stay <=1000. Once the owner grants more tickets, that old check would
+-- prevent the player from claiming ordinary Monopoly prizes. Change only
+-- the storage-overflow guard; do NOT increase normal earn rates or bypass
+-- the existing per-quest eligibility/frequency restrictions.
+DO $owner_ticket_monopoly$
+DECLARE
+  v_source text;
+  v_old constant text := $old$IF a.tickets+v_reward>1000 THEN RAISE EXCEPTION 'hall_ticket_wallet_full'; END IF;$old$;
+  v_new constant text := $new$IF a.tickets::bigint+v_reward::bigint>2147483647 THEN RAISE EXCEPTION 'hall_ticket_wallet_full'; END IF;$new$;
+BEGIN
+  SELECT pg_get_functiondef('public.territory_monopoly_v2(text,integer,uuid)'::regprocedure)
+    INTO v_source;
+  IF position(v_new IN v_source)>0 THEN RETURN; END IF;
+  IF position(v_old IN v_source)=0 THEN
+    RAISE EXCEPTION 'monopoly_ticket_guard_unexpected_definition';
+  END IF;
+  EXECUTE replace(v_source,v_old,v_new);
+END $owner_ticket_monopoly$;
+
 COMMIT;

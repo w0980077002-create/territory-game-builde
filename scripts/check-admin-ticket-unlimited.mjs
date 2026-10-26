@@ -41,6 +41,20 @@ try {
     CREATE TABLE territory_private.hall_history_v1(
       player_id uuid,game text,won boolean,earned_gold int,
       played_at timestamptz DEFAULT clock_timestamp());
+    -- Minimal copy of the live Monopoly ticket guard. This isolates the
+    -- migration's targeted source rewrite, not the full Monopoly rules.
+    CREATE FUNCTION public.territory_monopoly_v2(
+      p_action text DEFAULT 'status',p_value integer DEFAULT 1,p_token uuid DEFAULT NULL)
+    RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $stub$
+    DECLARE a territory_private.hall_accounts_v1%ROWTYPE;v_reward integer:=2;
+    BEGIN
+      SELECT * INTO a FROM territory_private.hall_accounts_v1
+        WHERE player_id=auth.uid() FOR UPDATE;
+      IF a.tickets+v_reward>1000 THEN RAISE EXCEPTION 'hall_ticket_wallet_full'; END IF;
+      UPDATE territory_private.hall_accounts_v1 SET tickets=tickets+v_reward
+        WHERE player_id=a.player_id;
+      RETURN jsonb_build_object('tickets',a.tickets+v_reward);
+    END $stub$;
   `);
   await db.query('INSERT INTO public.players(id,display_name,last_seen_at,banned) VALUES($1,$2,now(),false)', [playerA, 'Owner']);
   await db.query('INSERT INTO public.players(id,display_name,last_seen_at,banned) VALUES($1,$2,now(),false)', [playerB, 'Tester']);
@@ -59,11 +73,16 @@ try {
   assert.equal(all.affected, 2, 'owner bulk grant excludes banned players');
   assert.equal(await balance(playerA), 1_250_004);
   assert.equal(await balance(playerB), 750_004);
+  // Owner-awarded tickets must never block ordinary Monopoly quest rewards.
+  await db.query('SELECT set_config($1,$2,false)', ['request.jwt.claim.sub',playerB]);
+  const quest = await one("SELECT public.territory_monopoly_v2('quest',1,null) AS result");
+  assert.equal(quest.result.tickets, 750_006);
+  await db.query('SELECT set_config($1,$2,false)', ['request.jwt.claim.sub','']);
   assert.equal((await one('SELECT tickets FROM territory_private.hall_accounts_v1 WHERE player_id=$1', [playerBanned]))?.tickets, undefined);
 
   const deducted = await grant(request(3), 'one', playerA, -2_000_000);
   assert.equal(deducted.balance, 0, 'large owner adjustment never creates negative tickets');
-  assert.equal(await balance(playerB), 750_004, 'other player untouched');
+  assert.equal(await balance(playerB), 750_006, 'other player retains owner tickets and the independent Monopoly quest reward');
 
   await db.query('UPDATE territory_private.hall_accounts_v1 SET tickets=2147483600 WHERE player_id=$1', [playerA]);
   await assert.rejects(grant(request(4), 'one', playerA, 100), /admin_ticket_wallet_overflow/);
@@ -73,6 +92,14 @@ try {
   const maxWithoutOverflow = await grant(request(5), 'one', playerA, 47);
   assert.equal(maxWithoutOverflow.balance, 2_147_483_647);
   assert.equal(await balance(playerA), 2_147_483_647);
+  await db.query('SELECT set_config($1,$2,false)', ['request.jwt.claim.sub',playerA]);
+  await assert.rejects(
+    one("SELECT public.territory_monopoly_v2('quest',1,null) AS result"),
+    /hall_ticket_wallet_full/,
+    'real int4 overflow still cancels the Monopoly prize',
+  );
+  assert.equal(await balance(playerA), 2_147_483_647);
+  await db.query('SELECT set_config($1,$2,false)', ['request.jwt.claim.sub','']);
 
   for (const role of ['anon', 'authenticated']) {
     assert.equal((await one(
