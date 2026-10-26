@@ -221,6 +221,9 @@ assert.match(cabinetCss,/@keyframes vslot-real-reel-roll/,'Must animate vertical
 assert.match(cabinetCss,/translateY\(-83\.333333%\)/,'Travel must land on final three symbols of 18');
 assert.match(cabinetCss,/vslot-reel-track--rolling[^{]*\{/,'Rolling track class is required');
 assert.match(cabinetCss,/max-width:430px/,'Mobile cabinet must be compact');
-assert.match(cabinetCss,/\.vslot-action-bar button\{height:42px/,'Spin controls must fit on mobile');
+assert.match(ui,/vslot-machine-deck/,'Demo must use the physical casino control console');
+assert.match(cabinetCss,/\.vslot-spin-key\s*\{/,'Casino console must use a compact round spin key');
+assert.match(cabinetCss,/\.vslot-selection--coins>div\{grid-template-columns:repeat\(4/,'Coin selectors must fill the row without an empty fifth key');
+assert.match(cabinetCss,/\.vslot-deck-tool--utility/,'Skip/refresh must share one small secondary key');
 
 console.log('Viking slots PASS: 9 lines, both-edge pay, wild, bonus, bet guard, spin RNG, preview wallet isolation.');

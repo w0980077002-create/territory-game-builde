@@ -363,25 +363,94 @@
 .vslot-adventure-tiles--four .vslot-adventure-glyph{height:57px}
 @media(max-width:360px){.vslot-adventure-glyph{height:40px}.vslot-adventure-tiles--three .vslot-adventure-glyph,.vslot-adventure-tiles--four .vslot-adventure-glyph{height:45px}}
 
-/* Gold-stake cabinet: compact controls in the same bright casino palette. */
-.vslot-bottom-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.vslot-bottom-actions button{
-  min-height:40px;
-  border-radius:11px;
-  font-size:11px;
-  letter-spacing:.25px;
-  font-weight:950;
-  text-shadow:0 1px 2px #191022;
-  box-shadow:inset 0 1px #ffffff35,0 3px 0 #150e27;
+/* Physical casino console: compact stake keys and one unmistakable spin dial. */
+.vslot-controls{
+  padding:9px 9px 10px;
+  border:1px solid #b98657;
+  border-radius:16px;
+  background:linear-gradient(165deg,#39253e 0%,#201e3b 36%,#151c2c 100%);
+  box-shadow:inset 0 1px #ffe0a042,inset 0 -2px 12px #0b0c1cb3,0 4px 12px #05071670;
+  gap:7px;
 }
-.vslot-bottom-actions button:first-child{
-  color:#fff4c8;
-  border:1px solid #f1c476;
-  background:linear-gradient(160deg,#aa539d,#642a7a 57%,#3f295e);
+.vslot-selection{grid-template-columns:minmax(83px,1fr) minmax(0,2.85fr);gap:6px}
+.vslot-selection label{font-size:9px;line-height:1.12;letter-spacing:.1px;color:#ffe0a6;text-shadow:0 1px 3px #0e0615}
+.vslot-selection>div{gap:5px}
+.vslot-selection--coins>div{grid-template-columns:repeat(4,minmax(0,1fr))}
+.vslot-selection button{
+  height:32px;min-height:32px;
+  border:1px solid #816286;
+  border-radius:7px;
+  background:linear-gradient(155deg,#413357,#282440 65%,#221d38);
+  color:#eddaef;
+  font-size:12px;font-weight:850;
+  box-shadow:inset 0 1px #e2b4fd30,inset 0 -2px #140d26a3;
 }
-.vslot-bottom-actions button:last-child{
-  color:#e7fff5;
-  border:1px solid #64cfbc;
-  background:linear-gradient(160deg,#348887,#22546a 57%,#20344d);
+.vslot-selection button.selected{
+  border:1px solid #ffdf81;
+  background:linear-gradient(145deg,#ffe8a0 0%,#eeb855 42%,#b56c2b 100%);
+  color:#4a2713;
+  box-shadow:inset 0 1px #fff5bb,0 0 8px #f8a73c78;
 }
-.vslot-bottom-actions button:disabled{opacity:.48;filter:saturate(.4)}
+.vslot-selection button:disabled:not(.selected){opacity:.54}
+.vslot-machine-deck{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 88px;
+  align-items:center;
+  gap:9px;
+  min-height:96px;
+  padding:6px 6px 6px 9px;
+  border:1px solid #755376;
+  border-radius:14px;
+  background:radial-gradient(ellipse at 86% 45%,#85572e5c,transparent 38%),linear-gradient(170deg,#171a31,#251a37);
+  box-shadow:inset 0 2px 10px #070718a8,0 1px #cc98654f;
+}
+.vslot-deck-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;align-items:center;min-width:0}
+.vslot-deck-tool{
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:3px;min-width:0;min-height:49px;padding:4px 2px;
+  border-radius:10px;border:1px solid #97759e;
+  background:linear-gradient(150deg,#5a386b,#342846 65%,#262137);
+  color:#ffe6fc;
+  font-size:9px;font-weight:900;line-height:1.05;
+  box-shadow:inset 0 1px #ffffff4d,inset 0 -3px #191225,0 2px 5px #0007;
+}
+.vslot-deck-tool svg{width:17px;height:17px;filter:drop-shadow(0 0 4px #ebb6ff88)}
+.vslot-deck-tool span{display:flex;align-items:center;justify-content:center;gap:3px;white-space:nowrap}
+.vslot-deck-tool small{font-size:9px;font-weight:950;color:#ffd686}
+.vslot-deck-tool--active{background:linear-gradient(150deg,#ba6096,#763b89);border-color:#ffd37d}
+.vslot-deck-tool--utility{background:linear-gradient(155deg,#355868,#24374b 66%,#1e2b3c);border-color:#639aa8;color:#cbe9f2}
+.vslot-deck-tool--risk{background:linear-gradient(150deg,#9b4b8b,#562b76);border-color:#dca0db}
+.vslot-spin-key{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  justify-self:end;gap:2px;
+  width:84px;height:84px;padding:3px;
+  border:5px solid #9d5524;
+  border-radius:50%;
+  background:radial-gradient(circle at 38% 20%,#fff7b7,#ffd65e 35%,#ef992b 68%,#a94617 100%);
+  color:#50230b;text-shadow:0 1px #fff0b3;
+  font-size:10px;font-weight:1000;letter-spacing:.05px;
+  box-shadow:inset 0 3px 4px #fff8b8,inset 0 -6px 7px #862d11a8,0 0 0 2px #fbe4a1,0 3px 10px #f1a23669,0 5px 5px #060514;
+}
+.vslot-spin-key svg{filter:drop-shadow(0 1px 0 #fff5c8)}
+.vslot-spin-key span{white-space:nowrap}
+.vslot-spin-key small{font-size:10px;max-width:70px;overflow:hidden;text-overflow:ellipsis}
+.vslot-spin-key--collect{
+  color:#153922;text-shadow:0 1px #e8ffe5;
+  border-color:#38715c;
+  background:radial-gradient(circle at 38% 22%,#f1ffb8,#b4ed7a 36%,#56bc7f 68%,#208464 100%);
+  box-shadow:inset 0 3px 4px #fffed1,inset 0 -6px 7px #17614e99,0 0 0 2px #bce8b2,0 3px 10px #62e69a77,0 5px 5px #060514;
+}
+.vslot-deck-tool:active:not(:disabled),.vslot-spin-key:active:not(:disabled){transform:translateY(2px)}
+.vslot-deck-tool:disabled{opacity:.45;filter:saturate(.55)}
+.vslot-spin-key:disabled{opacity:.6;filter:saturate(.7)}
+.vslot-controls button:focus-visible{outline:2px solid #fff5b1;outline-offset:3px}
+@media(max-width:355px){
+  .vslot-controls{padding:8px 6px}
+  .vslot-selection{grid-template-columns:80px minmax(0,1fr)}
+  .vslot-selection label{font-size:8px}
+  .vslot-selection button{height:31px;min-height:31px;font-size:11px}
+  .vslot-machine-deck{grid-template-columns:minmax(0,1fr) 80px;gap:7px;padding:6px}
+  .vslot-deck-tools{gap:5px}
+  .vslot-deck-tool{font-size:8px;min-height:47px}
+  .vslot-spin-key{width:77px;height:77px;font-size:9px}
+}

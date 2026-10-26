@@ -27,8 +27,7 @@ def skip_reel_animation(page):
     # the animation completes and its button legitimately disappears.
     page.wait_for_function('document.querySelector(".vslot-reel-track--rolling") !== null',timeout=5000)
     page.evaluate('''() => {
-      const button = [...document.querySelectorAll('button')]
-        .find(item => item.textContent?.trim() === 'ПРОПУСТИТЬ');
+      const button = document.querySelector('button[aria-label="ПРОПУСТИТЬ"]');
       if (!button || button.disabled) throw new Error('SKIP must be available during the reel animation');
       button.click();
     }''')
@@ -41,9 +40,13 @@ with sync_playwright() as p:
         assert page.locator('.vslot-reel-window').count()==5
         assert page.locator('.vslot-symbol').count()==15
         assert '500' in page.locator('.vslot-stats').inner_text()
+        assert page.locator('.vslot-spin-key').count()==1
+        assert page.locator('.vslot-deck-tool').count()==2
+        assert page.get_by_role('button',name='ПРОПУСТИТЬ',exact=True).count()==0,'Skip key should only appear during spin'
         page.get_by_role('button',name='КРУТИТЬ',exact=True).scroll_into_view_if_needed()
         box=page.get_by_role('button',name='КРУТИТЬ',exact=True).bounding_box()
         assert box['x']>=0 and box['x']+box['width']<=w
+        assert box['width']<=90 and box['height']<=90,'Spin dial must stay compact'
         page.screenshot(path=str(OUT/f'slots-{w}x{h}.png'),full_page=True)
         viewports.append({'width':w,'height':h,'horizontal_overflow':False})
         page.close()
