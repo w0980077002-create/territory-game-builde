@@ -42,6 +42,18 @@ assert.match(play,/Which chest equals the sum of runes/);
 assert.match(play,/Which pair is closest to 7/);
 assert.match(play,/Choose the strongest gate/);
 assert.match(play,/Hit the middle-number target/);
+const puzzles=readFileSync('src/components/hallChallenges.css','utf8');
+for(const mode of ['dice','tower','targets','treasury']){
+ assert.ok(puzzles.includes('hall-challenge--'+mode),'Missing distinct puzzle art for '+mode);
+}
+assert.match(play,/data-testid=\{`hall-challenge-\$\{game\}`\}/,'All puzzle types must use the same server-bound interactive shell');
+for(const itemArt of ['hall-mini-die','hall-choice-gate','hall-choice-target','hall-choice-chest']){
+ assert.ok(puzzles.includes('.'+itemArt),'Missing distinct illustrated game control: '+itemArt);
+}
+assert.match(play,/aria-pressed=\{selected===i\}/,'The tapped option should remain visibly selected during the server response');
+assert.match(play,/setSelectedChoice\(null\);setError\(hallError\(e,en\)\)/,'Failed server calls must permit retrying the same choice');
+assert.match(play,/await hallFinish\(session,answer\)/,'Puzzle art must keep the server as the sole judge');
+assert.match(puzzles,/prefers-reduced-motion/,'Puzzle decorations must respect reduced motion on iPhone');
 assert.match(app,/<HallPlayScreen game=\{hallGame\}/);
 assert.match(app,/<GamesScreen userId=\{user\.id\}/);
 assert.doesNotMatch(app,/<MonopolyScreen/,'Unverified legacy Monopoly must not be playable');
