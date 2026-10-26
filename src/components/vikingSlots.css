@@ -372,24 +372,36 @@
   box-shadow:inset 0 1px #ffe0a042,inset 0 -2px 12px #0b0c1cb3,0 4px 12px #05071670;
   gap:7px;
 }
-.vslot-selection{grid-template-columns:minmax(83px,1fr) minmax(0,2.85fr);gap:6px}
+.vslot-selection{grid-template-columns:90px minmax(0,1fr);gap:7px;min-height:32px}
 .vslot-selection label{font-size:9px;line-height:1.12;letter-spacing:.1px;color:#ffe0a6;text-shadow:0 1px 3px #0e0615}
-.vslot-selection>div{gap:5px}
-.vslot-selection--coins>div{grid-template-columns:repeat(4,minmax(0,1fr))}
-.vslot-selection button{
-  height:32px;min-height:32px;
-  border:1px solid #816286;
-  border-radius:7px;
-  background:linear-gradient(155deg,#413357,#282440 65%,#221d38);
-  color:#eddaef;
-  font-size:12px;font-weight:850;
-  box-shadow:inset 0 1px #e2b4fd30,inset 0 -2px #140d26a3;
+.vslot-selection>div{
+  display:flex;align-items:center;justify-content:flex-start;
+  gap:3px;width:max-content;max-width:100%;
+  padding:2px;
+  border:1px solid #66506c;
+  border-radius:9px;
+  background:linear-gradient(155deg,#110f27,#2a2035);
+  box-shadow:inset 0 2px 5px #0707138c,0 1px #ae7b8042;
 }
+.vslot-selection--coins>div{grid-template-columns:none}
+.vslot-selection button{
+  box-sizing:border-box;
+  flex:0 0 35px;width:35px;
+  height:26px;min-height:26px;
+  padding:0;
+  border:1px solid transparent;
+  border-radius:6px;
+  background:linear-gradient(160deg,#3b304d,#28243e);
+  color:#e6d4e9;
+  font-size:11px;font-weight:850;
+  box-shadow:inset 0 1px #edd0f51e;
+}
+.vslot-selection--coins button{flex-basis:41px;width:41px}
 .vslot-selection button.selected{
-  border:1px solid #ffdf81;
-  background:linear-gradient(145deg,#ffe8a0 0%,#eeb855 42%,#b56c2b 100%);
-  color:#4a2713;
-  box-shadow:inset 0 1px #fff5bb,0 0 8px #f8a73c78;
+  border:1px solid #f6ce70;
+  background:linear-gradient(145deg,#ffe4a0 0%,#dca74f 60%,#ad753b 100%);
+  color:#48260d;
+  box-shadow:inset 0 1px #fff1b9,0 0 5px #d8964566;
 }
 .vslot-selection button:disabled:not(.selected){opacity:.54}
 .vslot-machine-deck{
@@ -446,9 +458,10 @@
 .vslot-controls button:focus-visible{outline:2px solid #fff5b1;outline-offset:3px}
 @media(max-width:355px){
   .vslot-controls{padding:8px 6px}
-  .vslot-selection{grid-template-columns:80px minmax(0,1fr)}
+  .vslot-selection{grid-template-columns:80px minmax(0,1fr);gap:5px}
   .vslot-selection label{font-size:8px}
-  .vslot-selection button{height:31px;min-height:31px;font-size:11px}
+  .vslot-selection button{flex-basis:33px;width:33px;height:25px;min-height:25px;font-size:10px}
+  .vslot-selection--coins button{flex-basis:39px;width:39px}
   .vslot-machine-deck{grid-template-columns:minmax(0,1fr) 80px;gap:7px;padding:6px}
   .vslot-deck-tools{gap:5px}
   .vslot-deck-tool{font-size:8px;min-height:47px}

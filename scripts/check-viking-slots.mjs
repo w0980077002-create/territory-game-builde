@@ -223,7 +223,8 @@ assert.match(cabinetCss,/vslot-reel-track--rolling[^{]*\{/,'Rolling track class 
 assert.match(cabinetCss,/max-width:430px/,'Mobile cabinet must be compact');
 assert.match(ui,/vslot-machine-deck/,'Demo must use the physical casino control console');
 assert.match(cabinetCss,/\.vslot-spin-key\s*\{/,'Casino console must use a compact round spin key');
-assert.match(cabinetCss,/\.vslot-selection--coins>div\{grid-template-columns:repeat\(4/,'Coin selectors must fill the row without an empty fifth key');
+assert.match(cabinetCss,/\.vslot-selection--coins button\{flex-basis:41px/,'Coin stakes should be compact grouped keys');
+assert.match(cabinetCss,/\.vslot-selection>div\{[\s\S]*?display:flex/,'Stake rows should use a compact inline selector track');
 assert.match(cabinetCss,/\.vslot-deck-tool--utility/,'Skip/refresh must share one small secondary key');
 
 console.log('Viking slots PASS: 9 lines, both-edge pay, wild, bonus, bet guard, spin RNG, preview wallet isolation.');
