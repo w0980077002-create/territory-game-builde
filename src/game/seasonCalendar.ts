@@ -27,6 +27,25 @@ export function seasonWindow(now: number = Date.now()): SeasonWindow {
   return { weekKey, startsAt, endsAt, remainingMs: endsAt - now };
 }
 
+/** Arena TOP-50 only: the approved PvP week is Sunday-to-Sunday, 00:00 UTC.
+ * Keep the quest/event calendar separate; changing its week would also affect
+ * unrelated rewards. The server RPC remains the authority for recorded wins.
+ */
+export function arenaSeasonWindow(now: number = Date.now()): SeasonWindow {
+  if (!Number.isFinite(now)) throw new RangeError('Invalid Arena clock');
+  const date = new Date(now);
+  const midnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const startsAt = midnight - date.getUTCDay() * 86_400_000;
+  const endsAt = startsAt + 7 * 86_400_000;
+  if (!(startsAt <= now && now < endsAt)) throw new RangeError('Arena week mismatch');
+  return {
+    weekKey: new Date(startsAt).toISOString().slice(0, 10),
+    startsAt,
+    endsAt,
+    remainingMs: endsAt - now,
+  };
+}
+
 export function seasonCountdown(ms: number, language: 'ru' | 'en' = 'ru') {
   const minutes = Math.max(0, Math.ceil(ms / 60_000));
   const days = Math.floor(minutes / 1440);
