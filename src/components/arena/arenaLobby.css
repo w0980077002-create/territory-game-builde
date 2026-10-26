@@ -898,6 +898,114 @@
   text-shadow:0 2px 2px #000;
 }
 .arena-approved-entry .arena-approved-en-card-desc svg {display:none;}
+
+/* Weekly Arena: vivid, space-efficient podium and small prize-plan entry.
+   All names, positions and wins still come from the existing leaderboard. */
+.arena-approved-entry .arena-weekly-head {padding-bottom:7px;}
+.arena-weekly-head-actions {display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.arena-approved-entry .arena-weekly-prize-button {
+  display:grid;place-items:center;flex-shrink:0;width:30px;height:30px;padding:0;
+  border:1.5px solid #ffda84;border-radius:9px;
+  background:linear-gradient(150deg,#ffdc6e 0%,#c47c19 55%,#884113 100%);
+  box-shadow:inset 0 1px 0 #fff9c3a6,0 2px 4px #0009,0 0 7px #ffd24b40;
+  color:#fff9ce;text-shadow:0 1px 2px #4b220b;
+}
+.arena-weekly-prize-button svg {width:20px;height:20px;filter:drop-shadow(0 1px 1px #512707);}
+.arena-weekly-prize-button:active {transform:translateY(1px) scale(.97);}
+.arena-approved-entry .arena-weekly-winners {
+  display:grid;grid-template-columns:1fr 1.1fr 1fr;align-items:end;gap:5px;
+  margin:0 0 3px;padding:3px 1px 4px;
+  background:radial-gradient(ellipse 48% 80% at 50% 70%,#f8a82d26,transparent);
+}
+.arena-approved-entry .arena-weekly-winner {
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  position:relative;min-width:0;min-height:116px;padding:4px 4px 6px;
+  border:1.5px solid #a7bed2;border-radius:11px;
+  background:linear-gradient(155deg,#2b4d6b 0%,#132d49 52%,#071626 100%);
+  box-shadow:inset 0 1px 0 #d3e6f777,0 2px 5px #000a;
+}
+.arena-approved-entry .arena-weekly-winner-1 {
+  min-height:127px;border-color:#ffdd75;
+  background:radial-gradient(ellipse at 50% 27%,#b2792c55,transparent 76%),linear-gradient(#314e67,#17304b 58%,#08182c);
+  box-shadow:inset 0 1px 0 #fff2b4a8,0 0 11px #f9b72c65,0 3px 6px #000a;
+}
+.arena-approved-entry .arena-weekly-winner-3 {border-color:#d9a27e;}
+.arena-approved-entry .arena-weekly-winner-mine {outline:2px solid #57e4ff;outline-offset:1px;}
+.arena-weekly-winner-portrait {
+  display:grid;place-items:center;width:60px;height:65px;max-width:100%;margin:0 auto 2px;
+  overflow:hidden;border-radius:42% 42% 15% 15%;
+  background:radial-gradient(circle at center 31%,#466485,#152c48 60%,#0c2138);
+  border-bottom:2px solid #d3a152;
+}
+.arena-weekly-winner-1 .arena-weekly-winner-portrait {width:70px;height:75px;border-bottom-color:#ffe08e;}
+.arena-weekly-winner-portrait img {display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 2px 3px #0009) saturate(1.22);}
+.arena-weekly-winner-medal {
+  position:absolute;top:3px;left:4px;display:grid;place-items:center;
+  width:22px;height:25px;border:1px solid #e6eeff;border-radius:5px;
+  color:#19354a;background:linear-gradient(#fff,#9fb2c6 55%,#728aa2);
+  font-size:14px;font-weight:1000;box-shadow:0 2px 3px #000b;
+}
+.arena-weekly-winner-1 .arena-weekly-winner-medal {left:50%;top:-4px;transform:translateX(-50%);width:27px;height:29px;border-color:#fff3bb;background:linear-gradient(#fff6ba,#f8c044 55%,#bb7a16);color:#70350b;font-size:17px;box-shadow:0 0 7px #ffce4ca6;}
+.arena-weekly-winner-3 .arena-weekly-winner-medal {color:#572f18;border-color:#ffcba4;background:linear-gradient(#ffd8ae,#c88754 58%,#96502b);}
+.arena-weekly-winner-name {display:block;max-width:100%;font-size:clamp(10px,2.85vw,13px);font-weight:1000;line-height:1.12;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 2px 2px #000;}
+.arena-weekly-winner-wins {display:flex;align-items:center;justify-content:center;gap:3px;margin-top:3px;color:#ffe49b;font-size:clamp(11px,3vw,14px);font-weight:1000;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.arena-weekly-winner-wins svg {width:13px;height:13px;color:#ffdc71;}
+.arena-approved-entry .arena-weekly-rows-expanded {margin:5px 0;padding:5px;border:1px solid #bf9351;border-radius:9px;background:#06192cba;}
+.arena-approved-entry .arena-weekly-personal {padding-top:7px;font-size:clamp(10px,2.75vw,12px);}
+.arena-weekly-personal strong {color:#ffe27e;font-size:1.08em;}
+.arena-approved-entry .arena-weekly-personal .arena-weekly-expand {padding:5px 7px;min-height:28px;font-size:10px;}
+.arena-approved-entry .arena-weekly-chase {margin:5px 0 2px;padding:6px 8px;gap:4px;}
+.arena-approved-entry .arena-weekly-chase-note {font-size:8px;}
+.arena-approved-entry .arena-weekly-note {margin-top:5px;}
+
+/* The prizes panel is a real accessible, scrollable game dialog, not bitmap text. */
+.arena-prizes-overlay {position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;padding:12px 10px max(15px,env(safe-area-inset-bottom));font-family:inherit;}
+.arena-prizes-backdrop {position:absolute;inset:0;border:0;background:#02060bce;backdrop-filter:blur(3px);cursor:pointer;}
+.arena-prizes-panel {position:relative;z-index:1;width:min(100%,420px);max-height:min(85dvh,690px);overflow:hidden;display:flex;flex-direction:column;border:3px ridge #f0c46e;border-radius:16px;background:radial-gradient(ellipse at 50% 0,#33587a,#102844 32%,#061528 100%);color:#fff3cc;box-shadow:inset 0 2px 0 #fff7c174,0 14px 36px #000d,0 0 15px #e9ad3844;}
+.arena-prizes-head {display:flex;align-items:center;gap:9px;padding:12px 12px 10px;border-bottom:2px solid #b98540;background:linear-gradient(160deg,#66401d,#2c2c32 60%,#12243a);}
+.arena-prizes-head>svg {width:29px;height:29px;flex-shrink:0;color:#ffd660;filter:drop-shadow(0 2px 2px #2d1804);}
+.arena-prizes-head>div {flex:1;min-width:0;}
+.arena-prizes-head h3 {font-size:clamp(15px,4.4vw,19px);line-height:1.1;font-weight:1000;color:#ffe79d;text-shadow:0 2px 2px #180b05;}
+.arena-prizes-head span {font-size:11px;color:#c5d6e7;}
+.arena-prizes-close {display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border:1px solid #b78e59;border-radius:9px;background:linear-gradient(#354b62,#12243b);color:#fff5db;}
+.arena-prizes-close svg {width:19px;height:19px;}
+.arena-prizes-body {padding:12px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;}
+.arena-prizes-my-place {display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:9px;border:1px solid #679dbf;border-radius:10px;background:linear-gradient(120deg,#1b4d6b,#0b2745);font-size:12px;font-weight:1000;color:#fff1bf;}
+.arena-prizes-my-place>svg {width:24px;height:24px;flex-shrink:0;color:#f9ca5e;}
+.arena-prizes-my-place small {display:block;margin-top:2px;font-size:10px;color:#bcd0e5;font-weight:700;}
+.arena-prizes-list {display:grid;gap:6px;}
+.arena-prizes-tier {display:flex;align-items:center;gap:8px;position:relative;min-height:45px;padding:6px 8px;border:1px solid #56738f;border-radius:9px;background:linear-gradient(140deg,#1b3c5a,#0b1e34);box-shadow:inset 0 1px 0 #f1e8d51e;}
+.arena-prizes-tier>strong {display:grid;place-items:center;flex-shrink:0;width:53px;min-height:30px;border-radius:6px;background:linear-gradient(#4c617b,#253c58);font-size:12px;color:#fff7e3;}
+.arena-prizes-tier-1 {border-color:#efbb54;background:linear-gradient(130deg,#60451f,#1b3248 68%);}
+.arena-prizes-tier-1>strong {background:linear-gradient(#ffe5a2,#c9881d);color:#5d2d08;}
+.arena-prizes-tier-2>strong {background:linear-gradient(#f3fcff,#92a7bc);color:#2b3f56;}
+.arena-prizes-tier-3>strong {background:linear-gradient(#f7c79f,#b37146);color:#432718;}
+.arena-prizes-tier-mine {outline:2px solid #62e7ff;outline-offset:1px;}
+.arena-prizes-resources {display:flex;flex:1;flex-wrap:wrap;gap:4px 8px;min-width:0;color:#f5e7c3;font-size:11px;font-weight:900;}
+.arena-prizes-resources span {white-space:nowrap;}
+.arena-prizes-resources .arena-prizes-red {color:#ffb0c1;}
+.arena-prizes-you {padding:2px 4px;border-radius:4px;background:#167eb6;color:white;font-size:9px;font-weight:1000;}
+.arena-prizes-bottom {display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding:9px 2px 1px;border-top:1px solid #80623d;color:#ffe0a3;font-size:10px;}
+.arena-prizes-bottom svg {width:15px;height:15px;}
+.arena-prizes-bottom strong {margin-left:auto;color:#fbdf72;font-size:11px;}
+@media(min-width:600px) {.arena-prizes-overlay {align-items:center;}}
+@media(max-width:365px) {
+  .arena-approved-entry .arena-weekly-heading h3 {font-size:11px;}
+  .arena-approved-entry .arena-weekly-heading svg {width:17px;height:17px;}
+  .arena-approved-entry .arena-weekly-timer {padding:5px 4px;font-size:9px;}
+  .arena-approved-entry .arena-weekly-prize-button {width:27px;height:27px;}
+  .arena-weekly-prize-button svg {width:18px;height:18px;}
+  .arena-approved-entry .arena-weekly-winners {gap:3px;}
+  .arena-approved-entry .arena-weekly-winner {padding:4px 2px 5px;min-height:102px;}
+  .arena-approved-entry .arena-weekly-winner-1 {min-height:111px;}
+  .arena-weekly-winner-portrait {width:49px;height:57px;}
+  .arena-weekly-winner-1 .arena-weekly-winner-portrait {width:57px;height:65px;}
+  .arena-weekly-winner-name {font-size:10px;}
+  .arena-weekly-winner-wins {font-size:11px;}
+  .arena-prizes-tier {gap:5px;padding:5px;}
+  .arena-prizes-tier>strong {width:46px;font-size:11px;}
+  .arena-prizes-resources {font-size:10px;gap:3px 6px;}
+}
 .arena-approved-entry .arena-approved-mode-blue .arena-approved-en-card-desc {
   background:linear-gradient(180deg,#123951,#071724);
 }
