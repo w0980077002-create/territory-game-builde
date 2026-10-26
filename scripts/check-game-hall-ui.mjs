@@ -13,6 +13,14 @@ for(const game of ['monopoly','dice','tower','targets','treasury']) {
  assert.match(api,new RegExp("'"+game+"'"),'Server game type missing '+game);
 }
 assert.match(hall,/id:\s*'wheel'/,'Approved visual contains Wheel of Fortune');
+assert.match(hall,/const activeGame = GAMES\.find\(game => game\.id === state\?\.active\?\.game\)/,
+  'An unfinished Hall round must show the actual game name in the resume action');
+assert.match(hall,/resumeThisGame\s*\?\s*\(en \? 'Continue' : 'Продолжить'\)/,
+  'The active Hall game card must offer to continue instead of implying a new charge');
+assert.match(hall,/otherActive && !game\.demo[\s\S]*?'Finish round' : 'Заверши раунд'/,
+  'Other Hall games must explain why they are unavailable while a round is active');
+assert.match(hall,/game\.artwork\.endsWith\('\.webp'\) && <source/,
+  'Do not mislabel the SVG-only Viking Slots demo scene as a WebP source');
 assert.match(hall,/id:\s*'targets'[\s\S]*?scene:\s*'hall-art\/targets\.svg'[\s\S]*?artwork:\s*'hall-art\/targets-hd\.webp'/,
   'Previously hidden server-authoritative Sharpshooter must have a visible illustrated card');
 assert.doesNotMatch(hall,/id:\s*'targets'[\s\S]{0,250}demo:\s*true/, 'Sharpshooter must use the real server ticket flow');

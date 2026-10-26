@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { build } from 'esbuild';
 
 const result = await build({entryPoints:['src/game/eventsBoard.ts'],bundle:true,write:false,platform:'node',format:'esm'});
-const {eventCalendar,questAction,readyQuestCount} = await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+const {eventCalendar,questAction,readyQuestCount,withEventStatusTimeout} = await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
 const at = (date) => Date.parse(date);
 
 const ordinary = eventCalendar(at('2026-10-26T12:00:00Z'));
@@ -25,6 +25,10 @@ assert.equal(questAction({id:'unrecognized',type:'story'}),null);
 const tasks=[{type:'daily',current:3,target:3,claimed:false},{type:'daily',current:5,target:5,claimed:true},{type:'weekly',current:1,target:3,claimed:false}];
 assert.equal(readyQuestCount(tasks),1);
 assert.equal(readyQuestCount(tasks,'weekly'),0);
+assert.equal(await withEventStatusTimeout(Promise.resolve('ready'),50),'ready');
+await assert.rejects(withEventStatusTimeout(Promise.reject(new Error('offline')),50), /offline/);
+await assert.rejects(withEventStatusTimeout(new Promise(() => {}),15), /event_status_timeout/,
+  'a stalled weekly RPC must release the refresh control');
 
 const read = path => readFileSync(path,'utf8');
 const screen=read('src/components/EventsScreen.tsx'),home=read('src/components/HomeScreen.tsx'),app=read('src/App.tsx');
@@ -41,6 +45,10 @@ assert.match(home,/label=\{t\('events'\)\} badge=\{questAlerts\.readyCount > 0\}
 assert.match(quests,/const action = questAction\(q, language === 'en'\)/,'Existing quests should deep-link into gameplay');
 assert.match(quests,/onNavigate\(action\.destination\)/);
 assert.match(screen,/Promise\.allSettled\(checks\)/,'Live cards must tolerate partial backend failures');
+assert.match(screen,/view === 'daily'/,'Opening the daily calendar must not fetch all weekly statuses');
+assert.match(screen,/refresh\('daily'\)/,'Initial events view only checks live daily status');
+assert.match(screen,/weeklyArenaLive/,'Stale arena rankings must not be presented as current results');
+assert.match(screen,/aria-labelledby="territory-events-daily-tab"/,'Calendar tab must label its panel');
 for(const serverRead of ['hallStatus()','fetchSeasonStatus()','getArenaWeeklyStatus()'])assert.ok(screen.includes(serverRead));
 assert.doesNotMatch(screen,/hallDaily\(|hallStart\(|hallFinish\(|useGame\.set\(|supabase\.rpc\(/,'Event hub must never grant rewards itself');
 assert.match(screen,/season\.week === seasonWindow\(clock\)\.weekKey/,'Never show last week as a live season');
@@ -49,4 +57,6 @@ assert.match(analytics,/'messages','events'/,'Anonymous screen analytics must in
 assert.match(analytics,/'territory_events_action'/,'Track only whitelisted event navigation, never player identity');
 assert.match(styles,/max-width:\s*360px/,'Compact Android/iPhone screens must remain usable');
 assert.match(styles,/prefers-reduced-motion/,'Honor reduced-motion setting');
+assert.match(quests,/import\.meta\.env\.BASE_URL \+ 'ic-quests\.webp'/,'Quest art must work below the Pages base path');
+assert.match(quests,/import\.meta\.env\.BASE_URL \+ 'ic-trophy\.webp'/,'Achievement art must work below the Pages base path');
 console.log('Events board PASS: real existing bonuses, DST-safe Kyiv countdowns, server-only status, live navigation, first-hour quest actions, anonymous analytics and compact mobile layout.');

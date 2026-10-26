@@ -28,3 +28,14 @@ export function questAction(quest: Pick<Quest, 'id' | 'type'>, en = false) {
 export function readyQuestCount(quests: readonly Pick<Quest, 'current' | 'target' | 'claimed' | 'type'>[], type?: Quest['type']) {
   return quests.filter(q => (!type || q.type === type) && !q.claimed && q.current >= q.target).length;
 }
+
+/** A stalled optional status RPC must not keep the Event screen's refresh locked. */
+export function withEventStatusTimeout<T>(request: Promise<T>, timeoutMs = 8_000): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('event_status_timeout')), timeoutMs);
+    request.then(
+      value => { clearTimeout(timer); resolve(value); },
+      error => { clearTimeout(timer); reject(error); },
+    );
+  });
+}

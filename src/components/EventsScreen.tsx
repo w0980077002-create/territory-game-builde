@@ -8,7 +8,7 @@ import { DAILY_REWARDS, MAIL, blessingReady, dailyStatus } from '@/game/progress
 import { hallStatus, type HallState } from '@/game/gameHall';
 import { fetchSeasonStatus, type SeasonStatus } from '@/game/seasonApi';
 import { getArenaWeeklyStatus, type ArenaWeeklyStatus } from '@/game/arenaWeekly';
-import { eventCalendar, readyQuestCount } from '@/game/eventsBoard';
+import { eventCalendar, readyQuestCount, withEventStatusTimeout } from '@/game/eventsBoard';
 import { captureGameEvent } from '@/game/analytics';
 import { seasonCountdown, seasonWindow } from '@/game/seasonCalendar';
 import './eventsBoard.css';
@@ -55,34 +55,37 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
   const [arena, setArena] = useState<ArenaWeeklyStatus | null>(null);
   const [checking, setChecking] = useState(false);
   const [failed, setFailed] = useState({ hall: false, season: false, arena: false });
+  const tabRef = useRef<'daily' | 'weekly'>('daily');
   const currentRequest = useRef(0);
-  const lastFetched = useRef(0);
+  const lastFetched = useRef({ daily: 0, weekly: 0 });
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback((view: 'daily' | 'weekly' = tabRef.current) => {
     const request = ++currentRequest.current;
-    lastFetched.current = Date.now();
+    lastFetched.current[view] = Date.now();
     setChecking(true);
     setFailed({ hall: false, season: false, arena: false });
-    // Each independent read populates its own card as soon as it returns.
-    // Slow season/arena servers must never block daily rewards or navigation.
-    const checks = [
-      hallStatus().then(value => { if (request === currentRequest.current) setHall(value); })
+    // Daily opening needs only Hall status; defer weekly RPCs until the
+    // player opens that tab. Stalled optional reads expire independently.
+    const checks = view === 'daily' ? [
+      withEventStatusTimeout(hallStatus()).then(value => { if (request === currentRequest.current) setHall(value); })
         .catch(() => { if (request === currentRequest.current) { setHall(null); setFailed(v => ({ ...v, hall: true })); } }),
-      fetchSeasonStatus().then(value => { if (request === currentRequest.current) setSeason(value); })
+    ] : [
+      withEventStatusTimeout(fetchSeasonStatus()).then(value => { if (request === currentRequest.current) setSeason(value); })
         .catch(() => { if (request === currentRequest.current) { setSeason(null); setFailed(v => ({ ...v, season: true })); } }),
-      getArenaWeeklyStatus().then(value => { if (request === currentRequest.current) setArena(value); })
+      withEventStatusTimeout(getArenaWeeklyStatus()).then(value => { if (request === currentRequest.current) setArena(value); })
         .catch(() => { if (request === currentRequest.current) { setArena(null); setFailed(v => ({ ...v, arena: true })); } }),
     ];
     void Promise.allSettled(checks).then(() => { if (request === currentRequest.current) setChecking(false); });
   }, []);
 
   useEffect(() => {
-    refresh();
+    refresh('daily');
     const ticker = window.setInterval(() => setClock(Date.now()), 30_000);
     const resumed = () => {
       if (document.visibilityState === 'visible') {
         setClock(Date.now());
-        if (Date.now() - lastFetched.current > 90_000) refresh();
+        const view = tabRef.current;
+        if (Date.now() - lastFetched.current[view] > 90_000) refresh(view);
       }
     };
     document.addEventListener('visibilitychange', resumed);
@@ -106,11 +109,18 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
   const seasonActive = season?.enabled === true && season.week === seasonWindow(clock).weekKey;
   // A staged server can report an older week; never display it as today's contest.
   const weeklySeasonLive = seasonActive && season?.ends_at !== '' && Date.parse(season.ends_at) > clock;
+  const weeklyArenaLive = !!arena && Date.parse(arena.starts_at) <= clock && Date.parse(arena.ends_at) > clock;
   const readyNow = Number(!daily.claimedToday) + Number(blessing) + Number(readyDaily > 0)
     + Number(hall?.free_ready === true) + Number(gatherReady) + Number(unreadMail > 0);
   const dayReward = DAILY_REWARDS[daily.dayIndex];
   const format = (n: number) => n.toLocaleString(en ? 'en-US' : 'ru-RU');
   const visit = (destination: EventDestination) => () => onNavigate(destination);
+  const switchTab = (next: 'daily' | 'weekly') => {
+    if (tabRef.current === next) return;
+    tabRef.current = next;
+    setTab(next);
+    refresh(next);
+  };
 
   return <div className="territory-events" data-testid="territory-events">
     <header className="territory-events__hero">
@@ -120,7 +130,7 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
         <h2>{en ? 'Adventure calendar' : 'Календарь приключений'}</h2>
         <p>{en ? 'Real quests, bonuses and standings in one place' : 'Все задания, бонусы и соревнования в одном месте'}</p>
       </div>
-      <button type="button" className="territory-events__refresh" onClick={refresh} aria-label={en ? 'Refresh events' : 'Обновить события'} disabled={checking}>
+      <button type="button" className="territory-events__refresh" onClick={() => refresh()} aria-label={en ? 'Refresh events' : 'Обновить события'} disabled={checking}>
         <RefreshCw size={18} className={checking ? 'animate-spin' : ''}/>
       </button>
     </header>
@@ -131,11 +141,11 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
     </div>
 
     <div className="territory-events__tabs" role="tablist" aria-label={en ? 'Event calendar' : 'Календарь событий'}>
-      <button type="button" role="tab" aria-selected={tab === 'daily'} onClick={() => setTab('daily')}><CalendarDays size={17}/>{en ? 'Today' : 'Сегодня'}</button>
-      <button type="button" role="tab" aria-selected={tab === 'weekly'} onClick={() => setTab('weekly')}><Trophy size={17}/>{en ? 'This week' : 'Эта неделя'}</button>
+      <button id="territory-events-daily-tab" type="button" role="tab" aria-controls="territory-events-daily-panel" aria-selected={tab === 'daily'} onClick={() => switchTab('daily')}><CalendarDays size={17}/>{en ? 'Today' : 'Сегодня'}</button>
+      <button id="territory-events-weekly-tab" type="button" role="tab" aria-controls="territory-events-weekly-panel" aria-selected={tab === 'weekly'} onClick={() => switchTab('weekly')}><Trophy size={17}/>{en ? 'This week' : 'Эта неделя'}</button>
     </div>
 
-    {tab === 'daily' ? <div className="territory-events__list" role="tabpanel">
+    {tab === 'daily' ? <div id="territory-events-daily-panel" className="territory-events__list" role="tabpanel" aria-labelledby="territory-events-daily-tab">
       <EventCard icon={Gift} image="ic-daily.webp" name={en ? 'Daily login gift' : 'Ежедневный подарок'}
         description={en ? `Day ${daily.dayIndex + 1} of 7. Open the reward calendar.` : `День ${daily.dayIndex + 1} из 7. Забери подарок в календаре.`}
         detail={dayReward ? [dayReward.gold ? `${format(dayReward.gold)} 🪙` : '', dayReward.gems ? `${dayReward.gems} 💎` : '', dayReward.stones ? `${dayReward.stones} ⚔️` : ''].filter(Boolean).join(' · ') : ''}
@@ -155,15 +165,15 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
       <EventCard icon={Bell} image="ic-mail.webp" name={en ? 'Mail and gifts' : 'Почта и подарки'}
         description={en ? `${unreadMail} unclaimed letters` : `Не получено писем: ${unreadMail}`}
         status={unreadMail ? 'ready' : 'done'} action={en ? 'Open inbox' : 'Открыть сообщения'} actionId="mail" onClick={visit('messages')} en={en}/>
-    </div> : <div className="territory-events__list" role="tabpanel">
+    </div> : <div id="territory-events-weekly-panel" className="territory-events__list" role="tabpanel" aria-labelledby="territory-events-weekly-tab">
       <div className="territory-events__week-clock"><Clock3 size={16}/>{en ? 'Week ends in' : 'До конца недели'} <strong>{seasonCountdown(time.weeklyRemaining, language)}</strong></div>
       <EventCard icon={ScrollText} image="ic-quests.webp" name={en ? 'Weekly challenges' : 'Недельные задания'}
         description={en ? `${readyWeekly} rewards ready · ${weekQuests.length} active tasks` : `${readyWeekly} наград готово · ${weekQuests.length} текущих заданий`}
         status={readyWeekly ? 'ready' : weekQuests.length ? 'active' : 'done'} action={en ? 'Open quests' : 'Перейти к заданиям'} actionId="weekly-quests" onClick={visit('quests')} en={en}/>
       <EventCard icon={Swords} image="ic-arena.webp" name={en ? 'Arena weekly ranking' : 'Недельный рейтинг арены'}
-        description={arena ? (en ? `Verified wins: ${format(arena.my_wins)} · rank ${arena.my_rank ? '#' + arena.my_rank : '—'}` : `Подтверждено побед: ${format(arena.my_wins)} · место ${arena.my_rank ? '№' + arena.my_rank : '—'}`)
+        description={weeklyArenaLive && arena ? (en ? `Verified wins: ${format(arena.my_wins)} · rank ${arena.my_rank ? '#' + arena.my_rank : '—'}` : `Подтверждено побед: ${format(arena.my_wins)} · место ${arena.my_rank ? '№' + arena.my_rank : '—'}`)
           : (en ? 'The Arena server confirms weekly wins and positions.' : 'Победы и место в рейтинге подтверждает сервер арены.')}
-        status={arena ? 'active' : 'unknown'} action={en ? 'Fight in Arena' : 'Сражаться на арене'} actionId="arena-weekly" onClick={visit('arena')} en={en}/>
+        status={weeklyArenaLive ? 'active' : 'unknown'} action={en ? 'Fight in Arena' : 'Сражаться на арене'} actionId="arena-weekly" onClick={visit('arena')} en={en}/>
       <EventCard icon={Crown} image="ic-trophy.webp" name={en ? 'Weekly championship' : 'Недельный чемпионат'}
         description={weeklySeasonLive && season ? (en ? `Your points: ${format(season.my_points)} · place ${season.my_rank ? '#' + season.my_rank : '—'}` : `Твои очки: ${format(season.my_points)} · место ${season.my_rank ? '№' + season.my_rank : '—'}`)
           : (en ? 'Points and prizes start only when the server enables the championship.' : 'Очки и призы появятся после запуска чемпионата на сервере.')}

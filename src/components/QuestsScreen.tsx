@@ -29,7 +29,7 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { use
       <div className="relative rounded-2xl overflow-hidden border border-amber-500/20 p-4">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-900/35 via-[#16130d] to-[#0f1115]" />
         <div className="relative flex items-center gap-3">
-          <img src="/ic-quests.webp" alt="" className="w-12 h-12 object-contain" />
+          <img src={import.meta.env.BASE_URL + 'ic-quests.webp'} alt="" className="w-12 h-12 object-contain" />
           <div className="flex-1">
             <h2 className="text-lg font-bold text-amber-100">{t('questTitle')}</h2>
             <p className="text-xs text-gray-400">{ready ? `${t('readyToClaim')}: ${ready}` : t('doQuestsForStones')}</p>
@@ -167,7 +167,7 @@ function AchievementCard({ ach, onClaim, language, t }: { ach: Achievement; onCl
   return (
     <div className={`rounded-2xl border p-3 ${complete && !ach.claimed ? 'border-amber-400/40 bg-amber-950/20' : 'border-white/10 bg-black/25'}`}>
       <div className="flex items-center gap-3">
-        <img src="/ic-trophy.webp" alt="" className={`w-10 h-10 object-contain shrink-0 ${complete ? '' : 'grayscale opacity-50'}`} />
+        <img src={import.meta.env.BASE_URL + 'ic-trophy.webp'} alt="" className={`w-10 h-10 object-contain shrink-0 ${complete ? '' : 'grayscale opacity-50'}`} />
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-semibold text-white">{language === 'en' ? ({ ach_1: t('achievementFirst'), ach_2: t('achievementFighter'), ach_3: t('achievementChapters'), ach_4: t('achievementBosses'), ach_5: t('achievementRich') } as Record<string, string>)[ach.id] ?? ach.title : ach.title}</h4>
           <p className="text-xs text-gray-400">{language === 'en' ? ({ ach_1: t('achievementFirstDesc'), ach_2: t('achievementFighterDesc'), ach_3: t('achievementChaptersDesc'), ach_4: t('achievementBossesDesc'), ach_5: t('achievementRichDesc') } as Record<string, string>)[ach.id] ?? ach.description : ach.description}</p>

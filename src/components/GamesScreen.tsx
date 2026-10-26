@@ -149,6 +149,10 @@ export function GamesScreen({
     onPlay(id);
   };
 
+  // One server Hall round may be unfinished. Make the resume destination
+  // unmistakable; previews have no ticket transactions and remain available.
+  const activeGame = GAMES.find(game => game.id === state?.active?.game);
+
   return (
     <div ref={hallRef} className="territory-game-hall" data-testid="game-hall">
       <header className="hall-marquee" style={{backgroundImage: `url("${base}hall-art/marquee.svg")`}} aria-label={en ? 'TERRITORY Game Hall' : 'TERRITORY Игровой зал'}>
@@ -203,7 +207,9 @@ export function GamesScreen({
         <button className="hall-resume" type="button" onClick={() => onPlay(state.active!.game)}
           data-testid="resume-hall">
           <RefreshCw size={18} />
-          <span>{en ? 'Continue your unfinished game' : 'Продолжить незавершённую игру'}</span>
+          <span>{en ? 'Continue: ' : 'Продолжить: '}
+            <strong>{activeGame ? (en ? activeGame.en : activeGame.ru) : (en ? 'unfinished game' : 'незавершённая игра')}</strong>
+          </span>
           <ArrowRight size={18} aria-hidden="true" />
         </button>
       )}
@@ -213,18 +219,24 @@ export function GamesScreen({
           const featured = index === 0;
           const locked = !state || (state.tickets < 1 && !state.active);
           const otherActive = !!state?.active && state.active.game !== game.id;
+          const resumeThisGame = state?.active?.game === game.id;
+          const action = otherActive && !game.demo
+            ? (en ? 'Finish round' : 'Заверши раунд')
+            : resumeThisGame
+              ? (en ? 'Continue' : 'Продолжить')
+              : game.demo ? (en ? 'Try demo' : 'Демо') : (en ? 'Play' : 'Играть');
           return (
             <button
               key={game.id}
               type="button"
               data-testid={`hall-game-${game.id}`}
-              aria-label={`${en ? game.en : game.ru} · ${game.demo ? (en ? 'Demo, no real rewards' : 'Демо, без реальных наград') : game.comingSoon ? (en ? 'Play, no tickets used' : 'Играть, билеты не списываются') : (en ? '1 ticket' : '1 билет')}`}
+              aria-label={`${en ? game.en : game.ru} · ${game.demo ? (en ? 'Demo, no real rewards' : 'Демо, без реальных наград') : otherActive ? (en ? 'Finish your active round first' : 'Сначала заверши начатый раунд') : resumeThisGame ? (en ? 'Continue your round' : 'Продолжить начатый раунд') : (en ? '1 ticket' : '1 билет')}`}
               onClick={() => play(game)}
               disabled={!game.demo && !game.comingSoon && (loading || !state || busy || otherActive)}
               className={`hall-game hall-game--${game.color} ${featured ? 'hall-game--featured' : ''} ${locked && !game.comingSoon && !game.demo ? 'hall-game--no-tickets' : ''} ${game.comingSoon ? 'hall-game--coming-soon' : ''}`}
             >
               <picture className="hall-game__scene">
-                <source
+                {game.artwork.endsWith('.webp') && <source
                   type="image/webp"
                   srcSet={featured
                     ? `${base + game.artwork} 1774w`
@@ -232,7 +244,7 @@ export function GamesScreen({
                   sizes={featured
                     ? '(max-width: 448px) calc(100vw - 18px), 430px'
                     : '(max-width: 360px) calc((100vw - 21px) / 2), (max-width: 448px) calc((100vw - 27px) / 2), 211px'}
-                />
+                />}
                 <img src={base + game.scene} alt="" loading="lazy" decoding="async" draggable={false} />
               </picture>
               <span className="hall-game__glow" aria-hidden="true" />
@@ -244,7 +256,7 @@ export function GamesScreen({
                 <strong className="hall-game__name">{en ? game.en : game.ru}</strong>
                 <small className="hall-game__hint">{en ? game.enHint : game.ruHint}</small>
               </span>
-              <span className="hall-game__play">{game.demo ? (en ? 'Try demo' : 'Демо') : (en ? 'Play' : 'Играть')}<ChevronRight size={14} aria-hidden="true" /></span>
+              <span className={`hall-game__play ${otherActive && !game.demo ? 'hall-game__play--blocked' : ''}`}>{action}<ChevronRight size={14} aria-hidden="true" /></span>
             </button>
           );
         })}

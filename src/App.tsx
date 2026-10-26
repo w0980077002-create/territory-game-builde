@@ -9,6 +9,7 @@ import { createImmediateSaveController } from '@/game/immediateSave';
 import { HomeScreen } from '@/components/HomeScreen';
 import type { BattleView } from '@/components/BattleScreen';
 import { DailySheet, type SaveStatus } from '@/components/home/HomeSheets';
+import { SectionErrorBoundary } from '@/components/SectionErrorBoundary';
 
 
 
@@ -397,6 +398,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
       )}
 
       <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : slotImmersive ? 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide !px-0 !py-0' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
+        <SectionErrorBoundary key={screen} language={language} onBack={() => setScreen('city')}>
         <Suspense fallback={<div role="status" className="flex min-h-32 items-center justify-center text-center text-sm text-amber-100/80">{language === 'en' ? 'Opening section…' : 'Открываем раздел…'}</div>}>
         {screen === 'city' && (
           <HomeScreen
@@ -454,6 +456,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'events' && <EventsScreen onNavigate={setScreen} onDaily={() => setEventDailyOpen(true)} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} gatherReady={gatherReady} />}
         {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} />}
         </Suspense>
+        </SectionErrorBoundary>
       </main>
 
       {eventDailyOpen && <DailySheet onClose={() => setEventDailyOpen(false)} notify={notify} />}
