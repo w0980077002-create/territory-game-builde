@@ -56,9 +56,8 @@ assert.match(roster, /candidates\.slice\(0, 50\)/, 'Display must contain exactly
 assert.match(roster, /rank: index \+ 1/, 'Displayed ranks must run continuously from 1');
 assert.doesNotMatch(roster, /rank <= 9|50 - Math\.max\(9, humans\.length\)/, 'Artificial NPC rank limits must not return');
 assert.match(weeklyUI, /arenaWeeklyWithBots/, 'Weekly ranking should merge verified players with NPC placeholders');
-assert.match(weeklyUI, /Боец арены: игровой бот/, 'NPC identity must be available on the actual leaderboard entry');
-assert.match(weeklyUI, /Соперник арены/, 'NPC entry must have a concise label instead of the removed explanatory footer');
-assert.doesNotMatch(weeklyUI, /Места 10–50 могут занимать боты арены/, 'Removed verbose NPC footer must not reappear');
+assert.doesNotMatch(weeklyUI, /Боец арены: игровой бот|Соперник арены|Места 10–50 могут занимать боты арены/,
+  'Arena leaderboard must not expose simulated-opponent labels to players');
 assert.doesNotMatch(roster, /supabase\.(?:from|rpc)|update\(|insert\(|delete\(/i,
   'Leaderboard filler may never mutate authoritative PvP game state');
 console.log('Weekly Arena TOP: 25 Cyrillic + 25 Latin unique names without numerical variants; real players and bots ranked by victories.');

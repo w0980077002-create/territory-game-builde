@@ -1059,3 +1059,188 @@
   .arena-approved-entry .arena-approved-en-card-cta {font-size:10px;border-width:1.5px;}
   .arena-approved-entry .arena-approved-en-card-desc {font-size:9px;}
 }
+
+/* Arena final presentation pass. Keep the approved artwork and real matchmaking;
+   make its energy cost, season podium, all 50 ranks and prizes legible on phones. */
+.arena-approved-fight-tip {
+  display:flex;align-items:center;justify-content:space-between;gap:7px;
+  margin:0 1px 7px;padding:5px 8px;min-height:30px;
+  border:1px solid #71583c;border-radius:8px;
+  background:linear-gradient(90deg,#172d43,#0b1d31);
+  box-shadow:inset 0 1px 0 #ffce8040;
+  color:#ffe0a8;font-size:clamp(10px,2.75vw,12px);font-weight:800;
+}
+.arena-approved-fight-tip>span,.arena-approved-fight-tip button{display:inline-flex;align-items:center;gap:5px;min-width:0;}
+.arena-approved-fight-tip>span svg{width:15px;height:15px;flex-shrink:0;fill:#f6b950;color:#ffda6b;}
+.arena-approved-fight-tip button{flex-shrink:0;padding:3px 6px;border:1px solid #4c8ebb;border-radius:6px;background:#143854;color:#c9ecff;font-size:10px;font-weight:900;}
+.arena-approved-fight-tip button svg{width:12px;height:12px;}
+.arena-approved-fight-tip-empty{border-color:#bc7356;color:#ffd0ae;}
+.arena-approved-fight-tip-empty>span svg{color:#f18469;fill:#e36a36;}
+
+/* Champion podium: distinct medal levels, clear portraits and a real podium base. */
+.arena-approved-entry .arena-weekly-winners{margin:5px 0 7px;padding:10px 1px 7px;gap:6px;}
+.arena-approved-entry .arena-weekly-winner{
+  min-height:120px;padding:7px 5px 9px;overflow:visible;
+  border-width:2px;border-radius:11px 11px 8px 8px;
+}
+.arena-approved-entry .arena-weekly-winner-1{min-height:137px;transform:translateY(-2px);}
+.arena-approved-entry .arena-weekly-winner::after{
+  content:"";position:absolute;bottom:-5px;left:6%;right:6%;height:5px;
+  border-radius:0 0 7px 7px;background:linear-gradient(90deg,#54728e,#bed6e5,#526d86);
+  box-shadow:0 2px 4px #000b;
+}
+.arena-approved-entry .arena-weekly-winner-1::after{background:linear-gradient(90deg,#9b651a,#ffe49b,#b47719);}
+.arena-approved-entry .arena-weekly-winner-3::after{background:linear-gradient(90deg,#8c4b2b,#eab78d,#935330);}
+.arena-weekly-champion-crown{
+  position:absolute;top:-16px;right:7px;width:25px;height:25px;z-index:3;
+  color:#ffe48a;fill:#f5b72d;stroke-width:2;filter:drop-shadow(0 3px 2px #000a);
+}
+.arena-approved-entry .arena-weekly-winner-1 .arena-weekly-winner-medal{left:5px;top:5px;transform:none;}
+.arena-approved-entry .arena-weekly-winner-portrait{
+  width:clamp(52px,15vw,68px);height:clamp(59px,17vw,76px);
+  margin-bottom:4px;border-bottom-width:3px;
+  background:radial-gradient(ellipse at 50% 44%,#345f8c 0%,#183655 52%,#0b213a 85%);
+}
+.arena-approved-entry .arena-weekly-winner-1 .arena-weekly-winner-portrait{width:clamp(61px,17vw,76px);height:clamp(69px,19vw,84px);}
+.arena-approved-entry .arena-weekly-winner-name{width:100%;text-align:center;font-size:clamp(11px,3vw,14px);}
+.arena-approved-entry .arena-weekly-winner-wins{margin-top:5px;font-size:clamp(12px,3.3vw,15px);}
+
+/* A single readable 1–50 scoreboard, instead of fifty tiny two-column cards. */
+.arena-approved-entry .arena-weekly-rows-expanded{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:4px;
+  max-height:min(48dvh,390px);padding:6px;
+}
+.arena-weekly-list-head{
+  position:sticky;top:-6px;z-index:2;display:flex;justify-content:space-between;align-items:center;
+  padding:6px 10px;color:#b9cfe4;font-size:10px;font-weight:950;letter-spacing:.04em;
+  border-bottom:1px solid #496986;background:#091d32;
+}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-player{
+  display:grid;grid-template-columns:32px 40px minmax(0,1fr) auto;grid-template-rows:1fr;
+  align-items:center;gap:0 7px;min-height:58px;height:58px;padding:6px 9px;
+  border-radius:9px;
+}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-rank{
+  grid-column:1;grid-row:1;width:32px;height:36px;font-size:15px;
+}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-avatar{
+  grid-column:2;grid-row:1;width:40px;height:43px;
+}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-player-name{
+  grid-column:3;grid-row:1;font-size:12px;font-weight:950;
+}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-wins{
+  grid-column:4;grid-row:1;justify-self:end;align-self:center;
+  font-size:13px;font-weight:1000;white-space:nowrap;color:#ffe19a;
+}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-wins svg{width:15px;height:15px;}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-mine{
+  border:2px solid #49d7fa;background:linear-gradient(120deg,#15547a,#08253f);
+}
+.arena-weekly-my-rank{
+  display:inline-flex;align-items:center;margin-left:6px;padding:2px 5px;
+  border:1px solid #e6b458;border-radius:5px;background:#42331b;color:#ffdf91;font-size:10px;
+}
+.arena-approved-entry .arena-weekly-chase-note{
+  display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:10px;color:#b5d0e7;
+}
+
+/* A real prize table: named currency legend, aligned quantities, visible tier. */
+.arena-prizes-overlay{padding:12px 10px max(16px,env(safe-area-inset-bottom));}
+.arena-prizes-panel{width:min(100%,440px);max-height:min(88dvh,710px);border-color:#edb759;}
+.arena-prizes-head{padding:13px 13px 11px;background:linear-gradient(145deg,#65441e 0%,#35343b 50%,#122b48 100%);}
+.arena-prizes-head h3{font-size:clamp(15px,4.4vw,19px);}
+.arena-prizes-body{padding:11px 12px 12px;}
+.arena-prizes-my-place{
+  gap:10px;padding:11px 12px;margin-bottom:7px;
+  border:1.5px solid #76c7ed;
+  background:linear-gradient(115deg,#175277,#113455 55%,#0c2944);
+  box-shadow:inset 0 1px 0 #c3f4ff61,0 3px 8px #0006;
+}
+.arena-prizes-my-place>svg{width:29px;height:29px;}
+.arena-prizes-my-place strong{display:block;font-size:15px;line-height:1.1;color:#fff0bc;}
+.arena-prizes-my-place small{margin-top:4px;line-height:1.3;font-size:10px;}
+.arena-prizes-condition{margin:4px 0 9px;color:#d2c49e;font-size:10px;line-height:1.3;text-align:center;}
+.arena-prizes-legend{
+  display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;
+  margin:0 0 10px;padding:7px 9px;border:1px solid #496786;border-radius:9px;
+  background:linear-gradient(160deg,#0e2945,#0a1e35);
+}
+.arena-prizes-legend span{display:flex;align-items:center;gap:5px;min-width:0;color:#d8e8f6;font-size:10px;font-weight:750;line-height:1.2;}
+.arena-prizes-legend b{display:inline-block;width:20px;text-align:center;font-size:16px;font-weight:900;font-style:normal;}
+.arena-prizes-legend .arena-prizes-red{color:#ff8eb0;}
+.arena-prizes-list{gap:7px;}
+.arena-prizes-tier{
+  display:grid;grid-template-columns:62px minmax(0,1fr);gap:7px;
+  min-height:55px;padding:6px 8px;border-radius:10px;
+  background:linear-gradient(130deg,#173b5d,#102a46 55%,#0b213b);
+}
+.arena-prizes-tier>.arena-prizes-tier-rank{
+  width:62px;height:40px;min-height:40px;align-self:center;
+  border:1px solid #879fb5;border-radius:7px;font-size:13px;
+}
+.arena-prizes-tier-1{border-color:#e6af50;background:linear-gradient(120deg,#63451c,#243d55 48%,#0e2540);}
+.arena-prizes-tier-1>.arena-prizes-tier-rank{border-color:#ffe49a;}
+.arena-prizes-tier-mine{
+  border-color:#68e5ff;outline:2px solid #4fdcff;outline-offset:1px;
+  background:linear-gradient(110deg,#175d87,#0d365a 67%,#0b2846);
+  box-shadow:inset 0 0 0 1px #b5f9ff85,0 0 12px #39ccff63;
+}
+.arena-prizes-resources{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;
+  align-items:center;width:100%;font-size:12px;
+}
+.arena-prizes-resources>span{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;min-width:0;white-space:nowrap;line-height:1;
+}
+.arena-prizes-resources i{display:block;min-height:19px;font-size:17px;font-weight:900;font-style:normal;line-height:19px;}
+.arena-prizes-resources b{font-size:13px;color:#fff5d5;font-weight:1000;line-height:1.1;font-variant-numeric:tabular-nums;}
+.arena-prizes-resources .arena-prizes-red i{color:#ff89a5;}
+.arena-prizes-resources .arena-prizes-none{opacity:.35;}
+.arena-prizes-you{
+  position:absolute;top:-8px;right:6px;padding:2px 7px;
+  border:1px solid #92f4ff;border-radius:5px;
+  background:#077fae;color:#fff;font-size:9px;letter-spacing:.04em;
+  box-shadow:0 2px 3px #0008;
+}
+.arena-prizes-bottom{gap:7px;margin-top:10px;padding:11px 2px 0;border-top-color:#ab7f41;font-size:11px;}
+.arena-prizes-bottom strong{font-size:13px;}
+/* Rules use the same carved Viking visual system as Arena prizes. */
+.arena-rules-overlay{position:fixed;inset:0;z-index:101;display:flex;justify-content:center;align-items:flex-end;padding:12px 10px max(16px,env(safe-area-inset-bottom));}
+.arena-rules-backdrop{position:absolute;inset:0;border:0;background:#02060bd8;backdrop-filter:blur(3px);}
+.arena-rules-panel{
+  position:relative;z-index:1;display:flex;flex-direction:column;
+  width:min(100%,440px);max-height:86dvh;overflow:hidden;
+  border:2px solid #e5b25d;border-radius:15px;
+  background:linear-gradient(165deg,#1c3e5b,#0c2239 45%,#061426);
+  color:#ecf2f8;box-shadow:inset 0 1px 0 #ffe3a173,0 10px 28px #000d;
+}
+.arena-rules-head{display:flex;align-items:center;gap:9px;padding:13px 12px;border-bottom:2px solid #a87537;background:linear-gradient(125deg,#60411f,#1a2e47);}
+.arena-rules-head>svg{width:25px;height:25px;flex-shrink:0;color:#ffd471;}
+.arena-rules-head h3{flex:1;min-width:0;font-weight:1000;font-size:18px;letter-spacing:.02em;color:#ffe3a0;}
+.arena-rules-head button{display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border:1px solid #bb8a4d;border-radius:8px;background:#18334d;}
+.arena-rules-head button svg{width:20px;height:20px;}
+.arena-rules-list{display:grid;gap:7px;margin:0;padding:12px;overflow-y:auto;overscroll-behavior:contain;list-style:none;}
+.arena-rules-list li{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border:1px solid #416080;border-radius:9px;background:linear-gradient(130deg,#163a59,#0c2137);font-size:12px;line-height:1.45;}
+.arena-rules-number{display:grid;place-items:center;width:24px;height:24px;flex:0 0 24px;border:1px solid #f3c776;border-radius:50%;background:linear-gradient(#e6b750,#93611b);color:#231607;font-size:11px;font-weight:1000;}
+@media(min-width:600px){.arena-rules-overlay{align-items:center;}}
+@media(max-width:365px){
+  .arena-approved-fight-tip{padding:5px 6px;font-size:10px;}
+  .arena-approved-entry .arena-weekly-winners{gap:3px;}
+  .arena-approved-entry .arena-weekly-winner{padding-left:2px;padding-right:2px;min-height:113px;}
+  .arena-approved-entry .arena-weekly-winner-1{min-height:129px;}
+  .arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-player{grid-template-columns:26px 35px minmax(0,1fr) auto;gap:0 4px;padding:5px;}
+  .arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-rank{width:26px;height:33px;font-size:12px;}
+  .arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-avatar{width:35px;height:40px;}
+  .arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-player-name{font-size:11px;}
+  .arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-wins{font-size:11px;}
+  .arena-prizes-tier{grid-template-columns:53px minmax(0,1fr);padding:6px;gap:4px;}
+  .arena-prizes-tier>.arena-prizes-tier-rank{width:53px;font-size:12px;}
+  .arena-prizes-resources{gap:1px;}
+  .arena-prizes-resources i{font-size:15px;}
+  .arena-prizes-resources b{font-size:12px;}
+  .arena-prizes-legend{gap:4px;font-size:9px;}
+  .arena-prizes-legend span{font-size:9px;}
+}

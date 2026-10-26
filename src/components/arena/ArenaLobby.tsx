@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useGame, useArena } from '@/game/actions';
 import type { ArenaMode } from '@/game/arenaApi';
@@ -7,7 +7,7 @@ import { captureGameEvent } from '@/game/analytics';
 import { hapticImpact } from '@/game/telegram';
 import { IosGamePortal } from '@/components/ui/Modal';
 import { useLanguage, localizeText } from '@/game/i18n';
-import { ChevronLeft, Flame, Info, Loader2, Swords, Trophy, Users, X } from 'lucide-react';
+import { ChevronLeft, Flame, Info, Loader2, Swords, Users, X, Zap } from 'lucide-react';
 import { ArenaWeeklyBoard } from './ArenaWeeklyBoard';
 import './arenaLobby.css';
 
@@ -126,6 +126,10 @@ export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
         })}
       </section>
 
+      <div className={`arena-approved-fight-tip ${noEnergy ? 'arena-approved-fight-tip-empty' : ''}`}>
+        <span><Zap aria-hidden="true" />{en ? `Battle: ${ENERGY_COST} energy · Available: ${state.player.energy}` : `Бой: ${ENERGY_COST} энергия · Доступно: ${state.player.energy}`}</span>
+        <button type="button" onClick={() => setShowRules(true)}><Info aria-hidden="true" />{en ? 'Rules' : 'Правила'}</button>
+      </div>
       {error && <p role="alert" className="arena-lobby-warning">{error}</p>}
       <ArenaWeeklyBoard />
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
@@ -135,6 +139,17 @@ export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
 
 function RulesModal({ onClose }: { onClose: () => void }) {
   const { language } = useLanguage();
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+      if (event.key === 'Tab') { event.preventDefault(); closeRef.current?.focus(); }
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => { window.removeEventListener('keydown', closeOnEscape); previousFocus?.focus(); };
+  }, [onClose]);
   const rules = [
     'Каждый раунд выбери цель, 2 из 4 зон защиты слева и 1 зону удара справа, затем жми «УДАР».',
     'Удар в заблокированную зону не проходит. Критический удар пробивает блок, но слабее.',
@@ -149,17 +164,19 @@ function RulesModal({ onClose }: { onClose: () => void }) {
   ];
   return (
     <IosGamePortal>
-    <div className="arena-modal-overlay fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-      <div className="card w-full max-w-md animate-slide-up" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2"><Trophy className="w-5 h-5 text-amber-400" /> {language === 'en' ? 'How combat works' : 'Как проходит бой'}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+    <div className="arena-rules-overlay" role="dialog" aria-modal="true" aria-labelledby="arena-rules-title">
+      <button type="button" className="arena-rules-backdrop" aria-label={language === 'en' ? 'Close rules' : 'Закрыть правила'} onClick={onClose} />
+      <div className="arena-rules-panel">
+        <div className="arena-rules-head">
+          <Swords aria-hidden="true" />
+          <h3 id="arena-rules-title">{language === 'en' ? 'ARENA RULES' : 'ПРАВИЛА АРЕНЫ'}</h3>
+          <button ref={closeRef} type="button" onClick={onClose} aria-label={language === 'en' ? 'Close' : 'Закрыть'}><X aria-hidden="true" /></button>
         </div>
-        <ol className="space-y-2">
+        <ol className="arena-rules-list">
           {rules.map((r, i) => (
-            <li key={i} className="flex gap-3 text-sm text-gray-300 leading-relaxed">
-              <span className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-300 text-xs flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-              {language === 'en' ? ([
+            <li key={i}>
+              <span className="arena-rules-number">{i + 1}</span>
+              <span>{language === 'en' ? ([
                 'Each round, choose a target, 2 of 4 defense zones on the left, and 1 attack zone on the right, then press STRIKE.',
                 'A strike against a blocked zone does not land. Critical strikes pierce blocks but deal less damage.',
                 'Head strikes deal more damage (×1.25); leg strikes deal less (×0.85).',
@@ -170,7 +187,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                 'A fallen fighter stays in the room until battle ends. An ally can revive them with Adrenaline.',
                 'Auto-battle: the server fights for you even while the game is minimized.',
                 'After the battle, you have 30 minutes to chat. The arena then closes automatically.'
-              ] as string[])[i] : r}
+              ] as string[])[i] : r}</span>
             </li>
           ))}
         </ol>
