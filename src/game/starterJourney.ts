@@ -1,6 +1,6 @@
 import type { GameState } from './types';
 
-export type StarterDestination = 'battle' | 'inventory' | 'shop';
+export type StarterDestination = 'battle' | 'inventory' | 'shop' | 'arena';
 export type StarterMilestone = {
   id: 'first-fight' | 'three-fights' | 'first-equipment' | 'level-five';
   done: boolean;

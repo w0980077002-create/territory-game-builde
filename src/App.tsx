@@ -8,7 +8,7 @@ import { loadCloudSave, saveCloudSave } from '@/game/cloud';
 import { createImmediateSaveController } from '@/game/immediateSave';
 import { HomeScreen } from '@/components/HomeScreen';
 import type { BattleView } from '@/components/BattleScreen';
-import type { SaveStatus } from '@/components/home/HomeSheets';
+import { DailySheet, type SaveStatus } from '@/components/home/HomeSheets';
 
 
 
@@ -57,9 +57,10 @@ const ClanScreen = lazy(() => import('@/components/ClanScreen').then(m => ({ def
 const AuctionScreen = lazy(() => import('@/components/AuctionScreen').then(m => ({ default: m.AuctionScreen })));
 const FriendsScreen = lazy(() => import('@/components/FriendsScreen').then(m => ({ default: m.FriendsScreen })));
 const MessagesScreen = lazy(() => import('@/components/MessagesScreen').then(m => ({ default: m.MessagesScreen })));
+const EventsScreen = lazy(() => import('@/components/EventsScreen').then(m => ({ default: m.EventsScreen })));
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
-type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages';
+type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages' | 'events';
 type Screen = NavId | SubScreen;
 
 /** Warm only the navigation chunks people are most likely to open.
@@ -80,6 +81,7 @@ const sectionPreloaders: Partial<Record<Screen, () => Promise<unknown>>> = {
   leaderboard: () => import('@/components/LeaderboardScreen'),
   friends: () => import('@/components/FriendsScreen'),
   messages: () => import('@/components/MessagesScreen'),
+  events: () => import('@/components/EventsScreen'),
 };
 
 function preloadSection(screen: Screen): Promise<unknown> {
@@ -107,6 +109,7 @@ const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> =
   auction: { title: 'Аукцион и чат', icon: '/ic-auction.svg' },
   friends: { title: 'Друзья', icon: '/ic-invite.webp' },
   messages: { title: 'Сообщения', icon: '/ic-mail.webp' },
+  events: { title: 'События', icon: '/ic-events.webp' },
 };
 
 function Splash({ text }: { text: string }) {
@@ -158,6 +161,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const live = useStore(useLive);
   const game = useStore(useGame);
   const [socialClaims, setSocialClaims] = useState<SocialStatus | null>(null);
+  const [eventDailyOpen, setEventDailyOpen] = useState(false);
+  const [leaderboardInitialTab, setLeaderboardInitialTab] = useState<'rating' | 'season'>('rating');
   const [seenQuestKeys, setSeenQuestKeys] = useState<string[]>(() => readSeenQuests(user.id));
   const questAlerts = getQuestAlerts(game, socialClaims, seenQuestKeys);
   const onSocialStatusChange = useCallback((next: SocialStatus) => setSocialClaims(next), []);
@@ -387,7 +392,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             <ChevronLeft className="w-4 h-4" /> {translate('cityBack')}
           </button>
           <img src={sub.icon} alt="" className="w-7 h-7 object-contain" />
-          <h1 className="text-base font-bold text-white truncate">{translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction', friends: 'friends', messages: 'messages' } as Record<string, string>)[screen] ?? sub.title)}</h1>
+          <h1 className="text-base font-bold text-white truncate">{translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction', friends: 'friends', messages: 'messages', events: 'events' } as Record<string, string>)[screen] ?? sub.title)}</h1>
         </header>
       )}
 
@@ -398,7 +403,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             user={user}
             saveStatus={saveStatus}
             notify={notify}
-            onOpen={setScreen}
+            onOpen={(next) => { if (next === 'leaderboard') setLeaderboardInitialTab('rating'); setScreen(next); }}
             questAlerts={questAlerts}
             onBattle={(view, auto) => {
               captureGameEvent('territory_battle_open', { mode: view });
@@ -431,8 +436,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'map' && <MapScreen />}
         {screen === 'shop' && <ShopScreen />}
         {screen === 'forge' && <ForgeScreen />}
-        {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => setScreen('leaderboard')} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
-        {screen === 'leaderboard' && <LeaderboardScreen user={user} />}
+        {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => { setLeaderboardInitialTab('rating'); setScreen('leaderboard'); }} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
+        {screen === 'leaderboard' && <LeaderboardScreen key={leaderboardInitialTab} user={user} initialTab={leaderboardInitialTab} />}
         {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} onNavigate={setScreen} />}
         {screen === 'games' && (
           <GamesScreen userId={user.id} onPlay={(gameId) => {
@@ -446,9 +451,12 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} />}
         {screen === 'messages' && <MessagesScreen notify={notify} />}
+        {screen === 'events' && <EventsScreen onNavigate={setScreen} onDaily={() => setEventDailyOpen(true)} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} gatherReady={gatherReady} />}
         {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} />}
         </Suspense>
       </main>
+
+      {eventDailyOpen && <DailySheet onClose={() => setEventDailyOpen(false)} notify={notify} />}
 
       {/* Computer-only shortcuts: visible without scrolling the city's side
           panels. CSS keeps this entire bar hidden on phones and tablets. */}
