@@ -12,6 +12,7 @@ import type { Equipment, InventoryItem } from '@/game/types';
 import { upgradeEquipment } from '@/game/equipmentBalance';
 import { forgeAttempt, forgeCost, forgeSetBonus, forgeSuccessRate } from '@/game/forge';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
+import { isStage8Item, stage8ItemAction } from '@/game/stage8ItemApi';
 import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
 
 export function ForgeScreen({ focusEquipmentId, onInventory, onMap }: { focusEquipmentId?: string | null; onInventory?: () => void; onMap?: () => void } = {}) {
@@ -59,6 +60,15 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap }: { focusEqu
 
   const tryUpgrade = (item: InventoryItem) => {
     if (lock.current || !item.equipment) return;
+    if (isStage8Item(item.equipment.id)) {
+      lock.current=true;setUpgrading(true);setError(null);
+      void stage8ItemAction(item.equipment.id,'upgrade').then(receipt=>{
+        setSuccess(receipt.upgraded);
+        if (!receipt.upgraded) setError(t('upgradeFailed'));
+      }).catch(()=>setError('Сервер не подтвердил улучшение. Повтори это же действие для сверки.'))
+        .finally(()=>{lock.current=false;setUpgrading(false);});
+      return;
+    }
     // Validate against the freshest state; modal snapshots can become stale while
     // the shop, mail, daily rewards or auto-save change the player's resources.
     const now = useGame.get();

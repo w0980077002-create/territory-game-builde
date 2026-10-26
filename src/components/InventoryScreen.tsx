@@ -11,6 +11,9 @@ import { FollowersPanel } from './FollowersPanel';
 import { rarityColor, rarityGlow } from '@/game/ui';
 import { elixirExpiryTime, elixirTimeLeftLabel, forgeMaterialTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
+import { fetchStage8Items, fetchStage8Status, mirrorStage8State } from '@/game/stage8CraftApi';
+import { supabase } from '@/game/supabase';
+import { recoverStage8ItemAction } from '@/game/stage8ItemApi';
 import { Package, X, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned } from 'lucide-react';
 
 /** Equipment, consumables/belt and companions share the inventory route.
@@ -30,6 +33,18 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const [beltNote, setBeltNote] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const inventoryContentRef = useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+    let active=true;
+    void (async()=>{
+      await recoverStage8ItemAction();
+      const status=await fetchStage8Status();
+      if (!status.enabled) return;
+      const owned=await fetchStage8Items();
+      const {data:{user:current}}=await supabase.auth.getUser();
+      if(active && current?.id===userId) useGame.set(latest=>mirrorStage8State(latest,owned));
+    })().catch(()=>{if(active) setBeltNote('Не удалось сверить серверные предметы. Открой инвентарь повторно для восстановления.');});
+    return ()=>{active=false;};
+  },[userId]);
 
   useEffect(() => {
     if (tab !== 'items') return;
@@ -44,7 +59,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
     };
   }, [tab]);
 
-  const consumables = state.inventory.filter(isPerishableItem)
+  const consumables = state.inventory.filter(item=>item.type!=='material' && isPerishableItem(item))
     .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b));
   const materials = state.inventory.filter((i) => i.type === 'material');
   const earliestOnBelt = state.belt.filter((item): item is InventoryItem => !!item && isPerishableItem(item))
@@ -72,6 +87,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 animate-fade-in">
+      {beltNote && <p role="status" className="text-xs text-amber-300">{beltNote}</p>}
       {(onForge || onProfessions || onMap) && <div className="grid shrink-0 grid-cols-3 gap-1.5" aria-label={language === 'en' ? 'Workshop navigation' : 'Мастерская'}>
         {onForge && <button type="button" onClick={() => onForge()} className="min-h-9 rounded-lg border border-orange-400/30 bg-orange-500/15 px-1 text-[11px] font-bold text-orange-100"><Hammer className="mr-1 inline h-3.5 w-3.5"/>{language === 'en' ? 'Forge' : 'Кузница'}</button>}
         {onProfessions && <button type="button" onClick={onProfessions} className="min-h-9 rounded-lg border border-amber-400/30 bg-amber-500/15 px-1 text-[11px] font-bold text-amber-100"><Pickaxe className="mr-1 inline h-3.5 w-3.5"/>{language === 'en' ? 'Craft' : 'Профессии'}</button>}

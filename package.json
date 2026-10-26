@@ -47,7 +47,8 @@
     "test:arena-prizes": "node scripts/check-arena-auto-prizes.mjs && node scripts/check-arena-prizes-ui.mjs && node scripts/check-arena-bot-leaderboard.mjs",
     "test:stage1": "npm run test:clans && npm run test:stage5 && npm run test:seasons",
     "test:wheel": "node scripts/check-fortune.mjs && node scripts/check-fortune-client.mjs",
-    "test:wheel:browser": "node scripts/build-fortune-preview.mjs && python scripts/check-fortune-browser.py"
+    "test:wheel:browser": "node scripts/build-fortune-preview.mjs && python scripts/check-fortune-browser.py",
+    "test:professions:full-cycle": "node scripts/check-profession-stage8-progression-sql.mjs && node scripts/check-profession-stage8-lifecycle-sql.mjs && node scripts/check-stage8-item-client.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

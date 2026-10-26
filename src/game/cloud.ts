@@ -402,3 +402,10 @@ export async function getPublicProfile(playerId: string): Promise<PublicProfile 
   const p = data as PublicProfile;
   return { ...p, equipped: Array.isArray(p.equipped) ? p.equipped : [] };
 }
+
+/** Install the existing server receipt revision before notifying state subscribers. */
+export function acceptStage8ItemReceipt(userId: string, response: unknown): GameState {
+  if (!response || typeof response!=='object') throw new Error('stage8_invalid_receipt');
+  const receipt=response as Record<string,unknown>;
+  return acceptMonopolyClaimReceipt(userId,{...receipt,wallet_gold:receipt.gold,wallet_gems:receipt.gems});
+}

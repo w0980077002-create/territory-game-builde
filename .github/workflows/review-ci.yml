@@ -52,6 +52,7 @@ jobs:
       - run: node scripts/check-equipment-safety-v4.mjs
       - run: npm run test:professions
       - run: npm run test:professions:stage8
+      - run: npm run test:professions:full-cycle
       - run: npm run test:master-license
       - run: npm run test:feature-separation
       - run: npm run test:mobile-home

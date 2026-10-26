@@ -13,6 +13,7 @@ import { ItemArt } from './ui/ItemArt';
 import type { Equipment, InventoryItem } from '@/game/types';
 import { Check, ChevronDown, ChevronUp, Hammer, Info, Recycle, RotateCcw, ShieldCheck, Trash2, X } from 'lucide-react';
 import './GearShowcase.css';
+import { isStage8Item, stage8ItemAction } from '@/game/stage8ItemApi';
 
 type Slot = Equipment['slot'];
 type Selection = { kind: 'worn'; slot: Slot } | { kind: 'bag'; id: string };
@@ -142,7 +143,7 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
   const worn = selectedWornSlot ? state.player.equipped[selectedWornSlot] : selectedItem?.equipment
     ? state.player.equipped[selectedItem.equipment.slot] : undefined;
   const bag = selectedWornSlot ? undefined : selectedItem;
-  const canSalvage = !!bag && canSalvageEquipment(bag);
+  const canSalvage = !!bag && (isStage8Item(bag.equipment?.id) || canSalvageEquipment(bag));
   const candidate = bag?.equipment;
   const isComparing = !!candidate;
   const miniHero = selection?.kind === 'bag' && !heroExpanded;
@@ -157,8 +158,16 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
     setSelection({ kind: 'worn', slot }); setHeroExpanded(true); setConfirm(null); setError(null);
   };
 
+  const serverAction = async (id:string,action:'equip'|'unequip'|'recycle'|'discard') => {
+    setBusy(true);setError(null);
+    try {await stage8ItemAction(id,action);setSelection(null);setConfirm(null);}
+    catch {setError('Сервер не подтвердил действие. Повтори то же действие для сверки; другая операция пока недоступна.');}
+    finally {setBusy(false);}
+  };
   const equip = () => {
     if (!bag || busy || mustReload) return;
+    if (!isStage8Item(bag.equipment?.id) && isStage8Item(worn?.id)) {setError('Сначала сними изготовленный предмет с помощью кнопки «Снять».');return;}
+    if (isStage8Item(bag.equipment?.id)) {void serverAction(bag.equipment!.id,'equip');return;}
     useGame.set((latest) => {
       const latestItem = latest.inventory.find((i) => i.id === bag.id && i.equipment);
       return latestItem ? equipItem(latest, latestItem) : latest;
@@ -168,12 +177,14 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
   };
   const unequip = () => {
     if (!selectedWornSlot || !worn || busy || mustReload) return;
+    if (isStage8Item(worn.id)) {void serverAction(worn.id,'unequip');return;}
     useGame.set((latest) => unequipItem(latest, selectedWornSlot));
     setSelection(null);
   };
 
   const recycle = async () => {
     if (!bag || !confirm || busy || mustReload) return;
+    if (isStage8Item(bag.equipment?.id)) {await serverAction(bag.equipment!.id,confirm==='salvage'?'recycle':'discard');return;}
     const id = bag.id;
     const action = confirm;
     const snapshot = useGame.get();
@@ -293,7 +304,7 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
               {canSalvage && (
                 <button type="button" className="gear-action-salvage" disabled={busy || mustReload}
                   onClick={() => setConfirm('salvage')}>
-                  <Hammer size={16}/>{language === 'en' ? 'Salvage +1' : 'Разобрать +1'}
+                  <Hammer size={16}/>{isStage8Item(bag?.equipment?.id) ? (language==='en'?'Recycle':'Разобрать') : (language === 'en' ? 'Salvage +1' : 'Разобрать +1')}
                 </button>
               )}
               <button type="button" className="gear-action-discard" disabled={busy || mustReload}
@@ -342,7 +353,7 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
               <button type="button" onClick={() => setConfirm(null)} disabled={busy} aria-label={language === 'en' ? 'Cancel' : 'Отмена'}><X size={16}/></button>
             </div>
             <p>{confirm === 'salvage'
-              ? (language === 'en' ? 'Destroy this unused boss drop for 1 forge material? Maximum 3 per UTC day.' : 'Разобрать эту вещь навсегда за 1 материал кузницы? Не более 3 в сутки.')
+              ? (isStage8Item(bag?.equipment?.id) ? (language==='en'?'Permanently recycle this crafted item? No material reward is configured.':'Навсегда разобрать изготовленный предмет? Награда материалами для него не предусмотрена.') : (language === 'en' ? 'Destroy this unused boss drop for 1 forge material? Maximum 3 per UTC day.' : 'Разобрать эту вещь навсегда за 1 материал кузницы? Не более 3 в сутки.'))
               : (language === 'en' ? 'Delete this spare item forever without any reward?' : 'Навсегда удалить этот запасной предмет без награды?')}</p>
             <div className="gear-confirm-buttons">
               <button type="button" disabled={busy} onClick={() => void recycle()}>
@@ -414,7 +425,7 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
           <div className="gear-bag-empty"><Info size={20}/>{language === 'en' ? 'No gear in this category yet.' : 'Пока нет вещей этого типа.'}</div>
         )}
         <div className="gear-bag-footer">
-          <span>{language === 'en' ? 'Tap a spare item to compare or salvage it (+1 material, up to 3 daily).' : 'Нажми на запасную вещь: сравни или разбери за +1 материал (до 3 в сутки).'}</span>
+          <span>{language === 'en' ? 'Tap a spare item to compare or recycle it. Ordinary boss drops yield +1 material, up to 3 daily.' : 'Нажми на запасную вещь: сравни или разбери. За обычную добычу с босса — +1 материал (до 3 в сутки).'}</span>
           <span><Hammer size={12}/>{state.forgeMaterials}
             {remainingToday !== null && <small>{language === 'en' ? ' • ' + remainingToday + '/3 left today' : ' • ' + remainingToday + '/3 сегодня'}</small>}</span>
         </div>

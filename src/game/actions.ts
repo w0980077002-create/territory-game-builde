@@ -250,10 +250,11 @@ export function buyItem(state: GameState, shopItem: ShopItem, qty: number = 1): 
 }
 
 export function equipItem(state: GameState, item: InventoryItem): GameState {
-  if (!item.equipment) return state;
+  if (!item.equipment || item.equipment.id.startsWith('stage8_')) return state;
   const eq = capEquipmentToHeroLevel(item.equipment, state.player.level);
   const slot = eq.slot;
   const currentEquipped = state.player.equipped[slot];
+  if (currentEquipped?.id.startsWith('stage8_')) return state;
 
   let inventory = state.inventory.filter((i) => i.id !== item.id);
 
@@ -281,7 +282,7 @@ export function equipItem(state: GameState, item: InventoryItem): GameState {
 
 export function unequipItem(state: GameState, slot: Equipment['slot']): GameState {
   const eq = state.player.equipped[slot];
-  if (!eq) return state;
+  if (!eq || eq.id.startsWith('stage8_')) return state;
 
   const inventory = [...state.inventory, {
     id: `inv_${Date.now()}_${Math.random().toString(36).slice(2)}`,
