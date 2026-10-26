@@ -1,7 +1,7 @@
 /**
- * Previously agreed weekly Arena TOP-50 prize PLAN, displayed for information.
- * This file does not grant prizes and must never be used to authorize payouts.
- * A separate server-reviewed reward flow is required before any grants go live.
+ * Weekly Arena TOP-50 prizes mirrored for display. Authoritative rank and
+ * payout values are frozen server-side by arena_top50_rewards_tick_v1().
+ * This UI catalogue must never grant inventory or currency to a player.
  */
 export interface ArenaPrizePreviewTier {
   from: number;
