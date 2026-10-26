@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { supabase } from './supabase';
 import { create } from './store';
 import { useGame } from './actions';
+import { acceptMonopolyClaimReceipt, protectFortuneSave, releaseArenaRejectedAction, saveCloudSave } from './cloud';
 import { generateShopItems } from './engine';
 import type { Equipment, GameState, InventoryItem } from './types';
 import { setAdminEquipmentLevel, capEquipmentToHeroLevel } from './equipmentBalance';
@@ -75,6 +76,8 @@ function setLevel(eq: Equipment, level: number, heroLevel: number, ownerApproved
   return ownerApproved ? { ...item, adminTestLevel: true } : capEquipmentToHeroLevel(item, heroLevel);
 }
 
+/** Legacy pure reward preview. Real admin grants must use the server-atomic
+ * claim receipt below; never mint real rewards by applying this on the client. */
 export function applyGrantPayload(state: GameState, p: GrantPayload): GameState {
   let battleStones = nonNeg(state.battleStones + (p.stones ?? 0));
   let inventory: InventoryItem[] = [...state.inventory];
@@ -160,27 +163,103 @@ export function applyGrantPayload(state: GameState, p: GrantPayload): GameState 
   };
 }
 
-async function claim(id: string): Promise<GrantPayload | null> {
-  const { data, error } = await supabase.rpc('claim_admin_grant', { p_id: id });
-  if (error || !data || typeof data !== 'object') return null;
-  return data as GrantPayload;
+type UncertainClaim = { id: string; userId: string; snapshot: GameState };
+let uncertainClaim: UncertainClaim | null = null;
+const claimedThisSession = new Set<string>();
+const claimTasks = new Map<string, Promise<boolean>>();
+let claimQueue: Promise<unknown> = Promise.resolve();
+
+/** An SQL/PostgREST error means the claim transaction was rolled back.
+ * Network timeouts are ambiguous and must NOT unlock stale local autosaves. */
+const definiteRollback = (code: unknown): boolean =>
+  typeof code === 'string' && /^(?:[0-9A-Z]{5}|PGRST\d+)$/.test(code);
+
+/** One grant and one player save revision at a time, including automatic
+ * adjustments and manually claimed inbox letters. We flush unsaved gameplay
+ * before the RPC and only install the FULL verified server receipt. */
+async function claimOnServer(id: string): Promise<boolean> {
+  let identity;
+  try {
+    const result = await supabase.auth.getUser();
+    if (result.error) return false;
+    identity = result.data;
+  } catch {
+    return false;
+  }
+  const userId = identity.user?.id;
+  if (!userId) return false;
+  if (uncertainClaim && (uncertainClaim.id !== id || uncertainClaim.userId !== userId)) return false;
+
+  if (!uncertainClaim) {
+    const snapshot = useGame.get();
+    try {
+      if (!await saveCloudSave(userId, snapshot) || useGame.get() !== snapshot) return false;
+    } catch {
+      return false;
+    }
+    // Stop queued old writes before a server transaction can mint the reward.
+    protectFortuneSave(userId);
+    uncertainClaim = { id, userId, snapshot };
+  }
+  const guarded = uncertainClaim;
+  if (useGame.get() !== guarded.snapshot) {
+    // New local gameplay occurred while the request was uncertain. Never
+    // discard it by replacing the game with an earlier server snapshot.
+    console.warn('Admin grant requires a game reload before retrying');
+    return false;
+  }
+
+  let response;
+  try {
+    response = await supabase.rpc('territory_admin_claim_grant_v2', { p_id: id });
+  } catch {
+    // An interrupted HTTP request may have committed on the server.
+    return false;
+  }
+  const { data, error } = response;
+  if (error) {
+    if (definiteRollback(error.code)) {
+      // A known rejected SQL transaction cannot have changed the save.
+      releaseArenaRejectedAction(userId);
+      uncertainClaim = null;
+    }
+    return false;
+  }
+  if (useGame.get() !== guarded.snapshot) {
+    // The RPC may already have committed: retain the save fence, so later
+    // client writes cannot overwrite the server-authoritative grant.
+    console.warn('Admin grant committed while gameplay changed; reload required');
+    return false;
+  }
+  try {
+    const saved = acceptMonopolyClaimReceipt(userId, data);
+    useGame.set(saved);
+    claimedThisSession.add(id);
+    useLive.set((s) => ({ ...s, mail: s.mail.filter((m) => m.id !== id) }));
+    uncertainClaim = null;
+    return true;
+  } catch {
+    // Invalid or stale receipts are NOT evidence of rollback.
+    // The player must reload before any old queued snapshot can save.
+    console.error('Admin grant returned an unverified receipt; reload required');
+    return false;
+  }
 }
 
-// Ignore overlapping button taps in this tab. The backend claim is atomic,
-// but the UI must never silently remove a letter after a failed request.
-const grantClaimsInFlight = new Set<string>();
-export async function claimMailGrant(id: string): Promise<boolean> {
-  if (!id || grantClaimsInFlight.has(id)) return false;
-  grantClaimsInFlight.add(id);
-  try {
-    const payload = await claim(id);
-    if (!payload) return false;
-    useGame.set(applyGrantPayload(useGame.get(), payload));
-    useLive.set((s) => ({ ...s, mail: s.mail.filter((m) => m.id !== id) }));
-    return true;
-  } finally {
-    grantClaimsInFlight.delete(id);
-  }
+function claim(id: string): Promise<boolean> {
+  if (!id) return Promise.resolve(false);
+  if (claimedThisSession.has(id)) return Promise.resolve(true);
+  const active = claimTasks.get(id);
+  if (active) return active;
+  const task = claimQueue.then(() => claimOnServer(id));
+  claimQueue = task.then(() => undefined, () => undefined);
+  claimTasks.set(id, task);
+  void task.finally(() => { if (claimTasks.get(id) === task) claimTasks.delete(id); }).catch(() => {});
+  return task;
+}
+
+export function claimMailGrant(id: string): Promise<boolean> {
+  return claim(id);
 }
 
 interface HeartbeatGrant extends MailGrant {
@@ -209,15 +288,14 @@ async function heartbeat() {
   const hb = data as { banned?: boolean; settings?: { maintenance?: boolean; shop_sale?: boolean; gold_x2?: boolean }; grants?: HeartbeatGrant[] };
   const grants = Array.isArray(hb.grants) ? hb.grants : [];
   for (const g of grants.filter((g) => g.kind === 'adjust')) {
-    const payload = await claim(g.id);
-    if (payload) useGame.set(applyGrantPayload(useGame.get(), payload));
+    if (!await claim(g.id)) break;
   }
   useLive.set({
     banned: !!hb.banned,
     maintenance: !!hb.settings?.maintenance,
     shopSale: !!hb.settings?.shop_sale,
     goldX2: !!hb.settings?.gold_x2,
-    mail: grants.filter((g) => g.kind === 'mail'),
+    mail: grants.filter((g) => g.kind === 'mail' && !claimedThisSession.has(g.id)),
   });
   } finally {
     heartbeatInFlight = false;
