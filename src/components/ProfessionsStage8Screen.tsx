@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Hammer, Lock, RefreshCw, ShieldCheck, Sparkles } from 'lucide-react';
 import { useGame } from '@/game/actions';
 import { useLanguage, localizeText } from '@/game/i18n';
-import { resourceArt } from '@/game/art';
+import { craftOutputArt, PROFESSION_ART, resourceArt } from '@/game/art';
 import { PROFESSION_DEFINITIONS, RESOURCE_DEFINITIONS } from '@/game/professions';
 import { mirrorCraftResources } from '@/game/craftApi';
 import {
@@ -143,7 +143,7 @@ export function ProfessionsStage8Screen() {
     </div>
     {!status.profession ? <div className="space-y-2 rounded-xl border border-white/10 p-3">
       <p className="text-xs text-slate-300">{language==='en'?'Choose one profession permanently for 1,000 blue gems.':'Выбери одну профессию навсегда за 1000 синих алмазов.'}</p>
-      {PROFESSION_DEFINITIONS.map((p)=><button key={p.id} disabled={busy||!!purchasePending} onClick={()=>{void choose(p.id);}} className="block w-full rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-left text-sm font-bold disabled:opacity-40">{p.icon} {p.name} · 1000 💎</button>)}
+      {PROFESSION_DEFINITIONS.map((p)=><button key={p.id} disabled={busy||!!purchasePending} onClick={()=>{void choose(p.id);}} className="flex w-full items-center gap-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-2.5 text-left text-sm font-bold disabled:opacity-40"><img src={PROFESSION_ART[p.id]} alt="" loading="lazy" className="h-12 w-12 shrink-0 object-contain"/><span>{p.name} · 1000 💎</span></button>)}
     </div> : <>
       <div className="flex items-center justify-between gap-2"><b className="text-sm text-amber-100">{language==='en'?'Training and recipes':'Обучение и рецепты'}</b><button className="text-xs text-sky-300" onClick={()=>setShowAll((s)=>!s)}>{showAll?(language==='en'?'Nearby levels':'Ближайшие уровни'):(language==='en'?'Show all':'Показать все')}</button></div>
       {visibleRecipes.map((recipe)=>{
@@ -154,7 +154,7 @@ export function ProfessionsStage8Screen() {
         const canRun=hasLevel && hasLicense && hasResources && hasXpRoom && !pending && !busy;
         const label=recipe.kind==='practice' ? recipe.name??'Обучение мастера' : recipe.output?.name??recipe.id;
         return <article key={recipe.id} className="rounded-xl border border-amber-400/15 bg-slate-900/80 p-3">
-          <div className="flex items-start gap-2"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-400/10 text-2xl">{recipe.kind==='practice'?'⚒️':recipe.output?.icon}</div><div className="min-w-0 flex-1"><b className="text-sm">{localizeText(label,language)}</b><p className="text-xs text-amber-300">{language==='en'?'Profession mastery Lv.':'Мастерство профессии ур.'} {recipe.requiredLevel} · +{recipe.masteryXp} XP</p><p className="mt-1 text-xs text-slate-400">{recipe.kind==='practice'?(language==='en'?'Consumes resources, awards verified mastery; no inventory junk.':'Расходует ресурсы и даёт мастерство без лишних предметов.'):recipe.output?.description}</p></div>{!hasLicense&&<Lock className="h-4 w-4 text-amber-300"/>}{recipe.requiredLevel>=300&&<Sparkles className="h-4 w-4 text-violet-300"/>}</div>
+          <div className="flex items-start gap-2"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-amber-400/15 bg-amber-400/10 p-1"><img src={recipe.output?craftOutputArt(recipe.output):PROFESSION_ART[recipe.profession]} alt="" loading="lazy" className="h-full w-full object-contain"/></div><div className="min-w-0 flex-1"><b className="text-sm">{localizeText(label,language)}</b><p className="text-xs text-amber-300">{language==='en'?'Profession mastery Lv.':'Мастерство профессии ур.'} {recipe.requiredLevel} · +{recipe.masteryXp} XP</p><p className="mt-1 text-xs text-slate-400">{recipe.kind==='practice'?(language==='en'?'Consumes resources, awards verified mastery; no inventory junk.':'Расходует ресурсы и даёт мастерство без лишних предметов.'):recipe.output?.description}</p></div>{!hasLicense&&<Lock className="h-4 w-4 text-amber-300"/>}{recipe.requiredLevel>=300&&<Sparkles className="h-4 w-4 text-violet-300"/>}</div>
           <div className="mt-2 flex flex-wrap gap-1">{recipe.ingredients.map((ingredient)=>{
             const material=RESOURCE_DEFINITIONS.find((r)=>r.id===ingredient.id);
             return <span key={ingredient.id} className="rounded-md bg-white/5 px-2 py-1 text-[11px] text-slate-200">{material&&<img src={resourceArt(material.id)} alt="" className="mr-1 inline-block h-4 w-4 object-contain"/>}{material?.name} {status.resources[ingredient.id]??0}/{ingredient.qty}</span>;

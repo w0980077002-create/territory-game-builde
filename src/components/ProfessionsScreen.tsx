@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Hammer, FlaskConical, Gem, Cog, Lock, Package, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Hammer, Lock, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useGame } from '@/game/actions';
 import { supabase } from '@/game/supabase';
 import { captureGameEvent } from '@/game/analytics';
 import { useLanguage, localizeText } from '@/game/i18n';
-import { resourceArt } from '@/game/art';
+import { craftOutputArt, PROFESSION_ART, resourceArt } from '@/game/art';
 import { useStore } from '@/game/store';
 import type { ProfessionId, ProfessionProgress } from '@/game/types';
 import { fetchCraftStatus, submitVerifiedCraft, receiptDisplayItem, mirrorCraftResources, keepPendingCraft, readPendingCraft, type CraftStatus } from '@/game/craftApi';
@@ -19,13 +19,6 @@ import {
   masteryXpToNext,
 } from '@/game/professions';
 
-const ICONS: Record<ProfessionId, typeof Hammer> = {
-  smith: Hammer,
-  alchemist: FlaskConical,
-  artisan: Package,
-  jeweler: Gem,
-  engineer: Cog,
-};
 const INITIAL_PROFESSION_PROGRESS: ProfessionProgress = {
   active: null,
   masteryLevel: 1,
@@ -217,12 +210,11 @@ export function ProfessionsScreen() {
           {language === 'en' ? 'Unlock one profession forever for 1000 blue gems. The 300-level Master license will become available later for real money; payments are not enabled.' : 'Открой одну профессию навсегда за 1000 синих алмазов. Лицензия мастера 300-го уровня появится позже за реальные деньги; оплаты пока нет.'}
         </div>
         {PROFESSION_DEFINITIONS.map((profession) => {
-          const Icon = ICONS[profession.id];
           const active = progress.active === profession.id;
           const lockedByChoice = progress.active !== null && !active;
           const starterRecipe = PROFESSION_RECIPES.find((recipe) => recipe.profession === profession.id && recipe.requiredLevel < 300);
           return <article key={profession.id} className={`flex items-center gap-3 rounded-xl border p-3 ${active ? 'border-emerald-400/50 bg-emerald-500/10' : 'border-white/10 bg-white/[0.04]'}`}>
-            <div className="rounded-xl bg-amber-500/10 p-3"><Icon className="h-6 w-6 text-amber-300" /></div>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-amber-400/25 bg-amber-500/10 p-1"><img src={PROFESSION_ART[profession.id]} alt="" loading="lazy" className="h-full w-full object-contain" /></div>
             <div className="min-w-0 flex-1"><b>{language === 'en' ? ({ smith: 'Blacksmith', alchemist: 'Alchemist', artisan: 'Artisan', jeweler: 'Jeweler', engineer: 'Engineer' } as Record<string, string>)[profession.id] : profession.name}</b><p className="text-xs text-slate-400">{language === 'en' ? ({ smith: 'Weapons, armor, and shields', alchemist: 'Potions and battle elixirs', artisan: 'Materials and useful kits', jeweler: 'Rings, amulets, and jewelry', engineer: 'Defensive devices and mechanisms' } as Record<string, string>)[profession.id] : profession.description}</p>{starterRecipe && <p className="mt-1 text-[11px] text-amber-200">{language === 'en' ? 'First craft' : 'Первый рецепт'}: {localizeText(starterRecipe.output.name, language)} · {language === 'en' ? 'Mastery Lv.' : 'Мастерство ур.'} {starterRecipe.requiredLevel}</p>}{active && <p className="mt-1 text-[10px] text-emerald-300">{t('activeProfession')}</p>}</div>
             <button disabled={lockedByChoice || active || buying} onClick={() => { void chooseProfession(profession.id); }} className={`shrink-0 rounded-lg border px-2.5 py-2 text-xs font-bold ${active ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200' : 'border-white/10 bg-white/5 disabled:opacity-50'}`}>
               {active ? <><CheckCircle2 className="mr-1 inline h-3 w-3" />{t('selected')}</> : lockedByChoice ? <><Lock className="mr-1 inline h-3 w-3" />{t('locked')}</> : `${t('choose')} · 1000 💎`}
@@ -240,7 +232,7 @@ export function ProfessionsScreen() {
             const unlocked = recipe.requiredLevel < 300 && displayedLevel >= recipe.requiredLevel && (!craftStatus?.enabled || craftStatus.profession === recipe.profession);
             const hasMaterials = craftStatus?.enabled ? recipe.ingredients.every((r) => (craftStatus.resources[r.id] ?? 0)>=r.qty) : canCraft(game.inventory, recipe);
             return <article key={recipe.id} className={`rounded-xl border p-3 ${unlocked ? 'border-white/10 bg-white/[0.04]' : 'border-white/5 bg-black/20 opacity-70'}`}>
-              <div className="flex items-start gap-3"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-2xl">{recipe.icon}</div><div className="min-w-0 flex-1"><div className="flex items-center gap-1"><b className="text-sm">{localizeText(recipe.name, language)}</b>{recipe.requiredLevel >= 300 && <Sparkles className="h-3.5 w-3.5 text-amber-300" />}</div><p className="mt-0.5 text-xs text-slate-400">{localizeText(recipe.description, language)}</p><p className="mt-1 text-[11px] text-amber-200">{unlocked ? `+${recipe.masteryXp} ${t('masteryXp')}` : recipe.requiredLevel >= 300 ? (language === 'en' ? 'Master license · Soon' : 'Лицензия мастера · Скоро') : `${t('needLevel')} ${recipe.requiredLevel}`}</p></div></div>
+              <div className="flex items-start gap-3"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-500/10 p-1"><img src={craftOutputArt(recipe.output)} alt="" loading="lazy" className="h-full w-full object-contain" /></div><div className="min-w-0 flex-1"><div className="flex items-center gap-1"><b className="text-sm">{localizeText(recipe.name, language)}</b>{recipe.requiredLevel >= 300 && <Sparkles className="h-3.5 w-3.5 text-amber-300" />}</div><p className="mt-0.5 text-xs text-slate-400">{localizeText(recipe.description, language)}</p><p className="mt-1 text-[11px] text-amber-200">{unlocked ? `+${recipe.masteryXp} ${t('masteryXp')}` : recipe.requiredLevel >= 300 ? (language === 'en' ? 'Master license · Soon' : 'Лицензия мастера · Скоро') : `${t('needLevel')} ${recipe.requiredLevel}`}</p></div></div>
               <div className="mt-3 flex flex-wrap gap-1.5">{recipe.ingredients.map((ingredient) => { const resource = RESOURCE_DEFINITIONS.find((r) => r.id === ingredient.id)!; const count = craftStatus?.enabled ? (craftStatus.resources[ingredient.id] ?? 0) : countResource(game.inventory, ingredient.id); return <span key={ingredient.id} className={`rounded-md border px-2 py-1 text-[10px] ${count >= ingredient.qty ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-200' : 'border-red-500/20 bg-red-500/5 text-red-200'}`}><img src={resourceArt(resource.id)} alt="" className="mr-1 inline-block h-4 w-4 align-middle object-contain" /> {localizeText(resource.name, language)} {count}/{ingredient.qty}</span>; })}</div>
               <button disabled={craftCheck !== 'ready' || !!pendingCraft || !unlocked || !hasMaterials || busyRecipe === recipe.id} onClick={() => {void craft(recipe.id);}} className="mt-3 w-full rounded-lg bg-amber-600 px-3 py-2.5 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="mr-1 inline h-3.5 w-3.5" />{unlocked ? hasMaterials ? t('craftItem') : t('notEnoughResourcesButton') : recipe.requiredLevel >= 300 ? (language === 'en' ? 'Master license · Soon' : 'Лицензия мастера · Скоро') : `${t('needLevel')} ${recipe.requiredLevel}`}</button>
             </article>;
