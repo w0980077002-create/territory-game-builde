@@ -40,6 +40,19 @@ const UNIQUE_EQUIPMENT_BY_NAME: Record<string, string> = {
   'ancient ring': 'ancient-ring',
   'кольцо силы мастера': 'master-power-ring',
   'master power ring': 'master-power-ring',
+  // Stage 8 mid-tier crafted gear must not collapse to the same generic slot icon.
+  'кольцо искры': 'spark-ring',
+  'spark ring': 'spark-ring',
+  'оберег северных врат': 'north-gate-amulet',
+  'guardian of the northern gates': 'north-gate-amulet',
+  'шлем дозорного': 'watch-helmet',
+  'watchman helmet': 'watch-helmet',
+  'сапоги следопыта': 'ranger-boots',
+  'ranger boots': 'ranger-boots',
+  'сапоги гонца': 'messenger-boots',
+  'messenger boots': 'messenger-boots',
+  'броня караванщика': 'caravan-armor',
+  'caravan armor': 'caravan-armor',
 };
 
 const normalizeItemName = (name: string) => name.trim().toLocaleLowerCase().replace(/\s+/g, ' ');
@@ -127,11 +140,21 @@ for (const entry of Object.values(MAIL_ITEM_VISUALS)) {
   CONSUMABLE_ART_BY_NAME[entry.name.toLocaleLowerCase()] = entry.image;
   CONSUMABLE_ART_BY_NAME[entry.nameEn.toLocaleLowerCase()] = entry.image;
 }
+const STAGE8_POTION_BY_NAME: Record<string, string> = {
+  'травяной настой': 'herbal-infusion',
+  'herbal infusion': 'herbal-infusion',
+  'эликсир точности': 'focus-elixir',
+  'precision elixir': 'focus-elixir',
+  'зелье северного здоровья': 'north-health-potion',
+  'northern health potion': 'north-health-potion',
+};
 
 /** Stable item identity wins over generic stat icons.
  * Purchased, gifted and saved copies can have different IDs but share the same name. */
 function consumableArt(item: ArtSource): string | null {
   if (/эликсир стойкости ярла|jarl.*resilience elixir/i.test(item.name)) return uniqueGearIcon('legendary-elixir');
+  const stage8Potion = STAGE8_POTION_BY_NAME[normalizeItemName(item.name)];
+  if (stage8Potion) return uniqueGearIcon(stage8Potion);
   const canonical = MAIL_ITEM_VISUALS[item.id]?.image
     ?? CONSUMABLE_ART_BY_NAME[item.name.trim().toLocaleLowerCase()];
   if (canonical) return rootItemArt(canonical);
