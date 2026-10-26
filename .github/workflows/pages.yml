@@ -79,6 +79,7 @@ jobs:
           python -m pip install --disable-pip-version-check --quiet Pillow==11.3.0
           python scripts/optimize-pages-images.py
           node scripts/check-monopoly-performance.mjs --verify-assets
+          node scripts/check-pages-image-optimization.mjs
 
       - name: Verify approved Telegram RU/EN banners
         run: node scripts/check-approved-telegram-promo.mjs
