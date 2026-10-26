@@ -104,7 +104,7 @@ function GearPortrait({ equipped, candidate, label, language, isCandidate }: {
 
 /** The actual equipment stage uses the player's selected hero art and current slots.
  * This does not fake visually equipped armor onto the existing hero sprite. */
-export function GearShowcase({ userId }: { userId: string }) {
+export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (equipmentId: string) => void }) {
   const { language } = useLanguage();
   const state = useStore(useGame);
   const [filter, setFilter] = useState<Slot | 'all'>('all');
@@ -287,6 +287,9 @@ export function GearShowcase({ userId }: { userId: string }) {
               <button type="button" onClick={equip} disabled={busy || mustReload} className="gear-action-equip">
                 <Check size={17}/>{language === 'en' ? 'Equip' : 'Надеть'}
               </button>
+              {onForge && candidate && <button type="button" disabled={busy || mustReload} onClick={() => onForge(candidate.id)} className="gear-action-salvage">
+                <Hammer size={16}/>{language === 'en' ? 'Upgrade' : 'В кузницу'}
+              </button>}
               {canSalvage && (
                 <button type="button" className="gear-action-salvage" disabled={busy || mustReload}
                   onClick={() => setConfirm('salvage')}>
@@ -319,6 +322,9 @@ export function GearShowcase({ userId }: { userId: string }) {
                 </div>
                 <button type="button" className="gear-unequip-button" onClick={unequip}
                   disabled={busy || mustReload}><RotateCcw size={15}/>{language === 'en' ? 'Unequip to bag' : 'Снять в инвентарь'}</button>
+                {onForge && <button type="button" className="gear-unequip-button" onClick={() => onForge(worn.id)} disabled={busy || mustReload}>
+                  <Hammer size={15}/>{language === 'en' ? 'Upgrade in forge' : 'Улучшить в кузнице'}
+                </button>}
               </>
             ) : (
               <div className="gear-no-selection"><Info size={21}/>

@@ -3,7 +3,7 @@ import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { rarityColor, rarityGlow } from '@/game/ui';
-import { Hammer, ArrowUp, X } from 'lucide-react';
+import { Hammer, ArrowUp, X, Package, MapPinned, CheckCircle2 } from 'lucide-react';
 import { hapticNotify } from '@/game/telegram';
 import { equipmentArt } from '@/game/art';
 import { ItemArt } from './ui/ItemArt';
@@ -14,7 +14,7 @@ import { forgeAttempt, forgeCost, forgeSetBonus, forgeSuccessRate } from '@/game
 import { EQUIPMENT_SLOTS } from '@/game/engine';
 import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
 
-export function ForgeScreen() {
+export function ForgeScreen({ focusEquipmentId, onInventory, onMap }: { focusEquipmentId?: string | null; onInventory?: () => void; onMap?: () => void } = {}) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [now, setNow] = useState(() => Date.now());
@@ -28,9 +28,20 @@ export function ForgeScreen() {
   const [upgrading, setUpgrading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gearFilter, setGearFilter] = useState<'all' | 'ready' | 'equipped'>('all');
+  const focused = useRef(false);
 
   const equipment = state.inventory.filter((i) => i.type === 'equipment' && i.equipment);
   const equippedList = Object.values(state.player.equipped).filter(Boolean) as Equipment[];
+  useEffect(()=>{
+    if (!focusEquipmentId || focused.current) return;
+    focused.current=true;
+    const latest=useGame.get();
+    const worn=Object.values(latest.player.equipped).find((eq)=>eq?.id===focusEquipmentId);
+    const bag=latest.inventory.find((item)=>item.equipment?.id===focusEquipmentId);
+    if (worn) setSelected({id:`equipped_${worn.id}`,name:worn.name,icon:worn.icon,type:'equipment',rarity:worn.rarity,qty:1,description:'',equipment:worn});
+    else if (bag) setSelected(bag);
+  },[focusEquipmentId]);
   // Keep the open item panel linked to live equipment; owner updates arrive while
   // the modal is open, and a stale useState snapshot used to hide the new stats.
   const chosenId = selected?.equipment?.id;
@@ -102,6 +113,15 @@ export function ForgeScreen() {
     })),
     ...equipment,
   ];
+  const forgeReady = (item: InventoryItem) => {
+    if (!item.equipment || item.equipment.level>=state.player.level) return false;
+    const cost=forgeCost(item.equipment.level);
+    return state.player.gold>=cost.gold && state.forgeMaterials>=cost.materials;
+  };
+  const readyCount = allEquipment.filter(forgeReady).length;
+  const listed = allEquipment.filter((item) => gearFilter === 'all' || (gearFilter === 'ready' ? forgeReady(item) : item.id.startsWith('equipped_')));
+  const listedWorn = listed.filter((item) => item.id.startsWith('equipped_'));
+  const listedBag = listed.filter((item) => !item.id.startsWith('equipped_'));
 
   return (
     <div className="space-y-4 animate-fade-in pb-4">
@@ -116,6 +136,18 @@ export function ForgeScreen() {
           <span className="text-orange-400">🔩 {state.forgeMaterials}</span>
         </div>
         {state.forgeMaterials > 0 && <p className="mt-1 text-[11px] tabular-nums text-amber-300">⏳ {language === 'en' ? 'Materials expire in' : 'До истечения материалов'}: {forgeMaterialTimeLeftLabel(state, language, now)}</p>}
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-2 text-emerald-200">
+            <CheckCircle2 className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Ready to upgrade' : 'Готово к улучшению'}: <b>{readyCount}</b>
+          </div>
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-2 text-amber-200">
+            {language === 'en' ? 'Gear in workshop' : 'Вещей в кузнице'}: <b>{allEquipment.length}</b>
+          </div>
+        </div>
+        {(onInventory || onMap) && <div className="mt-2 grid grid-cols-2 gap-2">
+          {onInventory && <button type="button" onClick={onInventory} className="rounded-lg border border-violet-400/25 bg-violet-500/15 px-2 py-2 text-xs font-bold text-violet-100"><Package className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Equipment' : 'Инвентарь'}</button>}
+          {onMap && <button type="button" onClick={onMap} className="rounded-lg border border-sky-400/25 bg-sky-500/15 px-2 py-2 text-xs font-bold text-sky-100"><MapPinned className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Gather materials' : 'Добыть ресурсы'}</button>}
+        </div>}
       </div>
 
       {/* Full set rewards apply only in PvE; never inflate Arena stats. */}
@@ -150,12 +182,20 @@ export function ForgeScreen() {
         </div>
       )}
 
+      {allEquipment.length > 0 && <div className="flex gap-1.5 overflow-x-auto" role="group" aria-label={language === 'en' ? 'Forge equipment filters' : 'Фильтры кузницы'}>
+        {(['all', 'ready', 'equipped'] as const).map((filter) => <button type="button" key={filter} aria-pressed={gearFilter === filter} onClick={() => setGearFilter(filter)} className={`shrink-0 rounded-lg border px-3 py-2 text-xs font-bold ${gearFilter === filter ? 'border-amber-400/70 bg-amber-400/20 text-amber-100' : 'border-white/10 bg-black/20 text-slate-300'}`}>
+          {filter === 'all' ? (language === 'en' ? 'All items' : 'Все вещи') : filter === 'ready' ? (language === 'en' ? `Ready (${readyCount})` : `Можно улучшить (${readyCount})`) : (language === 'en' ? 'Equipped' : 'Надето')}
+        </button>)}
+      </div>}
+
       {/* Equipped items */}
-      {equippedList.length > 0 && (
+      {listedWorn.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">{t('equippedGear')}</h3>
           <div className="grid grid-cols-2 gap-2">
-            {equippedList.map((eq) => (
+            {listedWorn.map((item) => {
+              const eq = item.equipment!;
+              return (
               <button
                 key={eq.id}
                 className="card flex flex-col items-center p-3 transition-all active:scale-95 hover:border-orange-500/30"
@@ -180,18 +220,19 @@ export function ForgeScreen() {
                   {localizeText(eq.name, language)}
                 </p>
                 <p className="text-xs text-gray-500">{t('level')} {eq.level}</p>
+                <p className={`mt-1 text-[10px] ${forgeReady(item) ? 'text-emerald-300' : 'text-amber-300/70'}`}>{forgeReady(item) ? (language === 'en' ? 'Ready to upgrade' : 'Можно улучшить') : (language === 'en' ? 'Not ready' : 'Пока недоступно')}</p>
               </button>
-            ))}
+            );})}
           </div>
         </div>
       )}
 
       {/* Inventory equipment */}
-      {equipment.length > 0 && (
+      {listedBag.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">{t('inInventory')}</h3>
           <div className="grid grid-cols-2 gap-2">
-            {equipment.map((item) => (
+            {listedBag.map((item) => (
               <button
                 key={item.id}
                 className="card flex flex-col items-center p-3 transition-all active:scale-95 hover:border-orange-500/30"
@@ -207,6 +248,7 @@ export function ForgeScreen() {
                   {localizeText(item.name, language)}
                 </p>
                 <p className="text-xs text-gray-500">{t('level')} {item.equipment?.level || 1}</p>
+                <p className={`mt-1 text-[10px] ${forgeReady(item) ? 'text-emerald-300' : 'text-amber-300/70'}`}>{forgeReady(item) ? (language === 'en' ? 'Ready to upgrade' : 'Можно улучшить') : (language === 'en' ? 'Not ready' : 'Пока недоступно')}</p>
               </button>
             ))}
           </div>
@@ -220,6 +262,9 @@ export function ForgeScreen() {
           <p className="text-xs mt-1">{t('bossesHint')}</p>
         </div>
       )}
+      {allEquipment.length > 0 && listed.length === 0 && <div className="card text-center py-5 text-sm text-amber-200">
+        {language === 'en' ? 'No gear matches this filter. Check materials, gold and hero level.' : 'По фильтру ничего нет. Проверь материалы, монеты и уровень героя.'}
+      </div>}
 
       {/* Upgrade modal */}
       {selectedCurrent && selectedCurrent.equipment && (
