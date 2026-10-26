@@ -20,6 +20,18 @@ def load(browser,w=390,h=844):
     page.wait_for_selector('[data-testid=viking-slots-server]')
     page.get_by_role('button',name='КРУТИТЬ',exact=True).wait_for()
     return page
+def skip_reel_animation(page):
+    # The server confirms a winning decision before the 2.4s reel animation
+    # finishes. Assert SKIP is still in the DOM while reels are moving, and
+    # invoke it synchronously to avoid Playwright actionability waiting until
+    # the animation completes and its button legitimately disappears.
+    page.wait_for_function('document.querySelector(".vslot-reel-track--rolling") !== null',timeout=5000)
+    page.evaluate('''() => {
+      const button = [...document.querySelectorAll('button')]
+        .find(item => item.textContent?.trim() === 'ПРОПУСТИТЬ');
+      if (!button || button.disabled) throw new Error('SKIP must be available during the reel animation');
+      button.click();
+    }''')
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path=shutil.which('chromium') or shutil.which('google-chrome'),headless=True,args=['--no-sandbox'])
     errors=[];viewports=[]
@@ -39,7 +51,7 @@ with sync_playwright() as p:
     # Synchronous ref lock must guard two events before React re-renders.
     page.get_by_role('button',name='КРУТИТЬ',exact=True).evaluate('(b)=>{b.click();b.click()}')
     page.wait_for_function('window.__slotCalls.length===1')
-    page.get_by_role('button',name='ПРОПУСТИТЬ',exact=True).click()
+    skip_reel_animation(page)
     page.get_by_role('button',name='ЗАБРАТЬ 32',exact=True).click()
     page.wait_for_function('window.__slotClaims===32')
     assert page.evaluate('window.__slotCalls.filter(x=>x.p_action==="collect").length')==1
@@ -64,7 +76,7 @@ with sync_playwright() as p:
     # Bonus board retains approved immersive art; reopening restores server phase.
     page.evaluate('window.__slotNextState={phase:"bonus",pending:10,opened:[],picksLeft:5,shields:0,revealed:{}}')
     page.get_by_role('button',name='КРУТИТЬ',exact=True).click()
-    page.get_by_role('button',name='ПРОПУСТИТЬ',exact=True).click()
+    skip_reel_animation(page)
     page.get_by_role('dialog',name='Бонусная игра').wait_for()
     assert page.locator('.vslot-adventure-tile').count()==5
     page.get_by_role('button',name='Выбрать 1',exact=True).click()
