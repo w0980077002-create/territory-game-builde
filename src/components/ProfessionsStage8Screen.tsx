@@ -143,7 +143,7 @@ export function ProfessionsStage8Screen() {
     </div>
     {!status.profession ? <div className="space-y-2 rounded-xl border border-white/10 p-3">
       <p className="text-xs text-slate-300">{language==='en'?'Choose one profession permanently for 1,000 blue gems.':'Выбери одну профессию навсегда за 1000 синих алмазов.'}</p>
-      {PROFESSION_DEFINITIONS.map((p)=><button key={p.id} disabled={busy||!!purchasePending} onClick={()=>{void choose(p.id);}} className="flex w-full items-center gap-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-2.5 text-left text-sm font-bold disabled:opacity-40"><img src={PROFESSION_ART[p.id]} alt="" loading="lazy" className="h-12 w-12 shrink-0 object-contain"/><span>{p.name} · 1000 💎</span></button>)}
+      {PROFESSION_DEFINITIONS.map((p)=><button key={p.id} disabled={busy||!!purchasePending} onClick={()=>{void choose(p.id);}} className="flex w-full items-center gap-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-2.5 text-left text-sm font-bold disabled:opacity-40"><img src={PROFESSION_ART[p.id]} alt="" loading="lazy" className="h-16 w-16 shrink-0 rounded-lg border border-amber-400/25 bg-slate-800/40 object-contain"/><span>{p.name} · 1000 💎</span></button>)}
     </div> : <>
       <div className="flex items-center justify-between gap-2"><b className="text-sm text-amber-100">{language==='en'?'Training and recipes':'Обучение и рецепты'}</b><button className="text-xs text-sky-300" onClick={()=>setShowAll((s)=>!s)}>{showAll?(language==='en'?'Nearby levels':'Ближайшие уровни'):(language==='en'?'Show all':'Показать все')}</button></div>
       {visibleRecipes.map((recipe)=>{

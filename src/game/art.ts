@@ -7,6 +7,7 @@ const itemIcon = (name: string) => ui + 'items/' + name + '.webp';
 const materialIcon = (name: string) => ui + 'materials/' + name + '.webp';
 const shopIcon = (name: string) => ui + 'shop/' + name + '.webp';
 const uniqueGearIcon = (name: string) => ui + 'unique-gear/' + name + '.webp';
+const masterPortrait = (profession: ProfessionId) => ui + 'profession-masters/' + profession + '.webp';
 
 /** Names are stable across bought, crafted and restored copies; random instance IDs aren't.
  * These are cosmetic overrides only and never change an item's balance or ownership. */
@@ -43,13 +44,13 @@ const UNIQUE_EQUIPMENT_BY_NAME: Record<string, string> = {
 
 const normalizeItemName = (name: string) => name.trim().toLocaleLowerCase().replace(/\s+/g, ' ');
 
-/** Illustrated profession emblems are shared across both profession screens. */
+/** Five distinct master portraits are shared across legacy and Stage 8 screens. */
 export const PROFESSION_ART: Record<ProfessionId, string> = {
-  smith: uniqueGearIcon('jarl-blade'),
-  alchemist: uniqueGearIcon('legendary-elixir'),
-  artisan: uniqueGearIcon('jarl-boots'),
-  jeweler: uniqueGearIcon('jarl-ring'),
-  engineer: uniqueGearIcon('jarl-armor'),
+  smith: masterPortrait('smith'),
+  alchemist: masterPortrait('alchemist'),
+  artisan: masterPortrait('artisan'),
+  jeweler: masterPortrait('jeweler'),
+  engineer: masterPortrait('engineer'),
 };
 
 // Static cosmetic art only: item identities, equip slots and stats are unchanged.
