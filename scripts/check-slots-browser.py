@@ -87,7 +87,9 @@ with sync_playwright() as p:
     assert page.locator('.vslot-adventure-tile:disabled').count()==1
     # A blocked durable write must never send a gameplay request.
     page=load(browser)
-    page.evaluate('Storage.prototype.setItem=function(){throw new Error("blocked")};')
+    # Return a non-callable value: Playwright invokes functions returned by
+    # evaluate(), which would otherwise trigger our fake storage error here.
+    page.evaluate('() => { Storage.prototype.setItem=function(){throw new Error("blocked")}; }')
     page.get_by_role('button',name='КРУТИТЬ',exact=True).click()
     page.get_by_role('alert').wait_for()
     assert page.evaluate('window.__slotCalls.length')==0
