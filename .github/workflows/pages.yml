@@ -53,6 +53,7 @@ jobs:
           node scripts/edge-identity-tests.cjs
           node scripts/check-admin-claim-client.mjs
           npm run test:events
+          npm run test:workshop
 
       - name: Economy release gate
         id: economy_release

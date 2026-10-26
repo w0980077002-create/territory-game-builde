@@ -39,6 +39,7 @@ jobs:
       - run: npm run test:inventory-cleanup
       - run: npm run test:gear-recycle
       - run: npm run test:gear-showcase
+      - run: npm run test:workshop
       - run: npm run test:companion-navigation
       - run: npm run test:founders
       - run: npm run test:referral-activity

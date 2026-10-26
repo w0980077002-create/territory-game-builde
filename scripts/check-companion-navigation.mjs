@@ -22,10 +22,11 @@ for(const tab of ['equipment','items','followers']){
 }
 assert.match(inv,/aria-controls="inventory-current-section"/);
 assert.match(inv,/id="inventory-current-section" role="tabpanel"/);
-assert.match(inv,/<GearShowcase userId=\{userId\}\/>/);
+assert.match(inv,/<GearShowcase userId=\{userId\} onForge=\{onForge\}\/>/);
 assert.match(inv,/<BeltCells/);
 assert.match(inv,/putInBelt/);
-assert.match(app,/<InventoryScreen key=\{inventoryTab\} initialTab=\{inventoryTab\} userId=\{user\.id\} \/>/);
+assert.match(app,/<InventoryScreen key=\{inventoryTab\} initialTab=\{inventoryTab\} userId=\{user\.id\}/);
+assert.match(app,/onForge=\{openForge\} onProfessions=/);
 assert.match(showcase,/recycleCloudEquipment\(userId, id, action\)/);
 assert.doesNotMatch(profile,/<FollowersPanel \/>/,'Profile must no longer host companion cards');
 assert.doesNotMatch(profile,/EQUIPMENT_SLOTS/,'Profile must no longer render a duplicate equipment list');

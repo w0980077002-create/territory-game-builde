@@ -152,6 +152,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [battleView, setBattleView] = useState<BattleView>('campaign');
   const [autoStart, setAutoStart] = useState(false);
   const [inventoryTab, setInventoryTab] = useState<'items' | 'equipment'>('equipment');
+  const [forgeFocusId, setForgeFocusId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const [battleLocked, setBattleLocked] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -352,6 +353,10 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     if (id === 'battle') setBattleView('campaign');
     setScreen(id);
   };
+  const openForge = (equipmentId?: string) => {
+    setForgeFocusId(equipmentId ?? null);
+    setScreen('forge');
+  };
 
   return (
     <div
@@ -433,11 +438,13 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             onActiveChange={setBattleLocked}
           />
         )}
-        {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} userId={user.id} />}
+        {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} userId={user.id}
+          onForge={openForge} onProfessions={() => setScreen('professions')} onMap={() => setScreen('map')} />}
         {screen === 'hero' && <ProfileScreen user={user} />}
         {screen === 'map' && <MapScreen />}
         {screen === 'shop' && <ShopScreen />}
-        {screen === 'forge' && <ForgeScreen />}
+        {screen === 'forge' && <ForgeScreen focusEquipmentId={forgeFocusId}
+          onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')} />}
         {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => { setLeaderboardInitialTab('rating'); setScreen('leaderboard'); }} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
         {screen === 'leaderboard' && <LeaderboardScreen key={leaderboardInitialTab} user={user} initialTab={leaderboardInitialTab} />}
         {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} onNavigate={setScreen} />}
@@ -449,7 +456,11 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           }} />
         )}
         {screen === 'hall-play' && <HallPlayScreen game={hallGame} userId={user.id} onBack={() => setScreen('games')} />}
-        {screen === 'professions' && (STAGE8_CLIENT_OPT_IN ? <Stage8ProfessionsScreen /> : <ProfessionsScreen />)}
+        {screen === 'professions' && (STAGE8_CLIENT_OPT_IN ? <Stage8ProfessionsScreen onNavigate={(target, tab) => {
+          if (target === 'forge') openForge();
+          else if (target === 'inventory') { setInventoryTab(tab ?? 'equipment'); setScreen('inventory'); }
+          else setScreen(target);
+        }} /> : <ProfessionsScreen />)}
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} />}
         {screen === 'messages' && <MessagesScreen notify={notify} />}
@@ -470,7 +481,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             { id: 'trial', icon: '/ic-trials.webp', label: translate('trials'), action: () => { setBattleView('trial'); setAutoStart(false); setScreen('battle'); } },
             { id: 'quests', icon: '/ic-quests.webp', label: translate('quests'), action: () => setScreen('quests') },
             { id: 'shop', icon: '/ic-shop.webp', label: translate('shop'), action: () => setScreen('shop') },
-            { id: 'forge', icon: '/ic-forge.webp', label: translate('forge'), action: () => setScreen('forge') },
+            { id: 'forge', icon: '/ic-forge.webp', label: translate('forge'), action: () => openForge() },
             { id: 'professions', icon: '/ic-professions.svg', label: translate('professions'), action: () => setScreen('professions') },
           ].map((item) => (
             <button type="button" key={item.id} disabled={battleLocked} onClick={item.action}
