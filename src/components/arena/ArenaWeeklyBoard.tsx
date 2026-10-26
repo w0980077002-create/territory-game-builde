@@ -117,7 +117,7 @@ export function ArenaWeeklyBoard() {
         </>}
       </div>}
       {failed && current ? <span className="arena-weekly-note"><RefreshCw className="inline h-3 w-3 mr-1" />{en ? 'Showing last verified results' : 'Последние подтверждённые результаты'}</span> : null}
-      <p className="arena-weekly-note">{en ? 'New season every Sunday (Kyiv time). Lifetime wins remain.' : 'Каждое воскресенье — новый сезон. Общие победы сохраняются.'}</p>
+      <p className="arena-weekly-note">{en ? 'New season every Sunday (server time). Lifetime wins remain.' : 'Каждое воскресенье — новый сезон по времени сервера. Общие победы сохраняются.'}</p>
     </section>
   );
 }

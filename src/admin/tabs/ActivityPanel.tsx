@@ -65,7 +65,7 @@ export function ActivityPanel({ onOpen }: { onOpen: (playerId: string) => void }
       </button>
     }>
       <p className="text-xs text-slate-400 mb-3 leading-relaxed">
-        Сейчас — активность за последние 5 минут; сегодня — с 00:00 по Киеву;
+        Сейчас — активность за последние 5 минут; сегодня — с полуночи по времени сервера;
         7 дней — последние 168 часов. Данные обновляются каждые 30 секунд.
       </p>
       <div className="grid grid-cols-3 gap-1.5 mb-3">

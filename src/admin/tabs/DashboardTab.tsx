@@ -59,7 +59,7 @@ export function DashboardTab({ confirm }: { confirm: Confirm }) {
         <StatCard label="Заходили за 7 дней" value={fmt(stats.weekPlayers)} icon={<CalendarDays className="w-5 h-5 text-violet-300" />} tone="bg-violet-500/15" />
         <StatCard label="Покупки сегодня" value={`$${stats.todayPurchasesUsd.toFixed(2)}`} icon={<DollarSign className="w-5 h-5 text-amber-300" />} tone="bg-amber-500/15" />
       </div>
-      <p className="text-[11px] text-slate-400">Сегодня — с 00:00 по Киеву; 7 дней — последние 168 часов. Списки и время визитов — во вкладке «Игроки & Онлайн».</p>
+      <p className="text-[11px] text-slate-400">Сегодня — с полуночи по времени сервера; 7 дней — последние 168 часов. Списки и время визитов — во вкладке «Игроки & Онлайн».</p>
       <ErrorLine text={error} />
 
       <Panel title="Управление игрой" icon={<Settings2 className="w-4 h-4" />} right={
