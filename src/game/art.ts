@@ -1,4 +1,4 @@
-import type { Equipment, InventoryItem, ShopItem } from './types';
+import type { Equipment, InventoryItem, ProfessionId, ShopItem } from './types';
 import { MAIL_ITEM_VISUALS } from './mailRewardVisuals';
 
 const ui = import.meta.env.BASE_URL + 'assets/territory/ui/';
@@ -6,6 +6,51 @@ const eq = (slot: string) => ui + 'equipment-cartoon/' + slot + '.webp';
 const itemIcon = (name: string) => ui + 'items/' + name + '.webp';
 const materialIcon = (name: string) => ui + 'materials/' + name + '.webp';
 const shopIcon = (name: string) => ui + 'shop/' + name + '.webp';
+const uniqueGearIcon = (name: string) => ui + 'unique-gear/' + name + '.webp';
+
+/** Names are stable across bought, crafted and restored copies; random instance IDs aren't.
+ * These are cosmetic overrides only and never change an item's balance or ownership. */
+const UNIQUE_EQUIPMENT_BY_NAME: Record<string, string> = {
+  'клинок древних': 'ancient-blade',
+  'ancient blade': 'ancient-blade',
+  'секира бури': 'storm-axe',
+  'storm axe': 'storm-axe',
+  'клинок первого ярла': 'jarl-blade',
+  'first jarl blade': 'jarl-blade',
+  'печать ярла': 'jarl-ring',
+  'jarl seal': 'jarl-ring',
+  'доспех мастера механизмов': 'jarl-armor',
+  'master machinist armor': 'jarl-armor',
+  'сапоги великого мастера': 'jarl-boots',
+  'grandmaster boots': 'jarl-boots',
+  'амулет ворона мастера': 'master-raven-amulet',
+  'master raven amulet': 'master-raven-amulet',
+  'клинок дозорного': 'watch-blade',
+  'watchman blade': 'watch-blade',
+  'сапфировое кольцо': 'sapphire-ring',
+  'sapphire ring': 'sapphire-ring',
+  'щит северной стражи': 'north-shield',
+  'northern guard shield': 'north-shield',
+  'латы северянина': 'north-armor',
+  'northern armor': 'north-armor',
+  'шлем старейшины': 'master-helm',
+  'elder helmet': 'master-helm',
+  'кольцо древних': 'ancient-ring',
+  'ancient ring': 'ancient-ring',
+  'кольцо силы мастера': 'master-power-ring',
+  'master power ring': 'master-power-ring',
+};
+
+const normalizeItemName = (name: string) => name.trim().toLocaleLowerCase().replace(/\s+/g, ' ');
+
+/** Illustrated profession emblems are shared across both profession screens. */
+export const PROFESSION_ART: Record<ProfessionId, string> = {
+  smith: uniqueGearIcon('jarl-blade'),
+  alchemist: uniqueGearIcon('legendary-elixir'),
+  artisan: uniqueGearIcon('jarl-boots'),
+  jeweler: uniqueGearIcon('jarl-ring'),
+  engineer: uniqueGearIcon('jarl-armor'),
+};
 
 // Static cosmetic art only: item identities, equip slots and stats are unchanged.
 export const SLOT_ART: Record<Equipment['slot'], string> = {
@@ -85,6 +130,7 @@ for (const entry of Object.values(MAIL_ITEM_VISUALS)) {
 /** Stable item identity wins over generic stat icons.
  * Purchased, gifted and saved copies can have different IDs but share the same name. */
 function consumableArt(item: ArtSource): string | null {
+  if (/эликсир стойкости ярла|jarl.*resilience elixir/i.test(item.name)) return uniqueGearIcon('legendary-elixir');
   const canonical = MAIL_ITEM_VISUALS[item.id]?.image
     ?? CONSUMABLE_ART_BY_NAME[item.name.trim().toLocaleLowerCase()];
   if (canonical) return rootItemArt(canonical);
@@ -113,7 +159,9 @@ function inventoryMaterialArt(item: ArtSource): string {
  * Cosmetic only — no item properties or combat statistics are altered.
  */
 export function equipmentArt(equipment: Equipment): string {
-  const name = equipment.name.toLowerCase();
+  const name = normalizeItemName(equipment.name);
+  const special = UNIQUE_EQUIPMENT_BY_NAME[name];
+  if (special) return uniqueGearIcon(special);
   if (equipment.slot === 'armor' && /латные доспехи|plate armor/.test(name)) return eq('plate-armor');
   if (equipment.slot !== 'weapon') return SLOT_ART[equipment.slot];
   if (/клинок рыцаря|knight.*blade/.test(name)) return eq('knight-blade');
@@ -125,6 +173,26 @@ export function equipmentArt(equipment: Equipment): string {
     return eq('sword');
   }
   return SLOT_ART.weapon;
+}
+
+/** Artwork for recipe cards, including stage8 previews which aren't owned items yet. */
+export function craftOutputArt(output: {
+  name: string;
+  icon: string;
+  type: string;
+  equipment?: { slot?: unknown };
+}): string {
+  const slots = Object.keys(SLOT_ART);
+  const slot = output.equipment?.slot;
+  if (output.type === 'equipment' && typeof slot === 'string' && slots.includes(slot)) {
+    return equipmentArt({
+      id: '', name: output.name, icon: output.icon, slot: slot as Equipment['slot'],
+      rarity: 'common', level: 1,
+    });
+  }
+  const preview = { id: '', name: output.name, icon: output.icon, type: output.type } as ArtSource;
+  if (output.type === 'material') return inventoryMaterialArt(preview);
+  return consumableArt(preview) ?? itemIcon('potion-green');
 }
 
 const SHOP_BUNDLE_ART: Record<string, string> = {
