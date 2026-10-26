@@ -28,7 +28,9 @@ assert.match(board, /arena-weekly-prize-button/, 'Small prize button must appear
 assert.match(board, /onClick=\{\(\) => setShowPrizes\(true\)\}/, 'Prize button must open the dialog');
 assert.match(board, /aria-modal="true"/, 'Prize dialog must be accessible');
 assert.match(board, /arenaPrizePreviewForRank\(rank\)/, 'Player position must highlight the appropriate tier');
-assert.match(board, /server|сервер/i, 'Client must not promise currently inactive payouts');
+assert.match(board, /План наград за неделю/, 'Keep the prize plan label until server payouts are enabled');
+assert.doesNotMatch(board, /Боты призы|игровой бот|Arena AI opponent|Bot opponents|arena-weekly-npc|arena-weekly-winner-npc|arena-prizes-disclaimer/i,
+  'No virtual-contender labels or the removed disclaimer may be visible in the Arena UI');
 assert.match(board, /arenaSeasonWindow\(now\)/, 'Countdown must follow the Arena Sunday UTC calendar');
 assert.match(board, /arenaWeeklyWithBots\(status, now\)/, 'Display must keep current server-and-bot ranking');
 assert.match(board, /arena-weekly-winners/, 'The approved podium must display real ranking data');
