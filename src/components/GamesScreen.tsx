@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowRight, ChevronRight, Gift, Loader2, RefreshCw, Ticket,
+  ArrowRight, ChevronRight, Coins, Gift, Loader2, RefreshCw, Ticket,
 } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { captureGameEvent } from '@/game/analytics';
@@ -9,7 +9,7 @@ import {
   type HallGame, type HallState,
 } from '@/game/gameHall';
 import './gameHall.css';
-import { fetchSlotsStatus } from '@/game/slotsApi';
+import { fetchSlotsStatus, type SlotsStatus } from '@/game/slotsApi';
 
 interface GameCard {
   id: HallGame | 'wheel';
@@ -82,10 +82,11 @@ export function GamesScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [slotsEnabled, setSlotsEnabled] = useState(false);
+  const [slotsStatus, setSlotsStatus] = useState<SlotsStatus|null>(null);
+  const slotsEnabled = slotsStatus?.enabled===true;
   useEffect(()=>{
     let alive=true;
-    void fetchSlotsStatus().then((next)=>{if(alive)setSlotsEnabled(next?.enabled===true);}).catch(()=>{});
+    void fetchSlotsStatus().then((next)=>{if(alive)setSlotsStatus(next);}).catch(()=>{});
     return ()=>{alive=false;};
   },[userId]);
   const [payoutRecovery, setPayoutRecovery] = useState(false);
@@ -223,9 +224,9 @@ export function GamesScreen({
 
       <section className="hall-games" aria-label={en ? 'Choose a game' : 'Выбери игру'}>
         {GAMES.map((configuredGame, index) => {
-          const game = configuredGame.id==='slots' && slotsEnabled ? {...configuredGame,demo:false,ruHint:'Пять барабанов · бонусы и риск',enHint:'Five reels · bonuses and risk'} : configuredGame;
+          const game = configuredGame.id==='slots' && slotsEnabled ? {...configuredGame,demo:false,ruHint:'Ставки и выигрыши золотом героя · бонусы и риск',enHint:'Hero gold stakes and prizes · bonus and risk'} : configuredGame;
           const featured = index === 0;
-          const locked = !state || (state.tickets < 1 && !state.active);
+          const locked = game.id==='slots' && slotsEnabled ? (slotsStatus?.coins??0)<5 : !state || (state.tickets < 1 && !state.active);
           const otherActive = !!state?.active && state.active.game !== game.id;
           const resumeThisGame = state?.active?.game === game.id;
           const action = otherActive && !game.demo
@@ -238,9 +239,9 @@ export function GamesScreen({
               key={game.id}
               type="button"
               data-testid={`hall-game-${game.id}`}
-              aria-label={`${en ? game.en : game.ru} · ${game.demo ? (en ? 'Demo, no real rewards' : 'Демо, без реальных наград') : otherActive ? (en ? 'Finish your active round first' : 'Сначала заверши начатый раунд') : resumeThisGame ? (en ? 'Continue your round' : 'Продолжить начатый раунд') : game.id === 'slots' ? (en ? 'From 1 ticket' : 'От 1 билета') : (en ? '1 ticket' : '1 билет')}`}
+              aria-label={`${en ? game.en : game.ru} · ${game.demo ? (en ? 'Demo, no real rewards' : 'Демо, без реальных наград') : otherActive ? (en ? 'Finish your active round first' : 'Сначала заверши начатый раунд') : resumeThisGame ? (en ? 'Continue your round' : 'Продолжить начатый раунд') : game.id === 'slots' ? (en ? 'From 5 gold' : 'От 5 монет') : (en ? '1 ticket' : '1 билет')}`}
               onClick={() => play(game)}
-              disabled={!game.demo && !game.comingSoon && (loading || !state || busy || otherActive)}
+              disabled={!game.demo && !game.comingSoon && (busy || otherActive || (game.id!=='slots' && (loading || !state)))}
               className={`hall-game hall-game--${game.color} ${featured ? 'hall-game--featured' : ''} ${locked && !game.comingSoon && !game.demo ? 'hall-game--no-tickets' : ''} ${game.comingSoon ? 'hall-game--coming-soon' : ''}`}
             >
               <picture className="hall-game__scene">
@@ -259,7 +260,7 @@ export function GamesScreen({
               <span className="hall-game__shimmer" aria-hidden="true" />
               {featured && <span className="hall-game__ribbon">{en ? 'Popular' : 'Популярно'}</span>}
               
-              {!game.comingSoon && !game.demo && <span className="hall-game__price" aria-label={game.id==='slots' ? (en ? 'From 1 ticket' : 'От 1 билета') : (en ? '1 ticket' : '1 билет')}><Ticket size={13} aria-hidden="true" /> {game.id==='slots' ? '1+' : '1'}</span>}
+              {!game.comingSoon && !game.demo && <span className="hall-game__price" aria-label={game.id==='slots' ? (en ? 'From 5 gold' : 'От 5 монет') : (en ? '1 ticket' : '1 билет')}>{game.id==='slots' ? <Coins size={13} aria-hidden="true" /> : <Ticket size={13} aria-hidden="true" />} {game.id==='slots' ? '5+' : '1'}</span>}
               <span className="hall-game__info">
                 <strong className="hall-game__name">{en ? game.en : game.ru}</strong>
                 <small className="hall-game__hint">{en ? game.enHint : game.ruHint}</small>

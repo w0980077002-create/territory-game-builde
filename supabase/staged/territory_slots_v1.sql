@@ -1,5 +1,6 @@
 -- REVIEWED INSTALLATION REQUIRED. Disabled by default; existing Hall is prerequisite.
--- Stakes debit Hall tickets. Prizes use existing protected Hall gold claim pipeline.
+-- Stakes debit real hero gold; collected prizes credit the same real gold wallet.
+-- Previous ticket-based version was never enabled; no rounds/receipts exist.
 -- No existing player snapshots, balances or administrator ticket grants are changed.
 BEGIN;
 CREATE TABLE IF NOT EXISTS territory_private.slots_release_v1(id integer PRIMARY KEY CHECK(id=1),enabled boolean NOT NULL DEFAULT false);
@@ -361,7 +362,7 @@ DECLARE cfg jsonb:=territory_private.slots_config_v1(); line integer; dir intege
  target text; symbol text; cnt integer; paid integer; best integer; total integer:=0; heroes integer:=0;
  wins jsonb:='[]'; positions jsonb; best_positions jsonb; best_target text; best_count integer;
 BEGIN
- IF p_lines IS NULL OR p_lines NOT IN(1,3,5,7,9) OR p_bet IS NULL OR p_bet NOT IN(1,2,5,10)
+ IF p_lines IS NULL OR p_lines NOT IN(1,3,5,7,9) OR p_bet IS NULL OR p_bet NOT IN(1,2,5,10,25,50)
   OR jsonb_typeof(p_grid)<>'array' OR jsonb_array_length(p_grid)<>5 THEN RAISE EXCEPTION 'slots_invalid_grid'; END IF;
  FOR reel IN 0..4 LOOP
   IF jsonb_typeof(p_grid->reel)<>'array' OR jsonb_array_length(p_grid->reel)<>3 THEN RAISE EXCEPTION 'slots_invalid_grid'; END IF;
@@ -399,13 +400,13 @@ END $$;
 CREATE OR REPLACE FUNCTION public.territory_slots_v1(p_action text DEFAULT 'status',p_operation uuid DEFAULT NULL,
  p_lines integer DEFAULT NULL,p_bet integer DEFAULT NULL,p_choice integer DEFAULT NULL,p_expected integer DEFAULT NULL)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='pg_catalog' AS $$
-DECLARE u uuid:=auth.uid();a territory_private.hall_accounts_v1%ROWTYPE;r territory_private.slots_rounds_v1%ROWTYPE;
+DECLARE u uuid:=auth.uid();p public.players%ROWTYPE;r territory_private.slots_rounds_v1%ROWTYPE;
  args jsonb:=jsonb_build_object('action',p_action,'lines',p_lines,'bet',p_bet,'choice',p_choice,'expected',p_expected);
  old territory_private.slots_receipts_v1%ROWTYPE;result jsonb;cfg jsonb:=territory_private.slots_config_v1();
  s jsonb;outcome jsonb;grid jsonb:='[]';col jsonb;stops jsonb:='[]';stop_n integer;i integer;j integer;n integer;
  deck jsonb;temp jsonb;phase text;pending integer;stake integer;heroes integer;left_n integer;shields integer;
  tile jsonb;kind text;opened jsonb;award integer:=0;chunk integer;rev integer;
- status_tickets integer;status_pending integer;status_state jsonb;
+ status_coins integer;status_state jsonb;
 BEGIN
  IF u IS NULL OR NOT EXISTS(SELECT 1 FROM public.players WHERE id=u AND NOT banned) THEN RAISE EXCEPTION 'slots_login_required'; END IF;
  IF p_action IS NULL OR p_action NOT IN('status','spin','bonus','super','risk_start','risk','collect') THEN RAISE EXCEPTION 'slots_invalid_action'; END IF;
@@ -414,7 +415,7 @@ BEGIN
  ELSE
   IF p_operation IS NULL OR p_expected IS NULL OR p_expected<0 THEN RAISE EXCEPTION 'slots_operation_required'; END IF;
   IF p_action='spin' THEN
-   IF p_lines IS NULL OR p_lines NOT IN(1,3,5,7,9) OR p_bet IS NULL OR p_bet NOT IN(1,2,5,10) OR p_choice IS NOT NULL THEN RAISE EXCEPTION 'slots_invalid_arguments'; END IF;
+   IF p_lines IS NULL OR p_lines NOT IN(1,3,5,7,9) OR p_bet IS NULL OR p_bet NOT IN(5,10,25,50) OR p_choice IS NOT NULL THEN RAISE EXCEPTION 'slots_invalid_arguments'; END IF;
   ELSIF p_lines IS NOT NULL OR p_bet IS NOT NULL OR
    (p_action IN('bonus','super','risk') AND (p_choice IS NULL OR p_choice<0 OR p_choice>CASE p_action WHEN 'bonus' THEN 4 WHEN 'super' THEN 2 ELSE 3 END)) OR
    (p_action IN('collect','risk_start') AND p_choice IS NOT NULL) THEN RAISE EXCEPTION 'slots_invalid_arguments'; END IF;
@@ -423,20 +424,19 @@ BEGIN
   IF p_action='status' THEN RETURN jsonb_build_object('enabled',false); END IF;
   RAISE EXCEPTION 'slots_not_enabled';
  END IF;
- -- Status is a read-only snapshot. Opening the Hall must not create account
- -- rows or wait for the same FOR UPDATE locks used by bets and gold claims.
- -- A missing Hall account has the existing four-ticket starting balance.
+ -- Status is a read-only snapshot; opening the cabinet must not debit anything.
  IF p_action='status' THEN
-  SELECT ha.tickets,ha.pending_gold,sr.state INTO status_tickets,status_pending,status_state
-  FROM public.players p
-  LEFT JOIN territory_private.hall_accounts_v1 ha ON ha.player_id=p.id
-  LEFT JOIN territory_private.slots_rounds_v1 sr ON sr.player_id=p.id WHERE p.id=u;
-  RETURN jsonb_build_object('enabled',true,'tickets',COALESCE(status_tickets,4),
-   'hallPending',COALESCE(status_pending,0),'collected',0,
+  SELECT pl.gold,sr.state INTO status_coins,status_state
+  FROM public.players pl
+  LEFT JOIN territory_private.slots_rounds_v1 sr ON sr.player_id=pl.id WHERE pl.id=u;
+  RETURN jsonb_build_object('enabled',true,'coins',status_coins,'collected',0,
    'state',COALESCE(status_state,'{"phase":"ready","revision":0,"pending":0,"riskSteps":0,"opened":[],"picksLeft":5,"shields":0}'::jsonb));
  END IF;
- INSERT INTO territory_private.hall_accounts_v1(player_id) VALUES(u) ON CONFLICT DO NOTHING;
- SELECT * INTO a FROM territory_private.hall_accounts_v1 WHERE player_id=u FOR UPDATE;
+ SELECT * INTO p FROM public.players WHERE id=u AND NOT banned FOR UPDATE;
+ IF NOT FOUND OR jsonb_typeof(p.game_state->'player') IS DISTINCT FROM 'object'
+   OR (p.game_state->'player'->>'gold')::integer IS DISTINCT FROM p.gold
+   OR (p.game_state->'player'->>'gems')::integer IS DISTINCT FROM p.gems
+ THEN RAISE EXCEPTION 'slots_invalid_wallet'; END IF;
  INSERT INTO territory_private.slots_rounds_v1(player_id) VALUES(u) ON CONFLICT DO NOTHING;
  SELECT * INTO r FROM territory_private.slots_rounds_v1 WHERE player_id=u FOR UPDATE;
  IF p_action<>'status' THEN
@@ -452,7 +452,7 @@ BEGIN
   IF phase<>'ready' OR pending<>0 THEN RAISE EXCEPTION 'slots_round_unfinished'; END IF;
   IF EXISTS(SELECT 1 FROM territory_private.hall_sessions_v1 WHERE player_id=u AND created_at>clock_timestamp()-interval '15 minutes') THEN RAISE EXCEPTION 'slots_hall_round_active'; END IF;
   stake:=p_lines*p_bet;
-  IF a.tickets<stake THEN RAISE EXCEPTION 'slots_no_tickets'; END IF;
+  IF p.gold<stake THEN RAISE EXCEPTION 'slots_no_gold'; END IF;
   FOR i IN 0..4 LOOP
    stop_n:=territory_private.slots_random_v1(40);stops:=stops||to_jsonb(stop_n);col:='[]';
    FOR j IN 0..2 LOOP col:=col||jsonb_build_array(cfg->'strips'->i->((stop_n+j)%40)); END LOOP;
@@ -472,7 +472,7 @@ BEGIN
   END LOOP;
   r.super_deck:=deck;r.risk_deck:='[]';
   s:=jsonb_build_object('phase',phase,'pending',pending,'lines',p_lines,'bet',p_bet,'stake',stake,'outcome',outcome,'riskSteps',0,'opened','[]'::jsonb,'picksLeft',5,'shields',CASE WHEN heroes>=4 THEN 1 ELSE 0 END,'revealed','{}'::jsonb);
-  UPDATE territory_private.hall_accounts_v1 SET tickets=tickets-stake WHERE player_id=u RETURNING * INTO a;
+  p.gold:=p.gold-stake;
  ELSIF p_action='bonus' THEN
   IF phase<>'bonus' THEN RAISE EXCEPTION 'slots_wrong_phase'; END IF;
   opened:=s->'opened';
@@ -502,18 +502,26 @@ BEGIN
   s:=s||jsonb_build_object('phase',CASE WHEN pending>0 THEN 'decision' ELSE 'ready' END,'pending',pending,'riskSteps',(s->>'riskSteps')::integer+1,'riskChoice',p_choice,'riskWon',(r.risk_deck->>p_choice)::boolean);
  ELSIF p_action='collect' THEN
   IF phase NOT IN('decision','bonus') OR pending<=0 THEN RAISE EXCEPTION 'slots_wrong_phase'; END IF;
-  -- Existing Hall pending wallet is bounded. Keep every excess coin in this round.
-  chunk:=least(pending,greatest(0,100000-a.pending_gold));
-  IF chunk=0 THEN RAISE EXCEPTION 'slots_claim_hall_first'; END IF;
-  UPDATE territory_private.hall_accounts_v1 SET pending_gold=pending_gold+chunk WHERE player_id=u RETURNING * INTO a;
+  -- The wallet is int4. If it approaches the limit, leave excess prize
+  -- safely pending so no won coins can silently disappear.
+  chunk:=least(pending,greatest(0,2147483647::bigint-p.gold));
+  IF chunk=0 THEN RAISE EXCEPTION 'slots_wallet_full'; END IF;
+  p.gold:=p.gold+chunk;
   pending:=pending-chunk;award:=chunk;
   s:=s||jsonb_build_object('phase',CASE WHEN pending>0 THEN 'decision' ELSE 'ready' END,'pending',pending);
+ END IF;
+ IF p_action IN('spin','collect') THEN
+  UPDATE public.players SET gold=p.gold,
+    game_state=jsonb_set(p.game_state,'{player,gold}',to_jsonb(p.gold)),
+    updated_at=greatest(clock_timestamp(),p.updated_at+interval '1 millisecond')
+  WHERE id=u RETURNING * INTO p;
  END IF;
  IF p_action<>'status' THEN
   s:=s||jsonb_build_object('revision',rev+1);
   UPDATE territory_private.slots_rounds_v1 SET state=s,bonus_deck=r.bonus_deck,super_deck=r.super_deck,risk_deck=r.risk_deck,updated_at=clock_timestamp() WHERE player_id=u;
  END IF;
- result:=jsonb_build_object('enabled',true,'tickets',a.tickets,'hallPending',a.pending_gold,'state',s,'collected',award);
+ result:=jsonb_build_object('enabled',true,'coins',p.gold,'state',s,'collected',award,
+   'success',true,'updated_at',p.updated_at,'wallet_gold',p.gold,'wallet_gems',p.gems,'game_state',p.game_state);
  IF p_action<>'status' THEN INSERT INTO territory_private.slots_receipts_v1(player_id,operation_id,arguments,result) VALUES(u,p_operation,args,result); END IF;
  RETURN result;
 END $$;

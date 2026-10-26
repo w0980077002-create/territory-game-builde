@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ArrowLeft, BookOpen, Crown, Loader2, Play, Shield, Sparkles, Ticket, Trophy } from 'lucide-react';
+import { ArrowLeft, BookOpen, Coins, Crown, Loader2, Play, Shield, Sparkles, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
-import { autoClaimHallGold } from '@/game/gameHall';
+import { useGame } from '@/game/actions';
+import { acceptMonopolyClaimReceipt, saveCloudSave, saveTokens } from '@/game/cloud';
 import { fetchSlotsStatus, keepPendingSlots, readPendingSlots, SlotsRejected, submitSlotsAction, withSlotsDeadline, type PendingSlots, type SlotsAction, type SlotsStatus } from '@/game/slotsApi';
-import { reelSpinTrail, SLOT_BET_CHOICES, SLOT_ICONS, SLOT_LINE_CHOICES, SLOT_PAYTABLE, type SlotGrid, type SlotSymbol } from '@/game/vikingSlots';
+import { reelSpinTrail, SLOT_COIN_BET_CHOICES, SLOT_ICONS, SLOT_LINE_CHOICES, SLOT_PAYTABLE, type SlotGrid, type SlotSymbol } from '@/game/vikingSlots';
 import './vikingSlots.css';
 const root = import.meta.env.BASE_URL;
 const START_GRID: SlotGrid = Array.from({length:5},()=>['gold','gem','sword'] as SlotSymbol[]);
@@ -41,7 +42,7 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
   const [notice,setNotice]=useState('');
   const [help,setHelp]=useState(false);
   const [lines,setLines]=useState(initial.state.lines || 9);
-  const [bet,setBet]=useState(initial.state.bet || 1);
+  const [bet,setBet]=useState(initial.state.bet || 5);
   const [auto,setAuto]=useState(0);
   const [tracks,setTracks]=useState<SlotGrid|null>(null);
   const [animation,setAnimation]=useState(0);
@@ -65,27 +66,28 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
     return ()=>clearInterval(timer);
   },[winnings.length,tracks]);
 
-  const settleHall=async(amount:number)=>{
-    if (!amount) return;
-    try {
-      // The server retains pending gold if cloud-save credit stalls. Do not
-      // leave the slot controls locked indefinitely behind that separate flow.
-      const gold=await withSlotsDeadline(autoClaimHallGold(userId,amount),15_000);
-      if (alive.current && gold>0) setNotice(en?`+${gold} gold credited to your hero!`:`+${gold} золота зачислено персонажу!`);
-    } catch {if(alive.current)setNotice(en?'Prize saved on the server. Return to the hall to complete the credit.':'Приз сохранён на сервере. Вернись в зал для зачисления.');}
-  };
-  useEffect(()=>{void settleHall(initial.hallPending);},[]);
-
   const command=async(request:SlotsAction,retry?:PendingSlots)=>{
     if (lock.current || !recovered || tracks || (pending&&!retry)) return;
     lock.current=true;setBusy(true);setError('');
     const operation=retry || {id:crypto.randomUUID(),expected:state.revision,request};
     let committed=false;
     try {
+      // Flush local game actions before changing the real hero wallet.
+      if (!retry && (request.action==='spin' || request.action==='collect')) {
+        const snapshot=useGame.get();
+        if (!await withSlotsDeadline(saveCloudSave(userId,snapshot),15_000) || useGame.get()!==snapshot)
+          throw new SlotsRejected('slots_reload_required');
+      }
       // Failure to persist prevents the RPC entirely.
       keepPendingSlots(userId,operation);setPending(operation);
       const receipt=await submitSlotsAction(operation);
       committed=true;
+      if (receipt.success) {
+        const installed=saveTokens.get(userId);
+        // A replayed old receipt must not overwrite a newer cloud snapshot.
+        if (!installed || !receipt.updated_at || Date.parse(receipt.updated_at)>=Date.parse(installed))
+          acceptMonopolyClaimReceipt(userId,receipt);
+      }
       const next=retry ? (await fetchSlotsStatus()) || receipt : receipt;
       if(!next.enabled)throw new Error('slots_unconfirmed');
       if (!alive.current) return;
@@ -100,39 +102,40 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
         if(next.state.phase==='bonus' || next.state.phase==='superbonus')setAuto(0);
       }
       keepPendingSlots(userId,null);setPending(null);
-      if(next.hallPending>0)await settleHall(next.hallPending);
+      if (request.action==='collect' && receipt.collected>0)
+        setNotice(en?`+${receipt.collected} gold credited to your hero!`:`+${receipt.collected} золота зачислено персонажу!`);
     } catch(cause) {
       if (!alive.current) return;
       setAuto(0);
       if(cause instanceof SlotsRejected) {
         try {keepPendingSlots(userId,null);setPending(null);}catch{/* Keep the same safe replay marker. */}
-        setError(cause.message.includes('slots_no_tickets') ? (en?'Not enough tickets.':'Недостаточно билетов.') : cause.message.includes('slots_claim_hall_first') ? (en?'Return to the hall to credit the saved gold, then collect the remainder.':'Вернись в зал для зачисления золота, затем забери остаток.') : (en?'Action rejected. Refresh the server state.':'Действие отклонено. Обнови состояние сервера.'));
+        setError(cause.message.includes('slots_no_gold') ? (en?'Not enough gold.':'Недостаточно монет.') : cause.message.includes('slots_reload_required') ? (en?'Reload the game to synchronize your coins.':'Перезапусти игру для синхронизации монет.') : (en?'Action rejected. Refresh the server state.':'Действие отклонено. Обнови состояние сервера.'));
       } else setError(committed ? (en?'Action confirmed; recovery marker could not be cleared. Retry safely.':'Действие подтверждено, но отметка восстановления не удалена. Безопасно повтори.') : (en?'Result unconfirmed. Retry the saved operation.':'Результат не подтверждён. Повтори сохранённую операцию.'));
     } finally {lock.current=false;if(alive.current)setBusy(false);}
   };
   useEffect(()=>{
     if(!auto || busy || tracks || pending || !recovered || help) return;
     if(!['ready','decision'].includes(state.phase)){setAuto(0);return;}
-    if(state.phase==='ready' && status.tickets<lines*bet){setAuto(0);return;}
+    if(state.phase==='ready' && status.coins<lines*bet){setAuto(0);return;}
     const timer=setTimeout(()=>{
       if(state.phase==='decision')void command({action:'collect'});
       else {setAuto(n=>Math.max(0,n-1));void command({action:'spin',lines,bet});}
     },600);
     return ()=>clearTimeout(timer);
-  },[auto,busy,tracks,pending,recovered,help,state.phase,status.tickets,lines,bet]);
+  },[auto,busy,tracks,pending,recovered,help,state.phase,status.coins,lines,bet]);
   const disabled=busy || !!pending || !recovered || !!tracks;
   const refresh=async()=>{
     if(lock.current)return;
     lock.current=true;setBusy(true);
-    try {const fresh=await fetchSlotsStatus();if(!fresh?.enabled)throw new Error();setStatus(fresh);setError('');await settleHall(fresh.hallPending);}
+    try {const fresh=await fetchSlotsStatus();if(!fresh?.enabled)throw new Error();setStatus(fresh);setError('');}
     catch {setError(en?'Server refresh failed. Your round is saved.':'Ошибка обновления. Раунд сохранён на сервере.');}
     finally {lock.current=false;setBusy(false);}
   };
   return <div className="vslot" data-testid="viking-slots-server">
     <div className="vslot-heading"><button className="vslot-icon-button" onClick={onBack} aria-label={en?'Back':'Назад'}><ArrowLeft size={18}/></button><div><span className="vslot-eyebrow">TERRITORY · {en?'GAME HALL':'ИГРОВОЙ ЗАЛ'}</span><h1>{en?'VIKING TREASURES':'СОКРОВИЩА ВИКИНГОВ'}</h1></div><button className="vslot-icon-button" onClick={()=>setHelp(v=>!v)} aria-label={en?'Paytable':'Таблица выплат'}><BookOpen size={18}/></button></div>
-    <div className="vslot-preview-label"><Shield size={12}/>{en?'SERVER-VERIFIED TICKETS AND PRIZES':'БИЛЕТЫ И ПРИЗЫ ПОДТВЕРЖДАЕТ СЕРВЕР'}</div>
+    <div className="vslot-preview-label"><Shield size={12}/>{en?'9 PAYLINES · BONUS · DOUBLE-UP':'9 ЛИНИЙ · БОНУС · РИСК ×2'}</div>
     <div className="vslot-art"><img src={root+'assets/territory/characters/heroes/female_warrior/idle.webp'} alt=""/><div><Crown size={25}/><strong>{en?'FATE OF THE NORTH':'УДАЧА СЕВЕРА'}</strong><span>{en?'Treasures, runes and legendary heroes':'Сокровища, руны и герои легенд'}</span></div><img src={root+'assets/territory/characters/bosses/northern_jarl/idle.webp'} alt=""/></div>
-    <div className="vslot-stats"><div><small>{en?'TICKETS':'БИЛЕТЫ'}</small><strong>{status.tickets.toLocaleString()}</strong></div><div><small>{en?'STAKE':'СТАВКА'}</small><strong>{lines*bet} 🎟️</strong></div><div><small>{en?'PRIZE':'ПРИЗ'}</small><strong className="vslot-gold">{state.pending.toLocaleString()} 🪙</strong></div></div>
+    <div className="vslot-stats"><div><small>{en?'YOUR GOLD':'ВАШЕ ЗОЛОТО'}</small><strong>{status.coins.toLocaleString()} 🪙</strong></div><div><small>{en?'STAKE':'СТАВКА'}</small><strong>{lines*bet} 🪙</strong></div><div><small>{en?'PRIZE':'ПРИЗ'}</small><strong className="vslot-gold">{state.pending.toLocaleString()} 🪙</strong></div></div>
     <div className="vslot-board"><div className="vslot-line-marker">{Array.from({length:state.lines||lines},(_,i)=><span key={i}>{i+1}</span>)}</div><div className="vslot-reels" aria-label={en?'Five reels, three symbols each':'Пять барабанов по три символа'}>
       {field.map((reel,r)=><div className="vslot-reel-window" key={r}><div key={tracks?`${animation}-${r}`:`rest-${r}`} className={'vslot-reel-track '+(tracks?'vslot-reel-track--rolling':'')} style={tracks?{animationDelay:r*100+'ms',animationDuration:950+r*220+'ms'}:undefined}>
         {(tracks?.[r] || reel).map((sym,row)=><div key={row} className={'vslot-symbol '+(!tracks&&visibleLine?.positions.some(([c,l])=>c===r&&l===row)?'vslot-symbol--win':'')}><img src={root+SLOT_ICONS[sym].image} alt={SLOT_ICONS[sym][en?'en':'ru']} draggable={false}/>{sym==='wild'&&<b>WILD</b>}{sym==='hero'&&<b>BONUS</b>}</div>)}
@@ -160,11 +163,11 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
     </section></div>}
     <div className="vslot-controls">
       <div className="vslot-selection"><label>{en?'ACTIVE LINES':'ЛИНИИ'}</label><div>{SLOT_LINE_CHOICES.map(n=><button key={n} className={lines===n?'selected':''} disabled={disabled||state.phase!=='ready'||auto>0} onClick={()=>setLines(n)}>{n}</button>)}</div></div>
-      <div className="vslot-selection"><label>{en?'TICKETS PER LINE':'БИЛЕТОВ НА ЛИНИЮ'}</label><div>{SLOT_BET_CHOICES.map(n=><button key={n} className={bet===n?'selected':''} disabled={disabled||state.phase!=='ready'||auto>0} onClick={()=>setBet(n)}>{n}</button>)}</div></div>
-      {state.phase==='decision'&&!tracks?<div className="vslot-action-bar"><button className="vslot-main" disabled={disabled} onClick={()=>void command({action:'collect'})}><Trophy size={18}/>{en?'COLLECT':'ЗАБРАТЬ'} {state.pending}</button><button className="vslot-secondary" disabled={disabled||state.riskSteps>=5||auto>0} onClick={()=>{setAuto(0);void command({action:'risk_start'});}}><Sparkles size={18}/>{en?'RISK ×2':'РИСК ×2'}</button></div>:<div className="vslot-action-bar"><button className="vslot-main" disabled={disabled||state.phase!=='ready'||status.tickets<lines*bet||auto>0} onClick={()=>void command({action:'spin',lines,bet})}>{busy?<Loader2 className="animate-spin" size={18}/>:<Play size={18}/>} {en?'SPIN':'КРУТИТЬ'}</button><button className="vslot-secondary" disabled={!tracks} onClick={()=>{if(animationTimer.current)clearTimeout(animationTimer.current);setTracks(null);}}>{en?'SKIP':'ПРОПУСТИТЬ'}</button></div>}
+      <div className="vslot-selection"><label>{en?'GOLD PER LINE':'МОНЕТ НА ЛИНИЮ'}</label><div>{SLOT_COIN_BET_CHOICES.map(n=><button key={n} className={bet===n?'selected':''} disabled={disabled||state.phase!=='ready'||auto>0} onClick={()=>setBet(n)}>{n}</button>)}</div></div>
+      {state.phase==='decision'&&!tracks?<div className="vslot-action-bar"><button className="vslot-main" disabled={disabled} onClick={()=>void command({action:'collect'})}><Trophy size={18}/>{en?'COLLECT':'ЗАБРАТЬ'} {state.pending}</button><button className="vslot-secondary" disabled={disabled||state.riskSteps>=5||auto>0} onClick={()=>{setAuto(0);void command({action:'risk_start'});}}><Sparkles size={18}/>{en?'RISK ×2':'РИСК ×2'}</button></div>:<div className="vslot-action-bar"><button className="vslot-main" disabled={disabled||state.phase!=='ready'||status.coins<lines*bet||auto>0} onClick={()=>void command({action:'spin',lines,bet})}>{busy?<Loader2 className="animate-spin" size={18}/>:<Play size={18}/>} {en?'SPIN':'КРУТИТЬ'}</button><button className="vslot-secondary" disabled={!tracks} onClick={()=>{if(animationTimer.current)clearTimeout(animationTimer.current);setTracks(null);}}>{en?'SKIP':'ПРОПУСТИТЬ'}</button></div>}
       <div className="vslot-bottom-actions"><button disabled={!auto&&(disabled||!['ready','decision'].includes(state.phase))} onClick={()=>setAuto(n=>n?0:10)}>{auto?(en?'STOP AUTO ':'СТОП АВТО ')+auto:(en?'AUTO ×10':'АВТО ×10')}</button><button disabled={busy} onClick={()=>{setAuto(0);void refresh();}}>{en?'REFRESH':'ОБНОВИТЬ'}</button></div>
     </div>
-    <p className="vslot-disclaimer"><Ticket size={14}/>{en?'Each spin spends the displayed ticket stake. Gold prizes are saved on the server. No cash payouts.':'Прокрутка списывает указанную ставку в билетах. Призы в золоте сохраняются на сервере. Денежных выплат нет.'}</p>
-    {help&&<div className="vslot-help-backdrop" role="dialog" aria-modal="true" aria-label={en?'Rules':'Правила'}><div className="vslot-help"><h2>{en?'PAYTABLE AND RULES':'ТАБЛИЦА ВЫПЛАТ И ПРАВИЛА'}</h2><p>{en?'Match 3–5 symbols from either edge. One best win per active line. WILD substitutes; 3+ heroes start a bonus. Four heroes grant a shield.':'Собери 3–5 символов от любого края. Одна лучшая выплата на активную линию. WILD заменяет символы; 3+ героя открывают бонус. Четыре героя дают щит.'}</p><table><thead><tr><th>{en?'Symbol':'Символ'}</th><th>×3</th><th>×4</th><th>×5</th></tr></thead><tbody>{Object.entries(SLOT_PAYTABLE).map(([sym,pays])=><tr key={sym}><td>{SLOT_ICONS[sym as SlotSymbol][en?'en':'ru']}</td>{pays?.map((n,i)=><td key={i}>{n}×</td>)}</tr>)}</tbody></table><p>{en?'Payouts are in gold, multiplied by tickets per line. Bonus: three treasures (1×, 2×, 3× total stake), a shield and a trap. Complete all five picks to unlock a 3×/5×/9× super chest. Risk doubles or forfeits the unclaimed prize, up to five times.':'Выплаты в золоте умножаются на билеты на линию. Бонус: три сокровища (1×, 2×, 3× полной ставки), щит и ловушка. Пройди пять попыток для суперсундука 3×/5×/9×. Риск удваивает или сжигает незабранный приз, не более пяти раз.'}</p><button onClick={()=>setHelp(false)}>{en?'CLOSE':'ЗАКРЫТЬ'}</button></div></div>}
+    <p className="vslot-disclaimer"><Coins size={14}/>{en?'Each spin spends hero gold. Gold prizes are credited to the same wallet when collected. No cash payouts.':'Каждая прокрутка списывает монеты героя. Выигрыш зачисляется туда же после нажатия «Забрать». Денежных выплат нет.'}</p>
+    {help&&<div className="vslot-help-backdrop" role="dialog" aria-modal="true" aria-label={en?'Rules':'Правила'}><div className="vslot-help"><h2>{en?'PAYTABLE AND RULES':'ТАБЛИЦА ВЫПЛАТ И ПРАВИЛА'}</h2><p>{en?'Match 3–5 symbols from either edge. One best win per active line. WILD substitutes; 3+ heroes start a bonus. Four heroes grant a shield.':'Собери 3–5 символов от любого края. Одна лучшая выплата на активную линию. WILD заменяет символы; 3+ героя открывают бонус. Четыре героя дают щит.'}</p><table><thead><tr><th>{en?'Symbol':'Символ'}</th><th>×3</th><th>×4</th><th>×5</th></tr></thead><tbody>{Object.entries(SLOT_PAYTABLE).map(([sym,pays])=><tr key={sym}><td>{SLOT_ICONS[sym as SlotSymbol][en?'en':'ru']}</td>{pays?.map((n,i)=><td key={i}>{n}×</td>)}</tr>)}</tbody></table><p>{en?'Payouts multiply the gold staked per line. Bonus: three treasures (1×, 2×, 3× total stake), a shield and a trap. Complete all five picks to unlock a 3×/5×/9× super chest. Risk doubles or forfeits the unclaimed prize, up to five times.':'Выплаты умножаются на ставку монет на линию. Бонус: три сокровища (1×, 2×, 3× полной ставки), щит и ловушка. Пройди пять попыток для суперсундука 3×/5×/9×. Риск удваивает или сжигает незабранный приз, не более пяти раз.'}</p><button onClick={()=>setHelp(false)}>{en?'CLOSE':'ЗАКРЫТЬ'}</button></div></div>}
   </div>;
 }

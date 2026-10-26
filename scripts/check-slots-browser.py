@@ -53,7 +53,7 @@ with sync_playwright() as p:
     page.wait_for_function('window.__slotCalls.length===1')
     skip_reel_animation(page)
     page.get_by_role('button',name='ЗАБРАТЬ 32',exact=True).click()
-    page.wait_for_function('window.__slotClaims===32')
+    page.wait_for_function('document.querySelector(".vslot-stats").textContent.includes("487")')
     assert page.evaluate('window.__slotCalls.filter(x=>x.p_action==="collect").length')==1
     assert page.evaluate('localStorage.getItem("territory_slots_operation_v1_review")') is None
     # Timeout after server commit must retain the exact operation across remount.
@@ -95,5 +95,5 @@ with sync_playwright() as p:
     assert page.evaluate('window.__slotCalls.length')==0
     assert not errors,errors
     browser.close()
-(OUT/'verification.json').write_text(json.dumps({'fixture':'production live-slot component/API, mocked transport; SQL separately tested in PGlite','viewports':viewports,'checks':['5x3 board','large ticket wallet','double click guard','gold claim','committed timeout/remount/replay','risk','bonus recovery','blocked storage prevents RPC'],'physical_telegram_device':False},ensure_ascii=False,indent=2))
-print('Slots browser PASS: four mobile viewports, real component/API, 500K tickets, double-click lock, gold collection, timeout/restart stable UUID, risk, bonus restore and storage failure. Offline transport; not physical Telegram verification.')
+(OUT/'verification.json').write_text(json.dumps({'fixture':'production live-slot component/API, mocked transport; SQL separately tested in PGlite','viewports':viewports,'checks':['5x3 board','real hero gold in the cabinet','double click guard','gold claim','committed timeout/remount/replay','risk','bonus recovery','blocked storage prevents RPC'],'physical_telegram_device':False},ensure_ascii=False,indent=2))
+print('Slots browser PASS: four mobile viewports, coin stakes and payout, double-click lock, timeout/restart stable UUID, risk, bonus restore and storage failure. Offline transport; not physical Telegram verification.')

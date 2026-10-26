@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { SLOT_ICONS, type SlotOutcome } from './vikingSlots';
+import { SLOT_COIN_BET_CHOICES, SLOT_ICONS, type SlotOutcome } from './vikingSlots';
 
 export type SlotsPhase = 'ready' | 'decision' | 'bonus' | 'superbonus' | 'risk';
 export interface SlotsState {
@@ -8,7 +8,8 @@ export interface SlotsState {
   outcome?: SlotOutcome; revealed?: Record<string, { kind: 'treasure' | 'trap' | 'shield'; payout: number }>;
   superChoice?: number; superAward?: number; riskChoice?: number; riskWon?: boolean;
 }
-export interface SlotsStatus { enabled: boolean; tickets: number; hallPending: number; collected: number; state: SlotsState }
+export interface SlotsStatus { enabled: boolean; coins: number; collected: number; state: SlotsState;
+  success?: true; updated_at?: string; wallet_gold?: number; wallet_gems?: number; game_state?: unknown }
 export type SlotsAction = { action: 'spin'; lines: number; bet: number } |
   { action: 'bonus' | 'super' | 'risk'; choice: number } | { action: 'risk_start' | 'collect' };
 export interface PendingSlots { id: string; expected: number; request: SlotsAction }
@@ -27,15 +28,15 @@ export function withSlotsDeadline<T>(request: PromiseLike<T>, timeoutMs = 12_000
 }
 function validAction(v: unknown): v is SlotsAction {
   if (!record(v)) return false;
-  if (v.action === 'spin') return [1,3,5,7,9].includes(Number(v.lines)) && [1,2,5,10].includes(Number(v.bet)) && typeof v.lines === 'number' && typeof v.bet === 'number';
+  if (v.action === 'spin') return [1,3,5,7,9].includes(Number(v.lines)) && SLOT_COIN_BET_CHOICES.includes(Number(v.bet) as 5|10|25|50) && typeof v.lines === 'number' && typeof v.bet === 'number';
   if (v.action === 'collect' || v.action === 'risk_start') return true;
   return ['bonus','super','risk'].includes(String(v.action)) && natural(v.choice, v.action === 'bonus' ? 4 : v.action === 'super' ? 2 : 3);
 }
 function parse(v: unknown): SlotsStatus {
   if (!record(v) || typeof v.enabled !== 'boolean') throw new Error('slots_invalid_reply');
-  if (!v.enabled) return { enabled:false,tickets:0,hallPending:0,collected:0,state:{phase:'ready',revision:0,pending:0,riskSteps:0,opened:[],picksLeft:5,shields:0} };
+  if (!v.enabled) return { enabled:false,coins:0,collected:0,state:{phase:'ready',revision:0,pending:0,riskSteps:0,opened:[],picksLeft:5,shields:0} };
   const s = v.state;
-  if (!natural(v.tickets) || !natural(v.hallPending,100000) || !natural(v.collected,100000) || !record(s) ||
+  if (!natural(v.coins) || !natural(v.collected) || !record(s) ||
       !['ready','decision','bonus','superbonus','risk'].includes(String(s.phase)) || !natural(s.pending) ||
       !natural(s.revision) || !natural(s.riskSteps,5) || !natural(s.picksLeft,5) || !natural(s.shields,5) ||
       !Array.isArray(s.opened) || s.opened.length>5 || s.opened.some((x)=>!natural(x,4)) || new Set(s.opened).size!==s.opened.length) throw new Error('slots_invalid_reply');
@@ -43,11 +44,13 @@ function parse(v: unknown): SlotsStatus {
     const o = s.outcome;
     if (!record(o) || !Array.isArray(o.grid) || o.grid.length!==5 ||
       o.grid.some((col)=>!Array.isArray(col) || col.length!==3 || col.some((x)=>typeof x!=='string' || !(x in SLOT_ICONS))) ||
-      !natural(o.payout,21600) || !natural(o.bonusSymbols,15) || !Array.isArray(o.lines) || o.lines.length>9 ||
-      o.lines.some((line)=>!record(line) || !natural(line.number,9) || line.number<1 || !natural(line.payout,2400) ||
+      !natural(o.payout,108000) || !natural(o.bonusSymbols,15) || !Array.isArray(o.lines) || o.lines.length>9 ||
+      o.lines.some((line)=>!record(line) || !natural(line.number,9) || line.number<1 || !natural(line.payout,12000) ||
         !natural(line.count,5) || line.count<3 || typeof line.symbol!=='string' || !(line.symbol in SLOT_ICONS) ||
         !Array.isArray(line.positions) || line.positions.length!==line.count || line.positions.some((pos)=>!Array.isArray(pos) || pos.length!==2 || !natural(pos[0],4) || !natural(pos[1],2)))) throw new Error('slots_invalid_outcome');
   }
+  if (v.success === true && (!natural(v.wallet_gold) || !natural(v.wallet_gems) || !record(v.game_state) ||
+      typeof v.updated_at !== 'string' || !Number.isFinite(Date.parse(v.updated_at)) || v.wallet_gold !== v.coins)) throw new Error('slots_invalid_wallet_receipt');
   return v as unknown as SlotsStatus;
 }
 export async function fetchSlotsStatus(): Promise<SlotsStatus | null> {

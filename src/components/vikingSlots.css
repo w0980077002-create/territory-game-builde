@@ -362,3 +362,26 @@
 .vslot-adventure-tiles--three .vslot-adventure-glyph{height:58px}
 .vslot-adventure-tiles--four .vslot-adventure-glyph{height:57px}
 @media(max-width:360px){.vslot-adventure-glyph{height:40px}.vslot-adventure-tiles--three .vslot-adventure-glyph,.vslot-adventure-tiles--four .vslot-adventure-glyph{height:45px}}
+
+/* Gold-stake cabinet: compact controls in the same bright casino palette. */
+.vslot-bottom-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.vslot-bottom-actions button{
+  min-height:40px;
+  border-radius:11px;
+  font-size:11px;
+  letter-spacing:.25px;
+  font-weight:950;
+  text-shadow:0 1px 2px #191022;
+  box-shadow:inset 0 1px #ffffff35,0 3px 0 #150e27;
+}
+.vslot-bottom-actions button:first-child{
+  color:#fff4c8;
+  border:1px solid #f1c476;
+  background:linear-gradient(160deg,#aa539d,#642a7a 57%,#3f295e);
+}
+.vslot-bottom-actions button:last-child{
+  color:#e7fff5;
+  border:1px solid #64cfbc;
+  background:linear-gradient(160deg,#348887,#22546a 57%,#20344d);
+}
+.vslot-bottom-actions button:disabled{opacity:.48;filter:saturate(.4)}

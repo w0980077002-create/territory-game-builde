@@ -29,6 +29,8 @@ export const SLOT_LINES: readonly (readonly number[])[] = [
 ];
 export const SLOT_LINE_CHOICES = [1,3,5,7,9] as const;
 export const SLOT_BET_CHOICES = [1,2,5,10] as const;
+/** Real-game gold stakes. The separate demo continues to use play credits. */
+export const SLOT_COIN_BET_CHOICES = [5,10,25,50] as const;
 /** Multipliers for 3, 4 and 5 matching icons; this is NOT the Igrosoft paytable. */
 export const SLOT_PAYTABLE: Partial<Record<SlotSymbol, readonly [number,number,number]>> = {
   wild: [24,80,240], boss: [16,52,152], wolf: [12,36,112],
@@ -90,7 +92,7 @@ export function makeSlotGrid():SlotGrid {
 export function scoreSlotGrid(grid: SlotGrid, activeLines: number, betPerLine: number): SlotOutcome {
   if (grid.length !== 5 || grid.some(reel => reel.length !== 3)) throw Error('Invalid grid');
   if (!SLOT_LINE_CHOICES.includes(activeLines as 1|3|5|7|9) ||
-    !SLOT_BET_CHOICES.includes(betPerLine as 1|2|5|10)) throw Error('Invalid bet');
+    !( [...SLOT_BET_CHOICES,...SLOT_COIN_BET_CHOICES] as readonly number[] ).includes(betPerLine)) throw Error('Invalid bet');
   const wins: WinningLine[] = [];
   let total = 0;
   for (let l=0; l<activeLines; l++) {
