@@ -433,7 +433,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'forge' && <ForgeScreen />}
         {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => setScreen('leaderboard')} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
         {screen === 'leaderboard' && <LeaderboardScreen user={user} />}
-        {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} />}
+        {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} onNavigate={setScreen} />}
         {screen === 'games' && (
           <GamesScreen userId={user.id} onPlay={(gameId) => {
             captureGameEvent('territory_hall_game_open', { mode: gameId });

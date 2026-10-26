@@ -7,6 +7,7 @@ import { Currency } from './ui/Currency';
 import { useLanguage } from '@/game/i18n';
 import { SocialQuestsSection } from './SocialQuestsSection';
 import type { SocialStatus } from '@/game/socialQuests';
+import { getStarterMilestones, type StarterDestination } from '@/game/starterJourney';
 
 const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
   { type: 'daily', titleKey: 'daily', hintKey: 'dailyHint' },
@@ -14,10 +15,13 @@ const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
   { type: 'story', titleKey: 'story', hintKey: 'storyHint' },
 ];
 
-export function QuestsScreen({ userId, onSocialStatusChange }: { userId: string; onSocialStatusChange: (status: SocialStatus) => void }) {
+export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { userId: string; onSocialStatusChange: (status: SocialStatus) => void; onNavigate: (screen: StarterDestination) => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const ready = state.quests.filter((q) => !q.claimed && q.current >= q.target).length;
+  const starterSteps = state.player.level < 5 ? getStarterMilestones(state) : [];
+  const starterDone = starterSteps.filter(step => step.done).length;
+  const starterNext = starterSteps.find(step => !step.done);
 
   return (
     <div className="space-y-4 animate-fade-in pb-2">
@@ -31,6 +35,28 @@ export function QuestsScreen({ userId, onSocialStatusChange }: { userId: string;
           </div>
         </div>
       </div>
+
+      {starterNext && (
+        <section className="rounded-2xl border border-sky-400/30 bg-gradient-to-br from-[#172b38] to-[#10151f] p-3" aria-label={language === 'en' ? 'Beginner journey' : 'Путь новичка'}>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-sky-100">🧭 {language === 'en' ? 'Your first steps' : 'Путь новичка'}</h3>
+            <span className="text-xs font-bold text-amber-200 tabular-nums">{starterDone}/4</span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/45" role="progressbar" aria-valuenow={starterDone} aria-valuemin={0} aria-valuemax={4}>
+            <div className="h-full bg-gradient-to-r from-sky-400 to-emerald-400" style={{ width: `${starterDone * 25}%` }} />
+          </div>
+          <ol className="mt-2 space-y-1">
+            {starterSteps.map((step) => <li key={step.id} className={`flex items-center gap-2 text-xs ${step.done ? 'text-emerald-300' : 'text-slate-200'}`}>
+              {step.done ? <CheckCircle2 size={14} className="shrink-0" /> : <span aria-hidden="true" className="h-3.5 w-3.5 shrink-0 rounded-full border border-sky-400/60" />}
+              <span>{language === 'en' ? step.titleEn : step.titleRu}</span>
+            </li>)}
+          </ol>
+          <button type="button" onClick={() => onNavigate(starterNext.destination)} className="mt-2 w-full rounded-lg border border-sky-300/40 bg-sky-500/20 px-3 py-2 text-xs font-bold text-sky-50 active:scale-[0.99]">
+            {language === 'en' ? starterNext.actionEn : starterNext.actionRu}
+          </button>
+          <p className="mt-1 text-[10px] text-slate-400">{language === 'en' ? 'Your regular quest rewards are listed below. No extra purchases required.' : 'Обычные награды за задания находятся ниже. Дополнительных покупок не требуется.'}</p>
+        </section>
+      )}
 
       <SocialQuestsSection userId={userId} onStatusChange={onSocialStatusChange} />
 
