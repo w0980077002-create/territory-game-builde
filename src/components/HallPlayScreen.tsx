@@ -7,6 +7,7 @@ import { ArrowLeft, Coins, Dice5, Dices, DoorOpen, Gift, Loader2, RefreshCw, Shi
 import { useLanguage } from '@/game/i18n';
 import { captureGameEvent } from '@/game/analytics';
 import { hallStatus, hallStart, hallFinish, autoClaimHallGold, hallError, type HallGame, type HallSession, type HallState, type HallResult } from '@/game/gameHall';
+import './hallChallenges.css';
 
 const names:Record<HallGame,[string,string]>={
  monopoly:['Монополия','Monopoly'],dice:['Кости судьбы','Dice of Fate'],
@@ -47,7 +48,30 @@ function MonopolyBoard({session}:{session:HallSession}){
   </div>
  </div>;
 }
-function Question({session,onPick,busy,en}:{session:HallSession;onPick:(i:number)=>void;busy:boolean;en:boolean}){
+
+// Decorative dice, doors, chests and targets never decide outcomes. The server
+// remains the only source of the puzzle, ticket debit and correct answer.
+const PIPS: Record<number, number[]> = {
+  1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8],
+  5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8],
+};
+const DICE_PAIRS = [[0, 1], [1, 2], [0, 2]] as const;
+function MiniDie({value}:{value:number|undefined}) {
+  if (!value || !PIPS[value]) return <span className="hall-mini-die hall-mini-die--unknown">?</span>;
+  return <span className="hall-mini-die" aria-label={`${value}`}>
+    {Array.from({length:9},(_,pos)=><i key={pos} className={PIPS[value].includes(pos)?'hall-mini-die__pip':''} />)}
+  </span>;
+}
+function ChoiceArt({game,index,dice}:{game:HallGame;index:number;dice?:number[]}) {
+  if (game==='dice') {
+    const pair=DICE_PAIRS[index];
+    return <span className="hall-choice-art hall-choice-art--dice" aria-hidden="true"><MiniDie value={dice?.[pair[0]]}/><MiniDie value={dice?.[pair[1]]}/></span>;
+  }
+  if (game==='tower') return <span className="hall-choice-art hall-choice-art--tower" aria-hidden="true"><span className="hall-choice-gate"><i/><b>✦</b></span></span>;
+  if (game==='targets') return <span className="hall-choice-art hall-choice-art--targets" aria-hidden="true"><span className="hall-choice-target"><i/></span></span>;
+  return <span className="hall-choice-art hall-choice-art--treasury" aria-hidden="true"><span className="hall-choice-chest"><i/><b>◆</b></span></span>;
+}
+function Question({session,onPick,busy,en,selected}:{session:HallSession;onPick:(i:number)=>void;busy:boolean;en:boolean;selected:number|null}){
  const game=session.game,q=session.question;
  if(game==='monopoly')return <div className="space-y-3">
   <MonopolyBoard session={session}/>
@@ -61,30 +85,35 @@ function Question({session,onPick,busy,en}:{session:HallSession;onPick:(i:number
  game==='tower'?(en?'Choose the strongest gate':'Выбери самые сильные ворота'):
  game==='targets'?(en?'Hit the middle-number target':'Попади в мишень со средним числом'):
  (en?'Which chest equals the sum of runes?':'Какой сундук равен сумме рун?');
- const prefix=game==='dice'?['🎲 1+2','🎲 2+3','🎲 1+3']:
-   game==='tower'?['🚪 I','🚪 II','🚪 III']:
-   game==='targets'?['🎯 1','🎯 2','🎯 3']:['🗝️ 1','🗝️ 2','🗝️ 3'];
- return <div className="space-y-4">
-  <h3 className="text-lg text-amber-100 text-center font-black">{title}</h3>
-  {game==='dice' && <p className="text-center text-xl font-black text-sky-200 tracking-widest">
-     🎲 {(q.dice??[]).join('  ·  ')}
-    </p>}
-  {game==='treasury' && <div className="rounded-xl bg-violet-950/45 border border-violet-300/30 py-3 text-center text-2xl font-black text-fuchsia-200">
-   ✨ {(q.runes??[]).join(' + ')} = ?
-  </div>}
-  {game==='tower' && <p className="text-center text-xs text-gray-300">{en?'Only the strongest gate opens the tower.':'Только самые сильные ворота откроют башню.'}</p>}
-  {game==='targets' && <p className="text-center text-xs text-gray-300">{en?'One shot. Pick the value between the other two.':'Один выстрел. Выбери число между двумя другими.'}</p>}
-  <div className="grid grid-cols-3 gap-2">
+ const label=game==='dice'?(en?'Pair':'Пара'):
+   game==='tower'?(en?'Gate':'Ворота'):
+   game==='targets'?(en?'Target':'Мишень'):(en?'Chest':'Сундук');
+ const hint=game==='dice'?(en?'Aim for a total of seven. In a tie, choose the left pair.':'Ищи сумму ближе к семи. При равенстве — левая пара.'):
+   game==='tower'?(en?'Only the strongest gate opens the tower.':'Только самые сильные ворота откроют башню.'):
+   game==='targets'?(en?'One shot: find the middle number.':'Один выстрел: найди среднее число.'):
+   (en?'Match the chest number to the sum of runes.':'Найди сундук с суммой указанных рун.');
+ return <div className={`hall-challenge hall-challenge--${game}`} data-testid={`hall-challenge-${game}`}>
+  <div className="hall-challenge-scene" aria-hidden="true">
+   <img src={import.meta.env.BASE_URL+`hall-art/${game}-mobile.webp`} alt="" loading="lazy" decoding="async"/>
+  </div>
+  <h3 className="hall-challenge-title">{title}</h3>
+  <p className="hall-challenge-hint">{hint}</p>
+  {game==='treasury'&&<div className="hall-challenge-runes" aria-label={en?'Rune sum':'Сумма рун'}>✦ {(q.runes??[]).join(' + ')} = ?</div>}
+  <div className="hall-challenge-choices" role="group" aria-label={title}>
    {nums.map((value,i)=><button type="button" key={i} disabled={busy} onClick={()=>onPick(i)}
-     className={'rounded-2xl p-3.5 h-32 flex flex-col justify-center items-center gap-2 font-black border-2 transition-transform active:scale-95 disabled:opacity-50 '+
-     (game==='treasury'?'bg-gradient-to-b from-amber-800/50 to-violet-950 border-amber-400/45 text-amber-200':
-     game==='tower'?'bg-gradient-to-b from-orange-700/40 to-slate-900 border-amber-400/45 text-orange-200':
-     game==='targets'?'bg-gradient-to-b from-rose-700/45 to-slate-900 border-rose-400/50 text-rose-200':
-     'bg-gradient-to-b from-sky-700/45 to-slate-900 border-sky-400/50 text-sky-200')}>
-      <span className="text-xs">{prefix[i]}</span><span className="text-3xl">{value}</span>
+     aria-label={`${label} ${i+1}: ${value}`}
+     aria-pressed={selected===i}
+     className={`hall-challenge-choice ${selected===i?'hall-challenge-choice--selected':''}`}>
+      <span className="hall-challenge-choice-number">{i+1}</span>
+      <ChoiceArt game={game} index={i} dice={q.dice}/>
+      <span className="hall-challenge-choice-value">{value}</span>
+      <span className="hall-challenge-choice-label">{label} {i+1}</span>
     </button>)}
   </div>
-  {game==='dice'&&<p className="text-[11px] text-gray-400 text-center">{en?'If tied, choose the pair on the left.':'При равенстве выбирай крайнюю левую пару.'}</p>}
+  <p className="hall-challenge-secure" role="status">
+    {busy?<Loader2 size={13} className="animate-spin"/>:<ShieldCheck size={13}/>}
+    {busy?(en?'Server is checking your shot…':'Сервер проверяет выбор…'):(en?'The server checks your choice and prize':'Выбор и награду проверяет сервер')}
+  </p>
  </div>;
 }
 function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void;userId:string}){
@@ -95,6 +124,7 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
  const [busy,setBusy]=useState(false);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
+ const [selectedChoice,setSelectedChoice]=useState<number|null>(null);
  const [payoutState,setPayoutState]=useState<'credited'|'pending'|null>(null);
  const init=async()=>{
   try{
@@ -106,14 +136,14 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
  };
  useEffect(()=>{void init();},[game,en]);
  const start=async()=>{
-  if(busy)return;setBusy(true);setError('');setResult(null);
+  if(busy)return;setBusy(true);setError('');setResult(null);setSelectedChoice(null);
   try{const data=await hallStart(game);captureGameEvent('territory_hall_round_start', { mode: game });setSession(data);setPayoutState(null);setWallet(await hallStatus());}
   catch(e){setError(hallError(e,en));}
   finally{setBusy(false);}
  };
  const finish=async(answer:number)=>{
   if(busy||!session)return;
-  setBusy(true);setError('');
+  setBusy(true);setError('');setSelectedChoice(answer);
   try{
    const prize=await hallFinish(session,answer);
    captureGameEvent('territory_hall_round_end', { mode: game, outcome: prize.won ? 'won' : 'lost' });
@@ -130,7 +160,7 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
      }
    }else setPayoutState(null);
    setWallet(await hallStatus());
-  }catch(e){setError(hallError(e,en));}
+  }catch(e){setSelectedChoice(null);setError(hallError(e,en));}
   finally{setBusy(false);}
  };
  return <div className="space-y-3 animate-fade-in pb-5" data-testid={'hall-play-'+game}>
@@ -167,9 +197,8 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
    </section>:
    session && session.game!==game?
     <div className="rounded-xl border border-amber-500/35 p-4 bg-amber-950/20 text-amber-200 text-sm">{en?'Another game is in progress. Return to the hall to continue it.':'У тебя уже начат другой раунд. Вернись в зал и заверши его.'}</div>:
-   session ? <section className="rounded-2xl border border-violet-300/25 bg-gradient-to-b from-violet-950/35 to-[#161b28] p-3.5 space-y-3">
-     <Question session={session} onPick={finish} busy={busy} en={en}/>
-     <p className="flex items-center justify-center gap-1 text-[11px] text-gray-400"><ShieldCheck size={14}/>{en?'Result validated by the server':'Результат проверяет сервер'}</p>
+   session ? <section className="rounded-2xl border border-violet-300/25 bg-gradient-to-b from-violet-950/35 to-[#161b28] p-2.5 space-y-2">
+     <Question session={session} onPick={finish} busy={busy} en={en} selected={selectedChoice}/>
     </section>:
     <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-b from-violet-950/35 to-[#151a28] p-5 text-center space-y-4">
      <Icon size={58} className="mx-auto text-amber-300 drop-shadow-[0_0_13px_#fbbf24]"/>
