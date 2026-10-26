@@ -46,6 +46,13 @@ const GAMES: GameCard[] = [
     scene: 'hall-art/tower.svg', artwork: 'hall-art/tower-hd.webp', color: 'red',
   },
   {
+    // The verified Sharpshooter round already exists in the five-game server
+    // contract. Keep its entrance visible alongside later-added Wheel/Slots.
+    id: 'targets', ru: 'Меткий стрелок', en: 'Sharpshooter',
+    ruHint: 'Попади точно в цель', enHint: 'Hit the right target',
+    scene: 'hall-art/targets.svg', artwork: 'hall-art/targets-hd.webp', color: 'gold',
+  },
+  {
     id: 'wheel', ru: 'Колесо фортуны', en: 'Wheel of Fortune',
     ruHint: 'Вращай колесо и получай награды', enHint: 'Spin the wheel and collect prizes',
     scene: 'hall-art/wheel.svg', artwork: 'hall-art/wheel-hd.webp', color: 'gold',

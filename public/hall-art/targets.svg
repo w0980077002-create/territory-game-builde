@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="267" viewBox="0 0 600 267" role="img" aria-label="Viking archery targets">
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#133c75"/><stop offset=".5" stop-color="#853558"/><stop offset="1" stop-color="#e9a34b"/></linearGradient>
+    <radialGradient id="gold"><stop stop-color="#fff3ad"/><stop offset=".63" stop-color="#efac39"/><stop offset="1" stop-color="#925122"/></radialGradient>
+    <linearGradient id="wood" x2="1" y2="1"><stop stop-color="#ae703c"/><stop offset=".5" stop-color="#65331d"/><stop offset="1" stop-color="#bd824a"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+  <rect width="600" height="267" fill="url(#sky)"/>
+  <path d="M0 139 58 84 95 111 145 56 209 145 252 104 302 137 350 75 412 151 492 91 554 151 600 112V267H0Z" fill="#263656" opacity=".85"/>
+  <path d="m114 95 31-39 23 44-25-16Zm226 0 10-20 24 36-24-12ZM477 109l15-18 21 32-20-12Z" fill="#c9d9e4" opacity=".9"/>
+  <rect y="194" width="600" height="73" fill="#2e1e2f" opacity=".83"/>
+  <path d="M0 202q120-35 244-7t356-6" fill="none" stroke="#f3b65a" stroke-width="3" opacity=".5"/>
+  <g stroke="#301c1d" stroke-width="7" stroke-linecap="round"><path d="m102 135-9 97m9-97 39 98m286-98-37 98m37-98 10 97m-168-110-27 108m27-108 25 108"/></g>
+  <g transform="translate(115 138)">
+    <circle r="55" fill="url(#wood)" stroke="#d29a53" stroke-width="9"/><circle r="40" fill="#631e25" stroke="#f3d16e" stroke-width="8"/><circle r="26" fill="#eece6d"/><circle r="15" fill="#a42a35"/><circle r="6" fill="#fff2ae"/>
+  </g>
+  <g transform="translate(429 138)">
+    <circle r="55" fill="url(#wood)" stroke="#d29a53" stroke-width="9"/><circle r="40" fill="#631e25" stroke="#f3d16e" stroke-width="8"/><circle r="26" fill="#eece6d"/><circle r="15" fill="#a42a35"/><circle r="6" fill="#fff2ae"/>
+  </g>
+  <g transform="translate(275 114)">
+    <circle r="75" fill="#f3c55b" opacity=".4" filter="url(#glow)"/><circle r="72" fill="url(#wood)" stroke="#f6c970" stroke-width="8"/><circle r="54" fill="#592137" stroke="#ffdc7c" stroke-width="9"/><circle r="37" fill="#dc8c40"/><circle r="26" fill="#8b2238"/><circle r="14" fill="url(#gold)" stroke="#fff1ac" stroke-width="3"/>
+    <path d="m-83-37 79 33" stroke="#d7e2e6" stroke-width="5" stroke-linecap="round"/><path d="m-83-37 18-12-4 18Z" fill="#f9dda0"/>
+    <path d="m96-59-91 55" stroke="#d7e2e6" stroke-width="5" stroke-linecap="round"/><path d="m96-59-8 20-15-12Z" fill="#f9dda0"/>
+  </g>
+  <g fill="#fff5ac" opacity=".85"><circle cx="191" cy="32" r="2"/><circle cx="359" cy="53" r="2"/><circle cx="509" cy="35" r="2"/><circle cx="551" cy="85" r="3"/></g>
+</svg>
