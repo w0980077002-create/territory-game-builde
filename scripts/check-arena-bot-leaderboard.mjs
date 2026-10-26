@@ -9,22 +9,34 @@ const source = readFileSync('src/game/arenaWeeklyBots.ts', 'utf8');
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
-const firstStart = Date.parse('2026-10-19T00:00:00Z'); // Monday 00:00 UTC
-const secondStart = Date.parse('2026-10-26T00:00:00Z');
-const thirdStart = Date.parse('2026-11-02T00:00:00Z');
+const firstStart = Date.parse('2026-10-18T00:00:00Z'); // Sunday 00:00 UTC
+const secondStart = Date.parse('2026-10-25T00:00:00Z');
+const thirdStart = Date.parse('2026-11-01T00:00:00Z');
 const utcMidnight = (day) => Date.parse(day + 'T00:00:00Z');
-function seasonWindow(now) {
-  return now >= secondStart ? {
-    startsAt: secondStart, endsAt: thirdStart, weekKey: '2026-10-26',
-  } : {
-    startsAt: firstStart, endsAt: secondStart, weekKey: '2026-10-19',
-  };
-}
+const calendarSource = readFileSync('src/game/seasonCalendar.ts', 'utf8');
+const calendarModule = { exports: {} };
+vm.runInNewContext(ts.transpileModule(calendarSource, {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, {
+  module: calendarModule, exports: calendarModule.exports,
+  require: name => {
+    if (name === './weeklyQuests') return { weeklyQuestKey: () => '2026-10-19' };
+    throw Error('Unexpected calendar dependency: ' + name);
+  },
+  Date, Intl, Math, Number, Object, String,
+}, { filename: 'seasonCalendar.transpiled.js', timeout: 5000 });
+const { arenaSeasonWindow } = calendarModule.exports;
+assert.equal(arenaSeasonWindow(Date.parse('2026-10-24T23:59:59Z')).startsAt, firstStart);
+assert.equal(arenaSeasonWindow(Date.parse('2026-10-25T00:00:00Z')).startsAt, secondStart);
+assert.equal(arenaSeasonWindow(Date.parse('2026-10-26T12:00:00Z')).endsAt, thirdStart);
+assert.equal(arenaSeasonWindow(Date.parse('2026-11-01T00:00:00Z')).weekKey, '2026-11-01');
+assert.equal(arenaSeasonWindow(Date.parse('2026-03-29T01:00:00Z')).weekKey, '2026-03-29',
+  'Season boundary must ignore regional daylight-saving changes');
 const loaded = { exports: {} };
 vm.runInNewContext(compiled, {
   module: loaded, exports: loaded.exports,
   require: (name) => {
-    if (name === './seasonCalendar') return { seasonWindow, utcMidnight };
+    if (name === './seasonCalendar') return { arenaSeasonWindow, utcMidnight };
     throw Error('Unexpected runtime dependency: ' + name);
   },
   Date, Intl, Math, Number, Object, Set, Map, String,
@@ -74,14 +86,14 @@ const checkRanks = leaders => {
   assert(leaders.every((p, i) => i === 0 || leaders[i - 1].wins >= p.wins),
     'Players and bots must sort by wins, not by fixed bot ranks');
 };
-const first = at('2026-10-19T12:00:00Z');
+const first = at('2026-10-18T12:00:00Z');
 checkRanks(first.leaders);
 assert(first.leaders.some(p => p.arenaBot), 'Bot pool is active');
 assert(first.leaders.every(p => !p.arenaBot || p.wins <= 25),
-  'Bots cannot instantly receive a whole week of wins at Monday start');
+  'Bots cannot instantly receive a whole week of wins at Sunday start');
 assert(first.leaders.slice(0, 9).every((p, i) => p.player_id === players[i].player_id));
 
-const botOnly = at('2026-10-19T12:00:00Z', []);
+const botOnly = at('2026-10-18T12:00:00Z', []);
 checkRanks(botOnly.leaders);
 assert(botOnly.leaders.every(p => p.arenaBot), 'All 50 slots are open to virtual contenders');
 assert.equal(new Set(botOnly.leaders.map(p => p.player_id)).size, 50);
@@ -92,7 +104,7 @@ assert(botOnly.leaders.every(p => !/[0-9_]/.test(p.display_name)), 'No numeric b
 const lowHumans = Array.from({ length: 50 }, (_, idx) => ({
   ...players[0], player_id: 'low-real-' + idx, rank: idx + 1, wins: 2,
 }));
-const againstLowHumans = at('2026-10-19T12:00:00Z', lowHumans);
+const againstLowHumans = at('2026-10-18T12:00:00Z', lowHumans);
 checkRanks(againstLowHumans.leaders);
 assert(againstLowHumans.leaders[0].arenaBot, 'A bot with more wins can beat a real player');
 assert(againstLowHumans.leaders.some(p => !p.arenaBot), 'Equal/strong human entries must not be excluded');
@@ -121,8 +133,7 @@ for (const date of ['2026-10-23', '2026-10-24']) {
     const snapshot = at(date + 'T' + utcHour + ':00:00Z', []);
     checkRanks(snapshot.leaders);
     const distinctWins = new Set(snapshot.leaders.map(p => p.wins)).size;
-    // The new Monday season start brings Friday morning one day closer to
-    // the reset: a single transient tie can naturally occur among 50 bots.
+    // The Sunday season start can cause a transient tie near Friday morning.
     if (date === '2026-10-23' && hour < 12) {
       assert(distinctWins >= 49, date + ' ' + utcHour + ': more than one transient tie');
     } else {
@@ -173,10 +184,10 @@ for (const [id, wins] of mondayMorning) {
 }
 assert(increased >= 20, 'Bots must earn their wins at different points throughout each day');
 
-const beforeReset = scoresByName(at('2026-10-25T23:50:00Z', []).leaders);
-const newSeason = at('2026-10-26T12:00:00Z', [], secondStart, thirdStart);
+const beforeReset = scoresByName(at('2026-10-24T23:50:00Z', []).leaders);
+const newSeason = at('2026-10-25T12:00:00Z', [], secondStart, thirdStart);
 checkRanks(newSeason.leaders);
-assert(newSeason.leaders.every(p => p.wins <= 25), 'Monday must reset synthetic season-only wins');
+assert(newSeason.leaders.every(p => p.wins <= 25), 'Sunday must reset synthetic season-only wins');
 assert([...beforeReset.values()].some(wins => wins >= 90));
 
 // Regional daylight-saving changes never affect UTC event progression.
@@ -188,4 +199,4 @@ for (const [id, wins] of dstBefore) {
 
 assert(!source.includes('supabase.rpc(') && !source.includes('supabase.from('),
   'NPC scores must never write to real-player data');
-console.log('Arena weekly TOP-50: 50 distinct Fri/Sat bot scores, wider 1..175 weekly targets, gradual single wins, Monday/UTC reset, no DB writes: PASS');
+console.log('Arena weekly TOP-50: 50 distinct Fri/Sat bot scores, wider 1..175 weekly targets, gradual single wins, Sunday/UTC reset, no DB writes: PASS');
