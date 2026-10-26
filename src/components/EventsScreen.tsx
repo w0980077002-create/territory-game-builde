@@ -137,7 +137,7 @@ export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
 
     <div className="territory-events__summary">
       <div><Bell size={16}/><strong>{readyNow}</strong><span>{en ? 'requiring attention' : 'требуют внимания'}</span></div>
-      <div><Clock3 size={16}/><strong>{seasonCountdown(time.dailyRemaining, language)}</strong><span>{en ? 'until server midnight' : 'до полуночи по времени сервера'}</span></div>
+      <div><Clock3 size={16}/><strong>{seasonCountdown(time.dailyRemaining, language)}</strong><span>{en ? 'until 00:00 UTC' : 'до 00:00 UTC'}</span></div>
     </div>
 
     <div className="territory-events__tabs" role="tablist" aria-label={en ? 'Event calendar' : 'Календарь событий'}>
@@ -186,6 +186,6 @@ export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
     {(failed.hall || failed.arena || failed.season) && <p className="territory-events__note" role="status">
       {en ? 'Some live data is unavailable. Your items and rewards have not changed.' : 'Некоторые серверные данные временно недоступны. Награды и предметы не изменены.'}
     </p>}
-    <p className="territory-events__footnote">{en ? 'Countdowns use server time. Rewards and rankings are confirmed by the game server.' : 'Таймеры работают по серверному времени. Начисления и рейтинги подтверждаются сервером игры.'}</p>
+    <p className="territory-events__footnote">{en ? 'Daily and weekly resets use UTC. Rewards and rankings are confirmed by the game server.' : 'Суточные и недельные обновления идут по UTC. Начисления и рейтинги подтверждаются сервером игры.'}</p>
   </div>;
 }

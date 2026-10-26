@@ -1,4 +1,4 @@
-import { kyivMidnightUtc, seasonWindow } from './seasonCalendar';
+import { utcMidnight, seasonWindow } from './seasonCalendar';
 import { calendarDayKey } from './weeklyQuests';
 import type { Quest } from './types';
 
@@ -7,7 +7,7 @@ export function eventCalendar(now = Date.now()) {
   const today = calendarDayKey(now);
   const [year, month, day] = today.split('-').map(Number);
   const tomorrow = new Date(Date.UTC(year, month - 1, day + 1)).toISOString().slice(0, 10);
-  const dailyResetAt = kyivMidnightUtc(tomorrow);
+  const dailyResetAt = utcMidnight(tomorrow);
   const weeklyResetAt = seasonWindow(now).endsAt;
   return { today, dailyResetAt, weeklyResetAt, dailyRemaining: dailyResetAt - now, weeklyRemaining: weeklyResetAt - now };
 }

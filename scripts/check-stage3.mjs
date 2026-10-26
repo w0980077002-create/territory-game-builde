@@ -24,25 +24,25 @@ const weekly=load('src/game/weeklyQuests.ts');
 const season=load('src/game/seasonCalendar.ts',{'./weeklyQuests':weekly});
 const pvp=load('src/game/pvpBalance.ts');
 const localIso = ms => new Date(ms).toISOString();
-assert.equal(season.kyivMidnightUtc('2026-10-18'),Date.parse('2026-10-17T21:00:00Z'));
-assert.equal(season.kyivMidnightUtc('2026-10-25'),Date.parse('2026-10-24T21:00:00Z'));
-assert.equal(season.kyivMidnightUtc('2026-11-01'),Date.parse('2026-10-31T22:00:00Z'));
-assert.equal(season.kyivMidnightUtc('2026-03-29'),Date.parse('2026-03-28T22:00:00Z'));
-assert.equal(season.kyivMidnightUtc('2026-04-05'),Date.parse('2026-04-04T21:00:00Z'));
-assert.throws(()=>season.kyivMidnightUtc('2026-02-30'),RangeError);
-assert.throws(()=>season.kyivMidnightUtc('sunday'),RangeError);
-for(const near of ['2026-10-17T20:59:59Z','2026-10-17T21:00:00Z','2026-10-24T21:00:00Z',
-                   '2026-10-31T21:59:59Z','2026-10-31T22:00:00Z','2026-03-28T21:59:59Z',
-                   '2026-03-28T22:00:00Z','2026-04-04T20:59:59Z','2026-04-04T21:00:00Z']) {
+assert.equal(season.utcMidnight('2026-10-18'),Date.parse('2026-10-18T00:00:00Z'));
+assert.equal(season.utcMidnight('2026-10-25'),Date.parse('2026-10-25T00:00:00Z'));
+assert.equal(season.utcMidnight('2026-11-01'),Date.parse('2026-11-01T00:00:00Z'));
+assert.equal(season.utcMidnight('2026-03-29'),Date.parse('2026-03-29T00:00:00Z'));
+assert.equal(season.utcMidnight('2026-04-05'),Date.parse('2026-04-05T00:00:00Z'));
+assert.throws(()=>season.utcMidnight('2026-02-30'),RangeError);
+assert.throws(()=>season.utcMidnight('monday'),RangeError);
+for(const near of ['2026-10-18T23:59:59Z','2026-10-19T00:00:00Z','2026-10-25T23:59:59Z',
+                   '2026-10-26T00:00:00Z','2026-11-01T23:59:59Z','2026-11-02T00:00:00Z',
+                   '2027-03-28T23:59:59Z','2027-03-29T00:00:00Z']) {
   const now=Date.parse(near);const w=season.seasonWindow(now);
-  assert.ok(w.startsAt<=now&&now<w.endsAt,`${near}: not in own Kyiv week`);
+  assert.ok(w.startsAt<=now&&now<w.endsAt,`${near}: not in own UTC week`);
   assert.equal(w.remainingMs,w.endsAt-now);
   assert.equal(w.weekKey,weekly.weeklyQuestKey(now));
-  assert.ok(w.endsAt-w.startsAt>=6*86_400_000&&w.endsAt-w.startsAt<=8*86_400_000);
+  assert.equal(w.endsAt-w.startsAt,7*86_400_000);
 }
 assert.equal(season.seasonCountdown(0),'0д 0ч 0м');
 assert.equal(season.seasonCountdown(86400000+3600000+60000,'en'),'1d 1h 1m');
-console.log('Stage3 Kyiv seasons: midnight, DST, countdown and week boundaries: PASS');
+console.log('Stage3 UTC seasons: midnight, countdown and week boundaries: PASS');
 
 const a=pvp.normalizePvpEntry(1,20);
 const b=pvp.normalizePvpEntry(5,25);

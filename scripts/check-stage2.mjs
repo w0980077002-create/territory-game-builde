@@ -21,28 +21,32 @@ const catalog={ createBossLootEquipment:(chapter, weapon, id)=>({id,slot:weapon?
 const engine=load('../src/game/engine.ts', {'./equipmentBalance':equipment, './equipmentCatalog': catalog, './weeklyQuests':weekly, './pveBalance':balance, './followers':followers});
 const elixirExpiry=load('../src/game/elixirExpiry.ts');
 const actions=load('../src/game/actions.ts', {'./store':{create:(initial)=>({get:()=>initial,set:()=>{},subscribe:()=>()=>{}})}, './equipmentBalance':equipment, './weeklyQuests':weekly, './purchaseGuard':{ canBuyShopItem:()=>true, shopStonesBoughtToday:()=>0, SHOP_STONES_PER_DAY:25 }, './engine':engine, './followers':followers, './elixirExpiry':elixirExpiry});
-assert.equal(weekly.weeklyQuestKey(Date.parse('2026-10-17T20:59:59Z')),'2026-10-11');
-assert.equal(weekly.weeklyQuestKey(Date.parse('2026-10-17T21:00:00Z')),'2026-10-18');
-assert.equal(weekly.weeklyQuestKey(Date.parse('2026-01-01T00:00:00Z')),'2025-12-28');
-assert.equal(weekly.weeklyQuestKey(Date.parse('2026-02-28T22:00:00Z')),'2026-03-01');
-assert.equal(weekly.weeklyQuestKey(Date.parse('2026-10-24T22:00:00Z')),'2026-10-25','DST switch on Sunday uses summer-time offset at midnight');
+assert.equal(weekly.weeklyQuestKey(Date.parse('2026-10-17T20:59:59Z')),'2026-10-12');
+assert.equal(weekly.weeklyQuestKey(Date.parse('2026-10-18T00:00:00Z')),'2026-10-12');
+assert.equal(weekly.weeklyQuestKey(Date.parse('2026-01-01T00:00:00Z')),'2025-12-29');
+assert.equal(weekly.weeklyQuestKey(Date.parse('2026-03-01T00:00:00Z')),'2026-02-23');
+assert.equal(weekly.weeklyQuestKey(Date.parse('2026-10-25T00:00:00Z')),'2026-10-19');
+assert.equal(weekly.weeklyQuestKey(Date.parse('2026-10-25T23:59:59Z')),'2026-10-19');
+assert.equal(weekly.weeklyQuestKey(Date.parse('2026-10-26T00:00:00Z')),'2026-10-26');
+assert.equal(weekly.calendarDayKey(Date.parse('2026-10-25T23:59:59Z')),'2026-10-25');
+assert.equal(weekly.calendarDayKey(Date.parse('2026-10-26T00:00:00Z')),'2026-10-26');
 assert.throws(()=>weekly.weeklyQuestKey(Number.NaN),/Invalid date/);
 let initial=engine.createInitialGame();
 assert.equal(initial.weeklyResetWeek,weekly.weeklyQuestKey());
-const sat=Date.parse('2026-10-17T12:00:00Z');
-const sun=Date.parse('2026-10-18T12:00:00Z');
-const previous = weekly.weeklyQuestKey(sat);
-let state={...initial, dailyResetDay:new Date(sun).toDateString(), weeklyResetWeek:previous,
+const sun=Date.parse('2026-10-25T12:00:00Z');
+const mon=Date.parse('2026-10-26T12:00:00Z');
+const previous = weekly.weeklyQuestKey(sun);
+let state={...initial, dailyResetDay:new Date(mon).toDateString(), weeklyResetWeek:previous,
   quests: initial.quests.map(q=>q.id==='q_weekly_1'?{...q,current:1,claimed:true}:q.id==='q_story_1'?{...q,current:2}:q)};
-let next=actions.applyTimeEffects(state,sun);
-assert.equal(next.weeklyResetWeek,weekly.weeklyQuestKey(sun));
+let next=actions.applyTimeEffects(state,mon);
+assert.equal(next.weeklyResetWeek,weekly.weeklyQuestKey(mon));
 assert.equal(next.quests.find(x=>x.id==='q_weekly_1').claimed,false,'weekly claim should reset');
 assert.equal(next.quests.find(x=>x.id==='q_weekly_1').current,0,'weekly count should reset');
 assert.equal(next.quests.find(x=>x.id==='q_story_1').current,2,'story should stay');
-assert.equal(actions.applyTimeEffects(next,sun).quests.find(x=>x.id==='q_weekly_1').current,0,'idempotent same week');
-let legacy = actions.applyTimeEffects({...state, weeklyResetWeek:undefined},sun);
+assert.equal(actions.applyTimeEffects(next,mon).quests.find(x=>x.id==='q_weekly_1').current,0,'idempotent same week');
+let legacy = actions.applyTimeEffects({...state, weeklyResetWeek:undefined},mon);
 assert.equal(legacy.quests.find(x=>x.id==='q_weekly_1').claimed,true,'legacy earned reward must survive first visit');
-assert.equal(legacy.weeklyResetWeek,weekly.weeklyQuestKey(sun));
+assert.equal(legacy.weeklyResetWeek,weekly.weeklyQuestKey(mon));
 // Three chapter starter scenario unchanged by level curve, despite stronger later bots.
 for(let c of [1,2,3]){
   const mult=balance.chapterEnemyMultipliers(c);
