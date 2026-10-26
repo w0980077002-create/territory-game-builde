@@ -8,16 +8,16 @@ const at = (date) => Date.parse(date);
 
 const ordinary = eventCalendar(at('2026-10-26T12:00:00Z'));
 assert.equal(ordinary.today,'2026-10-26');
-assert.equal(ordinary.dailyResetAt,at('2026-10-26T22:00:00Z'));
+assert.equal(ordinary.dailyResetAt,at('2026-10-27T00:00:00Z'));
 assert.ok(ordinary.weeklyResetAt > ordinary.dailyResetAt);
 assert.ok(ordinary.dailyRemaining>0);
 
-// DST transitions must count actual Kyiv hours, not a hardcoded UTC+2/3 day.
+// UTC days are exactly 24 hours even across regional daylight-saving changes.
 const autumn = eventCalendar(at('2026-10-25T00:00:00Z'));
 assert.equal(autumn.today,'2026-10-25');
-assert.equal(autumn.dailyResetAt-at('2026-10-24T21:00:00Z'),25*3600_000);
+assert.equal(autumn.dailyResetAt-at('2026-10-25T00:00:00Z'),24*3600_000);
 const spring = eventCalendar(at('2027-03-28T00:00:00Z'));
-assert.equal(spring.dailyResetAt-at('2027-03-27T22:00:00Z'),23*3600_000);
+assert.equal(spring.dailyResetAt-at('2027-03-28T00:00:00Z'),24*3600_000);
 
 assert.deepEqual(questAction({id:'q_daily_1',type:'daily'}),{destination:'battle',label:'В поход'});
 assert.deepEqual(questAction({id:'q_daily_3',type:'daily'},true),{destination:'arena',label:'To arena'});
@@ -59,4 +59,4 @@ assert.match(styles,/max-width:\s*360px/,'Compact Android/iPhone screens must re
 assert.match(styles,/prefers-reduced-motion/,'Honor reduced-motion setting');
 assert.match(quests,/import\.meta\.env\.BASE_URL \+ 'ic-quests\.webp'/,'Quest art must work below the Pages base path');
 assert.match(quests,/import\.meta\.env\.BASE_URL \+ 'ic-trophy\.webp'/,'Achievement art must work below the Pages base path');
-console.log('Events board PASS: real existing bonuses, DST-safe Kyiv countdowns, server-only status, live navigation, first-hour quest actions, anonymous analytics and compact mobile layout.');
+console.log('Events board PASS: real existing bonuses, UTC countdowns, server-only status, live navigation, first-hour quest actions, anonymous analytics and compact mobile layout.');

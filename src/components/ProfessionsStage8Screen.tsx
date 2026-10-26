@@ -141,7 +141,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
         <div className="rounded-lg bg-black/30 p-2"><span className="block text-slate-400">{language==='en'?'XP to level':'Опыт'}</span><b>{nextXp?`${status.masteryXp}/${nextXp}`:'MAX'}</b></div>
         <div className="rounded-lg bg-black/30 p-2"><span className="block text-slate-400">{language==='en'?'XP today':'Опыт за день'}</span><b>{status.dailyXpUsed}/{status.dailyXpCap}</b></div>
       </div>
-      <p className="mt-2 text-xs text-slate-400">{language==='en'?'Daily XP resets at server midnight.':'Дневной лимит обновляется в полночь по времени сервера.'}</p>
+      <p className="mt-2 text-xs text-slate-400">{language==='en'?'Daily XP resets at 00:00 UTC.':'Дневной лимит обновляется в 00:00 UTC.'}</p>
       {status.profession && <p className="mt-2 text-sm font-bold text-amber-200">{language==='en'?'Profession':'Профессия'}: {PROFESSION_DEFINITIONS.find((p)=>p.id===status.profession)?.name}</p>}
       {status.masterLicense && <p className="mt-1 text-xs text-emerald-300">👑 {language==='en'?'Master license confirmed':'Лицензия мастера подтверждена'}</p>}
       {status.profession && <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/50" role="progressbar" aria-label={language==='en'?'Mastery progress':'Прогресс мастерства'} aria-valuenow={nextXp?status.masteryXp:1} aria-valuemin={0} aria-valuemax={nextXp||1}>
