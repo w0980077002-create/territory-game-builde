@@ -26,12 +26,12 @@ function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
   }, [onClose]);
 
   const dialog = (
-      <div className="arena-prizes-overlay" role="dialog" aria-modal="true" aria-label={en ? 'Arena TOP-50 prize plan' : 'План наград ТОП-50 Арены'}>
+      <div className="arena-prizes-overlay" role="dialog" aria-modal="true" aria-label={en ? 'Arena TOP-50 weekly prizes' : 'Награды ТОП-50 Арены'}>
         <button type="button" className="arena-prizes-backdrop" onClick={onClose} aria-label={en ? 'Close prizes' : 'Закрыть награды'} />
         <div className="arena-prizes-panel">
           <div className="arena-prizes-head">
             <Gift aria-hidden="true" />
-            <div><h3>{en ? 'ARENA TOP-50 PRIZES' : 'НАГРАДЫ ТОП-50 АРЕНЫ'}</h3><span>{en ? 'Weekly prize plan' : 'План наград за неделю'}</span></div>
+            <div><h3>{en ? 'ARENA TOP-50 PRIZES' : 'НАГРАДЫ ТОП-50 АРЕНЫ'}</h3><span>{en ? 'Weekly prizes' : 'Еженедельные награды'}</span></div>
             <button ref={closeRef} type="button" className="arena-prizes-close" onClick={onClose} aria-label={en ? 'Close' : 'Закрыть'}><X /></button>
           </div>
           <div className="arena-prizes-body">
@@ -39,7 +39,7 @@ function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
               <Trophy aria-hidden="true" />
               {rank !== null
                 ? <span>{en ? `Your position: #${rank}` : `Твоё место: №${rank}`}
-                    {myTier ? <small>{en ? 'Your planned prize is highlighted' : 'Твой планируемый приз подсвечен'}</small> : null}</span>
+                    {myTier ? <small>{en ? 'Your prize tier is highlighted' : 'Твоя награда подсвечена'}</small> : null}</span>
                 : <span>{en ? 'Not yet in TOP-50' : 'Пока вне ТОП-50'}<small>{en ? 'Win Arena battles to climb the board' : 'Побеждай на Арене и поднимайся в рейтинге'}</small></span>}
             </div>
             <div className="arena-prizes-list">

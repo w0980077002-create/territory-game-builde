@@ -2,8 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 
-// The prize table is presentation only; real grants must be enabled on server
-// in a separately reviewed rollout. Bots keep their places but get no prizes.
+// Prize table is presentation only; database script authorizes real grants.
 const source = readFileSync('src/game/arenaPrizePreview.ts', 'utf8');
 const js = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
@@ -28,7 +27,7 @@ assert.match(board, /arena-weekly-prize-button/, 'Small prize button must appear
 assert.match(board, /onClick=\{\(\) => setShowPrizes\(true\)\}/, 'Prize button must open the dialog');
 assert.match(board, /aria-modal="true"/, 'Prize dialog must be accessible');
 assert.match(board, /arenaPrizePreviewForRank\(rank\)/, 'Player position must highlight the appropriate tier');
-assert.match(board, /План наград за неделю/, 'Keep the prize plan label until server payouts are enabled');
+assert.match(board, /Еженедельные награды/, 'Show the real weekly rewards label');
 assert.doesNotMatch(board, /Боты призы|игровой бот|Arena AI opponent|Bot opponents|arena-weekly-npc|arena-weekly-winner-npc|arena-prizes-disclaimer/i,
   'No virtual-contender labels or the removed disclaimer may be visible in the Arena UI');
 assert.match(board, /arenaSeasonWindow\(now\)/, 'Countdown must follow the Arena Sunday UTC calendar');
