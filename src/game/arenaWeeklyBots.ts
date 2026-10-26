@@ -1,5 +1,5 @@
 import type { ArenaWeeklyPlayer, ArenaWeeklyStatus } from './arenaWeekly';
-import { kyivMidnightUtc, seasonWindow } from './seasonCalendar';
+import { utcMidnight, seasonWindow } from './seasonCalendar';
 
 /**
  * Exactly 50 named virtual Arena contenders for the weekly scoreboard:
@@ -49,9 +49,9 @@ function stableHash(text: string): number {
 /**
  * Real PvP bot names compete for ANY of the TOP-50 slots (ranks 1–50).
  * Bot-only preview scores follow 50 distinct weekly activity profiles.
- * Every bot has separately scheduled single-win events across each Kyiv day,
+ * Every bot has separately scheduled single-win events across each UTC day,
  * never a shared midnight jump or an instant award of 17–25 victories.
- * The schedule is deterministic across viewers, reloads, and DST changes.
+ * The schedule is deterministic across viewers and reloads.
  * No timers, accounts, database writes, payouts or real-user score edits.
  */
 export function arenaWeeklyWithBots(
@@ -72,20 +72,9 @@ export function arenaWeeklyWithBots(
   if (season.startsAt !== start || season.endsAt !== end) {
     return { leaders: humans, displayRank: verified.my_rank, isDisplayRankVerified: true };
   }
-  // Kyiv-local midnight, not the device's time zone and not UTC midnight.
-  // Civil calendar day difference remains correct during daylight-saving changes.
-  let dayParts: Intl.DateTimeFormatPart[];
-  try {
-    dayParts = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit',
-    }).formatToParts(new Date(now));
-  } catch {
-    dayParts = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Europe/Kiev', year: 'numeric', month: '2-digit', day: '2-digit',
-    }).formatToParts(new Date(now));
-  }
-  const datePart = (type: string) => Number(dayParts.find((p) => p.type === type)?.value);
-  const dayUtc = Date.UTC(datePart('year'), datePart('month') - 1, datePart('day'));
+  // UTC day boundaries are identical across regions and have no DST jumps.
+  const today = new Date(now).toISOString().slice(0, 10);
+  const dayUtc = utcMidnight(today);
   const [startYear, startMonth, startDay] = season.weekKey.split('-').map(Number);
   const startDayUtc = Date.UTC(startYear, startMonth - 1, startDay);
   const currentDay = Math.min(6, Math.max(0, Math.round((dayUtc - startDayUtc) / 86_400_000)));
@@ -106,16 +95,10 @@ export function arenaWeeklyWithBots(
     || a.localeCompare(b));
   const skillIndex = new Map(skillOrder.map((name, index) => [name, index]));
 
-  // The date is Kyiv-local; utc elapsed time is monotonic even when autumn
-  // daylight-saving time repeats the local 03:00 hour.
-  const today = [
-    datePart('year'),
-    String(datePart('month')).padStart(2, '0'),
-    String(datePart('day')).padStart(2, '0'),
-  ].join('-');
+  // Elapsed UTC time is monotonic and each UTC calendar day lasts 1,440 min.
   const tomorrow = new Date(dayUtc + 86_400_000).toISOString().slice(0, 10);
-  const midnight = kyivMidnightUtc(today);
-  const nextMidnight = kyivMidnightUtc(tomorrow);
+  const midnight = utcMidnight(today);
+  const nextMidnight = utcMidnight(tomorrow);
   const availableMinutes = (nextMidnight - midnight) / 60_000;
   const elapsedMinutes = Math.max(0, Math.min(availableMinutes, (now - midnight) / 60_000));
 
@@ -133,7 +116,7 @@ export function arenaWeeklyWithBots(
     const todayWins = winsAtDayEnd - winsBeforeToday;
     let victories = winsBeforeToday;
 
-    // Divide the daylight-saving-aware day into personal win slots. Each
+    // Divide the UTC day into personal win slots. Each
     // event is at a distinct pseudo-random minute, with 15-minute quiet
     // margins around midnight. No lump-sum wins or app-side interval jobs.
     for (let event = 0; event < todayWins; event += 1) {

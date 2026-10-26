@@ -198,8 +198,8 @@ export function GamesScreen({
           <span className="block mt-1">
             {state.free_ready
               ? (en ? 'Your 2 daily free tickets are ready. Claim them above.' : 'Твои 2 бесплатных билета на сегодня готовы. Забери их в кассе выше.')
-              : (en ? 'The next 2 free tickets can be claimed after midnight Kyiv time. No purchase required.'
-                : 'Следующие 2 бесплатных билета можно забрать после полуночи по Киеву. Покупка не нужна.')}
+              : (en ? 'The next 2 free tickets can be claimed after 00:00 UTC. No purchase required.'
+                : 'Следующие 2 бесплатных билета можно забрать после 00:00 UTC. Покупка не нужна.')}
           </span>
           {state.free_ready && (
             <button type="button" disabled={busy} onClick={() => void takeDaily()}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CalendarClock, Crown, ShieldCheck, Trophy, RefreshCcw } from 'lucide-react';
-import { seasonWindow, seasonCountdown } from '@/game/seasonCalendar';
+import { seasonCountdown } from '@/game/seasonCalendar';
 import { fetchSeasonStatus, type SeasonStatus } from '@/game/seasonApi';
 import { useLanguage } from '@/game/i18n';
 import type { AuthUser } from '@/game/auth';
@@ -15,7 +15,6 @@ export function SeasonScreen({ user }: { user: AuthUser }) {
   const [failed, setFailed] = useState(false);
   const [offset, setOffset] = useState(0);
   const request = useRef(0);
-  const week = seasonWindow(clock + offset);
 
   const refresh = useCallback(async () => {
     const current = ++request.current;
@@ -40,9 +39,11 @@ export function SeasonScreen({ user }: { user: AuthUser }) {
     return () => { request.current += 1; window.clearInterval(ticker); window.clearInterval(polling); };
   }, [refresh]);
 
-  const live = status?.enabled === true && status.week === week.weekKey;
-  const remaining = live && Number.isFinite(Date.parse(status.ends_at))
-    ? Date.parse(status.ends_at) - clock - offset : week.remainingMs;
+  // The championship follows the server's Sunday/Kyiv window. The shared
+  // quest/Arena preview calendar may independently use Monday/UTC.
+  const endsAt = Date.parse(status?.ends_at ?? '');
+  const remaining = Number.isFinite(endsAt) ? Math.max(0, endsAt - clock - offset) : 0;
+  const live = status?.enabled === true && Number.isFinite(endsAt) && remaining > 0;
   const rewardText = (prize: { gold?: number; gems?: number }) =>
     [prize.gold ? `${prize.gold.toLocaleString()} ${en ? 'gold' : 'золота'}` : '',
       prize.gems ? `${prize.gems.toLocaleString()} ${en ? 'blue diamonds' : 'синих алмазов'}` : ''].filter(Boolean).join(' · ');
@@ -59,7 +60,7 @@ export function SeasonScreen({ user }: { user: AuthUser }) {
         <div className="relative grid grid-cols-2 gap-2 mt-4">
           <div className="rounded-xl bg-black/25 p-3 border border-white/5">
             <div className="text-[11px] text-slate-400 flex gap-1.5 items-center"><CalendarClock className="w-3.5 h-3.5" />{en ? 'Week ends in' : 'До конца недели'}</div>
-            <div className="mt-1 text-lg font-black text-white tabular-nums">{seasonCountdown(remaining, en ? 'en' : 'ru')}</div>
+            <div className="mt-1 text-lg font-black text-white tabular-nums">{status ? seasonCountdown(remaining, en ? 'en' : 'ru') : '—'}</div>
           </div>
           <div className="rounded-xl bg-black/25 p-3 border border-white/5">
             <div className="text-[11px] text-slate-400">{en ? 'Competition' : 'Соревнование'}</div>

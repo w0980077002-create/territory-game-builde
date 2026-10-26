@@ -35,7 +35,7 @@ assert.match(component, /setConfirm\('salvage'\)/, 'Salvage must require confirm
 assert.match(component, /onClick=\{unequip\}/, 'Unequip actual worn slot');
 assert.match(component, /setRemainingToday\(receipt\.remainingToday\)/, 'Server verified daily counter reflected');
 assert.match(component, /window\.location\.reload\(\)/, 'Save conflicts must prompt reload');
-assert.match(inventory, /<GearShowcase userId=\{userId\}\/>/, 'Equipment tab must use redesigned stage');
+assert.match(inventory, /<GearShowcase userId=\{userId\} onForge=\{onForge\}\/>/, 'Equipment tab must use redesigned stage and forge shortcut');
 assert.match(inventory, /data-testid="equipment-responsive-layout" className="flex min-h-full w-full min-w-0 flex-col"/,
   'The equipment section should occupy the available scroll height');
 assert.match(inventory, /className="my-auto w-full min-w-0 pt-3 pb-4"/,

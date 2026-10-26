@@ -85,7 +85,7 @@ export function GeographyTab() {
                   <th scope="col" className="px-1.5 text-left font-semibold">Страна</th>
                   <th scope="col" className="px-0.5 text-center font-semibold" title="Всего игроков" aria-label="Всего игроков">Вс.</th>
                   <th scope="col" className="px-0.5 text-center font-semibold" title="Сейчас: последние 5 минут" aria-label="Сейчас онлайн">Онл.</th>
-                  <th scope="col" className="px-0.5 text-center font-semibold" title="Сегодня с 00:00 по Киеву" aria-label="Сегодня">Сег.</th>
+                  <th scope="col" className="px-0.5 text-center font-semibold" title="Сегодня с 00:00 UTC" aria-label="Сегодня">Сег.</th>
                   <th scope="col" className="px-0.5 text-center font-semibold" title="За последние 7 дней" aria-label="За последние 7 дней">7д</th>
                 </tr>
               </thead>
@@ -109,7 +109,7 @@ export function GeographyTab() {
           </div>
         )}
         <p className="mt-2 text-[10px] leading-4 text-slate-500">
-          Страна по подключению (VPN может менять её). Сегодня — с 00:00 по Киеву, онлайн — 5 мин.
+          Страна по подключению (VPN может менять её). Сегодня — с 00:00 UTC, онлайн — 5 мин.
         </p>
       </Panel>
     </div>

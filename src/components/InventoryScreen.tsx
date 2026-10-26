@@ -11,13 +11,16 @@ import { FollowersPanel } from './FollowersPanel';
 import { rarityColor, rarityGlow } from '@/game/ui';
 import { elixirExpiryTime, elixirTimeLeftLabel, forgeMaterialTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
-import { Package, X, ArrowDownUp, UsersRound } from 'lucide-react';
+import { Package, X, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned } from 'lucide-react';
 
 /** Equipment, consumables/belt and companions share the inventory route.
  * The follower model is unchanged: training and PvE selection stay in the global store. */
-export function InventoryScreen({ initialTab = 'items', userId }: {
+export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfessions, onMap }: {
   initialTab?: 'items' | 'equipment';
   userId: string;
+  onForge?: (equipmentId?: string) => void;
+  onProfessions?: () => void;
+  onMap?: () => void;
 }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
@@ -69,12 +72,17 @@ export function InventoryScreen({ initialTab = 'items', userId }: {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 animate-fade-in">
+      {(onForge || onProfessions || onMap) && <div className="grid shrink-0 grid-cols-3 gap-1.5" aria-label={language === 'en' ? 'Workshop navigation' : 'Мастерская'}>
+        {onForge && <button type="button" onClick={() => onForge()} className="min-h-9 rounded-lg border border-orange-400/30 bg-orange-500/15 px-1 text-[11px] font-bold text-orange-100"><Hammer className="mr-1 inline h-3.5 w-3.5"/>{language === 'en' ? 'Forge' : 'Кузница'}</button>}
+        {onProfessions && <button type="button" onClick={onProfessions} className="min-h-9 rounded-lg border border-amber-400/30 bg-amber-500/15 px-1 text-[11px] font-bold text-amber-100"><Pickaxe className="mr-1 inline h-3.5 w-3.5"/>{language === 'en' ? 'Craft' : 'Профессии'}</button>}
+        {onMap && <button type="button" onClick={onMap} className="min-h-9 rounded-lg border border-sky-400/30 bg-sky-500/15 px-1 text-[11px] font-bold text-sky-100"><MapPinned className="mr-1 inline h-3.5 w-3.5"/>{language === 'en' ? 'Gather' : 'Добыча'}</button>}
+      </div>}
       <div ref={inventoryContentRef} id="inventory-current-section" role="tabpanel" className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide pb-2">
       {tab === 'equipment' ? (
         <div data-testid="equipment-responsive-layout" className="flex min-h-full w-full min-w-0 flex-col">
           {/* Center short inventories on tall phones; auto margins collapse for long inventories. */}
           <div className="my-auto w-full min-w-0 pt-3 pb-4">
-            <GearShowcase userId={userId}/>
+            <GearShowcase userId={userId} onForge={onForge}/>
           </div>
         </div>
       ) : tab === 'items' ? (

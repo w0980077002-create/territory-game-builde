@@ -8,7 +8,7 @@ import {supabase} from '@/game/supabase';
 import { generateShopItems } from '@/game/engine';
 import { MAX_SHOP_PURCHASE_QTY } from '@/game/purchaseGuard';
 import { calendarDayKey } from '@/game/weeklyQuests';
-import { kyivMidnightUtc } from '@/game/seasonCalendar';
+import { utcMidnight } from '@/game/seasonCalendar';
 import { rarityColor } from '@/game/ui';
 import { CheckCircle2, Sword, Shield, Heart, Star, Minus, Plus, Clock, Crown, Sparkles, LockKeyhole } from 'lucide-react';
 import type { GameState, ShopItem } from '@/game/types';
@@ -72,7 +72,7 @@ function msUntilMidnight(): number {
   const now = Date.now();
   const [year, month, day] = calendarDayKey(now).split('-').map(Number);
   const tomorrow = new Date(Date.UTC(year, month - 1, day + 1)).toISOString().slice(0, 10);
-  return Math.max(0, kyivMidnightUtc(tomorrow) - now);
+  return Math.max(0, utcMidnight(tomorrow) - now);
 }
 
 function formatDuration(ms: number): string {
