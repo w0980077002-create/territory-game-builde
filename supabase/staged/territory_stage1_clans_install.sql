@@ -549,6 +549,7 @@ CREATE OR REPLACE FUNCTION public.clan_contribute(p_clan uuid, p_gold integer, p
 AS $function$
 DECLARE v_uid uuid := auth.uid(); p players%ROWTYPE; c clans%ROWTYPE; m clan_members%ROWTYPE;
 v_points int; v_eff numeric; v_tr int; v_base int;
+v_batch jsonb; v_batches jsonb := '[]'::jsonb; v_total bigint := 0; v_qty integer; v_used integer; v_remaining integer;
 BEGIN
 IF v_uid IS NULL OR p_expected IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF p_gold IS NULL OR p_gold < 0 OR p_gold > 1000000 THEN RAISE EXCEPTION 'clan_bad_amount'; END IF;
@@ -566,6 +567,27 @@ IF (p.game_state->>'forgeMaterials') !~ '^[0-9]{1,8}$'
 OR p.forge_materials <> (p.game_state->>'forgeMaterials')::integer
 OR p.forge_materials < p_materials THEN RAISE EXCEPTION 'clan_not_enough_materials'; END IF;
 
+-- Material donations consume the existing seven-day lots, oldest expiry first.
+-- Legacy/mismatched/expired snapshots must be reconciled and saved before donation.
+IF p_materials > 0 THEN
+IF jsonb_typeof(p.game_state->'forgeMaterialBatches') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'clan_reload_save'; END IF;
+FOR v_batch IN SELECT value FROM jsonb_array_elements(p.game_state->'forgeMaterialBatches') LOOP
+IF NOT coalesce((v_batch->>'qty') ~ '^[0-9]{1,10}$', false)
+OR (v_batch->>'qty')::numeric NOT BETWEEN 1 AND 2147483647
+OR nullif(v_batch->>'expiresAt', '') IS NULL THEN RAISE EXCEPTION 'clan_invalid_materials'; END IF;
+IF (v_batch->>'expiresAt')::timestamptz <= now() THEN RAISE EXCEPTION 'clan_materials_expired'; END IF;
+v_total := v_total + (v_batch->>'qty')::bigint;
+END LOOP;
+IF v_total <> p.forge_materials THEN RAISE EXCEPTION 'clan_invalid_materials'; END IF;
+v_remaining := p_materials;
+FOR v_batch IN SELECT value FROM jsonb_array_elements(p.game_state->'forgeMaterialBatches') ORDER BY (value->>'expiresAt')::timestamptz LOOP
+v_qty := (v_batch->>'qty')::integer;
+v_used := least(v_qty, v_remaining);
+v_remaining := v_remaining - v_used;
+IF v_qty > v_used THEN v_batches := v_batches || jsonb_build_array(jsonb_set(v_batch, '{qty}', to_jsonb(v_qty - v_used))); END IF;
+END LOOP;
+p.game_state := jsonb_set(p.game_state, '{forgeMaterialBatches}', v_batches);
+END IF;
 UPDATE players SET
 game_state = jsonb_set(jsonb_set(p.game_state, '{player,gold}', to_jsonb(p.gold - p_gold)),
 '{forgeMaterials}', to_jsonb(p.forge_materials - p_materials)),

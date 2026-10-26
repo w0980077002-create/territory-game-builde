@@ -41,7 +41,7 @@
     "test:elixir-expiry": "node scripts/check-elixir-expiry.mjs",
     "test:admin-geography": "node scripts/check-admin-geography.mjs",
     "test:clans": "node scripts/check-clans.mjs",
-    "test:seasons": "node scripts/check-weekly-seasons.mjs",
+    "test:seasons": "node scripts/check-weekly-seasons.mjs && node scripts/check-season-admin-api.mjs",
     "test:stage1": "npm run test:clans && npm run test:stage5 && npm run test:seasons",
     "test:wheel": "node scripts/check-fortune.mjs && node scripts/check-fortune-client.mjs",
     "test:wheel:browser": "node scripts/build-fortune-preview.mjs && python scripts/check-fortune-browser.py"

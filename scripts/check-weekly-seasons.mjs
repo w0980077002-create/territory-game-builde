@@ -52,6 +52,14 @@ try {
  assert.deepEqual(result.map(r=>[r.player_id,r.rank,r.points,r.reward]),[[a,1,2,{gold:3000,gems:90}],[b,2,1,{gold:2000,gems:65}]]);
  await db.exec('SELECT territory_private.weekly_season_tick_v1(); SELECT territory_private.weekly_season_tick_v1()');
  assert.equal((await one('SELECT count(*)::int AS n FROM admin_grants')).n,2,'retry must never duplicate prizes');
+ // Existing owner cancel_pending may delete an unclaimed season mail.
+ // Keep immutable results/history; cancellation must not cause reissuance.
+ const cancelled=(await one('SELECT grant_id FROM territory_private.weekly_season_results_v1 WHERE player_id=$1',[b])).grant_id;
+ await db.query('DELETE FROM admin_grants WHERE id=$1 AND claimed_at IS NULL',[cancelled]);
+ assert.equal((await one('SELECT grant_id FROM territory_private.weekly_season_results_v1 WHERE player_id=$1',[b])).grant_id,null);
+ await db.exec('SELECT territory_private.weekly_season_tick_v1()');
+ assert.equal((await one('SELECT count(*)::int AS n FROM admin_grants')).n,1,'cancelled season reward must never reissue');
+ assert.deepEqual((await one('SELECT reward FROM territory_private.weekly_season_results_v1 WHERE player_id=$1',[b])).reward,{gold:2000,gems:65});
  await db.query("SELECT set_config('test.uid',$1,false)",[a]);
  const status=(await one('SELECT territory_season_status_v1() AS v')).v;
  assert.equal(status.enabled,true);assert.equal(status.history.length,2);assert.deepEqual(status.prizes,approved);

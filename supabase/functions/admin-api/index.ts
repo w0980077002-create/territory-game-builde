@@ -601,7 +601,7 @@ async function handle(action: string, body: Row) {
           const entries = Object.entries(prize);
           return entries.length > 0 && entries.every(([key, value]) =>
             ['gold', 'gems'].includes(key) && Number.isSafeInteger(value)
-              && Number(value) > 0 && Number(value) <= 999_999_999);
+              && Number(value) > 0 && Number(value) <= MAX_STORED_NUMBER);
         }) || !Number.isSafeInteger(body.revision) || Number(body.revision) < 1
         || typeof body.requestId !== 'string' || !/^[0-9a-f-]{36}$/i.test(body.requestId)) {
         throw new HttpError(400, 'season_invalid_prize');

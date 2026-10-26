@@ -24,7 +24,7 @@ const rpc = async (name, args = [], casts = []) => {
     return result;
   } catch (error) { await q('ROLLBACK'); throw error; }
 };
-const wallet = (gold) => JSON.stringify({ player: { name: 'Hero', gold, gems: 0, redGems: 60, level: 30, xp: 0, xpToNext: 1, energy: 0, maxEnergy: 0, stats: {}, equipped: {} }, inventory: [], forgeMaterials: 5, battleStones: 0 });
+const wallet = (gold) => JSON.stringify({ player: { name: 'Hero', gold, gems: 0, redGems: 60, level: 30, xp: 0, xpToNext: 1, energy: 0, maxEnergy: 0, stats: {}, equipped: {} }, inventory: [], forgeMaterials: 5, forgeMaterialBatches: [{ qty: 5, expiresAt: new Date(Date.now() + 86400000).toISOString() }], battleStones: 0 });
 
 try {
   await db.exec([
@@ -126,6 +126,21 @@ try {
     /clan_bad_amount|amount|check|clan_not_enough/,
     'negative amounts rejected',
   );
+
+  const early = new Date(Date.now() + 3600000).toISOString();
+  const late = new Date(Date.now() + 7200000).toISOString();
+  await q("UPDATE players SET forge_materials=5, game_state=jsonb_set(jsonb_set(game_state,'{forgeMaterials}','5'),'{forgeMaterialBatches}',$2::jsonb) WHERE id=$1", [A, JSON.stringify([{qty:3,expiresAt:late},{qty:2,expiresAt:early}])]);
+  const matRevision = (await q('SELECT updated_at FROM players WHERE id=$1', [A]))[0].updated_at;
+  const matReceipt = await rpc('clan_contribute', [clanId, 0, 3, matRevision], ['uuid','integer','integer','timestamptz']);
+  assert.deepEqual(matReceipt.game_state.forgeMaterialBatches, [{qty:2, expiresAt:late}], 'donation consumes oldest unexpired lot first');
+  await q("UPDATE players SET game_state=jsonb_set(game_state,'{forgeMaterialBatches}',$2::jsonb) WHERE id=$1", [A, JSON.stringify([{qty:2,expiresAt:'2000-01-01T00:00:00Z'}])]);
+  const expiredRev = (await q('SELECT updated_at FROM players WHERE id=$1', [A]))[0].updated_at;
+  await assert.rejects(rpc('clan_contribute', [clanId, 0, 1, expiredRev], ['uuid','integer','integer','timestamptz']), /clan_materials_expired/, 'expired materials cannot become clan points');
+  assert.equal((await q('SELECT forge_materials FROM players WHERE id=$1', [A]))[0].forge_materials, 2, 'rejected expired donation changes no wallet');
+  await q("UPDATE players SET game_state=jsonb_set(game_state,'{forgeMaterialBatches}',$2::jsonb) WHERE id=$1", [A, JSON.stringify([{qty:1,expiresAt:late}])]);
+  const mismatchRev = (await q('SELECT updated_at FROM players WHERE id=$1', [A]))[0].updated_at;
+  await assert.rejects(rpc('clan_contribute', [clanId, 0, 1, mismatchRev], ['uuid','integer','integer','timestamptz']), /clan_invalid_materials/, 'inconsistent material lot balance rejected');
+  await q("UPDATE players SET game_state=jsonb_set(game_state,'{forgeMaterialBatches}',$2::jsonb) WHERE id=$1", [A, JSON.stringify([{qty:2,expiresAt:late}])]);
 
   // ---------- membership + role matrix ----------
   await as(B);

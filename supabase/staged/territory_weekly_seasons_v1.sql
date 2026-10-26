@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS territory_private.weekly_season_results_v1 (
  week date NOT NULL REFERENCES territory_private.weekly_seasons_v1(week),
  player_id uuid NOT NULL REFERENCES public.players(id), display_name text NOT NULL,
  points integer NOT NULL CHECK(points>0), rank integer NOT NULL CHECK(rank>0),
- reward jsonb NOT NULL, grant_id uuid UNIQUE REFERENCES public.admin_grants(id),
+ reward jsonb NOT NULL, grant_id uuid UNIQUE REFERENCES public.admin_grants(id) ON DELETE SET NULL,
  PRIMARY KEY(week,player_id), UNIQUE(week,rank)
 );
 ALTER TABLE territory_private.weekly_season_config_v1 ENABLE ROW LEVEL SECURITY;
@@ -36,8 +36,8 @@ BEGIN
  FOR v_reward IN SELECT value FROM jsonb_array_elements(p_prizes) LOOP
    IF jsonb_typeof(v_reward)<>'object' OR v_reward='{}'::jsonb
      OR EXISTS(SELECT FROM jsonb_each(v_reward) e WHERE e.key NOT IN ('gold','gems')
-       OR jsonb_typeof(e.value)<>'number' OR e.value::text !~ '^[0-9]{1,9}$'
-       OR (e.value::text)::bigint<=0) THEN RAISE EXCEPTION 'season_invalid_prize'; END IF;
+       OR jsonb_typeof(e.value)<>'number' OR e.value::text !~ '^[0-9]{1,10}$'
+       OR (e.value::text)::bigint NOT BETWEEN 1 AND 2147483647) THEN RAISE EXCEPTION 'season_invalid_prize'; END IF;
  END LOOP;
 END $$;
 REVOKE ALL ON FUNCTION territory_private.weekly_season_validate_prizes_v1(jsonb) FROM PUBLIC,anon,authenticated;

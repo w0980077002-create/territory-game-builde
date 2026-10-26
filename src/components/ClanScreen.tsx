@@ -34,6 +34,7 @@ function errKey(error: string): string {
   if (/clan_no_permission/.test(key)) return 'clanErrPermission';
   if (/clan_full/.test(key)) return 'clanErrFull';
   if (/clan_level_required/.test(key)) return 'clanErrLevel';
+  if (/clan_materials_expired|clan_invalid_materials/.test(key)) return 'clanErrReload';
   if (/clan_reload_save/.test(key)) return 'clanErrReload';
   if (/clan_chat_slow/.test(key)) return 'clanErrChatSlow';
   if (/clan_quest_locked/.test(key)) return 'clanErrQuestLocked';
@@ -618,7 +619,7 @@ export function ClanScreen({ userId, notify }: Props) {
       {dir && !dir.my_clan_id && view === 'home' && rankings === null && (
         <button onClick={openBrowse} className="sr-only">{t('clanFind')}</button>
       )}
-      
+
     </div>
   );
 }

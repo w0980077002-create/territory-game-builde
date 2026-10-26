@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Trophy, RefreshCw } from 'lucide-react';
-import { adminCall } from '@/admin/api';
+import { adminCall, MAX_ADMIN_REWARD_QUANTITY } from '@/admin/api';
 import { Panel, ErrorLine, Loading, inputCls, type Confirm } from '@/admin/ui';
 import type { SeasonPrize } from '@/game/seasonApi';
 interface Configuration {
@@ -26,7 +26,7 @@ export function SeasonAdminTab({ confirm }: { confirm: Confirm }) {
   const submit = (e: FormEvent) => {
     e.preventDefault(); if (!status) return;
     const prizes = draft.map(row => ({ ...(row.gold ? { gold: Number(row.gold) } : {}), ...(row.gems ? { gems: Number(row.gems) } : {}) }));
-    if (!prizes.length || prizes.some(p => !Object.keys(p).length || Object.values(p).some(v => !Number.isSafeInteger(v) || v <= 0 || v > 999_999_999))) {
+    if (!prizes.length || prizes.some(p => !Object.keys(p).length || Object.values(p).some(v => !Number.isSafeInteger(v) || v <= 0 || v > MAX_ADMIN_REWARD_QUANTITY))) {
       setError('Заполни положительные целые суммы хотя бы одной валюты для каждого места.'); return;
     }
     const operation = pending && pending.revision === status.revision && JSON.stringify(pending.prizes) === JSON.stringify(prizes)
@@ -54,7 +54,7 @@ export function SeasonAdminTab({ confirm }: { confirm: Confirm }) {
         {draft.map((row, i) => <div key={i} className="grid grid-cols-[2rem_1fr_1fr] gap-2 items-center">
           <b className="text-amber-200 text-sm">#{i + 1}</b>
           {(['gold', 'gems'] as const).map(key => <input key={key} aria-label={`${key === 'gold' ? 'Золото' : 'Синие алмазы'} за место ${i + 1}`}
-            className={inputCls} type="number" min="1" max="999999999" step="1" value={row[key]}
+            className={inputCls} type="number" min="1" max={MAX_ADMIN_REWARD_QUANTITY} step="1" value={row[key]}
             onChange={e => setDraft(old => old.map((p, index) => index === i ? { ...p, [key]: e.target.value } : p))} />)}
         </div>)}
         <button disabled={loading || !draft.length} className="w-full h-12 rounded-xl bg-sky-600 font-bold text-sm disabled:opacity-50">Сохранить призы следующего сезона</button>
