@@ -8,11 +8,14 @@ const monoCss=readFileSync('src/components/monopoly/monopoly.css','utf8');
 const api=readFileSync('src/game/gameHall.ts','utf8');
 const cloud=readFileSync('src/game/cloud.ts','utf8');
 const sql=readFileSync('supabase/migrations/20261017_game_hall_five_v1.sql','utf8');
-for(const game of ['monopoly','dice','tower','treasury']) {
+for(const game of ['monopoly','dice','tower','targets','treasury']) {
  assert.match(hall,new RegExp("id\\s*:\\s*'"+game+"'"),'Live Hall card missing '+game);
  assert.match(api,new RegExp("'"+game+"'"),'Server game type missing '+game);
 }
 assert.match(hall,/id:\s*'wheel'/,'Approved visual contains Wheel of Fortune');
+assert.match(hall,/id:\s*'targets'[\s\S]*?scene:\s*'hall-art\/targets\.svg'[\s\S]*?artwork:\s*'hall-art\/targets-hd\.webp'/,
+  'Previously hidden server-authoritative Sharpshooter must have a visible illustrated card');
+assert.doesNotMatch(hall,/id:\s*'targets'[\s\S]{0,250}demo:\s*true/, 'Sharpshooter must use the real server ticket flow');
 assert.doesNotMatch(hall,/comingSoon:\s*true/,'Wheel now has a secure backend');
 assert.match(play,/game==='wheel'.*WheelOfFortune/,'Wheel has its own server-authoritative screen');
 assert.match(api,/'targets'/,'Preserve existing sharpshooter server route for existing sessions');
@@ -72,6 +75,13 @@ for(const art of ['marquee','monopoly','treasury','dice','tower','wheel']){
  assert.doesNotMatch(svg,/<script|javascript:|<image[^>]+href=["']https?:/i,'Unsafe remote image or script in '+art);
 }
 for(const name of ['monopoly','treasury','dice','tower','wheel'])assert.ok(hall.includes('hall-art/'+name+'.svg'),'Missing approved card art: '+name);
+const targetScene=readFileSync('public/hall-art/targets.svg','utf8');
+assert.match(targetScene,/<svg[\s\S]*<circle/,'Sharpshooter fallback should show an archery target');
+assert.doesNotMatch(targetScene,/<script|javascript:|<image[^>]+href=["']https?:/i,'Sharpshooter art must not fetch remote assets');
+for(const name of ['targets-hd.webp','targets-mobile.webp']) {
+ const p='public/hall-art/'+name;
+ assert.ok(statSync(p).size>5_000&&statSync(p).size<250_000,'Mobile-optimized Sharpshooter art missing or oversized: '+name);
+}
 
 assert.match(sql,/REVOKE ALL ON FUNCTION public\.territory_hall_start_v1/);
 assert.match(sql,/REVOKE ALL ON territory_private\.hall_accounts_v1/);
