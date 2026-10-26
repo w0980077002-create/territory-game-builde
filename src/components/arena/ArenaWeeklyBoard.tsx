@@ -3,7 +3,7 @@ import { ChevronRight, Crown, RefreshCw, Swords, Timer, Trophy } from 'lucide-re
 import { useLanguage } from '@/game/i18n';
 import { getAppearanceIcon } from '@/game/appearance';
 import { getArenaWeeklyStatus, type ArenaWeeklyStatus } from '@/game/arenaWeekly';
-import { seasonWindow, seasonCountdown } from '@/game/seasonCalendar';
+import { arenaSeasonWindow, seasonCountdown } from '@/game/seasonCalendar';
 import { arenaWeeklyWithBots } from '@/game/arenaWeeklyBots';
 import { arenaNextGoal } from '@/game/arenaProgress';
 
@@ -38,7 +38,7 @@ export function ArenaWeeklyBoard() {
     return () => { mounted = false; window.clearInterval(ticker); };
   }, []);
 
-  const week = seasonWindow(now);
+  const week = arenaSeasonWindow(now);
   const current = status && Date.parse(status.starts_at) === week.startsAt && Date.parse(status.ends_at) === week.endsAt;
   const display = current ? arenaWeeklyWithBots(status, now) : null;
   const rows = display?.leaders ?? [];
@@ -117,7 +117,7 @@ export function ArenaWeeklyBoard() {
         </>}
       </div>}
       {failed && current ? <span className="arena-weekly-note"><RefreshCw className="inline h-3 w-3 mr-1" />{en ? 'Showing last verified results' : 'Последние подтверждённые результаты'}</span> : null}
-      <p className="arena-weekly-note">{en ? 'New season every Monday at 00:00 UTC. Lifetime wins remain.' : 'Новый сезон каждый понедельник в 00:00 UTC. Общие победы сохраняются.'}</p>
+      <p className="arena-weekly-note">{en ? 'New season every Sunday at 00:00 UTC. Lifetime wins remain.' : 'Новый сезон каждое воскресенье в 00:00 UTC. Общие победы сохраняются.'}</p>
     </section>
   );
 }
