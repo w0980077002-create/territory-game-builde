@@ -23,7 +23,7 @@ export function forgeAttempt(state: GameState, itemId: string, expectedLevel: nu
   const equipped = equippedMode ? Object.values(state.player.equipped).find((eq) => eq?.id === actualId) : undefined;
   const item = equippedMode ? undefined : state.inventory.find((i) => i.id === actualId && i.type === 'equipment');
   const eq = equipped ?? item?.equipment;
-  if (!eq || !Number.isSafeInteger(eq.level) || eq.level !== expectedLevel || eq.level >= state.player.level) return { next: state, status: 'invalid' };
+  if (!eq || eq.id.startsWith('stage8_') || !Number.isSafeInteger(eq.level) || eq.level !== expectedLevel || eq.level >= state.player.level) return { next: state, status: 'invalid' };
   const cost = forgeCost(eq.level);
   if (!Number.isSafeInteger(state.player.gold) || state.player.gold < cost.gold || !Number.isSafeInteger(state.forgeMaterials) || state.forgeMaterials < cost.materials) return { next: state, status: 'invalid' };
 

@@ -20,6 +20,7 @@ import { BeltCells } from '@/components/ui/BeltCells';
 import { Currency } from '@/components/ui/Currency';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { beginReferralFight, finishReferralFight, type ReferralRound } from '@/game/referrals';
+import { stage8ItemAction } from '@/game/stage8ItemApi';
 import { captureGameEvent } from '@/game/analytics';
 
 export type FightKind = 'stage' | 'trial';
@@ -144,7 +145,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
   }, [enemy, kind]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
-    if (busy || outcome) return;
+    if (busy || outcome || drinkLock.current) return;
     setBusy(true);
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     hapticImpact('light');
@@ -191,11 +192,27 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
   const toggleBlock = (z: Zone) =>
     setBlocks((b) => (b.includes(z) ? b.filter((x) => x !== z) : b.length < 2 ? [...b, z] : [b[1], z]));
 
-  const drinkPotion = (i: number, open: boolean) => {
+  const drinkLock=useRef(false);
+  const drinkPotion = async (i: number, open: boolean) => {
     const item = state.belt[i];
     if (!open) return setToast(language === 'en' ? 'This belt slot is still locked' : 'Этот слот пояса ещё закрыт');
     if (!item) return setToast(language === 'en' ? 'Empty slot — move an elixir from inventory' : 'Слот пуст — положи эликсир из инвентаря');
-    if (busy || outcome) return;
+    if (busy || outcome || drinkLock.current) return;
+    if (item.serverItemId) {
+      drinkLock.current=true;setBusy(true);
+      try {
+        const preview=applyPotion(heroRef.current,item);
+        if (!preview.ok) {setToast(preview.text);return;}
+        const receipt=await stage8ItemAction(`stage8_${item.serverItemId}`,'consume');
+        if (!alive.current || done.current) return;
+        if (!receipt.effect || typeof receipt.effect!=='object') throw new Error('stage8_missing_effect');
+        const confirmed=applyPotion(heroRef.current,{...item,effect:receipt.effect as typeof item.effect});
+        if (confirmed.ok) {setHero(confirmed.hero);pushLog(`${item.name}: ${confirmed.text}`);}
+        setToast(confirmed.text);
+      } catch {setToast('Сервер не подтвердил расходник. Повтори это же действие для сверки.');}
+      finally {drinkLock.current=false;if(alive.current) setBusy(false);}
+      return;
+    }
     const r = applyPotion(heroRef.current, item);
     setToast(r.text);
     if (!r.ok) return;

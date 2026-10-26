@@ -92,6 +92,7 @@ export function putInBelt(state: GameState, itemId: string, c: BeltContext): Gam
   const belt = [...state.belt];
   let index = belt.findIndex((s, i) => s?.name === item.name && s.type === item.type
     && s.qty < BELT_STACK && isSlotOpen(i, c)
+    && s.serverItemId===item.serverItemId
     && (!isPerishableItem(item) || s.expiresAt === item.expiresAt));
   if (index < 0) index = belt.findIndex((s, i) => !s && isSlotOpen(i, c));
   if (index < 0) return null;
@@ -112,18 +113,19 @@ export function takeFromBelt(state: GameState, index: number): GameState {
   if (isElixirExpired(slot)) return { ...state, belt };
   const existing = state.inventory.find((i) =>
     i.type === slot.type && i.name === slot.name && i.rarity === slot.rarity
+    && i.serverItemId===slot.serverItemId
     && i.arenaEffect === slot.arenaEffect && JSON.stringify(i.effect ?? null) === JSON.stringify(slot.effect ?? null)
     && (!isPerishableItem(slot) || i.expiresAt === slot.expiresAt)
   );
   const inventory = existing
     ? state.inventory.map((i) => (i.id === existing.id ? { ...i, qty: i.qty + slot.qty } : i))
-    : [...state.inventory, { ...slot, id: `inv_${Date.now()}_${Math.random().toString(36).slice(2)}` }];
+    : [...state.inventory, { ...slot, id: slot.serverItemId ? `stage8_${slot.serverItemId}` : `inv_${Date.now()}_${Math.random().toString(36).slice(2)}` }];
   return { ...state, belt, inventory };
 }
 
 export function consumeBelt(state: GameState, index: number): GameState {
   const slot = state.belt[index];
-  if (!slot) return state;
+  if (!slot || slot.serverItemId) return state;
   if (isElixirExpired(slot)) return { ...state, belt: state.belt.map((s, i) => i === index ? null : s) };
   const belt = state.belt.map((s, i) => (i !== index || !s ? s : s.qty > 1 ? { ...s, qty: s.qty - 1 } : null));
   return { ...state, belt };

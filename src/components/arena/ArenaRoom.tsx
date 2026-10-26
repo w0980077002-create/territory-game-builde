@@ -172,6 +172,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
 
   const pressBeltSlot = (index: number) => {
     const item = game.belt[index];
+    if (item?.serverItemId) return setActionError('Изготовленные расходники пока доступны только в PvE. Арена требует отдельного серверного включения.');
     const action = item ? beltAction(item) : null;
     if (!action) return setActionError(language === 'en' ? 'This item cannot be used in battle' : 'Этот предмет нельзя использовать в бою');
     if (!isActive || !alive) return setActionError(language === 'en' ? 'The belt works only during battle while you are alive' : 'Пояс работает только во время боя, пока ты в строю');

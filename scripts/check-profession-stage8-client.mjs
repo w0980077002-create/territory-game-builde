@@ -140,6 +140,15 @@ const saved=globalThis.localStorage;delete globalThis.localStorage;
 await assert.rejects(()=>api.setStage8Pending({recipeId:practiceId,operationId:uuid}),/storage_unavailable/);
 globalThis.localStorage=saved;
 
+// Existing trade goods remain permanent; only actual consumables/material lots expire.
+for(const recipe of catalog.recipes.filter(r=>r.output?.type==='material')) {
+ response={error:null,data:{success:true,recipe_id:recipe.id,kind:'item',item_id:uuid,item_output:recipe.output,expires_at:null,mastery_level:300,mastery_xp:0,daily_xp_used:0}};
+ assert.equal((await api.executeStage8(recipe.id,uuid)).expiresAt,null);
+ response={error:null,data:{success:true,items:[{item_id:uuid,recipe_id:recipe.id,item_output:recipe.output,expires_at:null,equipped_slot:null}]}};
+ const permanent=await api.fetchStage8Items();
+ assert.equal(api.mirrorStage8Items([],permanent)[0].expiresAt,undefined,'Trade goods must not receive a new expiry or lose old compatibility');
+}
+
 const app=await readFile(new URL('../src/App.tsx',import.meta.url),'utf8');
 const screen=await readFile(new URL('../src/components/ProfessionsStage8Screen.tsx',import.meta.url),'utf8');
 assert.match(app,/VITE_TERRITORY_PROFESSIONS_STAGE8 !== 'false'/,

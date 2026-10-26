@@ -39,6 +39,8 @@ export interface Equipment {
 
 export interface InventoryItem {
   id: string;
+  /** Ownership UUID retained when this display copy moves onto the belt. */
+  serverItemId?: string;
   name: string;
   icon: string;
   type: 'potion' | 'elixir' | 'material' | 'equipment' | 'arena';

@@ -6,7 +6,7 @@
 import { supabase } from './supabase';
 import blueprint from '../../supabase/staged/territory_profession_stage8_catalog.json';
 import { receiptDisplayItem } from './craftApi';
-import type { InventoryItem, ProfessionId } from './types';
+import type { Equipment, GameState, InventoryItem, ProfessionId } from './types';
 
 export type Stage8Resource = { id: string; qty: number };
 export type Stage8Recipe = {
@@ -69,6 +69,7 @@ export type Stage8OwnedItem = {
   recipeId: string;
   output: Record<string, unknown>;
   expiresAt: string | null;
+  equippedSlot?: Equipment['slot'] | null;
 };
 
 const obj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -110,7 +111,7 @@ export async function executeStage8(recipeId: string, operationId: string): Prom
     if (!uuid(data.item_id) || !obj(data.item_output) || !recipe.output
         || data.item_output.name!==recipe.output.name || data.item_output.type!==recipe.output.type
         || data.item_output.rarity!==recipe.output.rarity) throw new Error('stage8_missing_item');
-    const perishable=recipe.output.type==='potion' || recipe.output.type==='elixir';
+    const perishable=(recipe.output.type==='potion' || recipe.output.type==='elixir');
     if (perishable !== (typeof data.expires_at==='string' && Number.isFinite(Date.parse(data.expires_at)))) {
       throw new Error('stage8_invalid_expiry');
     }
@@ -146,11 +147,14 @@ export async function fetchStage8Items(): Promise<Stage8OwnedItem[]> {
     if (!recipe?.output || row.item_output.name!==recipe.output.name
         || row.item_output.type!==recipe.output.type || row.item_output.rarity!==recipe.output.rarity)
       throw new Error('stage8_inventory_catalog_mismatch');
-    const perishable=recipe.output.type==='potion'||recipe.output.type==='elixir';
+    if (row.equipped_slot!==undefined && row.equipped_slot!==null
+        && (!['helmet','amulet','armor','weapon','shield','ring','boots'].includes(String(row.equipped_slot))
+          || recipe.output.type!=='equipment')) throw new Error('stage8_inventory_slot_invalid');
+    const perishable=(recipe.output.type==='potion' || recipe.output.type==='elixir');
     if (perishable !== (typeof row.expires_at==='string' && Number.isFinite(Date.parse(row.expires_at))))
       throw new Error('stage8_inventory_expiry_invalid');
     if (!perishable && row.expires_at!==null) throw new Error('stage8_inventory_expiry_invalid');
-    return {itemId:row.item_id,recipeId:row.recipe_id,output:row.item_output,expiresAt:row.expires_at as string|null};
+    return {itemId:row.item_id,recipeId:row.recipe_id,output:row.item_output,expiresAt:row.expires_at as string|null,equippedSlot:row.equipped_slot as Equipment['slot']|null|undefined};
   });
 }
 
@@ -159,13 +163,25 @@ export function mirrorStage8Items(items: InventoryItem[],owned: readonly Stage8O
   for (const item of items) if (!item.id.startsWith('stage8_')) byId.set(item.id,item);
   for (const item of owned) {
     const id=`stage8_${item.itemId}`;
-    // An equipped item is not also a backpack item in the legacy view.
-    // Final cutover still requires the server to verify this equip ownership.
-    if (equippedItemIds.has(id)) continue;
+    // Server-equipped items never appear in the backpack at the same time.
+    if (item.equippedSlot || (item.equippedSlot === undefined && equippedItemIds.has(id))) continue;
     const copy=receiptDisplayItem({itemId:item.itemId,recipeId:item.recipeId,output:item.output,
       masteryLevel:1,masteryXp:0});
     copy.id=id;
-    if (copy.equipment) copy.equipment.id=id;
+    copy.serverItemId=item.itemId;
+    if (copy.equipment) {
+      copy.equipment.id=id;
+      const gear=item.output.equipment;
+      if (obj(gear)) {
+        // Server forge levels and immutable baselines must survive display conversion.
+        for (const key of ['level','baseLevel','upgradeCount','attack','defense','hp','critChance'] as const) {
+          const value=gear[key];
+          if (typeof value==='number' && Number.isFinite(value) && value>=0)
+            (copy.equipment as unknown as Record<string,unknown>)[key]=value;
+        }
+        if (obj(gear.baseStats)) copy.equipment.baseStats=gear.baseStats;
+      }
+    }
     if (copy.type==='elixir'||copy.type==='potion') {
       if (!item.expiresAt) throw new Error('stage8_display_expiry_missing');
       copy.expiresAt=item.expiresAt;
@@ -238,4 +254,25 @@ export async function readStage8PurchasePending(): Promise<Stage8PurchaseOperati
 export async function setStage8PurchasePending(value: Stage8PurchaseOperation|null): Promise<void> {
   if (value && (!knownProfession(value.profession)||!uuid(value.operationId))) throw new Error('stage8_invalid_purchase_pending');
   await writePendingRecord(PURCHASE_PENDING_KEY,value);
+}
+
+/** Reconcile both backpack and worn slots from the ownership ledger. */
+export function mirrorStage8State(state: GameState, owned: readonly Stage8OwnedItem[]): GameState {
+  const equipped={...state.player.equipped};
+  for (const [slot,eq] of Object.entries(equipped)) {
+    if (eq?.id.startsWith('stage8_') && (!owned.length || owned.some(item=>item.equippedSlot!==undefined)))
+      delete equipped[slot as Equipment['slot']];
+  }
+  for (const item of owned) {
+    if (!item.equippedSlot) continue;
+    const display=mirrorStage8Items([], [{...item,equippedSlot:null}])[0];
+    if (!display?.equipment || display.equipment.slot!==item.equippedSlot) throw new Error('stage8_equipment_invalid');
+    equipped[item.equippedSlot]=display.equipment;
+  }
+  const available=new Set(owned.map(item=>item.itemId));
+  const belt=state.belt.map(item=>item?.serverItemId && !available.has(item.serverItemId)?null:item);
+  const held=new Set(belt.flatMap(item=>item?.serverItemId?[`stage8_${item.serverItemId}`]:[]));
+  const inventory=mirrorStage8Items(state.inventory,owned,
+    new Set(Object.values(equipped).flatMap(eq=>eq?[eq.id]:[]))).filter(item=>!held.has(item.id));
+  return {...state,player:{...state.player,equipped},inventory,belt};
 }
