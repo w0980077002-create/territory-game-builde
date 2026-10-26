@@ -1,7 +1,7 @@
 /**
  * Stage8 server-only profession bridge. This module has NO local craft/XP path.
- * It is loaded only by the off-by-default staging screen. Do not enable the
- * client gate until the versioned SQL RPCs and old-save migration are verified.
+ * The owner-enabled screen still requires a verified, enabled server release.
+ * Missing server authority never falls back to local crafting.
  */
 import { supabase } from './supabase';
 import blueprint from '../../supabase/staged/territory_profession_stage8_catalog.json';
@@ -182,49 +182,60 @@ async function signedInId(): Promise<string> {
   if (error || !user?.id) throw new Error('stage8_not_authenticated');
   return user.id;
 }
-export async function readStage8Pending(): Promise<Stage8PendingOperation|null> {
-  if (typeof sessionStorage==='undefined') return null;
+/** Durable account-scoped replay marker. Migrate an in-flight older tab once. */
+async function readPendingRecord(key: string): Promise<Record<string, unknown> | null> {
+  if (typeof localStorage==='undefined') throw new Error('stage8_storage_unavailable');
   const userId=await signedInId();
-  try {
-    const raw=sessionStorage.getItem(PENDING_KEY);
-    if (!raw) return null;
-    const value:unknown=JSON.parse(raw);
-    if (!obj(value) || value.userId!==userId || !STAGE8_RECIPES.some((r)=>r.id===value.recipeId) || !uuid(value.operationId)) return null;
-    return {recipeId:value.recipeId as string,operationId:value.operationId};
-  }catch{return null;}
+  const accountKey=`${key}:${userId}`;
+  let raw=localStorage.getItem(accountKey);
+  if (!raw && typeof sessionStorage!=='undefined') {
+    const legacy=sessionStorage.getItem(key);
+    if (legacy) {
+      let old: unknown;
+      try { old=JSON.parse(legacy); } catch { throw new Error('stage8_pending_corrupt'); }
+      if (obj(old) && old.userId===userId) {
+        localStorage.setItem(accountKey,legacy);
+        sessionStorage.removeItem(key);
+        raw=legacy;
+      }
+    }
+  }
+  if (!raw) return null;
+  let value: unknown;
+  try { value=JSON.parse(raw); } catch { throw new Error('stage8_pending_corrupt'); }
+  if (!obj(value) || value.userId!==userId || !uuid(value.operationId)) throw new Error('stage8_pending_corrupt');
+  return value;
+}
+async function writePendingRecord(key:string,value: Record<string,unknown>|null): Promise<void> {
+  if (typeof localStorage==='undefined') throw new Error('stage8_storage_unavailable');
+  const userId=await signedInId();
+  const accountKey=`${key}:${userId}`;
+  if (value) {
+    const old=await readPendingRecord(key);
+    if (old && (old.operationId!==value.operationId || old.recipeId!==value.recipeId || old.profession!==value.profession))
+      throw new Error('stage8_pending_operation_exists');
+    localStorage.setItem(accountKey,JSON.stringify({userId,...value}));
+  } else localStorage.removeItem(accountKey);
+}
+export async function readStage8Pending(): Promise<Stage8PendingOperation|null> {
+  const value=await readPendingRecord(PENDING_KEY);
+  if (!value) return null;
+  if (!STAGE8_RECIPES.some((r)=>r.id===value.recipeId)) throw new Error('stage8_pending_corrupt');
+  return {recipeId:value.recipeId as string,operationId:value.operationId as string};
 }
 export async function setStage8Pending(value: Stage8PendingOperation|null): Promise<void> {
-  if (typeof sessionStorage==='undefined') throw new Error('stage8_storage_unavailable');
-  const userId=await signedInId();
-  if (value) {
-    if (!STAGE8_RECIPES.some((r)=>r.id===value.recipeId)||!uuid(value.operationId)) throw new Error('stage8_invalid_pending');
-    sessionStorage.setItem(PENDING_KEY,JSON.stringify({userId,...value}));
-  }else {
-    const current=await readStage8Pending();
-    if (current) sessionStorage.removeItem(PENDING_KEY);
-  }
+  if (value && (!STAGE8_RECIPES.some((r)=>r.id===value.recipeId)||!uuid(value.operationId))) throw new Error('stage8_invalid_pending');
+  await writePendingRecord(PENDING_KEY,value);
 }
 
-/** Preserve the same UUID if an ambiguous network failure interrupts gem spending. */
+/** Preserve the same UUID across full Telegram restarts and account switches. */
 export async function readStage8PurchasePending(): Promise<Stage8PurchaseOperation|null> {
-  if (typeof sessionStorage==='undefined') return null;
-  const userId=await signedInId();
-  try {
-    const raw=sessionStorage.getItem(PURCHASE_PENDING_KEY);
-    if (!raw) return null;
-    const value:unknown=JSON.parse(raw);
-    if (!obj(value) || value.userId!==userId || !knownProfession(value.profession) || !uuid(value.operationId)) return null;
-    return {profession:value.profession,operationId:value.operationId};
-  }catch{return null;}
+  const value=await readPendingRecord(PURCHASE_PENDING_KEY);
+  if (!value) return null;
+  if (!knownProfession(value.profession)) throw new Error('stage8_pending_corrupt');
+  return {profession:value.profession,operationId:value.operationId as string};
 }
 export async function setStage8PurchasePending(value: Stage8PurchaseOperation|null): Promise<void> {
-  if (typeof sessionStorage==='undefined') throw new Error('stage8_storage_unavailable');
-  const userId=await signedInId();
-  if (value) {
-    if (!knownProfession(value.profession)||!uuid(value.operationId)) throw new Error('stage8_invalid_purchase_pending');
-    sessionStorage.setItem(PURCHASE_PENDING_KEY,JSON.stringify({userId,...value}));
-  }else {
-    const current=await readStage8PurchasePending();
-    if (current) sessionStorage.removeItem(PURCHASE_PENDING_KEY);
-  }
+  if (value && (!knownProfession(value.profession)||!uuid(value.operationId))) throw new Error('stage8_invalid_purchase_pending');
+  await writePendingRecord(PURCHASE_PENDING_KEY,value);
 }

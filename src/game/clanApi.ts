@@ -1,3 +1,4 @@
+import { normalizeClanState } from './clanState';
 import { supabase } from './supabase';
 import { getSaveToken, adoptServerWallet, unblockSave } from './cloudInt';
 import { validEconomySnapshot } from './economyInvariant';
@@ -38,21 +39,24 @@ export interface ClanState {
     xp: number; xp_needed: number; rating: number; season_medal: number;
     treasury_gold: number; treasury_points: number; leader_id: string; members: number; capacity: number;
   };
+  applications: { player_id: string; name: string; level: number }[];
   my_role: 'leader' | 'deputy' | 'officer' | 'veteran' | 'member';
   members: { player_id: string; display_name: string; role: string; level: number; power: number; contributed_gold: number; contributed_points: number; online: boolean }[];
   buildings: Record<string, { lvl: number }>;
   events: { id: number; kind: string; body: string; created_at: string }[];
   chat: { id: number; author_id: string | null; author_name: string; author_role: string; kind: string; body: string; created_at: string }[];
+  pending_boss_rewards: { boss_no: number; gold: number; earned_at: string }[];
   boss: { boss_no: number; hp: number; max_hp: number; expires_at: string } | null;
   my_boss_damage: number;
   boss_attacks_left: number;
   boss_claimed: boolean;
-  quests: { id: string; progress: number; target: number; claimed: boolean }[];
+  quests: { id: string; progress: number; target: number; claimed: boolean; member: number; member_req: number }[];
   treasury_log: { id: number; kind: string; gold: number; points: number; note: string; created_at: string }[];
   war: { id: number; score_a: number; score_b: number; ends_at: string; my_side: 'a' | 'b'; enemy_name: string; enemy_tag: string } | null;
   my_war_strikes_today: number;
   season: { started_at: string; ends_at: string } | null;
 }
+
 
 /** Receipt from wallet-touching RPCs: new server-verified state. */
 export interface WalletReceipt {
@@ -66,11 +70,13 @@ function adoptReceipt(userId: string, data: unknown): WalletReceipt {
   if (!data || typeof data !== 'object' || (data as { success?: unknown }).success !== true) {
     throw new Error('clan_invalid_receipt');
   }
-  const d = data as { state: GameState; updated_at: string; gold: number; gems: number };
+  const raw = data as { game_state: GameState; updated_at: string; wallet_gold: number; wallet_gems: number };
+  const d = { state: raw.game_state, updated_at: raw.updated_at, gold: raw.wallet_gold, gems: raw.wallet_gems };
   if (typeof d.updated_at !== 'string' || !Number.isFinite(Date.parse(d.updated_at))) {
     throw new Error('clan_invalid_receipt');
   }
-  if (!validEconomySnapshot(d.state) || !Number.isSafeInteger(d.gold) || !Number.isSafeInteger(d.gems)) {
+  if (!validEconomySnapshot(d.state) || !Number.isSafeInteger(d.gold) || !Number.isSafeInteger(d.gems)
+    || d.state.player.gold !== d.gold || d.state.player.gems !== d.gems) {
     throw new Error('clan_invalid_receipt');
   }
   adoptServerWallet(userId, d.updated_at, { gold: d.gold, gems: d.gems });
@@ -94,7 +100,7 @@ export async function fetchClanDirectory(query: string): Promise<ClanDirectory> 
 export async function fetchClanState(clanId: string, userId: string, afterChatId = 0): Promise<ClanState> {
   const { data, error } = await supabase.rpc('clan_state', { p_clan: clanId, p_after: afterChatId });
   if (error) throw new Error(error.message);
-  return data as ClanState;
+  return normalizeClanState(data);
 }
 
 export async function fetchClanRankings(): Promise<{ season: { started_at: string; ends_at: string } | null; clans: ClanSummary[]; history: { season: number; rank: number; medal: number; name: string; tag: string; rating: number }[] }> {
@@ -127,9 +133,9 @@ export async function contributeClan(userId: string, clanId: string, gold: numbe
   return adoptReceipt(userId, data);
 }
 
-export async function claimClanBoss(userId: string, clanId: string): Promise<WalletReceipt> {
+export async function claimClanBoss(userId: string, clanId: string, bossNo?: number): Promise<WalletReceipt> {
   const revision = expectedRevision(userId);
-  const { data, error } = await supabase.rpc('clan_boss_claim', { p_clan: clanId, p_expected: revision });
+  const { data, error } = await supabase.rpc('clan_boss_claim', { p_clan: clanId, p_expected: revision, p_boss_no: bossNo ?? null });
   if (error) throw new Error(error.message);
   return adoptReceipt(userId, data);
 }
@@ -192,4 +198,11 @@ export async function clanUpdate(clanId: string, input: {
     p_clan: clanId, p_description: input.description, p_join_mode: input.joinMode,
     p_min_level: input.minLevel, p_emblem: input.emblem, p_color1: input.color1, p_color2: input.color2,
   }));
+}
+
+export async function clanInviteCandidates(query: string): Promise<{ id: string; display_name: string; level: number }[]> {
+  const { data, error } = await supabase.rpc('clan_invite_candidates', { p_query: query.trim().slice(0, 40) });
+  if (error) throw new Error(error.message);
+  if (!Array.isArray(data)) throw new Error('clan_invalid_receipt');
+  return data;
 }

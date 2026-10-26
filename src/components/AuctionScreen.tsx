@@ -5,9 +5,9 @@ import { supabase } from '@/game/supabase';
 import { useGame } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
 import { useStore } from '@/game/store';
-import { fetchAuctionOverview, submitAuctionAction, type AuctionAction, type AuctionOverview } from '@/game/auctionApi';
+import { fetchAuctionOverview, submitAuctionAction, readPendingAuction, keepPendingAuction, AuctionTradeError, type AuctionAction, type AuctionOverview } from '@/game/auctionApi';
 
-type AuctionTab = 'lots' | 'mine' | 'chat';
+type AuctionTab = 'lots' | 'mine' | 'history' | 'chat';
 interface ChatMessage {
   id: string;
   author: string;
@@ -32,42 +32,68 @@ export function AuctionScreen() {
   const [auctionLoading, setAuctionLoading] = useState(true);
   const [auctionError, setAuctionError] = useState('');
   const [tradeBusy, setTradeBusy] = useState(false);
+  const [recoveryReady, setRecoveryReady] = useState(false);
+  const [search, setSearch] = useState('');
+  const [rarity, setRarity] = useState('');
+  const [sort, setSort] = useState<'newest' | 'price_asc' | 'price_desc'>('newest');
+  const tradeLock = useRef(false);
+  const overviewRequest = useRef(0);
   const [askPrice, setAskPrice] = useState('100');
   const [pendingOperation, setPendingOperation] = useState<{ action: AuctionAction; id: string } | null>(null);
 
   const refreshAuction = async () => {
-    const latest = await fetchAuctionOverview();
-    setAuction(latest);
+    const request = ++overviewRequest.current;
+    const latest = await fetchAuctionOverview({ search, rarity, sort });
+    if (request === overviewRequest.current) setAuction(latest);
     return latest;
   };
 
   useEffect(() => {
     let alive = true;
+    void readPendingAuction().then((pending) => {
+      if (alive) { setPendingOperation(pending); setRecoveryReady(true); }
+    }).catch(() => { if (alive) setAuctionError(language === 'en' ? 'Operation recovery unavailable. Trading locked.' : 'Восстановление операций недоступно. Торговля заблокирована.'); });
     void fetchAuctionOverview().then((latest) => {
-      if (alive) { setAuction(latest); setAuctionError(''); }
+      if (alive) setAuction(latest);
     }).catch(() => { if (alive) setAuctionError(language === 'en' ? 'Market unavailable.' : 'Аукцион временно недоступен.');
     }).finally(() => { if (alive) setAuctionLoading(false); });
     return () => { alive = false; };
   }, []);
 
   const trade = async (action: AuctionAction, pending?: { action: AuctionAction; id: string }) => {
-    if (tradeBusy || !auction?.enabled) return;
-    if (pendingOperation && !pending) return; // Never abandon an uncertain operation.
+    if (tradeLock.current || !recoveryReady || !auction?.enabled) return;
+    if (pendingOperation && !pending) return;
     const op = pending || { action, id: crypto.randomUUID() };
+    tradeLock.current = true;
     setTradeBusy(true);
     setAuctionError('');
+    let confirmed = false;
     try {
-      await submitAuctionAction(op.action, op.id);
-      setPendingOperation(null);
-      await refreshAuction();
-    } catch {
-      // The network may have timed out AFTER a committed transaction.
-      // Keep the SAME operation UUID for a safe retry, don't double-charge.
+      await keepPendingAuction(op);
       setPendingOperation(op);
-      setAuctionError(language === 'en'
-        ? 'Result unconfirmed. Retry the same operation; do not make another trade.'
-        : 'Результат операции не подтверждён. Повтори её с тем же номером, не создавай новую.');
-    } finally { setTradeBusy(false); }
+      await submitAuctionAction(op.action, op.id);
+      confirmed = true;
+      await keepPendingAuction(null);
+      setPendingOperation(null);
+    } catch (error) {
+      if (error instanceof AuctionTradeError && error.rejected) {
+        try {
+          await keepPendingAuction(null);
+          setPendingOperation(null);
+          setAuctionError(language === 'en' ? `Trade rejected: ${error.message}` : `Операция отклонена: ${error.message}`);
+        } catch {
+          setAuctionError(language === 'en' ? 'Cannot clear saved operation. Retry after reconnecting.' : 'Не удалось закрыть сохранённую операцию. Повтори после подключения.');
+        }
+      } else {
+        setAuctionError(language === 'en'
+          ? 'Result unconfirmed. Retry the saved operation.'
+          : 'Результат не подтверждён. Повтори сохранённую операцию.');
+      }
+    } finally {
+      if (confirmed) await refreshAuction().catch(() => setAuctionError(language === 'en' ? 'Trade confirmed. Refresh the market.' : 'Операция подтверждена. Обнови аукцион.'));
+      tradeLock.current = false;
+      setTradeBusy(false);
+    }
   };
 
   const ru = language !== 'en';
@@ -160,10 +186,11 @@ export function AuctionScreen() {
         </div>
       </section>
 
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-4 gap-1.5">
         {([
           ['lots', t('allLots')],
           ['mine', t('myLots')],
+          ['history', language === 'en' ? 'History' : 'История'],
           ['chat', language === 'en' ? 'Chat' : 'Чат'],
         ] as const).map(([id, label]) => (
           <button key={id} type="button" onClick={() => setTab(id)} className={tab === id ? 'rounded-xl border border-amber-400 bg-amber-500/20 px-1 py-3 text-xs font-bold text-amber-100' : 'rounded-xl border border-white/10 bg-white/5 px-1 py-3 text-xs font-bold text-slate-300'}>
@@ -172,6 +199,19 @@ export function AuctionScreen() {
         ))}
       </div>
 
+      {tab === 'history' && (
+        <section className="space-y-2 rounded-xl border border-amber-400/20 p-3">
+          <h3 className="font-bold">{ru ? 'История сделок' : 'Trade history'}</h3>
+          {(auction?.history || []).map((entry) => <div key={entry.id} className="rounded-lg bg-black/25 p-3 text-xs">
+            <b>{entry.item.icon} {entry.item.name}</b>
+            <p>{entry.status === 'cancelled' ? (ru ? 'Снято с продажи' : 'Cancelled') : entry.role === 'buyer' ? (ru ? 'Покупка' : 'Purchase') : (ru ? 'Продажа' : 'Sale')} · {formatGold(entry.price_gold)} 🪙</p>
+            {entry.role === 'seller' && entry.status === 'sold' && <p>{ru ? 'Комиссия' : 'Fee'}: {formatGold(entry.fee_gold || 0)} · {ru ? 'Получено' : 'Received'}: {formatGold(entry.price_gold - (entry.fee_gold || 0))}</p>}
+            <time>{new Date(entry.closed_at).toLocaleString(ru ? 'ru-RU' : 'en-US')}</time>
+          </div>)}
+          {!auction?.enabled && <p className="text-xs text-slate-400">{auctionLoading ? t('connecting') : t('tradingDisabled')}</p>}
+          {auction?.enabled && !auction.history.length && <p className="text-xs text-slate-400">{ru ? 'Завершённых сделок пока нет.' : 'No completed trades yet.'}</p>}
+        </section>
+      )}
       {(tab === 'lots' || tab === 'mine') && (
         <section className="rounded-xl border border-sky-400/20 bg-sky-500/5 p-4">
           <div className="flex items-center gap-2">
@@ -186,6 +226,17 @@ export function AuctionScreen() {
           ) : (
             <>
               <p className="mt-2 text-xs text-emerald-300">{ru ? 'Подтверждённые сервером предметы · ' : 'Server-verified items · '}{ru ? 'Золото' : 'Gold'}: {auction.myGold === null ? '—' : formatGold(auction.myGold)}</p>
+              {tab === 'lots' && <form onSubmit={(event) => { event.preventDefault(); void refreshAuction().catch(() => setAuctionError(ru ? 'Ошибка поиска' : 'Search failed')); }} className="mt-3 grid grid-cols-2 gap-2">
+                <input aria-label={ru ? 'Поиск предмета или продавца' : 'Search item or seller'} placeholder={ru ? 'Предмет или продавец' : 'Item or seller'} maxLength={100} value={search} onChange={(e) => setSearch(e.target.value)} className="col-span-2 min-w-0 rounded-lg bg-slate-800 p-2 text-xs" />
+                <select aria-label={ru ? 'Редкость' : 'Rarity'} value={rarity} onChange={(e) => setRarity(e.target.value)} className="min-w-0 rounded-lg bg-slate-800 p-2 text-xs">
+                  <option value="">{ru ? 'Любая редкость' : 'All rarities'}</option>
+                  {['common','rare','epic','legendary'].map((r, i) => <option key={r} value={r}>{ru ? ['Обычный','Редкий','Эпический','Легендарный'][i] : r}</option>)}
+                </select>
+                <select aria-label={ru ? 'Сортировка' : 'Sort'} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className="min-w-0 rounded-lg bg-slate-800 p-2 text-xs">
+                  <option value="newest">{ru ? 'Сначала новые' : 'Newest first'}</option><option value="price_asc">{ru ? 'Сначала дешёвые' : 'Lowest price'}</option><option value="price_desc">{ru ? 'Сначала дорогие' : 'Highest price'}</option>
+                </select>
+                <button className="col-span-2 rounded-lg bg-amber-600 p-2 text-xs font-bold">{ru ? 'Найти' : 'Search'}</button>
+              </form>}
               <div className="mt-3 space-y-2">
                 {(tab === 'mine' ? auction.mine : auction.lots).map((lot) => (
                   <div key={lot.id} className="rounded-xl border border-white/10 bg-black/25 p-3">
@@ -197,10 +248,10 @@ export function AuctionScreen() {
                       <span className="shrink-0 text-sm font-black text-amber-300">{formatGold(lot.price_gold)} 🪙</span>
                     </div>
                     {tab === 'mine' ? (
-                      <button disabled={tradeBusy || !!pendingOperation} onClick={() => void trade({ action: 'cancel', listingId: lot.id })}
+                      <button disabled={!recoveryReady || tradeBusy || !!pendingOperation} onClick={() => void trade({ action: 'cancel', listingId: lot.id })}
                         className="mt-2 w-full rounded-lg border border-rose-500/40 py-2 text-xs text-rose-200 disabled:opacity-40">{ru ? 'Снять с продажи' : 'Cancel listing'}</button>
                     ) : !auction.mine.some((mine) => mine.id === lot.id) && (
-                      <button disabled={tradeBusy || !!pendingOperation || auction.myGold === null || auction.myGold < lot.price_gold}
+                      <button disabled={!recoveryReady || tradeBusy || !!pendingOperation || auction.myGold === null || auction.myGold < lot.price_gold}
                         onClick={() => void trade({ action: 'buy', listingId: lot.id })}
                         className="mt-2 w-full rounded-lg bg-amber-600 py-2 text-xs font-bold disabled:opacity-40">{ru ? 'Купить' : 'Buy'}</button>
                     )}
@@ -218,7 +269,7 @@ export function AuctionScreen() {
                       onChange={(event) => setAskPrice(event.target.value)} className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 p-2 text-white" />
                   </label>
                   {auction.items.map((item) => (
-                    <button key={item.item_id} disabled={tradeBusy || !!pendingOperation || !Number.isSafeInteger(Number(askPrice)) || Number(askPrice) < 1 || Number(askPrice) > 2147483647}
+                    <button key={item.item_id} disabled={!recoveryReady || tradeBusy || !!pendingOperation || !Number.isSafeInteger(Number(askPrice)) || Number(askPrice) < 1 || Number(askPrice) > 2147483647}
                       onClick={() => void trade({ action: 'list', itemId: item.item_id, priceGold: Number(askPrice) })}
                       className="mb-1.5 w-full rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-left text-xs text-amber-100 disabled:opacity-40">
                       {item.item.icon || '📦'} {item.item.name || (ru ? 'Предмет' : 'Item')} · + {ru ? 'выставить' : 'list'}

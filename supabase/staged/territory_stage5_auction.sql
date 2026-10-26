@@ -59,7 +59,7 @@ ALTER TABLE public.territory_auction_treasury_v1 ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.territory_auction_treasury_v1 FROM PUBLIC, anon, authenticated;
 
 -- Single read-only RPC. No client-direct reads of wallets or escrow records.
-CREATE OR REPLACE FUNCTION public.territory_auction_overview_v1(p_limit integer DEFAULT 50)
+CREATE OR REPLACE FUNCTION public.territory_auction_overview_v1(p_limit integer DEFAULT 50, p_search text DEFAULT '', p_rarity text DEFAULT '', p_sort text DEFAULT 'newest')
 RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
 DECLARE
   v_uid uuid := auth.uid();
@@ -68,6 +68,7 @@ DECLARE
   v_mine jsonb := '[]'::jsonb;
   v_items jsonb := '[]'::jsonb;
   v_gold bigint;
+  v_history jsonb := '[]'::jsonb;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'not_authenticated'; END IF;
   SELECT auction_enabled INTO v_enabled FROM public.territory_release_flags_v1 WHERE id=1;
@@ -75,15 +76,21 @@ BEGIN
     RETURN jsonb_build_object('enabled',false,'lots','[]'::jsonb,'mine','[]'::jsonb,'items','[]'::jsonb);
   END IF;
   IF p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 100 THEN RAISE EXCEPTION 'invalid_limit'; END IF;
+  IF length(COALESCE(p_search,''))>100 OR p_sort NOT IN ('newest','price_asc','price_desc') OR p_sort IS NULL
+    OR COALESCE(p_rarity,'') NOT IN ('','common','rare','epic','legendary') THEN RAISE EXCEPTION 'invalid_filter'; END IF;
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
     'id',v.id,'seller_id',v.seller_id,'seller',v.seller,
     'item_id',v.item_id,'item',v.item_output,'price_gold',v.price_gold,
-    'created_at',v.created_at) ORDER BY v.created_at DESC,v.id),'[]'::jsonb) INTO v_lots
+    'created_at',v.created_at) ORDER BY CASE WHEN p_sort='price_asc' THEN v.price_gold END ASC, CASE WHEN p_sort='price_desc' THEN v.price_gold END DESC,v.created_at DESC,v.id),'[]'::jsonb) INTO v_lots
   FROM (SELECT l.*, left(p.display_name,64) AS seller, i.item_output
     FROM public.territory_auction_listings_v1 l
     JOIN public.territory_crafted_items_v1 i ON i.item_id=l.item_id
     JOIN public.players p ON p.id=l.seller_id
-    WHERE l.status='open' ORDER BY l.created_at DESC,l.id LIMIT p_limit) v;
+    WHERE l.status='open'
+      AND (COALESCE(p_search,'')='' OR position(lower(p_search) in lower(COALESCE(i.item_output->>'name','') || ' ' || p.display_name))>0)
+      AND (COALESCE(p_rarity,'')='' OR i.item_output->>'rarity'=p_rarity)
+    ORDER BY CASE WHEN p_sort='price_asc' THEN l.price_gold END ASC,
+      CASE WHEN p_sort='price_desc' THEN l.price_gold END DESC,l.created_at DESC,l.id LIMIT p_limit) v;
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
     'id',l.id,'item_id',l.item_id,'item',i.item_output,'price_gold',l.price_gold,
     'status',l.status,'created_at',l.created_at) ORDER BY l.created_at DESC),'[]'::jsonb)
@@ -96,11 +103,18 @@ BEGIN
     WHERE i.player_id=v_uid AND i.auction_escrow IS NULL;
   SELECT gold INTO v_gold FROM public.territory_wallet_v1
     WHERE player_id=v_uid AND verified=true;
-  RETURN jsonb_build_object('enabled',true,'lots',v_lots,'mine',v_mine,'items',v_items,'my_gold',v_gold);
+  SELECT COALESCE(jsonb_agg(to_jsonb(h) ORDER BY h.closed_at DESC),'[]'::jsonb) INTO v_history
+  FROM (SELECT l.id,l.item_id,i.item_output AS item,l.price_gold,l.fee_gold,l.status,l.closed_at,
+      CASE WHEN l.seller_id=v_uid THEN 'seller' ELSE 'buyer' END AS role
+    FROM public.territory_auction_listings_v1 l
+    JOIN public.territory_crafted_items_v1 i ON i.item_id=l.item_id
+    WHERE (l.seller_id=v_uid OR l.buyer_id=v_uid) AND l.status<>'open'
+    ORDER BY l.closed_at DESC,l.id LIMIT 100) h;
+  RETURN jsonb_build_object('enabled',true,'lots',v_lots,'mine',v_mine,'items',v_items,'my_gold',v_gold,'history',v_history);
 END;
 $$;
-REVOKE ALL ON FUNCTION public.territory_auction_overview_v1(integer) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.territory_auction_overview_v1(integer) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.territory_auction_overview_v1(integer,text,text,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.territory_auction_overview_v1(integer,text,text,text) TO authenticated, service_role;
 
 -- No client-supplied seller, buyer, item stats, commission or wallet balances.
 -- All actions serializable for the actor by advisory lock, and all affected

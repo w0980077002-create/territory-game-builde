@@ -214,3 +214,14 @@ LANGUAGE sql SECURITY DEFINER STABLE SET search_path TO 'public' AS
 CREATE POLICY members_select_roster ON clan_members FOR SELECT TO authenticated
 USING (player_id = auth.uid() OR clan_member_of(clan_id, auth.uid()));
 GRANT SELECT ON clan_members TO authenticated;
+
+-- Immutable server-computed entitlements survive the replaceable encounter row.
+CREATE TABLE clan_boss_rewards (
+  clan_id uuid NOT NULL,
+  boss_no integer NOT NULL,
+  player_id uuid NOT NULL,
+  gold integer NOT NULL CHECK (gold > 0),
+  earned_at timestamptz NOT NULL,
+  PRIMARY KEY (clan_id, boss_no, player_id)
+);
+CREATE INDEX clan_boss_rewards_player_idx ON clan_boss_rewards(player_id, clan_id, boss_no);

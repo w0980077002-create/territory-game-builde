@@ -5,7 +5,7 @@ import {
   CLAN_CREATION_RED_GEMS_COST,
   clanApply, clanCancelApplication, clanAcceptInvite, clanDeclineInvite,
   clanLeave, clanKick, clanSetRole, clanTransfer,
-  clanAcceptApp, clanRejectApp, clanChatSend, clanChatMute,
+  clanAcceptApp, clanRejectApp, clanInvitePlayer, clanInviteCandidates, clanChatSend, clanChatMute,
   clanBuildingUpgrade, clanBuildingCollect, clanBossAttack, clanBossSync,
   clanWarSignup, clanWarStrike,
   type ClanDirectory, type ClanState, type SimpleResult, type WalletReceipt,
@@ -84,6 +84,8 @@ export function ClanScreen({ userId, notify }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chatDraft, setChatDraft] = useState('');
+  const [invitePlayer, setInvitePlayer] = useState('');
+  const [inviteCandidates, setInviteCandidates] = useState<Awaited<ReturnType<typeof clanInviteCandidates>>>([]);
 
   // create form
   const [form, setForm] = useState({ name: '', tag: '', emblem: 1, color1: CLAN_COLORS[0], color2: '#1e293b', description: '', joinMode: 'apply', minLevel: 1 });
@@ -104,7 +106,7 @@ export function ClanScreen({ userId, notify }: Props) {
   const loadDirectory = useCallback(async (query = '') => {
     const d = await fetchClanDirectory(query);
     setDir(d);
-    if (d.my_clan_id) { setClanId(d.my_clan_id); setView('detail'); } else if (d.my_invites.length) { setView('home'); }
+    if (d.my_clan_id) { setClanId(d.my_clan_id); setView('detail'); }
   }, []);
 
   useEffect(() => { void run(() => loadDirectory('')); }, [run, loadDirectory]);
@@ -147,9 +149,9 @@ export function ClanScreen({ userId, notify }: Props) {
     await loadState(clanId);
   });
 
-  const doBossClaim = () => run(async () => {
+  const doBossClaim = (bossNo?: number) => run(async () => {
     if (!clanId) return;
-    const receipt = await claimClanBoss(userId, clanId);
+    const receipt = await claimClanBoss(userId, clanId, bossNo);
     applyState(receipt);
     await loadState(clanId);
     notify(t('clanRewardClaimed'));
@@ -172,9 +174,9 @@ export function ClanScreen({ userId, notify }: Props) {
   const doSendChat = () => run(async () => {
     if (!clanId || !chatDraft.trim()) return;
     const body = chatDraft.trim().slice(0, 300);
-    setChatDraft('');
     const r = await clanChatSend(clanId, body);
     if (!r.ok) throw new Error(r.error);
+    setChatDraft('');
     await loadState(clanId);
   });
 
@@ -185,7 +187,8 @@ export function ClanScreen({ userId, notify }: Props) {
     await loadDirectory('');
   });
 
-  const redGems = useStore(useGame).player.redGems;
+  const player = useStore(useGame).player;
+  const redGems = player.redGems;
   if (busy && !state && !dir) {
     return <div className="py-16 text-center text-sm text-gray-400">{t('loadingHero')}</div>;
   }
@@ -215,6 +218,8 @@ export function ClanScreen({ userId, notify }: Props) {
               </ApplyButton>
             </div>
           </div>
+          {dir?.my_clan_id && <button onClick={() => { setClanId(dir.my_clan_id); setView('detail'); }} className="w-full rounded-xl border border-amber-400/40 py-3 text-amber-200">{t('clanTitle')} →</button>}
+          <button onClick={() => setView('rankings')} className="w-full rounded-xl border border-white/15 py-3 text-sm font-bold text-amber-200">{t('clanRankings')}</button>
           {dir && dir.my_invites.length > 0 && (
             <div className="rounded-2xl border border-sky-500/30 bg-sky-950/30 p-3">
               <h3 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-sky-200"><Gem className="w-4 h-4" /> {t('clanInvites')}</h3>
@@ -357,8 +362,9 @@ export function ClanScreen({ userId, notify }: Props) {
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-300">
               <Gem className="w-3.5 h-3.5 text-red-400" /> {CLAN_CREATION_RED_GEMS_COST} — {t('clanCost')} ({t('clanYourRedGems')}: {redGems.toLocaleString()})
             </p>
+            {player.level < 15 && <p className="text-xs text-amber-200">{language === 'en' ? 'Clan creation unlocks at level 15.' : 'Создание клана доступно с 15 уровня.'}</p>}
             <button
-              disabled={busy || form.name.trim().length < 3 || form.tag.trim().length < 2 || redGems < CLAN_CREATION_RED_GEMS_COST}
+              disabled={busy || player.level < 15 || form.name.trim().length < 3 || form.tag.trim().length < 2 || redGems < CLAN_CREATION_RED_GEMS_COST}
               onClick={doCreate}
               className="w-full rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 py-2.5 text-sm font-extrabold text-black shadow-lg active:scale-95 transition-transform disabled:opacity-40"
             >
@@ -372,7 +378,8 @@ export function ClanScreen({ userId, notify }: Props) {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <button onClick={() => { setView('home'); setClanId(null); setState(null); }} className="rounded-xl border border-white/10 bg-white/5 p-2 text-gray-300"><ChevronLeft className="w-4 h-4" /></button>
-            <h2 className="truncate text-base font-bold text-white">{state.clan.name} <span style={{ color: state.clan.color1 }}>[{state.clan.tag}]</span></h2>
+            <h2 className="min-w-0 flex-1 truncate text-base font-bold text-white">{state.clan.name} <span style={{ color: state.clan.color1 }}>[{state.clan.tag}]</span></h2>
+            <button disabled={busy} onClick={() => void run(() => loadState(clanId!))} aria-label={language === 'en' ? 'Refresh clan' : 'Обновить клан'} className="rounded-xl border border-white/10 px-3 py-2 text-amber-200 disabled:opacity-40">↻</button>
           </div>
 
           <div className="rounded-2xl border border-amber-500/25 bg-gradient-to-b from-[#1a1610] to-[#0e0c08] p-3">
@@ -399,6 +406,14 @@ export function ClanScreen({ userId, notify }: Props) {
             </div>
           </div>
 
+          {state.pending_boss_rewards.length > 0 && <div className="space-y-2 rounded-2xl border border-amber-400/40 bg-amber-950/20 p-3">
+            <h3 className="text-sm font-bold text-amber-200">{language === 'en' ? 'Earned boss rewards' : 'Заработанные награды боссов'}</h3>
+            {state.pending_boss_rewards.map(reward => <div key={reward.boss_no} className="flex items-center gap-2 rounded-xl bg-black/30 p-2">
+              <span className="flex-1 text-xs text-white">{t('clanBoss')} #{reward.boss_no} · {reward.gold.toLocaleString()} 🪙</span>
+              <button disabled={busy} onClick={() => void doBossClaim(reward.boss_no)} className="rounded-lg border border-amber-400/40 bg-amber-500/20 px-3 py-2 text-xs font-bold text-amber-200 disabled:opacity-40">{t('clanClaim')}</button>
+            </div>)}
+          </div>}
+
           {state.boss && (
             <div className="rounded-2xl border border-red-500/30 bg-red-950/20 p-3">
               <div className="mb-1.5 flex items-center justify-between">
@@ -414,7 +429,7 @@ export function ClanScreen({ userId, notify }: Props) {
                   <button disabled={busy} onClick={() => void simple(() => clanBossAttack(clanId!), () => loadState(clanId!))} className="flex-1 rounded-xl bg-gradient-to-b from-red-500 to-red-700 py-2 text-xs font-extrabold text-white active:scale-95 transition-transform">{t('clanAttackBoss')}</button>
                 )}
                 {state.boss.hp <= 0 && !state.boss_claimed && state.my_boss_damage > 0 && (
-                  <button disabled={busy} onClick={doBossClaim} className="flex-1 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 py-2 text-xs font-extrabold text-black active:scale-95 transition-transform">{t('clanClaim')}</button>
+                  <button disabled={busy} onClick={() => void doBossClaim(state.boss?.boss_no)} className="flex-1 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 py-2 text-xs font-extrabold text-black active:scale-95 transition-transform">{t('clanClaim')}</button>
                 )}
                 {state.boss_claimed && <span className="flex-1 py-2 text-center text-xs font-bold text-emerald-400">{t('clanClaimed')}</span>}
               </div>
@@ -458,10 +473,10 @@ export function ClanScreen({ userId, notify }: Props) {
                 </div>
                 {q.claimed ? (
                   <span className="text-[10px] font-bold text-emerald-400">{t('clanClaimed')}</span>
-                ) : q.progress >= q.target ? (
+                ) : q.progress >= q.target && q.member >= q.member_req ? (
                   <button disabled={busy} onClick={() => doQuestClaim(q.id)} className="rounded-lg bg-amber-500/20 border border-amber-400/40 px-2.5 py-1 text-[11px] font-bold text-amber-200 active:scale-95 transition-transform">{t('clanClaim')}</button>
                 ) : (
-                  <span className="text-[10px] text-gray-500">{q.progress}/{q.target}</span>
+                  <span className="text-[10px] text-gray-500">{q.progress}/{q.target} · {q.member}/{q.member_req}</span>
                 )}
               </div>
             ))}
@@ -492,6 +507,25 @@ export function ClanScreen({ userId, notify }: Props) {
             </button>
           )}
 
+          {['leader', 'deputy', 'officer'].includes(state.my_role) && (
+            <div className="space-y-2 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <h3 className="text-sm font-bold text-white">{language === 'en' ? 'Applications and invitations' : 'Заявки и приглашения'}</h3>
+              {state.applications.map((app) => <div key={app.player_id} className="flex items-center gap-2 rounded-xl bg-black/30 p-2">
+                <span className="min-w-0 flex-1 truncate text-xs text-white">{app.name} · {app.level}</span>
+                <button disabled={busy} onClick={() => void simple(() => clanAcceptApp(app.player_id), () => loadState(clanId!))} className="rounded-lg bg-emerald-500/20 px-2 py-2 text-xs text-emerald-200">{t('clanAccept')}</button>
+                <button disabled={busy} onClick={() => void simple(() => clanRejectApp(app.player_id), () => loadState(clanId!))} className="rounded-lg bg-white/10 px-2 py-2 text-xs text-gray-200">{t('clanDecline')}</button>
+              </div>)}
+              <div className="flex gap-2">
+                <input value={invitePlayer} onChange={(e) => setInvitePlayer(e.target.value.slice(0, 40))} placeholder={language === 'en' ? 'Player name (2+ letters)' : 'Имя игрока (от 2 символов)'} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white" />
+                <button disabled={busy || invitePlayer.trim().length < 2} onClick={() => void run(async () => { setInviteCandidates(await clanInviteCandidates(invitePlayer)); })} className="rounded-xl bg-amber-500/20 px-3 py-2 text-xs font-bold text-amber-200 disabled:opacity-40">{t('clanSearchBtn')}</button>
+              </div>
+              {inviteCandidates.map(candidate => <div key={candidate.id} className="flex items-center gap-2 rounded-xl bg-black/30 p-2">
+                <span className="min-w-0 flex-1 truncate text-xs text-white">{candidate.display_name} · {candidate.level}</span>
+                <button disabled={busy} onClick={() => void simple(() => clanInvitePlayer(candidate.id), async () => { setInviteCandidates(current => current.filter(p => p.id !== candidate.id)); notify(language === 'en' ? 'Invitation sent' : 'Приглашение отправлено'); })} className="rounded-xl bg-amber-500/20 px-3 py-2 text-xs font-bold text-amber-200 disabled:opacity-40">{language === 'en' ? 'Invite' : 'Пригласить'}</button>
+              </div>)}
+            </div>
+          )}
+
           <div className="rounded-2xl border border-white/10 bg-white/[0.04]">
             <h3 className="border-b border-white/10 p-3 pb-2 text-sm font-bold text-white">{t('clanMembers')} ({state.clan.members})</h3>
             {state.members.map((m) => {
@@ -510,15 +544,15 @@ export function ClanScreen({ userId, notify }: Props) {
                   </div>
                   {m.online && <span className="h-2 w-2 rounded-full bg-emerald-400" title={t('clanOnline')} />}
                   {canManage && !isMe && (
-                    <div className="flex gap-1">
+                    <div className="flex flex-wrap justify-end gap-1 max-w-[45%]">
                       <button onClick={() => void simple(() => clanKick(m.player_id), () => loadState(clanId!))} className="rounded-lg bg-red-500/15 border border-red-400/30 px-2 py-1 text-[10px] font-bold text-red-300">{t('clanKick')}</button>
                       {state.my_role === 'leader' && (
                         <button onClick={() => void simple(() => clanTransfer(m.player_id), () => loadState(clanId!))} className="rounded-lg bg-amber-500/15 border border-amber-400/30 px-2 py-1 text-[10px] font-bold text-amber-300">{t('clanTransfer')}</button>
                       )}
                       {(state.my_role === 'leader' || state.my_role === 'deputy') && (
-                        <button onClick={() => void simple(() => clanSetRole(m.player_id, m.role === 'officer' ? 'member' : 'officer'), () => loadState(clanId!))} className="rounded-lg bg-sky-500/15 border border-sky-400/30 px-2 py-1 text-[10px] font-bold text-sky-300">
-                          {m.role === 'officer' ? '↓' : '↑'}
-                        </button>
+                        <select disabled={busy} value={m.role} aria-label={language === 'en' ? 'Member role' : 'Роль участника'} onChange={(e) => void simple(() => clanSetRole(m.player_id, e.target.value), () => loadState(clanId!))} className="max-w-[110px] rounded-lg bg-slate-900 border border-sky-400/30 px-1 py-1 text-[10px] text-sky-300">
+                          {(state.my_role === 'leader' ? ['deputy', 'officer', 'veteran', 'member'] : ['officer', 'veteran', 'member']).map(role => <option key={role} value={role}>{t(`clanR_${role}`)}</option>)}
+                        </select>
                       )}
                       {['leader', 'deputy', 'officer'].includes(state.my_role) && (
                         <button onClick={() => void simple(() => clanChatMute(clanId!, m.player_id, 30), () => loadState(clanId!))} className="rounded-lg bg-white/5 border border-white/10 px-2 py-1 text-[10px] font-bold text-gray-300">🔇</button>
@@ -528,7 +562,7 @@ export function ClanScreen({ userId, notify }: Props) {
                 </div>
               );
             })}
-            <button disabled={busy} onClick={() => void run(doLeave)} className="m-3 w-[calc(100%-24px)] rounded-xl border border-red-400/40 bg-red-500/10 py-2 text-xs font-bold text-red-300">{t('clanLeave')}</button>
+            <button disabled={busy} onClick={() => void doLeave()} className="m-3 w-[calc(100%-24px)] rounded-xl border border-red-400/40 bg-red-500/10 py-2 text-xs font-bold text-red-300">{t('clanLeave')}</button>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] flex flex-col">
@@ -584,9 +618,7 @@ export function ClanScreen({ userId, notify }: Props) {
       {dir && !dir.my_clan_id && view === 'home' && rankings === null && (
         <button onClick={openBrowse} className="sr-only">{t('clanFind')}</button>
       )}
-      <button onClick={() => { if (view === 'home') { setView('rankings'); } }} className={view === 'home' ? '' : 'sr-only'}>
-        <ScrollText className="w-0 h-0" />
-      </button>
+      
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   type HallGame, type HallState,
 } from '@/game/gameHall';
 import './gameHall.css';
+import { fetchSlotsStatus } from '@/game/slotsApi';
 
 interface GameCard {
   id: HallGame | 'wheel';
@@ -74,6 +75,12 @@ export function GamesScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [slotsEnabled, setSlotsEnabled] = useState(false);
+  useEffect(()=>{
+    let alive=true;
+    void fetchSlotsStatus().then((next)=>{if(alive)setSlotsEnabled(next?.enabled===true);}).catch(()=>{});
+    return ()=>{alive=false;};
+  },[userId]);
   const [payoutRecovery, setPayoutRecovery] = useState(false);
 
   const refresh = async (isCurrent:()=>boolean=()=>true) => {
@@ -126,7 +133,7 @@ export function GamesScreen({
 
   const play = (game: GameCard) => {
     const id = game.id as HallGame;
-    // Preview has no server ticket debits, no gold payouts, and works offline from the Hall API.
+    // Slot gate verifies its reviewed server installation; only an explicit disabled/missing backend opens the labelled demo.
     if (id === 'slots') { onPlay('slots'); return; }
     if (!state || loading || busy) return;
     if (state.active) {
@@ -202,7 +209,8 @@ export function GamesScreen({
       )}
 
       <section className="hall-games" aria-label={en ? 'Choose a game' : 'Выбери игру'}>
-        {GAMES.map((game, index) => {
+        {GAMES.map((configuredGame, index) => {
+          const game = configuredGame.id==='slots' && slotsEnabled ? {...configuredGame,demo:false,ruHint:'Пять барабанов · бонусы и риск',enHint:'Five reels · bonuses and risk'} : configuredGame;
           const featured = index === 0;
           const locked = !state || (state.tickets < 1 && !state.active);
           const otherActive = !!state?.active && state.active.game !== game.id;
@@ -211,7 +219,7 @@ export function GamesScreen({
               key={game.id}
               type="button"
               data-testid={`hall-game-${game.id}`}
-              aria-label={`${en ? game.en : game.ru} · ${game.demo ? (en ? 'Demo, no real rewards' : 'Демо, без реальных наград') : game.comingSoon ? (en ? 'Play, no tickets used' : 'Играть, билеты не списываются') : (en ? '1 ticket' : '1 билет')}`}
+              aria-label={`${en ? game.en : game.ru} · ${game.demo ? (en ? 'Demo, no real rewards' : 'Демо, без реальных наград') : game.comingSoon ? (en ? 'Play, no tickets used' : 'Играть, билеты не списываются') : game.id==='slots' ? (en ? 'From 1 ticket' : 'От 1 билета') : (en ? '1 ticket' : '1 билет')}`}
               onClick={() => play(game)}
               disabled={!game.demo && !game.comingSoon && (loading || !state || busy || otherActive)}
               className={`hall-game hall-game--${game.color} ${featured ? 'hall-game--featured' : ''} ${locked && !game.comingSoon && !game.demo ? 'hall-game--no-tickets' : ''} ${game.comingSoon ? 'hall-game--coming-soon' : ''}`}
@@ -232,7 +240,7 @@ export function GamesScreen({
               <span className="hall-game__shimmer" aria-hidden="true" />
               {featured && <span className="hall-game__ribbon">{en ? 'Popular' : 'Популярно'}</span>}
               
-              {!game.comingSoon && !game.demo && <span className="hall-game__price" aria-label={en ? '1 ticket' : '1 билет'}><Ticket size={13} aria-hidden="true" /> 1</span>}
+              {!game.comingSoon && !game.demo && <span className="hall-game__price" aria-label={game.id==='slots' ? (en ? 'From 1 ticket' : 'От 1 билета') : (en ? '1 ticket' : '1 билет')}><Ticket size={13} aria-hidden="true" /> {game.id==='slots' ? '1+' : '1'}</span>}
               <span className="hall-game__info">
                 <strong className="hall-game__name">{en ? game.en : game.ru}</strong>
                 <small className="hall-game__hint">{en ? game.enHint : game.ruHint}</small>

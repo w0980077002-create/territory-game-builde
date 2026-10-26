@@ -36,14 +36,17 @@ for (const required of [
 assert(!/GRANT (?:INSERT|UPDATE|DELETE|ALL) ON (?:TABLE )?public\.territory_auction_\w+ TO (?:anon|authenticated)/i.test(sql));
 console.log('Stage5: disabled-by-default, escrow, transaction locks, wallet ownership, 10% fee, receipts: PASS');
 
-const deps = { rpc: async () => { throw Error('Mock not set'); } };
+let account = 'account-a';
+const storage = new Map();
+const localStorage = { getItem: (k) => storage.get(k) ?? null, setItem: (k,v) => storage.set(k,v), removeItem: (k) => storage.delete(k) };
+const deps = { auth: { getUser: async () => ({data:{user:{id:account}},error:null}) }, rpc: async () => { throw Error('Mock not set'); } };
 const transpiled = ts.transpileModule(read('src/game/auctionApi.ts'), {
   fileName: 'src/game/auctionApi.ts', reportDiagnostics: true,
   compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS },
 });
 assert.equal((transpiled.diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error).length, 0);
 const mod = { exports: {} };
-vm.runInNewContext(transpiled.outputText, { module: mod, exports: mod.exports, require: () => ({ supabase: deps }) });
+vm.runInNewContext(transpiled.outputText, { module: mod, exports: mod.exports, require: () => ({ supabase: deps }), localStorage });
 const api = mod.exports;
 const U = '11111111-1111-4111-8111-111111111111';
 const V = '22222222-2222-4222-8222-222222222222';
@@ -77,6 +80,20 @@ assert.equal(calls.at(-1).params.p_listing, V);
 await assert.rejects(api.submitAuctionAction({action:'list', itemId:W, priceGold:Infinity},U),/invalid_listing/);
 await assert.rejects(api.submitAuctionAction({action:'list', itemId:W, priceGold:-1},U),/invalid_listing/);
 assert.equal(tradeAttempts, 2, 'never submit invalid prices');
+const pending = {action:{action:'buy',listingId:V},id:U};
+await api.keepPendingAuction(pending);
+assert.equal((await api.readPendingAuction()).id,U,'restart retains operation UUID');
+account = 'account-b';
+assert.equal(await api.readPendingAuction(),null,'other account cannot reuse operation');
+await api.keepPendingAuction(null);
+account = 'account-a';
+assert.equal((await api.readPendingAuction()).id,U,'other account cannot clear original pending');
+await api.keepPendingAuction(null);
+assert.equal(await api.readPendingAuction(),null);
+deps.rpc=async()=>({data:null,error:{code:'P0001',message:'insufficient_gold'}});
+await assert.rejects(api.submitAuctionAction({action:'buy',listingId:V},U),e=>e.rejected===true);
+deps.rpc=async()=>({data:null,error:{code:'',message:'timeout'}});
+await assert.rejects(api.submitAuctionAction({action:'buy',listingId:V},U),e=>e.rejected===false);
 console.log('Stage5: API rejects malformed replies and prices, unavailable fallback, stable operation ID: PASS');
 
 const sqlOther = read('supabase/staged/territory_stage3_backend.sql');

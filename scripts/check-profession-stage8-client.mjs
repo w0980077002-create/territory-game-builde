@@ -103,19 +103,42 @@ response={data:{success:true,items:[{...owned[0],item_id:uuid,recipe_id:itemId,
 await assert.rejects(()=>api.fetchStage8Items(),/catalog_mismatch/);
 
 const values=new Map();
-globalThis.sessionStorage={setItem:(key,value)=>values.set(key,value),getItem:(key)=>values.get(key)??null,removeItem:(key)=>values.delete(key)};
+const durable=new Map();
+const storage=(values)=>({setItem:(key,value)=>values.set(key,value),getItem:(key)=>values.get(key)??null,removeItem:(key)=>values.delete(key)});
+globalThis.sessionStorage=storage(values);
+globalThis.localStorage=storage(durable);
 await api.setStage8Pending({recipeId:practiceId,operationId:uuid});
 assert.deepEqual(await api.readStage8Pending(),{recipeId:practiceId,operationId:uuid});
 await api.setStage8PurchasePending({profession:'smith',operationId:uuid});
 assert.deepEqual(await api.readStage8PurchasePending(),{profession:'smith',operationId:uuid});
+values.clear(); // Full restart discards tab storage but preserves the operation UUID.
+assert.deepEqual(await api.readStage8Pending(),{recipeId:practiceId,operationId:uuid});
+assert.deepEqual(await api.readStage8PurchasePending(),{profession:'smith',operationId:uuid});
+await assert.rejects(()=>api.setStage8Pending({recipeId:practiceId,operationId:userId}),/pending_operation_exists/);
+await assert.rejects(()=>api.setStage8PurchasePending({profession:'jeweler',operationId:uuid}),/pending_operation_exists/);
 userId='33333333-3333-4333-8333-333333333333';
 assert.equal(await api.readStage8Pending(),null,'Another account cannot replay someone else’s pending receipt');
 assert.equal(await api.readStage8PurchasePending(),null,'Another account cannot reuse a purchase UUID');
+await api.setStage8Pending({recipeId:practiceId,operationId:userId});
+await api.setStage8PurchasePending({profession:'jeweler',operationId:userId});
+assert.equal(durable.size,4,'Each account retains independent recovery markers');
+await api.setStage8Pending(null);
+await api.setStage8PurchasePending(null);
 userId='11111111-1111-4111-8111-111111111111';
 await api.setStage8Pending(null);
 await api.setStage8PurchasePending(null);
 assert.equal(await api.readStage8Pending(),null);
 assert.equal(await api.readStage8PurchasePending(),null);
+values.set('territory_stage8_pending_operation_v1',JSON.stringify({userId,recipeId:practiceId,operationId:uuid}));
+assert.deepEqual(await api.readStage8Pending(),{recipeId:practiceId,operationId:uuid},'In-flight old-tab markers migrate before another request');
+assert.equal(values.size,0);
+await api.setStage8Pending(null);
+durable.set(`territory_stage8_pending_operation_v1:${userId}`,'{broken');
+await assert.rejects(()=>api.readStage8Pending(),/pending_corrupt/,'Corruption cannot silently permit another resource debit');
+durable.clear();
+const saved=globalThis.localStorage;delete globalThis.localStorage;
+await assert.rejects(()=>api.setStage8Pending({recipeId:practiceId,operationId:uuid}),/storage_unavailable/);
+globalThis.localStorage=saved;
 
 const app=await readFile(new URL('../src/App.tsx',import.meta.url),'utf8');
 const screen=await readFile(new URL('../src/components/ProfessionsStage8Screen.tsx',import.meta.url),'utf8');

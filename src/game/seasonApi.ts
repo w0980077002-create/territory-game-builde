@@ -7,7 +7,12 @@ export interface SeasonRow {
   points: number;
   rank: number;
 }
+export interface SeasonPrize { gold?: number; gems?: number }
+export interface SeasonWinner extends SeasonRow { week: string; reward: SeasonPrize }
 export interface SeasonStatus {
+  server_now: string;
+  prizes: SeasonPrize[];
+  history: SeasonWinner[];
   enabled: boolean;
   week: string;
   ends_at: string;
@@ -32,7 +37,17 @@ export async function fetchSeasonStatus(): Promise<SeasonStatus | null> {
       && typeof row.display_name === 'string' && Number.isSafeInteger(row.points) && row.points >= 0
       && Number.isSafeInteger(row.rank) && row.rank >= 1)
     : [];
+  const prize = (value: unknown): value is SeasonPrize => !!value && typeof value === 'object'
+    && !Array.isArray(value) && Object.entries(value).every(([key, amount]) =>
+      ['gold', 'gems'].includes(key) && Number.isSafeInteger(amount) && amount > 0);
   return {
+    server_now: typeof status.server_now === 'string' ? status.server_now : '',
+    prizes: Array.isArray(status.prizes) ? status.prizes.filter(prize) : [],
+    history: Array.isArray(status.history) ? status.history.filter((row): row is SeasonWinner =>
+      !!row && typeof row === 'object' && typeof row.player_id === 'string'
+      && typeof row.display_name === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(row.week)
+      && Number.isSafeInteger(row.points) && row.points > 0
+      && Number.isSafeInteger(row.rank) && row.rank > 0 && prize(row.reward)) : [],
     enabled: status.enabled,
     week: status.week,
     ends_at: typeof status.ends_at === 'string' ? status.ends_at : '',

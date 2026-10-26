@@ -99,7 +99,7 @@ export function ProfessionsScreen() {
     const currentProgress = current.professions ?? INITIAL_PROFESSION_PROGRESS;
     const recipe = PROFESSION_RECIPES.find((item) => item.id === recipeId);
     if (!recipe || !currentProgress.active || recipe.profession !== currentProgress.active) return;
-    if (recipe.requiredLevel >= 300) {setMessage(language === 'en' ? 'Master license is unavailable.' : 'Лицензия мастера пока недоступна.');return;}
+    if (recipe.requiredLevel >= 300) {setMessage(language === 'en' ? 'Level 300 recipes require verified crafting and the Master License from the shop (50 red gems).' : 'Рецепты уровня 300 требуют защищённого ремесла и лицензии мастера из магазина (50 красных алмазов).');return;}
 
     if (craftStatus?.enabled) {
       if (craftStatus.profession !== recipe.profession || craftStatus.masteryLevel < recipe.requiredLevel) {
@@ -191,8 +191,7 @@ export function ProfessionsScreen() {
       {progress.active && progress.masteryLevel >= 300 && (
         <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-4">
           <p className="font-bold text-amber-200">👑 {language === 'en' ? 'Master license' : 'Лицензия мастера'}</p>
-          <p className="mt-1 text-xs text-slate-300">{language === 'en' ? 'Exclusive recipes will be unlocked by a permanent paid license later. Payments are not enabled.' : 'Эксклюзивные рецепты откроются после покупки постоянной лицензии в будущем. Оплата пока не подключена.'}</p>
-          <button type="button" disabled className="mt-3 w-full rounded-lg bg-amber-700/60 p-2.5 text-sm font-bold text-amber-100 opacity-70">{language === 'en' ? 'Master license — coming soon' : 'Лицензия мастера — скоро'}</button>
+          <p className="mt-1 text-xs text-slate-300">{language === 'en' ? 'The permanent license costs 50 red gems in the shop. Level 300 recipes require verified crafting.' : 'Постоянная лицензия стоит 50 красных алмазов в магазине. Для рецептов уровня 300 требуется защищённое ремесло.'}</p>
         </div>
       )}
       <div className="grid grid-cols-2 gap-1.5">
@@ -207,7 +206,7 @@ export function ProfessionsScreen() {
 
       {tab === 'profession' && <>
         <div className="rounded-xl border border-sky-400/20 bg-sky-500/5 p-3 text-xs text-sky-100">
-          {language === 'en' ? 'Unlock one profession forever for 1000 blue gems. The 300-level Master license will become available later for real money; payments are not enabled.' : 'Открой одну профессию навсегда за 1000 синих алмазов. Лицензия мастера 300-го уровня появится позже за реальные деньги; оплаты пока нет.'}
+          {language === 'en' ? 'Unlock one profession forever for 1000 blue gems. The permanent Master License costs 50 red gems in the shop.' : 'Открой одну профессию навсегда за 1000 синих алмазов. Постоянная лицензия мастера стоит 50 красных алмазов в магазине.'}
         </div>
         {PROFESSION_DEFINITIONS.map((profession) => {
           const active = progress.active === profession.id;
@@ -232,9 +231,9 @@ export function ProfessionsScreen() {
             const unlocked = recipe.requiredLevel < 300 && displayedLevel >= recipe.requiredLevel && (!craftStatus?.enabled || craftStatus.profession === recipe.profession);
             const hasMaterials = craftStatus?.enabled ? recipe.ingredients.every((r) => (craftStatus.resources[r.id] ?? 0)>=r.qty) : canCraft(game.inventory, recipe);
             return <article key={recipe.id} className={`rounded-xl border p-3 ${unlocked ? 'border-white/10 bg-white/[0.04]' : 'border-white/5 bg-black/20 opacity-70'}`}>
-              <div className="flex items-start gap-3"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-500/10 p-1"><img src={craftOutputArt(recipe.output)} alt="" loading="lazy" className="h-full w-full object-contain" /></div><div className="min-w-0 flex-1"><div className="flex items-center gap-1"><b className="text-sm">{localizeText(recipe.name, language)}</b>{recipe.requiredLevel >= 300 && <Sparkles className="h-3.5 w-3.5 text-amber-300" />}</div><p className="mt-0.5 text-xs text-slate-400">{localizeText(recipe.description, language)}</p><p className="mt-1 text-[11px] text-amber-200">{unlocked ? `+${recipe.masteryXp} ${t('masteryXp')}` : recipe.requiredLevel >= 300 ? (language === 'en' ? 'Master license · Soon' : 'Лицензия мастера · Скоро') : `${t('needLevel')} ${recipe.requiredLevel}`}</p></div></div>
+              <div className="flex items-start gap-3"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-500/10 p-1"><img src={craftOutputArt(recipe.output)} alt="" loading="lazy" className="h-full w-full object-contain" /></div><div className="min-w-0 flex-1"><div className="flex items-center gap-1"><b className="text-sm">{localizeText(recipe.name, language)}</b>{recipe.requiredLevel >= 300 && <Sparkles className="h-3.5 w-3.5 text-amber-300" />}</div><p className="mt-0.5 text-xs text-slate-400">{localizeText(recipe.description, language)}</p><p className="mt-1 text-[11px] text-amber-200">{unlocked ? `+${recipe.masteryXp} ${t('masteryXp')}` : recipe.requiredLevel >= 300 ? (language === 'en' ? 'Verified crafting required' : 'Нужно защищённое ремесло') : `${t('needLevel')} ${recipe.requiredLevel}`}</p></div></div>
               <div className="mt-3 flex flex-wrap gap-1.5">{recipe.ingredients.map((ingredient) => { const resource = RESOURCE_DEFINITIONS.find((r) => r.id === ingredient.id)!; const count = craftStatus?.enabled ? (craftStatus.resources[ingredient.id] ?? 0) : countResource(game.inventory, ingredient.id); return <span key={ingredient.id} className={`rounded-md border px-2 py-1 text-[10px] ${count >= ingredient.qty ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-200' : 'border-red-500/20 bg-red-500/5 text-red-200'}`}><img src={resourceArt(resource.id)} alt="" className="mr-1 inline-block h-4 w-4 align-middle object-contain" /> {localizeText(resource.name, language)} {count}/{ingredient.qty}</span>; })}</div>
-              <button disabled={craftCheck !== 'ready' || !!pendingCraft || !unlocked || !hasMaterials || busyRecipe === recipe.id} onClick={() => {void craft(recipe.id);}} className="mt-3 w-full rounded-lg bg-amber-600 px-3 py-2.5 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="mr-1 inline h-3.5 w-3.5" />{unlocked ? hasMaterials ? t('craftItem') : t('notEnoughResourcesButton') : recipe.requiredLevel >= 300 ? (language === 'en' ? 'Master license · Soon' : 'Лицензия мастера · Скоро') : `${t('needLevel')} ${recipe.requiredLevel}`}</button>
+              <button disabled={craftCheck !== 'ready' || !!pendingCraft || !unlocked || !hasMaterials || busyRecipe === recipe.id} onClick={() => {void craft(recipe.id);}} className="mt-3 w-full rounded-lg bg-amber-600 px-3 py-2.5 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="mr-1 inline h-3.5 w-3.5" />{unlocked ? hasMaterials ? t('craftItem') : t('notEnoughResourcesButton') : recipe.requiredLevel >= 300 ? (language === 'en' ? 'Verified crafting required' : 'Нужно защищённое ремесло') : `${t('needLevel')} ${recipe.requiredLevel}`}</button>
             </article>;
           })}
         </>}
