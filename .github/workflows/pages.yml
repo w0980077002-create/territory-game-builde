@@ -39,45 +39,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck and regression checks
+      # Beta fast lane: comprehensive regressions run in review-ci.yml on PRs.
+      # Keep these small, high-value checks on every Pages release to prevent
+      # broken UI builds, auth regressions and lost currency/saves. Restore the
+      # wider suite here when beta development slows down.
+      - name: Fast beta release checks
         run: |
           npm run typecheck
-          node scripts/check-arena-secure.mjs
-          npm run test:economy
-          npm run test:professions
-          npm run test:master-license
-          npm run test:elixir-expiry
-          npm run test:balance
-          node scripts/check-social-quests.mjs
-          node scripts/check-quest-attention.mjs
-          node scripts/check-clan-red-gem-price.mjs
-          node scripts/check-daily-potions.mjs
-          node scripts/check-hero-level-and-underdog.mjs
-          npm run test:pve
-          npm run test:inventory-cleanup
-          npm run test:gear-recycle
-          npm run test:gear-showcase
-          npm run test:companion-navigation
-          npm run test:founders
-          npm run test:referral-activity
-          npm run test:hall
-          npm run test:slots
-          npm run test:admin-master
-          npm run test:admin-mail
-          node scripts/check-equipment-safety-v4.mjs
-          npm run test:feature-separation
-          npm run test:mobile-home
-          node scripts/check-combat-visuals.mjs
-          node scripts/check-arena-postfight.mjs
-          node scripts/check-belt-victory-milestones.mjs
-          node scripts/check-arena-matchmaking.mjs
-          node scripts/check-activity-audit.mjs
           node scripts/check-release-invariants.mjs
           node scripts/check-economy-receipts-foundation.mjs
           node scripts/check-inventory-acl-contract.mjs
           node scripts/auth-mock-tests.cjs
-          node scripts/edge-initdata-tests.cjs
           node scripts/edge-identity-tests.cjs
+          node scripts/check-admin-claim-client.mjs
 
       - name: Economy release gate
         id: economy_release
