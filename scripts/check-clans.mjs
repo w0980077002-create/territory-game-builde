@@ -11,6 +11,7 @@ const db = new PGlite();
 const A = '10000000-0000-0000-0000-000000000001';
 const B = '10000000-0000-0000-0000-000000000002';
 const C = '10000000-0000-0000-0000-000000000003';
+const D = '10000000-0000-0000-0000-000000000004';
 
 const q = async (sql, args = []) => (await db.query(sql, args)).rows;
 const as = async (id) => { await q("SELECT set_config('request.jwt.claim.sub',$1,false)", [id]); };
@@ -46,8 +47,18 @@ try {
   await q('INSERT INTO public.players(id,gold,forge_materials,game_state) VALUES ($1,0,5,$2)', [C, wallet(0)]);
 
   const installation = readFileSync('supabase/staged/territory_stage1_clans_install.sql', 'utf8');
-  assert(installation.includes(readFileSync('supabase/migrations/20261017_clans_schema_v1.sql', 'utf8')), 'installer matches source schema');
-  assert(installation.includes(readFileSync('supabase/migrations/20261017_clans_functions_snapshot.sql', 'utf8')), 'installer matches source functions; regenerate with scripts/clans/build-install.mjs after edits');
+  // Historical migrations stay byte-for-byte immutable. The reviewed staged
+  // installer replays their complete snapshot, then the release-only overlay.
+  const historicalSchema = readFileSync('supabase/migrations/20261017_clans_schema_v1.sql', 'utf8');
+  const historicalFunctions = readFileSync('supabase/migrations/20261017_clans_functions_snapshot.sql', 'utf8');
+  const hardening = readFileSync('supabase/staged/territory_stage1_clans_hardening.sql', 'utf8');
+  assert(installation.includes(historicalSchema), 'installer preserves every historical table definition');
+  assert(installation.includes(historicalFunctions), 'installer preserves every historical RPC');
+  assert(installation.includes(hardening), 'installer replays the explicit staged-only hardening overlay');
+  assert.match(installation, /DELETE FROM clan_members WHERE clan_id = v_clan;\s*DELETE FROM clans WHERE id = v_clan;/,
+    'staged clan installer must fix disband orphan membership, not historic migration');
+  assert.match(installation, /clan_a_name text NOT NULL DEFAULT/,
+    'staged clan installer must preserve defeated opponents in historical wars');
   await db.exec(installation);
 
   await as(A);
@@ -230,6 +241,64 @@ try {
   const visible = await q('SELECT count(*)::int AS n FROM clan_members WHERE clan_id=$1', [clanId]);
   await q('COMMIT');
   assert.equal(visible[0].n, 0, 'non-member sees no roster rows');
+
+  // ---------- final leader departure: atomic disband without orphaning membership ----------
+  await q('INSERT INTO public.players(id,gold,forge_materials,game_state) VALUES ($1,10000,5,$2)', [D, wallet(10000)]);
+  await q('INSERT INTO territory_private.territory_master_license_red_wallet_v1(player_id,balance) VALUES ($1,60)', [D]);
+  await as(D);
+  const soloCreated = await rpc('clan_create', [
+    'Solo Wardens', 'SW', 1, '#eab308', '#1e293b', '', 'apply', 1,
+    (await q('SELECT updated_at FROM players WHERE id=$1', [D]))[0].updated_at,
+  ], ['text','text','integer','text','text','text','text','integer','timestamptz']);
+  const soloId = soloCreated.clan_id;
+  await rpc('clan_invite_player', [C], ['uuid']);
+  await rpc('clan_chat_send', [soloId, 'Solo clan message'], ['uuid','text']);
+  await rpc('clan_boss_attack', [soloId], ['uuid']);
+  await q('UPDATE clan_bosses SET hp=0, killed_at=now() WHERE clan_id=$1', [soloId]);
+  const soloState = await rpc('clan_state', [soloId], ['uuid']);
+  assert.equal(soloState.pending_boss_rewards.length, 1, 'earned solo boss reward is retained');
+  await assert.rejects(rpc('clan_leave'), /clan_rewards_pending/,
+    'disband cannot destroy an earned but unclaimed reward');
+  const claimRevision = (await q('SELECT updated_at FROM players WHERE id=$1', [D]))[0].updated_at;
+  await rpc('clan_boss_claim', [soloId, claimRevision, soloState.pending_boss_rewards[0].boss_no],
+    ['uuid','timestamptz','integer']);
+  await as(A);
+  await rpc('clan_war_signup', [clanId], ['uuid']);
+  await as(D);
+  await rpc('clan_war_signup', [soloId], ['uuid']);
+  const paired = (await q('SELECT clan_a_name, clan_b_name FROM clan_wars WHERE clan_a=$1 OR clan_b=$1', [soloId]))[0];
+  assert.deepEqual([paired.clan_a_name, paired.clan_b_name].sort(), ['Alpha Wolves', 'Solo Wardens'],
+    'server matchmaking keeps both historical opponent names');
+  await assert.rejects(rpc('clan_leave'), /clan_war_active/,
+    'last leader cannot erase an active war affecting another clan');
+  await q("UPDATE clan_wars SET status='resolved', ends_at=now(), resolved_at=now() WHERE clan_a=$1 OR clan_b=$1", [soloId]);
+  await rpc('clan_leave');
+  for (const table of ['clans', 'clan_members', 'clan_chat', 'clan_invites', 'clan_events',
+    'clan_treasury_log', 'clan_bosses', 'clan_boss_damage', 'clan_boss_claims', 'clan_boss_rewards']) {
+    const rows = await q(`SELECT count(*)::int AS n FROM ${table} WHERE ${table === 'clans' ? 'id' : 'clan_id'}=$1`, [soloId]);
+    assert.equal(rows[0].n, 0, `${table} has no disbanded-clan orphan rows`);
+  }
+  assert.equal((await q('SELECT count(*)::int AS n FROM clan_wars WHERE clan_a=$1', [soloId]))[0].n, 1,
+    'resolved war history for the other clan remains available');
+  await as(A);
+  const opponentHistory = await rpc('clan_state', [clanId], ['uuid']);
+  assert(opponentHistory.war_history.some(w => w.enemy === 'Solo Wardens'),
+    'disbanded clan name remains visible in another clans completed war history');
+  await as(C);
+  assert.equal((await rpc('clan_directory', [''], ['text'])).my_invites.some(invite => invite.clan_id === soloId), false,
+    'disbanded clan invitations are removed from players inboxes');
+  await as(D);
+  await rpc('clan_create', [
+    'Reborn Guild', 'RG', 2, '#ef4444', '#1e293b', '', 'open', 1,
+    (await q('SELECT updated_at FROM players WHERE id=$1', [D]))[0].updated_at,
+  ], ['text','text','integer','text','text','text','text','integer','timestamptz']);
+  assert.equal((await q('SELECT count(*)::int AS n FROM clan_members WHERE player_id=$1', [D]))[0].n, 1,
+    'former solo leader can create and join a new clan after disbanding');
+
+  const screen = readFileSync('src/components/ClanScreen.tsx', 'utf8');
+  assert.match(screen, /role="alertdialog"/, 'clan exit needs an explicit confirmation');
+  assert.match(screen, /state\.my_role === 'leader' && state\.clan\.members > 1/,
+    'leader cannot abandon a clan with other members');
 
   const js = ts.transpileModule(readFileSync('src/game/clanState.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 } }).outputText;
   const { normalizeClanState } = await import('data:text/javascript;base64,' + Buffer.from(js).toString('base64'));

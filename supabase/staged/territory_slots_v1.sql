@@ -405,6 +405,7 @@ DECLARE u uuid:=auth.uid();a territory_private.hall_accounts_v1%ROWTYPE;r territ
  s jsonb;outcome jsonb;grid jsonb:='[]';col jsonb;stops jsonb:='[]';stop_n integer;i integer;j integer;n integer;
  deck jsonb;temp jsonb;phase text;pending integer;stake integer;heroes integer;left_n integer;shields integer;
  tile jsonb;kind text;opened jsonb;award integer:=0;chunk integer;rev integer;
+ status_tickets integer;status_pending integer;status_state jsonb;
 BEGIN
  IF u IS NULL OR NOT EXISTS(SELECT 1 FROM public.players WHERE id=u AND NOT banned) THEN RAISE EXCEPTION 'slots_login_required'; END IF;
  IF p_action IS NULL OR p_action NOT IN('status','spin','bonus','super','risk_start','risk','collect') THEN RAISE EXCEPTION 'slots_invalid_action'; END IF;
@@ -421,6 +422,18 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM territory_private.slots_release_v1 WHERE id=1 AND enabled) THEN
   IF p_action='status' THEN RETURN jsonb_build_object('enabled',false); END IF;
   RAISE EXCEPTION 'slots_not_enabled';
+ END IF;
+ -- Status is a read-only snapshot. Opening the Hall must not create account
+ -- rows or wait for the same FOR UPDATE locks used by bets and gold claims.
+ -- A missing Hall account has the existing four-ticket starting balance.
+ IF p_action='status' THEN
+  SELECT ha.tickets,ha.pending_gold,sr.state INTO status_tickets,status_pending,status_state
+  FROM public.players p
+  LEFT JOIN territory_private.hall_accounts_v1 ha ON ha.player_id=p.id
+  LEFT JOIN territory_private.slots_rounds_v1 sr ON sr.player_id=p.id WHERE p.id=u;
+  RETURN jsonb_build_object('enabled',true,'tickets',COALESCE(status_tickets,4),
+   'hallPending',COALESCE(status_pending,0),'collected',0,
+   'state',COALESCE(status_state,'{"phase":"ready","revision":0,"pending":0,"riskSteps":0,"opened":[],"picksLeft":5,"shields":0}'::jsonb));
  END IF;
  INSERT INTO territory_private.hall_accounts_v1(player_id) VALUES(u) ON CONFLICT DO NOTHING;
  SELECT * INTO a FROM territory_private.hall_accounts_v1 WHERE player_id=u FOR UPDATE;

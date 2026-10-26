@@ -6,8 +6,12 @@ const memory=new Map();let storageFail=false;let calls=[];
 const localStorage={getItem:k=>memory.get(k)??null,setItem:(k,v)=>{if(storageFail)throw Error('blocked');memory.set(k,v);},removeItem:k=>memory.delete(k)};
 const supabase={rpc:async(name,args)=>{calls.push([name,args]);return {data:{enabled:false},error:null};}};
 const m={exports:{}};
-vm.runInNewContext(ts.transpileModule(readFileSync('src/game/slotsApi.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,{module:m,exports:m.exports,localStorage,require:p=>p==='./supabase'?{supabase}:{SLOT_ICONS:{gold:{},gem:{},sword:{}}}});
+vm.runInNewContext(ts.transpileModule(readFileSync('src/game/slotsApi.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,{module:m,exports:m.exports,localStorage,setTimeout,clearTimeout,require:p=>p==='./supabase'?{supabase}:{SLOT_ICONS:{gold:{},gem:{},sword:{}}}});
 const api=m.exports;
+assert.equal(await api.withSlotsDeadline(Promise.resolve('ok'),25),'ok');
+await assert.rejects(api.withSlotsDeadline(new Promise(()=>{}),10),/slots_request_timeout/,
+ 'an unresponsive status RPC must not trap the Telegram WebView in a loading screen');
+await assert.rejects(api.withSlotsDeadline(Promise.reject(new Error('offline')),25),/offline/);
 assert.equal((await api.fetchSlotsStatus()).enabled,false);
 supabase.rpc=async()=>({data:null,error:{code:'PGRST202',message:'missing'}});
 assert.equal(await api.fetchSlotsStatus(),null);
@@ -32,10 +36,17 @@ supabase.rpc=async()=>({data:{...status,state:{...status.state,outcome:{grid:[[]
 supabase.rpc=async()=>({data:null,error:{code:'P0001',message:'slots_no_tickets'}});
 await assert.rejects(api.submitSlotsAction(op),e=>e instanceof api.SlotsRejected);
 const ui=readFileSync('src/components/ServerVikingSlots.tsx','utf8');
+const apiSource=readFileSync('src/game/slotsApi.ts','utf8');
 assert.ok(ui.indexOf('keepPendingSlots(userId,operation)')<ui.indexOf('await submitSlotsAction(operation)'),'persist before sending');
 assert.match(ui,/if \(lock\.current/,'synchronous double-click guard');
 assert.match(ui,/readPendingSlots\(userId\)/,'restore saved operation');
+assert.match(apiSource,/await withSlotsDeadline\(supabase\.rpc\('territory_slots_v1', \{ p_action:'status' \}\)\)/,
+ 'status must not leave the enabled/demo gate spinning forever when offline');
+assert.match(apiSource,/\}\), 15_000\)/,
+ 'an unconfirmed bet must time out while retaining its durable operation for replay');
 assert.match(ui,/autoClaimHallGold\(userId,amount\)/,'existing protected gold payout');
+assert.match(ui,/withSlotsDeadline\(autoClaimHallGold\(userId,amount\),15_000\)/,
+ 'a stalled separate Hall gold credit must release the server-slot controls');
 assert.doesNotMatch(ui,/spinVikingSlots|fairDemoInt|setBalance|useGame\.set/,'live screen cannot invent outcomes or balances');
 api.keepPendingSlots('A',null);assert.equal(api.readPendingSlots('A'),null);
 console.log('Slots client PASS: unavailable vs disabled gate, malformed response guards, 500K tickets, account-scoped restart recovery, durable markers, stable retry UUID, synchronous operation lock and server-only outcomes.');

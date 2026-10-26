@@ -40,6 +40,8 @@ function errKey(error: string): string {
   if (/clan_quest_locked/.test(key)) return 'clanErrQuestLocked';
   if (/clan_boss_claimed|no_damage/.test(key)) return 'clanErrBossClaimed';
   if (/clan_leader_must_transfer/.test(key)) return 'clanErrTransfer';
+  if (/clan_rewards_pending/.test(key)) return 'clan_rewards_pending';
+  if (/clan_war_active/.test(key)) return 'clan_war_active';
   if (/clan_login_required/.test(key)) return 'clanErrReload';
   if (/clan_invalid_wallet|clan_invalid_receipt/.test(key)) return 'clanErrReload';
   if (/row-level security|permission denied/.test(key)) return 'clanErrPermission';
@@ -86,6 +88,7 @@ export function ClanScreen({ userId, notify }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [chatDraft, setChatDraft] = useState('');
   const [invitePlayer, setInvitePlayer] = useState('');
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [inviteCandidates, setInviteCandidates] = useState<Awaited<ReturnType<typeof clanInviteCandidates>>>([]);
 
   // create form
@@ -184,6 +187,7 @@ export function ClanScreen({ userId, notify }: Props) {
   const doLeave = () => run(async () => {
     const r = await clanLeave();
     if (!r.ok) throw new Error(r.error);
+    setConfirmLeave(false);
     setClanId(null); setState(null); setView('home');
     await loadDirectory('');
   });
@@ -198,7 +202,11 @@ export function ClanScreen({ userId, notify }: Props) {
     <div className="pb-4">
       {error && (
         <div role="alert" className="mb-3 rounded-xl border border-red-500/40 bg-red-950/60 px-3 py-2 text-xs font-semibold text-red-100" onClick={() => setError(null)}>
-          {t(error)}
+          {error === 'clan_rewards_pending'
+            ? (language === 'en' ? 'Claim earned boss rewards before disbanding the clan.' : 'Забери заработанные награды босса перед роспуском клана.')
+            : error === 'clan_war_active'
+              ? (language === 'en' ? 'Finish the active clan war before disbanding.' : 'Дождись окончания клановой войны перед роспуском.')
+              : t(error)}
         </div>
       )}
 
@@ -563,7 +571,25 @@ export function ClanScreen({ userId, notify }: Props) {
                 </div>
               );
             })}
-            <button disabled={busy} onClick={() => void doLeave()} className="m-3 w-[calc(100%-24px)] rounded-xl border border-red-400/40 bg-red-500/10 py-2 text-xs font-bold text-red-300">{t('clanLeave')}</button>
+            {state.my_role === 'leader' && state.clan.members > 1 && (
+              <p className="mx-3 mt-3 text-xs text-amber-200">
+                {language === 'en' ? 'Transfer leadership to a member before leaving.' : 'Перед выходом передай руководство другому участнику.'}
+              </p>
+            )}
+            {confirmLeave && (
+              <div role="alertdialog" aria-label={language === 'en' ? 'Confirm leaving clan' : 'Подтверждение выхода из клана'} className="mx-3 mt-3 rounded-xl border border-red-400/40 bg-red-950/30 p-3">
+                <p className="mb-3 text-xs leading-relaxed text-red-100">
+                  {state.my_role === 'leader' && state.clan.members === 1
+                    ? (language === 'en' ? 'You are the last member. Leaving will disband this clan and its treasury. Claim earned rewards first.' : 'Ты последний участник. Выход распустит клан и его казну. Сначала забери заработанные награды.')
+                    : (language === 'en' ? 'Leave this clan? Your personal hero progress stays unchanged.' : 'Выйти из клана? Личный прогресс героя не изменится.')}
+                </p>
+                <div className="flex gap-2">
+                  <button type="button" disabled={busy} onClick={() => void doLeave()} className="min-h-10 flex-1 rounded-lg bg-red-600/70 px-2 text-xs font-bold text-white disabled:opacity-40">{language === 'en' ? 'Confirm' : 'Подтвердить'}</button>
+                  <button type="button" disabled={busy} onClick={() => setConfirmLeave(false)} className="min-h-10 flex-1 rounded-lg border border-white/20 px-2 text-xs font-bold text-white disabled:opacity-40">{language === 'en' ? 'Cancel' : 'Отмена'}</button>
+                </div>
+              </div>
+            )}
+            <button type="button" disabled={busy || confirmLeave || (state.my_role === 'leader' && state.clan.members > 1)} onClick={() => setConfirmLeave(true)} className="m-3 w-[calc(100%-24px)] rounded-xl border border-red-400/40 bg-red-500/10 py-2 text-xs font-bold text-red-300 disabled:opacity-40">{t('clanLeave')}</button>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] flex flex-col">

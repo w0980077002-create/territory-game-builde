@@ -111,13 +111,23 @@ try {
  const twelve=Array.from({length:12},(_,i)=>`10000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`);
  for(const [i,id] of twelve.entries()) {
    await db.query('INSERT INTO players(id,display_name,telegram_id) VALUES($1,$2,$3)',[id,`Warrior ${i+1}`,100+i]);
+   // Older Telegram profiles may have no saved nickname and a NULL ban marker.
+   // They are legitimate competitors; a missing nickname must not abort all mail.
+   if(i===0) await db.query('UPDATE players SET display_name=NULL,banned=NULL WHERE id=$1',[id]);
    await db.query(`INSERT INTO arena_weekly_wins_v1(player_id,won_at)
      SELECT $1::uuid,starts_at+interval '1 hour' FROM territory_private.weekly_seasons_v1,
        generate_series(1,$2::integer) WHERE week=(SELECT min(week) FROM territory_private.weekly_seasons_v1)`,[id,12-i]);
  }
+ const blocked='10000000-0000-4000-8000-000000000013';
+ await db.query('INSERT INTO players(id,display_name,telegram_id,banned) VALUES($1,$2,$3,true)',[blocked,'Blocked',113]);
+ await db.query(`INSERT INTO arena_weekly_wins_v1(player_id,won_at)
+   SELECT $1::uuid,starts_at+interval '1 hour' FROM territory_private.weekly_seasons_v1,
+     generate_series(1,20) WHERE week=(SELECT min(week) FROM territory_private.weekly_seasons_v1)`,[blocked]);
  await db.exec('SELECT territory_private.weekly_season_tick_v1()');
- const podium=(await db.query('SELECT player_id,rank,reward,grant_id FROM territory_private.weekly_season_results_v1 WHERE player_id=ANY($1::uuid[]) ORDER BY rank',[twelve])).rows;
+ const podium=(await db.query('SELECT player_id,display_name,rank,reward,grant_id FROM territory_private.weekly_season_results_v1 WHERE player_id=ANY($1::uuid[]) ORDER BY rank',[twelve])).rows;
  assert.equal(podium.length,12);
+ assert.equal(podium[0].display_name,'Герой','legacy blank display names must not prevent every prize delivery');
+ assert.equal((await one('SELECT count(*)::int AS n FROM territory_private.weekly_season_results_v1 WHERE player_id=$1',[blocked])).n,0,'banned account must not take a prize place');
  for(const [i,result] of podium.entries()) {
    assert.equal(result.player_id,twelve[i]);
    assert.deepEqual(result.reward,approved[i]??{});

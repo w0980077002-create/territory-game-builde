@@ -56,11 +56,12 @@ BEGIN
    WHERE finished_at IS NULL AND ends_at<=now() ORDER BY week FOR UPDATE
  LOOP
    FOR v_row IN
-     SELECT w.player_id,p.display_name,count(*)::integer AS points,
+     SELECT w.player_id,COALESCE(NULLIF(btrim(left(p.display_name,70)),''),'Герой') AS display_name,
+       count(*)::integer AS points,
        row_number() OVER(ORDER BY count(*) DESC,max(w.won_at),w.player_id)::integer AS rank
      FROM public.arena_weekly_wins_v1 w JOIN public.players p ON p.id=w.player_id
      WHERE w.won_at>=v_season.starts_at AND w.won_at<v_season.ends_at
-       AND p.telegram_id IS NOT NULL AND NOT p.banned
+       AND p.telegram_id IS NOT NULL AND p.banned IS DISTINCT FROM true
      GROUP BY w.player_id,p.display_name
    LOOP
      v_reward:=COALESCE(v_season.prizes->(v_row.rank-1),'{}'::jsonb);
@@ -97,17 +98,18 @@ DECLARE v_week date; v_season territory_private.weekly_seasons_v1%ROWTYPE;
  v_leaders jsonb; v_history jsonb; v_points integer; v_rank integer;
 BEGIN
  IF auth.uid() IS NULL OR NOT EXISTS(SELECT FROM public.players
-   WHERE id=auth.uid() AND telegram_id IS NOT NULL AND NOT banned)
+   WHERE id=auth.uid() AND telegram_id IS NOT NULL AND banned IS DISTINCT FROM true)
  THEN RAISE EXCEPTION 'season_verified_login_required' USING ERRCODE='42501'; END IF;
  v_week:=(now() AT TIME ZONE 'Europe/Kyiv')::date;
  v_week:=v_week-extract(dow FROM v_week)::integer;
  SELECT * INTO v_season FROM territory_private.weekly_seasons_v1 WHERE week=v_week;
  WITH ranked AS (
-   SELECT w.player_id,p.display_name,count(*)::integer AS points,
+   SELECT w.player_id,COALESCE(NULLIF(btrim(left(p.display_name,70)),''),'Герой') AS display_name,
+     count(*)::integer AS points,
      row_number() OVER(ORDER BY count(*) DESC,max(w.won_at),w.player_id)::integer AS rank
    FROM public.arena_weekly_wins_v1 w JOIN public.players p ON p.id=w.player_id
    WHERE w.won_at>=v_season.starts_at AND w.won_at<v_season.ends_at
-     AND p.telegram_id IS NOT NULL AND NOT p.banned
+     AND p.telegram_id IS NOT NULL AND p.banned IS DISTINCT FROM true
    GROUP BY w.player_id,p.display_name
  ) SELECT COALESCE(jsonb_agg(to_jsonb(r) ORDER BY rank) FILTER(WHERE rank<=50),'[]'),
    COALESCE(max(points) FILTER(WHERE player_id=auth.uid()),0),

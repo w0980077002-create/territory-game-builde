@@ -46,7 +46,7 @@ const transpiled = ts.transpileModule(read('src/game/auctionApi.ts'), {
 });
 assert.equal((transpiled.diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error).length, 0);
 const mod = { exports: {} };
-vm.runInNewContext(transpiled.outputText, { module: mod, exports: mod.exports, require: () => ({ supabase: deps }), localStorage });
+vm.runInNewContext(transpiled.outputText, { module: mod, exports: mod.exports, require: () => ({ supabase: deps }), localStorage, setTimeout, clearTimeout });
 const api = mod.exports;
 const U = '11111111-1111-4111-8111-111111111111';
 const V = '22222222-2222-4222-8222-222222222222';

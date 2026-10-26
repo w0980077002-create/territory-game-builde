@@ -54,6 +54,7 @@ jobs:
       - run: npm run test:master-license
       - run: npm run test:feature-separation
       - run: npm run test:mobile-home
+      - run: npm run test:events
       - run: node scripts/check-combat-visuals.mjs
       - run: node scripts/check-arena-postfight.mjs
       - run: node scripts/check-belt-victory-milestones.mjs

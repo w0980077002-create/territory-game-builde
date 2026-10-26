@@ -1,0 +1,227 @@
+/* Four separate, decorative Game Hall puzzle appearances. No reward logic. */
+.hall-challenge {
+  --challenge-accent: #f4c675;
+  --challenge-glow: #f3a24564;
+  position: relative;
+  min-width: 0;
+  padding: 0 9px 12px;
+  overflow: hidden;
+  border: 1px solid #c590514d;
+  border-radius: 16px;
+  background: radial-gradient(ellipse at 50% 8%, #723d6c4d, transparent 75%), #101725;
+  text-align: center;
+}
+.hall-challenge--dice { --challenge-accent: #9cdaff; --challenge-glow: #3eb9ef6b; }
+.hall-challenge--tower { --challenge-accent: #ffcf80; --challenge-glow: #d6772e70; }
+.hall-challenge--targets { --challenge-accent: #ffb9a9; --challenge-glow: #f45b5770; }
+.hall-challenge--treasury { --challenge-accent: #ffe395; --challenge-glow: #e3aa3270; }
+.hall-challenge-scene {
+  position: relative;
+  height: clamp(84px, 23vw, 125px);
+  margin: 0 -9px 10px;
+  overflow: hidden;
+  border-radius: 15px 15px 9px 9px;
+  border-bottom: 1px solid #efb76c70;
+  background: #1b263a;
+}
+.hall-challenge-scene img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+}
+.hall-challenge-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(0deg, #101725b5, transparent 60%);
+}
+.hall-challenge-title {
+  margin: 0;
+  color: #fff2d3;
+  font-size: clamp(14px, 4.1vw, 19px);
+  font-weight: 900;
+  line-height: 1.2;
+  text-shadow: 0 2px 3px #000b;
+}
+.hall-challenge-hint {
+  margin: 6px auto 9px;
+  max-width: 330px;
+  color: #c9cede;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.hall-challenge-runes {
+  margin: 0 auto 9px;
+  max-width: 260px;
+  padding: 7px;
+  border: 1px solid #fbcb6e91;
+  border-radius: 10px;
+  color: #ffeeb5;
+  background: linear-gradient(130deg, #84501a6b, #4b21625c);
+  box-shadow: inset 0 1px #ffeabc42;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: .4px;
+}
+.hall-challenge-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: clamp(5px, 1.8vw, 10px);
+}
+.hall-challenge-choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 0;
+  min-height: 172px;
+  padding: 8px 2px 10px;
+  overflow: hidden;
+  border: 2px solid #a78963;
+  border-radius: 14px;
+  background: linear-gradient(155deg, #56617e3b, #1b2138 52%, #321e2c);
+  color: #fff7e2;
+  box-shadow: inset 0 1px #ffffff34, 0 4px 8px #0007;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+}
+.hall-challenge-choice::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 44%, var(--challenge-glow), transparent 64%);
+}
+.hall-challenge-choice:focus-visible { outline: 3px solid #fdf3bb; outline-offset: 2px; }
+.hall-challenge-choice:not(:disabled):active { transform: translateY(2px) scale(.98); }
+.hall-challenge-choice--selected {
+  border-color: #fff4a1;
+  box-shadow: inset 0 1px #fff7c890, 0 0 0 2px #ffce6c42, 0 0 20px var(--challenge-glow);
+}
+.hall-challenge-choice:disabled:not(.hall-challenge-choice--selected) { opacity: .65; cursor: default; }
+.hall-challenge-choice-number {
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #efdaae9e;
+  border-radius: 50%;
+  background: #171627d6;
+  color: var(--challenge-accent);
+  font: 900 12px/1 system-ui, sans-serif;
+}
+.hall-choice-art {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  height: 78px;
+}
+.hall-mini-die {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+  width: clamp(27px, 8.5vw, 36px);
+  height: clamp(27px, 8.5vw, 36px);
+  padding: 6px;
+  border: 2px solid #edf9ff;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #fcfdff, #8fd4f4);
+  box-shadow: 2px 3px 0 #34658d, 0 4px 8px #0008;
+  transform: rotate(-7deg);
+}
+.hall-mini-die:nth-child(2) { transform: rotate(9deg) translateY(3px); }
+.hall-mini-die > i { border-radius: 50%; }
+.hall-mini-die__pip { background: #23427b; box-shadow: inset 0 1px #0f244f; }
+.hall-mini-die--unknown { display: grid; place-items: center; color: #182d63; }
+.hall-choice-gate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 57px;
+  height: 76px;
+  overflow: hidden;
+  border: 6px ridge #bc8750;
+  border-bottom-width: 8px;
+  border-radius: 29px 29px 4px 4px;
+  background: linear-gradient(90deg, #5b301c, #bb6e3c 48%, #5a251e 52%, #9e6538);
+  box-shadow: 0 0 0 3px #432639, 0 5px 10px #000a, inset 0 0 12px #0009;
+}
+.hall-choice-gate::before { content: ''; position: absolute; inset: 5px 49% 0 auto; width: 2px; background: #f4c98794; }
+.hall-choice-gate i { position: absolute; right: 9px; top: 40px; width: 6px; height: 6px; border-radius: 50%; background: #ffdc8a; box-shadow: 0 0 4px #fbdc6f; }
+.hall-choice-gate b { color: #ffe2a4; font-size: 24px; text-shadow: 0 0 7px #efad5c; }
+.hall-choice-target {
+  position: relative;
+  display: block;
+  width: 70px;
+  height: 70px;
+  border: 5px ridge #bd8752;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffeb92 0 10%, #ae2d34 11% 25%, #ffdf91 26% 42%, #b7403e 43% 61%, #f1d8ad 62% 78%, #6f362a 79%);
+  box-shadow: 0 0 0 3px #53301d, 0 5px 10px #0008, inset 0 0 3px #261a22;
+}
+.hall-choice-target::after {
+  content: '';
+  position: absolute;
+  left: 28px;
+  top: 18px;
+  width: 6px;
+  height: 31px;
+  border-radius: 4px;
+  background: linear-gradient(#eee8d9, #6f7e8c);
+  box-shadow: 1px 0 2px #22152a;
+  transform: rotate(38deg);
+}
+.hall-choice-target i { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #fcdf7b; left: 26px; top: 26px; box-shadow: 0 0 5px #fff7a0; }
+.hall-choice-chest {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 71px;
+  height: 48px;
+  margin-top: 20px;
+  border: 4px ridge #e5a84c;
+  border-radius: 6px 6px 10px 10px;
+  background: repeating-linear-gradient(0deg, #713c21 0 13px, #9c5730 14px 16px);
+  box-shadow: 0 5px 0 #41251a, 0 9px 12px #0008, inset 0 0 9px #0008;
+}
+.hall-choice-chest::before {
+  content: '';
+  position: absolute;
+  top: -22px;
+  left: -5px;
+  right: -5px;
+  height: 26px;
+  border: 4px solid #e1ac54;
+  border-radius: 24px 24px 2px 2px;
+  background: linear-gradient(#af622f, #613019);
+  box-shadow: inset 0 4px #f3bf6588;
+}
+.hall-choice-chest::after { content: ''; position: absolute; top: -18px; bottom: -3px; width: 10px; background: linear-gradient(90deg, #83531c, #ffdb78, #9c6023); opacity: .8; }
+.hall-choice-chest b { position: relative; z-index: 1; color: #f8e0a3; font-size: 15px; text-shadow: 0 0 4px #fff1a7; }
+.hall-challenge-choice-value { z-index: 1; color: #fff5cb; font: 900 clamp(20px, 6vw, 28px)/1 system-ui, sans-serif; text-shadow: 0 2px 4px #000b; }
+.hall-challenge-choice-label { z-index: 1; color: #e1c7a8; font: 800 9px/1.1 system-ui, sans-serif; }
+.hall-challenge-secure { display: flex; align-items: center; justify-content: center; gap: 5px; margin: 10px 0 0; color: #9cacb9; font-size: 10px; line-height: 1.2; }
+@media (max-width: 360px) {
+  .hall-challenge { padding-inline: 6px; }
+  .hall-challenge-scene { margin-inline: -6px; }
+  .hall-challenge-choice { min-height: 160px; padding-inline: 1px; }
+  .hall-choice-art { height: 70px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hall-challenge-choice { transition: none; }
+  .hall-challenge-choice:not(:disabled):active { transform: none; }
+}

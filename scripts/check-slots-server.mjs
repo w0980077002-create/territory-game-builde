@@ -33,8 +33,17 @@ try {
  await db.exec(readFileSync('supabase/staged/territory_slots_v1.sql','utf8'));
  await as(A);
  assert.equal((await rpc()).enabled,false);
+ assert.equal((await q('SELECT count(*)::integer AS n FROM territory_private.hall_accounts_v1 WHERE player_id=$1',[A]))[0].n,0,
+  'disabled status may not create a Hall account');
  await assert.rejects(rpc('spin',key(),9,1),/slots_not_enabled/);
  await q('UPDATE territory_private.slots_release_v1 SET enabled=true');
+ const freshStatus=await rpc();
+ assert.equal(freshStatus.tickets,4);
+ assert.equal(freshStatus.state.phase,'ready');
+ assert.equal((await q('SELECT count(*)::integer AS n FROM territory_private.hall_accounts_v1 WHERE player_id=$1',[A]))[0].n,0,
+  'enabled status must not create wallet rows or acquire bet locks');
+ assert.equal((await q('SELECT count(*)::integer AS n FROM territory_private.slots_rounds_v1 WHERE player_id=$1',[A]))[0].n,0,
+  'enabled status must not create empty rounds');
  const serverConfig=(await q('SELECT territory_private.slots_config_v1() AS r'))[0].r;
  assert.equal(JSON.stringify(serverConfig.strips),JSON.stringify(SLOT_REEL_STRIPS));
  for(let n=0;n<45;n++) {
@@ -52,6 +61,7 @@ try {
  let status=await rpc();assert.equal(status.tickets,4);
  await assert.rejects(rpc('spin',key(),9,1),/slots_no_tickets/);
  await assert.rejects(rpc('spin',key(),2,1),/slots_invalid_arguments/);
+ await q('INSERT INTO territory_private.hall_accounts_v1(player_id) VALUES($1) ON CONFLICT DO NOTHING',[A]);
  await q('UPDATE territory_private.hall_accounts_v1 SET tickets=20 WHERE player_id=$1',[A]);
  await force(0);
  const spinKey=key(); const spin=await rpc('spin',spinKey,1,1);

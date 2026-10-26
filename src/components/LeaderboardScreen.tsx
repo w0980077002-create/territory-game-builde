@@ -15,12 +15,12 @@ interface LeaderboardEntry {
   photo_url: string | null;
 }
 
-export function LeaderboardScreen({ user }: { user: AuthUser }) {
+export function LeaderboardScreen({ user, initialTab = 'rating' }: { user: AuthUser; initialTab?: 'rating' | 'wins' | 'season' }) {
   const { t, language } = useLanguage();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [tab, setTab] = useState<'rating' | 'wins' | 'season'>('rating');
+  const [tab, setTab] = useState<'rating' | 'wins' | 'season'>(initialTab);
   const requestId = useRef(0);
 
   useEffect(() => {

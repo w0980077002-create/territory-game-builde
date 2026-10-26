@@ -191,7 +191,7 @@ export function ProfessionsScreen() {
       {progress.active && progress.masteryLevel >= 300 && (
         <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-4">
           <p className="font-bold text-amber-200">👑 {language === 'en' ? 'Master license' : 'Лицензия мастера'}</p>
-          <p className="mt-1 text-xs text-slate-300">{language === 'en' ? 'The permanent license costs 50 red gems in the shop. Level 300 recipes require verified crafting.' : 'Постоянная лицензия стоит 50 красных алмазов в магазине. Для рецептов уровня 300 требуется защищённое ремесло.'}</p>
+          <p className="mt-1 text-xs text-slate-300">{language === 'en' ? 'The permanent Master license is available in the Shop for 50 red gems. Use the new professions system to craft level-300 recipes.' : 'Постоянная лицензия мастера уже продаётся в Лавке за 50 красных алмазов. Рецепты 300-го уровня создаются в новой системе профессий.'}</p>
         </div>
       )}
       <div className="grid grid-cols-2 gap-1.5">
@@ -206,14 +206,14 @@ export function ProfessionsScreen() {
 
       {tab === 'profession' && <>
         <div className="rounded-xl border border-sky-400/20 bg-sky-500/5 p-3 text-xs text-sky-100">
-          {language === 'en' ? 'Unlock one profession forever for 1000 blue gems. The permanent Master License costs 50 red gems in the shop.' : 'Открой одну профессию навсегда за 1000 синих алмазов. Постоянная лицензия мастера стоит 50 красных алмазов в магазине.'}
+          {language === 'en' ? 'Unlock one profession forever for 1000 blue gems. The Master license costs 50 red gems in the Shop; 300-level recipes are available in the new professions system.' : 'Открой одну профессию навсегда за 1000 синих алмазов. Лицензия мастера стоит 50 красных алмазов в Лавке; рецепты 300-го уровня доступны в новой системе профессий.'}
         </div>
         {PROFESSION_DEFINITIONS.map((profession) => {
           const active = progress.active === profession.id;
           const lockedByChoice = progress.active !== null && !active;
           const starterRecipe = PROFESSION_RECIPES.find((recipe) => recipe.profession === profession.id && recipe.requiredLevel < 300);
           return <article key={profession.id} className={`flex items-center gap-3 rounded-xl border p-3 ${active ? 'border-emerald-400/50 bg-emerald-500/10' : 'border-white/10 bg-white/[0.04]'}`}>
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-amber-400/25 bg-amber-500/10 p-1"><img src={PROFESSION_ART[profession.id]} alt="" loading="lazy" className="h-full w-full object-contain" /></div>
+            <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-500/20 to-sky-900/30 p-0.5"><img src={PROFESSION_ART[profession.id]} alt="" loading="lazy" className="h-full w-full object-contain" /></div>
             <div className="min-w-0 flex-1"><b>{language === 'en' ? ({ smith: 'Blacksmith', alchemist: 'Alchemist', artisan: 'Artisan', jeweler: 'Jeweler', engineer: 'Engineer' } as Record<string, string>)[profession.id] : profession.name}</b><p className="text-xs text-slate-400">{language === 'en' ? ({ smith: 'Weapons, armor, and shields', alchemist: 'Potions and battle elixirs', artisan: 'Materials and useful kits', jeweler: 'Rings, amulets, and jewelry', engineer: 'Defensive devices and mechanisms' } as Record<string, string>)[profession.id] : profession.description}</p>{starterRecipe && <p className="mt-1 text-[11px] text-amber-200">{language === 'en' ? 'First craft' : 'Первый рецепт'}: {localizeText(starterRecipe.output.name, language)} · {language === 'en' ? 'Mastery Lv.' : 'Мастерство ур.'} {starterRecipe.requiredLevel}</p>}{active && <p className="mt-1 text-[10px] text-emerald-300">{t('activeProfession')}</p>}</div>
             <button disabled={lockedByChoice || active || buying} onClick={() => { void chooseProfession(profession.id); }} className={`shrink-0 rounded-lg border px-2.5 py-2 text-xs font-bold ${active ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200' : 'border-white/10 bg-white/5 disabled:opacity-50'}`}>
               {active ? <><CheckCircle2 className="mr-1 inline h-3 w-3" />{t('selected')}</> : lockedByChoice ? <><Lock className="mr-1 inline h-3 w-3" />{t('locked')}</> : `${t('choose')} · 1000 💎`}

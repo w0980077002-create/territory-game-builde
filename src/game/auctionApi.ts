@@ -46,9 +46,23 @@ const safeItem = (value: unknown): AuctionItem['item'] => {
   };
 };
 
+/**
+ * Release the Telegram UI if PostgREST stalls. A timed-out trade remains
+ * ambiguous and must be retried with the SAME persisted operation UUID.
+ */
+export function withAuctionDeadline<T>(request: PromiseLike<T>, timeoutMs = 12_000): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('auction_request_timeout')), timeoutMs);
+    request.then(
+      value => { clearTimeout(timer); resolve(value); },
+      error => { clearTimeout(timer); reject(error); },
+    );
+  });
+}
+
 /** Null means the function has not been installed (current live STAGE4). */
 export async function fetchAuctionOverview(filters: AuctionFilters = {}): Promise<AuctionOverview | null> {
-  const { data, error } = await supabase.rpc('territory_auction_overview_v1', { p_limit: 50, p_search: (filters.search || '').slice(0, 100), p_rarity: filters.rarity || '', p_sort: filters.sort || 'newest' });
+  const { data, error } = await withAuctionDeadline(supabase.rpc('territory_auction_overview_v1', { p_limit: 50, p_search: (filters.search || '').slice(0, 100), p_rarity: filters.rarity || '', p_sort: filters.sort || 'newest' }));
   if (error) {
     if (error.code === 'PGRST202' || error.code === '42883' || /function.*does not exist|could not find the function/i.test(error.message)) return null;
     throw new Error('auction_unavailable');
@@ -95,7 +109,7 @@ export async function submitAuctionAction(action: AuctionAction, operationId: st
     : { p_action: action.action, p_operation: operationId, p_listing: action.listingId };
   if (action.action === 'list' && (!uuid(action.itemId) || !price(action.priceGold))) throw new Error('invalid_listing');
   if (action.action !== 'list' && !uuid(action.listingId)) throw new Error('invalid_listing');
-  const { data, error } = await supabase.rpc('territory_auction_trade_v1', args);
+  const { data, error } = await withAuctionDeadline(supabase.rpc('territory_auction_trade_v1', args), 15_000);
   if (error) throw new AuctionTradeError(error.message || 'trade_failed', error.code === 'P0001' || error.code === '42501');
   if (!record(data) || data.success !== true || data.action !== action.action) throw new Error('trade_unconfirmed');
 }

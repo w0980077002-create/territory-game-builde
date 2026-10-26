@@ -15,6 +15,16 @@ export interface PendingSlots { id: string; expected: number; request: SlotsActi
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const natural = (v: unknown, max = 2147483647): v is number => Number.isSafeInteger(v) && (v as number) >= 0 && (v as number) <= max;
 const uuid = (v: unknown): v is string => typeof v === 'string' && /^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(v);
+/** Network deadlines release the UI; the durable UUID allows safe receipt replay. */
+export function withSlotsDeadline<T>(request: PromiseLike<T>, timeoutMs = 12_000): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('slots_request_timeout')), timeoutMs);
+    request.then(
+      value => { clearTimeout(timer); resolve(value); },
+      error => { clearTimeout(timer); reject(error); },
+    );
+  });
+}
 function validAction(v: unknown): v is SlotsAction {
   if (!record(v)) return false;
   if (v.action === 'spin') return [1,3,5,7,9].includes(Number(v.lines)) && [1,2,5,10].includes(Number(v.bet)) && typeof v.lines === 'number' && typeof v.bet === 'number';
@@ -41,7 +51,7 @@ function parse(v: unknown): SlotsStatus {
   return v as unknown as SlotsStatus;
 }
 export async function fetchSlotsStatus(): Promise<SlotsStatus | null> {
-  const { data, error } = await supabase.rpc('territory_slots_v1', { p_action:'status' });
+  const { data, error } = await withSlotsDeadline(supabase.rpc('territory_slots_v1', { p_action:'status' }));
   if (error) {
     if (error.code==='PGRST202' || error.code==='42883') return null;
     throw new Error(error.message || 'slots_unavailable');
@@ -52,10 +62,10 @@ export class SlotsRejected extends Error {}
 export async function submitSlotsAction(pending: PendingSlots): Promise<SlotsStatus> {
   if (!uuid(pending.id) || !natural(pending.expected) || !validAction(pending.request)) throw new Error('slots_invalid_operation');
   const r = pending.request;
-  const { data, error } = await supabase.rpc('territory_slots_v1', {
+  const { data, error } = await withSlotsDeadline(supabase.rpc('territory_slots_v1', {
     p_action:r.action,p_operation:pending.id,p_expected:pending.expected,
     ...('lines' in r ? {p_lines:r.lines,p_bet:r.bet} : {}), ...('choice' in r ? {p_choice:r.choice} : {}),
-  });
+  }), 15_000);
   if (error) {
     if (error.code==='P0001' || error.code==='42501') throw new SlotsRejected(error.message);
     throw new Error(error.message || 'slots_unconfirmed');

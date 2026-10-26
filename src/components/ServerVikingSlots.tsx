@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, BookOpen, Crown, Loader2, Play, Shield, Sparkles, Ticket, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { autoClaimHallGold } from '@/game/gameHall';
-import { fetchSlotsStatus, keepPendingSlots, readPendingSlots, SlotsRejected, submitSlotsAction, type PendingSlots, type SlotsAction, type SlotsStatus } from '@/game/slotsApi';
+import { fetchSlotsStatus, keepPendingSlots, readPendingSlots, SlotsRejected, submitSlotsAction, withSlotsDeadline, type PendingSlots, type SlotsAction, type SlotsStatus } from '@/game/slotsApi';
 import { reelSpinTrail, SLOT_BET_CHOICES, SLOT_ICONS, SLOT_LINE_CHOICES, SLOT_PAYTABLE, type SlotGrid, type SlotSymbol } from '@/game/vikingSlots';
 import './vikingSlots.css';
 const root = import.meta.env.BASE_URL;
@@ -68,7 +68,9 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
   const settleHall=async(amount:number)=>{
     if (!amount) return;
     try {
-      const gold=await autoClaimHallGold(userId,amount);
+      // The server retains pending gold if cloud-save credit stalls. Do not
+      // leave the slot controls locked indefinitely behind that separate flow.
+      const gold=await withSlotsDeadline(autoClaimHallGold(userId,amount),15_000);
       if (alive.current && gold>0) setNotice(en?`+${gold} gold credited to your hero!`:`+${gold} золота зачислено персонажу!`);
     } catch {if(alive.current)setNotice(en?'Prize saved on the server. Return to the hall to complete the credit.':'Приз сохранён на сервере. Вернись в зал для зачисления.');}
   };

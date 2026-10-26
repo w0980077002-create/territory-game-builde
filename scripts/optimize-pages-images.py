@@ -66,4 +66,37 @@ for name in ("map-bg", "map-chamber", "map-forest", "map-mountain", "map-herbs",
     finally:
         temp.unlink(missing_ok=True)
 
+
+# The archived appearance portraits and the small Map button were originally
+# exported as PNG bytes but named *.webp. Vite copies them verbatim, so any
+# screen that requests them downloads multi-megabyte PNGs. Keep original art in
+# public/, and replace only the Pages copies with real WebP files.
+for name in (
+    "appearance-m1", "appearance-m2", "appearance-m3", "appearance-m4", "appearance-m5",
+    "appearance-f1", "appearance-f2", "appearance-f3", "appearance-f4", "appearance-f5",
+    "nav-map",
+):
+    source = PUBLIC / f"{name}.webp"
+    target = DIST / f"{name}.webp"
+    if not target.is_file():
+        raise FileNotFoundError(f"Vite must copy source character art before optimizing: {target}")
+    original_size = target.stat().st_size
+    temp = DIST / f"{name}.optimized.webp"
+    try:
+        with open_image(source) as image:
+            # The map image is rendered at only 36px; 512px is ample for
+            # high-density phones. Preserve full resolution for the portraits.
+            converted = scale(image, 512 if name == "nav-map" else 2048, 2)
+            expected_size = converted.size
+            save_webp(converted, temp, 84)
+        with open_image(temp) as encoded:
+            if encoded.format != "WEBP" or encoded.size != expected_size:
+                raise RuntimeError(f"WebP artwork changed dimensions or encoding: {name}")
+        if not (1024 <= temp.stat().st_size < original_size):
+            raise RuntimeError(f"WebP optimization did not reduce artwork size: {name}")
+        temp.replace(target)
+        print(f"Character/UI {name}: {original_size // 1024} KB -> {target.stat().st_size // 1024} KB")
+    finally:
+        temp.unlink(missing_ok=True)
+
 print("Pages image optimization passed.")

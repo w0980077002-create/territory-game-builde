@@ -168,6 +168,12 @@
   box-shadow: inset 0 0 0 1px var(--play-light), inset 0 2px #ffffff45, 0 0 6px var(--play-glow), 0 2px 3px #0007;
   color: #fffbe9; font: 800 13px/1 system-ui, sans-serif; text-shadow: 0 1px 2px #0008;
 }
+.hall-game__play svg { flex: 0 0 auto; }
+.hall-game__play--blocked {
+  max-width: calc(100% - 14px);
+  font-size: clamp(10px, 2.7vw, 12px);
+  white-space: nowrap;
+}
 .hall-game--blue { --play-top: #128fc3; --play-bottom: #054f83; --play-light: #9be9ff; --play-glow: #00c3ff77; }
 .hall-game--violet { --play-top: #b332db; --play-bottom: #59118c; --play-light: #f1b0ff; --play-glow: #d239ff77; }
 .hall-game--red { --play-top: #df4b2c; --play-bottom: #901b19; --play-light: #ffbd8e; --play-glow: #ff572477; }
