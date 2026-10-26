@@ -20,7 +20,7 @@ import { LiveCityBackdrop, CITY_MOTION_KEY, initialCityMotion } from '@/componen
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 
-export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages';
+export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events';
 // All five follower images use 512x512 canvases but have different amounts of
 // transparent space above the character. Normalize visible silhouettes in the
 // home city without changing original artwork, combat sprites or player saves.
@@ -93,7 +93,7 @@ function ControlButton({ active, label, onClick, children }: { active?: boolean;
   );
 }
 
-export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, onInventory, notify }: Props) {
+export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInventory, notify }: Props) {
   const state = useStore(useGame);
   const arena = useStore(useArena);
   const account = useStore(useAccount);
@@ -194,7 +194,7 @@ export function HomeScreen({ user, saveStatus, questAlerts, onOpen, onBattle, on
       </button>
 
       <div className="home-side-stack absolute z-10 left-1.5 w-[48px] flex flex-col gap-1">
-        <SideButton icon="/ic-events.webp" label={t('events')} soon onClick={() => soon(t('events'))} />
+        <SideButton icon="/ic-events.webp" label={t('events')} badge={questAlerts.readyCount > 0} onClick={() => onOpen('events')} />
         <SideButton icon="/ic-daily.webp" label={t('rewards')} badge={!dailyStatus(state).claimedToday} onClick={() => setSheet('daily')} />
         <SideButton icon="/ic-quests.webp" label={t('quests')} badge={questAlerts.count > 0} onClick={() => onOpen('quests')} />
         <SideButton icon="/ic-invite.webp" label={t('friends')} onClick={() => onOpen('friends')} />

@@ -17,6 +17,7 @@
     "sync:professions:stage8:sql": "node scripts/professions/sync-stage8-sql.mjs",
     "test:feature-separation": "node scripts/check-feature-separation.mjs",
     "test:mobile-home": "node scripts/check-mobile-home-ui.mjs && node scripts/check-runtime-performance.mjs && node scripts/check-starter-journey.mjs",
+    "test:events": "node scripts/check-events-board.mjs",
     "test:economy": "node scripts/check-economy.mjs && node scripts/economy-client-guard-tests.mjs && node scripts/check-stage2.mjs && node scripts/progression-audit.mjs && node scripts/check-stage3.mjs && node scripts/check-stage4.mjs && node scripts/check-stage5.mjs && node scripts/check-stage6.mjs && node scripts/check-stage7.mjs && node scripts/check-immediate-save.mjs && node scripts/check-save-auth-recovery.mjs",
     "test:saves": "node scripts/check-economy.mjs && node scripts/check-immediate-save.mjs",
     "test:client-guard": "node scripts/economy-client-guard-tests.mjs",

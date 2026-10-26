@@ -14,13 +14,15 @@ const EVENT_NAMES = new Set([
   'territory_craft_completed', 'territory_shop_purchase', 'territory_salvage_completed',
   'territory_arena_fight_start', 'territory_quest_claim', 'territory_client_error',
   'territory_screen_dwell',
+  'territory_events_action',
 ]);
 const SCREENS = new Set([
   'city','inventory','hero','battle','map','games','clan','shop',
   'forge','arena','leaderboard','quests','hall-play',
-  'professions','auction','friends',
+  'professions','auction','friends','messages','events',
 ]);
-const MODES = new Set(['campaign','trial','duel','team','chaos','monopoly','treasury','dice','tower','targets','wheel']);
+const MODES = new Set(['campaign','trial','duel','team','chaos','monopoly','treasury','dice','tower','targets','wheel','slots',
+  'daily-reward','hall-tickets','daily-quests','blessing','gather','mail','weekly-quests','arena-weekly','championship','clan']);
 
 // One anonymous session per webview tab. Distinct IDs never contain player IDs.
 function sessionId(): string | null {
@@ -45,7 +47,7 @@ type GameEvent = 'territory_screen_open' | 'territory_battle_open'
   | 'territory_referral_reward_claim' | 'territory_profession_unlock'
   | 'territory_craft_completed' | 'territory_shop_purchase' | 'territory_salvage_completed'
   | 'territory_arena_fight_start' | 'territory_quest_claim' | 'territory_client_error'
-  | 'territory_screen_dwell';
+  | 'territory_screen_dwell' | 'territory_events_action';
 type GameEventProps = {
   screen?: string;
   mode?: string;

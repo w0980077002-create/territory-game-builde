@@ -1,13 +1,14 @@
 import { useStore } from '@/game/store';
 import { useGame, claimQuest, claimAchievement } from '@/game/actions';
 import { captureGameEvent } from '@/game/analytics';
-import { CheckCircle2, Lock } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Lock } from 'lucide-react';
 import type { Achievement, Quest } from '@/game/types';
 import { Currency } from './ui/Currency';
 import { useLanguage } from '@/game/i18n';
 import { SocialQuestsSection } from './SocialQuestsSection';
 import type { SocialStatus } from '@/game/socialQuests';
 import { getStarterMilestones, type StarterDestination } from '@/game/starterJourney';
+import { questAction, readyQuestCount } from '@/game/eventsBoard';
 
 const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
   { type: 'daily', titleKey: 'daily', hintKey: 'dailyHint' },
@@ -61,17 +62,20 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { use
       <SocialQuestsSection userId={userId} onStatusChange={onSocialStatusChange} />
 
       {SECTIONS.map((sec) => {
-        const list = state.quests.filter((q) => q.type === sec.type);
+        const list = state.quests.filter((q) => q.type === sec.type).sort((left, right) => {
+          const priority = (q: Quest) => q.claimed ? 2 : q.current >= q.target ? 0 : 1;
+          return priority(left) - priority(right);
+        });
         if (!list.length) return null;
         return (
           <section key={sec.type}>
             <div className="flex items-baseline justify-between px-1 mb-2">
               <h3 className="text-xs font-semibold text-amber-200/80 uppercase tracking-wider">{t(sec.titleKey)}</h3>
-              <span className="text-[11px] text-gray-500">{t(sec.hintKey)}</span>
+              <span className="text-[11px] text-gray-400">{readyQuestCount(list) > 0 ? `${readyQuestCount(list)} ${language === 'en' ? 'ready' : 'готово'} · ` : ''}{t(sec.hintKey)}</span>
             </div>
             <div className="space-y-2">
               {list.map((q) => (
-                <QuestCard key={q.id} quest={q} language={language} t={t} onClaim={() => {
+                <QuestCard key={q.id} quest={q} language={language} t={t} onNavigate={onNavigate} onClaim={() => {
                   const previous = useGame.get();
                   const next = claimQuest(previous, q.id);
                   if (next !== previous) {
@@ -110,8 +114,9 @@ function ClaimState({ complete, claimed, onClaim, claimLabel }: { complete: bool
   );
 }
 
-function QuestCard({ quest: q, onClaim, language, t }: { quest: Quest; onClaim: () => void; language: 'ru' | 'en'; t: (key: string) => string }) {
+function QuestCard({ quest: q, onClaim, onNavigate, language, t }: { quest: Quest; onClaim: () => void; onNavigate: (screen: StarterDestination) => void; language: 'ru' | 'en'; t: (key: string) => string }) {
   const complete = q.current >= q.target;
+  const action = questAction(q, language === 'en');
   return (
     <div className={`relative rounded-2xl border p-3 transition-colors ${complete && !q.claimed ? 'border-amber-400/65 bg-amber-950/25 shadow-[0_0_13px_rgba(245,158,11,0.14)]' : !q.claimed ? 'border-sky-400/25 bg-[#161b26]' : 'border-white/10 bg-[#161b26] opacity-60'}`}>
       <div className="flex items-start gap-3">
@@ -125,6 +130,9 @@ function QuestCard({ quest: q, onClaim, language, t }: { quest: Quest; onClaim: 
             {(q.rewardStones ?? 0) > 0 && <Currency kind="stones" value={`+${q.rewardStones}`} size={14} className="text-orange-200" />}
             {q.rewardXp > 0 && <span className="text-emerald-300 font-semibold">+{q.rewardXp} {t('xpWord')}</span>}
           </div>
+          {!complete && !q.claimed && action && <button type="button" className="mt-2 inline-flex items-center gap-1 rounded-md border border-sky-400/30 bg-sky-600/15 px-2 py-1 text-[11px] font-bold text-sky-200" onClick={() => onNavigate(action.destination)}>
+            {action.label}<ChevronRight size={13} aria-hidden="true"/>
+          </button>}
         </div>
         <ClaimState complete={complete} claimed={q.claimed} onClaim={onClaim} claimLabel={t('claim')} />
       </div>
