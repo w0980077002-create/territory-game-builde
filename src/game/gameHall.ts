@@ -2,8 +2,8 @@ import { supabase } from './supabase';
 import { useGame } from './actions';
 import { saveCloudSave, claimHallGoldCloud } from './cloud';
 
-/** Maximum stored Hall tickets allowed by the production database constraint. */
-export const HALL_TICKET_MAX = 1000;
+/** Hall wallet is a PostgreSQL integer (int4). Owner grants may exceed 1,000. */
+export const HALL_TICKET_MAX = 2_147_483_647;
 
 export type HallGame = 'monopoly' | 'dice' | 'tower' | 'targets' | 'treasury' | 'wheel' | 'slots';
 export const GAME_IDS: HallGame[] = ['monopoly','dice','tower','targets','treasury'];

@@ -12,6 +12,7 @@ const fixture={useGame:{get:()=>state,set:s=>{state=s;}},useAccount:{set:()=>{}}
   if(name==='territory_fortune_entitlement_v1')return {data:{vip:0,permanent_vip:0,server_now:serverRevision,vip_until:null}};
   if(name==='territory_hall_status_v1')return {data:{tickets,points:0,played:0,wins:0,pending_gold:0,claimed_gold:0,position:0,daily_remaining:0,free_ready:false,active:null}};
   if(name==='territory_hall_finish_v1')return {data:{won:true,earned_gold:100,points:10,daily_remaining:0,tickets,game:'treasury',new_position:null}};
+  if(name==='territory_monopoly_v2')return {data:{hall:{tickets},progress:{laps:0,claimed:[],pending_rewards:{},ends_at:'2026-11-01T00:00:00Z'},result:null,added:0}};
   calls.push({...args});if(mode==='defer'&&args.p_action==='spin')await new Promise(resolve=>{deferred=resolve;});
   if(mode==='before'&&args.p_action==='spin')throw new Error('Network disconnected before request');
   if(args.p_action==='ack'){receipt=null;return {data:data()};}
@@ -48,8 +49,8 @@ mode='normal';const retry=await api.recoverFortune('A');assert.equal(retry.recei
 // A definitive SQL rollback clears the marker only after status reconciliation.
 mode='reject';await assert.rejects(api.playFortune('A','spin'),/hall_no_tickets/);assert.equal(tickets,1);assert.equal(storage.size,0);assert.equal(fixture.blocked,false);
 assert.equal((await api.recoverFortune('A')).receipt,null);
-// Regression: admin-issued / accumulated Hall balances can exceed the 20-ticket
-// daily-claim threshold. The production wallet constraint allows up to 1000.
+// Regression: owner-issued tickets can exceed the 20-ticket daily claim threshold
+// and 1,000-ticket legacy limit, up to the PostgreSQL int4 wallet ceiling.
 mode='normal';tickets=128;
 assert.equal((await api.recoverFortune('A')).tickets,128);
 const largeWallet=await api.playFortune('A','spin');
@@ -58,7 +59,11 @@ assert.equal(state.player.gold,500);
 await api.acknowledgeFortune('A',largeWallet.receipt.id);
 tickets=1000;
 assert.equal((await api.recoverFortune('A')).tickets,1000);
-tickets=1001;
+tickets=500_000;
+assert.equal((await api.recoverFortune('A')).tickets,500_000);
+tickets=2_147_483_647;
+assert.equal((await api.recoverFortune('A')).tickets,2_147_483_647);
+tickets=2_147_483_648;
 await assert.rejects(api.recoverFortune('A'),/fortune_invalid_receipt/);
 // Exercise the real shared Hall response validators, not only Fortune's.
 const hallBuild=await build({entryPoints:['src/game/gameHall.ts'],bundle:true,write:false,format:'esm',platform:'node',plugins:[{name:'hall-fixtures',setup(b){b.onResolve({filter:/^\.\/(cloud|actions|supabase)$/},()=>({path:'stub',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:stub}));}}]});
@@ -70,8 +75,23 @@ assert.equal((await hall.hallFinish(session,0)).tickets,128);
 tickets=1000;
 assert.equal((await hall.hallStatus()).tickets,1000);
 assert.equal((await hall.hallFinish(session,0)).tickets,1000);
-tickets=1001;
+tickets=500_000;
+assert.equal((await hall.hallStatus()).tickets,500_000);
+assert.equal((await hall.hallFinish(session,0)).tickets,500_000);
+tickets=2_147_483_647;
+assert.equal((await hall.hallStatus()).tickets,2_147_483_647);
+assert.equal((await hall.hallFinish(session,0)).tickets,2_147_483_647);
+tickets=2_147_483_648;
 await assert.rejects(hall.hallStatus(),/hall_invalid_status_tickets/);
 await assert.rejects(hall.hallFinish(session,0),/hall_invalid_result/);
+// Monopoly has a separate RPC response parser; keep its ticket validation aligned.
+const monopolyBuild=await build({entryPoints:['src/components/monopoly/api.ts'],bundle:true,write:false,format:'esm',platform:'node',plugins:[{name:'monopoly-fixtures',setup(b){b.onResolve({filter:/^@\/game\/gameHall$/},()=>({path:resolve('src/game/gameHall.ts')}));b.onResolve({filter:/^(?:@\/game\/|\.\/)(?:cloud|actions|supabase)$/},()=>({path:'stub',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:stub}));}}]});
+const monopoly=await import('data:text/javascript;base64,'+Buffer.from(monopolyBuild.outputFiles[0].text).toString('base64'));
+tickets=500_000;
+assert.equal((await monopoly.monopoly()).hall.tickets,500_000);
+tickets=2_147_483_647;
+assert.equal((await monopoly.monopoly()).hall.tickets,2_147_483_647);
+tickets=2_147_483_648;
+await assert.rejects(monopoly.monopoly(),/monopoly_invalid_reply/);
 assert.ok(calls.every(c=>!('prize'in c)&&!('quantity'in c)&&!('reward'in c)));
-console.log('Wheel client PASS: double click mutex, blocked old saves, network failures before/after commit, persisted key, module restart, same-key recovery, definitive rollback reconciliation, Hall and Wheel balances 128/1000, invalid 1001 rejected, no reward payload.');
+console.log('Wheel/Hall/Monopoly client PASS: payout recovery, owner-issued 500K and int4-max tickets accepted, overflow rejected, no reward payload.');
