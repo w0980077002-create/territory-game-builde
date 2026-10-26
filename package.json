@@ -36,7 +36,7 @@
     "test:referral-activity": "node scripts/check-referral-activity.mjs",
     "test:slots": "node scripts/check-viking-slots.mjs",
     "test:hall": "node scripts/check-game-hall.mjs && node scripts/check-game-hall-ui.mjs && node scripts/check-monopoly-performance.mjs",
-    "test:admin-master": "node scripts/check-admin-master.mjs && node scripts/check-admin-ui.mjs",
+    "test:admin-master": "node scripts/check-admin-master.mjs && node scripts/check-admin-ui.mjs && node scripts/check-admin-quantity.mjs && node scripts/check-admin-ticket-unlimited.mjs",
     "test:admin-mail": "node scripts/check-admin-mail.mjs && node scripts/check-admin-mail-reward-art.mjs && node scripts/check-mail-history.mjs",
     "test:elixir-expiry": "node scripts/check-elixir-expiry.mjs",
     "test:admin-geography": "node scripts/check-admin-geography.mjs",

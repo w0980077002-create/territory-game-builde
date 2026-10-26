@@ -139,6 +139,16 @@ export const RESOURCES: { key: string; label: string; item?: boolean; icon: stri
   { key: 'shop_arena_adrenaline', label: 'Адреналин', item: true, icon: '/potion-adrenaline.webp' },
 ];
 
+/** Physical PostgreSQL int4 wallet bound, not an administrator reward quota. */
+export const MAX_ADMIN_REWARD_QUANTITY = 2_147_483_647;
+
+export function maxAdminRewardQuantity(key: string): number {
+  // One shop_stone_5 unit deposits five stones into an int4 wallet.
+  return key === 'shop_stone_5'
+    ? Math.floor(MAX_ADMIN_REWARD_QUANTITY / 5)
+    : MAX_ADMIN_REWARD_QUANTITY;
+}
+
 export function payloadFor(key: string, qty: number): GrantPayload {
   const r = RESOURCES.find((x) => x.key === key);
   if (!r) return {};
