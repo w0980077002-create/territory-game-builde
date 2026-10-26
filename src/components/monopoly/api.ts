@@ -1,6 +1,7 @@
 import {useGame} from '@/game/actions';
 import {saveCloudSave,acceptMonopolyClaimReceipt} from '@/game/cloud';
 import { supabase } from '@/game/supabase';
+import { HALL_TICKET_MAX } from '@/game/gameHall';
 import type { HallState, HallResult, HallQuestion } from '@/game/gameHall';
 export type MonopolyQuestion = HallQuestion & { steps?:number; event?:string; laps?:number; multiplier?:number; gold?:number; prize?:Prize; doubled?:boolean };
 export type MonopolyData = {
@@ -14,7 +15,7 @@ export async function monopoly(action='status',value=1,token:string|null=null):P
  const {data,error}=await supabase.rpc('territory_monopoly_v2',{p_action:action,p_value:value,p_token:token});
  if(error)throw new Error(error.message);
  if(!data?.hall || !data?.progress || !Array.isArray(data.progress.claimed) ||
-  !Number.isSafeInteger(data.hall.tickets) || data.hall.tickets<0 || data.hall.tickets>1000 ||
+  !Number.isSafeInteger(data.hall.tickets) || data.hall.tickets<0 || data.hall.tickets>HALL_TICKET_MAX ||
   !Number.isSafeInteger(data.progress.laps) || !Number.isFinite(Date.parse(data.progress.ends_at)))throw new Error('monopoly_invalid_reply');
  if(!data.progress.pending_rewards || Object.values(data.progress.pending_rewards).some(v=>!Number.isSafeInteger(v)||(v as number)<0||(v as number)>100000))throw new Error('monopoly_invalid_rewards');
  return data;
