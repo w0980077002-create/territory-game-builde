@@ -16,7 +16,9 @@ try {
  CREATE TABLE public.territory_profession_unlocks(player_id uuid PRIMARY KEY REFERENCES players(id),profession text,master_license boolean DEFAULT false);
  CREATE TABLE territory_private.referral_claim_cursor_v1(player_id uuid PRIMARY KEY REFERENCES players(id),red_paid integer DEFAULT 0);
  CREATE TABLE admin_audit_log(action text,details jsonb);
- CREATE TABLE arena_weekly_wins_v1(room_id uuid DEFAULT gen_random_uuid(),player_id uuid,won_at timestamptz);
+ CREATE TABLE arena_weekly_wins_v1(room_id uuid DEFAULT gen_random_uuid(),player_id uuid,won_at timestamptz,PRIMARY KEY(room_id,player_id));
+ CREATE TABLE arena_rooms(id uuid PRIMARY KEY,status text,winner_team integer,finished_at timestamptz);
+ CREATE TABLE arena_participants(room_id uuid,user_id uuid,is_bot boolean,team integer);
  CREATE TABLE admin_grants(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),player_id uuid REFERENCES players(id),kind text,subject text,body text,payload jsonb,claimed_at timestamptz);`);
  await db.query('INSERT INTO players(id,display_name,telegram_id) VALUES($1,\'Alice\',1),($2,\'Bob\',2)',[a,b]);
  await db.exec(readFileSync('supabase/staged/territory_master_license_shop_v1.sql','utf8'));
@@ -126,6 +128,33 @@ try {
      assert.equal((await one('SELECT territory_admin_claim_grant_v2($1) AS v',[result.grant_id])).v.replayed,true);
    } else assert.equal(result.grant_id,null);
  }
+ // Real capture trigger: a backdated room timestamp cannot append an old-week score.
+ const captureSQL=readFileSync('supabase/staged/territory_weekly_seasons_capture_v1.sql','utf8');
+ const tickSQL=readFileSync('supabase/staged/territory_weekly_seasons_v1.sql','utf8');
+ assert(captureSQL.includes('pg_advisory_xact_lock(14601,701)'));
+ assert(tickSQL.includes('pg_try_advisory_xact_lock(14601,701)'));
+ assert(captureSQL.indexOf('PERFORM pg_advisory_xact_lock')<captureSQL.indexOf('v_recorded_at:=clock_timestamp()'));
+ assert(!/COALESCE\(NEW\.finished_at|v_recorded_at:=now\(\)/.test(captureSQL));
+ await db.exec(captureSQL);
+ await db.exec(`CREATE TRIGGER capture AFTER UPDATE OF status ON arena_rooms FOR EACH ROW
+ WHEN(OLD.status IS DISTINCT FROM NEW.status AND NEW.status='finished') EXECUTE FUNCTION arena_weekly_capture_v1()`);
+ const room='bbbbbbbb-bbbb-4bbb-8bbb-111111111111';
+ await db.query("INSERT INTO arena_rooms VALUES($1,'active',1,now()-interval '14 days')",[room]);
+ await db.query('INSERT INTO arena_participants VALUES($1,$2,false,1),($1,$3,false,2),($1,$3,true,1)',[room,a,b]);
+ const priorWins=(await one("SELECT jsonb_agg(to_jsonb(w) ORDER BY room_id,player_id) AS v FROM arena_weekly_wins_v1 w")).v;
+ await db.exec('BEGIN');
+ await new Promise(resolve=>setTimeout(resolve,25));
+ await db.query("UPDATE arena_rooms SET status='finished' WHERE id=$1",[room]);
+ assert.equal((await one("SELECT won_at>now()+interval '10 milliseconds' AS later FROM arena_weekly_wins_v1 WHERE room_id=$1",[room])).later,true,'capture uses recording clock after transaction start');
+ await db.exec('COMMIT');
+ assert.deepEqual((await one('SELECT jsonb_agg(to_jsonb(w) ORDER BY room_id,player_id) AS v FROM arena_weekly_wins_v1 w WHERE room_id<>$1',[room])).v,priorWins,'existing verified wins untouched');
+ const recorded=await one("SELECT player_id,won_at>=now()-interval '1 minute' AS fresh FROM arena_weekly_wins_v1 WHERE room_id=$1",[room]);
+ assert.equal(recorded.player_id,a);assert.equal(recorded.fresh,true,'server recording time, not finished_at or old transaction clock');
+ assert.equal((await one('SELECT count(*)::int AS n FROM arena_weekly_wins_v1 WHERE room_id=$1',[room])).n,1,'bots and losing players excluded');
+ await db.query("UPDATE arena_rooms SET status='finished' WHERE id=$1",[room]);
+ assert.equal((await one('SELECT count(*)::int AS n FROM arena_weekly_wins_v1 WHERE room_id=$1',[room])).n,1,'replayed room completion does not duplicate score');
+ await db.exec('SELECT territory_private.weekly_season_tick_v1()');
+ assert.equal((await one('SELECT count(*)::int AS n FROM territory_private.weekly_season_results_v1 WHERE player_id=$1',[a])).n,1,'old standings remain finalized');
  await db.query("SELECT set_config('test.uid',$1,false)",[a]);
  await db.query('UPDATE players SET banned=true WHERE id=$1',[a]);
  await assert.rejects(db.exec('SELECT territory_season_status_v1()'),/season_verified_login_required/);

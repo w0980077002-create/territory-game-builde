@@ -249,7 +249,7 @@ export function ClanScreen({ userId, notify }: Props) {
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') void run(() => loadDirectory(search)); }}
               placeholder={t('clanSearch')}
-              className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-amber-400/50 focus:outline-none"
+              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-amber-400/50 focus:outline-none"
             />
             <button onClick={() => void run(() => loadDirectory(search))} className="rounded-xl bg-amber-500/20 border border-amber-400/40 px-3 py-2 text-xs font-bold text-amber-200">{t('clanSearchBtn')}</button>
           </div>
@@ -576,7 +576,7 @@ export function ClanScreen({ userId, notify }: Props) {
                     {msg.kind !== 'chat' ? `📜 ${t(`clanK_${msg.kind}`) || msg.kind}` : msg.author_name}
                     <span className="ml-1 font-normal text-gray-500">{new Date(msg.created_at).toLocaleTimeString(language === 'en' ? 'en-US' : 'ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
                   </p>
-                  <p className="text-xs leading-relaxed text-white">{msg.body}</p>
+                  <p className="break-words text-xs leading-relaxed text-white">{msg.body}</p>
                 </div>
               ))}
             </div>
@@ -586,7 +586,7 @@ export function ClanScreen({ userId, notify }: Props) {
                 onChange={(e) => setChatDraft(e.target.value.slice(0, 300))}
                 onKeyDown={(e) => { if (e.key === 'Enter') void doSendChat(); }}
                 placeholder={t('clanChatPh')}
-                className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-amber-400/50 focus:outline-none"
+                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-amber-400/50 focus:outline-none"
               />
               <button disabled={busy || !chatDraft.trim()} onClick={doSendChat} className="rounded-xl bg-amber-500/20 border border-amber-400/40 px-3 text-amber-200 active:scale-95 transition-transform disabled:opacity-40"><Send className="w-4 h-4" /></button>
             </div>

@@ -21,14 +21,17 @@ def load(browser,width,height,screen,member=False,english=False):
     return page
 
 def check(page,label):
-    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),f'{label}: document overflow'
+    if not page.evaluate('document.documentElement.scrollWidth<=innerWidth'):
+        overflowing=page.evaluate("[...document.querySelectorAll('main *')].filter(el=>el.getBoundingClientRect().right>innerWidth+1).map(el=>({tag:el.tagName,classes:el.className,text:el.textContent.slice(0,100),rect:el.getBoundingClientRect().toJSON()}))")
+        page.screenshot(path=str(OUT/(label+'-overflow.png')),full_page=True)
+        raise AssertionError(f'{label}: document overflow {overflowing}')
     wide=page.evaluate("""[...document.querySelectorAll('main input,main select,main button')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&!el.classList.contains('sr-only')&&(r.x<0||r.right>innerWidth+1)}).map(el=>({tag:el.tagName,text:el.textContent,placeholder:el.placeholder,rect:el.getBoundingClientRect().toJSON()}))""")
     assert not wide,f'{label}: clipped controls {wide}'
     assert not page.locator('[role=alert]').count(),f'{label}: unexpected alert'
 
 def shot(page,name):
-    page.screenshot(path=str(OUT/(name+'.webp')),full_page=True,type='jpeg',quality=80)
-    report['screenshots'].append(name+'.webp')
+    page.screenshot(path=str(OUT/(name+'.jpg')),full_page=True,type='jpeg',quality=80)
+    report['screenshots'].append(name+'.jpg')
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path=shutil.which('chromium') or shutil.which('google-chrome'),headless=True,args=['--no-sandbox'])
     for width,height in [(320,640),(390,844),(430,740)]:
