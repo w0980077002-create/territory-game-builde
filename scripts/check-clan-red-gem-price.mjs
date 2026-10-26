@@ -17,9 +17,13 @@ assert.match(screen, /clan_not_enough_red_gems/, 'map server insufficient funds 
 assert.doesNotMatch(screen, /gold < 100000|100 000 —/, 'no obsolete gold price in UI');
 assert.match(lang, /Создать клан за 30 красных алмазов/);
 assert.match(lang, /Create for 30 red diamonds/);
-assert.match(fn, /redGems'\)::bigint < 30/, 'server checks 30 red gems');
+assert.match(fn, /v_red_balance < 30/, 'server checks 30 trusted red gems');
+assert.match(fn, /territory_private\.territory_master_license_red_wallet_v1/, 'use existing protected wallet');
+assert.match(fn, /least\(coalesce\(v_red_balance, 0\)/, 'client balance cannot inflate protected wallet');
+assert.doesNotMatch(fn, /INSERT INTO territory_private/, 'no reseeding from client save');
 assert.match(fn, /\{player,redGems\}/, 'server deducts red gems from saved wallet');
-assert.match(fn, /::integer - 30\)/, 'deduct exact amount');
+assert.match(fn, /to_jsonb\(v_red_balance - 30\)/, 'deduct exact amount from mirror');
+assert.match(fn, /SET balance = v_red_balance - 30/, 'deduct exact amount from protected wallet');
 assert.match(fn, /clan_not_enough_red_gems/, 'server insufficient funds guard');
 assert.match(fn, /FOR UPDATE/, 'serialize concurrent wallet transactions');
 assert.match(fn, /p\.updated_at <> p_expected/, 'revision check prevents stale double-spends');

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Hammer, Lock, RefreshCw, ShieldCheck, Sparkles, Search, MapPinned, Package, Anvil } from 'lucide-react';
 import { useGame } from '@/game/actions';
 import { useLanguage, localizeText } from '@/game/i18n';
@@ -21,6 +21,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
   const [error,setError] = useState('');
   const [loading,setLoading] = useState(true);
   const [busy,setBusy] = useState(false);
+  const actionLock=useRef(false);
   const [pending,setPending] = useState<Stage8PendingOperation|null>(null);
   const [purchasePending,setPurchasePending] = useState<Stage8PurchaseOperation|null>(null);
   const [notice,setNotice] = useState('');
@@ -55,12 +56,15 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
   const shownRecipes=useMemo(()=>status?visibleWorkshopRecipes(available,status,recipeFilter,recipeSearch):[],[available,status,recipeFilter,recipeSearch]);
 
   const confirm = async (recipeId:string,operationId:string) => {
-    setBusy(true);setNotice('');
+    if (actionLock.current) return;
+    actionLock.current=true;setBusy(true);setNotice('');
     try {
       const receipt=await executeStage8(recipeId,operationId);
       const [verified,owned]=await Promise.all([fetchStage8Status(),fetchStage8Items()]);
       if (!verified.enabled || !verified.profession || verified.masteryLevel<receipt.masteryLevel) throw new Error('stage8_status_not_confirmed');
-      if (receipt.kind==='item' && !owned.some((item)=>item.itemId===receipt.itemId))
+      const expired=!!receipt.expiresAt && Date.parse(receipt.expiresAt)<=Date.now();
+      if (receipt.kind==='item' && !expired
+        && !owned.some((item)=>item.itemId===receipt.itemId))
         throw new Error('stage8_item_not_in_server_inventory');
       const latest=useGame.get();
       const equippedIds=new Set(Object.values(latest.player.equipped).flatMap((item)=>item?[item.id]:[]));
@@ -71,31 +75,32 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       });
       await setStage8Pending(null);
       setPending(null);setStatus(verified);
-      setNotice(language==='en'?(receipt.kind==='item'?'Verified item crafted.':'Mastery training confirmed.'):(receipt.kind==='item'?'Предмет создан и подтверждён сервером.':'Обучение подтверждено сервером.'));
+      setNotice(expired ? (language==='en'?'Previous craft confirmed. That consumable has expired.':'Прежнее изготовление подтверждено. Срок расходника уже истёк.') : language==='en'?(receipt.kind==='item'?'Verified item crafted.':'Mastery training confirmed.'):(receipt.kind==='item'?'Предмет создан и подтверждён сервером.':'Обучение подтверждено сервером.'));
       const crafted=owned.find(item=>item.itemId===receipt.itemId);
-      setCraftedItemTab(receipt.kind==='item'?(crafted?.output.type==='equipment'?'equipment':'items'):null);
+      setCraftedItemTab(!expired && receipt.kind==='item' && crafted ? (crafted.output.type==='equipment'?'equipment':'items') : null);
     }catch{
       setNotice(language==='en'?'Response uncertain. Retry the SAME operation; never start another.':'Сервер не подтвердил результат. Повтори ЭТУ ЖЕ операцию, чтобы не списать ресурсы дважды.');
-    }finally{setBusy(false);}
+    }finally{actionLock.current=false;setBusy(false);}
   };
 
   const start = async (recipeId:string) => {
-    if (busy || pending || !status?.enabled) return;
-    setBusy(true);
+    if (actionLock.current || busy || pending || purchasePending || !status?.enabled) return;
+    actionLock.current=true;setBusy(true);
     const operationId=crypto.randomUUID();
     try {
       await setStage8Pending({recipeId,operationId});
       setPending({recipeId,operationId});
     }catch{
       setNotice(language==='en'?'Secure operation storage unavailable; crafting blocked.':'Не удалось сохранить номер операции. Крафт остановлен без списания.');
-      setBusy(false);return;
+      actionLock.current=false;setBusy(false);return;
     }
-    setBusy(false);
+    actionLock.current=false;
     await confirm(recipeId,operationId);
   };
 
   const confirmPurchase = async (profession:ProfessionId,operationId:string) => {
-    setBusy(true);setNotice('');
+    if (actionLock.current) return;
+    actionLock.current=true;setBusy(true);setNotice('');
     try {
       const receipt=await purchaseStage8(profession,operationId);
       const verified=await fetchStage8Status();
@@ -108,20 +113,20 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       setPurchasePending(null);setStatus(verified);
       setNotice(language==='en'?'Profession purchase verified by server.':'Профессия открыта и подтверждена сервером.');
     }catch{setNotice(language==='en'?'Purchase result uncertain. Retry the SAME operation, never buy again.':'Результат покупки пока неизвестен. Повтори ЭТУ ЖЕ операцию: алмазы повторно не спишутся.');}
-    finally{setBusy(false);}
+    finally{actionLock.current=false;setBusy(false);}
   };
   const choose = async (profession:ProfessionId) => {
-    if (busy || purchasePending || !status?.enabled || status.profession) return;
-    setBusy(true);setNotice('');
+    if (actionLock.current || busy || pending || purchasePending || !status?.enabled || status.profession) return;
+    actionLock.current=true;setBusy(true);setNotice('');
     const operationId=crypto.randomUUID();
     try {
       await setStage8PurchasePending({profession,operationId});
       setPurchasePending({profession,operationId});
     }catch{
       setNotice(language==='en'?'Cannot preserve purchase request. No gems were spent.':'Не удалось сохранить номер покупки. Алмазы не списывались.');
-      setBusy(false);return;
+      actionLock.current=false;setBusy(false);return;
     }
-    setBusy(false);
+    actionLock.current=false;
     await confirmPurchase(profession,operationId);
   };
 
@@ -180,7 +185,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
         const hasLicense=readiness.licenseReady;
         const hasResources=readiness.missing.length===0;
         const hasXpRoom=readiness.xpReady;
-        const canRun=readiness.ready && !pending && !busy;
+        const canRun=readiness.ready && !pending && !busy && !purchasePending;
         const label=recipe.kind==='practice' ? recipe.name??'Обучение мастера' : recipe.output?.name??recipe.id;
         return <article key={recipe.id} className="rounded-xl border border-amber-400/15 bg-slate-900/80 p-3">
           <div className="flex items-start gap-2"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-amber-400/15 bg-amber-400/10 p-1"><img src={recipe.output?craftOutputArt(recipe.output):PROFESSION_ART[recipe.profession]} alt="" loading="lazy" className="h-full w-full object-contain"/></div><div className="min-w-0 flex-1"><b className="text-sm">{localizeText(label,language)}</b><p className="text-xs text-amber-300">{language==='en'?'Profession mastery Lv.':'Мастерство профессии ур.'} {recipe.requiredLevel} · +{recipe.masteryXp} XP</p><p className="mt-1 text-xs text-slate-400">{recipe.kind==='practice'?(language==='en'?'Consumes resources, awards verified mastery; no inventory junk.':'Расходует ресурсы и даёт мастерство без лишних предметов.'):recipe.output?.description}</p></div>{!hasLicense&&<Lock className="h-4 w-4 text-amber-300"/>}{recipe.requiredLevel>=300&&<Sparkles className="h-4 w-4 text-violet-300"/>}</div>

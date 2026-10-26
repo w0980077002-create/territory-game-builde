@@ -32,6 +32,7 @@ jobs:
       - run: node scripts/edge-initdata-tests.cjs
       - run: node scripts/edge-identity-tests.cjs
       - run: npm run typecheck
+      - run: npm run test:stage1
       - run: npm run test:slots
       - run: npm run build
       - run: npm run test:balance
@@ -46,9 +47,11 @@ jobs:
       - run: npm run test:hall
       - run: npm run test:admin-master
       - run: npm run test:admin-mail
+      - run: npm run test:admin-geography
       - run: npm run test:economy
       - run: node scripts/check-equipment-safety-v4.mjs
       - run: npm run test:professions
+      - run: npm run test:professions:stage8
       - run: npm run test:master-license
       - run: npm run test:feature-separation
       - run: npm run test:mobile-home

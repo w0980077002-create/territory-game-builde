@@ -2,6 +2,10 @@ const URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-api`;
 const TOKEN_KEY = 'territory_admin_token';
 
 const ERRORS: Record<string, string> = {
+  season_unavailable: 'Управление сезоном пока не подключено на сервере',
+  season_invalid_prize: 'Награды должны содержать положительное целое золото или синие алмазы',
+  season_config_changed: 'Награды изменены в другой вкладке. Обнови данные и повтори',
+  season_operation_collision: 'Повтор операции содержит другие награды. Обнови страницу',
   invalid_credentials: 'Неверный логин или пароль',
   too_many_attempts: 'Слишком много попыток. Подождите 15 минут',
   unauthorized: 'Сессия истекла, войдите снова',

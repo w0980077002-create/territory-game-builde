@@ -6,6 +6,7 @@ CREATE OR REPLACE FUNCTION public.clan_accept_app(p_player uuid)
 AS $function$
 DECLARE v_uid uuid := auth.uid(); v_role text; v_clan uuid;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL OR p_player IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 SELECT role, clan_id INTO v_role, v_clan FROM clan_members WHERE player_id = v_uid;
 IF v_clan IS NULL OR v_role NOT IN ('leader','deputy','officer') THEN RAISE EXCEPTION 'clan_no_permission'; END IF;
@@ -24,6 +25,7 @@ CREATE OR REPLACE FUNCTION public.clan_accept_invite(p_clan uuid)
 AS $function$
 DECLARE v_uid uuid := auth.uid();
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF EXISTS (SELECT 1 FROM clan_members WHERE player_id = v_uid) THEN RAISE EXCEPTION 'clan_already_member'; END IF;
 IF NOT EXISTS (SELECT 1 FROM clan_invites WHERE clan_id = p_clan AND player_id = v_uid) THEN
@@ -41,6 +43,7 @@ CREATE OR REPLACE FUNCTION public.clan_apply(p_clan uuid)
 AS $function$
 DECLARE v_uid uuid := auth.uid(); c clans%ROWTYPE;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF EXISTS (SELECT 1 FROM clan_members WHERE player_id = v_uid) THEN RAISE EXCEPTION 'clan_already_member'; END IF;
 SELECT * INTO c FROM clans WHERE id = p_clan;
@@ -76,7 +79,7 @@ v_cap := 5 + CASE WHEN COALESCE((SELECT (buildings->'heroes'->>'lvl')::int FROM 
 IF v_today >= v_cap THEN RAISE EXCEPTION 'clan_boss_limit'; END IF;
 SELECT COALESCE((buildings->'forge'->>'lvl')::int, 0) INTO v_frge FROM clans WHERE id = p_clan;
 v_dmg := round((p.attack + p.defense * 0.5 + p.level * 10) * (0.9 + random() * 0.25) * (1 + v_frge * 0.01))::bigint;
-v_dmg := greatest(50, least(v_dmg, b.hp));
+v_dmg := least(greatest(50, v_dmg), b.hp);
 UPDATE clan_bosses SET hp = hp - v_dmg,
 phase = greatest(1, least(3, 1 + floor((max_hp - (hp - v_dmg)) * 3 / max_hp)::int)),
 killed_at = CASE WHEN hp - v_dmg <= 0 THEN now() ELSE killed_at END
@@ -88,44 +91,59 @@ RETURN jsonb_build_object('damage', v_dmg, 'boss_hp', v_hp, 'max_hp', b.max_hp,
 'killed', v_killed, 'attacks_left', v_cap - v_today - 1, 'boss_no', b.boss_no);
 END $function$;
 
-CREATE OR REPLACE FUNCTION public.clan_boss_claim(p_clan uuid, p_expected timestamp with time zone)
+CREATE OR REPLACE FUNCTION public.clan_boss_archive_rewards(p_clan uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE b clan_bosses%ROWTYPE;
+BEGIN
+SELECT * INTO b FROM clan_bosses WHERE clan_id = p_clan FOR UPDATE;
+IF NOT FOUND OR b.killed_at IS NULL THEN RETURN; END IF;
+INSERT INTO clan_boss_rewards(clan_id, boss_no, player_id, gold, earned_at)
+SELECT p_clan, b.boss_no, d.player_id,
+  least(2147483647::numeric, greatest(50::numeric, trunc(500::numeric * b.boss_no * sum(d.damage) /
+    greatest(1::numeric, (SELECT sum(x.damage) FROM clan_boss_damage x WHERE x.clan_id = p_clan AND x.boss_no = b.boss_no)))))::integer,
+  b.killed_at
+FROM clan_boss_damage d WHERE d.clan_id = p_clan AND d.boss_no = b.boss_no AND d.damage > 0
+GROUP BY d.player_id
+ON CONFLICT (clan_id, boss_no, player_id) DO NOTHING;
+END $function$;
+
+CREATE OR REPLACE FUNCTION public.clan_boss_claim(p_clan uuid, p_expected timestamp with time zone, p_boss_no integer DEFAULT NULL)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-DECLARE v_uid uuid := auth.uid(); p players%ROWTYPE; b clan_bosses%ROWTYPE;
-v_mine bigint; v_total bigint; v_pool int; v_gold int; v_pts int; m clan_members%ROWTYPE;
+DECLARE v_uid uuid := auth.uid(); p players%ROWTYPE; r clan_boss_rewards%ROWTYPE;
+v_gold int; v_pts int;
 BEGIN
 IF v_uid IS NULL OR p_expected IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
-SELECT * INTO m FROM clan_members WHERE clan_id = p_clan AND player_id = v_uid;
-IF NOT FOUND THEN RAISE EXCEPTION 'clan_not_member'; END IF;
-SELECT * INTO b FROM clan_bosses WHERE clan_id = p_clan;
-IF NOT FOUND OR b.killed_at IS NULL THEN RAISE EXCEPTION 'clan_boss_alive'; END IF;
-SELECT COALESCE(sum(damage), 0) INTO v_mine FROM clan_boss_damage
-WHERE clan_id = p_clan AND boss_no = b.boss_no AND player_id = v_uid;
-SELECT COALESCE(sum(damage), 0) INTO v_total FROM clan_boss_damage
-WHERE clan_id = p_clan AND boss_no = b.boss_no;
-IF v_mine < 1 THEN RAISE EXCEPTION 'clan_boss_no_damage'; END IF;
-IF EXISTS (SELECT 1 FROM clan_boss_claims WHERE clan_id = p_clan AND boss_no = b.boss_no AND player_id = v_uid) THEN
-RAISE EXCEPTION 'clan_boss_claimed';
-END IF;
+IF NOT EXISTS (SELECT 1 FROM clan_members WHERE clan_id = p_clan AND player_id = v_uid) THEN RAISE EXCEPTION 'clan_not_member'; END IF;
+PERFORM clan_boss_archive_rewards(p_clan);
+SELECT * INTO r FROM clan_boss_rewards e
+WHERE e.clan_id = p_clan AND e.player_id = v_uid
+AND (p_boss_no IS NULL OR e.boss_no = p_boss_no)
+AND NOT EXISTS (SELECT 1 FROM clan_boss_claims c WHERE c.clan_id = e.clan_id AND c.boss_no = e.boss_no AND c.player_id = v_uid)
+ORDER BY e.boss_no LIMIT 1 FOR UPDATE;
+IF NOT FOUND THEN RAISE EXCEPTION 'clan_boss_claimed'; END IF;
 SELECT * INTO p FROM public.players WHERE id = v_uid AND NOT banned FOR UPDATE;
 IF NOT FOUND THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF p.updated_at <> p_expected THEN RAISE EXCEPTION 'clan_reload_save'; END IF;
 IF (p.game_state->'player'->>'gold') !~ '^[0-9]{1,10}$' OR p.gold <> (p.game_state->'player'->>'gold')::integer THEN
 RAISE EXCEPTION 'clan_invalid_wallet';
 END IF;
-v_pool := 500 * b.boss_no;
-v_gold := greatest(50, round(v_pool * v_mine / greatest(v_total, 1)))::int;
+v_gold := r.gold;
 IF p.gold::bigint + v_gold > 2147483647 THEN RAISE EXCEPTION 'clan_invalid_wallet'; END IF;
-v_pts := 50 * b.boss_no;
+v_pts := least(2147483647::bigint, 50::bigint * r.boss_no)::integer;
 UPDATE players SET game_state = jsonb_set(p.game_state, '{player,gold}', to_jsonb(p.gold + v_gold)),
 gold = p.gold + v_gold WHERE id = v_uid RETURNING * INTO p;
-INSERT INTO clan_boss_claims(clan_id, boss_no, player_id, gold) VALUES (p_clan, b.boss_no, v_uid, v_gold);
+INSERT INTO clan_boss_claims(clan_id, boss_no, player_id, gold) VALUES (p_clan, r.boss_no, v_uid, v_gold);
 UPDATE clans SET treasury_points = treasury_points + v_pts, updated_at = now() WHERE id = p_clan;
 INSERT INTO clan_treasury_log(clan_id, player_id, kind, gold, points, note) VALUES (p_clan, NULL, 'reward', 0, v_pts, 'boss_kill');
-PERFORM clan_xp_add(p_clan, 100 + 10 * b.boss_no);
+PERFORM clan_xp_add(p_clan, 100 + 10 * r.boss_no);
 PERFORM clan_level_recheck(p_clan);
 RETURN jsonb_build_object('success', true, 'gold', v_gold, 'updated_at', p.updated_at,
 'wallet_gold', p.gold, 'wallet_gems', p.gems, 'game_state', p.game_state);
@@ -148,10 +166,14 @@ CREATE OR REPLACE FUNCTION public.clan_boss_sync(p_clan uuid)
 AS $function$
 DECLARE c clans%ROWTYPE; b clan_bosses%ROWTYPE;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
+IF NOT EXISTS (SELECT 1 FROM public.clan_members WHERE clan_id = p_clan AND player_id = auth.uid()) THEN RAISE EXCEPTION 'clan_not_member'; END IF;
 SELECT * INTO c FROM clans WHERE id = p_clan FOR UPDATE;
 IF NOT FOUND THEN RETURN; END IF;
 SELECT * INTO b FROM clan_bosses WHERE clan_id = p_clan FOR UPDATE;
 IF FOUND AND b.killed_at IS NULL AND b.expires_at > now() THEN RETURN; END IF;
+-- Snapshot every earned reward before replacing the encounter. Inactive members never stall progression.
+PERFORM clan_boss_archive_rewards(p_clan);
 IF FOUND AND b.killed_at IS NOT NULL AND c.boss_no = b.boss_no THEN
 UPDATE clans SET boss_no = c.boss_no + 1 WHERE id = p_clan;
 c.boss_no := c.boss_no + 1;
@@ -172,6 +194,8 @@ CREATE OR REPLACE FUNCTION public.clan_building_collect(p_clan uuid)
 AS $function$
 DECLARE b jsonb; k text; v_done boolean := false; v_now timestamptz := now();
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
+IF NOT EXISTS (SELECT 1 FROM public.clan_members WHERE clan_id = p_clan AND player_id = auth.uid()) THEN RAISE EXCEPTION 'clan_not_member'; END IF;
 SELECT buildings INTO b FROM clans WHERE id = p_clan FOR UPDATE;
 IF NOT FOUND THEN RETURN; END IF;
 FOR k IN SELECT jsonb_object_keys(b) LOOP
@@ -196,10 +220,11 @@ AS $function$
 DECLARE v_uid uuid := auth.uid(); v_role text; b jsonb; c clans%ROWTYPE;
 v_lvl int; v_gold int; v_pts int; v_min int;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL OR p_key IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF p_key NOT IN ('hall','forge','library','treasury','tower','heroes') THEN RAISE EXCEPTION 'clan_bad_building'; END IF;
 SELECT role INTO v_role FROM clan_members WHERE clan_id = p_clan AND player_id = v_uid;
-IF v_role NOT IN ('leader','deputy') THEN RAISE EXCEPTION 'clan_no_permission'; END IF;
+IF v_role IS NULL OR v_role NOT IN ('leader','deputy') THEN RAISE EXCEPTION 'clan_no_permission'; END IF;
 PERFORM clan_building_collect(p_clan);
 SELECT * INTO c FROM clans WHERE id = p_clan FOR UPDATE;
 IF NOT FOUND THEN RAISE EXCEPTION 'clan_not_found'; END IF;
@@ -248,6 +273,7 @@ CREATE OR REPLACE FUNCTION public.clan_chat_mute(p_clan uuid, p_player uuid, p_m
 AS $function$
 DECLARE v_uid uuid := auth.uid(); v_role text; v_target text;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL OR p_player IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF p_minutes IS NULL OR p_minutes < 5 OR p_minutes > 1440 THEN RAISE EXCEPTION 'clan_bad_mute'; END IF;
 SELECT role INTO v_role FROM clan_members WHERE clan_id = p_clan AND player_id = v_uid;
@@ -269,6 +295,7 @@ CREATE OR REPLACE FUNCTION public.clan_chat_send(p_clan uuid, p_body text)
 AS $function$
 DECLARE v_uid uuid := auth.uid(); v_role text; v_name text; v_body text; v_mute timestamptz;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL OR p_body IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 SELECT role, display_name INTO v_role, v_name FROM clan_members WHERE clan_id = p_clan AND player_id = v_uid;
 IF v_role IS NULL THEN RAISE EXCEPTION 'clan_not_member'; END IF;
@@ -291,6 +318,7 @@ CREATE OR REPLACE FUNCTION public.clan_contribute(p_clan uuid, p_gold integer, p
 AS $function$
 DECLARE v_uid uuid := auth.uid(); p players%ROWTYPE; c clans%ROWTYPE; m clan_members%ROWTYPE;
 v_points int; v_eff numeric; v_tr int; v_base int;
+v_batch jsonb; v_batches jsonb := '[]'::jsonb; v_total bigint := 0; v_qty integer; v_used integer; v_remaining integer;
 BEGIN
 IF v_uid IS NULL OR p_expected IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF p_gold IS NULL OR p_gold < 0 OR p_gold > 1000000 THEN RAISE EXCEPTION 'clan_bad_amount'; END IF;
@@ -308,6 +336,27 @@ IF (p.game_state->>'forgeMaterials') !~ '^[0-9]{1,8}$'
 OR p.forge_materials <> (p.game_state->>'forgeMaterials')::integer
 OR p.forge_materials < p_materials THEN RAISE EXCEPTION 'clan_not_enough_materials'; END IF;
 
+-- Material donations consume the existing seven-day lots, oldest expiry first.
+-- Legacy/mismatched/expired snapshots must be reconciled and saved before donation.
+IF p_materials > 0 THEN
+IF jsonb_typeof(p.game_state->'forgeMaterialBatches') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'clan_reload_save'; END IF;
+FOR v_batch IN SELECT value FROM jsonb_array_elements(p.game_state->'forgeMaterialBatches') LOOP
+IF NOT coalesce((v_batch->>'qty') ~ '^[0-9]{1,10}$', false)
+OR (v_batch->>'qty')::numeric NOT BETWEEN 1 AND 2147483647
+OR nullif(v_batch->>'expiresAt', '') IS NULL THEN RAISE EXCEPTION 'clan_invalid_materials'; END IF;
+IF (v_batch->>'expiresAt')::timestamptz <= now() THEN RAISE EXCEPTION 'clan_materials_expired'; END IF;
+v_total := v_total + (v_batch->>'qty')::bigint;
+END LOOP;
+IF v_total <> p.forge_materials THEN RAISE EXCEPTION 'clan_invalid_materials'; END IF;
+v_remaining := p_materials;
+FOR v_batch IN SELECT value FROM jsonb_array_elements(p.game_state->'forgeMaterialBatches') ORDER BY (value->>'expiresAt')::timestamptz LOOP
+v_qty := (v_batch->>'qty')::integer;
+v_used := least(v_qty, v_remaining);
+v_remaining := v_remaining - v_used;
+IF v_qty > v_used THEN v_batches := v_batches || jsonb_build_array(jsonb_set(v_batch, '{qty}', to_jsonb(v_qty - v_used))); END IF;
+END LOOP;
+p.game_state := jsonb_set(p.game_state, '{forgeMaterialBatches}', v_batches);
+END IF;
 UPDATE players SET
 game_state = jsonb_set(jsonb_set(p.game_state, '{player,gold}', to_jsonb(p.gold - p_gold)),
 '{forgeMaterials}', to_jsonb(p.forge_materials - p_materials)),
@@ -340,7 +389,7 @@ CREATE OR REPLACE FUNCTION public.clan_create(p_name text, p_tag text, p_emblem 
  SET search_path TO 'public'
 AS $function$
 DECLARE v_uid uuid := auth.uid(); p players%ROWTYPE;
-v_name text; v_tag text; v_desc text; v_clan uuid;
+v_name text; v_tag text; v_desc text; v_clan uuid; v_red_balance integer;
 BEGIN
 IF v_uid IS NULL OR p_expected IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 SELECT * INTO p FROM public.players WHERE id = v_uid AND NOT banned FOR UPDATE;
@@ -352,8 +401,13 @@ IF (p.game_state->'player'->>'gold') !~ '^[0-9]{1,10}$'
   OR p.gold <> (p.game_state->'player'->>'gold')::integer
   OR (p.game_state->'player'->>'redGems') !~ '^[0-9]{1,10}$'
 THEN RAISE EXCEPTION 'clan_invalid_wallet'; END IF;
-IF (p.game_state->'player'->>'redGems')::bigint < 30
-THEN RAISE EXCEPTION 'clan_not_enough_red_gems'; END IF;
+-- Reuse the already-reviewed permanent-license wallet; never seed it from a client save.
+IF to_regclass('territory_private.territory_master_license_red_wallet_v1') IS NULL THEN
+RAISE EXCEPTION 'clan_red_wallet_unavailable'; END IF;
+SELECT balance INTO v_red_balance FROM territory_private.territory_master_license_red_wallet_v1
+WHERE player_id = v_uid FOR UPDATE;
+v_red_balance := least(coalesce(v_red_balance, 0), coalesce((p.game_state->'player'->>'redGems')::numeric, 0))::integer;
+IF v_red_balance < 30 THEN RAISE EXCEPTION 'clan_not_enough_red_gems'; END IF;
 v_name := regexp_replace(trim(coalesce(p_name, '')), '[[:space:]]+', ' ', 'g');
 v_tag := upper(regexp_replace(trim(coalesce(p_tag, '')), '[[:space:]]', '', 'g'));
 v_desc := left(regexp_replace(trim(coalesce(p_description, '')), E'[[:cntrl:]]', '', 'g'), 500);
@@ -364,9 +418,10 @@ IF p_join_mode NOT IN ('open','apply','closed') THEN RAISE EXCEPTION 'clan_bad_j
 IF p_min_level IS NULL OR p_min_level < 1 OR p_min_level > 50 THEN RAISE EXCEPTION 'clan_bad_min_level'; END IF;
 IF p_emblem IS NULL OR p_emblem NOT BETWEEN 1 AND 12 THEN RAISE EXCEPTION 'clan_bad_emblem'; END IF;
 IF p_color1 !~ '^#[0-9a-fA-F]{6}$' OR p_color2 !~ '^#[0-9a-fA-F]{6}$' THEN RAISE EXCEPTION 'clan_bad_color'; END IF;
+UPDATE territory_private.territory_master_license_red_wallet_v1 SET balance = v_red_balance - 30 WHERE player_id = v_uid;
 UPDATE players SET
 game_state = jsonb_set(p.game_state, '{player,redGems}',
-  to_jsonb((p.game_state->'player'->>'redGems')::integer - 30))
+  to_jsonb(v_red_balance - 30))
 WHERE id = v_uid RETURNING * INTO p;
 INSERT INTO clans(name, tag, emblem, color1, color2, description, join_mode, min_level, leader_id, buildings)
 VALUES (v_name, v_tag, p_emblem, lower(p_color1), lower(p_color2), v_desc, p_join_mode, p_min_level, v_uid,
@@ -400,6 +455,7 @@ CREATE OR REPLACE FUNCTION public.clan_directory(p_query text)
 AS $function$
 DECLARE v_q text; v_uid uuid := auth.uid();
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 PERFORM clan_season_ensure();
 PERFORM clan_war_resolve_if_done();
 v_q := lower(coalesce(trim(p_query), ''));
@@ -412,7 +468,7 @@ RETURN jsonb_build_object(
 FROM clan_invites i JOIN clans c ON c.id = i.clan_id WHERE i.player_id = v_uid),
 'my_applications', (SELECT COALESCE(jsonb_agg(i.clan_id), '[]'::jsonb) FROM clan_applications i WHERE i.player_id = v_uid),
 'clans', (
-SELECT COALESCE(jsonb_agg(x ORDER BY x.rating DESC), '[]'::jsonb) FROM (
+SELECT COALESCE(jsonb_agg(x ORDER BY (x->>'rating')::integer DESC), '[]'::jsonb) FROM (
 SELECT jsonb_build_object('id', c.id, 'name', c.name, 'tag', c.tag, 'emblem', c.emblem,
 'color1', c.color1, 'color2', c.color2, 'level', c.level, 'rating', c.rating,
 'season_medal', c.season_medal, 'join_mode', c.join_mode, 'min_level', c.min_level,
@@ -446,6 +502,7 @@ CREATE OR REPLACE FUNCTION public.clan_invite_player(p_player uuid)
 AS $function$
 DECLARE v_uid uuid := auth.uid(); v_role text; v_clan uuid;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL OR p_player IS NULL OR p_player = v_uid THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 SELECT role, clan_id INTO v_role, v_clan FROM clan_members WHERE player_id = v_uid;
 IF v_clan IS NULL OR v_role NOT IN ('leader','deputy','officer') THEN RAISE EXCEPTION 'clan_no_permission'; END IF;
@@ -484,6 +541,7 @@ CREATE OR REPLACE FUNCTION public.clan_kick(p_player uuid)
 AS $function$
 DECLARE v_uid uuid := auth.uid(); v_role text; v_target text; v_clan uuid;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL OR p_player IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 SELECT role, clan_id INTO v_role, v_clan FROM clan_members WHERE player_id = v_uid;
 IF v_clan IS NULL THEN RAISE EXCEPTION 'clan_not_member'; END IF;
@@ -591,7 +649,7 @@ SELECT COALESCE(sum(score), 0) INTO v_progress FROM clan_war_strikes WHERE clan_
 SELECT count(*) INTO v_member FROM clan_war_strikes WHERE clan_id = p_clan AND player_id = v_uid AND day = current_date;
 WHEN 'cw_boss_kills' THEN
 v_period := to_char(now(), 'IYYY-"W"IW'); v_target := 2; v_member_req := 1; v_gold := 500;
-SELECT count(*) INTO v_progress FROM clan_bosses WHERE clan_id = p_clan AND killed_at >= date_trunc('week', now());
+SELECT count(DISTINCT boss_no) INTO v_progress FROM clan_boss_rewards WHERE clan_id = p_clan AND earned_at >= date_trunc('week', now());
 SELECT count(*) INTO v_member FROM clan_boss_damage WHERE clan_id = p_clan AND player_id = v_uid AND day >= date_trunc('week', now())::date;
 WHEN 'cw_wars' THEN
 v_period := to_char(now(), 'IYYY-"W"IW'); v_target := 1; v_member_req := 1; v_gold := 500;
@@ -622,6 +680,7 @@ CREATE OR REPLACE FUNCTION public.clan_rankings()
  SET search_path TO 'public'
 AS $function$
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 PERFORM clan_season_ensure();
 RETURN jsonb_build_object(
 'season', (SELECT jsonb_build_object('started_at', started_at, 'ends_at', ends_at) FROM clan_seasons ORDER BY id DESC LIMIT 1),
@@ -662,9 +721,10 @@ CREATE OR REPLACE FUNCTION public.clan_season_ensure()
 AS $function$
 DECLARE v_current record; v_top record;
 BEGIN
+PERFORM pg_advisory_xact_lock(174901, 1);
 SELECT * INTO v_current FROM clan_seasons ORDER BY id DESC LIMIT 1;
 IF NOT FOUND THEN
-INSERT INTO clan_seasons(started_at, ends_at) VALUES (now(), now() + interval '30 days');
+INSERT INTO clan_seasons(id, started_at, ends_at) SELECT COALESCE(max(id), 0) + 1, now(), now() + interval '30 days' FROM clan_seasons;
 RETURN;
 END IF;
 IF now() < v_current.ends_at THEN RETURN; END IF;
@@ -684,7 +744,7 @@ SELECT id AS clan_id, row_number() OVER (ORDER BY rating DESC, level DESC, id) A
 FROM clans ORDER BY rating DESC, level DESC, id LIMIT 50
 ) s WHERE s.clan_id = clans.id;
 UPDATE clans SET rating = 1000;
-INSERT INTO clan_seasons(started_at, ends_at) VALUES (now(), now() + interval '30 days');
+INSERT INTO clan_seasons(id, started_at, ends_at) SELECT COALESCE(max(id), 0) + 1, now(), now() + interval '30 days' FROM clan_seasons;
 UPDATE clan_seasons SET archived = true WHERE id = v_current.id;
 END $function$;
 
@@ -696,6 +756,7 @@ CREATE OR REPLACE FUNCTION public.clan_set_role(p_player uuid, p_role text)
 AS $function$
 DECLARE v_uid uuid := auth.uid(); v_role text; v_target text; v_clan uuid;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL OR p_role IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF p_role NOT IN ('deputy','officer','veteran','member') THEN RAISE EXCEPTION 'clan_bad_role'; END IF;
 SELECT role, clan_id INTO v_role, v_clan FROM clan_members WHERE player_id = v_uid;
@@ -720,6 +781,7 @@ AS $function$
 DECLARE v_uid uuid := auth.uid(); v_role text; c clans%ROWTYPE; b clan_bosses%ROWTYPE;
 w clan_wars%ROWTYPE; v_season record; v_cap int; v_attacks int; v_today int;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 SELECT role INTO v_role FROM clan_members WHERE clan_id = p_clan AND player_id = v_uid;
 IF v_role IS NULL THEN RAISE EXCEPTION 'clan_not_member'; END IF;
@@ -757,7 +819,7 @@ ORDER BY CASE m.role WHEN 'leader' THEN 1 WHEN 'deputy' THEN 2 WHEN 'officer' TH
 FROM clan_members m WHERE m.clan_id = p_clan),
 'applications', CASE WHEN v_role IN ('leader','deputy','officer') THEN
 (SELECT COALESCE(jsonb_agg(jsonb_build_object('player_id', a.player_id, 'name', a2.display_name, 'level', a2.level) ORDER BY a.id), '[]'::jsonb)
-FROM clan_applications a JOIN clan_members a2 ON a2.player_id = a.player_id AND a2.clan_id = p_clan
+FROM clan_applications a JOIN players a2 ON a2.id = a.player_id
 WHERE a.clan_id = p_clan)
 ELSE NULL END,
 'treasury_log', (SELECT COALESCE(jsonb_agg(jsonb_build_object('kind', l.kind, 'gold', l.gold, 'points', l.points,
@@ -765,10 +827,13 @@ ELSE NULL END,
 FROM (SELECT * FROM clan_treasury_log WHERE clan_id = p_clan ORDER BY id DESC LIMIT 20) l),
 'events', (SELECT COALESCE(jsonb_agg(jsonb_build_object('kind', e.kind, 'body', e.body, 'at', e.created_at) ORDER BY e.id DESC), '[]'::jsonb)
 FROM (SELECT * FROM clan_events WHERE clan_id = p_clan ORDER BY id DESC LIMIT 15) e),
-'chat', (SELECT COALESCE(jsonb_agg(jsonb_build_object('id', ch.id, 'kind', ch.kind, 'author', ch.author_name,
+'chat', (SELECT COALESCE(jsonb_agg(jsonb_build_object('id', ch.id, 'kind', ch.kind, 'author_id', ch.author_id, 'author', ch.author_name,
 'role', ch.author_role, 'body', ch.body, 'at', ch.created_at) ORDER BY ch.id), '[]'::jsonb)
 FROM (SELECT * FROM clan_chat WHERE clan_id = p_clan AND id > p_after ORDER BY id DESC LIMIT 80) ch),
 'muted_until', (SELECT until FROM clan_chat_mutes WHERE clan_id = p_clan AND player_id = v_uid AND until > now()),
+ 'pending_boss_rewards', (SELECT coalesce(jsonb_agg(jsonb_build_object('boss_no', e.boss_no, 'gold', e.gold, 'earned_at', e.earned_at) ORDER BY e.boss_no), '[]'::jsonb)
+FROM clan_boss_rewards e WHERE e.clan_id = p_clan AND e.player_id = v_uid
+AND NOT EXISTS (SELECT 1 FROM clan_boss_claims r WHERE r.clan_id = e.clan_id AND r.boss_no = e.boss_no AND r.player_id = v_uid)),
 'boss', CASE WHEN b.clan_id IS NULL THEN NULL ELSE jsonb_build_object('no', b.boss_no, 'hp', b.hp,
 'max_hp', b.max_hp, 'phase', b.phase, 'expires_at', b.expires_at, 'killed', b.killed_at IS NOT NULL,
 'attacks_left', v_attacks - v_today,
@@ -786,7 +851,7 @@ END,
 'target', 20, 'member', (SELECT count(*) FROM clan_war_strikes WHERE clan_id = p_clan AND player_id = v_uid AND day = current_date),
 'member_req', 3, 'claimed', EXISTS (SELECT 1 FROM clan_quest_claims WHERE clan_id = p_clan AND quest_id = 'cq_war_strikes' AND period = current_date::text AND player_id = v_uid)),
 'cw_boss_kills', jsonb_build_object('progress',
-(SELECT count(*) FROM clan_bosses WHERE clan_id = p_clan AND killed_at >= date_trunc('week', now())),
+(SELECT count(DISTINCT boss_no) FROM clan_boss_rewards WHERE clan_id = p_clan AND earned_at >= date_trunc('week', now())),
 'target', 2, 'member', (SELECT count(*) FROM clan_boss_damage WHERE clan_id = p_clan AND player_id = v_uid AND day >= date_trunc('week', now())::date),
 'member_req', 1, 'claimed', EXISTS (SELECT 1 FROM clan_quest_claims WHERE clan_id = p_clan AND quest_id = 'cw_boss_kills' AND period = to_char(now(),'IYYY-"W"IW') AND player_id = v_uid)),
 'cw_wars', jsonb_build_object('progress',
@@ -820,6 +885,7 @@ CREATE OR REPLACE FUNCTION public.clan_transfer(p_player uuid)
 AS $function$
 DECLARE v_uid uuid := auth.uid(); v_clan uuid; v_target text;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL OR p_player IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 SELECT clan_id INTO v_clan FROM clan_members WHERE player_id = v_uid AND role = 'leader';
 IF v_clan IS NULL THEN RAISE EXCEPTION 'clan_no_permission'; END IF;
@@ -840,6 +906,7 @@ CREATE OR REPLACE FUNCTION public.clan_update(p_clan uuid, p_description text, p
 AS $function$
 DECLARE v_uid uuid := auth.uid(); v_role text;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 SELECT role INTO v_role FROM clan_members WHERE clan_id = p_clan AND player_id = v_uid;
 IF v_role IS NULL THEN RAISE EXCEPTION 'clan_not_member'; END IF;
@@ -895,9 +962,10 @@ AS $function$
 DECLARE v_uid uuid := auth.uid(); v_role text; c clans%ROWTYPE; v_key text;
 v_opp record;
 BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 IF v_uid IS NULL THEN RAISE EXCEPTION 'clan_login_required'; END IF;
 SELECT role INTO v_role FROM clan_members WHERE clan_id = p_clan AND player_id = v_uid;
-IF v_role NOT IN ('leader','deputy','officer') THEN RAISE EXCEPTION 'clan_no_permission'; END IF;
+IF v_role IS NULL OR v_role NOT IN ('leader','deputy','officer') THEN RAISE EXCEPTION 'clan_no_permission'; END IF;
 SELECT * INTO c FROM clans WHERE id = p_clan;
 IF NOT FOUND THEN RAISE EXCEPTION 'clan_not_found'; END IF;
 IF EXISTS (SELECT 1 FROM clan_wars w WHERE (w.clan_a = p_clan OR w.clan_b = p_clan) AND w.status = 'active') THEN
@@ -981,3 +1049,23 @@ CREATE OR REPLACE FUNCTION public.clan_xp_needed(p_level integer)
 AS $function$
 SELECT 1000 * p_level * p_level;
 $function$;
+
+CREATE OR REPLACE FUNCTION public.clan_invite_candidates(p_query text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_query text := left(trim(coalesce(p_query, '')), 40);
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.players WHERE id = auth.uid() AND NOT banned) THEN RAISE EXCEPTION 'clan_login_required'; END IF;
+IF NOT EXISTS (SELECT 1 FROM public.clan_members WHERE player_id = auth.uid() AND role IN ('leader','deputy','officer')) THEN RAISE EXCEPTION 'clan_no_permission'; END IF;
+IF char_length(v_query) < 2 THEN RETURN '[]'::jsonb; END IF;
+RETURN (SELECT coalesce(jsonb_agg(x ORDER BY x.display_name, x.id), '[]'::jsonb) FROM (
+  SELECT p.id, p.display_name, p.level FROM public.players p
+  WHERE NOT p.banned AND p.id <> auth.uid()
+  AND position(lower(v_query) IN lower(p.display_name)) > 0
+  AND NOT EXISTS (SELECT 1 FROM public.clan_members m WHERE m.player_id = p.id)
+  ORDER BY p.display_name, p.id LIMIT 20
+) x);
+END $function$;

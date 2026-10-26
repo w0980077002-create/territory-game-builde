@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CalendarClock, Crown, ShieldCheck, Trophy, RefreshCcw } from 'lucide-react';
-import { seasonWindow, seasonCountdown } from '@/game/seasonCalendar';
+import { seasonCountdown } from '@/game/seasonCalendar';
 import { fetchSeasonStatus, type SeasonStatus } from '@/game/seasonApi';
 import { useLanguage } from '@/game/i18n';
 import type { AuthUser } from '@/game/auth';
@@ -13,23 +13,40 @@ export function SeasonScreen({ user }: { user: AuthUser }) {
   const [status, setStatus] = useState<SeasonStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const week = seasonWindow(clock);
+  const [offset, setOffset] = useState(0);
+  const request = useRef(0);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
+    const current = ++request.current;
     setLoading(true);
     setFailed(false);
-    try { setStatus(await fetchSeasonStatus()); }
-    catch { setFailed(true); }
-    finally { setLoading(false); }
-  };
+    try {
+      const result = await fetchSeasonStatus();
+      if (current !== request.current) return;
+      setStatus(result);
+      const serverNow = Date.parse(result?.server_now ?? '');
+      if (Number.isFinite(serverNow)) setOffset(serverNow - Date.now());
+    }
+    catch { if (current === request.current) setFailed(true); }
+    finally { if (current === request.current) setLoading(false); }
+  }, [user.id]);
 
   useEffect(() => {
+    setStatus(null);
     void refresh();
+    const polling = window.setInterval(() => void refresh(), 60_000);
     const ticker = window.setInterval(() => setClock(Date.now()), 30_000);
-    return () => window.clearInterval(ticker);
-  }, []);
+    return () => { request.current += 1; window.clearInterval(ticker); window.clearInterval(polling); };
+  }, [refresh]);
 
-  const live = status?.enabled === true && status.week === week.weekKey;
+  // The championship follows the server's Sunday/Kyiv window. The shared
+  // quest/Arena preview calendar may independently use Monday/UTC.
+  const endsAt = Date.parse(status?.ends_at ?? '');
+  const remaining = Number.isFinite(endsAt) ? Math.max(0, endsAt - clock - offset) : 0;
+  const live = status?.enabled === true && Number.isFinite(endsAt) && remaining > 0;
+  const rewardText = (prize: { gold?: number; gems?: number }) =>
+    [prize.gold ? `${prize.gold.toLocaleString()} ${en ? 'gold' : 'золота'}` : '',
+      prize.gems ? `${prize.gems.toLocaleString()} ${en ? 'blue diamonds' : 'синих алмазов'}` : ''].filter(Boolean).join(' · ');
   return (
     <div className="space-y-3 animate-fade-in">
       <div className="card relative overflow-hidden border-amber-400/40 bg-gradient-to-br from-amber-950/50 via-slate-900 to-sky-950/60">
@@ -43,7 +60,7 @@ export function SeasonScreen({ user }: { user: AuthUser }) {
         <div className="relative grid grid-cols-2 gap-2 mt-4">
           <div className="rounded-xl bg-black/25 p-3 border border-white/5">
             <div className="text-[11px] text-slate-400 flex gap-1.5 items-center"><CalendarClock className="w-3.5 h-3.5" />{en ? 'Week ends in' : 'До конца недели'}</div>
-            <div className="mt-1 text-lg font-black text-white tabular-nums">{seasonCountdown(week.remainingMs, en ? 'en' : 'ru')}</div>
+            <div className="mt-1 text-lg font-black text-white tabular-nums">{status ? seasonCountdown(remaining, en ? 'en' : 'ru') : '—'}</div>
           </div>
           <div className="rounded-xl bg-black/25 p-3 border border-white/5">
             <div className="text-[11px] text-slate-400">{en ? 'Competition' : 'Соревнование'}</div>
@@ -56,6 +73,10 @@ export function SeasonScreen({ user }: { user: AuthUser }) {
 
       {live ? (
         <>
+          <div className="card text-sm space-y-2">
+            <p className="text-slate-300">{en ? '1 verified Arena win = 1 point. Sunday to Sunday, Kyiv time. Prizes arrive by mail once the season closes.' : '1 подтверждённая победа на Арене = 1 очко. С воскресенья по воскресенье по Киеву. Призы приходят почтой после закрытия сезона.'}</p>
+            {status.prizes.map((prize, index) => <div key={index} className="flex justify-between gap-2 text-amber-200"><b>#{index + 1}</b><span>{rewardText(prize)}</span></div>)}
+          </div>
           <div className="card text-sm">
             <div className="flex justify-between gap-3"><span className="text-slate-300">{en ? 'Your season points' : 'Твои сезонные очки'}</span><b className="text-amber-300">{status.my_points.toLocaleString()}</b></div>
             <div className="flex justify-between gap-3 mt-2"><span className="text-slate-300">{en ? 'Your rank' : 'Твоё место'}</span><b className="text-white">{status.my_rank ? `#${status.my_rank}` : '—'}</b></div>
@@ -80,6 +101,13 @@ export function SeasonScreen({ user }: { user: AuthUser }) {
           <div className="flex gap-2 rounded-xl bg-black/20 p-3 text-xs text-amber-200/90"><Trophy className="w-4 h-4 shrink-0" />{en ? 'Planned: rankings, weekly prizes and permanent champion titles. No prizes are active yet.' : 'В планах: рейтинг, недельные награды и постоянные титулы чемпионов. Сейчас призы не начисляются.'}</div>
         </div>
       )}
+      {!!status?.history.length && <div className="card space-y-2">
+        <h4 className="font-bold text-amber-200">{en ? 'Previous winners' : 'История победителей'}</h4>
+        {status.history.map(row => <div key={`${row.week}:${row.player_id}`} className="text-xs flex justify-between gap-2">
+          <span className="min-w-0 truncate">{row.week} · #{row.rank} {row.display_name}</span>
+          <span className="shrink-0 text-amber-200">{rewardText(row.reward) || `${row.points} ${en ? 'points' : 'очков'}`}</span>
+        </div>)}
+      </div>}
       {failed && <div className="text-xs text-amber-300 text-center">{en ? 'The season server did not respond. No score has been changed.' : 'Нет ответа сервера сезонов. Сезонные очки не изменены.'}</div>}
       <button onClick={() => void refresh()} disabled={loading} className="btn-ghost w-full text-xs flex justify-center gap-2 items-center"><RefreshCcw className="w-4 h-4" />{loading ? en ? 'Loading...' : 'Загрузка...' : en ? 'Refresh' : 'Обновить'}</button>
     </div>

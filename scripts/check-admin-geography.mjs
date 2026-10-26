@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import ts from 'typescript';
 const read=(p)=>readFileSync(p,'utf8');
 const app=read('src/admin/AdminApp.tsx');
 const tab=read('src/admin/tabs/GeographyTab.tsx');
@@ -16,7 +17,8 @@ assert.match(admin,/territory_admin_geography_v1/);
 assert.match(collector,/auth\.getUser\(token\)/);
 assert.match(collector,/req\.headers\.get\("cf-ipcountry"\)/);
 assert.doesNotMatch(collector,/req\.json\(/);
-assert.doesNotMatch(collector,/x-forwarded-for|ipinfo\.io/i);
+const collectorCode=ts.transpileModule(collector,{compilerOptions:{removeComments:true}}).outputText;
+assert.doesNotMatch(collectorCode,/x-forwarded-for|ipinfo\.io/i);
 assert.match(sql,/ENABLE ROW LEVEL SECURITY/);
 assert.match(sql,/GRANT EXECUTE ON FUNCTION public\.territory_admin_geography_v1\(\) TO service_role/);
 assert.match(sql,/GRANT EXECUTE ON FUNCTION public\.territory_geo_record_v1\(uuid,text\) TO service_role/);

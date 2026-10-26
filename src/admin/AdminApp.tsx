@@ -7,6 +7,7 @@ import { PlayersTab } from '@/admin/tabs/PlayersTab';
 import { MailTab } from '@/admin/tabs/MailTab';
 import { FinanceTab } from '@/admin/tabs/FinanceTab';
 import { TopTab } from '@/admin/tabs/TopTab';
+import { SeasonAdminTab } from '@/admin/tabs/SeasonAdminTab';
 import { HallAdminTab } from '@/admin/tabs/HallAdminTab';
 import { AuditAdminTab } from '@/admin/tabs/AuditAdminTab';
 import { GeographyTab } from '@/admin/tabs/GeographyTab';
@@ -19,6 +20,7 @@ const TABS = [
   { id: 'mail', label: 'Почта & Рассылки', icon: Mail },
   { id: 'finance', label: 'Финансы & Лавка', icon: Wallet },
   { id: 'top', label: 'Топ-100', icon: Trophy },
+  { id: 'seasons', label: 'Недельный чемпионат', icon: Trophy },
   { id: 'hall', label: 'Игровой зал', icon: Ticket },
   { id: 'audit', label: 'Журнал & Защита', icon: ScrollText },
 ] as const;
@@ -192,6 +194,7 @@ export function AdminApp() {
         {tab === 'mail' && <MailTab confirm={confirm} />}
         {tab === 'finance' && <FinanceTab confirm={confirm} />}
         {tab === 'top' && <TopTab />}
+        {tab === 'seasons' && <SeasonAdminTab confirm={confirm} />}
         {tab === 'hall' && <HallAdminTab confirm={confirm} />}
         {tab === 'audit' && <AuditAdminTab confirm={confirm} onLogout={logout} />}
       </main>

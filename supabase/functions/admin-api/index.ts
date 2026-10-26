@@ -589,6 +589,33 @@ async function handle(action: string, body: Row) {
       return { ok: true };
     }
 
+    case "season_status": {
+      const { data, error } = await db.rpc('territory_season_admin_status_v1');
+      if (error || !data) throw new HttpError(503, 'season_unavailable');
+      return data;
+    }
+    case "season_prizes": {
+      if (!Array.isArray(body.prizes) || body.prizes.length < 1 || body.prizes.length > 50
+        || !body.prizes.every((prize: unknown) => {
+          if (!prize || typeof prize !== 'object' || Array.isArray(prize)) return false;
+          const entries = Object.entries(prize);
+          return entries.length > 0 && entries.every(([key, value]) =>
+            ['gold', 'gems'].includes(key) && Number.isSafeInteger(value)
+              && Number(value) > 0 && Number(value) <= MAX_STORED_NUMBER);
+        }) || !Number.isSafeInteger(body.revision) || Number(body.revision) < 1
+        || typeof body.requestId !== 'string' || !/^[0-9a-f-]{36}$/i.test(body.requestId)) {
+        throw new HttpError(400, 'season_invalid_prize');
+      }
+      const { data, error } = await db.rpc('territory_season_admin_prizes_v1', {
+        p_operation: body.requestId, p_revision: body.revision, p_prizes: body.prizes,
+      });
+      if (error) {
+        const known = ['season_config_changed', 'season_operation_collision', 'season_invalid_prize'];
+        const code = known.find(value => error.message?.includes(value));
+        throw new HttpError(code ? 409 : 503, code ?? 'season_unavailable');
+      }
+      return data;
+    }
     case "hall_stats": {
       const {data,error}=await db.rpc('territory_hall_admin_overview_v2');
       if(error||!data)throw new HttpError(500,'db_error');

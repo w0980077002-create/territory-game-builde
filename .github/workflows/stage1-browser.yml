@@ -1,0 +1,48 @@
+name: Territory stage1 mobile interfaces
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/stage1/**'
+      - 'scripts/*slots*'
+      - 'package*.json'
+      - '.github/workflows/stage1-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [stage1, slots]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --ignore-scripts
+      - run: python -m pip install playwright==1.55.0
+      - run: python -m playwright install chromium --with-deps
+      - run: node scripts/stage1/build-preview.mjs
+        if: matrix.suite == 'stage1'
+      - run: python scripts/stage1/check-browser.py
+        if: matrix.suite == 'stage1'
+      - run: node scripts/build-slots-preview.mjs
+        if: matrix.suite == 'slots'
+      - run: python scripts/check-slots-browser.py
+        if: matrix.suite == 'slots'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: territory-mobile-review-${{ matrix.suite }}
+          path: |
+            /tmp/territory-stage1-ui
+            /tmp/slots-screenshots
