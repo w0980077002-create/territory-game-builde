@@ -4,6 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {PGlite} from '@electric-sql/pglite';
 
 const sql=await readFile(new URL('../supabase/staged/territory_master_license_shop_v1.sql',import.meta.url),'utf8');
+const hotfix=await readFile(new URL('../supabase/staged/20261026_admin_grant_claim_hotfix.sql',import.meta.url),'utf8');
 const db=new PGlite();
 const hero='11111111-1111-4111-8111-111111111111';
 const poor='22222222-2222-4222-8222-222222222222';
@@ -11,6 +12,12 @@ const guest='33333333-3333-4333-8333-333333333333';
 const noProfession='44444444-4444-4444-8444-444444444444';
 const op='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const other='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const coinGrant='cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const blueGrant='dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const gearGrant='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+const warningGrant='ffffffff-ffff-4fff-8fff-ffffffffffff';
+const mixedGrant='99999999-9999-4999-8999-999999999999';
+const largeRedGrant='88888888-8888-4888-8888-888888888888';
 const one=async(query,params=[]) => (await db.query(query,params)).rows[0];
 const as=(id)=>db.query("SELECT set_config('test.uid',$1::text,false)",[id]);
 
@@ -45,6 +52,24 @@ try {
       ('${hero}','smith'),('${poor}','smith'),('${guest}','smith');
   `);
   await db.exec(sql);
+
+  // Regression: the live trigger previously rejected every adjustment without
+  // redGems with SQL 23502 (NULL amount), including two 500,000-coin grants.
+  await db.exec(`INSERT INTO public.admin_grants(id,player_id,payload) VALUES
+    ('${coinGrant}','${hero}','{"gold":500000}'),
+    ('${blueGrant}','${hero}','{"gems":1000}'),
+    ('${gearGrant}','${hero}','{"equipLevels":{"weapon":59},"adminTestLevel":true}'),
+    ('${warningGrant}','${hero}','{}');`);
+  await db.exec(`UPDATE public.admin_grants SET claimed_at=clock_timestamp()
+    WHERE id IN ('${coinGrant}','${blueGrant}','${gearGrant}','${warningGrant}');`);
+  assert.equal((await one(`SELECT count(*)::int AS n FROM public.admin_grants
+    WHERE claimed_at IS NOT NULL AND id IN ('${coinGrant}','${blueGrant}','${gearGrant}','${warningGrant}')`)).n,4,
+    'Coin, blue gem, equipment and empty mail grants must all be claimable');
+  assert.equal((await one(`SELECT count(*)::int AS n FROM territory_private.territory_master_license_credit_events_v1
+    WHERE source_key IN ('${coinGrant}','${blueGrant}','${gearGrant}','${warningGrant}')`)).n,0,
+    'Grants without red gems must not change the protected red wallet');
+  // The narrow production repair should remain safe to reapply unchanged.
+  await db.exec(hotfix);
 
   const initial=await one('SELECT balance FROM territory_private.territory_master_license_red_wallet_v1 WHERE player_id=$1',[hero]);
   assert.equal(initial.balance,75,'cutover preserves existing red gems');
@@ -106,5 +131,18 @@ try {
   await assert.rejects(()=>one('SELECT public.territory_master_license_shop_buy_v1($1::uuid,$2::timestamptz) AS value',[op,noProfessionRevision]),/license_profession_required/);
   await db.exec('RESET ROLE;');
   assert.equal((await one('SELECT count(*)::int AS count FROM territory_private.territory_master_license_buy_events_v1')).count,2);
-  console.log('Master License PASS: 50 protected red gems, one-time snapshot, verified mail/referral credits, auth, profession check, atomic purchase, replay, no double debit, no JSON forgery.');
+  // A legitimate combined grant credits red gems exactly once; ten-digit
+  // integer quantities are allowed up to PostgreSQL INT_MAX.
+  await db.exec(`INSERT INTO public.admin_grants(id,player_id,payload) VALUES
+    ('${mixedGrant}','${hero}','{"gold":500000,"redGems":3}'),
+    ('${largeRedGrant}','${noProfession}','{"redGems":1000000000}');`);
+  await db.exec(`UPDATE public.admin_grants SET claimed_at=clock_timestamp()
+    WHERE id IN ('${mixedGrant}','${largeRedGrant}');`);
+  await db.exec(`UPDATE public.admin_grants SET claimed_at=clock_timestamp()
+    WHERE id IN ('${mixedGrant}','${largeRedGrant}');`);
+  assert.equal((await one('SELECT balance FROM territory_private.territory_master_license_red_wallet_v1 WHERE player_id=$1',[hero])).balance,28);
+  assert.equal((await one('SELECT balance FROM territory_private.territory_master_license_red_wallet_v1 WHERE player_id=$1',[noProfession])).balance,1000000100);
+  assert.equal((await one(`SELECT count(*)::int AS n FROM territory_private.territory_master_license_credit_events_v1
+    WHERE source_key IN ('${mixedGrant}','${largeRedGrant}')`)).n,2,'Each red gem grant is credited only once');
+  console.log('Master License PASS: coins/gems/gear/empty-mail grants, null-safe credits, 10-digit quantities, wallet idempotency, 50-gem purchases, auth and replay.');
 } finally {await db.close();}

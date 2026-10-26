@@ -54,7 +54,12 @@ DECLARE
 BEGIN
   IF TG_TABLE_NAME='admin_grants' THEN
     IF OLD.claimed_at IS NOT NULL OR NEW.claimed_at IS NULL THEN RETURN NEW; END IF;
-    IF (NEW.payload->>'redGems') !~ '^[0-9]{1,9}$' THEN RETURN NEW; END IF;
+    -- Missing redGems is normal for coins, gems, gear, materials and empty
+    -- warning letters. In PL/pgSQL, NULL !~ regex is NULL (not TRUE), so
+    -- without COALESCE these grants try to insert a NULL credit and fail.
+    IF NOT COALESCE((NEW.payload->>'redGems') ~ '^[0-9]{1,10}$', false)
+      THEN RETURN NEW; END IF;
+    IF (NEW.payload->>'redGems')::numeric > 2147483647 THEN RETURN NEW; END IF;
     v_uid:=NEW.player_id;
     v_amount:=(NEW.payload->>'redGems')::int;
     v_source:='admin_mail';v_key:=NEW.id::text;
@@ -64,7 +69,7 @@ BEGIN
     v_uid:=NEW.player_id;
     v_source:='referral';v_key:=NEW.player_id::text||':'||NEW.red_paid::text;
   ELSE RETURN NEW; END IF;
-  IF v_amount<=0 THEN RETURN NEW; END IF;
+  IF COALESCE(v_amount,0)<=0 THEN RETURN NEW; END IF;
   INSERT INTO territory_private.territory_master_license_credit_events_v1(source,source_key,player_id,amount)
   VALUES(v_source,v_key,v_uid,v_amount) ON CONFLICT DO NOTHING;
   IF NOT FOUND THEN RETURN NEW; END IF;
