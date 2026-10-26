@@ -28,3 +28,12 @@ This repository contains the live Telegram game **TERRITORY 1.0**. Treat its mai
 5. Keep production state untouched and hand work back for final integration/approval of high-impact changes.
 
 Specialized GitHub Copilot profiles are in `.github/agents/`. These files configure agent behavior but do not grant extra authority or automatically launch jobs.
+
+## Beta delivery priority — owner decision 2026-10-26
+
+- The primary goal is finishing playable TERRITORY 1.0, including incomplete features and approved visuals. Do not start optional security redesigns, broad audits or infrastructure refactors unrelated to the requested feature; postpone those until the feature-complete milestone. Existing server-side protections and player data remain intact.
+- Ship coherent batches of related UI/gameplay improvements, not one micro-commit or one approval request per button. Avoid repeated progress reports and ask the owner only for genuinely necessary decisions.
+- **Low-risk UI/text/assets changes:** work directly on `main` when ready, run TypeScript and relevant focused tests, then verify the automatic Pages release. A separate PR and the complete regression suite are optional for these beta-only changes.
+- **Economy, rewards, authentication, database, game saves and admin actions:** retain server authorization and anti-loss guards, test the changed contract and use a reviewed staged rollout. Never trade real testers' saved progress for publication speed.
+- The Pages workflow intentionally uses a focused beta smoke gate; its comprehensive regression suite remains available in pull-request review CI. Re-enable the broader Pages release checks once the owner declares the game feature-complete.
+- TERRITORY 2.0 remains an independent project; do not intermingle its changes or deployment with the 1.0 fast lane.
