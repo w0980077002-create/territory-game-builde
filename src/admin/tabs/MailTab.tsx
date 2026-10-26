@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { CalendarClock, Gift, Mail, RefreshCw, Send, Trash2 } from 'lucide-react';
-import { RESOURCES, adminCall, payloadFor, type GrantPayload } from '@/admin/api';
+import { RESOURCES, adminCall, maxAdminRewardQuantity, payloadFor, type GrantPayload } from '@/admin/api';
 import { Empty, ErrorLine, Loading, Panel, fmtDate, inputCls, type Confirm } from '@/admin/ui';
 
 type Target = 'one' | 'all' | 'active';
@@ -70,8 +70,9 @@ export function MailTab({ confirm }: { confirm: Confirm }) {
       if (selected.has(slot.key)) return setError('Выбирай разные награды в трёх строках.');
       selected.add(slot.key);
       const qty = Number(slot.qty);
-      if (!Number.isSafeInteger(qty) || qty < 1 || qty > 100_000) {
-        return setError('Количество каждой награды — целое число от 1 до 100 000.');
+      const max = maxAdminRewardQuantity(slot.key);
+      if (!Number.isSafeInteger(qty) || qty < 1 || qty > max) {
+        return setError(`Количество должно быть целым числом от 1 до ${max.toLocaleString('ru-RU')} (предел хранения в игре).`);
       }
       const part = payloadFor(slot.key, qty);
       if (part.items) payload.items = { ...payload.items, ...part.items };
@@ -146,7 +147,8 @@ export function MailTab({ confirm }: { confirm: Confirm }) {
               </label>
               <label className="block">
                 <span className="block text-[11px] text-slate-400 mb-1">Количество</span>
-                <input className={inputCls} type="number" inputMode="numeric" step={1} min={1} max={100000}
+                <input className={inputCls} type="number" inputMode="numeric" step={1} min={1}
+                  max={maxAdminRewardQuantity(slot.key)}
                   value={slot.qty} onChange={(e) => updateSlot(index, { qty: e.target.value })}
                   disabled={!slot.key} placeholder="0" />
               </label>

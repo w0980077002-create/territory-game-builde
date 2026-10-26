@@ -18,7 +18,12 @@ const ITEM_KEYS = [
 ] as const;
 const SLOTS = ["helmet", "amulet", "armor", "weapon", "shield", "ring", "boots"] as const;
 const SETTING_KEYS = ["maintenance", "arena_bots_enabled", "shop_sale", "gold_x2"] as const;
-const MAX_DELTA = 10_000_000;
+// No arbitrary owner-grant quota. The legacy players wallet, profession
+// materials and ticket balances are PostgreSQL int4 values, so an individual
+// adjustment must fit that storage type. Ordinary gameplay limits remain in
+// its separate, server-authorized RPCs.
+const MAX_STORED_NUMBER = 2_147_483_647;
+const MAX_STONE_BUNDLES = Math.floor(MAX_STORED_NUMBER / 5);
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const enc = new TextEncoder();
@@ -113,7 +118,7 @@ async function audit(action: string, details: Record<string, unknown> = {}) {
 
 function intIn(v: unknown, min: number, max: number) {
   const n = Number(v);
-  if (!Number.isInteger(n) || n < min || n > max) throw new HttpError(400, "invalid_number");
+  if (!Number.isSafeInteger(n) || n < min || n > max) throw new HttpError(400, "invalid_number");
   return n;
 }
 
@@ -121,12 +126,15 @@ function cleanPayload(raw: unknown) {
   const src = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const out: Record<string, unknown> = {};
   for (const k of RESOURCE_KEYS) {
-    if (src[k] !== undefined && src[k] !== 0) out[k] = intIn(src[k], -MAX_DELTA, MAX_DELTA);
+    if (src[k] !== undefined && src[k] !== 0) out[k] = intIn(src[k], -MAX_STORED_NUMBER, MAX_STORED_NUMBER);
   }
   const items = (src.items && typeof src.items === "object" ? src.items : {}) as Record<string, unknown>;
   const cleanItems: Record<string, number> = {};
   for (const k of ITEM_KEYS) {
-    if (items[k] !== undefined && items[k] !== 0) cleanItems[k] = intIn(items[k], -100_000, 100_000);
+    // A bundle produces five battle stones; keep that resulting int4 wallet
+    // addition representable without introducing an unrelated reward quota.
+    const cap = k === "shop_stone_5" ? MAX_STONE_BUNDLES : MAX_STORED_NUMBER;
+    if (items[k] !== undefined && items[k] !== 0) cleanItems[k] = intIn(items[k], -cap, cap);
   }
   if (Object.keys(cleanItems).length) out.items = cleanItems;
   const levels = (src.equipLevels && typeof src.equipLevels === "object" ? src.equipLevels : {}) as Record<string, unknown>;
@@ -596,7 +604,7 @@ async function handle(action: string, body: Row) {
       const scope=String(body.scope??'');
       if(scope!=='one'&&scope!=='active'&&scope!=='all')throw new HttpError(400,'invalid_target');
       const player=scope==='one'?playerId(body.playerId):null;
-      const amount=intIn(body.amount,-250,250);
+      const amount=intIn(body.amount,-MAX_STORED_NUMBER,MAX_STORED_NUMBER);
       if(amount===0)throw new HttpError(400,'invalid_number');
       const reason=text(body.reason,140);
       if(reason.length<3)throw new HttpError(400,'invalid_reason');

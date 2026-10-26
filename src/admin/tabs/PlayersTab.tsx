@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { ArrowLeft, Ban, Hammer, Minus, Plus, Search, ShieldAlert, ShieldCheck, UserRound, Ticket, RotateCcw, Trash2 } from 'lucide-react';
-import { RESOURCES, adminCall, payloadFor, type PlayerSummary } from '@/admin/api';
+import { RESOURCES, MAX_ADMIN_REWARD_QUANTITY, maxAdminRewardQuantity, adminCall, payloadFor, type PlayerSummary } from '@/admin/api';
 import { ActivityPanel } from '@/admin/tabs/ActivityPanel';
 import { Empty, ErrorLine, Loading, Panel, fmt, fmtDate, inputCls, type Confirm } from '@/admin/ui';
 
@@ -66,8 +66,9 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
   if (!p) return error ? <ErrorLine text={error} /> : <Loading />;
 
   const change = (key: string, label: string, sign: 1 | -1) => {
-    const qty = Math.floor(Number(amounts[key] || 0));
-    if (!qty || qty < 1) return setError('Введите количество больше нуля');
+    const qty = Number(amounts[key] || 0);
+    if (!Number.isSafeInteger(qty) || qty < 1 || qty > maxAdminRewardQuantity(key))
+      return setError('Введи положительное целое количество в пределах числового формата игры.');
     setError(null);
     confirm(`${sign > 0 ? 'Выдать' : 'Списать'} ${fmt(qty)} — ${label} игроку ${p.name}`, async () => {
       await adminCall('adjust', { playerId: p.id, payload: payloadFor(key, qty * sign) });
@@ -114,8 +115,8 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
   };
   const giveTickets = () => {
     const count=Number(ticketQty),note=reason.trim();
-    if(!Number.isSafeInteger(count)||count===0||Math.abs(count)>250)
-      return setError('Разрешено от −250 до +250 билетов за операцию.');
+    if(!Number.isSafeInteger(count)||count===0||Math.abs(count)>MAX_ADMIN_REWARD_QUANTITY)
+      return setError('Введи целое количество билетов в пределах диапазона базы данных, кроме нуля.');
     if(note.length<3||note.length>140)return setError('Напиши причину выдачи.');
     setError(null);
     confirm((count>0?'Выдать ':'Списать ')+Math.abs(count)+' билетов игроку '+p.name+'? Причина: '+note,async()=>{
@@ -192,6 +193,8 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
                   type="number"
                   inputMode="numeric"
                   min={1}
+                  max={maxAdminRewardQuantity(r.key)}
+                  step={1}
                   value={amounts[r.key] ?? ''}
                   onChange={(e) => setAmounts((a) => ({ ...a, [r.key]: e.target.value }))}
                   placeholder="0"
@@ -216,7 +219,7 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
             </div>)}
         </div>
         <div className="grid grid-cols-[90px_1fr] gap-2">
-          <input type="number" step={1} min={-250} max={250} className={inputCls}
+          <input type="number" step={1} min={-MAX_ADMIN_REWARD_QUANTITY} max={MAX_ADMIN_REWARD_QUANTITY} className={inputCls}
             value={ticketQty} onChange={e=>setTicketQty(e.target.value)}/>
           <input type="text" className={inputCls} value={reason} maxLength={140}
             onChange={e=>setReason(e.target.value)} placeholder="Причина"/>
@@ -226,7 +229,7 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
           {Number(ticketQty)<0?'Списать':'Выдать'} билеты этому игроку
         </button>
         <p className="text-xs text-slate-400 mt-2">
-          Изменяется сразу на сервере. У игрока максимум 1000 билетов.
+          Выдача администратора применяется сразу на сервере, без игрового лимита в 1000 билетов.
         </p>
       </Panel>
       <Panel title="Неполученные награды" icon={<Trash2 size={17}/>}>

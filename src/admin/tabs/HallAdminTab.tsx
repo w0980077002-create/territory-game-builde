@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useState,type FormEvent} from 'react';
 import {Ticket,Gift,RefreshCw,Activity,ShieldCheck} from 'lucide-react';
-import {adminCall,type PlayerSummary} from '@/admin/api';
+import {adminCall,MAX_ADMIN_REWARD_QUANTITY,type PlayerSummary} from '@/admin/api';
 import {Panel,Loading,Empty,ErrorLine,fmt,fmtDate,inputCls,type Confirm} from '@/admin/ui';
 type Scope='one'|'active'|'all';
 interface HallOverview{
@@ -40,8 +40,8 @@ export function HallAdminTab({confirm}:{confirm:Confirm}){
  const submit=(e:FormEvent)=>{
   e.preventDefault();
   const count=Number(amount),note=reason.trim();
-  if(!Number.isSafeInteger(count)||count===0||Math.abs(count)>250)
-    return setError('Введи целое количество от −250 до 250, кроме нуля.');
+  if(!Number.isSafeInteger(count)||count===0||Math.abs(count)>MAX_ADMIN_REWARD_QUANTITY)
+    return setError('Введи целое количество билетов в пределах технического диапазона, кроме нуля.');
   if(note.length<3||note.length>140)return setError('Укажи причину (от 3 до 140 символов).');
   if(scope==='one'&&!selected)return setError('Сначала выбери игрока.');
   setError(null);
@@ -99,7 +99,7 @@ export function HallAdminTab({confirm}:{confirm:Confirm}){
     </div>}
     <div className="grid grid-cols-2 gap-2">
      <label className="block text-xs text-slate-400">Билетов (+ / −)
-      <input className={inputCls+' mt-1'} type="number" min={-250} max={250} step={1}
+      <input className={inputCls+' mt-1'} type="number" min={-MAX_ADMIN_REWARD_QUANTITY} max={MAX_ADMIN_REWARD_QUANTITY} step={1}
        value={amount} onChange={e=>setAmount(e.target.value)}/>
      </label>
      <div className="space-y-1 text-xs text-slate-400">
@@ -120,7 +120,7 @@ export function HallAdminTab({confirm}:{confirm:Confirm}){
     <button type="submit" className="h-12 w-full rounded-xl bg-gradient-to-b from-sky-500 to-sky-700 text-white font-bold text-sm flex items-center justify-center gap-2">
      <Ticket size={19}/> {Number(amount)<0?'Списать билеты':'Выдать билеты'}
     </button>
-    <p className="text-[11px] text-slate-500">Лимит одной операции ±250, остаток 0–1000. Все операции фиксируются в журнале.</p>
+    <p className="text-[11px] text-slate-500">Администратор может выдать любое количество билетов в пределах целого числа базы данных. Выдача сохраняется в журнале; при переполнении остатка операция отменяется целиком.</p>
    </form>
    <ErrorLine text={error}/>
   </Panel>
