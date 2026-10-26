@@ -1,5 +1,5 @@
 import type { ArenaWeeklyPlayer, ArenaWeeklyStatus } from './arenaWeekly';
-import { utcMidnight, seasonWindow } from './seasonCalendar';
+import { utcMidnight, arenaSeasonWindow } from './seasonCalendar';
 
 /**
  * Exactly 50 named virtual Arena contenders for the weekly scoreboard:
@@ -68,7 +68,7 @@ export function arenaWeeklyWithBots(
     return { leaders: humans, displayRank: verified.my_rank, isDisplayRankVerified: true };
   }
 
-  const season = seasonWindow(now);
+  const season = arenaSeasonWindow(now);
   if (season.startsAt !== start || season.endsAt !== end) {
     return { leaders: humans, displayRank: verified.my_rank, isDisplayRankVerified: true };
   }
