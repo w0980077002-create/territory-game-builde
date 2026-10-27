@@ -59,6 +59,19 @@ assert.match(canvas, /nav-city\.webp/, 'Reuse approved city iconography');
 assert.match(canvas, /ic-arena-viking\.webp/, 'Reuse the approved arena illustration');
 assert.match(canvas, /ic-professions-viking\.webp/, 'Reuse the approved professions illustration');
 assert.match(canvas, /ic-auction-viking\.webp/, 'Reuse the approved auction illustration');
+for (const art of [
+  'ore-cart-v1.webp', 'appearance-mirror-v1.webp', 'hunting-bow-v1.webp',
+  'dark-forest-v1.webp', 'herb-basket-v1.webp', 'rune-stones-v1.webp',
+  'crystal-cave-v1.webp', 'companions-v1.webp',
+]) {
+  const path = `public/assets/territory/map/icons/${art}`;
+  const icon = readFileSync(path);
+  assert.equal(icon.subarray(0, 4).toString(), 'RIFF', `${art} must be WebP`);
+  assert.equal(icon.subarray(8, 12).toString(), 'WEBP', `${art} must be WebP`);
+  assert.ok(statSync(path).size < 100_000, `${art} must remain lightweight for Telegram`);
+  assert.ok(canvas.includes(`assets/territory/map/icons/${art}`), `${art} must be used by a destination button`);
+}
+assert.doesNotMatch(canvas, /Glyph:/, 'All drawer destinations must have painted art, not temporary line icons');
 assert.match(canvas, /PLACES\.map\(renderDestination\)/, 'Buildings list should render illustrated destination buttons');
 assert.match(canvas, /OTHER_PLACES\.map\(renderDestination\)/, 'Secondary sections should share illustrated destination buttons');
 assert.match(canvas, /loading="lazy" decoding="async"/, 'Drawer art must not block initial map rendering');

@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { ChevronRight, Compass, Crosshair, Gem, Hand, Layers3, LocateFixed, Minus, Mountain, PawPrint, Pickaxe, Plus, Sparkles, Sprout, Trees, X, type LucideIcon } from 'lucide-react';
+import { ChevronRight, Compass, Hand, Layers3, LocateFixed, Minus, Plus, X } from 'lucide-react';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import './worldMapCanvas.css';
 
@@ -52,33 +52,31 @@ const OTHER_PLACES: { id: WorldMapRoute; ru: string; en: string }[] = [
 ];
 
 type PlaceVisual = {
-  art?: string;
-  Glyph?: LucideIcon;
+  art: string;
   tone: 'gold' | 'ember' | 'forest' | 'rune' | 'sea';
 };
 
-// Use already-approved navigation and city artwork wherever possible.
-// Resource areas have distinct lightweight vector crests instead of
-// repeating one image for unrelated destinations.
+// All 24 locations have a real illustrated icon; reused approved navigation
+// artwork stays unchanged, while missing places receive unique generated art.
 const PLACE_VISUALS: Record<WorldMapPlace, PlaceVisual> = {
   city: { art: 'nav-city.webp', tone: 'gold' },
   arena: { art: 'ic-arena-viking.webp', tone: 'ember' },
-  mountain: { Glyph: Pickaxe, tone: 'gold' },
+  mountain: { art: 'assets/territory/map/icons/ore-cart-v1.webp', tone: 'gold' },
   auction: { art: 'ic-auction-viking.webp', tone: 'gold' },
   hero: { art: 'nav-hero-crown.webp', tone: 'rune' },
   trial: { art: 'ic-trials.webp', tone: 'ember' },
-  chamber: { Glyph: Sparkles, tone: 'rune' },
+  chamber: { art: 'assets/territory/map/icons/appearance-mirror-v1.webp', tone: 'rune' },
   forge: { art: 'ic-forge.webp', tone: 'ember' },
   professions: { art: 'ic-professions-viking.webp', tone: 'gold' },
   shop: { art: 'ic-shop.webp', tone: 'gold' },
-  hunting: { Glyph: Crosshair, tone: 'forest' },
-  forest: { Glyph: Trees, tone: 'forest' },
-  herbs: { Glyph: Sprout, tone: 'forest' },
+  hunting: { art: 'assets/territory/map/icons/hunting-bow-v1.webp', tone: 'forest' },
+  forest: { art: 'assets/territory/map/icons/dark-forest-v1.webp', tone: 'forest' },
+  herbs: { art: 'assets/territory/map/icons/herb-basket-v1.webp', tone: 'forest' },
   inventory: { art: 'nav-inventory.webp', tone: 'sea' },
-  runes: { Glyph: Gem, tone: 'rune' },
-  rare: { Glyph: Mountain, tone: 'rune' },
+  runes: { art: 'assets/territory/map/icons/rune-stones-v1.webp', tone: 'rune' },
+  rare: { art: 'assets/territory/map/icons/crystal-cave-v1.webp', tone: 'rune' },
   games: { art: 'nav-games.webp', tone: 'sea' },
-  companions: { Glyph: PawPrint, tone: 'forest' },
+  companions: { art: 'assets/territory/map/icons/companions-v1.webp', tone: 'forest' },
   battle: { art: 'nav-battle.webp', tone: 'ember' },
   clan: { art: 'nav-clan.webp', tone: 'ember' },
   friends: { art: 'ic-invite.webp', tone: 'forest' },
@@ -383,7 +381,6 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
 
   const renderDestination = (place: { id: WorldMapPlace; ru: string; en: string }) => {
     const visual = PLACE_VISUALS[place.id];
-    const Glyph = visual.Glyph;
     return (
       <button
         key={place.id}
@@ -393,8 +390,7 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
         aria-label={language === 'en' ? place.en : place.ru}
       >
         <span className="territory-world-map__destination-crest" aria-hidden="true">
-          {visual.art && <img src={`${import.meta.env.BASE_URL}${visual.art}`} alt="" draggable={false} loading="lazy" decoding="async" />}
-          {Glyph && <Glyph size={26} strokeWidth={2.1} />}
+          <img src={`${import.meta.env.BASE_URL}${visual.art}`} alt="" draggable={false} loading="lazy" decoding="async" />
         </span>
         <span className="territory-world-map__destination-name">{language === 'en' ? place.en : place.ru}</span>
         <ChevronRight className="territory-world-map__destination-arrow" size={15} strokeWidth={2.4} aria-hidden="true" />
