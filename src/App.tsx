@@ -104,11 +104,11 @@ const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
 const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> = {
   shop: { title: 'Лавка', icon: '/ic-shop.webp' },
   forge: { title: 'Кузница', icon: '/ic-forge.webp' },
-  arena: { title: 'Арена', icon: '/ic-arena.webp' },
+  arena: { title: 'Арена', icon: '/ic-arena-viking.webp' },
   leaderboard: { title: 'Топ игроков', icon: '/ic-trophy.webp' },
   quests: { title: 'Задания', icon: '/ic-quests.webp' },
-  professions: { title: 'Профессии и ремесло', icon: '/ic-professions.svg' },
-  auction: { title: 'Аукцион и чат', icon: '/ic-auction.svg' },
+  professions: { title: 'Профессии и ремесло', icon: '/ic-professions-viking.webp' },
+  auction: { title: 'Аукцион и чат', icon: '/ic-auction-viking.webp' },
   friends: { title: 'Друзья', icon: '/ic-invite.webp' },
   messages: { title: 'Сообщения', icon: '/ic-mail.webp' },
   events: { title: 'События', icon: '/ic-events.webp' },
@@ -482,12 +482,12 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
       {screen === 'city' && (
         <nav className="territory-desktop-quicknav shrink-0" aria-label={language === 'en' ? 'Quick access' : 'Быстрый доступ'}>
           {[
-            { id: 'arena', icon: '/ic-arena.webp', label: translate('arena'), action: () => setScreen('arena') },
+            { id: 'arena', icon: '/ic-arena-viking.webp', label: translate('arena'), action: () => setScreen('arena') },
             { id: 'trial', icon: '/ic-trials.webp', label: translate('trials'), action: () => { setBattleView('trial'); setAutoStart(false); setScreen('battle'); } },
             { id: 'quests', icon: '/ic-quests.webp', label: translate('quests'), action: () => setScreen('quests') },
             { id: 'shop', icon: '/ic-shop.webp', label: translate('shop'), action: () => setScreen('shop') },
             { id: 'forge', icon: '/ic-forge.webp', label: translate('forge'), action: () => openForge() },
-            { id: 'professions', icon: '/ic-professions.svg', label: translate('professions'), action: () => setScreen('professions') },
+            { id: 'professions', icon: '/ic-professions-viking.webp', label: translate('professions'), action: () => setScreen('professions') },
           ].map((item) => (
             <button type="button" key={item.id} disabled={battleLocked} onClick={item.action}
               aria-label={item.label} title={item.label}>

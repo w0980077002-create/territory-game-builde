@@ -47,9 +47,10 @@ interface Props {
 type Sheet = 'daily' | 'settings' | 'stones' | null;
 
 function SideButton({ icon, label, onClick, soon, badge }: { icon: string; label: string; onClick: () => void; soon?: boolean; badge?: boolean }) {
+  const isVikingFeatureIcon = /\/ic-(?:auction|professions|arena)-viking\.webp$/.test(icon);
   return (
     <button onClick={onClick} className="home-side group" aria-label={label}>
-      <img src={icon} alt="" draggable={false} className={`w-[80%] max-h-[60%] object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] saturate-125 transition-transform duration-200 group-hover:scale-110 ${soon ? 'opacity-70 grayscale-[25%]' : ''}`} />
+      <img src={icon} alt="" draggable={false} className={`${isVikingFeatureIcon ? 'w-[90%] max-h-[70%]' : 'w-[80%] max-h-[60%]'} object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] saturate-125 transition-transform duration-200 group-hover:scale-110 ${soon ? 'opacity-70 grayscale-[25%]' : ''}`} />
       <span className="text-[clamp(6.8px,1.95vw,8px)] leading-[1.04] font-extrabold tracking-[-0.02em] text-amber-50 text-center whitespace-normal break-words line-clamp-2 max-w-full px-px [text-shadow:0_1px_2px_#000,0_0_4px_rgba(0,0,0,0.95)]">{label}</span>
       {soon && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-slate-400 border border-black" aria-hidden />}
       {badge && <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-pulse" />}
@@ -212,11 +213,11 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
       </div>
       <div className="home-side-stack home-side-stack-right absolute z-10 right-1.5 w-[48px] flex flex-col gap-1">
         <SideButton icon="/ic-shop.webp" label={t('shop')} onClick={() => onOpen('shop')} />
-        <SideButton icon="/ic-auction.svg" label={t('auction')} onClick={() => onOpen('auction')} />
+        <SideButton icon="/ic-auction-viking.webp" label={t('auction')} onClick={() => onOpen('auction')} />
         <SideButton icon="/ic-forge.webp" label={t('forge')} onClick={() => onOpen('forge')} />
-        <SideButton icon="/ic-professions.svg" label={t('professions')} onClick={() => onOpen('professions')} />
+        <SideButton icon="/ic-professions-viking.webp" label={t('professions')} onClick={() => onOpen('professions')} />
         <SideButton icon="/ic-trials.webp" label={t('trials')} onClick={() => onBattle('trial')} />
-        <SideButton icon="/ic-arena.webp" label={t('arena')} onClick={() => onOpen('arena')} />
+        <SideButton icon="/ic-arena-viking.webp" label={t('arena')} onClick={() => onOpen('arena')} />
       </div>
 
       <div className="home-character-stage absolute z-0 left-[50px] right-[50px] flex items-end justify-center pointer-events-none">

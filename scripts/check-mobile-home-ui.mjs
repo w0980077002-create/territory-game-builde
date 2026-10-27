@@ -54,19 +54,21 @@ assert.match(city, /live-city-ship\.webp/, 'Viking ships must have a subtle moti
 assert.match(city, /live-city-waterfall/, 'Waterfalls must have visual motion');
 assert.match(sheets, /Живой город/, 'Animated city must have an on/off setting');
 assert.match(css, /prefers-reduced-motion/, 'City motion must respect accessibility setting');
-assert.match(home, /ic-auction\.svg/, 'Auction needs its own unique button artwork');
-assert.match(home, /ic-professions\.svg/, 'Professions needs its own unique button artwork');
+assert.match(home, /ic-auction-viking\.webp/, 'Auction needs its own distinctive Viking artwork');
+assert.match(home, /ic-professions-viking\.webp/, 'Professions needs its own distinctive Viking artwork');
+assert.match(home, /ic-arena-viking\.webp/, 'Arena must depict its own Viking amphitheater');
 assert.doesNotMatch(home, /SideButton icon="\/ic-shop\.webp" label=\{t\('auction'\)\}/, 'Auction must not reuse the shop image');
 assert.doesNotMatch(home, /SideButton icon="\/ic-forge\.webp" label=\{t\('professions'\)\}/, 'Professions must not reuse the forge image');
 assert.match(home, /setLanguage\(language === 'ru' \? 'en' : 'ru'\)/, 'Language switch must remain interactive');
 assert.match(home, /<EquipCells/, 'Equipment slots must remain on the home screen');
 assert.match(home, /<BeltCells/, 'Potion belt must remain on the home screen');
-assert.match(app, /ic-auction\.svg/, 'Auction sub-screen must use its unique icon');
+assert.match(app, /ic-auction-viking\.webp/, 'Auction sub-screen must use its own Viking icon');
 assert.ok(app.includes("icon: '/nav-hero-crown.webp'"), 'Approved muted gold/blue crown icon must appear in Hero navigation');
 assert.ok(app.includes("icon: '/nav-map-parchment.webp'"), 'Approved parchment and compass icon must appear in Map navigation');
 assert.ok(app.includes("t.id === 'hero' || t.id === 'map' ? 'w-9 h-9'"), 'Both new icons must be readable without changing the button layout');
 
-assert.match(app, /ic-professions\.svg/, 'Professions sub-screen must use its unique icon');
+assert.match(app, /ic-professions-viking\.webp/, 'Professions sub-screen must use its own Viking icon');
+assert.match(app, /ic-arena-viking\.webp/, 'Arena sub-screen must use its own Viking amphitheater icon');
 assert.match(html, /viewport-fit=cover/, 'Viewport must respect modern mobile safe areas');
 assert.match(css, /env\(safe-area-inset-bottom/, 'Telegram shell must respect the iPhone home indicator');
 assert.match(css, /\.home-side-stack \.home-side/, 'Home side buttons must keep a tappable height');
@@ -175,7 +177,7 @@ assert.match(gearCss, /html\.territory-ios-webapp \.gear-stage-ring\s*\{[\s\S]*?
 assert.match(gearCss, /html\.territory-ios-webapp \.gear-filter-strip/,
   'Gear item filters must remain discoverably scrollable on iPhone');
 
-for (const asset of ['public/city-bg-vibrant.webp', 'public/ic-auction.svg', 'public/ic-professions.svg', 'public/territory-mark.svg', 'public/nav-hero-crown.webp', 'public/nav-map-parchment.webp']) {
+for (const asset of ['public/city-bg-vibrant.webp', 'public/ic-auction-viking.webp', 'public/ic-professions-viking.webp', 'public/ic-arena-viking.webp', 'public/territory-mark.svg', 'public/nav-hero-crown.webp', 'public/nav-map-parchment.webp']) {
   await access(new URL(asset, root));
 }
 console.log('Mobile home UI checks passed: living city, responsive sides and nav, Telegram fullscreen, safe-area, language, gear.');
