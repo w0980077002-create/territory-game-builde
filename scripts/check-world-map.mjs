@@ -1,0 +1,59 @@
+import assert from 'node:assert/strict';
+import { readFileSync, statSync } from 'node:fs';
+
+const canvas = readFileSync('src/components/WorldMapCanvas.tsx', 'utf8');
+const css = readFileSync('src/components/worldMapCanvas.css', 'utf8');
+const map = readFileSync('src/components/MapScreen.tsx', 'utf8');
+const app = readFileSync('src/App.tsx', 'utf8');
+const inventory = readFileSync('src/components/InventoryScreen.tsx', 'utf8');
+const profile = readFileSync('src/components/ProfileScreen.tsx', 'utf8');
+const artPath = 'public/assets/territory/map/world-map-v1-20261027.webp';
+const art = readFileSync(artPath);
+
+assert.equal(art.subarray(0, 4).toString(), 'RIFF');
+assert.equal(art.subarray(8, 12).toString(), 'WEBP');
+assert.ok(statSync(artPath).size < 800_000, 'World map must remain fast to load on mobile');
+
+for (const section of ['city', 'arena', 'shop', 'forge', 'professions', 'auction', 'inventory', 'games', 'hero', 'battle', 'clan', 'friends', 'quests', 'messages', 'events']) {
+  assert.match(canvas, new RegExp("id: '" + section + "'"), `Missing ${section} location`);
+}
+for (const region of ['forest', 'mountain', 'herbs', 'hunting', 'rare', 'chamber']) {
+  assert.match(canvas, new RegExp("id: '" + region + "'"), `Missing ${region} resource or appearance destination`);
+}
+for (const destination of ['runes', 'trial', 'companions']) {
+  assert.match(canvas, new RegExp("id: '" + destination + "'"), `Missing ${destination} destination`);
+}
+assert.doesNotMatch(canvas, /id: 'leaderboard'/, 'Owner disabled the direct global leaderboard entrance');
+
+assert.match(canvas, /touchAction: 'none'/, 'Prevent WebView scrolling while dragging world');
+assert.match(canvas, /onPointerDown=/);
+assert.match(canvas, /onPointerMove=/);
+assert.match(canvas, /onPointerCancel=/);
+assert.match(canvas, /onClickCapture=/, 'Panning must suppress accidental building taps');
+assert.match(canvas, /setPointerCapture\(event\.pointerId\)/);
+assert.match(canvas, /ResizeObserver/);
+assert.match(canvas, /clampView/, 'Players must not lose the entire map beyond viewport');
+assert.match(canvas, /sessionStorage\.setItem\('territory-map-pan-seen'/);
+assert.match(canvas, /<Hand /, 'First swipe must be explained visually');
+assert.match(css, /prefers-reduced-motion/, 'Animation should respect accessibility settings');
+assert.match(canvas, /setDrawerOpen\(true\)/, 'All sections must remain discoverable without clutter');
+
+assert.match(map, /<WorldMapCanvas /);
+assert.match(map, /case 'trial': onTrial\(\)/);
+assert.match(map, /case 'companions': onCompanions\(\)/);
+assert.match(map, /case 'runes': onRunes\(\)/);
+for (const action of ['territory_gather_status', 'territory_gather_start', 'territory_gather_claim']) {
+  assert.match(map, new RegExp(action), `Keep server-authoritative ${action} operation`);
+}
+assert.match(map, /<ChamberModal /, 'Preserve cosmetic appearance selection');
+assert.doesNotMatch(map, /\{\/\* Resource Regions \*\/\}/, 'Old text-card map must not remain on screen');
+
+assert.match(app, /screen === 'map' \? 'overflow-hidden !px-0 !py-0'/);
+assert.match(app, /onTrial=\{\(\) => \{ setBattleView\('trial'\)/);
+assert.match(app, /onCompanions=\{\(\) => \{ setInventoryTab\('followers'\)/);
+assert.match(app, /onRunes=\{\(\) => \{ setHeroTrainingOpen\(true\)/);
+assert.match(inventory, /initialTab\?: 'items' \| 'equipment' \| 'followers'/);
+assert.match(profile, /initialTrainingOpen= false|initialTrainingOpen = false/);
+assert.match(profile, /open=\{trainingOpen\}/);
+
+console.log('World map: all existing destinations, swipe controls, ready resources, rune/trial/companion deep links, mobile art and unchanged server gathering PASS');

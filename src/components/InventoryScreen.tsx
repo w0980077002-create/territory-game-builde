@@ -16,7 +16,7 @@ import { Package, X, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned } from 
 /** Equipment, consumables/belt and companions share the inventory route.
  * The follower model is unchanged: training and PvE selection stay in the global store. */
 export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfessions, onMap }: {
-  initialTab?: 'items' | 'equipment';
+  initialTab?: 'items' | 'equipment' | 'followers';
   userId: string;
   onForge?: (equipmentId?: string) => void;
   onProfessions?: () => void;

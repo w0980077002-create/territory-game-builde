@@ -152,7 +152,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [hallGame, setHallGame] = useState<HallGame>('monopoly');
   const [battleView, setBattleView] = useState<BattleView>('campaign');
   const [autoStart, setAutoStart] = useState(false);
-  const [inventoryTab, setInventoryTab] = useState<'items' | 'equipment'>('equipment');
+  const [inventoryTab, setInventoryTab] = useState<'items' | 'equipment' | 'followers'>('equipment');
+  const [heroTrainingOpen, setHeroTrainingOpen] = useState(false);
   const [forgeFocusId, setForgeFocusId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const [battleLocked, setBattleLocked] = useState(false);
@@ -352,6 +353,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   const goNav = (id: NavId) => {
     if (id === 'battle') setBattleView('campaign');
+    if (id === 'hero') setHeroTrainingOpen(false);
     setScreen(id);
   };
   const openForge = (equipmentId?: string) => {
@@ -407,7 +409,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         </header>
       )}
 
-      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : slotImmersive ? 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide !px-0 !py-0' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
+      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : screen === 'map' ? 'overflow-hidden !px-0 !py-0' : slotImmersive ? 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide !px-0 !py-0' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
         <SectionErrorBoundary key={screen} language={language} onBack={() => setScreen('city')}>
         <Suspense fallback={<div role="status" className="flex min-h-32 items-center justify-center text-center text-sm text-amber-100/80">{language === 'en' ? 'Opening section…' : 'Открываем раздел…'}</div>}>
         {screen === 'city' && (
@@ -415,7 +417,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             user={user}
             saveStatus={saveStatus}
             notify={notify}
-            onOpen={(next) => { if (next === 'leaderboard') setLeaderboardInitialTab('rating'); setScreen(next); }}
+            onOpen={(next) => { if (next === 'leaderboard') setLeaderboardInitialTab('rating'); if (next === 'hero') setHeroTrainingOpen(false); setScreen(next); }}
             questAlerts={questAlerts}
             onBattle={(view, auto) => {
               captureGameEvent('territory_battle_open', { mode: view });
@@ -445,8 +447,19 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         )}
         {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} userId={user.id}
           onForge={openForge} onProfessions={() => setScreen('professions')} onMap={() => setScreen('map')} />}
-        {screen === 'hero' && <ProfileScreen user={user} />}
-        {screen === 'map' && <MapScreen />}
+        {screen === 'hero' && <ProfileScreen key={heroTrainingOpen ? 'runes' : 'hero'} user={user} initialTrainingOpen={heroTrainingOpen} />}
+        {screen === 'map' && <MapScreen
+          onNavigate={(route) => {
+            if (route === 'battle') { setBattleView('campaign'); setAutoStart(false); }
+            if (route === 'hero') setHeroTrainingOpen(false);
+            if (route === 'inventory') setInventoryTab('items');
+            if (route === 'forge') setForgeFocusId(null);
+            setScreen(route);
+          }}
+          onTrial={() => { setBattleView('trial'); setAutoStart(false); setScreen('battle'); }}
+          onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }}
+          onRunes={() => { setHeroTrainingOpen(true); setScreen('hero'); }}
+        />}
         {screen === 'shop' && <ShopScreen />}
         {screen === 'forge' && <ForgeScreen focusEquipmentId={forgeFocusId}
           onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')} />}

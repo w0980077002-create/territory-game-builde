@@ -10,7 +10,7 @@ import { APPEARANCE_PRESETS, MALE_PRESETS, FEMALE_PRESETS, getPlayableAppearance
 import type { InventoryItem } from '@/game/types';
 import { RESOURCE_DEFINITIONS, type ResourceId } from '@/game/professions';
 import { resourceArt } from '@/game/art';
-import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
+import { WorldMapCanvas, type WorldMapPlace, type WorldMapRoute } from '@/components/WorldMapCanvas';
 
 type GatherStatus = {
   active: { resource_id: string; finishes_at: string } | null;
@@ -99,23 +99,12 @@ const REGIONS: Region[] = [
   },
 ];
 
-const GLOW_RING: Record<string, string> = {
-  emerald: 'shadow-[0_0_18px_rgba(16,185,129,0.25)]',
-  stone: 'shadow-[0_0_18px_rgba(168,162,158,0.25)]',
-  lime: 'shadow-[0_0_18px_rgba(132,204,22,0.25)]',
-  amber: 'shadow-[0_0_18px_rgba(245,158,11,0.25)]',
-  sky: 'shadow-[0_0_18px_rgba(56,189,248,0.25)]',
-};
-
-const GLOW_BORDER: Record<string, string> = {
-  emerald: 'border-emerald-500/40',
-  stone: 'border-stone-400/40',
-  lime: 'border-lime-500/40',
-  amber: 'border-amber-500/40',
-  sky: 'border-sky-500/40',
-};
-
-export function MapScreen() {
+export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes }: {
+  onNavigate: (route: WorldMapRoute) => void;
+  onTrial: () => void;
+  onCompanions: () => void;
+  onRunes: () => void;
+}) {
   const [selected, setSelected] = useState<LocationId | null>(null);
   const [notice, setNotice] = useState('');
   const { t, language } = useLanguage();
@@ -207,109 +196,37 @@ export function MapScreen() {
     }
   };
 
+  const handleWorldVisit = (place: WorldMapPlace) => {
+    switch (place) {
+      case 'forest':
+      case 'mountain':
+      case 'herbs':
+      case 'hunting':
+      case 'rare':
+      case 'chamber':
+        setNotice('');
+        setSelected(place);
+        break;
+      case 'trial': onTrial(); break;
+      case 'companions': onCompanions(); break;
+      case 'runes': onRunes(); break;
+      default: onNavigate(place);
+    }
+  };
+
   return (
-    <div className="relative min-h-full animate-fade-in pb-2">
-      {/* World map background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <img src="/map-bg.webp" alt="" className="w-full h-full object-cover opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0c1117]/60 via-transparent to-[#0c1117]/80" />
-      </div>
-
-      <div className="relative space-y-4">
-        {/* Header */}
-        <div className="relative rounded-2xl overflow-hidden border border-amber-500/20 p-4">
-          <div className="absolute inset-0 bg-gradient-to-br from-teal-900/30 via-[#16130d] to-[#0f1115]" />
-          <div className="relative flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl border border-amber-400/30 bg-black/40 flex items-center justify-center">
-              <img src="/nav-map.webp" alt="" className="w-9 h-9 object-contain" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-bold text-amber-100"><WoodenPlaque>{t('mapTitle')}</WoodenPlaque></h2>
-              <p className="text-xs text-gray-400">{t('mapHint')}</p>
-            </div>
-          </div>
-        </div>
-
-        {readyRegion && (
-          <div role="status">
-            <button
-              type="button"
-              onClick={() => setSelected(readyRegion.id)}
-              className="w-full rounded-xl border border-emerald-300/80 bg-emerald-950/80 px-3 py-3 text-left flex items-center gap-3 shadow-[0_0_14px_rgba(52,211,153,0.28)] active:scale-[0.98] transition-transform"
-            >
-              <BellRing className="w-6 h-6 shrink-0 text-emerald-300 animate-pulse" />
-              <span className="flex-1 min-w-0">
-                <span className="block text-sm font-extrabold text-emerald-100">{language === 'en' ? 'Resources are ready!' : 'Ресурсы готовы!'}</span>
-                <span className="block text-[11px] text-emerald-200/80">{language === 'en' ? 'Open the location and claim your resource' : 'Открой локацию и забери добычу'}</span>
-              </span>
-              <span className="text-xs font-extrabold text-white whitespace-nowrap">{language === 'en' ? 'Claim →' : 'Забрать →'}</span>
-            </button>
-          </div>
-        )}
-
-        {/* Resource Regions */}
-        <div>
-          <div className="flex items-baseline justify-between px-1 mb-2">
-            <h3 className="text-xs font-semibold text-amber-200/80 uppercase tracking-wider">{t('resourceLands')}</h3>
-            <span className={`text-[11px] ${readyRegion ? 'text-emerald-200 font-bold' : 'text-emerald-300'}`}>{readyRegion ? (language === 'en' ? 'Ready to claim!' : 'Можно забрать!') : gather?.active ? (language === 'en' ? 'Gathering…' : 'Идёт добыча…') : gather ? (language === 'en' ? 'Available' : 'Доступно') : '…'}</span>
-          </div>
-          <div className="space-y-2.5">
-            {REGIONS.map((r) => (
-              <button
-                key={r.id}
-                onClick={() => setSelected(r.id)}
-                className={`group relative w-full rounded-2xl border ${GLOW_BORDER[r.glow]} bg-gradient-to-r ${r.accent} ${GLOW_RING[r.glow]} ${readyRegion?.id === r.id || (readyRegion && r.resources.some((resource) => resource.id === gather?.active?.resource_id)) ? 'ring-2 ring-emerald-400/90' : ''} overflow-hidden p-3 flex items-center gap-3 text-left active:scale-[0.98] transition-transform`}
-              >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
-                <div className="relative w-16 h-16 rounded-xl border border-white/10 bg-black/30 overflow-hidden shrink-0">
-                  <img src={r.icon} alt="" className="w-full h-full object-cover" />
-                </div>
-                <div className="relative flex-1 min-w-0">
-                  <h4 className="text-sm font-bold text-white truncate">{language === 'en' ? ({ forest: t('gatherForest'), mountain: t('gatherMines'), herbs: t('gatherHerbs'), hunting: t('gatherHunting'), rare: t('gatherCaves') } as Record<string, string>)[r.id] : r.name}</h4>
-                  <p className="text-[11px] text-gray-300/80 truncate">{language === 'en' ? ({ forest: t('gatherForestDesc'), mountain: t('gatherMinesDesc'), herbs: t('gatherHerbsDesc'), hunting: t('gatherHuntingDesc'), rare: t('gatherCavesDesc') } as Record<string, string>)[r.id] : r.desc}</p>
-                  <div className="flex items-center gap-1.5 mt-1.5">
-                    {r.resources.map((res) => (
-                      <span key={language === 'en' ? ({ 'gather-wood': t('wood'), 'gather-herb': t('healingHerbs'), 'gather-ore': t('ironOre'), 'gather-crystal': t('magicCrystal'), 'gather-hide': t('hide') } as Record<string, string>)[res.id] : res.name} className="inline-flex items-center gap-0.5 rounded-md bg-black/40 border border-white/10 px-1.5 py-0.5 text-[9px] font-semibold text-gray-200">
-                        <img src={resourceArt(res.id)} alt="" className="h-4 w-4 object-contain" /> {language === 'en' ? ({ 'gather-wood': t('wood'), 'gather-herb': t('healingHerbs'), 'gather-ore': t('ironOre'), 'gather-crystal': t('magicCrystal'), 'gather-hide': t('hide') } as Record<string, string>)[res.id] : res.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="relative shrink-0 flex flex-col items-center gap-1">
-                  <span className="rounded-lg bg-black/50 border border-white/10 px-2 py-1 text-[9px] font-bold text-amber-200/90">{t('resources')}</span>
-                  <span className={`flex items-center gap-0.5 text-[9px] ${readyRegion && r.resources.some((resource) => resource.id === gather?.active?.resource_id) ? 'text-emerald-200 font-bold animate-pulse' : 'text-emerald-300'}`}>
-                    {gather?.active && r.resources.some((resource) => resource.id === gather.active?.resource_id)
-                      ? remainingMs === 0 ? (language === 'en' ? 'Ready to claim!' : 'Забрать!') : timeRemaining(remainingMs)
-                      : gather?.active ? (language === 'en' ? 'Occupied' : 'Занято') : gather ? (language === 'en' ? 'Available' : 'Доступно') : '…'}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Chamber of Appearance */}
-        <div>
-          <div className="flex items-baseline justify-between px-1 mb-2">
-            <h3 className="text-xs font-semibold text-amber-200/80 uppercase tracking-wider">{t('specialPlaces')}</h3>
-          </div>
-          <button
-            onClick={() => setSelected('chamber')}
-            className="group relative w-full rounded-2xl border border-purple-400/30 bg-gradient-to-r from-indigo-900/40 to-purple-950/50 shadow-[0_0_18px_rgba(168,85,247,0.2)] overflow-hidden p-4 flex items-center gap-3 text-left active:scale-[0.98] transition-transform"
-          >
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
-            <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-purple-500/10 blur-2xl pointer-events-none" />
-            <div className="relative w-16 h-16 rounded-xl border border-purple-300/30 bg-black/30 overflow-hidden shrink-0">
-              <img src="/map-chamber.webp" alt="" className="w-full h-full object-cover" />
-            </div>
-            <div className="relative flex-1 min-w-0">
-              <h4 className="text-sm font-bold text-purple-100 truncate">{t('appearanceHall')}</h4>
-              <p className="text-[11px] text-purple-200/70 truncate">{language === 'en' ? 'Change your hero’s appearance. It does not affect combat stats.' : 'Смени облик героя. Внешность не влияет на боевые характеристики.'}</p>
-            </div>
-            <Sparkles className="relative w-5 h-5 text-purple-300 shrink-0" />
-          </button>
-        </div>
-      </div>
+    <div className="relative h-full min-h-0 w-full overflow-hidden">
+      <WorldMapCanvas onVisit={handleWorldVisit} readyRegion={readyRegion?.id} language={language} />
+      {readyRegion && (
+        <button
+          type="button"
+          onClick={() => handleWorldVisit(readyRegion.id)}
+          className="absolute bottom-3 left-3 z-10 flex items-center gap-2 rounded-xl border border-emerald-200/75 bg-emerald-950/85 px-3 py-2 text-left text-xs font-bold text-emerald-100 shadow-xl backdrop-blur-sm"
+        >
+          <BellRing className="h-4 w-4 animate-pulse text-emerald-300" />
+          {language === 'en' ? 'Resources ready — claim' : 'Добыча готова — забрать'}
+        </button>
+      )}
 
       {/* Region detail modal */}
       {selected && selected !== 'chamber' && (() => {
