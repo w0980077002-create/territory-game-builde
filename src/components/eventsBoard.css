@@ -19,6 +19,22 @@
 .territory-events__tabs button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 39px; border: 1px solid transparent; border-radius: 10px; color: #9caabe; font-size: 12px; font-weight: 800; }
 .territory-events__tabs button[aria-selected='true'] { color: #201708; border-color: #ffe1a6; background: linear-gradient(#ffe39c, #dfa049); box-shadow: 0 2px 5px #0007; }
 .territory-events__list { display: grid; gap: 8px; margin-top: 10px; }
+.territory-events__journey { padding: 11px 10px 12px; border: 1px solid #d7a15d93; border-radius: 15px; overflow: hidden; background: radial-gradient(ellipse at 80% 0, #6d583a55, transparent 70%), linear-gradient(115deg, #322820, #111e2b); box-shadow: inset 0 1px #fff6d224, 0 4px 12px #0005; }
+.territory-events__journey-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 1px 9px; }
+.territory-events__journey-title span { display: block; color: #e5b36e; font-size: 8px; font-weight: 900; letter-spacing: 1.4px; }
+.territory-events__journey-title h3 { margin: 3px 0 0; color: #ffe9c6; font-size: 13px; font-weight: 900; }
+.territory-events__journey-title>b { padding: 5px 8px; border-radius: 8px; border: 1px solid #f6c37575; color: #ffe3aa; background: #46342188; font-size: 12px; font-variant-numeric: tabular-nums; }
+.territory-events__journey-days { display: grid; grid-template-columns: repeat(7, minmax(43px, 1fr)); gap: 5px; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; padding-bottom: 2px; }
+.territory-events__journey-day { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 6px; min-width: 43px; min-height: 79px; padding: 8px 3px 5px; border: 1px solid #8d785e57; border-radius: 10px; background: linear-gradient(#302f35, #1b2735); color: #b6bac7; }
+.territory-events__journey-day>span { font-size: 8px; font-weight: 900; white-space: nowrap; }
+.territory-events__journey-day strong { display: grid; place-items: center; min-height: 25px; font-size: 20px; font-style: normal; filter: drop-shadow(0 2px 2px #0007); }
+.territory-events__journey-day em { color: #c5a66c; font-size: 7px; font-style: normal; font-weight: 900; white-space: nowrap; }
+.territory-events__journey-day--ready { color: #fff8d8; border-color: #f0c063; background: linear-gradient(#9c632f, #54381e); box-shadow: inset 0 1px #fff3c66c, 0 0 11px #f3b85b4a; animation: territory-journey-glow 2.7s ease-in-out infinite; }
+.territory-events__journey-day--ready em { color: #fff2bd; }
+.territory-events__journey-day--done { color: #e5d1a5; border-color: #a28c5e; background: linear-gradient(#564b36, #26332e); }
+.territory-events__journey-day--done strong { color: #a7f1c6; }
+.territory-events__journey-day:disabled { cursor: default; }
+@keyframes territory-journey-glow { 50% { box-shadow: inset 0 1px #fff3c66c, 0 0 17px #f3b85b77; } }
 .territory-event { position: relative; display: flex; gap: 11px; padding: 11px; border-radius: 15px; border: 1px solid #cfa45c55; background: linear-gradient(130deg, #302925dc, #121b27 65%); box-shadow: inset 0 1px #ffffff0b, 0 3px 9px #0004; }
 .territory-event--ready { border-color: #f8c659cc; background: linear-gradient(125deg, #4b3422, #1b2430 72%); box-shadow: inset 0 1px #fff1b933, 0 0 12px #edab3140; }
 .territory-event__art { display: grid; place-items: center; flex: 0 0 62px; width: 62px; height: 66px; border-radius: 12px; border: 1px solid #e7c17740; background: radial-gradient(ellipse at 45% 36%, #b68b455c, #1b2538 80%); color: #f4c981; overflow: hidden; }
@@ -38,4 +54,4 @@
 .territory-events__note { margin-top: 9px; padding: 9px; border: 1px solid #fbbf2466; border-radius: 9px; color: #ffdda5; background: #4230187a; font-size: 10px; line-height: 1.4; }
 .territory-events__footnote { margin: 13px auto 0; max-width: 310px; color: #8394a6; text-align: center; font-size: 10px; line-height: 1.4; }
 @media(max-width: 360px) { .territory-events__hero { gap: 7px; padding: 9px; } .territory-events__hero-mark { flex-basis: 57px; width: 57px; height: 57px; } .territory-events__hero-mark img { width: 53px; height: 53px; } .territory-event { gap: 8px; padding: 9px; } .territory-event__art { flex-basis: 52px; width: 52px; height: 59px; } .territory-event__art img { width: 52px; height: 52px; } .territory-event__heading h3 { min-width: 105px; } }
-@media(prefers-reduced-motion: reduce) { .territory-event__action:active { transform: none; } .territory-events__refresh svg { animation: none; } }
+@media(prefers-reduced-motion: reduce) { .territory-event__action:active { transform: none; } .territory-events__refresh svg { animation: none; } .territory-events__journey-day--ready { animation: none; } }

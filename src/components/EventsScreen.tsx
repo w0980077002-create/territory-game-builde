@@ -37,6 +37,41 @@ function EventCard({ icon: Icon, image, name, description, detail, status, actio
   </article>;
 }
 
+/** A Lootborn-inspired retention pattern using TERRITORY's *existing* seven
+ * daily rewards. Only the existing calendar action can award anything. */
+function SevenDayJourney({ dayIndex, claimedToday, rewards, onOpen, en }: {
+  dayIndex: number;
+  claimedToday: boolean;
+  rewards: typeof DAILY_REWARDS;
+  onOpen: () => void;
+  en: boolean;
+}) {
+  return <section className="territory-events__journey" aria-label={en ? 'Seven-day hero journey' : 'Путь героя на семь дней'}>
+    <div className="territory-events__journey-title">
+      <div><span>{en ? 'YOUR FIRST STEPS' : 'ПУТЬ ГЕРОЯ'}</span><h3>{en ? 'Seven days of gifts' : 'Семь дней подарков'}</h3></div>
+      <b>{Math.max(1, Math.min(7, dayIndex + 1))}/7</b>
+    </div>
+    <div className="territory-events__journey-days">
+      {rewards.slice(0, 7).map((reward, index) => {
+        const current = index === dayIndex;
+        const complete = index < dayIndex || (current && claimedToday);
+        const ready = current && !claimedToday;
+        const detail = [reward.gold ? `${reward.gold.toLocaleString(en ? 'en-US' : 'ru-RU')} 🪙` : null,
+          reward.gems ? `${reward.gems} 💎` : null, reward.stones ? `${reward.stones} ⚔️` : null,
+          reward.largeHealthPotions ? `${reward.largeHealthPotions} 🧪` : null].filter(Boolean).join(' · ');
+        return <button key={index} type="button" onClick={onOpen} disabled={!current}
+          className={`territory-events__journey-day ${ready ? 'territory-events__journey-day--ready' : ''} ${complete ? 'territory-events__journey-day--done' : ''}`}
+          aria-label={`${en ? 'Day' : 'День'} ${index + 1}: ${detail}${ready ? en ? ', available now' : ', можно забрать' : ''}`}
+          title={detail}>
+          <span>{en ? 'DAY' : 'ДЕНЬ'} {index + 1}</span>
+          <strong aria-hidden="true">{complete ? '✓' : index === 6 ? '🎁' : index % 2 ? '💎' : '🪙'}</strong>
+          <em>{ready ? en ? 'CLAIM' : 'ЗАБРАТЬ' : complete ? '✓' : '· · ·'}</em>
+        </button>;
+      })}
+    </div>
+  </section>;
+}
+
 /** Real existing bonuses and competition progress; zero synthetic payouts. */
 export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
   onNavigate: (screen: EventDestination) => void;
@@ -146,6 +181,7 @@ export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
     </div>
 
     {tab === 'daily' ? <div id="territory-events-daily-panel" className="territory-events__list" role="tabpanel" aria-labelledby="territory-events-daily-tab">
+      <SevenDayJourney dayIndex={daily.dayIndex} claimedToday={daily.claimedToday} rewards={DAILY_REWARDS} onOpen={onDaily} en={en}/>
       <EventCard icon={Gift} image="ic-daily.webp" name={en ? 'Daily login gift' : 'Ежедневный подарок'}
         description={en ? `Day ${daily.dayIndex + 1} of 7. Open the reward calendar.` : `День ${daily.dayIndex + 1} из 7. Забери подарок в календаре.`}
         detail={dayReward ? [dayReward.gold ? `${format(dayReward.gold)} 🪙` : '', dayReward.gems ? `${dayReward.gems} 💎` : '', dayReward.stones ? `${dayReward.stones} ⚔️` : ''].filter(Boolean).join(' · ') : ''}
