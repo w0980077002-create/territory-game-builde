@@ -21,7 +21,7 @@ def load(browser,w=390,h=844):
     page.get_by_role('button',name='КРУТИТЬ',exact=True).wait_for()
     return page
 def skip_reel_animation(page):
-    # The server confirms a winning decision before the 2.4s reel animation
+    # The server confirms a winning decision before the short reel animation
     # finishes. Assert SKIP is still in the DOM while reels are moving, and
     # invoke it synchronously to avoid Playwright actionability waiting until
     # the animation completes and its button legitimately disappears.

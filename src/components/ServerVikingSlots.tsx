@@ -8,6 +8,10 @@ import { reelSpinTrail, SLOT_COIN_BET_CHOICES, SLOT_ICONS, SLOT_LINE_CHOICES, SL
 import './vikingSlots.css';
 const root = import.meta.env.BASE_URL;
 const START_GRID: SlotGrid = Array.from({length:5},()=>['gold','gem','sword'] as SlotSymbol[]);
+// Each mobile reel keeps its starting three symbols, six travelling symbols,
+// and the three server-confirmed landing symbols (12 instead of 18 images).
+const LIVE_REEL_TRAIL = 6;
+const LIVE_REEL_END_MS = 1_900;
 
 /** Missing/disabled reviewed installation keeps the explicitly labelled existing demo. */
 export function SlotsGate({userId,onBack,demo}:{userId:string;onBack:()=>void;demo:ReactNode}) {
@@ -45,6 +49,7 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
   const [bet,setBet]=useState(initial.state.bet || 5);
   const [auto,setAuto]=useState(0);
   const [tracks,setTracks]=useState<SlotGrid|null>(null);
+  const [spinWaiting,setSpinWaiting]=useState(false);
   const [animation,setAnimation]=useState(0);
   const [lineIndex,setLineIndex]=useState(0);
   const lock=useRef(false);
@@ -69,13 +74,18 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
   const command=async(request:SlotsAction,retry?:PendingSlots)=>{
     if (lock.current || !recovered || tracks || (pending&&!retry)) return;
     lock.current=true;setBusy(true);setError('');
+    if (request.action==='spin') setSpinWaiting(true);
     const operation=retry || {id:crypto.randomUUID(),expected:state.revision,request};
     let committed=false;
     try {
       // Flush local game actions before changing the real hero wallet.
       if (!retry && (request.action==='spin' || request.action==='collect')) {
         const snapshot=useGame.get();
-        if (!await withSlotsDeadline(saveCloudSave(userId,snapshot),15_000) || useGame.get()!==snapshot)
+        // A stalled pre-save has NOT sent a wager. Fail promptly and allow a
+        // normal retry; it is not the uncertain-RPC case that needs UUID replay.
+        const saved=await withSlotsDeadline(saveCloudSave(userId,snapshot),8_000)
+          .catch(cause=>{if(cause instanceof Error && cause.message==='slots_request_timeout')throw new SlotsRejected('slots_save_slow');throw cause;});
+        if (!saved || useGame.get()!==snapshot)
           throw new SlotsRejected('slots_reload_required');
       }
       // Failure to persist prevents the RPC entirely.
@@ -96,9 +106,9 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
       if(request.action==='super')setNotice((en?'Super treasure: +':'Суперсокровище: +')+(next.state.superAward||0)+' 🪙');
       if (!retry && request.action==='spin' && next.state.outcome) {
         const outcome=next.state.outcome;
-        setTracks(field.map((column,i)=>[...column,...reelSpinTrail(i,outcome.stops?.[i] || 0,12),...outcome.grid[i]]));
+        setTracks(field.map((column,i)=>[...column,...reelSpinTrail(i,outcome.stops?.[i] || 0,LIVE_REEL_TRAIL),...outcome.grid[i]]));
         setAnimation(n=>n+1);
-        animationTimer.current=setTimeout(()=>{if(alive.current)setTracks(null);},2400);
+        animationTimer.current=setTimeout(()=>{if(alive.current)setTracks(null);},LIVE_REEL_END_MS);
         if(next.state.phase==='bonus' || next.state.phase==='superbonus')setAuto(0);
       }
       keepPendingSlots(userId,null);setPending(null);
@@ -109,9 +119,9 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
       setAuto(0);
       if(cause instanceof SlotsRejected) {
         try {keepPendingSlots(userId,null);setPending(null);}catch{/* Keep the same safe replay marker. */}
-        setError(cause.message.includes('slots_no_gold') ? (en?'Not enough gold.':'Недостаточно монет.') : cause.message.includes('slots_reload_required') ? (en?'Reload the game to synchronize your coins.':'Перезапусти игру для синхронизации монет.') : (en?'Action rejected. Refresh the server state.':'Действие отклонено. Обнови состояние сервера.'));
+        setError(cause.message.includes('slots_no_gold') ? (en?'Not enough gold.':'Недостаточно монет.') : cause.message.includes('slots_save_slow') ? (en?'Save is slow. No gold was staked. Please retry.':'Сохранение отвечает медленно. Ставка не списана. Повтори.') : cause.message.includes('slots_reload_required') ? (en?'Reload the game to synchronize your coins.':'Перезапусти игру для синхронизации монет.') : (en?'Action rejected. Refresh the server state.':'Действие отклонено. Обнови состояние сервера.'));
       } else setError(committed ? (en?'Action confirmed; recovery marker could not be cleared. Retry safely.':'Действие подтверждено, но отметка восстановления не удалена. Безопасно повтори.') : (en?'Result unconfirmed. Retry the saved operation.':'Результат не подтверждён. Повтори сохранённую операцию.'));
-    } finally {lock.current=false;if(alive.current)setBusy(false);}
+    } finally {lock.current=false;if(alive.current){setSpinWaiting(false);setBusy(false);}}
   };
   useEffect(()=>{
     if(!auto || busy || tracks || pending || !recovered || help) return;
@@ -136,12 +146,12 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
     <div className="vslot-preview-label"><Shield size={12}/>{en?'9 PAYLINES · BONUS · DOUBLE-UP':'9 ЛИНИЙ · БОНУС · РИСК ×2'}</div>
     <div className="vslot-art"><img src={root+'assets/territory/characters/heroes/female_warrior/idle.webp'} alt=""/><div><Crown size={25}/><strong>{en?'FATE OF THE NORTH':'УДАЧА СЕВЕРА'}</strong><span>{en?'Treasures, runes and legendary heroes':'Сокровища, руны и герои легенд'}</span></div><img src={root+'assets/territory/characters/bosses/northern_jarl/idle.webp'} alt=""/></div>
     <div className="vslot-stats"><div><small>{en?'YOUR GOLD':'ВАШЕ ЗОЛОТО'}</small><strong>{status.coins.toLocaleString()} 🪙</strong></div><div><small>{en?'STAKE':'СТАВКА'}</small><strong>{lines*bet} 🪙</strong></div><div><small>{en?'PRIZE':'ПРИЗ'}</small><strong className="vslot-gold">{state.pending.toLocaleString()} 🪙</strong></div></div>
-    <div className="vslot-board"><div className="vslot-line-marker">{Array.from({length:state.lines||lines},(_,i)=><span key={i}>{i+1}</span>)}</div><div className="vslot-reels" aria-label={en?'Five reels, three symbols each':'Пять барабанов по три символа'}>
-      {field.map((reel,r)=><div className="vslot-reel-window" key={r}><div key={tracks?`${animation}-${r}`:`rest-${r}`} className={'vslot-reel-track '+(tracks?'vslot-reel-track--rolling':'')} style={tracks?{animationDelay:r*100+'ms',animationDuration:950+r*220+'ms'}:undefined}>
+    <div className="vslot-board"><div className="vslot-line-marker">{Array.from({length:state.lines||lines},(_,i)=><span key={i}>{i+1}</span>)}</div><div className={'vslot-reels '+(spinWaiting?'vslot-reels--confirming':'')} aria-label={en?'Five reels, three symbols each':'Пять барабанов по три символа'}>
+      {field.map((reel,r)=><div className="vslot-reel-window" key={r}><div key={tracks?`${animation}-${r}`:`rest-${r}`} className={'vslot-reel-track '+(tracks?'vslot-reel-track--rolling vslot-reel-track--quick':'')} style={tracks?{animationDelay:r*75+'ms',animationDuration:750+r*170+'ms'}:undefined}>
         {(tracks?.[r] || reel).map((sym,row)=><div key={row} className={'vslot-symbol '+(!tracks&&visibleLine?.positions.some(([c,l])=>c===r&&l===row)?'vslot-symbol--win':'')}><img src={root+SLOT_ICONS[sym].image} alt={SLOT_ICONS[sym][en?'en':'ru']} draggable={false}/>{sym==='wild'&&<b>WILD</b>}{sym==='hero'&&<b>BONUS</b>}</div>)}
       </div></div>)}
       {visibleLine&&!tracks&&<svg className="vslot-win-path" viewBox="0 0 500 300" preserveAspectRatio="none" aria-hidden="true"><polyline points={visibleLine.positions.map(([c,r])=>`${c*100+50},${r*100+50}`).join(' ')} stroke="#ffde55" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>}
-    </div><span className="vslot-board-caption">{tracks?(en?'SPINNING…':'ВРАЩЕНИЕ…'):`${state.lines||lines} ${en?'ACTIVE LINES':'АКТИВНЫХ ЛИНИЙ'}`}</span></div>
+    </div><span className="vslot-board-caption" role="status">{spinWaiting?(en?'CONFIRMING WAGER…':'ПОДТВЕРЖДАЕМ СТАВКУ…'):tracks?(en?'SPINNING…':'ВРАЩЕНИЕ…'):`${state.lines||lines} ${en?'ACTIVE LINES':'АКТИВНЫХ ЛИНИЙ'}`}</span></div>
     {visibleLine&&!tracks&&<div className="vslot-winning-lines"><Sparkles size={15}/>{en?'Line':'Линия'} {visibleLine.number} · +{visibleLine.payout} 🪙 ({lineIndex%winnings.length+1}/{winnings.length})</div>}
     {notice&&<p className="vslot-notice" role="status">{notice}</p>}
     {error&&<p className="vslot-notice" role="alert">{error}</p>}

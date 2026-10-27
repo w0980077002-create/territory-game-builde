@@ -46,13 +46,13 @@ export function useArenaRoom(roomId: string, onGone: () => void) {
     }
   }, [roomId]);
 
-  // Keep the 2.2-second refresh for live fights, but slow the waiting / finished
-  // room and NEVER poll a hidden Telegram Mini App. This prevents inactive
-  // arena sessions from saturating the shared Supabase connection pool.
+  // Preserve fast synchronization during real fights. Lobby / completed rooms
+  // have no second-by-second combat updates and should not contend with player
+  // saves and slot rounds on the shared Supabase project.
   const roomStatus = view?.room.status;
   useEffect(() => {
     if (document.visibilityState !== 'hidden') void refresh();
-    const intervalMs = roomStatus === 'active' ? POLL_MS : roomStatus === 'finished' ? 4_000 : 2_500;
+    const intervalMs = roomStatus === 'active' ? POLL_MS : roomStatus === 'finished' ? 5_000 : 4_000;
     const timer = window.setInterval(() => {
       if (document.visibilityState !== 'hidden') void refresh();
     }, intervalMs);

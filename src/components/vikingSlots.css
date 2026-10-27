@@ -456,6 +456,33 @@
 .vslot-deck-tool:disabled{opacity:.45;filter:saturate(.55)}
 .vslot-spin-key:disabled{opacity:.6;filter:saturate(.7)}
 .vslot-controls button:focus-visible{outline:2px solid #fff5b1;outline-offset:3px}
+/* Low-memory Telegram WebViews: twelve moving symbols per reel, not eighteen. */
+.vslot-reel-track--rolling.vslot-reel-track--quick{
+  height:400%;
+  animation-name:vslot-short-reel-roll;
+}
+.vslot-reel-track--rolling.vslot-reel-track--quick .vslot-symbol{
+  flex:0 0 calc(100% / 12);
+  height:calc(100% / 12);
+}
+.vslot-reel-track--quick .vslot-symbol img{filter:none}
+@keyframes vslot-short-reel-roll{
+  0%{transform:translateY(0)}
+  16%{transform:translateY(-12.5%)}
+  33%{transform:translateY(-25%)}
+  53%{transform:translateY(-37.5%)}
+  75%{transform:translateY(-50%)}
+  100%{transform:translateY(-75%)}
+}
+/* A slow network never leaves a visually inert board while a bet is pending. */
+.vslot-reels--confirming::before{
+  content:"";position:absolute;z-index:6;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(180deg,transparent 0%,#f7bd4948 7%,transparent 15%,transparent 33%);
+  background-size:100% 110%;
+  animation:vslot-wager-confirm .8s linear infinite;
+}
+@keyframes vslot-wager-confirm{from{background-position:0 -120px}to{background-position:0 120px}}
+@media(prefers-reduced-motion:reduce){.vslot-reels--confirming::before{animation:none}}
 @media(max-width:355px){
   .vslot-controls{padding:8px 6px}
   .vslot-selection{grid-template-columns:80px minmax(0,1fr);gap:5px}

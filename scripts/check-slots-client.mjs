@@ -44,7 +44,10 @@ assert.match(apiSource,/await withSlotsDeadline\(supabase\.rpc\('territory_slots
  'status must not leave the enabled/demo gate spinning forever when offline');
 assert.match(apiSource,/\}\), 15_000\)/,
  'an unconfirmed bet must time out while retaining its durable operation for replay');
-assert.match(ui,/await withSlotsDeadline\(saveCloudSave\(userId,snapshot\),15_000\)/,'flush pending game actions before spending real gold');
+assert.match(ui,/await withSlotsDeadline\(saveCloudSave\(userId,snapshot\),8_000\)/,'flush pending game actions before spending real gold, with a prompt no-wager deadline');
+assert.match(ui,/slots_save_slow/,'a slow pre-save must explain that no bet was sent');
+assert.match(ui,/LIVE_REEL_TRAIL = 6/,'live cabinet must not animate ninety high-detail mobile images');
+assert.match(ui,/vslot-reels--confirming/,'pending stake should visibly progress instead of showing a frozen board');
 assert.match(ui,/acceptMonopolyClaimReceipt\(userId,receipt\)/,'adopt the exact verified server wallet receipt');
 assert.doesNotMatch(ui,/spinVikingSlots|fairDemoInt|setBalance|useGame\.set|autoClaimHallGold/,'live screen cannot invent outcomes or balances');
 assert.doesNotMatch(ui,/status\.tickets|БИЛЕТОВ НА ЛИНИЮ/,'slot stakes must use hero gold, not hall tickets');

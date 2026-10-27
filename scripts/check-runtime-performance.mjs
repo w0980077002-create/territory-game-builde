@@ -10,6 +10,7 @@ const clouds = read('src/game/cloud.ts');
 
 assert.match(arena,/const POLL_MS = 2200;/, 'Keep active battle sync under 2.2 seconds');
 assert.match(arena,/roomStatus === 'active' \? POLL_MS/, 'Active rooms still sync quickly');
+assert.match(arena,/roomStatus === 'finished' \? 5_000 : 4_000/, 'Idle rooms must avoid unnecessary backend polling');
 assert.match(arena,/document\.visibilityState !== 'hidden'/, 'Hidden arena pages must not poll');
 assert.match(arena,/document\.addEventListener\('visibilitychange', resumed\)/, 'Arena catches up when reopened');
 assert.match(arena,/lastId\.current = next\.messages\[next\.messages\.length - 1\]\.id/, 'Chat cursor continuity');
