@@ -20,6 +20,12 @@ This repository contains the live Telegram game **TERRITORY 1.0**. Treat its mai
 - Preserve mobile-first Telegram/iPhone/Samsung layouts and avoid slow section loading.
 - Economy integrity, seven-day consumable/material lifetimes and oldest-expiring-first usage must remain intact.
 
+## Locked visual standard — owner approved 2026-10-27
+
+- **Mandatory reference for all new TERRITORY 1.0 art:** [`docs/ART_STYLE_LOCKED_TERRITORY_V1_20261027_RU.md`](docs/ART_STYLE_LOCKED_TERRITORY_V1_20261027_RU.md). Read it before creating or replacing any visual assets.
+- The two fixed pillars are **warm carved wood with visible natural grain** (the existing `WoodenPlaque` asset/component) and **vivid glossy cartoon-Viking potions/items** matching the saved owner screenshot in `docs/art-reference/shop-potions-approved-20261027.jpg`.
+- Preserve the seven approved `public/*-viking.webp` consumables and expand missing illustrations in this exact style. **No large circular runic-medallion backgrounds, black boxes, unrelated photorealistic bottle styles or duplicate art for different effects.** Do not replace approved art without the owner's explicit instruction.
+
 ## Working agreement
 
 1. Assign non-overlapping files/tasks to specialist agents; work on independent branches or PRs.
