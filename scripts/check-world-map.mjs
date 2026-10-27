@@ -29,6 +29,10 @@ assert.match(canvas, /touchAction: 'none'/, 'Prevent WebView scrolling while dra
 assert.match(canvas, /onPointerDown=/);
 assert.match(canvas, /onPointerMove=/);
 assert.match(canvas, /onPointerCancel=/);
+assert.match(canvas, /addEventListener\('touchmove', touchMove, \{ passive: false \}\)/, 'Android gestures must not be stolen by the Telegram WebView');
+assert.match(canvas, /event\.preventDefault\(\)/, 'Native touchmove must block parent scroll during map drag');
+assert.match(canvas, /requestAnimationFrame\(fling\)/, 'Long map traversal needs momentum after a flick');
+assert.match(canvas, /event\.pointerType === 'touch'\) return;/, 'Avoid duplicate native touch and pointer gestures');
 assert.match(canvas, /onClickCapture=/, 'Panning must suppress accidental building taps');
 assert.match(canvas, /setPointerCapture\(event\.pointerId\)/);
 assert.match(canvas, /ResizeObserver/);

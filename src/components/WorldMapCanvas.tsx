@@ -84,6 +84,7 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
   const sizeRef = useRef({ width: 0, height: 0 });
   const viewRef = useRef<View>({ x: 0, y: 0, scale: 1 });
   const frameRef = useRef<number | null>(null);
+  const inertiaRef = useRef<number | null>(null);
   const drag = useRef<{ pointerId: number; x: number; y: number; startX: number; startY: number; moved: boolean } | null>(null);
   const cancelClick = useRef(false);
   const [hintVisible, setHintVisible] = useState(() => !sawPanHint());
@@ -108,6 +109,111 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
     viewRef.current = clampView(next, width, height);
     scheduleTransform();
   };
+
+  const stopInertia = () => {
+    if (inertiaRef.current !== null) window.cancelAnimationFrame(inertiaRef.current);
+    inertiaRef.current = null;
+  };
+
+  // Android Telegram's WebView sometimes cancels pointer streams mid-swipe.
+  // Non-passive native touch listeners keep one continuous finger gesture and
+  // allow momentum after the finger is lifted, without React render work.
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    let gesture: {
+      id: number; x: number; y: number; startX: number; startY: number;
+      lastX: number; lastY: number; lastT: number;
+      vx: number; vy: number; moved: boolean;
+    } | null = null;
+
+    const touchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) { gesture = null; stopInertia(); return; }
+      const finger = event.touches[0];
+      stopInertia();
+      cancelClick.current = false;
+      const now = performance.now();
+      gesture = {
+        id: finger.identifier, x: finger.clientX, y: finger.clientY,
+        startX: viewRef.current.x, startY: viewRef.current.y,
+        lastX: finger.clientX, lastY: finger.clientY, lastT: now,
+        vx: 0, vy: 0, moved: false,
+      };
+    };
+
+    const touchMove = (event: TouchEvent) => {
+      const current = gesture;
+      if (!current || event.touches.length !== 1) return;
+      const finger = Array.from(event.touches).find(item => item.identifier === current.id);
+      if (!finger) return;
+      const dx = finger.clientX - current.x;
+      const dy = finger.clientY - current.y;
+      if (!current.moved && Math.abs(dx) + Math.abs(dy) > 5) {
+        current.moved = true;
+        setHintVisible(previous => {
+          if (!previous) return false;
+          try { window.sessionStorage.setItem('territory-map-pan-seen', 'yes'); } catch { /* Hint only. */ }
+          return false;
+        });
+      }
+      if (!current.moved) return;
+      event.preventDefault();
+      moveWorld({ ...viewRef.current, x: current.startX + dx, y: current.startY + dy });
+      const now = performance.now();
+      const elapsed = now - current.lastT;
+      if (elapsed >= 8) {
+        const vx = Math.max(-2.5, Math.min(2.5, (finger.clientX - current.lastX) / elapsed));
+        const vy = Math.max(-2.5, Math.min(2.5, (finger.clientY - current.lastY) / elapsed));
+        current.vx = current.vx * 0.45 + vx * 0.55;
+        current.vy = current.vy * 0.45 + vy * 0.55;
+        current.lastX = finger.clientX;
+        current.lastY = finger.clientY;
+        current.lastT = now;
+      }
+    };
+
+    const touchEnd = (event: TouchEvent) => {
+      const current = gesture;
+      if (!current || !Array.from(event.changedTouches).some(item => item.identifier === current.id)) return;
+      gesture = null;
+      cancelClick.current = current.moved;
+      if (!current.moved) return;
+      if (performance.now() - current.lastT > 120) return;
+      // Keep a direct, slow drag exact; only a flick gets extra travel.
+      let vx = current.vx * 1.65;
+      let vy = current.vy * 1.65;
+      if (Math.hypot(vx, vy) < 0.22) return;
+      let lastFrame = performance.now();
+      const fling = (now: number) => {
+        const dt = Math.min(32, now - lastFrame);
+        lastFrame = now;
+        const friction = Math.pow(0.94, dt / 16.67);
+        vx *= friction;
+        vy *= friction;
+        const previous = viewRef.current;
+        const desired = { ...previous, x: previous.x + vx * dt, y: previous.y + vy * dt };
+        moveWorld(desired);
+        if (Math.abs(viewRef.current.x - desired.x) > 0.5) vx = 0;
+        if (Math.abs(viewRef.current.y - desired.y) > 0.5) vy = 0;
+        if (Math.hypot(vx, vy) < 0.04) { inertiaRef.current = null; return; }
+        inertiaRef.current = window.requestAnimationFrame(fling);
+      };
+      inertiaRef.current = window.requestAnimationFrame(fling);
+    };
+
+    const touchCancel = () => { gesture = null; cancelClick.current = true; };
+    viewport.addEventListener('touchstart', touchStart, { passive: true });
+    viewport.addEventListener('touchmove', touchMove, { passive: false });
+    viewport.addEventListener('touchend', touchEnd, { passive: true });
+    viewport.addEventListener('touchcancel', touchCancel, { passive: true });
+    return () => {
+      viewport.removeEventListener('touchstart', touchStart);
+      viewport.removeEventListener('touchmove', touchMove);
+      viewport.removeEventListener('touchend', touchEnd);
+      viewport.removeEventListener('touchcancel', touchCancel);
+      stopInertia();
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -139,6 +245,7 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
   }, []);
 
   const recenter = () => {
+    stopInertia();
     const { width, height } = sizeRef.current;
     if (!width || !height) return;
     const scale = startingScale(width, height);
@@ -146,6 +253,7 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
   };
 
   const zoom = (factor: number) => {
+    stopInertia();
     const { width, height } = sizeRef.current;
     if (!width || !height) return;
     const previous = viewRef.current;
@@ -173,14 +281,17 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
       <div
         ref={viewportRef}
         className="absolute inset-0 select-none"
-        style={{ touchAction: 'none', cursor: 'grab' }}
+        style={{ touchAction: 'none', overscrollBehavior: 'contain', cursor: 'grab' }}
         onPointerDown={event => {
+          if (event.pointerType === 'touch') return; // Native touch gestures handle mobile WebViews.
           if (event.pointerType === 'mouse' && event.button !== 0) return;
           if (drag.current) return;
+          stopInertia();
           cancelClick.current = false;
           drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, startX: viewRef.current.x, startY: viewRef.current.y, moved: false };
         }}
         onPointerMove={event => {
+          if (event.pointerType === 'touch') return;
           const active = drag.current;
           if (!active || active.pointerId !== event.pointerId) return;
           const dx = event.clientX - active.x;
