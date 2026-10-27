@@ -135,9 +135,16 @@ export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes }: {
         }
       } catch { /* Keep resource actions disabled if server is not configured. */ }
     })();
-    const timer = window.setInterval(() => setClock(Date.now()), 1000);
-    return () => { cancelled = true; window.clearInterval(timer); };
+    return () => { cancelled = true; };
   }, []);
+
+  // No per-second React renders while the player is simply exploring the map.
+  // Countdown ticks are needed only for an active gathering action.
+  useEffect(() => {
+    if (!gather?.active) return;
+    const timer = window.setInterval(() => setClock(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [gather?.active?.finishes_at]);
 
   const remainingMs = gather?.active
     ? Math.max(0, Date.parse(gather.active.finishes_at) - (clock + serverOffset))

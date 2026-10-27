@@ -32,6 +32,9 @@ assert.match(canvas, /onPointerCancel=/);
 assert.match(canvas, /onClickCapture=/, 'Panning must suppress accidental building taps');
 assert.match(canvas, /setPointerCapture\(event\.pointerId\)/);
 assert.match(canvas, /ResizeObserver/);
+assert.match(canvas, /requestAnimationFrame/, 'Map movement should use browser animation frames');
+assert.match(canvas, /world\.style\.transform =/, 'Move one composited layer without React reconciliation');
+assert.doesNotMatch(canvas, /setView\(/, 'Pointer movement must not re-render the entire map in React');
 assert.match(canvas, /clampView/, 'Players must not lose the entire map beyond viewport');
 assert.match(canvas, /sessionStorage\.setItem\('territory-map-pan-seen'/);
 assert.match(canvas, /<Hand /, 'First swipe must be explained visually');
@@ -39,6 +42,7 @@ assert.match(css, /prefers-reduced-motion/, 'Animation should respect accessibil
 assert.match(canvas, /setDrawerOpen\(true\)/, 'All sections must remain discoverable without clutter');
 
 assert.match(map, /<WorldMapCanvas /);
+assert.match(map, /if \(!gather\?\.active\) return;/, 'Idle map should not re-render once per second');
 assert.match(map, /case 'trial': onTrial\(\)/);
 assert.match(map, /case 'companions': onCompanions\(\)/);
 assert.match(map, /case 'runes': onRunes\(\)/);

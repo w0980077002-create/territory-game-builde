@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Compass, Hand, Layers3, LocateFixed, Minus, Plus, X } from 'lucide-react';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import './worldMapCanvas.css';
@@ -80,51 +80,79 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
   language: 'ru' | 'en';
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  const [view, setView] = useState<View>({ x: 0, y: 0, scale: 1 });
-  const initialized = useRef(false);
+  const worldRef = useRef<HTMLDivElement>(null);
+  const sizeRef = useRef({ width: 0, height: 0 });
+  const viewRef = useRef<View>({ x: 0, y: 0, scale: 1 });
+  const frameRef = useRef<number | null>(null);
   const drag = useRef<{ pointerId: number; x: number; y: number; startX: number; startY: number; moved: boolean } | null>(null);
   const cancelClick = useRef(false);
   const [hintVisible, setHintVisible] = useState(() => !sawPanHint());
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  useEffect(() => {
+  // Directly move one composited layer in requestAnimationFrame. React never
+  // reconciles the 18 clickable landmarks on each pointermove (a major source
+  // of stutter in Android Telegram WebView).
+  const scheduleTransform = () => {
+    if (frameRef.current !== null) return;
+    frameRef.current = window.requestAnimationFrame(() => {
+      frameRef.current = null;
+      const world = worldRef.current;
+      if (!world) return;
+      const { x, y, scale } = viewRef.current;
+      world.style.transform = `translate3d(${x}px,${y}px,0) scale(${scale})`;
+    });
+  };
+
+  const moveWorld = (next: View) => {
+    const { width, height } = sizeRef.current;
+    viewRef.current = clampView(next, width, height);
+    scheduleTransform();
+  };
+
+  useLayoutEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const width = entry.contentRect.width;
-      const height = entry.contentRect.height;
+    const resize = (width: number, height: number) => {
       if (width === 0 || height === 0) return;
-      setSize({ width, height });
-      if (!initialized.current) {
+      const previousSize = sizeRef.current;
+      if (previousSize.width === width && previousSize.height === height) return;
+      sizeRef.current = { width, height };
+      if (previousSize.width === 0) {
         const scale = startingScale(width, height);
-        setView(clampView({ x: (width - WORLD_WIDTH * scale) / 2, y: (height - WORLD_HEIGHT * scale) / 2, scale }, width, height));
-        initialized.current = true;
+        viewRef.current = clampView({ x: (width - WORLD_WIDTH * scale) / 2, y: (height - WORLD_HEIGHT * scale) / 2, scale }, width, height);
       } else {
-        setView(previous => clampView(previous, width, height));
+        viewRef.current = clampView(viewRef.current, width, height);
       }
+      scheduleTransform();
+    };
+    const initial = viewport.getBoundingClientRect();
+    resize(initial.width, initial.height);
+    const observer = new ResizeObserver(([entry]) => {
+      resize(entry.contentRect.width, entry.contentRect.height);
     });
     observer.observe(viewport);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    };
   }, []);
 
-  const recenter = useCallback(() => {
-    if (!size.width || !size.height) return;
-    const scale = startingScale(size.width, size.height);
-    setView(clampView({ x: (size.width - WORLD_WIDTH * scale) / 2, y: (size.height - WORLD_HEIGHT * scale) / 2, scale }, size.width, size.height));
-  }, [size]);
+  const recenter = () => {
+    const { width, height } = sizeRef.current;
+    if (!width || !height) return;
+    const scale = startingScale(width, height);
+    moveWorld({ x: (width - WORLD_WIDTH * scale) / 2, y: (height - WORLD_HEIGHT * scale) / 2, scale });
+  };
 
   const zoom = (factor: number) => {
-    const min = startingScale(size.width, size.height);
-    setView(previous => {
-      const scale = Math.max(min, Math.min(min * 2.2, previous.scale * factor));
-      const ratio = scale / previous.scale;
-      return clampView({
-        scale,
-        x: size.width / 2 - (size.width / 2 - previous.x) * ratio,
-        y: size.height / 2 - (size.height / 2 - previous.y) * ratio,
-      }, size.width, size.height);
-    });
+    const { width, height } = sizeRef.current;
+    if (!width || !height) return;
+    const previous = viewRef.current;
+    const min = startingScale(width, height);
+    const scale = Math.max(min, Math.min(min * 2.2, previous.scale * factor));
+    const ratio = scale / previous.scale;
+    moveWorld({ scale, x: width / 2 - (width / 2 - previous.x) * ratio, y: height / 2 - (height / 2 - previous.y) * ratio });
   };
 
   const stopDrag = (pointerId: number) => {
@@ -132,6 +160,7 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
     if (!active || active.pointerId !== pointerId) return;
     cancelClick.current = active.moved;
     drag.current = null;
+    if (viewportRef.current) viewportRef.current.style.cursor = 'grab';
   };
 
   const visit = (id: WorldMapPlace) => {
@@ -144,12 +173,12 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
       <div
         ref={viewportRef}
         className="absolute inset-0 select-none"
-        style={{ touchAction: 'none', cursor: drag.current ? 'grabbing' : 'grab' }}
+        style={{ touchAction: 'none', cursor: 'grab' }}
         onPointerDown={event => {
           if (event.pointerType === 'mouse' && event.button !== 0) return;
           if (drag.current) return;
           cancelClick.current = false;
-          drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, startX: view.x, startY: view.y, moved: false };
+          drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, startX: viewRef.current.x, startY: viewRef.current.y, moved: false };
         }}
         onPointerMove={event => {
           const active = drag.current;
@@ -157,7 +186,10 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
           const dx = event.clientX - active.x;
           const dy = event.clientY - active.y;
           if (Math.abs(dx) + Math.abs(dy) > 8) {
-            if (!active.moved) event.currentTarget.setPointerCapture(event.pointerId);
+            if (!active.moved) {
+              event.currentTarget.setPointerCapture(event.pointerId);
+              event.currentTarget.style.cursor = 'grabbing';
+            }
             active.moved = true;
             if (hintVisible) {
               setHintVisible(false);
@@ -165,7 +197,7 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
             }
           }
           if (active.moved) {
-            setView(previous => clampView({ ...previous, x: active.startX + dx, y: active.startY + dy }, size.width, size.height));
+            moveWorld({ ...viewRef.current, x: active.startX + dx, y: active.startY + dy });
           }
         }}
         onPointerUp={event => stopDrag(event.pointerId)}
@@ -180,8 +212,9 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
         }}
       >
         <div
+          ref={worldRef}
           className="absolute left-0 top-0 will-change-transform"
-          style={{ width: WORLD_WIDTH, height: WORLD_HEIGHT, transform: `translate3d(${view.x}px,${view.y}px,0) scale(${view.scale})`, transformOrigin: 'top left' }}
+          style={{ width: WORLD_WIDTH, height: WORLD_HEIGHT, transform: 'translate3d(0,0,0) scale(1)', transformOrigin: 'top left' }}
         >
           <img
             src={`${import.meta.env.BASE_URL}assets/territory/map/world-map-v1-20261027.webp`}
