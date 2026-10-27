@@ -1,0 +1,102 @@
+{
+  "schema": "territory-expansion-v1/1",
+  "status": "design_only",
+  "playerFacingEnabled": false,
+  "paymentsEnabled": false,
+  "cashoutEnabled": false,
+  "originalArtworkRequired": true,
+  "copyrightPolicy": "Use only original Territory expression, not copied audiovisual assets, texts or distinctive artwork.",
+  "premiumPricingReferenceUsd": [0.99, 1.99, 3.99, 5.99, 11.99, 17.99, 22.99, 34.99, 59.99, 119.99],
+  "heroBuilds": [
+    {
+      "id": "northern_guard",
+      "nameRu": "Страж севера",
+      "nameEn": "Northern Guard",
+      "speciality": "survival",
+      "skillIds": ["shield_wall", "frost_oath", "stand_fast"]
+    },
+    {
+      "id": "thunder_raider",
+      "nameRu": "Грозовой налётчик",
+      "nameEn": "Thunder Raider",
+      "speciality": "burst",
+      "skillIds": ["axe_storm", "battle_chant", "blood_rush"]
+    },
+    {
+      "id": "rune_weaver",
+      "nameRu": "Хранитель рун",
+      "nameEn": "Rune Weaver",
+      "speciality": "control",
+      "skillIds": ["runic_bolt", "rune_snare", "ancestral_surge"]
+    },
+    {
+      "id": "forest_tracker",
+      "nameRu": "Следопыт чащи",
+      "nameEn": "Forest Tracker",
+      "speciality": "precision",
+      "skillIds": ["hawk_shot", "quickstep", "hunter_focus"]
+    }
+  ],
+  "skills": [
+    { "id": "shield_wall", "nameRu": "Стена щитов", "slot": "active", "roles": ["northern_guard"], "tags": ["block", "survival"] },
+    { "id": "frost_oath", "nameRu": "Клятва инея", "slot": "ultimate", "roles": ["northern_guard"], "tags": ["slow", "resistance"] },
+    { "id": "stand_fast", "nameRu": "Несокрушимость", "slot": "passive", "roles": ["northern_guard"], "tags": ["defense"] },
+    { "id": "axe_storm", "nameRu": "Вихрь секир", "slot": "active", "roles": ["thunder_raider"], "tags": ["area", "physical"] },
+    { "id": "battle_chant", "nameRu": "Боевой напев", "slot": "ultimate", "roles": ["thunder_raider"], "tags": ["damage", "team"] },
+    { "id": "blood_rush", "nameRu": "Жажда битвы", "slot": "passive", "roles": ["thunder_raider"], "tags": ["crit"] },
+    { "id": "runic_bolt", "nameRu": "Рунический заряд", "slot": "active", "roles": ["rune_weaver"], "tags": ["magic"] },
+    { "id": "rune_snare", "nameRu": "Узоры сковывания", "slot": "ultimate", "roles": ["rune_weaver"], "tags": ["control"] },
+    { "id": "ancestral_surge", "nameRu": "Наследие предков", "slot": "passive", "roles": ["rune_weaver"], "tags": ["energy"] },
+    { "id": "hawk_shot", "nameRu": "Соколиный выстрел", "slot": "active", "roles": ["forest_tracker"], "tags": ["precision"] },
+    { "id": "quickstep", "nameRu": "Теневой шаг", "slot": "ultimate", "roles": ["forest_tracker"], "tags": ["dodge", "speed"] },
+    { "id": "hunter_focus", "nameRu": "Верный прицел", "slot": "passive", "roles": ["forest_tracker"], "tags": ["crit"] }
+  ],
+  "runes": [
+    { "id": "glacial_edge", "nameRu": "Грань льда", "tags": ["slow", "control"] },
+    { "id": "fire_ember", "nameRu": "Тлеющий пепел", "tags": ["damage", "burn"] },
+    { "id": "oak_bark", "nameRu": "Дубовая кора", "tags": ["block", "survival"] },
+    { "id": "wolf_fang", "nameRu": "Волчий клык", "tags": ["crit", "physical"] },
+    { "id": "storm_core", "nameRu": "Сердце грозы", "tags": ["energy", "magic"] },
+    { "id": "seers_mark", "nameRu": "Метка провидца", "tags": ["precision", "damage"] }
+  ],
+  "equipmentSetIdeas": [
+    { "id": "fjord_bastion", "nameRu": "Оплот фьорда", "preferredSlots": ["helmet", "armor", "shield"], "synergy": "block" },
+    { "id": "storm_hunt", "nameRu": "Грозовая охота", "preferredSlots": ["weapon", "amulet", "ring"], "synergy": "crit" },
+    { "id": "elder_runestone", "nameRu": "Руна старейшин", "preferredSlots": ["amulet", "ring", "boots"], "synergy": "energy" }
+  ],
+  "companionRoles": [
+    { "id": "guardian", "nameRu": "Защитник", "plannedPosition": "main_or_support" },
+    { "id": "warrior", "nameRu": "Воин", "plannedPosition": "main_or_support" },
+    { "id": "healer", "nameRu": "Целитель", "plannedPosition": "main_or_support" },
+    { "id": "hunter", "nameRu": "Охотник", "plannedPosition": "main_or_support" },
+    { "id": "mage", "nameRu": "Чародей", "plannedPosition": "main_or_support" }
+  ],
+  "eventIdeas": [
+    { "id": "seven_day_hero_path", "nameRu": "Путь героя: семь дней", "days": 7, "freeTrack": true, "premiumTrack": false, "type": "onboarding" },
+    { "id": "winter_trophies", "nameRu": "Зимние трофеи", "days": 4, "freeTrack": true, "premiumTrack": true, "type": "collection" },
+    { "id": "ancient_colossus", "nameRu": "Древний исполин", "days": 7, "freeTrack": true, "premiumTrack": false, "type": "cooperative_boss" },
+    { "id": "chieftain_rally", "nameRu": "Сбор ярлов", "days": 7, "freeTrack": true, "premiumTrack": false, "type": "clan" }
+  ],
+  "offerDesigns": [
+    { "id": "first_steps", "nameRu": "Первый поход", "usdTier": 0.99, "contentsKeys": ["gold", "stones"], "purchaseLimit": 1, "status": "disabled_pending_server" },
+    { "id": "craftsman_supply", "nameRu": "Сундучок мастера", "usdTier": 1.99, "contentsKeys": ["forge_materials", "gold"], "purchaseLimit": 3, "status": "disabled_pending_server" },
+    { "id": "travelers_store", "nameRu": "Запасы странника", "usdTier": 3.99, "contentsKeys": ["potions", "stones"], "purchaseLimit": 3, "status": "disabled_pending_server" },
+    { "id": "warriors_choice", "nameRu": "Выбор дружинника", "usdTier": 5.99, "contentsKeys": ["equipment_choice", "gold"], "purchaseLimit": 2, "status": "disabled_pending_server" },
+    { "id": "rune_hunters_bundle", "nameRu": "Кладезь рун", "usdTier": 11.99, "contentsKeys": ["rune_materials", "blue_gems"], "purchaseLimit": 2, "status": "disabled_pending_server" },
+    { "id": "forest_companion", "nameRu": "Союз со спутником", "usdTier": 17.99, "contentsKeys": ["companion_growth", "gold"], "purchaseLimit": 2, "status": "disabled_pending_server" },
+    { "id": "viking_armory", "nameRu": "Оружейная ярла", "usdTier": 22.99, "contentsKeys": ["equipment_choice", "forge_materials"], "purchaseLimit": 2, "status": "disabled_pending_server" },
+    { "id": "thunder_chest", "nameRu": "Грозовой сундук", "usdTier": 34.99, "contentsKeys": ["rune_materials", "companion_growth"], "purchaseLimit": 2, "status": "disabled_pending_server" },
+    { "id": "northern_heritage", "nameRu": "Наследие севера", "usdTier": 59.99, "contentsKeys": ["cosmetic_outfit", "equipment_choice"], "purchaseLimit": 1, "status": "disabled_pending_server" },
+    { "id": "hall_of_legends", "nameRu": "Чертог легенд", "usdTier": 119.99, "contentsKeys": ["cosmetic_outfit", "rune_materials", "companion_growth"], "purchaseLimit": 1, "status": "disabled_pending_server" }
+  ],
+  "implementationRequirements": {
+    "allRewardsServerAuthorized": true,
+    "paymentMethodForTelegramDigitalGoods": "stars_xtr",
+    "realCurrencyPricesAreReferencesOnly": true,
+    "randomPaidRewardsEnabled": false,
+    "paidCurrencyToCasinoAllowed": false,
+    "storeSchemaMigrationsAllowed": false,
+    "preservePlayerSaveData": true,
+    "preserveAdminFiveTapEntry": true
+  }
+}
