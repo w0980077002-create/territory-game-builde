@@ -16,7 +16,8 @@ import { EquipCells } from '@/components/ui/EquipCells';
 import { BeltCells } from '@/components/ui/BeltCells';
 import { Currency, formatAmount } from '@/components/ui/Currency';
 import { DailySheet, SettingsSheet, StonesSheet, type SaveStatus } from '@/components/home/HomeSheets';
-import { LiveCityBackdrop, CITY_MOTION_KEY, initialCityMotion } from '@/components/home/LiveCityBackdrop';
+import { LiveCityBackdrop, CITY_MOTION_KEY, CITY_BACKGROUND_KEY, initialCityMotion, initialCityBackground, type CityBackground } from '@/components/home/LiveCityBackdrop';
+import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 
@@ -101,6 +102,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
   const vip = Math.max(account.permanentVip,remainingVip>0?account.vip:0);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [cityMotion, setCityMotion] = useState(initialCityMotion);
+  const [cityBackground, setCityBackground] = useState(initialCityBackground);
   const { language, setLanguage, t } = useLanguage();
 
   const { player } = state;
@@ -128,6 +130,10 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
     try { window.localStorage.setItem(CITY_MOTION_KEY, next ? 'on' : 'off'); } catch { /* storage may be disabled */ }
     return next;
   });
+  const chooseCityBackground = (background: CityBackground) => {
+    setCityBackground(background);
+    try { window.localStorage.setItem(CITY_BACKGROUND_KEY, background); } catch { /* optional device preference */ }
+  };
 
   const bless = () => {
     const next = claimBlessing(useGame.get());
@@ -141,7 +147,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
 
   return (
     <div className="home-game-scene relative h-full w-full overflow-hidden select-none animate-fade-in">
-      <LiveCityBackdrop animated={cityMotion} />
+      <LiveCityBackdrop animated={cityMotion} background={cityBackground} />
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-sky-500/[0.05] via-transparent to-amber-500/[0.04]" />
       <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 to-transparent pointer-events-none" />
       <div className="absolute inset-x-0 bottom-0 h-[230px] bg-gradient-to-t from-[#07090d] via-[#07090d]/65 to-transparent pointer-events-none" />
@@ -176,6 +182,10 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
             <button type="button" onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')} aria-label={t('language')} className="h-8 min-w-8 px-1.5 rounded-lg border border-sky-200/65 bg-gradient-to-b from-[#173a54]/95 to-[#08111d]/95 text-[10px] font-black text-sky-100 shadow-[0_0_9px_rgba(56,189,248,0.18)] active:scale-90">{language.toUpperCase()}</button>
           </div>
         </div>
+      </div>
+
+      <div className="home-brand-plaque absolute left-1/2 z-10 -translate-x-1/2 pointer-events-none" aria-label="TERRITORY">
+        <WoodenPlaque variant="logo">TERRITORY</WoodenPlaque>
       </div>
 
       <button
@@ -310,7 +320,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
       </div>
 
       {sheet === 'daily' && <DailySheet onClose={() => setSheet(null)} notify={notify} />}
-      {sheet === 'settings' && <SettingsSheet onClose={() => setSheet(null)} saveStatus={saveStatus} cityMotion={cityMotion} onToggleCityMotion={toggleCityMotion} />}
+      {sheet === 'settings' && <SettingsSheet onClose={() => setSheet(null)} saveStatus={saveStatus} cityMotion={cityMotion} onToggleCityMotion={toggleCityMotion} cityBackground={cityBackground} onCityBackgroundChange={chooseCityBackground} />}
       {sheet === 'stones' && (
         <StonesSheet
           onClose={() => setSheet(null)}

@@ -10,6 +10,7 @@ import { generateShopItems } from '@/game/engine';
 import { mailRewardVisuals } from '@/game/mailRewardVisuals';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage, localizeText } from '@/game/i18n';
+import { CITY_BACKGROUND_KEY, initialCityBackground, type CityBackground } from '@/components/home/LiveCityBackdrop';
 
 export type SaveStatus = 'saved' | 'saving' | 'error';
 
@@ -279,10 +280,26 @@ function Toggle({ label, hint, on, onChange }: { label: string; hint: string; on
   );
 }
 
-export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMotion }: { onClose: () => void; saveStatus: SaveStatus; cityMotion: boolean; onToggleCityMotion: () => void }) {
+export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMotion, cityBackground, onCityBackgroundChange }: {
+  onClose: () => void;
+  saveStatus: SaveStatus;
+  cityMotion: boolean;
+  onToggleCityMotion: () => void;
+  cityBackground?: CityBackground;
+  onCityBackgroundChange?: (background: CityBackground) => void;
+}) {
   const { t, language } = useLanguage();
   const { settings } = useStore(useGame);
+  const [localBackground, setLocalBackground] = useState<CityBackground>(initialCityBackground);
+  const selectedBackground = cityBackground ?? localBackground;
   const update = (patch: Partial<typeof settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
+  const pickBackground = (background: CityBackground) => {
+    if (onCityBackgroundChange) onCityBackgroundChange(background);
+    else {
+      setLocalBackground(background);
+      try { window.localStorage.setItem(CITY_BACKGROUND_KEY, background); } catch { /* device settings may be blocked */ }
+    }
+  };
   const taps = useRef({ count: 0, last: 0 });
 
   const secretTap = () => {
@@ -304,6 +321,38 @@ export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMot
         <Toggle label={t('battleSpeed')} hint={t('speedHint')} on={settings.speed === 2} onChange={() => update({ speed: settings.speed === 2 ? 1 : 2 })} />
         <Toggle label={t('autoBattle')} hint={t('autoBattleHint')} on={settings.auto} onChange={() => update({ auto: !settings.auto })} />
         <Toggle label={language === 'en' ? 'Living city' : 'Живой город'} hint={language === 'en' ? 'Animated ships, waterfalls and fire. Disable to save battery.' : 'Движение кораблей, водопадов и огня. Можно отключить для экономии заряда.'} on={cityMotion} onChange={onToggleCityMotion} />
+        <div className="rounded-xl border border-amber-500/25 bg-black/30 p-2.5">
+          <p className="mb-1 text-sm font-bold text-amber-100">{language === 'en' ? 'City background' : 'Фон города'}</p>
+          <p className="mb-2 text-[11px] text-gray-400">{language === 'en' ? 'Choose your scenery. Your original background remains available.' : 'Выбери фон по вкусу. Наш прежний фон никуда не исчезнет.'}</p>
+          <div className="grid grid-cols-2 gap-2">
+            {([ 'classic', 'sunlit' ] as const).map((background) => {
+              const active = selectedBackground === background;
+              const title = background === 'classic'
+                ? (language === 'en' ? 'Classic harbour' : 'Родная гавань')
+                : (language === 'en' ? 'Sunny coast' : 'Солнечный берег');
+              return (
+                <button
+                  key={background}
+                  type="button"
+                  onClick={() => pickBackground(background)}
+                  aria-pressed={active}
+                  className={`relative overflow-hidden rounded-lg border-2 text-left transition-colors active:scale-[0.98] ${active ? 'border-amber-300 bg-amber-500/15' : 'border-white/15 bg-black/30'}`}
+                >
+                  <img
+                    src={`${import.meta.env.BASE_URL}assets/territory/scenes/${background === 'classic' ? 'live-city-bg.webp' : 'sunlit-harbor.webp'}`}
+                    alt=""
+                    loading="lazy"
+                    className="h-[82px] w-full object-cover object-center"
+                  />
+                  <span className="flex min-h-8 items-center justify-between gap-1 px-1.5 py-1 text-[11px] font-bold text-amber-50">
+                    <span className="truncate">{title}</span>
+                    {active && <Check className="h-3.5 w-3.5 shrink-0 text-emerald-300" aria-hidden="true" />}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div onClick={secretTap} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm select-none">
           {saveStatus === 'error' ? <CloudOff className="w-4 h-4 text-red-400" /> : <Cloud className={`w-4 h-4 ${saveStatus === 'saving' ? 'text-gray-400 animate-pulse' : 'text-emerald-400'}`} />}
           <span className="text-gray-300">

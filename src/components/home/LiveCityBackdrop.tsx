@@ -4,6 +4,14 @@
  * UI, hitboxes, save data and fighter positions are deliberately untouched.
  */
 export const CITY_MOTION_KEY = 'territory_city_motion';
+export const CITY_BACKGROUND_KEY = 'territory_city_background';
+export type CityBackground = 'classic' | 'sunlit';
+
+export function initialCityBackground(): CityBackground {
+  if (typeof window === 'undefined') return 'classic';
+  try { return window.localStorage.getItem(CITY_BACKGROUND_KEY) === 'sunlit' ? 'sunlit' : 'classic'; }
+  catch { return 'classic'; }
+}
 
 export function initialCityMotion(): boolean {
   if (typeof window === 'undefined') return false;
@@ -29,14 +37,18 @@ export function initialCityMotion(): boolean {
 
 const prefix = import.meta.env.BASE_URL + 'assets/territory/scenes/';
 
-export function LiveCityBackdrop({ animated }: { animated: boolean }) {
+export function LiveCityBackdrop({ animated, background = 'classic' }: { animated: boolean; background?: CityBackground }) {
+  const isClassic = background === 'classic';
   return (
     <div className="live-city-viewport absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
       <div
-        className={`live-city-stage ${animated ? 'live-city-running' : ''}`}
-        style={{ backgroundImage: `url("${prefix}live-city-bg.webp")` }}
+        className={`live-city-stage ${isClassic && animated ? 'live-city-running' : ''}`}
+        style={{
+          backgroundImage: `url("${prefix}${isClassic ? 'live-city-bg.webp' : 'sunlit-harbor.webp'}")`,
+          backgroundSize: isClassic ? '100% 100%' : 'cover',
+        }}
       >
-        {animated && (
+        {isClassic && animated && (
           <>
             <span className="live-city-waterfall city-falls-left" />
             <span className="live-city-waterfall city-falls-center" />

@@ -11,6 +11,7 @@ import { ArenaLobby } from './arena/ArenaLobby';
 import { ArenaRoom } from './arena/ArenaRoom';
 import { SettingsSheet, type SaveStatus } from './home/HomeSheets';
 import { CITY_MOTION_KEY, initialCityMotion } from './home/LiveCityBackdrop';
+import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import './arena/arenaLobby.css';
 
 interface Props {
@@ -87,7 +88,7 @@ export function ArenaScreen({ onActiveChange, onBack, backDisabled, onLeaderboar
       </div>
       {(checking || roomId) && <div className="arena-global-subnav">
         <button type="button" disabled={backDisabled} onClick={onBack} className="arena-global-back"><ChevronLeft className="h-4 w-4" />{language === 'en' ? 'City' : 'Город'}</button>
-        <span className="arena-global-subtitle">{language === 'en' ? 'VIKING ARENA' : 'АРЕНА ВИКИНГОВ'}</span>
+        <WoodenPlaque>{language === 'en' ? 'VIKING ARENA' : 'АРЕНА ВИКИНГОВ'}</WoodenPlaque>
       </div>}
       {checking ? (
         <div className="flex justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-amber-300" /></div>

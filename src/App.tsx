@@ -31,6 +31,7 @@ import { useStore } from '@/game/store';
 import { isVerifiedAdmin } from '@/admin/api';
 import { ChevronLeft, Send, Wrench, Smartphone, BellRing } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
+import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useGatherReady } from '@/game/gatherNotice';
 import { socialStatus, type SocialStatus } from '@/game/socialQuests';
 import { getQuestAlerts, readSeenQuests, rememberSeenQuests } from '@/game/questAttention';
@@ -398,7 +399,11 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             <ChevronLeft className="w-4 h-4" /> {translate('cityBack')}
           </button>
           <img src={sub.icon} alt="" className="w-7 h-7 object-contain" />
-          <h1 className="text-base font-bold text-white truncate">{translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction', friends: 'friends', messages: 'messages', events: 'events' } as Record<string, string>)[screen] ?? sub.title)}</h1>
+          <h1 className="min-w-0 truncate text-base font-bold text-white">
+            {screen === 'forge' ? (
+              <WoodenPlaque>{translate('forge')}</WoodenPlaque>
+            ) : translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction', friends: 'friends', messages: 'messages', events: 'events' } as Record<string, string>)[screen] ?? sub.title)}
+          </h1>
         </header>
       )}
 

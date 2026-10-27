@@ -10,6 +10,7 @@ import { APPEARANCE_PRESETS, MALE_PRESETS, FEMALE_PRESETS, getPlayableAppearance
 import type { InventoryItem } from '@/game/types';
 import { RESOURCE_DEFINITIONS, type ResourceId } from '@/game/professions';
 import { resourceArt } from '@/game/art';
+import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 
 type GatherStatus = {
   active: { resource_id: string; finishes_at: string } | null;
@@ -223,7 +224,7 @@ export function MapScreen() {
               <img src="/nav-map.webp" alt="" className="w-9 h-9 object-contain" />
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold text-amber-100">{t('mapTitle')}</h2>
+              <h2 className="text-lg font-bold text-amber-100"><WoodenPlaque>{t('mapTitle')}</WoodenPlaque></h2>
               <p className="text-xs text-gray-400">{t('mapHint')}</p>
             </div>
           </div>
