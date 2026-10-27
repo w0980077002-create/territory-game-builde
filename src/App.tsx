@@ -33,6 +33,7 @@ import { ChevronLeft, Send, Wrench, Smartphone, BellRing } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useGatherReady } from '@/game/gatherNotice';
+import { forgeCost } from '@/game/forge';
 import { socialStatus, type SocialStatus } from '@/game/socialQuests';
 import { getQuestAlerts, readSeenQuests, rememberSeenQuests } from '@/game/questAttention';
 
@@ -169,6 +170,16 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [leaderboardInitialTab, setLeaderboardInitialTab] = useState<'rating' | 'season'>('rating');
   const [seenQuestKeys, setSeenQuestKeys] = useState<string[]>(() => readSeenQuests(user.id));
   const questAlerts = getQuestAlerts(game, socialClaims, seenQuestKeys);
+  // These are genuine, already-calculated gameplay opportunities, not
+  // fabricated timers or notifications. Compute only while the map is open.
+  const mapForgeReady = screen === 'map' && [
+    ...Object.values(game.player.equipped),
+    ...game.inventory.map(item => item.equipment),
+  ].some(eq => {
+    if (!eq || eq.level >= game.player.level) return false;
+    const cost = forgeCost(eq.level);
+    return game.player.gold >= cost.gold && game.forgeMaterials >= cost.materials;
+  });
   const onSocialStatusChange = useCallback((next: SocialStatus) => setSocialClaims(next), []);
   useLiveSync(loaded);
   // Anonymously count successful navigation after the cloud save has loaded.
@@ -449,6 +460,11 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           onForge={openForge} onProfessions={() => setScreen('professions')} onMap={() => setScreen('map')} />}
         {screen === 'hero' && <ProfileScreen key={heroTrainingOpen ? 'runes' : 'hero'} user={user} initialTrainingOpen={heroTrainingOpen} />}
         {screen === 'map' && <MapScreen
+          attentionPlaces={[
+            ...(mapForgeReady ? ['forge' as const] : []),
+            ...(questAlerts.readyCount > 0 ? ['quests' as const] : []),
+            ...(live.mail.length > 0 ? ['messages' as const] : []),
+          ]}
           onNavigate={(route) => {
             if (route === 'battle') { setBattleView('campaign'); setAutoStart(false); }
             if (route === 'hero') setHeroTrainingOpen(false);

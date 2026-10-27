@@ -99,11 +99,12 @@ const REGIONS: Region[] = [
   },
 ];
 
-export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes }: {
+export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes, attentionPlaces }: {
   onNavigate: (route: WorldMapRoute) => void;
   onTrial: () => void;
   onCompanions: () => void;
   onRunes: () => void;
+  attentionPlaces?: readonly WorldMapPlace[];
 }) {
   const [selected, setSelected] = useState<LocationId | null>(null);
   const [notice, setNotice] = useState('');
@@ -223,7 +224,7 @@ export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes }: {
 
   return (
     <div className="relative h-full min-h-0 w-full overflow-hidden">
-      <WorldMapCanvas onVisit={handleWorldVisit} readyRegion={readyRegion?.id} language={language} />
+      <WorldMapCanvas onVisit={handleWorldVisit} readyRegion={readyRegion?.id} attentionPlaces={attentionPlaces} language={language} />
       {readyRegion && (
         <button
           type="button"
@@ -362,13 +363,6 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
       {children}
     </button>
   );
-}
-
-interface Preset {
-  id: string;
-  name: string;
-  icon: string;
-  desc: string;
 }
 
 function PresetGrid({ presets, selected, onPick }: { presets: AppearancePreset[]; selected: string; onPick: (id: string) => void }) {

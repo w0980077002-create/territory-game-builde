@@ -53,6 +53,19 @@ assert.match(canvas, /clampView/, 'Players must not lose the entire map beyond v
 assert.match(canvas, /className="territory-world-map__backdrop"/, 'Maximum zoom-out should not leave plain green bands');
 assert.match(canvas, /backgroundImage: /, 'Backdrop must reuse the world illustration without another download');
 assert.match(canvas, /fittedScale \* 1\.035/, 'Overview edge fade should activate only at full-map zoom');
+assert.match(canvas, /--map-marker-inverse/, 'Landmarks must counter-scale to stay tappable on phones');
+assert.match(canvas, /relativeZoom < 0\.65 \? 'overview'/, 'Overview must show a reduced set of distinct map landmarks');
+assert.match(canvas, /OVERVIEW_PLACES\.has\(place\.id\)/, 'Major locations must be explicit in the map design');
+assert.match(css, /width: 44px;/, 'At overview, location touch targets must stay at least 44 pixels wide');
+assert.match(css, /data-map-mode='overview'/, 'Map decluttering must follow zoom level');
+assert.match(css, /territory-world-map__place--minor:not\(\.territory-world-map__place--ready\)/, 'Ready resources must remain visible even when zoomed out');
+assert.match(canvas, /function bookmarkCamera\(/, 'Map must save world-space center and relative zoom');
+assert.match(canvas, /function restoreCamera\(/, 'Map must restore camera after returning from another section');
+assert.match(canvas, /sessionStorage\.setItem\(CAMERA_STORAGE_KEY/, 'Saved camera must remain a local visual preference');
+assert.match(canvas, /window\.addEventListener\('pagehide', persistCamera\)/, 'Preserve camera if Telegram pauses the app');
+assert.match(canvas, /className="territory-world-map__control-alert"/, 'Hidden destinations with attention need a visible menu indicator');
+assert.match(canvas, /territory-world-map__place--notice/, 'Optional actions must use a calm notice state');
+assert.match(css, /territory-world-map__destination-alert/, 'The destinations drawer must expose claimable actions');
 assert.match(css, /territory-world-map__world--overview/, 'Overview artwork edges must blend into the continuation');
 assert.match(css, /filter: blur\(19px\)/, 'The illustration extension should be calm and unobtrusive');
 assert.match(canvas, /sessionStorage\.setItem\('territory-map-pan-seen'/);
@@ -85,6 +98,7 @@ assert.match(css, /territory-world-map__destination--forest/, 'Resources should 
 assert.match(css, /territory-world-map__drawer-scroll/, 'Location drawer should remain scrollable on phones');
 
 assert.match(map, /<WorldMapCanvas /);
+assert.match(map, /attentionPlaces=\{attentionPlaces\}/, 'Map must forward existing attention states');
 assert.match(map, /if \(!gather\?\.active\) return;/, 'Idle map should not re-render once per second');
 assert.match(map, /case 'trial': onTrial\(\)/);
 assert.match(map, /case 'companions': onCompanions\(\)/);
@@ -96,6 +110,9 @@ assert.match(map, /<ChamberModal /, 'Preserve cosmetic appearance selection');
 assert.doesNotMatch(map, /\{\/\* Resource Regions \*\/\}/, 'Old text-card map must not remain on screen');
 
 assert.match(app, /screen === 'map' \? 'overflow-hidden !px-0 !py-0'/);
+assert.match(app, /mapForgeReady/, 'Forge notice must rely on actually affordable equipment upgrades');
+assert.match(app, /questAlerts\.readyCount > 0/, 'Quest notices must reflect real completed quests');
+assert.match(app, /live\.mail\.length > 0/, 'Message notices must reflect existing received mail');
 assert.match(app, /onTrial=\{\(\) => \{ setBattleView\('trial'\)/);
 assert.match(app, /onCompanions=\{\(\) => \{ setInventoryTab\('followers'\)/);
 assert.match(app, /onRunes=\{\(\) => \{ setHeroTrainingOpen\(true\)/);

@@ -40,6 +40,13 @@ const PLACES: Place[] = [
   { id: 'companions', ru: 'Спутники', en: 'Companions', x: 44, y: 85 },
 ];
 
+// At minimum zoom only the primary hubs remain visible. The complete list
+// stays one tap away in "All locations", and every pin returns at closer zoom.
+const OVERVIEW_PLACES = new Set<WorldMapPlace>([
+  'city', 'arena', 'mountain', 'hero', 'forge', 'professions',
+  'shop', 'inventory', 'runes', 'rare', 'games',
+]);
+
 // Sections without a distinctive building in this illustration are accessible
 // from the compact places drawer; no dead-end decorative buttons.
 const OTHER_PLACES: { id: WorldMapRoute; ru: string; en: string }[] = [
@@ -88,6 +95,9 @@ const PLACE_VISUALS: Record<WorldMapPlace, PlaceVisual> = {
 const WORLD_WIDTH = 1536;
 const WORLD_HEIGHT = 1024;
 type View = { x: number; y: number; scale: number };
+type Size = { width: number; height: number };
+type CameraBookmark = { centerX: number; centerY: number; zoomRatio: number };
+const CAMERA_STORAGE_KEY = 'territory-world-map-camera-v1';
 
 function startingScale(width: number, height: number): number {
   return Math.max(width / WORLD_WIDTH, height / WORLD_HEIGHT) * 1.3;
@@ -111,14 +121,42 @@ function clampView(next: View, width: number, height: number): View {
   };
 }
 
+function bookmarkCamera(view: View, size: Size): CameraBookmark {
+  return {
+    centerX: (size.width / 2 - view.x) / view.scale,
+    centerY: (size.height / 2 - view.y) / view.scale,
+    zoomRatio: view.scale / startingScale(size.width, size.height),
+  };
+}
+
+function restoreCamera(bookmark: CameraBookmark, size: Size): View {
+  const scale = clampScale(startingScale(size.width, size.height) * bookmark.zoomRatio, size.width, size.height);
+  return clampView({
+    scale,
+    x: size.width / 2 - bookmark.centerX * scale,
+    y: size.height / 2 - bookmark.centerY * scale,
+  }, size.width, size.height);
+}
+
+function readCameraBookmark(): CameraBookmark | null {
+  try {
+    const saved = JSON.parse(window.sessionStorage.getItem(CAMERA_STORAGE_KEY) ?? 'null') as CameraBookmark | null;
+    if (!saved || !Number.isFinite(saved.centerX) || !Number.isFinite(saved.centerY) || !Number.isFinite(saved.zoomRatio)) return null;
+    if (saved.centerX < 0 || saved.centerX > WORLD_WIDTH || saved.centerY < 0 || saved.centerY > WORLD_HEIGHT) return null;
+    if (saved.zoomRatio < 0.1 || saved.zoomRatio > 3) return null;
+    return saved;
+  } catch { return null; }
+}
+
 function sawPanHint(): boolean {
   try { return window.sessionStorage.getItem('territory-map-pan-seen') === 'yes'; }
   catch { return false; }
 }
 
-export function WorldMapCanvas({ onVisit, readyRegion, language }: {
+export function WorldMapCanvas({ onVisit, readyRegion, attentionPlaces = [], language }: {
   onVisit: (place: WorldMapPlace) => void;
   readyRegion?: WorldMapRegion;
+  attentionPlaces?: readonly WorldMapPlace[];
   language: 'ru' | 'en';
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -126,12 +164,14 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
   const zoomLabelRef = useRef<HTMLSpanElement>(null);
   const sizeRef = useRef({ width: 0, height: 0 });
   const viewRef = useRef<View>({ x: 0, y: 0, scale: 1 });
+  const markerScaleRef = useRef(0);
   const frameRef = useRef<number | null>(null);
   const inertiaRef = useRef<number | null>(null);
   const drag = useRef<{ pointerId: number; x: number; y: number; startX: number; startY: number; moved: boolean } | null>(null);
   const cancelClick = useRef(false);
   const [hintVisible, setHintVisible] = useState(() => !sawPanHint());
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const attentionSet = new Set<WorldMapPlace>(attentionPlaces);
 
   // Directly move one composited layer in requestAnimationFrame. React never
   // reconciles the 18 clickable landmarks on each pointermove (a major source
@@ -146,6 +186,13 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
       world.style.transform = `translate3d(${x}px,${y}px,0) scale(${scale})`;
       const { width, height } = sizeRef.current;
       if (width && height) {
+        if (markerScaleRef.current !== scale) {
+          world.style.setProperty('--map-marker-inverse', String(1 / scale));
+          markerScaleRef.current = scale;
+        }
+        const relativeZoom = scale / startingScale(width, height);
+        const mapMode = relativeZoom < 0.65 ? 'overview' : relativeZoom < 0.95 ? 'compact' : 'detail';
+        if (world.dataset.mapMode !== mapMode) world.dataset.mapMode = mapMode;
         // Fade only at full-world zoom, joining the crisp map to its
         // softly extended illustrated backdrop.
         const fittedScale = Math.min(width / WORLD_WIDTH, height / WORLD_HEIGHT);
@@ -337,12 +384,28 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
       if (previousSize.width === width && previousSize.height === height) return;
       sizeRef.current = { width, height };
       if (previousSize.width === 0) {
-        const scale = startingScale(width, height);
-        viewRef.current = clampView({ x: (width - WORLD_WIDTH * scale) / 2, y: (height - WORLD_HEIGHT * scale) / 2, scale }, width, height);
+        const bookmark = readCameraBookmark();
+        if (bookmark) {
+          viewRef.current = restoreCamera(bookmark, { width, height });
+        } else {
+          const scale = startingScale(width, height);
+          viewRef.current = clampView({ x: (width - WORLD_WIDTH * scale) / 2, y: (height - WORLD_HEIGHT * scale) / 2, scale }, width, height);
+        }
       } else {
-        viewRef.current = clampView(viewRef.current, width, height);
+        // Keep the same world point in the centre when Telegram changes the
+        // viewport size (including iPhone safe areas and rotation).
+        viewRef.current = restoreCamera(bookmarkCamera(viewRef.current, previousSize), { width, height });
       }
       scheduleTransform();
+    };
+    const persistCamera = () => {
+      const size = sizeRef.current;
+      if (!size.width || !size.height) return;
+      try { window.sessionStorage.setItem(CAMERA_STORAGE_KEY, JSON.stringify(bookmarkCamera(viewRef.current, size))); }
+      catch { /* Visual preference only, never player progress. */ }
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') persistCamera();
     };
     const initial = viewport.getBoundingClientRect();
     resize(initial.width, initial.height);
@@ -350,7 +413,12 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
       resize(entry.contentRect.width, entry.contentRect.height);
     });
     observer.observe(viewport);
+    window.addEventListener('pagehide', persistCamera);
+    document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
+      persistCamera();
+      window.removeEventListener('pagehide', persistCamera);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       observer.disconnect();
       if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
@@ -390,11 +458,12 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
 
   const renderDestination = (place: { id: WorldMapPlace; ru: string; en: string }) => {
     const visual = PLACE_VISUALS[place.id];
+    const hasAttention = readyRegion === place.id || attentionSet.has(place.id);
     return (
       <button
         key={place.id}
         type="button"
-        className={`territory-world-map__destination territory-world-map__destination--${visual.tone}`}
+        className={`territory-world-map__destination territory-world-map__destination--${visual.tone} ${hasAttention ? 'territory-world-map__destination--attention' : ''}`}
         onClick={() => visit(place.id)}
         aria-label={language === 'en' ? place.en : place.ru}
       >
@@ -402,6 +471,7 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
           <img src={`${import.meta.env.BASE_URL}${visual.art}`} alt="" draggable={false} loading="lazy" decoding="async" />
         </span>
         <span className="territory-world-map__destination-name">{language === 'en' ? place.en : place.ru}</span>
+        {hasAttention && <span className="territory-world-map__destination-alert" aria-label={language === 'en' ? 'Action available' : 'Есть действие'}>!</span>}
         <ChevronRight className="territory-world-map__destination-arrow" size={15} strokeWidth={2.4} aria-hidden="true" />
       </button>
     );
@@ -469,20 +539,27 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
             draggable={false}
             className="h-full w-full select-none object-cover pointer-events-none"
           />
-          {PLACES.map(place => (
-            <button
-              key={place.id}
-              type="button"
-              className={`territory-world-map__place ${place.kind === 'magic' ? 'territory-world-map__place--magic' : ''} ${readyRegion === place.id ? 'territory-world-map__place--ready' : ''}`}
-              style={{ left: `${place.x}%`, top: `${place.y}%` }}
-              onClick={() => visit(place.id)}
-              aria-label={`${language === 'en' ? 'Open' : 'Открыть'}: ${language === 'en' ? place.en : place.ru}`}
-            >
-              <span className="territory-world-map__place-dot" aria-hidden="true" />
-              <span className="territory-world-map__place-name">{language === 'en' ? place.en : place.ru}</span>
-              {readyRegion === place.id && <span className="territory-world-map__place-ready">{language === 'en' ? 'Ready!' : 'Готово!'}</span>}
-            </button>
-          ))}
+          {PLACES.map(place => {
+            const resourceReady = readyRegion === place.id;
+            const hasNotice = attentionSet.has(place.id);
+            const hasAttention = resourceReady || hasNotice;
+            return (
+              <button
+                key={place.id}
+                type="button"
+                className={`territory-world-map__place ${place.kind === 'magic' ? 'territory-world-map__place--magic' : ''} ${OVERVIEW_PLACES.has(place.id) ? '' : 'territory-world-map__place--minor'} ${resourceReady ? 'territory-world-map__place--ready' : hasNotice ? 'territory-world-map__place--notice' : ''}`}
+                style={{ left: `${place.x}%`, top: `${place.y}%` }}
+                onClick={() => visit(place.id)}
+                aria-label={`${language === 'en' ? 'Open' : 'Открыть'}: ${language === 'en' ? place.en : place.ru}${hasAttention ? language === 'en' ? ' — action available' : ' — есть действие' : ''}`}
+              >
+                <span className="territory-world-map__place-icon" aria-hidden="true">
+                  <img src={`${import.meta.env.BASE_URL}${PLACE_VISUALS[place.id].art}`} alt="" draggable={false} loading="lazy" decoding="async" />
+                </span>
+                <span className="territory-world-map__place-name">{language === 'en' ? place.en : place.ru}</span>
+                {hasAttention && <span className="territory-world-map__place-attention" aria-hidden="true">!</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -494,7 +571,10 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
       </div>
 
       <div className="absolute right-2 top-3 z-20 flex flex-col gap-2">
-        <button type="button" className="territory-world-map__control" onClick={() => setDrawerOpen(true)} aria-label={language === 'en' ? 'All locations' : 'Все места'}><Layers3 size={18} /></button>
+        <button type="button" className="territory-world-map__control relative" onClick={() => setDrawerOpen(true)} aria-label={language === 'en' ? 'All locations' : 'Все места'}>
+          <Layers3 size={18} />
+          {(attentionPlaces.length > 0 || !!readyRegion) && <span className="territory-world-map__control-alert" aria-hidden="true" />}
+        </button>
         <button type="button" className="territory-world-map__control" onClick={() => zoom(1.35)} aria-label={language === 'en' ? 'Zoom in' : 'Приблизить'}><Plus size={19} /></button>
         <span ref={zoomLabelRef} className="territory-world-map__zoom-label" aria-label={language === 'en' ? 'Map zoom level' : 'Масштаб карты'}>100%</span>
         <button type="button" className="territory-world-map__control" onClick={() => zoom(1 / 1.35)} aria-label={language === 'en' ? 'Zoom out' : 'Отдалить'}><Minus size={19} /></button>
