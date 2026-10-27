@@ -54,6 +54,6 @@ assert.match(mail, /reward\.amount/);
 assert.doesNotMatch(mail, /grantItemsText\(/);
 const art = read('src/game/art.ts');
 assert.match(art, /e\.value >= 150/);
-assert.match(art, /potion-hp-large\.webp/);
+assert.match(art, /potion-hp-large-viking\.webp/);
 assert.match(read('src/components/home/HomeSheets.tsx'), /taps\.current\.count >= 5/, 'Five-tap admin entrance must remain untouched');
 console.log('Mail rewards PASS: all 13 admin rewards, 3-icon existing letter, bundle x5, forge material, health potion art.');
