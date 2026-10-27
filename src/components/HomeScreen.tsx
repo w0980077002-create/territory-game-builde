@@ -7,7 +7,7 @@ import { generateChapter, getComputedStats, HERO_MAX_LEVEL } from '@/game/engine
 import { beltContext } from '@/game/belt';
 import { getAppearanceIcon } from '@/game/appearance';
 import { getFollowerArt } from '@/game/combatArt';
-import { MAIL, blessingReady, claimBlessing, dailyStatus } from '@/game/progression';
+import { MAIL, blessingReady, claimBlessing } from '@/game/progression';
 import type { AuthUser } from '@/game/auth';
 import type { QuestAlerts } from '@/game/questAttention';
 import { useLive } from '@/game/live';
@@ -46,13 +46,12 @@ interface Props {
 
 type Sheet = 'daily' | 'settings' | 'stones' | null;
 
-function SideButton({ icon, label, onClick, soon, badge }: { icon: string; label: string; onClick: () => void; soon?: boolean; badge?: boolean }) {
+function SideButton({ icon, label, onClick, badge }: { icon: string; label: string; onClick: () => void; badge?: boolean }) {
   const isVikingFeatureIcon = /\/ic-(?:auction|professions|arena)-viking\.webp$/.test(icon);
   return (
     <button onClick={onClick} className="home-side group" aria-label={label}>
-      <img src={icon} alt="" draggable={false} className={`${isVikingFeatureIcon ? 'w-[90%] max-h-[70%]' : 'w-[80%] max-h-[60%]'} object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] saturate-125 transition-transform duration-200 group-hover:scale-110 ${soon ? 'opacity-70 grayscale-[25%]' : ''}`} />
+      <img src={icon} alt="" draggable={false} className={`${isVikingFeatureIcon ? 'w-[90%] max-h-[70%]' : 'w-[80%] max-h-[60%]'} object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] saturate-125 transition-transform duration-200 group-hover:scale-110`} />
       <span className="text-[clamp(6.8px,1.95vw,8px)] leading-[1.04] font-extrabold tracking-[-0.02em] text-amber-50 text-center whitespace-normal break-words line-clamp-2 max-w-full px-px [text-shadow:0_1px_2px_#000,0_0_4px_rgba(0,0,0,0.95)]">{label}</span>
-      {soon && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-slate-400 border border-black" aria-hidden />}
       {badge && <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-pulse" />}
     </button>
   );
@@ -122,8 +121,6 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
   const unreadMail = MAIL.filter((l) => !state.mailClaimed.includes(l.id)).length + adminMail;
   const blessReady = blessingReady(state);
   const quest = state.quests.find((q) => !q.claimed && q.current >= q.target) ?? state.quests.find((q) => !q.claimed);
-
-  const soon = (label: string) => notify(language === 'en' ? `${label} will be available in a future update` : `${label} откроется в следующих обновлениях`);
 
   const setSettings = (patch: Partial<typeof state.settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
   const toggleCityMotion = () => setCityMotion((previous) => {
@@ -206,16 +203,11 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
 
       <div className="home-side-stack absolute z-10 left-1.5 w-[48px] flex flex-col gap-1">
         <SideButton icon="/ic-events.webp" label={t('events')} badge={questAlerts.readyCount > 0} onClick={() => onOpen('events')} />
-        <SideButton icon="/ic-daily.webp" label={t('rewards')} badge={!dailyStatus(state).claimedToday} onClick={() => setSheet('daily')} />
         <SideButton icon="/ic-quests.webp" label={t('quests')} badge={questAlerts.count > 0} onClick={() => onOpen('quests')} />
         <SideButton icon="/ic-invite.webp" label={t('friends')} onClick={() => onOpen('friends')} />
-        <SideButton icon="/ic-sea.webp" label={t('sea')} soon onClick={() => soon(t('sea'))} />
       </div>
       <div className="home-side-stack home-side-stack-right absolute z-10 right-1.5 w-[48px] flex flex-col gap-1">
         <SideButton icon="/ic-shop.webp" label={t('shop')} onClick={() => onOpen('shop')} />
-        <SideButton icon="/ic-auction-viking.webp" label={t('auction')} onClick={() => onOpen('auction')} />
-        <SideButton icon="/ic-forge.webp" label={t('forge')} onClick={() => onOpen('forge')} />
-        <SideButton icon="/ic-professions-viking.webp" label={t('professions')} onClick={() => onOpen('professions')} />
         <SideButton icon="/ic-trials.webp" label={t('trials')} onClick={() => onBattle('trial')} />
         <SideButton icon="/ic-arena-viking.webp" label={t('arena')} onClick={() => onOpen('arena')} />
       </div>

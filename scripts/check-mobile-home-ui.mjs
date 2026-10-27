@@ -12,6 +12,7 @@ const [home, app, css, html, city, sheets, telegram] = await Promise.all([
   read('src/components/home/HomeSheets.tsx'),
   read('src/game/telegram.ts'),
 ]);
+const worldMap = await read('src/components/WorldMapCanvas.tsx');
 
 const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventure] = await Promise.all([
   read('src/components/ForgeScreen.tsx'),
@@ -54,11 +55,20 @@ assert.match(city, /live-city-ship\.webp/, 'Viking ships must have a subtle moti
 assert.match(city, /live-city-waterfall/, 'Waterfalls must have visual motion');
 assert.match(sheets, /Живой город/, 'Animated city must have an on/off setting');
 assert.match(css, /prefers-reduced-motion/, 'City motion must respect accessibility setting');
-assert.match(home, /ic-auction-viking\.webp/, 'Auction needs its own distinctive Viking artwork');
-assert.match(home, /ic-professions-viking\.webp/, 'Professions needs its own distinctive Viking artwork');
+assert.match(worldMap, /ic-auction-viking\.webp/, 'Auction keeps its distinctive Viking artwork on the map');
+assert.match(worldMap, /ic-professions-viking\.webp/, 'Professions keep their distinctive Viking artwork on the map');
 assert.match(home, /ic-arena-viking\.webp/, 'Arena must depict its own Viking amphitheater');
-assert.doesNotMatch(home, /SideButton icon="\/ic-shop\.webp" label=\{t\('auction'\)\}/, 'Auction must not reuse the shop image');
-assert.doesNotMatch(home, /SideButton icon="\/ic-forge\.webp" label=\{t\('professions'\)\}/, 'Professions must not reuse the forge image');
+for (const hiddenSideArt of ['ic-daily.webp', 'ic-sea.webp', 'ic-auction-viking.webp', 'ic-forge.webp', 'ic-professions-viking.webp']) {
+  assert.ok(!home.includes(`<SideButton icon="/${hiddenSideArt}"`), `${hiddenSideArt} must be hidden from the side rails`);
+}
+for (const shownSideArt of ['ic-events.webp', 'ic-quests.webp', 'ic-invite.webp', 'ic-shop.webp', 'ic-trials.webp', 'ic-arena-viking.webp']) {
+  assert.ok(home.includes(`<SideButton icon="/${shownSideArt}"`), `${shownSideArt} remains visible in the side rails`);
+}
+for (const mapRoute of ['auction', 'forge', 'professions', 'events']) {
+  assert.ok(worldMap.includes(`id: '${mapRoute}'`), `${mapRoute} remains reachable from the map`);
+}
+assert.match(app, /<EventsScreen onNavigate=\{setScreen\} onDaily=\{\(\) => setEventDailyOpen\(true\)\}/,
+  'Daily rewards must remain reachable through Events after hiding their city-side shortcut');
 assert.match(home, /setLanguage\(language === 'ru' \? 'en' : 'ru'\)/, 'Language switch must remain interactive');
 assert.match(home, /<EquipCells/, 'Equipment slots must remain on the home screen');
 assert.match(home, /<BeltCells/, 'Potion belt must remain on the home screen');
