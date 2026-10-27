@@ -3,6 +3,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 import json
 import mimetypes
+import os
 import shutil
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[1]
@@ -32,7 +33,7 @@ def skip_reel_animation(page):
       button.click();
     }''')
 with sync_playwright() as p:
-    browser=p.chromium.launch(executable_path=shutil.which('chromium') or shutil.which('google-chrome'),headless=True,args=['--no-sandbox'])
+    browser=p.chromium.launch(executable_path=os.environ.get('SLOT_BROWSER_EXECUTABLE') or shutil.which('chromium') or shutil.which('google-chrome'),headless=True,args=['--no-sandbox'])
     errors=[];viewports=[]
     for w,h in [(320,568),(360,700),(390,844),(430,740)]:
         page=load(browser,w,h);page.on('pageerror',lambda e:errors.append(str(e)))
@@ -42,6 +43,10 @@ with sync_playwright() as p:
         assert '500' in page.locator('.vslot-stats').inner_text()
         assert page.locator('.vslot-spin-key').count()==1
         assert page.locator('.vslot-deck-tool').count()==2
+        assert page.locator('.vslot-marquee h1').count()==1,'One clear casino marquee title'
+        assert page.locator('.vslot-bet-stepper').count()==2,'Two compact stake controls'
+        assert page.get_by_role('button',name='Меньше линий').is_enabled()
+        assert page.get_by_role('button',name='Больше монет на линию').is_enabled()
         assert page.get_by_role('button',name='ПРОПУСТИТЬ',exact=True).count()==0,'Skip key should only appear during spin'
         page.get_by_role('button',name='КРУТИТЬ',exact=True).scroll_into_view_if_needed()
         box=page.get_by_role('button',name='КРУТИТЬ',exact=True).bounding_box()
@@ -51,6 +56,12 @@ with sync_playwright() as p:
         viewports.append({'width':w,'height':h,'horizontal_overflow':False})
         page.close()
     page=load(browser)
+    page.get_by_role('button',name='Меньше линий').click()
+    assert '35' in page.locator('.vslot-stats').inner_text(),'Stake must reflect fewer paylines'
+    page.get_by_role('button',name='Больше линий').click()
+    page.get_by_role('button',name='Больше монет на линию').click()
+    assert '90' in page.locator('.vslot-stats').inner_text(),'Stake must reflect larger gold per line'
+    page.get_by_role('button',name='Меньше монет на линию').click()
     # Synchronous ref lock must guard two events before React re-renders.
     page.get_by_role('button',name='КРУТИТЬ',exact=True).evaluate('(b)=>{b.click();b.click()}')
     page.wait_for_function('window.__slotCalls.length===1')
@@ -62,10 +73,10 @@ with sync_playwright() as p:
     # Timeout after server commit must retain the exact operation across remount.
     page.evaluate('window.__slotTimeout=true')
     page.get_by_role('button',name='КРУТИТЬ',exact=True).click()
-    page.get_by_role('button',name='БЕЗОПАСНО ПОВТОРИТЬ ДЕЙСТВИЕ',exact=True).wait_for()
+    page.get_by_role('button',name='ВОССТАНОВИТЬ РАУНД',exact=True).wait_for()
     saved=page.evaluate('JSON.parse(localStorage.getItem("territory_slots_operation_v1_review"))')
     page.locator('#fixture-remount').evaluate('(b)=>b.click()')
-    retry=page.get_by_role('button',name='БЕЗОПАСНО ПОВТОРИТЬ ДЕЙСТВИЕ',exact=True);retry.wait_for();retry.click()
+    retry=page.get_by_role('button',name='ВОССТАНОВИТЬ РАУНД',exact=True);retry.wait_for();retry.click()
     page.wait_for_function('localStorage.getItem("territory_slots_operation_v1_review")===null')
     assert page.evaluate('window.__slotCalls.at(-1).p_operation')==saved['id']
     assert page.evaluate('window.__slotCalls.at(-1).p_expected')==saved['expected']

@@ -9,10 +9,11 @@ const fixture=`
 let state={phase:'ready',revision:0,pending:0,riskSteps:0,opened:[],picksLeft:5,shields:0};
 let coins=500,rev=0;const receipts=new Map();window.__slotCalls=[];
 const status=()=>({enabled:true,coins,collected:0,state});
-export const useGame={get:()=>({player:{gold:coins,gems:0}})};
+const gameSnapshot={player:{gold:500,gems:0}};
+export const useGame={get:()=>gameSnapshot};
 export const saveTokens=new Map([['review',new Date().toISOString()]]);
 export async function saveCloudSave(){return true;}
-export function acceptMonopolyClaimReceipt(userId,r){saveTokens.set(userId,r.updated_at);}
+export function acceptMonopolyClaimReceipt(userId,r){saveTokens.set(userId,r.updated_at);gameSnapshot.player.gold=r.wallet_gold;}
 export const supabase={rpc:async(name,args)=>{
  if(args.p_action==='status')return {data:status(),error:null};
  window.__slotCalls.push(args);

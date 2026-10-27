@@ -494,3 +494,239 @@
   .vslot-deck-tool{font-size:8px;min-height:47px}
   .vslot-spin-key{width:77px;height:77px;font-size:9px}
 }
+
+/* Premium live cabinet — one marquee, illuminated reels and a concise betting desk.
+   Scoped to the server-backed machine; never changes the fallback/demo screen. */
+.vslot-live{
+  max-width:440px;
+  padding:7px 9px 11px;
+  color:#fff0d3;
+  background:
+    radial-gradient(ellipse 70% 32% at 50% 0%,#8239ae59,transparent),
+    linear-gradient(90deg,#21132f 0,#13142d 5%,#101829 50%,#13142d 95%,#21132f 100%);
+  box-shadow:inset 2px 0 #a7704e44,inset -2px 0 #a7704e44;
+}
+.vslot-live .vslot-heading{min-height:38px;padding:0 2px 5px}
+.vslot-live .vslot-heading-label{
+  text-align:center;
+  color:#e8c785;
+  font-size:10px;
+  letter-spacing:1.6px;
+  font-weight:900;
+  text-shadow:0 0 11px #eda15361;
+}
+.vslot-live .vslot-heading-label span{color:#f5c36e}
+.vslot-live .vslot-icon-button{
+  flex:0 0 34px;min-width:34px;height:34px;min-height:34px;
+  border:1px solid #c89b5a;border-radius:10px;
+  color:#ffe4a0;
+  background:linear-gradient(145deg,#47314e,#1b1c36);
+  box-shadow:inset 0 1px #ffe3a938,0 2px 5px #0006;
+}
+.vslot-marquee{
+  position:relative;
+  display:grid;
+  place-items:center;
+  height:clamp(84px,24vw,106px);
+  overflow:hidden;
+  border:2px solid #ffdb7f;
+  border-radius:19px 19px 11px 11px;
+  background-color:#2e155b;
+  background-position:center;
+  background-size:cover;
+  box-shadow:0 0 0 2px #74417d,0 0 16px #c781ff59,0 5px 10px #030412a8;
+}
+.vslot-marquee::after{
+  content:"";
+  position:absolute;inset:0;
+  pointer-events:none;
+  background:linear-gradient(90deg,#100b300d,#17063857 32%,#17063857 68%,#100b300d);
+}
+.vslot-marquee-content{
+  position:relative;z-index:1;
+  width:54%;height:100%;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  text-align:center;
+  gap:1px;
+  color:#ffe6a3;
+  text-shadow:0 2px 2px #320d18,0 0 8px #f2a72e;
+}
+.vslot-marquee-content svg{width:16px;height:16px;color:#fff1a8;filter:drop-shadow(0 0 5px #ffb531)}
+.vslot-marquee-content h1{
+  margin:0;
+  font-size:clamp(15px,4.4vw,20px);
+  line-height:.94;
+  font-weight:1000;
+  letter-spacing:.15px;
+  color:#fff0b0;
+}
+.vslot-marquee-content span{
+  margin-top:5px;
+  font-size:clamp(7px,2vw,9px);
+  font-weight:900;
+  letter-spacing:1.15px;
+  color:#f8c9f4;
+}
+.vslot-live .vslot-stats{grid-template-columns:1.2fr 1fr 1fr;gap:5px;padding:7px 0 8px}
+.vslot-live .vslot-stats>div{
+  min-height:51px;
+  gap:2px;
+  padding:6px 2px 5px;
+  border:1px solid #9b85a3;
+  border-bottom-color:#e4ac56;
+  border-radius:9px;
+  background:linear-gradient(180deg,#20223d,#111c32 62%,#0b2531);
+  box-shadow:inset 0 2px 8px #040618b0,0 1px #edb86960;
+}
+.vslot-live .vslot-stats small{
+  font-size:9px;letter-spacing:.65px;
+  font-weight:800;color:#d8c8de;
+}
+.vslot-live .vslot-stats strong{
+  display:flex;justify-content:center;align-items:center;gap:5px;
+  white-space:nowrap;font-size:clamp(15px,4.8vw,20px);line-height:1.2;
+  font-variant-numeric:tabular-nums;color:#fff3b8;
+  text-shadow:0 0 8px #f9b83c57;
+}
+.vslot-live .vslot-stats>div.vslot-stats--prize{
+  border-color:#ffd66e;
+  box-shadow:0 0 12px #ffd05270,inset 0 0 9px #985c2f69;
+}
+.vslot-coin{
+  display:inline-block;flex:0 0 15px;width:15px;height:15px;
+  border:2px solid #ffeb9e;border-radius:50%;
+  background:radial-gradient(circle at 35% 25%,#fff7b0,#f4c342 47%,#b46b20);
+  box-shadow:inset 0 0 0 2px #ba7f2d,0 0 6px #fcb23b8f;
+}
+.vslot-coin::after{
+  content:"✦";display:block;font-size:9px;line-height:11px;
+  text-align:center;color:#95551a;text-shadow:0 1px #fff8b9;
+}
+.vslot-live .vslot-board{
+  margin:2px 1px 0;
+  padding:8px 6px 21px;
+  border:4px solid #ffcb65;
+  border-radius:17px;
+  background:linear-gradient(125deg,#552254,#cf8647 50%,#592258);
+  box-shadow:0 0 0 2px #6c367a,0 0 20px #b851e071,inset 0 0 10px #fff2acbd,0 5px 10px #0008;
+}
+.vslot-live .vslot-board::before{
+  inset:-2px;
+  border:1px solid #fff6c1b7;
+  border-radius:15px;
+}
+.vslot-live .vslot-line-marker{display:none}
+.vslot-live .vslot-reels{
+  border:2px solid #39223f;
+  border-radius:8px;
+  gap:3px;
+  box-shadow:inset 0 0 14px #000b;
+}
+.vslot-live .vslot-reel-window{background:#f7dfaa}
+.vslot-live .vslot-reel-track .vslot-symbol{
+  background:radial-gradient(ellipse at 42% 30%,#fff4d4,#edd4aa 68%,#ac8378);
+}
+.vslot-live .vslot-board-caption{
+  bottom:3px;font-size:9px;font-weight:900;letter-spacing:1px;
+  color:#fff2c4;
+}
+.vslot-live .vslot-board--winning{
+  box-shadow:0 0 0 2px #9b477f,0 0 23px #ffe06f9a,inset 0 0 13px #fff2acbd,0 5px 10px #0008;
+}
+.vslot-result{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  height:33px;min-height:33px;margin:8px 1px 0;
+  padding:4px 8px;
+  border:1px solid #9575a2;border-radius:9px;
+  background:linear-gradient(90deg,#191833,#392548 50%,#191833);
+  font-size:10px;font-weight:900;letter-spacing:.45px;
+  color:#eecfa6;text-align:center;
+}
+.vslot-result svg{flex:0 0 auto;color:#ffd96c}
+.vslot-result strong{font-size:15px;line-height:1;color:#fff1b0;text-shadow:0 0 8px #ffc942}
+.vslot-result--win{
+  border-color:#f4c65a;
+  background:linear-gradient(90deg,#49214b,#8f5137 50%,#49214b);
+  box-shadow:0 0 12px #ffb73e58,inset 0 1px #ffe08d45;
+}
+.vslot-result--win span{color:#ffe5bc;font-size:10px}
+.vslot-recovery{
+  margin:7px 0;padding:9px;
+  border:1px solid #c89b5b;border-radius:11px;
+  background:#3b2536;text-align:center;
+}
+.vslot-recovery p{font-size:11px;color:#ffe1a0;margin-bottom:7px}
+.vslot-recovery button{min-height:39px;border-radius:9px;font-weight:950}
+.vslot-live .vslot-controls{
+  gap:8px;margin-top:9px;
+  padding:9px;
+  border:1px solid #bb8c67;border-radius:17px;
+  background:linear-gradient(180deg,#31233c,#201d35 44%,#131d30);
+  box-shadow:inset 0 1px #ffdeac55,inset 0 -4px 15px #060713a6,0 4px 12px #01030e8a;
+}
+.vslot-bet-console{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.vslot-bet-control{
+  min-width:0;display:flex;flex-direction:column;gap:3px;
+  padding:5px 6px 6px;
+  border:1px solid #695477;border-radius:10px;
+  background:#15172d;
+  box-shadow:inset 0 2px 5px #0007;
+}
+.vslot-bet-control label{
+  color:#f6d9a7;font-size:9px;font-weight:950;
+  text-align:center;letter-spacing:.7px;line-height:1.1;
+}
+.vslot-bet-stepper{
+  height:30px;min-width:0;display:grid;
+  grid-template-columns:31px minmax(0,1fr) 31px;
+  align-items:stretch;gap:5px;
+}
+.vslot-bet-stepper button{
+  display:grid;place-items:center;
+  min-width:0;border:1px solid #8c769d;border-radius:7px;
+  background:linear-gradient(180deg,#55456b,#302641);
+  color:#ffe9bd;
+  box-shadow:inset 0 1px #fff1c333;
+}
+.vslot-bet-stepper button:disabled{opacity:.34}
+.vslot-bet-stepper button:active:not(:disabled){background:#a36b55}
+.vslot-bet-stepper strong{
+  display:grid;place-items:center;min-width:0;
+  color:#ffe3a4;font-size:18px;line-height:1;
+  font-variant-numeric:tabular-nums;text-shadow:0 0 8px #f0a84b8c;
+}
+.vslot-live .vslot-machine-deck{
+  grid-template-columns:minmax(0,1fr) 79px;
+  gap:9px;min-height:85px;
+  padding:5px 5px 5px 8px;
+  border-color:#7b5b86;
+  background:linear-gradient(160deg,#181b34,#32203d);
+}
+.vslot-live .vslot-deck-tool{
+  min-height:45px;gap:3px;font-size:10px;
+  border-color:#8a6a95;border-radius:10px;
+}
+.vslot-live .vslot-deck-tool--utility{border-color:#6198a2}
+.vslot-live .vslot-spin-key{
+  width:76px;height:76px;
+  border:4px solid #a65a2a;
+  font-size:10px;
+  box-shadow:inset 0 3px 5px #fffcc9,inset 0 -6px 7px #8a3213a1,0 0 0 2px #f9e4a5,0 0 14px #e8a04489,0 4px 4px #060514;
+}
+.vslot-live .vslot-spin-key--collect{border-color:#43735a;box-shadow:inset 0 3px 5px #fffcc9,inset 0 -6px 7px #17614e99,0 0 0 2px #bce8b2,0 0 14px #62e69a77,0 4px 4px #060514}
+.vslot-live .vslot-disclaimer{margin:8px 3px 3px;font-size:9px;line-height:1.25}
+@media(max-width:355px){
+  .vslot-live{padding:5px 6px 8px}
+  .vslot-live .vslot-heading-label{font-size:9px;letter-spacing:1px}
+  .vslot-live .vslot-stats strong{gap:3px;font-size:15px}
+  .vslot-coin{flex-basis:13px;width:13px;height:13px}
+  .vslot-live .vslot-controls{padding:7px}
+  .vslot-bet-console{gap:5px}
+  .vslot-bet-control{padding:5px 4px}
+  .vslot-bet-stepper{grid-template-columns:27px minmax(0,1fr) 27px;gap:3px}
+  .vslot-live .vslot-machine-deck{grid-template-columns:minmax(0,1fr) 74px;gap:6px;padding:5px}
+  .vslot-live .vslot-spin-key{width:72px;height:72px}
+}
+@media(prefers-reduced-motion:reduce){
+  .vslot-live .vslot-result--win,.vslot-live .vslot-board--winning{animation:none}
+}
