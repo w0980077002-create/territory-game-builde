@@ -33,6 +33,16 @@ assert.match(canvas, /addEventListener\('touchmove', touchMove, \{ passive: fals
 assert.match(canvas, /event\.preventDefault\(\)/, 'Native touchmove must block parent scroll during map drag');
 assert.match(canvas, /requestAnimationFrame\(fling\)/, 'Long map traversal needs momentum after a flick');
 assert.match(canvas, /event\.pointerType === 'touch'\) return;/, 'Avoid duplicate native touch and pointer gestures');
+assert.match(canvas, /function clampScale\(/, 'Map must have explicit minimum and maximum zoom levels');
+assert.match(canvas, /Math\.min\(width \/ WORLD_WIDTH, height \/ WORLD_HEIGHT\)/, 'Zooming out must reveal the whole world');
+assert.match(canvas, /const beginPinch = \(first: Touch, second: Touch\)/, 'Pinching two fingers must start a scale gesture');
+assert.match(canvas, /current\.kind === 'pinch'/, 'Pinch movements need a separate path from panning');
+assert.match(canvas, /distance \/ current\.startDistance/, 'Pinch distance must drive map scale');
+assert.match(canvas, /centerX - current\.worldX \* scale/, 'Pinch midpoint must remain anchored to the world');
+assert.match(canvas, /event\.touches\.length === 1\) beginPan\(event\.touches\[0\], true\)/, 'Ending a pinch must allow continued one-finger movement');
+assert.match(canvas, /ref=\{zoomLabelRef\}/, 'Current zoom level must be visible');
+assert.match(canvas, /onClick=\{\(\) => zoom\(1 \/ 1\.35\)\}/, 'Zoom-out button must have a working click handler');
+assert.match(css, /territory-world-map__zoom-label/, 'Zoom level should match existing map controls');
 assert.match(canvas, /onClickCapture=/, 'Panning must suppress accidental building taps');
 assert.match(canvas, /setPointerCapture\(event\.pointerId\)/);
 assert.match(canvas, /ResizeObserver/);

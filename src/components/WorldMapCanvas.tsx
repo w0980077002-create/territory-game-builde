@@ -59,6 +59,14 @@ function startingScale(width: number, height: number): number {
   return Math.max(width / WORLD_WIDTH, height / WORLD_HEIGHT) * 1.3;
 }
 
+function clampScale(scale: number, width: number, height: number): number {
+  // At the minimum zoom the entire world fits, even on tall phone screens.
+  // Keep the maximum high enough to inspect individual buildings.
+  const min = Math.min(width / WORLD_WIDTH, height / WORLD_HEIGHT);
+  const max = startingScale(width, height) * 2.5;
+  return Math.max(min, Math.min(max, scale));
+}
+
 function clampView(next: View, width: number, height: number): View {
   const contentWidth = WORLD_WIDTH * next.scale;
   const contentHeight = WORLD_HEIGHT * next.scale;
@@ -81,6 +89,7 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
+  const zoomLabelRef = useRef<HTMLSpanElement>(null);
   const sizeRef = useRef({ width: 0, height: 0 });
   const viewRef = useRef<View>({ x: 0, y: 0, scale: 1 });
   const frameRef = useRef<number | null>(null);
@@ -101,6 +110,11 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
       if (!world) return;
       const { x, y, scale } = viewRef.current;
       world.style.transform = `translate3d(${x}px,${y}px,0) scale(${scale})`;
+      const { width, height } = sizeRef.current;
+      if (zoomLabelRef.current && width && height) {
+        const label = `${Math.round(scale / startingScale(width, height) * 100)}%`;
+        if (zoomLabelRef.current.textContent !== label) zoomLabelRef.current.textContent = label;
+      }
     });
   };
 
@@ -121,40 +135,88 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    let gesture: {
-      id: number; x: number; y: number; startX: number; startY: number;
+    type PanGesture = {
+      kind: 'pan'; id: number; x: number; y: number; startX: number; startY: number;
       lastX: number; lastY: number; lastT: number;
       vx: number; vy: number; moved: boolean;
-    } | null = null;
+    };
+    type PinchGesture = {
+      kind: 'pinch'; ids: [number, number]; startDistance: number; startScale: number;
+      worldX: number; worldY: number; left: number; top: number;
+    };
+    let gesture: PanGesture | PinchGesture | null = null;
 
-    const touchStart = (event: TouchEvent) => {
-      if (event.touches.length !== 1) { gesture = null; stopInertia(); return; }
-      const finger = event.touches[0];
-      stopInertia();
-      cancelClick.current = false;
+    const markHintSeen = () => {
+      setHintVisible(previous => {
+        if (!previous) return false;
+        try { window.sessionStorage.setItem('territory-map-pan-seen', 'yes'); } catch { /* Hint only. */ }
+        return false;
+      });
+    };
+
+    const beginPan = (finger: Touch, preserveClickCancellation = false) => {
+      if (!preserveClickCancellation) cancelClick.current = false;
       const now = performance.now();
       gesture = {
-        id: finger.identifier, x: finger.clientX, y: finger.clientY,
+        kind: 'pan', id: finger.identifier, x: finger.clientX, y: finger.clientY,
         startX: viewRef.current.x, startY: viewRef.current.y,
         lastX: finger.clientX, lastY: finger.clientY, lastT: now,
         vx: 0, vy: 0, moved: false,
       };
     };
 
+    const beginPinch = (first: Touch, second: Touch) => {
+      const bounds = viewport.getBoundingClientRect();
+      const centerX = (first.clientX + second.clientX) / 2 - bounds.left;
+      const centerY = (first.clientY + second.clientY) / 2 - bounds.top;
+      const previous = viewRef.current;
+      gesture = {
+        kind: 'pinch', ids: [first.identifier, second.identifier],
+        startDistance: Math.max(1, Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY)),
+        startScale: previous.scale,
+        worldX: (centerX - previous.x) / previous.scale,
+        worldY: (centerY - previous.y) / previous.scale,
+        left: bounds.left, top: bounds.top,
+      };
+      cancelClick.current = true;
+      markHintSeen();
+    };
+
+    const touchStart = (event: TouchEvent) => {
+      stopInertia();
+      if (event.touches.length === 2) beginPinch(event.touches[0], event.touches[1]);
+      else if (event.touches.length === 1) beginPan(event.touches[0]);
+      else gesture = null;
+    };
+
     const touchMove = (event: TouchEvent) => {
       const current = gesture;
-      if (!current || event.touches.length !== 1) return;
+      if (!current) return;
+      if (current.kind === 'pinch') {
+        if (event.touches.length !== 2) return;
+        const fingers = Array.from(event.touches);
+        const first = fingers.find(item => item.identifier === current.ids[0]);
+        const second = fingers.find(item => item.identifier === current.ids[1]);
+        if (!first || !second) return;
+        event.preventDefault();
+        const { width, height } = sizeRef.current;
+        if (!width || !height) return;
+        const centerX = (first.clientX + second.clientX) / 2 - current.left;
+        const centerY = (first.clientY + second.clientY) / 2 - current.top;
+        const distance = Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
+        const scale = clampScale(current.startScale * distance / current.startDistance, width, height);
+        // The point between both fingers remains under the same world location.
+        moveWorld({ scale, x: centerX - current.worldX * scale, y: centerY - current.worldY * scale });
+        return;
+      }
+      if (event.touches.length !== 1) return;
       const finger = Array.from(event.touches).find(item => item.identifier === current.id);
       if (!finger) return;
       const dx = finger.clientX - current.x;
       const dy = finger.clientY - current.y;
       if (!current.moved && Math.abs(dx) + Math.abs(dy) > 5) {
         current.moved = true;
-        setHintVisible(previous => {
-          if (!previous) return false;
-          try { window.sessionStorage.setItem('territory-map-pan-seen', 'yes'); } catch { /* Hint only. */ }
-          return false;
-        });
+        markHintSeen();
       }
       if (!current.moved) return;
       event.preventDefault();
@@ -174,9 +236,17 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
 
     const touchEnd = (event: TouchEvent) => {
       const current = gesture;
-      if (!current || !Array.from(event.changedTouches).some(item => item.identifier === current.id)) return;
+      if (!current) return;
+      if (current.kind === 'pinch') {
+        // Continue dragging with the remaining finger at the current position.
+        if (event.touches.length === 1) beginPan(event.touches[0], true);
+        else gesture = null;
+        cancelClick.current = true;
+        return;
+      }
+      if (!Array.from(event.changedTouches).some(item => item.identifier === current.id)) return;
       gesture = null;
-      cancelClick.current = current.moved;
+      cancelClick.current = cancelClick.current || current.moved;
       if (!current.moved) return;
       if (performance.now() - current.lastT > 120) return;
       // Keep a direct, slow drag exact; only a flick gets extra travel.
@@ -257,8 +327,7 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
     const { width, height } = sizeRef.current;
     if (!width || !height) return;
     const previous = viewRef.current;
-    const min = startingScale(width, height);
-    const scale = Math.max(min, Math.min(min * 2.2, previous.scale * factor));
+    const scale = clampScale(previous.scale * factor, width, height);
     const ratio = scale / previous.scale;
     moveWorld({ scale, x: width / 2 - (width / 2 - previous.x) * ratio, y: height / 2 - (height / 2 - previous.y) * ratio });
   };
@@ -359,15 +428,16 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
 
       <div className="absolute right-2 top-3 z-20 flex flex-col gap-2">
         <button type="button" className="territory-world-map__control" onClick={() => setDrawerOpen(true)} aria-label={language === 'en' ? 'All locations' : 'Все места'}><Layers3 size={18} /></button>
-        <button type="button" className="territory-world-map__control" onClick={() => zoom(1.25)} aria-label={language === 'en' ? 'Zoom in' : 'Приблизить'}><Plus size={18} /></button>
-        <button type="button" className="territory-world-map__control" onClick={() => zoom(0.8)} aria-label={language === 'en' ? 'Zoom out' : 'Отдалить'}><Minus size={18} /></button>
+        <button type="button" className="territory-world-map__control" onClick={() => zoom(1.35)} aria-label={language === 'en' ? 'Zoom in' : 'Приблизить'}><Plus size={19} /></button>
+        <span ref={zoomLabelRef} className="territory-world-map__zoom-label" aria-label={language === 'en' ? 'Map zoom level' : 'Масштаб карты'}>100%</span>
+        <button type="button" className="territory-world-map__control" onClick={() => zoom(1 / 1.35)} aria-label={language === 'en' ? 'Zoom out' : 'Отдалить'}><Minus size={19} /></button>
         <button type="button" className="territory-world-map__control" onClick={recenter} aria-label={language === 'en' ? 'Center map' : 'В центр карты'}><LocateFixed size={18} /></button>
       </div>
 
       {hintVisible && !drawerOpen && (
         <div className="pointer-events-none absolute bottom-5 left-1/2 z-10 -translate-x-1/2 rounded-xl border border-amber-200/40 bg-[#281b0f]/85 px-3 py-2 text-center text-xs font-bold text-amber-50 shadow-xl backdrop-blur-sm">
           <Hand size={24} className="territory-world-map__hint-hand mx-auto mb-1 text-amber-200" />
-          {language === 'en' ? 'Drag the map with your finger' : 'Двигай карту пальцем'}
+          {language === 'en' ? 'Drag to explore · pinch to zoom' : 'Двигай пальцем · масштабируй двумя'}
         </div>
       )}
 

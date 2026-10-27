@@ -68,6 +68,21 @@
   -webkit-tap-highlight-color: transparent;
 }
 .territory-world-map__control:active { transform: scale(.94); }
+.territory-world-map__zoom-label {
+  align-self: center;
+  min-width: 35px;
+  border: 1px solid #e8cd8866;
+  border-radius: 7px;
+  background: #291c10df;
+  color: #ffe7ae;
+  padding: 3px 2px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px #11231766;
+  pointer-events: none;
+}
 .territory-world-map__hint-hand { animation: territory-map-swipe 2.5s ease-in-out infinite; }
 @keyframes territory-map-swipe {
   0%, 100% { transform: translate(-16px, 5px) rotate(-15deg); }
