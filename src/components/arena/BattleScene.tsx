@@ -104,7 +104,7 @@ export function BattleScene(props: Props) {
     <div className="arena-battle relative rounded-2xl overflow-hidden border border-amber-400/40 shadow-xl shadow-black/50">
       <img
         src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'}
-        onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = import.meta.env.BASE_URL + 'arena-bg.webp'; }}
+        onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = import.meta.env.BASE_URL + 'assets/territory/scenes/live-city-bg.webp'; }}
         alt=""
         draggable={false}
         className="arena-battle-art absolute inset-0 w-full h-full object-cover pointer-events-none"

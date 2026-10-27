@@ -208,7 +208,7 @@ function TrialPanel({ level, onFight, t }: { level: number; onFight: () => void;
   return (
     <div className="space-y-3">
       <div className="relative rounded-2xl overflow-hidden border border-sky-400/25">
-        <img src="/arena-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
         <div className="relative p-4 flex items-end gap-3 min-h-[180px]">
           <img src={enemy.art} alt={enemy.name} className="w-28 h-36 object-contain object-bottom drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] animate-idle" />

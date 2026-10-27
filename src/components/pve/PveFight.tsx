@@ -232,7 +232,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
           src={import.meta.env.BASE_URL + (kind === 'trial' ? 'map-chamber.webp' : 'assets/territory/scenes/arena-viking.webp')}
           onError={(event) => {
             event.currentTarget.onerror = null;
-            event.currentTarget.src = import.meta.env.BASE_URL + 'arena-bg.webp';
+            event.currentTarget.src = import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp';
           }}
           alt=""
           className={`absolute inset-0 h-full w-full object-cover ${kind === 'trial' ? 'object-center saturate-[1.18] contrast-[1.08]' : 'object-[center_62%]'}`}
