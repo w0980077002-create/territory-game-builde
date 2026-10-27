@@ -56,32 +56,156 @@
 }
 .territory-world-map__control {
   display: flex;
-  height: 35px;
-  width: 35px;
+  height: 38px;
+  width: 38px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e8cd88a6;
-  border-radius: 11px;
-  background: #291c10df;
-  color: #ffe7ae;
-  box-shadow: 0 2px 8px #11231799;
+  border: 2px solid #d7a655;
+  border-radius: 12px;
+  background: linear-gradient(155deg, #83542d 0%, #452a18 47%, #23170d 100%);
+  color: #ffe8a2;
+  box-shadow: inset 0 2px 1px #ffe2a450, inset 0 -3px 1px #1b0b0677, 0 3px 6px #101a1399;
+  filter: drop-shadow(0 1px 1px #070e08);
   -webkit-tap-highlight-color: transparent;
 }
 .territory-world-map__control:active { transform: scale(.94); }
 .territory-world-map__zoom-label {
   align-self: center;
-  min-width: 35px;
-  border: 1px solid #e8cd8866;
-  border-radius: 7px;
-  background: #291c10df;
-  color: #ffe7ae;
-  padding: 3px 2px;
+  min-width: 38px;
+  border: 1px solid #dfb96d;
+  border-radius: 8px;
+  background: linear-gradient(#6b4625, #291b12);
+  color: #ffe6a0;
+  padding: 4px 2px;
   text-align: center;
   font-size: 10px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  box-shadow: 0 2px 8px #11231766;
+  text-shadow: 0 1px 2px #140a05;
+  box-shadow: inset 0 1px 1px #ffe2a444, 0 2px 6px #11231788;
   pointer-events: none;
+}
+.territory-world-map__drawer {
+  border-top: 3px solid #dcb36b;
+  background:
+    radial-gradient(ellipse at 50% 0%, #78502b55, transparent 65%),
+    linear-gradient(170deg, #20332a 0%, #172821 48%, #131d19 100%);
+  box-shadow: inset 0 2px 0 #ffe0a53f, 0 -10px 30px #060e0baa;
+}
+.territory-world-map__drawer-scroll {
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #bd8954 #1b2a22;
+}
+.territory-world-map__drawer-section {
+  margin: 8px 4px 9px;
+  color: #edd5a4;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px #080d08;
+}
+.territory-world-map__drawer-close {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dab16c;
+  border-radius: 10px;
+  background: linear-gradient(#775028, #2b1a0d);
+  color: #fff0ca;
+  box-shadow: inset 0 1px 1px #ffe1a54d, 0 2px 5px #0007;
+}
+.territory-world-map__destination {
+  --crest-color: #ffe1a0;
+  --crest-glow: #da9b3b;
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 62px;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  padding: 7px 7px 7px 6px;
+  border: 1px solid #dcad67;
+  border-radius: 13px;
+  background:
+    linear-gradient(160deg, #995d3380 0%, #603a21b0 56%, #28170ed9 100%),
+    repeating-linear-gradient(174deg, #5d361b 0, #6b4120 3px, #593118 7px, #81512b 14px, #60391d 21px);
+  color: #fff1c8;
+  text-align: left;
+  box-shadow: inset 0 2px 1px #ffe8b34a, inset 0 -3px 0 #1c0e0888, 0 3px 5px #080f0b77;
+  -webkit-tap-highlight-color: transparent;
+}
+.territory-world-map__destination::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 10px 8px, #f4cf80 0 1px, #59321d 2px, transparent 3px),
+    radial-gradient(circle at calc(100% - 9px) calc(100% - 8px), #f4cf80 0 1px, #59321d 2px, transparent 3px);
+  content: '';
+  pointer-events: none;
+}
+.territory-world-map__destination--ember { --crest-color: #ffd2a3; --crest-glow: #dd6537; }
+.territory-world-map__destination--forest { --crest-color: #d0ffd4; --crest-glow: #4ca66d; }
+.territory-world-map__destination--rune { --crest-color: #ede0ff; --crest-glow: #9262ca; }
+.territory-world-map__destination--sea { --crest-color: #d4f1ff; --crest-glow: #488db9; }
+.territory-world-map__destination-crest {
+  position: relative;
+  display: flex;
+  width: 43px;
+  height: 43px;
+  flex: 0 0 43px;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #ebbd70;
+  border-radius: 11px;
+  background:
+    radial-gradient(circle at 44% 25%, color-mix(in srgb, var(--crest-glow) 58%, #fff3c3), var(--crest-glow) 35%, #291e19 88%);
+  color: var(--crest-color);
+  box-shadow: inset 0 1px 4px #fff1bf70, inset 0 -3px 5px #120c0a80, 0 2px 4px #160b08aa;
+}
+.territory-world-map__destination-crest img {
+  width: 39px;
+  height: 39px;
+  object-fit: contain;
+  filter: saturate(1.17) drop-shadow(0 2px 2px #130d0baf);
+}
+.territory-world-map__destination-crest svg {
+  filter: drop-shadow(0 2px 1px #110b09cc);
+}
+.territory-world-map__destination-name {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #fff2d2;
+  font-size: clamp(10.5px, 3.3vw, 13px);
+  font-weight: 900;
+  line-height: 1.14;
+  overflow-wrap: anywhere;
+  text-shadow: 0 2px 1px #211009, 0 0 4px #211009;
+}
+.territory-world-map__destination-arrow {
+  position: relative;
+  flex: 0 0 13px;
+  margin-left: auto;
+  color: #ffdf9e;
+  filter: drop-shadow(0 1px 1px #291208);
+}
+.territory-world-map__destination:active {
+  transform: translateY(2px);
+  border-color: #ffecaa;
+  box-shadow: inset 0 2px 5px #170b08aa, 0 1px 2px #080f0b77;
+}
+@media (max-width: 360px) {
+  .territory-world-map__destination { gap: 5px; padding: 6px 4px; }
+  .territory-world-map__destination-crest { width: 38px; height: 38px; flex-basis: 38px; }
+  .territory-world-map__destination-crest img { width: 35px; height: 35px; }
+  .territory-world-map__destination-arrow { flex-basis: 10px; width: 10px; }
 }
 .territory-world-map__hint-hand { animation: territory-map-swipe 2.5s ease-in-out infinite; }
 @keyframes territory-map-swipe {

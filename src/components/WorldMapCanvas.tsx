@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Compass, Hand, Layers3, LocateFixed, Minus, Plus, X } from 'lucide-react';
+import { ChevronRight, Compass, Crosshair, Gem, Hand, Layers3, LocateFixed, Minus, Mountain, PawPrint, Pickaxe, Plus, Sparkles, Sprout, Trees, X, type LucideIcon } from 'lucide-react';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import './worldMapCanvas.css';
 
@@ -50,6 +50,42 @@ const OTHER_PLACES: { id: WorldMapRoute; ru: string; en: string }[] = [
   { id: 'messages', ru: 'Сообщения', en: 'Messages' },
   { id: 'events', ru: 'События', en: 'Events' },
 ];
+
+type PlaceVisual = {
+  art?: string;
+  Glyph?: LucideIcon;
+  tone: 'gold' | 'ember' | 'forest' | 'rune' | 'sea';
+};
+
+// Use already-approved navigation and city artwork wherever possible.
+// Resource areas have distinct lightweight vector crests instead of
+// repeating one image for unrelated destinations.
+const PLACE_VISUALS: Record<WorldMapPlace, PlaceVisual> = {
+  city: { art: 'nav-city.webp', tone: 'gold' },
+  arena: { art: 'ic-arena-viking.webp', tone: 'ember' },
+  mountain: { Glyph: Pickaxe, tone: 'gold' },
+  auction: { art: 'ic-auction-viking.webp', tone: 'gold' },
+  hero: { art: 'nav-hero-crown.webp', tone: 'rune' },
+  trial: { art: 'ic-trials.webp', tone: 'ember' },
+  chamber: { Glyph: Sparkles, tone: 'rune' },
+  forge: { art: 'ic-forge.webp', tone: 'ember' },
+  professions: { art: 'ic-professions-viking.webp', tone: 'gold' },
+  shop: { art: 'ic-shop.webp', tone: 'gold' },
+  hunting: { Glyph: Crosshair, tone: 'forest' },
+  forest: { Glyph: Trees, tone: 'forest' },
+  herbs: { Glyph: Sprout, tone: 'forest' },
+  inventory: { art: 'nav-inventory.webp', tone: 'sea' },
+  runes: { Glyph: Gem, tone: 'rune' },
+  rare: { Glyph: Mountain, tone: 'rune' },
+  games: { art: 'nav-games.webp', tone: 'sea' },
+  companions: { Glyph: PawPrint, tone: 'forest' },
+  battle: { art: 'nav-battle.webp', tone: 'ember' },
+  clan: { art: 'nav-clan.webp', tone: 'ember' },
+  friends: { art: 'ic-invite.webp', tone: 'forest' },
+  quests: { art: 'ic-quests.webp', tone: 'gold' },
+  messages: { art: 'ic-mail.webp', tone: 'sea' },
+  events: { art: 'ic-events.webp', tone: 'rune' },
+};
 
 const WORLD_WIDTH = 1536;
 const WORLD_HEIGHT = 1024;
@@ -345,6 +381,27 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
     onVisit(id);
   };
 
+  const renderDestination = (place: { id: WorldMapPlace; ru: string; en: string }) => {
+    const visual = PLACE_VISUALS[place.id];
+    const Glyph = visual.Glyph;
+    return (
+      <button
+        key={place.id}
+        type="button"
+        className={`territory-world-map__destination territory-world-map__destination--${visual.tone}`}
+        onClick={() => visit(place.id)}
+        aria-label={language === 'en' ? place.en : place.ru}
+      >
+        <span className="territory-world-map__destination-crest" aria-hidden="true">
+          {visual.art && <img src={`${import.meta.env.BASE_URL}${visual.art}`} alt="" draggable={false} loading="lazy" decoding="async" />}
+          {Glyph && <Glyph size={26} strokeWidth={2.1} />}
+        </span>
+        <span className="territory-world-map__destination-name">{language === 'en' ? place.en : place.ru}</span>
+        <ChevronRight className="territory-world-map__destination-arrow" size={15} strokeWidth={2.4} aria-hidden="true" />
+      </button>
+    );
+  };
+
   return (
     <section className="territory-world-map relative h-full min-h-0 w-full overflow-hidden bg-[#547e66]" aria-label={language === 'en' ? 'Interactive world map' : 'Интерактивная карта мира'}>
       <div
@@ -442,20 +499,23 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
       )}
 
       {drawerOpen && (
-        <div className="absolute inset-0 z-30 flex items-end bg-black/45" onClick={() => setDrawerOpen(false)}>
-          <div className="max-h-[70%] w-full overflow-y-auto rounded-t-2xl border-t border-amber-400/50 bg-[#1b211b]/95 p-3 shadow-2xl" onClick={event => event.stopPropagation()} role="dialog" aria-label={language === 'en' ? 'All locations' : 'Все места'}>
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 className="font-bold text-amber-100">{language === 'en' ? 'All locations' : 'Все места'}</h3>
-              <button type="button" className="rounded-lg p-2 text-amber-100" onClick={() => setDrawerOpen(false)} aria-label={language === 'en' ? 'Close' : 'Закрыть'}><X size={19} /></button>
+        <div className="absolute inset-0 z-30 flex items-end bg-black/55" onClick={() => setDrawerOpen(false)}>
+          <div className="territory-world-map__drawer flex max-h-[78%] w-full flex-col overflow-hidden rounded-t-2xl p-3 shadow-2xl" onClick={event => event.stopPropagation()} role="dialog" aria-label={language === 'en' ? 'All locations' : 'Все места'}>
+            <div className="mb-1 flex shrink-0 items-center justify-between gap-2">
+              <WoodenPlaque>{language === 'en' ? 'All locations' : 'Все места'}</WoodenPlaque>
+              <button type="button" className="territory-world-map__drawer-close" onClick={() => setDrawerOpen(false)} aria-label={language === 'en' ? 'Close' : 'Закрыть'}><X size={20} /></button>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {[...PLACES, ...OTHER_PLACES].map(place => (
-                <button key={place.id} type="button" className="rounded-xl border border-amber-400/20 bg-[#3c3425]/70 px-3 py-2 text-left text-xs font-semibold text-amber-50 active:bg-amber-800/40" onClick={() => visit(place.id)}>
-                  {language === 'en' ? place.en : place.ru}
-                </button>
-              ))}
+            <div className="territory-world-map__drawer-scroll min-h-0 overflow-y-auto pb-2">
+              <p className="territory-world-map__drawer-section">{language === 'en' ? 'Discover on the map' : 'Места на карте'}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {PLACES.map(renderDestination)}
+              </div>
+              <p className="territory-world-map__drawer-section mt-3">{language === 'en' ? 'Other destinations' : 'Другие разделы'}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {OTHER_PLACES.map(renderDestination)}
+              </div>
+              <p className="mt-3 text-center text-[10px] font-medium text-amber-100/70">{language === 'en' ? 'Runes are in Hero → Combat training.' : 'Руны находятся в разделе «Герой» → «Тренировка».'}</p>
             </div>
-            <p className="mt-3 text-[10px] text-amber-100/65">{language === 'en' ? 'Runes are in Hero → Combat training.' : 'Руны сейчас находятся в разделе «Герой» → «Тренировка».'}</p>
           </div>
         </div>
       )}

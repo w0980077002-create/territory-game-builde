@@ -54,6 +54,17 @@ assert.match(canvas, /sessionStorage\.setItem\('territory-map-pan-seen'/);
 assert.match(canvas, /<Hand /, 'First swipe must be explained visually');
 assert.match(css, /prefers-reduced-motion/, 'Animation should respect accessibility settings');
 assert.match(canvas, /setDrawerOpen\(true\)/, 'All sections must remain discoverable without clutter');
+assert.match(canvas, /const PLACE_VISUALS: Record<WorldMapPlace, PlaceVisual>/, 'Every destination should have a deliberate Viking visual');
+assert.match(canvas, /nav-city\.webp/, 'Reuse approved city iconography');
+assert.match(canvas, /ic-arena-viking\.webp/, 'Reuse the approved arena illustration');
+assert.match(canvas, /ic-professions-viking\.webp/, 'Reuse the approved professions illustration');
+assert.match(canvas, /ic-auction-viking\.webp/, 'Reuse the approved auction illustration');
+assert.match(canvas, /PLACES\.map\(renderDestination\)/, 'Buildings list should render illustrated destination buttons');
+assert.match(canvas, /OTHER_PLACES\.map\(renderDestination\)/, 'Secondary sections should share illustrated destination buttons');
+assert.match(canvas, /loading="lazy" decoding="async"/, 'Drawer art must not block initial map rendering');
+assert.match(css, /territory-world-map__destination-crest/, 'Destination buttons need illustrated crests');
+assert.match(css, /territory-world-map__destination--forest/, 'Resources should be visually differentiated');
+assert.match(css, /territory-world-map__drawer-scroll/, 'Location drawer should remain scrollable on phones');
 
 assert.match(map, /<WorldMapCanvas /);
 assert.match(map, /if \(!gather\?\.active\) return;/, 'Idle map should not re-render once per second');
