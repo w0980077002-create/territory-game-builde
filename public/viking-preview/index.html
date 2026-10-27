@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101212">
+<title>TERRITORY 1.0 · Два клинка</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101212;color:#eeeee9;font:15px/1.5 system-ui,-apple-system,sans-serif}main{width:min(920px,100%);margin:auto;padding:28px 24px 24px}header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:1px solid #303534}.brand{letter-spacing:.24em;font-size:13px;font-weight:700}.version{font-size:11px;color:#9ca8a1;letter-spacing:.12em}h1{font-size:clamp(26px,5vw,40px);line-height:1.15;font-weight:500;letter-spacing:-.04em;margin:24px 0 5px}.subtitle{color:#9ca8a1;margin:0}.stage{position:relative;margin:20px 0 18px;border:1px solid #333a37;border-radius:12px;overflow:hidden;background-color:#1a1e1c;background-image:linear-gradient(45deg,#202522 25%,transparent 25%,transparent 75%,#202522 75%),linear-gradient(45deg,#202522 25%,transparent 25%,transparent 75%,#202522 75%);background-size:28px 28px;background-position:0 0,14px 14px}.stage:after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 100px #10121255}.stage svg{display:block;width:100%;height:min(57vh,530px);min-height:280px;overflow:hidden}.stage-label{position:absolute;top:16px;left:18px;font-size:10px;letter-spacing:.15em;color:#a6b0a8}.state{position:absolute;right:18px;top:15px;font-size:12px;color:#d3dfd4}.state:before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#c2d6a9;margin-right:8px}.controls{display:flex;gap:12px;align-items:stretch}button{font:inherit;cursor:pointer;border:1px solid #455047;background:#202822;color:#eee;border-radius:7px;min-height:48px;padding:10px 20px;touch-action:manipulation}button:hover{background:#2c382d}button:focus-visible{outline:2px solid #d5e8bc;outline-offset:3px}button:disabled{cursor:default;opacity:.6}.play{flex:1;background:#d6e4c4;color:#182015;border-color:#d6e4c4;font-weight:650}.play:hover{background:#e6f1d8}.directions{display:flex;gap:4px}.directions button{padding:10px 16px;color:#99a59b}.directions button[aria-pressed=true]{color:#edf5e7;border-color:#a4b694;background:#34402f}.phases{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}.phase{border-top:2px solid #353d37;padding-top:10px;color:#7d8980;font-size:12px;transition:color .12s,border-color .12s}.phase span{font-size:10px;letter-spacing:.12em;display:block;margin-bottom:3px}.phase.active{border-color:#d6e4c4;color:#eff7e8}.foot{display:flex;justify-content:space-between;color:#7d8980;font-size:11px;margin-top:24px;gap:12px}.ink{fill:#000;stroke:#eee;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.detail{fill:none;stroke:#e5e5e2;stroke-width:1.15;stroke-linecap:round;stroke-linejoin:round}.fine{stroke-width:.9}.rivet{fill:#000;stroke:#eee;stroke-width:1.3}@media(max-width:520px){main{padding:18px 14px}.stage{margin-top:18px}.stage svg{height:49vh;min-height:290px}.stage-label{font-size:8px;left:12px;top:12px}.state{right:12px;top:10px;font-size:11px}.controls{gap:8px}button{padding:10px 12px;font-size:13px}.directions button{padding:10px 12px}.phases{gap:8px;margin-top:18px}.phase{font-size:10px}.foot{margin-top:18px;font-size:10px}}
+</style>
+<main>
+ <header><div class="brand">TERRITORY <span style="color:#82917f">1.0</span></div><div class="version">CHARACTER PREVIEW</div></header>
+ <h1>Два клинка. Одна серия.</h1><p class="subtitle">Викинг · боевая анимация</p>
+ <div class="stage">
+  <span class="stage-label">2D / ПРОЗРАЧНЫЙ ФОН</span><span class="state" id="state" role="status">Боевая стойка</span>
+  <svg id="viking" xmlns="http://www.w3.org/2000/svg" viewBox="-55 0 790 600" role="img" aria-labelledby="hero-title"><title id="hero-title">Чёрный викинг в капюшоне с бородой и двумя клинками</title>
+   <defs>
+    <g id="upper-art" class="ink"><path d="M-26-8 Q-34 12-26 42 L-21 69 Q0 84 23 67 L29 28 Q29 2 20-9Z"/><path class="detail" d="M-25 13Q0 2 27 15 M-26 22Q0 12 27 24 M-22 57Q0 47 23 59"/><path d="M-29-7Q-8-24 19-12L28-4 23 0 31 5 23 8 30 16 21 15 25 26 15 22 17 31 7 26 2 32-5 25-13 30-16 22-25 25-23 15-32 18-27 8-34 7Z"/><path class="detail fine" d="M-24-4Q-3-17 21-5 M-23 2L-16-3-18 6-9 0-9 8 0 4 7 9 14 3 16 12 23 9"/><circle class="rivet" cx="-17" cy="32" r="2.8"/><circle class="rivet" cx="18" cy="33" r="2.8"/></g>
+    <g id="fore-art" class="ink"><path d="M-21-7Q-29 4-23 24L-20 59Q-1 71 20 59L24 16Q27 1 19-7Z"/><path d="M-25 5Q0-6 25 6L23 21Q0 9-24 21Z M-22 31Q0 21 23 32L21 46Q0 35-21 46Z"/><path class="detail" d="M-24 10Q0 0 24 11 M-21 37Q0 27 22 38 M-17 56Q0 50 17 56"/><circle class="rivet" cx="-12" cy="12" r="2.4"/><circle class="rivet" cx="12" cy="13" r="2.4"/><circle class="rivet" cx="-11" cy="38" r="2.4"/><circle class="rivet" cx="11" cy="38" r="2.4"/></g>
+    <g id="blade-art" class="ink">
+     <path d="M-11-22L-13-66Q-11-103 6-144Q13-169 11-190Q39-157 35-119L30-104 25-106 27-96 19-85 15-88 15-77 8-66 2-68 3-57-7-36Z"/>
+     <path class="detail" d="M-6-30L2-65 14-88 21-115Q29-144 13-178 M-12-63L1-60 M-10-80L7-76 M-6-98L16-94"/>
+     <path d="M-25-28Q-3-13 24-29L29-21Q7 1-29-19Z"/><path class="detail" d="M-24-22Q0-8 25-23"/>
+     <path d="M-8-17L-10 24Q-1 33 8 24L9-18Z"/><path class="detail" d="M-8-9L8-4 M-9 1L8 6 M-9 11L8 16"/><ellipse cx="-1" cy="27" rx="11" ry="5"/>
+    </g>
+    <g id="hand-art" class="ink"><path d="M-18-10Q-13-18-7-15L-2-12Q5-19 12-11L19-2 17 17Q13 24 6 20-3 25-9 20-18 20-20 11Z"/><path class="detail" d="M-11-8L-12 12Q-10 18-6 18 M-3-9L-4 15 M6-9L6 15 M13-5L13 12 M-18-7Q-8-12-1-3L-5 6-15 1"/></g>
+    <g id="thigh-art" class="ink"><path d="M-32-13Q-41 18-31 50L-26 83Q0 101 29 80L35 21Q35-5 25-15Z"/><path class="detail" d="M-26 9Q0 23 29 8 M-29 34Q-11 50 21 35 M-24 58L-8 66 20 55"/></g>
+    <g id="shin-art" class="ink"><path d="M-27-12L-26 60Q0 79 27 60L29-10Z"/><path d="M-27 29L-36 36-30 39-38 49-28 48-32 60-21 55-19 66-10 60-4 70 3 61 10 67 17 57 23 63 27 52 35 56 32 44 39 45 32 35 34 30 26 26Z"/><path class="detail fine" d="M-27 36L-23 45-17 39-13 51-7 43 0 54 7 44 12 50 18 39 24 44 29 35"/><path d="M-27-15Q0-34 28-13L32 7Q29 32 1 34-31 31-33 9Z"/><ellipse cx="0" cy="3" rx="25" ry="26"/><circle class="rivet" cx="-13" cy="-11" r="2.5"/><circle class="rivet" cx="14" cy="-11" r="2.5"/><circle class="rivet" cx="-15" cy="15" r="2.5"/><circle class="rivet" cx="14" cy="16" r="2.5"/></g>
+    <g id="boot-art" class="ink"><path d="M-25-28Q-4-36 23-26L31-9Q51-6 56 15L58 27Q14 39-35 25L-34 8Z"/><path d="M-29-14Q-4-23 27-11L32 2Q4-10-33 3Z M-9 28Q-12 7 1-5 M7 30Q7 7 19-2 M-35 20Q9 33 56 21L58 29Q10 41-36 28Z"/><circle class="rivet" cx="-15" cy="-11" r="2.5"/><circle class="rivet" cx="14" cy="-10" r="2.5"/><circle class="rivet" cx="23" cy="12" r="2.5"/><circle class="rivet" cx="43" cy="12" r="2.5"/></g>
+   </defs>
+   <g id="facing" class="ink"><g id="legs"><g id="leg-r"><g data-part="thigh"><use href="#thigh-art"/></g><g data-part="shin"><use href="#shin-art"/></g><g data-part="boot"><use href="#boot-art"/></g></g><g id="leg-l"><g data-part="thigh"><use href="#thigh-art"/></g><g data-part="shin"><use href="#shin-art"/></g><g data-part="boot"><use href="#boot-art"/></g></g></g>
+   <g id="body">
+    <g id="cape" class="ink"><path d="M-56-150Q-97-112-94-38L-132 94-116 85-127 115-106 107-106 135-89 118-92 151-71 133-73 164-48 142-37 173-21 146 2 151 20 123 38 145 48 112 64 129 72 92 94 106 80 51 78-100Z"/><path class="detail" d="M-65-113Q-72 7-108 89 M-48-84Q-72 54-73 123 M-24-66Q-33 73-39 137 M51-82Q42 39 65 93"/></g>
+    <g id="arm-l"><g data-part="upper"><use href="#upper-art"/></g><g data-part="fore"><use href="#fore-art"/></g><g data-part="grip"><use href="#blade-art" transform="scale(.82)"/><use href="#hand-art"/></g></g>
+    <g id="torso" class="ink">
+     <path d="M-61-143Q-88-110-65-64L-54-8Q-1 22 62-9L76-89Q82-132 53-147Z"/>
+     <path class="detail" d="M-62-104Q-34-71 48-102 M-58-80Q-23-46 61-75 M-55-46Q-3-19 61-43 M-36-128Q-41-82-23-55 M42-126Q49-109 40-90"/>
+     <path d="M-59-26Q1-8 63-30L70-5Q6 28-62 3Z"/><path class="detail" d="M-57-18Q-1 0 65-21"/>
+     <path d="M-54-145L-71-130 38-17 57-31Z"/><path class="detail" d="M-55-135L47-27"/>
+     <g transform="translate(-5 -79) rotate(-43)"><rect x="-16" y="-20" width="32" height="40" rx="4"/><rect x="-11" y="-15" width="22" height="30" rx="2"/><path class="detail" d="M0-16V5H16"/></g>
+     <circle class="rivet" cx="-39" cy="-100" r="3"/><circle class="rivet" cx="21" cy="-48" r="3"/>
+     <circle class="rivet" cx="-42" cy="-8" r="3"/><circle class="rivet" cx="45" cy="-10" r="3"/>
+     <g transform="translate(8 -3)"><circle r="25"/><circle r="20"/><path class="detail" d="M5-11Q-14-15-13 2-10 13 2 10-5 4 1-2 8-6 13 2"/><circle class="rivet" cx="0" cy="-17" r="2"/><circle class="rivet" cx="15" cy="7" r="2"/><circle class="rivet" cx="-14" cy="9" r="2"/></g>
+     <path d="M-43 13L-58 59-49 55-53 73-38 64-34 83-18 71-11 93 3 75 15 91 24 68 40 77 43 56 59 63 56 43 66 45 52 12Q1 38-43 13Z"/>
+     <path class="detail" d="M-35 30L-28 58-18 45 M35 29L29 56 18 43"/>
+     <path d="M-15 20L-25 90-15 104-5 92 2 22Z"/><path class="detail" d="M-12 31L-17 85-14 94"/>
+    </g>
+    <g id="collar" class="ink"><path d="M-56-165L-67-174-65-161-78-168-74-153-90-156-81-142-96-139-85-129-98-121-84-116-93-102-78-101-85-86-68-90-70-74-54-82-48-63-36-77-25-66-20-82 1-73 15-85 29-74 35-92 52-82 55-100 74-94 68-110 84-111 76-124 88-133 75-140 83-151 66-153 69-167 51-162 45-176 33-166Z"/><path class="detail fine" d="M-63-151L-65-142-74-143-66-133-76-129-65-121-74-112-61-112-62-99-51-103-47-88-36-94 M54-149L63-139 59-130 68-122 58-115 63-107 50-109 49-97 39-103"/></g>
+    <g id="head" class="ink"><g transform="translate(1 -16) scale(.9)">
+     <path d="M-43-137Q-59-158-63-192L-74-219Q-56-225-43-239L-21-269Q-2-290 19-283L42-282Q59-276 72-264L96-251Q111-238 105-218L109-192Q119-168 104-144L96-123 76-132 69-119-28-125Z"/>
+     <path class="detail" d="M-68-218Q-39-215-12-236 M-45-237Q-17-235 12-271 M-30-239Q-13-270 8-277 M-59-208Q-44-190-42-164 M-48-216Q-32-195-33-174 M75-256L92-249"/>
+     <path d="M-35-164Q-48-182-28-197L37-239Q74-259 103-242L103-229Q76-243 51-227L-14-182Q-31-166-18-148Z"/>
+     <path class="detail" d="M-33-180L48-237Q77-253 102-238 M-20-195L-23-204 M3-211L0-219 M28-228L25-237 M54-243L51-251 M80-246L77-254"/>
+     <path d="M-16-179L49-224Q74-238 96-229L88-201 92-182 78-164 87-143 67-124 40-117 9-134-9-151Z"/>
+     <path class="detail" d="M27-192Q36-206 49-203 M57-210Q67-218 79-214 M31-187L42-190 M63-200L73-201 M43-183Q54-190 55-201 M58-199L61-185Q78-185 79-174 73-168 62-172L54-176 46-171 M26-178L17-169 12-155 M80-164L86-155"/>
+     <path d="M17-169Q9-149-5-145L5-138-7-134 4-127-7-121 7-113 4-104 18-101 20-87 32-91 42-72 52-90 66-85 73-101 87-108 81-122 92-129 81-144 76-156Q60-151 53-163 40-156 17-169Z"/>
+     <path class="detail" d="M16-157Q6-138 18-121 M20-147Q17-126 35-113 M30-148Q23-130 43-107L44-83 M55-148Q69-127 62-109 M66-144Q80-133 72-118 M25-118Q31-101 35-97 M49-119Q57-101 49-92"/>
+     <path d="M52-166Q37-175 25-159 12-148 4-153 16-138 34-149L49-160Q62-146 79-148L88-154Q74-150 66-163 60-170 52-166Z"/>
+     <path class="detail fine" d="M45-163Q27-151 15-150 M58-162Q70-151 79-152"/>
+     <g id="braid-r"><path d="M16-117Q-4-106 10-78L22-60Q39-77 32-97Z"/><path class="detail" d="M18-106Q5-91 22-66 M23-104Q35-87 22-66"/><path d="M6-119Q19-128 33-116L33-106Q18-115 5-107Z"/><circle class="rivet" cx="13" cy="-115" r="2"/><circle class="rivet" cx="25" cy="-114" r="2"/></g>
+     <g id="braid-l"><path d="M62-109Q49-91 62-71L72-54Q90-72 79-97Z"/><path class="detail" d="M64-98Q58-81 72-59 M72-96Q83-77 72-59"/><path d="M55-113Q68-122 81-110L83-100Q69-108 55-101Z"/><circle class="rivet" cx="62" cy="-109" r="2"/><circle class="rivet" cx="74" cy="-108" r="2"/></g>
+    </g>
+    </g><g id="arm-r"><g data-part="upper"><use href="#upper-art"/></g><g data-part="fore"><use href="#fore-art"/></g><g data-part="grip"><use href="#blade-art" transform="scale(.82)"/><use href="#hand-art"/></g></g>
+   </g></g>
+  </svg>
+ </div>
+ <div class="controls"><button class="play" id="play">↗ Запустить комбинацию</button><div class="directions" aria-label="Направление персонажа"><button id="left" aria-label="Лицом влево" aria-pressed="false">←</button><button id="right" aria-label="Лицом вправо" aria-pressed="true">→</button></div></div>
+ <div class="phases"><div class="phase"><span>01 / ПРАВЫЙ</span>Горизонтальный</div><div class="phase"><span>02 / ЛЕВЫЙ</span>Обратный</div><div class="phase"><span>03 / ДВА КЛИНКА</span>Крестовой</div><div class="phase"><span>04 / ФИНИШЕР</span>Мощный выпад</div></div>
+ <div class="foot"><span>Послойная векторная анимация</span><span>Idle → 4 удара → Idle</span></div>
+</main>
+<script>
+/* All coordinates belong to the rig. Weapons are children of wrist groups.
+   Fixed-length two-bone IK keeps elbows and knees connected at every frame. */
+const $=id=>document.getElementById(id), rad=Math.PI/180;
+const idle={x:0,y:0,lean:0,rx:-125,ry:-42,ra:89,lx:137,ly:-69,la:18,rf:-91,lf:88,rl:0,ll:0,head:0,cape:0};
+// A continuous timeline: anticipation, quick contact, follow-through, transfer.
+const keys=[
+ [0,idle],
+ [.24,{x:-8,y:8,lean:-9,rx:-147,ry:-100,ra:-63,lx:112,ly:-100,la:-13,rf:-98,lf:89,rl:5,head:5,cape:9}],
+ [.40,{x:20,y:2,lean:12,rx:66,ry:-98,ra:100,lx:118,ly:-88,la:10,rf:-89,lf:105,head:-7,cape:-13}],
+ [.59,{x:24,y:5,lean:15,rx:77,ry:-67,ra:142,lx:95,ly:-150,la:72,rf:-84,lf:109,head:-9,cape:-16}],
+ [.78,{x:4,y:9,lean:0,rx:12,ry:-60,ra:126,lx:144,ly:-165,la:71,rf:-88,lf:106,ll:5,head:0,cape:4}],
+ [.95,{x:18,y:0,lean:-11,rx:-84,ry:-67,ra:65,lx:-54,ly:-104,la:-97,rf:-99,lf:107,head:6,cape:15}],
+ [1.14,{x:5,y:8,lean:-14,rx:-126,ry:-100,ra:-23,lx:-68,ly:-70,la:-133,rf:-99,lf:106,head:9,cape:17}],
+ [1.39,{x:-7,y:14,lean:-4,rx:-151,ry:-143,ra:-40,lx:151,ly:-148,la:43,rf:-109,lf:110,rl:4,head:5,cape:4}],
+ [1.57,{x:23,y:3,lean:9,rx:30,ry:-35,ra:-43,lx:-30,ly:-36,la:43,rf:-97,lf:120,head:-5,cape:-14}],
+ [1.77,{x:26,y:12,lean:13,rx:64,ry:-49,ra:-135,lx:-62,ly:-49,la:135,rf:-94,lf:125,head:-7,cape:-19}],
+ [2.08,{x:-17,y:20,lean:-15,rx:-113,ry:-164,ra:40,lx:90,ly:-143,la:-37,rf:-111,lf:96,ll:12,head:9,cape:13}],
+ [2.29,{x:43,y:4,lean:16,rx:57,ry:-100,ra:91,lx:159,ly:-103,la:91,rf:-83,lf:156,head:-13,cape:-24}],
+ [2.44,{x:47,y:6,lean:17,rx:62,ry:-94,ra:94,lx:162,ly:-98,la:94,rf:-81,lf:160,head:-13,cape:-25}],
+ [2.69,{x:44,y:15,lean:12,rx:1,ry:-49,ra:111,lx:134,ly:-61,la:51,rf:-85,lf:139,ll:11,head:-7,cape:-9}],
+ [3.10,{x:0,y:1,lean:0,rx:-125,ry:-42,ra:89,lx:137,ly:-69,la:18,rf:-91,lf:88,head:0,cape:0}],
+ [3.22,idle]
+].map(([t,p])=>({t,p:{...idle,...p}}));
+const duration=keys.at(-1).t;
+const armR=$('arm-r'),armL=$('arm-l'),legR=$('leg-r'),legL=$('leg-l');
+const parts=g=>Object.fromEntries([...g.children].map(e=>[e.dataset.part,e]));
+const arms=[parts(armR),parts(armL)],legs=[parts(legR),parts(legL)];
+// The far wrist crosses in front of the chest; retain body-local coordinates.
+$('body').insertBefore(arms[1].grip,armR);
+const transform=(e,v)=>e.setAttribute('transform',v);
+function solve(ax,ay,bx,by,a,b,bend){
+ let dx=bx-ax,dy=by-ay,d=Math.hypot(dx,dy);d=Math.min(a+b-.01,Math.max(Math.abs(a-b)+.01,d));
+ const base=Math.atan2(dy,dx),off=Math.acos(Math.max(-1,Math.min(1,(a*a+d*d-b*b)/(2*a*d))));
+ const angle=base+off*bend,ex=ax+Math.cos(angle)*a,ey=ay+Math.sin(angle)*a;
+ // If a target is outside the reach envelope, use the solved wrist position.
+ const endAngle=Math.atan2(by-ey,bx-ex),wx=ex+Math.cos(endAngle)*b,wy=ey+Math.sin(endAngle)*b;
+ return{ex,ey,wx,wy,upper:angle/rad-90,lower:endAngle/rad-90};
+}
+function arm(part,sx,sy,wx,wy,angle,bend){
+ const j=solve(sx,sy,wx,wy,69,67,bend);
+ transform(part.upper,`translate(${sx} ${sy}) rotate(${j.upper})`);
+ transform(part.fore,`translate(${j.ex} ${j.ey}) rotate(${j.lower})`);
+ transform(part.grip,`translate(${j.wx} ${j.wy}) rotate(${angle})`);
+}
+function leg(part,hx,hy,fx,lift,bend){
+ const fy=151-lift,j=solve(hx,hy,fx,fy,89,88,bend);
+ transform(part.thigh,`translate(${hx} ${hy}) rotate(${j.upper})`);
+ transform(part.shin,`translate(${j.ex} ${j.ey}) rotate(${j.lower})`);
+ transform(part.boot,`translate(${j.wx} ${j.wy}) rotate(${-lift*.4})`);
+}
+function sample(t){
+ let i=0;while(i<keys.length-2&&t>keys[i+1].t)i++;
+ const a=keys[i],b=keys[i+1],u=Math.max(0,Math.min(1,(t-a.t)/(b.t-a.t))),s=u*u*(3-2*u);
+ return Object.fromEntries(Object.keys(idle).map(k=>[k,a.p[k]+(b.p[k]-a.p[k])*s]));
+}
+function render(p,t){
+ transform($('facing'),`translate(340 367) scale(${direction} 1)`);
+ transform($('body'),`translate(${p.x} ${p.y}) rotate(${p.lean})`);
+ transform($('head'),`rotate(${p.head} 10 -163)`);
+ transform($('cape'),`rotate(${p.cape} -24 -150)`);
+ transform($('braid-r'),`rotate(${Math.sin(t*4)*2-p.lean*.55} 18 -115)`);
+ transform($('braid-l'),`rotate(${Math.sin(t*4-1)*2-p.lean*.6} 67 -109)`);
+ arm(arms[0],-64,-131,p.rx,p.ry,p.ra,-1);
+ arm(arms[1],65,-130,p.lx,p.ly,p.la,1);
+ // Pelvis follows the torso; feet remain planted independently of body rotation.
+ const c=Math.cos(p.lean*rad),s=Math.sin(p.lean*rad);
+ leg(legs[0],p.x-35*c,p.y-35*s,p.rf,p.rl,-1);
+ leg(legs[1],p.x+37*c,p.y+37*s,p.lf,p.ll,-1);
+}
+let direction=1,start=null,last=0,clock=0,phase=-2,raf=0;
+const phases=[...document.querySelectorAll('.phase')],play=$('play');
+function setPhase(next){if(phase===next)return;phase=next;phases.forEach((e,i)=>e.classList.toggle('active',i===next));$('state').textContent=next<0?'Боевая стойка':['Удар 1 · правый','Удар 2 · левый','Удар 3 · крест','Удар 4 · выпад'][next];}
+function tick(now){
+ const dt=last?Math.min((now-last)/1000,.05):0;last=now;clock+=dt;
+ let p;
+ if(start!==null){start+=dt;const t=start;p=sample(t);setPhase(t<.65?0:t<1.2?1:t<1.86?2:t<2.76?3:-1);
+  if(t>=duration){start=null;play.disabled=false;play.textContent='↗ Запустить комбинацию';setPhase(-1);}
+ }else{const b=Math.sin(clock*2.2);p={...idle,y:-b*2,lean:b*.7,rx:idle.rx+b*1.6,ry:idle.ry-b*2,lx:idle.lx-b,ly:idle.ly-b*2,head:-b*.65,cape:b*1.2};setPhase(-1);}
+ render(p,clock);raf=requestAnimationFrame(tick);
+}
+play.addEventListener('click',()=>{if(start!==null)return;start=0;play.disabled=true;play.textContent='Комбинация…';});
+for(const [id,dir] of [['left',-1],['right',1]])$(id).addEventListener('click',()=>{direction=dir;$('left').setAttribute('aria-pressed',String(dir===-1));$('right').setAttribute('aria-pressed',String(dir===1));render(start===null?idle:sample(start),clock);});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf);last=0;}else{last=0;raf=requestAnimationFrame(tick);}});
+raf=requestAnimationFrame(tick);
+</script>
+</html>
