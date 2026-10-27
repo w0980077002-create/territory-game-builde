@@ -19,13 +19,13 @@ export interface MailRewardVisual {
 }
 
 export const MAIL_ITEM_VISUALS: Record<string, { name: string; nameEn: string; image: string }> = {
-  shop_potion_hp: { name: 'Зелье здоровья', nameEn: 'Health potion', image: 'potion-hp.webp' },
-  shop_potion_hp_large: { name: 'Большое зелье здоровья', nameEn: 'Large health potion', image: 'potion-hp-large.webp' },
-  shop_elixir_atk: { name: 'Эликсир силы', nameEn: 'Attack elixir', image: 'elixir-attack-ornate.webp' },
-  shop_elixir_def: { name: 'Эликсир защиты', nameEn: 'Defense elixir', image: 'elixir-defense.webp' },
-  shop_elixir_crit: { name: 'Эликсир крита', nameEn: 'Critical hit elixir', image: 'elixir-crit-ornate.webp' },
-  shop_arena_time: { name: 'Зелье времени', nameEn: 'Time potion', image: 'potion-time.webp' },
-  shop_arena_adrenaline: { name: 'Адреналин', nameEn: 'Adrenaline', image: 'potion-adrenaline.webp' },
+  shop_potion_hp: { name: 'Зелье здоровья', nameEn: 'Health potion', image: 'potion-hp-viking.webp' },
+  shop_potion_hp_large: { name: 'Большое зелье здоровья', nameEn: 'Large health potion', image: 'potion-hp-large-viking.webp' },
+  shop_elixir_atk: { name: 'Эликсир силы', nameEn: 'Attack elixir', image: 'elixir-attack-viking.webp' },
+  shop_elixir_def: { name: 'Эликсир защиты', nameEn: 'Defense elixir', image: 'elixir-defense-viking.webp' },
+  shop_elixir_crit: { name: 'Эликсир крита', nameEn: 'Critical hit elixir', image: 'elixir-crit-viking.webp' },
+  shop_arena_time: { name: 'Зелье времени', nameEn: 'Time potion', image: 'potion-time-viking.webp' },
+  shop_arena_adrenaline: { name: 'Адреналин', nameEn: 'Adrenaline', image: 'potion-adrenaline-viking.webp' },
 };
 
 /** Positive whole numbers only. Server-generated grants use integer quantities. */

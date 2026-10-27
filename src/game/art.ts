@@ -160,13 +160,13 @@ function consumableArt(item: ArtSource): string | null {
   if (canonical) return rootItemArt(canonical);
 
   // Crafted master recipes have their own looks, separate from shop consumables.
-  if (/зелье здоровья мастера|master.*health potion/i.test(item.name)) return itemIcon('master-health');
-  if (/эликсир силы мастера|master.*strength elixir/i.test(item.name)) return itemIcon('master-strength');
-  if (/большое зелье мастера|master.*large health potion/i.test(item.name)) return itemIcon('master-greater-health');
-  if (/эликсир легенды|legendary elixir/i.test(item.name)) return itemIcon('master-legendary');
+  if (/зелье здоровья мастера|master.*health potion/i.test(item.name)) return itemIcon('potion-green');
+  if (/эликсир силы мастера|master.*strength elixir/i.test(item.name)) return itemIcon('potion-fire');
+  if (/большое зелье мастера|master.*large health potion/i.test(item.name)) return itemIcon('potion-hp');
+  if (/эликсир легенды|legendary elixir/i.test(item.name)) return itemIcon('potion-energy');
 
-  if (item.arenaEffect === 'time') return rootItemArt('potion-time.webp');
-  if (item.arenaEffect === 'adrenaline') return rootItemArt('potion-adrenaline.webp');
+  if (item.arenaEffect === 'time') return rootItemArt('potion-time-viking.webp');
+  if (item.arenaEffect === 'adrenaline') return rootItemArt('potion-adrenaline-viking.webp');
   return null;
 }
 
@@ -237,10 +237,10 @@ export function itemArt(item: ArtSource): string {
   const e = item.effect;
   // Large healing potions must have their own art in inventory and the shop,
   // matching the exact icon shown for the same item in the in-game mail.
-  if (e?.stat === 'hp' && e.value >= 150) return import.meta.env.BASE_URL + 'potion-hp-large.webp';
-  if (e?.stat === 'hp') return itemIcon('potion-hp');
-  if (e?.stat === 'attack') return itemIcon('potion-fire');
-  if (e?.stat === 'defense') return itemIcon('potion-mana');
-  if (e?.stat === 'critChance') return itemIcon('potion-energy');
+  if (e?.stat === 'hp' && e.value >= 150) return import.meta.env.BASE_URL + 'potion-hp-large-viking.webp';
+  if (e?.stat === 'hp') return rootItemArt('potion-hp-viking.webp');
+  if (e?.stat === 'attack') return rootItemArt('elixir-attack-viking.webp');
+  if (e?.stat === 'defense') return rootItemArt('elixir-defense-viking.webp');
+  if (e?.stat === 'critChance') return rootItemArt('elixir-crit-viking.webp');
   return itemIcon('potion-green');
 }

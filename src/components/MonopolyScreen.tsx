@@ -23,8 +23,8 @@ const REWARD_ART: Record<CellReward, string> = {
   gold: CURRENCY_ART.gold,
   gems: CURRENCY_ART.gems,
   stones: CURRENCY_ART.stones,
-  elixir: '/elixir-attack-ornate.webp',
-  potion: '/potion-hp.webp',
+  elixir: '/elixir-attack-viking.webp',
+  potion: '/potion-hp-viking.webp',
 };
 
 const REWARD_LABEL: Record<CellReward, string> = {

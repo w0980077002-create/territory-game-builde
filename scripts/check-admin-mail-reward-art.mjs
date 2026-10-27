@@ -37,7 +37,7 @@ const selected = mailRewardVisuals({ gems: 200, stones: 30, items: { shop_potion
 assert.equal(selected.length, 3, 'Existing letter should display three award icons');
 const large = selected.find((r) => r.key === 'shop_potion_hp_large');
 assert.equal(large?.amount, 20);
-assert.equal(large?.image, 'potion-hp-large.webp');
+assert.equal(large?.image, 'potion-hp-large-viking.webp');
 const bundle = mailRewardVisuals({ stones: 2, items: { shop_stone_5: 4 } });
 assert.equal(bundle.length, 1);
 assert.equal(bundle[0].key, 'stones');

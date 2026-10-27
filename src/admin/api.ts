@@ -134,13 +134,13 @@ export const RESOURCES: { key: string; label: string; item?: boolean; icon: stri
   { key: 'stones', label: 'Боевые камни', icon: '/battle-stone.webp' },
   { key: 'shop_stone_5', label: 'Связки камней (x5)', item: true, icon: '/battle-stone.webp' },
   { key: 'forgeMaterials', label: 'Материалы кузницы', icon: '/forge-material.webp' },
-  { key: 'shop_potion_hp', label: 'Зелье здоровья', item: true, icon: '/potion-hp.webp' },
-  { key: 'shop_potion_hp_large', label: 'Большое зелье здоровья', item: true, icon: '/potion-hp-large.webp' },
-  { key: 'shop_elixir_atk', label: 'Эликсир силы', item: true, icon: '/elixir-attack-ornate.webp' },
-  { key: 'shop_elixir_def', label: 'Эликсир защиты', item: true, icon: '/elixir-defense.webp' },
-  { key: 'shop_elixir_crit', label: 'Эликсир крита', item: true, icon: '/elixir-crit-ornate.webp' },
-  { key: 'shop_arena_time', label: 'Зелье времени', item: true, icon: '/potion-time.webp' },
-  { key: 'shop_arena_adrenaline', label: 'Адреналин', item: true, icon: '/potion-adrenaline.webp' },
+  { key: 'shop_potion_hp', label: 'Зелье здоровья', item: true, icon: '/potion-hp-viking.webp' },
+  { key: 'shop_potion_hp_large', label: 'Большое зелье здоровья', item: true, icon: '/potion-hp-large-viking.webp' },
+  { key: 'shop_elixir_atk', label: 'Эликсир силы', item: true, icon: '/elixir-attack-viking.webp' },
+  { key: 'shop_elixir_def', label: 'Эликсир защиты', item: true, icon: '/elixir-defense-viking.webp' },
+  { key: 'shop_elixir_crit', label: 'Эликсир крита', item: true, icon: '/elixir-crit-viking.webp' },
+  { key: 'shop_arena_time', label: 'Зелье времени', item: true, icon: '/potion-time-viking.webp' },
+  { key: 'shop_arena_adrenaline', label: 'Адреналин', item: true, icon: '/potion-adrenaline-viking.webp' },
 ];
 
 /** Physical PostgreSQL int4 wallet bound, not an administrator reward quota. */
