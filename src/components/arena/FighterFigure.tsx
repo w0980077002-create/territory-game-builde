@@ -52,7 +52,7 @@ export function FighterFigure({ src, combatFrames, name, dir, mirror = false, al
             onError={(event) => {
               // On missing art, never retry the same broken URL forever.
               const img = event.currentTarget;
-              const candidates = [combatFrames?.idle, src, import.meta.env.BASE_URL + 'enemy-viking.webp'];
+              const candidates = [combatFrames?.idle, src, import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp'];
               const attempt = Number(img.dataset.artRetry ?? '0');
               if (attempt < candidates.length) {
                 img.dataset.artRetry = String(attempt + 1);

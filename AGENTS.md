@@ -14,6 +14,7 @@ This repository contains the live Telegram game **TERRITORY 1.0**. Treat its mai
 ## Product direction
 
 - Visuals: vivid, saturated, high-quality **cartoon Viking** style; never drab, realistic, childish, or generic placeholders.
+- Canonical active hero art lives in `public/assets/territory/characters/heroes/` and is selected by `src/game/appearance.ts`. Do not restore deleted root-level `appearance-*`, `male2-*`, `enemy-*` or numbered generated images; they were rejected or superseded. Enemy fallback art must also use approved cartoon assets.
 - Four currently available hero appearances, more planned. Equipment is **universal** across appearances; it must not be tied to a single character skin.
 - In combat, heroes face right, opponents face left, with heroes about 20–30% larger. Bodies, limbs, weapons and clothing must move coherently; no detached hands, floating equipment, inert opponents or fake attacks without contact.
 - Preserve mobile-first Telegram/iPhone/Samsung layouts and avoid slow section loading.

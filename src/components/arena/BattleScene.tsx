@@ -176,7 +176,7 @@ export function BattleScene(props: Props) {
                   <span aria-hidden="true" className="absolute left-0 right-[8%] bottom-[1%] h-[7%] rounded-full bg-black/60 blur-md pointer-events-none" />
                   <FighterFigure
                     key={enemy.id}
-                    src={import.meta.env.BASE_URL + 'enemy-viking.webp'}
+                    src={import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp'}
                     combatFrames={getCombatAppearance(enemy.appearance)}
                     name={enemy.name}
                     dir={-1}
