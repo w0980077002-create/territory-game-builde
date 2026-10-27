@@ -160,10 +160,10 @@ function consumableArt(item: ArtSource): string | null {
   if (canonical) return rootItemArt(canonical);
 
   // Crafted master recipes have their own looks, separate from shop consumables.
-  if (/зелье здоровья мастера|master.*health potion/i.test(item.name)) return itemIcon('potion-green');
-  if (/эликсир силы мастера|master.*strength elixir/i.test(item.name)) return itemIcon('potion-fire');
-  if (/большое зелье мастера|master.*large health potion/i.test(item.name)) return itemIcon('potion-hp');
-  if (/эликсир легенды|legendary elixir/i.test(item.name)) return itemIcon('potion-energy');
+  if (/зелье здоровья мастера|master.*health potion/i.test(item.name)) return itemIcon('master-health');
+  if (/эликсир силы мастера|master.*strength elixir/i.test(item.name)) return itemIcon('master-strength');
+  if (/большое зелье мастера|master.*large health potion/i.test(item.name)) return itemIcon('master-greater-health');
+  if (/эликсир легенды|legendary elixir/i.test(item.name)) return itemIcon('master-legendary');
 
   if (item.arenaEffect === 'time') return rootItemArt('potion-time.webp');
   if (item.arenaEffect === 'adrenaline') return rootItemArt('potion-adrenaline.webp');
