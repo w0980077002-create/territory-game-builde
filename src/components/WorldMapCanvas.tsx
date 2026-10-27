@@ -145,6 +145,15 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
       const { x, y, scale } = viewRef.current;
       world.style.transform = `translate3d(${x}px,${y}px,0) scale(${scale})`;
       const { width, height } = sizeRef.current;
+      if (width && height) {
+        // Fade only at full-world zoom, joining the crisp map to its
+        // softly extended illustrated backdrop.
+        const fittedScale = Math.min(width / WORLD_WIDTH, height / WORLD_HEIGHT);
+        const overview = scale <= fittedScale * 1.035;
+        if (world.classList.contains('territory-world-map__world--overview') !== overview) {
+          world.classList.toggle('territory-world-map__world--overview', overview);
+        }
+      }
       if (zoomLabelRef.current && width && height) {
         const label = `${Math.round(scale / startingScale(width, height) * 100)}%`;
         if (zoomLabelRef.current.textContent !== label) zoomLabelRef.current.textContent = label;
@@ -401,6 +410,11 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
   return (
     <section className="territory-world-map relative h-full min-h-0 w-full overflow-hidden bg-[#547e66]" aria-label={language === 'en' ? 'Interactive world map' : 'Интерактивная карта мира'}>
       <div
+        className="territory-world-map__backdrop"
+        style={{ backgroundImage: `url(${import.meta.env.BASE_URL}assets/territory/map/world-map-v1-20261027.webp)` }}
+        aria-hidden="true"
+      />
+      <div
         ref={viewportRef}
         className="absolute inset-0 select-none"
         style={{ touchAction: 'none', overscrollBehavior: 'contain', cursor: 'grab' }}
@@ -446,7 +460,7 @@ export function WorldMapCanvas({ onVisit, readyRegion, language }: {
       >
         <div
           ref={worldRef}
-          className="absolute left-0 top-0 will-change-transform"
+          className="territory-world-map__world absolute left-0 top-0 will-change-transform"
           style={{ width: WORLD_WIDTH, height: WORLD_HEIGHT, transform: 'translate3d(0,0,0) scale(1)', transformOrigin: 'top left' }}
         >
           <img

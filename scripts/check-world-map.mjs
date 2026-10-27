@@ -50,6 +50,11 @@ assert.match(canvas, /requestAnimationFrame/, 'Map movement should use browser a
 assert.match(canvas, /world\.style\.transform =/, 'Move one composited layer without React reconciliation');
 assert.doesNotMatch(canvas, /setView\(/, 'Pointer movement must not re-render the entire map in React');
 assert.match(canvas, /clampView/, 'Players must not lose the entire map beyond viewport');
+assert.match(canvas, /className="territory-world-map__backdrop"/, 'Maximum zoom-out should not leave plain green bands');
+assert.match(canvas, /backgroundImage: /, 'Backdrop must reuse the world illustration without another download');
+assert.match(canvas, /fittedScale \* 1\.035/, 'Overview edge fade should activate only at full-map zoom');
+assert.match(css, /territory-world-map__world--overview/, 'Overview artwork edges must blend into the continuation');
+assert.match(css, /filter: blur\(19px\)/, 'The illustration extension should be calm and unobtrusive');
 assert.match(canvas, /sessionStorage\.setItem\('territory-map-pan-seen'/);
 assert.match(canvas, /<Hand /, 'First swipe must be explained visually');
 assert.match(css, /prefers-reduced-motion/, 'Animation should respect accessibility settings');

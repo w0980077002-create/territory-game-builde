@@ -1,3 +1,18 @@
+.territory-world-map__backdrop {
+  position: absolute;
+  inset: -22px;
+  z-index: 0;
+  pointer-events: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(19px) brightness(.78) saturate(.84);
+  transform: translateZ(0);
+}
+.territory-world-map__world--overview {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 4%, #000 96%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 4%, #000 96%, transparent);
+}
 .territory-world-map__place {
   position: absolute;
   display: flex;
