@@ -1,0 +1,47 @@
+.territory-build { display:grid; gap:12px; padding-top:12px; color:#f8ead3; font:12px/1.4 system-ui,sans-serif; }
+.territory-build__intro { display:flex; align-items:center; gap:10px; padding:10px; border:1px solid #b18c485c; border-radius:12px; background:linear-gradient(140deg,#51391c80,#182536d9); }
+.territory-build__intro svg { flex-shrink:0; color:#ffd385; }
+.territory-build__intro p { margin:0; color:#e8dbc8; font-size:11px; }
+.territory-build h4 { margin:2px 0 -5px; font-size:12px; font-weight:900; color:#f5d9aa; }
+.territory-build__classes { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.territory-build__choice { display:flex; align-items:center; justify-content:center; gap:6px; min-height:48px; padding:5px 7px; border:1px solid #977d5570; border-radius:10px; background:linear-gradient(#233242,#131d2b); font-size:11px; font-weight:800; }
+.territory-build__choice svg { flex-shrink:0; color:#dda85a; }
+.territory-build__choice--active { border-color:#efcb7e; background:linear-gradient(#73532c,#3c2b1b); color:#fff8df; box-shadow:inset 0 1px #ffe7b854,0 0 10px #edb65736; }
+.territory-build__skills { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+.territory-build__skills>div { min-width:0; min-height:48px; padding:7px 6px; border:1px solid #536c8a60; border-radius:9px; background:#172838ab; }
+.territory-build__skills span { display:block; color:#8db7d6; font-size:9px; }
+.territory-build__skills b { display:block; margin-top:3px; color:#fff3d3; font-size:11px; overflow-wrap:anywhere; }
+.territory-build__runes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+.territory-build__rune { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:69px; padding:6px; border:1px solid #6978a466; border-radius:10px; background:linear-gradient(#292e44,#181c32); }
+.territory-build__rune>span { display:grid; place-items:center; width:28px; height:28px; border:1px solid #817ac466; border-radius:50%; color:#aca2ff; background:#554c8b30; font-size:20px; }
+.territory-build__rune b { font-size:10px; line-height:1.1; text-align:center; }
+.territory-build__rune small { color:#a8f1c1; font-size:8px; font-weight:800; }
+.territory-build__rune--selected { border-color:#b8a6ff; background:linear-gradient(#534b82,#242447); box-shadow:0 0 10px #9d80ef38; }
+.territory-build__sets { display:flex; gap:6px; overflow-x:auto; padding-bottom:3px; }
+.territory-build__sets button { flex-shrink:0; min-height:33px; padding:6px 9px; border:1px solid #876c4f73; border-radius:9px; color:#e8d4ab; background:#1c2838; font-size:10px; font-weight:800; }
+.territory-build__sets button[aria-pressed='true'] { border-color:#f9cf78; color:#2a1b0c; background:linear-gradient(#ffdf99,#dba757); }
+.territory-build__companions { display:grid; gap:10px; padding:10px; border:1px solid #566b7259; border-radius:12px; background:#0f1e2c; }
+.territory-build__companions label,.territory-build__companions>div>span { display:grid; gap:5px; color:#b7c7d3; font-size:10px; font-weight:800; }
+.territory-build__companions select { width:100%; min-height:35px; padding:5px 9px; border:1px solid #987550; border-radius:8px; color:#fff2d3; background:#253448; }
+.territory-build__supports { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-top:6px; }
+.territory-build__supports button { min-height:31px; padding:5px 2px; border:1px solid #67748775; border-radius:8px; background:#1e2b3d; color:#d0d7dd; font-size:10px; }
+.territory-build__supports button[aria-pressed='true'] { border-color:#70ddb4; color:#ceffdf; background:#1c4b427c; }
+.territory-build__supports button:disabled { opacity:.33; }
+.territory-build__stats { display:flex; flex-wrap:wrap; justify-content:space-evenly; gap:6px; padding:8px; border:1px solid #9e8d6260; border-radius:10px; background:linear-gradient(100deg,#342b25,#1c2631); }
+.territory-build__stats span { color:#f4e3c7; font-size:11px; font-weight:900; white-space:nowrap; }
+.territory-build__enemies { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; }
+.territory-build__enemies button { display:grid; justify-items:center; align-content:center; gap:4px; min-height:53px; padding:7px 4px; border:1px solid #716a6770; border-radius:9px; color:#c9cbd1; background:linear-gradient(#293140,#1c202c); font-size:10px; font-weight:800; text-align:center; }
+.territory-build__enemies button[aria-pressed='true'] { border-color:#fdc96e; color:#fff0d0; background:linear-gradient(#6d472d,#392b2b); }
+.territory-build__fight { display:flex; align-items:center; justify-content:center; gap:9px; min-height:48px; border:1px solid #ffe0a3; border-radius:12px; color:#25170b; background:linear-gradient(#ffe3a0,#e59b35); box-shadow:inset 0 1px #fff7db,0 3px 0 #854e1c; font-size:13px; font-weight:900; }
+.territory-build__fight:active { transform:translateY(2px); box-shadow:inset 0 1px #fff7db,0 1px 0 #854e1c; }
+.territory-build__result { display:grid; gap:9px; padding:10px; border:1px solid #81c0a683; border-radius:12px; background:linear-gradient(150deg,#223e39,#101e2f); }
+.territory-build__result-title { display:flex; align-items:center; justify-content:space-between; gap:8px; font-weight:900; }
+.territory-build__result-title span { color:#ffdb91; font-size:16px; }
+.territory-build__result-title b { color:#a7d6d4; font-size:10px; }
+.territory-build__result ol { display:grid; gap:4px; max-height:222px; margin:0; padding:0 3px 0 0; overflow-y:auto; list-style:none; }
+.territory-build__result li { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px; min-height:30px; padding:5px 7px; border-radius:7px; background:#0e1b2eab; color:#d4e7ea; font-size:10px; }
+.territory-build__result li strong { color:#f5c780; }
+.territory-build__result li em { color:#e5ab78; font-size:9px; }
+.territory-build__result p { margin:0; color:#9abbbb; font-size:10px; }
+@media(max-width:350px) { .territory-build__runes { gap:4px; } .territory-build__rune b { font-size:9px; } .territory-build__supports { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(prefers-reduced-motion:reduce) { .territory-build__fight:active { transform:none; } }

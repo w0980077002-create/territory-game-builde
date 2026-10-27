@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { getTelegramInitData } from '@/game/telegram';
@@ -9,12 +9,15 @@ import { User, Heart, Sword, Shield, Star, Zap, Coins, Gem, Send, Check, Link2, 
 import type { ReactNode } from 'react';
 import { APPEARANCE_PRESETS, getPlayableAppearance, getAppearanceIcon } from '@/game/appearance';
 
+const BuildTrainingPanel = lazy(() => import('./builds/BuildTrainingPanel').then(module => ({ default: module.BuildTrainingPanel })));
+
 export function ProfileScreen({ user }: { user: AuthUser }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const computed = getComputedStats(state);
   const [linking, setLinking] = useState(false);
   const [linkResult, setLinkResult] = useState<string | null>(null);
+  const [trainingOpen, setTrainingOpen] = useState(false);
   const canLink = user.telegramId === null && !!getTelegramInitData();
 
   const handleLink = async () => {
@@ -86,6 +89,17 @@ export function ProfileScreen({ user }: { user: AuthUser }) {
           </div>
         </div>
       </div>
+      {/* Build lab runs only when opened; it cannot change the saved character. */}
+      <details className="card group" data-testid="profile-build-training" onToggle={event => setTrainingOpen(event.currentTarget.open)}>
+        <summary className="cursor-pointer list-none flex items-center justify-between gap-3 text-sm font-semibold text-amber-200">
+          <span>⚔️ {language === 'en' ? 'Combat builds · Training' : 'Боевые сборки · Тренировка'}</span>
+          <span className="text-xs text-gray-400 group-open:hidden">▾</span><span className="text-xs text-gray-400 hidden group-open:inline">▴</span>
+        </summary>
+        {trainingOpen && <Suspense fallback={<p className="py-4 text-xs text-amber-100">{language === 'en' ? 'Opening training...' : 'Открываем тренировку...'}</p>}>
+          <BuildTrainingPanel baseStats={computed} language={language}/>
+        </Suspense>}
+      </details>
+
       {/* Appearance is optional; keep the profile compact until requested. */}
       <details className="card group" data-testid="profile-appearance">
         <summary className="cursor-pointer list-none flex items-center justify-between gap-3 text-sm font-semibold text-amber-200">

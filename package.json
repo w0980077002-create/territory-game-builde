@@ -48,7 +48,8 @@
     "test:stage1": "npm run test:clans && npm run test:stage5 && npm run test:seasons",
     "test:wheel": "node scripts/check-fortune.mjs && node scripts/check-fortune-client.mjs",
     "test:wheel:browser": "node scripts/build-fortune-preview.mjs && python scripts/check-fortune-browser.py",
-    "test:expansion-catalog": "node scripts/check-territory-expansion-catalog.mjs"
+    "test:expansion-catalog": "node scripts/check-territory-expansion-catalog.mjs",
+    "test:build-training": "node scripts/check-build-training.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

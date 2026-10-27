@@ -2,6 +2,7 @@
   "schema": "territory-expansion-v1/1",
   "status": "design_only",
   "playerFacingEnabled": false,
+  "rewardFreeTrainingEnabled": true,
   "paymentsEnabled": false,
   "cashoutEnabled": false,
   "originalArtworkRequired": true,
@@ -38,38 +39,38 @@
     }
   ],
   "skills": [
-    { "id": "shield_wall", "nameRu": "Стена щитов", "slot": "active", "roles": ["northern_guard"], "tags": ["block", "survival"] },
-    { "id": "frost_oath", "nameRu": "Клятва инея", "slot": "ultimate", "roles": ["northern_guard"], "tags": ["slow", "resistance"] },
-    { "id": "stand_fast", "nameRu": "Несокрушимость", "slot": "passive", "roles": ["northern_guard"], "tags": ["defense"] },
-    { "id": "axe_storm", "nameRu": "Вихрь секир", "slot": "active", "roles": ["thunder_raider"], "tags": ["area", "physical"] },
-    { "id": "battle_chant", "nameRu": "Боевой напев", "slot": "ultimate", "roles": ["thunder_raider"], "tags": ["damage", "team"] },
-    { "id": "blood_rush", "nameRu": "Жажда битвы", "slot": "passive", "roles": ["thunder_raider"], "tags": ["crit"] },
-    { "id": "runic_bolt", "nameRu": "Рунический заряд", "slot": "active", "roles": ["rune_weaver"], "tags": ["magic"] },
-    { "id": "rune_snare", "nameRu": "Узоры сковывания", "slot": "ultimate", "roles": ["rune_weaver"], "tags": ["control"] },
-    { "id": "ancestral_surge", "nameRu": "Наследие предков", "slot": "passive", "roles": ["rune_weaver"], "tags": ["energy"] },
-    { "id": "hawk_shot", "nameRu": "Соколиный выстрел", "slot": "active", "roles": ["forest_tracker"], "tags": ["precision"] },
-    { "id": "quickstep", "nameRu": "Теневой шаг", "slot": "ultimate", "roles": ["forest_tracker"], "tags": ["dodge", "speed"] },
-    { "id": "hunter_focus", "nameRu": "Верный прицел", "slot": "passive", "roles": ["forest_tracker"], "tags": ["crit"] }
+    { "id": "shield_wall", "nameRu": "Стена щитов", "nameEn": "Shield Wall", "slot": "active", "roles": ["northern_guard"], "tags": ["block", "survival"] },
+    { "id": "frost_oath", "nameRu": "Клятва инея", "nameEn": "Frost Oath", "slot": "ultimate", "roles": ["northern_guard"], "tags": ["slow", "resistance"] },
+    { "id": "stand_fast", "nameRu": "Несокрушимость", "nameEn": "Stand Fast", "slot": "passive", "roles": ["northern_guard"], "tags": ["defense"] },
+    { "id": "axe_storm", "nameRu": "Вихрь секир", "nameEn": "Axe Storm", "slot": "active", "roles": ["thunder_raider"], "tags": ["area", "physical"] },
+    { "id": "battle_chant", "nameRu": "Боевой напев", "nameEn": "Battle Chant", "slot": "ultimate", "roles": ["thunder_raider"], "tags": ["damage", "team"] },
+    { "id": "blood_rush", "nameRu": "Жажда битвы", "nameEn": "Blood Rush", "slot": "passive", "roles": ["thunder_raider"], "tags": ["crit"] },
+    { "id": "runic_bolt", "nameRu": "Рунический заряд", "nameEn": "Runic Bolt", "slot": "active", "roles": ["rune_weaver"], "tags": ["magic"] },
+    { "id": "rune_snare", "nameRu": "Узоры сковывания", "nameEn": "Rune Snare", "slot": "ultimate", "roles": ["rune_weaver"], "tags": ["control"] },
+    { "id": "ancestral_surge", "nameRu": "Наследие предков", "nameEn": "Ancestral Surge", "slot": "passive", "roles": ["rune_weaver"], "tags": ["energy"] },
+    { "id": "hawk_shot", "nameRu": "Соколиный выстрел", "nameEn": "Hawk Shot", "slot": "active", "roles": ["forest_tracker"], "tags": ["precision"] },
+    { "id": "quickstep", "nameRu": "Теневой шаг", "nameEn": "Shadow Step", "slot": "ultimate", "roles": ["forest_tracker"], "tags": ["dodge", "speed"] },
+    { "id": "hunter_focus", "nameRu": "Верный прицел", "nameEn": "Hunter's Focus", "slot": "passive", "roles": ["forest_tracker"], "tags": ["crit"] }
   ],
   "runes": [
-    { "id": "glacial_edge", "nameRu": "Грань льда", "tags": ["slow", "control"] },
-    { "id": "fire_ember", "nameRu": "Тлеющий пепел", "tags": ["damage", "burn"] },
-    { "id": "oak_bark", "nameRu": "Дубовая кора", "tags": ["block", "survival"] },
-    { "id": "wolf_fang", "nameRu": "Волчий клык", "tags": ["crit", "physical"] },
-    { "id": "storm_core", "nameRu": "Сердце грозы", "tags": ["energy", "magic"] },
-    { "id": "seers_mark", "nameRu": "Метка провидца", "tags": ["precision", "damage"] }
+    { "id": "glacial_edge", "nameRu": "Грань льда", "nameEn": "Glacial Edge", "tags": ["slow", "control"] },
+    { "id": "fire_ember", "nameRu": "Тлеющий пепел", "nameEn": "Smoldering Ember", "tags": ["damage", "burn"] },
+    { "id": "oak_bark", "nameRu": "Дубовая кора", "nameEn": "Oak Bark", "tags": ["block", "survival"] },
+    { "id": "wolf_fang", "nameRu": "Волчий клык", "nameEn": "Wolf Fang", "tags": ["crit", "physical"] },
+    { "id": "storm_core", "nameRu": "Сердце грозы", "nameEn": "Storm Heart", "tags": ["energy", "magic"] },
+    { "id": "seers_mark", "nameRu": "Метка провидца", "nameEn": "Seer's Mark", "tags": ["precision", "damage"] }
   ],
   "equipmentSetIdeas": [
-    { "id": "fjord_bastion", "nameRu": "Оплот фьорда", "preferredSlots": ["helmet", "armor", "shield"], "synergy": "block" },
-    { "id": "storm_hunt", "nameRu": "Грозовая охота", "preferredSlots": ["weapon", "amulet", "ring"], "synergy": "crit" },
-    { "id": "elder_runestone", "nameRu": "Руна старейшин", "preferredSlots": ["amulet", "ring", "boots"], "synergy": "energy" }
+    { "id": "fjord_bastion", "nameRu": "Оплот фьорда", "nameEn": "Fjord Bastion", "preferredSlots": ["helmet", "armor", "shield"], "synergy": "block" },
+    { "id": "storm_hunt", "nameRu": "Грозовая охота", "nameEn": "Storm Hunt", "preferredSlots": ["weapon", "amulet", "ring"], "synergy": "crit" },
+    { "id": "elder_runestone", "nameRu": "Руна старейшин", "nameEn": "Elder Runestone", "preferredSlots": ["amulet", "ring", "boots"], "synergy": "energy" }
   ],
   "companionRoles": [
-    { "id": "guardian", "nameRu": "Защитник", "plannedPosition": "main_or_support" },
-    { "id": "warrior", "nameRu": "Воин", "plannedPosition": "main_or_support" },
-    { "id": "healer", "nameRu": "Целитель", "plannedPosition": "main_or_support" },
-    { "id": "hunter", "nameRu": "Охотник", "plannedPosition": "main_or_support" },
-    { "id": "mage", "nameRu": "Чародей", "plannedPosition": "main_or_support" }
+    { "id": "guardian", "nameRu": "Защитник", "nameEn": "Guardian", "plannedPosition": "main_or_support" },
+    { "id": "warrior", "nameRu": "Воин", "nameEn": "Warrior", "plannedPosition": "main_or_support" },
+    { "id": "healer", "nameRu": "Целитель", "nameEn": "Healer", "plannedPosition": "main_or_support" },
+    { "id": "hunter", "nameRu": "Охотник", "nameEn": "Hunter", "plannedPosition": "main_or_support" },
+    { "id": "mage", "nameRu": "Чародей", "nameEn": "Mage", "plannedPosition": "main_or_support" }
   ],
   "eventIdeas": [
     { "id": "seven_day_hero_path", "nameRu": "Путь героя: семь дней", "days": 7, "freeTrack": true, "premiumTrack": false, "type": "onboarding" },
