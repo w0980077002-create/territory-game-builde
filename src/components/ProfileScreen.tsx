@@ -18,8 +18,10 @@ export function ProfileScreen({ user, initialTrainingOpen = false }: { user: Aut
   const computed = getComputedStats(state);
   const [linking, setLinking] = useState(false);
   const [linkResult, setLinkResult] = useState<string | null>(null);
-  const [trainingOpen, setTrainingOpen] = useState(initialTrainingOpen);
-  const [runeBookOpen, setRuneBookOpen] = useState(false);
+  const [trainingOpen, setTrainingOpen] = useState(false);
+  // Existing world-map Rune route uses initialTrainingOpen. Open the new rune book there,
+  // while keeping the original training laboratory available separately.
+  const [runeBookOpen, setRuneBookOpen] = useState(initialTrainingOpen);
   const canLink = user.telegramId === null && !!getTelegramInitData();
 
   const handleLink = async () => {
