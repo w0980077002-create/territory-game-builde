@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import { build } from 'esbuild';
+async function compile(file) { const out=await build({entryPoints:[file],bundle:true,platform:'node',format:'esm',write:false,logLevel:'silent'});return import('data:text/javascript;base64,'+Buffer.from(out.outputFiles[0].text).toString('base64')); }
+const vip=await compile('src/game/monetizationV1/vip.ts');
+const {createStarsHandler}=await compile('supabase/functions/territory-stars/handler.ts');
+const stars=await compile('src/game/monetizationV1/stars.ts');
+const entitlement={permanentTier:5,temporaryTier:1,temporaryUntil:'2026-11-01T00:00:00Z',points:100,serverNow:'2026-10-28T00:00:00Z'};
+assert.equal(vip.resolveVip(entitlement,[]).tier,5);assert.equal(vip.resolveVip(entitlement,[]).bonusesConfigured,false);
+const rule={tier:6,requiredPoints:100,attackBps:1000,defenseBps:2000,hpBps:5000};
+assert.equal(vip.resolveVip(entitlement,[rule]).tier,6);
+const base={attack:100,defense:50,hp:50,maxHp:100,critChance:4};
+assert.deepEqual(vip.applyVipCombatStats(base,rule),{attack:110,defense:60,hp:75,maxHp:150,critChance:4});
+assert.deepEqual(vip.applyVipCombatStats(base,null),base);assert.equal(base.maxHp,100);
+assert.deepEqual(vip.adaptIdleVipStats({...base,critChance:0.4,dodgeChance:0.1,blockChance:0.2},rule),{attack:110,defense:60,hp:75,maxHp:150,critChance:0.4,dodgeChance:0.1,blockChance:0.2});
+assert.throws(()=>vip.adaptIdleVipStats({...base,critChance:40,dodgeChance:0.1,blockChance:0.2},rule),/invalid_combat_probability/);
+assert.equal(vip.applyVipCombatStats({...base,hp:0},rule).hp,0);
+const temp={...entitlement,permanentTier:0,points:0};assert.equal(vip.resolveVip(temp,[]).tier,1);
+assert.equal(vip.resolveVip({...temp,temporaryUntil:temp.serverNow},[]).tier,0);
+assert.throws(()=>vip.resolveVip({...temp,serverNow:'bad'},[]));
+assert.throws(()=>vip.resolveVip(entitlement,[rule,rule]),/invalid_vip_rules/);
+assert.throws(()=>vip.applyVipCombatStats({...base,hp:101},rule),/invalid_combat_stats/);
+assert.throws(()=>vip.applyVipCombatStats({...base,attack:Number.MAX_SAFE_INTEGER},rule),/vip_stat_overflow/);
+const id='10000000-0000-4000-8000-000000000001';
+const calls=[];const deps={webhookSecret:'secret',authenticate:async(token)=>token==='good',callerRpc:async(b,n,a)=>{
+ calls.push([n,a]);if(n==='territory_stars_order_v1') return {orderId:id,payload:'territory:'+id,title:'Test',description:'Test',currency:'XTR',amount:10};return null;
+},serverRpc:async(n,a)=>{calls.push([n,a]);return true;},telegram:async(n,a)=>{calls.push([n,a]);return n==='createInvoiceLink'?'https://t.me/$fixture':true;}};
+const handler=createStarsHandler(deps);
+const request=(body,webhook=false,secret='secret',bearer='good')=>new Request('https://example.invalid/territory-stars'+(webhook?'/webhook':''),{method:'POST',headers:{'content-type':'application/json','x-telegram-bot-api-secret-token':secret,'authorization':'Bearer '+bearer},body:JSON.stringify(body)});
+let res=await handler(request({action:'invoice',sku:'test',operationId:id},false,'secret','bad'));assert.equal(res.status,401);assert.equal(calls.length,0);
+res=await handler(request({action:'invoice',sku:'test',operationId:id}));assert.equal(res.status,200);assert.equal((await res.json()).invoiceLink,'https://t.me/$fixture');
+assert.deepEqual(calls.at(-1)[1].prices,[{label:'Test',amount:10}]);assert.equal(calls.at(-1)[1].provider_token,'');
+const payment={message:{from:{id:111},successful_payment:{currency:'XTR',total_amount:10,invoice_payload:'territory:'+id,telegram_payment_charge_id:'charge'}}};
+calls.length=0;res=await handler(request(payment,true,'wrong'));assert.equal(res.status,401);assert.equal(calls.length,0);
+res=await handler(request(payment,true));assert.equal(res.status,200);assert.equal(calls[0][0],'territory_stars_fulfill_v1');assert.equal(calls[0][1].p_telegram,111);
+calls.length=0;res=await handler(request({...payment,message:{...payment.message,successful_payment:{...payment.message.successful_payment,currency:'USD'}}},true));assert.equal(res.status,400);assert.equal(calls.length,0);
+res=await handler(request({action:'fulfill',...payment},false));assert.equal(res.status,400);assert.equal(calls.length,0,'browser cannot request rewards');
+const query={pre_checkout_query:{id:'query1',from:{id:111},currency:'XTR',total_amount:10,invoice_payload:'territory:'+id}};
+res=await handler(request(query,true));assert.equal(res.status,200);assert.equal(calls[0][0],'territory_stars_precheckout_v1');assert.equal(calls.at(-1)[1].ok,true);
+calls.length=0;res=await handler(request({pre_checkout_query:{...query.pre_checkout_query,currency:'USD'}},true));assert.equal(res.status,200);assert.equal(calls[0][0],'answerPreCheckoutQuery');assert.equal(calls[0][1].ok,false);
+const fails=createStarsHandler({...deps,serverRpc:async()=>{throw new Error('database unavailable');}});res=await fails(request(payment,true));assert.equal(res.status,503,'Telegram must retry failed fulfillment');
+res=await handler(new Request('https://example.invalid',{method:'POST',body:'{'}));assert.equal(res.status,400);
+res=await handler(new Request('https://example.invalid',{method:'POST',body:'x'.repeat(65537)}));assert.equal(res.status,413);
+res=await handler(new Request('https://example.invalid',{method:'OPTIONS'}));assert.equal(res.status,200);assert.equal(res.headers.get('access-control-allow-origin'),'*');
+
+assert.deepEqual(await stars.createStarsInvoice({invoke:async()=>({operationId:id,orderId:id,invoiceLink:'https://t.me/$fixture'})},'test',id),{operationId:id,orderId:id,invoiceLink:'https://t.me/$fixture'});
+await assert.rejects(stars.createStarsInvoice({invoke:async()=>({operationId:id,orderId:id,invoiceLink:'https://evil.invalid'})},'test',id),/invalid_stars_invoice/);
+console.log('Monetization TS PASS: VIP configured vs missing bonuses, expiry/permanent preservation, formula/HP ratio, browser auth, authenticated Telegram webhook, exact XTR request, no client fulfillment, precheckout rejection, retry on failure.');
