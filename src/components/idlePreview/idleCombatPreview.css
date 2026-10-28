@@ -12,6 +12,7 @@
 .territory-idle-chapter__ticks i:first-child{background:linear-gradient(#ffeea4,#d58d22)}
 .territory-idle-battlefield{position:absolute;inset:0 0 30%;z-index:1;overflow:hidden;background-color:#48676f;background-position:center 59%;background-size:cover;background-repeat:no-repeat}
 .territory-idle-vignette{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,#0c21363d,transparent 35%,transparent 68%,#0b1a302e),linear-gradient(transparent 54%,#140f10aa 99%)}
+.territory-idle-battlefield--critical{animation:territoryIdleCamera .23s ease-out both}
 .territory-idle-name{position:absolute;z-index:3;top:35%;display:flex;flex-direction:column;align-items:center;font-size:11px;text-shadow:0 2px 3px #000,0 0 6px #000;font-weight:900}
 .territory-idle-name span{color:#7efeff;font-size:10px}
 .territory-idle-name--hero{left:8%}.territory-idle-name--foe{right:5%}
@@ -29,6 +30,17 @@
 .territory-idle-follower--attack{animation:territoryIdleBreathe .5s ease-out both}
 .territory-idle-impact{position:absolute;z-index:5;right:15%;bottom:34%;width:34%;aspect-ratio:1;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;animation:territoryIdleImpact .8s ease-out both;text-shadow:0 3px 4px #1a0711,0 0 9px #1b0924}
 .territory-idle-impact__burst{position:absolute;z-index:-1;font-size:110px;line-height:1;opacity:.82;filter:drop-shadow(0 0 12px currentColor);animation:territoryIdleBurst .65s ease-out both}
+.territory-idle-impact__magic{position:absolute;inset:-25%;display:block;pointer-events:none;filter:drop-shadow(0 0 9px currentColor)}
+.territory-idle-impact__magic i{position:absolute;left:48%;top:35%;width:25%;height:63%;display:block;opacity:.9;transform-origin:50% 85%;background:linear-gradient(0deg,transparent,currentColor 45%,#fffde3 75%,transparent);clip-path:polygon(48% 0,78% 37%,60% 58%,85% 100%,15% 100%,45% 55%,23% 30%);animation:territoryIdleMagic .75s ease-out both}
+.territory-idle-impact__magic i:nth-child(2){transform:rotate(115deg);animation-delay:.04s}
+.territory-idle-impact__magic i:nth-child(3){transform:rotate(235deg);animation-delay:.09s}
+.territory-idle-impact--fire .territory-idle-impact__magic{filter:drop-shadow(0 0 11px #ff5e17)}
+.territory-idle-impact--fire .territory-idle-impact__magic i{background:linear-gradient(0deg,#c31a12,#ff7824 55%,#fff6a0);border-radius:55% 10% 65% 25%}
+.territory-idle-impact--ice .territory-idle-impact__magic i{background:linear-gradient(#fff,#93e9ff,#3b7ed7);clip-path:polygon(50% 0,66% 35%,100% 35%,72% 55%,83% 100%,50% 73%,15% 100%,27% 55%,0 35%,35% 35%)}
+.territory-idle-impact--lightning .territory-idle-impact__magic i{background:linear-gradient(#fffde3,#b5eaff,#527bea);clip-path:polygon(52% 0,90% 0,65% 41%,95% 41%,18% 100%,38% 57%,12% 57%)}
+.territory-idle-impact--shield .territory-idle-impact__magic i{background:linear-gradient(#fff7bc,#dbb35f,#97623d);clip-path:polygon(50% 0,95% 24%,85% 74%,50% 100%,15% 74%,5% 24%)}
+.territory-idle-impact--wolf .territory-idle-impact__magic i{background:linear-gradient(#e2ffbc,#72e6a1,#138c5b);clip-path:polygon(0 100%,63% 0,76% 44%,100% 8%,70% 100%)}
+.territory-idle-impact--precision .territory-idle-impact__magic i{background:linear-gradient(#fff,#e3b5ff,#8e5ac0);clip-path:polygon(50% 0,65% 42%,100% 50%,65% 58%,50% 100%,35% 58%,0 50%,35% 42%)}
 .territory-idle-impact strong{font-size:clamp(18px,6vw,30px);font-weight:1000;color:#fff6c7;white-space:nowrap;filter:drop-shadow(0 3px 2px #64180a)}
 .territory-idle-impact--fire{color:#ff751a}.territory-idle-impact--ice{color:#83ebff}.territory-idle-impact--lightning{color:#b0d5ff}.territory-idle-impact--wolf{color:#ebff79}.territory-idle-impact--shield{color:#ffe89a}.territory-idle-impact--precision{color:#e4b2ff}.territory-idle-impact--heal{color:#b2ff99}.territory-idle-impact--wind{color:#c6fff2}.territory-idle-impact--steel{color:#fff8d1}
 .territory-idle-skill-callout{position:absolute;z-index:6;left:18%;bottom:47%;font-size:14px;color:#fff5b5;font-weight:900;white-space:nowrap;text-shadow:0 2px 5px #1a0708,0 0 8px #ae361d;animation:territoryIdleCallout .8s both}
@@ -92,6 +104,8 @@
 @keyframes territoryIdleBurst{0%{opacity:0;transform:scale(.25) rotate(-25deg)}25%{opacity:1;transform:scale(1.2) rotate(15deg)}100%{opacity:0;transform:scale(1.7) rotate(40deg)}}
 @keyframes territoryIdleImpact{0%{opacity:0;transform:translateY(13px)}25%{opacity:1;transform:translateY(-8px)}100%{opacity:0;transform:translateY(-45px)}}
 @keyframes territoryIdleCallout{0%{opacity:0;transform:translateY(15px)}15%,65%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-12px)}}
+@keyframes territoryIdleMagic{0%{opacity:0;scale:.25}25%{opacity:1;scale:1.2}100%{opacity:0;scale:1.65}}
+@keyframes territoryIdleCamera{0%,100%{transform:translateX(0)}20%{transform:translateX(1.5px)}45%{transform:translateX(-1.5px)}65%{transform:translateY(1px)}}
 @keyframes territoryIdleFade{from{opacity:0}to{opacity:1}}
 @keyframes territoryIdleSlide{from{transform:translateY(30px)}to{transform:translateY(0)}}
 @media(max-width:360px){.territory-idle-orb{width:61px;height:61px}.territory-idle-gear{gap:4px;padding:6px}.territory-idle-panel__scroll{padding:9px 7px 22px}.territory-idle-skill-row{grid-template-columns:55px 1fr;gap:3px}.territory-idle-skill-row__cards{gap:3px}.territory-idle-skill-card small{font-size:9px}}
