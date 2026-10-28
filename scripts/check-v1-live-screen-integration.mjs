@@ -29,6 +29,7 @@ assert.match(v2,/submitAuctionCompletion\(order\.action,order\.id\)/,'Exactly on
 assert.match(v2,/durationSeconds:duration/,'Auction preserves user-selected expiry');
 assert.match(v2,/currency==='gold'\|\|parsedPrice%10===0/,'Gem lot multiples of ten');
 assert.match(v2,/source:'resource'/,'Resource lots on server');
+assert.match(v2,/nameAuctionItem\(crypto\.randomUUID\(\),itemId,source,customName\.trim\(\)\)/,'Custom item names require server proof of mastery and license');
 assert.match(auctionApi,/territory_auction_overview_v2/);
 assert.doesNotMatch(v2,/useGame\.set|grantGold|grantGems|buyItem\(/,'Never grant currency client-side');
 console.log('Live integration PASS: server progression and v2 auction with durable claims, legacy fallback and chat.');
