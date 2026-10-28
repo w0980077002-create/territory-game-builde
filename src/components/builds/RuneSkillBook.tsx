@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Check, ChevronLeft, Crown, Flame, Info, LockKeyhole, ScrollText, Shield, Sparkles, Swords, Wind, X, Zap } from 'lucide-react';
 import catalog from '@/game/config/territory-rune-skill-book-v1.json';
 import { RuneArtwork } from './RuneArtwork';
-import { RuneSummonPreview, RuneUpgradeDemo, createRuneDemoState, summonRuneDemo, upgradeRuneDemo } from './RuneSummonPreview';
+import { RuneSummonPreview, RuneUpgradeDemo, RuneGemIllustration, createRuneDemoState, summonRuneDemo, upgradeRuneDemo } from './RuneSummonPreview';
 import './runeHall.css';
 
 type GroupId = (typeof catalog.groups)[number]['id'];
@@ -205,7 +205,8 @@ export function RuneSkillBook({
      <section className="rhall-dialog rhall-dialog--rune" role="dialog" aria-modal="true" aria-labelledby="rhall-rune-title">
        <div className="rhall-popup-heading"><h3 id="rhall-rune-title">{en?'RUNE DETAILS':'ПОДРОБНОСТИ РУНЫ'}</h3>
          <button type="button" aria-label={en?'Close':'Закрыть'} onClick={()=>setActiveRune(null)}><X size={20}/></button></div>
-       <div className="rhall-rune-detail-head"><span className="rhall-rune-detail-glyph">ᛟ</span>
+       <div className="rhall-rune-detail-head"><span className="rhall-rune-detail-glyph rhall-rune-detail-glyph--illustrated"><RuneGemIllustration
+   tier={serverConnected?'blue':demo.rank[activeRune.runeId]??'blue'} runeId={activeRune.runeId}/></span>
          <div><h4>{name(chosenRune,en)}</h4><small>{name(runeOwner,en)}</small>
          <strong>{runeLevel!==undefined?(en?'Level ':'Уровень ')+runeLevel:(en?'Level not confirmed':'Уровень не подтверждён сервером')}</strong></div></div>
        <div className="rhall-rune-detail-facts"><b>{en?'RUNE PARAMETERS':'ПАРАМЕТРЫ РУНЫ'}</b>

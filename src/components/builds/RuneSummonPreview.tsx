@@ -1,7 +1,26 @@
 import { useState } from 'react';
-import { Check, CircleHelp, Crown, Gem, ScrollText, Sparkles, X } from 'lucide-react';
+import { Check, CircleHelp, ScrollText, Sparkles, X } from 'lucide-react';
 import catalog from '@/game/config/territory-rune-skill-book-v1.json';
 import './runeSummonPreview.css';
+
+/** Artwork cropped from the original approved TERRITORY rune UI concept.
+ * One lightweight WebP atlas instead of 15 separate image requests.
+ * Each rarity receives a matching colour, while individual runes vary by symbol.
+ */
+export function RuneGemIllustration({tier,runeId='default',className=''}:{tier:RuneTier;runeId?:string;className?:string}) {
+ const hash=[...runeId].reduce((acc,ch)=>(acc*31+ch.charCodeAt(0))>>>0,7);
+ const options:Record<RuneTier,number[]>={
+   legendary:[0], yellow:[1], purple:[2,3,4,5], blue:[6,7,8,9,10,11,12,13,14],
+ };
+ const slots=options[tier],index=slots[hash%slots.length];
+ return <span aria-hidden="true" className={'rsim-art-sprite '+className}
+   style={{
+     backgroundImage:'url('+import.meta.env.BASE_URL+'runes/rune-rewards-art.webp)',
+     backgroundSize:'500% 300%',
+     backgroundPosition:(index%5)*25+'% '+Math.floor(index/5)*50+'%',
+   }}/>;
+}
+
 
 export type RuneTier = 'blue' | 'purple' | 'yellow' | 'legendary';
 export const RUNE_CAP: Record<RuneTier, number> = { blue:20, purple:40, yellow:60, legendary:300 };
@@ -82,7 +101,7 @@ export function RuneTierStrip({language}:{language:'ru'|'en'}) {
  const en=language==='en';
  return <div className="rsim-tiers" aria-label={en?'Rune rarity and level caps':'Редкость и пределы развития рун'}>
    {TIERS.map(tier=><div key={tier} className={'rsim-tier rsim-tier--'+tier}>
-      <Gem size={22}/><b>{en?RUNE_TIER_NAMES[tier].en:RUNE_TIER_NAMES[tier].ru}</b>
+      <RuneGemIllustration tier={tier} runeId={tier}/><b>{en?RUNE_TIER_NAMES[tier].en:RUNE_TIER_NAMES[tier].ru}</b>
       <span>{en?'Maximum level':'Макс. уровень'} <strong>{RUNE_CAP[tier]}</strong></span>
    </div>)}
  </div>;
@@ -103,7 +122,7 @@ export function RuneSummonPreview({language,state,quantity,setQuantity,onSummon,
       <div className="rsim-result-grid">
        {state.result.map(drop=><button key={drop.kind+':'+drop.id+':'+drop.tier}
          className={'rsim-drop rsim-drop--'+drop.tier} onClick={()=>onChooseRune?.(items.find(item=>item.id===drop.id)?.skillId??'',drop.id)}>
-         <span className="rsim-drop-icon">{drop.kind==='legendary'?<Crown size={29}/>:<ScrollText size={26}/>}</span>
+         <span className="rsim-drop-icon"><RuneGemIllustration tier={drop.tier} runeId={drop.id}/></span>
          <span className="rsim-drop-name">{showName(drop.id)}</span>
          <strong>×{drop.count}</strong>
          <small>{drop.kind==='legendary'?(en?'Legendary rune':'Легендарная руна'):(en?'Level-up points':'Очки развития')}</small>
@@ -112,11 +131,9 @@ export function RuneSummonPreview({language,state,quantity,setQuantity,onSummon,
       <button type="button" className="rsim-collect" onClick={onResultClose}><Check size={17}/>{en?'COLLECT':'ЗАБРАТЬ'}</button>
       <p className="rsim-demotag">{en?'DEMO · No real account changes':'ТЕСТ · Не начисляется на игровой аккаунт'}</p>
      </div>:<>
-      <div className="rsim-altar"><div className="rsim-altar-glow"/><div className="rsim-floating rsim-floating--left">ᚠ</div>
-       <div className="rsim-floating rsim-floating--right">ᛟ</div><div className="rsim-floating rsim-floating--bottom">ᚱ</div>
-       <div className="rsim-monolith"><span>ᛉ</span></div>
-       <div className="rsim-altar-floor"><span>✦ ᚢ ✦ ᛟ ✦</span></div>
-       <span className="rsim-altar-caption">{en?'All runes are forged in the hall':'Руны рождаются в магическом зале'}</span>
+      <div className="rsim-altar rsim-altar--painted"
+        style={{backgroundImage:'url('+import.meta.env.BASE_URL+'runes/magic-altar-art.webp)'}}>
+        <span className="rsim-altar-caption">{en?'Runic altar':'Магический алтарь'}</span>
       </div>
       <div className="rsim-pity"><div className="rsim-pity-top">
        <span>{en?'Guaranteed random legendary every 100 summons':'Гарантированная случайная легендарная каждые 100 призывов'}</span>

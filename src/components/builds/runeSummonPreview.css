@@ -101,3 +101,45 @@
 @media(max-width:360px){.rhall-bonus-entry{grid-template-columns:minmax(0,1fr) 55px;gap:5px}.rhall-scroll-gateway{width:53px;height:54px}.rhall-scroll-gateway>span svg{width:29px}.rhall-scroll-gateway-label{font-size:9px}
  .rsim-altar{height:190px}.rsim-summon-btn{min-height:58px}.rsim-result-grid{max-height:51dvh}}
 @media(prefers-reduced-motion:reduce){.rsim-monolith,.rsim-floating{animation:none!important}}
+
+
+/* Approved painted art pass: original generated fantasy background + 15-symbol WebP atlas. */
+.rsim-altar.rsim-altar--painted {
+  background-color:#101b39!important;background-size:cover!important;background-repeat:no-repeat!important;
+  background-position:50% 53%!important;height:clamp(220px,34vh,310px)!important;
+  box-shadow:inset 0 0 26px #100929,0 2px 8px #0007;
+}
+.rsim-altar--painted::before {
+  content:''!important;position:absolute!important;inset:0!important;
+  background:linear-gradient(180deg,#070c2300 76%,#06091a98)!important;pointer-events:none;
+}
+.rsim-altar--painted::after {content:none!important;display:none!important}
+.rsim-altar--painted .rsim-altar-caption {
+  z-index:5;bottom:5px;color:#fff1c4;letter-spacing:.8px;font-size:11px;font-weight:950;
+  text-shadow:0 2px 3px #171029,0 0 8px #150921;
+}
+.rsim-art-sprite {
+  display:block;flex:none;width:100%;height:100%;background-repeat:no-repeat;
+  image-rendering:auto;filter:drop-shadow(0 1px 3px currentColor);
+}
+.rsim-drop-icon {
+  width:51px!important;height:51px!important;display:block!important;background:transparent!important;
+  clip-path:none!important;border:0!important;filter:drop-shadow(0 0 5px currentColor)!important;
+  box-shadow:none!important;
+}
+.rsim-drop-icon .rsim-art-sprite {width:100%;height:100%;border-radius:4px}
+.rsim-drop {padding-top:5px!important;gap:3px!important;min-height:114px!important}
+.rsim-drop-name {min-height:18px;display:flex;align-items:center;justify-content:center}
+.rsim-drop strong {font-size:16px!important;line-height:1.1;color:#ffd35c!important;text-shadow:0 2px 2px #050715}
+.rsim-tier .rsim-art-sprite {width:35px;height:35px;border-radius:5px}
+.rhall-rune-detail-glyph--illustrated {
+  clip-path:none!important;width:72px!important;height:72px!important;border:0!important;
+  background:transparent!important;color:#ffe7b5!important;filter:drop-shadow(0 1px 5px #daa850)!important;
+}
+.rhall-rune-detail-glyph--illustrated .rsim-art-sprite {width:100%;height:100%;border-radius:5px}
+@media (max-width:360px) {
+  .rsim-altar.rsim-altar--painted {height:215px!important}
+  .rsim-drop-icon{width:43px!important;height:43px!important}
+  .rsim-drop{min-height:107px!important}
+  .rsim-tier .rsim-art-sprite{width:29px;height:29px}
+}
