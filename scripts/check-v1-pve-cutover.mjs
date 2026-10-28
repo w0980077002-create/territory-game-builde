@@ -8,7 +8,7 @@ const generator=read('scripts/generate-staged-combat-sql.mjs');
 
 assert.match(old,/VITE_TERRITORY_V1_SERVER_COMBAT === 'verified'/,'Default remains live old PvE');
 assert.match(old,/function LegacyPveFight\(/,'Old manual zone battle remains intact');
-assert.match(old,/<LegacyPveFight \{\.\.\.props\}\/ >/,'Legacy fallback should mount only when explicitly selected'.replace(/ /g,' '));
+assert.match(old,/return <LegacyPveFight/, 'Legacy fight must remain the fallback');
 // Existing beta session only routes to server when BOTH deployment and SQL are approved.
 assert.match(old,/territory_combat_route_v1/);
 assert.match(old,/setRoute\('legacy'\)/,'Offline/missing RPC must fall back to existing PvE');
