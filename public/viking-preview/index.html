@@ -5,24 +5,24 @@
 <meta name="theme-color" content="#101212">
 <title>TERRITORY 1.0 · Два клинка</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#101212;color:#eeeee9;font:15px/1.5 system-ui,-apple-system,sans-serif}main{width:min(920px,100%);margin:auto;padding:28px 24px 24px}header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:1px solid #303534}.brand{letter-spacing:.24em;font-size:13px;font-weight:700}.version{font-size:11px;color:#9ca8a1;letter-spacing:.12em}h1{font-size:clamp(26px,5vw,40px);line-height:1.15;font-weight:500;letter-spacing:-.04em;margin:24px 0 5px}.subtitle{color:#9ca8a1;margin:0}.stage{position:relative;margin:20px 0 18px;border:1px solid #333a37;border-radius:12px;overflow:hidden;background-color:#1a1e1c;background-image:linear-gradient(45deg,#202522 25%,transparent 25%,transparent 75%,#202522 75%),linear-gradient(45deg,#202522 25%,transparent 25%,transparent 75%,#202522 75%);background-size:28px 28px;background-position:0 0,14px 14px}.stage:after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 100px #10121255}.stage svg{display:block;width:100%;height:min(57vh,530px);min-height:280px;overflow:hidden}.stage-label{position:absolute;top:16px;left:18px;font-size:10px;letter-spacing:.15em;color:#a6b0a8}.state{position:absolute;right:18px;top:15px;font-size:12px;color:#d3dfd4}.state:before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#c2d6a9;margin-right:8px}.controls{display:flex;gap:12px;align-items:stretch}button{font:inherit;cursor:pointer;border:1px solid #455047;background:#202822;color:#eee;border-radius:7px;min-height:48px;padding:10px 20px;touch-action:manipulation}button:hover{background:#2c382d}button:focus-visible{outline:2px solid #d5e8bc;outline-offset:3px}button:disabled{cursor:default;opacity:.6}.play{flex:1;background:#d6e4c4;color:#182015;border-color:#d6e4c4;font-weight:650}.play:hover{background:#e6f1d8}.actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.actions button{font-size:13px;padding:9px 8px}.directions{display:flex;gap:4px}.directions button{padding:10px 16px;color:#99a59b}.directions button[aria-pressed=true]{color:#edf5e7;border-color:#a4b694;background:#34402f}.phases{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}.phase{border-top:2px solid #353d37;padding-top:10px;color:#7d8980;font-size:12px;transition:color .12s,border-color .12s}.phase span{font-size:10px;letter-spacing:.12em;display:block;margin-bottom:3px}.phase.active{border-color:#d6e4c4;color:#eff7e8}.foot{display:flex;justify-content:space-between;color:#7d8980;font-size:11px;margin-top:24px;gap:12px}.ink{fill:#000;stroke:#eee;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.detail{fill:none;stroke:#e5e5e2;stroke-width:1.15;stroke-linecap:round;stroke-linejoin:round}.fine{display:none}.rivet{fill:#000;stroke:#eee;stroke-width:1.3}@media(max-width:520px){main{padding:18px 14px}.stage{margin-top:18px}.stage svg{height:49vh;min-height:290px}.stage-label{font-size:8px;left:12px;top:12px}.state{right:12px;top:10px;font-size:11px}.controls{gap:8px}button{padding:10px 12px;font-size:13px}.directions button{padding:10px 12px}.phases{gap:8px;margin-top:18px}.phase{font-size:10px}.foot{margin-top:18px;font-size:10px}}
+*{box-sizing:border-box}body{margin:0;background:#101212;color:#eeeee9;font:15px/1.5 system-ui,-apple-system,sans-serif}main{width:min(920px,100%);margin:auto;padding:28px 24px 24px}header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:1px solid #303534}.brand{letter-spacing:.24em;font-size:13px;font-weight:700}.version{font-size:11px;color:#9ca8a1;letter-spacing:.12em}h1{font-size:clamp(26px,5vw,40px);line-height:1.15;font-weight:500;letter-spacing:-.04em;margin:24px 0 5px}.subtitle{color:#9ca8a1;margin:0}.stage{position:relative;margin:20px 0 18px;border:1px solid #333a37;border-radius:12px;overflow:hidden;background-color:#1a1e1c;background-image:linear-gradient(45deg,#202522 25%,transparent 25%,transparent 75%,#202522 75%),linear-gradient(45deg,#202522 25%,transparent 25%,transparent 75%,#202522 75%);background-size:28px 28px;background-position:0 0,14px 14px}.stage:after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 100px #10121255}.stage svg{display:block;width:100%;height:min(57vh,530px);min-height:280px;overflow:hidden}.stage-label{position:absolute;top:16px;left:18px;font-size:10px;letter-spacing:.15em;color:#a6b0a8}.state{position:absolute;right:18px;top:15px;font-size:12px;color:#d3dfd4}.state:before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#c2d6a9;margin-right:8px}.controls{display:flex;gap:12px;align-items:stretch}button{font:inherit;cursor:pointer;border:1px solid #455047;background:#202822;color:#eee;border-radius:7px;min-height:48px;padding:10px 20px;touch-action:manipulation}button:hover{background:#2c382d}button:focus-visible{outline:2px solid #d5e8bc;outline-offset:3px}button:disabled{cursor:default;opacity:.6}.play{flex:1;background:#d6e4c4;color:#182015;border-color:#d6e4c4;font-weight:650}.play:hover{background:#e6f1d8}.actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.actions button{font-size:13px;padding:9px 8px}.directions{display:flex;gap:4px}.directions button{padding:10px 16px;color:#99a59b}.directions button[aria-pressed=true]{color:#edf5e7;border-color:#a4b694;background:#34402f}.phases{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}.phase{border-top:2px solid #353d37;padding-top:10px;color:#7d8980;font-size:12px;transition:color .12s,border-color .12s}.phase span{font-size:10px;letter-spacing:.12em;display:block;margin-bottom:3px}.phase.active{border-color:#d6e4c4;color:#eff7e8}.foot{display:flex;justify-content:space-between;color:#7d8980;font-size:11px;margin-top:24px;gap:12px}.ink{fill:#000;stroke:#eee;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.detail{fill:none;stroke:#e5e5e2;stroke-width:1.15;stroke-linecap:round;stroke-linejoin:round}.fine{display:none}.rivet{fill:#000;stroke:#eee;stroke-width:1.3}@media(max-width:520px){main{padding:18px 14px}.stage{margin-top:18px}.stage svg{height:auto;min-height:0}.stage-label{font-size:8px;left:12px;top:12px}.state{right:12px;top:10px;font-size:11px}.controls{gap:8px}button{padding:10px 12px;font-size:13px}.directions button{padding:10px 12px}.phases{gap:8px;margin-top:18px}.phase{font-size:10px}.foot{margin-top:18px;font-size:10px}}
 </style>
 <main>
  <header><div class="brand">TERRITORY <span style="color:#82917f">1.0</span></div><div class="version">CHARACTER PREVIEW</div></header>
  <h1>Два клинка. Одна серия.</h1><p class="subtitle">Викинг · боевая анимация</p>
  <div class="stage">
   <span class="stage-label">2D / ПРОЗРАЧНЫЙ ФОН</span><span class="state" id="state" role="status">Боевая стойка</span>
-  <svg id="viking" xmlns="http://www.w3.org/2000/svg" viewBox="-12 52 704 516" role="img" aria-labelledby="hero-title"><title id="hero-title">Чёрный викинг в капюшоне с бородой и двумя клинками</title>
+  <svg id="viking" xmlns="http://www.w3.org/2000/svg" viewBox="-75 12 830 556" role="img" aria-labelledby="hero-title"><title id="hero-title">Чёрный викинг в капюшоне с бородой и двумя клинками</title>
    <defs>
     <g id="upper-art" class="ink"><path d="M-26-8 Q-34 12-26 42 L-21 69 Q0 84 23 67 L29 28 Q29 2 20-9Z"/><path class="detail" d="M-25 15Q0 5 27 17 M-22 57Q0 47 23 59"/><path d="M-29-7Q-8-24 19-12L28-4 23 0 31 5 23 8 30 16 21 15 25 26 15 22 17 31 7 26 2 32-5 25-13 30-16 22-25 25-23 15-32 18-27 8-34 7Z"/><path class="detail fine" d="M-24-4Q-3-17 21-5 M-23 2L-16-3-18 6-9 0-9 8 0 4 7 9 14 3 16 12 23 9"/><circle class="rivet" cx="-17" cy="32" r="2.8"/><circle class="rivet" cx="18" cy="33" r="2.8"/></g>
-    <g id="fore-art" class="ink"><path d="M-21-7Q-29 4-23 24L-20 59Q-1 71 20 59L24 16Q27 1 19-7Z"/><path d="M-25 5Q0-6 25 6L23 21Q0 9-24 21Z M-22 31Q0 21 23 32L21 46Q0 35-21 46Z"/><path class="detail" d="M-17 56Q0 50 17 56"/><circle class="rivet" cx="-12" cy="12" r="2.4"/><circle class="rivet" cx="12" cy="13" r="2.4"/><circle class="rivet" cx="-11" cy="38" r="2.4"/><circle class="rivet" cx="11" cy="38" r="2.4"/></g>
+    <g id="fore-art" class="ink"><path d="M-21-7Q-29 4-23 24L-20 59Q-1 71 20 59L24 16Q27 1 19-7Z"/><path d="M-25 5Q0-6 25 6L23 21Q0 9-24 21Z"/><path class="detail" d="M-17 56Q0 50 17 56"/><circle class="rivet" cx="-12" cy="12" r="2.4"/><circle class="rivet" cx="12" cy="13" r="2.4"/><circle class="rivet" cx="-11" cy="38" r="2.4"/><circle class="rivet" cx="11" cy="38" r="2.4"/></g>
     <g id="blade-art" class="ink">
      <path d="M-11-22L-13-66Q-11-103 6-144Q13-169 11-190Q39-157 35-119L30-104 25-106 27-96 19-85 15-88 15-77 8-66 2-68 3-57-7-36Z"/>
      <path class="detail" d="M-6-30L2-65 14-88 21-115Q29-144 13-178"/>
      <path d="M-25-28Q-3-13 24-29L29-21Q7 1-29-19Z"/><path class="detail" d="M-24-22Q0-8 25-23"/>
      <path d="M-8-17L-10 24Q-1 33 8 24L9-18Z"/><path class="detail" d="M-8-9L8-4 M-9 1L8 6 M-9 11L8 16"/><ellipse cx="-1" cy="27" rx="11" ry="5"/>
     </g>
-    <g id="hand-art" class="ink"><path d="M-18-10Q-13-18-7-15L-2-12Q5-19 12-11L19-2 17 17Q13 24 6 20-3 25-9 20-18 20-20 11Z"/><path class="detail" d="M-11-8L-12 12Q-10 18-6 18 M-3-9L-4 15 M6-9L6 15 M13-5L13 12 M-18-7Q-8-12-1-3L-5 6-15 1"/></g>
+    <g id="hand-art" class="ink"><path d="M-18-10Q-13-18-7-15L-2-12Q5-19 12-11L19-2 17 17Q13 24 6 20-3 25-9 20-18 20-20 11Z"/><path class="detail" d="M-9-6L-9 12 M1-7L1 14 M11-4L11 11 M-18-7Q-8-12-1-3L-5 6-15 1"/></g>
     <g id="thigh-art" class="ink"><path d="M-32-13Q-41 18-31 50L-26 83Q0 101 29 80L35 21Q35-5 25-15Z"/><path class="detail" d="M-26 9Q0 23 29 8 M-29 34Q-11 50 21 35 M-24 58L-8 66 20 55"/></g>
     <g id="shin-art" class="ink"><path d="M-27-12L-26 60Q0 79 27 60L29-10Z"/><path d="M-27 29L-36 36-30 39-38 49-28 48-32 60-21 55-19 66-10 60-4 70 3 61 10 67 17 57 23 63 27 52 35 56 32 44 39 45 32 35 34 30 26 26Z"/><path class="detail fine" d="M-27 36L-23 45-17 39-13 51-7 43 0 54 7 44 12 50 18 39 24 44 29 35"/><path d="M-27-15Q0-34 28-13L32 7Q29 32 1 34-31 31-33 9Z"/><ellipse cx="0" cy="3" rx="25" ry="26"/><circle class="rivet" cx="-13" cy="-11" r="2.5"/><circle class="rivet" cx="14" cy="-11" r="2.5"/><circle class="rivet" cx="-15" cy="15" r="2.5"/><circle class="rivet" cx="14" cy="16" r="2.5"/></g>
     <g id="boot-art" class="ink"><path d="M-25-28Q-4-36 23-26L31-9Q51-6 56 15L58 27Q14 39-35 25L-34 8Z"/><path d="M-29-14Q-4-23 27-11L32 2Q4-10-33 3Z M-9 28Q-12 7 1-5 M7 30Q7 7 19-2 M-35 20Q9 33 56 21L58 29Q10 41-36 28Z"/><circle class="rivet" cx="-15" cy="-11" r="2.5"/><circle class="rivet" cx="14" cy="-10" r="2.5"/><circle class="rivet" cx="23" cy="12" r="2.5"/><circle class="rivet" cx="43" cy="12" r="2.5"/></g>
@@ -33,7 +33,7 @@
     <g id="arm-l"><g data-part="upper"><use href="#upper-art" transform="scale(1.09 1)"/></g><g data-part="fore"><use href="#fore-art"/></g><g data-part="grip"><use href="#blade-art" transform="scale(.76)"/><use href="#hand-art"/></g></g>
     <g id="torso" class="ink">
      <path d="M-61-143Q-88-110-65-64L-54-8Q-1 22 62-9L76-89Q82-132 53-147Z"/>
-     <path class="detail" d="M-58-80Q-23-46 61-75 M-36-128Q-41-82-23-55"/>
+     <path class="detail" d="M-36-128Q-41-82-23-55"/>
      <path d="M-59-26Q1-8 63-30L70-5Q6 28-62 3Z"/><path class="detail" d="M-57-18Q-1 0 65-21"/>
      <path d="M-54-145L-71-130 38-17 57-31Z"/><path class="detail" d="M-55-135L47-27"/>
      <g transform="translate(-5 -79) rotate(-43)"><rect x="-16" y="-20" width="32" height="40" rx="4"/><rect x="-11" y="-15" width="22" height="30" rx="2"/><path class="detail" d="M0-16V5H16"/></g>
@@ -72,63 +72,72 @@
 /* All coordinates belong to the rig. Weapons are children of wrist groups.
    Fixed-length two-bone IK keeps elbows and knees connected at every frame. */
 const $=id=>document.getElementById(id), rad=Math.PI/180;
-const idle={x:0,y:10,lean:0,chest:0,hip:0,twist:0,rx:-122,ry:-37,ra:88,lx:128,ly:-58,la:16,rf:-96,lf:88,rl:0,ll:0,head:0,cape:0};
-// The same pose/IK rig drives every clip. Arena tones remain read-only references:
-// hit/crit recoil, block brace, dodge duck and step; no combat events are emitted.
+// Arm channels are unwrapped shoulder angles and signed elbow flexion, in degrees.
+// There is no binary IK pole and no independently animated weapon orientation.
+const idle={x:0,y:10,lean:0,chest:0,hip:0,twist:0,ru:145,re:95,rw:28,lu:65,le:-120,lw:-5,rs:0,ls:0,rsy:0,lsy:0,rf:-96,lf:88,rl:0,ll:0,head:0,hx:0,hy:0,cape:0};
 const clips={
  combo:buildClip([
   [0,idle],
-  [.19,{x:-9,y:15,lean:-4,chest:-6,hip:3,twist:-12,rx:-146,ry:-78,ra:-40,lx:127,ly:-78,la:6,head:3,cape:5}],
-  [.27,{x:0,y:12,lean:0,chest:0,hip:0,twist:0,rx:-73,ry:-48,ra:30,lx:128,ly:-78,la:7}],
-  [.37,{x:10,y:10,lean:4,chest:7,hip:-3,twist:12,rx:31,ry:-94,ra:79,lx:132,ly:-79,la:2,head:-5,cape:-8}],
-  [.49,{x:14,y:15,lean:6,chest:9,hip:-4,twist:15,rx:34,ry:-53,ra:132,lx:131,ly:-83,la:8,head:-6,cape:-12}],
-  [.68,{x:1,y:18,lean:0,chest:1,hip:2,twist:3,rx:-19,ry:-54,ra:109,lx:112,ly:-85,la:51,head:-1,cape:-2}],
-  [.84,{x:-6,y:21,lean:-4,chest:-4,hip:4,twist:-9,rx:-47,ry:-61,ra:86,lx:112,ly:-102,la:70,head:4,cape:7}],
-  [1.03,{x:21,y:13,lean:7,chest:3,hip:-3,twist:11,rx:-35,ry:-68,ra:70,lx:138,ly:-113,la:80,head:-7,cape:-13}],
-  [1.14,{x:25,y:16,lean:8,chest:4,hip:-4,twist:13,rx:-28,ry:-63,ra:77,lx:140,ly:-110,la:78,head:-8,cape:-16}],
-  [1.35,{x:9,y:20,lean:2,chest:-2,hip:2,twist:-2,rx:-58,ry:-75,ra:41,lx:117,ly:-86,la:32,head:-1,cape:3}],
-  [1.44,{x:1,y:18,lean:-1,chest:-4,hip:3,twist:-6,rx:-3,ry:-102,ra:-18,lx:119,ly:-87,la:24,head:3,cape:5}],
-  [1.53,{x:-5,y:16,lean:-4,chest:-6,hip:4,twist:-9,rx:-20,ry:-164,ra:-53,lx:121,ly:-85,la:15,head:5,cape:8}],
-  [1.70,{x:-8,y:14,lean:-5,chest:-6,hip:5,twist:-10,rx:-38,ry:-202,ra:-65,lx:122,ly:-91,la:5,head:7,cape:10}],
-  [1.82,{x:5,y:17,lean:2,chest:2,hip:-1,twist:3,rx:18,ry:-148,ra:34,lx:123,ly:-87,la:7,head:-2,cape:-3}],
-  [1.95,{x:22,y:25,lean:9,chest:7,hip:-5,twist:13,rx:34,ry:-81,ra:145,lx:126,ly:-80,la:16,head:-8,cape:-17}],
-  [2.10,{x:25,y:29,lean:10,chest:7,hip:-6,twist:14,rx:22,ry:-42,ra:164,lx:127,ly:-72,la:20,head:-9,cape:-20}],
-  [2.32,{x:4,y:22,lean:0,chest:-3,hip:3,twist:-5,rx:-88,ry:-58,ra:80,lx:139,ly:-106,la:8,head:1,cape:4}],
-  [2.51,{x:-7,y:24,lean:-4,chest:-5,hip:4,twist:-9,rx:-137,ry:-94,ra:-34,lx:145,ly:-145,la:35,head:4,cape:9}],
-  [2.66,{x:3,y:18,lean:1,chest:0,hip:-1,twist:0,rx:-67,ry:-61,ra:8,lx:137,ly:-129,la:-4,head:0,cape:1}],
-  [2.82,{x:19,y:20,lean:6,chest:4,hip:-4,twist:8,rx:8,ry:-71,ra:50,lx:124,ly:-117,la:-53,head:-5,cape:-12}],
-  [2.97,{x:24,y:27,lean:8,chest:4,hip:-5,twist:10,rx:20,ry:-54,ra:139,lx:130,ly:-42,la:-132,head:-6,cape:-18}],
-  [3.17,{x:10,y:22,lean:3,chest:0,hip:1,twist:1,rx:-55,ry:-40,ra:110,lx:120,ly:-47,la:-30,head:-1,cape:1}],
-  [3.60,{x:0,y:11,rx:-122,ry:-37,ra:88,lx:128,ly:-58,la:16}],
-  [3.84,idle]
- ],[
-  ['lf',.76,.99,88,124,16],['lf',1.55,1.83,124,140,14],['lf',3.18,3.62,140,88,17]
- ]),
+  [.14,{x:-7,y:16,lean:-4,chest:-5,hip:3,twist:-10,ru:170,re:70,rw:28,lu:65,le:-120,lw:-5,head:3,cape:6}],
+  [.23,{x:-1,y:17,lean:-1,chest:0,hip:1,twist:-3,ru:90,re:100,rw:28,lu:65,le:-120,lw:-5,head:1,cape:2}],
+  [.34,{x:9,y:13,lean:4,chest:10,hip:-3,twist:13,ru:0,re:10,rw:-24,rs:20,lu:65,le:-120,lw:-5,head:-6,cape:-10}],
+  [.382,{x:9,y:13,lean:4,chest:10,hip:-3,twist:13,ru:0,re:10,rw:-24,rs:20,lu:65,le:-120,lw:-5,head:-6,cape:-10}],
+  [.49,{x:13,y:20,lean:7,chest:9,hip:-4,twist:15,ru:5,re:35,rw:-25,rs:20,lu:68,le:-122,lw:-5,head:-7,cape:-14}],
+  [.60,{x:0,y:20,lean:0,chest:0,hip:2,twist:0,ru:110,re:90,rw:0,lu:95,le:-115,lw:-10,head:0,cape:2}],
+  [.70,{x:-5,y:21,lean:-3,chest:-3,hip:3,twist:-8,ru:140,re:95,rw:28,lu:95,le:-115,lw:-10,ls:-6,head:4,cape:7}],
+  [.86,{x:14,y:14,lean:4,chest:3,hip:-2,twist:9,ru:140,re:95,rw:28,lu:12,le:-12,lw:-7,ls:-12,head:-6,cape:-12}],
+  [.90,{x:14,y:14,lean:4,chest:3,hip:-2,twist:9,ru:140,re:95,rw:28,lu:12,le:-12,lw:-7,ls:-12,head:-6,cape:-12}],
+  [1.01,{x:17,y:21,lean:6,chest:4,hip:-3,twist:11,ru:120,re:65,rw:0,lu:24,le:-30,lw:-7,ls:-10,head:-7,cape:-14}],
+  [1.10,{x:3,y:19,lean:0,chest:-2,hip:2,ru:160,re:0,rw:-28,rs:12,lu:65,le:-120,lw:-5,head:2,cape:4}],
+  [1.26,{x:-5,y:16,lean:-4,chest:-4,hip:4,twist:-8,ru:-20,re:-100,rw:-20,lu:65,le:-120,lw:-5,head:5,hx:-7,cape:10}],
+  [1.39,{x:2,y:21,lean:1,chest:2,hip:-1,twist:2,ru:2,re:-70,rw:-10,rs:14,lu:65,le:-120,lw:-5,head:1,hx:-5,hy:4,cape:0}],
+  [1.53,{x:18,y:29,lean:10,chest:10,hip:-5,twist:12,ru:45,re:-35,rw:28,rs:32,lu:65,le:-120,lw:-5,head:-8,hx:-6,hy:6,cape:-17}],
+  [1.578,{x:18,y:29,lean:10,chest:10,hip:-5,twist:12,ru:45,re:-35,rw:28,rs:32,lu:65,le:-120,lw:-5,head:-8,hx:-6,hy:6,cape:-17}],
+  [1.72,{x:19,y:32,lean:11,chest:9,hip:-6,twist:14,ru:35,re:-10,rw:28,rs:34,lu:68,le:-122,lw:-5,head:-9,hx:-4,hy:7,cape:-19}],
+  [1.88,{x:0,y:24,lean:-2,chest:-3,hip:3,twist:-5,ru:25,re:-65,rw:-8,rs:10,lu:80,le:-105,lw:-5,head:2,hx:-3,cape:5}],
+  [2.03,{x:-5,y:23,lean:-3,chest:-4,hip:3,twist:-7,ru:15,re:-70,rw:-10,rs:10,lu:-45,le:0,lw:28,ls:8,head:3,hx:-10,cape:8}],
+  [2.16,{x:13,y:20,lean:4,chest:3,hip:-3,twist:8,ru:30,re:-50,rw:-20,rs:18,lu:65,le:-125,lw:-20,ls:12,head:-4,hx:-12,cape:-10}],
+  [2.195,{x:13,y:20,lean:4,chest:3,hip:-3,twist:8,ru:30,re:-50,rw:-20,rs:18,lu:65,le:-125,lw:-20,ls:12,head:-4,hx:-12,cape:-10}],
+  [2.30,{x:15,y:23,lean:3,chest:-2,hip:1,twist:-2,ru:0,re:-8,rw:25,rs:42,lu:96.93,le:-129.26,lw:-20,ls:-20,head:-3,hx:-14,cape:-11}],
+  [2.43,{x:15,y:25,lean:3,chest:-8,hip:3,twist:-12,ru:-5,re:0,rw:28,rs:42,lu:160,le:-12,lw:-15,ls:-8,head:-4,hx:-18,cape:-12}],
+  [2.48,{x:15,y:25,lean:3,chest:-8,hip:3,twist:-12,ru:-5,re:0,rw:28,rs:42,lu:160,le:-12,lw:-15,ls:-8,head:-4,hx:-18,cape:-12}],
+  [2.60,{x:14,y:26,lean:4,chest:-3,hip:1,twist:-3,ru:3,re:0,rw:28,rs:16,lu:145,le:0,lw:-15,ls:-20,head:-4,hx:-14,cape:-10}],
+  [2.72,{x:12,y:27,lean:5,chest:0,hip:-2,twist:3,ru:10,re:0,rw:28,rs:14,lu:140,le:-85,lw:-15,head:-6,hx:-6,cape:-13}],
+  [2.82,{x:2,y:18,lean:1,chest:0,hip:1,ru:55,re:75,rw:28,rs:8,lu:70,le:-115,lw:-3,head:1,cape:2}],
+  [2.95,{x:0,y:13,ru:105,re:105,rw:28,lu:65,le:-120,lw:-5}],
+  [3.01,{x:0,y:11,ru:138,re:90,rw:28,lu:65,le:-120,lw:-5}],
+  [3.08,idle]
+ ],[['lf',.64,.82,88,124,16],['lf',1.17,1.46,124,140,13],['lf',2.80,3.04,140,88,17]],
+ {r:[[0,true],[.16,false],[.315,true],[.50,false],[.70,true],[1.105,false],[1.45,true],[1.83,false],[2.12,true],[2.74,false],[3.02,true]],l:[[0,false],[.61,true],[1.08,false],[1.90,true],[2.35,false],[2.41,true],[2.60,false]]}),
  block:buildClip([
   [0,idle],
-  [.16,{x:-2,y:14,lean:-2,chest:-2,hip:2,rx:-25,ry:-77,ra:35,lx:132,ly:-126,la:-36,head:2,cape:3}],
-  [.30,{x:-6,y:15,lean:-4,chest:-1,hip:2,rx:8,ry:-96,ra:45,lx:128,ly:-157,la:-55,head:2,cape:4}],
-  [.40,{x:-14,y:22,lean:-8,chest:-4,hip:4,rx:3,ry:-89,ra:42,lx:124,ly:-149,la:-52,head:-3,cape:10}],
-  [.52,{x:-9,y:19,lean:-5,chest:-2,hip:3,rx:7,ry:-94,ra:45,lx:127,ly:-155,la:-55,head:1,cape:6}],
-  [.65,{x:-5,y:16,lean:-3,chest:-1,hip:2,rx:7,ry:-94,ra:45,lx:127,ly:-155,la:-55,head:2,cape:3}],
-  [.81,{x:-2,y:13,lean:-1,chest:0,hip:1,rx:-57,ry:-49,ra:73,lx:131,ly:-107,la:-8,head:1,cape:1}],
-  [1.08,idle]
- ]),
+  [.11,{x:-2,y:15,lean:-1,chest:-1,hip:1,ru:85,re:105,rw:28,lu:60,le:-123,lw:-8,head:1,hx:-4,cape:2}],
+  [.24,{x:-3,y:17,lean:-2,chest:-2,hip:2,ru:0,re:0,rw:-14,rs:12,lu:55,le:-140,lw:-12,ls:8,head:2,hx:-8,cape:3}],
+  [.40,{x:-7,y:19,lean:-4,chest:-2,hip:3,ru:20,re:-70,rw:15,rsy:16,lu:55,le:-150,lw:-20,ls:12,lsy:16,head:4,hx:-15,hy:2,cape:5}],
+  [.49,{x:-16,y:26,lean:-9,chest:-4,hip:5,ru:23,re:-71,rw:16,rsy:16,lu:58,le:-148,lw:-22,ls:12,lsy:16,head:0,hx:-18,hy:4,cape:11}],
+  [.59,{x:-11,y:23,lean:-6,chest:-2,hip:4,ru:20,re:-70,rw:15,rsy:16,lu:55,le:-150,lw:-20,ls:12,lsy:16,head:4,hx:-16,hy:3,cape:7}],
+  [.73,{x:-6,y:19,lean:-3,chest:-1,hip:2,ru:20,re:-70,rw:15,rsy:16,lu:55,le:-150,lw:-20,ls:12,lsy:16,head:3,hx:-15,hy:2,cape:3}],
+  [.89,{x:-2,y:15,lean:-1,chest:0,hip:1,ru:2,re:0,rw:28,rs:10,lu:55,le:-125,lw:-5,head:1,hx:-6,cape:1}],
+  [1.15,{x:0,y:13,ru:85,re:110,rw:28,lu:65,le:-120,lw:-5}],
+  [1.32,{x:0,y:11,ru:138,re:93,rw:28,lu:65,le:-120,lw:-5}],
+  [1.45,idle]
+ ],[],{r:[[0,true],[.14,false],[.36,true],[.90,false],[1.34,true]],l:[[0,false],[.33,true],[.94,false]]}),
  dodge:buildClip([
   [0,idle],
-  [.10,{x:-7,y:20,lean:4,chest:3,hip:-2,rx:-125,ry:-27,ra:76,lx:123,ly:-51,la:5,head:7,cape:5}],
-  [.25,{x:-32,y:43,lean:11,chest:8,hip:-5,twist:-8,rx:-129,ry:-18,ra:58,lx:105,ly:-40,la:2,head:15,cape:15}],
-  [.39,{x:-39,y:39,lean:8,chest:4,hip:-4,twist:-7,rx:-130,ry:-21,ra:66,lx:108,ly:-44,la:5,head:11,cape:12}],
-  [.61,{x:-18,y:27,lean:4,chest:2,hip:-2,twist:-3,rx:-126,ry:-29,ra:78,lx:119,ly:-51,la:10,head:5,cape:5}],
-  [.91,{x:0,y:11,rx:-122,ry:-37,ra:88,lx:128,ly:-58,la:16}],
+  [.085,{x:-8,y:24,lean:5,chest:4,hip:-3,ru:137,re:96,rw:28,lu:82,le:-92,lw:-8,head:5,hy:4,cape:5}],
+  [.24,{x:-38,y:52,lean:12,chest:9,hip:-6,twist:-8,ru:120,re:90,rw:28,lu:93,le:-94,lw:-12,head:11,hx:-4,hy:12,cape:16}],
+  [.38,{x:-44,y:47,lean:8,chest:5,hip:-4,twist:-7,ru:125,re:92,rw:28,lu:88,le:-93,lw:-9,head:8,hx:-3,hy:9,cape:12}],
+  [.60,{x:-20,y:29,lean:4,chest:2,hip:-2,twist:-3,ru:135,re:95,rw:28,lu:78,le:-92,lw:-5,head:4,hy:4,cape:5}],
+  [.92,{x:0,y:12,ru:145,re:95,rw:28,lu:65,le:-120,lw:-5}],
   [1.10,idle]
- ],[['rf',.08,.24,-96,-124,16],['lf',.24,.40,88,66,12],['rf',.50,.72,-124,-96,13],['lf',.75,.94,66,88,11]]),
+ ],[['rf',.07,.23,-96,-126,17],['lf',.24,.39,88,64,12],['rf',.48,.70,-126,-96,14],['lf',.74,.95,64,88,12]]),
  hit:buildClip([
   [0,idle],
-  [.065,{x:-9,y:14,lean:-5,chest:-5,hip:2,rx:-129,ry:-32,ra:81,lx:133,ly:-62,la:27,head:-8,cape:8}],
-  [.14,{x:-18,y:21,lean:-8,chest:-5,hip:4,twist:-5,rx:-131,ry:-29,ra:74,lx:135,ly:-57,la:34,head:-10,cape:12}],
-  [.28,{x:-11,y:19,lean:-4,chest:-1,hip:2,rx:-127,ry:-34,ra:84,lx:131,ly:-59,la:20,head:3,cape:7}],
-  [.45,{x:-3,y:14,lean:-1,chest:1,hip:0,rx:-123,ry:-36,ra:90,lx:129,ly:-58,la:14,head:1,cape:2}],
+  [.055,{x:-12,y:17,lean:-7,chest:-2,hip:3,ru:147,re:93,rw:28,lu:65,le:-120,lw:-5,head:0,cape:5}],
+  [.12,{x:-22,y:24,lean:-9,chest:-6,hip:5,twist:-6,ru:151,re:88,rw:28,lu:66,le:-118,lw:-6,head:-7,hx:-5,cape:13}],
+  [.19,{x:-18,y:25,lean:-6,chest:-7,hip:4,ru:150,re:89,rw:28,lu:67,le:-119,lw:-6,head:-12,hx:-8,hy:3,cape:12}],
+  [.32,{x:-10,y:21,lean:-3,chest:-2,hip:2,ru:146,re:93,rw:28,lu:65,le:-120,lw:-5,head:2,hx:-3,cape:6}],
+  [.48,{x:-2,y:14,lean:0,chest:1,hip:0,ru:144,re:95,rw:28,lu:65,le:-120,lw:-5,head:1,cape:1}],
   [.70,idle]
  ])
 };
@@ -145,14 +154,28 @@ for(const i of [2,3,9,10,11,12,13,14,15])if(torsoParts[i])pelvis.append(torsoPar
 for(const e of [armL,torso,$('collar'),$('head')])shoulders.append(e);
 body.append(pelvis);
 const frontArms=joint('front-arms');
-frontArms.append(armR);
-for(const part of arms){
- part.weapon=part.grip.querySelector('use');
+const padLayer=document.createElementNS('http://www.w3.org/2000/svg','g');
+padLayer.id='shoulder-pads';shoulders.insertBefore(padLayer,$('collar'));
+const furArt=document.createElementNS('http://www.w3.org/2000/svg','g');furArt.id='shoulder-fur-art';
+const upperLayers=[...$('upper-art').children];
+for(const e of [upperLayers[2],upperLayers[3]])furArt.append(e);
+$('viking').querySelector('defs').append(furArt);
+const backArms=joint('back-arms');body.insertBefore(backArms,shoulders);
+for(const [i,part] of arms.entries()){
+ part.root=i===0?armR:armL;
+ part.pad=document.createElementNS('http://www.w3.org/2000/svg','g');
+ const fur=document.createElementNS('http://www.w3.org/2000/svg','use');
+ fur.setAttribute('href','#shoulder-fur-art');fur.setAttribute('transform','scale(1.09 1)');
+ part.pad.append(fur);padLayer.append(part.pad);
+ part.weapon=part.grip.querySelector('use');part.hand=part.grip.querySelectorAll('use')[1];
+ // These bind transforms are immutable: fist, handle, guard and blade are one rigid unit.
+ part.weapon.setAttribute('transform','scale(.76)');part.hand.setAttribute('transform','rotate(180)');
  part.elbow=document.createElementNS('http://www.w3.org/2000/svg','circle');
- part.elbow.setAttribute('r','17');part.elbow.setAttribute('stroke-width','1.2');
+ part.elbow.setAttribute('r','15');part.elbow.setAttribute('stroke-width','1.1');
  part.wrist=document.createElementNS('http://www.w3.org/2000/svg','circle');
- part.wrist.setAttribute('r','11');part.wrist.setAttribute('stroke-width','1.2');
- for(const e of [part.elbow,part.fore,part.wrist,part.grip])frontArms.append(e);
+ part.wrist.setAttribute('r','10');part.wrist.setAttribute('stroke-width','1.1');
+ for(const e of [part.upper,part.elbow,part.fore,part.wrist,part.grip])part.root.append(e);
+ (i===0?frontArms:backArms).append(part.root);
 }
 // Sparse rivets and fewer engraving strokes remain legible on a phone.
 for(const g of document.querySelectorAll('defs g'))[...g.children].filter(e=>e.classList.contains('rivet')).forEach((e,i)=>{if(i%2)e.remove();});
@@ -164,17 +187,30 @@ function solve(ax,ay,bx,by,a,b,bend,minReach=Math.abs(a-b)+2,maxReach=a+b-2){
  const angle=base+off*bend,ex=ax+Math.cos(angle)*a,ey=ay+Math.sin(angle)*a;
  return{ex,ey,wx,wy,upper:angle/rad-90,lower:Math.atan2(wy-ey,wx-ex)/rad-90};
 }
-function arm(part,sx,sy,wx,wy,angle,bend){
- const j=solve(sx,sy,wx,wy,69,67,bend,56,128);
- transform(part.upper,`translate(${sx} ${sy}) rotate(${j.upper})`);
- transform(part.fore,`translate(${j.ex} ${j.ey}) rotate(${j.lower})`);
- transform(part.elbow,`translate(${j.ex} ${j.ey})`);
- transform(part.wrist,`translate(${j.wx} ${j.wy})`);
- // The palm follows the forearm with bounded wrist flexion. Weapon rotation
- // stays anchored inside the closed fist, rather than twisting the wrist 180 degrees.
- const handAngle=j.lower+16*Math.sin((angle-j.lower-90)*rad);
- transform(part.grip,`translate(${j.wx} ${j.wy}) rotate(${handAngle})`);
- transform(part.weapon,`rotate(${angle-handAngle}) scale(.76)`);
+function arm(part,sx,sy,upper,elbow,wrist){
+ // Pose-authored signed flexion replaces discrete IK branch selection. A sign
+ // change passes through an explicit straight-arm key, never a mirrored solution.
+ const u=upper*rad,f=(upper+elbow)*rad;
+ const ex=sx+69*Math.cos(u),ey=sy+69*Math.sin(u);
+ const wx=ex+67*Math.cos(f),wy=ey+67*Math.sin(f);
+ const flex=Math.max(-28,Math.min(28,wrist));
+ transform(part.upper,`translate(${sx} ${sy}) rotate(${upper-90})`);
+ transform(part.pad,`translate(${sx} ${sy}) rotate(${upper-90})`);
+ transform(part.fore,`translate(${ex} ${ey}) rotate(${upper+elbow-90})`);
+ transform(part.elbow,`translate(${ex} ${ey})`);
+ transform(part.wrist,`translate(${wx} ${wy})`);
+ transform(part.grip,`translate(${wx} ${wy}) rotate(${upper+elbow+90+flex})`);
+}
+function armLayers(p){
+ const tracks=clips[p.action]?.layers;
+ for(const [i,key] of ['r','l'].entries()){
+  let front=i===0;
+  for(const [time,value] of tracks?.[key]||[]){if(time>(p.time||0))break;front=value;}
+  const parent=front?frontArms:backArms;
+  if(arms[i].root.parentNode!==parent)parent.append(arms[i].root);
+  const padParent=front?padLayer:backArms;
+  if(arms[i].pad.parentNode!==padParent)padParent.append(arms[i].pad);
+ }
 }
 function leg(part,hx,hy,fx,lift,bend){
  const fy=151-lift,j=solve(hx,hy,fx,fy,89,88,bend);
@@ -192,10 +228,16 @@ function tangent(keys,i,k){
  const w0=2*h1+h0,w1=h1+2*h0;
  return (w0+w1)/(w0/d0+w1/d1);
 }
-function buildClip(rows,steps=[]){
+function buildClip(rows,steps=[],layers={}){
  const keys=rows.map(([t,p])=>({t,p:{...idle,...p}}));
+ // Unwrap only the shoulder rotation. Signed elbow flexion must retain its
+ // authored sign and its straight-arm keys; it is never wrapped or pole-flipped.
+ for(const name of ['ru','lu'])for(let i=1;i<keys.length;i++){
+  while(keys[i].p[name]-keys[i-1].p[name]<=-180)keys[i].p[name]+=360;
+  while(keys[i].p[name]-keys[i-1].p[name]>180)keys[i].p[name]-=360;
+ }
  const curves=keys.slice(0,-1).map((a,i)=>Object.fromEntries(Object.keys(idle).map(k=>[k,[a.p[k],keys[i+1].p[k],tangent(keys,i,k),tangent(keys,i+1,k)]])));
- return {keys,curves,steps,duration:keys.at(-1).t};
+ return {keys,curves,steps,layers,duration:keys.at(-1).t};
 }
 function foot(t,action='combo'){
  const p={rf:-96,rl:0,lf:88,ll:0};
@@ -211,21 +253,23 @@ function sample(t,action='combo'){
  while(i<keys.length-2&&t>keys[i+1].t)i++;
  const a=keys[i],b=keys[i+1],h=b.t-a.t,u=Math.max(0,Math.min(1,(t-a.t)/h)),u2=u*u,u3=u2*u;
  const p={};for(const k in idle){const [v0,v1,m0,m1]=curves[i][k];p[k]=(2*u3-3*u2+1)*v0+(u3-2*u2+u)*h*m0+(-2*u3+3*u2)*v1+(u3-u2)*h*m1;}
- return Object.assign(p,foot(t,action));
+ if(t>=clips[action].duration){p.ru=idle.ru;p.lu=idle.lu;}
+ return Object.assign(p,foot(t,action),{action,time:t});
 }
 function render(p,t){
- transform($('facing'),`translate(340 367) scale(${direction*1.06} 1)`);
+ transform($('facing'),`translate(${340-direction*45} 367) scale(${direction*1.06} 1)`);
  transform(body,`translate(${p.x} ${p.y}) rotate(${p.lean})`);
  const shoulderTransform=`rotate(${p.chest} 0 -15) scale(${Math.cos(p.twist*rad)} 1) skewY(${p.twist*.10})`;
- transform(shoulders,shoulderTransform);transform(frontArms,shoulderTransform);
+ transform(shoulders,shoulderTransform);transform(frontArms,shoulderTransform);transform(backArms,shoulderTransform);
+ armLayers(p);
  transform(torso,'scale(1.16 1)');
  transform(pelvis,`rotate(${p.hip}) scale(1.16 1)`);
- transform($('head'),`rotate(${p.head} 10 -163)`);
+ transform($('head'),`translate(${p.hx} ${p.hy}) rotate(${p.head} 10 -163)`);
  transform($('cape'),`rotate(${p.cape} -24 -150) translate(0 -24) scale(1.04 .84)`);
  transform($('braid-r'),`rotate(${Math.sin(t*4)*1.3-p.chest*.5} 18 -115)`);
  transform($('braid-l'),`rotate(${Math.sin(t*4-1)*1.3-p.chest*.55} 67 -109)`);
- arm(arms[0],-74,-131,p.rx,p.ry,p.ra,1);
- arm(arms[1],74,-130,p.lx,p.ly,p.la,1);
+ arm(arms[0],-74+p.rs,-131+p.rsy,p.ru,p.re,p.rw);
+ arm(arms[1],74+p.ls,-130+p.lsy,p.lu,p.le,p.lw);
  // Hips follow the pelvis rather than the counter-rotating shoulder girdle.
  const angle=(p.lean+p.hip)*rad,c=Math.cos(angle),s=Math.sin(angle);
  leg(legs[0],p.x-43*c,p.y-43*s,p.rf,p.rl,-1);
@@ -233,7 +277,7 @@ function render(p,t){
 }
 let direction=1,start=null,last=0,clock=0,phase=-2,raf=0,idleFade=1,activeAction='combo';
 let lastPose={...idle},launchPose={...idle};
-const mix=(a,b,u)=>Object.fromEntries(Object.keys(idle).map(k=>[k,a[k]+(b[k]-a[k])*u]));
+const mix=(a,b,u)=>Object.assign(Object.fromEntries(Object.keys(idle).map(k=>[k,a[k]+(b[k]-a[k])*u])),{action:b.action,time:b.time});
 const phases=[...document.querySelectorAll('.phase')],play=$('play');
 const buttons=[play,$('block'),$('dodge'),$('hit')];
 const labels={combo:'Комбинация ×4',block:'Блок',dodge:'Уклонение',hit:'Получение урона'};
@@ -244,17 +288,19 @@ function tick(now){
  if(start!==null){
   start+=dt;const t=start,clip=clips[activeAction];
   p=mix(launchPose,sample(t,activeAction),smooth(t/.10));
-  const index=activeAction==='combo'?(t<.60?0:t<1.30?1:t<2.26?2:3):-1;
+  const index=activeAction==='combo'?(t<.58?0:t<1.07?1:t<1.85?2:3):-1;
   setPhase(index);
   if(t>=clip.duration){start=null;idleFade=0;buttons.forEach(e=>e.disabled=false);setPhase(-1);$('state').textContent='Боевая стойка';}
   else $('state').textContent=index<0?labels[activeAction]:['Удар 1 · рубящий','Удар 2 · колющий','Удар 3 · сверху','Удар 4 · крест'][index];
  }else{
   idleFade=Math.min(1,idleFade+dt/.28);const b=Math.sin(clock*2.2)*smooth(idleFade);
-  p={...idle,y:idle.y-b*1.6,lean:b*.5,chest:b*.4,hip:-b*.25,rx:idle.rx+b*1.2,ry:idle.ry-b*1.6,lx:idle.lx-b,ly:idle.ly-b*1.6,head:-b*.5,cape:b};setPhase(-1);
+  p={...idle,y:idle.y-b*1.6,lean:b*.4,chest:b*.3,hip:-b*.2,ru:idle.ru+b*.7,lu:idle.lu-b*.6,head:-b*.4,cape:b};setPhase(-1);
  }
  lastPose=p;render(p,clock);raf=requestAnimationFrame(tick);
 }
-function launch(action){if(start!==null)return;activeAction=action;launchPose={...lastPose};start=0;buttons.forEach(e=>e.disabled=true);}
+function launch(action){if(start!==null)return;activeAction=action;launchPose={...lastPose};
+ for(const name of ['ru','lu'])launchPose[name]-=360*Math.round((launchPose[name]-clips[action].keys[0].p[name])/360);
+ start=0;buttons.forEach(e=>e.disabled=true);}
 play.addEventListener('click',()=>launch('combo'));
 for(const action of ['block','dodge','hit'])$(action).addEventListener('click',()=>launch(action));
 for(const [id,dir] of [['left',-1],['right',1]])$(id).addEventListener('click',()=>{direction=dir;$('left').setAttribute('aria-pressed',String(dir===-1));$('right').setAttribute('aria-pressed',String(dir===1));render(lastPose,clock);});
