@@ -177,3 +177,55 @@
  .rhall-skills{border-width:2px}
 }
 @media(prefers-reduced-motion:reduce){.rhall-gem{animation:none!important}.rhall-skill-gem{transition:none!important}}
+
+
+/* Odins-inspired screen flow. Original artwork and text; no copied game assets. */
+.rhall-section-label{justify-content:space-between;padding-left:8px;padding-right:8px}
+.rhall-section-label .rhall-diamond{font-size:13px}
+.rhall-section-label b{flex:1;text-align:center;font-size:clamp(11px,3.8vw,14px)}
+.rhall-summon-trigger{display:flex;align-items:center;gap:3px;flex-shrink:0;padding:4px 7px;border:2px solid #ab7537!important;border-radius:8px!important;background:linear-gradient(#ffe1a5,#a45a24)!important;color:#54230a!important;font-weight:900;font-size:10px;line-height:1}
+.rhall-overlay--top{z-index:140}
+.rhall-dialog--summon,.rhall-dialog--rune{display:flex;gap:0;padding:0;overflow:hidden;max-height:min(91dvh,780px);border:3px solid #2d1c1b;border-radius:17px;background:#f8f1ef!important;color:#28201e}
+.rhall-popup-heading{width:100%;display:flex;justify-content:center;align-items:center;position:relative;min-height:43px;padding:8px 42px;border-bottom:4px solid #1f1211;background:linear-gradient(#784544,#432523)}
+.rhall-popup-heading h3{margin:0;color:#ffe394;font:bold clamp(16px,4.5vw,22px)/1 Georgia,serif;text-shadow:1px 2px #200e0e}
+.rhall-popup-heading>button{position:absolute;right:7px;top:5px;display:grid;place-items:center;width:33px;height:33px;border:2px solid #5f1237!important;border-radius:50%!important;background:linear-gradient(#ff98ba,#ea3371)!important;color:#421325!important}
+.rhall-popup-subtitle{text-align:center;margin:7px 10px!important;font-size:12px!important;font-weight:800;color:#845435!important}
+.rhall-summon-gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;width:100%;padding:8px;min-height:0;max-height:52dvh;overflow:auto;overscroll-behavior:contain;background:linear-gradient(#f8e5b9,#edcea3);border-block:2px solid #aa895f}
+.rhall-summon-tile{min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0!important;background:none!important;color:#342a2a!important;border:none!important}
+.rhall-summon-glyph{display:grid;place-items:center;width:43px;height:46px;clip-path:polygon(50% 0%,91% 20%,91% 79%,50% 100%,9% 79%,9% 20%);background:linear-gradient(130deg,#b2ada9,#39383e 30%,#292a32 70%,#96918f);color:#ffa652;font:bold 23px Georgia,serif;text-shadow:0 2px #1a0e1b}
+.rhall-summon-glyph--1{color:#af89ff}.rhall-summon-glyph--2{color:#8fd8ff}
+.rhall-summon-tile>span:nth-child(2){font-size:9px;font-weight:800;line-height:1.05;min-height:18px;overflow-wrap:anywhere;text-align:center}
+.rhall-summon-tile small{font-size:9px;font-weight:900;color:#ad602e}
+.rhall-summon-foot{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;padding:8px 10px 10px;background:#f7eddd}
+.rhall-summon-foot p{display:flex;align-items:center;gap:5px;font-size:10px!important;line-height:1.25;margin:0!important;color:#6b4635!important;text-align:center}
+.rhall-summon-foot p svg{flex-shrink:0;color:#a76d30}
+.rhall-summon-quantities{display:flex;gap:10px}
+.rhall-summon-quantities button{border:2px solid #c99c68!important;border-radius:9px!important;padding:6px 19px!important;color:#745335!important;background:#f6e5c3!important;font-weight:900;font-size:13px}
+.rhall-summon-quantities button.active{border-color:#1a8b68!important;color:white!important;background:#298963!important}
+.rhall-upgrade-disabled{display:flex;justify-content:center;align-items:center;gap:8px;min-height:40px;width:min(100%,230px);padding:8px 13px!important;border:2px solid #fce282!important;border-radius:10px!important;background:linear-gradient(#ffd45c,#a47b32)!important;color:#52361d!important;font-weight:950;font-size:15px;opacity:.65;cursor:not-allowed}
+.rhall-dialog--rune .rhall-rune-detail-head{display:flex;align-items:center;gap:12px;width:100%;padding:12px 15px;background:#fff}
+.rhall-rune-detail-glyph{display:grid;place-items:center;width:65px;height:65px;flex-shrink:0;clip-path:polygon(50% 0,91% 22%,91% 78%,50% 100%,9% 78%,9% 22%);background:linear-gradient(120deg,#a7a3a5,#29282e 35%,#36303a 68%,#928383);color:#ffaf6a;text-shadow:0 2px 3px #211527;font:bold 36px Georgia,serif}
+.rhall-rune-detail-head h4{margin:0 0 3px;color:#945319;font-size:15px;font-weight:950}
+.rhall-rune-detail-head small,.rhall-rune-detail-head strong{display:block;color:#604d45;font-size:11px}
+.rhall-rune-detail-head strong{color:#a25b23;margin-top:3px}
+.rhall-rune-detail-facts{width:calc(100% - 18px);margin:7px 9px;padding:10px;border:2px solid #7f7770;border-radius:8px;background:white}
+.rhall-rune-detail-facts>b{display:block;text-align:center;font-size:14px;color:#332922}
+.rhall-rune-effect{display:flex;align-items:flex-start;gap:9px;margin:9px 0 0!important;font-size:12px!important;line-height:1.35;color:#40302a!important;text-align:left!important}
+.rhall-rune-effect span{color:#2aa5e3;font-size:17px;line-height:1}
+.rhall-rune-locked{display:flex;gap:6px;align-items:flex-start;font-size:10px!important;line-height:1.25;text-align:left!important;color:#a28573!important;margin:10px 0 0!important}
+.rhall-rune-locked svg{flex-shrink:0}
+.rhall-scroll-upgrade{display:flex;flex-direction:column;align-items:center;gap:7px;width:100%;padding:9px 10px;border-block:1px solid #d7b8a3;background:#f3e0c8}
+.rhall-scroll-upgrade h4{font-size:12px!important;color:#703c22!important;margin:0!important;text-align:center}
+.rhall-scroll-tiers{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;width:100%}
+.rhall-scroll-tier{display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 0;border:1px solid #d8a77a;border-radius:8px;background:linear-gradient(#fff6e6,#ebcba4)}
+.rhall-scroll-tier svg{width:22px;height:22px;color:#c6a37a;fill:#f9dca8}
+.rhall-scroll-tier--uncommon svg{color:#459a4b}.rhall-scroll-tier--rare svg{color:#377be2}.rhall-scroll-tier--epic svg{color:#ae47d6}.rhall-scroll-tier--legendary svg{color:#ee8c20}
+.rhall-scroll-tier small{font-size:8px;font-weight:800;color:#564133;max-width:100%;overflow-wrap:anywhere;text-align:center}
+.rhall-scroll-upgrade p{font-size:10px!important;line-height:1.25;color:#795943!important;margin:0!important;text-align:center!important}
+.rhall-rune-detail-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%;padding:9px 10px 12px}
+.rhall-rune-detail-actions .rhall-confirm{font-size:10px!important;min-width:0}
+.rhall-rune-detail-actions .rhall-dialog-back{margin:0}
+.rhall-rune-choice em{display:block;font-size:9px;font-style:normal;color:#ae8145;margin-top:4px}
+.rhall-skill-facts{display:flex;gap:6px;align-items:center;color:#88613d;font-size:10px;line-height:1.3;width:100%;text-align:center;padding:6px 0}
+.rhall-skill-facts svg{flex-shrink:0}
+@media(max-width:360px){.rhall-summon-trigger{padding:4px!important;font-size:9px}.rhall-summon-trigger svg{width:13px}.rhall-scroll-tier small{font-size:7px}}

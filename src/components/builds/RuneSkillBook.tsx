@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, ChevronLeft, Crown, Flame, Info, LockKeyhole, Shield, Sparkles, Swords, Wind, X, Zap } from 'lucide-react';
+import { BookOpen, Check, ChevronLeft, Crown, Flame, Info, LockKeyhole, ScrollText, Shield, Sparkles, Swords, Wind, X, Zap } from 'lucide-react';
 import catalog from '@/game/config/territory-rune-skill-book-v1.json';
 import { RuneArtwork } from './RuneArtwork';
 import './runeHall.css';
@@ -55,8 +55,15 @@ export function RuneSkillBook({
  const [activeSkillId,setActiveSkillId]=useState<string|null>(null);
  const [showAllPassives,setShowAllPassives]=useState(false);
  const [showHelp,setShowHelp]=useState(false);
+ const [showSummon,setShowSummon]=useState(false);
+ const [summonQuantity,setSummonQuantity]=useState<10|100>(10);
+ const [activeRune,setActiveRune]=useState<{skillId:string;runeId:string}|null>(null);
  const activeSkill=useMemo(()=>catalog.groups.flatMap(group=>group.skills).find(skill=>skill.id===activeSkillId),[activeSkillId]);
  const activeGroup=useMemo(()=>catalog.groups.find(group=>group.skills.some(skill=>skill.id===activeSkillId)),[activeSkillId]);
+ const runeOwner=activeRune?catalog.groups.flatMap(g=>g.skills).find(s=>s.id===activeRune.skillId):undefined;
+ const chosenRune=runeOwner?.runes.find(r=>r.id===activeRune?.runeId);
+ const runeLevel=activeRune?available?.runes[activeRune.runeId]:undefined;
+ const skillLevel=activeSkill?available?.skills[activeSkill.id]:undefined;
  const setNext=(next:RuneSkillBookSelection)=>{setSelection(next);onSelectionChange?.(next);};
  const equipSkill=(skill:Skill,groupId:GroupId)=>setNext({...selection,skillIds:{...selection.skillIds,[groupId]:skill.id}});
  const equipRune=(skillId:string,runeId:string)=>setNext({...selection,runeIds:{...selection.runeIds,[skillId]:runeId}});
@@ -72,11 +79,11 @@ export function RuneSkillBook({
    ...catalog.passives.filter(p=>!selection.passiveIds.includes(p.id)),
  ].slice(0,3);
  useEffect(()=>{
-   if(!activeSkillId&&!showHelp)return;
-   const handle=(event:KeyboardEvent)=>{if(event.key==='Escape'){setActiveSkillId(null);setShowHelp(false);}};
+   if(!activeSkillId&&!showHelp&&!showSummon&&!activeRune)return;
+   const handle=(event:KeyboardEvent)=>{if(event.key==='Escape'){if(activeRune)setActiveRune(null);else{setActiveSkillId(null);setShowHelp(false);setShowSummon(false);}}};
    document.addEventListener('keydown',handle);
    return()=>document.removeEventListener('keydown',handle);
- },[activeSkillId,showHelp]);
+ },[activeSkillId,showHelp,showSummon,activeRune]);
  return <section className="rhall" data-testid="territory-rune-skill-book">
    <div className="rhall-temple">
     <Temple/>
@@ -87,7 +94,7 @@ export function RuneSkillBook({
     <div className="rhall-heading"><span className="rhall-wood-nail"/><span>{en?'RUNES':'РУНЫ'}</span><span className="rhall-wood-nail"/></div>
    </div>
    <div className="rhall-parchment">
-     <div className="rhall-section-label"><span className="rhall-diamond">✦</span><b>{en?'BATTLE SKILLS':'БОЕВЫЕ НАВЫКИ'}</b><span className="rhall-diamond">✦</span></div>
+     <div className="rhall-section-label"><span className="rhall-diamond">✦</span><b>{en?'BATTLE SKILLS':'БОЕВЫЕ НАВЫКИ'}</b><button className="rhall-summon-trigger" type="button" onClick={()=>setShowSummon(true)}><ScrollText size={16}/>{en?'Summon':'Призыв'}</button></div>
      <div className="rhall-skills">
       {catalog.groups.map(group=><div key={group.id} className="rhall-row" data-testid={'rune-row-'+group.id}>
         <div className="rhall-group"><CategoryBadge groupId={group.id}/><strong>{name(group,en)}</strong></div>
@@ -145,6 +152,30 @@ export function RuneSkillBook({
      </div>
      <div className="rhall-bottom-tabs"><span className="rhall-tab rhall-tab--on">{en?'SKILLS':'НАВЫКИ'}</span><span className="rhall-tab rhall-tab--disabled">{en?'MAX LEVEL':'ПИКОВЫЙ УРОВЕНЬ'} <LockKeyhole size={12}/></span></div>
    </div>
+   {showSummon&&<div className="rhall-overlay" onMouseDown={event=>{if(event.target===event.currentTarget)setShowSummon(false);}}>
+      <section className="rhall-dialog rhall-dialog--summon" role="dialog" aria-modal="true" aria-labelledby="rhall-summon-title">
+        <div className="rhall-popup-heading"><h3 id="rhall-summon-title">{en?'SUMMON RUNES':'ПРИЗЫВ РУН'}</h3><button type="button" onClick={()=>setShowSummon(false)} aria-label={en?'Close':'Закрыть'}><X size={20}/></button></div>
+        <p className="rhall-popup-subtitle">{en?'Rune collection · 45 rune variants':'Коллекция рун · 45 разновидностей'}</p>
+        <div className="rhall-summon-gallery">
+          {catalog.groups.flatMap(g=>g.skills).flatMap(skill=>skill.runes.map((rune,index)=>(
+            <button className="rhall-summon-tile" key={rune.id} type="button" title={name(skill,en)+' · '+name(rune,en)}
+              onClick={()=>{setShowSummon(false);setActiveSkillId(skill.id);setActiveRune({skillId:skill.id,runeId:rune.id});}}>
+              <span className={'rhall-summon-glyph rhall-summon-glyph--'+(index%3)}>{['ᚠ','ᚱ','ᛃ'][index]}</span>
+              <span>{name(rune,en)}</span>
+              <small>{available?.runes[rune.id]!==undefined?(en?'Lv. ':'Ур. ')+available.runes[rune.id]:(en?'Details':'Подробнее')}</small>
+            </button>
+          )))}
+        </div>
+        <div className="rhall-summon-foot">
+          <p><ScrollText size={17}/>{en?'Summoning requires scrolls. Server inventory not connected yet.':'Для призыва нужны свитки. Серверный запас пока не подключён.'}</p>
+          <div className="rhall-summon-quantities">
+            <button className={summonQuantity===10?'active':''} type="button" aria-pressed={summonQuantity===10} onClick={()=>setSummonQuantity(10)}>×10</button>
+            <button className={summonQuantity===100?'active':''} type="button" aria-pressed={summonQuantity===100} onClick={()=>setSummonQuantity(100)}>×100</button>
+          </div>
+          <button className="rhall-upgrade-disabled" type="button" disabled title={en?'No summon server action connected':'Призыв не подключён к серверу'}><ScrollText size={18}/>{en?'Summon':'Призвать'} ×{summonQuantity}</button>
+        </div>
+      </section>
+    </div>}
    {showHelp&&<div className="rhall-overlay" onMouseDown={event=>{if(event.target===event.currentTarget)setShowHelp(false);}}>
      <section className="rhall-dialog" role="dialog" aria-modal="true" aria-label={en?'About runes':'О рунах'}>
        <button className="rhall-close" type="button" onClick={()=>setShowHelp(false)} aria-label={en?'Close':'Закрыть'}><X size={20}/></button>
@@ -157,7 +188,7 @@ export function RuneSkillBook({
      <section className="rhall-dialog" role="dialog" aria-modal="true" aria-labelledby="rhall-dialog-title">
        <button className="rhall-close" type="button" aria-label={en?'Close':'Закрыть'} onClick={()=>setActiveSkillId(null)}><X size={20}/></button>
        <div className="rhall-dialog-icon"><RuneArtwork id={activeSkill.id} equipped={selection.skillIds[activeGroup.id]===activeSkill.id}/></div>
-       <span className="rhall-dialog-group">{name(activeGroup,en)}</span>
+       <span className="rhall-dialog-group">{name(activeGroup,en)}{skillLevel!==undefined?' · '+(en?'Lv. ':'Ур. ')+skillLevel:''}</span>
        <h3 id="rhall-dialog-title">{name(activeSkill,en)}</h3>
        <p>{en?activeSkill.descriptionEn:activeSkill.descriptionRu}</p>
        <button type="button" className="rhall-confirm" aria-pressed={selection.skillIds[activeGroup.id]===activeSkill.id}
@@ -165,20 +196,54 @@ export function RuneSkillBook({
          onClick={()=>equipSkill(activeSkill,activeGroup.id)}>
          <Check size={16}/>{selection.skillIds[activeGroup.id]===activeSkill.id?(en?'EQUIPPED':'ЭКИПИРОВАНО'):(en?'EQUIP SKILL':'ВЫБРАТЬ НАВЫК')}
        </button>
-       <h4>{en?'RUNES FOR THIS SKILL':'РУНЫ ЭТОГО НАВЫКА'}</h4>
+       <div className="rhall-skill-facts"><BookOpen size={15}/>{en?'Choose a skill and inspect its rune effects below.':'Выбери навык и изучи ниже эффекты каждой руны.'}</div>
+       <h4>{en?'SKILL RUNES':'РУНЫ НАВЫКА'}</h4>
        <div className="rhall-rune-options">
          {activeSkill.runes.map((rune,index)=>{
            const picked=selection.runeIds[activeSkill.id]===rune.id;
            const unlocked=!serverConnected||!!available?.runes[rune.id];
            return <button key={rune.id} type="button" className={'rhall-rune-choice'+(picked?' rhall-rune-choice--picked':'')}
-             aria-pressed={picked} disabled={!unlocked} onClick={()=>equipRune(activeSkill.id,rune.id)}>
+             aria-pressed={picked} disabled={!unlocked} onClick={()=>setActiveRune({skillId:activeSkill.id,runeId:rune.id})}>
              <span className="rhall-rune-sign">{['ᚠ','ᚱ','ᛟ'][index]}</span>
-             <span><strong>{name(rune,en)}</strong><small>{en?rune.effectEn:rune.effectRu}</small></span>
+             <span><strong>{name(rune,en)}</strong><small>{en?rune.effectEn:rune.effectRu}</small><em>{available?.runes[rune.id]!==undefined?(en?'Level ':'Уровень ')+available.runes[rune.id]:(en?'View description':'Посмотреть подробности')}</em></span>
              {picked?<Check size={18}/>:unlocked?<span className="rhall-unpicked">◇</span>:<LockKeyhole size={14}/>}
            </button>;
          })}
        </div>
        <button type="button" className="rhall-dialog-back" onClick={()=>setActiveSkillId(null)}>{en?'Back to skills':'Назад к навыкам'}</button>
+     </section>
+   </div>}
+   {chosenRune&&runeOwner&&activeRune&&<div className="rhall-overlay rhall-overlay--top" onMouseDown={event=>{if(event.target===event.currentTarget)setActiveRune(null);}}>
+     <section className="rhall-dialog rhall-dialog--rune" role="dialog" aria-modal="true" aria-labelledby="rhall-rune-title">
+       <div className="rhall-popup-heading"><h3 id="rhall-rune-title">{en?'RUNE DETAILS':'ПОДРОБНОСТИ РУНЫ'}</h3>
+         <button type="button" aria-label={en?'Close':'Закрыть'} onClick={()=>setActiveRune(null)}><X size={20}/></button></div>
+       <div className="rhall-rune-detail-head"><span className="rhall-rune-detail-glyph">ᛟ</span>
+         <div><h4>{name(chosenRune,en)}</h4><small>{name(runeOwner,en)}</small>
+         <strong>{runeLevel!==undefined?(en?'Level ':'Уровень ')+runeLevel:(en?'Level not confirmed':'Уровень не подтверждён сервером')}</strong></div></div>
+       <div className="rhall-rune-detail-facts"><b>{en?'RUNE PARAMETERS':'ПАРАМЕТРЫ РУНЫ'}</b>
+         <p className="rhall-rune-effect"><span>◆</span>{en?chosenRune.effectEn:chosenRune.effectRu}</p>
+         <p className="rhall-rune-effect"><span>◆</span>{en?'Equipping the rune modifies its compatible skill.':'Руна усиливает связанный с ней навык.'}</p>
+         <p className="rhall-rune-locked"><LockKeyhole size={15}/>{en?'Additional effects and milestones will be shown when verified by the server.':'Дополнительные эффекты и пороги уровней появятся после подтверждения сервером.'}</p>
+       </div>
+       <div className="rhall-scroll-upgrade">
+         <h4>{en?'SCROLLS FOR UPGRADES':'СВИТКИ ДЛЯ УЛУЧШЕНИЯ'}</h4>
+         <div className="rhall-scroll-tiers">
+           {['common','uncommon','rare','epic','legendary'].map((tier,index)=>(
+             <span key={tier} className={'rhall-scroll-tier rhall-scroll-tier--'+tier}>
+               <ScrollText size={22}/><small>{en?['Common','Uncommon','Rare','Epic','Legendary'][index]:['Обычный','Необычный','Редкий','Эпический','Легендарный'][index]}</small>
+             </span>))}
+         </div>
+         <p>{en?'The exact tier, amount and level requirements await server balance configuration.':'Какие свитки и сколько нужно — определим в серверном балансе. Монеты не требуются.'}</p>
+         <button className="rhall-upgrade-disabled" type="button" disabled><ScrollText size={17}/>{en?'UPGRADE':'УЛУЧШИТЬ'}</button>
+       </div>
+       <div className="rhall-rune-detail-actions">
+         <button type="button" className="rhall-confirm" aria-pressed={selection.runeIds[activeRune.skillId]===activeRune.runeId}
+           disabled={serverConnected&&!available?.runes[activeRune.runeId]}
+           onClick={()=>{equipRune(activeRune.skillId,activeRune.runeId);setActiveRune(null);}}>
+           <Check size={16}/>{selection.runeIds[activeRune.skillId]===activeRune.runeId?(en?'ENABLED':'ВКЛЮЧЕНО'):(en?'ENABLE RUNE':'ВКЛЮЧИТЬ РУНУ')}
+         </button>
+         <button className="rhall-dialog-back" type="button" onClick={()=>setActiveRune(null)}>{en?'Back to skill':'К навыку'}</button>
+       </div>
      </section>
    </div>}
  </section>;
