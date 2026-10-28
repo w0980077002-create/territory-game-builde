@@ -38,6 +38,7 @@ export async function submitAuctionAction(action,id){call('auction_trade',{actio
 export async function readPendingAuction(){return null;} export async function keepPendingAuction(){}
 export async function fetchAuctionCompletion(){return {enabled:false};}
 export async function submitAuctionCompletion(){throw new AuctionTradeError('offline_fixture_disabled');}
+export async function nameAuctionItem(){throw new AuctionTradeError('offline_fixture_disabled');}
 export async function readPendingAuctionCompletion(){return null;}
 export async function keepPendingAuctionCompletion(){}
 export function validAuctionCompletionAction(){return false;}
