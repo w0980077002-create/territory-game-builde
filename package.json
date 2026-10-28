@@ -58,7 +58,7 @@
     "test:v1-progression": "node scripts/check-v1-progression-client.mjs && node scripts/check-v1-progression-sql.mjs",
     "test:v1-monetization": "node scripts/check-v1-monetization.mjs && node scripts/check-v1-monetization-sql.mjs",
     "test:v1-completion": "npm run test:v1-combat && npm run test:v1-auction && npm run test:v1-progression && npm run test:v1-monetization && node scripts/check-v1-integration.mjs && node scripts/check-v1-edges.mjs",
-    "test:ui-integration": "node scripts/check-rune-skill-book.mjs && node scripts/check-compact-warehouse.mjs && node scripts/check-reward-visuals-ui.mjs && node scripts/check-t18-panels.mjs && node scripts/check-map-timer-performance.mjs"
+    "test:ui-integration": "node scripts/check-rune-skill-book.mjs && node scripts/check-compact-warehouse.mjs && node scripts/check-reward-visuals-ui.mjs && node scripts/check-t18-panels.mjs && node scripts/check-map-timer-performance.mjs && node scripts/check-v1-live-screen-integration.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
