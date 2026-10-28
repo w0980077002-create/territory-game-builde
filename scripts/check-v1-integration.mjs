@@ -83,7 +83,8 @@ try {
   const rules = { stepMs: 10, maxDurationMs: 1000, approachMs: 10, attackIntervalMs: 100, basicWindupMs: 10, basicMultiplier: 1,
     defenseFactor: 0.5, magicDefenseFactor: 0.2, minimumDamage: 1, critMultiplier: 2, blockMultiplier: 0,
     maxEnergy: 0, initialEnergy: 0, energyPerSecond: 0, modeDamageMultiplier: { pve: 1, boss: 1, pvp: 1 } };
-  await q("UPDATE territory_private.combat_config_v1 SET enabled=true,approval_reference='TEST',rules=$1", [rules]);
+  // Test-only PGlite instance has isolated fake balances; production stays disabled.
+  await q("UPDATE territory_private.combat_config_v1 SET enabled=true,settlement_ready=true,approval_reference='TEST',rules=$1", [rules]);
   await q("INSERT INTO territory_private.combat_profiles_v1(player_id,verified,fighter,equipped_item_ids,approval_reference) VALUES($1,true,$2,$3,'TEST')", [B, fighter, [item]]);
   await q("INSERT INTO territory_private.combat_encounters_v1(encounter_id,enabled,mode,stage,enemy,approval_reference) VALUES('test_fight',true,'pve',1,$1,'TEST')", [enemy]);
   await db.exec("INSERT INTO territory_private.v1_combat_activity_sources VALUES('pve','test_activity_1','TEST'); INSERT INTO territory_private.v1_combat_fund_sources VALUES('test_fight','adventure',1,'TEST')");

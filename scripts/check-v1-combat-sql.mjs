@@ -66,6 +66,10 @@ try {
   await assert.rejects(execute(A, { action: 'loadout', operationId: op(), revision: 0, loadout: wrongLoadout }), /combat_invalid_loadout/);
   const saved = await execute(A, { action: 'loadout', operationId: op(), revision: 0, loadout });
   assert.equal(saved.profile_revision, 1);
+  // The actual live game must NOT switch to this combat session while
+  // its legacy gold/XP/arena reward ledger has not been atomically migrated.
+  await assert.rejects(execute(A, start), /combat_settlement_not_ready/);
+  await query(`UPDATE territory_private.combat_config_v1 SET settlement_ready=true`);
   const receipt = await execute(A, start);
   assert.equal(receipt.state.input.mode, 'pve');
   assert.equal(receipt.rewards_claimed, false);
