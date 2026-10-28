@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Clock3, Gem, Package, RefreshCw, ShoppingBag } from 'lucide-react';
 import {
   fetchAuctionCompletion, submitAuctionCompletion, readPendingAuctionCompletion, keepPendingAuctionCompletion,
-  validAuctionCompletionAction, AuctionTradeError,
+  validAuctionCompletionAction,
   type AuctionCompletionAction, type AuctionCompletionFilters, type AuctionCompletionOverview, type AuctionCurrency,
   type PendingAuctionCompletion,
 } from '@/game/auctionCompletion';
+import { AuctionTradeError } from '@/game/auctionApi';
 import './auctionCompletionPanel.css';
 
 type TradeTab = 'lots' | 'mine' | 'history';
