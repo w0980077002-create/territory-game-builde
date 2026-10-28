@@ -35,6 +35,8 @@ jobs:
       - run: npm run test:stage1
       - run: npm run test:slots
       - run: npm run build
+      - run: npm run test:v1-completion
+      - run: npm run test:ui-integration
       - run: npm run test:balance
       - run: npm run test:pve
       - run: npm run test:inventory-cleanup
