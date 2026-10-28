@@ -2,7 +2,7 @@
 export type IdleCategory = 'base' | 'core' | 'control' | 'awakening' | 'final';
 export type IdleActor = 'hero' | 'enemy';
 export type IdleMode = 'pve' | 'boss' | 'pvp';
-export type IdleEffectType = 'burn' | 'bleed' | 'slow' | 'mitigation' | 'crit' | 'magic' | 'energy' | 'precision' | 'evasion'
+export type IdleEffectType = 'burn' | 'bleed' | 'slow' | 'mitigation' | 'crit' | 'magic' | 'energy' | 'precision' | 'evasion' | 'blind' | 'energy_regen'
   | 'heal' | 'interrupt' | 'attack' | 'defense';
 export interface IdleEffect {
   type: IdleEffectType;
