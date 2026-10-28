@@ -19,6 +19,14 @@ export const INITIAL_RUNE_BOOK_SELECTION: RuneSkillBookSelection = {
 };
 function name(item:{nameRu:string;nameEn:string},en:boolean){return en?item.nameEn:item.nameRu;}
 const badgeIcon = { base:Swords, core:Flame, control:Wind, awakening:Zap, final:Crown };
+/** Fifteen illustrated skill badges cut from the owner's approved rune UI concept. */
+function ApprovedSkillArtwork({index}:{index:number}) {
+ return <span className="rhall-approved-art" aria-hidden="true" style={{
+  backgroundImage:'url('+import.meta.env.BASE_URL+'runes/approved-skills-atlas.webp)',
+  backgroundSize:'300% 500%',
+  backgroundPosition:(index%3)*50+'% '+Math.floor(index/3)*25+'%',
+ }} />;
+}
 function CategoryBadge({groupId}:{groupId:GroupId}) {
   const Icon=badgeIcon[groupId]??Shield;
   return <span className="rhall-category-medal" aria-hidden="true"><Icon size={25} strokeWidth={2.8}/></span>;
@@ -99,10 +107,10 @@ export function RuneSkillBook({
    <div className="rhall-parchment">
      <div className="rhall-section-label"><span className="rhall-diamond">✦</span><b>{en?'BATTLE SKILLS':'БОЕВЫЕ НАВЫКИ'}</b><span className="rhall-diamond">✦</span></div>
      <div className="rhall-skills">
-      {catalog.groups.map(group=><div key={group.id} className="rhall-row" data-testid={'rune-row-'+group.id}>
+      {catalog.groups.map((group,groupIndex)=><div key={group.id} className="rhall-row" data-testid={'rune-row-'+group.id}>
         <div className="rhall-group"><CategoryBadge groupId={group.id}/><strong>{name(group,en)}</strong></div>
         <div className="rhall-options">
-         {group.skills.map(skill=>{
+         {group.skills.map((skill,skillIndex)=>{
            const equipped=selection.skillIds[group.id]===skill.id;
            const unlocked=!serverConnected||!!available?.skills[skill.id];
            return <button key={skill.id} type="button"
@@ -111,7 +119,7 @@ export function RuneSkillBook({
              aria-pressed={equipped}
              disabled={!unlocked}
              onClick={()=>setActiveSkillId(skill.id)}>
-             <span className="rhall-skill-gem"><RuneArtwork id={skill.id} equipped={equipped}/></span>
+             <span className="rhall-skill-gem"><ApprovedSkillArtwork index={groupIndex*3+skillIndex}/></span>
              {equipped&&<span className="rhall-equipped">{en?'EQUIPPED':'Экипировано'}</span>}
              {!unlocked&&<LockKeyhole className="rhall-locked" size={14}/>}
            </button>;

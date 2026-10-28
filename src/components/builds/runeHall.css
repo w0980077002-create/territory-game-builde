@@ -229,3 +229,29 @@
 .rhall-skill-facts{display:flex;gap:6px;align-items:center;color:#88613d;font-size:10px;line-height:1.3;width:100%;text-align:center;padding:6px 0}
 .rhall-skill-facts svg{flex-shrink:0}
 @media(max-width:360px){.rhall-summon-trigger{padding:4px!important;font-size:9px}.rhall-summon-trigger svg{width:13px}.rhall-scroll-tier small{font-size:7px}}
+
+
+/* 2026-10-28: LOCK THE APPROVED PARCHMENT LOOK ON MOBILE.
+   Mobile browser auto-darken used to invert yellow preview banner and turn all
+   parchment surfaces dark brown. 'only light' is an opt-out, NOT a game theme. */
+:root{color-scheme:only light}
+.rhall,.rhall *{color-scheme:only light}
+.rhall{background:#f6ddb0!important;color:#5a331c!important}
+.rhall-parchment{background:linear-gradient(100deg,#f7d9a1 0%,#fff0d0 10%,#f8dfae 52%,#fff0d0 92%,#e3bc8e 100%)!important}
+.rhall-section-label{color:#734323!important;text-shadow:0 1px #fff1d4!important}
+.rhall-skills{background:linear-gradient(110deg,#ffe8bd,#fff3d9 50%,#ffe2b0)!important;border-color:#dfb77c!important;
+  box-shadow:inset 0 0 0 2px #fff9e4,0 2px 5px #ba8959!important}
+.rhall-row{background:linear-gradient(180deg,#fff5df,#fee3b4)!important;border-bottom-color:#d6a879!important}
+.rhall-group{color:#4b2c1e!important}
+.rhall-passive-title{color:#78502b!important}
+.rhall-passive-panel{background:linear-gradient(120deg,#f9dca9,#ffeac3,#f3d19b)!important}
+.rhall-bonus{background:linear-gradient(#ffeac2,#f6d79f)!important}
+.rhall-approved-art{display:block;width:100%;height:100%;background-repeat:no-repeat;image-rendering:auto;
+  filter:drop-shadow(0 2px 1px #7d533977) saturate(1.25) contrast(1.15)}
+.rhall-skill-gem{width:64px;height:67px;display:block;position:relative}
+.rhall-skill--equipped .rhall-approved-art{
+  filter:drop-shadow(0 0 5px #ffbc38) drop-shadow(0 3px 0 #8c521c) saturate(1.35) contrast(1.16)}
+.rhall-skill--equipped:before,.rhall-skill--equipped:after{z-index:1;pointer-events:none}
+.rhall-skill{min-height:79px}
+.rhall-equipped{z-index:2;bottom:0}
+@media(max-width:360px){.rhall-skill-gem{width:52px;height:58px}.rhall-skill{min-height:71px}}

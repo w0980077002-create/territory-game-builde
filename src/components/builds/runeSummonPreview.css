@@ -143,3 +143,6 @@
   .rsim-drop{min-height:107px!important}
   .rsim-tier .rsim-art-sprite{width:29px;height:29px}
 }
+
+/* Keep the entry icon visible above the light bonus panel. */
+.rhall-scroll-gateway{z-index:1;box-shadow:inset 0 0 0 3px #6b3943,0 4px 5px #63380d88!important}
