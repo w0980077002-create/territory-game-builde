@@ -123,7 +123,7 @@ export function IdleCombatPreview() {
           </div>
         </header>
 
-        <section className="territory-idle-battlefield" style={{ backgroundImage: `url(${ASSETS}scenes/arena-viking.webp)` }} aria-label="Боевой показ">
+        <section className={`territory-idle-battlefield ${visual?.critical ? 'territory-idle-battlefield--critical' : ''}`} style={{ backgroundImage: `url(${ASSETS}scenes/arena-viking.webp)` }} aria-label="Боевой показ">
           <div className="territory-idle-vignette" />
           <div className="territory-idle-name territory-idle-name--hero"><b>Викинг</b><span>ур. 25</span></div>
           <div className="territory-idle-name territory-idle-name--foe"><b>{isBoss ? 'Тёмный жрец' : 'Гоблин-налётчик'}</b><span>{Math.round(battle.foeHp)} HP</span></div>
@@ -137,6 +137,7 @@ export function IdleCombatPreview() {
             <img src={(isBoss ? BOSS : FOE) + foePose + '.webp'} alt="Противник" draggable={false} />
           </div>
           {visual && <div key={visual.id} className={`territory-idle-impact territory-idle-impact--${visual.vfx}`}>
+            <span className="territory-idle-impact__magic" aria-hidden="true"><i /><i /><i /></span>
             <span className="territory-idle-impact__burst" aria-hidden="true">{visual.vfx === 'ice' ? '✳' : visual.vfx === 'lightning' ? 'ϟ' : visual.vfx === 'fire' ? '✹' : '✦'}</span>
             <strong>{visual.critical ? 'КРИТ! ' : '−'}{visual.number}</strong>
           </div>}
