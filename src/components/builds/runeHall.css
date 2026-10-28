@@ -1,0 +1,179 @@
+/* TERRITORY 1.0 — original illustrated Rune Hall.
+   Dedicated rhall namespace prevents old dark-card styles from bleeding in. */
+.rhall{--ink:#583119;--copper:#c38d57;--cream:#ffe8ba;position:relative;isolation:isolate;
+  min-height:100%;width:100%;padding:0 0 13px;overflow:hidden;
+  background:linear-gradient(90deg,#d8a36b 0%,#fff0cd 2%,#ffe4b1 15%,#ffebc7 50%,#ffe2b2 89%,#f8d9a5 98%,#c88d50 100%)!important;
+  color:var(--ink);font:12px/1.25 system-ui,-apple-system,sans-serif;
+  box-shadow:inset 2px 0 #fff2cf,inset -2px 0 #ffe7b8}
+.rhall *{box-sizing:border-box}
+.rhall button{font-family:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.rhall button:focus-visible{outline:3px solid #2683b1!important;outline-offset:2px}
+.rhall-temple{position:relative;height:129px;overflow:hidden;background:
+ radial-gradient(ellipse at 50% 38%,#ffe5ff98 0%,transparent 48%),
+ linear-gradient(180deg,#d5e8fb 0%,#d8c4f1 42%,#b26fdf 72%,#68358f 100%);border-bottom:9px solid #7b4929;
+ box-shadow:inset 0 -4px #d4a570,0 3px 0 #3a211b}
+.rhall-temple-art{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.rhall-temple-art:before{content:'';position:absolute;left:26%;right:26%;top:0;bottom:0;
+  background:repeating-linear-gradient(90deg,#ded5ed7e 0px,#8d78ae66 3px,transparent 4px,transparent 39px),
+ linear-gradient(90deg,#c8dcfa55,#fbccff66,#e5dafa33);
+ border-left:4px solid #685479;border-right:4px solid #6c548c;transform:perspective(300px) rotateX(6deg)}
+.rhall-temple-art:after{content:'';position:absolute;inset:0;
+  background:linear-gradient(110deg,#3a285c80 0 9%,transparent 11% 90%,#44295c88 92%),
+ radial-gradient(ellipse at 50% 16%,#ffffffbd,transparent 32%);opacity:.6}
+.rhall-banner-flag{position:absolute;top:-9px;width:55px;height:91px;z-index:1;
+  background:linear-gradient(90deg,#6429a1,#b44ae9 50%,#67219e);border:4px solid #f6c77b;
+  clip-path:polygon(0 0,100% 0,100% 70%,50% 100%,0 70%);
+  box-shadow:inset 0 0 4px #f9d2fe;color:#fbe7a8;font:bold 28px Georgia,serif;text-align:center;padding-top:21px;
+  text-shadow:0 2px #41125f}
+.rhall-banner-flag--left{left:18%}.rhall-banner-flag--right{right:18%}
+.rhall-tower{position:absolute;top:30px;bottom:0;width:30px;z-index:1;
+  background:linear-gradient(90deg,#493758,#e1d4e0 40%,#9c8dba 75%,#4b3855);
+  border-left:3px solid #473254;border-right:3px solid #5b4a68}
+.rhall-tower--left{left:7%}.rhall-tower--right{right:7%}
+.rhall-tower:before{content:'';position:absolute;top:-13px;left:-8px;right:-8px;height:18px;
+  background:linear-gradient(#a49abe,#5c4c72);border:3px solid #655371;border-radius:5px}
+.rhall-gem{position:absolute;z-index:2;width:67px;height:83px;left:50%;top:3px;
+  transform:translateX(-50%);filter:drop-shadow(0 0 10px #e866ff) drop-shadow(0 5px 2px #38154d);
+  animation:rhall-float 4s ease-in-out infinite}
+@keyframes rhall-float{0%,100%{translate:0 0}50%{translate:0 -4px}}
+.rhall-flame{position:absolute;top:70px;width:19px;height:30px;z-index:3;
+ background:radial-gradient(ellipse at 51% 76%,#fffce0 0%,#ffec5f 28%,#ffad26 56%,#ec5e1c 77%,transparent 82%);
+ clip-path:polygon(50% 0%,82% 32%,100% 72%,75% 100%,25% 100%,0 73%,26% 31%);
+ filter:drop-shadow(0 0 9px #ffa836)}
+.rhall-flame--left{left:14%}.rhall-flame--right{right:14%}
+.rhall-temple-actions{position:absolute;z-index:6;inset:7px 11px auto;display:flex;justify-content:space-between;align-items:center}
+.rhall-back,.rhall-help{display:flex;align-items:center;justify-content:center;
+  min-height:32px;border:2px solid #ffdf8a!important;border-radius:8px!important;color:#fff5d5!important;
+  background:linear-gradient(#91603c,#492814)!important;box-shadow:inset 0 1px #f2c27c,0 3px 0 #29190d;
+  text-shadow:0 1px 2px #2c160e;font-size:12px;font-weight:1000}
+.rhall-back{gap:3px;padding:0 11px 0 5px}
+.rhall-help{width:33px;border-radius:50%!important;color:#ffe7a0!important}
+.rhall-heading{position:absolute;z-index:5;display:flex;align-items:center;justify-content:center;gap:14px;
+  bottom:0;left:15%;right:15%;height:38px;padding-bottom:6px;
+  clip-path:polygon(0 23%,7% 23%,12% 0,88% 0,93% 23%,100% 23%,94% 100%,6% 100%);
+  background:linear-gradient(180deg,#db9f61 0%,#976035 8%,#5a2b17 28%,#7b3f23 75%,#3b1c12 100%);
+  box-shadow:inset 0 3px #f3d2a0;color:#ffdb72;text-shadow:1px 2px 0 #2f110f,-1px -1px #46220c;
+  font:bold 23px/1 Georgia,serif;letter-spacing:1.3px}
+.rhall-wood-nail{width:6px;height:6px;border-radius:50%;background:#dfb675;border:1px solid #4b2b1b}
+.rhall-parchment{padding:7px 7px 0;position:relative;
+  background:radial-gradient(ellipse at 50% 0%,#fff9e0cc,transparent 68%)}
+.rhall-section-label{display:flex;align-items:center;justify-content:center;gap:13px;
+ height:28px;margin-bottom:5px;white-space:nowrap;border-bottom:2px solid #deab72;
+ color:#81502c;text-shadow:0 1px #fff7dc;font:900 14px Georgia,serif;letter-spacing:.4px}
+.rhall-diamond{color:#dc9548;font-size:15px}
+.rhall-skills{border:3px solid #d9a470;border-radius:14px;background:linear-gradient(90deg,#ffe6b8,#fff0d0 52%,#fbe0b2)!important;
+ box-shadow:inset 0 0 0 2px #fff7dd,0 2px 5px #b57f4a66;overflow:hidden}
+.rhall-row{display:grid;grid-template-columns:63px minmax(0,1fr);align-items:center;gap:0;
+  min-height:77px;padding:4px 3px 3px 1px;border-bottom:2px solid #d8ab79;
+  background:linear-gradient(180deg,#fff7df4d,#ffdcaa18)!important}
+.rhall-row:last-child{border-bottom:none}
+.rhall-group{align-self:stretch;display:flex;flex-direction:column;gap:3px;justify-content:center;align-items:center;
+  padding:2px 0;color:#553b32;text-align:center;overflow:visible}
+.rhall-category-medal{display:grid;place-items:center;position:relative;width:43px;height:44px;
+  background:linear-gradient(135deg,#ffffee 0%,#eee4cf 32%,#9a8586 100%);border:3px solid #62585c;
+  border-radius:13px;box-shadow:inset 0 0 0 2px #f9f4df,0 2px 2px #865a3955;
+  clip-path:polygon(50% 0,93% 25%,93% 76%,50% 100%,7% 76%,7% 24%)}
+.rhall-category-medal svg{color:#5f555c;filter:drop-shadow(0 1px white)}
+.rhall-group strong{font-size:10px;line-height:1.02;font-weight:950;letter-spacing:-.3px;
+  color:#3e2b27;overflow-wrap:anywhere}
+.rhall-options{min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;align-items:center}
+.rhall-skill{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;
+  min-height:69px;padding:0 0 10px;border:0!important;border-radius:0;background:transparent!important;
+  box-shadow:none!important;cursor:pointer}
+.rhall-skill-gem{display:block;position:relative;width:57px;height:62px;transition:transform .12s ease-out}
+.rhall-icon{display:block;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 2px 1px #64422f77)}
+.rhall-skill:hover .rhall-skill-gem{transform:translateY(-2px)}
+.rhall-skill:active .rhall-skill-gem{transform:scale(.95)}
+.rhall-skill--equipped .rhall-icon{filter:drop-shadow(0 0 3px #e9a022) drop-shadow(0 2px 1px #5a321e)}
+.rhall-skill--equipped:before{content:'✦';position:absolute;left:1px;top:8px;color:#ffcc43;font-size:16px;text-shadow:0 0 6px #d58b15}
+.rhall-skill--equipped:after{content:'✦';position:absolute;right:1px;top:12px;color:#ffd760;font-size:13px;text-shadow:0 0 6px #d58b15}
+.rhall-equipped{position:absolute;z-index:1;bottom:0;left:0;right:0;max-width:88px;
+ margin:auto;border:2px solid #ffce65;border-radius:8px;
+ background:linear-gradient(#563519,#24190f);color:#ffe48c;padding:3px 0;
+ text-align:center;font-size:9px;line-height:1;font-weight:950;letter-spacing:-.2px;
+ box-shadow:inset 0 1px #b88442,0 2px 1px #b2804670;text-shadow:0 1px black}
+.rhall-locked{position:absolute;right:5px;top:0;color:#4d342c}
+.rhall-skill:disabled{opacity:.54}
+.rhall-passive-title{display:flex;align-items:center;gap:12px;margin:8px 5px 5px;color:#7a4c27;
+ text-shadow:0 1px #fff7d4;font:bold 13px Georgia,serif;text-align:center;white-space:nowrap}
+.rhall-passive-title span{flex:1;height:2px;background:linear-gradient(90deg,transparent,#d3a367,transparent)}
+.rhall-passive-panel{margin:0 3px 0;padding:4px 9px 6px;border:2px solid #e3b782;border-radius:13px;
+ background:linear-gradient(100deg,#f9dfb5,#ffedca 50%,#f8daad)!important;
+ box-shadow:inset 0 2px 2px #fff7df}
+.rhall-passives{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;justify-items:stretch}
+.rhall-passive{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:0;min-height:72px;gap:2px;padding:0 2px;border:1px solid transparent;border-radius:9px;
+  background:transparent!important;color:#663c2a!important}
+.rhall-passive--on{background:radial-gradient(ellipse at center,#fff4c099 0%,transparent 75%)!important}
+.rhall-passive .rhall-icon{width:51px;height:51px}
+.rhall-passive span:not(.rhall-passive-check){max-width:100%;font-size:9px;font-weight:900;line-height:1;
+ text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rhall-passive-check{position:absolute;right:8px;top:2px;color:#4ba345;background:#fff8b8;border:1px solid #9c773d;border-radius:50%}
+.rhall-passive:disabled{opacity:.54}
+.rhall-toggle{display:block;margin:2px auto 0;padding:4px 11px;border:1px solid #c6925a!important;border-radius:30px!important;
+ background:linear-gradient(#fff6de,#e6ba7e)!important;color:#794e28!important;
+ font-size:10px;font-weight:900;text-decoration:none}
+.rhall-bonus{display:grid;gap:4px;margin:7px 3px 0;padding:6px 9px 7px;
+ border:2px solid #c99960;border-radius:10px;background:linear-gradient(180deg,#ffeabf,#ebc58c)!important;
+ color:#643918;box-shadow:inset 0 2px 1px #fff8e6}
+.rhall-bonus-heading{display:flex;align-items:center;gap:5px;font:bold 12px Georgia,serif;color:#62351f}
+.rhall-bonus-heading svg{color:#bf7a26}
+.rhall-bonus-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;text-align:center}
+.rhall-bonus-grid span{white-space:nowrap;font-size:10px;font-weight:850;color:#57341e}
+.rhall-bonus-grid b{font-weight:1000;font-size:11px;color:#ad611d}
+.rhall-bonus p{margin:0;font-size:9px;color:#9d7548;font-weight:650}
+.rhall-bottom-tabs{display:flex;align-items:center;justify-content:center;gap:9px;margin:7px auto 0}
+.rhall-tab{display:flex;align-items:center;gap:6px;justify-content:center;min-width:111px;min-height:30px;
+ padding:5px 12px;clip-path:polygon(13% 0,87% 0,100% 50%,87% 100%,13% 100%,0 50%);
+ color:#ffdb76;text-shadow:0 1px #2f190b;font-size:11px;font-weight:900;
+ border:0;background:linear-gradient(#a8662d,#64361a)!important}
+.rhall-tab--on{background:linear-gradient(#e7a54a,#a56322)!important;color:#fff2a6}
+.rhall-tab--disabled{background:linear-gradient(#9f9086,#62524d)!important;color:#d1c6ba}
+.rhall-overlay{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;
+ background:#100c1cda;padding:12px;padding-top:max(12px,env(safe-area-inset-top));padding-bottom:max(12px,env(safe-area-inset-bottom));overflow:auto}
+.rhall-dialog{position:relative;display:flex;flex-direction:column;align-items:center;width:min(100%,425px);
+ max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain;
+ border:5px solid #c28846;border-radius:19px;padding:14px 14px 16px;
+ background:linear-gradient(130deg,#fff1d0,#f5d19c 55%,#ffe6be)!important;
+ color:#5c331b;box-shadow:inset 0 0 0 2px #fff2d5,0 20px 30px #0009}
+.rhall-dialog-icon{width:88px;height:92px;filter:drop-shadow(0 3px 3px #ae733a)}
+.rhall-dialog .rhall-dialog-icon svg{width:100%;height:100%}
+.rhall-dialog-group{color:#b27b38;font-weight:900;font-size:11px;text-transform:uppercase;margin-top:5px}
+.rhall-dialog h3{font:bold 22px Georgia,serif;text-align:center;color:#643818;margin:2px 25px 6px;text-shadow:0 1px #fff8dd}
+.rhall-dialog>p{width:100%;font-size:12px;color:#7b5637;text-align:center;margin:3px 0 12px;line-height:1.36}
+.rhall-dialog h4{align-self:stretch;margin:11px 0 7px;font:bold 14px Georgia,serif;color:#6b3e20}
+.rhall-close{position:absolute;z-index:3;right:8px;top:7px;display:grid;place-items:center;
+ width:34px;height:34px;border:2px solid #bf8b59!important;border-radius:50%!important;
+ background:linear-gradient(#fff6d9,#f2c992)!important;color:#6a381f!important}
+.rhall-confirm{display:flex;align-items:center;justify-content:center;gap:6px;
+ min-height:39px;width:100%;border:3px solid #f4be63!important;border-radius:11px!important;
+ background:linear-gradient(#80501b,#4a2c16)!important;color:#ffe8a2!important;
+ font-size:12px;font-weight:1000;box-shadow:inset 0 2px #ba8241}
+.rhall-confirm[aria-pressed=true]{border-color:#97b778!important;background:linear-gradient(#4c893f,#205431)!important}
+.rhall-confirm:disabled{opacity:.5}
+.rhall-rune-options{display:grid;width:100%;gap:7px}
+.rhall-rune-choice{display:grid;grid-template-columns:44px 1fr 20px;align-items:center;gap:8px;
+ min-height:57px;padding:7px;border:2px solid #d2a777!important;border-radius:10px!important;
+ background:linear-gradient(#ffedc8,#f5d5a9)!important;color:#60371d!important;text-align:left!important}
+.rhall-rune-choice--picked{border-color:#db9936!important;background:linear-gradient(#fff8df,#f4d28e)!important}
+.rhall-rune-sign{display:grid;place-items:center;width:42px;height:42px;border:2px solid #fbe3a5;
+ border-radius:12px;background:radial-gradient(#cb76ea,#65248b);color:#fff1d5;font:bold 29px Georgia,serif;text-shadow:0 2px #4d2260}
+.rhall-rune-choice strong{display:block;font-weight:900;font-size:12px}
+.rhall-rune-choice small{display:block;margin-top:3px;color:#876349;font-size:10px;line-height:1.25}
+.rhall-rune-choice:disabled{opacity:.5}
+.rhall-unpicked{font-size:23px;color:#aa7a42}
+.rhall-dialog-back{width:100%;min-height:33px;margin-top:10px;border:2px solid #d0ac78!important;border-radius:8px!important;
+ background:linear-gradient(#f9e6bf,#e2ba82)!important;color:#6e4729!important;font-size:11px;font-weight:900}
+@media(min-width:600px){.rhall-temple{height:143px}.rhall-row{min-height:89px}.rhall-skill-gem{width:65px;height:69px}}
+@media(max-width:360px){
+ .rhall-row{grid-template-columns:53px minmax(0,1fr);min-height:74px}
+ .rhall-category-medal{width:37px;height:40px}
+ .rhall-category-medal svg{width:21px}
+ .rhall-group strong{font-size:9px}
+ .rhall-skill-gem{width:49px;height:56px}
+ .rhall-equipped{font-size:8px;letter-spacing:-.4px}
+ .rhall-heading{font-size:20px}
+ .rhall-bonus-grid span{font-size:9px}
+ .rhall-skills{border-width:2px}
+}
+@media(prefers-reduced-motion:reduce){.rhall-gem{animation:none!important}.rhall-skill-gem{transition:none!important}}

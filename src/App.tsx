@@ -422,7 +422,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             : 'Прогресс не сохранён! Не закрывайте игру, проверьте сеть.'}
         </div>
       )}
-      {sub && screen !== 'arena' && (
+      {sub && screen !== 'arena' && screen !== 'runes' && (
         <header className="shrink-0 z-30 h-12 px-2 flex items-center gap-2 border-b border-amber-500/20 bg-[#0c1117]/95">
           <button disabled={battleLocked} onClick={() => setScreen(screen === 'runes' ? 'map' : 'city')} className="h-9 pl-1.5 pr-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 text-sm font-semibold text-amber-100 bg-white/5 border border-white/10 active:scale-95 transition-transform">
             <ChevronLeft className="w-4 h-4" /> {screen === 'runes' ? (language === 'en' ? 'Back to map' : 'К карте') : translate('cityBack')}
@@ -436,7 +436,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         </header>
       )}
 
-      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : screen === 'map' ? 'overflow-hidden !px-0 !py-0' : slotImmersive ? 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide !px-0 !py-0' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
+      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : screen === 'map' || screen === 'runes' ? 'overflow-y-auto overflow-x-hidden !px-0 !py-0' : slotImmersive ? 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide !px-0 !py-0' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
         <SectionErrorBoundary key={screen} language={language} onBack={() => setScreen('city')}>
         <Suspense fallback={<div role="status" className="flex min-h-32 items-center justify-center text-center text-sm text-amber-100/80">{language === 'en' ? 'Opening section…' : 'Открываем раздел…'}</div>}>
         {screen === 'city' && (
@@ -475,7 +475,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} userId={user.id}
           onForge={openForge} onProfessions={() => setScreen('professions')} onMap={() => setScreen('map')} />}
         {screen === 'hero' && <ProfileScreen key={heroTrainingOpen ? 'runes' : 'hero'} user={user} initialTrainingOpen={heroTrainingOpen} />}
-        {screen === 'runes' && <ServerRuneBook language={language} />}
+        {screen === 'runes' && <ServerRuneBook language={language} onBack={() => setScreen('map')} />}
         {screen === 'map' && <MapScreen
           attentionPlaces={[
             ...(mapForgeReady ? ['forge' as const] : []),

@@ -34,7 +34,7 @@ function compose(status:Status,choice:RuneSkillBookSelection):IdleLoadout{
   }),
  };
 }
-export function ServerRuneBook({language}:{language:'ru'|'en'}){
+export function ServerRuneBook({language,onBack}:{language:'ru'|'en';onBack?:()=>void}){
  const en=language==='en';const alive=useRef(true),saving=useRef(false);
  const [status,setStatus]=useState<Status|null>(null),[notice,setNotice]=useState(''),[version,setVersion]=useState(0);
  useEffect(()=>{
@@ -64,7 +64,7 @@ export function ServerRuneBook({language}:{language:'ru'|'en'}){
   {status&&<p role="status" className="mb-2 rounded-lg border border-amber-500/35 bg-amber-900/30 p-2 text-[11px] text-amber-100">
     {en?'Server-verified runes. Changes need server confirmation. Combat migration is separate.':'Руны проверены сервером. Выбор сохраняется только после подтверждения. Перенос самой боёвки выполняется отдельно.'}
   </p>}
-  <RuneSkillBook key={status?String(status.revision)+'/'+version:'preview'} language={language}
+  <RuneSkillBook key={status?String(status.revision)+'/'+version:'preview'} language={language} onBack={onBack}
     initialSelection={status?selections(status):undefined}
     onSelectionChange={status?(handle):undefined}
     serverConnected={!!status}
