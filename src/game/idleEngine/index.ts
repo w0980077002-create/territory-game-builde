@@ -1,8 +1,8 @@
 import type {
   IdleActor, IdleCatalog, IdleCombatEvent, IdleCombatInput, IdleCombatState, IdleEffect,
   IdleEffectType, IdleFighterState, IdleLoadout, IdleOwnership,
-} from './types';
-export type * from './types';
+} from './types.ts';
+export type * from './types.ts';
 
 const categories = ['base', 'core', 'control', 'awakening', 'final'];
 const effectTypes = ['burn', 'slow', 'mitigation', 'crit', 'magic', 'energy', 'precision', 'heal', 'interrupt', 'attack', 'defense'];

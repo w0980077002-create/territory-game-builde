@@ -51,7 +51,13 @@
     "test:wheel:browser": "node scripts/build-fortune-preview.mjs && python scripts/check-fortune-browser.py",
     "test:expansion-catalog": "node scripts/check-territory-expansion-catalog.mjs",
     "test:build-training": "node scripts/check-build-training.mjs",
-    "test:world-map": "node scripts/check-world-map.mjs"
+    "test:world-map": "node scripts/check-world-map.mjs",
+    "test:idle-engine": "node scripts/check-idle-engine.mjs",
+    "test:v1-combat": "node scripts/check-idle-engine.mjs && node scripts/check-v1-combat-sql.mjs",
+    "test:v1-auction": "node scripts/check-v1-auction-client.mjs && node scripts/check-v1-auction-sql.mjs",
+    "test:v1-progression": "node scripts/check-v1-progression-client.mjs && node scripts/check-v1-progression-sql.mjs",
+    "test:v1-monetization": "node scripts/check-v1-monetization.mjs && node scripts/check-v1-monetization-sql.mjs",
+    "test:v1-completion": "npm run test:v1-combat && npm run test:v1-auction && npm run test:v1-progression && npm run test:v1-monetization && node scripts/check-v1-integration.mjs && node scripts/check-v1-edges.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

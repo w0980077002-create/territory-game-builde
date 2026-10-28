@@ -223,4 +223,3 @@ END $$;
 REVOKE ALL ON FUNCTION territory_private.vip_combat_stats_v1(uuid,jsonb) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION territory_private.vip_combat_stats_v1(uuid,jsonb) TO service_role;
 COMMIT;
-
