@@ -241,15 +241,12 @@ END $$;
 -- Route stays disabled until BOTH the battle engine and atomic rewards are ready.
 -- Only authenticated players can read their own available real PvE encounter.
 CREATE OR REPLACE FUNCTION public.territory_combat_route_v1(p_kind text,p_enemy_id text)
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE u uuid:=auth.uid(); cfg territory_private.combat_config_v1%ROWTYPE;
   row_e territory_private.combat_encounters_v1%ROWTYPE;
   active_id uuid;
 BEGIN
- IF u IS NULL OR p_kind NOT IN ('stage','trial') OR p_enemy_id !~ '^[a-zA-Z0-9_-]{1,80}
-GRANT EXECUTE ON FUNCTION public.territory_combat_loadout_status_v1() TO authenticated;
-COMMIT;
-
+ IF u IS NULL OR p_kind NOT IN ('stage','trial') OR p_enemy_id !~ '^[a-zA-Z0-9_-]{1,80}$'
    THEN RETURN jsonb_build_object('enabled',false); END IF;
  IF NOT EXISTS(SELECT 1 FROM public.players WHERE id=u AND NOT coalesce(banned,false))
    THEN RETURN jsonb_build_object('enabled',false); END IF;
@@ -263,7 +260,6 @@ COMMIT;
     WHERE encounter_id=('territory_v1_'||p_kind||'_'||p_enemy_id) AND enabled
       AND mode IN('pve','boss') AND approval_reference IS NOT NULL;
  IF NOT FOUND THEN RETURN jsonb_build_object('enabled',false); END IF;
- -- Existing server sessions take precedence, preventing duplicate battles.
  SELECT session_id INTO active_id FROM territory_private.combat_sessions_v1
     WHERE player_id=u AND state->>'status'='fighting' LIMIT 1;
  IF active_id IS NOT NULL AND NOT EXISTS(
@@ -272,7 +268,7 @@ COMMIT;
  THEN RETURN jsonb_build_object('enabled',false); END IF;
  RETURN jsonb_build_object('enabled',true,'encounter_id',row_e.encounter_id,
     'session_id',active_id);
-END $;
+END $$;
 REVOKE ALL ON FUNCTION public.territory_combat_route_v1(text,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_combat_route_v1(text,text) TO authenticated;
 
