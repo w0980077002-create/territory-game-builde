@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Clock3, Crown, Gem, Gift, RefreshCw, Shield, Sparkles, Swords } from 'lucide-react';
 import { authenticatedProgressionClient } from '@/game/progressionV1/api';
-import { ACTIVITY_THRESHOLDS, FUND_KINDS, missingProgressionConfiguration, type FundKind, type ProgressionRequest, type ProgressionStatus } from '@/game/progressionV1';
+import { FUND_KINDS, missingProgressionConfiguration, type FundKind, type ProgressionRequest, type ProgressionStatus } from '@/game/progressionV1';
 import './progressionLive.css';
 
 type Client = Awaited<ReturnType<typeof authenticatedProgressionClient>>;
