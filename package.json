@@ -53,7 +53,7 @@
     "test:build-training": "node scripts/check-build-training.mjs",
     "test:world-map": "node scripts/check-world-map.mjs",
     "test:idle-engine": "node scripts/check-idle-engine.mjs",
-    "test:v1-combat": "node scripts/check-idle-engine.mjs && node scripts/check-v1-combat-sql.mjs",
+    "test:v1-combat": "node scripts/check-idle-engine.mjs && node scripts/check-v1-full-combat-catalog.mjs && node scripts/check-v1-combat-sql.mjs",
     "test:v1-auction": "node scripts/check-v1-auction-client.mjs && node scripts/check-v1-auction-sql.mjs",
     "test:v1-progression": "node scripts/check-v1-progression-client.mjs && node scripts/check-v1-progression-sql.mjs",
     "test:v1-monetization": "node scripts/check-v1-monetization.mjs && node scripts/check-v1-monetization-sql.mjs",
