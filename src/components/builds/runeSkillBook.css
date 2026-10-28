@@ -63,3 +63,139 @@
 .rune-book__dialog-actions button{display:block;width:100%;min-height:40px;border:1px solid #ae824b;border-radius:10px;background:#f1d2a1;font-size:12px;font-weight:800}
 @media(max-width:360px){.rune-book__row{grid-template-columns:56px minmax(0,1fr)}.rune-book__hex{width:43px;height:45px}.rune-book__hex--small{width:36px;height:37px}.rune-book__group b{font-size:9px}.rune-book__skill-name{font-size:8px}.rune-book__heading h3{font-size:16px}.rune-book__passive-grid{gap:4px}}
 @media(prefers-reduced-motion:reduce){.rune-book *, .rune-book *:before{animation:none!important;transition:none!important}}
+
+
+/* TERRITORY 1.0: October 2026 Rune Hall refresh — vibrant Viking parchment.
+   Staging-only styling: preserves the existing verified loadout contract. */
+.rune-book{
+  --rune-ink:#633716;--rune-gold:#d68f30;
+  position:relative;isolation:isolate;display:flex;flex-direction:column;gap:0;
+  padding:0 0 13px;margin:0 -12px;color:var(--rune-ink);
+  background:linear-gradient(90deg,#ca9153 0,#f0cf97 1.2%,#f9e7be 4%,#f7dfae 50%,#fbe5be 96%,#d69a5b 100%);
+  box-shadow:0 5px 16px #080d14a3,inset 0 0 0 2px #ffedc0,inset 0 0 30px #a5693040;
+  font-family:system-ui,-apple-system,sans-serif;font-size:12px;
+}
+.rune-book:before{content:'';pointer-events:none;position:absolute;top:0;left:0;right:0;height:155px;
+  background:radial-gradient(ellipse at 50% 0%,#e09affb0,transparent 67%);z-index:-1}
+.rune-book__heading{
+  position:relative;justify-content:center;min-height:140px;gap:14px;overflow:hidden;
+  padding:21px 16px 26px;margin:0 0 -1px;border:0;border-radius:0;
+  background-image:
+    radial-gradient(ellipse at 51% 6%,#ffaffd9c,transparent 53%),
+    linear-gradient(100deg,#1e1036 1%,#7c239e 19%,#bf5ef2 42%,#8025aa 75%,#2b163b 99%)!important;
+  box-shadow:inset 0 -8px 0 #a87548,inset 0 -14px 0 #563524,0 4px 0 #28190f;
+}
+.rune-book__heading:before{content:'';position:absolute;inset:6px 12% 17px;border:3px solid #fad79e60;border-top:none;
+  background:repeating-linear-gradient(90deg,transparent 0 19%,#efb9ff29 20% 21%,transparent 22% 40%);
+  clip-path:polygon(0 0,100% 0,95% 100%,5% 100%);pointer-events:none}
+.rune-book__heading:after{content:'✦';position:absolute;right:24px;top:19px;color:#fff0a7;font-size:17px;text-shadow:0 0 10px #fff}
+.rune-book__crest{
+  z-index:1;transform:rotate(0deg);width:71px;height:77px;flex-shrink:0;
+  background:linear-gradient(140deg,#ffebae 0,#b165dc 22%,#45066f 48%,#f8c48e 78%,#6b3382 100%);
+  border:0;clip-path:polygon(50% 0%,89% 21%,89% 77%,50% 100%,11% 77%,11% 21%);
+  filter:drop-shadow(0 5px 2px #100419);box-shadow:none}
+.rune-book__crest:before{content:'';position:absolute;inset:5px;background:linear-gradient(137deg,#d5a3ff 5%,#a92ae8 40%,#58148e 52%,#dd8aff 93%);
+  clip-path:inherit;box-shadow:inset 1px 1px 4px #fff}
+.rune-book__crest span{z-index:1;font:38px Georgia,serif;color:#fff5d1;text-shadow:0 2px 3px #360359,0 0 10px #ffe4ff}
+.rune-book__heading>div:nth-child(2){z-index:1}
+.rune-book__heading h3{font:bold clamp(17px,5vw,23px)/1.05 Georgia,serif;color:#fff1bb;
+  text-shadow:-2px -2px 0 #50204f,2px 3px 0 #50204f,0 4px 7px #160421}
+.rune-book__heading p{margin:8px 0 0;color:#ffe2fd;font-size:11px;font-weight:750}
+.rune-book__heading>svg{display:none}
+.rune-book__preview{order:4;display:flex;align-items:center;margin:8px 13px 0;padding:8px 10px;
+  border:1px solid #bb8947;border-radius:9px;background:#f4d49d;color:#80552d;
+  box-shadow:inset 0 1px 0 #ffebc4;font-size:10px;line-height:1.3}
+.rune-book__preview svg{color:#955821}
+.rune-book__rows{order:1;margin:9px 8px 0;padding:5px 6px 3px;border:2px solid #dbb67e;border-radius:17px;
+  background:linear-gradient(100deg,#fcebd0,#f9dbab 52%,#ffebce);
+  box-shadow:inset 0 2px 5px #fff9e6,inset 0 -2px 3px #c486504d,0 2px 3px #8e5f3666}
+.rune-book__row{grid-template-columns:66px minmax(0,1fr);gap:1px;min-height:102px;padding:5px 0;border-bottom:2px solid #d9aa70b0}
+.rune-book__row:last-child{border-bottom:none}
+.rune-book__group{gap:5px;color:#3e251d;align-self:stretch;justify-content:center}
+.rune-book__group-symbol{display:grid;place-items:center;width:51px;height:54px;
+  background:linear-gradient(135deg,#fff9ed 0%,#f2e6d7 48%,#bbb1af 100%)!important;
+  border:3px solid #665956!important;border-radius:16px!important;color:#665450!important;
+  clip-path:polygon(50% 0%,93% 23%,93% 77%,50% 100%,7% 77%,7% 23%);
+  box-shadow:0 2px 0 #b29b82,inset 0 0 0 3px #fff!important;font:bold 30px Georgia,serif!important;
+  text-shadow:0 1px 0 #fff;filter:drop-shadow(0 2px 1px #946c3a60)}
+.rune-book__group b{font-size:11px;font-weight:1000;letter-spacing:-.4px;color:#3c2923;
+  text-shadow:0 1px #fff7e6;max-width:64px;overflow-wrap:break-word}
+.rune-book__choices{grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+.rune-book__skill{min-width:0;min-height:90px;padding:5px 0 3px;gap:4px;border:0;
+  background:none!important;box-shadow:none!important}
+.rune-book__skill:active .rune-book__hex{transform:scale(.94)}
+.rune-book__skill:disabled{opacity:.56}
+.rune-book__hex{
+  width:clamp(54px,18vw,70px);height:clamp(61px,20vw,77px);
+  background:linear-gradient(135deg,#54473f 0%,#faf4d4 9%,#262a40 22%,#11172f 54%,#c2a48c 87%,#544342 100%);
+  filter:drop-shadow(0 3px 1px #734527b3);
+  clip-path:polygon(50% 0,91% 21%,91% 78%,50% 100%,9% 78%,9% 21%);
+  transition:transform .14s ease;
+}
+.rune-book__hex:before{inset:5px;clip-path:inherit;border:0;
+  background:linear-gradient(152deg,#ffffffab 0%,transparent 25%),
+  radial-gradient(ellipse at 28% 19%,var(--rune-light),var(--rune-dark) 72%)}
+.rune-book__hex:after{content:'';position:absolute;inset:10px;clip-path:inherit;
+  border-top:2px solid #fff8;filter:drop-shadow(0 2px 2px #120e19)}
+.rune-book__hex svg{z-index:1;width:38px;height:38px;color:#fff8e7;stroke:#fff1de;
+  stroke-width:2.8px;filter:drop-shadow(2px 3px 0 #2f183888) drop-shadow(0 0 4px var(--rune-light))}
+.rune-book__hex--ember{--rune-light:#ffe071;--rune-dark:#d45c13}
+.rune-book__hex--frost{--rune-light:#a7f5ff;--rune-dark:#1554ba}
+.rune-book__hex--gold{--rune-light:#ffe987;--rune-dark:#be801e}
+.rune-book__hex--violet{--rune-light:#f2baff;--rune-dark:#6223ad}
+.rune-book__hex--forest{--rune-light:#baff71;--rune-dark:#20862f}
+.rune-book__skill--equipped .rune-book__hex{
+  background:linear-gradient(120deg,#b66b00 0%,#fff5a5 20%,#e2a52e 44%,#fff4ad 70%,#a55803 100%);
+  filter:drop-shadow(0 0 5px #ffd046de) drop-shadow(0 4px 1px #98672980);
+}
+.rune-book__skill--equipped .rune-book__hex:before{inset:6px}
+.rune-book__equipped{top:1px;right:calc(50% - 32px);width:15px;height:15px;background:#fff0a6;border:2px solid #bc751f;color:#9c551e;z-index:2}
+.rune-book__skill-name{width:100%;height:13px;min-height:13px;line-height:13px;font-size:9px;
+  font-weight:1000;color:#5e4026;text-shadow:0 1px #fff8e8;white-space:nowrap;overflow:hidden;
+  display:block;text-overflow:ellipsis}
+.rune-book__skill--equipped .rune-book__skill-name{color:#553008;font-size:10px;text-shadow:0 1px #ffeeba}
+.rune-book__skill:not(.rune-book__skill--equipped) .rune-book__skill-name{font-size:0}
+.rune-book__skill:not(.rune-book__skill--equipped) .rune-book__skill-name:after{content:''}
+.rune-book__passives{order:2;margin:8px 9px 0;padding:14px 10px 9px;border:0;border-radius:12px;
+  background:linear-gradient(125deg,#f9dbab,#ffedce 45%,#efd0a1);box-shadow:inset 0 1px 2px #c89555}
+.rune-book__passives h4{font:900 13px Georgia,serif;color:#655037;gap:7px;margin-bottom:11px;white-space:nowrap}
+.rune-book__subtitle-line{flex:1;height:2px;background:linear-gradient(90deg,transparent,#c49c65,transparent)}
+.rune-book__passive-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.rune-book__passive{min-height:86px;padding:4px 1px;gap:4px;border:1px solid transparent;border-radius:12px;
+  background:transparent;box-shadow:none;justify-content:flex-start}
+.rune-book__passive--equipped{background:radial-gradient(ellipse at 50% 24%,#fff4c9,#f6dbb059 65%,transparent);
+  border-color:#d6ae69;box-shadow:none}
+.rune-book__passive .rune-book__hex--small{width:56px;height:60px;filter:drop-shadow(0 2px 2px #9e64344d);
+  background:linear-gradient(135deg,#ffc98e,#a52e54 40%,#4c173b 85%,#fec06f)}
+.rune-book__passive .rune-book__hex--small:before{background:linear-gradient(140deg,#f4b6d5,#c72d7e 54%,#7e1757)}
+.rune-book__passive .rune-book__hex--small svg{width:32px;height:32px;stroke:#fff0c0}
+.rune-book__passive>span:nth-child(2){color:#603d24;font-size:10px;line-height:1.1}
+.rune-book__passive>svg{color:#229341;right:10px;top:5px}
+.rune-book__passive:disabled{opacity:.55}
+.rune-book__passive-toggle{display:block;margin:4px auto 0;padding:5px 12px;border:1px solid #bf966a;
+  border-radius:15px;background:linear-gradient(#fff0d0,#ecc796);color:#704520;font-size:10px;font-weight:850}
+.rune-book__bonuses{order:3;margin:10px 10px 0;border:2px solid #c29a65;border-radius:10px;
+  background:linear-gradient(#f7deb0,#f5d8a2);box-shadow:inset 0 2px 1px #fff4dc;padding:8px 10px}
+.rune-book__bonus-title{display:flex;align-items:center;gap:6px;color:#513019;font-size:12px;font-weight:950;
+  text-shadow:0 1px #fff0d7}
+.rune-book__bonus-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:6px}
+.rune-book__bonus-stats span{font-size:10px;color:#72482a;text-align:center;white-space:nowrap}
+.rune-book__bonus-stats b{color:#5e2e14;font-weight:1000;font-size:12px}
+.rune-book__footer{order:5;margin:8px 10px 0;color:#8b5f36;text-align:center;font-size:10px}
+.rune-book__overlay{order:6}
+.rune-book__dialog{border:3px solid #ae7945;border-radius:16px;background:linear-gradient(#ffebc9,#f4d9a7);box-shadow:0 10px 30px #000a}
+.rune-book__dialog .rune-book__hex{width:57px;height:62px}
+.rune-book__dialog .rune-book__hex svg{width:32px;height:32px}
+.rune-book__rune-option{background:linear-gradient(#ffe6ba,#f4d3a0);border-color:#c99f6f}
+.rune-book__rune-option--selected{border-color:#f4b321;background:linear-gradient(#fff2d3,#f5d292)}
+@media(max-width:360px){
+ .rune-book{margin-left:-12px;margin-right:-12px}
+ .rune-book__row{grid-template-columns:54px minmax(0,1fr);min-height:96px}
+ .rune-book__group-symbol{width:43px;height:47px;font-size:24px!important}
+ .rune-book__group b{font-size:9px}
+ .rune-book__hex{width:47px;height:55px}
+ .rune-book__hex svg{width:28px;height:28px}
+ .rune-book__skill--equipped .rune-book__skill-name{font-size:8px}
+ .rune-book__heading{padding-left:8px;padding-right:8px}
+}
+@media(prefers-reduced-motion:reduce){.rune-book__hex{transition:none}}
