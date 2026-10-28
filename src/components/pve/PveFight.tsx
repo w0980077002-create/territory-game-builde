@@ -21,6 +21,8 @@ import { Currency } from '@/components/ui/Currency';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { beginReferralFight, finishReferralFight, type ReferralRound } from '@/game/referrals';
 import { captureGameEvent } from '@/game/analytics';
+import { supabase } from '@/game/supabase';
+import { ServerPveFight } from './ServerPveFight';
 
 export type FightKind = 'stage' | 'trial';
 
@@ -79,7 +81,42 @@ function ZoneBtn({ label, sub, on, tone, disabled, onClick }: { label: string; s
   );
 }
 
-export function PveFight({ enemy, kind, onExit, onNext }: Props) {
+/** All real server-vs-legacy switches are fail-closed. Default is the
+ * original rewarded fight, without any additional network request.
+ * The new route can ONLY be used after reviewed server atomic settlement.
+ */
+const SERVER_COMBAT_OPT_IN = import.meta.env.VITE_TERRITORY_V1_SERVER_COMBAT === 'verified';
+type BattleRoute = 'checking' | 'legacy' | { encounterId: string; sessionId: string | null };
+
+export function PveFight(props: Props) {
+  const { enemy, kind, onExit, onNext } = props;
+  const { language } = useLanguage();
+  const [route, setRoute] = useState<BattleRoute>(SERVER_COMBAT_OPT_IN ? 'checking' : 'legacy');
+  useEffect(() => {
+    if (!SERVER_COMBAT_OPT_IN) return;
+    let active = true;
+    setRoute('checking');
+    void supabase.rpc('territory_combat_route_v1', { p_kind: kind, p_enemy_id: enemy.id })
+      .then(({data, error}) => {
+        if (!active) return;
+        if (error || data?.enabled !== true || typeof data.encounter_id !== 'string'
+          || !/^territory_v1_(stage|trial)_[a-zA-Z0-9_-]{1,80}$/.test(data.encounter_id)
+          || (data.session_id !== null && typeof data.session_id !== 'string')) {
+          setRoute('legacy');
+          return;
+        }
+        setRoute({encounterId:data.encounter_id, sessionId:data.session_id});
+      }).catch(() => { if (active) setRoute('legacy'); });
+    return () => {active = false;};
+  },[enemy.id,kind]);
+  if (route === 'checking') return <div className="rounded-xl bg-black/30 p-5 text-center text-sm text-amber-100"
+    role="status">{language === 'en' ? 'Checking the battle server…' : 'Проверяем боевой сервер…'}</div>;
+  if (route !== 'legacy') return <ServerPveFight enemy={enemy} kind={kind}
+    encounterId={route.encounterId} sessionId={route.sessionId} onExit={onExit} onNext={onNext}/>;
+  return <LegacyPveFight {...props}/>;
+}
+
+function LegacyPveFight({ enemy, kind, onExit, onNext }: Props) {
   const { language } = useLanguage();
   const state = useStore(useGame);
   const arena = useStore(useArena);
