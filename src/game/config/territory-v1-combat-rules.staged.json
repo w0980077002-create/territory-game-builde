@@ -1,0 +1,21 @@
+{
+  "stepMs": 50,
+  "maxDurationMs": 120000,
+  "approachMs": 450,
+  "attackIntervalMs": 1450,
+  "basicWindupMs": 250,
+  "basicMultiplier": 1,
+  "defenseFactor": 0.45,
+  "magicDefenseFactor": 0.25,
+  "minimumDamage": 1,
+  "critMultiplier": 1.7,
+  "blockMultiplier": 0.55,
+  "maxEnergy": 100,
+  "initialEnergy": 45,
+  "energyPerSecond": 6,
+  "modeDamageMultiplier": {
+    "pve": 1,
+    "boss": 0.9,
+    "pvp": 0.7
+  }
+}
