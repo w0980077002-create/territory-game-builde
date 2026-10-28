@@ -81,7 +81,7 @@ export function ProgressionLive({language, tab}: {language:'ru'|'en'; tab:'daily
         <span>{en?'Activity points':'Очки активности'}</span>
       </div>
       {tab==='daily' && <div className="progression-live__activity-list">
-        {status.activities.map(a=><div key={a.id}><Check size={13}/><span>{a.id.replaceAll('_',' ')}</span><b>{Math.min(a.current,a.target)}/{a.target}</b></div>)}
+        {status.activities.map(a=><div key={a.id}><Check size={13}/><span>{a.id.replace(/_/g,' ')}</span><b>{Math.min(a.current,a.target)}/{a.target}</b></div>)}
       </div>}
       <div className="progression-live__rewards">
         {rewards.map(r=>{
