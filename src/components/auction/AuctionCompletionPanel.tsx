@@ -32,7 +32,6 @@ export function AuctionCompletionPanel({tab,language}:{tab:TradeTab;language:'ru
   const [currency,setCurrency]=useState<AuctionCurrency>('gold');
   const [price,setPrice]=useState('100');
   const [amount,setAmount]=useState('1');
-  const [itemName,setItemName]=useState('');
   const [duration,setDuration]=useState(86400);
   const format=(v:number)=>v.toLocaleString(en?'en-US':'ru-RU');
   const refresh=useCallback(async(next:AuctionCompletionFilters={})=>{
@@ -127,7 +126,7 @@ export function AuctionCompletionPanel({tab,language}:{tab:TradeTab;language:'ru
           </select></label>
         </div>
         {currency!=='gold'&&<p>{en?'Gem prices must be multiples of 10.':'Цена в алмазах должна быть кратной 10.'}</p>}
-        {overview.items.map(item=><button type="button" key={item.source+item.item_id} disabled={!validPrice||!!pending||busy||!recoveryReady} onClick={()=>void execute(makeAction(item.item_id,item.source as 'stage3'|'stage8'))}>
+        {overview.items.filter(item=>item.source==='stage3'||item.source==='stage8').map(item=><button type="button" key={item.source+item.item_id} disabled={!validPrice||!!pending||busy||!recoveryReady} onClick={()=>void execute(makeAction(item.item_id,item.source as 'stage3'|'stage8'))}>
           <Package size={15}/> {item.item.customName??item.item.name??(en?'Crafted item':'Изделие мастера')} — {en?'Sell':'Продать'}
         </button>)}
         {Object.entries(overview.resources).filter(([,q])=>(q??0)>0).length>0&&<div className="auction-completion__resources">
