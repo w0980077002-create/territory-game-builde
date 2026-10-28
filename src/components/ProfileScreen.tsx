@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 import { APPEARANCE_PRESETS, getPlayableAppearance, getAppearanceIcon } from '@/game/appearance';
 
 const BuildTrainingPanel = lazy(() => import('./builds/BuildTrainingPanel').then(module => ({ default: module.BuildTrainingPanel })));
-const RuneSkillBook = lazy(() => import('./builds/RuneSkillBook').then(module => ({ default: module.RuneSkillBook })));
+const RuneSkillBook = lazy(() => import('./builds/ServerRuneBook').then(module => ({ default: module.ServerRuneBook })));
 
 export function ProfileScreen({ user, initialTrainingOpen = false }: { user: AuthUser; initialTrainingOpen?: boolean }) {
   const { t, language } = useLanguage();
