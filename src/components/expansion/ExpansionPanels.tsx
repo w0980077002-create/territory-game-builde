@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Anchor, Check, ChevronDown, Clock3, Coins, Crown, Gem, LockKeyhole, Package, ScrollText, Shield, ShipWheel, Sparkles, Swords, Trash2 } from 'lucide-react';
+import { Anchor, Check, ChevronDown, Clock3, Coins, Crown, Gem, LockKeyhole, Package, ScrollText, Shield, ShipWheel, Sparkles, Trash2 } from 'lucide-react';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import './expansionPanels.css';
 
