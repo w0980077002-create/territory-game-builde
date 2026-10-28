@@ -96,7 +96,7 @@ export function PveFight(props: Props) {
     if (!SERVER_COMBAT_OPT_IN) return;
     let active = true;
     setRoute('checking');
-    void supabase.rpc('territory_combat_route_v1', { p_kind: kind, p_enemy_id: enemy.id })
+    void Promise.resolve(supabase.rpc('territory_combat_route_v1', { p_kind: kind, p_enemy_id: enemy.id }))
       .then(({data, error}) => {
         if (!active) return;
         if (error || data?.enabled !== true || typeof data.encounter_id !== 'string'
