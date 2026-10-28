@@ -146,8 +146,8 @@ export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes, attentio
   // one wake-up near completion. Return from Telegram's background state is
   // handled below so a throttled timer cannot hide a finished gather.
   useEffect(() => {
-    const finishesAt = gather?.active?.finishes_at;
-    if (!finishesAt) return;
+    if (!gather?.active) return;
+    const finishesAt = gather.active.finishes_at;
     const dueAt = Date.parse(finishesAt) - serverOffset;
     if (!Number.isFinite(dueAt)) return;
     const detailOpen = selected !== null && selected !== 'chamber';
