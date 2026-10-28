@@ -346,4 +346,33 @@ for (const key of ['runes', 'passives']) {
   assert.ok(validateIdleLoadout(loadout, duplicateCatalog).length, `duplicate ${key} catalog IDs rejected`);
   assert.equal(createIdleCombat(input({ catalog: duplicateCatalog, loadout })).phase, 'invalid');
 }
-console.log('Idle engine tests passed: deterministic timing, loadout limits, effects, cooldowns, HP ledger, death, stage simulation and renderer events.');
+
+// Multi-hit skills have real independent contacts, not repeated cosmetic damage labels.
+const comboConfig = singleSkillConfig({ hitCount: 3, hitGapMs: 80, cooldownMs: 5000,
+  windupMs: 20, multiplier: 2.1,
+  effects: [{ type: 'slow', strength: 0.25, durationMs: 500 }] },
+{ cooldownMs: 500, effects: [{ type: 'magic', strength: 5 }] },
+{ hero: stats({ attackIntervalMs: 1000 }), enemy: stats({ attack: 0, defense: 0 }) });
+const combo = run(comboConfig, [400]);
+const comboStarts = combo.events.filter(event => event.type === 'attack_start' && event.actor === 'hero');
+const comboImpacts = combo.events.filter(event => event.type === 'impact' && event.actor === 'hero' && event.source === 'attack');
+assert.equal(comboStarts.length, 1, 'triple combo spends a single skill cast');
+assert.deepEqual(comboImpacts.map(event => event.hitIndex), [1, 2, 3], 'all three physical strikes resolve independently');
+assert.ok(comboImpacts.every(event => event.hitCount === 3));
+assert.deepEqual(comboImpacts.map(event => event.atMs - comboImpacts[0].atMs), [0, 80, 160]);
+assert.equal(new Set(comboImpacts.map(event => event.contactId)).size, 3, 'each hit has unique correlation ID');
+assert.equal(combo.events.filter(event => event.source === 'slow' && event.type === 'status_apply').length, 1,
+  'skill status is applied only after the final contact');
+assert.equal(combo.events.filter(event => event.type === 'rune_proc').length, 1, 'rune cooldown prevents free extra procs');
+assert.deepEqual(run(comboConfig, [400]), run(comboConfig, [100, 80, 20, 200]), 'combos are frame-rate independent');
+hpLedger(combo, 100000, 100000);
+const lethalCombo = run(singleSkillConfig({ hitCount: 3, hitGapMs: 80, windupMs: 20, multiplier: 3 },
+  undefined, { enemy: stats({ maxHp: 1, defense: 0, attack: 0 }) }), [500]);
+assert.equal(lethalCombo.events.filter(event => event.type === 'impact' && event.actor === 'hero').length, 1,
+  'lethal first strike cancels the rest of a combo');
+assert.equal(lethalCombo.state.phase, 'victory');
+for (const badHits of [0, 1.5, 4, Infinity, -1]) {
+  const malformed = singleSkillConfig({ hitCount: badHits });
+  assert.ok(validateIdleLoadout(malformed.loadout, malformed.catalog).length, `invalid hitCount ${badHits} rejected`);
+}
+console.log('Idle engine tests passed: deterministic timing, loadout limits, multi-hit combos, effects, cooldowns, HP ledger, death and renderer events.');

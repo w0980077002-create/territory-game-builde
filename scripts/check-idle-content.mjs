@@ -63,6 +63,8 @@ assert.ok(results.some((event) => event.type === 'attack_start' && event.actor =
 assert.ok(results.some((event) => event.type === 'attack_start' && event.actor === 'enemy'));
 assert.ok(results.some((event) => event.type === 'impact' && event.source === 'attack'));
 assert.ok(results.some((event) => event.type === 'rune_proc'), 'equipped runes must produce real events');
+assert.ok(results.some((event) => event.type === 'impact' && event.skillId === 'double_cleave' && event.hitIndex === 2),
+  'default double-cleave must have a second real, separately calculated strike');
 assert.ok(results.filter((event) => event.type === 'impact').every((event) => Number.isFinite(event.hpAfter)));
 const runeTest = bridge.createPreviewLoadout({ ...DEFAULT_SKILLS, base: 'hunter_lunge' }, { hunter_lunge: ['storm_core'] });
 assert.ok(engine.validateIdleLoadout(runeTest, catalog).length > 0, 'wrong rune category must be rejected');

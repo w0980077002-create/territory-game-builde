@@ -13,6 +13,8 @@ export type IdleSkillContent = {
   vfx: CombatVfx;
   cooldownSeconds: number;
   energyCost: number;
+  hits?: number;
+  hitGapMs?: number;
   hue: number;
 };
 
@@ -43,9 +45,9 @@ export const BRANCHES: ReadonlyArray<{ id: SkillBranch; title: string; short: st
 ];
 
 export const IDLE_SKILLS: ReadonlyArray<IdleSkillContent> = [
-  { id: 'double_cleave', branch: 'base', name: 'Двойной рубящий', description: 'Два стремительных удара с переменой стойки.', symbol: '⚔', vfx: 'steel', cooldownSeconds: 2.5, energyCost: 0, hue: 38 },
+  { id: 'double_cleave', branch: 'base', name: 'Двойной рубящий', description: 'Два стремительных удара с переменой стойки.', symbol: '⚔', vfx: 'steel', cooldownSeconds: 2.5, energyCost: 0, hits: 2, hitGapMs: 220, hue: 38 },
   { id: 'hunter_lunge', branch: 'base', name: 'Выпад охотника', description: 'Рывок вперёд и точный удар по слабому месту.', symbol: '➶', vfx: 'precision', cooldownSeconds: 3, energyCost: 0, hue: 195 },
-  { id: 'axe_circle', branch: 'base', name: 'Круг секиры', description: 'Размашистый удар, способный задеть группу врагов.', symbol: '✶', vfx: 'wind', cooldownSeconds: 4, energyCost: 0, hue: 118 },
+  { id: 'axe_circle', branch: 'base', name: 'Круг секиры', description: 'Два размашистых удара по противнику.', symbol: '✶', vfx: 'wind', cooldownSeconds: 4, energyCost: 0, hits: 2, hitGapMs: 240, hue: 118 },
 
   { id: 'forge_heat', branch: 'core', name: 'Жар кузни', description: 'Оружие вспыхивает и оставляет огненный след.', symbol: '♨', vfx: 'fire', cooldownSeconds: 7, energyCost: 14, hue: 18 },
   { id: 'storm_spark', branch: 'core', name: 'Искра бури', description: 'С меча срывается разряд северной грозы.', symbol: 'ϟ', vfx: 'lightning', cooldownSeconds: 8, energyCost: 16, hue: 210 },
@@ -53,15 +55,15 @@ export const IDLE_SKILLS: ReadonlyArray<IdleSkillContent> = [
 
   { id: 'ice_shackles', branch: 'control', name: 'Ледяные оковы', description: 'Мороз сковывает врага и мешает ответить.', symbol: '❄', vfx: 'ice', cooldownSeconds: 9, energyCost: 18, hue: 197 },
   { id: 'ancestral_shield', branch: 'control', name: 'Щит предков', description: 'Блокирует натиск и открывает окно контратаки.', symbol: '⬡', vfx: 'shield', cooldownSeconds: 9, energyCost: 12, hue: 47 },
-  { id: 'wolf_charge', branch: 'control', name: 'Волчий наскок', description: 'Резкий бросок сбивает противника с ритма.', symbol: '♜', vfx: 'wolf', cooldownSeconds: 8, energyCost: 15, hue: 125 },
+  { id: 'wolf_charge', branch: 'control', name: 'Волчий наскок', description: 'Рывок с двумя быстрыми ударами сбивает противника с ритма.', symbol: '♜', vfx: 'wolf', cooldownSeconds: 8, energyCost: 15, hits: 2, hitGapMs: 180, hue: 125 },
 
-  { id: 'berserker_fury', branch: 'awakening', name: 'Ярость берсерка', description: 'Короткая серия быстрых и мощных атак.', symbol: '✹', vfx: 'fire', cooldownSeconds: 17, energyCost: 26, hue: 8 },
+  { id: 'berserker_fury', branch: 'awakening', name: 'Ярость берсерка', description: 'Три быстрых удара с нарастающим напором.', symbol: '✹', vfx: 'fire', cooldownSeconds: 17, energyCost: 26, hits: 3, hitGapMs: 160, hue: 8 },
   { id: 'jarl_resolve', branch: 'awakening', name: 'Сила ярла', description: 'Герой занимает крепкую защитную позицию.', symbol: '♛', vfx: 'shield', cooldownSeconds: 18, energyCost: 22, hue: 42 },
   { id: 'valkyrie_song', branch: 'awakening', name: 'Песнь валькирии', description: 'Золотой свет поддерживает здоровье и дух.', symbol: '✧', vfx: 'heal', cooldownSeconds: 20, energyCost: 24, hue: 293 },
 
   { id: 'thunder_wrath', branch: 'final', name: 'Гнев грома', description: 'Один сокрушительный удар с громовым разрядом.', symbol: 'ϟ', vfx: 'lightning', cooldownSeconds: 25, energyCost: 40, hue: 225 },
-  { id: 'northern_blizzard', branch: 'final', name: 'Метель севера', description: 'Вихрь ледяных клинков поражает цель.', symbol: '❅', vfx: 'ice', cooldownSeconds: 27, energyCost: 38, hue: 192 },
-  { id: 'burning_axe', branch: 'final', name: 'Пылающая секира', description: 'Тяжёлый рубящий удар в огненном вихре.', symbol: '☄', vfx: 'fire', cooldownSeconds: 26, energyCost: 42, hue: 24 },
+  { id: 'northern_blizzard', branch: 'final', name: 'Метель севера', description: 'Три ледяных удара кружат вокруг врага.', symbol: '❅', vfx: 'ice', cooldownSeconds: 27, energyCost: 38, hits: 3, hitGapMs: 190, hue: 192 },
+  { id: 'burning_axe', branch: 'final', name: 'Пылающая секира', description: 'Два тяжёлых рубящих удара в огненном вихре.', symbol: '☄', vfx: 'fire', cooldownSeconds: 26, energyCost: 42, hits: 2, hitGapMs: 210, hue: 24 },
 ];
 
 export const IDLE_RUNES: ReadonlyArray<IdleRuneContent> = [

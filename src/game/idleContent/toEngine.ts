@@ -39,7 +39,8 @@ export function createPreviewCatalog(): IdleCatalog {
       id: skill.id, category: skill.branch, cooldownMs: second(skill.cooldownSeconds),
       energyCost: skill.energyCost, priority: 6 - ['base', 'core', 'control', 'awakening', 'final'].indexOf(skill.branch),
       multiplier: skill.branch === 'final' ? 2.2 : skill.branch === 'awakening' ? 1.7 : skill.branch === 'base' ? 1.35 : 0.9,
-      windupMs: skill.branch === 'final' ? 400 : 230, effects: skillEffects[skill.id], vfxKey: skill.vfx,
+      windupMs: skill.branch === 'final' ? 400 : 230, hitCount: skill.hits, hitGapMs: skill.hitGapMs,
+      effects: skillEffects[skill.id], vfxKey: skill.vfx,
     })),
     runes: IDLE_RUNES.map((rune) => ({
       id: rune.id, categories: [...rune.compatible], chance: 0.7, cooldownMs: 3000,

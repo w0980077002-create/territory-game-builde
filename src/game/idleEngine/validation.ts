@@ -39,6 +39,8 @@ export function validateIdleLoadout(loadout: IdleLoadout, catalog: IdleCatalog):
       || (s.priority !== undefined && !number(s.priority, -1e9))
       || (s.multiplier !== undefined && !number(s.multiplier))
       || (s.windupMs !== undefined && !number(s.windupMs)) || !effects(s.effects)
+      || (s.hitCount !== undefined && (!number(s.hitCount, 1, 3) || !Number.isInteger(s.hitCount)))
+      || (s.hitGapMs !== undefined && !number(s.hitGapMs, 20, 3000))
       || (s.vfxKey !== undefined && !id(s.vfxKey))
       || (s.condition !== undefined && (!record(s.condition) || Object.entries(s.condition).some(([k, v]) =>
         !['selfHpBelow', 'enemyHpBelow', 'energyAtLeast'].includes(k) || !number(v, 0, k === 'energyAtLeast' ? 1e9 : 1))))) {

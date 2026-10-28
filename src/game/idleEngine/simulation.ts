@@ -42,7 +42,8 @@ function catalogSnapshot(catalog: IdleCatalog): IdleCatalog {
   return copy({
     skills: catalog.skills.map(s => ({ id: s.id, category: s.category, cooldownMs: s.cooldownMs,
       energyCost: s.energyCost, priority: s.priority, condition: s.condition && { ...s.condition },
-      multiplier: s.multiplier, windupMs: s.windupMs, effects: s.effects?.map(effect), vfxKey: s.vfxKey })),
+      multiplier: s.multiplier, windupMs: s.windupMs, hitCount: s.hitCount,
+      hitGapMs: s.hitGapMs, effects: s.effects?.map(effect), vfxKey: s.vfxKey })),
     runes: catalog.runes.map(r => ({ id: r.id, skillIds: r.skillIds && [...r.skillIds], categories: r.categories && [...r.categories],
       chance: r.chance, cooldownMs: r.cooldownMs, effects: r.effects.map(effect), vfxKey: r.vfxKey })),
     passives: catalog.passives.map(p => ({ id: p.id, modifiers: { ...p.modifiers } })),
@@ -190,44 +191,53 @@ function beginAttack(s: IdleCombatState, events: IdleCombatEvent[], actor: IdleA
     f.cooldowns[`skill:${skill.id}`] = s.timeMs + time(skill.cooldownMs, STEP_MS);
   }
   const windup = time(skill?.windupMs ?? f.stats.windupMs, STEP_MS);
+  const hitCount = skill?.hitCount ?? 1;
+  const hitGapMs = time(skill?.hitGapMs, 160);
   const interval = time(f.stats.attackIntervalMs / (1 - slow), STEP_MS);
   const event = emit(s, events, actor, 'attack_start', { target: other(actor), skillId: skill?.id,
-    value: windup, vfxKey: skill?.vfxKey });
+    value: windup, vfxKey: skill?.vfxKey, hitCount });
   event.contactId = event.id;
-  f.pendingAttack = { atMs: s.timeMs + windup, skillId: skill?.id, contactId: event.id };
-  f.readyAtMs = s.timeMs + Math.max(interval, windup + STEP_MS);
+  f.pendingAttack = { atMs: s.timeMs + windup, skillId: skill?.id, contactId: event.id,
+    hitIndex: 1, hitCount, hitGapMs };
+  f.readyAtMs = s.timeMs + Math.max(interval, windup + (hitCount - 1) * hitGapMs + STEP_MS);
 }
 function contact(s: IdleCombatState, events: IdleCombatEvent[], actor: IdleActor): void {
   const attacker = s[actor];
   const pending = attacker.pendingAttack;
   if (!pending || pending.atMs > s.timeMs) return;
-  delete attacker.pendingAttack;
+  const hitIndex = pending.hitIndex ?? 1;
+  const hitCount = pending.hitCount ?? 1;
+  const contactId = hitIndex === 1 ? pending.contactId : `${pending.contactId}:hit${hitIndex}`;
+  if (hitIndex < hitCount) {
+    attacker.pendingAttack = { ...pending, atMs: s.timeMs + (pending.hitGapMs ?? 160), hitIndex: hitIndex + 1 };
+  } else delete attacker.pendingAttack;
   const target = other(actor);
   const defender = s[target];
   const skill = pending.skillId ? s.catalog.skills.find(sk => sk.id === pending.skillId) : undefined;
-  const detail = { skillId: skill?.id, contactId: pending.contactId, vfxKey: skill?.vfxKey, source: 'attack' as const };
+  const detail = { skillId: skill?.id, contactId, hitIndex, hitCount,
+    vfxKey: skill?.vfxKey, source: 'attack' as const };
   const precision = chance(attacker.stats.precision + bonus(s, actor, 'precision'));
   const multiplier = skill ? skill.multiplier ?? 0 : 1;
   if (multiplier > 0 && roll(s, defender.stats.dodgeChance * (1 - precision))) {
-    emit(s, events, target, 'dodge', { target: actor, skillId: skill?.id, contactId: pending.contactId });
+    emit(s, events, target, 'dodge', { target: actor, skillId: skill?.id, contactId, hitIndex, hitCount });
     damage(s, events, actor, target, 0, detail);
     return;
   }
   // Effects-only skills still make one zero-value contact, with no fictitious critical/block.
-  let amount = finite(attacker.stats.attack * multiplier);
+  let amount = finite(attacker.stats.attack * multiplier / hitCount);
   if (amount > 0 && roll(s, chance(attacker.stats.critChance + bonus(s, actor, 'crit')))) {
     amount = finite(amount * attacker.stats.criticalMultiplier);
-    emit(s, events, actor, 'critical', { target, skillId: skill?.id, contactId: pending.contactId });
+    emit(s, events, actor, 'critical', { target, skillId: skill?.id, contactId, hitIndex, hitCount });
   }
   amount = Math.max(0, amount - defender.stats.defense);
   if (multiplier > 0 && roll(s, defender.stats.blockChance * (1 - precision))) {
     amount *= 1 - defender.stats.blockReduction;
-    emit(s, events, target, 'block', { target: actor, skillId: skill?.id, contactId: pending.contactId });
+    emit(s, events, target, 'block', { target: actor, skillId: skill?.id, contactId, hitIndex, hitCount });
   }
   amount *= 1 - bonus(s, target, 'mitigation');
   damage(s, events, actor, target, amount, detail);
   if (s.phase !== 'combat' || !skill) return;
-  applyEffects(s, events, actor, skill.effects ?? [], skill.id, undefined, pending.contactId);
+  if (hitIndex === hitCount) applyEffects(s, events, actor, skill.effects ?? [], skill.id, undefined, contactId);
   if (s.phase !== 'combat') return;
   const slot = s.loadout.active.find(a => a.skillId === skill.id)!;
   // Only primary skill contacts can proc attached runes. Rune damage and status ticks never recurse.
@@ -236,10 +246,10 @@ function contact(s: IdleCombatState, events: IdleCombatEvent[], actor: IdleActor
     const rune = s.catalog.runes.find(r => r.id === runeId)!;
     const key = JSON.stringify([skill.id, rune.id]);
     if ((attacker.runeCooldowns[key] ?? 0) > s.timeMs || !roll(s, rune.chance)) continue;
-    applyEffects(s, events, actor, rune.effects, skill.id, rune.id, pending.contactId, () => {
+    applyEffects(s, events, actor, rune.effects, skill.id, rune.id, contactId, () => {
       attacker.runeCooldowns[key] = s.timeMs + time(rune.cooldownMs, STEP_MS);
       emit(s, events, actor, 'rune_proc', { target, skillId: skill.id, runeId: rune.id,
-        contactId: pending.contactId, vfxKey: rune.vfxKey });
+        contactId, hitIndex, hitCount, vfxKey: rune.vfxKey });
     });
   }
 }

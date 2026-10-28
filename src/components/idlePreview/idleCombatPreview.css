@@ -24,6 +24,8 @@
 .territory-idle-hero img,.territory-idle-foe img,.territory-idle-follower img{width:100%;height:100%;object-fit:contain;object-position:bottom;user-select:none;pointer-events:none}
 .territory-idle-pose--idle{animation:territoryIdleBreathe 2.4s ease-in-out infinite}
 .territory-idle-pose--attack{animation:territoryIdleLunge .65s cubic-bezier(.16,.85,.32,1) both}
+.territory-idle-pose--attack.territory-idle-combo--2{animation:territoryIdleSecondStrike .25s cubic-bezier(.15,.9,.3,1) both}
+.territory-idle-pose--attack.territory-idle-combo--3{animation:territoryIdleThirdStrike .28s cubic-bezier(.18,.86,.35,1) both}
 .territory-idle-pose--block{animation:territoryIdleGuard .72s ease-out both}
 .territory-idle-pose--dodge{animation:territoryIdleDodge .7s ease-out both}
 .territory-idle-pose--hit{animation:territoryIdleHeroHit .65s ease-out both}
@@ -31,7 +33,20 @@
 .territory-idle-foe--attack{animation:territoryIdleEnemyAttack .7s ease-out both}
 .territory-idle-foe--block{animation:territoryIdleGuard .72s ease-out both}
 .territory-idle-foe--dodge{animation:territoryIdleEnemyDodge .7s ease-out both}
+.territory-idle-foe--death{animation:territoryIdleEnemyFall .72s ease-in both}
+.territory-idle-pose--death{animation:territoryIdleHeroFall .72s ease-in both}
 .territory-idle-follower--attack{animation:territoryIdleBreathe .5s ease-out both}
+.territory-idle-slash{position:absolute;z-index:5;right:17%;bottom:38%;height:13%;width:23%;pointer-events:none;transform-origin:center;animation:territoryIdleBladeTrail .36s cubic-bezier(.13,.72,.41,1) both}
+.territory-idle-slash--hero{right:auto;left:16%;transform:scaleX(-1)}
+.territory-idle-slash--2{animation-name:territoryIdleBladeReturn}
+.territory-idle-slash--3{animation-name:territoryIdleBladeFinisher}
+.territory-idle-slash i{position:absolute;inset:7% 0 43%;display:block;transform:rotate(-33deg);border-radius:95% 12% 95% 14%;background:linear-gradient(160deg,transparent 3%,#fef5cf 34%,#fff 52%,#b8e8ff 65%,transparent 96%);filter:drop-shadow(0 0 5px #bff4ff) drop-shadow(0 0 2px #fff);clip-path:polygon(3% 54%,87% 0,100% 14%,88% 48%,15% 100%)}
+.territory-idle-slash i:nth-child(2){inset:20% 4% 30%;opacity:.65;transform:rotate(-23deg);filter:drop-shadow(0 0 5px #ffe7ab)}
+.territory-idle-loot-burst{position:absolute;z-index:6;right:15%;bottom:26%;width:28%;height:21%;pointer-events:none}
+.territory-idle-loot-burst__item{position:absolute;left:37%;bottom:0;width:36%;height:40%;object-fit:contain;filter:drop-shadow(0 0 8px #f5cb53) drop-shadow(0 3px 4px #000);animation:territoryIdleLootRise 1.27s cubic-bezier(.16,.71,.35,1) both}
+.territory-idle-loot-burst__item--1{--loot-x:-78%;--loot-rise:-112%}
+.territory-idle-loot-burst__item--2{--loot-x:0%;--loot-rise:-148%;animation-delay:.07s}
+.territory-idle-loot-burst__item--3{--loot-x:82%;--loot-rise:-105%;animation-delay:.14s}
 .territory-idle-impact{position:absolute;z-index:5;right:18%;bottom:34%;width:19%;aspect-ratio:1;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;animation:territoryIdleImpact .8s ease-out both;text-shadow:0 3px 4px #1a0711,0 0 9px #1b0924}
 .territory-idle-impact--hero{right:auto;left:14%}
 .territory-idle-impact__burst{position:absolute;z-index:-1;font-size:60px;line-height:1;opacity:.82;filter:drop-shadow(0 0 12px currentColor);animation:territoryIdleBurst .65s ease-out both}
@@ -102,12 +117,20 @@
 .territory-idle-passive-card{border:2px solid #bd935a;border-radius:13px;background:#fff2d0;padding:12px;display:flex;align-items:center;gap:12px}.territory-idle-passive-card>span{font-size:36px;flex:none}.territory-idle-passive-card>div{flex:1;display:flex;flex-direction:column;gap:3px}.territory-idle-passive-card b{font-size:14px}.territory-idle-passive-card small{font-size:11px;color:#76523b}.territory-idle-passive-card i{font-style:normal;color:#398953;font-size:21px}
 @keyframes territoryIdleBreathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.015)}}
 @keyframes territoryIdleLunge{0%{transform:translateX(0) rotate(0)}28%{transform:translateX(45%) rotate(-5deg)}50%{transform:translateX(56%) rotate(3deg)}70%{transform:translateX(27%)}100%{transform:translateX(0)}}
+@keyframes territoryIdleSecondStrike{0%{transform:translateX(24%) rotate(6deg)}37%{transform:translateX(50%) rotate(-7deg)}63%{transform:translateX(43%) rotate(4deg)}100%{transform:translateX(14%) rotate(0)}}
+@keyframes territoryIdleThirdStrike{0%{transform:translateX(15%) rotate(-6deg) scale(.98)}35%{transform:translateX(62%) rotate(7deg) scale(1.06)}65%{transform:translateX(40%) rotate(-3deg)}100%{transform:translateX(0) rotate(0)}}
+@keyframes territoryIdleBladeTrail{0%{opacity:0;scale:.35;rotate:-45deg}28%{opacity:.95;scale:1.1;rotate:0deg}70%{opacity:.5;scale:1.25;rotate:15deg}100%{opacity:0;scale:1.5;rotate:25deg}}
+@keyframes territoryIdleBladeReturn{0%{opacity:0;scale:.35;rotate:40deg}30%{opacity:.9;scale:1.1;rotate:0deg}100%{opacity:0;scale:1.5;rotate:-30deg}}
+@keyframes territoryIdleBladeFinisher{0%{opacity:0;scale:.5;rotate:-25deg}25%{opacity:1;scale:1.4;rotate:12deg}100%{opacity:0;scale:1.8;rotate:40deg}}
 @keyframes territoryIdleGuard{0%,100%{transform:translateX(0)}25%,65%{transform:translateX(13%) scale(1.04)}}
 @keyframes territoryIdleDodge{0%,100%{transform:translateX(0)}32%{transform:translateX(-20%)}65%{transform:translateX(-8%)}}
 @keyframes territoryIdleHeroHit{0%,100%{transform:translateX(0)}30%{transform:translateX(-17%) rotate(-5deg)}65%{transform:translateX(-7%)}}
 @keyframes territoryIdleRecoil{0%,100%{transform:translateX(0)}30%{transform:translateX(21%) rotate(5deg)}55%{transform:translateX(12%) rotate(-2deg)}}
 @keyframes territoryIdleEnemyAttack{0%,100%{transform:translateX(0)}45%{transform:translateX(-27%)}}
 @keyframes territoryIdleEnemyDodge{0%,100%{transform:translateX(0)}32%{transform:translateX(20%)}65%{transform:translateX(8%)}}
+@keyframes territoryIdleEnemyFall{0%{opacity:1;transform:translateY(0) rotate(0)}45%{opacity:1;transform:translateY(6%) rotate(9deg)}100%{opacity:.08;transform:translateY(24%) rotate(19deg)}}
+@keyframes territoryIdleHeroFall{0%{opacity:1;transform:translateY(0) rotate(0)}45%{opacity:1;transform:translateY(5%) rotate(-7deg)}100%{opacity:.15;transform:translateY(22%) rotate(-15deg)}}
+@keyframes territoryIdleLootRise{0%{opacity:0;transform:translate(0,0) scale(.3) rotate(-18deg)}23%{opacity:1;transform:translate(var(--loot-x),var(--loot-rise)) scale(1.12) rotate(14deg)}65%{opacity:1;transform:translate(var(--loot-x),-35%) scale(.95) rotate(-5deg)}100%{opacity:0;transform:translate(var(--loot-x),24%) scale(.6) rotate(9deg)}}
 @keyframes territoryIdleBurst{0%{opacity:0;transform:scale(.25) rotate(-25deg)}25%{opacity:1;transform:scale(1.2) rotate(15deg)}100%{opacity:0;transform:scale(1.7) rotate(40deg)}}
 @keyframes territoryIdleImpact{0%{opacity:0;transform:translateY(13px)}25%{opacity:1;transform:translateY(-8px)}100%{opacity:0;transform:translateY(-45px)}}
 @keyframes territoryIdleCallout{0%{opacity:0;transform:translateY(15px)}15%,65%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-12px)}}

@@ -32,6 +32,10 @@ export interface IdleSkill {
   /** Omit for an effects-only skill. Basic attacks always use multiplier 1. */
   multiplier?: number;
   windupMs?: number;
+  /** Real physical contacts per cast; 1..3, each with its own impact and dodge/block roll. */
+  hitCount?: number;
+  /** Milliseconds between consecutive contacts. A cast spends energy/cooldown once. */
+  hitGapMs?: number;
   effects?: IdleEffect[];
   vfxKey?: string;
 }
@@ -87,13 +91,16 @@ export interface IdleCombatEvent {
   source?: 'attack' | IdleEffect['type'];
   statusId?: string;
   contactId?: string;
+  hitIndex?: number;
+  hitCount?: number;
 }
 export interface IdleFighter {
   stats: Required<IdleStats>;
   hp: number;
   energy: number;
   readyAtMs: number;
-  pendingAttack?: { atMs: number; skillId?: string; contactId: string };
+  pendingAttack?: { atMs: number; skillId?: string; contactId: string;
+    hitIndex?: number; hitCount?: number; hitGapMs?: number };
   cooldowns: Record<string, number>;
   runeCooldowns: Record<string, number>;
 }

@@ -15,9 +15,12 @@ const HERO = ASSETS + 'characters/heroes/male_viking/';
 const FOE = ASSETS + 'characters/enemies/goblin/';
 const ALLY = ASSETS + 'characters/followers/loyal_shield/';
 
-type CombatPose = 'idle' | 'attack' | 'block' | 'dodge' | 'hit';
+type CombatPose = 'idle' | 'attack' | 'block' | 'dodge' | 'hit' | 'death';
 type Panel = 'skills' | 'runes' | 'passives' | null;
-type BattleVisual = { id: string; vfx: CombatVfx; skill: string; number?: number; critical: boolean; target: 'hero' | 'enemy' };
+type BattleVisual = { id: string; vfx: CombatVfx; skill: string; number?: number; critical: boolean;
+  target: 'hero' | 'enemy'; defense?: 'block' | 'dodge' };
+type SlashVisual = { id: string; target: 'hero' | 'enemy'; hitIndex: number };
+type LootVisual = { id: string; icons: string[] };
 type BattleView = { stage: number; heroHp: number; foeHp: number; energy: number; victories: number; phase: string };
 const PREVIEW_CATALOG = createPreviewCatalog();
 const INITIAL_RUNES: Record<string, string[]> = {
@@ -46,12 +49,16 @@ export function IdleCombatPreview() {
   const [pose, setPose] = useState<CombatPose>('idle');
   const [foePose, setFoePose] = useState<CombatPose>('idle');
   const [visual, setVisual] = useState<BattleVisual | null>(null);
+  const [slash, setSlash] = useState<SlashVisual | null>(null);
+  const [comboStep, setComboStep] = useState(0);
+  const [loot, setLoot] = useState<LootVisual | null>(null);
   const [battle, setBattle] = useState<BattleView>(INITIAL_VIEW);
   const loadout = useMemo(() => createPreviewLoadout(selected, runeSlots), [selected, runeSlots]);
   const combatRef = useRef(INITIAL_COMBAT);
   const victoriesRef = useRef(0);
   const lastTickRef = useRef(0);
   const clearMoveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearLootRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeSkills = useMemo(() => BRANCHES.map((branch) => findIdleSkill(selected[branch.id])).filter((skill): skill is IdleSkillContent => !!skill), [selected]);
   const detail = findIdleSkill(detailId) ?? activeSkills[0];
@@ -62,6 +69,10 @@ export function IdleCombatPreview() {
     victoriesRef.current = 0;
     setBattle({ ...INITIAL_VIEW });
     setVisual(null);
+    setSlash(null);
+    setComboStep(0);
+    setLoot(null);
+    if (clearLootRef.current) clearTimeout(clearLootRef.current);
     setPose('idle');
     setFoePose('idle');
   };
@@ -72,6 +83,10 @@ export function IdleCombatPreview() {
     victoriesRef.current = 0;
     setBattle({ ...INITIAL_VIEW });
     setVisual(null);
+    setSlash(null);
+    setComboStep(0);
+    setLoot(null);
+    if (clearLootRef.current) clearTimeout(clearLootRef.current);
     setPose('idle');
     setFoePose('idle');
   }, [loadout]);
@@ -88,12 +103,26 @@ export function IdleCombatPreview() {
       let nextPose: CombatPose | null = null;
       let nextFoePose: CombatPose | null = null;
       let effectVisual: BattleVisual | null = null;
+      let nextSlash: SlashVisual | null = null;
+      let nextComboStep = 0;
+      let lootVisual: LootVisual | null = null;
       const criticalContacts = new Set(frame.events.filter((event) => event.type === 'critical').map((event) => event.contactId));
+      const blockedContacts = new Set(frame.events.filter((event) => event.type === 'block').map((event) => event.contactId));
+      const dodgedContacts = new Set(frame.events.filter((event) => event.type === 'dodge').map((event) => event.contactId));
       const skills = new Map(IDLE_SKILLS.map((skill) => [skill.id, skill]));
       const runes = new Map(IDLE_RUNES.map((rune) => [rune.id, rune]));
 
       for (const event of frame.events) {
         if (event.type === 'stage_clear') victoriesRef.current += 1;
+        if (event.type === 'loot_visual') {
+          const gearIndex = event.stage % GEAR.length;
+          lootVisual = { id: event.id, icons: [GEAR[gearIndex][0], GEAR[(gearIndex + 3) % GEAR.length][0], GEAR[(gearIndex + 5) % GEAR.length][0]] };
+        }
+        if (event.type === 'death') {
+          if (event.target === 'enemy') nextFoePose = 'death';
+          else if (event.target === 'hero') nextPose = 'death';
+        }
+        if (event.type === 'spawn' && event.actor === 'enemy') nextFoePose = 'idle';
         if (event.type === 'attack_start') {
           if (event.actor === 'hero') nextPose = 'attack';
           else nextFoePose = 'attack';
@@ -103,15 +132,24 @@ export function IdleCombatPreview() {
           else nextFoePose = event.type;
         }
         if (event.type === 'impact') {
-          if (event.target === 'enemy') nextFoePose = event.value ? 'hit' : 'dodge';
-          else if (event.target === 'hero') nextPose = event.value ? 'hit' : 'dodge';
+          const defense = dodgedContacts.has(event.contactId) ? 'dodge' : blockedContacts.has(event.contactId) ? 'block' : undefined;
+          if (event.target === 'enemy') nextFoePose = defense ?? 'hit';
+          else if (event.target === 'hero') nextPose = defense ?? 'hit';
+          if (event.source === 'attack') {
+            nextSlash = { id: event.id, target: event.target ?? 'enemy', hitIndex: event.hitIndex ?? 1 };
+            if (event.actor === 'hero' && (event.hitIndex ?? 1) > 1) {
+              nextPose = 'attack';
+              nextComboStep = event.hitIndex ?? 1;
+            }
+          }
           const skill = event.skillId ? skills.get(event.skillId) : undefined;
           const rune = event.runeId ? runes.get(event.runeId) : undefined;
           effectVisual = {
             id: event.id, vfx: (event.vfxKey as CombatVfx) || rune?.vfx || skill?.vfx || 'steel',
             skill: rune ? `Руна: ${rune.name}` : skill?.name || 'Удар',
             number: event.value === undefined ? 0 : Math.round(event.value),
-            critical: !!event.contactId && criticalContacts.has(event.contactId), target: event.target ?? 'enemy',
+            critical: !!event.contactId && criticalContacts.has(event.contactId),
+            target: event.target ?? 'enemy', defense,
           };
         }
         if (event.type === 'rune_proc') {
@@ -129,10 +167,19 @@ export function IdleCombatPreview() {
       if (nextPose) setPose(nextPose);
       if (nextFoePose) setFoePose(nextFoePose);
       if (effectVisual) setVisual(effectVisual);
-      if (nextPose || nextFoePose || effectVisual) {
+      if (nextSlash) setSlash(nextSlash);
+      if (nextComboStep > 0) setComboStep(nextComboStep);
+      if (lootVisual) {
+        setLoot(lootVisual);
+        if (clearLootRef.current) clearTimeout(clearLootRef.current);
+        clearLootRef.current = setTimeout(() => setLoot(null), 1350);
+      }
+      if (nextPose || nextFoePose || effectVisual || nextSlash) {
         if (clearMoveRef.current) clearTimeout(clearMoveRef.current);
         clearMoveRef.current = setTimeout(() => {
-          setPose('idle'); setFoePose('idle'); setVisual(null);
+          setPose(combatRef.current.phase === 'defeat' ? 'death' : 'idle');
+          setFoePose(combatRef.current.phase === 'victory' ? 'death' : 'idle');
+          setVisual(null); setSlash(null); setComboStep(0);
         }, 720);
       }
     };
@@ -142,6 +189,10 @@ export function IdleCombatPreview() {
       if (clearMoveRef.current) clearTimeout(clearMoveRef.current);
     };
   }, [auto]);
+
+  useEffect(() => () => {
+    if (clearLootRef.current) clearTimeout(clearLootRef.current);
+  }, []);
 
   const showDetail = (id: string) => { setDetailId(id); setPanel('runes'); };
   const equip = (branch: SkillBranch, id: string) => {
@@ -168,19 +219,24 @@ export function IdleCombatPreview() {
           <div className="territory-idle-vignette" />
           <div className="territory-idle-name territory-idle-name--hero"><b>Викинг</b><span>ур. 25</span></div>
           <div className="territory-idle-name territory-idle-name--foe"><b>{isBoss ? 'Вождь гоблинов' : 'Гоблин-налётчик'}</b><span>{Math.round(battle.foeHp)}% HP</span></div>
-          <div className={`territory-idle-follower ${pose === 'attack' ? 'territory-idle-follower--attack' : ''}`}>
-            <img src={ALLY + (pose === 'attack' ? 'attack.webp' : 'idle.webp')} alt="Спутник" />
+          <div className="territory-idle-follower">
+            <img src={ALLY + 'idle.webp'} alt="Спутник, ожидающий своей способности" />
           </div>
-          <div className={`territory-idle-hero territory-idle-pose--${pose}`}>
+          <div className={`territory-idle-hero territory-idle-pose--${pose} territory-idle-combo--${comboStep}`}>
             <img src={HERO + pose + '.webp'} alt="Наш викинг" draggable={false} />
           </div>
           <div className={`territory-idle-foe territory-idle-foe--${foePose} ${isBoss ? 'territory-idle-foe--boss' : ''}`}>
             <img src={FOE + foePose + '.webp'} alt={isBoss ? 'Вождь гоблинов' : 'Противник'} draggable={false} />
           </div>
+          {slash && <div key={slash.id} className={`territory-idle-slash territory-idle-slash--${slash.target} territory-idle-slash--${slash.hitIndex}`} aria-hidden="true"><i /><i /></div>}
+          {loot && <div key={loot.id} className="territory-idle-loot-burst" aria-label="Визуальная демонстрация добычи без выдачи предметов">
+            {loot.icons.map((icon, index) => <img key={`${index}-${icon}`} className={`territory-idle-loot-burst__item territory-idle-loot-burst__item--${index + 1}`}
+              src={`${ASSETS}ui/equipment-cartoon/${icon}.webp`} alt="" />)}
+          </div>}
           {visual && <div key={visual.id} className={`territory-idle-impact territory-idle-impact--${visual.vfx} ${visual.target === 'hero' ? 'territory-idle-impact--hero' : ''}`}>
             <span className="territory-idle-impact__magic" aria-hidden="true"><i /><i /><i /></span>
             <span className="territory-idle-impact__burst" aria-hidden="true">{visual.vfx === 'ice' ? '✳' : visual.vfx === 'lightning' ? 'ϟ' : visual.vfx === 'fire' ? '✹' : '✦'}</span>
-            <strong>{visual.number === undefined ? 'РУНА!' : visual.number === 0 ? 'УКЛОН!' : `${visual.critical ? 'КРИТ! ' : '−'}${visual.number}`}</strong>
+            <strong>{visual.defense === 'dodge' ? 'УКЛОН!' : visual.defense === 'block' ? 'БЛОК!' : visual.number === undefined ? 'РУНА!' : visual.number === 0 ? '0' : `${visual.critical ? 'КРИТ! ' : '−'}${visual.number}`}</strong>
           </div>}
           {visual && <div key={'name' + visual.id} className="territory-idle-skill-callout">{visual.skill}</div>}
           <div className="territory-idle-ground-shade" />
