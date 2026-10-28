@@ -28,10 +28,14 @@ export function RuneSkillBook({
   language,
   initialSelection,
   onSelectionChange,
+  serverConnected = false,
+  available,
 }: {
   language: 'ru' | 'en';
   initialSelection?: RuneSkillBookSelection;
   onSelectionChange?: (selection: RuneSkillBookSelection) => void;
+  serverConnected?: boolean;
+  available?: {skills:Record<string,number>;runes:Record<string,number>;passives:Record<string,number>};
 }) {
   const en = language === 'en';
   const [selection, setSelection] = useState<RuneSkillBookSelection>(() => initialSelection ?? INITIAL_RUNE_BOOK_SELECTION);
@@ -60,8 +64,8 @@ export function RuneSkillBook({
       <Sparkles size={23} aria-hidden="true"/>
     </div>
     <p className="rune-book__preview" role="status"><Info size={15} aria-hidden="true"/>
-      {en ? 'Visual skill-book preview. Choices do not yet affect live battles or save to your hero.'
-        : 'Предпросмотр книги навыков. Выбор пока не сохраняется у героя и не влияет на настоящий бой.'}
+      {serverConnected ? (en ? 'Only unlocked skills can be equipped. Server validates the build and combat migration is separate.' : 'Можно выбирать открытые навыки. Сборку проверяет сервер; подключение новых эффектов к боям выполняется отдельно.')
+        : (en ? 'Visual skill-book preview. Choices do not yet affect live battles or save to your hero.' : 'Предпросмотр книги навыков. Выбор пока не сохраняется у героя и не влияет на настоящий бой.')}
     </p>
     <div className="rune-book__rows" aria-label={en ? 'Five skill groups' : 'Пять групп навыков'}>
       {catalog.groups.map(group => <div className="rune-book__row" key={group.id} data-testid={`rune-row-${group.id}`}>
@@ -72,7 +76,7 @@ export function RuneSkillBook({
             const picked = selection.skillIds[group.id] === skill.id;
             return <button key={skill.id} type="button" className={`rune-book__skill ${picked ? 'rune-book__skill--equipped' : ''}`}
               aria-label={`${name(skill, en)}. ${picked ? en ? 'Equipped. ' : 'Экипировано. ' : ''}${en ? 'Details' : 'Подробнее'}`}
-              aria-pressed={picked} onClick={() => setActiveSkillId(skill.id)}>
+              aria-pressed={picked} disabled={serverConnected && !(available?.skills[skill.id]??0)} onClick={() => setActiveSkillId(skill.id)}>
               <SkillIcon icon={skill.icon} tone={skill.tone}/>
               {picked && <span className="rune-book__equipped"><Check size={11} strokeWidth={4}/></span>}
               <span className="rune-book__skill-name">{name(skill, en)}</span>
@@ -87,7 +91,7 @@ export function RuneSkillBook({
         {catalog.passives.map(passive => {
           const picked = selection.passiveIds.includes(passive.id);
           return <button type="button" key={passive.id} aria-pressed={picked}
-            disabled={!picked && selection.passiveIds.length >= 3}
+            disabled={(!picked && selection.passiveIds.length >= 3) || (serverConnected && !(available?.passives[passive.id]??0))}
             onClick={() => togglePassive(passive.id)}
             className={`rune-book__passive ${picked ? 'rune-book__passive--equipped' : ''}`}
             title={en ? passive.descriptionEn : passive.descriptionRu}>
@@ -113,20 +117,19 @@ export function RuneSkillBook({
         <p className="rune-book__description">{en ? activeSkill.descriptionEn : activeSkill.descriptionRu}</p>
         <button className="rune-book__equip-btn" type="button"
           aria-pressed={selection.skillIds[activeGroup.id] === activeSkill.id}
-          onClick={() => equipSkill(activeSkill, activeGroup.id)}>
+          disabled={serverConnected && !(available?.skills[activeSkill.id]??0)} onClick={() => equipSkill(activeSkill, activeGroup.id)}>
           <Check size={16}/>{selection.skillIds[activeGroup.id] === activeSkill.id
             ? en ? 'Equipped' : 'Экипировано'
             : en ? 'Choose this skill' : 'Выбрать навык'}
         </button>
         <h5>{en ? 'Runes for this skill' : 'Руны этого навыка'}</h5>
-        <p className="rune-book__rune-hint">{en ? 'Choose one visual variant. Exact levels and chances await combat integration.'
-          : 'Выбери одну руну. Реальные уровни и шансы появятся после подключения боевой системы.'}</p>
+        <p className="rune-book__rune-hint">{serverConnected ? (en ? 'Choose an unlocked rune. The server checks its true level and compatibility.' : 'Выбери открытую руну. Уровень и совместимость проверяет сервер.') : (en ? 'Choose one visual variant. Exact levels and chances await combat integration.' : 'Выбери одну руну. Реальные уровни и шансы появятся после подключения боевой системы.')}</p>
         <div className="rune-book__rune-list">
           {activeSkill.runes.map((rune, index) => {
             const picked = selection.runeIds[activeSkill.id] === rune.id;
             return <button type="button" key={rune.id}
               className={`rune-book__rune-option ${picked ? 'rune-book__rune-option--selected' : ''}`}
-              aria-pressed={picked} onClick={() => equipRune(activeSkill.id, rune.id)}>
+              aria-pressed={picked} disabled={serverConnected && !(available?.runes[rune.id]??0)} onClick={() => equipRune(activeSkill.id, rune.id)}>
               <span className="rune-book__rune-mark" aria-hidden="true">{['ᚠ','ᚱ','ᛃ'][index]}</span>
               <span><b>{name(rune, en)}</b><small>{en ? rune.effectEn : rune.effectRu}</small></span>
               <span className="rune-book__rune-check">{picked ? <Check size={17}/> : '○'}</span>
