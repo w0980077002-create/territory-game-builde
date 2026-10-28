@@ -11,6 +11,7 @@ import { getArenaWeeklyStatus, type ArenaWeeklyStatus } from '@/game/arenaWeekly
 import { eventCalendar, readyQuestCount, withEventStatusTimeout } from '@/game/eventsBoard';
 import { captureGameEvent } from '@/game/analytics';
 import { RewardLootStrip } from '@/components/ui/RewardLootStrip';
+import { ProgressionLive } from '@/components/progression/ProgressionLive';
 import { seasonCountdown, seasonWindow } from '@/game/seasonCalendar';
 import './eventsBoard.css';
 
@@ -188,6 +189,8 @@ export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
       <button id="territory-events-daily-tab" type="button" role="tab" aria-controls="territory-events-daily-panel" aria-selected={tab === 'daily'} onClick={() => switchTab('daily')}><CalendarDays size={17}/>{en ? 'Today' : 'Сегодня'}</button>
       <button id="territory-events-weekly-tab" type="button" role="tab" aria-controls="territory-events-weekly-panel" aria-selected={tab === 'weekly'} onClick={() => switchTab('weekly')}><Trophy size={17}/>{en ? 'This week' : 'Эта неделя'}</button>
     </div>
+
+    <ProgressionLive language={language} tab={tab}/>
 
     {tab === 'daily' ? <div id="territory-events-daily-panel" className="territory-events__list" role="tabpanel" aria-labelledby="territory-events-daily-tab">
       <SevenDayJourney dayIndex={daily.dayIndex} claimedToday={daily.claimedToday} rewards={DAILY_REWARDS} onOpen={onDaily} en={en}/>
