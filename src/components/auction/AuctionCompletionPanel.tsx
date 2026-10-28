@@ -63,7 +63,10 @@ export function AuctionCompletionPanel({tab,language}:{tab:TradeTab;language:'ru
       const receipt=await submitAuctionCompletion(order.action,order.id);
       await keepPendingAuctionCompletion(null);
       if(alive.current){setPending(null);setNotice(en?'Server confirmed the trade.':'Сделка подтверждена сервером.');}
-      if(receipt.success)await refresh(filters);
+      if(receipt.success) {
+        try { await refresh(filters); }
+        catch { if(alive.current)setError(en?'Trade confirmed, but the market could not refresh.':'Сделка подтверждена, но обновить аукцион пока не удалось.'); }
+      }
     }catch(err){
       if(err instanceof AuctionTradeError&&err.rejected){
         try{await keepPendingAuctionCompletion(null);if(alive.current)setPending(null);}catch{}
