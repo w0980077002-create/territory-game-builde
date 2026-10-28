@@ -21,7 +21,7 @@ interface Receipt {
   success: true; session_id: string; revision: number;
   state: IdleCombatState; events?: IdleCombatEvent[]; rewards_claimed: boolean;
 }
-function validReceipt(value: Record<string, unknown>): value is unknown & Receipt {
+function validReceipt(value: Record<string, unknown>): value is Record<string, unknown> & Receipt {
   if (value.success !== true || typeof value.session_id !== 'string'
     || !Number.isSafeInteger(value.revision) || typeof value.rewards_claimed !== 'boolean') return false;
   const state = value.state as IdleCombatState | undefined;
@@ -64,8 +64,7 @@ export function ServerPveFight({enemy,kind,encounterId,sessionId,onExit,onNext}:
         const name=event.actor==='hero'?(en?'Hero':'Герой'):enemy.name;
         return `${name}: ${event.type.replace(/_/g,' ')}${event.skillId?' · '+event.skillId:''}${event.runeId?' · '+event.runeId:''}${typeof event.value==='number'?' −'+Math.floor(event.value):''}`;
       })].slice(-16));
-      const animation=events.findLast ? [...events].reverse().find(event=>['impact','critical','block','dodge'].includes(event.type))
-        : [...events].reverse().find(event=>['impact','critical','block','dodge'].includes(event.type));
+      const animation=[...events].reverse().find(event=>['impact','critical','block','dodge'].includes(event.type));
       if(animation){
         const attacker=animation.actor==='hero'?game.player.name:enemy.name;
         const target=animation.target==='hero'?game.player.name:enemy.name;
