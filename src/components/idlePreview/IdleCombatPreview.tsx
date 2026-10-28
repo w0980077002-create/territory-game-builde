@@ -25,6 +25,7 @@ const INITIAL_RUNES: Record<string, string[]> = {
   ice_shackles: ['glacial_edge'], berserker_fury: ['wolf_fang'], thunder_wrath: ['storm_core'],
 };
 const INITIAL_VIEW: BattleView = { stage: 1, heroHp: 100, foeHp: 100, energy: 80, victories: 0, phase: 'approach' };
+const INITIAL_COMBAT = createIdleCombat(createPreviewInput(PREVIEW_CATALOG, createPreviewLoadout(DEFAULT_SKILLS, INITIAL_RUNES)));
 
 const GEAR = [
   ['weapon', 'Меч'], ['helmet', 'Шлем'], ['armor', 'Доспех'], ['shield', 'Щит'],
@@ -47,7 +48,7 @@ export function IdleCombatPreview() {
   const [visual, setVisual] = useState<BattleVisual | null>(null);
   const [battle, setBattle] = useState<BattleView>(INITIAL_VIEW);
   const loadout = useMemo(() => createPreviewLoadout(selected, runeSlots), [selected, runeSlots]);
-  const combatRef = useRef(createIdleCombat(createPreviewInput(PREVIEW_CATALOG, loadout)));
+  const combatRef = useRef(INITIAL_COMBAT);
   const victoriesRef = useRef(0);
   const lastTickRef = useRef(0);
   const clearMoveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,6 +125,7 @@ export function IdleCombatPreview() {
         foeHp: Math.round(100 * s.enemy.hp / s.enemy.stats.maxHp),
         energy: s.hero.stats.maxEnergy ? Math.round(100 * s.hero.energy / s.hero.stats.maxEnergy) : 0,
         victories: victoriesRef.current, phase: s.phase });
+      if (['victory', 'defeat', 'timeout', 'invalid'].includes(s.phase)) setAuto(false);
       if (nextPose) setPose(nextPose);
       if (nextFoePose) setFoePose(nextFoePose);
       if (effectVisual) setVisual(effectVisual);
@@ -189,8 +191,11 @@ export function IdleCombatPreview() {
           <div className="territory-idle-hud__center">
             <span>{battle.phase === 'defeat' ? '☠ ПОРАЖЕНИЕ' : battle.phase === 'victory' ? '🏆 ПОБЕДА' : `⚔ ПОБЕД ${battle.victories}`}</span>
             <div className="territory-idle-healthtrack"><span style={{ width: `${battle.heroHp}%` }} /></div>
-            <button onClick={() => setAuto((value) => !value)} aria-label={auto ? 'Приостановить показ' : 'Продолжить показ'}>
-              {auto ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}{auto ? 'АВТО' : 'ПАУЗА'}
+            <button onClick={() => {
+              if (['victory', 'defeat', 'timeout', 'invalid'].includes(battle.phase)) { resetBattle(); setAuto(true); }
+              else setAuto((value) => !value);
+            }} aria-label={auto ? 'Приостановить показ' : 'Продолжить показ'}>
+              {auto ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}{auto ? 'АВТО' : battle.phase === 'victory' || battle.phase === 'defeat' ? 'ПОВТОР' : 'ПАУЗА'}
             </button>
           </div>
           <div className="territory-idle-orb territory-idle-orb--energy"><span>✦</span><b>{battle.energy}%</b></div>
