@@ -40,22 +40,25 @@ function hpLedger(result, startingHeroHp, startingEnemyHp) {
   const hp = { hero: startingHeroHp, enemy: startingEnemyHp };
   const contacts = new Set();
   for (const event of result.events) {
-    if (event.type !== 'impact') {
+    if (event.type !== 'impact' && event.type !== 'heal') {
       assert.equal(event.hpAfter, undefined, `${event.type} must not change HP`);
       continue;
     }
     assert.ok(event.target === 'hero' || event.target === 'enemy');
     assert.ok(event.value >= 0 && Number.isFinite(event.value));
-    assert.equal(event.hpAfter, hp[event.target] - event.value, 'one authoritative HP change per impact');
+    assert.equal(event.hpAfter, hp[event.target] + (event.type === 'heal' ? event.value : -event.value),
+      'damage and healing have one authoritative HP update each');
     hp[event.target] = event.hpAfter;
-    if (event.source === 'attack') {
+    if (event.source === 'attack' || event.source === 'companion') {
       assert.ok(event.contactId, 'contacts have a renderer correlation ID');
       assert.ok(!contacts.has(event.contactId), 'a contact must not apply damage twice');
       contacts.add(event.contactId);
     }
   }
   for (const annotation of result.events.filter(event => ['critical', 'block', 'dodge'].includes(event.type))) {
-    assert.equal(result.events.filter(event => event.type === 'impact' && event.source === 'attack' && event.contactId === annotation.contactId).length, 1, `${annotation.type} annotates exactly one contact impact`);
+    assert.equal(result.events.filter(event => event.type === 'impact'
+      && (event.source === 'attack' || event.source === 'companion') && event.contactId === annotation.contactId).length, 1,
+      `${annotation.type} annotates exactly one physical contact`);
   }
   assert.equal(result.state.hero.hp, hp.hero);
   assert.equal(result.state.enemy.hp, hp.enemy);
@@ -375,4 +378,50 @@ for (const badHits of [0, 1.5, 4, Infinity, -1]) {
   const malformed = singleSkillConfig({ hitCount: badHits });
   assert.ok(validateIdleLoadout(malformed.loadout, malformed.catalog).length, `invalid hitCount ${badHits} rejected`);
 }
-console.log('Idle engine tests passed: deterministic timing, loadout limits, multi-hit combos, effects, cooldowns, HP ledger, death and renderer events.');
+
+const supportInput = input({ hero: stats({ attack: 0 }), enemy: stats({ attack: 0, defense: 2 }),
+  companions: [
+    { id: 'shield', attack: 28, intervalMs: 500, windupMs: 100,
+      effects: [{ type: 'mitigation', strength: 0.2, durationMs: 400 }] },
+    { id: 'mage', attack: 0, intervalMs: 800, windupMs: 160,
+      effects: [{ type: 'magic', strength: 12 }] },
+  ],
+});
+const support = run(supportInput, [2100]);
+assert.ok(support.events.some(event => event.type === 'companion_start' && event.companionId === 'shield'));
+assert.ok(support.events.some(event => event.type === 'companion_start' && event.companionId === 'mage'));
+assert.ok(support.events.some(event => event.type === 'impact' && event.source === 'companion'
+  && event.companionId === 'shield' && event.value > 0), 'companion has real calculated physical damage');
+assert.ok(support.events.some(event => event.type === 'impact' && event.source === 'magic' && event.skillId === 'companion:mage'),
+  'mage companion casts real magic, not a fake physical attack');
+assert.ok(support.events.some(event => event.type === 'status_apply' && event.skillId === 'companion:shield'));
+assert.deepEqual(run(supportInput, [2100]), run(supportInput, Array(21).fill(100)), 'companion timing is deterministic');
+hpLedger(support, 100000, 100000);
+const healing = run(input({ hero: stats({ attack: 0 }), enemy: stats({ attack: 90, attackIntervalMs: 500 }),
+  companions: [{ id: 'healer', attack: 0, intervalMs: 800, windupMs: 100,
+    effects: [{ type: 'heal', strength: 42 }] }] }), [2100]);
+assert.ok(healing.events.some(event => event.type === 'heal' && event.target === 'hero' && event.value > 0),
+  'healer companion restores genuinely lost HP');
+assert.ok(healing.events.filter(event => event.type === 'heal').every(event => event.hpAfter <= 100000));
+hpLedger(healing, 100000, 100000);
+const corpseSupport = run(input({ hero: stats({ attack: 100, windupMs: 20 }),
+  enemy: stats({ maxHp: 1, attack: 0 }), companions: [{ id: 'friend', attack: 99, intervalMs: 300, windupMs: 300 }] }), [1000]);
+assert.equal(corpseSupport.events.filter(event => event.source === 'companion').length, 0,
+  'companion attack is cancelled after the enemy dies');
+
+const bossAbility = { id: 'boss-fire', category: 'core', cooldownMs: 500, energyCost: 0,
+  multiplier: 1.5, effects: [{ type: 'burn', strength: 3, durationMs: 300, tickMs: 100 }] };
+const boss = run(input({ hero: stats({ attack: 0 }), enemy: stats({ attack: 30 }), enemyAbility: bossAbility }), [1500]);
+assert.ok(boss.events.some(event => event.type === 'attack_start' && event.actor === 'enemy'
+  && event.skillId === 'boss-fire'), 'boss uses its own skill');
+assert.ok(boss.events.some(event => event.type === 'status_apply' && event.actor === 'enemy' && event.source === 'burn'),
+  'boss skills apply real debuffs');
+assert.deepEqual(run(input({ hero: stats({ attack: 0 }), enemy: stats({ attack: 30 }), enemyAbility: bossAbility }), [1500]),
+  run(input({ hero: stats({ attack: 0 }), enemy: stats({ attack: 30 }), enemyAbility: bossAbility }), [500, 1000]));
+for (const companions of [Array(6).fill({ id: 'same', attack: 1, intervalMs: 500, windupMs: 100 }),
+  [{ id: 'bad', attack: -1, intervalMs: 500, windupMs: 100 }]]) {
+  assert.equal(createIdleCombat(input({ companions })).phase, 'invalid', 'bad companions must be rejected');
+}
+assert.equal(createIdleCombat(input({ enemyAbility: { ...bossAbility, cooldownMs: -1 } })).phase, 'invalid');
+assert.equal(createIdleCombat(input({ nextEnemies: [stats()], nextEnemyAbilities: [] })).phase, 'invalid');
+console.log('Idle engine tests passed: timing, combos, boss abilities, five-companion contract, HP ledger and rune effects.');

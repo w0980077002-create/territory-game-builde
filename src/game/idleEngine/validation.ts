@@ -13,7 +13,7 @@ export function compatible(rune: IdleRune, skill: IdleSkill): boolean {
 function effect(v: unknown): v is IdleEffect {
   if (!record(v) || !number(v.strength) || (v.target !== undefined && v.target !== 'self' && v.target !== 'opponent')
     || (v.vfxKey !== undefined && !id(v.vfxKey))) return false;
-  if (v.type === 'magic' || v.type === 'energy') return true;
+  if (v.type === 'magic' || v.type === 'energy' || v.type === 'heal') return true;
   if (!number(v.durationMs, 1)) return false;
   if (v.type === 'burn') return number(v.tickMs, 1);
   return ['slow', 'mitigation', 'crit', 'precision'].includes(String(v.type)) && number(v.strength, 0, 1);
@@ -21,6 +21,35 @@ function effect(v: unknown): v is IdleEffect {
 const effects = (v: unknown): boolean => v === undefined || (Array.isArray(v) && v.length <= 16 && v.every(effect));
 const statKeys = ['maxHp', 'attack', 'defense', 'attackIntervalMs', 'windupMs', 'critChance', 'criticalMultiplier',
   'blockChance', 'blockReduction', 'dodgeChance', 'precision', 'maxEnergy', 'energy', 'energyRegenPerSecond'];
+
+/** Companions and boss moves have the same strict, data-only contract as skills. */
+export function validateIdleCompanions(value: unknown): string[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.length > 5) return ['companions: expected at most five companions'];
+  const ids = new Set<string>();
+  for (const item of value) {
+    if (!record(item) || !id(item.id) || ids.has(item.id)
+      || !number(item.attack) || !number(item.intervalMs, 300, 30000) || !number(item.windupMs, 20, 5000)
+      || !effects(item.effects) || (item.vfxKey !== undefined && !id(item.vfxKey))) {
+      return ['companions: invalid or duplicate companion'];
+    }
+    ids.add(item.id);
+  }
+  return [];
+}
+
+export function validateIdleEnemyAbility(value: unknown): string[] {
+  if (value === undefined || value === null) return [];
+  if (!record(value) || !id(value.id) || !CATEGORIES.includes(value.category as IdleSkillCategory)
+    || !number(value.cooldownMs) || !number(value.energyCost) || !number(value.multiplier ?? 1)
+    || (value.windupMs !== undefined && !number(value.windupMs))
+    || (value.hitCount !== undefined && (!number(value.hitCount, 1, 3) || !Number.isInteger(value.hitCount)))
+    || (value.hitGapMs !== undefined && !number(value.hitGapMs, 20, 3000))
+    || !effects(value.effects) || (value.vfxKey !== undefined && !id(value.vfxKey))) {
+    return ['enemy ability: invalid data'];
+  }
+  return [];
+}
 
 /** Empty builds are legal and use basic attacks. Malformed data returns errors, never throws. */
 export function validateIdleLoadout(loadout: IdleLoadout, catalog: IdleCatalog): string[] {

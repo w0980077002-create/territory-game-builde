@@ -9,7 +9,7 @@
 .territory-idle-chapter strong{font-weight:900;color:#fff6d4}
 .territory-idle-chapter__ticks{display:flex;justify-content:center;gap:4px;margin-top:5px}
 .territory-idle-chapter__ticks i{width:24px;height:5px;background:#39201b;border:1px solid #bc8c44;clip-path:polygon(12% 0,100% 0,88% 100%,0 100%)}
-.territory-idle-chapter__ticks i:first-child{background:linear-gradient(#ffeea4,#d58d22)}
+.territory-idle-chapter__ticks .territory-idle-chapter__tick--lit{background:linear-gradient(#ffeea4,#d58d22)}
 .territory-idle-battlefield{position:absolute;inset:0 0 30%;z-index:1;overflow:hidden;background-color:#48676f;background-position:center 59%;background-size:cover;background-repeat:no-repeat}
 .territory-idle-vignette{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,#0c21363d,transparent 35%,transparent 68%,#0b1a302e),linear-gradient(transparent 54%,#140f10aa 99%)}
 .territory-idle-battlefield--critical{animation:territoryIdleCamera .23s ease-out both}
@@ -20,7 +20,12 @@
 .territory-idle-hero{left:5%;width:48%;height:43%;display:flex;align-items:end;justify-content:center;transition:transform .16s ease}
 .territory-idle-foe{right:1%;width:39%;height:39%;display:flex;align-items:end;justify-content:center;transition:transform .15s ease}
 .territory-idle-foe--boss{width:44%;height:44%;filter:drop-shadow(0 0 12px #f8c952) drop-shadow(0 9px 4px #0008)}
-.territory-idle-follower{left:0;width:27%;height:24%;opacity:.95}
+.territory-idle-follower{left:0;width:19%;height:20%;opacity:.95;z-index:2;transition:filter .2s ease}
+.territory-idle-follower--slot-0{left:-4%;bottom:14%}
+.territory-idle-follower--slot-1{left:5%;bottom:21%}
+.territory-idle-follower--slot-2{left:19%;bottom:13%}
+.territory-idle-follower--slot-3{left:29%;bottom:19%}
+.territory-idle-follower--slot-4{left:35%;bottom:12%}
 .territory-idle-hero img,.territory-idle-foe img,.territory-idle-follower img{width:100%;height:100%;object-fit:contain;object-position:bottom;user-select:none;pointer-events:none}
 .territory-idle-pose--idle{animation:territoryIdleBreathe 2.4s ease-in-out infinite}
 .territory-idle-pose--attack{animation:territoryIdleLunge .65s cubic-bezier(.16,.85,.32,1) both}
@@ -35,7 +40,8 @@
 .territory-idle-foe--dodge{animation:territoryIdleEnemyDodge .7s ease-out both}
 .territory-idle-foe--death{animation:territoryIdleEnemyFall .72s ease-in both}
 .territory-idle-pose--death{animation:territoryIdleHeroFall .72s ease-in both}
-.territory-idle-follower--attack{animation:territoryIdleBreathe .5s ease-out both}
+.territory-idle-follower--attack{z-index:4;animation:territoryIdleCompanionLunge .72s cubic-bezier(.16,.85,.32,1) both}
+.territory-idle-follower--cast{z-index:4;filter:drop-shadow(0 0 14px #bafff4) drop-shadow(0 5px 3px #0007);animation:territoryIdleCompanionCast .72s ease-out both}
 .territory-idle-slash{position:absolute;z-index:5;right:17%;bottom:38%;height:13%;width:23%;pointer-events:none;transform-origin:center;animation:territoryIdleBladeTrail .36s cubic-bezier(.13,.72,.41,1) both}
 .territory-idle-slash--hero{right:auto;left:16%;transform:scaleX(-1)}
 .territory-idle-slash--2{animation-name:territoryIdleBladeReturn}
@@ -127,6 +133,8 @@
 @keyframes territoryIdleHeroHit{0%,100%{transform:translateX(0)}30%{transform:translateX(-17%) rotate(-5deg)}65%{transform:translateX(-7%)}}
 @keyframes territoryIdleRecoil{0%,100%{transform:translateX(0)}30%{transform:translateX(21%) rotate(5deg)}55%{transform:translateX(12%) rotate(-2deg)}}
 @keyframes territoryIdleEnemyAttack{0%,100%{transform:translateX(0)}45%{transform:translateX(-27%)}}
+@keyframes territoryIdleCompanionLunge{0%,100%{transform:translateX(0) scale(1)}27%{transform:translateX(225%) scale(1.08)}54%{transform:translateX(245%) scale(1.02)}78%{transform:translateX(90%) scale(1)}}
+@keyframes territoryIdleCompanionCast{0%,100%{transform:translateY(0) scale(1)}30%{transform:translateY(-4%) scale(1.13)}64%{transform:translateY(-2%) scale(1.05)}}
 @keyframes territoryIdleEnemyDodge{0%,100%{transform:translateX(0)}32%{transform:translateX(20%)}65%{transform:translateX(8%)}}
 @keyframes territoryIdleEnemyFall{0%{opacity:1;transform:translateY(0) rotate(0)}45%{opacity:1;transform:translateY(6%) rotate(9deg)}100%{opacity:.08;transform:translateY(24%) rotate(19deg)}}
 @keyframes territoryIdleHeroFall{0%{opacity:1;transform:translateY(0) rotate(0)}45%{opacity:1;transform:translateY(5%) rotate(-7deg)}100%{opacity:.15;transform:translateY(22%) rotate(-15deg)}}
@@ -138,6 +146,53 @@
 @keyframes territoryIdleCamera{0%,100%{transform:translateX(0)}20%{transform:translateX(1.5px)}45%{transform:translateX(-1.5px)}65%{transform:translateY(1px)}}
 @keyframes territoryIdleFade{from{opacity:0}to{opacity:1}}
 @keyframes territoryIdleSlide{from{transform:translateY(30px)}to{transform:translateY(0)}}
+.territory-idle-name--boss b{color:#ffe39f;text-shadow:0 1px 3px #000,0 0 9px #e15d1b}
+.territory-idle-status-icons{position:absolute;z-index:5;top:41%;display:flex;gap:3px;max-width:38%;pointer-events:none}
+.territory-idle-status-icons--hero{left:5%}.territory-idle-status-icons--enemy{right:4%}
+.territory-idle-status-icons span{display:grid;place-items:center;font-size:12px;min-width:18px;height:18px;border:1px solid #ebce85;border-radius:5px;background:#34251bdd;box-shadow:0 1px 3px #0008;animation:territoryIdleStatusPulse 2s ease-in-out infinite}
+.territory-idle-status-icon--burn{color:#ff6a29}.territory-idle-status-icon--slow{color:#81dfff}.territory-idle-status-icon--mitigation{color:#ffe69b}.territory-idle-status-icon--crit{color:#ffb981}.territory-idle-status-icon--precision{color:#ddaaff}
+@keyframes territoryIdleStatusPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.3)}}
+.territory-idle-ally-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:18px}
+.territory-idle-ally-grid--heroes{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.territory-idle-ally-card{display:flex;align-items:center;flex-direction:column;gap:3px;padding:7px 5px;text-align:center;border:2px solid #a78d71;border-radius:11px;background:linear-gradient(#fff0d4,#d3b182);color:#4c2b1c;min-width:0;min-height:128px;box-shadow:0 2px 5px #57311c4d}
+.territory-idle-ally-card--selected{border-color:#f3bb3f;box-shadow:inset 0 0 0 2px #fff0a4,0 0 8px #ffa93a8c;background:linear-gradient(#ffe8ad,#e7bc77)}
+.territory-idle-ally-card img{width:100%;height:78px;object-fit:contain;filter:drop-shadow(0 3px 2px #4b2b2277)}
+.territory-idle-ally-card b{font-size:12px;line-height:1.12}
+.territory-idle-ally-card small{font-size:11px;font-weight:900;color:#795326}
+.territory-idle-ally-card span{font-size:10px;line-height:1.2;color:#6a4c3a}
+.territory-idle-ally-grid--heroes .territory-idle-ally-card{min-height:105px;padding:4px 2px}
+.territory-idle-ally-grid--heroes .territory-idle-ally-card img{height:64px}
+.territory-idle-ally-grid--heroes .territory-idle-ally-card b{font-size:10px}
+.territory-idle-ally-grid--heroes .territory-idle-ally-card small{font-size:9px}
+.territory-idle-gear__slot--empty{background:linear-gradient(#382f43,#201a2a);border-color:#76644f;box-shadow:inset 0 0 8px #000a}
+.territory-idle-gear__slot--empty img{opacity:.27;filter:grayscale(1)}
+.territory-idle-gear__slot--rare{border-color:#55baff}
+.territory-idle-gear__slot--epic{border-color:#d18dff;box-shadow:0 0 8px #b86bf4a6,inset 0 0 0 2px #f3caff72}
+.territory-idle-gear__slot--legendary{border-color:#ffca47;box-shadow:0 0 10px #ffbd38b8,inset 0 0 0 2px #fff9ca9c}
+.territory-idle-item-compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.territory-idle-item-compare__box{display:flex;flex-direction:column;align-items:center;gap:5px;min-height:190px;padding:10px 5px;text-align:center;color:#53341e;background:linear-gradient(#fff0ce,#e8c68b);border:2px solid #bf9359;border-radius:12px}
+.territory-idle-item-compare__box small{font-weight:900;color:#805639}
+.territory-idle-item-compare__box img{height:90px;width:90px;object-fit:contain;filter:drop-shadow(0 3px 4px #42261966)}
+.territory-idle-item-compare__box b{font-size:12px;line-height:1.2}
+.territory-idle-item-compare__box span{font-size:11px;font-weight:800}
+.territory-idle-item-compare__box strong{flex:1;display:grid;place-items:center;color:#997a54;font-size:12px}
+.territory-idle-bag-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.territory-idle-bag-item{display:flex;align-items:center;flex-direction:column;gap:4px;padding:8px 4px;border:2px solid #a08467;border-radius:11px;background:linear-gradient(#ffefcb,#d9b987);color:#5d3a22;min-width:0}
+.territory-idle-bag-item--rare{border-color:#3ca6ed}.territory-idle-bag-item--epic{border-color:#bb75eb}.territory-idle-bag-item--legendary{border-color:#e9ae27}
+.territory-idle-bag-item--selected{box-shadow:0 0 0 3px #f9d164}
+.territory-idle-bag-item img{width:80px;height:75px;object-fit:contain}
+.territory-idle-bag-item b{font-size:11px;line-height:1.2;text-align:center}
+.territory-idle-bag-item small{font-size:10px;color:#855b3a}
+.territory-idle-map-stats{display:flex;justify-content:space-between;gap:8px;color:#5a3926;font-size:11px;font-weight:900;border-radius:10px;background:#ffefd0;border:2px solid #c39863;padding:9px;margin:5px 0 10px}
+.territory-idle-chapter-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.territory-idle-chapter-tabs button{min-height:43px;border:2px solid #af8b5f;border-radius:9px;color:#65402b;background:linear-gradient(#ffebc0,#d5b180);font-weight:900;font-size:17px}
+.territory-idle-chapter-tabs .territory-idle-chapter-tabs__active{background:linear-gradient(#fbe3a0,#d49a42);border-color:#885a28;box-shadow:inset 0 0 0 2px #ffe9b2}
+.territory-idle-stage-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.territory-idle-stage-grid button{min-height:55px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;color:#f9ecce;font-weight:900;background:linear-gradient(#947353,#503c39);border:3px solid #d6ae6e;border-radius:11px;text-shadow:0 2px 3px #31201a;box-shadow:0 3px 4px #4a2a2270}
+.territory-idle-stage-grid button span{font-size:15px;line-height:1}.territory-idle-stage-grid button b{font-size:13px}
+.territory-idle-stage-grid button:disabled{background:#857a72;border-color:#a99a8b;opacity:.55;color:#ddd1c2;filter:grayscale(.9)}
+.territory-idle-stage-grid .territory-idle-stage-grid__boss{background:linear-gradient(#d08b4d,#74392d);border-color:#f3c067}
+.territory-idle-stage-grid .territory-idle-stage-grid__current{box-shadow:0 0 0 3px #fcedaa,0 3px 9px #e4953b}
 @media(max-width:360px){.territory-idle-orb{width:61px;height:61px}.territory-idle-gear{gap:4px;padding:6px}.territory-idle-panel__scroll{padding:9px 7px 22px}.territory-idle-skill-row{grid-template-columns:55px 1fr;gap:3px}.territory-idle-skill-row__cards{gap:3px}.territory-idle-skill-card small{font-size:9px}}
 @media(max-height:680px){.territory-idle-heading{height:122px}.territory-idle-heading__title .territory-wooden-plaque{height:38px}.territory-idle-hero{height:41%}.territory-idle-gear{top:72.5%;height:19.5%}}
 @media(prefers-reduced-motion:reduce){.territory-idle-surround *{animation:none!important;transition:none!important}}

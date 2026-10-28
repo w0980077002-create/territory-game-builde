@@ -1,8 +1,8 @@
 import type {
   IdleActor, IdleCatalog, IdleCombatEvent, IdleCombatInput, IdleCombatState, IdleEffect,
-  IdleFighter, IdleSkill, IdleStats, IdleStatus,
+  IdleCompanionState, IdleFighter, IdleSkill, IdleStats, IdleStatus,
 } from './types';
-import { validateIdleLoadout } from './validation';
+import { validateIdleCompanions, validateIdleEnemyAbility, validateIdleLoadout } from './validation';
 
 // Timing bounds, not balance coefficients. Every loop has a finite simulation horizon.
 const STEP_MS = 20;
@@ -36,7 +36,7 @@ function fighter(raw: IdleStats): IdleFighter {
 function catalogSnapshot(catalog: IdleCatalog): IdleCatalog {
   const effect = (e: IdleEffect): IdleEffect => {
     const result = { type: e.type, strength: e.strength, target: e.target, vfxKey: e.vfxKey };
-    if (e.type === 'magic' || e.type === 'energy') return result as IdleEffect;
+    if (e.type === 'magic' || e.type === 'energy' || e.type === 'heal') return result as IdleEffect;
     return { ...result, durationMs: e.durationMs, ...(e.type === 'burn' ? { tickMs: e.tickMs } : {}) } as IdleEffect;
   };
   return copy({
@@ -48,6 +48,20 @@ function catalogSnapshot(catalog: IdleCatalog): IdleCatalog {
       chance: r.chance, cooldownMs: r.cooldownMs, effects: r.effects.map(effect), vfxKey: r.vfxKey })),
     passives: catalog.passives.map(p => ({ id: p.id, modifiers: { ...p.modifiers } })),
   });
+}
+function abilitySnapshot(ability: IdleSkill | null | undefined): IdleSkill | undefined {
+  if (!ability) return undefined;
+  return catalogSnapshot({ skills: [ability], runes: [], passives: [] }).skills[0];
+}
+function companionSnapshot(raw: IdleCombatInput['companions']): IdleCompanionState[] {
+  return (raw ?? []).map((item, index) => ({ id: item.id, attack: item.attack, intervalMs: time(item.intervalMs, 1400),
+    windupMs: time(item.windupMs, 240), vfxKey: item.vfxKey,
+    effects: item.effects?.map(e => catalogEffectSnapshot(e)), readyAtMs: index * 320 }));
+}
+function catalogEffectSnapshot(e: IdleEffect): IdleEffect {
+  const result = { type: e.type, strength: e.strength, target: e.target, vfxKey: e.vfxKey };
+  if (e.type === 'magic' || e.type === 'energy' || e.type === 'heal') return result as IdleEffect;
+  return { ...result, durationMs: e.durationMs, ...(e.type === 'burn' ? { tickMs: e.tickMs } : {}) } as IdleEffect;
 }
 function emit(s: IdleCombatState, events: IdleCombatEvent[], actor: IdleActor,
   type: IdleCombatEvent['type'], detail: Partial<IdleCombatEvent> = {}): IdleCombatEvent {
@@ -64,9 +78,15 @@ function spawn(s: IdleCombatState, events: IdleCombatEvent[], hero: boolean): vo
 export function createIdleCombat(input: IdleCombatInput): IdleCombatState {
   const raw = (object(input) ? input : {}) as unknown as IdleCombatInput;
   const errors = validateIdleLoadout(raw.loadout, raw.catalog);
+  errors.push(...validateIdleCompanions(raw.companions), ...validateIdleEnemyAbility(raw.enemyAbility));
   if (!object(raw.hero) || !object(raw.enemy)) errors.push('input: hero and enemy stats required');
   if (raw.nextEnemies !== undefined && (!Array.isArray(raw.nextEnemies) || raw.nextEnemies.length > 100 || raw.nextEnemies.some(e => !object(e)))) {
     errors.push('input: invalid nextEnemies');
+  }
+  if (raw.nextEnemyAbilities !== undefined) {
+    if (!Array.isArray(raw.nextEnemyAbilities) || !Array.isArray(raw.nextEnemies)
+      || raw.nextEnemyAbilities.length !== raw.nextEnemies.length) errors.push('input: ability queue length mismatch');
+    else for (const ability of raw.nextEnemyAbilities) errors.push(...validateIdleEnemyAbility(ability));
   }
   const catalog = errors.length ? { skills: [], runes: [], passives: [] } : catalogSnapshot(raw.catalog);
   const loadout = errors.length ? { active: [], passiveIds: [] } : {
@@ -86,6 +106,9 @@ export function createIdleCombat(input: IdleCombatInput): IdleCombatState {
     stage: Math.max(1, Math.floor(finite(raw.stage, 1))), rng: (finite(raw.seed, 1, 0xffffffff) >>> 0) || 0x9e3779b9,
     sequence: 0, hero: fighter(heroStats), enemy: fighter(object(raw.enemy) ? raw.enemy as unknown as IdleStats : { maxHp: 1, attack: 0 }),
     catalog, loadout, statuses: [], nextEnemies: errors.length ? [] : (raw.nextEnemies ?? []).map(e => stats(e)),
+    enemyAbility: errors.length ? undefined : abilitySnapshot(raw.enemyAbility),
+    nextEnemyAbilities: errors.length ? [] : (raw.nextEnemyAbilities ?? []).map(a => abilitySnapshot(a) ?? null),
+    companions: errors.length ? [] : companionSnapshot(raw.companions),
     approachMs: time(raw.approachMs, 300), stageTransitionMs: time(raw.stageTransitionMs, 500),
     phaseEndsAtMs: time(raw.approachMs, 300), pendingEvents: [], validationErrors: errors,
   };
@@ -111,6 +134,7 @@ function expire(s: IdleCombatState, events: IdleCombatEvent[], status: IdleStatu
 function finish(s: IdleCombatState, events: IdleCombatEvent[], victim: IdleActor): void {
   emit(s, events, victim, 'death', { target: victim });
   delete s.hero.pendingAttack; delete s.enemy.pendingAttack;
+  for (const companion of s.companions) { delete companion.pendingAtMs; delete companion.pendingContactId; }
   for (const status of s.statuses) expire(s, events, status);
   s.statuses = [];
   if (victim === 'hero') { s.phase = 'defeat'; return; }
@@ -135,7 +159,7 @@ function applyEffects(s: IdleCombatState, events: IdleCombatEvent[], actor: Idle
   const announce = (): void => { if (!applied) onApply?.(); applied = true; };
   for (const e of effects) {
     if (s.phase !== 'combat') break;
-    const selfByDefault = ['energy', 'mitigation', 'crit', 'precision'].includes(e.type);
+    const selfByDefault = ['energy', 'heal', 'mitigation', 'crit', 'precision'].includes(e.type);
     const target = e.target === 'self' || (e.target === undefined && selfByDefault) ? actor : other(actor);
     if (s[target].hp <= 0 || e.strength <= 0) continue;
     const detail = { skillId, runeId, contactId, source: e.type, vfxKey: e.vfxKey };
@@ -144,6 +168,13 @@ function applyEffects(s: IdleCombatState, events: IdleCombatEvent[], actor: Idle
       if (value <= 0) continue;
       announce();
       damage(s, events, actor, target, value, detail);
+    } else if (e.type === 'heal') {
+      const before = s[target].hp;
+      const after = Math.min(s[target].stats.maxHp, before + e.strength);
+      if (after === before) continue;
+      announce();
+      s[target].hp = after;
+      emit(s, events, actor, 'heal', { ...detail, target, value: after - before, hpAfter: after });
     } else if (e.type === 'energy') {
       const before = s[target].energy;
       const after = Math.min(s[target].stats.maxEnergy, before + e.strength);
@@ -170,7 +201,11 @@ function applyEffects(s: IdleCombatState, events: IdleCombatEvent[], actor: Idle
   return applied;
 }
 function skillFor(s: IdleCombatState, actor: IdleActor): IdleSkill | undefined {
-  if (actor === 'enemy') return undefined;
+  if (actor === 'enemy') {
+    const ability = s.enemyAbility;
+    return ability && (s.enemy.cooldowns[`skill:${ability.id}`] ?? 0) <= s.timeMs && s.enemy.energy >= ability.energyCost
+      ? ability : undefined;
+  }
   const f = s[actor];
   return s.loadout.active.map(slot => s.catalog.skills.find(skill => skill.id === slot.skillId)!)
     .filter(skill => (f.cooldowns[`skill:${skill.id}`] ?? 0) <= s.timeMs && f.energy >= skill.energyCost
@@ -213,7 +248,9 @@ function contact(s: IdleCombatState, events: IdleCombatEvent[], actor: IdleActor
   } else delete attacker.pendingAttack;
   const target = other(actor);
   const defender = s[target];
-  const skill = pending.skillId ? s.catalog.skills.find(sk => sk.id === pending.skillId) : undefined;
+  const skill = pending.skillId
+    ? actor === 'enemy' ? s.enemyAbility?.id === pending.skillId ? s.enemyAbility : undefined
+      : s.catalog.skills.find(sk => sk.id === pending.skillId) : undefined;
   const detail = { skillId: skill?.id, contactId, hitIndex, hitCount,
     vfxKey: skill?.vfxKey, source: 'attack' as const };
   const precision = chance(attacker.stats.precision + bonus(s, actor, 'precision'));
@@ -239,6 +276,7 @@ function contact(s: IdleCombatState, events: IdleCombatEvent[], actor: IdleActor
   if (s.phase !== 'combat' || !skill) return;
   if (hitIndex === hitCount) applyEffects(s, events, actor, skill.effects ?? [], skill.id, undefined, contactId);
   if (s.phase !== 'combat') return;
+  if (actor === 'enemy') return;
   const slot = s.loadout.active.find(a => a.skillId === skill.id)!;
   // Only primary skill contacts can proc attached runes. Rune damage and status ticks never recurse.
   for (const runeId of slot.runeIds ?? []) {
@@ -251,6 +289,43 @@ function contact(s: IdleCombatState, events: IdleCombatEvent[], actor: IdleActor
       emit(s, events, actor, 'rune_proc', { target, skillId: skill.id, runeId: rune.id,
         contactId, hitIndex, hitCount, vfxKey: rune.vfxKey });
     });
+  }
+}
+function beginCompanions(s: IdleCombatState, events: IdleCombatEvent[]): void {
+  for (const c of s.companions) {
+    if (c.pendingAtMs !== undefined || c.readyAtMs > s.timeMs) continue;
+    const event = emit(s, events, 'hero', 'companion_start', { target: 'enemy', companionId: c.id,
+      vfxKey: c.vfxKey, value: c.windupMs });
+    event.contactId = event.id;
+    c.pendingAtMs = s.timeMs + c.windupMs;
+    c.pendingContactId = event.id;
+    c.readyAtMs = s.timeMs + Math.max(c.intervalMs, c.windupMs + STEP_MS);
+  }
+}
+function contactCompanions(s: IdleCombatState, events: IdleCombatEvent[]): void {
+  for (const c of s.companions) {
+    if (s.phase !== 'combat') break;
+    if (c.pendingAtMs === undefined || c.pendingAtMs > s.timeMs) continue;
+    const contactId = c.pendingContactId;
+    delete c.pendingAtMs; delete c.pendingContactId;
+    if (c.attack > 0) {
+      const detail = { companionId: c.id, contactId, source: 'companion' as const, vfxKey: c.vfxKey };
+      if (roll(s, s.enemy.stats.dodgeChance)) {
+        emit(s, events, 'enemy', 'dodge', { target: 'hero', companionId: c.id, contactId });
+        damage(s, events, 'hero', 'enemy', 0, detail);
+      } else {
+        let amount = Math.max(0, c.attack - s.enemy.stats.defense);
+        if (roll(s, s.enemy.stats.blockChance)) {
+          amount *= 1 - s.enemy.stats.blockReduction;
+          emit(s, events, 'enemy', 'block', { target: 'hero', companionId: c.id, contactId });
+        }
+        amount *= 1 - bonus(s, 'enemy', 'mitigation');
+        damage(s, events, 'hero', 'enemy', amount, detail);
+      }
+    }
+    if (s.phase === 'combat' && c.effects?.length) {
+      applyEffects(s, events, 'hero', c.effects, `companion:${c.id}`, undefined, contactId);
+    }
   }
 }
 function statuses(s: IdleCombatState, events: IdleCombatEvent[]): void {
@@ -274,6 +349,7 @@ function step(s: IdleCombatState, events: IdleCombatEvent[]): void {
   if (s.phase === 'transition' && s.timeMs >= s.phaseEndsAtMs) {
     s.stage = Math.min(LIMIT, s.stage + 1);
     s.enemy = fighter(s.nextEnemies.shift()!);
+    s.enemyAbility = s.nextEnemyAbilities.shift() ?? undefined;
     s.phase = 'approach';
     s.phaseEndsAtMs = s.timeMs + s.approachMs;
     spawn(s, events, false);
@@ -292,14 +368,17 @@ function step(s: IdleCombatState, events: IdleCombatEvent[]): void {
       if (s.phase !== 'combat') break;
       contact(s, events, actor);
     }
+    if (s.phase === 'combat') contactCompanions(s, events);
     for (const actor of ['hero', 'enemy'] as const) {
       if (s.phase !== 'combat') break;
       beginAttack(s, events, actor);
     }
+    if (s.phase === 'combat') beginCompanions(s, events);
   }
   if (!terminal(s) && s.timeMs >= s.maxDurationMs) {
     s.phase = 'timeout';
     delete s.hero.pendingAttack; delete s.enemy.pendingAttack;
+    for (const c of s.companions) { delete c.pendingAtMs; delete c.pendingContactId; }
   }
 }
 

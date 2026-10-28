@@ -21,7 +21,8 @@ export type IdleEffect =
   | { type: 'burn'; strength: number; durationMs: number; tickMs: number; target?: 'self' | 'opponent'; vfxKey?: string }
   | { type: 'slow' | 'mitigation' | 'crit' | 'precision'; strength: number; durationMs: number; target?: 'self' | 'opponent'; vfxKey?: string }
   | { type: 'magic'; strength: number; target?: 'self' | 'opponent'; vfxKey?: string }
-  | { type: 'energy'; strength: number; target?: 'self' | 'opponent'; vfxKey?: string };
+  | { type: 'energy'; strength: number; target?: 'self' | 'opponent'; vfxKey?: string }
+  | { type: 'heal'; strength: number; target?: 'self' | 'opponent'; vfxKey?: string };
 export interface IdleSkill {
   id: string;
   category: IdleSkillCategory;
@@ -54,6 +55,20 @@ export interface IdlePassive {
   /** Additive stat bonuses, applied once when combat is created. */
   modifiers: Partial<IdleStats>;
 }
+/** Combat-only allied actions. No inventory, reward or server state. */
+export interface IdleCompanionConfig {
+  id: string;
+  attack: number;
+  intervalMs: number;
+  windupMs: number;
+  effects?: IdleEffect[];
+  vfxKey?: string;
+}
+export interface IdleCompanionState extends IdleCompanionConfig {
+  readyAtMs: number;
+  pendingAtMs?: number;
+  pendingContactId?: string;
+}
 export interface IdleCatalog { skills: IdleSkill[]; runes: IdleRune[]; passives: IdlePassive[] }
 export interface IdleLoadout {
   active: { skillId: string; runeIds?: string[] }[];
@@ -68,13 +83,17 @@ export interface IdleCombatInput {
   loadout: IdleLoadout;
   /** Optional finite sequence, used only inside this simulation; no rewards. */
   nextEnemies?: IdleStats[];
+  /** Boss ability for the first and subsequently queued enemies. */
+  enemyAbility?: IdleSkill | null;
+  nextEnemyAbilities?: (IdleSkill | null)[];
+  companions?: IdleCompanionConfig[];
   approachMs?: number;
   stageTransitionMs?: number;
   /** Safety horizon, rounded up to a fixed step and limited to 10 minutes. */
   maxDurationMs?: number;
 }
-export type IdleEventType = 'spawn' | 'approach' | 'attack_start' | 'impact' | 'critical' | 'block' | 'dodge'
-  | 'status_apply' | 'status_expire' | 'rune_proc' | 'death' | 'stage_clear' | 'loot_visual';
+export type IdleEventType = 'spawn' | 'approach' | 'attack_start' | 'companion_start' | 'impact' | 'critical' | 'block' | 'dodge'
+  | 'heal' | 'status_apply' | 'status_expire' | 'rune_proc' | 'death' | 'stage_clear' | 'loot_visual';
 export interface IdleCombatEvent {
   id: string;
   atMs: number;
@@ -86,13 +105,14 @@ export interface IdleCombatEvent {
   value?: number;
   target?: IdleActor;
   vfxKey?: string;
-  /** Only impact changes HP; value is actual HP lost, hpAfter is authoritative. */
+  /** impact loses HP, heal restores HP; both supply final authoritative hpAfter. */
   hpAfter?: number;
-  source?: 'attack' | IdleEffect['type'];
+  source?: 'attack' | 'companion' | IdleEffect['type'];
   statusId?: string;
   contactId?: string;
   hitIndex?: number;
   hitCount?: number;
+  companionId?: string;
 }
 export interface IdleFighter {
   stats: Required<IdleStats>;
@@ -133,6 +153,9 @@ export interface IdleCombatState {
   loadout: IdleLoadout;
   statuses: IdleStatus[];
   nextEnemies: IdleStats[];
+  enemyAbility?: IdleSkill;
+  nextEnemyAbilities: (IdleSkill | null)[];
+  companions: IdleCompanionState[];
   approachMs: number;
   stageTransitionMs: number;
   phaseEndsAtMs: number;
