@@ -5,7 +5,7 @@ import type {
 export type * from './types.ts';
 
 const categories = ['base', 'core', 'control', 'awakening', 'final'];
-const effectTypes = ['burn', 'slow', 'mitigation', 'crit', 'magic', 'energy', 'precision', 'heal', 'interrupt', 'attack', 'defense'];
+const effectTypes = ['burn', 'bleed', 'slow', 'mitigation', 'crit', 'magic', 'energy', 'precision', 'evasion', 'heal', 'interrupt', 'attack', 'defense'];
 const actors: IdleActor[] = ['hero', 'enemy'];
 const MAX_VALUE = 1e9;
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
@@ -22,13 +22,13 @@ const probability = (n: number) => Math.max(0, Math.min(1, n));
 function validEffect(e: IdleEffect, passive = false): boolean {
   if (!e || !effectTypes.includes(e.type) || !['self', 'opponent'].includes(e.target)
     || !finite(e.value) || !integer(e.durationMs, 0, 600_000)) return false;
-  if (['slow', 'mitigation', 'crit', 'precision'].includes(e.type) && !finite(e.value, 0, 1)) return false;
+  if (['slow', 'mitigation', 'crit', 'precision', 'evasion'].includes(e.type) && !finite(e.value, 0, 1)) return false;
   if (['attack', 'defense'].includes(e.type) && (e.target !== 'self' || !finite(e.value, 0, 1000))) return false;
   if (e.type === 'interrupt' && (e.target !== 'opponent' || e.value !== 0)) return false;
   if (e.type === 'heal' && e.durationMs !== 0) return false;
   if (e.type === 'slow' && e.value >= 1) return false;
-  if (e.type === 'burn' && (!integer(e.tickMs, 10, 600_000) || e.durationMs < e.tickMs)) return false;
-  if (passive) return ['mitigation', 'crit', 'precision', 'attack', 'defense'].includes(e.type) && e.target === 'self' && e.durationMs === 0;
+  if (['burn', 'bleed'].includes(e.type) && (!integer(e.tickMs, 10, 600_000) || e.durationMs < e.tickMs)) return false;
+  if (passive) return ['mitigation', 'crit', 'precision', 'evasion', 'attack', 'defense'].includes(e.type) && e.target === 'self' && e.durationMs === 0;
   return ['magic', 'energy', 'heal'].includes(e.type) || e.durationMs > 0;
 }
 
@@ -257,7 +257,7 @@ function applyEffect(state: IdleCombatState, events: IdleCombatEvent[], actor: I
   // Refresh same-source status; no unbounded stacking or recursive effect/proc chains.
   const key = `${actor}/${skillId ?? ''}/${runeId ?? ''}/${effect.type}/${target}`;
   const previous = f.statuses.findIndex(s => s.id === key);
-  const nextTickAtMs = previous >= 0 && effect.type === 'burn'
+  const nextTickAtMs = previous >= 0 && (effect.type === 'burn' || effect.type === 'bleed')
     ? f.statuses[previous].nextTickAtMs : state.atMs + (effect.tickMs ?? effect.durationMs);
   const status = { id: key, source: actor, effect, ...(skillId ? { skillId } : {}), ...(runeId ? { runeId } : {}),
     expiresAtMs: permanent ? state.input.rules.maxDurationMs + 1 : state.atMs + effect.durationMs, nextTickAtMs };
@@ -273,7 +273,7 @@ function resolveAttack(state: IdleCombatState, events: IdleCombatEvent[], actor:
   const selected = attacker.loadout.skills.find(s => s.skillId === skillId);
   const level = skill && selected ? skill.levels[selected.level - 1] : undefined;
   const precision = probability(modifier(attacker, 'precision'));
-  if (random(state) < probability(defender.stats.dodgeChance - precision)) {
+  if (random(state) < probability(defender.stats.dodgeChance + modifier(defender, 'evasion') - precision)) {
     emit(state, events, { actor: target, target: actor, type: 'dodge', skillId });
     return;
   }
@@ -347,7 +347,7 @@ function tick(state: IdleCombatState, events: IdleCombatEvent[]) {
     for (const status of [...f.statuses]) {
       if (state.status !== 'fighting') return;
       // Include final DOT tick at the exact expiry boundary.
-      while (status.effect.type === 'burn' && status.nextTickAtMs <= Math.min(state.atMs, status.expiresAtMs)) {
+      while ((status.effect.type === 'burn' || status.effect.type === 'bleed') && status.nextTickAtMs <= Math.min(state.atMs, status.expiresAtMs)) {
         const amount = status.effect.value * rules.modeDamageMultiplier[state.input.mode]
           * (1 - probability(modifier(f, 'mitigation')));
         damage(state, events, status.source, actor, amount, status.skillId, status.runeId, status.id, status.effect.vfxKey);
