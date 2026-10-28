@@ -217,4 +217,24 @@ REVOKE ALL ON FUNCTION public.territory_combat_context_v1(uuid,jsonb),
   public.territory_combat_commit_v1(uuid,jsonb,jsonb,jsonb) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_combat_context_v1(uuid,jsonb),
   public.territory_combat_commit_v1(uuid,jsonb,jsonb,jsonb) TO service_role;
+
+-- Authenticated player's READ-ONLY skill book. No stats/secrets for other accounts.
+-- The live game continues using its original skills until the approved combat
+-- catalog AND the verified server profile are both ready.
+CREATE OR REPLACE FUNCTION public.territory_combat_loadout_status_v1()
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $
+DECLARE u uuid:=auth.uid(); c territory_private.combat_config_v1%ROWTYPE;
+  h territory_private.combat_profiles_v1%ROWTYPE;
+BEGIN
+ IF u IS NULL OR NOT EXISTS(SELECT 1 FROM public.players WHERE id=u AND NOT coalesce(banned,false))
+   THEN RAISE EXCEPTION 'combat_account_unavailable'; END IF;
+ SELECT * INTO c FROM territory_private.combat_config_v1 WHERE id;
+ SELECT * INTO h FROM territory_private.combat_profiles_v1 WHERE player_id=u;
+ IF NOT coalesce(c.enabled,false) OR c.approval_reference IS NULL OR NOT coalesce(h.verified,false)
+   THEN RETURN jsonb_build_object('enabled',false); END IF;
+ RETURN jsonb_build_object('enabled',true,'revision',h.version,'catalog',c.catalog,
+   'ownership',h.fighter->'ownership','loadout',h.fighter->'loadout');
+END $;
+REVOKE ALL ON FUNCTION public.territory_combat_loadout_status_v1() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.territory_combat_loadout_status_v1() TO authenticated;
 COMMIT;
