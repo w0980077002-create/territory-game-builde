@@ -5,7 +5,7 @@ import type {
 export type * from './types.ts';
 
 const categories = ['base', 'core', 'control', 'awakening', 'final'];
-const effectTypes = ['burn', 'bleed', 'slow', 'mitigation', 'crit', 'magic', 'energy', 'precision', 'evasion', 'heal', 'interrupt', 'attack', 'defense'];
+const effectTypes = ['burn', 'bleed', 'slow', 'mitigation', 'crit', 'magic', 'energy', 'precision', 'evasion', 'blind', 'energy_regen', 'heal', 'interrupt', 'attack', 'defense'];
 const actors: IdleActor[] = ['hero', 'enemy'];
 const MAX_VALUE = 1e9;
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
@@ -22,13 +22,13 @@ const probability = (n: number) => Math.max(0, Math.min(1, n));
 function validEffect(e: IdleEffect, passive = false): boolean {
   if (!e || !effectTypes.includes(e.type) || !['self', 'opponent'].includes(e.target)
     || !finite(e.value) || !integer(e.durationMs, 0, 600_000)) return false;
-  if (['slow', 'mitigation', 'crit', 'precision', 'evasion'].includes(e.type) && !finite(e.value, 0, 1)) return false;
+  if (['slow', 'mitigation', 'crit', 'precision', 'evasion', 'blind', 'energy_regen'].includes(e.type) && !finite(e.value, 0, 1)) return false;
   if (['attack', 'defense'].includes(e.type) && (e.target !== 'self' || !finite(e.value, 0, 1000))) return false;
   if (e.type === 'interrupt' && (e.target !== 'opponent' || e.value !== 0)) return false;
   if (e.type === 'heal' && e.durationMs !== 0) return false;
   if (e.type === 'slow' && e.value >= 1) return false;
   if (['burn', 'bleed'].includes(e.type) && (!integer(e.tickMs, 10, 600_000) || e.durationMs < e.tickMs)) return false;
-  if (passive) return ['mitigation', 'crit', 'precision', 'evasion', 'attack', 'defense'].includes(e.type) && e.target === 'self' && e.durationMs === 0;
+  if (passive) return ['mitigation', 'crit', 'precision', 'evasion', 'energy_regen', 'attack', 'defense'].includes(e.type) && e.target === 'self' && e.durationMs === 0;
   return ['magic', 'energy', 'heal'].includes(e.type) || e.durationMs > 0;
 }
 
@@ -273,7 +273,8 @@ function resolveAttack(state: IdleCombatState, events: IdleCombatEvent[], actor:
   const selected = attacker.loadout.skills.find(s => s.skillId === skillId);
   const level = skill && selected ? skill.levels[selected.level - 1] : undefined;
   const precision = probability(modifier(attacker, 'precision'));
-  if (random(state) < probability(defender.stats.dodgeChance + modifier(defender, 'evasion') - precision)) {
+  const blind = probability(modifier(attacker, 'blind'));
+  if (random(state) < probability(defender.stats.dodgeChance + modifier(defender, 'evasion') + blind - precision)) {
     emit(state, events, { actor: target, target: actor, type: 'dodge', skillId });
     return;
   }
@@ -343,7 +344,7 @@ function tick(state: IdleCombatState, events: IdleCombatEvent[]) {
   const rules = state.input.rules;
   for (const actor of actors) {
     const f = state.actors[actor];
-    f.energy = Math.min(rules.maxEnergy, f.energy + rules.energyPerSecond * rules.stepMs / 1000);
+    f.energy = Math.min(rules.maxEnergy, f.energy + rules.energyPerSecond * (1 + probability(modifier(f, 'energy_regen'))) * rules.stepMs / 1000);
     for (const status of [...f.statuses]) {
       if (state.status !== 'fighting') return;
       // Include final DOT tick at the exact expiry boundary.
