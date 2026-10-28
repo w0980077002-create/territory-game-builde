@@ -57,7 +57,7 @@ type GameEventProps = {
 
 // Only allow enumerated event names and enumerated public properties.
 export function captureGameEvent(name: GameEvent, details: GameEventProps = {}): void {
-  if (!EVENT_NAMES.has(name)) return;
+  if (import.meta.env.VITE_TERRITORY_VISUAL_PREVIEW === 'true' || !EVENT_NAMES.has(name)) return;
   const properties: Record<string, string | boolean> = {
     $process_person_profile: false,
     source: 'territory_web_client',
@@ -75,7 +75,7 @@ export function captureGameEvent(name: GameEvent, details: GameEventProps = {}):
 
 function sendEvent(event: string, properties: Record<string, string | boolean>): void {
   const id = sessionId();
-  if (!id || !EVENT_NAMES.has(event)) return;
+  if (import.meta.env.VITE_TERRITORY_VISUAL_PREVIEW === 'true' || !id || !EVENT_NAMES.has(event)) return;
   // Events must never block UI, login, the save queue or critical requests.
   try {
     void fetch(ANALYTICS_URL, {

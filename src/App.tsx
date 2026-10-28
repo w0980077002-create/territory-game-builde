@@ -37,6 +37,9 @@ import { forgeCost } from '@/game/forge';
 import { socialStatus, type SocialStatus } from '@/game/socialQuests';
 import { getQuestAlerts, readSeenQuests, rememberSeenQuests } from '@/game/questAttention';
 
+// Visual-only staging: no real account, cloud saves, or server-linked rewards.
+const VISUAL_PREVIEW = import.meta.env.VITE_TERRITORY_VISUAL_PREVIEW === 'true';
+
 // Only City is downloaded for initial login; other screens load on demand.
 // Never prefetch every game mode on a mobile connection.
 const BattleScreen = lazy(() => import('@/components/BattleScreen').then(m => ({ default: m.BattleScreen })));
@@ -181,7 +184,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     return game.player.gold >= cost.gold && game.forgeMaterials >= cost.materials;
   });
   const onSocialStatusChange = useCallback((next: SocialStatus) => setSocialClaims(next), []);
-  useLiveSync(loaded);
+  useLiveSync(loaded && !VISUAL_PREVIEW);
   // Anonymously count successful navigation after the cloud save has loaded.
   // No user ID, character name or gameplay data is sent to analytics.
   useEffect(() => {
@@ -233,7 +236,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   // Expiring VIP is refreshed against server time, including WebView resume.
   useEffect(()=>{
-    if(!loaded)return;
+    if(!loaded || VISUAL_PREVIEW)return;
     const refresh=()=>{if(document.visibilityState!=='hidden')void refreshFortuneVip();};
     const timer=setInterval(refresh,60000);
     document.addEventListener('visibilitychange',refresh);
@@ -242,7 +245,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   // Social rewards are stored on the server, never inferred from local quest progress.
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || VISUAL_PREVIEW) return;
     let active = true;
     socialStatus().then((result) => {
       if (active) setSocialClaims(result);
@@ -282,6 +285,11 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
+    if (VISUAL_PREVIEW) {
+      // The initialized local game state is used only in this browser tab.
+      setLoaded(true);
+      return;
+    }
     loadCloudSave(user.id, user.displayName)
       .then(async (profile) => {
         if (cancelled) return;
@@ -314,7 +322,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   }, [user.id, user.displayName]);
 
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || VISUAL_PREVIEW) return;
     // Important actions (battle wins, shop purchases, forge upgrades, rewards)
     // start a cloud write immediately. Only one is in flight; newer changes
     // are sent as soon as its confirmed response arrives.
@@ -394,6 +402,11 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
       // native variable, then to the browser's dynamic viewport height.
       style={{ background: 'var(--color-bg)', height: 'var(--territory-viewport-height, var(--tg-viewport-stable-height, 100dvh))' }}
     >
+      {VISUAL_PREVIEW && (
+        <div className="shrink-0 z-50 bg-amber-400 px-2 py-1 text-center text-[11px] font-bold text-black">
+          ТЕСТОВЫЙ ПРОСМОТР — без сервера и сохранения прогресса
+        </div>
+      )}
       {live.maintenance && (
         <div className="shrink-0 z-40 flex items-center justify-center gap-1.5 bg-amber-500 py-1 text-[11px] font-bold text-black">
           <Wrench className="w-3 h-3" /> {translate('maintenance')}
@@ -595,6 +608,7 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    if (VISUAL_PREVIEW) return;
     // Owner verification must still happen server-side, but it should not hold
     // the loading screen for ALL players while the admin API is slow.
     // Until verified the client has NO admin privileges, including maintenance
@@ -603,6 +617,9 @@ function App() {
     void fetchMaintenance().then((on) => useLive.set((s) => ({ ...s, maintenance: on }))).catch(() => {});
   }, []);
 
+  if (VISUAL_PREVIEW) {
+    return <GameShell key="visual-preview" user={{ id: 'visual-preview', telegramId: null, photoUrl: null, displayName: 'Тестовый герой' }} isAdmin={false} />;
+  }
   if (authState.status === 'loading') return <Splash text={t('loadingHero')} />;
   if (maintenance && !isAdmin) return <MaintenanceScreen />;
   if (authState.status === 'guest') return <TelegramPrompt error={authState.error} />;

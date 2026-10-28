@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-const base = '/territory-game-builde/';
+const base = process.env.VERCEL ? '/' : '/territory-game-builde/';
 
 function fixPublicAssetPaths(): Plugin {
   return {
