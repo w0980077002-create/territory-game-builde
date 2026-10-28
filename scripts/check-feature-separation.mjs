@@ -9,7 +9,10 @@ const [app, home, map, professions, auction] = await Promise.all([
   readFile(new URL('../src/components/AuctionScreen.tsx', import.meta.url), 'utf8'),
 ]);
 
-assert.match(app, /screen === 'map' && <MapScreen \/>/, 'Map must remain a standalone screen');
+assert.match(app, /screen === 'map' && <MapScreen\b/, 'Map must remain a standalone screen');
+assert.match(app, /onTrial=\{\(\) =>/, 'Map must keep the separate Trials route');
+assert.match(app, /onCompanions=\{\(\) =>/, 'Map must keep the Companion route');
+assert.match(app, /onRunes=\{\(\) =>/, 'Map must keep the Runes route');
 assert.match(app, /screen === 'professions' && \(STAGE8_CLIENT_OPT_IN \? <Stage8ProfessionsScreen onNavigate=/,
   'Owner-enabled secure professions must keep the same standalone screen and a rollback path');
 assert.match(app, /screen === 'auction' && <AuctionScreen \/>/, 'Auction must have its own route');
