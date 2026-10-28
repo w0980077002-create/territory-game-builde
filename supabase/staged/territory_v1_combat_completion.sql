@@ -7,6 +7,8 @@ REVOKE ALL ON SCHEMA territory_private FROM PUBLIC, anon, authenticated;
 CREATE TABLE IF NOT EXISTS territory_private.combat_config_v1 (
   id boolean PRIMARY KEY DEFAULT true CHECK(id),
   enabled boolean NOT NULL DEFAULT false,
+  -- Never replace real PvE until an ATOMIC, idempotent reward settlement is installed.
+  settlement_ready boolean NOT NULL DEFAULT false,
   version integer NOT NULL DEFAULT 1 CHECK(version>0),
   catalog jsonb NOT NULL DEFAULT '{"skills":[],"runes":[],"passives":[]}',
   rules jsonb NOT NULL DEFAULT '{}',
@@ -114,6 +116,7 @@ BEGIN
   IF p_request->>'action'='resume' THEN RETURN result; END IF;
   IF NOT c.enabled OR c.approval_reference IS NULL THEN RAISE EXCEPTION 'combat_not_enabled'; END IF;
   IF p_request->>'action'='start' THEN
+    IF NOT c.settlement_ready THEN RAISE EXCEPTION 'combat_settlement_not_ready'; END IF;
     SELECT * INTO e FROM territory_private.combat_encounters_v1 WHERE encounter_id=p_request->>'encounterId' AND enabled;
     IF NOT FOUND THEN RAISE EXCEPTION 'combat_encounter_not_available'; END IF;
     IF e.mode='pvp' THEN
@@ -235,6 +238,44 @@ BEGIN
  RETURN jsonb_build_object('enabled',true,'revision',h.version,'catalog',c.catalog,
    'ownership',h.fighter->'ownership','loadout',h.fighter->'loadout');
 END $$;
+-- Route stays disabled until BOTH the battle engine and atomic rewards are ready.
+-- Only authenticated players can read their own available real PvE encounter.
+CREATE OR REPLACE FUNCTION public.territory_combat_route_v1(p_kind text,p_enemy_id text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $
+DECLARE u uuid:=auth.uid(); cfg territory_private.combat_config_v1%ROWTYPE;
+  row_e territory_private.combat_encounters_v1%ROWTYPE;
+  active_id uuid;
+BEGIN
+ IF u IS NULL OR p_kind NOT IN ('stage','trial') OR p_enemy_id !~ '^[a-zA-Z0-9_-]{1,80}
+GRANT EXECUTE ON FUNCTION public.territory_combat_loadout_status_v1() TO authenticated;
+COMMIT;
+
+   THEN RETURN jsonb_build_object('enabled',false); END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.players WHERE id=u AND NOT coalesce(banned,false))
+   THEN RETURN jsonb_build_object('enabled',false); END IF;
+ SELECT * INTO cfg FROM territory_private.combat_config_v1 WHERE id=true;
+ IF NOT coalesce(cfg.enabled,false) OR NOT coalesce(cfg.settlement_ready,false)
+    OR cfg.approval_reference IS NULL THEN RETURN jsonb_build_object('enabled',false); END IF;
+ IF NOT EXISTS(SELECT 1 FROM territory_private.combat_profiles_v1
+     WHERE player_id=u AND verified AND approval_reference IS NOT NULL)
+   THEN RETURN jsonb_build_object('enabled',false); END IF;
+ SELECT * INTO row_e FROM territory_private.combat_encounters_v1
+    WHERE encounter_id=('territory_v1_'||p_kind||'_'||p_enemy_id) AND enabled
+      AND mode IN('pve','boss') AND approval_reference IS NOT NULL;
+ IF NOT FOUND THEN RETURN jsonb_build_object('enabled',false); END IF;
+ -- Existing server sessions take precedence, preventing duplicate battles.
+ SELECT session_id INTO active_id FROM territory_private.combat_sessions_v1
+    WHERE player_id=u AND state->>'status'='fighting' LIMIT 1;
+ IF active_id IS NOT NULL AND NOT EXISTS(
+    SELECT 1 FROM territory_private.combat_sessions_v1 WHERE session_id=active_id
+      AND encounter_id=row_e.encounter_id)
+ THEN RETURN jsonb_build_object('enabled',false); END IF;
+ RETURN jsonb_build_object('enabled',true,'encounter_id',row_e.encounter_id,
+    'session_id',active_id);
+END $;
+REVOKE ALL ON FUNCTION public.territory_combat_route_v1(text,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.territory_combat_route_v1(text,text) TO authenticated;
+
 REVOKE ALL ON FUNCTION public.territory_combat_loadout_status_v1() FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_combat_loadout_status_v1() TO authenticated;
 COMMIT;
