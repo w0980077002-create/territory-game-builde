@@ -7,6 +7,7 @@ import { Hammer, ArrowUp, X, Package, MapPinned, CheckCircle2 } from 'lucide-rea
 import { hapticNotify } from '@/game/telegram';
 import { equipmentArt } from '@/game/art';
 import { ItemArt } from './ui/ItemArt';
+import { ForgeForecastHint } from './ForgeForecastHint';
 import { IosGamePortal } from './ui/Modal';
 import type { Equipment, InventoryItem } from '@/game/types';
 import { upgradeEquipment } from '@/game/equipmentBalance';
@@ -339,6 +340,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap }: { focusEqu
                 <p className="text-xs text-gray-500 mt-2">
                   {language === 'en' ? 'Success chance' : 'Шанс успеха'}: {Math.round(forgeSuccessRate(selectedCurrent.equipment.level) * 100)}%
                 </p>
+                <ForgeForecastHint itemLevel={selectedCurrent.equipment.level} heroLevel={state.player.level} language={language}/>
               </div>
             )}
 
