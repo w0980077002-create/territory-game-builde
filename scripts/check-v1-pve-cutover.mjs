@@ -17,6 +17,11 @@ assert.match(old,/return <ServerPveFight/);
 assert.match(sql,/settlement_ready boolean NOT NULL DEFAULT false/,'No server battle before atomic wallet settlement');
 assert.match(sql,/IF NOT c\.settlement_ready THEN RAISE EXCEPTION 'combat_settlement_not_ready'/,'Direct Edge start must be denied until settlement');
 assert.match(sql,/CREATE OR REPLACE FUNCTION public\.territory_combat_route_v1/);
+const route=sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION public.territory_combat_route_v1'),sql.indexOf('REVOKE ALL ON FUNCTION public.territory_combat_route_v1'));
+assert.match(route,/AS \$\$\nDECLARE u uuid:=auth\.uid\(\)/,'The route must have valid double-dollar PostgreSQL delimiters');
+assert.match(route,/END \$\$;/,'The route must end with valid PostgreSQL delimiters');
+assert.match(route,/\^\[a-zA-Z0-9_-\]\{1,80\}\$/,'The requested enemy id must be strictly validated');
+
 assert.match(sql,/NOT coalesce\(cfg\.settlement_ready,false\)/,'Public route must be fail-closed');
 assert.match(sql,/auth\.uid\(\)/,'Only own verified profile can unlock server route');
 assert.match(sql,/GRANT EXECUTE ON FUNCTION public\.territory_combat_route_v1\(text,text\) TO authenticated/);
