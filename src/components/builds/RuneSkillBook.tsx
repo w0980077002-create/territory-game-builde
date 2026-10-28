@@ -91,7 +91,7 @@ export function RuneSkillBook({
     <div className="rune-book__passives">
       <h4><span className="rune-book__subtitle-line"/>{en ? 'Passive skills' : 'Пассивные навыки'}<span className="rune-book__subtitle-line"/></h4>
       <div className="rune-book__passive-grid">
-        {catalog.passives.filter(passive => passiveExpanded || selection.passiveIds.includes(passive.id)).map(passive => {
+        {(passiveExpanded ? catalog.passives : [...catalog.passives.filter(passive => selection.passiveIds.includes(passive.id)), ...catalog.passives.filter(passive => !selection.passiveIds.includes(passive.id))].slice(0,3)).map(passive => {
           const picked = selection.passiveIds.includes(passive.id);
           return <button type="button" key={passive.id} aria-pressed={picked}
             disabled={(!picked && selection.passiveIds.length >= 3) || (serverConnected && !(available?.passives[passive.id]??0))}

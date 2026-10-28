@@ -199,3 +199,28 @@
  .rune-book__heading{padding-left:8px;padding-right:8px}
 }
 @media(prefers-reduced-motion:reduce){.rune-book__hex{transition:none}}
+
+
+/* Compact phone composition: all five skill tiers remain easy to scan. */
+.rune-book__heading{min-height:119px;padding-top:16px;padding-bottom:22px}
+.rune-book__crest{width:62px;height:67px}
+.rune-book__crest span{font-size:35px}
+.rune-book__row{min-height:83px;padding:3px 0}
+.rune-book__skill{min-height:75px;padding:2px 0;gap:2px}
+.rune-book__hex{width:clamp(50px,16vw,64px);height:clamp(55px,18vw,68px)}
+.rune-book__hex svg{width:32px;height:32px}
+.rune-book__group-symbol{width:45px;height:49px;font-size:26px!important}
+.rune-book__group b{font-size:10px}
+.rune-book__skill-name{height:12px;line-height:12px}
+.rune-book__passives{padding-top:9px;padding-bottom:6px}
+.rune-book__passive{min-height:76px}
+.rune-book__passive .rune-book__hex--small{width:48px;height:52px}
+.rune-book__passive .rune-book__hex--small svg{width:27px;height:27px}
+@media(max-width:360px){
+ .rune-book__heading{min-height:110px}
+ .rune-book__row{min-height:79px}
+ .rune-book__skill{min-height:72px}
+ .rune-book__hex{width:45px;height:53px}
+ .rune-book__hex svg{width:28px;height:28px}
+ .rune-book__group-symbol{width:40px;height:44px;font-size:23px!important}
+}
