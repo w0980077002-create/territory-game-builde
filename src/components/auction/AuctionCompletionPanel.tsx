@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Clock3, Gem, Package, RefreshCw, ShoppingBag } from 'lucide-react';
 import {
-  fetchAuctionCompletion, submitAuctionCompletion, readPendingAuctionCompletion, keepPendingAuctionCompletion,
+  fetchAuctionCompletion, submitAuctionCompletion, nameAuctionItem, readPendingAuctionCompletion, keepPendingAuctionCompletion,
   validAuctionCompletionAction,
   type AuctionCompletionAction, type AuctionCompletionFilters, type AuctionCompletionOverview, type AuctionCurrency,
   type PendingAuctionCompletion,
@@ -33,6 +33,8 @@ export function AuctionCompletionPanel({tab,language}:{tab:TradeTab;language:'ru
   const [currency,setCurrency]=useState<AuctionCurrency>('gold');
   const [price,setPrice]=useState('100');
   const [amount,setAmount]=useState('1');
+  const [renameTarget,setRenameTarget]=useState<string|null>(null);
+  const [customName,setCustomName]=useState('');
   const [duration,setDuration]=useState(86400);
   const format=(v:number)=>v.toLocaleString(en?'en-US':'ru-RU');
   const refresh=useCallback(async(next:AuctionCompletionFilters={})=>{
@@ -72,6 +74,17 @@ export function AuctionCompletionPanel({tab,language}:{tab:TradeTab;language:'ru
         try{await keepPendingAuctionCompletion(null);if(alive.current)setPending(null);}catch{}
         if(alive.current)setError(en?'Trade rejected by server.':'Сервер отклонил операцию.');
       }else if(alive.current)setError(en?'Result uncertain. Use safe retry with the same ID.':'Результат неизвестен. Повтори операцию с сохранённым ID.');
+    }finally{lock.current=false;if(alive.current)setBusy(false);}
+  };
+  const rename=async(itemId:string,source:'stage3'|'stage8')=>{
+    if(lock.current||!recoveryReady||pending||!customName.trim()||customName.trim().length>60)return;
+    lock.current=true;setBusy(true);setError('');setNotice('');
+    try{
+      await nameAuctionItem(crypto.randomUUID(),itemId,source,customName.trim());
+      if(alive.current){setNotice(en?'Item renamed by the server.':'Имя изделия сохранено сервером.');setRenameTarget(null);setCustomName('');}
+      try{await refresh(filters);}catch{if(alive.current)setError(en?'Name saved; refresh the market.':'Имя сохранено. Обнови список.');}
+    }catch{
+      if(alive.current)setError(en?'Naming requires mastery 300, a purchased Master License and ownership. Check the item before retrying.':'Для имени нужны мастерство 300, купленная лицензия мастера и свой предмет. Проверь состояние перед повтором.');
     }finally{lock.current=false;if(alive.current)setBusy(false);}
   };
   const parsedPrice=Number(price),quantity=Number(amount);
@@ -130,9 +143,20 @@ export function AuctionCompletionPanel({tab,language}:{tab:TradeTab;language:'ru
           </select></label>
         </div>
         {currency!=='gold'&&<p>{en?'Gem prices must be multiples of 10.':'Цена в алмазах должна быть кратной 10.'}</p>}
-        {overview.items.filter(item=>item.source==='stage3'||item.source==='stage8').map(item=><button type="button" key={item.source+item.item_id} disabled={!validPrice||!!pending||busy||!recoveryReady} onClick={()=>void execute(makeAction(item.item_id,item.source as 'stage3'|'stage8'))}>
-          <Package size={15}/> {item.item.customName??item.item.name??(en?'Crafted item':'Изделие мастера')} — {en?'Sell':'Продать'}
-        </button>)}
+        {overview.items.filter(item=>item.source==='stage3'||item.source==='stage8').map(item=><div className="auction-completion__crafted" key={item.source+item.item_id}>
+          <span><Package size={15}/> {item.item.customName??item.item.name??(en?'Crafted item':'Изделие мастера')}</span>
+          <button type="button" disabled={!validPrice||!!pending||busy||!recoveryReady}
+            onClick={()=>void execute(makeAction(item.item_id,item.source as 'stage3'|'stage8'))}>{en?'Sell':'Продать'}</button>
+          <button type="button" disabled={busy||!!pending||!recoveryReady}
+            onClick={()=>{setRenameTarget(renameTarget===item.item_id?null:item.item_id);setCustomName('');}}>
+            {en?'Give item a name':'Дать имя изделию'}</button>
+          {renameTarget===item.item_id&&<div className="auction-completion__rename">
+            <label>{en?'Custom name (mastery 300 + Master License)':'Имя (мастерство 300 + лицензия мастера)'}
+              <input value={customName} maxLength={60} onChange={e=>setCustomName(e.target.value)} placeholder={en?'New name':'Новое имя'}/></label>
+            <button type="button" disabled={busy||!!pending||!customName.trim()||customName.trim().length>60}
+              onClick={()=>void rename(item.item_id,item.source as 'stage3'|'stage8')}>{en?'Save name':'Сохранить имя'}</button>
+          </div>}
+        </div>)}
         {Object.entries(overview.resources).filter(([,q])=>(q??0)>0).length>0&&<div className="auction-completion__resources">
           <label>{en?'Quantity':'Количество ресурсов'}<input type="number" min="1" step="1" inputMode="numeric" value={amount} onChange={e=>setAmount(e.target.value)}/></label>
           {Object.entries(overview.resources).filter(([,q])=>(q??0)>0).map(([id,qty])=><button type="button" key={id}
