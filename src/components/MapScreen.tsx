@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Lock, Sparkles, Crown, Check, BellRing } from 'lucide-react';
 import { useStore } from '@/game/store';
@@ -120,6 +120,7 @@ export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes, attentio
     const status = data as GatherStatus;
     setGather(status);
     setServerOffset(Date.parse(status.server_now) - Date.now());
+    setClock(Date.now());
     notifyGatherStatusChanged();
     return status;
   };
@@ -133,19 +134,43 @@ export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes, attentio
           const status = data as GatherStatus;
           setGather(status);
           setServerOffset(Date.parse(status.server_now) - Date.now());
+          setClock(Date.now());
         }
       } catch { /* Keep resource actions disabled if server is not configured. */ }
     })();
     return () => { cancelled = true; };
   }, []);
 
-  // No per-second React renders while the player is simply exploring the map.
-  // Countdown ticks are needed only for an active gathering action.
+  // A four-hour gather should not re-render the whole map 14,400 times.
+  // Tick each second only while the resource detail is open; otherwise schedule
+  // one wake-up near completion. Return from Telegram's background state is
+  // handled below so a throttled timer cannot hide a finished gather.
   useEffect(() => {
     if (!gather?.active) return;
-    const timer = window.setInterval(() => setClock(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [gather?.active?.finishes_at]);
+    const finishesAt = gather.active.finishes_at;
+    const dueAt = Date.parse(finishesAt) - serverOffset;
+    if (!Number.isFinite(dueAt)) return;
+    const detailOpen = selected !== null && selected !== 'chamber';
+    if (detailOpen) {
+      const interval = window.setInterval(() => setClock(Date.now()), 1000);
+      return () => window.clearInterval(interval);
+    }
+    const delay = dueAt - Date.now();
+    if (delay <= 0) {
+      setClock(Date.now());
+      return;
+    }
+    const wakeup = window.setTimeout(() => setClock(Date.now()), Math.min(delay + 20, 2_147_483_647));
+    return () => window.clearTimeout(wakeup);
+  }, [gather?.active?.finishes_at, serverOffset, selected]);
+
+  useEffect(() => {
+    const onReturn = () => {
+      if (document.visibilityState === 'visible') setClock(Date.now());
+    };
+    document.addEventListener('visibilitychange', onReturn);
+    return () => document.removeEventListener('visibilitychange', onReturn);
+  }, []);
 
   const remainingMs = gather?.active
     ? Math.max(0, Date.parse(gather.active.finishes_at) - (clock + serverOffset))
@@ -175,8 +200,9 @@ export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes, attentio
         setNotice(language === 'en' ? 'Gathering started. Return in 4 hours.' : 'Добыча началась. Вернитесь через 4 часа.');
       } else if (gather.active.resource_id !== resource.id) {
         setNotice(language === 'en' ? 'Only one gathering action at a time.' : 'Можно добывать только один ресурс одновременно.');
-      } else if (remainingMs > 0) {
-        setNotice(`${language === 'en' ? 'Time left' : 'Осталось'}: ${timeRemaining(remainingMs)}`);
+      } else if (Math.max(0, Date.parse(gather.active.finishes_at) - (Date.now() + serverOffset)) > 0) {
+        const latestRemainingMs = Math.max(0, Date.parse(gather.active.finishes_at) - (Date.now() + serverOffset));
+        setNotice(`${language === 'en' ? 'Time left' : 'Осталось'}: ${timeRemaining(latestRemainingMs)}`);
       } else {
         const { data, error } = await supabase.rpc('territory_gather_claim');
         if (error || data?.error || data?.resource_id !== resource.id) throw new Error('claim_failed');
@@ -204,7 +230,7 @@ export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes, attentio
     }
   };
 
-  const handleWorldVisit = (place: WorldMapPlace) => {
+  const handleWorldVisit = useCallback((place: WorldMapPlace) => {
     switch (place) {
       case 'forest':
       case 'mountain':
@@ -220,7 +246,7 @@ export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes, attentio
       case 'runes': onRunes(); break;
       default: onNavigate(place);
     }
-  };
+  }, [onTrial, onCompanions, onRunes, onNavigate]);
 
   return (
     <div className="relative h-full min-h-0 w-full overflow-hidden">

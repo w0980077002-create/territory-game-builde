@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=(path)=>readFileSync(path,'utf8');
+const old=read('src/components/pve/PveFight.tsx');
+const battle=read('src/components/pve/ServerPveFight.tsx');
+const sql=read('supabase/staged/territory_v1_combat_completion.sql');
+const generator=read('scripts/generate-staged-combat-sql.mjs');
+
+assert.match(old,/VITE_TERRITORY_V1_SERVER_COMBAT === 'verified'/,'Default remains live old PvE');
+assert.match(old,/function LegacyPveFight\(/,'Old manual zone battle remains intact');
+assert.match(old,/return <LegacyPveFight/, 'Legacy fight must remain the fallback');
+// Existing beta session only routes to server when BOTH deployment and SQL are approved.
+assert.match(old,/territory_combat_route_v1/);
+assert.match(old,/setRoute\('legacy'\)/,'Offline/missing RPC must fall back to existing PvE');
+assert.match(old,/if \(route === 'checking'\)/,'No duplicate referral or local rewards while checking route');
+assert.match(old,/return <ServerPveFight/);
+assert.match(sql,/settlement_ready boolean NOT NULL DEFAULT false/,'No server battle before atomic wallet settlement');
+assert.match(sql,/IF NOT c\.settlement_ready THEN RAISE EXCEPTION 'combat_settlement_not_ready'/,'Direct Edge start must be denied until settlement');
+assert.match(sql,/CREATE OR REPLACE FUNCTION public\.territory_combat_route_v1/);
+const route=sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION public.territory_combat_route_v1'),sql.indexOf('REVOKE ALL ON FUNCTION public.territory_combat_route_v1'));
+assert.match(route,/AS \$\$\nDECLARE u uuid:=auth\.uid\(\)/,'The route must have valid double-dollar PostgreSQL delimiters');
+assert.match(route,/END \$\$;/,'The route must end with valid PostgreSQL delimiters');
+assert.match(route,/\^\[a-zA-Z0-9_-\]\{1,80\}\$/,'The requested enemy id must be strictly validated');
+
+assert.match(sql,/NOT coalesce\(cfg\.settlement_ready,false\)/,'Public route must be fail-closed');
+assert.match(sql,/auth\.uid\(\)/,'Only own verified profile can unlock server route');
+assert.match(sql,/GRANT EXECUTE ON FUNCTION public\.territory_combat_route_v1\(text,text\) TO authenticated/);
+assert.match(battle,/pendingCombatCommand\(\)/,'Recover unfinished server combat commands');
+assert.match(battle,/requestCombat\(command\)/,'Start only via authenticated server');
+assert.match(battle,/requestCombat\(authoritative\)/,'Moves are server-authoritative and safely replayed');
+assert.match(battle,/revision:receipt\.revision/,'Server revision guards stale turns');
+assert.match(battle,/sessionId:receipt\.session_id/,'Only server-confirmed session is advanced');
+assert.match(battle,/state\.input\.control==='manual'/,'Manual skill buttons are wired to the server');
+assert.match(battle,/state\.input\.control==='auto'/,'Auto mode follows server configuration');
+assert.match(battle,/hero\.loadout\.skills\.map/,'Use actual equipped skills, not visual placeholders');
+assert.match(battle,/state\.input\.catalog\.skills/,'Cooldown and energy from verified catalog');
+assert.match(battle,/rewards_claimed/,'Only a server reward receipt can unlock next stage');
+assert.match(battle,/canContinue&&onNext/,'No next stage before settlement');
+assert.doesNotMatch(battle,/recordBattleResult\(|useGame\.set\(|applyReward\(|saveCloudSave|claimDaily\(/,'No client-authoritative currency grants');
+assert.match(generator,/enabled = false/,'Balance proposal cannot enable new combat automatically');
+console.log('TERRITORY PvE cutover PASS: old rewarded fights preserved, new server runes/skills routed only after atomic settlement.');

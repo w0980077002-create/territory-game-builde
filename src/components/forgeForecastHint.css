@@ -1,0 +1,15 @@
+/* Tiny opt-in cost explanation beneath real forge attempt price. */
+.forge-forecast-hint{margin-top:9px;border:1px solid #b58a50a8;border-radius:10px;overflow:hidden;background:linear-gradient(110deg,#283348,#332617)}
+.forge-forecast-hint__toggle{display:flex;align-items:center;gap:7px;width:100%;min-height:37px;padding:7px 9px;text-align:left;font-size:11px;font-weight:850;color:#f9e3b0}
+.forge-forecast-hint__toggle>svg:first-child{color:#ffdd9e;flex-shrink:0}
+.forge-forecast-hint__toggle>svg:last-child{margin-left:auto;flex-shrink:0}
+.forge-forecast-hint__toggle:focus-visible{outline:2px solid #ffe2a6;outline-offset:-2px}
+.forge-forecast-hint__rows{display:grid;gap:5px;padding:0 8px 5px}
+.forge-forecast-hint__row{display:grid;gap:3px;padding:7px 8px;border:1px solid #a57f4b66;border-radius:8px;background:#111f2cb8;font-variant-numeric:tabular-nums}
+.forge-forecast-hint__row>strong{font-size:11px;color:#ffdf9e}
+.forge-forecast-hint__row>span{font-size:10px;color:#d0dce6}
+.forge-forecast-hint__row>div{display:flex;flex-wrap:wrap;gap:12px}
+.forge-forecast-hint__row>div span{display:flex;align-items:center;gap:4px;color:#ffdeaa;font-size:11px;font-weight:850}
+.forge-forecast-hint__row>div span:last-child{color:#efc48d}
+.forge-forecast-hint>p{margin:0;padding:5px 9px 8px;color:#cbc7bd;font-size:9px;line-height:1.45}
+@media(prefers-reduced-motion:reduce){.forge-forecast-hint *{transition:none!important}}

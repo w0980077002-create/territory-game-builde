@@ -4,34 +4,21 @@ import { useGame } from '@/game/actions';
 import { DAILY_REWARDS, MAIL, claimDaily, claimMail, dailyStatus, type Reward } from '@/game/progression';
 import { Modal } from '@/components/ui/Modal';
 import { Currency } from '@/components/ui/Currency';
-import { ItemArt } from '@/components/ui/ItemArt';
+import { RewardLootStrip } from '@/components/ui/RewardLootStrip';
 import { useLive, claimMailGrant, getClaimedMailHistory, type ClaimedMailGrant } from '@/game/live';
-import { generateShopItems } from '@/game/engine';
+import './mailVisuals.css';
 import { mailRewardVisuals } from '@/game/mailRewardVisuals';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLanguage, localizeText } from '@/game/i18n';
+import { useLanguage } from '@/game/i18n';
 import { CITY_BACKGROUND_KEY, initialCityBackground, type CityBackground } from '@/components/home/LiveCityBackdrop';
 
 export type SaveStatus = 'saved' | 'saving' | 'error';
 
-const LARGE_HEALTH_POTION = generateShopItems(1).find((item) => item.id === 'shop_potion_hp_large');
-
 function RewardLine({ reward, size = 16 }: { reward: Reward; size?: number }) {
   const { language } = useLanguage();
-  return (
-    <span className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-xs text-amber-50">
-      {!!reward.gold && <Currency kind="gold" value={reward.gold} size={size} />}
-      {!!reward.gems && <Currency kind="gems" value={reward.gems} size={size} />}
-      {!!reward.redGems && <Currency kind="redGems" value={reward.redGems} size={size} />}
-      {!!reward.largeHealthPotions && LARGE_HEALTH_POTION && (
-        <span className="inline-flex items-center gap-0.5 font-semibold" title={localizeText(LARGE_HEALTH_POTION.name, language)}>
-          <ItemArt item={LARGE_HEALTH_POTION} size={size + 3} />
-          ×{reward.largeHealthPotions}
-        </span>
-      )}
-      {!!reward.stones && <Currency kind="stones" value={reward.stones} size={size} />}
-    </span>
-  );
+  return <span className="territory-reward-line" data-icon-size={size}>
+    <RewardLootStrip reward={reward} language={language}/>
+  </span>;
 }
 
 export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (t: string) => void }) {
@@ -49,18 +36,18 @@ export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (
   return (
     <Modal title={t('dailyRewards')} icon="/ic-daily.webp" onClose={onClose}>
       <p className="text-xs text-gray-400 mb-3 leading-relaxed">{t('dailyRewardsHint')}</p>
-      <div className="grid grid-cols-4 gap-2 mb-4">
+      <div className="territory-daily-rewards grid grid-cols-4 gap-2 mb-4">
         {DAILY_REWARDS.map((r, i) => {
           const done = claimedToday ? i <= dayIndex : i < dayIndex;
           const current = i === dayIndex && !claimedToday;
           return (
             <div
               key={i}
-              className={`relative rounded-xl border p-1.5 flex flex-col items-center gap-1 min-h-[76px] ${
+              className={`territory-daily-card relative rounded-xl border p-1.5 flex flex-col items-center gap-1 min-h-[76px] ${
                 i === 6 ? 'col-span-2' : ''
               } ${current ? 'border-amber-400/80 bg-amber-500/10 shadow-[0_0_12px_rgba(251,191,36,0.25)]' : done ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/10 bg-black/30'}`}
             >
-              <span className="text-[10px] font-bold text-gray-300">{t('day')} {i + 1}</span>
+              <span className="territory-daily-card__day text-[10px] font-bold text-gray-300">{t('day')} {i + 1}</span>
               <RewardLine reward={r} size={14} />
               {done && (
                 <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
@@ -148,8 +135,8 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
   const newCount = adminMail.length + MAIL.filter((letter) => !state.mailClaimed.includes(letter.id)).length;
 
   return (
-    <section className="space-y-1.5" aria-label={language === 'en' ? 'Messages' : 'Сообщения'}>
-        <div className="flex gap-1.5" role="tablist" aria-label={language === 'en' ? 'Mail folders' : 'Разделы почты'}>
+    <section className="territory-mail space-y-1.5" aria-label={language === 'en' ? 'Messages' : 'Сообщения'}>
+        <div className="territory-mail__tabs flex gap-1.5" role="tablist" aria-label={language === 'en' ? 'Mail folders' : 'Разделы почты'}>
           <button type="button" role="tab" aria-selected={!received} onClick={() => setTab('new')}
             className={`rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors ${!received ? 'border-sky-400/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-black/20 text-gray-400'}`}>
             {language === 'en' ? 'New' : 'Новые'} {newCount > 0 ? `(${newCount})` : ''}
@@ -174,7 +161,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
           const rewards = mailRewardVisuals(m.payload);
           const expanded = expandedId === `admin:${m.id}`;
           return (
-            <article key={m.id} className={`rounded-lg border ${received ? 'border-white/10 bg-black/20' : 'border-sky-400/30 bg-sky-500/5'}`}>
+            <article key={m.id} className={`territory-mail__letter rounded-lg border ${received ? 'border-white/10 bg-black/20' : 'border-sky-400/30 bg-sky-500/5'}`}>
               <button type="button" className="flex w-full items-center gap-2 px-2 py-1.5 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `admin:${m.id}`)}>
                 <img src={import.meta.env.BASE_URL + 'ic-mail.webp'} alt="" className="h-5 w-5 shrink-0 object-contain" />
                 <span className="min-w-0 flex-1">
@@ -196,7 +183,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
                       return (
                         <span
                           key={reward.key}
-                          className="inline-flex shrink-0 items-center gap-0.5 rounded border border-amber-300/15 bg-black/20 px-1 py-0.5 text-[10px] font-bold text-amber-50 tabular-nums"
+                          className="territory-mail__reward inline-flex shrink-0 items-center gap-0.5 rounded border border-amber-300/15 bg-black/20 px-1 py-0.5 text-[10px] font-bold text-amber-50 tabular-nums"
                           title={name}
                           aria-label={`${name}: ${reward.amount}`}
                         >
@@ -227,7 +214,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
           const claimed = state.mailClaimed.includes(l.id);
           const expanded = expandedId === `game:${l.id}`;
           return (
-            <article key={l.id} className={`rounded-lg border ${claimed ? 'border-white/10 bg-black/20' : 'border-amber-500/25 bg-black/30'}`}>
+            <article key={l.id} className={`territory-mail__letter rounded-lg border ${claimed ? 'border-white/10 bg-black/20' : 'border-amber-500/25 bg-black/30'}`}>
               <button type="button" className="flex w-full items-center gap-2 px-2 py-1.5 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `game:${l.id}`)}>
                 <img src={import.meta.env.BASE_URL + 'ic-mail.webp'} alt="" className="h-5 w-5 shrink-0 object-contain" />
                 <span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-white">{l.title}</span><span className="block truncate text-[9px] text-slate-400">{l.from}</span></span>

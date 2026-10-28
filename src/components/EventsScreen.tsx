@@ -10,6 +10,8 @@ import { fetchSeasonStatus, type SeasonStatus } from '@/game/seasonApi';
 import { getArenaWeeklyStatus, type ArenaWeeklyStatus } from '@/game/arenaWeekly';
 import { eventCalendar, readyQuestCount, withEventStatusTimeout } from '@/game/eventsBoard';
 import { captureGameEvent } from '@/game/analytics';
+import { RewardLootStrip } from '@/components/ui/RewardLootStrip';
+import { ProgressionLive } from '@/components/progression/ProgressionLive';
 import { seasonCountdown, seasonWindow } from '@/game/seasonCalendar';
 import './eventsBoard.css';
 
@@ -46,10 +48,16 @@ function SevenDayJourney({ dayIndex, claimedToday, rewards, onOpen, en }: {
   onOpen: () => void;
   en: boolean;
 }) {
+  const collectedDays = Math.max(0, Math.min(7, dayIndex + Number(claimedToday)));
   return <section className="territory-events__journey" aria-label={en ? 'Seven-day hero journey' : 'Путь героя на семь дней'}>
     <div className="territory-events__journey-title">
       <div><span>{en ? 'YOUR FIRST STEPS' : 'ПУТЬ ГЕРОЯ'}</span><h3>{en ? 'Seven days of gifts' : 'Семь дней подарков'}</h3></div>
       <b>{Math.max(1, Math.min(7, dayIndex + 1))}/7</b>
+    </div>
+    <div className="territory-events__journey-progress" role="progressbar"
+      aria-label={en ? 'Days collected' : 'Подарков получено'}
+      aria-valuemin={0} aria-valuemax={7} aria-valuenow={collectedDays}>
+      <span style={{ width: `${Math.round(collectedDays / 7 * 100)}%` }}/>
     </div>
     <div className="territory-events__journey-days">
       {rewards.slice(0, 7).map((reward, index) => {
@@ -60,11 +68,13 @@ function SevenDayJourney({ dayIndex, claimedToday, rewards, onOpen, en }: {
           reward.gems ? `${reward.gems} 💎` : null, reward.stones ? `${reward.stones} ⚔️` : null,
           reward.largeHealthPotions ? `${reward.largeHealthPotions} 🧪` : null].filter(Boolean).join(' · ');
         return <button key={index} type="button" onClick={onOpen} disabled={!current}
-          className={`territory-events__journey-day ${ready ? 'territory-events__journey-day--ready' : ''} ${complete ? 'territory-events__journey-day--done' : ''}`}
+          className={`territory-events__journey-day ${current ? 'territory-events__journey-day--today' : ''} ${ready ? 'territory-events__journey-day--ready' : ''} ${complete ? 'territory-events__journey-day--done' : ''}`}
           aria-label={`${en ? 'Day' : 'День'} ${index + 1}: ${detail}${ready ? en ? ', available now' : ', можно забрать' : ''}`}
           title={detail}>
           <span>{en ? 'DAY' : 'ДЕНЬ'} {index + 1}</span>
-          <strong aria-hidden="true">{complete ? '✓' : index === 6 ? '🎁' : index % 2 ? '💎' : '🪙'}</strong>
+          <span className="territory-events__journey-loot">
+            <RewardLootStrip reward={reward} language={en ? 'en' : 'ru'} mini/>
+          </span>
           <em>{ready ? en ? 'CLAIM' : 'ЗАБРАТЬ' : complete ? '✓' : '· · ·'}</em>
         </button>;
       })}
@@ -179,6 +189,8 @@ export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
       <button id="territory-events-daily-tab" type="button" role="tab" aria-controls="territory-events-daily-panel" aria-selected={tab === 'daily'} onClick={() => switchTab('daily')}><CalendarDays size={17}/>{en ? 'Today' : 'Сегодня'}</button>
       <button id="territory-events-weekly-tab" type="button" role="tab" aria-controls="territory-events-weekly-panel" aria-selected={tab === 'weekly'} onClick={() => switchTab('weekly')}><Trophy size={17}/>{en ? 'This week' : 'Эта неделя'}</button>
     </div>
+
+    <ProgressionLive language={language} tab={tab}/>
 
     {tab === 'daily' ? <div id="territory-events-daily-panel" className="territory-events__list" role="tabpanel" aria-labelledby="territory-events-daily-tab">
       <SevenDayJourney dayIndex={daily.dayIndex} claimedToday={daily.claimedToday} rewards={DAILY_REWARDS} onOpen={onDaily} en={en}/>

@@ -111,10 +111,11 @@ export async function executeStage8(recipeId: string, operationId: string): Prom
         || data.item_output.name!==recipe.output.name || data.item_output.type!==recipe.output.type
         || data.item_output.rarity!==recipe.output.rarity) throw new Error('stage8_missing_item');
     const perishable=recipe.output.type==='potion' || recipe.output.type==='elixir';
-    if (perishable !== (typeof data.expires_at==='string' && Number.isFinite(Date.parse(data.expires_at)))) {
+    const datedMaterial=recipe.output.type==='material' && data.expires_at!==null;
+    if ((perishable || datedMaterial) !== (typeof data.expires_at==='string' && Number.isFinite(Date.parse(data.expires_at)))) {
       throw new Error('stage8_invalid_expiry');
     }
-    if (!perishable && data.expires_at!==null) throw new Error('stage8_invalid_expiry');
+    if (!perishable && !datedMaterial && data.expires_at!==null) throw new Error('stage8_invalid_expiry');
   }
   return {recipeId,kind:recipe.kind,itemId:recipe.kind==='item'?data.item_id as string:null,
     itemOutput:recipe.kind==='item'?data.item_output as Record<string,unknown>:null,
@@ -147,9 +148,10 @@ export async function fetchStage8Items(): Promise<Stage8OwnedItem[]> {
         || row.item_output.type!==recipe.output.type || row.item_output.rarity!==recipe.output.rarity)
       throw new Error('stage8_inventory_catalog_mismatch');
     const perishable=recipe.output.type==='potion'||recipe.output.type==='elixir';
-    if (perishable !== (typeof row.expires_at==='string' && Number.isFinite(Date.parse(row.expires_at))))
+    const datedMaterial=recipe.output.type==='material' && row.expires_at!==null;
+    if ((perishable || datedMaterial) !== (typeof row.expires_at==='string' && Number.isFinite(Date.parse(row.expires_at))))
       throw new Error('stage8_inventory_expiry_invalid');
-    if (!perishable && row.expires_at!==null) throw new Error('stage8_inventory_expiry_invalid');
+    if (!perishable && !datedMaterial && row.expires_at!==null) throw new Error('stage8_inventory_expiry_invalid');
     return {itemId:row.item_id,recipeId:row.recipe_id,output:row.item_output,expiresAt:row.expires_at as string|null};
   });
 }
@@ -166,7 +168,7 @@ export function mirrorStage8Items(items: InventoryItem[],owned: readonly Stage8O
       masteryLevel:1,masteryXp:0});
     copy.id=id;
     if (copy.equipment) copy.equipment.id=id;
-    if (copy.type==='elixir'||copy.type==='potion') {
+    if (copy.type==='elixir'||copy.type==='potion'||(copy.type==='material' && item.expiresAt!==null)) {
       if (!item.expiresAt) throw new Error('stage8_display_expiry_missing');
       copy.expiresAt=item.expiresAt;
     }

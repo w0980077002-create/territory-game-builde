@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { memo, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronRight, Compass, Hand, Layers3, LocateFixed, Minus, Plus, X } from 'lucide-react';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import './worldMapCanvas.css';
@@ -153,7 +153,7 @@ function sawPanHint(): boolean {
   catch { return false; }
 }
 
-export function WorldMapCanvas({ onVisit, readyRegion, attentionPlaces = [], language }: {
+export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegion, attentionPlaces = [], language }: {
   onVisit: (place: WorldMapPlace) => void;
   readyRegion?: WorldMapRegion;
   attentionPlaces?: readonly WorldMapPlace[];
@@ -604,11 +604,11 @@ export function WorldMapCanvas({ onVisit, readyRegion, attentionPlaces = [], lan
               <div className="grid grid-cols-2 gap-2">
                 {OTHER_PLACES.map(renderDestination)}
               </div>
-              <p className="mt-3 text-center text-[10px] font-medium text-amber-100/70">{language === 'en' ? 'Runes are in Hero → Combat training.' : 'Руны находятся в разделе «Герой» → «Тренировка».'}</p>
+              <p className="mt-3 text-center text-[10px] font-medium text-amber-100/70">{language === 'en' ? 'Tap Runes on the map to open the skill book under Hero.' : 'Нажми на «Руны» на карте, чтобы открыть книгу навыков в разделе «Герой».'}</p>
             </div>
           </div>
         </div>
       )}
     </section>
   );
-}
+});

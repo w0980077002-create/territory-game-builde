@@ -1,0 +1,31 @@
+.progression-live{display:grid;gap:10px;margin:10px 0;padding:12px 10px;border:2px solid #d5a35f;border-radius:15px;color:#f9e5c5;background:linear-gradient(140deg,#46321d,#1d2a3c 78%);box-shadow:0 4px 9px #0005;min-width:0}
+.progression-live__header,.progression-live__server{display:flex;align-items:center;gap:7px}.progression-live__header{color:#ffe1a0;font-size:14px;font-weight:900}.progression-live__header button{margin-left:auto;color:#ffe2aa}
+.progression-live__server{margin:0;color:#b9d2c6;font-size:10px}
+.progression-live__tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.progression-live__tabs button{padding:8px 3px;min-height:36px;border:1px solid #ad8f5a;border-radius:9px;background:#213044;color:#ead4a9;font-size:10px;font-weight:850}
+.progression-live__tabs button[aria-pressed=true]{background:linear-gradient(#f6d596,#bf853e);color:#31200d;border-color:#ffe6a2}
+.progression-live__score{text-align:center;border-radius:10px;padding:8px;background:#1e2b3a}
+.progression-live__score b{display:block;font-size:20px;color:#ffdd98;font-variant-numeric:tabular-nums}
+.progression-live__score span{font-size:10px;color:#d8cfbd}
+.progression-live__activity-list{display:grid;gap:4px}
+.progression-live__activity-list>div{display:flex;align-items:center;gap:5px;padding:6px;background:#162333a3;border-radius:6px;font-size:10px}
+.progression-live__activity-list>div span{flex:1;overflow-wrap:anywhere}.progression-live__activity-list>div b{white-space:nowrap;font-variant-numeric:tabular-nums}
+.progression-live__rewards,.progression-live__funds,.progression-live__gems{display:grid;gap:7px}
+.progression-live__reward,.progression-live__blessing,.progression-live__gem{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #8a7156;border-radius:9px;background:#162235b5;min-width:0}
+.progression-live__reward>span,.progression-live__blessing>span,.progression-live__gem>span{display:grid;gap:3px;min-width:0;flex:1;font-size:11px}
+.progression-live__reward small,.progression-live__gem small,.progression-live__blessing small{font-size:9px;color:#c7bfc0;overflow-wrap:anywhere}
+.progression-live button:not(.progression-live__tabs button):not(.progression-live__header button){touch-action:manipulation}
+.progression-live__reward>button,.progression-live__blessing>button,.progression-live__gem>button,.progression-live__fund-reward button,.progression-live__retry{flex-shrink:0;padding:7px 8px;min-height:32px;background:linear-gradient(#f4ce7d,#bf8439);border:1px solid #ffe0a0;border-radius:8px;color:#33240c;font-size:10px;font-weight:900}
+.progression-live button:disabled{opacity:.45;cursor:not-allowed}
+.progression-live__funds>section{padding:9px;border:1px solid #ad805b79;border-radius:10px;background:#1a2638}
+.progression-live__funds h4{margin:0;font-size:12px;display:flex;align-items:center;gap:6px;color:#f8d697}
+.progression-live__funds p{margin:5px 0;font-size:10px;color:#c8c8c5;display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.progression-live__funds p span{margin-left:auto;color:#9ac5ae}
+.progression-live__fund-reward{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px;border-top:1px solid #c0996040;font-size:11px}
+.progression-live__fund-reward span{color:#ffd99d}
+.progression-live__gems h4{display:flex;align-items:center;gap:8px;margin:0;color:#f5d79b;font-size:12px}
+.progression-live__gems>p{margin:0;color:#cfc2b0;font-size:10px}
+.progression-live__notice{display:flex;align-items:center;gap:7px;margin:0;padding:8px;border-radius:8px;background:#23354b;color:#e5d3b7;font-size:10px}
+.progression-live__retry{width:100%}
+.progression-live__footnote{margin:0;color:#b8b1a9;text-align:center;font-size:9px}
+@media(max-width:350px){.progression-live{padding:9px 6px}.progression-live__reward{gap:4px;padding:6px}.progression-live__tabs button{font-size:9px}}

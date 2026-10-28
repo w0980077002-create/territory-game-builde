@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { MessageCircle, Send, ShoppingBag, Package, Radio, AlertCircle } from 'lucide-react';
 import { supabase } from '@/game/supabase';
+import { fetchAuctionCompletion } from '@/game/auctionCompletion';
+import { AuctionCompletionPanel } from './auction/AuctionCompletionPanel';
 import { useGame } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
 import { useStore } from '@/game/store';
@@ -21,6 +23,11 @@ export function AuctionScreen() {
   const game = useStore(useGame);
   const { t, language } = useLanguage();
   const [tab, setTab] = useState<AuctionTab>('lots');
+  const [completionEnabled, setCompletionEnabled] = useState(false);
+  useEffect(() => { let alive = true;
+    void fetchAuctionCompletion().then(value => { if (alive) setCompletionEnabled(value?.enabled === true); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [connected, setConnected] = useState(false);
@@ -199,7 +206,8 @@ export function AuctionScreen() {
         ))}
       </div>
 
-      {tab === 'history' && (
+      {completionEnabled && tab !== 'chat' && <AuctionCompletionPanel tab={tab} language={language}/>}
+      {tab === 'history' && !completionEnabled && (
         <section className="space-y-2 rounded-xl border border-amber-400/20 p-3">
           <h3 className="font-bold">{ru ? 'История сделок' : 'Trade history'}</h3>
           {(auction?.history || []).map((entry) => <div key={entry.id} className="rounded-lg bg-black/25 p-3 text-xs">
@@ -212,7 +220,7 @@ export function AuctionScreen() {
           {auction?.enabled && !auction.history.length && <p className="text-xs text-slate-400">{ru ? 'Завершённых сделок пока нет.' : 'No completed trades yet.'}</p>}
         </section>
       )}
-      {(tab === 'lots' || tab === 'mine') && (
+      {(tab === 'lots' || tab === 'mine') && !completionEnabled && (
         <section className="rounded-xl border border-sky-400/20 bg-sky-500/5 p-4">
           <div className="flex items-center gap-2">
             {tab === 'mine' ? <Package className="h-5 w-5 text-sky-300" /> : <ShoppingBag className="h-5 w-5 text-amber-300" />}
