@@ -222,7 +222,7 @@ GRANT EXECUTE ON FUNCTION public.territory_combat_context_v1(uuid,jsonb),
 -- The live game continues using its original skills until the approved combat
 -- catalog AND the verified server profile are both ready.
 CREATE OR REPLACE FUNCTION public.territory_combat_loadout_status_v1()
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE u uuid:=auth.uid(); c territory_private.combat_config_v1%ROWTYPE;
   h territory_private.combat_profiles_v1%ROWTYPE;
 BEGIN
@@ -234,7 +234,7 @@ BEGIN
    THEN RETURN jsonb_build_object('enabled',false); END IF;
  RETURN jsonb_build_object('enabled',true,'revision',h.version,'catalog',c.catalog,
    'ownership',h.fighter->'ownership','loadout',h.fighter->'loadout');
-END $;
+END $$;
 REVOKE ALL ON FUNCTION public.territory_combat_loadout_status_v1() FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_combat_loadout_status_v1() TO authenticated;
 COMMIT;
