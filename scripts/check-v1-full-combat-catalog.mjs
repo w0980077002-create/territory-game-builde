@@ -103,4 +103,28 @@ const phases=simulate(phaseInput,[6000]);
 assert(phases.events.some(e=>e.type==='phase_change'),'Boss vulnerability/resistance phase is active');
 const long=simulate(battle(empty,'pve'),[Number.MAX_SAFE_INTEGER]);
 assert(long.state.atMs<=rules.maxDurationMs,'Long suspension cannot simulate more than max battle duration');
+// Mechanical proofs: the approved rune descriptions must change combat,
+ // not merely emit decorative 'rune proc' events.
+const bleedLoadout={skills:[{skillId:'axe_storm',level:3,runes:[{runeId:'axe_storm_r2',level:3}]}],passives:[]};
+const bleedInput=battle(bleedLoadout);
+bleedInput.catalog=copy(catalog);
+bleedInput.catalog.runes.find(r=>r.id==='axe_storm_r2').levels[2].chance=1;
+bleedInput.enemy.stats.dodgeChance=0;
+const bleeding=simulate(bleedInput,[5000]);
+assert(bleeding.events.some(e=>e.type==='impact'&&e.effectId?.includes('/bleed/')),
+  'Blood Mark must actually remove enemy HP over time');
+
+const evasive={skills:[],passives:[{passiveId:'forest_instinct',level:3}]};
+const evasionInput=battle(evasive);
+evasionInput.catalog=copy(catalog);
+evasionInput.catalog.passives.find(p=>p.id==='forest_instinct').levels[2].effects[0].value=1;
+const evaded=simulate(evasionInput,[4000]);
+assert(!evaded.events.some(e=>e.type==='impact'&&e.actor==='enemy'),
+  'Full-evasion test fixture must genuinely dodge attacks');
+
+const energyInput=battle({skills:[],passives:[{passiveId:'thunder_spirit',level:3}]});
+const noEnergyInput=battle(empty);
+const recovered=simulate(energyInput,[1800]),baseline=simulate(noEnergyInput,[1800]);
+assert(recovered.state.actors.hero.energy>baseline.state.actors.hero.energy,
+  'Thunder Spirit must accelerate actual hero energy recovery');
 console.log('TERRITORY staged combat PASS: 15 skills, 45 rune variants, 6 passives, 3 modes, manual+auto, boss phases, no rewards; server-authoritative engine.');
