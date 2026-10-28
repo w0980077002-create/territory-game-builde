@@ -1,0 +1,103 @@
+
+/* TERRITORY rune scroll gateway and independent visual summon (no server writes). */
+.rhall-bonus-entry{display:grid;grid-template-columns:minmax(0,1fr) 65px;gap:8px;align-items:center;margin:7px 3px 0}
+.rhall-bonus-entry .rhall-bonus{margin:0;min-width:0;align-self:stretch}
+.rhall-scroll-gateway{position:relative;display:flex;justify-content:center;align-items:center;
+ width:64px;height:66px;padding:4px;border:3px solid #d7a36b!important;
+ background:linear-gradient(135deg,#7b5044,#26161c 38%,#3b1f30 79%,#926247)!important;
+ border-radius:14px!important;transform:rotate(45deg);box-shadow:inset 0 0 0 3px #392027,0 3px 3px #6943225e!important}
+.rhall-scroll-gateway>span{display:flex;align-items:center;justify-content:center;width:50px;height:50px;transform:rotate(-45deg);color:#d99884!important;filter:drop-shadow(0 0 3px #f19b7d)}
+.rhall-scroll-gateway>span svg{width:35px;height:35px}
+.rhall-scroll-gateway:after{content:'✦';position:absolute;top:-11px;right:1px;transform:rotate(-45deg);font-size:15px;color:#ffe8a4;text-shadow:0 0 4px #f9ad4a}
+.rhall-scroll-gateway:active{filter:brightness(1.3);scale:.97}
+.rhall-scroll-gateway:focus-visible{outline:3px solid #157bbb}
+.rhall-scroll-gateway-label{text-align:center;grid-column:2;font-size:10px;font-weight:950;color:#7a4427;line-height:1;margin-top:-3px}
+.rsim-overlay{position:fixed;inset:0;z-index:160;display:flex;align-items:center;justify-content:center;padding:8px;overscroll-behavior:contain;background:#090b19e8}
+.rsim-popup{width:min(100%,425px);max-height:calc(100dvh - 22px);display:flex;flex-direction:column;overflow-y:auto;
+ border:3px solid #b9873f;border-radius:16px;background:linear-gradient(170deg,#243354,#0f172c)!important;
+ color:#ffe7b4;box-shadow:0 18px 40px #000d,inset 0 0 0 2px #3f2b21}
+.rsim-header{position:relative;flex-shrink:0;min-height:47px;display:flex;align-items:center;justify-content:center;
+ background:linear-gradient(#b66a36,#75401d 43%,#34221e);border-bottom:4px solid #371d14;padding:9px 39px;
+ color:#ffeaa3;font:bold 16px/1.13 Georgia,serif;text-shadow:0 2px 2px #271212;text-align:center}
+.rsim-header button{position:absolute;right:6px;top:6px;display:grid;place-items:center;width:31px;height:31px;
+ border-radius:50%!important;border:2px solid #f8b5c6!important;color:white!important;background:linear-gradient(#fa7f9e,#a52048)!important}
+.rsim-altar{position:relative;flex-shrink:0;height:230px;overflow:hidden;
+ background:radial-gradient(ellipse at 50% 72%,#bc7afe8a,transparent 55%),
+ radial-gradient(circle at 50% 38%,#459cffb5,transparent 47%),
+ linear-gradient(130deg,#111b3e,#364d91 51%,#180e34)}
+.rsim-altar:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,#ccd7ff16 0px,#ccd7ff16 2px,transparent 2px,transparent 65px)}
+.rsim-altar:after{content:'';position:absolute;bottom:13px;left:6%;right:6%;height:67px;border-radius:50%;
+ background:radial-gradient(ellipse,#8497fa,#152d66 60%,#12182c 75%);border:6px ridge #c58b4b;box-shadow:0 0 12px #ffbf6a7a}
+.rsim-altar-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:150px;height:150px;
+ background:#b888ff99;border-radius:50%;filter:blur(34px)}
+.rsim-monolith{position:absolute;z-index:3;left:50%;top:20px;transform:translateX(-50%) rotate(-6deg);
+ display:grid;place-items:center;width:116px;height:142px;clip-path:polygon(32% 0,84% 8%,100% 31%,92% 81%,53% 100%,10% 84%,0 32%);
+ background:linear-gradient(116deg,#94c7ff,#244a8c 24%,#101638 71%,#5c4bb5);border:2px solid #fff2c7;
+ filter:drop-shadow(0 6px 7px #0b0922)}
+.rsim-monolith:before{content:'';position:absolute;inset:10px;clip-path:inherit;background:radial-gradient(#365bd7,#0a0c3a)}
+.rsim-monolith span{position:relative;z-index:1;color:#a2eaff;font:900 78px Georgia,serif;text-shadow:0 0 15px #49daff,0 2px #fff}
+.rsim-floating{position:absolute;z-index:4;display:grid;place-items:center;width:53px;height:62px;
+ clip-path:polygon(50% 0,90% 25%,90% 75%,50% 100%,10% 75%,10% 25%);
+ background:linear-gradient(#fee48a,#ab6825 49%,#623517);color:#ffefb0;font:900 32px Georgia,serif;text-shadow:0 2px #60290e}
+.rsim-floating--left{left:9%;top:31%;transform:rotate(-15deg)}
+.rsim-floating--right{right:9%;top:27%;transform:rotate(11deg);background:linear-gradient(#eb9dff,#9b43b9 49%,#4d276f)}
+.rsim-floating--bottom{right:18%;top:68%;width:36px;height:43px;background:linear-gradient(#baffff,#1a9bd5,#1c3466)}
+.rsim-altar-floor{position:absolute;z-index:5;bottom:28px;left:50%;transform:translateX(-50%);color:#fff0a6;font:900 18px Georgia,serif;text-shadow:0 0 8px #ffc269}
+.rsim-altar-caption{position:absolute;z-index:5;bottom:5px;left:0;right:0;color:#ecf4ff;text-align:center;font-weight:850;font-size:10px;text-shadow:0 1px 3px #0c1126}
+.rsim-pity{margin:8px 8px 0;padding:8px;border:2px solid #9e7645;border-radius:9px;background:#121f35!important}
+.rsim-pity-top{display:flex;justify-content:center;align-items:center;gap:5px;text-align:center;font-size:10px;font-weight:900}
+.rsim-pity-top button{background:none!important;border:0!important;padding:0!important;color:#ffdb91!important}
+.rsim-pity p{font-size:10px;margin:4px 0 0;text-align:center;color:#f9d9a3}
+.rsim-meter{position:relative;height:21px;margin-top:5px;overflow:hidden;border:2px solid #7ca8d6;border-radius:10px;background:#0c1126}
+.rsim-meter div{height:100%;background:linear-gradient(#89f9ff,#137ee6);border-radius:8px}
+.rsim-meter strong{position:absolute;inset:0;display:grid;place-items:center;color:white;text-shadow:0 1px 3px #091426}
+.rsim-summon-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:8px}
+.rsim-summon-btn{min-height:65px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;
+ border:3px solid #9ddcff!important;border-radius:9px!important;background:linear-gradient(#a7e6ff,#1b8cdb 47%,#12447a)!important;color:white!important;
+ box-shadow:inset 0 2px #f5ffff,0 3px #0c1221;text-shadow:0 2px #153053}
+.rsim-summon-btn:nth-child(2){border-color:#ffcf66!important;background:linear-gradient(#fff6b0,#f5aa25 50%,#a65b0d)!important;color:#5d320d!important;text-shadow:0 1px #fff8c9}
+.rsim-summon-btn:disabled{opacity:.4}
+.rsim-summon-btn--on{outline:2px solid #fcf2bf;outline-offset:1px}
+.rsim-summon-btn b{font-size:15px;font-weight:1000}
+.rsim-summon-btn span{display:flex;gap:5px;align-items:center;font-size:11px;font-weight:850}
+.rsim-inventory{display:flex;align-items:center;justify-content:center;gap:4px;margin:1px 0 5px!important;font-size:10px;color:#ffdfa6}
+.rsim-demo-note{font-size:10px;line-height:1.25;text-align:center;color:#d7bf9d;padding:5px 9px;border-top:1px solid #9b73494b}
+.rsim-tiers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;padding:5px}
+.rsim-tier{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:5px 2px;
+ border:1px solid #488dda;border-radius:6px;background:linear-gradient(#1b497e,#081931);color:#b5dfff;text-align:center}
+.rsim-tier svg{width:20px;height:20px;filter:drop-shadow(0 0 4px currentColor)}
+.rsim-tier b{font-size:9px;line-height:1.1}.rsim-tier span{font-size:8px;line-height:1.2}.rsim-tier strong{font-size:11px}
+.rsim-tier--purple{border-color:#9149dc;background:linear-gradient(#652f92,#211039);color:#edc6ff}
+.rsim-tier--yellow{border-color:#cf9a2b;background:linear-gradient(#765019,#2d1909);color:#ffebac}
+.rsim-tier--legendary{border-color:#f19237;background:linear-gradient(#913c16,#301509);color:#ffc997}
+.rsim-result{display:flex;flex-direction:column;align-items:center;min-height:0}
+.rsim-result-label{font-size:10px;text-align:center;color:#ffdeab;margin:6px 7px!important}
+.rsim-result-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:7px;width:100%;max-height:58dvh;overflow-y:auto}
+.rsim-drop{display:flex;align-items:center;flex-direction:column;gap:4px;min-width:0;min-height:105px;padding:5px 2px!important;
+ border:1px solid #458cca!important;border-radius:6px!important;background:#142a55!important;color:#b7e5ff!important}
+.rsim-drop--purple{border-color:#af70ec!important;background:#321750!important;color:#e9c0ff!important}
+.rsim-drop--yellow{border-color:#f0d15c!important;background:#4c320e!important;color:#ffdd83!important}
+.rsim-drop--legendary{border-color:#f5ad48!important;background:#643010!important;color:#ffca7e!important;box-shadow:0 0 9px #ef8d33}
+.rsim-drop-icon{display:grid;place-items:center;width:37px;height:43px;clip-path:polygon(50% 0,92% 24%,92% 76%,50% 100%,8% 76%,8% 24%);
+ background:#0e1a30;border:2px solid currentColor}
+.rsim-drop-name{font-size:9px;font-weight:900;line-height:1.1;text-align:center;overflow-wrap:anywhere}
+.rsim-drop strong{font-size:15px;font-weight:1000}.rsim-drop small{font-size:8px;text-align:center}
+.rsim-collect{display:flex;justify-content:center;align-items:center;gap:6px;width:65%;min-height:43px;margin:8px 0!important;
+ border:3px solid #b8fa80!important;border-radius:10px!important;background:linear-gradient(#8ff850,#218f23 60%,#0d6a14)!important;
+ color:white!important;font-weight:950;font-size:17px;text-shadow:0 2px #194914}
+.rsim-demotag{font-size:10px;color:#e3bd89;margin:0 7px 8px!important;text-align:center}
+.rsim-upgrade-details{display:flex;flex-direction:column;gap:7px;width:100%;margin:5px 0;padding:9px;border:2px solid #cf9b5d;border-radius:10px;background:#ffebc2}
+.rsim-progress-heading{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12px}
+.rsim-chip{border-radius:12px;padding:3px 7px;font-size:10px;background:#3564af;color:white}
+.rsim-chip--purple{background:#833cc2}.rsim-chip--yellow{background:#b4861c}.rsim-chip--legendary{background:#bd5917}
+.rsim-level-meter{height:12px;background:#b69778;border:1px solid #704b36;border-radius:8px;overflow:hidden}
+.rsim-level-meter span{display:block;height:100%;background:linear-gradient(#f4e68c,#e09c22)}
+.rsim-level-resource{display:flex;align-items:center;gap:4px;font-size:11px!important;margin:0!important;color:#563116!important}
+.rsim-level-lock{border:1px solid #bd763c;background:#fff6df;border-radius:7px;padding:6px;color:#98451d;font-weight:850;font-size:10px}
+.rsim-upgrade-buttons{display:flex;align-items:center;flex-direction:column;gap:4px}
+.rsim-upgrade-buttons button{width:75%;min-height:37px;background:linear-gradient(#ffe36d,#e9a82c)!important;border:2px solid #b47724!important;border-radius:8px!important;color:#5f3512!important;font-weight:1000}
+.rsim-upgrade-buttons button:disabled{opacity:.45}
+.rsim-upgrade-buttons small{font-size:9px;color:#a4754c;text-align:center}
+@media(max-width:360px){.rhall-bonus-entry{grid-template-columns:minmax(0,1fr) 55px;gap:5px}.rhall-scroll-gateway{width:53px;height:54px}.rhall-scroll-gateway>span svg{width:29px}.rhall-scroll-gateway-label{font-size:9px}
+ .rsim-altar{height:190px}.rsim-summon-btn{min-height:58px}.rsim-result-grid{max-height:51dvh}}
+@media(prefers-reduced-motion:reduce){.rsim-monolith,.rsim-floating{animation:none!important}}
