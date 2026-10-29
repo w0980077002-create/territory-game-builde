@@ -199,6 +199,8 @@
   74% { opacity: 1; transform: translate(-50%,-12px) scale(1); }
   100% { opacity: 0; transform: translate(-50%,-23px) scale(.96); }
 }
+/* Override the shorthand defaults above so target effects wait for blade contact. */
+.fighter-impact > span { animation-delay: var(--fighter-hit-delay); animation-fill-mode: both; }
 @media (prefers-reduced-motion: reduce) {
   .fighter-figure .battle-swing-0, .fighter-figure .battle-swing-1, .fighter-figure .battle-swing-2,
   .fighter-figure .animate-recoil, .fighter-figure .animate-guard, .fighter-figure .animate-dodge { animation: none !important; }
