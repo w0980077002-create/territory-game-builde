@@ -239,6 +239,66 @@ export function acceptMonopolyClaimReceipt(userId:string,response:unknown):GameS
  return state;
 }
 
+/** Consume a confirmed adventure settlement using the existing save fence.
+ * A receipt whose token is already loaded is a replay: never replace local
+ * state with the old snapshot. Unknown ordering requires a fresh cloud load. */
+export function acceptAdventureSettlementReceipt(userId:string,response:unknown,sessionId:string):GameState|null{
+ if(!response || typeof response!=='object' || Array.isArray(response)) throw new Error('adventure_invalid_receipt');
+ const receipt=response as Record<string,unknown>;
+ const state=receipt.game_state as GameState;
+ const reward=receipt.reward as Record<string,unknown> | null;
+ const natural=(v:unknown,max=2147483647):v is number=>Number.isSafeInteger(v)&&Number(v)>=0&&Number(v)<=max;
+ if(receipt.success!==true || receipt.session_id!==sessionId || !['hero_won','enemy_won','draw'].includes(String(receipt.outcome))
+   || !natural(receipt.stage,100) || receipt.stage<1 || !natural(receipt.completed_stage,100)
+   || !natural(receipt.unlocked_stage,100) || receipt.unlocked_stage<1
+   || receipt.unlocked_stage!==Math.min(100,receipt.completed_stage+1)
+   || (receipt.outcome==='hero_won' && receipt.completed_stage<receipt.stage)
+   || !reward || typeof reward!=='object' || !natural(reward.gold) || !natural(reward.xp)
+   || !Array.isArray(reward.items) || reward.items.length!==0
+   || (receipt.outcome!=='hero_won' && (reward.gold!==0 || reward.xp!==0))
+   || !validSaveToken(receipt.updated_at) || !validEconomySnapshot(state)
+   || !Array.isArray(state.inventory) || !Number.isSafeInteger(state.forgeMaterials))
+   throw new Error('adventure_invalid_receipt');
+ const wallet=safeWalletVersion({gold:receipt.wallet_gold,gems:receipt.wallet_gems},state.player);
+ if(!walletMatchesVersion(wallet,state.player))throw new Error('adventure_invalid_receipt');
+ const previous=saveTokens.get(userId);
+ if(!validSaveToken(previous))throw new Error('adventure_reload_required');
+ if(receipt.updated_at===previous) return null;
+ // Date.parse has millisecond precision; distinct timestamps within one ms
+ // cannot be reliably ordered here and must be reloaded instead of guessed.
+ if(Date.parse(receipt.updated_at)<=Date.parse(previous))throw new Error('adventure_reload_required');
+ saveGenerations.set(userId,(saveGenerations.get(userId)??0)+1);
+ saveTokens.set(userId,receipt.updated_at);
+ walletVersions.set(userId,wallet);
+ saveBlocked.delete(userId);
+ return state;
+}
+
+/** Install an atomic one-stone PvE start debit from its durable server receipt.
+ * A replay must never reapply an older snapshot over newer cloud progress. */
+export function acceptAdventureStartReceipt(userId:string,response:unknown,sessionId:string):GameState|null{
+ if(!response || typeof response!=='object' || Array.isArray(response))throw new Error('adventure_invalid_start_receipt');
+ const receipt=response as Record<string,unknown>;
+ const state=receipt.game_state as GameState;
+ if(receipt.success!==true || receipt.session_id!==sessionId
+   || !Number.isSafeInteger(receipt.battle_stones) || Number(receipt.battle_stones)<0
+   || !validSaveToken(receipt.updated_at) || !validEconomySnapshot(state)
+   || !Array.isArray(state.inventory) || !Number.isSafeInteger(state.forgeMaterials)
+   || state.battleStones!==receipt.battle_stones)
+   throw new Error('adventure_invalid_start_receipt');
+ const wallet=safeWalletVersion({gold:receipt.wallet_gold,gems:receipt.wallet_gems},state.player);
+ if(!walletMatchesVersion(wallet,state.player))throw new Error('adventure_invalid_start_receipt');
+ const previous=saveTokens.get(userId);
+ if(!validSaveToken(previous))throw new Error('adventure_reload_required');
+ if(receipt.updated_at===previous)return null;
+ if(Date.parse(receipt.updated_at)<=Date.parse(previous))throw new Error('adventure_reload_required');
+ saveGenerations.set(userId,(saveGenerations.get(userId)??0)+1);
+ saveTokens.set(userId,receipt.updated_at);
+ walletVersions.set(userId,wallet);
+ saveBlocked.delete(userId);
+ return state;
+}
+
 /** Adopt a permanent license debit without letting a queued stale cloud save
  * restore the previous red-gem count or overwrite newer server game_state. */
 export function acceptMasterLicenseReceipt(userId:string,receipt:{
