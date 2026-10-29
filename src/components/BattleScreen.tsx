@@ -60,7 +60,7 @@ export function BattleScreen({ userId, isAdmin, view, onView, autoStart, onAutoS
     // Canary release only for the owner's existing admin UI. Other accounts
     // continue the fully featured legacy PvE; this is not a security boundary.
     if (!isAdmin) { setServerMode('legacy'); return () => { alive = false; }; }
-    void Promise.resolve(supabase.rpc('territory_adventure_mode_v1'))
+    void Promise.resolve(supabase.rpc('territory_adventure_mode_v2', { p_owner_preview: true }))
       .then(({ data, error }) => {
         if (alive) setServerMode(!error && data?.enabled === true ? 'enabled' : 'legacy');
       })
