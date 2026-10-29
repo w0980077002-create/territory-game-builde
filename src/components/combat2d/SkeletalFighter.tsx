@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { FighterRig } from './FighterRig';
+import { plantedLegFrames } from './plantedFrames';
 import { ACTION_MS, jointFrames, motionStops, type FighterMotion, type Joint } from './fighterAnimations';
 import type { FighterRigDefinition } from './fighterRigs';
 import './combat2d.css';
@@ -19,6 +20,7 @@ interface Props {
 export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, speed, className, onAssetError }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const terminalRef = useRef<'death' | 'victory' | null>(null);
+  const previousPose = useRef(new Map<Joint, string>());
   const [finishedKey, setFinishedKey] = useState<number | null>(null);
   const role = strike?.attacker === name ? 'attacker' : strike?.target === name ? 'target' : null;
   const key = role ? strike?.key : null;
@@ -42,23 +44,33 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
     const svg = svgRef.current;
     if (!svg) return;
     terminalRef.current = motion === 'death' || motion === 'victory' ? motion : null;
-    if (motion === 'idle') return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
     let animations: Animation[] = [];
     const apply = () => {
       animations.forEach(a => a.cancel());
       const stops = motionStops(motion, critical);
+      const legs = motion === 'slash' || motion === 'thrust' || motion === 'overhead' ? plantedLegFrames(stops, rig.id, previousPose.current) : {};
       animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).map(joint => {
-        const frames = jointFrames(joint.dataset.rigPart as Joint, stops);
-        // Retain readable final outcome poses without large movement in reduced mode.
-        const selected = reduced.matches ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
-        return joint.animate(selected, { duration: reduced.matches ? 1 : ACTION_MS / speed, fill: 'forwards' });
+        const part = joint.dataset.rigPart as Joint;
+        const frames = legs[part] ?? jointFrames(part, stops);
+        const previous = previousPose.current.get(part);
+        const withStart = previous ? [{ ...frames[0], transform: previous }, ...frames.slice(1)] : frames;
+        // Blend interrupted movement back to rest, then let the idle cycle resume.
+        const blend = motion === 'idle' ? [{ transform: previous ?? frames[0].transform }, { transform: frames[frames.length - 1].transform }] : withStart;
+        const selected = reduced.matches ? [blend[blend.length - 1], blend[blend.length - 1]] : blend;
+        return joint.animate(selected, { duration: reduced.matches ? 1 : motion === 'idle' ? 120 / speed : ACTION_MS / speed, fill: motion === 'idle' ? 'none' : 'forwards' });
       });
     };
     apply();
     reduced.addEventListener('change', apply);
-    return () => { reduced.removeEventListener('change', apply); animations.forEach(a => a.cancel()); };
-  }, [motion, animationKey, speed, critical]);
+    return () => {
+      reduced.removeEventListener('change', apply);
+      for (const joint of svg.querySelectorAll<SVGGElement>('[data-rig-part]')) {
+        previousPose.current.set(joint.dataset.rigPart as Joint, getComputedStyle(joint).transform);
+      }
+      animations.forEach(a => a.cancel());
+    };
+  }, [motion, animationKey, speed, critical, rig.id]);
   return <svg ref={svgRef} viewBox="0 0 512 512" preserveAspectRatio="xMidYMax meet" role="img" aria-label={name}
     data-rig={rig.id} data-motion={motion} data-critical={strike?.tone === 'crit' && active ? 'true' : undefined}
     className={`skeletal-fighter ${className}`} onErrorCapture={onAssetError}>

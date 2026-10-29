@@ -6,6 +6,7 @@ This is Chromium mobile emulation, not Telegram authentication or network PvP.
 from pathlib import Path
 from urllib.parse import urlparse
 import json
+import math
 import mimetypes
 import shutil
 from playwright.sync_api import sync_playwright
@@ -30,7 +31,7 @@ def serve(route):
 
 
 def load(browser, width=390, scene='figure', reduced=False, low_quality=False):
-    page = browser.new_page(viewport={'width': width, 'height': 844}, device_scale_factor=1,
+    page = browser.new_page(viewport={'width': width, 'height': {360:800,390:844,430:932}.get(width,844)}, device_scale_factor=1,
                             reduced_motion='reduce' if reduced else 'no-preference')
     page.on('pageerror', lambda error: report['errors'].append(str(error)))
     page.route(ORIGIN + '/**', serve)
@@ -65,6 +66,17 @@ def matrices(page, selector, milliseconds):
     }''', milliseconds)
 
 
+def feet_at(page, selector, milliseconds):
+    return page.locator(selector).evaluate("""(svg,time)=>{
+      for(const a of svg.getAnimations({subtree:true})){a.pause();a.currentTime=time;}
+      return Object.fromEntries(['left','right'].map(side=>{
+        const foot=svg.querySelector('[data-anchor=foot-'+side+']');
+        const p=new DOMPoint(0,55).matrixTransform(foot.getScreenCTM());
+        return [side,{x:p.x,y:p.y}];
+      }));
+    }""", milliseconds)
+
+
 def visible_effects(page):
     return page.locator('.combat2d-effects [data-effect]').evaluate_all('''nodes=>nodes.filter(node=>{
       for(let el=node;el&&el!==document.body;el=el.parentElement){const s=getComputedStyle(el);if(s.display==='none'||s.visibility==='hidden'||Number(s.opacity)<.01)return false;}
@@ -74,7 +86,7 @@ def visible_effects(page):
 
 with sync_playwright() as playwright:
     browser = playwright.chromium.launch(executable_path=shutil.which('chromium') or shutil.which('google-chrome'), headless=True, args=['--no-sandbox', '--disable-breakpad', '--disable-crash-reporter'])
-    for width in [360, 390]:
+    for width in [360, 390, 430]:
         page = load(browser, width)
         hero = page.locator('#fixture-hero svg[data-rig="male_viking"]')
         foe = page.locator('#fixture-enemy svg[data-rig="goblin"]')
@@ -91,11 +103,26 @@ with sync_playwright() as playwright:
         for key, motion in [(3, 'slash'), (4, 'thrust'), (5, 'overhead')]:
             set_visual(page, {'strike': strike(key)})
             assert hero.get_attribute('data-motion') == motion
+            # Capture world-space feet through the actual nested SVG transforms.
+            samples_feet = {ms: feet_at(page, '#fixture-hero svg', ms) for ms in [0,100,160,250,350]}
+            planted = samples_feet[0]['left']
+            for ms, feet in samples_feet.items():
+                drift = math.hypot(feet['left']['x']-planted['x'], feet['left']['y']-planted['y'])
+                assert drift <= 3, f'{motion} support foot drift {drift:.2f}px at {ms}ms'
+            assert abs(samples_feet[250]['right']['y']-samples_feet[160]['right']['y']) > .4, f'{motion}: free foot never lifts'
+            assert abs(samples_feet[350]['right']['x']-samples_feet[160]['right']['x']) > 2, f'{motion}: no visible step'
             sample = matrices(page, '#fixture-hero svg', 240)
             samples[motion] = sample
             for name in ['torso', 'arm-right', 'forearm-right', 'leg-right', 'leg-left', 'knee-right', 'knee-left']:
                 assert sample[name] != baseline[name], f'{motion}: {name} remains static'
             page.screenshot(path=str(OUT / f'{motion}-{width}.png'))
+        # The mirrored goblin uses the same foot-plant guarantee.
+        for key in [21, 22, 23]:
+            set_visual(page, {'strike': strike(key, attacker='Противник')})
+            foot = feet_at(page, '#fixture-enemy svg', 0)['left']
+            for ms in [100, 160, 250, 350]:
+                p = feet_at(page, '#fixture-enemy svg', ms)['left']
+                assert math.hypot(p['x']-foot['x'], p['y']-foot['y']) <= 3, f'goblin support foot drifts at {ms}ms'
         assert len({sample['arm-right'] for sample in samples.values()}) == 3, 'Three attacks must have distinct upper-arm movement'
         assert len({sample['torso'] for sample in samples.values()}) == 3, 'Three attacks must have distinct torso movement'
         report['attacks'][str(width)] = samples
@@ -153,7 +180,7 @@ with sync_playwright() as playwright:
         page.wait_for_timeout(850)
         assert hero.is_visible() and page.locator('#fixture-enemy svg').is_visible(), 'End of battle must not remove fighters'
         page.screenshot(path=str(OUT / f'victory-{width}.png'))
-        report['viewports'].append({'width': width, 'height': 844, 'parts': parts, 'overflow': False})
+        report['viewports'].append({'width': width, 'height': {360:800,390:844,430:932}[width], 'parts': parts, 'overflow': False})
         page.close()
 
     page = load(browser)
@@ -181,7 +208,7 @@ with sync_playwright() as playwright:
     report['reduced_motion_animations'] = animations
     page.close()
 
-    for width in [360, 390]:
+    for width in [360, 390, 430]:
         page = load(browser, width, 'arena')
         assert page.locator('svg[data-rig="male_viking"]').count() == 2, 'Actual PvP scene must use both rigs'
         assert page.get_by_role('button', name='УДАР', exact=True).is_disabled()
@@ -192,9 +219,30 @@ with sync_playwright() as playwright:
         assert page.get_by_role('button', name='УДАР', exact=True).is_enabled()
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
         page.screenshot(path=str(OUT / f'arena-{width}.png'))
-        set_visual(page, {'strike': strike(15)})
-        page.wait_for_timeout(320)
-        page.screenshot(path=str(OUT / f'arena-contact-{width}.png'))
+        for key in [15, 16, 17]:
+            set_visual(page, {'strike': strike(key)})
+            # Freeze the production WAAPI timelines at contact for a deterministic
+            # geometry check while the real contact timer runs once.
+            page.evaluate("""()=>document.querySelectorAll('svg[data-rig]').forEach(svg=>svg.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=350;}))""")
+            page.wait_for_timeout(380)
+            effects = page.locator('.combat2d-effects[data-contact="ready"]')
+            assert effects.count() == 1, f'No physical contact at 350ms, attack {key}, {width}px'
+            check = effects.evaluate("""node=>{
+              const box=node.getBoundingClientRect(),scene=node.closest('[data-combat-scene]');
+              const x=box.left+parseFloat(node.style.getPropertyValue('--impact-x'))*box.width/node.offsetWidth;
+              const y=box.top+parseFloat(node.style.getPropertyValue('--impact-y'))*box.height/node.offsetHeight;
+              const hit=scene.querySelector('svg[aria-label="Противник"] [data-anchor="torso-hit-area"]');
+              const local=new DOMPoint(x,y).matrixTransform(hit.getScreenCTM().inverse());
+              const normalized=((local.x-hit.cx.baseVal.value)/hit.rx.baseVal.value)**2+((local.y-hit.cy.baseVal.value)/hit.ry.baseVal.value)**2;
+              const blade=scene.querySelector('svg[aria-label="Рагнар"] [data-anchor="weapon-edge"]');
+              const length=blade.getTotalLength(),matrix=blade.getScreenCTM();let distance=Infinity;
+              for(let i=0;i<=96;i++){const p=blade.getPointAtLength(length*i/96).matrixTransform(matrix);distance=Math.min(distance,Math.hypot(p.x-x,p.y-y));}
+              return {normalized,distance};
+            }""")
+            assert check['normalized'] <= 1.001 and check['distance'] <= 12.1, (key,width,check)
+            if key == 15:
+                page.screenshot(path=str(OUT / f'arena-contact-{width}.png'))
+
         page.close()
         for mode in ['pve', 'trial']:
             page = load(browser, width, mode)
@@ -265,4 +313,4 @@ with sync_playwright() as playwright:
     assert not report['missing_assets'], report['missing_assets']
 
 (OUT / 'verification.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
-print('Combat browser PASS: real rigs, independent limbs, three attacks, block/dodge/crit, effects lifetime, mirror, death/victory, x2, reduced motion, unmount cleanup; production PvP/PvE/trial controls at 360/390px. Offline Chromium emulation; no Telegram/network PvP/physical-device claim.')
+print('Combat browser PASS: real rigs, independent limbs, three attacks, block/dodge/crit, effects lifetime, mirror, death/victory, x2, reduced motion, unmount cleanup; production PvP/PvE/trial controls at 360/390/430px. Offline Chromium emulation; no Telegram/network PvP/physical-device claim.')

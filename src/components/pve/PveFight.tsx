@@ -245,7 +245,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
           : 'Слева выбери 2 зоны защиты, справа — 1 зону удара, затем нажми «УДАР». Можно включить автобой.'}
       </p>}
 
-      <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black/40">
+      <div data-combat-scene className="relative rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black/40">
         <img
           src={import.meta.env.BASE_URL + (kind === 'trial' ? 'map-chamber.webp' : 'assets/territory/scenes/arena-viking.webp')}
           onError={(event) => {

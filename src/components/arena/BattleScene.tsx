@@ -104,7 +104,7 @@ export function BattleScene(props: Props) {
     ? (language === 'en' ? `Choose ${2 - blocks.length} more defense zone(s)` : `Защита: выбери ещё ${2 - blocks.length}`) : !attack ? (language === 'en' ? 'Choose an attack zone' : 'Выбери зону удара') : (language === 'en' ? `Attack ${enemy.name}` : `Удар по ${enemy.name}`);
 
   return (
-    <div className="arena-battle relative rounded-2xl overflow-hidden border border-amber-400/40 shadow-xl shadow-black/50">
+    <div data-combat-scene className="arena-battle relative rounded-2xl overflow-hidden border border-amber-400/40 shadow-xl shadow-black/50">
       <img
         src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'}
         onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = import.meta.env.BASE_URL + 'assets/territory/scenes/live-city-bg.webp'; }}

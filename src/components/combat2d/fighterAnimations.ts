@@ -24,21 +24,21 @@ const stop = (at: number, pose: Pose = {}): PoseStop => {
   return { at, pose: { ...REST, ...knees, ...pose } };
 };
 const attacks: Record<'slash' | 'thrust' | 'overhead', PoseStop[]> = {
-  slash: [stop(0), stop(160, { root: t(-10, 8), torso: r(-9), head: r(5), 'arm-right': r(55), 'forearm-right': r(-115), weapon: r(0), 'arm-left': r(12), 'leg-right': r(-24), 'leg-left': r(23) }),
-    stop(CONTACT_MS, { root: t(66, 2), torso: r(15), head: r(-9), 'arm-right': r(-85), 'forearm-right': r(-10), weapon: r(180), 'arm-left': r(8), 'leg-right': r(-30), 'leg-left': r(24), hair: r(-10) }),
-    stop(470, { root: t(45, 5), torso: r(10), 'arm-right': r(-110), 'forearm-right': r(25), weapon: r(235), 'leg-right': r(-24), 'leg-left': r(20) }), stop(ACTION_MS)],
-  thrust: [stop(0), stop(175, { root: t(-12, 9), torso: r(-5), 'arm-right': r(6), 'forearm-right': r(-105), weapon: r(189), 'leg-left': r(22), 'leg-right': r(-19) }),
-    stop(CONTACT_MS, { root: t(78, 5), torso: r(19), head: r(-12), 'arm-right': r(-74), 'forearm-right': r(-12), weapon: r(157), 'leg-right': r(-36), 'leg-left': r(29), 'arm-left': r(8) }),
-    stop(450, { root: t(64, 5), torso: r(14), 'arm-right': r(-70), 'forearm-right': r(-22), weapon: r(168), 'leg-right': r(-29), 'leg-left': r(25) }), stop(ACTION_MS)],
-  overhead: [stop(0), stop(210, { root: t(-4, 10), torso: r(-12), head: r(-7), 'arm-right': r(154), 'forearm-right': r(56), weapon: r(205), 'arm-left': r(-32), 'leg-right': r(-24), 'leg-left': r(25) }),
-    stop(CONTACT_MS, { root: t(62, 9), torso: r(20), head: r(-12), 'arm-right': r(-78), 'forearm-right': r(-4), weapon: r(170), 'arm-left': r(-20), 'leg-right': r(-31), 'leg-left': r(30), hair: r(-16) }),
-    stop(490, { root: t(42, 10), torso: r(14), 'arm-right': r(-105), 'forearm-right': r(12), weapon: r(235), 'leg-right': r(-24), 'leg-left': r(22) }), stop(ACTION_MS)],
+  slash: [stop(0), stop(160, { root: t(-5, 12), torso: r(-9), head: r(5), 'arm-right': r(55), 'forearm-right': r(-115), weapon: r(0), 'arm-left': r(12), 'leg-right': r(-24), 'leg-left': r(23) }),
+    stop(CONTACT_MS, { root: t(25, 20), torso: r(15), head: r(-9), 'arm-right': r(-85), 'forearm-right': r(-10), weapon: r(180), 'arm-left': r(8), 'leg-right': r(-30), 'leg-left': r(24), hair: r(-10) }),
+    stop(470, { root: t(15, 10), torso: r(10), 'arm-right': r(-110), 'forearm-right': r(25), weapon: r(235), 'leg-right': r(-24), 'leg-left': r(20) }), stop(600, { root: t(4, 3), torso: r(2), 'arm-right': r(-55), 'forearm-right': r(-38) }), stop(ACTION_MS)],
+  thrust: [stop(0), stop(175, { root: t(-7, 12), torso: r(-5), 'arm-right': r(6), 'forearm-right': r(-105), weapon: r(189), 'leg-left': r(22), 'leg-right': r(-19) }),
+    stop(CONTACT_MS, { root: t(32, 24), torso: r(19), head: r(-12), 'arm-right': r(-74), 'forearm-right': r(-12), weapon: r(157), 'leg-right': r(-36), 'leg-left': r(29), 'arm-left': r(8) }),
+    stop(450, { root: t(18, 12), torso: r(14), 'arm-right': r(-70), 'forearm-right': r(-22), weapon: r(168), 'leg-right': r(-29), 'leg-left': r(25) }), stop(600, { root: t(4, 3), torso: r(3), 'arm-right': r(-54), 'forearm-right': r(-40) }), stop(ACTION_MS)],
+  overhead: [stop(0), stop(210, { root: t(-4, 12), torso: r(-12), head: r(-7), 'arm-right': r(154), 'forearm-right': r(56), weapon: r(205), 'arm-left': r(-32), 'leg-right': r(-24), 'leg-left': r(25) }),
+    stop(CONTACT_MS, { root: t(23, 24), torso: r(20), head: r(-12), 'arm-right': r(-78), 'forearm-right': r(-4), weapon: r(160), 'arm-left': r(-20), 'leg-right': r(-31), 'leg-left': r(30), hair: r(-16) }),
+    stop(490, { root: t(15, 12), torso: r(14), 'arm-right': r(-105), 'forearm-right': r(12), weapon: r(235), 'leg-right': r(-24), 'leg-left': r(22) }), stop(600, { root: t(4, 3), torso: r(3), 'arm-right': r(-56), 'forearm-right': r(-38) }), stop(ACTION_MS)],
 };
 export function motionStops(motion: FighterMotion, critical = false): PoseStop[] {
   if (motion === 'slash' || motion === 'thrust' || motion === 'overhead') {
     const stops = attacks[motion];
     if (!critical) return stops;
-    return stops.map((s, index) => index === 1 ? { ...s, pose: { ...s.pose, root: t(-17, 12), torso: r(-16), 'arm-right': r(motion === 'overhead' ? 165 : 66) } } : s);
+    return stops.map((s, index) => index === 1 ? { ...s, pose: { ...s.pose, root: t(-7, 12), torso: r(-16), 'arm-right': r(motion === 'overhead' ? 165 : 66) } } : s);
   }
   if (motion === 'block') return [stop(0), stop(240, { root: t(-5, 7), torso: r(-5), 'arm-left': r(-50), 'forearm-left': r(-58), shield: r(108), 'leg-right': r(-18), 'leg-left': r(20) }),
     stop(CONTACT_MS, { root: t(-12, 10), torso: r(-10), head: r(5), 'arm-left': r(-40), 'forearm-left': r(-65), shield: r(101), 'leg-right': r(-21), 'leg-left': r(24) }), stop(500, { root: t(-6, 7), 'arm-left': r(-48), 'forearm-left': r(-57), shield: r(105), 'leg-right': r(-18), 'leg-left': r(20) }), stop(ACTION_MS)];

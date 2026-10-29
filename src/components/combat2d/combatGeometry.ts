@@ -25,3 +25,28 @@ export function screenPoint(element: SVGGraphicsElement, point: Point): Point | 
   const p = new DOMPoint(point.x, point.y).matrixTransform(matrix);
   return Number.isFinite(p.x) && Number.isFinite(p.y) ? { x: p.x, y: p.y } : null;
 }
+
+/** Find the closest sampled point on a transformed blade to a transformed
+ * target ellipse. Returned contact always lies inside the target ellipse. */
+export function bladeContact(blade: SVGPathElement, target: SVGEllipseElement): { point: Point; distance: number } | null {
+  const bladeMatrix = blade.getScreenCTM(), targetMatrix = target.getScreenCTM();
+  if (!bladeMatrix || !targetMatrix) return null;
+  let inverse: DOMMatrix;
+  try { inverse = targetMatrix.inverse(); } catch { return null; }
+  const cx = target.cx.baseVal.value, cy = target.cy.baseVal.value;
+  const rx = target.rx.baseVal.value, ry = target.ry.baseVal.value;
+  if (!(rx > 0 && ry > 0)) return null;
+  const length = blade.getTotalLength();
+  let best: { point: Point; distance: number } | null = null;
+  for (let i = 0; i <= 48; i++) {
+    const p = blade.getPointAtLength(length * i / 48).matrixTransform(bladeMatrix);
+    const local = p.matrixTransform(inverse);
+    const x = (local.x - cx) / rx, y = (local.y - cy) / ry;
+    const radius = Math.hypot(x, y);
+    const ratio = radius > 1 ? 1 / radius : 1;
+    const contact = new DOMPoint(cx + x * ratio * rx, cy + y * ratio * ry).matrixTransform(targetMatrix);
+    const distance = Math.hypot(contact.x - p.x, contact.y - p.y);
+    if (Number.isFinite(distance) && (!best || distance < best.distance)) best = { point: { x: contact.x, y: contact.y }, distance };
+  }
+  return best;
+}

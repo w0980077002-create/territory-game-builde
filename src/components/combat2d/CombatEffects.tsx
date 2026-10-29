@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { bladeContact } from './combatGeometry';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { useLanguage } from '@/game/i18n';
 
 /** Short, bounded effects. This component cannot emit combat events or damage. */
-export function CombatEffects({ strike, role, won = false }: { strike: StrikeEvent | null; role: 'attacker' | 'target' | null; won?: boolean }) {
+export function CombatEffects({ strike, role, won = false, speed = 1 }: { strike: StrikeEvent | null; role: 'attacker' | 'target' | null; won?: boolean; speed?: number }) {
+  const effectRef = useRef<HTMLDivElement>(null);
   const { language } = useLanguage();
   const [lowQuality, setLowQuality] = useState(() => navigator.hardwareConcurrency <= 4 || window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   useEffect(() => {
@@ -22,10 +24,35 @@ export function CombatEffects({ strike, role, won = false }: { strike: StrikeEve
     frame = requestAnimationFrame(sample);
     return () => cancelAnimationFrame(frame);
   }, [lowQuality]);
+  useEffect(() => {
+    const node = effectRef.current;
+    if (!node) return;
+    delete node.dataset.contact;
+    if (!strike || role !== 'target' || strike.tone === 'dodge') return;
+    const scene = node.closest('[data-combat-scene]');
+    if (!scene) return;
+    const rigs = Array.from(scene.querySelectorAll<SVGSVGElement>('svg[data-rig]'));
+    const attacker = rigs.find(svg => svg.getAttribute('aria-label') === strike.attacker);
+    const target = rigs.find(svg => svg.getAttribute('aria-label') === strike.target);
+    const blade = attacker?.querySelector<SVGPathElement>('[data-anchor="weapon-edge"]');
+    const hitArea = target?.querySelector<SVGEllipseElement>(strike.tone === 'block' ? '[data-anchor="shield-hit-area"]' : '[data-anchor="torso-hit-area"]');
+    // Unrigged characters retain their existing effects and geometry.
+    if (!blade || !hitArea) return;
+    node.dataset.contact = 'pending';
+    const timer = window.setTimeout(() => {
+      const contact = bladeContact(blade, hitArea);
+      const rect = node.getBoundingClientRect();
+      if (!contact || contact.distance > 12 || !rect.width || !rect.height) return;
+      node.style.setProperty('--impact-x', `${(contact.point.x - rect.left) * node.offsetWidth / rect.width}px`);
+      node.style.setProperty('--impact-y', `${(contact.point.y - rect.top) * node.offsetHeight / rect.height}px`);
+      node.dataset.contact = 'ready';
+    }, 350 / speed);
+    return () => window.clearTimeout(timer);
+  }, [role, strike, speed]);
   const tone = strike?.tone;
   const target = role === 'target' && strike;
   const label = tone === 'dodge' ? (language === 'en' ? 'DODGE!' : 'УКЛОН!') : tone === 'block' ? (language === 'en' ? 'BLOCK!' : 'БЛОК!') : null;
-  return <div key={strike && role ? `${strike.key}-${role}` : won ? 'victory' : 'idle'}
+  return <div ref={effectRef} key={strike && role ? `${strike.key}-${role}` : won ? 'victory' : 'idle'}
     className={`combat2d-effects combat2d-effects--${tone ?? 'idle'} ${strike && Math.abs(strike.key) % 3 === 2 ? 'combat2d-effects--strong' : ''}`}
     data-quality={lowQuality ? 'low' : 'full'} aria-hidden="true">
     {role === 'attacker' && <span data-effect="dust" className="combat2d-dust" />}

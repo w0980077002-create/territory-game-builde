@@ -14,6 +14,8 @@
 .skeletal-fighter[data-motion=idle] .rig-torso { animation: rig-breathe 3.2s ease-in-out infinite; }
 .skeletal-fighter[data-motion=idle] .rig-head { animation: rig-look 4.6s ease-in-out infinite; }
 .skeletal-fighter[data-motion=idle] .rig-arm-right { animation: rig-hand 3.2s ease-in-out infinite; }
+.skeletal-fighter[data-motion=idle] .rig-forearm-right { animation: rig-wrist 3.2s ease-in-out infinite; }
+.skeletal-fighter[data-motion=idle] .rig-shield { animation: rig-shield-idle 3.2s ease-in-out infinite; }
 .skeletal-fighter[data-motion=idle] .rig-arm-left { animation: rig-guard-idle 3.2s ease-in-out infinite; }
 .skeletal-fighter[data-motion=idle] .rig-leg-left { animation: rig-weight-left 3.2s ease-in-out infinite; }
 .skeletal-fighter[data-motion=idle] .rig-leg-right { animation: rig-weight-right 3.2s ease-in-out infinite; }
@@ -21,6 +23,10 @@
 @keyframes rig-breathe { 0%,100% { transform: translateY(0) rotate(-.4deg); } 50% { transform: translateY(-2px) rotate(.6deg); } }
 @keyframes rig-look { 0%,100% { transform: rotate(-.5deg); } 50% { transform: rotate(1deg); } }
 @keyframes rig-hand { 0%,100% { transform: rotate(-48deg); } 50% { transform: rotate(-50deg); } }
+@keyframes rig-wrist { 0%,100% { transform: rotate(-44deg); } 50% { transform: rotate(-46deg); } }
+@keyframes rig-shield-idle { 0%,100% { transform: rotate(-40deg); } 50% { transform: rotate(-38deg); } }
+.skeletal-fighter[data-rig=goblin][data-motion=idle] :is(.rig-torso,.rig-arm-right,.rig-forearm-right,.rig-arm-left,.rig-shield,.rig-leg-left,.rig-leg-right) { animation-duration:2.45s; }
+.skeletal-fighter[data-motion=idle] .rig-hair { animation-delay:-.65s; }
 @keyframes rig-guard-idle { 0%,100% { transform: rotate(35deg); } 50% { transform: rotate(33deg); } }
 @keyframes rig-weight-left { 0%,100% { transform: rotate(9deg); } 50% { transform: rotate(10.5deg); } }
 @keyframes rig-weight-right { 0%,100% { transform: rotate(-9deg); } 50% { transform: rotate(-8deg); } }
@@ -65,3 +71,10 @@
  .combat2d-label { animation-name:combat2d-label-reduced; }
  @keyframes combat2d-label-reduced { 0%,90% { opacity:1; transform:translateX(-50%); } 100% { opacity:0; transform:translateX(-50%); } }
 }
+
+/* Measured once at contact; no persistent frame loop. */
+.combat2d-effects[data-contact=pending] :is(.combat2d-flash,.combat2d-sparks,.combat2d-ring) { visibility:hidden; }
+.combat2d-effects[data-contact=ready] .combat2d-flash { left:calc(var(--impact-x) - 16px); top:calc(var(--impact-y) - 16px); }
+.combat2d-effects[data-contact=ready].combat2d-effects--crit .combat2d-flash { left:calc(var(--impact-x) - 23px); top:calc(var(--impact-y) - 23px); }
+.combat2d-effects[data-contact=ready] .combat2d-sparks { left:var(--impact-x); top:var(--impact-y); }
+.combat2d-effects[data-contact=ready] .combat2d-ring { left:calc(var(--impact-x) - 18px); top:calc(var(--impact-y) - 18px); }

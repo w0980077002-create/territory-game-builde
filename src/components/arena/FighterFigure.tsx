@@ -83,7 +83,7 @@ export function FighterFigure({
         <div className={className}>
           <SkeletalFighter rig={rig} name={name} dir={dir} alive={alive} won={won} strike={strike} speed={speed} className="absolute inset-0 w-full h-full"
             onAssetError={() => setAssets({ id: rig.id, ready: false })} />
-          <CombatEffects strike={strike} role={role} won={won} />
+          <CombatEffects strike={strike} role={role} won={won} speed={speed} />
         </div>
       </div>
     </div>

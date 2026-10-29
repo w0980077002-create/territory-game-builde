@@ -42,6 +42,7 @@ export const FighterRig = memo(function FighterRig({ rig }: { rig: FighterRigDef
     return <g transform={`translate(${left ? -35 : 31} 0)`}><g data-rig-part={`leg-${side}`} className={`rig-joint rig-leg-${side}`}>
       <g clipPath={`url(#${id}-thigh)`}>{sprite(-13)}</g>
       <g transform="translate(0 53)"><g data-rig-part={`knee-${side}`} className={`rig-joint rig-knee-${side}`}>
+        <circle data-anchor={`foot-${side}`} cx="0" cy="55" r="1" visibility="hidden" />
         <g clipPath={`url(#${id}-shin)`}>{sprite(-66)}</g>
       </g></g>
     </g></g>;
