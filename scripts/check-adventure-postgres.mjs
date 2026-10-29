@@ -33,7 +33,7 @@ const fighter = { stats: { hp: 1000, maxHp: 1000, attack: 100, defense: 4, critC
 const weak = { ...fighter, stats: { ...fighter.stats, hp: 1, maxHp: 1, attack: 1 } };
 const enemy = { ...fighter, stats: { ...fighter.stats, hp: 10, maxHp: 10, attack: 1 } };
 const rules = { stepMs: 10, maxDurationMs: 10000, approachMs: 20, attackIntervalMs: 200, basicWindupMs: 20, basicMultiplier: 1, defenseFactor: 0.5, magicDefenseFactor: 0.2, minimumDamage: 1, critMultiplier: 2, blockMultiplier: 0, maxEnergy: 100, initialEnergy: 100, energyPerSecond: 0, modeDamageMultiplier: { pve: 1, boss: 1, pvp: 1 } };
-const save = { player: { gold: 50, xp: 90, level: 1, xpToNext: 100, maxEnergy: 20, stats: { hp: 100, maxHp: 100, attack: 20, defense: 5 }, equipped: { weapon: { id: 'old' } } }, inventory: [{ id: 'old' }], vip: 7, redGems: 45, achievements: [{ id: 'old' }] };
+const save = { player: { gold: 50, xp: 90, level: 1, xpToNext: 100, maxEnergy: 20, stats: { hp: 100, maxHp: 100, attack: 20, defense: 5 }, equipped: { weapon: { id: 'old' } } }, inventory: [{ id: 'old' }], battleStones: 10, vip: 7, redGems: 45, achievements: [{ id: 'old' }] };
 const noLevelSave = structuredClone(save); noLevelSave.player.xp = 0;
 
 // Refuse to reuse any database that already contains application data.
@@ -73,6 +73,10 @@ const repo = {
 const execute = (p,c,repository=repo) => executeCombatCommand(repository,p,c,() => 12);
 await assert.rejects(execute(player,{action:'start',operationId:op(1),encounterId:'s2',control:'auto'}), /adventure_stage_locked/);
 const start = await execute(player,{action:'start',operationId:op(2),encounterId:'s1',control:'auto'});
+assert.equal(start.start_save.battle_stones,9);
+assert.equal((await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`)).battleStones,9);
+assert.deepEqual(await execute(player,{action:'start',operationId:op(2),encounterId:'s1',control:'auto'}),start);
+await assert.rejects(execute(player,{action:'start',operationId:op(12),encounterId:'s1',control:'auto'}),/combat_active_session_exists/);
 await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(start.session_id)};
  UPDATE territory_private.adventure_rewards_v1 SET items='[{"id":"unapproved"}]' WHERE stage=1;`);
 const cmd = {action:'advance',operationId:op(3),sessionId:start.session_id,revision:0};
