@@ -64,14 +64,21 @@ BEGIN
     -- A new owner correction downwards bypasses this branch and is applied
     -- by the owner-authorized transaction below.
     IF v_oldlevel >= v_approved THEN
-      IF v_requested = v_oldlevel + 1
+      -- During an explicit OWNER relevel, the approval row has been refreshed
+      -- with a NULL receipt. A requested correction DOWN to its new target
+      -- must win over any older server value.
+      IF v_saved IS NULL AND v_requested = v_approved
+        AND v_oldlevel <> v_approved THEN
+        NULL; -- fall through to the owner's requested canonical relevel below
+      ELSIF v_requested = v_oldlevel + 1
         AND v_requested <= p_hero AND v_requested <= 500 THEN
         RETURN public.territory_normalize_gear_v4(v_item)
           || jsonb_build_object('adminTestLevel',true);
       END IF;
-      IF v_requested = v_oldlevel
-        OR v_saved IS NOT NULL
-        OR v_requested < v_oldlevel THEN
+      IF (v_saved IS NOT NULL OR v_requested <> v_approved
+          OR v_oldlevel = v_approved)
+        AND (v_requested = v_oldlevel OR v_saved IS NOT NULL
+            OR v_requested < v_oldlevel) THEN
         RETURN v_old || jsonb_build_object('adminTestLevel',true);
       END IF;
       -- Old approvals without a receipt also retain the current level if
@@ -114,18 +121,19 @@ DECLARE v_definition text;
 BEGIN
   SELECT pg_get_functiondef('public.territory_admin_claim_grant_v2(uuid)'::regprocedure)
   INTO v_definition;
-  IF position('v_equipped:=jsonb_set(v_equipped,ARRAY[v_slot],v_gear,true);' IN v_definition)=0
-    OR position('OR v_equipped->v_slot->>''id'' IS DISTINCT FROM v_gear_id' IN v_definition)=0
+  IF position('v_equipped:=jsonb_set(v_equipped,ARRAY[v_slot],v_gear,true);' IN v_definition)>0
+    AND position('OR v_equipped->v_slot->>''id'' IS DISTINCT FROM v_gear_id' IN v_definition)>0
   THEN
+    v_definition:=replace(v_definition,
+      'OR v_equipped->v_slot->>''id'' IS DISTINCT FROM v_gear_id',
+      '');
+    v_definition:=replace(v_definition,
+      'v_equipped:=jsonb_set(v_equipped,ARRAY[v_slot],v_gear,true);',
+      'NULL; -- Owner already applied item atomically. Never replay outdated item.');
+    EXECUTE v_definition;
+  ELSIF position('Never replay outdated item.' IN v_definition)=0 THEN
     RAISE EXCEPTION 'Unexpected admin-grant implementation; refusing non-atomic patch';
   END IF;
-  v_definition:=replace(v_definition,
-    'OR v_equipped->v_slot->>''id'' IS DISTINCT FROM v_gear_id',
-    '');
-  v_definition:=replace(v_definition,
-    'v_equipped:=jsonb_set(v_equipped,ARRAY[v_slot],v_gear,true);',
-    'NULL; -- Owner already applied item atomically. Never replay outdated item.');
-  EXECUTE v_definition;
 END;
 $patch_grant$;
 
