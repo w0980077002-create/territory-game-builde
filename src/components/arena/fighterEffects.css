@@ -335,6 +335,8 @@
   animation: clash-fragment var(--clash-duration) ease-out both;
 }
 .combat-clash--dodge .combat-clash__fragment { opacity: 0 !important; animation: none; }
+/* An evasion has only a motion trail, never a fake contact flash. */
+.combat-clash--dodge .combat-clash__center, .combat-clash--dodge .combat-clash__ring { display: none; }
 .combat-clash--crit .combat-clash__ring { border-width: 3px; }
 @keyframes clash-center {
   0%, 33%, 100% { opacity: 0; transform: scale(.35); }
