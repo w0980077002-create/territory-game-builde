@@ -9,8 +9,13 @@ import { spendStones, trialReward, blessedGold } from '@/game/progression';
 import { hapticImpact } from '@/game/telegram';
 import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
+import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
 import { Currency } from './ui/Currency';
 import { DailyShareCard } from '@/game/DailyShareCard';
+
+// Strict double gate: the server must separately enable verified profiles, stages, and settlement.
+// This opt-in is ABSENT on production, so the approved legacy campaign is untouched.
+const SERVER_ADVENTURE_OPT_IN = import.meta.env.VITE_TERRITORY_V1_SERVER_COMBAT === 'verified';
 
 export type BattleView = 'campaign' | 'trial';
 
@@ -64,8 +69,15 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
     if (!autoStart || autoHandled.current) return;
     autoHandled.current = true;
     onAutoStartHandled();
+    // No client-side stone deductions or legacy battle while server cutover is active.
+    if (SERVER_ADVENTURE_OPT_IN && view === 'campaign') return;
     start(view === 'trial' ? 'trial' : 'stage');
   });
+
+  if (SERVER_ADVENTURE_OPT_IN && view === 'campaign') {
+    return <ServerAdventureScreen userId={userId} onTrial={() => onView('trial')}
+      onActiveChange={onActiveChange} />;
+  }
 
   if (fight) {
     return (
