@@ -68,7 +68,11 @@
   border-color: #8df7c3;
   box-shadow: inset 0 1px 1px #eaffeb55, 0 0 0 2px #1eb87677, 0 0 15px #1eb876bb;
   z-index: 4;
-  animation: territory-map-ready-pulse 1.5s ease-in-out infinite;
+}
+/* The tiny attention badge pulses instead of filtering/repainting an entire
+   moving landmark on every animation frame in Android Telegram WebView. */
+.territory-world-map__place--ready .territory-world-map__place-attention {
+  animation: territory-map-ready-pulse 1.8s ease-in-out infinite;
 }
 .territory-world-map__place-attention {
   position: absolute;
@@ -300,9 +304,10 @@
   50% { transform: translate(16px, -6px) rotate(12deg); }
 }
 @keyframes territory-map-ready-pulse {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.23); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: .65; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .territory-world-map__hint-hand, .territory-world-map__place--ready { animation: none; }
+  .territory-world-map__hint-hand, .territory-world-map__place--ready,
+  .territory-world-map__place--ready .territory-world-map__place-attention { animation: none; }
 }
