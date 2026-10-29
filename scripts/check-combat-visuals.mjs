@@ -77,4 +77,16 @@ assert.equal(resolveCombatArtUrl(base + trialPath), base + trialPath, 'Already-p
 assert(existsSync('public/assets/territory/characters/bosses/barrow_guardian/death.webp'), 'Trial guardian poses missing');
 assert.match(strikes, /STRIKE_MS = 920/, 'Faster strike FX queue timing missing');
 
+// Living battle is purely visual and shares its fighter component across PvP/PvE.
+const fighterMotionCss = read('src/components/arena/fighterEffects.css');
+assert.match(figure, /fighter-figure__breath--idle/, 'Hero stance must breathe between real strike events');
+assert.match(figure, /fighter-figure__footstep/, 'Attacker must step onto the ground on a real strike');
+assert.match(figure, /fighter-impact__flash/, 'Contact flash must be tied to the target impact');
+assert.match(figure, /combatSpeed = 1/, 'PvE x2 motion support was removed');
+for (const animation of ['fighter-breathe', 'fighter-step-dust', 'fighter-cut', 'fighter-thrust', 'fighter-overhead', 'fighter-recoil', 'fighter-guard', 'fighter-dodge', 'fighter-contact']) {
+  assert.match(fighterMotionCss, new RegExp('\\\\@keyframes ' + animation + ' \\\\{'.replace('\\\\@','@')), 'Missing live combat animation: ' + animation);
+}
+assert.match(fighterMotionCss, /\.fighter-figure__breath--idle \{ animation: none !important; \}/, 'Reduced-motion guard must disable continuous breathing');
+assert.match(fighterMotionCss, /\.fighter-figure__footstep, \.fighter-impact__flash \{ display: none; \}/, 'Reduced-motion guard must disable extra FX');
+
 console.log('Battle visuals OK: all character poses/assets, opponent, companion, sword, chat and seven-slot UI.');
