@@ -59,7 +59,7 @@ DECLARE s territory_private.combat_sessions_v1%ROWTYPE; e territory_private.comb
  r territory_private.adventure_rewards_v1%ROWTYPE; p public.players%ROWTYPE;
  existing territory_private.adventure_settlements_v1%ROWTYPE;
  st jsonb; stats jsonb; followers jsonb; receipt jsonb; outcome text;
- lv integer; v_max_energy integer; balance bigint; threshold bigint;
+ lv integer; v_max_energy integer; balance bigint; threshold bigint; before_projection jsonb; old_level integer; old_updated_at timestamptz;
 BEGIN
  SELECT * INTO p FROM public.players WHERE id=p_player FOR UPDATE;
  IF NOT FOUND OR coalesce(p.banned,false) THEN RAISE EXCEPTION 'adventure_account_unavailable'; END IF;
@@ -77,6 +77,14 @@ BEGIN
  PERFORM 1 FROM territory_private.adventure_progress_v1 WHERE player_id=p_player AND r.stage=unlocked_stage AND completed_stage<r.stage FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'adventure_stage_locked'; END IF;
  IF outcome='hero_won' THEN
+   -- The player row was locked above. A browser-side equipment or stat change
+   -- during the fight must not be silently trusted by reward settlement.
+   IF NOT territory_private.combat_profile_is_current_v1(p_player)
+     THEN RAISE EXCEPTION 'combat_profile_needs_reconciliation'; END IF;
+   before_projection:=territory_private.combat_source_projection_v1(p);
+   old_level:=p.level;
+   old_updated_at:=p.updated_at;
+   IF old_updated_at IS NULL THEN RAISE EXCEPTION 'adventure_save_needs_reconciliation'; END IF;
    st:=p.game_state; stats:=st#>'{player,stats}';
    IF jsonb_typeof(st->'player') IS DISTINCT FROM 'object' OR jsonb_typeof(stats) IS DISTINCT FROM 'object'
      OR (st#>>'{player,gold}')::bigint IS DISTINCT FROM p.gold::bigint
@@ -116,8 +124,11 @@ BEGIN
        FROM jsonb_array_elements(st->'followers') WITH ORDINALITY f(value,ordinality);
      st:=jsonb_set(st,'{followers}',followers);
    END IF;
-   UPDATE public.players SET game_state=st,gold=p.gold+r.gold,xp=balance::integer,level=lv,max_energy=v_max_energy
+   UPDATE public.players SET game_state=st,gold=p.gold+r.gold,xp=balance::integer,level=lv,max_energy=v_max_energy,
+     updated_at=greatest(clock_timestamp(),p.updated_at+interval '1 millisecond')
      WHERE id=p_player RETURNING * INTO p;
+   IF p.updated_at IS NULL OR p.updated_at<=old_updated_at THEN RAISE EXCEPTION 'adventure_save_needs_reconciliation'; END IF;
+   PERFORM territory_private.combat_refresh_reward_v1(p_player,before_projection,old_level);
    UPDATE territory_private.adventure_progress_v1 SET completed_stage=greatest(completed_stage,r.stage),
      unlocked_stage=least(100,greatest(completed_stage,r.stage)+1) WHERE player_id=p_player;
  END IF;

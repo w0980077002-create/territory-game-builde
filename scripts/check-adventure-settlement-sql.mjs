@@ -13,6 +13,11 @@ try {
  CREATE TABLE public.players(id uuid primary key,banned bool default false,game_state jsonb,gold int,gems int,xp int,level int,max_energy int,updated_at timestamptz default clock_timestamp());
  CREATE TABLE territory_private.combat_encounters_v1(encounter_id text primary key,stage int,mode text,enabled bool);
  CREATE TABLE territory_private.combat_sessions_v1(session_id uuid primary key,player_id uuid references public.players(id),encounter_id text references territory_private.combat_encounters_v1(encounter_id),state jsonb);
+ -- This focused settlement fixture stubs profile integration; the separate
+ -- service integration test exercises the real profile functions.
+ CREATE FUNCTION territory_private.combat_profile_is_current_v1(uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;
+ CREATE FUNCTION territory_private.combat_source_projection_v1(public.players) RETURNS jsonb LANGUAGE sql AS $$ SELECT '{}'::jsonb $$;
+ CREATE FUNCTION territory_private.combat_refresh_reward_v1(uuid,jsonb,integer) RETURNS void LANGUAGE sql AS $$ SELECT $$;
  GRANT USAGE ON SCHEMA territory_private TO service_role;
  GRANT SELECT,UPDATE ON public.players TO service_role;
  GRANT SELECT,UPDATE ON territory_private.combat_encounters_v1,territory_private.combat_sessions_v1 TO service_role;`);

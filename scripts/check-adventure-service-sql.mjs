@@ -4,7 +4,7 @@ import {build} from 'esbuild';
 import {PGlite} from '@electric-sql/pglite';
 const compiled=await build({entryPoints:['src/game/combatV1/service.ts'],bundle:true,platform:'node',format:'esm',write:false,logLevel:'silent'});
 const {executeCombatCommand}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'));
-const db=new PGlite(); const player='10000000-0000-4000-8000-000000000001';
+const db=new PGlite(); const player='10000000-0000-4000-8000-000000000001', noLevel='10000000-0000-4000-8000-000000000002';
 const op=n=>`20000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const q=async(sql,args=[]) => (await db.query(sql,args)).rows;
 const rpc=async(name,args)=>(await q(`SELECT public.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) r`,args))[0].r;
@@ -20,12 +20,16 @@ try {
  CREATE TABLE public.players(id uuid primary key,banned bool default false,game_state jsonb,gold int,gems int,xp int,level int,max_energy int,updated_at timestamptz default clock_timestamp());
  GRANT SELECT,UPDATE ON public.players TO service_role;`);
  await q('INSERT INTO players(id,game_state,gold,gems,xp,level,max_energy) VALUES($1,$2,50,9,90,1,20)',[player,save]);
+ const noLevelSave=structuredClone(save); noLevelSave.player.xp=0;
+ await q('INSERT INTO players(id,game_state,gold,gems,xp,level,max_energy) VALUES($1,$2,50,9,0,1,20)',[noLevel,noLevelSave]);
  await db.exec(readFileSync('supabase/staged/territory_v1_combat_completion.sql','utf8'));
  await db.exec(readFileSync('supabase/staged/territory_v1_adventure_settlement.sql','utf8'));
  await db.exec(readFileSync('supabase/staged/territory_v1_combat_profiles_reconciliation.sql','utf8'));
  await q(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by) VALUES($1,$2,1,$3,'{}','test evidence','test reviewer')`,[player,save,fighter]);
+ await q(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by) VALUES($1,$2,1,$3,'{}','test evidence','test reviewer')`,[noLevel,noLevelSave,fighter]);
  const prepared=(await q('SELECT territory_private.prepare_combat_profile_v1($1) result',[player]))[0].result;
  assert.equal(prepared.status,'ready');
+ assert.equal((await q('SELECT territory_private.prepare_combat_profile_v1($1) result',[noLevel]))[0].result.status,'ready');
  await q(`INSERT INTO territory_private.combat_encounters_v1(encounter_id,mode,stage,enemy,enabled,approval_reference) VALUES('s1','pve',1,$1,true,'test only'),('s2','pve',2,$1,true,'test only')`,[enemy]);
  await db.exec(`INSERT INTO territory_private.adventure_rewards_v1(stage,encounter_id,enabled,gold,xp,approval_reference) VALUES(1,'s1',true,15,20,'test only'),(2,'s2',true,15,20,'test only')`);
  await q(`UPDATE territory_private.combat_config_v1 SET catalog=$1,rules=$2,enabled=true,settlement_ready=true,approval_reference='test only'`,[{skills:[],runes:[],passives:[]},rules]);
@@ -44,6 +48,35 @@ try {
  const winningCommand=attempts[0].status==='fulfilled'?command:{...command,operationId:op(4)};
  assert.deepEqual(await exec(winningCommand),won);
  const resume=await exec({action:'resume',sessionId:start.session_id}); assert.deepEqual(resume.settlement,won.settlement);
+ const levelProfile=(await q('SELECT fighter FROM territory_private.combat_profiles_v1 WHERE player_id=$1',[player]))[0].fighter;
+ assert.equal(levelProfile.ownership.heroLevel,2); assert.equal(levelProfile.stats.attack,105); assert.equal(levelProfile.stats.defense,6); assert.equal(levelProfile.stats.maxHp,1020);
+ const next=await exec({action:'start',operationId:op(5),encounterId:'s2',control:'auto'});
+ assert.equal(next.state.input.stage,2,'start next stage immediately after level-up');
+ const execOther=c=>executeCombatCommand(repo,noLevel,c,()=>12);
+ const otherStart=await execOther({action:'start',operationId:op(6),encounterId:'s1',control:'auto'});
+ await db.exec('RESET ROLE'); await q('UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=$1',[otherStart.session_id]); await db.exec('SET ROLE service_role');
+ const otherWin=await execOther({action:'advance',operationId:op(7),sessionId:otherStart.session_id,revision:0});
+ assert.equal(otherWin.settlement.game_state.player.level,1);
+ const otherNext=await execOther({action:'start',operationId:op(8),encounterId:'s2',control:'auto'});
+ assert.equal(otherNext.state.input.stage,2,'start next stage immediately without level-up');
+ // Changing untrusted equipment while a battle is active must not create a
+ // newly attested profile or advance/award the terminal result.
+ await db.exec('RESET ROLE');
+ await q(`UPDATE players SET game_state=jsonb_set(game_state,'{player,equipped,weapon,id}','"tampered"') WHERE id=$1`,[noLevel]);
+ await q('UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=$1',[otherNext.session_id]);
+ await db.exec('SET ROLE service_role');
+ await assert.rejects(execOther({action:'advance',operationId:op(9),sessionId:otherNext.session_id,revision:0}),/combat_profile_needs_reconciliation/);
+ assert.equal((await q('SELECT revision FROM territory_private.combat_sessions_v1 WHERE session_id=$1',[otherNext.session_id]))[0].revision,0);
+ // A guard/trigger may normalize saved stats. Unexpected trigger effects must
+ // roll back both the terminal combat update and all reward changes.
+ await db.exec('RESET ROLE');
+ await q('UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=$1',[next.session_id]);
+ await db.exec(`CREATE FUNCTION public.test_unexpected_stat_trigger() RETURNS trigger LANGUAGE plpgsql AS $$
+   BEGIN NEW.game_state:=jsonb_set(NEW.game_state,'{player,stats,attack}','999'::jsonb); RETURN NEW; END $$;
+   CREATE TRIGGER test_unexpected_stat BEFORE UPDATE OF game_state ON public.players FOR EACH ROW EXECUTE FUNCTION public.test_unexpected_stat_trigger();`);
+ await db.exec('SET ROLE service_role');
+ await assert.rejects(exec({action:'advance',operationId:op(10),sessionId:next.session_id,revision:0}),/combat_profile_needs_reconciliation/);
+ assert.equal((await q('SELECT revision FROM territory_private.combat_sessions_v1 WHERE session_id=$1',[next.session_id]))[0].revision,0);
  await db.exec('RESET ROLE'); const row=(await q('SELECT * FROM players WHERE id=$1',[player]))[0];
  assert.equal(row.gold,65); assert.equal(row.xp,10); assert.deepEqual(row.game_state.inventory,save.inventory); assert.deepEqual(row.game_state.player.equipped,save.player.equipped); assert.equal(row.game_state.redGems,45); assert.equal(row.game_state.vip,7);
  console.log('Adventure service + SQL PGlite PASS: reviewed test profile, real engine victory, receipt replay/resume, legacy wallet and save, locked stage.');

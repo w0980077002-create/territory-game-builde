@@ -1,0 +1,2808 @@
+{
+  "status": "REVIEW_REQUIRED_NOT_FOR_DEPLOYMENT",
+  "mapping": "New stage N -> legacy floor N; old chapter-clear rewards omitted; elite uses ordinary enemy.",
+  "source": "Legacy src/game/engine.ts stats/gold/xp; PR #96 laboratory crit/block/dodge probabilities.",
+  "limitations": "Mapping and balance not approved; no boss abilities, elite multipliers or item rewards; not an SQL seed.",
+  "stages": [
+    {
+      "stage": 1,
+      "encounterId": "adventure_v1_stage_1",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 80,
+          "maxHp": 80,
+          "attack": 12,
+          "defense": 4,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 20,
+      "xp": 28,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 1,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 2,
+      "encounterId": "adventure_v1_stage_2",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 137,
+          "maxHp": 137,
+          "attack": 22,
+          "defense": 7,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 25,
+      "xp": 36,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 2,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 3,
+      "encounterId": "adventure_v1_stage_3",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 150,
+          "maxHp": 150,
+          "attack": 24,
+          "defense": 9,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 30,
+      "xp": 44,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 3,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 4,
+      "encounterId": "adventure_v1_stage_4",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 159,
+          "maxHp": 159,
+          "attack": 25,
+          "defense": 10,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 35,
+      "xp": 52,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 4,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 5,
+      "encounterId": "adventure_v1_stage_5",
+      "kind": "elite",
+      "enemyId": "troll",
+      "enemy": {
+        "stats": {
+          "hp": 247,
+          "maxHp": 247,
+          "attack": 39,
+          "defense": 15,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 40,
+      "xp": 60,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 5,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 6,
+      "encounterId": "adventure_v1_stage_6",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 188,
+          "maxHp": 188,
+          "attack": 29,
+          "defense": 12,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 45,
+      "xp": 68,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 6,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 7,
+      "encounterId": "adventure_v1_stage_7",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 291,
+          "maxHp": 291,
+          "attack": 46,
+          "defense": 19,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 50,
+      "xp": 76,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 7,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 8,
+      "encounterId": "adventure_v1_stage_8",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 296,
+          "maxHp": 296,
+          "attack": 46,
+          "defense": 20,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 55,
+      "xp": 84,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 8,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 9,
+      "encounterId": "adventure_v1_stage_9",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 294,
+          "maxHp": 294,
+          "attack": 46,
+          "defense": 20,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 60,
+      "xp": 92,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 9,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 10,
+      "encounterId": "adventure_v1_stage_10",
+      "kind": "boss",
+      "enemyId": "bandit_chief",
+      "enemy": {
+        "stats": {
+          "hp": 1211,
+          "maxHp": 1211,
+          "attack": 84,
+          "defense": 63,
+          "critChance": 0.14,
+          "dodgeChance": 0.08,
+          "blockChance": 0.18
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 200,
+      "xp": 280,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 10,
+      "legacySource": "boss"
+    },
+    {
+      "stage": 11,
+      "encounterId": "adventure_v1_stage_11",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 314,
+          "maxHp": 314,
+          "attack": 49,
+          "defense": 21,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 70,
+      "xp": 108,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 11,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 12,
+      "encounterId": "adventure_v1_stage_12",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 469,
+          "maxHp": 469,
+          "attack": 72,
+          "defense": 32,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 75,
+      "xp": 116,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 12,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 13,
+      "encounterId": "adventure_v1_stage_13",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 461,
+          "maxHp": 461,
+          "attack": 71,
+          "defense": 32,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 80,
+      "xp": 124,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 13,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 14,
+      "encounterId": "adventure_v1_stage_14",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 446,
+          "maxHp": 446,
+          "attack": 69,
+          "defense": 31,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 85,
+      "xp": 132,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 14,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 15,
+      "encounterId": "adventure_v1_stage_15",
+      "kind": "elite",
+      "enemyId": "troll",
+      "enemy": {
+        "stats": {
+          "hp": 639,
+          "maxHp": 639,
+          "attack": 98,
+          "defense": 45,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 90,
+      "xp": 140,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 15,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 16,
+      "encounterId": "adventure_v1_stage_16",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 455,
+          "maxHp": 455,
+          "attack": 70,
+          "defense": 32,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 95,
+      "xp": 148,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 16,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 17,
+      "encounterId": "adventure_v1_stage_17",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 667,
+          "maxHp": 667,
+          "attack": 102,
+          "defense": 47,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 100,
+      "xp": 156,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 17,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 18,
+      "encounterId": "adventure_v1_stage_18",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 645,
+          "maxHp": 645,
+          "attack": 98,
+          "defense": 45,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 105,
+      "xp": 164,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 18,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 19,
+      "encounterId": "adventure_v1_stage_19",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 616,
+          "maxHp": 616,
+          "attack": 94,
+          "defense": 43,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 110,
+      "xp": 172,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 19,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 20,
+      "encounterId": "adventure_v1_stage_20",
+      "kind": "boss",
+      "enemyId": "barrow_guardian",
+      "enemy": {
+        "stats": {
+          "hp": 2438,
+          "maxHp": 2438,
+          "attack": 166,
+          "defense": 130,
+          "critChance": 0.14,
+          "dodgeChance": 0.08,
+          "blockChance": 0.18
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 350,
+      "xp": 480,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 20,
+      "legacySource": "boss"
+    },
+    {
+      "stage": 21,
+      "encounterId": "adventure_v1_stage_21",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 607,
+          "maxHp": 607,
+          "attack": 92,
+          "defense": 43,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 120,
+      "xp": 188,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 21,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 22,
+      "encounterId": "adventure_v1_stage_22",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 875,
+          "maxHp": 875,
+          "attack": 132,
+          "defense": 62,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 125,
+      "xp": 196,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 22,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 23,
+      "encounterId": "adventure_v1_stage_23",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 831,
+          "maxHp": 831,
+          "attack": 126,
+          "defense": 59,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 130,
+      "xp": 204,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 23,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 24,
+      "encounterId": "adventure_v1_stage_24",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 781,
+          "maxHp": 781,
+          "attack": 118,
+          "defense": 55,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 135,
+      "xp": 212,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 24,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 25,
+      "encounterId": "adventure_v1_stage_25",
+      "kind": "elite",
+      "enemyId": "troll",
+      "enemy": {
+        "stats": {
+          "hp": 1085,
+          "maxHp": 1085,
+          "attack": 164,
+          "defense": 77,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 140,
+      "xp": 220,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 25,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 26,
+      "encounterId": "adventure_v1_stage_26",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 753,
+          "maxHp": 753,
+          "attack": 113,
+          "defense": 54,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 145,
+      "xp": 228,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 26,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 27,
+      "encounterId": "adventure_v1_stage_27",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 1077,
+          "maxHp": 1077,
+          "attack": 162,
+          "defense": 77,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 150,
+      "xp": 236,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 27,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 28,
+      "encounterId": "adventure_v1_stage_28",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 1016,
+          "maxHp": 1016,
+          "attack": 153,
+          "defense": 73,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 155,
+      "xp": 244,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 28,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 29,
+      "encounterId": "adventure_v1_stage_29",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 949,
+          "maxHp": 949,
+          "attack": 142,
+          "defense": 68,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 160,
+      "xp": 252,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 29,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 30,
+      "encounterId": "adventure_v1_stage_30",
+      "kind": "boss",
+      "enemyId": "dark_priest",
+      "enemy": {
+        "stats": {
+          "hp": 3679,
+          "maxHp": 3679,
+          "attack": 247,
+          "defense": 199,
+          "critChance": 0.14,
+          "dodgeChance": 0.08,
+          "blockChance": 0.18
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 500,
+      "xp": 680,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 30,
+      "legacySource": "boss"
+    },
+    {
+      "stage": 31,
+      "encounterId": "adventure_v1_stage_31",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 905,
+          "maxHp": 905,
+          "attack": 135,
+          "defense": 65,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 170,
+      "xp": 268,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 31,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 32,
+      "encounterId": "adventure_v1_stage_32",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 1287,
+          "maxHp": 1287,
+          "attack": 193,
+          "defense": 92,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 175,
+      "xp": 276,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 32,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 33,
+      "encounterId": "adventure_v1_stage_33",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 1210,
+          "maxHp": 1210,
+          "attack": 181,
+          "defense": 87,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 180,
+      "xp": 284,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 33,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 34,
+      "encounterId": "adventure_v1_stage_34",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 1124,
+          "maxHp": 1124,
+          "attack": 168,
+          "defense": 81,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 185,
+      "xp": 292,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 34,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 35,
+      "encounterId": "adventure_v1_stage_35",
+      "kind": "elite",
+      "enemyId": "troll",
+      "enemy": {
+        "stats": {
+          "hp": 1547,
+          "maxHp": 1547,
+          "attack": 231,
+          "defense": 111,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 190,
+      "xp": 300,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 35,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 36,
+      "encounterId": "adventure_v1_stage_36",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 1063,
+          "maxHp": 1063,
+          "attack": 158,
+          "defense": 76,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 195,
+      "xp": 308,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 36,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 37,
+      "encounterId": "adventure_v1_stage_37",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 1507,
+          "maxHp": 1507,
+          "attack": 224,
+          "defense": 108,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 200,
+      "xp": 316,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 37,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 38,
+      "encounterId": "adventure_v1_stage_38",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 1411,
+          "maxHp": 1411,
+          "attack": 210,
+          "defense": 101,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 205,
+      "xp": 324,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 38,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 39,
+      "encounterId": "adventure_v1_stage_39",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 1307,
+          "maxHp": 1307,
+          "attack": 194,
+          "defense": 94,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 210,
+      "xp": 332,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 39,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 40,
+      "encounterId": "adventure_v1_stage_40",
+      "kind": "boss",
+      "enemyId": "northern_jarl",
+      "enemy": {
+        "stats": {
+          "hp": 5029,
+          "maxHp": 5029,
+          "attack": 334,
+          "defense": 273,
+          "critChance": 0.14,
+          "dodgeChance": 0.08,
+          "blockChance": 0.18
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 650,
+      "xp": 880,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 40,
+      "legacySource": "boss"
+    },
+    {
+      "stage": 41,
+      "encounterId": "adventure_v1_stage_41",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 1228,
+          "maxHp": 1228,
+          "attack": 182,
+          "defense": 88,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 220,
+      "xp": 348,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 41,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 42,
+      "encounterId": "adventure_v1_stage_42",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 1736,
+          "maxHp": 1736,
+          "attack": 257,
+          "defense": 125,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 225,
+      "xp": 356,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 42,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 43,
+      "encounterId": "adventure_v1_stage_43",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 1620,
+          "maxHp": 1620,
+          "attack": 239,
+          "defense": 117,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 230,
+      "xp": 364,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 43,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 44,
+      "encounterId": "adventure_v1_stage_44",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 1497,
+          "maxHp": 1497,
+          "attack": 221,
+          "defense": 108,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 235,
+      "xp": 372,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 44,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 45,
+      "encounterId": "adventure_v1_stage_45",
+      "kind": "elite",
+      "enemyId": "troll",
+      "enemy": {
+        "stats": {
+          "hp": 2048,
+          "maxHp": 2048,
+          "attack": 302,
+          "defense": 147,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 240,
+      "xp": 380,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 45,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 46,
+      "encounterId": "adventure_v1_stage_46",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 1400,
+          "maxHp": 1400,
+          "attack": 206,
+          "defense": 101,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 245,
+      "xp": 388,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 46,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 47,
+      "encounterId": "adventure_v1_stage_47",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 1973,
+          "maxHp": 1973,
+          "attack": 290,
+          "defense": 142,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 250,
+      "xp": 396,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 47,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 48,
+      "encounterId": "adventure_v1_stage_48",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 1838,
+          "maxHp": 1838,
+          "attack": 270,
+          "defense": 132,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 255,
+      "xp": 404,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 48,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 49,
+      "encounterId": "adventure_v1_stage_49",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 1694,
+          "maxHp": 1694,
+          "attack": 249,
+          "defense": 122,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 260,
+      "xp": 412,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 49,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 50,
+      "encounterId": "adventure_v1_stage_50",
+      "kind": "boss",
+      "enemyId": "storm_lord",
+      "enemy": {
+        "stats": {
+          "hp": 6489,
+          "maxHp": 6489,
+          "attack": 426,
+          "defense": 352,
+          "critChance": 0.14,
+          "dodgeChance": 0.08,
+          "blockChance": 0.18
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 800,
+      "xp": 1080,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 50,
+      "legacySource": "boss"
+    },
+    {
+      "stage": 51,
+      "encounterId": "adventure_v1_stage_51",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 1578,
+          "maxHp": 1578,
+          "attack": 231,
+          "defense": 113,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 270,
+      "xp": 428,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 51,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 52,
+      "encounterId": "adventure_v1_stage_52",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 2220,
+          "maxHp": 2220,
+          "attack": 325,
+          "defense": 160,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 275,
+      "xp": 436,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 52,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 53,
+      "encounterId": "adventure_v1_stage_53",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 2064,
+          "maxHp": 2064,
+          "attack": 302,
+          "defense": 148,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 280,
+      "xp": 444,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 53,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 54,
+      "encounterId": "adventure_v1_stage_54",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 1899,
+          "maxHp": 1899,
+          "attack": 277,
+          "defense": 136,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 285,
+      "xp": 452,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 54,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 55,
+      "encounterId": "adventure_v1_stage_55",
+      "kind": "elite",
+      "enemyId": "troll",
+      "enemy": {
+        "stats": {
+          "hp": 2588,
+          "maxHp": 2588,
+          "attack": 377,
+          "defense": 186,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 290,
+      "xp": 460,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 55,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 56,
+      "encounterId": "adventure_v1_stage_56",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 1762,
+          "maxHp": 1762,
+          "attack": 257,
+          "defense": 126,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 295,
+      "xp": 468,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 56,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 57,
+      "encounterId": "adventure_v1_stage_57",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 2475,
+          "maxHp": 2475,
+          "attack": 360,
+          "defense": 178,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 300,
+      "xp": 476,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 57,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 58,
+      "encounterId": "adventure_v1_stage_58",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 2298,
+          "maxHp": 2298,
+          "attack": 334,
+          "defense": 165,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 305,
+      "xp": 484,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 58,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 59,
+      "encounterId": "adventure_v1_stage_59",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 2111,
+          "maxHp": 2111,
+          "attack": 307,
+          "defense": 151,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 310,
+      "xp": 492,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 59,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 60,
+      "encounterId": "adventure_v1_stage_60",
+      "kind": "boss",
+      "enemyId": "fire_lord",
+      "enemy": {
+        "stats": {
+          "hp": 8058,
+          "maxHp": 8058,
+          "attack": 524,
+          "defense": 436,
+          "critChance": 0.14,
+          "dodgeChance": 0.08,
+          "blockChance": 0.18
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 950,
+      "xp": 1280,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 60,
+      "legacySource": "boss"
+    },
+    {
+      "stage": 61,
+      "encounterId": "adventure_v1_stage_61",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 1953,
+          "maxHp": 1953,
+          "attack": 283,
+          "defense": 140,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 320,
+      "xp": 508,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 61,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 62,
+      "encounterId": "adventure_v1_stage_62",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 2740,
+          "maxHp": 2740,
+          "attack": 397,
+          "defense": 196,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 325,
+      "xp": 516,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 62,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 63,
+      "encounterId": "adventure_v1_stage_63",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 2540,
+          "maxHp": 2540,
+          "attack": 367,
+          "defense": 182,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 330,
+      "xp": 524,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 63,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 64,
+      "encounterId": "adventure_v1_stage_64",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 2330,
+          "maxHp": 2330,
+          "attack": 337,
+          "defense": 167,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 335,
+      "xp": 532,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 64,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 65,
+      "encounterId": "adventure_v1_stage_65",
+      "kind": "elite",
+      "enemyId": "troll",
+      "enemy": {
+        "stats": {
+          "hp": 3167,
+          "maxHp": 3167,
+          "attack": 457,
+          "defense": 227,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 340,
+      "xp": 540,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 65,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 66,
+      "encounterId": "adventure_v1_stage_66",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 2151,
+          "maxHp": 2151,
+          "attack": 310,
+          "defense": 154,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 345,
+      "xp": 548,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 66,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 67,
+      "encounterId": "adventure_v1_stage_67",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 3013,
+          "maxHp": 3013,
+          "attack": 434,
+          "defense": 216,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 350,
+      "xp": 556,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 67,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 68,
+      "encounterId": "adventure_v1_stage_68",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 2790,
+          "maxHp": 2790,
+          "attack": 402,
+          "defense": 200,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 355,
+      "xp": 564,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 68,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 69,
+      "encounterId": "adventure_v1_stage_69",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 2557,
+          "maxHp": 2557,
+          "attack": 368,
+          "defense": 183,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 360,
+      "xp": 572,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 69,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 70,
+      "encounterId": "adventure_v1_stage_70",
+      "kind": "boss",
+      "enemyId": "undead_king",
+      "enemy": {
+        "stats": {
+          "hp": 9736,
+          "maxHp": 9736,
+          "attack": 627,
+          "defense": 526,
+          "critChance": 0.14,
+          "dodgeChance": 0.08,
+          "blockChance": 0.18
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 1100,
+      "xp": 1480,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 70,
+      "legacySource": "boss"
+    },
+    {
+      "stage": 71,
+      "encounterId": "adventure_v1_stage_71",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 2355,
+          "maxHp": 2355,
+          "attack": 338,
+          "defense": 168,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 370,
+      "xp": 588,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 71,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 72,
+      "encounterId": "adventure_v1_stage_72",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 3295,
+          "maxHp": 3295,
+          "attack": 473,
+          "defense": 236,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 375,
+      "xp": 596,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 72,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 73,
+      "encounterId": "adventure_v1_stage_73",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 3048,
+          "maxHp": 3048,
+          "attack": 437,
+          "defense": 218,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 380,
+      "xp": 604,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 73,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 74,
+      "encounterId": "adventure_v1_stage_74",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 2791,
+          "maxHp": 2791,
+          "attack": 399,
+          "defense": 199,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 385,
+      "xp": 612,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 74,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 75,
+      "encounterId": "adventure_v1_stage_75",
+      "kind": "elite",
+      "enemyId": "troll",
+      "enemy": {
+        "stats": {
+          "hp": 3784,
+          "maxHp": 3784,
+          "attack": 541,
+          "defense": 270,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 390,
+      "xp": 620,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 75,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 76,
+      "encounterId": "adventure_v1_stage_76",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 2565,
+          "maxHp": 2565,
+          "attack": 367,
+          "defense": 183,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 395,
+      "xp": 628,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 76,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 77,
+      "encounterId": "adventure_v1_stage_77",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 3587,
+          "maxHp": 3587,
+          "attack": 512,
+          "defense": 256,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 400,
+      "xp": 636,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 77,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 78,
+      "encounterId": "adventure_v1_stage_78",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 3314,
+          "maxHp": 3314,
+          "attack": 473,
+          "defense": 236,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 405,
+      "xp": 644,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 78,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 79,
+      "encounterId": "adventure_v1_stage_79",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 3032,
+          "maxHp": 3032,
+          "attack": 432,
+          "defense": 216,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 410,
+      "xp": 652,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 79,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 80,
+      "encounterId": "adventure_v1_stage_80",
+      "kind": "boss",
+      "enemyId": "giant_king",
+      "enemy": {
+        "stats": {
+          "hp": 11524,
+          "maxHp": 11524,
+          "attack": 735,
+          "defense": 620,
+          "critChance": 0.14,
+          "dodgeChance": 0.08,
+          "blockChance": 0.18
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 1250,
+      "xp": 1680,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 80,
+      "legacySource": "boss"
+    },
+    {
+      "stage": 81,
+      "encounterId": "adventure_v1_stage_81",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 2782,
+          "maxHp": 2782,
+          "attack": 396,
+          "defense": 198,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 420,
+      "xp": 668,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 81,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 82,
+      "encounterId": "adventure_v1_stage_82",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 3887,
+          "maxHp": 3887,
+          "attack": 553,
+          "defense": 277,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 425,
+      "xp": 676,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 82,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 83,
+      "encounterId": "adventure_v1_stage_83",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 3589,
+          "maxHp": 3589,
+          "attack": 510,
+          "defense": 256,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 430,
+      "xp": 684,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 83,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 84,
+      "encounterId": "adventure_v1_stage_84",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 3280,
+          "maxHp": 3280,
+          "attack": 466,
+          "defense": 233,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 435,
+      "xp": 692,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 84,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 85,
+      "encounterId": "adventure_v1_stage_85",
+      "kind": "elite",
+      "enemyId": "troll",
+      "enemy": {
+        "stats": {
+          "hp": 4441,
+          "maxHp": 4441,
+          "attack": 630,
+          "defense": 316,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 440,
+      "xp": 700,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 85,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 86,
+      "encounterId": "adventure_v1_stage_86",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 3006,
+          "maxHp": 3006,
+          "attack": 426,
+          "defense": 214,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 445,
+      "xp": 708,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 86,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 87,
+      "encounterId": "adventure_v1_stage_87",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 4196,
+          "maxHp": 4196,
+          "attack": 594,
+          "defense": 298,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 450,
+      "xp": 716,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 87,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 88,
+      "encounterId": "adventure_v1_stage_88",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 3872,
+          "maxHp": 3872,
+          "attack": 548,
+          "defense": 275,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 455,
+      "xp": 724,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 88,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 89,
+      "encounterId": "adventure_v1_stage_89",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 3536,
+          "maxHp": 3536,
+          "attack": 500,
+          "defense": 251,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 460,
+      "xp": 732,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 89,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 90,
+      "encounterId": "adventure_v1_stage_90",
+      "kind": "boss",
+      "enemyId": "chaos_shadow",
+      "enemy": {
+        "stats": {
+          "hp": 13421,
+          "maxHp": 13421,
+          "attack": 849,
+          "defense": 719,
+          "critChance": 0.14,
+          "dodgeChance": 0.08,
+          "blockChance": 0.18
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 1400,
+      "xp": 1880,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 90,
+      "legacySource": "boss"
+    },
+    {
+      "stage": 91,
+      "encounterId": "adventure_v1_stage_91",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 3236,
+          "maxHp": 3236,
+          "attack": 457,
+          "defense": 230,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 470,
+      "xp": 748,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 91,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 92,
+      "encounterId": "adventure_v1_stage_92",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 4514,
+          "maxHp": 4514,
+          "attack": 637,
+          "defense": 320,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 475,
+      "xp": 756,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 92,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 93,
+      "encounterId": "adventure_v1_stage_93",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 4162,
+          "maxHp": 4162,
+          "attack": 586,
+          "defense": 295,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 480,
+      "xp": 764,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 93,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 94,
+      "encounterId": "adventure_v1_stage_94",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 3799,
+          "maxHp": 3799,
+          "attack": 535,
+          "defense": 269,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 485,
+      "xp": 772,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 94,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 95,
+      "encounterId": "adventure_v1_stage_95",
+      "kind": "elite",
+      "enemyId": "troll",
+      "enemy": {
+        "stats": {
+          "hp": 5137,
+          "maxHp": 5137,
+          "attack": 723,
+          "defense": 364,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 490,
+      "xp": 780,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 95,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 96,
+      "encounterId": "adventure_v1_stage_96",
+      "kind": "normal",
+      "enemyId": "goblin",
+      "enemy": {
+        "stats": {
+          "hp": 3472,
+          "maxHp": 3472,
+          "attack": 488,
+          "defense": 246,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 495,
+      "xp": 788,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 96,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 97,
+      "encounterId": "adventure_v1_stage_97",
+      "kind": "normal",
+      "enemyId": "wolf",
+      "enemy": {
+        "stats": {
+          "hp": 4841,
+          "maxHp": 4841,
+          "attack": 680,
+          "defense": 343,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 500,
+      "xp": 796,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 97,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 98,
+      "encounterId": "adventure_v1_stage_98",
+      "kind": "normal",
+      "enemyId": "bandit",
+      "enemy": {
+        "stats": {
+          "hp": 4461,
+          "maxHp": 4461,
+          "attack": 626,
+          "defense": 316,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 505,
+      "xp": 804,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 98,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 99,
+      "encounterId": "adventure_v1_stage_99",
+      "kind": "normal",
+      "enemyId": "boar",
+      "enemy": {
+        "stats": {
+          "hp": 4070,
+          "maxHp": 4070,
+          "attack": 571,
+          "defense": 288,
+          "critChance": 0.06,
+          "dodgeChance": 0.07,
+          "blockChance": 0.08
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 510,
+      "xp": 812,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 99,
+      "legacySource": "ordinary"
+    },
+    {
+      "stage": 100,
+      "encounterId": "adventure_v1_stage_100",
+      "kind": "boss",
+      "enemyId": "abyss_demon",
+      "enemy": {
+        "stats": {
+          "hp": 15428,
+          "maxHp": 15428,
+          "attack": 969,
+          "defense": 824,
+          "critChance": 0.14,
+          "dodgeChance": 0.08,
+          "blockChance": 0.18
+        },
+        "loadout": {
+          "skills": [],
+          "passives": []
+        }
+      },
+      "gold": 1550,
+      "xp": 2080,
+      "items": [],
+      "enabled": false,
+      "approval": "review_required",
+      "legacyFloor": 100,
+      "legacySource": "boss"
+    }
+  ]
+}

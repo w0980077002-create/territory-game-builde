@@ -27,11 +27,13 @@ const json = x => `${quote(JSON.stringify(x))}::jsonb`;
 const scalar = async statement => JSON.parse(await sql(statement));
 const player = '10000000-0000-4000-8000-000000000001';
 const loser = '10000000-0000-4000-8000-000000000002';
+const noLevel = '10000000-0000-4000-8000-000000000003';
 const op = n => `20000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const fighter = { stats: { hp: 1000, maxHp: 1000, attack: 100, defense: 4, critChance: 0, dodgeChance: 0, blockChance: 0 }, ownership: { heroLevel: 1, skills: {}, runes: {}, passives: {} }, loadout: { skills: [], passives: [] } };
 const enemy = { ...fighter, stats: { ...fighter.stats, hp: 10, maxHp: 10, attack: 1 } };
 const rules = { stepMs: 10, maxDurationMs: 10000, approachMs: 20, attackIntervalMs: 200, basicWindupMs: 20, basicMultiplier: 1, defenseFactor: 0.5, magicDefenseFactor: 0.2, minimumDamage: 1, critMultiplier: 2, blockMultiplier: 0, maxEnergy: 100, initialEnergy: 100, energyPerSecond: 0, modeDamageMultiplier: { pve: 1, boss: 1, pvp: 1 } };
 const save = { player: { gold: 50, xp: 90, level: 1, xpToNext: 100, maxEnergy: 20, stats: { hp: 100, maxHp: 100, attack: 20, defense: 5 }, equipped: { weapon: { id: 'old' } } }, inventory: [{ id: 'old' }], vip: 7, redGems: 45, achievements: [{ id: 'old' }] };
+const noLevelSave = structuredClone(save); noLevelSave.player.xp = 0;
 
 // Refuse to reuse any database that already contains application data.
 assert.equal(await sql("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p')"), '0', 'test database must be empty');
@@ -43,15 +45,18 @@ await sql(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role
  CREATE TRIGGER test_player_timestamp BEFORE UPDATE ON public.players FOR EACH ROW EXECUTE FUNCTION public.test_touch_player();
  GRANT SELECT,UPDATE ON public.players TO service_role;
  INSERT INTO public.players(id,game_state,gold,gems,xp,level,max_energy) VALUES
- (${quote(player)},${json(save)},50,9,90,1,20),(${quote(loser)},${json(save)},50,9,90,1,20);`);
+ (${quote(player)},${json(save)},50,9,90,1,20),(${quote(loser)},${json(save)},50,9,90,1,20),
+ (${quote(noLevel)},${json(noLevelSave)},50,9,0,1,20);`);
 for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supabase/staged/territory_v1_adventure_settlement.sql', 'supabase/staged/territory_v1_combat_profiles_reconciliation.sql']) await file(path);
 assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`), save, 'installation leaves the old save untouched');
 await sql(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by)
  VALUES (${quote(player)},${json(save)},1,${json(fighter)},'{}','synthetic evidence','test reviewer'),
- (${quote(loser)},${json(save)},1,${json(fighter)},'{}','synthetic evidence','test reviewer');`);
+ (${quote(loser)},${json(save)},1,${json(fighter)},'{}','synthetic evidence','test reviewer'),
+ (${quote(noLevel)},${json(noLevelSave)},1,${json(fighter)},'{}','synthetic evidence','test reviewer');`);
 const prepared = await scalar(`SET ROLE service_role; SELECT public.territory_combat_prepare_profile_v1(${quote(player)})`);
 assert.equal(prepared.status, 'ready');
 assert.equal((await scalar(`SET ROLE service_role; SELECT public.territory_combat_prepare_profile_v1(${quote(loser)})`)).status, 'ready');
+assert.equal((await scalar(`SET ROLE service_role; SELECT public.territory_combat_prepare_profile_v1(${quote(noLevel)})`)).status, 'ready');
 await sql(`INSERT INTO territory_private.combat_encounters_v1(encounter_id,mode,stage,enemy,enabled,approval_reference)
  VALUES ('s1','pve',1,${json(enemy)},true,'synthetic'),('s2','pve',2,${json(enemy)},true,'synthetic');
  INSERT INTO territory_private.adventure_rewards_v1(stage,encounter_id,enabled,gold,xp,approval_reference)
@@ -121,6 +126,20 @@ assert.equal(row.game_state.vip,7); assert.equal(row.game_state.redGems,45); ass
 assert.equal(await sql(`SELECT count(*) FROM territory_private.adventure_settlements_v1 WHERE session_id=${quote(start.session_id)}`),'1');
 const progress=await scalar(`SET ROLE authenticated; SELECT set_config('request.test_uid',${quote(player)},false); SELECT public.territory_adventure_progress_v1()` .replace(`SELECT set_config('request.test_uid',${quote(player)},false);`, `SET request.test_uid=${quote(player)};`));
 assert.deepEqual(progress,{completed_stage:1,unlocked_stage:2});
+const next=await execute(player,{action:'start',operationId:op(7),encounterId:'s2',control:'auto'});
+assert.equal(next.state.input.stage,2,'next stage starts immediately after level-up');
+const profile=await scalar(`SELECT fighter FROM territory_private.combat_profiles_v1 WHERE player_id=${quote(player)}`);
+assert.equal(profile.ownership.heroLevel,2); assert.equal(profile.stats.attack,105); assert.equal(profile.stats.maxHp,1020);
+const noLevelStart=await execute(noLevel,{action:'start',operationId:op(8),encounterId:'s1',control:'auto'});
+await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(noLevelStart.session_id)}`);
+const noLevelWin=await execute(noLevel,{action:'advance',operationId:op(9),sessionId:noLevelStart.session_id,revision:0});
+assert.equal(noLevelWin.settlement.game_state.player.level,1);
+const noLevelNext=await execute(noLevel,{action:'start',operationId:op(10),encounterId:'s2',control:'auto'});
+assert.equal(noLevelNext.state.input.stage,2,'next stage starts immediately without level-up');
+await sql(`UPDATE public.players SET game_state=jsonb_set(game_state,'{player,equipped,weapon,id}','"tampered"') WHERE id=${quote(noLevel)};
+ UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(noLevelNext.session_id)}`);
+await assert.rejects(execute(noLevel,{action:'advance',operationId:op(11),sessionId:noLevelNext.session_id,revision:0}),/combat_profile_needs_reconciliation/);
+assert.equal(await sql(`SELECT revision FROM territory_private.combat_sessions_v1 WHERE session_id=${quote(noLevelNext.session_id)}`),'0');
 // The second synthetic player loses a genuine engine fight; no win reward is paid.
 const strongEnemy={...fighter,stats:{...fighter.stats,attack:1000}};
 await sql(`UPDATE territory_private.combat_encounters_v1 SET enemy=${json(strongEnemy)} WHERE encounter_id='s1'`);

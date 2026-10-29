@@ -1,0 +1,85 @@
+import { supabase } from '../supabase';
+import { ensurePlayerSession } from '../auth';
+import { acceptAdventureSettlementReceipt, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave } from '../cloud';
+import type { GameState } from '../types';
+import { parseCombatCommand, type CombatCommand } from './service';
+
+type Advance = Extract<CombatCommand, { action: 'advance' }>;
+type Resume = Extract<CombatCommand, { action: 'resume' }>;
+type Hooks = { getState(): GameState; applyState(state: GameState): void };
+const key = (userId: string) => `territory_adventure_pending_v1:${userId}`;
+const active = new Set<string>();
+const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+
+/** Call before allowing autosave on remount. A pending command has an uncertain
+ * outcome and must be replayed with its original ID, or resolved by reload. */
+export function restoreAdventureSaveFence(userId: string): Advance | null {
+  if (typeof localStorage === 'undefined') throw new Error('adventure_storage_unavailable');
+  const raw = localStorage.getItem(key(userId));
+  if (!raw) return null;
+  // Fence even when the persisted data is corrupt: a request may have committed.
+  protectFortuneSave(userId);
+  const value = parseCombatCommand(JSON.parse(raw));
+  if (value.action !== 'advance') throw new Error('adventure_invalid_pending');
+  return value;
+}
+
+/** Submit an advance or resume, preserving an uncertain advance across remounts.
+ * The caller must keep editing disabled during the operation and invoke
+ * restoreAdventureSaveFence before starting autosave after a remount. */
+export async function requestAdventureSettlement(userId: string, command: Advance | Resume, hooks: Hooks): Promise<Record<string, unknown>> {
+  if (active.has(userId)) throw new Error('adventure_request_pending');
+  active.add(userId);
+  let fenced = false;
+  try {
+    if (typeof localStorage === 'undefined') throw new Error('adventure_storage_unavailable');
+    const checked = parseCombatCommand(command);
+    if (checked.action !== 'advance' && checked.action !== 'resume') throw new Error('adventure_invalid_command');
+    if (!await ensurePlayerSession(userId)) throw new Error('adventure_auth_required');
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || user?.id !== userId) throw new Error('adventure_auth_required');
+    const wasBlocked = saveBlocked.has(userId);
+    const old = restoreAdventureSaveFence(userId);
+    if (!old && wasBlocked) throw new Error('adventure_save_blocked');
+    if (old && JSON.stringify(old) !== JSON.stringify(checked)) throw new Error('adventure_retry_pending_operation');
+    if (!old && checked.action === 'advance') {
+      const snapshot = hooks.getState();
+      const serialized = JSON.stringify(snapshot);
+      if (!await saveCloudSave(userId, snapshot) || JSON.stringify(hooks.getState()) !== serialized)
+        throw new Error('adventure_save_required');
+      localStorage.setItem(key(userId), JSON.stringify(checked));
+    }
+    // Block queued stale snapshots until a confirmed result has been installed.
+    protectFortuneSave(userId);
+    fenced = true;
+    const { data, error } = await supabase.functions.invoke('territory-combat', { body: checked });
+    if (error || !record(data) || data.success !== true || data.session_id !== checked.sessionId || !record(data.state)
+      || !Number.isSafeInteger(data.revision) || Number(data.revision)<0
+      || (checked.action === 'advance' && data.revision !== checked.revision+1))
+      throw new Error('adventure_unconfirmed');
+    const terminal = ['hero_won', 'enemy_won', 'draw'].includes(String(data.state.status));
+    if (terminal) {
+      if (!record(data.settlement) || data.settlement.outcome !== data.state.status) throw new Error('adventure_invalid_receipt');
+      // A replay may predate another device's save. Check the current row
+      // before exposing its snapshot; the normal CAS still guards later saves.
+      const currentUser = await supabase.auth.getUser();
+      if (currentUser.error || currentUser.data.user?.id !== userId) throw new Error('adventure_auth_required');
+      const current = await supabase.from('players').select('updated_at').eq('id', userId).maybeSingle();
+      if (current.error || !current.data || current.data.updated_at !== data.settlement.updated_at)
+        throw new Error('adventure_reload_required');
+      const state = acceptAdventureSettlementReceipt(userId, data.settlement, checked.sessionId);
+      if (state) hooks.applyState(state);
+    } else if (data.state.status !== 'fighting' || data.settlement != null) {
+      throw new Error('adventure_invalid_receipt');
+    }
+    if (checked.action === 'advance') localStorage.removeItem(key(userId));
+    releaseArenaRejectedAction(userId);
+    fenced = false;
+    return data;
+  } catch (error) {
+    // acceptAdventureSettlementReceipt installs the token before the caller's
+    // state update. If that update fails, retain the fence and require reload.
+    if (fenced) protectFortuneSave(userId);
+    throw error;
+  } finally { active.delete(userId); }
+}

@@ -40,3 +40,9 @@ jobs:
         run: node scripts/check-adventure-postgres.mjs
         env:
           ADVENTURE_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/territory_adventure_ci
+      - name: Rehearse settlement with checked-in V1 guards
+        run: |
+          PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres territory_adventure_guards_ci
+          node scripts/check-adventure-postgres-v1-guards.mjs
+        env:
+          ADVENTURE_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/territory_adventure_guards_ci
