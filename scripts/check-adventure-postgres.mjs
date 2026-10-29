@@ -50,10 +50,10 @@ await sql(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role
  (${quote(noLevel)},${json(noLevelSave)},50,9,0,1,20);`);
 for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supabase/staged/territory_v1_adventure_settlement.sql', 'supabase/staged/territory_v1_combat_profiles_reconciliation.sql']) await file(path);
 assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`), save, 'installation leaves the old save untouched');
-await sql(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by)
- VALUES (${quote(player)},${json(save)},1,${json(fighter)},'{}','synthetic evidence','test reviewer'),
- (${quote(loser)},${json(save)},1,${json(weak)},'{}','synthetic evidence','test reviewer'),
- (${quote(noLevel)},${json(noLevelSave)},1,${json(fighter)},'{}','synthetic evidence','test reviewer');`);
+await sql(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
+ VALUES (${quote(player)},${json(save)},1,${json(fighter)},'{}',ARRAY['old']::text[],'synthetic evidence','test reviewer'),
+ (${quote(loser)},${json(save)},1,${json(weak)},'{}',ARRAY['old']::text[],'synthetic evidence','test reviewer'),
+ (${quote(noLevel)},${json(noLevelSave)},1,${json(fighter)},'{}',ARRAY['old']::text[],'synthetic evidence','test reviewer');`);
 const prepared = await scalar(`SET ROLE service_role; SELECT public.territory_combat_prepare_profile_v1(${quote(player)})`);
 assert.equal(prepared.status, 'ready');
 assert.equal((await scalar(`SET ROLE service_role; SELECT public.territory_combat_prepare_profile_v1(${quote(loser)})`)).status, 'ready');
