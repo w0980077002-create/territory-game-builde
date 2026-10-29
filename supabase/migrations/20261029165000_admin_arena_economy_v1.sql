@@ -388,7 +388,7 @@ BEGIN
    'notes',pg_catalog.jsonb_build_object(
      'wallet','Все списания/пополнения по игре; точных исторических покупок лавки нет',
      'consumables','Точный серверный учёт начат с установки этой версии',
-     'rewards','Золото рассчитано по полученным наградам, ТОП-50 — по реальным письмам'))
+     'rewards','Золото рассчитано по полученным наградам, ТОП-50 — по реальным письмам'));
 END $func$;
 REVOKE ALL ON FUNCTION public.territory_admin_arena_economy_v1(integer) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_admin_arena_economy_v1(integer) TO service_role;
