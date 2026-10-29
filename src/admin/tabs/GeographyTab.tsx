@@ -117,7 +117,7 @@ export function GeographyTab() {
                 </tr>
               </thead>
               <tbody>
-{countries.map((c) => (
+                {countries.map((c) => (
                   <tr key={c.code} className="h-8 border-t border-slate-800/90 hover:bg-slate-800/40">
                     <td className="overflow-hidden px-1.5 font-medium text-slate-100" title={countryName(c.code)}>
                       <div className="flex min-w-0 items-center gap-1">
