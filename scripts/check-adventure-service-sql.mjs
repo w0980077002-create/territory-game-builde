@@ -13,7 +13,7 @@ const exec=c=>executeCombatCommand(repo,player,c,()=>12);
 const fighter={stats:{hp:1000,maxHp:1000,attack:100,defense:4,critChance:0,dodgeChance:0,blockChance:0},ownership:{heroLevel:1,skills:{},runes:{},passives:{}},loadout:{skills:[],passives:[]}};
 const enemy={...fighter,stats:{...fighter.stats,hp:10,maxHp:10,attack:1}};
 const rules={stepMs:10,maxDurationMs:10000,approachMs:20,attackIntervalMs:200,basicWindupMs:20,basicMultiplier:1,defenseFactor:0.5,magicDefenseFactor:0.2,minimumDamage:1,critMultiplier:2,blockMultiplier:0,maxEnergy:100,initialEnergy:100,energyPerSecond:0,modeDamageMultiplier:{pve:1,boss:1,pvp:1}};
-const save={player:{gold:50,xp:90,level:1,xpToNext:100,maxEnergy:20,stats:{hp:100,maxHp:100,attack:20,defense:5},equipped:{weapon:{id:'old'}}},inventory:[{id:'old'}],vip:7,redGems:45,achievements:[{id:'old'}]};
+const save={player:{gold:50,xp:90,level:1,xpToNext:100,maxEnergy:20,stats:{hp:100,maxHp:100,attack:20,defense:5},equipped:{weapon:{id:'old'}}},inventory:[{id:'old'}],battleStones:10,vip:7,redGems:45,achievements:[{id:'old'}]};
 try {
  await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
  CREATE SCHEMA auth; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT NULL::uuid $$;
@@ -36,6 +36,10 @@ try {
  await db.exec('SET ROLE service_role');
  await assert.rejects(exec({action:'start',operationId:op(1),encounterId:'s2',control:'auto'}),/adventure_stage_locked/);
  const start=await exec({action:'start',operationId:op(2),encounterId:'s1',control:'auto'});
+ assert.equal(start.start_save.battle_stones,9,'server charges exactly one stone');
+ assert.equal((await q('SELECT game_state FROM public.players WHERE id=$1',[player]))[0].game_state.battleStones,9);
+ assert.deepEqual(await exec({action:'start',operationId:op(2),encounterId:'s1',control:'auto'}),start,'same start UUID must not charge twice');
+ await assert.rejects(exec({action:'start',operationId:op(10),encounterId:'s1',control:'auto'}),/combat_active_session_exists/);
  await db.exec('RESET ROLE'); await q('UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=$1',[start.session_id]); await db.exec('SET ROLE service_role');
  const command={action:'advance',operationId:op(3),sessionId:start.session_id,revision:0};
  // PGlite serializes work through one connection. This checks competing
