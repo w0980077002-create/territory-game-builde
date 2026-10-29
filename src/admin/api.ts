@@ -10,6 +10,7 @@ const ERRORS: Record<string, string> = {
   too_many_attempts: 'Слишком много попыток. Подождите 15 минут',
   unauthorized: 'Сессия истекла, войдите снова',
   geo_unavailable: 'Статистика стран пока не подключена на сервере',
+  registrations_unavailable: 'Список новых игроков пока недоступен на сервере',
   not_found: 'Игрок не найден',
   recipient_not_found: 'Получатель не найден',
   empty_payload: 'Не указаны изменения',
