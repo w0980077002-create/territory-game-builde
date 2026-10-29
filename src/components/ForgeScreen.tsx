@@ -16,6 +16,10 @@ import { forgeAttempt, forgeCost, forgeSetBonus, forgeSuccessRate } from '@/game
 import { EQUIPMENT_SLOTS } from '@/game/engine';
 import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
 
+// Do not let navigating away and back bypass an unresolved forge confirmation.
+// A fresh Telegram launch loads the canonical server save before restoring upgrades.
+const unverifiedForgeUsers = new Set<string>();
+
 export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { focusEquipmentId?: string | null; onInventory?: () => void; onMap?: () => void; userId: string }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
@@ -31,7 +35,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { 
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // A forge result is not final until the server has persisted it.
-  const [saveUnverified, setSaveUnverified] = useState(false);
+  const [saveUnverified, setSaveUnverified] = useState(() => unverifiedForgeUsers.has(userId));
   const [gearFilter, setGearFilter] = useState<'all' | 'ready' | 'equipped'>('all');
   const focused = useRef(false);
 
@@ -129,6 +133,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { 
           // Keep the local snapshot intact: never overwrite newer server awards
           // with an old copy. The player must reload before another forge roll.
           console.warn('Forge result not verified on the server:', cause);
+          unverifiedForgeUsers.add(userId);
           setSaveUnverified(true);
           setSelected(null);
           setError(language === 'en'
