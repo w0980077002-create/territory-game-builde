@@ -46,7 +46,14 @@ assert.match(apiSource,/\}\), 15_000\)/,
  'an unconfirmed bet must time out while retaining its durable operation for replay');
 assert.match(ui,/await withSlotsDeadline\(saveCloudSave\(userId,snapshot\),8_000\)/,'flush pending game actions before spending real gold, with a prompt no-wager deadline');
 assert.match(ui,/slots_save_slow/,'a slow pre-save must explain that no bet was sent');
-assert.match(ui,/LIVE_REEL_TRAIL = 6/,'live cabinet must not animate ninety high-detail mobile images');
+assert.match(ui,/LIVE_REEL_TRAIL = 3/,'mobile live reels must render only nine symbols per reel');
+const css=readFileSync('src/components/vikingSlots.css','utf8');
+assert.match(css,/\.vslot-reel-track--rolling\.vslot-reel-track--quick\{\s*height:300%;/,
+ 'nine-symbol animated reel must retain three visible rows');
+assert.match(css,/\.vslot-reel-track--rolling\.vslot-reel-track--quick \.vslot-symbol\{\s*flex:0 0 calc\(100% \/ 9\);/,
+ 'all nine travelling symbols must have equal heights');
+assert.match(css,/@keyframes vslot-short-reel-roll\{[\s\S]*?100%\{transform:translateY\(-66\.666667%\)\}/,
+ 'the last three symbols must land exactly on the three-row viewport');
 assert.match(ui,/vslot-reels--confirming/,'pending stake should visibly progress instead of showing a frozen board');
 assert.match(ui,/acceptMonopolyClaimReceipt\(userId,receipt\)/,'adopt the exact verified server wallet receipt');
 assert.doesNotMatch(ui,/spinVikingSlots|fairDemoInt|setBalance|useGame\.set|autoClaimHallGold/,'live screen cannot invent outcomes or balances');
