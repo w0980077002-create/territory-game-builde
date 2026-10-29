@@ -324,7 +324,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
                 compact
                 belt={game.belt}
                 ctx={beltContext(game, arenaStats.wins)}
-                actionLabel={isActive && alive ? (language === 'en' ? 'Tap to use · one potion per round' : 'Нажми для использования · одно зелье за раунд') : (language === 'en' ? 'Equip potions from inventory' : 'Пополняй зелья в инвентаре')}
+                actionLabel={isActive && alive ? (language === 'en' ? '1 potion/round · attack/defense +25%' : '1 зелье/раунд · сила/защита +25%') : (language === 'en' ? 'Equip potions from inventory' : 'Пополняй зелья в инвентаре')}
                 disabled={!isActive || !alive || busy}
                 busyIndex={beltBusy}
                 onAction={pressBeltSlot}
