@@ -126,11 +126,18 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
       } else setError(committed ? (en?'Action confirmed; recovery marker could not be cleared. Retry safely.':'Действие подтверждено, но отметка восстановления не удалена. Безопасно повтори.') : (en?'Result unconfirmed. Retry the saved operation.':'Результат не подтверждён. Повтори сохранённую операцию.'));
     } finally {lock.current=false;if(alive.current){setSpinWaiting(false);setBusy(false);}}
   };
+  // Never keep wagering gold after Telegram sends this WebView to the background.
   useEffect(()=>{
-    if(!auto || busy || tracks || pending || !recovered || help) return;
+    const stopAutoOnHide=()=>{if(document.visibilityState==='hidden')setAuto(0);};
+    document.addEventListener('visibilitychange',stopAutoOnHide);
+    return ()=>document.removeEventListener('visibilitychange',stopAutoOnHide);
+  },[]);
+  useEffect(()=>{
+    if(!auto || busy || tracks || pending || !recovered || help || document.visibilityState!=='visible') return;
     if(!['ready','decision'].includes(state.phase)){setAuto(0);return;}
     if(state.phase==='ready' && status.coins<lines*bet){setAuto(0);return;}
     const timer=setTimeout(()=>{
+      if(document.visibilityState!=='visible'){setAuto(0);return;}
       if(state.phase==='decision')void command({action:'collect'});
       else {setAuto(n=>Math.max(0,n-1));void command({action:'spin',lines,bet});}
     },600);
