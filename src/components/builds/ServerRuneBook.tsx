@@ -60,6 +60,7 @@ export function ServerRuneBook({language}:{language:'ru'|'en'}){
     if(alive.current){setNotice(en?'Could not confirm. Previous saved build remains on server.':'Нет подтверждения. На сервере остаётся прежняя сборка.');setVersion(v=>v+1);}
   }finally{saving.current=false;}
  };
+ if (!status) return <p role="status" className="rounded-lg border border-amber-500/40 bg-slate-900/90 p-3 text-xs text-amber-100">{en?'Server skills are not yet available. Existing hero training remains unchanged.':'Боевые руны пока недоступны на сервере. Существующая тренировка героя сохранена.'}</p>;
  return <>
   {status&&<p role="status" className="mb-2 rounded-lg border border-amber-500/35 bg-amber-900/30 p-2 text-[11px] text-amber-100">
     {en?'Server-verified runes. Changes need server confirmation. Combat migration is separate.':'Руны проверены сервером. Выбор сохраняется только после подтверждения. Перенос самой боёвки выполняется отдельно.'}
