@@ -18,7 +18,7 @@ OUT.mkdir(exist_ok=True)
 ORIGIN = 'http://127.0.0.1:4173'
 report = {'environment': 'Chromium headless, actual production React components and CSS; offline in-memory game state',
           'limitations': ['No Telegram authorization', 'No real network PvP', 'No physical Android/iPhone FPS claim'],
-          'viewports': [], 'attacks': {}, 'errors': [], 'missing_assets': []}
+          'viewports': [], 'attacks': {}, 'errors': [], 'missing_assets': [], 'max_support_drift_px': 0, 'max_contact_gap_px': 0, 'contact_measurements': []}
 
 
 def serve(route):
@@ -72,8 +72,8 @@ def feet_at(page, selector, milliseconds):
       for(const a of svg.getAnimations({subtree:true})){a.pause();a.currentTime=time;}
       return Object.fromEntries(['left','right'].map(side=>{
         const foot=svg.querySelector('[data-anchor=foot-'+side+']');
-        const p=new DOMPoint(foot.cx.baseVal.value,foot.cy.baseVal.value).matrixTransform(foot.getScreenCTM());
-        return [side,{x:p.x,y:p.y}];
+        const m=foot.getScreenCTM(),p=new DOMPoint(foot.cx.baseVal.value,foot.cy.baseVal.value).matrixTransform(m);
+        return [side,{x:p.x,y:p.y,angle:Math.atan2(Math.abs(m.b),Math.abs(m.a))*180/Math.PI}];
       }));
     }""", milliseconds)
 
@@ -98,8 +98,10 @@ def verify_scene_contact(page, attacker, target, area):
       const blade=rigs.find(n=>n.getAttribute('aria-label')===names.attacker).querySelector('[data-anchor="weapon-edge"]');
       const length=blade.getTotalLength(),matrix=blade.getScreenCTM();let distance=Infinity;
       for(let i=0;i<=96;i++){const p=blade.getPointAtLength(length*i/96).matrixTransform(matrix);distance=Math.min(distance,Math.hypot(p.x-x,p.y-y));}
-      return {normalized,distance};
+      return {normalized,distance,motion:rigs.find(n=>n.getAttribute('aria-label')===names.attacker).dataset.motion};
     }""", {'attacker':attacker,'target':target,'area':area})
+    report['max_contact_gap_px'] = max(report['max_contact_gap_px'], result['distance'])
+    report['contact_measurements'].append({'width':page.viewport_size['width'],'attacker':attacker,'target':target,'area':area,**result})
     assert result['normalized'] <= 1.001 and result['distance'] <= 12.1, result
     return result
 
@@ -132,11 +134,13 @@ with sync_playwright() as playwright:
             }''', previous)
             assert difference < .02, f'{motion} jumps at transition: {difference}'
             # Capture world-space feet through the actual nested SVG transforms.
-            samples_feet = {ms: feet_at(page, '#fixture-hero svg', ms) for ms in [0,100,160,250,350]}
+            samples_feet = {ms: feet_at(page, '#fixture-hero svg', ms) for ms in sorted(set(range(0,351,20)) | {250,350})}
             planted = samples_feet[0]['left']
             for ms, feet in samples_feet.items():
                 drift = math.hypot(feet['left']['x']-planted['x'], feet['left']['y']-planted['y'])
+                report['max_support_drift_px'] = max(report['max_support_drift_px'], drift)
                 assert drift <= 3, f'{motion} support foot drift {drift:.2f}px at {ms}ms'
+                assert feet['left']['angle'] <= 5, f'{motion}: planted sole tilts {feet["left"]["angle"]:.2f}°'
             assert abs(samples_feet[250]['right']['y']-samples_feet[160]['right']['y']) > .4, f'{motion}: free foot never lifts'
             assert abs(samples_feet[350]['right']['x']-samples_feet[160]['right']['x']) > 2, f'{motion}: no visible step'
             sample = matrices(page, '#fixture-hero svg', 240)
@@ -150,9 +154,12 @@ with sync_playwright() as playwright:
         for key in [21, 22, 23]:
             set_visual(page, {'strike': strike(key, attacker='Противник')})
             foot = feet_at(page, '#fixture-enemy svg', 0)['left']
-            for ms in [100, 160, 250, 350]:
+            for ms in sorted(set(range(0,351,20)) | {250,350}):
                 p = feet_at(page, '#fixture-enemy svg', ms)['left']
-                assert math.hypot(p['x']-foot['x'], p['y']-foot['y']) <= 3, f'goblin support foot drifts at {ms}ms'
+                drift = math.hypot(p['x']-foot['x'], p['y']-foot['y'])
+                report['max_support_drift_px'] = max(report['max_support_drift_px'], drift)
+                assert drift <= 3, f'goblin support foot drifts at {ms}ms'
+                assert p['angle'] <= 5, f'goblin planted sole tilts at {ms}ms'
         for first, second in [('slash','thrust'),('slash','overhead'),('thrust','overhead')]:
             a,b=trajectories[first],trajectories[second]
             assert math.hypot(a['x']-b['x'],a['y']-b['y']) > 2, f'Weapon paths indistinguishable: {first}, {second}'
@@ -222,6 +229,12 @@ with sync_playwright() as playwright:
     set_visual(page, {'speed': 2, 'strike': strike(10)})
     durations = page.evaluate("window.__waapi.filter(a=>a.effect.target.closest('#fixture-hero')).map(a=>a.effect.getTiming().duration).filter(d=>Number.isFinite(d))")
     assert durations and max(durations) <= 450, ('x2 must halve event durations', durations)
+    # The planted foot follows the same geometry at double speed.
+    foot = feet_at(page, '#fixture-hero svg', 0)['left']
+    for ms in [50,80,125,175]:
+        current = feet_at(page, '#fixture-hero svg', ms)['left']
+        assert math.hypot(current['x']-foot['x'], current['y']-foot['y']) <= 3
+        assert current['angle'] <= 5
     page.wait_for_timeout(480)
     assert page.locator('#fixture-hero svg').get_attribute('data-motion') == 'idle'
     set_visual(page, {'strike': strike(11)})
@@ -273,7 +286,9 @@ with sync_playwright() as playwright:
               for(let i=0;i<=96;i++){const p=blade.getPointAtLength(length*i/96).matrixTransform(matrix);distance=Math.min(distance,Math.hypot(p.x-x,p.y-y));}
               return {normalized,distance};
             }""")
+            report['max_contact_gap_px'] = max(report['max_contact_gap_px'], check['distance'])
             assert check['normalized'] <= 1.001 and check['distance'] <= 12.1, (key,width,check)
+            report['contact_measurements'].append({'width':width,'attacker':'Рагнар','target':'Противник','area':'torso','motion':str(key),**check})
             if key == 15:
                 page.screenshot(path=str(OUT / f'arena-contact-{width}.png'))
                 if width == 390:
@@ -304,7 +319,14 @@ with sync_playwright() as playwright:
               return ((p.x-hit.cx.baseVal.value)/hit.rx.baseVal.value)**2+((p.y-hit.cy.baseVal.value)/hit.ry.baseVal.value)**2;
             }""")
             assert inside <= 1.001, ('Block effect outside shield',width,inside)
-    
+            verify_scene_contact(page, 'Рагнар', 'Противник', 'shield')
+        # The smaller mirrored PvP Viking must also reach the hero's body and shield.
+        for tone in ['hit', 'block']:
+            for key in [24,25,26]:
+                set_visual(page, {'strike': strike(key, tone=tone, attacker='Противник')})
+                page.evaluate("""()=>document.querySelectorAll('svg[data-rig]').forEach(svg=>svg.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=350;}))""")
+                page.wait_for_selector('.combat2d-scene-impact', timeout=1000)
+                verify_scene_contact(page, 'Противник', 'Рагнар', 'shield' if tone == 'block' else 'torso')
         page.close()
         for mode in ['pve', 'trial']:
             page = load(browser, width, mode)
@@ -367,11 +389,18 @@ with sync_playwright() as playwright:
             page.evaluate("""()=>document.querySelectorAll('svg[data-rig]').forEach(svg=>svg.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=350;}))""")
             page.wait_for_selector('.combat2d-scene-impact', timeout=1000)
             verify_scene_contact(page, 'Рагнар', 'Гоблин', 'torso')
+            if width == 390 and motion == 'overhead':
+                page.wait_for_timeout(50)
+                page.evaluate("""()=>{const marker=document.createElement('span');marker.id='test-contact-marker';Object.assign(marker.style,{position:'absolute',left:'-3px',top:'-3px',width:'7px',height:'7px',border:'1px solid red',borderRadius:'50%',zIndex:'100'});document.querySelector('.combat2d-scene-impact').append(marker)}""")
+                page.screenshot(path=str(OUT / 'sequence-pve-contact.png'))
+                page.locator('#test-contact-marker').evaluate('el=>el.remove()')
             page.wait_for_selector('svg[aria-label="Гоблин"][data-motion="'+motion+'"]')
             page.evaluate("""()=>document.querySelectorAll('svg[data-rig]').forEach(svg=>svg.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=350;}))""")
             page.wait_for_selector('.combat2d-scene-impact', timeout=1000)
             verify_scene_contact(page, 'Гоблин', 'Рагнар', 'torso')
-            if width == 390: page.screenshot(path=str(OUT / f'sequence-pve-goblin-{motion}.png'))
+            if width == 390:
+                page.wait_for_timeout(50)
+                page.screenshot(path=str(OUT / f'sequence-pve-goblin-{motion}.png'))
             page.wait_for_timeout(650)
         page.close()
         for labels, attacker, target, second in [
@@ -387,7 +416,9 @@ with sync_playwright() as playwright:
                 page.evaluate("""()=>document.querySelectorAll('svg[data-rig]').forEach(svg=>svg.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=350;}))""")
                 page.wait_for_selector('.combat2d-scene-impact', timeout=1000)
                 verify_scene_contact(page, attacker, target, 'shield')
-                if width == 390 and index == 0: page.screenshot(path=str(OUT / ('sequence-pve-hero-block.png' if second else 'sequence-pve-goblin-block.png')))
+                if width == 390 and index == 0:
+                    page.wait_for_timeout(50)
+                    page.screenshot(path=str(OUT / ('sequence-pve-hero-block.png' if second else 'sequence-pve-goblin-block.png')))
                 page.wait_for_timeout(650 if second else 1500)
             page.close()
         page = load(browser, width, 'pve')
@@ -405,6 +436,23 @@ with sync_playwright() as playwright:
         page.wait_for_selector('.combat2d-scene-impact', timeout=1000)
         verify_scene_contact(page, 'Гоблин', 'Рагнар', 'torso')
         page.close()
+
+    # Observe the existing idle cycle for more than three seconds; the body,
+    # wrist and shield must move while the root stays grounded.
+    page = load(browser, 390)
+    page.wait_for_timeout(200)
+    def idle_pose():
+        return page.locator('#fixture-hero svg').evaluate("""svg=>Object.fromEntries(['root','torso','head','forearm-right','shield','hair'].map(part=>[part,getComputedStyle(svg.querySelector('[data-rig-part="'+part+'"]')).transform]))""")
+    first = idle_pose()
+    page.wait_for_timeout(1600)
+    middle = idle_pose()
+    page.wait_for_timeout(1600)
+    last = idle_pose()
+    assert first['root'] == middle['root'] == last['root'], 'Idle must not bounce the whole fighter'
+    for part in ['torso','head','forearm-right','shield','hair']:
+        assert len({first[part],middle[part],last[part]}) > 1, f'Idle joint {part} remains static'
+    report['idle_observed_seconds'] = 3.2
+    page.close()
 
     page = load(browser, low_quality=True)
     set_visual(page, {'strike': strike(13, 'block')})

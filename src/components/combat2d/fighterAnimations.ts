@@ -58,12 +58,13 @@ const attacks: Record<'slash' | 'thrust' | 'overhead', PoseStop[]> = {
     stop(CONTACT_MS, { root: t(23, 24), torso: r(20), head: r(-12), 'arm-right': r(-78), 'forearm-right': r(-4), weapon: r(160), 'arm-left': r(-20), 'leg-right': r(-31), 'leg-left': r(30), hair: r(-16) }),
     stop(490, { root: t(15, 12), torso: r(14), 'arm-right': r(-105), 'forearm-right': r(12), weapon: r(235), 'leg-right': r(-24), 'leg-left': r(22) }), stop(600, { root: t(4, 3), torso: r(3), 'arm-right': r(-56), 'forearm-right': r(-38) }), stop(ACTION_MS)],
 };
-export function motionStops(motion: FighterMotion, critical = false, rig: 'male_viking' | 'goblin' = 'male_viking'): PoseStop[] {
+export function motionStops(motion: FighterMotion, critical = false, rig: 'male_viking' | 'goblin' = 'male_viking', direction: 1 | -1 = 1): PoseStop[] {
   if (motion === 'slash' || motion === 'thrust' || motion === 'overhead') {
     // The goblin's curved blade has a different edge than the Viking sword.
     // Aim its contact pose slightly upward while retaining the same body action.
-    const stops = rig === 'goblin' ? attacks[motion].map(s => s.at === CONTACT_MS
-      ? { ...s, pose: { ...s.pose, weapon: r(Number.parseFloat(s.pose.weapon!.slice(7)) - 30) } }
+    const adjustment = rig === 'goblin' ? -30 : direction === -1 && motion === 'overhead' ? -20 : 0;
+    const stops = adjustment ? attacks[motion].map(s => s.at === CONTACT_MS
+      ? { ...s, pose: { ...s.pose, weapon: r(Number.parseFloat(s.pose.weapon!.slice(7)) + adjustment) } }
       : s) : attacks[motion];
     if (!critical) return stops;
     return stops.map((s, index) => index === 1 ? { ...s, pose: { ...s.pose, root: t(-7, 12), torso: r(-16), 'arm-right': r(motion === 'overhead' ? 165 : 66) } } : s);

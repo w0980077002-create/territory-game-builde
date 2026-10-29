@@ -45,7 +45,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
     let animations: Animation[] = [];
     const apply = () => {
       animations.forEach(a => a.cancel());
-      const stops = motionStops(motion, critical, rig.id);
+      const stops = motionStops(motion, critical, rig.id, dir);
       const legs = motion === 'slash' || motion === 'thrust' || motion === 'overhead' ? plantedLegFrames(stops, rig, previousPose.current) : {};
       animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).map(joint => {
         const part = joint.dataset.rigPart as Joint;
@@ -67,7 +67,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
       }
       animations.forEach(a => a.cancel());
     };
-  }, [motion, animationKey, speed, critical, rig.id]);
+  }, [motion, animationKey, speed, critical, rig.id, dir]);
   return <svg ref={svgRef} viewBox="0 0 512 512" preserveAspectRatio="xMidYMax meet" role="img" aria-label={name}
     data-rig={rig.id} data-motion={motion} data-critical={strike?.tone === 'crit' && active ? 'true' : undefined}
     className={`skeletal-fighter ${className}`} onErrorCapture={onAssetError}>

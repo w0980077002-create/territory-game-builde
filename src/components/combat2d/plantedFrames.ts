@@ -69,18 +69,32 @@ export function plantedLegFrames(stops: PoseStop[], rig: FighterRigDefinition, p
     targets.right.x += 38 * phase;
     if (ms >= 160 && ms <= 350) targets.right.y -= 11 * Math.sin(Math.PI * phase);
     if (ms > 350 && ms < 600) targets.right.y -= 7 * Math.sin(Math.PI * phase);
+    // Keep the moving foot within a distance where both legs can reach one
+    // pelvis, including when the new action begins in a wide recoil pose.
+    const reach = upper + shinLength - .0001;
+    const leftX = targets.left.x - hips.left, leftY = targets.left.y - footDepth;
+    const rightX = targets.right.x - hips.right, rightY = targets.right.y - footDepth;
+    const span = Math.hypot(rightX - leftX, rightY - leftY);
+    if (span > 2 * reach - .01) {
+      const ratio = (2 * reach - .01) / span;
+      targets.right.x = leftX + (rightX - leftX) * ratio + hips.right;
+      targets.right.y = leftY + (rightY - leftY) * ratio + footDepth;
+    }
     // Restrict the pelvis to the intersection of the legs' reachable discs.
-    // Projecting both constraints prevents IK from silently stretching a limb.
-    for (let iteration = 0; iteration < 12; iteration++) {
+    // Most frames need only one pass; the bound handles near-tangent discs.
+    for (let iteration = 0; iteration < 40; iteration++) {
+      let adjusted = false;
       for (const side of ['left', 'right'] as const) {
         const centerX = targets[side].x - hips[side], centerY = targets[side].y - footDepth;
         const dx = root.x - centerX, dy = root.y - centerY;
-        const distance = Math.hypot(dx, dy), reach = upper + shinLength - .0001;
+        const distance = Math.hypot(dx, dy);
         if (distance > reach) {
           root.x = centerX + dx * reach / distance;
           root.y = centerY + dy * reach / distance;
+          adjusted = true;
         }
       }
+      if (!adjusted) break;
     }
     output.root!.push({ offset: ms / ACTION_MS, transform: `translate(${root.x}px, ${root.y}px) rotate(0deg)`, easing: 'linear' });
     for (const side of ['left', 'right'] as const) {
