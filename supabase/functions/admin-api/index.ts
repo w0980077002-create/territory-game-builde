@@ -240,6 +240,21 @@ async function handle(action: string, body: Row) {
         settings: settings.data,
       };
     }
+    case "arena_economy": {
+      // Available only after verifyToken() in the owner-admin request handler.
+      // Report RPC additionally requires service_role and returns aggregates,
+      // never raw player state, credentials or Telegram identity records.
+      const days = Number(body.days ?? 7);
+      if (![1, 7, 30].includes(days)) throw new HttpError(400, "invalid_request");
+      const { data, error } = await db.rpc("territory_admin_arena_economy_v1", { p_days: days });
+      if (error || !data || typeof data !== "object" ||
+          !data.battles || !data.wallet || !data.consumables || !data.rewards ||
+          !Array.isArray(data.daily) || !Array.isArray(data.topPlayers)) {
+        console.error("arena_economy_rpc_error", error);
+        throw new HttpError(503, "arena_economy_unavailable");
+      }
+      return data;
+    }
     case "geo_stats": {
       // Only available through the existing owner-authenticated admin-api handler.
       // Read an aggregated RPC; do not expose player IDs, IPs or location history.
