@@ -64,12 +64,12 @@ GRANT SELECT,INSERT,UPDATE ON territory_private.combat_profile_sources_v1 TO ser
 -- Slot-order makes the migration deterministic; missing IDs are rejected by
 -- preparation rather than replaced with fake equipment.
 CREATE OR REPLACE FUNCTION territory_private.combat_legacy_equipped_ids_v1(p_state jsonb)
-RETURNS text[] LANGUAGE sql IMMUTABLE SECURITY INVOKER SET search_path='' AS $
+RETURNS text[] LANGUAGE sql IMMUTABLE SECURITY INVOKER SET search_path='' AS $combat_legacy$
  SELECT coalesce(array_agg(x.value->>'id' ORDER BY x.key),ARRAY[]::text[])
  FROM jsonb_each(CASE WHEN jsonb_typeof(p_state#>'{player,equipped}')='object'
    THEN p_state#>'{player,equipped}' ELSE '{}'::jsonb END) x
- WHERE x.value <> 'null'::jsonb;
-$;
+ WHERE x.value <> 'null'::jsonb
+$combat_legacy$;
 CREATE OR REPLACE FUNCTION territory_private.combat_profile_is_current_v1(p_player uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
   SELECT EXISTS (
