@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [stage1, slots]
+        suite: [stage1, slots, adventure]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,6 +39,10 @@ jobs:
         if: matrix.suite == 'slots'
       - run: python scripts/check-slots-browser.py
         if: matrix.suite == 'slots'
+      - run: node scripts/build-adventure-preview.mjs
+        if: matrix.suite == 'adventure'
+      - run: python scripts/check-adventure-browser.py
+        if: matrix.suite == 'adventure'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -46,3 +50,4 @@ jobs:
           path: |
             /tmp/territory-stage1-ui
             /tmp/slots-screenshots
+            /tmp/adventure-screenshots
