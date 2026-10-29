@@ -119,7 +119,7 @@ export function BattleScene(props: Props) {
           ))}
         </div>}
 
-        <div className="relative grid grid-cols-2 gap-1 min-h-[260px]">
+        <div className="relative grid grid-cols-2 gap-1 min-h-[290px]">
           {status && (
             <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 px-2.5 py-1 rounded-full bg-black/70 border border-white/10 flex items-center gap-1 animate-fade-in">
               <status.icon className={`w-3 h-3 ${status.tone}`} />
@@ -141,6 +141,7 @@ export function BattleScene(props: Props) {
                   combatFrames={getCombatAppearance(game.appearance)}
                   name={me.name}
                   dir={1}
+                  scale={1.24}
                   alive={alive}
                   strike={strike}
                   idleSeconds={3.1}
@@ -158,6 +159,7 @@ export function BattleScene(props: Props) {
                     combatFrames={getFollowerCombatFrames(portraitFollower.id)}
                     name={portraitFollower.name}
                     dir={1}
+                    scale={1.03}
                     alive={alive}
                     strike={null}
                     idleSeconds={3.7}
@@ -180,6 +182,7 @@ export function BattleScene(props: Props) {
                     combatFrames={getCombatAppearance(enemy.appearance)}
                     name={enemy.name}
                     dir={-1}
+                    scale={1.08}
                     mirror
                     alive={enemy.hp > 0}
                     strike={strike}
