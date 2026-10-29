@@ -345,7 +345,7 @@
   "headless_attack_frame_pacing": {
     "frames": 40,
     "median_ms": 16.699999999999932,
-    "p95_ms": 16.800000000000068,
+    "p95_ms": 16.700000000000045,
     "over33ms": 0
   }
 }

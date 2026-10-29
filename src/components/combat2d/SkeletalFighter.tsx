@@ -18,26 +18,31 @@ interface Props {
 }
 export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, speed, className, onAssetError }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const terminalRef = useRef<'death' | 'victory' | null>(null);
   const [finishedKey, setFinishedKey] = useState<number | null>(null);
   const role = strike?.attacker === name ? 'attacker' : strike?.target === name ? 'target' : null;
   const key = role ? strike?.key : null;
-  // A fatal HP update may arrive during contact. Let the final hit finish first.
+  // PvP HP snapshots can precede several queued visual hits. Finish those
+  // confirmed events and wait for queue retirement before any terminal pose.
   useEffect(() => {
     if (key == null) return;
     const timer = window.setTimeout(() => setFinishedKey(key ?? null), ACTION_MS / speed);
     return () => window.clearTimeout(timer);
   }, [key, speed]);
   const active = role && key !== finishedKey;
-  const animationKey = active ? key : null;
-  const critical = Boolean(active && strike?.tone === 'crit');
   const swing = strike ? Math.abs(strike.key) % 3 : 0;
-  const motion: FighterMotion = active
+  const heldTerminal = !alive && terminalRef.current === 'death' ? 'death' : alive && won && terminalRef.current === 'victory' ? 'victory' : null;
+  const animationKey = active && !heldTerminal ? key : null;
+  const critical = Boolean(active && !heldTerminal && strike?.tone === 'crit');
+  const motion: FighterMotion = heldTerminal ?? (active
     ? role === 'attacker' ? (['slash', 'thrust', 'overhead'] as const)[swing]
       : strike?.tone === 'block' ? 'block' : strike?.tone === 'dodge' ? 'dodge' : strike?.tone === 'crit' ? 'crit-hit' : 'hit'
-    : !alive ? 'death' : won ? 'victory' : 'idle';
+    : strike ? 'idle' : !alive ? 'death' : won ? 'victory' : 'idle');
   useEffect(() => {
     const svg = svgRef.current;
-    if (!svg || motion === 'idle') return;
+    if (!svg) return;
+    terminalRef.current = motion === 'death' || motion === 'victory' ? motion : null;
+    if (motion === 'idle') return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
     let animations: Animation[] = [];
     const apply = () => {

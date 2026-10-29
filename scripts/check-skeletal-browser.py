@@ -132,10 +132,22 @@ with sync_playwright() as playwright:
         page.wait_for_selector('#fixture-enemy svg[data-rig="goblin"]')
         set_visual(page, {'strike': strike(9), 'foeAlive': False})
         page.wait_for_timeout(880)
+        assert page.locator('#fixture-enemy svg').get_attribute('data-motion') == 'idle', 'A fatal snapshot must not collapse before queued strikes retire'
+        set_visual(page, {'strike': strike(10)})
+        assert page.locator('#fixture-enemy svg').get_attribute('data-motion') == 'hit'
+        page.wait_for_timeout(880)
+        assert page.locator('#fixture-enemy svg').get_attribute('data-motion') == 'idle'
+        set_visual(page, {'strike': {'key': 99, 'attacker': 'Другой', 'target': 'Третий', 'tone': 'block', 'amount': None}})
+        assert page.locator('#fixture-enemy svg').get_attribute('data-motion') == 'idle', 'Wait for whole queue, including other participants'
+        set_visual(page, {'strike': None, 'heroWon': True})
+        page.wait_for_timeout(60)
         assert page.locator('#fixture-enemy svg').get_attribute('data-motion') == 'death'
         page.evaluate("window.__deathAnimations=document.querySelector('#fixture-enemy svg').getAnimations({subtree:true})")
-        set_visual(page, {'strike': None, 'heroWon': True})
+        set_visual(page, {'strike': {'key': 100, 'attacker': 'Другой', 'target': 'Третий', 'tone': 'hit', 'amount': 7}})
         assert page.evaluate("document.querySelector('#fixture-enemy svg').getAnimations({subtree:true}).every(a=>window.__deathAnimations.includes(a))"), 'Retiring final strike must not restart death from stance'
+        set_visual(page, {'strike': strike(11, 'crit')})
+        assert page.locator('#fixture-enemy svg').get_attribute('data-motion') == 'death', 'Late confirmed event must not revive a collapsed fighter'
+        assert page.evaluate("document.querySelector('#fixture-enemy svg').getAnimations({subtree:true}).every(a=>window.__deathAnimations.includes(a))"), 'Late key/tone must not restart terminal animation'
         page.wait_for_timeout(60)
         assert hero.get_attribute('data-motion') == 'victory'
         page.wait_for_timeout(850)
