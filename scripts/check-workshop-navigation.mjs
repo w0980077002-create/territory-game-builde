@@ -56,6 +56,19 @@ assert.match(gear, /onForge\(worn\.id\)/, 'Equipped gear can open the forge');
 assert.match(forge, /const readyCount = allEquipment\.filter\(forgeReady\)\.length/, 'Forge shows preparation status');
 assert.match(forge, /const listed = allEquipment\.filter/, 'Forge filters actual inventory, not dummy rewards');
 assert.match(forge, /forgeAttempt\(latest, item\.id, eq\.level, Math\.random\(\)\)/, 'Existing forge actions preserved');
+assert.match(app, /<ForgeScreen focusEquipmentId=\{forgeFocusId\} userId=\{user\.id\}/,
+  'Forge verifies saves for the authenticated hero');
+assert.match(forge, /const saved = await saveCloudSave\(userId, result\.next\)/,
+  'Forge must await the cloud writer after each attempt');
+assert.match(forge, /savedItem\?\.level !== expectedLevel/,
+  'Forge must verify the final item level after server normalization');
+assert.match(forge, /data\.gold !== result\.next\.player\.gold/,
+  'Forge must verify server-reported gold debit');
+assert.match(forge, /saveUnverified \|\| selectedCurrent\.equipment\.level/,
+  'No further roll is allowed when the server has not confirmed the previous one');
+assert.match(forge, /if \(result\.status === 'success'\) \{\s*setSuccess\(true\)/,
+  'Only a confirmed server save may display forge success');
+
 assert.match(professions, /readyRecipes/, 'Server-provided craft readiness summary visible');
 assert.match(professions, /readiness\.missing\.map/, 'Missing resource counts visible');
 assert.match(professions, /const canRun=readiness\.ready && !pending && !busy/, 'Unready recipes cannot execute');
