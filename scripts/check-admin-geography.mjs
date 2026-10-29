@@ -16,6 +16,12 @@ assert.match(admin,/case "geo_stats":/);
 assert.match(admin,/territory_admin_geography_v1/);
 assert.match(collector,/auth\.getUser\(token\)/);
 assert.match(collector,/req\.headers\.get\("cf-ipcountry"\)/);
+assert.match(collector,/req\.headers\.get\("cf-connecting-ip"\)/);
+assert.match(collector,/https:\/\/api\.country\.is\//);
+assert.match(collector,/AbortSignal\.timeout\(3000\)/);
+assert.match(collector,/country_unavailable/);
+assert.doesNotMatch(collector,/\.insert\(\{[^}]*clientIp/);
+
 assert.doesNotMatch(collector,/req\.json\(/);
 const collectorCode=ts.transpileModule(collector,{compilerOptions:{removeComments:true}}).outputText;
 assert.doesNotMatch(collectorCode,/x-forwarded-for|ipinfo\.io/i);
