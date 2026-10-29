@@ -274,6 +274,31 @@ export function acceptAdventureSettlementReceipt(userId:string,response:unknown,
  return state;
 }
 
+/** Install an atomic one-stone PvE start debit from its durable server receipt.
+ * A replay must never reapply an older snapshot over newer cloud progress. */
+export function acceptAdventureStartReceipt(userId:string,response:unknown,sessionId:string):GameState|null{
+ if(!response || typeof response!=='object' || Array.isArray(response))throw new Error('adventure_invalid_start_receipt');
+ const receipt=response as Record<string,unknown>;
+ const state=receipt.game_state as GameState;
+ if(receipt.success!==true || receipt.session_id!==sessionId
+   || !Number.isSafeInteger(receipt.battle_stones) || Number(receipt.battle_stones)<0
+   || !validSaveToken(receipt.updated_at) || !validEconomySnapshot(state)
+   || !Array.isArray(state.inventory) || !Number.isSafeInteger(state.forgeMaterials)
+   || state.battleStones!==receipt.battle_stones)
+   throw new Error('adventure_invalid_start_receipt');
+ const wallet=safeWalletVersion({gold:receipt.wallet_gold,gems:receipt.wallet_gems},state.player);
+ if(!walletMatchesVersion(wallet,state.player))throw new Error('adventure_invalid_start_receipt');
+ const previous=saveTokens.get(userId);
+ if(!validSaveToken(previous))throw new Error('adventure_reload_required');
+ if(receipt.updated_at===previous)return null;
+ if(Date.parse(receipt.updated_at)<=Date.parse(previous))throw new Error('adventure_reload_required');
+ saveGenerations.set(userId,(saveGenerations.get(userId)??0)+1);
+ saveTokens.set(userId,receipt.updated_at);
+ walletVersions.set(userId,wallet);
+ saveBlocked.delete(userId);
+ return state;
+}
+
 /** Adopt a permanent license debit without letting a queued stale cloud save
  * restore the previous red-gem count or overwrite newer server game_state. */
 export function acceptMasterLicenseReceipt(userId:string,receipt:{
