@@ -102,7 +102,9 @@ assert.match(map, /attentionPlaces=\{attentionPlaces\}/, 'Map must forward exist
 assert.match(map, /if \(!gather\?\.active\) return;/, 'Idle map should not re-render once per second');
 assert.match(map, /case 'trial': onTrial\(\)/);
 assert.match(map, /case 'companions': onCompanions\(\)/);
-assert.match(map, /case 'runes': onRunes\(\)/);
+assert.match(map, /case 'runes': setRuneMenuOpen\(true\)/, 'Map runes open the dedicated skill and rune menu');
+assert.match(map, /<RuneSkillsMenu/, 'Map must render the mobile rune skills menu');
+assert.match(map, /onOpenTraining=\{\(\) => \{ setRuneMenuOpen\(false\); onRunes\(\); \}\}/, 'Existing combat training must remain reachable');
 for (const action of ['territory_gather_status', 'territory_gather_start', 'territory_gather_claim']) {
   assert.match(map, new RegExp(action), `Keep server-authoritative ${action} operation`);
 }

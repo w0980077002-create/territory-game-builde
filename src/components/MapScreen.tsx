@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Lock, Sparkles, Crown, Check, BellRing } from 'lucide-react';
 import { useStore } from '@/game/store';
@@ -11,6 +11,9 @@ import type { InventoryItem } from '@/game/types';
 import { RESOURCE_DEFINITIONS, type ResourceId } from '@/game/professions';
 import { resourceArt } from '@/game/art';
 import { WorldMapCanvas, type WorldMapPlace, type WorldMapRoute } from '@/components/WorldMapCanvas';
+
+// Keep the map's initial bundle light; the 15-skill illustrated menu loads on demand.
+const RuneSkillsMenu = lazy(() => import('@/components/runes/RuneSkillsMenu').then(module => ({ default: module.RuneSkillsMenu })));
 
 type GatherStatus = {
   active: { resource_id: string; finishes_at: string } | null;
@@ -107,6 +110,7 @@ export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes, attentio
   attentionPlaces?: readonly WorldMapPlace[];
 }) {
   const [selected, setSelected] = useState<LocationId | null>(null);
+  const [runeMenuOpen, setRuneMenuOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const { t, language } = useLanguage();
   const [gather, setGather] = useState<GatherStatus | null>(null);
@@ -217,7 +221,7 @@ export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes, attentio
         break;
       case 'trial': onTrial(); break;
       case 'companions': onCompanions(); break;
-      case 'runes': onRunes(); break;
+      case 'runes': setRuneMenuOpen(true); break;
       default: onNavigate(place);
     }
   };
@@ -283,6 +287,15 @@ export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes, attentio
       {/* Chamber of Appearance modal */}
       {selected === 'chamber' && (
         <ChamberModal onClose={() => setSelected(null)} />
+      )}
+      {runeMenuOpen && (
+        <Suspense fallback={<div role="status" className="absolute inset-0 z-30 flex items-center justify-center bg-black/65 text-sm font-bold text-amber-100">{language === 'en' ? 'Loading skills…' : 'Загружаем навыки…'}</div>}>
+          <RuneSkillsMenu
+            language={language}
+            onClose={() => setRuneMenuOpen(false)}
+            onOpenTraining={() => { setRuneMenuOpen(false); onRunes(); }}
+          />
+        </Suspense>
       )}
     </div>
   );

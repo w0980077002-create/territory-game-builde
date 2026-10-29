@@ -604,7 +604,7 @@ export function WorldMapCanvas({ onVisit, readyRegion, attentionPlaces = [], lan
               <div className="grid grid-cols-2 gap-2">
                 {OTHER_PLACES.map(renderDestination)}
               </div>
-              <p className="mt-3 text-center text-[10px] font-medium text-amber-100/70">{language === 'en' ? 'Runes are in Hero → Combat training.' : 'Руны находятся в разделе «Герой» → «Тренировка».'}</p>
+              <p className="mt-3 text-center text-[10px] font-medium text-amber-100/70">{language === 'en' ? 'Open Runes on the map for the skill menu; combat training is one tap away.' : 'Открой «Руны» на карте для меню навыков; тренировка доступна из него.'}</p>
             </div>
           </div>
         </div>
