@@ -49,7 +49,7 @@ assert.ok(inventory.indexOf('data-testid="inventory-pinned-belt"') > inventory.i
   'Belt must sit between scrollable items and the bottom section navigation');
 assert.match(inventory, /putInBelt/, 'Existing consumable use preserved');
 assert.doesNotMatch(inventory, /<GearComparison/, 'Remove legacy equipment modal');
-assert.match(app, /useState<'items' \| 'equipment'>\('equipment'\)/, 'Equipment should open by default');
+assert.match(app, /useState<'items' \| 'equipment' \| 'followers'>\('equipment'\)/, 'Equipment should open by default while preserving the Followers tab');
 assert.match(cloud, /recycleCloudEquipment/, 'Use existing receipt-driven token synchronization');
 assert.match(css, /grid-template-columns: repeat\(5/, 'Compact bag grid required');
 assert.match(css, /@media \(max-width: 370px\)/, 'Small Android layout required');
