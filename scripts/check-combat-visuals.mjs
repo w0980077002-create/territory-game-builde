@@ -89,4 +89,19 @@ for (const animation of ['fighter-breathe', 'fighter-step-dust', 'fighter-cut', 
 assert.match(fighterMotionCss, /\.fighter-figure__breath--idle \{ animation: none !important; \}/, 'Reduced-motion guard must disable continuous breathing');
 assert.match(fighterMotionCss, /\.fighter-figure__footstep, \.fighter-impact__flash \{ display: none; \}/, 'Reduced-motion guard must disable extra FX');
 
+// Enhanced feedback must be tied to actual fight events, not synthetic damage.
+assert.match(arena, /<CombatClash strike=\{strike\} \/>/, 'PvP cinematic FX must follow real arena strikes');
+assert.match(pve, /<CombatClash strike=\{strike\} speed=\{speed\} \/>/, 'PvE clash must respect x2 speed');
+assert.match(figure, /if \(!strike\) return null/, 'Never show a clash without a real attack');
+assert.match(figure, /data-combat-vfx=\{strike\.tone\}/, 'Distinct hit, crit, block and dodge feedback must follow the real result');
+assert.match(figure, /role === 'attacker' && alive/, 'Afterimage belongs only to the attacking fighter');
+assert.match(figure, /CLASH_SPARKS\.map/, 'Use a fixed, bounded particle count for older phones');
+assert.doesNotMatch(figure, /setTimeout\(/, 'Visual-only battle components must not start independent combat timers');
+for (const animation of ['clash-center', 'clash-ring', 'clash-sweep', 'clash-thrust', 'clash-overhead', 'clash-parry', 'clash-evade', 'clash-fragment', 'fighter-afterimage']) {
+  assert.ok(fighterMotionCss.includes(`@keyframes ${animation} {`), 'Missing cinematic combat animation: ' + animation);
+}
+assert.match(fighterMotionCss, /\.combat-clash--dodge \.combat-clash__fragment/, 'An evasion must not look like a damaging hit');
+assert.match(fighterMotionCss, /\.combat-clash \{ display: none !important; \}/, 'Respect reduced motion in additional FX');
+assert.match(fighterMotionCss, /\.fighter-figure__afterimage \{ display: none !important; \}/, 'Respect reduced motion in attack echoes');
+
 console.log('Battle visuals OK: all character poses/assets, opponent, companion, sword, chat and seven-slot UI.');

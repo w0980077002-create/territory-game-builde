@@ -267,3 +267,119 @@
   .fighter-impact__shield, .fighter-impact__trail { display: none; }
   .fighter-impact__label { animation: none !important; opacity: 1 !important; transform: translateX(-50%) !important; }
 }
+
+
+/* V1 cinematic accents. The fighter art stays unchanged, and EVERY burst is
+   keyed to an actual strike event. One 800ms sequence, no particle engine. */
+.fighter-figure__afterimage {
+  opacity: 0;
+  pointer-events: none;
+  filter: brightness(1.55) saturate(1.15);
+  animation: fighter-afterimage var(--fighter-motion-duration) ease-out both;
+}
+@keyframes fighter-afterimage {
+  0%, 16%, 65%, 100% { opacity: 0; transform: translate3d(0,0,0) scale(1); }
+  28% { opacity: .3; transform: translate3d(calc(var(--dir) * -15px),-2px,0) scale(1.03); }
+  43% { opacity: .15; transform: translate3d(calc(var(--dir) * -25px),0,0) scale(.99); }
+  56% { opacity: 0; transform: translate3d(calc(var(--dir) * -33px),2px,0) scale(.97); }
+}
+.combat-clash {
+  --clash-rgb: 255,194,120;
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  overflow: visible;
+}
+.combat-clash--crit { --clash-rgb: 255,214,93; }
+.combat-clash--block { --clash-rgb: 95,218,255; }
+.combat-clash--dodge { --clash-rgb: 184,155,255; }
+.combat-clash > span { position: absolute; top: 51%; left: 50%; opacity: 0; pointer-events: none; }
+.combat-clash__center {
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.9) 0%, rgba(var(--clash-rgb),.78) 15%, rgba(var(--clash-rgb),.2) 42%, transparent 70%);
+  animation: clash-center var(--clash-duration) ease-out both;
+}
+.combat-clash__ring {
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 50%;
+  border: 2px solid rgba(var(--clash-rgb),.95);
+  box-shadow: 0 0 7px rgba(var(--clash-rgb),.55);
+  animation: clash-ring var(--clash-duration) ease-out both;
+}
+.combat-clash__sweep {
+  width: 98px;
+  height: 48px;
+  margin: -24px 0 0 -49px;
+  border-radius: 50%;
+  border-top: 4px solid rgba(255,250,234,.95);
+  box-shadow: 0 -4px 6px -5px rgba(var(--clash-rgb),.95);
+  animation: clash-sweep var(--clash-duration) ease-out both;
+}
+.combat-clash--swing-1 .combat-clash__sweep { height: 13px; margin-top: -6px; border-radius: 28%; animation-name: clash-thrust; }
+.combat-clash--swing-2 .combat-clash__sweep { width: 55px; height: 91px; margin: -45px 0 0 -27px; animation-name: clash-overhead; }
+.combat-clash--block .combat-clash__sweep { width: 66px; height: 66px; margin: -33px 0 0 -33px; border: 3px solid rgba(var(--clash-rgb),.8); border-radius: 50%; box-shadow: 0 0 12px rgba(var(--clash-rgb),.35); animation-name: clash-parry; }
+.combat-clash--dodge .combat-clash__sweep { width: 67px; height: 15px; margin: -7px 0 0 -34px; border-top-color: rgba(var(--clash-rgb),.85); animation-name: clash-evade; }
+.combat-clash__fragment {
+  width: 5px;
+  height: 11px;
+  margin: -5px 0 0 -2px;
+  border-radius: 50%;
+  background: rgba(var(--clash-rgb),.95);
+  box-shadow: 0 0 5px rgba(var(--clash-rgb),.7);
+  animation: clash-fragment var(--clash-duration) ease-out both;
+}
+.combat-clash--dodge .combat-clash__fragment { opacity: 0 !important; animation: none; }
+/* An evasion has only a motion trail, never a fake contact flash. */
+.combat-clash--dodge .combat-clash__center, .combat-clash--dodge .combat-clash__ring { display: none; }
+.combat-clash--crit .combat-clash__ring { border-width: 3px; }
+@keyframes clash-center {
+  0%, 33%, 100% { opacity: 0; transform: scale(.35); }
+  39% { opacity: 1; transform: scale(.95); }
+  56% { opacity: 0; transform: scale(1.45); }
+}
+@keyframes clash-ring {
+  0%, 34%, 100% { opacity: 0; transform: scale(.4); }
+  41% { opacity: .92; transform: scale(.8); }
+  68% { opacity: 0; transform: scale(2.6); }
+}
+@keyframes clash-sweep {
+  0%, 28%, 100% { opacity: 0; transform: rotate(-52deg) scale(.5); }
+  36% { opacity: 1; transform: rotate(-23deg) scale(.85); }
+  49% { opacity: .75; transform: rotate(14deg) scale(1.08); }
+  61% { opacity: 0; transform: rotate(27deg) scale(1.13); }
+}
+@keyframes clash-thrust {
+  0%, 27%, 100% { opacity: 0; transform: translateX(-38px) scaleX(.35); }
+  38% { opacity: 1; transform: translateX(-5px) scaleX(1); }
+  53% { opacity: 0; transform: translateX(30px) scaleX(1.2); }
+}
+@keyframes clash-overhead {
+  0%, 26%, 100% { opacity: 0; transform: rotate(-45deg) scale(.6); }
+  39% { opacity: .98; transform: rotate(-5deg) scale(1); }
+  57% { opacity: 0; transform: rotate(30deg) scale(1.12); }
+}
+@keyframes clash-parry {
+  0%, 34%, 100% { opacity: 0; transform: scale(.4); }
+  42% { opacity: 1; transform: scale(.95); }
+  66% { opacity: 0; transform: scale(1.35); }
+}
+@keyframes clash-evade {
+  0%, 27%, 100% { opacity: 0; transform: translateX(0) scaleX(.45); }
+  39% { opacity: .9; transform: translateX(-25px) scaleX(.9); }
+  60% { opacity: 0; transform: translateX(-46px) scaleX(1.2); }
+}
+@keyframes clash-fragment {
+  0%, 35%, 100% { opacity: 0; transform: translate(-50%,-50%) scale(.35); }
+  42% { opacity: .98; transform: translate(-50%,-50%) scale(1); }
+  74% { opacity: 0; transform: translate(calc(-50% + var(--fragment-x)),calc(-50% + var(--fragment-y))) scale(.35); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fighter-figure__afterimage { display: none !important; }
+  .combat-clash { display: none !important; }
+}
