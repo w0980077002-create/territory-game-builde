@@ -7,7 +7,7 @@ import { useGame } from '@/game/actions';
 import { getCombatAppearance } from '@/game/appearance';
 import { selectedFollower } from '@/game/followers';
 import { getFollowerArt, getFollowerCombatFrames } from '@/game/combatArt';
-import { FighterFigure } from './FighterFigure';
+import { CombatClash, FighterFigure } from './FighterFigure';
 import { useLanguage } from '@/game/i18n';
 
 interface Props {
@@ -195,6 +195,7 @@ export function BattleScene(props: Props) {
               <div className="flex-1 flex items-center justify-center text-[11px] text-gray-300">{language === 'en' ? 'No enemies' : 'Противников нет'}</div>
             )}
           </div>
+          <CombatClash strike={strike} />
         </div>
 
         {!finished && <div className="flex flex-col gap-1.5 pt-6">
