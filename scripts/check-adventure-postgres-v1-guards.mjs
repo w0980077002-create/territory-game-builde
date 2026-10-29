@@ -156,5 +156,5 @@ const lostStart=await execute(loser,{action:'start',operationId:op(5),encounterI
 await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(lostStart.session_id)}`);
 const lost=await execute(loser,{action:'advance',operationId:op(6),sessionId:lostStart.session_id,revision:0});
 assert.equal(lost.state.status,'enemy_won'); assert.equal(lost.settlement.reward.gold,0); assert.equal(lost.settlement.reward.xp,0);
-assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`),normalizedSave);
+assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`),{...normalizedSave,battleStones:normalizedSave.battleStones-1},'defeat charges exactly one battle stone, leaves all other save fields unchanged');
 console.log('PostgreSQL 17 with actual V1 economy, gear and inventory guards PASS: reviewed synthetic profile, locked stages, engine victory/loss, rollback and retry, durable receipts, preserved save and real concurrent lock contention.');
