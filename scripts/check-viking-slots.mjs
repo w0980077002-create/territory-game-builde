@@ -220,7 +220,7 @@ assert.doesNotMatch(ui,/vslot-reel--moving/,'Do not regress to wobbling the old 
 assert.match(cabinetCss,/@keyframes vslot-real-reel-roll/,'Must animate vertical symbol travel');
 assert.match(cabinetCss,/translateY\(-83\.333333%\)/,'Travel must land on final three symbols of 18');
 assert.match(cabinetCss,/@keyframes vslot-short-reel-roll/,'Live mobile reels need the reduced symbol path');
-assert.match(cabinetCss,/100%\{transform:translateY\(-75%\)\}/,'Twelve-symbol live reels must still land on their final three positions');
+assert.match(cabinetCss,/100%\{transform:translateY\(-66\.666667%\)\}/,'Nine-symbol live reels must still land on their final three positions');
 assert.match(cabinetCss,/vslot-reel-track--rolling[^{]*\{/,'Rolling track class is required');
 assert.match(cabinetCss,/max-width:430px/,'Mobile cabinet must be compact');
 assert.match(ui,/vslot-machine-deck/,'Demo must use the physical casino control console');

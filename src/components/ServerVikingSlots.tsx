@@ -9,9 +9,9 @@ import './vikingSlots.css';
 const root = import.meta.env.BASE_URL;
 const START_GRID: SlotGrid = Array.from({length:5},()=>['gold','gem','sword'] as SlotSymbol[]);
 // Each mobile reel keeps its starting three symbols, six travelling symbols,
-// and the three server-confirmed landing symbols (12 instead of 18 images).
-const LIVE_REEL_TRAIL = 6;
-const LIVE_REEL_END_MS = 1_900;
+// and the three server-confirmed landing symbols (9 instead of 18 images).
+const LIVE_REEL_TRAIL = 3;
+const LIVE_REEL_END_MS = 1_600;
 const adjacentChoice = (choices: readonly number[], current: number, offset: number) =>
   choices[Math.max(0, Math.min(choices.length - 1, choices.indexOf(current) + offset))];
 
@@ -126,11 +126,18 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
       } else setError(committed ? (en?'Action confirmed; recovery marker could not be cleared. Retry safely.':'Действие подтверждено, но отметка восстановления не удалена. Безопасно повтори.') : (en?'Result unconfirmed. Retry the saved operation.':'Результат не подтверждён. Повтори сохранённую операцию.'));
     } finally {lock.current=false;if(alive.current){setSpinWaiting(false);setBusy(false);}}
   };
+  // Never keep wagering gold after Telegram sends this WebView to the background.
   useEffect(()=>{
-    if(!auto || busy || tracks || pending || !recovered || help) return;
+    const stopAutoOnHide=()=>{if(document.visibilityState==='hidden')setAuto(0);};
+    document.addEventListener('visibilitychange',stopAutoOnHide);
+    return ()=>document.removeEventListener('visibilitychange',stopAutoOnHide);
+  },[]);
+  useEffect(()=>{
+    if(!auto || busy || tracks || pending || !recovered || help || document.visibilityState!=='visible') return;
     if(!['ready','decision'].includes(state.phase)){setAuto(0);return;}
     if(state.phase==='ready' && status.coins<lines*bet){setAuto(0);return;}
     const timer=setTimeout(()=>{
+      if(document.visibilityState!=='visible'){setAuto(0);return;}
       if(state.phase==='decision')void command({action:'collect'});
       else {setAuto(n=>Math.max(0,n-1));void command({action:'spin',lines,bet});}
     },600);
@@ -149,7 +156,7 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
     <div className="vslot-marquee" style={{backgroundImage:`url('${root}slots/viking-casino-marquee.webp')`}}><div className="vslot-marquee-content"><Crown size={17}/><h1>{en?<>VIKING<br/>TREASURES</>:<>СОКРОВИЩА<br/>ВИКИНГОВ</>}</h1><span>{en?'FATE OF THE NORTH':'УДАЧА СЕВЕРА'}</span></div></div>
     <div className="vslot-stats"><div><small>{en?'CREDIT':'БАЛАНС'}</small><strong>{status.coins.toLocaleString()} <span className="vslot-coin" aria-hidden="true"/></strong></div><div><small>{en?'TOTAL BET':'СТАВКА'}</small><strong>{(lines*bet).toLocaleString()} <span className="vslot-coin" aria-hidden="true"/></strong></div><div className={state.pending>0?'vslot-stats--prize':''}><small>{en?'WIN':'ВЫИГРЫШ'}</small><strong className="vslot-gold">{state.pending.toLocaleString()} <span className="vslot-coin" aria-hidden="true"/></strong></div></div>
     <div className={'vslot-board '+(visibleLine&&!tracks?'vslot-board--winning':'')}><div className="vslot-line-marker" aria-hidden="true">{Array.from({length:state.lines||lines},(_,i)=><span key={i}>{i+1}</span>)}</div><div className={'vslot-reels '+(spinWaiting?'vslot-reels--confirming':'')} aria-label={en?'Five reels, three symbols each':'Пять барабанов по три символа'}>
-      {field.map((reel,r)=><div className="vslot-reel-window" key={r}><div key={tracks?`${animation}-${r}`:`rest-${r}`} className={'vslot-reel-track '+(tracks?'vslot-reel-track--rolling vslot-reel-track--quick':'')} style={tracks?{animationDelay:r*75+'ms',animationDuration:750+r*170+'ms'}:undefined}>
+      {field.map((reel,r)=><div className="vslot-reel-window" key={r}><div key={tracks?`${animation}-${r}`:`rest-${r}`} className={'vslot-reel-track '+(tracks?'vslot-reel-track--rolling vslot-reel-track--quick':'')} style={tracks?{animationDelay:r*60+'ms',animationDuration:680+r*145+'ms'}:undefined}>
         {(tracks?.[r] || reel).map((sym,row)=><div key={row} className={'vslot-symbol '+(!tracks&&visibleLine?.positions.some(([c,l])=>c===r&&l===row)?'vslot-symbol--win':'')}><img src={root+SLOT_ICONS[sym].image} alt={SLOT_ICONS[sym][en?'en':'ru']} draggable={false}/>{sym==='wild'&&<b>WILD</b>}{sym==='hero'&&<b>BONUS</b>}</div>)}
       </div></div>)}
       {visibleLine&&!tracks&&<svg className="vslot-win-path" viewBox="0 0 500 300" preserveAspectRatio="none" aria-hidden="true"><polyline points={visibleLine.positions.map(([c,r])=>`${c*100+50},${r*100+50}`).join(' ')} stroke="#ffde55" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>}
