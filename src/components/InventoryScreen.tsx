@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
@@ -8,8 +8,9 @@ import { IosGamePortal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
 import { GearShowcase } from './GearShowcase';
 import { FollowersPanel } from './FollowersPanel';
+import { CompactWarehouse } from './CompactWarehouse';
 import { rarityColor, rarityGlow } from '@/game/ui';
-import { elixirExpiryTime, elixirTimeLeftLabel, forgeMaterialTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
+import { elixirExpiryTime, elixirTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
 import { Package, X, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned } from 'lucide-react';
 
@@ -45,11 +46,12 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
     };
   }, [tab]);
 
-  const consumables = state.inventory.filter(isPerishableItem)
-    .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b));
-  const materials = state.inventory.filter((i) => i.type === 'material');
-  const earliestOnBelt = state.belt.filter((item): item is InventoryItem => !!item && isPerishableItem(item))
-    .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0];
+  // Keep inventory sorting stable while the visible expiry clock updates.
+  const consumables = useMemo(() => state.inventory.filter(isPerishableItem)
+    .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b)), [state.inventory]);
+  const materials = useMemo(() => state.inventory.filter(item => item.type === 'material'), [state.inventory]);
+  const earliestOnBelt = useMemo(() => state.belt.filter((item): item is InventoryItem => !!item && isPerishableItem(item))
+    .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0], [state.belt]);
 
   const switchTab = (to: 'items' | 'equipment' | 'followers') => {
     // The content scrolls independently; the bottom tabs stay within reach.
@@ -90,40 +92,15 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
           </div>
         </div>
       ) : tab === 'items' ? (
-        <>
-          {consumables.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">{t('consumables')}</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {consumables.map((item) => <ItemCard key={item.id} item={item} now={now} onClick={() => setSelected(item)}/>)}
-              </div>
-            </div>
-          )}
-          {(materials.length > 0 || state.forgeMaterials > 0) && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">{t('materials')}</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {materials.map((item) => <ItemCard key={item.id} item={item} now={now} onClick={() => setSelected(item)}/>)}
-                {state.forgeMaterials > 0 && (
-                  <div className="card flex flex-col items-center p-3 border border-amber-500/30" aria-label={language === 'en' ? 'Forge materials' : 'Материалы кузницы'}>
-                    <div className="mb-1 flex h-14 w-14 items-center justify-center rounded-lg bg-black/30 shadow-[0_0_12px_rgba(245,158,11,0.18)]">
-                      <img src={import.meta.env.BASE_URL + 'forge-material.webp'} alt="" className="h-12 w-12 object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.7)]" loading="lazy" draggable={false} />
-                    </div>
-                    <p className="w-full truncate text-center text-xs font-medium text-amber-200">{language === 'en' ? 'Forge materials' : 'Материалы кузницы'}</p>
-                    <span className="mt-0.5 text-xs text-gray-500">x{state.forgeMaterials}</span>
-                    <span className="mt-1 text-[10px] leading-tight text-amber-300">⏳ {forgeMaterialTimeLeftLabel(state, language, now)}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          {consumables.length === 0 && materials.length === 0 && state.forgeMaterials === 0 && (
-            <div className="card text-center py-8 text-gray-500">
-              <Package className="w-12 h-12 mx-auto mb-2 opacity-30"/>
-              <p>{t('inventoryEmpty')}</p>
-            </div>
-          )}
-        </>
+        <CompactWarehouse
+          consumables={consumables}
+          materials={materials}
+          forgeMaterials={state.forgeMaterials}
+          forgeMaterialBatches={state.forgeMaterialBatches}
+          now={now}
+          language={language}
+          onItemSelect={setSelected}
+        />
       ) : (
         <FollowersPanel />
       )}
@@ -237,24 +214,3 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   );
 }
 
-function ItemCard({ item, now, onClick }: { item: InventoryItem; now: number; onClick: () => void }) {
-  const { language } = useLanguage();
-  const color = rarityColor(item.rarity);
-  return (
-    <button type="button"
-      className="card flex flex-col items-center p-3 transition-all active:scale-95 hover:border-teal-500/30"
-      style={{ border: '1px solid ' + color + '40' }} onClick={onClick}>
-      <div className="w-14 h-14 rounded-lg bg-black/30 flex items-center justify-center mb-1"
-        style={{ boxShadow: rarityGlow(item.rarity) }}>
-        <ItemArt item={item} size={48}/>
-      </div>
-      <p className="text-xs font-medium text-center truncate w-full" style={{ color }}>
-        {localizeText(item.name, language)}
-      </p>
-      {item.qty > 1 && <span className="text-xs text-gray-500 mt-0.5">x{item.qty}</span>}
-      {isPerishableItem(item) && <span className={`mt-1 text-[10px] leading-tight ${elixirExpiryTime(item) - now <= 24 * 60 * 60 * 1000 ? 'text-red-300' : 'text-amber-300'}`}>
-        ⏳ {elixirTimeLeftLabel(item, language, now)}
-      </span>}
-    </button>
-  );
-}

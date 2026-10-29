@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { memo, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronRight, Compass, Hand, Layers3, LocateFixed, Minus, Plus, X } from 'lucide-react';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import './worldMapCanvas.css';
@@ -153,7 +153,7 @@ function sawPanHint(): boolean {
   catch { return false; }
 }
 
-export function WorldMapCanvas({ onVisit, readyRegion, attentionPlaces = [], language }: {
+export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegion, attentionPlaces = [], language }: {
   onVisit: (place: WorldMapPlace) => void;
   readyRegion?: WorldMapRegion;
   attentionPlaces?: readonly WorldMapPlace[];
@@ -611,4 +611,4 @@ export function WorldMapCanvas({ onVisit, readyRegion, attentionPlaces = [], lan
       )}
     </section>
   );
-}
+});

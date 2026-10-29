@@ -1,19 +1,25 @@
 import { useState } from 'react';
+import { Check, Coins, Crown, LockKeyhole, Shield, Sparkles, Swords, Wrench } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
 import { getFollowerArt } from '@/game/combatArt';
+import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import {
   FOLLOWER_TEMPLATES, followerTrainingCost, MAX_FOLLOWER_LEVEL,
   selectedFollower, selectFollower, trainFollower,
 } from '@/game/followers';
+import './followersCamp.css';
 
-/** Inventory companions tab: existing training/selection, one active in PvE, never Arena. */
+/** Real PvE companions, displayed as a compact selectable roster.
+ * No fictitious stars, calls, awakenings or invented companion abilities.
+ */
 export function FollowersPanel() {
   const { language } = useLanguage();
   const en = language === 'en';
   const state = useStore(useGame);
   const active = selectedFollower(state);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState('');
 
   const choose = (id: string) => {
@@ -31,78 +37,109 @@ export function FollowersPanel() {
     setNote(succeeded ? (en ? 'Training completed' : 'Тренировка завершена') : (en ? 'Not enough materials, gold or hero level' : 'Не хватает золота, материалов или уровня героя'));
   };
 
-  return (
-    <div className="card space-y-3" data-testid="followers-panel">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="font-bold text-amber-200 text-sm">{en ? 'Companion camp' : 'Лагерь спутников'}</h3>
-        <span className="text-[10px] px-2 py-1 rounded-full border border-teal-500/40 text-teal-200 bg-teal-900/20">
-          {en ? '1 active / PvE only' : '1 активный / только PvE'}
-        </span>
+  const unlockedCount = FOLLOWER_TEMPLATES.filter(template =>
+    state.followers.find(f => f.id === template.id)?.unlocked).length;
+  const currentId = selectedId ?? active?.id ?? FOLLOWER_TEMPLATES[0].id;
+  const template = FOLLOWER_TEMPLATES.find(f => f.id === currentId) ?? FOLLOWER_TEMPLATES[0];
+  const follower = state.followers.find(f => f.id === template.id);
+  const unlocked = follower?.unlocked === true;
+  const selected = active?.id === follower?.id && unlocked;
+  const maxed = !!follower && (follower.level >= state.player.level || follower.level >= MAX_FOLLOWER_LEVEL);
+  const price = follower ? followerTrainingCost(follower.level) : { gold: 0, materials: 0 };
+  const canTrain = unlocked && !maxed && state.player.gold >= price.gold && state.forgeMaterials >= price.materials;
+  const cap = Math.max(1, Math.min(state.player.level, MAX_FOLLOWER_LEVEL));
+  const progress = follower ? Math.min(100, Math.round(follower.level / cap * 100)) : 0;
+  const nextUnlock = FOLLOWER_TEMPLATES.find(f => !state.followers.find(x => x.id === f.id)?.unlocked);
+
+  return <section className="followers-camp" data-testid="followers-panel" aria-label={en ? 'Companion camp' : 'Лагерь спутников'}>
+    <header className="followers-camp__header">
+      <div className="followers-camp__crest"><img src={import.meta.env.BASE_URL + 'assets/territory/map/icons/companions-v1.webp'} loading="lazy" alt=""/></div>
+      <div className="followers-camp__heading">
+        <WoodenPlaque>{en ? 'COMPANIONS' : 'СПУТНИКИ'}</WoodenPlaque>
+        <p>{en ? 'Companion camp' : 'Лагерь последователей'}</p>
       </div>
-      {active ? (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-600/15 to-violet-700/15 p-3">
-          <img src={getFollowerArt(active.id)} alt="" className="w-20 h-24 shrink-0 object-contain object-bottom" loading="lazy" />
-          <div className="min-w-0 flex-1">
-            <span className="text-[10px] font-bold text-emerald-300 uppercase">{en ? 'Your active companion' : 'Твой активный последователь'}</span>
-            <p className="text-base font-bold text-amber-100">{en
-              ? (FOLLOWER_TEMPLATES.find((f) => f.id === active.id)?.nameEn ?? active.name)
-              : active.name}</p>
-            <p className="text-xs text-sky-200 mt-1">{en ? 'Level' : 'Уровень'} {active.level}</p>
-            <p className="text-xs text-gray-300 mt-1">⚔️ {active.attack} · 🛡️ {active.defense}</p>
-          </div>
+      <div className="followers-camp__count">{unlockedCount}/{FOLLOWER_TEMPLATES.length}</div>
+    </header>
+
+    <div className="followers-camp__active">
+      {active ? <>
+        <div className="followers-camp__active-art">
+          <img src={getFollowerArt(active.id)} loading="lazy" alt="" draggable={false}/>
         </div>
-      ) : (
-        <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-gray-300">
-          {en ? 'Your first companion unlocks at hero level 3.' : 'Первый последователь откроется на 3 уровне героя.'}
+        <div className="followers-camp__active-info">
+          <span className="followers-camp__eyebrow"><Check size={13}/>{en ? 'ACTIVE IN PvE' : 'АКТИВЕН В PvE'}</span>
+          <h3>{en ? (FOLLOWER_TEMPLATES.find(f => f.id === active.id)?.nameEn ?? active.name) : active.name}</h3>
+          <p>{en ? 'Level' : 'Уровень'} {active.level} <span>·</span> <Swords size={12}/> {active.attack} <span>·</span> <Shield size={12}/> {active.defense}</p>
+          <small>{en ? 'Helps in Campaign and Trials, not in Arena' : 'Помогает в Походе и Испытаниях, не на Арене'}</small>
         </div>
-      )}
-      <p className="text-xs text-slate-300">{en
-        ? 'Unlock allies as your hero levels up. Train with gold and forge materials. Only one companion can assist in battles.'
-        : 'Открывай спутников с ростом уровня героя. Обучай за золото и материалы кузницы. В бою помогает только один.'}</p>
-      <div className="space-y-2">
-        {FOLLOWER_TEMPLATES.map((template) => {
-          const follower = state.followers.find((f) => f.id === template.id);
-          if (!follower) return null;
-          const unlocked = follower.unlocked;
-          const selected = active?.id === follower.id;
-          const maxed = follower.level >= state.player.level || follower.level >= MAX_FOLLOWER_LEVEL;
-          const price = followerTrainingCost(follower.level);
-          const canTrain = unlocked && !maxed && state.player.gold >= price.gold && state.forgeMaterials >= price.materials;
-          return (
-            <div key={follower.id} className={`rounded-xl border p-3 ${selected ? 'border-amber-400/60 bg-amber-500/10' : 'border-white/10 bg-black/20'}`}>
-              <div className="flex items-start gap-2">
-                <img src={getFollowerArt(template.id)} alt="" loading="lazy" className="h-20 w-16 shrink-0 object-contain object-bottom" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-semibold text-white">{en ? template.nameEn : template.name}</p>
-                    {selected && <span className="text-[10px] rounded-md bg-amber-400/20 px-1.5 py-0.5 text-amber-200">{en ? 'ACTIVE' : 'В БОЮ'}</span>}
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5">{en ? template.descriptionEn : template.description}</p>
-                  <p className="text-[11px] text-sky-200 mt-1">{unlocked
-                    ? `${en ? 'Level' : 'Уровень'} ${follower.level} · ⚔️ ${follower.attack} · 🛡️ ${follower.defense}`
-                    : `${en ? 'Unlocks at hero level' : 'Откроется на уровне героя'} ${template.unlockLevel}`}</p>
-                </div>
-              </div>
-              {unlocked && (
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <button type="button" onClick={() => choose(follower.id)} disabled={selected}
-                    className="h-9 rounded-lg bg-teal-700/30 border border-teal-400/30 text-xs font-bold text-teal-100 disabled:opacity-40">
-                    {selected ? (en ? 'Selected' : 'Выбран') : (en ? 'Choose' : 'Выбрать')}
-                  </button>
-                  <button type="button" onClick={() => train(follower.id)} disabled={!canTrain}
-                    className="h-9 rounded-lg bg-amber-700/20 border border-amber-400/30 text-[11px] font-bold text-amber-100 disabled:opacity-40">
-                    {maxed ? (en ? 'Level cap' : 'Лимит уровня') : `${en ? 'Train' : 'Обучить'} · 🪙${price.gold} 🔩${price.materials}`}
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      {note && <p role="status" className="text-xs text-amber-200">{note}</p>}
-      <p className="text-[10px] text-slate-500">{en
-        ? 'Follower bonuses work in PvE only. Arena remains balanced separately.'
-        : 'Бонусы спутников действуют только в Походе и Испытаниях, не на Арене.'}</p>
+      </> : <div className="followers-camp__locked-start">
+        <LockKeyhole size={19}/><span>{en ? 'Your first companion unlocks at hero level 3.' : 'Первый последователь откроется на 3 уровне героя.'}</span>
+      </div>}
     </div>
-  );
+
+    <div className="followers-camp__roster-title">
+      <h4>{en ? 'Your companions' : 'Все последователи'}</h4>
+      {nextUnlock && <span>{en ? 'Next unlock' : 'Следующий'}: {en ? 'Lv.' : 'Ур.'} {nextUnlock.unlockLevel}</span>}
+    </div>
+    <div className="followers-camp__roster" role="group" aria-label={en ? 'Choose companion to inspect' : 'Выбор последователя'}>
+      {FOLLOWER_TEMPLATES.map(candidate => {
+        const unit = state.followers.find(f => f.id === candidate.id);
+        const isActive = active?.id === candidate.id;
+        const focus = candidate.id === template.id;
+        return <button key={candidate.id} type="button" onClick={() => { setSelectedId(candidate.id); setNote(''); }}
+          className={`followers-camp__portrait ${focus ? 'followers-camp__portrait--focus' : ''} ${isActive ? 'followers-camp__portrait--active' : ''}`}
+          aria-pressed={focus} aria-label={`${en ? candidate.nameEn : candidate.name} — ${unit?.unlocked ? (en ? 'Level' : 'Уровень') + ' ' + unit.level : (en ? 'Unlocks at level' : 'Откроется на уровне') + ' ' + candidate.unlockLevel}`}>
+          <img src={getFollowerArt(candidate.id)} loading="lazy" draggable={false} alt=""
+            className={unit?.unlocked ? '' : 'followers-camp__portrait-img--locked'}/>
+          {isActive && <span className="followers-camp__portrait-status"><Check size={11}/></span>}
+          {!unit?.unlocked && <span className="followers-camp__portrait-status followers-camp__portrait-status--locked"><LockKeyhole size={11}/></span>}
+          <b>{en ? candidate.nameEn : candidate.name}</b>
+        </button>;
+      })}
+    </div>
+
+    {follower && <section className="followers-camp__detail" aria-live="polite">
+      <div className="followers-camp__detail-top">
+        <img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/>
+        <div>
+          <span className="followers-camp__eyebrow"><Sparkles size={12}/>{en ? 'COMPANION DETAILS' : 'ХАРАКТЕРИСТИКИ'}</span>
+          <h3>{en ? template.nameEn : template.name}</h3>
+          <p>{en ? template.descriptionEn : template.description}</p>
+          <span className={unlocked ? 'followers-camp__availability' : 'followers-camp__availability followers-camp__availability--locked'}>
+            {unlocked ? en ? 'Unlocked' : 'Открыт' : `${en ? 'Unlocks at hero level' : 'Откроется на уровне героя'} ${template.unlockLevel}`}
+          </span>
+        </div>
+      </div>
+
+      {unlocked && <>
+        <div className="followers-camp__stats">
+          <div><Swords size={16}/><span>{en ? 'Attack' : 'Атака'}</span><b>{follower.attack}</b></div>
+          <div><Shield size={16}/><span>{en ? 'Defense' : 'Защита'}</span><b>{follower.defense}</b></div>
+          <div><Crown size={16}/><span>{en ? 'Level' : 'Уровень'}</span><b>{follower.level}/{cap}</b></div>
+        </div>
+        <div className="followers-camp__progress" role="progressbar" aria-label={en ? 'Training level' : 'Уровень развития'} aria-valuemin={0} aria-valuemax={cap} aria-valuenow={Math.min(follower.level, cap)}>
+          <span style={{ width: `${progress}%` }} />
+        </div>
+        <div className="followers-camp__actions">
+          <button type="button" onClick={() => choose(follower.id)} disabled={selected}
+            className="followers-camp__choose">
+            <Check size={16}/>{selected ? en ? 'Selected' : 'Выбран' : en ? 'Choose' : 'Выбрать'}
+          </button>
+          <button type="button" onClick={() => train(follower.id)} disabled={!canTrain}
+            className="followers-camp__train">
+            <Wrench size={16}/>{maxed ? en ? 'Level cap' : 'Лимит уровня' : en ? 'Train' : 'Обучить'}
+          </button>
+        </div>
+        {!maxed && <div className="followers-camp__cost">
+          <span><Coins size={14}/>{price.gold.toLocaleString(en ? 'en-US' : 'ru-RU')}</span>
+          <span><img src={import.meta.env.BASE_URL + 'forge-material.webp'} alt="" loading="lazy"/>{price.materials}</span>
+          {!canTrain && <small>{en ? 'Not enough materials, gold or hero level' : 'Недостаточно ресурсов или уровня героя'}</small>}
+        </div>}
+      </>}
+    </section>}
+    {note && <p role="status" className="followers-camp__note">{note}</p>}
+    <p className="followers-camp__footnote">{en
+      ? 'Follower bonuses work in PvE only. Arena remains balanced separately.'
+      : 'Бонусы спутников действуют только в Походе и Испытаниях, не на Арене.'}</p>
+  </section>;
 }
