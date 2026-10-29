@@ -1,13 +1,15 @@
 import { supabase } from '../supabase';
 import { ensurePlayerSession } from '../auth';
-import { acceptAdventureSettlementReceipt, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave } from '../cloud';
+import { acceptAdventureSettlementReceipt, acceptAdventureStartReceipt, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave } from '../cloud';
 import type { GameState } from '../types';
 import { parseCombatCommand, type CombatCommand } from './service';
 
+type Start = Extract<CombatCommand, { action: 'start' }>;
 type Advance = Extract<CombatCommand, { action: 'advance' }>;
 type Resume = Extract<CombatCommand, { action: 'resume' }>;
 type Hooks = { getState(): GameState; applyState(state: GameState): void };
 const key = (userId: string) => `territory_adventure_pending_v1:${userId}`;
+const startKey = (userId: string) => `territory_adventure_start_v1:${userId}`;
 const active = new Set<string>();
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
@@ -22,6 +24,56 @@ export function restoreAdventureSaveFence(userId: string): Advance | null {
   const value = parseCombatCommand(JSON.parse(raw));
   if (value.action !== 'advance') throw new Error('adventure_invalid_pending');
   return value;
+}
+
+/** Fence uncertain start debits before the app enables its autosave queue. */
+export function restoreAdventureStartFence(userId:string):Start|null{
+ if(typeof localStorage==='undefined')throw new Error('adventure_storage_unavailable');
+ const raw=localStorage.getItem(startKey(userId));
+ if(!raw)return null;
+ protectFortuneSave(userId);
+ const command=parseCombatCommand(JSON.parse(raw));
+ if(command.action!=='start')throw new Error('adventure_invalid_start_marker');
+ return command;
+}
+
+/** Commit one server-authorized stone debit; use the SAME UUID on retries. */
+export async function requestAdventureStart(userId:string,command:Start,hooks:Hooks):Promise<Record<string,unknown>>{
+ if(active.has(userId))throw new Error('adventure_request_pending');
+ active.add(userId);
+ let fenced=false;
+ try{
+   const checked=parseCombatCommand(command);
+   if(checked.action!=='start')throw new Error('adventure_invalid_command');
+   if(!await ensurePlayerSession(userId))throw new Error('adventure_auth_required');
+   const auth=await supabase.auth.getUser();
+   if(auth.error||auth.data.user?.id!==userId)throw new Error('adventure_auth_required');
+   const wasBlocked=saveBlocked.has(userId);
+   const old=restoreAdventureStartFence(userId);
+   if(old && JSON.stringify(old)!==JSON.stringify(checked))throw new Error('adventure_retry_pending_operation');
+   if(!old && wasBlocked)throw new Error('adventure_save_blocked');
+   if(!old){
+     const snapshot=hooks.getState();
+     const serialized=JSON.stringify(snapshot);
+     if(!await saveCloudSave(userId,snapshot)||JSON.stringify(hooks.getState())!==serialized)
+       throw new Error('adventure_save_required');
+     localStorage.setItem(startKey(userId),JSON.stringify(checked));
+   }
+   protectFortuneSave(userId);fenced=true;
+   const {data,error}=await supabase.functions.invoke('territory-combat',{body:checked});
+   if(error||!record(data)||data.success!==true||typeof data.session_id!=='string'
+     ||!record(data.start_save)||!record(data.state)||data.state.status!=='fighting')
+     throw new Error('adventure_unconfirmed');
+   const check=await supabase.from('players').select('updated_at').eq('id',userId).maybeSingle();
+   if(check.error||!check.data||check.data.updated_at!==data.start_save.updated_at)
+     throw new Error('adventure_reload_required');
+   const adopted=acceptAdventureStartReceipt(userId,data.start_save,data.session_id);
+   if(adopted)hooks.applyState(adopted);
+   localStorage.removeItem(startKey(userId));
+   releaseArenaRejectedAction(userId);fenced=false;
+   return data;
+ }catch(error){if(fenced)protectFortuneSave(userId);throw error;}
+ finally{active.delete(userId);}
 }
 
 /** Submit an advance or resume, preserving an uncertain advance across remounts.
