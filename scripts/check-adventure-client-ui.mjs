@@ -5,7 +5,13 @@ const ui = read('src/components/pve/ServerAdventureScreen.tsx');
 const battle = read('src/components/BattleScreen.tsx');
 const app = read('src/App.tsx');
 const bridge = read('src/game/combatV1/receiptAdapter.ts');
+const map = read('src/components/MapScreen.tsx');
+const canvas = read('src/components/WorldMapCanvas.tsx');
 
+assert.match(map, /data-testid="map-server-adventure-entry"/,'Adventure must be visible directly on the map without opening a drawer');
+assert.match(map, /onClick=\{\(\) => onNavigate\('battle'\)\}/,'Map entry must open the actual battle screen');
+assert.match(canvas, /id: 'battle', ru: 'Приключения · 100 этапов'/,'100-stage Adventure must have its own map landmark');
+assert.match(canvas, /'city', 'battle', 'arena'/,'Adventure landmark must remain visible at minimum zoom');
 assert.match(battle, /territory_adventure_mode_v3/,'Real server adventure gate must be accessible from gameplay');
 assert.doesNotMatch(battle, /p_owner_preview|isAdmin|serverOptIn/,'The server campaign must not require the admin panel');
 assert.match(battle, /legacySelected/,'Classic campaign remains an explicit in-game choice');
