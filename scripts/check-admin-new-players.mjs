@@ -7,6 +7,7 @@ const tab = read('src/admin/tabs/NewPlayersTab.tsx');
 const dashboard = read('src/admin/tabs/DashboardTab.tsx');
 const api = read('supabase/functions/admin-api/index.ts');
 const migration = read('supabase/migrations/20261029061500_admin_new_player_registrations_v1.sql');
+const pageFix = read('supabase/migrations/20261029062000_admin_new_players_pagination_fix_v2.sql');
 
 assert.match(app, /id: 'newplayers', label: 'Новые игроки'/);
 assert.match(app, /<NewPlayersTab \/>/);
@@ -32,4 +33,6 @@ assert.match(migration, /LEFT JOIN territory_private\.player_geo_v1/);
 assert.match(migration, /REVOKE ALL ON FUNCTION public\.territory_admin_new_players_v1\(text,integer,integer\) FROM PUBLIC, anon, authenticated/);
 assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.territory_admin_new_players_v1\(text,integer,integer\) TO service_role/);
 assert.match(migration, /'country', q.country_code/);
+assert.match(pageFix, /q.rn <= p_offset \+ p_page_size/);
+assert.match(pageFix, /q.rn > p_offset \+ p_page_size/);
 console.log('Admin new-player registration integration PASS');
