@@ -27,6 +27,7 @@ def skip_reel_animation(page):
     # invoke it synchronously to avoid Playwright actionability waiting until
     # the animation completes and its button legitimately disappears.
     page.wait_for_function('document.querySelector(".vslot-reel-track--rolling") !== null',timeout=5000)
+    assert page.locator('.vslot-reel-track--rolling .vslot-symbol').count()==45, 'exactly nine symbols on each of five spinning reels'
     page.evaluate('''() => {
       const button = document.querySelector('button[aria-label="ПРОПУСТИТЬ"]');
       if (!button || button.disabled) throw new Error('SKIP must be available during the reel animation');
@@ -55,6 +56,18 @@ with sync_playwright() as p:
         page.screenshot(path=str(OUT/f'slots-{w}x{h}.png'),full_page=True)
         viewports.append({'width':w,'height':h,'horizontal_overflow':False})
         page.close()
+    page=load(browser)
+    # Autospin must not place bets while Telegram is backgrounded.
+    page.get_by_role('button',name='АВТО ×10',exact=True).click()
+    page.get_by_role('button',name='СТОП АВТО',exact=True).wait_for()
+    page.evaluate("""() => {
+      Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});
+      document.dispatchEvent(new Event('visibilitychange'));
+    }""")
+    page.get_by_role('button',name='АВТО ×10',exact=True).wait_for()
+    page.wait_for_timeout(700)
+    assert page.evaluate('window.__slotCalls.length')==0, 'hidden Telegram WebView must not spend gold'
+    page.close()
     page=load(browser)
     page.get_by_role('button',name='Меньше линий').click()
     assert '35' in page.locator('.vslot-stats').inner_text(),'Stake must reflect fewer paylines'
