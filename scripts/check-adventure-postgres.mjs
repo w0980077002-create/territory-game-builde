@@ -48,12 +48,12 @@ await sql(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role
  INSERT INTO public.players(id,game_state,gold,gems,xp,level,max_energy) VALUES
  (${quote(player)},${json(save)},50,9,90,1,20),(${quote(loser)},${json(save)},50,9,90,1,20),
  (${quote(noLevel)},${json(noLevelSave)},50,9,0,1,20);`);
-for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supabase/staged/territory_v1_adventure_settlement.sql', 'supabase/staged/territory_v1_combat_profiles_reconciliation.sql']) await file(path);
+for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supabase/staged/territory_v1_adventure_settlement.sql', 'supabase/staged/territory_v1_combat_profiles_reconciliation.sql', 'supabase/staged/territory_v1_adventure_cutover_mode.sql']) await file(path);
 assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`), save, 'installation leaves the old save untouched');
-await sql(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by)
- VALUES (${quote(player)},${json(save)},1,${json(fighter)},'{}','synthetic evidence','test reviewer'),
- (${quote(loser)},${json(save)},1,${json(weak)},'{}','synthetic evidence','test reviewer'),
- (${quote(noLevel)},${json(noLevelSave)},1,${json(fighter)},'{}','synthetic evidence','test reviewer');`);
+await sql(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
+ VALUES (${quote(player)},${json(save)},1,${json(fighter)},'{}',ARRAY['old']::text[],'synthetic evidence','test reviewer'),
+ (${quote(loser)},${json(save)},1,${json(weak)},'{}',ARRAY['old']::text[],'synthetic evidence','test reviewer'),
+ (${quote(noLevel)},${json(noLevelSave)},1,${json(fighter)},'{}',ARRAY['old']::text[],'synthetic evidence','test reviewer');`);
 const prepared = await scalar(`SET ROLE service_role; SELECT public.territory_combat_prepare_profile_v1(${quote(player)})`);
 assert.equal(prepared.status, 'ready');
 assert.equal((await scalar(`SET ROLE service_role; SELECT public.territory_combat_prepare_profile_v1(${quote(loser)})`)).status, 'ready');
@@ -63,6 +63,9 @@ await sql(`INSERT INTO territory_private.combat_encounters_v1(encounter_id,mode,
  INSERT INTO territory_private.adventure_rewards_v1(stage,encounter_id,enabled,gold,xp,approval_reference)
  VALUES (1,'s1',true,15,20,'synthetic'),(2,'s2',true,15,20,'synthetic');
  UPDATE territory_private.combat_config_v1 SET catalog=${json({skills:[],runes:[],passives:[]})},rules=${json(rules)},enabled=true,settlement_ready=true,approval_reference='synthetic';`);
+// The new authenticated cutover route is disabled per-account until both
+// the reviewed profile and enabled stage exist.
+assert.deepEqual(await scalar(`SET ROLE authenticated; SET request.test_uid=${quote(player)}; SELECT public.territory_adventure_mode_v1()`), {enabled:true});
 const built = await build({ entryPoints: ['src/game/combatV1/service.ts'], bundle: true, platform: 'node', format: 'esm', write: false, logLevel: 'silent' });
 const { executeCombatCommand } = await import('data:text/javascript;base64,' + Buffer.from(built.outputFiles[0].text).toString('base64'));
 const invocation = (name, args) => `public.${name}(${args.map((x, i) => i === 0 ? `${quote(x)}::uuid` : json(x)).join(',')})`;
