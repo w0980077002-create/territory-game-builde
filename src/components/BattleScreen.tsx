@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, ShoppingBag } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
@@ -21,6 +21,7 @@ export type BattleView = 'campaign' | 'trial';
 
 interface Props {
   userId:string;
+  isAdmin: boolean;
   view: BattleView;
   onView: (v: BattleView) => void;
   autoStart: boolean;
@@ -30,11 +31,18 @@ interface Props {
   onActiveChange?: (active: boolean) => void;
 }
 
-export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onQuests, onActiveChange }: Props) {
+export function BattleScreen({ userId, isAdmin, view, onView, autoStart, onAutoStartHandled, onShop, onQuests, onActiveChange }: Props) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
   const [serverMode, setServerMode] = useState<ServerMode>('checking');
+  const [recoveryRequired, setRecoveryRequired] = useState(false);
+  const [serverOptIn, setServerOptIn] = useState(false);
+  const [serverActive, setServerActive] = useState(false);
+  const handleServerActive = useCallback((active: boolean) => {
+    setServerActive(active);
+    onActiveChange?.(active);
+  }, [onActiveChange]);
   useEffect(() => {
     let alive = true;
     const hasPendingServerSession = [
@@ -45,16 +53,22 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       try { return !!localStorage.getItem(prefix + userId); } catch { return false; }
     });
     if (hasPendingServerSession) {
+      setRecoveryRequired(true);
       setServerMode('enabled'); // Recover a durable in-flight server debit/receipt first.
       return () => { alive = false; };
     }
+    // Canary release only for the owner's existing admin UI. Other accounts
+    // continue the fully featured legacy PvE; this is not a security boundary.
+    if (!isAdmin) { setServerMode('legacy'); return () => { alive = false; }; }
     void Promise.resolve(supabase.rpc('territory_adventure_mode_v1'))
       .then(({ data, error }) => {
         if (alive) setServerMode(!error && data?.enabled === true ? 'enabled' : 'legacy');
       })
       .catch(() => { if (alive) setServerMode('legacy'); });
     return () => { alive = false; };
-  }, [userId]);
+  }, [userId, isAdmin]);
+  const showServer = serverMode === 'enabled' &&
+    (recoveryRequired || (isAdmin && (serverOptIn || serverActive)));
   const [error, setError] = useState<string | null>(null);
   const chapter = useMemo(() => generateChapter(state.currentChapter), [state.currentChapter]);
   const stages = [...chapter.enemies, chapter.boss];
@@ -91,7 +105,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
     autoHandled.current = true;
     onAutoStartHandled();
     // No client-side stone deductions or legacy battle while server cutover is active.
-    if (serverMode === 'enabled' && view === 'campaign') return;
+    if (showServer && view === 'campaign') return;
     start(view === 'trial' ? 'trial' : 'stage');
   });
 
@@ -100,9 +114,17 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       {language === 'en' ? 'Checking campaign availability…' : 'Проверяем доступность приключений…'}
     </p>;
   }
-  if (serverMode === 'enabled' && view === 'campaign' && !fight) {
-    return <ServerAdventureScreen userId={userId} onTrial={() => onView('trial')}
-      onActiveChange={onActiveChange} />;
+  if (showServer && view === 'campaign' && !fight) {
+    return <div className="space-y-2">
+      {isAdmin && !serverActive && !recoveryRequired && (
+        <button type="button" onClick={() => setServerOptIn(false)}
+          className="w-full rounded-lg border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-xs font-semibold text-amber-100">
+          {language === 'en' ? '← Original campaign' : '← Вернуться к обычному походу'}
+        </button>
+      )}
+      <ServerAdventureScreen userId={userId} onTrial={() => onView('trial')}
+        onActiveChange={handleServerActive} />
+    </div>;
   }
 
   if (fight) {
@@ -124,6 +146,15 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
 
   return (
     <div className="space-y-3 animate-fade-in pb-2">
+      {isAdmin && serverMode === 'enabled' && !fight && view === 'campaign' && (
+        <button type="button" onClick={() => setServerOptIn(true)}
+          className="w-full rounded-xl border border-emerald-400/50 bg-emerald-950/50 px-3 py-3 text-sm font-bold text-emerald-100">
+          {language === 'en' ? '⚔️ Try server adventure (100 stages)' : '⚔️ Серверные приключения — 100 этапов'}
+          <span className="mt-1 block text-[11px] font-normal opacity-75">
+            {language === 'en' ? 'Owner testing · Original campaign preserved' : 'Для проверки владельцем · обычный поход сохранён'}
+          </span>
+        </button>
+      )}
       <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10">
         {([
           { id: 'campaign', label: t('campaign'), icon: Swords },
