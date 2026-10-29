@@ -1,0 +1,583 @@
+{
+  "schema": "territory-rune-skill-book/1",
+  "mode": "visual_preview_only",
+  "note": "Original Territory UI proposals. No live battle effects, purchases or save changes until server contract integration.",
+  "groups": [
+    {
+      "id": "base",
+      "nameRu": "База",
+      "nameEn": "Base",
+      "symbol": "ᛉ",
+      "skills": [
+        {
+          "id": "shield_wall",
+          "nameRu": "Стена щитов",
+          "nameEn": "Shield Wall",
+          "icon": "shield",
+          "tone": "frost",
+          "descriptionRu": "Щит уменьшает силу следующего удара",
+          "descriptionEn": "Shield Wall combat technique",
+          "runes": [
+            {
+              "id": "shield_wall_r1",
+              "nameRu": "Стойкость",
+              "nameEn": "Guard",
+              "effectRu": "Усиливает поглощение урона",
+              "effectEn": "Increases damage absorption"
+            },
+            {
+              "id": "shield_wall_r2",
+              "nameRu": "Ответный выпад",
+              "nameEn": "Riposte",
+              "effectRu": "Добавляет ответный удар после блока",
+              "effectEn": "Adds a counterattack after blocking"
+            },
+            {
+              "id": "shield_wall_r3",
+              "nameRu": "Железная воля",
+              "nameEn": "Iron Will",
+              "effectRu": "Удлиняет время защиты",
+              "effectEn": "Extends protection duration"
+            }
+          ]
+        },
+        {
+          "id": "axe_storm",
+          "nameRu": "Вихрь секир",
+          "nameEn": "Axe Storm",
+          "icon": "swords",
+          "tone": "ember",
+          "descriptionRu": "Серия рубящих атак по противнику",
+          "descriptionEn": "Axe Storm combat technique",
+          "runes": [
+            {
+              "id": "axe_storm_r1",
+              "nameRu": "Острый край",
+              "nameEn": "Keen Edge",
+              "effectRu": "Усиливает каждый удар вихря",
+              "effectEn": "Improves each whirlwind hit"
+            },
+            {
+              "id": "axe_storm_r2",
+              "nameRu": "Кровавая метка",
+              "nameEn": "Blood Mark",
+              "effectRu": "Может накладывать кровотечение",
+              "effectEn": "May apply bleeding"
+            },
+            {
+              "id": "axe_storm_r3",
+              "nameRu": "Разгон",
+              "nameEn": "Momentum",
+              "effectRu": "Ускоряет следующую атаку",
+              "effectEn": "Speeds up the next attack"
+            }
+          ]
+        },
+        {
+          "id": "hawk_shot",
+          "nameRu": "Соколиный выстрел",
+          "nameEn": "Hawk Shot",
+          "icon": "target",
+          "tone": "gold",
+          "descriptionRu": "Точный удар по уязвимой точке",
+          "descriptionEn": "Hawk Shot combat technique",
+          "runes": [
+            {
+              "id": "hawk_shot_r1",
+              "nameRu": "Метка охотника",
+              "nameEn": "Hunter's Mark",
+              "effectRu": "Повышает точность повторного удара",
+              "effectEn": "Improves follow-up accuracy"
+            },
+            {
+              "id": "hawk_shot_r2",
+              "nameRu": "Пробитие",
+              "nameEn": "Piercing",
+              "effectRu": "Позволяет частично игнорировать защиту",
+              "effectEn": "Partly ignores defense"
+            },
+            {
+              "id": "hawk_shot_r3",
+              "nameRu": "Оперённая стрела",
+              "nameEn": "Fletched Arrow",
+              "effectRu": "Повышает шанс критического удара",
+              "effectEn": "Improves critical strike chance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "core",
+      "nameRu": "Ядро",
+      "nameEn": "Core",
+      "symbol": "ᚠ",
+      "skills": [
+        {
+          "id": "frost_oath",
+          "nameRu": "Клятва инея",
+          "nameEn": "Frost Oath",
+          "icon": "snowflake",
+          "tone": "frost",
+          "descriptionRu": "Ледяной удар ослабляет противника",
+          "descriptionEn": "Frost Oath combat technique",
+          "runes": [
+            {
+              "id": "frost_oath_r1",
+              "nameRu": "Морозная хватка",
+              "nameEn": "Frost Grip",
+              "effectRu": "Увеличивает время замедления",
+              "effectEn": "Extends slow duration"
+            },
+            {
+              "id": "frost_oath_r2",
+              "nameRu": "Ледяной осколок",
+              "nameEn": "Ice Shard",
+              "effectRu": "Усиливает урон по замедленной цели",
+              "effectEn": "Improves damage to slowed enemies"
+            },
+            {
+              "id": "frost_oath_r3",
+              "nameRu": "Стужа",
+              "nameEn": "Deep Freeze",
+              "effectRu": "Может ненадолго сковать цель",
+              "effectEn": "May briefly root the target"
+            }
+          ]
+        },
+        {
+          "id": "battle_chant",
+          "nameRu": "Боевой напев",
+          "nameEn": "War Chant",
+          "icon": "crown",
+          "tone": "ember",
+          "descriptionRu": "Воинский клич усиливает следующую атаку",
+          "descriptionEn": "War Chant combat technique",
+          "runes": [
+            {
+              "id": "battle_chant_r1",
+              "nameRu": "Громкий зов",
+              "nameEn": "Loud Call",
+              "effectRu": "Продлевает эффект напева",
+              "effectEn": "Extends the chant effect"
+            },
+            {
+              "id": "battle_chant_r2",
+              "nameRu": "Ярость",
+              "nameEn": "Fury",
+              "effectRu": "Усиливает следующую атаку",
+              "effectEn": "Empowers the next attack"
+            },
+            {
+              "id": "battle_chant_r3",
+              "nameRu": "Стяг",
+              "nameEn": "Banner",
+              "effectRu": "Добавляет защиту во время напева",
+              "effectEn": "Adds protection during the chant"
+            }
+          ]
+        },
+        {
+          "id": "runic_bolt",
+          "nameRu": "Рунический заряд",
+          "nameEn": "Runic Bolt",
+          "icon": "zap",
+          "tone": "violet",
+          "descriptionRu": "Энергетический разряд наносит магический урон",
+          "descriptionEn": "Runic Bolt combat technique",
+          "runes": [
+            {
+              "id": "runic_bolt_r1",
+              "nameRu": "Искра",
+              "nameEn": "Spark",
+              "effectRu": "Ускоряет накопление заряда",
+              "effectEn": "Accelerates charge accumulation"
+            },
+            {
+              "id": "runic_bolt_r2",
+              "nameRu": "Цепь молний",
+              "nameEn": "Chain Lightning",
+              "effectRu": "Может поразить дополнительную цель",
+              "effectEn": "May strike another target"
+            },
+            {
+              "id": "runic_bolt_r3",
+              "nameRu": "Перегрузка",
+              "nameEn": "Overload",
+              "effectRu": "Повышает силу разряда",
+              "effectEn": "Increases bolt power"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "control",
+      "nameRu": "Контроль",
+      "nameEn": "Control",
+      "symbol": "ᚲ",
+      "skills": [
+        {
+          "id": "rune_snare",
+          "nameRu": "Узоры сковывания",
+          "nameEn": "Rune Snare",
+          "icon": "shield",
+          "tone": "violet",
+          "descriptionRu": "Руническая ловушка ограничивает действия врага",
+          "descriptionEn": "Rune Snare combat technique",
+          "runes": [
+            {
+              "id": "rune_snare_r1",
+              "nameRu": "Крепкая вязь",
+              "nameEn": "Tight Weave",
+              "effectRu": "Продлевает удержание цели",
+              "effectEn": "Extends the snare"
+            },
+            {
+              "id": "rune_snare_r2",
+              "nameRu": "Ловчий круг",
+              "nameEn": "Hunter's Circle",
+              "effectRu": "Расширяет область ловушки",
+              "effectEn": "Expands snare area"
+            },
+            {
+              "id": "rune_snare_r3",
+              "nameRu": "Рассеивание",
+              "nameEn": "Dispel",
+              "effectRu": "Может ослабить усиление врага",
+              "effectEn": "May weaken an enemy buff"
+            }
+          ]
+        },
+        {
+          "id": "quickstep",
+          "nameRu": "Теневой шаг",
+          "nameEn": "Shadow Step",
+          "icon": "wind",
+          "tone": "forest",
+          "descriptionRu": "Уклонение с быстрым ответным движением",
+          "descriptionEn": "Shadow Step combat technique",
+          "runes": [
+            {
+              "id": "quickstep_r1",
+              "nameRu": "Отражение",
+              "nameEn": "Reflection",
+              "effectRu": "Улучшает шанс увернуться",
+              "effectEn": "Improves dodge chance"
+            },
+            {
+              "id": "quickstep_r2",
+              "nameRu": "Скрытность",
+              "nameEn": "Stealth",
+              "effectRu": "Ослабляет следующий удар противника",
+              "effectEn": "Weakens the next enemy strike"
+            },
+            {
+              "id": "quickstep_r3",
+              "nameRu": "Контратака",
+              "nameEn": "Counterstroke",
+              "effectRu": "Усиливает ответный удар",
+              "effectEn": "Improves the counterattack"
+            }
+          ]
+        },
+        {
+          "id": "fire_net",
+          "nameRu": "Огненная сеть",
+          "nameEn": "Flame Net",
+          "icon": "flame",
+          "tone": "ember",
+          "descriptionRu": "Огненная ловушка мешает противнику двигаться",
+          "descriptionEn": "Flame Net combat technique",
+          "runes": [
+            {
+              "id": "fire_net_r1",
+              "nameRu": "Тлеющие путы",
+              "nameEn": "Smoldering Bonds",
+              "effectRu": "Дольше удерживает цель",
+              "effectEn": "Holds the target for longer"
+            },
+            {
+              "id": "fire_net_r2",
+              "nameRu": "Горящий след",
+              "nameEn": "Burning Trail",
+              "effectRu": "Может поджечь цель",
+              "effectEn": "May ignite the target"
+            },
+            {
+              "id": "fire_net_r3",
+              "nameRu": "Пепельная завеса",
+              "nameEn": "Ash Veil",
+              "effectRu": "Уменьшает точность врага",
+              "effectEn": "Reduces enemy accuracy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "awakening",
+      "nameRu": "Пробуждение",
+      "nameEn": "Awakening",
+      "symbol": "ᚱ",
+      "skills": [
+        {
+          "id": "ancestral_surge",
+          "nameRu": "Наследие предков",
+          "nameEn": "Ancestor's Might",
+          "icon": "crown",
+          "tone": "gold",
+          "descriptionRu": "Пробуждает древнюю силу героя",
+          "descriptionEn": "Ancestor's Might combat technique",
+          "runes": [
+            {
+              "id": "ancestral_surge_r1",
+              "nameRu": "Родовая память",
+              "nameEn": "Ancestral Memory",
+              "effectRu": "Увеличивает время усиления",
+              "effectEn": "Extends the empowered state"
+            },
+            {
+              "id": "ancestral_surge_r2",
+              "nameRu": "Дух защитника",
+              "nameEn": "Guardian Spirit",
+              "effectRu": "Даёт дополнительную защиту",
+              "effectEn": "Grants extra defense"
+            },
+            {
+              "id": "ancestral_surge_r3",
+              "nameRu": "Зов предков",
+              "nameEn": "Ancestors' Call",
+              "effectRu": "Ускоряет накопление энергии",
+              "effectEn": "Builds energy faster"
+            }
+          ]
+        },
+        {
+          "id": "blood_rush",
+          "nameRu": "Жажда битвы",
+          "nameEn": "Battle Thirst",
+          "icon": "swords",
+          "tone": "ember",
+          "descriptionRu": "Герой входит в боевую ярость",
+          "descriptionEn": "Battle Thirst combat technique",
+          "runes": [
+            {
+              "id": "blood_rush_r1",
+              "nameRu": "Бешенство",
+              "nameEn": "Frenzy",
+              "effectRu": "Усиливает серию атак",
+              "effectEn": "Empowers attack chains"
+            },
+            {
+              "id": "blood_rush_r2",
+              "nameRu": "Несгибаемый",
+              "nameEn": "Unbroken",
+              "effectRu": "Снижает урон во время ярости",
+              "effectEn": "Reduces damage during frenzy"
+            },
+            {
+              "id": "blood_rush_r3",
+              "nameRu": "Алый удар",
+              "nameEn": "Crimson Strike",
+              "effectRu": "Повышает шанс критического удара",
+              "effectEn": "Improves crit chance"
+            }
+          ]
+        },
+        {
+          "id": "forest_awakening",
+          "nameRu": "Голос чащи",
+          "nameEn": "Forest's Call",
+          "icon": "wind",
+          "tone": "forest",
+          "descriptionRu": "Сила леса ускоряет бойца",
+          "descriptionEn": "Forest's Call combat technique",
+          "runes": [
+            {
+              "id": "forest_awakening_r1",
+              "nameRu": "Корни",
+              "nameEn": "Roots",
+              "effectRu": "Может замедлить атакующего",
+              "effectEn": "May slow an attacker"
+            },
+            {
+              "id": "forest_awakening_r2",
+              "nameRu": "Живой сок",
+              "nameEn": "Vital Sap",
+              "effectRu": "Постепенно восстанавливает здоровье",
+              "effectEn": "Gradually restores health"
+            },
+            {
+              "id": "forest_awakening_r3",
+              "nameRu": "Звериный слух",
+              "nameEn": "Wild Instinct",
+              "effectRu": "Улучшает уклонение",
+              "effectEn": "Improves dodging"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "final",
+      "nameRu": "Финал",
+      "nameEn": "Final",
+      "symbol": "ᛟ",
+      "skills": [
+        {
+          "id": "storm_judgement",
+          "nameRu": "Приговор грозы",
+          "nameEn": "Storm Judgment",
+          "icon": "zap",
+          "tone": "violet",
+          "descriptionRu": "Мощный завершающий удар молнией",
+          "descriptionEn": "Storm Judgment combat technique",
+          "runes": [
+            {
+              "id": "storm_judgement_r1",
+              "nameRu": "Раскат грома",
+              "nameEn": "Thunderclap",
+              "effectRu": "Усиливает удар по одной цели",
+              "effectEn": "Empowers single-target damage"
+            },
+            {
+              "id": "storm_judgement_r2",
+              "nameRu": "Грозовой след",
+              "nameEn": "Storm Trail",
+              "effectRu": "Оставляет краткий эффект после удара",
+              "effectEn": "Leaves a short lingering effect"
+            },
+            {
+              "id": "storm_judgement_r3",
+              "nameRu": "Небесный разряд",
+              "nameEn": "Sky Bolt",
+              "effectRu": "Ускоряет повторное применение",
+              "effectEn": "Speeds up recast"
+            }
+          ]
+        },
+        {
+          "id": "winter_breaker",
+          "nameRu": "Сокрушитель зимы",
+          "nameEn": "Winterbreaker",
+          "icon": "snowflake",
+          "tone": "frost",
+          "descriptionRu": "Ледяной завершающий удар",
+          "descriptionEn": "Winterbreaker combat technique",
+          "runes": [
+            {
+              "id": "winter_breaker_r1",
+              "nameRu": "Ледолом",
+              "nameEn": "Icebreaker",
+              "effectRu": "Усиливает удар по защищённой цели",
+              "effectEn": "Improves damage against guarded targets"
+            },
+            {
+              "id": "winter_breaker_r2",
+              "nameRu": "Кристальная буря",
+              "nameEn": "Crystal Storm",
+              "effectRu": "Расширяет область действия",
+              "effectEn": "Extends effect area"
+            },
+            {
+              "id": "winter_breaker_r3",
+              "nameRu": "Вечная мерзлота",
+              "nameEn": "Permafrost",
+              "effectRu": "Продлевает замедление",
+              "effectEn": "Extends slowing effect"
+            }
+          ]
+        },
+        {
+          "id": "wolf_king",
+          "nameRu": "Рёв волчьего короля",
+          "nameEn": "Wolf King's Roar",
+          "icon": "crown",
+          "tone": "gold",
+          "descriptionRu": "Финальный боевой клич героя",
+          "descriptionEn": "Wolf King's Roar combat technique",
+          "runes": [
+            {
+              "id": "wolf_king_r1",
+              "nameRu": "Рёв стаи",
+              "nameEn": "Pack Roar",
+              "effectRu": "Увеличивает длительность клича",
+              "effectEn": "Increases roar duration"
+            },
+            {
+              "id": "wolf_king_r2",
+              "nameRu": "Волчий клык",
+              "nameEn": "Wolf Fang",
+              "effectRu": "Усиливает завершающую атаку",
+              "effectEn": "Empowers finishing attack"
+            },
+            {
+              "id": "wolf_king_r3",
+              "nameRu": "Бесстрашие",
+              "nameEn": "Fearless",
+              "effectRu": "Даёт защиту от контроля",
+              "effectEn": "Grants control resistance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "passives": [
+    {
+      "id": "iron_skin",
+      "nameRu": "Каменная кожа",
+      "nameEn": "Stone Skin",
+      "icon": "shield",
+      "tone": "frost",
+      "descriptionRu": "Повышает стойкость героя",
+      "descriptionEn": "Improves hero resilience"
+    },
+    {
+      "id": "hunter_focus",
+      "nameRu": "Верный прицел",
+      "nameEn": "Steady Aim",
+      "icon": "target",
+      "tone": "gold",
+      "descriptionRu": "Помогает находить слабые точки",
+      "descriptionEn": "Helps find weak points"
+    },
+    {
+      "id": "warm_blood",
+      "nameRu": "Живое сердце",
+      "nameEn": "Living Heart",
+      "icon": "crown",
+      "tone": "ember",
+      "descriptionRu": "Поддерживает выживание в бою",
+      "descriptionEn": "Improves staying power"
+    },
+    {
+      "id": "thunder_spirit",
+      "nameRu": "Дух грозы",
+      "nameEn": "Storm Spirit",
+      "icon": "zap",
+      "tone": "violet",
+      "descriptionRu": "Поддерживает накопление энергии",
+      "descriptionEn": "Supports energy gain"
+    },
+    {
+      "id": "forest_instinct",
+      "nameRu": "Чутьё леса",
+      "nameEn": "Forest Instinct",
+      "icon": "wind",
+      "tone": "forest",
+      "descriptionRu": "Усиливает уклонение",
+      "descriptionEn": "Improves dodging"
+    },
+    {
+      "id": "warrior_oath",
+      "nameRu": "Клятва воина",
+      "nameEn": "Warrior's Oath",
+      "icon": "swords",
+      "tone": "gold",
+      "descriptionRu": "Усиливает стойкость в затяжном бою",
+      "descriptionEn": "Improves endurance in long battles"
+    }
+  ]
+}
