@@ -712,12 +712,25 @@ async function handle(action: string, body: Row) {
     }
     case "top": {
       const kind = body.kind;
-      if (kind === "level" || kind === "gold") {
+      if (kind === "level" || kind === "gold" || kind === "gems") {
+        // Blue diamonds are in the indexed players.gems column.
         const { data, error } = await db.from("players")
-          .select("id, telegram_id, username, display_name, level, gold")
-          .order(kind, { ascending: false }).limit(100);
+          .select("id, telegram_id, username, display_name, level, gold, gems")
+          .order(kind, { ascending: false })
+          .order("id", { ascending: true })
+          .limit(100);
         if (error) throw new HttpError(500, "db_error");
-        return { rows: (data ?? []).map((p) => ({ id: p.id, telegramId: p.telegram_id, name: p.display_name, username: p.username, value: kind === "level" ? p.level : p.gold })) };
+        return { rows: (data ?? []).map((p) => ({
+          id: p.id, telegramId: p.telegram_id, name: p.display_name,
+          username: p.username, value: Number(p[kind] ?? 0),
+        })) };
+      }
+      if (kind === "red_gems") {
+        // Premium diamonds are inside game_state.player.redGems, not donations.
+        // Return only leaderboard fields, never full player saves.
+        const { data, error } = await db.rpc("territory_admin_top_red_gems_v1");
+        if (error || !Array.isArray(data)) throw new HttpError(503, "top_unavailable");
+        return { rows: data };
       }
       if (kind === "donate") {
         const { data, error } = await db.from("donations")
