@@ -30,8 +30,11 @@ const FILTERS: { key: Period; title: string }[] = [
   { key: 'week', title: '7 дней' },
   { key: 'all', title: 'Все' },
 ];
-const countryNames = typeof Intl.DisplayNames === 'function'
-  ? new Intl.DisplayNames(['ru'], { type: 'region' }) : null;
+type RegionNames = { of(code: string): string | undefined };
+const DisplayNames = (Intl as unknown as {
+  DisplayNames?: new (locales: string[], options: { type: 'region' }) => RegionNames;
+}).DisplayNames;
+const countryNames = DisplayNames ? new DisplayNames(['ru'], { type: 'region' }) : null;
 
 function countryLabel(code: string | null) {
   if (!code || !/^[A-Z]{2}$/.test(code)) return 'Страна неизвестна';
@@ -172,10 +175,10 @@ export function NewPlayersTab() {
         )}
         {result && (page > 0 || result.hasMore) && (
           <div className="mt-3 flex items-center justify-between gap-2 text-xs">
-            <button type="button" disabled={loading || page === 0} onClick={() => setPage((v) => Math.max(0, v - 1))}
+            <button type="button" disabled={loading || page === 0} onClick={() => { setResult(null); setPage((v) => Math.max(0, v - 1)); }}
               className="h-10 rounded-lg border border-slate-700 px-3 text-slate-200 disabled:opacity-40">Назад</button>
             <span className="text-slate-400">Страница {page + 1}</span>
-            <button type="button" disabled={loading || !result.hasMore} onClick={() => setPage((v) => v + 1)}
+            <button type="button" disabled={loading || !result.hasMore} onClick={() => { setResult(null); setPage((v) => v + 1); }}
               className="h-10 rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 font-semibold text-sky-200 disabled:opacity-40">Дальше</button>
           </div>
         )}
