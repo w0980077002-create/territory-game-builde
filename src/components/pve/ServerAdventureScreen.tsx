@@ -4,7 +4,7 @@ import { useLanguage } from '@/game/i18n';
 import { useGame } from '@/game/actions';
 import { ensurePlayerSession } from '@/game/auth';
 import { supabase } from '@/game/supabase';
-import { restoreAdventureSaveFence, requestAdventureSettlement } from '@/game/combatV1/receiptAdapter';
+import { restoreAdventureSaveFence, restoreAdventureStartFence, requestAdventureStart, requestAdventureSettlement } from '@/game/combatV1/receiptAdapter';
 import { getCampaignStage, CAMPAIGN_CHAPTERS } from '@/game/idleContent/campaign';
 import type { IdleCombatState } from '@/game/idleEngine/types';
 
@@ -80,17 +80,9 @@ export function ServerAdventureScreen({ userId, onTrial, onActiveChange }: Props
   }, []);
 
   const runSavedStart = useCallback(async () => {
-    const raw = localStorage.getItem(startKey(userId));
-    if (!raw) return false;
-    const command: unknown = JSON.parse(raw);
-    if (!obj(command) || command.action !== 'start' || typeof command.operationId !== 'string'
-      || !/^[-a-f0-9]{36}$/i.test(command.operationId) || typeof command.encounterId !== 'string'
-      || !['auto','manual'].includes(String(command.control))) throw new Error('adventure_invalid_start_marker');
-    const response = await supabase.functions.invoke('territory-combat', { body: command });
-    if (response.error) throw new Error('combat_unavailable');
-    const result = decodeSession(response.data);
-    install(result);
-    localStorage.removeItem(startKey(userId));
+    const command=restoreAdventureStartFence(userId);
+    if (!command) return false;
+    install(decodeSession(await requestAdventureStart(userId,command,hooks)));
     return true;
   }, [install, userId]);
 
@@ -127,11 +119,11 @@ export function ServerAdventureScreen({ userId, onTrial, onActiveChange }: Props
     if (lock.current || !ready || !progress || sessionRef.current?.state.status === 'fighting') return;
     lock.current = true; setBusy(true); setError('');
     try {
-      if (!localStorage.getItem(startKey(userId))) localStorage.setItem(startKey(userId), JSON.stringify({
-        action: 'start', operationId: crypto.randomUUID(),
+      const command=restoreAdventureStartFence(userId) || {
+        action: 'start' as const, operationId: crypto.randomUUID(),
         encounterId: 'adventure_v1_stage_' + progress.unlocked_stage, control,
-      }));
-      await runSavedStart();
+      };
+      install(decodeSession(await requestAdventureStart(userId,command,hooks)));
     } catch (cause) { if (mounted.current) { setError(message(cause,en)); setRecoverable(true); } }
     finally { lock.current = false; if (mounted.current) setBusy(false); }
   };
