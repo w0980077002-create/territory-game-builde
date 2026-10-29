@@ -84,7 +84,7 @@ assert.match(figure, /fighter-figure__footstep/, 'Attacker must step onto the gr
 assert.match(figure, /fighter-impact__flash/, 'Contact flash must be tied to the target impact');
 assert.match(figure, /combatSpeed = 1/, 'PvE x2 motion support was removed');
 for (const animation of ['fighter-breathe', 'fighter-step-dust', 'fighter-cut', 'fighter-thrust', 'fighter-overhead', 'fighter-recoil', 'fighter-guard', 'fighter-dodge', 'fighter-contact']) {
-  assert.match(fighterMotionCss, new RegExp('\\\\@keyframes ' + animation + ' \\\\{'.replace('\\\\@','@')), 'Missing live combat animation: ' + animation);
+  assert.ok(fighterMotionCss.includes(`@keyframes ${animation} {`), 'Missing live combat animation: ' + animation);
 }
 assert.match(fighterMotionCss, /\.fighter-figure__breath--idle \{ animation: none !important; \}/, 'Reduced-motion guard must disable continuous breathing');
 assert.match(fighterMotionCss, /\.fighter-figure__footstep, \.fighter-impact__flash \{ display: none; \}/, 'Reduced-motion guard must disable extra FX');
