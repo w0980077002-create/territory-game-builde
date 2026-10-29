@@ -140,7 +140,8 @@ const row=await scalar(`SELECT row_to_json(p) FROM public.players p WHERE id=${q
 assert.equal(row.gold,65); assert.equal(row.xp,10); assert.equal(row.level,2);
 assert.deepEqual(row.game_state.inventory,normalizedSave.inventory); assert.deepEqual(row.game_state.player.equipped,normalizedSave.player.equipped);
 assert.deepEqual([row.attack,row.defense,row.max_hp,row.crit_chance],[33,7,120,5]);
-assert.equal(await sql(`SELECT count(*) FROM public.territory_economy_audit_v1 WHERE player_id=${quote(player)}`),'1');
+assert.equal(await sql(`SELECT count(*) FROM public.territory_economy_audit_v1 WHERE player_id=${quote(player)}`),'2',
+ 'audit must record exactly one entry-stone debit and one victory award');
 const stale = structuredClone(row.game_state); delete stale.inventoryCleanupVersion;
 await assert.rejects(sql(`UPDATE public.players SET game_state=${json(stale)} WHERE id=${quote(player)}`), /territory_stale_inventory_cleanup_snapshot/);
 const mismatch = structuredClone(row.game_state); mismatch.player.gold++;
