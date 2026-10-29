@@ -47,7 +47,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON territory_private.combat_profile_reconci
 CREATE OR REPLACE FUNCTION territory_private.combat_source_projection_v1(p public.players)
 RETURNS jsonb LANGUAGE sql IMMUTABLE SECURITY INVOKER SET search_path='' AS $$
  SELECT jsonb_build_object('level',p.level,'stats',p.game_state#>'{player,stats}',
-   'equipped',p.game_state#>'{player,equipped}','inventory',p.game_state->'inventory',
+   'equipped',p.game_state#>'{player,equipped}',
    'attack',to_jsonb(p)->'attack','defense',to_jsonb(p)->'defense',
    'max_hp',to_jsonb(p)->'max_hp','crit_chance',to_jsonb(p)->'crit_chance');
 $$;
@@ -115,7 +115,10 @@ BEGIN
   IF reason IS NULL THEN
     SELECT * INTO a FROM territory_private.combat_profile_attestations_v1
       WHERE player_id=p_player AND revoked_at IS NULL
-        AND source_game_state IS NOT DISTINCT FROM p.game_state
+        -- A gold/energy/quest/inventory update does not change equipped
+        -- combat stats and should not disable a reviewed baseline.
+        AND source_game_state#>'{player,stats}' IS NOT DISTINCT FROM p.game_state#>'{player,stats}'
+        AND source_game_state#>'{player,equipped}' IS NOT DISTINCT FROM p.game_state#>'{player,equipped}'
         AND source_player_level=p.level
       ORDER BY reviewed_at DESC,attestation_id DESC LIMIT 1;
     IF NOT FOUND THEN
