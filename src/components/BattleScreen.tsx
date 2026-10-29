@@ -12,10 +12,10 @@ import { PveFight, type FightKind } from './pve/PveFight';
 import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
 import { Currency } from './ui/Currency';
 import { DailyShareCard } from '@/game/DailyShareCard';
+import { supabase } from '@/game/supabase';
 
-// Strict double gate: the server must separately enable verified profiles, stages, and settlement.
-// This opt-in is ABSENT on production, so the approved legacy campaign is untouched.
-const SERVER_ADVENTURE_OPT_IN = import.meta.env.VITE_TERRITORY_V1_SERVER_COMBAT === 'verified';
+// The server decides per player. Ineligible accounts keep the legacy campaign.
+type ServerMode = 'checking' | 'enabled' | 'legacy';
 
 export type BattleView = 'campaign' | 'trial';
 
@@ -34,6 +34,27 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
+  const [serverMode, setServerMode] = useState<ServerMode>('checking');
+  useEffect(() => {
+    let alive = true;
+    const hasPendingServerSession = [
+      'territory_adventure_session_v1:',
+      'territory_adventure_start_v1:',
+      'territory_adventure_pending_v1:',
+    ].some(prefix => {
+      try { return !!localStorage.getItem(prefix + userId); } catch { return false; }
+    });
+    if (hasPendingServerSession) {
+      setServerMode('enabled'); // Recover a durable in-flight server debit/receipt first.
+      return () => { alive = false; };
+    }
+    void supabase.rpc('territory_adventure_mode_v1')
+      .then(({ data, error }) => {
+        if (alive) setServerMode(!error && data?.enabled === true ? 'enabled' : 'legacy');
+      })
+      .catch(() => { if (alive) setServerMode('legacy'); });
+    return () => { alive = false; };
+  }, [userId]);
   const [error, setError] = useState<string | null>(null);
   const chapter = useMemo(() => generateChapter(state.currentChapter), [state.currentChapter]);
   const stages = [...chapter.enemies, chapter.boss];
@@ -66,15 +87,20 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   };
 
   useEffect(() => {
-    if (!autoStart || autoHandled.current) return;
+    if (!autoStart || autoHandled.current || (view === 'campaign' && serverMode === 'checking')) return;
     autoHandled.current = true;
     onAutoStartHandled();
     // No client-side stone deductions or legacy battle while server cutover is active.
-    if (SERVER_ADVENTURE_OPT_IN && view === 'campaign') return;
+    if (serverMode === 'enabled' && view === 'campaign') return;
     start(view === 'trial' ? 'trial' : 'stage');
   });
 
-  if (SERVER_ADVENTURE_OPT_IN && view === 'campaign') {
+  if (view === 'campaign' && serverMode === 'checking' && !fight) {
+    return <p role="status" className="p-4 text-center text-xs text-amber-100">
+      {language === 'en' ? 'Checking campaign availability…' : 'Проверяем доступность приключений…'}
+    </p>;
+  }
+  if (serverMode === 'enabled' && view === 'campaign' && !fight) {
     return <ServerAdventureScreen userId={userId} onTrial={() => onView('trial')}
       onActiveChange={onActiveChange} />;
   }
