@@ -21,6 +21,7 @@ type Place = {
 // Every destination uses an existing screen or existing server-backed region.
 const PLACES: Place[] = [
   { id: 'city', ru: 'Замок', en: 'Castle', x: 51, y: 13 },
+  { id: 'battle', ru: 'Приключения · 100 этапов', en: 'Adventure · 100 stages', x: 51, y: 27 },
   { id: 'arena', ru: 'Арена', en: 'Arena', x: 13, y: 27 },
   { id: 'mountain', ru: 'Рудники', en: 'Mines', x: 88, y: 24, kind: 'resource' },
   { id: 'auction', ru: 'Аукцион', en: 'Auction', x: 37, y: 36 },
@@ -43,14 +44,13 @@ const PLACES: Place[] = [
 // At minimum zoom only the primary hubs remain visible. The complete list
 // stays one tap away in "All locations", and every pin returns at closer zoom.
 const OVERVIEW_PLACES = new Set<WorldMapPlace>([
-  'city', 'arena', 'mountain', 'hero', 'forge', 'professions',
+  'city', 'battle', 'arena', 'mountain', 'hero', 'forge', 'professions',
   'shop', 'inventory', 'runes', 'rare', 'games',
 ]);
 
 // Sections without a distinctive building in this illustration are accessible
 // from the compact places drawer; no dead-end decorative buttons.
 const OTHER_PLACES: { id: WorldMapRoute; ru: string; en: string }[] = [
-  { id: 'battle', ru: 'Поход', en: 'Campaign' },
   { id: 'clan', ru: 'Клан', en: 'Clan' },
   { id: 'friends', ru: 'Друзья', en: 'Friends' },
   { id: 'quests', ru: 'Задания', en: 'Quests' },
