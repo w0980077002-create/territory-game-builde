@@ -64,6 +64,10 @@ export function FighterFigure({
         <div className="fighter-figure__size absolute inset-0">
           <div className={`fighter-figure__breath absolute inset-0 ${!role && alive ? 'fighter-figure__breath--idle' : ''}`}>
             <div className={`absolute inset-0 ${mirror ? 'battle-mirror-art' : ''}`}>
+            {role === 'attacker' && alive && (
+              <img src={pose} alt="" aria-hidden="true" draggable={false}
+                className={`${className} fighter-figure__afterimage select-none`} />
+            )}
             <img
               src={pose}
               alt={name}
@@ -117,6 +121,40 @@ function Impact({ strike }: { strike: StrikeEvent }) {
           {label ?? `−${strike.amount}`}
         </span>
       )}
+    </div>
+  );
+}
+
+// One purely visual clash at the center of the two fighters, triggered ONLY by
+// the already-confirmed PvP strike queue or existing PvE hit. No extra attack,
+// damage, timers, backend requests or reward changes are introduced here.
+const CLASH_SPARKS = [
+  { x: '-43px', y: '-27px' }, { x: '46px', y: '-31px' },
+  { x: '-59px', y: '10px' }, { x: '57px', y: '15px' },
+  { x: '-22px', y: '43px' }, { x: '27px', y: '37px' },
+] as const;
+
+export function CombatClash({ strike, speed = 1 }: { strike: StrikeEvent | null; speed?: number }) {
+  if (!strike) return null;
+  const safeSpeed = Number.isFinite(speed) && speed > 0 ? speed : 1;
+  const style = {
+    '--clash-duration': `${Math.round(800 / safeSpeed)}ms`,
+  } as CSSProperties;
+  const swing = Math.abs(strike.key) % 3;
+
+  return (
+    <div key={strike.key}
+      className={`combat-clash combat-clash--${strike.tone} combat-clash--swing-${swing}`}
+      style={style} aria-hidden="true" data-combat-vfx={strike.tone}>
+      <span className="combat-clash__sweep" />
+      <span className="combat-clash__center" />
+      <span className="combat-clash__ring" />
+      {CLASH_SPARKS.map((spark, index) => (
+        <span key={index} className="combat-clash__fragment" style={{
+          '--fragment-x': spark.x,
+          '--fragment-y': spark.y,
+        } as CSSProperties} />
+      ))}
     </div>
   );
 }
