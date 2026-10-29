@@ -182,9 +182,9 @@ export function BattleScene(props: Props) {
                     combatFrames={getCombatAppearance(enemy.appearance)}
                     name={enemy.name}
                     dir={-1}
-                    scale={1.08}
                     mirror
                     alive={enemy.hp > 0}
+                    scale={1.08}
                     strike={strike}
                     idleSeconds={2.8}
                     className="absolute left-0 bottom-0 h-[96%] w-full object-contain object-left-bottom"
