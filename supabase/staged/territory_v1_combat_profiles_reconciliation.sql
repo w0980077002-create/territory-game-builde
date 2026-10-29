@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS territory_private.combat_profile_attestations_v1 (
   source_player_level integer NOT NULL,
   fighter jsonb NOT NULL,
   equipped_item_ids uuid[] NOT NULL,
+  legacy_equipped_ids text[] NOT NULL DEFAULT '{}'::text[],
   evidence_reference text NOT NULL CHECK(length(btrim(evidence_reference)) > 0),
   reviewed_by text NOT NULL CHECK(length(btrim(reviewed_by)) > 0),
   reviewed_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -19,6 +20,11 @@ CREATE TABLE IF NOT EXISTS territory_private.combat_profile_attestations_v1 (
 );
 CREATE INDEX IF NOT EXISTS combat_profile_attestation_player_v1
   ON territory_private.combat_profile_attestations_v1(player_id, reviewed_at DESC);
+-- Preserve legacy non-UUID item keys; gem sockets keep the separate uuid[].
+ALTER TABLE territory_private.combat_profile_attestations_v1
+ ADD COLUMN IF NOT EXISTS legacy_equipped_ids text[] NOT NULL DEFAULT '{}'::text[];
+ALTER TABLE territory_private.combat_profiles_v1
+ ADD COLUMN IF NOT EXISTS legacy_equipped_ids text[] NOT NULL DEFAULT '{}'::text[];
 
 CREATE TABLE IF NOT EXISTS territory_private.combat_profile_reconciliation_v1 (
   player_id uuid PRIMARY KEY REFERENCES public.players(id),
@@ -55,6 +61,15 @@ ALTER TABLE territory_private.combat_profile_sources_v1 ENABLE ROW LEVEL SECURIT
 REVOKE ALL ON territory_private.combat_profile_sources_v1 FROM PUBLIC,anon,authenticated;
 GRANT SELECT,INSERT,UPDATE ON territory_private.combat_profile_sources_v1 TO service_role;
 
+-- Slot-order makes the migration deterministic; missing IDs are rejected by
+-- preparation rather than replaced with fake equipment.
+CREATE OR REPLACE FUNCTION territory_private.combat_legacy_equipped_ids_v1(p_state jsonb)
+RETURNS text[] LANGUAGE sql IMMUTABLE SECURITY INVOKER SET search_path='' AS $
+ SELECT coalesce(array_agg(x.value->>'id' ORDER BY x.key),ARRAY[]::text[])
+ FROM jsonb_each(CASE WHEN jsonb_typeof(p_state#>'{player,equipped}')='object'
+   THEN p_state#>'{player,equipped}' ELSE '{}'::jsonb END) x
+ WHERE x.value <> 'null'::jsonb;
+$;
 CREATE OR REPLACE FUNCTION territory_private.combat_profile_is_current_v1(p_player uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
   SELECT EXISTS (
@@ -69,6 +84,8 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
       AND src.projection = territory_private.combat_source_projection_v1(p)
       AND (h.fighter - 'loadout') = src.fighter
       AND h.equipped_item_ids = a.equipped_item_ids
+      AND h.legacy_equipped_ids = a.legacy_equipped_ids
+      AND a.legacy_equipped_ids = territory_private.combat_legacy_equipped_ids_v1(p.game_state)
   );
 $$;
 
@@ -115,6 +132,10 @@ BEGIN
       OR jsonb_typeof(a.fighter#>'{ownership,heroLevel}') IS DISTINCT FROM 'number'
       OR array_position(a.equipped_item_ids,NULL) IS NOT NULL
       OR cardinality(a.equipped_item_ids) <> (SELECT count(DISTINCT x) FROM unnest(a.equipped_item_ids) x)
+      OR array_position(a.legacy_equipped_ids,NULL) IS NOT NULL
+      OR EXISTS (SELECT 1 FROM unnest(a.legacy_equipped_ids) x WHERE btrim(x)='' OR length(x)>256)
+      OR cardinality(a.legacy_equipped_ids) <> (SELECT count(DISTINCT x) FROM unnest(a.legacy_equipped_ids) x)
+      OR a.legacy_equipped_ids IS DISTINCT FROM territory_private.combat_legacy_equipped_ids_v1(p.game_state)
     THEN
       reason := 'invalid_reviewed_projection';
     ELSE
@@ -139,12 +160,12 @@ BEGIN
           -- against the new ownership and catalog before starting combat.
           UPDATE territory_private.combat_profiles_v1 SET
             verified=true,fighter=jsonb_set(a.fighter,'{loadout}',h.fighter->'loadout'),
-            equipped_item_ids=a.equipped_item_ids,approval_reference=a.attestation_id::text,
+            equipped_item_ids=a.equipped_item_ids,legacy_equipped_ids=a.legacy_equipped_ids,approval_reference=a.attestation_id::text,
             version=version+1,updated_at=clock_timestamp()
             WHERE player_id=p_player RETURNING * INTO h;
         ELSE
-          INSERT INTO territory_private.combat_profiles_v1(player_id,verified,fighter,equipped_item_ids,approval_reference)
-            VALUES(p_player,true,a.fighter,a.equipped_item_ids,a.attestation_id::text) RETURNING * INTO h;
+          INSERT INTO territory_private.combat_profiles_v1(player_id,verified,fighter,equipped_item_ids,legacy_equipped_ids,approval_reference)
+            VALUES(p_player,true,a.fighter,a.equipped_item_ids,a.legacy_equipped_ids,a.attestation_id::text) RETURNING * INTO h;
         END IF;
         INSERT INTO territory_private.combat_profile_sources_v1(player_id,attestation_id,projection,fighter)
           VALUES(p_player,a.attestation_id,territory_private.combat_source_projection_v1(p),h.fighter-'loadout')
@@ -223,10 +244,12 @@ RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$
   SELECT territory_private.prepare_combat_profile_v1(p_player);
 $$;
 
-REVOKE ALL ON FUNCTION territory_private.combat_profile_is_current_v1(uuid),
+REVOKE ALL ON FUNCTION territory_private.combat_legacy_equipped_ids_v1(jsonb),
+  territory_private.combat_profile_is_current_v1(uuid),
   territory_private.prepare_combat_profile_v1(uuid),territory_private.combat_source_projection_v1(public.players),
   territory_private.combat_refresh_reward_v1(uuid,jsonb,integer) FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION territory_private.combat_profile_is_current_v1(uuid),
+GRANT EXECUTE ON FUNCTION territory_private.combat_legacy_equipped_ids_v1(jsonb),
+  territory_private.combat_profile_is_current_v1(uuid),
   territory_private.prepare_combat_profile_v1(uuid),territory_private.combat_source_projection_v1(public.players),
   territory_private.combat_refresh_reward_v1(uuid,jsonb,integer) TO service_role;
 REVOKE ALL ON FUNCTION public.territory_combat_prepare_profile_v1(uuid) FROM PUBLIC,anon,authenticated;
