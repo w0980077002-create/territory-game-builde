@@ -12,6 +12,8 @@ LANGUAGE plpgsql STABLE SET search_path TO 'pg_catalog'
 AS $owner_gear$
 DECLARE
   v_approved integer;
+  v_approval_at timestamptz;
+  v_player_at timestamptz;
   v_saved jsonb;
   v_item jsonb;
   v_old jsonb;
@@ -26,7 +28,7 @@ BEGIN
   v_slot:=p_item->>'slot';
   v_id:=p_item->>'id';
   v_item:=p_item-'adminTestLevel';
-  SELECT a.target_level,a.approved_equipment INTO v_approved,v_saved
+  SELECT a.target_level,a.approved_equipment,a.updated_at INTO v_approved,v_saved,v_approval_at
   FROM territory_private.owner_test_gear_v1 a
   WHERE a.player_id=p_player AND a.slot=v_slot AND a.equipment_id=v_id;
 
@@ -38,7 +40,7 @@ BEGIN
 
   -- Compare against the already-committed version, never against the historic
   -- owner receipt. Items may move between equipped, bag and belt.
-  SELECT game_state INTO v_state FROM public.players WHERE id=p_player;
+  SELECT game_state,updated_at INTO v_state,v_player_at FROM public.players WHERE id=p_player;
   IF jsonb_typeof(v_state#>'{player,equipped}')='object' THEN
     SELECT x.value INTO v_old FROM jsonb_each(v_state#>'{player,equipped}') x
     WHERE x.value->>'id'=v_id LIMIT 1;
@@ -68,7 +70,8 @@ BEGIN
       -- with a NULL receipt. A requested correction DOWN to its new target
       -- must win over any older server value.
       IF v_saved IS NULL AND v_requested = v_approved
-        AND v_oldlevel <> v_approved THEN
+        AND v_oldlevel <> v_approved
+        AND v_approval_at >= v_player_at THEN
         NULL; -- fall through to the owner's requested canonical relevel below
       ELSIF v_requested = v_oldlevel + 1
         AND v_requested <= p_hero AND v_requested <= 500 THEN
@@ -76,7 +79,7 @@ BEGIN
           || jsonb_build_object('adminTestLevel',true);
       END IF;
       IF (v_saved IS NOT NULL OR v_requested <> v_approved
-          OR v_oldlevel = v_approved)
+          OR v_oldlevel = v_approved OR v_approval_at < v_player_at)
         AND (v_requested = v_oldlevel OR v_saved IS NOT NULL
             OR v_requested < v_oldlevel) THEN
         RETURN v_old || jsonb_build_object('adminTestLevel',true);
