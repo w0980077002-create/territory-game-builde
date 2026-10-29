@@ -48,6 +48,7 @@ export function FighterFigure({
     '--fighter-impact-duration': `${Math.round(470 / speed)}ms`,
     '--fighter-motion-duration': `${Math.round(810 / speed)}ms`,
     '--fighter-sweep-duration': `${Math.round(440 / speed)}ms`,
+    '--fighter-idle-duration': `${idleSeconds}s`,
   } as CSSProperties;
 
   const pose = !alive ? combatFrames?.death ?? src
@@ -61,7 +62,8 @@ export function FighterFigure({
     <div className="fighter-figure absolute inset-0 pointer-events-none" style={style}>
       <div key={role ? `${strike?.key}-${role}` : 'still'} className={`fighter-figure__motion absolute inset-0 ${motion}`}>
         <div className="fighter-figure__size absolute inset-0">
-          <div className={`absolute inset-0 ${mirror ? 'battle-mirror-art' : ''}`}>
+          <div className={`fighter-figure__breath absolute inset-0 ${!role && alive ? 'fighter-figure__breath--idle' : ''}`}>
+            <div className={`absolute inset-0 ${mirror ? 'battle-mirror-art' : ''}`}>
             <img
               src={pose}
               alt={name}
@@ -76,12 +78,15 @@ export function FighterFigure({
                   img.src = candidates[attempt] ?? src;
                 }
               }}
-              className={`${className} select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] ${!alive ? 'grayscale opacity-40 translate-y-2' : !role ? 'animate-idle' : ''}`}
-              style={!role && alive ? { animationDuration: `${idleSeconds}s` } : undefined}
+              className={`${className} select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] ${!alive ? 'grayscale opacity-40 translate-y-2' : ''}`}
             />
+            </div>
           </div>
         </div>
-        {role === 'attacker' && <span aria-hidden="true" className={`fighter-figure__sweep fighter-figure__sweep--${swing}`} />}
+        {role === 'attacker' && <>
+          <span aria-hidden="true" className={`fighter-figure__sweep fighter-figure__sweep--${swing}`} />
+          <span aria-hidden="true" className="fighter-figure__footstep" />
+        </>}
       </div>
       {role === 'target' && strike && <Impact key={strike.key} strike={strike} />}
     </div>
@@ -101,6 +106,7 @@ function Impact({ strike }: { strike: StrikeEvent }) {
         : strike.tone === 'block'
           ? <span className="fighter-impact__shield" />
           : <>
+            <span className="fighter-impact__flash" />
             <span className="fighter-impact__arc" />
             <span className="fighter-impact__spark" />
             <span className="fighter-impact__shock" />

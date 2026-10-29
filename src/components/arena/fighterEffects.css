@@ -8,6 +8,37 @@
   transform-origin: 50% 96%;
 }
 .fighter-figure__motion { transform-origin: 50% 88%; }
+/* A real resting stance: small weight shifts and breathing, not an endlessly
+   repeated attack. It stops whenever a server-confirmed strike is being played. */
+.fighter-figure__breath { transform-origin: 50% 94%; }
+.fighter-figure__breath--idle {
+  animation: fighter-breathe var(--fighter-idle-duration, 3.1s) ease-in-out infinite;
+}
+@keyframes fighter-breathe {
+  0%, 100% { transform: translate3d(0,0,0) rotate(-.7deg) scale(.997,1.005); }
+  31% { transform: translate3d(calc(var(--dir) * 2px),-4px,0) rotate(1deg) scale(1.007,1.025); }
+  59% { transform: translate3d(calc(var(--dir) * -2px),-1px,0) rotate(-.3deg) scale(1.003,1.013); }
+  81% { transform: translate3d(calc(var(--dir) * 1px),-2px,0) rotate(.6deg) scale(.999,1.017); }
+}
+/* Tiny dust at the attacker's feet, synchronized to the step rather than HP. */
+.fighter-figure__footstep {
+  position: absolute;
+  left: 27%;
+  bottom: 2%;
+  width: 64%;
+  height: 11%;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(228,204,145,.48) 0%, rgba(199,163,112,.22) 33%, transparent 72%);
+  opacity: 0;
+  animation: fighter-step-dust var(--fighter-motion-duration) ease-out both;
+}
+@keyframes fighter-step-dust {
+  0%, 32% { opacity: 0; transform: translateX(0) scale(.4); }
+  42% { opacity: .7; transform: translateX(calc(var(--dir) * 12px)) scale(.9); }
+  75% { opacity: 0; transform: translateX(calc(var(--dir) * 18px)) scale(1.28); }
+  100% { opacity: 0; }
+}
 .fighter-figure .battle-swing-0 {
   animation: fighter-cut var(--fighter-motion-duration) cubic-bezier(.23,.55,.24,1) both;
 }
@@ -28,37 +59,47 @@
 }
 /* Three recognizable attacks: diagonal slash, forward thrust, overhead chop. */
 @keyframes fighter-cut {
-  0%, 100% { transform: translate(0,0) rotate(0); }
-  17% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -8deg)); }
-  43% { transform: translateX(calc(var(--dir) * 43px)) translateY(-2px) rotate(calc(var(--dir) * 12deg)); }
-  64% { transform: translateX(calc(var(--dir) * 24px)) rotate(calc(var(--dir) * 4deg)); }
+  0%, 100% { transform: translate3d(0,0,0) rotate(0); }
+  18% { transform: translate3d(calc(var(--dir) * -13px),-3px,0) rotate(calc(var(--dir) * -9deg)); }
+  38% { transform: translate3d(calc(var(--dir) * 52px),-8px,0) rotate(calc(var(--dir) * 15deg)); }
+  47% { transform: translate3d(calc(var(--dir) * 58px),-2px,0) rotate(calc(var(--dir) * 9deg)); }
+  70% { transform: translate3d(calc(var(--dir) * 17px),0,0) rotate(calc(var(--dir) * -3deg)); }
+  86% { transform: translate3d(calc(var(--dir) * -3px),0,0) rotate(0); }
 }
 @keyframes fighter-thrust {
-  0%, 100% { transform: translate(0,0) scale(1); }
-  20% { transform: translateX(calc(var(--dir) * -13px)) scale(.96,1.04); }
-  42% { transform: translateX(calc(var(--dir) * 50px)) scale(1.12,.95); }
-  61% { transform: translateX(calc(var(--dir) * 25px)) scale(1.04); }
+  0%, 100% { transform: translate3d(0,0,0) scale(1); }
+  18% { transform: translate3d(calc(var(--dir) * -16px),-2px,0) scale(.96,1.025); }
+  40% { transform: translate3d(calc(var(--dir) * 64px),-5px,0) scale(1.09,.96); }
+  48% { transform: translate3d(calc(var(--dir) * 57px),-4px,0) scale(1.05,.98); }
+  73% { transform: translate3d(calc(var(--dir) * 13px),0,0) scale(.99,1.01); }
+  88% { transform: translate3d(calc(var(--dir) * -4px),0,0) scale(1.01,.99); }
 }
 @keyframes fighter-overhead {
-  0%, 100% { transform: translate(0,0) rotate(0); }
-  23% { transform: translateX(calc(var(--dir) * -8px)) translateY(-13px) rotate(calc(var(--dir) * -12deg)); }
-  46% { transform: translateX(calc(var(--dir) * 39px)) translateY(7px) rotate(calc(var(--dir) * 14deg)); }
-  67% { transform: translateX(calc(var(--dir) * 18px)) translateY(-2px); }
+  0%, 100% { transform: translate3d(0,0,0) rotate(0); }
+  17% { transform: translate3d(calc(var(--dir) * -10px),-12px,0) rotate(calc(var(--dir) * -12deg)); }
+  27% { transform: translate3d(calc(var(--dir) * -5px),-19px,0) rotate(calc(var(--dir) * -18deg)); }
+  45% { transform: translate3d(calc(var(--dir) * 49px),7px,0) rotate(calc(var(--dir) * 17deg)); }
+  54% { transform: translate3d(calc(var(--dir) * 40px),4px,0) rotate(calc(var(--dir) * 9deg)); }
+  77% { transform: translate3d(calc(var(--dir) * 8px),0,0) rotate(calc(var(--dir) * -2deg)); }
 }
 /* Reactions start when the opponent's blade arrives, not at event start. */
 @keyframes fighter-recoil {
-  0%, 33%, 100% { transform: translate(0,0) rotate(0); filter: none; }
-  46% { transform: translateX(calc(var(--dir) * -17px)) rotate(calc(var(--dir) * -6deg)); filter: brightness(1.75) drop-shadow(0 0 5px #f87171); }
-  66% { transform: translateX(calc(var(--dir) * -6px)); filter: brightness(1.1); }
+  0%, 33%, 100% { transform: translate3d(0,0,0) rotate(0); filter: none; }
+  45% { transform: translate3d(calc(var(--dir) * -22px),-4px,0) rotate(calc(var(--dir) * -9deg)); filter: brightness(1.5); }
+  62% { transform: translate3d(calc(var(--dir) * -8px),1px,0) rotate(calc(var(--dir) * 3deg)); filter: brightness(1.1); }
+  80% { transform: translate3d(calc(var(--dir) * 3px),0,0) rotate(0); filter: none; }
 }
 @keyframes fighter-guard {
-  0%, 34%, 100% { transform: translate(0,0); filter: none; }
-  46% { transform: translateX(calc(var(--dir) * -7px)) scale(.97); filter: brightness(1.25) drop-shadow(0 0 4px #38bdf8); }
+  0%, 32%, 100% { transform: translate3d(0,0,0); filter: none; }
+  42% { transform: translate3d(calc(var(--dir) * -10px),-2px,0) rotate(calc(var(--dir) * -5deg)) scale(.96); filter: brightness(1.3); }
+  58% { transform: translate3d(calc(var(--dir) * -5px),0,0) scale(1.02); }
+  78% { transform: translate3d(calc(var(--dir) * 2px),0,0); filter: none; }
 }
 @keyframes fighter-dodge {
-  0%, 29%, 100% { transform: translateX(0); opacity: 1; }
-  45% { transform: translateX(calc(var(--dir) * -29px)) skewX(calc(var(--dir) * 7deg)); opacity: .68; }
-  70% { transform: translateX(calc(var(--dir) * -10px)); opacity: .94; }
+  0%, 22%, 100% { transform: translate3d(0,0,0) skewX(0); opacity: 1; }
+  36% { transform: translate3d(calc(var(--dir) * -35px),-5px,0) skewX(calc(var(--dir) * 8deg)); opacity: .7; }
+  55% { transform: translate3d(calc(var(--dir) * -24px),-4px,0) skewX(calc(var(--dir) * 3deg)); opacity: .86; }
+  78% { transform: translate3d(calc(var(--dir) * 3px),0,0); opacity: 1; }
 }
 /* Sword motion is attached to the ATTACKER, while damage stays at the TARGET. */
 .fighter-figure__sweep {
@@ -104,6 +145,22 @@
   opacity: 0;
   animation-delay: var(--fighter-hit-delay);
   animation-fill-mode: both;
+}
+/* Small contact light makes the confirmed impact feel physical without
+   obscuring figures or making a hit from an ordinary block/dodge. */
+.fighter-impact__flash {
+  width: 58px;
+  height: 58px;
+  top: 32%;
+  left: calc(50% - 29px);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,254,211,.75), rgba(255,168,65,.32) 33%, transparent 70%);
+  animation: fighter-contact var(--fighter-impact-duration) ease-out;
+}
+@keyframes fighter-contact {
+  0% { opacity: 0; transform: scale(.45); }
+  22% { opacity: .8; transform: scale(.9); }
+  100% { opacity: 0; transform: scale(1.3); }
 }
 .fighter-impact__arc {
   width: 66px;
@@ -204,6 +261,8 @@
 @media (prefers-reduced-motion: reduce) {
   .fighter-figure .battle-swing-0, .fighter-figure .battle-swing-1, .fighter-figure .battle-swing-2,
   .fighter-figure .animate-recoil, .fighter-figure .animate-guard, .fighter-figure .animate-dodge { animation: none !important; }
+  .fighter-figure__breath--idle { animation: none !important; }
+  .fighter-figure__footstep, .fighter-impact__flash { display: none; }
   .fighter-figure__sweep, .fighter-impact__arc, .fighter-impact__spark, .fighter-impact__shock,
   .fighter-impact__shield, .fighter-impact__trail { display: none; }
   .fighter-impact__label { animation: none !important; opacity: 1 !important; transform: translateX(-50%) !important; }
