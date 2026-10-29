@@ -162,22 +162,6 @@ const startOfDayIso = () => {
   return d.toISOString();
 };
 
-// "Today" in the owner dashboard follows Kyiv local midnight, including DST.
-function kyivTodayStartIso(): string {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(new Date());
-  const value = (type: string) => Number(parts.find((p) => p.type === type)?.value);
-  const utcMidnight = Date.UTC(value("year"), value("month") - 1, value("day"));
-  const zone = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Kyiv", timeZoneName: "shortOffset",
-  }).formatToParts(new Date(utcMidnight)).find((p) => p.type === "timeZoneName")?.value ?? "";
-  const offset = /^GMT([+-])(\d{1,2})(?::(\d{2}))?$/.exec(zone);
-  if (!offset) throw new HttpError(500, "db_error");
-  const minutes = (Number(offset[2]) * 60 + Number(offset[3] ?? 0)) * (offset[1] === "+" ? 1 : -1);
-  return new Date(utcMidnight - minutes * 60_000).toISOString();
-}
-
 type Row = Record<string, unknown>;
 
 function summarize(p: Row) {
@@ -234,7 +218,7 @@ async function handle(action: string, body: Row) {
       const [total, online, today, week, todayDon, settings] = await Promise.all([
         db.from("players").select("id", { count: "exact", head: true }),
         db.from("players").select("id", { count: "exact", head: true }).gte("last_seen_at", sinceIso(ONLINE_WINDOW_MS)),
-        db.from("players").select("id", { count: "exact", head: true }).gte("last_seen_at", kyivTodayStartIso()),
+        db.from("players").select("id", { count: "exact", head: true }).gte("last_seen_at", startOfDayIso()),
         db.from("players").select("id", { count: "exact", head: true }).gte("last_seen_at", sinceIso(7 * 24 * 60 * 60 * 1000)),
         db.from("donations").select("amount_usd").gte("created_at", startOfDayIso()),
         db.from("game_settings").select("*").eq("id", 1).maybeSingle(),
@@ -269,7 +253,7 @@ async function handle(action: string, body: Row) {
         throw new HttpError(400, "invalid_request");
       }
       const cutoff = period === "online" ? sinceIso(ONLINE_WINDOW_MS)
-        : period === "today" ? kyivTodayStartIso()
+        : period === "today" ? startOfDayIso()
         : sinceIso(7 * 24 * 60 * 60 * 1000);
       // Read-only, owner-authorized and paginated: never download full player game_state.
       const { data, error } = await db.from("players")
