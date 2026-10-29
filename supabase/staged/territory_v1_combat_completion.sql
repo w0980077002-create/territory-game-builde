@@ -168,6 +168,8 @@ DECLARE c territory_private.combat_config_v1%ROWTYPE;
   s territory_private.combat_sessions_v1%ROWTYPE;
   r territory_private.combat_operations_v1%ROWTYPE;
   receipt jsonb; settlement jsonb; a text:=p_request->>'action';
+  wallet public.players%ROWTYPE;
+  available_stones bigint;
 BEGIN
   -- Serialize with existing player saves before taking any combat-specific lock.
   PERFORM 1 FROM public.players WHERE id=p_player AND NOT coalesce(banned,false) FOR UPDATE;
@@ -203,6 +205,23 @@ BEGIN
     PERFORM territory_private.adventure_check_start_v1(p_player,e.encounter_id);
     IF EXISTS(SELECT 1 FROM territory_private.combat_sessions_v1 WHERE player_id=p_player AND state->>'status'='fighting')
       THEN RAISE EXCEPTION 'combat_active_session_exists'; END IF;
+    -- The real V1 PvE consumes one battle stone per accepted start. Debit
+    -- only after all stage/profile/session checks, inside the same operation
+    -- transaction as the session and its durable replay receipt.
+    SELECT * INTO wallet FROM public.players WHERE id=p_player FOR UPDATE;
+    IF jsonb_typeof(wallet.game_state->'battleStones') IS DISTINCT FROM 'number'
+      OR (wallet.game_state->>'battleStones')::numeric < 1
+      OR (wallet.game_state->>'battleStones')::numeric > 2147483647
+      OR trunc((wallet.game_state->>'battleStones')::numeric) <> (wallet.game_state->>'battleStones')::numeric
+      THEN RAISE EXCEPTION 'adventure_no_battle_stones'; END IF;
+    available_stones := (wallet.game_state->>'battleStones')::bigint;
+    UPDATE public.players SET game_state=jsonb_set(game_state,'{battleStones}',to_jsonb(available_stones-1)),
+      updated_at=greatest(clock_timestamp(),updated_at+interval '1 millisecond')
+      WHERE id=p_player RETURNING * INTO wallet;
+    -- If a live trigger unexpectedly alters combat-relevant fields, fail
+    -- the entire transaction instead of spending currency with stale stats.
+    IF NOT territory_private.combat_profile_is_current_v1(p_player)
+      THEN RAISE EXCEPTION 'combat_profile_needs_reconciliation'; END IF;
     INSERT INTO territory_private.combat_sessions_v1(player_id,encounter_id,state,cursor_ms)
       VALUES(p_player,e.encounter_id,p_result->'state',(p_result->>'cursorMs')::bigint) RETURNING * INTO s;
   ELSIF a='advance' THEN
@@ -225,6 +244,12 @@ BEGIN
     receipt:=jsonb_build_object('success',true,'session_id',s.session_id,'revision',s.revision,
       'state',s.state,'events',coalesce(p_result->'events','[]'::jsonb),
       'rewards_claimed',coalesce(settlement->>'outcome'='hero_won',false),'settlement',settlement);
+    IF a='start' THEN
+      receipt:=receipt||jsonb_build_object('start_save',jsonb_build_object(
+        'success',true,'session_id',s.session_id,'updated_at',wallet.updated_at,
+        'wallet_gold',wallet.gold,'wallet_gems',wallet.gems,
+        'battle_stones',available_stones-1,'game_state',wallet.game_state));
+    END IF;
   END IF;
   INSERT INTO territory_private.combat_operations_v1(player_id,operation_id,request,receipt)
     VALUES(p_player,(p_request->>'operationId')::uuid,p_request,receipt);
