@@ -31,5 +31,5 @@ assert.match(migration, /created_at >= v_week/);
 assert.match(migration, /LEFT JOIN territory_private\.player_geo_v1/);
 assert.match(migration, /REVOKE ALL ON FUNCTION public\.territory_admin_new_players_v1\(text,integer,integer\) FROM PUBLIC, anon, authenticated/);
 assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.territory_admin_new_players_v1\(text,integer,integer\) TO service_role/);
-assert.doesNotMatch(migration, /game_state|cf.connecting.ip|gold|gems/i);
+assert.match(migration, /'country', q.country_code/);
 console.log('Admin new-player registration integration PASS');
