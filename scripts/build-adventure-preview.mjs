@@ -15,6 +15,14 @@ export const useGame = { get: () => oldState, set: () => {} };
 export const useLanguage = () => ({ language: 'ru' });
 export async function ensurePlayerSession() { return true; }
 export function restoreAdventureSaveFence() { return null; }
+export function restoreAdventureStartFence() { return null; }
+export async function requestAdventureStart(userId,command,hooks) {
+ window.__adventureCalls.push(command);
+ window.__adventureControl=command.control;
+ current=outcome('fighting');
+ hooks.applyState(oldState);
+ return current;
+}
 const outcome = status => ({
  success: true, session_id: '11111111-1111-4111-8111-111111111111',
  revision: status === 'fighting' ? 0 : 1,
