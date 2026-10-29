@@ -52,6 +52,7 @@ jobs:
           node scripts/auth-mock-tests.cjs
           node scripts/edge-identity-tests.cjs
           node scripts/check-admin-claim-client.mjs
+          node scripts/check-admin-new-players.mjs
           npm run test:events
           npm run test:workshop
 
