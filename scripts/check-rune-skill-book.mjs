@@ -36,5 +36,6 @@ assert(ui.includes('onSelectionChange'));
 assert(ui.includes('do not yet affect live battles'));
 assert(!ui.includes('useGame.set('), 'visual book must not mutate saved state');
 assert(profile.includes('profile-rune-skill-book'));
-assert(profile.includes('setRuneBookOpen] = useState(initialTrainingOpen)'), 'map Runes must open skill book');
+assert(profile.includes('setRuneBookOpen] = useState(VERIFIED_RUNE_BOOK && initialTrainingOpen)'), 'map Runes open verified rune book only');
+assert(profile.includes('VERIFIED_RUNE_BOOK && <details'), 'Do not expose preview while production combat is disabled');
 console.log('Rune skill book OK: 5 groups, 15 skills, 45 rune variants, 3 passive slots; visual-only.');
