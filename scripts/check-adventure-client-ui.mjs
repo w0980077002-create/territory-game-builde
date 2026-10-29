@@ -6,10 +6,10 @@ const battle = read('src/components/BattleScreen.tsx');
 const app = read('src/App.tsx');
 const bridge = read('src/game/combatV1/receiptAdapter.ts');
 
-assert.match(battle, /VITE_TERRITORY_V1_SERVER_COMBAT === 'verified'/);
-assert.match(battle, /SERVER_ADVENTURE_OPT_IN && view === 'campaign'/);
-assert.match(battle, /if \(SERVER_ADVENTURE_OPT_IN && view === 'campaign'\) return;/);
-assert.match(app, /VITE_TERRITORY_V1_SERVER_COMBAT === 'verified'/);
+assert.match(battle, /territory_adventure_mode_v1/,'Runtime server readiness must be checked per account');
+assert.match(battle, /serverMode === 'enabled' && view === 'campaign'/);
+assert.match(battle, /if \(serverMode === 'enabled' && view === 'campaign'\) return;/);
+assert.match(app, /restoreAdventureSaveFence\(user\.id\);\s*restoreAdventureStartFence\(user\.id\);/,'Restore fences on EVERY save load, not only on a compile-time flag');
 assert.match(app,/restoreAdventureStartFence\(user.id\)/,'fence a pending start before autosave');
 assert.ok(app.indexOf('restoreAdventureSaveFence(user.id)') < app.indexOf('setLoaded(true)'),
   'pending server receipt must be fenced before the global autosave subscription begins');
