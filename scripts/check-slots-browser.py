@@ -57,6 +57,18 @@ with sync_playwright() as p:
         viewports.append({'width':w,'height':h,'horizontal_overflow':False})
         page.close()
     page=load(browser)
+    # Autospin must not place bets while Telegram is backgrounded.
+    page.get_by_role('button',name='АВТО ×10',exact=True).click()
+    page.get_by_role('button',name='СТОП АВТО',exact=True).wait_for()
+    page.evaluate("""() => {
+      Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});
+      document.dispatchEvent(new Event('visibilitychange'));
+    }""")
+    page.get_by_role('button',name='АВТО ×10',exact=True).wait_for()
+    page.wait_for_timeout(700)
+    assert page.evaluate('window.__slotCalls.length')==0, 'hidden Telegram WebView must not spend gold'
+    page.close()
+    page=load(browser)
     page.get_by_role('button',name='Меньше линий').click()
     assert '35' in page.locator('.vslot-stats').inner_text(),'Stake must reflect fewer paylines'
     page.get_by_role('button',name='Больше линий').click()
