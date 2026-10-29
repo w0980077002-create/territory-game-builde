@@ -4,7 +4,8 @@ import { fileURLToPath, URL } from 'node:url';
 import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-const base = '/territory-game-builde/';
+// Vercel serves the app at /; GitHub Pages keeps the repository subpath.
+const base = process.env.VERCEL === '1' ? '/' : '/territory-game-builde/';
 
 function fixPublicAssetPaths(): Plugin {
   return {
