@@ -47,8 +47,8 @@ const GAMES: GameCard[] = [
     scene: 'hall-art/tower.svg', artwork: 'hall-art/tower-hd.webp', color: 'red',
   },
   {
-    // The verified Sharpshooter round already exists in the five-game server
-    // contract. Keep its entrance visible alongside later-added Wheel/Slots.
+    // Preserve the existing server game and assets for unfinished sessions.
+    // Its card is temporarily hidden from the public game hall.
     id: 'targets', ru: 'Меткий стрелок', en: 'Sharpshooter',
     ruHint: 'Попади точно в цель', enHint: 'Hit the right target',
     scene: 'hall-art/targets.svg', artwork: 'hall-art/targets-hd.webp', color: 'gold',
@@ -64,6 +64,11 @@ const GAMES: GameCard[] = [
     scene: 'hall-art/slots.svg', artwork: 'hall-art/slots.svg', color: 'gold', demo: true,
   },
 ];
+
+// Temporarily hide unfinished Hall mini-games from players without deleting
+// their server data, tickets, rewards or the ability to resume an active round.
+const HIDDEN_HALL_GAMES = new Set<GameCard['id']>(['treasury', 'dice', 'tower', 'targets']);
+const VISIBLE_GAMES = GAMES.filter(game => !HIDDEN_HALL_GAMES.has(game.id));
 
 export function GamesScreen({
   onPlay, userId,
@@ -223,7 +228,7 @@ export function GamesScreen({
       )}
 
       <section className="hall-games" aria-label={en ? 'Choose a game' : 'Выбери игру'}>
-        {GAMES.map((configuredGame, index) => {
+        {VISIBLE_GAMES.map((configuredGame, index) => {
           const game = configuredGame.id==='slots' && slotsEnabled ? {...configuredGame,demo:false,ruHint:'Ставки и выигрыши золотом героя · бонусы и риск',enHint:'Hero gold stakes and prizes · bonus and risk'} : configuredGame;
           const featured = index === 0;
           const locked = game.id==='slots' && slotsEnabled ? (slotsStatus?.coins??0)<5 : !state || (state.tickets < 1 && !state.active);
