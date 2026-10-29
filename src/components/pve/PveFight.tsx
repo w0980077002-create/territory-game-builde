@@ -258,7 +258,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-1 min-h-[240px]">
+          <div className="grid grid-cols-2 gap-1 min-h-[275px]">
             <div className="flex flex-col min-w-0">
               <Plate side={hero} tone="ally" />
               <div className="relative flex-1 mt-1">
@@ -269,6 +269,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
                       combatFrames={getFollowerCombatFrames(follower.id)}
                       name={follower.name}
                       dir={1}
+                      scale={1.03}
                       alive={hero.hp > 0}
                       strike={strike}
                       combatSpeed={speed}
@@ -283,6 +284,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
                     combatFrames={getCombatAppearance(state.appearance)}
                     name={hero.name}
                     dir={1}
+                    scale={1.22}
                     alive={hero.hp > 0}
                     strike={strike}
                     combatSpeed={speed}
@@ -300,6 +302,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
                   combatFrames={getEnemyCombatFrames(enemy.art)}
                   name={foe.name}
                   dir={-1}
+                  scale={enemy.isBoss ? 1.07 : 1.1}
                   alive={foe.hp > 0}
                   strike={strike}
                   combatSpeed={speed}
