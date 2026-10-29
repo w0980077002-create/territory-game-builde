@@ -287,12 +287,11 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     loadCloudSave(user.id, user.displayName)
       .then(async (profile) => {
         if (cancelled) return;
-        // Restore an uncertain settlement fence BEFORE the global autosave starts.
-        // When this mode is off, existing accounts never touch the adventure adapter.
-        if (import.meta.env.VITE_TERRITORY_V1_SERVER_COMBAT === 'verified') {
-          restoreAdventureSaveFence(user.id);
-          restoreAdventureStartFence(user.id);
-        }
+        // Always restore durable server-adventure fences before any autosave.
+        // No marker = no state change; a pending server debit must never be
+        // overwritten by a legacy save after a release flag or network change.
+        restoreAdventureSaveFence(user.id);
+        restoreAdventureStartFence(user.id);
         const timedState = applyTimeEffects(profile.state);
         // Historic belt slots can become locked by harder win requirements.
         // Return their consumables to the inventory before showing or saving.
