@@ -1,0 +1,67 @@
+/* Local SVG joint coordinates; translation wrappers hold anatomically fixed pivots.
+   No filters or perpetual particles. Idle uses compositor transforms only. */
+.skeletal-fighter { overflow: visible; pointer-events: none; }
+.rig-joint { transform-box: view-box; transform-origin: 0 0; }
+.rig-ground { fill: #12131b; opacity: .3; }
+.rig-arm-right { transform: rotate(-48deg); }
+.rig-forearm-right { transform: rotate(-44deg); }
+.rig-weapon { transform: rotate(117deg); }
+.rig-arm-left { transform: rotate(35deg); }
+.rig-forearm-left { transform: rotate(5deg); }
+.rig-shield { transform: rotate(-40deg); }
+.rig-leg-left { transform: rotate(9deg); }
+.rig-leg-right { transform: rotate(-9deg); }
+.skeletal-fighter[data-motion=idle] .rig-torso { animation: rig-breathe 3.2s ease-in-out infinite; }
+.skeletal-fighter[data-motion=idle] .rig-head { animation: rig-look 4.6s ease-in-out infinite; }
+.skeletal-fighter[data-motion=idle] .rig-arm-right { animation: rig-hand 3.2s ease-in-out infinite; }
+.skeletal-fighter[data-motion=idle] .rig-arm-left { animation: rig-guard-idle 3.2s ease-in-out infinite; }
+.skeletal-fighter[data-motion=idle] .rig-leg-left { animation: rig-weight-left 3.2s ease-in-out infinite; }
+.skeletal-fighter[data-motion=idle] .rig-leg-right { animation: rig-weight-right 3.2s ease-in-out infinite; }
+.skeletal-fighter[data-motion=idle] .rig-hair { animation: rig-hair 4.6s ease-in-out infinite; }
+@keyframes rig-breathe { 0%,100% { transform: translateY(0) rotate(-.4deg); } 50% { transform: translateY(-2px) rotate(.6deg); } }
+@keyframes rig-look { 0%,100% { transform: rotate(-.5deg); } 50% { transform: rotate(1deg); } }
+@keyframes rig-hand { 0%,100% { transform: rotate(-48deg); } 50% { transform: rotate(-50deg); } }
+@keyframes rig-guard-idle { 0%,100% { transform: rotate(35deg); } 50% { transform: rotate(33deg); } }
+@keyframes rig-weight-left { 0%,100% { transform: rotate(9deg); } 50% { transform: rotate(10.5deg); } }
+@keyframes rig-weight-right { 0%,100% { transform: rotate(-9deg); } 50% { transform: rotate(-8deg); } }
+@keyframes rig-hair { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-2deg); } }
+.rig-blade-trail { fill: none; stroke: #c5f8ff; stroke-width: 11; stroke-linecap: round; opacity: 0; }
+.skeletal-fighter:is([data-motion=slash],[data-motion=thrust],[data-motion=overhead]) .rig-blade-trail {
+ animation: rig-blade-flash var(--fighter-motion-duration) linear both;
+}
+.skeletal-fighter[data-critical=true] .rig-blade-trail { stroke: #ffe58d; stroke-width: 13; }
+/* This trace is inside the wrist hierarchy and follows the blade exactly. */
+@keyframes rig-blade-flash { 0%,30%,58%,100% { opacity: 0; } 39%,46% { opacity: .62; } }
+.rig-shield-glint { fill: #8aeaff; stroke: #defbff; stroke-width: 4; opacity: 0; }
+.skeletal-fighter[data-motion=block] .rig-shield-glint { animation: rig-block-glint var(--fighter-motion-duration) linear both; }
+@keyframes rig-block-glint { 0%,42%,70%,100% { opacity: 0; } 45% { opacity: .65; } 52% { opacity: .25; } }
+.combat2d-effects { position:absolute; left:0; right:0; bottom:0; aspect-ratio:1; max-height:100%; z-index:40; pointer-events:none; --fx-color:#ffe1a3; }
+.combat2d-effects--crit { --fx-color:#ffd15c; }
+.combat2d-effects--block { --fx-color:#93eaff; }
+.combat2d-effects--dodge { --fx-color:#d3eaff; }
+.combat2d-effects > span { position:absolute; opacity:0; animation-delay:var(--fighter-hit-delay); animation-fill-mode:both; }
+.combat2d-flash { left:calc(43% - 16px); top:44%; width:32px; height:32px; border-radius:50%; background:radial-gradient(circle,#fff 0 10%,var(--fx-color) 20%,transparent 70%); animation:combat2d-flash var(--fighter-impact-duration) ease-out; }
+.combat2d-effects--crit .combat2d-flash { width:46px; height:46px; left:calc(43% - 23px); }
+.combat2d-effects--strong .combat2d-flash { width:40px; height:40px; }
+.combat2d-ring { left:calc(43% - 18px); top:43%; width:36px; height:36px; border:2px solid var(--fx-color); border-radius:50%; animation:combat2d-ring var(--fighter-impact-duration) ease-out; }
+.combat2d-sparks { left:43%; top:48%; width:3px; height:3px; background:var(--fx-color); box-shadow:-12px -10px 0 var(--fx-color), 10px -15px 0 var(--fx-color), 16px 4px 0 var(--fx-color),-6px 12px 0 var(--fx-color); animation:combat2d-sparks var(--fighter-impact-duration) ease-out; }
+.combat2d-escape { left:28%; top:55%; width:36px; height:16px; border-block:2px solid #c4e8ff; border-radius:50%; animation:combat2d-escape var(--fighter-impact-duration) ease-out; }
+.combat2d-dust { left:43%; bottom:3%; width:29px; height:8px; border-radius:50%; background:#c7aa7b; animation:combat2d-dust var(--fighter-impact-duration) ease-out; }
+.combat2d-label { left:50%; top:20%; display:flex; flex-direction:column; align-items:center; font-size:19px; font-weight:900; line-height:1.05; white-space:nowrap; color:var(--fx-color); text-shadow:0 2px 2px #181321; animation:combat2d-label var(--fighter-impact-duration) ease-out; }
+.combat2d-label small { font-size:10px; }
+.combat2d-victory { left:45%; top:28%; width:4px; height:6px; background:#ffe593; box-shadow:16px -20px #eaa427,-20px -10px #f7d25a,24px 18px #a3e4ff,-17px 23px #ffb64e; animation:combat2d-celebrate 800ms ease-out; }
+@keyframes combat2d-flash { 0% {opacity:0;transform:scale(.2)} 14% {opacity:1;transform:scale(1)} 70%,100% {opacity:0;transform:scale(1.25)} }
+@keyframes combat2d-ring { 0% {opacity:.9;transform:scale(.35)} 100% {opacity:0;transform:scale(1.6)} }
+@keyframes combat2d-sparks { 0% {opacity:1;transform:scale(.4) rotate(-15deg)} 100% {opacity:0;transform:scale(1.5) rotate(18deg)} }
+@keyframes combat2d-escape { 0% {opacity:.7;transform:translateX(0)} 100% {opacity:0;transform:translateX(calc(var(--dir) * -24px))} }
+@keyframes combat2d-dust { 0% {opacity:0;transform:scale(.3)} 18% {opacity:.45} 100% {opacity:0;transform:translateX(calc(var(--dir) * -16px)) scale(1.4)} }
+@keyframes combat2d-label { 0% {opacity:0;transform:translate(-50%,4px)} 14%,65% {opacity:1} 100% {opacity:0;transform:translate(-50%,-26px)} }
+@keyframes combat2d-celebrate { 0% {opacity:0;transform:translateY(12px) scale(.4)} 20% {opacity:1} 100% {opacity:0;transform:translateY(-32px) scale(1.5) rotate(25deg)} }
+.combat2d-effects[data-quality=low] :is(.combat2d-ring,.combat2d-sparks,.combat2d-dust,.combat2d-victory) { display:none; }
+@media (prefers-reduced-motion: reduce) {
+ .skeletal-fighter .rig-joint { animation:none !important; }
+ .rig-blade-trail,.rig-shield-glint { animation:none !important; opacity:0 !important; }
+ .combat2d-effects > span:not(.combat2d-label) { display:none; }
+ .combat2d-label { animation-name:combat2d-label-reduced; }
+ @keyframes combat2d-label-reduced { 0%,90% { opacity:1; transform:translateX(-50%); } 100% { opacity:0; transform:translateX(-50%); } }
+}

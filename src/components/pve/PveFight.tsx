@@ -12,7 +12,7 @@ import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
 import { getEnemyCombatFrames, getFollowerArt, getFollowerCombatFrames, resolveCombatArtUrl } from '@/game/combatArt';
 import { hapticImpact } from '@/game/telegram';
-import { CombatClash, FighterFigure } from '@/components/arena/FighterFigure';
+import { FighterFigure } from '@/components/arena/FighterFigure';
 import { VictorySparks } from '@/components/arena/VictorySparks';
 import { FoldSection } from '@/components/arena/FoldSection';
 import { GearStrip } from '@/components/arena/GearStrip';
@@ -95,6 +95,9 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const [attack, setAttack] = useState<Zone | null>(null);
   const [blocks, setBlocks] = useState<Zone[]>([]);
   const [busy, setBusy] = useState(false);
+  // A speed change applies to the next round. Keep the current visual contact
+  // aligned with the HP update scheduled from this round's original pace.
+  const [roundSpeed, setRoundSpeed] = useState(() => useGame.get().settings.speed);
   const [strike, setStrike] = useState<StrikeEvent | null>(null);
   const [log, setLog] = useState<string[]>([language === 'en' ? `Battle started: ${localizeText(enemy.name, language)}` : `Бой начался: ${enemy.name}`]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
@@ -154,7 +157,9 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     hapticImpact('light');
     const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus);
-    const pace = 1 / useGame.get().settings.speed;
+    const currentSpeed = useGame.get().settings.speed;
+    setRoundSpeed(currentSpeed);
+    const pace = 1 / currentSpeed;
     for (const hit of res.hits) {
       if (!alive.current || done.current) return;
       setStrike({ key: ++keyRef.current, attacker: hit.attacker, target: hit.target, tone: hit.tone, amount: hit.amount || null });
@@ -285,7 +290,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
                       scale={1.03}
                       alive={hero.hp > 0}
                       strike={strike}
-                      combatSpeed={speed}
+                      combatSpeed={busy || outcome ? roundSpeed : speed}
                       idleSeconds={3.7}
                       className="absolute left-0 bottom-0 h-full w-full object-contain object-left-bottom"
                     />
@@ -298,9 +303,10 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
                     name={hero.name}
                     dir={1}
                     scale={1.22}
-                    alive={hero.hp > 0}
+                    alive={hero.hp > 0 && outcome?.won !== false}
+                    won={outcome?.won === true}
                     strike={strike}
-                    combatSpeed={speed}
+                    combatSpeed={busy || outcome ? roundSpeed : speed}
                     idleSeconds={3.1}
                     className="absolute right-0 bottom-0 h-[98%] w-full object-contain object-right-bottom"
                   />
@@ -317,14 +323,14 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
                   dir={-1}
                   scale={enemy.isBoss ? 1.07 : 1.1}
                   alive={foe.hp > 0}
+                  won={outcome?.won === false}
                   strike={strike}
-                  combatSpeed={speed}
+                  combatSpeed={busy || outcome ? roundSpeed : speed}
                   idleSeconds={2.8}
-                  className={`absolute left-0 bottom-0 object-contain object-left-bottom ${enemy.isBoss ? 'h-[96%] w-[100%]' : 'h-[78%] w-[80%]'}`}
+                  className={`absolute left-0 bottom-0 object-contain object-left-bottom ${enemy.isBoss ? 'h-[96%] w-[100%]' : 'h-[84%] w-[88%]'}`}
                 />
               </div>
             </div>
-            <CombatClash strike={strike} speed={speed} />
           </div>
 
           <div className="flex flex-col gap-1.5 pt-5">

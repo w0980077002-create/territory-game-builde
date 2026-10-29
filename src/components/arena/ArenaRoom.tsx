@@ -259,6 +259,8 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
           enemy={shownEnemy}
           active={isActive}
           finished={finished}
+          won={won}
+          draw={draw}
           moved={view.me.moved}
           auto={view.me.auto}
           autoLocked={view.me.vip < view.me.autoMinVip}
