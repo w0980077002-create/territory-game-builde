@@ -61,14 +61,18 @@ function Plate({ side, tone }: { side: PveSide; tone: 'ally' | 'enemy' }) {
 }
 
 function ZoneBtn({ label, sub, on, tone, disabled, onClick }: { label: string; sub?: string; on: boolean; tone: 'def' | 'atk'; disabled: boolean; onClick: () => void }) {
+  const { language } = useLanguage();
   const Icon = tone === 'def' ? Shield : Sword;
   const active = tone === 'def'
     ? 'bg-sky-500/35 border-sky-300 text-white shadow-[0_0_14px_rgba(56,189,248,0.45)]'
     : 'bg-red-500/35 border-red-300 text-white shadow-[0_0_14px_rgba(248,113,113,0.45)]';
   return (
     <button
+      type="button"
       disabled={disabled}
       onClick={onClick}
+      aria-pressed={on}
+      aria-label={`${tone === 'def' ? (language === 'en' ? 'Defense' : 'Защита') : (language === 'en' ? 'Attack' : 'Удар')}: ${label}`}
       className={`w-full h-11 rounded-xl border flex flex-col items-center justify-center transition-all duration-200 active:scale-95 disabled:opacity-40 ${
         on ? active : 'bg-black/55 border-white/15 text-gray-200 backdrop-blur-sm'
       }`}
@@ -207,7 +211,9 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
 
   const controls = !busy && !outcome && !auto;
   const ready = controls && !!attack && blocks.length === 2;
-  const hint = auto ? (language === 'en' ? 'Auto-battle: zones are selected automatically' : 'Автобой: зоны выбираются сами')
+  const firstFightHelp = kind === 'stage' && state.player.level <= 2 && state.totalBattlesWon === 0;
+  const hint = busy ? (language === 'en' ? 'Round in progress…' : 'Идёт раунд…')
+    : auto ? (language === 'en' ? 'Auto-battle: zones are selected automatically' : 'Автобой: зоны выбираются сами')
     : blocks.length < 2 ? (language === 'en' ? `Choose ${2 - blocks.length} more defense zone(s)` : `Защита: выбери ещё ${2 - blocks.length}`) : !attack ? (language === 'en' ? 'Choose an attack zone' : 'Выбери зону удара') : (language === 'en' ? 'Press STRIKE' : 'Жми УДАР');
 
   return (
@@ -217,7 +223,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
           onClick={() => (outcome ? onExit() : finish(false))}
           className="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-200 flex items-center gap-1.5 active:scale-95 transition-transform"
         >
-          <Flag className="w-3.5 h-3.5" /> {outcome ? (language === 'en' ? 'Map' : 'К карте') : (language === 'en' ? 'Surrender' : 'Сдаться')}
+          <Flag className="w-3.5 h-3.5" /> {outcome ? (kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')) : (language === 'en' ? 'Surrender' : 'Сдаться')}
         </button>
         <div className="flex-1 min-w-0 text-center">
           <p className="text-[10px] uppercase tracking-wider text-amber-300/80">{kind === 'trial' ? (language === 'en' ? `Trial ${state.trialLevel}` : `Испытание ${state.trialLevel}`) : enemy.isBoss ? (language === 'en' ? 'Chapter boss' : 'Босс главы') : (language === 'en' ? `Chapter ${state.currentChapter}` : `Глава ${state.currentChapter}`)}</p>
@@ -227,6 +233,12 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
           <Currency kind="stones" value={state.battleStones} size={18} className="text-xs text-amber-100" />
         </span>
       </div>
+
+      {firstFightHelp && !outcome && !auto && <p className="rounded-xl border border-amber-400/40 bg-amber-950/50 px-3 py-2 text-xs leading-relaxed text-amber-100" role="note">
+        {language === 'en'
+          ? 'Choose 2 defense zones on the left and 1 attack zone on the right, then press STRIKE. You can also turn on auto-battle.'
+          : 'Слева выбери 2 зоны защиты, справа — 1 зону удара, затем нажми «УДАР». Можно включить автобой.'}
+      </p>}
 
       <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black/40">
         <img
@@ -324,10 +336,12 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
 
         {!outcome && (
           <div className="relative px-2 pb-2">
-            <p className="text-[11px] text-gray-200 text-center h-4 mb-1 truncate">{toast ?? hint}</p>
+            <p className="min-h-4 mb-1 text-center text-[11px] leading-4 text-gray-200" role="status" aria-live="polite">{toast ?? hint}</p>
             <div className="flex items-center gap-1.5">
               <button
+                type="button"
                 onClick={() => setSettings({ auto: !auto })}
+                aria-pressed={auto}
                 className="shrink-0 flex items-center gap-1.5 h-11 px-2 rounded-xl bg-black/55 border border-white/15 backdrop-blur-sm"
               >
                 <span className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${auto ? 'bg-amber-400 border-amber-400' : 'border-white/40'}`}>
@@ -408,7 +422,7 @@ function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests }: {
         </button>}
         <div className="flex gap-2 mt-3">
           <button onClick={onExit} className="flex-1 h-10 rounded-xl bg-white/10 border border-white/15 text-sm font-semibold text-white active:scale-95 transition-transform">
-            {kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Map' : 'К карте')}
+            {kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')}
           </button>
           {outcome.won && onNext && (
             <button onClick={onNext} className="flex-1 h-10 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-sm font-bold text-black active:scale-95 transition-transform">
