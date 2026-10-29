@@ -48,7 +48,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       setServerMode('enabled'); // Recover a durable in-flight server debit/receipt first.
       return () => { alive = false; };
     }
-    void supabase.rpc('territory_adventure_mode_v1')
+    void Promise.resolve(supabase.rpc('territory_adventure_mode_v1'))
       .then(({ data, error }) => {
         if (alive) setServerMode(!error && data?.enabled === true ? 'enabled' : 'legacy');
       })
