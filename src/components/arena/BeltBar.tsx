@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Lock, Loader2 } from 'lucide-react';
-import { BELT_RULES, BELT_STACK, type BeltContext } from '@/game/belt';
+import { BELT_RULES, BELT_STACK, beltAction, type BeltContext } from '@/game/belt';
 import { rarityColor } from '@/game/ui';
 import type { InventoryItem } from '@/game/types';
 import { useLanguage, localizeText } from '@/game/i18n';
@@ -15,6 +15,21 @@ interface Props {
   disabled?: boolean;
   busyIndex?: number | null;
   onAction: (index: number) => void;
+}
+
+/** In Arena the item has stronger, server-calculated combat effects than
+ * the permanent inventory item description. Show the actual arena rules. */
+function arenaItemBonus(item: InventoryItem, language: string): string | null {
+  const action = beltAction(item);
+  if (action?.kind !== 'item') return null;
+  const en = language === 'en';
+  switch (action.code) {
+    case 'attack': return en ? 'Arena: +25% attack (minimum +10)' : 'На арене: +25% атаки (минимум +10)';
+    case 'defense': return en ? 'Arena: +25% defense (minimum +10)' : 'На арене: +25% защиты (минимум +10)';
+    case 'heal_small': return en ? 'Arena: heal 18% max HP (minimum 50)' : 'На арене: лечение 18% от макс. HP (минимум 50)';
+    case 'heal_large': return en ? 'Arena: heal 35% max HP (minimum 150)' : 'На арене: лечение 35% от макс. HP (минимум 150)';
+    case 'crit': return en ? 'Arena: +15 percentage points crit chance (max 75%)' : 'На арене: +15 п.п. шанса крита (макс. 75%)';
+  }
 }
 
 export function BeltBar({ belt, ctx, actionLabel, compact = false, disabled, busyIndex, onAction }: Props) {
@@ -71,7 +86,7 @@ export function BeltBar({ belt, ctx, actionLabel, compact = false, disabled, bus
         {shown ? (
           shown.check.open ? (
             shown.item ? (
-              <span><span className="text-white font-semibold">{localizeText(shown.item.name, language)}</span> · {localizeText(shown.item.description, language)}</span>
+              <span><span className="text-white font-semibold">{localizeText(shown.item.name, language)}</span> · {arenaItemBonus(shown.item, language) ?? localizeText(shown.item.description, language)}</span>
             ) : (
               <span>{language === 'en' ? `Slot ${info! + 1} is free — move a potion here from inventory (up to ${BELT_STACK})` : `Слот ${info! + 1} свободен — положи сюда зелье из сумки (до ${BELT_STACK} шт.)`}</span>
             )
