@@ -48,7 +48,7 @@ await sql(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role
  INSERT INTO public.players(id,game_state,gold,gems,xp,level,max_energy) VALUES
  (${quote(player)},${json(save)},50,9,90,1,20),(${quote(loser)},${json(save)},50,9,90,1,20),
  (${quote(noLevel)},${json(noLevelSave)},50,9,0,1,20);`);
-for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supabase/staged/territory_v1_adventure_settlement.sql', 'supabase/staged/territory_v1_combat_profiles_reconciliation.sql', 'supabase/staged/territory_v1_adventure_cutover_mode.sql']) await file(path);
+for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supabase/staged/territory_v1_adventure_settlement.sql', 'supabase/staged/territory_v1_combat_profiles_reconciliation.sql', 'supabase/staged/territory_v1_adventure_cutover_mode.sql', 'supabase/staged/territory_v1_adventure_cached_client_guard_v2.sql']) await file(path);
 assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`), save, 'installation leaves the old save untouched');
 await sql(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
  VALUES (${quote(player)},${json(save)},1,${json(fighter)},'{}',ARRAY['old']::text[],'synthetic evidence','test reviewer'),
@@ -65,7 +65,9 @@ await sql(`INSERT INTO territory_private.combat_encounters_v1(encounter_id,mode,
  UPDATE territory_private.combat_config_v1 SET catalog=${json({skills:[],runes:[],passives:[]})},rules=${json(rules)},enabled=true,settlement_ready=true,approval_reference='synthetic';`);
 // The new authenticated cutover route is disabled per-account until both
 // the reviewed profile and enabled stage exist.
-assert.deepEqual(await scalar(`SET ROLE authenticated; SET request.test_uid=${quote(player)}; SELECT public.territory_adventure_mode_v1()`), {enabled:true});
+assert.deepEqual(await scalar(`SET ROLE authenticated; SET request.test_uid=${quote(player)}; SELECT public.territory_adventure_mode_v1()`), {enabled:false}, 'Old cached Telegram clients must remain on legacy');
+assert.deepEqual(await scalar(`SET ROLE authenticated; SET request.test_uid=${quote(player)}; SELECT public.territory_adventure_mode_v2(true)`), {enabled:true}, 'Updated canary client can enter verified server stage');
+assert.deepEqual(await scalar(`SET ROLE authenticated; SET request.test_uid=${quote(player)}; SELECT public.territory_adventure_mode_v2(false)`), {enabled:false}, 'No opt-in remains legacy');
 const built = await build({ entryPoints: ['src/game/combatV1/service.ts'], bundle: true, platform: 'node', format: 'esm', write: false, logLevel: 'silent' });
 const { executeCombatCommand } = await import('data:text/javascript;base64,' + Buffer.from(built.outputFiles[0].text).toString('base64'));
 const invocation = (name, args) => `public.${name}(${args.map((x, i) => i === 0 ? `${quote(x)}::uuid` : json(x)).join(',')})`;
