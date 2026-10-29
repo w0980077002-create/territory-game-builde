@@ -1,75 +1,208 @@
-/* Cosmetic feedback only: the event and damage come from the combat queue. */
+/* Cosmetic combat motion for the APPROVED existing character poses.
+   No new hits, damage, economy actions or timers are generated here.
+   The animation completes inside the 920ms arena strike-queue window;
+   PvE x2 shortens all timing together. */
+.fighter-figure { --fighter-scale: 1; --fighter-motion-duration: 810ms; --fighter-hit-delay: 280ms; --fighter-impact-duration: 470ms; --fighter-sweep-duration: 440ms; }
+.fighter-figure__size {
+  transform: scale(var(--fighter-scale));
+  transform-origin: 50% 96%;
+}
+.fighter-figure__motion { transform-origin: 50% 88%; }
+.fighter-figure .battle-swing-0 {
+  animation: fighter-cut var(--fighter-motion-duration) cubic-bezier(.23,.55,.24,1) both;
+}
+.fighter-figure .battle-swing-1 {
+  animation: fighter-thrust var(--fighter-motion-duration) cubic-bezier(.22,.58,.25,1) both;
+}
+.fighter-figure .battle-swing-2 {
+  animation: fighter-overhead var(--fighter-motion-duration) cubic-bezier(.25,.45,.23,1) both;
+}
+.fighter-figure .animate-recoil {
+  animation: fighter-recoil var(--fighter-motion-duration) ease-out both;
+}
+.fighter-figure .animate-guard {
+  animation: fighter-guard var(--fighter-motion-duration) ease-out both;
+}
+.fighter-figure .animate-dodge {
+  animation: fighter-dodge var(--fighter-motion-duration) ease-out both;
+}
+/* Three recognizable attacks: diagonal slash, forward thrust, overhead chop. */
+@keyframes fighter-cut {
+  0%, 100% { transform: translate(0,0) rotate(0); }
+  17% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -8deg)); }
+  43% { transform: translateX(calc(var(--dir) * 43px)) translateY(-2px) rotate(calc(var(--dir) * 12deg)); }
+  64% { transform: translateX(calc(var(--dir) * 24px)) rotate(calc(var(--dir) * 4deg)); }
+}
+@keyframes fighter-thrust {
+  0%, 100% { transform: translate(0,0) scale(1); }
+  20% { transform: translateX(calc(var(--dir) * -13px)) scale(.96,1.04); }
+  42% { transform: translateX(calc(var(--dir) * 50px)) scale(1.12,.95); }
+  61% { transform: translateX(calc(var(--dir) * 25px)) scale(1.04); }
+}
+@keyframes fighter-overhead {
+  0%, 100% { transform: translate(0,0) rotate(0); }
+  23% { transform: translateX(calc(var(--dir) * -8px)) translateY(-13px) rotate(calc(var(--dir) * -12deg)); }
+  46% { transform: translateX(calc(var(--dir) * 39px)) translateY(7px) rotate(calc(var(--dir) * 14deg)); }
+  67% { transform: translateX(calc(var(--dir) * 18px)) translateY(-2px); }
+}
+/* Reactions start when the opponent's blade arrives, not at event start. */
+@keyframes fighter-recoil {
+  0%, 33%, 100% { transform: translate(0,0) rotate(0); filter: none; }
+  46% { transform: translateX(calc(var(--dir) * -17px)) rotate(calc(var(--dir) * -6deg)); filter: brightness(1.75) drop-shadow(0 0 5px #f87171); }
+  66% { transform: translateX(calc(var(--dir) * -6px)); filter: brightness(1.1); }
+}
+@keyframes fighter-guard {
+  0%, 34%, 100% { transform: translate(0,0); filter: none; }
+  46% { transform: translateX(calc(var(--dir) * -7px)) scale(.97); filter: brightness(1.25) drop-shadow(0 0 4px #38bdf8); }
+}
+@keyframes fighter-dodge {
+  0%, 29%, 100% { transform: translateX(0); opacity: 1; }
+  45% { transform: translateX(calc(var(--dir) * -29px)) skewX(calc(var(--dir) * 7deg)); opacity: .68; }
+  70% { transform: translateX(calc(var(--dir) * -10px)); opacity: .94; }
+}
+/* Sword motion is attached to the ATTACKER, while damage stays at the TARGET. */
+.fighter-figure__sweep {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  top: 37%;
+  left: 46%;
+  width: 53%;
+  height: 22%;
+  border-radius: 50%;
+  border-top: 3px solid rgba(221,250,255,.95);
+  box-shadow: 0 -3px 5px rgba(38,170,255,.65);
+  opacity: 0;
+  transform-origin: 20% 70%;
+  animation: fighter-sweep var(--fighter-sweep-duration) ease-out var(--fighter-hit-delay) both;
+}
+.fighter-figure__sweep--1 { top: 45%; height: 9%; border-radius: 20%; animation-name: fighter-sweep-thrust; }
+.fighter-figure__sweep--2 { top: 19%; left: 57%; height: 34%; animation-name: fighter-sweep-overhead; }
+@keyframes fighter-sweep {
+  0% { opacity: 0; transform: rotate(-48deg) scale(.55); }
+  20% { opacity: .95; }
+  100% { opacity: 0; transform: rotate(16deg) scale(1.1); }
+}
+@keyframes fighter-sweep-thrust {
+  0% { opacity: 0; transform: translateX(calc(var(--dir) * -14px)) scaleX(.35); }
+  28% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(calc(var(--dir) * 25px)) scaleX(1.2); }
+}
+@keyframes fighter-sweep-overhead {
+  0% { opacity: 0; transform: rotate(-75deg) scale(.55); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(35deg) scale(1.05); }
+}
 .fighter-impact {
   position: absolute;
   inset: 0;
-  z-index: 30;
+  z-index: 45;
   pointer-events: none;
 }
-.fighter-impact > span { position: absolute; opacity: 0; }
+.fighter-impact > span {
+  position: absolute;
+  opacity: 0;
+  animation-delay: var(--fighter-hit-delay);
+  animation-fill-mode: both;
+}
 .fighter-impact__arc {
-  left: calc(26% + var(--dir, 1) * 10%); top: 35%; width: 48%; height: 29%;
+  width: 66px;
+  height: 38px;
+  left: calc(50% - 33px);
+  top: 35%;
+  border-bottom: 4px solid #dcfaff;
   border-radius: 50%;
-  border-bottom: 4px solid #d9faff;
-  box-shadow: 0 3px 4px #19a8ff, 0 7px 9px #1676e3;
-  transform: rotate(-35deg);
-  animation: fighter-arc 420ms ease-out 310ms both;
+  box-shadow: 0 3px 5px #079fe0, 0 6px 8px #1764de;
+  animation: fighter-arc var(--fighter-impact-duration) ease-out;
 }
-.fighter-impact--crit .fighter-impact__arc {
-  border-bottom-width: 6px;
-  box-shadow: 0 3px 6px #6ee7ff, 0 8px 14px #1789ff;
-}
+.fighter-impact--crit .fighter-impact__arc { border-bottom-color: #ffe2a0; box-shadow: 0 4px 8px #ff9a24,0 6px 10px #ec6b21; }
 .fighter-impact__spark {
-  left: calc(50% + var(--dir, 1) * 15%); top: 39%; width: 42px; height: 42px;
-  background: radial-gradient(circle, #fff 0 8%, #ffe58a 10%, #ff8a17 25%, transparent 65%);
-  animation: fighter-spark 350ms ease-out 360ms both;
+  width: 38px;
+  height: 38px;
+  left: calc(50% - 19px);
+  top: 40%;
+  background: radial-gradient(circle,white 0 9%,#ffe4a1 10% 18%,#ff8f26 25%,transparent 68%);
+  animation: fighter-spark var(--fighter-impact-duration) ease-out;
 }
-.fighter-impact--crit .fighter-impact__spark { width: 56px; height: 56px; filter: drop-shadow(0 0 5px #ff8c22); }
+.fighter-impact--crit .fighter-impact__spark { width: 48px; height: 48px; left: calc(50% - 24px); filter: drop-shadow(0 0 5px #f59e0b); }
+.fighter-impact__shock {
+  width: 39px;
+  height: 39px;
+  left: calc(50% - 20px);
+  top: 41%;
+  border: 2px solid #ffd79d;
+  border-radius: 50%;
+  animation: fighter-shock var(--fighter-impact-duration) ease-out;
+}
 .fighter-impact__shield {
-  left: calc(45% + var(--dir, 1) * 15%); top: 35%; width: 54px; height: 54px;
-  border: 3px solid #b9f4ff; border-radius: 50%;
-  background: radial-gradient(circle, #baf7ff99, #0288d544 55%, transparent 70%);
-  box-shadow: 0 0 12px #25bfff;
-  animation: fighter-spark 390ms ease-out 360ms both;
+  width: 50px;
+  height: 50px;
+  left: calc(50% - 25px);
+  top: 35%;
+  border: 3px solid #b8f6ff;
+  border-radius: 50%;
+  background: radial-gradient(circle,#d0faffaa,#0c96d244 65%,transparent);
+  box-shadow: 0 0 13px #25bfff;
+  animation: fighter-shock var(--fighter-impact-duration) ease-out;
 }
 .fighter-impact__trail {
-  left: calc(40% + var(--dir, 1) * 15%); top: 40%; width: 52px; height: 22px;
-  border-bottom: 3px solid #a8eaff; border-radius: 50%;
-  box-shadow: 0 5px 8px #357cff;
-  animation: fighter-trail 350ms ease-out 320ms both;
+  width: 45px;
+  height: 18px;
+  top: 43%;
+  left: calc(50% - 23px);
+  border-bottom: 3px solid #b6edff;
+  border-radius: 50%;
+  box-shadow: 0 4px 6px #3887ff;
+  animation: fighter-escape var(--fighter-impact-duration) ease-out;
 }
 .fighter-impact__label {
-  left: 38%; top: 19%;
-  color: #fff; font-size: 19px; line-height: 1; font-weight: 900;
-  white-space: nowrap; text-shadow: 0 2px 2px #2b1209, 0 0 5px #000;
-  animation: fighter-label 480ms ease-out 360ms both;
+  top: 17%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.05;
+  white-space: nowrap;
+  color: #fff4e9;
+  text-shadow: 0 2px 2px #1a0d0b, 0 0 6px #000;
+  animation: fighter-label var(--fighter-impact-duration) ease-out;
 }
-.fighter-impact--crit .fighter-impact__label { color: #ffba38; font-size: 24px; }
-.fighter-impact--block .fighter-impact__label { color: #7fe3ff; font-size: 16px; }
-.fighter-impact--dodge .fighter-impact__label { color: #d3a2ff; font-size: 16px; }
-.fighter-impact__label small { display: block; font-size: 11px; text-align: center; }
+.fighter-impact__label small { font-size: 10px; letter-spacing: .07em; }
+.fighter-impact--crit .fighter-impact__label { font-size: 25px; color: #ffca57; }
+.fighter-impact--block .fighter-impact__label { font-size: 16px; color: #83e1ff; }
+.fighter-impact--dodge .fighter-impact__label { font-size: 16px; color: #ded2ff; }
 @keyframes fighter-arc {
-  0% { opacity: 0; transform: rotate(-50deg) scale(.55); }
+  0% { opacity: 0; transform: rotate(-56deg) scale(.5); }
   25% { opacity: 1; }
-  100% { opacity: 0; transform: rotate(-20deg) scale(1.08); }
+  100% { opacity: 0; transform: rotate(-10deg) scale(1.08); }
 }
 @keyframes fighter-spark {
   0% { opacity: 0; transform: scale(.35); }
-  25% { opacity: 1; }
+  22% { opacity: 1; }
   100% { opacity: 0; transform: scale(1.2); }
 }
-@keyframes fighter-trail {
+@keyframes fighter-shock {
+  0% { opacity: 0; transform: scale(.45); }
+  28% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.16); }
+}
+@keyframes fighter-escape {
   0% { opacity: 0; transform: translateX(0); }
-  25% { opacity: .8; }
-  100% { opacity: 0; transform: translateX(calc(var(--dir, 1) * -22px)); }
+  28% { opacity: .9; }
+  100% { opacity: 0; transform: translateX(calc(var(--dir) * -23px)); }
 }
 @keyframes fighter-label {
-  0% { opacity: 0; transform: translateY(7px); }
-  20% { opacity: 1; }
-  75% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-12px); }
+  0% { opacity: 0; transform: translate(-50%,7px) scale(.8); }
+  18% { opacity: 1; transform: translate(-50%,-4px) scale(1.06); }
+  74% { opacity: 1; transform: translate(-50%,-12px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%,-23px) scale(.96); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fighter-impact__arc, .fighter-impact__spark, .fighter-impact__shield, .fighter-impact__trail { display: none; }
-  .fighter-impact__label { animation-name: fighter-label-reduced; }
-  @keyframes fighter-label-reduced { 0%, 100% { opacity: 0; } 20%, 75% { opacity: 1; } }
+  .fighter-figure .battle-swing-0, .fighter-figure .battle-swing-1, .fighter-figure .battle-swing-2,
+  .fighter-figure .animate-recoil, .fighter-figure .animate-guard, .fighter-figure .animate-dodge { animation: none !important; }
+  .fighter-figure__sweep, .fighter-impact__arc, .fighter-impact__spark, .fighter-impact__shock,
+  .fighter-impact__shield, .fighter-impact__trail { display: none; }
+  .fighter-impact__label { animation: none !important; opacity: 1 !important; transform: translateX(-50%) !important; }
 }
