@@ -20,9 +20,13 @@ export const FighterRig = memo(function FighterRig({ rig }: { rig: FighterRigDef
             <g clipPath={`url(#${id}-lower)`}>{armImage(side, -75)}</g>
             <g transform="translate(3 57)">
               {left ? <g data-rig-part="shield" className="rig-joint rig-shield">
+                <ellipse data-anchor="shield-hit-area" cx="0" cy="0" rx="71" ry="96" visibility="hidden" />
                 <image href={asset('shield')} x="-83" y="-108" width="166" height="222" preserveAspectRatio="none" />
                 <ellipse data-effect="shield-glint" className="rig-shield-glint" cx="0" cy="0" rx="71" ry="96" />
               </g> : <g data-rig-part="weapon" className="rig-joint rig-weapon">
+                <circle data-anchor="weapon-grip" cx="0" cy="0" r="1" visibility="hidden" />
+                <circle data-anchor="weapon-tip" cx={goblin ? 23 : 2} cy="-192" r="1" visibility="hidden" />
+                <path data-anchor="weapon-edge" d={goblin ? 'M23 -192 Q65 -94 0 -35' : 'M2 -196 L2 -45'} visibility="hidden" />
                 <g transform={goblin ? 'scale(-1 1)' : undefined}><image href={asset('weapon')} x={goblin ? -68 : -30} y="-205" width={goblin ? 85 : 65} height="224" preserveAspectRatio="none" /></g>
                 <path data-effect="blade-trail" className="rig-blade-trail" d={goblin ? 'M23 -192 Q65 -94 0 -35' : 'M2 -196 L2 -45'} />
               </g>}
@@ -58,6 +62,7 @@ export const FighterRig = memo(function FighterRig({ rig }: { rig: FighterRigDef
         {leg('right')}
         <g data-rig-part="torso" className="rig-joint rig-torso">
           <g transform="translate(-256 -390)">
+            <ellipse data-anchor="torso-hit-area" cx="258" cy="302" rx="65" ry="65" visibility="hidden" />
             <image href={asset('torso')} x="169" y="220" width="175" height="219" preserveAspectRatio="none" />
             <g transform="translate(258 238)"><g data-rig-part="head" className="rig-joint rig-head">
               <g transform={goblin ? 'scale(-1 1)' : undefined}>

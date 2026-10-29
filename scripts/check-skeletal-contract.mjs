@@ -51,3 +51,15 @@ for(const rig of [viking,goblin])for(const part of ['head','torso','arm-right','
 }
 assert(bytes<600_000,'Two prepared rigs must stay within mobile download budget');
 console.log(`Skeletal contract PASS: two explicit rigs, safe fallback, independent joints, contact/recovery, distinct attacks, critical windup, Pages paths; ${Math.round(bytes/1024)} KiB assets.`);
+
+// Validate inverse kinematics against forward kinematics, including unreachable targets.
+const {solveLeg} = await load('src/components/combat2d/combatGeometry.ts');
+for (const bend of [-1, 1]) for (const foot of [{x: 15, y: 90}, {x: -30, y: 75}, {x: 0, y: 50}]) {
+ const solution = solveLeg({x: 0, y: 0}, foot, 53, 55, bend);
+ assert(solution.reachable);
+ const a = solution.hip * Math.PI / 180, b = solution.knee * Math.PI / 180;
+ assert(Math.hypot(-53*Math.sin(a)-55*Math.sin(a+b)-foot.x, 53*Math.cos(a)+55*Math.cos(a+b)-foot.y) < 1e-7);
+}
+assert.equal(solveLeg({x:0,y:0},{x:200,y:0},53,55,1).reachable,false);
+assert.throws(()=>solveLeg({x:0,y:0},{x:0,y:0},0,55,1),RangeError);
+console.log('Leg geometry: reachable targets, both knee directions and unreachable targets PASS.');
