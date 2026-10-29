@@ -20,10 +20,12 @@ interface Props {
   alive: boolean;
   strike: StrikeEvent | null;
   idleSeconds: number;
+  /** Playback speed for combat feedback; defaults to the arena's normal pace. */
+  combatSpeed?: number;
   className: string;
 }
 
-export function FighterFigure({ src, combatFrames, name, dir, mirror = false, alive, strike, idleSeconds, className }: Props) {
+export function FighterFigure({ src, combatFrames, name, dir, mirror = false, alive, strike, idleSeconds, combatSpeed = 1, className }: Props) {
   const role = !strike ? null : strike.attacker === name ? 'attacker' : strike.target === name ? 'target' : null;
   const tone = strike?.tone;
   // Three visually distinct swings are derived from the event key.
@@ -35,10 +37,15 @@ export function FighterFigure({ src, combatFrames, name, dir, mirror = false, al
     : tone === 'block' ? 'animate-guard'
     : 'animate-recoil';
   const style = { '--dir': dir } as CSSProperties;
+  const speed = Number.isFinite(combatSpeed) && combatSpeed > 0 ? combatSpeed : 1;
+  const motionTiming = speed === 1 || !role ? undefined : {
+    animationDuration: `${(role === 'attacker' ? [840, 820, 880][swing] : tone === 'dodge' ? 500 : tone === 'block' ? 350 : 450) / speed}ms`,
+    animationDelay: `${(role === 'attacker' ? 0 : tone === 'dodge' ? 320 : 400) / speed}ms`,
+  };
 
   return (
     <div className="absolute inset-0" style={style}>
-      <div key={role ? `${strike?.key}-${role}` : 'still'} className={`absolute inset-0 ${motion}`}>
+      <div key={role ? `${strike?.key}-${role}` : 'still'} className={`absolute inset-0 ${motion}`} style={motionTiming}>
         {/* Mirror the ART separately from the movement transform. Combat labels remain readable. */}
         <div className={`absolute inset-0 ${mirror ? 'battle-mirror-art' : ''}`}>
           <img
@@ -68,27 +75,30 @@ export function FighterFigure({ src, combatFrames, name, dir, mirror = false, al
         </div>
       </div>
 
-      {role === 'target' && strike && <Impact key={strike.key} strike={strike} />}
+      {role === 'target' && strike && <Impact key={strike.key} strike={strike} speed={speed} />}
     </div>
   );
 }
 
-function Impact({ strike }: { strike: StrikeEvent }) {
+function Impact({ strike, speed }: { strike: StrikeEvent; speed: number }) {
   const { language } = useLanguage();
   const crit = strike.tone === 'crit';
   const label = strike.tone === 'dodge' ? (language === 'en' ? 'DODGE!' : 'УКЛОН!')
     : strike.tone === 'block' ? (language === 'en' ? 'BLOCK!' : 'БЛОК!') : null;
+  const timing = (duration: number, delay: number): CSSProperties | undefined => speed === 1 ? undefined : {
+    animationDuration: `${duration / speed}ms`, animationDelay: `${delay / speed}ms`,
+  };
 
   return (
     <div className={`fighter-impact fighter-impact--${strike.tone}`} aria-hidden="true">
-      {strike.tone === 'dodge' ? <span className="fighter-impact__trail" />
-        : strike.tone === 'block' ? <span className="fighter-impact__shield" />
+      {strike.tone === 'dodge' ? <span className="fighter-impact__trail" style={timing(350, 320)} />
+        : strike.tone === 'block' ? <span className="fighter-impact__shield" style={timing(390, 360)} />
         : <>
-          <span className="fighter-impact__arc" />
-          <span className="fighter-impact__spark" />
+          <span className="fighter-impact__arc" style={timing(420, 310)} />
+          <span className="fighter-impact__spark" style={timing(350, 360)} />
         </>}
       {(label || strike.amount !== null) && (
-        <span className="fighter-impact__label">
+        <span className="fighter-impact__label" style={timing(480, 360)}>
           {crit && <small>{language === 'en' ? 'CRIT!' : 'КРИТ!'}</small>}
           {label ?? `−${strike.amount}`}
         </span>

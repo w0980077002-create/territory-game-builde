@@ -271,6 +271,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
                       dir={1}
                       alive={hero.hp > 0}
                       strike={strike}
+                      combatSpeed={speed}
                       idleSeconds={3.7}
                       className="absolute left-0 bottom-0 h-full w-full object-contain object-left-bottom"
                     />
@@ -284,6 +285,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
                     dir={1}
                     alive={hero.hp > 0}
                     strike={strike}
+                    combatSpeed={speed}
                     idleSeconds={3.1}
                     className="absolute right-0 bottom-0 h-[98%] w-full object-contain object-right-bottom"
                   />
@@ -300,6 +302,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
                   dir={-1}
                   alive={foe.hp > 0}
                   strike={strike}
+                  combatSpeed={speed}
                   idleSeconds={2.8}
                   className={`absolute left-0 bottom-0 object-contain object-left-bottom ${enemy.isBoss ? 'h-[96%] w-[100%]' : 'h-[78%] w-[80%]'}`}
                 />

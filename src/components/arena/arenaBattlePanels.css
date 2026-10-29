@@ -1,8 +1,4 @@
 /* Compact battle inventory uses the approved carved-wood asset. */
-.arena-supplies {
-  display: grid;
-  gap: 4px;
-}
 .arena-supply-panel {
   min-width: 0;
   overflow: hidden;
@@ -39,6 +35,3 @@
   text-shadow: 0 1px 2px #1a0903, 0 0 4px #1a0903;
 }
 .arena-supply-body { padding: 2px 6px 5px; }
-@media (min-width: 600px) {
-  .arena-supplies { grid-template-columns: 1fr 1fr; align-items: start; }
-}
