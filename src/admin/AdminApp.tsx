@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { BarChart3, CheckCircle2, Crown, Eye, EyeOff, Gamepad2, Lock, LogOut, Mail, ShieldAlert, Trophy, Wallet, Ticket, ScrollText, Globe2, UserPlus, XCircle } from 'lucide-react';
+import { BarChart3, Swords, CheckCircle2, Crown, Eye, EyeOff, Gamepad2, Lock, LogOut, Mail, ShieldAlert, Trophy, Wallet, Ticket, ScrollText, Globe2, UserPlus, XCircle } from 'lucide-react';
 import { adminLogin, adminCall, clearAdminToken, getAdminToken } from '@/admin/api';
 import { ConfirmDialog, ErrorLine, inputCls, type Confirm } from '@/admin/ui';
 import { DashboardTab } from '@/admin/tabs/DashboardTab';
 import { PlayersTab } from '@/admin/tabs/PlayersTab';
 import { MailTab } from '@/admin/tabs/MailTab';
 import { FinanceTab } from '@/admin/tabs/FinanceTab';
+import { ArenaEconomyTab } from '@/admin/tabs/ArenaEconomyTab';
 import { TopTab } from '@/admin/tabs/TopTab';
 import { SeasonAdminTab } from '@/admin/tabs/SeasonAdminTab';
 import { HallAdminTab } from '@/admin/tabs/HallAdminTab';
@@ -21,6 +22,7 @@ const TABS = [
   { id: 'geography', label: 'География', icon: Globe2 },
   { id: 'mail', label: 'Почта & Рассылки', icon: Mail },
   { id: 'finance', label: 'Финансы & Лавка', icon: Wallet },
+  { id: 'arenaEconomy', label: 'Экономика Арены', icon: Swords },
   { id: 'top', label: 'Топ-100', icon: Trophy },
   { id: 'seasons', label: 'Недельный чемпионат', icon: Trophy },
   { id: 'hall', label: 'Игровой зал', icon: Ticket },
@@ -196,6 +198,7 @@ export function AdminApp() {
         {tab === 'geography' && <GeographyTab />}
         {tab === 'mail' && <MailTab confirm={confirm} />}
         {tab === 'finance' && <FinanceTab confirm={confirm} />}
+        {tab === 'arenaEconomy' && <ArenaEconomyTab />}
         {tab === 'top' && <TopTab />}
         {tab === 'seasons' && <SeasonAdminTab confirm={confirm} />}
         {tab === 'hall' && <HallAdminTab confirm={confirm} />}
