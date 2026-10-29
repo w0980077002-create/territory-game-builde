@@ -6,7 +6,8 @@ const battle = read('src/components/BattleScreen.tsx');
 const app = read('src/App.tsx');
 const bridge = read('src/game/combatV1/receiptAdapter.ts');
 
-assert.match(battle, /territory_adventure_mode_v1/,'Runtime server readiness must be checked per account');
+assert.match(battle, /territory_adventure_mode_v2/,'Runtime server readiness must be checked per account');
+assert.match(battle, /p_owner_preview: true/,'Only new pilot clients can request the upgraded route');
 assert.match(battle, /if \(!isAdmin\) \{ setServerMode\('legacy'\)/,'Ordinary players must retain the legacy campaign');
 assert.match(battle, /recoveryRequired \|\| \(isAdmin && \(serverOptIn \|\| serverActive\)\)/,
   'Server cutover must require admin opt-in or a durable in-flight session');
