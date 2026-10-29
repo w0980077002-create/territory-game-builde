@@ -455,7 +455,6 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'battle' && (
           <BattleScreen
             userId={user.id}
-            isAdmin={isAdmin}
             view={battleView}
             onView={setBattleView}
             autoStart={autoStart}
