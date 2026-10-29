@@ -8,6 +8,12 @@ const one = async (sql, params=[]) => (await db.query(sql,params)).rows[0];
 const id = '11111111-1111-4111-8111-111111111111';
 const otherId = '22222222-2222-4222-8222-222222222222';
 const migration = (path) => readFileSync(`supabase/${path}`,'utf8');
+const fixSql = migration('staged/20261029_owner_gear_authority_forge_fix.sql');
+const fixFunctionStart = fixSql.indexOf('CREATE OR REPLACE FUNCTION territory_private.owner_cap_item_v1(');
+const fixFunctionEnd = fixSql.indexOf('$owner_gear$;',fixFunctionStart) + '$owner_gear$;'.length;
+assert(fixFunctionStart >= 0 && fixFunctionEnd > fixFunctionStart,'Owner gear patch must define a full DB function');
+assert.match(fixSql,/Never replay outdated item\./,'Old admin grants must not overwrite newer forge progress');
+
 const install = async path => {
   // The 2026-10-18 historical SQL snapshot omitted statement terminators
   // between its function definitions; the live DB already has those functions.
@@ -44,6 +50,7 @@ try {
       gold integer NOT NULL DEFAULT 1234,
       gems integer NOT NULL DEFAULT 15,
       game_state jsonb NOT NULL,
+      updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
       attack integer NOT NULL DEFAULT 0,
       defense integer NOT NULL DEFAULT 0,
       max_hp integer NOT NULL DEFAULT 0,
@@ -60,6 +67,9 @@ try {
   await install('migrations/20261022_owner_test_equipment_levels.sql');
   await install('migrations/20261022_owner_test_gear_stats_receipt_v3.sql');
   await install('staged/20261027_owner_test_gear_relevel_v4.sql');
+  // Test the deployed replacement against an isolated in-memory PostgreSQL.
+  // Only the helper is installed: the grant claim migration has separate setup.
+  await db.exec(fixSql.slice(fixFunctionStart,fixFunctionEnd));
 
   const initial = basicState(equipment('rare-shield','Укреплённый щит','shield','rare',10,
     {defense:20,hp:40,baseLevel:10,baseStats:{defense:20,hp:40},upgradeCount:0}));
@@ -127,6 +137,30 @@ try {
     'historic chapter loot must be rebuilt at the new chapter curve');
   const bossUp=await grant('armor',165);
   assert.deepEqual([bossUp.gear.level,bossUp.gear.defense,bossUp.gear.hp],[165,335,845]);
+
+  // The owner chooses a baseline, but regular one-level forge upgrades must
+  // persist afterwards. Simulate an advanced hero and a successful forge.
+  await db.query(`UPDATE public.players SET level=200,
+    game_state=jsonb_set(game_state,'{player,level}','200'::jsonb)
+    WHERE id=$1::uuid`,[id]);
+  await db.query(`UPDATE public.players
+    SET game_state=jsonb_set(game_state,'{player,equipped,armor,level}','166'::jsonb)
+    WHERE id=$1::uuid`,[id]);
+  row=await get();
+  assert.equal(row.game_state.player.equipped.armor.level,166,
+    'owner gear must accept a normal forge level above the previous admin value');
+  await db.query(`UPDATE public.players
+    SET game_state=jsonb_set(game_state,'{player,equipped,armor,level}','165'::jsonb)
+    WHERE id=$1::uuid`,[id]);
+  row=await get();
+  assert.equal(row.game_state.player.equipped.armor.level,166,
+    'stale owner receipt and older saves must not roll back a forged item');
+  const ownerLowerAfterForge=await grant('armor',82);
+  assert.equal(ownerLowerAfterForge.gear.level,82,
+    'a later owner correction DOWN must always override the forged level');
+  const ownerRaiseAgain=await grant('armor',190);
+  assert.equal(ownerRaiseAgain.gear.level,190,
+    'a later owner correction UP must always override the forged level');
 
   row=await get();
   const last=(await one(`SELECT payload FROM public.admin_grants WHERE player_id=$1
