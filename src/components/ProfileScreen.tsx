@@ -10,6 +10,9 @@ import type { ReactNode } from 'react';
 import { APPEARANCE_PRESETS, getPlayableAppearance, getAppearanceIcon } from '@/game/appearance';
 
 const BuildTrainingPanel = lazy(() => import('./builds/BuildTrainingPanel').then(module => ({ default: module.BuildTrainingPanel })));
+const RuneSkillBook = lazy(() => import('./builds/ServerRuneBook').then(module => ({ default: module.ServerRuneBook })));
+// Do not show an unfinished skill book to live players before the verified combat cutover.
+const VERIFIED_RUNE_BOOK = import.meta.env.VITE_TERRITORY_V1_SERVER_COMBAT === 'verified';
 
 export function ProfileScreen({ user, initialTrainingOpen = false }: { user: AuthUser; initialTrainingOpen?: boolean }) {
   const { t, language } = useLanguage();
@@ -17,7 +20,10 @@ export function ProfileScreen({ user, initialTrainingOpen = false }: { user: Aut
   const computed = getComputedStats(state);
   const [linking, setLinking] = useState(false);
   const [linkResult, setLinkResult] = useState<string | null>(null);
-  const [trainingOpen, setTrainingOpen] = useState(initialTrainingOpen);
+  const [trainingOpen, setTrainingOpen] = useState(!VERIFIED_RUNE_BOOK && initialTrainingOpen);
+  // Existing world-map Rune route uses initialTrainingOpen. Open the new rune book there,
+  // while keeping the original training laboratory available separately.
+  const [runeBookOpen, setRuneBookOpen] = useState(VERIFIED_RUNE_BOOK && initialTrainingOpen);
   const canLink = user.telegramId === null && !!getTelegramInitData();
 
   const handleLink = async () => {
@@ -89,6 +95,19 @@ export function ProfileScreen({ user, initialTrainingOpen = false }: { user: Aut
           </div>
         </div>
       </div>
+      {/* Owner-approved 5×3 skill interface. Visual-only until server battle integration. */}
+      {VERIFIED_RUNE_BOOK && <details className="card group" data-testid="profile-rune-skill-book" open={runeBookOpen}
+        onToggle={event => setRuneBookOpen(event.currentTarget.open)}>
+        <summary className="cursor-pointer list-none flex items-center justify-between gap-3 text-sm font-semibold text-amber-200">
+          <span>✨ {language === 'en' ? 'Skills and runes · Preview' : 'Навыки и руны · Предпросмотр'}</span>
+          <span className="text-xs text-gray-400 group-open:hidden">▾</span>
+          <span className="text-xs text-gray-400 hidden group-open:inline">▴</span>
+        </summary>
+        {runeBookOpen && <Suspense fallback={<p className="py-4 text-xs text-amber-100">{language === 'en' ? 'Opening skill book...' : 'Открываем книгу навыков...'}</p>}>
+          <RuneSkillBook language={language}/>
+        </Suspense>}
+      </details>}
+
       {/* Build lab runs only when opened; it cannot change the saved character. */}
       <details className="card group" data-testid="profile-build-training" open={trainingOpen} onToggle={event => setTrainingOpen(event.currentTarget.open)}>
         <summary className="cursor-pointer list-none flex items-center justify-between gap-3 text-sm font-semibold text-amber-200">
