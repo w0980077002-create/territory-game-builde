@@ -5,7 +5,7 @@ import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
-import { restoreAdventureSaveFence } from '@/game/combatV1/receiptAdapter';
+import { restoreAdventureSaveFence, restoreAdventureStartFence } from '@/game/combatV1/receiptAdapter';
 import { createImmediateSaveController } from '@/game/immediateSave';
 import { HomeScreen } from '@/components/HomeScreen';
 import type { BattleView } from '@/components/BattleScreen';
@@ -291,6 +291,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         // When this mode is off, existing accounts never touch the adventure adapter.
         if (import.meta.env.VITE_TERRITORY_V1_SERVER_COMBAT === 'verified') {
           restoreAdventureSaveFence(user.id);
+          restoreAdventureStartFence(user.id);
         }
         const timedState = applyTimeEffects(profile.state);
         // Historic belt slots can become locked by harder win requirements.
