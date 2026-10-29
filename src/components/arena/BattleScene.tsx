@@ -141,6 +141,7 @@ export function BattleScene(props: Props) {
                   combatFrames={getCombatAppearance(game.appearance)}
                   name={me.name}
                   dir={1}
+                  scale={1.24}
                   alive={alive}
                   strike={strike}
                   idleSeconds={3.1}
@@ -158,6 +159,7 @@ export function BattleScene(props: Props) {
                     combatFrames={getFollowerCombatFrames(portraitFollower.id)}
                     name={portraitFollower.name}
                     dir={1}
+                    scale={1.03}
                     alive={alive}
                     strike={null}
                     idleSeconds={3.7}
@@ -182,6 +184,7 @@ export function BattleScene(props: Props) {
                     dir={-1}
                     mirror
                     alive={enemy.hp > 0}
+                    scale={1.08}
                     strike={strike}
                     idleSeconds={2.8}
                     className="absolute left-0 bottom-0 h-[96%] w-full object-contain object-left-bottom"
