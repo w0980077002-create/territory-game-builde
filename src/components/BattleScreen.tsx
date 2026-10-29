@@ -21,10 +21,11 @@ interface Props {
   autoStart: boolean;
   onAutoStartHandled: () => void;
   onShop: () => void;
+  onQuests: () => void;
   onActiveChange?: (active: boolean) => void;
 }
 
-export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onActiveChange }: Props) {
+export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onQuests, onActiveChange }: Props) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
@@ -78,6 +79,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
           onActiveChange?.(false);
         }}
         onNext={() => { fightStartLocked.current = false; start(fight.kind); }}
+        onQuests={() => { fightStartLocked.current = false; onActiveChange?.(false); onQuests(); }}
       />
     );
   }

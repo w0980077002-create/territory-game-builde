@@ -55,7 +55,7 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { use
           <button type="button" onClick={() => onNavigate(starterNext.destination)} className="mt-2 w-full rounded-lg border border-sky-300/40 bg-sky-500/20 px-3 py-2 text-xs font-bold text-sky-50 active:scale-[0.99]">
             {language === 'en' ? starterNext.actionEn : starterNext.actionRu}
           </button>
-          <p className="mt-1 text-[10px] text-slate-400">{language === 'en' ? 'Your regular quest rewards are listed below. No extra purchases required.' : 'Обычные награды за задания находятся ниже. Дополнительных покупок не требуется.'}</p>
+          <p className="mt-1 text-[10px] text-slate-400">{language === 'en' ? 'Your regular quest rewards are listed below.' : 'Награды за выполненные задания находятся ниже.'}</p>
         </section>
       )}
 

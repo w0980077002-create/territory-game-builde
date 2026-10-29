@@ -83,7 +83,7 @@ function formatDuration(ms: number): string {
   return `${h}:${m}:${s}`;
 }
 
-export function ShopScreen() {
+export function ShopScreen({ initialTab = 'potions' }: { initialTab?: Tab }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const { shopSale } = useStore(useLive);
@@ -132,7 +132,7 @@ export function ShopScreen() {
     if (shopStatus?.enabled && i.type === 'stone') return {...i, priceGems:i.id==='shop_stone_1'?2:8, priceGold:0};
     return shopSale ? { ...i, priceGold: discount(i.priceGold) ?? 0, priceGems: discount(i.priceGems) } : i;
   });
-  const [tab, setTab] = useState<Tab>('potions');
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [picked, setPicked] = useState<ShopItem | null>(null);
   const [result, setResult] = useState<{ item: ShopItem; text: string } | null>(null);
   const items = allItems.filter((i) => inTab(i, tab));

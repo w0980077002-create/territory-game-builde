@@ -154,6 +154,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [battleView, setBattleView] = useState<BattleView>('campaign');
   const [autoStart, setAutoStart] = useState(false);
   const [inventoryTab, setInventoryTab] = useState<'items' | 'equipment' | 'followers'>('equipment');
+  const [shopTab, setShopTab] = useState<'potions' | 'equipment'>('potions');
   const [heroTrainingOpen, setHeroTrainingOpen] = useState(false);
   const [forgeFocusId, setForgeFocusId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
@@ -428,7 +429,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             user={user}
             saveStatus={saveStatus}
             notify={notify}
-            onOpen={(next) => { if (next === 'leaderboard') setLeaderboardInitialTab('rating'); if (next === 'hero') setHeroTrainingOpen(false); setScreen(next); }}
+            onOpen={(next) => { if (next === 'leaderboard') setLeaderboardInitialTab('rating'); if (next === 'hero') setHeroTrainingOpen(false); if (next === 'shop') setShopTab('potions'); setScreen(next); }}
             questAlerts={questAlerts}
             onBattle={(view, auto) => {
               captureGameEvent('territory_battle_open', { mode: view });
@@ -452,7 +453,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             onView={setBattleView}
             autoStart={autoStart}
             onAutoStartHandled={() => setAutoStart(false)}
-            onShop={() => setScreen('shop')}
+            onShop={() => { setShopTab('potions'); setScreen('shop'); }}
+            onQuests={() => setScreen('quests')}
             onActiveChange={setBattleLocked}
           />
         )}
@@ -476,12 +478,17 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }}
           onRunes={() => { setHeroTrainingOpen(true); setScreen('hero'); }}
         />}
-        {screen === 'shop' && <ShopScreen />}
+        {screen === 'shop' && <ShopScreen key={shopTab} initialTab={shopTab} />}
         {screen === 'forge' && <ForgeScreen focusEquipmentId={forgeFocusId}
           onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')} />}
         {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => { setLeaderboardInitialTab('rating'); setScreen('leaderboard'); }} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
         {screen === 'leaderboard' && <LeaderboardScreen key={leaderboardInitialTab} user={user} initialTab={leaderboardInitialTab} />}
-        {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} onNavigate={setScreen} />}
+        {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} onNavigate={(target) => {
+          if (target === 'inventory') setInventoryTab('equipment');
+          if (target === 'shop') setShopTab('equipment');
+          if (target === 'battle') { setBattleView('campaign'); setAutoStart(false); }
+          setScreen(target);
+        }} />}
         {screen === 'games' && (
           <GamesScreen userId={user.id} onPlay={(gameId) => {
             captureGameEvent('territory_hall_game_open', { mode: gameId });

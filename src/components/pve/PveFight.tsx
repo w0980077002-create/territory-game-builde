@@ -29,6 +29,7 @@ interface Props {
   kind: FightKind;
   onExit: () => void;
   onNext?: () => void;
+  onQuests?: () => void;
 }
 
 interface Outcome {
@@ -79,7 +80,7 @@ function ZoneBtn({ label, sub, on, tone, disabled, onClick }: { label: string; s
   );
 }
 
-export function PveFight({ enemy, kind, onExit, onNext }: Props) {
+export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const { language } = useLanguage();
   const state = useStore(useGame);
   const arena = useStore(useArena);
@@ -353,6 +354,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
         )}
 
         {outcome && <OutcomePanel outcome={outcome} kind={kind} onExit={onExit}
+          questReady={state.player.level < 5 && state.quests.some(q => !q.claimed && q.current >= q.target)} onQuests={onQuests}
           onNext={onNext ? () => {
             if (nextRequested.current) return;
             nextRequested.current = true;
@@ -384,7 +386,7 @@ export function PveFight({ enemy, kind, onExit, onNext }: Props) {
   );
 }
 
-function OutcomePanel({ outcome, kind, onExit, onNext }: { outcome: Outcome; kind: FightKind; onExit: () => void; onNext?: () => void }) {
+function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests }: { outcome: Outcome; kind: FightKind; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void }) {
   const { language } = useLanguage();
   return (
     <div className="relative px-3 pb-3 pt-1 animate-pop">
@@ -401,6 +403,9 @@ function OutcomePanel({ outcome, kind, onExit, onNext }: { outcome: Outcome; kin
         ) : (
           <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>
         )}
+        {outcome.won && questReady && onQuests && <button type="button" onClick={onQuests} className="relative mt-3 w-full min-h-11 rounded-xl border border-emerald-300/60 bg-emerald-700/70 px-3 text-sm font-bold text-white active:scale-[0.98]">
+          {language === 'en' ? 'Quest reward ready — claim it' : 'Награда за задание готова — забрать'}
+        </button>}
         <div className="flex gap-2 mt-3">
           <button onClick={onExit} className="flex-1 h-10 rounded-xl bg-white/10 border border-white/15 text-sm font-semibold text-white active:scale-95 transition-transform">
             {kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Map' : 'К карте')}
