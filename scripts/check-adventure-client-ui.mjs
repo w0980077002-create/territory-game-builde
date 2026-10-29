@@ -10,14 +10,16 @@ assert.match(battle, /VITE_TERRITORY_V1_SERVER_COMBAT === 'verified'/);
 assert.match(battle, /SERVER_ADVENTURE_OPT_IN && view === 'campaign'/);
 assert.match(battle, /if \(SERVER_ADVENTURE_OPT_IN && view === 'campaign'\) return;/);
 assert.match(app, /VITE_TERRITORY_V1_SERVER_COMBAT === 'verified'/);
+assert.match(app,/restoreAdventureStartFence\(user.id\)/,'fence a pending start before autosave');
 assert.ok(app.indexOf('restoreAdventureSaveFence(user.id)') < app.indexOf('setLoaded(true)'),
   'pending server receipt must be fenced before the global autosave subscription begins');
 
-for (const name of ['territory_adventure_progress_v1','requestAdventureSettlement','restoreAdventureSaveFence',
+for (const name of ['territory_adventure_progress_v1','requestAdventureStart','restoreAdventureStartFence','requestAdventureSettlement','restoreAdventureSaveFence',
   "action: 'prepare'", "action: 'start'", "action: 'resume'", "action: 'advance'",
   'crypto.randomUUID()', 'getCampaignStage', "document.visibilityState !== 'visible'"])
   assert.ok(ui.includes(name), 'missing server-authoritative control: ' + name);
-assert.match(ui, /localStorage\.setItem\(startKey\(userId\)/, 'keep original start operation during transport error');
+assert.match(read('src/game/combatV1/receiptAdapter.ts'), /localStorage\.setItem\(startKey\(userId\)/,
+ 'persist original start operation UUID before any wager request');
 assert.match(ui, /localStorage\.setItem\(sessionKey\(userId\)/, 'recover active server session across remounts');
 assert.match(ui, /busy \|\| recoverable/, 'block conflicting controls during uncertain receipt');
 assert.match(ui, /getCampaignStage\(\(chapter-1\)\*20\+i\+1\)/, '20 stages per chapter must be rendered');
