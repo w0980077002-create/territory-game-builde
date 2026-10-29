@@ -8,6 +8,7 @@ import { getCombatAppearance } from '@/game/appearance';
 import { selectedFollower } from '@/game/followers';
 import { getFollowerArt, getFollowerCombatFrames } from '@/game/combatArt';
 import { FighterFigure } from './FighterFigure';
+import { getFighterRig } from '@/components/combat2d/fighterRigs';
 import { useLanguage } from '@/game/i18n';
 
 interface Props {
@@ -192,7 +193,7 @@ export function BattleScene(props: Props) {
                     scale={1.02}
                     strike={strike}
                     idleSeconds={2.8}
-                    className="absolute left-0 bottom-0 h-[96%] w-full object-contain object-left-bottom"
+                    className={`absolute ${getFighterRig(getCombatAppearance(enemy.appearance).idle)?.id === 'male_viking' ? '-left-[12%]' : 'left-0'} bottom-0 h-[96%] w-full object-contain object-left-bottom`}
                   />
                 </div>
               </>

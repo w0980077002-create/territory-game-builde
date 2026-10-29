@@ -55,14 +55,14 @@ const attacks: Record<'slash' | 'thrust' | 'overhead', PoseStop[]> = {
     stop(CONTACT_MS, { root: t(32, 24), torso: r(19), head: r(-12), 'arm-right': r(-74), 'forearm-right': r(-12), weapon: r(157), 'leg-right': r(-36), 'leg-left': r(29), 'arm-left': r(8) }),
     stop(450, { root: t(18, 12), torso: r(14), 'arm-right': r(-70), 'forearm-right': r(-22), weapon: r(168), 'leg-right': r(-29), 'leg-left': r(25) }), stop(600, { root: t(4, 3), torso: r(3), 'arm-right': r(-54), 'forearm-right': r(-40) }), stop(ACTION_MS)],
   overhead: [stop(0), stop(210, { root: t(-4, 12), torso: r(-12), head: r(-7), 'arm-right': r(154), 'forearm-right': r(56), weapon: r(205), 'arm-left': r(-32), 'leg-right': r(-24), 'leg-left': r(25) }),
-    stop(CONTACT_MS, { root: t(23, 24), torso: r(20), head: r(-12), 'arm-right': r(-78), 'forearm-right': r(-4), weapon: r(160), 'arm-left': r(-20), 'leg-right': r(-31), 'leg-left': r(30), hair: r(-16) }),
+    stop(CONTACT_MS, { root: t(23, 24), torso: r(20), head: r(-12), 'arm-right': r(-78), 'forearm-right': r(-4), weapon: r(155), 'arm-left': r(-20), 'leg-right': r(-31), 'leg-left': r(30), hair: r(-16) }),
     stop(490, { root: t(15, 12), torso: r(14), 'arm-right': r(-105), 'forearm-right': r(12), weapon: r(235), 'leg-right': r(-24), 'leg-left': r(22) }), stop(600, { root: t(4, 3), torso: r(3), 'arm-right': r(-56), 'forearm-right': r(-38) }), stop(ACTION_MS)],
 };
 export function motionStops(motion: FighterMotion, critical = false, rig: 'male_viking' | 'goblin' = 'male_viking', direction: 1 | -1 = 1): PoseStop[] {
   if (motion === 'slash' || motion === 'thrust' || motion === 'overhead') {
     // The goblin's curved blade has a different edge than the Viking sword.
     // Aim its contact pose slightly upward while retaining the same body action.
-    const adjustment = rig === 'goblin' ? -30 : direction === -1 && motion === 'overhead' ? -20 : 0;
+    const adjustment = rig === 'goblin' ? -30 : direction === -1 ? -20 : 0;
     const stops = adjustment ? attacks[motion].map(s => s.at === CONTACT_MS
       ? { ...s, pose: { ...s.pose, weapon: r(Number.parseFloat(s.pose.weapon!.slice(7)) + adjustment) } }
       : s) : attacks[motion];
