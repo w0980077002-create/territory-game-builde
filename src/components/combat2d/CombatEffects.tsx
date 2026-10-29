@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { bladeContact } from './combatGeometry';
+import { CONTACT_MS } from './fighterAnimations';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { useLanguage } from '@/game/i18n';
 
@@ -39,15 +40,40 @@ export function CombatEffects({ strike, role, won = false, speed = 1 }: { strike
     // Unrigged characters retain their existing effects and geometry.
     if (!blade || !hitArea) return;
     node.dataset.contact = 'pending';
+    let impact: HTMLDivElement | undefined;
+    let removalTimer: number | undefined;
     const timer = window.setTimeout(() => {
       const contact = bladeContact(blade, hitArea);
-      const rect = node.getBoundingClientRect();
-      if (!contact || contact.distance > 12 || !rect.width || !rect.height) return;
-      node.style.setProperty('--impact-x', `${(contact.point.x - rect.left) * node.offsetWidth / rect.width}px`);
-      node.style.setProperty('--impact-y', `${(contact.point.y - rect.top) * node.offsetHeight / rect.height}px`);
+      const bounds = scene.getBoundingClientRect();
+      if (!contact || contact.distance > 12 || !bounds.width || !bounds.height) return;
+      const element = scene as HTMLElement;
+      // Screen coordinates are converted into the shared scene's local coordinates.
+      const x = (contact.point.x - bounds.left) * element.offsetWidth / bounds.width - element.clientLeft;
+      const y = (contact.point.y - bounds.top) * element.offsetHeight / bounds.height - element.clientTop;
+      impact = document.createElement('div');
+      impact.className = `combat2d-scene-impact combat2d-scene-impact--${strike.tone}`;
+      impact.dataset.contactEffect = strike.tone;
+      impact.style.left = `${x}px`;
+      impact.style.top = `${y}px`;
+      impact.style.setProperty('--impact-duration', `${470 / speed}ms`);
+      const flash = document.createElement('span');
+      flash.className = strike.tone === 'block' ? 'combat2d-scene-ring' : 'combat2d-scene-flash';
+      impact.append(flash);
+      if (strike.tone !== 'block' && node.dataset.quality !== 'low') {
+        const sparks = document.createElement('span');
+        sparks.className = 'combat2d-scene-sparks';
+        impact.append(sparks);
+        if (strike.tone === 'crit') {
+          const wave = document.createElement('span');
+          wave.className = 'combat2d-scene-ring';
+          impact.append(wave);
+        }
+      }
+      element.append(impact);
       node.dataset.contact = 'ready';
-    }, 350 / speed);
-    return () => window.clearTimeout(timer);
+      removalTimer = window.setTimeout(() => impact?.remove(), 470 / speed);
+    }, CONTACT_MS / speed);
+    return () => { window.clearTimeout(timer); if (removalTimer !== undefined) window.clearTimeout(removalTimer); impact?.remove(); };
   }, [role, strike, speed]);
   const tone = strike?.tone;
   const target = role === 'target' && strike;

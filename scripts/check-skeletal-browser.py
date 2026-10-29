@@ -7,6 +7,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 import json
 import math
+import time
 import mimetypes
 import shutil
 from playwright.sync_api import sync_playwright
@@ -71,7 +72,7 @@ def feet_at(page, selector, milliseconds):
       for(const a of svg.getAnimations({subtree:true})){a.pause();a.currentTime=time;}
       return Object.fromEntries(['left','right'].map(side=>{
         const foot=svg.querySelector('[data-anchor=foot-'+side+']');
-        const p=new DOMPoint(0,55).matrixTransform(foot.getScreenCTM());
+        const p=new DOMPoint(foot.cx.baseVal.value,foot.cy.baseVal.value).matrixTransform(foot.getScreenCTM());
         return [side,{x:p.x,y:p.y}];
       }));
     }""", milliseconds)
@@ -84,6 +85,25 @@ def visible_effects(page):
     }).map(el=>el.dataset.effect)''')
 
 
+def verify_scene_contact(page, attacker, target, area):
+    effect = page.locator('.combat2d-effects[data-contact="ready"]')
+    assert effect.count() == 1, f'No measured contact: {attacker} → {target} ({area})'
+    result = effect.evaluate("""(node, names)=>{
+      const scene=node.closest('[data-combat-scene]'),mark=scene.querySelector('.combat2d-scene-impact');
+      const box=mark.getBoundingClientRect(),x=box.left,y=box.top;
+      const rigs=[...scene.querySelectorAll('svg[data-rig]')];
+      const hit=rigs.find(n=>n.getAttribute('aria-label')===names.target).querySelector('[data-anchor="'+names.area+'-hit-area"]');
+      const point=new DOMPoint(x,y).matrixTransform(hit.getScreenCTM().inverse());
+      const normalized=((point.x-hit.cx.baseVal.value)/hit.rx.baseVal.value)**2+((point.y-hit.cy.baseVal.value)/hit.ry.baseVal.value)**2;
+      const blade=rigs.find(n=>n.getAttribute('aria-label')===names.attacker).querySelector('[data-anchor="weapon-edge"]');
+      const length=blade.getTotalLength(),matrix=blade.getScreenCTM();let distance=Infinity;
+      for(let i=0;i<=96;i++){const p=blade.getPointAtLength(length*i/96).matrixTransform(matrix);distance=Math.min(distance,Math.hypot(p.x-x,p.y-y));}
+      return {normalized,distance};
+    }""", {'attacker':attacker,'target':target,'area':area})
+    assert result['normalized'] <= 1.001 and result['distance'] <= 12.1, result
+    return result
+
+
 with sync_playwright() as playwright:
     browser = playwright.chromium.launch(executable_path=shutil.which('chromium') or shutil.which('google-chrome'), headless=True, args=['--no-sandbox', '--disable-breakpad', '--disable-crash-reporter'])
     for width in [360, 390, 430]:
@@ -92,7 +112,7 @@ with sync_playwright() as playwright:
         foe = page.locator('#fixture-enemy svg[data-rig="goblin"]')
         assert hero.count() == 1 and foe.count() == 1, 'Both real rigs must mount'
         parts = hero.locator('[data-rig-part]').evaluate_all('nodes=>nodes.map(n=>n.dataset.rigPart)')
-        for name in ['root', 'torso', 'head', 'arm-right', 'forearm-right', 'weapon', 'arm-left', 'forearm-left', 'shield', 'leg-right', 'leg-left', 'knee-right', 'knee-left']:
+        for name in ['root', 'torso', 'head', 'arm-right', 'forearm-right', 'weapon', 'arm-left', 'forearm-left', 'shield', 'leg-right', 'leg-left', 'knee-right', 'knee-left', 'ankle-right', 'ankle-left']:
             assert name in parts, ('Missing independently movable part', name)
         assert hero.locator('[data-rig-part="weapon"]').evaluate('el=>!!el.parentElement.closest(\'[data-rig-part="forearm-right"]\')'), 'Weapon must inherit hand motion'
         assert hero.locator('[data-rig-part="shield"]').evaluate('el=>!!el.parentElement.closest(\'[data-rig-part="forearm-left"]\')'), 'Shield must inherit hand motion'
@@ -100,9 +120,17 @@ with sync_playwright() as playwright:
         page.screenshot(path=str(OUT / f'idle-{width}.png'))
         baseline = matrices(page, '#fixture-hero svg', 0)
         samples = {}
+        trajectories = {}
         for key, motion in [(3, 'slash'), (4, 'thrust'), (5, 'overhead')]:
+            previous = hero.locator('[data-rig-part="arm-right"]').evaluate('el=>getComputedStyle(el).transform')
             set_visual(page, {'strike': strike(key)})
             assert hero.get_attribute('data-motion') == motion
+            difference = hero.locator('[data-rig-part="arm-right"]').evaluate('''(el, before)=>{
+              const active=el.getAnimations().find(a=>a.effect.getTiming().duration===810);
+              const a=new DOMMatrix(before),b=new DOMMatrix(active.effect.getKeyframes()[0].transform);
+              return Math.max(...['a','b','c','d','e','f'].map(k=>Math.abs(a[k]-b[k])));
+            }''', previous)
+            assert difference < .02, f'{motion} jumps at transition: {difference}'
             # Capture world-space feet through the actual nested SVG transforms.
             samples_feet = {ms: feet_at(page, '#fixture-hero svg', ms) for ms in [0,100,160,250,350]}
             planted = samples_feet[0]['left']
@@ -112,8 +140,10 @@ with sync_playwright() as playwright:
             assert abs(samples_feet[250]['right']['y']-samples_feet[160]['right']['y']) > .4, f'{motion}: free foot never lifts'
             assert abs(samples_feet[350]['right']['x']-samples_feet[160]['right']['x']) > 2, f'{motion}: no visible step'
             sample = matrices(page, '#fixture-hero svg', 240)
+            tip = hero.locator('[data-anchor="weapon-tip"]').evaluate('''el=>{const p=new DOMPoint(el.cx.baseVal.value,el.cy.baseVal.value).matrixTransform(el.getScreenCTM());return {x:p.x,y:p.y}}''')
+            trajectories[motion] = tip
             samples[motion] = sample
-            for name in ['torso', 'arm-right', 'forearm-right', 'leg-right', 'leg-left', 'knee-right', 'knee-left']:
+            for name in ['torso', 'arm-right', 'forearm-right', 'leg-right', 'leg-left', 'knee-right', 'knee-left', 'ankle-right', 'ankle-left']:
                 assert sample[name] != baseline[name], f'{motion}: {name} remains static'
             page.screenshot(path=str(OUT / f'{motion}-{width}.png'))
         # The mirrored goblin uses the same foot-plant guarantee.
@@ -123,6 +153,9 @@ with sync_playwright() as playwright:
             for ms in [100, 160, 250, 350]:
                 p = feet_at(page, '#fixture-enemy svg', ms)['left']
                 assert math.hypot(p['x']-foot['x'], p['y']-foot['y']) <= 3, f'goblin support foot drifts at {ms}ms'
+        for first, second in [('slash','thrust'),('slash','overhead'),('thrust','overhead')]:
+            a,b=trajectories[first],trajectories[second]
+            assert math.hypot(a['x']-b['x'],a['y']-b['y']) > 2, f'Weapon paths indistinguishable: {first}, {second}'
         assert len({sample['arm-right'] for sample in samples.values()}) == 3, 'Three attacks must have distinct upper-arm movement'
         assert len({sample['torso'] for sample in samples.values()}) == 3, 'Three attacks must have distinct torso movement'
         report['attacks'][str(width)] = samples
@@ -137,6 +170,7 @@ with sync_playwright() as playwright:
         page.wait_for_timeout(390)
         effects = visible_effects(page)
         assert not any(effect in ['hit', 'crit', 'spark', 'sparks', 'shock', 'shockwave', 'contact'] for effect in effects), 'Dodge must not show damage effects'
+        assert page.locator('.combat2d-scene-impact').count() == 0, 'Dodge must not create a contact flash'
         page.screenshot(path=str(OUT / f'dodge-{width}.png'))
         set_visual(page, {'strike': strike(8, 'crit')})
         assert foe.get_attribute('data-motion') == 'crit-hit'
@@ -145,6 +179,7 @@ with sync_playwright() as playwright:
         assert visible_effects(page), 'Critical contact effect missing'
         page.wait_for_timeout(650)
         assert not visible_effects(page), 'Contact effects outlive the strike'
+        assert page.locator('.combat2d-scene-impact').count() == 0, 'Scene contact effects must be removed'
         # Event state can remain in PvP until queue retirement; pose must recover.
         assert hero.get_attribute('data-motion') == 'idle', 'Attacker must recover naturally while old event remains selected'
         # Mirroring applies to artwork coordinates while world movement keeps dir=-1.
@@ -228,9 +263,8 @@ with sync_playwright() as playwright:
             effects = page.locator('.combat2d-effects[data-contact="ready"]')
             assert effects.count() == 1, f'No physical contact at 350ms, attack {key}, {width}px'
             check = effects.evaluate("""node=>{
-              const box=node.getBoundingClientRect(),scene=node.closest('[data-combat-scene]');
-              const x=box.left+parseFloat(node.style.getPropertyValue('--impact-x'))*box.width/node.offsetWidth;
-              const y=box.top+parseFloat(node.style.getPropertyValue('--impact-y'))*box.height/node.offsetHeight;
+              const scene=node.closest('[data-combat-scene]'), mark=scene.querySelector('.combat2d-scene-impact');
+              const box=mark.getBoundingClientRect(),x=box.left,y=box.top;
               const hit=scene.querySelector('svg[aria-label="Противник"] [data-anchor="torso-hit-area"]');
               const local=new DOMPoint(x,y).matrixTransform(hit.getScreenCTM().inverse());
               const normalized=((local.x-hit.cx.baseVal.value)/hit.rx.baseVal.value)**2+((local.y-hit.cy.baseVal.value)/hit.ry.baseVal.value)**2;
@@ -242,7 +276,35 @@ with sync_playwright() as playwright:
             assert check['normalized'] <= 1.001 and check['distance'] <= 12.1, (key,width,check)
             if key == 15:
                 page.screenshot(path=str(OUT / f'arena-contact-{width}.png'))
-
+                if width == 390:
+                    set_visual(page, {'strike': None})
+                    page.wait_for_timeout(150)
+                    set_visual(page, {'strike': strike(24)})
+                    started = time.monotonic() - .035
+                    for phase, moment in [('start',0),('windup',160),('contact',350),('recoil',410),('recovery',600),('settle',810)]:
+                        remaining = moment - (time.monotonic() - started) * 1000
+                        if remaining > 0: page.wait_for_timeout(remaining)
+                        if phase == 'contact':
+                            page.wait_for_selector('.combat2d-scene-impact', timeout=500)
+                            page.evaluate("""()=>{const marker=document.createElement('span');marker.id='test-contact-marker';Object.assign(marker.style,{position:'absolute',left:'-3px',top:'-3px',width:'7px',height:'7px',border:'1px solid red',borderRadius:'50%',zIndex:'100'});document.querySelector('.combat2d-scene-impact').append(marker)}""")
+                        page.screenshot(path=str(OUT / f'sequence-pvp-{phase}.png'))
+                        if phase == 'contact': page.locator('#test-contact-marker').evaluate('el=>el.remove()')
+        # A block must intersect the shield itself, not the torso.
+        for block_key in [18,19,20]:
+            set_visual(page, {'strike': strike(block_key, 'block')})
+            page.evaluate("""()=>document.querySelectorAll('svg[data-rig]').forEach(svg=>svg.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=350;}))""")
+            page.wait_for_timeout(380)
+            effect = page.locator('.combat2d-effects[data-contact="ready"]')
+            assert effect.count() == 1, f'Sword misses shield at {width}px'
+            inside = effect.evaluate("""node=>{
+              const scene=node.closest('[data-combat-scene]'),mark=scene.querySelector('.combat2d-scene-impact');
+              const box=mark.getBoundingClientRect(),x=box.left,y=box.top;
+              const hit=scene.querySelector('svg[aria-label="Противник"] [data-anchor="shield-hit-area"]');
+              const p=new DOMPoint(x,y).matrixTransform(hit.getScreenCTM().inverse());
+              return ((p.x-hit.cx.baseVal.value)/hit.rx.baseVal.value)**2+((p.y-hit.cy.baseVal.value)/hit.ry.baseVal.value)**2;
+            }""")
+            assert inside <= 1.001, ('Block effect outside shield',width,inside)
+    
         page.close()
         for mode in ['pve', 'trial']:
             page = load(browser, width, mode)
@@ -256,16 +318,35 @@ with sync_playwright() as playwright:
             page.get_by_role('button', name='Защита: Грудь', exact=True).click()
             page.get_by_role('button', name='Удар: Живот', exact=True).click()
             assert page.get_by_role('button', name='УДАР', exact=True).is_enabled()
+            if mode == 'pve': page.evaluate('Math.random=()=>0.5')
             page.get_by_role('button', name='УДАР', exact=True).click()
             page.wait_for_timeout(120)
             assert page.locator('svg[data-motion="slash"],svg[data-motion="thrust"],svg[data-motion="overhead"]').count() >= 1, 'Actual playRound event must animate rig'
             page.screenshot(path=str(OUT / f'{mode}-manual-{width}.png'))
+            if mode == 'pve':
+                # Change x1/x2 while an actual playRound strike is active: the
+                # existing round keeps the same animation object and timing.
+                page.evaluate("""()=>{const root=document.querySelector('svg[data-rig=male_viking] [data-rig-part=root]');window.__roundAnimation=root.getAnimations().find(a=>a.effect.getTiming().duration===810)}""")
+                assert page.evaluate('!!window.__roundAnimation')
+                page.get_by_role('button', name='Скорость боя', exact=True).click()
+                assert page.evaluate("""()=>{const root=document.querySelector('svg[data-rig=male_viking] [data-rig-part=root]');return root.getAnimations().includes(window.__roundAnimation)&&window.__roundAnimation.effect.getTiming().duration===810}""")
+                if width == 390: page.screenshot(path=str(OUT / 'sequence-pve-start.png'))
             page.wait_for_timeout(230)
             page.screenshot(path=str(OUT / f'{mode}-contact-{width}.png'))
-            page.wait_for_timeout(1670)
+            if mode == 'pve':
+                page.wait_for_timeout(65)
+                assert page.locator('.combat2d-effects[data-contact="pending"]').count() == 0, f'PvE contact geometry missed at {width}px'
+                assert page.locator('.combat2d-effects[data-contact="ready"]').count() == 1, f'PvE contact missing at {width}px'
+                if width == 390: page.screenshot(path=str(OUT / 'sequence-pve-contact.png'))
+                page.wait_for_timeout(450)
+                if width == 390: page.screenshot(path=str(OUT / 'sequence-pve-finish.png'))
+                page.wait_for_timeout(1155)
+            else:
+                page.wait_for_timeout(1670)
             assert page.get_by_text('Пояс с эликсирами', exact=True).is_visible()
             assert page.get_by_text('Снаряжение', exact=False).count() >= 1
-            page.get_by_role('button', name='Скорость боя', exact=True).click()
+            if page.evaluate('window.__combat.game().settings.speed') != 2:
+                page.get_by_role('button', name='Скорость боя', exact=True).click()
             assert page.evaluate('window.__combat.game().settings.speed') == 2
             page.get_by_role('button', name='Авто бой', exact=False).click()
             page.wait_for_timeout(550)
@@ -273,6 +354,58 @@ with sync_playwright() as playwright:
             assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
             page.screenshot(path=str(OUT / f'{mode}-auto-x2-{width}.png'))
             page.close()
+    # Real PvE rounds: all three hero/goblin attacks in both directions,
+    # shield impacts, plus an independently started x2 round.
+    for width in [360, 390, 430]:
+        page = load(browser, width, 'pve')
+        page.evaluate('Math.random=()=>0.5')
+        for motion in ['overhead', 'thrust', 'slash']:
+            for label in ['Защита: Голова', 'Защита: Грудь', 'Удар: Живот']:
+                page.get_by_role('button',name=label,exact=True).click()
+            page.get_by_role('button',name='УДАР',exact=True).click()
+            page.wait_for_timeout(80)
+            page.evaluate("""()=>document.querySelectorAll('svg[data-rig]').forEach(svg=>svg.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=350;}))""")
+            page.wait_for_selector('.combat2d-scene-impact', timeout=1000)
+            verify_scene_contact(page, 'Рагнар', 'Гоблин', 'torso')
+            page.wait_for_selector('svg[aria-label="Гоблин"][data-motion="'+motion+'"]')
+            page.evaluate("""()=>document.querySelectorAll('svg[data-rig]').forEach(svg=>svg.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=350;}))""")
+            page.wait_for_selector('.combat2d-scene-impact', timeout=1000)
+            verify_scene_contact(page, 'Гоблин', 'Рагнар', 'torso')
+            if width == 390: page.screenshot(path=str(OUT / f'sequence-pve-goblin-{motion}.png'))
+            page.wait_for_timeout(650)
+        page.close()
+        for labels, attacker, target, second in [
+          (['Защита: Голова','Защита: Грудь','Удар: Голова'],'Рагнар','Гоблин',False),
+          (['Защита: Живот','Защита: Грудь','Удар: Живот'],'Гоблин','Рагнар',True)]:
+            page = load(browser, width, 'pve')
+            page.evaluate('Math.random=()=>0.5')
+            for index, motion in enumerate(['overhead','thrust','slash'] if second else ['thrust','slash','overhead']):
+                for label in labels: page.get_by_role('button',name=label,exact=True).click()
+                page.get_by_role('button',name='УДАР',exact=True).click()
+                if second: page.wait_for_selector('svg[aria-label="Гоблин"][data-motion="'+motion+'"]')
+                else: page.wait_for_selector('svg[aria-label="Рагнар"][data-motion="'+motion+'"]')
+                page.evaluate("""()=>document.querySelectorAll('svg[data-rig]').forEach(svg=>svg.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=350;}))""")
+                page.wait_for_selector('.combat2d-scene-impact', timeout=1000)
+                verify_scene_contact(page, attacker, target, 'shield')
+                if width == 390 and index == 0: page.screenshot(path=str(OUT / ('sequence-pve-hero-block.png' if second else 'sequence-pve-goblin-block.png')))
+                page.wait_for_timeout(650 if second else 1500)
+            page.close()
+        page = load(browser, width, 'pve')
+        page.evaluate('Math.random=()=>0.5')
+        page.get_by_role('button',name='Скорость боя',exact=True).click()
+        for label in ['Защита: Голова','Защита: Грудь','Удар: Живот']:
+            page.get_by_role('button',name=label,exact=True).click()
+        page.get_by_role('button',name='УДАР',exact=True).click()
+        page.wait_for_timeout(60)
+        page.evaluate("""()=>document.querySelectorAll('svg[data-rig]').forEach(svg=>svg.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=175;}))""")
+        page.wait_for_selector('.combat2d-scene-impact', timeout=1000)
+        verify_scene_contact(page, 'Рагнар', 'Гоблин', 'torso')
+        page.wait_for_selector('svg[aria-label="Гоблин"][data-motion="overhead"]')
+        page.evaluate("""()=>document.querySelectorAll('svg[data-rig]').forEach(svg=>svg.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=175;}))""")
+        page.wait_for_selector('.combat2d-scene-impact', timeout=1000)
+        verify_scene_contact(page, 'Гоблин', 'Рагнар', 'torso')
+        page.close()
+
     page = load(browser, low_quality=True)
     set_visual(page, {'strike': strike(13, 'block')})
     page.wait_for_timeout(380)

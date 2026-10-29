@@ -11,6 +11,8 @@
 .rig-shield { transform: rotate(-40deg); }
 .rig-leg-left { transform: rotate(9deg); }
 .rig-leg-right { transform: rotate(-9deg); }
+.rig-ankle-left { transform: rotate(-9deg); }
+.rig-ankle-right { transform: rotate(9deg); }
 .skeletal-fighter[data-motion=idle] .rig-torso { animation: rig-breathe 3.2s ease-in-out infinite; }
 .skeletal-fighter[data-motion=idle] .rig-head { animation: rig-look 4.6s ease-in-out infinite; }
 .skeletal-fighter[data-motion=idle] .rig-arm-right { animation: rig-hand 3.2s ease-in-out infinite; }
@@ -72,9 +74,14 @@
  @keyframes combat2d-label-reduced { 0%,90% { opacity:1; transform:translateX(-50%); } 100% { opacity:0; transform:translateX(-50%); } }
 }
 
-/* Measured once at contact; no persistent frame loop. */
-.combat2d-effects[data-contact=pending] :is(.combat2d-flash,.combat2d-sparks,.combat2d-ring) { visibility:hidden; }
-.combat2d-effects[data-contact=ready] .combat2d-flash { left:calc(var(--impact-x) - 16px); top:calc(var(--impact-y) - 16px); }
-.combat2d-effects[data-contact=ready].combat2d-effects--crit .combat2d-flash { left:calc(var(--impact-x) - 23px); top:calc(var(--impact-y) - 23px); }
-.combat2d-effects[data-contact=ready] .combat2d-sparks { left:var(--impact-x); top:var(--impact-y); }
-.combat2d-effects[data-contact=ready] .combat2d-ring { left:calc(var(--impact-x) - 18px); top:calc(var(--impact-y) - 18px); }
+/* Measured once at contact in the common scene's coordinate system. */
+.combat2d-effects:is([data-contact=pending],[data-contact=ready]) :is(.combat2d-flash,.combat2d-sparks,.combat2d-ring) { visibility:hidden; }
+.combat2d-scene-impact { position:absolute; z-index:40; width:1px; height:1px; pointer-events:none; --fx-color:#ffe1a3; }
+.combat2d-scene-impact--crit { --fx-color:#ffd15c; }
+.combat2d-scene-impact--block { --fx-color:#93eaff; }
+.combat2d-scene-impact > span { position:absolute; opacity:0; animation-duration:var(--impact-duration); animation-timing-function:ease-out; animation-fill-mode:both; }
+.combat2d-scene-flash { left:-16px; top:-16px; width:32px; height:32px; border-radius:50%; background:radial-gradient(circle,#fff 0 10%,var(--fx-color) 20%,transparent 70%); animation-name:combat2d-flash; }
+.combat2d-scene-impact--crit .combat2d-scene-flash { width:46px; height:46px; left:-23px; top:-23px; }
+.combat2d-scene-ring { left:-18px; top:-18px; width:36px; height:36px; border:2px solid var(--fx-color); border-radius:50%; animation-name:combat2d-ring; }
+.combat2d-scene-sparks { width:3px; height:3px; background:var(--fx-color); box-shadow:-12px -10px 0 var(--fx-color),10px -15px 0 var(--fx-color),16px 4px 0 var(--fx-color),-6px 12px 0 var(--fx-color); animation-name:combat2d-sparks; }
+@media (prefers-reduced-motion: reduce) { .combat2d-scene-impact { display:none; } }

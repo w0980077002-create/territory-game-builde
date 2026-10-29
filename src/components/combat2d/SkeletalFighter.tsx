@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { FighterRig } from './FighterRig';
 import { plantedLegFrames } from './plantedFrames';
-import { ACTION_MS, jointFrames, motionStops, type FighterMotion, type Joint } from './fighterAnimations';
+import { ACTION_MS, chooseMotion, jointFrames, motionStops, type Joint } from './fighterAnimations';
 import type { FighterRigDefinition } from './fighterRigs';
 import './combat2d.css';
 
@@ -36,10 +36,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
   const heldTerminal = !alive && terminalRef.current === 'death' ? 'death' : alive && won && terminalRef.current === 'victory' ? 'victory' : null;
   const animationKey = active && !heldTerminal ? key : null;
   const critical = Boolean(active && !heldTerminal && strike?.tone === 'crit');
-  const motion: FighterMotion = heldTerminal ?? (active
-    ? role === 'attacker' ? (['slash', 'thrust', 'overhead'] as const)[swing]
-      : strike?.tone === 'block' ? 'block' : strike?.tone === 'dodge' ? 'dodge' : strike?.tone === 'crit' ? 'crit-hit' : 'hit'
-    : strike ? 'idle' : !alive ? 'death' : won ? 'victory' : 'idle');
+  const motion = chooseMotion({ heldTerminal, active: Boolean(active), role, tone: strike?.tone, swing, queued: Boolean(strike), alive, won });
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg) return;
@@ -48,8 +45,8 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
     let animations: Animation[] = [];
     const apply = () => {
       animations.forEach(a => a.cancel());
-      const stops = motionStops(motion, critical);
-      const legs = motion === 'slash' || motion === 'thrust' || motion === 'overhead' ? plantedLegFrames(stops, rig.id, previousPose.current) : {};
+      const stops = motionStops(motion, critical, rig.id);
+      const legs = motion === 'slash' || motion === 'thrust' || motion === 'overhead' ? plantedLegFrames(stops, rig, previousPose.current) : {};
       animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).map(joint => {
         const part = joint.dataset.rigPart as Joint;
         const frames = legs[part] ?? jointFrames(part, stops);

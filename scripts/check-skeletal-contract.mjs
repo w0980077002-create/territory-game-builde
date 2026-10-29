@@ -7,16 +7,27 @@ async function load(path) {
  return import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
 }
 const {getFighterRig,rigAsset} = await load('src/components/combat2d/fighterRigs.ts');
-const {motionStops,jointFrames,CONTACT_MS,ACTION_MS} = await load('src/components/combat2d/fighterAnimations.ts');
+const {motionStops,jointFrames,chooseMotion,CONTACT_MS,ACTION_MS} = await load('src/components/combat2d/fighterAnimations.ts');
 const root='/territory-game-builde/assets/territory/characters/';
 const viking=getFighterRig(root+'heroes/male_viking/idle.webp');
 const goblin=getFighterRig(root+'enemies/goblin/idle.webp');
 assert.equal(viking.id,'male_viking'); assert.equal(goblin.id,'goblin');
+assert.notDeepEqual(viking.legs,goblin.legs,'Both rigs must declare their own limb geometry');
+assert.equal(viking.legs.ground,goblin.legs.ground,'Ground line must agree');
 for(const path of ['heroes/female_warrior','heroes/male_rogue','heroes/female_archer','enemies/wolf','bosses/northern_jarl','followers/loyal_shield']) {
  assert.equal(getFighterRig(root+path+'/idle.webp'),undefined,`Unprepared ${path} must keep approved fallback`);
 }
 assert.equal(getFighterRig(root+'heroes/male_viking/attack.webp'),undefined);
-const joints=['root','torso','head','arm-right','forearm-right','weapon','arm-left','forearm-left','shield','leg-right','leg-left','knee-right','knee-left','hair'];
+
+const state = {heldTerminal:null, active:false, role:null, swing:0, queued:false, alive:true, won:false};
+assert.equal(chooseMotion({...state, heldTerminal:'death', active:true, role:'attacker', queued:true, alive:false}),'death');
+assert.equal(chooseMotion({...state, heldTerminal:'victory', active:true, role:'target', tone:'hit', queued:true, won:true}),'victory');
+assert.equal(chooseMotion({...state, active:true, role:'target', tone:'block', queued:true, alive:false}),'block');
+assert.equal(chooseMotion({...state, active:true, role:'target', tone:'dodge', queued:true}),'dodge');
+assert.equal(chooseMotion({...state, queued:true, alive:false}),'idle');
+assert.equal(chooseMotion({...state, alive:false}),'death');
+assert.equal(chooseMotion({...state, won:true}),'victory');
+const joints=['root','torso','head','arm-right','forearm-right','weapon','arm-left','forearm-left','shield','leg-right','leg-left','knee-right','knee-left','ankle-right','ankle-left','hair'];
 const rest=motionStops('idle')[0].pose;
 assert.equal(CONTACT_MS,350); assert(ACTION_MS<870 && ACTION_MS<920,'Actions fit PvE/PvP queues');
 const attacks=['slash','thrust','overhead'];

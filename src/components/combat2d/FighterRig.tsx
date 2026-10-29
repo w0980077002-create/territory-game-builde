@@ -12,7 +12,7 @@ export const FighterRig = memo(function FighterRig({ rig }: { rig: FighterRigDef
     const left = side === 'left';
     return <g transform={`translate(${left ? 194 : 318} 258)`}>
       <g data-rig-part={`arm-${side}`} className={`rig-joint rig-arm-${side}`}>
-        <ellipse cx="0" cy="9" rx="24" ry="25" fill={rig.skin} />
+        <ellipse cx="0" cy="9" rx="24" ry="25" fill={`url(#${id}-joint-${side})`} />
         <g clipPath={`url(#${id}-upper)`}>{armImage(side, -18)}</g>
         <g transform="translate(0 57)">
           <g data-rig-part={`forearm-${side}`} className={`rig-joint rig-forearm-${side}`}>
@@ -39,23 +39,37 @@ export const FighterRig = memo(function FighterRig({ rig }: { rig: FighterRigDef
   function leg(side: 'left' | 'right') {
     const left = side === 'left';
     const sprite = (y: number) => <image href={asset(`leg-${side}`)} x={left ? -43 : -39} y={y} width={left ? 92 : 99} height="121" preserveAspectRatio="none" />;
-    return <g transform={`translate(${left ? -35 : 31} 0)`}><g data-rig-part={`leg-${side}`} className={`rig-joint rig-leg-${side}`}>
+    return <g transform={`translate(${left ? rig.legs.leftHip : rig.legs.rightHip} 0)`}><g data-rig-part={`leg-${side}`} className={`rig-joint rig-leg-${side}`}>
+      <circle data-anchor={`hip-${side}`} cx="0" cy="0" r="1" visibility="hidden" />
       <g clipPath={`url(#${id}-thigh)`}>{sprite(-13)}</g>
-      <g transform="translate(0 53)"><g data-rig-part={`knee-${side}`} className={`rig-joint rig-knee-${side}`}>
-        <circle data-anchor={`foot-${side}`} cx="0" cy="55" r="1" visibility="hidden" />
-        <g clipPath={`url(#${id}-shin)`}>{sprite(-66)}</g>
+      <g transform={`translate(0 ${rig.legs.upper})`}><g data-rig-part={`knee-${side}`} className={`rig-joint rig-knee-${side}`}>
+        <circle data-anchor={`knee-${side}`} cx="0" cy="0" r="1" visibility="hidden" />
+        <g clipPath={`url(#${id}-shin)`}>{sprite(-13 - rig.legs.upper)}</g>
+        <g transform={`translate(0 ${rig.legs.lower - rig.legs.footDepth})`}>
+          <g data-rig-part={`ankle-${side}`} className={`rig-joint rig-ankle-${side}`}>
+            <circle data-anchor={`ankle-${side}`} cx="0" cy="0" r="1" visibility="hidden" />
+            <circle data-anchor={`foot-${side}`} cx="0" cy={rig.legs.footDepth} r="1" visibility="hidden" />
+            <g clipPath={`url(#${id}-boot)`}>{sprite(-13 - rig.legs.upper - rig.legs.lower + rig.legs.footDepth)}</g>
+          </g>
+        </g>
       </g></g>
     </g></g>;
   }
   return <>
     <defs>
-      <clipPath id={`${id}-thigh`}><rect x="-55" y="-20" width="120" height="84" /></clipPath>
-      <clipPath id={`${id}-shin`}><rect x="-55" y="-12" width="120" height="80" /></clipPath>
+      {(['left', 'right'] as const).map(side => <pattern key={side} id={`${id}-joint-${side}`} width="48" height="48" patternUnits="userSpaceOnUse" viewBox="35 18 110 78" preserveAspectRatio="xMidYMid slice">
+        <rect width="200" height="300" fill={goblin ? '#879093' : '#d8c8a7'} />
+        <image href={asset(`arm-${side}`)} width="200" height="300" preserveAspectRatio="none" />
+      </pattern>)}
+      <clipPath id={`${id}-thigh`}><rect x="-55" y="-20" width="120" height={rig.legs.upper + 31} /></clipPath>
+      <clipPath id={`${id}-shin`}><rect x="-55" y="-12" width="120" height={rig.legs.lower - 21} /></clipPath>
+      <clipPath id={`${id}-boot`}><rect x="-55" y="-23" width="120" height="50" /></clipPath>
       <clipPath id={`${id}-head`}><rect x="-95" y="-145" width="190" height="164" /></clipPath>
       <clipPath id={`${id}-hair`}><rect x="-95" y="12" width="190" height="45" /></clipPath>
       <clipPath id={`${id}-upper`}><rect x="-45" y="-25" width="90" height="94" /></clipPath>
       <clipPath id={`${id}-lower`}><rect x="-45" y="-9" width="90" height="84" /></clipPath>
     </defs>
+    <path data-anchor="ground" d={`M0 ${rig.legs.ground} H512`} visibility="hidden" />
     <ellipse className="rig-ground" cx="256" cy="493" rx="112" ry="10" />
     <g transform="translate(256 390)">
       <g data-rig-part="root" className="rig-joint rig-root">

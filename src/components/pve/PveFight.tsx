@@ -13,6 +13,7 @@ import { getCombatAppearance } from '@/game/appearance';
 import { getEnemyCombatFrames, getFollowerArt, getFollowerCombatFrames, resolveCombatArtUrl } from '@/game/combatArt';
 import { hapticImpact } from '@/game/telegram';
 import { FighterFigure } from '@/components/arena/FighterFigure';
+import { getFighterRig } from '@/components/combat2d/fighterRigs';
 import { VictorySparks } from '@/components/arena/VictorySparks';
 import { FoldSection } from '@/components/arena/FoldSection';
 import { GearStrip } from '@/components/arena/GearStrip';
@@ -327,7 +328,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
                   strike={strike}
                   combatSpeed={busy || outcome ? roundSpeed : speed}
                   idleSeconds={2.8}
-                  className={`absolute left-0 bottom-0 object-contain object-left-bottom ${enemy.isBoss ? 'h-[96%] w-[100%]' : 'h-[84%] w-[88%]'}`}
+                  className={`absolute ${getFighterRig(resolveCombatArtUrl(enemy.art))?.id === 'goblin' ? '-left-[12%]' : 'left-0'} bottom-0 object-contain object-left-bottom ${enemy.isBoss ? 'h-[96%] w-[100%]' : 'h-[84%] w-[88%]'}`}
                 />
               </div>
             </div>

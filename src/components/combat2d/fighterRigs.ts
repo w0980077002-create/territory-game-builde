@@ -6,10 +6,11 @@ export interface FighterRigDefinition {
   faces: 1 | -1;
   skin: string;
   cloth: string;
+  legs: { leftHip: number; rightHip: number; upper: number; lower: number; footDepth: number; ground: number };
 }
 const RIGS: Record<RigId, FighterRigDefinition> = {
-  male_viking: { id: 'male_viking', faces: 1, skin: '#e99a59', cloth: '#1765b6' },
-  goblin: { id: 'goblin', faces: -1, skin: '#789928', cloth: '#a92d20' },
+  male_viking: { id: 'male_viking', faces: 1, skin: '#e99a59', cloth: '#1765b6', legs: { leftHip: -35, rightHip: 31, upper: 53, lower: 55, footDepth: 20, ground: 497 } },
+  goblin: { id: 'goblin', faces: -1, skin: '#789928', cloth: '#a92d20', legs: { leftHip: -33, rightHip: 29, upper: 50, lower: 58, footDepth: 20, ground: 497 } },
 };
 export function getFighterRig(idleArt: string): FighterRigDefinition | undefined {
   const match = idleArt.match(/\/characters\/(heroes\/male_viking|enemies\/goblin)\/idle\.webp(?:[?#].*)?$/);

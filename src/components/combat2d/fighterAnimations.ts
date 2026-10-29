@@ -3,14 +3,31 @@
 export const CONTACT_MS = 350;
 export const ACTION_MS = 810;
 export type FighterMotion = 'idle' | 'slash' | 'thrust' | 'overhead' | 'block' | 'dodge' | 'hit' | 'crit-hit' | 'victory' | 'death';
-export type Joint = 'root' | 'torso' | 'head' | 'arm-right' | 'forearm-right' | 'weapon' | 'arm-left' | 'forearm-left' | 'shield' | 'leg-right' | 'leg-left' | 'knee-right' | 'knee-left' | 'hair';
+/** Outcome poses have priority over late events. Confirmed queue entries play
+ * before a new outcome pose; retirement is required before entering it. */
+export function chooseMotion(options: {
+  heldTerminal: 'death' | 'victory' | null;
+  active: boolean;
+  role: 'attacker' | 'target' | null;
+  tone?: 'hit' | 'crit' | 'block' | 'dodge';
+  swing: number;
+  queued: boolean;
+  alive: boolean;
+  won: boolean;
+}): FighterMotion {
+  if (options.heldTerminal) return options.heldTerminal;
+  if (options.active && options.role === 'attacker') return (['slash', 'thrust', 'overhead'] as const)[options.swing % 3];
+  if (options.active && options.role === 'target') return options.tone === 'block' ? 'block' : options.tone === 'dodge' ? 'dodge' : options.tone === 'crit' ? 'crit-hit' : 'hit';
+  return options.queued ? 'idle' : !options.alive ? 'death' : options.won ? 'victory' : 'idle';
+}
+export type Joint = 'root' | 'torso' | 'head' | 'arm-right' | 'forearm-right' | 'weapon' | 'arm-left' | 'forearm-left' | 'shield' | 'leg-right' | 'leg-left' | 'knee-right' | 'knee-left' | 'ankle-right' | 'ankle-left' | 'hair';
 type Pose = Partial<Record<Joint, string>>;
 export interface PoseStop { at: number; pose: Pose }
 const r = (angle: number) => `rotate(${angle}deg)`;
 const t = (x: number, y: number, angle = 0) => `translate(${x}px, ${y}px) rotate(${angle}deg)`;
 const REST: Pose = {
   root: t(0, 0), torso: r(0), head: r(0), 'arm-right': r(-48), 'forearm-right': r(-44), weapon: r(117),
-  'arm-left': r(35), 'forearm-left': r(5), shield: r(-40), 'leg-right': r(-9), 'leg-left': r(9), 'knee-right': r(0), 'knee-left': r(0), hair: r(0),
+  'arm-left': r(35), 'forearm-left': r(5), shield: r(-40), 'leg-right': r(-9), 'leg-left': r(9), 'knee-right': r(0), 'knee-left': r(0), 'ankle-right': r(9), 'ankle-left': r(-9), hair: r(0),
 };
 // Every action explicitly settles all joints. No frame-rate React updates.
 const stop = (at: number, pose: Pose = {}): PoseStop => {
@@ -21,7 +38,14 @@ const stop = (at: number, pose: Pose = {}): PoseStop => {
     const hip = pose[`leg-${side}`];
     if (hip) knees[`knee-${side}`] = r(-(Number.parseFloat(hip.slice(7)) - (side === 'left' ? 9 : -9)) * .7);
   }
-  return { at, pose: { ...REST, ...knees, ...pose } };
+  const result = { ...REST, ...knees, ...pose };
+  for (const side of ['left', 'right'] as const) {
+    const hip = Number.parseFloat(result[`leg-${side}`]!.slice(7));
+    const knee = Number.parseFloat(result[`knee-${side}`]!.slice(7));
+    result[`ankle-${side}`] = r(-hip - knee);
+  }
+  return { at, pose: result };
+
 };
 const attacks: Record<'slash' | 'thrust' | 'overhead', PoseStop[]> = {
   slash: [stop(0), stop(160, { root: t(-5, 12), torso: r(-9), head: r(5), 'arm-right': r(55), 'forearm-right': r(-115), weapon: r(0), 'arm-left': r(12), 'leg-right': r(-24), 'leg-left': r(23) }),
@@ -34,9 +58,13 @@ const attacks: Record<'slash' | 'thrust' | 'overhead', PoseStop[]> = {
     stop(CONTACT_MS, { root: t(23, 24), torso: r(20), head: r(-12), 'arm-right': r(-78), 'forearm-right': r(-4), weapon: r(160), 'arm-left': r(-20), 'leg-right': r(-31), 'leg-left': r(30), hair: r(-16) }),
     stop(490, { root: t(15, 12), torso: r(14), 'arm-right': r(-105), 'forearm-right': r(12), weapon: r(235), 'leg-right': r(-24), 'leg-left': r(22) }), stop(600, { root: t(4, 3), torso: r(3), 'arm-right': r(-56), 'forearm-right': r(-38) }), stop(ACTION_MS)],
 };
-export function motionStops(motion: FighterMotion, critical = false): PoseStop[] {
+export function motionStops(motion: FighterMotion, critical = false, rig: 'male_viking' | 'goblin' = 'male_viking'): PoseStop[] {
   if (motion === 'slash' || motion === 'thrust' || motion === 'overhead') {
-    const stops = attacks[motion];
+    // The goblin's curved blade has a different edge than the Viking sword.
+    // Aim its contact pose slightly upward while retaining the same body action.
+    const stops = rig === 'goblin' ? attacks[motion].map(s => s.at === CONTACT_MS
+      ? { ...s, pose: { ...s.pose, weapon: r(Number.parseFloat(s.pose.weapon!.slice(7)) - 30) } }
+      : s) : attacks[motion];
     if (!critical) return stops;
     return stops.map((s, index) => index === 1 ? { ...s, pose: { ...s.pose, root: t(-7, 12), torso: r(-16), 'arm-right': r(motion === 'overhead' ? 165 : 66) } } : s);
   }
