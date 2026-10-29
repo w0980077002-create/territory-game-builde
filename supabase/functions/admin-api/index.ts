@@ -215,15 +215,17 @@ const ACTIVITY_COLS = "id, telegram_id, username, display_name, level, banned, l
 async function handle(action: string, body: Row) {
   switch (action) {
     case "stats": {
-      const [total, online, today, week, todayDon, settings] = await Promise.all([
+      const [total, online, today, week, newToday, newWeek, todayDon, settings] = await Promise.all([
         db.from("players").select("id", { count: "exact", head: true }),
         db.from("players").select("id", { count: "exact", head: true }).gte("last_seen_at", sinceIso(ONLINE_WINDOW_MS)),
         db.from("players").select("id", { count: "exact", head: true }).gte("last_seen_at", startOfDayIso()),
         db.from("players").select("id", { count: "exact", head: true }).gte("last_seen_at", sinceIso(7 * 24 * 60 * 60 * 1000)),
+        db.from("players").select("id", { count: "exact", head: true }).gte("created_at", startOfDayIso()),
+        db.from("players").select("id", { count: "exact", head: true }).gte("created_at", sinceIso(7 * 24 * 60 * 60 * 1000)),
         db.from("donations").select("amount_usd").gte("created_at", startOfDayIso()),
         db.from("game_settings").select("*").eq("id", 1).maybeSingle(),
       ]);
-      if (total.error || online.error || today.error || week.error || todayDon.error || settings.error) {
+      if (total.error || online.error || today.error || week.error || newToday.error || newWeek.error || todayDon.error || settings.error) {
         throw new HttpError(500, "db_error");
       }
       const todaySum = (todayDon.data ?? []).reduce((s, r) => s + Number(r.amount_usd), 0);
@@ -232,6 +234,8 @@ async function handle(action: string, body: Row) {
         onlinePlayers: online.count ?? 0,
         todayPlayers: today.count ?? 0,
         weekPlayers: week.count ?? 0,
+        newTodayPlayers: newToday.count ?? 0,
+        newWeekPlayers: newWeek.count ?? 0,
         todayPurchasesUsd: todaySum,
         settings: settings.data,
       };
@@ -241,6 +245,27 @@ async function handle(action: string, body: Row) {
       // Read an aggregated RPC; do not expose player IDs, IPs or location history.
       const { data, error } = await db.rpc("territory_admin_geography_v1");
       if (error || !data || typeof data !== "object") throw new HttpError(503, "geo_unavailable");
+      return data;
+    }
+    case "new_players": {
+      // Registration date is a server timestamp, never the last login/heartbeat.
+      // This RPC joins verified country codes without exposing private geo tables.
+      const period = body.period;
+      if (period !== "today" && period !== "week" && period !== "all") {
+        throw new HttpError(400, "invalid_request");
+      }
+      const offset = Number(body.offset ?? 0);
+      if (!Number.isSafeInteger(offset) || offset < 0 || offset > 5000) {
+        throw new HttpError(400, "invalid_request");
+      }
+      const { data, error } = await db.rpc("territory_admin_new_players_v1", {
+        p_period: period, p_offset: offset, p_page_size: 30,
+      });
+      if (error || !data || typeof data !== "object" ||
+          !Array.isArray(data.players) || !Number.isSafeInteger(data.total) ||
+          !Number.isSafeInteger(data.today) || !Number.isSafeInteger(data.week)) {
+        throw new HttpError(503, "registrations_unavailable");
+      }
       return data;
     }
     case "activity": {
