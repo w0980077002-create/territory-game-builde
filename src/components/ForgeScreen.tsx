@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
+import { saveCloudSave } from '@/game/cloud';
+import { supabase } from '@/game/supabase';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { rarityColor, rarityGlow } from '@/game/ui';
 import { Hammer, ArrowUp, X, Package, MapPinned, CheckCircle2 } from 'lucide-react';
@@ -14,7 +16,7 @@ import { forgeAttempt, forgeCost, forgeSetBonus, forgeSuccessRate } from '@/game
 import { EQUIPMENT_SLOTS } from '@/game/engine';
 import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
 
-export function ForgeScreen({ focusEquipmentId, onInventory, onMap }: { focusEquipmentId?: string | null; onInventory?: () => void; onMap?: () => void } = {}) {
+export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { focusEquipmentId?: string | null; onInventory?: () => void; onMap?: () => void; userId: string }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [now, setNow] = useState(() => Date.now());
@@ -28,6 +30,8 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap }: { focusEqu
   const [upgrading, setUpgrading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A forge result is not final until the server has persisted it.
+  const [saveUnverified, setSaveUnverified] = useState(false);
   const [gearFilter, setGearFilter] = useState<'all' | 'ready' | 'equipped'>('all');
   const focused = useRef(false);
 
@@ -58,9 +62,9 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap }: { focusEqu
   useEffect(() => () => { if (pending.current) clearTimeout(pending.current); }, []);
 
   const tryUpgrade = (item: InventoryItem) => {
-    if (lock.current || !item.equipment) return;
-    // Validate against the freshest state; modal snapshots can become stale while
-    // the shop, mail, daily rewards or auto-save change the player's resources.
+    if (lock.current || saveUnverified || !item.equipment) return;
+    // The same item, currency, and material snapshot must be checked again at the
+    // instant of the roll; the open modal can be stale after another game action.
     const now = useGame.get();
     const eq = item.equipment;
     if (eq.level >= now.player.level) {
@@ -72,29 +76,67 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap }: { focusEqu
     if (now.player.gold < cost.gold) { setError(t('notEnoughGold')); hapticNotify('error'); return; }
     if (now.forgeMaterials < cost.materials) { setError(t('notEnoughForgeMaterials')); hapticNotify('error'); return; }
 
-    lock.current = true; // synchronous guard against two taps before React render
+    lock.current = true;
     setUpgrading(true);
     setError(null);
     pending.current = setTimeout(() => {
-      const outcome: { status: ReturnType<typeof forgeAttempt>['status'] } = { status: 'invalid' };
-      useGame.set((latest) => {
-        const attempt = forgeAttempt(latest, item.id, eq.level, Math.random());
-        outcome.status = attempt.status;
-        return attempt.next;
-      });
-      lock.current = false;
       pending.current = null;
-      setUpgrading(false);
-      if (outcome.status === 'success') {
-        setSelected(null);
-        setSuccess(true);
-        hapticNotify('success');
-        setTimeout(() => setSuccess(false), 2200);
-      } else {
-        setError(outcome.status === 'failed' ? t('upgradeFailed') : (language === 'en' ? 'Equipment or resources changed. Please try again.' : 'Экипировка или ресурсы изменились. Попробуй ещё раз.'));
-        hapticNotify('error');
-        setSelected(null);
-      }
+      void (async () => {
+        let changed: ReturnType<typeof forgeAttempt> | null = null;
+        useGame.set((latest) => {
+          changed = forgeAttempt(latest, item.id, eq.level, Math.random());
+          return changed.next;
+        });
+        const result = changed as ReturnType<typeof forgeAttempt> | null;
+        if (!result || result.status === 'invalid') {
+          setError(language === 'en' ? 'Equipment or resources changed. Try again.' : 'Экипировка или ресурсы изменились. Попробуй ещё раз.');
+          hapticNotify('error');
+          setSelected(null);
+          return;
+        }
+        try {
+          // Autosave and this confirmation use the same coalescing CAS writer.
+          // Do not show a green success or permit another roll on an uncommitted level.
+          const saved = await saveCloudSave(userId, result.next);
+          if (!saved) throw new Error('forge_cloud_save_failed');
+          // A successful PATCH can be normalized by SQL triggers. Verify the
+          // canonical item level and charged resources, not just the HTTP response.
+          const { data, error: readError } = await supabase.from('players')
+            .select('game_state,gold,forge_materials')
+            .eq('id', userId).maybeSingle();
+          if (readError || !data?.game_state) throw new Error('forge_save_unverified');
+          const canonical = data.game_state as typeof result.next;
+          const originalId = eq.id;
+          const expectedLevel = result.status === 'success' ? eq.level + 1 : eq.level;
+          const savedItem = item.id.startsWith('equipped_')
+            ? Object.values(canonical.player.equipped).find((e) => e?.id === originalId)
+            : canonical.inventory.find((e) => e.id === item.id)?.equipment;
+          if (savedItem?.level !== expectedLevel
+            || data.gold !== result.next.player.gold
+            || data.forge_materials !== result.next.forgeMaterials) {
+            throw new Error('forge_save_not_committed');
+          }
+          setSelected(null);
+          if (result.status === 'success') {
+            setSuccess(true);
+            hapticNotify('success');
+            setTimeout(() => setSuccess(false), 2200);
+          } else {
+            setError(t('upgradeFailed'));
+            hapticNotify('error');
+          }
+        } catch (cause) {
+          // Keep the local snapshot intact: never overwrite newer server awards
+          // with an old copy. The player must reload before another forge roll.
+          console.warn('Forge result not verified on the server:', cause);
+          setSaveUnverified(true);
+          setSelected(null);
+          setError(language === 'en'
+            ? 'Forge result was not confirmed on the server. Reopen TERRITORY in Telegram before upgrading again. Do not repeat this roll.'
+            : 'Результат заточки не подтверждён сервером. Перезапусти TERRITORY через Telegram перед следующей заточкой. Не повторяй попытку.');
+          hapticNotify('error');
+        }
+      })().finally(() => { lock.current = false; setUpgrading(false); });
     }, 1000);
   };
 
@@ -347,7 +389,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap }: { focusEqu
             <button
               className="btn-accent w-full"
               onClick={() => tryUpgrade(selectedCurrent)}
-              disabled={upgrading || selectedCurrent.equipment.level >= state.player.level}
+              disabled={upgrading || saveUnverified || selectedCurrent.equipment.level >= state.player.level}
             >
               {upgrading ? t('blacksmithWorking') : selectedCurrent.equipment.level >= state.player.level ? (
                 t('maxLevel')
