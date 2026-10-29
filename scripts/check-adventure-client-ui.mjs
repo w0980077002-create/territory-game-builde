@@ -7,8 +7,12 @@ const app = read('src/App.tsx');
 const bridge = read('src/game/combatV1/receiptAdapter.ts');
 
 assert.match(battle, /territory_adventure_mode_v1/,'Runtime server readiness must be checked per account');
-assert.match(battle, /serverMode === 'enabled' && view === 'campaign'/);
-assert.match(battle, /if \(serverMode === 'enabled' && view === 'campaign'\) return;/);
+assert.match(battle, /if \(!isAdmin\) \{ setServerMode\('legacy'\)/,'Ordinary players must retain the legacy campaign');
+assert.match(battle, /recoveryRequired \|\| \(isAdmin && \(serverOptIn \|\| serverActive\)\)/,
+  'Server cutover must require admin opt-in or a durable in-flight session');
+assert.match(app, /isAdmin=\{isAdmin\}/,'Admin flag passed from authenticated shell');
+assert.match(battle, /showServer && view === 'campaign'/);
+assert.match(battle, /if \(showServer && view === 'campaign'\) return;/);
 assert.match(app, /restoreAdventureSaveFence\(user\.id\);\s*restoreAdventureStartFence\(user\.id\);/,'Restore fences on EVERY save load, not only on a compile-time flag');
 assert.match(app,/restoreAdventureStartFence\(user.id\)/,'fence a pending start before autosave');
 assert.ok(app.indexOf('restoreAdventureSaveFence(user.id)') < app.indexOf('setLoaded(true)'),
