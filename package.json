@@ -53,7 +53,8 @@
     "test:build-training": "node scripts/check-build-training.mjs",
     "test:world-map": "node scripts/check-world-map.mjs",
     "test:combat": "node scripts/check-combat-visuals.mjs",
-    "test:combat:browser": "node scripts/build-combat-preview.mjs && python scripts/check-skeletal-browser.py"
+    "test:combat:browser": "node scripts/build-combat-preview.mjs && python scripts/check-skeletal-browser.py",
+    "test:adventure-server": "node scripts/check-idle-engine.mjs && node scripts/check-adventure-campaign.mjs && node scripts/check-combat-profile-reconciliation.mjs && node scripts/check-adventure-settlement-sql.mjs && node scripts/check-adventure-service-sql.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

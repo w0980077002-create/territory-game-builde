@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {build} from 'esbuild';
+import {PGlite} from '@electric-sql/pglite';
+const compiled=await build({entryPoints:['src/game/combatV1/service.ts'],bundle:true,platform:'node',format:'esm',write:false,logLevel:'silent'});
+const {executeCombatCommand}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'));
+const db=new PGlite(); const player='10000000-0000-4000-8000-000000000001';
+const op=n=>`20000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+const q=async(sql,args=[]) => (await db.query(sql,args)).rows;
+const rpc=async(name,args)=>(await q(`SELECT public.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) r`,args))[0].r;
+const repo={context:(p,c)=>rpc('territory_combat_context_v1',[p,c]),commit:(p,c,x,r)=>rpc('territory_combat_commit_v1',[p,c,x,r])};
+const exec=c=>executeCombatCommand(repo,player,c,()=>12);
+const fighter={stats:{hp:1000,maxHp:1000,attack:100,defense:4,critChance:0,dodgeChance:0,blockChance:0},ownership:{heroLevel:1,skills:{},runes:{},passives:{}},loadout:{skills:[],passives:[]}};
+const enemy={...fighter,stats:{...fighter.stats,hp:10,maxHp:10,attack:1}};
+const rules={stepMs:10,maxDurationMs:10000,approachMs:20,attackIntervalMs:200,basicWindupMs:20,basicMultiplier:1,defenseFactor:0.5,magicDefenseFactor:0.2,minimumDamage:1,critMultiplier:2,blockMultiplier:0,maxEnergy:100,initialEnergy:100,energyPerSecond:0,modeDamageMultiplier:{pve:1,boss:1,pvp:1}};
+const save={player:{gold:50,xp:90,level:1,xpToNext:100,maxEnergy:20,stats:{hp:100,maxHp:100,attack:20,defense:5},equipped:{weapon:{id:'old'}}},inventory:[{id:'old'}],vip:7,redGems:45,achievements:[{id:'old'}]};
+try {
+ await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
+ CREATE SCHEMA auth; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT NULL::uuid $$;
+ CREATE TABLE public.players(id uuid primary key,banned bool default false,game_state jsonb,gold int,gems int,xp int,level int,max_energy int,updated_at timestamptz default clock_timestamp());
+ GRANT SELECT,UPDATE ON public.players TO service_role;`);
+ await q('INSERT INTO players(id,game_state,gold,gems,xp,level,max_energy) VALUES($1,$2,50,9,90,1,20)',[player,save]);
+ await db.exec(readFileSync('supabase/staged/territory_v1_combat_completion.sql','utf8'));
+ await db.exec(readFileSync('supabase/staged/territory_v1_adventure_settlement.sql','utf8'));
+ await db.exec(readFileSync('supabase/staged/territory_v1_combat_profiles_reconciliation.sql','utf8'));
+ await q(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by) VALUES($1,$2,1,$3,'{}','test evidence','test reviewer')`,[player,save,fighter]);
+ const prepared=(await q('SELECT territory_private.prepare_combat_profile_v1($1) result',[player]))[0].result;
+ assert.equal(prepared.status,'ready');
+ await q(`INSERT INTO territory_private.combat_encounters_v1(encounter_id,mode,stage,enemy,enabled,approval_reference) VALUES('s1','pve',1,$1,true,'test only'),('s2','pve',2,$1,true,'test only')`,[enemy]);
+ await db.exec(`INSERT INTO territory_private.adventure_rewards_v1(stage,encounter_id,enabled,gold,xp,approval_reference) VALUES(1,'s1',true,15,20,'test only'),(2,'s2',true,15,20,'test only')`);
+ await q(`UPDATE territory_private.combat_config_v1 SET catalog=$1,rules=$2,enabled=true,settlement_ready=true,approval_reference='test only'`,[{skills:[],runes:[],passives:[]},rules]);
+ await db.exec('SET ROLE service_role');
+ await assert.rejects(exec({action:'start',operationId:op(1),encounterId:'s2',control:'auto'}),/adventure_stage_locked/);
+ const start=await exec({action:'start',operationId:op(2),encounterId:'s1',control:'auto'});
+ await db.exec('RESET ROLE'); await q('UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=$1',[start.session_id]); await db.exec('SET ROLE service_role');
+ const command={action:'advance',operationId:op(3),sessionId:start.session_id,revision:0};
+ // PGlite serializes work through one connection. This checks competing
+ // operations/revisions, not concurrent PostgreSQL connections or lock timing.
+ const attempts=await Promise.allSettled([exec(command),exec({...command,operationId:op(4)})]);
+ const winners=attempts.filter(x=>x.status==='fulfilled'); const failures=attempts.filter(x=>x.status==='rejected');
+ assert.equal(winners.length,1); assert.equal(failures.length,1); assert.match(String(failures[0].reason),/combat_revision_conflict|combat_already_finished/);
+ const won=winners[0].value; assert.equal(won.state.status,'hero_won'); assert.equal(won.settlement.reward.gold,15); assert.equal(won.settlement.reward.xp,20);
+ assert.equal(won.settlement.unlocked_stage,2); assert.equal(won.settlement.game_state.player.gold,65); assert.equal(won.settlement.game_state.player.level,2); assert.equal(won.settlement.game_state.player.xp,10);
+ const winningCommand=attempts[0].status==='fulfilled'?command:{...command,operationId:op(4)};
+ assert.deepEqual(await exec(winningCommand),won);
+ const resume=await exec({action:'resume',sessionId:start.session_id}); assert.deepEqual(resume.settlement,won.settlement);
+ await db.exec('RESET ROLE'); const row=(await q('SELECT * FROM players WHERE id=$1',[player]))[0];
+ assert.equal(row.gold,65); assert.equal(row.xp,10); assert.deepEqual(row.game_state.inventory,save.inventory); assert.deepEqual(row.game_state.player.equipped,save.player.equipped); assert.equal(row.game_state.redGems,45); assert.equal(row.game_state.vip,7);
+ console.log('Adventure service + SQL PGlite PASS: reviewed test profile, real engine victory, receipt replay/resume, legacy wallet and save, locked stage.');
+} finally {await db.close();}
