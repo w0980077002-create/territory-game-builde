@@ -15,12 +15,13 @@ import { Package, X, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned } from 
 
 /** Equipment, consumables/belt and companions share the inventory route.
  * The follower model is unchanged: training and PvE selection stay in the global store. */
-export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfessions, onMap }: {
+export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfessions, onMap, onBattle }: {
   initialTab?: 'items' | 'equipment' | 'followers';
   userId: string;
   onForge?: (equipmentId?: string) => void;
   onProfessions?: () => void;
   onMap?: () => void;
+  onBattle?: () => void;
 }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
@@ -80,6 +81,9 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
       <div ref={inventoryContentRef} id="inventory-current-section" role="tabpanel" className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide pb-2">
       {tab === 'equipment' ? (
         <div data-testid="equipment-responsive-layout" className="flex min-h-full w-full min-w-0 flex-col">
+          {onBattle && state.player.level < 5 && state.totalBattlesWon > 0 && Object.values(state.player.equipped).some(Boolean) && <button type="button" onClick={onBattle} className="w-full min-h-11 rounded-xl border border-amber-400/50 bg-amber-700/30 px-3 text-xs font-bold text-amber-100">
+            {language === 'en' ? 'Continue the campaign' : 'Продолжить поход'}
+          </button>}
           {/* Center short inventories on tall phones; auto margins collapse for long inventories. */}
           <div className="my-auto w-full min-w-0 pt-3 pb-4">
             <GearShowcase userId={userId} onForge={onForge}/>

@@ -459,7 +459,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           />
         )}
         {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} userId={user.id}
-          onForge={openForge} onProfessions={() => setScreen('professions')} onMap={() => setScreen('map')} />}
+          onForge={openForge} onProfessions={() => setScreen('professions')} onMap={() => setScreen('map')}
+          onBattle={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }} />}
         {screen === 'hero' && <ProfileScreen key={heroTrainingOpen ? 'runes' : 'hero'} user={user} initialTrainingOpen={heroTrainingOpen} />}
         {screen === 'map' && <MapScreen
           attentionPlaces={[
@@ -478,7 +479,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }}
           onRunes={() => { setHeroTrainingOpen(true); setScreen('hero'); }}
         />}
-        {screen === 'shop' && <ShopScreen key={shopTab} initialTab={shopTab} />}
+        {screen === 'shop' && <ShopScreen key={shopTab} initialTab={shopTab} onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} />}
         {screen === 'forge' && <ForgeScreen focusEquipmentId={forgeFocusId}
           onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')} />}
         {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => { setLeaderboardInitialTab('rating'); setScreen('leaderboard'); }} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}

@@ -361,6 +361,9 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
       </section>}
 
       <section className="gear-bag" aria-label={language === 'en' ? 'Equipment inventory' : 'Инвентарь экипировки'}>
+        {state.player.level < 5 && equipment.length > 0 && !Object.values(state.player.equipped).some(Boolean) && !selection && <p className="mb-2 rounded-lg border border-sky-400/40 bg-sky-950/60 px-3 py-2 text-xs leading-relaxed text-sky-100" role="note">
+          {language === 'en' ? 'Tap an item below, compare it, then press Equip.' : 'Нажми на вещь в сумке ниже, сравни её и выбери «Надеть».'}
+        </p>}
         <div className="gear-bag-toolbar">
           <button type="button" disabled={!bag || !canSalvage || busy || mustReload}
             onClick={() => setConfirm('salvage')} className="gear-bag-salvage">

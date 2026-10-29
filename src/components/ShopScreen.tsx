@@ -10,11 +10,11 @@ import { MAX_SHOP_PURCHASE_QTY } from '@/game/purchaseGuard';
 import { calendarDayKey } from '@/game/weeklyQuests';
 import { utcMidnight } from '@/game/seasonCalendar';
 import { rarityColor } from '@/game/ui';
-import { CheckCircle2, Sword, Shield, Heart, Star, Minus, Plus, Clock, Crown, Sparkles, LockKeyhole } from 'lucide-react';
+import { CheckCircle2, Sword, Shield, Heart, Star, Minus, Plus, Clock, Crown, Sparkles, LockKeyhole, X } from 'lucide-react';
 import type { GameState, ShopItem } from '@/game/types';
 import { ItemArt } from './ui/ItemArt';
 import { Currency, formatAmount } from './ui/Currency';
-import { Modal } from './ui/Modal';
+import { IosGamePortal, Modal } from './ui/Modal';
 import { useLive, SHOP_SALE_FACTOR } from '@/game/live';
 import { fetchShopStatus, purchaseServerStones, readPendingShop, keepPendingShop, type ShopStatus, type PendingShop } from '@/game/shopApi';
 import {
@@ -83,7 +83,7 @@ function formatDuration(ms: number): string {
   return `${h}:${m}:${s}`;
 }
 
-export function ShopScreen({ initialTab = 'potions' }: { initialTab?: Tab }) {
+export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab?: Tab; onInventory?: () => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const { shopSale } = useStore(useLive);
@@ -136,12 +136,14 @@ export function ShopScreen({ initialTab = 'potions' }: { initialTab?: Tab }) {
   const [picked, setPicked] = useState<ShopItem | null>(null);
   const [result, setResult] = useState<{ item: ShopItem; text: string } | null>(null);
   const items = allItems.filter((i) => inTab(i, tab));
+  const firstGearResult = !!onInventory && result?.item.type === 'equipment' && state.player.level < 5
+    && !Object.values(state.player.equipped).some(Boolean);
 
   useEffect(() => {
-    if (!result) return;
+    if (!result || firstGearResult) return;
     const t = setTimeout(() => setResult(null), 2600);
     return () => clearTimeout(t);
-  }, [result]);
+  }, [result, firstGearResult]);
 
   const buy = async (item: ShopItem, qty: number) => {
     if (buying || pendingShop) return;
@@ -357,13 +359,19 @@ export function ShopScreen({ initialTab = 'potions' }: { initialTab?: Tab }) {
       </Modal>}
 
       {result && (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-50 w-[calc(100%-32px)] max-w-sm rounded-2xl border border-emerald-400/40 bg-[#0f1f1a]/95 backdrop-blur-md px-3 py-2.5 flex items-center gap-3 shadow-2xl animate-sheet-up">
+        <IosGamePortal>
+        <div role="status" className="fixed left-1/2 -translate-x-1/2 bottom-24 z-50 w-[calc(100%-32px)] max-w-sm rounded-2xl border border-emerald-400/40 bg-[#0f1f1a]/95 backdrop-blur-md px-3 py-2.5 flex items-center gap-3 shadow-2xl animate-sheet-up">
           <ItemArt item={result.item} size={36} />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-emerald-200 flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> {t('purchased')}</p>
             <p className="text-xs text-gray-300 truncate">{result.text}</p>
+            {firstGearResult && <button type="button" onClick={onInventory} className="mt-2 min-h-10 rounded-lg border border-emerald-300/60 bg-emerald-700 px-3 text-xs font-bold text-white">
+              {language === 'en' ? 'Equip in inventory' : 'Надеть в инвентаре'}
+            </button>}
           </div>
+          {firstGearResult && <button type="button" onClick={() => setResult(null)} aria-label={language === 'en' ? 'Close' : 'Закрыть'} className="self-start rounded-lg p-2 text-emerald-100"><X size={18}/></button>}
         </div>
+        </IosGamePortal>
       )}
     </div>
   );
