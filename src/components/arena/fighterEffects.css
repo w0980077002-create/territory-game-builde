@@ -1,0 +1,75 @@
+/* Cosmetic feedback only: the event and damage come from the combat queue. */
+.fighter-impact {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+.fighter-impact > span { position: absolute; opacity: 0; }
+.fighter-impact__arc {
+  left: calc(26% + var(--dir, 1) * 10%); top: 35%; width: 48%; height: 29%;
+  border-radius: 50%;
+  border-bottom: 4px solid #d9faff;
+  box-shadow: 0 3px 4px #19a8ff, 0 7px 9px #1676e3;
+  transform: rotate(-35deg);
+  animation: fighter-arc 420ms ease-out 310ms both;
+}
+.fighter-impact--crit .fighter-impact__arc {
+  border-bottom-width: 6px;
+  box-shadow: 0 3px 6px #6ee7ff, 0 8px 14px #1789ff;
+}
+.fighter-impact__spark {
+  left: calc(50% + var(--dir, 1) * 15%); top: 39%; width: 42px; height: 42px;
+  background: radial-gradient(circle, #fff 0 8%, #ffe58a 10%, #ff8a17 25%, transparent 65%);
+  animation: fighter-spark 350ms ease-out 360ms both;
+}
+.fighter-impact--crit .fighter-impact__spark { width: 56px; height: 56px; filter: drop-shadow(0 0 5px #ff8c22); }
+.fighter-impact__shield {
+  left: calc(45% + var(--dir, 1) * 15%); top: 35%; width: 54px; height: 54px;
+  border: 3px solid #b9f4ff; border-radius: 50%;
+  background: radial-gradient(circle, #baf7ff99, #0288d544 55%, transparent 70%);
+  box-shadow: 0 0 12px #25bfff;
+  animation: fighter-spark 390ms ease-out 360ms both;
+}
+.fighter-impact__trail {
+  left: calc(40% + var(--dir, 1) * 15%); top: 40%; width: 52px; height: 22px;
+  border-bottom: 3px solid #a8eaff; border-radius: 50%;
+  box-shadow: 0 5px 8px #357cff;
+  animation: fighter-trail 350ms ease-out 320ms both;
+}
+.fighter-impact__label {
+  left: 38%; top: 19%;
+  color: #fff; font-size: 19px; line-height: 1; font-weight: 900;
+  white-space: nowrap; text-shadow: 0 2px 2px #2b1209, 0 0 5px #000;
+  animation: fighter-label 480ms ease-out 360ms both;
+}
+.fighter-impact--crit .fighter-impact__label { color: #ffba38; font-size: 24px; }
+.fighter-impact--block .fighter-impact__label { color: #7fe3ff; font-size: 16px; }
+.fighter-impact--dodge .fighter-impact__label { color: #d3a2ff; font-size: 16px; }
+.fighter-impact__label small { display: block; font-size: 11px; text-align: center; }
+@keyframes fighter-arc {
+  0% { opacity: 0; transform: rotate(-50deg) scale(.55); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(-20deg) scale(1.08); }
+}
+@keyframes fighter-spark {
+  0% { opacity: 0; transform: scale(.35); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+@keyframes fighter-trail {
+  0% { opacity: 0; transform: translateX(0); }
+  25% { opacity: .8; }
+  100% { opacity: 0; transform: translateX(calc(var(--dir, 1) * -22px)); }
+}
+@keyframes fighter-label {
+  0% { opacity: 0; transform: translateY(7px); }
+  20% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-12px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fighter-impact__arc, .fighter-impact__spark, .fighter-impact__shield, .fighter-impact__trail { display: none; }
+  .fighter-impact__label { animation-name: fighter-label-reduced; }
+  @keyframes fighter-label-reduced { 0%, 100% { opacity: 0; } 20%, 75% { opacity: 1; } }
+}

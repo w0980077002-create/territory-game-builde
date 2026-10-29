@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { useLanguage } from '@/game/i18n';
+import './fighterEffects.css';
 
 interface Props {
   src: string;
@@ -75,51 +76,23 @@ export function FighterFigure({ src, combatFrames, name, dir, mirror = false, al
 function Impact({ strike }: { strike: StrikeEvent }) {
   const { language } = useLanguage();
   const crit = strike.tone === 'crit';
-  if (strike.tone === 'dodge') {
-    return (
-      <>
-        <span aria-hidden="true" className="battle-dodge-echo absolute left-[12%] top-[31%] h-[48%] w-[65%] rounded-full border border-cyan-200/50 bg-cyan-300/10 blur-sm pointer-events-none" />
-        <span className="absolute left-1/2 top-[22%] z-30 animate-dmg text-base font-black text-cyan-200 whitespace-nowrap [text-shadow:0_2px_6px_rgba(0,0,0,0.9)]">
-          {language === 'en' ? 'DODGE!' : 'Уклон!'}
-        </span>
-      </>
-    );
-  }
-  if (strike.tone === 'block') {
-    return (
-      <>
-        <span className="absolute left-1/2 top-[38%] -ml-9 -mt-9 w-[72px] h-[72px] rounded-full border-2 border-sky-300/90 bg-sky-400/20 shadow-[0_0_24px_rgba(56,189,248,0.7)] animate-shield-pulse pointer-events-none" />
-        <span className="absolute left-1/2 top-[22%] z-30 animate-dmg text-base font-black text-sky-200 whitespace-nowrap [text-shadow:0_2px_6px_rgba(0,0,0,0.9)]">
-          {language === 'en' ? 'BLOCK' : 'Блок'}
-        </span>
-      </>
-    );
-  }
+  const label = strike.tone === 'dodge' ? (language === 'en' ? 'DODGE!' : 'УКЛОН!')
+    : strike.tone === 'block' ? (language === 'en' ? 'BLOCK!' : 'БЛОК!') : null;
+
   return (
-    <>
-      <span
-        aria-hidden="true"
-        className={`arena-impact-burst absolute left-1/2 top-[40%] h-16 w-16 rounded-full pointer-events-none ${crit ? 'arena-impact-crit' : 'arena-impact-normal'}`}
-      />
-      <span
-        aria-hidden="true"
-        className={`battle-sword-arc battle-sword-arc-${Math.abs(strike.key) % 3} absolute left-[-16%] right-[-16%] top-[38%] z-30 pointer-events-none ${crit ? 'battle-sword-arc-crit' : ''}`}
-      />
-      <span
-        className={`absolute left-[12%] right-[12%] top-[40%] rounded-full pointer-events-none animate-slash ${
-          crit
-            ? 'h-1.5 bg-gradient-to-r from-transparent via-amber-200 to-transparent shadow-[0_0_18px_rgba(251,191,36,0.95)]'
-            : 'h-1 bg-gradient-to-r from-transparent via-white to-transparent shadow-[0_0_14px_rgba(248,113,113,0.95)]'
-        }`}
-      />
-      <span
-        className={`absolute left-1/2 top-[18%] z-30 animate-dmg font-black whitespace-nowrap [text-shadow:0_2px_8px_rgba(0,0,0,0.95)] ${
-          crit ? 'text-3xl text-amber-300' : 'text-2xl text-red-500'
-        }`}
-      >
-        {crit && <span className="block text-[10px] tracking-[0.3em] text-amber-200 text-center">{language === 'en' ? 'CRIT' : 'КРИТ'}</span>}
-        −{strike.amount ?? 0}
-      </span>
-    </>
+    <div className={`fighter-impact fighter-impact--${strike.tone}`} aria-hidden="true">
+      {strike.tone === 'dodge' ? <span className="fighter-impact__trail" />
+        : strike.tone === 'block' ? <span className="fighter-impact__shield" />
+        : <>
+          <span className="fighter-impact__arc" />
+          <span className="fighter-impact__spark" />
+        </>}
+      {(label || strike.amount !== null) && (
+        <span className="fighter-impact__label">
+          {crit && <small>{language === 'en' ? 'CRIT!' : 'КРИТ!'}</small>}
+          {label ?? `−${strike.amount}`}
+        </span>
+      )}
+    </div>
   );
 }

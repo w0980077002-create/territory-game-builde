@@ -16,7 +16,7 @@ import { ArenaResultCard } from './ArenaResultCard';
 import { ArenaChat } from './ArenaChat';
 import { GearStrip } from './GearStrip';
 import { BeltBar } from './BeltBar';
-import { FoldSection } from './FoldSection';
+import './arenaBattlePanels.css';
 import { equipmentArt } from '@/game/art';
 import { ItemArt } from '@/components/ui/ItemArt';
 import { IosGamePortal } from '@/components/ui/Modal';
@@ -291,20 +291,21 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
         />
       )}
 
-      {/* A slim, collapsible quick belt immediately between the fight and chat.
-          Its state is independent of equipment and item usage restrictions. */}
-      {room.status !== 'waiting' && (
+      {/* The belt keeps its existing actions and the gear strip remains informational. */}
+      <div className="arena-supplies">
+        {room.status !== 'waiting' && (
         <section aria-label={language === 'en' ? 'Battle elixirs' : 'Боевые эликсиры'}
-          className="overflow-hidden rounded-xl border border-amber-400/35 bg-gradient-to-b from-[#241a19]/95 to-[#080e1c]/95 shadow-[0_3px_10px_rgba(0,0,0,0.4)]">
+          className="arena-supply-panel">
           <button
             type="button"
             aria-expanded={beltOpen}
             aria-controls="arena-quick-belt"
             onClick={() => setBeltOpen((open) => !open)}
-            className="flex h-7 w-full items-center gap-2 px-2 text-left transition-colors hover:bg-white/5"
+            className="arena-supply-heading"
+            style={{ backgroundImage: `url(${import.meta.env.BASE_URL}assets/territory/ui/wooden-plaque.webp)` }}
           >
-            <span className="shrink-0 truncate text-[10px] font-bold uppercase tracking-[0.08em] text-amber-200">
-              {language === 'en' ? 'Elixirs & items' : 'Эликсиры и предметы'}
+            <span className="arena-supply-title">
+              {language === 'en' ? 'Elixirs' : 'Эликсиры'}
             </span>
             <span className="flex min-w-0 flex-1 items-center justify-end gap-1 overflow-hidden">
               {!beltOpen && game.belt.map((item, index) =>
@@ -317,7 +318,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
             <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-amber-200 transition-transform duration-200 ${beltOpen ? 'rotate-180' : ''}`} />
           </button>
           {beltOpen && (
-            <div id="arena-quick-belt" className="px-1.5 pb-1 pt-0.5">
+            <div id="arena-quick-belt" className="arena-supply-body">
               <BeltBar
                 compact
                 belt={game.belt}
@@ -332,32 +333,31 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
         </section>
       )}
 
+        {room.status !== 'waiting' && (
+          <section className="arena-supply-panel" aria-label={language === 'en' ? 'Equipment' : 'Экипировка'}>
+            <button type="button" aria-expanded={gearOpen} aria-controls="arena-quick-gear"
+              onClick={() => setGearOpen((open) => !open)} className="arena-supply-heading"
+            style={{ backgroundImage: `url(${import.meta.env.BASE_URL}assets/territory/ui/wooden-plaque.webp)` }}>
+              <span className="arena-supply-title">{language === 'en' ? 'Equipment' : 'Экипировка'}</span>
+              <span className="flex min-w-0 flex-1 items-center justify-end gap-1 overflow-hidden">
+                {!gearOpen && Object.values(game.player.equipped).filter((eq) => !!eq).slice(0, 3).map((eq) => (
+                  <img key={eq!.id} src={equipmentArt(eq!)} alt="" className="h-5 w-5 object-contain" />
+                ))}
+                <span className="shrink-0 text-[10px] font-semibold tabular-nums text-amber-100/75">{Object.values(game.player.equipped).filter(Boolean).length}/7</span>
+              </span>
+              <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-amber-200 transition-transform duration-200 ${gearOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {gearOpen && <div id="arena-quick-gear" className="arena-supply-body"><GearStrip equipped={game.player.equipped} /></div>}
+          </section>
+        )}
+      </div>
+
       <ArenaChat
         roomId={roomId}
         messages={messages}
         myName={me.name}
         canSend={!chatExpired}
       />
-
-      {room.status !== 'waiting' && (
-        <div className="space-y-1.5">
-          <FoldSection
-            title={language === 'en' ? 'Equipment' : 'Снаряжение'}
-            open={gearOpen}
-            onToggle={() => setGearOpen((o) => !o)}
-            summary={
-              <>
-                {Object.values(game.player.equipped).filter((eq) => !!eq).slice(0, 3).map((eq) => (
-                  <img key={eq!.id} src={equipmentArt(eq!)} alt="" className="h-5 w-5 object-contain" />
-                ))}
-                <span className="text-[10px] text-gray-500 tabular-nums ml-1">{Object.values(game.player.equipped).filter(Boolean).length}/7</span>
-              </>
-            }
-          >
-            <GearStrip equipped={game.player.equipped} />
-          </FoldSection>
-        </div>
-      )}
 
       {actionError && <div className="card text-center text-sm text-red-400 py-3 animate-fade-in">{actionError}</div>}
 
