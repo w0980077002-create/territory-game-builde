@@ -321,8 +321,8 @@ with sync_playwright() as playwright:
             assert inside <= 1.001, ('Block effect outside shield',width,inside)
             verify_scene_contact(page, 'Рагнар', 'Противник', 'shield')
         # The smaller mirrored PvP Viking must also reach the hero's body and shield.
-        for tone in ['hit', 'block']:
-            for key in [24,25,26]:
+        for tone, keys in [('hit',[30,31,32]), ('block',[33,34,35])]:
+            for key in keys:
                 set_visual(page, {'strike': strike(key, tone=tone, attacker='Противник')})
                 page.evaluate("""()=>document.querySelectorAll('svg[data-rig]').forEach(svg=>svg.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=350;}))""")
                 page.wait_for_selector('.combat2d-scene-impact', timeout=1000)
