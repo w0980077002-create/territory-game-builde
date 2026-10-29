@@ -89,7 +89,7 @@ DECLARE c territory_private.combat_config_v1%ROWTYPE;
   d territory_private.combat_profiles_v1%ROWTYPE;
   s territory_private.combat_sessions_v1%ROWTYPE;
   r territory_private.combat_operations_v1%ROWTYPE;
-  result jsonb; projected_stats jsonb;
+  result jsonb; projected_stats jsonb; settlement jsonb;
 BEGIN
   IF p_player IS NULL OR NOT EXISTS(SELECT 1 FROM public.players WHERE id=p_player AND NOT coalesce(banned,false))
     THEN RAISE EXCEPTION 'combat_account_unavailable'; END IF;
@@ -112,6 +112,11 @@ BEGIN
     IF NOT FOUND THEN RAISE EXCEPTION 'combat_session_not_found'; END IF;
     result:=result||jsonb_build_object('session',jsonb_build_object('id',s.session_id,
       'revision',s.revision,'cursorMs',s.cursor_ms,'state',s.state));
+    IF s.state->>'status'<>'fighting' THEN
+      SELECT receipt INTO settlement FROM territory_private.adventure_settlements_v1
+        WHERE session_id=s.session_id AND player_id=p_player;
+      result:=result||jsonb_build_object('settlement',settlement);
+    END IF;
   END IF;
   IF p_request->>'action'='resume' THEN RETURN result; END IF;
   IF NOT c.enabled OR c.approval_reference IS NULL THEN RAISE EXCEPTION 'combat_not_enabled'; END IF;
@@ -119,6 +124,7 @@ BEGIN
     IF NOT c.settlement_ready THEN RAISE EXCEPTION 'combat_settlement_not_ready'; END IF;
     SELECT * INTO e FROM territory_private.combat_encounters_v1 WHERE encounter_id=p_request->>'encounterId' AND enabled;
     IF NOT FOUND THEN RAISE EXCEPTION 'combat_encounter_not_available'; END IF;
+    IF e.mode NOT IN ('pve','boss') THEN RAISE EXCEPTION 'combat_encounter_not_available'; END IF;
     IF e.mode='pvp' THEN
       IF e.enemy_player_id=p_player THEN RAISE EXCEPTION 'combat_self_battle'; END IF;
       SELECT * INTO d FROM territory_private.combat_profiles_v1 WHERE player_id=e.enemy_player_id AND verified;
@@ -161,9 +167,13 @@ DECLARE c territory_private.combat_config_v1%ROWTYPE;
   e territory_private.combat_encounters_v1%ROWTYPE;
   s territory_private.combat_sessions_v1%ROWTYPE;
   r territory_private.combat_operations_v1%ROWTYPE;
-  receipt jsonb; a text:=p_request->>'action';
+  receipt jsonb; settlement jsonb; a text:=p_request->>'action';
+  wallet public.players%ROWTYPE;
+  available_stones bigint;
 BEGIN
-  -- One account lock serializes different sessions, build changes and request IDs.
+  -- Serialize with existing player saves before taking any combat-specific lock.
+  PERFORM 1 FROM public.players WHERE id=p_player AND NOT coalesce(banned,false) FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'combat_account_unavailable'; END IF;
   SELECT * INTO h FROM territory_private.combat_profiles_v1 WHERE player_id=p_player FOR UPDATE;
   IF NOT FOUND OR NOT h.verified THEN RAISE EXCEPTION 'combat_profile_not_verified'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.players WHERE id=p_player AND NOT coalesce(banned,false))
@@ -178,6 +188,8 @@ BEGIN
   IF NOT c.enabled OR c.approval_reference IS NULL THEN RAISE EXCEPTION 'combat_not_enabled'; END IF;
   IF c.version<>(p_context->>'configVersion')::integer OR h.version<>(p_context->>'profileVersion')::integer
     THEN RAISE EXCEPTION 'combat_revision_conflict'; END IF;
+  IF a IN ('start','loadout') AND NOT territory_private.combat_profile_is_current_v1(p_player)
+    THEN RAISE EXCEPTION 'combat_profile_needs_reconciliation'; END IF;
   IF a='loadout' THEN
     IF h.version<>(p_request->>'revision')::integer OR p_result->'loadout' IS DISTINCT FROM p_request->'loadout'
       THEN RAISE EXCEPTION 'combat_revision_conflict'; END IF;
@@ -185,11 +197,31 @@ BEGIN
       version=version+1,updated_at=clock_timestamp() WHERE player_id=p_player;
     receipt:=jsonb_build_object('success',true,'profile_revision',h.version+1,'loadout',p_result->'loadout');
   ELSIF a='start' THEN
+    IF NOT c.settlement_ready THEN RAISE EXCEPTION 'combat_settlement_not_ready'; END IF;
     SELECT * INTO e FROM territory_private.combat_encounters_v1 WHERE encounter_id=p_request->>'encounterId' FOR SHARE;
     IF NOT FOUND OR NOT e.enabled OR e.version<>(p_context->'encounter'->>'version')::integer
       THEN RAISE EXCEPTION 'combat_encounter_not_available'; END IF;
+    IF e.mode NOT IN ('pve','boss') THEN RAISE EXCEPTION 'combat_encounter_not_available'; END IF;
+    PERFORM territory_private.adventure_check_start_v1(p_player,e.encounter_id);
     IF EXISTS(SELECT 1 FROM territory_private.combat_sessions_v1 WHERE player_id=p_player AND state->>'status'='fighting')
       THEN RAISE EXCEPTION 'combat_active_session_exists'; END IF;
+    -- The real V1 PvE consumes one battle stone per accepted start. Debit
+    -- only after all stage/profile/session checks, inside the same operation
+    -- transaction as the session and its durable replay receipt.
+    SELECT * INTO wallet FROM public.players WHERE id=p_player FOR UPDATE;
+    IF jsonb_typeof(wallet.game_state->'battleStones') IS DISTINCT FROM 'number'
+      OR (wallet.game_state->>'battleStones')::numeric < 1
+      OR (wallet.game_state->>'battleStones')::numeric > 2147483647
+      OR trunc((wallet.game_state->>'battleStones')::numeric) <> (wallet.game_state->>'battleStones')::numeric
+      THEN RAISE EXCEPTION 'adventure_no_battle_stones'; END IF;
+    available_stones := (wallet.game_state->>'battleStones')::bigint;
+    UPDATE public.players SET game_state=jsonb_set(game_state,'{battleStones}',to_jsonb(available_stones-1)),
+      updated_at=greatest(clock_timestamp(),updated_at+interval '1 millisecond')
+      WHERE id=p_player RETURNING * INTO wallet;
+    -- If a live trigger unexpectedly alters combat-relevant fields, fail
+    -- the entire transaction instead of spending currency with stale stats.
+    IF NOT territory_private.combat_profile_is_current_v1(p_player)
+      THEN RAISE EXCEPTION 'combat_profile_needs_reconciliation'; END IF;
     INSERT INTO territory_private.combat_sessions_v1(player_id,encounter_id,state,cursor_ms)
       VALUES(p_player,e.encounter_id,p_result->'state',(p_result->>'cursorMs')::bigint) RETURNING * INTO s;
   ELSIF a='advance' THEN
@@ -205,11 +237,19 @@ BEGIN
     IF s.state->>'status'<>'fighting' THEN
       INSERT INTO territory_private.combat_outcomes_v1(session_id,player_id,mode,encounter_id,outcome)
         VALUES(s.session_id,p_player,s.state->'input'->>'mode',s.encounter_id,s.state->>'status') ON CONFLICT DO NOTHING;
+      settlement:=territory_private.adventure_settle_v1(p_player,s.session_id);
     END IF;
   ELSE RAISE EXCEPTION 'combat_invalid_action'; END IF;
   IF a<>'loadout' THEN
     receipt:=jsonb_build_object('success',true,'session_id',s.session_id,'revision',s.revision,
-      'state',s.state,'events',coalesce(p_result->'events','[]'::jsonb),'rewards_claimed',false);
+      'state',s.state,'events',coalesce(p_result->'events','[]'::jsonb),
+      'rewards_claimed',coalesce(settlement->>'outcome'='hero_won',false),'settlement',settlement);
+    IF a='start' THEN
+      receipt:=receipt||jsonb_build_object('start_save',jsonb_build_object(
+        'success',true,'session_id',s.session_id,'updated_at',wallet.updated_at,
+        'wallet_gold',wallet.gold,'wallet_gems',wallet.gems,
+        'battle_stones',available_stones-1,'game_state',wallet.game_state));
+    END IF;
   END IF;
   INSERT INTO territory_private.combat_operations_v1(player_id,operation_id,request,receipt)
     VALUES(p_player,(p_request->>'operationId')::uuid,p_request,receipt);
