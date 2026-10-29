@@ -12,7 +12,7 @@ import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
 import { getEnemyCombatFrames, getFollowerArt, getFollowerCombatFrames, resolveCombatArtUrl } from '@/game/combatArt';
 import { hapticImpact } from '@/game/telegram';
-import { FighterFigure } from '@/components/arena/FighterFigure';
+import { CombatClash, FighterFigure } from '@/components/arena/FighterFigure';
 import { VictorySparks } from '@/components/arena/VictorySparks';
 import { FoldSection } from '@/components/arena/FoldSection';
 import { GearStrip } from '@/components/arena/GearStrip';
@@ -271,7 +271,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-1 min-h-[275px]">
+          <div className="relative grid grid-cols-2 gap-1 min-h-[275px]">
             <div className="flex flex-col min-w-0">
               <Plate side={hero} tone="ally" />
               <div className="relative flex-1 mt-1">
@@ -324,6 +324,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
                 />
               </div>
             </div>
+            <CombatClash strike={strike} speed={speed} />
           </div>
 
           <div className="flex flex-col gap-1.5 pt-5">
