@@ -25,8 +25,18 @@ Deno.serve(async (req: Request) => {
 
   // Cloudflare passes this to the Supabase Edge gateway. Never fall back to
   // a country from JSON, Telegram language, client locale or X-Forwarded-For.
-  const country = (req.headers.get("cf-ipcountry") ?? "").toUpperCase();
-  if (!/^[A-Z]{2}$/.test(country) || country === "XX") {
+  // Only trust country metadata supplied by the edge platform, never client JSON.
+  // Some runtimes expose Cloudflare's country on Request.cf instead of forwarding
+  // CF-IPCountry as a header. The optional property is not available everywhere.
+  const gatewayCountry = (req as Request & { cf?: { country?: string } }).cf?.country;
+  const country = (req.headers.get("cf-ipcountry") ?? gatewayCountry ?? "").toUpperCase();
+  if (!/^[A-Z]{2}$/.test(country) || ["XX", "T1"].includes(country)) {
+    // No IPs, tokens or player IDs in logs. It is important not to count
+    // a successful HTTP response as a successful country attribution.
+    console.info("player-geography: country metadata unavailable", {
+      headerPresent: !!req.headers.get("cf-ipcountry"),
+      runtimeCountryPresent: !!gatewayCountry,
+    });
     return Response.json({ recorded: false, reason: "country_unavailable" }, { headers: cors });
   }
 
