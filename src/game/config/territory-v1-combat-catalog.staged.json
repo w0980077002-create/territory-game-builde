@@ -1,0 +1,3335 @@
+{
+  "skills": [
+    {
+      "id": "shield_wall",
+      "category": "base",
+      "unlockLevel": 1,
+      "priority": 0.5,
+      "levels": [
+        {
+          "multiplier": 0.92,
+          "energyCost": 10,
+          "cooldownMs": 4500,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.18,
+              "durationMs": 3200,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "multiplier": 0.984,
+          "energyCost": 10,
+          "cooldownMs": 4500,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.2106,
+              "durationMs": 3200,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.049,
+          "energyCost": 10,
+          "cooldownMs": 4500,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.2412,
+              "durationMs": 3200,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-frost"
+    },
+    {
+      "id": "axe_storm",
+      "category": "base",
+      "unlockLevel": 1,
+      "priority": 1.5,
+      "levels": [
+        {
+          "multiplier": 1.32,
+          "energyCost": 12,
+          "cooldownMs": 4500,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "bleed",
+              "target": "opponent",
+              "value": 3.2,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-bleed"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.412,
+          "energyCost": 12,
+          "cooldownMs": 4500,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "bleed",
+              "target": "opponent",
+              "value": 3.744,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-bleed"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.505,
+          "energyCost": 12,
+          "cooldownMs": 4500,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "bleed",
+              "target": "opponent",
+              "value": 4.288,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-bleed"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "hawk_shot",
+      "category": "base",
+      "unlockLevel": 1,
+      "priority": 2.5,
+      "levels": [
+        {
+          "multiplier": 1.25,
+          "energyCost": 14,
+          "cooldownMs": 4500,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "precision",
+              "target": "self",
+              "value": 0.12,
+              "durationMs": 2500,
+              "vfxKey": "territory-precision"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.338,
+          "energyCost": 14,
+          "cooldownMs": 4500,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "precision",
+              "target": "self",
+              "value": 0.1404,
+              "durationMs": 2500,
+              "vfxKey": "territory-precision"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.425,
+          "energyCost": 14,
+          "cooldownMs": 4500,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "precision",
+              "target": "self",
+              "value": 0.1608,
+              "durationMs": 2500,
+              "vfxKey": "territory-precision"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-gold"
+    },
+    {
+      "id": "frost_oath",
+      "category": "core",
+      "unlockLevel": 8,
+      "priority": 4,
+      "levels": [
+        {
+          "multiplier": 1.11,
+          "energyCost": 11,
+          "cooldownMs": 4950,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.22,
+              "durationMs": 2600,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.188,
+          "energyCost": 11,
+          "cooldownMs": 4950,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.2574,
+              "durationMs": 2600,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.265,
+          "energyCost": 11,
+          "cooldownMs": 4950,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.2948,
+              "durationMs": 2600,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-frost"
+    },
+    {
+      "id": "battle_chant",
+      "category": "core",
+      "unlockLevel": 8,
+      "priority": 5,
+      "levels": [
+        {
+          "multiplier": 1.02,
+          "energyCost": 13,
+          "cooldownMs": 4950,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.15,
+              "durationMs": 3700,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.091,
+          "energyCost": 13,
+          "cooldownMs": 4950,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.1755,
+              "durationMs": 3700,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.163,
+          "energyCost": 13,
+          "cooldownMs": 4950,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.201,
+              "durationMs": 3700,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "runic_bolt",
+      "category": "core",
+      "unlockLevel": 8,
+      "priority": 6,
+      "levels": [
+        {
+          "multiplier": 1.08,
+          "energyCost": 15,
+          "cooldownMs": 4950,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 24,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.156,
+          "energyCost": 15,
+          "cooldownMs": 4950,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 28.08,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.231,
+          "energyCost": 15,
+          "cooldownMs": 4950,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 32.16,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-violet"
+    },
+    {
+      "id": "rune_snare",
+      "category": "control",
+      "unlockLevel": 16,
+      "priority": 8,
+      "levels": [
+        {
+          "multiplier": 1.04,
+          "energyCost": 13,
+          "cooldownMs": 5850,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.32,
+              "durationMs": 2400,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.113,
+          "energyCost": 13,
+          "cooldownMs": 5850,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.3744,
+              "durationMs": 2400,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.186,
+          "energyCost": 13,
+          "cooldownMs": 5850,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.4288,
+              "durationMs": 2400,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-violet"
+    },
+    {
+      "id": "quickstep",
+      "category": "control",
+      "unlockLevel": 16,
+      "priority": 9,
+      "levels": [
+        {
+          "multiplier": 1.07,
+          "energyCost": 15,
+          "cooldownMs": 5850,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.18,
+              "durationMs": 3200,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.145,
+          "energyCost": 15,
+          "cooldownMs": 5850,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.2106,
+              "durationMs": 3200,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.22,
+          "energyCost": 15,
+          "cooldownMs": 5850,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.2412,
+              "durationMs": 3200,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-forest"
+    },
+    {
+      "id": "fire_net",
+      "category": "control",
+      "unlockLevel": 16,
+      "priority": 10,
+      "levels": [
+        {
+          "multiplier": 1.04,
+          "energyCost": 17,
+          "cooldownMs": 5850,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "burn",
+              "target": "opponent",
+              "value": 3.2,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-burn"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.113,
+          "energyCost": 17,
+          "cooldownMs": 5850,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "burn",
+              "target": "opponent",
+              "value": 3.744,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-burn"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.186,
+          "energyCost": 17,
+          "cooldownMs": 5850,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "burn",
+              "target": "opponent",
+              "value": 4.288,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-burn"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "ancestral_surge",
+      "category": "awakening",
+      "unlockLevel": 28,
+      "priority": 14,
+      "levels": [
+        {
+          "multiplier": 1.11,
+          "energyCost": 15,
+          "cooldownMs": 6750,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.19,
+              "durationMs": 4000,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.188,
+          "energyCost": 15,
+          "cooldownMs": 6750,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.2223,
+              "durationMs": 4000,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.265,
+          "energyCost": 15,
+          "cooldownMs": 6750,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.2546,
+              "durationMs": 4000,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-gold"
+    },
+    {
+      "id": "blood_rush",
+      "category": "awakening",
+      "unlockLevel": 28,
+      "priority": 15,
+      "levels": [
+        {
+          "multiplier": 1.26,
+          "energyCost": 17,
+          "cooldownMs": 6750,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.12,
+              "durationMs": 3200,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.348,
+          "energyCost": 17,
+          "cooldownMs": 6750,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.1404,
+              "durationMs": 3200,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.436,
+          "energyCost": 17,
+          "cooldownMs": 6750,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.1608,
+              "durationMs": 3200,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "forest_awakening",
+      "category": "awakening",
+      "unlockLevel": 28,
+      "priority": 16,
+      "levels": [
+        {
+          "multiplier": 1.04,
+          "energyCost": 19,
+          "cooldownMs": 6750,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "heal",
+              "target": "self",
+              "value": 18,
+              "durationMs": 0,
+              "vfxKey": "territory-heal"
+            },
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.12,
+              "durationMs": 2800,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.113,
+          "energyCost": 19,
+          "cooldownMs": 6750,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "heal",
+              "target": "self",
+              "value": 21.06,
+              "durationMs": 0,
+              "vfxKey": "territory-heal"
+            },
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.1404,
+              "durationMs": 2800,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.186,
+          "energyCost": 19,
+          "cooldownMs": 6750,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "heal",
+              "target": "self",
+              "value": 24.12,
+              "durationMs": 0,
+              "vfxKey": "territory-heal"
+            },
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.1608,
+              "durationMs": 2800,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-forest"
+    },
+    {
+      "id": "storm_judgement",
+      "category": "final",
+      "unlockLevel": 42,
+      "priority": 21,
+      "levels": [
+        {
+          "multiplier": 1.37,
+          "energyCost": 18,
+          "cooldownMs": 8100,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 38,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.466,
+          "energyCost": 18,
+          "cooldownMs": 8100,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 44.46,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.562,
+          "energyCost": 18,
+          "cooldownMs": 8100,
+          "windupMs": 240,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 50.92,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-violet"
+    },
+    {
+      "id": "winter_breaker",
+      "category": "final",
+      "unlockLevel": 42,
+      "priority": 22,
+      "levels": [
+        {
+          "multiplier": 1.24,
+          "energyCost": 20,
+          "cooldownMs": 8100,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.34,
+              "durationMs": 3600,
+              "vfxKey": "territory-slow"
+            },
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 18,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.327,
+          "energyCost": 20,
+          "cooldownMs": 8100,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.3978,
+              "durationMs": 3600,
+              "vfxKey": "territory-slow"
+            },
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 21.06,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.414,
+          "energyCost": 20,
+          "cooldownMs": 8100,
+          "windupMs": 320,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.4556,
+              "durationMs": 3600,
+              "vfxKey": "territory-slow"
+            },
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 24.12,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-frost"
+    },
+    {
+      "id": "wolf_king",
+      "category": "final",
+      "unlockLevel": 42,
+      "priority": 23,
+      "levels": [
+        {
+          "multiplier": 1.23,
+          "energyCost": 22,
+          "cooldownMs": 8100,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.14,
+              "durationMs": 3900,
+              "vfxKey": "territory-attack"
+            },
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.06,
+              "durationMs": 3900,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.316,
+          "energyCost": 22,
+          "cooldownMs": 8100,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.1638,
+              "durationMs": 3900,
+              "vfxKey": "territory-attack"
+            },
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.0702,
+              "durationMs": 3900,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "multiplier": 1.402,
+          "energyCost": 22,
+          "cooldownMs": 8100,
+          "windupMs": 400,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.1876,
+              "durationMs": 3900,
+              "vfxKey": "territory-attack"
+            },
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.0804,
+              "durationMs": 3900,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-gold"
+    }
+  ],
+  "runes": [
+    {
+      "id": "shield_wall_r1",
+      "unlockLevel": 3,
+      "compatibleSkillIds": [
+        "shield_wall"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.09,
+              "durationMs": 3400,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.1053,
+              "durationMs": 3400,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.1206,
+              "durationMs": 3400,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-frost"
+    },
+    {
+      "id": "shield_wall_r2",
+      "unlockLevel": 3,
+      "compatibleSkillIds": [
+        "shield_wall"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "precision",
+              "target": "self",
+              "value": 0.08,
+              "durationMs": 2400,
+              "vfxKey": "territory-precision"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "precision",
+              "target": "self",
+              "value": 0.0936,
+              "durationMs": 2400,
+              "vfxKey": "territory-precision"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "precision",
+              "target": "self",
+              "value": 0.1072,
+              "durationMs": 2400,
+              "vfxKey": "territory-precision"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-frost"
+    },
+    {
+      "id": "shield_wall_r3",
+      "unlockLevel": 3,
+      "compatibleSkillIds": [
+        "shield_wall"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "defense",
+              "target": "self",
+              "value": 0.11,
+              "durationMs": 3300,
+              "vfxKey": "territory-defense"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "defense",
+              "target": "self",
+              "value": 0.1287,
+              "durationMs": 3300,
+              "vfxKey": "territory-defense"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "defense",
+              "target": "self",
+              "value": 0.1474,
+              "durationMs": 3300,
+              "vfxKey": "territory-defense"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-frost"
+    },
+    {
+      "id": "axe_storm_r1",
+      "unlockLevel": 3,
+      "compatibleSkillIds": [
+        "axe_storm"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.09,
+              "durationMs": 2600,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.1053,
+              "durationMs": 2600,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.1206,
+              "durationMs": 2600,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "axe_storm_r2",
+      "unlockLevel": 3,
+      "compatibleSkillIds": [
+        "axe_storm"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "bleed",
+              "target": "opponent",
+              "value": 4,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-bleed"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "bleed",
+              "target": "opponent",
+              "value": 4.68,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-bleed"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "bleed",
+              "target": "opponent",
+              "value": 5.36,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-bleed"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "axe_storm_r3",
+      "unlockLevel": 3,
+      "compatibleSkillIds": [
+        "axe_storm"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "energy",
+              "target": "self",
+              "value": 10,
+              "durationMs": 0,
+              "vfxKey": "territory-energy"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "energy",
+              "target": "self",
+              "value": 11.7,
+              "durationMs": 0,
+              "vfxKey": "territory-energy"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "energy",
+              "target": "self",
+              "value": 13.4,
+              "durationMs": 0,
+              "vfxKey": "territory-energy"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "hawk_shot_r1",
+      "unlockLevel": 3,
+      "compatibleSkillIds": [
+        "hawk_shot"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "precision",
+              "target": "self",
+              "value": 0.1,
+              "durationMs": 3000,
+              "vfxKey": "territory-precision"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "precision",
+              "target": "self",
+              "value": 0.117,
+              "durationMs": 3000,
+              "vfxKey": "territory-precision"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "precision",
+              "target": "self",
+              "value": 0.134,
+              "durationMs": 3000,
+              "vfxKey": "territory-precision"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-gold"
+    },
+    {
+      "id": "hawk_shot_r2",
+      "unlockLevel": 3,
+      "compatibleSkillIds": [
+        "hawk_shot"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 15,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 17.55,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 20.1,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-gold"
+    },
+    {
+      "id": "hawk_shot_r3",
+      "unlockLevel": 3,
+      "compatibleSkillIds": [
+        "hawk_shot"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.08,
+              "durationMs": 2800,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.0936,
+              "durationMs": 2800,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.1072,
+              "durationMs": 2800,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-gold"
+    },
+    {
+      "id": "frost_oath_r1",
+      "unlockLevel": 10,
+      "compatibleSkillIds": [
+        "frost_oath"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.12,
+              "durationMs": 3200,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.1404,
+              "durationMs": 3200,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.1608,
+              "durationMs": 3200,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-frost"
+    },
+    {
+      "id": "frost_oath_r2",
+      "unlockLevel": 10,
+      "compatibleSkillIds": [
+        "frost_oath"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 18,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 21.06,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 24.12,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-frost"
+    },
+    {
+      "id": "frost_oath_r3",
+      "unlockLevel": 10,
+      "compatibleSkillIds": [
+        "frost_oath"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "interrupt",
+              "target": "opponent",
+              "value": 0,
+              "durationMs": 700,
+              "vfxKey": "territory-interrupt"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "interrupt",
+              "target": "opponent",
+              "value": 0,
+              "durationMs": 700,
+              "vfxKey": "territory-interrupt"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "interrupt",
+              "target": "opponent",
+              "value": 0,
+              "durationMs": 700,
+              "vfxKey": "territory-interrupt"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-frost"
+    },
+    {
+      "id": "battle_chant_r1",
+      "unlockLevel": 10,
+      "compatibleSkillIds": [
+        "battle_chant"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.09,
+              "durationMs": 4200,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.1053,
+              "durationMs": 4200,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.1206,
+              "durationMs": 4200,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "battle_chant_r2",
+      "unlockLevel": 10,
+      "compatibleSkillIds": [
+        "battle_chant"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.08,
+              "durationMs": 3600,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.0936,
+              "durationMs": 3600,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.1072,
+              "durationMs": 3600,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "battle_chant_r3",
+      "unlockLevel": 10,
+      "compatibleSkillIds": [
+        "battle_chant"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.11,
+              "durationMs": 3300,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.1287,
+              "durationMs": 3300,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.1474,
+              "durationMs": 3300,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "runic_bolt_r1",
+      "unlockLevel": 10,
+      "compatibleSkillIds": [
+        "runic_bolt"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "energy",
+              "target": "self",
+              "value": 12,
+              "durationMs": 0,
+              "vfxKey": "territory-energy"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "energy",
+              "target": "self",
+              "value": 14.04,
+              "durationMs": 0,
+              "vfxKey": "territory-energy"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "energy",
+              "target": "self",
+              "value": 16.08,
+              "durationMs": 0,
+              "vfxKey": "territory-energy"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-violet"
+    },
+    {
+      "id": "runic_bolt_r2",
+      "unlockLevel": 10,
+      "compatibleSkillIds": [
+        "runic_bolt"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 16,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 18.72,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 21.44,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-violet"
+    },
+    {
+      "id": "runic_bolt_r3",
+      "unlockLevel": 10,
+      "compatibleSkillIds": [
+        "runic_bolt"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 25,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 29.25,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 33.5,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-violet"
+    },
+    {
+      "id": "rune_snare_r1",
+      "unlockLevel": 18,
+      "compatibleSkillIds": [
+        "rune_snare"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.1,
+              "durationMs": 3900,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.117,
+              "durationMs": 3900,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.134,
+              "durationMs": 3900,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-violet"
+    },
+    {
+      "id": "rune_snare_r2",
+      "unlockLevel": 18,
+      "compatibleSkillIds": [
+        "rune_snare"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.17,
+              "durationMs": 2600,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.1989,
+              "durationMs": 2600,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.2278,
+              "durationMs": 2600,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-violet"
+    },
+    {
+      "id": "rune_snare_r3",
+      "unlockLevel": 18,
+      "compatibleSkillIds": [
+        "rune_snare"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "blind",
+              "target": "opponent",
+              "value": 0.12,
+              "durationMs": 2600,
+              "vfxKey": "territory-blind"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "blind",
+              "target": "opponent",
+              "value": 0.1404,
+              "durationMs": 2600,
+              "vfxKey": "territory-blind"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "blind",
+              "target": "opponent",
+              "value": 0.1608,
+              "durationMs": 2600,
+              "vfxKey": "territory-blind"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-violet"
+    },
+    {
+      "id": "quickstep_r1",
+      "unlockLevel": 18,
+      "compatibleSkillIds": [
+        "quickstep"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.09,
+              "durationMs": 3400,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.1053,
+              "durationMs": 3400,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.1206,
+              "durationMs": 3400,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-forest"
+    },
+    {
+      "id": "quickstep_r2",
+      "unlockLevel": 18,
+      "compatibleSkillIds": [
+        "quickstep"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "blind",
+              "target": "opponent",
+              "value": 0.12,
+              "durationMs": 2600,
+              "vfxKey": "territory-blind"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "blind",
+              "target": "opponent",
+              "value": 0.1404,
+              "durationMs": 2600,
+              "vfxKey": "territory-blind"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "blind",
+              "target": "opponent",
+              "value": 0.1608,
+              "durationMs": 2600,
+              "vfxKey": "territory-blind"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-forest"
+    },
+    {
+      "id": "quickstep_r3",
+      "unlockLevel": 18,
+      "compatibleSkillIds": [
+        "quickstep"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 15,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 17.55,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 20.1,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-forest"
+    },
+    {
+      "id": "fire_net_r1",
+      "unlockLevel": 18,
+      "compatibleSkillIds": [
+        "fire_net"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.14,
+              "durationMs": 3000,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.1638,
+              "durationMs": 3000,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.1876,
+              "durationMs": 3000,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "fire_net_r2",
+      "unlockLevel": 18,
+      "compatibleSkillIds": [
+        "fire_net"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "burn",
+              "target": "opponent",
+              "value": 4.5,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-burn"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "burn",
+              "target": "opponent",
+              "value": 5.265,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-burn"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "burn",
+              "target": "opponent",
+              "value": 6.03,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-burn"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "fire_net_r3",
+      "unlockLevel": 18,
+      "compatibleSkillIds": [
+        "fire_net"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "blind",
+              "target": "opponent",
+              "value": 0.14,
+              "durationMs": 2500,
+              "vfxKey": "territory-blind"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "blind",
+              "target": "opponent",
+              "value": 0.1638,
+              "durationMs": 2500,
+              "vfxKey": "territory-blind"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "blind",
+              "target": "opponent",
+              "value": 0.1876,
+              "durationMs": 2500,
+              "vfxKey": "territory-blind"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "ancestral_surge_r1",
+      "unlockLevel": 30,
+      "compatibleSkillIds": [
+        "ancestral_surge"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.07,
+              "durationMs": 4800,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.0819,
+              "durationMs": 4800,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.0938,
+              "durationMs": 4800,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-gold"
+    },
+    {
+      "id": "ancestral_surge_r2",
+      "unlockLevel": 30,
+      "compatibleSkillIds": [
+        "ancestral_surge"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.12,
+              "durationMs": 3900,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.1404,
+              "durationMs": 3900,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.1608,
+              "durationMs": 3900,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-gold"
+    },
+    {
+      "id": "ancestral_surge_r3",
+      "unlockLevel": 30,
+      "compatibleSkillIds": [
+        "ancestral_surge"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "energy",
+              "target": "self",
+              "value": 12,
+              "durationMs": 0,
+              "vfxKey": "territory-energy"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "energy",
+              "target": "self",
+              "value": 14.04,
+              "durationMs": 0,
+              "vfxKey": "territory-energy"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "energy",
+              "target": "self",
+              "value": 16.08,
+              "durationMs": 0,
+              "vfxKey": "territory-energy"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-gold"
+    },
+    {
+      "id": "blood_rush_r1",
+      "unlockLevel": 30,
+      "compatibleSkillIds": [
+        "blood_rush"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.15,
+              "durationMs": 3000,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.1755,
+              "durationMs": 3000,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.201,
+              "durationMs": 3000,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "blood_rush_r2",
+      "unlockLevel": 30,
+      "compatibleSkillIds": [
+        "blood_rush"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "defense",
+              "target": "self",
+              "value": 0.12,
+              "durationMs": 3400,
+              "vfxKey": "territory-defense"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "defense",
+              "target": "self",
+              "value": 0.1404,
+              "durationMs": 3400,
+              "vfxKey": "territory-defense"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "defense",
+              "target": "self",
+              "value": 0.1608,
+              "durationMs": 3400,
+              "vfxKey": "territory-defense"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "blood_rush_r3",
+      "unlockLevel": 30,
+      "compatibleSkillIds": [
+        "blood_rush"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.09,
+              "durationMs": 2900,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.1053,
+              "durationMs": 2900,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.1206,
+              "durationMs": 2900,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-ember"
+    },
+    {
+      "id": "forest_awakening_r1",
+      "unlockLevel": 30,
+      "compatibleSkillIds": [
+        "forest_awakening"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.15,
+              "durationMs": 2400,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.1755,
+              "durationMs": 2400,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.201,
+              "durationMs": 2400,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-forest"
+    },
+    {
+      "id": "forest_awakening_r2",
+      "unlockLevel": 30,
+      "compatibleSkillIds": [
+        "forest_awakening"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "heal",
+              "target": "self",
+              "value": 28,
+              "durationMs": 0,
+              "vfxKey": "territory-heal"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "heal",
+              "target": "self",
+              "value": 32.76,
+              "durationMs": 0,
+              "vfxKey": "territory-heal"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "heal",
+              "target": "self",
+              "value": 37.52,
+              "durationMs": 0,
+              "vfxKey": "territory-heal"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-forest"
+    },
+    {
+      "id": "forest_awakening_r3",
+      "unlockLevel": 30,
+      "compatibleSkillIds": [
+        "forest_awakening"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.1,
+              "durationMs": 3400,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.117,
+              "durationMs": 3400,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.134,
+              "durationMs": 3400,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-forest"
+    },
+    {
+      "id": "storm_judgement_r1",
+      "unlockLevel": 44,
+      "compatibleSkillIds": [
+        "storm_judgement"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 24,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 28.08,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 32.16,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-violet"
+    },
+    {
+      "id": "storm_judgement_r2",
+      "unlockLevel": 44,
+      "compatibleSkillIds": [
+        "storm_judgement"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "burn",
+              "target": "opponent",
+              "value": 4,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-burn"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "burn",
+              "target": "opponent",
+              "value": 4.68,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-burn"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "burn",
+              "target": "opponent",
+              "value": 5.36,
+              "durationMs": 3000,
+              "tickMs": 1000,
+              "vfxKey": "territory-burn"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-violet"
+    },
+    {
+      "id": "storm_judgement_r3",
+      "unlockLevel": 44,
+      "compatibleSkillIds": [
+        "storm_judgement"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "energy",
+              "target": "self",
+              "value": 16,
+              "durationMs": 0,
+              "vfxKey": "territory-energy"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "energy",
+              "target": "self",
+              "value": 18.72,
+              "durationMs": 0,
+              "vfxKey": "territory-energy"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "energy",
+              "target": "self",
+              "value": 21.44,
+              "durationMs": 0,
+              "vfxKey": "territory-energy"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-violet"
+    },
+    {
+      "id": "winter_breaker_r1",
+      "unlockLevel": 44,
+      "compatibleSkillIds": [
+        "winter_breaker"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 23,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 26.91,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 30.82,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-frost"
+    },
+    {
+      "id": "winter_breaker_r2",
+      "unlockLevel": 44,
+      "compatibleSkillIds": [
+        "winter_breaker"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 18,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 21.06,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "magic",
+              "target": "opponent",
+              "value": 24.12,
+              "durationMs": 0,
+              "vfxKey": "territory-magic"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-frost"
+    },
+    {
+      "id": "winter_breaker_r3",
+      "unlockLevel": 44,
+      "compatibleSkillIds": [
+        "winter_breaker"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.12,
+              "durationMs": 4400,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.1404,
+              "durationMs": 4400,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "slow",
+              "target": "opponent",
+              "value": 0.1608,
+              "durationMs": 4400,
+              "vfxKey": "territory-slow"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-frost"
+    },
+    {
+      "id": "wolf_king_r1",
+      "unlockLevel": 44,
+      "compatibleSkillIds": [
+        "wolf_king"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.09,
+              "durationMs": 4600,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.1053,
+              "durationMs": 4600,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.1206,
+              "durationMs": 4600,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-gold"
+    },
+    {
+      "id": "wolf_king_r2",
+      "unlockLevel": 44,
+      "compatibleSkillIds": [
+        "wolf_king"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.1,
+              "durationMs": 3400,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.117,
+              "durationMs": 3400,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "crit",
+              "target": "self",
+              "value": 0.134,
+              "durationMs": 3400,
+              "vfxKey": "territory-crit"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-gold"
+    },
+    {
+      "id": "wolf_king_r3",
+      "unlockLevel": 44,
+      "compatibleSkillIds": [
+        "wolf_king"
+      ],
+      "levels": [
+        {
+          "chance": 0.26,
+          "cooldownMs": 9000,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.12,
+              "durationMs": 3800,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "chance": 0.325,
+          "cooldownMs": 8000,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.1404,
+              "durationMs": 3800,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "chance": 0.39,
+          "cooldownMs": 7000,
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.1608,
+              "durationMs": 3800,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        }
+      ],
+      "vfxKey": "territory-gold"
+    }
+  ],
+  "passives": [
+    {
+      "id": "iron_skin",
+      "unlockLevel": 1,
+      "levels": [
+        {
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.04,
+              "durationMs": 0,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.0468,
+              "durationMs": 0,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "type": "mitigation",
+              "target": "self",
+              "value": 0.0536,
+              "durationMs": 0,
+              "vfxKey": "territory-mitigation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hunter_focus",
+      "unlockLevel": 8,
+      "levels": [
+        {
+          "effects": [
+            {
+              "type": "precision",
+              "target": "self",
+              "value": 0.055,
+              "durationMs": 0,
+              "vfxKey": "territory-precision"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "type": "precision",
+              "target": "self",
+              "value": 0.0643,
+              "durationMs": 0,
+              "vfxKey": "territory-precision"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "type": "precision",
+              "target": "self",
+              "value": 0.0737,
+              "durationMs": 0,
+              "vfxKey": "territory-precision"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "warm_blood",
+      "unlockLevel": 15,
+      "levels": [
+        {
+          "effects": [
+            {
+              "type": "defense",
+              "target": "self",
+              "value": 0.05,
+              "durationMs": 0,
+              "vfxKey": "territory-defense"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "type": "defense",
+              "target": "self",
+              "value": 0.0585,
+              "durationMs": 0,
+              "vfxKey": "territory-defense"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "type": "defense",
+              "target": "self",
+              "value": 0.067,
+              "durationMs": 0,
+              "vfxKey": "territory-defense"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "thunder_spirit",
+      "unlockLevel": 22,
+      "levels": [
+        {
+          "effects": [
+            {
+              "type": "energy_regen",
+              "target": "self",
+              "value": 0.085,
+              "durationMs": 0,
+              "vfxKey": "territory-energy_regen"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "type": "energy_regen",
+              "target": "self",
+              "value": 0.0994,
+              "durationMs": 0,
+              "vfxKey": "territory-energy_regen"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "type": "energy_regen",
+              "target": "self",
+              "value": 0.1139,
+              "durationMs": 0,
+              "vfxKey": "territory-energy_regen"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forest_instinct",
+      "unlockLevel": 30,
+      "levels": [
+        {
+          "effects": [
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.04,
+              "durationMs": 0,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.0468,
+              "durationMs": 0,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "type": "evasion",
+              "target": "self",
+              "value": 0.0536,
+              "durationMs": 0,
+              "vfxKey": "territory-evasion"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "warrior_oath",
+      "unlockLevel": 38,
+      "levels": [
+        {
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.055,
+              "durationMs": 0,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.0643,
+              "durationMs": 0,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "type": "attack",
+              "target": "self",
+              "value": 0.0737,
+              "durationMs": 0,
+              "vfxKey": "territory-attack"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -35,16 +35,6 @@ Deno.serve(async (request: Request) => {
     }
     body += decoder.decode();
     const db = createClient(url, service, { auth: { persistSession: false } });
-    const payload: unknown = JSON.parse(body);
-    // Preparation commits separately so a reconciliation request is not rolled
-    // back when a subsequent start is refused. Identity always comes from auth.
-    if (payload && typeof payload === 'object' && !Array.isArray(payload)
-      && (payload as Record<string, unknown>).action === 'prepare') {
-      if (Object.keys(payload).length !== 1) return respond({ error: 'combat_invalid_command' }, 400);
-      const { data, error } = await db.rpc('territory_combat_prepare_profile_v1', { p_player: user.id });
-      if (error || !data) throw new Error('combat_profile_unavailable');
-      return respond(data);
-    }
     const repository: CombatRepository = {
       async context(player, command) {
         const { data, error } = await db.rpc('territory_combat_context_v1', { p_player: player, p_request: command });
@@ -59,7 +49,7 @@ Deno.serve(async (request: Request) => {
         return data;
       },
     };
-    const receipt = await executeCombatCommand(repository, user.id, payload,
+    const receipt = await executeCombatCommand(repository, user.id, JSON.parse(body),
       () => crypto.getRandomValues(new Uint32Array(1))[0]);
     return respond(receipt);
   } catch (error) {

@@ -17,7 +17,6 @@ export interface CombatContext {
   hero: IdleFighterInput;
   encounter?: { id: string; version: number; stage: number; mode: IdleCombatInput['mode']; enemy: IdleFighterInput };
   session?: { id: string; revision: number; cursorMs: number; state: IdleCombatState };
-  settlement?: Record<string, unknown> | null;
   replay?: Record<string, unknown>;
 }
 
@@ -78,8 +77,7 @@ export async function executeCombatCommand(repository: CombatRepository, player:
   if (command.action === 'resume') {
     if (!context.session) throw new Error('combat_session_not_found');
     return { success: true, session_id: context.session.id, revision: context.session.revision,
-      state: context.session.state, rewards_claimed: context.settlement?.outcome === 'hero_won',
-      settlement: context.settlement ?? null };
+      state: context.session.state, rewards_claimed: false };
   }
   if (command.action === 'loadout') {
     if (context.profileVersion !== command.revision) throw new Error('combat_revision_conflict');
