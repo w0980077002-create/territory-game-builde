@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { BarChart3, CheckCircle2, Crown, Eye, EyeOff, Gamepad2, Lock, LogOut, Mail, ShieldAlert, Trophy, Wallet, Ticket, ScrollText, Globe2, XCircle } from 'lucide-react';
+import { BarChart3, CheckCircle2, Crown, Eye, EyeOff, Gamepad2, Lock, LogOut, Mail, ShieldAlert, Trophy, Wallet, Ticket, ScrollText, Globe2, UserPlus, XCircle } from 'lucide-react';
 import { adminLogin, adminCall, clearAdminToken, getAdminToken } from '@/admin/api';
 import { ConfirmDialog, ErrorLine, inputCls, type Confirm } from '@/admin/ui';
 import { DashboardTab } from '@/admin/tabs/DashboardTab';
@@ -11,11 +11,13 @@ import { SeasonAdminTab } from '@/admin/tabs/SeasonAdminTab';
 import { HallAdminTab } from '@/admin/tabs/HallAdminTab';
 import { AuditAdminTab } from '@/admin/tabs/AuditAdminTab';
 import { GeographyTab } from '@/admin/tabs/GeographyTab';
+import { NewPlayersTab } from '@/admin/tabs/NewPlayersTab';
 import { getTelegramWebApp } from '@/game/telegram';
 
 const TABS = [
   { id: 'main', label: 'Главная & Управление', icon: BarChart3 },
   { id: 'players', label: 'Игроки & Онлайн', icon: ShieldAlert },
+  { id: 'newplayers', label: 'Новые игроки', icon: UserPlus },
   { id: 'geography', label: 'География', icon: Globe2 },
   { id: 'mail', label: 'Почта & Рассылки', icon: Mail },
   { id: 'finance', label: 'Финансы & Лавка', icon: Wallet },
@@ -190,6 +192,7 @@ export function AdminApp() {
       <main key={tab} className="max-w-3xl mx-auto px-4 py-4 pb-24 animate-[fadeIn_.25s_ease-out]">
         {tab === 'main' && <DashboardTab confirm={confirm} />}
         {tab === 'players' && <PlayersTab confirm={confirm} />}
+        {tab === 'newplayers' && <NewPlayersTab />}
         {tab === 'geography' && <GeographyTab />}
         {tab === 'mail' && <MailTab confirm={confirm} />}
         {tab === 'finance' && <FinanceTab confirm={confirm} />}
