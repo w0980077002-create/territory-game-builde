@@ -9,10 +9,17 @@ const api=readFileSync('src/game/gameHall.ts','utf8');
 const cloud=readFileSync('src/game/cloud.ts','utf8');
 const sql=readFileSync('supabase/migrations/20261017_game_hall_five_v1.sql','utf8');
 for(const game of ['monopoly','dice','tower','targets','treasury']) {
- assert.match(hall,new RegExp("id\\s*:\\s*'"+game+"'"),'Live Hall card missing '+game);
+ assert.match(hall,new RegExp("id\\s*:\\s*'"+game+"'"),'Hall game definition missing for existing sessions '+game);
  assert.match(api,new RegExp("'"+game+"'"),'Server game type missing '+game);
 }
 assert.match(hall,/id:\s*'wheel'/,'Approved visual contains Wheel of Fortune');
+assert.match(hall,/const HIDDEN_HALL_GAMES = new Set<GameCard\['id'\]>\(\['treasury', 'dice', 'tower', 'targets'\]\)/,
+ 'All four unfinished mini-games must remain hidden from the Hall');
+assert.match(hall,/const VISIBLE_GAMES = GAMES\.filter\(game => !HIDDEN_HALL_GAMES\.has\(game\.id\)\)/,
+ 'Only public games may be rendered');
+assert.match(hall,/\{VISIBLE_GAMES\.map\(/,
+ 'Game Hall must render the filtered public games, not all registered games');
+
 assert.match(hall,/const activeGame = GAMES\.find\(game => game\.id === state\?\.active\?\.game\)/,
   'An unfinished Hall round must show the actual game name in the resume action');
 assert.match(hall,/resumeThisGame\s*\?\s*\(en \? 'Continue' : 'Продолжить'\)/,
@@ -22,7 +29,7 @@ assert.match(hall,/otherActive && !game\.demo[\s\S]*?'Finish round' : 'Заве�
 assert.match(hall,/game\.artwork\.endsWith\('\.webp'\) && <source/,
   'Do not mislabel the SVG-only Viking Slots demo scene as a WebP source');
 assert.match(hall,/id:\s*'targets'[\s\S]*?scene:\s*'hall-art\/targets\.svg'[\s\S]*?artwork:\s*'hall-art\/targets-hd\.webp'/,
-  'Previously hidden server-authoritative Sharpshooter must have a visible illustrated card');
+  'Keep Sharpshooter assets for recovery of existing rounds');
 assert.doesNotMatch(hall,/id:\s*'targets'[\s\S]{0,250}demo:\s*true/, 'Sharpshooter must use the real server ticket flow');
 assert.doesNotMatch(hall,/comingSoon:\s*true/,'Wheel now has a secure backend');
 assert.match(play,/game==='wheel'.*WheelOfFortune/,'Wheel has its own server-authoritative screen');
