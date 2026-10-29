@@ -47,6 +47,10 @@ assert.match(apiSource,/\}\), 15_000\)/,
 assert.match(ui,/await withSlotsDeadline\(saveCloudSave\(userId,snapshot\),8_000\)/,'flush pending game actions before spending real gold, with a prompt no-wager deadline');
 assert.match(ui,/slots_save_slow/,'a slow pre-save must explain that no bet was sent');
 assert.match(ui,/LIVE_REEL_TRAIL = 3/,'mobile live reels must render only nine symbols per reel');
+assert.match(ui,/document\.addEventListener\('visibilitychange',stopAutoOnHide\)/,
+ 'Telegram backgrounding must stop autospin');
+assert.match(ui,/if\(document\.visibilityState!=='visible'\)\{setAuto\(0\);return;\}/,
+ 'a queued autospin must not wager while the WebView is hidden');
 const css=readFileSync('src/components/vikingSlots.css','utf8');
 assert.match(css,/\.vslot-reel-track--rolling\.vslot-reel-track--quick\{\s*height:300%;/,
  'nine-symbol animated reel must retain three visible rows');
