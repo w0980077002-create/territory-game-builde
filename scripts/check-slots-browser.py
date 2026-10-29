@@ -27,6 +27,7 @@ def skip_reel_animation(page):
     # invoke it synchronously to avoid Playwright actionability waiting until
     # the animation completes and its button legitimately disappears.
     page.wait_for_function('document.querySelector(".vslot-reel-track--rolling") !== null',timeout=5000)
+    assert page.locator('.vslot-reel-track--rolling .vslot-symbol').count()==45, 'exactly nine symbols on each of five spinning reels'
     page.evaluate('''() => {
       const button = document.querySelector('button[aria-label="ПРОПУСТИТЬ"]');
       if (!button || button.disabled) throw new Error('SKIP must be available during the reel animation');
