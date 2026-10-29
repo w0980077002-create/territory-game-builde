@@ -8,7 +8,7 @@ import { useLanguage } from '@/game/i18n';
 import { SocialQuestsSection } from './SocialQuestsSection';
 import type { SocialStatus } from '@/game/socialQuests';
 import { getStarterMilestones, type StarterDestination } from '@/game/starterJourney';
-import { questAction, readyQuestCount } from '@/game/eventsBoard';
+import { questAction } from '@/game/eventsBoard';
 
 const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
   { type: 'daily', titleKey: 'daily', hintKey: 'dailyHint' },
@@ -19,10 +19,19 @@ const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
 export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { userId: string; onSocialStatusChange: (status: SocialStatus) => void; onNavigate: (screen: StarterDestination) => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
-  const ready = state.quests.filter((q) => !q.claimed && q.current >= q.target).length;
+  const readyQuests = state.quests.filter((q) => !q.claimed && q.current >= q.target);
+  const ready = readyQuests.length;
   const starterSteps = state.player.level < 5 ? getStarterMilestones(state) : [];
   const starterDone = starterSteps.filter(step => step.done).length;
   const starterNext = starterSteps.find(step => !step.done);
+  const claim = (questId: string) => {
+    const previous = useGame.get();
+    const next = claimQuest(previous, questId);
+    if (next !== previous) {
+      useGame.set(next);
+      captureGameEvent('territory_quest_claim', { screen: 'quests', outcome: 'success' });
+    }
+  };
 
   return (
     <div className="space-y-4 animate-fade-in pb-2">
@@ -36,6 +45,13 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { use
           </div>
         </div>
       </div>
+
+      {ready > 0 && <section aria-label={language === 'en' ? 'Rewards ready' : 'Готовые награды'}>
+        <h3 className="mb-2 px-1 text-sm font-bold text-amber-200">{language === 'en' ? 'Rewards ready' : 'Награды готовы'} · {ready}</h3>
+        <div className="space-y-2">
+          {readyQuests.map(q => <QuestCard key={q.id} quest={q} language={language} t={t} onNavigate={onNavigate} onClaim={() => claim(q.id)} />)}
+        </div>
+      </section>}
 
       {starterNext && (
         <section className="rounded-2xl border border-sky-400/30 bg-gradient-to-br from-[#172b38] to-[#10151f] p-3" aria-label={language === 'en' ? 'Beginner journey' : 'Путь новичка'}>
@@ -62,8 +78,8 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { use
       <SocialQuestsSection userId={userId} onStatusChange={onSocialStatusChange} />
 
       {SECTIONS.map((sec) => {
-        const list = state.quests.filter((q) => q.type === sec.type).sort((left, right) => {
-          const priority = (q: Quest) => q.claimed ? 2 : q.current >= q.target ? 0 : 1;
+        const list = state.quests.filter((q) => q.type === sec.type && (q.claimed || q.current < q.target)).sort((left, right) => {
+          const priority = (q: Quest) => q.claimed ? 1 : 0;
           return priority(left) - priority(right);
         });
         if (!list.length) return null;
@@ -71,18 +87,11 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { use
           <section key={sec.type}>
             <div className="flex items-baseline justify-between px-1 mb-2">
               <h3 className="text-xs font-semibold text-amber-200/80 uppercase tracking-wider">{t(sec.titleKey)}</h3>
-              <span className="text-[11px] text-gray-400">{readyQuestCount(list) > 0 ? `${readyQuestCount(list)} ${language === 'en' ? 'ready' : 'готово'} · ` : ''}{t(sec.hintKey)}</span>
+              <span className="text-[11px] text-gray-400">{t(sec.hintKey)}</span>
             </div>
             <div className="space-y-2">
               {list.map((q) => (
-                <QuestCard key={q.id} quest={q} language={language} t={t} onNavigate={onNavigate} onClaim={() => {
-                  const previous = useGame.get();
-                  const next = claimQuest(previous, q.id);
-                  if (next !== previous) {
-                    useGame.set(next);
-                    captureGameEvent('territory_quest_claim', { screen: 'quests', outcome: 'success' });
-                  }
-                }} />
+                <QuestCard key={q.id} quest={q} language={language} t={t} onNavigate={onNavigate} onClaim={() => claim(q.id)} />
               ))}
             </div>
           </section>
