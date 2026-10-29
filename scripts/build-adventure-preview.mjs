@@ -1,0 +1,78 @@
+import { build } from 'esbuild';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import postcss from 'postcss';
+import tailwindcss from 'tailwindcss';
+import autoprefixer from 'autoprefixer';
+
+// Browser-only fixture: actual React adventure UI, fake transport, never real players.
+const fixture = String.raw`
+let progress = { completed_stage: 0, unlocked_stage: 1 };
+let current = null;
+const oldState = { player: { gold: 100 }, inventory: [] };
+window.__adventureCalls = [];
+export const useGame = { get: () => oldState, set: () => {} };
+export const useLanguage = () => ({ language: 'ru' });
+export async function ensurePlayerSession() { return true; }
+export function restoreAdventureSaveFence() { return null; }
+const outcome = status => ({
+ success: true, session_id: '11111111-1111-4111-8111-111111111111',
+ revision: status === 'fighting' ? 0 : 1,
+ state: { status, input: { stage: 1, control: window.__adventureControl || 'manual' },
+   actors: { hero: { stats: { hp: 100, maxHp: 100 }, loadout: { skills: [] } },
+             enemy: { stats: { hp: status === 'fighting' ? 50 : 0, maxHp: 50 } } } },
+ settlement: status === 'fighting' ? null : { outcome: status, reward: { gold: 10, xp: 20 } },
+});
+export const supabase = {
+ rpc: async name => ({ data: name === 'territory_adventure_progress_v1' ? progress : null, error: null }),
+ functions: { invoke: async (name, args) => {
+   window.__adventureCalls.push(args.body);
+   if (args.body.action === 'prepare') return { data: { status: 'ready' }, error: null };
+   if (args.body.action === 'start') {
+     window.__adventureControl = args.body.control;
+     current = outcome('fighting');
+     return { data: current, error: null };
+   }
+   return { data: current || outcome('fighting'), error: null };
+ } }
+};
+export async function requestAdventureSettlement(userId, command, hooks) {
+ window.__adventureCalls.push(command);
+ if (command.action === 'advance') {
+   current = outcome('hero_won');
+   progress = { completed_stage: 1, unlocked_stage: 2 };
+   hooks.applyState(oldState);
+ }
+ return current || outcome('fighting');
+}
+`;
+const entry = String.raw`import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { ServerAdventureScreen } from './src/components/pve/ServerAdventureScreen';
+function App() {
+ const [counter, setCounter] = React.useState(0);
+ return <div style={{maxWidth:440,margin:'auto',padding:8}}>
+   <button id="remount" style={{position:'absolute',left:-999}} onClick={()=>setCounter(v=>v+1)}>Remount</button>
+   <ServerAdventureScreen key={counter} userId="review" onTrial={()=>{window.__onTrial=true}} />
+ </div>;
+}
+createRoot(document.getElementById('root')).render(<App />);
+`;
+const output = await build({
+ stdin: { contents:entry, resolveDir:resolve('.'), loader:'tsx' },
+ bundle:true, write:false, outdir:'/tmp/adventure-browser', format:'iife', jsx:'automatic',
+ alias: { '@':resolve('src') },
+ define: { 'import.meta.env.BASE_URL':JSON.stringify('/'), 'import.meta.env.DEV':'false', 'process.env.NODE_ENV':'"production"' },
+ plugins: [{ name:'adventure-fixture', setup(b) {
+   b.onResolve({ filter:/\/game\/(?:i18n|actions|auth|supabase|combatV1\/receiptAdapter)$/ }, () => ({ path:'fixture', namespace:'adventure-fixture' }));
+   b.onLoad({ filter:/.*/, namespace:'adventure-fixture' }, () => ({ contents:fixture, loader:'js' }));
+ } }],
+});
+const js = output.outputFiles.find(f=>f.path.endsWith('.js')).text;
+const baseCss = (await postcss([tailwindcss(),autoprefixer()]).process(readFileSync('src/index.css','utf8'),{from:'src/index.css'})).css;
+const css = output.outputFiles.find(f=>f.path.endsWith('.css'))?.text || '';
+writeFileSync('/tmp/adventure-preview.html',
+ '<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
+ '<style>html,body{margin:0;background:#0b1220;color:#fff}'+baseCss+'\n'+css+'</style><div id="root"></div><script>'+
+ js.replace(/<\/script/gi,'<\\/script')+'</script></html>');
+console.log('Adventure browser fixture ready (offline simulated server).');
