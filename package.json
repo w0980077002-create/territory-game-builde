@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "test:idle-engine": "node scripts/check-idle-engine.mjs",
     "test:balance": "node scripts/check-equipment-balance.mjs",
     "test:professions": "node scripts/check-professions.mjs && node scripts/check-profession-art.mjs",
     "test:master-license": "node scripts/check-master-license-shop.mjs",
