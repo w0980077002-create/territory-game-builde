@@ -1,0 +1,351 @@
+{
+  "environment": "Chromium headless, actual production React components and CSS; offline in-memory game state",
+  "limitations": [
+    "No Telegram authorization",
+    "No real network PvP",
+    "No physical Android/iPhone FPS claim"
+  ],
+  "viewports": [
+    {
+      "width": 360,
+      "height": 844,
+      "parts": [
+        "root",
+        "leg-left",
+        "knee-left",
+        "leg-right",
+        "knee-right",
+        "torso",
+        "head",
+        "hair",
+        "arm-left",
+        "forearm-left",
+        "shield",
+        "arm-right",
+        "forearm-right",
+        "weapon"
+      ],
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "parts": [
+        "root",
+        "leg-left",
+        "knee-left",
+        "leg-right",
+        "knee-right",
+        "torso",
+        "head",
+        "hair",
+        "arm-left",
+        "forearm-left",
+        "shield",
+        "arm-right",
+        "forearm-right",
+        "weapon"
+      ],
+      "overflow": false
+    }
+  ],
+  "attacks": {
+    "360": {
+      "slash": {
+        "root": "matrix(1, 0, 0, 1, 52.6181, 3.05646)",
+        "leg-left": "matrix(0.914791, 0.403927, -0.403927, 0.914791, 0, 0)",
+        "knee-left": "matrix(0.983645, -0.18012, 0.18012, 0.983645, 0, 0)",
+        "leg-right": "matrix(0.875097, -0.483947, 0.483947, 0.875097, 0, 0)",
+        "knee-right": "matrix(0.970462, 0.241253, -0.241253, 0.970462, 0, 0)",
+        "torso": "matrix(0.982372, 0.186938, -0.186938, 0.982372, 0, 0)",
+        "head": "matrix(0.993503, -0.113809, 0.113809, 0.993503, 0, 0)",
+        "hair": "matrix(0.989678, -0.143307, 0.143307, 0.989678, 0, 0)",
+        "arm-left": "matrix(0.988483, 0.151335, -0.151335, 0.988483, 0, 0)",
+        "forearm-left": "matrix(0.996195, 0.0871557, -0.0871557, 0.996195, 0, 0)",
+        "shield": "matrix(0.766044, -0.642788, 0.642788, 0.766044, 0, 0)",
+        "arm-right": "matrix(0.494713, -0.869057, 0.869057, 0.494713, 0, 0)",
+        "forearm-right": "matrix(0.878916, -0.476976, 0.476976, 0.878916, 0, 0)",
+        "weapon": "matrix(-0.850867, 0.525381, -0.525381, -0.850867, 0, 0)"
+      },
+      "thrust": {
+        "root": "matrix(1, 0, 0, 1, 57.6709, 5.90352)",
+        "leg-left": "matrix(0.887664, 0.460492, -0.460492, 0.887664, 0, 0)",
+        "knee-left": "matrix(0.974788, -0.223134, 0.223134, 0.974788, 0, 0)",
+        "leg-right": "matrix(0.846564, -0.532286, 0.532286, 0.846564, 0, 0)",
+        "knee-right": "matrix(0.960235, 0.279193, -0.279193, 0.960235, 0, 0)",
+        "torso": "matrix(0.972048, 0.234784, -0.234784, 0.972048, 0, 0)",
+        "head": "matrix(0.986885, -0.161422, 0.161422, 0.986885, 0, 0)",
+        "hair": "matrix(1, 0, 0, 1, 0, 0)",
+        "arm-left": "matrix(0.969877, 0.243594, -0.243594, 0.969877, 0, 0)",
+        "forearm-left": "matrix(0.996195, 0.0871557, -0.0871557, 0.996195, 0, 0)",
+        "shield": "matrix(0.766044, -0.642788, 0.642788, 0.766044, 0, 0)",
+        "arm-right": "matrix(0.56021, -0.82835, 0.82835, 0.56021, 0, 0)",
+        "forearm-right": "matrix(0.838606, -0.544738, 0.544738, 0.838606, 0, 0)",
+        "weapon": "matrix(-0.962352, 0.271808, -0.271808, -0.962352, 0, 0)"
+      },
+      "overhead": {
+        "root": "matrix(1, 0, 0, 1, 30.6375, 9.47519)",
+        "leg-left": "matrix(0.886009, 0.463668, -0.463668, 0.886009, 0, 0)",
+        "knee-left": "matrix(0.974225, -0.225577, 0.225577, 0.974225, 0, 0)",
+        "leg-right": "matrix(0.885607, -0.464435, 0.464435, 0.885607, 0, 0)",
+        "knee-right": "matrix(0.974088, 0.226168, -0.226168, 0.974088, 0, 0)",
+        "torso": "matrix(0.996502, 0.0835727, -0.0835727, 0.996502, 0, 0)",
+        "head": "matrix(0.985926, -0.167183, 0.167183, 0.985926, 0, 0)",
+        "hair": "matrix(0.98928, -0.146031, 0.146031, 0.98928, 0, 0)",
+        "arm-left": "matrix(0.90106, -0.433695, 0.433695, 0.90106, 0, 0)",
+        "forearm-left": "matrix(0.996195, 0.0871557, -0.0871557, 0.996195, 0, 0)",
+        "shield": "matrix(0.766044, -0.642788, 0.642788, 0.766044, 0, 0)",
+        "arm-right": "matrix(0.845785, 0.533523, -0.533523, 0.845785, 0, 0)",
+        "forearm-right": "matrix(0.909879, 0.414873, -0.414873, 0.909879, 0, 0)",
+        "weapon": "matrix(-0.993309, -0.115485, 0.115485, -0.993309, 0, 0)"
+      }
+    },
+    "390": {
+      "slash": {
+        "root": "matrix(1, 0, 0, 1, 52.6181, 3.05646)",
+        "leg-left": "matrix(0.914791, 0.403927, -0.403927, 0.914791, 0, 0)",
+        "knee-left": "matrix(0.983645, -0.18012, 0.18012, 0.983645, 0, 0)",
+        "leg-right": "matrix(0.875097, -0.483947, 0.483947, 0.875097, 0, 0)",
+        "knee-right": "matrix(0.970462, 0.241253, -0.241253, 0.970462, 0, 0)",
+        "torso": "matrix(0.982372, 0.186938, -0.186938, 0.982372, 0, 0)",
+        "head": "matrix(0.993503, -0.113809, 0.113809, 0.993503, 0, 0)",
+        "hair": "matrix(0.989678, -0.143307, 0.143307, 0.989678, 0, 0)",
+        "arm-left": "matrix(0.988483, 0.151335, -0.151335, 0.988483, 0, 0)",
+        "forearm-left": "matrix(0.996195, 0.0871557, -0.0871557, 0.996195, 0, 0)",
+        "shield": "matrix(0.766044, -0.642788, 0.642788, 0.766044, 0, 0)",
+        "arm-right": "matrix(0.494713, -0.869057, 0.869057, 0.494713, 0, 0)",
+        "forearm-right": "matrix(0.878916, -0.476976, 0.476976, 0.878916, 0, 0)",
+        "weapon": "matrix(-0.850867, 0.525381, -0.525381, -0.850867, 0, 0)"
+      },
+      "thrust": {
+        "root": "matrix(1, 0, 0, 1, 57.6709, 5.90352)",
+        "leg-left": "matrix(0.887664, 0.460492, -0.460492, 0.887664, 0, 0)",
+        "knee-left": "matrix(0.974788, -0.223134, 0.223134, 0.974788, 0, 0)",
+        "leg-right": "matrix(0.846564, -0.532286, 0.532286, 0.846564, 0, 0)",
+        "knee-right": "matrix(0.960235, 0.279193, -0.279193, 0.960235, 0, 0)",
+        "torso": "matrix(0.972048, 0.234784, -0.234784, 0.972048, 0, 0)",
+        "head": "matrix(0.986885, -0.161422, 0.161422, 0.986885, 0, 0)",
+        "hair": "matrix(1, 0, 0, 1, 0, 0)",
+        "arm-left": "matrix(0.969877, 0.243594, -0.243594, 0.969877, 0, 0)",
+        "forearm-left": "matrix(0.996195, 0.0871557, -0.0871557, 0.996195, 0, 0)",
+        "shield": "matrix(0.766044, -0.642788, 0.642788, 0.766044, 0, 0)",
+        "arm-right": "matrix(0.56021, -0.82835, 0.82835, 0.56021, 0, 0)",
+        "forearm-right": "matrix(0.838606, -0.544738, 0.544738, 0.838606, 0, 0)",
+        "weapon": "matrix(-0.962352, 0.271808, -0.271808, -0.962352, 0, 0)"
+      },
+      "overhead": {
+        "root": "matrix(1, 0, 0, 1, 30.6375, 9.47519)",
+        "leg-left": "matrix(0.886009, 0.463668, -0.463668, 0.886009, 0, 0)",
+        "knee-left": "matrix(0.974225, -0.225577, 0.225577, 0.974225, 0, 0)",
+        "leg-right": "matrix(0.885607, -0.464435, 0.464435, 0.885607, 0, 0)",
+        "knee-right": "matrix(0.974088, 0.226168, -0.226168, 0.974088, 0, 0)",
+        "torso": "matrix(0.996502, 0.0835727, -0.0835727, 0.996502, 0, 0)",
+        "head": "matrix(0.985926, -0.167183, 0.167183, 0.985926, 0, 0)",
+        "hair": "matrix(0.98928, -0.146031, 0.146031, 0.98928, 0, 0)",
+        "arm-left": "matrix(0.90106, -0.433695, 0.433695, 0.90106, 0, 0)",
+        "forearm-left": "matrix(0.996195, 0.0871557, -0.0871557, 0.996195, 0, 0)",
+        "shield": "matrix(0.766044, -0.642788, 0.642788, 0.766044, 0, 0)",
+        "arm-right": "matrix(0.845785, 0.533523, -0.533523, 0.845785, 0, 0)",
+        "forearm-right": "matrix(0.909879, 0.414873, -0.414873, 0.909879, 0, 0)",
+        "weapon": "matrix(-0.993309, -0.115485, 0.115485, -0.993309, 0, 0)"
+      }
+    }
+  },
+  "errors": [],
+  "missing_assets": [],
+  "speed2_durations_ms": [
+    405,
+    405,
+    405,
+    405,
+    405,
+    405,
+    405,
+    405,
+    405,
+    405,
+    405,
+    405,
+    405,
+    405
+  ],
+  "unmounted_animation_states": [
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle",
+    "idle"
+  ],
+  "reduced_motion_animations": [
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    },
+    {
+      "duration": 1,
+      "iterations": 1
+    }
+  ],
+  "missing_cutout_same_hero_fallback": true,
+  "headless_attack_frame_pacing": {
+    "frames": 40,
+    "median_ms": 16.699999999999932,
+    "p95_ms": 16.700000000000045,
+    "over33ms": 0
+  }
+}

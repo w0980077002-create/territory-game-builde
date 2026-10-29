@@ -7,7 +7,7 @@ import { useGame } from '@/game/actions';
 import { getCombatAppearance } from '@/game/appearance';
 import { selectedFollower } from '@/game/followers';
 import { getFollowerArt, getFollowerCombatFrames } from '@/game/combatArt';
-import { CombatClash, FighterFigure } from './FighterFigure';
+import { FighterFigure } from './FighterFigure';
 import { useLanguage } from '@/game/i18n';
 
 interface Props {
@@ -15,6 +15,9 @@ interface Props {
   enemy: ArenaFighter | null;
   active: boolean;
   finished: boolean;
+  /** Outcome comes from the existing server result, never inferred from a pose. */
+  won: boolean;
+  draw: boolean;
   moved: boolean;
   auto: boolean;
   autoLocked: boolean;
@@ -81,7 +84,7 @@ function ZoneButton({ label, sub, selected, tone, disabled, onClick }: {
 
 export function BattleScene(props: Props) {
   const {
-    me, enemy, active, finished, moved, auto, autoLocked, autoMinVip, attack, blocks, busy,
+    me, enemy, active, finished, won, draw, moved, auto, autoLocked, autoMinVip, attack, blocks, busy,
     movedCount, aliveCount, strike, canRepeat, onAttack, onToggleBlock, onStrike, onRepeat, onToggleAuto, resultPanel,
   } = props;
   const game = useStore(useGame);
@@ -143,6 +146,7 @@ export function BattleScene(props: Props) {
                   dir={1}
                   scale={1.24}
                   alive={alive}
+                  won={finished && won && alive}
                   strike={strike}
                   idleSeconds={3.1}
                   className={`absolute bottom-0 h-[98%] w-full object-contain object-right-bottom ${portraitFollower ? '-right-[12%]' : 'right-0'}`}
@@ -184,7 +188,8 @@ export function BattleScene(props: Props) {
                     dir={-1}
                     mirror
                     alive={enemy.hp > 0}
-                    scale={1.08}
+                    won={finished && !won && !draw && enemy.hp > 0}
+                    scale={1.02}
                     strike={strike}
                     idleSeconds={2.8}
                     className="absolute left-0 bottom-0 h-[96%] w-full object-contain object-left-bottom"
@@ -195,7 +200,6 @@ export function BattleScene(props: Props) {
               <div className="flex-1 flex items-center justify-center text-[11px] text-gray-300">{language === 'en' ? 'No enemies' : 'Противников нет'}</div>
             )}
           </div>
-          <CombatClash strike={strike} />
         </div>
 
         {!finished && <div className="flex flex-col gap-1.5 pt-6">
