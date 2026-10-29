@@ -27,8 +27,7 @@ BEGIN
  IF NOT EXISTS(
    SELECT 1 FROM territory_private.combat_encounters_v1 e
    JOIN territory_private.adventure_rewards_v1 r ON r.encounter_id=e.encounter_id
-   WHERE e.encounter_id='adventure_v1_stage_'||st::text
-     AND e.enabled AND r.enabled AND e.stage=st AND r.stage=st
+   WHERE e.enabled AND r.enabled AND e.stage=st AND r.stage=st
      AND r.items='[]'::jsonb
      AND e.mode=(CASE WHEN st%10=0 THEN 'boss' ELSE 'pve' END)
  ) THEN RETURN jsonb_build_object('enabled',false); END IF;
