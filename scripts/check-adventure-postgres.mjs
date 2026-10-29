@@ -30,6 +30,7 @@ const loser = '10000000-0000-4000-8000-000000000002';
 const noLevel = '10000000-0000-4000-8000-000000000003';
 const op = n => `20000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const fighter = { stats: { hp: 1000, maxHp: 1000, attack: 100, defense: 4, critChance: 0, dodgeChance: 0, blockChance: 0 }, ownership: { heroLevel: 1, skills: {}, runes: {}, passives: {} }, loadout: { skills: [], passives: [] } };
+const weak = { ...fighter, stats: { ...fighter.stats, hp: 1, maxHp: 1, attack: 1 } };
 const enemy = { ...fighter, stats: { ...fighter.stats, hp: 10, maxHp: 10, attack: 1 } };
 const rules = { stepMs: 10, maxDurationMs: 10000, approachMs: 20, attackIntervalMs: 200, basicWindupMs: 20, basicMultiplier: 1, defenseFactor: 0.5, magicDefenseFactor: 0.2, minimumDamage: 1, critMultiplier: 2, blockMultiplier: 0, maxEnergy: 100, initialEnergy: 100, energyPerSecond: 0, modeDamageMultiplier: { pve: 1, boss: 1, pvp: 1 } };
 const save = { player: { gold: 50, xp: 90, level: 1, xpToNext: 100, maxEnergy: 20, stats: { hp: 100, maxHp: 100, attack: 20, defense: 5 }, equipped: { weapon: { id: 'old' } } }, inventory: [{ id: 'old' }], vip: 7, redGems: 45, achievements: [{ id: 'old' }] };
@@ -51,7 +52,7 @@ for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supab
 assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`), save, 'installation leaves the old save untouched');
 await sql(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by)
  VALUES (${quote(player)},${json(save)},1,${json(fighter)},'{}','synthetic evidence','test reviewer'),
- (${quote(loser)},${json(save)},1,${json(fighter)},'{}','synthetic evidence','test reviewer'),
+ (${quote(loser)},${json(save)},1,${json(weak)},'{}','synthetic evidence','test reviewer'),
  (${quote(noLevel)},${json(noLevelSave)},1,${json(fighter)},'{}','synthetic evidence','test reviewer');`);
 const prepared = await scalar(`SET ROLE service_role; SELECT public.territory_combat_prepare_profile_v1(${quote(player)})`);
 assert.equal(prepared.status, 'ready');
@@ -143,9 +144,6 @@ assert.equal(await sql(`SELECT revision FROM territory_private.combat_sessions_v
 // The second synthetic player loses a genuine engine fight; no win reward is paid.
 const strongEnemy={...fighter,stats:{...fighter.stats,attack:1000}};
 await sql(`UPDATE territory_private.combat_encounters_v1 SET enemy=${json(strongEnemy)} WHERE encounter_id='s1'`);
-const weak={...fighter,stats:{...fighter.stats,hp:1,maxHp:1,attack:1}};
-await sql(`UPDATE territory_private.combat_profile_attestations_v1 SET fighter=${json(weak)} WHERE player_id=${quote(loser)};
- UPDATE territory_private.combat_profiles_v1 SET fighter=${json(weak)} WHERE player_id=${quote(loser)};`);
 const lostStart=await execute(loser,{action:'start',operationId:op(5),encounterId:'s1',control:'auto'});
 await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(lostStart.session_id)}`);
 const lost=await execute(loser,{action:'advance',operationId:op(6),sessionId:lostStart.session_id,revision:0});
