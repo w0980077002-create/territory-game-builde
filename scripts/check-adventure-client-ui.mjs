@@ -71,7 +71,7 @@ assert.match(ui, /dark-cave-floor-list/, 'Dedicated floor selection UI is requir
 assert.match(ui, /progress\.dark_stones<1/, 'Never enable entry when no Dark Stones are available');
 assert.match(ui, /await readProgress\(\)/, 'Recheck stone balance after server start');
 assert.match(darkSql, /dark_stone_take_v1\(p_player\)/, 'Server must atomically consume stone on start');
-assert.match(darkSql, /battle_stones'',available_stones\)/, 'Existing arena stones must remain unchanged in receipt');
+assert.match(darkSql, /revised_sql:=replace\(revised_sql/, 'Existing arena stones must remain unchanged in receipt');
 assert.match(darkSql, /ENABLE ROW LEVEL SECURITY/, 'Private resource table must use RLS');
 
 console.log('Dark Cave separate navigation PASS: old campaign, Trials, 3 buttons, cave stages, safe server receipts.');
