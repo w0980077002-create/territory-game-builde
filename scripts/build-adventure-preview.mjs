@@ -60,7 +60,7 @@ import { createRoot } from 'react-dom/client';
 import { ServerAdventureScreen } from './src/components/pve/ServerAdventureScreen';
 function App() {
  const [counter, setCounter] = React.useState(0);
- return <div style={{maxWidth:440,margin:'auto',padding:8}}>
+ return <div style={{maxWidth:440,margin:'auto',padding:8,height:'calc(100dvh - 132px)',minHeight:0,boxSizing:'border-box',display:'flex',flexDirection:'column',overflow:'hidden'}}> 
    <button id="remount" style={{position:'absolute',left:-999}} onClick={()=>setCounter(v=>v+1)}>Remount</button>
    <ServerAdventureScreen key={counter} userId="review" onTrial={()=>{window.__onTrial=true}} />
  </div>;
