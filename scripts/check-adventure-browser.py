@@ -38,7 +38,7 @@ with sync_playwright() as p:
             assert page.get_by_text('+10 монет').count() == 1
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
             page.get_by_role('button',name='К этапам').click()
-            page.get_by_text('Открыт этап: 2').wait_for()
+            page.get_by_text('Открытый этаж: 2 / 100').wait_for()
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
         page.close()
     assert not errors, errors
