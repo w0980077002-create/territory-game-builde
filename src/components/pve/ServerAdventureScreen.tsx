@@ -259,14 +259,14 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     return () => cancelAnimationFrame(frame);
   }, [session?.session_id, progress?.unlocked_stage]);
 
-  return <section className="space-y-3 pb-4" data-testid="territory-adventure-v1">
+  return <section className="flex h-full min-h-0 flex-col gap-1.5 overflow-hidden" data-testid="territory-adventure-v1">
     <h2 className="sr-only">{en ? 'Dark Cave' : 'Тёмная пещера'}</h2>
     {error && <p role="alert" className="rounded-xl border border-red-400/40 bg-red-950/50 p-3 text-xs text-red-100">{error}</p>}
     {recoverable && <button disabled={busy} onClick={()=>void restore()} className="w-full rounded-xl border border-amber-500/60 bg-amber-900/30 p-3 font-semibold text-amber-100">
       {en ? 'Recover server session' : 'Восстановить серверный бой'}
     </button>}
     {busy && <p role="status" className="text-center text-amber-100 text-xs"><Loader2 className="w-4 h-4 animate-spin inline mr-2"/>{en?'Synchronizing':'Синхронизация'}</p>}
-    {session ? <div ref={battleRef} data-testid="territory-adventure-battle" className="rounded-2xl border border-amber-600/50 bg-gradient-to-b from-amber-950/70 to-slate-950 p-2 space-y-3 scroll-mt-3">
+    {session ? <div ref={battleRef} data-testid="territory-adventure-battle" className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-amber-600/50 bg-gradient-to-b from-amber-950/70 to-slate-950 p-2 space-y-3 scroll-mt-3">
       <p className="text-center text-xs text-amber-200 font-bold">{en?'Server battle':'Серверный бой'} · {en?'Stage':'Этап'} {session.state.input.stage} · {enemyName}</p>
       <div className="relative min-h-[340px] overflow-hidden rounded-xl border border-amber-400/25 bg-slate-900">
         <img src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
@@ -315,23 +315,23 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           : (en?'Skills and damage are verified by the server':'Умения и урон проверяет сервер')}</p>
       </>}
     </div> : progress ? <>
-      <div className="relative isolate overflow-hidden rounded-[22px] border border-[#54446f] bg-[#101830] px-2.5 pb-3 pt-3 shadow-[inset_0_0_50px_rgba(51,25,101,.42),0_10px_30px_rgba(0,0,0,.32)]" data-testid="dark-cave-realm">
+      <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden rounded-[18px] border border-[#54446f] bg-[#101830] px-2 pb-2 pt-2 shadow-[inset_0_0_50px_rgba(51,25,101,.42),0_10px_30px_rgba(0,0,0,.32)]" data-testid="dark-cave-realm">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_45%_25%,rgba(109,42,164,.20),transparent_65%)]"/>
-        <div className="relative text-center">
-          <div className="mx-auto mb-1 flex max-w-[90%] items-center gap-2 text-[#f6b755]">
+        <div className="relative shrink-0 text-center">
+          <div className="mx-auto mb-0.5 flex max-w-[90%] items-center gap-2 text-[#f6b755]">
             <span className="h-px grow bg-gradient-to-r from-transparent to-[#f4a945]"/>
             <span className="h-2 w-2 rotate-45 border border-[#ffc567] bg-[#7639ae]"/>
             <span className="h-px grow bg-gradient-to-l from-transparent to-[#f4a945]"/>
           </div>
-          <h3 className="text-[clamp(17px,5vw,24px)] font-black leading-tight tracking-tight text-[#ffe4a2] drop-shadow-[0_2px_3px_#070b1e]">
+          <h3 className="text-[clamp(17px,4.8vw,21px)] font-black leading-tight tracking-tight text-[#ffe4a2] drop-shadow-[0_2px_3px_#070b1e]">
             {en?'Realm of Dark Energy':'Царство Тёмной энергии'}
           </h3>
           <div className="mx-auto mt-1 h-px w-[82%] bg-gradient-to-r from-transparent via-[#f8b343] to-transparent"/>
         </div>
-        <div className="relative z-10 mt-2 flex items-center justify-between">
+        <div className="relative z-10 mt-0.5 flex shrink-0 items-center justify-between">
           <button type="button" onClick={()=>setStoneInfo(v=>!v)} aria-expanded={stoneInfo} data-testid="dark-stone-balance"
-            className="flex min-h-11 items-center gap-1 rounded-xl border border-[#9a5ce0]/70 bg-[#0c0c21]/90 py-0.5 pl-1 pr-3 font-black text-lg tabular-nums text-white shadow-[0_2px_16px_rgba(140,66,244,.22)]">
-            <img src={darkStoneArt} alt={en?'Dark Stone':'Тёмный камень'} className="h-9 w-9 rounded-md object-cover"/>
+            className="flex min-h-8 items-center gap-1 rounded-xl border border-[#9a5ce0]/70 bg-[#0c0c21]/90 py-0.5 pl-1 pr-3 font-black text-lg tabular-nums text-white shadow-[0_2px_16px_rgba(140,66,244,.22)]">
+            <img src={darkStoneArt} alt={en?'Dark Stone':'Тёмный камень'} className="h-7 w-7 rounded-md object-cover"/>
             {progress.dark_stones}
             <Info size={14} className="ml-1 text-amber-300"/>
           </button>
@@ -343,23 +343,23 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           {en?'Entrance costs 1 Dark Stone. First entry: 5 stones; daily +3 at 00:00 UTC.':'Вход стоит 1 Тёмный камень. Первые 5 камней выдаются при первом посещении; далее +3 ежедневно в 00:00 UTC.'}
         </div>}
         <img src={portalArt} alt={en?'Glowing cave portal':'Светящийся портал Тёмной пещеры'}
-          className="pointer-events-none relative -mt-2 h-auto w-full select-none object-contain" data-testid="dark-cave-portal" draggable={false}/>
-        <div className="relative mx-auto -mt-1 flex items-center justify-between gap-2 px-1 pb-2 text-xs font-bold text-amber-100">
+          className="pointer-events-none relative -mt-1 h-[clamp(92px,18dvh,152px)] w-full shrink-0 select-none object-cover object-center" data-testid="dark-cave-portal" draggable={false}/>
+        <div className="relative mx-auto -mt-1 flex w-full shrink-0 items-center justify-between gap-2 px-1 pb-1 text-xs font-bold text-amber-100">
           <span className="truncate">{en?'Chapter':'Глава'} {highlightedFloor.chapter} · {CAMPAIGN_CHAPTERS[highlightedFloor.chapter-1]}</span>
           <button onClick={jumpToCurrent} type="button"
             className="shrink-0 rounded-md border border-amber-400/50 bg-amber-900/40 px-2 py-1 text-[11px] text-[#ffe5a4]">
             {en?'My floor':'Мой этаж'}
           </button>
         </div>
-        <div className="relative rounded-xl border border-[#5d5077]/70 bg-[#080c20]/75 p-1.5 shadow-[inset_0_3px_18px_#060719]" data-testid="dark-cave-floor-list">
+        <div className="relative min-h-[72px] flex-1 overflow-hidden rounded-xl border border-[#5d5077]/70 bg-[#080c20]/75 p-1 shadow-[inset_0_3px_18px_#060719]" data-testid="dark-cave-floor-list">
           <div ref={floorListRef} data-testid="dark-cave-floor-scroll" role="region" aria-label={en?'Scrollable cave floors':'Прокручиваемый список этажей'}
-            tabIndex={0} className="dark-cave-floor-scroll relative h-[min(34dvh,315px)] min-h-[210px] space-y-1.5 overflow-y-auto overscroll-contain pr-2 touch-pan-y">
+            tabIndex={0} className="dark-cave-floor-scroll relative h-full min-h-0 space-y-1 overflow-y-auto overscroll-contain pr-2 touch-pan-y">
             {floors.map((floor)=>{
               const cleared=floor.index<=progress.completed_stage;
               const current=floor.index===progress.unlocked_stage && progress.completed_stage<100;
               const locked=floor.index>progress.unlocked_stage || progress.completed_stage===100 && !cleared;
               const highlighted=floor.index===floorFocus;
-              const rowClass='relative flex min-h-[51px] w-full items-center gap-2.5 overflow-hidden rounded-[9px] border-2 px-3 text-left text-sm font-black transition-colors '+
+              const rowClass='relative flex min-h-[42px] w-full items-center gap-2 overflow-hidden rounded-[9px] border-2 px-2.5 text-left text-sm font-black transition-colors '+
                 (highlighted && current ? 'border-[#ffe28c] bg-[#713f16] text-[#fff0b7] shadow-[inset_0_0_14px_rgba(255,187,62,.16),0_0_11px_rgba(255,175,52,.48)]':
                 locked?'border-[#48435b] bg-[#141b37] text-[#9798b1]':
                 highlighted?'border-[#c6a460] bg-[#474062] text-[#fff0be]':
@@ -384,33 +384,33 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
             })}
           </div>
         </div>
-        <div className="relative mt-3 space-y-2">
-          <div className="flex items-center justify-center gap-2 text-center text-sm font-black text-[#ffe4ac]">
+        <div className="relative z-10 mt-1 shrink-0 space-y-1.5 border-t border-amber-500/30 bg-[#101830] pt-1" data-testid="dark-cave-actions">
+          <div className="flex items-center justify-center gap-2 text-center text-[13px] font-black text-[#ffe4ac]">
             <span className="h-px grow bg-gradient-to-r from-transparent to-[#a96b3c]"/>
             {en?'Add a blessing':'Добавить благословение'}
             <span className="h-px grow bg-gradient-to-l from-transparent to-[#a96b3c]"/>
           </div>
-          <div className="mx-auto grid max-w-[310px] grid-cols-3 gap-3">
+          <div className="mx-auto grid max-w-[240px] grid-cols-3 gap-2">
             {[1,2,3].map(slot=><button type="button" key={slot} onClick={()=>setBlessingInfo(v=>!v)}
               aria-label={en?'Blessing slot '+slot:'Благословение '+slot}
-              className="flex aspect-[1.15] items-center justify-center rounded-xl border-2 border-[#7788b0]/80 bg-[#233251]/90 text-[32px] font-light text-[#ffdd97] shadow-[inset_0_2px_12px_#15203d,0_4px_0_#090d20] active:scale-[.98]">+</button>)}
+              className="flex h-11 items-center justify-center rounded-lg border-2 border-[#7788b0]/80 bg-[#233251]/90 text-[26px] font-light text-[#ffdd97] shadow-[inset_0_2px_12px_#15203d,0_4px_0_#090d20] active:scale-[.98]">+</button>)}
           </div>
           {blessingInfo&&<p role="status" className="rounded-lg border border-[#725a92] bg-[#17162e] px-2 py-2 text-center text-[11px] text-[#e4d6f5]">
             {en?'Blessings are not enabled yet and do not affect battles.':'Благословения ещё не подключены и пока не влияют на бой.'}
           </p>}
-          <div className="flex items-center justify-center gap-3 text-xs text-amber-100">
+          <div className="flex items-center justify-center gap-2 text-[11px] text-amber-100">
             <span>{en?'Battle mode':'Режим боя'}:</span>
             {(['manual','auto'] as const).map(mode=><button type="button" key={mode} disabled={busy}
               aria-pressed={control===mode} onClick={()=>setControl(mode)}
-              className={'rounded-md border px-3 py-1.5 font-bold '+(control===mode?'border-amber-300 bg-amber-500 text-[#2d1b12]':'border-amber-500/30 bg-[#12162c] text-amber-100')}>
+              className={'rounded-md border px-2 py-1 font-bold '+(control===mode?'border-amber-300 bg-amber-500 text-[#2d1b12]':'border-amber-500/30 bg-[#12162c] text-amber-100')}>
               {mode==='manual'?(en?'Manual':'Ручной'):(en?'Auto':'Авто')}
             </button>)}
           </div>
           {progress.completed_stage<100 ? <>
             <button type="button" disabled={!ready||busy||recoverable||!mayChallenge||progress.dark_stones<1}
               onClick={()=>void start(control)} data-testid="dark-cave-challenge"
-              className="mx-auto flex min-h-[56px] w-full max-w-[310px] items-center justify-center gap-2 rounded-[18px] border-2 border-[#ffe6a1] bg-gradient-to-b from-[#fff19f] via-[#ffce44] to-[#e8941b] px-4 text-[19px] font-black text-[#4b270c] shadow-[inset_0_2px_3px_#fff9d0,0_5px_0_#694216,0_0_18px_rgba(255,192,73,.26)] transition-transform active:scale-[.98] disabled:opacity-50">
-              <img src={darkStoneArt} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover"/>
+              className="mx-auto flex min-h-[48px] w-full max-w-[300px] items-center justify-center gap-2 rounded-[15px] border-2 border-[#ffe6a1] bg-gradient-to-b from-[#fff19f] via-[#ffce44] to-[#e8941b] px-3 text-[17px] font-black text-[#4b270c] shadow-[inset_0_2px_3px_#fff9d0,0_5px_0_#694216,0_0_18px_rgba(255,192,73,.26)] transition-transform active:scale-[.98] disabled:opacity-50">
+              <img src={darkStoneArt} alt="" className="h-7 w-7 shrink-0 rounded-md object-cover"/>
               <span className="tabular-nums">1</span> {en?'Challenge':'Вызов'}
             </button>
             {!mayChallenge&&<p className="text-center text-xs text-[#ddd1ef]">
