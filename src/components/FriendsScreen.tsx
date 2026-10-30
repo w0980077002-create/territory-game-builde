@@ -6,6 +6,7 @@ import {
   LoaderCircle, LockKeyhole, RefreshCw, Send, ShieldCheck, Sparkles, Trophy, UsersRound
 } from 'lucide-react';
 import { Currency } from './ui/Currency';
+import { SocialTrail, type SocialDestination } from './social/SocialTrail';
 import { prepareRichShareMessage } from '@/game/dailyShare';
 import { captureGameEvent } from '@/game/analytics';
 import { getTelegramWebApp } from '@/game/telegram';
@@ -21,7 +22,7 @@ const milestones = [
   { count: 25, ru: 'Посол TERRITORY', en: 'TERRITORY Ambassador', ruGift: 'Знамя, аура и зал славы — позже', enGift: 'Banner, aura and hall of fame — later' },
 ];
 
-export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => void }) {
+export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; onHero: () => void; onNavigate: (destination: SocialDestination) => void }) {
   const { language } = useLanguage();
   const en = language === 'en';
   const isLinked = user.telegramId !== null;
@@ -130,6 +131,25 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
 
   return (
     <div className="viking-screen viking-screen--friends space-y-2.5 animate-fade-in pb-5 text-white" data-testid="compact-friends-screen">
+      <SocialTrail active="friends" onNavigate={onNavigate}
+        detail={status ? (en ? `${status.qualified} qualified allies` : `Засчитано союзников: ${status.qualified}`) : undefined} />
+      {readyToClaim && <section data-testid="friends-ready-reward" className="rounded-2xl border-2 border-emerald-400/60 bg-gradient-to-br from-[#4d3920] to-[#183026] p-3">
+        <p className="text-sm font-black text-amber-100">{en ? 'Your earned rewards are ready' : 'Твои награды уже готовы'}</p>
+        <button type="button" onClick={() => void claim()} disabled={busy} className="btn-primary mt-2 flex min-h-11 w-full items-center justify-center gap-2 font-black disabled:opacity-50">
+          {busy ? <LoaderCircle size={19} className="animate-spin" /> : <Gift size={19} />}
+          {en ? 'CLAIM REWARDS' : 'ЗАБРАТЬ НАГРАДЫ'}
+        </button>
+      </section>}
+      {!readyToClaim && status && status.registered > status.qualified && <section data-testid="friends-next-progress" className="rounded-2xl border border-amber-400/50 bg-[#432b1d] p-3">
+        <p className="text-sm font-black text-amber-100">{en ? 'Allies on their way' : 'Друзья развивают героев'}</p>
+        <p className="mt-1 text-xs text-amber-100/80">{en
+          ? `${status.registered - status.qualified} invited heroes are progressing toward the verified milestone.`
+          : `Ещё ${status.registered - status.qualified} приглашённых героев идут к подтверждённой цели.`}</p>
+        <button type="button" onClick={() => document.getElementById('referral-friend-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          className="mt-2 min-h-11 w-full rounded-xl border border-amber-300/60 bg-amber-900/50 px-3 py-2 text-sm font-bold text-amber-100">
+          {en ? 'View friend progress' : 'Посмотреть прогресс друзей'}
+        </button>
+      </section>}
       {/* ONE lead message and ONE primary call to action. */}
       <section className="relative overflow-hidden rounded-2xl border border-amber-400/60 bg-gradient-to-br from-[#482333] via-[#2d173b] to-[#14182a] p-3.5 shadow-[0_6px_24px_#0006]">
         <div className="absolute -top-5 -right-5 opacity-10 pointer-events-none"><Crown size={125} /></div>
@@ -246,7 +266,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
           )}
 
 
-          <section className="rounded-xl border border-violet-400/25 bg-[#19182b] p-3" data-testid="referral-friend-list">
+          <section id="referral-friend-list" className="rounded-xl border border-violet-400/25 bg-[#19182b] p-3" data-testid="referral-friend-list">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-black text-amber-100 flex items-center gap-2">
                 <UsersRound size={17} />{en ? 'My invited friends' : 'Мои друзья'}
@@ -311,10 +331,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
             </p>
           </section>
 
-          {readyToClaim && <button type="button" onClick={() => void claim()} disabled={busy} className="btn-primary w-full py-3.5 flex items-center justify-center gap-2 font-black">
-            {busy ? <LoaderCircle size={19} className="animate-spin"/> : <Gift size={19}/>}
-            {en ? 'CLAIM REWARDS' : 'ЗАБРАТЬ НАГРАДЫ'}
-          </button>}
+
         </>
       )}
 
