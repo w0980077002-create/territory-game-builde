@@ -284,3 +284,38 @@
 @media (prefers-reduced-motion:reduce) {
   .territory-profile .hero-showcase__hero-art { animation:none; }
 }
+
+/* #145 approved Battle Cow plaque typography: the label belongs dead center
+   of the carved sign, NEVER at the left edge of a stretched background. */
+.territory-profile .hero-showcase :is(.hero-showcase__stats,.hero-showcase__journey) > .hero-showcase__plaque-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: min(100%, 310px);
+  min-height: 49px;
+  height: auto;
+  margin: 0 auto 10px;
+  padding: 9px 25px 10px;
+  border: 0;
+  border-radius: 0;
+  background: var(--viking-plaque) center / 100% 100% no-repeat;
+  color: #ffe59c;
+  font-family: 'Arial Black', system-ui, -apple-system, sans-serif;
+  font-size: clamp(16px, 4.5vw, 20px);
+  font-weight: 1000;
+  letter-spacing: 0;
+  line-height: 1.16;
+  text-align: center;
+  text-shadow: 1px 2px 0 #311609, -1px -1px 0 #311609,
+               2px 2px 1px #1f0e06, 0 0 3px #190d09;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 350px) {
+  .territory-profile .hero-showcase :is(.hero-showcase__stats,.hero-showcase__journey) > .hero-showcase__plaque-title {
+    min-height: 46px;
+    padding-inline: 18px;
+    font-size: 16px;
+  }
+}
