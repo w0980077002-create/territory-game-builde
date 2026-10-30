@@ -36,7 +36,19 @@ const out=await build({
   alias:{'@':resolve('src')},
   define:{'import.meta.env.BASE_URL':JSON.stringify('/'),'process.env.NODE_ENV':'"production"'},
   plugins:[{name:'mock-social-transport',setup(b){
-    b.onResolve({filter:new RegExp('^@/game/socialQuests$')},()=>({path:'social-quests-stub',namespace:'social-stub'}));
+    b.onResolve({filter:new RegExp('socialQuests},()=>({path:'social-quests-stub',namespace:'social-stub'}));
+    b.onLoad({filter:/.*/,namespace:'social-stub'},()=>({contents:stub,loader:'js'}));
+  }}]
+});
+const baseCss=readFileSync('src/index.css','utf8');
+const css=(await postcss([tailwindcss(),autoprefixer()]).process(baseCss,{from:'src/index.css'})).css
+  + '\n' + readFileSync('src/components/ui/vikingScreenSkin.css','utf8')
+  + '\n' + out.outputFiles.filter(f=>f.path.endsWith('.css')).map(f=>f.text).join('\n');
+const js=out.outputFiles.find(f=>f.path.endsWith('.js')).text;
+writeFileSync('/tmp/territory-social-quests-preview.html',
+  `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body><div id="root"></div><script>${js}</script></body></html>`);
+console.log('Social quest offline preview ready (real component, fake transport).');
+)},()=>({path:'social-quests-stub',namespace:'social-stub'}));
     b.onLoad({filter:/.*/,namespace:'social-stub'},()=>({contents:stub,loader:'js'}));
   }}]
 });
