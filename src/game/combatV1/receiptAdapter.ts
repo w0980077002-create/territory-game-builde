@@ -29,7 +29,7 @@ async function isVerifiedRollback(error: unknown): Promise<boolean> {
   const response = error.context;
   if (response.status !== 409 || typeof response.clone !== 'function') return false;
   try {
-    const payload: unknown = await (response.clone as () => Response)().json();
+    const payload: unknown = await (response as { clone: () => Response }).clone().json();
     return record(payload) && typeof payload.error === 'string' && definitelyRejected.has(payload.error);
   } catch { return false; }
 }
