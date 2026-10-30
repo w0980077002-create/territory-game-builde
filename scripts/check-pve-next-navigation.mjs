@@ -78,6 +78,6 @@ try {
   if (oldWindow === undefined) delete globalThis.window;
   else globalThis.window = oldWindow;
 }
-assert.match(fight, /try \\{ captureGameEvent\\('territory_pve_fight_end',[\\s\\S]*?\\);\\s*\\}\\s*catch \\{/,
+assert.match(fight, /try \{ captureGameEvent\('territory_pve_fight_end',[\s\S]*?\);\s*\}\s*catch \{/,
   'Optional analytics must never abort the actual victory or saved rewards');
 console.log('PvE post-battle navigation PASS: cancelled next, optional Telegram haptics and telemetry cannot block battle progression.');
