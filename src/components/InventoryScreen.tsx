@@ -4,16 +4,16 @@ import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
 import { BELT_STACK, beltContext, canBelt, putInBelt, takeFromBelt } from '@/game/belt';
 import { ItemArt } from './ui/ItemArt';
-import { IosGamePortal } from './ui/Modal';
+import { Modal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
 import { GearShowcase } from './GearShowcase';
 import { FollowersPanel } from './FollowersPanel';
 import { AWAKENING_STONE_ITEM, cowStonesOwned } from '@/game/followers';
 import { CompactWarehouse } from './CompactWarehouse';
-import { rarityColor, rarityGlow } from '@/game/ui';
+import { rarityColor } from '@/game/ui';
 import { elixirExpiryTime, elixirTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
-import { Package, X, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned } from 'lucide-react';
+import { Package, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned } from 'lucide-react';
 
 /** Equipment, consumables/belt and companions share the inventory route.
  * The follower model is unchanged: training and PvE selection stay in the global store. */
@@ -159,25 +159,14 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
       </div>
 
       {tab === 'items' && selected && (
-        <IosGamePortal>
-        <div className="inventory-item-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
-          onClick={close}>
-          <div className="card w-full max-w-sm m-2 animate-slide-up max-h-[88dvh] overflow-y-auto overscroll-contain"
-            style={{ border: '1px solid ' + rarityColor(selected.rarity), boxShadow: rarityGlow(selected.rarity) }}
-            onClick={(event) => event.stopPropagation()}>
-            <div className="flex items-start gap-3 mb-3">
+        <Modal title={localizeText(selected.name, language)} onClose={close}>
+          <div className="inventory-item-detail">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-16 h-16 rounded-xl bg-black/30 flex items-center justify-center shrink-0"
                 style={{ border: '1px solid ' + rarityColor(selected.rarity) }}>
                 <ItemArt item={selected} size={52}/>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-base" style={{ color: rarityColor(selected.rarity) }}>
-                  {localizeText(selected.name, language)}
-                </h3>
-                <p className="text-xs text-gray-400 capitalize">{selected.rarity}</p>
-              </div>
-              <button type="button" aria-label={language === 'en' ? 'Close' : 'Закрыть'}
-                onClick={close} className="text-gray-500 hover:text-white"><X className="w-5 h-5"/></button>
+              <p className="text-sm capitalize" style={{ color: rarityColor(selected.rarity) }}>{selected.rarity}</p>
             </div>
             <p className="text-sm text-gray-300 mb-3">{localizeText(selected.description, language)}</p>
             {isPerishableItem(selected) && (
@@ -211,8 +200,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
               <button className="btn-ghost flex-1" onClick={close}>{language === 'en' ? 'Close' : 'Закрыть'}</button>
             </div>
           </div>
-        </div>
-        </IosGamePortal>
+        </Modal>
       )}
     </div>
   );

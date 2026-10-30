@@ -1233,7 +1233,7 @@
   display:flex;align-items:center;gap:8px;flex:0 0 auto;
   padding:7px 8px 7px 11px;
   border-bottom:2px solid #ba8942;
-  background:linear-gradient(180deg,#81522b,#4e2b18);
+  background:var(--viking-plaque) center / 100% 100% no-repeat,linear-gradient(180deg,#81522b,#4e2b18);
 }
 .arena-rules-head>svg{width:23px;height:23px;flex-shrink:0;color:#ffe08b;filter:drop-shadow(0 1px 1px #201006);}
 .arena-rules-head h3{

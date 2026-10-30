@@ -1,11 +1,18 @@
 """Exercise production dialogs in an offline, short Telegram-like shell."""
 import shutil
 import threading
+import os
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from functools import partial
 from playwright.sync_api import sync_playwright
 
-server = ThreadingHTTPServer(('127.0.0.1', 0), partial(SimpleHTTPRequestHandler, directory='/tmp'))
+class FixtureHandler(SimpleHTTPRequestHandler):
+    def translate_path(self, path):
+        if path.startswith('/assets/'):
+            return os.path.join(os.getcwd(), 'public', path.lstrip('/'))
+        return super().translate_path(path)
+
+server = ThreadingHTTPServer(('127.0.0.1', 0), partial(FixtureHandler, directory='/tmp'))
 threading.Thread(target=server.serve_forever, daemon=True).start()
 url = f'http://127.0.0.1:{server.server_port}/territory-dialog-preview.html'
 with sync_playwright() as p:
@@ -29,6 +36,8 @@ with sync_playwright() as p:
                     area.evaluate('(e) => e.scrollTop = e.scrollHeight')
                     assert area.evaluate('(e) => e.scrollTop > 0')
                     assert page.locator(close).is_visible()
+                    if width == 360 and language == 'ru' and ios:
+                        page.screenshot(path=f'/tmp/territory-{name}-360-ios.png')
                     page.keyboard.press('Escape')
                     assert page.locator(panel).count() == 0
                     assert page.evaluate('document.activeElement.id') == name

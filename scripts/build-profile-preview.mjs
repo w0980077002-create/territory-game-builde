@@ -1,0 +1,14 @@
+// Render the actual profile using an in-memory game state and no network.
+import {build} from 'esbuild';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import postcss from 'postcss';
+import tailwindcss from 'tailwindcss';
+import autoprefixer from 'autoprefixer';
+const entry = `import React from 'react'; import {createRoot} from 'react-dom/client'; import {LanguageProvider} from './src/game/i18n'; import {ProfileScreen} from './src/components/ProfileScreen'; import {InventoryScreen} from './src/components/InventoryScreen';
+createRoot(document.getElementById('root')).render(<LanguageProvider><div className="territory-shell" style={{height:'100dvh',overflow:'auto',padding:12}}>{location.search ? <InventoryScreen userId="fixture"/> : <ProfileScreen user={{id:'fixture',telegramId:null,photoUrl:null,displayName:'fixture'}}/>}</div></LanguageProvider>);`;
+const fixture=`import {create} from './src/game/store'; import {createInitialGame} from './src/game/engine'; const seed=createInitialGame(); seed.forgeMaterials=2; export const useGame=create(seed); export const useArena=create({wins:0}); export async function linkTelegram(){return {success:false}}; export function getTelegramInitData(){return ''}; export function BuildTrainingPanel(){return null}; export function ServerRuneBook(){return null}; export function GearShowcase(){return null}; export function FollowersPanel(){return null}`;
+const out=await build({stdin:{contents:entry,resolveDir:resolve('.'),loader:'tsx'},bundle:true,write:false,outdir:'/tmp/profile-fixture',format:'iife',jsx:'automatic',alias:{'@':resolve('src')},define:{'import.meta.env.BASE_URL':JSON.stringify('/'),'import.meta.env.VITE_TERRITORY_V1_SERVER_COMBAT':'""','process.env.NODE_ENV':'"production"'},plugins:[{name:'offline',setup(b){b.onResolve({filter:/\/game\/(actions|auth|telegram)$|\/builds\/(BuildTrainingPanel|ServerRuneBook)$|^\.\/(GearShowcase|FollowersPanel)$/},()=>({path:'fixture',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:fixture,loader:'js',resolveDir:resolve('.')}));}}]});
+const css=(await postcss([tailwindcss(),autoprefixer()]).process(readFileSync('src/index.css','utf8'),{from:'src/index.css'})).css + (out.outputFiles.find(f=>f.path.endsWith('.css'))?.text || '');
+const js=out.outputFiles.find(f=>f.path.endsWith('.js')).text;
+writeFileSync('/tmp/territory-profile-preview.html',`<!doctype html><html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style><div id="root"></div><script>${js.replace(/<\/script/gi,'<\\/script')}</script></html>`);

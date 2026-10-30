@@ -42,7 +42,7 @@ export function ProfileScreen({ user, initialTrainingOpen = false }: { user: Aut
   };
 
   return (
-    <div className="space-y-4 animate-fade-in pb-4">
+    <div className="territory-profile space-y-4 animate-fade-in pb-4">
       {/* Profile header */}
       <div className="card relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-teal-900/30 to-transparent" />
@@ -52,7 +52,7 @@ export function ProfileScreen({ user, initialTrainingOpen = false }: { user: Aut
           </div>
           <h2 className="text-xl font-bold text-white">{state.player.name}</h2>
           <p className="text-sm text-gray-400">{t('levelWord')} {state.player.level}</p>
-          <div className="flex gap-3 mt-3 text-sm">
+          <div className="flex flex-wrap justify-center gap-3 mt-3 text-sm">
             <span className="flex items-center gap-1 text-amber-400">
               <Coins className="w-4 h-4" /> {state.player.gold}
             </span>
@@ -193,7 +193,7 @@ export function ProfileScreen({ user, initialTrainingOpen = false }: { user: Aut
 
 function StatBox({ icon, label, value }: { icon: ReactNode; label: string; value: string | number }) {
   return (
-    <div className="flex items-center gap-2 bg-black/20 rounded-lg px-3 py-2">
+    <div className="territory-profile-stat flex items-center gap-2 bg-black/20 rounded-lg px-3 py-2">
       {icon}
       <div>
         <p className="text-xs text-gray-500">{label}</p>
