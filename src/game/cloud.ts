@@ -242,7 +242,7 @@ export function acceptMonopolyClaimReceipt(userId:string,response:unknown):GameS
 /** Consume a confirmed adventure settlement using the existing save fence.
  * A receipt whose token is already loaded is a replay: never replace local
  * state with the old snapshot. Unknown ordering requires a fresh cloud load. */
-export function acceptAdventureSettlementReceipt(userId:string,response:unknown,sessionId:string):GameState|null{
+export function validateAdventureSettlementReceipt(response:unknown,sessionId:string):GameState{
  if(!response || typeof response!=='object' || Array.isArray(response)) throw new Error('adventure_invalid_receipt');
  const receipt=response as Record<string,unknown>;
  const state=receipt.game_state as GameState;
@@ -261,6 +261,12 @@ export function acceptAdventureSettlementReceipt(userId:string,response:unknown,
    throw new Error('adventure_invalid_receipt');
  const wallet=safeWalletVersion({gold:receipt.wallet_gold,gems:receipt.wallet_gems},state.player);
  if(!walletMatchesVersion(wallet,state.player))throw new Error('adventure_invalid_receipt');
+ return state;
+}
+export function acceptAdventureSettlementReceipt(userId:string,response:unknown,sessionId:string):GameState|null{
+ const state=validateAdventureSettlementReceipt(response,sessionId);
+ const receipt=response as Record<string,unknown>;
+ const wallet=safeWalletVersion({gold:receipt.wallet_gold,gems:receipt.wallet_gems},state.player);
  const previous=saveTokens.get(userId);
  if(!validSaveToken(previous))throw new Error('adventure_reload_required');
  if(receipt.updated_at===previous) return null;
@@ -304,7 +310,7 @@ export function acceptAdventureLatestCloudSnapshot(
 
 /** Install an atomic one-stone PvE start debit from its durable server receipt.
  * A replay must never reapply an older snapshot over newer cloud progress. */
-export function acceptAdventureStartReceipt(userId:string,response:unknown,sessionId:string):GameState|null{
+export function validateAdventureStartReceipt(response:unknown,sessionId:string):GameState{
  if(!response || typeof response!=='object' || Array.isArray(response))throw new Error('adventure_invalid_start_receipt');
  const receipt=response as Record<string,unknown>;
  const state=receipt.game_state as GameState;
@@ -316,6 +322,12 @@ export function acceptAdventureStartReceipt(userId:string,response:unknown,sessi
    throw new Error('adventure_invalid_start_receipt');
  const wallet=safeWalletVersion({gold:receipt.wallet_gold,gems:receipt.wallet_gems},state.player);
  if(!walletMatchesVersion(wallet,state.player))throw new Error('adventure_invalid_start_receipt');
+ return state;
+}
+export function acceptAdventureStartReceipt(userId:string,response:unknown,sessionId:string):GameState|null{
+ const state=validateAdventureStartReceipt(response,sessionId);
+ const receipt=response as Record<string,unknown>;
+ const wallet=safeWalletVersion({gold:receipt.wallet_gold,gems:receipt.wallet_gems},state.player);
  const previous=saveTokens.get(userId);
  if(!validSaveToken(previous))throw new Error('adventure_reload_required');
  if(receipt.updated_at===previous)return null;
