@@ -6,7 +6,7 @@ import { useLanguage } from '@/game/i18n';
 import { getFollowerArt } from '@/game/combatArt';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import {
-  FOLLOWER_TEMPLATES, followerTrainingCost, MAX_FOLLOWER_LEVEL,
+  FOLLOWER_TEMPLATES, followerTrainingCost, MAX_FOLLOWER_LEVEL, COW_AWAKENING_STONE_COST, AWAKENING_STONE_ART,
   selectedFollower, selectFollower, trainFollower,
 } from '@/game/followers';
 import './followersCamp.css';
@@ -34,7 +34,9 @@ export function FollowersPanel() {
       succeeded = next !== null;
       return next ?? current;
     });
-    setNote(succeeded ? (en ? 'Training completed' : 'Тренировка завершена') : (en ? 'Not enough materials, gold or hero level' : 'Не хватает золота, материалов или уровня героя'));
+    setNote(succeeded
+      ? (id === 'follower_6' ? (en ? 'Battle Cow awakened!' : 'Боевая корова пробуждена!') : (en ? 'Training completed' : 'Тренировка завершена'))
+      : (id === 'follower_6' ? (en ? 'Awakening Stone or hero level required' : 'Нужен Камень пробуждения или более высокий уровень героя') : (en ? 'Not enough materials, gold or hero level' : 'Не хватает золота, материалов или уровня героя')));
   };
 
   const unlockedCount = FOLLOWER_TEMPLATES.filter(template =>
@@ -45,8 +47,10 @@ export function FollowersPanel() {
   const unlocked = follower?.unlocked === true;
   const selected = active?.id === follower?.id && unlocked;
   const maxed = !!follower && (follower.level >= state.player.level || follower.level >= MAX_FOLLOWER_LEVEL);
+  const isCow = template.id === 'follower_6';
+  const stoneBalance = Number.isSafeInteger(state.awakeningStones) && (state.awakeningStones ?? 0) > 0 ? state.awakeningStones! : 0;
   const price = follower ? followerTrainingCost(follower.level) : { gold: 0, materials: 0 };
-  const canTrain = unlocked && !maxed && state.player.gold >= price.gold && state.forgeMaterials >= price.materials;
+  const canTrain = unlocked && !maxed && (isCow ? stoneBalance >= COW_AWAKENING_STONE_COST : state.player.gold >= price.gold && state.forgeMaterials >= price.materials);
   const cap = Math.max(1, Math.min(state.player.level, MAX_FOLLOWER_LEVEL));
   const progress = follower ? Math.min(100, Math.round(follower.level / cap * 100)) : 0;
   const nextUnlock = FOLLOWER_TEMPLATES.find(f => !state.followers.find(x => x.id === f.id)?.unlocked);
@@ -114,6 +118,7 @@ export function FollowersPanel() {
 
       {unlocked && <>
         {template.role === 'crystal' && <div className="followers-camp__special"><Sparkles size={15}/>{en ? 'Crystal Frenzy: extra strike, light healing each round, slight armor piercing.' : 'Кристальное безумие: дополнительный удар, небольшое лечение каждый раунд и пробивание брони.'}</div>}
+        {isCow && <div className="followers-camp__awakening"><img src={import.meta.env.BASE_URL + AWAKENING_STONE_ART} alt="" loading="lazy"/><div><strong>{en ? 'AWAKENING STONE' : 'КАМЕНЬ ПРОБУЖДЕНИЯ'}</strong><span>{en ? 'Rare resource · not obtainable yet' : 'Редкий ресурс · пока не добывается'}</span></div><b>{stoneBalance}</b></div>}
         <div className="followers-camp__stats">
           <div><Swords size={16}/><span>{en ? 'Attack' : 'Атака'}</span><b>{follower.attack}</b></div>
           <div><Shield size={16}/><span>{en ? 'Defense' : 'Защита'}</span><b>{follower.defense}</b></div>
@@ -129,10 +134,13 @@ export function FollowersPanel() {
           </button>
           <button type="button" onClick={() => train(follower.id)} disabled={!canTrain}
             className="followers-camp__train">
-            <Wrench size={16}/>{maxed ? en ? 'Level cap' : 'Лимит уровня' : en ? 'Train' : 'Обучить'}
+            {isCow ? <Sparkles size={16}/> : <Wrench size={16}/>}{maxed ? en ? 'Level cap' : 'Лимит уровня' : isCow ? en ? 'Awaken' : 'Пробудить' : en ? 'Train' : 'Обучить'}
           </button>
         </div>
-        {!maxed && <div className="followers-camp__cost">
+        {isCow ? <div className="followers-camp__cost followers-camp__cost--awakening">
+          <span><img src={import.meta.env.BASE_URL + AWAKENING_STONE_ART} alt={en ? 'Awakening Stone' : 'Камень пробуждения'}/>{stoneBalance}/{COW_AWAKENING_STONE_COST}</span>
+          <small>{maxed ? (follower.level >= MAX_FOLLOWER_LEVEL ? (en ? 'Maximum companion level reached' : 'Достигнут максимальный уровень спутника') : (en ? 'Increase hero level to awaken further' : 'Для пробуждения повысь уровень героя')) : (en ? 'Only Awakening Stones can raise Battle Cow levels. No gold or gems.' : 'Повышение уровня только за Камни пробуждения. Монеты и алмазы не используются.')}</small>
+        </div> : !maxed && <div className="followers-camp__cost">
           <span><Coins size={14}/>{price.gold.toLocaleString(en ? 'en-US' : 'ru-RU')}</span>
           <span><img src={import.meta.env.BASE_URL + 'forge-material.webp'} alt="" loading="lazy"/>{price.materials}</span>
           {!canTrain && <small>{en ? 'Not enough materials, gold or hero level' : 'Недостаточно ресурсов или уровня героя'}</small>}
