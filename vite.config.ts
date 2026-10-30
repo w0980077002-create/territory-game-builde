@@ -7,6 +7,23 @@ import { join, relative, sep } from 'node:path';
 // Vercel serves the app at /; GitHub Pages keeps the repository subpath.
 const base = process.env.VERCEL === '1' ? '/' : '/territory-game-builde/';
 
+/** Attach the exact source revision to the published HTML, not just to a CI log.
+ * This is inert for local builds and never changes game state or assets. */
+function territoryBuildIdentity(): Plugin {
+  return {
+    name: 'territory-build-identity',
+    apply: 'build',
+    transformIndexHtml(html) {
+      const sha = process.env.GITHUB_SHA;
+      if (!sha || !/^[a-f0-9]{40}$/i.test(sha)) return html;
+      return {
+        html,
+        tags: [{ tag: 'meta', attrs: { name: 'territory-build-sha', content: sha }, injectTo: 'head' }],
+      };
+    },
+  };
+}
+
 function fixPublicAssetPaths(): Plugin {
   return {
     name: 'fix-public-asset-paths',
@@ -68,7 +85,7 @@ function fixPublicAssetPaths(): Plugin {
 
 export default defineConfig({
   base,
-  plugins: [react(), fixPublicAssetPaths()],
+  plugins: [react(), territoryBuildIdentity(), fixPublicAssetPaths()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
