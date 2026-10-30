@@ -68,7 +68,7 @@ export const ArenaChat = memo(function ArenaChat({ roomId, messages, myName, can
           const el = e.currentTarget;
           stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
         }}
-        className="h-56 overflow-y-auto scrollbar-hide space-y-1 bg-black/20 rounded-xl p-2.5"
+        className="h-[clamp(140px,24dvh,224px)] overflow-y-auto overscroll-contain scrollbar-hide space-y-1 bg-black/20 rounded-xl p-2.5"
       >
         {shown.length === 0 && <p className="text-xs text-gray-600 italic">{language === 'en' ? 'It’s quiet for now...' : 'Пока тихо...'}</p>}
         {shown.map((m) => (

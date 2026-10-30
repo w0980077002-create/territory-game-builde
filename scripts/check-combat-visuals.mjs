@@ -50,6 +50,25 @@ assert.match(gear, /equipmentArt\(item\)/, 'Arena gear still shows generic weapo
 assert.match(room, /<ArenaChat\s+roomId=\{roomId\}/, 'Persistent arena chat missing');
 assert.match(room, /<BeltBar/, 'Seven-slot item belt missing');
 assert.match(room, /<GearStrip/, 'Seven-slot gear missing');
+// Arena actions affect real players: do not allow a second transaction before
+// React updates the button's disabled state on rapid Android double taps.
+assert.match(room, /const actionFlight = useRef\(false\)/, 'Missing synchronous arena action guard');
+assert.match(room, /if \(actionFlight\.current\) return;\s*actionFlight\.current = true/, 'Arena actions must lock synchronously');
+assert.match(room, /finally \{\s*actionFlight\.current = false;\s*setBusy\(false\)/,
+  'Arena action guard must unlock after success or failure');
+assert.match(room, /const runBelt = async[\s\S]*?if \(actionFlight\.current \|\| busy\) return;/,
+  'Belt action must reject a second debit while another action is pending');
+assert.match(room, /const strike = \(\) => \{\s*if \(actionFlight\.current/,
+  'Second tap cannot submit the same arena strike again');
+assert.match(room, /role="alert" data-testid="arena-action-error"/,
+  'Server errors should be visible above elixirs, not buried below the chat');
+assert(room.indexOf('data-testid="arena-action-error"') < room.indexOf('<ArenaChat'),
+  'Battle errors must be near the fight controls');
+assert.doesNotMatch(room, /className="card text-center text-sm text-red-400 py-3 animate-fade-in"/,
+  'Do not render duplicate action errors underneath the chat');
+const arenaChat = read('src/components/arena/ArenaChat.tsx');
+assert.match(arenaChat, /h-\[clamp\(140px,24dvh,224px\)\]/,
+  'Keep Arena chat scrollable without consuming most of short mobile screens');
 assert.match(effects, /prefers-reduced-motion: reduce/, 'Motion accessibility safeguards missing');
 
 // Regression coverage for the reported Android arena/trials defects.
