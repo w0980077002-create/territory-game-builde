@@ -344,3 +344,17 @@
 ):not(:has(button, a, input)):has(+ *) {
   min-height: 40px;
 }
+
+/* Shared wooden dialog captions use the same centered fantasy lettering.
+   Leave the existing icon and 44px close button outside the title layout. */
+.territory-shell :is(.fortune-dialog__head h2, .rune-book__dialog-top h4, .mono-panel > header h3) {
+  min-width: 0;
+  text-align: center;
+  color: #ffe5a0;
+  font-family: 'Arial Black', system-ui, -apple-system, sans-serif;
+  font-size: clamp(15px, 4vw, 19px);
+  font-weight: 1000;
+  line-height: 1.15;
+  text-wrap: balance;
+  text-shadow: 1px 2px 0 #311609, -1px -1px 0 #311609, 2px 2px 1px #1f0e06;
+}
