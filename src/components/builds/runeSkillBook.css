@@ -47,6 +47,8 @@
   padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));
   background:#120b08cc;overscroll-behavior:contain;
 }
+html.territory-ios-webapp .territory-shell > .rune-book__overlay{position:absolute;inset:0;width:100%;height:100%;box-sizing:border-box}
+html.territory-ios-webapp .territory-shell > .rune-book__overlay .rune-book__dialog{max-height:min(74%,520px)}
 .rune-book__dialog{
   display:flex;flex-direction:column;min-height:0;overflow:hidden;
   width:min(100%,380px);max-height:min(74dvh,520px);padding:0;
@@ -56,12 +58,12 @@
   box-shadow:inset 0 0 0 2px #392013,inset 0 2px 0 #ffdc9965,0 16px 40px #000b;
 }
 .rune-book__dialog-top{
-  flex:0 0 auto;display:flex;align-items:center;gap:8px;
-  min-height:59px;padding:7px 8px 7px 11px;
+  flex:0 0 auto;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:4px;
+  min-height:59px;padding:7px 8px;
   border-bottom:2px solid #b7864a;
   background:var(--viking-plaque) center / 100% 100% no-repeat,linear-gradient(#81502a,#482719);
 }
-.rune-book__dialog-top>div:nth-child(2){min-width:0;flex:1}
+.rune-book__dialog-top>div:nth-child(2){min-width:0;text-align:center}
 .rune-book__dialog-top span:not(.rune-book__hex){font-size:10px;color:#ffe0aa}
 .rune-book__dialog-top h4{
   font:900 clamp(15px,4vw,18px)/1.2 system-ui,-apple-system,sans-serif;

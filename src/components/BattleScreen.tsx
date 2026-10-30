@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, ShoppingBag } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
-import { useLanguage } from '@/game/i18n';
+import { useLanguage, localizeText } from '@/game/i18n';
 import { captureGameEvent } from '@/game/analytics';
 import { generateChapter, generateTrial, PVE_STONE_COST } from '@/game/engine';
 import { spendStones, trialReward, blessedGold } from '@/game/progression';
@@ -12,6 +12,7 @@ import { PveFight, type FightKind } from './pve/PveFight';
 import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
 import { Currency } from './ui/Currency';
 import { DailyShareCard } from '@/game/DailyShareCard';
+import './battleJourney.css';
 // Independent: the old campaign, Trials, and server-operated Dark Cave.
 export type BattleView = 'campaign' | 'trial' | 'cave';
 
@@ -163,13 +164,8 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       {view === 'campaign' ? (
         <>
           {state.totalBattlesWon === 0 && (
-            <div className="rounded-xl border border-amber-400/40 bg-amber-950/30 p-3 text-sm text-amber-100" role="note">
-              <strong className="block font-bold">{language === 'en' ? 'Your first victory starts here!' : 'Первая победа начинается здесь!'}</strong>
-              <span className="block mt-1 text-xs leading-relaxed">
-                {language === 'en'
-                  ? 'Press Fight on the highlighted enemy below. Win the battle to gain experience and unlock the next stage.'
-                  : 'Нажми «Бой» у выделенного противника ниже. Победи, получи опыт и открой следующий этап.'}
-              </span>
+            <div className="rounded-xl border border-amber-400/40 bg-amber-950/30 px-3 py-2 text-sm font-bold text-amber-100" role="note">
+              {language === 'en' ? 'Your first victory starts here!' : 'Первая победа начинается здесь!'}
             </div>
           )}
           <div className="relative rounded-2xl overflow-hidden border border-amber-500/20">
@@ -177,7 +173,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
             <div className="relative p-4">
               <p className="text-[11px] uppercase tracking-[0.2em] text-amber-300">{t('chapter')} {chapter.number}</p>
-              <h2 className="text-xl font-bold text-white mt-0.5">{chapter.title}</h2>
+              <h2 className="text-xl font-bold text-white mt-0.5">{localizeText(chapter.title, language)}</h2>
               <div className="mt-3 flex items-center gap-2">
                 <div className="flex-1 h-2 rounded-full bg-black/50 overflow-hidden">
                   <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-500" style={{ width: `${(nextIndex / stages.length) * 100}%` }} />
@@ -207,7 +203,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       ) : (
         <div className="space-y-3">
           <DailyShareCard task="trials" userId={userId}/>
-          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={caveRecoveryNeeded} t={t} />
+          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={caveRecoveryNeeded} t={t} language={language} />
         </div>
       )}
       </>}
@@ -217,6 +213,23 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
 
 function StageRow({ enemy, index, status, gold, onFight, blocked, t, language }: { enemy: Enemy; index: number; status: 'done' | 'current' | 'locked'; gold: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en' }) {
   const current = status === 'current';
+  if (current) return (
+    <article className="journey-encounter" aria-label={language === 'en' ? 'Next encounter' : 'Следующий противник'}>
+      <div className="journey-encounter__art"><img src={enemy.art} alt="" draggable={false} /></div>
+      <div className="journey-encounter__content">
+        <p className="journey-encounter__eyebrow">{enemy.isBoss ? t('bossLabel') : `${t('stage')} ${index + 1}`}</p>
+        <h3>{localizeText(enemy.name, language)}</h3>
+        <div className="journey-encounter__stats">
+          <span><Heart size={15} aria-hidden="true" />{enemy.maxHp}</span>
+          <span><SwordIcon size={15} aria-hidden="true" />{enemy.attack}</span>
+        </div>
+        <div className="journey-encounter__reward"><span>{language === 'en' ? 'Victory reward' : 'Награда за победу'}</span><Currency kind="gold" value={gold} size={17} /></div>
+        <button type="button" onClick={onFight} disabled={blocked} aria-describedby={blocked ? 'pending-cave-recovery' : undefined}>
+          <Swords size={18} aria-hidden="true" />{language === 'en' ? 'Fight' : 'Бой'}
+        </button>
+      </div>
+    </article>
+  );
   return (
     <div
       className={`relative flex items-center gap-3 rounded-2xl border p-2.5 transition-all ${
@@ -231,7 +244,7 @@ function StageRow({ enemy, index, status, gold, onFight, blocked, t, language }:
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[10px] uppercase tracking-wider text-gray-500">{enemy.isBoss ? t('bossLabel') : `${t('stage')} ${index + 1}`}</p>
-        <p className="text-sm font-semibold text-white truncate">{enemy.name}</p>
+        <p className="text-sm font-semibold text-white truncate">{localizeText(enemy.name, language)}</p>
         <div className="flex items-center gap-2.5 text-[11px] text-gray-400 mt-0.5">
           <span className="flex items-center gap-0.5"><Heart className="w-3 h-3 text-red-400" />{enemy.maxHp}</span>
           <span className="flex items-center gap-0.5"><SwordIcon className="w-3 h-3 text-amber-400" />{enemy.attack}</span>
@@ -240,16 +253,11 @@ function StageRow({ enemy, index, status, gold, onFight, blocked, t, language }:
       </div>
       {status === 'done' && <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center"><Check className="w-4 h-4 text-emerald-400" /></span>}
       {status === 'locked' && <Lock className="w-4 h-4 text-gray-600 mr-2" />}
-      {current && (
-        <button onClick={onFight} disabled={blocked} aria-describedby={blocked ? 'pending-cave-recovery' : undefined} className="shrink-0 h-10 px-3 rounded-xl bg-gradient-to-b from-red-500 to-red-700 border border-red-300/40 text-white text-sm font-bold flex items-center gap-1.5 active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed">
-          <Swords className="w-4 h-4" /> Бой
-        </button>
-      )}
     </div>
   );
 }
 
-function TrialPanel({ level, onFight, blocked, t }: { level: number; onFight: () => void; blocked: boolean; t: (key: string) => string }) {
+function TrialPanel({ level, onFight, blocked, t, language }: { level: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en' }) {
   const enemy = generateTrial(level);
   const upcoming = Array.from({ length: 5 }, (_, i) => level + i);
   return (
@@ -262,7 +270,7 @@ function TrialPanel({ level, onFight, blocked, t }: { level: number; onFight: ()
           <div className="flex-1 min-w-0 pb-1">
             <p className="text-[11px] uppercase tracking-[0.2em] text-sky-300">{t('trialTower')}</p>
             <h2 className="text-lg font-bold text-white">{t('floor')} {level}</h2>
-            <p className="text-xs text-gray-300">{enemy.name}</p>
+            <p className="text-xs text-gray-300">{localizeText(enemy.name, language)}</p>
             <div className="flex items-center gap-2.5 text-[11px] text-gray-300 mt-1">
               <span className="flex items-center gap-0.5"><Heart className="w-3 h-3 text-red-400" />{enemy.maxHp}</span>
               <span className="flex items-center gap-0.5"><SwordIcon className="w-3 h-3 text-amber-400" />{enemy.attack}</span>

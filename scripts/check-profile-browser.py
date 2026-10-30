@@ -89,6 +89,8 @@ with sync_playwright() as p:
             assert page.evaluate('window.__route') == 'equipment'
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?inventory')
+            assert page.locator('.warehouse-tile__name').evaluate_all('names => names.every(el => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1)')
+            assert page.locator('.warehouse-tile').evaluate_all('tiles => tiles.every(el => { const r=el.getBoundingClientRect(); return r.width >= 44 && r.height >= 44; })')
             tile = page.locator('.warehouse-tile').first
             tile.click()
             dialog = page.get_by_role('dialog')
@@ -102,12 +104,26 @@ with sync_playwright() as p:
             close.click()
             assert dialog.count() == 0
             assert tile.evaluate('(el) => document.activeElement === el')
+            stone = page.locator('.warehouse-tile').filter(has_text='Awakening Stone' if lang == 'en' else 'Камень пробуждения')
+            stone.click()
+            assert ('not yet confirmed' if lang == 'en' else 'пока не подтверждён') in dialog.inner_text()
+            dialog.locator('.territory-modal-close').click()
             forge = page.locator('.warehouse-tile--forge')
             forge.click()
             assert dialog.locator('.warehouse-info-content').count() == 1
             page.keyboard.press('Escape')
             assert dialog.count() == 0
             assert forge.evaluate('(el) => document.activeElement === el')
+            # A long warehouse stays searchable and keeps the pinned controls reachable.
+            page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?inventory-many')
+            search = page.locator('.compact-warehouse__search input')
+            assert page.locator('.warehouse-tile').count() >= 40
+            search.fill('Test material 39')
+            assert page.locator('.warehouse-tile').count() == 1
+            assert 'Test material 39' in page.locator('.warehouse-tile').inner_text()
+            assert page.locator('[data-testid="inventory-pinned-belt"]').is_visible()
+            assert page.get_by_role('tablist', name='Inventory sections' if lang == 'en' else 'Разделы инвентаря').is_visible()
+            search.fill('')
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?city')
             page.locator('.home-game-scene').wait_for()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')

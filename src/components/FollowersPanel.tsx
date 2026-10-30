@@ -36,7 +36,7 @@ export function FollowersPanel() {
     });
     const cow = id === 'follower_6';
     setNote(succeeded ? (cow ? (en ? 'Battle Cow level raised with an awakening stone' : 'Уровень Боевой коровы повышен за камень пробуждения') : (en ? 'Training completed' : 'Тренировка завершена'))
-      : cow ? (en ? 'Awakening stone required. Defeat milestone bosses to earn one.' : 'Нужен камень пробуждения. Побеждай особых боссов, чтобы получить его.')
+      : cow ? (en ? 'An awakening stone is required. Its source is not yet confirmed.' : 'Нужен камень пробуждения. Источник пока не подтверждён.')
         : (en ? 'Not enough materials, gold or hero level' : 'Не хватает золота, материалов или уровня героя'));
   };
 
@@ -83,32 +83,13 @@ export function FollowersPanel() {
       </div>}
     </div>
 
-    <div className="followers-camp__roster-title">
-      <h4>{en ? 'Your companions' : 'Все последователи'}</h4>
-      {nextUnlock && <span>{en ? 'Next unlock' : 'Следующий'}: {en ? 'Lv.' : 'Ур.'} {nextUnlock.unlockLevel}</span>}
-    </div>
-    <div className="followers-camp__roster" role="group" aria-label={en ? 'Choose companion to inspect' : 'Выбор последователя'}>
-      {FOLLOWER_TEMPLATES.map(candidate => {
-        const unit = state.followers.find(f => f.id === candidate.id);
-        const isActive = active?.id === candidate.id;
-        const focus = candidate.id === template.id;
-        return <button key={candidate.id} type="button" onClick={() => { setSelectedId(candidate.id); setNote(''); }}
-          className={`followers-camp__portrait ${focus ? 'followers-camp__portrait--focus' : ''} ${isActive ? 'followers-camp__portrait--active' : ''}`}
-          aria-pressed={focus} aria-label={`${en ? candidate.nameEn : candidate.name} — ${unit?.unlocked ? (en ? 'Level' : 'Уровень') + ' ' + unit.level : (en ? 'Unlocks at level' : 'Откроется на уровне') + ' ' + candidate.unlockLevel}`}>
-          <img src={getFollowerArt(candidate.id)} loading="lazy" draggable={false} alt=""
-            className={unit?.unlocked ? '' : 'followers-camp__portrait-img--locked'}/>
-          {isActive && <span className="followers-camp__portrait-status"><Check size={11}/></span>}
-          {!unit?.unlocked && <span className="followers-camp__portrait-status followers-camp__portrait-status--locked"><LockKeyhole size={11}/></span>}
-          <b>{en ? candidate.nameEn : candidate.name}</b>
-        </button>;
-      })}
-    </div>
-
     {follower && <section className="followers-camp__detail" aria-live="polite">
       <div className="followers-camp__detail-top">
-        <img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/>
+        <div className="followers-camp__detail-art"><img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/></div>
         <div>
-          <span className="followers-camp__eyebrow"><Sparkles size={12}/>{en ? 'COMPANION DETAILS' : 'ХАРАКТЕРИСТИКИ'}</span>
+          <span className="followers-camp__eyebrow"><Sparkles size={12}/>{selected
+            ? (en ? 'ACTIVE COMPANION' : 'АКТИВНЫЙ СПУТНИК')
+            : (en ? 'VIEWING COMPANION' : 'ПРОСМОТР СПУТНИКА')}</span>
           <h3>{en ? template.nameEn : template.name}</h3>
           {template.id === 'follower_6' && <span className="followers-camp__legendary"><Sparkles size={12}/>{en ? 'LEGENDARY LOOK' : 'ЛЕГЕНДАРНЫЙ ОБРАЗ'}</span>}
           <p>{en ? template.descriptionEn : template.description}</p>
@@ -143,7 +124,7 @@ export function FollowersPanel() {
           <div>
             <strong>{en ? 'AWAKENING STONE' : 'КАМЕНЬ ПРОБУЖДЕНИЯ'}</strong>
             <span>{en ? 'Owned' : 'В наличии'}: <b>{stoneCount}</b>{!maxed && <>{' · '}{en ? 'Needed' : 'Нужно'}: {stonePrice}</>}</span>
-            <small>{en ? 'Earn from every 5th chapter boss and every 10th trial. No gold or gems.' : 'Добыча: боссы глав 5, 10, 15… и испытаний 10, 20, 30… Монеты и алмазы не нужны.'}</small>
+            <small>{en ? 'The source is not yet confirmed. No gold or gems are needed.' : 'Источник пока не подтверждён. Монеты и алмазы не нужны.'}</small>
           </div>
         </div>}
         {!isCow && !maxed && <div className="followers-camp__cost">
@@ -154,6 +135,28 @@ export function FollowersPanel() {
       </>}
     </section>}
     {note && <p role="status" className="followers-camp__note">{note}</p>}
+
+    <div className="followers-camp__roster-title">
+      <h4>{en ? 'Your companions' : 'Все последователи'}</h4>
+      {nextUnlock && <span>{en ? 'Next unlock' : 'Следующий'}: {en ? 'Lv.' : 'Ур.'} {nextUnlock.unlockLevel}</span>}
+    </div>
+    <div className="followers-camp__roster" role="group" aria-label={en ? 'Choose companion to inspect' : 'Выбор последователя'}>
+      {FOLLOWER_TEMPLATES.map(candidate => {
+        const unit = state.followers.find(f => f.id === candidate.id);
+        const isActive = active?.id === candidate.id;
+        const focus = candidate.id === template.id;
+        return <button key={candidate.id} type="button" onClick={() => { setSelectedId(candidate.id); setNote(''); }}
+          className={`followers-camp__portrait ${focus ? 'followers-camp__portrait--focus' : ''} ${isActive ? 'followers-camp__portrait--active' : ''}`}
+          aria-pressed={focus} aria-label={`${en ? candidate.nameEn : candidate.name} — ${unit?.unlocked ? (en ? 'Level' : 'Уровень') + ' ' + unit.level : (en ? 'Unlocks at level' : 'Откроется на уровне') + ' ' + candidate.unlockLevel}`}>
+          <img src={getFollowerArt(candidate.id)} loading="lazy" draggable={false} alt=""
+            className={unit?.unlocked ? '' : 'followers-camp__portrait-img--locked'}/>
+          {isActive && <span className="followers-camp__portrait-status"><Check size={11}/></span>}
+          {!unit?.unlocked && <span className="followers-camp__portrait-status followers-camp__portrait-status--locked"><LockKeyhole size={11}/></span>}
+          <b>{en ? candidate.nameEn : candidate.name}</b>
+        </button>;
+      })}
+    </div>
+
     <p className="followers-camp__footnote">{en
       ? 'Follower bonuses work in PvE only. Arena remains balanced separately.'
       : 'Бонусы спутников действуют только в Походе и Испытаниях, не на Арене.'}</p>

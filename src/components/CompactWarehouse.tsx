@@ -40,7 +40,7 @@ function WarehouseItem({ item, language, now, onSelect }: {
     onClick={() => onSelect(item)}
   >
     <span className="warehouse-tile__art">
-      <ItemArt item={item} size={49}/>
+      <ItemArt item={item} size={70}/>
       {(item.qty > 1 || item.id === 'cow_awakening_stone') && <span className="warehouse-tile__count">×{formatQuantity(item.qty)}</span>}
     </span>
     <span className="warehouse-tile__name">{name}</span>
@@ -77,13 +77,14 @@ export function CompactWarehouse({ consumables, materials, forgeMaterials, forge
     <div className="compact-warehouse__sign" style={{
       backgroundImage: `linear-gradient(110deg, rgba(65,31,10,.4), rgba(55,23,12,.5)), url("${import.meta.env.BASE_URL}assets/territory/ui/wooden-plaque.webp")`,
     }}>
-      <Package size={21} aria-hidden="true" />
       <div className="min-w-0">
         <h2>{en ? 'WAREHOUSE' : 'СКЛАД'}</h2>
-        <p>{en ? 'Your potions and crafting materials' : 'Зелья, эликсиры и материалы'}</p>
       </div>
-      <strong>{count}</strong>
     </div>
+    <p className="compact-warehouse__hint"><Package size={15} aria-hidden="true" />
+      {en ? 'Choose an item to see its details' : 'Выберите предмет, чтобы узнать больше'}
+      <span>{count}</span>
+    </p>
     <div className="compact-warehouse__toolbar">
       <label className="compact-warehouse__search">
         <Search size={16} aria-hidden="true"/>

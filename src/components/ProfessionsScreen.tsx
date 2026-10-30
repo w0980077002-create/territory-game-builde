@@ -173,7 +173,7 @@ export function ProfessionsScreen() {
     <div className="viking-screen viking-screen--professions space-y-3 pb-5 text-white">
       <section className="rounded-2xl border border-amber-400/30 bg-gradient-to-br from-[#282116] to-[#111820] p-4">
         <div className="flex items-center gap-2">
-          <Hammer className="h-7 w-7 shrink-0 text-amber-300" />
+          <img src={progress.active ? PROFESSION_ART[progress.active] : import.meta.env.BASE_URL + 'ic-professions-viking.webp'} alt="" className="h-20 w-20 shrink-0 object-contain" />
           <div className="min-w-0">
             <h2 className="text-lg font-black">{t('professionsCraft')}</h2>
             <p className="text-xs text-slate-300">{t('chooseRecipesMastery')}</p>
@@ -212,10 +212,10 @@ export function ProfessionsScreen() {
           const active = progress.active === profession.id;
           const lockedByChoice = progress.active !== null && !active;
           const starterRecipe = PROFESSION_RECIPES.find((recipe) => recipe.profession === profession.id && recipe.requiredLevel < 300);
-          return <article key={profession.id} className={`flex items-center gap-3 rounded-xl border p-3 ${active ? 'border-emerald-400/50 bg-emerald-500/10' : 'border-white/10 bg-white/[0.04]'}`}>
+          return <article key={profession.id} className={`profession-choice rounded-xl border p-3 ${active ? 'border-emerald-400/50 bg-emerald-500/10' : 'border-white/10 bg-white/[0.04]'}`}>
             <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-500/20 to-sky-900/30 p-0.5"><img src={PROFESSION_ART[profession.id]} alt="" loading="lazy" className="h-full w-full object-contain" /></div>
             <div className="min-w-0 flex-1"><b>{language === 'en' ? ({ smith: 'Blacksmith', alchemist: 'Alchemist', artisan: 'Artisan', jeweler: 'Jeweler', engineer: 'Engineer' } as Record<string, string>)[profession.id] : profession.name}</b><p className="text-xs text-slate-400">{language === 'en' ? ({ smith: 'Weapons, armor, and shields', alchemist: 'Potions and battle elixirs', artisan: 'Materials and useful kits', jeweler: 'Rings, amulets, and jewelry', engineer: 'Defensive devices and mechanisms' } as Record<string, string>)[profession.id] : profession.description}</p>{starterRecipe && <p className="mt-1 text-[11px] text-amber-200">{language === 'en' ? 'First craft' : 'Первый рецепт'}: {localizeText(starterRecipe.output.name, language)} · {language === 'en' ? 'Mastery Lv.' : 'Мастерство ур.'} {starterRecipe.requiredLevel}</p>}{active && <p className="mt-1 text-[10px] text-emerald-300">{t('activeProfession')}</p>}</div>
-            <button disabled={lockedByChoice || active || buying} onClick={() => { void chooseProfession(profession.id); }} className={`shrink-0 rounded-lg border px-2.5 py-2 text-xs font-bold ${active ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200' : 'border-white/10 bg-white/5 disabled:opacity-50'}`}>
+            <button disabled={lockedByChoice || active || buying} onClick={() => { void chooseProfession(profession.id); }} className={`profession-choice__action rounded-lg border px-2.5 py-2 text-xs font-bold ${active ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200' : 'border-white/10 bg-white/5 disabled:opacity-50'}`}>
               {active ? <><CheckCircle2 className="mr-1 inline h-3 w-3" />{t('selected')}</> : lockedByChoice ? <><Lock className="mr-1 inline h-3 w-3" />{t('locked')}</> : `${t('choose')} · 1000 💎`}
             </button>
           </article>;

@@ -320,10 +320,10 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
               className="relative text-left rounded-2xl border bg-gradient-to-b from-[#1f232d] to-[#12151b] p-2.5 flex flex-col transition-all active:scale-[0.97] hover:brightness-110"
               style={{ borderColor: `${color}55` }}
             >
-              <div className="h-20 flex items-center justify-center rounded-xl bg-black/30 mb-2">
-                <ItemArt item={item} size={64} />
+              <div className="h-24 flex items-center justify-center rounded-xl bg-black/30 mb-2">
+                <ItemArt item={item} size={80} />
               </div>
-              <p className="text-xs font-semibold leading-tight line-clamp-2 min-h-[30px]" style={{ color }}>{localizeText(item.name, language)}</p>
+              <p className="text-sm font-bold leading-tight min-h-[34px] break-words" style={{ color }}>{localizeText(item.name, language)}</p>
               {(item.type === 'elixir' || item.type === 'potion' || item.type === 'arena' || item.id === 'shop_forge_material') && <p className="text-[10px] text-amber-300">⏳ {language === 'en' ? '7-day shelf life' : 'Срок 7 суток'}</p>}
               {item.amount && item.type !== 'equipment' && (
                 <p className="text-[10px] text-gray-400">x{item.amount}</p>
@@ -340,7 +340,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
       {shopCheck==='error' && <p role="alert" className="rounded-lg border border-red-500/40 bg-red-950/30 p-3 text-xs text-red-200">{language==='en'?'Shop server unavailable. Purchases paused.':'Сервер магазина недоступен. Покупки остановлены.'}</p>}
       {pendingShop && <button className="w-full rounded-xl border border-amber-400/40 bg-amber-500/10 p-3 text-sm font-bold text-amber-200 disabled:opacity-50" onClick={()=>{void retryServerPurchase();}} disabled={buying}>{language==='en'?'Retry pending purchase (same transaction)':'Повторить неподтверждённую покупку (тот же запрос)'}</button>}
       {picked && (
-        <Modal title={picked.name} onClose={() => setPicked(null)}>
+        <Modal title={localizeText(picked.name, language)} onClose={() => setPicked(null)}>
           <PurchaseSheet item={picked} state={shopStatus?.enabled ? {...state, player:{...state.player,gems:shopStatus.gems},battleStones:shopStatus.stones,dailyStonesBought:shopStatus.boughtToday,dailyStonesDate:calendarDayKey()} : state} onBuy={(qty) => {void buy(picked, qty);}} />
         </Modal>
       )}
@@ -461,12 +461,13 @@ function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameStat
             <button
               onClick={() => setQty((q) => clamp(q - 1))}
               disabled={qtyClamped <= 1}
-              className="w-9 h-9 rounded-xl bg-white/10 text-white flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30"
+              aria-label={language === 'en' ? 'Decrease quantity' : 'Уменьшить количество'} className="w-11 h-11 rounded-xl bg-white/10 text-white flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30"
             >
               <Minus className="w-4 h-4" />
             </button>
             <input
               type="range"
+              aria-label={language === 'en' ? 'Quantity' : 'Количество'}
               min={1}
               max={maxQty}
               value={qtyClamped}
@@ -476,7 +477,7 @@ function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameStat
             <button
               onClick={() => setQty((q) => clamp(q + 1))}
               disabled={qtyClamped >= maxQty}
-              className="w-9 h-9 rounded-xl bg-white/10 text-white flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30"
+              aria-label={language === 'en' ? 'Increase quantity' : 'Увеличить количество'} className="w-11 h-11 rounded-xl bg-white/10 text-white flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -489,10 +490,10 @@ function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameStat
             </span>
           </div>
           <div className="flex justify-between text-[10px] text-gray-500 px-1">
-            <button onClick={() => setQty(1)} className="hover:text-amber-300 transition-colors">1</button>
-            <button onClick={() => setQty(clamp(Math.floor(maxQty / 4)))} className="hover:text-amber-300 transition-colors">¼</button>
-            <button onClick={() => setQty(clamp(Math.floor(maxQty / 2)))} className="hover:text-amber-300 transition-colors">½</button>
-            <button onClick={() => setQty(maxQty)} className="hover:text-amber-300 transition-colors">{t('max')} ({maxQty})</button>
+            <button onClick={() => setQty(1)} className="min-w-11 min-h-11 hover:text-amber-300 transition-colors">1</button>
+            <button onClick={() => setQty(clamp(Math.floor(maxQty / 4)))} className="min-w-11 min-h-11 hover:text-amber-300 transition-colors">¼</button>
+            <button onClick={() => setQty(clamp(Math.floor(maxQty / 2)))} className="min-w-11 min-h-11 hover:text-amber-300 transition-colors">½</button>
+            <button onClick={() => setQty(maxQty)} className="min-w-11 min-h-11 hover:text-amber-300 transition-colors">{t('max')} ({maxQty})</button>
           </div>
         </div>
       ) : isStone ? (

@@ -25,11 +25,21 @@ with sync_playwright() as p:
                 page.goto(url)
                 for name, panel, close, scroll in [('rules', '.arena-rules-panel', '.arena-rules-head button', '.arena-rules-list'), ('prizes', '.arena-prizes-panel', '.arena-prizes-close', '.arena-prizes-body'), ('common', '.territory-modal-panel', '.territory-modal-close', '.territory-modal-content')]:
                     page.locator('#'+name).click()
+                    if name == 'common':
+                        page.locator('#nested').click()
+                        assert page.get_by_role('dialog').count() == 2
+                        page.keyboard.press('Escape')
+                        assert page.get_by_role('dialog').count() == 1
+                        assert page.evaluate('document.activeElement.id') == 'nested'
                     rect = page.locator(panel).bounding_box()
                     button = page.locator(close).bounding_box()
                     assert rect and button and rect['x'] >= 0 and rect['x'] + rect['width'] <= width + 1, (name, width, rect)
                     assert rect['y'] >= 0 and rect['y'] + rect['height'] <= (400 if ios else 500) + 1, (name, ios, rect)
                     assert button['width'] >= 44 and button['height'] >= 44, button
+                    if name == 'common':
+                        head = page.locator('.territory-modal-head').bounding_box()
+                        title = page.locator('.territory-modal-head h2').bounding_box()
+                        assert abs((head['x'] + head['width']/2) - (title['x'] + title['width']/2)) < 1
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
                     area=page.locator(scroll)
                     assert area.evaluate('(e) => e.scrollHeight > e.clientHeight')

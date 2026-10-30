@@ -1,9 +1,12 @@
 /* Compact warehouse — independent presentation; inventory, belt and economy unchanged. */
 .compact-warehouse{display:grid;gap:10px;min-width:0;padding:5px 0 12px;color:#f5e6c4;font:12px/1.3 system-ui,sans-serif}
 .compact-warehouse button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.compact-warehouse__sign{position:relative;display:flex;align-items:center;gap:9px;min-height:64px;padding:9px 13px;border:2px ridge #eac17d;border-radius:12px;background-size:cover;background-position:center;box-shadow:inset 0 1px #ffecc4a8,0 3px 0 #563015}
+.compact-warehouse__sign{position:relative;display:flex;align-items:center;justify-content:center;min-height:53px;padding:9px 35px;border-radius:12px;background-size:100% 100%;background-position:center;text-align:center}
 .compact-warehouse__sign>svg{color:#f6d799;flex-shrink:0;filter:drop-shadow(0 2px 2px #2e1509)}
-.compact-warehouse__sign h2{margin:0;color:#fff1c4;font:900 18px/1.1 Georgia,serif;text-shadow:0 2px 2px #30150a;letter-spacing:.7px}
+.compact-warehouse__sign h2{margin:0;color:#ffe6a6;font:900 clamp(18px,5vw,23px)/1.1 system-ui,sans-serif;text-shadow:1px 2px #30150a,-1px -1px #30150a;overflow-wrap:anywhere}
+.compact-warehouse__hint{display:flex;align-items:center;gap:6px;margin:0;padding:0 3px;color:#f7ddb0;font-size:12px;line-height:1.3}
+.compact-warehouse__hint svg{flex:none;color:#f7c36b}
+.compact-warehouse__hint span{margin-left:auto;color:#fff1cf;font-weight:900}
 .compact-warehouse__sign p{font-size:10px;color:#f3d8ae;margin:4px 0 0;text-shadow:0 1px 1px #281306}
 .compact-warehouse__sign strong{margin-left:auto;color:#ffeec6;background:#2a190cc2;border:1px solid #d8a15d;border-radius:8px;min-width:28px;padding:3px 6px;text-align:center;line-height:1.15}
 .compact-warehouse__toolbar{display:grid;gap:8px}
@@ -19,15 +22,15 @@
 .compact-warehouse__group>h3{display:flex;gap:6px;align-items:center;margin:1px 0 0;padding:0 3px;color:#eed5a8;font-weight:900;font-size:11px}
 .compact-warehouse__group>h3 svg{color:#f1b75c}
 .compact-warehouse__group>h3 span{margin-left:auto;color:#aebdc6;font-size:10px}
-.compact-warehouse__grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.warehouse-tile{--warehouse-rarity:#b7c0cb;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-width:0;min-height:97px;padding:7px 3px 5px;border:1px solid var(--warehouse-rarity);border-radius:10px;background:linear-gradient(165deg,#29364b,#161c2a 78%);box-shadow:inset 0 1px 0 #ffffff19,0 2px 2px #0004;color:#fff0d2}
+.compact-warehouse__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.warehouse-tile{--warehouse-rarity:#b7c0cb;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-width:0;min-height:132px;padding:8px 5px 7px;border:1px solid var(--warehouse-rarity);border-radius:12px;background:radial-gradient(ellipse at 50% 22%,#685233,#293140 60%,#1b2029);box-shadow:inset 0 1px 0 #ffffff30,0 2px 3px #0005;color:#fff0d2}
 .warehouse-tile:focus-visible{outline:3px solid #f8d27c;outline-offset:1px}
 .warehouse-tile:active{transform:scale(.97)}
-.warehouse-tile__art{position:relative;display:grid;place-items:center;width:55px;height:55px;max-width:100%;flex-shrink:0}
-.warehouse-tile__art img{width:49px;height:49px;object-fit:contain;filter:drop-shadow(0 3px 2px #0007)}
+.warehouse-tile__art{position:relative;display:grid;place-items:center;width:72px;height:72px;max-width:100%;flex-shrink:0}
+.warehouse-tile__art img{width:70px;height:70px;max-width:100%;object-fit:contain;filter:drop-shadow(0 3px 2px #0007)}
 .warehouse-tile__count{position:absolute;right:-4px;bottom:2px;max-width:87%;padding:1px 3px;border:1px solid #e5bf78;border-radius:5px;color:#fff6df;background:#352214e8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.15}
-.warehouse-tile__name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;min-width:0;width:100%;max-height:25px;overflow:hidden;text-align:center;overflow-wrap:anywhere;color:#f8e6c9;font-size:9px;line-height:1.1;font-weight:800}
-.warehouse-tile__expiry{display:flex;align-items:center;justify-content:center;gap:2px;min-width:0;max-width:100%;margin-top:auto;padding-top:3px;white-space:nowrap;color:#f9d180;font-size:8px;line-height:1.1;font-variant-numeric:tabular-nums}
+.warehouse-tile__name{display:block;min-width:0;width:100%;text-align:center;overflow-wrap:anywhere;color:#fff0d5;font-size:12px;line-height:1.18;font-weight:800}
+.warehouse-tile__expiry{display:flex;align-items:center;justify-content:center;gap:2px;min-width:0;max-width:100%;margin-top:auto;padding-top:4px;color:#f9d180;font-size:11px;line-height:1.2;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .warehouse-tile__expiry svg{flex-shrink:0}
 .warehouse-tile--urgent .warehouse-tile__expiry{color:#ffaaa3}
 .warehouse-tile--forge{--warehouse-rarity:#d2a252}
@@ -47,6 +50,5 @@
 .warehouse-info-content{display:grid;justify-items:center;gap:10px;text-align:center;color:#f7e6cb}
 .warehouse-info-content p{color:#f3dfbf}
 .warehouse-info-content span{display:flex;align-items:center;gap:5px;color:#ffdc8c}
-@media(min-width:390px){.compact-warehouse__grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.warehouse-tile{min-height:100px;padding:8px 3px 5px}}
-@media(max-width:340px){.compact-warehouse__grid{gap:4px}.warehouse-tile{min-height:96px;padding:5px 2px}.warehouse-tile__art{width:48px;height:49px}.warehouse-tile__art img{width:44px;height:44px}.warehouse-tile__count{right:-2px;font-size:8px}.warehouse-tile__expiry{font-size:7px}.compact-warehouse__filter{font-size:10px}}
+@media(max-width:340px){.compact-warehouse__grid{gap:5px}.warehouse-tile{padding-inline:3px}.warehouse-tile__art{width:64px;height:64px}.warehouse-tile__art img{width:62px;height:62px}.compact-warehouse__filter{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.warehouse-tile{transition:none!important}.warehouse-tile:active{transform:none}}

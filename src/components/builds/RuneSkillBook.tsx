@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Crown, Flame, Info, Shield, Snowflake, Sparkles, Swords, Target, Wind, X, Zap } from 'lucide-react';
 import catalog from '@/game/config/territory-rune-skill-book-v1.json';
+import { IosGamePortal } from '@/components/ui/Modal';
 import './runeSkillBook.css';
 
 const ICONS = { crown: Crown, flame: Flame, shield: Shield, snowflake: Snowflake, swords: Swords, target: Target, wind: Wind, zap: Zap };
@@ -124,7 +125,7 @@ export function RuneSkillBook({
     </div>
     <p className="rune-book__footer">{en ? 'Tap any skill to view its 3 rune choices and effects.'
       : 'Нажми на любой навык: внутри три варианта рун и их эффекты.'}</p>
-    {activeSkill && activeGroup && <div className="rune-book__overlay" onMouseDown={event => {
+    {activeSkill && activeGroup && <IosGamePortal><div className="rune-book__overlay" onMouseDown={event => {
       if (event.target === event.currentTarget) setActiveSkillId(null);
     }}>
       <section ref={dialogRef} className="rune-book__dialog" role="dialog" aria-modal="true" aria-labelledby="rune-book-dialog-title">
@@ -162,6 +163,6 @@ export function RuneSkillBook({
           <button type="button" onClick={() => setActiveSkillId(null)}>{en ? 'Back to skill book' : 'Назад к навыкам'}</button>
         </div>
       </section>
-    </div>}
+    </div></IosGamePortal>}
   </section>;
 }
