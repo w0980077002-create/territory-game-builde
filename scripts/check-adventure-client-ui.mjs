@@ -35,6 +35,11 @@ assert.match(read('src/game/combatV1/receiptAdapter.ts'), /localStorage\.setItem
  'persist original start operation UUID before any wager request');
 assert.match(ui, /localStorage\.setItem\(sessionKey\(userId\)/, 'recover active server session across remounts');
 assert.match(ui, /busy \|\| recoverable/, 'block conflicting controls during uncertain receipt');
+assert.match(ui, /data-testid="territory-adventure-battle"/, 'server combat should have a visible battle scene');
+assert.match(ui, /<FighterFigure /, 'server combat should animate the same 2D fighters used by the classic game');
+assert.match(ui, /getEnemyCombatFrames/, 'server enemies should use existing combat pose art');
+assert.match(ui, /battleRef\.current\?\.scrollIntoView/, 'mobile must reveal battle after tapping Start');
+assert.match(ui, /Array\.isArray\(value\.events\)/, 'animation should use only confirmed server battle events');
 assert.match(ui, /getCampaignStage\(\(chapter-1\)\*20\+i\+1\)/, '20 stages per chapter must be rendered');
 assert.match(ui, /setProgress\(found\)/, 'unlock progress must arrive from server');
 assert.doesNotMatch(ui, /recordBattleResult|spendStones|trialReward|Math\.random|setBalance/,
