@@ -265,7 +265,7 @@ export function validateAdventureSettlementReceipt(response:unknown,sessionId:st
 }
 export function acceptAdventureSettlementReceipt(userId:string,response:unknown,sessionId:string):GameState|null{
  const state=validateAdventureSettlementReceipt(response,sessionId);
- const receipt=response as Record<string,unknown>;
+ const receipt=response as Record<string,unknown> & {updated_at:string};
  const wallet=safeWalletVersion({gold:receipt.wallet_gold,gems:receipt.wallet_gems},state.player);
  const previous=saveTokens.get(userId);
  if(!validSaveToken(previous))throw new Error('adventure_reload_required');
@@ -326,7 +326,7 @@ export function validateAdventureStartReceipt(response:unknown,sessionId:string)
 }
 export function acceptAdventureStartReceipt(userId:string,response:unknown,sessionId:string):GameState|null{
  const state=validateAdventureStartReceipt(response,sessionId);
- const receipt=response as Record<string,unknown>;
+ const receipt=response as Record<string,unknown> & {updated_at:string};
  const wallet=safeWalletVersion({gold:receipt.wallet_gold,gems:receipt.wallet_gems},state.player);
  const previous=saveTokens.get(userId);
  if(!validSaveToken(previous))throw new Error('adventure_reload_required');
