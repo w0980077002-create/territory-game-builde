@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, ExternalLink, Gift, Loader2, UsersRound } from 'lucide-react';
+import { CheckCircle2, ExternalLink, Gift, Loader2 } from 'lucide-react';
 import { Currency } from './ui/Currency';
 import { useLanguage } from '@/game/i18n';
 import { claimSocial, openSocialLink, socialStatus, type SocialTask, type SocialStatus } from '@/game/socialQuests';
