@@ -15,7 +15,7 @@ import { FighterFigure } from '@/components/arena/FighterFigure';
 type Progress = { completed_stage: number; unlocked_stage: number };
 type Settlement = { outcome: string; reward?: { gold: number; xp: number } };
 type Session = { session_id: string; revision: number; state: IdleCombatState; events?: IdleCombatEvent[]; settlement?: Settlement | null };
-type Props = { userId: string; onTrial: () => void; onActiveChange?: (active: boolean) => void };
+type Props = { userId: string; onActiveChange?: (active: boolean) => void };
 const sessionKey = (id: string) => 'territory_adventure_session_v1:' + id;
 const startKey = (id: string) => 'territory_adventure_start_v1:' + id;
 const obj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
@@ -50,7 +50,7 @@ function message(error: unknown, en: boolean) {
 }
 
 /** Separate V1 server campaign: NEVER computes a win, cost, loot or stats in the browser. */
-export function ServerAdventureScreen({ userId, onTrial, onActiveChange }: Props) {
+export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const { language } = useLanguage();
   const en = language === 'en';
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -218,12 +218,7 @@ export function ServerAdventureScreen({ userId, onTrial, onActiveChange }: Props
   const enemySrc = import.meta.env.BASE_URL + 'assets/territory/characters/' + battleStage.enemyArt + '/idle.webp';
 
   return <section className="space-y-3 pb-4" data-testid="territory-adventure-v1">
-    <div className="flex items-center justify-between gap-2">
-      <h2 className="text-lg font-black text-amber-200">{en ? 'Dark Cave' : 'Тёмная пещера'} <span className="text-xs text-amber-100/70">1–100</span></h2>
-      <button className="rounded-lg border border-white/20 px-3 py-2 text-xs text-white" onClick={onTrial}>
-        {en ? 'Trials' : 'Испытания'}
-      </button>
-    </div>
+    <h2 className="text-lg font-black text-amber-200">{en ? 'Dark Cave' : 'Тёмная пещера'} <span className="text-xs text-amber-100/70">1–100</span></h2>
     {error && <p role="alert" className="rounded-xl border border-red-400/40 bg-red-950/50 p-3 text-xs text-red-100">{error}</p>}
     {recoverable && <button disabled={busy} onClick={()=>void restore()} className="w-full rounded-xl border border-amber-500/60 bg-amber-900/30 p-3 font-semibold text-amber-100">
       {en ? 'Recover server session' : 'Восстановить серверный бой'}

@@ -124,7 +124,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       </div>
 
       {view === 'cave' ? (
-        <ServerAdventureScreen userId={userId} onTrial={() => onView('trial')} onActiveChange={handleCaveActive} />
+        <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} />
       ) : <>
       <div className="flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11">
         <span className="text-xs text-gray-400">{t('oneFightCost')} {PVE_STONE_COST} {t('stone')}</span>
