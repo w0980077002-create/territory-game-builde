@@ -89,6 +89,8 @@ with sync_playwright() as p:
             assert page.evaluate('window.__route') == 'equipment'
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?inventory')
+            assert page.locator('.warehouse-tile__name').evaluate_all('names => names.every(el => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1)')
+            assert page.locator('.warehouse-tile').evaluate_all('tiles => tiles.every(el => { const r=el.getBoundingClientRect(); return r.width >= 44 && r.height >= 44; })')
             tile = page.locator('.warehouse-tile').first
             tile.click()
             dialog = page.get_by_role('dialog')
@@ -102,6 +104,10 @@ with sync_playwright() as p:
             close.click()
             assert dialog.count() == 0
             assert tile.evaluate('(el) => document.activeElement === el')
+            stone = page.locator('.warehouse-tile').filter(has_text='Awakening Stone' if lang == 'en' else 'Камень пробуждения')
+            stone.click()
+            assert ('not yet confirmed' if lang == 'en' else 'пока не подтверждён') in dialog.inner_text()
+            dialog.locator('.territory-modal-close').click()
             forge = page.locator('.warehouse-tile--forge')
             forge.click()
             assert dialog.locator('.warehouse-info-content').count() == 1

@@ -143,7 +143,7 @@ export function FollowersPanel() {
           <div>
             <strong>{en ? 'AWAKENING STONE' : 'КАМЕНЬ ПРОБУЖДЕНИЯ'}</strong>
             <span>{en ? 'Owned' : 'В наличии'}: <b>{stoneCount}</b>{!maxed && <>{' · '}{en ? 'Needed' : 'Нужно'}: {stonePrice}</>}</span>
-            <small>{en ? 'Earn from every 5th chapter boss and every 10th trial. No gold or gems.' : 'Добыча: боссы глав 5, 10, 15… и испытаний 10, 20, 30… Монеты и алмазы не нужны.'}</small>
+            <small>{en ? 'The source is not yet confirmed. No gold or gems are needed.' : 'Источник пока не подтверждён. Монеты и алмазы не нужны.'}</small>
           </div>
         </div>}
         {!isCow && !maxed && <div className="followers-camp__cost">
