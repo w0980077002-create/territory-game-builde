@@ -9,6 +9,16 @@ const map = read('src/components/MapScreen.tsx');
 const canvas = read('src/components/WorldMapCanvas.tsx');
 
 // Regression: classic campaign and trials are not replaced by the server cave.
+assert.match(battle, /const caveRecoveryNeeded = view !== 'cave'/,
+  'An unresolved cave action must not hijack the classic campaign tab');
+assert.match(battle, /if \(caveRecoveryNeeded\) \{/,
+  'Never spend legacy battle stones while a cave receipt is unresolved');
+assert.match(battle, /view === 'cave' \|\| caveRecoveryNeeded/,
+  'Autostart must respect the cave receipt fence');
+assert.match(battle, /data-testid="pending-cave-recovery"/,
+  'Show an explicit recovery action instead of silently switching tabs');
+assert.doesNotMatch(battle, /if \(pending\) onView\('cave'\)/,
+  'Never silently redirect a campaign player into the cave');
 assert.match(battle, /export type BattleView = 'campaign' \| 'trial' \| 'cave'/);
 assert.match(battle, /grid-cols-3/);
 assert.match(battle, /label: language === 'en' \? 'Dark Cave' : 'Тёмная пещера'/);
