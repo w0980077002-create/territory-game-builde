@@ -1,5 +1,7 @@
 -- Territory 1.0: separate Dark Cave entrance currency, no changes to player saves.
--- First visit grants 5 stones. Each UTC day thereafter grants 3, up to 30.
+-- First visit grants 5 stones. Each subsequent UTC day grants 3; missed
+-- days accrue from the stored grant_day without changing existing balances.
+-- Past days already hidden by an earlier grant_day cannot be reconstructed here.
 CREATE TABLE IF NOT EXISTS territory_private.dark_stones_v1 (
   player_id uuid PRIMARY KEY REFERENCES public.players(id) ON DELETE CASCADE,
   balance integer NOT NULL DEFAULT 5 CHECK(balance >= 0),
@@ -16,7 +18,7 @@ BEGIN
   INSERT INTO territory_private.dark_stones_v1(player_id,balance,grant_day)
     VALUES(p_player,5,today_utc) ON CONFLICT DO NOTHING;
   UPDATE territory_private.dark_stones_v1 SET
-    balance=CASE WHEN balance<30 THEN least(30,balance+3) ELSE balance END,
+    balance=(balance::bigint + 3::bigint * (today_utc-grant_day))::integer,
     grant_day=today_utc
     WHERE player_id=p_player AND grant_day<today_utc;
   SELECT balance INTO amount FROM territory_private.dark_stones_v1 WHERE player_id=p_player FOR UPDATE;

@@ -66,6 +66,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
   const [recoverable, setRecoverable] = useState(false);
+  const [visible, setVisible] = useState(() => document.visibilityState === 'visible');
   const mounted = useRef(true);
   const lock = useRef(false);
   const sessionRef = useRef<Session | null>(null);
@@ -205,11 +206,17 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   }, [userId, install, readProgress, en]);
 
   useEffect(() => {
+    const onVisibilityChange = () => setVisible(document.visibilityState === 'visible');
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
+
+  useEffect(() => {
     if (!session || session.state.status !== 'fighting' || session.state.input.control !== 'auto'
-      || busy || recoverable || document.visibilityState !== 'visible') return;
+      || busy || recoverable || !visible) return;
     const timer = window.setTimeout(() => { void advance(); }, 1100);
     return () => window.clearTimeout(timer);
-  }, [session, busy, recoverable, advance]);
+  }, [session, busy, recoverable, visible, advance]);
 
   const clearFinished = () => {
     if (lock.current || sessionRef.current?.state.status === 'fighting') return;

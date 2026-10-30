@@ -47,7 +47,7 @@ assert.ok(app.indexOf('restoreAdventureSaveFence(user.id)') < app.indexOf('setLo
 
 for (const name of ['territory_adventure_progress_v1','requestAdventureStart','restoreAdventureStartFence','requestAdventureSettlement','restoreAdventureSaveFence',
   "action: 'prepare'", "action: 'start'", "action: 'resume'", "action: 'advance'",
-  'crypto.randomUUID()', 'getCampaignStage', "document.visibilityState !== 'visible'"])
+  'crypto.randomUUID()', 'getCampaignStage', "document.addEventListener('visibilitychange'"])
   assert.ok(ui.includes(name), 'missing server-authoritative control: ' + name);
 assert.match(read('src/game/combatV1/receiptAdapter.ts'), /localStorage\.setItem\(startKey\(userId\)/,
  'persist original start operation UUID before any wager request');
