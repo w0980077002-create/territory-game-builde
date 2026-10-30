@@ -9,12 +9,22 @@ const map = read('src/components/MapScreen.tsx');
 const canvas = read('src/components/WorldMapCanvas.tsx');
 
 // Regression: classic campaign and trials are not replaced by the server cave.
+assert.match(battle, /const caveRecoveryNeeded = view !== 'cave'/,
+  'An unresolved cave action must not hijack the classic campaign tab');
+assert.match(battle, /if \(caveRecoveryNeeded\) \{/,
+  'Never spend legacy battle stones while a cave receipt is unresolved');
+assert.match(battle, /view === 'cave' \|\| caveRecoveryNeeded/,
+  'Autostart must respect the cave receipt fence');
+assert.match(battle, /data-testid="pending-cave-recovery"/,
+  'Show an explicit recovery action instead of silently switching tabs');
+assert.doesNotMatch(battle, /if \(pending\) onView\('cave'\)/,
+  'Never silently redirect a campaign player into the cave');
 assert.match(battle, /export type BattleView = 'campaign' \| 'trial' \| 'cave'/);
 assert.match(battle, /grid-cols-3/);
 assert.match(battle, /label: language === 'en' \? 'Dark Cave' : 'Тёмная пещера'/);
 assert.match(battle, /view === 'cave' \? \(/);
 assert.match(battle, /<ServerAdventureScreen /);
-assert.match(battle, /if \(view === 'cave'\) return;/, 'Never charge legacy stones in cave');
+assert.match(battle, /if \(view === 'cave' \|\| caveRecoveryNeeded\) return;/, 'Never charge legacy stones in cave or during unresolved cave recovery');
 assert.match(battle, /generateChapter\(state.currentChapter\)/);
 assert.match(battle, /<PveFight/);
 assert.doesNotMatch(battle, /serverMode|legacySelected|showServer|territory_adventure_mode_v3/);
