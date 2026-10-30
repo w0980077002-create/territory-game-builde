@@ -38,6 +38,14 @@ assert.match(hall,/loading="lazy"/,'Large scenic art must lazy load on phones');
 assert.doesNotMatch(hall,/Смотреть рекламу|Watch ad/,'Do not promise an unconnected ad provider');
 assert.match(hall,/Сокровищница/);assert.doesNotMatch(hall,/Джекпот/);
 assert.match(hall,/data-testid="game-hall"/);
+assert.match(hall,/data-testid="hall-next-play"/,'Real server-backed tickets must give a single actionable Hall next move');
+assert.match(hall,/className="hall-hero-mission"/,'Game Hall must feature real play or the server-saved round');
+assert.match(hall,/if \(id === 'wheel'\)/,'Wheel must remain recoverable if the optional Hall status read fails');
+assert.match(hall,/onPlay\('wheel'\); return;/,'Wheel must keep its existing server-authoritative route');
+assert.match(hall,/game\.id!=='wheel' && \(loading \|\| !state\)/,'Hall outages may not lock the Wheel recovery screen');
+assert.match(hall,/YOUR ROUND IS SAVED/,'Hall must explain protected resumed rounds');
+assert.doesNotMatch(hall,/Popular' : 'Популярно/,'No invented popularity labels without analytics');
+
 assert.match(hall,/autoClaimHallGold\(userId,next\.pending_gold\)/,'Old pending winnings should settle when hall opens');
 assert.match(api,/const autoClaims=new Map/,'Prevent concurrent duplicate payout requests');
 assert.match(mono,/await settleWinnings\(finished\)/,'Monopoly winnings must settle automatically');
