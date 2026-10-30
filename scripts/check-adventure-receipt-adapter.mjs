@@ -35,7 +35,7 @@ const supabase={auth:{getUser:async()=>({data:{user:{id:user}},error:null})},fun
 }},from:()=>({select:()=>({eq:(column,id)=>({maybeSingle:async()=>({data:{
  id, updated_at:remoteToken,game_state:remoteState,gold:remoteState.player.gold,gems:remoteState.player.gems,
 },error:null})})})})};
-const cloud={saveBlocked:blocked,protectFortuneSave:id=>{blocked.add(id);generations.set(id,(generations.get(id)??0)+1);},
+const cloud={saveBlocked:blocked,saveTokens:tokens,protectFortuneSave:id=>{blocked.add(id);generations.set(id,(generations.get(id)??0)+1);},
  releaseArenaRejectedAction:id=>blocked.delete(id),saveCloudSave:async()=>{saveCalls++;if(saveGate)await saveGate;return true;},
  acceptAdventureSettlementReceipt:cloudExports.acceptAdventureSettlementReceipt,
  acceptAdventureLatestCloudSnapshot:cloudExports.acceptAdventureLatestCloudSnapshot,
