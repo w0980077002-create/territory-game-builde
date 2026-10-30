@@ -47,6 +47,7 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
     achievements: migrated.achievements?.length ? migrated.achievements : defaults.achievements,
     inventory: inventory ?? defaults.inventory,
     followers: reconcileFollowers(migrated.followers, heroLevel),
+    awakeningStones: Number.isSafeInteger(migrated.awakeningStones) && (migrated.awakeningStones ?? 0) >= 0 ? migrated.awakeningStones : 0,
     activeFollowerId: migrated.activeFollowerId ?? null,
     belt: Array.from({ length: 7 }, (_, i) => belt?.[i] ?? null),
     activeDays: migrated.activeDays ?? 1,
