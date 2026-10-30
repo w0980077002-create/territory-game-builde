@@ -18,6 +18,8 @@ if(query.has('quests')){
 }
 export const useGame=create(state);
 export const useLive=create({mail:[]});
+export function grantRewards(state){return state;}
+export function updateProgress(state){return state;}
 export async function claimMailGrant(){return false;}
 export async function getClaimedMailHistory(){return {letters:[],hasMore:false};}
 export function captureGameEvent(){}
