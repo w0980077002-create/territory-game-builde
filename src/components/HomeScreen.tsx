@@ -20,6 +20,7 @@ import { LiveCityBackdrop, CITY_MOTION_KEY, CITY_BACKGROUND_KEY, initialCityMoti
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
+import { getStarterMilestones } from '@/game/starterJourney';
 
 export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events';
 // All five follower images use 512x512 canvases but have different amounts of
@@ -121,6 +122,11 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
   const unreadMail = MAIL.filter((l) => !state.mailClaimed.includes(l.id)).length + adminMail;
   const blessReady = blessingReady(state);
   const quest = state.quests.find((q) => !q.claimed && q.current >= q.target) ?? state.quests.find((q) => !q.claimed);
+  // A saved-progress guide appears in the existing quest strip, not as a new overlay.
+  // Keep veterans' city unchanged and never issue tutorial rewards in the client.
+  const starterSteps = player.level < 5 ? getStarterMilestones(state) : [];
+  const starterDone = starterSteps.filter(step => step.done).length;
+  const starterNext = starterSteps.find(step => !step.done);
 
   const setSettings = (patch: Partial<typeof state.settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
   const toggleCityMotion = () => setCityMotion((previous) => {
@@ -273,16 +279,25 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => onOpen('quests')}
+            data-testid="home-hero-path"
+            aria-label={starterNext && questAlerts.readyCount === 0
+              ? (language === 'en' ? 'Hero path: ' + starterNext.titleEn : 'Путь героя: ' + starterNext.titleRu)
+              : t('quests')}
             className={`relative flex-1 min-w-0 h-10 flex items-center gap-1.5 rounded-xl border bg-gradient-to-r from-[#3a2a16]/95 to-[#1a130a]/95 pl-1 pr-1.5 active:scale-[0.98] transition-transform ${questAlerts.count ? 'border-red-400/80 shadow-[0_0_12px_rgba(239,68,68,0.25)]' : 'border-amber-500/40'}`}
           >
             <img src="/ic-quests.webp" alt="" className="w-8 h-8 object-contain shrink-0" />
             {questAlerts.count > 0 && <span aria-label={language === 'en' ? 'Quests need attention' : 'Есть новые задания или награды'} className="absolute -top-1 -left-1 rounded-full bg-red-600 border border-white/80 text-white text-[9px] font-black min-w-4 h-4 px-0.5 flex items-center justify-center shadow-[0_0_8px_rgba(239,68,68,0.7)] animate-pulse">{questAlerts.count > 9 ? '9+' : questAlerts.count}</span>}
             <span className="flex-1 min-w-0 text-left">
-              <span className="block text-[10px] font-semibold text-amber-50 truncate leading-tight">{questAlerts.readyCount > 0 ? (language === 'en' ? 'Claim quest rewards!' : 'Забери награды!') : quest ? quest.title : questAlerts.newCount > 0 ? (language === 'en' ? 'New quests available!' : 'Новые задания!') : t('allQuestsDone')}</span>
-              {quest && (
+              <span className="block text-[10px] font-semibold text-amber-50 truncate leading-tight">{questAlerts.readyCount > 0 ? (language === 'en' ? 'Claim quest rewards!' : 'Забери награды!') : starterNext ? (language === 'en' ? 'Hero path' : 'Путь героя') : quest ? quest.title : questAlerts.newCount > 0 ? (language === 'en' ? 'New quests available!' : 'Новые задания!') : t('allQuestsDone')}</span>
+              {starterNext && questAlerts.readyCount === 0 ? (
+                <span className="flex items-center gap-1 mt-0.5">
+                  <span className="min-w-0 flex-1 truncate text-[9px] text-amber-200">{language === 'en' ? starterNext.titleEn : starterNext.titleRu}</span>
+                  <span className="shrink-0 text-[9px] font-black text-amber-300 tabular-nums">{starterDone}/4</span>
+                </span>
+              ) : quest && (
                 <span className="flex items-center gap-1 mt-0.5">
                   <span className="flex-1 h-1.5 rounded-full bg-black/60 overflow-hidden">
-                    <span className="block h-full bg-emerald-500" style={{ width: `${Math.min(100, (quest.current / quest.target) * 100)}%` }} />
+                    <span className="block h-full bg-emerald-500" style={{ width: `${Math.min(100, (quest.current / Math.max(1, quest.target)) * 100)}%` }} />
                   </span>
                   <span className="text-[9px] text-gray-300 tabular-nums">{Math.min(quest.current, quest.target)}/{quest.target}</span>
                 </span>
