@@ -68,6 +68,9 @@ export function followerTrainingCost(level: number): { gold: number; materials: 
 }
 
 export const MAX_FOLLOWER_LEVEL = 60;
+/** Exactly one rare stone per Battle Cow level. No automatic drops, purchases or grants. */
+export const COW_AWAKENING_STONE_COST = 1;
+export const AWAKENING_STONE_ART = 'assets/territory/items/awakening-stone.svg';
 
 /** Atomic pure update: call against the latest store state, never a stale render.
  * No cap bypass by negative/NaN amounts, and train only one companion at a time. */
@@ -76,16 +79,21 @@ export function trainFollower(state: GameState, followerId: string): GameState |
   const found = state.followers.find((f) => f.id === followerId && f.unlocked);
   if (!found || !FOLLOWER_TEMPLATES.some((f) => f.id === followerId)) return null;
   if (!Number.isSafeInteger(found.level) || found.level < 1 || found.level >= MAX_FOLLOWER_LEVEL || found.level >= state.player.level) return null;
+  const cowAwakening = followerId === 'follower_6';
   const price = followerTrainingCost(found.level);
-  if (!Number.isSafeInteger(state.player.gold) || state.player.gold < price.gold || !Number.isSafeInteger(state.forgeMaterials) || state.forgeMaterials < price.materials) return null;
+  if (cowAwakening) {
+    if (!Number.isSafeInteger(state.awakeningStones) || (state.awakeningStones ?? 0) < COW_AWAKENING_STONE_COST) return null;
+  } else if (!Number.isSafeInteger(state.player.gold) || state.player.gold < price.gold || !Number.isSafeInteger(state.forgeMaterials) || state.forgeMaterials < price.materials) return null;
   const template = FOLLOWER_TEMPLATES.find((f) => f.id === followerId)!;
   const gain = template.role === 'guardian' ? { attack: 1, defense: 2 }
     : template.role === 'warrior' ? { attack: 2, defense: 0 }
       : { attack: 1, defense: 0 };
   return {
     ...state,
-    player: { ...state.player, gold: state.player.gold - price.gold },
-    forgeMaterials: state.forgeMaterials - price.materials,
+    // The Cow never accepts gold, gems or forge materials; past levels stay untouched.
+    player: cowAwakening ? state.player : { ...state.player, gold: state.player.gold - price.gold },
+    forgeMaterials: cowAwakening ? state.forgeMaterials : state.forgeMaterials - price.materials,
+    awakeningStones: cowAwakening ? (state.awakeningStones ?? 0) - COW_AWAKENING_STONE_COST : state.awakeningStones,
     followers: state.followers.map((f) => f.id !== followerId ? f : {
       ...f, level: f.level + 1, attack: f.attack + gain.attack, defense: f.defense + gain.defense,
     }),
