@@ -13,7 +13,7 @@ const exec=c=>executeCombatCommand(repo,player,c,()=>12);
 const fighter={stats:{hp:1000,maxHp:1000,attack:100,defense:4,critChance:0,dodgeChance:0,blockChance:0},ownership:{heroLevel:1,skills:{},runes:{},passives:{}},loadout:{skills:[],passives:[]}};
 const enemy={...fighter,stats:{...fighter.stats,hp:10,maxHp:10,attack:1}};
 const rules={stepMs:10,maxDurationMs:10000,approachMs:20,attackIntervalMs:200,basicWindupMs:20,basicMultiplier:1,defenseFactor:0.5,magicDefenseFactor:0.2,minimumDamage:1,critMultiplier:2,blockMultiplier:0,maxEnergy:100,initialEnergy:100,energyPerSecond:0,modeDamageMultiplier:{pve:1,boss:1,pvp:1}};
-const save={player:{gold:50,xp:90,level:1,xpToNext:100,maxEnergy:20,stats:{hp:100,maxHp:100,attack:20,defense:5},equipped:{weapon:{id:'old'}}},inventory:[{id:'old'}],battleStones:10,vip:7,redGems:45,achievements:[{id:'old'}]};
+const save={player:{gold:50,xp:90,level:1,xpToNext:100,maxEnergy:20,stats:{hp:100,maxHp:100,attack:20,defense:5},equipped:{weapon:{id:'old'}}},inventory:[{id:'old'}],belt:[{id:'belt_0',qty:1},null,null,null,null,null,null],battleStones:10,vip:7,redGems:45,achievements:[{id:'old'}]};
 try {
  await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
  CREATE SCHEMA auth; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT NULL::uuid $$;
@@ -36,6 +36,9 @@ try {
  await db.exec('SET ROLE service_role');
  await assert.rejects(exec({action:'start',operationId:op(1),encounterId:'s2',control:'auto'}),/adventure_stage_locked/);
  const start=await exec({action:'start',operationId:op(2),encounterId:'s1',control:'auto'});
+ assert.equal(start.state.input.hero.stats.attack,100,'use the attested fighter strength, not base stats or empty UUID equipment');
+ assert.deepEqual((await q('SELECT legacy_equipped_ids,equipped_item_ids FROM territory_private.combat_profiles_v1 WHERE player_id=$1',[player]))[0],{legacy_equipped_ids:['old'],equipped_item_ids:[]});
+ assert.deepEqual(start.start_save.game_state.belt,save.belt,'a populated legacy belt is retained, not consumed');
  assert.equal(start.start_save.battle_stones,9,'server charges exactly one stone');
  assert.equal((await q('SELECT game_state FROM public.players WHERE id=$1',[player]))[0].game_state.battleStones,9);
  assert.deepEqual(await exec({action:'start',operationId:op(2),encounterId:'s1',control:'auto'}),start,'same start UUID must not charge twice');
@@ -69,8 +72,11 @@ try {
  await q(`UPDATE players SET game_state=jsonb_set(game_state,'{player,equipped,weapon,id}','"tampered"') WHERE id=$1`,[noLevel]);
  await q('UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=$1',[otherNext.session_id]);
  await db.exec('SET ROLE service_role');
+ const beforeRejected=(await q('SELECT gold,xp,game_state FROM public.players WHERE id=$1',[noLevel]))[0];
  await assert.rejects(execOther({action:'advance',operationId:op(9),sessionId:otherNext.session_id,revision:0}),/combat_profile_needs_reconciliation/);
  assert.equal((await q('SELECT revision FROM territory_private.combat_sessions_v1 WHERE session_id=$1',[otherNext.session_id]))[0].revision,0);
+ assert.deepEqual((await q('SELECT gold,xp,game_state FROM public.players WHERE id=$1',[noLevel]))[0],beforeRejected,'failed settlement rolls back wallet and save');
+ assert.equal((await q('SELECT count(*)::int n FROM territory_private.adventure_settlements_v1 WHERE session_id=$1',[otherNext.session_id]))[0].n,0,'failed settlement creates no receipt');
  // A guard/trigger may normalize saved stats. Unexpected trigger effects must
  // roll back both the terminal combat update and all reward changes.
  await db.exec('RESET ROLE');
