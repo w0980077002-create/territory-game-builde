@@ -6,7 +6,7 @@ import './worldMapCanvas.css';
 export type WorldMapRegion = 'forest' | 'mountain' | 'herbs' | 'hunting' | 'rare' | 'chamber';
 export type WorldMapRoute = 'city' | 'arena' | 'shop' | 'forge' | 'professions' | 'auction'
   | 'inventory' | 'games' | 'hero' | 'battle' | 'clan' | 'friends' | 'quests' | 'messages' | 'events';
-export type WorldMapPlace = WorldMapRegion | WorldMapRoute | 'runes' | 'trial' | 'companions';
+export type WorldMapPlace = WorldMapRegion | WorldMapRoute | 'runes' | 'trial' | 'companions' | 'cave';
 
 type Place = {
   id: WorldMapPlace;
@@ -21,7 +21,8 @@ type Place = {
 // Every destination uses an existing screen or existing server-backed region.
 const PLACES: Place[] = [
   { id: 'city', ru: 'Замок', en: 'Castle', x: 51, y: 13 },
-  { id: 'battle', ru: 'Приключения · 100 этапов', en: 'Adventure · 100 stages', x: 51, y: 27 },
+  { id: 'battle', ru: 'Поход', en: 'Campaign', x: 51, y: 27 },
+  { id: 'cave', ru: 'Тёмная пещера', en: 'Dark Cave', x: 81, y: 83 },
   { id: 'arena', ru: 'Арена', en: 'Arena', x: 13, y: 27 },
   { id: 'mountain', ru: 'Рудники', en: 'Mines', x: 88, y: 24, kind: 'resource' },
   { id: 'auction', ru: 'Аукцион', en: 'Auction', x: 37, y: 36 },
@@ -44,7 +45,7 @@ const PLACES: Place[] = [
 // At minimum zoom only the primary hubs remain visible. The complete list
 // stays one tap away in "All locations", and every pin returns at closer zoom.
 const OVERVIEW_PLACES = new Set<WorldMapPlace>([
-  'city', 'battle', 'arena', 'mountain', 'hero', 'forge', 'professions',
+  'city', 'battle', 'cave', 'arena', 'mountain', 'hero', 'forge', 'professions',
   'shop', 'inventory', 'runes', 'rare', 'games',
 ]);
 
@@ -85,6 +86,7 @@ const PLACE_VISUALS: Record<WorldMapPlace, PlaceVisual> = {
   games: { art: 'nav-games.webp', tone: 'sea' },
   companions: { art: 'assets/territory/map/icons/companions-v1.webp', tone: 'forest' },
   battle: { art: 'nav-battle.webp', tone: 'ember' },
+  cave: { art: 'map-chamber.webp', tone: 'rune' },
   clan: { art: 'nav-clan.webp', tone: 'ember' },
   friends: { art: 'ic-invite.webp', tone: 'forest' },
   quests: { art: 'ic-quests.webp', tone: 'gold' },

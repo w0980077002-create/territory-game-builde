@@ -8,20 +8,24 @@ const bridge = read('src/game/combatV1/receiptAdapter.ts');
 const map = read('src/components/MapScreen.tsx');
 const canvas = read('src/components/WorldMapCanvas.tsx');
 
-assert.match(map, /data-testid="map-server-adventure-entry"/,'Adventure must be visible directly on the map without opening a drawer');
-assert.match(map, /onClick=\{\(\) => onNavigate\('battle'\)\}/,'Map entry must open the actual battle screen');
-assert.match(canvas, /id: 'battle', ru: 'Приключения · 100 этапов'/,'100-stage Adventure must have its own map landmark');
-assert.match(canvas, /'city', 'battle', 'arena'/,'Adventure landmark must remain visible at minimum zoom');
-assert.match(battle, /territory_adventure_mode_v3/,'Real server adventure gate must be accessible from gameplay');
-assert.doesNotMatch(battle, /p_owner_preview|isAdmin|serverOptIn/,'The server campaign must not require the admin panel');
-assert.match(battle, /legacySelected/,'Classic campaign remains an explicit in-game choice');
-assert.match(battle, /setLegacySelected\(true\)/,'Classic progress is reachable without admin');
-assert.match(battle, /setLegacySelected\(false\)/,'New server campaign is reachable without admin');
-assert.match(battle, /serverMode === 'enabled' &&/,'Server readiness remains authoritative');
-assert.match(battle, /recoveryRequired \|\| serverActive \|\| !legacySelected/,'New campaign should be default; in-flight fights always recover');
-assert.doesNotMatch(app, /<BattleScreen[^>]*isAdmin=/s,'Game battle is not tied to admin authentication');
-assert.match(battle, /showServer && view === 'campaign'/);
-assert.match(battle, /if \(showServer && view === 'campaign'\) return;/);
+// Regression: classic campaign and trials are not replaced by the server cave.
+assert.match(battle, /export type BattleView = 'campaign' \| 'trial' \| 'cave'/);
+assert.match(battle, /grid-cols-3/);
+assert.match(battle, /label: language === 'en' \? 'Dark Cave' : 'Тёмная пещера'/);
+assert.match(battle, /view === 'cave' \? \(/);
+assert.match(battle, /<ServerAdventureScreen /);
+assert.match(battle, /if \(view === 'cave'\) return;/, 'Never charge legacy stones in cave');
+assert.match(battle, /generateChapter\(state.currentChapter\)/);
+assert.match(battle, /<PveFight/);
+assert.doesNotMatch(battle, /serverMode|legacySelected|showServer|territory_adventure_mode_v3/);
+assert.match(map, /onClick=\{onCave\}/);
+assert.match(map, /case 'cave': onCave\(\)/);
+assert.match(canvas, /id: 'battle', ru: 'Поход'/);
+assert.match(canvas, /id: 'cave', ru: 'Тёмная пещера'/);
+assert.match(canvas, /'city', 'battle', 'cave', 'arena'/);
+assert.match(app, /onCave=\{\(\) => \{ setBattleView\('cave'\)/);
+assert.doesNotMatch(app, /<BattleScreen[^>]*isAdmin=/s);
+
 assert.match(app, /restoreAdventureSaveFence\(user\.id\);\s*restoreAdventureStartFence\(user\.id\);/,'Restore fences on EVERY save load, not only on a compile-time flag');
 assert.match(app,/restoreAdventureStartFence\(user.id\)/,'fence a pending start before autosave');
 assert.ok(app.indexOf('restoreAdventureSaveFence(user.id)') < app.indexOf('setLoaded(true)'),
@@ -46,4 +50,4 @@ assert.doesNotMatch(ui, /recordBattleResult|spendStones|trialReward|Math\.random
   'the server campaign must never issue client-side currency, level, experience, or RNG rewards');
 assert.match(bridge, /acceptAdventureSettlementReceipt\(/,
   'accept authenticated receipts using existing save-token CAS');
-console.log('Adventure client UI contract PASS: dual gate, server progress, durable command recovery, no client-authoritative grants, autosave fence.');
+console.log('Dark Cave separate navigation PASS: old campaign, Trials, 3 buttons, cave stages, safe server receipts.');

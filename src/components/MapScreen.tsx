@@ -99,9 +99,10 @@ const REGIONS: Region[] = [
   },
 ];
 
-export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes, attentionPlaces }: {
+export function MapScreen({ onNavigate, onTrial, onCave, onCompanions, onRunes, attentionPlaces }: {
   onNavigate: (route: WorldMapRoute) => void;
   onTrial: () => void;
+  onCave: () => void;
   onCompanions: () => void;
   onRunes: () => void;
   attentionPlaces?: readonly WorldMapPlace[];
@@ -242,28 +243,28 @@ export function MapScreen({ onNavigate, onTrial, onCompanions, onRunes, attentio
         setSelected(place);
         break;
       case 'trial': onTrial(); break;
+      case 'cave': onCave(); break;
       case 'companions': onCompanions(); break;
       case 'runes': onRunes(); break;
       default: onNavigate(place);
     }
-  }, [onTrial, onCompanions, onRunes, onNavigate]);
+  }, [onTrial, onCave, onCompanions, onRunes, onNavigate]);
 
   return (
     <div className="relative h-full min-h-0 w-full overflow-hidden">
       <WorldMapCanvas onVisit={handleWorldVisit} readyRegion={readyRegion?.id} attentionPlaces={attentionPlaces} language={language} />
-      {/* Main game entry: the world map must expose the 100-stage campaign
-          without requiring the tiny "All locations" drawer or admin panel. */}
+      {/* Separate Dark Cave entrance; never replaces the old campaign. */}
       <button
         type="button"
         data-testid="map-server-adventure-entry"
-        onClick={() => onNavigate('battle')}
+        onClick={onCave}
         className="absolute left-2 top-[76px] z-20 flex max-w-[calc(100%-76px)] items-center gap-2 rounded-xl border border-amber-300/70 bg-[#3e2514]/95 px-3 py-2.5 text-left text-amber-50 shadow-[0_5px_20px_rgba(0,0,0,0.45)] backdrop-blur-sm active:scale-[0.98]"
-        aria-label={language === 'en' ? 'Open Adventure: 100 stages' : 'Открыть приключения: 100 этапов'}
+        aria-label={language === 'en' ? 'Dark Cave: 100 stages' : 'Тёмная пещера: 100 этапов'}
       >
-        <img src={`${import.meta.env.BASE_URL}nav-battle.webp`} alt="" className="h-9 w-9 shrink-0 object-contain" />
+        <img src={`${import.meta.env.BASE_URL}map-chamber.webp`} alt="" className="h-9 w-9 shrink-0 object-contain" />
         <span className="flex flex-col gap-0.5 leading-tight">
-          <span className="text-[13px] font-black">{language === 'en' ? '⚔ Adventure' : '⚔ Приключения'}</span>
-          <span className="text-[11px] font-semibold text-amber-200">{language === 'en' ? '100 stages · server battles' : '100 этапов · новые бои'}</span>
+          <span className="text-[13px] font-black">{language === 'en' ? 'Dark Cave' : 'Тёмная пещера'}</span>
+          <span className="text-[11px] font-semibold text-amber-200">{language === 'en' ? '100 stages · separate campaign' : '100 этапов · отдельный поход'}</span>
         </span>
       </button>
       {readyRegion && (

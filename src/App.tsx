@@ -482,6 +482,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             setScreen(route);
           }}
           onTrial={() => { setBattleView('trial'); setAutoStart(false); setScreen('battle'); }}
+          onCave={() => { setBattleView('cave'); setAutoStart(false); setScreen('battle'); }}
           onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }}
           onRunes={() => { setHeroTrainingOpen(true); setScreen('hero'); }}
         />}

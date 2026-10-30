@@ -219,7 +219,7 @@ export function ServerAdventureScreen({ userId, onTrial, onActiveChange }: Props
 
   return <section className="space-y-3 pb-4" data-testid="territory-adventure-v1">
     <div className="flex items-center justify-between gap-2">
-      <h2 className="text-lg font-black text-amber-200">{en ? 'Adventure' : 'Приключения'} <span className="text-xs text-amber-100/70">1–100</span></h2>
+      <h2 className="text-lg font-black text-amber-200">{en ? 'Dark Cave' : 'Тёмная пещера'} <span className="text-xs text-amber-100/70">1–100</span></h2>
       <button className="rounded-lg border border-white/20 px-3 py-2 text-xs text-white" onClick={onTrial}>
         {en ? 'Trials' : 'Испытания'}
       </button>
@@ -267,7 +267,7 @@ export function ServerAdventureScreen({ userId, onTrial, onActiveChange }: Props
         {session.settlement?.reward && <p className="text-center text-xs text-yellow-100">
           +{session.settlement.reward.gold} {en?'gold':'монет'} · +{session.settlement.reward.xp} XP
         </p>}
-        <button onClick={clearFinished} disabled={busy} className="w-full rounded-xl bg-amber-500 text-black p-3 font-bold">{en?'Return to campaign':'К этапам'}</button>
+        <button onClick={clearFinished} disabled={busy} className="w-full rounded-xl bg-amber-500 text-black p-3 font-bold">{en?'Back to cave stages':'К этапам пещеры'}</button>
       </> : <>
         {session.state.input.control==='manual' && <div className="grid grid-cols-2 gap-2">
           {session.state.actors.hero.loadout.skills.map(skill=><button key={skill.skillId} disabled={busy || recoverable} onClick={()=>void advance(skill.skillId)} className="rounded-lg border border-amber-500/40 bg-amber-900/30 p-2 text-xs text-amber-100">{skill.skillId}</button>)}

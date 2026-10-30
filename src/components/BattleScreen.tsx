@@ -12,12 +12,8 @@ import { PveFight, type FightKind } from './pve/PveFight';
 import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
 import { Currency } from './ui/Currency';
 import { DailyShareCard } from '@/game/DailyShareCard';
-import { supabase } from '@/game/supabase';
-
-// The server decides per player. Ineligible accounts keep the legacy campaign.
-type ServerMode = 'checking' | 'enabled' | 'legacy';
-
-export type BattleView = 'campaign' | 'trial';
+// Independent: the old campaign, Trials, and server-operated Dark Cave.
+export type BattleView = 'campaign' | 'trial' | 'cave';
 
 interface Props {
   userId:string;
@@ -34,39 +30,21 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
-  const [serverMode, setServerMode] = useState<ServerMode>('checking');
-  const [recoveryRequired, setRecoveryRequired] = useState(false);
-  const [legacySelected, setLegacySelected] = useState(false);
-  const [serverActive, setServerActive] = useState(false);
-  const handleServerActive = useCallback((active: boolean) => {
-    setServerActive(active);
+  const [caveActive, setCaveActive] = useState(false);
+  const handleCaveActive = useCallback((active: boolean) => {
+    setCaveActive(active);
     onActiveChange?.(active);
   }, [onActiveChange]);
+  // Unsettled cave operations must be recovered before the old save is editable.
   useEffect(() => {
-    let alive = true;
-    const hasPendingServerSession = [
-      'territory_adventure_session_v1:',
-      'territory_adventure_start_v1:',
-      'territory_adventure_pending_v1:',
-    ].some(prefix => {
-      try { return !!localStorage.getItem(prefix + userId); } catch { return false; }
-    });
-    if (hasPendingServerSession) {
-      setRecoveryRequired(true);
-      setServerMode('enabled'); // Recover a durable in-flight server debit/receipt first.
-      return () => { alive = false; };
-    }
-    // Any authenticated player may use the new campaign from the normal
-    // Adventure/Battle screen. Keep old campaign available by explicit choice.
-    void Promise.resolve(supabase.rpc('territory_adventure_mode_v3'))
-      .then(({ data, error }) => {
-        if (alive) setServerMode(!error && data?.enabled === true ? 'enabled' : 'legacy');
-      })
-      .catch(() => { if (alive) setServerMode('legacy'); });
-    return () => { alive = false; };
-  }, [userId]);
-  const showServer = serverMode === 'enabled' &&
-    (recoveryRequired || serverActive || !legacySelected);
+    if (view === 'cave') return;
+    const pending = ['territory_adventure_start_v1:', 'territory_adventure_pending_v1:']
+      .some(prefix => {
+        try { return !!localStorage.getItem(prefix + userId); }
+        catch { return false; }
+      });
+    if (pending) onView('cave');
+  }, [userId, view, onView]);
   const [error, setError] = useState<string | null>(null);
   const chapter = useMemo(() => generateChapter(state.currentChapter), [state.currentChapter]);
   const stages = [...chapter.enemies, chapter.boss];
@@ -99,31 +77,13 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   };
 
   useEffect(() => {
-    if (!autoStart || autoHandled.current || (view === 'campaign' && serverMode === 'checking')) return;
+    if (!autoStart || autoHandled.current) return;
     autoHandled.current = true;
     onAutoStartHandled();
-    // No client-side stone deductions or legacy battle while server cutover is active.
-    if (showServer && view === 'campaign') return;
+    // Cave starts and settles exclusively via its own server workflow.
+    if (view === 'cave') return;
     start(view === 'trial' ? 'trial' : 'stage');
   });
-
-  if (view === 'campaign' && serverMode === 'checking' && !fight) {
-    return <p role="status" className="p-4 text-center text-xs text-amber-100">
-      {language === 'en' ? 'Checking campaign availability…' : 'Проверяем доступность приключений…'}
-    </p>;
-  }
-  if (showServer && view === 'campaign' && !fight) {
-    return <div className="space-y-2">
-      {!serverActive && !recoveryRequired && (
-        <button type="button" onClick={() => setLegacySelected(true)}
-          className="w-full rounded-lg border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-xs font-semibold text-amber-100">
-          {language === 'en' ? '← Classic campaign (old progress)' : '← Классический поход (старый прогресс)'}
-        </button>
-      )}
-      <ServerAdventureScreen userId={userId} onTrial={() => onView('trial')}
-        onActiveChange={handleServerActive} />
-    </div>;
-  }
 
   if (fight) {
     return (
@@ -144,32 +104,28 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
 
   return (
     <div className="space-y-3 animate-fade-in pb-2">
-      {serverMode === 'enabled' && !fight && view === 'campaign' && (
-        <button type="button" onClick={() => setLegacySelected(false)}
-          className="w-full rounded-xl border border-emerald-400/50 bg-emerald-950/50 px-3 py-3 text-sm font-bold text-emerald-100">
-          {language === 'en' ? '⚔️ New adventure — 100 stages' : '⚔️ Новые приключения — 100 этапов'}
-          <span className="mt-1 block text-[11px] font-normal opacity-75">
-            {language === 'en' ? 'Server battles and rewards · Classic progress is retained' : 'Серверные бои и награды · Старый прогресс сохранён отдельно'}
-          </span>
-        </button>
-      )}
-      <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10">
+      <div data-testid="battle-mode-tabs" className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10">
         {([
           { id: 'campaign', label: t('campaign'), icon: Swords },
           { id: 'trial', label: t('trials'), icon: Mountain },
+          { id: 'cave', label: language === 'en' ? 'Dark Cave' : 'Тёмная пещера', icon: Mountain },
         ] as const).map((t) => (
           <button
             key={t.id}
             onClick={() => onView(t.id)}
-            className={`h-10 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+            disabled={caveActive && view === 'cave' && t.id !== 'cave'}
+            className={`min-h-12 rounded-xl text-[11px] leading-tight font-semibold flex flex-col items-center justify-center gap-0.5 transition-all disabled:opacity-40 ${
               view === t.id ? 'bg-gradient-to-b from-amber-400 to-amber-600 text-black shadow-lg shadow-amber-900/30' : 'text-gray-400'
             }`}
           >
-            <t.icon className="w-4 h-4" /> {t.label}
+            <t.icon className="w-4 h-4" /> <span className="text-center">{t.label}</span>
           </button>
         ))}
       </div>
 
+      {view === 'cave' ? (
+        <ServerAdventureScreen userId={userId} onTrial={() => onView('trial')} onActiveChange={handleCaveActive} />
+      ) : <>
       <div className="flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11">
         <span className="text-xs text-gray-400">{t('oneFightCost')} {PVE_STONE_COST} {t('stone')}</span>
         <Currency kind="stones" value={state.battleStones} size={20} className="text-sm text-amber-100" />
@@ -233,6 +189,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
           <TrialPanel level={state.trialLevel} onFight={() => start('trial')} t={t} />
         </div>
       )}
+      </>}
     </div>
   );
 }
