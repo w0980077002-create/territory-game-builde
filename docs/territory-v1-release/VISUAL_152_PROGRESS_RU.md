@@ -67,6 +67,15 @@
 | Задания | [до](visual-152/quests-before-320-ru.png) · [после](visual-152/quests-after-320-ru.png) | [before](visual-152/quests-before-320-en.png) · [after](visual-152/quests-after-320-en.png) | [до](visual-152/quests-before-390-ru.png) · [после](visual-152/quests-after-390-ru.png) | [before](visual-152/quests-before-390-en.png) · [after](visual-152/quests-after-390-en.png) |
 | Почта | [до](visual-152/mail-before-320-ru.png) · [после](visual-152/mail-after-320-ru.png) | [before](visual-152/mail-before-320-en.png) · [after](visual-152/mail-after-320-en.png) | [до](visual-152/mail-before-390-ru.png) · [после](visual-152/mail-after-390-ru.png) | [before](visual-152/mail-before-390-en.png) · [after](visual-152/mail-after-390-en.png) |
 
+## Следующее задание для развитого героя
+
+При отсутствии готовой награды и незавершённого вводного шага выделяется существующее доступное задание с его реальным действием и наградой. Снимки используют одинаковую изолированную фикстуру уровня 6; начислений и сетевых запросов нет.
+
+| Ширина | RU | EN |
+| --- | --- | --- |
+| 320 | [до](visual-152/quests-veteran-before-320-ru.png) · [после](visual-152/quests-veteran-after-320-ru.png) | [before](visual-152/quests-veteran-before-320-en.png) · [after](visual-152/quests-veteran-after-320-en.png) |
+| 390 | [до](visual-152/quests-veteran-before-390-ru.png) · [после](visual-152/quests-veteran-after-390-ru.png) | [before](visual-152/quests-veteran-before-390-en.png) · [after](visual-152/quests-veteran-after-390-en.png) |
+
 ## Чеклист
 
 - [ ] Герой: сцена, реальные слоты и путь проверены в изолированном Chromium; художественная приёмка и состояния со всеми вариантами реальной экипировки не завершены.
