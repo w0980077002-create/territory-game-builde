@@ -9,10 +9,12 @@ import autoprefixer from 'autoprefixer';
 const fixture = String.raw`
 let progress = { completed_stage: 0, unlocked_stage: 1, dark_stones: 5 };
 let current = null;
-const oldState = { player: { gold: 100 }, inventory: [] };
+const oldState = { player: { gold: 100, equipped: {} }, inventory: [], belt: Array(7).fill(null), activeDays: 1 };
 window.__adventureCalls = [];
-export const useGame = { get: () => oldState, set: () => {} };
+export const useGame = { get: () => oldState, set: () => {}, subscribe: () => () => {} };
+export const useArena = { get: () => ({ wins: 0, losses: 0, rating: 1000 }), subscribe: () => () => {} };
 export const useLanguage = () => ({ language: 'ru' });
+export const localizeText = (item, language) => typeof item === 'string' ? item : item?.[language] || item?.ru || '';
 export async function ensurePlayerSession() { return true; }
 export function restoreAdventureSaveFence() { return null; }
 export function restoreAdventureStartFence() { return null; }
