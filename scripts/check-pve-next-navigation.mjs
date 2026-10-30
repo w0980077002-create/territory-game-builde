@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { build } from 'esbuild';
+
+const bundled = await build({
+  entryPoints: ['src/game/pveNextAction.ts'],
+  bundle: true, write: false, platform: 'node', format: 'esm',
+});
+const { runDeferredNextBattle } = await import(
+  'data:text/javascript;base64,' + Buffer.from(bundled.outputFiles[0].text).toString('base64')
+);
+
+let starts = 0;
+assert.equal(await runDeferredNextBattle(Promise.resolve(), () => true, () => { starts++; return true; }, 30), 'started');
+assert.equal(starts, 1, 'a completed referral allows exactly one next fight');
+
+assert.equal(await runDeferredNextBattle(Promise.resolve(), () => false, () => { starts++; return true; }, 30), 'cancelled');
+assert.equal(starts, 1, 'unmounted battle must not start a fight');
+
+let settle;
+const pending = new Promise(resolve => { settle = resolve; });
+let stillHere = true;
+const waiting = runDeferredNextBattle(pending, () => stillHere, () => { starts++; return true; }, 100);
+stillHere = false; // Player tapped Back or Quests before the referral settled.
+settle();
+assert.equal(await waiting, 'cancelled');
+assert.equal(starts, 1, 'leaving during referral wait must never debit a new stone');
+
+assert.equal(await runDeferredNextBattle(new Promise(() => {}), () => true, () => { starts++; return true; }, 5), 'started');
+assert.equal(starts, 2, 'timeout must allow continuing without hanging on referrals');
+assert.equal(await runDeferredNextBattle(Promise.reject(Error('offline')), () => true, () => false, 20), 'blocked',
+  'a failed start must be reported as blocked rather than silently looking successful');
+
+const fight = readFileSync('src/components/pve/PveFight.tsx', 'utf8');
+const battle = readFileSync('src/components/BattleScreen.tsx', 'utf8');
+assert.match(fight, /nextCancelled\.current = true; onExit\(\)/, 'Back must cancel a pending next fight');
+assert.match(fight, /nextCancelled\.current = true; onQuests\(\)/, 'Opening quests must cancel a pending next fight');
+assert.match(fight, /alive\.current && !nextCancelled\.current/, 'Deferred start must check the mounted battle');
+assert.match(fight, /questReady=\{state\.quests\.some\(/, 'Claim-ready quests must be offered at every hero level');
+assert.doesNotMatch(fight, /questReady=\{state\.player\.level < 5/, 'Do not hide quest rewards from veteran players');
+assert.match(battle, /return start\(fight\.kind\)/, 'Next fight must report whether stones were actually spent');
+assert.match(fight, /nextPending\? \(language === 'en' \? 'Starting…' : 'Начинаем…'\)/, 'Pending next action must be visible');
+
+console.log('PvE post-battle navigation PASS: cancelled next does not spend stones, timeout/retry, veteran quest CTA and pending UI.');
