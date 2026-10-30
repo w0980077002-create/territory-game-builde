@@ -30,6 +30,8 @@ assert.equal(await runDeferredNextBattle(new Promise(() => {}), () => true, () =
 assert.equal(starts, 2, 'timeout must allow continuing without hanging on referrals');
 assert.equal(await runDeferredNextBattle(Promise.reject(Error('offline')), () => true, () => false, 20), 'blocked',
   'a failed start must be reported as blocked rather than silently looking successful');
+assert.equal(await runDeferredNextBattle(Promise.resolve(), () => true, () => { throw Error('Telegram SDK unavailable'); }, 20), 'blocked',
+  'a thrown next-fight callback must not leave the button permanently disabled');
 
 const fight = readFileSync('src/components/pve/PveFight.tsx', 'utf8');
 const battle = readFileSync('src/components/BattleScreen.tsx', 'utf8');
@@ -39,6 +41,7 @@ assert.match(fight, /alive\.current && !nextCancelled\.current/, 'Deferred start
 assert.match(fight, /questReady=\{state\.quests\.some\(/, 'Claim-ready quests must be offered at every hero level');
 assert.doesNotMatch(fight, /questReady=\{state\.player\.level < 5/, 'Do not hide quest rewards from veteran players');
 assert.match(battle, /return start\(fight\.kind\)/, 'Next fight must report whether stones were actually spent');
+assert.match(battle, /try \{ hapticImpact\('medium'\); \} catch/, 'Telegram haptic errors must not interrupt battle start');
 assert.match(fight, /nextPending\? \(language === 'en' \? 'Starting…' : 'Начинаем…'\)/, 'Pending next action must be visible');
 
 console.log('PvE post-battle navigation PASS: cancelled next does not spend stones, timeout/retry, veteran quest CTA and pending UI.');
