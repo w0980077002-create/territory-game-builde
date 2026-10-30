@@ -5,7 +5,7 @@ import { reconcileElixirExpiry } from './elixirExpiry';
  * exactly one active companion. PvP Arena snapshots never use these bonuses.
  * Training is a client-side gameplay feature, NOT an anti-cheat boundary.
  */
-export type FollowerRole = 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage';
+export type FollowerRole = 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage' | 'crystal';
 
 export interface FollowerTemplate {
   id: string;
@@ -26,6 +26,7 @@ export const FOLLOWER_TEMPLATES: FollowerTemplate[] = [
   { id: 'follower_3', role: 'healer', unlockLevel: 15, name: 'Лесная целительница', nameEn: 'Forest Healer', icon: '🌿', attack: 3, defense: 1, description: 'Восстанавливает немного HP между раундами.', descriptionEn: 'Restores some HP between rounds.' },
   { id: 'follower_4', role: 'hunter', unlockLevel: 25, name: 'Лунный охотник', nameEn: 'Moon Hunter', icon: '🏹', attack: 7, defense: 1, description: 'Немного повышает шанс критического удара героя.', descriptionEn: 'Slightly improves the hero’s critical-hit chance.' },
   { id: 'follower_5', role: 'mage', unlockLevel: 40, name: 'Рунный маг', nameEn: 'Rune Mage', icon: '🔮', attack: 5, defense: 1, description: 'Ослабляет защиту врага в Походе и Испытаниях.', descriptionEn: 'Weakens enemy defense in PvE battles.' },
+  { id: 'follower_6', role: 'crystal', unlockLevel: 50, name: 'Боевая корова', nameEn: 'Battle Cow', icon: '🐮', attack: 7, defense: 2, description: 'Кристальное безумие: атакует врага и немного лечит героя между раундами. Только PvE.', descriptionEn: 'Crystal Frenzy: attacks enemies and heals the hero a little between rounds. PvE only.' },
 ];
 
 export function initialFollowers(): Follower[] {
@@ -102,8 +103,8 @@ export function followerCombat(follower: Follower | null) {
     role,
     attack: template ? clamp(follower?.attack, template.attack + MAX_FOLLOWER_LEVEL * 2) : 0,
     defense: role === 'guardian' ? clamp(follower?.defense, 10 + MAX_FOLLOWER_LEVEL * 2) : 0,
-    heal: role === 'healer' ? Math.min(15, 3 + Math.floor(level / 4)) : 0,
+    heal: role === 'healer' ? Math.min(15, 3 + Math.floor(level / 4)) : role === 'crystal' ? Math.min(10, 4 + Math.floor(level / 10)) : 0,
     crit: role === 'hunter' ? Math.min(5, 2 + Math.floor(level / 10)) : 0,
-    pierce: role === 'mage' ? Math.min(0.08, 0.04 + level * 0.0008) : 0,
+    pierce: role === 'mage' ? Math.min(0.08, 0.04 + level * 0.0008) : role === 'crystal' ? 0.02 : 0,
   };
 }
