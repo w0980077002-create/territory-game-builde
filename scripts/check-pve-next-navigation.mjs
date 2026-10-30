@@ -44,4 +44,40 @@ assert.match(battle, /return start\(fight\.kind\)/, 'Next fight must report whet
 assert.match(battle, /try \{ hapticImpact\('medium'\); \} catch/, 'Telegram haptic errors must not interrupt battle start');
 assert.match(fight, /nextPending\? \(language === 'en' \? 'Starting…' : 'Начинаем…'\)/, 'Pending next action must be visible');
 
-console.log('PvE post-battle navigation PASS: cancelled next does not spend stones, timeout/retry, veteran quest CTA and pending UI.');
+// The native Telegram bridge can exist but throw on older WebViews. Neither
+// a round's damage nor a finished battle may depend on vibration/telemetry.
+const telegramBuild = await build({
+  entryPoints: ['src/game/telegram.ts'],
+  bundle: true, write: false, platform: 'node', format: 'esm',
+});
+const { hapticImpact, hapticNotify } = await import(
+  'data:text/javascript;base64,' + Buffer.from(telegramBuild.outputFiles[0].text).toString('base64')
+);
+const oldWindow = globalThis.window;
+try {
+  delete globalThis.window;
+  assert.doesNotThrow(() => hapticImpact('light'), 'No Telegram SDK must be safe');
+  assert.doesNotThrow(() => hapticNotify('success'), 'No Telegram SDK must be safe');
+  globalThis.window = { Telegram: { WebApp: { HapticFeedback: {
+    impactOccurred: () => { throw new Error('WebView vibration unsupported'); },
+    notificationOccurred: () => { throw new Error('WebView notification unsupported'); },
+  } } } };
+  assert.doesNotThrow(() => hapticImpact('light'), 'Broken native vibration must not abort a PvE round');
+  assert.doesNotThrow(() => hapticNotify('success'), 'Broken native notification must not abort a victory');
+  let impactCount = 0;
+  let notifyCount = 0;
+  globalThis.window = { Telegram: { WebApp: { HapticFeedback: {
+    impactOccurred: () => { impactCount++; },
+    notificationOccurred: () => { notifyCount++; },
+  } } } };
+  hapticImpact('light');
+  hapticNotify('success');
+  assert.equal(impactCount, 1, 'Working Telegram vibration must still fire');
+  assert.equal(notifyCount, 1, 'Working Telegram notification must still fire');
+} finally {
+  if (oldWindow === undefined) delete globalThis.window;
+  else globalThis.window = oldWindow;
+}
+assert.match(fight, /try \{ captureGameEvent\('territory_pve_fight_end',[\s\S]*?\);\s*\}\s*catch \{/,
+  'Optional analytics must never abort the actual victory or saved rewards');
+console.log('PvE post-battle navigation PASS: cancelled next, optional Telegram haptics and telemetry cannot block battle progression.');

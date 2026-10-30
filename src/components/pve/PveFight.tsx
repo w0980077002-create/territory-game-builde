@@ -142,7 +142,10 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const finish = useCallback((won: boolean) => {
     if (done.current) return;
     done.current = true;
-    captureGameEvent('territory_pve_fight_end', { mode: kind === 'trial' ? 'trial' : 'campaign', outcome: won ? 'won' : 'lost' });
+    // Telemetry is optional: an unavailable browser API must not abort the
+    // authoritative local result/save path after the final blow.
+    try { captureGameEvent('territory_pve_fight_end', { mode: kind === 'trial' ? 'trial' : 'campaign', outcome: won ? 'won' : 'lost' }); }
+    catch { /* Never withhold victory or a saved reward because of analytics. */ }
     referralFinish.current = (referralStart.current ?? Promise.resolve(null))
       .then(ticket => ticket
         ? finishReferralFight(ticket, won, referralRounds.current).catch(() => false)
