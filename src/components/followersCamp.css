@@ -56,6 +56,13 @@
 .followers-camp__cost img{width:18px;height:18px;object-fit:contain}
 .followers-camp__cost small{width:100%;text-align:center;color:#f4baae;font-size:9px}
 .followers-camp__note{border:1px solid #f7dc9770;border-radius:8px;padding:9px;margin:0;background:#51371f;color:#ffe0a9}
+.followers-camp__awakening{display:flex;align-items:center;gap:10px;min-height:88px;padding:8px;border:2px solid #dc9a5b;border-radius:12px;background:radial-gradient(circle at 14% 48%,#9336a96b,transparent 55%),linear-gradient(135deg,#52301e,#29233b 72%);box-shadow:inset 0 1px #f0c86b61,0 2px 7px #1f1120bd}
+.followers-camp__awakening img{width:70px;height:70px;flex:0 0 70px;object-fit:contain;filter:drop-shadow(0 0 7px #e454ffb3)}
+.followers-camp__awakening>div{display:grid;gap:3px;min-width:0}
+.followers-camp__awakening strong{font-size:12px;font-weight:900;color:#ffe09f;text-shadow:1px 2px 0 #26110d,0 0 4px #db9f65}
+.followers-camp__awakening span{color:#efc8ff;font-size:12px;font-weight:800}
+.followers-camp__awakening b{font-size:15px;color:#fff0f9}
+.followers-camp__awakening small{font-size:10px;color:#d6becc;line-height:1.3}
 .followers-camp__footnote{margin:0;text-align:center;font-size:10px;color:#a7b1c1;line-height:1.35}
 .followers-camp__legendary{display:inline-flex;align-items:center;gap:3px;margin:0 0 6px;border:1px solid #e9b96c;border-radius:8px;padding:3px 6px;background:linear-gradient(140deg,#673a1c,#422432);font-size:10px;font-weight:900;color:#ffe5a5;text-shadow:1px 1px 0 #341b0e}
 .followers-camp__special{display:flex;align-items:center;gap:6px;border:1px solid #ca8df2a3;border-radius:9px;padding:8px;background:linear-gradient(120deg,#543567,#24344e);font-size:11px;font-weight:850;color:#f7e6ff;line-height:1.35}
