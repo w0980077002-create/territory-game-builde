@@ -1,0 +1,119 @@
+# TERRITORY 1.0: opt-in Codex runner for the existing draft Cave PR.
+# DISABLED until owner explicitly sets repository variable CODEX_AUTORUN_ENABLED=true
+# and supplies a billed OpenAI API key as OPENAI_API_KEY secret.
+# No changes to production DB; never merges into main.
+name: Codex cave PR 128 (opt-in)
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 * * * *"
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: territory-v1-codex-cave-128
+  cancel-in-progress: false
+
+jobs:
+  continue-cave:
+    if: ${{ github.repository == 'w0980077002-create/territory-game-builde' && vars.CODEX_AUTORUN_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Require explicit owner opt-in and API secret
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::OPENAI_API_KEY secret is required; API usage is billed separately from ChatGPT."
+            exit 1
+          fi
+
+      - name: Verify original PR is still an open draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh pr view 128 --repo "$GITHUB_REPOSITORY" --json state --jq .state)" = OPEN
+          test "$(gh pr view 128 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
+          test "$(gh pr view 128 --repo "$GITHUB_REPOSITORY" --json headRefName --jq .headRefName)" = copilot/issue-125-adventure
+
+      - name: Check out existing PR branch only
+        uses: actions/checkout@v4
+        with:
+          ref: copilot/issue-125-adventure
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies before protected Codex step
+        run: npm ci
+
+      - name: Continue one safe Cave PR task
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          permission-profile: ":workspace"
+          prompt: |
+            You are continuing the existing DRAFT PR #128 in the TERRITORY 1.0 GitHub repository.
+            Read docs/territory-v1-release/PLAN_RU.md,
+            docs/territory-v1-release/CODEX_QUEUE_RU.md and AGENTS.md
+            before editing. Use issue #125 context already reflected in the files.
+            Work ONLY on C1, the existing server-authoritative Dark Cave fight,
+            choosing ONE concrete, safe, unblocked improvement/test per invocation.
+            Never create another PR, change branch, merge, or deploy.
+            Do NOT change Supabase migrations, schema, secrets, edge functions,
+            server configuration, player data, inventories, wallet, payments,
+            authorization policies, GitHub workflows, or release switches.
+            Do not fabricate legacy ownership from game_state/player_inventory,
+            bypass missing belt provenance, or turn off failing tests.
+            If the next step needs an unverified server migration or a trusted
+            ownership source, DO NOT change code; describe the precise blocker.
+            Preserve ordinary Adventure, Trials, 100 existing players, their
+            currencies/gear/VIP, and admin access. Do not touch Territory 2.0.
+            Implement only validated code and focused tests; no broad refactors.
+            Stop after this single change, or without edits if blocked.
+
+      - name: Reject protected paths and check patch formatting
+        shell: bash
+        run: |
+          changed="$( { git diff --name-only; git ls-files --others --exclude-standard; } | sort -u )"
+          if [ -z "$changed" ]; then
+            echo "No uncommitted changes; safe no-op."
+            exit 0
+          fi
+          echo "$changed"
+          if echo "$changed" | grep -E '^(\.github/|supabase/|docs/|\.env|package(-lock)?\.json$|economy-release\.json$)'; then
+            echo "::error::Protected files were modified. Refusing to push."
+            exit 1
+          fi
+          git diff --check
+
+      - name: Verify protected test suite
+        run: |
+          npm run typecheck
+          npm run build
+          npm run test:adventure-server
+          npm run test:pve
+
+      - name: Commit to existing draft PR branch, never main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Codex made no changes."
+            exit 0
+          fi
+          git config user.name "territory-codex-automation"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "test(cave): Codex safe incremental work"
+          basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git -c http.extraheader="AUTHORIZATION: basic $basic" push origin HEAD:copilot/issue-125-adventure
