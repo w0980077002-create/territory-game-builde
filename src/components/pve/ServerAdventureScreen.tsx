@@ -125,7 +125,11 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const runSavedStart = useCallback(async () => {
     const command=restoreAdventureStartFence(userId);
     if (!command) return false;
-    install(decodeSession(await requestAdventureStart(userId,command,hooks)));
+    const started = decodeSession(await requestAdventureStart(userId,command,hooks));
+    install(started);
+    // Start receipt replay may predate a finished fight. Load its live status.
+    install(decodeSession(await requestAdventureSettlement(
+      userId, { action: 'resume', sessionId: started.session_id }, hooks)));
     return true;
   }, [install, userId]);
 
@@ -134,10 +138,15 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     lock.current = true; setBusy(true); setError(''); setRecoverable(false);
     try {
       if (!await ensurePlayerSession(userId)) throw new Error('combat_auth_required');
-      // On every remount, rescue a durable unsettled operation before creating a new session.
+      // Always show real server progress, including when old receipt recovery fails.
+      await readProgress();
       const pending = restoreAdventureSaveFence(userId);
-      if (pending) install(decodeSession(await requestAdventureSettlement(userId, pending, hooks)));
-      else if (await runSavedStart()) { /* original UUID and server receipt recovered */ }
+      if (pending) {
+        const result = decodeSession(await requestAdventureSettlement(userId, pending, hooks));
+        install(result);
+        install(decodeSession(await requestAdventureSettlement(
+          userId, { action: 'resume', sessionId: result.session_id }, hooks)));
+      } else if (await runSavedStart()) { /* original UUID and live session recovered */ }
       else {
         const id = localStorage.getItem(sessionKey(userId));
         if (id) install(decodeSession(await requestAdventureSettlement(userId, { action: 'resume', sessionId: id }, hooks)));
@@ -272,7 +281,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           ? (en?'Auto battle · server confirms every step':'Автобой · каждый шаг подтверждает сервер')
           : (en?'Skills and damage are verified by the server':'Умения и урон проверяет сервер')}</p>
       </>}
-    </div> : <>
+    </div> : progress ? <>
       <div className="grid grid-cols-5 gap-1">
         {CAMPAIGN_CHAPTERS.map((name,i)=><button key={name} disabled={busy} onClick={()=>setChapter(i+1)}
           className={'rounded-lg border px-1 py-2 text-xs '+(chapter===i+1?'bg-amber-500 text-black border-yellow-200':'bg-black/40 text-amber-100 border-amber-700/40')}>
@@ -300,6 +309,8 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           <button disabled={busy || recoverable} onClick={()=>void start('auto')} className="rounded-xl bg-yellow-400 text-black font-bold p-3">{en?'Auto battle':'Автобой'}</button>
         </div>
       </div>}
-    </>}
+    </> : <p role="status" className="rounded-xl border border-amber-700/30 bg-black/25 p-3 text-xs text-amber-100">
+      {en ? 'Loading verified cave progress…' : 'Загружаем подтверждённый прогресс пещеры…'}
+    </p>}
   </section>;
 }
