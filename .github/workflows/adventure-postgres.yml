@@ -38,6 +38,8 @@ jobs:
         run: |
           node scripts/check-adventure-client-ui.mjs
           node scripts/check-adventure-receipt-adapter.mjs
+          npm run typecheck
+          npm run build
       - name: Ensure PostgreSQL client is available
         run: command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
       - name: Test PostgreSQL transactions with independent connections
