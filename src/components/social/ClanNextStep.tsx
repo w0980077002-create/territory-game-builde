@@ -2,14 +2,18 @@ import { useLanguage } from '@/game/i18n';
 import type { ClanState } from '@/game/clanApi';
 import { Gift, ScrollText, Send, Swords } from 'lucide-react';
 
-type ClanProgress = Pick<ClanState, 'pending_boss_rewards' | 'quests' | 'boss' | 'boss_attacks_left'>;
+type ClanProgress = Pick<ClanState, 'pending_boss_rewards' | 'quests' | 'boss' | 'boss_attacks_left' | 'boss_claimed' | 'my_boss_damage'>;
 type ClanStep = { target: 'clan-boss-rewards' | 'clan-quests' | 'clan-boss' | 'clan-chat'; ru: string; en: string; actionRu: string; actionEn: string; icon: 'gift' | 'quest' | 'boss' | 'chat' };
 
 /** Read-only priority derived exclusively from server-returned clan state. */
 export function getClanNextStep(state: ClanProgress): ClanStep {
-  if (state.pending_boss_rewards.length > 0 || (state.boss && state.boss.hp <= 0 && !state.boss_claimed)) {
+  if (state.pending_boss_rewards.length > 0) {
     return { target: 'clan-boss-rewards', ru: 'Есть награда за босса', en: 'Boss reward is ready',
       actionRu: 'К наградам', actionEn: 'View rewards', icon: 'gift' };
+  }
+  if (state.boss && state.boss.hp <= 0 && !state.boss_claimed && state.my_boss_damage > 0) {
+    return { target: 'clan-boss', ru: 'Победа над боссом подтверждена', en: 'Boss defeated — reward available',
+      actionRu: 'Забрать награду', actionEn: 'Claim reward', icon: 'gift' };
   }
   if (state.quests.some(q => !q.claimed && q.progress >= q.target && q.member >= q.member_req)) {
     return { target: 'clan-quests', ru: 'Клановое задание выполнено', en: 'Clan quest completed',
