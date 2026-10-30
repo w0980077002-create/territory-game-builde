@@ -23,7 +23,7 @@ with sync_playwright() as p:
                 page = browser.new_page(viewport={'width': width, 'height': 500})
                 page.add_init_script(f"localStorage.setItem('territory-language', '{language}');" + ("document.addEventListener('DOMContentLoaded', () => document.documentElement.classList.add('territory-ios-webapp'));" if ios else ''))
                 page.goto(url)
-                for name, panel, close, scroll in [('rules', '.arena-rules-panel', '.arena-rules-head button', '.arena-rules-list'), ('common', '.territory-modal-panel', '.territory-modal-close', '.territory-modal-content')]:
+                for name, panel, close, scroll in [('rules', '.arena-rules-panel', '.arena-rules-head button', '.arena-rules-list'), ('prizes', '.arena-prizes-panel', '.arena-prizes-close', '.arena-prizes-body'), ('common', '.territory-modal-panel', '.territory-modal-close', '.territory-modal-content')]:
                     page.locator('#'+name).click()
                     rect = page.locator(panel).bounding_box()
                     button = page.locator(close).bounding_box()

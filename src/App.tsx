@@ -414,12 +414,12 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         </div>
       )}
       {sub && screen !== 'arena' && (
-        <header className="shrink-0 z-30 h-12 px-2 flex items-center gap-2 border-b border-amber-500/20 bg-[#0c1117]/95">
+        <header className="territory-section-head shrink-0 z-30 h-12 px-2 flex items-center gap-2 border-b border-amber-500/20 bg-[#0c1117]/95">
           <button disabled={battleLocked} onClick={() => setScreen('city')} className="h-9 pl-1.5 pr-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 text-sm font-semibold text-amber-100 bg-white/5 border border-white/10 active:scale-95 transition-transform">
             <ChevronLeft className="w-4 h-4" /> {translate('cityBack')}
           </button>
           <img src={sub.icon} alt="" className="w-7 h-7 object-contain" />
-          <h1 className="min-w-0 truncate text-base font-bold text-white">
+          <h1 className="viking-title min-w-0 flex-1 text-sm leading-tight">
             {screen === 'forge' ? (
               <WoodenPlaque>{translate('forge')}</WoodenPlaque>
             ) : translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction', friends: 'friends', messages: 'messages', events: 'events' } as Record<string, string>)[screen] ?? sub.title)}

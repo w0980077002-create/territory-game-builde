@@ -49,6 +49,15 @@ with sync_playwright() as p:
         assert page.get_by_role('button',name='Меньше линий').is_enabled()
         assert page.get_by_role('button',name='Больше монет на линию').is_enabled()
         assert page.get_by_role('button',name='ПРОПУСТИТЬ',exact=True).count()==0,'Skip key should only appear during spin'
+        help_button=page.get_by_role('button',name='Таблица выплат')
+        help_button.click()
+        dialog=page.get_by_role('dialog')
+        close=dialog.locator('.territory-modal-close')
+        bounds=close.bounding_box()
+        assert bounds and bounds['width']>=44 and bounds['height']>=44
+        assert dialog.locator('.vslot-help-content table').is_visible()
+        page.keyboard.press('Escape')
+        assert dialog.count()==0 and help_button.evaluate('(el) => document.activeElement === el')
         page.get_by_role('button',name='КРУТИТЬ',exact=True).scroll_into_view_if_needed()
         box=page.get_by_role('button',name='КРУТИТЬ',exact=True).bounding_box()
         assert box['x']>=0 and box['x']+box['width']<=w
@@ -56,6 +65,14 @@ with sync_playwright() as p:
         page.screenshot(path=str(OUT/f'slots-{w}x{h}.png'),full_page=True)
         viewports.append({'width':w,'height':h,'horizontal_overflow':False})
         page.close()
+    en_page=browser.new_page(viewport={'width':320,'height':500})
+    en_page.route(ORIGIN+'/**',serve);en_page.route('https://**/*',lambda r:r.abort())
+    en_page.add_init_script("localStorage.setItem('territory-language', 'en')")
+    en_page.goto(ORIGIN+'/')
+    en_page.get_by_role('button',name='Paytable').click()
+    assert en_page.get_by_role('dialog',name='PAYTABLE AND RULES').count()==1
+    en_page.get_by_role('dialog').locator('.territory-modal-close').click()
+    en_page.close()
     page=load(browser)
     # Autospin must not place bets while Telegram is backgrounded.
     page.get_by_role('button',name='АВТО ×10',exact=True).click()
