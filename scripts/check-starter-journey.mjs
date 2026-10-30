@@ -36,5 +36,13 @@ assert.match(app, /if \(target === 'battle'\) \{ setBattleView\('campaign'\); se
 const fight = readFileSync('src/components/pve/PveFight.tsx', 'utf8');
 assert.match(fight, /state\.quests\.some\(q => !q\.claimed && q\.current >= q\.target\)/, 'Only genuinely ready quests are suggested after combat');
 assert.match(home, /state\.totalBattlesWon === 0/, 'Preserve existing first-fight hint on the home scene');
+assert.match(home, /player\.level < 5 \? getStarterMilestones\(state\)/, 'Home roadmap must be hidden from established players');
+assert.match(home, /data-testid="home-hero-path"/, 'The existing quest strip is the roadmap entry point');
+assert.match(home, /onClick=\{\(\) => onOpen\('quests'\)\}/, 'Roadmap button opens the real quest screen');
+assert.match(home, /questAlerts\.readyCount === 0/, 'Ready rewards must take visual priority');
+assert.match(home, /starterNext\.titleRu/, 'Home must reveal the next real objective from saved progress');
+assert.match(home, /\{starterDone\}\/4/, 'The hero path progress must update with completed milestones');
+assert.match(quests, /data-testid="quest-hero-path"/, 'Quests must display the matching hero path');
+assert.match(quests, /from-yellow-300 via-amber-400 to-amber-600/, 'Hero path must follow the approved gold Viking style');
 assert.doesNotMatch(quests, /starter.*rewardGold|starter.*rewardGems/i, 'Guide must not invent client-side rewards');
 console.log('Starter journey PASS: first fights, gear/shop routing, level 5, existing progress only, hidden from veterans, real navigation and no invented rewards.');
