@@ -1,4 +1,4 @@
-import { Coins, Gem, Zap, Heart, Sword, Shield, Star, ChevronRight, Shirt, Trophy } from 'lucide-react';
+import { Coins, Gem, Zap, Heart, Sword, Shield, Star, ChevronRight, Shirt } from 'lucide-react';
 import { EQUIPMENT_SLOTS, HERO_MAX_LEVEL, getComputedStats } from '@/game/engine';
 import { getAppearanceIcon } from '@/game/appearance';
 import { SLOT_ART, equipmentArt } from '@/game/art';
@@ -89,7 +89,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure }: Props) 
       </button>
 
       <div className="hero-showcase__stats" aria-label={t('withEquipment')}>
-        <h3>{t('withEquipment')}</h3>
+        <h3 className="hero-showcase__plaque-title">{t('withEquipment')}</h3>
         <div className="hero-showcase__stat-grid">
           <div className="hero-showcase__stat"><Heart size={18} className="hero-showcase__heart" aria-hidden="true"/><span>{t('heroHealth')}<strong>{stats.maxHp}</strong></span></div>
           <div className="hero-showcase__stat"><Sword size={18} className="hero-showcase__attack" aria-hidden="true"/><span>{t('attack')}<strong>{stats.attack}</strong></span></div>
@@ -99,7 +99,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure }: Props) 
       </div>
 
       <div className="hero-showcase__journey">
-        <h3><Trophy size={17} aria-hidden="true"/>{t('battlePath')}</h3>
+        <h3 className="hero-showcase__plaque-title">{t('battlePath')}</h3>
         <div className="hero-showcase__records">
           <div><strong>{state.totalBattlesWon}</strong><span>{t('wins')}</span></div>
           <div><strong>{state.totalBossesDefeated}</strong><span>{t('bosses')}</span></div>
