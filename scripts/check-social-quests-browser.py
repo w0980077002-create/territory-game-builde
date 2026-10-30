@@ -29,6 +29,22 @@ with sync_playwright() as p:
                 page.goto(url)
                 board = page.get_by_test_id('social-quests-section')
                 board.wait_for()
+                trail = page.get_by_test_id('social-journey')
+                trail.wait_for()
+                assert trail.locator('button[aria-current="page"]').count() == 1
+                assert trail.locator('button[aria-current="page"]').is_disabled()
+                trail.get_by_role('button', name='Clan' if language=='en' else 'Клан').click()
+                assert page.evaluate('window.__socialRoute') == 'clan', 'social navigation must use real route id'
+                trail.get_by_role('button', name='Friends' if language=='en' else 'Друзья').click()
+                assert page.evaluate('window.__socialRoute') == 'friends'
+                for mode,target in [('reward','clan-boss-rewards'),('quest','clan-quests'),('boss','clan-boss'),('chat','clan-chat')]:
+                    page.get_by_test_id('fixture-clan-modes').get_by_role('button', name=mode).click()
+                    page.get_by_test_id('clan-next-step').get_by_role('button').click()
+                    assert page.evaluate('window.__clanJump') == target, (language,mode,target)
+                for button in trail.locator('button').all():
+                    rect=button.bounding_box()
+                    assert rect and rect['height']>=43.5, (width,language,ios,'social touch target',rect)
+                    assert rect['x']>=-1 and rect['x']+rect['width']<=width+1, (width,language,ios,'social overflow',rect)
                 retry = page.get_by_role('button', name='Retry loading quests' if language=='en' else 'Повторить загрузку заданий')
                 retry.wait_for()
                 assert page.evaluate('window.__socialStatusCalls') == 1, 'first status call must fail without fake rewards'
@@ -56,4 +72,4 @@ with sync_playwright() as p:
                 page.close()
     browser.close()
 server.shutdown()
-print('Social quests mobile PASS: real component, mocked server, 320/360/390/430 RU/EN, iOS shell, retry and 44px actions.')
+print('Social journey + community quests mobile PASS: real React components, mock transport, 320/360/390/430 RU/EN, iOS shell, 4 server-state priorities, retry and 44px actions.')
