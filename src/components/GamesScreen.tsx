@@ -160,7 +160,7 @@ export function GamesScreen({
       onPlay(state.active.game);
       return;
     }
-    if (state.tickets < 1 && id !== 'treasury' && id !== 'wheel') {
+    if (state.tickets < 1 && id !== 'treasury') {
       setNotice(en ? 'Collect tickets to play.' : 'Получи билеты, чтобы играть.');
       captureGameEvent('territory_hall_no_tickets', { mode: id });
       return;
