@@ -52,4 +52,12 @@ assert(wheel.includes('fortune-dialog__close'), 'wheel needs a reachable close b
 assert(wheel.includes('fortune-dialog__body'), 'wheel rules need inner scrolling');
 assert(wheel.includes('>OK</button>'), 'wheel receipt acknowledgement must retain OK action');
 assert(source('src/components/fortune.css').includes('max-height:min(72dvh,470px)'), 'wheel dialog too tall');
+const social = source('src/components/SocialQuestsSection.tsx');
+const socialCss = source('src/components/socialQuestsBoard.css');
+assert(social.includes("setAttempt(n => n + 1)"), 'community quests need retry without restarting the game');
+assert(social.includes("aria-busy={loading || !!busy}"), 'community quests need honest loading state');
+assert(social.includes("min-h-11"), 'community quest actions need 44px touch targets');
+assert(social.includes("claimSocial(userId, task)"), 'claims must still use the existing server API');
+assert(socialCss.includes(".social-quest-card") && socialCss.includes("var(--viking-plaque)"), 'community quest board must use approved wood/gold UI');
+console.log('Community quests #145 gate: real server claim preserved, retry, 44px controls and approved visual skin.');
 console.log('Territory #145 visual coverage gate: 11 real routes plus battle/arena/runes/companions/events/mail/casino/forge popup structure. Browser Telegram verification remains separate.');
