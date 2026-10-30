@@ -171,6 +171,7 @@ function consumableArt(item: ArtSource): string | null {
 }
 
 function inventoryMaterialArt(item: ArtSource): string {
+  if (item.id === 'cow_awakening_stone') return import.meta.env.BASE_URL + 'assets/territory/ui/items/awakening-stone.svg';
   const asset = MATERIAL_BY_ID[item.id]
     ?? MATERIAL_BY_NAME[item.name.trim().toLocaleLowerCase()]
     ?? MATERIAL_BY_EMOJI[item.icon];
