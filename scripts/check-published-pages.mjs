@@ -10,8 +10,8 @@ for (let attempt = 0; attempt < 12; attempt++) {
     const expectedSha = process.env.EXPECTED_PAGES_SHA;
     if (expectedSha) {
       assert.match(expectedSha, /^[a-f0-9]{40}$/i, 'Expected Pages revision must be a Git SHA');
-      const identityTag = html.match(/<meta\\b[^>]*\\bname=["']territory-build-sha["'][^>]*>/i)?.[0];
-      const publishedSha = identityTag?.match(/\\bcontent=["']([a-f0-9]{40})["']/i)?.[1];
+      const identityTag = html.match(/<meta\b[^>]*\bname=["']territory-build-sha["'][^>]*>/i)?.[0];
+      const publishedSha = identityTag?.match(/\bcontent=["']([a-f0-9]{40})["']/i)?.[1];
       assert.equal(publishedSha, expectedSha,
         'Published Pages revision does not match the completed deploy workflow (stale or missing release)');
     }
