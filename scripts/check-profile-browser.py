@@ -20,9 +20,23 @@ with sync_playwright() as p:
             page=browser.new_page(viewport={'width':width, 'height':500})
             page.add_init_script(f"localStorage.setItem('territory-language', '{lang}')")
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html')
-            page.locator('.territory-profile-stat').first.wait_for()
+            hero = page.locator('[data-testid="living-hero-showcase"]')
+            hero.wait_for()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-            assert page.locator('.territory-profile-stat').count() >= 4
+            assert hero.locator('.hero-showcase__stat').count() == 4
+            assert hero.locator('.hero-showcase__slot').count() == 7
+            image = hero.locator('.hero-showcase__hero-art')
+            assert image.evaluate('(el) => el.complete && el.naturalWidth > 0'), 'Missing canonical hero art'
+            assert image.bounding_box()['height'] >= 190, 'Hero art is still too small'
+            assert hero.get_by_role('progressbar').count() == 1, 'Saved XP bar must be visible'
+            if width == 360 and lang == 'ru':
+                hero.screenshot(path='/tmp/territory-hero-360.png')
+            page.evaluate('window.__route = null')
+            hero.locator('.hero-showcase__equipment-link').click()
+            assert page.evaluate('window.__route') == 'equipment'
+            page.evaluate('window.__route = null')
+            hero.locator('.hero-showcase__adventure').click()
+            assert page.evaluate('window.__route') == 'campaign'
             page.locator('[data-testid="profile-appearance"] summary').click()
             assert page.locator('[data-testid="profile-appearance"] button').count() >= 4
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
