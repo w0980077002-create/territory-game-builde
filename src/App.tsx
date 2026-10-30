@@ -467,7 +467,9 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} userId={user.id}
           onForge={openForge} onProfessions={() => setScreen('professions')} onMap={() => setScreen('map')}
           onBattle={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }} />}
-        {screen === 'hero' && <ProfileScreen key={heroTrainingOpen ? 'runes' : 'hero'} user={user} initialTrainingOpen={heroTrainingOpen} />}
+        {screen === 'hero' && <ProfileScreen key={heroTrainingOpen ? 'runes' : 'hero'} user={user} initialTrainingOpen={heroTrainingOpen}
+          onEquipment={() => { setInventoryTab('equipment'); setScreen('inventory'); }}
+          onAdventure={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }} />}
         {screen === 'map' && <MapScreen
           attentionPlaces={[
             ...(mapForgeReady ? ['forge' as const] : []),
@@ -556,7 +558,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
                 aria-label={t.id === 'map' && gatherReady ? `${tNav(translate, t.label)} — ${language === 'en' ? 'resources ready' : 'ресурсы готовы'}` : tNav(translate, t.label)}
                 className={`nav-btn relative disabled:opacity-40 disabled:cursor-not-allowed ${
                   center
-                    ? `-mt-3 h-[70px] border-sky-300/60 bg-gradient-to-b from-sky-600/60 to-[#0d1a33] shadow-[0_0_14px_rgba(56,189,248,0.35)] ${active ? 'ring-2 ring-sky-300/70' : ''}`
+                    ? `-mt-3 h-[70px] ${active ? 'border-sky-300/75 bg-gradient-to-b from-sky-600/60 to-[#0d1a33] ring-2 ring-sky-300/70 shadow-[0_0_14px_rgba(56,189,248,0.35)]' : 'border-amber-700/40 bg-gradient-to-b from-[#644126] to-[#312116] shadow-[inset_0_1px_0_rgba(255,222,157,0.25)]'}`
                     : active
                       ? 'border-amber-400/60 bg-gradient-to-b from-amber-500/25 to-amber-900/20'
                       : 'border-white/5 bg-white/[0.03]'
@@ -573,7 +575,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
                     <BellRing className="w-2.5 h-2.5 text-white" />
                   </span>
                 )}
-                <span className={`territory-nav-label text-[9px] tracking-tight font-bold max-w-full ${active || center ? 'text-white' : 'text-gray-400'}`}>{tNav(translate, t.label)}</span>
+                <span className={`territory-nav-label text-[9px] tracking-tight font-bold max-w-full ${active ? 'text-white' : 'text-amber-100/75'}`}>{tNav(translate, t.label)}</span>
               </button>
             );
           })}
