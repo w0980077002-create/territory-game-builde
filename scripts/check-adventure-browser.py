@@ -31,7 +31,8 @@ with sync_playwright() as p:
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'horizontal overflow'
         page.screenshot(path=str(OUT / ('adventure-'+str(width)+'.png')), full_page=True)
         if width == 390:
-            assert page.locator('button').filter(has_text='3').count() > 0
+            assert page.get_by_test_id('dark-cave-current-floor').count() == 1
+            assert floor_panel.locator('[aria-label*="закрыт"]').count() >= 95, 'locked floors visible in scroll catalog'
             floor_panel.evaluate('(e) => {e.scrollTop = e.scrollHeight}')
             assert floor_panel.evaluate('(e) => e.scrollTop > 0'), 'must scroll beyond initial floors'
             page.get_by_role('button',name='Мой этаж').click()
