@@ -53,6 +53,7 @@ assert.match(read('src/game/combatV1/receiptAdapter.ts'), /localStorage\.setItem
  'persist original start operation UUID before any wager request');
 assert.match(ui, /localStorage\.setItem\(sessionKey\(userId\)/, 'recover active server session across remounts');
 assert.match(ui, /busy \|\| recoverable/, 'block conflicting controls during uncertain receipt');
+assert.match(ui, /adventure_definitively_rejected/, 'After a verified server rollback the UI must explain safe recovery');
 assert.match(ui, /data-testid="territory-adventure-battle"/, 'server combat should have a visible battle scene');
 assert.match(ui, /<FighterFigure /, 'server combat should animate the same 2D fighters used by the classic game');
 assert.match(ui, /getEnemyCombatFrames/, 'server enemies should use existing combat pose art');
