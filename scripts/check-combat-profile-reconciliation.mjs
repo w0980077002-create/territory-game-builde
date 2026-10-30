@@ -28,6 +28,15 @@ try {
   assert.equal((await query('SELECT count(*)::int AS n FROM territory_private.combat_profiles_v1'))[0].n,0);
   await assert.rejects(query(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by) VALUES($1,'{}',9,$2,'{}','forged','forged')`,[a,fighter]),/permission denied/);
   await db.exec('RESET ROLE');
+  // A reviewed record that omits the actually equipped legacy ID must not
+  // silently turn a worn item into an empty server loadout.
+  await query(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
+    SELECT id,game_state,level,$2,'{}','{}','incomplete review','reviewer' FROM public.players WHERE id=$1`,[a,fighter]);
+  await db.exec('SET ROLE service_role');
+  assert.equal((await query('SELECT territory_private.prepare_combat_profile_v1($1) AS r',[a]))[0].r.reason,'invalid_reviewed_projection');
+  assert.equal((await query('SELECT count(*)::int AS n FROM territory_private.combat_profiles_v1'))[0].n,0,'incomplete equipment must not create a profile');
+  await db.exec('RESET ROLE');
+  await query(`UPDATE territory_private.combat_profile_attestations_v1 SET revoked_at=clock_timestamp() WHERE player_id=$1`,[a]);
   await query(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
     SELECT id,game_state,level,$2,ARRAY[$3::uuid],territory_private.combat_legacy_equipped_ids_v1(game_state),'review case 123','reviewer' FROM public.players WHERE id=$1`,[a,fighter,item]);
   await db.exec('SET ROLE service_role');
