@@ -55,21 +55,23 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       setError(language === 'en'
         ? 'Recover your pending Dark Cave fight before starting a Campaign battle.'
         : 'Сначала восстанови незавершённый бой в Тёмной пещере. Награды и камни сохранятся.');
-      return;
+      return false;
     }
     // One user gesture = at most one stone. Prevent overlapping taps/autostart
     // callbacks from charging twice before React commits setFight.
-    if (fightStartLocked.current) return;
+    if (fightStartLocked.current) return false;
     fightStartLocked.current = true;
     const s = useGame.get();
     const paid = spendStones(s, PVE_STONE_COST);
     if (!paid) {
       fightStartLocked.current = false;
       setError(t('noBattleStones'));
-      return;
+      return false;
     }
-    hapticImpact('medium');
-    captureGameEvent('territory_pve_fight_start', { mode: kind === 'trial' ? 'trial' : 'campaign' });
+    // Haptics and analytics are best-effort; an SDK error must never prevent
+    // a paid battle from being committed or leave the Next button locked.
+    try { hapticImpact('medium'); } catch { /* Unsupported Telegram haptics. */ }
+    try { captureGameEvent('territory_pve_fight_start', { mode: kind === 'trial' ? 'trial' : 'campaign' }); } catch { /* Optional telemetry. */ }
     setError(null);
     useGame.set(paid);
     const ch = generateChapter(paid.currentChapter);
@@ -78,6 +80,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       : paid.chapterWins >= ch.enemies.length ? ch.boss : ch.enemies[paid.chapterWins];
     setFight({ enemy, kind, id: Date.now() });
     onActiveChange?.(true);
+    return true;
   };
 
   useEffect(() => {
@@ -100,7 +103,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
           setFight(null);
           onActiveChange?.(false);
         }}
-        onNext={() => { fightStartLocked.current = false; start(fight.kind); }}
+        onNext={() => { fightStartLocked.current = false; return start(fight.kind); }}
         onQuests={() => { fightStartLocked.current = false; onActiveChange?.(false); onQuests(); }}
       />
     );

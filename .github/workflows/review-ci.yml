@@ -38,6 +38,7 @@ jobs:
       - run: node scripts/check-pages-build-sha.mjs
       - run: npm run test:balance
       - run: npm run test:pve
+      - run: node scripts/check-pve-next-navigation.mjs
       - run: node scripts/check-pve-recovery-controls.mjs
       - run: npm run test:inventory-cleanup
       - run: npm run test:gear-recycle
