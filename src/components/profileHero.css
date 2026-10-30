@@ -96,13 +96,13 @@
   grid-template-columns: minmax(45px,56px) minmax(0,1fr) minmax(45px,56px);
   gap: 5px;
   min-width: 0;
-  min-height: 246px;
-  padding: 12px 9px;
+  min-height: 290px;
+  padding: 10px 7px;
   border: 2px solid #daa55e;
   border-radius: 17px;
   background-color: #547a65;
   background-size: cover;
-  background-position: center 40%;
+  background-position: center 38%;
   box-shadow: inset 0 0 0 2px #422817, inset 0 10px 22px #ffe2a016, 0 5px 14px #0e070777;
 }
 .territory-profile .hero-showcase__gear-column {
@@ -159,15 +159,23 @@
   align-items: end;
   justify-content: center;
   min-width: 0;
-  min-height: 220px;
+  min-height: 266px;
   overflow: hidden;
+}
+.territory-profile .hero-showcase__character::before {
+  content: '';
+  position: absolute;
+  inset: 12% 0 3%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #fff2ba99 0%, #f8cd7852 42%, transparent 72%);
+  pointer-events: none;
 }
 .territory-profile .hero-showcase__hero-art {
   position: relative;
   z-index: 1;
   display: block;
   width: 100%;
-  height: 226px;
+  height: 270px;
   object-fit: contain;
   object-position: center bottom;
   filter: drop-shadow(0 5px 5px #0008);
@@ -227,10 +235,10 @@
   align-items:center;
   gap:7px;
   min-width:0;
-  padding:8px 7px;
-  border:1px solid #a77945;
+  padding:6px 7px;
+  border:1px solid #a7794580;
   border-radius:10px;
-  background:#2b1c13cf;
+  background:#2b1c137a;
 }
 .territory-profile .hero-showcase__stat svg { flex:0 0 auto; }
 .territory-profile .hero-showcase__stat span {
@@ -280,8 +288,8 @@
 }
 @media (max-width:350px) {
   .territory-profile .hero-showcase__stage { grid-template-columns:44px minmax(0,1fr) 44px;padding-inline:6px;gap:3px; }
-  .territory-profile .hero-showcase__hero-art {height:208px;}
-  .territory-profile .hero-showcase__character {min-height:208px;}
+  .territory-profile .hero-showcase__hero-art {height:250px;}
+  .territory-profile .hero-showcase__character {min-height:250px;}
   .territory-profile .hero-showcase__slot {border-radius:9px;}
 }
 @media (prefers-reduced-motion:reduce) {
