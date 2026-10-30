@@ -172,7 +172,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { 
   const listedBag = listed.filter((item) => !item.id.startsWith('equipped_'));
 
   return (
-    <div className="space-y-4 animate-fade-in pb-4">
+    <div className="viking-screen viking-screen--forge space-y-4 animate-fade-in pb-4">
       <div className="card text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Hammer className="w-6 h-6 text-orange-400" />
