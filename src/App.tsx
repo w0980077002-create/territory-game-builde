@@ -11,6 +11,7 @@ import { HomeScreen } from '@/components/HomeScreen';
 import type { BattleView } from '@/components/BattleScreen';
 import { DailySheet, type SaveStatus } from '@/components/home/HomeSheets';
 import { SectionErrorBoundary } from '@/components/SectionErrorBoundary';
+import { MapScreen } from '@/components/MapScreen';
 
 
 
@@ -43,7 +44,6 @@ import { getQuestAlerts, readSeenQuests, rememberSeenQuests } from '@/game/quest
 const BattleScreen = lazy(() => import('@/components/BattleScreen').then(m => ({ default: m.BattleScreen })));
 const InventoryScreen = lazy(() => import('@/components/InventoryScreen').then(m => ({ default: m.InventoryScreen })));
 const ShopScreen = lazy(() => import('@/components/ShopScreen').then(m => ({ default: m.ShopScreen })));
-const MapScreen = lazy(() => import('@/components/MapScreen').then(m => ({ default: m.MapScreen })));
 const QuestsScreen = lazy(() => import('@/components/QuestsScreen').then(m => ({ default: m.QuestsScreen })));
 const ProfileScreen = lazy(() => import('@/components/ProfileScreen').then(m => ({ default: m.ProfileScreen })));
 const ArenaScreen = lazy(() => import('@/components/ArenaScreen').then(m => ({ default: m.ArenaScreen })));
@@ -74,7 +74,7 @@ type Screen = NavId | SubScreen;
 const sectionPreloaders: Partial<Record<Screen, () => Promise<unknown>>> = {
   inventory: () => import('@/components/InventoryScreen'),
   battle: () => import('@/components/BattleScreen'),
-  map: () => import('@/components/MapScreen'),
+  map: () => Promise.resolve(),
   games: () => import('@/components/GamesScreen'),
   hero: () => import('@/components/ProfileScreen'),
   arena: () => import('@/components/ArenaScreen'),

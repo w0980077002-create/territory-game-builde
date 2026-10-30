@@ -411,17 +411,27 @@ export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegio
     };
     const initial = viewport.getBoundingClientRect();
     resize(initial.width, initial.height);
-    const observer = new ResizeObserver(([entry]) => {
-      resize(entry.contentRect.width, entry.contentRect.height);
-    });
-    observer.observe(viewport);
+    // Some Telegram Android WebViews do not expose ResizeObserver at first
+    // paint. The map must remain usable, with an ordinary resize fallback.
+    const onResize = () => {
+      const rect = viewport.getBoundingClientRect();
+      resize(rect.width, rect.height);
+    };
+    const observer = typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(([entry]) => {
+          if (entry) resize(entry.contentRect.width, entry.contentRect.height);
+        });
+    if (observer) observer.observe(viewport);
+    else window.addEventListener('resize', onResize);
     window.addEventListener('pagehide', persistCamera);
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
       persistCamera();
       window.removeEventListener('pagehide', persistCamera);
       document.removeEventListener('visibilitychange', onVisibilityChange);
-      observer.disconnect();
+      observer?.disconnect();
+      window.removeEventListener('resize', onResize);
       if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
     };

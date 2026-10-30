@@ -20,6 +20,10 @@ export class SectionErrorBoundary extends Component<Props, State> {
     return { failed: true };
   }
 
+  componentDidCatch(error: Error) {
+    console.error('Territory section failed:', error.name, error.message);
+  }
+
   render() {
     if (!this.state.failed) return this.props.children;
 
@@ -33,6 +37,10 @@ export class SectionErrorBoundary extends Component<Props, State> {
             : 'Проверь связь. Если игра только что обновилась, открой её заново в Telegram после сохранения прогресса.'}
         </p>
         <button type="button" className="mt-4 min-h-11 w-full rounded-xl border border-amber-300/50 bg-amber-500/20 px-4 font-semibold"
+          onClick={() => this.setState({ failed: false })}>
+          {en ? 'Try opening again' : 'Открыть раздел повторно'}
+        </button>
+        <button type="button" className="mt-2 min-h-11 w-full rounded-xl border border-amber-300/50 bg-amber-500/20 px-4 font-semibold"
           onClick={this.props.onBack}>
           {en ? 'Back to city' : 'Вернуться в город'}
         </button>

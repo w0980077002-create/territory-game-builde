@@ -10,6 +10,14 @@ assert.match(app, /onBack=\{\(\) => setScreen\('city'\)\}/,
   'Player must be able to return to the reliable city screen');
 assert.match(boundary, /getDerivedStateFromError/,
   'Actual render and lazy import errors must be caught');
+assert.match(app, /import \{ MapScreen \} from '@\/components\/MapScreen'/,
+  'Map must be included in the main bundle to avoid stale Telegram lazy chunk 404s');
+assert.doesNotMatch(app, /const MapScreen = lazy\(/,
+  'Map should not rely on a deferred chunk across rapid production deployments');
+assert.match(boundary, /Открыть раздел повторно/,
+  'A transient failure must offer an in-app retry without losing unsaved progress');
+assert.match(readFileSync('src/components/WorldMapCanvas.tsx', 'utf8'), /typeof ResizeObserver === 'undefined'/,
+  'The world map needs an older WebView resize fallback');
 assert.match(boundary, /role="alert"/,
   'A failed chunk needs a readable, accessible fallback');
 assert.match(boundary, /Вернуться в город/,
