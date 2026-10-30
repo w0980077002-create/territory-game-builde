@@ -35,7 +35,9 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Check adventure client cutover and receipt wiring
-        run: node scripts/check-adventure-client-ui.mjs
+        run: |
+          node scripts/check-adventure-client-ui.mjs
+          node scripts/check-adventure-receipt-adapter.mjs
       - name: Ensure PostgreSQL client is available
         run: command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
       - name: Test PostgreSQL transactions with independent connections
