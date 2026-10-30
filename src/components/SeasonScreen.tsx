@@ -48,7 +48,7 @@ export function SeasonScreen({ user }: { user: AuthUser }) {
     [prize.gold ? `${prize.gold.toLocaleString()} ${en ? 'gold' : 'золота'}` : '',
       prize.gems ? `${prize.gems.toLocaleString()} ${en ? 'blue diamonds' : 'синих алмазов'}` : ''].filter(Boolean).join(' · ');
   return (
-    <div className="space-y-3 animate-fade-in">
+    <div className="viking-screen viking-screen--season space-y-3 animate-fade-in">
       <div className="card relative overflow-hidden border-amber-400/40 bg-gradient-to-br from-amber-950/50 via-slate-900 to-sky-950/60">
         <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-amber-400/10 blur-2xl pointer-events-none" />
         <div className="relative flex items-center gap-3">
