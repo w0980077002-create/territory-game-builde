@@ -63,4 +63,15 @@ assert.match(ui, /: progress \? <>/, 'Do not invent stage one while progress is 
 assert.match(ui, /sessionId: result\.session_id/, 'Recover actual session after uncertain advance');
 assert.match(ui, /sessionId: started\.session_id/, 'Recover actual session after uncertain start');
 
+const darkSql = read('supabase/staged/territory_dark_stones_20261030.sql');
+const darkArt = read('public/assets/territory/items/dark-stone.svg');
+assert.match(darkArt, /data:image\/webp;base64,UklGR/, 'Approved violet Dark Stone icon must be bundled');
+assert.match(ui, /dark-stone\.svg/, 'Dark Stone image must show in the cave');
+assert.match(ui, /dark-cave-floor-list/, 'Dedicated floor selection UI is required');
+assert.match(ui, /progress\.dark_stones<1/, 'Never enable entry when no Dark Stones are available');
+assert.match(ui, /await readProgress\(\)/, 'Recheck stone balance after server start');
+assert.match(darkSql, /dark_stone_take_v1\(p_player\)/, 'Server must atomically consume stone on start');
+assert.match(darkSql, /revised_sql:=replace\(revised_sql/, 'Existing arena stones must remain unchanged in receipt');
+assert.match(darkSql, /ENABLE ROW LEVEL SECURITY/, 'Private resource table must use RLS');
+
 console.log('Dark Cave separate navigation PASS: old campaign, Trials, 3 buttons, cave stages, safe server receipts.');
