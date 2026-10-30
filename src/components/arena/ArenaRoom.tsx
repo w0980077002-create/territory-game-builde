@@ -47,6 +47,9 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const claiming = useRef(false);
   const prevHp = useRef<number | null>(null);
   const autoLeaving = useRef(false);
+  // Lock synchronously before React commits the disabled state. A fast double
+  // tap must never send two arena actions, especially two elixir debits.
+  const actionFlight = useRef(false);
   const [postFightDeadline, setPostFightDeadline] = useState<number | null>(null);
 
   const room = view?.room;
@@ -101,6 +104,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   useEffect(() => {
     setAttack(null);
     setBlocks([]);
+    setActionError(null);
   }, [round]);
 
   useEffect(() => {
@@ -127,6 +131,8 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   }, [view, roomId]);
 
   const run = async (fn: () => Promise<unknown>, after?: () => void) => {
+    if (actionFlight.current) return;
+    actionFlight.current = true; // synchronous guard, unlike React setState
     setBusy(true);
     setActionError(null);
     try {
@@ -135,15 +141,18 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
       refresh();
     } catch (e) {
       setActionError(localizeText((e as Error).message, language));
+    } finally {
+      actionFlight.current = false;
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   const toggleBlock = (z: Zone) =>
     setBlocks((b) => (b.includes(z) ? b.filter((x) => x !== z) : b.length < 2 ? [...b, z] : [b[1], z]));
 
   const strike = () => {
-    if (!shownEnemy || shownEnemy.hp <= 0 || !attack || blocks.length !== 2) return;
+    if (actionFlight.current || busy || !isActive || !alive || view?.me.moved || view?.me.auto
+      || !shownEnemy || shownEnemy.hp <= 0 || !attack || blocks.length !== 2) return;
     hapticImpact('medium');
     const move = { attack, blocks };
     run(() => submitArenaMove(roomId, shownEnemy.id, move.attack, move.blocks), () => setLastMove(move));
@@ -156,7 +165,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   };
 
   const toggleAuto = () => {
-    if (!view) return;
+    if (!view || actionFlight.current || busy || !isActive || !alive) return;
     const on = !view.me.auto;
     run(() => setArenaAuto(roomId, on));
   };
@@ -164,13 +173,15 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const adrenalineSlot = game.belt.findIndex((s) => !!s && s.arenaEffect === 'adrenaline');
 
   const runBelt = async (index: number, fn: () => Promise<unknown>) => {
+    if (actionFlight.current || busy) return;
     setBeltBusy(index);
     // The RPC validates/debits this precise belt slot with the combat action.
-    await run(fn);
-    setBeltBusy(null);
+    try { await run(fn); }
+    finally { setBeltBusy(null); }
   };
 
   const pressBeltSlot = (index: number) => {
+    if (actionFlight.current || busy) return;
     const item = game.belt[index];
     const action = item ? beltAction(item) : null;
     if (!action) return setActionError(language === 'en' ? 'This item cannot be used in battle' : 'Этот предмет нельзя использовать в бою');
@@ -293,6 +304,13 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
         />
       )}
 
+      {/* Place action errors next to fight and potion controls, not below the
+          long chat where the player cannot see why a server command failed. */}
+      {actionError && <div role="alert" data-testid="arena-action-error"
+        className="rounded-xl border border-red-400/60 bg-red-950/80 px-3 py-2 text-sm font-semibold text-red-100 animate-fade-in">
+        {actionError}
+      </div>}
+
       {/* Keep the quick belt above chat and equipment below it on mobile. */}
       {room.status !== 'waiting' && (
         <section aria-label={language === 'en' ? 'Battle elixirs' : 'Боевые эликсиры'}
@@ -358,8 +376,6 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
           {gearOpen && <div id="arena-quick-gear" className="arena-supply-body"><GearStrip equipped={game.player.equipped} /></div>}
         </section>
       )}
-
-      {actionError && <div className="card text-center text-sm text-red-400 py-3 animate-fade-in">{actionError}</div>}
 
       {isActive && !alive && !isDuel && (
         <div className="card text-center py-3 border-red-500/30">
