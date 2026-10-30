@@ -171,3 +171,49 @@
 @media (prefers-reduced-motion: reduce) {
   .viking-screen * { animation-duration: 0.01ms; transition-duration: 0.01ms; }
 }
+
+/* Campaign/Trials/Dark Cave share a control strip, never share a combat scene. */
+.territory-shell .viking-adventure-tabs {
+  padding:4px;border:2px solid #b58a50;border-radius:13px;
+  background:linear-gradient(#714825,#382315);
+  box-shadow:inset 0 1px 0 #ffe2ad73,0 3px 6px #100a06a0;
+}
+.territory-shell .viking-adventure-tabs > button[role="tab"] {
+  min-width:0;min-height:48px;border:1px solid #a7793f;
+  border-radius:10px;padding:5px 3px;
+  color:#fce8bf;background:linear-gradient(#6a4126,#382219);
+  text-shadow:0 1px 1px #160d09;
+  font-weight:900;overflow-wrap:anywhere;
+}
+.territory-shell .viking-adventure-tabs > button[aria-selected="true"] {
+  color:#321d0c;background:var(--viking-button-bg);border-color:#ffe2a6;
+  text-shadow:0 1px 0 #fff3c6;
+  box-shadow:inset 0 1px 0 #fff4c4,0 2px 0 #78441b;
+}
+.territory-shell .viking-adventure-tabs > button:focus-visible {
+  outline:3px solid #fff1b7;outline-offset:2px;
+}
+/* The inbox uses the same wooden plaque and clear gold selection as all tabs. */
+.territory-shell .territory-mail__tabs {
+  border:2px solid #b98b4b;
+  background:linear-gradient(135deg,#6b4428,#322016);
+  box-shadow:inset 0 1px 0 #ffe1a04d;
+}
+.territory-shell .territory-mail__tabs > button {
+  min-height:44px;border:1px solid #aa7b41;
+  background:linear-gradient(#674127,#3a2519);
+  color:#ffe9c6;font-weight:900;
+}
+.territory-shell .territory-mail__tabs > button[aria-selected="true"] {
+  border-color:#ffe2a2;
+  background:var(--viking-button-bg);
+  color:#32200d;text-shadow:0 1px 0 #fff4c4a3;
+}
+.territory-shell .territory-mail__letter {
+  border:1px solid #ba8851;
+  background:linear-gradient(140deg,#654028,#2c2019);
+}
+.territory-shell .territory-mail__tabs > button:focus-visible,
+.territory-shell .territory-mail__letter button:focus-visible {
+  outline:3px solid #fff1b7;outline-offset:2px;
+}
