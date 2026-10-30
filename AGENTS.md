@@ -1,3 +1,11 @@
+## TERRITORY 1.0 release command center — owner decision 2026-10-30
+
+- **Canonical prioritized plan:** [`docs/territory-v1-release/PLAN_RU.md`](docs/territory-v1-release/PLAN_RU.md).
+- **Next actionable Codex task:** [`docs/territory-v1-release/CODEX_QUEUE_RU.md`](docs/territory-v1-release/CODEX_QUEUE_RU.md). Read the queue **before** starting any new work; begin with its highest-priority unfinished, unblocked task and reuse existing issue/PR rather than making duplicates.
+- **Release target is GitHub Pages from `main` only.** Vercel is explicitly out of scope for this beta: no new Vercel deploys, verification workflows, project changes or service integrations unless the owner later requests them. Do not delete existing Vercel assets. GitHub Pages CI and published revision are required before calling a game feature released.
+- **Do not self-assume automation:** these Markdown instructions are a handoff for agents that are already running or explicitly invoked, not a mechanism that launches Codex by themselves.
+- Keep player saves, legacy equipped gear, currencies, VIP, admin access and server-authoritative rewards intact. If a risky backend change is blocked, preserve the feature gate and work on the next safe, independent item instead of silently bypassing it.
+
 # TERRITORY 1.0 — rules for coding agents
 
 This repository contains the live Telegram game **TERRITORY 1.0**. Treat its main branch, GitHub Pages site and connected Supabase project as production. **TERRITORY 2.0 is an independent project; never mix the two.**
