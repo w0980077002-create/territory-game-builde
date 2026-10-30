@@ -73,6 +73,25 @@ assert.equal(followers.selectFollower(starter, 'follower_6')?.activeFollowerId, 
 assert.equal(followers.AWAKENING_STONE_ITEM.qty, 0, 'the stone is visible but never gifted on install');
 assert.equal(followers.AWAKENING_STONE_ITEM.type, 'material');
 assert.equal(followers.MAX_BATTLE_COW_LEVEL, 100);
+assert.equal(followers.cowStoneChapterBossReward(1, 'ch1_boss', true), 0, 'early bosses cannot mint the rare item');
+assert.equal(followers.cowStoneChapterBossReward(5, 'ch5_boss', true), 1, 'fifth chapter boss grants a stone');
+assert.equal(followers.cowStoneChapterBossReward(10, 'ch10_boss', true), 1, 'tenth chapter boss grants a stone');
+assert.equal(followers.cowStoneChapterBossReward(5, 'ch4_boss', true), 0, 'wrong boss identity never grants a stone');
+assert.equal(followers.cowStoneChapterBossReward(5, 'ch5_boss', false), 0, 'regular fights do not grant stone');
+assert.equal(followers.cowStoneTrialReward(9), 0);
+assert.equal(followers.cowStoneTrialReward(10), 1);
+assert.equal(followers.cowStoneTrialReward(20), 1);
+assert.equal(followers.cowStoneTrialReward(NaN), 0);
+const stoneBlank = { ...starter, inventory: [{ id:'keep', type:'material', qty:4 }] };
+const stoneClaim = followers.awardCowAwakeningStone(stoneBlank, 1);
+assert.equal(followers.cowStonesOwned(stoneClaim), 1, 'one stone appears only after boss milestone');
+assert.equal(followers.cowStonesOwned(stoneBlank), 0, 'existing save unchanged');
+assert.equal(stoneClaim.inventory.find((item) => item.id === 'keep').qty, 4);
+assert.equal(followers.awardCowAwakeningStone(stoneClaim, 0), stoneClaim, 'never award zero');
+const stoneStack = followers.awardCowAwakeningStone(stoneClaim, 1);
+assert.equal(followers.cowStonesOwned(stoneStack), 2, 'awards stack on existing stone batch');
+assert.equal(stoneStack.inventory.filter((i)=>i.id===followers.AWAKENING_STONE_ID).length,1);
+
 const oldCow = { ...roster.find((f) => f.id === 'follower_6'), level: 59, attack: 65 };
 const existingCow = {
   ...starter,
