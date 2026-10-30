@@ -49,7 +49,7 @@ export function LeaderboardScreen({ user, initialTab = 'rating' }: { user: AuthU
   const sorted = entries;
 
   return (
-    <div className="space-y-4 animate-fade-in pb-4">
+    <div className="viking-screen viking-screen--leaderboard space-y-4 animate-fade-in pb-4">
       <div className="card text-center">
         <div className="flex items-center justify-center gap-2 mb-3">
           <Trophy className="w-6 h-6 text-amber-400" />
