@@ -359,6 +359,10 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
               const current=floor.index===progress.unlocked_stage && progress.completed_stage<100;
               const locked=floor.index>progress.unlocked_stage || progress.completed_stage===100 && !cleared;
               const highlighted=floor.index===floorFocus;
+              const sceneArt=import.meta.env.BASE_URL + 'assets/territory/scenes/cave-floor-' + (locked?'locked':current?'current':'done') + '.svg';
+              const scene=<img src={sceneArt} alt="" loading="lazy" draggable={false}
+                className="pointer-events-none absolute right-0 top-0 h-full w-3/5 object-cover opacity-70"
+                style={{ maskImage:'linear-gradient(to right, transparent, black)', WebkitMaskImage:'linear-gradient(to right, transparent, black)' }} />;
               const rowClass='relative flex min-h-[42px] w-full items-center gap-2 overflow-hidden rounded-[9px] border-2 px-2.5 text-left text-sm font-black transition-colors '+
                 (highlighted && current ? 'border-[#ffe28c] bg-[#713f16] text-[#fff0b7] shadow-[inset_0_0_14px_rgba(255,187,62,.16),0_0_11px_rgba(255,175,52,.48)]':
                 locked?'border-[#48435b] bg-[#141b37] text-[#9798b1]':
@@ -369,12 +373,14 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
                   {en?'CHAPTER':'ГЛАВА'} {floor.chapter} · {CAMPAIGN_CHAPTERS[floor.chapter-1]}
                 </div>}
                 {locked?<div aria-label={(en?'Floor ':'Этаж ')+floor.index+(en?' locked':' закрыт')} className={rowClass}>
+                  {scene}
                   <Lock size={17} className="shrink-0 text-[#9a98a8]"/>
-                  <span>{en?'Floor':'Этаж'} {floor.index}</span>
+                  <span className="relative z-10">{en?'Floor':'Этаж'} {floor.index}</span>
                   {floor.kind==='boss'&&<Crown size={15} className="ml-auto text-[#ab90b8]"/>}
                 </div>:<button type="button" aria-pressed={highlighted} data-current-floor={current?'true':undefined}
                   data-testid={current?'dark-cave-current-floor':undefined}
                   onClick={()=>setSelectedFloor(floor.index)} className={rowClass}>
+                  {scene}
                   {floor.kind==='boss'?<Crown size={18} className="shrink-0 text-amber-300"/>:<Swords size={16} className="shrink-0 text-[#e2b46e]"/>}
                   <span>{en?'Floor':'Этаж'} {floor.index}</span>
                   {cleared?<Check size={21} className="ml-auto shrink-0 text-[#58e66b]"/>:
