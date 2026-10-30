@@ -261,7 +261,7 @@ export function ServerAdventureScreen({ userId, onTrial, onActiveChange }: Props
       </div>
       {!!battleLog.length && <div className="rounded-lg bg-black/35 border border-white/10 px-2 py-1 text-[11px] text-slate-200 max-h-24 overflow-auto" aria-live="polite">
         {battleLog.slice(-4).map((line, i) => <p key={i}>{line}</p>)}
-      </div>
+      </div>}
       {finished ? <>
         <p className="text-center text-amber-200 font-bold">{session.state.status==='hero_won'?(en?'Victory!':'Победа!'):(en?'Battle finished':'Бой завершён')}</p>
         {session.settlement?.reward && <p className="text-center text-xs text-yellow-100">
