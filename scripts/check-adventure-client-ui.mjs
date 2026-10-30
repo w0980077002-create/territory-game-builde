@@ -48,7 +48,12 @@ assert.match(ui, /<FighterFigure /, 'server combat should animate the same 2D fi
 assert.match(ui, /getEnemyCombatFrames/, 'server enemies should use existing combat pose art');
 assert.match(ui, /battleRef\.current\?\.scrollIntoView/, 'mobile must reveal battle after tapping Start');
 assert.match(ui, /Array\.isArray\(value\.events\)/, 'animation should use only confirmed server battle events');
-assert.match(ui, /getCampaignStage\(\(chapter-1\)\*20\+i\+1\)/, '20 stages per chapter must be rendered');
+assert.match(ui, /getCampaignStage\\(i \\+ 1\\)/, 'All 100 floors must render from the existing campaign catalog');
+assert.match(ui, /dark-cave-floor-scroll/, 'Floor list must support independent vertical scrolling');
+assert.match(ui, /floorListRef\\.current/, 'Current floor scrolls into view inside the cave');
+assert.match(ui, /progress\\.unlocked_stage/, 'Current stage remains server-authoritative');
+assert.match(ui, /onClick=\\{\\(\\)=>void start\\(control\\)\\}/, 'Challenge button must use the existing server start command');
+assert.match(ui, /progress\\.dark_stones<1/, 'Dark Stones must gate the Challenge');
 assert.match(ui, /setProgress\(found\)/, 'unlock progress must arrive from server');
 assert.doesNotMatch(ui, /recordBattleResult|spendStones|trialReward|Math\.random|setBalance/,
   'the server campaign must never issue client-side currency, level, experience, or RNG rewards');
@@ -68,6 +73,9 @@ const darkArt = read('public/assets/territory/items/dark-stone.svg');
 assert.match(darkArt, /data:image\/webp;base64,UklGR/, 'Approved violet Dark Stone icon must be bundled');
 assert.match(ui, /dark-stone\.svg/, 'Dark Stone image must show in the cave');
 assert.match(ui, /dark-cave-floor-list/, 'Dedicated floor selection UI is required');
+assert.match(ui, /dark-cave-portal\\.svg/, 'Approved fantasy cave portal art must be present');
+assert.match(read('public/assets/territory/scenes/dark-cave-portal.svg'), /<svg/, 'Portal art asset must exist');
+assert.match(ui, /Добавить благословение/, 'Blessing area visible without changing combat mechanics');
 assert.match(ui, /progress\.dark_stones<1/, 'Never enable entry when no Dark Stones are available');
 assert.match(ui, /await readProgress\(\)/, 'Recheck stone balance after server start');
 assert.match(darkSql, /dark_stone_take_v1\(p_player\)/, 'Server must atomically consume stone on start');
