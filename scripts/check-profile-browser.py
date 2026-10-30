@@ -28,7 +28,13 @@ with sync_playwright() as p:
             image = hero.locator('.hero-showcase__hero-art')
             assert image.evaluate('(el) => el.complete && el.naturalWidth > 0'), 'Missing canonical hero art'
             assert image.bounding_box()['height'] >= 190, 'Hero art is still too small'
-            assert hero.get_by_role('progressbar').count() == 1, 'Saved XP bar must be visible'
+            assert hero.get_by_role('progressbar').count() == 2, 'Saved XP and chapter progress must be visible'
+            chapter = hero.locator('.hero-showcase__chapter-track')
+            assert chapter.get_attribute('aria-valuemin') == '0'
+            assert chapter.get_attribute('aria-valuemax') == '5', 'Real chapter generator defines five enemies'
+            assert chapter.get_attribute('aria-valuenow') == '0', 'New player has zero chapter victories'
+            boss_art = hero.locator('.hero-showcase__boss-art')
+            assert boss_art.evaluate('(el) => el.complete && el.naturalWidth > 0'), 'Missing approved boss art'
             # The owner-approved wooden titles must be visually centered on the
             # carved background, not just painted with the same texture.
             for title in hero.locator('.hero-showcase__plaque-title').all():
@@ -61,6 +67,27 @@ with sync_playwright() as p:
             if width == 360 and lang == 'ru':
                 page.locator('.territory-shell').evaluate('(el) => el.scrollTop = 0')
                 page.screenshot(path='/tmp/territory-profile-360.png')
+            # A saved chapter with enough victories must announce the boss;
+            # the art and CTA stay bound to the existing campaign, not a fake reward.
+            page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?boss-ready')
+            hero = page.locator('[data-testid="living-hero-showcase"]')
+            hero.wait_for()
+            assert hero.locator('.hero-showcase__chapter-track').get_attribute('aria-valuenow') == '5'
+            expected = 'Boss battle unlocked!' if lang == 'en' else 'Босс готов к бою!'
+            assert hero.locator('.hero-showcase__next-copy strong').inner_text() == expected
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            # Only existing inventory gear is advertised. Tapping opens the
+            # actual equipment route and never auto-equips or grants an item.
+            page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?loot')
+            hero = page.locator('[data-testid="living-hero-showcase"]')
+            hero.wait_for()
+            loot = hero.locator('.hero-showcase__loot')
+            assert loot.count() == 1
+            assert 'Шлем дозорного' in loot.inner_text()
+            assert loot.locator('img').evaluate('(el) => el.complete && el.naturalWidth > 0')
+            loot.click()
+            assert page.evaluate('window.__route') == 'equipment'
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?inventory')
             tile = page.locator('.warehouse-tile').first
             tile.click()
