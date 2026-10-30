@@ -35,16 +35,14 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
     setCaveActive(active);
     onActiveChange?.(active);
   }, [onActiveChange]);
-  // Unsettled cave operations must be recovered before the old save is editable.
-  useEffect(() => {
-    if (view === 'cave') return;
-    const pending = ['territory_adventure_start_v1:', 'territory_adventure_pending_v1:']
-      .some(prefix => {
-        try { return !!localStorage.getItem(prefix + userId); }
-        catch { return false; }
-      });
-    if (pending) onView('cave');
-  }, [userId, view, onView]);
+  // Preserve a visible and playable-looking classic campaign instead of silently
+  // switching to the cave. A pending debit must still be recovered before any
+  // legacy battle spends stones or changes the saved hero.
+  const caveRecoveryNeeded = view !== 'cave' && ['territory_adventure_start_v1:', 'territory_adventure_pending_v1:']
+    .some(prefix => {
+      try { return !!localStorage.getItem(prefix + userId); }
+      catch { return true; } // Unreadable storage must not authorize a new spend.
+    });
   const [error, setError] = useState<string | null>(null);
   const chapter = useMemo(() => generateChapter(state.currentChapter), [state.currentChapter]);
   const stages = [...chapter.enemies, chapter.boss];
@@ -53,6 +51,12 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const fightStartLocked = useRef(false);
 
   const start = (kind: FightKind) => {
+    if (caveRecoveryNeeded) {
+      setError(language === 'en'
+        ? 'Recover your pending Dark Cave fight before starting a Campaign battle.'
+        : 'Сначала восстанови незавершённый бой в Тёмной пещере. Награды и камни сохранятся.');
+      return;
+    }
     // One user gesture = at most one stone. Prevent overlapping taps/autostart
     // callbacks from charging twice before React commits setFight.
     if (fightStartLocked.current) return;
@@ -81,7 +85,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
     autoHandled.current = true;
     onAutoStartHandled();
     // Cave starts and settles exclusively via its own server workflow.
-    if (view === 'cave') return;
+    if (view === 'cave' || caveRecoveryNeeded) return;
     start(view === 'trial' ? 'trial' : 'stage');
   });
 
@@ -125,6 +129,16 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         ))}
       </div>
 
+      {caveRecoveryNeeded && (
+        <div role="alert" data-testid="pending-cave-recovery" className="rounded-xl border border-amber-400/60 bg-amber-950/60 px-3 py-2 text-xs text-amber-100">
+          <p>{language === 'en'
+            ? 'The Dark Cave has an unfinished server action. Campaign progress is safe; recover that action before the next battle.'
+            : 'В Тёмной пещере есть незавершённое серверное действие. Поход и прогресс сохранены; сначала восстанови операцию.'}</p>
+          <button type="button" onClick={() => onView('cave')} className="mt-2 min-h-10 w-full rounded-lg border border-amber-200 bg-amber-500 px-3 py-2 font-black text-black">
+            {language === 'en' ? 'Recover Dark Cave battle' : 'Восстановить бой в пещере'}
+          </button>
+        </div>
+      )}
       {view === 'cave' ? (
         <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} />
       ) : <>
