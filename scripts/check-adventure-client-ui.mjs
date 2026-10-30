@@ -47,13 +47,23 @@ assert.ok(app.indexOf('restoreAdventureSaveFence(user.id)') < app.indexOf('setLo
 
 for (const name of ['territory_adventure_progress_v1','requestAdventureStart','restoreAdventureStartFence','requestAdventureSettlement','restoreAdventureSaveFence',
   "action: 'prepare'", "action: 'start'", "action: 'resume'", "action: 'advance'",
-  'crypto.randomUUID()', 'getCampaignStage', "document.visibilityState !== 'visible'"])
+  'crypto.randomUUID()', 'getCampaignStage', "document.addEventListener('visibilitychange'"])
   assert.ok(ui.includes(name), 'missing server-authoritative control: ' + name);
 assert.match(read('src/game/combatV1/receiptAdapter.ts'), /localStorage\.setItem\(startKey\(userId\)/,
  'persist original start operation UUID before any wager request');
 assert.match(ui, /localStorage\.setItem\(sessionKey\(userId\)/, 'recover active server session across remounts');
 assert.match(ui, /busy \|\| recoverable/, 'block conflicting controls during uncertain receipt');
+assert.match(ui, /adventure_definitively_rejected/, 'After a verified server rollback the UI must explain safe recovery');
 assert.match(ui, /data-testid="territory-adventure-battle"/, 'server combat should have a visible battle scene');
+assert.match(ui, /data-testid="dark-cave-battle-background"/, 'Cave fights use their own approved cave portal instead of Arena scene');
+assert.match(ui, /data-testid="dark-cave-combat-panels"/, 'Cave battle provides compact equipment and elixir inspection panels');
+assert.match(ui, /<GearStrip equipped=\{game\.player\.equipped\}/, 'Only saved equipped items are displayed; do not invent combat stats');
+assert.match(ui, /<BeltCells belt=\{game\.belt\}/, 'Display the existing seven elixir slots without client-side consumption');
+assert.match(ui, /Только просмотр: эффекты эликсиров/, 'Unimplemented cave elixir usage must be labeled truthfully');
+assert.match(ui, /data-testid="dark-cave-manual-actions"/, 'Manual combat exposes actual server equipped skills');
+assert.match(ui, /cooldowns\[slot\.skillId\]/, 'Skills display server cooldown status');
+assert.match(ui, /rank\.energyCost/, 'Skills respect server-reported energy costs');
+assert.doesNotMatch(ui, /assets\/territory\/scenes\/arena-viking\.webp/, 'Dark Cave battle cannot silently reuse Arena scenery');
 assert.match(ui, /<FighterFigure /, 'server combat should animate the same 2D fighters used by the classic game');
 assert.match(ui, /getEnemyCombatFrames/, 'server enemies should use existing combat pose art');
 assert.match(ui, /battleRef\.current\?\.scrollIntoView/, 'mobile must reveal battle after tapping Start');
