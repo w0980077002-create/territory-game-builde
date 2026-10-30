@@ -52,7 +52,11 @@ with sync_playwright() as p:
             page.get_by_role('button',name='Мой этаж').click()
             assert floor_panel.evaluate('(e) => e.scrollTop < e.scrollHeight - e.clientHeight'), 'jump to current floor'
             page.get_by_test_id('dark-cave-challenge').click()
-            page.get_by_text('Серверный бой').wait_for()
+            page.get_by_test_id('dark-cave-battle-background').wait_for()
+            page.get_by_test_id('dark-cave-combat-panels').wait_for()
+            page.get_by_role('button',name='Экипировка').click()
+            page.get_by_role('button',name='Пояс эликсиров').click()
+            page.get_by_text('Только просмотр: эффекты эликсиров').wait_for()
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
             page.get_by_role('button',name='Следующий шаг боя').click()
             page.get_by_text('Победа!').wait_for()
