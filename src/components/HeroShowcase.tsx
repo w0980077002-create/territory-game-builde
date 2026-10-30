@@ -120,7 +120,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure }: Props) 
         </div>
         <div className="hero-showcase__next" data-testid="hero-next-goal">
           <img className="hero-showcase__boss-art"
-            src={import.meta.env.BASE_URL + chapter.boss.art.replace(/^\\/+/, '')}
+            src={import.meta.env.BASE_URL + (chapter.boss.art.startsWith('/') ? chapter.boss.art.slice(1) : chapter.boss.art)}
             alt="" loading="lazy" draggable={false} />
           <div className="hero-showcase__next-copy">
             <strong>{bossReady
