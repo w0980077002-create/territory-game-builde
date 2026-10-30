@@ -66,7 +66,11 @@ assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_6'))
 assert.equal(followers.selectFollower({ ...starter, followers: followers.reconcileFollowers([], 49) }, 'follower_6'), null, 'Battle Cow unlocks at 50');
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_2')).defense, 0);
 assert.equal(fee.gold, 205);
-console.log('Stage4: 5 follower roles, legacy migration, one active, level-gated training, bounded PvE bonuses: PASS');
+const cowSprite = readFileSync(new URL('../public/assets/territory/characters/followers/battle_cow/idle.svg', import.meta.url), 'utf8');
+assert.match(cowSprite, /viewBox="0 0 493 564"/, 'Battle Cow sprite needs a tightly cropped, transparent viewBox');
+assert.match(cowSprite, /data:image\/webp;base64,UklGR/, 'Battle Cow must embed the approved raster art, not an external URL');
+assert.equal(followers.selectFollower(starter, 'follower_6')?.activeFollowerId, 'follower_6');
+console.log('Stage4: 6 follower roles, approved cow art, legacy migration, one active, level-gated training, bounded PvE bonuses: PASS');
 
 const equipBalance = loadTs('src/game/equipmentBalance.ts', { './equipmentCatalog': { EQUIPMENT_TEMPLATES: [], rarityForChapter: () => 'common' } });
 const forge = loadTs('src/game/forge.ts', { './equipmentBalance': equipBalance, './elixirExpiry': expiryMock });
