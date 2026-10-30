@@ -107,7 +107,7 @@ export interface Achievement {
 
 export interface Follower {
   /** Companion role added in release 4; old saves omit it safely. */
-  role?: 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage';
+  role?: 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage' | 'crystal';
   id: string;
   name: string;
   icon: string;
