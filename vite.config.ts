@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
-import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 // Vercel serves the app at /; GitHub Pages keeps the repository subpath.
@@ -14,6 +14,9 @@ function fixPublicAssetPaths(): Plugin {
     closeBundle() {
       const publicDir = join(process.cwd(), 'public');
       const distDir = join(process.cwd(), 'dist');
+      // closeBundle also runs when Rollup aborts before producing an output directory.
+      // Do not mask the original compiler error with an ENOENT from this optional rewrite.
+      if (!existsSync(publicDir) || !existsSync(distDir)) return;
       const assets = new Set<string>();
 
       function collect(dir: string) {
