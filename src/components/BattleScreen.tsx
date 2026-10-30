@@ -130,7 +130,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       </div>
 
       {caveRecoveryNeeded && (
-        <div role="alert" data-testid="pending-cave-recovery" className="rounded-xl border border-amber-400/60 bg-amber-950/60 px-3 py-2 text-xs text-amber-100">
+        <div id="pending-cave-recovery" role="alert" data-testid="pending-cave-recovery" className="rounded-xl border border-amber-400/60 bg-amber-950/60 px-3 py-2 text-xs text-amber-100">
           <p>{language === 'en'
             ? 'The Dark Cave has an unfinished server action. Campaign progress is safe; recover that action before the next battle.'
             : 'В Тёмной пещере есть незавершённое серверное действие. Поход и прогресс сохранены; сначала восстанови операцию.'}</p>
@@ -150,8 +150,8 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       {error && (
         <div className="rounded-xl border border-red-400/30 bg-red-950/40 p-3 animate-fade-in">
           <p className="text-xs text-red-200">{error}</p>
-          <button onClick={onShop} className="mt-2 h-9 px-3 rounded-lg bg-amber-500 text-black text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform">
-            <ShoppingBag className="w-3.5 h-3.5" /> {t('toShop')}
+          <button onClick={caveRecoveryNeeded ? () => { setError(null); onView('cave'); } : onShop} className="mt-2 h-9 px-3 rounded-lg bg-amber-500 text-black text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform">
+            {!caveRecoveryNeeded && <ShoppingBag className="w-3.5 h-3.5" />} {caveRecoveryNeeded ? (language === 'en' ? 'Recover Dark Cave battle' : 'Восстановить бой в пещере') : t('toShop')}
           </button>
         </div>
       )}
@@ -195,6 +195,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
                 status={i < nextIndex ? 'done' : i === nextIndex ? 'current' : 'locked'}
                 gold={blessedGold(state, e.rewardGold)}
                 onFight={() => start('stage')}
+                blocked={caveRecoveryNeeded}
               />
             ))}
           </div>
@@ -202,7 +203,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       ) : (
         <div className="space-y-3">
           <DailyShareCard task="trials" userId={userId}/>
-          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} t={t} />
+          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={caveRecoveryNeeded} t={t} />
         </div>
       )}
       </>}
@@ -210,7 +211,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   );
 }
 
-function StageRow({ enemy, index, status, gold, onFight, t, language }: { enemy: Enemy; index: number; status: 'done' | 'current' | 'locked'; gold: number; onFight: () => void; t: (key: string) => string; language: 'ru' | 'en' }) {
+function StageRow({ enemy, index, status, gold, onFight, blocked, t, language }: { enemy: Enemy; index: number; status: 'done' | 'current' | 'locked'; gold: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en' }) {
   const current = status === 'current';
   return (
     <div
@@ -236,7 +237,7 @@ function StageRow({ enemy, index, status, gold, onFight, t, language }: { enemy:
       {status === 'done' && <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center"><Check className="w-4 h-4 text-emerald-400" /></span>}
       {status === 'locked' && <Lock className="w-4 h-4 text-gray-600 mr-2" />}
       {current && (
-        <button onClick={onFight} className="shrink-0 h-10 px-3 rounded-xl bg-gradient-to-b from-red-500 to-red-700 border border-red-300/40 text-white text-sm font-bold flex items-center gap-1.5 active:scale-95 transition-transform">
+        <button onClick={onFight} disabled={blocked} aria-describedby={blocked ? 'pending-cave-recovery' : undefined} className="shrink-0 h-10 px-3 rounded-xl bg-gradient-to-b from-red-500 to-red-700 border border-red-300/40 text-white text-sm font-bold flex items-center gap-1.5 active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed">
           <Swords className="w-4 h-4" /> Бой
         </button>
       )}
@@ -244,7 +245,7 @@ function StageRow({ enemy, index, status, gold, onFight, t, language }: { enemy:
   );
 }
 
-function TrialPanel({ level, onFight, t }: { level: number; onFight: () => void; t: (key: string) => string }) {
+function TrialPanel({ level, onFight, blocked, t }: { level: number; onFight: () => void; blocked: boolean; t: (key: string) => string }) {
   const enemy = generateTrial(level);
   const upcoming = Array.from({ length: 5 }, (_, i) => level + i);
   return (
@@ -266,7 +267,7 @@ function TrialPanel({ level, onFight, t }: { level: number; onFight: () => void;
         </div>
       </div>
 
-      <button onClick={onFight} className="w-full h-12 rounded-2xl bg-gradient-to-b from-sky-400 to-sky-700 border border-sky-200/30 text-white font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
+      <button onClick={onFight} disabled={blocked} aria-describedby={blocked ? 'pending-cave-recovery' : undefined} className="w-full h-12 rounded-2xl bg-gradient-to-b from-sky-400 to-sky-700 border border-sky-200/30 text-white font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-40 disabled:cursor-not-allowed">
         <Swords className="w-5 h-5" /> {t('startTrial')}
       </button>
 
