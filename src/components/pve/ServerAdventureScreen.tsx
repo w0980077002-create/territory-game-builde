@@ -259,7 +259,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     return () => cancelAnimationFrame(frame);
   }, [session?.session_id, progress?.unlocked_stage]);
 
-  return <section className="flex h-full min-h-0 flex-col gap-1.5 overflow-hidden" data-testid="territory-adventure-v1">
+  return <section className="flex h-full min-h-0 flex-1 flex-col gap-1.5 overflow-hidden" data-testid="territory-adventure-v1">
     <h2 className="sr-only">{en ? 'Dark Cave' : 'Тёмная пещера'}</h2>
     {error && <p role="alert" className="rounded-xl border border-red-400/40 bg-red-950/50 p-3 text-xs text-red-100">{error}</p>}
     {recoverable && <button disabled={busy} onClick={()=>void restore()} className="w-full rounded-xl border border-amber-500/60 bg-amber-900/30 p-3 font-semibold text-amber-100">
