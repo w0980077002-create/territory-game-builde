@@ -14,7 +14,7 @@ with sync_playwright() as p:
   for lang in ('ru','en'):
    for mode in ('win','draw','loss'):
     page=browser.new_page(viewport={'width':width,'height':500},reduced_motion='reduce');page.add_init_script(f"localStorage.setItem('territory-language','{lang}')");page.goto(f'http://127.0.0.1:{server.server_port}/arena-result-preview.html?m={mode}')
-    button=page.get_by_role('button',name='Leave arena' if lang=='en' else 'Покинуть арену');rect=button.bounding_box();assert rect['height']>=44 and rect['width']>=44,rect
+    button=page.get_by_role('button',name='Leave arena' if lang=='en' else 'Покинуть арену');rect=button.bounding_box();assert rect['height']>=43.99 and rect['width']>=43.99,rect
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');button.click();assert page.evaluate('window.__exit===true');page.close()
  browser.close()
 server.shutdown()

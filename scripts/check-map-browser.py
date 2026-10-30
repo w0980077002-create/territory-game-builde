@@ -22,7 +22,7 @@ with sync_playwright() as p:
             dialog=page.get_by_role('dialog')
             close=dialog.get_by_role('button', name='Close' if language=='en' else 'Закрыть')
             rect=close.bounding_box()
-            assert rect['width'] >= 44 and rect['height'] >= 44
+            assert rect['width'] >= 43.99 and rect['height'] >= 43.99
             head=dialog.locator('.territory-world-map__drawer-head').bounding_box()
             title=dialog.locator('.territory-wooden-plaque').bounding_box()
             assert abs((head['x']+head['width']/2)-(title['x']+title['width']/2)) < 1

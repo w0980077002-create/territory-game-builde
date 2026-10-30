@@ -58,6 +58,15 @@
 | Покупка | [до](visual-152/shop-before-320-ru.png) · [после](visual-152/shop-after-320-ru.png) | [before](visual-152/shop-before-320-en.png) · [after](visual-152/shop-after-320-en.png) | [до](visual-152/shop-before-390-ru.png) · [после](visual-152/shop-after-390-ru.png) | [before](visual-152/shop-before-390-en.png) · [after](visual-152/shop-after-390-en.png) |
 | Профессии | [до](visual-152/professions-before-320-ru.png) · [после](visual-152/professions-after-320-ru.png) | [before](visual-152/professions-before-320-en.png) · [after](visual-152/professions-after-320-en.png) | [до](visual-152/professions-before-390-ru.png) · [после](visual-152/professions-after-390-ru.png) | [before](visual-152/professions-before-390-en.png) · [after](visual-152/professions-after-390-en.png) |
 
+## Задания и почта
+
+Снимки действующих компонентов с локальным тестовым состоянием; социальные функции и получение наград в фикстуре не выполняются. Изменение относится к зонам касания, композиционная приёмка этих экранов ещё не завершена.
+
+| Экран | 320 RU | 320 EN | 390 RU | 390 EN |
+| --- | --- | --- | --- | --- |
+| Задания | [до](visual-152/quests-before-320-ru.png) · [после](visual-152/quests-after-320-ru.png) | [before](visual-152/quests-before-320-en.png) · [after](visual-152/quests-after-320-en.png) | [до](visual-152/quests-before-390-ru.png) · [после](visual-152/quests-after-390-ru.png) | [before](visual-152/quests-before-390-en.png) · [after](visual-152/quests-after-390-en.png) |
+| Почта | [до](visual-152/mail-before-320-ru.png) · [после](visual-152/mail-after-320-ru.png) | [before](visual-152/mail-before-320-en.png) · [after](visual-152/mail-after-320-en.png) | [до](visual-152/mail-before-390-ru.png) · [после](visual-152/mail-after-390-ru.png) | [before](visual-152/mail-before-390-en.png) · [after](visual-152/mail-after-390-en.png) |
+
 ## Чеклист
 
 - [ ] Герой: сцена, реальные слоты и путь проверены в изолированном Chromium; художественная приёмка и состояния со всеми вариантами реальной экипировки не завершены.

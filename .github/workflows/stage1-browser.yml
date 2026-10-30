@@ -61,6 +61,8 @@ jobs:
         if: matrix.suite == 'workshop-ui'
       - run: node scripts/build-workshop-preview.mjs && python scripts/check-workshop-browser.py
         if: matrix.suite == 'workshop-ui'
+      - run: node scripts/build-journal-preview.mjs && python scripts/check-journal-browser.py
+        if: matrix.suite == 'workshop-ui'
       - uses: actions/upload-artifact@v4
         if: always()
         with:

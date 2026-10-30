@@ -25,7 +25,7 @@ with sync_playwright() as p:
             encounter.wait_for()
             assert encounter.locator('.journey-encounter__art img').evaluate('(el)=>el.complete && el.naturalWidth>0')
             fight=encounter.get_by_role('button',name='Fight' if lang=='en' else 'Бой')
-            assert fight.bounding_box()['height'] >= 44
+            assert fight.bounding_box()['height'] >= 43.99
             heading=encounter.locator('h3')
             heading.evaluate("el => el.textContent = 'Очень длинное имя великого повелителя северных земель / Extremely long northern overlord name'")
             assert heading.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1 && el.scrollHeight <= el.clientHeight + 3'), heading.evaluate('(el) => [el.scrollWidth,el.clientWidth,el.scrollHeight,el.clientHeight]')

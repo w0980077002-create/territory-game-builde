@@ -9,14 +9,14 @@
 .territory-daily-card .reward-loot__award b{font-size:7px;padding:0 2px;bottom:-2px;right:-2px}
 .territory-daily-card[colspan]{background:linear-gradient(120deg,#493320,#2a2233)}
 .territory-mail__tabs{position:sticky;top:0;z-index:1;padding:4px;border:1px solid #c9a0606b;border-radius:10px;background:#182333f0}
-.territory-mail__tabs button{flex:1;justify-content:center;min-height:36px;border-radius:8px;font-size:11px}
+.territory-mail__tabs button{flex:1;justify-content:center;min-height:44px;border-radius:8px;font-size:11px}
 .territory-mail__tabs button[aria-selected='true']{color:#33200e;border-color:#ffe0a3;background:linear-gradient(#ffe2a5,#e2a250)}
 .territory-mail__letter{position:relative;overflow:hidden;margin-top:6px;border-radius:11px;background:linear-gradient(115deg,#3e2d24be,#162332 84%);box-shadow:inset 0 1px #ffe8b520,0 2px 4px #0005}
 .territory-mail__letter>button:first-child{min-height:44px;padding:7px 9px}
 .territory-mail__letter>button:first-child img{width:31px;height:31px;filter:drop-shadow(0 2px 2px #0007)}
 .territory-mail__letter>button:first-child span span:first-child{font-size:12px;color:#f9e5ba}
 .territory-mail__letter>div{background:linear-gradient(135deg,#182334dd,#251c27ba)}
-.territory-mail__letter button:not(:first-child){min-height:30px;border-radius:7px;font-weight:900}
+.territory-mail__letter button:not(:first-child){min-height:44px;border-radius:7px;font-weight:900}
 .territory-mail__reward{min-height:29px;padding:3px 5px;border-radius:8px;border-color:#c89d5b99;background:linear-gradient(#463522,#202533)}
 .territory-mail__reward img{width:24px;height:24px;filter:drop-shadow(0 2px 2px #0008)}
 .territory-mail__reward>span{color:#ffe6b8;font-size:10px}
@@ -24,5 +24,5 @@
 .territory-mail .reward-loot__award{width:39px;height:39px;flex-basis:39px}
 .territory-mail .reward-loot__award img{width:32px;height:32px}
 .territory-mail .reward-loot__award b{font-size:9px}
-@media(max-width:360px){.territory-daily-card .reward-loot__award{flex-basis:29px;width:29px;height:31px}.territory-daily-card .reward-loot__award img{width:26px;height:26px}.territory-mail__letter>button:first-child{min-height:42px}}
+@media(max-width:360px){.territory-daily-card .reward-loot__award{flex-basis:29px;width:29px;height:31px}.territory-daily-card .reward-loot__award img{width:26px;height:26px}}
 @media(prefers-reduced-motion:reduce){.territory-mail *,.territory-daily-card *{transition:none!important}}

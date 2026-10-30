@@ -117,7 +117,7 @@ function ClaimState({ complete, claimed, onClaim, claimLabel }: { complete: bool
   if (claimed) return <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />;
   if (!complete) return <Lock className="w-4 h-4 text-gray-600 shrink-0" />;
   return (
-    <button onClick={onClaim} className="shrink-0 h-9 px-3 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-black text-xs font-bold active:scale-95 transition-transform animate-pulse-glow">
+    <button onClick={onClaim} className="shrink-0 min-h-11 px-3 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-black text-xs font-bold active:scale-95 transition-transform animate-pulse-glow">
       {claimLabel}
     </button>
   );
@@ -139,7 +139,7 @@ function QuestCard({ quest: q, onClaim, onNavigate, language, t }: { quest: Ques
             {(q.rewardStones ?? 0) > 0 && <Currency kind="stones" value={`+${q.rewardStones}`} size={14} className="text-orange-200" />}
             {q.rewardXp > 0 && <span className="text-emerald-300 font-semibold">+{q.rewardXp} {t('xpWord')}</span>}
           </div>
-          {!complete && !q.claimed && action && <button type="button" className="mt-2 inline-flex items-center gap-1 rounded-md border border-sky-400/30 bg-sky-600/15 px-2 py-1 text-[11px] font-bold text-sky-200" onClick={() => onNavigate(action.destination)}>
+          {!complete && !q.claimed && action && <button type="button" className="mt-2 inline-flex min-h-11 items-center gap-1 rounded-md border border-sky-400/30 bg-sky-600/15 px-3 py-1 text-xs font-bold text-sky-200" onClick={() => onNavigate(action.destination)}>
             {action.label}<ChevronRight size={13} aria-hidden="true"/>
           </button>}
         </div>

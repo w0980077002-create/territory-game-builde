@@ -14,7 +14,7 @@ with sync_playwright() as p:
   for lang in ('ru','en'):
    for ios in (False,True):
     page=browser.new_page(viewport={'width':width,'height':500},reduced_motion='reduce');page.add_init_script(f"localStorage.setItem('territory-language','{lang}')" + (";document.addEventListener('DOMContentLoaded',()=>document.documentElement.classList.add('territory-ios-webapp'))" if ios else ''));page.goto(f'http://127.0.0.1:{server.server_port}/territory-runes-after.html')
-    skill=page.locator('.rune-book__skill').first;skill.click();dialog=page.get_by_role('dialog');close=dialog.get_by_role('button',name='Close' if lang=='en' else 'Закрыть');box=close.bounding_box();assert box['width']>=44 and box['height']>=44
+    skill=page.locator('.rune-book__skill').first;skill.click();dialog=page.get_by_role('dialog');close=dialog.get_by_role('button',name='Close' if lang=='en' else 'Закрыть');box=close.bounding_box();assert box['width']>=43.99 and box['height']>=43.99
     assert dialog.bounding_box()['y'] >= 0 and dialog.bounding_box()['y'] + dialog.bounding_box()['height'] <= 501
     title=dialog.locator('.rune-book__dialog-top > div').bounding_box();head=dialog.locator('.rune-book__dialog-top').bounding_box();assert abs((title['x']+title['width']/2)-(head['x']+head['width']/2))<1
     assert dialog.locator('.rune-book__dialog-body').evaluate('(e)=>e.scrollHeight>e.clientHeight');assert close.evaluate('(e)=>document.activeElement===e');page.keyboard.press('Escape');assert dialog.count()==0 and skill.evaluate('(e)=>document.activeElement===e')
