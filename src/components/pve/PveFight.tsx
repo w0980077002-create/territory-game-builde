@@ -248,7 +248,14 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     <div className="space-y-2 animate-fade-in">
       <div className="flex items-center gap-2 h-10">
         <button
-          onClick={() => (outcome ? (nextCancelled.current = true, onExit()) : finish(false))}
+          onClick={() => {
+            if (outcome) {
+              nextCancelled.current = true;
+              onExit();
+            } else {
+              finish(false);
+            }
+          }}
           className="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-200 flex items-center gap-1.5 active:scale-95 transition-transform"
         >
           <Flag className="w-3.5 h-3.5" /> {outcome ? (kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')) : (language === 'en' ? 'Surrender' : 'Сдаться')}
