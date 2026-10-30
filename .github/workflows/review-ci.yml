@@ -35,6 +35,7 @@ jobs:
       - run: npm run test:stage1
       - run: npm run test:slots
       - run: npm run build
+      - run: node scripts/check-pages-build-sha.mjs
       - run: npm run test:balance
       - run: npm run test:pve
       - run: npm run test:inventory-cleanup
