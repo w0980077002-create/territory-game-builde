@@ -93,6 +93,7 @@ export function createInitialGame(): GameState {
     followers: initialFollowers(),
     activeFollowerId: null,
     forgeMaterials: 0,
+    awakeningStones: 0,
     storyProgress: 0,
     lastEnergyAt: Date.now(),
     dailyResetDay: calendarDayKey(),
