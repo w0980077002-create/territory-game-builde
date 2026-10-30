@@ -1,5 +1,5 @@
 import { Coins, Gem, Zap, Heart, Sword, Shield, Star, ChevronRight, Shirt } from 'lucide-react';
-import { EQUIPMENT_SLOTS, HERO_MAX_LEVEL, getComputedStats } from '@/game/engine';
+import { EQUIPMENT_SLOTS, HERO_MAX_LEVEL, generateChapter, getComputedStats } from '@/game/engine';
 import { getAppearanceIcon } from '@/game/appearance';
 import { SLOT_ART, equipmentArt } from '@/game/art';
 import { rarityColor } from '@/game/ui';
@@ -26,6 +26,19 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure }: Props) 
   const xp = hasRealXp ? Math.min(Math.max(0, player.xp), player.xpToNext) : 0;
   const xpPercent = hasRealXp ? Math.max(0, Math.min(100, 100 * xp / player.xpToNext)) : 0;
   const slots = EQUIPMENT_SLOTS.map(slot => ({ slot, item: player.equipped[slot.id] }));
+  // Existing saved campaign progress: the chapter generator is also used by
+  // the real PvE fight. No invented XP, boss counters or reward claims.
+  const chapterNumber = Number.isFinite(state.currentChapter)
+    ? Math.max(1, Math.floor(state.currentChapter)) : 1;
+  const chapter = generateChapter(chapterNumber);
+  const chapterWins = Number.isFinite(state.chapterWins)
+    ? Math.max(0, Math.min(chapter.winsNeeded, Math.floor(state.chapterWins))) : 0;
+  const bossReady = chapterWins >= chapter.winsNeeded;
+  // Only suggest gear that is already in the player's saved inventory and
+  // would fill an empty real slot. This is navigation, not proof of ownership
+  // for server combat or an automatic equip/grant.
+  const readyGear = state.inventory.find(item => item.type === 'equipment'
+    && item.qty > 0 && item.equipment && !player.equipped[item.equipment.slot]);
   const text = (ru: string, en: string) => language === 'en' ? en : ru;
 
   const renderSlot = ({ slot, item }: { slot: (typeof EQUIPMENT_SLOTS)[number]; item: Equipment | undefined }) => (
@@ -103,8 +116,36 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure }: Props) 
         <div className="hero-showcase__records">
           <div><strong>{state.totalBattlesWon}</strong><span>{t('wins')}</span></div>
           <div><strong>{state.totalBossesDefeated}</strong><span>{t('bosses')}</span></div>
-          <div><strong>{state.currentChapter}</strong><span>{t('chapter')}</span></div>
+          <div><strong>{chapterNumber}</strong><span>{t('chapter')}</span></div>
         </div>
+        <div className="hero-showcase__next" data-testid="hero-next-goal">
+          <img className="hero-showcase__boss-art"
+            src={import.meta.env.BASE_URL + chapter.boss.art.replace(/^\\/+/, '')}
+            alt="" loading="lazy" draggable={false} />
+          <div className="hero-showcase__next-copy">
+            <strong>{bossReady
+              ? text('Босс готов к бою!', 'Boss battle unlocked!')
+              : text('Путь к боссу', 'Road to the boss')}</strong>
+            <span>{language === 'en'
+              ? `Chapter ${chapterNumber} · ${chapterWins}/${chapter.winsNeeded} fights`
+              : `${chapter.title} · ${chapterWins}/${chapter.winsNeeded} побед`}</span>
+            <div className="hero-showcase__chapter-track" role="progressbar"
+              aria-label={text('Победы до босса главы', 'Chapter victories before boss')}
+              aria-valuemin={0} aria-valuemax={chapter.winsNeeded} aria-valuenow={chapterWins}>
+              <span style={{ width: `${chapter.winsNeeded > 0 ? chapterWins / chapter.winsNeeded * 100 : 0}%` }} />
+            </div>
+          </div>
+        </div>
+        {readyGear?.equipment && (
+          <button type="button" className="hero-showcase__loot" onClick={onEquipment}
+            aria-label={text('Открыть экипировку: ', 'Open equipment: ') + readyGear.equipment.name}>
+            <img src={equipmentArt(readyGear.equipment)} alt="" loading="lazy" draggable={false}
+              style={{ borderColor: rarityColor(readyGear.equipment.rarity) }} />
+            <span><strong>{text('Добыча ждёт!', 'Gear ready!')}</strong>
+              {readyGear.equipment.name}</span>
+            <ChevronRight size={17} aria-hidden="true" />
+          </button>
+        )}
         <button type="button" className="hero-showcase__adventure" onClick={onAdventure}>
           {text('Продолжить поход', 'Continue adventure')}<ChevronRight size={19} aria-hidden="true"/>
         </button>
