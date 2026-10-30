@@ -26,6 +26,20 @@ with sync_playwright() as p:
         page.get_by_test_id('territory-adventure-v1').wait_for()
         page.get_by_test_id('dark-cave-challenge').wait_for()
         floor_panel = page.get_by_test_id('dark-cave-floor-scroll')
+        actions = page.get_by_test_id('dark-cave-actions')
+        challenge = page.get_by_test_id('dark-cave-challenge')
+        assert actions.is_visible() and challenge.is_visible(), 'Challenge and blessings must be visible without scrolling main page'
+        bounds = page.evaluate("""() => {
+          const realm=document.querySelector('[data-testid="dark-cave-realm"]').getBoundingClientRect();
+          const list=document.querySelector('[data-testid="dark-cave-floor-scroll"]').getBoundingClientRect();
+          const actions=document.querySelector('[data-testid="dark-cave-actions"]').getBoundingClientRect();
+          const challenge=document.querySelector('[data-testid="dark-cave-challenge"]').getBoundingClientRect();
+          return {realmTop:realm.top, realmBottom:realm.bottom, listTop:list.top, listBottom:list.bottom,
+                  actionsTop:actions.top, actionsBottom:actions.bottom, challengeBottom:challenge.bottom,
+                  windowHeight:innerHeight};
+        }""")
+        assert bounds['listBottom'] <= bounds['actionsTop'] + 2, f'Floor list overlaps actions: {bounds}'
+        assert bounds['challengeBottom'] <= bounds['windowHeight'] - 60, f'Challenge hidden behind bottom navigation: {bounds}'
         assert floor_panel.evaluate('(e) => e.scrollHeight > e.clientHeight'), '100 floors must be scrollable'
         assert page.locator('button').count() >= 8
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'horizontal overflow'
