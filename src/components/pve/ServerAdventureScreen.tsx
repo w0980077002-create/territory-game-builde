@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Crown, Loader2, Lock, Swords, Zap } from 'lucide-react';
+import { Check, ChevronRight, Crown, Info, Loader2, Lock, Swords, Zap } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { useGame } from '@/game/actions';
 import { ensurePlayerSession } from '@/game/auth';
@@ -56,7 +56,11 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const { language } = useLanguage();
   const en = language === 'en';
   const [progress, setProgress] = useState<Progress | null>(null);
-  const [chapter, setChapter] = useState(1);
+  const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
+  const [control, setControl] = useState<'manual' | 'auto'>('manual');
+  const [stoneInfo, setStoneInfo] = useState(false);
+  const [blessingInfo, setBlessingInfo] = useState(false);
+  const floorListRef = useRef<HTMLDivElement | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
@@ -120,7 +124,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     const found = decodeProgress(response.data);
     if (mounted.current) {
       setProgress(found);
-      setChapter(Math.min(5, Math.floor((found.unlocked_stage - 1) / 20) + 1));
+      // Cave progress and currency always come from the server.
     }
   }, []);
 
@@ -229,9 +233,31 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const fighterSrc = import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp';
   const enemySrc = import.meta.env.BASE_URL + 'assets/territory/characters/' + battleStage.enemyArt + '/idle.webp';
   const darkStoneArt = import.meta.env.BASE_URL + 'assets/territory/items/dark-stone.svg';
-  const chapterStages = Array.from({length:20},(_,i)=>getCampaignStage((chapter-1)*20+i+1));
-  const stageFocus = Math.max(0,Math.min(19,currentStage-(chapter-1)*20-1));
-  const visibleStages = chapterStages.slice(Math.max(0,Math.min(15,stageFocus-2)),Math.max(0,Math.min(15,stageFocus-2))+5);
+  const portalArt = import.meta.env.BASE_URL + 'assets/territory/scenes/dark-cave-portal.svg';
+  const floors = Array.from({ length: 100 }, (_, i) => getCampaignStage(i + 1));
+  const floorFocus = selectedFloor ?? currentStage;
+  const highlightedFloor = getCampaignStage(floorFocus);
+  const mayChallenge = progress !== null && floorFocus === progress.unlocked_stage && progress.completed_stage < 100;
+  const jumpToCurrent = () => {
+    setSelectedFloor(null);
+    const panel = floorListRef.current;
+    const current = panel?.querySelector<HTMLElement>('[data-current-floor="true"]');
+    if (panel && current) {
+      panel.scrollTop = current.offsetTop - panel.offsetTop - panel.clientHeight / 2 + current.clientHeight / 2;
+    }
+  };
+  // Scroll inside the floor list, not the entire Telegram WebApp or the battle page.
+  useEffect(() => {
+    if (session || !progress) return;
+    const frame = requestAnimationFrame(() => {
+      const panel = floorListRef.current;
+      const current = panel?.querySelector<HTMLElement>('[data-current-floor="true"]');
+      if (panel && current) {
+        panel.scrollTop = current.offsetTop - panel.offsetTop - panel.clientHeight / 2 + current.clientHeight / 2;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [session?.session_id, progress?.unlocked_stage]);
 
   return <section className="space-y-3 pb-4" data-testid="territory-adventure-v1">
     <h2 className="sr-only">{en ? 'Dark Cave' : 'Тёмная пещера'}</h2>
@@ -289,58 +315,111 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           : (en?'Skills and damage are verified by the server':'Умения и урон проверяет сервер')}</p>
       </>}
     </div> : progress ? <>
-      <div className="relative overflow-hidden rounded-2xl border-2 border-violet-500/40 bg-[#171d37] p-4 text-center shadow-lg" data-testid="dark-cave-portal">
-        <div className="relative flex items-center justify-between gap-2">
-          <h3 className="text-base font-black text-amber-200">{en?'Realm of Dark Energy':'Царство Тёмной энергии'}</h3>
-          <div data-testid="dark-stone-balance" className="flex shrink-0 items-center gap-1 rounded-xl border border-violet-400/50 bg-black/60 pr-2 font-black text-white">
-            <img src={darkStoneArt} alt={en?'Dark Stone':'Тёмный камень'} className="h-11 w-11 rounded-lg object-cover"/>{progress.dark_stones}
+      <div className="relative isolate overflow-hidden rounded-[22px] border border-[#54446f] bg-[#101830] px-2.5 pb-3 pt-3 shadow-[inset_0_0_50px_rgba(51,25,101,.42),0_10px_30px_rgba(0,0,0,.32)]" data-testid="dark-cave-realm">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_45%_25%,rgba(109,42,164,.20),transparent_65%)]"/>
+        <div className="relative text-center">
+          <div className="mx-auto mb-1 flex max-w-[90%] items-center gap-2 text-[#f6b755]">
+            <span className="h-px grow bg-gradient-to-r from-transparent to-[#f4a945]"/>
+            <span className="h-2 w-2 rotate-45 border border-[#ffc567] bg-[#7639ae]"/>
+            <span className="h-px grow bg-gradient-to-l from-transparent to-[#f4a945]"/>
+          </div>
+          <h3 className="text-[clamp(17px,5vw,24px)] font-black leading-tight tracking-tight text-[#ffe4a2] drop-shadow-[0_2px_3px_#070b1e]">
+            {en?'Realm of Dark Energy':'Царство Тёмной энергии'}
+          </h3>
+          <div className="mx-auto mt-1 h-px w-[82%] bg-gradient-to-r from-transparent via-[#f8b343] to-transparent"/>
+        </div>
+        <div className="relative z-10 mt-2 flex items-center justify-between">
+          <button type="button" onClick={()=>setStoneInfo(v=>!v)} aria-expanded={stoneInfo} data-testid="dark-stone-balance"
+            className="flex min-h-11 items-center gap-1 rounded-xl border border-[#9a5ce0]/70 bg-[#0c0c21]/90 py-0.5 pl-1 pr-3 font-black text-lg tabular-nums text-white shadow-[0_2px_16px_rgba(140,66,244,.22)]">
+            <img src={darkStoneArt} alt={en?'Dark Stone':'Тёмный камень'} className="h-9 w-9 rounded-md object-cover"/>
+            {progress.dark_stones}
+            <Info size={14} className="ml-1 text-amber-300"/>
+          </button>
+          <span className="rounded-full border border-amber-500/40 bg-[#0a1024]/80 px-3 py-1 text-[11px] font-bold text-amber-200">
+            {en?'Floor':'Этаж'} {currentStage} / 100
+          </span>
+        </div>
+        {stoneInfo&&<div className="relative z-20 mt-2 rounded-lg border border-violet-500/50 bg-[#16102c] px-3 py-2 text-xs text-violet-100">
+          {en?'Entrance costs 1 Dark Stone. First entry: 5 stones; daily +3 at 00:00 UTC.':'Вход стоит 1 Тёмный камень. Первые 5 камней выдаются при первом посещении; далее +3 ежедневно в 00:00 UTC.'}
+        </div>}
+        <img src={portalArt} alt={en?'Glowing cave portal':'Светящийся портал Тёмной пещеры'}
+          className="pointer-events-none relative -mt-2 h-auto w-full select-none object-contain" data-testid="dark-cave-portal" draggable={false}/>
+        <div className="relative mx-auto -mt-1 flex items-center justify-between gap-2 px-1 pb-2 text-xs font-bold text-amber-100">
+          <span className="truncate">{en?'Chapter':'Глава'} {highlightedFloor.chapter} · {CAMPAIGN_CHAPTERS[highlightedFloor.chapter-1]}</span>
+          <button onClick={jumpToCurrent} type="button"
+            className="shrink-0 rounded-md border border-amber-400/50 bg-amber-900/40 px-2 py-1 text-[11px] text-[#ffe5a4]">
+            {en?'My floor':'Мой этаж'}
+          </button>
+        </div>
+        <div className="relative rounded-xl border border-[#5d5077]/70 bg-[#080c20]/75 p-1.5 shadow-[inset_0_3px_18px_#060719]" data-testid="dark-cave-floor-list">
+          <div ref={floorListRef} data-testid="dark-cave-floor-scroll" role="region" aria-label={en?'Scrollable cave floors':'Прокручиваемый список этажей'}
+            tabIndex={0} className="dark-cave-floor-scroll relative h-[min(34dvh,315px)] min-h-[210px] space-y-1.5 overflow-y-auto overscroll-contain pr-2 touch-pan-y">
+            {floors.map((floor)=>{
+              const cleared=floor.index<=progress.completed_stage;
+              const current=floor.index===progress.unlocked_stage && progress.completed_stage<100;
+              const locked=floor.index>progress.unlocked_stage || progress.completed_stage===100 && !cleared;
+              const highlighted=floor.index===floorFocus;
+              const rowClass='relative flex min-h-[51px] w-full items-center gap-2.5 overflow-hidden rounded-[9px] border-2 px-3 text-left text-sm font-black transition-colors '+
+                (highlighted && current ? 'border-[#ffe28c] bg-[#713f16] text-[#fff0b7] shadow-[inset_0_0_14px_rgba(255,187,62,.16),0_0_11px_rgba(255,175,52,.48)]':
+                locked?'border-[#48435b] bg-[#141b37] text-[#9798b1]':
+                highlighted?'border-[#c6a460] bg-[#474062] text-[#fff0be]':
+                'border-[#6a5c72] bg-[#232b47] text-[#f4e0b8]');
+              return <div key={floor.index}>
+                {floor.index%20===1&&<div className="px-2 pb-0.5 pt-1 text-center text-[10px] font-bold tracking-[.11em] text-[#b7a6ce]">
+                  {en?'CHAPTER':'ГЛАВА'} {floor.chapter} · {CAMPAIGN_CHAPTERS[floor.chapter-1]}
+                </div>}
+                {locked?<div aria-label={(en?'Floor ':'Этаж ')+floor.index+(en?' locked':' закрыт')} className={rowClass}>
+                  <Lock size={17} className="shrink-0 text-[#9a98a8]"/>
+                  <span>{en?'Floor':'Этаж'} {floor.index}</span>
+                  {floor.kind==='boss'&&<Crown size={15} className="ml-auto text-[#ab90b8]"/>}
+                </div>:<button type="button" aria-pressed={highlighted} data-current-floor={current?'true':undefined}
+                  data-testid={current?'dark-cave-current-floor':undefined}
+                  onClick={()=>setSelectedFloor(floor.index)} className={rowClass}>
+                  {floor.kind==='boss'?<Crown size={18} className="shrink-0 text-amber-300"/>:<Swords size={16} className="shrink-0 text-[#e2b46e]"/>}
+                  <span>{en?'Floor':'Этаж'} {floor.index}</span>
+                  {cleared?<Check size={21} className="ml-auto shrink-0 text-[#58e66b]"/>:
+                    <ChevronRight size={21} className="ml-auto shrink-0 text-amber-200"/>}
+                </button>}
+              </div>;
+            })}
           </div>
         </div>
-        <div className="relative mx-auto mt-3 flex h-40 max-w-[220px] items-end justify-center">
-          <div className="absolute inset-x-5 inset-y-0 rounded-t-full border-[12px] border-slate-500 bg-gradient-to-t from-amber-400 via-yellow-100 to-violet-600 shadow-[0_0_28px_rgba(250,215,105,.6)]"/>
-          <img src={import.meta.env.BASE_URL+'map-chamber.webp'} alt="" className="relative h-32 w-32 object-contain drop-shadow-[0_0_16px_#e3aaff]"/>
-        </div>
-        <p className="mt-2 text-xs font-semibold text-violet-100">{en?'1 Dark Stone per floor entry':'Для входа на этаж нужен 1 Тёмный камень'}</p>
-      </div>
-      <div className="flex justify-center gap-2">
-        {CAMPAIGN_CHAPTERS.map((name,i)=><button key={name} disabled={busy} onClick={()=>setChapter(i+1)}
-          aria-label={en?'Chapter '+(i+1):'Глава '+(i+1)}
-          className={'min-w-10 rounded-lg border p-2 text-xs font-black '+(chapter===i+1?'bg-amber-300 text-black border-amber-100':'bg-slate-800 text-amber-100 border-amber-700/40')}>
-          {i+1}
-        </button>)}
-      </div>
-      <div className="space-y-2 rounded-2xl border border-violet-500/30 bg-slate-950/60 p-3" data-testid="dark-cave-floor-list">
-        <p className="text-center text-sm font-black text-amber-200">{en?'Chapter':'Глава'} {chapter} · {CAMPAIGN_CHAPTERS[chapter-1]}</p>
-        <p className="text-center text-xs text-slate-200">{en?'Unlocked floor':'Открытый этаж'}: {currentStage} / 100</p>
-        {visibleStages.map(s=>{
-          const done=s.index<=progress.completed_stage;
-          const now=s.index===progress.unlocked_stage&&!done;
-          return <div key={s.index} data-testid={now?'dark-cave-current-floor':undefined}
-            className={'flex min-h-[52px] items-center justify-center gap-2 rounded-xl border-2 font-black shadow-[0_3px_0_#111] '+
-              (now?'border-yellow-200 bg-gradient-to-b from-yellow-100 to-amber-300 text-amber-950 shadow-[0_0_12px_#eabb70]':
-              done?'border-amber-200/70 bg-[#e7d8b5] text-amber-950':'border-slate-500/50 bg-slate-700 text-slate-300')}>
-            {done?<Check size={16}/>:!now?<Lock size={16}/>:s.kind==='boss'?<Crown size={17}/>:<Swords size={16}/>}
-            {en?'Floor':'Этаж'} {s.index} {s.kind==='boss'?'· '+(en?'Boss':'Босс'):''}
-          </div>;
-        })}
-      </div>
-      {chapter===chosen.chapter&&progress.completed_stage<100&&<>
-        <div className="flex items-center justify-center gap-3 rounded-xl border border-violet-500/30 bg-violet-950/30 p-2">
-          <img src={darkStoneArt} alt="" className="h-12 w-12 rounded-lg"/>
-          <div className="text-sm text-violet-100">
-            <p className="font-black">{en?'Dark Stones':'Тёмные камни'}: {progress.dark_stones}</p>
-            <p className="text-xs">{en?'5 on first entry, +3 daily at 00:00 UTC':'Сначала 5, ежедневно +3 в 00:00 UTC'}</p>
+        <div className="relative mt-3 space-y-2">
+          <div className="flex items-center justify-center gap-2 text-center text-sm font-black text-[#ffe4ac]">
+            <span className="h-px grow bg-gradient-to-r from-transparent to-[#a96b3c]"/>
+            {en?'Add a blessing':'Добавить благословение'}
+            <span className="h-px grow bg-gradient-to-l from-transparent to-[#a96b3c]"/>
           </div>
+          <div className="mx-auto grid max-w-[310px] grid-cols-3 gap-3">
+            {[1,2,3].map(slot=><button type="button" key={slot} onClick={()=>setBlessingInfo(v=>!v)}
+              aria-label={en?'Blessing slot '+slot:'Благословение '+slot}
+              className="flex aspect-[1.15] items-center justify-center rounded-xl border-2 border-[#7788b0]/80 bg-[#233251]/90 text-[32px] font-light text-[#ffdd97] shadow-[inset_0_2px_12px_#15203d,0_4px_0_#090d20] active:scale-[.98]">+</button>)}
+          </div>
+          {blessingInfo&&<p role="status" className="rounded-lg border border-[#725a92] bg-[#17162e] px-2 py-2 text-center text-[11px] text-[#e4d6f5]">
+            {en?'Blessings are not enabled yet and do not affect battles.':'Благословения ещё не подключены и пока не влияют на бой.'}
+          </p>}
+          <div className="flex items-center justify-center gap-3 text-xs text-amber-100">
+            <span>{en?'Battle mode':'Режим боя'}:</span>
+            {(['manual','auto'] as const).map(mode=><button type="button" key={mode} disabled={busy}
+              aria-pressed={control===mode} onClick={()=>setControl(mode)}
+              className={'rounded-md border px-3 py-1.5 font-bold '+(control===mode?'border-amber-300 bg-amber-500 text-[#2d1b12]':'border-amber-500/30 bg-[#12162c] text-amber-100')}>
+              {mode==='manual'?(en?'Manual':'Ручной'):(en?'Auto':'Авто')}
+            </button>)}
+          </div>
+          {progress.completed_stage<100 ? <>
+            <button type="button" disabled={!ready||busy||recoverable||!mayChallenge||progress.dark_stones<1}
+              onClick={()=>void start(control)} data-testid="dark-cave-challenge"
+              className="mx-auto flex min-h-[56px] w-full max-w-[310px] items-center justify-center gap-2 rounded-[18px] border-2 border-[#ffe6a1] bg-gradient-to-b from-[#fff19f] via-[#ffce44] to-[#e8941b] px-4 text-[19px] font-black text-[#4b270c] shadow-[inset_0_2px_3px_#fff9d0,0_5px_0_#694216,0_0_18px_rgba(255,192,73,.26)] transition-transform active:scale-[.98] disabled:opacity-50">
+              <img src={darkStoneArt} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover"/>
+              <span className="tabular-nums">1</span> {en?'Challenge':'Вызов'}
+            </button>
+            {!mayChallenge&&<p className="text-center text-xs text-[#ddd1ef]">
+              {en?'This floor is already completed. Select your current floor.':'Этот этаж уже пройден. Выбери свой текущий этаж.'}
+            </p>}
+            {progress.dark_stones<1&&<p className="text-center text-xs text-violet-100">{en?'Next Dark Stones: 00:00 UTC':'Новые Тёмные камни в 00:00 UTC'}</p>}
+          </> : <p className="text-center text-sm font-black text-amber-200">{en?'All 100 cave floors completed!':'Все 100 этажей Тёмной пещеры пройдены!'}</p>}
         </div>
-        <p className="text-center font-bold text-amber-100">{chosen.enemyName} · {en?'Floor':'Этаж'} {currentStage}</p>
-        <div className="grid grid-cols-2 gap-2">
-          <button disabled={!ready||busy||recoverable||progress.dark_stones<1} onClick={()=>void start('manual')}
-            className="rounded-xl bg-amber-500 text-black font-black p-3 disabled:opacity-50">{en?'Manual battle':'Ручной бой'}</button>
-          <button disabled={!ready||busy||recoverable||progress.dark_stones<1} onClick={()=>void start('auto')}
-            className="rounded-xl bg-yellow-400 text-black font-black p-3 disabled:opacity-50">{en?'Auto battle':'Автобой'}</button>
-        </div>
-        {progress.dark_stones<1&&<p className="text-center text-xs text-violet-200">{en?'Next daily stones: 00:00 UTC':'Новые камни ежедневно в 00:00 UTC'}</p>}
-      </>}
+      </div>
     </> : <p role="status" className="rounded-xl border border-amber-700/30 bg-black/25 p-3 text-xs text-amber-100">
       {en ? 'Loading verified cave progress…' : 'Загружаем подтверждённый прогресс пещеры…'}
     </p>}

@@ -24,13 +24,20 @@ with sync_playwright() as p:
         page.route(URL+'**',serve)
         page.goto(URL)
         page.get_by_test_id('territory-adventure-v1').wait_for()
-        page.get_by_role('button',name='Ручной бой').wait_for()
+        page.get_by_test_id('dark-cave-challenge').wait_for()
+        floor_panel = page.get_by_test_id('dark-cave-floor-scroll')
+        assert floor_panel.evaluate('(e) => e.scrollHeight > e.clientHeight'), '100 floors must be scrollable'
         assert page.locator('button').count() >= 8
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'horizontal overflow'
         page.screenshot(path=str(OUT / ('adventure-'+str(width)+'.png')), full_page=True)
         if width == 390:
-            assert page.locator('button').filter(has_text='3').count() > 0
-            page.get_by_role('button',name='Ручной бой').click()
+            assert page.get_by_test_id('dark-cave-current-floor').count() == 1
+            assert floor_panel.locator('[aria-label*="закрыт"]').count() >= 95, 'locked floors visible in scroll catalog'
+            floor_panel.evaluate('(e) => {e.scrollTop = e.scrollHeight}')
+            assert floor_panel.evaluate('(e) => e.scrollTop > 0'), 'must scroll beyond initial floors'
+            page.get_by_role('button',name='Мой этаж').click()
+            assert floor_panel.evaluate('(e) => e.scrollTop < e.scrollHeight - e.clientHeight'), 'jump to current floor'
+            page.get_by_test_id('dark-cave-challenge').click()
             page.get_by_text('Серверный бой').wait_for()
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
             page.get_by_role('button',name='Продолжить').click()
@@ -38,7 +45,7 @@ with sync_playwright() as p:
             assert page.get_by_text('+10 монет').count() == 1
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
             page.get_by_role('button',name='К этапам').click()
-            page.get_by_text('Открытый этаж: 2 / 100').wait_for()
+            page.get_by_text('Этаж 2 / 100').wait_for()
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
         page.close()
     assert not errors, errors
