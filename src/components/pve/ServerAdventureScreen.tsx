@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, ChevronLeft, Crown, Loader2, Lock, Swords, Trophy } from 'lucide-react';
+import { Check, Crown, Loader2, Lock, Swords, Zap } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { useGame } from '@/game/actions';
 import { ensurePlayerSession } from '@/game/auth';
 import { supabase } from '@/game/supabase';
 import { restoreAdventureSaveFence, restoreAdventureStartFence, requestAdventureStart, requestAdventureSettlement } from '@/game/combatV1/receiptAdapter';
 import { getCampaignStage, CAMPAIGN_CHAPTERS } from '@/game/idleContent/campaign';
-import type { IdleCombatState } from '@/game/idleEngine/types';
+import type { IdleCombatState, IdleCombatEvent } from '@/game/idleEngine/types';
+import { getCombatAppearance } from '@/game/appearance';
+import { getEnemyCombatFrames } from '@/game/combatArt';
+import type { StrikeEvent } from '@/game/useStrikeQueue';
+import { FighterFigure } from '@/components/arena/FighterFigure';
 
 type Progress = { completed_stage: number; unlocked_stage: number };
 type Settlement = { outcome: string; reward?: { gold: number; xp: number } };
-type Session = { session_id: string; revision: number; state: IdleCombatState; settlement?: Settlement | null };
+type Session = { session_id: string; revision: number; state: IdleCombatState; events?: IdleCombatEvent[]; settlement?: Settlement | null };
 type Props = { userId: string; onTrial: () => void; onActiveChange?: (active: boolean) => void };
 const sessionKey = (id: string) => 'territory_adventure_session_v1:' + id;
 const startKey = (id: string) => 'territory_adventure_start_v1:' + id;
@@ -59,15 +63,54 @@ export function ServerAdventureScreen({ userId, onTrial, onActiveChange }: Props
   const mounted = useRef(true);
   const lock = useRef(false);
   const sessionRef = useRef<Session | null>(null);
+  const battleRef = useRef<HTMLDivElement | null>(null);
+  const strikeId = useRef(0);
+  const [strike, setStrike] = useState<StrikeEvent | null>(null);
+  const [battleLog, setBattleLog] = useState<string[]>([]);
   const hooks = { getState: () => useGame.get(), applyState: (state: ReturnType<typeof useGame.get>) => useGame.set(state) };
 
   const install = useCallback((value: Session) => {
     if (!mounted.current) return;
     sessionRef.current = value;
     setSession(value);
+    // Visual effects follow the authoritative server event stream, never invented client hits.
+    const events = Array.isArray(value.events) ? value.events : [];
+    const lastHit = [...events].reverse().find(event =>
+      ['impact', 'critical', 'block', 'dodge'].includes(event.type)
+      && (event.target === 'hero' || event.target === 'enemy'));
+    if (lastHit) {
+      const opponent = getCampaignStage(value.state.input.stage).enemyName;
+      const hero = useGame.get().player.name;
+      setStrike({ key: ++strikeId.current,
+        attacker: lastHit.actor === 'hero' ? hero : opponent,
+        target: lastHit.target === 'hero' ? hero : opponent,
+        tone: lastHit.type === 'critical' ? 'crit' :
+          lastHit.type === 'block' ? 'block' : lastHit.type === 'dodge' ? 'dodge' : 'hit',
+        amount: typeof lastHit.value === 'number' ? Math.floor(lastHit.value) : null });
+    }
+    if (events.length) setBattleLog(old => [
+      ...old,
+      ...events.filter(event => ['impact', 'critical', 'block', 'dodge', 'rune_proc'].includes(event.type))
+        .slice(-5).map(event => event.type === 'rune_proc'
+          ? (en ? 'Rune activated' : 'Сработала руна')
+          : `${event.actor === 'hero' ? (en ? 'Hero' : 'Герой') : getCampaignStage(value.state.input.stage).enemyName}: ${event.type === 'critical' ? (en ? 'Critical hit' : 'Критический удар') : event.type === 'block' ? (en ? 'Block' : 'Блок') : event.type === 'dodge' ? (en ? 'Dodge' : 'Уклонение') : (en ? 'Hit' : 'Удар')}${typeof event.value === 'number' ? ' −' + Math.floor(event.value) : ''}`)
+    ].slice(-8));
     localStorage.setItem(sessionKey(userId), value.session_id);
     onActiveChange?.(value.state.status === 'fighting');
-  }, [userId, onActiveChange]);
+  }, [userId, onActiveChange, en]);
+
+  // The stage grid is tall on phones. Move to the actual fight once a session starts.
+  useEffect(() => {
+    if (!session?.session_id) return;
+    const frame = requestAnimationFrame(() => battleRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+    return () => cancelAnimationFrame(frame);
+  }, [session?.session_id]);
+
+  useEffect(() => {
+    if (!strike) return;
+    const timer = window.setTimeout(() => setStrike(null), 820);
+    return () => window.clearTimeout(timer);
+  }, [strike]);
 
   const readProgress = useCallback(async () => {
     const response = await supabase.rpc('territory_adventure_progress_v1');
@@ -155,7 +198,7 @@ export function ServerAdventureScreen({ userId, onTrial, onActiveChange }: Props
   const clearFinished = () => {
     if (lock.current || sessionRef.current?.state.status === 'fighting') return;
     localStorage.removeItem(sessionKey(userId));
-    sessionRef.current = null; setSession(null); onActiveChange?.(false);
+    sessionRef.current = null; setSession(null); setStrike(null); setBattleLog([]); onActiveChange?.(false);
   };
 
   const currentStage = progress?.unlocked_stage ?? 1;
@@ -168,6 +211,11 @@ export function ServerAdventureScreen({ userId, onTrial, onActiveChange }: Props
     return { left, max, pct: Math.max(0, Math.min(100, 100 * left / max)) };
   };
   const finished = session && session.state.status !== 'fighting';
+  const battleStage = session ? getCampaignStage(session.state.input.stage) : chosen;
+  const heroName = useGame.get().player.name;
+  const enemyName = battleStage.enemyName;
+  const fighterSrc = import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp';
+  const enemySrc = import.meta.env.BASE_URL + 'assets/territory/characters/' + battleStage.enemyArt + '/idle.webp';
 
   return <section className="space-y-3 pb-4" data-testid="territory-adventure-v1">
     <div className="flex items-center justify-between gap-2">
@@ -181,14 +229,38 @@ export function ServerAdventureScreen({ userId, onTrial, onActiveChange }: Props
       {en ? 'Recover server session' : 'Восстановить серверный бой'}
     </button>}
     {busy && <p role="status" className="text-center text-amber-100 text-xs"><Loader2 className="w-4 h-4 animate-spin inline mr-2"/>{en?'Synchronizing':'Синхронизация'}</p>}
-    {session ? <div className="rounded-2xl border border-amber-600/50 bg-gradient-to-b from-amber-950/70 to-slate-950 p-3 space-y-3">
-      <p className="text-center text-xs text-amber-200">{en?'Server battle':'Серверный бой'} · {en?'Stage':'Этап'} {session.state.input.stage}</p>
-      <div className="grid grid-cols-2 gap-3">
-        {(['hero','enemy'] as const).map(side => <div key={side} className="rounded-xl bg-black/40 p-3">
-          <p className="text-xs text-white mb-2">{side==='hero'?(en?'Hero':'Герой'):(en?'Enemy':'Противник')}</p>
-          <div className="h-2 bg-black rounded-full overflow-hidden"><div className={side==='hero'?'h-full bg-emerald-400':'h-full bg-red-400'} style={{width:hp(side).pct+'%'}}/></div>
-          <p className="text-[10px] text-gray-300 mt-1">{hp(side).left}/{hp(side).max} HP</p>
-        </div>)}
+    {session ? <div ref={battleRef} data-testid="territory-adventure-battle" className="rounded-2xl border border-amber-600/50 bg-gradient-to-b from-amber-950/70 to-slate-950 p-2 space-y-3 scroll-mt-3">
+      <p className="text-center text-xs text-amber-200 font-bold">{en?'Server battle':'Серверный бой'} · {en?'Stage':'Этап'} {session.state.input.stage} · {enemyName}</p>
+      <div className="relative min-h-[340px] overflow-hidden rounded-xl border border-amber-400/25 bg-slate-900">
+        <img src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/75 pointer-events-none" />
+        <div className="relative grid grid-cols-2 gap-2 p-2 min-h-[340px]">
+          {(['hero','enemy'] as const).map(side => <div key={side} className="relative min-w-0 flex flex-col">
+            <div className="relative z-20 rounded-lg border border-white/15 bg-black/65 p-2">
+              <p className="text-xs text-white font-semibold truncate mb-1">{side === 'hero' ? heroName : enemyName}</p>
+              <div className="h-2 bg-black rounded-full overflow-hidden"><div className={side === 'hero' ? 'h-full bg-emerald-400 transition-[width] duration-500' : 'h-full bg-red-400 transition-[width] duration-500'} style={{ width: hp(side).pct + '%' }} /></div>
+              <p className="text-[10px] text-gray-200 mt-1 text-right tabular-nums">{Math.ceil(hp(side).left)}/{Math.ceil(hp(side).max)} HP</p>
+            </div>
+            <div className="relative flex-1 z-10 min-h-[270px]">
+              {side === 'hero'
+                ? <FighterFigure src={fighterSrc} combatFrames={getCombatAppearance(useGame.get().appearance)}
+                    name={heroName} dir={1} alive={hp(side).left > 0} won={session.state.status === 'hero_won'}
+                    strike={strike} idleSeconds={3.1} scale={1.2}
+                    className="absolute right-0 bottom-0 h-full w-full object-contain object-right-bottom" />
+                : <FighterFigure src={enemySrc} combatFrames={getEnemyCombatFrames(enemySrc)}
+                    name={enemyName} dir={-1} alive={hp(side).left > 0} won={session.state.status === 'enemy_won'}
+                    strike={strike} idleSeconds={2.8}
+                    className="absolute left-0 bottom-0 h-[86%] w-full object-contain object-left-bottom" />}
+            </div>
+          </div>)}
+        </div>
+      </div>
+      <div className="flex justify-between items-center gap-2 text-xs text-amber-100">
+        <span className="flex items-center gap-1"><Zap size={14}/>{en ? 'Energy' : 'Энергия'}: {Math.floor(session.state.actors.hero.energy)}/{session.state.input.rules.maxEnergy}</span>
+        <span className="text-yellow-200">{session.state.input.control === 'auto' ? (en?'Auto':'Авто') : (en?'Manual':'Ручной')}</span>
+      </div>
+      {!!battleLog.length && <div className="rounded-lg bg-black/35 border border-white/10 px-2 py-1 text-[11px] text-slate-200 max-h-24 overflow-auto" aria-live="polite">
+        {battleLog.slice(-4).map((line, i) => <p key={i}>{line}</p>)}
       </div>
       {finished ? <>
         <p className="text-center text-amber-200 font-bold">{session.state.status==='hero_won'?(en?'Victory!':'Победа!'):(en?'Battle finished':'Бой завершён')}</p>
