@@ -274,6 +274,34 @@ export function acceptAdventureSettlementReceipt(userId:string,response:unknown,
  return state;
 }
 
+/** Adopt the newest verified, owner-scoped server snapshot when a replayed
+ * cave receipt predates other saved activity. No currency is issued.
+ * Call only after authenticated server operation and owner-scoped row read.
+ */
+export function acceptAdventureLatestCloudSnapshot(
+  userId: string, source: unknown, receiptUpdatedAt: unknown,
+): GameState {
+  if (!source || typeof source !== 'object' || Array.isArray(source))
+    throw new Error('adventure_invalid_cloud_snapshot');
+  const row = source as Record<string, unknown>;
+  const state = row.game_state as GameState;
+  if (row.id !== userId || !validSaveToken(row.updated_at)
+    || !validSaveToken(receiptUpdatedAt) || !validEconomySnapshot(state)
+    || !Array.isArray(state.inventory) || !Number.isSafeInteger(state.forgeMaterials))
+    throw new Error('adventure_invalid_cloud_snapshot');
+  const wallet = safeWalletVersion({ gold: row.gold, gems: row.gems }, state.player);
+  if (!walletMatchesVersion(wallet, state.player))
+    throw new Error('adventure_invalid_cloud_snapshot');
+  const previous = saveTokens.get(userId);
+  if ((validSaveToken(previous) && Date.parse(row.updated_at) < Date.parse(previous))
+    || Date.parse(row.updated_at) < Date.parse(receiptUpdatedAt))
+    throw new Error('adventure_reload_required');
+  protectFortuneSave(userId); // invalidate queued older snapshots
+  saveTokens.set(userId, row.updated_at);
+  walletVersions.set(userId, wallet);
+  return state; // caller retains the fence until original operation is resolved
+}
+
 /** Install an atomic one-stone PvE start debit from its durable server receipt.
  * A replay must never reapply an older snapshot over newer cloud progress. */
 export function acceptAdventureStartReceipt(userId:string,response:unknown,sessionId:string):GameState|null{
