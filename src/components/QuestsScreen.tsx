@@ -54,24 +54,24 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { use
       </section>}
 
       {starterNext && (
-        <section className="rounded-2xl border border-sky-400/30 bg-gradient-to-br from-[#172b38] to-[#10151f] p-3" aria-label={language === 'en' ? 'Beginner journey' : 'Путь новичка'}>
+        <section data-testid="quest-hero-path" className="rounded-2xl border-2 border-amber-500/65 bg-gradient-to-br from-[#704322] via-[#442812] to-[#251509] p-3 shadow-[inset_0_2px_12px_rgba(255,194,94,0.14),0_5px_14px_rgba(0,0,0,0.25)]" aria-label={language === 'en' ? 'Hero path' : 'Путь героя'}>
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-bold text-sky-100">🧭 {language === 'en' ? 'Your first steps' : 'Путь новичка'}</h3>
+            <h3 className="text-sm font-black text-amber-100">🧭 {language === 'en' ? 'Hero path' : 'Путь героя'}</h3>
             <span className="text-xs font-bold text-amber-200 tabular-nums">{starterDone}/4</span>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/45" role="progressbar" aria-valuenow={starterDone} aria-valuemin={0} aria-valuemax={4}>
-            <div className="h-full bg-gradient-to-r from-sky-400 to-emerald-400" style={{ width: `${starterDone * 25}%` }} />
+            <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-200" style={{ width: `${starterDone * 25}%` }} />
           </div>
           <ol className="mt-2 space-y-1">
             {starterSteps.map((step) => <li key={step.id} className={`flex items-center gap-2 text-xs ${step.done ? 'text-emerald-300' : 'text-slate-200'}`}>
-              {step.done ? <CheckCircle2 size={14} className="shrink-0" /> : <span aria-hidden="true" className="h-3.5 w-3.5 shrink-0 rounded-full border border-sky-400/60" />}
+              {step.done ? <CheckCircle2 size={14} className="shrink-0" /> : <span aria-hidden="true" className="h-3.5 w-3.5 shrink-0 rounded-full border border-amber-400/70" />}
               <span>{language === 'en' ? step.titleEn : step.titleRu}</span>
             </li>)}
           </ol>
-          <button type="button" onClick={() => onNavigate(starterNext.destination)} className="mt-2 w-full rounded-lg border border-sky-300/40 bg-sky-500/20 px-3 py-2 text-xs font-bold text-sky-50 active:scale-[0.99]">
+          <button type="button" onClick={() => onNavigate(starterNext.destination)} className="mt-2 min-h-10 w-full rounded-lg border border-yellow-200/80 bg-gradient-to-b from-yellow-300 via-amber-400 to-amber-600 px-3 py-2 text-sm font-black text-[#40220c] shadow-[0_3px_0_#633c15] active:scale-[0.99]">
             {language === 'en' ? starterNext.actionEn : starterNext.actionRu}
           </button>
-          <p className="mt-1 text-[10px] text-slate-400">{language === 'en' ? 'Your regular quest rewards are listed below.' : 'Награды за выполненные задания находятся ниже.'}</p>
+          <p className="mt-2 text-[10px] text-amber-100/70">{language === 'en' ? 'Your regular quest rewards are listed below.' : 'Награды за выполненные задания находятся ниже.'}</p>
         </section>
       )}
 
