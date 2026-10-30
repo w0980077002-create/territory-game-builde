@@ -113,6 +113,10 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const referralStart = useRef<Promise<string | null> | null>(null);
   const referralFinish = useRef<Promise<unknown>>(Promise.resolve());
   const nextRequested = useRef(false);
+  // React's disabled button state is not synchronous. Lock the round before
+  // the first await, so two taps cannot run two local fights / referral rounds.
+  const roundFlight = useRef(false);
+  const lastPotionUse = useRef<{ slot: number; at: number } | null>(null);
   heroRef.current = hero;
   foeRef.current = foe;
 
@@ -152,8 +156,10 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   }, [enemy, kind]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
-    if (busy || outcome) return;
+    if (roundFlight.current || busy || outcome || done.current || !alive.current) return;
+    roundFlight.current = true;
     setBusy(true);
+    try {
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     hapticImpact('light');
     const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus);
@@ -176,11 +182,14 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
       pushLog(language === 'en' ? `Companion healed ${res.healAmount} HP` : `Спутник восстановил ${res.healAmount} HP`);
     }
     setStrike(null);
-    setBusy(false);
     setAttack(null);
     setBlocks([]);
     if (res.enemy.hp <= 0) finish(true);
     else if (res.hero.hp <= 0) finish(false);
+    } finally {
+      roundFlight.current = false;
+      if (alive.current) setBusy(false);
+    }
   }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language]);
 
   useEffect(() => {
@@ -202,16 +211,25 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     setBlocks((b) => (b.includes(z) ? b.filter((x) => x !== z) : b.length < 2 ? [...b, z] : [b[1], z]));
 
   const drinkPotion = (i: number, open: boolean) => {
-    const item = state.belt[i];
+    if (roundFlight.current || busy || outcome || done.current || !alive.current) return;
     if (!open) return setToast(language === 'en' ? 'This belt slot is still locked' : 'Этот слот пояса ещё закрыт');
+    // Read the current saved belt, not the one from the last React render:
+    // an Android double tap must not re-use an already consumed last charge.
+    const latest = useGame.get();
+    const item = latest.belt[i];
     if (!item) return setToast(language === 'en' ? 'Empty slot — move an elixir from inventory' : 'Слот пуст — положи эликсир из инвентаря');
-    if (busy || outcome) return;
+    const now = Date.now();
+    if (lastPotionUse.current?.slot === i && now - lastPotionUse.current.at < 650) return;
     const r = applyPotion(heroRef.current, item);
     setToast(r.text);
     if (!r.ok) return;
+    lastPotionUse.current = { slot: i, at: now };
+    // Publish the new local hero state before another input event, even if
+    // React has not committed the visual HP yet.
+    heroRef.current = r.hero;
+    useGame.set(consumeBelt(latest, i));
     setHero(r.hero);
     pushLog(`${item.name}: ${r.text}`);
-    useGame.set((s) => consumeBelt(s, i));
   };
 
   const controls = !busy && !outcome && !auto;
@@ -394,7 +412,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
         </div>
       )}
 
-      <FoldSection title={language === 'en' ? 'Equipment' : 'Снаряжение'} summary={`${Object.keys(state.player.equipped).length}/7`} open={gearOpen} onToggle={() => setGearOpen((v) => !v)}>
+      <FoldSection title={language === 'en' ? 'Equipment' : 'Снаряжение'} summary={`${Object.values(state.player.equipped).filter(Boolean).length}/7`} open={gearOpen} onToggle={() => setGearOpen((v) => !v)}>
         <GearStrip equipped={state.player.equipped} />
       </FoldSection>
 

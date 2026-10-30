@@ -88,4 +88,23 @@ assert(engine.includes('export const PVE_STONE_COST = 1;'), 'combat stone cost u
 assert(engine.includes('winsNeeded: enemies.length'), 'chapter gates unchanged');
 assert(actions.includes('currentChapter: nextChapter'), 'chapter progression remains victory-based');
 assert(!engine.includes('Math.pow(1.15, num)'), 'no accidental exponential boss loot inflation');
+
+const classicFight = source('../src/components/pve/PveFight.tsx');
+assert.match(classicFight, /const roundFlight = useRef\(false\)/,
+  'Classic campaign and trials need a synchronous one-round-at-a-time guard');
+assert.match(classicFight, /if \(roundFlight\.current \|\| busy \|\| outcome \|\| done\.current \|\| !alive\.current\) return;/,
+  'Repeated attack taps and unmounted fights must not run another round');
+assert.match(classicFight, /roundFlight\.current = true;[\s\S]*?try \{/,
+  'Lock the round before animation or referral bookkeeping');
+assert.match(classicFight, /finally \{\s*roundFlight\.current = false;/,
+  'Always release the in-flight round guard');
+assert.match(classicFight, /const latest = useGame\.get\(\);\s*const item = latest\.belt\[i\];/,
+  'Consume the most recent inventory belt, not a stale React snapshot');
+assert.match(classicFight, /now - lastPotionUse\.current\.at < 650/,
+  'A rapid double tap must not consume the same potion twice');
+assert.match(classicFight, /heroRef\.current = r\.hero;\s*useGame\.set\(consumeBelt\(latest, i\)\)/,
+  'Update battle state and consume one current belt charge exactly once');
+assert.match(classicFight, /Object\.values\(state\.player\.equipped\)\.filter\(Boolean\)\.length/,
+  'Only actual equipped items count toward the seven gear slots');
+
 console.log('PvE balance PASS: floors 1-3000, boss milestones, real rounds, follower limits, tutorial, costs and progression.');
