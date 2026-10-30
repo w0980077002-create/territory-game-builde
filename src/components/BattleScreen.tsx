@@ -110,7 +110,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
     <div className={view === 'cave'
       ? 'flex h-full min-h-0 flex-col gap-2 overflow-hidden animate-fade-in'
       : 'space-y-3 animate-fade-in pb-2'}>
-      <div data-testid="battle-mode-tabs" className="grid shrink-0 grid-cols-3 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10">
+      <div data-testid="battle-mode-tabs" role="tablist" className="viking-adventure-tabs grid shrink-0 grid-cols-3 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10">
         {([
           { id: 'campaign', label: t('campaign'), icon: Swords },
           { id: 'trial', label: t('trials'), icon: Mountain },
@@ -118,6 +118,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         ] as const).map((t) => (
           <button
             key={t.id}
+            role="tab" aria-selected={view === t.id}
             onClick={() => onView(t.id)}
             disabled={caveActive && view === 'cave' && t.id !== 'cave'}
             className={`min-h-12 rounded-xl text-[11px] leading-tight font-semibold flex flex-col items-center justify-center gap-0.5 transition-all disabled:opacity-40 ${
