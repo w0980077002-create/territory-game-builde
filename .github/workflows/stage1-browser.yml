@@ -6,6 +6,8 @@ on:
       - 'src/**'
       - 'scripts/stage1/**'
       - 'scripts/*slots*'
+      - 'scripts/*-browser.py'
+      - 'scripts/build-*-preview.mjs'
       - 'package*.json'
       - '.github/workflows/stage1-browser.yml'
   workflow_dispatch:
@@ -18,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [stage1, slots, adventure, hero]
+        suite: [stage1, slots, adventure, hero, gameplay-ui, workshop-ui]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,6 +51,16 @@ jobs:
         if: matrix.suite == 'adventure'
       - run: python scripts/check-cave-compact-layout.py
         if: matrix.suite == 'adventure'
+      - run: node scripts/build-journey-preview.mjs && python scripts/check-journey-browser.py
+        if: matrix.suite == 'gameplay-ui'
+      - run: node scripts/build-arena-room-preview.mjs && python scripts/check-arena-room-browser.py
+        if: matrix.suite == 'gameplay-ui'
+      - run: node scripts/build-arena-result-preview.mjs && python scripts/check-arena-result-browser.py
+        if: matrix.suite == 'gameplay-ui'
+      - run: node scripts/build-runes-preview.mjs && python scripts/check-runes-browser.py
+        if: matrix.suite == 'workshop-ui'
+      - run: node scripts/build-workshop-preview.mjs && python scripts/check-workshop-browser.py
+        if: matrix.suite == 'workshop-ui'
       - uses: actions/upload-artifact@v4
         if: always()
         with:

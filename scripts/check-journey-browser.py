@@ -1,5 +1,5 @@
 """Offline campaign/trial UI: actual React screen, simulated combat and transport."""
-import os, threading
+import os, threading, shutil
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from playwright.sync_api import sync_playwright
@@ -11,7 +11,7 @@ class Handler(SimpleHTTPRequestHandler):
 server=ThreadingHTTPServer(('127.0.0.1',0),partial(Handler,directory='/tmp'))
 threading.Thread(target=server.serve_forever,daemon=True).start()
 with sync_playwright() as p:
-    browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
+    browser=p.chromium.launch(executable_path=shutil.which('chromium'),args=['--no-sandbox'])
     for width in (320,360,390,430):
         for lang in ('ru','en'):
             page=browser.new_page(viewport={'width':width,'height':500},reduced_motion='reduce')
@@ -26,6 +26,11 @@ with sync_playwright() as p:
             assert encounter.locator('.journey-encounter__art img').evaluate('(el)=>el.complete && el.naturalWidth>0')
             fight=encounter.get_by_role('button',name='Fight' if lang=='en' else 'Бой')
             assert fight.bounding_box()['height'] >= 44
+            heading=encounter.locator('h3')
+            heading.evaluate("el => el.textContent = 'Очень длинное имя великого повелителя северных земель / Extremely long northern overlord name'")
+            assert heading.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1 && el.scrollHeight <= el.clientHeight + 3'), heading.evaluate('(el) => [el.scrollWidth,el.clientWidth,el.scrollHeight,el.clientHeight]')
+            assert heading.bounding_box()['y'] + heading.bounding_box()['height'] <= encounter.locator('.journey-encounter__stats').bounding_box()['y'] + 1
+            assert fight.is_visible() and fight.bounding_box()['x'] + fight.bounding_box()['width'] <= width
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             fight.click()
             assert page.get_by_test_id('fixture-fight').inner_text() == 'stage'
