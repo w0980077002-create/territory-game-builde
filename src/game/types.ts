@@ -181,6 +181,8 @@ export interface GameState {
   quests: Quest[];
   achievements: Achievement[];
   forgeMaterials: number;
+  /** Scarce companion awakening resource. Absent in older saves -> zero. No earn/shop sources yet. */
+  awakeningStones?: number;
   storyProgress: number;
   lastEnergyAt: number;
   dailyResetDay: string;
