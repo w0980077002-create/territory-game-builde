@@ -1,5 +1,6 @@
 ## TERRITORY 1.0 release command center — owner decision 2026-10-30
 
+- **Owner operating agreement and roles:** [`docs/territory-v1-release/WORKING_AGREEMENT_RU.md`](docs/territory-v1-release/WORKING_AGREEMENT_RU.md). Review before delegating; owners do not need to test every change. Do not misrepresent scheduled checks as a continuously running Codex agent.
 - **Canonical prioritized plan:** [`docs/territory-v1-release/PLAN_RU.md`](docs/territory-v1-release/PLAN_RU.md).
 - **Next actionable Codex task:** [`docs/territory-v1-release/CODEX_QUEUE_RU.md`](docs/territory-v1-release/CODEX_QUEUE_RU.md). Read the queue **before** starting any new work; begin with its highest-priority unfinished, unblocked task and reuse existing issue/PR rather than making duplicates.
 - **Release target is GitHub Pages from `main` only.** Vercel is explicitly out of scope for this beta: no new Vercel deploys, verification workflows, project changes or service integrations unless the owner later requests them. Do not delete existing Vercel assets. GitHub Pages CI and published revision are required before calling a game feature released.
