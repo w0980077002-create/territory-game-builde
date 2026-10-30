@@ -34,7 +34,7 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { use
   };
 
   return (
-    <div className="space-y-4 animate-fade-in pb-2">
+    <div className="viking-screen viking-screen--quests space-y-4 animate-fade-in pb-2">
       <div className="relative rounded-2xl overflow-hidden border border-amber-500/20 p-4">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-900/35 via-[#16130d] to-[#0f1115]" />
         <div className="relative flex items-center gap-3">
