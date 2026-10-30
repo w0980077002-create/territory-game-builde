@@ -111,7 +111,13 @@ export async function requestAdventureStart(userId:string,command:Start,hooks:Ho
    }
    protectFortuneSave(userId);fenced=true;
    const {data,error}=await supabase.functions.invoke('territory-combat',{body:checked});
-   if(error||!record(data)||data.success!==true||typeof data.session_id!=='string'
+   if(error){
+     // Keep the original HTTP 409 only when its machine code verifies rollback.
+     // A timeout, 503 or unknown error remains indistinguishable from a commit.
+     if(await isVerifiedRollback(error)) throw error;
+     throw new Error('adventure_unconfirmed');
+   }
+   if(!record(data)||data.success!==true||typeof data.session_id!=='string'
      ||!record(data.start_save)||!record(data.state)||data.state.status!=='fighting')
      throw new Error('adventure_unconfirmed');
    const check=await supabase.from('players').select('id,updated_at,game_state,gold,gems').eq('id',userId).maybeSingle();
@@ -173,7 +179,11 @@ export async function requestAdventureSettlement(userId: string, command: Advanc
     protectFortuneSave(userId);
     fenced = true;
     const { data, error } = await supabase.functions.invoke('territory-combat', { body: checked });
-    if (error || !record(data) || data.success !== true || data.session_id !== checked.sessionId || !record(data.state)
+    if (error) {
+      if (await isVerifiedRollback(error)) throw error;
+      throw new Error('adventure_unconfirmed');
+    }
+    if (!record(data) || data.success !== true || data.session_id !== checked.sessionId || !record(data.state)
       || !Number.isSafeInteger(data.revision) || Number(data.revision)<0
       || (checked.action === 'advance' && data.revision !== checked.revision+1))
       throw new Error('adventure_unconfirmed');
