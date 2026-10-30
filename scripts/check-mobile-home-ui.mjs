@@ -18,7 +18,7 @@ const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventu
   read('src/components/ForgeScreen.tsx'),
   read('src/components/ui/Modal.tsx'),
   read('src/components/InventoryScreen.tsx'),
-  read('src/components/arena/ArenaLobby.tsx'),
+  read('src/components/arena/ArenaRulesModal.tsx'),
   read('src/components/arena/ArenaRoom.tsx'),
   read('src/components/MonopolyScreen.tsx'),
   read('src/components/monopoly/MonopolyAdventure.tsx'),

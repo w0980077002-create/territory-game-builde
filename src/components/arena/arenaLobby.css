@@ -1276,6 +1276,12 @@
 /* Keyboard, Telegram safe areas and short landscape screens keep the close
    control in view; only the list scrolls. */
 @media(max-height:560px){.arena-rules-panel{max-height:70dvh;}}
+html.territory-ios-webapp .territory-shell > .arena-rules-overlay{
+  position:absolute;inset:0;z-index:110;width:100%;height:100%;
+}
+html.territory-ios-webapp .territory-shell > .arena-rules-overlay .arena-rules-panel{max-height:min(65%,440px);}
+@media(max-height:560px){html.territory-ios-webapp .territory-shell > .arena-rules-overlay .arena-rules-panel{max-height:70%;}}
+.arena-rules-list:focus-visible{outline:2px solid #fff1b7;outline-offset:-3px;}
 @media(max-width:365px){
   .arena-approved-fight-tip{padding:5px 6px;font-size:10px;}
   .arena-approved-entry .arena-weekly-winners{gap:3px;}
