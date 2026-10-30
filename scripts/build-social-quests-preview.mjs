@@ -36,7 +36,7 @@ const out=await build({
   alias:{'@':resolve('src')},
   define:{'import.meta.env.BASE_URL':JSON.stringify('/'),'process.env.NODE_ENV':'"production"'},
   plugins:[{name:'mock-social-transport',setup(b){
-    b.onResolve({filter:new RegExp('socialQuests},()=>({path:'social-quests-stub',namespace:'social-stub'}));
+    b.onResolve({filter:new RegExp('socialQuests')},()=>({path:'social-quests-stub',namespace:'social-stub'}));
     b.onLoad({filter:/.*/,namespace:'social-stub'},()=>({contents:stub,loader:'js'}));
   }}]
 });
