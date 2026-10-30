@@ -130,6 +130,9 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
 
   useEffect(() => {
+    // React StrictMode may replay effect setup/cleanup in development.
+    alive.current = true;
+    nextCancelled.current = false;
     referralStart.current = beginReferralFight(kind, enemy.id);
     return () => { alive.current = false; nextCancelled.current = true; };
   }, [kind, enemy.id]);
