@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import { ensurePlayerSession } from '../auth';
-import { acceptAdventureSettlementReceipt, acceptAdventureStartReceipt, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave } from '../cloud';
+import { acceptAdventureSettlementReceipt, acceptAdventureStartReceipt, acceptAdventureLatestCloudSnapshot, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave } from '../cloud';
 import type { GameState } from '../types';
 import { parseCombatCommand, type CombatCommand } from './service';
 
@@ -64,11 +64,15 @@ export async function requestAdventureStart(userId:string,command:Start,hooks:Ho
    if(error||!record(data)||data.success!==true||typeof data.session_id!=='string'
      ||!record(data.start_save)||!record(data.state)||data.state.status!=='fighting')
      throw new Error('adventure_unconfirmed');
-   const check=await supabase.from('players').select('updated_at').eq('id',userId).maybeSingle();
-   if(check.error||!check.data||check.data.updated_at!==data.start_save.updated_at)
-     throw new Error('adventure_reload_required');
-   const adopted=acceptAdventureStartReceipt(userId,data.start_save,data.session_id);
-   if(adopted)hooks.applyState(adopted);
+   const check=await supabase.from('players').select('id,updated_at,game_state,gold,gems').eq('id',userId).maybeSingle();
+   if(check.error||!check.data)throw new Error('adventure_reload_required');
+   if(check.data.updated_at !== data.start_save.updated_at){
+     // Confirmed original start followed by newer authoritative cloud activity.
+     hooks.applyState(acceptAdventureLatestCloudSnapshot(userId,check.data,data.start_save.updated_at));
+   }else{
+     const adopted=acceptAdventureStartReceipt(userId,data.start_save,data.session_id);
+     if(adopted)hooks.applyState(adopted);
+   }
    localStorage.removeItem(startKey(userId));
    releaseArenaRejectedAction(userId);fenced=false;
    return data;
@@ -92,7 +96,8 @@ export async function requestAdventureSettlement(userId: string, command: Advanc
     if (authError || user?.id !== userId) throw new Error('adventure_auth_required');
     const wasBlocked = saveBlocked.has(userId);
     const old = restoreAdventureSaveFence(userId);
-    if (!old && wasBlocked) throw new Error('adventure_save_blocked');
+    // Read-only resume can reconcile a confirmed terminal battle without a new debit.
+    if (!old && wasBlocked && checked.action !== 'resume') throw new Error('adventure_save_blocked');
     if (old && JSON.stringify(old) !== JSON.stringify(checked)) throw new Error('adventure_retry_pending_operation');
     if (!old && checked.action === 'advance') {
       const snapshot = hooks.getState();
@@ -116,13 +121,19 @@ export async function requestAdventureSettlement(userId: string, command: Advanc
       // before exposing its snapshot; the normal CAS still guards later saves.
       const currentUser = await supabase.auth.getUser();
       if (currentUser.error || currentUser.data.user?.id !== userId) throw new Error('adventure_auth_required');
-      const current = await supabase.from('players').select('updated_at').eq('id', userId).maybeSingle();
-      if (current.error || !current.data || current.data.updated_at !== data.settlement.updated_at)
-        throw new Error('adventure_reload_required');
-      const state = acceptAdventureSettlementReceipt(userId, data.settlement, checked.sessionId);
-      if (state) hooks.applyState(state);
+      const current = await supabase.from('players').select('id,updated_at,game_state,gold,gems').eq('id', userId).maybeSingle();
+      if (current.error || !current.data) throw new Error('adventure_reload_required');
+      if (current.data.updated_at !== data.settlement.updated_at) {
+        // Adopt the latest verified state; old reward is already in server ledger.
+        hooks.applyState(acceptAdventureLatestCloudSnapshot(userId,current.data,data.settlement.updated_at));
+      } else {
+        const state = acceptAdventureSettlementReceipt(userId, data.settlement, checked.sessionId);
+        if (state) hooks.applyState(state);
+      }
     } else if (data.state.status !== 'fighting' || data.settlement != null) {
       throw new Error('adventure_invalid_receipt');
+    } else if (!old && wasBlocked) {
+      throw new Error('adventure_save_blocked');
     }
     if (checked.action === 'advance') localStorage.removeItem(key(userId));
     releaseArenaRejectedAction(userId);
