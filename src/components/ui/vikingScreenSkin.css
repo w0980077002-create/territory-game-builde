@@ -217,3 +217,103 @@
 .territory-shell .territory-mail__letter button:focus-visible {
   outline:3px solid #fff1b7;outline-offset:2px;
 }
+
+/* Companion camp: brighten wood, gold and lettering without repainting art. */
+.territory-shell .followers-camp__header,
+.territory-shell .expansion-panel__head {
+  border:2px solid #d5a563;
+  background:linear-gradient(120deg,#50321ebd,#2b1d14d9),var(--viking-plaque) center / cover no-repeat;
+  box-shadow:inset 0 1px 0 #ffe9b971,0 4px 8px #160b077c;
+}
+.territory-shell .followers-camp__active,
+.territory-shell .followers-camp__detail,
+.territory-shell .expansion-panel__card,
+.territory-shell .expansion-panel__summary {
+  border-color:#c79853;
+  background:linear-gradient(135deg,#634026,#332117 85%);
+  box-shadow:inset 0 1px 0 #ffdf9e5a,0 3px 7px #13090470;
+}
+.territory-shell .followers-camp__portrait {
+  border-color:#b48b56;
+  background:linear-gradient(145deg,#67442b,#2c211a);
+  color:#fff0d5;
+}
+.territory-shell .followers-camp__portrait--focus {
+  border-color:#ffe3a0;
+  background:linear-gradient(#865b31,#462919);
+}
+.territory-shell .followers-camp__portrait--active {
+  border-color:#b2e89b;
+}
+.territory-shell .followers-camp__portrait b {
+  font-size:clamp(9px,2.8vw,11px);
+  font-weight:900;
+  line-height:1.16;
+}
+.territory-shell .followers-camp__active-info :is(h3,p),
+.territory-shell .expansion-panel__card h3 {
+  color:#fff0c9;text-shadow:var(--viking-title-shadow);
+}
+.territory-shell .followers-camp__count,
+.territory-shell .expansion-panel__pending,
+.territory-shell .expansion-panel__slot {
+  background:linear-gradient(#573b26,#30231a);
+  border-color:#b68c53;
+  color:#ffe4b0;
+}
+.territory-shell .expansion-panel__slot[aria-pressed="true"] {
+  background:linear-gradient(#a4773b,#50311c);
+  border-color:#ffe1a2;
+}
+.territory-shell .expansion-panel__slot span,
+.territory-shell .expansion-panel__relic > span {
+  font-size:clamp(9px,2.6vw,11px);
+  font-weight:800;
+  line-height:1.16;
+}
+.territory-shell .expansion-panel__card > button,
+.territory-shell .expansion-panel__sea-actions > button {
+  min-height:44px;
+  border-color:#ffe1a0;
+  color:#31200e;
+  background:var(--viking-button-bg);
+  font-weight:900;
+}
+.territory-shell .followers-camp button:focus-visible,
+.territory-shell .expansion-panel button:focus-visible {
+  outline:3px solid #ffe7b0;outline-offset:2px;
+}
+/* Events calendar: buttons/panels, not the images or reward statuses. */
+.territory-shell .territory-events__hero {
+  border:2px solid #d7aa69;
+  background:radial-gradient(ellipse at 80% 0,#cc883144,transparent 67%),linear-gradient(#52321add,#2c201bdc),var(--viking-plaque) center / cover no-repeat;
+}
+.territory-shell .territory-events__summary > div,
+.territory-shell .territory-events__journey {
+  border-color:#bd8c52;
+  background:linear-gradient(130deg,#563723,#2e2118);
+}
+.territory-shell .territory-events__tabs {
+  border:2px solid #c29450;
+  background:linear-gradient(#6b4427,#392316);
+}
+.territory-shell .territory-events__tabs > button {
+  min-height:44px;
+  border:1px solid #ac8047;
+  color:#ffe8c2;
+  background:linear-gradient(#5c3925,#352014);
+}
+.territory-shell .territory-events__tabs > button[aria-selected="true"] {
+  background:var(--viking-button-bg);
+  color:#301a0b;
+  border-color:#ffe1aa;
+  text-shadow:0 1px #fff3bb;
+}
+.territory-shell .territory-events__refresh {
+  width:44px;height:44px;flex-basis:44px;
+  color:#fff0c4;border:2px solid #d5a55f;
+  background:linear-gradient(#97602d,#51321e);
+}
+.territory-shell .territory-events :is(button,a):focus-visible {
+  outline:3px solid #fff1b7;outline-offset:2px;
+}
