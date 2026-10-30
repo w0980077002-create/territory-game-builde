@@ -112,9 +112,18 @@ with sync_playwright() as p:
     assert page.evaluate('window.__slotCalls.at(-1).p_expected')==saved['expected']
     # Risk uses the real request API and a server response, no client RNG.
     page.get_by_role('button',name='РИСК ×2',exact=True).click()
-    page.get_by_role('dialog',name='Бонусная игра').wait_for()
+    dialog=page.get_by_role('dialog',name='Бонусная игра')
+    dialog.wait_for()
     assert page.locator('.vslot-adventure-tile').count()==4
-    page.get_by_role('button',name='Выбрать 1',exact=True).click()
+    first=dialog.get_by_role('button',name='Выбрать 1',exact=True)
+    last=dialog.locator('button:not([disabled])').last
+    assert first.evaluate('(el) => document.activeElement === el'), 'focus enters live bonus modal'
+    last.focus()
+    page.keyboard.press('Tab')
+    assert first.evaluate('(el) => document.activeElement === el'), 'Tab must remain inside the live bonus'
+    page.keyboard.press('Shift+Tab')
+    assert last.evaluate('(el) => document.activeElement === el'), 'Shift+Tab wraps inside bonus'
+    first.click()
     page.get_by_role('button',name='ЗАБРАТЬ 64',exact=True).wait_for()
     page.get_by_role('button',name='ЗАБРАТЬ 64',exact=True).click()
     # Bonus board retains approved immersive art; reopening restores server phase.
@@ -129,6 +138,22 @@ with sync_playwright() as p:
     page.locator('#fixture-remount').evaluate('(b)=>b.click()')
     page.get_by_role('dialog',name='Бонусная игра').wait_for()
     assert page.locator('.vslot-adventure-tile:disabled').count()==1
+    # iPhone shell portal: a restored live bonus must remain above the footer.
+    ios=load(browser,320,568)
+    ios.evaluate("document.documentElement.classList.add('territory-ios-webapp')")
+    ios.get_by_role('button',name='КРУТИТЬ',exact=True).click()
+    skip_reel_animation(ios)
+    ios.get_by_role('button',name='РИСК ×2',exact=True).click()
+    ios_dialog=ios.get_by_role('dialog',name='Бонусная игра')
+    ios_dialog.wait_for()
+    assert ios.locator('.territory-shell > .vslot-adventure-backdrop').count()==1, 'bonus portal must attach to iPhone shell'
+    assert ios_dialog.get_by_role('button',name='Выбрать 1',exact=True).evaluate('(el) => document.activeElement === el')
+    assert ios.evaluate('document.documentElement.scrollWidth <= innerWidth')
+    calls_before=ios.evaluate('window.__slotCalls.length')
+    ios.keyboard.press('Escape')
+    assert ios.evaluate('window.__slotBack === true'), 'Escape must leave safely and keep server round'
+    assert ios.evaluate('window.__slotCalls.length')==calls_before, 'Escape cannot wager or collect gold'
+    ios.close()
     # A blocked durable write must never send a gameplay request.
     page=load(browser)
     # Return a non-callable value: Playwright invokes functions returned by
