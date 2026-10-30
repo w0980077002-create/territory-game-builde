@@ -27,7 +27,7 @@ export function FortuneDialog({ title, onClose, children }: { title: string; onC
     </div>
     <div className="fortune-dialog__body">{children}</div>
     <div className="fortune-dialog__foot">
-      <button type="button" className="fortune-button" onClick={onClose}>{language === 'en' ? 'CLOSE' : 'ЗАКРЫТЬ'}</button>
+      <button type="button" className="fortune-button" onClick={onClose}>OK</button>
     </div>
   </dialog>;
 }
