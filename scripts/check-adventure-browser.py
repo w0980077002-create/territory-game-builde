@@ -54,7 +54,7 @@ with sync_playwright() as p:
             page.get_by_test_id('dark-cave-challenge').click()
             page.get_by_text('Серверный бой').wait_for()
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
-            page.get_by_role('button',name='Продолжить').click()
+            page.get_by_role('button',name='Следующий шаг боя').click()
             page.get_by_text('Победа!').wait_for()
             assert page.get_by_text('+10 монет').count() == 1
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
