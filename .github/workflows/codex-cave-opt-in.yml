@@ -46,6 +46,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Bring current release rules and fixes from main into this checkout
+        run: |
+          git fetch --no-tags origin main
+          git merge --no-edit origin/main
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
