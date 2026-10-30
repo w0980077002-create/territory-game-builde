@@ -15,12 +15,14 @@ import { useStore } from '@/game/store';
 import { validEconomySnapshot } from '@/game/economyInvariant';
 import { Users, Swords, Crown, Shield, Coins, ChevronLeft, Send, ScrollText, Gem } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
+import { SocialTrail, type SocialDestination } from './social/SocialTrail';
+import { ClanNextStep } from './social/ClanNextStep';
 
 const CLAN_COLORS = ['#eab308', '#ef4444', '#22c55e', '#3b82f6', '#f97316', '#ec4899', '#14b8a6', '#a3e635'];
 const EMBLEMS = ['🐺', '🦁', '🐉', '🦅', '🐻', '🐺', '⚔️', '🛡️', '🔥', '🌊', '⚡', '🌟'];
 const ROLE_ORDER: Record<string, number> = { leader: 0, deputy: 1, officer: 2, veteran: 3, member: 4 };
 
-type Props = { userId: string; notify: (text: string) => void };
+type Props = { userId: string; notify: (text: string) => void; onNavigate: (destination: SocialDestination) => void };
 
 function errKey(error: string): string {
   const key = error.split('\n')[0].trim();
@@ -76,7 +78,7 @@ function ApplyButton({ onResult, children, className }: { onResult: () => Promis
   );
 }
 
-export function ClanScreen({ userId, notify }: Props) {
+export function ClanScreen({ userId, notify, onNavigate }: Props) {
   const { language, t } = useLanguage();
   const [dir, setDir] = useState<ClanDirectory | null>(null);
   const [clanId, setClanId] = useState<string | null>(null);
@@ -199,7 +201,13 @@ export function ClanScreen({ userId, notify }: Props) {
   }
 
   return (
-    <div className="viking-screen viking-screen--clan pb-4">
+    <div className="viking-screen viking-screen--clan space-y-3 pb-4" data-testid="clan-social-screen">
+      <SocialTrail active="clan" onNavigate={onNavigate}
+        detail={state
+          ? (language === 'en' ? `${state.clan.members} clan members · level ${state.clan.level}` : `${state.clan.members} участников · уровень ${state.clan.level}`)
+          : dir?.my_invites.length
+            ? (language === 'en' ? `${dir.my_invites.length} clan invitations` : `Приглашений в клан: ${dir.my_invites.length}`)
+            : undefined} />
       {error && (
         <div role="alert" className="mb-3 rounded-xl border border-red-500/40 bg-red-950/60 px-3 py-2 text-xs font-semibold text-red-100" onClick={() => setError(null)}>
           {error === 'clan_rewards_pending'
@@ -212,6 +220,12 @@ export function ClanScreen({ userId, notify }: Props) {
 
       {view === 'home' && (
         <div className="space-y-3">
+          {!dir && !busy && <div role="status" className="rounded-xl border border-amber-400/50 bg-[#39251a] p-3 text-center">
+            <p className="mb-2 text-xs text-amber-100">{language === 'en' ? 'Clan directory is unavailable. Your clan progress is safe.' : 'Список кланов недоступен. Прогресс клана сохранён.'}</p>
+            <button type="button" onClick={() => void run(() => loadDirectory(''))} className="min-h-11 w-full rounded-xl border border-amber-300/70 bg-amber-900/50 text-sm font-bold text-amber-100">
+              {language === 'en' ? 'Retry clan directory' : 'Повторить загрузку кланов'}
+            </button>
+          </div>}
           <div className="rounded-2xl border border-amber-500/25 bg-gradient-to-b from-[#1a1610] to-[#0e0c08] p-4 text-center">
             <div className="mx-auto mb-3 w-16 h-16 rounded-2xl border-2 border-amber-400/50 bg-amber-500/10 flex items-center justify-center">
               <Users className="w-8 h-8 text-amber-300" />
@@ -230,7 +244,7 @@ export function ClanScreen({ userId, notify }: Props) {
           {dir?.my_clan_id && <button onClick={() => { setClanId(dir.my_clan_id); setView('detail'); }} className="w-full rounded-xl border border-amber-400/40 py-3 text-amber-200">{t('clanTitle')} →</button>}
           <button onClick={() => setView('rankings')} className="w-full rounded-xl border border-white/15 py-3 text-sm font-bold text-amber-200">{t('clanRankings')}</button>
           {dir && dir.my_invites.length > 0 && (
-            <div className="rounded-2xl border border-sky-500/30 bg-sky-950/30 p-3">
+            <div id="clan-invites" className="rounded-2xl border border-sky-500/30 bg-sky-950/30 p-3">
               <h3 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-sky-200"><Gem className="w-4 h-4" /> {t('clanInvites')}</h3>
               {dir.my_invites.map((inv) => (
                 <div key={inv.id} className="mb-2 flex items-center gap-2 rounded-xl bg-black/30 p-2 last:mb-0">
@@ -391,6 +405,7 @@ export function ClanScreen({ userId, notify }: Props) {
             <button disabled={busy} onClick={() => void run(() => loadState(clanId!))} aria-label={language === 'en' ? 'Refresh clan' : 'Обновить клан'} className="rounded-xl border border-white/10 px-3 py-2 text-amber-200 disabled:opacity-40">↻</button>
           </div>
 
+          <ClanNextStep state={state} onJump={(target) => document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
           <div className="rounded-2xl border border-amber-500/25 bg-gradient-to-b from-[#1a1610] to-[#0e0c08] p-3">
             <div className="flex items-center gap-2.5">
               <Emblem emblem={state.clan.emblem} color1={state.clan.color1} color2={state.clan.color2} size={48} />
@@ -415,7 +430,7 @@ export function ClanScreen({ userId, notify }: Props) {
             </div>
           </div>
 
-          {state.pending_boss_rewards.length > 0 && <div className="space-y-2 rounded-2xl border border-amber-400/40 bg-amber-950/20 p-3">
+          {state.pending_boss_rewards.length > 0 && <div id="clan-boss-rewards" className="space-y-2 rounded-2xl border border-amber-400/40 bg-amber-950/20 p-3">
             <h3 className="text-sm font-bold text-amber-200">{language === 'en' ? 'Earned boss rewards' : 'Заработанные награды боссов'}</h3>
             {state.pending_boss_rewards.map(reward => <div key={reward.boss_no} className="flex items-center gap-2 rounded-xl bg-black/30 p-2">
               <span className="flex-1 text-xs text-white">{t('clanBoss')} #{reward.boss_no} · {reward.gold.toLocaleString()} 🪙</span>
@@ -424,7 +439,7 @@ export function ClanScreen({ userId, notify }: Props) {
           </div>}
 
           {state.boss && (
-            <div className="rounded-2xl border border-red-500/30 bg-red-950/20 p-3">
+            <div id="clan-boss" className="rounded-2xl border border-red-500/30 bg-red-950/20 p-3">
               <div className="mb-1.5 flex items-center justify-between">
                 <h3 className="flex items-center gap-1.5 text-sm font-bold text-red-200"><Swords className="w-4 h-4" /> {t('clanBoss')} #{state.boss.boss_no}</h3>
                 <span className="text-[10px] text-gray-400">{state.boss_attacks_left} {t('clanAttacksLeft')}</span>
@@ -469,7 +484,7 @@ export function ClanScreen({ userId, notify }: Props) {
             <button disabled={busy} onClick={() => void simple(() => clanBuildingCollect(clanId!), () => loadState(clanId!))} className="mt-2 w-full rounded-xl bg-emerald-500/20 border border-emerald-400/40 py-1.5 text-xs font-bold text-emerald-200 active:scale-95 transition-transform">{t('clanCollect')}</button>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+          <div id="clan-quests" className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
             <h3 className="mb-2 text-sm font-bold text-white">{t('clanQuests')}</h3>
             {state.quests.length === 0 && <p className="text-[11px] text-gray-500">{t('clanNoQuests')}</p>}
             {state.quests.map((q) => (
@@ -592,7 +607,7 @@ export function ClanScreen({ userId, notify }: Props) {
             <button type="button" disabled={busy || confirmLeave || (state.my_role === 'leader' && state.clan.members > 1)} onClick={() => setConfirmLeave(true)} className="m-3 w-[calc(100%-24px)] rounded-xl border border-red-400/40 bg-red-500/10 py-2 text-xs font-bold text-red-300 disabled:opacity-40">{t('clanLeave')}</button>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] flex flex-col">
+          <div id="clan-chat" className="rounded-2xl border border-white/10 bg-white/[0.04] flex flex-col">
             <h3 className="border-b border-white/10 p-3 pb-2 text-sm font-bold text-white">{t('clanChat')}</h3>
             <div className="max-h-64 space-y-2 overflow-y-auto p-3">
               {state.chat.length === 0 && <p className="text-[11px] text-gray-500">{t('clanNoChat')}</p>}
@@ -620,8 +635,19 @@ export function ClanScreen({ userId, notify }: Props) {
         </div>
       )}
 
-      {view === 'detail' && !state && <p className="py-12 text-center text-sm text-gray-400">{t('loadingHero')}</p>}
+      {view === 'detail' && !state && <div className="space-y-2 py-6 text-center text-sm text-amber-100">
+        <p>{busy ? t('loadingHero') : (language === 'en' ? 'Unable to open clan details. No changes were made.' : 'Не удалось открыть клан. Данные не изменились.')}</p>
+        {!busy && clanId && <button type="button" onClick={() => void run(() => loadState(clanId))} className="min-h-11 w-full rounded-xl border border-amber-400/60 bg-amber-900/40 font-bold">
+          {language === 'en' ? 'Retry clan details' : 'Повторить загрузку клана'}
+        </button>}
+      </div>}
 
+      {view === 'rankings' && !rankings && <div className="space-y-2 py-6 text-center text-sm text-amber-100">
+        <p>{busy ? t('loadingHero') : (language === 'en' ? 'Clan rankings are unavailable.' : 'Рейтинг кланов пока недоступен.')}</p>
+        {!busy && <button type="button" onClick={() => void run(loadRankings)} className="min-h-11 w-full rounded-xl border border-amber-400/60 bg-amber-900/40 font-bold">
+          {language === 'en' ? 'Retry rankings' : 'Обновить рейтинг'}
+        </button>}
+      </div>}
       {view === 'rankings' && rankings && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
