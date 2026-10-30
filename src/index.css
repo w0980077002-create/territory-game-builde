@@ -1086,3 +1086,21 @@ html.territory-ios-webapp .territory-nav-label {
   letter-spacing: -0.045em;
   font-size: clamp(7.5px, 1.95vw, 8.5px);
 }
+
+/* Territory Dark Cave: independent touch-scrolling floor panel. */
+.dark-cave-floor-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #ffd16a #192039;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: auto;
+}
+.dark-cave-floor-scroll::-webkit-scrollbar { width: 6px; }
+.dark-cave-floor-scroll::-webkit-scrollbar-track {
+  background: #171d34;
+  border-radius: 8px;
+}
+.dark-cave-floor-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ffe8a3, #d99a29);
+  border-radius: 8px;
+  border: 1px solid #9a6b35;
+}
