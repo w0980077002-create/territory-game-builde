@@ -199,7 +199,7 @@ export function ClanScreen({ userId, notify }: Props) {
   }
 
   return (
-    <div className="pb-4">
+    <div className="viking-screen viking-screen--clan pb-4">
       {error && (
         <div role="alert" className="mb-3 rounded-xl border border-red-500/40 bg-red-950/60 px-3 py-2 text-xs font-semibold text-red-100" onClick={() => setError(null)}>
           {error === 'clan_rewards_pending'

@@ -1,11 +1,11 @@
 import { useMemo, useState, type CSSProperties } from 'react';
-import { Clock3, FlaskConical, Info, Package, Search, X } from 'lucide-react';
+import { Clock3, FlaskConical, Info, Package, Search } from 'lucide-react';
 import type { GameState, InventoryItem } from '@/game/types';
 import { localizeText } from '@/game/i18n';
 import { rarityColor } from '@/game/ui';
 import { elixirExpiryTime, elixirTimeLeftLabel, forgeMaterialTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
 import { ItemArt } from './ui/ItemArt';
-import { IosGamePortal } from './ui/Modal';
+import { Modal } from './ui/Modal';
 import './compactWarehouse.css';
 
 type WarehouseFilter = 'all' | 'consumables' | 'materials';
@@ -130,15 +130,9 @@ export function CompactWarehouse({ consumables, materials, forgeMaterials, forge
         : (en ? 'No items in this category yet' : 'В этой категории пока нет предметов')}</p>
       {search && <button type="button" onClick={() => setSearch('')}>{en ? 'Clear search' : 'Сбросить поиск'}</button>}
     </div>}
-    {forgeInfoOpen && <IosGamePortal>
-      <div className="warehouse-info-overlay" onClick={() => setForgeInfoOpen(false)}>
-        <section className="warehouse-info-card" role="dialog" aria-modal="true"
-          aria-label={en ? 'Forge materials' : 'Материалы кузницы'}
-          onClick={event => event.stopPropagation()}>
-          <button type="button" className="warehouse-info-card__close"
-            aria-label={en ? 'Close' : 'Закрыть'} onClick={() => setForgeInfoOpen(false)}><X size={20}/></button>
+    {forgeInfoOpen && <Modal title={en ? 'Forge materials' : 'Материалы кузницы'} onClose={() => setForgeInfoOpen(false)}>
+        <section className="warehouse-info-content">
           <img src={import.meta.env.BASE_URL + 'forge-material.webp'} alt="" className="warehouse-info-card__art"/>
-          <h3>{en ? 'Forge materials' : 'Материалы кузницы'}</h3>
           <p>{en ? 'Used for equipment upgrades at the forge.' : 'Используются для улучшения экипировки в кузнице.'}</p>
           <strong>{en ? 'Quantity' : 'Количество'}: {formatQuantity(forgeMaterials)}</strong>
           <span><Clock3 size={15} aria-hidden="true"/> {en ? 'Shelf life' : 'Срок годности'}: {forgeTimer}</span>
@@ -146,7 +140,6 @@ export function CompactWarehouse({ consumables, materials, forgeMaterials, forge
             {en ? 'Close' : 'Закрыть'}
           </button>
         </section>
-      </div>
-    </IosGamePortal>}
+    </Modal>}
   </section>;
 }

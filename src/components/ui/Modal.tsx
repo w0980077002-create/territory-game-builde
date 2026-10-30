@@ -1,5 +1,5 @@
 import { useLanguage } from '@/game/i18n';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
@@ -25,29 +25,45 @@ interface Props {
 
 export function Modal({ title, icon, onClose, children }: Props) {
   const { language } = useLanguage();
+  const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.stopPropagation(); onCloseRef.current(); return; }
+      if (e.key !== 'Tab' || !panelRef.current) return;
+      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')).filter(el => el.getClientRects().length > 0);
+      if (!focusable.length) { e.preventDefault(); return; }
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+    return () => { window.removeEventListener('keydown', onKey); previousFocus?.focus(); };
+  }, []);
 
   return (
     <IosGamePortal>
-    <div className="territory-modal fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true">
+    <div className="territory-modal fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <button aria-label={language === 'en' ? 'Close' : 'Закрыть'} className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose} />
-      <div className="territory-modal-panel relative w-full max-w-md flex flex-col rounded-t-3xl sm:rounded-3xl border border-amber-500/25 bg-gradient-to-b from-[#1d2330] to-[#11151d] shadow-2xl shadow-black animate-sheet-up">
-        <div className="flex items-center gap-2.5 px-4 h-14 border-b border-white/10 shrink-0">
+      <div ref={panelRef} className="territory-modal-panel relative flex flex-col shadow-2xl shadow-black">
+        <div className="territory-modal-head flex items-center gap-2.5 shrink-0">
           {icon && <img src={icon} alt="" className="w-8 h-8 object-contain" />}
-          <h2 className="flex-1 text-base font-bold text-amber-100 truncate">{title}</h2>
+          <h2 id={titleId} className="flex-1">{title}</h2>
           <button
+            ref={closeRef}
             onClick={onClose}
             aria-label={language === 'en' ? 'Close' : 'Закрыть'}
-            className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+            className="territory-modal-close flex items-center justify-center"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="overflow-y-auto scrollbar-hide p-4 pb-[max(16px,env(safe-area-inset-bottom))]">{children}</div>
+        <div className="territory-modal-content overflow-y-auto p-4" tabIndex={0}>{children}</div>
       </div>
     </div>
     </IosGamePortal>

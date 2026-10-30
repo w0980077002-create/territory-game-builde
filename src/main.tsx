@@ -2,6 +2,7 @@ import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import './components/ui/vikingScreenSkin.css';
 import { LanguageProvider } from '@/game/i18n';
 import { captureGameOpen, captureGameEvent } from '@/game/analytics';
 

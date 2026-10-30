@@ -730,3 +730,10 @@
 @media(prefers-reduced-motion:reduce){
   .vslot-live .vslot-result--win,.vslot-live .vslot-board--winning{animation:none}
 }
+
+/* Rules are informational: the shared dialog owns the fixed close control and scrolling. */
+.vslot-help-content{color:#f8e7c1}
+.vslot-help-content p{font-size:13px;margin:11px 0;line-height:1.5}
+.vslot-help-content table{width:100%;border-collapse:collapse;font-size:12px}
+.vslot-help-content th,.vslot-help-content td{border-bottom:1px solid #a87940;padding:5px 3px;text-align:left}
+.vslot-help-content button{width:100%;min-height:44px;margin-top:16px;background:var(--viking-button-bg);border:1px solid #f6cd6d;border-radius:8px;font-weight:900;color:#321b0a}

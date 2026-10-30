@@ -51,8 +51,8 @@ function SideButton({ icon, label, onClick, badge }: { icon: string; label: stri
   const isVikingFeatureIcon = /\/ic-(?:auction|professions|arena)-viking\.webp$/.test(icon);
   return (
     <button onClick={onClick} className="home-side group" aria-label={label}>
-      <img src={icon} alt="" draggable={false} className={`${isVikingFeatureIcon ? 'w-[90%] max-h-[70%]' : 'w-[80%] max-h-[60%]'} object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] saturate-125 transition-transform duration-200 group-hover:scale-110`} />
-      <span className="text-[clamp(6.8px,1.95vw,8px)] leading-[1.04] font-extrabold tracking-[-0.02em] text-amber-50 text-center whitespace-normal break-words line-clamp-2 max-w-full px-px [text-shadow:0_1px_2px_#000,0_0_4px_rgba(0,0,0,0.95)]">{label}</span>
+      <img src={icon} alt="" draggable={false} className={`${isVikingFeatureIcon ? 'w-[90%] max-h-[60%]' : 'w-[80%] max-h-[54%]'} object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] saturate-125 transition-transform duration-200 group-hover:scale-110`} />
+      <span className="text-[clamp(8px,2.4vw,10px)] leading-[1.04] font-extrabold tracking-[-0.02em] text-amber-50 text-center whitespace-normal break-words line-clamp-2 max-w-full px-px [text-shadow:0_1px_2px_#000,0_0_4px_rgba(0,0,0,0.95)]">{label}</span>
       {badge && <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-pulse" />}
     </button>
   );

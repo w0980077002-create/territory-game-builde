@@ -166,7 +166,7 @@ export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
     refresh(next);
   };
 
-  return <div className="territory-events" data-testid="territory-events">
+  return <div className="viking-screen viking-screen--events territory-events" data-testid="territory-events">
     <header className="territory-events__hero">
       <div className="territory-events__hero-mark"><img src={import.meta.env.BASE_URL + 'ic-events.webp'} alt="" /></div>
       <div className="territory-events__hero-text">

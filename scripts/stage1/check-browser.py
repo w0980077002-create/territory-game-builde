@@ -21,6 +21,8 @@ def load(browser,width,height,screen,member=False,english=False):
     return page
 
 def check(page,label):
+    assert page.locator('.viking-screen').count()==1, f'{label}: missing real-route wooden style marker'
+    assert page.locator('.viking-screen').evaluate("el=>getComputedStyle(el).color")!='rgb(0, 0, 0)', f'{label}: unreadable themed text'
     if not page.evaluate('document.documentElement.scrollWidth<=innerWidth'):
         overflowing=page.evaluate("[...document.querySelectorAll('main *')].filter(el=>el.getBoundingClientRect().right>innerWidth+1).map(el=>({tag:el.tagName,classes:el.className,text:el.textContent.slice(0,100),rect:el.getBoundingClientRect().toJSON()}))")
         page.screenshot(path=str(OUT/(label+'-overflow.png')),full_page=True)
@@ -71,10 +73,10 @@ with sync_playwright() as p:
         page.get_by_role('button',name='Найти',exact=True).click()
         assert page.evaluate("window.__uiCalls.some(c=>c.name==='auction_overview'&&c.args.search==='Секира'&&c.args.rarity==='epic'&&c.args.sort==='price_asc')")
         check(page,f'auction-lots-{width}');shot(page,f'auction-lots-{width}')
-        page.get_by_role('button',name='Мои лоты',exact=True).click()
+        page.get_by_role('tab',name='Мои лоты',exact=True).click()
         expect(page.get_by_role('heading',name='Выставить предмет мастера')).to_be_visible()
         check(page,f'auction-mine-{width}')
-        page.get_by_role('button',name='История',exact=True).click()
+        page.get_by_role('tab',name='История',exact=True).click()
         expect(page.get_by_role('heading',name='История сделок')).to_be_visible()
         expect(page.get_by_text('Комиссия: 100 · Получено: 900')).to_be_visible()
         check(page,f'auction-history-{width}')

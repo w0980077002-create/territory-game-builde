@@ -9,7 +9,7 @@ import { arenaWeeklyWithBots } from '@/game/arenaWeeklyBots';
 import { arenaNextGoal } from '@/game/arenaProgress';
 import { ARENA_PRIZE_PREVIEW, arenaPrizePreviewForRank } from '@/game/arenaPrizePreview';
 
-function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
+export function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
   en: boolean;
   rank: number | null;
   countdown: string;
@@ -18,12 +18,14 @@ function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
   const myTier = arenaPrizePreviewForRank(rank);
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') onCloseRef.current();
       if (event.key !== 'Tab' || !panelRef.current) return;
       const focusable = [...panelRef.current.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])')];
       if (!focusable.length) return;
@@ -37,7 +39,7 @@ function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => { window.removeEventListener('keydown', onKeyDown); previousFocus?.focus(); };
-  }, [onClose]);
+  }, []);
 
   const dialog = (
       <div className="arena-prizes-overlay" role="dialog" aria-modal="true" aria-label={en ? 'Arena TOP-50 weekly prizes' : 'Награды ТОП-50 Арены'}>
@@ -48,7 +50,7 @@ function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
             <div><h3>{en ? 'ARENA TOP-50 PRIZES' : 'НАГРАДЫ ТОП-50 АРЕНЫ'}</h3><span>{en ? 'Weekly prizes' : 'Еженедельные награды'}</span></div>
             <button ref={closeRef} type="button" className="arena-prizes-close" onClick={onClose} aria-label={en ? 'Close' : 'Закрыть'}><X /></button>
           </div>
-          <div className="arena-prizes-body">
+          <div className="arena-prizes-body" tabIndex={0}>
             <div className="arena-prizes-my-place">
               <Trophy aria-hidden="true" />
               {rank !== null
