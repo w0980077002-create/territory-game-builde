@@ -193,7 +193,7 @@ export function AuctionScreen() {
           ['history', language === 'en' ? 'History' : 'История'],
           ['chat', language === 'en' ? 'Chat' : 'Чат'],
         ] as const).map(([id, label]) => (
-          <button key={id} type="button" onClick={() => setTab(id)} className={tab === id ? 'rounded-xl border border-amber-400 bg-amber-500/20 px-1 py-3 text-xs font-bold text-amber-100' : 'rounded-xl border border-white/10 bg-white/5 px-1 py-3 text-xs font-bold text-slate-300'}>
+          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={tab === id ? 'rounded-xl border border-amber-400 bg-amber-500/20 px-1 py-3 text-xs font-bold text-amber-100' : 'rounded-xl border border-white/10 bg-white/5 px-1 py-3 text-xs font-bold text-slate-300'}>
             {label}
           </button>
         ))}
