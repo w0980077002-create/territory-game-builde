@@ -22,5 +22,10 @@ export async function runDeferredNextBattle(
   }
 
   if (!isStillInBattle()) return 'cancelled';
-  return start() ? 'started' : 'blocked';
+  try {
+    return start() ? 'started' : 'blocked';
+  } catch {
+    // A failed Telegram SDK callback must not strand the Next fight button.
+    return 'blocked';
+  }
 }
