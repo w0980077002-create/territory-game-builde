@@ -104,6 +104,7 @@ export function FollowersPanel() {
         <div>
           <span className="followers-camp__eyebrow"><Sparkles size={12}/>{en ? 'COMPANION DETAILS' : 'ХАРАКТЕРИСТИКИ'}</span>
           <h3>{en ? template.nameEn : template.name}</h3>
+          {template.id === 'follower_6' && <span className="followers-camp__legendary"><Sparkles size={12}/>{en ? 'LEGENDARY LOOK' : 'ЛЕГЕНДАРНЫЙ ОБРАЗ'}</span>}
           <p>{en ? template.descriptionEn : template.description}</p>
           <span className={unlocked ? 'followers-camp__availability' : 'followers-camp__availability followers-camp__availability--locked'}>
             {unlocked ? en ? 'Unlocked' : 'Открыт' : `${en ? 'Unlocks at hero level' : 'Откроется на уровне героя'} ${template.unlockLevel}`}
@@ -112,6 +113,7 @@ export function FollowersPanel() {
       </div>
 
       {unlocked && <>
+        {template.role === 'crystal' && <div className="followers-camp__special"><Sparkles size={15}/>{en ? 'Crystal Frenzy: extra strike, light healing each round, slight armor piercing.' : 'Кристальное безумие: дополнительный удар, небольшое лечение каждый раунд и пробивание брони.'}</div>}
         <div className="followers-camp__stats">
           <div><Swords size={16}/><span>{en ? 'Attack' : 'Атака'}</span><b>{follower.attack}</b></div>
           <div><Shield size={16}/><span>{en ? 'Defense' : 'Защита'}</span><b>{follower.defense}</b></div>

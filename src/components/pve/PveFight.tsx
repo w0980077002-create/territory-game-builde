@@ -299,7 +299,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
               <Plate side={hero} tone="ally" />
               <div className="relative flex-1 mt-1">
                 {follower && (
-                  <div className="absolute -left-[8%] bottom-0 z-10 h-[52%] w-[48%] pointer-events-none">
+                  <div className={follower.id === 'follower_6' ? 'absolute left-0 bottom-0 z-30 h-[64%] w-[64%] pointer-events-none' : 'absolute -left-[8%] bottom-0 z-10 h-[52%] w-[48%] pointer-events-none'}>
                     <FighterFigure
                       src={getFollowerArt(follower.id)}
                       combatFrames={getFollowerCombatFrames(follower.id)}

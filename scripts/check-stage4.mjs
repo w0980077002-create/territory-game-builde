@@ -22,13 +22,13 @@ function loadTs(file, dependencies = {}) {
 
 const expiryMock = { reconcileElixirExpiry: (state) => state };
 const followers = loadTs('src/game/followers.ts', { './elixirExpiry': expiryMock });
-assert.equal(followers.FOLLOWER_TEMPLATES.length, 5);
-assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.role)).size, 5);
-assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.id)).size, 5);
-assert.deepEqual(followers.FOLLOWER_TEMPLATES.map((f) => f.unlockLevel).join(','), '3,8,15,25,40');
+assert.equal(followers.FOLLOWER_TEMPLATES.length, 6);
+assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.role)).size, 6);
+assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.id)).size, 6);
+assert.deepEqual(followers.FOLLOWER_TEMPLATES.map((f) => f.unlockLevel).join(','), '3,8,15,25,40,50');
 const oldShield = { id: 'follower_1', name: 'Верный щит', level: 3, attack: 5, defense: 10, unlocked: true, icon: '🛡️', description: 'old' };
 const roster = followers.reconcileFollowers([oldShield], 81);
-assert.equal(roster.length, 5);
+assert.equal(roster.length, 6);
 assert.equal(roster[0].level, 3, 'keep existing shield level');
 assert.equal(roster[0].defense, 10, 'keep existing shield stats');
 assert.equal(roster[0].description, 'old', 'keep legacy description');
@@ -61,9 +61,16 @@ for (const f of roster) {
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_4')).crit > 0, true);
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_5')).pierce > 0, true);
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_3')).heal > 0, true);
+assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_6')).heal > 0, true);
+assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_6')).pierce, 0.02);
+assert.equal(followers.selectFollower({ ...starter, followers: followers.reconcileFollowers([], 49) }, 'follower_6'), null, 'Battle Cow unlocks at 50');
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_2')).defense, 0);
 assert.equal(fee.gold, 205);
-console.log('Stage4: 5 follower roles, legacy migration, one active, level-gated training, bounded PvE bonuses: PASS');
+const cowSprite = readFileSync(new URL('../public/assets/territory/characters/followers/battle_cow/idle.svg', import.meta.url), 'utf8');
+assert.match(cowSprite, /viewBox="0 0 493 564"/, 'Battle Cow sprite needs a tightly cropped, transparent viewBox');
+assert.match(cowSprite, /data:image\/webp;base64,UklGR/, 'Battle Cow must embed the approved raster art, not an external URL');
+assert.equal(followers.selectFollower(starter, 'follower_6')?.activeFollowerId, 'follower_6');
+console.log('Stage4: 6 follower roles, approved cow art, legacy migration, one active, level-gated training, bounded PvE bonuses: PASS');
 
 const equipBalance = loadTs('src/game/equipmentBalance.ts', { './equipmentCatalog': { EQUIPMENT_TEMPLATES: [], rarityForChapter: () => 'common' } });
 const forge = loadTs('src/game/forge.ts', { './equipmentBalance': equipBalance, './elixirExpiry': expiryMock });
