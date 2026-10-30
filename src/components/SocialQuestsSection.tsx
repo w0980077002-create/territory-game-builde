@@ -28,7 +28,7 @@ export function SocialQuestsSection({ userId, onStatusChange }: { userId: string
     socialStatus().then((result) => {
       if (active) { setStatus(result); onStatusChange?.(result); }
     }).catch(() => {
-      if (active) setError(en ? 'Could not load community quests. Your rewards are safe.' : 'Не удалось загрузить задания сообщества. Награды сохранены.');
+      if (active) { setStatus(null); setError(en ? 'Could not load community quests. Your rewards are safe.' : 'Не удалось загрузить задания сообщества. Награды сохранены.'); }
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [en, onStatusChange, attempt]);
