@@ -59,7 +59,7 @@ const output=await build({
  plugins:[{
   name:'inert-daily-loop',
   setup(build){
-   build.onResolve({filter:new RegExp('(?:game/|[.]/)(actions|live|analytics|gameHall|slotsApi|seasonApi|arenaWeekly)$'),()=>({path:'fixture',namespace:'fixture'}));
+   build.onResolve({filter:new RegExp('(?:game/|[.]/)(actions|live|analytics|gameHall|slotsApi|seasonApi|arenaWeekly)$')},()=>({path:'fixture',namespace:'fixture'}));
    build.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:fixture,loader:'js',resolveDir:resolve('.')}));
   },
  }],
