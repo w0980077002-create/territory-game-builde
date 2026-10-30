@@ -75,7 +75,7 @@ export const AWAKENING_STONE_ID = 'cow_awakening_stone';
 export const AWAKENING_STONE_ITEM: InventoryItem = {
   id: AWAKENING_STONE_ID, name: 'Камень пробуждения', icon: '💜',
   type: 'material', rarity: 'legendary', qty: 0,
-  description: 'Редкий камень для повышения уровня Боевой коровы. Пока не выдаётся в наградах и не продаётся.',
+  description: 'Редкий камень для повышения уровня Боевой коровы. Награда за победы над боссами каждой пятой главы и каждого десятого испытания. Не продаётся за монеты и алмазы.',
 };
 export function cowStonesOwned(state: Pick<GameState, 'inventory'>): number {
   return state.inventory.reduce((sum, item) =>
@@ -83,6 +83,29 @@ export function cowStonesOwned(state: Pick<GameState, 'inventory'>): number {
       ? Math.min(2147483647, sum + item.qty) : sum, 0);
 }
 export function cowAwakeningCost(_level: number): number { return 1; }
+
+/** Lootborn-style rare boss material, deterministic instead of unverifiable published drop rates.
+ * Bosses are one-time story progression; only the actual current boss can award a stone.
+ * This does NOT authorize rewards server-side; PvE still uses the existing save pipeline. */
+export function cowStoneChapterBossReward(chapter: number, enemyId: string, isBoss: boolean): number {
+  return Number.isSafeInteger(chapter) && chapter >= 5 && chapter % 5 === 0
+    && isBoss && enemyId === `ch${chapter}_boss` ? 1 : 0;
+}
+/** Trial progression grants a stone on every tenth successfully completed stage. */
+export function cowStoneTrialReward(level: number): number {
+  return Number.isSafeInteger(level) && level >= 10 && level % 10 === 0 ? 1 : 0;
+}
+/** Add one real, non-expiring legendary inventory material; never touch wallet balances. */
+export function awardCowAwakeningStone(state: GameState, count: number): GameState {
+  if (!Number.isSafeInteger(count) || count < 1 || count > 10) return state;
+  const current = cowStonesOwned(state);
+  if (current > 2147483647 - count) return state;
+  const idx = state.inventory.findIndex((i) => i.id === AWAKENING_STONE_ID && i.type === 'material');
+  if (idx === -1) return { ...state, inventory: [...state.inventory, { ...AWAKENING_STONE_ITEM, qty: count }] };
+  return { ...state, inventory: state.inventory.map((i, n) =>
+    n === idx ? { ...i, qty: i.qty + count } : i) };
+}
+
 
 
 /** Atomic pure update: call against the latest store state, never a stale render.
