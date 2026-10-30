@@ -4,15 +4,16 @@ import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
 import { BELT_STACK, beltContext, canBelt, putInBelt, takeFromBelt } from '@/game/belt';
 import { ItemArt } from './ui/ItemArt';
-import { IosGamePortal } from './ui/Modal';
+import { Modal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
 import { GearShowcase } from './GearShowcase';
 import { FollowersPanel } from './FollowersPanel';
+import { AWAKENING_STONE_ITEM, cowStonesOwned } from '@/game/followers';
 import { CompactWarehouse } from './CompactWarehouse';
-import { rarityColor, rarityGlow } from '@/game/ui';
+import { rarityColor } from '@/game/ui';
 import { elixirExpiryTime, elixirTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
-import { Package, X, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned } from 'lucide-react';
+import { Package, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned } from 'lucide-react';
 
 /** Equipment, consumables/belt and companions share the inventory route.
  * The follower model is unchanged: training and PvE selection stay in the global store. */
@@ -49,7 +50,10 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   // Keep inventory sorting stable while the visible expiry clock updates.
   const consumables = useMemo(() => state.inventory.filter(isPerishableItem)
     .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b)), [state.inventory]);
-  const materials = useMemo(() => state.inventory.filter(item => item.type === 'material'), [state.inventory]);
+  const materials = useMemo(() => [
+    ...state.inventory.filter(item => item.type === 'material' && item.id !== AWAKENING_STONE_ITEM.id),
+    { ...AWAKENING_STONE_ITEM, qty: cowStonesOwned(state) },
+  ], [state.inventory]);
   const earliestOnBelt = useMemo(() => state.belt.filter((item): item is InventoryItem => !!item && isPerishableItem(item))
     .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0], [state.belt]);
 
@@ -129,51 +133,34 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
       )}
 
       {/* Always visible directly above the game's main navigation. */}
-      <div className="z-20 grid shrink-0 grid-cols-3 gap-1.5 rounded-2xl border border-violet-500/40 bg-[#170f25] p-1.5 shadow-[0_-4px_18px_rgba(0,0,0,0.45)]"
+      <div className="z-20 grid shrink-0 grid-cols-3 gap-1.5 rounded-2xl border border-amber-700/60 bg-[#2d1a11] p-1.5 shadow-[0_-4px_18px_rgba(0,0,0,0.45)]"
         role="tablist" aria-label={language === 'en' ? 'Inventory sections' : 'Разделы инвентаря'}>
         <button type="button" role="tab" aria-selected={tab === 'equipment'} aria-controls="inventory-current-section"
-          className={'flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-lg px-1 py-1 text-[10px] font-bold leading-tight transition-colors sm:text-xs ' + (tab === 'equipment'
-            ? 'border border-amber-400/60 bg-gradient-to-b from-amber-500/30 to-amber-900/30 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,.15)]'
-            : 'border border-transparent text-violet-200/75')}
+          className="viking-tab flex items-center justify-center gap-1 px-1 py-1 text-[11px] leading-tight transition-colors sm:text-xs"
           onClick={() => switchTab('equipment')}>
           <ArrowDownUp className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />{language === 'en' ? 'Equipment' : 'Снаряжение'}
         </button>
         <button type="button" role="tab" aria-selected={tab === 'items'} aria-controls="inventory-current-section"
-          className={'flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-lg px-1 py-1 text-[10px] font-bold leading-tight transition-colors sm:text-xs ' + (tab === 'items'
-            ? 'border border-amber-400/60 bg-gradient-to-b from-amber-500/30 to-amber-900/30 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,.15)]'
-            : 'border border-transparent text-violet-200/75')}
+          className="viking-tab flex items-center justify-center gap-1 px-1 py-1 text-[11px] leading-tight transition-colors sm:text-xs"
           onClick={() => switchTab('items')}>
           <Package className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />{language === 'en' ? 'Items' : 'Предметы'}
         </button>
         <button type="button" role="tab" aria-selected={tab === 'followers'} aria-controls="inventory-current-section"
-          className={'flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-lg px-1 py-1 text-[10px] font-bold leading-tight transition-colors sm:text-xs ' + (tab === 'followers'
-            ? 'border border-amber-400/60 bg-gradient-to-b from-amber-500/30 to-amber-900/30 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,.15)]'
-            : 'border border-transparent text-violet-200/75')}
+          className="viking-tab flex items-center justify-center gap-1 px-1 py-1 text-[11px] leading-tight transition-colors sm:text-xs"
           onClick={() => switchTab('followers')}>
           <UsersRound className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />{language === 'en' ? 'Companions' : 'Спутники'}
         </button>
       </div>
 
       {tab === 'items' && selected && (
-        <IosGamePortal>
-        <div className="inventory-item-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
-          onClick={close}>
-          <div className="card w-full max-w-sm m-2 animate-slide-up max-h-[88dvh] overflow-y-auto overscroll-contain"
-            style={{ border: '1px solid ' + rarityColor(selected.rarity), boxShadow: rarityGlow(selected.rarity) }}
-            onClick={(event) => event.stopPropagation()}>
-            <div className="flex items-start gap-3 mb-3">
+        <Modal title={localizeText(selected.name, language)} onClose={close}>
+          <div className="inventory-item-detail">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-16 h-16 rounded-xl bg-black/30 flex items-center justify-center shrink-0"
                 style={{ border: '1px solid ' + rarityColor(selected.rarity) }}>
                 <ItemArt item={selected} size={52}/>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-base" style={{ color: rarityColor(selected.rarity) }}>
-                  {localizeText(selected.name, language)}
-                </h3>
-                <p className="text-xs text-gray-400 capitalize">{selected.rarity}</p>
-              </div>
-              <button type="button" aria-label={language === 'en' ? 'Close' : 'Закрыть'}
-                onClick={close} className="text-gray-500 hover:text-white"><X className="w-5 h-5"/></button>
+              <p className="text-sm capitalize" style={{ color: rarityColor(selected.rarity) }}>{selected.rarity}</p>
             </div>
             <p className="text-sm text-gray-300 mb-3">{localizeText(selected.description, language)}</p>
             {isPerishableItem(selected) && (
@@ -207,8 +194,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
               <button className="btn-ghost flex-1" onClick={close}>{language === 'en' ? 'Close' : 'Закрыть'}</button>
             </div>
           </div>
-        </div>
-        </IosGamePortal>
+        </Modal>
       )}
     </div>
   );

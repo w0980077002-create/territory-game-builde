@@ -1,11 +1,11 @@
-import type { Follower, GameState } from './types';
+import type { Follower, GameState, InventoryItem } from './types';
 import { reconcileElixirExpiry } from './elixirExpiry';
 
 /** PvE-only companions. An account can have several unlocked companions but
  * exactly one active companion. PvP Arena snapshots never use these bonuses.
  * Training is a client-side gameplay feature, NOT an anti-cheat boundary.
  */
-export type FollowerRole = 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage';
+export type FollowerRole = 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage' | 'crystal';
 
 export interface FollowerTemplate {
   id: string;
@@ -26,6 +26,7 @@ export const FOLLOWER_TEMPLATES: FollowerTemplate[] = [
   { id: 'follower_3', role: 'healer', unlockLevel: 15, name: 'Лесная целительница', nameEn: 'Forest Healer', icon: '🌿', attack: 3, defense: 1, description: 'Восстанавливает немного HP между раундами.', descriptionEn: 'Restores some HP between rounds.' },
   { id: 'follower_4', role: 'hunter', unlockLevel: 25, name: 'Лунный охотник', nameEn: 'Moon Hunter', icon: '🏹', attack: 7, defense: 1, description: 'Немного повышает шанс критического удара героя.', descriptionEn: 'Slightly improves the hero’s critical-hit chance.' },
   { id: 'follower_5', role: 'mage', unlockLevel: 40, name: 'Рунный маг', nameEn: 'Rune Mage', icon: '🔮', attack: 5, defense: 1, description: 'Ослабляет защиту врага в Походе и Испытаниях.', descriptionEn: 'Weakens enemy defense in PvE battles.' },
+  { id: 'follower_6', role: 'crystal', unlockLevel: 50, name: 'Боевая корова', nameEn: 'Battle Cow', icon: '🐮', attack: 7, defense: 2, description: 'Кристальное безумие: атакует врага и немного лечит героя между раундами. Только PvE.', descriptionEn: 'Crystal Frenzy: attacks enemies and heals the hero a little between rounds. PvE only.' },
 ];
 
 export function initialFollowers(): Follower[] {
@@ -67,6 +68,45 @@ export function followerTrainingCost(level: number): { gold: number; materials: 
 }
 
 export const MAX_FOLLOWER_LEVEL = 60;
+/** Battle Cow uses a rare, non-expiring item, never coins, gems or forge materials.
+ * No automatic source or rewards are enabled until the owner approves distribution. */
+export const MAX_BATTLE_COW_LEVEL = 100;
+export const AWAKENING_STONE_ID = 'cow_awakening_stone';
+export const AWAKENING_STONE_ITEM: InventoryItem = {
+  id: AWAKENING_STONE_ID, name: 'Камень пробуждения', icon: '💜',
+  type: 'material', rarity: 'legendary', qty: 0,
+  description: 'Редкий камень для повышения уровня Боевой коровы. Награда за победы над боссами каждой пятой главы и каждого десятого испытания. Не продаётся за монеты и алмазы.',
+};
+export function cowStonesOwned(state: Pick<GameState, 'inventory'>): number {
+  return state.inventory.reduce((sum, item) =>
+    item.id === AWAKENING_STONE_ID && item.type === 'material' && Number.isSafeInteger(item.qty) && item.qty > 0
+      ? Math.min(2147483647, sum + item.qty) : sum, 0);
+}
+export function cowAwakeningCost(_level: number): number { return 1; }
+
+/** Lootborn-style rare boss material, deterministic instead of unverifiable published drop rates.
+ * Bosses are one-time story progression; only the actual current boss can award a stone.
+ * This does NOT authorize rewards server-side; PvE still uses the existing save pipeline. */
+export function cowStoneChapterBossReward(chapter: number, enemyId: string, isBoss: boolean): number {
+  return Number.isSafeInteger(chapter) && chapter >= 5 && chapter % 5 === 0
+    && isBoss && enemyId === `ch${chapter}_boss` ? 1 : 0;
+}
+/** Trial progression grants a stone on every tenth successfully completed stage. */
+export function cowStoneTrialReward(level: number): number {
+  return Number.isSafeInteger(level) && level >= 10 && level % 10 === 0 ? 1 : 0;
+}
+/** Add one real, non-expiring legendary inventory material; never touch wallet balances. */
+export function awardCowAwakeningStone(state: GameState, count: number): GameState {
+  if (!Number.isSafeInteger(count) || count < 1 || count > 10) return state;
+  const current = cowStonesOwned(state);
+  if (current > 2147483647 - count) return state;
+  const idx = state.inventory.findIndex((i) => i.id === AWAKENING_STONE_ID && i.type === 'material');
+  if (idx === -1) return { ...state, inventory: [...state.inventory, { ...AWAKENING_STONE_ITEM, qty: count }] };
+  return { ...state, inventory: state.inventory.map((i, n) =>
+    n === idx ? { ...i, qty: i.qty + count } : i) };
+}
+
+
 
 /** Atomic pure update: call against the latest store state, never a stale render.
  * No cap bypass by negative/NaN amounts, and train only one companion at a time. */
@@ -74,7 +114,21 @@ export function trainFollower(state: GameState, followerId: string): GameState |
   state = reconcileElixirExpiry(state);
   const found = state.followers.find((f) => f.id === followerId && f.unlocked);
   if (!found || !FOLLOWER_TEMPLATES.some((f) => f.id === followerId)) return null;
-  if (!Number.isSafeInteger(found.level) || found.level < 1 || found.level >= MAX_FOLLOWER_LEVEL || found.level >= state.player.level) return null;
+  if (!Number.isSafeInteger(found.level) || found.level < 1) return null;
+  if (followerId === 'follower_6') {
+    if (found.level >= MAX_BATTLE_COW_LEVEL || cowStonesOwned(state) < cowAwakeningCost(found.level)) return null;
+    // Spend precisely one owned stone and improve the cow; preserve ALL other items, currencies and followers.
+    let consumed = false;
+    const inventory = state.inventory.map((item) => {
+      if (consumed || item.id !== AWAKENING_STONE_ID || item.type !== 'material' || !Number.isSafeInteger(item.qty) || item.qty < 1) return item;
+      consumed = true;
+      return { ...item, qty: item.qty - cowAwakeningCost(found.level) };
+    }).filter((item) => item.id !== AWAKENING_STONE_ID || item.type !== 'material' || item.qty > 0);
+    if (!consumed) return null;
+    return { ...state, inventory, followers: state.followers.map((f) => f.id !== followerId
+      ? f : { ...f, level: f.level + 1, attack: f.attack + 1 }) };
+  }
+  if (found.level >= MAX_FOLLOWER_LEVEL || found.level >= state.player.level) return null;
   const price = followerTrainingCost(found.level);
   if (!Number.isSafeInteger(state.player.gold) || state.player.gold < price.gold || !Number.isSafeInteger(state.forgeMaterials) || state.forgeMaterials < price.materials) return null;
   const template = FOLLOWER_TEMPLATES.find((f) => f.id === followerId)!;
@@ -96,14 +150,14 @@ export function trainFollower(state: GameState, followerId: string): GameState |
 export function followerCombat(follower: Follower | null) {
   const template = follower && FOLLOWER_TEMPLATES.find((f) => f.id === follower.id);
   const role = template?.role ?? null;
-  const level = follower && Number.isSafeInteger(follower.level) ? Math.max(1, Math.min(MAX_FOLLOWER_LEVEL, follower.level)) : 1;
+  const level = follower && Number.isSafeInteger(follower.level) ? Math.max(1, Math.min(role === 'crystal' ? MAX_BATTLE_COW_LEVEL : MAX_FOLLOWER_LEVEL, follower.level)) : 1;
   const clamp = (value: number | undefined, max: number) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(max, Math.floor(value))) : 0;
   return {
     role,
-    attack: template ? clamp(follower?.attack, template.attack + MAX_FOLLOWER_LEVEL * 2) : 0,
+    attack: template ? clamp(follower?.attack, template.attack + (role === 'crystal' ? MAX_BATTLE_COW_LEVEL : MAX_FOLLOWER_LEVEL) * 2) : 0,
     defense: role === 'guardian' ? clamp(follower?.defense, 10 + MAX_FOLLOWER_LEVEL * 2) : 0,
-    heal: role === 'healer' ? Math.min(15, 3 + Math.floor(level / 4)) : 0,
+    heal: role === 'healer' ? Math.min(15, 3 + Math.floor(level / 4)) : role === 'crystal' ? Math.min(10, 4 + Math.floor(level / 10)) : 0,
     crit: role === 'hunter' ? Math.min(5, 2 + Math.floor(level / 10)) : 0,
-    pierce: role === 'mage' ? Math.min(0.08, 0.04 + level * 0.0008) : 0,
+    pierce: role === 'mage' ? Math.min(0.08, 0.04 + level * 0.0008) : role === 'crystal' ? 0.02 : 0,
   };
 }

@@ -1207,25 +1207,97 @@
 }
 .arena-prizes-bottom{gap:7px;margin-top:10px;padding:11px 2px 0;border-top-color:#ab7f41;font-size:11px;}
 .arena-prizes-bottom strong{font-size:13px;}
-/* Rules use the same carved Viking visual system as Arena prizes. */
-.arena-rules-overlay{position:fixed;inset:0;z-index:101;display:flex;justify-content:center;align-items:flex-end;padding:12px 10px max(16px,env(safe-area-inset-bottom));}
-.arena-rules-backdrop{position:absolute;inset:0;border:0;background:#02060bd8;backdrop-filter:blur(3px);}
-.arena-rules-panel{
-  position:relative;z-index:1;display:flex;flex-direction:column;
-  width:min(100%,440px);max-height:86dvh;overflow:hidden;
-  border:2px solid #e5b25d;border-radius:15px;
-  background:linear-gradient(165deg,#1c3e5b,#0c2239 45%,#061426);
-  color:#ecf2f8;box-shadow:inset 0 1px 0 #ffe3a173,0 10px 28px #000d;
+/* Prize information remains readable without covering the entire phone. */
+.arena-prizes-overlay{align-items:center;padding:max(12px,env(safe-area-inset-top)) 14px max(12px,env(safe-area-inset-bottom));}
+.arena-prizes-panel{width:min(100%,380px);max-height:min(72dvh,560px);min-height:0;background:linear-gradient(145deg,#754923,#4c2a17 56%,#2c180e);}
+.arena-prizes-head{flex:0 0 auto;padding:7px 8px 7px 11px;background:var(--viking-plaque) center / 100% 100% no-repeat,linear-gradient(#81522b,#4e2b18);}
+.arena-prizes-head span{color:#ffe6b6;}
+.arena-prizes-close{width:44px;height:44px;border:2px solid #d4a35c;background:linear-gradient(#986333,#522b17);}
+.arena-prizes-close:focus-visible{outline:3px solid #fff1b7;outline-offset:2px;}
+.arena-prizes-body{min-height:0;-webkit-overflow-scrolling:touch;}
+.arena-prizes-legend{border-color:#a87940;background:#301b12;}
+.arena-prizes-legend span{color:#ffe9c6;}
+.arena-prizes-tier{border-color:#ae804a;background:linear-gradient(130deg,#674024,#3c2114);}
+.arena-prizes-tier-1{background:linear-gradient(120deg,#8d5a22,#533016);}
+.arena-prizes-tier-mine{border-color:#68e5ff;background:linear-gradient(110deg,#175d87,#0d365a);}
+.arena-prizes-tier>.arena-prizes-tier-rank{border-color:#c79a60;background:#3b2315;}
+html.territory-ios-webapp .territory-shell > .arena-prizes-overlay{position:absolute;inset:0;width:100%;height:100%;z-index:110;}
+html.territory-ios-webapp .territory-shell > .arena-prizes-overlay .arena-prizes-panel{max-height:72%;}
+/* Compact Viking reference dialog (#145). Keeps the entire rules list scrollable
+   WITHOUT turning an informational card into a giant mobile bottom sheet. */
+.arena-rules-overlay{
+  position:fixed;inset:0;z-index:101;isolation:isolate;
+  display:flex;justify-content:center;align-items:center;
+  padding:max(16px,env(safe-area-inset-top)) 14px max(16px,env(safe-area-inset-bottom));
 }
-.arena-rules-head{display:flex;align-items:center;gap:9px;padding:13px 12px;border-bottom:2px solid #a87537;background:linear-gradient(125deg,#60411f,#1a2e47);}
-.arena-rules-head>svg{width:25px;height:25px;flex-shrink:0;color:#ffd471;}
-.arena-rules-head h3{flex:1;min-width:0;font-weight:1000;font-size:18px;letter-spacing:.02em;color:#ffe3a0;}
-.arena-rules-head button{display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border:1px solid #bb8a4d;border-radius:8px;background:#18334d;}
-.arena-rules-head button svg{width:20px;height:20px;}
-.arena-rules-list{display:grid;gap:7px;margin:0;padding:12px;overflow-y:auto;overscroll-behavior:contain;list-style:none;}
-.arena-rules-list li{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border:1px solid #416080;border-radius:9px;background:linear-gradient(130deg,#163a59,#0c2137);font-size:12px;line-height:1.45;}
-.arena-rules-number{display:grid;place-items:center;width:24px;height:24px;flex:0 0 24px;border:1px solid #f3c776;border-radius:50%;background:linear-gradient(#e6b750,#93611b);color:#231607;font-size:11px;font-weight:1000;}
-@media(min-width:600px){.arena-rules-overlay{align-items:center;}}
+.arena-rules-backdrop{
+  position:absolute;inset:0;border:0;
+  background:rgba(12,7,5,.72);backdrop-filter:blur(3px);
+}
+.arena-rules-panel{
+  position:relative;z-index:1;display:flex;flex-direction:column;min-height:0;
+  width:min(100%,354px);max-height:min(65dvh,440px);overflow:hidden;
+  border:3px solid #e2ae5a;border-radius:18px;
+  background:
+    radial-gradient(ellipse at 16% 3%,rgba(238,185,95,.22),transparent 48%),
+    repeating-linear-gradient(177deg,rgba(255,216,139,.025) 0 3px,rgba(33,15,8,.065) 4px 7px,transparent 8px 14px),
+    linear-gradient(145deg,#754923,#4c2a17 56%,#2c180e);
+  color:#fff0d3;
+  box-shadow:inset 0 0 0 2px rgba(61,30,13,.88),inset 0 2px 0 rgba(255,222,146,.45),0 15px 40px rgba(0,0,0,.65);
+}
+.arena-rules-head{
+  display:flex;align-items:center;gap:8px;flex:0 0 auto;
+  padding:7px 8px 7px 11px;
+  border-bottom:2px solid #ba8942;
+  background:var(--viking-plaque) center / 100% 100% no-repeat,linear-gradient(180deg,#81522b,#4e2b18);
+}
+.arena-rules-head>svg{width:23px;height:23px;flex-shrink:0;color:#ffe08b;filter:drop-shadow(0 1px 1px #201006);}
+.arena-rules-head h3{
+  flex:1;min-width:0;margin:0;
+  font-size:clamp(15px,4.3vw,18px);font-weight:900;line-height:1.15;
+  letter-spacing:.015em;color:#ffe29a;
+  text-shadow:1px 2px 0 #281408,-1px -1px 0 #38200e;
+}
+.arena-rules-head button{
+  display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;
+  border:2px solid #d4a35c;border-radius:11px;
+  background:linear-gradient(170deg,#986333,#522b17);
+  color:#fff0c4;cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,239,181,.46),0 2px 4px #1f0f08a8;
+}
+.arena-rules-head button:hover{filter:brightness(1.12);}
+.arena-rules-head button:focus-visible{outline:3px solid #fff1b7;outline-offset:2px;}
+.arena-rules-head button svg{width:23px;height:23px;}
+.arena-rules-list{
+  display:grid;gap:7px;min-height:0;
+  margin:0;padding:11px;
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  scrollbar-width:thin;scrollbar-color:#b98a4c #3f2316;
+  list-style:none;
+}
+.arena-rules-list li{
+  display:flex;align-items:flex-start;gap:9px;
+  padding:9px 8px;border:1px solid #a77a46;border-radius:10px;
+  background:linear-gradient(145deg,#714425,#482617);
+  color:#fff1d8;font-size:13px;line-height:1.4;
+  box-shadow:inset 0 1px 0 rgba(255,214,138,.12);
+}
+.arena-rules-number{
+  display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;
+  border:1px solid #ffe3a1;border-radius:8px;
+  background:linear-gradient(#efc86b,#a66b25);
+  color:#2b1709;font-size:12px;font-weight:900;
+  box-shadow:0 2px 3px #1d100899;
+}
+/* Keyboard, Telegram safe areas and short landscape screens keep the close
+   control in view; only the list scrolls. */
+@media(max-height:560px){.arena-rules-panel{max-height:70dvh;}}
+html.territory-ios-webapp .territory-shell > .arena-rules-overlay{
+  position:absolute;inset:0;z-index:110;width:100%;height:100%;
+}
+html.territory-ios-webapp .territory-shell > .arena-rules-overlay .arena-rules-panel{max-height:min(65%,440px);}
+@media(max-height:560px){html.territory-ios-webapp .territory-shell > .arena-rules-overlay .arena-rules-panel{max-height:70%;}}
+.arena-rules-list:focus-visible{outline:2px solid #fff1b7;outline-offset:-3px;}
 @media(max-width:365px){
   .arena-approved-fight-tip{padding:5px 6px;font-size:10px;}
   .arena-approved-entry .arena-weekly-winners{gap:3px;}

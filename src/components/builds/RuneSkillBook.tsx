@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Crown, Flame, Info, Shield, Snowflake, Sparkles, Swords, Target, Wind, X, Zap } from 'lucide-react';
 import catalog from '@/game/config/territory-rune-skill-book-v1.json';
 import './runeSkillBook.css';
@@ -40,6 +40,9 @@ export function RuneSkillBook({
   const en = language === 'en';
   const [selection, setSelection] = useState<RuneSkillBookSelection>(() => initialSelection ?? INITIAL_RUNE_BOOK_SELECTION);
   const [activeSkillId, setActiveSkillId] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const openerRef = useRef<HTMLButtonElement | null>(null);
   const activeSkill = useMemo(() => catalog.groups.flatMap(group => group.skills).find(skill => skill.id === activeSkillId), [activeSkillId]);
   const activeGroup = useMemo(() => catalog.groups.find(group => group.skills.some(skill => skill.id === activeSkillId)), [activeSkillId]);
   const setNext = (next: RuneSkillBookSelection) => { setSelection(next); onSelectionChange?.(next); };
@@ -52,9 +55,26 @@ export function RuneSkillBook({
   };
   useEffect(() => {
     if (!activeSkillId) return;
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setActiveSkillId(null); };
-    document.addEventListener('keydown', closeOnEscape);
-    return () => document.removeEventListener('keydown', closeOnEscape);
+    closeRef.current?.focus({ preventScroll: true });
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        setActiveSkillId(null);
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = [...dialogRef.current.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')]
+        .filter(button => button.getClientRects().length > 0);
+      if (!focusable.length) { event.preventDefault(); return; }
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      openerRef.current?.focus({ preventScroll: true });
+    };
   }, [activeSkillId]);
   return <section className="rune-book" data-testid="territory-rune-skill-book">
     <div className="rune-book__heading" style={{ backgroundImage: `linear-gradient(100deg, rgba(54,29,11,.8),rgba(95,48,12,.55)), url("${import.meta.env.BASE_URL}assets/territory/ui/wooden-plaque.webp")` }}>
@@ -76,7 +96,7 @@ export function RuneSkillBook({
             const picked = selection.skillIds[group.id] === skill.id;
             return <button key={skill.id} type="button" className={`rune-book__skill ${picked ? 'rune-book__skill--equipped' : ''}`}
               aria-label={`${name(skill, en)}. ${picked ? en ? 'Equipped. ' : 'Экипировано. ' : ''}${en ? 'Details' : 'Подробнее'}`}
-              aria-pressed={picked} disabled={serverConnected && !(available?.skills[skill.id]??0)} onClick={() => setActiveSkillId(skill.id)}>
+              aria-pressed={picked} disabled={serverConnected && !(available?.skills[skill.id]??0)} onClick={event => { openerRef.current = event.currentTarget; setActiveSkillId(skill.id); }}>
               <SkillIcon icon={skill.icon} tone={skill.tone}/>
               {picked && <span className="rune-book__equipped"><Check size={11} strokeWidth={4}/></span>}
               <span className="rune-book__skill-name">{name(skill, en)}</span>
@@ -107,13 +127,14 @@ export function RuneSkillBook({
     {activeSkill && activeGroup && <div className="rune-book__overlay" onMouseDown={event => {
       if (event.target === event.currentTarget) setActiveSkillId(null);
     }}>
-      <section className="rune-book__dialog" role="dialog" aria-modal="true" aria-labelledby="rune-book-dialog-title">
+      <section ref={dialogRef} className="rune-book__dialog" role="dialog" aria-modal="true" aria-labelledby="rune-book-dialog-title">
         <div className="rune-book__dialog-top">
           <SkillIcon icon={activeSkill.icon} tone={activeSkill.tone}/>
           <div><span>{name(activeGroup, en)}</span><h4 id="rune-book-dialog-title">{name(activeSkill, en)}</h4></div>
-          <button className="rune-book__close" type="button" aria-label={en ? 'Close' : 'Закрыть'}
+          <button ref={closeRef} className="rune-book__close" type="button" aria-label={en ? 'Close' : 'Закрыть'}
             onClick={() => setActiveSkillId(null)}><X size={20}/></button>
         </div>
+        <div className="rune-book__dialog-body">
         <p className="rune-book__description">{en ? activeSkill.descriptionEn : activeSkill.descriptionRu}</p>
         <button className="rune-book__equip-btn" type="button"
           aria-pressed={selection.skillIds[activeGroup.id] === activeSkill.id}
@@ -135,6 +156,7 @@ export function RuneSkillBook({
               <span className="rune-book__rune-check">{picked ? <Check size={17}/> : '○'}</span>
             </button>;
           })}
+        </div>
         </div>
         <div className="rune-book__dialog-actions">
           <button type="button" onClick={() => setActiveSkillId(null)}>{en ? 'Back to skill book' : 'Назад к навыкам'}</button>

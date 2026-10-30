@@ -5,7 +5,7 @@ import { useGame, useArena, recordBattleResult } from '@/game/actions';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
-import { selectedFollower, followerCombat } from '@/game/followers';
+import { selectedFollower, followerCombat, cowStoneChapterBossReward, cowStoneTrialReward } from '@/game/followers';
 import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, type PveSide } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
@@ -37,6 +37,7 @@ interface Outcome {
   gold: number;
   xp: number;
   gems: number;
+  awakeningStones: number;
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -113,6 +114,10 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const referralStart = useRef<Promise<string | null> | null>(null);
   const referralFinish = useRef<Promise<unknown>>(Promise.resolve());
   const nextRequested = useRef(false);
+  // React's disabled button state is not synchronous. Lock the round before
+  // the first await, so two taps cannot run two local fights / referral rounds.
+  const roundFlight = useRef(false);
+  const lastPotionUse = useRef<{ slot: number; at: number } | null>(null);
   heroRef.current = hero;
   foeRef.current = foe;
 
@@ -136,24 +141,26 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
         ? finishReferralFight(ticket, won, referralRounds.current).catch(() => false)
         : false);
     if (!won) {
-      setOutcome({ won: false, gold: 0, xp: 0, gems: 0 });
+      setOutcome({ won: false, gold: 0, xp: 0, gems: 0, awakeningStones: 0 });
       return;
     }
     const s = useGame.get();
     if (kind === 'trial') {
       const r = trialReward(s.trialLevel);
       useGame.set(recordTrialWin(s, enemy));
-      setOutcome({ won: true, gold: r.gold ?? 0, xp: enemy.rewardXp, gems: r.gems ?? 0 });
+      setOutcome({ won: true, gold: r.gold ?? 0, xp: enemy.rewardXp, gems: r.gems ?? 0, awakeningStones: cowStoneTrialReward(s.trialLevel) });
       return;
     }
     const gold = blessedGold(s, enemy.rewardGold);
     useGame.set(recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp }));
-    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0 });
+    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0, awakeningStones: cowStoneChapterBossReward(s.currentChapter, enemy.id, enemy.isBoss) });
   }, [enemy, kind]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
-    if (busy || outcome) return;
+    if (roundFlight.current || busy || outcome || done.current || !alive.current) return;
+    roundFlight.current = true;
     setBusy(true);
+    try {
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     hapticImpact('light');
     const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus);
@@ -176,11 +183,14 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
       pushLog(language === 'en' ? `Companion healed ${res.healAmount} HP` : `Спутник восстановил ${res.healAmount} HP`);
     }
     setStrike(null);
-    setBusy(false);
     setAttack(null);
     setBlocks([]);
     if (res.enemy.hp <= 0) finish(true);
     else if (res.hero.hp <= 0) finish(false);
+    } finally {
+      roundFlight.current = false;
+      if (alive.current) setBusy(false);
+    }
   }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language]);
 
   useEffect(() => {
@@ -202,16 +212,25 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     setBlocks((b) => (b.includes(z) ? b.filter((x) => x !== z) : b.length < 2 ? [...b, z] : [b[1], z]));
 
   const drinkPotion = (i: number, open: boolean) => {
-    const item = state.belt[i];
+    if (roundFlight.current || busy || outcome || done.current || !alive.current) return;
     if (!open) return setToast(language === 'en' ? 'This belt slot is still locked' : 'Этот слот пояса ещё закрыт');
+    // Read the current saved belt, not the one from the last React render:
+    // an Android double tap must not re-use an already consumed last charge.
+    const latest = useGame.get();
+    const item = latest.belt[i];
     if (!item) return setToast(language === 'en' ? 'Empty slot — move an elixir from inventory' : 'Слот пуст — положи эликсир из инвентаря');
-    if (busy || outcome) return;
+    const now = Date.now();
+    if (lastPotionUse.current?.slot === i && now - lastPotionUse.current.at < 650) return;
     const r = applyPotion(heroRef.current, item);
     setToast(r.text);
     if (!r.ok) return;
+    lastPotionUse.current = { slot: i, at: now };
+    // Publish the new local hero state before another input event, even if
+    // React has not committed the visual HP yet.
+    heroRef.current = r.hero;
+    useGame.set(consumeBelt(latest, i));
     setHero(r.hero);
     pushLog(`${item.name}: ${r.text}`);
-    useGame.set((s) => consumeBelt(s, i));
   };
 
   const controls = !busy && !outcome && !auto;
@@ -281,7 +300,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
               <Plate side={hero} tone="ally" />
               <div className="relative flex-1 mt-1">
                 {follower && (
-                  <div className="absolute -left-[8%] bottom-0 z-10 h-[52%] w-[48%] pointer-events-none">
+                  <div className={follower.id === 'follower_6' ? 'absolute left-0 bottom-0 z-30 h-[64%] w-[64%] pointer-events-none' : 'absolute -left-[8%] bottom-0 z-10 h-[52%] w-[48%] pointer-events-none'}>
                     <FighterFigure
                       src={getFollowerArt(follower.id)}
                       combatFrames={getFollowerCombatFrames(follower.id)}
@@ -394,7 +413,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
         </div>
       )}
 
-      <FoldSection title={language === 'en' ? 'Equipment' : 'Снаряжение'} summary={`${Object.keys(state.player.equipped).length}/7`} open={gearOpen} onToggle={() => setGearOpen((v) => !v)}>
+      <FoldSection title={language === 'en' ? 'Equipment' : 'Снаряжение'} summary={`${Object.values(state.player.equipped).filter(Boolean).length}/7`} open={gearOpen} onToggle={() => setGearOpen((v) => !v)}>
         <GearStrip equipped={state.player.equipped} />
       </FoldSection>
 
@@ -420,6 +439,7 @@ function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests }: {
             <Currency kind="gold" value={`+${outcome.gold}`} size={18} />
             <span className="font-semibold text-sky-200">+{outcome.xp} {language === 'en' ? 'XP' : 'опыта'}</span>
             {outcome.gems > 0 && <Currency kind="gems" value={`+${outcome.gems}`} size={18} />}
+            {outcome.awakeningStones > 0 && <div className="flex items-center gap-1 rounded-lg border border-fuchsia-400/60 bg-violet-700/35 px-2 py-1 text-xs font-black text-fuchsia-100"><img src={import.meta.env.BASE_URL + 'assets/territory/ui/items/awakening-stone.svg'} alt="" className="h-7 w-7 object-contain" /> +{outcome.awakeningStones} {language === 'en' ? 'Awakening Stone' : 'Камень пробуждения'}</div>}
           </div>
         ) : (
           <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>

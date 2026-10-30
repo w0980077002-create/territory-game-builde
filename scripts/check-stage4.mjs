@@ -22,13 +22,13 @@ function loadTs(file, dependencies = {}) {
 
 const expiryMock = { reconcileElixirExpiry: (state) => state };
 const followers = loadTs('src/game/followers.ts', { './elixirExpiry': expiryMock });
-assert.equal(followers.FOLLOWER_TEMPLATES.length, 5);
-assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.role)).size, 5);
-assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.id)).size, 5);
-assert.deepEqual(followers.FOLLOWER_TEMPLATES.map((f) => f.unlockLevel).join(','), '3,8,15,25,40');
+assert.equal(followers.FOLLOWER_TEMPLATES.length, 6);
+assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.role)).size, 6);
+assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.id)).size, 6);
+assert.deepEqual(followers.FOLLOWER_TEMPLATES.map((f) => f.unlockLevel).join(','), '3,8,15,25,40,50');
 const oldShield = { id: 'follower_1', name: 'Верный щит', level: 3, attack: 5, defense: 10, unlocked: true, icon: '🛡️', description: 'old' };
 const roster = followers.reconcileFollowers([oldShield], 81);
-assert.equal(roster.length, 5);
+assert.equal(roster.length, 6);
 assert.equal(roster[0].level, 3, 'keep existing shield level');
 assert.equal(roster[0].defense, 10, 'keep existing shield stats');
 assert.equal(roster[0].description, 'old', 'keep legacy description');
@@ -61,9 +61,63 @@ for (const f of roster) {
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_4')).crit > 0, true);
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_5')).pierce > 0, true);
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_3')).heal > 0, true);
+assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_6')).heal > 0, true);
+assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_6')).pierce, 0.02);
+assert.equal(followers.selectFollower({ ...starter, followers: followers.reconcileFollowers([], 49) }, 'follower_6'), null, 'Battle Cow unlocks at 50');
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_2')).defense, 0);
 assert.equal(fee.gold, 205);
-console.log('Stage4: 5 follower roles, legacy migration, one active, level-gated training, bounded PvE bonuses: PASS');
+const cowSprite = readFileSync(new URL('../public/assets/territory/characters/followers/battle_cow/idle.svg', import.meta.url), 'utf8');
+assert.match(cowSprite, /viewBox="0 0 493 564"/, 'Battle Cow sprite needs a tightly cropped, transparent viewBox');
+assert.match(cowSprite, /data:image\/webp;base64,UklGR/, 'Battle Cow must embed the approved raster art, not an external URL');
+assert.equal(followers.selectFollower(starter, 'follower_6')?.activeFollowerId, 'follower_6');
+assert.equal(followers.AWAKENING_STONE_ITEM.qty, 0, 'the stone is visible but never gifted on install');
+assert.equal(followers.AWAKENING_STONE_ITEM.type, 'material');
+assert.equal(followers.MAX_BATTLE_COW_LEVEL, 100);
+assert.equal(followers.cowStoneChapterBossReward(1, 'ch1_boss', true), 0, 'early bosses cannot mint the rare item');
+assert.equal(followers.cowStoneChapterBossReward(5, 'ch5_boss', true), 1, 'fifth chapter boss grants a stone');
+assert.equal(followers.cowStoneChapterBossReward(10, 'ch10_boss', true), 1, 'tenth chapter boss grants a stone');
+assert.equal(followers.cowStoneChapterBossReward(5, 'ch4_boss', true), 0, 'wrong boss identity never grants a stone');
+assert.equal(followers.cowStoneChapterBossReward(5, 'ch5_boss', false), 0, 'regular fights do not grant stone');
+assert.equal(followers.cowStoneTrialReward(9), 0);
+assert.equal(followers.cowStoneTrialReward(10), 1);
+assert.equal(followers.cowStoneTrialReward(20), 1);
+assert.equal(followers.cowStoneTrialReward(NaN), 0);
+const stoneBlank = { ...starter, inventory: [{ id:'keep', type:'material', qty:4 }] };
+const stoneClaim = followers.awardCowAwakeningStone(stoneBlank, 1);
+assert.equal(followers.cowStonesOwned(stoneClaim), 1, 'one stone appears only after boss milestone');
+assert.equal(followers.cowStonesOwned(stoneBlank), 0, 'existing save unchanged');
+assert.equal(stoneClaim.inventory.find((item) => item.id === 'keep').qty, 4);
+assert.equal(followers.awardCowAwakeningStone(stoneClaim, 0), stoneClaim, 'never award zero');
+const stoneStack = followers.awardCowAwakeningStone(stoneClaim, 1);
+assert.equal(followers.cowStonesOwned(stoneStack), 2, 'awards stack on existing stone batch');
+assert.equal(stoneStack.inventory.filter((i)=>i.id===followers.AWAKENING_STONE_ID).length,1);
+
+const oldCow = { ...roster.find((f) => f.id === 'follower_6'), level: 59, attack: 65 };
+const existingCow = {
+  ...starter,
+  player: { ...starter.player, level: 59, gold: 987654, gems: 111, redGems: 2 },
+  inventory: [{ ...followers.AWAKENING_STONE_ITEM, qty: 0 },
+    { id: 'legacy-material', type: 'material', name: 'Old material', qty: 9 }],
+  followers: roster.map((f) => f.id === 'follower_6' ? oldCow : f),
+};
+assert.equal(followers.trainFollower(existingCow, 'follower_6'), null, 'without stones cannot spend gold for Battle Cow');
+const withStone = { ...existingCow, inventory: existingCow.inventory.map((x) =>
+  x.id === followers.AWAKENING_STONE_ID ? { ...x, qty: 1 } : x) };
+const cowLevelUp = followers.trainFollower(withStone, 'follower_6');
+assert(cowLevelUp, 'an owned awakening stone raises Battle Cow level even when hero is 59');
+assert.equal(cowLevelUp.followers.find((f) => f.id === 'follower_6').level, 60);
+assert.equal(cowLevelUp.followers.find((f) => f.id === 'follower_6').attack, 66);
+assert.equal(cowLevelUp.followers.find((f) => f.id === 'follower_1').level, roster[0].level);
+assert.deepEqual(cowLevelUp.player, withStone.player, 'no gold, gems or red diamonds are spent');
+assert.equal(cowLevelUp.forgeMaterials, withStone.forgeMaterials);
+assert.equal(cowLevelUp.inventory.find((x) => x.id === 'legacy-material').qty, 9);
+assert.equal(followers.cowStonesOwned(cowLevelUp), 0, 'one stone consumed exactly once');
+assert.equal(followers.trainFollower(cowLevelUp, 'follower_6'), null, 'cannot reuse consumed stone');
+const cowMaxed = { ...withStone, followers: withStone.followers.map((x) =>
+  x.id === 'follower_6' ? { ...x, level: 100 } : x) };
+assert.equal(followers.trainFollower(cowMaxed, 'follower_6'), null, 'never overlevel the cow');
+
+console.log('Stage4: 6 follower roles, approved cow art, legacy migration, one active, level-gated training, bounded PvE bonuses: PASS');
 
 const equipBalance = loadTs('src/game/equipmentBalance.ts', { './equipmentCatalog': { EQUIPMENT_TEMPLATES: [], rarityForChapter: () => 'common' } });
 const forge = loadTs('src/game/forge.ts', { './equipmentBalance': equipBalance, './elixirExpiry': expiryMock });

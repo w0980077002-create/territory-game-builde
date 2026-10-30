@@ -35,8 +35,10 @@ jobs:
       - run: npm run test:stage1
       - run: npm run test:slots
       - run: npm run build
+      - run: node scripts/check-pages-build-sha.mjs
       - run: npm run test:balance
       - run: npm run test:pve
+      - run: node scripts/check-pve-recovery-controls.mjs
       - run: npm run test:inventory-cleanup
       - run: npm run test:gear-recycle
       - run: npm run test:gear-showcase
@@ -55,6 +57,7 @@ jobs:
       - run: npm run test:master-license
       - run: npm run test:feature-separation
       - run: npm run test:mobile-home
+      - run: npm run test:visual-viking
       - run: npm run test:events
       - run: node scripts/check-combat-visuals.mjs
       - run: node scripts/check-arena-postfight.mjs

@@ -6,8 +6,8 @@ import { useLanguage } from '@/game/i18n';
 import { getFollowerArt } from '@/game/combatArt';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import {
-  FOLLOWER_TEMPLATES, followerTrainingCost, MAX_FOLLOWER_LEVEL,
-  selectedFollower, selectFollower, trainFollower,
+  FOLLOWER_TEMPLATES, followerTrainingCost, MAX_FOLLOWER_LEVEL, MAX_BATTLE_COW_LEVEL,
+  cowStonesOwned, cowAwakeningCost, selectedFollower, selectFollower, trainFollower,
 } from '@/game/followers';
 import './followersCamp.css';
 
@@ -34,7 +34,10 @@ export function FollowersPanel() {
       succeeded = next !== null;
       return next ?? current;
     });
-    setNote(succeeded ? (en ? 'Training completed' : 'Тренировка завершена') : (en ? 'Not enough materials, gold or hero level' : 'Не хватает золота, материалов или уровня героя'));
+    const cow = id === 'follower_6';
+    setNote(succeeded ? (cow ? (en ? 'Battle Cow level raised with an awakening stone' : 'Уровень Боевой коровы повышен за камень пробуждения') : (en ? 'Training completed' : 'Тренировка завершена'))
+      : cow ? (en ? 'Awakening stone required. Defeat milestone bosses to earn one.' : 'Нужен камень пробуждения. Побеждай особых боссов, чтобы получить его.')
+        : (en ? 'Not enough materials, gold or hero level' : 'Не хватает золота, материалов или уровня героя'));
   };
 
   const unlockedCount = FOLLOWER_TEMPLATES.filter(template =>
@@ -44,10 +47,13 @@ export function FollowersPanel() {
   const follower = state.followers.find(f => f.id === template.id);
   const unlocked = follower?.unlocked === true;
   const selected = active?.id === follower?.id && unlocked;
-  const maxed = !!follower && (follower.level >= state.player.level || follower.level >= MAX_FOLLOWER_LEVEL);
+  const isCow = template.id === 'follower_6';
+  const stoneCount = cowStonesOwned(state);
+  const stonePrice = follower ? cowAwakeningCost(follower.level) : 1;
+  const maxed = !!follower && (isCow ? follower.level >= MAX_BATTLE_COW_LEVEL : (follower.level >= state.player.level || follower.level >= MAX_FOLLOWER_LEVEL));
   const price = follower ? followerTrainingCost(follower.level) : { gold: 0, materials: 0 };
-  const canTrain = unlocked && !maxed && state.player.gold >= price.gold && state.forgeMaterials >= price.materials;
-  const cap = Math.max(1, Math.min(state.player.level, MAX_FOLLOWER_LEVEL));
+  const canTrain = unlocked && !maxed && (isCow ? stoneCount >= stonePrice : state.player.gold >= price.gold && state.forgeMaterials >= price.materials);
+  const cap = isCow ? MAX_BATTLE_COW_LEVEL : Math.max(1, Math.min(state.player.level, MAX_FOLLOWER_LEVEL));
   const progress = follower ? Math.min(100, Math.round(follower.level / cap * 100)) : 0;
   const nextUnlock = FOLLOWER_TEMPLATES.find(f => !state.followers.find(x => x.id === f.id)?.unlocked);
 
@@ -104,6 +110,7 @@ export function FollowersPanel() {
         <div>
           <span className="followers-camp__eyebrow"><Sparkles size={12}/>{en ? 'COMPANION DETAILS' : 'ХАРАКТЕРИСТИКИ'}</span>
           <h3>{en ? template.nameEn : template.name}</h3>
+          {template.id === 'follower_6' && <span className="followers-camp__legendary"><Sparkles size={12}/>{en ? 'LEGENDARY LOOK' : 'ЛЕГЕНДАРНЫЙ ОБРАЗ'}</span>}
           <p>{en ? template.descriptionEn : template.description}</p>
           <span className={unlocked ? 'followers-camp__availability' : 'followers-camp__availability followers-camp__availability--locked'}>
             {unlocked ? en ? 'Unlocked' : 'Открыт' : `${en ? 'Unlocks at hero level' : 'Откроется на уровне героя'} ${template.unlockLevel}`}
@@ -112,6 +119,7 @@ export function FollowersPanel() {
       </div>
 
       {unlocked && <>
+        {template.role === 'crystal' && <div className="followers-camp__special"><Sparkles size={15}/>{en ? 'Crystal Frenzy: extra strike, light healing each round, slight armor piercing.' : 'Кристальное безумие: дополнительный удар, небольшое лечение каждый раунд и пробивание брони.'}</div>}
         <div className="followers-camp__stats">
           <div><Swords size={16}/><span>{en ? 'Attack' : 'Атака'}</span><b>{follower.attack}</b></div>
           <div><Shield size={16}/><span>{en ? 'Defense' : 'Защита'}</span><b>{follower.defense}</b></div>
@@ -127,10 +135,18 @@ export function FollowersPanel() {
           </button>
           <button type="button" onClick={() => train(follower.id)} disabled={!canTrain}
             className="followers-camp__train">
-            <Wrench size={16}/>{maxed ? en ? 'Level cap' : 'Лимит уровня' : en ? 'Train' : 'Обучить'}
+            {isCow ? <Sparkles size={16}/> : <Wrench size={16}/>}{maxed ? en ? 'Level cap' : 'Лимит уровня' : isCow ? (en ? 'Raise level' : 'Повысить уровень') : en ? 'Train' : 'Обучить'}
           </button>
         </div>
-        {!maxed && <div className="followers-camp__cost">
+        {isCow && <div className="followers-camp__awakening" aria-label={en ? 'Awakening stone' : 'Камень пробуждения'}>
+          <img src={import.meta.env.BASE_URL + 'assets/territory/ui/items/awakening-stone.svg'} alt="" loading="lazy" draggable={false}/>
+          <div>
+            <strong>{en ? 'AWAKENING STONE' : 'КАМЕНЬ ПРОБУЖДЕНИЯ'}</strong>
+            <span>{en ? 'Owned' : 'В наличии'}: <b>{stoneCount}</b>{!maxed && <>{' · '}{en ? 'Needed' : 'Нужно'}: {stonePrice}</>}</span>
+            <small>{en ? 'Earn from every 5th chapter boss and every 10th trial. No gold or gems.' : 'Добыча: боссы глав 5, 10, 15… и испытаний 10, 20, 30… Монеты и алмазы не нужны.'}</small>
+          </div>
+        </div>}
+        {!isCow && !maxed && <div className="followers-camp__cost">
           <span><Coins size={14}/>{price.gold.toLocaleString(en ? 'en-US' : 'ru-RU')}</span>
           <span><img src={import.meta.env.BASE_URL + 'forge-material.webp'} alt="" loading="lazy"/>{price.materials}</span>
           {!canTrain && <small>{en ? 'Not enough materials, gold or hero level' : 'Недостаточно ресурсов или уровня героя'}</small>}

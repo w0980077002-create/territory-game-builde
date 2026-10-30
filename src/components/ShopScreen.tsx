@@ -250,7 +250,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
   };
 
   return (
-    <div className="space-y-3 animate-fade-in pb-2">
+    <div className="viking-screen viking-screen--shop space-y-3 animate-fade-in pb-2">
       <div className="relative rounded-2xl overflow-hidden border border-amber-500/20 p-4">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-900/40 via-[#16130d] to-[#0f1115]" />
         <div className="relative flex items-center gap-3">
@@ -296,10 +296,11 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
         {licenseNotice&&<p role="status" className="mt-2 rounded-lg bg-emerald-950/50 p-2 text-xs text-emerald-200">{licenseNotice}</p>}
       </div>
 
-      <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10">
+      <div className="viking-screen-tabs grid grid-cols-3 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10" role="tablist">
         {TABS.map((tabItem) => (
           <button
             key={tabItem.id}
+            type="button" role="tab" aria-selected={tab === tabItem.id}
             onClick={() => setTab(tabItem.id)}
             className={`h-9 rounded-xl text-xs font-semibold transition-all ${tab === tabItem.id ? 'bg-gradient-to-b from-amber-400 to-amber-600 text-black' : 'text-gray-400'}`}
           >

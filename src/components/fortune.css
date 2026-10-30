@@ -58,15 +58,69 @@
 .fortune-status, .fortune-treasury p { font-size: 12px; line-height: 1.55; margin: 6px 12px; color: #f0e6f3; }
 .fortune-status button, .fortune-skip { min-height: 44px; padding: 8px 12px; font-size: 12px; color: #ffe6b2; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .fortune-screen button:focus-visible, .fortune-dialog button:focus-visible, .fortune-treasury button:focus-visible { outline: 3px solid #68e0ff; outline-offset: 3px; }
-.fortune-dialog{width:calc(100% - 24px);max-width:420px;max-height:85dvh;overflow:auto;overscroll-behavior:contain;padding:22px 18px;border:2px solid #edca73;border-radius:22px;background:radial-gradient(at top,#49246a,#11182e 70%);color:#fff1cb;text-align:center;box-shadow:inset 0 0 0 4px #a7793533,0 0 60px #c091f455}
-.fortune-dialog::backdrop{background:#060817dc;backdrop-filter:blur(5px)}
-.fortune-dialog h2{font-family:Georgia,serif;font-weight:900;font-size:23px;color:#ffe29b;margin:0 0 18px}
-.fortune-dialog h3{font-size:23px;font-weight:900;margin:15px 0}
-.fortune-dialog p{font-size:13px;line-height:1.65;margin:12px 0}
-.fortune-dialog table{font-size:12px;width:100%;text-align:left;margin:16px 0}
-.fortune-dialog td{padding:6px 4px;border-bottom:1px solid #f4c87333}
+/* Approved #145: carved-wood, content-sized wheel rules and prize information.
+   Wheel artwork and all odds/claim logic remain unchanged. */
+.fortune-dialog{
+  box-sizing:border-box;
+  width:min(calc(100% - 28px),368px);
+  max-height:min(72dvh,470px);
+  margin:auto;
+  padding:0;
+  overflow:hidden;
+  overscroll-behavior:contain;
+  border:3px solid #ddb065;
+  border-radius:17px;
+  color:#fff0d0;
+  background:linear-gradient(145deg,#704522,#482817 62%,#29170f);
+  box-shadow:inset 0 0 0 2px #342013,inset 0 2px 0 #ffe1a36a,0 15px 34px #000b;
+}
+.fortune-dialog[open]{display:flex;flex-direction:column}
+.fortune-dialog::backdrop{background:#130b08c9;backdrop-filter:blur(3px)}
+.fortune-dialog__head{
+  flex:0 0 auto;display:flex;align-items:center;gap:7px;
+  padding:7px 8px 7px 12px;
+  min-height:54px;
+  border-bottom:2px solid #c48b43;
+  background:var(--viking-plaque) center / 100% 100% no-repeat,linear-gradient(#83502a,#4a2818);
+}
+.fortune-dialog__head h2{
+  flex:1;min-width:0;margin:0;
+  color:#ffe9a1;font:900 clamp(15px,4.3vw,19px)/1.16 system-ui,-apple-system,sans-serif;
+  text-shadow:1px 2px 0 #281408,-1px -1px 0 #38200e;
+  overflow-wrap:anywhere;
+}
+.fortune-dialog__close{
+  display:grid;place-items:center;flex:0 0 44px;
+  width:44px;height:44px;
+  padding:0;border:2px solid #dcae67;border-radius:10px;
+  background:linear-gradient(#986333,#542d19);color:#fff0c4;
+  box-shadow:inset 0 1px 0 #ffe6ac66,0 2px 4px #20110aa8;
+  cursor:pointer;
+}
+.fortune-dialog__body{
+  flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  padding:10px 13px 7px;
+  scrollbar-width:thin;scrollbar-color:#bd8b4b #352011;
+}
+.fortune-dialog__foot{
+  flex:0 0 auto;display:flex;justify-content:center;
+  padding:8px 12px 10px;border-top:1px solid #a5753e;
+  background:linear-gradient(#4b2b1a,#322015);
+}
+.fortune-dialog .fortune-dialog__foot .fortune-button{
+  width:min(100%,210px);min-height:44px;margin:0;
+  padding:8px 12px;border:2px solid #ffe3a1;border-radius:10px;
+  background:var(--viking-button-bg,linear-gradient(#ffe29a,#d79839 51%,#9e5e1d));
+  color:#38200e;text-shadow:0 1px #fff1c280;
+}
+.fortune-dialog h3{font-size:18px;font-weight:900;margin:11px 0;color:#ffe2a0}
+.fortune-dialog p{font-size:13px;line-height:1.5;margin:9px 0;color:#fff1d4}
+.fortune-dialog table{font-size:12px;width:100%;text-align:left;margin:11px 0}
+.fortune-dialog td{padding:6px 4px;border-bottom:1px solid #e2ba734f}
 .fortune-dialog td:last-child{text-align:right;white-space:nowrap}
-.fortune-dialog>.fortune-button{margin-top:14px;min-width:140px}
+.fortune-dialog button:focus-visible{outline:3px solid #fff5b7;outline-offset:2px}
+@media(max-height:450px){.fortune-dialog{max-height:80dvh}.fortune-dialog__head{padding-block:4px}}
 .fortune-reveal{position:relative;padding:18px 0}
 .fortune-reveal img{width:118px;height:118px;object-fit:contain;margin:auto;filter:drop-shadow(0 0 24px #f9bf43)}
 .fortune-reveal>span{font-size:90px;display:block;line-height:1.3}

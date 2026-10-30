@@ -44,6 +44,9 @@
 .warehouse-info-card strong{color:#fff4df}
 .warehouse-info-card span{display:flex;align-items:center;gap:5px;color:#ffdc8c}
 .warehouse-info-card__done{width:100%;padding:10px;background:linear-gradient(#fbd68e,#d6963a);border:1px solid #ffe3ad;border-radius:9px;color:#39220d;font-weight:900}
+.warehouse-info-content{display:grid;justify-items:center;gap:10px;text-align:center;color:#f7e6cb}
+.warehouse-info-content p{color:#f3dfbf}
+.warehouse-info-content span{display:flex;align-items:center;gap:5px;color:#ffdc8c}
 @media(min-width:390px){.compact-warehouse__grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.warehouse-tile{min-height:100px;padding:8px 3px 5px}}
 @media(max-width:340px){.compact-warehouse__grid{gap:4px}.warehouse-tile{min-height:96px;padding:5px 2px}.warehouse-tile__art{width:48px;height:49px}.warehouse-tile__art img{width:44px;height:44px}.warehouse-tile__count{right:-2px;font-size:8px}.warehouse-tile__expiry{font-size:7px}.compact-warehouse__filter{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.warehouse-tile{transition:none!important}.warehouse-tile:active{transform:none}}

@@ -39,6 +39,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const [actionError, setActionError] = useState<string | null>(null);
   const [reward, setReward] = useState<ArenaReward | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const cancelLeaveRef = useRef<HTMLButtonElement>(null);
   const [beltBusy, setBeltBusy] = useState<number | null>(null);
   const [beltOpen, setBeltOpen] = useState(true);
   const [enemiesOpen, setEnemiesOpen] = useState(false);
@@ -51,6 +52,19 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   // tap must never send two arena actions, especially two elixir debits.
   const actionFlight = useRef(false);
   const [postFightDeadline, setPostFightDeadline] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!confirmLeave) return;
+    const prior = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    cancelLeaveRef.current?.focus({ preventScroll: true });
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      setConfirmLeave(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('keydown', onKey); prior?.focus({ preventScroll: true }); };
+  }, [confirmLeave]);
 
   const room = view?.room;
   const countdown = useCountdown(room ? (room.status === 'waiting' ? room.startsAt : room.deadline) : null, clockOffset);
@@ -416,11 +430,11 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
       {confirmLeave && (
         <IosGamePortal>
         <div className="arena-modal-overlay fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={() => setConfirmLeave(false)}>
-          <div className="card w-full max-w-sm text-center animate-pop" onClick={(e) => e.stopPropagation()}>
+          <div role="alertdialog" aria-modal="true" aria-label={language === 'en' ? 'Leave battle?' : 'Покинуть бой?'} className="card w-full max-w-sm text-center animate-pop" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-white mb-2">{language === 'en' ? 'Leave battle?' : 'Покинуть бой?'}</h3>
             <p className="text-sm text-gray-400 mb-4">{alive ? (language === 'en' ? 'You will count as defeated, and your team may lose.' : 'Ты будешь считаться павшим, и бой может быть проигран.') : (language === 'en' ? 'You will no longer see this battle chat.' : 'Ты больше не увидишь чат этого боя.')}</p>
             <div className="grid grid-cols-2 gap-2">
-              <button className="btn-ghost" onClick={() => setConfirmLeave(false)}>{language === 'en' ? 'Stay' : 'Остаться'}</button>
+              <button ref={cancelLeaveRef} className="btn-ghost" onClick={() => setConfirmLeave(false)}>{language === 'en' ? 'Stay' : 'Остаться'}</button>
               <button className="btn-danger" disabled={busy} onClick={() => { setConfirmLeave(false); leave(); }}>{language === 'en' ? 'Leave' : 'Выйти'}</button>
             </div>
           </div>

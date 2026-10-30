@@ -129,7 +129,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
   const readyToClaim = !!status && (status.pending_claims > 0 || status.welcome_pending || status.red_pending > 0);
 
   return (
-    <div className="space-y-2.5 animate-fade-in pb-5 text-white" data-testid="compact-friends-screen">
+    <div className="viking-screen viking-screen--friends space-y-2.5 animate-fade-in pb-5 text-white" data-testid="compact-friends-screen">
       {/* ONE lead message and ONE primary call to action. */}
       <section className="relative overflow-hidden rounded-2xl border border-amber-400/60 bg-gradient-to-br from-[#482333] via-[#2d173b] to-[#14182a] p-3.5 shadow-[0_6px_24px_#0006]">
         <div className="absolute -top-5 -right-5 opacity-10 pointer-events-none"><Crown size={125} /></div>

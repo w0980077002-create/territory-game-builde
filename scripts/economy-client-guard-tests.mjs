@@ -22,7 +22,10 @@ function loadPureTsModule(relativePath, dependencies = {}) {
 const { createSequentialWriter } = loadPureTsModule('../src/game/saveQueue.ts');
 const calendar = loadPureTsModule('../src/game/weeklyQuests.ts');
 const { canBuyShopItem, shopStonesBoughtToday, MAX_SHOP_PURCHASE_QTY } = loadPureTsModule('../src/game/purchaseGuard.ts', { './weeklyQuests': calendar });
-const { spendStones } = loadPureTsModule('../src/game/progression.ts', { './actions': {}, './live': {}, './weeklyQuests': calendar });
+const { spendStones } = loadPureTsModule('../src/game/progression.ts', {
+  './actions': {}, './live': {}, './weeklyQuests': calendar,
+  './followers': { awardCowAwakeningStone: (state) => state, cowStoneTrialReward: () => 0 },
+});
 
 // Pure tests: do not contact the real Supabase database or touch player data.
 const now = new Date('2026-10-15T08:00:00+03:00');

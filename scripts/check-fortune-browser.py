@@ -78,6 +78,10 @@ with sync_playwright() as p:
         assert '0.05%' in dialog.inner_text() and '0.45%' in dialog.inner_text()
         assert dialog.evaluate('(el)=>el.scrollTop')==0,'Rules should open at their beginning'
         db=dialog.bounding_box();assert db['x']>=0 and db['x']+db['width']<=width and db['y']>=0 and db['y']+db['height']<=height
+        close=dialog.locator('.fortune-dialog__close').bounding_box()
+        assert close and close['width']>=44 and close['height']>=44,'wheel rules close target too small'
+        assert db['height']<=min(470,height*.72)+3, f'wheel rules should remain compact: {width}x{height} => {db}'
+        assert dialog.locator('.fortune-dialog__body').is_visible(), 'long wheel rules must scroll inside the dialog'
         if width==390:page.screenshot(path=str(OUT/'rules-390.png'))
         page.keyboard.press('Escape')
         # The panel/gallery is entirely gone; Back is a discreet top control.

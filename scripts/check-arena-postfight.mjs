@@ -10,6 +10,7 @@ const api = read('src/game/arenaApi.ts');
 const pve = read('src/components/pve/PveFight.tsx');
 const server = read('supabase/migrations/20261017_arena_postfight_30m_chat.sql');
 const lobby = read('src/components/arena/ArenaLobby.tsx');
+const rulesModal = read('src/components/arena/ArenaRulesModal.tsx');
 
 assert(!room.includes('createPortal'), 'Result must not block the whole viewport');
 assert(!room.includes('z-[10000]'), 'No full-screen result modal allowed');
@@ -29,7 +30,8 @@ assert.match(room, /\(!view\?\.me\.rewarded && !reward\)/, 'Auto-exit must not d
 assert.match(room, /leaveArena\(roomId\)/, 'Automatic departure must notify the server');
 assert.match(api, /arenaPostFightDeadline/, 'Post-fight server deadline RPC missing');
 assert.match(chat, /canSend/, 'Chat expiry gating missing');
-assert.match(lobby, /30 минут/, 'Arena rules must announce the time limit');
+assert.match(lobby, /<RulesModal/, 'Arena lobby must open its extracted rules dialog');
+assert.match(rulesModal, /30 минут/, 'Arena rules must announce the time limit');
 assert.match(result, /VictorySparks/, 'Victory artwork and effects missing');
 assert.match(result, /formatPostFightTime/, 'Result countdown missing');
 assert.match(result, /arena-result-banner-title/, 'Illustrated victory title is missing');

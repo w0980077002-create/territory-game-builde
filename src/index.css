@@ -12,6 +12,16 @@
     --color-surface: #161b26;
     --color-surface-light: #1e2533;
     --color-border: #2a3245;
+    --viking-wood: #4a2919;
+    --viking-wood-deep: #291811;
+    --viking-gold: #d7a258;
+    --viking-gold-light: #ffe09a;
+    --viking-plaque: url('/assets/territory/ui/wooden-plaque.webp');
+    --viking-title-shadow: 1px 2px 0 #281408, -1px -1px 0 #281408;
+    --viking-panel-bg: linear-gradient(145deg, #654024, #321b12);
+    --viking-panel-border: #b98748;
+    --viking-panel-shadow: inset 0 1px 0 #ffdc9550, 0 3px 10px #10090280;
+    --viking-button-bg: linear-gradient(#ffe29a, #d79839 51%, #9e5e1d);
   }
 
   body {
@@ -30,29 +40,36 @@
 }
 
 @layer components {
-  .card {
+  .card, .viking-panel, .viking-card {
     @apply rounded-2xl p-4;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    min-width: 0;
+    background: var(--viking-panel-bg);
+    border: 1px solid var(--viking-panel-border);
+    box-shadow: var(--viking-panel-shadow);
   }
 
   .btn {
     @apply px-4 py-2.5 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100;
   }
 
-  .btn-primary {
+  .btn-primary, .viking-button {
     @apply btn text-white;
-    background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+    background: var(--viking-button-bg);
+    border: 1px solid #f6cf78;
+    color: #321b0a;
+    font-weight: 800;
+    box-shadow: inset 0 1px #fff4ca, 0 3px 0 #60360f;
   }
 
   .btn-primary:hover:not(:disabled) {
-    background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary-dark));
-    box-shadow: 0 0 20px rgba(20, 184, 166, 0.3);
+    filter: brightness(1.08);
   }
 
   .btn-accent {
     @apply btn text-black;
-    background: linear-gradient(135deg, #fbbf24, var(--color-accent));
+    background: var(--viking-button-bg);
+    border: 1px solid #f6cf78;
+    box-shadow: inset 0 1px #fff4ca, 0 3px 0 #60360f;
   }
 
   .btn-accent:hover:not(:disabled) {
@@ -65,7 +82,15 @@
 
   .btn-ghost {
     @apply btn bg-transparent text-gray-300 hover:bg-white/5;
+    border: 1px solid #a87940;
+    color: #ffebc7;
   }
+
+  .viking-title { color: var(--viking-gold-light); font-weight: 900; text-shadow: var(--viking-title-shadow); overflow-wrap: anywhere; }
+  .viking-tab { min-width: 0; min-height: 44px; border: 1px solid #a87940; border-radius: 10px; color: #ffebc7; background: #3b2418; font-weight: 800; }
+  .viking-tab[aria-selected='true'] { color: #2c1809; background: var(--viking-button-bg); border-color: #f6cf78; }
+  .viking-button:focus-visible, .viking-tab:focus-visible, .btn:focus-visible { outline: 3px solid #fff1b7; outline-offset: 2px; }
+  .card .text-gray-500, .card .text-gray-600 { color: #d1b893; }
 
   .progress-bar {
     @apply w-full h-2 rounded-full overflow-hidden bg-black/30;
@@ -304,6 +329,12 @@
 .home-profile-chip {
   box-shadow: inset 0 1px 0 rgba(255,245,205,.14), 0 4px 12px rgba(0,0,0,.45), 0 0 12px rgba(245,158,11,.12);
 }
+.home-profile-chip, .home-side {
+  border-color: #d2a25a;
+  background: linear-gradient(#754925eb, #321b10f2);
+}
+.territory-section-head, .territory-nav { background: linear-gradient(#684023, #301a10); border-color: #ba8844; }
+.territory-nav-label { text-shadow: var(--viking-title-shadow); }
 
 .hud-utility-button {
   box-shadow: inset 0 1px 0 rgba(255,245,205,.16), 0 3px 7px rgba(0,0,0,.55);
@@ -913,14 +944,36 @@ html.territory-desktop-webapp .home-side-stack .home-side {
 /* Modal content scrolls inside Telegram's usable rectangle. */
 .territory-modal {
   box-sizing: border-box;
+  padding-left: 14px;
+  padding-right: 14px;
   padding-top: max(8px, env(safe-area-inset-top, 0px), var(--territory-top-inset, 0px));
   padding-bottom: max(8px, env(safe-area-inset-bottom, 0px), var(--territory-bottom-inset, 0px));
 }
 .territory-modal-panel {
+  width: min(100%, 380px);
   max-height: min(86dvh, calc(100dvh - var(--territory-top-inset, 0px) - var(--territory-bottom-inset, 0px) - 16px));
   min-height: 0;
+  overflow: hidden;
+  border: 3px solid #d8a255;
+  border-radius: 18px;
+  color: #fff0d3;
+  background: repeating-linear-gradient(177deg, #ffdc9108 0 3px, #210f0812 4px 7px, transparent 8px 14px), linear-gradient(145deg, #754923, #4c2a17 56%, #2c180e);
+  box-shadow: inset 0 0 0 2px #3d1e0de0, inset 0 2px 0 #ffde9273, 0 15px 40px #000a;
 }
-.territory-modal-panel > div:last-child { min-height: 0; -webkit-overflow-scrolling: touch; }
+.territory-modal-head { min-height: 60px; padding: 7px 8px 7px 12px; border-bottom: 2px solid #ba8942; background: var(--viking-plaque) center / 100% 100% no-repeat, linear-gradient(#81522b, #4e2b18); }
+.territory-modal-head h2 { min-width: 0; margin: 0; overflow-wrap: anywhere; color: #ffe29a; font-size: 17px; font-weight: 900; line-height: 1.2; text-shadow: 1px 2px #281408; }
+.territory-modal-close { flex: 0 0 44px; width: 44px; height: 44px; border: 2px solid #d4a35c; border-radius: 11px; color: #fff0c4; background: linear-gradient(#986333, #522b17); box-shadow: inset 0 1px #ffefb576, 0 2px 4px #1f0f08a8; }
+.territory-modal-close:focus-visible, .territory-modal-content:focus-visible { outline: 2px solid #fff1b7; outline-offset: -3px; }
+.territory-modal-panel > div:last-child { min-height: 0; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+
+/* Profile panels keep the approved city and combat artwork separate. */
+.territory-profile .card { min-width: 0; background: linear-gradient(145deg, #59351f, var(--viking-wood-deep)); border: 1px solid #a87940; box-shadow: inset 0 1px 0 #ffd9953d, 0 3px 10px #10090266; }
+.territory-profile h2, .territory-profile h3, .territory-profile summary { color: #ffe2a0; font-weight: 900; text-shadow: var(--viking-title-shadow); overflow-wrap: anywhere; }
+.territory-profile .card > h3 { min-height: 38px; display: flex; align-items: center; padding: 8px 24px; background: var(--viking-plaque) center / 100% 100% no-repeat; }
+.territory-profile .text-gray-500, .territory-profile .text-gray-400 { color: #e8cfa9; }
+.territory-profile-stat { min-width: 0; border: 1px solid #a57844; background: #25150f99; }
+.territory-profile-stat > div { min-width: 0; overflow-wrap: anywhere; }
+.inventory-item-detail { overflow-wrap: anywhere; }
 
 @media (max-width: 400px) {
   .home-top-hud { gap: 4px; }
@@ -1103,4 +1156,35 @@ html.territory-ios-webapp .territory-nav-label {
   background: linear-gradient(180deg, #ffe8a3, #d99a29);
   border-radius: 8px;
   border: 1px solid #9a6b35;
+}
+
+
+/* Dark Cave: compact mobile view keeps the floor list usable and Challenge visible. */
+/* The portal is decoration, not the primary action. Give the actual 100-floor
+   scroll list its space on short Telegram/iPhone/Android viewports. Keep the
+   Challenge and the 44px touch targets visible without moving the game nav. */
+@media (max-height: 760px) {
+  [data-testid="dark-cave-realm"] [data-testid="dark-cave-portal"] {
+    height: 68px;
+    object-position: center 48%;
+  }
+  [data-testid="dark-cave-realm"] [data-testid="dark-cave-floor-list"] {
+    min-height: 100px;
+  }
+}
+/* At 568px the three Blessing buttons have no gameplay effect yet. Do not let
+   these inactive controls consume the only space for selecting a cave floor.
+   Full-height layouts keep all three slots and their explanatory notice. */
+@media (max-height: 640px) {
+  [data-testid="dark-cave-realm"] {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  [data-testid="dark-cave-realm"] [data-testid="dark-cave-portal"] {
+    height: 56px;
+  }
+  [data-testid="dark-cave-actions"] > div:first-child,
+  [data-testid="dark-cave-actions"] > div:nth-child(2) {
+    display: none;
+  }
 }

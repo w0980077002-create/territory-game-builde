@@ -18,7 +18,7 @@ const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventu
   read('src/components/ForgeScreen.tsx'),
   read('src/components/ui/Modal.tsx'),
   read('src/components/InventoryScreen.tsx'),
-  read('src/components/arena/ArenaLobby.tsx'),
+  read('src/components/arena/ArenaRulesModal.tsx'),
   read('src/components/arena/ArenaRoom.tsx'),
   read('src/components/MonopolyScreen.tsx'),
   read('src/components/monopoly/MonopolyAdventure.tsx'),
@@ -142,11 +142,13 @@ assert.match(forge, /className="forge-upgrade-actions"/,
 assert.match(css, /html\.territory-ios-webapp \.forge-upgrade-actions\s*\{[\s\S]*?flex:\s*0 0 auto/,
   'Upgrade button must stay visible when stats scroll');
 for (const [name, source] of [
-  ['inventory', inventory], ['arena rules', arenaLobby],
+  ['arena rules', arenaLobby],
   ['arena confirmation', arenaRoom], ['Monopoly reward', monopoly],
 ]) {
   assert.match(source, /<IosGamePortal>/, name + ' must also overlay the navigation');
 }
+assert.match(inventory, /<Modal title=\{localizeText\(selected\.name, language\)\}/,
+  'Inventory item details must use the shared accessible portal dialog');
 assert.match(css, /html\.territory-ios-webapp \.territory-shell > \.territory-modal/,
   'iOS dialogs must be bounded by the shell, not the external Telegram header');
 assert.match(css, /html\.territory-ios-webapp \.inventory-item-overlay > \.card/,
