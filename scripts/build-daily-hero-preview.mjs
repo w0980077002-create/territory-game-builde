@@ -65,7 +65,8 @@ const output=await build({
  }],
 });
 const compiledCss=(await postcss([tailwindcss(),autoprefixer()]).process(readFileSync('src/index.css','utf8'),{from:'src/index.css'})).css;
-const css=compiledCss+'\\n'+readFileSync('src/components/ui/vikingScreenSkin.css','utf8')+'\\n'+(output.outputFiles.find(f=>f.path.endsWith('.css'))?.text||'');
+const css=compiledCss+'\n'+readFileSync('src/components/ui/vikingScreenSkin.css','utf8')+'\n'+(output.outputFiles.find(f=>f.path.endsWith('.css'))?.text||'');
 const js=output.outputFiles.find(f=>f.path.endsWith('.js')).text;
-writeFileSync('/tmp/territory-daily-hero-preview.html',`<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#121924"><style>${css}</style><div id="root"></div><script>${js.replace(/<\\/script/gi,'<\\\\/script')}</script></body></html>`);
+const safeJs=js.split('</script').join('<'+'\\'+'/script');
+writeFileSync('/tmp/territory-daily-hero-preview.html',`<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#121924"><style>${css}</style><div id="root"></div><script>${safeJs}</script></body></html>`);
 console.log('Offline daily loop preview built: /tmp/territory-daily-hero-preview.html');
