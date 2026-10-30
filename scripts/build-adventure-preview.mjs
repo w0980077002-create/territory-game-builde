@@ -7,7 +7,7 @@ import autoprefixer from 'autoprefixer';
 
 // Browser-only fixture: actual React adventure UI, fake transport, never real players.
 const fixture = String.raw`
-let progress = { completed_stage: 0, unlocked_stage: 1 };
+let progress = { completed_stage: 0, unlocked_stage: 1, dark_stones: 5 };
 let current = null;
 const oldState = { player: { gold: 100 }, inventory: [] };
 window.__adventureCalls = [];
@@ -19,6 +19,7 @@ export function restoreAdventureStartFence() { return null; }
 export async function requestAdventureStart(userId,command,hooks) {
  window.__adventureCalls.push(command);
  window.__adventureControl=command.control;
+ progress = {...progress, dark_stones: progress.dark_stones - 1};
  current=outcome('fighting');
  hooks.applyState(oldState);
  return current;
@@ -48,7 +49,7 @@ export async function requestAdventureSettlement(userId, command, hooks) {
  window.__adventureCalls.push(command);
  if (command.action === 'advance') {
    current = outcome('hero_won');
-   progress = { completed_stage: 1, unlocked_stage: 2 };
+   progress = { completed_stage: 1, unlocked_stage: 2, dark_stones: 4 };
    hooks.applyState(oldState);
  }
  return current || outcome('fighting');
