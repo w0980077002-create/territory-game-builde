@@ -49,7 +49,15 @@ with sync_playwright() as p:
             page.keyboard.press('Escape')
             assert dialog.count() == 0
             assert forge.evaluate('(el) => document.activeElement === el')
+            page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?city')
+            page.locator('.home-game-scene').wait_for()
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            assert page.locator('.home-side').count() >= 6
+            assert page.locator('.home-side').evaluate_all('buttons => buttons.every(b => { const r=b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && r.left >= 0 && r.right <= innerWidth; })')
+            page.locator('.home-profile-chip').click()
+            assert page.evaluate('window.__route') == 'hero'
+            if width == 360 and lang == 'ru': page.screenshot(path='/tmp/territory-city-360.png')
             page.close()
     browser.close()
 server.shutdown()
-print('Profile and inventory browser checks passed: 320/360/390/430, RU/EN, short height, appearance expansion and item dialog.')
+print('City, profile and inventory browser checks passed: 320/360/390/430, RU/EN, short height and item dialogs.')
