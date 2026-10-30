@@ -148,13 +148,19 @@ export function GamesScreen({
     const id = game.id as HallGame;
     // Slot gate verifies its reviewed server installation; only an explicit disabled/missing backend opens the labelled demo.
     if (id === 'slots') { onPlay('slots'); return; }
+    // The Wheel uses its own server receipt. A failed Hall status read must not
+    // trap an existing Wheel transaction on this screen.
+    if (id === 'wheel') {
+      if (busy || state?.active) return;
+      onPlay('wheel'); return;
+    }
     if (!state || loading || busy) return;
     if (state.active) {
       if (state.active.game !== id) return;
       onPlay(state.active.game);
       return;
     }
-    if (state.tickets < 1 && id !== 'treasury' && id !== 'wheel') {
+    if (state.tickets < 1 && id !== 'treasury') {
       setNotice(en ? 'Collect tickets to play.' : 'Получи билеты, чтобы играть.');
       captureGameEvent('territory_hall_no_tickets', { mode: id });
       return;
@@ -217,13 +223,32 @@ export function GamesScreen({
       )}
 
       {state?.active && (
-        <button className="hall-resume" type="button" onClick={() => onPlay(state.active!.game)}
-          data-testid="resume-hall">
-          <RefreshCw size={18} />
-          <span>{en ? 'Continue: ' : 'Продолжить: '}
-            <strong>{activeGame ? (en ? activeGame.en : activeGame.ru) : (en ? 'unfinished game' : 'незавершённая игра')}</strong>
+        <button className="hall-hero-mission" type="button" onClick={() => onPlay(state.active!.game)}
+          data-testid="resume-hall" aria-label={en ? 'Continue your server-saved round' : 'Продолжить сохранённую сервером партию'}>
+          <span className="hall-hero-mission__art" aria-hidden="true">
+            <img src={base + (activeGame?.artwork ?? 'hall-art/monopoly-hd.webp')} alt="" loading="lazy" decoding="async" />
           </span>
-          <ArrowRight size={18} aria-hidden="true" />
+          <span className="hall-hero-mission__body">
+            <small>{en ? 'YOUR ROUND IS SAVED' : 'ТВОЯ ПАРТИЯ СОХРАНЕНА'}</small>
+            <strong>{activeGame ? (en ? activeGame.en : activeGame.ru) : (en ? 'Unfinished game' : 'Незавершённая игра')}</strong>
+            <span>{en ? 'Continue the same server round, without paying a second ticket.' : 'Продолжи тот же серверный раунд без повторной траты билета.'}</span>
+            <b>{en ? 'Continue playing' : 'Продолжить игру'} <ArrowRight size={16} aria-hidden="true"/></b>
+          </span>
+        </button>
+      )}
+      {!state?.active && !loading && state && state.tickets > 0 && (
+        <button type="button" className="hall-hero-mission" data-testid="hall-next-play"
+          onClick={() => play(GAMES[0])}
+          aria-label={en ? 'Start Monopoly for one ticket' : 'Начать Монополию за один билет'}>
+          <span className="hall-hero-mission__art" aria-hidden="true">
+            <img src={base + 'hall-art/monopoly-hd.webp'} alt="" loading="lazy" decoding="async" />
+          </span>
+          <span className="hall-hero-mission__body">
+            <small>{en ? 'YOUR NEXT ADVENTURE' : 'ТВОЁ СЛЕДУЮЩЕЕ ПРИКЛЮЧЕНИЕ'}</small>
+            <strong>{en ? 'Roll in Monopoly' : 'Сделай ход в Монополии'}</strong>
+            <span>{en ? `${state.tickets.toLocaleString('en-US')} tickets ready · 1 ticket per round` : `${state.tickets.toLocaleString('ru-RU')} билетов · 1 билет за раунд`}</span>
+            <b>{en ? 'Play for 1 ticket' : 'Играть за 1 билет'} <Ticket size={16} aria-hidden="true"/></b>
+          </span>
         </button>
       )}
 
@@ -231,7 +256,9 @@ export function GamesScreen({
         {VISIBLE_GAMES.map((configuredGame, index) => {
           const game = configuredGame.id==='slots' && slotsEnabled ? {...configuredGame,demo:false,ruHint:'Ставки и выигрыши золотом героя · бонусы и риск',enHint:'Hero gold stakes and prizes · bonus and risk'} : configuredGame;
           const featured = index === 0;
-          const locked = game.id==='slots' && slotsEnabled ? (slotsStatus?.coins??0)<5 : !state || (state.tickets < 1 && !state.active);
+          const locked = game.id==='slots' && slotsEnabled ? (slotsStatus?.coins??0)<5
+            : game.id === 'wheel' ? (!!state && state.tickets < 1)
+            : !state || (state.tickets < 1 && !state.active);
           const otherActive = !!state?.active && state.active.game !== game.id;
           const resumeThisGame = state?.active?.game === game.id;
           const action = otherActive && !game.demo
@@ -246,7 +273,7 @@ export function GamesScreen({
               data-testid={`hall-game-${game.id}`}
               aria-label={`${en ? game.en : game.ru} · ${game.demo ? (en ? 'Demo, no real rewards' : 'Демо, без реальных наград') : otherActive ? (en ? 'Finish your active round first' : 'Сначала заверши начатый раунд') : resumeThisGame ? (en ? 'Continue your round' : 'Продолжить начатый раунд') : game.id === 'slots' ? (en ? 'From 5 gold' : 'От 5 монет') : (en ? '1 ticket' : '1 билет')}`}
               onClick={() => play(game)}
-              disabled={!game.demo && !game.comingSoon && (busy || otherActive || (game.id!=='slots' && (loading || !state)))}
+              disabled={!game.demo && !game.comingSoon && (busy || otherActive || (game.id!=='slots' && game.id!=='wheel' && (loading || !state)))}
               className={`hall-game hall-game--${game.color} ${featured ? 'hall-game--featured' : ''} ${locked && !game.comingSoon && !game.demo ? 'hall-game--no-tickets' : ''} ${game.comingSoon ? 'hall-game--coming-soon' : ''}`}
             >
               <picture className="hall-game__scene">
@@ -263,7 +290,7 @@ export function GamesScreen({
               </picture>
               <span className="hall-game__glow" aria-hidden="true" />
               <span className="hall-game__shimmer" aria-hidden="true" />
-              {featured && <span className="hall-game__ribbon">{en ? 'Popular' : 'Популярно'}</span>}
+              {featured && <span className="hall-game__ribbon">{en ? 'BOARD ADVENTURE' : 'НАСТОЛЬНОЕ ПРИКЛЮЧЕНИЕ'}</span>}
               
               {!game.comingSoon && !game.demo && <span className="hall-game__price" aria-label={game.id==='slots' ? (en ? 'From 5 gold' : 'От 5 монет') : (en ? '1 ticket' : '1 билет')}>{game.id==='slots' ? <Coins size={13} aria-hidden="true" /> : <Ticket size={13} aria-hidden="true" />} {game.id==='slots' ? '5+' : '1'}</span>}
               <span className="hall-game__info">

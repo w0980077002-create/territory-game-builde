@@ -261,3 +261,35 @@
 /* Hall actions remain reachable on 320px Android/iPhone; game cards themselves are full-button hit targets. */
 .hall-resume:focus-visible, .hall-payout-recovery button:focus-visible,
 .hall-toast button:focus-visible { outline: 3px solid #fff0ac; outline-offset: 2px; }
+
+
+/* The live hall round / next quest takes precedence over the game catalog. */
+.hall-hero-mission{
+ position:relative;display:grid;grid-template-columns:minmax(108px,37%) minmax(0,1fr);
+ align-items:stretch;gap:10px;width:100%;min-height:152px;margin:10px 0 14px;padding:9px;
+ border:2px solid #f6c26d;border-radius:17px;text-align:left;color:#fff0cf;
+ background:radial-gradient(ellipse at 8% 0%,#8e5f4e69,transparent 66%),linear-gradient(115deg,#352039,#182a36 84%);
+ box-shadow:inset 0 0 0 2px #6a3c2b,inset 0 1px #fff0bd77,0 6px 13px #0009;
+ touch-action:manipulation;
+}
+.hall-hero-mission__art{
+ min-width:0;overflow:hidden;display:grid;place-items:center;border:1px solid #e8af65a1;
+ border-radius:12px;background:radial-gradient(circle,#8c537988,#17243a 80%);
+}
+.hall-hero-mission__art img{width:100%;height:100%;min-height:125px;max-height:155px;object-fit:cover;object-position:center;}
+.hall-hero-mission__body{display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0;}
+.hall-hero-mission__body>small{color:#f6c574;font-size:10px;line-height:1.2;font-weight:900;letter-spacing:.4px;}
+.hall-hero-mission__body>strong{font-size:clamp(16px,4.4vw,21px);line-height:1.1;font-weight:900;color:#fff2d2;text-shadow:0 2px 3px #000b;overflow-wrap:anywhere;}
+.hall-hero-mission__body>span{font-size:12px;line-height:1.35;color:#eee0ca;}
+.hall-hero-mission__body>b{display:flex;align-items:center;justify-content:space-between;gap:5px;
+ min-height:44px;margin-top:2px;padding:7px 9px;border:2px solid #ffdfa2;border-radius:10px;
+ background:linear-gradient(#ffe5a2,#c88d41);color:#32200d;font-size:12px;line-height:1.2;box-shadow:inset 0 1px #fff5da;}
+.hall-hero-mission__body>b svg{flex-shrink:0;}
+.hall-hero-mission:focus-visible{outline:3px solid #fff5b8;outline-offset:3px;}
+.hall-hero-mission:active{transform:scale(.99);}
+@media(max-width:355px){
+ .hall-hero-mission{grid-template-columns:minmax(92px,34%) minmax(0,1fr);gap:8px;padding:7px;}
+ .hall-hero-mission__body>strong{font-size:16px;}
+ .hall-hero-mission__body>span{font-size:11px;}
+}
+@media(prefers-reduced-motion:reduce){.hall-hero-mission{transition:none;}}

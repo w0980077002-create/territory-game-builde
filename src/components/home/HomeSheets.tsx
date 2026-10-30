@@ -25,6 +25,7 @@ export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const { claimedToday, dayIndex } = dailyStatus(state);
+  const todayReward = DAILY_REWARDS[dayIndex];
 
   const claim = () => {
     const next = claimDaily(useGame.get());
@@ -35,8 +36,17 @@ export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (
 
   return (
     <Modal title={t('dailyRewards')} icon="/ic-daily.webp" onClose={onClose}>
-      <p className="text-xs text-gray-400 mb-3 leading-relaxed">{t('dailyRewardsHint')}</p>
-      <div className="territory-daily-rewards grid grid-cols-4 gap-2 mb-4">
+      <section className="territory-daily-feature" data-testid="daily-current-reward" aria-label={language === 'en' ? 'Today’s reward' : 'Сегодняшняя награда'}>
+        <img src={import.meta.env.BASE_URL + 'ic-daily.webp'} alt="" className="territory-daily-feature__art" />
+        <div className="territory-daily-feature__content">
+          <span className="territory-daily-feature__kicker">{language === 'en' ? 'YOUR HERO’S DAILY GIFT' : 'ПОДАРОК ТВОЕМУ ГЕРОЮ'}</span>
+          <strong>{language === 'en' ? `Day ${dayIndex + 1} of 7` : `День ${dayIndex + 1} из 7`}</strong>
+          <RewardLootStrip reward={todayReward} language={language}/>
+          <p>{claimedToday ? (language === 'en' ? 'Already collected today' : 'Сегодня уже получено') : (language === 'en' ? 'Available to collect now' : 'Можно получить сейчас')}</p>
+        </div>
+      </section>
+      <p className="text-xs text-gray-300 mb-3 leading-relaxed">{t('dailyRewardsHint')}</p>
+      <div className="territory-daily-rewards grid grid-cols-4 gap-2 mb-4" aria-label={language === 'en' ? 'Seven-day gift calendar' : 'Календарь подарков на семь дней'}>
         {DAILY_REWARDS.map((r, i) => {
           const done = claimedToday ? i <= dayIndex : i < dayIndex;
           const current = i === dayIndex && !claimedToday;

@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { build } from 'esbuild';
 
 const result = await build({entryPoints:['src/game/eventsBoard.ts'],bundle:true,write:false,platform:'node',format:'esm'});
-const {eventCalendar,questAction,readyQuestCount,withEventStatusTimeout} = await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+const {eventCalendar,questAction,readyQuestCount,withEventStatusTimeout,dailyHeroGoal} = await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
 const at = (date) => Date.parse(date);
 
 const ordinary = eventCalendar(at('2026-10-26T12:00:00Z'));
@@ -25,6 +25,25 @@ assert.equal(questAction({id:'unrecognized',type:'story'}),null);
 const tasks=[{type:'daily',current:3,target:3,claimed:false},{type:'daily',current:5,target:5,claimed:true},{type:'weekly',current:1,target:3,claimed:false}];
 assert.equal(readyQuestCount(tasks),1);
 assert.equal(readyQuestCount(tasks,'weekly'),0);
+const emptyGoal = {pendingGold:null,dailyReady:false,readyQuests:0,hallTicketsReady:false,gatherReady:false,unreadMail:0,blessingReady:false};
+assert.deepEqual([dailyHeroGoal(emptyGoal).key,dailyHeroGoal(emptyGoal).action],['explore','quests']);
+const goalCases=[
+ [{dailyReady:true},'daily','daily'],
+ [{readyQuests:1},'quests','quests'],
+ [{hallTicketsReady:true},'hall','games'],
+ [{gatherReady:true},'gather','map'],
+ [{unreadMail:2},'mail','messages'],
+ [{blessingReady:true},'blessing','city'],
+ [{dailyReady:true,readyQuests:1},'daily','daily'],
+ [{pendingGold:35,dailyReady:true},'recover','games'],
+];
+for(const [input,key,action] of goalCases){
+ const result=dailyHeroGoal({...emptyGoal,...input});
+ assert.equal(result.key,key,'real next-action priority '+key);
+ assert.equal(result.action,action);
+ for(const name of ['art','ru','en','ruHint','enHint','ruAction','enAction'])assert.ok(result[name],'empty translation/art for '+key);
+}
+assert.equal(dailyHeroGoal({...emptyGoal,pendingGold:null}).key,'explore','missing server data must not promise a payout');
 assert.equal(await withEventStatusTimeout(Promise.resolve('ready'),50),'ready');
 await assert.rejects(withEventStatusTimeout(Promise.reject(new Error('offline')),50), /offline/);
 await assert.rejects(withEventStatusTimeout(new Promise(() => {}),15), /event_status_timeout/,
@@ -49,6 +68,10 @@ assert.match(screen,/view === 'daily'/,'Opening the daily calendar must not fetc
 assert.match(screen,/refresh\('daily'\)/,'Initial events view only checks live daily status');
 assert.match(screen,/weeklyArenaLive/,'Stale arena rankings must not be presented as current results');
 assert.match(screen,/aria-labelledby="territory-events-daily-tab"/,'Calendar tab must label its panel');
+assert.match(screen,/data-testid="events-daily-focus"/,'Daily panel must show a real next-action feature');
+assert.match(screen,/if \(nextGoal\.action === 'daily'\) onDaily\(\)/,'Focus must use the real daily reward sheet');
+assert.match(screen,/else onNavigate\(nextGoal\.action\)/,'Focus must lead to real game routes');
+assert.match(styles,/\.territory-events__focus-action\s*\{/,'Daily focus needs a primary large mobile CTA');
 for(const serverRead of ['hallStatus()','fetchSeasonStatus()','getArenaWeeklyStatus()'])assert.ok(screen.includes(serverRead));
 assert.doesNotMatch(screen,/hallDaily\(|hallStart\(|hallFinish\(|useGame\.set\(|supabase\.rpc\(/,'Event hub must never grant rewards itself');
 assert.match(screen,/season\.week === seasonWindow\(clock\)\.weekKey/,'Never show last week as a live season');

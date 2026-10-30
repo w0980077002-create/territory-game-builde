@@ -26,3 +26,25 @@
 .territory-mail .reward-loot__award b{font-size:9px}
 @media(max-width:360px){.territory-daily-card .reward-loot__award{flex-basis:29px;width:29px;height:31px}.territory-daily-card .reward-loot__award img{width:26px;height:26px}}
 @media(prefers-reduced-motion:reduce){.territory-mail *,.territory-daily-card *{transition:none!important}}
+
+
+/* Seven-day reward screen shows the actual claimable prize before the calendar. */
+.territory-daily-feature{
+ display:grid;grid-template-columns:94px minmax(0,1fr);gap:10px;align-items:center;
+ min-height:125px;margin-bottom:11px;padding:10px;border:2px solid #efc476;border-radius:16px;
+ background:radial-gradient(ellipse at 15% 20%,#b47e4277,transparent 55%),linear-gradient(135deg,#654027,#2e2538 67%,#192939);
+ box-shadow:inset 0 0 0 2px #613c21,inset 0 1px #ffe4ae66,0 4px 13px #0007;
+}
+.territory-daily-feature__art{width:94px;height:104px;object-fit:contain;filter:drop-shadow(0 5px 7px #080509ab);}
+.territory-daily-feature__content{display:flex;flex-direction:column;gap:5px;min-width:0;}
+.territory-daily-feature__content strong{color:#fff1c6;font-size:clamp(16px,4.5vw,21px);font-weight:900;line-height:1.2;}
+.territory-daily-feature__kicker{color:#eec67e;font-size:10px;letter-spacing:.4px;font-weight:900;}
+.territory-daily-feature__content p{margin:0;color:#f4d5a5;font-size:11px;line-height:1.3;}
+.territory-daily-feature .territory-reward-loot{flex-wrap:wrap;}
+.territory-daily-rewards .territory-daily-card{overflow:visible;min-height:88px;}
+.territory-daily-rewards .territory-daily-card--current{border-color:#ffdf90;}
+@media(max-width:355px){
+ .territory-daily-feature{grid-template-columns:78px minmax(0,1fr);padding:8px;gap:7px;}
+ .territory-daily-feature__art{width:78px;height:94px;}
+ .territory-daily-feature__content strong{font-size:16px;}
+}

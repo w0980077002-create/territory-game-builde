@@ -72,3 +72,48 @@
 .territory-events__journey-day:focus-visible,
 .territory-event__action:focus-visible { outline: 3px solid #ffeba8; outline-offset: 2px; }
 .territory-event__action svg { flex-shrink: 0; }
+
+
+/* Real daily progression, not a stack of arbitrary tasks. */
+.territory-events__focus{
+ position:relative;display:grid;grid-template-columns:minmax(98px,35%) minmax(0,1fr);
+ align-items:center;gap:11px;margin:10px 0 13px;padding:12px;
+ border:2px solid #ecc171;border-radius:18px;
+ background:radial-gradient(ellipse at 18% 40%,#ad7b3f75,transparent 54%),linear-gradient(125deg,#694024,#281a19 61%,#182638);
+ box-shadow:inset 0 0 0 2px #4f2915,inset 0 1px #ffe6ae7a,0 6px 16px #0007;
+}
+.territory-events__focus::after{
+ content:'';position:absolute;inset:5px;border:1px solid #ffe1a838;border-radius:13px;
+ pointer-events:none;
+}
+.territory-events__focus-art{
+ min-height:118px;display:grid;place-items:center;overflow:hidden;
+ border:1px solid #ebb56f9c;border-radius:13px;
+ background:radial-gradient(ellipse at 50% 40%,#d7af6c44,#312332 75%);
+ box-shadow:inset 0 1px #ffebb98a;
+}
+.territory-events__focus-art img{
+ width:100%;max-height:124px;aspect-ratio:1/1;object-fit:contain;
+ filter:drop-shadow(0 5px 7px #000b);
+}
+.territory-events__focus-info{position:relative;z-index:1;min-width:0;}
+.territory-events__focus-kicker{display:block;margin-bottom:5px;font-size:10px;font-weight:900;letter-spacing:.7px;color:#ffce75;}
+.territory-events__focus h3{margin:0;color:#fff5d9;font-size:clamp(16px,4.7vw,21px);line-height:1.12;font-weight:900;text-shadow:0 2px 3px #000b;overflow-wrap:anywhere;}
+.territory-events__focus p{margin:7px 0 10px;color:#f1e0ca;font-size:12px;line-height:1.35;}
+.territory-events__focus-action{
+ display:flex;align-items:center;justify-content:space-between;gap:6px;
+ min-height:44px;width:100%;padding:8px 9px;border:2px solid #ffde94;border-radius:10px;
+ color:#402309;background:linear-gradient(#fff0b8,#e6ab54 50%,#bd782f);
+ box-shadow:inset 0 1px #fffef1,0 3px #6a341d;
+ font-size:12px;font-weight:900;text-align:left;touch-action:manipulation;
+}
+.territory-events__focus-action svg{flex-shrink:0;}
+.territory-events__focus-action:focus-visible{outline:3px solid #fff9c0;outline-offset:3px;}
+.territory-events__focus-action:active{transform:translateY(2px);box-shadow:inset 0 1px #fffef1,0 1px #6a341d;}
+@media(max-width:355px){
+ .territory-events__focus{gap:8px;padding:9px;grid-template-columns:minmax(89px,32%) minmax(0,1fr);}
+ .territory-events__focus-art{min-height:109px;}
+ .territory-events__focus-art img{max-height:114px;}
+ .territory-events__focus h3{font-size:16px;}
+}
+@media(prefers-reduced-motion:reduce){.territory-events__focus-action{transition:none;}}
