@@ -88,7 +88,7 @@
 }
 .hall-action {
   display: flex; align-items: center; justify-content: center;
-  gap: 5px; width: 100%; min-height: 42px; padding: 5px;
+  gap: 5px; width: 100%; min-height: 44px; padding: 7px 6px;
   border: 1px solid #f9acff; border-radius: 10px;
   color: #fff; cursor: pointer; text-align: left;
   background: linear-gradient(#8b19b6, #4c086f);
@@ -187,10 +187,10 @@
 .hall-game:disabled .hall-game__play { opacity: .6; }
 .hall-game:not(:disabled):active, .hall-action:not(:disabled):active { transform: scale(.985); }
 .territory-game-hall button:focus-visible { outline: 2px solid #fff0ac; outline-offset: 3px; }
-.hall-resume { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 10px; padding: 10px; border: 1px solid #ae874c; border-radius: 9px; color: #ffe6b2; background: #231a30; font-size: 12px; cursor: pointer; }
+.hall-resume { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin: 0 0 10px; padding: 10px; border: 1px solid #ae874c; border-radius: 9px; color: #ffe6b2; background: #231a30; font-size: 12px; cursor: pointer; }
 .hall-resume span { flex: 1; text-align: left; }
 .hall-payout-recovery { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 7px; font-size: 11px; line-height: 1.4; color: #f9dfb3; }
-.hall-payout-recovery button, .hall-toast button { min-height: 34px; padding: 6px 10px; border: 1px solid #ad8b56; border-radius: 7px; background: #2c203b; color: #ffedc1; cursor: pointer; }
+.hall-payout-recovery button, .hall-toast button { min-height: 44px; padding: 9px 12px; border: 1px solid #ad8b56; border-radius: 7px; background: #2c203b; color: #ffedc1; cursor: pointer; }
 .hall-toast { margin: 10px 0 0; padding: 10px; border: 1px solid #6fbc9b; border-radius: 10px; background: #122e2a; color: #d2ffe5; font-size: 12px; line-height: 1.4; }
 .hall-toast--error { display: flex; align-items: center; gap: 8px; border-color: #c76583; background: #391e30; color: #ffe1eb; }
 .hall-toast--error span { flex: 1; }
@@ -257,3 +257,7 @@
 .territory-wheel-open .territory-nav .nav-btn:not([aria-current="page"]) .territory-nav-label {
   color: #9ca3af;
 }
+
+/* Hall actions remain reachable on 320px Android/iPhone; game cards themselves are full-button hit targets. */
+.hall-resume:focus-visible, .hall-payout-recovery button:focus-visible,
+.hall-toast button:focus-visible { outline: 3px solid #fff0ac; outline-offset: 2px; }
