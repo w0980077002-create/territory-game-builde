@@ -190,14 +190,17 @@ export function initTelegramWebApp() {
   }
 }
 
+// Telegram vibration is an optional effect, never a prerequisite for
+// committing a battle round, showing a victory or claiming a saved reward.
+// Some older/embedded WebViews expose the SDK but throw on feedback calls.
 export function hapticImpact(style: 'light' | 'medium' | 'heavy' = 'light') {
-  const tg = getTelegramWebApp();
-  tg?.HapticFeedback?.impactOccurred(style);
+  try { getTelegramWebApp()?.HapticFeedback?.impactOccurred(style); }
+  catch { /* Unsupported Telegram haptics must not interrupt gameplay. */ }
 }
 
 export function hapticNotify(type: 'error' | 'success' | 'warning') {
-  const tg = getTelegramWebApp();
-  tg?.HapticFeedback?.notificationOccurred(type);
+  try { getTelegramWebApp()?.HapticFeedback?.notificationOccurred(type); }
+  catch { /* Haptics are best-effort on every supported platform. */ }
 }
 
 export type { TelegramWebAppUser, TelegramWebApp };
