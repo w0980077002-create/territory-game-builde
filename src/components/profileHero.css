@@ -100,10 +100,9 @@
   padding: 12px 9px;
   border: 2px solid #daa55e;
   border-radius: 17px;
-  background:
-    radial-gradient(ellipse at 50% 35%,#fac65a60 0%,transparent 55%),
-    radial-gradient(ellipse at 50% 90%,#354c2da9 0%,transparent 65%),
-    linear-gradient(150deg,#6a462e,#3e352c 55%,#2b1e18);
+  background-color: #547a65;
+  background-size: cover;
+  background-position: center 40%;
   box-shadow: inset 0 0 0 2px #422817, inset 0 10px 22px #ffe2a016, 0 5px 14px #0e070777;
 }
 .territory-profile .hero-showcase__gear-column {
@@ -129,6 +128,10 @@
   box-shadow: inset 0 1px 0 #ffe3ae57, 0 2px 5px #120a0980;
 }
 .territory-profile .hero-showcase__slot--empty { border-color: #906f4c; }
+.territory-profile .hero-showcase__slot--equipped { box-shadow: inset 0 1px 0 #fff5ca99, 0 0 8px 1px currentColor, 0 3px 5px #120a09aa; }
+.territory-profile .hero-showcase__slot:active,
+.territory-profile .hero-showcase__equipment-link:active,
+.territory-profile .hero-showcase__adventure:active { transform: translateY(2px); }
 .territory-profile .hero-showcase__slot img {
   width: 90%;
   height: 90%;

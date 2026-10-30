@@ -47,7 +47,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure }: Props) 
       type="button"
       onClick={onEquipment}
       className={'hero-showcase__slot ' + (item ? 'hero-showcase__slot--equipped' : 'hero-showcase__slot--empty')}
-      style={item ? { borderColor: rarityColor(item.rarity) } : undefined}
+      style={item ? { borderColor: rarityColor(item.rarity), color: rarityColor(item.rarity) } : undefined}
       title={item ? item.name : slot.name}
       aria-label={item
         ? text('Экипировано: ', 'Equipped: ') + item.name + '. ' + text('Открыть экипировку', 'Open equipment')
@@ -87,7 +87,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure }: Props) 
         ) : null}
       </header>
 
-      <div className="hero-showcase__stage">
+      <div className="hero-showcase__stage" style={{ backgroundImage: `linear-gradient(180deg, #173c5120, #4c321d40), url("${import.meta.env.BASE_URL}assets/territory/scenes/sunlit-harbor.webp")` }}>
         <div className="hero-showcase__gear-column">{slots.slice(0, 3).map(renderSlot)}</div>
         <div className="hero-showcase__character">
           <img className="hero-showcase__hero-art" src={getAppearanceIcon(state.appearance)}
