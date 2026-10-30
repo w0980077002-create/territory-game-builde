@@ -43,6 +43,8 @@ jobs:
         if: matrix.suite == 'adventure'
       - run: python scripts/check-adventure-browser.py
         if: matrix.suite == 'adventure'
+      - run: python scripts/check-cave-compact-layout.py
+        if: matrix.suite == 'adventure'
       - uses: actions/upload-artifact@v4
         if: always()
         with:

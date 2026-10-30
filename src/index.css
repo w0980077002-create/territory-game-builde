@@ -1104,3 +1104,34 @@ html.territory-ios-webapp .territory-nav-label {
   border-radius: 8px;
   border: 1px solid #9a6b35;
 }
+
+
+/* Dark Cave: compact mobile view keeps the floor list usable and Challenge visible. */
+/* The portal is decoration, not the primary action. Give the actual 100-floor
+   scroll list its space on short Telegram/iPhone/Android viewports. Keep the
+   Challenge and the 44px touch targets visible without moving the game nav. */
+@media (max-height: 760px) {
+  [data-testid="dark-cave-realm"] [data-testid="dark-cave-portal"] {
+    height: 68px;
+    object-position: center 48%;
+  }
+  [data-testid="dark-cave-realm"] [data-testid="dark-cave-floor-list"] {
+    min-height: 100px;
+  }
+}
+/* At 568px the three Blessing buttons have no gameplay effect yet. Do not let
+   these inactive controls consume the only space for selecting a cave floor.
+   Full-height layouts keep all three slots and their explanatory notice. */
+@media (max-height: 640px) {
+  [data-testid="dark-cave-realm"] {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  [data-testid="dark-cave-realm"] [data-testid="dark-cave-portal"] {
+    height: 56px;
+  }
+  [data-testid="dark-cave-actions"] > div:first-child,
+  [data-testid="dark-cave-actions"] > div:nth-child(2) {
+    display: none;
+  }
+}
