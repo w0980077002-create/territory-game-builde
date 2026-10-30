@@ -8,6 +8,7 @@ import { IosGamePortal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
 import { GearShowcase } from './GearShowcase';
 import { FollowersPanel } from './FollowersPanel';
+import { AWAKENING_STONE_ITEM, cowStonesOwned } from '@/game/followers';
 import { CompactWarehouse } from './CompactWarehouse';
 import { rarityColor, rarityGlow } from '@/game/ui';
 import { elixirExpiryTime, elixirTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
@@ -49,7 +50,10 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   // Keep inventory sorting stable while the visible expiry clock updates.
   const consumables = useMemo(() => state.inventory.filter(isPerishableItem)
     .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b)), [state.inventory]);
-  const materials = useMemo(() => state.inventory.filter(item => item.type === 'material'), [state.inventory]);
+  const materials = useMemo(() => [
+    ...state.inventory.filter(item => item.type === 'material' && item.id !== AWAKENING_STONE_ITEM.id),
+    { ...AWAKENING_STONE_ITEM, qty: cowStonesOwned(state) },
+  ], [state.inventory]);
   const earliestOnBelt = useMemo(() => state.belt.filter((item): item is InventoryItem => !!item && isPerishableItem(item))
     .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0], [state.belt]);
 

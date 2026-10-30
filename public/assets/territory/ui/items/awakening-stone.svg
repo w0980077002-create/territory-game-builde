@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Камень пробуждения">
+<defs>
+<radialGradient id="a"><stop stop-color="#ff9ff8" stop-opacity=".9"/><stop offset=".35" stop-color="#b323ed" stop-opacity=".6"/><stop offset="1" stop-color="#8c16c8" stop-opacity="0"/></radialGradient>
+<linearGradient id="gem" x1=".2" y1="0" x2=".8" y2="1"><stop stop-color="#ffd3ff"/><stop offset=".18" stop-color="#fc77ff"/><stop offset=".48" stop-color="#9c1cdb"/><stop offset=".72" stop-color="#671dc6"/><stop offset="1" stop-color="#2e0b68"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2=".75" y2="1"><stop stop-color="#fff1a6"/><stop offset=".24" stop-color="#efbd57"/><stop offset=".55" stop-color="#b66b27"/><stop offset=".74" stop-color="#ffe47f"/><stop offset="1" stop-color="#8e4317"/></linearGradient>
+<linearGradient id="pink" x1=".2" y1="0" x2=".8" y2="1"><stop stop-color="#ffbdff"/><stop offset=".5" stop-color="#ff66ba"/><stop offset="1" stop-color="#bd267c"/></linearGradient>
+<filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7"/></filter>
+<filter id="shadow" x="-50%" y="-50%" width="200%" height="220%"><feDropShadow dx="0" dy="6" stdDeviation="4" flood-color="#1b062e" flood-opacity=".78"/></filter>
+</defs>
+<ellipse cx="128" cy="134" rx="122" ry="121" fill="url(#a)" opacity=".75"/>
+<g fill="#ffb7ff" filter="url(#glow)" opacity=".9"><circle cx="36" cy="67" r="8"/><circle cx="218" cy="82" r="9"/><circle cx="29" cy="160" r="5"/><circle cx="220" cy="167" r="7"/></g>
+<g fill="#ffd6ff"><path d="m39 48 3 11 11 3-11 3-3 11-3-11-11-3 11-3z"/><path d="m212 58 4 12 12 4-12 4-4 12-4-12-12-4 12-4z"/><path d="m211 173 2 8 8 2-8 2-2 8-2-8-8-2 8-2z"/><circle cx="52" cy="196" r="3"/></g>
+<path d="M128 15 184 56 204 132 178 198 130 233 75 203 51 136 70 56Z" fill="#6f1bc0" stroke="#ffca72" stroke-width="5" stroke-linejoin="round" filter="url(#shadow)"/>
+<path d="M128 18 176 60 144 102 109 90 70 57Z" fill="#ffb3f5"/>
+<path d="M70 57 109 90 128 180 73 200 52 135Z" fill="#b944fa"/>
+<path d="M128 18 144 102 128 180 109 90Z" fill="#f470fa"/>
+<path d="M176 60 203 131 128 180 144 102Z" fill="#6120c0"/>
+<path d="M52 135 128 180 130 231 76 203Z" fill="#481495"/>
+<path d="M203 131 179 199 130 231 128 180Z" fill="#a02ce4"/>
+<path d="M109 90 144 102 128 180Z" fill="#ffbcff" opacity=".45"/>
+<path d="M91 73 126 30 149 57 137 90 112 88Z" fill="#fff2ff" opacity=".55"/>
+<path d="M73 115 82 75 109 90 128 178Z" fill="#ffa8ff" opacity=".35"/>
+<g filter="url(#shadow)">
+<path d="M87 123C66 125 52 108 53 87 40 102 40 122 53 135c12 12 25 15 41 10Z" fill="url(#gold)" stroke="#783512" stroke-width="4"/>
+<path d="M170 123c21 2 35-15 34-36 13 15 13 35 0 48-12 12-25 15-41 10Z" fill="url(#gold)" stroke="#783512" stroke-width="4"/>
+<path d="M94 115c-7-8-19-5-21 5-5 17 9 32 27 30l15-15Z" fill="#fff1ed" stroke="#7b3572" stroke-width="4"/>
+<path d="M162 115c7-8 19-5 21 5 5 17-9 32-27 30l-15-15Z" fill="#fff1ed" stroke="#7b3572" stroke-width="4"/>
+<path d="M92 124C106 113 151 113 165 125c8 6 9 23 0 38-13 18-61 18-74 0-9-15-8-32 1-39Z" fill="#fff6ed" stroke="#6b3376" stroke-width="5"/>
+<ellipse cx="109" cy="133" rx="5" ry="6" fill="#2b193d"/><ellipse cx="148" cy="133" rx="5" ry="6" fill="#2b193d"/>
+<path d="M103 146c3-5 13-7 25-7s22 2 25 7l-5 12c-8 8-33 8-41 0Z" fill="url(#pink)" stroke="#923f8d" stroke-width="3"/>
+<ellipse cx="117" cy="151" rx="3" ry="2" fill="#983174"/><ellipse cx="140" cy="151" rx="3" ry="2" fill="#983174"/>
+<path d="M113 162c9 6 22 6 31 0" fill="none" stroke="#a64178" stroke-width="3" stroke-linecap="round"/>
+<path d="m128 117-4-9 8-7 3 10Z" fill="#ffdb68"/>
+</g>
+<path d="M69 202q53 20 118-5" stroke="#ffe59e" stroke-width="5" opacity=".66" fill="none"/>
+</svg>

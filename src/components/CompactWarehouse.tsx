@@ -41,7 +41,7 @@ function WarehouseItem({ item, language, now, onSelect }: {
   >
     <span className="warehouse-tile__art">
       <ItemArt item={item} size={49}/>
-      {item.qty > 1 && <span className="warehouse-tile__count">×{formatQuantity(item.qty)}</span>}
+      {(item.qty > 1 || item.id === 'cow_awakening_stone') && <span className="warehouse-tile__count">×{formatQuantity(item.qty)}</span>}
     </span>
     <span className="warehouse-tile__name">{name}</span>
     {perishable && <span className="warehouse-tile__expiry">

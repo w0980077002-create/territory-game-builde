@@ -1,4 +1,4 @@
-import type { Follower, GameState } from './types';
+import type { Follower, GameState, InventoryItem } from './types';
 import { reconcileElixirExpiry } from './elixirExpiry';
 
 /** PvE-only companions. An account can have several unlocked companions but
@@ -68,6 +68,22 @@ export function followerTrainingCost(level: number): { gold: number; materials: 
 }
 
 export const MAX_FOLLOWER_LEVEL = 60;
+/** Battle Cow uses a rare, non-expiring item, never coins, gems or forge materials.
+ * No automatic source or rewards are enabled until the owner approves distribution. */
+export const MAX_BATTLE_COW_LEVEL = 100;
+export const AWAKENING_STONE_ID = 'cow_awakening_stone';
+export const AWAKENING_STONE_ITEM: InventoryItem = {
+  id: AWAKENING_STONE_ID, name: 'Камень пробуждения', icon: '💜',
+  type: 'material', rarity: 'legendary', qty: 0,
+  description: 'Редкий камень для повышения уровня Боевой коровы. Пока не выдаётся в наградах и не продаётся.',
+};
+export function cowStonesOwned(state: Pick<GameState, 'inventory'>): number {
+  return state.inventory.reduce((sum, item) =>
+    item.id === AWAKENING_STONE_ID && item.type === 'material' && Number.isSafeInteger(item.qty) && item.qty > 0
+      ? Math.min(2147483647, sum + item.qty) : sum, 0);
+}
+export function cowAwakeningCost(_level: number): number { return 1; }
+
 
 /** Atomic pure update: call against the latest store state, never a stale render.
  * No cap bypass by negative/NaN amounts, and train only one companion at a time. */
@@ -75,7 +91,21 @@ export function trainFollower(state: GameState, followerId: string): GameState |
   state = reconcileElixirExpiry(state);
   const found = state.followers.find((f) => f.id === followerId && f.unlocked);
   if (!found || !FOLLOWER_TEMPLATES.some((f) => f.id === followerId)) return null;
-  if (!Number.isSafeInteger(found.level) || found.level < 1 || found.level >= MAX_FOLLOWER_LEVEL || found.level >= state.player.level) return null;
+  if (!Number.isSafeInteger(found.level) || found.level < 1) return null;
+  if (followerId === 'follower_6') {
+    if (found.level >= MAX_BATTLE_COW_LEVEL || cowStonesOwned(state) < cowAwakeningCost(found.level)) return null;
+    // Spend precisely one owned stone and improve the cow; preserve ALL other items, currencies and followers.
+    let consumed = false;
+    const inventory = state.inventory.map((item) => {
+      if (consumed || item.id !== AWAKENING_STONE_ID || item.type !== 'material' || !Number.isSafeInteger(item.qty) || item.qty < 1) return item;
+      consumed = true;
+      return { ...item, qty: item.qty - cowAwakeningCost(found.level) };
+    }).filter((item) => item.id !== AWAKENING_STONE_ID || item.type !== 'material' || item.qty > 0);
+    if (!consumed) return null;
+    return { ...state, inventory, followers: state.followers.map((f) => f.id !== followerId
+      ? f : { ...f, level: f.level + 1, attack: f.attack + 1 }) };
+  }
+  if (found.level >= MAX_FOLLOWER_LEVEL || found.level >= state.player.level) return null;
   const price = followerTrainingCost(found.level);
   if (!Number.isSafeInteger(state.player.gold) || state.player.gold < price.gold || !Number.isSafeInteger(state.forgeMaterials) || state.forgeMaterials < price.materials) return null;
   const template = FOLLOWER_TEMPLATES.find((f) => f.id === followerId)!;
@@ -97,11 +127,11 @@ export function trainFollower(state: GameState, followerId: string): GameState |
 export function followerCombat(follower: Follower | null) {
   const template = follower && FOLLOWER_TEMPLATES.find((f) => f.id === follower.id);
   const role = template?.role ?? null;
-  const level = follower && Number.isSafeInteger(follower.level) ? Math.max(1, Math.min(MAX_FOLLOWER_LEVEL, follower.level)) : 1;
+  const level = follower && Number.isSafeInteger(follower.level) ? Math.max(1, Math.min(role === 'crystal' ? MAX_BATTLE_COW_LEVEL : MAX_FOLLOWER_LEVEL, follower.level)) : 1;
   const clamp = (value: number | undefined, max: number) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(max, Math.floor(value))) : 0;
   return {
     role,
-    attack: template ? clamp(follower?.attack, template.attack + MAX_FOLLOWER_LEVEL * 2) : 0,
+    attack: template ? clamp(follower?.attack, template.attack + (role === 'crystal' ? MAX_BATTLE_COW_LEVEL : MAX_FOLLOWER_LEVEL) * 2) : 0,
     defense: role === 'guardian' ? clamp(follower?.defense, 10 + MAX_FOLLOWER_LEVEL * 2) : 0,
     heal: role === 'healer' ? Math.min(15, 3 + Math.floor(level / 4)) : role === 'crystal' ? Math.min(10, 4 + Math.floor(level / 10)) : 0,
     crit: role === 'hunter' ? Math.min(5, 2 + Math.floor(level / 10)) : 0,
