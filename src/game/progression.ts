@@ -1,5 +1,6 @@
 import type { GameState, InventoryItem } from './types';
 import { grantRewards, updateProgress } from './actions';
+import { awardCowAwakeningStone, cowStoneTrialReward } from './followers';
 import type { Enemy } from './types';
 import { useLive } from './live';
 import { calendarDayKey, previousCalendarDayKey } from './weeklyQuests';
@@ -159,6 +160,7 @@ export function recordTrialWin(state: GameState, enemy: Enemy): GameState {
   const r = trialReward(state.trialLevel);
   let next = grantRewards(applyReward(state, { gems: r.gems }), r.gold ?? 0, enemy.rewardXp);
   next = { ...next, trialLevel: next.trialLevel + 1, forgeMaterials: next.forgeMaterials + 1 };
+  next = awardCowAwakeningStone(next, cowStoneTrialReward(state.trialLevel));
   return updateProgress(next, 'battle_win', 1);
 }
 
