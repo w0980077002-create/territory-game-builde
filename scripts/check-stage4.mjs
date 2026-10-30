@@ -22,13 +22,13 @@ function loadTs(file, dependencies = {}) {
 
 const expiryMock = { reconcileElixirExpiry: (state) => state };
 const followers = loadTs('src/game/followers.ts', { './elixirExpiry': expiryMock });
-assert.equal(followers.FOLLOWER_TEMPLATES.length, 5);
-assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.role)).size, 5);
-assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.id)).size, 5);
-assert.deepEqual(followers.FOLLOWER_TEMPLATES.map((f) => f.unlockLevel).join(','), '3,8,15,25,40');
+assert.equal(followers.FOLLOWER_TEMPLATES.length, 6);
+assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.role)).size, 6);
+assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.id)).size, 6);
+assert.deepEqual(followers.FOLLOWER_TEMPLATES.map((f) => f.unlockLevel).join(','), '3,8,15,25,40,50');
 const oldShield = { id: 'follower_1', name: 'Верный щит', level: 3, attack: 5, defense: 10, unlocked: true, icon: '🛡️', description: 'old' };
 const roster = followers.reconcileFollowers([oldShield], 81);
-assert.equal(roster.length, 5);
+assert.equal(roster.length, 6);
 assert.equal(roster[0].level, 3, 'keep existing shield level');
 assert.equal(roster[0].defense, 10, 'keep existing shield stats');
 assert.equal(roster[0].description, 'old', 'keep legacy description');
@@ -61,6 +61,9 @@ for (const f of roster) {
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_4')).crit > 0, true);
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_5')).pierce > 0, true);
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_3')).heal > 0, true);
+assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_6')).heal > 0, true);
+assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_6')).pierce, 0.02);
+assert.equal(followers.selectFollower({ ...starter, followers: followers.reconcileFollowers([], 49) }, 'follower_6'), null, 'Battle Cow unlocks at 50');
 assert.equal(followers.followerCombat(roster.find((x) => x.id === 'follower_2')).defense, 0);
 assert.equal(fee.gold, 205);
 console.log('Stage4: 5 follower roles, legacy migration, one active, level-gated training, bounded PvE bonuses: PASS');
