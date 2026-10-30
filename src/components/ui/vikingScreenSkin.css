@@ -317,3 +317,44 @@
 .territory-shell .territory-events :is(button,a):focus-visible {
   outline:3px solid #fff1b7;outline-offset:2px;
 }
+
+/* Owner reference: the caption is centered on the wooden plaque, not aligned
+   against a card edge. Apply to ornamental headings ONLY, not form labels,
+   gameplay values, inventory listings or headers containing actionable controls. */
+.territory-shell .viking-screen :is(
+  .card > h2,
+  .card > h3,
+  .card > header > h2,
+  .card > header > h3
+):not(:has(button, a, input)) {
+  text-align: center;
+  justify-content: center;
+  font-family: 'Arial Black', system-ui, -apple-system, sans-serif;
+  font-size: clamp(15px, 4vw, 19px);
+  font-weight: 1000;
+  line-height: 1.2;
+  text-wrap: balance;
+  text-shadow: 1px 2px 0 #311609, -1px -1px 0 #311609, 2px 2px 1px #1f0e06;
+}
+.territory-shell .viking-screen :is(
+  .card > h2,
+  .card > h3,
+  .card > header > h2,
+  .card > header > h3
+):not(:has(button, a, input)):has(+ *) {
+  min-height: 40px;
+}
+
+/* Shared wooden dialog captions use the same centered fantasy lettering.
+   Leave the existing icon and 44px close button outside the title layout. */
+.territory-shell :is(.fortune-dialog__head h2, .rune-book__dialog-top h4, .mono-panel > header h3) {
+  min-width: 0;
+  text-align: center;
+  color: #ffe5a0;
+  font-family: 'Arial Black', system-ui, -apple-system, sans-serif;
+  font-size: clamp(15px, 4vw, 19px);
+  font-weight: 1000;
+  line-height: 1.15;
+  text-wrap: balance;
+  text-shadow: 1px 2px 0 #311609, -1px -1px 0 #311609, 2px 2px 1px #1f0e06;
+}

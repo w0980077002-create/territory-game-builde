@@ -1188,3 +1188,23 @@ html.territory-ios-webapp .territory-nav-label {
     display: none;
   }
 }
+
+/* Approved Battle Cow typography: centered, thick gold on wood, including
+   generic profile plaques and shared information dialog titles. */
+.territory-shell .territory-profile .card > h3 {
+  justify-content: center;
+  text-align: center;
+  font-family: 'Arial Black', system-ui, -apple-system, sans-serif;
+  font-size: clamp(15px, 4vw, 19px);
+  font-weight: 1000;
+  line-height: 1.18;
+  text-shadow: 1px 2px 0 #301509, -1px -1px 0 #301509, 2px 2px 1px #190d09;
+}
+.territory-modal-head h2,
+.arena-rules-head h3 {
+  text-align: center;
+  font-family: 'Arial Black', system-ui, -apple-system, sans-serif;
+  font-weight: 1000;
+  text-wrap: balance;
+  text-shadow: 1px 2px 0 #301509, -1px -1px 0 #301509;
+}

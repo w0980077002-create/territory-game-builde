@@ -29,6 +29,24 @@ with sync_playwright() as p:
             assert image.evaluate('(el) => el.complete && el.naturalWidth > 0'), 'Missing canonical hero art'
             assert image.bounding_box()['height'] >= 190, 'Hero art is still too small'
             assert hero.get_by_role('progressbar').count() == 1, 'Saved XP bar must be visible'
+            # The owner-approved wooden titles must be visually centered on the
+            # carved background, not just painted with the same texture.
+            for title in hero.locator('.hero-showcase__plaque-title').all():
+                metrics = title.evaluate("""el => {
+                  const box=el.getBoundingClientRect();
+                  const range=document.createRange(); range.selectNodeContents(el);
+                  const glyph=range.getBoundingClientRect();
+                  const css=getComputedStyle(el);
+                  return { centerError:Math.abs((box.left+box.right-glyph.left-glyph.right)/2),
+                           centerStyle:css.textAlign,
+                           weight:parseInt(css.fontWeight,10),
+                           withinViewport:box.left >= 0 && box.right <= innerWidth+1,
+                           textured:css.backgroundImage.includes('wooden-plaque') };
+                }""")
+                assert metrics['centerStyle'] == 'center', (width,lang,'heading is left-aligned',metrics)
+                assert metrics['centerError'] < 9, (width,lang,'heading text displaced on wood',metrics)
+                assert metrics['weight'] >= 900, (width,lang,'heading is not bold enough',metrics)
+                assert metrics['withinViewport'] and metrics['textured'], (width,lang,'heading plaque misfit',metrics)
             if width == 360 and lang == 'ru':
                 hero.screenshot(path='/tmp/territory-hero-360.png')
             page.evaluate('window.__route = null')

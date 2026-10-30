@@ -5,11 +5,11 @@
   justify-content: center;
   align-items: center;
   flex: 0 1 auto;
-  width: clamp(142px, 43vw, 180px);
+  width: clamp(168px, 50vw, 225px);
   height: 43px;
   max-width: 100%;
   isolation: isolate;
-  white-space: nowrap;
+  white-space: normal;
   user-select: none;
 }
 .territory-wooden-plaque > img {
@@ -22,16 +22,18 @@
   pointer-events: none;
 }
 .territory-wooden-plaque__label {
+  display: block;
   overflow: hidden;
-  max-width: calc(100% - 28px);
-  padding: 0 1px 2px 6px;
+  max-width: calc(100% - 24px);
+  padding: 0 1px 2px;
   color: #ffe174;
   font-family: system-ui, -apple-system, 'Arial Black', sans-serif;
-  font-size: clamp(11px, 3.15vw, 15px);
+  font-size: clamp(14px, 3.7vw, 18px);
   font-weight: 950;
   letter-spacing: .015em;
-  line-height: 1;
+  line-height: 1.1;
   text-align: center;
+  text-wrap: balance;
   text-overflow: ellipsis;
   text-shadow: 1px 2px 0 #34150b, -1px -1px 0 #48200d, 0 0 4px #2d160e;
 }
@@ -41,7 +43,6 @@
 }
 .territory-wooden-plaque--logo .territory-wooden-plaque__label {
   max-width: calc(100% - 35px);
-  padding-left: 9px;
   font-size: clamp(19px, 5.5vw, 27px);
   letter-spacing: -.035em;
   font-weight: 1000;
