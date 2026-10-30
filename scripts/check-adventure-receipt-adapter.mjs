@@ -28,6 +28,9 @@ const receipt={success:true,session_id:session,outcome:'hero_won',stage:1,comple
 let user=A,remoteToken=time2,remoteState=won,mode='offline',saveCalls=0,calls=[],current=initial,applyCalls=0,saveGate=null;
 const supabase={auth:{getUser:async()=>({data:{user:{id:user}},error:null})},functions:{invoke:async(_name,{body})=>{
  calls.push(body);if(mode==='offline')return {data:null,error:new Error('offline')};
+ if(mode==='definitive')return {data:null,error:{context:new Response(JSON.stringify({error:'combat_revision_conflict'}),{status:409})}};
+ if(mode==='opaque409')return {data:null,error:{context:new Response(JSON.stringify({error:'combat_unavailable'}),{status:409})}};
+ if(mode==='timeout503')return {data:null,error:{context:new Response(JSON.stringify({error:'combat_revision_conflict'}),{status:503})}};
  return {data:{success:true,session_id:session,revision:1,state:{status:'hero_won'},settlement:mode==='malformed'?{...receipt,wallet_gold:999}:receipt},error:null};
 }},from:()=>({select:()=>({eq:(column,id)=>({maybeSingle:async()=>({data:{
  id, updated_at:remoteToken,game_state:remoteState,gold:remoteState.player.gold,gems:remoteState.player.gems,
@@ -38,7 +41,7 @@ const cloud={saveBlocked:blocked,protectFortuneSave:id=>{blocked.add(id);generat
  acceptAdventureLatestCloudSnapshot:cloudExports.acceptAdventureLatestCloudSnapshot,
  validateAdventureSettlementReceipt:cloudExports.validateAdventureSettlementReceipt,
  validateAdventureStartReceipt:cloudExports.validateAdventureStartReceipt};
-const parseCombatCommand=v=>{if(!v||!['advance','resume'].includes(v.action)||typeof v.sessionId!=='string')throw Error('bad command');return v};
+const parseCombatCommand=v=>{if(!v||!['advance','resume','start'].includes(v.action)|| (v.action!=='start'&&typeof v.sessionId!=='string'))throw Error('bad command');return v};
 function mount(){const exports={};vm.runInNewContext(compile(adapterSource),{exports,localStorage:storage,Set,JSON,Error,Response,
  require:id=>id==='../supabase'?{supabase}:id==='../auth'?{ensurePlayerSession:async id=>user===id}:id==='../cloud'?cloud:id==='./service'?{parseCombatCommand}: (()=>{throw Error(id)})()});return exports;}
 const hooks={getState:()=>current,applyState:s=>{current=s;applyCalls++;}};
@@ -65,6 +68,42 @@ assert.equal(current.player.gold,70);assert.equal(current.player.xp,77);
 assert.equal(current.forgeMaterials,6);assert.equal(current.inventory[0].id,'new-equipped-item');
 assert.equal(current.extra,'saved on server');assert.equal(blocked.has(A),false);
 assert.equal(tokens.get(A),time3);
+// A trusted conflict response is a definitive rolled-back operation. Reconcile
+// the owner's latest cloud save before dropping the pending marker.
+const rolledBack={...cmd,operationId:'20000000-0000-4000-8000-000000000009'};
+mode='offline';
+await assert.rejects(adapter.requestAdventureSettlement(A,rolledBack,hooks),/adventure_unconfirmed/);
+assert.equal(blocked.has(A),true);
+assert.ok(storage.getItem('territory_adventure_pending_v1:'+A));
+mode='definitive';
+await assert.rejects(adapter.requestAdventureSettlement(A,rolledBack,hooks),/adventure_definitively_rejected/);
+assert.equal(blocked.has(A),false);
+assert.equal(storage.getItem('territory_adventure_pending_v1:'+A),null);
+assert.equal(current.player.gold,70, 'No new reward was minted for rejected advance');
+// Opaque 409 and named 503 are not proof of rollback and must retain the fence.
+const ambiguous={...cmd,operationId:'20000000-0000-4000-8000-000000000010'};
+mode='opaque409';
+await assert.rejects(adapter.requestAdventureSettlement(A,ambiguous,hooks),/adventure_unconfirmed/);
+assert.equal(blocked.has(A),true);
+assert.ok(storage.getItem('territory_adventure_pending_v1:'+A));
+mode='timeout503';
+await assert.rejects(adapter.requestAdventureSettlement(A,ambiguous,hooks),/adventure_unconfirmed/);
+assert.equal(blocked.has(A),true);
+mode='definitive';
+await assert.rejects(adapter.requestAdventureSettlement(A,ambiguous,hooks),/adventure_definitively_rejected/);
+assert.equal(storage.getItem('territory_adventure_pending_v1:'+A),null);
+assert.equal(blocked.has(A),false);
+// The same confirmed-rollback rule also applies to uncertain starts.
+const rejectedStart={action:'start',operationId:'20000000-0000-4000-8000-000000000011',
+ encounterId:'adventure_v1_stage_2',control:'manual'};
+mode='offline';
+await assert.rejects(adapter.requestAdventureStart(A,rejectedStart,hooks),/adventure_unconfirmed/);
+assert.ok(storage.getItem('territory_adventure_start_v1:'+A));
+mode='definitive';
+await assert.rejects(adapter.requestAdventureStart(A,rejectedStart,hooks),/adventure_definitively_rejected/);
+assert.equal(storage.getItem('territory_adventure_start_v1:'+A),null);
+assert.equal(blocked.has(A),false);
+assert.equal(current.player.gold,70);
 remoteToken=time2;remoteState=won;
 // A malformed receipt and wrong account never affect the installed state.
 mode='malformed';await assert.rejects(adapter.requestAdventureSettlement(A,{action:'resume',sessionId:session},hooks),/adventure_invalid_receipt/);
