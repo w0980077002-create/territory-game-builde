@@ -323,6 +323,8 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { 
         >
           <div
             className="forge-upgrade-panel card w-full max-w-sm m-2 animate-slide-up"
+            role="dialog" aria-modal="true" aria-label={localizeText(selectedCurrent.name, language)}
+            onKeyDown={(event) => { if (event.key === 'Escape' && !upgrading) { event.stopPropagation(); setSelected(null); } }}
             style={{ border: `1px solid ${rarityColor(selectedCurrent.rarity)}` }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -339,7 +341,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { 
                 </h3>
                 <p className="text-xs text-gray-400">{t('level')} {selectedCurrent.equipment.level} · {selectedCurrent.rarity}</p>
               </div>
-              <button onClick={() => { if (!upgrading) setSelected(null); }} className="text-gray-500 hover:text-white">
+              <button type="button" aria-label={language === 'en' ? 'Close' : 'Закрыть'} onClick={() => { if (!upgrading) setSelected(null); }} className="text-gray-500 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
