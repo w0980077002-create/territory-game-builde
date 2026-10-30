@@ -21,6 +21,7 @@ import { Currency } from '@/components/ui/Currency';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { beginReferralFight, finishReferralFight, type ReferralRound } from '@/game/referrals';
 import { captureGameEvent } from '@/game/analytics';
+import { runDeferredNextBattle } from '@/game/pveNextAction';
 
 export type FightKind = 'stage' | 'trial';
 
@@ -28,7 +29,7 @@ interface Props {
   enemy: Enemy;
   kind: FightKind;
   onExit: () => void;
-  onNext?: () => void;
+  onNext?: () => boolean;
   onQuests?: () => void;
 }
 
@@ -114,6 +115,9 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const referralStart = useRef<Promise<string | null> | null>(null);
   const referralFinish = useRef<Promise<unknown>>(Promise.resolve());
   const nextRequested = useRef(false);
+  const nextCancelled = useRef(false);
+  const [nextPending, setNextPending] = useState(false);
+  const [nextError, setNextError] = useState(false);
   // React's disabled button state is not synchronous. Lock the round before
   // the first await, so two taps cannot run two local fights / referral rounds.
   const roundFlight = useRef(false);
@@ -127,7 +131,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
 
   useEffect(() => {
     referralStart.current = beginReferralFight(kind, enemy.id);
-    return () => { alive.current = false; };
+    return () => { alive.current = false; nextCancelled.current = true; };
   }, [kind, enemy.id]);
 
   const pushLog = (line: string) => setLog((l) => [line, ...l].slice(0, 30));
@@ -244,7 +248,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     <div className="space-y-2 animate-fade-in">
       <div className="flex items-center gap-2 h-10">
         <button
-          onClick={() => (outcome ? onExit() : finish(false))}
+          onClick={() => (outcome ? (nextCancelled.current = true, onExit()) : finish(false))}
           className="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-200 flex items-center gap-1.5 active:scale-95 transition-transform"
         >
           <Flag className="w-3.5 h-3.5" /> {outcome ? (kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')) : (language === 'en' ? 'Surrender' : 'Сдаться')}
@@ -393,16 +397,28 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
           </div>
         )}
 
-        {outcome && <OutcomePanel outcome={outcome} kind={kind} onExit={onExit}
-          questReady={state.player.level < 5 && state.quests.some(q => !q.claimed && q.current >= q.target)} onQuests={onQuests}
+        {outcome && <OutcomePanel outcome={outcome} kind={kind}
+          onExit={() => { nextCancelled.current = true; onExit(); }}
+          questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
+          onQuests={onQuests ? () => { nextCancelled.current = true; onQuests(); } : undefined}
+          nextPending={nextPending} nextError={nextError}
           onNext={onNext ? () => {
             if (nextRequested.current) return;
             nextRequested.current = true;
-            // Never hold up normal combat if Supabase is temporarily offline.
-            void Promise.race([
-              referralFinish.current.catch(() => false),
-              new Promise(resolve => setTimeout(resolve, 1400)),
-            ]).then(onNext);
+            setNextPending(true);
+            setNextError(false);
+            // A late referral result must not launch a fight after Back/Quests.
+            void runDeferredNextBattle(
+              referralFinish.current,
+              () => alive.current && !nextCancelled.current,
+              onNext,
+            ).then(result => {
+              if (result === 'blocked' && alive.current && !nextCancelled.current) {
+                nextRequested.current = false;
+                setNextPending(false);
+                setNextError(true);
+              }
+            });
           } : undefined} />}
       </div>
 
@@ -426,7 +442,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   );
 }
 
-function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests }: { outcome: Outcome; kind: FightKind; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void }) {
+function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests, nextPending, nextError }: { outcome: Outcome; kind: FightKind; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; nextPending: boolean; nextError: boolean }) {
   const { language } = useLanguage();
   return (
     <div className="relative px-3 pb-3 pt-1 animate-pop">
@@ -452,11 +468,14 @@ function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests }: {
             {kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')}
           </button>
           {outcome.won && onNext && (
-            <button onClick={onNext} className="flex-1 h-10 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-sm font-bold text-black active:scale-95 transition-transform">
-              {language === 'en' ? 'Next fight' : 'Следующий бой'}
+            <button type="button" onClick={onNext} disabled={nextPending} aria-busy={nextPending} className="flex-1 h-10 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-sm font-bold text-black active:scale-95 transition-transform disabled:opacity-60">
+              {nextPending? (language === 'en' ? 'Starting…' : 'Начинаем…') : (language === 'en' ? 'Next fight' : 'Следующий бой')}
             </button>
           )}
         </div>
+        {nextError && <p role="alert" className="mt-2 text-xs text-amber-100">
+          {language === 'en' ? 'Next fight could not start. Check battle stones or recover the Dark Cave operation, then try again or return to Campaign.' : 'Следующий бой не запустился. Проверь боевые камни или восстанови операцию в Тёмной пещере. Можно повторить или вернуться в Поход.'}
+        </p>}
       </div>
     </div>
   );
