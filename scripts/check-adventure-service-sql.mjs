@@ -25,8 +25,8 @@ try {
  await db.exec(readFileSync('supabase/staged/territory_v1_combat_completion.sql','utf8'));
  await db.exec(readFileSync('supabase/staged/territory_v1_adventure_settlement.sql','utf8'));
  await db.exec(readFileSync('supabase/staged/territory_v1_combat_profiles_reconciliation.sql','utf8'));
- await q(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by) VALUES($1,$2,1,$3,'{}','test evidence','test reviewer')`,[player,save,fighter]);
- await q(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by) VALUES($1,$2,1,$3,'{}','test evidence','test reviewer')`,[noLevel,noLevelSave,fighter]);
+ await q(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by) VALUES($1,$2,1,$3,'{}',territory_private.combat_legacy_equipped_ids_v1($2),'test evidence','test reviewer')`,[player,save,fighter]);
+ await q(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by) VALUES($1,$2,1,$3,'{}',territory_private.combat_legacy_equipped_ids_v1($2),'test evidence','test reviewer')`,[noLevel,noLevelSave,fighter]);
  const prepared=(await q('SELECT territory_private.prepare_combat_profile_v1($1) result',[player]))[0].result;
  assert.equal(prepared.status,'ready');
  assert.equal((await q('SELECT territory_private.prepare_combat_profile_v1($1) result',[noLevel]))[0].result.status,'ready');

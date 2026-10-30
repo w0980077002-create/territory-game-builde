@@ -28,8 +28,8 @@ try {
   assert.equal((await query('SELECT count(*)::int AS n FROM territory_private.combat_profiles_v1'))[0].n,0);
   await assert.rejects(query(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by) VALUES($1,'{}',9,$2,'{}','forged','forged')`,[a,fighter]),/permission denied/);
   await db.exec('RESET ROLE');
-  await query(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by)
-    SELECT id,game_state,level,$2,ARRAY[$3::uuid],'review case 123','reviewer' FROM public.players WHERE id=$1`,[a,fighter,item]);
+  await query(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
+    SELECT id,game_state,level,$2,ARRAY[$3::uuid],territory_private.combat_legacy_equipped_ids_v1(game_state),'review case 123','reviewer' FROM public.players WHERE id=$1`,[a,fighter,item]);
   await db.exec('SET ROLE service_role');
   assert.equal((await query('SELECT territory_private.prepare_combat_profile_v1($1) AS r',[a]))[0].r.status,'ready');
   assert.equal((await query('SELECT territory_private.combat_profile_is_current_v1($1) AS current',[a]))[0].current,true);
@@ -46,8 +46,8 @@ try {
   assert.equal((await query('SELECT public.territory_combat_prepare_profile_v1($1) AS r',[a]))[0].r.reason,'trusted_projection_missing_or_stale');
   assert.deepEqual((await query('SELECT fighter->\'loadout\' AS loadout FROM territory_private.combat_profiles_v1 WHERE player_id=$1',[a]))[0].loadout,{skills:[],passives:[]},'does not overwrite saved loadout');
   await db.exec('RESET ROLE');
-  await query(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,evidence_reference,reviewed_by)
-    SELECT id,game_state,level,$2,ARRAY[$3::uuid],'review case 124','reviewer' FROM public.players WHERE id=$1`,[a,{...fighter,stats:{...fighter.stats,attack:55}},item]);
+  await query(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
+    SELECT id,game_state,level,$2,ARRAY[$3::uuid],territory_private.combat_legacy_equipped_ids_v1(game_state),'review case 124','reviewer' FROM public.players WHERE id=$1`,[a,{...fighter,stats:{...fighter.stats,attack:55}},item]);
   await query(`INSERT INTO territory_private.combat_sessions_v1 VALUES($1,'{"status":"fighting"}')`,[a]);
   await db.exec('SET ROLE service_role');
   assert.equal((await query('SELECT public.territory_combat_prepare_profile_v1($1) AS r',[a]))[0].r.reason,'active_session');
