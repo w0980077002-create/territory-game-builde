@@ -1,0 +1,286 @@
+/* Territory 1.0 — owner-approved living hero, not an oversized stat table.
+   Read-only saved equipment and XP; scoped to the hero route. */
+.territory-profile .hero-showcase {
+  --hero-wood: #3c2417;
+  --hero-gold: #d9a65a;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.territory-profile .hero-showcase__header,
+.territory-profile .hero-showcase__stats,
+.territory-profile .hero-showcase__journey {
+  min-width: 0;
+  padding: 12px;
+  border: 2px solid #bd8c4d;
+  border-radius: 16px;
+  color: #f9e4c3;
+  background: linear-gradient(145deg,#684228 0%,#40291b 65%,#302016);
+  box-shadow: inset 0 2px 0 #ffe0a448, 0 4px 12px #160c0880;
+}
+.territory-profile .hero-showcase__identity {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+}
+.territory-profile .hero-showcase__identity h2 {
+  min-width: 0;
+  margin: 0;
+  color: #ffe9ac;
+  font-size: clamp(19px,5.3vw,24px);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+  text-shadow: 1px 2px #2a170e;
+}
+.territory-profile .hero-showcase__level {
+  color: #f6d6a3;
+  font-size: 13px;
+  font-weight: 800;
+}
+.territory-profile .hero-showcase__resources {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 7px;
+}
+.territory-profile .hero-showcase__resources span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  color: #ffdc83;
+  font-size: clamp(12px,3.7vw,16px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.territory-profile .hero-showcase__resources span:nth-child(2) { color: #6be2f4; }
+.territory-profile .hero-showcase__xp { margin-top: 10px; }
+.territory-profile .hero-showcase__xp-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  color: #ffdea0;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.territory-profile .hero-showcase__xp-track {
+  height: 11px;
+  overflow: hidden;
+  border: 1px solid #edba65;
+  border-radius: 20px;
+  background: #20150f;
+  box-shadow: inset 0 1px 3px #0009;
+}
+.territory-profile .hero-showcase__xp-track > span {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg,#5ab2fd,#b6f8fb 55%,#ffe5a0);
+  box-shadow: 0 0 8px #82ebfd6b;
+}
+.territory-profile .hero-showcase__max {
+  margin: 8px 0 0;
+  color: #ffdaa0;
+  font-size: 12px;
+  font-weight: 900;
+}
+.territory-profile .hero-showcase__stage {
+  display: grid;
+  grid-template-columns: minmax(45px,56px) minmax(0,1fr) minmax(45px,56px);
+  gap: 5px;
+  min-width: 0;
+  min-height: 246px;
+  padding: 12px 9px;
+  border: 2px solid #daa55e;
+  border-radius: 17px;
+  background:
+    radial-gradient(ellipse at 50% 35%,#fac65a60 0%,transparent 55%),
+    radial-gradient(ellipse at 50% 90%,#354c2da9 0%,transparent 65%),
+    linear-gradient(150deg,#6a462e,#3e352c 55%,#2b1e18);
+  box-shadow: inset 0 0 0 2px #422817, inset 0 10px 22px #ffe2a016, 0 5px 14px #0e070777;
+}
+.territory-profile .hero-showcase__gear-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 7px;
+  min-width: 0;
+  z-index: 2;
+}
+.territory-profile .hero-showcase__slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  width: 100%;
+  min-height: 44px;
+  padding: 3px;
+  overflow: hidden;
+  border: 2px solid #a97c46;
+  border-radius: 12px;
+  background: linear-gradient(160deg,#6f4c2d,#28201b);
+  box-shadow: inset 0 1px 0 #ffe3ae57, 0 2px 5px #120a0980;
+}
+.territory-profile .hero-showcase__slot--empty { border-color: #906f4c; }
+.territory-profile .hero-showcase__slot img {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px #0008);
+}
+.territory-profile .hero-showcase__slot--empty img { opacity: .36; filter: grayscale(.65); }
+.territory-profile .hero-showcase__item-level {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  padding: 1px;
+  background: #170d0bcc;
+  color: #fff6e2;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+.territory-profile .hero-showcase__character {
+  position: relative;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  min-width: 0;
+  min-height: 220px;
+  overflow: hidden;
+}
+.territory-profile .hero-showcase__hero-art {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 226px;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 5px 5px #0008);
+  animation: territoryHeroBreathe 4s ease-in-out infinite;
+}
+.territory-profile .hero-showcase__character-floor {
+  position: absolute;
+  bottom: 1px;
+  left: 0;
+  right: 0;
+  height: 19px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse,#e8b55c48,transparent 70%);
+}
+.territory-profile .hero-showcase__equipment-link,
+.territory-profile .hero-showcase__adventure {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 2px solid #ffde98;
+  border-radius: 11px;
+  color: #2a1a0f;
+  background: var(--viking-button-bg,linear-gradient(#ffe39d,#d79b47,#a46627));
+  box-shadow: inset 0 1px 0 #fff4c1, 0 3px 0 #613713;
+  font-size: 13px;
+  font-weight: 900;
+  text-shadow: 0 1px #fff1c07a;
+}
+.territory-profile .hero-showcase__equipment-link { background:linear-gradient(#ffdfaa,#c58a45,#946135); }
+.territory-profile .hero-showcase__stats h3,
+.territory-profile .hero-showcase__journey h3 {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin: -2px -2px 9px;
+  padding: 5px 10px;
+  border: 1px solid #cb9549;
+  border-radius: 10px;
+  color: #ffe6af;
+  background: var(--viking-plaque) center / 100% 100% no-repeat,#664127;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-shadow: 1px 2px 0 #26140b;
+}
+.territory-profile .hero-showcase__stat-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+}
+.territory-profile .hero-showcase__stat {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  padding:8px 7px;
+  border:1px solid #a77945;
+  border-radius:10px;
+  background:#2b1c13cf;
+}
+.territory-profile .hero-showcase__stat svg { flex:0 0 auto; }
+.territory-profile .hero-showcase__stat span {
+  display:grid;
+  min-width:0;
+  color:#ffe1b5;
+  font-size:11px;
+  line-height:1.2;
+  overflow-wrap:anywhere;
+}
+.territory-profile .hero-showcase__stat strong {
+  margin-top:3px;
+  color:#fff9e9;
+  font-size:clamp(17px,4.5vw,21px);
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+.territory-profile .hero-showcase__heart { color:#ff8396; }
+.territory-profile .hero-showcase__attack { color:#ffb866; }
+.territory-profile .hero-showcase__defense { color:#70c4ff; }
+.territory-profile .hero-showcase__crit { color:#ffe078; }
+.territory-profile .hero-showcase__records {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  text-align:center;
+  margin-bottom:10px;
+}
+.territory-profile .hero-showcase__records > div {
+  min-width:0;
+  display:grid;
+  gap:2px;
+  padding:8px 2px;
+  border:1px solid #8b693e;
+  border-radius:10px;
+  background:#2c1c13a6;
+}
+.territory-profile .hero-showcase__records strong {color:#ffecad;font-size:22px;font-weight:900;}
+.territory-profile .hero-showcase__records span {color:#efd9bb;font-size:11px;}
+.territory-profile .hero-showcase :is(button):focus-visible {
+  outline:3px solid #fff3bc;
+  outline-offset:2px;
+}
+@keyframes territoryHeroBreathe {
+  0%,100% { transform:translateY(0); }
+  50% { transform:translateY(-3px); }
+}
+@media (max-width:350px) {
+  .territory-profile .hero-showcase__stage { grid-template-columns:44px minmax(0,1fr) 44px;padding-inline:6px;gap:3px; }
+  .territory-profile .hero-showcase__hero-art {height:208px;}
+  .territory-profile .hero-showcase__character {min-height:208px;}
+  .territory-profile .hero-showcase__slot {border-radius:9px;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .territory-profile .hero-showcase__hero-art { animation:none; }
+}
