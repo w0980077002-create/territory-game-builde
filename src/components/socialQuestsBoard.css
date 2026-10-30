@@ -1,0 +1,40 @@
+/* Territory 1.0 community quests: existing server actions, approved carved wood/gold UI.
+   No local rewards, counters, timers or client-side grants. */
+.territory-shell .social-quests-board { min-width:0; }
+.territory-shell .social-quests-heading {
+  min-width:0; border:2px solid #e4b86c; border-radius:13px;
+  background:linear-gradient(100deg,#5e391fd9,#302017e8),var(--viking-plaque) center/100% 100% no-repeat;
+  box-shadow:inset 0 1px 0 #ffe8af85,0 3px 7px #1b0b0870;
+  color:#ffe8ac; text-shadow:1px 2px 0 #281408,-1px -1px 0 #281408;
+}
+.territory-shell .social-quest-card {
+  min-width:0;
+  border:2px solid #b88b51;
+  background:
+    repeating-linear-gradient(175deg,transparent 0 15px,#ffdc8910 16px 17px,transparent 18px 30px),
+    linear-gradient(145deg,#674127,#3c2518 65%,#261910);
+  box-shadow:inset 0 1px 0 #ffe5ad66,0 3px 9px #16090480;
+}
+.territory-shell .social-quest-card--claimed { border-color:#9ec87e; }
+.territory-shell .social-quest-actions { min-width:0; }
+.territory-shell .social-quest-action {
+  min-width:0; min-height:44px;
+  border:1px solid #f2c67e;
+  box-shadow:inset 0 1px 0 #fff4c66b,0 2px 0 #573019;
+  line-height:1.25; overflow-wrap:anywhere; text-align:center;
+}
+.territory-shell .social-quest-action--retry {
+  background:var(--viking-button-bg);color:#301a0c;
+}
+.territory-shell .social-quest-action:focus-visible {
+  outline:3px solid #fff1b7;outline-offset:2px;
+}
+.territory-shell .social-quest-claimed { border:1px solid #91c48c; }
+.territory-shell .social-quests-feedback { min-width:0;overflow-wrap:anywhere; }
+@media (max-width:350px) {
+  .territory-shell .social-quest-actions { width:100%; }
+  .territory-shell .social-quest-action { flex:1 1 105px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .territory-shell .social-quests-board * { transition-duration:.01ms;animation-duration:.01ms; }
+}
