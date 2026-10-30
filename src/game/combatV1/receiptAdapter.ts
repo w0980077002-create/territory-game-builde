@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import { ensurePlayerSession } from '../auth';
-import { acceptAdventureSettlementReceipt, acceptAdventureStartReceipt, acceptAdventureLatestCloudSnapshot, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave } from '../cloud';
+import { acceptAdventureSettlementReceipt, acceptAdventureStartReceipt, validateAdventureSettlementReceipt, validateAdventureStartReceipt, acceptAdventureLatestCloudSnapshot, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave } from '../cloud';
 import type { GameState } from '../types';
 import { parseCombatCommand, type CombatCommand } from './service';
 
@@ -66,6 +66,7 @@ export async function requestAdventureStart(userId:string,command:Start,hooks:Ho
      throw new Error('adventure_unconfirmed');
    const check=await supabase.from('players').select('id,updated_at,game_state,gold,gems').eq('id',userId).maybeSingle();
    if(check.error||!check.data)throw new Error('adventure_reload_required');
+   validateAdventureStartReceipt(data.start_save,data.session_id);
    if(check.data.updated_at !== data.start_save.updated_at){
      // Confirmed original start followed by newer authoritative cloud activity.
      hooks.applyState(acceptAdventureLatestCloudSnapshot(userId,check.data,data.start_save.updated_at));
@@ -123,6 +124,7 @@ export async function requestAdventureSettlement(userId: string, command: Advanc
       if (currentUser.error || currentUser.data.user?.id !== userId) throw new Error('adventure_auth_required');
       const current = await supabase.from('players').select('id,updated_at,game_state,gold,gems').eq('id', userId).maybeSingle();
       if (current.error || !current.data) throw new Error('adventure_reload_required');
+      validateAdventureSettlementReceipt(data.settlement,checked.sessionId);
       if (current.data.updated_at !== data.settlement.updated_at) {
         // Adopt the latest verified state; old reward is already in server ledger.
         hooks.applyState(acceptAdventureLatestCloudSnapshot(userId,current.data,data.settlement.updated_at));
