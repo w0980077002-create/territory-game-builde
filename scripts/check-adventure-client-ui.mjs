@@ -18,6 +18,10 @@ assert.match(battle, /if \(view === 'cave'\) return;/, 'Never charge legacy ston
 assert.match(battle, /generateChapter\(state.currentChapter\)/);
 assert.match(battle, /<PveFight/);
 assert.doesNotMatch(battle, /serverMode|legacySelected|showServer|territory_adventure_mode_v3/);
+assert.doesNotMatch(map, /100 этапов · отдельный поход|100 stages · separate campaign/,
+  'Dark Cave banner must not cover map with redundant copy');
+assert.match(canvas, /id: 'professions', ru: 'Профессии'/,
+  'Profession location must be visible and easy to identify');
 assert.match(map, /onClick=\{onCave\}/);
 assert.match(map, /case 'cave': onCave\(\)/);
 assert.match(canvas, /id: 'battle', ru: 'Поход'/);

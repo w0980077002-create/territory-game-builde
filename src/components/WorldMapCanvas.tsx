@@ -30,7 +30,7 @@ const PLACES: Place[] = [
   { id: 'trial', ru: 'Испытания', en: 'Trials', x: 77, y: 19 },
   { id: 'chamber', ru: 'Чертог облика', en: 'Appearance', x: 12, y: 51, kind: 'magic' },
   { id: 'forge', ru: 'Кузница', en: 'Forge', x: 36, y: 52 },
-  { id: 'professions', ru: 'Мастерские', en: 'Workshops', x: 60, y: 54 },
+  { id: 'professions', ru: 'Профессии', en: 'Professions', x: 60, y: 54 },
   { id: 'shop', ru: 'Лавка', en: 'Shop', x: 76, y: 54 },
   { id: 'hunting', ru: 'Охота', en: 'Hunting', x: 87, y: 50, kind: 'resource' },
   { id: 'forest', ru: 'Тёмный лес', en: 'Dark forest', x: 23, y: 18, kind: 'resource' },

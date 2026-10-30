@@ -262,10 +262,7 @@ export function MapScreen({ onNavigate, onTrial, onCave, onCompanions, onRunes, 
         aria-label={language === 'en' ? 'Dark Cave: 100 stages' : 'Тёмная пещера: 100 этапов'}
       >
         <img src={`${import.meta.env.BASE_URL}map-chamber.webp`} alt="" className="h-9 w-9 shrink-0 object-contain" />
-        <span className="flex flex-col gap-0.5 leading-tight">
-          <span className="text-[13px] font-black">{language === 'en' ? 'Dark Cave' : 'Тёмная пещера'}</span>
-          <span className="text-[11px] font-semibold text-amber-200">{language === 'en' ? '100 stages · separate campaign' : '100 этапов · отдельный поход'}</span>
-        </span>
+        <span className="text-[13px] font-black leading-tight">{language === 'en' ? 'Dark Cave' : 'Тёмная пещера'}</span>
       </button>
       {readyRegion && (
         <button

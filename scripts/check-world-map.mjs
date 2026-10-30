@@ -97,6 +97,18 @@ assert.match(css, /territory-world-map__destination-crest/, 'Destination buttons
 assert.match(css, /territory-world-map__destination--forest/, 'Resources should be visually differentiated');
 assert.match(css, /territory-world-map__drawer-scroll/, 'Location drawer should remain scrollable on phones');
 
+// A named, visible professions location must open the existing real game section.
+assert.match(canvas, /id: 'professions', ru: 'Профессии', en: 'Professions'/,
+  'Profession building must be explicitly labelled, not obscured as Workshops');
+assert.match(canvas, /'forge', 'professions'/,
+  'Professions must stay visible at overview zoom');
+assert.match(map, /default: onNavigate\(place\)/,
+  'Map pin must route directly to the matching playable screen');
+assert.match(app, /\{screen === 'professions' &&/,
+  'Profession landmark must open the real profession screen');
+assert.doesNotMatch(map, /100 этапов · отдельный поход|100 stages · separate campaign/,
+  'Remove redundant cave subtitle on world map');
+
 assert.match(map, /<WorldMapCanvas /);
 assert.match(map, /attentionPlaces=\{attentionPlaces\}/, 'Map must forward existing attention states');
 assert.match(map, /if \(!gather\?\.active\) return;/, 'Idle map should not re-render once per second');
