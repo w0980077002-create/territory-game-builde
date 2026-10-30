@@ -114,6 +114,16 @@ with sync_playwright() as p:
             page.keyboard.press('Escape')
             assert dialog.count() == 0
             assert forge.evaluate('(el) => document.activeElement === el')
+            # A long warehouse stays searchable and keeps the pinned controls reachable.
+            page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?inventory-many')
+            search = page.locator('.compact-warehouse__search input')
+            assert page.locator('.warehouse-tile').count() >= 40
+            search.fill('Test material 39')
+            assert page.locator('.warehouse-tile').count() == 1
+            assert 'Test material 39' in page.locator('.warehouse-tile').inner_text()
+            assert page.locator('[data-testid="inventory-pinned-belt"]').is_visible()
+            assert page.get_by_role('tablist', name='Inventory sections' if lang == 'en' else 'Разделы инвентаря').is_visible()
+            search.fill('')
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?city')
             page.locator('.home-game-scene').wait_for()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')

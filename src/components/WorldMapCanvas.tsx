@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronRight, Compass, Hand, Layers3, LocateFixed, Minus, Plus, X } from 'lucide-react';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import './worldMapCanvas.css';
@@ -173,7 +173,26 @@ export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegio
   const cancelClick = useRef(false);
   const [hintVisible, setHintVisible] = useState(() => !sawPanHint());
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const drawerCloseRef = useRef<HTMLButtonElement>(null);
   const attentionSet = new Set<WorldMapPlace>(attentionPlaces);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    drawerCloseRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setDrawerOpen(false); return; }
+      if (event.key !== 'Tab' || !drawerRef.current) return;
+      const buttons = Array.from(drawerRef.current.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+      if (!buttons.length) return;
+      const first = buttons[0], last = buttons[buttons.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('keydown', onKey); if (previous?.isConnected) previous.focus(); };
+  }, [drawerOpen]);
 
   // Directly move one composited layer in requestAnimationFrame. React never
   // reconciles the 18 clickable landmarks on each pointermove (a major source
@@ -602,10 +621,10 @@ export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegio
 
       {drawerOpen && (
         <div className="absolute inset-0 z-30 flex items-end bg-black/55" onClick={() => setDrawerOpen(false)}>
-          <div className="territory-world-map__drawer flex max-h-[78%] w-full flex-col overflow-hidden rounded-t-2xl p-3 shadow-2xl" onClick={event => event.stopPropagation()} role="dialog" aria-label={language === 'en' ? 'All locations' : 'Все места'}>
-            <div className="mb-1 flex shrink-0 items-center justify-between gap-2">
+          <div ref={drawerRef} className="territory-world-map__drawer flex max-h-[78%] w-full flex-col overflow-hidden rounded-t-2xl p-3 shadow-2xl" onClick={event => event.stopPropagation()} role="dialog" aria-modal="true" aria-label={language === 'en' ? 'All locations' : 'Все места'}>
+            <div className="territory-world-map__drawer-head mb-1 shrink-0">
               <WoodenPlaque>{language === 'en' ? 'All locations' : 'Все места'}</WoodenPlaque>
-              <button type="button" className="territory-world-map__drawer-close" onClick={() => setDrawerOpen(false)} aria-label={language === 'en' ? 'Close' : 'Закрыть'}><X size={20} /></button>
+              <button ref={drawerCloseRef} type="button" className="territory-world-map__drawer-close" onClick={() => setDrawerOpen(false)} aria-label={language === 'en' ? 'Close' : 'Закрыть'}><X size={20} /></button>
             </div>
             <div className="territory-world-map__drawer-scroll min-h-0 overflow-y-auto pb-2">
               <p className="territory-world-map__drawer-section">{language === 'en' ? 'Discover on the map' : 'Места на карте'}</p>
