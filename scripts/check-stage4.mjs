@@ -70,7 +70,25 @@ const cowSprite = readFileSync(new URL('../public/assets/territory/characters/fo
 assert.match(cowSprite, /viewBox="0 0 493 564"/, 'Battle Cow sprite needs a tightly cropped, transparent viewBox');
 assert.match(cowSprite, /data:image\/webp;base64,UklGR/, 'Battle Cow must embed the approved raster art, not an external URL');
 assert.equal(followers.selectFollower(starter, 'follower_6')?.activeFollowerId, 'follower_6');
-console.log('Stage4: 6 follower roles, approved cow art, legacy migration, one active, level-gated training, bounded PvE bonuses: PASS');
+const goldRichCow = { ...starter, followers: roster.map(f => f.id === 'follower_6' ? { ...f, level: 59, attack: 65 } : f), player: { ...starter.player, level: 80, gold: 1_000_000 }, forgeMaterials: 100_000, awakeningStones: 0 };
+assert.equal(followers.trainFollower(goldRichCow, 'follower_6'), null, 'Gold and materials must never raise Battle Cow level');
+assert.equal(followers.trainFollower({ ...goldRichCow, awakeningStones: -1 }, 'follower_6'), null, 'Negative stone balance rejected');
+assert.equal(followers.trainFollower({ ...goldRichCow, awakeningStones: NaN }, 'follower_6'), null, 'Invalid stone balance rejected');
+assert.equal(followers.trainFollower({ ...goldRichCow, awakeningStones: 0.5 }, 'follower_6'), null, 'Fractional stones rejected');
+assert.equal(followers.trainFollower({ ...goldRichCow, awakeningStones: 1, player: { ...goldRichCow.player, level: 59 } }, 'follower_6'), null, 'Hero level still gates progression');
+const cowAwakened = followers.trainFollower({ ...goldRichCow, awakeningStones: 2 }, 'follower_6');
+assert.equal(cowAwakened.followers.find(f => f.id === 'follower_6').level, 60, 'A stone raises cow level once');
+assert.equal(cowAwakened.followers.find(f => f.id === 'follower_6').attack, 66, 'Keep existing cow upgrades');
+assert.equal(cowAwakened.awakeningStones, 1, 'Consume one stone exactly once');
+assert.equal(cowAwakened.player.gold, goldRichCow.player.gold, 'No gold charged for cow awakening');
+assert.equal(cowAwakened.forgeMaterials, goldRichCow.forgeMaterials, 'No forge materials charged for cow awakening');
+assert.equal(followers.trainFollower(cowAwakened, 'follower_6'), null, 'Maximum level stays enforced');
+assert.equal(goldRichCow.followers.find(f => f.id === 'follower_6').level, 59, 'Do not mutate or reset already bought levels');
+const guardianStillTrained = followers.trainFollower({ ...starter, awakeningStones: 0 }, 'follower_1');
+assert.equal(guardianStillTrained.awakeningStones, 0, 'Other companion training does not touch stones');
+const awakeningArt = readFileSync(new URL('../public/assets/territory/items/awakening-stone.svg', import.meta.url), 'utf8');
+assert.match(awakeningArt, /viewBox="0 0 160 160"/, 'Awakening Stone art must be a compact transparent SVG');
+console.log('Stage4: 6 follower roles, cow Awakening Stone economy, no gold bypass, preserved legacy training and art: PASS');
 
 const equipBalance = loadTs('src/game/equipmentBalance.ts', { './equipmentCatalog': { EQUIPMENT_TEMPLATES: [], rarityForChapter: () => 'common' } });
 const forge = loadTs('src/game/forge.ts', { './equipmentBalance': equipBalance, './elixirExpiry': expiryMock });
