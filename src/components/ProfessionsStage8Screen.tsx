@@ -138,7 +138,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
   </div>;
 
   const nextXp=stage8XpToNext(status.masteryLevel);
-  return <div className="space-y-3 pb-5 text-white">
+  return <div className="viking-screen viking-screen--profession-stage8 space-y-3 pb-5 text-white">
     <div className="rounded-2xl border border-amber-400/30 bg-gradient-to-br from-[#282116] to-[#111820] p-4">
       <div className="flex items-center gap-2 text-amber-100"><ShieldCheck className="h-6 w-6 text-emerald-300"/><b>{language==='en'?'Verified professions':'Защищённые профессии'}</b></div>
       <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
