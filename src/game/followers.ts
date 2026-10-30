@@ -100,7 +100,7 @@ export function trainFollower(state: GameState, followerId: string): GameState |
       if (consumed || item.id !== AWAKENING_STONE_ID || item.type !== 'material' || !Number.isSafeInteger(item.qty) || item.qty < 1) return item;
       consumed = true;
       return { ...item, qty: item.qty - cowAwakeningCost(found.level) };
-    }).filter((item) => item.qty > 0);
+    }).filter((item) => item.id !== AWAKENING_STONE_ID || item.type !== 'material' || item.qty > 0);
     if (!consumed) return null;
     return { ...state, inventory, followers: state.followers.map((f) => f.id !== followerId
       ? f : { ...f, level: f.level + 1, attack: f.attack + 1 }) };
