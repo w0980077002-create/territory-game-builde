@@ -194,11 +194,11 @@ export function ProfessionsScreen() {
           <p className="mt-1 text-xs text-slate-300">{language === 'en' ? 'The permanent Master license is available in the Shop for 50 red gems. Use the new professions system to craft level-300 recipes.' : 'Постоянная лицензия мастера уже продаётся в Лавке за 50 красных алмазов. Рецепты 300-го уровня создаются в новой системе профессий.'}</p>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="viking-screen-tabs grid grid-cols-2 gap-1.5" role="tablist">
         {([
           ['profession', t('professionTab')], ['craft', t('crafting')],
         ] as const).map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} className={`rounded-xl border px-2 py-3 text-xs font-bold ${tab === id ? 'border-amber-400 bg-amber-500/20 text-amber-100' : 'border-white/10 bg-white/5 text-slate-300'}`}>
+          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={`rounded-xl border px-2 py-3 text-xs font-bold ${tab === id ? 'border-amber-400 bg-amber-500/20 text-amber-100' : 'border-white/10 bg-white/5 text-slate-300'}`}>
             {label}
           </button>
         ))}
