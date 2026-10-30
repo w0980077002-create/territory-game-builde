@@ -68,8 +68,10 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       setError(t('noBattleStones'));
       return false;
     }
-    hapticImpact('medium');
-    captureGameEvent('territory_pve_fight_start', { mode: kind === 'trial' ? 'trial' : 'campaign' });
+    // Haptics and analytics are best-effort; an SDK error must never prevent
+    // a paid battle from being committed or leave the Next button locked.
+    try { hapticImpact('medium'); } catch { /* Unsupported Telegram haptics. */ }
+    try { captureGameEvent('territory_pve_fight_start', { mode: kind === 'trial' ? 'trial' : 'campaign' }); } catch { /* Optional telemetry. */ }
     setError(null);
     useGame.set(paid);
     const ch = generateChapter(paid.currentChapter);
