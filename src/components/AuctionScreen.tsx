@@ -172,7 +172,7 @@ export function AuctionScreen() {
   };
 
   return (
-    <div className="space-y-3 pb-5 text-white">
+    <div className="viking-screen viking-screen--auction space-y-3 pb-5 text-white">
       <section className="rounded-2xl border border-amber-400/30 bg-gradient-to-br from-[#282116] to-[#111820] p-4">
         <div className="flex items-center gap-3">
           <ShoppingBag className="h-7 w-7 shrink-0 text-amber-300" />
