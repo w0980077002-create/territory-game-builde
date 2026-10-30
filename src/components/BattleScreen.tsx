@@ -103,8 +103,10 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   }
 
   return (
-    <div className="space-y-3 animate-fade-in pb-2">
-      <div data-testid="battle-mode-tabs" className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10">
+    <div className={view === 'cave'
+      ? 'flex h-full min-h-0 flex-col gap-2 overflow-hidden animate-fade-in'
+      : 'space-y-3 animate-fade-in pb-2'}>
+      <div data-testid="battle-mode-tabs" className="grid shrink-0 grid-cols-3 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10">
         {([
           { id: 'campaign', label: t('campaign'), icon: Swords },
           { id: 'trial', label: t('trials'), icon: Mountain },
