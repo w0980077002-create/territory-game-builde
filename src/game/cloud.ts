@@ -94,7 +94,7 @@ export async function loadCloudSave(userId: string, displayName: string): Promis
   return {
     state: mergeWithDefaults(savedState, data.display_name || displayName),
     balanceMigrated,
-    rosterMigrated: !savedState || !savedState.followers?.some((f) => f.id === 'follower_5'),
+    rosterMigrated: !savedState || !savedState.followers?.some((f) => f.id === 'follower_6'),
     arenaRating: data.arena_rating,
     arenaWins: data.arena_wins,
     arenaLosses: data.arena_losses,
