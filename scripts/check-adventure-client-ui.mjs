@@ -24,7 +24,7 @@ assert.match(battle, /grid-cols-3/);
 assert.match(battle, /label: language === 'en' \? 'Dark Cave' : 'Тёмная пещера'/);
 assert.match(battle, /view === 'cave' \? \(/);
 assert.match(battle, /<ServerAdventureScreen /);
-assert.match(battle, /if \(view === 'cave'\) return;/, 'Never charge legacy stones in cave');
+assert.match(battle, /if \(view === 'cave' \|\| caveRecoveryNeeded\) return;/, 'Never charge legacy stones in cave or during unresolved cave recovery');
 assert.match(battle, /generateChapter\(state.currentChapter\)/);
 assert.match(battle, /<PveFight/);
 assert.doesNotMatch(battle, /serverMode|legacySelected|showServer|territory_adventure_mode_v3/);
