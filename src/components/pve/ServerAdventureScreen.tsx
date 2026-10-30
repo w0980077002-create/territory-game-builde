@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, ChevronRight, Crown, Info, Loader2, Lock, Swords, Zap } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
-import { useGame } from '@/game/actions';
+import { useGame, useArena } from '@/game/actions';
+import { useStore } from '@/game/store';
+import { beltContext } from '@/game/belt';
+import { BeltCells } from '@/components/ui/BeltCells';
+import { GearStrip } from '@/components/arena/GearStrip';
+import { FoldSection } from '@/components/arena/FoldSection';
 import { ensurePlayerSession } from '@/game/auth';
 import { supabase } from '@/game/supabase';
 import { restoreAdventureSaveFence, restoreAdventureStartFence, requestAdventureStart, requestAdventureSettlement } from '@/game/combatV1/receiptAdapter';
@@ -58,6 +63,11 @@ function message(error: unknown, en: boolean) {
 export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const { language } = useLanguage();
   const en = language === 'en';
+  const game = useStore(useGame);
+  const arena = useStore(useArena);
+  const [gearOpen, setGearOpen] = useState(false);
+  const [elixirsOpen, setElixirsOpen] = useState(false);
+  const [selectedElixir, setSelectedElixir] = useState<number | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
   const [control, setControl] = useState<'manual' | 'auto'>('manual');
@@ -277,9 +287,9 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     </button>}
     {busy && <p role="status" className="text-center text-amber-100 text-xs"><Loader2 className="w-4 h-4 animate-spin inline mr-2"/>{en?'Synchronizing':'Синхронизация'}</p>}
     {session ? <div ref={battleRef} data-testid="territory-adventure-battle" className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-amber-600/50 bg-gradient-to-b from-amber-950/70 to-slate-950 p-2 space-y-3 scroll-mt-3">
-      <p className="text-center text-xs text-amber-200 font-bold">{en?'Server battle':'Серверный бой'} · {en?'Stage':'Этап'} {session.state.input.stage} · {enemyName}</p>
+      <p className="text-center text-xs text-amber-200 font-bold">{en?'Dark Cave':'Тёмная пещера'} · {en?'Floor':'Этаж'} {session.state.input.stage} · {enemyName}</p>
       <div className="relative min-h-[340px] overflow-hidden rounded-xl border border-amber-400/25 bg-slate-900">
-        <img src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
+        <img src={portalArt} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover object-center pointer-events-none" data-testid="dark-cave-battle-background" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/75 pointer-events-none" />
         <div className="relative grid grid-cols-2 gap-2 p-2 min-h-[340px]">
           {(['hero','enemy'] as const).map(side => <div key={side} className="relative min-w-0 flex flex-col">
@@ -306,6 +316,28 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         <span className="flex items-center gap-1"><Zap size={14}/>{en ? 'Energy' : 'Энергия'}: {Math.floor(session.state.actors.hero.energy)}/{session.state.input.rules.maxEnergy}</span>
         <span className="text-yellow-200">{session.state.input.control === 'auto' ? (en?'Auto':'Авто') : (en?'Manual':'Ручной')}</span>
       </div>
+      <div className="grid grid-cols-1 gap-1.5" data-testid="dark-cave-combat-panels">
+        <FoldSection title={en?'Equipment':'Экипировка'}
+          summary={<span className="text-[10px] text-amber-100">{Object.values(game.player.equipped ?? {}).filter(Boolean).length}/7</span>}
+          open={gearOpen} onToggle={() => setGearOpen(v => !v)}>
+          <GearStrip equipped={game.player.equipped}/>
+          <p className="mt-1.5 text-[10px] text-amber-100/75">
+            {en?'The server verifies combat stats from your equipped items. Change gear in Inventory before entering the next floor.':'Сервер проверяет характеристики надетых предметов. Меняй экипировку в Инвентаре до входа на следующий этаж.'}
+          </p>
+        </FoldSection>
+        <FoldSection title={en?'Elixir belt':'Пояс эликсиров'}
+          summary={<span className="text-[10px] text-amber-100">{game.belt.filter(Boolean).length}/7</span>}
+          open={elixirsOpen} onToggle={() => setElixirsOpen(v => !v)}>
+          <BeltCells belt={game.belt} ctx={beltContext(game,arena.wins)} disabled
+            onTap={(index) => setSelectedElixir(current => current === index ? null : index)}/>
+          {selectedElixir !== null && game.belt[selectedElixir] && (
+            <p className="mt-1 text-[11px] text-amber-200">{game.belt[selectedElixir]?.name}</p>
+          )}
+          <p className="mt-1.5 text-[10px] text-amber-100/75" role="note">
+            {en?'View only: cave elixir effects are not enabled on the combat server. The belt is not consumed or charged here.':'Только просмотр: эффекты эликсиров ещё не подключены к серверным боям пещеры. Здесь они не расходуются и не списываются.'}
+          </p>
+        </FoldSection>
+      </div>
       {!!battleLog.length && <div className="rounded-lg bg-black/35 border border-white/10 px-2 py-1 text-[11px] text-slate-200 max-h-24 overflow-auto" aria-live="polite">
         {battleLog.slice(-4).map((line, i) => <p key={i}>{line}</p>)}
       </div>}
@@ -316,9 +348,32 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         </p>}
         <button onClick={clearFinished} disabled={busy} className="w-full rounded-xl bg-amber-500 text-black p-3 font-bold">{en?'Back to cave stages':'К этапам пещеры'}</button>
       </> : <>
-        {session.state.input.control==='manual' && <div className="grid grid-cols-2 gap-2">
-          {session.state.actors.hero.loadout.skills.map(skill=><button key={skill.skillId} disabled={busy || recoverable} onClick={()=>void advance(skill.skillId)} className="rounded-lg border border-amber-500/40 bg-amber-900/30 p-2 text-xs text-amber-100">{skill.skillId}</button>)}
-          <button disabled={busy || recoverable} onClick={()=>void advance()} className="rounded-lg border border-amber-500/40 p-2 text-xs text-amber-100">{en?'Continue':'Продолжить'}</button>
+        {session.state.input.control==='manual' && <div className="space-y-1.5" data-testid="dark-cave-manual-actions">
+          {session.state.actors.hero.loadout.skills.length > 0 ? (
+            <div className="grid grid-cols-2 gap-1.5">
+              {session.state.actors.hero.loadout.skills.map(slot=>{
+                const def = session.state.input.catalog.skills.find(item => item.id === slot.skillId);
+                const rank = def?.levels[slot.level - 1];
+                const onCooldown = (session.state.actors.hero.cooldowns[slot.skillId] ?? 0) > session.state.atMs;
+                const enoughEnergy = !!rank && session.state.actors.hero.energy >= rank.energyCost;
+                return <button key={slot.skillId} type="button"
+                  disabled={busy || recoverable || !rank || onCooldown || !enoughEnergy}
+                  onClick={()=>void advance(slot.skillId)}
+                  className="min-h-11 rounded-lg border border-amber-500/50 bg-gradient-to-b from-[#5b381d] to-[#28170c] p-1.5 text-xs font-bold text-amber-100 disabled:opacity-45"
+                  aria-label={slot.skillId.replace(/_/g,' ')}>
+                  <Swords size={15} className="mx-auto text-yellow-200"/>
+                  <span className="block truncate">{slot.skillId.replace(/_/g,' ')}</span>
+                  <span className="block text-[10px] text-amber-200/90">{onCooldown ? (en?'Cooldown':'Откат') : rank ? `${rank.energyCost} ⚡` : (en?'Unavailable':'Недоступно')}</span>
+                </button>;
+              })}
+            </div>
+          ) : <p className="rounded-lg border border-amber-500/20 bg-amber-950/25 px-2 py-1.5 text-[11px] text-amber-100/80">
+            {en?'No server-equipped skills yet. Configure skills and runes in Hero before the next fight.':'На сервере пока не установлены боевые умения. Настрой умения и руны в разделе «Герой» перед следующим боем.'}
+          </p>}
+          <button type="button" disabled={busy || recoverable} onClick={()=>void advance()}
+            className="min-h-11 w-full rounded-xl border border-yellow-300/60 bg-gradient-to-b from-amber-400 to-amber-600 px-3 py-2 text-sm font-black text-[#2c170b] disabled:opacity-50">
+            {en?'Next combat step':'Следующий шаг боя'}
+          </button>
         </div>}
         <p className="text-center text-xs text-amber-100/70">{session.state.input.control==='auto'
           ? (en?'Auto battle · server confirms every step':'Автобой · каждый шаг подтверждает сервер')
