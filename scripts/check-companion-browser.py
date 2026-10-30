@@ -28,10 +28,12 @@ with sync_playwright() as playwright:
             panel.locator('.followers-camp__portrait').nth(1).click()
             assert panel.locator('.followers-camp__portrait[aria-pressed="true"]').count() == 1
             assert ('Northern Warrior' if language == 'en' else 'Северный воин') in panel.locator('.followers-camp__detail h3').inner_text()
+            assert ('VIEWING COMPANION' if language == 'en' else 'ПРОСМОТР СПУТНИКА') in panel.locator('.followers-camp__detail').inner_text()
             choose = panel.locator('.followers-camp__choose')
             assert choose.is_enabled()
             choose.click()
             assert choose.is_disabled()
+            assert ('ACTIVE COMPANION' if language == 'en' else 'АКТИВНЫЙ СПУТНИК') in panel.locator('.followers-camp__detail').inner_text()
             panel.locator('.followers-camp__portrait').last.click()
             assert ('Battle Cow' if language == 'en' else 'Боевая корова') in panel.locator('.followers-camp__detail h3').inner_text()
             assert panel.locator('.followers-camp__availability--locked').is_visible()

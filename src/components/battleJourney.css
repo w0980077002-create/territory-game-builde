@@ -1,0 +1,13 @@
+/* The next saved campaign encounter is the focus; later stages remain compact. */
+.journey-encounter{position:relative;display:grid;grid-template-columns:minmax(110px,42%) minmax(0,1fr);min-width:0;min-height:176px;overflow:hidden;border:2px solid #e2aa57;border-radius:17px;color:#fff0d4;background:radial-gradient(ellipse at 20% 65%,#e59c443d,transparent 55%),linear-gradient(135deg,#694022,#30201b 72%,#182738);box-shadow:inset 0 1px #ffe8ad75,0 4px 10px #100a0870}
+.journey-encounter__art{display:flex;align-items:flex-end;justify-content:center;min-width:0;padding:8px 0 5px;background:radial-gradient(ellipse at 50% 83%,#ffc97152,transparent 68%)}
+.journey-encounter__art img{width:100%;height:156px;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 4px #0009)}
+.journey-encounter__content{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;padding:12px 10px 10px 2px}
+.journey-encounter__eyebrow{margin:0;color:#ffd58e;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+.journey-encounter h3{margin:0;color:#fff0c8;font-size:clamp(16px,4.5vw,20px);font-weight:900;line-height:1.15;overflow-wrap:anywhere;text-shadow:1px 2px #2c150b}
+.journey-encounter__stats{display:flex;flex-wrap:wrap;gap:6px 12px;color:#fff0d5;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+.journey-encounter__stats span{display:inline-flex;align-items:center;gap:3px}.journey-encounter__stats span:first-child svg{color:#ff8b98}.journey-encounter__stats span:last-child svg{color:#ffcd73}
+.journey-encounter__reward{display:flex;align-items:center;flex-wrap:wrap;gap:4px 7px;color:#f6dbad;font-size:11px;line-height:1.2}
+.journey-encounter button{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:44px;margin-top:auto;padding:7px;border:1px solid #ffe0a0;border-radius:10px;color:#351b0a;background:linear-gradient(#ffe1a0,#e2a34a,#b9742b);box-shadow:inset 0 1px #fff4cb,0 2px 0 #653b17;font-weight:900}
+.journey-encounter button:active{transform:translateY(2px)}.journey-encounter button:disabled{opacity:.5;cursor:not-allowed}.journey-encounter button:focus-visible{outline:3px solid #fff2be;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.journey-encounter button:active{transform:none}}

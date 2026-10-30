@@ -87,7 +87,9 @@ export function FollowersPanel() {
       <div className="followers-camp__detail-top">
         <div className="followers-camp__detail-art"><img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/></div>
         <div>
-          <span className="followers-camp__eyebrow"><Sparkles size={12}/>{en ? 'COMPANION DETAILS' : 'ХАРАКТЕРИСТИКИ'}</span>
+          <span className="followers-camp__eyebrow"><Sparkles size={12}/>{selected
+            ? (en ? 'ACTIVE COMPANION' : 'АКТИВНЫЙ СПУТНИК')
+            : (en ? 'VIEWING COMPANION' : 'ПРОСМОТР СПУТНИКА')}</span>
           <h3>{en ? template.nameEn : template.name}</h3>
           {template.id === 'follower_6' && <span className="followers-camp__legendary"><Sparkles size={12}/>{en ? 'LEGENDARY LOOK' : 'ЛЕГЕНДАРНЫЙ ОБРАЗ'}</span>}
           <p>{en ? template.descriptionEn : template.description}</p>

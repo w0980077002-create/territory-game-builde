@@ -31,12 +31,28 @@
 | Спутники | [до](visual-152/companions-before-320-ru.png) · [после](visual-152/companions-after-320-ru.png) | [before](visual-152/companions-before-320-en.png) · [after](visual-152/companions-after-320-en.png) | [до](visual-152/companions-before-390-ru.png) · [после](visual-152/companions-after-390-ru.png) | [before](visual-152/companions-before-390-en.png) · [after](visual-152/companions-after-390-en.png) |
 | Список карты | [до](visual-152/map-dialog-before-320-ru.png) · [после](visual-152/map-dialog-after-320-ru.png) | [before](visual-152/map-dialog-before-320-en.png) · [after](visual-152/map-dialog-after-320-en.png) | [до](visual-152/map-dialog-before-390-ru.png) · [после](visual-152/map-dialog-after-390-ru.png) | [before](visual-152/map-dialog-before-390-en.png) · [after](visual-152/map-dialog-after-390-en.png) |
 
+## Поход
+
+Реальный `BattleScreen`, изолированное начальное состояние, одинаковая ширина и язык; боевой компонент и серверный транспорт в фикстуре подменены. «До» — `main` 8e0167e.
+
+| Ширина | Русский | English |
+| --- | --- | --- |
+| 320 | [до](visual-152/journey-before-320-ru.png) · [после](visual-152/journey-after-320-ru.png) | [before](visual-152/journey-before-320-en.png) · [after](visual-152/journey-after-320-en.png) |
+| 390 | [до](visual-152/journey-before-390-ru.png) · [после](visual-152/journey-after-390-ru.png) | [before](visual-152/journey-before-390-en.png) · [after](visual-152/journey-after-390-en.png) |
+
+Окно выхода Арены и панель результата показаны на искусственном состоянии комнаты; боевой фон и транспорт фикстуры подменены. Числа награды в снимке результата — тестовые, а не начисленные игроку.
+
+| Состояние | 320 RU | 320 EN | 390 RU | 390 EN |
+| --- | --- | --- | --- | --- |
+| Выход | [до](visual-152/arena-leave-before-320-ru.png) · [после](visual-152/arena-leave-after-320-ru.png) | [before](visual-152/arena-leave-before-320-en.png) · [after](visual-152/arena-leave-after-320-en.png) | [до](visual-152/arena-leave-before-390-ru.png) · [после](visual-152/arena-leave-after-390-ru.png) | [before](visual-152/arena-leave-before-390-en.png) · [after](visual-152/arena-leave-after-390-en.png) |
+| Результат | [до](visual-152/arena-result-before-320-ru.png) · [после](visual-152/arena-result-after-320-ru.png) | [before](visual-152/arena-result-before-320-en.png) · [after](visual-152/arena-result-after-320-en.png) | [до](visual-152/arena-result-before-390-ru.png) · [после](visual-152/arena-result-after-390-ru.png) | [before](visual-152/arena-result-before-390-en.png) · [after](visual-152/arena-result-after-390-en.png) |
+
 ## Чеклист
 
 - [ ] Герой: сцена, реальные слоты и путь проверены в изолированном Chromium; художественная приёмка и состояния со всеми вариантами реальной экипировки не завершены.
 - [ ] Город и инвентарь: склад получил более крупные предметы и полные названия, браузерный smoke проверяет карточки и их закрытие; полный визуальный аудит всех вкладок и состояний не завершён.
 - [ ] Общий Modal и окна правил/призов Арены: проверены размер, внутренний скролл, закрытие, Escape, возврат фокуса и вложенный общий Modal в Chromium; остальные локальные окна требуют отдельной проверки.
-- [ ] Арена и бой, поход, испытания и существующая Тёмная пещера.
+- [ ] Арена и бой, поход, испытания и существующая Тёмная пещера. В Походе текущий противник выделен сценой и реальной наградой; изолированный browser smoke проверяет переходы в поход и испытание на четырёх ширинах и двух языках. Окно выхода и три состояния результата Арены проверены с подменённым транспортом. Сам сетевой бой, серверная Пещера и остальные локальные состояния ещё требуют отдельной визуальной проверки.
 - [ ] Руны, спутники, кузница, профессии, магазин и VIP. Спутники: изолированная проверка выбранного и закрытого состояния, выбор и настоящие данные на четырёх ширинах и двух языках; остальные состояния требуют проверки.
 - [ ] Карта, задания, награды, клан, почта, аукцион и мини-игры. Список карты: проверены скролл, закрытие, фокус, маршрут кузницы, четыре ширины и два языка; жесты карты и прочие состояния требуют отдельной визуальной проверки.
 - [ ] Парные снимки остальных разделов, реальные пути действий и окончательная проверка всех окон.

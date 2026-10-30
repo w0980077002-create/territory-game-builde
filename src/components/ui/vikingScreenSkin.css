@@ -107,10 +107,14 @@
   width: min(100%,355px);max-height: min(62dvh,370px);overflow-y:auto;
   padding:14px;border:3px solid #d7a458;border-radius:17px;
   color:#ffecc6;
-  background:var(--viking-plaque) center / 100% 100% no-repeat,linear-gradient(#654026,#2e1c14);
+  background:linear-gradient(145deg,#6d452a,#3c261a 65%,#281a14);
   box-shadow:inset 0 2px 0 #ffe5a34d,0 12px 32px #000b;
 }
 .arena-modal-overlay > .card h3 { color:#ffe5a9;font-weight:900;text-shadow:var(--viking-title-shadow); }
+.arena-leave-head { display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:4px;margin-bottom:8px; }
+.arena-leave-head h3 { grid-column:2;display:flex;align-items:center;justify-content:center;min-height:45px;margin:0;padding:7px 14px;background:var(--viking-plaque) center / 100% 100% no-repeat;text-align:center;font-size:16px;line-height:1.2;overflow-wrap:anywhere; }
+.arena-leave-head .arena-leave-close { grid-column:3;grid-row:1;display:grid;place-items:center;width:44px;min-height:44px;border:1px solid #e4bb78;border-radius:10px;color:#fff0ca;background:linear-gradient(#986333,#522b17); }
+@media (prefers-reduced-motion:reduce) { .arena-modal-overlay > .card { animation:none; } }
 .arena-modal-overlay > .card p { color:#f2dcbc;line-height:1.4; }
 .arena-modal-overlay > .card button { min-height:44px; }
 /* Forge upgrade overlay is a dialog, not a full-page sheet. Keep existing
