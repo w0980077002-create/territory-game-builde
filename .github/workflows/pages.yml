@@ -74,6 +74,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Confirm Pages artifact identifies its source commit
+        run: node scripts/check-pages-build-sha.mjs
+
       - name: Setup fast image tooling
         uses: actions/setup-python@v5
         with:
