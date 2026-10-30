@@ -1,4 +1,4 @@
-import { Modal } from './ui/Modal';
+import { Modal, IosGamePortal } from './ui/Modal';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, BookOpen, Coins, Crown, FastForward, Loader2, Minus, Play, Plus, RotateCcw, Sparkles, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
@@ -59,6 +59,14 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
   const animationTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
   const alive=useRef(true);
   const state=status.state;
+  const bonusDialogRef=useRef<HTMLElement>(null);
+  const bonusActive=!tracks && ['bonus','superbonus','risk'].includes(state.phase);
+  useEffect(()=>{
+    if(!bonusActive)return;
+    const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    bonusDialogRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({preventScroll:true});
+    return ()=>{if(previous?.isConnected)previous.focus({preventScroll:true});};
+  },[bonusActive,state.phase]);
   const field=state.outcome?.grid || START_GRID;
   const winnings=state.outcome?.lines || [];
   const visibleLine=winnings.length ? winnings[lineIndex%winnings.length] : null;
@@ -166,7 +174,19 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
     {notice&&<p className="vslot-notice" role="status">{notice}</p>}
     {error&&<p className="vslot-notice" role="alert">{error}</p>}
     {pending&&!busy&&<div className="vslot-recovery"><p>{en?'Connection interrupted. Your round is protected.':'Связь прервалась. Раунд сохранён.'}</p><button className="vslot-main w-full" disabled={!!tracks} onClick={()=>void command(pending.request,pending)}>{en?'RESTORE ROUND':'ВОССТАНОВИТЬ РАУНД'}</button></div>}
-    {!tracks&&['bonus','superbonus','risk'].includes(state.phase)&&<div className="vslot-adventure-backdrop"><section className="vslot-adventure" role="dialog" aria-modal="true" aria-label={en?'Bonus challenge':'Бонусная игра'}><div className="vslot-adventure-title"><Crown size={24}/>
+    {bonusActive&&<IosGamePortal><div className="vslot-adventure-backdrop"><section ref={bonusDialogRef} className="vslot-adventure" role="dialog" aria-modal="true" aria-label={en?'Bonus challenge':'Бонусная игра'} onKeyDown={event=>{
+      if(event.key==='Escape'){
+        event.preventDefault();event.stopPropagation();
+        if(!busy)onBack(); // The server retains this round; never synthesize a payout.
+        return;
+      }
+      if(event.key!=='Tab'||!bonusDialogRef.current)return;
+      const buttons=Array.from(bonusDialogRef.current.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')).filter(button=>button.getClientRects().length>0);
+      if(!buttons.length){event.preventDefault();return;}
+      const first=buttons[0],last=buttons[buttons.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    }}><div className="vslot-adventure-title"><Crown size={24}/>
       <h2>{state.phase==='bonus'?(en?'RUNE TREASURY':'РУННАЯ СОКРОВИЩНИЦА'):state.phase==='superbonus'?(en?'SUPER TREASURE':'СУПЕРСОКРОВИЩЕ'):(en?'CHOOSE YOUR FATE':'ИСПЫТАНИЕ УДАЧИ')}</h2></div>
       <p className="vslot-adventure-instruction">{state.phase==='bonus'?(en?`Picks left: ${state.picksLeft} · Shields: ${state.shields}`:`Попыток: ${state.picksLeft} · Щитов: ${state.shields}`):state.phase==='risk'?(en?'Two winning cards out of four. A loss forfeits the unclaimed prize.':'Две выигрышные карты из четырёх. Проигрыш сжигает незабранный приз.'):(en?'Choose one of three sealed chests.':'Выбери один из трёх закрытых сундуков.')}</p>
       <div className={'vslot-adventure-tiles '+(state.phase==='superbonus'?'vslot-adventure-tiles--three':state.phase==='risk'?'vslot-adventure-tiles--four':'')}>{Array.from({length:state.phase==='bonus'?5:state.phase==='superbonus'?3:4},(_,i)=>{
@@ -179,8 +199,8 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
       {error&&<p className="vslot-adventure-feedback" role="alert">{error}</p>}
       {pending&&<button className="vslot-adventure-cta" disabled={busy} onClick={()=>void command(pending.request,pending)}>{en?'RETRY SAVED ACTION':'ПОВТОРИТЬ СОХРАНЁННОЕ ДЕЙСТВИЕ'}</button>}
       {state.phase==='bonus'&&state.pending>0&&<button className="vslot-secondary w-full" disabled={disabled} onClick={()=>void command({action:'collect'})}>{en?'Finish and collect':'Завершить и забрать'} {state.pending}</button>}
-      <button className="vslot-adventure-subtle" onClick={onBack}>{en?'Return to hall · round is saved':'Вернуться в зал · раунд сохранён'}</button>
-    </section></div>}
+      <button className="vslot-adventure-subtle" disabled={busy} onClick={onBack}>{en?'Return to hall · round is saved':'Вернуться в зал · раунд сохранён'}</button>
+    </section></div></IosGamePortal>}
     <div className="vslot-controls">
       <div className="vslot-bet-console">
         <div className="vslot-bet-control"><label>{en?'PAYLINES':'ЛИНИИ'}</label><div className="vslot-bet-stepper"><button aria-label={en?'Fewer lines':'Меньше линий'} disabled={stakesLocked||lines===SLOT_LINE_CHOICES[0]} onClick={()=>setLines(adjacentChoice(SLOT_LINE_CHOICES,lines,-1))}><Minus size={17}/></button><strong>{lines}</strong><button aria-label={en?'More lines':'Больше линий'} disabled={stakesLocked||lines===SLOT_LINE_CHOICES[SLOT_LINE_CHOICES.length-1]} onClick={()=>setLines(adjacentChoice(SLOT_LINE_CHOICES,lines,1))}><Plus size={17}/></button></div></div>
