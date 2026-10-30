@@ -27,8 +27,8 @@ export async function requestAdventureStart(userId,command,hooks) {
 const outcome = status => ({
  success: true, session_id: '11111111-1111-4111-8111-111111111111',
  revision: status === 'fighting' ? 0 : 1,
- state: { status, input: { stage: 1, control: window.__adventureControl || 'manual' },
-   actors: { hero: { stats: { hp: 100, maxHp: 100 }, loadout: { skills: [] } },
+ state: { status, input: { stage: 1, control: window.__adventureControl || 'manual', rules: { maxEnergy: 100 } },
+   actors: { hero: { energy: 35, stats: { hp: 100, maxHp: 100 }, loadout: { skills: [] } },
              enemy: { stats: { hp: status === 'fighting' ? 50 : 0, maxHp: 50 } } } },
  settlement: status === 'fighting' ? null : { outcome: status, reward: { gold: 10, xp: 20 } },
 });
