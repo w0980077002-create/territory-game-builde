@@ -192,4 +192,22 @@ assert.match(gearCss, /html\.territory-ios-webapp \.gear-filter-strip/,
 for (const asset of ['public/city-bg-vibrant.webp', 'public/ic-auction-viking.webp', 'public/ic-professions-viking.webp', 'public/ic-arena-viking.webp', 'public/territory-mark.svg', 'public/nav-hero-crown.webp', 'public/nav-map-parchment.webp']) {
   await access(new URL(asset, root));
 }
+// Map → active server gathering → collection → real Storage / Forge route.
+const [mapJourney, expeditionCss] = await Promise.all([
+  read('src/components/MapScreen.tsx'),
+  read('src/components/mapExpedition.css'),
+]);
+assert.match(mapJourney, /data-testid="map-expedition-status"/, 'Active gathering must be visible without finding its map pin');
+assert.match(mapJourney, /data-testid="map-resource-details"/, 'Resource details must remain on the real map');
+assert.match(mapJourney, /data-testid="map-expedition-reward"/, 'Server-confirmed claim must reveal follow-up actions');
+assert.match(mapJourney, /setClaimedResource\(resource\.id\)/, 'Reward follow-up must follow confirmed server claim');
+assert.match(mapJourney, /onNavigate\('inventory'\)/, 'Collected resources must link to the actual Storage screen');
+assert.match(mapJourney, /onNavigate\('forge'\)/, 'Collected resources must link to the actual Forge screen');
+assert.match(mapJourney, /refreshGather\(\)\.catch\(\(\) => setGatherError\(true\)\)/, 'Unavailable server status needs a retry, not a fake resource');
+assert.match(mapJourney, /resourceArt\(activeResource\.id\)/, 'The real resource illustration must accompany the expedition');
+assert.match(expeditionCss, /\.map-expedition-banner--ready/, 'Ready resources need a distinct visible state');
+assert.match(expeditionCss, /\.map-expedition-reward__actions button\s*\{[\s\S]*?min-height: 44px/, 'Storage and Forge actions must have mobile touch targets');
+assert.match(expeditionCss, /env\(safe-area-inset-bottom/, 'Map expedition must avoid iPhone bottom inset');
+assert.doesNotMatch(mapJourney, /setInterval\(\(\) => refreshGather/, 'Do not poll the server during a four-hour expedition');
+
 console.log('Mobile home UI checks passed: living city, responsive sides and nav, Telegram fullscreen, safe-area, language, gear.');

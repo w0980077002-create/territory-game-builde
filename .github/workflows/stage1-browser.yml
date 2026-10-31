@@ -59,6 +59,8 @@ jobs:
         if: matrix.suite == 'gameplay-ui'
       - run: node scripts/build-social-quests-preview.mjs && python scripts/check-social-quests-browser.py
         if: matrix.suite == 'gameplay-ui'
+      - run: node scripts/build-map-expedition-preview.mjs && python scripts/check-map-expedition-browser.py
+        if: matrix.suite == 'gameplay-ui'
       - run: node scripts/build-runes-preview.mjs && python scripts/check-runes-browser.py
         if: matrix.suite == 'workshop-ui'
       - run: node scripts/build-workshop-preview.mjs && python scripts/check-workshop-browser.py
