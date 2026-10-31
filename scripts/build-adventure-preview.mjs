@@ -9,6 +9,8 @@ import autoprefixer from 'autoprefixer';
 const fixture = String.raw`
 let progress = { completed_stage: 0, unlocked_stage: 1, dark_stones: 5 };
 let current = null;
+// Exercise duplicate delivery of one server-confirmed batch on pending advance + resume.
+let pendingRecovery = new URLSearchParams(location.search).get('pending') === '1';
 const oldState = { player: { gold: 100, equipped: {} }, inventory: [], belt: Array(7).fill(null), appearance: 'm2', activeDays: 1 };
 window.__adventureCalls = [];
 export const useGame = { get: () => oldState, set: () => {}, subscribe: () => () => {} };
@@ -17,7 +19,10 @@ export const useArena = { get: () => arenaState, set: () => {}, subscribe: () =>
 export const useLanguage = () => ({ language: new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'ru' });
 export const localizeText = (item, language) => typeof item === 'string' ? item : item?.[language] || item?.ru || '';
 export async function ensurePlayerSession() { return true; }
-export function restoreAdventureSaveFence() { return null; }
+export function restoreAdventureSaveFence() {
+ return pendingRecovery ? { action:'advance', operationId:'22222222-2222-4222-8222-222222222222',
+   sessionId:'11111111-1111-4111-8111-111111111111', revision:0 } : null;
+}
 export function restoreAdventureStartFence() { return null; }
 export async function requestAdventureStart(userId,command,hooks) {
  window.__adventureCalls.push(command);
@@ -51,6 +56,7 @@ export const supabase = {
 export async function requestAdventureSettlement(userId, command, hooks) {
  window.__adventureCalls.push(command);
  if (command.action === 'advance') {
+   pendingRecovery = false;
    const result = window.__nextOutcome || 'hero_won';
    current = { ...outcome(result), events: [
      { id: 'confirmed-1', atMs: 1000, actor: 'hero', target: 'enemy', type: 'impact', value: 10 },
