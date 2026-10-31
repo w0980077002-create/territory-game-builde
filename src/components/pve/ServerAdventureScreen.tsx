@@ -90,7 +90,8 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const sessionRef = useRef<Session | null>(null);
   const battleRef = useRef<HTMLDivElement | null>(null);
   const strikeId = useRef(0);
-  const [strike, setStrike] = useState<StrikeEvent | null>(null);
+  const [strikeQueue, setStrikeQueue] = useState<StrikeEvent[]>([]);
+  const strike = strikeQueue[0] ?? null;
   const [battleLog, setBattleLog] = useState<string[]>([]);
   const hooks = { getState: () => useGame.get(), applyState: (state: ReturnType<typeof useGame.get>) => useGame.set(state) };
 
@@ -100,18 +101,21 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     setSession(value);
     // Visual effects follow the authoritative server event stream, never invented client hits.
     const events = Array.isArray(value.events) ? value.events : [];
-    const lastHit = [...events].reverse().find(event =>
+    const hits = events.filter(event =>
       ['impact', 'critical', 'block', 'dodge'].includes(event.type)
-      && (event.target === 'hero' || event.target === 'enemy'));
-    if (lastHit) {
+      && (event.target === 'hero' || event.target === 'enemy')).slice(-6);
+    if (hits.length) {
       const opponent = getCampaignStage(value.state.input.stage).enemyName;
       const hero = useGame.get().player.name;
-      setStrike({ key: ++strikeId.current,
-        attacker: lastHit.actor === 'hero' ? hero : opponent,
-        target: lastHit.target === 'hero' ? hero : opponent,
-        tone: lastHit.type === 'critical' ? 'crit' :
-          lastHit.type === 'block' ? 'block' : lastHit.type === 'dodge' ? 'dodge' : 'hit',
-        amount: typeof lastHit.value === 'number' ? Math.floor(lastHit.value) : null });
+      const confirmed: StrikeEvent[] = hits.map(hit => ({
+        key: ++strikeId.current,
+        attacker: hit.actor === 'hero' ? hero : opponent,
+        target: hit.target === 'hero' ? hero : opponent,
+        tone: (hit.type === 'critical' ? 'crit' : hit.type === 'block' ? 'block' :
+          hit.type === 'dodge' ? 'dodge' : 'hit') as StrikeEvent['tone'],
+        amount: typeof hit.value === 'number' ? Math.floor(hit.value) : null,
+      }));
+      setStrikeQueue(old => [...old, ...confirmed].slice(-8));
     }
     if (events.length) setBattleLog(old => [
       ...old,
@@ -131,9 +135,11 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     return () => cancelAnimationFrame(frame);
   }, [session?.session_id]);
 
+  // Only animate hits present in an authenticated server receipt. Never draw
+  // fabricated damage while waiting for the next server-confirmed step.
   useEffect(() => {
     if (!strike) return;
-    const timer = window.setTimeout(() => setStrike(null), 820);
+    const timer = window.setTimeout(() => setStrikeQueue(q => q.slice(1)), 920);
     return () => window.clearTimeout(timer);
   }, [strike]);
 
@@ -246,7 +252,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const clearFinished = () => {
     if (lock.current || sessionRef.current?.state.status === 'fighting') return;
     localStorage.removeItem(sessionKey(userId));
-    sessionRef.current = null; setSession(null); setStrike(null); setBattleLog([]); onActiveChange?.(false);
+    sessionRef.current = null; setSession(null); setStrikeQueue([]); setBattleLog([]); onActiveChange?.(false);
     // A finished pinned session does not approve the new equipment. Recheck
     // before offering a new start, including on a different device.
     setReady(false);
