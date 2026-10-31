@@ -266,7 +266,9 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const battleStage = session ? getCampaignStage(session.state.input.stage) : chosen;
   const heroName = useGame.get().player.name;
   const enemyName = battleStage.enemyName;
-  const fighterSrc = import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp';
+  // Keep the exact hero appearance chosen by the player.
+  const heroFrames = getCombatAppearance(game.appearance);
+  const fighterSrc = heroFrames.idle;
   const enemySrc = import.meta.env.BASE_URL + 'assets/territory/characters/' + battleStage.enemyArt + '/idle.webp';
   const darkStoneArt = import.meta.env.BASE_URL + 'assets/territory/items/dark-stone.svg';
   const portalArt = import.meta.env.BASE_URL + 'assets/territory/scenes/dark-cave-portal.svg';
@@ -316,7 +318,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
             </div>
             <div className="relative flex-1 z-10 min-h-[270px]">
               {side === 'hero'
-                ? <FighterFigure src={fighterSrc} combatFrames={getCombatAppearance(useGame.get().appearance)}
+                ? <FighterFigure src={fighterSrc} combatFrames={heroFrames}
                     name={heroName} dir={1} alive={hp(side).left > 0} won={session.state.status === 'hero_won'}
                     strike={strike} idleSeconds={3.1} scale={1.2}
                     className="absolute right-0 bottom-0 h-full w-full object-contain object-right-bottom" />
@@ -384,16 +386,16 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
               })}
             </div>
           ) : <p className="rounded-lg border border-amber-500/20 bg-amber-950/25 px-2 py-1.5 text-[11px] text-amber-100/80">
-            {en?'No server-equipped skills yet. Your hero continues fighting with basic attacks.':'Подтверждённых боевых умений пока нет. Герой продолжает бой обычными ударами.'}
+            {en?'No skills equipped. Your hero fights with basic attacks; continue to see the next result.':'Боевые умения не установлены. Герой сражается обычными ударами — продолжай бой.'}
           </p>}
           <button type="button" disabled={busy || recoverable} onClick={()=>void advance()}
             className="min-h-11 w-full rounded-xl border border-yellow-300/60 bg-gradient-to-b from-amber-400 to-amber-600 px-3 py-2 text-sm font-black text-[#2c170b] disabled:opacity-50">
-            {en?'Next combat step':'Следующий шаг боя'}
+            <Swords size={18} aria-hidden="true" className="inline-block mr-2 align-[-3px]"/>{en?'Continue battle':'Продолжить бой'}
           </button>
         </div>}
         <p className="text-center text-xs text-amber-100/70">{session.state.input.control==='auto'
-          ? (en?'Auto battle · server confirms every step':'Автобой · каждый шаг подтверждает сервер')
-          : (en?'Skills and damage are verified by the server':'Умения и урон проверяет сервер')}</p>
+          ? (en?'The hero fights automatically':'Герой сражается автоматически')
+          : (en?'Each tap advances the ongoing battle':'Каждое нажатие продолжает текущий бой')}</p>
       </>}
     </div> : progress ? <>
       <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden rounded-[18px] border border-[#54446f] bg-[#101830] px-2 pb-2 pt-2 shadow-[inset_0_0_50px_rgba(51,25,101,.42),0_10px_30px_rgba(0,0,0,.32)]" data-testid="dark-cave-realm">
