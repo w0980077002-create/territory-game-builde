@@ -374,8 +374,8 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
                     name={hero.name}
                     dir={1}
                     scale={1.22}
-                    alive={hero.hp > 0 && outcome?.won !== false}
-                    won={outcome?.won === true}
+                    alive={hero.hp > 0}
+                    won={false}
                     strike={strike}
                     combatSpeed={busy || outcome ? roundSpeed : speed}
                     idleSeconds={3.1}
@@ -394,7 +394,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
                   dir={-1}
                   scale={enemy.isBoss ? 1.07 : 1.1}
                   alive={foe.hp > 0}
-                  won={outcome?.won === false}
+                  won={false}
                   strike={strike}
                   combatSpeed={busy || outcome ? roundSpeed : speed}
                   idleSeconds={2.8}
