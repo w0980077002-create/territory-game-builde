@@ -119,7 +119,7 @@ with sync_playwright() as p:
             assert tile.evaluate('(el) => document.activeElement === el')
             stone = page.locator('.warehouse-tile').filter(has_text='Awakening Stone' if lang == 'en' else 'Камень пробуждения')
             stone.click()
-            assert ('not yet confirmed' if lang == 'en' else 'пока не подтверждён') in dialog.inner_text()
+            assert ('A rare material used to awaken the Battle Cow.' if lang == 'en' else 'Редкий камень для пробуждения Боевой коровы.') in dialog.inner_text()
             dialog.locator('.territory-modal-close').click()
             forge = page.locator('.warehouse-tile--forge')
             forge.click()
