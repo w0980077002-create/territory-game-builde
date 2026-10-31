@@ -59,14 +59,15 @@ with sync_playwright() as p:
             page.evaluate("window.__profileChanged = true; localStorage.removeItem('territory_adventure_session_v1:review')")
             page.locator('#remount').evaluate('(e) => e.click()')
             page.get_by_test_id('dark-cave-battle-background').wait_for()
-            page.get_by_role('button',name='Следующий шаг боя').wait_for(state='visible')
-            assert page.get_by_role('button',name='Следующий шаг боя').is_enabled(), 'pinned fight must remain playable after restore'
+            page.get_by_role('button',name='Продолжить бой').wait_for(state='visible')
+            assert page.get_by_role('button',name='Продолжить бой').is_enabled(), 'pinned fight must remain playable after restore'
             page.get_by_role('button',name='Экипировка').click()
             page.get_by_role('button',name='Пояс эликсиров').click()
             page.get_by_text('Только просмотр: эффекты эликсиров').wait_for()
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
-            page.get_by_role('button',name='Следующий шаг боя').click()
+            page.get_by_role('button',name='Продолжить бой').click()
             page.get_by_text('Победа!').wait_for()
+            assert page.get_by_test_id('dark-cave-battle-log').locator('p').count() == 2, 'both server-confirmed hit and block must remain in combat log'
             assert page.get_by_text('+10 монет').count() == 1
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
             page.get_by_role('button',name='К этапам').click()
@@ -84,7 +85,7 @@ with sync_playwright() as p:
         page.get_by_test_id('dark-cave-challenge').click()
         page.get_by_test_id('dark-cave-battle-background').wait_for()
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'English combat horizontal overflow'
-        page.get_by_role('button',name='Next combat step').click()
+        page.get_by_role('button',name='Continue battle').click()
         page.get_by_text('Victory!').wait_for()
         assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
         page.close()
@@ -110,7 +111,7 @@ with sync_playwright() as p:
         page.evaluate('(result) => { window.__nextOutcome = result }', outcome)
         page.get_by_test_id('dark-cave-challenge').click()
         page.get_by_test_id('dark-cave-battle-background').wait_for()
-        page.get_by_role('button',name='Next combat step' if lang == 'en' else 'Следующий шаг боя').click()
+        page.get_by_role('button',name='Continue battle' if lang == 'en' else 'Продолжить бой').click()
         page.get_by_text(label, exact=True).wait_for()
         assert page.get_by_text('+10 монет').count() == 0
         assert page.get_by_text('+10 gold').count() == 0
