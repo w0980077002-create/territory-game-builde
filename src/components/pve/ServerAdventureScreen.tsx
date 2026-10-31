@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, ChevronRight, Crown, Info, Loader2, Lock, Swords, Zap } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
-import { useGame } from '@/game/actions';
+import { useGame, useArena } from '@/game/actions';
+import { useStore } from '@/game/store';
+import { beltContext } from '@/game/belt';
+import { BeltCells } from '@/components/ui/BeltCells';
+import { GearStrip } from '@/components/arena/GearStrip';
+import { FoldSection } from '@/components/arena/FoldSection';
 import { ensurePlayerSession } from '@/game/auth';
 import { supabase } from '@/game/supabase';
 import { restoreAdventureSaveFence, restoreAdventureStartFence, requestAdventureStart, requestAdventureSettlement } from '@/game/combatV1/receiptAdapter';
@@ -12,7 +17,7 @@ import { getEnemyCombatFrames } from '@/game/combatArt';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { FighterFigure } from '@/components/arena/FighterFigure';
 
-type Progress = { completed_stage: number; unlocked_stage: number; dark_stones: number };
+type Progress = { completed_stage: number; unlocked_stage: number; dark_stones: number; active_session_id?: string | null };
 type Settlement = { outcome: string; reward?: { gold: number; xp: number } };
 type Session = { session_id: string; revision: number; state: IdleCombatState; events?: IdleCombatEvent[]; settlement?: Settlement | null };
 type Props = { userId: string; onActiveChange?: (active: boolean) => void };
@@ -31,12 +36,20 @@ function decodeProgress(data: unknown): Progress {
   if (!obj(data) || !Number.isInteger(data.completed_stage) || !Number.isInteger(data.unlocked_stage)
     || Number(data.completed_stage) < 0 || Number(data.completed_stage) > 100
     || Number(data.unlocked_stage) !== Math.min(100, Number(data.completed_stage) + 1)
-    || !Number.isSafeInteger(data.dark_stones) || Number(data.dark_stones) < 0)
+    || !Number.isSafeInteger(data.dark_stones) || Number(data.dark_stones) < 0
+    || (data.active_session_id != null && (typeof data.active_session_id !== 'string'
+      || !/^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(data.active_session_id))))
     throw new Error('adventure_invalid_progress');
   return data as Progress;
 }
 function message(error: unknown, en: boolean) {
   const s = error instanceof Error ? error.message : String(error);
+  if (/adventure_definitively_rejected/.test(s)) return en
+    ? 'The server rejected that action without a new charge. Your save was synchronized. Recover the fight to continue.'
+    : 'Сервер отклонил действие без нового списания. Сохранение синхронизировано. Восстанови бой, чтобы продолжить.';
+  if (/combat_starts_paused/.test(s)) return en
+    ? 'New cave fights are temporarily paused. Existing fights can continue.'
+    : 'Новые бои в пещере временно приостановлены. Начатые бои можно продолжить.';
   if (/dark_stone/.test(s)) return en ? 'No Dark Stones; next grant at 00:00 UTC.' : 'Тёмные камни закончились. Новые будут в 00:00 UTC.';
   if (/reconciliation|profile|ownership/.test(s)) return en
     ? 'Hero equipment must be verified before using the new campaign.'
@@ -55,6 +68,11 @@ function message(error: unknown, en: boolean) {
 export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const { language } = useLanguage();
   const en = language === 'en';
+  const game = useStore(useGame);
+  const arena = useStore(useArena);
+  const [gearOpen, setGearOpen] = useState(false);
+  const [elixirsOpen, setElixirsOpen] = useState(false);
+  const [selectedElixir, setSelectedElixir] = useState<number | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
   const [control, setControl] = useState<'manual' | 'auto'>('manual');
@@ -66,12 +84,14 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
   const [recoverable, setRecoverable] = useState(false);
+  const [visible, setVisible] = useState(() => document.visibilityState === 'visible');
   const mounted = useRef(true);
   const lock = useRef(false);
   const sessionRef = useRef<Session | null>(null);
   const battleRef = useRef<HTMLDivElement | null>(null);
   const strikeId = useRef(0);
-  const [strike, setStrike] = useState<StrikeEvent | null>(null);
+  const [strikeQueue, setStrikeQueue] = useState<StrikeEvent[]>([]);
+  const strike = strikeQueue[0] ?? null;
   const [battleLog, setBattleLog] = useState<string[]>([]);
   const hooks = { getState: () => useGame.get(), applyState: (state: ReturnType<typeof useGame.get>) => useGame.set(state) };
 
@@ -81,18 +101,21 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     setSession(value);
     // Visual effects follow the authoritative server event stream, never invented client hits.
     const events = Array.isArray(value.events) ? value.events : [];
-    const lastHit = [...events].reverse().find(event =>
+    const hits = events.filter(event =>
       ['impact', 'critical', 'block', 'dodge'].includes(event.type)
-      && (event.target === 'hero' || event.target === 'enemy'));
-    if (lastHit) {
+      && (event.target === 'hero' || event.target === 'enemy')).slice(-6);
+    if (hits.length) {
       const opponent = getCampaignStage(value.state.input.stage).enemyName;
       const hero = useGame.get().player.name;
-      setStrike({ key: ++strikeId.current,
-        attacker: lastHit.actor === 'hero' ? hero : opponent,
-        target: lastHit.target === 'hero' ? hero : opponent,
-        tone: lastHit.type === 'critical' ? 'crit' :
-          lastHit.type === 'block' ? 'block' : lastHit.type === 'dodge' ? 'dodge' : 'hit',
-        amount: typeof lastHit.value === 'number' ? Math.floor(lastHit.value) : null });
+      const confirmed: StrikeEvent[] = hits.map(hit => ({
+        key: ++strikeId.current,
+        attacker: hit.actor === 'hero' ? hero : opponent,
+        target: hit.target === 'hero' ? hero : opponent,
+        tone: (hit.type === 'critical' ? 'crit' : hit.type === 'block' ? 'block' :
+          hit.type === 'dodge' ? 'dodge' : 'hit') as StrikeEvent['tone'],
+        amount: typeof hit.value === 'number' ? Math.floor(hit.value) : null,
+      }));
+      setStrikeQueue(old => [...old, ...confirmed].slice(-8));
     }
     if (events.length) setBattleLog(old => [
       ...old,
@@ -112,9 +135,11 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     return () => cancelAnimationFrame(frame);
   }, [session?.session_id]);
 
+  // Only animate hits present in an authenticated server receipt. Never draw
+  // fabricated damage while waiting for the next server-confirmed step.
   useEffect(() => {
     if (!strike) return;
-    const timer = window.setTimeout(() => setStrike(null), 820);
+    const timer = window.setTimeout(() => setStrikeQueue(q => q.slice(1)), 920);
     return () => window.clearTimeout(timer);
   }, [strike]);
 
@@ -126,6 +151,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
       setProgress(found);
       // Cave progress and currency always come from the server.
     }
+    return found;
   }, []);
 
   const runSavedStart = useCallback(async () => {
@@ -145,7 +171,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     try {
       if (!await ensurePlayerSession(userId)) throw new Error('combat_auth_required');
       // Always show real server progress, including when old receipt recovery fails.
-      await readProgress();
+      const currentProgress = await readProgress();
       const pending = restoreAdventureSaveFence(userId);
       if (pending) {
         const result = decodeSession(await requestAdventureSettlement(userId, pending, hooks));
@@ -154,13 +180,19 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           userId, { action: 'resume', sessionId: result.session_id }, hooks)));
       } else if (await runSavedStart()) { /* original UUID and live session recovered */ }
       else {
-        const id = localStorage.getItem(sessionKey(userId));
+        const id = currentProgress.active_session_id || localStorage.getItem(sessionKey(userId));
         if (id) install(decodeSession(await requestAdventureSettlement(userId, { action: 'resume', sessionId: id }, hooks)));
       }
       const prepared = await supabase.functions.invoke('territory-combat', { body: { action: 'prepare' } });
       if (prepared.error || !obj(prepared.data)) throw new Error('combat_unavailable');
-      if (prepared.data.status !== 'ready') throw new Error('combat_profile_not_verified');
-      if (mounted.current) setReady(true);
+      // An existing server session keeps its pinned fighter even when a later
+      // equipment change requires review. Do not block its controls, and do
+      // not authorize a new start until preparation succeeds.
+      const mayFinishPinnedSession = prepared.data.status === 'reconciliation_required'
+        && prepared.data.reason === 'active_session'
+        && sessionRef.current?.state.status === 'fighting';
+      if (prepared.data.status !== 'ready' && !mayFinishPinnedSession) throw new Error('combat_profile_not_verified');
+      if (mounted.current) setReady(prepared.data.status === 'ready');
       await readProgress();
     } catch (cause) {
       if (mounted.current) { setError(message(cause, en)); setRecoverable(true); }
@@ -205,16 +237,26 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   }, [userId, install, readProgress, en]);
 
   useEffect(() => {
+    const onVisibilityChange = () => setVisible(document.visibilityState === 'visible');
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
+
+  useEffect(() => {
     if (!session || session.state.status !== 'fighting' || session.state.input.control !== 'auto'
-      || busy || recoverable || document.visibilityState !== 'visible') return;
+      || busy || recoverable || !visible) return;
     const timer = window.setTimeout(() => { void advance(); }, 1100);
     return () => window.clearTimeout(timer);
-  }, [session, busy, recoverable, advance]);
+  }, [session, busy, recoverable, visible, advance]);
 
   const clearFinished = () => {
     if (lock.current || sessionRef.current?.state.status === 'fighting') return;
     localStorage.removeItem(sessionKey(userId));
-    sessionRef.current = null; setSession(null); setStrike(null); setBattleLog([]); onActiveChange?.(false);
+    sessionRef.current = null; setSession(null); setStrikeQueue([]); setBattleLog([]); onActiveChange?.(false);
+    // A finished pinned session does not approve the new equipment. Recheck
+    // before offering a new start, including on a different device.
+    setReady(false);
+    void restore();
   };
 
   const currentStage = progress?.unlocked_stage ?? 1;
@@ -230,7 +272,9 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const battleStage = session ? getCampaignStage(session.state.input.stage) : chosen;
   const heroName = useGame.get().player.name;
   const enemyName = battleStage.enemyName;
-  const fighterSrc = import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp';
+  // Keep the exact hero appearance chosen by the player.
+  const heroFrames = getCombatAppearance(game.appearance);
+  const fighterSrc = heroFrames.idle;
   const enemySrc = import.meta.env.BASE_URL + 'assets/territory/characters/' + battleStage.enemyArt + '/idle.webp';
   const darkStoneArt = import.meta.env.BASE_URL + 'assets/territory/items/dark-stone.svg';
   const portalArt = import.meta.env.BASE_URL + 'assets/territory/scenes/dark-cave-portal.svg';
@@ -267,9 +311,9 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     </button>}
     {busy && <p role="status" className="text-center text-amber-100 text-xs"><Loader2 className="w-4 h-4 animate-spin inline mr-2"/>{en?'Synchronizing':'Синхронизация'}</p>}
     {session ? <div ref={battleRef} data-testid="territory-adventure-battle" className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-amber-600/50 bg-gradient-to-b from-amber-950/70 to-slate-950 p-2 space-y-3 scroll-mt-3">
-      <p className="text-center text-xs text-amber-200 font-bold">{en?'Server battle':'Серверный бой'} · {en?'Stage':'Этап'} {session.state.input.stage} · {enemyName}</p>
+      <p className="text-center text-xs text-amber-200 font-bold">{en?'Dark Cave':'Тёмная пещера'} · {en?'Floor':'Этаж'} {session.state.input.stage} · {enemyName}</p>
       <div className="relative min-h-[340px] overflow-hidden rounded-xl border border-amber-400/25 bg-slate-900">
-        <img src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
+        <img src={portalArt} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover object-center pointer-events-none" data-testid="dark-cave-battle-background" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/75 pointer-events-none" />
         <div className="relative grid grid-cols-2 gap-2 p-2 min-h-[340px]">
           {(['hero','enemy'] as const).map(side => <div key={side} className="relative min-w-0 flex flex-col">
@@ -280,7 +324,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
             </div>
             <div className="relative flex-1 z-10 min-h-[270px]">
               {side === 'hero'
-                ? <FighterFigure src={fighterSrc} combatFrames={getCombatAppearance(useGame.get().appearance)}
+                ? <FighterFigure src={fighterSrc} combatFrames={heroFrames}
                     name={heroName} dir={1} alive={hp(side).left > 0} won={session.state.status === 'hero_won'}
                     strike={strike} idleSeconds={3.1} scale={1.2}
                     className="absolute right-0 bottom-0 h-full w-full object-contain object-right-bottom" />
@@ -296,23 +340,76 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         <span className="flex items-center gap-1"><Zap size={14}/>{en ? 'Energy' : 'Энергия'}: {Math.floor(session.state.actors.hero.energy)}/{session.state.input.rules.maxEnergy}</span>
         <span className="text-yellow-200">{session.state.input.control === 'auto' ? (en?'Auto':'Авто') : (en?'Manual':'Ручной')}</span>
       </div>
-      {!!battleLog.length && <div className="rounded-lg bg-black/35 border border-white/10 px-2 py-1 text-[11px] text-slate-200 max-h-24 overflow-auto" aria-live="polite">
+      {!!battleLog.length && <div data-testid="dark-cave-battle-log" className="rounded-lg bg-black/35 border border-white/10 px-2 py-1 text-[11px] text-slate-200 max-h-24 overflow-auto" aria-live="polite">
         {battleLog.slice(-4).map((line, i) => <p key={i}>{line}</p>)}
       </div>}
+      <div className="grid grid-cols-1 gap-1.5" data-testid="dark-cave-combat-panels">
+        <FoldSection title={en?'Equipment':'Экипировка'}
+          summary={<span className="text-[10px] text-amber-100">{Object.values(game.player.equipped ?? {}).filter(Boolean).length}/7</span>}
+          open={gearOpen} onToggle={() => setGearOpen(v => !v)}>
+          <GearStrip equipped={game.player.equipped}/>
+          <p className="mt-1.5 text-[10px] text-amber-100/75">
+            {en?'This fight uses the server-verified stats fixed at its start. Gear shown here reflects your current save.':'В этом бою действуют подтверждённые сервером характеристики на момент входа. Здесь показана текущая экипировка.'}
+          </p>
+        </FoldSection>
+        <FoldSection title={en?'Elixir belt':'Пояс эликсиров'}
+          summary={<span className="text-[10px] text-amber-100">{game.belt.filter(Boolean).length}/7</span>}
+          open={elixirsOpen} onToggle={() => setElixirsOpen(v => !v)}>
+          <BeltCells belt={game.belt} ctx={beltContext(game,arena.wins)} disabled
+            onTap={(index) => setSelectedElixir(current => current === index ? null : index)}/>
+          {selectedElixir !== null && game.belt[selectedElixir] && (
+            <p className="mt-1 text-[11px] text-amber-200">{game.belt[selectedElixir]?.name}</p>
+          )}
+          <p className="mt-1.5 text-[10px] text-amber-100/75" role="note">
+            {en?'View only: cave elixir effects are not enabled on the combat server. The belt is not consumed or charged here.':'Только просмотр: эффекты эликсиров ещё не подключены к серверным боям пещеры. Здесь они не расходуются и не списываются.'}
+          </p>
+        </FoldSection>
+      </div>
       {finished ? <>
-        <p className="text-center text-amber-200 font-bold">{session.state.status==='hero_won'?(en?'Victory!':'Победа!'):(en?'Battle finished':'Бой завершён')}</p>
-        {session.settlement?.reward && <p className="text-center text-xs text-yellow-100">
+        <p className="text-center text-amber-200 font-bold" role="status">{session.state.status==='hero_won' ? (en?'Victory!':'Победа!') : session.state.status==='enemy_won' ? (en?'Defeat':'Поражение') : (en?'Draw':'Ничья')}</p>
+        {session.state.status==='hero_won' && session.settlement?.reward && <p className="text-center text-xs text-yellow-100">
           +{session.settlement.reward.gold} {en?'gold':'монет'} · +{session.settlement.reward.xp} XP
+        </p>}
+        {session.state.status === 'hero_won' && progress && progress.unlocked_stage > session.state.input.stage && (
+          <p className="rounded-lg border border-emerald-400/40 bg-emerald-950/40 px-3 py-2 text-center text-sm font-bold text-emerald-200" data-testid="dark-cave-next-floor">
+            {en ? 'Next floor unlocked: ' : 'Открыт следующий этаж: '}{progress.unlocked_stage}
+          </p>
+        )}
+        {session.state.status !== 'hero_won' && <p className="text-center text-xs text-amber-100/80">
+          {en ? 'Try this floor again when you are ready.' : 'Попробуй пройти этот этаж ещё раз, когда будешь готов.'}
         </p>}
         <button onClick={clearFinished} disabled={busy} className="w-full rounded-xl bg-amber-500 text-black p-3 font-bold">{en?'Back to cave stages':'К этапам пещеры'}</button>
       </> : <>
-        {session.state.input.control==='manual' && <div className="grid grid-cols-2 gap-2">
-          {session.state.actors.hero.loadout.skills.map(skill=><button key={skill.skillId} disabled={busy || recoverable} onClick={()=>void advance(skill.skillId)} className="rounded-lg border border-amber-500/40 bg-amber-900/30 p-2 text-xs text-amber-100">{skill.skillId}</button>)}
-          <button disabled={busy || recoverable} onClick={()=>void advance()} className="rounded-lg border border-amber-500/40 p-2 text-xs text-amber-100">{en?'Continue':'Продолжить'}</button>
+        {session.state.input.control==='manual' && <div className="space-y-1.5" data-testid="dark-cave-manual-actions">
+          {session.state.actors.hero.loadout.skills.length > 0 ? (
+            <div className="grid grid-cols-2 gap-1.5">
+              {session.state.actors.hero.loadout.skills.map(slot=>{
+                const def = session.state.input.catalog.skills.find(item => item.id === slot.skillId);
+                const rank = def?.levels[slot.level - 1];
+                const onCooldown = (session.state.actors.hero.cooldowns[slot.skillId] ?? 0) > session.state.atMs;
+                const enoughEnergy = !!rank && session.state.actors.hero.energy >= rank.energyCost;
+                return <button key={slot.skillId} type="button"
+                  disabled={busy || recoverable || !rank || onCooldown || !enoughEnergy}
+                  onClick={()=>void advance(slot.skillId)}
+                  className="min-h-11 rounded-lg border border-amber-500/50 bg-gradient-to-b from-[#5b381d] to-[#28170c] p-1.5 text-xs font-bold text-amber-100 disabled:opacity-45"
+                  aria-label={slot.skillId.replace(/_/g,' ')}>
+                  <Swords size={15} className="mx-auto text-yellow-200"/>
+                  <span className="block truncate">{slot.skillId.replace(/_/g,' ')}</span>
+                  <span className="block text-[10px] text-amber-200/90">{onCooldown ? (en?'Cooldown':'Откат') : rank ? `${rank.energyCost} ⚡` : (en?'Unavailable':'Недоступно')}</span>
+                </button>;
+              })}
+            </div>
+          ) : <p className="rounded-lg border border-amber-500/20 bg-amber-950/25 px-2 py-1.5 text-[11px] text-amber-100/80">
+            {en?'No skills equipped. Your hero fights with basic attacks; continue to see the next result.':'Боевые умения не установлены. Герой сражается обычными ударами — продолжай бой.'}
+          </p>}
+          <button type="button" disabled={busy || recoverable} onClick={()=>void advance()}
+            className="min-h-11 w-full rounded-xl border border-yellow-300/60 bg-gradient-to-b from-amber-400 to-amber-600 px-3 py-2 text-sm font-black text-[#2c170b] disabled:opacity-50">
+            <Swords size={18} aria-hidden="true" className="inline-block mr-2 align-[-3px]"/>{en?'Continue battle':'Продолжить бой'}
+          </button>
         </div>}
         <p className="text-center text-xs text-amber-100/70">{session.state.input.control==='auto'
-          ? (en?'Auto battle · server confirms every step':'Автобой · каждый шаг подтверждает сервер')
-          : (en?'Skills and damage are verified by the server':'Умения и урон проверяет сервер')}</p>
+          ? (en?'The hero fights automatically':'Герой сражается автоматически')
+          : (en?'Each tap advances the ongoing battle':'Каждое нажатие продолжает текущий бой')}</p>
       </>}
     </div> : progress ? <>
       <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden rounded-[18px] border border-[#54446f] bg-[#101830] px-2 pb-2 pt-2 shadow-[inset_0_0_50px_rgba(51,25,101,.42),0_10px_30px_rgba(0,0,0,.32)]" data-testid="dark-cave-realm">
