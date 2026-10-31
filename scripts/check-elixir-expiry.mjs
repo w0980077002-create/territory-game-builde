@@ -74,32 +74,33 @@ assert.ok(actions.useGame.get().inventory[0].expiresAt);
 actions.useGame.set((state) => ({ ...state, forgeMaterials: state.forgeMaterials + 4 }));
 assert.equal(actions.useGame.get().forgeMaterialBatches.reduce((sum, lot) => sum + lot.qty, 0), 14);
 
-// When a different date was selected, equip the batch that expires first.
+// Player selection wins over hidden oldest-first reordering. Expiry still stays per batch.
 const later = elixir('newer', 8, elixirAt(6));
 const earlier = elixir('older', 8, elixirAt(2));
 const stock = { ...initial, inventory: [later, earlier], belt: Array(7).fill(null) };
 const ctx = { level: 99, activeDays: 99, arenaWins: 10000 };
 const first = belt.putInBelt(stock, later.id, ctx);
-assert.equal(first.belt[0].expiresAt, earlier.expiresAt);
+assert.equal(first.belt[0].expiresAt, later.expiresAt);
 assert.equal(first.belt[0].qty, 5);
-assert.equal(first.inventory.find((i) => i.id === earlier.id).qty, 3);
-const second = belt.putInBelt(first, later.id, ctx);
-assert.equal(second.belt[0].qty, 5, 'other expiry must not be mixed into a slot');
+assert.equal(first.inventory.find((i) => i.id === earlier.id).qty, 8);
+assert.equal(first.inventory.find((i) => i.id === later.id).qty, 3);
+const second = belt.putInBelt(first, earlier.id, ctx);
+assert.equal(second.belt[0].qty, 5, 'different expiry must not be mixed into a slot');
 assert.equal(second.belt[1].expiresAt, earlier.expiresAt);
-assert.equal(second.belt[1].qty, 3);
+assert.equal(second.belt[1].qty, 5);
 const third = belt.putInBelt(second, later.id, ctx);
 assert.equal(third.belt[2].expiresAt, later.expiresAt);
-assert.equal(third.belt[2].qty, 5);
+assert.equal(third.belt[2].qty, 3);
 const returned = belt.takeFromBelt(third, 1);
-assert.equal(returned.inventory.find((i) => i.expiresAt === earlier.expiresAt).qty, 3);
+assert.equal(returned.inventory.find((i) => i.expiresAt === earlier.expiresAt).qty, 8);
 assert.equal(belt.beltAction(elixir('bad', 2, elixirAt(-1))), null);
 assert.equal(belt.canBelt(elixir('bad', 2, new Date(Date.now() - 1000).toISOString())), false);
 
-// Health potions must also be equipped oldest-first, never extending the date.
+// Health potions must also honor the selected batch, never extending the date.
 const potionLate = { ...potion, id: 'p-late', expiresAt: elixirAt(6) };
 const potionEarly = { ...potion, id: 'p-early', expiresAt: elixirAt(3) };
 const potionEquipped = belt.putInBelt({ ...stock, inventory: [potionLate, potionEarly] }, potionLate.id, ctx);
-assert.equal(potionEquipped.belt[0].expiresAt, potionEarly.expiresAt);
+assert.equal(potionEquipped.belt[0].expiresAt, potionLate.expiresAt);
 
 // Shop and crafting create new, separately dated supplies, never prolong old batches.
 const shopItem = { id: 'test-elixir', name: 'Эликсир силы', icon: '💪', type: 'elixir', rarity: 'common',
@@ -127,4 +128,4 @@ assert.ok(crafted);
 assert.equal(crafted.find((i) => i.id === earlier.id).qty, 8);
 assert.ok(crafted.some((i) => i.type === 'elixir' && i.expiresAt !== earlier.expiresAt));
 
-console.log('Seven-day elixir/potion/forge-material expiry, legacy grace, oldest-first belt and forge spending: OK');
+console.log('Seven-day elixir/potion/forge-material expiry, legacy grace, selected-batch belt and oldest-first forge spending: OK');
