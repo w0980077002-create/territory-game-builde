@@ -1,5 +1,5 @@
 """Offline tests of the actual companion panel; no server or player accounts."""
-import os, threading, shutil
+import os, threading
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from playwright.sync_api import sync_playwright
