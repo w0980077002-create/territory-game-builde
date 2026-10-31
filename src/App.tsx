@@ -469,7 +469,9 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           onBattle={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }} />}
         {screen === 'hero' && <ProfileScreen key={heroTrainingOpen ? 'runes' : 'hero'} user={user} initialTrainingOpen={heroTrainingOpen}
           onEquipment={() => { setInventoryTab('equipment'); setScreen('inventory'); }}
-          onAdventure={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }} />}
+          onAdventure={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }}
+          onForge={(equipmentId) => openForge(equipmentId)}
+          onQuests={() => setScreen('quests')} />}
         {screen === 'map' && <MapScreen
           attentionPlaces={[
             ...(mapForgeReady ? ['forge' as const] : []),
@@ -490,7 +492,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         />}
         {screen === 'shop' && <ShopScreen key={shopTab} initialTab={shopTab} onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} />}
         {screen === 'forge' && <ForgeScreen focusEquipmentId={forgeFocusId} userId={user.id}
-          onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')} />}
+          onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')}
+          onBattle={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }} />}
         {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => { setLeaderboardInitialTab('rating'); setScreen('leaderboard'); }} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
         {screen === 'leaderboard' && <LeaderboardScreen key={leaderboardInitialTab} user={user} initialTab={leaderboardInitialTab} />}
         {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} onSocialNavigate={setScreen} onNavigate={(target) => {

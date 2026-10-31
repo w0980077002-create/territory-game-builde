@@ -1,4 +1,4 @@
-import { Coins, Gem, Zap, Heart, Sword, Shield, Star, ChevronRight, Shirt } from 'lucide-react';
+import { Coins, Gem, Zap, Heart, Sword, Shield, Star, ChevronRight, Shirt, Hammer, ScrollText } from 'lucide-react';
 import { EQUIPMENT_SLOTS, HERO_MAX_LEVEL, generateChapter, getComputedStats } from '@/game/engine';
 import { getAppearanceIcon } from '@/game/appearance';
 import { SLOT_ART, equipmentArt } from '@/game/art';
@@ -14,11 +14,13 @@ interface Props {
   stats: HeroStats;
   onEquipment: () => void;
   onAdventure: () => void;
+  onForge: (equipmentId: string) => void;
+  onQuests: () => void;
 }
 
 /** Presentation only: all values and equipment are taken from the saved game state.
  * No grants, XP updates or inventory mutations happen in this component. */
-export function HeroShowcase({ state, stats, onEquipment, onAdventure }: Props) {
+export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, onQuests }: Props) {
   const { t, language } = useLanguage();
   const player = state.player;
   const isMax = player.level >= HERO_MAX_LEVEL;
@@ -39,6 +41,8 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure }: Props) 
   // for server combat or an automatic equip/grant.
   const readyGear = state.inventory.find(item => item.type === 'equipment'
     && item.qty > 0 && item.equipment && !player.equipped[item.equipment.slot]);
+  const readyQuest = state.quests.some(quest => !quest.claimed && quest.current >= quest.target);
+  const forgeCandidate = Object.values(player.equipped).find((item): item is Equipment => !!item && item.level < player.level);
   const text = (ru: string, en: string) => language === 'en' ? en : ru;
 
   const renderSlot = ({ slot, item }: { slot: (typeof EQUIPMENT_SLOTS)[number]; item: Equipment | undefined }) => (
@@ -136,6 +140,26 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure }: Props) 
             </div>
           </div>
         </div>
+        {(readyQuest || forgeCandidate) && (
+          <div className="hero-showcase__preparation" aria-label={text('Подготовка к походу', 'Adventure preparation')} data-testid="hero-preparation-actions">
+            {readyQuest && (
+              <button type="button" onClick={onQuests} data-testid="hero-ready-quest">
+                <ScrollText size={21} aria-hidden="true" />
+                <span><strong>{text('Награда задания ждёт', 'Quest reward ready')}</strong>
+                  <small>{text('Открыть настоящие задания', 'Open your quests')}</small></span>
+                <ChevronRight size={17} aria-hidden="true" />
+              </button>
+            )}
+            {forgeCandidate && (
+              <button type="button" onClick={() => onForge(forgeCandidate.id)} data-testid="hero-forge-gear">
+                <img src={equipmentArt(forgeCandidate)} alt="" loading="lazy" draggable={false} />
+                <span><strong>{text('Усилить снаряжение', 'Strengthen equipment')}</strong>
+                  <small>{forgeCandidate.name} · {text('Посмотреть в кузнице', 'Inspect in forge')}</small></span>
+                <Hammer size={17} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        )}
         {readyGear?.equipment && (
           <button type="button" className="hero-showcase__loot" onClick={onEquipment}
             aria-label={text('Открыть экипировку: ', 'Open equipment: ') + readyGear.equipment.name}>

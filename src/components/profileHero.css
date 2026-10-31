@@ -429,3 +429,23 @@
   .territory-profile .hero-showcase__boss-art { flex-basis: 61px; width: 61px; height: 67px; }
   .territory-profile .hero-showcase__next { gap: 6px; padding-inline: 6px; }
 }
+
+/* Real next actions in the hero loop: ready quests and already worn gear only. */
+.territory-profile .hero-showcase__preparation { display:grid;gap:7px;margin-bottom:10px; }
+.territory-profile .hero-showcase__preparation button {
+  display:flex;align-items:center;gap:9px;min-height:53px;width:100%;min-width:0;
+  padding:7px 9px;border:1px solid #e0b36e;border-radius:11px;
+  color:#ffebc6;background:linear-gradient(110deg,#694127,#302019);
+  text-align:left;box-shadow:inset 0 1px #f9d5a034;
+}
+.territory-profile .hero-showcase__preparation button > img {
+  width:37px;height:37px;flex:0 0 37px;object-fit:contain;
+  filter:drop-shadow(0 2px 3px #0009);
+}
+.territory-profile .hero-showcase__preparation button > svg:first-child {
+  color:#ffd47f;flex:0 0 37px;
+}
+.territory-profile .hero-showcase__preparation button > svg:last-child {flex:0 0 auto;color:#f7c778;}
+.territory-profile .hero-showcase__preparation button > span {display:grid;gap:3px;min-width:0;flex:1;}
+.territory-profile .hero-showcase__preparation strong {font-size:13px;font-weight:900;line-height:1.15;}
+.territory-profile .hero-showcase__preparation small {font-size:11px;color:#e6c7a4;overflow-wrap:anywhere;line-height:1.2;}
