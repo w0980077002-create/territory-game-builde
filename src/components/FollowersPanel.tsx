@@ -36,7 +36,7 @@ export function FollowersPanel() {
     });
     const cow = id === 'follower_6';
     setNote(succeeded ? (cow ? (en ? 'Battle Cow level raised with an awakening stone' : 'Уровень Боевой коровы повышен за камень пробуждения') : (en ? 'Training completed' : 'Тренировка завершена'))
-      : cow ? (en ? 'An awakening stone is required. Its source is not yet confirmed.' : 'Нужен камень пробуждения. Источник пока не подтверждён.')
+      : cow ? (en ? 'An awakening stone is required for this upgrade.' : 'Для улучшения нужен камень пробуждения.')
         : (en ? 'Not enough materials, gold or hero level' : 'Не хватает золота, материалов или уровня героя'));
   };
 
@@ -124,7 +124,7 @@ export function FollowersPanel() {
           <div>
             <strong>{en ? 'AWAKENING STONE' : 'КАМЕНЬ ПРОБУЖДЕНИЯ'}</strong>
             <span>{en ? 'Owned' : 'В наличии'}: <b>{stoneCount}</b>{!maxed && <>{' · '}{en ? 'Needed' : 'Нужно'}: {stonePrice}</>}</span>
-            <small>{en ? 'The source is not yet confirmed. No gold or gems are needed.' : 'Источник пока не подтверждён. Монеты и алмазы не нужны.'}</small>
+            <small>{en ? 'Awakening uses this stone only, never gold or gems.' : 'Пробуждение — только за камень, не за монеты и алмазы.'}</small>
           </div>
         </div>}
         {!isCow && !maxed && <div className="followers-camp__cost">
