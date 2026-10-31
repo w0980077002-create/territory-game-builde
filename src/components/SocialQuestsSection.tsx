@@ -21,6 +21,7 @@ export function SocialQuestsSection({ userId, onStatusChange }: { userId: string
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
   const verifyLock = useRef(false);
+  const lastResumeCheck = useRef(Date.now());
   const statusListener = useRef(onStatusChange);
   useEffect(() => { statusListener.current = onStatusChange; }, [onStatusChange]);
 
@@ -35,6 +36,26 @@ export function SocialQuestsSection({ userId, onStatusChange }: { userId: string
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [en, attempt]);
+
+  // Returning from the official Telegram chat/channel may change membership.
+  // Refresh server status, never infer a completed task from opening a link.
+  useEffect(() => {
+    const refreshOnReturn = () => {
+      if (document.visibilityState !== 'visible' || verifyLock.current) return;
+      const now = Date.now();
+      if (now - lastResumeCheck.current < 30_000) return;
+      lastResumeCheck.current = now;
+      setAttempt(n => n + 1);
+    };
+    document.addEventListener('visibilitychange', refreshOnReturn);
+    window.addEventListener('focus', refreshOnReturn);
+    window.addEventListener('online', refreshOnReturn);
+    return () => {
+      document.removeEventListener('visibilitychange', refreshOnReturn);
+      window.removeEventListener('focus', refreshOnReturn);
+      window.removeEventListener('online', refreshOnReturn);
+    };
+  }, []);
 
   async function verify(task: SocialTask) {
     if (verifyLock.current || !status || status[task]) return;
