@@ -54,6 +54,12 @@ assert.match(read('src/game/combatV1/receiptAdapter.ts'), /localStorage\.setItem
 assert.match(ui, /localStorage\.setItem\(sessionKey\(userId\)/, 'recover active server session across remounts');
 assert.match(ui, /busy \|\| recoverable/, 'block conflicting controls during uncertain receipt');
 assert.match(ui, /adventure_definitively_rejected/, 'After a verified server rollback the UI must explain safe recovery');
+assert.match(ui, /cause\.message !== 'adventure_definitively_rejected'/,
+  'A proven 409 rejected duplicate start must auto-recover its existing server fight');
+assert.match(ui, /!currentProgress\.active_session_id\) throw cause/,
+  'Never switch sessions on a 409 without the owner-scoped active session from the server');
+assert.match(ui, /recoveredStart = true/,
+  'After safe resume do not try another cave start or recovery request');
 assert.match(ui, /data-testid="territory-adventure-battle"/, 'server combat should have a visible battle scene');
 assert.match(ui, /data-testid="dark-cave-battle-background"/, 'Cave fights use their own approved cave portal instead of Arena scene');
 assert.match(ui, /data-testid="dark-cave-combat-panels"/, 'Cave battle provides compact equipment and elixir inspection panels');
