@@ -34,29 +34,29 @@ const cloud = read('src/game/cloud.ts');
 
 const weekly = read('src/components/arena/ArenaWeeklyBoard.tsx');
 const bots = read('src/game/arenaWeeklyBots.ts');
-assert.match(board, /import \\{ ArenaWeeklyBoard \\} from '\\.\\/arena\\/ArenaWeeklyBoard'/);
-assert.match(board, /data-testid="arena-rank-shared-top50"[\\s\\S]*?<ArenaWeeklyBoard \\/>/,
+assert.match(board, /import \{ ArenaWeeklyBoard \} from '\.\/arena\/ArenaWeeklyBoard'/);
+assert.match(board, /data-testid="arena-rank-shared-top50"[\s\S]*?<ArenaWeeklyBoard \/>/,
   'Top Players must use exactly the existing Arena board');
-assert.match(weekly, /arenaWeeklyWithBots\\(status, now\\)/);
-assert.match(bots, /\\.\\.\\.humans\\.map/);
-assert.match(bots, /\\.\\.\\.bots/);
-assert.match(board, /onRankings=\\{\\(\\) => setTab\\('arena'\\)\\}/);
-assert.match(board, /onClick=\\{onArena\\}/);
+assert.match(weekly, /arenaWeeklyWithBots\(status, now\)/);
+assert.match(bots, /\.\.\.humans\.map/);
+assert.match(bots, /\.\.\.bots/);
+assert.match(board, /onRankings=\{\(\) => setTab\('arena'\)\}/);
+assert.match(board, /onClick=\{onArena\}/);
 assert.match(board, /role="tabpanel"/);
-assert.doesNotMatch(board, /getLeaderboard\\(|arenaRankView\\(|Серверный ТОП-50|Server TOP-50|entry\\.level/,
+assert.doesNotMatch(board, /getLeaderboard\(|arenaRankView\(|Серверный ТОП-50|Server TOP-50|entry\.level/,
   'Old player-only server leaderboard, conflicting ranks and visible levels must not return');
-assert.doesNotMatch(weekly, /\\{player\\.level\\}/,
+assert.doesNotMatch(weekly, /\{player\.level\}/,
   'Weekly TOP-50 shared with Arena and Championship must not expose hero levels');
 assert.match(season, /data-testid="season-open-top50"/);
-assert.match(season, /onClick=\\{onRankings\\}/);
+assert.match(season, /onClick=\{onRankings\}/);
 assert.match(season, /'Открыть Арену'/, 'Inactive season must not mislabel Arena as TOP-50');
-assert.match(app, /onArena=\\{\\(\\) => setScreen\\('arena'\\)\\}/);
-assert.doesNotMatch(board, /useGame\\.set|saveCloudSave|supabase\\.(?:rpc|from)|claimReward|admin_grants/,
+assert.match(app, /onArena=\{\(\) => setScreen\('arena'\)\}/);
+assert.doesNotMatch(board, /useGame\.set|saveCloudSave|supabase\.(?:rpc|from)|claimReward|admin_grants/,
   'Rankings must be strictly read-only');
 assert.ok(existsSync('public/ic-trophy.webp'), 'Keep approved Arena art');
 assert.match(css, /min-height:48px/);
 assert.match(css, /min-height:44px/);
-assert.match(css, /@media\\(max-width:350px\\)/);
+assert.match(css, /@media\(max-width:350px\)/);
 assert.match(css, /prefers-reduced-motion/);
 assert.match(css, /arena-rank-journey__arena-top/);
 assert.match(seasonCss, /season-journey__secondary--four/);
