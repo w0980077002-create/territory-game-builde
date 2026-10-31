@@ -1,5 +1,5 @@
 import type { ArenaWeeklyPlayer, ArenaWeeklyStatus } from './arenaWeekly';
-import { utcMidnight, arenaSeasonWindow, kyivArenaDayUtc, kyivArenaMidnight } from './seasonCalendar';
+import { utcMidnight, arenaSeasonWindow } from './seasonCalendar';
 
 /**
  * Exactly 50 named virtual Arena contenders for the weekly scoreboard:
@@ -72,16 +72,12 @@ export function arenaWeeklyWithBots(
   if (season.startsAt !== start || season.endsAt !== end) {
     return { leaders: humans, displayRank: verified.my_rank, isDisplayRankVerified: true };
   }
-  // During the one-time transition, keep the old UTC-day bot profiles.
-  // Future seasons use Kyiv civil days, including the Sunday DST shift.
-  const transition = season.weekKey === '2026-10-25';
-  const dayUtc = transition
-    ? utcMidnight(new Date(now).toISOString().slice(0, 10))
-    : kyivArenaDayUtc(now);
-  const today = new Date(dayUtc).toISOString().slice(0, 10);
+  // UTC days, globally identical; an extra transition day retains the
+  // season's final bot totals until Monday instead of resetting on Sunday.
+  const today = new Date(now).toISOString().slice(0, 10);
+  const dayUtc = utcMidnight(today);
   const startDayUtc = utcMidnight(season.weekKey);
-  const dayIndex = Math.floor((dayUtc - startDayUtc) / 86_400_000);
-  const currentDay = Math.max(0, Math.min(7, dayIndex));
+  const currentDay = Math.max(0, Math.min(7, Math.floor((dayUtc - startDayUtc) / 86_400_000)));
   const week = season.weekKey;
 
   // 25 Cyrillic + 25 Latin bot identities, no duplicated or numbered names.
@@ -99,9 +95,9 @@ export function arenaWeeklyWithBots(
     || a.localeCompare(b));
   const skillIndex = new Map(skillOrder.map((name, index) => [name, index]));
 
-  // Event slots use the actual local day length (23/24/25 hours across DST).
-  const midnight = transition ? utcMidnight(today) : kyivArenaMidnight(dayUtc);
-  const nextMidnight = transition ? midnight + 86_400_000 : kyivArenaMidnight(dayUtc + 86_400_000);
+  // Every UTC day has 1,440 minutes, unaffected by local timezone/DST.
+  const midnight = dayUtc;
+  const nextMidnight = midnight + 86_400_000;
   const availableMinutes = (nextMidnight - midnight) / 60_000;
   const elapsedMinutes = Math.max(0, Math.min(availableMinutes, (now - midnight) / 60_000));
 
@@ -114,7 +110,7 @@ export function arenaWeeklyWithBots(
     const strength = 49 - index;
     const weeklyGoal = 1 + strength * 3
       + Math.round(27 * (strength / 49) ** 2);
-    // Transitional eighth day has no fresh simulated wins, never a reset.
+    // The transitional eighth day preserves final simulated wins, no reset.
     const winsBeforeToday = Math.floor(weeklyGoal * currentDay / 7);
     const winsAtDayEnd = Math.floor(weeklyGoal * Math.min(7, currentDay + 1) / 7);
     const todayWins = winsAtDayEnd - winsBeforeToday;
