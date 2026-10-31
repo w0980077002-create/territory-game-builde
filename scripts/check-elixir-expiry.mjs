@@ -75,8 +75,11 @@ actions.useGame.set((state) => ({ ...state, forgeMaterials: state.forgeMaterials
 assert.equal(actions.useGame.get().forgeMaterialBatches.reduce((sum, lot) => sum + lot.qty, 0), 14);
 
 // Player selection wins over hidden oldest-first reordering. Expiry still stays per batch.
-const later = elixir('newer', 8, elixirAt(6));
-const earlier = elixir('older', 8, elixirAt(2));
+// Relative dates keep the transfer regression valid after the fixed historical date passes.
+const laterFuture = new Date(Date.now() + 6 * 86400000).toISOString();
+const earlierFuture = new Date(Date.now() + 2 * 86400000).toISOString();
+const later = elixir('newer', 8, laterFuture);
+const earlier = elixir('older', 8, earlierFuture);
 const stock = { ...initial, inventory: [later, earlier], belt: Array(7).fill(null) };
 const ctx = { level: 99, activeDays: 99, arenaWins: 10000 };
 const first = belt.putInBelt(stock, later.id, ctx);
@@ -97,8 +100,8 @@ assert.equal(belt.beltAction(elixir('bad', 2, elixirAt(-1))), null);
 assert.equal(belt.canBelt(elixir('bad', 2, new Date(Date.now() - 1000).toISOString())), false);
 
 // Health potions must also honor the selected batch, never extending the date.
-const potionLate = { ...potion, id: 'p-late', expiresAt: elixirAt(6) };
-const potionEarly = { ...potion, id: 'p-early', expiresAt: elixirAt(3) };
+const potionLate = { ...potion, id: 'p-late', expiresAt: laterFuture };
+const potionEarly = { ...potion, id: 'p-early', expiresAt: earlierFuture };
 const potionEquipped = belt.putInBelt({ ...stock, inventory: [potionLate, potionEarly] }, potionLate.id, ctx);
 assert.equal(potionEquipped.belt[0].expiresAt, potionLate.expiresAt);
 
