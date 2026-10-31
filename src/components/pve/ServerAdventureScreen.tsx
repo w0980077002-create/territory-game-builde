@@ -370,6 +370,14 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         {session.state.status==='hero_won' && session.settlement?.reward && <p className="text-center text-xs text-yellow-100">
           +{session.settlement.reward.gold} {en?'gold':'монет'} · +{session.settlement.reward.xp} XP
         </p>}
+        {session.state.status === 'hero_won' && progress && progress.unlocked_stage > session.state.input.stage && (
+          <p className="rounded-lg border border-emerald-400/40 bg-emerald-950/40 px-3 py-2 text-center text-sm font-bold text-emerald-200" data-testid="dark-cave-next-floor">
+            {en ? 'Next floor unlocked: ' : 'Открыт следующий этаж: '}{progress.unlocked_stage}
+          </p>
+        )}
+        {session.state.status !== 'hero_won' && <p className="text-center text-xs text-amber-100/80">
+          {en ? 'Try this floor again when you are ready.' : 'Попробуй пройти этот этаж ещё раз, когда будешь готов.'}
+        </p>}
         <button onClick={clearFinished} disabled={busy} className="w-full rounded-xl bg-amber-500 text-black p-3 font-bold">{en?'Back to cave stages':'К этапам пещеры'}</button>
       </> : <>
         {session.state.input.control==='manual' && <div className="space-y-1.5" data-testid="dark-cave-manual-actions">
