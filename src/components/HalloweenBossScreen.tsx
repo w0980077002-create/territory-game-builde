@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Clock3, RefreshCw, Skull, Sparkles, Sword, Trophy, Users } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
+import { useStore } from '@/game/store';
+import { useGame } from '@/game/actions';
+import { getAppearanceIcon } from '@/game/appearance';
 import { getHalloweenBossState, hitHalloweenBoss, type HalloweenBossState } from '@/game/halloweenBoss';
 
 const formatDamage = (value: number, en: boolean) => Math.floor(value).toLocaleString(en ? 'en-US' : 'ru-RU');
@@ -26,6 +29,7 @@ function timeToGo(seconds: number, en: boolean): string {
 /** Seasonal standalone raid. The server alone owns total HP, hits and ranking. */
 export function HalloweenBossScreen() {
   const { language } = useLanguage();
+  const appearance = useStore(useGame).appearance;
   const en = language === 'en';
   const [state, setState] = useState<HalloweenBossState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,7 +109,14 @@ export function HalloweenBossScreen() {
         </p>
         <div className="relative mx-auto mt-1 flex h-44 items-center justify-center" role="img" aria-label={en ? 'Pumpkin King, Halloween world boss' : 'Тыквенный король, общий босс'}>
           <span className="absolute h-28 w-28 rounded-full bg-orange-500/20 blur-2xl" />
+          <img
+            src={getAppearanceIcon(appearance)}
+            alt=""
+            className={`absolute bottom-1 left-0 h-[105px] w-[95px] object-contain object-bottom drop-shadow-[0_4px_6px_#000] transition-transform duration-200 ${impact ? 'translate-x-7 -rotate-6 scale-110' : 'translate-x-0'}`}
+            aria-hidden="true"
+          />
           <div className={`relative select-none text-[116px] leading-none drop-shadow-[0_13px_10px_#000] transition-transform duration-150 ${impact ? 'scale-90 -rotate-6 brightness-150' : 'scale-100'}`} aria-hidden="true">🎃</div>
+          {impact && <span className="absolute bottom-12 left-[38%] -rotate-45 animate-pulse text-[44px] font-black text-yellow-100 drop-shadow-[0_0_12px_#fb923c]" aria-hidden="true">⚔️</span>}
           <Skull size={30} className="absolute bottom-2 right-[22%] text-violet-300/70" aria-hidden="true" />
           {impact && <span className="absolute top-4 right-[18%] animate-bounce text-3xl font-black text-yellow-300 [text-shadow:0_2px_3px_#000]" aria-hidden="true">⚡</span>}
           {lastDamage !== null && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-lg border border-orange-400/50 bg-black/75 px-3 py-1 text-base font-black text-orange-300" aria-live="polite">−{formatDamage(lastDamage, en)}</span>}
