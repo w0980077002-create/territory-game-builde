@@ -73,7 +73,27 @@ try {
     SELECT id,game_state,level,$2,'{}','review case 456','reviewer' FROM public.players WHERE id=$1`,[b,{...fighter,stats:{...fighter.stats,hp:999,maxHp:1}}]);
   await db.exec('SET ROLE service_role');
   assert.equal((await query('SELECT territory_private.prepare_combat_profile_v1($1) AS r',[b]))[0].r.reason,'invalid_reviewed_projection');
-  await db.exec('RESET ROLE; SET ROLE authenticated');
+  await db.exec('RESET ROLE');
+  const missed = Array.from({length:8}, (_,i)=>`40000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`);
+  for (const id of missed) {
+    await query('INSERT INTO public.players SELECT $1,banned,level,game_state,gold FROM public.players WHERE id=$2',[id,a]);
+    await query(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
+      SELECT id,game_state,level,$2,'{}',territory_private.combat_legacy_equipped_ids_v1(game_state),'synthetic evidence','reviewer' FROM public.players WHERE id=$1`,[id,refreshed.fighter]);
+    assert.equal((await query('SELECT territory_private.prepare_combat_profile_v1($1) r',[id]))[0].r.status,'ready');
+    await query(`UPDATE public.players SET game_state=jsonb_set(game_state,'{player,equipped,weapon,id}','"changed-again"') WHERE id=$1`,[id]);
+  }
+  const beforeDetection=await query('SELECT * FROM public.players ORDER BY id');
+  await db.exec('SET ROLE service_role');
+  assert.equal((await query('SELECT territory_private.detect_combat_profile_v1($1) r',[a]))[0].r.status,'current');
+  for (const id of missed) {
+    assert.equal((await query('SELECT territory_private.detect_combat_profile_v1($1) r',[id]))[0].r.status,'reconciliation_required');
+    assert.equal((await query('SELECT territory_private.detect_combat_profile_v1($1) r',[id]))[0].r.status,'reconciliation_required');
+  }
+  assert.equal((await query(`SELECT count(*)::int n FROM territory_private.combat_profile_reconciliation_v1 WHERE player_id = ANY($1::uuid[])`,[missed]))[0].n,8);
+  await db.exec('RESET ROLE');
+  assert.deepEqual(await query('SELECT * FROM public.players ORDER BY id'),beforeDetection, 'detection never changes saves, gear or wallets');
+  await db.exec('SET ROLE authenticated');
+  await assert.rejects(query('SELECT territory_private.detect_combat_profile_v1($1)',[a]),/permission denied/);
   await assert.rejects(query('SELECT territory_private.prepare_combat_profile_v1($1)',[a]),/permission denied/);
   console.log('Combat profile reconciliation PASS: reviewed snapshots only, ownership preserved, stale gear blocked, no player mutation.');
 } finally { await db.close(); }

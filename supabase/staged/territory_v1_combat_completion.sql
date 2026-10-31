@@ -18,6 +18,16 @@ CREATE TABLE IF NOT EXISTS territory_private.combat_config_v1 (
 -- an existing deployment preserves its current start behavior.
 ALTER TABLE territory_private.combat_config_v1
  ADD COLUMN IF NOT EXISTS starts_enabled boolean NOT NULL DEFAULT true;
+ALTER TABLE territory_private.combat_config_v1
+ ADD COLUMN IF NOT EXISTS canary_only boolean NOT NULL DEFAULT false;
+-- Empty private allowlist; no users are enrolled by installation.
+CREATE TABLE IF NOT EXISTS territory_private.cave_canary_v1 (
+ player_id uuid PRIMARY KEY REFERENCES public.players(id),
+ evidence_reference text NOT NULL CHECK(length(btrim(evidence_reference)) > 0)
+);
+ALTER TABLE territory_private.cave_canary_v1 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON territory_private.cave_canary_v1 FROM PUBLIC,anon,authenticated,service_role;
+GRANT SELECT ON territory_private.cave_canary_v1 TO service_role;
 INSERT INTO territory_private.combat_config_v1(id) VALUES(true) ON CONFLICT DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS territory_private.combat_profiles_v1 (
@@ -202,6 +212,8 @@ BEGIN
     receipt:=jsonb_build_object('success',true,'profile_revision',h.version+1,'loadout',p_result->'loadout');
   ELSIF a='start' THEN
     IF NOT c.starts_enabled THEN RAISE EXCEPTION 'combat_starts_paused'; END IF;
+    IF c.canary_only AND NOT EXISTS (SELECT 1 FROM territory_private.cave_canary_v1 WHERE player_id=p_player)
+      THEN RAISE EXCEPTION 'combat_canary_not_allowed'; END IF;
     IF NOT c.settlement_ready THEN RAISE EXCEPTION 'combat_settlement_not_ready'; END IF;
     SELECT * INTO e FROM territory_private.combat_encounters_v1 WHERE encounter_id=p_request->>'encounterId' FOR SHARE;
     IF NOT FOUND OR NOT e.enabled OR e.version<>(p_context->'encounter'->>'version')::integer

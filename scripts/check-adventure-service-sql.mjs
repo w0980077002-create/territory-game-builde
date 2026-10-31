@@ -68,8 +68,11 @@ try {
  assert.equal((await exec({action:'resume',sessionId:next.session_id})).state.status,'fighting');
  assert.deepEqual(await exec({action:'start',operationId:op(5),encounterId:'s2',control:'auto'}),next);
  await db.exec('RESET ROLE');
- await db.exec('UPDATE territory_private.combat_config_v1 SET starts_enabled=true WHERE id');
+ await db.exec('UPDATE territory_private.combat_config_v1 SET starts_enabled=true,canary_only=true WHERE id');
+ await q(`INSERT INTO territory_private.cave_canary_v1 VALUES($1,'synthetic review')`,[noLevel]);
  await db.exec('SET ROLE service_role');
+ await assert.rejects(exec({action:'start',operationId:op(13),encounterId:'s1',control:'auto'}),/combat_canary_not_allowed/);
+ await assert.rejects(q(`INSERT INTO territory_private.cave_canary_v1 VALUES($1,'forged')`,[player]),/permission denied/);
  const otherStart=await execOther({action:'start',operationId:op(6),encounterId:'s1',control:'auto'});
  await db.exec('RESET ROLE'); await q('UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=$1',[otherStart.session_id]); await db.exec('SET ROLE service_role');
  const otherWin=await execOther({action:'advance',operationId:op(7),sessionId:otherStart.session_id,revision:0});

@@ -194,5 +194,40 @@ const drained=await execute(player,{action:'advance',operationId:op(15),sessionI
 assert.equal(drained.state.status,'hero_won');
 assert.deepEqual(await execute(player,{action:'advance',operationId:op(15),sessionId:next.session_id,revision:0}),drained);
 assert.equal(await sql(`SELECT count(*) FROM territory_private.adventure_settlements_v1 WHERE session_id=${quote(next.session_id)}`),'1');
-await sql('UPDATE territory_private.combat_config_v1 SET starts_enabled=true WHERE id=true');
+await sql('UPDATE territory_private.combat_config_v1 SET starts_enabled=true,canary_only=true WHERE id=true');
+await assert.rejects(execute(player,{action:'start',operationId:op(16),encounterId:'s1',control:'auto'}),/combat_canary_not_allowed/);
+await assert.rejects(sql(`SET ROLE authenticated; INSERT INTO territory_private.cave_canary_v1 VALUES(${quote(player)},'forged')`),/permission denied/);
+await sql(`INSERT INTO territory_private.cave_canary_v1 VALUES(${quote(loser)},'synthetic case')`);
+const canaryBefore=Number(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`));
+const canaryCmd={action:'start',operationId:op(17),encounterId:'s1',control:'auto'};
+const canaryStart=await execute(loser,canaryCmd);
+assert.deepEqual(await execute(loser,canaryCmd),canaryStart);
+assert.equal(Number(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`)),canaryBefore-1);
+await sql('UPDATE territory_private.combat_config_v1 SET starts_enabled=false WHERE id=true');
+assert.equal((await execute(loser,{action:'resume',sessionId:canaryStart.session_id})).state.status,'fighting');
+await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(canaryStart.session_id)}`);
+const canaryFinish={action:'advance',operationId:op(18),sessionId:canaryStart.session_id,revision:0};
+const canaryResult=await execute(loser,canaryFinish);
+assert.equal(canaryResult.state.status,'enemy_won');
+assert.deepEqual(await execute(loser,canaryFinish),canaryResult);
+assert.equal(Number(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`)),canaryBefore-1);
+// Eight individually stale owners simulate accounts that never called prepare.
+// Clone only synthetic fixture records, never production data.
+for (let i=1;i<=8;i++) {
+ const id=`40000000-0000-4000-8000-${String(i).padStart(12,'0')}`;
+ await sql(`INSERT INTO public.players(id,banned,game_state,gold,gems,xp,level,max_energy,updated_at)
+  SELECT ${quote(id)},banned,game_state,gold,gems,xp,level,max_energy,updated_at FROM public.players WHERE id=${quote(player)};
+  WITH a AS (INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
+    SELECT ${quote(id)},a.source_game_state,a.source_player_level,a.fighter,a.equipped_item_ids,a.legacy_equipped_ids,'synthetic evidence','reviewer'
+    FROM territory_private.combat_profile_sources_v1 src JOIN territory_private.combat_profile_attestations_v1 a ON a.attestation_id=src.attestation_id WHERE src.player_id=${quote(player)} RETURNING attestation_id)
+  INSERT INTO territory_private.combat_profiles_v1(player_id,version,verified,fighter,equipped_item_ids,legacy_equipped_ids,approval_reference)
+    SELECT ${quote(id)},h.version,h.verified,h.fighter,h.equipped_item_ids,h.legacy_equipped_ids,a.attestation_id::text FROM territory_private.combat_profiles_v1 h CROSS JOIN a WHERE h.player_id=${quote(player)};
+  INSERT INTO territory_private.combat_profile_sources_v1(player_id,attestation_id,projection,fighter)
+    SELECT ${quote(id)},h.approval_reference::uuid,src.projection,src.fighter FROM territory_private.combat_profile_sources_v1 src JOIN territory_private.combat_profiles_v1 h ON h.player_id=${quote(id)} WHERE src.player_id=${quote(player)};
+  UPDATE public.players SET game_state=jsonb_set(game_state,'{player,equipped,weapon,id}','"stale"') WHERE id=${quote(id)};`);
+ assert.equal((await scalar(`SET ROLE service_role; SELECT territory_private.detect_combat_profile_v1(${quote(id)})`)).status,'reconciliation_required');
+ assert.equal((await scalar(`SET ROLE service_role; SELECT territory_private.detect_combat_profile_v1(${quote(id)})`)).status,'reconciliation_required');
+}
+assert.equal(await sql("SELECT count(*) FROM territory_private.combat_profile_reconciliation_v1 WHERE player_id::text LIKE '40000000-%'"),'8');
+await assert.rejects(sql(`SET ROLE authenticated; SELECT territory_private.detect_combat_profile_v1(${quote(player)})`),/permission denied/);
 console.log('PostgreSQL 17 PASS: owner-scoped recovery, unique active session, reviewed synthetic profile, locked stages, engine victory/loss, rollback and retry, durable receipts, preserved save and real concurrent lock contention.');

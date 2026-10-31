@@ -89,6 +89,24 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
   );
 $$;
 
+-- Explicit owner-scoped detection for an operator or trusted service. It never
+-- attests or updates player/projection data and does not invoke preparation.
+-- Detection and start serialize on the same player row.
+CREATE OR REPLACE FUNCTION territory_private.detect_combat_profile_v1(p_player uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
+BEGIN
+ PERFORM 1 FROM public.players WHERE id=p_player AND NOT coalesce(banned,false) FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'combat_account_unavailable'; END IF;
+ IF territory_private.combat_profile_is_current_v1(p_player) THEN
+   RETURN jsonb_build_object('status','current');
+ END IF;
+ INSERT INTO territory_private.combat_profile_reconciliation_v1(player_id,reason)
+   VALUES(p_player,'trusted_projection_missing_or_stale') ON CONFLICT(player_id) DO NOTHING;
+ RETURN jsonb_build_object('status','reconciliation_required');
+END $$;
+REVOKE ALL ON FUNCTION territory_private.detect_combat_profile_v1(uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION territory_private.detect_combat_profile_v1(uuid) TO service_role;
+
 CREATE OR REPLACE FUNCTION territory_private.prepare_combat_profile_v1(p_player uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
 DECLARE p public.players%ROWTYPE;
