@@ -64,8 +64,8 @@ assert(ruNames.every(name => /^[А-Яа-яЁё]+$/.test(name)));
 assert(enNames.every(name => /^[A-Za-z]+$/.test(name)));
 assert.equal(new Set([...ruNames, ...enNames].map(name => name.toLowerCase())).size, 50);
 assert.doesNotMatch(source, /name \+ '_' \+|ARENA_PVP_BOT_NAMES\.slice/, 'No numbered copies');
-assert.match(source, /utcMidnight\(today\)/, 'Use exact UTC day boundaries');
-assert.match(source, /utcMidnight\(tomorrow\)/, 'Use exact UTC midnight for next day');
+assert.match(source, /kyivArenaDayUtc\(now\)/, 'Kyiv season days must use the correct local date');
+assert.match(source, /kyivArenaMidnight\(dayUtc\)/, 'Kyiv day boundaries must account for daylight saving');
 assert.match(source, /eventMinute/, 'Each individual win needs its own scheduled time');
 assert.doesNotMatch(source, /17 \+ \(\(mixed|Math\.random\(/, 'No daily bulk credit or viewer-specific random scores');
 
@@ -191,6 +191,41 @@ for (const [id, wins] of mondayMorning) {
 assert(increased >= 20, 'Bots must earn their wins at different points throughout each day');
 
 const beforeReset = scoresByName(at('2026-10-24T23:50:00Z', []).leaders);
+const transitionBeforeSunday = at('2026-10-31T23:59:00Z', [], secondStart, transitionEnd);
+const transitionAfterSunday = at('2026-11-01T00:01:00Z', [], secondStart, transitionEnd);
+checkRanks(transitionBeforeSunday.leaders);
+checkRanks(transitionAfterSunday.leaders);
+const beforeCutover = scoresByName(transitionBeforeSunday.leaders);
+const afterCutover = scoresByName(transitionAfterSunday.leaders);
+for (const [bot, wins] of beforeCutover) {
+  assert(afterCutover.get(bot) >= wins, 'Old Sunday midnight must not reset a bot');
+}
+assert.deepEqual([...beforeCutover.keys()].sort(), [...afterCutover.keys()].sort(),
+  'The same contender identities must remain until Monday');
+
+const mondayStart = at('2026-11-01T22:01:00Z', [], transitionEnd, nextEnd);
+checkRanks(mondayStart.leaders);
+assert(mondayStart.leaders.every(p => p.wins <= 1),
+  'At Kyiv Monday 00:01 simulated rivals must not receive 22 hours of wins');
+const mondayMorning = arenaSeasonWindow(Date.parse('2026-11-02T01:00:00Z'));
+assert.equal(mondayMorning.weekKey, '2026-11-02');
+assert.equal(mondayMorning.startsAt, transitionEnd);
+assert.equal(arenaSeasonWindow(Date.parse('2027-03-28T20:59:59Z')).endsAt,
+  Date.parse('2027-03-28T21:00:00Z'), 'Spring DST boundary shifts next Monday midnight');
+assert.equal(arenaSeasonWindow(Date.parse('2027-03-28T21:00:00Z')).weekKey,
+  '2027-03-29', 'Spring DST must not reset during Sunday');
+assert.equal(arenaSeasonWindow(Date.parse('2027-10-31T21:59:59Z')).endsAt,
+  Date.parse('2027-10-31T22:00:00Z'), 'Autumn DST boundary shifts next Monday midnight');
+
+const sql = readFileSync('supabase/staged/arena_top50_monday_kyiv_cutover_20261102.sql','utf8');
+assert.match(sql,/arena_cutover_requires_paused_original_config/);
+assert.match(sql,/arena_cutover_rewards_version_mismatch/);
+assert.match(sql,/v_current_week := \(now\(\) AT TIME ZONE 'Europe\/Kyiv'\)/);
+assert.match(sql,/v_kyiv_monday := v_utc_day/);
+assert.match(sql,/DATE '2026-11-02'/);
+assert.match(sql,/v_start := '2026-10-25T00:00:00Z'/);
+assert.match(sql,/v_end := '2026-11-01T22:00:00Z'/);
+
 const newSeason = at('2026-10-25T12:00:00Z', [], secondStart, transitionEnd);
 checkRanks(newSeason.leaders);
 assert(newSeason.leaders.every(p => p.wins <= 25), 'Sunday must reset synthetic season-only wins');
@@ -205,4 +240,4 @@ for (const [id, wins] of dstBefore) {
 
 assert(!source.includes('supabase.rpc(') && !source.includes('supabase.from('),
   'NPC scores must never write to real-player data');
-console.log('Arena weekly TOP-50: 50 distinct Fri/Sat bot scores, wider 1..175 weekly targets, gradual single wins, Sunday/UTC reset, no DB writes: PASS');
+console.log('Arena weekly TOP-50: 50 distinct rivals, 25/day, transitional 8th day, Monday Kyiv reset/DST, guarded payout SQL: PASS');
