@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Hammer, Lock, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Hammer, Lock, Sparkles, CheckCircle2, MapPinned, Package, RefreshCw, ChevronRight } from 'lucide-react';
 import { useGame } from '@/game/actions';
 import { supabase } from '@/game/supabase';
 import { captureGameEvent } from '@/game/analytics';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { craftOutputArt, PROFESSION_ART, resourceArt } from '@/game/art';
 import { useStore } from '@/game/store';
+import { nextCraftRoute } from '@/game/craftJourney';
 import type { ProfessionId, ProfessionProgress } from '@/game/types';
 import { fetchCraftStatus, submitVerifiedCraft, receiptDisplayItem, mirrorCraftResources, keepPendingCraft, readPendingCraft, type CraftStatus } from '@/game/craftApi';
 import {
@@ -28,7 +29,7 @@ const INITIAL_PROFESSION_PROGRESS: ProfessionProgress = {
 
 type Tab = 'profession' | 'craft';
 
-export function ProfessionsScreen() {
+export function ProfessionsScreen({ onMap, onInventory, onForge }: { onMap?: () => void; onInventory?: () => void; onForge?: () => void }) {
   const game = useStore(useGame);
   const { t, language } = useLanguage();
   const progress = game.professions ?? INITIAL_PROFESSION_PROGRESS;
@@ -56,6 +57,21 @@ export function ProfessionsScreen() {
   const displayedLevel = craftStatus?.enabled ? craftStatus.masteryLevel : progress.masteryLevel;
   const displayedXp = craftStatus?.enabled ? craftStatus.masteryXp : progress.masteryXp;
   const xpPercent = nextXp ? Math.min(100, Math.round((displayedXp / nextXp) * 100)) : 100;
+  const routeGoal = nextCraftRoute(availableRecipes, displayedLevel,
+    (id) => craftStatus?.enabled ? (craftStatus.resources[id] ?? 0) : countResource(game.inventory, id));
+  const retryCraftCheck = async () => {
+    if (craftCheck === 'checking') return;
+    setCraftCheck('checking');
+    try {
+      const status = await fetchCraftStatus();
+      const pending = status?.enabled ? await readPendingCraft() : null;
+      setCraftStatus(status);
+      setPendingCraft(pending);
+      setCraftCheck('ready');
+    } catch {
+      setCraftCheck('error');
+    }
+  };
 
   const chooseProfession = async (id: ProfessionId) => {
     if (buying) return;
