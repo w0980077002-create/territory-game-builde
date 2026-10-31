@@ -46,6 +46,7 @@ jobs:
       - name: Fast beta release checks
         run: |
           npm run typecheck
+          node scripts/check-halloween-world-boss.mjs
           node scripts/check-release-invariants.mjs
           node scripts/check-economy-receipts-foundation.mjs
           node scripts/check-inventory-acl-contract.mjs

@@ -62,9 +62,10 @@ const AuctionScreen = lazy(() => import('@/components/AuctionScreen').then(m => 
 const FriendsScreen = lazy(() => import('@/components/FriendsScreen').then(m => ({ default: m.FriendsScreen })));
 const MessagesScreen = lazy(() => import('@/components/MessagesScreen').then(m => ({ default: m.MessagesScreen })));
 const EventsScreen = lazy(() => import('@/components/EventsScreen').then(m => ({ default: m.EventsScreen })));
+const HalloweenBossScreen = lazy(() => import('@/components/HalloweenBossScreen').then(m => ({ default: m.HalloweenBossScreen })));
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
-type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages' | 'events';
+type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
 type Screen = NavId | SubScreen;
 
 /** Warm only the navigation chunks people are most likely to open.
@@ -86,6 +87,7 @@ const sectionPreloaders: Partial<Record<Screen, () => Promise<unknown>>> = {
   friends: () => import('@/components/FriendsScreen'),
   messages: () => import('@/components/MessagesScreen'),
   events: () => import('@/components/EventsScreen'),
+  'halloween-boss': () => import('@/components/HalloweenBossScreen'),
 };
 
 function preloadSection(screen: Screen): Promise<unknown> {
@@ -114,6 +116,7 @@ const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> =
   friends: { title: 'Друзья', icon: '/ic-invite.webp' },
   messages: { title: 'Сообщения', icon: '/ic-mail.webp' },
   events: { title: 'События', icon: '/ic-events.webp' },
+  'halloween-boss': { title: 'Хэллоуинский босс', icon: '/ic-events.webp' },
 };
 
 function Splash({ text }: { text: string }) {
@@ -422,7 +425,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           <h1 className="viking-title min-w-0 flex-1 text-sm leading-tight">
             {screen === 'forge' ? (
               <WoodenPlaque>{translate('forge')}</WoodenPlaque>
-            ) : translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction', friends: 'friends', messages: 'messages', events: 'events' } as Record<string, string>)[screen] ?? sub.title)}
+            ) : screen === 'halloween-boss' ? (language === 'en' ? 'Halloween boss' : 'Хэллоуинский босс') : translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction', friends: 'friends', messages: 'messages', events: 'events' } as Record<string, string>)[screen] ?? sub.title)}
           </h1>
         </header>
       )}
@@ -519,6 +522,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} onNavigate={setScreen} />}
         {screen === 'messages' && <MessagesScreen notify={notify} onQuests={() => setScreen('quests')} onDaily={() => setEventDailyOpen(true)} />}
         {screen === 'events' && <EventsScreen onNavigate={setScreen} onDaily={() => setEventDailyOpen(true)} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} gatherReady={gatherReady} />}
+        {screen === 'halloween-boss' && <HalloweenBossScreen />}
         {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} onNavigate={setScreen} />}
         </Suspense>
         </SectionErrorBoundary>
