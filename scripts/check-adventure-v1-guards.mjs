@@ -43,6 +43,7 @@ try {
  await db.exec(readFileSync('supabase/staged/territory_v1_combat_completion.sql','utf8'));
  await db.exec(readFileSync('supabase/staged/territory_v1_adventure_settlement.sql','utf8'));
  await db.exec(readFileSync('supabase/staged/territory_v1_combat_profiles_reconciliation.sql','utf8'));
+ await db.exec(readFileSync('supabase/staged/territory_dark_stones_20261030.sql','utf8'));
  await q(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by) VALUES($1,$2,1,$3,'{}',territory_private.combat_legacy_equipped_ids_v1($2),'test evidence','test reviewer')`,[player,actualSave,fighter]);
  const prepared=(await q('SELECT territory_private.prepare_combat_profile_v1($1) result',[player]))[0].result;
  assert.equal(prepared.status,'ready');
@@ -68,7 +69,7 @@ try {
  assert.equal(row.gold,65); assert.equal(row.xp,10); assert.deepEqual(row.game_state.inventory,actualSave.inventory); assert.deepEqual(row.game_state.player.equipped,actualSave.player.equipped);
  assert.deepEqual([row.attack,row.defense,row.max_hp,row.crit_chance],[33,7,120,5]);
  assert.equal((await q('SELECT updated_at > $2::timestamptz AS newer FROM players WHERE id=$1',[player,originalTimestamp]))[0].newer,true);
- assert.equal((await q('SELECT count(*)::int AS n FROM public.territory_economy_audit_v1 WHERE player_id=$1',[player]))[0].n,2,'start debit and settlement are both audited');
+ assert.equal((await q('SELECT count(*)::int AS n FROM public.territory_economy_audit_v1 WHERE player_id=$1',[player]))[0].n,1,'the players wallet audit records the settlement; Cave debit is in the Dark Stone ledger');
  const stale=structuredClone(row.game_state); delete stale.inventoryCleanupVersion;
  await assert.rejects(q('UPDATE players SET game_state=$2 WHERE id=$1',[player,stale]),/territory_stale_inventory_cleanup_snapshot/);
  const mismatch=structuredClone(row.game_state); mismatch.player.gold++;

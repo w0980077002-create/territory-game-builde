@@ -7,6 +7,10 @@
 BEGIN;
 SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '30s';
+-- Serialize the freeze with existing commit calls taking config FOR SHARE.
+-- Once this lock is held, the active-session preflight observes any start
+-- that committed before the freeze and later starts wait for this transaction.
+LOCK TABLE territory_private.combat_config_v1 IN ACCESS EXCLUSIVE MODE;
 DO $c1_preflight$
 BEGIN
  IF md5(pg_get_functiondef(to_regprocedure('public.territory_combat_commit_v1(uuid,jsonb,jsonb,jsonb)'))) IS DISTINCT FROM 'aff68eb71dd065e460829a592fa5eea7' THEN
@@ -90,7 +94,7 @@ BEGIN
     PERFORM territory_private.adventure_check_start_v1(p_player,e.encounter_id);
     IF EXISTS(SELECT 1 FROM territory_private.combat_sessions_v1 WHERE player_id=p_player AND state->>'status'='fighting')
       THEN RAISE EXCEPTION 'combat_active_session_exists'; END IF;
-    -- The real V1 PvE consumes one battle stone per accepted start. Debit
+    -- Cave entry debits one server-owned Dark Stone per accepted start. Debit
     -- only after all stage/profile/session checks, inside the same operation
     -- transaction as the session and its durable replay receipt.
     SELECT * INTO wallet FROM public.players WHERE id=p_player FOR UPDATE;
@@ -141,7 +145,7 @@ BEGIN
   INSERT INTO territory_private.combat_operations_v1(player_id,operation_id,request,receipt)
     VALUES(p_player,(p_request->>'operationId')::uuid,p_request,receipt);
   RETURN receipt;
-END $function$
+END $function$;
 
 
 CREATE OR REPLACE FUNCTION territory_private.combat_refresh_reward_v1(p_player uuid, p_before jsonb, p_old_level integer)
@@ -199,7 +203,7 @@ BEGIN
  UPDATE territory_private.combat_profile_sources_v1 SET
    projection=jsonb_set(after_projection,'{equipped}',src.projection->'equipped'),
    fighter=v_fighter-'loadout' WHERE player_id=p_player;
-END $function$
+END $function$;
 
 
 CREATE OR REPLACE FUNCTION territory_private.adventure_settle_v1(p_player uuid, p_session uuid)
@@ -293,7 +297,7 @@ BEGIN
  INSERT INTO territory_private.adventure_settlements_v1(session_id,player_id,stage,outcome,receipt)
    VALUES(p_session,p_player,r.stage,outcome,receipt);
  RETURN receipt;
-END $function$
+END $function$;
 
 
 CREATE OR REPLACE FUNCTION public.territory_adventure_progress_v1()
@@ -313,7 +317,7 @@ BEGIN
     WHERE player_id=u AND state->>'status'='fighting';
   RETURN jsonb_build_object('completed_stage',coalesce(completed,0),
     'unlocked_stage',coalesce(unlocked,1),'dark_stones',stones,'active_session_id',active_session);
-END $function$
+END $function$;
 
 
 -- An operator/service-only detector; installing it does NOT enqueue real players.

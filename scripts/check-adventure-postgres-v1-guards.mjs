@@ -66,7 +66,7 @@ for (const path of ['supabase/migrations/20261017_inventory_cleanup_prepare.sql'
 await sql('UPDATE public.players SET game_state=game_state');
 const normalizedSave=await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`);
 assert.equal((await scalar(`SELECT row_to_json(p) FROM public.players p WHERE id=${quote(player)}`)).attack,28);
-for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supabase/staged/territory_v1_adventure_settlement.sql', 'supabase/staged/territory_v1_combat_profiles_reconciliation.sql']) await file(path);
+for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supabase/staged/territory_v1_adventure_settlement.sql', 'supabase/staged/territory_v1_combat_profiles_reconciliation.sql', 'supabase/staged/territory_dark_stones_20261030.sql']) await file(path);
 assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`), normalizedSave, 'installation leaves the old save untouched');
 await sql(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
  VALUES (${quote(player)},${json(normalizedSave)},1,${json(fighter)},'{}',ARRAY['old']::text[],'synthetic evidence','test reviewer'),
@@ -140,8 +140,8 @@ const row=await scalar(`SELECT row_to_json(p) FROM public.players p WHERE id=${q
 assert.equal(row.gold,65); assert.equal(row.xp,10); assert.equal(row.level,2);
 assert.deepEqual(row.game_state.inventory,normalizedSave.inventory); assert.deepEqual(row.game_state.player.equipped,normalizedSave.player.equipped);
 assert.deepEqual([row.attack,row.defense,row.max_hp,row.crit_chance],[33,7,120,5]);
-assert.equal(await sql(`SELECT count(*) FROM public.territory_economy_audit_v1 WHERE player_id=${quote(player)}`),'2',
- 'audit must record exactly one entry-stone debit and one victory award');
+assert.equal(await sql(`SELECT count(*) FROM public.territory_economy_audit_v1 WHERE player_id=${quote(player)}`),'1',
+ 'players wallet audit records only settlement; Cave debit is in the Dark Stone ledger');
 const stale = structuredClone(row.game_state); delete stale.inventoryCleanupVersion;
 await assert.rejects(sql(`UPDATE public.players SET game_state=${json(stale)} WHERE id=${quote(player)}`), /territory_stale_inventory_cleanup_snapshot/);
 const mismatch = structuredClone(row.game_state); mismatch.player.gold++;
@@ -149,7 +149,7 @@ await assert.rejects(sql(`UPDATE public.players SET game_state=${json(mismatch)}
 assert.equal(row.game_state.vip,7); assert.equal(row.game_state.redGems,45); assert.deepEqual(row.game_state.achievements,save.achievements);
 assert.equal(await sql(`SELECT count(*) FROM territory_private.adventure_settlements_v1 WHERE session_id=${quote(start.session_id)}`),'1');
 const progress=await scalar(`SET ROLE authenticated; SELECT set_config('request.test_uid',${quote(player)},false); SELECT public.territory_adventure_progress_v1()` .replace(`SELECT set_config('request.test_uid',${quote(player)},false);`, `SET request.test_uid=${quote(player)};`));
-assert.deepEqual(progress,{completed_stage:1,unlocked_stage:2});
+assert.deepEqual(progress,{completed_stage:1,unlocked_stage:2,dark_stones:4,active_session_id:null});
 // The second synthetic player loses a genuine engine fight; no win reward is paid.
 const strongEnemy={...fighter,stats:{...fighter.stats,attack:1000}};
 await sql(`UPDATE territory_private.combat_encounters_v1 SET enemy=${json(strongEnemy)} WHERE encounter_id='s1'`);
@@ -157,5 +157,5 @@ const lostStart=await execute(loser,{action:'start',operationId:op(5),encounterI
 await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(lostStart.session_id)}`);
 const lost=await execute(loser,{action:'advance',operationId:op(6),sessionId:lostStart.session_id,revision:0});
 assert.equal(lost.state.status,'enemy_won'); assert.equal(lost.settlement.reward.gold,0); assert.equal(lost.settlement.reward.xp,0);
-assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`),{...normalizedSave,battleStones:normalizedSave.battleStones-1},'defeat charges exactly one battle stone, leaves all other save fields unchanged');
+assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`),normalizedSave,'defeat preserves ordinary battle stones and all other save fields');
 console.log('PostgreSQL 17 with actual V1 economy, gear and inventory guards PASS: reviewed synthetic profile, locked stages, engine victory/loss, rollback and retry, durable receipts, preserved save and real concurrent lock contention.');

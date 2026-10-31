@@ -46,6 +46,12 @@ jobs:
         run: node scripts/check-adventure-postgres.mjs
         env:
           ADVENTURE_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/territory_adventure_ci
+      - name: Rehearse guarded live-function patch and phase-A stop on clone
+        run: |
+          PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres territory_adventure_clone_ci
+          node scripts/check-adventure-postgres.mjs
+        env:
+          ADVENTURE_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/territory_adventure_clone_ci
       - name: Rehearse settlement with checked-in V1 guards
         run: |
           PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres territory_adventure_guards_ci

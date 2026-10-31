@@ -222,18 +222,18 @@ BEGIN
     PERFORM territory_private.adventure_check_start_v1(p_player,e.encounter_id);
     IF EXISTS(SELECT 1 FROM territory_private.combat_sessions_v1 WHERE player_id=p_player AND state->>'status'='fighting')
       THEN RAISE EXCEPTION 'combat_active_session_exists'; END IF;
-    -- The real V1 PvE consumes one battle stone per accepted start. Debit
-    -- only after all stage/profile/session checks, inside the same operation
-    -- transaction as the session and its durable replay receipt.
+    -- The Cave has its own server-owned wallet. Its debit, session and
+    -- operation receipt commit atomically under the player lock. Legacy
+    -- campaign battleStones remain unchanged, including when zero.
+    PERFORM territory_private.dark_stone_take_v1(p_player);
     SELECT * INTO wallet FROM public.players WHERE id=p_player FOR UPDATE;
     IF jsonb_typeof(wallet.game_state->'battleStones') IS DISTINCT FROM 'number'
-      OR (wallet.game_state->>'battleStones')::numeric < 1
+      OR (wallet.game_state->>'battleStones')::numeric < 0
       OR (wallet.game_state->>'battleStones')::numeric > 2147483647
       OR trunc((wallet.game_state->>'battleStones')::numeric) <> (wallet.game_state->>'battleStones')::numeric
-      THEN RAISE EXCEPTION 'adventure_no_battle_stones'; END IF;
+      THEN RAISE EXCEPTION 'combat_invalid_battle_stones'; END IF;
     available_stones := (wallet.game_state->>'battleStones')::bigint;
-    UPDATE public.players SET game_state=jsonb_set(game_state,'{battleStones}',to_jsonb(available_stones-1)),
-      updated_at=greatest(clock_timestamp(),updated_at+interval '1 millisecond')
+    UPDATE public.players SET updated_at=greatest(clock_timestamp(),updated_at+interval '1 millisecond')
       WHERE id=p_player RETURNING * INTO wallet;
     -- If a live trigger unexpectedly alters combat-relevant fields, fail
     -- the entire transaction instead of spending currency with stale stats.
@@ -265,7 +265,7 @@ BEGIN
       receipt:=receipt||jsonb_build_object('start_save',jsonb_build_object(
         'success',true,'session_id',s.session_id,'updated_at',wallet.updated_at,
         'wallet_gold',wallet.gold,'wallet_gems',wallet.gems,
-        'battle_stones',available_stones-1,'game_state',wallet.game_state));
+        'battle_stones',available_stones,'game_state',wallet.game_state));
     END IF;
   END IF;
   INSERT INTO territory_private.combat_operations_v1(player_id,operation_id,request,receipt)
