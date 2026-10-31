@@ -128,6 +128,20 @@ with sync_playwright() as p:
         page.get_by_role('button',name='Back to cave stages' if lang == 'en' else 'К этапам пещеры').click()
         page.get_by_text('Floor 1 / 100' if lang == 'en' else 'Этаж 1 / 100').wait_for()
         page.close()
+    # Pending advance can be replayed and then resumed with the SAME confirmed
+    # event IDs. One impact and one block must not become four visual log rows.
+    for lang in ('ru', 'en'):
+        page = browser.new_page(viewport={'width':390,'height':844})
+        page.on('pageerror', lambda e: errors.append(str(e)))
+        page.route(URL+'**', serve)
+        page.goto(URL + ('?pending=1&lang=en' if lang == 'en' else '?pending=1'))
+        log = page.get_by_test_id('dark-cave-battle-log')
+        log.wait_for()
+        assert log.locator('p').count() == 2, 'Repeated server receipt must not duplicate confirmed hit/block'
+        assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
+        assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="resume").length') == 1
+        assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 0
+        page.close()
     assert not errors, errors
     browser.close()
 print('Adventure browser PASS: 320/360/390/430 no overflow, one server start, one advance, confirmed reward, next stage (offline fixture).')
