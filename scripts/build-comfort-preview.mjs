@@ -40,7 +40,7 @@ const output = await build({
   alias:{'@':resolve('src')},
   define:{'import.meta.env.BASE_URL':JSON.stringify('/'),'process.env.NODE_ENV':'"production"'},
   plugins:[{name:'no-live-transport',setup(b){
-    b.onResolve({filter:/^@\/game\/(actions|live|progression)$/},args=>({path:args.path.split('/').pop(),namespace:'comfort-fixture'}));
+    b.onResolve({filter:/(?:^@\/game\/|\/game\/)(actions|live|progression)(?:\.ts)?$/},args=>({path:args.path.match(/(actions|live|progression)(?:\.ts)?$/)[1],namespace:'comfort-fixture'}));
     b.onLoad({filter:/.*/,namespace:'comfort-fixture'},args=>({contents:mocks[args.path],loader:'js'}));
   }}],
 });
