@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useGame, useArena } from '@/game/actions';
-import type { ArenaMode } from '@/game/arenaApi';
+import { currentArenaRoom, type ArenaMode } from '@/game/arenaApi';
 import { secureArenaJoin } from '@/game/arenaSecure';
 import { captureGameEvent } from '@/game/analytics';
 import { hapticImpact } from '@/game/telegram';
 import { useLanguage, localizeText } from '@/game/i18n';
-import { ChevronLeft, Flame, Info, Loader2, Swords, Users, Zap } from 'lucide-react';
+import { ChevronLeft, Flame, Info, Loader2, RefreshCw, ShieldAlert, Swords, Users, Zap } from 'lucide-react';
 import { ArenaWeeklyBoard } from './ArenaWeeklyBoard';
 import { RulesModal } from './ArenaRulesModal';
 import './arenaLobby.css';
@@ -40,27 +40,69 @@ export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
   const state = useStore(useGame);
   const arena = useStore(useArena);
   const [joining, setJoining] = useState<ArenaMode | null>(null);
+  const joinInFlight = useRef(false);
+  const [recoveryRequired, setRecoveryRequired] = useState(false);
+  const [recovering, setRecovering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRules, setShowRules] = useState(false);
   const [artFailed, setArtFailed] = useState(false);
   const noEnergy = state.player.energy < ENERGY_COST;
 
+  const recoverRoom = async () => {
+    if (recovering || joinInFlight.current) return;
+    setRecovering(true);
+    try {
+      const activeRoom = await currentArenaRoom();
+      if (activeRoom) {
+        onJoined(activeRoom);
+        return;
+      }
+      setRecoveryRequired(false);
+      setError(en
+        ? 'No unfinished battle was found. You can try matchmaking again.'
+        : 'Незавершённый бой не найден. Можно попробовать начать новый.');
+    } catch {
+      setRecoveryRequired(true);
+      setError(en
+        ? 'Could not verify your arena room. Try checking again before starting a new battle.'
+        : 'Не удалось проверить комнату арены. Повтори проверку перед новым боем.');
+    } finally {
+      setRecovering(false);
+    }
+  };
+
   const join = async (mode: ArenaMode) => {
-    if (joining) return;
+    // A ref closes the double-tap window before React commits the busy state.
+    if (joinInFlight.current || joining || recovering || recoveryRequired) return;
     if (noEnergy) {
       setError(en ? 'Not enough energy. 1 point returns every 5 minutes.' : 'Недостаточно энергии. 1 единица восстанавливается каждые 5 минут.');
       return;
     }
-    hapticImpact('medium');
+    joinInFlight.current = true;
+    try { hapticImpact('medium'); } catch { /* Optional Telegram feedback must not prevent a real fight. */ }
     setJoining(mode);
     setError(null);
     try {
-      // Do not touch the server-authoritative matchmaking, wallet or room state.
+      // Matchmaking and energy remain entirely server-authoritative.
       const roomId = await secureArenaJoin(mode);
-      captureGameEvent('territory_arena_fight_start', { mode });
+      try { captureGameEvent('territory_arena_fight_start', { mode }); } catch { /* Analytics is optional. */ }
       onJoined(roomId);
     } catch (e) {
+      // A timeout can happen AFTER the server has committed the join.
+      // Verify the current room before ever allowing another attempt.
       setError(localizeText((e as Error).message, language));
+      setRecoveryRequired(true);
+      try {
+        const activeRoom = await currentArenaRoom();
+        if (activeRoom) onJoined(activeRoom);
+        else setRecoveryRequired(false);
+      } catch {
+        setError(en
+          ? 'Connection lost while joining. Check for an unfinished battle before trying again.'
+          : 'Связь пропала во время входа. Проверь незавершённый бой перед повторной попыткой.');
+      }
+    } finally {
+      joinInFlight.current = false;
       setJoining(null);
     }
   };
@@ -106,7 +148,7 @@ export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
             <button
               key={m.id} type="button"
               className={`arena-approved-mode arena-approved-mode-${m.tone}`}
-              disabled={!!joining}
+              disabled={!!joining || recovering || recoveryRequired}
               onClick={() => void join(m.id)}
               aria-label={en ? `Start ${m.english}, ${m.sizeEn}` : `Начать бой: ${m.title}, ${m.size}`}
             >
@@ -131,6 +173,19 @@ export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
         <button type="button" onClick={() => setShowRules(true)}><Info aria-hidden="true" />{en ? 'Rules' : 'Правила'}</button>
       </div>
       {error && <p role="alert" className="arena-lobby-warning">{error}</p>}
+      {recoveryRequired && (
+        <div className="arena-lobby-recovery" role="status" data-testid="arena-join-recovery">
+          <ShieldAlert aria-hidden="true" className="h-7 w-7 shrink-0 text-amber-200" />
+          <div>
+            <strong>{en ? 'Your arena progress is protected' : 'Твой прогресс на арене защищён'}</strong>
+            <p>{en ? 'Matchmaking is paused until the server confirms your previous attempt.' : 'Новый бой недоступен, пока сервер не проверит предыдущую попытку.'}</p>
+            <button type="button" disabled={recovering} onClick={() => void recoverRoom()}>
+              {recovering ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <RefreshCw aria-hidden="true" className="h-4 w-4" />}
+              {en ? 'Check and resume battle' : 'Проверить и продолжить бой'}
+            </button>
+          </div>
+        </div>
+      )}
       <ArenaWeeklyBoard />
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
     </div>
