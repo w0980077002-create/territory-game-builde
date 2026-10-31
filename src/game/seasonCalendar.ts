@@ -27,65 +27,39 @@ export function seasonWindow(now: number = Date.now()): SeasonWindow {
   return { weekKey, startsAt, endsAt, remainingMs: endsAt - now };
 }
 
-/** Arena TOP-50 only. The current Sunday-start season is extended until
- * Monday 2 November 2026 00:00 Europe/Kyiv, so recorded wins are not cut
- * out of an already-running competition. Later weeks run Monday-to-Monday
- * at Kyiv civil midnight, including daylight-saving changes.
- * This is a display clock; the server RPC remains authoritative.
+/** Arena TOP-50 runs Monday-to-Monday, 00:00 UTC.
+ * The already-running season that began Sunday 25 October 2026 is extended
+ * through Monday 2 November UTC to protect recorded player victories.
+ * This client clock is only a preview; server RPC determines official wins.
  */
-const ARENA_CUTOVER = Date.parse('2026-11-01T22:00:00Z');
+const ARENA_CUTOVER = Date.parse('2026-11-02T00:00:00Z');
 const ARENA_TRANSITION_START = Date.parse('2026-10-25T00:00:00Z');
 const UTC_DAY = 86_400_000;
 
-function kyivDateParts(instant: number) {
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
-  }).formatToParts(new Date(instant));
-  const get = (type: string) => Number(parts.find(part => part.type === type)?.value);
-  return { year: get('year'), month: get('month'), day: get('day'),
-    hour: get('hour'), minute: get('minute'), second: get('second') };
-}
-
-/** Local Kyiv calendar date represented as UTC midnight solely for arithmetic. */
-export function kyivArenaDayUtc(now: number): number {
-  const { year, month, day } = kyivDateParts(now);
-  return Date.UTC(year, month - 1, day);
-}
-
-/** Instant when the given UTC calendar date begins in Kyiv.
- * Use its local noon offset, which is already correct after Sunday DST shifts.
- */
-export function kyivArenaMidnight(utcDay: number): number {
-  const anchor = utcDay + 12 * 3_600_000;
-  const p = kyivDateParts(anchor);
-  const local = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
-  return utcDay - (local - anchor);
-}
-
 export function arenaSeasonWindow(now: number = Date.now()): SeasonWindow {
   if (!Number.isFinite(now)) throw new RangeError('Invalid Arena clock');
-  let startsAt: number, endsAt: number, weekKey: string;
+  let startsAt: number;
+  let endsAt: number;
   if (now >= ARENA_TRANSITION_START && now < ARENA_CUTOVER) {
-    // Transitional 25 Oct–2 Nov window: preserve the whole recorded week.
     startsAt = ARENA_TRANSITION_START;
     endsAt = ARENA_CUTOVER;
-  } else if (now < ARENA_TRANSITION_START) {
-    // Historic dates: do not rewrite already-finished weeks.
+  } else {
     const date = new Date(now);
     const midnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-    startsAt = midnight - date.getUTCDay() * UTC_DAY;
+    const dayOfWeek = date.getUTCDay();
+    const offset = now < ARENA_TRANSITION_START
+      ? dayOfWeek // Historical Sunday-start weeks are unchanged.
+      : (dayOfWeek + 6) % 7; // Monday = 0.
+    startsAt = midnight - offset * UTC_DAY;
     endsAt = startsAt + 7 * UTC_DAY;
-  } else {
-    const localDay = kyivArenaDayUtc(now);
-    const daysSinceMonday = (new Date(localDay).getUTCDay() + 6) % 7;
-    const monday = localDay - daysSinceMonday * UTC_DAY;
-    startsAt = kyivArenaMidnight(monday);
-    endsAt = kyivArenaMidnight(monday + 7 * UTC_DAY);
   }
   if (!(startsAt <= now && now < endsAt)) throw new RangeError('Arena week mismatch');
-  weekKey = new Date(now >= ARENA_CUTOVER ? kyivArenaDayUtc(startsAt) : startsAt).toISOString().slice(0, 10);
-  return { weekKey, startsAt, endsAt, remainingMs: endsAt - now };
+  return {
+    weekKey: new Date(startsAt).toISOString().slice(0, 10),
+    startsAt,
+    endsAt,
+    remainingMs: endsAt - now,
+  };
 }
 
 export function seasonCountdown(ms: number, language: 'ru' | 'en' = 'ru') {
