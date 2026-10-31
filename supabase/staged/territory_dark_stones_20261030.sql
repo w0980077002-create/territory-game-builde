@@ -45,15 +45,17 @@ GRANT EXECUTE ON FUNCTION territory_private.dark_stone_touch_v1(uuid),
 -- The player's existing progress RPC now also supplies a server-owned stone balance.
 CREATE OR REPLACE FUNCTION public.territory_adventure_progress_v1()
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $rpc$
-DECLARE u uuid:=auth.uid(); completed integer; unlocked integer; stones integer;
+DECLARE u uuid:=auth.uid(); completed integer; unlocked integer; stones integer; active_session uuid;
 BEGIN
   IF u IS NULL OR NOT EXISTS(SELECT 1 FROM public.players WHERE id=u AND NOT coalesce(banned,false))
     THEN RAISE EXCEPTION 'adventure_account_unavailable'; END IF;
   stones:=territory_private.dark_stone_touch_v1(u);
   SELECT completed_stage,unlocked_stage INTO completed,unlocked
     FROM territory_private.adventure_progress_v1 WHERE player_id=u;
+  SELECT session_id INTO active_session FROM territory_private.combat_sessions_v1
+    WHERE player_id=u AND state->>'status'='fighting';
   RETURN jsonb_build_object('completed_stage',coalesce(completed,0),
-    'unlocked_stage',coalesce(unlocked,1),'dark_stones',stones);
+    'unlocked_stage',coalesce(unlocked,1),'dark_stones',stones,'active_session_id',active_session);
 END $rpc$;
 REVOKE ALL ON FUNCTION public.territory_adventure_progress_v1() FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_adventure_progress_v1() TO authenticated;

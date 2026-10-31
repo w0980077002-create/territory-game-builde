@@ -13,6 +13,7 @@ try {
     CREATE SCHEMA auth; CREATE SCHEMA territory_private;
     CREATE TABLE public.players(id uuid PRIMARY KEY, banned boolean DEFAULT false);
     CREATE TABLE territory_private.adventure_progress_v1(player_id uuid PRIMARY KEY, completed_stage integer, unlocked_stage integer);
+    CREATE TABLE territory_private.combat_sessions_v1(session_id uuid PRIMARY KEY, player_id uuid, state jsonb);
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('test.uid', true), '')::uuid $$;
     GRANT USAGE ON SCHEMA territory_private TO service_role;
     GRANT SELECT ON public.players TO service_role;`);
@@ -37,7 +38,11 @@ try {
   await query(`UPDATE territory_private.dark_stones_v1 SET balance=0 WHERE player_id=$1`, [player]);
   await assert.rejects(take(player), /combat_no_dark_stones/);
   assert.equal(await touch(player), 0, 'insufficient funds do not debit');
-  await db.exec('SET ROLE authenticated');
+  await query(`INSERT INTO territory_private.combat_sessions_v1 VALUES('30000000-0000-4000-8000-000000000001',$1,'{"status":"fighting"}')`, [player]);
+  await db.exec(`SET ROLE authenticated; SET test.uid='10000000-0000-4000-8000-000000000002'`);
+  assert.equal((await query('SELECT public.territory_adventure_progress_v1() p'))[0].p.active_session_id, null, 'another player cannot discover the active session');
+  await db.exec(`SET test.uid='10000000-0000-4000-8000-000000000001'`);
+  assert.equal((await query('SELECT public.territory_adventure_progress_v1() p'))[0].p.active_session_id, '30000000-0000-4000-8000-000000000001');
   await assert.rejects(query('SELECT territory_private.dark_stone_take_v1($1)', [player]), /permission denied/);
   await db.exec('RESET ROLE');
   console.log('Dark Stones PGlite PASS: initial grant, missed UTC days, idempotency, account isolation, debit and rollback.');

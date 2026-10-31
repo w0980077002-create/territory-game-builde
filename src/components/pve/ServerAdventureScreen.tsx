@@ -17,7 +17,7 @@ import { getEnemyCombatFrames } from '@/game/combatArt';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { FighterFigure } from '@/components/arena/FighterFigure';
 
-type Progress = { completed_stage: number; unlocked_stage: number; dark_stones: number };
+type Progress = { completed_stage: number; unlocked_stage: number; dark_stones: number; active_session_id?: string | null };
 type Settlement = { outcome: string; reward?: { gold: number; xp: number } };
 type Session = { session_id: string; revision: number; state: IdleCombatState; events?: IdleCombatEvent[]; settlement?: Settlement | null };
 type Props = { userId: string; onActiveChange?: (active: boolean) => void };
@@ -36,7 +36,9 @@ function decodeProgress(data: unknown): Progress {
   if (!obj(data) || !Number.isInteger(data.completed_stage) || !Number.isInteger(data.unlocked_stage)
     || Number(data.completed_stage) < 0 || Number(data.completed_stage) > 100
     || Number(data.unlocked_stage) !== Math.min(100, Number(data.completed_stage) + 1)
-    || !Number.isSafeInteger(data.dark_stones) || Number(data.dark_stones) < 0)
+    || !Number.isSafeInteger(data.dark_stones) || Number(data.dark_stones) < 0
+    || (data.active_session_id != null && (typeof data.active_session_id !== 'string'
+      || !/^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(data.active_session_id))))
     throw new Error('adventure_invalid_progress');
   return data as Progress;
 }
@@ -140,6 +142,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
       setProgress(found);
       // Cave progress and currency always come from the server.
     }
+    return found;
   }, []);
 
   const runSavedStart = useCallback(async () => {
@@ -159,7 +162,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     try {
       if (!await ensurePlayerSession(userId)) throw new Error('combat_auth_required');
       // Always show real server progress, including when old receipt recovery fails.
-      await readProgress();
+      const currentProgress = await readProgress();
       const pending = restoreAdventureSaveFence(userId);
       if (pending) {
         const result = decodeSession(await requestAdventureSettlement(userId, pending, hooks));
@@ -168,7 +171,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           userId, { action: 'resume', sessionId: result.session_id }, hooks)));
       } else if (await runSavedStart()) { /* original UUID and live session recovered */ }
       else {
-        const id = localStorage.getItem(sessionKey(userId));
+        const id = currentProgress.active_session_id || localStorage.getItem(sessionKey(userId));
         if (id) install(decodeSession(await requestAdventureSettlement(userId, { action: 'resume', sessionId: id }, hooks)));
       }
       const prepared = await supabase.functions.invoke('territory-combat', { body: { action: 'prepare' } });

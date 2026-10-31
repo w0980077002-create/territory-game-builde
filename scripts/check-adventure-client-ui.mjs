@@ -83,7 +83,7 @@ assert.match(bridge, /acceptAdventureLatestCloudSnapshot/, 'Replayed historical 
 assert.match(bridge, /validateAdventureSettlementReceipt/, 'Never skip receipt validation when latest save is newer');
 assert.match(bridge, /validateAdventureStartReceipt/, 'Validate a replayed start before adopting latest save');
 assert.match(bridge, /id,updated_at,game_state,gold,gems/, 'Reconciliation requires account scoped state and wallet');
-assert.match(ui, /await readProgress\(\);\s*const pending/, 'Load real progress even when recovery fails');
+assert.match(ui, /const currentProgress = await readProgress\(\);\s*const pending/, 'Load real progress even when recovery fails');
 assert.match(ui, /: progress \? <>/, 'Do not invent stage one while progress is missing');
 assert.match(ui, /sessionId: result\.session_id/, 'Recover actual session after uncertain advance');
 assert.match(ui, /sessionId: started\.session_id/, 'Recover actual session after uncertain start');

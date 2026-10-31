@@ -56,7 +56,7 @@ with sync_playwright() as p:
             page.get_by_test_id('dark-cave-combat-panels').wait_for()
             # Simulate a later equipment edit and a screen remount while the
             # server still owns the original active fight snapshot.
-            page.evaluate('window.__profileChanged = true')
+            page.evaluate("window.__profileChanged = true; localStorage.removeItem('territory_adventure_session_v1:review')")
             page.locator('#remount').evaluate('(e) => e.click()')
             page.get_by_test_id('dark-cave-battle-background').wait_for()
             page.get_by_role('button',name='Следующий шаг боя').wait_for(state='visible')
