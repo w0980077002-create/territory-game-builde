@@ -45,6 +45,8 @@ jobs:
         if: matrix.suite == 'hero'
       - run: python scripts/check-profile-browser.py
         if: matrix.suite == 'hero'
+      - run: node scripts/build-companion-preview.mjs && python scripts/check-companion-browser.py
+        if: matrix.suite == 'hero'
       - run: node scripts/build-adventure-preview.mjs
         if: matrix.suite == 'adventure'
       - run: python scripts/check-adventure-browser.py
