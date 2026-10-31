@@ -85,10 +85,6 @@ export function SeasonScreen({ user, onArena, onEvents, onMessages, onRankings }
     <div className="arena-lobby arena-approved-entry season-journey__arena-top" data-testid="season-arena-top50">
       <ArenaWeeklyBoard />
     </div>
-    <p className="season-journey__ranking-info">{en
-      ? 'The Arena TOP-50 combines players and virtual contenders. Official championship rewards are calculated separately from server-confirmed results.'
-      : 'ТОП-50 Арены объединяет игроков и соперников. Официальные награды чемпионата рассчитываются отдельно по подтверждённым сервером результатам.'}</p>
-
     <details className="season-journey__details season-journey__official" data-testid="season-official-server">
       <summary><ShieldCheck size={18} aria-hidden="true"/>{en ? 'Official standings and championship prizes' : 'Официальные места и награды чемпионата'}</summary>
       <div className="season-journey__official-content">
@@ -125,7 +121,7 @@ export function SeasonScreen({ user, onArena, onEvents, onMessages, onRankings }
       </div>
       <details className="season-journey__details" data-testid="season-prize-rules">
         <summary><Crown size={18} aria-hidden="true"/>{en ? 'Rules and server prizes' : 'Правила и серверные награды'}</summary>
-        <p>{en ? 'One confirmed Arena win gives one championship point. The championship follows Sunday-to-Sunday Kyiv time. Awards are sent by mail only after the server closes the season.' : 'Одна подтверждённая победа на Арене даёт одно очко чемпионата. Сезон идёт с воскресенья по воскресенье по Киеву. Награды отправляются почтой только после завершения сезона на сервере.'}</p>
+        <p>{en ? 'One confirmed Arena win gives one championship point. The championship runs from Sunday to Sunday. Awards are sent by mail only after the server closes the season.' : 'Одна подтверждённая победа на Арене даёт одно очко чемпионата. Сезон идёт с воскресенья по воскресенье. Награды отправляются почтой только после завершения сезона на сервере.'}</p>
         {status.prizes.length ? status.prizes.map((prize, index) =>
           <div key={index} className="season-journey__prize"><b>№{index + 1}</b><span>{prizeText(prize)}</span></div>
         ) : <p>{en ? 'The server has not published prizes.' : 'Сервер пока не опубликовал награды.'}</p>}
