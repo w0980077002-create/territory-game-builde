@@ -1171,7 +1171,8 @@ html.territory-ios-webapp .territory-nav-label {
     object-position: center 48%;
   }
   [data-testid="dark-cave-realm"] [data-testid="dark-cave-floor-list"] {
-    min-height: 100px;
+    /* The padded panel must leave at least 156px of actual scrolling space. */
+    min-height: 170px;
   }
 }
 /* At 568px the three Blessing buttons have no gameplay effect yet. Do not let
