@@ -250,8 +250,8 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
             </div>
             <p className="text-sm text-gray-300 mb-3">{selected.id === AWAKENING_STONE_ITEM.id
               ? (language === 'en'
-                ? 'A rare material for the Battle Cow. Its source is not yet confirmed.'
-                : 'Редкий материал для Боевой коровы. Источник пока не подтверждён.')
+                ? 'A rare material used to awaken the Battle Cow.'
+                : 'Редкий камень для пробуждения Боевой коровы.')
               : localizeText(selected.description, language)}</p>
             {isPerishableItem(selected) && (
               <p className={`mb-3 text-xs font-semibold ${elixirExpiryTime(selected) - now < 24 * 60 * 60 * 1000 ? 'text-red-300' : 'text-amber-300'}`}>
