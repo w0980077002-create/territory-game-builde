@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
-import { BELT_STACK, beltContext, canBelt, putInBelt, takeFromBelt } from '@/game/belt';
+import { BELT_RULES, BELT_STACK, beltContext, canBelt, isSlotOpen, putInBelt, takeFromBelt } from '@/game/belt';
 import { ItemArt } from './ui/ItemArt';
 import { Modal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
@@ -15,19 +15,21 @@ import { AWAKENING_STONE_ITEM, cowStonesOwned } from '@/game/followers';
 import { CompactWarehouse } from './CompactWarehouse';
 import { rarityColor } from '@/game/ui';
 import { EQUIPMENT_SLOTS, generateChapter } from '@/game/engine';
-import { elixirExpiryTime, elixirTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
+import { elixirExpiryTime, elixirTimeLeftLabel, isElixirExpired, isPerishableItem } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
-import { Package, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned, ChevronRight } from 'lucide-react';
+import { Package, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned, ChevronRight, ShieldCheck, Swords } from 'lucide-react';
+import './inventoryPreparation.css';
 
 /** Equipment, consumables/belt and companions share the inventory route.
  * The follower model is unchanged: training and PvE selection stay in the global store. */
-export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfessions, onMap, onBattle, onHero }: {
+export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfessions, onMap, onBattle, onArena, onHero }: {
   initialTab?: 'items' | 'equipment' | 'followers';
   userId: string;
   onForge?: (equipmentId?: string) => void;
   onProfessions?: () => void;
   onMap?: () => void;
   onBattle?: () => void;
+  onArena?: () => void;
   onHero?: () => void;
 }) {
   const { t, language } = useLanguage();
@@ -36,6 +38,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const [tab, setTab] = useState<'items' | 'equipment' | 'followers'>(initialTab);
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const [beltNote, setBeltNote] = useState<string | null>(null);
+  const [preparedNotice, setPreparedNotice] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const inventoryContentRef = useRef<HTMLDivElement>(null);
   const chapterNumber = Math.max(1, Math.floor(state.currentChapter || 1));
@@ -67,6 +70,11 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   ], [state.inventory]);
   const earliestOnBelt = useMemo(() => state.belt.filter((item): item is InventoryItem => !!item && isPerishableItem(item))
     .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0], [state.belt]);
+  // Read-only preparation; existing belt inventory and Arena win gates are authoritative.
+  const beltCtx = beltContext(state, arena.wins);
+  const openBeltSlots = BELT_RULES.filter((_, i) => isSlotOpen(i, beltCtx)).length;
+  const beltReady = state.belt.reduce((n, item, i) => n + (item && isSlotOpen(i, beltCtx) && !isElixirExpired(item, now) ? item.qty : 0), 0);
+  const spareConsumables = consumables.reduce((n, item) => n + (!isElixirExpired(item, now) ? Math.max(0, item.qty) : 0), 0);
 
   const switchTab = (to: 'items' | 'equipment' | 'followers') => {
     // The content scrolls independently; the bottom tabs stay within reach.
@@ -74,6 +82,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
     setTab(to);
     setSelected(null);
     setBeltNote(null);
+    setPreparedNotice('');
   };
   const toBelt = (item: InventoryItem) => {
     const latest = useGame.get();
@@ -85,6 +94,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
     useGame.set(next);
     setSelected(null);
     setBeltNote(null);
+    setPreparedNotice(language === 'en' ? 'Consumable moved to your battle belt.' : 'Расходник перемещён на боевой пояс.');
   };
   const close = () => { setSelected(null); setBeltNote(null); };
 
@@ -116,15 +126,35 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
           </div>
         </div>
       ) : tab === 'items' ? (
-        <CompactWarehouse
-          consumables={consumables}
-          materials={materials}
-          forgeMaterials={state.forgeMaterials}
-          forgeMaterialBatches={state.forgeMaterialBatches}
-          now={now}
-          language={language}
-          onItemSelect={setSelected}
-        />
+        <div className="inventory-preparation-content">
+          <section className="inventory-preparation" data-testid="inventory-battle-preparation" aria-label={language === 'en' ? 'Prepare for battle' : 'Подготовка к бою'}>
+            <img className="inventory-preparation__art" src={import.meta.env.BASE_URL + 'assets/territory/ui/items/belt.webp'} alt="" loading="lazy" draggable={false}/>
+            <div className="inventory-preparation__summary">
+              <strong>{language === 'en' ? 'READY FOR BATTLE' : 'ГОТОВ К БОЮ'}</strong>
+              <span>{language === 'en' ? 'Belt items' : 'На поясе'}: <b>{beltReady}</b> · {language === 'en' ? 'Open slots' : 'Открыто ячеек'}: <b>{openBeltSlots}/7</b></span>
+              <small>{beltReady
+                ? (language === 'en' ? 'Your consumables are ready. Choose when to use them in battle.' : 'Расходники готовы. В бою сам выбирай, когда их применять.')
+                : spareConsumables
+                  ? (language === 'en' ? 'Tap a potion in the warehouse to equip it on the belt.' : 'Нажми на зелье в складе и перенеси его на пояс.')
+                  : (language === 'en' ? 'Your belt is empty. You can still fight without potions.' : 'Пояс пуст. Можно сражаться и без зелий.')}</small>
+            </div>
+            <div className="inventory-preparation__actions">
+              {onArena && <button type="button" onClick={onArena} className="inventory-preparation__arena"><Swords size={17}/>{language === 'en' ? 'Arena lobby' : 'На Арену'}<ChevronRight size={15}/></button>}
+              {onBattle && <button type="button" onClick={onBattle} className="inventory-preparation__campaign"><ShieldCheck size={17}/>{language === 'en' ? 'Campaign' : 'В Поход'}<ChevronRight size={15}/></button>}
+            </div>
+            {preparedNotice && <p className="inventory-preparation__notice" role="status">{preparedNotice}</p>}
+          </section>
+          <CompactWarehouse
+            consumables={consumables}
+            materials={materials}
+            forgeMaterials={state.forgeMaterials}
+            forgeMaterialBatches={state.forgeMaterialBatches}
+            now={now}
+            language={language}
+            onItemSelect={setSelected}
+            onForge={onForge}
+          />
+        </div>
       ) : (
         <FollowersPanel />
       )}
@@ -139,15 +169,24 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
         >
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-amber-100">{t('belt')}</h3>
+              <h3 className="text-sm font-bold text-amber-100">{t('belt')} <span data-testid="inventory-belt-status" className="text-xs text-amber-300">· {beltReady} / {openBeltSlots * BELT_STACK}</span></h3>
               {earliestOnBelt && <span className="text-[10px] font-semibold text-amber-300 tabular-nums">⏳ {elixirTimeLeftLabel(earliestOnBelt, language, now)}</span>}
             </div>
             <span className="text-right text-[10px] leading-tight text-gray-400">{t('tapSlotToUnequip')}</span>
           </div>
           <BeltCells
             belt={state.belt}
-            ctx={beltContext(state, arena.wins)}
-            onTap={(i, open) => open && useGame.set((current) => takeFromBelt(current, i))}
+            ctx={beltCtx}
+            onTap={(i, open) => {
+              if (!open) return;
+              let removed = false;
+              useGame.set((current) => {
+                if (!current.belt[i]) return current;
+                removed = true;
+                return takeFromBelt(current, i);
+              });
+              if (removed) setPreparedNotice(language === 'en' ? 'Consumable returned to the warehouse.' : 'Расходник возвращён на склад.');
+            }}
           />
         </section>
       )}
