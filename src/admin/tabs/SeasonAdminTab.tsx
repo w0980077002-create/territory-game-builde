@@ -42,7 +42,7 @@ export function SeasonAdminTab({ confirm }: { confirm: Confirm }) {
     right={<button type="button" disabled={loading} onClick={() => void refresh()} aria-label="Обновить"><RefreshCw size={18} /></button>}>
     <ErrorLine text={error} />
     {!status ? loading ? <Loading /> : null : <div className="space-y-4">
-      <p className="text-sm text-slate-300">{status.enabled ? 'Чемпионат включён' : 'Чемпионат не запущен'}. Неделя: воскресенье → воскресенье, 00:00 по Киеву. Призы доставляются почтой однократно.</p>
+      <p className="text-sm text-slate-300">{status.enabled ? 'Чемпионат включён' : 'Чемпионат не запущен'}. Неделя: воскресенье → воскресенье, 00:00 по времени чемпионата. Призы доставляются почтой однократно.</p>
       {!!status.current_prizes.length && <div className="rounded-xl border border-amber-500/30 p-3 space-y-1">
         <h3 className="text-sm font-bold text-amber-200">Текущий сезон · {status.current_week}</h3>
         {status.current_prizes.map((p, i) => <div key={i} className="flex justify-between gap-2 text-xs"><b>#{i + 1}</b><span>{p.gold ?? 0} золота · {p.gems ?? 0} синих алмазов</span></div>)}
