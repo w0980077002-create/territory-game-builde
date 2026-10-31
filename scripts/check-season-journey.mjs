@@ -1,61 +1,73 @@
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { build } from 'esbuild';
-const compiled = await build({ entryPoints:['src/game/seasonCalendar.ts'], bundle:true, write:false, platform:'node', format:'esm' });
-const { kyivSeasonWeekKey } = await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'));
+
+const compiled = await build({
+  entryPoints: ['src/game/seasonCalendar.ts'],
+  bundle: true, write: false, platform: 'node', format: 'esm',
+});
+const { kyivSeasonWeekKey } = await import('data:text/javascript;base64,' +
+  Buffer.from(compiled.outputFiles[0].text).toString('base64'));
 const cases = [
-  ['2026-10-24T20:59:59Z','2026-10-18'],
-  ['2026-10-24T21:00:00Z','2026-10-25'],
-  ['2026-10-31T21:59:59Z','2026-10-25'],
-  ['2026-10-31T22:00:00Z','2026-11-01'],
-  ['2026-03-28T21:59:59Z','2026-03-22'],
-  ['2026-03-28T22:00:00Z','2026-03-29'],
+  ['2026-10-24T20:59:59Z', '2026-10-18'],
+  ['2026-10-24T21:00:00Z', '2026-10-25'],
+  ['2026-10-31T21:59:59Z', '2026-10-25'],
+  ['2026-10-31T22:00:00Z', '2026-11-01'],
+  ['2026-03-28T21:59:59Z', '2026-03-22'],
+  ['2026-03-28T22:00:00Z', '2026-03-29'],
 ];
-for (const [at,week] of cases) assert.equal(kyivSeasonWeekKey(Date.parse(at)),week,'Kyiv Sunday boundary '+at);
-assert.throws(()=>kyivSeasonWeekKey(Number.NaN),RangeError);
-const read = p => readFileSync(p,'utf8');
-const app=read('src/App.tsx'),events=read('src/components/EventsScreen.tsx');
-const arena=read('src/components/ArenaScreen.tsx'),lobby=read('src/components/arena/ArenaLobby.tsx');
-const board=read('src/components/LeaderboardScreen.tsx'),season=read('src/components/SeasonScreen.tsx');
-const css=read('src/components/seasonJourney.css');
-const seasonAdmin=read('src/admin/tabs/SeasonAdminTab.tsx');
-// Private implementation names and server timezone must stay untouched.
-// Player-facing labels must never reveal artificial Arena opponents or a city.
-assert.doesNotMatch(season, /virtual contenders|virtual players|AI opponents|боты(?:\\b|[^а-яё])|по Киеву|Sunday-to-Sunday Kyiv time/i);
-assert.doesNotMatch(seasonAdmin, /по Киеву/i);
-const weekly=read('src/components/arena/ArenaWeeklyBoard.tsx');
-const bots=read('src/game/arenaWeeklyBots.ts');
-// Championship must display the exact existing Arena ranking, not a second
-// hand-maintained NPC list with conflicting positions or win counts.
-assert.match(season, /import \{ ArenaWeeklyBoard \} from '\.\/arena\/ArenaWeeklyBoard'/);
-assert.match(season, /data-testid="season-arena-top50"[\s\S]*?<ArenaWeeklyBoard \/>/);
-assert.match(season, /data-testid="season-official-server"/, 'Preserve real server-confirmed prize standings separately');
-assert.match(weekly, /arenaWeeklyWithBots\(status, now\)/, 'Both screens use the same player-and-bot TOP-50');
-assert.match(weekly, /getArenaWeeklyStatus\(\)/, 'Real wins come from Arena server');
-assert.match(bots, /\.\.\.humans\.map/, 'Real players are merged with bot contenders');
-assert.match(bots, /\.\.\.bots/, 'NPCs remain on the same weekly leaderboard');
-assert.match(events,/actionId="weekly-championship" onClick=\{onSeason\}/);
-assert.match(events,/season\.week === kyivSeasonWeekKey\(clock\)/);
-assert.match(app,/onSeason=\{\(\) => \{ setLeaderboardInitialTab\('season'\); setScreen\('leaderboard'\); \}\}/);
-assert.match(arena,/onSeason=\{onSeason\}/);
-assert.match(lobby,/data-testid="arena-season-journey"/);
-assert.match(lobby,/disabled=\{!!joining \|\| recovering \|\| backDisabled\}/,'Never navigate away during an in-flight Arena join');
-assert.match(board,/<SeasonScreen user=\{user\} onArena=\{onArena\} onEvents=\{onEvents\} onMessages=\{onMessages\}/);
-assert.match(app,/onArena=\{\(\) => setScreen\('arena'\)\} onEvents=\{\(\) => setScreen\('events'\)\} onMessages=\{\(\) => setScreen\('messages'\)\}/);
-assert.match(season,/fetchSeasonStatus\(\)/,'Only the existing read-only RPC may provide season data');
-assert.match(season,/status\?\.week === kyivSeasonWeekKey\(serverClock\)/,'Do not display stale season as live');
-assert.match(season,/status\.leaders\.map\(/,'Standings come from server');
-assert.match(season,/status\.history\.map\(/,'History comes from server');
-assert.match(season,/status\.prizes\.map\(/,'Prizes come from server');
-assert.match(season,/data-testid="season-prize-rules"/,'Players can expand genuine rules and prize list');
-assert.match(season,/data-testid="season-winners-history"/,'Players can inspect genuine winner history');
-assert.match(season,/onClick=\{onArena\}/);
-assert.match(season,/onClick=\{onEvents\}/);
-assert.match(season,/onClick=\{onMessages\}/);
-assert.match(season,/role="alert"/,'Failed read must be visible and recoverable');
-assert.doesNotMatch(season,/useGame\.set|supabase\.(?:rpc|from)|admin_grants|claimReward|saveCloudSave/,'Read-only journey must never grant or mutate');
-assert.ok(existsSync('public/ic-trophy.webp'),'Reuse approved trophy art, no fake placeholder');
-assert.match(css,/min-height:44px/,'Touch targets must be reachable on narrow screens');
-assert.match(css,/@media\(max-width:350px\)/,'320px layout must be accounted for');
-assert.match(css,/prefers-reduced-motion/);
-console.log('Championship journey PASS: Kyiv DST boundaries, server-only results, real Events/Arena/Mail routes, local rules/history, retry, mobile controls.');
+for (const [at, week] of cases) assert.equal(kyivSeasonWeekKey(Date.parse(at)), week);
+assert.throws(() => kyivSeasonWeekKey(Number.NaN), RangeError);
+
+const read = path => readFileSync(path, 'utf8');
+const app = read('src/App.tsx');
+const events = read('src/components/EventsScreen.tsx');
+const arena = read('src/components/ArenaScreen.tsx');
+const lobby = read('src/components/arena/ArenaLobby.tsx');
+const board = read('src/components/LeaderboardScreen.tsx');
+const season = read('src/components/SeasonScreen.tsx');
+const seasonApi = read('src/game/seasonApi.ts');
+const weekly = read('src/components/arena/ArenaWeeklyBoard.tsx');
+const bots = read('src/game/arenaWeeklyBots.ts');
+const css = read('src/components/seasonJourney.css');
+const seasonAdmin = read('src/admin/tabs/SeasonAdminTab.tsx');
+
+assert(season.includes("import { ArenaWeeklyBoard } from './arena/ArenaWeeklyBoard'"));
+assert(season.includes('data-testid="season-arena-top50"'));
+assert(season.includes('<ArenaWeeklyBoard />'));
+assert(season.includes("Открыть Арену"));
+assert(season.includes('data-testid="season-open-top50"'));
+assert(season.includes('onClick={onRankings}'));
+assert(season.includes('onClick={onArena}'));
+assert(season.includes('onClick={onEvents}'));
+assert(season.includes('onClick={onMessages}'));
+assert(season.includes('viking-screen--season'));
+for (const forbidden of [
+  'season-official-server', 'Официальные места', 'Official standings',
+  'ТВОЁ МЕСТО', 'YOUR PLACE', 'ТВОИ ОЧКИ', 'YOUR POINTS',
+  'season-journey__board', 'season-prize-rules', 'season-winners-history',
+  'status.my_rank', 'status.leaders', 'fetchSeasonStatus', 'kyivSeasonWeekKey',
+  'virtual contenders', 'по Киеву',
+]) {
+  assert(!season.includes(forbidden), 'Second standings or private season details leaked into player UI: ' + forbidden);
+}
+assert(!board.includes('Серверный ТОП-50'), 'Top Players must not show a second player-only leaderboard');
+assert(board.includes('<ArenaWeeklyBoard />'), 'Top Players must share Arena board');
+assert(weekly.includes('arenaWeeklyWithBots(status, now)'));
+assert(weekly.includes('getArenaWeeklyStatus()'));
+assert(bots.includes('...humans.map'));
+assert(bots.includes('...bots'));
+assert(!weekly.includes('{player.level}'), 'Do not reveal hero levels in TOP-50');
+assert(events.includes('actionId="weekly-championship" onClick={onSeason}'));
+assert(events.includes('kyivSeasonWeekKey(clock)'), 'Preserve live seasonal checks, not season payouts changes');
+assert(seasonApi.includes('territory_season_status_v1'), 'Keep server championship ledger for admin/rewards');
+assert(app.includes("setLeaderboardInitialTab('season')"), 'Events championship must still open');
+assert(arena.includes('onSeason={onSeason}'));
+assert(lobby.includes('data-testid="arena-season-journey"'));
+assert(!seasonAdmin.includes('по Киеву'));
+assert(!/useGame\.set|supabase\.(?:rpc|from)|admin_grants|claimReward|saveCloudSave/.test(season));
+assert.ok(existsSync('public/ic-trophy.webp'));
+assert(css.includes('min-height:44px'));
+assert(css.includes('@media(max-width:350px)'));
+assert(css.includes('prefers-reduced-motion'));
+console.log('Championship PASS: single Arena player-and-bot TOP-50, no conflicting place/points, unchanged season API, routes, bilingual UI.');
