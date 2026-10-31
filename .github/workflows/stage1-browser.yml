@@ -69,6 +69,8 @@ jobs:
         if: matrix.suite == 'workshop-ui'
       - run: node scripts/build-daily-hero-preview.mjs && python scripts/check-daily-hero-browser.py
         if: matrix.suite == 'daily-loop'
+      - run: node scripts/build-comfort-preview.mjs && python scripts/check-comfort-browser.py
+        if: matrix.suite == 'daily-loop'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -82,3 +84,4 @@ jobs:
             /tmp/territory-item-360.png
             /tmp/territory-city-360.png
             /tmp/social-quests-screenshots
+            /tmp/comfort-screenshots
