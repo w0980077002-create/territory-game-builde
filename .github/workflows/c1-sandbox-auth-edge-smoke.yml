@@ -44,7 +44,7 @@ jobs:
               const code=first.error.code || 'unknown';
               console.log('EXTERNAL AUTH GATE BLOCKED: anonymous test JWT unavailable: ' + code);
               console.log('No production/game data touched; do not mark C1 released.');
-              process.exit(0);
+              throw new Error('C1 JWT/RLS/Edge smoke NOT TESTED: enable anonymous Auth only in the approved test project');
             }
             assert.ok(first.data.session?.access_token,'first real JWT missing');
             const second=await b.auth.signInAnonymously();
