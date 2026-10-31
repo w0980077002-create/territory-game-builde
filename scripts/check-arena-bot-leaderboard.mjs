@@ -11,9 +11,9 @@ const compiled = ts.transpileModule(source, {
 }).outputText;
 const firstStart = Date.parse('2026-10-18T00:00:00Z'); // Sunday 00:00 UTC
 const secondStart = Date.parse('2026-10-25T00:00:00Z');
-const transitionEnd = Date.parse('2026-11-01T22:00:00Z');
+const transitionEnd = Date.parse('2026-11-02T00:00:00Z');
 const thirdStart = transitionEnd;
-const nextEnd = Date.parse('2026-11-08T22:00:00Z');
+const nextEnd = Date.parse('2026-11-09T00:00:00Z');
 const utcMidnight = (day) => Date.parse(day + 'T00:00:00Z');
 const calendarSource = readFileSync('src/game/seasonCalendar.ts', 'utf8');
 const calendarModule = { exports: {} };
@@ -27,12 +27,12 @@ vm.runInNewContext(ts.transpileModule(calendarSource, {
   },
   Date, Intl, Math, Number, Object, String,
 }, { filename: 'seasonCalendar.transpiled.js', timeout: 5000 });
-const { arenaSeasonWindow, kyivArenaDayUtc, kyivArenaMidnight } = calendarModule.exports;
+const { arenaSeasonWindow } = calendarModule.exports;
 assert.equal(arenaSeasonWindow(Date.parse('2026-10-24T23:59:59Z')).startsAt, firstStart);
 assert.equal(arenaSeasonWindow(Date.parse('2026-10-25T00:00:00Z')).startsAt, secondStart);
 assert.equal(arenaSeasonWindow(Date.parse('2026-10-26T12:00:00Z')).endsAt, transitionEnd);
 assert.equal(arenaSeasonWindow(Date.parse('2026-11-01T00:00:00Z')).weekKey, '2026-10-25');
-assert.equal(arenaSeasonWindow(Date.parse('2026-11-01T21:59:59Z')).weekKey, '2026-10-25');
+assert.equal(arenaSeasonWindow(Date.parse('2026-11-01T23:59:59Z')).weekKey, '2026-10-25');
 assert.equal(arenaSeasonWindow(transitionEnd).weekKey, '2026-11-02');
 assert.equal(arenaSeasonWindow(transitionEnd).startsAt, transitionEnd);
 assert.equal(arenaSeasonWindow(transitionEnd).endsAt, nextEnd);
@@ -42,7 +42,7 @@ const loaded = { exports: {} };
 vm.runInNewContext(compiled, {
   module: loaded, exports: loaded.exports,
   require: (name) => {
-    if (name === './seasonCalendar') return { arenaSeasonWindow, utcMidnight, kyivArenaDayUtc, kyivArenaMidnight };
+    if (name === './seasonCalendar') return { arenaSeasonWindow, utcMidnight };
     throw Error('Unexpected runtime dependency: ' + name);
   },
   Date, Intl, Math, Number, Object, Set, Map, String,
@@ -64,8 +64,8 @@ assert(ruNames.every(name => /^[А-Яа-яЁё]+$/.test(name)));
 assert(enNames.every(name => /^[A-Za-z]+$/.test(name)));
 assert.equal(new Set([...ruNames, ...enNames].map(name => name.toLowerCase())).size, 50);
 assert.doesNotMatch(source, /name \+ '_' \+|ARENA_PVP_BOT_NAMES\.slice/, 'No numbered copies');
-assert.match(source, /kyivArenaDayUtc\(now\)/, 'Kyiv season days must use the correct local date');
-assert.match(source, /kyivArenaMidnight\(dayUtc\)/, 'Kyiv day boundaries must account for daylight saving');
+assert.match(source, /utcMidnight\(today\)/, 'Use UTC calendar days for Arena rivals');
+assert.match(source, /nextMidnight = midnight \+ 86_400_000/, 'A UTC day must always last 24 hours');
 assert.match(source, /eventMinute/, 'Each individual win needs its own scheduled time');
 assert.doesNotMatch(source, /17 \+ \(\(mixed|Math\.random\(/, 'No daily bulk credit or viewer-specific random scores');
 
@@ -203,28 +203,28 @@ for (const [bot, wins] of beforeCutover) {
 assert.deepEqual([...beforeCutover.keys()].sort(), [...afterCutover.keys()].sort(),
   'The same contender identities must remain until Monday');
 
-const mondayStart = at('2026-11-01T22:01:00Z', [], transitionEnd, nextEnd);
+const mondayStart = at('2026-11-02T00:01:00Z', [], transitionEnd, nextEnd);
 checkRanks(mondayStart.leaders);
 assert(mondayStart.leaders.every(p => p.wins <= 1),
-  'At Kyiv Monday 00:01 simulated rivals must not receive 22 hours of wins');
-const mondayMorning = arenaSeasonWindow(Date.parse('2026-11-02T01:00:00Z'));
-assert.equal(mondayMorning.weekKey, '2026-11-02');
-assert.equal(mondayMorning.startsAt, transitionEnd);
-assert.equal(arenaSeasonWindow(Date.parse('2027-03-28T20:59:59Z')).endsAt,
-  Date.parse('2027-03-28T21:00:00Z'), 'Spring DST boundary shifts next Monday midnight');
-assert.equal(arenaSeasonWindow(Date.parse('2027-03-28T21:00:00Z')).weekKey,
-  '2027-03-29', 'Spring DST must not reset during Sunday');
-assert.equal(arenaSeasonWindow(Date.parse('2027-10-31T21:59:59Z')).endsAt,
-  Date.parse('2027-10-31T22:00:00Z'), 'Autumn DST boundary shifts next Monday midnight');
+  'At Monday 00:01 UTC simulated rivals must start near zero');
+const mondayWindow = arenaSeasonWindow(Date.parse('2026-11-02T01:00:00Z'));
+assert.equal(mondayWindow.weekKey, '2026-11-02');
+assert.equal(mondayWindow.startsAt, transitionEnd);
+assert.equal(arenaSeasonWindow(Date.parse('2027-03-28T23:59:59Z')).endsAt,
+  Date.parse('2027-03-29T00:00:00Z'), 'End Sunday UTC after European DST shift');
+assert.equal(arenaSeasonWindow(Date.parse('2027-03-29T00:00:00Z')).weekKey,
+  '2027-03-29', 'Monday UTC season begins regardless of local DST');
+assert.equal(arenaSeasonWindow(Date.parse('2027-10-31T23:59:59Z')).endsAt,
+  Date.parse('2027-11-01T00:00:00Z'), 'Fall DST does not change UTC Monday cutoff');
 
 const sql = readFileSync('supabase/staged/arena_top50_monday_kyiv_cutover_20261102.sql','utf8');
 assert.match(sql,/arena_cutover_requires_paused_original_config/);
 assert.match(sql,/arena_cutover_rewards_version_mismatch/);
-assert.match(sql,/v_current_week := \(now\(\) AT TIME ZONE 'Europe\/Kyiv'\)/);
-assert.match(sql,/v_kyiv_monday := v_utc_day/);
+assert.match(sql,/v_current_week := \(now\(\) AT TIME ZONE 'UTC'\)/);
+assert.match(sql,/v_monday := v_utc_day/);
 assert.match(sql,/DATE '2026-11-02'/);
 assert.match(sql,/v_start := '2026-10-25T00:00:00Z'/);
-assert.match(sql,/v_end := '2026-11-01T22:00:00Z'/);
+assert.match(sql,/v_end := '2026-11-02T00:00:00Z'/);
 
 const newSeason = at('2026-10-25T12:00:00Z', [], secondStart, transitionEnd);
 checkRanks(newSeason.leaders);
@@ -240,4 +240,4 @@ for (const [id, wins] of dstBefore) {
 
 assert(!source.includes('supabase.rpc(') && !source.includes('supabase.from('),
   'NPC scores must never write to real-player data');
-console.log('Arena weekly TOP-50: 50 distinct rivals, 25/day, transitional 8th day, Monday Kyiv reset/DST, guarded payout SQL: PASS');
+console.log('Arena weekly TOP-50: 50 distinct rivals, 25/day, transitional 8th day, Monday UTC reset, guarded payout SQL: PASS');
