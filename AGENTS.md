@@ -1,3 +1,11 @@
+## Owner rule: new game content must be manageable in Admin — 2026-10-31
+
+**Standing owner requirement for TERRITORY 1.0:** When adding any new resource, currency, collectible, consumable, equipment type, reward or game system, include the relevant owner-facing administration in the *same feature change*, without asking the owner to remember it. For grantable resources this means the existing admin player page must show the actual balance/quantity and let the owner issue or deduct an exact quantity for an individual player, with authorization, audit, server-confirmed results, and idempotent retry behavior. For non-grantable features, show suitable admin status/controls instead of pretending they are grantable.
+
+This is an **acceptance/release gate**, not an optional follow-up ticket. Update the actual backend and admin UI together; test grants, deductions, duplicate requests, permissions and balance boundaries. Adding a UI item to `RESOURCES` alone is insufficient. Resources in separate server-owned wallets (e.g. `territory_private.dark_stones_v1`) need their own atomic admin flow, not a fake entry in the legacy `admin_grants` payload or the normal `battleStones` wallet. If the server part isn't deployed, label the feature staged and don't claim it works.
+
+Preserve the existing 5-tap admin entry, owner credentials, live player data, and all economy safeguards. Any production database/Edge deployment remains subject to the existing reviewed release rules. Never expose generic unrestricted SQL or client-side currency minting.
+
 ## 🔒 OWNER-APPROVED LIVING RPG GAME-DESIGN LOCK — 2026-10-30
 
 **READ BEFORE ANY NEW VISUAL/UI TASK IN TERRITORY V1:** [`docs/TERRITORY_V1_LIVING_RPG_UX_LOCKED_20261030_RU.md`](docs/TERRITORY_V1_LIVING_RPG_UX_LOCKED_20261030_RU.md). This is a **mandatory product/UX acceptance standard**, not an optional mood-board or merely a CSS theme. The owner confirmed that the post-#146 mobile Hero screen looked like a beautifully decorated *spreadsheet*, not a compelling RPG. Future work must prioritize **full-size living hero and scene > real visible equipment and upgrade actions > verified progression and next goal > compact readable stats > textured wood/gold chrome > unambiguous active navigation**.

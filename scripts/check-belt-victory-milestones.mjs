@@ -17,7 +17,7 @@ vm.runInNewContext(expiryJs, { module: expiryMod, exports: expiryMod.exports, Da
 const mod = { exports: {} };
 vm.runInNewContext(js, { module: mod, exports: mod.exports, Date, Math, JSON,
   require: (name) => { assert.equal(name, './elixirExpiry'); return expiryMod.exports; } });
-const { BELT_WIN_GOALS, BELT_RULES, isSlotOpen, reconcileLockedBelt, putInBelt } = mod.exports;
+const { BELT_WIN_GOALS, BELT_RULES, isSlotOpen, reconcileLockedBelt, putInBelt, takeFromBelt } = mod.exports;
 
 const goals = [0, 100, 500, 1000, 2000, 3500, 5000];
 assert.equal(BELT_WIN_GOALS.length, 7);
@@ -67,6 +67,55 @@ const put = putInBelt({ ...state, belt: [null, null, null, null, null, null, nul
 assert(put, 'potions can still be added to the unlocked first slot');
 assert.equal(put.belt[0]?.qty, 4);
 assert.equal(put.belt[1], null);
+
+/** Regression #177: the tapped tile contains 5 but another older batch contains 1. */
+const oldExpiry = new Date(Date.now() + 2 * 86400000).toISOString();
+const selectedExpiry = new Date(Date.now() + 6 * 86400000).toISOString();
+const oldLot = { ...elixir('lot-old', 'Strength', 1), expiresAt: oldExpiry };
+const chosenLot = { ...elixir('lot-five', 'Strength', 5), expiresAt: selectedExpiry };
+const ctx = { level: 1, activeDays: 0, arenaWins: 99 };
+const emptyBelt = Array(7).fill(null);
+const withLots = { player: { level: 1 }, activeDays: 0, belt: emptyBelt,
+  inventory: [oldLot, chosenLot] };
+const selectedFive = putInBelt(withLots, 'lot-five', ctx);
+assert(selectedFive, 'a selected stack of five must fit in the first open belt slot');
+assert.equal(selectedFive.belt[0].qty, 5, 'do not silently choose the older x1 lot');
+assert.equal(selectedFive.belt[0].expiresAt, selectedExpiry, 'retain selected batch expiration');
+assert.equal(selectedFive.inventory.find(i => i.id === 'lot-old')?.qty, 1, 'older stock is unchanged');
+assert.equal(selectedFive.inventory.find(i => i.id === 'lot-five'), undefined, 'selected x5 moved in one click');
+assert.equal(sum(selectedFive), sum(withLots), 'transfers cannot create or lose consumables');
+assert.equal(putInBelt(selectedFive, 'lot-five', ctx), null, 'fast repeat cannot duplicate a depleted lot');
+
+const partial = putInBelt({ ...withLots, inventory: [{ ...chosenLot, qty: 5 }],
+  belt: [{ ...chosenLot, id: 'belt_0', qty: 2 }, ...Array(6).fill(null)] }, 'lot-five', ctx);
+assert(partial, 'compatible stack must allow top-up');
+assert.equal(partial.belt[0].qty, 5, 'top up 2 to 5');
+assert.equal(partial.inventory[0].qty, 2, 'leave exactly two behind in the selected lot');
+assert.equal(sum(partial), 7, 'top-up conserves inventory plus belt');
+
+for (const [name, incompatible] of [
+  ['expiry', { ...chosenLot, id: 'belt_0', expiresAt: oldExpiry, qty: 1 }],
+  ['effect', { ...chosenLot, id: 'belt_0', effect: { stat: 'hp', value: 150 }, qty: 1 }],
+  ['rarity', { ...chosenLot, id: 'belt_0', rarity: 'rare', qty: 1 }],
+]) {
+  const blocked = { ...withLots, inventory: [chosenLot],
+    belt: [incompatible, ...Array(6).fill(null)] };
+  assert.equal(putInBelt(blocked, 'lot-five', ctx), null, 'no incompatible merge for ' + name);
+  assert.equal(blocked.inventory[0].qty, 5, 'failed move is immutable for ' + name);
+}
+const returned = takeFromBelt(selectedFive, 0);
+assert.equal(sum(returned), sum(withLots), 'return to inventory conserves quantities');
+assert.equal(returned.inventory.find(i => i.expiresAt === selectedExpiry)?.qty, 5,
+  'returned lot keeps its own expiry');
+
+const expired = { ...chosenLot, expiresAt: new Date(Date.now() - 86400000).toISOString() };
+assert.equal(putInBelt({ ...withLots, inventory: [expired] }, 'lot-five', ctx), null,
+  'expired lots must remain unusable');
+for (const type of ['elixir', 'arena']) {
+  const each = { ...chosenLot, type };
+  const moved = putInBelt({ ...withLots, inventory: [oldLot, each] }, 'lot-five', ctx);
+  assert.equal(moved?.belt[0]?.qty, 5, type + ' also must transfer selected x5');
+}
 
 const app = read('src/App.tsx');
 assert.match(app, /reconcileLockedBelt\(timedState, profile\.arenaWins\)/,

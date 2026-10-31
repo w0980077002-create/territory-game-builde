@@ -265,8 +265,8 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
               <p className={`mb-3 text-xs font-semibold ${elixirExpiryTime(selected) - now < 24 * 60 * 60 * 1000 ? 'text-red-300' : 'text-amber-300'}`}>
                 ⏳ {language === 'en' ? 'Shelf life' : 'Срок годности'}: {elixirTimeLeftLabel(selected, language, now)}
                 <span className="block pt-1 font-normal text-gray-400">{language === 'en'
-                  ? '7 days from receipt. The earliest expiry goes on the belt first.'
-                  : '7 суток с получения. На пояс сначала идёт самый ранний срок.'}</span>
+                  ? '7 days from receipt. The selected batch goes on the belt, up to 5 per slot.'
+                  : '7 суток с получения. На пояс идёт выбранная партия, до 5 шт. в ячейке.'}</span>
               </p>
             )}
             {selected.effect && (
