@@ -5,6 +5,25 @@ const ui = read('src/components/pve/ServerAdventureScreen.tsx');
 const battle = read('src/components/BattleScreen.tsx');
 const app = read('src/App.tsx');
 const bridge = read('src/game/combatV1/receiptAdapter.ts');
+
+const arenaSecure = read('src/game/arenaSecure.ts');
+assert.match(arenaSecure, /args\.p_action === 'join'/,
+  'Cross-mode cave recovery runs on Arena entry only, not during an Arena fight');
+assert.match(arenaSecure, /await reconcilePendingCaveBeforeArena\(id,/,
+  'Arena must resolve the original cave command before performing a competing CAS save');
+assert.ok(arenaSecure.indexOf('await reconcilePendingCaveBeforeArena(id,') < arenaSecure.indexOf('const snapshot = useGame.get();'),
+  'Reconcile any pending cave receipt before capturing the Arena snapshot');
+assert.match(bridge, /export async function reconcilePendingCaveBeforeArena\(/,
+  'Original pending cave commands must be reconciled before unrelated Arena mode');
+assert.match(bridge, /await requestAdventureStart\(userId, pendingStart, hooks\)/,
+  'Replay only the original cave start UUID, never mint a new operation');
+assert.match(bridge, /await requestAdventureSettlement\(userId, pendingAdvance, hooks\)/,
+  'Replay only the original pending advance UUID before allowing Arena save');
+assert.match(bridge, /error\.message !== 'adventure_definitively_rejected'/,
+  'Only a verified 409 rollback may clear a rejected cave operation');
+assert.match(bridge, /throw new Error\('cave_recovery_required'\)/,
+  'Unknown cave results must keep Arena entry fenced and cannot be skipped');
+
 const map = read('src/components/MapScreen.tsx');
 const canvas = read('src/components/WorldMapCanvas.tsx');
 
