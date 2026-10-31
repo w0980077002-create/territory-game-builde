@@ -41,7 +41,7 @@ const output = await build({
   define:{'import.meta.env.BASE_URL':JSON.stringify('/'),'process.env.NODE_ENV':'"production"'},
   plugins:[{name:'no-live-transport',setup(b){
     b.onResolve({filter:/(?:^@\/game\/|\/game\/)(actions|live|progression)(?:\.ts)?$/},args=>({path:args.path.match(/(actions|live|progression)(?:\.ts)?$/)[1],namespace:'comfort-fixture'}));
-    b.onLoad({filter:/.*/,namespace:'comfort-fixture'},args=>({contents:mocks[args.path],loader:'js'}));
+    b.onLoad({filter:/.*/,namespace:'comfort-fixture'},args=>({contents:mocks[args.path],loader:'js',resolveDir:resolve('.')}));
   }}],
 });
 const css=(await postcss([tailwindcss(),autoprefixer()]).process(readFileSync('src/index.css','utf8'),{from:'src/index.css'})).css
