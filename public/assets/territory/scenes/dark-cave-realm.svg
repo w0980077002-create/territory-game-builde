@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" role="img" aria-label="Царство тёмной энергии: подземная бездна с фиолетовым магическим разломом">
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#05050e"/><stop offset=".54" stop-color="#171029"/><stop offset="1" stop-color="#090713"/></linearGradient>
+  <radialGradient id="mist"><stop stop-color="#ad58fc" stop-opacity=".80"/><stop offset=".33" stop-color="#7334bd" stop-opacity=".45"/><stop offset=".74" stop-color="#27134c" stop-opacity=".15"/><stop offset="1" stop-color="#0b0716" stop-opacity="0"/></radialGradient>
+  <radialGradient id="rift"><stop stop-color="#ce94ff"/><stop offset=".17" stop-color="#8335d3"/><stop offset=".42" stop-color="#35115e"/><stop offset=".75" stop-color="#110c29"/><stop offset="1" stop-color="#060611"/></radialGradient>
+  <linearGradient id="rock" x1="0" y1="0" x2="1" y2=".8"><stop stop-color="#211732"/><stop offset=".35" stop-color="#0c0b1a"/><stop offset=".72" stop-color="#25203b"/><stop offset="1" stop-color="#060712"/></linearGradient>
+  <linearGradient id="crystal" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#eed7ff"/><stop offset=".22" stop-color="#9957e1"/><stop offset=".66" stop-color="#421777"/><stop offset="1" stop-color="#180d2d"/></linearGradient>
+  <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a277ba"/><stop offset=".36" stop-color="#3d2b59"/><stop offset=".65" stop-color="#151427"/><stop offset=".93" stop-color="#6a3888"/></linearGradient>
+  <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#24152d"/><stop offset="1" stop-color="#05050d"/></linearGradient>
+  <filter id="soft"><feGaussianBlur stdDeviation="17"/></filter>
+  <filter id="glow"><feGaussianBlur stdDeviation="3"/></filter>
+  <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".018" numOctaves="3" seed="12"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".16"/></feComponentTransfer></filter>
+</defs>
+<rect width="960" height="420" fill="url(#sky)"/>
+<ellipse cx="485" cy="218" rx="400" ry="260" fill="url(#mist)"/>
+<path d="M0 0h960v420H0z" filter="url(#rough)" opacity=".42"/>
+<!-- Distant jagged cavern -->
+<path d="M0 0 72 41 132 5 201 68 267 14 340 80 390 18 445 51 526 0 586 60 640 22 714 76 793 16 861 53 929 7 960 26V420H0Z" fill="#090a18" opacity=".8"/>
+<path d="M0 0 58 100 94 36 128 141 159 44 188 109 218 25 244 166 278 70 313 113 350 0H0Z" fill="#141223"/>
+<path d="M960 0 908 92 877 27 837 139 805 48 770 104 734 24 703 160 672 44 646 104 610 0Z" fill="#141223"/>
+<path d="M0 0 28 106 57 42 83 179 108 98 143 240 161 54 197 131 214 0H0Z" fill="url(#rock)"/>
+<path d="M960 0 933 120 906 34 884 173 847 87 829 232 800 68 761 142 741 0Z" fill="url(#rock)"/>
+<!-- Black stone gate and abyss -->
+<path d="M327 345V170 Q340 73 485 63 Q634 73 645 170V345Z" fill="#090815" stroke="#2f243e" stroke-width="28"/>
+<path d="M348 329V173Q360 95 485 88Q613 95 624 173V329Z" fill="url(#rift)" stroke="url(#rim)" stroke-width="18"/>
+<path d="M365 314V179 Q374 111 485 106 Q596 111 606 179V314" fill="none" stroke="#9d64d6" stroke-opacity=".55" stroke-width="3"/>
+<ellipse cx="484" cy="216" rx="117" ry="148" fill="url(#mist)" opacity=".78"/>
+<path d="M471 128C563 145 585 209 526 256C486 290 433 275 430 233C425 195 476 184 504 216C524 239 494 258 469 244C445 231 452 198 480 180" fill="none" stroke="#c18aff" stroke-width="16" stroke-linecap="round" opacity=".28" filter="url(#glow)"/>
+<path d="M469 126C561 143 586 211 527 257C489 286 433 275 430 233C426 196 475 186 501 214C520 234 495 257 474 246C453 234 457 211 478 191" fill="none" stroke="#b875f2" stroke-width="4" stroke-linecap="round" opacity=".75"/>
+<path d="m388 150 20 25-28 34 34 20-22 33 32 25 M582 142l-23 31 29 31-24 25 22 27-34 36" fill="none" stroke="#8d4bdf" stroke-width="3" opacity=".76"/>
+<!-- Ancient pillars -->
+<path d="M290 0h41l-9 316-44 20 3-245Z" fill="#171329" stroke="#56446b" stroke-width="7"/>
+<path d="M633 0h41l9 336-43-20-9-316Z" fill="#171329" stroke="#56446b" stroke-width="7"/>
+<path d="M258 104h97v22h-97z M603 104h95v22h-95z" fill="#342947" stroke="#6d5084" stroke-width="4"/>
+<path d="M294 131 283 305 M661 131l12 181" stroke="#82638c" stroke-width="2" opacity=".4"/>
+<!-- Hanging chains -->
+<path d="M204 0Q222 84 187 154M755 0Q738 85 774 163" fill="none" stroke="#0c0c12" stroke-width="14" stroke-dasharray="4 16" stroke-linecap="round"/>
+<path d="M204 0Q222 84 187 154M755 0Q738 85 774 163" fill="none" stroke="#715a78" stroke-width="2" stroke-dasharray="3 16"/>
+<!-- Glowing runic facets -->
+<g fill="none" stroke="#a36bdd" stroke-width="2" opacity=".9">
+<path d="m299 177 10-14 10 14-10 14z m351 0 10-14 10 14-10 14z"/>
+<path d="m291 221 13-9 0 23 12-8 M649 221l13-9v23l12-8"/>
+<path d="m298 268 20-12-18 24 20-5 M643 260l20 15-21-2 16 14"/>
+</g>
+<!-- Crystals growing from chasm -->
+<g>
+<path d="m117 339 36-121 33 121z" fill="url(#crystal)" stroke="#7f4bc4" stroke-width="4"/>
+<path d="m153 218 1 121-37 0z" fill="#d9a5ff" opacity=".26"/>
+<path d="m185 346 34-85 30 85z M70 358l25-69 25 69z M793 348l37-113 33 113z M853 364l29-81 27 81z" fill="url(#crystal)" stroke="#6e3eaa" stroke-width="4"/>
+<path d="m830 235-1 113-36 0z" fill="#ddabff" opacity=".18"/>
+<path d="m118 328 45-61m49 55 22-37m587 28 35-52" stroke="#c18aff" stroke-width="4" opacity=".32"/>
+</g>
+<!-- Black rock ledges -->
+<path d="M0 286 44 268 95 307 135 290 184 332 239 308 278 357 342 342 405 383 0 420Z" fill="#0a0913" stroke="#22172b" stroke-width="5"/>
+<path d="m960 277-48-21-43 54-38-22-53 45-63-21-59 42-48-17-62 45 414 38Z" fill="#0b0a15" stroke="#21172a" stroke-width="5"/>
+<path d="M0 365Q220 341 362 365Q470 384 580 359Q734 340 960 364V420H0Z" fill="url(#floor)"/>
+<path d="M357 371Q465 344 602 366M322 392Q470 375 637 394" fill="none" stroke="#4d2877" stroke-width="4" opacity=".58"/>
+<!-- Foreground teeth and scattered energy -->
+<path d="M0 420v-65l41-58 19 123 35-67 28 67 42-80 40 80z M960 420v-68l-38-58-21 126-37-69-30 69-40-77-40 77z" fill="#090912"/>
+<g fill="#b585fc">
+<circle cx="252" cy="202" r="3"/><circle cx="713" cy="186" r="4"/><circle cx="414" cy="112" r="2"/><circle cx="568" cy="95" r="3"/><circle cx="375" cy="291" r="3"/><circle cx="619" cy="294" r="2"/>
+</g>
+<g fill="#9164ff" opacity=".5" filter="url(#soft)"><ellipse cx="483" cy="355" rx="166" ry="14"/><ellipse cx="113" cy="329" rx="33" ry="18"/><ellipse cx="849" cy="336" rx="35" ry="16"/></g>
+<path d="M0 0H960V420H0Z" fill="none" stroke="#050510" stroke-width="28" opacity=".4"/>
+</svg>
