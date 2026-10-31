@@ -5,7 +5,7 @@ import { saveCloudSave } from '@/game/cloud';
 import { supabase } from '@/game/supabase';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { rarityColor, rarityGlow } from '@/game/ui';
-import { Hammer, ArrowUp, X, Package, MapPinned, CheckCircle2 } from 'lucide-react';
+import { Hammer, ArrowUp, X, Package, MapPinned, CheckCircle2, Sword } from 'lucide-react';
 import { hapticNotify } from '@/game/telegram';
 import { equipmentArt } from '@/game/art';
 import { ItemArt } from './ui/ItemArt';
@@ -21,7 +21,7 @@ import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
 // A fresh Telegram launch loads the canonical server save before restoring upgrades.
 const unverifiedForgeUsers = new Set<string>();
 
-export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { focusEquipmentId?: string | null; onInventory?: () => void; onMap?: () => void; userId: string }) {
+export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, userId }: { focusEquipmentId?: string | null; onInventory?: () => void; onMap?: () => void; onBattle?: () => void; userId: string }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [now, setNow] = useState(() => Date.now());
@@ -201,9 +201,13 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { 
             {language === 'en' ? 'Gear in workshop' : 'Вещей в кузнице'}: <b>{allEquipment.length}</b>
           </div>
         </div>
-        {(onInventory || onMap) && <div className="mt-2 grid grid-cols-2 gap-2">
+        {(onInventory || onMap || onBattle) && <div className="mt-2 grid grid-cols-3 gap-1.5" data-testid="forge-journey-navigation">
           {onInventory && <button type="button" onClick={onInventory} className="rounded-lg border border-violet-400/25 bg-violet-500/15 px-2 py-2 text-xs font-bold text-violet-100"><Package className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Equipment' : 'Инвентарь'}</button>}
-          {onMap && <button type="button" onClick={onMap} className="rounded-lg border border-sky-400/25 bg-sky-500/15 px-2 py-2 text-xs font-bold text-sky-100"><MapPinned className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Gather materials' : 'Добыть ресурсы'}</button>}
+          {onMap && <button type="button" onClick={onMap} className="min-h-11 rounded-lg border border-sky-400/25 bg-sky-500/15 px-1 py-2 text-[11px] font-bold text-sky-100"><MapPinned className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Gather' : 'Добыча'}</button>}
+          {onBattle && <button type="button" onClick={onBattle} disabled={upgrading || saveUnverified}
+            className="min-h-11 rounded-lg border border-amber-300/70 bg-gradient-to-b from-amber-500/40 to-amber-900/40 px-1 py-2 text-[11px] font-black text-amber-100 disabled:opacity-40">
+            <Sword className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Adventure' : 'В поход'}
+          </button>}
         </div>}
       </div>
 
