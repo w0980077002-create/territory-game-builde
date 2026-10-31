@@ -3,7 +3,8 @@ import { Clock3, RefreshCw, Skull, Sparkles, Sword, Trophy, Users } from 'lucide
 import { useLanguage } from '@/game/i18n';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
-import { getAppearanceIcon } from '@/game/appearance';
+import { getCombatAppearance } from '@/game/appearance';
+import './halloweenRaid.css';
 import { getHalloweenBossState, hitHalloweenBoss, type HalloweenBossState } from '@/game/halloweenBoss';
 
 const formatDamage = (value: number, en: boolean) => Math.floor(value).toLocaleString(en ? 'en-US' : 'ru-RU');
@@ -41,15 +42,18 @@ export function HalloweenBossScreen() {
   const mounted = useRef(true);
   const fetching = useRef(false);
   const attackingRef = useRef(false);
+  const revision = useRef(0);
+  const timers = useRef<number[]>([]);
 
   const refresh = useCallback(async () => {
     if (fetching.current || attackingRef.current) return;
     fetching.current = true;
+    const startedAt = revision.current;
     try {
       const next = await getHalloweenBossState();
-      if (mounted.current) { setState(next); setMessage(''); }
+      if (mounted.current && startedAt === revision.current && !attackingRef.current) { setState(next); setMessage(''); }
     } catch (error) {
-      if (mounted.current) setMessage(bossError(error, en));
+      if (mounted.current && startedAt === revision.current && !attackingRef.current) setMessage(bossError(error, en));
     } finally {
       fetching.current = false;
       if (mounted.current) setLoading(false);
@@ -65,26 +69,37 @@ export function HalloweenBossScreen() {
       mounted.current = false;
       window.clearInterval(poll);
       window.clearInterval(clock);
+      timers.current.forEach(window.clearTimeout);
+      timers.current = [];
     };
   }, [refresh]);
 
   const attack = async () => {
     if (!state?.active || attackingRef.current) return;
     attackingRef.current = true;
+    revision.current += 1;
     setAttacking(true);
     setMessage('');
     try {
       const next = await hitHalloweenBoss();
       if (!mounted.current) return;
-      setState(next);
-      setLastDamage(next.hitDamage ?? 0);
+      // Only a confirmed server response starts a visual strike. Never fabricate damage.
+      if (next.hitDamage == null) {
+        setState(next);
+        throw new Error('halloween_boss_bad_response');
+      }
+      setLastDamage(next.hitDamage);
       setImpact(true);
-      window.setTimeout(() => { if (mounted.current) setImpact(false); }, 650);
+      timers.current.push(window.setTimeout(() => {
+        if (mounted.current) setState(next);
+      }, 540));
+      timers.current.push(window.setTimeout(() => {
+        attackingRef.current = false;
+        if (mounted.current) { setImpact(false); setAttacking(false); }
+      }, 1250));
     } catch (error) {
-      if (mounted.current) setMessage(bossError(error, en));
-    } finally {
       attackingRef.current = false;
-      if (mounted.current) setAttacking(false);
+      if (mounted.current) { setAttacking(false); setMessage(bossError(error, en)); }
     }
   };
 
@@ -107,19 +122,11 @@ export function HalloweenBossScreen() {
         <p className="relative mt-1 flex items-center justify-center gap-1.5 text-[11px] text-amber-200/85">
           <Users size={13} />{en ? 'One boss for all heroes' : 'Один босс для всех героев'}
         </p>
-        <div className="relative mx-auto mt-1 flex h-44 items-center justify-center" role="img" aria-label={en ? 'Pumpkin King, Halloween world boss' : 'Тыквенный король, общий босс'}>
-          <span className="absolute h-28 w-28 rounded-full bg-orange-500/20 blur-2xl" />
-          <img
-            src={getAppearanceIcon(appearance)}
-            alt=""
-            className={`absolute bottom-1 left-0 h-[105px] w-[95px] object-contain object-bottom drop-shadow-[0_4px_6px_#000] transition-transform duration-200 ${impact ? 'translate-x-7 -rotate-6 scale-110' : 'translate-x-0'}`}
-            aria-hidden="true"
-          />
-          <div className={`relative select-none text-[116px] leading-none drop-shadow-[0_13px_10px_#000] transition-transform duration-150 ${impact ? 'scale-90 -rotate-6 brightness-150' : 'scale-100'}`} aria-hidden="true">🎃</div>
-          {impact && <span className="absolute bottom-12 left-[38%] -rotate-45 animate-pulse text-[44px] font-black text-yellow-100 drop-shadow-[0_0_12px_#fb923c]" aria-hidden="true">⚔️</span>}
-          <Skull size={30} className="absolute bottom-2 right-[22%] text-violet-300/70" aria-hidden="true" />
-          {impact && <span className="absolute top-4 right-[18%] animate-bounce text-3xl font-black text-yellow-300 [text-shadow:0_2px_3px_#000]" aria-hidden="true">⚡</span>}
-          {lastDamage !== null && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-lg border border-orange-400/50 bg-black/75 px-3 py-1 text-base font-black text-orange-300" aria-live="polite">−{formatDamage(lastDamage, en)}</span>}
+        <div className={`raid-arena ${impact ? 'raid-arena--striking' : ''}`} style={{ backgroundImage: `url(${import.meta.env.BASE_URL}assets/territory/halloween/arena.webp)` }} role="img" aria-label={en ? 'Pumpkin King, Halloween world boss' : 'Тыквенный король, общий босс'}>
+          <div className="raid-mist" aria-hidden="true" />
+          <img className="raid-boss" src={`${import.meta.env.BASE_URL}assets/territory/halloween/pumpkin-king.webp`} alt="" />
+          <img className="raid-hero" src={impact ? getCombatAppearance(appearance).attack : getCombatAppearance(appearance).idle} alt="" />
+          {impact && <><span className="raid-slash" aria-hidden="true"/><span className="raid-impact" aria-hidden="true">✦</span><span className="raid-damage" aria-live="polite">−{formatDamage(lastDamage ?? 0, en)}</span></>}
         </div>
 
         <div className="relative mt-4 flex justify-between gap-2 text-xs font-bold">
@@ -157,19 +164,19 @@ export function HalloweenBossScreen() {
         </div>
         <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-orange-400/40 bg-orange-900/35 p-2 text-xs">
           <span><Sparkles size={13} className="mr-1 inline text-yellow-300"/>{en ? 'Your damage' : 'Твой урон'} {state?.myRank ? `· #${state.myRank}` : ''}</span>
-          <b className="tabular-nums text-amber-100">{formatDamage(state?.myDamage ?? 0, en)}</b>
+          <b className="tabular-nums text-amber-100">{state ? formatDamage(state.myDamage, en) : '…'}</b>
         </div>
         {state?.top10.length ? (
           <ol className="mt-2 space-y-1.5" aria-label={en ? 'Top 10 damage leaderboard' : 'Десятка лидеров по урону'}>
             {state.top10.map((item) => (
               <li key={item.rank} className="flex min-w-0 items-center gap-2 rounded-lg border border-white/5 bg-black/30 px-2 py-2 text-xs">
-                <span className={`w-6 shrink-0 text-center font-black ${item.rank <= 3 ? 'text-yellow-300' : 'text-amber-200/65'}`}>{item.rank <= 3 ? ['🥇','🥈','🥉'][item.rank - 1] : `#${item.rank}`}</span>
+                <span className={`w-6 shrink-0 text-center font-black ${item.rank === 1 ? 'text-yellow-300' : item.rank === 2 ? 'text-slate-200' : item.rank === 3 ? 'text-orange-400' : 'text-amber-200/65'}`}>{item.rank <= 3 ? ['🥇','🥈','🥉'][item.rank - 1] : `#${item.rank}`}</span>
                 <span className="min-w-0 flex-1 truncate font-bold text-amber-50">{item.name}</span>
                 <span className="shrink-0 tabular-nums font-black text-orange-200">{formatDamage(item.damage, en)}</span>
               </li>
             ))}
           </ol>
-        ) : <p className="mt-4 text-center text-xs text-amber-100/70">{en ? 'No strikes yet. Be the first!' : 'Ударов пока нет. Стань первым!'}</p>}
+        ) : state ? <p className="mt-4 text-center text-xs text-amber-100/70">{en ? 'No strikes yet. Be the first!' : 'Ударов пока нет. Стань первым!'}</p> : null}
         <p className="mt-3 text-center text-[10px] leading-relaxed text-amber-200/70">
           {en ? 'The leaderboard refreshes every 8 seconds. Only server-confirmed damage counts. No existing energy, stones or potions are spent.' : 'Рейтинг обновляется каждые 8 секунд. Засчитывается только подтверждённый сервером урон. Энергия, камни и эликсиры не тратятся.'}
         </p>

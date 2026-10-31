@@ -1,3 +1,4 @@
+import './halloweenRaid.css';
 import { useState, type ReactNode } from 'react';
 import { ChevronRight, Repeat, Crown } from 'lucide-react';
 import { useStore } from '@/game/store';
@@ -214,11 +215,11 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
           onClick={() => onOpen('halloween-boss')}
           aria-label={language === 'en' ? 'Halloween world boss and live damage ranking' : 'Хэллоуинский босс и рейтинг урона'}
           style={{ top: 'calc(var(--home-chapter-top) + 27px)', width: 'min(210px, calc(100% - 110px))' }}
-          className="absolute left-1/2 z-20 flex h-9 -translate-x-1/2 items-center justify-center gap-1.5 rounded-xl border-2 border-orange-300/90 bg-gradient-to-b from-[#a13f17] via-[#64201a] to-[#291025] px-2 shadow-[0_3px_0_#170b08,0_4px_12px_#000a] active:translate-y-0.5"
+          className="raid-city-button absolute left-1/2 z-20 flex h-9 -translate-x-1/2 items-center justify-center gap-1.5 px-2"
         >
-          <span className="text-base leading-none" aria-hidden="true">🎃</span>
+          <img className="raid-city-pumpkin" src={`${import.meta.env.BASE_URL}assets/territory/halloween/pumpkin-king.webp`} alt="" />
           <span className="truncate text-[11px] font-black uppercase tracking-tight text-amber-50 [text-shadow:0_2px_2px_#000]">{language === 'en' ? 'Halloween boss' : 'Хэллоуинский босс'}</span>
-          <span className="text-base leading-none" aria-hidden="true">⚔️</span>
+          <span className="raid-city-swords" aria-hidden="true">⚔️</span>
         </button>
       )}
 
