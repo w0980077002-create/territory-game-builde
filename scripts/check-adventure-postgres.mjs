@@ -170,4 +170,16 @@ await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1
 const lost=await execute(loser,{action:'advance',operationId:op(6),sessionId:lostStart.session_id,revision:0});
 assert.equal(lost.state.status,'enemy_won'); assert.equal(lost.settlement.reward.gold,0); assert.equal(lost.settlement.reward.xp,0);
 assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`),{...save,battleStones:9},'a defeat consumes one entry stone but awards no gold or XP');
-console.log('PostgreSQL 17 PASS: reviewed synthetic profile, locked stages, engine victory/loss, rollback and retry, durable receipts, preserved save and real concurrent lock contention.');
+// Install the staged cave wallet/RPC against this disposable PG17 database.
+// The unique partial index is the invariant that lets the RPC return one ID.
+await file('supabase/staged/territory_dark_stones_20261030.sql');
+const progressAs = id => scalar(`SET ROLE authenticated; SET request.test_uid=${quote(id)}; SELECT public.territory_adventure_progress_v1()`);
+assert.equal((await progressAs(player)).active_session_id,next.session_id, 'owner can recover active session after device loss');
+assert.equal((await progressAs(noLevel)).active_session_id,null, 'finished session is not active');
+assert.equal((await progressAs(loser)).active_session_id,null, 'another player cannot see the active ID');
+await assert.rejects(execute(noLevel,{action:'resume',sessionId:next.session_id}),/combat_session_not_found/);
+await assert.rejects(execute(player,{action:'resume',sessionId:'30000000-0000-4000-8000-000000000099'}),/combat_session_not_found/);
+await assert.rejects(sql(`INSERT INTO territory_private.combat_sessions_v1(player_id,encounter_id,state,cursor_ms)
+ SELECT player_id,encounter_id,state,cursor_ms FROM territory_private.combat_sessions_v1 WHERE session_id=${quote(next.session_id)}`),/combat_one_active_session_v1/);
+assert.equal(await sql(`SELECT count(*) FROM territory_private.combat_sessions_v1 WHERE player_id=${quote(player)} AND state->>'status'='fighting'`),'1');
+console.log('PostgreSQL 17 PASS: owner-scoped recovery, unique active session, reviewed synthetic profile, locked stages, engine victory/loss, rollback and retry, durable receipts, preserved save and real concurrent lock contention.');

@@ -74,6 +74,20 @@ with sync_playwright() as p:
             assert page.get_by_test_id('dark-cave-challenge').is_disabled(), 'unreviewed equipment must not enable another start'
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
         page.close()
+    for width, height in [(320,568),(360,700),(390,844),(430,740)]:
+        page = browser.new_page(viewport={'width':width,'height':height})
+        page.on('pageerror',lambda e:errors.append(str(e)))
+        page.route(URL+'**',serve)
+        page.goto(URL+'?lang=en')
+        page.get_by_test_id('dark-cave-challenge').wait_for()
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'English horizontal overflow'
+        page.get_by_test_id('dark-cave-challenge').click()
+        page.get_by_test_id('dark-cave-battle-background').wait_for()
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'English combat horizontal overflow'
+        page.get_by_role('button',name='Next combat step').click()
+        page.get_by_text('Victory!').wait_for()
+        assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
+        page.close()
     assert not errors, errors
     browser.close()
 print('Adventure browser PASS: 320/360/390/430 no overflow, one server start, one advance, confirmed reward, next stage (offline fixture).')

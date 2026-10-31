@@ -14,7 +14,7 @@ window.__adventureCalls = [];
 export const useGame = { get: () => oldState, set: () => {}, subscribe: () => () => {} };
 const arenaState = { wins: 0, losses: 0, rating: 1000 };
 export const useArena = { get: () => arenaState, subscribe: () => () => {} };
-export const useLanguage = () => ({ language: 'ru' });
+export const useLanguage = () => ({ language: new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'ru' });
 export const localizeText = (item, language) => typeof item === 'string' ? item : item?.[language] || item?.ru || '';
 export async function ensurePlayerSession() { return true; }
 export function restoreAdventureSaveFence() { return null; }
