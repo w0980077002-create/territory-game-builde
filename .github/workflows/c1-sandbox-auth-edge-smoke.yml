@@ -1,0 +1,73 @@
+name: C1 isolated auth and Edge smoke (not a production release gate)
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sandbox-jwt-edge-smoke:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 128 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Real JWT + isolated RLS/Edge (NOT the full C1 game)
+        env:
+          C1_LAB_URL: https://ksikzkrvuuhermhnbycn.supabase.co
+          # Public publishable key, not service_role or server secret.
+          C1_LAB_PUBLISHABLE_KEY: "sb_publishable_Wr9NxENExIMjwxOQeuecmA_myOoGSb_"
+        run: |
+          node --input-type=module <<'JS'
+            import assert from 'node:assert/strict';
+            import { randomUUID } from 'node:crypto';
+            import { createClient } from '@supabase/supabase-js';
+            const url = process.env.C1_LAB_URL;
+            const key = process.env.C1_LAB_PUBLISHABLE_KEY;
+            const prefix = url + '/functions/v1/territory-c1-auth-smoke';
+            const create = () => createClient(url, key, { auth: { persistSession:false, autoRefreshToken:false } });
+            async function invoke(token, body) {
+              const res = await fetch(prefix, {method:'POST', headers:{apikey:key, Authorization:'Bearer '+token, 'Content-Type':'application/json'}, body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
+              return {status:res.status, payload:await res.json().catch(()=>null)};
+            }
+            const invalid = await invoke('invalid-jwt-for-negative-test', {action:'health'});
+            assert.notEqual(invalid.status, 200, 'Invalid JWT must not enter the Edge Function');
+            const a=create(),b=create();
+            const first=await a.auth.signInAnonymously();
+            if(first.error) {
+              const code=first.error.code || 'unknown';
+              console.log('EXTERNAL AUTH GATE BLOCKED: anonymous test JWT unavailable: ' + code);
+              console.log('No production/game data touched; do not mark C1 released.');
+              process.exit(0);
+            }
+            assert.ok(first.data.session?.access_token,'first real JWT missing');
+            const second=await b.auth.signInAnonymously();
+            if(second.error) throw Error('Second test JWT unavailable: '+ (second.error.code||'unknown'));
+            assert.ok(second.data.session?.access_token,'second real JWT missing');
+            const tokenA=first.data.session.access_token, tokenB=second.data.session.access_token;
+            const ownA=first.data.user.id,ownB=second.data.user.id;
+            assert.notEqual(ownA,ownB,'test users must differ');
+            assert.equal((await invoke(tokenA,{action:'health'})).status,200,'real JWT A rejected by Edge');
+            assert.equal((await invoke(tokenB,{action:'health'})).status,200,'real JWT B rejected by Edge');
+            const nonceA=randomUUID(),nonceB=randomUUID(),badNonce=randomUUID();
+            assert.equal((await invoke(tokenA,{action:'write',nonce:nonceA})).status,200,'A cannot write own RLS row');
+            const beforeB=await invoke(tokenB,{action:'read'});
+            assert.equal(beforeB.status,200,'B RLS read failed');
+            assert.ok(!beforeB.payload?.visible_nonces?.includes(nonceA),'B leaked A row');
+            const denied=await invoke(tokenB,{action:'write',nonce:badNonce,owner_id:ownA});
+            assert.equal(denied.status,403,'B must not insert as A');
+            assert.equal((await invoke(tokenB,{action:'write',nonce:nonceB})).status,200,'B own row failed');
+            const readA=await invoke(tokenA,{action:'read'});
+            assert.equal(readA.status,200);
+            assert.ok(readA.payload.visible_nonces.includes(nonceA),'A cannot read own row');
+            assert.ok(!readA.payload.visible_nonces.includes(nonceB),'A can read B row');
+            console.log('REAL JWT/RLS/EDGE sandbox smoke PASS: 2 separate Auth users; owner read+write, cross-account denied, invalid bearer denied.');
+            console.log('Only isolated territory_c1_lab_auth_probe_20261031 and new anonymous Auth test users were used.');
+            
+          JS
