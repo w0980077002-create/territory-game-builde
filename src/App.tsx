@@ -499,6 +499,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'shop' && <ShopScreen key={shopTab} initialTab={shopTab} onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} />}
         {screen === 'forge' && <ForgeScreen focusEquipmentId={forgeFocusId} userId={user.id}
           onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')}
+          onProfessions={() => setScreen('professions')}
           onBattle={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }} />}
         {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => { setLeaderboardInitialTab('rating'); setScreen('leaderboard'); }} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
         {screen === 'leaderboard' && <LeaderboardScreen key={leaderboardInitialTab} user={user} initialTab={leaderboardInitialTab} onArena={() => setScreen('arena')} onEvents={() => setScreen('events')} onMessages={() => setScreen('messages')} />}
@@ -520,7 +521,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           if (target === 'forge') openForge();
           else if (target === 'inventory') { setInventoryTab(tab ?? 'equipment'); setScreen('inventory'); }
           else setScreen(target);
-        }} /> : <ProfessionsScreen />)}
+        }} /> : <ProfessionsScreen onMap={() => setScreen('map')} onInventory={() => { setInventoryTab('items'); setScreen('inventory'); }} onForge={() => openForge()} />)}
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} onNavigate={setScreen} />}
         {screen === 'messages' && <MessagesScreen notify={notify} onQuests={() => setScreen('quests')} onDaily={() => setEventDailyOpen(true)} />}

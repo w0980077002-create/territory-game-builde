@@ -21,7 +21,7 @@ import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
 // A fresh Telegram launch loads the canonical server save before restoring upgrades.
 const unverifiedForgeUsers = new Set<string>();
 
-export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, userId }: { focusEquipmentId?: string | null; onInventory?: () => void; onMap?: () => void; onBattle?: () => void; userId: string }) {
+export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, onProfessions, userId }: { focusEquipmentId?: string | null; onInventory?: () => void; onMap?: () => void; onBattle?: () => void; onProfessions?: () => void; userId: string }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [now, setNow] = useState(() => Date.now());
@@ -201,9 +201,10 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, us
             {language === 'en' ? 'Gear in workshop' : 'Вещей в кузнице'}: <b>{allEquipment.length}</b>
           </div>
         </div>
-        {(onInventory || onMap || onBattle) && <div className="mt-2 grid grid-cols-3 gap-1.5" data-testid="forge-journey-navigation">
+        {(onInventory || onMap || onBattle || onProfessions) && <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4" data-testid="forge-journey-navigation">
           {onInventory && <button type="button" onClick={onInventory} className="rounded-lg border border-violet-400/25 bg-violet-500/15 px-2 py-2 text-xs font-bold text-violet-100"><Package className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Equipment' : 'Инвентарь'}</button>}
           {onMap && <button type="button" onClick={onMap} className="min-h-11 rounded-lg border border-sky-400/25 bg-sky-500/15 px-1 py-2 text-[11px] font-bold text-sky-100"><MapPinned className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Gather' : 'Добыча'}</button>}
+          {onProfessions && <button type="button" onClick={onProfessions} disabled={upgrading || saveUnverified} className="min-h-11 rounded-lg border border-amber-300/45 bg-amber-900/40 px-1 py-2 text-[11px] font-bold text-amber-100 disabled:opacity-40"><Hammer className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Crafting' : 'Ремесло'}</button>}
           {onBattle && <button type="button" onClick={onBattle} disabled={upgrading || saveUnverified}
             className="min-h-11 rounded-lg border border-amber-300/70 bg-gradient-to-b from-amber-500/40 to-amber-900/40 px-1 py-2 text-[11px] font-black text-amber-100 disabled:opacity-40">
             <Sword className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Adventure' : 'В поход'}
