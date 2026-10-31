@@ -173,8 +173,14 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
       }
       const prepared = await supabase.functions.invoke('territory-combat', { body: { action: 'prepare' } });
       if (prepared.error || !obj(prepared.data)) throw new Error('combat_unavailable');
-      if (prepared.data.status !== 'ready') throw new Error('combat_profile_not_verified');
-      if (mounted.current) setReady(true);
+      // An existing server session keeps its pinned fighter even when a later
+      // equipment change requires review. Do not block its controls, and do
+      // not authorize a new start until preparation succeeds.
+      const mayFinishPinnedSession = prepared.data.status === 'reconciliation_required'
+        && prepared.data.reason === 'active_session'
+        && sessionRef.current?.state.status === 'fighting';
+      if (prepared.data.status !== 'ready' && !mayFinishPinnedSession) throw new Error('combat_profile_not_verified');
+      if (mounted.current) setReady(prepared.data.status === 'ready');
       await readProgress();
     } catch (cause) {
       if (mounted.current) { setError(message(cause, en)); setRecoverable(true); }
@@ -235,6 +241,10 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     if (lock.current || sessionRef.current?.state.status === 'fighting') return;
     localStorage.removeItem(sessionKey(userId));
     sessionRef.current = null; setSession(null); setStrike(null); setBattleLog([]); onActiveChange?.(false);
+    // A finished pinned session does not approve the new equipment. Recheck
+    // before offering a new start, including on a different device.
+    setReady(false);
+    void restore();
   };
 
   const currentStage = progress?.unlocked_stage ?? 1;

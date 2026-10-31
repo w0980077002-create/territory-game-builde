@@ -39,7 +39,7 @@ export const supabase = {
  rpc: async name => ({ data: name === 'territory_adventure_progress_v1' ? progress : null, error: null }),
  functions: { invoke: async (name, args) => {
    window.__adventureCalls.push(args.body);
-   if (args.body.action === 'prepare') return { data: { status: 'ready' }, error: null };
+   if (args.body.action === 'prepare') return { data: window.__profileChanged ? { status: 'reconciliation_required', reason: 'active_session' } : { status: 'ready' }, error: null };
    if (args.body.action === 'start') {
      window.__adventureControl = args.body.control;
      current = outcome('fighting');

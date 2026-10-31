@@ -54,6 +54,13 @@ with sync_playwright() as p:
             page.get_by_test_id('dark-cave-challenge').click()
             page.get_by_test_id('dark-cave-battle-background').wait_for()
             page.get_by_test_id('dark-cave-combat-panels').wait_for()
+            # Simulate a later equipment edit and a screen remount while the
+            # server still owns the original active fight snapshot.
+            page.evaluate('window.__profileChanged = true')
+            page.locator('#remount').evaluate('(e) => e.click()')
+            page.get_by_test_id('dark-cave-battle-background').wait_for()
+            page.get_by_role('button',name='Следующий шаг боя').wait_for(state='visible')
+            assert page.get_by_role('button',name='Следующий шаг боя').is_enabled(), 'pinned fight must remain playable after restore'
             page.get_by_role('button',name='Экипировка').click()
             page.get_by_role('button',name='Пояс эликсиров').click()
             page.get_by_text('Только просмотр: эффекты эликсиров').wait_for()
@@ -64,6 +71,7 @@ with sync_playwright() as p:
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
             page.get_by_role('button',name='К этапам').click()
             page.get_by_text('Этаж 2 / 100').wait_for()
+            assert page.get_by_test_id('dark-cave-challenge').is_disabled(), 'unreviewed equipment must not enable another start'
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
         page.close()
     assert not errors, errors
