@@ -21,7 +21,7 @@ import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 import { getStarterMilestones } from '@/game/starterJourney';
-import { halloweenBossInSeason } from '@/game/halloweenBoss';
+import { halloweenBossInSeason } from '@/game/halloweenBossSeason';
 
 export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
 // All five follower images use 512x512 canvases but have different amounts of
