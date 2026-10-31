@@ -59,7 +59,7 @@ with sync_playwright() as p:
                     rect=button.bounding_box()
                     assert rect and rect['height']>=43.5, (width,language,ios,button.inner_text(),rect)
                     assert rect['x']>=-1 and rect['x']+rect['width']<=width+1, (width,language,ios,rect)
-                page.get_by_role('button', name='Open' if language=='en' else 'Перейти').first.click()
+                board.get_by_role('button', name='Open' if language=='en' else 'Перейти').first.click()
                 assert page.evaluate('window.__socialOpen') == 'chat'
                 assert page.evaluate('window.__socialClaimCalls || []') == [], 'opening a link cannot claim rewards'
                 verify.first.click()
