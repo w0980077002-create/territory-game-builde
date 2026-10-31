@@ -42,7 +42,7 @@ assert.match(fight, /questReady=\{state\.quests\.some\(/, 'Claim-ready quests mu
 assert.doesNotMatch(fight, /questReady=\{state\.player\.level < 5/, 'Do not hide quest rewards from veteran players');
 assert.match(battle, /return start\(fight\.kind\)/, 'Next fight must report whether stones were actually spent');
 assert.match(battle, /try \{ hapticImpact\('medium'\); \} catch/, 'Telegram haptic errors must not interrupt battle start');
-assert.match(fight, /nextPending\? \(language === 'en' \? 'Starting…' : 'Начинаем…'\)/, 'Pending next action must be visible');
+assert.match(fight, /nextPending\s*\?\s*\(language === 'en' \? 'Starting…' : 'Начинаем…'\)/, 'Pending next action must be visible');
 
 // The native Telegram bridge can exist but throw on older WebViews. Neither
 // a round's damage nor a finished battle may depend on vibration/telemetry.
