@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - copilot/runes-adventures-integration
+      - copilot/issue-125-adventure
   workflow_dispatch:
 
 permissions:
