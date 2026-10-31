@@ -1,8 +1,8 @@
--- TERRITORY 1.0: guarded Monday 00:00 Europe/Kyiv Arena TOP-50 cutover.
+-- TERRITORY 1.0: guarded 24h extension, then Monday 00:00 UTC Arena TOP-50.
 -- REQUIRED: release reviewed client in same rollout; leave payouts DISABLED.
 -- Preserve all player wins including the ongoing Sunday 25 Oct competition.
--- Old Sunday 25 Oct -> Monday 2 Nov is one extended transition; following weeks
--- are Monday-to-Monday Kyiv, DST-aware. No data deletes, grants or wallet edits.
+-- Current Sunday 25 Oct -> Monday 2 Nov 00:00 UTC is one 8-day season;
+-- future weeks are Monday-to-Monday UTC. No deletes, grants or wallet edits.
 BEGIN;
 SELECT pg_advisory_xact_lock(14601,701);
 DO $guard$
@@ -29,14 +29,14 @@ ALTER TABLE territory_private.arena_top50_reward_weeks_v1
   DROP CONSTRAINT arena_top50_reward_weeks_v1_week_check,
   DROP CONSTRAINT arena_top50_reward_weeks_v1_check;
 ALTER TABLE territory_private.arena_top50_reward_weeks_v1
-  ADD CONSTRAINT arena_top50_reward_weeks_monday_kyiv_check CHECK (
+  ADD CONSTRAINT arena_top50_reward_weeks_monday_utc_check CHECK (
    (week=DATE '2026-10-25'
      AND starts_at='2026-10-25T00:00:00Z'::timestamptz
-     AND ends_at='2026-11-01T22:00:00Z'::timestamptz)
+     AND ends_at='2026-11-02T00:00:00Z'::timestamptz)
     OR
    (extract(isodow FROM week)=1
-     AND starts_at=week::timestamp AT TIME ZONE 'Europe/Kyiv'
-     AND ends_at=(week+7)::timestamp AT TIME ZONE 'Europe/Kyiv')
+     AND starts_at=week::timestamp AT TIME ZONE 'UTC'
+     AND ends_at=(week+7)::timestamp AT TIME ZONE 'UTC')
   );
 
 CREATE OR REPLACE FUNCTION public.arena_weekly_top50_v1()
@@ -47,7 +47,7 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_utc_day date;
-  v_kyiv_monday date;
+  v_monday date;
   v_start timestamptz;
   v_end timestamptz;
   v_leaders jsonb := '[]'::jsonb;
@@ -58,20 +58,20 @@ BEGIN
     RAISE EXCEPTION 'not_authenticated' USING ERRCODE = '42501';
   END IF;
   IF now() >= '2026-10-25T00:00:00Z'::timestamptz
-     AND now() < '2026-11-01T22:00:00Z'::timestamptz THEN
+     AND now() < '2026-11-02T00:00:00Z'::timestamptz THEN
     -- Extended ongoing season: keep every win already counted in the live board.
     v_start := '2026-10-25T00:00:00Z'::timestamptz;
-    v_end := '2026-11-01T22:00:00Z'::timestamptz;
+    v_end := '2026-11-02T00:00:00Z'::timestamptz;
   ELSIF now() < '2026-10-25T00:00:00Z'::timestamptz THEN
     v_utc_day := (now() AT TIME ZONE 'UTC')::date;
     v_start := (v_utc_day - EXTRACT(DOW FROM v_utc_day)::integer)::timestamp AT TIME ZONE 'UTC';
     v_end := v_start + interval '7 days';
   ELSE
-    -- Each following week: Monday 00:00 Kyiv, including DST.
-    v_utc_day := (now() AT TIME ZONE 'Europe/Kyiv')::date;
-    v_kyiv_monday := v_utc_day - (EXTRACT(ISODOW FROM v_utc_day)::integer - 1);
-    v_start := v_kyiv_monday::timestamp AT TIME ZONE 'Europe/Kyiv';
-    v_end := (v_kyiv_monday + 7)::timestamp AT TIME ZONE 'Europe/Kyiv';
+    -- Future seasons: Monday 00:00 UTC, identical for all players.
+    v_utc_day := (now() AT TIME ZONE 'UTC')::date;
+    v_monday := v_utc_day - (EXTRACT(ISODOW FROM v_utc_day)::integer - 1);
+    v_start := v_monday::timestamp AT TIME ZONE 'UTC';
+    v_end := (v_monday + 7)::timestamp AT TIME ZONE 'UTC';
   END IF;
 
   WITH scores AS (
@@ -130,8 +130,8 @@ BEGIN
     WHERE id=1 FOR UPDATE;
   IF NOT FOUND OR NOT v_config.enabled THEN RETURN; END IF;
 
-  -- Never treat Sunday as a completed season. First closure is Monday 2 Nov.
-  v_current_week := (now() AT TIME ZONE 'Europe/Kyiv')::date;
+  -- Never treat Sunday as a completed season. First closure is Monday 2 Nov UTC.
+  v_current_week := (now() AT TIME ZONE 'UTC')::date;
   v_current_week := v_current_week
     - (extract(isodow FROM v_current_week)::integer - 1);
   v_week := v_config.first_week;
@@ -141,10 +141,10 @@ BEGIN
       IF v_week = DATE '2026-10-25' THEN
         -- One extended transitional week; reward the already-running competition once.
         v_start := '2026-10-25T00:00:00Z'::timestamptz;
-        v_end := '2026-11-01T22:00:00Z'::timestamptz;
+        v_end := '2026-11-02T00:00:00Z'::timestamptz;
       ELSE
-        v_start := v_week::timestamp AT TIME ZONE 'Europe/Kyiv';
-        v_end := (v_week+7)::timestamp AT TIME ZONE 'Europe/Kyiv';
+        v_start := v_week::timestamp AT TIME ZONE 'UTC';
+        v_end := (v_week+7)::timestamp AT TIME ZONE 'UTC';
       END IF;
       -- Archive 50 places including virtual entries, without issuing them mail.
       INSERT INTO territory_private.arena_top50_reward_weeks_v1
