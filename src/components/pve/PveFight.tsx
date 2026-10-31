@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shield, Sword, Check, Flag, Loader2, Trophy } from 'lucide-react';
 import { useStore } from '@/game/store';
+import { getVictoryJourney, type VictoryJourney } from '@/game/victoryJourney';
 import { useGame, useArena, recordBattleResult } from '@/game/actions';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
@@ -91,6 +92,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const arena = useStore(useArena);
   const follower = selectedFollower(state);
   const followerBonus = followerCombat(follower);
+  const levelAtFightStart = useRef(useGame.get().player.level);
   const [hero, setHero] = useState<PveSide>(() => heroSide(useGame.get()));
   const [foe, setFoe] = useState<PveSide>(() => enemySide(enemy));
   const [attack, setAttack] = useState<Zone | null>(null);
@@ -245,6 +247,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const controls = !busy && !outcome && !auto;
   const ready = controls && !!attack && blocks.length === 2;
   const firstFightHelp = kind === 'stage' && state.player.level <= 2 && state.totalBattlesWon === 0;
+  const victoryJourney = outcome?.won ? getVictoryJourney(state,kind,levelAtFightStart.current) : null;
   const hint = busy ? (language === 'en' ? 'Round in progress…' : 'Идёт раунд…')
     : auto ? (language === 'en' ? 'Auto-battle: zones are selected automatically' : 'Автобой: зоны выбираются сами')
     : blocks.length < 2 ? (language === 'en' ? `Choose ${2 - blocks.length} more defense zone(s)` : `Защита: выбери ещё ${2 - blocks.length}`) : !attack ? (language === 'en' ? 'Choose an attack zone' : 'Выбери зону удара') : (language === 'en' ? 'Press STRIKE' : 'Жми УДАР');
@@ -333,7 +336,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
                 )}
                 <div className="absolute inset-0 z-20 pointer-events-none">
                   <FighterFigure
-                    src={import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp'}
+                    src={getCombatAppearance(state.appearance).idle}
                     combatFrames={getCombatAppearance(state.appearance)}
                     name={hero.name}
                     dir={1}
@@ -409,7 +412,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
           </div>
         )}
 
-        {outcome && <OutcomePanel outcome={outcome} kind={kind}
+        {outcome && <OutcomePanel outcome={outcome} kind={kind} victoryJourney={victoryJourney}
           onExit={() => { nextCancelled.current = true; onExit(); }}
           questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
           onQuests={onQuests ? () => { nextCancelled.current = true; onQuests(); } : undefined}
@@ -454,7 +457,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   );
 }
 
-function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests, nextPending, nextError }: { outcome: Outcome; kind: FightKind; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; nextPending: boolean; nextError: boolean }) {
+function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questReady, onQuests, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; nextPending: boolean; nextError: boolean }) {
   const { language } = useLanguage();
   return (
     <div className="relative px-3 pb-3 pt-1 animate-pop">
@@ -470,6 +473,50 @@ function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests, nex
           </div>
         ) : (
           <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>
+        )}
+        {outcome.won && victoryJourney && (
+          <section data-testid="victory-next-goal" aria-label={language === 'en' ? 'Next hero goal' : 'Следующая цель героя'}
+            className="relative mt-3 rounded-xl border border-amber-300/40 bg-gradient-to-r from-[#291c18]/95 to-[#141625]/95 p-2 text-left">
+            <div className="flex items-center gap-2.5">
+              <div className="h-[60px] w-[58px] shrink-0 overflow-hidden rounded-lg border border-amber-500/35 bg-black/40">
+                <img src={victoryJourney.enemy.art} alt="" draggable={false} loading="lazy"
+                  className="h-full w-full object-contain object-bottom"/>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black uppercase tracking-[.1em] text-amber-300">
+                  {language === 'en' ? 'Next target' : 'Следующая цель'} · {victoryJourney.kind === 'trial'
+                    ? (language === 'en' ? 'Trial ' : 'Испытание ') + victoryJourney.trialLevel
+                    : victoryJourney.enemy.isBoss
+                      ? (language === 'en' ? 'Chapter boss' : 'Босс главы')
+                      : (language === 'en' ? 'Chapter ' : 'Глава ') + victoryJourney.chapter}
+                </p>
+                <p data-testid="victory-next-enemy" className="truncate text-sm font-extrabold text-[#ffe5a5]">
+                  {localizeText(victoryJourney.enemy.name,language)}
+                </p>
+                <p className="text-[10px] text-amber-100/80">
+                  {language === 'en' ? 'HP ' : 'Здоровье '}{victoryJourney.enemy.maxHp} · {language === 'en' ? 'Attack ' : 'Атака '}{victoryJourney.enemy.attack}
+                </p>
+              </div>
+            </div>
+            <div className="mt-2 border-t border-amber-300/20 pt-1.5">
+              <div className="mb-1 flex justify-between gap-2 text-[11px] font-semibold">
+                <span className={victoryJourney.leveledUp ? 'text-emerald-300' : 'text-amber-100'}>
+                  {victoryJourney.leveledUp
+                    ? (language === 'en' ? 'LEVEL UP! · Level ' : 'НОВЫЙ УРОВЕНЬ! · Ур. ') + victoryJourney.level
+                    : (language === 'en' ? 'Hero level ' : 'Уровень героя ') + victoryJourney.level}
+                </span>
+                <span data-testid="victory-xp-label" className="text-amber-100/85 tabular-nums">
+                  {victoryJourney.maxLevel ? 'MAX' : `${victoryJourney.xp}/${victoryJourney.xpToNext} XP`}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-black/70 border border-amber-100/10"
+                role="progressbar" aria-label={language === 'en' ? 'Hero experience' : 'Опыт героя'}
+                aria-valuemin={0} aria-valuemax={100} aria-valuenow={victoryJourney.xpPercent}>
+                <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-400 transition-[width] duration-500"
+                  style={{width: `${victoryJourney.xpPercent}%`}}/>
+              </div>
+            </div>
+          </section>
         )}
         {outcome.won && questReady && onQuests && <button type="button" onClick={onQuests} className="relative mt-3 w-full min-h-11 rounded-xl border border-emerald-300/60 bg-emerald-700/70 px-3 text-sm font-bold text-white active:scale-[0.98]">
           {language === 'en' ? 'Quest reward ready — claim it' : 'Награда за задание готова — забрать'}
