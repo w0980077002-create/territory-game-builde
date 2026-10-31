@@ -7,7 +7,7 @@
 .arena-rank-journey__hero span{font-size:10px;font-weight:900;letter-spacing:.3px;color:#f6c77a}
 .arena-rank-journey__hero h2{margin:3px 0;font-size:clamp(20px,5.5vw,26px);font-weight:900;line-height:1.1;color:#ffe5a0;text-shadow:0 2px #24120a;overflow-wrap:anywhere}
 .arena-rank-journey__hero p{font-size:11px;line-height:1.35;color:#f4e0c5}
-.arena-rank-journey__tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;min-width:0}
+.arena-rank-journey__tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;min-width:0}
 .arena-rank-journey__tab{min-width:0;min-height:48px;padding:7px 3px;border:2px solid #ad804a;border-radius:10px;background:linear-gradient(#6a462c,#35241c);color:#ffe3ae;font-size:12px;font-weight:900;line-height:1.2;overflow-wrap:anywhere}
 .arena-rank-journey__tab--active{border-color:#fff0b1;background:linear-gradient(#ffe5a1,#c68c3b);color:#351b0b;box-shadow:inset 0 2px #fff7d2,0 3px #694018}
 .arena-rank-journey__content{display:grid;gap:10px;min-width:0}
@@ -48,3 +48,7 @@
 .arena-rank-journey button:disabled{opacity:.55}
 @media(max-width:350px){.arena-rank-journey__hero{gap:7px;padding:8px}.arena-rank-journey__hero img{width:64px;height:72px}.arena-rank-journey__hero span{font-size:9px}.arena-rank-journey__tab{font-size:11px}.arena-rank-journey__row{gap:5px;padding:7px 5px}.arena-rank-journey__place{flex-basis:39px}.arena-rank-journey__portrait{width:30px;height:30px;flex-basis:30px}}
 @media(prefers-reduced-motion:reduce){.arena-rank-journey *{animation:none!important;transition:none!important}}
+
+/* Player-facing Top Players reuses the identical Arena board and mobile artwork. */
+.arena-rank-journey__arena-top{min-width:0;max-width:100%;padding:0;background:transparent;overflow:visible;isolation:auto}
+.arena-rank-journey__arena-top .arena-weekly{margin:0;min-width:0}
