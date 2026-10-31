@@ -14,6 +14,7 @@ import {SocialTrail} from './src/components/social/SocialTrail';
 import {ClanNextStep} from './src/components/social/ClanNextStep';
 function App(){
   const [clanMode,setClanMode]=React.useState('chat');
+  const onSocialStatusChange=React.useCallback((status)=>{window.__lastSocialStatus=status},[]);
   const clanState={pending_boss_rewards:clanMode==='reward'?[{boss_no:3,gold:500,earned_at:'2026-10-30'}]:[],
     quests:clanMode==='quest'?[{id:'help',progress:2,target:2,member:1,member_req:1,claimed:false}]:[],
     boss:clanMode==='boss'?{boss_no:3,hp:100,max_hp:200,expires_at:'2026-11-01'}:null,
@@ -25,7 +26,7 @@ function App(){
       {['reward','quest','boss','chat'].map(mode=><button key={mode} type="button" className="min-h-11 rounded-lg bg-amber-900/60 text-xs text-amber-100" onClick={()=>setClanMode(mode)}>{mode}</button>)}
     </div>
     <ClanNextStep state={clanState} onJump={target=>{window.__clanJump=target}} />
-    <SocialQuestsSection userId="fixture" onStatusChange={(s)=>{window.__lastSocialStatus=s}}/>
+    <SocialQuestsSection userId="fixture" onStatusChange={onSocialStatusChange}/>
   </div></LanguageProvider></div>
 }
 createRoot(document.getElementById('root')).render(<App/>);`;
