@@ -47,4 +47,5 @@ const output = await build({
 const css=(await postcss([tailwindcss(),autoprefixer()]).process(readFileSync('src/index.css','utf8'),{from:'src/index.css'})).css
   + (output.outputFiles.find(f=>f.path.endsWith('.css'))?.text??'');
 const js=output.outputFiles.find(f=>f.path.endsWith('.js')).text;
-writeFileSync('/tmp/territory-comfort-preview.html',`<!doctype html><html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style><div id="root"></div><script>${js.replace(/<\\/script/gi,'<\\\\/script')}</script></html>`);
+writeFileSync('/tmp/territory-comfort-preview.js', js);
+writeFileSync('/tmp/territory-comfort-preview.html',`<!doctype html><html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style><div id="root"></div><script src="/territory-comfort-preview.js"></script></html>`);
