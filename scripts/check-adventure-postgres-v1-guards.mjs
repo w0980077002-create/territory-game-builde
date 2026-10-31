@@ -30,6 +30,7 @@ const json = x => `${quote(JSON.stringify(x))}::jsonb`;
 const scalar = async statement => JSON.parse(await sql(statement));
 const player = '10000000-0000-4000-8000-000000000001';
 const loser = '10000000-0000-4000-8000-000000000002';
+const observer = '10000000-0000-4000-8000-000000000003';
 const op = n => `20000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const fighter = { stats: { hp: 1000, maxHp: 1000, attack: 100, defense: 4, critChance: 0, dodgeChance: 0, blockChance: 0 }, ownership: { heroLevel: 1, skills: {}, runes: {}, passives: {} }, loadout: { skills: [], passives: [] } };
 const weak={...fighter,stats:{...fighter.stats,hp:1,maxHp:1,attack:1}};
@@ -49,7 +50,7 @@ await sql(`DO $$ BEGIN
  CREATE TABLE public.players(id uuid PRIMARY KEY,banned boolean DEFAULT false,game_state jsonb,gold integer,gems integer,xp integer,level integer,max_energy integer,attack integer,defense integer,max_hp integer,crit_chance integer,updated_at timestamptz DEFAULT clock_timestamp());
  GRANT SELECT,UPDATE ON public.players TO service_role;
  INSERT INTO public.players(id,game_state,gold,gems,xp,level,max_energy) VALUES
- (${quote(player)},${json(save)},50,9,90,1,20),(${quote(loser)},${json(save)},50,9,90,1,20);`);
+ (${quote(player)},${json(save)},50,9,90,1,20),(${quote(loser)},${json(save)},50,9,90,1,20),(${quote(observer)},${json(save)},50,9,90,1,20);`);
 // These are real V1 function/trigger sources, with only the historical file's
 // missing dollar terminators normalized as in check-admin-gear-relevel-v4.mjs.
 await file('supabase/migrations/20261017_equipment_guard_v4.sql');
@@ -105,6 +106,7 @@ await file('scripts/fixtures/c1-live-function-baseline.sql');
 await file('supabase/staged/territory_c1_live_guarded_patch_DRAFT_20261031.sql');
 await sql(`INSERT INTO territory_private.cave_canary_v1 VALUES(${quote(player)},'synthetic player'),(${quote(loser)},'synthetic loser'); UPDATE territory_private.combat_config_v1 SET starts_enabled=true,canary_only=true WHERE id`);
 assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`), normalizedSave, 'installation leaves the old save untouched');
+const observerBefore=await scalar(`SELECT row_to_json(p) FROM public.players p WHERE id=${quote(observer)}`);
 await sql(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
  VALUES (${quote(player)},${json(normalizedSave)},1,${json(fighter)},'{}',ARRAY['old']::text[],'synthetic evidence','test reviewer'),
  (${quote(loser)},${json(normalizedSave)},1,${json(weak)},'{}',ARRAY['old']::text[],'synthetic evidence','test reviewer');`);
@@ -125,7 +127,9 @@ const repo = {
 };
 const execute = (p,c,repository=repo) => executeCombatCommand(repository,p,c,() => 12);
 await assert.rejects(execute(player,{action:'start',operationId:op(1),encounterId:'s2',control:'auto'}), /adventure_stage_locked/);
-const start = await execute(player,{action:'start',operationId:op(2),encounterId:'s1',control:'auto'});
+const startCmd={action:'start',operationId:op(2),encounterId:'s1',control:'auto'};
+const [start,startReplay]=await Promise.all([execute(player,startCmd),execute(player,startCmd)]);
+assert.deepEqual(start,startReplay,'two connections share a single start receipt');
 assert.equal(start.start_save.battle_stones,0);
 assert.equal(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(player)}`),'4');
 await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(start.session_id)};
@@ -193,6 +197,10 @@ assert.deepEqual(progress,{completed_stage:1,unlocked_stage:2,dark_stones:4,acti
 const strongEnemy={...fighter,stats:{...fighter.stats,attack:1000}};
 await sql(`UPDATE territory_private.combat_encounters_v1 SET enemy=${json(strongEnemy)} WHERE encounter_id='s1'`);
 const lostStart=await execute(loser,{action:'start',operationId:op(5),encounterId:'s1',control:'auto'});
+await file('supabase/staged/territory_c1_pause_new_starts_DRAFT_20261031.sql');
+assert.equal((await execute(loser,{action:'resume',sessionId:lostStart.session_id})).state.status,'fighting');
+await assert.rejects(execute(player,{action:'start',operationId:op(30),encounterId:'s2',control:'auto'}),/combat_starts_paused/);
+await assert.rejects(file('supabase/staged/territory_c1_restore_functions_DRAFT_20261031.sql'),/requires drained sessions/);
 await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(lostStart.session_id)}`);
 const lost=await execute(loser,{action:'advance',operationId:op(6),sessionId:lostStart.session_id,revision:0});
 assert.equal(lost.state.status,'enemy_won'); assert.equal(lost.settlement.reward.gold,0); assert.equal(lost.settlement.reward.xp,0);
@@ -201,9 +209,10 @@ assert.equal(await sql(`SELECT count(*) FROM territory_private.referral_invites_
 assert.equal(await sql(`SELECT count(*) FROM territory_private.referral_chests_v1`),'0');
 const board=await scalar(`SELECT row_to_json(l) FROM public.leaderboard l WHERE player_id=${quote(player)}`);
 assert.equal(board.level,2); assert.equal(board.attack,33);
-await file('supabase/staged/territory_c1_pause_new_starts_DRAFT_20261031.sql');
-const playerRowsBefore=await scalar('SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM public.players p');
+assert.deepEqual(await scalar(`SELECT row_to_json(p) FROM public.players p WHERE id=${quote(observer)}`),observerBefore,'unrelated player remains unchanged');
+const snapshotSql="SELECT jsonb_build_object('players',(SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM public.players p),'wallets',(SELECT jsonb_agg(to_jsonb(w) ORDER BY player_id) FROM territory_private.dark_stones_v1 w),'receipts',(SELECT count(*) FROM territory_private.adventure_settlements_v1),'operations',(SELECT count(*) FROM territory_private.combat_operations_v1))";
+const playerRowsBefore=await scalar(snapshotSql);
 await file('supabase/staged/territory_c1_restore_functions_DRAFT_20261031.sql');
-assert.deepEqual(await scalar('SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM public.players p'),playerRowsBefore,'phase B must not alter player assets');
+assert.deepEqual(await scalar(snapshotSql),playerRowsBefore,'phase B must not alter player assets, dark wallets or receipts');
 assert.deepEqual(await execute(player,cmd),won,'receipt replay survives rollback');
 console.log('PostgreSQL 17 with actual V1 economy, gear and inventory guards PASS: reviewed synthetic profile, locked stages, engine victory/loss, rollback and retry, durable receipts, preserved save and real concurrent lock contention.');
