@@ -295,9 +295,8 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
               <div className="mt-3 space-y-2">
                 {(showAllFriends ? friends : friends.slice(0,5)).map((friend, index) => {
                   const wins = Math.min(10,friend.wins);
-                  const level = Math.min(5,friend.level);
-                  const progress = friend.qualified ? 100 : Math.min(99,Math.round(
-                    50 * (wins / 10) + 50 * (Math.max(0,level-1) / 4)));
+                  // Do not display or infer a friend's hero level; only battle progress is public.
+                  const progress = friend.qualified ? 100 : Math.min(99,Math.round(100 * wins / 10));
                   return (
                     <div key={friend.joined_at + index} className="rounded-xl border border-white/10 bg-black/25 p-2.5">
                       <div className="flex gap-2 items-center">
@@ -310,7 +309,7 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
                             {friend.qualified ? <CheckCircle2 size={15} className="text-emerald-400 shrink-0"/> : null}
                           </div>
                           <p className="text-[11px] text-violet-200/80">
-                            {en ? 'Level' : 'Уровень'} {level}/5 · {wins}/10 {en ? 'verified fights' : 'учтённых побед'}
+                            {wins}/10 {en ? 'recorded wins' : 'учтённых побед'}
                           </p>
                         </div>
                         <span className={'text-[10px] font-bold shrink-0 ' + (friend.qualified ? 'text-emerald-300' : 'text-amber-200')}>
