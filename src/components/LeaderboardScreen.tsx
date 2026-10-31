@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, Swords } from 'lucide-react';
 import type { AuthUser } from '@/game/auth';
 import { useLanguage } from '@/game/i18n';
+import { SHOW_WEEKLY_CHAMPIONSHIP } from '@/game/uiFeatureFlags';
 import { ArenaWeeklyBoard } from './arena/ArenaWeeklyBoard';
 import { SeasonScreen } from './SeasonScreen';
 import './arena/arenaLobby.css';
@@ -22,14 +23,14 @@ export function LeaderboardScreen({ user, initialTab = 'rating', onArena, onEven
 }) {
   const { language } = useLanguage();
   const en = language === 'en';
-  const [tab, setTab] = useState<RankTab>(initialTab === 'season' ? 'season' : 'arena');
+  const [tab, setTab] = useState<RankTab>(SHOW_WEEKLY_CHAMPIONSHIP && initialTab === 'season' ? 'season' : 'arena');
 
   useEffect(() => {
-    setTab(initialTab === 'season' ? 'season' : 'arena');
+    setTab(SHOW_WEEKLY_CHAMPIONSHIP && initialTab === 'season' ? 'season' : 'arena');
   }, [initialTab]);
 
   return <div className="arena-rank-journey viking-screen viking-screen--leaderboard animate-fade-in" data-testid="arena-rank-journey">
-    <div className="arena-rank-journey__tabs" role="tablist" aria-label={en ? 'Arena rankings' : 'Рейтинги Арены'}>
+    {SHOW_WEEKLY_CHAMPIONSHIP && <div className="arena-rank-journey__tabs" role="tablist" aria-label={en ? 'Arena rankings' : 'Рейтинги Арены'}>
       {([
         ['arena', en ? 'Arena TOP-50' : 'ТОП-50 Арены'],
         ['season', en ? 'Championship' : 'Чемпионат'],
@@ -40,10 +41,10 @@ export function LeaderboardScreen({ user, initialTab = 'rating', onArena, onEven
           {label}
         </button>
       )}
-    </div>
+    </div>}
 
     <div id="arena-rank-journey-content" role="tabpanel" className="arena-rank-journey__content">
-      {tab === 'season'
+      {SHOW_WEEKLY_CHAMPIONSHIP && tab === 'season'
         ? <SeasonScreen user={user} onArena={onArena} onEvents={onEvents} onMessages={onMessages}
             onRankings={() => setTab('arena')} />
         : <>
