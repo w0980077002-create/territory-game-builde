@@ -33,6 +33,7 @@
 .season-journey__primary{display:flex;align-items:center;justify-content:center;gap:9px;min-height:52px;width:100%;padding:9px 12px;border:2px solid #ffe6a4;border-radius:13px;background:linear-gradient(#ffdf84,#d99b3c 55%,#a66322);box-shadow:inset 0 2px #fff3ca,0 4px #67350e;color:#311a0b;font-weight:900;font-size:15px;line-height:1.2;text-align:center;}
 .season-journey__primary svg:last-child{margin-left:auto;flex-shrink:0;}
 .season-journey__secondary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
+.season-journey__secondary--four{grid-template-columns:repeat(2,minmax(0,1fr));}
 .season-journey__secondary button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:44px;padding:7px 4px;border:1px solid #e3b66a;border-radius:10px;background:linear-gradient(#78502c,#3b261b);color:#fff0cf;font-size:12px;font-weight:800;overflow-wrap:anywhere;}
 .season-journey button:focus-visible,.season-journey summary:focus-visible{outline:3px solid #fff3b0;outline-offset:2px;}
 .season-journey button:disabled{opacity:.55;}
