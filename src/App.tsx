@@ -493,7 +493,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')} />}
         {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => { setLeaderboardInitialTab('rating'); setScreen('leaderboard'); }} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
         {screen === 'leaderboard' && <LeaderboardScreen key={leaderboardInitialTab} user={user} initialTab={leaderboardInitialTab} />}
-        {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} onNavigate={(target) => {
+        {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} onSocialNavigate={setScreen} onNavigate={(target) => {
           if (target === 'inventory') setInventoryTab('equipment');
           if (target === 'shop') setShopTab('equipment');
           if (target === 'battle') { setBattleView('campaign'); setAutoStart(false); }
@@ -513,10 +513,10 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           else setScreen(target);
         }} /> : <ProfessionsScreen />)}
         {screen === 'auction' && <AuctionScreen />}
-        {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} />}
+        {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} onNavigate={setScreen} />}
         {screen === 'messages' && <MessagesScreen notify={notify} />}
         {screen === 'events' && <EventsScreen onNavigate={setScreen} onDaily={() => setEventDailyOpen(true)} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} gatherReady={gatherReady} />}
-        {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} />}
+        {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} onNavigate={setScreen} />}
         </Suspense>
         </SectionErrorBoundary>
       </main>

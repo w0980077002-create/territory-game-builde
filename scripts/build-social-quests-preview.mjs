@@ -10,10 +10,25 @@ const entry = `import React from 'react';
 import {createRoot} from 'react-dom/client';
 import {LanguageProvider} from './src/game/i18n';
 import {SocialQuestsSection} from './src/components/SocialQuestsSection';
-function App(){return <div className="territory-shell" style={{minHeight:'100dvh',padding:'12px',background:'#26180f'}}>
-<LanguageProvider><div className="viking-screen viking-screen--quests" style={{maxWidth:'430px',margin:'0 auto'}}>
-<SocialQuestsSection userId="fixture" onStatusChange={(s)=>{window.__lastSocialStatus=s}}/>
-</div></LanguageProvider></div>}
+import {SocialTrail} from './src/components/social/SocialTrail';
+import {ClanNextStep} from './src/components/social/ClanNextStep';
+function App(){
+  const [clanMode,setClanMode]=React.useState('chat');
+  const onSocialStatusChange=React.useCallback((status)=>{window.__lastSocialStatus=status},[]);
+  const clanState={pending_boss_rewards:clanMode==='reward'?[{boss_no:3,gold:500,earned_at:'2026-10-30'}]:[],
+    quests:clanMode==='quest'?[{id:'help',progress:2,target:2,member:1,member_req:1,claimed:false}]:[],
+    boss:clanMode==='boss'?{boss_no:3,hp:100,max_hp:200,expires_at:'2026-11-01'}:null,
+    boss_attacks_left:clanMode==='boss'?2:0,boss_claimed:false,my_boss_damage:0};
+  return <div className="territory-shell" style={{minHeight:'100dvh',padding:'12px',background:'#26180f'}}>
+  <LanguageProvider><div className="viking-screen viking-screen--quests space-y-3" style={{maxWidth:'430px',margin:'0 auto'}}>
+    <SocialTrail active="quests" onNavigate={route=>{window.__socialRoute=route}} />
+    <div data-testid="fixture-clan-modes" className="grid grid-cols-4 gap-1">
+      {['reward','quest','boss','chat'].map(mode=><button key={mode} type="button" className="min-h-11 rounded-lg bg-amber-900/60 text-xs text-amber-100" onClick={()=>setClanMode(mode)}>{mode}</button>)}
+    </div>
+    <ClanNextStep state={clanState} onJump={target=>{window.__clanJump=target}} />
+    <SocialQuestsSection userId="fixture" onStatusChange={onSocialStatusChange}/>
+  </div></LanguageProvider></div>
+}
 createRoot(document.getElementById('root')).render(<App/>);`;
 const stub = `
 export async function socialStatus(){

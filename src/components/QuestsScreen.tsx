@@ -6,6 +6,7 @@ import type { Achievement, Quest } from '@/game/types';
 import { Currency } from './ui/Currency';
 import { useLanguage } from '@/game/i18n';
 import { SocialQuestsSection } from './SocialQuestsSection';
+import { SocialTrail, type SocialDestination } from './social/SocialTrail';
 import type { SocialStatus } from '@/game/socialQuests';
 import { getStarterMilestones, type StarterDestination } from '@/game/starterJourney';
 import { questAction } from '@/game/eventsBoard';
@@ -16,7 +17,7 @@ const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
   { type: 'story', titleKey: 'story', hintKey: 'storyHint' },
 ];
 
-export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { userId: string; onSocialStatusChange: (status: SocialStatus) => void; onNavigate: (screen: StarterDestination) => void }) {
+export function QuestsScreen({ userId, onSocialStatusChange, onNavigate, onSocialNavigate }: { userId: string; onSocialStatusChange: (status: SocialStatus) => void; onNavigate: (screen: StarterDestination) => void; onSocialNavigate: (destination: SocialDestination) => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const readyQuests = state.quests.filter((q) => !q.claimed && q.current >= q.target);
@@ -85,6 +86,8 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { use
         <QuestCard quest={featuredQuest} language={language} t={t} onNavigate={onNavigate} onClaim={() => claim(featuredQuest.id)} featured />
       </section>}
 
+      <SocialTrail active="quests" onNavigate={onSocialNavigate}
+        detail={language === 'en' ? 'Verified community quests and your allies' : 'Задания сообщества и твои союзники'} />
       <SocialQuestsSection userId={userId} onStatusChange={onSocialStatusChange} />
 
       {SECTIONS.map((sec) => {
