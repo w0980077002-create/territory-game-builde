@@ -8,6 +8,8 @@ import { Modal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
 import { GearShowcase } from './GearShowcase';
 import { FollowersPanel } from './FollowersPanel';
+import { FOLLOWER_TEMPLATES, selectedFollower } from '@/game/followers';
+import { getFollowerArt } from '@/game/combatArt';
 import { AWAKENING_STONE_ITEM, cowStonesOwned } from '@/game/followers';
 import { CompactWarehouse } from './CompactWarehouse';
 import { rarityColor } from '@/game/ui';
@@ -18,13 +20,14 @@ import { Package, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned, ChevronRi
 
 /** Equipment, consumables/belt and companions share the inventory route.
  * The follower model is unchanged: training and PvE selection stay in the global store. */
-export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfessions, onMap, onBattle }: {
+export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfessions, onMap, onBattle, onHero }: {
   initialTab?: 'items' | 'equipment' | 'followers';
   userId: string;
   onForge?: (equipmentId?: string) => void;
   onProfessions?: () => void;
   onMap?: () => void;
   onBattle?: () => void;
+  onHero?: () => void;
 }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
@@ -38,6 +41,8 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const chapter = generateChapter(chapterNumber);
   const chapterWins = Math.max(0, Math.min(chapter.winsNeeded, state.chapterWins || 0));
   const equippedCount = EQUIPMENT_SLOTS.filter(({ id }) => !!state.player.equipped[id]).length;
+  const activeCompanion = selectedFollower(state);
+  const activeCompanionTemplate = FOLLOWER_TEMPLATES.find(unit => unit.id === activeCompanion?.id);
 
   useEffect(() => {
     if (tab !== 'items') return;
@@ -143,6 +148,33 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
             ctx={beltContext(state, arena.wins)}
             onTap={(i, open) => open && useGame.set((current) => takeFromBelt(current, i))}
           />
+        </section>
+      )}
+
+      {tab === 'followers' && (onHero || onBattle) && (
+        <section className="companion-journey-bar" data-testid="companion-journey-actions"
+          aria-label={language === 'en' ? 'Companion battle journey' : 'Боевой путь со спутником'}>
+          <div className="companion-journey-bar__status">
+            <img src={activeCompanion ? getFollowerArt(activeCompanion.id)
+              : import.meta.env.BASE_URL + 'assets/territory/map/icons/companions-v1.webp'}
+              alt="" loading="lazy" draggable={false}/>
+            <div>
+              <strong>{activeCompanion
+                ? (language === 'en' ? (activeCompanionTemplate?.nameEn ?? activeCompanion.name) : activeCompanion.name)
+                : (language === 'en' ? 'Companion not unlocked' : 'Спутник ещё не открыт')}</strong>
+              <span>{activeCompanion
+                ? `${language === 'en' ? 'Level' : 'Уровень'} ${activeCompanion.level} · PvE`
+                : (language === 'en' ? 'Unlocks from hero level 3' : 'Открывается с 3 уровня героя')}</span>
+            </div>
+          </div>
+          <div className="companion-journey-bar__buttons">
+            {onHero && <button type="button" onClick={onHero}>
+              {language === 'en' ? 'Hero' : 'Герой'}
+            </button>}
+            {onBattle && <button type="button" onClick={onBattle} className="companion-journey-bar__battle">
+              {language === 'en' ? 'Open Campaign' : 'Открыть Поход'} <ChevronRight size={15} aria-hidden="true"/>
+            </button>}
+          </div>
         </section>
       )}
 
