@@ -11,6 +11,13 @@ export type StarterMilestone = {
   actionEn: string;
 };
 
+/** An owner-adjusted level does not prove that the hero learned the first fights.
+ * Keep actual veterans free of hints, but help any hero who has not yet won
+ * three PvE fights. All information comes from the saved game state.
+ */
+export const shouldShowStarterJourney = (state: Pick<GameState,'player' | 'totalBattlesWon'>) =>
+  state.player.level < 5 || state.totalBattlesWon < 3;
+
 /** A read-only guide over saved gameplay progress. No new currency or tutorial flags. */
 export function getStarterMilestones(state: Pick<GameState, 'player' | 'inventory' | 'totalBattlesWon'>): StarterMilestone[] {
   const hasEquipment = Object.values(state.player.equipped ?? {}).some(Boolean);

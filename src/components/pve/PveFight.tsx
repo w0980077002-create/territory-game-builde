@@ -246,7 +246,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
 
   const controls = !busy && !outcome && !auto;
   const ready = controls && !!attack && blocks.length === 2;
-  const firstFightHelp = kind === 'stage' && state.player.level <= 2 && state.totalBattlesWon === 0;
+  const firstFightHelp = kind === 'stage' && state.totalBattlesWon === 0;
   const victoryJourney = outcome?.won ? getVictoryJourney(state,kind,levelAtFightStart.current) : null;
   const hint = busy ? (language === 'en' ? 'Round in progress…' : 'Идёт раунд…')
     : auto ? (language === 'en' ? 'Auto-battle: zones are selected automatically' : 'Автобой: зоны выбираются сами')
