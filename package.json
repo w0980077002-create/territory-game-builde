@@ -33,7 +33,7 @@
     "test:inventory-cleanup": "node scripts/check-inventory-cleanup.mjs",
     "test:gear-recycle": "node scripts/check-gear-recycle.mjs",
     "test:gear-showcase": "node scripts/check-gear-showcase.mjs",
-    "test:workshop": "node scripts/check-workshop-navigation.mjs",
+    "test:workshop": "node scripts/check-workshop-navigation.mjs && node scripts/check-craft-route.mjs",
     "test:companion-navigation": "node scripts/check-companion-navigation.mjs",
     "test:founders": "node scripts/check-founder-referrals.mjs && node scripts/check-founders-ui.mjs",
     "test:referral-activity": "node scripts/check-referral-activity.mjs",
