@@ -70,5 +70,5 @@ const css=(await postcss([tailwindcss(),autoprefixer()]).process(
 )).css+'\n'+out.outputFiles.filter(f=>f.path.endsWith('.css')).map(f=>f.text).join('\n');
 const js=out.outputFiles.find(f=>f.path.endsWith('.js')).text;
 writeFileSync('/tmp/territory-map-expedition-preview.html',
-  `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body style="margin:0"><div id="root"></div><script>${js.replace(/<\\/script/gi,'<\\\\/script')}</script></body></html>`);
+  `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body style="margin:0"><div id="root"></div><script>${js}</script></body></html>`);
 console.log('Map expedition offline preview built: real MapScreen, simulated server.');
