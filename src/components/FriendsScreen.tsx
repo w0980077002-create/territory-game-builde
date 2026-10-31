@@ -218,10 +218,8 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
             {!botLoading && <button type="button" onClick={() => void loadBot()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/40 bg-black/25 py-3 font-bold text-amber-200"><RefreshCw size={17}/>{en ? 'Retry bot link' : 'Обновить ссылку'}</button>}
           </div>
         )}
-        {status && <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-amber-200/90">
+        {status && <div className="flex items-center justify-center text-[11px] text-amber-200/90">
           <span><Crown className="inline mr-1" size={13}/>{status.founder_number ? (en ? 'Founder #' : 'Основатель №') + status.founder_number : (en ? 'Founders season' : 'Сезон основателей')}</span>
-          <span className="text-gray-600">•</span>
-          <span>{en ? 'Spots left' : 'Свободных мест'}: {status.places_left} / 300</span>
         </div>}
       </section>
 
