@@ -34,7 +34,7 @@ with sync_playwright() as playwright:
             details.wait_for()
             assert details.locator('.map-expedition-current').is_visible()
             assert not details.get_by_test_id('map-expedition-reward').count()
-            page.get_by_role('dialog').get_by_role('button', name='Close' if language == 'en' else 'Закрыть').click()
+            page.get_by_role('dialog').locator('.territory-modal-close').click()
 
             page.goto(url + '?mode=ready')
             banner = page.get_by_test_id('map-expedition-status')
