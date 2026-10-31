@@ -17,8 +17,10 @@ assert.match(hall,/const HIDDEN_HALL_GAMES = new Set<GameCard\['id'\]>\(\['treas
  'All four unfinished mini-games must remain hidden from the Hall');
 assert.match(hall,/const VISIBLE_GAMES = GAMES\.filter\(game => !HIDDEN_HALL_GAMES\.has\(game\.id\)\)/,
  'Only public games may be rendered');
-assert.match(hall,/\{VISIBLE_GAMES\.map\(/,
- 'Game Hall must render the filtered public games, not all registered games');
+assert.match(hall,/\{availableGames\.map\(/,
+ 'Game Hall must render only server-enabled games, not unfinished demos');
+assert.match(hall,/const availableGames = VISIBLE_GAMES\.filter\(game => game\.id !== 'slots' \|\| slotsEnabled\)/,
+ 'Unverified slots demo must remain hidden unless the server game is enabled');
 
 assert.match(hall,/const activeGame = GAMES\.find\(game => game\.id === state\?\.active\?\.game\)/,
   'An unfinished Hall round must show the actual game name in the resume action');
