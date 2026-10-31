@@ -89,6 +89,8 @@ export function GamesScreen({
   const [notice, setNotice] = useState('');
   const [slotsStatus, setSlotsStatus] = useState<SlotsStatus|null>(null);
   const slotsEnabled = slotsStatus?.enabled===true;
+  // Keep the existing server slots and its recovery route, but do not advertise an unfinished demo as a playable game.
+  const availableGames = VISIBLE_GAMES.filter(game => game.id !== 'slots' || slotsEnabled);
   useEffect(()=>{
     let alive=true;
     void fetchSlotsStatus().then((next)=>{if(alive)setSlotsStatus(next);}).catch(()=>{});
@@ -253,7 +255,7 @@ export function GamesScreen({
       )}
 
       <section className="hall-games" aria-label={en ? 'Choose a game' : 'Выбери игру'}>
-        {VISIBLE_GAMES.map((configuredGame, index) => {
+        {availableGames.map((configuredGame, index) => {
           const game = configuredGame.id==='slots' && slotsEnabled ? {...configuredGame,demo:false,ruHint:'Ставки и выигрыши золотом героя · бонусы и риск',enHint:'Hero gold stakes and prizes · bonus and risk'} : configuredGame;
           const featured = index === 0;
           const locked = game.id==='slots' && slotsEnabled ? (slotsStatus?.coins??0)<5
