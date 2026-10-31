@@ -53,4 +53,18 @@ assert.match(community, /statusListener\.current\?\.\(result\)/, 'Community stat
 assert.doesNotMatch(community, /\[en, onStatusChange, attempt\]/, 'Changing callback identity must not refetch community quests');
 assert.match(socialApi, /validEconomySnapshot\(receipt\.game_state\)/, 'Community reward remains server-receipt-verified');
 
+// A Telegram return is a read-only status refresh, never a replayed reward
+// operation. All three real social screens must recover without restarting.
+for (const [name, screen] of [['friends', friends], ['clan', clan], ['community', community]]) {
+  assert.match(screen, /visibilitychange/, `${name} must refresh on WebView resume`);
+  assert.match(screen, /addEventListener\('online', refreshOnReturn\)/, `${name} must recover when network returns`);
+  assert.match(screen, /removeEventListener\('visibilitychange', refreshOnReturn\)/, `${name} must clean up listeners`);
+  assert.match(screen, /lastResumeCheck\.current < (30|45)_000/, `${name} must throttle repeated focus events`);
+}
+assert.match(friends, /claimLock\.current\) return;/, 'Referral refresh must not overlap a claim');
+assert.match(clan, /mutationLock\.current \|\| busy\) return;/, 'Clan refresh must not overlap a mutation');
+assert.match(clan, /directory\.my_clan_id === clanId/, 'Clan resume must reconcile actual membership');
+assert.match(community, /verifyLock\.current\) return;/, 'Community refresh must not overlap verification');
+assert.match(community, /setAttempt\(n => n \+ 1\)/, 'Community resume must re-read server status, not grant a reward');
+
 console.log('Social journey contract PASS: real routes, server-backed priorities, referral claims, mobile navigation, no invented rewards.');
