@@ -14,7 +14,7 @@ import { getFollowerArt } from '@/game/combatArt';
 import { AWAKENING_STONE_ITEM, cowStonesOwned } from '@/game/followers';
 import { CompactWarehouse } from './CompactWarehouse';
 import { rarityColor } from '@/game/ui';
-import { EQUIPMENT_SLOTS, generateChapter } from '@/game/engine';
+import { EQUIPMENT_SLOTS, generateChapter, generateTrial } from '@/game/engine';
 import { elixirExpiryTime, elixirTimeLeftLabel, isElixirExpired, isPerishableItem } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
 import { Package, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned, ChevronRight, ShieldCheck, Swords } from 'lucide-react';
@@ -22,7 +22,7 @@ import './inventoryPreparation.css';
 
 /** Equipment, consumables/belt and companions share the inventory route.
  * The follower model is unchanged: training and PvE selection stay in the global store. */
-export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfessions, onMap, onBattle, onArena, onHero }: {
+export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfessions, onMap, onBattle, onArena, onHero, returnBattleView }: {
   initialTab?: 'items' | 'equipment' | 'followers';
   userId: string;
   onForge?: (equipmentId?: string) => void;
@@ -31,6 +31,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   onBattle?: () => void;
   onArena?: () => void;
   onHero?: () => void;
+  returnBattleView?: 'campaign' | 'trial' | null;
 }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
@@ -44,6 +45,11 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const chapterNumber = Math.max(1, Math.floor(state.currentChapter || 1));
   const chapter = generateChapter(chapterNumber);
   const chapterWins = Math.max(0, Math.min(chapter.winsNeeded, state.chapterWins || 0));
+  const returningToTrial = returnBattleView === 'trial';
+  const battleEnemyArt = returningToTrial ? generateTrial(state.trialLevel).art : chapter.boss.art;
+  const battleReturnLabel = returningToTrial
+    ? (language === 'en' ? 'Back to Trials' : 'К Испытаниям')
+    : (language === 'en' ? 'Open Campaign' : 'Открыть Поход');
   const equippedCount = EQUIPMENT_SLOTS.filter(({ id }) => !!state.player.equipped[id]).length;
   const activeCompanion = selectedFollower(state);
   const activeCompanionTemplate = FOLLOWER_TEMPLATES.find(unit => unit.id === activeCompanion?.id);
@@ -110,13 +116,15 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
         <div data-testid="equipment-responsive-layout" className="flex min-h-full w-full min-w-0 flex-col">
           {onBattle && <section data-testid="equipment-campaign-return" className="mb-1 flex min-w-0 items-center gap-2 rounded-xl border-2 border-amber-500/70 bg-gradient-to-r from-[#59361e] to-[#261b16] p-2 text-amber-100 shadow-lg">
             <img className="h-16 w-16 shrink-0 object-contain" loading="lazy" draggable={false} alt=""
-              src={import.meta.env.BASE_URL + (chapter.boss.art.startsWith('/') ? chapter.boss.art.slice(1) : chapter.boss.art)} />
+              src={battleEnemyArt.startsWith('/') ? battleEnemyArt : import.meta.env.BASE_URL + battleEnemyArt} />
             <div className="min-w-0 flex-1">
               <strong className="block text-xs font-black leading-tight">{language === 'en' ? 'Ready for the next encounter?' : 'Готов к следующему бою?'}</strong>
-              <span className="block text-[11px] leading-tight text-amber-200">{language === 'en' ? 'Chapter' : 'Глава'} {chapterNumber} · {chapterWins}/{chapter.winsNeeded}</span>
+              <span className="block text-[11px] leading-tight text-amber-200">{returningToTrial
+                ? (language === 'en' ? 'Trial floor ' : 'Этаж испытаний ') + state.trialLevel
+                : (language === 'en' ? 'Chapter ' : 'Глава ') + chapterNumber + ' · ' + chapterWins + '/' + chapter.winsNeeded}</span>
               <span className="block text-[10px] text-amber-300">{language === 'en' ? 'Equipped slots' : 'Надето вещей'}: {equippedCount}/7</span>
               <button type="button" onClick={onBattle} className="mt-1 flex min-h-10 w-full items-center justify-center gap-1 rounded-lg border border-amber-200 bg-gradient-to-b from-[#ffe3a1] to-[#bb762c] px-2 text-xs font-black text-[#281508]">
-                {language === 'en' ? 'Open adventure' : 'Открыть поход'} <ChevronRight size={16} aria-hidden="true"/>
+                {returningToTrial ? battleReturnLabel : (language === 'en' ? 'Open adventure' : 'Открыть поход')} <ChevronRight size={16} aria-hidden="true"/>
               </button>
             </div>
           </section>}
@@ -140,7 +148,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
             </div>
             <div className="inventory-preparation__actions">
               {onArena && <button type="button" onClick={onArena} className="inventory-preparation__arena"><Swords size={17}/>{language === 'en' ? 'Arena lobby' : 'На Арену'}<ChevronRight size={15}/></button>}
-              {onBattle && <button type="button" onClick={onBattle} className="inventory-preparation__campaign"><ShieldCheck size={17}/>{language === 'en' ? 'Campaign' : 'В Поход'}<ChevronRight size={15}/></button>}
+              {onBattle && <button type="button" onClick={onBattle} className="inventory-preparation__campaign"><ShieldCheck size={17}/>{returningToTrial ? battleReturnLabel : (language === 'en' ? 'Campaign' : 'В Поход')}<ChevronRight size={15}/></button>}
             </div>
             {preparedNotice && <p className="inventory-preparation__notice" role="status">{preparedNotice}</p>}
           </section>
@@ -212,7 +220,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
               {language === 'en' ? 'Hero' : 'Герой'}
             </button>}
             {onBattle && <button type="button" onClick={onBattle} className="companion-journey-bar__battle">
-              {language === 'en' ? 'Open Campaign' : 'Открыть Поход'} <ChevronRight size={15} aria-hidden="true"/>
+              {battleReturnLabel} <ChevronRight size={15} aria-hidden="true"/>
             </button>}
           </div>
         </section>
