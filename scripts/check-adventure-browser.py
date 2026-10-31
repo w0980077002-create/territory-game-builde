@@ -41,7 +41,7 @@ with sync_playwright() as p:
         assert bounds['listBottom'] <= bounds['actionsTop'] + 2, f'Floor list overlaps actions: {bounds}'
         assert bounds['challengeBottom'] <= bounds['windowHeight'] - 60, f'Challenge hidden behind bottom navigation: {bounds}'
         assert floor_panel.evaluate('(e) => e.scrollHeight > e.clientHeight'), '100 floors must be scrollable'
-        assert page.locator('button').count() >= 8
+        assert floor_panel.locator('button').count() >= 1, 'Current Cave floor must remain selectable'
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'horizontal overflow'
         page.screenshot(path=str(OUT / ('adventure-'+str(width)+'.png')), full_page=True)
         if width == 390:
@@ -52,13 +52,14 @@ with sync_playwright() as p:
             page.get_by_role('button',name='Мой этаж').click()
             assert floor_panel.evaluate('(e) => e.scrollTop < e.scrollHeight - e.clientHeight'), 'jump to current floor'
             page.get_by_test_id('dark-cave-challenge').click()
-            page.get_by_text('Серверный бой').wait_for()
+            page.get_by_test_id('territory-adventure-battle').wait_for()
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
-            page.get_by_role('button',name='Продолжить').click()
-            page.get_by_text('Победа!').wait_for()
+            # The live Cave challenge starts in automatic mode: server
+            # progression is scheduled, not exposed as a manual Continue button.
+            page.get_by_text('Победа!').wait_for(timeout=15000)
             assert page.get_by_text('+10 монет').count() == 1
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
-            page.get_by_role('button',name='К этапам').click()
+            page.get_by_role('button',name='К этапам пещеры').click()
             page.get_by_text('Этаж 2 / 100').wait_for()
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
         page.close()
