@@ -8,6 +8,7 @@ import { Modal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
 import { GearShowcase } from './GearShowcase';
 import { FollowersPanel } from './FollowersPanel';
+import './followersCamp.css'; // Shared pinned companion journey styles, including offline mobile preview.
 import { FOLLOWER_TEMPLATES, selectedFollower } from '@/game/followers';
 import { getFollowerArt } from '@/game/combatArt';
 import { AWAKENING_STONE_ITEM, cowStonesOwned } from '@/game/followers';
