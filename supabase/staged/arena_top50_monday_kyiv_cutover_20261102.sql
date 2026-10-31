@@ -130,10 +130,16 @@ BEGIN
     WHERE id=1 FOR UPDATE;
   IF NOT FOUND OR NOT v_config.enabled THEN RETURN; END IF;
 
-  -- Never treat Sunday as a completed season. First closure is Monday 2 Nov UTC.
-  v_current_week := (now() AT TIME ZONE 'UTC')::date;
-  v_current_week := v_current_week
-    - (extract(isodow FROM v_current_week)::integer - 1);
+  -- Extended season cannot be finalized until Monday 2 Nov 00:00 UTC,
+  -- even if an operator enables rewards early by mistake.
+  IF now() >= '2026-10-25T00:00:00Z'::timestamptz
+     AND now() < '2026-11-02T00:00:00Z'::timestamptz THEN
+    v_current_week := DATE '2026-10-25';
+  ELSE
+    v_current_week := (now() AT TIME ZONE 'UTC')::date;
+    v_current_week := v_current_week
+      - (extract(isodow FROM v_current_week)::integer - 1);
+  END IF;
   v_week := v_config.first_week;
   WHILE v_week < v_current_week LOOP
     IF NOT EXISTS (SELECT 1 FROM territory_private.arena_top50_reward_weeks_v1
