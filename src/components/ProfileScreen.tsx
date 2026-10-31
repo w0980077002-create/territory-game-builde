@@ -15,7 +15,7 @@ const RuneSkillBook = lazy(() => import('./builds/ServerRuneBook').then(module =
 // Do not show an unfinished skill book to live players before the verified combat cutover.
 const VERIFIED_RUNE_BOOK = import.meta.env.VITE_TERRITORY_V1_SERVER_COMBAT === 'verified';
 
-export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, onAdventure, onForge, onQuests }: { user: AuthUser; initialTrainingOpen?: boolean; onEquipment: () => void; onAdventure: () => void; onForge: (equipmentId: string) => void; onQuests: () => void }) {
+export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, onAdventure, onForge, onQuests, onCompanions }: { user: AuthUser; initialTrainingOpen?: boolean; onEquipment: () => void; onAdventure: () => void; onForge: (equipmentId: string) => void; onQuests: () => void; onCompanions: () => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const computed = getComputedStats(state);
@@ -44,7 +44,7 @@ export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, 
 
   return (
     <div className="territory-profile space-y-4 animate-fade-in pb-4">
-      <HeroShowcase state={state} stats={computed} onEquipment={onEquipment} onAdventure={onAdventure} onForge={onForge} onQuests={onQuests} />
+      <HeroShowcase state={state} stats={computed} onEquipment={onEquipment} onAdventure={onAdventure} onForge={onForge} onQuests={onQuests} onCompanions={onCompanions} />
       {/* Owner-approved 5×3 skill interface. Visual-only until server battle integration. */}
       {VERIFIED_RUNE_BOOK && <details className="card group" data-testid="profile-rune-skill-book" open={runeBookOpen}
         onToggle={event => setRuneBookOpen(event.currentTarget.open)}>

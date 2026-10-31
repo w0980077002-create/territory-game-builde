@@ -469,12 +469,14 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         )}
         {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} userId={user.id}
           onForge={openForge} onProfessions={() => setScreen('professions')} onMap={() => setScreen('map')}
+           onHero={() => { setHeroTrainingOpen(false); setScreen('hero'); }}
           onBattle={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }} />}
         {screen === 'hero' && <ProfileScreen key={heroTrainingOpen ? 'runes' : 'hero'} user={user} initialTrainingOpen={heroTrainingOpen}
           onEquipment={() => { setInventoryTab('equipment'); setScreen('inventory'); }}
           onAdventure={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }}
           onForge={(equipmentId) => openForge(equipmentId)}
-          onQuests={() => setScreen('quests')} />}
+          onQuests={() => setScreen('quests')}
+           onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }} />}
         {screen === 'map' && <MapScreen
           attentionPlaces={[
             ...(mapForgeReady ? ['forge' as const] : []),

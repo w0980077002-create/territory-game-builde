@@ -1,9 +1,11 @@
-import { Coins, Gem, Zap, Heart, Sword, Shield, Star, ChevronRight, Shirt, Hammer, ScrollText } from 'lucide-react';
+import { Coins, Gem, Zap, Heart, Sword, Shield, Star, ChevronRight, Shirt, Hammer, ScrollText, UsersRound } from 'lucide-react';
 import { EQUIPMENT_SLOTS, HERO_MAX_LEVEL, generateChapter, getComputedStats } from '@/game/engine';
 import { getAppearanceIcon } from '@/game/appearance';
 import { SLOT_ART, equipmentArt } from '@/game/art';
 import { rarityColor } from '@/game/ui';
 import { useLanguage } from '@/game/i18n';
+import { selectedFollower, FOLLOWER_TEMPLATES } from '@/game/followers';
+import { getFollowerArt } from '@/game/combatArt';
 import type { Equipment, GameState } from '@/game/types';
 import './profileHero.css';
 
@@ -16,11 +18,12 @@ interface Props {
   onAdventure: () => void;
   onForge: (equipmentId: string) => void;
   onQuests: () => void;
+  onCompanions: () => void;
 }
 
 /** Presentation only: all values and equipment are taken from the saved game state.
  * No grants, XP updates or inventory mutations happen in this component. */
-export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, onQuests }: Props) {
+export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, onQuests, onCompanions }: Props) {
   const { t, language } = useLanguage();
   const player = state.player;
   const isMax = player.level >= HERO_MAX_LEVEL;
@@ -43,6 +46,8 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
     && item.qty > 0 && item.equipment && !player.equipped[item.equipment.slot]);
   const readyQuest = state.quests.some(quest => !quest.claimed && quest.current >= quest.target);
   const forgeCandidate = Object.values(player.equipped).find((item): item is Equipment => !!item && item.level < player.level);
+  const activeCompanion = selectedFollower(state);
+  const activeCompanionTemplate = FOLLOWER_TEMPLATES.find(unit => unit.id === activeCompanion?.id);
   const text = (ru: string, en: string) => language === 'en' ? en : ru;
 
   const renderSlot = ({ slot, item }: { slot: (typeof EQUIPMENT_SLOTS)[number]; item: Equipment | undefined }) => (
@@ -104,6 +109,27 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
       <button type="button" className="hero-showcase__equipment-link" onClick={onEquipment}>
         <Shirt size={17} aria-hidden="true" />{text('Моя экипировка', 'My equipment')}<ChevronRight size={17} aria-hidden="true" />
       </button>
+
+      <section className="hero-showcase__companion" data-testid="hero-companion-journey"
+        aria-label={text('Спутник героя', 'Hero companion')}>
+        <img src={activeCompanion ? getFollowerArt(activeCompanion.id)
+          : import.meta.env.BASE_URL + 'assets/territory/map/icons/companions-v1.webp'}
+          alt="" loading="lazy" draggable={false}/>
+        <div className="hero-showcase__companion-copy">
+          <span>{text('ПОМОЩНИК В ПОХОДЕ', 'CAMPAIGN COMPANION')}</span>
+          <strong>{activeCompanion
+            ? (language === 'en' ? (activeCompanionTemplate?.nameEn ?? activeCompanion.name) : activeCompanion.name)
+            : text('Спутник ещё не открыт', 'No companion unlocked yet')}</strong>
+          <small>{activeCompanion
+            ? text(`Ур. ${activeCompanion.level} · Атака ${activeCompanion.attack} · Защита ${activeCompanion.defense}`,
+                `Lv. ${activeCompanion.level} · Attack ${activeCompanion.attack} · Defense ${activeCompanion.defense}`)
+            : text('Первый спутник откроется на 3 уровне', 'First companion unlocks at hero level 3')}</small>
+          <small>{text('Помогает в Походе и Испытаниях, не на Арене', 'Helps in Campaign and Trials, not Arena')}</small>
+        </div>
+        <button type="button" onClick={onCompanions} data-testid="hero-open-companions">
+          <UsersRound size={16} aria-hidden="true"/>{text('Лагерь', 'Camp')}<ChevronRight size={15} aria-hidden="true"/>
+        </button>
+      </section>
 
       <div className="hero-showcase__stats" aria-label={t('withEquipment')}>
         <h3 className="hero-showcase__plaque-title">{t('withEquipment')}</h3>

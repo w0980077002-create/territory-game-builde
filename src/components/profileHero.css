@@ -449,3 +449,48 @@
 .territory-profile .hero-showcase__preparation button > span {display:grid;gap:3px;min-width:0;flex:1;}
 .territory-profile .hero-showcase__preparation strong {font-size:13px;font-weight:900;line-height:1.15;}
 .territory-profile .hero-showcase__preparation small {font-size:11px;color:#e6c7a4;overflow-wrap:anywhere;line-height:1.2;}
+
+/* Companion journey is a real saved PvE selection, not a decorative summon. */
+.territory-profile .hero-showcase__companion {
+  display: grid;
+  grid-template-columns: 68px minmax(0,1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px;
+  border: 2px solid #d9a55c;
+  border-radius: 15px;
+  background: radial-gradient(circle at 12% 55%,#9a663e7c,transparent 54%),linear-gradient(135deg,#5b3924,#283345);
+  box-shadow: inset 0 1px #ffe6b37a,0 3px 9px #130c0999;
+}
+.territory-profile .hero-showcase__companion > img {
+  grid-row: 1 / 3;
+  width: 68px;
+  height: 96px;
+  object-fit: contain;
+  object-position: bottom;
+  filter: drop-shadow(0 3px 3px #0008);
+}
+.territory-profile .hero-showcase__companion-copy {display:grid;gap:3px;min-width:0}
+.territory-profile .hero-showcase__companion-copy > span {font-size:10px;font-weight:900;color:#eac17e;letter-spacing:.2px}
+.territory-profile .hero-showcase__companion-copy strong {font-size:clamp(13px,3.8vw,17px);font-weight:900;color:#fff0c5;overflow-wrap:anywhere;text-shadow:1px 2px #27140b}
+.territory-profile .hero-showcase__companion-copy small {font-size:11px;line-height:1.25;color:#e2d8c8;overflow-wrap:anywhere}
+.territory-profile .hero-showcase__companion > button {
+  grid-column:2;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  min-height:44px;
+  border:2px solid #ffdf9d;
+  border-radius:10px;
+  background:linear-gradient(#ffe8ae,#dca64d,#a66a2c);
+  color:#2b180e;
+  font-size:13px;
+  font-weight:900;
+}
+.territory-profile .hero-showcase__companion > button:focus-visible {outline:3px solid #fff6d3;outline-offset:2px}
+@media(max-width:350px){
+  .territory-profile .hero-showcase__companion {grid-template-columns:54px minmax(0,1fr);gap:6px;padding:7px}
+  .territory-profile .hero-showcase__companion > img {width:54px;height:88px}
+}

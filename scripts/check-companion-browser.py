@@ -1,5 +1,5 @@
 """Offline tests of the actual companion panel; no server or player accounts."""
-import os, threading, shutil
+import os, threading
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from playwright.sync_api import sync_playwright
@@ -13,7 +13,7 @@ class Handler(SimpleHTTPRequestHandler):
 server = ThreadingHTTPServer(('127.0.0.1', 0), partial(Handler, directory='/tmp'))
 threading.Thread(target=server.serve_forever, daemon=True).start()
 with sync_playwright() as playwright:
-    browser = playwright.chromium.launch(executable_path=shutil.which('chromium'), args=['--no-sandbox'])
+    browser = playwright.chromium.launch(args=['--no-sandbox'])
     for width in (320, 360, 390, 430):
         for language in ('ru', 'en'):
             page = browser.new_page(viewport={'width': width, 'height': 500}, reduced_motion='reduce')
@@ -38,6 +38,7 @@ with sync_playwright() as playwright:
             assert ('Battle Cow' if language == 'en' else 'Боевая корова') in panel.locator('.followers-camp__detail h3').inner_text()
             assert panel.locator('.followers-camp__availability--locked').is_visible()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            if width == 360 and language == 'ru': page.screenshot(path='/tmp/territory-companion-360.png')
             page.close()
     browser.close()
 server.shutdown()

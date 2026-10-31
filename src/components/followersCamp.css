@@ -72,3 +72,32 @@
 @media(min-width:700px){.followers-camp__roster{grid-template-columns:repeat(6,minmax(0,1fr))}}
 @media(max-width:350px){.followers-camp__header{gap:4px}.followers-camp__crest{width:46px;flex-basis:46px}.followers-camp__crest img{width:46px}.followers-camp__heading .territory-wooden-plaque{width:145px}.followers-camp__portrait{min-height:90px;padding:4px 1px}.followers-camp__portrait img{height:60px}.followers-camp__portrait b{font-size:7px}.followers-camp__active-art{width:77px;flex-basis:77px}.followers-camp__active-art img{width:77px}.followers-camp__detail-top>img{width:77px;flex-basis:77px}}
 @media(prefers-reduced-motion:reduce){.followers-camp *, .followers-camp *:before{animation:none!important;transition:none!important}}
+
+/* Pinned return route: inspect/select/train -> hero or existing campaign.
+   No new grants, auto-start, or companion combat rules. */
+.companion-journey-bar {
+  display:grid;
+  gap:6px;
+  min-width:0;
+  padding:7px;
+  border:2px solid #d2a55e;
+  border-radius:13px;
+  background:linear-gradient(140deg,#5a3823,#292035);
+  box-shadow:inset 0 1px #ffe4b85c,0 -3px 10px #0d0809a8;
+}
+.companion-journey-bar__status {display:flex;align-items:center;gap:8px;min-width:0}
+.companion-journey-bar__status img {width:40px;height:38px;flex:0 0 40px;object-fit:contain;object-position:bottom}
+.companion-journey-bar__status div {display:grid;gap:2px;min-width:0}
+.companion-journey-bar__status strong {color:#ffe9b2;font-size:12px;font-weight:900;line-height:1.1;overflow-wrap:anywhere}
+.companion-journey-bar__status span {color:#d6c6b3;font-size:10px;line-height:1.15}
+.companion-journey-bar__buttons {display:grid;grid-template-columns:1fr 1.5fr;gap:6px}
+.companion-journey-bar__buttons button {
+  display:flex;align-items:center;justify-content:center;gap:3px;
+  min-width:0;min-height:44px;padding:5px;
+  border:1px solid #e4b66e;border-radius:9px;
+  background:#674328;color:#ffe9bf;font-size:11px;font-weight:900;
+}
+.companion-journey-bar__buttons .companion-journey-bar__battle {
+  border:2px solid #ffde9a;background:linear-gradient(#ffe7a9,#dba24a,#a4692c);color:#2a180d;
+}
+.companion-journey-bar__buttons button:focus-visible {outline:3px solid #fff1be;outline-offset:1px}
