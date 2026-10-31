@@ -56,7 +56,7 @@ with sync_playwright() as p:
             page.get_by_role('button',name='Мой этаж').click()
             assert floor_panel.evaluate('(e) => e.scrollTop < e.scrollHeight - e.clientHeight'), 'jump to current floor'
             page.goto(URL)
-            page.get_by_test_id('dark-cave-challenge-manual').click()
+            page.get_by_test_id('dark-cave-challenge').click()
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start" && c.control==="manual").length') == 1
             page.get_by_test_id('dark-cave-battle-background').wait_for()
             page.get_by_test_id('dark-cave-combat-panels').wait_for()
@@ -65,6 +65,7 @@ with sync_playwright() as p:
             page.evaluate("window.__profileChanged = true; localStorage.removeItem('territory_adventure_session_v1:review')")
             page.locator('#remount').evaluate('(e) => e.click()')
             page.get_by_test_id('dark-cave-battle-background').wait_for()
+            assert page.get_by_test_id('dark-cave-toggle-auto').get_attribute('aria-pressed') == 'false'
             page.get_by_role('button',name='Продолжить бой').wait_for(state='visible')
             assert page.get_by_role('button',name='Продолжить бой').is_enabled(), 'pinned fight must remain playable after restore'
             page.get_by_role('button',name='Экипировка').click()
@@ -88,9 +89,9 @@ with sync_playwright() as p:
         page.on('pageerror',lambda e:errors.append(str(e)))
         page.route(URL+'**',serve)
         page.goto(URL+'?lang=en')
-        page.get_by_test_id('dark-cave-challenge-manual').wait_for()
+        page.get_by_test_id('dark-cave-challenge').wait_for()
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'English horizontal overflow'
-        page.get_by_test_id('dark-cave-challenge-manual').click()
+        page.get_by_test_id('dark-cave-challenge').click()
         assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start" && c.control==="manual").length') == 1
         page.get_by_test_id('dark-cave-battle-background').wait_for()
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'English combat horizontal overflow'
@@ -98,7 +99,7 @@ with sync_playwright() as p:
         page.get_by_text('Victory!').wait_for()
         assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
         page.close()
-    # Actual React auto control: a server-confirmed result ends polling.
+    # Auto switch inside a server-manual battle: no second charge, same receipt path.
     for lang in ('ru','en'):
         page = browser.new_page(viewport={'width':390,'height':844})
         page.on('pageerror',lambda e:errors.append(str(e)))
@@ -106,6 +107,8 @@ with sync_playwright() as p:
         page.goto(URL + ('?lang=en' if lang == 'en' else ''))
         page.get_by_test_id('dark-cave-challenge').wait_for()
         page.get_by_test_id('dark-cave-challenge').click()
+        page.get_by_test_id('dark-cave-toggle-auto').click()
+        assert page.get_by_test_id('dark-cave-toggle-auto').get_attribute('aria-pressed') == 'true'
         page.get_by_text('Victory!' if lang == 'en' else 'Победа!', exact=True).wait_for(timeout=10000)
         assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
         assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
@@ -117,7 +120,7 @@ with sync_playwright() as p:
         page.goto(URL + ('?lang=en' if lang == 'en' else ''))
         page.get_by_test_id('dark-cave-challenge').wait_for()
         page.evaluate('(result) => { window.__nextOutcome = result }', outcome)
-        page.get_by_test_id('dark-cave-challenge-manual').click()
+        page.get_by_test_id('dark-cave-challenge').click()
         assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start" && c.control==="manual").length') == 1
         page.get_by_test_id('dark-cave-battle-background').wait_for()
         page.get_by_role('button',name='Continue battle' if lang == 'en' else 'Продолжить бой').click()

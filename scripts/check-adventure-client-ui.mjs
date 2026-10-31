@@ -109,9 +109,12 @@ assert.match(ui, /getCampaignStage\(i \+ 1\)/, 'All 100 floors must render from 
 assert.match(ui, /dark-cave-floor-scroll/, 'Floor list must support independent vertical scrolling');
 assert.match(ui, /floorListRef\.current/, 'Current floor scrolls into view inside the cave');
 assert.match(ui, /progress\.unlocked_stage/, 'Current stage remains server-authoritative');
-assert.match(ui, /onClick=\{\(\)=>void start\(control\)\}/, 'Challenge passes selected control to server start');
-assert.match(ui, /\(\['auto','manual'\] as const\)/, 'Two server-backed cave controls before Dark Stone debit');
-assert.match(ui, /dark-cave-challenge-manual/, 'Manual combat must have an actual pre-start button');
+assert.match(ui, /onClick=\{\(\)=>void start\(\)\}/, 'One Challenge action uses a single server start');
+assert.match(ui, /control: 'manual' as const/, 'Server-manual permits genuine skill input');
+assert.match(ui, /data-testid="dark-cave-toggle-auto"/, 'Auto toggle is inside combat');
+assert.match(ui, /setAutoFight\(v => !v\)/, 'Auto switch never calls start again');
+assert.match(ui, /!autoFight/, 'Auto off exposes actual server skills');
+assert.doesNotMatch(ui, /data-testid="dark-cave-challenge-manual"|dark-cave-start-modes/, 'Do not show a second paid challenge');
 assert.match(ui, /progress\.dark_stones<1/, 'Dark Stones must gate the Challenge');
 assert.match(ui, /setProgress\(found\)/, 'unlock progress must arrive from server');
 assert.doesNotMatch(ui, /recordBattleResult|spendStones|trialReward|Math\.random|setBalance/,
