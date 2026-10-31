@@ -2,28 +2,36 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
-import { BELT_STACK, beltContext, canBelt, putInBelt, takeFromBelt } from '@/game/belt';
+import { BELT_RULES, BELT_STACK, beltContext, canBelt, isSlotOpen, putInBelt, takeFromBelt } from '@/game/belt';
 import { ItemArt } from './ui/ItemArt';
 import { Modal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
 import { GearShowcase } from './GearShowcase';
 import { FollowersPanel } from './FollowersPanel';
+import './followersCamp.css'; // Shared pinned companion journey styles, including offline mobile preview.
+import { FOLLOWER_TEMPLATES, selectedFollower } from '@/game/followers';
+import { getFollowerArt } from '@/game/combatArt';
 import { AWAKENING_STONE_ITEM, cowStonesOwned } from '@/game/followers';
 import { CompactWarehouse } from './CompactWarehouse';
 import { rarityColor } from '@/game/ui';
-import { elixirExpiryTime, elixirTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
+import { EQUIPMENT_SLOTS, generateChapter, generateTrial } from '@/game/engine';
+import { elixirExpiryTime, elixirTimeLeftLabel, isElixirExpired, isPerishableItem } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
-import { Package, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned } from 'lucide-react';
+import { Package, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned, ChevronRight, ShieldCheck, Swords } from 'lucide-react';
+import './inventoryPreparation.css';
 
 /** Equipment, consumables/belt and companions share the inventory route.
  * The follower model is unchanged: training and PvE selection stay in the global store. */
-export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfessions, onMap, onBattle }: {
+export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfessions, onMap, onBattle, onArena, onHero, returnBattleView }: {
   initialTab?: 'items' | 'equipment' | 'followers';
   userId: string;
   onForge?: (equipmentId?: string) => void;
   onProfessions?: () => void;
   onMap?: () => void;
   onBattle?: () => void;
+  onArena?: () => void;
+  onHero?: () => void;
+  returnBattleView?: 'campaign' | 'trial' | null;
 }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
@@ -31,8 +39,20 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const [tab, setTab] = useState<'items' | 'equipment' | 'followers'>(initialTab);
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const [beltNote, setBeltNote] = useState<string | null>(null);
+  const [preparedNotice, setPreparedNotice] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const inventoryContentRef = useRef<HTMLDivElement>(null);
+  const chapterNumber = Math.max(1, Math.floor(state.currentChapter || 1));
+  const chapter = generateChapter(chapterNumber);
+  const chapterWins = Math.max(0, Math.min(chapter.winsNeeded, state.chapterWins || 0));
+  const returningToTrial = returnBattleView === 'trial';
+  const battleEnemyArt = returningToTrial ? generateTrial(state.trialLevel).art : chapter.boss.art;
+  const battleReturnLabel = returningToTrial
+    ? (language === 'en' ? 'Back to Trials' : 'К Испытаниям')
+    : (language === 'en' ? 'Open Campaign' : 'Открыть Поход');
+  const equippedCount = EQUIPMENT_SLOTS.filter(({ id }) => !!state.player.equipped[id]).length;
+  const activeCompanion = selectedFollower(state);
+  const activeCompanionTemplate = FOLLOWER_TEMPLATES.find(unit => unit.id === activeCompanion?.id);
 
   useEffect(() => {
     if (tab !== 'items') return;
@@ -56,6 +76,11 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   ], [state.inventory]);
   const earliestOnBelt = useMemo(() => state.belt.filter((item): item is InventoryItem => !!item && isPerishableItem(item))
     .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0], [state.belt]);
+  // Read-only preparation; existing belt inventory and Arena win gates are authoritative.
+  const beltCtx = beltContext(state, arena.wins);
+  const openBeltSlots = BELT_RULES.filter((_, i) => isSlotOpen(i, beltCtx)).length;
+  const beltReady = state.belt.reduce((n, item, i) => n + (item && isSlotOpen(i, beltCtx) && !isElixirExpired(item, now) ? item.qty : 0), 0);
+  const spareConsumables = consumables.reduce((n, item) => n + (!isElixirExpired(item, now) ? Math.max(0, item.qty) : 0), 0);
 
   const switchTab = (to: 'items' | 'equipment' | 'followers') => {
     // The content scrolls independently; the bottom tabs stay within reach.
@@ -63,6 +88,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
     setTab(to);
     setSelected(null);
     setBeltNote(null);
+    setPreparedNotice('');
   };
   const toBelt = (item: InventoryItem) => {
     const latest = useGame.get();
@@ -74,6 +100,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
     useGame.set(next);
     setSelected(null);
     setBeltNote(null);
+    setPreparedNotice(language === 'en' ? 'Consumable moved to your battle belt.' : 'Расходник перемещён на боевой пояс.');
   };
   const close = () => { setSelected(null); setBeltNote(null); };
 
@@ -87,24 +114,55 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
       <div ref={inventoryContentRef} id="inventory-current-section" role="tabpanel" className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide pb-2">
       {tab === 'equipment' ? (
         <div data-testid="equipment-responsive-layout" className="flex min-h-full w-full min-w-0 flex-col">
-          {onBattle && state.player.level < 5 && state.totalBattlesWon > 0 && Object.values(state.player.equipped).some(Boolean) && <button type="button" onClick={onBattle} className="w-full min-h-11 rounded-xl border border-amber-400/50 bg-amber-700/30 px-3 text-xs font-bold text-amber-100">
-            {language === 'en' ? 'Continue the campaign' : 'Продолжить поход'}
-          </button>}
+          {onBattle && <section data-testid="equipment-campaign-return" className="mb-1 flex min-w-0 items-center gap-2 rounded-xl border-2 border-amber-500/70 bg-gradient-to-r from-[#59361e] to-[#261b16] p-2 text-amber-100 shadow-lg">
+            <img className="h-16 w-16 shrink-0 object-contain" loading="lazy" draggable={false} alt=""
+              src={battleEnemyArt.startsWith('/') ? battleEnemyArt : import.meta.env.BASE_URL + battleEnemyArt} />
+            <div className="min-w-0 flex-1">
+              <strong className="block text-xs font-black leading-tight">{language === 'en' ? 'Ready for the next encounter?' : 'Готов к следующему бою?'}</strong>
+              <span className="block text-[11px] leading-tight text-amber-200">{returningToTrial
+                ? (language === 'en' ? 'Trial floor ' : 'Этаж испытаний ') + state.trialLevel
+                : (language === 'en' ? 'Chapter ' : 'Глава ') + chapterNumber + ' · ' + chapterWins + '/' + chapter.winsNeeded}</span>
+              <span className="block text-[10px] text-amber-300">{language === 'en' ? 'Equipped slots' : 'Надето вещей'}: {equippedCount}/7</span>
+              <button type="button" onClick={onBattle} className="mt-1 flex min-h-10 w-full items-center justify-center gap-1 rounded-lg border border-amber-200 bg-gradient-to-b from-[#ffe3a1] to-[#bb762c] px-2 text-xs font-black text-[#281508]">
+                {returningToTrial ? battleReturnLabel : (language === 'en' ? 'Open adventure' : 'Открыть поход')} <ChevronRight size={16} aria-hidden="true"/>
+              </button>
+            </div>
+          </section>}
           {/* Center short inventories on tall phones; auto margins collapse for long inventories. */}
           <div className="my-auto w-full min-w-0 pt-3 pb-4">
             <GearShowcase userId={userId} onForge={onForge}/>
           </div>
         </div>
       ) : tab === 'items' ? (
-        <CompactWarehouse
-          consumables={consumables}
-          materials={materials}
-          forgeMaterials={state.forgeMaterials}
-          forgeMaterialBatches={state.forgeMaterialBatches}
-          now={now}
-          language={language}
-          onItemSelect={setSelected}
-        />
+        <div className="inventory-preparation-content">
+          <section className="inventory-preparation" data-testid="inventory-battle-preparation" aria-label={language === 'en' ? 'Prepare for battle' : 'Подготовка к бою'}>
+            <img className="inventory-preparation__art" src={import.meta.env.BASE_URL + 'assets/territory/ui/items/belt.webp'} alt="" loading="lazy" draggable={false}/>
+            <div className="inventory-preparation__summary">
+              <strong>{language === 'en' ? 'READY FOR BATTLE' : 'ГОТОВ К БОЮ'}</strong>
+              <span>{language === 'en' ? 'Belt items' : 'На поясе'}: <b>{beltReady}</b> · {language === 'en' ? 'Open slots' : 'Открыто ячеек'}: <b>{openBeltSlots}/7</b></span>
+              <small>{beltReady
+                ? (language === 'en' ? 'Your consumables are ready. Choose when to use them in battle.' : 'Расходники готовы. В бою сам выбирай, когда их применять.')
+                : spareConsumables
+                  ? (language === 'en' ? 'Tap a potion in the warehouse to equip it on the belt.' : 'Нажми на зелье в складе и перенеси его на пояс.')
+                  : (language === 'en' ? 'Your belt is empty. You can still fight without potions.' : 'Пояс пуст. Можно сражаться и без зелий.')}</small>
+            </div>
+            <div className="inventory-preparation__actions">
+              {onArena && <button type="button" onClick={onArena} className="inventory-preparation__arena"><Swords size={17}/>{language === 'en' ? 'Arena lobby' : 'На Арену'}<ChevronRight size={15}/></button>}
+              {onBattle && <button type="button" onClick={onBattle} className="inventory-preparation__campaign"><ShieldCheck size={17}/>{returningToTrial ? battleReturnLabel : (language === 'en' ? 'Campaign' : 'В Поход')}<ChevronRight size={15}/></button>}
+            </div>
+            {preparedNotice && <p className="inventory-preparation__notice" role="status">{preparedNotice}</p>}
+          </section>
+          <CompactWarehouse
+            consumables={consumables}
+            materials={materials}
+            forgeMaterials={state.forgeMaterials}
+            forgeMaterialBatches={state.forgeMaterialBatches}
+            now={now}
+            language={language}
+            onItemSelect={setSelected}
+            onForge={onForge}
+          />
+        </div>
       ) : (
         <FollowersPanel />
       )}
@@ -119,16 +177,52 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
         >
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-amber-100">{t('belt')}</h3>
+              <h3 className="text-sm font-bold text-amber-100">{t('belt')} <span data-testid="inventory-belt-status" className="text-xs text-amber-300">· {beltReady} / {openBeltSlots * BELT_STACK}</span></h3>
               {earliestOnBelt && <span className="text-[10px] font-semibold text-amber-300 tabular-nums">⏳ {elixirTimeLeftLabel(earliestOnBelt, language, now)}</span>}
             </div>
             <span className="text-right text-[10px] leading-tight text-gray-400">{t('tapSlotToUnequip')}</span>
           </div>
           <BeltCells
             belt={state.belt}
-            ctx={beltContext(state, arena.wins)}
-            onTap={(i, open) => open && useGame.set((current) => takeFromBelt(current, i))}
+            ctx={beltCtx}
+            onTap={(i, open) => {
+              if (!open) return;
+              let removed = false;
+              useGame.set((current) => {
+                if (!current.belt[i]) return current;
+                removed = true;
+                return takeFromBelt(current, i);
+              });
+              if (removed) setPreparedNotice(language === 'en' ? 'Consumable returned to the warehouse.' : 'Расходник возвращён на склад.');
+            }}
           />
+        </section>
+      )}
+
+      {tab === 'followers' && (onHero || onBattle) && (
+        <section className="companion-journey-bar" data-testid="companion-journey-actions"
+          aria-label={language === 'en' ? 'Companion battle journey' : 'Боевой путь со спутником'}>
+          <div className="companion-journey-bar__status">
+            <img src={activeCompanion ? getFollowerArt(activeCompanion.id)
+              : import.meta.env.BASE_URL + 'assets/territory/map/icons/companions-v1.webp'}
+              alt="" loading="lazy" draggable={false}/>
+            <div>
+              <strong>{activeCompanion
+                ? (language === 'en' ? (activeCompanionTemplate?.nameEn ?? activeCompanion.name) : activeCompanion.name)
+                : (language === 'en' ? 'Companion not unlocked' : 'Спутник ещё не открыт')}</strong>
+              <span>{activeCompanion
+                ? `${language === 'en' ? 'Level' : 'Уровень'} ${activeCompanion.level} · PvE`
+                : (language === 'en' ? 'Unlocks from hero level 3' : 'Открывается с 3 уровня героя')}</span>
+            </div>
+          </div>
+          <div className="companion-journey-bar__buttons">
+            {onHero && <button type="button" onClick={onHero}>
+              {language === 'en' ? 'Hero' : 'Герой'}
+            </button>}
+            {onBattle && <button type="button" onClick={onBattle} className="companion-journey-bar__battle">
+              {battleReturnLabel} <ChevronRight size={15} aria-hidden="true"/>
+            </button>}
+          </div>
         </section>
       )}
 
@@ -162,7 +256,11 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
               </div>
               <p className="text-sm capitalize" style={{ color: rarityColor(selected.rarity) }}>{selected.rarity}</p>
             </div>
-            <p className="text-sm text-gray-300 mb-3">{localizeText(selected.description, language)}</p>
+            <p className="text-sm text-gray-300 mb-3">{selected.id === AWAKENING_STONE_ITEM.id
+              ? (language === 'en'
+                ? 'A rare awakening material. Obtaining and spending are paused; existing stones are safe.'
+                : 'Редкий камень пробуждения. Получение и расход пока закрыты, имеющиеся камни сохранены.')
+              : localizeText(selected.description, language)}</p>
             {isPerishableItem(selected) && (
               <p className={`mb-3 text-xs font-semibold ${elixirExpiryTime(selected) - now < 24 * 60 * 60 * 1000 ? 'text-red-300' : 'text-amber-300'}`}>
                 ⏳ {language === 'en' ? 'Shelf life' : 'Срок годности'}: {elixirTimeLeftLabel(selected, language, now)}

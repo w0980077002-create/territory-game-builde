@@ -75,7 +75,7 @@ export const AWAKENING_STONE_ID = 'cow_awakening_stone';
 export const AWAKENING_STONE_ITEM: InventoryItem = {
   id: AWAKENING_STONE_ID, name: 'Камень пробуждения', icon: '💜',
   type: 'material', rarity: 'legendary', qty: 0,
-  description: 'Редкий камень для повышения уровня Боевой коровы. Награда за победы над боссами каждой пятой главы и каждого десятого испытания. Не продаётся за монеты и алмазы.',
+  description: 'Редкий камень пробуждения Боевой коровы. Источники получения и улучшение пока не открыты. Уже имеющиеся камни сохраняются.',
 };
 export function cowStonesOwned(state: Pick<GameState, 'inventory'>): number {
   return state.inventory.reduce((sum, item) =>
@@ -84,29 +84,11 @@ export function cowStonesOwned(state: Pick<GameState, 'inventory'>): number {
 }
 export function cowAwakeningCost(_level: number): number { return 1; }
 
-/** Lootborn-style rare boss material, deterministic instead of unverifiable published drop rates.
- * Bosses are one-time story progression; only the actual current boss can award a stone.
- * This does NOT authorize rewards server-side; PvE still uses the existing save pipeline. */
-export function cowStoneChapterBossReward(chapter: number, enemyId: string, isBoss: boolean): number {
-  return Number.isSafeInteger(chapter) && chapter >= 5 && chapter % 5 === 0
-    && isBoss && enemyId === `ch${chapter}_boss` ? 1 : 0;
-}
-/** Trial progression grants a stone on every tenth successfully completed stage. */
-export function cowStoneTrialReward(level: number): number {
-  return Number.isSafeInteger(level) && level >= 10 && level % 10 === 0 ? 1 : 0;
-}
-/** Add one real, non-expiring legendary inventory material; never touch wallet balances. */
-export function awardCowAwakeningStone(state: GameState, count: number): GameState {
-  if (!Number.isSafeInteger(count) || count < 1 || count > 10) return state;
-  const current = cowStonesOwned(state);
-  if (current > 2147483647 - count) return state;
-  const idx = state.inventory.findIndex((i) => i.id === AWAKENING_STONE_ID && i.type === 'material');
-  if (idx === -1) return { ...state, inventory: [...state.inventory, { ...AWAKENING_STONE_ITEM, qty: count }] };
-  return { ...state, inventory: state.inventory.map((i, n) =>
-    n === idx ? { ...i, qty: i.qty + count } : i) };
-}
-
-
+/** Owner-approved freeze: awakening stones have no automatic source until a separate
+ * decision and server-authoritative reward receipt. Never mint client inventory. */
+export function cowStoneChapterBossReward(_chapter: number, _enemyId: string, _isBoss: boolean): number { return 0; }
+export function cowStoneTrialReward(_level: number): number { return 0; }
+export function awardCowAwakeningStone(state: GameState, _count: number): GameState { return state; }
 
 /** Atomic pure update: call against the latest store state, never a stale render.
  * No cap bypass by negative/NaN amounts, and train only one companion at a time. */
@@ -115,19 +97,9 @@ export function trainFollower(state: GameState, followerId: string): GameState |
   const found = state.followers.find((f) => f.id === followerId && f.unlocked);
   if (!found || !FOLLOWER_TEMPLATES.some((f) => f.id === followerId)) return null;
   if (!Number.isSafeInteger(found.level) || found.level < 1) return null;
-  if (followerId === 'follower_6') {
-    if (found.level >= MAX_BATTLE_COW_LEVEL || cowStonesOwned(state) < cowAwakeningCost(found.level)) return null;
-    // Spend precisely one owned stone and improve the cow; preserve ALL other items, currencies and followers.
-    let consumed = false;
-    const inventory = state.inventory.map((item) => {
-      if (consumed || item.id !== AWAKENING_STONE_ID || item.type !== 'material' || !Number.isSafeInteger(item.qty) || item.qty < 1) return item;
-      consumed = true;
-      return { ...item, qty: item.qty - cowAwakeningCost(found.level) };
-    }).filter((item) => item.id !== AWAKENING_STONE_ID || item.type !== 'material' || item.qty > 0);
-    if (!consumed) return null;
-    return { ...state, inventory, followers: state.followers.map((f) => f.id !== followerId
-      ? f : { ...f, level: f.level + 1, attack: f.attack + 1 }) };
-  }
+  // Do not spend saved stones or modify a cow's existing level before the
+  // approved, server-authoritative awakening operation is available.
+  if (followerId === 'follower_6') return null;
   if (found.level >= MAX_FOLLOWER_LEVEL || found.level >= state.player.level) return null;
   const price = followerTrainingCost(found.level);
   if (!Number.isSafeInteger(state.player.gold) || state.player.gold < price.gold || !Number.isSafeInteger(state.forgeMaterials) || state.forgeMaterials < price.materials) return null;

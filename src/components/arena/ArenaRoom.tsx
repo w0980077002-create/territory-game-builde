@@ -20,7 +20,7 @@ import './arenaBattlePanels.css';
 import { equipmentArt } from '@/game/art';
 import { ItemArt } from '@/components/ui/ItemArt';
 import { IosGamePortal } from '@/components/ui/Modal';
-import { ChevronDown, Loader2, Timer, WifiOff } from 'lucide-react';
+import { ChevronDown, Loader2, Timer, WifiOff, X } from 'lucide-react';
 import { useLanguage, localizeText } from '@/game/i18n';
 
 
@@ -40,6 +40,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const [reward, setReward] = useState<ArenaReward | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const cancelLeaveRef = useRef<HTMLButtonElement>(null);
+  const confirmLeaveRef = useRef<HTMLDivElement>(null);
   const [beltBusy, setBeltBusy] = useState<number | null>(null);
   const [beltOpen, setBeltOpen] = useState(true);
   const [enemiesOpen, setEnemiesOpen] = useState(false);
@@ -58,9 +59,13 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
     const prior = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     cancelLeaveRef.current?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.stopPropagation();
-      setConfirmLeave(false);
+      if (event.key === 'Escape') { event.stopPropagation(); setConfirmLeave(false); return; }
+      if (event.key !== 'Tab' || !confirmLeaveRef.current) return;
+      const buttons = Array.from(confirmLeaveRef.current.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+      if (!buttons.length) return;
+      const first = buttons[0], last = buttons[buttons.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     };
     window.addEventListener('keydown', onKey);
     return () => { window.removeEventListener('keydown', onKey); prior?.focus({ preventScroll: true }); };
@@ -430,8 +435,11 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
       {confirmLeave && (
         <IosGamePortal>
         <div className="arena-modal-overlay fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={() => setConfirmLeave(false)}>
-          <div role="alertdialog" aria-modal="true" aria-label={language === 'en' ? 'Leave battle?' : 'Покинуть бой?'} className="card w-full max-w-sm text-center animate-pop" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-white mb-2">{language === 'en' ? 'Leave battle?' : 'Покинуть бой?'}</h3>
+          <div ref={confirmLeaveRef} role="alertdialog" aria-modal="true" aria-labelledby="arena-leave-title" className="card w-full max-w-sm text-center animate-pop" onClick={(e) => e.stopPropagation()}>
+            <div className="arena-leave-head">
+              <h3 id="arena-leave-title">{language === 'en' ? 'Leave battle?' : 'Покинуть бой?'}</h3>
+              <button type="button" className="arena-leave-close" aria-label={language === 'en' ? 'Close' : 'Закрыть'} onClick={() => setConfirmLeave(false)}><X size={20} aria-hidden="true" /></button>
+            </div>
             <p className="text-sm text-gray-400 mb-4">{alive ? (language === 'en' ? 'You will count as defeated, and your team may lose.' : 'Ты будешь считаться павшим, и бой может быть проигран.') : (language === 'en' ? 'You will no longer see this battle chat.' : 'Ты больше не увидишь чат этого боя.')}</p>
             <div className="grid grid-cols-2 gap-2">
               <button ref={cancelLeaveRef} className="btn-ghost" onClick={() => setConfirmLeave(false)}>{language === 'en' ? 'Stay' : 'Остаться'}</button>

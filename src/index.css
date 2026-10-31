@@ -960,8 +960,10 @@ html.territory-desktop-webapp .home-side-stack .home-side {
   background: repeating-linear-gradient(177deg, #ffdc9108 0 3px, #210f0812 4px 7px, transparent 8px 14px), linear-gradient(145deg, #754923, #4c2a17 56%, #2c180e);
   box-shadow: inset 0 0 0 2px #3d1e0de0, inset 0 2px 0 #ffde9273, 0 15px 40px #000a;
 }
-.territory-modal-head { min-height: 60px; padding: 7px 8px 7px 12px; border-bottom: 2px solid #ba8942; background: var(--viking-plaque) center / 100% 100% no-repeat, linear-gradient(#81522b, #4e2b18); }
-.territory-modal-head h2 { min-width: 0; margin: 0; overflow-wrap: anywhere; color: #ffe29a; font-size: 17px; font-weight: 900; line-height: 1.2; text-shadow: 1px 2px #281408; }
+.territory-modal-head { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px; min-height: 60px; padding: 7px 8px; border-bottom: 2px solid #ba8942; background: var(--viking-plaque) center / 100% 100% no-repeat, linear-gradient(#81522b, #4e2b18); }
+.territory-modal-head > img { grid-column: 1; justify-self: center; }
+.territory-modal-head h2 { grid-column: 2; min-width: 0; margin: 0; overflow-wrap: anywhere; color: #ffe29a; font-size: 17px; font-weight: 900; line-height: 1.2; text-shadow: 1px 2px #281408; }
+.territory-modal-head .territory-modal-close { grid-column: 3; grid-row: 1; }
 .territory-modal-close { flex: 0 0 44px; width: 44px; height: 44px; border: 2px solid #d4a35c; border-radius: 11px; color: #fff0c4; background: linear-gradient(#986333, #522b17); box-shadow: inset 0 1px #ffefb576, 0 2px 4px #1f0f08a8; }
 .territory-modal-close:focus-visible, .territory-modal-content:focus-visible { outline: 2px solid #fff1b7; outline-offset: -3px; }
 .territory-modal-panel > div:last-child { min-height: 0; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
@@ -1187,4 +1189,24 @@ html.territory-ios-webapp .territory-nav-label {
   [data-testid="dark-cave-actions"] > div:nth-child(2) {
     display: none;
   }
+}
+
+/* Approved Battle Cow typography: centered, thick gold on wood, including
+   generic profile plaques and shared information dialog titles. */
+.territory-shell .territory-profile .card > h3 {
+  justify-content: center;
+  text-align: center;
+  font-family: 'Arial Black', system-ui, -apple-system, sans-serif;
+  font-size: clamp(15px, 4vw, 19px);
+  font-weight: 1000;
+  line-height: 1.18;
+  text-shadow: 1px 2px 0 #301509, -1px -1px 0 #301509, 2px 2px 1px #190d09;
+}
+.territory-modal-head h2,
+.arena-rules-head h3 {
+  text-align: center;
+  font-family: 'Arial Black', system-ui, -apple-system, sans-serif;
+  font-weight: 1000;
+  text-wrap: balance;
+  text-shadow: 1px 2px 0 #301509, -1px -1px 0 #301509;
 }

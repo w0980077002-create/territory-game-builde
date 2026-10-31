@@ -5,7 +5,7 @@ import { useGame, useArena, recordBattleResult } from '@/game/actions';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
-import { selectedFollower, followerCombat, cowStoneChapterBossReward, cowStoneTrialReward } from '@/game/followers';
+import { selectedFollower, followerCombat } from '@/game/followers';
 import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, type PveSide } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
@@ -21,6 +21,7 @@ import { Currency } from '@/components/ui/Currency';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { beginReferralFight, finishReferralFight, type ReferralRound } from '@/game/referrals';
 import { captureGameEvent } from '@/game/analytics';
+import { runDeferredNextBattle } from '@/game/pveNextAction';
 
 export type FightKind = 'stage' | 'trial';
 
@@ -28,7 +29,7 @@ interface Props {
   enemy: Enemy;
   kind: FightKind;
   onExit: () => void;
-  onNext?: () => void;
+  onNext?: () => boolean;
   onQuests?: () => void;
 }
 
@@ -37,7 +38,6 @@ interface Outcome {
   gold: number;
   xp: number;
   gems: number;
-  awakeningStones: number;
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -114,6 +114,9 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const referralStart = useRef<Promise<string | null> | null>(null);
   const referralFinish = useRef<Promise<unknown>>(Promise.resolve());
   const nextRequested = useRef(false);
+  const nextCancelled = useRef(false);
+  const [nextPending, setNextPending] = useState(false);
+  const [nextError, setNextError] = useState(false);
   // React's disabled button state is not synchronous. Lock the round before
   // the first await, so two taps cannot run two local fights / referral rounds.
   const roundFlight = useRef(false);
@@ -126,8 +129,11 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
 
   useEffect(() => {
+    // React StrictMode may replay effect setup/cleanup in development.
+    alive.current = true;
+    nextCancelled.current = false;
     referralStart.current = beginReferralFight(kind, enemy.id);
-    return () => { alive.current = false; };
+    return () => { alive.current = false; nextCancelled.current = true; };
   }, [kind, enemy.id]);
 
   const pushLog = (line: string) => setLog((l) => [line, ...l].slice(0, 30));
@@ -135,25 +141,28 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const finish = useCallback((won: boolean) => {
     if (done.current) return;
     done.current = true;
-    captureGameEvent('territory_pve_fight_end', { mode: kind === 'trial' ? 'trial' : 'campaign', outcome: won ? 'won' : 'lost' });
+    // Telemetry is optional: an unavailable browser API must not abort the
+    // authoritative local result/save path after the final blow.
+    try { captureGameEvent('territory_pve_fight_end', { mode: kind === 'trial' ? 'trial' : 'campaign', outcome: won ? 'won' : 'lost' }); }
+    catch { /* Never withhold victory or a saved reward because of analytics. */ }
     referralFinish.current = (referralStart.current ?? Promise.resolve(null))
       .then(ticket => ticket
         ? finishReferralFight(ticket, won, referralRounds.current).catch(() => false)
         : false);
     if (!won) {
-      setOutcome({ won: false, gold: 0, xp: 0, gems: 0, awakeningStones: 0 });
+      setOutcome({ won: false, gold: 0, xp: 0, gems: 0 });
       return;
     }
     const s = useGame.get();
     if (kind === 'trial') {
       const r = trialReward(s.trialLevel);
       useGame.set(recordTrialWin(s, enemy));
-      setOutcome({ won: true, gold: r.gold ?? 0, xp: enemy.rewardXp, gems: r.gems ?? 0, awakeningStones: cowStoneTrialReward(s.trialLevel) });
+      setOutcome({ won: true, gold: r.gold ?? 0, xp: enemy.rewardXp, gems: r.gems ?? 0 });
       return;
     }
     const gold = blessedGold(s, enemy.rewardGold);
     useGame.set(recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp }));
-    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0, awakeningStones: cowStoneChapterBossReward(s.currentChapter, enemy.id, enemy.isBoss) });
+    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0 });
   }, [enemy, kind]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
@@ -244,7 +253,14 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     <div className="space-y-2 animate-fade-in">
       <div className="flex items-center gap-2 h-10">
         <button
-          onClick={() => (outcome ? onExit() : finish(false))}
+          onClick={() => {
+            if (outcome) {
+              nextCancelled.current = true;
+              onExit();
+            } else {
+              finish(false);
+            }
+          }}
           className="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-200 flex items-center gap-1.5 active:scale-95 transition-transform"
         >
           <Flag className="w-3.5 h-3.5" /> {outcome ? (kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')) : (language === 'en' ? 'Surrender' : 'Сдаться')}
@@ -393,16 +409,28 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
           </div>
         )}
 
-        {outcome && <OutcomePanel outcome={outcome} kind={kind} onExit={onExit}
-          questReady={state.player.level < 5 && state.quests.some(q => !q.claimed && q.current >= q.target)} onQuests={onQuests}
+        {outcome && <OutcomePanel outcome={outcome} kind={kind}
+          onExit={() => { nextCancelled.current = true; onExit(); }}
+          questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
+          onQuests={onQuests ? () => { nextCancelled.current = true; onQuests(); } : undefined}
+          nextPending={nextPending} nextError={nextError}
           onNext={onNext ? () => {
             if (nextRequested.current) return;
             nextRequested.current = true;
-            // Never hold up normal combat if Supabase is temporarily offline.
-            void Promise.race([
-              referralFinish.current.catch(() => false),
-              new Promise(resolve => setTimeout(resolve, 1400)),
-            ]).then(onNext);
+            setNextPending(true);
+            setNextError(false);
+            // A late referral result must not launch a fight after Back/Quests.
+            void runDeferredNextBattle(
+              referralFinish.current,
+              () => alive.current && !nextCancelled.current,
+              onNext,
+            ).then(result => {
+              if (result === 'blocked' && alive.current && !nextCancelled.current) {
+                nextRequested.current = false;
+                setNextPending(false);
+                setNextError(true);
+              }
+            });
           } : undefined} />}
       </div>
 
@@ -426,7 +454,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   );
 }
 
-function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests }: { outcome: Outcome; kind: FightKind; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void }) {
+function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests, nextPending, nextError }: { outcome: Outcome; kind: FightKind; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; nextPending: boolean; nextError: boolean }) {
   const { language } = useLanguage();
   return (
     <div className="relative px-3 pb-3 pt-1 animate-pop">
@@ -439,7 +467,6 @@ function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests }: {
             <Currency kind="gold" value={`+${outcome.gold}`} size={18} />
             <span className="font-semibold text-sky-200">+{outcome.xp} {language === 'en' ? 'XP' : 'опыта'}</span>
             {outcome.gems > 0 && <Currency kind="gems" value={`+${outcome.gems}`} size={18} />}
-            {outcome.awakeningStones > 0 && <div className="flex items-center gap-1 rounded-lg border border-fuchsia-400/60 bg-violet-700/35 px-2 py-1 text-xs font-black text-fuchsia-100"><img src={import.meta.env.BASE_URL + 'assets/territory/ui/items/awakening-stone.svg'} alt="" className="h-7 w-7 object-contain" /> +{outcome.awakeningStones} {language === 'en' ? 'Awakening Stone' : 'Камень пробуждения'}</div>}
           </div>
         ) : (
           <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>
@@ -452,11 +479,14 @@ function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests }: {
             {kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')}
           </button>
           {outcome.won && onNext && (
-            <button onClick={onNext} className="flex-1 h-10 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-sm font-bold text-black active:scale-95 transition-transform">
-              {language === 'en' ? 'Next fight' : 'Следующий бой'}
+            <button type="button" onClick={onNext} disabled={nextPending} aria-busy={nextPending} className="flex-1 h-10 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-sm font-bold text-black active:scale-95 transition-transform disabled:opacity-60">
+              {nextPending? (language === 'en' ? 'Starting…' : 'Начинаем…') : (language === 'en' ? 'Next fight' : 'Следующий бой')}
             </button>
           )}
         </div>
+        {nextError && <p role="alert" className="mt-2 text-xs text-amber-100">
+          {language === 'en' ? 'Next fight could not start. Check battle stones or recover the Dark Cave operation, then try again or return to Campaign.' : 'Следующий бой не запустился. Проверь боевые камни или восстанови операцию в Тёмной пещере. Можно повторить или вернуться в Поход.'}
+        </p>}
       </div>
     </div>
   );

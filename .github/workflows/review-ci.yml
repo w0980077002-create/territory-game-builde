@@ -32,12 +32,14 @@ jobs:
       - run: node scripts/edge-initdata-tests.cjs
       - run: node scripts/edge-identity-tests.cjs
       - run: npm run typecheck
+      - run: node scripts/check-halloween-world-boss.mjs
       - run: npm run test:stage1
       - run: npm run test:slots
       - run: npm run build
       - run: node scripts/check-pages-build-sha.mjs
       - run: npm run test:balance
       - run: npm run test:pve
+      - run: node scripts/check-pve-next-navigation.mjs
       - run: node scripts/check-pve-recovery-controls.mjs
       - run: npm run test:inventory-cleanup
       - run: npm run test:gear-recycle

@@ -17,8 +17,10 @@ assert.match(hall,/const HIDDEN_HALL_GAMES = new Set<GameCard\['id'\]>\(\['treas
  'All four unfinished mini-games must remain hidden from the Hall');
 assert.match(hall,/const VISIBLE_GAMES = GAMES\.filter\(game => !HIDDEN_HALL_GAMES\.has\(game\.id\)\)/,
  'Only public games may be rendered');
-assert.match(hall,/\{VISIBLE_GAMES\.map\(/,
- 'Game Hall must render the filtered public games, not all registered games');
+assert.match(hall,/\{availableGames\.map\(/,
+ 'Game Hall must render only server-enabled games, not unfinished demos');
+assert.match(hall,/const availableGames = VISIBLE_GAMES\.filter\(game => game\.id !== 'slots' \|\| slotsEnabled\)/,
+ 'Unverified slots demo must remain hidden unless the server game is enabled');
 
 assert.match(hall,/const activeGame = GAMES\.find\(game => game\.id === state\?\.active\?\.game\)/,
   'An unfinished Hall round must show the actual game name in the resume action');
@@ -38,6 +40,14 @@ assert.match(hall,/loading="lazy"/,'Large scenic art must lazy load on phones');
 assert.doesNotMatch(hall,/Смотреть рекламу|Watch ad/,'Do not promise an unconnected ad provider');
 assert.match(hall,/Сокровищница/);assert.doesNotMatch(hall,/Джекпот/);
 assert.match(hall,/data-testid="game-hall"/);
+assert.match(hall,/data-testid="hall-next-play"/,'Real server-backed tickets must give a single actionable Hall next move');
+assert.match(hall,/className="hall-hero-mission"/,'Game Hall must feature real play or the server-saved round');
+assert.match(hall,/if \(id === 'wheel'\)/,'Wheel must remain recoverable if the optional Hall status read fails');
+assert.match(hall,/onPlay\('wheel'\); return;/,'Wheel must keep its existing server-authoritative route');
+assert.match(hall,/game\.id!=='wheel' && \(loading \|\| !state\)/,'Hall outages may not lock the Wheel recovery screen');
+assert.match(hall,/YOUR ROUND IS SAVED/,'Hall must explain protected resumed rounds');
+assert.doesNotMatch(hall,/Popular' : 'Популярно/,'No invented popularity labels without analytics');
+
 assert.match(hall,/autoClaimHallGold\(userId,next\.pending_gold\)/,'Old pending winnings should settle when hall opens');
 assert.match(api,/const autoClaims=new Map/,'Prevent concurrent duplicate payout requests');
 assert.match(mono,/await settleWinnings\(finished\)/,'Monopoly winnings must settle automatically');

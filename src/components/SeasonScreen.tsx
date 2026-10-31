@@ -1,115 +1,47 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { CalendarClock, Crown, ShieldCheck, Trophy, RefreshCcw } from 'lucide-react';
-import { seasonCountdown } from '@/game/seasonCalendar';
-import { fetchSeasonStatus, type SeasonStatus } from '@/game/seasonApi';
+import { ChevronRight, Mail, Swords, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import type { AuthUser } from '@/game/auth';
+import { ArenaWeeklyBoard } from './arena/ArenaWeeklyBoard';
+import './arena/arenaLobby.css';
+import './seasonJourney.css';
 
-/** Read-only season board. No rewards/points are ever issued by the browser. */
-export function SeasonScreen({ user }: { user: AuthUser }) {
+interface Props {
+  user: AuthUser;
+  onArena?: () => void;
+  onEvents?: () => void;
+  onMessages?: () => void;
+  onRankings?: () => void;
+}
+
+/** The public championship shows one canonical Arena TOP-50 only.
+ * The independent server prize ledger stays intact and remains outside this screen.
+ * Never show the owner two incompatible places or two unrelated season clocks. */
+export function SeasonScreen({ onArena, onEvents, onMessages, onRankings }: Props) {
   const { language } = useLanguage();
   const en = language === 'en';
-  const [clock, setClock] = useState(Date.now());
-  const [status, setStatus] = useState<SeasonStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
-  const [offset, setOffset] = useState(0);
-  const request = useRef(0);
 
-  const refresh = useCallback(async () => {
-    const current = ++request.current;
-    setLoading(true);
-    setFailed(false);
-    try {
-      const result = await fetchSeasonStatus();
-      if (current !== request.current) return;
-      setStatus(result);
-      const serverNow = Date.parse(result?.server_now ?? '');
-      if (Number.isFinite(serverNow)) setOffset(serverNow - Date.now());
-    }
-    catch { if (current === request.current) setFailed(true); }
-    finally { if (current === request.current) setLoading(false); }
-  }, [user.id]);
-
-  useEffect(() => {
-    setStatus(null);
-    void refresh();
-    const polling = window.setInterval(() => void refresh(), 60_000);
-    const ticker = window.setInterval(() => setClock(Date.now()), 30_000);
-    return () => { request.current += 1; window.clearInterval(ticker); window.clearInterval(polling); };
-  }, [refresh]);
-
-  // The championship follows the server's Sunday/Kyiv window. The shared
-  // quest/Arena preview calendar may independently use Monday/UTC.
-  const endsAt = Date.parse(status?.ends_at ?? '');
-  const remaining = Number.isFinite(endsAt) ? Math.max(0, endsAt - clock - offset) : 0;
-  const live = status?.enabled === true && Number.isFinite(endsAt) && remaining > 0;
-  const rewardText = (prize: { gold?: number; gems?: number }) =>
-    [prize.gold ? `${prize.gold.toLocaleString()} ${en ? 'gold' : 'золота'}` : '',
-      prize.gems ? `${prize.gems.toLocaleString()} ${en ? 'blue diamonds' : 'синих алмазов'}` : ''].filter(Boolean).join(' · ');
-  return (
-    <div className="viking-screen viking-screen--season space-y-3 animate-fade-in">
-      <div className="card relative overflow-hidden border-amber-400/40 bg-gradient-to-br from-amber-950/50 via-slate-900 to-sky-950/60">
-        <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-amber-400/10 blur-2xl pointer-events-none" />
-        <div className="relative flex items-center gap-3">
-          <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-amber-400/10 border border-amber-400/20"><Crown className="text-amber-300" /></div>
-          <div>
-            <h3 className="font-black text-amber-100 text-lg">{en ? 'Weekly Championship' : 'Недельный чемпионат'}</h3>
-          </div>
-        </div>
-        <div className="relative grid grid-cols-2 gap-2 mt-4">
-          <div className="rounded-xl bg-black/25 p-3 border border-white/5">
-            <div className="text-[11px] text-slate-400 flex gap-1.5 items-center"><CalendarClock className="w-3.5 h-3.5" />{en ? 'Week ends in' : 'До конца недели'}</div>
-            <div className="mt-1 text-lg font-black text-white tabular-nums">{status ? seasonCountdown(remaining, en ? 'en' : 'ru') : '—'}</div>
-          </div>
-          <div className="rounded-xl bg-black/25 p-3 border border-white/5">
-            <div className="text-[11px] text-slate-400">{en ? 'Competition' : 'Соревнование'}</div>
-            <div className={`mt-1 font-bold ${live ? 'text-emerald-300' : 'text-amber-300'}`}>
-              {live ? en ? 'Active' : 'Активно' : en ? 'Preparing' : 'Подготовка'}
-            </div>
-          </div>
-        </div>
+  return <section className="viking-screen viking-screen--season season-journey" data-testid="season-journey">
+    <header className="season-journey__hero">
+      <img src={import.meta.env.BASE_URL + 'ic-trophy.webp'} alt="" loading="lazy" />
+      <div className="season-journey__heading">
+        <span>{en ? 'ARENA' : 'АРЕНА'}</span>
+        <h2>{en ? 'Weekly championship' : 'Недельный чемпионат'}</h2>
       </div>
+    </header>
 
-      {live ? (
-        <>
-          <div className="card text-sm space-y-2">
-            <p className="text-slate-300">{en ? '1 verified Arena win = 1 point. Sunday to Sunday, Kyiv time. Prizes arrive by mail once the season closes.' : '1 подтверждённая победа на Арене = 1 очко. С воскресенья по воскресенье по Киеву. Призы приходят почтой после закрытия сезона.'}</p>
-            {status.prizes.map((prize, index) => <div key={index} className="flex justify-between gap-2 text-amber-200"><b>#{index + 1}</b><span>{rewardText(prize)}</span></div>)}
-          </div>
-          <div className="card text-sm">
-            <div className="flex justify-between gap-3"><span className="text-slate-300">{en ? 'Your season points' : 'Твои сезонные очки'}</span><b className="text-amber-300">{status.my_points.toLocaleString()}</b></div>
-            <div className="flex justify-between gap-3 mt-2"><span className="text-slate-300">{en ? 'Your rank' : 'Твоё место'}</span><b className="text-white">{status.my_rank ? `#${status.my_rank}` : '—'}</b></div>
-          </div>
-          {status.leaders.map((row) => (
-            <div key={row.player_id} className={`card flex items-center gap-3 text-sm ${row.player_id === user.id ? 'border-teal-400/50 bg-teal-900/10' : ''}`}>
-              <div className="shrink-0 w-8 text-center text-amber-300 font-black">#{row.rank}</div>
-              <div className="min-w-0 flex-1 truncate text-slate-100">{row.display_name}{row.player_id === user.id ? en ? ' (you)' : ' (ты)' : ''}</div>
-              <div className="font-black text-amber-200">{row.points}</div>
-            </div>
-          ))}
-          {status.leaders.length === 0 && <div className="card text-slate-400 text-sm text-center">{en ? 'The season has no verified scores yet.' : 'Пока нет подтверждённых сервером результатов.'}</div>}
-        </>
-      ) : (
-        <div className="card space-y-2 border-sky-500/20 bg-sky-950/20">
-          <div className="flex items-center gap-2 text-sky-200 font-bold"><ShieldCheck className="w-5 h-5" />{en ? 'Fair play first' : 'Сначала честная игра'}</div>
-          <p className="text-sm text-slate-300 leading-relaxed">
-            {en
-              ? 'The championship will start only after server verification of points and rewards. Local saves cannot create season scores or prizes.'
-              : 'Чемпионат запустим только после серверной проверки очков и наград. Локальные сохранения не могут создавать сезонные очки или призы.'}
-          </p>
-          <div className="flex gap-2 rounded-xl bg-black/20 p-3 text-xs text-amber-200/90"><Trophy className="w-4 h-4 shrink-0" />{en ? 'Planned: rankings, weekly prizes and permanent champion titles. No prizes are active yet.' : 'В планах: рейтинг, недельные награды и постоянные титулы чемпионов. Сейчас призы не начисляются.'}</div>
-        </div>
-      )}
-      {!!status?.history.length && <div className="card space-y-2">
-        <h4 className="font-bold text-amber-200">{en ? 'Previous winners' : 'История победителей'}</h4>
-        {status.history.map(row => <div key={`${row.week}:${row.player_id}`} className="text-xs flex justify-between gap-2">
-          <span className="min-w-0 truncate">{row.week} · #{row.rank} {row.display_name}</span>
-          <span className="shrink-0 text-amber-200">{rewardText(row.reward) || `${row.points} ${en ? 'points' : 'очков'}`}</span>
-        </div>)}
-      </div>}
-      {failed && <div className="text-xs text-amber-300 text-center">{en ? 'The season server did not respond. No score has been changed.' : 'Нет ответа сервера сезонов. Сезонные очки не изменены.'}</div>}
-      <button onClick={() => void refresh()} disabled={loading} className="btn-ghost w-full text-xs flex justify-center gap-2 items-center"><RefreshCcw className="w-4 h-4" />{loading ? en ? 'Loading...' : 'Загрузка...' : en ? 'Refresh' : 'Обновить'}</button>
+    <div className="arena-lobby arena-approved-entry season-journey__arena-top" data-testid="season-arena-top50">
+      <ArenaWeeklyBoard />
     </div>
-  );
+
+    <nav className="season-journey__actions" aria-label={en ? 'Championship navigation' : 'Навигация чемпионата'}>
+      {onArena && <button type="button" className="season-journey__primary" onClick={onArena}>
+        <Swords size={20} aria-hidden="true"/>{en ? 'Open Arena' : 'Открыть Арену'}<ChevronRight size={17} aria-hidden="true"/>
+      </button>}
+      {(onRankings || onEvents || onMessages) && <div className={onRankings ? 'season-journey__secondary season-journey__secondary--four' : 'season-journey__secondary'}>
+        {onRankings && <button type="button" data-testid="season-open-top50" onClick={onRankings}><Trophy size={17} aria-hidden="true"/>{en ? 'Arena TOP-50' : 'ТОП-50 Арены'}</button>}
+        {onEvents && <button type="button" onClick={onEvents}>{en ? 'Events' : 'События'}</button>}
+        {onMessages && <button type="button" onClick={onMessages}><Mail size={17} aria-hidden="true"/>{en ? 'Mail' : 'Почта'}</button>}
+      </div>}
+    </nav>
+  </section>;
 }

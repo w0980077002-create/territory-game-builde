@@ -1,156 +1,62 @@
-import { useState, useEffect, useRef } from 'react';
-import { getLeaderboard } from '@/game/cloud';
-import { Trophy, Crown, Medal } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowRight, Swords } from 'lucide-react';
 import type { AuthUser } from '@/game/auth';
 import { useLanguage } from '@/game/i18n';
+import { SHOW_WEEKLY_CHAMPIONSHIP } from '@/game/uiFeatureFlags';
+import { ArenaWeeklyBoard } from './arena/ArenaWeeklyBoard';
 import { SeasonScreen } from './SeasonScreen';
+import './arena/arenaLobby.css';
+import './arenaRankJourney.css';
 
-interface LeaderboardEntry {
-  player_id: string;
-  display_name: string;
-  level: number;
-  arena_rating: number;
-  arena_wins: number;
-  total_battles_won: number;
-  photo_url: string | null;
-}
+type InitialRankTab = 'rating' | 'wins' | 'season';
+type RankTab = 'arena' | 'season';
 
-export function LeaderboardScreen({ user, initialTab = 'rating' }: { user: AuthUser; initialTab?: 'rating' | 'wins' | 'season' }) {
-  const { t, language } = useLanguage();
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [tab, setTab] = useState<'rating' | 'wins' | 'season'>(initialTab);
-  const requestId = useRef(0);
+/** One public Arena TOP-50: the very same players, opponents, ranking and
+ * appearance as the Arena lobby. No separate lifetime/server-only leaderboard
+ * and no other player's level is shown here. Official prizes stay untouched. */
+export function LeaderboardScreen({ user, initialTab = 'rating', onArena, onEvents, onMessages }: {
+  user: AuthUser;
+  initialTab?: InitialRankTab;
+  onArena?: () => void;
+  onEvents?: () => void;
+  onMessages?: () => void;
+}) {
+  const { language } = useLanguage();
+  const en = language === 'en';
+  const [tab, setTab] = useState<RankTab>(SHOW_WEEKLY_CHAMPIONSHIP && initialTab === 'season' ? 'season' : 'arena');
 
   useEffect(() => {
-    if (tab !== 'season') void loadLeaderboard(tab);
-    return () => { requestId.current += 1; };
-  }, [tab]);
+    setTab(SHOW_WEEKLY_CHAMPIONSHIP && initialTab === 'season' ? 'season' : 'arena');
+  }, [initialTab]);
 
-  const loadLeaderboard = async (kind: 'rating' | 'wins') => {
-    const ticket = ++requestId.current;
-    setLoading(true);
-    setError(false);
-    try {
-      const result = await getLeaderboard(50, kind === 'rating' ? 'arena_rating' : 'arena_wins');
-      if (ticket !== requestId.current) return;
-      setEntries(result as LeaderboardEntry[]);
-    } catch {
-      if (ticket !== requestId.current) return;
-      setError(true);
-    } finally {
-      if (ticket === requestId.current) setLoading(false);
-    }
-  };
-
-  // The database orders the entire leaderboard before limiting to the top 50.
-  // Sorting only the fifty highest-rated players would exclude real win leaders.
-  const sorted = entries;
-
-  return (
-    <div className="viking-screen viking-screen--leaderboard space-y-4 animate-fade-in pb-4">
-      <div className="card text-center">
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <Trophy className="w-6 h-6 text-amber-400" />
-          <h2 className="text-xl font-bold text-white">{t('leaderboard')}</h2>
-        </div>
-        <div className="flex gap-2">
-          <button
-            className={`flex-1 btn text-sm ${tab === 'rating' ? 'btn-accent' : 'btn-ghost'}`}
-            onClick={() => setTab('rating')}
-          >
-            {language === 'en' ? 'By rating' : 'По рейтингу'}
-          </button>
-          <button
-            className={`flex-1 btn text-sm ${tab === 'wins' ? 'btn-accent' : 'btn-ghost'}`}
-            onClick={() => setTab('wins')}
-          >
-            {language === 'en' ? 'By wins' : 'По победам'}
-          </button>
-          <button
-            className={`flex-1 btn text-sm ${tab === 'season' ? 'btn-accent' : 'btn-ghost'}`}
-            onClick={() => setTab('season')}
-          >
-            {language === 'en' ? 'Seasons' : 'Сезоны'}
-          </button>
-        </div>
-      </div>
-
-      {tab === 'season' ? <SeasonScreen user={user} /> : <>
-      {error && (
-        <div className="card text-center text-sm text-red-400">{t('leaderboardLoadError')}</div>
+  return <div className="arena-rank-journey viking-screen viking-screen--leaderboard animate-fade-in" data-testid="arena-rank-journey">
+    {SHOW_WEEKLY_CHAMPIONSHIP && <div className="arena-rank-journey__tabs" role="tablist" aria-label={en ? 'Arena rankings' : 'Рейтинги Арены'}>
+      {([
+        ['arena', en ? 'Arena TOP-50' : 'ТОП-50 Арены'],
+        ['season', en ? 'Championship' : 'Чемпионат'],
+      ] as const).map(([id, label]) =>
+        <button type="button" role="tab" key={id} aria-selected={tab === id}
+          aria-controls="arena-rank-journey-content" onClick={() => setTab(id)}
+          className={tab === id ? 'arena-rank-journey__tab arena-rank-journey__tab--active' : 'arena-rank-journey__tab'}>
+          {label}
+        </button>
       )}
+    </div>}
 
-      {loading ? (
-        <div className="card text-center py-8 text-gray-500">
-          <p className="text-sm">{t('loading')}</p>
-        </div>
-      ) : sorted.length === 0 ? (
-        <div className="card text-center py-8 text-gray-500">
-          <Trophy className="w-12 h-12 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">{t('noLeaderboard')}</p>
-          <p className="text-xs mt-1">{t('playArenaForRank')}</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {sorted.map((entry, index) => {
-            const isMe = entry.player_id === user.id;
-            const rank = index + 1;
-
-            return (
-              <div
-                key={entry.player_id}
-                className={`card flex items-center gap-3 ${
-                  isMe ? 'border-teal-500/50 bg-teal-900/10' : ''
-                } ${rank <= 3 ? 'animate-pop' : ''}`}
-              >
-                {/* Rank */}
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold shrink-0 ${
-                  rank === 1 ? 'bg-amber-500/20 text-amber-400' :
-                  rank === 2 ? 'bg-gray-400/20 text-gray-300' :
-                  rank === 3 ? 'bg-orange-700/20 text-orange-400' :
-                  'bg-black/30 text-gray-500'
-                }`}>
-                  {rank === 1 ? <Crown className="w-5 h-5" /> :
-                   rank === 2 ? <Medal className="w-5 h-5" /> :
-                   rank === 3 ? <Medal className="w-5 h-5" /> :
-                   rank}
-                </div>
-
-                {/* Avatar */}
-                <div className="w-10 h-10 rounded-full bg-black/30 overflow-hidden shrink-0 flex items-center justify-center text-xl">
-                  {entry.photo_url ? (
-                    <img src={entry.photo_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    '🦸'
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <h4 className={`text-sm font-semibold truncate ${isMe ? 'text-teal-400' : 'text-white'}`}>
-                    {entry.display_name} {isMe && (language === 'en' ? '(you)' : '(ты)')}
-                  </h4>
-                  <div className="flex gap-3 text-xs text-gray-400">
-                    <span>{t('level')} {entry.level}</span>
-                    {tab === 'rating' ? (
-                      <span className="text-amber-400">{entry.arena_rating} {language === 'en' ? 'rating' : 'рейтинг'}</span>
-                    ) : (
-                      <span className="text-teal-400">{entry.arena_wins} {language === 'en' ? 'wins' : 'побед'}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <button className="btn-ghost w-full text-sm" onClick={() => void loadLeaderboard(tab === 'wins' ? 'wins' : 'rating')}>
-        {language === 'en' ? 'Refresh' : 'Обновить'}
-      </button>
-      </>}
+    <div id="arena-rank-journey-content" role="tabpanel" className="arena-rank-journey__content">
+      {SHOW_WEEKLY_CHAMPIONSHIP && tab === 'season'
+        ? <SeasonScreen user={user} onArena={onArena} onEvents={onEvents} onMessages={onMessages}
+            onRankings={() => setTab('arena')} />
+        : <>
+            <div className="arena-lobby arena-approved-entry arena-rank-journey__arena-top" data-testid="arena-rank-shared-top50">
+              <ArenaWeeklyBoard />
+            </div>
+            {onArena && <nav className="arena-rank-journey__actions" aria-label={en ? 'Arena actions' : 'Действия Арены'}>
+              <button type="button" className="arena-rank-journey__primary" onClick={onArena}>
+                <Swords size={20} aria-hidden="true" />{en ? 'Go to Arena' : 'На Арену'}<ArrowRight size={17} aria-hidden="true" />
+              </button>
+            </nav>}
+          </>}
     </div>
-  );
+  </div>;
 }

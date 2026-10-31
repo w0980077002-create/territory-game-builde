@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { build } from 'esbuild';
 
 const result = await build({entryPoints:['src/game/eventsBoard.ts'],bundle:true,write:false,platform:'node',format:'esm'});
-const {eventCalendar,questAction,readyQuestCount,withEventStatusTimeout} = await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+const {eventCalendar,questAction,readyQuestCount,withEventStatusTimeout,dailyHeroGoal} = await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
 const at = (date) => Date.parse(date);
 
 const ordinary = eventCalendar(at('2026-10-26T12:00:00Z'));
@@ -25,6 +25,25 @@ assert.equal(questAction({id:'unrecognized',type:'story'}),null);
 const tasks=[{type:'daily',current:3,target:3,claimed:false},{type:'daily',current:5,target:5,claimed:true},{type:'weekly',current:1,target:3,claimed:false}];
 assert.equal(readyQuestCount(tasks),1);
 assert.equal(readyQuestCount(tasks,'weekly'),0);
+const emptyGoal = {pendingGold:null,dailyReady:false,readyQuests:0,hallTicketsReady:false,gatherReady:false,unreadMail:0,blessingReady:false};
+assert.deepEqual([dailyHeroGoal(emptyGoal).key,dailyHeroGoal(emptyGoal).action],['explore','quests']);
+const goalCases=[
+ [{dailyReady:true},'daily','daily'],
+ [{readyQuests:1},'quests','quests'],
+ [{hallTicketsReady:true},'hall','games'],
+ [{gatherReady:true},'gather','map'],
+ [{unreadMail:2},'mail','messages'],
+ [{blessingReady:true},'blessing','city'],
+ [{dailyReady:true,readyQuests:1},'daily','daily'],
+ [{pendingGold:35,dailyReady:true},'recover','games'],
+];
+for(const [input,key,action] of goalCases){
+ const result=dailyHeroGoal({...emptyGoal,...input});
+ assert.equal(result.key,key,'real next-action priority '+key);
+ assert.equal(result.action,action);
+ for(const name of ['art','ru','en','ruHint','enHint','ruAction','enAction'])assert.ok(result[name],'empty translation/art for '+key);
+}
+assert.equal(dailyHeroGoal({...emptyGoal,pendingGold:null}).key,'explore','missing server data must not promise a payout');
 assert.equal(await withEventStatusTimeout(Promise.resolve('ready'),50),'ready');
 await assert.rejects(withEventStatusTimeout(Promise.reject(new Error('offline')),50), /offline/);
 await assert.rejects(withEventStatusTimeout(new Promise(() => {}),15), /event_status_timeout/,
@@ -48,10 +67,15 @@ assert.match(screen,/Promise\.allSettled\(checks\)/,'Live cards must tolerate pa
 assert.match(screen,/view === 'daily'/,'Opening the daily calendar must not fetch all weekly statuses');
 assert.match(screen,/refresh\('daily'\)/,'Initial events view only checks live daily status');
 assert.match(screen,/weeklyArenaLive/,'Stale arena rankings must not be presented as current results');
+assert.match(screen,/actionId="weekly-championship" onClick=\{onSeason\}/,'Weekly championship card must open real server standings');
 assert.match(screen,/aria-labelledby="territory-events-daily-tab"/,'Calendar tab must label its panel');
+assert.match(screen,/data-testid="events-daily-focus"/,'Daily panel must show a real next-action feature');
+assert.match(screen,/if \(nextGoal\.action === 'daily'\) onDaily\(\)/,'Focus must use the real daily reward sheet');
+assert.match(screen,/else onNavigate\(nextGoal\.action\)/,'Focus must lead to real game routes');
+assert.match(styles,/\.territory-events__focus-action\s*\{/,'Daily focus needs a primary large mobile CTA');
 for(const serverRead of ['hallStatus()','fetchSeasonStatus()','getArenaWeeklyStatus()'])assert.ok(screen.includes(serverRead));
 assert.doesNotMatch(screen,/hallDaily\(|hallStart\(|hallFinish\(|useGame\.set\(|supabase\.rpc\(/,'Event hub must never grant rewards itself');
-assert.match(screen,/season\.week === seasonWindow\(clock\)\.weekKey/,'Never show last week as a live season');
+assert.match(screen,/season\.week === kyivSeasonWeekKey\(clock\)/,'Never show last week as a live season');
 assert.match(screen,/currentRequest\.current \+= 1/,'Ignore stale server replies after unmount');
 assert.match(analytics,/'messages','events'/,'Anonymous screen analytics must include new event hub and inbox');
 assert.match(analytics,/'territory_events_action'/,'Track only whitelisted event navigation, never player identity');
@@ -59,4 +83,50 @@ assert.match(styles,/max-width:\s*360px/,'Compact Android/iPhone screens must re
 assert.match(styles,/prefers-reduced-motion/,'Honor reduced-motion setting');
 assert.match(quests,/import\.meta\.env\.BASE_URL \+ 'ic-quests\.webp'/,'Quest art must work below the Pages base path');
 assert.match(quests,/import\.meta\.env\.BASE_URL \+ 'ic-trophy\.webp'/,'Achievement art must work below the Pages base path');
+// Player-facing copy lock: one visible Arena place, no bot labels or other heroes' levels.
+const arenaLobby=read('src/components/arena/ArenaLobby.tsx');
+const arenaBoard=read('src/components/arena/ArenaWeeklyBoard.tsx');
+const battleScene=read('src/components/arena/BattleScene.tsx');
+const fighters=read('src/components/arena/FighterList.tsx');
+const clans=read('src/components/ClanScreen.tsx');
+const friends=read('src/components/FriendsScreen.tsx');
+const championship=read('src/components/SeasonScreen.tsx');
+assert(!screen.includes('season.my_rank') && !screen.includes('arena.my_rank'),
+  'Events must not display server-only places contradicting Arena bot-inclusive TOP-50');
+assert(screen.includes('Единый недельный ТОП-50 всех участников Арены.'));
+assert(arenaLobby.includes('ТОП-50 Арены, победы и награды недели'));
+assert(!arenaLobby.includes('Подтверждённые очки, победители и статус сезона'));
+assert(!arenaBoard.includes('Выдуманные результаты не показываем.'));
+assert(!arenaBoard.includes('По текущему ТОПу: обойти'));
+assert(!arenaBoard.includes('Новый сезон каждое воскресенье в 00:00 UTC.'));
+assert(arenaBoard.includes('arenaWeeklyWithBots(status, now)'));
+assert(!arenaBoard.includes('{player.level}'));
+assert(battleScene.includes('showLevel = false') && battleScene.includes('<Plate fighter={me} side="ally" showLevel />'));
+assert(battleScene.includes('<Plate fighter={enemy} side="enemy" />'));
+assert(fighters.includes('isMe ? <span') && fighters.includes('<Shield className="w-3 h-3 text-gray-400"'));
+assert(!clans.includes('{app.name} · {app.level}'));
+assert(!clans.includes('{candidate.display_name} · {candidate.level}'));
+assert(clans.includes("isMe ? ` · ${t('clanLevelShort')} ${m.level}` : ''"));
+assert(!friends.includes('{level}/5') && friends.includes("friend.qualified ? 100"));
+assert(championship.includes('season-journey__hero') && !championship.includes('Тот же недельный ТОП-50'));
+assert(!championship.includes('season-official-server'));
+// Temporarily paused championship may not be reachable from player UI.
+const featureFlags = read('src/game/uiFeatureFlags.ts');
+const topPlayers = read('src/components/LeaderboardScreen.tsx');
+assert.match(featureFlags, /export const SHOW_WEEKLY_CHAMPIONSHIP = false;/,
+  'Separate championship must remain paused until its ranking and payouts are unified with Arena');
+assert.match(topPlayers, /SHOW_WEEKLY_CHAMPIONSHIP && <div className="arena-rank-journey__tabs"/,
+  'When championship is off, avoid a lone redundant ranking tab');
+assert.match(topPlayers, /SHOW_WEEKLY_CHAMPIONSHIP && tab === 'season'/,
+  'Season must not render from direct navigation while feature is paused');
+assert.match(topPlayers, /SHOW_WEEKLY_CHAMPIONSHIP && initialTab === 'season'/,
+  'Previously saved championship route must fall back to the Arena board');
+assert.match(arenaLobby, /SHOW_WEEKLY_CHAMPIONSHIP && onSeason && <button/,
+  'Do not advertise championship in the Arena lobby');
+assert.match(screen, /SHOW_WEEKLY_CHAMPIONSHIP && <EventCard icon=\{Crown\}/,
+  'Weekly event calendar must not advertise championship');
+assert.match(screen, /\.\.\.\(SHOW_WEEKLY_CHAMPIONSHIP \? \[withEventStatusTimeout\(fetchSeasonStatus\(\)\)/,
+  'Do not call inactive championship RPC when players open the calendar');
+assert.match(topPlayers, /<ArenaWeeklyBoard \/>/,
+  'Existing Arena TOP-50 remains accessible');
 console.log('Events board PASS: real existing bonuses, UTC countdowns, server-only status, live navigation, first-hour quest actions, anonymous analytics and compact mobile layout.');

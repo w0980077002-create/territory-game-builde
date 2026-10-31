@@ -1,4 +1,4 @@
-import { Skull, Check, Crosshair, Syringe, LogOut, ChevronDown } from 'lucide-react';
+import { Skull, Check, Crosshair, Syringe, LogOut, ChevronDown, Shield } from 'lucide-react';
 import type { ArenaFighter } from '@/game/arenaApi';
 import { useLanguage } from '@/game/i18n';
 
@@ -57,7 +57,7 @@ export function FighterList({ title, accent, fighters, meId, active, selectedId,
                 <span className="w-5 h-5 rounded bg-black/40 flex items-center justify-center shrink-0">
                   {dead ? (f.left ? <LogOut className="w-3 h-3 text-gray-500" /> : <Skull className="w-3 h-3 text-gray-400" />) :
                     selected ? <Crosshair className="w-3 h-3 text-red-400" /> :
-                    <span className="text-[9px] font-bold text-gray-300">{f.level}</span>}
+                    isMe ? <span className="text-[9px] font-bold text-gray-300">{f.level}</span> : <Shield className="w-3 h-3 text-gray-400" aria-hidden="true" />}
                 </span>
                 <span className={`text-[11px] font-semibold truncate w-[34%] ${isMe ? 'text-teal-300' : 'text-white'}`}>
                   {f.name}{isMe && <span className="text-teal-400 font-normal"> {language === 'en' ? '(you)' : '(ты)'}</span>}

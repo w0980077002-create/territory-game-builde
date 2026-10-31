@@ -12,6 +12,9 @@ assert.doesNotMatch(home, /label=\{t\('friends'\)\} soon/,'Do not leave soon bad
 assert.match(app,/<FriendsScreen user=\{user\}/,'Friends route');
 assert.match(screen,/sealed_chests/,'Display sealed chest ledger');
 assert.match(screen,/red_fragments/,'Display 0.2 red diamond fragments');
+assert.match(screen,/status\.founder_number/,'Keep personal founder number visible');
+assert.doesNotMatch(screen,/status\.places_left|Свободных мест|Spots left/,
+  'Never show remaining founder registration capacity to other players');
 assert.match(screen,/pending_claims/,'Reward claims require server status');
 assert.match(screen,/onClick=\{share\}/);
 assert.match(screen,/onClick=\{\(\) => void copy\(\)\}/);

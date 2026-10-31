@@ -8,10 +8,11 @@ import { DAILY_REWARDS, MAIL, blessingReady, dailyStatus } from '@/game/progress
 import { hallStatus, type HallState } from '@/game/gameHall';
 import { fetchSeasonStatus, type SeasonStatus } from '@/game/seasonApi';
 import { getArenaWeeklyStatus, type ArenaWeeklyStatus } from '@/game/arenaWeekly';
-import { eventCalendar, readyQuestCount, withEventStatusTimeout } from '@/game/eventsBoard';
+import { dailyHeroGoal, eventCalendar, readyQuestCount, withEventStatusTimeout } from '@/game/eventsBoard';
 import { captureGameEvent } from '@/game/analytics';
 import { RewardLootStrip } from '@/components/ui/RewardLootStrip';
-import { seasonCountdown, seasonWindow } from '@/game/seasonCalendar';
+import { kyivSeasonWeekKey, seasonCountdown } from '@/game/seasonCalendar';
+import { SHOW_WEEKLY_CHAMPIONSHIP } from '@/game/uiFeatureFlags';
 import './eventsBoard.css';
 
 export type EventDestination = 'city' | 'quests' | 'games' | 'map' | 'arena' | 'leaderboard' | 'messages' | 'clan';
@@ -82,7 +83,7 @@ function SevenDayJourney({ dayIndex, claimedToday, rewards, onOpen, en }: {
 }
 
 /** Real existing bonuses and competition progress; zero synthetic payouts. */
-export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
+export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
   onNavigate: (screen: EventDestination) => void;
   onDaily: () => void;
   onSeason: () => void;
@@ -114,8 +115,8 @@ export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
       withEventStatusTimeout(hallStatus()).then(value => { if (request === currentRequest.current) setHall(value); })
         .catch(() => { if (request === currentRequest.current) { setHall(null); setFailed(v => ({ ...v, hall: true })); } }),
     ] : [
-      withEventStatusTimeout(fetchSeasonStatus()).then(value => { if (request === currentRequest.current) setSeason(value); })
-        .catch(() => { if (request === currentRequest.current) { setSeason(null); setFailed(v => ({ ...v, season: true })); } }),
+      ...(SHOW_WEEKLY_CHAMPIONSHIP ? [withEventStatusTimeout(fetchSeasonStatus()).then(value => { if (request === currentRequest.current) setSeason(value); })
+        .catch(() => { if (request === currentRequest.current) { setSeason(null); setFailed(v => ({ ...v, season: true })); } })] : []),
       withEventStatusTimeout(getArenaWeeklyStatus()).then(value => { if (request === currentRequest.current) setArena(value); })
         .catch(() => { if (request === currentRequest.current) { setArena(null); setFailed(v => ({ ...v, arena: true })); } }),
     ];
@@ -150,12 +151,26 @@ export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
   const readyWeekly = readyQuestCount(state.quests, 'weekly');
   const unreadMail = MAIL.filter(letter => !state.mailClaimed.includes(letter.id)).length + mail.length;
   const time = eventCalendar(clock);
-  const seasonActive = season?.enabled === true && season.week === seasonWindow(clock).weekKey;
+  const seasonActive = season?.enabled === true && season.week === kyivSeasonWeekKey(clock);
   // A staged server can report an older week; never display it as today's contest.
   const weeklySeasonLive = seasonActive && season?.ends_at !== '' && Date.parse(season.ends_at) > clock;
   const weeklyArenaLive = !!arena && Date.parse(arena.starts_at) <= clock && Date.parse(arena.ends_at) > clock;
   const readyNow = Number(!daily.claimedToday) + Number(blessing) + Number(readyDaily > 0)
     + Number(hall?.free_ready === true) + Number(gatherReady) + Number(unreadMail > 0);
+  const nextGoal = dailyHeroGoal({
+    pendingGold: hall?.pending_gold ?? null,
+    dailyReady: !daily.claimedToday,
+    readyQuests: readyDaily,
+    hallTicketsReady: hall?.free_ready === true,
+    gatherReady,
+    unreadMail,
+    blessingReady: blessing,
+  });
+  const nextGoalAction = () => {
+    captureGameEvent('territory_events_action', { screen: 'events', mode: 'daily-focus-' + nextGoal.key });
+    if (nextGoal.action === 'daily') onDaily();
+    else onNavigate(nextGoal.action);
+  };
   const dayReward = DAILY_REWARDS[daily.dayIndex];
   const format = (n: number) => n.toLocaleString(en ? 'en-US' : 'ru-RU');
   const visit = (destination: EventDestination) => () => onNavigate(destination);
@@ -183,6 +198,21 @@ export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
       <div><Bell size={16}/><strong>{readyNow}</strong><span>{en ? 'requiring attention' : 'требуют внимания'}</span></div>
       <div><Clock3 size={16}/><strong>{seasonCountdown(time.dailyRemaining, language)}</strong><span>{en ? 'until 00:00 UTC' : 'до 00:00 UTC'}</span></div>
     </div>
+
+    <section className="territory-events__focus" aria-label={en ? 'Your next step' : 'Следующий шаг героя'} data-testid="events-daily-focus">
+      <div className="territory-events__focus-art" aria-hidden="true">
+        <img src={import.meta.env.BASE_URL + nextGoal.art} alt="" loading="lazy" decoding="async"/>
+      </div>
+      <div className="territory-events__focus-info">
+        <span className="territory-events__focus-kicker">{en ? 'YOUR NEXT MOVE' : 'ТВОЙ СЛЕДУЮЩИЙ ШАГ'}</span>
+        <h3>{en ? nextGoal.en : nextGoal.ru}</h3>
+        <p>{en ? nextGoal.enHint : nextGoal.ruHint}</p>
+        <button type="button" onClick={nextGoalAction} className="territory-events__focus-action">
+          {en ? nextGoal.enAction : nextGoal.ruAction}
+          <ChevronRight size={18} aria-hidden="true"/>
+        </button>
+      </div>
+    </section>
 
     <div className="territory-events__tabs" role="tablist" aria-label={en ? 'Event calendar' : 'Календарь событий'}>
       <button id="territory-events-daily-tab" type="button" role="tab" aria-controls="territory-events-daily-panel" aria-selected={tab === 'daily'} onClick={() => switchTab('daily')}><CalendarDays size={17}/>{en ? 'Today' : 'Сегодня'}</button>
@@ -216,19 +246,18 @@ export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
         description={en ? `${readyWeekly} rewards ready · ${weekQuests.length} active tasks` : `${readyWeekly} наград готово · ${weekQuests.length} текущих заданий`}
         status={readyWeekly ? 'ready' : weekQuests.length ? 'active' : 'done'} action={en ? 'Open quests' : 'Перейти к заданиям'} actionId="weekly-quests" onClick={visit('quests')} en={en}/>
       <EventCard icon={Swords} image="ic-arena.webp" name={en ? 'Arena weekly ranking' : 'Недельный рейтинг арены'}
-        description={weeklyArenaLive && arena ? (en ? `Verified wins: ${format(arena.my_wins)} · rank ${arena.my_rank ? '#' + arena.my_rank : '—'}` : `Подтверждено побед: ${format(arena.my_wins)} · место ${arena.my_rank ? '№' + arena.my_rank : '—'}`)
-          : (en ? 'The Arena server confirms weekly wins and positions.' : 'Победы и место в рейтинге подтверждает сервер арены.')}
+        description={weeklyArenaLive && arena ? (en ? `Wins this week: ${format(arena.my_wins)} · open TOP-50 for your place` : `Побед за неделю: ${format(arena.my_wins)} · место смотри в ТОП-50`)
+          : (en ? 'Your place is shown in the Arena TOP-50.' : 'Твоё место показано в ТОП-50 Арены.')}
         status={weeklyArenaLive ? 'active' : 'unknown'} action={en ? 'Fight in Arena' : 'Сражаться на арене'} actionId="arena-weekly" onClick={visit('arena')} en={en}/>
-      <EventCard icon={Crown} image="ic-trophy.webp" name={en ? 'Weekly championship' : 'Недельный чемпионат'}
-        description={weeklySeasonLive && season ? (en ? `Your points: ${format(season.my_points)} · place ${season.my_rank ? '#' + season.my_rank : '—'}` : `Твои очки: ${format(season.my_points)} · место ${season.my_rank ? '№' + season.my_rank : '—'}`)
-          : (en ? 'Points and prizes start only when the server enables the championship.' : 'Очки и призы появятся после запуска чемпионата на сервере.')}
-        status={weeklySeasonLive ? 'active' : 'unknown'} en={en}/>
+      {SHOW_WEEKLY_CHAMPIONSHIP && <EventCard icon={Crown} image="ic-trophy.webp" name={en ? 'Weekly championship' : 'Недельный чемпионат'}
+        description={en ? 'The same weekly Arena TOP-50 with all participants.' : 'Единый недельный ТОП-50 всех участников Арены.'}
+        status={weeklySeasonLive ? 'active' : 'unknown'} action={en ? 'Open TOP-50' : 'Открыть ТОП-50'} actionId="weekly-championship" onClick={onSeason} en={en}/>}
       <EventCard icon={Shield} image="nav-clan.webp" name={en ? 'Clan missions' : 'Клановые испытания'}
         description={en ? 'Contributions, quests, clan boss and wars.' : 'Взносы, задания, клановый босс и войны.'}
         status="active" action={en ? 'Open Clan' : 'Войти в клан'} actionId="clan" onClick={visit('clan')} en={en}/>
     </div>}
 
-    {(failed.hall || failed.arena || failed.season) && <p className="territory-events__note" role="status">
+    {(failed.hall || failed.arena || (SHOW_WEEKLY_CHAMPIONSHIP && failed.season)) && <p className="territory-events__note" role="status">
       {en ? 'Some live data is unavailable. Your items and rewards have not changed.' : 'Некоторые серверные данные временно недоступны. Награды и предметы не изменены.'}
     </p>}
     <p className="territory-events__footnote">{en ? 'Daily and weekly resets use UTC. Rewards and rankings are confirmed by the game server.' : 'Суточные и недельные обновления идут по UTC. Начисления и рейтинги подтверждаются сервером игры.'}</p>

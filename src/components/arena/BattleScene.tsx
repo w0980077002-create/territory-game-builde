@@ -37,7 +37,7 @@ interface Props {
   resultPanel?: ReactNode;
 }
 
-function Plate({ fighter, side }: { fighter: ArenaFighter; side: 'ally' | 'enemy' }) {
+function Plate({ fighter, side, showLevel = false }: { fighter: ArenaFighter; side: 'ally' | 'enemy'; showLevel?: boolean }) {
   const { language } = useLanguage();
   const pct = Math.max(0, (fighter.hp / fighter.maxHp) * 100);
   const low = pct <= 30;
@@ -45,7 +45,7 @@ function Plate({ fighter, side }: { fighter: ArenaFighter; side: 'ally' | 'enemy
     <div className="w-full rounded-lg bg-black/55 backdrop-blur-sm px-2 py-1 border border-white/10">
       <div className="flex items-center justify-between gap-1">
         <span className={`text-[11px] font-semibold truncate ${side === 'ally' ? 'text-teal-200' : 'text-red-200'}`}>{fighter.name}</span>
-        <span className="text-[10px] text-gray-300 shrink-0">{fighter.level} {language === 'en' ? 'Lv.' : 'ур.'}</span>
+        {showLevel && <span className="text-[10px] text-gray-300 shrink-0">{fighter.level} {language === 'en' ? 'Lv.' : 'ур.'}</span>}
       </div>
       <div className="h-1.5 rounded-full bg-black/60 overflow-hidden mt-0.5">
         <div
@@ -131,7 +131,7 @@ export function BattleScene(props: Props) {
           )}
 
           <div className="flex flex-col min-w-0">
-            <Plate fighter={me} side="ally" />
+            <Plate fighter={me} side="ally" showLevel />
             <div className="relative flex-1 mt-1">
               <span aria-hidden="true" className="absolute left-[6%] right-0 bottom-[1%] h-[7%] rounded-full bg-black/60 blur-md pointer-events-none" />
               {/* A companion is a cosmetic PvP spectator, not a damage source.

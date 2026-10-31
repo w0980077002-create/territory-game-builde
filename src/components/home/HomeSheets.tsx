@@ -11,6 +11,8 @@ import { mailRewardVisuals } from '@/game/mailRewardVisuals';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/game/i18n';
 import { CITY_BACKGROUND_KEY, initialCityBackground, type CityBackground } from '@/components/home/LiveCityBackdrop';
+import { hapticsEnabled, setHapticsEnabled } from '@/game/hapticPreference';
+import './settingsJourney.css';
 
 export type SaveStatus = 'saved' | 'saving' | 'error';
 
@@ -25,6 +27,7 @@ export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const { claimedToday, dayIndex } = dailyStatus(state);
+  const todayReward = DAILY_REWARDS[dayIndex];
 
   const claim = () => {
     const next = claimDaily(useGame.get());
@@ -35,8 +38,17 @@ export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (
 
   return (
     <Modal title={t('dailyRewards')} icon="/ic-daily.webp" onClose={onClose}>
-      <p className="text-xs text-gray-400 mb-3 leading-relaxed">{t('dailyRewardsHint')}</p>
-      <div className="territory-daily-rewards grid grid-cols-4 gap-2 mb-4">
+      <section className="territory-daily-feature" data-testid="daily-current-reward" aria-label={language === 'en' ? 'Today’s reward' : 'Сегодняшняя награда'}>
+        <img src={import.meta.env.BASE_URL + 'ic-daily.webp'} alt="" className="territory-daily-feature__art" />
+        <div className="territory-daily-feature__content">
+          <span className="territory-daily-feature__kicker">{language === 'en' ? 'YOUR HERO’S DAILY GIFT' : 'ПОДАРОК ТВОЕМУ ГЕРОЮ'}</span>
+          <strong>{language === 'en' ? `Day ${dayIndex + 1} of 7` : `День ${dayIndex + 1} из 7`}</strong>
+          <RewardLootStrip reward={todayReward} language={language}/>
+          <p>{claimedToday ? (language === 'en' ? 'Already collected today' : 'Сегодня уже получено') : (language === 'en' ? 'Available to collect now' : 'Можно получить сейчас')}</p>
+        </div>
+      </section>
+      <p className="text-xs text-gray-300 mb-3 leading-relaxed">{t('dailyRewardsHint')}</p>
+      <div className="territory-daily-rewards grid grid-cols-4 gap-2 mb-4" aria-label={language === 'en' ? 'Seven-day gift calendar' : 'Календарь подарков на семь дней'}>
         {DAILY_REWARDS.map((r, i) => {
           const done = claimedToday ? i <= dayIndex : i < dayIndex;
           const current = i === dayIndex && !claimedToday;
@@ -78,6 +90,8 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
   const [historyError, setHistoryError] = useState(false);
   const [historyHasMore, setHistoryHasMore] = useState(false);
   const historyRequest = useRef(0);
+  const failedHistoryOffset = useRef(0);
+  const claimInFlight = useRef(false);
 
   const loadHistory = useCallback(async (offset = 0) => {
     const request = ++historyRequest.current;
@@ -92,7 +106,10 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
       ]);
       setHistoryHasMore(result.hasMore);
     } catch {
-      if (request === historyRequest.current) setHistoryError(true);
+      if (request === historyRequest.current) {
+        failedHistoryOffset.current = offset;
+        setHistoryError(true);
+      }
     } finally {
       if (request === historyRequest.current) setHistoryLoading(false);
     }
@@ -104,6 +121,8 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
   }, [loadHistory]);
 
   const claimAdmin = async (id: string) => {
+    if (claimInFlight.current) return;
+    claimInFlight.current = true;
     setClaiming(id);
     try {
       const ok = await claimMailGrant(id);
@@ -116,6 +135,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
     } catch {
       notify(t('claimLetterRewardFail'));
     } finally {
+      claimInFlight.current = false;
       setClaiming(null);
     }
   };
@@ -138,7 +158,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
     <section className="territory-mail space-y-1.5" aria-label={language === 'en' ? 'Messages' : 'Сообщения'}>
         <div className="territory-mail__tabs flex gap-1.5" role="tablist" aria-label={language === 'en' ? 'Mail folders' : 'Разделы почты'}>
           <button type="button" role="tab" aria-selected={!received} onClick={() => setTab('new')}
-            className={`rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors ${!received ? 'border-sky-400/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-black/20 text-gray-400'}`}>
+            className={`min-h-11 rounded-md border px-3 py-2 text-[11px] font-semibold transition-colors ${!received ? 'border-sky-400/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-black/20 text-gray-400'}`}>
             {language === 'en' ? 'New' : 'Новые'} {newCount > 0 ? `(${newCount})` : ''}
           </button>
           <button type="button" role="tab" aria-selected={received} onClick={() => setTab('received')}
@@ -152,7 +172,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
         {received && historyError && (
           <div className="rounded-md border border-red-400/25 bg-red-500/10 p-2 text-center text-xs text-red-200">
             <p>{language === 'en' ? 'Could not load mail history.' : 'Не удалось загрузить историю писем.'}</p>
-            <button type="button" className="mt-2 text-sky-300 underline" onClick={() => void loadHistory(history.length)}>
+            <button type="button" className="mt-2 min-h-11 rounded-lg border border-amber-400/60 bg-amber-500/20 px-4 py-2 font-bold text-amber-100" onClick={() => void loadHistory(failedHistoryOffset.current)}>
               {language === 'en' ? 'Try again' : 'Повторить'}
             </button>
           </div>
@@ -162,7 +182,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
           const expanded = expandedId === `admin:${m.id}`;
           return (
             <article key={m.id} className={`territory-mail__letter rounded-lg border ${received ? 'border-white/10 bg-black/20' : 'border-sky-400/30 bg-sky-500/5'}`}>
-              <button type="button" className="flex w-full items-center gap-2 px-2 py-1.5 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `admin:${m.id}`)}>
+              <button type="button" className="flex min-h-11 w-full items-center gap-2 px-2 py-2 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `admin:${m.id}`)}>
                 <img src={import.meta.env.BASE_URL + 'ic-mail.webp'} alt="" className="h-5 w-5 shrink-0 object-contain" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[11px] font-bold text-white">{m.subject}</span>
@@ -200,7 +220,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
                   <button
                     onClick={() => void claimAdmin(m.id)}
                     disabled={claiming === m.id}
-                    className="shrink-0 h-6 px-2 rounded text-[10px] font-bold bg-sky-400 text-black disabled:opacity-50 transition-colors"
+                    className="shrink-0 min-h-11 px-3 rounded-lg text-[11px] font-bold bg-sky-400 text-black disabled:opacity-50 transition-colors"
                   >
                     {claiming === m.id ? '...' : t('claimReward')}
                   </button>
@@ -215,7 +235,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
           const expanded = expandedId === `game:${l.id}`;
           return (
             <article key={l.id} className={`territory-mail__letter rounded-lg border ${claimed ? 'border-white/10 bg-black/20' : 'border-amber-500/25 bg-black/30'}`}>
-              <button type="button" className="flex w-full items-center gap-2 px-2 py-1.5 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `game:${l.id}`)}>
+              <button type="button" className="flex min-h-11 w-full items-center gap-2 px-2 py-2 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `game:${l.id}`)}>
                 <img src={import.meta.env.BASE_URL + 'ic-mail.webp'} alt="" className="h-5 w-5 shrink-0 object-contain" />
                 <span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-white">{l.title}</span><span className="block truncate text-[9px] text-slate-400">{l.from}</span></span>
                 {expanded ? <ChevronDown className="h-3.5 w-3.5 text-amber-200" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-400" />}
@@ -227,7 +247,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
                 <button
                   onClick={() => claim(l.id)}
                   disabled={claimed}
-                  className="shrink-0 h-6 px-2 rounded text-[10px] font-bold bg-amber-500 text-black disabled:bg-white/10 disabled:text-gray-400 transition-colors"
+                  className="shrink-0 min-h-11 px-3 rounded-lg text-[11px] font-bold bg-amber-500 text-black disabled:bg-white/10 disabled:text-gray-400 transition-colors"
                 >
                   {claimed ? t('claimed') : t('claim')}
                 </button>
@@ -237,7 +257,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
           );
         })}
         {received && historyHasMore && !historyLoading && !historyError && (
-          <button type="button" className="btn-ghost w-full text-xs" onClick={() => void loadHistory(history.length)}>
+          <button type="button" className="btn-ghost min-h-11 w-full text-xs" onClick={() => void loadHistory(history.length)}>
             {language === 'en' ? 'Show more letters' : 'Показать ещё письма'}
           </button>
         )}
@@ -255,7 +275,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
 
 function Toggle({ label, hint, on, onChange }: { label: string; hint: string; on: boolean; onChange: () => void }) {
   return (
-    <button onClick={onChange} className="w-full flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-left">
+    <button type="button" role="switch" aria-checked={on} onClick={onChange} className="territory-settings-toggle w-full min-h-11 flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-left">
       <span className="flex-1 min-w-0">
         <span className="block text-sm font-semibold text-white">{label}</span>
         <span className="block text-[11px] text-gray-400">{hint}</span>
@@ -277,6 +297,12 @@ export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMot
 }) {
   const { t, language } = useLanguage();
   const { settings } = useStore(useGame);
+  const [vibrationEnabled, setVibrationEnabled] = useState(hapticsEnabled);
+  const toggleVibration = () => {
+    const next = !vibrationEnabled;
+    setHapticsEnabled(next);
+    setVibrationEnabled(next);
+  };
   const [localBackground, setLocalBackground] = useState<CityBackground>(initialCityBackground);
   const selectedBackground = cityBackground ?? localBackground;
   const update = (patch: Partial<typeof settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
@@ -304,9 +330,17 @@ export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMot
 
   return (
     <Modal title={t('settings')} icon="/ic-settings.webp" onClose={onClose}>
-      <div className="space-y-2">
+      <div className="territory-settings space-y-3">
+        <section className="territory-settings-group" aria-label={language === 'en' ? 'Combat controls' : 'Управление боем'}>
+          <h3 className="territory-settings-heading"><img src={import.meta.env.BASE_URL + 'ic-arena-viking.webp'} alt="" />{language === 'en' ? 'Combat controls' : 'Управление боем'}</h3>
         <Toggle label={t('battleSpeed')} hint={t('speedHint')} on={settings.speed === 2} onChange={() => update({ speed: settings.speed === 2 ? 1 : 2 })} />
         <Toggle label={t('autoBattle')} hint={t('autoBattleHint')} on={settings.auto} onChange={() => update({ auto: !settings.auto })} />
+        </section>
+        <section className="territory-settings-group" aria-label={language === 'en' ? 'Device comfort and scenery' : 'Комфорт и оформление'}>
+          <h3 className="territory-settings-heading"><img src={import.meta.env.BASE_URL + 'ic-settings.webp'} alt="" />{language === 'en' ? 'Comfort and scenery' : 'Комфорт и оформление'}</h3>
+        <Toggle label={language === 'en' ? 'Telegram vibration' : 'Вибрация Telegram'}
+          hint={language === 'en' ? 'Combat hits, crafting feedback and prize wheel ticks. Saved on this device.' : 'Удары, кузница и колесо удачи. Настройка сохраняется на этом устройстве.'}
+          on={vibrationEnabled} onChange={toggleVibration} />
         <Toggle label={language === 'en' ? 'Living city' : 'Живой город'} hint={language === 'en' ? 'Animated ships, waterfalls and fire. Disable to save battery.' : 'Движение кораблей, водопадов и огня. Можно отключить для экономии заряда.'} on={cityMotion} onChange={onToggleCityMotion} />
         <div className="rounded-xl border border-amber-500/25 bg-black/30 p-2.5">
           <p className="mb-1 text-sm font-bold text-amber-100">{language === 'en' ? 'City background' : 'Фон города'}</p>
@@ -340,6 +374,8 @@ export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMot
             })}
           </div>
         </div>
+        </section>
+        <p className="territory-settings-note">{language === 'en' ? 'Combat options use your existing game save. Vibration, city motion and scenery are local to this device.' : 'Настройки боя сохраняются с игрой. Вибрация, движение и фон города — только на этом устройстве.'}</p>
         <div onClick={secretTap} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm select-none">
           {saveStatus === 'error' ? <CloudOff className="w-4 h-4 text-red-400" /> : <Cloud className={`w-4 h-4 ${saveStatus === 'saving' ? 'text-gray-400 animate-pulse' : 'text-emerald-400'}`} />}
           <span className="text-gray-300">

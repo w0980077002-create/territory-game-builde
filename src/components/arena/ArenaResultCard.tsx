@@ -85,7 +85,7 @@ export function ArenaResultCard({
             type="button"
             disabled={busy}
             onClick={onLeave}
-            className="arena-result-leave pointer-events-auto flex h-[30px] min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border px-1.5 text-[11px] font-black text-white transition active:scale-[0.98] disabled:opacity-50"
+            className="arena-result-leave pointer-events-auto flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border px-1.5 text-xs font-black text-white transition active:scale-[0.98] disabled:opacity-50"
           >
             <LogOut aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
             {language === 'en' ? 'Leave arena' : 'Покинуть арену'}

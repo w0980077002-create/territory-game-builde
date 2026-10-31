@@ -133,7 +133,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
   if (loading && !status) return <div role="status" className="rounded-xl border border-amber-500/30 p-4 text-sm text-amber-100">{language==='en'?'Checking the verified profession server…':'Проверяем защищённый сервер профессий…'}</div>;
   if (error || !status?.enabled) return <div role="status" className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
     <ShieldCheck className="h-6 w-6"/><b className="block">{language==='en'?'Crafting is paused safely':'Ремесло безопасно приостановлено'}</b>
-    <p>{error||(language==='en'?'Server release is not enabled yet. Your items, resources and mastery are preserved.':'Серверный этап ещё не включён. Твои вещи, ресурсы и мастерство сохранены.')}</p>
+    <p>{error||(language==='en'?'Crafting is not available right now. Your items and progress are safe.':'Ремесло сейчас недоступно. Все вещи и прогресс сохранены.')}</p>
     <button className="rounded-lg bg-amber-600 px-3 py-2 font-bold" onClick={()=>{void refresh();}}><RefreshCw className="mr-1 inline h-4 w-4"/>{language==='en'?'Check again':'Проверить снова'}</button>
   </div>;
 

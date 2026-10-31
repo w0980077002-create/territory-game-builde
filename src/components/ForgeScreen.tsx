@@ -5,7 +5,7 @@ import { saveCloudSave } from '@/game/cloud';
 import { supabase } from '@/game/supabase';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { rarityColor, rarityGlow } from '@/game/ui';
-import { Hammer, ArrowUp, X, Package, MapPinned, CheckCircle2 } from 'lucide-react';
+import { Hammer, ArrowUp, X, Package, MapPinned, CheckCircle2, Sword } from 'lucide-react';
 import { hapticNotify } from '@/game/telegram';
 import { equipmentArt } from '@/game/art';
 import { ItemArt } from './ui/ItemArt';
@@ -21,7 +21,7 @@ import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
 // A fresh Telegram launch loads the canonical server save before restoring upgrades.
 const unverifiedForgeUsers = new Set<string>();
 
-export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { focusEquipmentId?: string | null; onInventory?: () => void; onMap?: () => void; userId: string }) {
+export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, onProfessions, userId }: { focusEquipmentId?: string | null; onInventory?: () => void; onMap?: () => void; onBattle?: () => void; onProfessions?: () => void; userId: string }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [now, setNow] = useState(() => Date.now());
@@ -61,6 +61,15 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { 
   const selectedCurrent = selected && freshEquipment
     ? { ...selected, equipment: freshEquipment }
     : null;
+  const forgeDialogRef = useRef<HTMLDivElement>(null);
+  const forgeCloseRef = useRef<HTMLButtonElement>(null);
+  const dialogVisible = !!selectedCurrent?.equipment;
+  useEffect(() => {
+    if (!dialogVisible) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    forgeCloseRef.current?.focus({ preventScroll: true });
+    return () => { if (previous?.isConnected) previous.focus({ preventScroll: true }); };
+  }, [dialogVisible]);
 
   const lock = useRef(false);
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -192,9 +201,14 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { 
             {language === 'en' ? 'Gear in workshop' : 'Вещей в кузнице'}: <b>{allEquipment.length}</b>
           </div>
         </div>
-        {(onInventory || onMap) && <div className="mt-2 grid grid-cols-2 gap-2">
+        {(onInventory || onMap || onBattle || onProfessions) && <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4" data-testid="forge-journey-navigation">
           {onInventory && <button type="button" onClick={onInventory} className="rounded-lg border border-violet-400/25 bg-violet-500/15 px-2 py-2 text-xs font-bold text-violet-100"><Package className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Equipment' : 'Инвентарь'}</button>}
-          {onMap && <button type="button" onClick={onMap} className="rounded-lg border border-sky-400/25 bg-sky-500/15 px-2 py-2 text-xs font-bold text-sky-100"><MapPinned className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Gather materials' : 'Добыть ресурсы'}</button>}
+          {onMap && <button type="button" onClick={onMap} className="min-h-11 rounded-lg border border-sky-400/25 bg-sky-500/15 px-1 py-2 text-[11px] font-bold text-sky-100"><MapPinned className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Gather' : 'Добыча'}</button>}
+          {onProfessions && <button type="button" onClick={onProfessions} disabled={upgrading || saveUnverified} className="min-h-11 rounded-lg border border-amber-300/45 bg-amber-900/40 px-1 py-2 text-[11px] font-bold text-amber-100 disabled:opacity-40"><Hammer className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Crafting' : 'Ремесло'}</button>}
+          {onBattle && <button type="button" onClick={onBattle} disabled={upgrading || saveUnverified}
+            className="min-h-11 rounded-lg border border-amber-300/70 bg-gradient-to-b from-amber-500/40 to-amber-900/40 px-1 py-2 text-[11px] font-black text-amber-100 disabled:opacity-40">
+            <Sword className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Adventure' : 'В поход'}
+          </button>}
         </div>}
       </div>
 
@@ -259,12 +273,12 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { 
                   equipment: eq,
                 })}
               >
-                <div className="w-12 h-12 rounded-lg bg-black/30 flex items-center justify-center text-2xl mb-1"
+                <div className="w-20 h-20 rounded-lg bg-black/30 flex items-center justify-center text-2xl mb-1"
                   style={{ boxShadow: rarityGlow(eq.rarity) }}
                 >
-                  <img src={equipmentArt(eq)} alt="" className="w-11 h-11 object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.7)]" />
+                  <img src={equipmentArt(eq)} alt="" className="w-[72px] h-[72px] object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.7)]" />
                 </div>
-                <p className="text-xs font-medium truncate w-full text-center" style={{ color: rarityColor(eq.rarity) }}>
+                <p className="text-sm font-bold break-words w-full text-center" style={{ color: rarityColor(eq.rarity) }}>
                   {localizeText(eq.name, language)}
                 </p>
                 <p className="text-xs text-gray-500">{t('level')} {eq.level}</p>
@@ -287,12 +301,12 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { 
                 style={{ border: `1px solid ${rarityColor(item.rarity)}40` }}
                 onClick={() => setSelected(item)}
               >
-                <div className="w-12 h-12 rounded-lg bg-black/30 flex items-center justify-center text-2xl mb-1"
+                <div className="w-20 h-20 rounded-lg bg-black/30 flex items-center justify-center text-2xl mb-1"
                   style={{ boxShadow: rarityGlow(item.rarity) }}
                 >
-                  <ItemArt item={item} size={44} />
+                  <ItemArt item={item} size={72} />
                 </div>
-                <p className="text-xs font-medium truncate w-full text-center" style={{ color: rarityColor(item.rarity) }}>
+                <p className="text-sm font-bold break-words w-full text-center" style={{ color: rarityColor(item.rarity) }}>
                   {localizeText(item.name, language)}
                 </p>
                 <p className="text-xs text-gray-500">{t('level')} {item.equipment?.level || 1}</p>
@@ -322,9 +336,17 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { 
           onClick={() => { if (!upgrading) setSelected(null); }}
         >
           <div
-            className="forge-upgrade-panel card w-full max-w-sm m-2 animate-slide-up"
+            ref={forgeDialogRef} className="forge-upgrade-panel card w-full max-w-sm m-2 animate-slide-up"
             role="dialog" aria-modal="true" aria-label={localizeText(selectedCurrent.name, language)}
-            onKeyDown={(event) => { if (event.key === 'Escape' && !upgrading) { event.stopPropagation(); setSelected(null); } }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape' && !upgrading) { event.stopPropagation(); setSelected(null); return; }
+              if (event.key !== 'Tab' || !forgeDialogRef.current) return;
+              const buttons = Array.from(forgeDialogRef.current.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+              if (!buttons.length) { event.preventDefault(); return; }
+              const first = buttons[0], last = buttons[buttons.length - 1];
+              if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+              else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+            }}
             style={{ border: `1px solid ${rarityColor(selectedCurrent.rarity)}` }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -336,12 +358,12 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, userId }: { 
                 <ItemArt item={selectedCurrent} size={48} />
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-base" style={{ color: rarityColor(selectedCurrent.rarity) }}>
+                <h3 className="font-bold text-base">
                   {localizeText(selectedCurrent.name, language)}
                 </h3>
                 <p className="text-xs text-gray-400">{t('level')} {selectedCurrent.equipment.level} · {selectedCurrent.rarity}</p>
               </div>
-              <button type="button" aria-label={language === 'en' ? 'Close' : 'Закрыть'} onClick={() => { if (!upgrading) setSelected(null); }} className="text-gray-500 hover:text-white">
+              <button ref={forgeCloseRef} type="button" disabled={upgrading} aria-label={language === 'en' ? 'Close' : 'Закрыть'} onClick={() => { if (!upgrading) setSelected(null); }} className="text-gray-500 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>

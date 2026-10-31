@@ -62,9 +62,10 @@ const AuctionScreen = lazy(() => import('@/components/AuctionScreen').then(m => 
 const FriendsScreen = lazy(() => import('@/components/FriendsScreen').then(m => ({ default: m.FriendsScreen })));
 const MessagesScreen = lazy(() => import('@/components/MessagesScreen').then(m => ({ default: m.MessagesScreen })));
 const EventsScreen = lazy(() => import('@/components/EventsScreen').then(m => ({ default: m.EventsScreen })));
+const HalloweenBossScreen = lazy(() => import('@/components/HalloweenBossScreen').then(m => ({ default: m.HalloweenBossScreen })));
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
-type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages' | 'events';
+type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
 type Screen = NavId | SubScreen;
 
 /** Warm only the navigation chunks people are most likely to open.
@@ -86,6 +87,7 @@ const sectionPreloaders: Partial<Record<Screen, () => Promise<unknown>>> = {
   friends: () => import('@/components/FriendsScreen'),
   messages: () => import('@/components/MessagesScreen'),
   events: () => import('@/components/EventsScreen'),
+  'halloween-boss': () => import('@/components/HalloweenBossScreen'),
 };
 
 function preloadSection(screen: Screen): Promise<unknown> {
@@ -114,6 +116,7 @@ const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> =
   friends: { title: 'Друзья', icon: '/ic-invite.webp' },
   messages: { title: 'Сообщения', icon: '/ic-mail.webp' },
   events: { title: 'События', icon: '/ic-events.webp' },
+  'halloween-boss': { title: 'Хэллоуинский босс', icon: '/ic-events.webp' },
 };
 
 function Splash({ text }: { text: string }) {
@@ -153,8 +156,13 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [screen, setScreen] = useState<Screen>('city');
   const [hallGame, setHallGame] = useState<HallGame>('monopoly');
   const [battleView, setBattleView] = useState<BattleView>('campaign');
+  // Only a deliberate battle → equipment trip preserves the selected classic mode.
+  const [battlePrepReturn, setBattlePrepReturn] = useState<'campaign' | 'trial' | null>(null);
   const [autoStart, setAutoStart] = useState(false);
   const [inventoryTab, setInventoryTab] = useState<'items' | 'equipment' | 'followers'>('equipment');
+  useEffect(() => {
+    if (screen !== 'battle' && screen !== 'inventory') setBattlePrepReturn(null);
+  }, [screen]);
   const [shopTab, setShopTab] = useState<'potions' | 'equipment'>('potions');
   const [heroTrainingOpen, setHeroTrainingOpen] = useState(false);
   const [forgeFocusId, setForgeFocusId] = useState<string | null>(null);
@@ -422,7 +430,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           <h1 className="viking-title min-w-0 flex-1 text-sm leading-tight">
             {screen === 'forge' ? (
               <WoodenPlaque>{translate('forge')}</WoodenPlaque>
-            ) : translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction', friends: 'friends', messages: 'messages', events: 'events' } as Record<string, string>)[screen] ?? sub.title)}
+            ) : screen === 'halloween-boss' ? (language === 'en' ? 'Halloween boss' : 'Хэллоуинский босс') : translate(({ shop: 'shop', forge: 'forge', arena: 'arena', leaderboard: 'leaderboard', quests: 'quests', professions: 'professions', auction: 'auction', friends: 'friends', messages: 'messages', events: 'events' } as Record<string, string>)[screen] ?? sub.title)}
           </h1>
         </header>
       )}
@@ -461,13 +469,31 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             onAutoStartHandled={() => setAutoStart(false)}
             onShop={() => { setShopTab('potions'); setScreen('shop'); }}
             onQuests={() => setScreen('quests')}
+            onEquipment={() => {
+              setBattlePrepReturn(battleView === 'trial' ? 'trial' : 'campaign');
+              setInventoryTab('equipment');
+              setScreen('inventory');
+            }}
             onActiveChange={setBattleLocked}
           />
         )}
         {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} userId={user.id}
+          returnBattleView={battlePrepReturn}
           onForge={openForge} onProfessions={() => setScreen('professions')} onMap={() => setScreen('map')}
-          onBattle={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }} />}
-        {screen === 'hero' && <ProfileScreen key={heroTrainingOpen ? 'runes' : 'hero'} user={user} initialTrainingOpen={heroTrainingOpen} />}
+           onHero={() => { setHeroTrainingOpen(false); setScreen('hero'); }}
+          onBattle={() => {
+            setBattleView(battlePrepReturn ?? 'campaign');
+            setBattlePrepReturn(null);
+            setAutoStart(false);
+            setScreen('battle');
+          }}
+          onArena={() => setScreen('arena')} />}
+        {screen === 'hero' && <ProfileScreen key={heroTrainingOpen ? 'runes' : 'hero'} user={user} initialTrainingOpen={heroTrainingOpen}
+          onEquipment={() => { setInventoryTab('equipment'); setScreen('inventory'); }}
+          onAdventure={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }}
+          onForge={(equipmentId) => openForge(equipmentId)}
+          onQuests={() => setScreen('quests')}
+           onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }} />}
         {screen === 'map' && <MapScreen
           attentionPlaces={[
             ...(mapForgeReady ? ['forge' as const] : []),
@@ -488,10 +514,12 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         />}
         {screen === 'shop' && <ShopScreen key={shopTab} initialTab={shopTab} onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} />}
         {screen === 'forge' && <ForgeScreen focusEquipmentId={forgeFocusId} userId={user.id}
-          onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')} />}
-        {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => { setLeaderboardInitialTab('rating'); setScreen('leaderboard'); }} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
-        {screen === 'leaderboard' && <LeaderboardScreen key={leaderboardInitialTab} user={user} initialTab={leaderboardInitialTab} />}
-        {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} onNavigate={(target) => {
+          onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')}
+          onProfessions={() => setScreen('professions')}
+          onBattle={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }} />}
+        {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => { setLeaderboardInitialTab('rating'); setScreen('leaderboard'); }} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
+        {screen === 'leaderboard' && <LeaderboardScreen key={leaderboardInitialTab} user={user} initialTab={leaderboardInitialTab} onArena={() => setScreen('arena')} onEvents={() => setScreen('events')} onMessages={() => setScreen('messages')} />}
+        {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} onSocialNavigate={setScreen} onMail={() => setScreen('messages')} onDaily={() => setEventDailyOpen(true)} onNavigate={(target) => {
           if (target === 'inventory') setInventoryTab('equipment');
           if (target === 'shop') setShopTab('equipment');
           if (target === 'battle') { setBattleView('campaign'); setAutoStart(false); }
@@ -509,12 +537,13 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           if (target === 'forge') openForge();
           else if (target === 'inventory') { setInventoryTab(tab ?? 'equipment'); setScreen('inventory'); }
           else setScreen(target);
-        }} /> : <ProfessionsScreen />)}
+        }} /> : <ProfessionsScreen onMap={() => setScreen('map')} onInventory={() => { setInventoryTab('items'); setScreen('inventory'); }} onForge={() => openForge()} />)}
         {screen === 'auction' && <AuctionScreen />}
-        {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} />}
-        {screen === 'messages' && <MessagesScreen notify={notify} />}
+        {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} onNavigate={setScreen} />}
+        {screen === 'messages' && <MessagesScreen notify={notify} onQuests={() => setScreen('quests')} onDaily={() => setEventDailyOpen(true)} />}
         {screen === 'events' && <EventsScreen onNavigate={setScreen} onDaily={() => setEventDailyOpen(true)} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} gatherReady={gatherReady} />}
-        {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} />}
+        {screen === 'halloween-boss' && <HalloweenBossScreen />}
+        {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} onNavigate={setScreen} />}
         </Suspense>
         </SectionErrorBoundary>
       </main>
@@ -556,7 +585,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
                 aria-label={t.id === 'map' && gatherReady ? `${tNav(translate, t.label)} — ${language === 'en' ? 'resources ready' : 'ресурсы готовы'}` : tNav(translate, t.label)}
                 className={`nav-btn relative disabled:opacity-40 disabled:cursor-not-allowed ${
                   center
-                    ? `-mt-3 h-[70px] border-sky-300/60 bg-gradient-to-b from-sky-600/60 to-[#0d1a33] shadow-[0_0_14px_rgba(56,189,248,0.35)] ${active ? 'ring-2 ring-sky-300/70' : ''}`
+                    ? `-mt-3 h-[70px] ${active ? 'border-sky-300/75 bg-gradient-to-b from-sky-600/60 to-[#0d1a33] ring-2 ring-sky-300/70 shadow-[0_0_14px_rgba(56,189,248,0.35)]' : 'border-amber-700/40 bg-gradient-to-b from-[#644126] to-[#312116] shadow-[inset_0_1px_0_rgba(255,222,157,0.25)]'}`
                     : active
                       ? 'border-amber-400/60 bg-gradient-to-b from-amber-500/25 to-amber-900/20'
                       : 'border-white/5 bg-white/[0.03]'
@@ -573,7 +602,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
                     <BellRing className="w-2.5 h-2.5 text-white" />
                   </span>
                 )}
-                <span className={`territory-nav-label text-[9px] tracking-tight font-bold max-w-full ${active || center ? 'text-white' : 'text-gray-400'}`}>{tNav(translate, t.label)}</span>
+                <span className={`territory-nav-label text-[9px] tracking-tight font-bold max-w-full ${active ? 'text-white' : 'text-amber-100/75'}`}>{tNav(translate, t.label)}</span>
               </button>
             );
           })}

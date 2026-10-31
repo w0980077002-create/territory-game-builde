@@ -73,24 +73,29 @@ assert.equal(followers.selectFollower(starter, 'follower_6')?.activeFollowerId, 
 assert.equal(followers.AWAKENING_STONE_ITEM.qty, 0, 'the stone is visible but never gifted on install');
 assert.equal(followers.AWAKENING_STONE_ITEM.type, 'material');
 assert.equal(followers.MAX_BATTLE_COW_LEVEL, 100);
-assert.equal(followers.cowStoneChapterBossReward(1, 'ch1_boss', true), 0, 'early bosses cannot mint the rare item');
-assert.equal(followers.cowStoneChapterBossReward(5, 'ch5_boss', true), 1, 'fifth chapter boss grants a stone');
-assert.equal(followers.cowStoneChapterBossReward(10, 'ch10_boss', true), 1, 'tenth chapter boss grants a stone');
-assert.equal(followers.cowStoneChapterBossReward(5, 'ch4_boss', true), 0, 'wrong boss identity never grants a stone');
-assert.equal(followers.cowStoneChapterBossReward(5, 'ch5_boss', false), 0, 'regular fights do not grant stone');
-assert.equal(followers.cowStoneTrialReward(9), 0);
-assert.equal(followers.cowStoneTrialReward(10), 1);
-assert.equal(followers.cowStoneTrialReward(20), 1);
-assert.equal(followers.cowStoneTrialReward(NaN), 0);
+// Product owner explicitly froze awakening stone sources. No PvE battle should
+// mint this rare item, including milestones that previously issued one.
+for (const chapter of [1, 5, 10, 20, 100]) {
+  assert.equal(followers.cowStoneChapterBossReward(chapter, `ch${chapter}_boss`, true), 0);
+}
+for (const floor of [1, 9, 10, 20, 100]) {
+  assert.equal(followers.cowStoneTrialReward(floor), 0);
+}
 const stoneBlank = { ...starter, inventory: [{ id:'keep', type:'material', qty:4 }] };
-const stoneClaim = followers.awardCowAwakeningStone(stoneBlank, 1);
-assert.equal(followers.cowStonesOwned(stoneClaim), 1, 'one stone appears only after boss milestone');
-assert.equal(followers.cowStonesOwned(stoneBlank), 0, 'existing save unchanged');
-assert.equal(stoneClaim.inventory.find((item) => item.id === 'keep').qty, 4);
-assert.equal(followers.awardCowAwakeningStone(stoneClaim, 0), stoneClaim, 'never award zero');
-const stoneStack = followers.awardCowAwakeningStone(stoneClaim, 1);
-assert.equal(followers.cowStonesOwned(stoneStack), 2, 'awards stack on existing stone batch');
-assert.equal(stoneStack.inventory.filter((i)=>i.id===followers.AWAKENING_STONE_ID).length,1);
+assert.equal(followers.awardCowAwakeningStone(stoneBlank, 1), stoneBlank, 'client cannot mint an awakening stone');
+assert.equal(followers.cowStonesOwned(stoneBlank), 0);
+const savedStone = { ...stoneBlank, inventory: [{ ...followers.AWAKENING_STONE_ITEM, qty: 2 }, ...stoneBlank.inventory] };
+assert.equal(followers.cowStonesOwned(savedStone), 2, 'historical stones stay visible');
+assert.equal(followers.awardCowAwakeningStone(savedStone, 5), savedStone, 'historical stones must not be changed by a grant');
+assert.equal(followers.cowStonesOwned(savedStone), 2);
+const actionSource = readFileSync(new URL('../src/game/actions.ts', import.meta.url), 'utf8');
+const progressionSource = readFileSync(new URL('../src/game/progression.ts', import.meta.url), 'utf8');
+const pveSource = readFileSync(new URL('../src/components/pve/PveFight.tsx', import.meta.url), 'utf8');
+const campSource = readFileSync(new URL('../src/components/FollowersPanel.tsx', import.meta.url), 'utf8');
+assert(!actionSource.includes('awardCowAwakeningStone('), 'campaign must not award stones');
+assert(!progressionSource.includes('awardCowAwakeningStone('), 'trials must not award stones');
+assert(!pveSource.includes('awakeningStones'), 'victory must not advertise unavailable drops');
+assert(campSource.includes('!isCow &&'), 'cow awakening must remain disabled in live UI');
 
 const oldCow = { ...roster.find((f) => f.id === 'follower_6'), level: 59, attack: 65 };
 const existingCow = {
@@ -103,16 +108,12 @@ const existingCow = {
 assert.equal(followers.trainFollower(existingCow, 'follower_6'), null, 'without stones cannot spend gold for Battle Cow');
 const withStone = { ...existingCow, inventory: existingCow.inventory.map((x) =>
   x.id === followers.AWAKENING_STONE_ID ? { ...x, qty: 1 } : x) };
-const cowLevelUp = followers.trainFollower(withStone, 'follower_6');
-assert(cowLevelUp, 'an owned awakening stone raises Battle Cow level even when hero is 59');
-assert.equal(cowLevelUp.followers.find((f) => f.id === 'follower_6').level, 60);
-assert.equal(cowLevelUp.followers.find((f) => f.id === 'follower_6').attack, 66);
-assert.equal(cowLevelUp.followers.find((f) => f.id === 'follower_1').level, roster[0].level);
-assert.deepEqual(cowLevelUp.player, withStone.player, 'no gold, gems or red diamonds are spent');
-assert.equal(cowLevelUp.forgeMaterials, withStone.forgeMaterials);
-assert.equal(cowLevelUp.inventory.find((x) => x.id === 'legacy-material').qty, 9);
-assert.equal(followers.cowStonesOwned(cowLevelUp), 0, 'one stone consumed exactly once');
-assert.equal(followers.trainFollower(cowLevelUp, 'follower_6'), null, 'cannot reuse consumed stone');
+const cowBefore = structuredClone(withStone);
+assert.equal(followers.trainFollower(withStone, 'follower_6'), null, 'awakening paused even when historical stones exist');
+assert.equal(JSON.stringify(withStone), JSON.stringify(cowBefore), 'no stone, level, or currency silently changed');
+assert.equal(followers.cowStonesOwned(withStone), 1, 'old saved stone remains available later');
+assert.equal(withStone.followers.find(f => f.id === 'follower_6').level, 59, 'old companion level remains unchanged');
+
 const cowMaxed = { ...withStone, followers: withStone.followers.map((x) =>
   x.id === 'follower_6' ? { ...x, level: 100 } : x) };
 assert.equal(followers.trainFollower(cowMaxed, 'follower_6'), null, 'never overlevel the cow');

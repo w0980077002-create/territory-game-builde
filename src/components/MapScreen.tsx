@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { Lock, Sparkles, Crown, Check, BellRing } from 'lucide-react';
+import { Lock, Sparkles, Crown, Check, BellRing, ChevronRight, RefreshCw, Hammer, Package } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { supabase } from '@/game/supabase';
@@ -11,6 +11,7 @@ import type { InventoryItem } from '@/game/types';
 import { RESOURCE_DEFINITIONS, type ResourceId } from '@/game/professions';
 import { resourceArt } from '@/game/art';
 import { WorldMapCanvas, type WorldMapPlace, type WorldMapRoute } from '@/components/WorldMapCanvas';
+import './mapExpedition.css';
 
 type GatherStatus = {
   active: { resource_id: string; finishes_at: string } | null;
@@ -109,6 +110,8 @@ export function MapScreen({ onNavigate, onTrial, onCave, onCompanions, onRunes, 
 }) {
   const [selected, setSelected] = useState<LocationId | null>(null);
   const [notice, setNotice] = useState('');
+  const [gatherError, setGatherError] = useState(false);
+  const [claimedResource, setClaimedResource] = useState<ResourceId | null>(null);
   const { t, language } = useLanguage();
   const [gather, setGather] = useState<GatherStatus | null>(null);
   const [gatherBusy, setGatherBusy] = useState(false);
@@ -120,6 +123,7 @@ export function MapScreen({ onNavigate, onTrial, onCave, onCompanions, onRunes, 
     if (error || !data || typeof data !== 'object') throw new Error('server_unavailable');
     const status = data as GatherStatus;
     setGather(status);
+    setGatherError(false);
     setServerOffset(Date.parse(status.server_now) - Date.now());
     setClock(Date.now());
     notifyGatherStatusChanged();
@@ -136,8 +140,8 @@ export function MapScreen({ onNavigate, onTrial, onCave, onCompanions, onRunes, 
           setGather(status);
           setServerOffset(Date.parse(status.server_now) - Date.now());
           setClock(Date.now());
-        }
-      } catch { /* Keep resource actions disabled if server is not configured. */ }
+        } else if (!cancelled) setGatherError(true);
+      } catch { if (!cancelled) setGatherError(true); /* Keep resource actions disabled. */ }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -177,9 +181,15 @@ export function MapScreen({ onNavigate, onTrial, onCave, onCompanions, onRunes, 
     ? Math.max(0, Date.parse(gather.active.finishes_at) - (clock + serverOffset))
     : 0;
 
-  const readyRegion = gather?.active && remainingMs === 0
+  const activeResource = gather?.active
+    ? RESOURCE_DEFINITIONS.find((resource) => resource.id === gather.active?.resource_id)
+    : undefined;
+  // The server stores a resource id, not its original map location. Use a valid
+  // destination that offers that resource; never invent an expedition region.
+  const activeRegion = gather?.active
     ? REGIONS.find((region) => region.resources.some((resource) => resource.id === gather.active?.resource_id))
     : undefined;
+  const readyRegion = gather?.active && remainingMs === 0 ? activeRegion : undefined;
 
   const resourceButtonLabel = (id: ResourceId): string => {
     if (!gather) return language === 'en' ? 'Server unavailable' : 'Сервер недоступен';
@@ -192,6 +202,7 @@ export function MapScreen({ onNavigate, onTrial, onCave, onCompanions, onRunes, 
   const gatherResource = async (regionResource: Region['resources'][number]) => {
     if (!gather || gatherBusy) return;
     setGatherBusy(true);
+    setClaimedResource(null);
     try {
       const resource = RESOURCE_DEFINITIONS.find((item) => item.id === regionResource.id);
       if (!resource) return;
@@ -219,6 +230,7 @@ export function MapScreen({ onNavigate, onTrial, onCave, onCompanions, onRunes, 
           description: t('resourceDescription'),
         }];
         useGame.set({ ...current, inventory: refreshed });
+        setClaimedResource(resource.id);
         setNotice(`${t('gathered')}: ${localizeText(resource.name, language)} ×1`);
       }
       await refreshGather();
@@ -264,15 +276,35 @@ export function MapScreen({ onNavigate, onTrial, onCave, onCompanions, onRunes, 
         <img src={`${import.meta.env.BASE_URL}map-chamber.webp`} alt="" className="h-9 w-9 shrink-0 object-contain" />
         <span className="text-[13px] font-black leading-tight">{language === 'en' ? 'Dark Cave' : 'Тёмная пещера'}</span>
       </button>
-      {readyRegion && (
+      {activeRegion && activeResource && gather?.active && (
         <button
           type="button"
-          onClick={() => handleWorldVisit(readyRegion.id)}
-          className="absolute bottom-3 left-3 z-10 flex items-center gap-2 rounded-xl border border-emerald-200/75 bg-emerald-950/85 px-3 py-2 text-left text-xs font-bold text-emerald-100 shadow-xl backdrop-blur-sm"
+          data-testid="map-expedition-status"
+          onClick={() => handleWorldVisit(activeRegion.id)}
+          className={`map-expedition-banner ${readyRegion ? 'map-expedition-banner--ready' : ''}`}
+          aria-label={readyRegion
+            ? (language === 'en' ? 'Resources ready — open collection' : 'Добыча готова — открыть получение')
+            : (language === 'en' ? 'Open active resource expedition' : 'Открыть текущую добычу')}
         >
-          <BellRing className="h-4 w-4 animate-pulse text-emerald-300" />
-          {language === 'en' ? 'Resources ready — claim' : 'Добыча готова — забрать'}
+          <img src={resourceArt(activeResource.id)} alt="" className="map-expedition-banner__art" />
+          <span className="map-expedition-banner__copy">
+            <strong>{readyRegion
+              ? (language === 'en' ? 'READY TO COLLECT' : 'ДОБЫЧА ГОТОВА')
+              : (language === 'en' ? 'EXPEDITION IN PROGRESS' : 'ИДЁТ ДОБЫЧА')}</strong>
+            <small>{localizeText(activeResource.name, language)} · {readyRegion
+              ? (language === 'en' ? 'Collect now' : 'Забрать сейчас')
+              : `${language === 'en' ? 'Ready at' : 'Готово в'} ${new Date(gather.active.finishes_at).toLocaleTimeString(language === 'en' ? 'en-US' : 'ru-RU', { hour: '2-digit', minute: '2-digit' })}`}</small>
+          </span>
+          {readyRegion ? <BellRing className="map-expedition-banner__arrow" aria-hidden="true" /> : <ChevronRight className="map-expedition-banner__arrow" aria-hidden="true" />}
         </button>
+      )}
+      {gatherError && (
+        <div className="map-expedition-error" role="alert">
+          <span>{language === 'en' ? 'Resource status unavailable. No action was sent.' : 'Статус добычи недоступен. Действие не отправлено.'}</span>
+          <button type="button" onClick={() => void refreshGather().catch(() => setGatherError(true))}>
+            <RefreshCw size={15} aria-hidden="true" />{language === 'en' ? 'Retry' : 'Повторить'}
+          </button>
+        </div>
       )}
 
       {/* Region detail modal */}
@@ -280,7 +312,46 @@ export function MapScreen({ onNavigate, onTrial, onCave, onCompanions, onRunes, 
         const r = REGIONS.find((reg) => reg.id === selected)!;
         return (
           <Modal title={language === 'en' ? ({ forest: t('gatherForest'), mountain: t('gatherMines'), herbs: t('gatherHerbs'), hunting: t('gatherHunting'), rare: t('gatherCaves') } as Record<string, string>)[r.id] : r.name} icon={r.icon} onClose={() => setSelected(null)}>
-            <div className="space-y-4">
+            <div className="space-y-4" data-testid="map-resource-details">
+              {gather?.active && activeResource && (
+                <section className="map-expedition-current" role="status">
+                  <img src={resourceArt(activeResource.id)} alt="" />
+                  <div>
+                    <strong>{remainingMs === 0
+                      ? (language === 'en' ? 'Expedition complete' : 'Добыча завершена')
+                      : (language === 'en' ? 'Your expedition' : 'Твоя добыча')}</strong>
+                    <p>{localizeText(activeResource.name, language)} · {remainingMs === 0
+                      ? (language === 'en' ? 'Ready for collection' : 'Можно забирать')
+                      : timeRemaining(remainingMs)}</p>
+                    {activeRegion && activeRegion.id !== r.id && (
+                      <button type="button" onClick={() => setSelected(activeRegion.id)}>
+                        {language === 'en' ? 'Go to resource' : 'Перейти к ресурсу'} <ChevronRight size={15} aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                </section>
+              )}
+              {claimedResource && (
+                <section className="map-expedition-reward" data-testid="map-expedition-reward" role="status">
+                  <img src={resourceArt(claimedResource)} alt="" />
+                  <div className="map-expedition-reward__copy">
+                    <strong>{language === 'en' ? 'RESOURCE COLLECTED' : 'РЕСУРС ПОЛУЧЕН'}</strong>
+                    <p>{language === 'en' ? 'Server-confirmed collection. Continue crafting or inspect your inventory.' : 'Получение подтверждено сервером. Продолжай в кузнице или проверь склад.'}</p>
+                  </div>
+                  <div className="map-expedition-reward__actions">
+                    <button type="button" onClick={() => { setSelected(null); onNavigate('inventory'); }}><Package size={17} aria-hidden="true" />{language === 'en' ? 'Storage' : 'Склад'}</button>
+                    <button type="button" onClick={() => { setSelected(null); onNavigate('forge'); }}><Hammer size={17} aria-hidden="true" />{language === 'en' ? 'Forge' : 'Кузница'}</button>
+                  </div>
+                </section>
+              )}
+              {gatherError && (
+                <div className="map-expedition-modal-error" role="alert">
+                  {language === 'en' ? 'Cannot check resources right now.' : 'Сейчас не удаётся проверить ресурсы.'}
+                  <button type="button" onClick={() => void refreshGather().catch(() => setGatherError(true))}>
+                    <RefreshCw size={15} aria-hidden="true" />{language === 'en' ? 'Retry' : 'Повторить'}
+                  </button>
+                </div>
+              )}
               <div className="rounded-xl overflow-hidden border border-white/10">
                 <img src={r.icon} alt="" className="w-full h-32 object-cover" />
               </div>

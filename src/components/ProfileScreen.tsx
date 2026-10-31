@@ -5,16 +5,17 @@ import { getTelegramInitData } from '@/game/telegram';
 import { linkTelegram, type AuthUser } from '@/game/auth';
 import { useLanguage } from '@/game/i18n';
 import { getComputedStats } from '@/game/engine';
-import { User, Heart, Sword, Shield, Star, Zap, Coins, Gem, Send, Check, Link2, Loader2 } from 'lucide-react';
+import { Heart, Sword, Shield, Star, Send, Check, Link2, Loader2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { APPEARANCE_PRESETS, getPlayableAppearance, getAppearanceIcon } from '@/game/appearance';
+import { APPEARANCE_PRESETS, getPlayableAppearance } from '@/game/appearance';
+import { HeroShowcase } from './HeroShowcase';
 
 const BuildTrainingPanel = lazy(() => import('./builds/BuildTrainingPanel').then(module => ({ default: module.BuildTrainingPanel })));
 const RuneSkillBook = lazy(() => import('./builds/ServerRuneBook').then(module => ({ default: module.ServerRuneBook })));
 // Do not show an unfinished skill book to live players before the verified combat cutover.
 const VERIFIED_RUNE_BOOK = import.meta.env.VITE_TERRITORY_V1_SERVER_COMBAT === 'verified';
 
-export function ProfileScreen({ user, initialTrainingOpen = false }: { user: AuthUser; initialTrainingOpen?: boolean }) {
+export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, onAdventure, onForge, onQuests, onCompanions }: { user: AuthUser; initialTrainingOpen?: boolean; onEquipment: () => void; onAdventure: () => void; onForge: (equipmentId: string) => void; onQuests: () => void; onCompanions: () => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const computed = getComputedStats(state);
@@ -43,58 +44,7 @@ export function ProfileScreen({ user, initialTrainingOpen = false }: { user: Aut
 
   return (
     <div className="territory-profile space-y-4 animate-fade-in pb-4">
-      {/* Profile header */}
-      <div className="card relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-900/30 to-transparent" />
-        <div className="relative flex flex-col items-center text-center py-2">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-teal-400 to-teal-700 flex items-center justify-center mb-3">
-            <img src={getAppearanceIcon(state.appearance)} alt="" className="h-full w-full object-contain" />
-          </div>
-          <h2 className="text-xl font-bold text-white">{state.player.name}</h2>
-          <p className="text-sm text-gray-400">{t('levelWord')} {state.player.level}</p>
-          <div className="flex flex-wrap justify-center gap-3 mt-3 text-sm">
-            <span className="flex items-center gap-1 text-amber-400">
-              <Coins className="w-4 h-4" /> {state.player.gold}
-            </span>
-            <span className="flex items-center gap-1 text-cyan-400">
-              <Gem className="w-4 h-4" /> {state.player.gems}
-            </span>
-            <span className="flex items-center gap-1 text-yellow-400">
-              <Zap className="w-4 h-4" /> {state.player.energy}/{state.player.maxEnergy}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Computed stats (with equipment) */}
-      <div className="card">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">{t('withEquipment')}</h3>
-        <div className="grid grid-cols-2 gap-3">
-          <StatBox icon={<Heart className="w-4 h-4 text-red-400" />} label={t('heroHealth')} value={`${computed.maxHp}`} />
-          <StatBox icon={<Sword className="w-4 h-4 text-orange-400" />} label={t('attack')} value={computed.attack} />
-          <StatBox icon={<Shield className="w-4 h-4 text-blue-400" />} label={t('defense')} value={computed.defense} />
-          <StatBox icon={<Star className="w-4 h-4 text-yellow-400" />} label={t('critChance')} value={`${computed.critChance}%`} />
-        </div>
-      </div>
-
-      {/* Battle record */}
-      <div className="card">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">{t('battlePath')}</h3>
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <div>
-            <div className="text-2xl font-bold text-white">{state.totalBattlesWon}</div>
-            <div className="text-xs text-gray-500">{t('wins')}</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-amber-400">{state.totalBossesDefeated}</div>
-            <div className="text-xs text-gray-500">{t('bosses')}</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-teal-400">{state.currentChapter}</div>
-            <div className="text-xs text-gray-500">{t('chapter')}</div>
-          </div>
-        </div>
-      </div>
+      <HeroShowcase state={state} stats={computed} onEquipment={onEquipment} onAdventure={onAdventure} onForge={onForge} onQuests={onQuests} onCompanions={onCompanions} />
       {/* Owner-approved 5×3 skill interface. Visual-only until server battle integration. */}
       {VERIFIED_RUNE_BOOK && <details className="card group" data-testid="profile-rune-skill-book" open={runeBookOpen}
         onToggle={event => setRuneBookOpen(event.currentTarget.open)}>

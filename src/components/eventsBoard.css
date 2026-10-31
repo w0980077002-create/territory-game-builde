@@ -7,8 +7,8 @@
 .territory-events__hero-text { position: relative; min-width: 0; flex: 1; }
 .territory-events__kicker { color: #f8b951; font: 800 9px/1.3 system-ui, sans-serif; letter-spacing: 1.8px; }
 .territory-events__hero h2 { margin: 3px 0 5px; color: #fff2cf; font: 900 clamp(16px, 4.7vw, 23px)/1.04 system-ui, sans-serif; text-shadow: 0 2px 3px #0008; }
-.territory-events__hero p { margin: 0; color: #d2d4dc; font-size: 10px; line-height: 1.35; }
-.territory-events__refresh { position: relative; display: grid; place-items: center; align-self: flex-start; flex: 0 0 29px; width: 29px; height: 29px; border: 1px solid #dec17a60; border-radius: 9px; color: #fcd58a; background: #121a27ad; }
+.territory-events__hero p { margin: 0; color: #d2d4dc; font-size: 12px; line-height: 1.35; }
+.territory-events__refresh { position: relative; display: grid; place-items: center; align-self: flex-start; flex: 0 0 44px; width: 44px; height: 44px; border: 1px solid #dec17a60; border-radius: 9px; color: #fcd58a; background: #121a27ad; }
 .territory-events__refresh:disabled { opacity: .5; }
 .territory-events__summary { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin: 10px 0 11px; }
 .territory-events__summary > div { display: flex; flex-wrap: wrap; align-items: center; align-content: center; gap: 4px 5px; min-height: 54px; padding: 9px; border: 1px solid #d9a65e4d; border-radius: 12px; background: linear-gradient(135deg, #2b2937, #14202a); }
@@ -16,7 +16,7 @@
 .territory-events__summary strong { font-size: clamp(13px, 4vw, 18px); font-weight: 900; color: #fff4d6; font-variant-numeric: tabular-nums; }
 .territory-events__summary span { width: 100%; color: #bfc4d3; font-size: 10px; line-height: 1.1; }
 .territory-events__tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 4px; border-radius: 13px; border: 1px solid #ffde9c42; background: #101725; }
-.territory-events__tabs button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 39px; border: 1px solid transparent; border-radius: 10px; color: #9caabe; font-size: 12px; font-weight: 800; }
+.territory-events__tabs button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; border: 1px solid transparent; border-radius: 10px; color: #9caabe; font-size: 12px; font-weight: 800; }
 .territory-events__tabs button[aria-selected='true'] { color: #201708; border-color: #ffe1a6; background: linear-gradient(#ffe39c, #dfa049); box-shadow: 0 2px 5px #0007; }
 .territory-events__list { display: grid; gap: 8px; margin-top: 10px; }
 .territory-events__journey { padding: 11px 10px 12px; border: 1px solid #d7a15d93; border-radius: 15px; overflow: hidden; background: radial-gradient(ellipse at 80% 0, #6d583a55, transparent 70%), linear-gradient(115deg, #322820, #111e2b); box-shadow: inset 0 1px #fff6d224, 0 4px 12px #0005; }
@@ -25,7 +25,7 @@
 .territory-events__journey-title h3 { margin: 3px 0 0; color: #ffe9c6; font-size: 13px; font-weight: 900; }
 .territory-events__journey-title>b { padding: 5px 8px; border-radius: 8px; border: 1px solid #f6c37575; color: #ffe3aa; background: #46342188; font-size: 12px; font-variant-numeric: tabular-nums; }
 .territory-events__journey-days { display: grid; grid-template-columns: repeat(7, minmax(43px, 1fr)); gap: 5px; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; padding-bottom: 2px; }
-.territory-events__journey-day { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 6px; min-width: 43px; min-height: 79px; padding: 8px 3px 5px; border: 1px solid #8d785e57; border-radius: 10px; background: linear-gradient(#302f35, #1b2735); color: #b6bac7; }
+.territory-events__journey-day { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 6px; min-width: 44px; min-height: 79px; padding: 8px 3px 5px; border: 1px solid #8d785e57; border-radius: 10px; background: linear-gradient(#302f35, #1b2735); color: #b6bac7; }
 .territory-events__journey-day>span { font-size: 8px; font-weight: 900; white-space: nowrap; }
 .territory-events__journey-day strong { display: grid; place-items: center; min-height: 25px; font-size: 20px; font-style: normal; filter: drop-shadow(0 2px 2px #0007); }
 .territory-events__journey-day em { color: #c5a66c; font-size: 7px; font-style: normal; font-weight: 900; white-space: nowrap; }
@@ -41,15 +41,15 @@
 .territory-event__art img { display: block; width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(0 3px 3px #0009); }
 .territory-event__body { min-width: 0; flex: 1; }
 .territory-event__heading { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 5px; }
-.territory-event__heading h3 { flex: 1; min-width: 120px; margin: 0; color: #fff4d9; font-size: 12px; font-weight: 900; line-height: 1.25; }
-.territory-event__status { display: inline-flex; align-items: center; gap: 2px; flex: 0 0 auto; color: #aad6c9; font-size: 8px; font-weight: 900; letter-spacing: .5px; }
+.territory-event__heading h3 { flex: 1; min-width: 120px; margin: 0; color: #fff4d9; font-size: 14px; font-weight: 900; line-height: 1.25; }
+.territory-event__status { display: inline-flex; align-items: center; gap: 2px; flex: 0 0 auto; color: #aad6c9; font-size: 10px; font-weight: 900; letter-spacing: .5px; }
 .territory-event--ready .territory-event__status { color: #ffd37e; }
 .territory-event--unknown .territory-event__status { color: #8495ad; }
-.territory-event p { margin: 4px 0 0; color: #bfc6d3; font-size: 10px; line-height: 1.35; }
-.territory-event__detail { display: block; margin-top: 3px; color: #f7d58f; font-size: 10px; font-weight: 700; }
-.territory-event__action { display: inline-flex; align-items: center; gap: 3px; min-height: 29px; margin-top: 7px; padding: 5px 9px; border-radius: 8px; border: 1px solid #ffc66a70; color: #fff3c8; background: linear-gradient(#9b612a70, #55362465); font-size: 10px; font-weight: 800; touch-action: manipulation; }
+.territory-event p { margin: 4px 0 0; color: #e1e4eb; font-size: 12px; line-height: 1.4; }
+.territory-event__detail { display: block; margin-top: 3px; color: #f7d58f; font-size: 12px; font-weight: 700; }
+.territory-event__action { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; margin-top: 8px; padding: 8px 11px; border-radius: 8px; border: 1px solid #ffc66a70; color: #fff3c8; background: linear-gradient(#9b612a70, #55362465); font-size: 12px; font-weight: 900; touch-action: manipulation; }
 .territory-event__action:active { transform: scale(.98); }
-.territory-events__week-clock { display: flex; gap: 7px; align-items: center; justify-content: center; min-height: 39px; border-radius: 11px; border: 1px solid #6ba9c85c; color: #cfe2e9; background: #1c2c3a; font-size: 11px; }
+.territory-events__week-clock { display: flex; gap: 7px; align-items: center; justify-content: center; min-height: 44px; border-radius: 11px; border: 1px solid #6ba9c85c; color: #cfe2e9; background: #1c2c3a; font-size: 11px; }
 .territory-events__week-clock strong { color: #ffe2a1; font-variant-numeric: tabular-nums; font-size: 13px; }
 .territory-events__note { margin-top: 9px; padding: 9px; border: 1px solid #fbbf2466; border-radius: 9px; color: #ffdda5; background: #4230187a; font-size: 10px; line-height: 1.4; }
 .territory-events__footnote { margin: 13px auto 0; max-width: 310px; color: #8394a6; text-align: center; font-size: 10px; line-height: 1.4; }
@@ -64,4 +64,56 @@
 .territory-events__journey-day--done .territory-events__journey-loot:after{content:'✓';position:absolute;top:1px;right:2px;display:grid;place-items:center;width:15px;height:15px;border:1px solid #e2ffe0;border-radius:50%;color:#173d27;background:#a5edb4;font-size:11px;font-weight:900}
 .territory-events__journey-day{position:relative}
 .territory-events__journey-day>em{position:relative;z-index:2}
-@media(max-width:370px){.territory-events__journey-days{grid-template-columns:repeat(7,minmax(39px,1fr));gap:3px}.territory-events__journey-day{min-width:39px;padding:7px 2px 5px}}
+@media(max-width:370px){.territory-events__journey-days{grid-template-columns:repeat(7,minmax(39px,1fr));gap:3px}.territory-events__journey-day{min-width:44px;padding:7px 2px 5px}}
+
+/* Mobile-first action and focus affordances; cosmetic only, no reward or timer changes. */
+.territory-events__refresh:focus-visible,
+.territory-events__tabs button:focus-visible,
+.territory-events__journey-day:focus-visible,
+.territory-event__action:focus-visible { outline: 3px solid #ffeba8; outline-offset: 2px; }
+.territory-event__action svg { flex-shrink: 0; }
+
+
+/* Real daily progression, not a stack of arbitrary tasks. */
+.territory-events__focus{
+ position:relative;display:grid;grid-template-columns:minmax(98px,35%) minmax(0,1fr);
+ align-items:center;gap:11px;margin:10px 0 13px;padding:12px;
+ border:2px solid #ecc171;border-radius:18px;
+ background:radial-gradient(ellipse at 18% 40%,#ad7b3f75,transparent 54%),linear-gradient(125deg,#694024,#281a19 61%,#182638);
+ box-shadow:inset 0 0 0 2px #4f2915,inset 0 1px #ffe6ae7a,0 6px 16px #0007;
+}
+.territory-events__focus::after{
+ content:'';position:absolute;inset:5px;border:1px solid #ffe1a838;border-radius:13px;
+ pointer-events:none;
+}
+.territory-events__focus-art{
+ min-height:118px;display:grid;place-items:center;overflow:hidden;
+ border:1px solid #ebb56f9c;border-radius:13px;
+ background:radial-gradient(ellipse at 50% 40%,#d7af6c44,#312332 75%);
+ box-shadow:inset 0 1px #ffebb98a;
+}
+.territory-events__focus-art img{
+ width:100%;max-height:124px;aspect-ratio:1/1;object-fit:contain;
+ filter:drop-shadow(0 5px 7px #000b);
+}
+.territory-events__focus-info{position:relative;z-index:1;min-width:0;}
+.territory-events__focus-kicker{display:block;margin-bottom:5px;font-size:10px;font-weight:900;letter-spacing:.7px;color:#ffce75;}
+.territory-events__focus h3{margin:0;color:#fff5d9;font-size:clamp(16px,4.7vw,21px);line-height:1.12;font-weight:900;text-shadow:0 2px 3px #000b;overflow-wrap:anywhere;}
+.territory-events__focus p{margin:7px 0 10px;color:#f1e0ca;font-size:12px;line-height:1.35;}
+.territory-events__focus-action{
+ display:flex;align-items:center;justify-content:space-between;gap:6px;
+ min-height:44px;width:100%;padding:8px 9px;border:2px solid #ffde94;border-radius:10px;
+ color:#402309;background:linear-gradient(#fff0b8,#e6ab54 50%,#bd782f);
+ box-shadow:inset 0 1px #fffef1,0 3px #6a341d;
+ font-size:12px;font-weight:900;text-align:left;touch-action:manipulation;
+}
+.territory-events__focus-action svg{flex-shrink:0;}
+.territory-events__focus-action:focus-visible{outline:3px solid #fff9c0;outline-offset:3px;}
+.territory-events__focus-action:active{transform:translateY(2px);box-shadow:inset 0 1px #fffef1,0 1px #6a341d;}
+@media(max-width:355px){
+ .territory-events__focus{gap:8px;padding:9px;grid-template-columns:minmax(89px,32%) minmax(0,1fr);}
+ .territory-events__focus-art{min-height:109px;}
+ .territory-events__focus-art img{max-height:114px;}
+ .territory-events__focus h3{font-size:16px;}
+}
+@media(prefers-reduced-motion:reduce){.territory-events__focus-action{transition:none;}}

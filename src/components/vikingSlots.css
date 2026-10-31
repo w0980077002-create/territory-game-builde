@@ -737,3 +737,13 @@
 .vslot-help-content table{width:100%;border-collapse:collapse;font-size:12px}
 .vslot-help-content th,.vslot-help-content td{border-bottom:1px solid #a87940;padding:5px 3px;text-align:left}
 .vslot-help-content button{width:100%;min-height:44px;margin-top:16px;background:var(--viking-button-bg);border:1px solid #f6cd6d;border-radius:8px;font-weight:900;color:#321b0a}
+
+/* Live bonus dialog keyboard and Telegram safe-area: never change coin or round state. */
+.vslot-live .vslot-icon-button { flex:0 0 44px;min-width:44px;width:44px;height:44px;min-height:44px; }
+.vslot-adventure-subtle { min-height:44px; }
+.vslot-adventure button:focus-visible { outline:3px solid #fff0ad;outline-offset:2px; }
+.vslot-adventure-subtle:disabled { opacity:.48;cursor:wait; }
+html.territory-ios-webapp .territory-shell > .vslot-adventure-backdrop {
+  position:absolute;inset:0;width:100%;height:100%;min-height:0;
+  padding:max(12px,env(safe-area-inset-top)) 10px max(18px,env(safe-area-inset-bottom));
+}

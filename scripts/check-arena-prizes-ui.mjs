@@ -26,7 +26,15 @@ const styles = readFileSync('src/components/arena/arenaLobby.css', 'utf8');
 assert.match(board, /arena-weekly-prize-button/, 'Small prize button must appear in the Arena header');
 assert.match(board, /onClick=\{\(\) => setShowPrizes\(true\)\}/, 'Prize button must open the dialog');
 assert.match(board, /aria-modal="true"/, 'Prize dialog must be accessible');
-assert.match(board, /arenaPrizePreviewForRank\(rank\)/, 'Player position must highlight the appropriate tier');
+assert.doesNotMatch(board, /arenaPrizePreviewForRank\(rank\)|arena-prizes-tier-mine|arena-prizes-you/,
+  'A display-only rank must never highlight a server-awarded prize tier');
+assert.match(board, /Место в таблице не является подтверждённым призовым местом/,
+  'The Arena position must not be mistaken for a payout rank');
+assert.match(board, /Награды начисляются после завершения недели по подтверждённым сервером результатам/,
+  'Prize eligibility must be explained without exposing virtual opponent labels');
+assert.match(board, /arena-weekly-retry/, 'Failed weekly board needs an immediate retry action');
+assert.match(board, /setRetryKey\(\(value\) => value \+ 1\)/,
+  'Retry must trigger a new verified server read');
 assert.match(board, /Еженедельные награды/, 'Show the real weekly rewards label');
 assert.doesNotMatch(board, /Боты призы|игровой бот|Arena AI opponent|Bot opponents|arena-weekly-npc|arena-weekly-winner-npc|arena-prizes-disclaimer/i,
   'No virtual-contender labels or the removed disclaimer may be visible in the Arena UI');

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/game/i18n';
 import type { AuthUser } from '@/game/auth';
 import {
@@ -6,6 +6,7 @@ import {
   LoaderCircle, LockKeyhole, RefreshCw, Send, ShieldCheck, Sparkles, Trophy, UsersRound
 } from 'lucide-react';
 import { Currency } from './ui/Currency';
+import { SocialTrail, type SocialDestination } from './social/SocialTrail';
 import { prepareRichShareMessage } from '@/game/dailyShare';
 import { captureGameEvent } from '@/game/analytics';
 import { getTelegramWebApp } from '@/game/telegram';
@@ -21,7 +22,7 @@ const milestones = [
   { count: 25, ru: 'Посол TERRITORY', en: 'TERRITORY Ambassador', ruGift: 'Знамя, аура и зал славы — позже', enGift: 'Banner, aura and hall of fame — later' },
 ];
 
-export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => void }) {
+export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; onHero: () => void; onNavigate: (destination: SocialDestination) => void }) {
   const { language } = useLanguage();
   const en = language === 'en';
   const isLinked = user.telegramId !== null;
@@ -32,6 +33,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
   const [loading, setLoading] = useState(isLinked);
   const [botLoading, setBotLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const claimLock = useRef(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [friends, setFriends] = useState<ReferralFriend[]>([]);
@@ -51,6 +53,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
       setStatus(data);
       setError('');
     } catch (err) {
+      setStatus(null); // Do not offer a claim from an unverified old snapshot.
       console.error('Referral status unavailable:', err);
       setError(en ? 'Unable to load referrals. Try again.' : 'Не удалось загрузить друзей. Попробуй ещё раз.');
     } finally {
@@ -62,7 +65,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
     if (!isLinked) { setFriends([]); setFriendsLoading(false); return; }
     setFriendsLoading(true);
     try { setFriends(await getReferralFriends()); setFriendsError(false); }
-    catch { setFriendsError(true); }
+    catch { setFriends([]); setFriendsError(true); }
     finally { setFriendsLoading(false); }
   }, [isLinked]);
 
@@ -73,6 +76,28 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
   }, []);
 
   useEffect(() => { void load(); void loadBot(); void loadFriends(); }, [load, loadBot, loadFriends]);
+
+  // Telegram share can background the WebView. Recheck real referral counts
+  // on return instead of requiring the player to restart the game.
+  const lastResumeCheck = useRef(Date.now());
+  useEffect(() => {
+    if (!isLinked) return;
+    const refreshOnReturn = () => {
+      if (document.visibilityState !== 'visible' || claimLock.current) return;
+      const now = Date.now();
+      if (now - lastResumeCheck.current < 30_000) return;
+      lastResumeCheck.current = now;
+      void Promise.all([load(), loadFriends()]);
+    };
+    document.addEventListener('visibilitychange', refreshOnReturn);
+    window.addEventListener('focus', refreshOnReturn);
+    window.addEventListener('online', refreshOnReturn);
+    return () => {
+      document.removeEventListener('visibilitychange', refreshOnReturn);
+      window.removeEventListener('focus', refreshOnReturn);
+      window.removeEventListener('online', refreshOnReturn);
+    };
+  }, [isLinked, load, loadFriends]);
   useEffect(()=>{
     const tg=getTelegramWebApp();
     if(!isLinked||!tg?.shareMessage||(tg.isVersionAtLeast&&!tg.isVersionAtLeast('8.0')))return;
@@ -98,7 +123,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
   };
 
   const share = () => {
-    if(preparing)return;
+    // A validated referral link works even while the richer card is preparing.
     if(preparedId || url) captureGameEvent('territory_referral_share_click');
     const tg=getTelegramWebApp();
     if(preparedId&&tg?.shareMessage){
@@ -110,7 +135,8 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
   };
 
   const claim = async () => {
-    if (busy) return;
+    if (claimLock.current) return;
+    claimLock.current = true;
     setBusy(true); setError(''); setMessage('');
     try {
       const reward = await redeemReferrals(user.id);
@@ -118,18 +144,38 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
       setMessage(en
         ? 'Rewards claimed! +' + reward.gold + ' gold, +' + reward.gems + ' gems, +' + reward.stones + ' stones, +' + reward.materials + ' forge materials, +' + reward.red_gems + ' red gems.'
         : 'Награды получены! +' + reward.gold + ' золота, +' + reward.gems + ' алмазов, +' + reward.stones + ' камней, +' + reward.materials + ' материалов, +' + reward.red_gems + ' красных алмазов.');
+      setStatus(null); // A receipt is authoritative; the next claim needs a fresh status.
       await Promise.all([load(), loadFriends()]);
     } catch (err) {
       setError(err instanceof Error && err.message.includes('referral_nothing_to_claim')
         ? (en ? 'No rewards to claim yet.' : 'Пока нечего забирать.')
         : (en ? 'Server could not confirm rewards. Restart the game before retrying.' : 'Сервер не подтвердил награды. Перезапусти игру перед повтором.'));
-    } finally { setBusy(false); }
+    } finally { claimLock.current = false; setBusy(false); }
   };
 
   const readyToClaim = !!status && (status.pending_claims > 0 || status.welcome_pending || status.red_pending > 0);
 
   return (
     <div className="viking-screen viking-screen--friends space-y-2.5 animate-fade-in pb-5 text-white" data-testid="compact-friends-screen">
+      <SocialTrail active="friends" onNavigate={onNavigate}
+        detail={status ? (en ? `${status.qualified} qualified allies` : `Засчитано союзников: ${status.qualified}`) : undefined} />
+      {readyToClaim && <section data-testid="friends-ready-reward" className="rounded-2xl border-2 border-emerald-400/60 bg-gradient-to-br from-[#4d3920] to-[#183026] p-3">
+        <p className="text-sm font-black text-amber-100">{en ? 'Your earned rewards are ready' : 'Твои награды уже готовы'}</p>
+        <button type="button" onClick={() => void claim()} disabled={busy} className="btn-primary mt-2 flex min-h-11 w-full items-center justify-center gap-2 font-black disabled:opacity-50">
+          {busy ? <LoaderCircle size={19} className="animate-spin" /> : <Gift size={19} />}
+          {en ? 'CLAIM REWARDS' : 'ЗАБРАТЬ НАГРАДЫ'}
+        </button>
+      </section>}
+      {!readyToClaim && status && status.registered > status.qualified && <section data-testid="friends-next-progress" className="rounded-2xl border border-amber-400/50 bg-[#432b1d] p-3">
+        <p className="text-sm font-black text-amber-100">{en ? 'Allies on their way' : 'Друзья развивают героев'}</p>
+        <p className="mt-1 text-xs text-amber-100/80">{en
+          ? `${status.registered - status.qualified} invited heroes are progressing toward the verified milestone.`
+          : `Ещё ${status.registered - status.qualified} приглашённых героев идут к подтверждённой цели.`}</p>
+        <button type="button" onClick={() => document.getElementById('referral-friend-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          className="mt-2 min-h-11 w-full rounded-xl border border-amber-300/60 bg-amber-900/50 px-3 py-2 text-sm font-bold text-amber-100">
+          {en ? 'View friend progress' : 'Посмотреть прогресс друзей'}
+        </button>
+      </section>}
       {/* ONE lead message and ONE primary call to action. */}
       <section className="relative overflow-hidden rounded-2xl border border-amber-400/60 bg-gradient-to-br from-[#482333] via-[#2d173b] to-[#14182a] p-3.5 shadow-[0_6px_24px_#0006]">
         <div className="absolute -top-5 -right-5 opacity-10 pointer-events-none"><Crown size={125} /></div>
@@ -177,14 +223,14 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
             <p className="text-sm text-amber-200">{en ? 'Could not load the referral link.' : 'Не удалось получить реферальную ссылку.'}</p>
             <button type="button" className="w-full rounded-xl border border-amber-400/50 bg-amber-900/40 py-3 font-bold flex items-center justify-center gap-2" onClick={() => void load()}><RefreshCw size={17}/>{en ? 'Retry' : 'Повторить'}</button>
           </div>
-        ) : url ? (
+        ) : (url || preparedId) ? (
           <>
-            <button type="button" className="btn-primary w-full py-3.5 text-base font-black flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(245,158,11,.22)]" onClick={share} disabled={preparing}>
+            <button type="button" className="btn-primary w-full py-3.5 text-base font-black flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(245,158,11,.22)]" onClick={share} disabled={!url && preparing}>
               <Send size={20}/>{en ? 'INVITE A FRIEND' : 'ПРИГЛАСИТЬ ДРУГА'}
             </button>
-            <button type="button" onClick={() => void copy()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm font-bold text-gray-200">
+            {url && <button type="button" onClick={() => void copy()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm font-bold text-gray-200">
               <Copy size={16}/>{en ? 'Copy my link' : 'Скопировать мою ссылку'}
-            </button>
+            </button>}
           </>
         ) : (
           <div className="space-y-2">
@@ -194,10 +240,8 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
             {!botLoading && <button type="button" onClick={() => void loadBot()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/40 bg-black/25 py-3 font-bold text-amber-200"><RefreshCw size={17}/>{en ? 'Retry bot link' : 'Обновить ссылку'}</button>}
           </div>
         )}
-        {status && <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-amber-200/90">
+        {status && <div className="flex items-center justify-center text-[11px] text-amber-200/90">
           <span><Crown className="inline mr-1" size={13}/>{status.founder_number ? (en ? 'Founder #' : 'Основатель №') + status.founder_number : (en ? 'Founders season' : 'Сезон основателей')}</span>
-          <span className="text-gray-600">•</span>
-          <span>{en ? 'Spots left' : 'Свободных мест'}: {status.places_left} / 300</span>
         </div>}
       </section>
 
@@ -205,7 +249,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
         <>
           <section className="grid grid-cols-3 gap-2" aria-label={en ? 'Friend statistics' : 'Статистика друзей'}>
             {([
-              [status.registered, en ? 'Пришли' : 'Пришли', UsersRound],
+              [status.registered, en ? 'Joined' : 'Пришли', UsersRound],
               [status.qualified, en ? 'Active' : 'Засчитаны', ShieldCheck],
               [status.sealed_chests, en ? 'Chests' : 'Сундуки', Gift],
             ] as const).map(([value, label, Icon]) => (
@@ -246,7 +290,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
           )}
 
 
-          <section className="rounded-xl border border-violet-400/25 bg-[#19182b] p-3" data-testid="referral-friend-list">
+          <section id="referral-friend-list" className="rounded-xl border border-violet-400/25 bg-[#19182b] p-3" data-testid="referral-friend-list">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-black text-amber-100 flex items-center gap-2">
                 <UsersRound size={17} />{en ? 'My invited friends' : 'Мои друзья'}
@@ -271,9 +315,8 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
               <div className="mt-3 space-y-2">
                 {(showAllFriends ? friends : friends.slice(0,5)).map((friend, index) => {
                   const wins = Math.min(10,friend.wins);
-                  const level = Math.min(5,friend.level);
-                  const progress = friend.qualified ? 100 : Math.min(99,Math.round(
-                    50 * (wins / 10) + 50 * (Math.max(0,level-1) / 4)));
+                  // Do not display or infer a friend's hero level; only battle progress is public.
+                  const progress = friend.qualified ? 100 : Math.min(99,Math.round(100 * wins / 10));
                   return (
                     <div key={friend.joined_at + index} className="rounded-xl border border-white/10 bg-black/25 p-2.5">
                       <div className="flex gap-2 items-center">
@@ -286,7 +329,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
                             {friend.qualified ? <CheckCircle2 size={15} className="text-emerald-400 shrink-0"/> : null}
                           </div>
                           <p className="text-[11px] text-violet-200/80">
-                            {en ? 'Level' : 'Уровень'} {level}/5 · {wins}/10 {en ? 'verified fights' : 'учтённых побед'}
+                            {wins}/10 {en ? 'recorded wins' : 'учтённых побед'}
                           </p>
                         </div>
                         <span className={'text-[10px] font-bold shrink-0 ' + (friend.qualified ? 'text-emerald-300' : 'text-amber-200')}>
@@ -311,10 +354,7 @@ export function FriendsScreen({ user, onHero }: { user: AuthUser; onHero: () => 
             </p>
           </section>
 
-          {readyToClaim && <button type="button" onClick={() => void claim()} disabled={busy} className="btn-primary w-full py-3.5 flex items-center justify-center gap-2 font-black">
-            {busy ? <LoaderCircle size={19} className="animate-spin"/> : <Gift size={19}/>}
-            {en ? 'CLAIM REWARDS' : 'ЗАБРАТЬ НАГРАДЫ'}
-          </button>}
+
         </>
       )}
 

@@ -6,6 +6,8 @@ on:
       - 'src/**'
       - 'scripts/stage1/**'
       - 'scripts/*slots*'
+      - 'scripts/*-browser.py'
+      - 'scripts/build-*-preview.mjs'
       - 'package*.json'
       - '.github/workflows/stage1-browser.yml'
   workflow_dispatch:
@@ -18,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [stage1, slots, adventure]
+        suite: [stage1, slots, adventure, hero, gameplay-ui, workshop-ui, daily-loop]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,12 +41,40 @@ jobs:
         if: matrix.suite == 'slots'
       - run: python scripts/check-slots-browser.py
         if: matrix.suite == 'slots'
+      - run: node scripts/build-profile-preview.mjs
+        if: matrix.suite == 'hero'
+      - run: python scripts/check-profile-browser.py
+        if: matrix.suite == 'hero'
+      - run: node scripts/build-companion-preview.mjs && python scripts/check-companion-browser.py
+        if: matrix.suite == 'hero'
+      - run: python scripts/check-inventory-preparation-browser.py
+        if: matrix.suite == 'hero'
       - run: node scripts/build-adventure-preview.mjs
         if: matrix.suite == 'adventure'
       - run: python scripts/check-adventure-browser.py
         if: matrix.suite == 'adventure'
       - run: python scripts/check-cave-compact-layout.py
         if: matrix.suite == 'adventure'
+      - run: node scripts/build-journey-preview.mjs && python scripts/check-journey-browser.py
+        if: matrix.suite == 'gameplay-ui'
+      - run: node scripts/build-arena-room-preview.mjs && python scripts/check-arena-room-browser.py
+        if: matrix.suite == 'gameplay-ui'
+      - run: node scripts/build-arena-result-preview.mjs && python scripts/check-arena-result-browser.py
+        if: matrix.suite == 'gameplay-ui'
+      - run: node scripts/build-social-quests-preview.mjs && python scripts/check-social-quests-browser.py
+        if: matrix.suite == 'gameplay-ui'
+      - run: node scripts/build-map-expedition-preview.mjs && python scripts/check-map-expedition-browser.py
+        if: matrix.suite == 'gameplay-ui'
+      - run: node scripts/build-runes-preview.mjs && python scripts/check-runes-browser.py
+        if: matrix.suite == 'workshop-ui'
+      - run: node scripts/build-workshop-preview.mjs && python scripts/check-workshop-browser.py
+        if: matrix.suite == 'workshop-ui'
+      - run: node scripts/build-journal-preview.mjs && python scripts/check-journal-browser.py
+        if: matrix.suite == 'workshop-ui'
+      - run: node scripts/build-daily-hero-preview.mjs && python scripts/check-daily-hero-browser.py
+        if: matrix.suite == 'daily-loop'
+      - run: node scripts/build-comfort-preview.mjs && python scripts/check-comfort-browser.py
+        if: matrix.suite == 'daily-loop'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -53,3 +83,10 @@ jobs:
             /tmp/territory-stage1-ui
             /tmp/slots-screenshots
             /tmp/adventure-screenshots
+            /tmp/territory-companion-360.png
+            /tmp/territory-hero-360.png
+            /tmp/territory-profile-360.png
+            /tmp/territory-item-360.png
+            /tmp/territory-city-360.png
+            /tmp/social-quests-screenshots
+            /tmp/comfort-screenshots

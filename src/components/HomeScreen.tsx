@@ -1,3 +1,4 @@
+import './halloweenRaid.css';
 import { useState, type ReactNode } from 'react';
 import { ChevronRight, Repeat, Crown } from 'lucide-react';
 import { useStore } from '@/game/store';
@@ -21,8 +22,9 @@ import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 import { getStarterMilestones } from '@/game/starterJourney';
+import { halloweenBossInSeason } from '@/game/halloweenBossSeason';
 
-export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events';
+export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
 // All five follower images use 512x512 canvases but have different amounts of
 // transparent space above the character. Normalize visible silhouettes in the
 // home city without changing original artwork, combat sprites or player saves.
@@ -206,6 +208,20 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
           <img src={chapter.boss.art} alt={language === 'en' ? 'Boss' : 'Босс'} className={`w-3.5 h-3.5 rounded-full object-cover object-top border ${bossReady ? 'border-red-400 animate-pulse' : 'border-white/20 grayscale opacity-70'}`} />
         </span>
       </button>
+
+      {halloweenBossInSeason() && (
+        <button
+          type="button"
+          onClick={() => onOpen('halloween-boss')}
+          aria-label={language === 'en' ? 'Halloween world boss and live damage ranking' : 'Хэллоуинский босс и рейтинг урона'}
+          style={{ top: 'calc(var(--home-chapter-top) + 27px)', width: 'min(210px, calc(100% - 110px))' }}
+          className="raid-city-button absolute left-1/2 z-20 flex h-9 -translate-x-1/2 items-center justify-center gap-1.5 px-2"
+        >
+          <img className="raid-city-pumpkin" src={`${import.meta.env.BASE_URL}assets/territory/halloween/pumpkin-king.webp`} alt="" />
+          <span className="truncate text-[11px] font-black uppercase tracking-tight text-amber-50 [text-shadow:0_2px_2px_#000]">{language === 'en' ? 'Halloween boss' : 'Хэллоуинский босс'}</span>
+          <span className="raid-city-swords" aria-hidden="true">⚔️</span>
+        </button>
+      )}
 
       <div className="home-side-stack absolute z-10 left-1.5 w-[48px] flex flex-col gap-1">
         <SideButton icon="/ic-events.webp" label={t('events')} badge={questAlerts.readyCount > 0} onClick={() => onOpen('events')} />

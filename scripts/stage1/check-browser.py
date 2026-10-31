@@ -38,7 +38,10 @@ with sync_playwright() as p:
     browser=p.chromium.launch(executable_path=shutil.which('chromium') or shutil.which('google-chrome'),headless=True,args=['--no-sandbox'])
     for width,height in [(320,640),(390,844),(430,740)]:
         page=load(browser,width,height,'clan')
-        expect(page.get_by_role('heading',name='Клан',exact=True)).to_be_visible()
+        try:
+            expect(page.get_by_role('heading',name='Клан',exact=True)).to_be_visible()
+        except AssertionError as exc:
+            raise AssertionError(f'Clan fixture did not render: page errors={report["errors"]}, body={page.locator("body").inner_text()[:1500]}') from exc
         check(page,f'clan-home-{width}')
         page.get_by_role('button',name='Рейтинг кланов',exact=True).click()
         expect(page.get_by_role('heading',name='Рейтинг кланов',exact=True)).to_be_visible()
@@ -80,12 +83,18 @@ with sync_playwright() as p:
         expect(page.get_by_role('heading',name='История сделок')).to_be_visible()
         expect(page.get_by_text('Комиссия: 100 · Получено: 900')).to_be_visible()
         check(page,f'auction-history-{width}')
+        # Standalone championship is paused in player navigation, but the
+        # retained component must still render the shared read-only Arena board.
         page=load(browser,width,height,'season')
         expect(page.get_by_role('heading',name='Недельный чемпионат')).to_be_visible()
-        expect(page.get_by_text('#10',exact=True)).to_be_visible()
-        expect(page.get_by_role('heading',name='История победителей')).to_be_visible()
+        expect(page.get_by_role('heading',name='ТОП-50 АРЕНЫ')).to_be_visible()
+        page.get_by_role('button',name='Посмотреть награды ТОП-50').click()
+        prize=page.get_by_role('dialog',name='Награды ТОП-50 Арены')
+        expect(prize).to_be_visible()
+        expect(prize.get_by_text('Текущее место в таблице не гарантирует приз.',exact=False)).to_be_visible()
+        prize.get_by_role('button',name='Закрыть',exact=True).click()
         check(page,f'season-{width}');shot(page,f'season-{width}')
-        report['viewports'].append({'width':width,'height':height,'clan_search_application_invite_chat':True,'auction_filters_history':True,'season_ten_prizes_history':True})
+        report['viewports'].append({'width':width,'height':height,'clan_search_application_invite_chat':True,'auction_filters_history':True,'paused_season_shared_arena_board':True})
     assert not report['errors'],report['errors']
     browser.close()
 (OUT/'verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))

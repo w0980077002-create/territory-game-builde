@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, ShoppingBag } from 'lucide-react';
+import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, ShoppingBag, Shirt, ScrollText, ChevronRight } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
-import { useLanguage } from '@/game/i18n';
+import { useLanguage, localizeText } from '@/game/i18n';
 import { captureGameEvent } from '@/game/analytics';
-import { generateChapter, generateTrial, PVE_STONE_COST } from '@/game/engine';
+import { EQUIPMENT_SLOTS, generateChapter, generateTrial, getComputedStats, PVE_STONE_COST } from '@/game/engine';
 import { spendStones, trialReward, blessedGold } from '@/game/progression';
 import { hapticImpact } from '@/game/telegram';
 import type { Enemy } from '@/game/types';
@@ -12,6 +12,8 @@ import { PveFight, type FightKind } from './pve/PveFight';
 import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
 import { Currency } from './ui/Currency';
 import { DailyShareCard } from '@/game/DailyShareCard';
+import { getAppearanceIcon } from '@/game/appearance';
+import './battleJourney.css';
 // Independent: the old campaign, Trials, and server-operated Dark Cave.
 export type BattleView = 'campaign' | 'trial' | 'cave';
 
@@ -23,10 +25,11 @@ interface Props {
   onAutoStartHandled: () => void;
   onShop: () => void;
   onQuests: () => void;
+  onEquipment: () => void;
   onActiveChange?: (active: boolean) => void;
 }
 
-export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onQuests, onActiveChange }: Props) {
+export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onQuests, onEquipment, onActiveChange }: Props) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
@@ -47,6 +50,9 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const chapter = useMemo(() => generateChapter(state.currentChapter), [state.currentChapter]);
   const stages = [...chapter.enemies, chapter.boss];
   const nextIndex = Math.min(state.chapterWins, chapter.enemies.length);
+  // Read-only classic PvE preparation; server Cave stats and ownership are never inferred here.
+  const equippedCount = EQUIPMENT_SLOTS.filter(({ id }) => !!state.player.equipped[id]).length;
+  const heroAttack = getComputedStats(state).attack;
   const autoHandled = useRef(false);
   const fightStartLocked = useRef(false);
 
@@ -55,21 +61,23 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       setError(language === 'en'
         ? 'Recover your pending Dark Cave fight before starting a Campaign battle.'
         : 'Сначала восстанови незавершённый бой в Тёмной пещере. Награды и камни сохранятся.');
-      return;
+      return false;
     }
     // One user gesture = at most one stone. Prevent overlapping taps/autostart
     // callbacks from charging twice before React commits setFight.
-    if (fightStartLocked.current) return;
+    if (fightStartLocked.current) return false;
     fightStartLocked.current = true;
     const s = useGame.get();
     const paid = spendStones(s, PVE_STONE_COST);
     if (!paid) {
       fightStartLocked.current = false;
       setError(t('noBattleStones'));
-      return;
+      return false;
     }
-    hapticImpact('medium');
-    captureGameEvent('territory_pve_fight_start', { mode: kind === 'trial' ? 'trial' : 'campaign' });
+    // Haptics and analytics are best-effort; an SDK error must never prevent
+    // a paid battle from being committed or leave the Next button locked.
+    try { hapticImpact('medium'); } catch { /* Unsupported Telegram haptics. */ }
+    try { captureGameEvent('territory_pve_fight_start', { mode: kind === 'trial' ? 'trial' : 'campaign' }); } catch { /* Optional telemetry. */ }
     setError(null);
     useGame.set(paid);
     const ch = generateChapter(paid.currentChapter);
@@ -78,6 +86,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       : paid.chapterWins >= ch.enemies.length ? ch.boss : ch.enemies[paid.chapterWins];
     setFight({ enemy, kind, id: Date.now() });
     onActiveChange?.(true);
+    return true;
   };
 
   useEffect(() => {
@@ -100,7 +109,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
           setFight(null);
           onActiveChange?.(false);
         }}
-        onNext={() => { fightStartLocked.current = false; start(fight.kind); }}
+        onNext={() => { fightStartLocked.current = false; return start(fight.kind); }}
         onQuests={() => { fightStartLocked.current = false; onActiveChange?.(false); onQuests(); }}
       />
     );
@@ -148,6 +157,38 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         <Currency kind="stones" value={state.battleStones} size={20} className="text-sm text-amber-100" />
       </div>
 
+      <section data-testid="battle-preparation-journey" aria-label={language === 'en' ? 'Prepare your hero for classic battles' : 'Подготовка героя к обычным боям'}
+        className="rounded-2xl border-2 border-amber-600/60 bg-gradient-to-r from-[#4d2e1b] via-[#30221b] to-[#171b24] p-2.5 shadow-[inset_0_1px_0_rgba(255,225,155,.22),0_5px_15px_rgba(0,0,0,.22)]">
+        <div className="flex items-center gap-2.5">
+          <img src={getAppearanceIcon(state.appearance)} alt="" loading="lazy" draggable={false}
+            className="h-20 w-16 shrink-0 object-contain object-bottom drop-shadow-[0_4px_5px_rgba(0,0,0,.65)]"/>
+          <div className="min-w-0 flex-1">
+            <strong className="block truncate text-sm font-black text-[#ffe6a4]">{language === 'en' ? 'Ready for the next fight?' : 'Готов к следующему бою?'}</strong>
+            <span className="block truncate text-xs font-semibold text-amber-100">{state.player.name} · {t('levelWord')} {state.player.level}</span>
+            <span className="block text-[11px] text-amber-200">
+              {language === 'en' ? 'Attack' : 'Атака'}: {heroAttack} · {language === 'en' ? 'Equipped' : 'Надето'}: {equippedCount}/7
+            </span>
+            <span className="block text-[10px] leading-snug text-amber-100/75">
+              {caveRecoveryNeeded
+                ? (language === 'en' ? 'Recover the pending Cave action before spending battle stones.' : 'Сначала восстанови операцию Пещеры, затем начинай бой.')
+                : equippedCount < 7
+                  ? (language === 'en' ? 'Check your saved equipment before battle.' : 'Проверь сохранённую экипировку перед боем.')
+                  : (language === 'en' ? 'Equipment is ready; choose your next encounter.' : 'Экипировка готова — выбирай противника.')}
+            </span>
+          </div>
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button type="button" data-testid="battle-open-equipment" onClick={onEquipment}
+            className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-[#ffdf9d] bg-gradient-to-b from-[#f8d78a] to-[#a96c32] px-2 text-xs font-black text-[#28170e]">
+            <Shirt size={16} aria-hidden="true"/>{language === 'en' ? 'Equipment' : 'Снаряжение'}<ChevronRight size={15} aria-hidden="true"/>
+          </button>
+          <button type="button" data-testid="battle-open-quests" onClick={onQuests}
+            className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-amber-500/50 bg-[#32251f] px-2 text-xs font-bold text-amber-100">
+            <ScrollText size={16} aria-hidden="true"/>{language === 'en' ? 'Quests' : 'Задания'}<ChevronRight size={15} aria-hidden="true"/>
+          </button>
+        </div>
+      </section>
+
       {error && (
         <div className="rounded-xl border border-red-400/30 bg-red-950/40 p-3 animate-fade-in">
           <p className="text-xs text-red-200">{error}</p>
@@ -160,13 +201,8 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       {view === 'campaign' ? (
         <>
           {state.totalBattlesWon === 0 && (
-            <div className="rounded-xl border border-amber-400/40 bg-amber-950/30 p-3 text-sm text-amber-100" role="note">
-              <strong className="block font-bold">{language === 'en' ? 'Your first victory starts here!' : 'Первая победа начинается здесь!'}</strong>
-              <span className="block mt-1 text-xs leading-relaxed">
-                {language === 'en'
-                  ? 'Press Fight on the highlighted enemy below. Win the battle to gain experience and unlock the next stage.'
-                  : 'Нажми «Бой» у выделенного противника ниже. Победи, получи опыт и открой следующий этап.'}
-              </span>
+            <div className="rounded-xl border border-amber-400/40 bg-amber-950/30 px-3 py-2 text-sm font-bold text-amber-100" role="note">
+              {language === 'en' ? 'Your first victory starts here!' : 'Первая победа начинается здесь!'}
             </div>
           )}
           <div className="relative rounded-2xl overflow-hidden border border-amber-500/20">
@@ -174,7 +210,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
             <div className="relative p-4">
               <p className="text-[11px] uppercase tracking-[0.2em] text-amber-300">{t('chapter')} {chapter.number}</p>
-              <h2 className="text-xl font-bold text-white mt-0.5">{chapter.title}</h2>
+              <h2 className="text-xl font-bold text-white mt-0.5">{localizeText(chapter.title, language)}</h2>
               <div className="mt-3 flex items-center gap-2">
                 <div className="flex-1 h-2 rounded-full bg-black/50 overflow-hidden">
                   <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-500" style={{ width: `${(nextIndex / stages.length) * 100}%` }} />
@@ -204,7 +240,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       ) : (
         <div className="space-y-3">
           <DailyShareCard task="trials" userId={userId}/>
-          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={caveRecoveryNeeded} t={t} />
+          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={caveRecoveryNeeded} t={t} language={language} />
         </div>
       )}
       </>}
@@ -214,6 +250,23 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
 
 function StageRow({ enemy, index, status, gold, onFight, blocked, t, language }: { enemy: Enemy; index: number; status: 'done' | 'current' | 'locked'; gold: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en' }) {
   const current = status === 'current';
+  if (current) return (
+    <article className="journey-encounter" aria-label={language === 'en' ? 'Next encounter' : 'Следующий противник'}>
+      <div className="journey-encounter__art"><img src={enemy.art} alt="" draggable={false} /></div>
+      <div className="journey-encounter__content">
+        <p className="journey-encounter__eyebrow">{enemy.isBoss ? t('bossLabel') : `${t('stage')} ${index + 1}`}</p>
+        <h3>{localizeText(enemy.name, language)}</h3>
+        <div className="journey-encounter__stats">
+          <span><Heart size={15} aria-hidden="true" />{enemy.maxHp}</span>
+          <span><SwordIcon size={15} aria-hidden="true" />{enemy.attack}</span>
+        </div>
+        <div className="journey-encounter__reward"><span>{language === 'en' ? 'Victory reward' : 'Награда за победу'}</span><Currency kind="gold" value={gold} size={17} /></div>
+        <button type="button" onClick={onFight} disabled={blocked} aria-describedby={blocked ? 'pending-cave-recovery' : undefined}>
+          <Swords size={18} aria-hidden="true" />{language === 'en' ? 'Fight' : 'Бой'}
+        </button>
+      </div>
+    </article>
+  );
   return (
     <div
       className={`relative flex items-center gap-3 rounded-2xl border p-2.5 transition-all ${
@@ -228,7 +281,7 @@ function StageRow({ enemy, index, status, gold, onFight, blocked, t, language }:
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[10px] uppercase tracking-wider text-gray-500">{enemy.isBoss ? t('bossLabel') : `${t('stage')} ${index + 1}`}</p>
-        <p className="text-sm font-semibold text-white truncate">{enemy.name}</p>
+        <p className="text-sm font-semibold text-white truncate">{localizeText(enemy.name, language)}</p>
         <div className="flex items-center gap-2.5 text-[11px] text-gray-400 mt-0.5">
           <span className="flex items-center gap-0.5"><Heart className="w-3 h-3 text-red-400" />{enemy.maxHp}</span>
           <span className="flex items-center gap-0.5"><SwordIcon className="w-3 h-3 text-amber-400" />{enemy.attack}</span>
@@ -237,16 +290,11 @@ function StageRow({ enemy, index, status, gold, onFight, blocked, t, language }:
       </div>
       {status === 'done' && <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center"><Check className="w-4 h-4 text-emerald-400" /></span>}
       {status === 'locked' && <Lock className="w-4 h-4 text-gray-600 mr-2" />}
-      {current && (
-        <button onClick={onFight} disabled={blocked} aria-describedby={blocked ? 'pending-cave-recovery' : undefined} className="shrink-0 h-10 px-3 rounded-xl bg-gradient-to-b from-red-500 to-red-700 border border-red-300/40 text-white text-sm font-bold flex items-center gap-1.5 active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed">
-          <Swords className="w-4 h-4" /> Бой
-        </button>
-      )}
     </div>
   );
 }
 
-function TrialPanel({ level, onFight, blocked, t }: { level: number; onFight: () => void; blocked: boolean; t: (key: string) => string }) {
+function TrialPanel({ level, onFight, blocked, t, language }: { level: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en' }) {
   const enemy = generateTrial(level);
   const upcoming = Array.from({ length: 5 }, (_, i) => level + i);
   return (
@@ -259,7 +307,7 @@ function TrialPanel({ level, onFight, blocked, t }: { level: number; onFight: ()
           <div className="flex-1 min-w-0 pb-1">
             <p className="text-[11px] uppercase tracking-[0.2em] text-sky-300">{t('trialTower')}</p>
             <h2 className="text-lg font-bold text-white">{t('floor')} {level}</h2>
-            <p className="text-xs text-gray-300">{enemy.name}</p>
+            <p className="text-xs text-gray-300">{localizeText(enemy.name, language)}</p>
             <div className="flex items-center gap-2.5 text-[11px] text-gray-300 mt-1">
               <span className="flex items-center gap-0.5"><Heart className="w-3 h-3 text-red-400" />{enemy.maxHp}</span>
               <span className="flex items-center gap-0.5"><SwordIcon className="w-3 h-3 text-amber-400" />{enemy.attack}</span>

@@ -17,6 +17,7 @@ interface Props {
   now: number;
   language: 'ru' | 'en';
   onItemSelect: (item: InventoryItem) => void;
+  onForge?: () => void;
 }
 
 const formatQuantity = (quantity: number) => quantity.toLocaleString('ru-RU');
@@ -40,7 +41,7 @@ function WarehouseItem({ item, language, now, onSelect }: {
     onClick={() => onSelect(item)}
   >
     <span className="warehouse-tile__art">
-      <ItemArt item={item} size={49}/>
+      <ItemArt item={item} size={70}/>
       {(item.qty > 1 || item.id === 'cow_awakening_stone') && <span className="warehouse-tile__count">×{formatQuantity(item.qty)}</span>}
     </span>
     <span className="warehouse-tile__name">{name}</span>
@@ -51,7 +52,7 @@ function WarehouseItem({ item, language, now, onSelect }: {
 }
 
 /** Display only: preserves every original inventory batch, identifier and expiry. */
-export function CompactWarehouse({ consumables, materials, forgeMaterials, forgeMaterialBatches, now, language, onItemSelect }: Props) {
+export function CompactWarehouse({ consumables, materials, forgeMaterials, forgeMaterialBatches, now, language, onItemSelect, onForge }: Props) {
   const en = language === 'en';
   const [filter, setFilter] = useState<WarehouseFilter>('all');
   const [search, setSearch] = useState('');
@@ -77,13 +78,14 @@ export function CompactWarehouse({ consumables, materials, forgeMaterials, forge
     <div className="compact-warehouse__sign" style={{
       backgroundImage: `linear-gradient(110deg, rgba(65,31,10,.4), rgba(55,23,12,.5)), url("${import.meta.env.BASE_URL}assets/territory/ui/wooden-plaque.webp")`,
     }}>
-      <Package size={21} aria-hidden="true" />
       <div className="min-w-0">
         <h2>{en ? 'WAREHOUSE' : 'СКЛАД'}</h2>
-        <p>{en ? 'Your potions and crafting materials' : 'Зелья, эликсиры и материалы'}</p>
       </div>
-      <strong>{count}</strong>
     </div>
+    <p className="compact-warehouse__hint"><Package size={15} aria-hidden="true" />
+      {en ? 'Choose an item to see its details' : 'Выберите предмет, чтобы узнать больше'}
+      <span>{count}</span>
+    </p>
     <div className="compact-warehouse__toolbar">
       <label className="compact-warehouse__search">
         <Search size={16} aria-hidden="true"/>
@@ -136,7 +138,8 @@ export function CompactWarehouse({ consumables, materials, forgeMaterials, forge
           <p>{en ? 'Used for equipment upgrades at the forge.' : 'Используются для улучшения экипировки в кузнице.'}</p>
           <strong>{en ? 'Quantity' : 'Количество'}: {formatQuantity(forgeMaterials)}</strong>
           <span><Clock3 size={15} aria-hidden="true"/> {en ? 'Shelf life' : 'Срок годности'}: {forgeTimer}</span>
-          <button type="button" className="warehouse-info-card__done" onClick={() => setForgeInfoOpen(false)}>
+          {onForge && <button type="button" className="warehouse-info-card__done" onClick={() => { setForgeInfoOpen(false); onForge(); }}>{en ? 'Open forge' : 'Открыть кузницу'}</button>}
+          <button type="button" className="warehouse-info-card__done warehouse-info-card__done--secondary" onClick={() => setForgeInfoOpen(false)}>
             {en ? 'Close' : 'Закрыть'}
           </button>
         </section>

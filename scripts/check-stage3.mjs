@@ -93,11 +93,15 @@ console.log('Stage3 staged backend: 17 canonical recipes, atomic crafting, recei
 
 const leaderboard=read('src/components/LeaderboardScreen.tsx');
 const cloud=read('src/game/cloud.ts');
-assert.ok(cloud.includes("'arena_wins' |"));
-assert.ok(leaderboard.includes("kind === 'rating' ? 'arena_rating' : 'arena_wins'"));
-assert.ok(leaderboard.includes('ticket !== requestId.current'));
-assert.ok(leaderboard.includes('<SeasonScreen user={user} />'));
-console.log('Stage3 leaderboard: server-sorted wins, race-safe updates, and seasons preview: PASS');
+const seasonUi=read('src/components/SeasonScreen.tsx');
+assert.ok(cloud.includes("'arena_wins' |"), 'Server data access remains intact for existing functionality');
+assert.ok(leaderboard.includes('data-testid="arena-rank-shared-top50"'));
+assert.ok(leaderboard.includes('<ArenaWeeklyBoard />'));
+assert.ok(leaderboard.includes("onRankings={() => setTab('arena')}"));
+assert.ok(leaderboard.includes('<SeasonScreen user={user} onArena={onArena} onEvents={onEvents} onMessages={onMessages}'));
+assert.ok(!leaderboard.includes('Серверный ТОП-50'), 'Do not reintroduce a separate player-only ranking');
+assert.ok(!seasonUi.includes('season-official-server'), 'Never show contradictory championship positions');
+console.log('Stage3 leaderboard: one Arena player/bot TOP-50, preserved seasonal navigation, no competing standings: PASS');
 
 function walk(dir){for(const name of readdirSync(dir)){const file=join(dir,name);if(statSync(file).isDirectory()){walk(file);continue;}if(!/\.tsx?$/.test(file) || /\.d\.ts$/.test(file))continue;
  const source=readFileSync(file,'utf8');const compiled=ts.transpileModule(source,{fileName:file,reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.ESNext,jsx:ts.JsxEmit.ReactJSX}});

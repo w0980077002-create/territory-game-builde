@@ -475,6 +475,7 @@ const contentEnglish: Record<string, string> = {
   'Малый набор кристаллов': 'Small Crystal Pack',
   'Большой набор кристаллов': 'Large Crystal Pack',
   'Материалы кузницы': 'Forge Materials',
+  'Камень пробуждения': 'Awakening Stone',
   'Верный щит': 'Faithful Shield',
   'Спутник, который помогает в бою. Открывается на 3 уровне.': 'A companion who helps in battle. Unlocks at level 3.',
   'Надёжный стальной меч. +8 к атаке.': 'A reliable steel sword. +8 Attack.',

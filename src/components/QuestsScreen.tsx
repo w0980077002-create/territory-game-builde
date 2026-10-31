@@ -6,6 +6,8 @@ import type { Achievement, Quest } from '@/game/types';
 import { Currency } from './ui/Currency';
 import { useLanguage } from '@/game/i18n';
 import { SocialQuestsSection } from './SocialQuestsSection';
+import { RewardJourney } from './RewardJourney';
+import { SocialTrail, type SocialDestination } from './social/SocialTrail';
 import type { SocialStatus } from '@/game/socialQuests';
 import { getStarterMilestones, type StarterDestination } from '@/game/starterJourney';
 import { questAction } from '@/game/eventsBoard';
@@ -16,7 +18,7 @@ const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
   { type: 'story', titleKey: 'story', hintKey: 'storyHint' },
 ];
 
-export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { userId: string; onSocialStatusChange: (status: SocialStatus) => void; onNavigate: (screen: StarterDestination) => void }) {
+export function QuestsScreen({ userId, onSocialStatusChange, onNavigate, onSocialNavigate, onMail, onDaily }: { userId: string; onSocialStatusChange: (status: SocialStatus) => void; onNavigate: (screen: StarterDestination) => void; onSocialNavigate: (destination: SocialDestination) => void; onMail: () => void; onDaily: () => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const readyQuests = state.quests.filter((q) => !q.claimed && q.current >= q.target);
@@ -24,6 +26,11 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { use
   const starterSteps = state.player.level < 5 ? getStarterMilestones(state) : [];
   const starterDone = starterSteps.filter(step => step.done).length;
   const starterNext = starterSteps.find(step => !step.done);
+  // Promote an existing actionable quest when no reward or starter step is
+  // already directing the player. This does not create progress or rewards.
+  const featuredQuest = !ready && !starterNext
+    ? state.quests.find(q => !q.claimed && q.current < q.target && questAction(q, language === 'en'))
+    : undefined;
   const claim = (questId: string) => {
     const previous = useGame.get();
     const next = claimQuest(previous, questId);
@@ -45,6 +52,8 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { use
           </div>
         </div>
       </div>
+
+      <RewardJourney active="quests" onDaily={onDaily} onMessages={onMail} />
 
       {ready > 0 && <section aria-label={language === 'en' ? 'Rewards ready' : 'Готовые награды'}>
         <h3 className="mb-2 px-1 text-sm font-bold text-amber-200">{language === 'en' ? 'Rewards ready' : 'Награды готовы'} · {ready}</h3>
@@ -75,10 +84,17 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate }: { use
         </section>
       )}
 
+      {featuredQuest && <section aria-label={language === 'en' ? 'Next quest' : 'Следующее задание'}>
+        <h3 className="mb-2 px-1 text-sm font-black text-amber-100">{language === 'en' ? 'Next quest' : 'Следующее задание'}</h3>
+        <QuestCard quest={featuredQuest} language={language} t={t} onNavigate={onNavigate} onClaim={() => claim(featuredQuest.id)} featured />
+      </section>}
+
+      <SocialTrail active="quests" onNavigate={onSocialNavigate}
+        detail={language === 'en' ? 'Verified community quests and your allies' : 'Задания сообщества и твои союзники'} />
       <SocialQuestsSection userId={userId} onStatusChange={onSocialStatusChange} />
 
       {SECTIONS.map((sec) => {
-        const list = state.quests.filter((q) => q.type === sec.type && (q.claimed || q.current < q.target)).sort((left, right) => {
+        const list = state.quests.filter((q) => q.id !== featuredQuest?.id && q.type === sec.type && (q.claimed || q.current < q.target)).sort((left, right) => {
           const priority = (q: Quest) => q.claimed ? 1 : 0;
           return priority(left) - priority(right);
         });
@@ -117,18 +133,19 @@ function ClaimState({ complete, claimed, onClaim, claimLabel }: { complete: bool
   if (claimed) return <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />;
   if (!complete) return <Lock className="w-4 h-4 text-gray-600 shrink-0" />;
   return (
-    <button onClick={onClaim} className="shrink-0 h-9 px-3 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-black text-xs font-bold active:scale-95 transition-transform animate-pulse-glow">
+    <button onClick={onClaim} className="shrink-0 min-h-11 px-3 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-black text-xs font-bold active:scale-95 transition-transform animate-pulse-glow">
       {claimLabel}
     </button>
   );
 }
 
-function QuestCard({ quest: q, onClaim, onNavigate, language, t }: { quest: Quest; onClaim: () => void; onNavigate: (screen: StarterDestination) => void; language: 'ru' | 'en'; t: (key: string) => string }) {
+function QuestCard({ quest: q, onClaim, onNavigate, language, t, featured = false }: { quest: Quest; onClaim: () => void; onNavigate: (screen: StarterDestination) => void; language: 'ru' | 'en'; t: (key: string) => string; featured?: boolean }) {
   const complete = q.current >= q.target;
   const action = questAction(q, language === 'en');
   return (
-    <div className={`relative rounded-2xl border p-3 transition-colors ${complete && !q.claimed ? 'border-amber-400/65 bg-amber-950/25 shadow-[0_0_13px_rgba(245,158,11,0.14)]' : !q.claimed ? 'border-sky-400/25 bg-[#161b26]' : 'border-white/10 bg-[#161b26] opacity-60'}`}>
+    <div className={`relative rounded-2xl border p-3 transition-colors ${featured ? 'border-amber-400/70 bg-gradient-to-br from-[#694124] to-[#1e2935]' : complete && !q.claimed ? 'border-amber-400/65 bg-amber-950/25 shadow-[0_0_13px_rgba(245,158,11,0.14)]' : !q.claimed ? 'border-sky-400/25 bg-[#161b26]' : 'border-white/10 bg-[#161b26] opacity-60'}`}>
       <div className="flex items-start gap-3">
+        {featured && <img src={import.meta.env.BASE_URL + 'ic-quests.webp'} alt="" className="h-16 w-16 shrink-0 object-contain" />}
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-semibold text-white flex items-center gap-1.5">{!q.claimed && <span aria-hidden="true" className={`w-2 h-2 shrink-0 rounded-full ${complete ? 'bg-red-500 animate-pulse shadow-[0_0_7px_rgba(239,68,68,0.9)]' : 'bg-sky-400'}`} />}{language === 'en' ? ({ q_daily_1: t('questKill3'), q_daily_2: t('questSpend50'), q_daily_3: t('questGladiator'), q_weekly_1: t('questBoss'), q_story_1: t('questChapters') } as Record<string, string>)[q.id] ?? q.title : q.title}</h4>
           <p className="text-xs text-gray-400">{language === 'en' ? ({ q_daily_1: t('questKill3Desc'), q_daily_2: t('questSpend50Desc'), q_daily_3: t('questGladiatorDesc'), q_weekly_1: t('questBossDesc'), q_story_1: t('questChaptersDesc') } as Record<string, string>)[q.id] ?? q.description : q.description}</p>
@@ -139,7 +156,7 @@ function QuestCard({ quest: q, onClaim, onNavigate, language, t }: { quest: Ques
             {(q.rewardStones ?? 0) > 0 && <Currency kind="stones" value={`+${q.rewardStones}`} size={14} className="text-orange-200" />}
             {q.rewardXp > 0 && <span className="text-emerald-300 font-semibold">+{q.rewardXp} {t('xpWord')}</span>}
           </div>
-          {!complete && !q.claimed && action && <button type="button" className="mt-2 inline-flex items-center gap-1 rounded-md border border-sky-400/30 bg-sky-600/15 px-2 py-1 text-[11px] font-bold text-sky-200" onClick={() => onNavigate(action.destination)}>
+          {!complete && !q.claimed && action && <button type="button" className="mt-2 inline-flex min-h-11 items-center gap-1 rounded-md border border-sky-400/30 bg-sky-600/15 px-3 py-1 text-xs font-bold text-sky-200" onClick={() => onNavigate(action.destination)}>
             {action.label}<ChevronRight size={13} aria-hidden="true"/>
           </button>}
         </div>

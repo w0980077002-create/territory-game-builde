@@ -1,5 +1,5 @@
 /* Real companion data with owner-approved wood and existing vivid Viking artwork. */
-.followers-camp{display:grid;gap:10px;min-width:0;padding:4px 1px 12px;color:#f8e9ca;font:12px/1.3 system-ui,-apple-system,sans-serif}
+.followers-camp{display:flex;flex-direction:column;gap:10px;min-width:0;padding:4px 1px 12px;color:#f8e9ca;font:12px/1.3 system-ui,-apple-system,sans-serif}
 .followers-camp *{box-sizing:border-box}
 .followers-camp button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .followers-camp__header{display:flex;align-items:center;gap:7px;padding:8px 7px;min-height:76px;border:1px solid #d6a9638c;border-radius:14px;background:linear-gradient(115deg,#48311f,#16283a 74%);box-shadow:inset 0 1px #fce6be30,0 3px 4px #0006}
@@ -9,9 +9,9 @@
 .followers-camp__heading .territory-wooden-plaque{width:min(100%,185px);height:45px}
 .followers-camp__heading p{margin:0 0 0 8px;color:#ead2ad;font-size:10px}
 .followers-camp__count{min-width:38px;padding:5px 4px;border:1px solid #d6b57580;border-radius:9px;background:#1e2636;color:#fff0c5;text-align:center;font-size:13px;font-weight:900;font-variant-numeric:tabular-nums}
-.followers-camp__active{position:relative;display:flex;gap:10px;align-items:center;min-height:122px;padding:10px;border:2px solid #d7a85c;border-radius:13px;background:radial-gradient(ellipse at 10% 20%,#936c3970,transparent 62%),linear-gradient(130deg,#4b2f20,#1e2d3f 73%);box-shadow:inset 0 1px #fff5cb56,0 2px 3px #0006}
-.followers-camp__active-art{display:grid;align-items:end;justify-items:center;flex:0 0 95px;width:95px;height:117px;border-bottom:2px solid #e0af67;background:radial-gradient(ellipse at 50% 80%,#f2dca52e,transparent 66%)}
-.followers-camp__active-art img{height:117px;width:95px;object-fit:contain;object-position:bottom;filter:drop-shadow(1px 5px 3px #0a0809b8)}
+.followers-camp__active{position:relative;display:flex;gap:10px;align-items:center;min-height:82px;padding:7px 10px;border:2px solid #d7a85c;border-radius:13px;background:radial-gradient(ellipse at 10% 20%,#936c3970,transparent 62%),linear-gradient(130deg,#4b2f20,#1e2d3f 73%);box-shadow:inset 0 1px #fff5cb56,0 2px 3px #0006}
+.followers-camp__active-art{display:grid;align-items:end;justify-items:center;flex:0 0 65px;width:65px;height:75px;border-bottom:2px solid #e0af67;background:radial-gradient(ellipse at 50% 80%,#f2dca52e,transparent 66%)}
+.followers-camp__active-art img{height:75px;width:65px;object-fit:contain;object-position:bottom;filter:drop-shadow(1px 5px 3px #0a0809b8)}
 .followers-camp__active-info{flex:1;min-width:0}
 .followers-camp__eyebrow{display:inline-flex;align-items:center;gap:3px;color:#f3c77e;font-size:9px;font-weight:900;letter-spacing:.3px}
 .followers-camp__active-info h3{margin:5px 0;color:#fff1cc;font-size:18px;font-weight:900;line-height:1.15;text-shadow:1px 2px 0 #251509,0 0 7px #eaba6785}
@@ -34,10 +34,11 @@
 .followers-camp__portrait-status--locked{background:#2a2d36;border-color:#aaa3a2}
 .followers-camp__detail{display:grid;gap:9px;padding:10px 9px;border:1px solid #d2ad7388;border-radius:13px;background:linear-gradient(145deg,#342719,#1d2b38 65%,#131b28);box-shadow:inset 0 1px #ffefc820}
 .followers-camp__detail-top{display:flex;gap:11px;align-items:center}
-.followers-camp__detail-top>img{width:89px;height:110px;flex:0 0 89px;object-fit:contain;object-position:bottom;filter:drop-shadow(0 4px 4px #0009)}
-.followers-camp__detail-top>div{flex:1;min-width:0}
+.followers-camp__detail-art{display:flex;justify-content:center;align-items:flex-end;flex:0 0 42%;height:180px;min-width:0;overflow:hidden;background:radial-gradient(ellipse at 50% 75%,#e6b55a54,transparent 68%)}
+.followers-camp__detail-art img{width:100%;height:100%;max-width:100%;flex:none;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 4px #0009)}
+.followers-camp__detail-top>div:not(.followers-camp__detail-art){flex:1;min-width:0}
 .followers-camp__detail-top h3{font-size:17px;margin:6px 0 5px;font-weight:900;color:#ffecbf;line-height:1.16;text-shadow:1px 2px 0 #24130a,0 0 7px #edae5b5c}
-.followers-camp__detail-top p{margin:0;font-size:11px;color:#d6c8b9;line-height:1.35}
+.followers-camp__detail-top p{margin:0;font-size:12px;color:#f0dfcb;line-height:1.35;overflow-wrap:anywhere}
 .followers-camp__availability{display:inline-flex;margin-top:8px;padding:3px 6px;border-radius:7px;background:#2b674671;color:#ace7c5;font-size:10px;font-weight:850}
 .followers-camp__availability--locked{background:#46372b;color:#efb77c}
 .followers-camp__stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
@@ -48,7 +49,7 @@
 .followers-camp__progress{height:9px;overflow:hidden;border:1px solid #c79d605e;border-radius:9px;background:#111a26}
 .followers-camp__progress>span{display:block;height:100%;max-width:100%;border-radius:9px;background:linear-gradient(90deg,#7fbb84,#e4d98a)}
 .followers-camp__actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.followers-camp__actions button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:41px;border-radius:10px;border:1px solid #a4dfc1;background:linear-gradient(#409269,#1d5847);color:#ebffdf;font-size:12px;font-weight:900}
+.followers-camp__actions button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:10px;border:1px solid #a4dfc1;background:linear-gradient(#409269,#1d5847);color:#ebffdf;font-size:12px;font-weight:900}
 .followers-camp__actions button.followers-camp__train{border-color:#ffe0a0;background:linear-gradient(#e5ad56,#925b27);color:#251407}
 .followers-camp__actions button:disabled{opacity:.47}
 .followers-camp__cost{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:12px;border:1px solid #d2a5643e;border-radius:8px;padding:7px;color:#ffdda2;background:#151d2b99;font-size:11px}
@@ -71,3 +72,32 @@
 @media(min-width:700px){.followers-camp__roster{grid-template-columns:repeat(6,minmax(0,1fr))}}
 @media(max-width:350px){.followers-camp__header{gap:4px}.followers-camp__crest{width:46px;flex-basis:46px}.followers-camp__crest img{width:46px}.followers-camp__heading .territory-wooden-plaque{width:145px}.followers-camp__portrait{min-height:90px;padding:4px 1px}.followers-camp__portrait img{height:60px}.followers-camp__portrait b{font-size:7px}.followers-camp__active-art{width:77px;flex-basis:77px}.followers-camp__active-art img{width:77px}.followers-camp__detail-top>img{width:77px;flex-basis:77px}}
 @media(prefers-reduced-motion:reduce){.followers-camp *, .followers-camp *:before{animation:none!important;transition:none!important}}
+
+/* Pinned return route: inspect/select/train -> hero or existing campaign.
+   No new grants, auto-start, or companion combat rules. */
+.companion-journey-bar {
+  display:grid;
+  gap:6px;
+  min-width:0;
+  padding:7px;
+  border:2px solid #d2a55e;
+  border-radius:13px;
+  background:linear-gradient(140deg,#5a3823,#292035);
+  box-shadow:inset 0 1px #ffe4b85c,0 -3px 10px #0d0809a8;
+}
+.companion-journey-bar__status {display:flex;align-items:center;gap:8px;min-width:0}
+.companion-journey-bar__status img {width:40px;height:38px;flex:0 0 40px;object-fit:contain;object-position:bottom}
+.companion-journey-bar__status div {display:grid;gap:2px;min-width:0}
+.companion-journey-bar__status strong {color:#ffe9b2;font-size:12px;font-weight:900;line-height:1.1;overflow-wrap:anywhere}
+.companion-journey-bar__status span {color:#d6c6b3;font-size:10px;line-height:1.15}
+.companion-journey-bar__buttons {display:grid;grid-template-columns:1fr 1.5fr;gap:6px}
+.companion-journey-bar__buttons button {
+  display:flex;align-items:center;justify-content:center;gap:3px;
+  min-width:0;min-height:44px;padding:5px;
+  border:1px solid #e4b66e;border-radius:9px;
+  background:#674328;color:#ffe9bf;font-size:11px;font-weight:900;
+}
+.companion-journey-bar__buttons .companion-journey-bar__battle {
+  border:2px solid #ffde9a;background:linear-gradient(#ffe7a9,#dba24a,#a4692c);color:#2a180d;
+}
+.companion-journey-bar__buttons button:focus-visible {outline:3px solid #fff1be;outline-offset:1px}

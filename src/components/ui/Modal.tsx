@@ -27,6 +27,7 @@ export function Modal({ title, icon, onClose, children }: Props) {
   const { language } = useLanguage();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -34,6 +35,10 @@ export function Modal({ title, icon, onClose, children }: Props) {
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
+      // DOM order also works when parent and child mount in the same render,
+      // where React can run the child's effect before the parent's effect.
+      const dialogs = document.querySelectorAll('.territory-modal[role="dialog"]');
+      if (dialogs[dialogs.length - 1] !== modalRef.current) return;
       if (e.key === 'Escape') { e.stopPropagation(); onCloseRef.current(); return; }
       if (e.key !== 'Tab' || !panelRef.current) return;
       const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')).filter(el => el.getClientRects().length > 0);
@@ -43,12 +48,15 @@ export function Modal({ title, icon, onClose, children }: Props) {
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
     window.addEventListener('keydown', onKey);
-    return () => { window.removeEventListener('keydown', onKey); previousFocus?.focus(); };
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      previousFocus?.focus();
+    };
   }, []);
 
   return (
     <IosGamePortal>
-    <div className="territory-modal fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+    <div ref={modalRef} className="territory-modal fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <button aria-label={language === 'en' ? 'Close' : 'Закрыть'} className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose} />
       <div ref={panelRef} className="territory-modal-panel relative flex flex-col shadow-2xl shadow-black">
         <div className="territory-modal-head flex items-center gap-2.5 shrink-0">

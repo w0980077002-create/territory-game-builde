@@ -53,8 +53,8 @@ function message(error: unknown, en: boolean) {
     ? 'A newer save exists. Reopen Telegram to synchronize safely.'
     : 'Есть более новое сохранение. Перезапусти Telegram для синхронизации.';
   if (/settlement|not_enabled|not_configured|unavailable|not_ready/.test(s)) return en
-    ? 'Server campaign is not yet enabled. Your old campaign is unchanged.'
-    : 'Серверная кампания пока не включена. Старая игра не изменена.';
+    ? 'This adventure is not available yet. Your progress is safe.'
+    : 'Этот поход пока недоступен. Твой прогресс сохранён.';
   return en ? 'Cannot confirm the result. Use recovery; no duplicate reward will be sent.'
     : 'Не удалось подтвердить результат. Используй восстановление — награда не задвоится.';
 }
@@ -467,7 +467,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
               className="flex h-11 items-center justify-center rounded-lg border-2 border-[#7788b0]/80 bg-[#233251]/90 text-[26px] font-light text-[#ffdd97] shadow-[inset_0_2px_12px_#15203d,0_4px_0_#090d20] active:scale-[.98]">+</button>)}
           </div>
           {blessingInfo&&<p role="status" className="rounded-lg border border-[#725a92] bg-[#17162e] px-2 py-2 text-center text-[11px] text-[#e4d6f5]">
-            {en?'Blessings are not enabled yet and do not affect battles.':'Благословения ещё не подключены и пока не влияют на бой.'}
+            {en?'Blessings are not available here yet and give no combat bonus.':'Благословения здесь пока недоступны и не усиливают бой.'}
           </p>}
           <div className="flex items-center justify-center gap-2 text-[11px] text-amber-100">
             <span>{en?'Battle mode':'Режим боя'}:</span>
