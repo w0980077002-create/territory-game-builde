@@ -88,6 +88,9 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const sessionRef = useRef<Session | null>(null);
   const battleRef = useRef<HTMLDivElement | null>(null);
   const strikeId = useRef(0);
+  // Resume/retry may return the same authoritative event batch more than once.
+  // Event IDs belong to a single server session, not to a React render.
+  const seenServerEvents = useRef<{ sessionId: string; keys: Set<string> }>({ sessionId: '', keys: new Set() });
   const [strikeQueue, setStrikeQueue] = useState<StrikeEvent[]>([]);
   const strike = strikeQueue[0] ?? null;
   const [battleLog, setBattleLog] = useState<string[]>([]);
@@ -98,7 +101,17 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     sessionRef.current = value;
     setSession(value);
     // Visual effects follow the authoritative server event stream, never invented client hits.
-    const events = Array.isArray(value.events) ? value.events : [];
+    if (seenServerEvents.current.sessionId !== value.session_id) {
+      seenServerEvents.current = { sessionId: value.session_id, keys: new Set() };
+      setStrikeQueue([]);
+      setBattleLog([]);
+    }
+    const events = (Array.isArray(value.events) ? value.events : []).filter((event, index) => {
+      const identity = event.id ? `event:${event.id}` : `revision:${value.revision}:index:${index}`;
+      if (seenServerEvents.current.keys.has(identity)) return false;
+      seenServerEvents.current.keys.add(identity);
+      return true;
+    });
     const hits = events.filter(event =>
       ['impact', 'critical', 'block', 'dodge'].includes(event.type)
       && (event.target === 'hero' || event.target === 'enemy')).slice(-6);
@@ -266,7 +279,8 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const clearFinished = () => {
     if (lock.current || sessionRef.current?.state.status === 'fighting') return;
     localStorage.removeItem(sessionKey(userId));
-    sessionRef.current = null; setSession(null); setStrikeQueue([]); setBattleLog([]); onActiveChange?.(false);
+    sessionRef.current = null; seenServerEvents.current = { sessionId: '', keys: new Set() };
+    setSession(null); setStrikeQueue([]); setBattleLog([]); onActiveChange?.(false);
     // A finished pinned session does not approve the new equipment. Recheck
     // before offering a new start, including on a different device.
     setReady(false);
