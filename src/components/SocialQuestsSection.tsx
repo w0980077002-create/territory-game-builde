@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, ExternalLink, Gift, Loader2 } from 'lucide-react';
 import { Currency } from './ui/Currency';
 import { useLanguage } from '@/game/i18n';
@@ -20,21 +20,25 @@ export function SocialQuestsSection({ userId, onStatusChange }: { userId: string
   const [busy, setBusy] = useState<SocialTask | null>(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
+  const verifyLock = useRef(false);
+  const statusListener = useRef(onStatusChange);
+  useEffect(() => { statusListener.current = onStatusChange; }, [onStatusChange]);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError('');
     socialStatus().then((result) => {
-      if (active) { setStatus(result); onStatusChange?.(result); }
+      if (active) { setStatus(result); statusListener.current?.(result); }
     }).catch(() => {
       if (active) { setStatus(null); setError(en ? 'Could not load community quests. Your rewards are safe.' : 'Не удалось загрузить задания сообщества. Награды сохранены.'); }
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [en, onStatusChange, attempt]);
+  }, [en, attempt]);
 
   async function verify(task: SocialTask) {
-    if (busy || !status || status[task]) return;
+    if (verifyLock.current || !status || status[task]) return;
+    verifyLock.current = true;
     setBusy(task);
     setError('');
     try {
@@ -52,7 +56,7 @@ export function SocialQuestsSection({ userId, onStatusChange }: { userId: string
           : code === 'already_claimed'
             ? (en ? 'Reward already claimed. Restart the game.' : 'Награда уже получена. Перезапусти игру.')
             : (en ? 'Unable to claim. Restart and try again.' : 'Не удалось получить награду. Перезапусти игру и повтори.'));
-    } finally { setBusy(null); }
+    } finally { verifyLock.current = false; setBusy(null); }
   }
 
   return (
