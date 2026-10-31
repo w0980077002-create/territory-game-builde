@@ -88,9 +88,10 @@ with sync_playwright() as p:
         page.on('pageerror',lambda e:errors.append(str(e)))
         page.route(URL+'**',serve)
         page.goto(URL+'?lang=en')
-        page.get_by_test_id('dark-cave-challenge').wait_for()
+        page.get_by_test_id('dark-cave-challenge-manual').wait_for()
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'English horizontal overflow'
-        page.get_by_test_id('dark-cave-challenge').click()
+        page.get_by_test_id('dark-cave-challenge-manual').click()
+        assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start" && c.control==="manual").length') == 1
         page.get_by_test_id('dark-cave-battle-background').wait_for()
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'English combat horizontal overflow'
         page.get_by_role('button',name='Continue battle').click()
