@@ -561,7 +561,7 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
             <div className="space-y-2 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
               <h3 className="text-sm font-bold text-white">{language === 'en' ? 'Applications and invitations' : 'Заявки и приглашения'}</h3>
               {state.applications.map((app) => <div key={app.player_id} className="flex items-center gap-2 rounded-xl bg-black/30 p-2">
-                <span className="min-w-0 flex-1 truncate text-xs text-white">{app.name} · {app.level}</span>
+                <span className="min-w-0 flex-1 truncate text-xs text-white">{app.name}</span>
                 <button disabled={busy} onClick={() => void simple(() => clanAcceptApp(app.player_id), () => loadState(clanId!))} className="rounded-lg bg-emerald-500/20 px-2 py-2 text-xs text-emerald-200">{t('clanAccept')}</button>
                 <button disabled={busy} onClick={() => void simple(() => clanRejectApp(app.player_id), () => loadState(clanId!))} className="rounded-lg bg-white/10 px-2 py-2 text-xs text-gray-200">{t('clanDecline')}</button>
               </div>)}
@@ -570,7 +570,7 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
                 <button disabled={busy || invitePlayer.trim().length < 2} onClick={() => void run(async () => { setInviteCandidates(await clanInviteCandidates(invitePlayer)); })} className="rounded-xl bg-amber-500/20 px-3 py-2 text-xs font-bold text-amber-200 disabled:opacity-40">{t('clanSearchBtn')}</button>
               </div>
               {inviteCandidates.map(candidate => <div key={candidate.id} className="flex items-center gap-2 rounded-xl bg-black/30 p-2">
-                <span className="min-w-0 flex-1 truncate text-xs text-white">{candidate.display_name} · {candidate.level}</span>
+                <span className="min-w-0 flex-1 truncate text-xs text-white">{candidate.display_name}</span>
                 <button disabled={busy} onClick={() => void simple(() => clanInvitePlayer(candidate.id), async () => { setInviteCandidates(current => current.filter(p => p.id !== candidate.id)); notify(language === 'en' ? 'Invitation sent' : 'Приглашение отправлено'); })} className="rounded-xl bg-amber-500/20 px-3 py-2 text-xs font-bold text-amber-200 disabled:opacity-40">{language === 'en' ? 'Invite' : 'Пригласить'}</button>
               </div>)}
             </div>
@@ -590,7 +590,7 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
                     <p className="truncate text-xs font-bold text-white">
                       {m.display_name} {isMe && <span className="text-[9px] text-amber-300">({t('clanYou')})</span>}
                     </p>
-                    <p className="text-[10px] text-gray-400">{t(`clanR_${m.role}`)} · {t('clanLevelShort')} {m.level} · {t('clanPower')} {m.power.toLocaleString()}</p>
+                    <p className="text-[10px] text-gray-400">{t(`clanR_${m.role}`)}{isMe ? ` · ${t('clanLevelShort')} ${m.level}` : ''} · {t('clanPower')} {m.power.toLocaleString()}</p>
                   </div>
                   {m.online && <span className="h-2 w-2 rounded-full bg-emerald-400" title={t('clanOnline')} />}
                   {canManage && !isMe && (
