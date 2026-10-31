@@ -9,10 +9,16 @@ import autoprefixer from 'autoprefixer';
 const fixture = String.raw`
 let progress = { completed_stage: 0, unlocked_stage: 1, dark_stones: 5 };
 let current = null;
-const oldState = { player: { gold: 100 }, inventory: [] };
+const oldState = {
+ player: { gold: 100, equipped: {} }, inventory: [], belt: Array(7).fill(null), appearance: 'm2',
+};
+const arenaState = { wins: 0 };
 window.__adventureCalls = [];
-export const useGame = { get: () => oldState, set: () => {} };
+// Read-only subscription stubs for the production hooks in the browser fixture.
+export const useGame = { get: () => oldState, set: () => {}, subscribe: () => () => {} };
+export const useArena = { get: () => arenaState, set: () => {}, subscribe: () => () => {} };
 export const useLanguage = () => ({ language: 'ru' });
+export const localizeText = value => typeof value === 'string' ? value : (value?.ru ?? value?.en ?? '');
 export async function ensurePlayerSession() { return true; }
 export function restoreAdventureSaveFence() { return null; }
 export function restoreAdventureStartFence() { return null; }
