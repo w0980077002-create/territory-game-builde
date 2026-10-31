@@ -5,7 +5,7 @@ import { useGame, useArena, recordBattleResult } from '@/game/actions';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
-import { selectedFollower, followerCombat, cowStoneChapterBossReward, cowStoneTrialReward } from '@/game/followers';
+import { selectedFollower, followerCombat } from '@/game/followers';
 import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, type PveSide } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
@@ -38,7 +38,6 @@ interface Outcome {
   gold: number;
   xp: number;
   gems: number;
-  awakeningStones: number;
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -151,19 +150,19 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
         ? finishReferralFight(ticket, won, referralRounds.current).catch(() => false)
         : false);
     if (!won) {
-      setOutcome({ won: false, gold: 0, xp: 0, gems: 0, awakeningStones: 0 });
+      setOutcome({ won: false, gold: 0, xp: 0, gems: 0 });
       return;
     }
     const s = useGame.get();
     if (kind === 'trial') {
       const r = trialReward(s.trialLevel);
       useGame.set(recordTrialWin(s, enemy));
-      setOutcome({ won: true, gold: r.gold ?? 0, xp: enemy.rewardXp, gems: r.gems ?? 0, awakeningStones: cowStoneTrialReward(s.trialLevel) });
+      setOutcome({ won: true, gold: r.gold ?? 0, xp: enemy.rewardXp, gems: r.gems ?? 0 });
       return;
     }
     const gold = blessedGold(s, enemy.rewardGold);
     useGame.set(recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp }));
-    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0, awakeningStones: cowStoneChapterBossReward(s.currentChapter, enemy.id, enemy.isBoss) });
+    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0 });
   }, [enemy, kind]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
@@ -468,7 +467,6 @@ function OutcomePanel({ outcome, kind, onExit, onNext, questReady, onQuests, nex
             <Currency kind="gold" value={`+${outcome.gold}`} size={18} />
             <span className="font-semibold text-sky-200">+{outcome.xp} {language === 'en' ? 'XP' : 'опыта'}</span>
             {outcome.gems > 0 && <Currency kind="gems" value={`+${outcome.gems}`} size={18} />}
-            {outcome.awakeningStones > 0 && <div className="flex items-center gap-1 rounded-lg border border-fuchsia-400/60 bg-violet-700/35 px-2 py-1 text-xs font-black text-fuchsia-100"><img src={import.meta.env.BASE_URL + 'assets/territory/ui/items/awakening-stone.svg'} alt="" className="h-7 w-7 object-contain" /> +{outcome.awakeningStones} {language === 'en' ? 'Awakening Stone' : 'Камень пробуждения'}</div>}
           </div>
         ) : (
           <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>
