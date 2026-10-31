@@ -5,6 +5,11 @@ import type {IdleCatalog,IdleLoadout,IdleOwnership} from '@/game/idleEngine/type
 import visual from '@/game/config/territory-rune-skill-book-v1.json';
 import {RuneSkillBook,type RuneSkillBookSelection} from './RuneSkillBook';
 type Status={enabled:true;revision:number;catalog:IdleCatalog;ownership:IdleOwnership;loadout:IdleLoadout};
+// The current loadout stores runes only on up to five selected skills. It cannot
+// round-trip the 15 independent selections required by issue #175. Do not turn
+// this on by configuration: replace this gate only alongside a reviewed server
+// contract, lossless migration and PvE/PvP integration.
+const FIFTEEN_SLOT_CONTRACT_READY = false;
 function isRecord(x:unknown):x is Record<string,unknown>{return x!==null&&typeof x==='object'&&!Array.isArray(x);}
 function verified(x:unknown):x is Status{
  if(!isRecord(x)||x.enabled!==true||!Number.isSafeInteger(x.revision)||!isRecord(x.catalog)||!isRecord(x.ownership)||!isRecord(x.loadout))return false;
@@ -39,6 +44,7 @@ export function ServerRuneBook({language}:{language:'ru'|'en'}){
  const [status,setStatus]=useState<Status|null>(null),[notice,setNotice]=useState(''),[version,setVersion]=useState(0);
  useEffect(()=>{
   alive.current=true;
+  if (!FIFTEEN_SLOT_CONTRACT_READY) return () => { alive.current=false; };
   void(async()=>{
     try{
       const {data,error}=await supabase.rpc('territory_combat_loadout_status_v1');
@@ -60,7 +66,7 @@ export function ServerRuneBook({language}:{language:'ru'|'en'}){
     if(alive.current){setNotice(en?'Could not confirm. Previous saved build remains on server.':'Нет подтверждения. На сервере остаётся прежняя сборка.');setVersion(v=>v+1);}
   }finally{saving.current=false;}
  };
- if (!status) return <p role="status" className="rounded-lg border border-amber-500/40 bg-slate-900/90 p-3 text-xs text-amber-100">{en?'Server skills are not yet available. Existing hero training remains unchanged.':'Боевые руны пока недоступны на сервере. Существующая тренировка героя сохранена.'}</p>;
+ if (!FIFTEEN_SLOT_CONTRACT_READY || !status) return <p role="status" className="rounded-lg border border-amber-500/40 bg-slate-900/90 p-3 text-xs text-amber-100">{en?'The 15-slot rune system is not available yet. Existing hero training remains unchanged.':'Система из 15 слотов рун пока недоступна. Существующая тренировка героя сохранена.'}</p>;
  return <>
   {status&&<p role="status" className="mb-2 rounded-lg border border-amber-500/35 bg-amber-900/30 p-2 text-[11px] text-amber-100">
     {en?'Server-verified runes. Changes need server confirmation. Combat migration is separate.':'Руны проверены сервером. Выбор сохраняется только после подтверждения. Перенос самой боёвки выполняется отдельно.'}
