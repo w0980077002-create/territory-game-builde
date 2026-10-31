@@ -1,7 +1,7 @@
 import { create } from './store';
 import { prepareNewEquipment, capEquipmentToHeroLevel } from './equipmentBalance';
 import { calendarDayKey, weeklyQuestKey } from './weeklyQuests';
-import { reconcileFollowers, cowStoneChapterBossReward, awardCowAwakeningStone } from './followers';
+import { reconcileFollowers } from './followers';
 import { canBuyShopItem, shopStonesBoughtToday, SHOP_STONES_PER_DAY, MAX_SHOP_PURCHASE_QTY } from './purchaseGuard';
 import { isPerishableItem, newElixirExpiry, reconcileElixirExpiry } from './elixirExpiry';
 import type { GameState } from './types';
@@ -421,7 +421,6 @@ export function recordBattleResult(
   newState = updateProgress(newState, 'battle_win', 1) as GameState;
   if (enemy.isBoss) {
     newState = updateProgress(newState, 'boss_win', 1) as GameState;
-    newState = awardCowAwakeningStone(newState, cowStoneChapterBossReward(state.currentChapter, enemy.id, enemy.isBoss));
   }
 
   // Update gold achievement
