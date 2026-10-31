@@ -245,13 +245,12 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
         description={en ? `${readyWeekly} rewards ready · ${weekQuests.length} active tasks` : `${readyWeekly} наград готово · ${weekQuests.length} текущих заданий`}
         status={readyWeekly ? 'ready' : weekQuests.length ? 'active' : 'done'} action={en ? 'Open quests' : 'Перейти к заданиям'} actionId="weekly-quests" onClick={visit('quests')} en={en}/>
       <EventCard icon={Swords} image="ic-arena.webp" name={en ? 'Arena weekly ranking' : 'Недельный рейтинг арены'}
-        description={weeklyArenaLive && arena ? (en ? `Verified wins: ${format(arena.my_wins)} · rank ${arena.my_rank ? '#' + arena.my_rank : '—'}` : `Подтверждено побед: ${format(arena.my_wins)} · место ${arena.my_rank ? '№' + arena.my_rank : '—'}`)
-          : (en ? 'The Arena server confirms weekly wins and positions.' : 'Победы и место в рейтинге подтверждает сервер арены.')}
+        description={weeklyArenaLive && arena ? (en ? `Wins this week: ${format(arena.my_wins)} · open TOP-50 for your place` : `Побед за неделю: ${format(arena.my_wins)} · место смотри в ТОП-50`)
+          : (en ? 'Your place is shown in the Arena TOP-50.' : 'Твоё место показано в ТОП-50 Арены.')}
         status={weeklyArenaLive ? 'active' : 'unknown'} action={en ? 'Fight in Arena' : 'Сражаться на арене'} actionId="arena-weekly" onClick={visit('arena')} en={en}/>
       <EventCard icon={Crown} image="ic-trophy.webp" name={en ? 'Weekly championship' : 'Недельный чемпионат'}
-        description={weeklySeasonLive && season ? (en ? `Your points: ${format(season.my_points)} · place ${season.my_rank ? '#' + season.my_rank : '—'}` : `Твои очки: ${format(season.my_points)} · место ${season.my_rank ? '№' + season.my_rank : '—'}`)
-          : (en ? 'Points and prizes start only when the server enables the championship.' : 'Очки и призы появятся после запуска чемпионата на сервере.')}
-        status={weeklySeasonLive ? 'active' : 'unknown'} action={weeklySeasonLive ? (en ? 'View standings' : 'Посмотреть места') : (en ? 'Check championship' : 'Проверить чемпионат')} actionId="weekly-championship" onClick={onSeason} en={en}/>
+        description={en ? 'The same weekly Arena TOP-50 with all participants.' : 'Единый недельный ТОП-50 всех участников Арены.'}
+        status={weeklySeasonLive ? 'active' : 'unknown'} action={en ? 'Open TOP-50' : 'Открыть ТОП-50'} actionId="weekly-championship" onClick={onSeason} en={en}/>
       <EventCard icon={Shield} image="nav-clan.webp" name={en ? 'Clan missions' : 'Клановые испытания'}
         description={en ? 'Contributions, quests, clan boss and wars.' : 'Взносы, задания, клановый босс и войны.'}
         status="active" action={en ? 'Open Clan' : 'Войти в клан'} actionId="clan" onClick={visit('clan')} en={en}/>
