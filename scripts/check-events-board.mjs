@@ -110,4 +110,24 @@ assert(clans.includes("isMe ? ` · ${t('clanLevelShort')} ${m.level}` : ''"));
 assert(!friends.includes('{level}/5') && friends.includes("friend.qualified ? 100"));
 assert(championship.includes('season-journey__hero') && !championship.includes('Тот же недельный ТОП-50'));
 assert(!championship.includes('season-official-server'));
+// Temporarily paused championship may not be reachable from player UI.
+const featureFlags = read('src/game/uiFeatureFlags.ts');
+const topPlayers = read('src/components/LeaderboardScreen.tsx');
+const arenaLobby = read('src/components/arena/ArenaLobby.tsx');
+assert.match(featureFlags, /export const SHOW_WEEKLY_CHAMPIONSHIP = false;/,
+  'Separate championship must remain paused until its ranking and payouts are unified with Arena');
+assert.match(topPlayers, /SHOW_WEEKLY_CHAMPIONSHIP && <div className="arena-rank-journey__tabs"/,
+  'When championship is off, avoid a lone redundant ranking tab');
+assert.match(topPlayers, /SHOW_WEEKLY_CHAMPIONSHIP && tab === 'season'/,
+  'Season must not render from direct navigation while feature is paused');
+assert.match(topPlayers, /SHOW_WEEKLY_CHAMPIONSHIP && initialTab === 'season'/,
+  'Previously saved championship route must fall back to the Arena board');
+assert.match(arenaLobby, /SHOW_WEEKLY_CHAMPIONSHIP && onSeason && <button/,
+  'Do not advertise championship in the Arena lobby');
+assert.match(screen, /SHOW_WEEKLY_CHAMPIONSHIP && <EventCard icon=\{Crown\}/,
+  'Weekly event calendar must not advertise championship');
+assert.match(screen, /\.\.\.\(SHOW_WEEKLY_CHAMPIONSHIP \? \[withEventStatusTimeout\(fetchSeasonStatus\(\)\)/,
+  'Do not call inactive championship RPC when players open the calendar');
+assert.match(topPlayers, /<ArenaWeeklyBoard \/>/,
+  'Existing Arena TOP-50 remains accessible');
 console.log('Events board PASS: real existing bonuses, UTC countdowns, server-only status, live navigation, first-hour quest actions, anonymous analytics and compact mobile layout.');
