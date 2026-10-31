@@ -204,6 +204,54 @@ export function ProfessionsScreen({ onMap, onInventory, onForge }: { onMap?: () 
         {progress.active && <div className="mt-2 text-xs text-amber-200">{t('yourProfession')}: {language === 'en' ? ({ smith: 'Blacksmith', alchemist: 'Alchemist', artisan: 'Artisan', jeweler: 'Jeweler', engineer: 'Engineer' } as Record<string, string>)[progress.active] : PROFESSION_DEFINITIONS.find((p) => p.id === progress.active)?.name}</div>}
       </section>
 
+      <section className="rounded-2xl border border-amber-400/50 bg-gradient-to-br from-[#4a2c14] via-[#2c1b11] to-[#17131b] p-3 shadow-[inset_0_2px_0_rgba(255,214,134,0.18)]" data-testid="profession-craft-route" aria-label={language === 'en' ? 'Crafting journey' : 'Путь ремесленника'}>
+        <div className="flex items-center gap-3">
+          <img src={progress.active ? PROFESSION_ART[progress.active] : import.meta.env.BASE_URL + 'ic-professions-viking.webp'} alt="" className="h-16 w-16 shrink-0 object-contain drop-shadow-lg" loading="lazy"/>
+          <div className="min-w-0">
+            <h3 className="text-base font-black text-amber-100 drop-shadow-[0_2px_1px_#241005]">{language === 'en' ? 'Your crafting journey' : 'Путь ремесленника'}</h3>
+            <p className="text-xs text-amber-100/85">{!progress.active
+              ? (language === 'en' ? 'Choose a profession to see real recipes and materials.' : 'Выбери профессию, чтобы увидеть настоящие рецепты и материалы.')
+              : (language === 'en' ? 'Prepare materials, craft, then check your inventory.' : 'Собери материалы, изготовь вещь и проверь её на складе.')}</p>
+          </div>
+        </div>
+        {progress.active && craftCheck === 'checking' && <p role="status" className="mt-2 text-xs text-amber-200">{language === 'en' ? 'Checking crafting status…' : 'Проверяем состояние ремесла…'}</p>}
+        {progress.active && craftCheck === 'error' && <div className="mt-2 rounded-lg border border-red-400/40 bg-red-950/35 p-2 text-xs text-red-100" role="alert">
+          <p>{language === 'en' ? 'Crafting status unavailable. No craft will start until checked.' : 'Статус ремесла недоступен. До проверки изготовление не начнётся.'}</p>
+          <button type="button" onClick={() => { void retryCraftCheck(); }} className="mt-2 min-h-11 rounded-lg border border-amber-300/60 bg-amber-700/50 px-3 font-bold"><RefreshCw className="mr-1 inline h-4 w-4"/>{language === 'en' ? 'Retry check' : 'Повторить проверку'}</button>
+        </div>}
+        {progress.active && craftCheck === 'ready' && routeGoal && <div className="mt-3 rounded-xl border border-amber-300/30 bg-black/25 p-2.5">
+          <div className="flex items-center gap-2">
+            <img src={craftOutputArt(routeGoal.recipe.output)} alt="" className="h-12 w-12 shrink-0 object-contain" loading="lazy"/>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-amber-300">{language === 'en' ? 'Next recipe' : 'Следующий рецепт'}</p>
+              <b className="block text-sm text-amber-50">{localizeText(routeGoal.recipe.name, language)}</b>
+              <p className="text-[11px] text-amber-100/85">{!routeGoal.levelReady
+                ? (language === 'en' ? 'Requires mastery ' + routeGoal.recipe.requiredLevel : 'Нужно мастерство ' + routeGoal.recipe.requiredLevel)
+                : routeGoal.ready ? (language === 'en' ? 'Materials are ready' : 'Материалы собраны')
+                : (language === 'en' ? 'Gather missing materials' : 'Нужно добыть материалы')}</p>
+            </div>
+          </div>
+          {routeGoal.missing.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5" aria-label={language === 'en' ? 'Missing materials' : 'Недостающие материалы'}>
+            {routeGoal.missing.map(({ id, need }) => {
+              const resource = RESOURCE_DEFINITIONS.find(item => item.id === id);
+              return <span key={id} className="inline-flex items-center gap-1 rounded-lg border border-amber-400/25 bg-[#21150c] px-2 py-1 text-[11px] text-amber-100">
+                {resource && <img src={resourceArt(resource.id)} alt="" className="h-5 w-5 object-contain"/>}
+                {resource ? localizeText(resource.name, language) : id}: −{need}
+              </span>;
+            })}
+          </div>}
+          {craftStatus?.enabled ? <p className="mt-2 text-[10px] text-emerald-200">{language === 'en' ? 'Material counts verified by the crafting server.' : 'Количество материалов подтверждено сервером ремесла.'}</p>
+            : <p className="mt-2 text-[10px] text-amber-200/80">{language === 'en' ? 'Local inventory preview; crafting requires its existing confirmation.' : 'Предпросмотр по инвентарю; изготовление требует действующего подтверждения.'}</p>}
+        </div>}
+        {pendingCraft && <p role="status" className="mt-2 text-xs font-bold text-amber-200">{language === 'en' ? 'Unconfirmed craft: return to the recipe tab to retry safely.' : 'Неподтверждённое изготовление: вернись к рецептам для безопасного повтора.'}</p>}
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="profession-journey-navigation">
+          {onMap && <button type="button" onClick={onMap} className="min-h-11 rounded-lg border border-sky-300/40 bg-sky-900/35 px-2 text-xs font-black text-sky-50"><MapPinned className="mr-1 inline h-4 w-4"/>{language === 'en' ? 'Gather' : 'Добыча'}</button>}
+          {onInventory && <button type="button" onClick={onInventory} className="min-h-11 rounded-lg border border-violet-300/40 bg-violet-900/35 px-2 text-xs font-black text-violet-50"><Package className="mr-1 inline h-4 w-4"/>{language === 'en' ? 'Warehouse' : 'Склад'}</button>}
+          {onForge && <button type="button" onClick={onForge} className="min-h-11 rounded-lg border border-orange-300/40 bg-orange-900/35 px-2 text-xs font-black text-orange-50"><Hammer className="mr-1 inline h-4 w-4"/>{language === 'en' ? 'Forge' : 'Кузница'}</button>}
+          <button type="button" onClick={() => setTab('craft')} className="min-h-11 rounded-lg border border-amber-200 bg-gradient-to-b from-[#f6c66e] to-[#a86a2a] px-2 text-xs font-black text-[#241308]">{language === 'en' ? 'Recipes' : 'Рецепты'}<ChevronRight className="ml-1 inline h-4 w-4"/></button>
+        </div>
+      </section>
+
       {progress.active && progress.masteryLevel >= 300 && (
         <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-4">
           <p className="font-bold text-amber-200">👑 {language === 'en' ? 'Master license' : 'Лицензия мастера'}</p>
