@@ -81,6 +81,7 @@ jobs:
             /tmp/territory-stage1-ui
             /tmp/slots-screenshots
             /tmp/adventure-screenshots
+            /tmp/territory-companion-360.png
             /tmp/territory-hero-360.png
             /tmp/territory-profile-360.png
             /tmp/territory-item-360.png
