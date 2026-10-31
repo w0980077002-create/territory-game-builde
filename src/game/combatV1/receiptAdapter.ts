@@ -229,3 +229,32 @@ export async function requestAdventureSettlement(userId: string, command: Advanc
     throw error;
   } finally { active.delete(userId); }
 }
+
+/** Before another game mode issues a save, finish only the SAME pending cave
+ * command (its persisted UUID). A proven 409 rollback is also a resolved
+ * outcome after the verified owner-scoped cloud snapshot is installed.
+ * Never silently discard a pending operation or mint a second cave charge. */
+export async function reconcilePendingCaveBeforeArena(userId: string, hooks: Hooks): Promise<void> {
+  const pendingStart = restoreAdventureStartFence(userId);
+  if (pendingStart) {
+    try {
+      await requestAdventureStart(userId, pendingStart, hooks);
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== 'adventure_definitively_rejected')
+        throw new Error('cave_recovery_required');
+    }
+  }
+  const pendingAdvance = restoreAdventureSaveFence(userId);
+  if (pendingAdvance) {
+    try {
+      await requestAdventureSettlement(userId, pendingAdvance, hooks);
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== 'adventure_definitively_rejected')
+        throw new Error('cave_recovery_required');
+    }
+  }
+  // Only acknowledged receipts or verified rollbacks remove markers.
+  // In all other cases leave the save fence in place and fail the Arena entry.
+  if (restoreAdventureStartFence(userId) || restoreAdventureSaveFence(userId))
+    throw new Error('cave_recovery_required');
+}
