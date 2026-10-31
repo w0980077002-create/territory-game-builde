@@ -28,7 +28,7 @@ with sync_playwright() as p:
         floor_panel = page.get_by_test_id('dark-cave-floor-scroll')
         actions = page.get_by_test_id('dark-cave-actions')
         challenge = page.get_by_test_id('dark-cave-challenge')
-        assert actions.is_visible() and challenge.is_visible(), 'Challenge and blessings must be visible without scrolling main page'
+        assert actions.is_visible() and challenge.is_visible(), 'Challenge must be visible without scrolling main page'
         bounds = page.evaluate("""() => {
           const realm=document.querySelector('[data-testid="dark-cave-realm"]').getBoundingClientRect();
           const list=document.querySelector('[data-testid="dark-cave-floor-scroll"]').getBoundingClientRect();
@@ -41,6 +41,10 @@ with sync_playwright() as p:
         assert bounds['listBottom'] <= bounds['actionsTop'] + 2, f'Floor list overlaps actions: {bounds}'
         assert bounds['challengeBottom'] <= bounds['windowHeight'] - 60, f'Challenge hidden behind bottom navigation: {bounds}'
         assert floor_panel.evaluate('(e) => e.scrollHeight > e.clientHeight'), '100 floors must be scrollable'
+        assert floor_panel.evaluate('(e) => e.clientHeight >= 156'), 'At least three cave floors must be viewable without scrolling'
+        assert page.get_by_test_id('dark-cave-visual').is_visible(), 'Dark abyss illustration must be present'
+        assert page.get_by_text('Добавить благословение').count() == 0, 'Unimplemented blessings may not appear as active slots'
+        assert page.get_by_text('Режим боя').count() == 0, 'Mode selection belongs in combat, not the cave lobby'
         assert page.locator('button').count() >= 8
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'horizontal overflow'
         page.screenshot(path=str(OUT / ('adventure-'+str(width)+'.png')), full_page=True)
@@ -51,6 +55,7 @@ with sync_playwright() as p:
             assert floor_panel.evaluate('(e) => e.scrollTop > 0'), 'must scroll beyond initial floors'
             page.get_by_role('button',name='Мой этаж').click()
             assert floor_panel.evaluate('(e) => e.scrollTop < e.scrollHeight - e.clientHeight'), 'jump to current floor'
+            page.goto(URL+'?manual=1')
             page.get_by_test_id('dark-cave-challenge').click()
             page.get_by_test_id('dark-cave-battle-background').wait_for()
             page.get_by_test_id('dark-cave-combat-panels').wait_for()
@@ -81,7 +86,7 @@ with sync_playwright() as p:
         page = browser.new_page(viewport={'width':width,'height':height})
         page.on('pageerror',lambda e:errors.append(str(e)))
         page.route(URL+'**',serve)
-        page.goto(URL+'?lang=en')
+        page.goto(URL+'?lang=en&manual=1')
         page.get_by_test_id('dark-cave-challenge').wait_for()
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'English horizontal overflow'
         page.get_by_test_id('dark-cave-challenge').click()
@@ -98,7 +103,6 @@ with sync_playwright() as p:
         page.route(URL+'**',serve)
         page.goto(URL + ('?lang=en' if lang == 'en' else ''))
         page.get_by_test_id('dark-cave-challenge').wait_for()
-        page.get_by_role('button',name='Auto' if lang == 'en' else 'Авто', exact=True).click()
         page.get_by_test_id('dark-cave-challenge').click()
         page.get_by_text('Victory!' if lang == 'en' else 'Победа!', exact=True).wait_for(timeout=10000)
         assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
@@ -108,7 +112,7 @@ with sync_playwright() as p:
         page = browser.new_page(viewport={'width':360,'height':700})
         page.on('pageerror',lambda e:errors.append(str(e)))
         page.route(URL+'**',serve)
-        page.goto(URL + ('?lang=en' if lang == 'en' else ''))
+        page.goto(URL + ('?lang=en&manual=1' if lang == 'en' else '?manual=1'))
         page.get_by_test_id('dark-cave-challenge').wait_for()
         page.evaluate('(result) => { window.__nextOutcome = result }', outcome)
         page.get_by_test_id('dark-cave-challenge').click()
