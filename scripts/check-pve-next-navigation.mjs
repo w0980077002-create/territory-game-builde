@@ -118,6 +118,6 @@ assert.equal(capped.xpPercent, 100);
 assert.match(fight, /src=\{getCombatAppearance\(state\.appearance\)\.idle\}/, 'battle still forces male Viking portrait over the selected hero');
 assert.match(fight, /data-testid="victory-next-goal"/, 'visible next opponent is missing from PvE victory');
 assert.match(fight, /data-testid="victory-xp-label"/, 'victory does not show saved XP progress');
-assert.match(fight, /outcome\.won \? getVictoryJourney\(state,kind,levelAtFightStart\.current\)/,
+assert.ok(fight.includes('outcome?.won ? getVictoryJourney(state,kind,levelAtFightStart.current)'),
   'victory path must be derived from committed game save, not invented rewards');
 console.log('PvE victory motivation PASS: selected hero, saved XP, level up, next enemy/boss/trial and no state mutation.');
