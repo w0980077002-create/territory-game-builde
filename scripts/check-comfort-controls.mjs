@@ -38,6 +38,18 @@ try {
   assert.equal(impacts, 3, 'Storage failure falls back to best-effort native feedback');
   webApp.HapticFeedback.impactOccurred = () => { throw Error('unsupported'); };
   assert.doesNotThrow(() => hapticImpact(), 'Broken Telegram SDK never aborts combat');
+  const preferenceBundle = await build({
+    entryPoints: ['src/game/hapticPreference.ts'], bundle: true, write: false,
+    platform: 'node', format: 'esm',
+  });
+  const preference = await import(
+    'data:text/javascript;base64,' + Buffer.from(preferenceBundle.outputFiles[0].text).toString('base64')
+  );
+  assert.equal(preference.hapticsEnabled(), true, 'Restricted storage defaults to original behavior');
+  preference.setHapticsEnabled(false);
+  assert.equal(preference.hapticsEnabled(), false, 'An opt-out must work during this session even without storage');
+  preference.setHapticsEnabled(true);
+  assert.equal(preference.hapticsEnabled(), true, 'The session switch must be reversible');
   delete globalThis.window;
   assert.doesNotThrow(() => hapticNotify('success'), 'No Telegram SDK is safe');
 } finally {
