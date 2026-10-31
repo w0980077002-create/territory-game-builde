@@ -185,7 +185,6 @@ export function ArenaWeeklyBoard() {
               <span className="arena-weekly-avatar"><img src={getAppearanceIcon(player.appearance)} alt="" loading="lazy" /></span>
               <span className="arena-weekly-player-name" title={player.display_name}>
                 <span className="arena-weekly-name-text">{player.display_name}</span>
-                <small>{en ? 'Lv.' : 'Ур.'} {player.level}</small>
               </span>
               <span className="arena-weekly-wins"><Trophy aria-hidden="true" />{player.wins.toLocaleString('ru-RU')}</span>
             </div>
