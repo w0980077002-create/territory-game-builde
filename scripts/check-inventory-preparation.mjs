@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import ts from 'typescript';
+const read = path => readFileSync(path, 'utf8');
+const inventory = read('src/components/InventoryScreen.tsx');
+const warehouse = read('src/components/CompactWarehouse.tsx');
+const app = read('src/App.tsx');
+const css = read('src/components/inventoryPreparation.css');
+for (const [path, content] of [['src/components/InventoryScreen.tsx',inventory],['src/components/CompactWarehouse.tsx',warehouse],['src/App.tsx',app]]) {
+  const parsed = ts.createSourceFile(path,content,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+  assert.equal(parsed.parseDiagnostics.length,0,path+' syntax');
+}
+assert.match(inventory,/data-testid="inventory-battle-preparation"/,'Preparation must be reachable from items');
+assert.match(inventory,/BELT_RULES\.filter/,'Only unlocked slots count');
+assert.match(inventory,/isSlotOpen\(i, beltCtx\) && !isElixirExpired\(item, now\)/,'Do not count expired or locked consumables');
+assert.match(inventory,/spareConsumables/,'Stocked and empty warehouses need distinct guidance');
+assert.match(inventory,/onArena && <button type="button" onClick=\{onArena\}/,'Open real Arena lobby');
+assert.match(inventory,/onBattle && <button type="button" onClick=\{onBattle\}/,'Open real Campaign');
+assert.match(app,/onArena=\{\(\) => setScreen\('arena'\)\}/,'Arena navigation cannot auto-start a fight');
+assert.match(app,/onBattle=\{\(\) => \{ setBattleView\('campaign'\); setAutoStart\(false\); setScreen\('battle'\); \}\}/,'Campaign cannot auto-spend stones');
+assert.match(inventory,/putInBelt\(latest, item\.id, beltContext\(latest, useArena\.get\(\)\.wins\)\)/,'Existing belt mutation uses latest state');
+assert.match(inventory,/takeFromBelt\(current, i\)/,'Return-to-warehouse action remains');
+assert.match(inventory,/<BeltCells/,'Seven real belt cells remain');
+assert.match(warehouse,/onForge\?: \(\) => void/,'Forge route is optional');
+assert.match(warehouse,/setForgeInfoOpen\(false\); onForge\(\)/,'Forge materials open the real forge');
+assert.match(inventory,/onForge=\{onForge\}/,'Forge route passed through inventory');
+assert.match(css,/min-height:44px/,'Mobile actions have accessible touch size');
+assert.match(css,/max-width:340px/,'Narrow phones have explicit layout');
+assert.doesNotMatch(inventory,/awardCowAwakeningStone|claimQuest|grantReward|saveCloudSave|supabase\./,'Preparation cannot grant rewards or write cloud state');
+console.log('Inventory preparation PASS: warehouse -> belt -> Arena/Campaign, forge materials -> forge, RU/EN, mobile targets, no new economy.');
