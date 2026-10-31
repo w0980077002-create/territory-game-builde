@@ -38,6 +38,7 @@ with sync_playwright() as playwright:
             assert ('Battle Cow' if language == 'en' else 'Боевая корова') in panel.locator('.followers-camp__detail h3').inner_text()
             assert panel.locator('.followers-camp__availability--locked').is_visible()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            if width == 360 and language == 'ru': page.screenshot(path='/tmp/territory-companion-360.png')
             page.close()
     browser.close()
 server.shutdown()
