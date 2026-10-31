@@ -35,7 +35,7 @@ const weak = { ...fighter, stats: { ...fighter.stats, hp: 1, maxHp: 1, attack: 1
 const enemy = { ...fighter, stats: { ...fighter.stats, hp: 10, maxHp: 10, attack: 1 } };
 const rules = { stepMs: 10, maxDurationMs: 10000, approachMs: 20, attackIntervalMs: 200, basicWindupMs: 20, basicMultiplier: 1, defenseFactor: 0.5, magicDefenseFactor: 0.2, minimumDamage: 1, critMultiplier: 2, blockMultiplier: 0, maxEnergy: 100, initialEnergy: 100, energyPerSecond: 0, modeDamageMultiplier: { pve: 1, boss: 1, pvp: 1 } };
 const save = { player: { gold: 50, xp: 90, level: 1, xpToNext: 100, maxEnergy: 20, stats: { hp: 100, maxHp: 100, attack: 20, defense: 5 }, equipped: { weapon: { id: 'old' } } }, inventory: [{ id: 'old' }], battleStones: 10, vip: 7, redGems: 45, achievements: [{ id: 'old' }] };
-const noLevelSave = structuredClone(save); noLevelSave.player.xp = 0;
+const noLevelSave = structuredClone(save); noLevelSave.player.xp = 0; noLevelSave.battleStones = 0;
 
 // Refuse to reuse any database that already contains application data.
 assert.equal(await sql("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p')"), '0', 'test database must be empty');
@@ -163,6 +163,8 @@ assert.equal(next.state.input.stage,2,'next stage starts immediately after level
 const profile=await scalar(`SELECT fighter FROM territory_private.combat_profiles_v1 WHERE player_id=${quote(player)}`);
 assert.equal(profile.ownership.heroLevel,2); assert.equal(profile.stats.attack,105); assert.equal(profile.stats.maxHp,1020);
 const noLevelStart=await execute(noLevel,{action:'start',operationId:op(8),encounterId:'s1',control:'auto'});
+assert.equal(noLevelStart.start_save.battle_stones,0,'Cave does not require ordinary stones');
+assert.equal(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(noLevel)}`),'4');
 await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(noLevelStart.session_id)}`);
 const noLevelWin=await execute(noLevel,{action:'advance',operationId:op(9),sessionId:noLevelStart.session_id,revision:0});
 assert.equal(noLevelWin.settlement.game_state.player.level,1);

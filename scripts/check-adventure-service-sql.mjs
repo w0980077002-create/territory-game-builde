@@ -20,7 +20,7 @@ try {
  CREATE TABLE public.players(id uuid primary key,banned bool default false,game_state jsonb,gold int,gems int,xp int,level int,max_energy int,updated_at timestamptz default clock_timestamp());
  GRANT SELECT,UPDATE ON public.players TO service_role;`);
  await q('INSERT INTO players(id,game_state,gold,gems,xp,level,max_energy) VALUES($1,$2,50,9,90,1,20)',[player,save]);
- const noLevelSave=structuredClone(save); noLevelSave.player.xp=0;
+ const noLevelSave=structuredClone(save); noLevelSave.player.xp=0; noLevelSave.battleStones=0;
  await q('INSERT INTO players(id,game_state,gold,gems,xp,level,max_energy) VALUES($1,$2,50,9,0,1,20)',[noLevel,noLevelSave]);
  await db.exec(readFileSync('supabase/staged/territory_v1_combat_completion.sql','utf8'));
  await db.exec(readFileSync('supabase/staged/territory_v1_adventure_settlement.sql','utf8'));
@@ -77,7 +77,7 @@ try {
  await db.exec('UPDATE territory_private.combat_config_v1 SET starts_enabled=false WHERE id');
  await db.exec('SET ROLE service_role');
  await assert.rejects(execOther({action:'start',operationId:op(12),encounterId:'s1',control:'auto'}),/combat_starts_paused/);
- assert.equal((await q('SELECT game_state FROM public.players WHERE id=$1',[noLevel]))[0].game_state.battleStones,10);
+ assert.equal((await q('SELECT game_state FROM public.players WHERE id=$1',[noLevel]))[0].game_state.battleStones,0);
  assert.equal((await exec({action:'resume',sessionId:next.session_id})).state.status,'fighting');
  assert.deepEqual(await exec({action:'start',operationId:op(5),encounterId:'s2',control:'auto'}),next);
  await db.exec('RESET ROLE');
@@ -87,6 +87,8 @@ try {
  await assert.rejects(exec({action:'start',operationId:op(13),encounterId:'s1',control:'auto'}),/combat_canary_not_allowed/);
  await assert.rejects(q(`INSERT INTO territory_private.cave_canary_v1 VALUES($1,'forged')`,[player]),/permission denied/);
  const otherStart=await execOther({action:'start',operationId:op(6),encounterId:'s1',control:'auto'});
+ assert.equal(otherStart.start_save.battle_stones,0,'Cave starts without ordinary stones');
+ assert.equal((await q('SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=$1',[noLevel]))[0].balance,4);
  await db.exec('RESET ROLE'); await q('UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=$1',[otherStart.session_id]); await db.exec('SET ROLE service_role');
  const otherWin=await execOther({action:'advance',operationId:op(7),sessionId:otherStart.session_id,revision:0});
  assert.equal(otherWin.settlement.game_state.player.level,1);
