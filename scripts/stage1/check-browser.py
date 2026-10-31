@@ -83,14 +83,18 @@ with sync_playwright() as p:
         expect(page.get_by_role('heading',name='История сделок')).to_be_visible()
         expect(page.get_by_text('Комиссия: 100 · Получено: 900')).to_be_visible()
         check(page,f'auction-history-{width}')
+        # Standalone championship is paused in player navigation, but the
+        # retained component must still render the shared read-only Arena board.
         page=load(browser,width,height,'season')
         expect(page.get_by_role('heading',name='Недельный чемпионат')).to_be_visible()
-        page.get_by_test_id('season-prize-rules').locator('summary').click()
-        expect(page.get_by_text('№10',exact=True)).to_be_visible()
-        page.get_by_test_id('season-winners-history').locator('summary').click()
-        expect(page.get_by_text('История чемпионов',exact=True)).to_be_visible()
+        expect(page.get_by_role('heading',name='ТОП-50 АРЕНЫ')).to_be_visible()
+        page.get_by_role('button',name='Посмотреть награды ТОП-50').click()
+        prize=page.get_by_role('dialog',name='Награды ТОП-50 Арены')
+        expect(prize).to_be_visible()
+        expect(prize.get_by_text('Текущее место в таблице не гарантирует приз.',exact=False)).to_be_visible()
+        prize.get_by_role('button',name='Закрыть',exact=True).click()
         check(page,f'season-{width}');shot(page,f'season-{width}')
-        report['viewports'].append({'width':width,'height':height,'clan_search_application_invite_chat':True,'auction_filters_history':True,'season_ten_prizes_history':True})
+        report['viewports'].append({'width':width,'height':height,'clan_search_application_invite_chat':True,'auction_filters_history':True,'paused_season_shared_arena_board':True})
     assert not report['errors'],report['errors']
     browser.close()
 (OUT/'verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
