@@ -11,7 +11,9 @@ const compiled = ts.transpileModule(source, {
 }).outputText;
 const firstStart = Date.parse('2026-10-18T00:00:00Z'); // Sunday 00:00 UTC
 const secondStart = Date.parse('2026-10-25T00:00:00Z');
-const thirdStart = Date.parse('2026-11-01T00:00:00Z');
+const transitionEnd = Date.parse('2026-11-01T22:00:00Z');
+const thirdStart = transitionEnd;
+const nextEnd = Date.parse('2026-11-08T22:00:00Z');
 const utcMidnight = (day) => Date.parse(day + 'T00:00:00Z');
 const calendarSource = readFileSync('src/game/seasonCalendar.ts', 'utf8');
 const calendarModule = { exports: {} };
@@ -25,18 +27,22 @@ vm.runInNewContext(ts.transpileModule(calendarSource, {
   },
   Date, Intl, Math, Number, Object, String,
 }, { filename: 'seasonCalendar.transpiled.js', timeout: 5000 });
-const { arenaSeasonWindow } = calendarModule.exports;
+const { arenaSeasonWindow, kyivArenaDayUtc, kyivArenaMidnight } = calendarModule.exports;
 assert.equal(arenaSeasonWindow(Date.parse('2026-10-24T23:59:59Z')).startsAt, firstStart);
 assert.equal(arenaSeasonWindow(Date.parse('2026-10-25T00:00:00Z')).startsAt, secondStart);
-assert.equal(arenaSeasonWindow(Date.parse('2026-10-26T12:00:00Z')).endsAt, thirdStart);
-assert.equal(arenaSeasonWindow(Date.parse('2026-11-01T00:00:00Z')).weekKey, '2026-11-01');
+assert.equal(arenaSeasonWindow(Date.parse('2026-10-26T12:00:00Z')).endsAt, transitionEnd);
+assert.equal(arenaSeasonWindow(Date.parse('2026-11-01T00:00:00Z')).weekKey, '2026-10-25');
+assert.equal(arenaSeasonWindow(Date.parse('2026-11-01T21:59:59Z')).weekKey, '2026-10-25');
+assert.equal(arenaSeasonWindow(transitionEnd).weekKey, '2026-11-02');
+assert.equal(arenaSeasonWindow(transitionEnd).startsAt, transitionEnd);
+assert.equal(arenaSeasonWindow(transitionEnd).endsAt, nextEnd);
 assert.equal(arenaSeasonWindow(Date.parse('2026-03-29T01:00:00Z')).weekKey, '2026-03-29',
   'Season boundary must ignore regional daylight-saving changes');
 const loaded = { exports: {} };
 vm.runInNewContext(compiled, {
   module: loaded, exports: loaded.exports,
   require: (name) => {
-    if (name === './seasonCalendar') return { arenaSeasonWindow, utcMidnight };
+    if (name === './seasonCalendar') return { arenaSeasonWindow, utcMidnight, kyivArenaDayUtc, kyivArenaMidnight };
     throw Error('Unexpected runtime dependency: ' + name);
   },
   Date, Intl, Math, Number, Object, Set, Map, String,
@@ -185,7 +191,7 @@ for (const [id, wins] of mondayMorning) {
 assert(increased >= 20, 'Bots must earn their wins at different points throughout each day');
 
 const beforeReset = scoresByName(at('2026-10-24T23:50:00Z', []).leaders);
-const newSeason = at('2026-10-25T12:00:00Z', [], secondStart, thirdStart);
+const newSeason = at('2026-10-25T12:00:00Z', [], secondStart, transitionEnd);
 checkRanks(newSeason.leaders);
 assert(newSeason.leaders.every(p => p.wins <= 25), 'Sunday must reset synthetic season-only wins');
 assert([...beforeReset.values()].some(wins => wins >= 90));
