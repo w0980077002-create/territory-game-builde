@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/game/i18n';
 import type { AuthUser } from '@/game/auth';
 import {
@@ -33,6 +33,7 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
   const [loading, setLoading] = useState(isLinked);
   const [botLoading, setBotLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const claimLock = useRef(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [friends, setFriends] = useState<ReferralFriend[]>([]);
@@ -52,6 +53,7 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
       setStatus(data);
       setError('');
     } catch (err) {
+      setStatus(null); // Do not offer a claim from an unverified old snapshot.
       console.error('Referral status unavailable:', err);
       setError(en ? 'Unable to load referrals. Try again.' : 'Не удалось загрузить друзей. Попробуй ещё раз.');
     } finally {
@@ -63,7 +65,7 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
     if (!isLinked) { setFriends([]); setFriendsLoading(false); return; }
     setFriendsLoading(true);
     try { setFriends(await getReferralFriends()); setFriendsError(false); }
-    catch { setFriendsError(true); }
+    catch { setFriends([]); setFriendsError(true); }
     finally { setFriendsLoading(false); }
   }, [isLinked]);
 
@@ -99,7 +101,7 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
   };
 
   const share = () => {
-    if(preparing)return;
+    // A validated referral link works even while the richer card is preparing.
     if(preparedId || url) captureGameEvent('territory_referral_share_click');
     const tg=getTelegramWebApp();
     if(preparedId&&tg?.shareMessage){
@@ -111,7 +113,8 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
   };
 
   const claim = async () => {
-    if (busy) return;
+    if (claimLock.current) return;
+    claimLock.current = true;
     setBusy(true); setError(''); setMessage('');
     try {
       const reward = await redeemReferrals(user.id);
@@ -119,12 +122,13 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
       setMessage(en
         ? 'Rewards claimed! +' + reward.gold + ' gold, +' + reward.gems + ' gems, +' + reward.stones + ' stones, +' + reward.materials + ' forge materials, +' + reward.red_gems + ' red gems.'
         : 'Награды получены! +' + reward.gold + ' золота, +' + reward.gems + ' алмазов, +' + reward.stones + ' камней, +' + reward.materials + ' материалов, +' + reward.red_gems + ' красных алмазов.');
+      setStatus(null); // A receipt is authoritative; the next claim needs a fresh status.
       await Promise.all([load(), loadFriends()]);
     } catch (err) {
       setError(err instanceof Error && err.message.includes('referral_nothing_to_claim')
         ? (en ? 'No rewards to claim yet.' : 'Пока нечего забирать.')
         : (en ? 'Server could not confirm rewards. Restart the game before retrying.' : 'Сервер не подтвердил награды. Перезапусти игру перед повтором.'));
-    } finally { setBusy(false); }
+    } finally { claimLock.current = false; setBusy(false); }
   };
 
   const readyToClaim = !!status && (status.pending_claims > 0 || status.welcome_pending || status.red_pending > 0);
@@ -197,14 +201,14 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
             <p className="text-sm text-amber-200">{en ? 'Could not load the referral link.' : 'Не удалось получить реферальную ссылку.'}</p>
             <button type="button" className="w-full rounded-xl border border-amber-400/50 bg-amber-900/40 py-3 font-bold flex items-center justify-center gap-2" onClick={() => void load()}><RefreshCw size={17}/>{en ? 'Retry' : 'Повторить'}</button>
           </div>
-        ) : url ? (
+        ) : (url || preparedId) ? (
           <>
-            <button type="button" className="btn-primary w-full py-3.5 text-base font-black flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(245,158,11,.22)]" onClick={share} disabled={preparing}>
+            <button type="button" className="btn-primary w-full py-3.5 text-base font-black flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(245,158,11,.22)]" onClick={share} disabled={!url && preparing}>
               <Send size={20}/>{en ? 'INVITE A FRIEND' : 'ПРИГЛАСИТЬ ДРУГА'}
             </button>
-            <button type="button" onClick={() => void copy()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm font-bold text-gray-200">
+            {url && <button type="button" onClick={() => void copy()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm font-bold text-gray-200">
               <Copy size={16}/>{en ? 'Copy my link' : 'Скопировать мою ссылку'}
-            </button>
+            </button>}
           </>
         ) : (
           <div className="space-y-2">
@@ -225,7 +229,7 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
         <>
           <section className="grid grid-cols-3 gap-2" aria-label={en ? 'Friend statistics' : 'Статистика друзей'}>
             {([
-              [status.registered, en ? 'Пришли' : 'Пришли', UsersRound],
+              [status.registered, en ? 'Joined' : 'Пришли', UsersRound],
               [status.qualified, en ? 'Active' : 'Засчитаны', ShieldCheck],
               [status.sealed_chests, en ? 'Chests' : 'Сундуки', Gift],
             ] as const).map(([value, label, Icon]) => (

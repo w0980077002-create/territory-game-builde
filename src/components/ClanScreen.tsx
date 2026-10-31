@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   fetchClanDirectory, fetchClanState, fetchClanRankings,
   createClan, contributeClan, claimClanBoss, claimClanQuest,
@@ -109,6 +109,26 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
     try { await fn(); } catch (e) { setError(errKey(e instanceof Error ? e.message : 'clan_error')); } finally { setBusy(false); }
   }, []);
 
+  // One server-changing clan action at a time, including before React renders
+  // disabled buttons. On an ambiguous result, hide stale actionable receipts
+  // until the player explicitly reloads the authoritative server state.
+  const mutationLock = useRef(false);
+  const runMutation = useCallback(async (fn: () => Promise<void>) => {
+    if (mutationLock.current) return;
+    mutationLock.current = true;
+    setBusy(true); setError(null);
+    try {
+      await fn();
+    } catch (e) {
+      setState(null);
+      setDir(null);
+      setError(errKey(e instanceof Error ? e.message : 'clan_error'));
+    } finally {
+      mutationLock.current = false;
+      setBusy(false);
+    }
+  }, []);
+
   const loadDirectory = useCallback(async (query = '') => {
     const d = await fetchClanDirectory(query);
     setDir(d);
@@ -118,6 +138,7 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
   useEffect(() => { void run(() => loadDirectory('')); }, [run, loadDirectory]);
 
   const loadState = useCallback(async (id: string) => {
+    setState(null);
     const s = await fetchClanState(id, userId);
     if (isStateShaped(s)) setState(s);
     else throw new Error('clan_error');
@@ -136,7 +157,7 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
 
   const openBrowse = () => { setView('browse'); void run(() => loadDirectory(search)); };
 
-  const doCreate = () => run(async () => {
+  const doCreate = () => runMutation(async () => {
     const receipt = await createClan(userId, {
       name: form.name.trim(), tag: form.tag.trim(), emblem: form.emblem,
       color1: form.color1, color2: form.color2, description: form.description,
@@ -148,14 +169,14 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
     notify(t('clanCreated'));
   });
 
-  const doContribute = (gold: number, materials: number) => run(async () => {
+  const doContribute = (gold: number, materials: number) => runMutation(async () => {
     if (!clanId) return;
     const receipt = await contributeClan(userId, clanId, gold, materials);
     applyState(receipt);
     await loadState(clanId);
   });
 
-  const doBossClaim = (bossNo?: number) => run(async () => {
+  const doBossClaim = (bossNo?: number) => runMutation(async () => {
     if (!clanId) return;
     const receipt = await claimClanBoss(userId, clanId, bossNo);
     applyState(receipt);
@@ -163,7 +184,7 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
     notify(t('clanRewardClaimed'));
   });
 
-  const doQuestClaim = (questId: string) => run(async () => {
+  const doQuestClaim = (questId: string) => runMutation(async () => {
     if (!clanId) return;
     const receipt = await claimClanQuest(userId, clanId, questId);
     applyState(receipt);
@@ -171,13 +192,13 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
     notify(t('clanRewardClaimed'));
   });
 
-  const simple = (fn: () => Promise<SimpleResult>, after?: () => Promise<void>) => run(async () => {
+  const simple = (fn: () => Promise<SimpleResult>, after?: () => Promise<void>) => runMutation(async () => {
     const r = await fn();
     if (!r.ok) throw new Error(r.error);
     if (after) await after();
   });
 
-  const doSendChat = () => run(async () => {
+  const doSendChat = () => runMutation(async () => {
     if (!clanId || !chatDraft.trim()) return;
     const body = chatDraft.trim().slice(0, 300);
     const r = await clanChatSend(clanId, body);
@@ -186,7 +207,7 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
     await loadState(clanId);
   });
 
-  const doLeave = () => run(async () => {
+  const doLeave = () => runMutation(async () => {
     const r = await clanLeave();
     if (!r.ok) throw new Error(r.error);
     setConfirmLeave(false);
@@ -275,7 +296,12 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
             />
             <button onClick={() => void run(() => loadDirectory(search))} className="rounded-xl bg-amber-500/20 border border-amber-400/40 px-3 py-2 text-xs font-bold text-amber-200">{t('clanSearchBtn')}</button>
           </div>
-          {!dir && <p className="py-8 text-center text-sm text-gray-400">{t('loadingHero')}</p>}
+          {!dir && (busy
+            ? <p className="py-8 text-center text-sm text-gray-400">{t('loadingHero')}</p>
+            : <button type="button" onClick={() => void run(() => loadDirectory(search))}
+                className="min-h-11 w-full rounded-xl border border-amber-400/60 bg-amber-900/40 px-3 py-2 text-sm font-bold text-amber-100">
+                {language === 'en' ? 'Retry clan search' : 'Повторить поиск кланов'}
+              </button>)}
           {dir && dir.clans.length === 0 && <p className="py-8 text-center text-sm text-gray-400">{t('clanNone')}</p>}
           {dir && dir.clans.map((c) => {
             const applied = dir.my_applications.includes(c.id);
@@ -636,7 +662,7 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
       )}
 
       {view === 'detail' && !state && <div className="space-y-2 py-6 text-center text-sm text-amber-100">
-        <p>{busy ? t('loadingHero') : (language === 'en' ? 'Unable to open clan details. No changes were made.' : 'Не удалось открыть клан. Данные не изменились.')}</p>
+        <p>{busy ? t('loadingHero') : (language === 'en' ? 'Clan confirmation is unavailable. Refresh before another action.' : 'Нет подтверждения состояния клана. Обнови данные перед следующим действием.')}</p>
         {!busy && clanId && <button type="button" onClick={() => void run(() => loadState(clanId))} className="min-h-11 w-full rounded-xl border border-amber-400/60 bg-amber-900/40 font-bold">
           {language === 'en' ? 'Retry clan details' : 'Повторить загрузку клана'}
         </button>}
