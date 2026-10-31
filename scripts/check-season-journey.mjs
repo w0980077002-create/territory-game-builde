@@ -18,6 +18,11 @@ const app=read('src/App.tsx'),events=read('src/components/EventsScreen.tsx');
 const arena=read('src/components/ArenaScreen.tsx'),lobby=read('src/components/arena/ArenaLobby.tsx');
 const board=read('src/components/LeaderboardScreen.tsx'),season=read('src/components/SeasonScreen.tsx');
 const css=read('src/components/seasonJourney.css');
+const seasonAdmin=read('src/admin/tabs/SeasonAdminTab.tsx');
+// Private implementation names and server timezone must stay untouched.
+// Player-facing labels must never reveal artificial Arena opponents or a city.
+assert.doesNotMatch(season, /virtual contenders|virtual players|AI opponents|боты(?:\\b|[^а-яё])|по Киеву|Sunday-to-Sunday Kyiv time/i);
+assert.doesNotMatch(seasonAdmin, /по Киеву/i);
 const weekly=read('src/components/arena/ArenaWeeklyBoard.tsx');
 const bots=read('src/game/arenaWeeklyBots.ts');
 // Championship must display the exact existing Arena ranking, not a second
