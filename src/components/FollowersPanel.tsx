@@ -35,8 +35,8 @@ export function FollowersPanel() {
       return next ?? current;
     });
     const cow = id === 'follower_6';
-    setNote(succeeded ? (cow ? (en ? 'Battle Cow level raised with an awakening stone' : 'Уровень Боевой коровы повышен за камень пробуждения') : (en ? 'Training completed' : 'Тренировка завершена'))
-      : cow ? (en ? 'An awakening stone is required for this upgrade.' : 'Для улучшения нужен камень пробуждения.')
+    setNote(cow ? (en ? 'Awakening is temporarily closed. Your stones and companion progress are safe.' : 'Пробуждение пока закрыто. Камни и прогресс спутника сохранены.')
+      : succeeded ? (en ? 'Training completed' : 'Тренировка завершена')
         : (en ? 'Not enough materials, gold or hero level' : 'Не хватает золота, материалов или уровня героя'));
   };
 
@@ -52,7 +52,7 @@ export function FollowersPanel() {
   const stonePrice = follower ? cowAwakeningCost(follower.level) : 1;
   const maxed = !!follower && (isCow ? follower.level >= MAX_BATTLE_COW_LEVEL : (follower.level >= state.player.level || follower.level >= MAX_FOLLOWER_LEVEL));
   const price = follower ? followerTrainingCost(follower.level) : { gold: 0, materials: 0 };
-  const canTrain = unlocked && !maxed && (isCow ? stoneCount >= stonePrice : state.player.gold >= price.gold && state.forgeMaterials >= price.materials);
+  const canTrain = unlocked && !maxed && !isCow && state.player.gold >= price.gold && state.forgeMaterials >= price.materials;
   const cap = isCow ? MAX_BATTLE_COW_LEVEL : Math.max(1, Math.min(state.player.level, MAX_FOLLOWER_LEVEL));
   const progress = follower ? Math.min(100, Math.round(follower.level / cap * 100)) : 0;
   const nextUnlock = FOLLOWER_TEMPLATES.find(f => !state.followers.find(x => x.id === f.id)?.unlocked);
@@ -116,7 +116,7 @@ export function FollowersPanel() {
           </button>
           <button type="button" onClick={() => train(follower.id)} disabled={!canTrain}
             className="followers-camp__train">
-            {isCow ? <Sparkles size={16}/> : <Wrench size={16}/>}{maxed ? en ? 'Level cap' : 'Лимит уровня' : isCow ? (en ? 'Raise level' : 'Повысить уровень') : en ? 'Train' : 'Обучить'}
+            {isCow ? <Sparkles size={16}/> : <Wrench size={16}/>}{maxed ? en ? 'Level cap' : 'Лимит уровня' : isCow ? (en ? 'Awakening unavailable' : 'Пробуждение закрыто') : en ? 'Train' : 'Обучить'}
           </button>
         </div>
         {isCow && <div className="followers-camp__awakening" aria-label={en ? 'Awakening stone' : 'Камень пробуждения'}>
@@ -124,7 +124,7 @@ export function FollowersPanel() {
           <div>
             <strong>{en ? 'AWAKENING STONE' : 'КАМЕНЬ ПРОБУЖДЕНИЯ'}</strong>
             <span>{en ? 'Owned' : 'В наличии'}: <b>{stoneCount}</b>{!maxed && <>{' · '}{en ? 'Needed' : 'Нужно'}: {stonePrice}</>}</span>
-            <small>{en ? 'Awakening uses this stone only, never gold or gems.' : 'Пробуждение — только за камень, не за монеты и алмазы.'}</small>
+            <small>{en ? 'Awakening is paused. No stones are being awarded or consumed.' : 'Пробуждение временно закрыто. Камни не выдаются и не списываются.'}</small>
           </div>
         </div>}
         {!isCow && !maxed && <div className="followers-camp__cost">
