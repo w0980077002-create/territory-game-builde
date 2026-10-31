@@ -1,0 +1,18 @@
+/* Warehouse -> saved belt -> existing battle modes, without new grants or timers. */
+.inventory-preparation-content{display:grid;gap:10px;min-width:0}
+.inventory-preparation{display:grid;grid-template-columns:66px minmax(0,1fr);align-items:center;gap:8px;min-width:0;padding:9px;border:2px solid #e4b46c;border-radius:14px;background:radial-gradient(ellipse at 10% 35%,#a55f3666,transparent 65%),linear-gradient(125deg,#4a2b1d,#202b37 88%);box-shadow:inset 0 1px #ffedbd69,0 3px 7px #100a08b5;color:#fce9c3}
+.inventory-preparation__art{width:66px;height:75px;object-fit:contain;filter:drop-shadow(0 4px 4px #100b09a8)}
+.inventory-preparation__summary{display:grid;gap:5px;min-width:0}
+.inventory-preparation__summary strong{color:#ffe5a4;font-size:clamp(14px,4.1vw,19px);font-weight:900;line-height:1.1;text-shadow:1px 2px #28150c,0 0 6px #e6a75355}
+.inventory-preparation__summary span{color:#ffe4b7;font-size:11px;font-weight:800;line-height:1.35}
+.inventory-preparation__summary span b{color:#fff8e3;font-size:13px}
+.inventory-preparation__summary small{color:#e2d2c0;font-size:11px;line-height:1.3;overflow-wrap:anywhere}
+.inventory-preparation__actions{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.inventory-preparation__actions button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:44px;padding:7px 5px;border:2px solid #ffe0a1;border-radius:10px;background:linear-gradient(#fbe3aa,#c48c41);color:#2e190d;font-size:12px;font-weight:900;line-height:1.2;touch-action:manipulation}
+.inventory-preparation__actions button.inventory-preparation__campaign{background:linear-gradient(#d2efc1,#7cab68);border-color:#d8f5b3}
+.inventory-preparation__actions button svg{flex-shrink:0}
+.inventory-preparation__actions button:focus-visible{outline:3px solid #fff2c2;outline-offset:2px}
+.inventory-preparation__notice{grid-column:1/-1;margin:0;padding:7px 9px;border:1px solid #c7e9a4;border-radius:8px;background:#2d5636;color:#f2ffdb;font-size:11px;line-height:1.3}
+.warehouse-info-card__done--secondary{background:linear-gradient(#76543b,#3e2b22);color:#ffe5b2;border-color:#ad8958}
+@media(max-width:340px){.inventory-preparation{grid-template-columns:53px minmax(0,1fr);gap:6px;padding:7px}.inventory-preparation__art{width:53px;height:65px}.inventory-preparation__actions button{font-size:11px;gap:2px}}
+@media(prefers-reduced-motion:reduce){.inventory-preparation__actions button{transition:none}}
