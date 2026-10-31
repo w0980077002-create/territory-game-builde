@@ -52,7 +52,10 @@ export async function requestAdventureSettlement(userId, command, hooks) {
  window.__adventureCalls.push(command);
  if (command.action === 'advance') {
    const result = window.__nextOutcome || 'hero_won';
-   current = outcome(result);
+   current = { ...outcome(result), events: [
+     { id: 'confirmed-1', atMs: 1000, actor: 'hero', target: 'enemy', type: 'impact', value: 10 },
+     { id: 'confirmed-2', atMs: 1700, actor: 'enemy', target: 'hero', type: 'block', value: 5 },
+   ] };
    progress = { completed_stage: result === 'hero_won' ? 1 : 0, unlocked_stage: result === 'hero_won' ? 2 : 1, dark_stones: 4 };
    hooks.applyState(oldState);
  }
