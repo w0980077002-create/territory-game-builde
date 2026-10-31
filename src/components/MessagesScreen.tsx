@@ -1,9 +1,10 @@
 import { MailInbox } from '@/components/home/HomeSheets';
+import { RewardJourney } from '@/components/RewardJourney';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage } from '@/game/i18n';
 
 /** Private mailbox. The existing server history and claim flows remain in MailInbox. */
-export function MessagesScreen({ notify }: { notify: (message: string) => void }) {
+export function MessagesScreen({ notify, onQuests, onDaily }: { notify: (message: string) => void; onQuests: () => void; onDaily: () => void }) {
   const { language } = useLanguage();
   const en = language === 'en';
   return (
@@ -15,7 +16,8 @@ export function MessagesScreen({ notify }: { notify: (message: string) => void }
           <p className="px-1 text-[10px] leading-tight text-amber-100/75">{en ? 'Letters, gifts and your reward history' : 'Письма, подарки и история наград'}</p>
         </div>
       </header>
-      <MailInbox notify={notify} />
+      <RewardJourney active="messages" onDaily={onDaily} onQuests={onQuests} />
+      <div className="mt-3"><MailInbox notify={notify} /></div>
     </div>
   );
 }

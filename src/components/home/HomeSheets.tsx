@@ -88,6 +88,8 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
   const [historyError, setHistoryError] = useState(false);
   const [historyHasMore, setHistoryHasMore] = useState(false);
   const historyRequest = useRef(0);
+  const failedHistoryOffset = useRef(0);
+  const claimInFlight = useRef(false);
 
   const loadHistory = useCallback(async (offset = 0) => {
     const request = ++historyRequest.current;
@@ -102,7 +104,10 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
       ]);
       setHistoryHasMore(result.hasMore);
     } catch {
-      if (request === historyRequest.current) setHistoryError(true);
+      if (request === historyRequest.current) {
+        failedHistoryOffset.current = offset;
+        setHistoryError(true);
+      }
     } finally {
       if (request === historyRequest.current) setHistoryLoading(false);
     }
@@ -114,6 +119,8 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
   }, [loadHistory]);
 
   const claimAdmin = async (id: string) => {
+    if (claimInFlight.current) return;
+    claimInFlight.current = true;
     setClaiming(id);
     try {
       const ok = await claimMailGrant(id);
@@ -126,6 +133,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
     } catch {
       notify(t('claimLetterRewardFail'));
     } finally {
+      claimInFlight.current = false;
       setClaiming(null);
     }
   };
@@ -148,7 +156,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
     <section className="territory-mail space-y-1.5" aria-label={language === 'en' ? 'Messages' : 'Сообщения'}>
         <div className="territory-mail__tabs flex gap-1.5" role="tablist" aria-label={language === 'en' ? 'Mail folders' : 'Разделы почты'}>
           <button type="button" role="tab" aria-selected={!received} onClick={() => setTab('new')}
-            className={`rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors ${!received ? 'border-sky-400/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-black/20 text-gray-400'}`}>
+            className={`min-h-11 rounded-md border px-3 py-2 text-[11px] font-semibold transition-colors ${!received ? 'border-sky-400/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-black/20 text-gray-400'}`}>
             {language === 'en' ? 'New' : 'Новые'} {newCount > 0 ? `(${newCount})` : ''}
           </button>
           <button type="button" role="tab" aria-selected={received} onClick={() => setTab('received')}
@@ -162,7 +170,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
         {received && historyError && (
           <div className="rounded-md border border-red-400/25 bg-red-500/10 p-2 text-center text-xs text-red-200">
             <p>{language === 'en' ? 'Could not load mail history.' : 'Не удалось загрузить историю писем.'}</p>
-            <button type="button" className="mt-2 text-sky-300 underline" onClick={() => void loadHistory(history.length)}>
+            <button type="button" className="mt-2 min-h-11 rounded-lg border border-amber-400/60 bg-amber-500/20 px-4 py-2 font-bold text-amber-100" onClick={() => void loadHistory(failedHistoryOffset.current)}>
               {language === 'en' ? 'Try again' : 'Повторить'}
             </button>
           </div>
@@ -172,7 +180,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
           const expanded = expandedId === `admin:${m.id}`;
           return (
             <article key={m.id} className={`territory-mail__letter rounded-lg border ${received ? 'border-white/10 bg-black/20' : 'border-sky-400/30 bg-sky-500/5'}`}>
-              <button type="button" className="flex w-full items-center gap-2 px-2 py-1.5 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `admin:${m.id}`)}>
+              <button type="button" className="flex min-h-11 w-full items-center gap-2 px-2 py-2 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `admin:${m.id}`)}>
                 <img src={import.meta.env.BASE_URL + 'ic-mail.webp'} alt="" className="h-5 w-5 shrink-0 object-contain" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[11px] font-bold text-white">{m.subject}</span>
@@ -210,7 +218,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
                   <button
                     onClick={() => void claimAdmin(m.id)}
                     disabled={claiming === m.id}
-                    className="shrink-0 h-6 px-2 rounded text-[10px] font-bold bg-sky-400 text-black disabled:opacity-50 transition-colors"
+                    className="shrink-0 min-h-11 px-3 rounded-lg text-[11px] font-bold bg-sky-400 text-black disabled:opacity-50 transition-colors"
                   >
                     {claiming === m.id ? '...' : t('claimReward')}
                   </button>
@@ -225,7 +233,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
           const expanded = expandedId === `game:${l.id}`;
           return (
             <article key={l.id} className={`territory-mail__letter rounded-lg border ${claimed ? 'border-white/10 bg-black/20' : 'border-amber-500/25 bg-black/30'}`}>
-              <button type="button" className="flex w-full items-center gap-2 px-2 py-1.5 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `game:${l.id}`)}>
+              <button type="button" className="flex min-h-11 w-full items-center gap-2 px-2 py-2 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `game:${l.id}`)}>
                 <img src={import.meta.env.BASE_URL + 'ic-mail.webp'} alt="" className="h-5 w-5 shrink-0 object-contain" />
                 <span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-white">{l.title}</span><span className="block truncate text-[9px] text-slate-400">{l.from}</span></span>
                 {expanded ? <ChevronDown className="h-3.5 w-3.5 text-amber-200" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-400" />}
@@ -237,7 +245,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
                 <button
                   onClick={() => claim(l.id)}
                   disabled={claimed}
-                  className="shrink-0 h-6 px-2 rounded text-[10px] font-bold bg-amber-500 text-black disabled:bg-white/10 disabled:text-gray-400 transition-colors"
+                  className="shrink-0 min-h-11 px-3 rounded-lg text-[11px] font-bold bg-amber-500 text-black disabled:bg-white/10 disabled:text-gray-400 transition-colors"
                 >
                   {claimed ? t('claimed') : t('claim')}
                 </button>
@@ -247,7 +255,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
           );
         })}
         {received && historyHasMore && !historyLoading && !historyError && (
-          <button type="button" className="btn-ghost w-full text-xs" onClick={() => void loadHistory(history.length)}>
+          <button type="button" className="btn-ghost min-h-11 w-full text-xs" onClick={() => void loadHistory(history.length)}>
             {language === 'en' ? 'Show more letters' : 'Показать ещё письма'}
           </button>
         )}
