@@ -18,6 +18,17 @@ const app=read('src/App.tsx'),events=read('src/components/EventsScreen.tsx');
 const arena=read('src/components/ArenaScreen.tsx'),lobby=read('src/components/arena/ArenaLobby.tsx');
 const board=read('src/components/LeaderboardScreen.tsx'),season=read('src/components/SeasonScreen.tsx');
 const css=read('src/components/seasonJourney.css');
+const weekly=read('src/components/arena/ArenaWeeklyBoard.tsx');
+const bots=read('src/game/arenaWeeklyBots.ts');
+// Championship must display the exact existing Arena ranking, not a second
+// hand-maintained NPC list with conflicting positions or win counts.
+assert.match(season, /import \{ ArenaWeeklyBoard \} from '\.\/arena\/ArenaWeeklyBoard'/);
+assert.match(season, /data-testid="season-arena-top50"[\s\S]*?<ArenaWeeklyBoard \/>/);
+assert.match(season, /data-testid="season-official-server"/, 'Preserve real server-confirmed prize standings separately');
+assert.match(weekly, /arenaWeeklyWithBots\(status, now\)/, 'Both screens use the same player-and-bot TOP-50');
+assert.match(weekly, /getArenaWeeklyStatus\(\)/, 'Real wins come from Arena server');
+assert.match(bots, /\.\.\.humans\.map/, 'Real players are merged with bot contenders');
+assert.match(bots, /\.\.\.bots/, 'NPCs remain on the same weekly leaderboard');
 assert.match(events,/actionId="weekly-championship" onClick=\{onSeason\}/);
 assert.match(events,/season\.week === kyivSeasonWeekKey\(clock\)/);
 assert.match(app,/onSeason=\{\(\) => \{ setLeaderboardInitialTab\('season'\); setScreen\('leaderboard'\); \}\}/);
