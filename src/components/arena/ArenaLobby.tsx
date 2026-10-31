@@ -193,7 +193,7 @@ export function ArenaLobby({ onJoined, onBack, onSeason, backDisabled = false }:
         className="mx-3 mb-4 flex min-h-[58px] w-[calc(100%-24px)] items-center gap-3 rounded-2xl border-2 border-amber-300/80 bg-gradient-to-r from-[#754520] via-[#52301c] to-[#352015] px-3 py-2 text-left text-amber-50 shadow-[inset_0_2px_0_#ffe1a077,0_4px_12px_#0008] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-100">
         <img src={import.meta.env.BASE_URL + 'ic-trophy.webp'} alt="" loading="lazy" className="h-11 w-11 shrink-0 object-contain" />
         <span className="min-w-0 flex-1"><strong className="block text-sm font-black leading-tight">{en ? 'Weekly championship' : 'Недельный чемпионат'}</strong>
-          <small className="block text-xs leading-snug text-amber-200">{en ? 'Verified points, winners and season status' : 'Подтверждённые очки, победители и статус сезона'}</small></span>
+          <small className="block text-xs leading-snug text-amber-200">{en ? 'Arena TOP-50, weekly battles and prizes' : 'ТОП-50 Арены, победы и награды недели'}</small></span>
         <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0 text-amber-200" />
       </button>}
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
