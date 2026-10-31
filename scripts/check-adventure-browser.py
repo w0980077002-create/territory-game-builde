@@ -69,6 +69,8 @@ with sync_playwright() as p:
             page.get_by_text('Победа!').wait_for()
             assert page.get_by_test_id('dark-cave-battle-log').locator('p').count() == 2, 'both server-confirmed hit and block must remain in combat log'
             assert page.get_by_text('+10 монет').count() == 1
+            page.get_by_test_id('dark-cave-next-floor').wait_for()
+            assert '2' in page.get_by_test_id('dark-cave-next-floor').inner_text(), 'new floor must come from server progress'
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
             page.get_by_role('button',name='К этапам').click()
             page.get_by_text('Этаж 2 / 100').wait_for()
@@ -115,6 +117,7 @@ with sync_playwright() as p:
         page.get_by_text(label, exact=True).wait_for()
         assert page.get_by_text('+10 монет').count() == 0
         assert page.get_by_text('+10 gold').count() == 0
+        assert page.get_by_test_id('dark-cave-next-floor').count() == 0, 'defeat/draw must not claim an unlocked floor'
         page.get_by_role('button',name='Back to cave stages' if lang == 'en' else 'К этапам пещеры').click()
         page.get_by_text('Floor 1 / 100' if lang == 'en' else 'Этаж 1 / 100').wait_for()
         page.close()
