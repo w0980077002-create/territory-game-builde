@@ -13,7 +13,7 @@ class Handler(SimpleHTTPRequestHandler):
 server = ThreadingHTTPServer(('127.0.0.1', 0), partial(Handler, directory='/tmp'))
 threading.Thread(target=server.serve_forever, daemon=True).start()
 with sync_playwright() as playwright:
-    browser = playwright.chromium.launch(executable_path=shutil.which('chromium'), args=['--no-sandbox'])
+    browser = playwright.chromium.launch(args=['--no-sandbox'])
     for width in (320, 360, 390, 430):
         for language in ('ru', 'en'):
             page = browser.new_page(viewport={'width': width, 'height': 500}, reduced_motion='reduce')
