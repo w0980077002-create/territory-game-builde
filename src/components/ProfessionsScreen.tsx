@@ -58,7 +58,7 @@ export function ProfessionsScreen({ onMap, onInventory, onForge }: { onMap?: () 
   const displayedXp = craftStatus?.enabled ? craftStatus.masteryXp : progress.masteryXp;
   const xpPercent = nextXp ? Math.min(100, Math.round((displayedXp / nextXp) * 100)) : 100;
   const routeGoal = nextCraftRoute(availableRecipes, displayedLevel,
-    (id) => craftStatus?.enabled ? (craftStatus.resources[id] ?? 0) : countResource(game.inventory, id));
+    (id) => craftStatus?.enabled ? (craftStatus.resources[id] ?? 0) : countResource(game.inventory, RESOURCE_DEFINITIONS.find(resource => resource.id === id)?.id ?? RESOURCE_DEFINITIONS[0].id));
   const retryCraftCheck = async () => {
     if (craftCheck === 'checking') return;
     setCraftCheck('checking');
