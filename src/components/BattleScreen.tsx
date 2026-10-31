@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, ShoppingBag } from 'lucide-react';
+import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, ShoppingBag, Shirt, ScrollText, ChevronRight } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { captureGameEvent } from '@/game/analytics';
-import { generateChapter, generateTrial, PVE_STONE_COST } from '@/game/engine';
+import { EQUIPMENT_SLOTS, generateChapter, generateTrial, getComputedStats, PVE_STONE_COST } from '@/game/engine';
 import { spendStones, trialReward, blessedGold } from '@/game/progression';
 import { hapticImpact } from '@/game/telegram';
 import type { Enemy } from '@/game/types';
@@ -12,6 +12,7 @@ import { PveFight, type FightKind } from './pve/PveFight';
 import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
 import { Currency } from './ui/Currency';
 import { DailyShareCard } from '@/game/DailyShareCard';
+import { getAppearanceIcon } from '@/game/appearance';
 import './battleJourney.css';
 // Independent: the old campaign, Trials, and server-operated Dark Cave.
 export type BattleView = 'campaign' | 'trial' | 'cave';
@@ -24,10 +25,11 @@ interface Props {
   onAutoStartHandled: () => void;
   onShop: () => void;
   onQuests: () => void;
+  onEquipment: () => void;
   onActiveChange?: (active: boolean) => void;
 }
 
-export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onQuests, onActiveChange }: Props) {
+export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onQuests, onEquipment, onActiveChange }: Props) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
@@ -48,6 +50,9 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const chapter = useMemo(() => generateChapter(state.currentChapter), [state.currentChapter]);
   const stages = [...chapter.enemies, chapter.boss];
   const nextIndex = Math.min(state.chapterWins, chapter.enemies.length);
+  // Read-only classic PvE preparation; server Cave stats and ownership are never inferred here.
+  const equippedCount = EQUIPMENT_SLOTS.filter(({ id }) => !!state.player.equipped[id]).length;
+  const heroAttack = getComputedStats(state).attack;
   const autoHandled = useRef(false);
   const fightStartLocked = useRef(false);
 
@@ -151,6 +156,38 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         <span className="text-xs text-gray-400">{t('oneFightCost')} {PVE_STONE_COST} {t('stone')}</span>
         <Currency kind="stones" value={state.battleStones} size={20} className="text-sm text-amber-100" />
       </div>
+
+      <section data-testid="battle-preparation-journey" aria-label={language === 'en' ? 'Prepare your hero for classic battles' : 'Подготовка героя к обычным боям'}
+        className="rounded-2xl border-2 border-amber-600/60 bg-gradient-to-r from-[#4d2e1b] via-[#30221b] to-[#171b24] p-2.5 shadow-[inset_0_1px_0_rgba(255,225,155,.22),0_5px_15px_rgba(0,0,0,.22)]">
+        <div className="flex items-center gap-2.5">
+          <img src={getAppearanceIcon(state.appearance)} alt="" loading="lazy" draggable={false}
+            className="h-20 w-16 shrink-0 object-contain object-bottom drop-shadow-[0_4px_5px_rgba(0,0,0,.65)]"/>
+          <div className="min-w-0 flex-1">
+            <strong className="block truncate text-sm font-black text-[#ffe6a4]">{language === 'en' ? 'Ready for the next fight?' : 'Готов к следующему бою?'}</strong>
+            <span className="block truncate text-xs font-semibold text-amber-100">{state.player.name} · {t('levelWord')} {state.player.level}</span>
+            <span className="block text-[11px] text-amber-200">
+              {language === 'en' ? 'Attack' : 'Атака'}: {heroAttack} · {language === 'en' ? 'Equipped' : 'Надето'}: {equippedCount}/7
+            </span>
+            <span className="block text-[10px] leading-snug text-amber-100/75">
+              {caveRecoveryNeeded
+                ? (language === 'en' ? 'Recover the pending Cave action before spending battle stones.' : 'Сначала восстанови операцию Пещеры, затем начинай бой.')
+                : equippedCount < 7
+                  ? (language === 'en' ? 'Check your saved equipment before battle.' : 'Проверь сохранённую экипировку перед боем.')
+                  : (language === 'en' ? 'Equipment is ready; choose your next encounter.' : 'Экипировка готова — выбирай противника.')}
+            </span>
+          </div>
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button type="button" data-testid="battle-open-equipment" onClick={onEquipment}
+            className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-[#ffdf9d] bg-gradient-to-b from-[#f8d78a] to-[#a96c32] px-2 text-xs font-black text-[#28170e]">
+            <Shirt size={16} aria-hidden="true"/>{language === 'en' ? 'Equipment' : 'Снаряжение'}<ChevronRight size={15} aria-hidden="true"/>
+          </button>
+          <button type="button" data-testid="battle-open-quests" onClick={onQuests}
+            className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-amber-500/50 bg-[#32251f] px-2 text-xs font-bold text-amber-100">
+            <ScrollText size={16} aria-hidden="true"/>{language === 'en' ? 'Quests' : 'Задания'}<ChevronRight size={15} aria-hidden="true"/>
+          </button>
+        </div>
+      </section>
 
       {error && (
         <div className="rounded-xl border border-red-400/30 bg-red-950/40 p-3 animate-fade-in">
