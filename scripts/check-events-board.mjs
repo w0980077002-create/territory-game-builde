@@ -67,6 +67,7 @@ assert.match(screen,/Promise\.allSettled\(checks\)/,'Live cards must tolerate pa
 assert.match(screen,/view === 'daily'/,'Opening the daily calendar must not fetch all weekly statuses');
 assert.match(screen,/refresh\('daily'\)/,'Initial events view only checks live daily status');
 assert.match(screen,/weeklyArenaLive/,'Stale arena rankings must not be presented as current results');
+assert.match(screen,/actionId="weekly-championship" onClick=\{onSeason\}/,'Weekly championship card must open real server standings');
 assert.match(screen,/aria-labelledby="territory-events-daily-tab"/,'Calendar tab must label its panel');
 assert.match(screen,/data-testid="events-daily-focus"/,'Daily panel must show a real next-action feature');
 assert.match(screen,/if \(nextGoal\.action === 'daily'\) onDaily\(\)/,'Focus must use the real daily reward sheet');
@@ -74,7 +75,7 @@ assert.match(screen,/else onNavigate\(nextGoal\.action\)/,'Focus must lead to re
 assert.match(styles,/\.territory-events__focus-action\s*\{/,'Daily focus needs a primary large mobile CTA');
 for(const serverRead of ['hallStatus()','fetchSeasonStatus()','getArenaWeeklyStatus()'])assert.ok(screen.includes(serverRead));
 assert.doesNotMatch(screen,/hallDaily\(|hallStart\(|hallFinish\(|useGame\.set\(|supabase\.rpc\(/,'Event hub must never grant rewards itself');
-assert.match(screen,/season\.week === seasonWindow\(clock\)\.weekKey/,'Never show last week as a live season');
+assert.match(screen,/season\.week === kyivSeasonWeekKey\(clock\)/,'Never show last week as a live season');
 assert.match(screen,/currentRequest\.current \+= 1/,'Ignore stale server replies after unmount');
 assert.match(analytics,/'messages','events'/,'Anonymous screen analytics must include new event hub and inbox');
 assert.match(analytics,/'territory_events_action'/,'Track only whitelisted event navigation, never player identity');

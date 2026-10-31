@@ -11,7 +11,7 @@ import { getArenaWeeklyStatus, type ArenaWeeklyStatus } from '@/game/arenaWeekly
 import { dailyHeroGoal, eventCalendar, readyQuestCount, withEventStatusTimeout } from '@/game/eventsBoard';
 import { captureGameEvent } from '@/game/analytics';
 import { RewardLootStrip } from '@/components/ui/RewardLootStrip';
-import { seasonCountdown, seasonWindow } from '@/game/seasonCalendar';
+import { kyivSeasonWeekKey, seasonCountdown } from '@/game/seasonCalendar';
 import './eventsBoard.css';
 
 export type EventDestination = 'city' | 'quests' | 'games' | 'map' | 'arena' | 'leaderboard' | 'messages' | 'clan';
@@ -82,7 +82,7 @@ function SevenDayJourney({ dayIndex, claimedToday, rewards, onOpen, en }: {
 }
 
 /** Real existing bonuses and competition progress; zero synthetic payouts. */
-export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
+export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
   onNavigate: (screen: EventDestination) => void;
   onDaily: () => void;
   onSeason: () => void;
@@ -150,7 +150,7 @@ export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
   const readyWeekly = readyQuestCount(state.quests, 'weekly');
   const unreadMail = MAIL.filter(letter => !state.mailClaimed.includes(letter.id)).length + mail.length;
   const time = eventCalendar(clock);
-  const seasonActive = season?.enabled === true && season.week === seasonWindow(clock).weekKey;
+  const seasonActive = season?.enabled === true && season.week === kyivSeasonWeekKey(clock);
   // A staged server can report an older week; never display it as today's contest.
   const weeklySeasonLive = seasonActive && season?.ends_at !== '' && Date.parse(season.ends_at) > clock;
   const weeklyArenaLive = !!arena && Date.parse(arena.starts_at) <= clock && Date.parse(arena.ends_at) > clock;
@@ -251,7 +251,7 @@ export function EventsScreen({ onNavigate, onDaily, gatherReady }: {
       <EventCard icon={Crown} image="ic-trophy.webp" name={en ? 'Weekly championship' : 'Недельный чемпионат'}
         description={weeklySeasonLive && season ? (en ? `Your points: ${format(season.my_points)} · place ${season.my_rank ? '#' + season.my_rank : '—'}` : `Твои очки: ${format(season.my_points)} · место ${season.my_rank ? '№' + season.my_rank : '—'}`)
           : (en ? 'Points and prizes start only when the server enables the championship.' : 'Очки и призы появятся после запуска чемпионата на сервере.')}
-        status={weeklySeasonLive ? 'active' : 'unknown'} en={en}/>
+        status={weeklySeasonLive ? 'active' : 'unknown'} action={weeklySeasonLive ? (en ? 'View standings' : 'Посмотреть места') : (en ? 'Check championship' : 'Проверить чемпионат')} actionId="weekly-championship" onClick={onSeason} en={en}/>
       <EventCard icon={Shield} image="nav-clan.webp" name={en ? 'Clan missions' : 'Клановые испытания'}
         description={en ? 'Contributions, quests, clan boss and wars.' : 'Взносы, задания, клановый босс и войны.'}
         status="active" action={en ? 'Open Clan' : 'Войти в клан'} actionId="clan" onClick={visit('clan')} en={en}/>

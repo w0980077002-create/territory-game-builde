@@ -1,0 +1,40 @@
+/* Existing championship: approved wood/gold game language, no new economy. */
+.season-journey{display:grid;gap:11px;min-width:0;padding-bottom:12px;color:#fff0cf;}
+.season-journey__hero{display:flex;align-items:center;gap:12px;min-width:0;padding:12px;border:3px solid #e9bd69;border-radius:18px;background:radial-gradient(ellipse at 18% 15%,#ad7d4577,transparent 62%),linear-gradient(145deg,#754421,#402619 62%,#291b17);box-shadow:inset 0 2px #ffe4a280,0 6px 15px #0008;}
+.season-journey__hero img{width:clamp(68px,24vw,106px);height:clamp(68px,24vw,106px);object-fit:contain;flex-shrink:0;filter:drop-shadow(0 4px 5px #0009);}
+.season-journey__heading{min-width:0;}
+.season-journey__heading>span{font-size:10px;line-height:1.3;letter-spacing:.5px;color:#ffda85;font-weight:900;}
+.season-journey__heading h2{font-size:clamp(19px,5.3vw,26px);font-weight:900;line-height:1.13;color:#fff0bc;text-shadow:0 2px 2px #1c0c05;overflow-wrap:anywhere;}
+.season-journey__heading p{font-size:12px;line-height:1.35;color:#f2dbc0;margin-top:5px;}
+.season-journey__summary,.season-journey__personal{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.season-journey__summary>div,.season-journey__personal>div{min-width:0;display:grid;align-content:center;justify-items:start;gap:4px;padding:10px;border:2px solid #b9874b;border-radius:13px;background:linear-gradient(145deg,#674027,#342019);box-shadow:inset 0 1px #ffda8655;}
+.season-journey__summary svg{color:#f9d28d;}
+.season-journey__summary span,.season-journey__personal span{font-size:11px;line-height:1.3;color:#f1d9b4;overflow-wrap:anywhere;}
+.season-journey__summary strong{font-size:15px;font-weight:900;color:#ffe9aa;overflow-wrap:anywhere;}
+.season-journey__personal>div{align-items:center;justify-items:center;padding:14px 7px;background:linear-gradient(140deg,#805025,#43291c);}
+.season-journey__personal strong{font-size:clamp(22px,7vw,32px);line-height:1.1;font-weight:900;color:#fff1b4;}
+.season-journey__goal,.season-journey__notice{border:2px solid #e6b565;border-radius:13px;background:linear-gradient(125deg,#684021,#302019);padding:12px;font-size:13px;line-height:1.5;color:#ffeac8;overflow-wrap:anywhere;}
+.season-journey__notice{display:flex;align-items:flex-start;gap:9px;}
+.season-journey__notice--warning{border-color:#ef9d69;}
+.season-journey__board,.season-journey__details{min-width:0;border:2px solid #c99c59;border-radius:15px;background:linear-gradient(160deg,#59351f,#291b16);box-shadow:inset 0 1px #ffe6a155;overflow:hidden;}
+.season-journey__board h3{display:flex;align-items:center;gap:8px;padding:12px;color:#ffe5a5;font-weight:900;font-size:16px;}
+.season-journey__row,.season-journey__prize,.season-journey__history{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding:10px 12px;border-top:1px solid #f7d89b33;font-size:13px;line-height:1.35;}
+.season-journey__row>span,.season-journey__history>span{flex:1;min-width:0;overflow-wrap:anywhere;}
+.season-journey__row>b{min-width:34px;color:#ffdf90;}
+.season-journey__row>strong,.season-journey__prize>span,.season-journey__history>strong{color:#ffe3a4;font-weight:900;text-align:right;overflow-wrap:anywhere;}
+.season-journey__row--mine{background:#9d773b44;outline:1px solid #ffdc8755;outline-offset:-1px;}
+.season-journey__empty{padding:12px;font-size:13px;color:#f0d4ad;}
+.season-journey__details summary{display:flex;align-items:center;gap:9px;min-height:48px;padding:11px 12px;color:#ffe5a5;font-size:14px;font-weight:900;cursor:pointer;list-style:none;}
+.season-journey__details summary::-webkit-details-marker{display:none;}
+.season-journey__details summary::after{content:'▾';margin-left:auto;color:#ffd27e;}
+.season-journey__details[open] summary::after{content:'▴';}
+.season-journey__details p{padding:10px 12px;font-size:12px;line-height:1.5;color:#f0dbc0;}
+.season-journey__actions{display:grid;gap:9px;}
+.season-journey__primary{display:flex;align-items:center;justify-content:center;gap:9px;min-height:52px;width:100%;padding:9px 12px;border:2px solid #ffe6a4;border-radius:13px;background:linear-gradient(#ffdf84,#d99b3c 55%,#a66322);box-shadow:inset 0 2px #fff3ca,0 4px #67350e;color:#311a0b;font-weight:900;font-size:15px;line-height:1.2;text-align:center;}
+.season-journey__primary svg:last-child{margin-left:auto;flex-shrink:0;}
+.season-journey__secondary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
+.season-journey__secondary button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:44px;padding:7px 4px;border:1px solid #e3b66a;border-radius:10px;background:linear-gradient(#78502c,#3b261b);color:#fff0cf;font-size:12px;font-weight:800;overflow-wrap:anywhere;}
+.season-journey button:focus-visible,.season-journey summary:focus-visible{outline:3px solid #fff3b0;outline-offset:2px;}
+.season-journey button:disabled{opacity:.55;}
+@media(max-width:350px){.season-journey__hero{gap:8px;padding:9px;}.season-journey__heading>span{font-size:9px;}.season-journey__summary>div{padding:8px;}.season-journey__secondary{gap:5px;}.season-journey__secondary button{font-size:11px;}}
+@media(prefers-reduced-motion:reduce){.season-journey button{transition:none;animation:none;}}

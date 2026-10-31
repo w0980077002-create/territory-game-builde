@@ -6,7 +6,7 @@ import { secureArenaJoin } from '@/game/arenaSecure';
 import { captureGameEvent } from '@/game/analytics';
 import { hapticImpact } from '@/game/telegram';
 import { useLanguage, localizeText } from '@/game/i18n';
-import { ChevronLeft, Flame, Info, Loader2, RefreshCw, ShieldAlert, Swords, Users, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flame, Info, Loader2, RefreshCw, ShieldAlert, Swords, Users, Zap } from 'lucide-react';
 import { ArenaWeeklyBoard } from './ArenaWeeklyBoard';
 import { RulesModal } from './ArenaRulesModal';
 import './arenaLobby.css';
@@ -30,9 +30,10 @@ const MODES: { id: ArenaMode; title: string; english: string; size: string; size
     fallback: ORIGINAL + 'enemies/goblin/idle.webp', tone: 'red', icon: Flame },
 ];
 
-export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
+export function ArenaLobby({ onJoined, onBack, onSeason, backDisabled = false }: {
   onJoined: (roomId: string) => void;
   onBack?: () => void;
+  onSeason?: () => void;
   backDisabled?: boolean;
 }) {
   const { language } = useLanguage();
@@ -187,6 +188,14 @@ export function ArenaLobby({ onJoined, onBack, backDisabled = false }: {
         </div>
       )}
       <ArenaWeeklyBoard />
+      {onSeason && <button type="button" data-testid="arena-season-journey"
+        onClick={onSeason} disabled={!!joining || recovering || backDisabled}
+        className="mx-3 mb-4 flex min-h-[58px] w-[calc(100%-24px)] items-center gap-3 rounded-2xl border-2 border-amber-300/80 bg-gradient-to-r from-[#754520] via-[#52301c] to-[#352015] px-3 py-2 text-left text-amber-50 shadow-[inset_0_2px_0_#ffe1a077,0_4px_12px_#0008] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-100">
+        <img src={import.meta.env.BASE_URL + 'ic-trophy.webp'} alt="" loading="lazy" className="h-11 w-11 shrink-0 object-contain" />
+        <span className="min-w-0 flex-1"><strong className="block text-sm font-black leading-tight">{en ? 'Weekly championship' : 'Недельный чемпионат'}</strong>
+          <small className="block text-xs leading-snug text-amber-200">{en ? 'Verified points, winners and season status' : 'Подтверждённые очки, победители и статус сезона'}</small></span>
+        <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0 text-amber-200" />
+      </button>}
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
     </div>
   );

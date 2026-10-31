@@ -15,7 +15,7 @@ interface LeaderboardEntry {
   photo_url: string | null;
 }
 
-export function LeaderboardScreen({ user, initialTab = 'rating' }: { user: AuthUser; initialTab?: 'rating' | 'wins' | 'season' }) {
+export function LeaderboardScreen({ user, initialTab = 'rating', onArena, onEvents, onMessages }: { user: AuthUser; initialTab?: 'rating' | 'wins' | 'season'; onArena?: () => void; onEvents?: () => void; onMessages?: () => void }) {
   const { t, language } = useLanguage();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +39,7 @@ export function LeaderboardScreen({ user, initialTab = 'rating' }: { user: AuthU
     } catch {
       if (ticket !== requestId.current) return;
       setError(true);
+      setEntries([]);
     } finally {
       if (ticket === requestId.current) setLoading(false);
     }
@@ -50,34 +51,37 @@ export function LeaderboardScreen({ user, initialTab = 'rating' }: { user: AuthU
 
   return (
     <div className="viking-screen viking-screen--leaderboard space-y-4 animate-fade-in pb-4">
-      <div className="card text-center">
+      <div className="card text-center border-2 border-amber-500/70 bg-gradient-to-br from-[#754725] via-[#422919] to-[#291b17] shadow-[inset_0_2px_0_#ffe2a05e,0_5px_13px_#0008]">
         <div className="flex items-center justify-center gap-2 mb-3">
           <Trophy className="w-6 h-6 text-amber-400" />
           <h2 className="text-xl font-bold text-white">{t('leaderboard')}</h2>
         </div>
         <div className="flex gap-2">
           <button
-            className={`flex-1 btn text-sm ${tab === 'rating' ? 'btn-accent' : 'btn-ghost'}`}
+            className={`flex-1 btn min-h-[44px] min-w-0 px-1 text-xs sm:text-sm ${tab === 'rating' ? 'btn-accent' : 'btn-ghost'}`}
             onClick={() => setTab('rating')}
+            aria-pressed={tab === 'rating'}
           >
             {language === 'en' ? 'By rating' : 'По рейтингу'}
           </button>
           <button
-            className={`flex-1 btn text-sm ${tab === 'wins' ? 'btn-accent' : 'btn-ghost'}`}
+            className={`flex-1 btn min-h-[44px] min-w-0 px-1 text-xs sm:text-sm ${tab === 'wins' ? 'btn-accent' : 'btn-ghost'}`}
             onClick={() => setTab('wins')}
+            aria-pressed={tab === 'wins'}
           >
             {language === 'en' ? 'By wins' : 'По победам'}
           </button>
           <button
-            className={`flex-1 btn text-sm ${tab === 'season' ? 'btn-accent' : 'btn-ghost'}`}
+            className={`flex-1 btn min-h-[44px] min-w-0 px-1 text-xs sm:text-sm ${tab === 'season' ? 'btn-accent' : 'btn-ghost'}`}
             onClick={() => setTab('season')}
+            aria-pressed={tab === 'season'}
           >
             {language === 'en' ? 'Seasons' : 'Сезоны'}
           </button>
         </div>
       </div>
 
-      {tab === 'season' ? <SeasonScreen user={user} /> : <>
+      {tab === 'season' ? <SeasonScreen user={user} onArena={onArena} onEvents={onEvents} onMessages={onMessages} /> : <>
       {error && (
         <div className="card text-center text-sm text-red-400">{t('leaderboardLoadError')}</div>
       )}
@@ -86,7 +90,7 @@ export function LeaderboardScreen({ user, initialTab = 'rating' }: { user: AuthU
         <div className="card text-center py-8 text-gray-500">
           <p className="text-sm">{t('loading')}</p>
         </div>
-      ) : sorted.length === 0 ? (
+      ) : error ? null : sorted.length === 0 ? (
         <div className="card text-center py-8 text-gray-500">
           <Trophy className="w-12 h-12 mx-auto mb-2 opacity-30" />
           <p className="text-sm">{t('noLeaderboard')}</p>
