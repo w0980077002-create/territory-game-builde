@@ -8,6 +8,7 @@ import { hapticImpact } from '@/game/telegram';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { ChevronLeft, ChevronRight, Flame, Info, Loader2, RefreshCw, ShieldAlert, Swords, Users, Zap } from 'lucide-react';
 import { ArenaWeeklyBoard } from './ArenaWeeklyBoard';
+import { SHOW_WEEKLY_CHAMPIONSHIP } from '@/game/uiFeatureFlags';
 import { RulesModal } from './ArenaRulesModal';
 import './arenaLobby.css';
 
@@ -188,7 +189,7 @@ export function ArenaLobby({ onJoined, onBack, onSeason, backDisabled = false }:
         </div>
       )}
       <ArenaWeeklyBoard />
-      {onSeason && <button type="button" data-testid="arena-season-journey"
+      {SHOW_WEEKLY_CHAMPIONSHIP && onSeason && <button type="button" data-testid="arena-season-journey"
         onClick={onSeason} disabled={!!joining || recovering || backDisabled}
         className="mx-3 mb-4 flex min-h-[58px] w-[calc(100%-24px)] items-center gap-3 rounded-2xl border-2 border-amber-300/80 bg-gradient-to-r from-[#754520] via-[#52301c] to-[#352015] px-3 py-2 text-left text-amber-50 shadow-[inset_0_2px_0_#ffe1a077,0_4px_12px_#0008] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-100">
         <img src={import.meta.env.BASE_URL + 'ic-trophy.webp'} alt="" loading="lazy" className="h-11 w-11 shrink-0 object-contain" />
