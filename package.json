@@ -18,7 +18,7 @@
     "test:feature-separation": "node scripts/check-feature-separation.mjs",
     "test:visual-viking": "node scripts/check-viking-screen-coverage.mjs",
     "test:mobile-home": "node scripts/check-mobile-home-ui.mjs && node scripts/check-runtime-performance.mjs && node scripts/check-starter-journey.mjs && node scripts/check-section-recovery.mjs && node scripts/check-social-journey.mjs && node scripts/check-hero-workflow.mjs && node scripts/check-reward-journey.mjs && node scripts/check-arena-entry-recovery.mjs",
-    "test:events": "node scripts/check-events-board.mjs && node scripts/check-season-journey.mjs",
+    "test:events": "node scripts/check-events-board.mjs && node scripts/check-season-journey.mjs && node scripts/check-arena-rank-journey.mjs",
     "test:economy": "node scripts/check-economy.mjs && node scripts/economy-client-guard-tests.mjs && node scripts/check-stage2.mjs && node scripts/progression-audit.mjs && node scripts/check-stage3.mjs && node scripts/check-stage4.mjs && node scripts/check-stage5.mjs && node scripts/check-stage6.mjs && node scripts/check-stage7.mjs && node scripts/check-immediate-save.mjs && node scripts/check-save-auth-recovery.mjs",
     "test:saves": "node scripts/check-economy.mjs && node scripts/check-immediate-save.mjs",
     "test:client-guard": "node scripts/economy-client-guard-tests.mjs",
