@@ -103,7 +103,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
                 {language === 'en' ? 'Open adventure' : 'Открыть поход'} <ChevronRight size={16} aria-hidden="true"/>
               </button>
             </div>
-          </section>
+          </section>}
           {/* Center short inventories on tall phones; auto margins collapse for long inventories. */}
           <div className="my-auto w-full min-w-0 pt-3 pb-4">
             <GearShowcase userId={userId} onForge={onForge}/>
