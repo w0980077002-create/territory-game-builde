@@ -32,7 +32,7 @@ assert.match(app, /<ProfessionsScreen onMap=\{\(\) => setScreen\('map'\)\}/);
 assert.match(app, /onInventory=\{\(\) => \{ setInventoryTab\('items'\); setScreen\('inventory'\); \}\}/);
 assert.match(forge, /onProfessions/);
 assert.match(professions, /nextCraftRoute\(availableRecipes, displayedLevel/);
-assert.match(professions, /craftStatus\?\.enabled \? \(craftStatus\.resources\[id\] \?\? 0\) : countResource\(game\.inventory, id\)/);
+assert.match(professions, /craftStatus\?\.enabled \? \(craftStatus\.resources\[id\] \?\? 0\) : countResource\(game\.inventory, id as ResourceId\)/);
 assert.match(professions, /craftCheck === 'error'/);
 assert.match(professions, /pendingCraft/);
 assert.match(professions, /onClick=\{\(\) => setTab\('craft'\)\}/);
