@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getLeaderboard } from '@/game/cloud';
+import { arenaRankView } from '@/game/arenaRankView';
 import { ArrowRight, Crown, Medal, RefreshCcw, ShieldCheck, Swords, Trophy } from 'lucide-react';
 import type { AuthUser } from '@/game/auth';
 import { useLanguage } from '@/game/i18n';
@@ -64,11 +65,7 @@ export function LeaderboardScreen({ user, initialTab = 'rating', onArena, onEven
   }, [tab, loadLeaderboard]);
 
   const metric = tab === 'wins' ? 'arena_wins' : 'arena_rating';
-  const mine = entries.findIndex(entry => entry.player_id === user.id);
-  const myRow = mine >= 0 ? entries[mine] : null;
-  const nextRival = mine > 0 ? entries[mine - 1] : null;
-  const leader = entries[0];
-  const gap = myRow && nextRival ? Math.max(0, nextRival[metric] - myRow[metric]) : null;
+  const { mine, myRow, nextRival, leader, gap } = arenaRankView(entries, user.id, metric);
   const number = (value: number) => value.toLocaleString(en ? 'en-US' : 'ru-RU');
   const metricLabel = tab === 'wins' ? (en ? 'wins' : 'побед') : (en ? 'rating' : 'рейтинг');
 
