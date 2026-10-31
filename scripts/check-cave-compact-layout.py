@@ -53,8 +53,9 @@ with sync_playwright() as playwright:
         assert measurements['challengeBottom'] <= height - 60, f'Challenge hidden behind nav: {measurements}'
         assert not measurements['horizontalOverflow'], f'Horizontal overflow at {width}x{height}'
         assert page.get_by_test_id('dark-cave-challenge').is_visible(), 'Challenge must be visible'
-        blessings = page.get_by_role('button', name='Благословение 1')
-        assert blessings.is_visible() == (height > 640), 'Inactive blessing slots only collapse on tiny screens'
+        # The current Cave does not render the old placeholder blessing buttons.
+        # Guard the actual compact realm and its playable floor/challenge UI.
+        assert page.get_by_test_id('dark-cave-realm').is_visible(), 'Current Cave realm must remain visible'
         floor_scroll = page.get_by_test_id('dark-cave-floor-scroll')
         floor_scroll.evaluate('(element) => { element.scrollTop = element.scrollHeight; }')
         assert floor_scroll.evaluate('(element) => element.scrollTop > 0'), 'Touch-scroll floor list must move'
