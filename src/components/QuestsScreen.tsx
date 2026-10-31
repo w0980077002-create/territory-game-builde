@@ -6,6 +6,7 @@ import type { Achievement, Quest } from '@/game/types';
 import { Currency } from './ui/Currency';
 import { useLanguage } from '@/game/i18n';
 import { SocialQuestsSection } from './SocialQuestsSection';
+import { RewardJourney } from './RewardJourney';
 import { SocialTrail, type SocialDestination } from './social/SocialTrail';
 import type { SocialStatus } from '@/game/socialQuests';
 import { getStarterMilestones, type StarterDestination } from '@/game/starterJourney';
@@ -17,7 +18,7 @@ const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
   { type: 'story', titleKey: 'story', hintKey: 'storyHint' },
 ];
 
-export function QuestsScreen({ userId, onSocialStatusChange, onNavigate, onSocialNavigate }: { userId: string; onSocialStatusChange: (status: SocialStatus) => void; onNavigate: (screen: StarterDestination) => void; onSocialNavigate: (destination: SocialDestination) => void }) {
+export function QuestsScreen({ userId, onSocialStatusChange, onNavigate, onSocialNavigate, onMail, onDaily }: { userId: string; onSocialStatusChange: (status: SocialStatus) => void; onNavigate: (screen: StarterDestination) => void; onSocialNavigate: (destination: SocialDestination) => void; onMail: () => void; onDaily: () => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const readyQuests = state.quests.filter((q) => !q.claimed && q.current >= q.target);
@@ -51,6 +52,8 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate, onSocia
           </div>
         </div>
       </div>
+
+      <RewardJourney active="quests" onDaily={onDaily} onMessages={onMail} />
 
       {ready > 0 && <section aria-label={language === 'en' ? 'Rewards ready' : 'Готовые награды'}>
         <h3 className="mb-2 px-1 text-sm font-bold text-amber-200">{language === 'en' ? 'Rewards ready' : 'Награды готовы'} · {ready}</h3>
