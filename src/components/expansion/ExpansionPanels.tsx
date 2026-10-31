@@ -72,8 +72,8 @@ const rarityText: Record<DarkEnergyRelic['rarity'], Translated> = {
 };
 function Pending({ en, title }: { en: boolean; title: string }) {
   return <div className="expansion-panel__pending"><LockKeyhole size={27}/>
-    <p>{en ? title + ' is not connected to the game server yet.' : 'Режим «' + title + '» ещё не подключён к игровому серверу.'}</p>
-    <small>{en ? 'No purchases, rewards or progress have changed.' : 'Покупки, награды и прогресс не изменялись.'}</small>
+    <p>{en ? title + ' is not available yet.' : 'Режим «' + title + '» пока закрыт.'}</p>
+    <small>{en ? 'Your rewards and progress are safe.' : 'Награды и прогресс сохранены.'}</small>
   </div>;
 }
 function Head({ title, subtitle, icon }: { title: string; subtitle: string; icon: string }) {
