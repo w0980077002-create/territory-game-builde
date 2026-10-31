@@ -96,7 +96,7 @@ const cloud=read('src/game/cloud.ts');
 assert.ok(cloud.includes("'arena_wins' |"));
 assert.ok(leaderboard.includes("kind === 'rating' ? 'arena_rating' : 'arena_wins'"));
 assert.ok(leaderboard.includes('ticket !== requestId.current'));
-assert.ok(leaderboard.includes('<SeasonScreen user={user} />'));
+assert.match(leaderboard, /<SeasonScreen user=\{user\} onArena=\{onArena\} onEvents=\{onEvents\} onMessages=\{onMessages\} \/>/, 'Season board must retain real user and route to Arena, Events and Mail');
 console.log('Stage3 leaderboard: server-sorted wins, race-safe updates, and seasons preview: PASS');
 
 function walk(dir){for(const name of readdirSync(dir)){const file=join(dir,name);if(statSync(file).isDirectory()){walk(file);continue;}if(!/\.tsx?$/.test(file) || /\.d\.ts$/.test(file))continue;
