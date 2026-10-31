@@ -17,6 +17,7 @@ interface Props {
   now: number;
   language: 'ru' | 'en';
   onItemSelect: (item: InventoryItem) => void;
+  onForge?: () => void;
 }
 
 const formatQuantity = (quantity: number) => quantity.toLocaleString('ru-RU');
@@ -51,7 +52,7 @@ function WarehouseItem({ item, language, now, onSelect }: {
 }
 
 /** Display only: preserves every original inventory batch, identifier and expiry. */
-export function CompactWarehouse({ consumables, materials, forgeMaterials, forgeMaterialBatches, now, language, onItemSelect }: Props) {
+export function CompactWarehouse({ consumables, materials, forgeMaterials, forgeMaterialBatches, now, language, onItemSelect, onForge }: Props) {
   const en = language === 'en';
   const [filter, setFilter] = useState<WarehouseFilter>('all');
   const [search, setSearch] = useState('');
@@ -137,7 +138,8 @@ export function CompactWarehouse({ consumables, materials, forgeMaterials, forge
           <p>{en ? 'Used for equipment upgrades at the forge.' : 'Используются для улучшения экипировки в кузнице.'}</p>
           <strong>{en ? 'Quantity' : 'Количество'}: {formatQuantity(forgeMaterials)}</strong>
           <span><Clock3 size={15} aria-hidden="true"/> {en ? 'Shelf life' : 'Срок годности'}: {forgeTimer}</span>
-          <button type="button" className="warehouse-info-card__done" onClick={() => setForgeInfoOpen(false)}>
+          {onForge && <button type="button" className="warehouse-info-card__done" onClick={() => { setForgeInfoOpen(false); onForge(); }}>{en ? 'Open forge' : 'Открыть кузницу'}</button>}
+          <button type="button" className="warehouse-info-card__done warehouse-info-card__done--secondary" onClick={() => setForgeInfoOpen(false)}>
             {en ? 'Close' : 'Закрыть'}
           </button>
         </section>
