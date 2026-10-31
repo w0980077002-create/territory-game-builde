@@ -66,17 +66,36 @@ try {
  assert.equal(otherWin.settlement.game_state.player.level,1);
  const otherNext=await execOther({action:'start',operationId:op(8),encounterId:'s2',control:'auto'});
  assert.equal(otherNext.state.input.stage,2,'start next stage immediately without level-up');
- // Changing untrusted equipment while a battle is active must not create a
- // newly attested profile or advance/award the terminal result.
+ // A changed equipment slot does not invalidate the pinned active fight.
+ // It is preserved in the save, but cannot become a trusted next profile.
  await db.exec('RESET ROLE');
- await q(`UPDATE players SET game_state=jsonb_set(game_state,'{player,equipped,weapon,id}','"tampered"') WHERE id=$1`,[noLevel]);
+ await q(`UPDATE players SET xp=90, game_state=jsonb_set(jsonb_set(game_state,'{player,equipped,weapon,id}','"tampered"'),'{player,xp}','90') WHERE id=$1`,[noLevel]);
  await q('UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=$1',[otherNext.session_id]);
  await db.exec('SET ROLE service_role');
- const beforeRejected=(await q('SELECT gold,xp,game_state FROM public.players WHERE id=$1',[noLevel]))[0];
- await assert.rejects(execOther({action:'advance',operationId:op(9),sessionId:otherNext.session_id,revision:0}),/combat_profile_needs_reconciliation/);
+ const finishCommand={action:'advance',operationId:op(9),sessionId:otherNext.session_id,revision:0};
+ await db.exec('RESET ROLE');
+ await q(`UPDATE players SET game_state=jsonb_set(game_state,'{player,stats,attack}','999') WHERE id=$1`,[noLevel]);
+ await db.exec('SET ROLE service_role');
+ await assert.rejects(execOther(finishCommand),/combat_profile_needs_reconciliation/);
  assert.equal((await q('SELECT revision FROM territory_private.combat_sessions_v1 WHERE session_id=$1',[otherNext.session_id]))[0].revision,0);
- assert.deepEqual((await q('SELECT gold,xp,game_state FROM public.players WHERE id=$1',[noLevel]))[0],beforeRejected,'failed settlement rolls back wallet and save');
- assert.equal((await q('SELECT count(*)::int n FROM territory_private.adventure_settlements_v1 WHERE session_id=$1',[otherNext.session_id]))[0].n,0,'failed settlement creates no receipt');
+ await db.exec('RESET ROLE');
+ await q(`UPDATE players SET game_state=jsonb_set(game_state,'{player,stats,attack}','20') WHERE id=$1`,[noLevel]);
+ await db.exec('SET ROLE service_role');
+ const finish=await execOther(finishCommand);
+ assert.equal(finish.state.status,'hero_won');
+ assert.equal(finish.settlement.game_state.player.equipped.weapon.id,'tampered');
+ assert.equal(finish.settlement.wallet_gold,80);
+ assert.equal(finish.settlement.game_state.player.level,2);
+ assert.equal(finish.settlement.game_state.player.xp,10);
+ assert.deepEqual(await execOther(finishCommand),finish,'retry cannot pay twice');
+ assert.deepEqual((await execOther({action:'resume',sessionId:otherNext.session_id})).settlement,finish.settlement);
+ const trusted=(await q('SELECT projection,fighter FROM territory_private.combat_profile_sources_v1 WHERE player_id=$1',[noLevel]))[0];
+ assert.equal(trusted.projection.equipped.weapon.id,'old','changed equipment must not be attested');
+ assert.equal(trusted.fighter.stats.attack,105,'trusted fighter gets only the server level increment');
+ assert.equal(trusted.fighter.ownership.heroLevel,2);
+ assert.equal((await q('SELECT territory_private.combat_profile_is_current_v1($1) ok',[noLevel]))[0].ok,false);
+ await assert.rejects(execOther({action:'start',operationId:op(11),encounterId:'s2',control:'auto'}),/combat_profile_needs_reconciliation/);
+ assert.equal((await q('SELECT count(*)::int n FROM territory_private.adventure_settlements_v1 WHERE session_id=$1',[otherNext.session_id]))[0].n,1);
  // A guard/trigger may normalize saved stats. Unexpected trigger effects must
  // roll back both the terminal combat update and all reward changes.
  await db.exec('RESET ROLE');

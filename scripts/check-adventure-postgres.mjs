@@ -152,8 +152,16 @@ const noLevelNext=await execute(noLevel,{action:'start',operationId:op(10),encou
 assert.equal(noLevelNext.state.input.stage,2,'next stage starts immediately without level-up');
 await sql(`UPDATE public.players SET game_state=jsonb_set(game_state,'{player,equipped,weapon,id}','"tampered"') WHERE id=${quote(noLevel)};
  UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(noLevelNext.session_id)}`);
-await assert.rejects(execute(noLevel,{action:'advance',operationId:op(11),sessionId:noLevelNext.session_id,revision:0}),/combat_profile_needs_reconciliation/);
-assert.equal(await sql(`SELECT revision FROM territory_private.combat_sessions_v1 WHERE session_id=${quote(noLevelNext.session_id)}`),'0');
+const finishChanged={action:'advance',operationId:op(11),sessionId:noLevelNext.session_id,revision:0};
+const changedWin=await execute(noLevel,finishChanged);
+assert.equal(changedWin.state.status,'hero_won');
+assert.equal(changedWin.settlement.game_state.player.equipped.weapon.id,'tampered');
+assert.equal(changedWin.settlement.wallet_gold,80);
+assert.deepEqual(await execute(noLevel,finishChanged),changedWin,'replayed receipt cannot duplicate payout');
+assert.equal(await sql(`SELECT count(*) FROM territory_private.adventure_settlements_v1 WHERE session_id=${quote(noLevelNext.session_id)}`),'1');
+assert.equal((await scalar(`SELECT projection FROM territory_private.combat_profile_sources_v1 WHERE player_id=${quote(noLevel)}`)).equipped.weapon.id,'old');
+assert.equal(await sql(`SELECT territory_private.combat_profile_is_current_v1(${quote(noLevel)})`),'f');
+await assert.rejects(execute(noLevel,{action:'start',operationId:op(13),encounterId:'s2',control:'auto'}),/combat_profile_needs_reconciliation/);
 // The second synthetic player loses a genuine engine fight; no win reward is paid.
 const strongEnemy={...fighter,stats:{...fighter.stats,attack:1000}};
 await sql(`UPDATE territory_private.combat_encounters_v1 SET enemy=${json(strongEnemy)} WHERE encounter_id='s1'`);
