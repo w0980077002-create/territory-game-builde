@@ -11,6 +11,8 @@ import { mailRewardVisuals } from '@/game/mailRewardVisuals';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/game/i18n';
 import { CITY_BACKGROUND_KEY, initialCityBackground, type CityBackground } from '@/components/home/LiveCityBackdrop';
+import { hapticsEnabled, setHapticsEnabled } from '@/game/hapticPreference';
+import './settingsJourney.css';
 
 export type SaveStatus = 'saved' | 'saving' | 'error';
 
@@ -273,7 +275,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
 
 function Toggle({ label, hint, on, onChange }: { label: string; hint: string; on: boolean; onChange: () => void }) {
   return (
-    <button onClick={onChange} className="w-full flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-left">
+    <button type="button" role="switch" aria-checked={on} onClick={onChange} className="territory-settings-toggle w-full min-h-11 flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-left">
       <span className="flex-1 min-w-0">
         <span className="block text-sm font-semibold text-white">{label}</span>
         <span className="block text-[11px] text-gray-400">{hint}</span>
@@ -295,6 +297,12 @@ export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMot
 }) {
   const { t, language } = useLanguage();
   const { settings } = useStore(useGame);
+  const [vibrationEnabled, setVibrationEnabled] = useState(hapticsEnabled);
+  const toggleVibration = () => {
+    const next = !vibrationEnabled;
+    setHapticsEnabled(next);
+    setVibrationEnabled(next);
+  };
   const [localBackground, setLocalBackground] = useState<CityBackground>(initialCityBackground);
   const selectedBackground = cityBackground ?? localBackground;
   const update = (patch: Partial<typeof settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
@@ -322,9 +330,17 @@ export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMot
 
   return (
     <Modal title={t('settings')} icon="/ic-settings.webp" onClose={onClose}>
-      <div className="space-y-2">
+      <div className="territory-settings space-y-3">
+        <section className="territory-settings-group" aria-label={language === 'en' ? 'Combat controls' : 'Управление боем'}>
+          <h3 className="territory-settings-heading"><img src={import.meta.env.BASE_URL + 'ic-arena-viking.webp'} alt="" />{language === 'en' ? 'Combat controls' : 'Управление боем'}</h3>
         <Toggle label={t('battleSpeed')} hint={t('speedHint')} on={settings.speed === 2} onChange={() => update({ speed: settings.speed === 2 ? 1 : 2 })} />
         <Toggle label={t('autoBattle')} hint={t('autoBattleHint')} on={settings.auto} onChange={() => update({ auto: !settings.auto })} />
+        </section>
+        <section className="territory-settings-group" aria-label={language === 'en' ? 'Device comfort and scenery' : 'Комфорт и оформление'}>
+          <h3 className="territory-settings-heading"><img src={import.meta.env.BASE_URL + 'ic-settings.webp'} alt="" />{language === 'en' ? 'Comfort and scenery' : 'Комфорт и оформление'}</h3>
+        <Toggle label={language === 'en' ? 'Telegram vibration' : 'Вибрация Telegram'}
+          hint={language === 'en' ? 'Combat hits, crafting feedback and prize wheel ticks. Saved on this device.' : 'Удары, кузница и колесо удачи. Настройка сохраняется на этом устройстве.'}
+          on={vibrationEnabled} onChange={toggleVibration} />
         <Toggle label={language === 'en' ? 'Living city' : 'Живой город'} hint={language === 'en' ? 'Animated ships, waterfalls and fire. Disable to save battery.' : 'Движение кораблей, водопадов и огня. Можно отключить для экономии заряда.'} on={cityMotion} onChange={onToggleCityMotion} />
         <div className="rounded-xl border border-amber-500/25 bg-black/30 p-2.5">
           <p className="mb-1 text-sm font-bold text-amber-100">{language === 'en' ? 'City background' : 'Фон города'}</p>
@@ -358,6 +374,8 @@ export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMot
             })}
           </div>
         </div>
+        </section>
+        <p className="territory-settings-note">{language === 'en' ? 'Combat options use your existing game save. Vibration, city motion and scenery are local to this device.' : 'Настройки боя сохраняются с игрой. Вибрация, движение и фон города — только на этом устройстве.'}</p>
         <div onClick={secretTap} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm select-none">
           {saveStatus === 'error' ? <CloudOff className="w-4 h-4 text-red-400" /> : <Cloud className={`w-4 h-4 ${saveStatus === 'saving' ? 'text-gray-400 animate-pulse' : 'text-emerald-400'}`} />}
           <span className="text-gray-300">
