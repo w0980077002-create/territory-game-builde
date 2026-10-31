@@ -81,7 +81,7 @@ export function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
                 </div>;
               })}
             </div>
-            <div className="arena-prizes-bottom"><Timer aria-hidden="true" /><span>{en ? 'Season ends Sunday, 00:00 UTC' : 'Конец сезона: воскресенье, 00:00 UTC'}</span><strong>{countdown}</strong></div>
+            <div className="arena-prizes-bottom"><Timer aria-hidden="true" /><span>{en ? 'Season ends Sunday; see countdown' : 'Конец сезона — в воскресенье, время по таймеру'}</span><strong>{countdown}</strong></div>
           </div>
         </div>
       </div>
@@ -154,7 +154,7 @@ export function ArenaWeeklyBoard() {
       </div>
       {loading && !status ? <p className="arena-weekly-empty">{en ? 'Loading verified wins…' : 'Загружаем подтверждённые победы…'}</p> : null}
       {failed && !current ? <div className="arena-weekly-empty">
-        {en ? 'Weekly ranking temporarily unavailable. No results were substituted.' : 'Недельный рейтинг пока недоступен. Выдуманные результаты не показываем.'}
+        {en ? 'Weekly ranking is temporarily unavailable. Try again shortly.' : 'Не удалось загрузить рейтинг. Попробуй ещё раз.'}
       </div> : null}
       {!loading && !failed && rows.length === 0 ? <p className="arena-weekly-empty">
         {en ? 'No confirmed arena wins this week yet. Be the first!' : 'На этой неделе ещё нет подтверждённых побед. Стань первым!'}
@@ -217,11 +217,11 @@ export function ArenaWeeklyBoard() {
           <div className="arena-weekly-chase-track" role="progressbar" aria-label={en ? 'Progress toward next place' : 'Прогресс до следующего места'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={goal.progressPercent}>
             <span style={{ width: `${goal.progressPercent}%` }} />
           </div>
-          <span className="arena-weekly-chase-note">{en ? `Catch ${goal.opponentName} · standings can change` : `По текущему ТОПу: обойти ${goal.opponentName} · соперники продолжают побеждать`}</span>
+          <span className="arena-weekly-chase-note">{en ? `Overtake ${goal.opponentName} to move up` : `Обойди ${goal.opponentName}, чтобы подняться`}</span>
         </>}
       </div>}
       {failed && current ? <span className="arena-weekly-note"><RefreshCw className="inline h-3 w-3 mr-1" />{en ? 'Showing last verified results' : 'Последние подтверждённые результаты'}</span> : null}
-      <p className="arena-weekly-note">{en ? 'New season every Sunday at 00:00 UTC. Lifetime wins remain.' : 'Новый сезон каждое воскресенье в 00:00 UTC. Общие победы сохраняются.'}</p>
+      <p className="arena-weekly-note">{en ? 'New season each Sunday. Lifetime wins remain.' : 'Новый сезон по воскресеньям. Общие победы сохраняются.'}</p>
       {showPrizes && <ArenaPrizesDialog en={en} rank={display?.displayRank ?? null} countdown={countdown} onClose={() => setShowPrizes(false)} />}
     </section>
   );
