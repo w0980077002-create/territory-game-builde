@@ -78,7 +78,7 @@ export function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
                 </div>;
               })}
             </div>
-            <div className="arena-prizes-bottom"><Timer aria-hidden="true" /><span>{en ? 'Season ends Sunday; see countdown' : 'Конец сезона — в воскресенье, время по таймеру'}</span><strong>{countdown}</strong></div>
+            <div className="arena-prizes-bottom"><Timer aria-hidden="true" /><span>{en ? 'Season ends Monday; see countdown' : 'Конец сезона — в понедельник, время по таймеру'}</span><strong>{countdown}</strong></div>
           </div>
         </div>
       </div>
@@ -234,7 +234,7 @@ export function ArenaWeeklyBoard() {
           <RefreshCw className="h-4 w-4" aria-hidden="true" />{en ? 'Refresh' : 'Обновить'}
         </button>
       </div> : null}
-      <p className="arena-weekly-note">{en ? 'New season each Sunday. Lifetime wins remain.' : 'Новый сезон по воскресеньям. Общие победы сохраняются.'}</p>
+      <p className="arena-weekly-note">{en ? 'New season each Monday. Lifetime wins remain.' : 'Новый сезон по понедельникам. Общие победы сохраняются.'}</p>
       {showPrizes && <ArenaPrizesDialog en={en} rank={display?.displayRank ?? null} countdown={countdown} onClose={() => setShowPrizes(false)} />}
     </section>
   );
