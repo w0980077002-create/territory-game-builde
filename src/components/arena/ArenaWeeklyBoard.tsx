@@ -7,7 +7,7 @@ import { getArenaWeeklyStatus, type ArenaWeeklyStatus } from '@/game/arenaWeekly
 import { arenaSeasonWindow, seasonCountdown } from '@/game/seasonCalendar';
 import { arenaWeeklyWithBots } from '@/game/arenaWeeklyBots';
 import { arenaNextGoal } from '@/game/arenaProgress';
-import { ARENA_PRIZE_PREVIEW, arenaPrizePreviewForRank } from '@/game/arenaPrizePreview';
+import { ARENA_PRIZE_PREVIEW } from '@/game/arenaPrizePreview';
 
 export function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
   en: boolean;
@@ -15,7 +15,6 @@ export function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
   countdown: string;
   onClose: () => void;
 }) {
-  const myTier = arenaPrizePreviewForRank(rank);
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -54,11 +53,11 @@ export function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
             <div className="arena-prizes-my-place">
               <Trophy aria-hidden="true" />
               {rank !== null
-                ? <span><strong>{en ? `Your position: #${rank}` : `Твоё место: №${rank}`}</strong>
-                    <small>{myTier ? (en ? 'Your projected prize is highlighted below' : 'Твоя возможная награда подсвечена ниже') : (en ? 'Enter the TOP 50 to earn prizes' : 'Войди в ТОП-50, чтобы получить награду')}</small></span>
-                : <span><strong>{en ? 'Not yet in TOP-50' : 'Пока вне ТОП-50'}</strong><small>{en ? 'Win Arena battles to climb the board' : 'Побеждай на Арене и поднимайся в рейтинге'}</small></span>}
+                ? <span><strong>{en ? `Your Arena board position: #${rank}` : `Твоё место в таблице Арены: №${rank}`}</strong>
+                    <small>{en ? 'Board position is not a confirmed prize rank.' : 'Место в таблице не является подтверждённым призовым местом.'}</small></span>
+                : <span><strong>{en ? 'Not yet in TOP-50' : 'Пока вне ТОП-50'}</strong><small>{en ? 'Win Arena battles to climb the board. Prize eligibility is checked separately.' : 'Побеждай на Арене и поднимайся в рейтинге. Право на награду проверяется отдельно.'}</small></span>}
             </div>
-            <p className="arena-prizes-condition">{en ? 'Rewards depend on your position at the end of the season.' : 'Награда зависит от места на момент завершения сезона.'}</p>
+            <p className="arena-prizes-condition">{en ? 'Prizes are awarded after the week ends using server-confirmed results. The live board does not guarantee a reward.' : 'Награды начисляются после завершения недели по подтверждённым сервером результатам. Текущее место в таблице не гарантирует приз.'}</p>
             <div className="arena-prizes-legend" aria-label={en ? 'Reward types' : 'Виды наград'}>
               <span><b>💎</b>{en ? 'Blue gems' : 'Синие алмазы'}</span>
               <span><b className="arena-prizes-red">♦</b>{en ? 'Red gems' : 'Красные алмазы'}</span>
@@ -67,9 +66,8 @@ export function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
             </div>
             <div className="arena-prizes-list">
               {ARENA_PRIZE_PREVIEW.map((tier) => {
-                const mine = tier === myTier;
                 const label = tier.from === tier.to ? `№${tier.from}` : `№${tier.from}–${tier.to}`;
-                return <div key={tier.from} className={`arena-prizes-tier arena-prizes-tier-${tier.from} ${mine ? 'arena-prizes-tier-mine' : ''}`}>
+                return <div key={tier.from} className={`arena-prizes-tier arena-prizes-tier-${tier.from}`}>
                   <strong className="arena-prizes-tier-rank">{label}</strong>
                   <div className="arena-prizes-resources">
                     <span aria-label={`${en ? 'Blue gems' : 'Синие алмазы'}: ${tier.blueGems}`}><i aria-hidden="true">💎</i><b>{tier.blueGems}</b></span>
@@ -77,7 +75,6 @@ export function ArenaPrizesDialog({ en, rank, countdown, onClose }: {
                     <span aria-label={`${en ? 'Battle stones' : 'Боевые камни'}: ${tier.stones}`}><i aria-hidden="true">⚔️</i><b>{tier.stones}</b></span>
                     <span aria-label={`${en ? 'Elixirs' : 'Эликсиры'}: ${tier.elixirs}`}><i aria-hidden="true">🧪</i><b>{tier.elixirs}</b></span>
                   </div>
-                  {mine && <span className="arena-prizes-you">{en ? 'YOU' : 'ТЫ'}</span>}
                 </div>;
               })}
             </div>
@@ -102,6 +99,7 @@ export function ArenaWeeklyBoard() {
   const [expanded, setExpanded] = useState(false);
   const [showPrizes, setShowPrizes] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [retryKey, setRetryKey] = useState(0);
   const rowsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -123,7 +121,14 @@ export function ArenaWeeklyBoard() {
       void load();
     }, 60_000);
     return () => { mounted = false; window.clearInterval(ticker); };
-  }, []);
+  }, [retryKey]);
+
+  const retry = () => {
+    if (loading) return;
+    setLoading(true);
+    setNow(Date.now());
+    setRetryKey((value) => value + 1);
+  };
 
   const week = arenaSeasonWindow(now);
   const current = status && Date.parse(status.starts_at) === week.startsAt && Date.parse(status.ends_at) === week.endsAt;
@@ -153,8 +158,11 @@ export function ArenaWeeklyBoard() {
         </div>
       </div>
       {loading && !status ? <p className="arena-weekly-empty">{en ? 'Loading verified wins…' : 'Загружаем подтверждённые победы…'}</p> : null}
-      {failed && !current ? <div className="arena-weekly-empty">
-        {en ? 'Weekly ranking is temporarily unavailable. Try again shortly.' : 'Не удалось загрузить рейтинг. Попробуй ещё раз.'}
+      {failed && !current ? <div className="arena-weekly-empty" role="alert">
+        <p>{en ? 'Weekly ranking is temporarily unavailable.' : 'Не удалось загрузить рейтинг Арены.'}</p>
+        <button type="button" className="arena-weekly-retry mx-auto mt-2 flex min-h-[44px] items-center justify-center gap-2 rounded-xl border-2 border-amber-300 bg-gradient-to-b from-amber-300 to-amber-600 px-4 py-2 font-black text-stone-900 disabled:opacity-60" disabled={loading} onClick={retry}>
+          <RefreshCw className="h-4 w-4" aria-hidden="true" />{en ? 'Retry ranking' : 'Повторить загрузку'}
+        </button>
       </div> : null}
       {!loading && !failed && rows.length === 0 ? <p className="arena-weekly-empty">
         {en ? 'No confirmed arena wins this week yet. Be the first!' : 'На этой неделе ещё нет подтверждённых побед. Стань первым!'}
@@ -220,7 +228,12 @@ export function ArenaWeeklyBoard() {
           <span className="arena-weekly-chase-note">{en ? `Overtake ${goal.opponentName} to move up` : `Обойди ${goal.opponentName}, чтобы подняться`}</span>
         </>}
       </div>}
-      {failed && current ? <span className="arena-weekly-note"><RefreshCw className="inline h-3 w-3 mr-1" />{en ? 'Showing last verified results' : 'Последние подтверждённые результаты'}</span> : null}
+      {failed && current ? <div className="arena-weekly-note" role="status">
+        <span>{en ? 'Showing the last loaded results' : 'Показаны последние загруженные результаты'}</span>
+        <button type="button" className="arena-weekly-retry ml-2 inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-amber-300 px-3 py-2 font-black text-amber-100 disabled:opacity-60" disabled={loading} onClick={retry}>
+          <RefreshCw className="h-4 w-4" aria-hidden="true" />{en ? 'Refresh' : 'Обновить'}
+        </button>
+      </div> : null}
       <p className="arena-weekly-note">{en ? 'New season each Sunday. Lifetime wins remain.' : 'Новый сезон по воскресеньям. Общие победы сохраняются.'}</p>
       {showPrizes && <ArenaPrizesDialog en={en} rank={display?.displayRank ?? null} countdown={countdown} onClose={() => setShowPrizes(false)} />}
     </section>
