@@ -8,7 +8,7 @@ from playwright.sync_api import sync_playwright
 
 class Handler(SimpleHTTPRequestHandler):
     def translate_path(self, path):
-        if path.startswith('/assets/') or path.startswith('/ic-'):
+        if path.startswith('/assets/') or path.startswith('/ic-') or path.startswith('/nav-'):
             return os.path.join(os.getcwd(), 'public', path.lstrip('/'))
         return super().translate_path(path)
 
