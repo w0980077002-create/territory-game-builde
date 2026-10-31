@@ -38,7 +38,10 @@ with sync_playwright() as p:
     browser=p.chromium.launch(executable_path=shutil.which('chromium') or shutil.which('google-chrome'),headless=True,args=['--no-sandbox'])
     for width,height in [(320,640),(390,844),(430,740)]:
         page=load(browser,width,height,'clan')
-        expect(page.get_by_role('heading',name='Клан',exact=True)).to_be_visible()
+        try:
+            expect(page.get_by_role('heading',name='Клан',exact=True)).to_be_visible()
+        except AssertionError as exc:
+            raise AssertionError(f'Clan fixture did not render: page errors={report["errors"]}, body={page.locator("body").inner_text()[:1500]}') from exc
         check(page,f'clan-home-{width}')
         page.get_by_role('button',name='Рейтинг кланов',exact=True).click()
         expect(page.get_by_role('heading',name='Рейтинг кланов',exact=True)).to_be_visible()
