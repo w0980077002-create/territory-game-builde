@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/game/i18n';
+import { hapticNotify, hapticSelection } from '@/game/telegram';
 import { FORTUNE_PRIZES, acknowledgeFortune, playFortune, recoverFortune, fortuneIndex, fortuneLabel, fortuneError, fortuneRotation, type FortuneReceipt, type FortuneStatus } from '@/game/fortune';
 import { FortuneDialog } from './FortuneDialog';
 import './fortune.css';
@@ -12,11 +13,9 @@ const ORIGINAL_LABELS=[
  [226,625,32,0],[644,526,32,0],[642,628,30,0],[231,529,28,0],
  [548,441,28,0],[548,822,30,0],[600,733,28,0],[307,820,23,20],
 ] as const;
-function haptic(kind:'tick'|'win'){
- try{
-  const tg=(window as unknown as {Telegram?:{WebApp?:{HapticFeedback?:{selectionChanged:()=>void;notificationOccurred:(s:string)=>void}}}}).Telegram?.WebApp?.HapticFeedback;
-  if(kind==='tick')tg?.selectionChanged();else tg?.notificationOccurred('success');
- }catch{/* Older Telegram clients may omit haptics. */}
+function haptic(kind: 'tick' | 'win') {
+  if (kind === 'tick') hapticSelection();
+  else hapticNotify('success');
 }
 function PrizeArt({prize}:{prize:string;quantity:number}){
  const p=FORTUNE_PRIZES.find(p=>p.prize===prize);

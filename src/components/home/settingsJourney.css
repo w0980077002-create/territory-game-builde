@@ -1,0 +1,30 @@
+/* Approved Territory Viking wood/gold language, scoped to the real Settings dialog. */
+.territory-settings { min-width: 0; }
+.territory-settings-group {
+  display: grid; gap: 8px; min-width: 0; padding: 10px;
+  border: 2px solid #bf8c49; border-radius: 15px;
+  background: radial-gradient(circle at 8% 0%,#a06c3866,transparent 55%),
+    linear-gradient(145deg,#684025,#3c2417 70%,#2b1b13);
+  box-shadow: inset 0 1px #ffdc9a66, inset 0 0 0 1px #382013, 0 3px 9px #10090588;
+}
+.territory-settings-heading {
+  display: flex; align-items: center; gap: 9px; min-width: 0;
+  margin: 0 0 2px; color: #ffe6a5;
+  font-size: clamp(14px,3.8vw,17px); font-weight: 900; line-height: 1.2;
+  text-shadow: 1px 2px 0 #291407, -1px -1px 0 #291407;
+}
+.territory-settings-heading img { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
+.territory-settings-toggle { border-color: #ab7b43; background: linear-gradient(145deg,#50311f,#2d1d15); }
+.territory-settings-toggle:focus-visible,
+.territory-settings button:focus-visible { outline: 3px solid #ffe6a5; outline-offset: 2px; }
+.territory-settings-toggle > span:first-child { overflow-wrap: anywhere; }
+.territory-settings-toggle > span:last-child { flex: 0 0 44px; }
+.territory-settings-note { margin: 0; color: #e8d2b0; font-size: 11px; line-height: 1.45; }
+@media (max-width: 360px) {
+  .territory-settings-group { padding: 8px; gap: 7px; }
+  .territory-settings-toggle { padding: 9px 8px; }
+  .territory-settings-heading img { width: 30px; height: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .territory-settings * { transition-duration: 0.01ms !important; }
+}
