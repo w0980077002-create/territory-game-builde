@@ -440,7 +440,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           {en?'Entrance costs 1 Dark Stone. First entry: 5 stones; daily +3 at 00:00 UTC.':'Вход стоит 1 Тёмный камень. Первые 5 камней выдаются при первом посещении; далее +3 ежедневно в 00:00 UTC.'}
         </div>}
         <img src={portalArt} alt={en?'Glowing cave portal':'Светящийся портал Тёмной пещеры'}
-          className="pointer-events-none relative -mt-1 h-[clamp(92px,18dvh,152px)] w-full shrink-0 select-none object-cover object-center" data-testid="dark-cave-portal" draggable={false}/>
+          className="pointer-events-none relative -mt-1 h-[clamp(40px,8dvh,76px)] w-full shrink-0 select-none object-cover object-center" data-testid="dark-cave-portal" draggable={false}/>
         <div className="relative mx-auto -mt-1 flex w-full shrink-0 items-center justify-between gap-2 px-1 pb-1 text-xs font-bold text-amber-100">
           <span className="truncate">{en?'Chapter':'Глава'} {highlightedFloor.chapter} · {CAMPAIGN_CHAPTERS[highlightedFloor.chapter-1]}</span>
           <button onClick={jumpToCurrent} type="button"
