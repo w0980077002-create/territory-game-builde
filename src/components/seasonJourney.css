@@ -39,3 +39,12 @@
 .season-journey button:disabled{opacity:.55;}
 @media(max-width:350px){.season-journey__hero{gap:8px;padding:9px;}.season-journey__heading>span{font-size:9px;}.season-journey__summary>div{padding:8px;}.season-journey__secondary{gap:5px;}.season-journey__secondary button{font-size:11px;}}
 @media(prefers-reduced-motion:reduce){.season-journey button{transition:none;animation:none;}}
+
+/* Share the actual Arena weekly board instead of fabricating another bots list. */
+.season-journey__arena-top{min-width:0;max-width:100%;padding:0;background:transparent;overflow:visible;isolation:auto}
+.season-journey__arena-top .arena-weekly{margin:0;min-width:0}
+.season-journey__ranking-info{padding:0 4px;font-size:11px;line-height:1.4;color:#dfc69d}
+.season-journey__official>summary{cursor:pointer;display:flex;align-items:center;gap:8px;padding:12px;color:#ffe5a5;font-weight:900;font-size:13px;line-height:1.4}
+.season-journey__official>summary svg{flex-shrink:0;color:#ffdaa0}
+.season-journey__official-content{display:grid;gap:10px;padding:9px;min-width:0}
+.season-journey__official-content .season-journey__details{border-width:1px}
