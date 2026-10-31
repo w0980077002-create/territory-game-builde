@@ -65,7 +65,7 @@ assert.match(ui, /cooldowns\[slot\.skillId\]/, 'Skills display server cooldown s
 assert.match(ui, /rank\.energyCost/, 'Skills respect server-reported energy costs');
 assert.doesNotMatch(ui, /assets\/territory\/scenes\/arena-viking\.webp/, 'Dark Cave battle cannot silently reuse Arena scenery');
 assert.match(ui, /getCombatAppearance\(game\.appearance\)/,
-  'Cave must use the player's currently selected hero appearance, not always a male viking');
+  'Cave must use the saved hero appearance, not always a male viking');
 assert.match(ui, /const fighterSrc = heroFrames\.idle;/,
   'Cave fallback art must belong to the selected hero');
 assert.match(ui, /setStrikeQueue\(old => \[\.\.\.old, \.\.\.confirmed\]\.slice\(-8\)\)/,
