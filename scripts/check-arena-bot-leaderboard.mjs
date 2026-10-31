@@ -217,7 +217,7 @@ assert.equal(arenaSeasonWindow(Date.parse('2027-03-29T00:00:00Z')).weekKey,
 assert.equal(arenaSeasonWindow(Date.parse('2027-10-31T23:59:59Z')).endsAt,
   Date.parse('2027-11-01T00:00:00Z'), 'Fall DST does not change UTC Monday cutoff');
 
-const sql = readFileSync('supabase/staged/arena_top50_monday_kyiv_cutover_20261102.sql','utf8');
+const sql = readFileSync('supabase/staged/arena_top50_monday_utc_cutover_20261102.sql','utf8');
 assert.match(sql,/arena_cutover_requires_paused_original_config/);
 assert.match(sql,/arena_cutover_rewards_version_mismatch/);
 assert.match(sql,/v_current_week := \(now\(\) AT TIME ZONE 'UTC'\)/);
