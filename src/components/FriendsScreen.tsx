@@ -76,6 +76,28 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
   }, []);
 
   useEffect(() => { void load(); void loadBot(); void loadFriends(); }, [load, loadBot, loadFriends]);
+
+  // Telegram share can background the WebView. Recheck real referral counts
+  // on return instead of requiring the player to restart the game.
+  const lastResumeCheck = useRef(Date.now());
+  useEffect(() => {
+    if (!isLinked) return;
+    const refreshOnReturn = () => {
+      if (document.visibilityState !== 'visible' || claimLock.current) return;
+      const now = Date.now();
+      if (now - lastResumeCheck.current < 30_000) return;
+      lastResumeCheck.current = now;
+      void Promise.all([load(), loadFriends()]);
+    };
+    document.addEventListener('visibilitychange', refreshOnReturn);
+    window.addEventListener('focus', refreshOnReturn);
+    window.addEventListener('online', refreshOnReturn);
+    return () => {
+      document.removeEventListener('visibilitychange', refreshOnReturn);
+      window.removeEventListener('focus', refreshOnReturn);
+      window.removeEventListener('online', refreshOnReturn);
+    };
+  }, [isLinked, load, loadFriends]);
   useEffect(()=>{
     const tg=getTelegramWebApp();
     if(!isLinked||!tg?.shareMessage||(tg.isVersionAtLeast&&!tg.isVersionAtLeast('8.0')))return;
