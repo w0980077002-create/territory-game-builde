@@ -252,6 +252,39 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     : auto ? (language === 'en' ? 'Auto-battle: zones are selected automatically' : 'Автобой: зоны выбираются сами')
     : blocks.length < 2 ? (language === 'en' ? `Choose ${2 - blocks.length} more defense zone(s)` : `Защита: выбери ещё ${2 - blocks.length}`) : !attack ? (language === 'en' ? 'Choose an attack zone' : 'Выбери зону удара') : (language === 'en' ? 'Press STRIKE' : 'Жми УДАР');
 
+  // The result replaces the entire battle scene. Keeping the tall arena
+  // above the outcome pushed the primary button below Android navigation.
+  // Hooks and reward settlement above this point remain unchanged.
+  if (outcome) {
+    return (
+      <div data-testid="pve-result-screen" className="mx-auto w-full max-w-xl animate-fade-in pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <OutcomePanel outcome={outcome} kind={kind} victoryJourney={victoryJourney}
+          onExit={() => { nextCancelled.current = true; onExit(); }}
+          questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
+          onQuests={onQuests ? () => { nextCancelled.current = true; onQuests(); } : undefined}
+          nextPending={nextPending} nextError={nextError}
+          onNext={onNext ? () => {
+            if (nextRequested.current) return;
+            nextRequested.current = true;
+            setNextPending(true);
+            setNextError(false);
+            // A late referral result must not launch a fight after Back/Quests.
+            void runDeferredNextBattle(
+              referralFinish.current,
+              () => alive.current && !nextCancelled.current,
+              onNext,
+            ).then(result => {
+              if (result === 'blocked' && alive.current && !nextCancelled.current) {
+                nextRequested.current = false;
+                setNextPending(false);
+                setNextError(true);
+              }
+            });
+          } : undefined} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2 animate-fade-in">
       <div className="flex items-center gap-2 h-10">
@@ -412,29 +445,6 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
           </div>
         )}
 
-        {outcome && <OutcomePanel outcome={outcome} kind={kind} victoryJourney={victoryJourney}
-          onExit={() => { nextCancelled.current = true; onExit(); }}
-          questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
-          onQuests={onQuests ? () => { nextCancelled.current = true; onQuests(); } : undefined}
-          nextPending={nextPending} nextError={nextError}
-          onNext={onNext ? () => {
-            if (nextRequested.current) return;
-            nextRequested.current = true;
-            setNextPending(true);
-            setNextError(false);
-            // A late referral result must not launch a fight after Back/Quests.
-            void runDeferredNextBattle(
-              referralFinish.current,
-              () => alive.current && !nextCancelled.current,
-              onNext,
-            ).then(result => {
-              if (result === 'blocked' && alive.current && !nextCancelled.current) {
-                nextRequested.current = false;
-                setNextPending(false);
-                setNextError(true);
-              }
-            });
-          } : undefined} />}
       </div>
 
       {!outcome && (
@@ -460,8 +470,8 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
 function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questReady, onQuests, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; nextPending: boolean; nextError: boolean }) {
   const { language } = useLanguage();
   return (
-    <div className="relative px-3 pb-3 pt-1 animate-pop">
-      <div className={`relative overflow-hidden rounded-2xl border p-3 text-center backdrop-blur-md ${outcome.won ? 'bg-amber-950/80 border-amber-400/60 shadow-[0_0_22px_rgba(245,158,11,0.15)]' : 'bg-red-950/70 border-red-400/40'}`}>
+    <div className="relative mx-auto w-full max-w-lg px-1 pb-2 pt-1 animate-pop">
+      <div data-testid="pve-outcome-card" className={`relative overflow-hidden rounded-2xl border-2 p-3 text-center backdrop-blur-md ${outcome.won ? 'bg-amber-950/80 border-amber-400/60 shadow-[0_0_22px_rgba(245,158,11,0.15)]' : 'bg-red-950/70 border-red-400/40'}`}>
         {outcome.won && <VictorySparks />}
         {outcome.won && <Trophy aria-hidden="true" className="relative mx-auto mb-1.5 h-9 w-9 text-amber-300 drop-shadow-[0_0_12px_rgba(251,191,36,0.7)]" />}
         <p className={`relative text-[22px] font-black tracking-[0.08em] ${outcome.won ? 'text-amber-300' : 'text-red-300'}`}>{outcome.won ? (language === 'en' ? 'VICTORY' : 'ПОБЕДА') : (language === 'en' ? 'DEFEAT' : 'ПОРАЖЕНИЕ')}</p>
@@ -474,6 +484,27 @@ function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questRead
         ) : (
           <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>
         )}
+        <div className="mt-3 flex gap-2" data-testid="pve-result-actions">
+          {onNext && (
+            <button type="button" data-testid="pve-result-next" onClick={onNext} disabled={nextPending} aria-busy={nextPending}
+              className="flex-1 min-h-12 rounded-xl border border-amber-200 bg-gradient-to-b from-amber-300 to-amber-600 px-2 py-2 text-[12px] leading-tight sm:text-sm font-black text-[#251409] shadow-[0_3px_0_rgba(87,45,14,.7)] active:scale-[0.98] transition-transform disabled:opacity-60">
+              {nextPending
+                ? (language === 'en' ? 'Starting…' : 'Начинаем…')
+                : outcome.won
+                  ? (language === 'en' ? 'Next fight' : 'Следующий бой')
+                  : (language === 'en' ? 'Try again' : 'Повторить бой')}
+            </button>
+          )}
+          <button type="button" data-testid="pve-result-exit" onClick={onExit}
+            className="flex-1 min-h-12 rounded-xl border border-amber-300/40 bg-[#291d18] px-2 py-2 text-[12px] leading-tight sm:text-sm font-bold text-amber-100 active:scale-[0.98] transition-transform">
+            {kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')}
+          </button>
+        </div>
+        {nextError && <p role="alert" className="mt-2 text-xs text-amber-100">
+          {language === 'en'
+            ? 'The battle could not start. Check your battle stones or recover any pending Dark Cave action, then retry or return.'
+            : 'Бой не запустился. Проверь боевые камни или восстанови незавершённую операцию Тёмной пещеры. Можно повторить или вернуться.'}
+        </p>}
         {outcome.won && victoryJourney && (
           <section data-testid="victory-next-goal" aria-label={language === 'en' ? 'Next hero goal' : 'Следующая цель героя'}
             className="relative mt-3 rounded-xl border border-amber-300/40 bg-gradient-to-r from-[#291c18]/95 to-[#141625]/95 p-2 text-left">
@@ -521,19 +552,7 @@ function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questRead
         {outcome.won && questReady && onQuests && <button type="button" onClick={onQuests} className="relative mt-3 w-full min-h-11 rounded-xl border border-emerald-300/60 bg-emerald-700/70 px-3 text-sm font-bold text-white active:scale-[0.98]">
           {language === 'en' ? 'Quest reward ready — claim it' : 'Награда за задание готова — забрать'}
         </button>}
-        <div className="flex gap-2 mt-3">
-          <button onClick={onExit} className="flex-1 h-10 rounded-xl bg-white/10 border border-white/15 text-sm font-semibold text-white active:scale-95 transition-transform">
-            {kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')}
-          </button>
-          {outcome.won && onNext && (
-            <button type="button" onClick={onNext} disabled={nextPending} aria-busy={nextPending} className="flex-1 h-10 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 text-sm font-bold text-black active:scale-95 transition-transform disabled:opacity-60">
-              {nextPending? (language === 'en' ? 'Starting…' : 'Начинаем…') : (language === 'en' ? 'Next fight' : 'Следующий бой')}
-            </button>
-          )}
-        </div>
-        {nextError && <p role="alert" className="mt-2 text-xs text-amber-100">
-          {language === 'en' ? 'Next fight could not start. Check battle stones or recover the Dark Cave operation, then try again or return to Campaign.' : 'Следующий бой не запустился. Проверь боевые камни или восстанови операцию в Тёмной пещере. Можно повторить или вернуться в Поход.'}
-        </p>}
+
       </div>
     </div>
   );
