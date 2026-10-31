@@ -156,8 +156,13 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [screen, setScreen] = useState<Screen>('city');
   const [hallGame, setHallGame] = useState<HallGame>('monopoly');
   const [battleView, setBattleView] = useState<BattleView>('campaign');
+  // Only a deliberate battle → equipment trip preserves the selected classic mode.
+  const [battlePrepReturn, setBattlePrepReturn] = useState<'campaign' | 'trial' | null>(null);
   const [autoStart, setAutoStart] = useState(false);
   const [inventoryTab, setInventoryTab] = useState<'items' | 'equipment' | 'followers'>('equipment');
+  useEffect(() => {
+    if (screen !== 'battle' && screen !== 'inventory') setBattlePrepReturn(null);
+  }, [screen]);
   const [shopTab, setShopTab] = useState<'potions' | 'equipment'>('potions');
   const [heroTrainingOpen, setHeroTrainingOpen] = useState(false);
   const [forgeFocusId, setForgeFocusId] = useState<string | null>(null);
@@ -464,13 +469,24 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             onAutoStartHandled={() => setAutoStart(false)}
             onShop={() => { setShopTab('potions'); setScreen('shop'); }}
             onQuests={() => setScreen('quests')}
+            onEquipment={() => {
+              setBattlePrepReturn(battleView === 'trial' ? 'trial' : 'campaign');
+              setInventoryTab('equipment');
+              setScreen('inventory');
+            }}
             onActiveChange={setBattleLocked}
           />
         )}
         {screen === 'inventory' && <InventoryScreen key={inventoryTab} initialTab={inventoryTab} userId={user.id}
+          returnBattleView={battlePrepReturn}
           onForge={openForge} onProfessions={() => setScreen('professions')} onMap={() => setScreen('map')}
            onHero={() => { setHeroTrainingOpen(false); setScreen('hero'); }}
-          onBattle={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }}
+          onBattle={() => {
+            setBattleView(battlePrepReturn ?? 'campaign');
+            setBattlePrepReturn(null);
+            setAutoStart(false);
+            setScreen('battle');
+          }}
           onArena={() => setScreen('arena')} />}
         {screen === 'hero' && <ProfileScreen key={heroTrainingOpen ? 'runes' : 'hero'} user={user} initialTrainingOpen={heroTrainingOpen}
           onEquipment={() => { setInventoryTab('equipment'); setScreen('inventory'); }}
