@@ -35,7 +35,7 @@ const fighter = { stats: { hp: 1000, maxHp: 1000, attack: 100, defense: 4, critC
 const weak={...fighter,stats:{...fighter.stats,hp:1,maxHp:1,attack:1}};
 const enemy = { ...fighter, stats: { ...fighter.stats, hp: 10, maxHp: 10, attack: 1 } };
 const rules = { stepMs: 10, maxDurationMs: 10000, approachMs: 20, attackIntervalMs: 200, basicWindupMs: 20, basicMultiplier: 1, defenseFactor: 0.5, magicDefenseFactor: 0.2, minimumDamage: 1, critMultiplier: 2, blockMultiplier: 0, maxEnergy: 100, initialEnergy: 100, energyPerSecond: 0, modeDamageMultiplier: { pve: 1, boss: 1, pvp: 1 } };
-const save = { player: { gold: 50, gems:9, xp: 90, level: 1, xpToNext: 100, maxEnergy: 20, stats: { hp: 100, maxHp: 100, attack: 20, defense: 5,critChance:5,critDamage:50 }, equipped: { weapon: { id:'old', name:'Меч воина',slot:'weapon',rarity:'common',level:1,attack:8 } } }, inventory: [{ id: 'old',name:'Potion',qty:1 }],belt:[],battleStones:10,inventoryCleanupVersion:1, vip: 7, redGems: 45, achievements: [{ id: 'old' }] };
+const save = { player: { gold: 50, gems:9, xp: 90, level: 1, xpToNext: 100, maxEnergy: 20, stats: { hp: 100, maxHp: 100, attack: 20, defense: 5,critChance:5,critDamage:50 }, equipped: { weapon: { id:'old', name:'Меч воина',slot:'weapon',rarity:'common',level:1,attack:8 } } }, inventory: [{ id: 'old',name:'Potion',qty:1 }],belt:[],battleStones:0,inventoryCleanupVersion:1, vip: 7, redGems: 45, achievements: [{ id: 'old' }] };
 
 // Refuse to reuse any database that already contains application data.
 assert.equal(await sql("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p')"), '0', 'test database must be empty');
@@ -63,10 +63,47 @@ const ownerBegin=ownerFix.indexOf('CREATE OR REPLACE FUNCTION territory_private.
 assert.ok(ownerBegin>=0 && ownerEnd>ownerBegin); const ownerPath=join(tmpdir(),'territory-adventure-owner-guard-ci.sql');
 await writeFile(ownerPath,ownerFix.slice(ownerBegin,ownerEnd)); try { await file(ownerPath); } finally { await unlink(ownerPath); }
 for (const path of ['supabase/migrations/20261017_inventory_cleanup_prepare.sql','supabase/production/territory_economy_guard_20261015.sql','supabase/migrations/20261018_hero_level_cap_100.sql']) await file(path);
+// Synthetic supporting tables and relevant players fields; function/trigger
+// bodies below are exact read-only captures, not stubs or player records.
+await sql(`ALTER TABLE public.players
+ ADD COLUMN telegram_id bigint UNIQUE, ADD COLUMN username text, ADD COLUMN photo_url text,
+ ADD COLUMN display_name text NOT NULL DEFAULT 'Герой', ADD COLUMN energy integer NOT NULL DEFAULT 20,
+ ADD COLUMN current_chapter integer NOT NULL DEFAULT 1, ADD COLUMN chapter_wins integer NOT NULL DEFAULT 0,
+ ADD COLUMN total_battles_won integer NOT NULL DEFAULT 0, ADD COLUMN total_bosses_defeated integer NOT NULL DEFAULT 0,
+ ADD COLUMN arena_wins integer NOT NULL DEFAULT 0, ADD COLUMN arena_losses integer NOT NULL DEFAULT 0,
+ ADD COLUMN arena_rating integer NOT NULL DEFAULT 1000, ADD COLUMN forge_materials integer NOT NULL DEFAULT 0,
+ ADD COLUMN vip_level integer NOT NULL DEFAULT 0 CHECK(vip_level BETWEEN 0 AND 10),
+ ADD COLUMN created_at timestamptz NOT NULL DEFAULT now(), ADD COLUMN last_seen_at timestamptz;
+ CREATE TABLE public.leaderboard(player_id uuid PRIMARY KEY,display_name text NOT NULL,level integer NOT NULL,
+ arena_rating integer NOT NULL,total_battles_won integer NOT NULL,arena_wins integer NOT NULL,photo_url text,
+ attack integer NOT NULL,defense integer NOT NULL,max_hp integer NOT NULL,crit_chance integer NOT NULL,updated_at timestamptz NOT NULL DEFAULT now());
+ CREATE TABLE territory_private.referral_invites_v1(invited_id uuid PRIMARY KEY,inviter_id uuid NOT NULL,qualified_at timestamptz);
+ CREATE TABLE territory_private.referral_activity_v2(player_id uuid PRIMARY KEY,credited_wins integer NOT NULL DEFAULT 0,
+ credited_xp integer NOT NULL DEFAULT 0,stage_wins integer NOT NULL DEFAULT 0,boss_wins integer NOT NULL DEFAULT 0);
+ CREATE TABLE territory_private.referral_chests_v1(invited_id uuid PRIMARY KEY,inviter_id uuid NOT NULL);
+ ALTER TABLE public.players ENABLE ROW LEVEL SECURITY;
+ CREATE POLICY insert_own_player ON public.players FOR INSERT TO authenticated WITH CHECK(auth.uid()=id);
+ CREATE POLICY select_own_player ON public.players FOR SELECT TO authenticated USING(auth.uid()=id);
+ CREATE POLICY update_own_player ON public.players FOR UPDATE TO authenticated USING(auth.uid()=id AND banned=false) WITH CHECK(auth.uid()=id AND banned=false);
+ GRANT USAGE ON SCHEMA auth TO authenticated;
+ GRANT SELECT ON public.players TO authenticated,anon;
+ GRANT INSERT(id,username,photo_url,display_name,level,xp,gold,gems,energy,max_energy,current_chapter,chapter_wins,total_battles_won,total_bosses_defeated,forge_materials,updated_at,game_state,attack,defense,max_hp,crit_chance) ON public.players TO authenticated;
+ GRANT UPDATE(username,photo_url,display_name,level,xp,gold,gems,energy,max_energy,current_chapter,chapter_wins,total_battles_won,total_bosses_defeated,forge_materials,updated_at,game_state,attack,defense,max_hp,crit_chance) ON public.players TO authenticated;
+ INSERT INTO territory_private.referral_invites_v1(invited_id,inviter_id) VALUES(${quote(player)},${quote(loser)});
+ INSERT INTO territory_private.referral_activity_v2(player_id) VALUES(${quote(player)});`);
+await file('scripts/fixtures/c1-live-players-triggers.sql');
+const expectedTriggerHashes={territory_economy_audit_after_v1:'7ba019abd3d7e1d4c30811abaaa825db',territory_economy_guard_before_v1:'a67b564acce6e099c8d09bdef8bcc70d',territory_gear_guard_before_v4:'fafdd6235b112b4c43ef43cde73dcd47',territory_inventory_cleanup_guard_v1:'079cd4c81b08fff3e13f30c1616d0b66',territory_referral_after_save_v2:'f8842b0c043987c62f38687535d109ad',trigger_update_leaderboard:'736feaa5c704063f07d5ec1a461f1856'};
+assert.deepEqual(await scalar(`SELECT jsonb_object_agg(t.tgname,md5(pg_get_functiondef(t.tgfoid))) FROM pg_trigger t WHERE t.tgrelid='public.players'::regclass AND NOT t.tgisinternal`),expectedTriggerHashes);
+assert.equal(await sql(`SET ROLE authenticated; SET request.test_uid=${quote(player)}; SELECT count(*) FROM public.players`),'1','owner RLS hides other player');
+assert.equal(await sql(`SET ROLE authenticated; SET request.test_uid=${quote(loser)}; SELECT count(*) FROM public.players WHERE id=${quote(player)}`),'0','cannot read another player');
 await sql('UPDATE public.players SET game_state=game_state');
 const normalizedSave=await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`);
 assert.equal((await scalar(`SELECT row_to_json(p) FROM public.players p WHERE id=${quote(player)}`)).attack,28);
 for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supabase/staged/territory_v1_adventure_settlement.sql', 'supabase/staged/territory_v1_combat_profiles_reconciliation.sql', 'supabase/staged/territory_dark_stones_20261030.sql']) await file(path);
+await sql(`DROP TABLE territory_private.cave_canary_v1; ALTER TABLE territory_private.combat_config_v1 DROP COLUMN starts_enabled, DROP COLUMN canary_only;`);
+await file('scripts/fixtures/c1-live-function-baseline.sql');
+await file('supabase/staged/territory_c1_live_guarded_patch_DRAFT_20261031.sql');
+await sql(`INSERT INTO territory_private.cave_canary_v1 VALUES(${quote(player)},'synthetic player'),(${quote(loser)},'synthetic loser'); UPDATE territory_private.combat_config_v1 SET starts_enabled=true,canary_only=true WHERE id`);
 assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`), normalizedSave, 'installation leaves the old save untouched');
 await sql(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
  VALUES (${quote(player)},${json(normalizedSave)},1,${json(fighter)},'{}',ARRAY['old']::text[],'synthetic evidence','test reviewer'),
@@ -89,6 +126,8 @@ const repo = {
 const execute = (p,c,repository=repo) => executeCombatCommand(repository,p,c,() => 12);
 await assert.rejects(execute(player,{action:'start',operationId:op(1),encounterId:'s2',control:'auto'}), /adventure_stage_locked/);
 const start = await execute(player,{action:'start',operationId:op(2),encounterId:'s1',control:'auto'});
+assert.equal(start.start_save.battle_stones,0);
+assert.equal(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(player)}`),'4');
 await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(start.session_id)};
  UPDATE territory_private.adventure_rewards_v1 SET items='[{"id":"unapproved"}]' WHERE stage=1;`);
 const cmd = {action:'advance',operationId:op(3),sessionId:start.session_id,revision:0};
@@ -158,4 +197,13 @@ await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1
 const lost=await execute(loser,{action:'advance',operationId:op(6),sessionId:lostStart.session_id,revision:0});
 assert.equal(lost.state.status,'enemy_won'); assert.equal(lost.settlement.reward.gold,0); assert.equal(lost.settlement.reward.xp,0);
 assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`),normalizedSave,'defeat preserves ordinary battle stones and all other save fields');
+assert.equal(await sql(`SELECT count(*) FROM territory_private.referral_invites_v1 WHERE invited_id=${quote(player)} AND qualified_at IS NULL`),'1');
+assert.equal(await sql(`SELECT count(*) FROM territory_private.referral_chests_v1`),'0');
+const board=await scalar(`SELECT row_to_json(l) FROM public.leaderboard l WHERE player_id=${quote(player)}`);
+assert.equal(board.level,2); assert.equal(board.attack,33);
+await file('supabase/staged/territory_c1_pause_new_starts_DRAFT_20261031.sql');
+const playerRowsBefore=await scalar('SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM public.players p');
+await file('supabase/staged/territory_c1_restore_functions_DRAFT_20261031.sql');
+assert.deepEqual(await scalar('SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM public.players p'),playerRowsBefore,'phase B must not alter player assets');
+assert.deepEqual(await execute(player,cmd),won,'receipt replay survives rollback');
 console.log('PostgreSQL 17 with actual V1 economy, gear and inventory guards PASS: reviewed synthetic profile, locked stages, engine victory/loss, rollback and retry, durable receipts, preserved save and real concurrent lock contention.');
