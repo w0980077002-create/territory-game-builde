@@ -21,7 +21,7 @@ export function restoreAdventureSaveFence() { return null; }
 export function restoreAdventureStartFence() { return null; }
 export async function requestAdventureStart(userId,command,hooks) {
  window.__adventureCalls.push(command);
- window.__adventureControl=command.control;
+ window.__adventureControl=new URLSearchParams(location.search).get('manual') === '1' ? 'manual' : command.control;
  progress = {...progress, dark_stones: progress.dark_stones - 1};
  current=outcome('fighting');
  hooks.applyState(oldState);
