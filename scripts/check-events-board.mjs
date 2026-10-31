@@ -83,4 +83,31 @@ assert.match(styles,/max-width:\s*360px/,'Compact Android/iPhone screens must re
 assert.match(styles,/prefers-reduced-motion/,'Honor reduced-motion setting');
 assert.match(quests,/import\.meta\.env\.BASE_URL \+ 'ic-quests\.webp'/,'Quest art must work below the Pages base path');
 assert.match(quests,/import\.meta\.env\.BASE_URL \+ 'ic-trophy\.webp'/,'Achievement art must work below the Pages base path');
+// Player-facing copy lock: one visible Arena place, no bot labels or other heroes' levels.
+const arenaLobby=read('src/components/arena/ArenaLobby.tsx');
+const arenaBoard=read('src/components/arena/ArenaWeeklyBoard.tsx');
+const battleScene=read('src/components/arena/BattleScene.tsx');
+const fighters=read('src/components/arena/FighterList.tsx');
+const clans=read('src/components/ClanScreen.tsx');
+const friends=read('src/components/FriendsScreen.tsx');
+const championship=read('src/components/SeasonScreen.tsx');
+assert(!screen.includes('season.my_rank') && !screen.includes('arena.my_rank'),
+  'Events must not display server-only places contradicting Arena bot-inclusive TOP-50');
+assert(screen.includes('Единый недельный ТОП-50 всех участников Арены.'));
+assert(arenaLobby.includes('ТОП-50 Арены, победы и награды недели'));
+assert(!arenaLobby.includes('Подтверждённые очки, победители и статус сезона'));
+assert(!arenaBoard.includes('Выдуманные результаты не показываем.'));
+assert(!arenaBoard.includes('По текущему ТОПу: обойти'));
+assert(!arenaBoard.includes('Новый сезон каждое воскресенье в 00:00 UTC.'));
+assert(arenaBoard.includes('arenaWeeklyWithBots(status, now)'));
+assert(!arenaBoard.includes('{player.level}'));
+assert(battleScene.includes('showLevel = false') && battleScene.includes('<Plate fighter={me} side="ally" showLevel />'));
+assert(battleScene.includes('<Plate fighter={enemy} side="enemy" />'));
+assert(fighters.includes('isMe ? <span') && fighters.includes('<Shield className="w-3 h-3 text-gray-400"'));
+assert(!clans.includes('{app.name} · {app.level}'));
+assert(!clans.includes('{candidate.display_name} · {candidate.level}'));
+assert(clans.includes("isMe ? ` · ${t('clanLevelShort')} ${m.level}` : ''"));
+assert(!friends.includes('{level}/5') && friends.includes("friend.qualified ? 100"));
+assert(championship.includes('season-journey__hero') && !championship.includes('Тот же недельный ТОП-50'));
+assert(!championship.includes('season-official-server'));
 console.log('Events board PASS: real existing bonuses, UTC countdowns, server-only status, live navigation, first-hour quest actions, anonymous analytics and compact mobile layout.');
