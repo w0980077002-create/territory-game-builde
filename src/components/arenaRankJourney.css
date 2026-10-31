@@ -1,0 +1,50 @@
+/* Arena TOP-50 journey: approved warm wood, dimensional gold and readable Viking UI. */
+.arena-rank-journey{display:grid;gap:10px;min-width:0;padding:0 0 12px;color:#fff0d0}
+.arena-rank-journey *{box-sizing:border-box}
+.arena-rank-journey__hero{display:flex;align-items:center;gap:10px;min-width:0;padding:10px;border:3px solid #dfb46b;border-radius:17px;background:radial-gradient(ellipse at 18% 12%,#ba86576b,transparent 68%),linear-gradient(145deg,#794822,#3b251b 75%);box-shadow:inset 0 2px #ffe9a273,0 5px 13px #0008}
+.arena-rank-journey__hero img{width:clamp(68px,24vw,100px);height:clamp(68px,24vw,100px);flex:0 0 auto;object-fit:contain;filter:drop-shadow(0 4px 5px #0008)}
+.arena-rank-journey__hero>div{flex:1;min-width:0}
+.arena-rank-journey__hero span{font-size:10px;font-weight:900;letter-spacing:.3px;color:#f6c77a}
+.arena-rank-journey__hero h2{margin:3px 0;font-size:clamp(20px,5.5vw,26px);font-weight:900;line-height:1.1;color:#ffe5a0;text-shadow:0 2px #24120a;overflow-wrap:anywhere}
+.arena-rank-journey__hero p{font-size:11px;line-height:1.35;color:#f4e0c5}
+.arena-rank-journey__tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;min-width:0}
+.arena-rank-journey__tab{min-width:0;min-height:48px;padding:7px 3px;border:2px solid #ad804a;border-radius:10px;background:linear-gradient(#6a462c,#35241c);color:#ffe3ae;font-size:12px;font-weight:900;line-height:1.2;overflow-wrap:anywhere}
+.arena-rank-journey__tab--active{border-color:#fff0b1;background:linear-gradient(#ffe5a1,#c68c3b);color:#351b0b;box-shadow:inset 0 2px #fff7d2,0 3px #694018}
+.arena-rank-journey__content{display:grid;gap:10px;min-width:0}
+.arena-rank-journey__personal{display:grid;gap:8px;padding:12px;border:2px solid #edc478;border-radius:14px;background:radial-gradient(ellipse at 0% 0%,#b78b4e4f,transparent 70%),linear-gradient(140deg,#654022,#2d231c);box-shadow:inset 0 1px #ffe7b570}
+.arena-rank-journey__personal-heading{display:flex;align-items:center;gap:7px;min-width:0;color:#ffe7ac}
+.arena-rank-journey__personal-heading strong{flex:1;min-width:0;font-size:14px;font-weight:900}
+.arena-rank-journey__personal-heading b{font-size:22px;font-weight:900;color:#fff1b7}
+.arena-rank-journey__personal p{font-size:12px;line-height:1.4;color:#f4dcc1}
+.arena-rank-journey__personal p strong{color:#fff1b0}
+.arena-rank-journey__rival{display:grid;gap:5px;padding:9px;border:1px solid #d6b47a;border-radius:9px;background:#251e1acc;font-size:12px;line-height:1.3;color:#efdcba;overflow-wrap:anywhere}
+.arena-rank-journey__rival b{color:#ffdd8a}
+.arena-rank-journey__leader{display:flex;align-items:center;gap:6px;min-width:0;padding:10px;border:1px solid #e7b55f;border-radius:12px;background:linear-gradient(115deg,#785027,#3c291e);color:#f5dcb3;font-size:11px}
+.arena-rank-journey__leader svg{color:#ffe08d;flex:0 0 auto}
+.arena-rank-journey__leader strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:#fff1c2}
+.arena-rank-journey__leader b{font-size:14px;color:#ffe18e;font-variant-numeric:tabular-nums}
+.arena-rank-journey__board{min-width:0;border:2px solid #cfa161;border-radius:14px;background:linear-gradient(155deg,#59371f,#271b16);overflow:hidden}
+.arena-rank-journey__board h3{display:flex;align-items:center;gap:7px;padding:12px;font-size:15px;font-weight:900;color:#ffe6a8}
+.arena-rank-journey__board h3 span{margin-left:auto;color:#edca96;font-size:11px}
+.arena-rank-journey__row{display:flex;align-items:center;gap:7px;min-width:0;min-height:54px;padding:7px 9px;border-top:1px solid #f4d9a12c}
+.arena-rank-journey__row--mine{background:#a17c414d;box-shadow:inset 3px 0 #ffe6a0}
+.arena-rank-journey__place{display:flex;align-items:center;justify-content:center;gap:2px;flex:0 0 46px;font-size:12px;font-weight:900;color:#ffda8b}
+.arena-rank-journey__portrait{display:grid;place-items:center;flex:0 0 35px;width:35px;height:35px;border:1px solid #c5a169;border-radius:9px;overflow:hidden;background:#3c2c24;color:#eecb8b}
+.arena-rank-journey__portrait img{width:100%;height:100%;object-fit:cover}
+.arena-rank-journey__player{flex:1;min-width:0;display:grid;gap:2px}
+.arena-rank-journey__player strong{font-size:12px;font-weight:900;color:#fff0d3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arena-rank-journey__player small{font-size:10px;color:#c8b8a5}
+.arena-rank-journey__score{flex:0 0 auto;max-width:30%;font-size:13px;font-weight:900;color:#ffe19b;overflow-wrap:anywhere;text-align:right;font-variant-numeric:tabular-nums}
+.arena-rank-journey__empty{padding:12px;color:#f1d6b6;font-size:12px}
+.arena-rank-journey__notice{display:flex;align-items:center;gap:9px;padding:13px;border:2px solid #c89c59;border-radius:12px;background:#533620;color:#ffebc9;font-size:12px;line-height:1.4}
+.arena-rank-journey__notice--error{display:grid;border-color:#ed9c72}
+.arena-rank-journey__notice button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border:1px solid #f3d08e;border-radius:9px;background:#76502b;font-weight:900}
+.arena-rank-journey__actions{display:grid;gap:7px}
+.arena-rank-journey__primary{display:flex;align-items:center;justify-content:center;gap:9px;min-height:52px;width:100%;padding:9px;border:2px solid #ffecb5;border-radius:12px;background:linear-gradient(#ffe7a4,#d99e43 58%,#ab6c26);box-shadow:inset 0 2px #fff6d3,0 3px #694018;color:#351b0a;font-size:15px;font-weight:900}
+.arena-rank-journey__primary svg:last-child{margin-left:auto}
+.arena-rank-journey__secondary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.arena-rank-journey__secondary button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:7px;border:1px solid #e3b879;border-radius:10px;background:linear-gradient(#75502e,#3a281c);color:#ffe8c3;font-size:12px;font-weight:900}
+.arena-rank-journey button:focus-visible{outline:3px solid #fff0ad;outline-offset:2px}
+.arena-rank-journey button:disabled{opacity:.55}
+@media(max-width:350px){.arena-rank-journey__hero{gap:7px;padding:8px}.arena-rank-journey__hero img{width:64px;height:72px}.arena-rank-journey__hero span{font-size:9px}.arena-rank-journey__tab{font-size:11px}.arena-rank-journey__row{gap:5px;padding:7px 5px}.arena-rank-journey__place{flex-basis:39px}.arena-rank-journey__portrait{width:30px;height:30px;flex-basis:30px}}
+@media(prefers-reduced-motion:reduce){.arena-rank-journey *{animation:none!important;transition:none!important}}

@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getLeaderboard } from '@/game/cloud';
-import { Trophy, Crown, Medal } from 'lucide-react';
+import { arenaRankView } from '@/game/arenaRankView';
+import { ArrowRight, Crown, Medal, RefreshCcw, ShieldCheck, Swords, Trophy } from 'lucide-react';
 import type { AuthUser } from '@/game/auth';
 import { useLanguage } from '@/game/i18n';
 import { SeasonScreen } from './SeasonScreen';
+import './arenaRankJourney.css';
 
 interface LeaderboardEntry {
   player_id: string;
@@ -15,146 +17,145 @@ interface LeaderboardEntry {
   photo_url: string | null;
 }
 
-export function LeaderboardScreen({ user, initialTab = 'rating', onArena, onEvents, onMessages }: { user: AuthUser; initialTab?: 'rating' | 'wins' | 'season'; onArena?: () => void; onEvents?: () => void; onMessages?: () => void }) {
-  const { t, language } = useLanguage();
+type RankTab = 'rating' | 'wins' | 'season';
+
+/** Read-only Arena TOP-50. Rank and values are the server's ordered rows.
+ * Never infer a player's global rank from a truncated list or local saves. */
+export function LeaderboardScreen({ user, initialTab = 'rating', onArena, onEvents, onMessages }: {
+  user: AuthUser;
+  initialTab?: RankTab;
+  onArena?: () => void;
+  onEvents?: () => void;
+  onMessages?: () => void;
+}) {
+  const { language } = useLanguage();
+  const en = language === 'en';
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [tab, setTab] = useState<'rating' | 'wins' | 'season'>(initialTab);
+  const [tab, setTab] = useState<RankTab>(initialTab);
   const requestId = useRef(0);
 
-  useEffect(() => {
-    if (tab !== 'season') void loadLeaderboard(tab);
-    return () => { requestId.current += 1; };
-  }, [tab]);
-
-  const loadLeaderboard = async (kind: 'rating' | 'wins') => {
+  const loadLeaderboard = useCallback(async (kind: 'rating' | 'wins') => {
     const ticket = ++requestId.current;
     setLoading(true);
     setError(false);
     try {
+      // Query orders the FULL view before LIMIT 50. Do not sort a rating
+      // sample by wins on the client: that hides real wins leaders.
       const result = await getLeaderboard(50, kind === 'rating' ? 'arena_rating' : 'arena_wins');
       if (ticket !== requestId.current) return;
       setEntries(result as LeaderboardEntry[]);
     } catch {
       if (ticket !== requestId.current) return;
-      setError(true);
       setEntries([]);
+      setError(true);
     } finally {
       if (ticket === requestId.current) setLoading(false);
     }
-  };
+  }, []);
 
-  // The database orders the entire leaderboard before limiting to the top 50.
-  // Sorting only the fifty highest-rated players would exclude real win leaders.
-  const sorted = entries;
+  useEffect(() => {
+    if (tab === 'season') {
+      requestId.current += 1;
+      return;
+    }
+    void loadLeaderboard(tab);
+    return () => { requestId.current += 1; };
+  }, [tab, loadLeaderboard]);
 
-  return (
-    <div className="viking-screen viking-screen--leaderboard space-y-4 animate-fade-in pb-4">
-      <div className="card text-center border-2 border-amber-500/70 bg-gradient-to-br from-[#754725] via-[#422919] to-[#291b17] shadow-[inset_0_2px_0_#ffe2a05e,0_5px_13px_#0008]">
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <Trophy className="w-6 h-6 text-amber-400" />
-          <h2 className="text-xl font-bold text-white">{t('leaderboard')}</h2>
-        </div>
-        <div className="flex gap-2">
-          <button
-            className={`flex-1 btn min-h-[44px] min-w-0 px-1 text-xs sm:text-sm ${tab === 'rating' ? 'btn-accent' : 'btn-ghost'}`}
-            onClick={() => setTab('rating')}
-            aria-pressed={tab === 'rating'}
-          >
-            {language === 'en' ? 'By rating' : 'По рейтингу'}
-          </button>
-          <button
-            className={`flex-1 btn min-h-[44px] min-w-0 px-1 text-xs sm:text-sm ${tab === 'wins' ? 'btn-accent' : 'btn-ghost'}`}
-            onClick={() => setTab('wins')}
-            aria-pressed={tab === 'wins'}
-          >
-            {language === 'en' ? 'By wins' : 'По победам'}
-          </button>
-          <button
-            className={`flex-1 btn min-h-[44px] min-w-0 px-1 text-xs sm:text-sm ${tab === 'season' ? 'btn-accent' : 'btn-ghost'}`}
-            onClick={() => setTab('season')}
-            aria-pressed={tab === 'season'}
-          >
-            {language === 'en' ? 'Seasons' : 'Сезоны'}
-          </button>
-        </div>
+  const metric = tab === 'wins' ? 'arena_wins' : 'arena_rating';
+  const { mine, myRow, nextRival, leader, gap } = arenaRankView(entries, user.id, metric);
+  const number = (value: number) => value.toLocaleString(en ? 'en-US' : 'ru-RU');
+  const metricLabel = tab === 'wins' ? (en ? 'wins' : 'побед') : (en ? 'rating' : 'рейтинг');
+
+  return <div className="arena-rank-journey viking-screen viking-screen--leaderboard animate-fade-in" data-testid="arena-rank-journey">
+    <header className="arena-rank-journey__hero">
+      <img src={import.meta.env.BASE_URL + 'ic-trophy.webp'} alt="" draggable={false} />
+      <div>
+        <span>{en ? 'ARENA · VERIFIED RESULTS' : 'АРЕНА · ПОДТВЕРЖДЁННЫЕ РЕЗУЛЬТАТЫ'}</span>
+        <h2>{en ? 'Path to the top' : 'Путь к вершине'}</h2>
+        <p>{en ? 'Compare real rankings, check the championship and return to battle.' : 'Сравни места, проверь чемпионат и возвращайся в бой.'}</p>
       </div>
+    </header>
 
-      {tab === 'season' ? <SeasonScreen user={user} onArena={onArena} onEvents={onEvents} onMessages={onMessages} /> : <>
-      {error && (
-        <div className="card text-center text-sm text-red-400">{t('leaderboardLoadError')}</div>
-      )}
+    <div className="arena-rank-journey__tabs" role="tablist" aria-label={en ? 'Arena rankings' : 'Рейтинги Арены'}>
+      {([
+        ['rating', en ? 'Rating' : 'Рейтинг'],
+        ['wins', en ? 'Wins' : 'Победы'],
+        ['season', en ? 'Championship' : 'Чемпионат'],
+      ] as const).map(([id, label]) => <button type="button" role="tab" key={id}
+        aria-selected={tab === id} aria-controls="arena-rank-journey-content"
+        onClick={() => setTab(id)} className={tab === id ? 'arena-rank-journey__tab arena-rank-journey__tab--active' : 'arena-rank-journey__tab'}>
+        {label}
+      </button>)}
+    </div>
 
-      {loading ? (
-        <div className="card text-center py-8 text-gray-500">
-          <p className="text-sm">{t('loading')}</p>
-        </div>
-      ) : error ? null : sorted.length === 0 ? (
-        <div className="card text-center py-8 text-gray-500">
-          <Trophy className="w-12 h-12 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">{t('noLeaderboard')}</p>
-          <p className="text-xs mt-1">{t('playArenaForRank')}</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {sorted.map((entry, index) => {
-            const isMe = entry.player_id === user.id;
-            const rank = index + 1;
+    <div id="arena-rank-journey-content" role="tabpanel" className="arena-rank-journey__content">
+      {tab === 'season' ? <SeasonScreen user={user} onArena={onArena} onEvents={onEvents} onMessages={onMessages}
+        onRankings={() => setTab('rating')} /> : <>
+        {loading ? <div className="arena-rank-journey__notice" role="status">
+          <RefreshCcw size={19} aria-hidden="true"/>{en ? 'Checking the Arena TOP-50…' : 'Проверяем ТОП-50 Арены…'}
+        </div> : error ? <div className="arena-rank-journey__notice arena-rank-journey__notice--error" role="alert">
+          <p>{en ? 'Could not load the server ranking. No scores were changed.' : 'Не удалось загрузить серверный рейтинг. Очки не изменены.'}</p>
+          <button type="button" onClick={() => void loadLeaderboard(tab)}>
+            <RefreshCcw size={16} aria-hidden="true"/>{en ? 'Try again' : 'Повторить'}
+          </button>
+        </div> : <>
+          <section className="arena-rank-journey__personal" data-testid="arena-rank-personal" aria-label={en ? 'Your verified TOP-50 result' : 'Твой результат в ТОП-50'}>
+            <div className="arena-rank-journey__personal-heading">
+              <ShieldCheck size={20} aria-hidden="true"/>
+              <strong>{en ? 'Your place in TOP-50' : 'Твоё место в ТОП-50'}</strong>
+              <b>{myRow ? `№${mine + 1}` : '—'}</b>
+            </div>
+            {myRow ? <>
+              <p>{en ? 'Your confirmed result:' : 'Твой подтверждённый результат:'} <strong>{number(myRow[metric])} {metricLabel}</strong></p>
+              {nextRival ? <div className="arena-rank-journey__rival" data-testid="arena-rank-next-rival">
+                <span>{en ? 'Next rival' : 'Следующий соперник'}: <b>{nextRival.display_name}</b> · №{mine}</span>
+                <span>{en ? 'Difference' : 'Разница'}: <b>{number(gap ?? 0)} {metricLabel}</b></span>
+              </div> : <p>{en ? 'You lead this TOP-50 list. Defend your place in Arena!' : 'Ты возглавляешь этот ТОП-50. Защищай место на Арене!'}</p>}
+            </> : <p>{entries.length
+              ? (en ? 'Your account is not shown among these 50 server results. Your exact global place is unknown.' : 'Тебя нет в этих 50 серверных результатах. Точное место вне списка неизвестно.')
+              : (en ? 'There are no confirmed results in this ranking yet.' : 'В этом рейтинге пока нет подтверждённых результатов.')}</p>}
+          </section>
 
-            return (
-              <div
-                key={entry.player_id}
-                className={`card flex items-center gap-3 ${
-                  isMe ? 'border-teal-500/50 bg-teal-900/10' : ''
-                } ${rank <= 3 ? 'animate-pop' : ''}`}
-              >
-                {/* Rank */}
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold shrink-0 ${
-                  rank === 1 ? 'bg-amber-500/20 text-amber-400' :
-                  rank === 2 ? 'bg-gray-400/20 text-gray-300' :
-                  rank === 3 ? 'bg-orange-700/20 text-orange-400' :
-                  'bg-black/30 text-gray-500'
-                }`}>
-                  {rank === 1 ? <Crown className="w-5 h-5" /> :
-                   rank === 2 ? <Medal className="w-5 h-5" /> :
-                   rank === 3 ? <Medal className="w-5 h-5" /> :
-                   rank}
+          {leader && <div className="arena-rank-journey__leader" data-testid="arena-rank-leader">
+            <Crown size={20} aria-hidden="true"/><span>{en ? 'Current leader' : 'Текущий лидер'}</span>
+            <strong title={leader.display_name}>{leader.display_name}</strong><b>{number(leader[metric])}</b>
+          </div>}
+
+          <section className="arena-rank-journey__board" aria-label={en ? 'Server TOP-50' : 'Серверный ТОП-50'}>
+            <h3><Trophy size={19} aria-hidden="true"/>{en ? 'Server TOP-50' : 'Серверный ТОП-50'} <span>{entries.length}/50</span></h3>
+            {entries.length ? entries.map((entry, index) => {
+              const isMe = entry.player_id === user.id;
+              const rank = index + 1;
+              return <div key={entry.player_id} className={isMe ? 'arena-rank-journey__row arena-rank-journey__row--mine' : 'arena-rank-journey__row'}>
+                <span className="arena-rank-journey__place">{rank <= 3 ? <Medal size={17} aria-hidden="true"/> : null}№{rank}</span>
+                <div className="arena-rank-journey__portrait">
+                  {entry.photo_url ? <img src={entry.photo_url} alt="" loading="lazy" referrerPolicy="no-referrer"/> : <Trophy size={19} aria-hidden="true"/>}
                 </div>
-
-                {/* Avatar */}
-                <div className="w-10 h-10 rounded-full bg-black/30 overflow-hidden shrink-0 flex items-center justify-center text-xl">
-                  {entry.photo_url ? (
-                    <img src={entry.photo_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    '🦸'
-                  )}
+                <div className="arena-rank-journey__player">
+                  <strong title={entry.display_name}>{entry.display_name}{isMe ? (en ? ' (you)' : ' (ты)') : ''}</strong>
+                  <small>{en ? 'Level' : 'Уровень'} {entry.level}</small>
                 </div>
+                <b className="arena-rank-journey__score">{number(entry[metric])}</b>
+              </div>;
+            }) : <p className="arena-rank-journey__empty">{en ? 'Win a confirmed Arena battle to join the competition.' : 'Победи на Арене, чтобы участвовать в соревновании.'}</p>}
+          </section>
+        </>}
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <h4 className={`text-sm font-semibold truncate ${isMe ? 'text-teal-400' : 'text-white'}`}>
-                    {entry.display_name} {isMe && (language === 'en' ? '(you)' : '(ты)')}
-                  </h4>
-                  <div className="flex gap-3 text-xs text-gray-400">
-                    <span>{t('level')} {entry.level}</span>
-                    {tab === 'rating' ? (
-                      <span className="text-amber-400">{entry.arena_rating} {language === 'en' ? 'rating' : 'рейтинг'}</span>
-                    ) : (
-                      <span className="text-teal-400">{entry.arena_wins} {language === 'en' ? 'wins' : 'побед'}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <button className="btn-ghost w-full text-sm" onClick={() => void loadLeaderboard(tab === 'wins' ? 'wins' : 'rating')}>
-        {language === 'en' ? 'Refresh' : 'Обновить'}
-      </button>
+        <nav className="arena-rank-journey__actions" aria-label={en ? 'Arena ranking actions' : 'Действия рейтинга'}>
+          {onArena && <button type="button" className="arena-rank-journey__primary" onClick={onArena}>
+            <Swords size={20} aria-hidden="true"/>{en ? 'Go to Arena' : 'На Арену'}<ArrowRight size={17} aria-hidden="true"/>
+          </button>}
+          <div className="arena-rank-journey__secondary">
+            <button type="button" onClick={() => setTab('season')}>{en ? 'Championship' : 'Чемпионат'}</button>
+            <button type="button" onClick={() => void loadLeaderboard(tab)} disabled={loading}>
+              <RefreshCcw size={16} aria-hidden="true"/>{en ? 'Refresh' : 'Обновить'}
+            </button>
+          </div>
+        </nav>
       </>}
     </div>
-  );
+  </div>;
 }

@@ -11,10 +11,11 @@ interface Props {
   onArena?: () => void;
   onEvents?: () => void;
   onMessages?: () => void;
+  onRankings?: () => void;
 }
 
 /** Read-only championship. Points, standings and prizes come only from the server. */
-export function SeasonScreen({ user, onArena, onEvents, onMessages }: Props) {
+export function SeasonScreen({ user, onArena, onEvents, onMessages, onRankings }: Props) {
   const { language } = useLanguage();
   const en = language === 'en';
   const [clock, setClock] = useState(Date.now());
@@ -132,9 +133,10 @@ export function SeasonScreen({ user, onArena, onEvents, onMessages }: Props) {
 
     <nav className="season-journey__actions" aria-label={en ? 'Championship journey' : 'Путь чемпионата'}>
       {onArena && <button type="button" className="season-journey__primary" onClick={onArena}>
-        <Swords size={20} aria-hidden="true"/>{live ? (en ? 'Fight in Arena' : 'Сражаться на Арене') : (en ? 'Open Arena TOP-50' : 'Открыть ТОП-50 Арены')}<ChevronRight size={17} aria-hidden="true"/>
+        <Swords size={20} aria-hidden="true"/>{live ? (en ? 'Fight in Arena' : 'Сражаться на Арене') : (en ? 'Open Arena' : 'Открыть Арену')}<ChevronRight size={17} aria-hidden="true"/>
       </button>}
-      <div className="season-journey__secondary">
+      <div className={onRankings ? "season-journey__secondary season-journey__secondary--four" : "season-journey__secondary"}>
+        {onRankings && <button type="button" data-testid="season-open-top50" onClick={onRankings}><Trophy size={17} aria-hidden="true"/>{en ? 'Arena TOP-50' : 'ТОП-50 Арены'}</button>}
         {onEvents && <button type="button" onClick={onEvents}>{en ? 'Events' : 'События'}</button>}
         {onMessages && <button type="button" onClick={onMessages}><Mail size={17} aria-hidden="true"/>{en ? 'Mail' : 'Почта'}</button>}
         <button type="button" onClick={() => void refresh()} disabled={loading}>
