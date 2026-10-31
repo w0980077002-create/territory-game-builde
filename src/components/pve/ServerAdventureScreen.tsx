@@ -490,7 +490,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
               const current = floor.index === progress.unlocked_stage && progress.completed_stage < 100;
               const locked = floor.index > progress.unlocked_stage || progress.completed_stage === 100 && !cleared;
               const highlighted = floor.index === floorFocus;
-              const rowClass = 'relative flex min-h-[49px] w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors ' +
+              const rowClass = 'relative flex min-h-[45px] w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors ' +
                 (current ? 'border-[#bf7df0] bg-gradient-to-r from-[#422052] via-[#271833] to-[#1a112b] text-[#fff1fc] shadow-[inset_0_0_12px_rgba(163,89,231,.14),0_0_10px_rgba(147,70,211,.2)]' :
                   locked ? 'border-[#322c46] bg-[#141426] text-[#86829d]' :
                     highlighted ? 'border-[#8063a2] bg-[#28223f] text-[#eaddfb]' :
