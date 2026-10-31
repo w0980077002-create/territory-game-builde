@@ -61,12 +61,25 @@ with sync_playwright() as p:
             page.evaluate('window.__route = null')
             hero.locator('.hero-showcase__adventure').click()
             assert page.evaluate('window.__route') == 'campaign'
+            companion = hero.locator('[data-testid="hero-companion-journey"]')
+            assert companion.count() == 1
+            assert companion.locator('img').evaluate('(el) => el.complete && el.naturalWidth > 0')
+            page.evaluate('window.__route = null')
+            companion.locator('[data-testid="hero-open-companions"]').click()
+            assert page.evaluate('window.__route') == 'companions'
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             page.locator('[data-testid="profile-appearance"] summary').click()
             assert page.locator('[data-testid="profile-appearance"] button').count() >= 4
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             if width == 360 and lang == 'ru':
                 page.locator('.territory-shell').evaluate('(el) => el.scrollTop = 0')
                 page.screenshot(path='/tmp/territory-profile-360.png')
+            page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?companion')
+            companion = page.locator('[data-testid="hero-companion-journey"]')
+            companion.wait_for()
+            assert ('Loyal Shield' if lang == 'en' else 'Верный щит') in companion.inner_text()
+            assert ('Lv. 1' if lang == 'en' else 'Ур. 1') in companion.inner_text()
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             # A saved chapter with enough victories must announce the boss;
             # the art and CTA stay bound to the existing campaign, not a fake reward.
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?boss-ready')
@@ -115,6 +128,18 @@ with sync_playwright() as p:
             assert dialog.count() == 0
             assert forge.evaluate('(el) => document.activeElement === el')
             # A long warehouse stays searchable and keeps the pinned controls reachable.
+            page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?inventory-companions')
+            bar = page.locator('[data-testid="companion-journey-actions"]')
+            bar.wait_for()
+            assert bar.is_visible()
+            assert page.get_by_role('tab', name='Companions' if lang == 'en' else 'Спутники').get_attribute('aria-selected') == 'true'
+            page.evaluate('window.__route = null')
+            bar.get_by_role('button', name='Open Campaign' if lang == 'en' else 'Открыть Поход').click()
+            assert page.evaluate('window.__route') == 'campaign'
+            page.evaluate('window.__route = null')
+            bar.get_by_role('button', name='Hero' if lang == 'en' else 'Герой').click()
+            assert page.evaluate('window.__route') == 'hero'
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?inventory-many')
             search = page.locator('.compact-warehouse__search input')
             assert page.locator('.warehouse-tile').count() >= 40
