@@ -19,11 +19,12 @@ interface Props {
   onBack?: () => void;
   backDisabled?: boolean;
   onLeaderboard?: () => void;
+  onSeason?: () => void;
   onMessages?: () => void;
   saveStatus?: SaveStatus;
 }
 
-export function ArenaScreen({ onActiveChange, onBack, backDisabled, onLeaderboard, onMessages, saveStatus = 'saved' }: Props) {
+export function ArenaScreen({ onActiveChange, onBack, backDisabled, onLeaderboard, onSeason, onMessages, saveStatus = 'saved' }: Props) {
   const state = useStore(useGame);
   const account = useStore(useAccount);
   const { language, setLanguage } = useLanguage();
@@ -118,7 +119,7 @@ export function ArenaScreen({ onActiveChange, onBack, backDisabled, onLeaderboar
         </section>
       ) : roomId ? (
         <div className="px-3 py-2"><ArenaRoom key={roomId} roomId={roomId} onExit={() => setRoomId(null)} onActiveChange={onActiveChange} /></div>
-      ) : <ArenaLobby onJoined={setRoomId} onBack={onBack} backDisabled={backDisabled} />}
+      ) : <ArenaLobby onJoined={setRoomId} onBack={onBack} onSeason={onSeason} backDisabled={backDisabled} />}
       {sheet === 'settings' && <SettingsSheet onClose={() => setSheet(null)} saveStatus={saveStatus} cityMotion={cityMotion} onToggleCityMotion={toggleCityMotion} />}
     </div>
   );

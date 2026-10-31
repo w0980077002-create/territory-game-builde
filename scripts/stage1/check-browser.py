@@ -82,8 +82,10 @@ with sync_playwright() as p:
         check(page,f'auction-history-{width}')
         page=load(browser,width,height,'season')
         expect(page.get_by_role('heading',name='Недельный чемпионат')).to_be_visible()
-        expect(page.get_by_text('#10',exact=True)).to_be_visible()
-        expect(page.get_by_role('heading',name='История победителей')).to_be_visible()
+        page.get_by_test_id('season-prize-rules').locator('summary').click()
+        expect(page.get_by_text('№10',exact=True)).to_be_visible()
+        page.get_by_test_id('season-winners-history').locator('summary').click()
+        expect(page.get_by_text('История чемпионов',exact=True)).to_be_visible()
         check(page,f'season-{width}');shot(page,f'season-{width}')
         report['viewports'].append({'width':width,'height':height,'clan_search_application_invite_chat':True,'auction_filters_history':True,'season_ten_prizes_history':True})
     assert not report['errors'],report['errors']

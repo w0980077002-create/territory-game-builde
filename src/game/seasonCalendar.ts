@@ -53,3 +53,15 @@ export function seasonCountdown(ms: number, language: 'ru' | 'en' = 'ru') {
   const mins = minutes % 60;
   return language === 'en' ? `${days}d ${hours}h ${mins}m` : `${days}д ${hours}ч ${mins}м`;
 }
+
+/** The server championship starts Sunday 00:00 Europe/Kyiv (DST aware).
+ * This differs from both Monday UTC quests and Sunday UTC Arena TOP-50. */
+export function kyivSeasonWeekKey(now: number = Date.now()): string {
+  if (!Number.isFinite(now)) throw new RangeError('Invalid championship clock');
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date(now));
+  const number = (type: string) => Number(parts.find(part => part.type === type)?.value);
+  const day = Date.UTC(number('year'), number('month') - 1, number('day'));
+  return new Date(day - new Date(day).getUTCDay() * 86_400_000).toISOString().slice(0, 10);
+}

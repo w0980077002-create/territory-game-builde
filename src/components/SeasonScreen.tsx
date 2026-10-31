@@ -1,12 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CalendarClock, Crown, ShieldCheck, Trophy, RefreshCcw } from 'lucide-react';
-import { seasonCountdown } from '@/game/seasonCalendar';
+import { CalendarClock, ChevronRight, Crown, Mail, RefreshCcw, ShieldCheck, Swords, Trophy } from 'lucide-react';
+import { kyivSeasonWeekKey, seasonCountdown } from '@/game/seasonCalendar';
 import { fetchSeasonStatus, type SeasonStatus } from '@/game/seasonApi';
 import { useLanguage } from '@/game/i18n';
 import type { AuthUser } from '@/game/auth';
+import './seasonJourney.css';
 
-/** Read-only season board. No rewards/points are ever issued by the browser. */
-export function SeasonScreen({ user }: { user: AuthUser }) {
+interface Props {
+  user: AuthUser;
+  onArena?: () => void;
+  onEvents?: () => void;
+  onMessages?: () => void;
+}
+
+/** Read-only championship. Points, standings and prizes come only from the server. */
+export function SeasonScreen({ user, onArena, onEvents, onMessages }: Props) {
   const { language } = useLanguage();
   const en = language === 'en';
   const [clock, setClock] = useState(Date.now());
@@ -25,10 +33,12 @@ export function SeasonScreen({ user }: { user: AuthUser }) {
       if (current !== request.current) return;
       setStatus(result);
       const serverNow = Date.parse(result?.server_now ?? '');
-      if (Number.isFinite(serverNow)) setOffset(serverNow - Date.now());
+      setOffset(Number.isFinite(serverNow) ? serverNow - Date.now() : 0);
+    } catch {
+      if (current === request.current) { setStatus(null); setFailed(true); }
+    } finally {
+      if (current === request.current) setLoading(false);
     }
-    catch { if (current === request.current) setFailed(true); }
-    finally { if (current === request.current) setLoading(false); }
   }, [user.id]);
 
   useEffect(() => {
@@ -36,80 +46,101 @@ export function SeasonScreen({ user }: { user: AuthUser }) {
     void refresh();
     const polling = window.setInterval(() => void refresh(), 60_000);
     const ticker = window.setInterval(() => setClock(Date.now()), 30_000);
-    return () => { request.current += 1; window.clearInterval(ticker); window.clearInterval(polling); };
+    const resumed = () => { if (document.visibilityState === 'visible') { setClock(Date.now()); void refresh(); } };
+    document.addEventListener('visibilitychange', resumed);
+    window.addEventListener('online', resumed);
+    return () => {
+      request.current += 1;
+      window.clearInterval(ticker);
+      window.clearInterval(polling);
+      document.removeEventListener('visibilitychange', resumed);
+      window.removeEventListener('online', resumed);
+    };
   }, [refresh]);
 
-  // The championship follows the server's Sunday/Kyiv window. The shared
-  // quest/Arena preview calendar may independently use Monday/UTC.
+  const serverClock = clock + offset;
   const endsAt = Date.parse(status?.ends_at ?? '');
-  const remaining = Number.isFinite(endsAt) ? Math.max(0, endsAt - clock - offset) : 0;
-  const live = status?.enabled === true && Number.isFinite(endsAt) && remaining > 0;
-  const rewardText = (prize: { gold?: number; gems?: number }) =>
-    [prize.gold ? `${prize.gold.toLocaleString()} ${en ? 'gold' : 'золота'}` : '',
-      prize.gems ? `${prize.gems.toLocaleString()} ${en ? 'blue diamonds' : 'синих алмазов'}` : ''].filter(Boolean).join(' · ');
-  return (
-    <div className="viking-screen viking-screen--season space-y-3 animate-fade-in">
-      <div className="card relative overflow-hidden border-amber-400/40 bg-gradient-to-br from-amber-950/50 via-slate-900 to-sky-950/60">
-        <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-amber-400/10 blur-2xl pointer-events-none" />
-        <div className="relative flex items-center gap-3">
-          <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-amber-400/10 border border-amber-400/20"><Crown className="text-amber-300" /></div>
-          <div>
-            <h3 className="font-black text-amber-100 text-lg">{en ? 'Weekly Championship' : 'Недельный чемпионат'}</h3>
-          </div>
-        </div>
-        <div className="relative grid grid-cols-2 gap-2 mt-4">
-          <div className="rounded-xl bg-black/25 p-3 border border-white/5">
-            <div className="text-[11px] text-slate-400 flex gap-1.5 items-center"><CalendarClock className="w-3.5 h-3.5" />{en ? 'Week ends in' : 'До конца недели'}</div>
-            <div className="mt-1 text-lg font-black text-white tabular-nums">{status ? seasonCountdown(remaining, en ? 'en' : 'ru') : '—'}</div>
-          </div>
-          <div className="rounded-xl bg-black/25 p-3 border border-white/5">
-            <div className="text-[11px] text-slate-400">{en ? 'Competition' : 'Соревнование'}</div>
-            <div className={`mt-1 font-bold ${live ? 'text-emerald-300' : 'text-amber-300'}`}>
-              {live ? en ? 'Active' : 'Активно' : en ? 'Preparing' : 'Подготовка'}
-            </div>
-          </div>
-        </div>
-      </div>
+  const remaining = Number.isFinite(endsAt) ? Math.max(0, endsAt - serverClock) : 0;
+  // The server's championship week is Sunday at 00:00 in Kyiv, NOT the
+  // Monday/UTC quest week or Sunday/UTC Arena TOP-50 preview.
+  const current = status?.week === kyivSeasonWeekKey(serverClock);
+  const live = status?.enabled === true && current && Number.isFinite(endsAt) && remaining > 0;
+  const prizeText = (prize: { gold?: number; gems?: number }) =>
+    [prize.gold ? `${prize.gold.toLocaleString(en ? 'en-US' : 'ru-RU')} ${en ? 'gold' : 'золота'}` : '',
+      prize.gems ? `${prize.gems.toLocaleString(en ? 'en-US' : 'ru-RU')} ${en ? 'blue gems' : 'синих алмазов'}` : ''].filter(Boolean).join(' · ');
 
-      {live ? (
-        <>
-          <div className="card text-sm space-y-2">
-            <p className="text-slate-300">{en ? '1 verified Arena win = 1 point. Sunday to Sunday, Kyiv time. Prizes arrive by mail once the season closes.' : '1 подтверждённая победа на Арене = 1 очко. С воскресенья по воскресенье по Киеву. Призы приходят почтой после закрытия сезона.'}</p>
-            {status.prizes.map((prize, index) => <div key={index} className="flex justify-between gap-2 text-amber-200"><b>#{index + 1}</b><span>{rewardText(prize)}</span></div>)}
-          </div>
-          <div className="card text-sm">
-            <div className="flex justify-between gap-3"><span className="text-slate-300">{en ? 'Your season points' : 'Твои сезонные очки'}</span><b className="text-amber-300">{status.my_points.toLocaleString()}</b></div>
-            <div className="flex justify-between gap-3 mt-2"><span className="text-slate-300">{en ? 'Your rank' : 'Твоё место'}</span><b className="text-white">{status.my_rank ? `#${status.my_rank}` : '—'}</b></div>
-          </div>
-          {status.leaders.map((row) => (
-            <div key={row.player_id} className={`card flex items-center gap-3 text-sm ${row.player_id === user.id ? 'border-teal-400/50 bg-teal-900/10' : ''}`}>
-              <div className="shrink-0 w-8 text-center text-amber-300 font-black">#{row.rank}</div>
-              <div className="min-w-0 flex-1 truncate text-slate-100">{row.display_name}{row.player_id === user.id ? en ? ' (you)' : ' (ты)' : ''}</div>
-              <div className="font-black text-amber-200">{row.points}</div>
-            </div>
-          ))}
-          {status.leaders.length === 0 && <div className="card text-slate-400 text-sm text-center">{en ? 'The season has no verified scores yet.' : 'Пока нет подтверждённых сервером результатов.'}</div>}
-        </>
-      ) : (
-        <div className="card space-y-2 border-sky-500/20 bg-sky-950/20">
-          <div className="flex items-center gap-2 text-sky-200 font-bold"><ShieldCheck className="w-5 h-5" />{en ? 'Fair play first' : 'Сначала честная игра'}</div>
-          <p className="text-sm text-slate-300 leading-relaxed">
-            {en
-              ? 'The championship will start only after server verification of points and rewards. Local saves cannot create season scores or prizes.'
-              : 'Чемпионат запустим только после серверной проверки очков и наград. Локальные сохранения не могут создавать сезонные очки или призы.'}
-          </p>
-          <div className="flex gap-2 rounded-xl bg-black/20 p-3 text-xs text-amber-200/90"><Trophy className="w-4 h-4 shrink-0" />{en ? 'Planned: rankings, weekly prizes and permanent champion titles. No prizes are active yet.' : 'В планах: рейтинг, недельные награды и постоянные титулы чемпионов. Сейчас призы не начисляются.'}</div>
-        </div>
-      )}
-      {!!status?.history.length && <div className="card space-y-2">
-        <h4 className="font-bold text-amber-200">{en ? 'Previous winners' : 'История победителей'}</h4>
-        {status.history.map(row => <div key={`${row.week}:${row.player_id}`} className="text-xs flex justify-between gap-2">
-          <span className="min-w-0 truncate">{row.week} · #{row.rank} {row.display_name}</span>
-          <span className="shrink-0 text-amber-200">{rewardText(row.reward) || `${row.points} ${en ? 'points' : 'очков'}`}</span>
-        </div>)}
-      </div>}
-      {failed && <div className="text-xs text-amber-300 text-center">{en ? 'The season server did not respond. No score has been changed.' : 'Нет ответа сервера сезонов. Сезонные очки не изменены.'}</div>}
-      <button onClick={() => void refresh()} disabled={loading} className="btn-ghost w-full text-xs flex justify-center gap-2 items-center"><RefreshCcw className="w-4 h-4" />{loading ? en ? 'Loading...' : 'Загрузка...' : en ? 'Refresh' : 'Обновить'}</button>
+  return <section className="viking-screen viking-screen--season season-journey" data-testid="season-journey">
+    <header className="season-journey__hero">
+      <img src={import.meta.env.BASE_URL + 'ic-trophy.webp'} alt="" loading="lazy" />
+      <div className="season-journey__heading">
+        <span>{en ? 'ARENA · VERIFIED RESULTS' : 'АРЕНА · ПОДТВЕРЖДЁННЫЕ РЕЗУЛЬТАТЫ'}</span>
+        <h2>{en ? 'Weekly championship' : 'Недельный чемпионат'}</h2>
+        <p>{en ? 'Real Arena victories decide the standings.' : 'Место зависит от настоящих побед на Арене.'}</p>
+      </div>
+    </header>
+
+    <div className="season-journey__summary" aria-live="polite">
+      <div><CalendarClock size={17} aria-hidden="true"/><span>{en ? 'Until season end' : 'До конца сезона'}</span>
+        <strong>{live ? seasonCountdown(remaining, language) : '—'}</strong></div>
+      <div><ShieldCheck size={17} aria-hidden="true"/><span>{en ? 'Server status' : 'Статус сервера'}</span>
+        <strong>{loading && !status ? (en ? 'Loading' : 'Загрузка') : failed ? (en ? 'Unavailable' : 'Нет связи') : live ? (en ? 'Active' : 'Активен') : (en ? 'Not active' : 'Не запущен')}</strong></div>
     </div>
-  );
+
+    {loading && !status && <p className="season-journey__notice" role="status">{en ? 'Checking verified championship standings…' : 'Проверяем подтверждённые результаты чемпионата…'}</p>}
+    {failed && <p className="season-journey__notice season-journey__notice--warning" role="alert">
+      {en ? 'The season server did not respond. No scores or rewards were changed.' : 'Сервер чемпионата не ответил. Очки и награды не изменены.'}
+    </p>}
+
+    {live && status ? <>
+      <section className="season-journey__personal" aria-label={en ? 'Your championship progress' : 'Твой прогресс в чемпионате'}>
+        <div><span>{en ? 'YOUR POINTS' : 'ТВОИ ОЧКИ'}</span><strong>{status.my_points.toLocaleString(en ? 'en-US' : 'ru-RU')}</strong></div>
+        <div><span>{en ? 'YOUR PLACE' : 'ТВОЁ МЕСТО'}</span><strong>{status.my_rank ? `№${status.my_rank}` : '—'}</strong></div>
+      </section>
+      <p className="season-journey__goal">{status.my_rank === 1
+        ? (en ? 'You lead! Keep winning to defend first place.' : 'Ты лидируешь! Побеждай, чтобы удержать первое место.')
+        : status.my_points > 0
+          ? (en ? 'Your next verified Arena win strengthens your position.' : 'Следующая подтверждённая победа укрепит твою позицию.')
+          : (en ? 'Win an Arena battle to earn your first confirmed point.' : 'Победи на Арене, чтобы получить первое подтверждённое очко.')}</p>
+      <div className="season-journey__board" aria-label={en ? 'Verified championship leaders' : 'Подтверждённые лидеры чемпионата'}>
+        <h3><Trophy size={19} aria-hidden="true"/>{en ? 'Current standings' : 'Текущие места'}</h3>
+        {status.leaders.length ? status.leaders.map(row =>
+          <div key={row.player_id} className={row.player_id === user.id ? 'season-journey__row season-journey__row--mine' : 'season-journey__row'}>
+            <b>№{row.rank}</b><span title={row.display_name}>{row.display_name}{row.player_id === user.id ? (en ? ' (you)' : ' (ты)') : ''}</span>
+            <strong>{row.points}</strong>
+          </div>
+        ) : <p className="season-journey__empty">{en ? 'No verified wins this season yet.' : 'В этом сезоне ещё нет подтверждённых побед.'}</p>}
+      </div>
+      <details className="season-journey__details" data-testid="season-prize-rules">
+        <summary><Crown size={18} aria-hidden="true"/>{en ? 'Rules and server prizes' : 'Правила и серверные награды'}</summary>
+        <p>{en ? 'One confirmed Arena win gives one championship point. The championship follows Sunday-to-Sunday Kyiv time. Awards are sent by mail only after the server closes the season.' : 'Одна подтверждённая победа на Арене даёт одно очко чемпионата. Сезон идёт с воскресенья по воскресенье по Киеву. Награды отправляются почтой только после завершения сезона на сервере.'}</p>
+        {status.prizes.length ? status.prizes.map((prize, index) =>
+          <div key={index} className="season-journey__prize"><b>№{index + 1}</b><span>{prizeText(prize)}</span></div>
+        ) : <p>{en ? 'The server has not published prizes.' : 'Сервер пока не опубликовал награды.'}</p>}
+      </details>
+    </> : !failed && !loading && <div className="season-journey__notice">
+      <ShieldCheck size={21} aria-hidden="true"/>
+      <p>{en ? 'The championship is not active. No championship points or prizes are being promised. The Arena has its own weekly TOP-50 board.' : 'Чемпионат пока не активен. Очки и призы чемпионата не обещаем. На Арене отдельно работает недельный ТОП-50.'}</p>
+    </div>}
+
+    {!!status?.history.length && <details className="season-journey__details" data-testid="season-winners-history">
+      <summary><Crown size={18} aria-hidden="true"/>{en ? 'Previous champions' : 'История чемпионов'}</summary>
+      {status.history.map(row => <div key={`${row.week}:${row.player_id}`} className="season-journey__history">
+        <span>{row.week} · №{row.rank} · {row.display_name}</span>
+        <strong>{prizeText(row.reward) || `${row.points} ${en ? 'points' : 'очков'}`}</strong>
+      </div>)}
+    </details>}
+
+    <nav className="season-journey__actions" aria-label={en ? 'Championship journey' : 'Путь чемпионата'}>
+      {onArena && <button type="button" className="season-journey__primary" onClick={onArena}>
+        <Swords size={20} aria-hidden="true"/>{live ? (en ? 'Fight in Arena' : 'Сражаться на Арене') : (en ? 'Open Arena TOP-50' : 'Открыть ТОП-50 Арены')}<ChevronRight size={17} aria-hidden="true"/>
+      </button>}
+      <div className="season-journey__secondary">
+        {onEvents && <button type="button" onClick={onEvents}>{en ? 'Events' : 'События'}</button>}
+        {onMessages && <button type="button" onClick={onMessages}><Mail size={17} aria-hidden="true"/>{en ? 'Mail' : 'Почта'}</button>}
+        <button type="button" onClick={() => void refresh()} disabled={loading}>
+          <RefreshCcw size={17} aria-hidden="true"/>{loading ? (en ? 'Loading…' : 'Загрузка…') : (en ? 'Refresh' : 'Обновить')}
+        </button>
+      </div>
+    </nav>
+  </section>;
 }
