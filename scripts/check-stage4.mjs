@@ -110,7 +110,7 @@ const withStone = { ...existingCow, inventory: existingCow.inventory.map((x) =>
   x.id === followers.AWAKENING_STONE_ID ? { ...x, qty: 1 } : x) };
 const cowBefore = structuredClone(withStone);
 assert.equal(followers.trainFollower(withStone, 'follower_6'), null, 'awakening paused even when historical stones exist');
-assert.deepEqual(withStone, cowBefore, 'no stone, level, or currency silently changed');
+assert.equal(JSON.stringify(withStone), JSON.stringify(cowBefore), 'no stone, level, or currency silently changed');
 assert.equal(followers.cowStonesOwned(withStone), 1, 'old saved stone remains available later');
 assert.equal(withStone.followers.find(f => f.id === 'follower_6').level, 59, 'old companion level remains unchanged');
 
