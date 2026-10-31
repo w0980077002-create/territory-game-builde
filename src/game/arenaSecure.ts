@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { useGame } from './actions';
 import { acceptMonopolyClaimReceipt, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave, saveTokens } from './cloud';
+import { reconcilePendingCaveBeforeArena } from './combatV1/receiptAdapter';
 import type { ArenaMode, ArenaReward } from './arenaApi';
 import type { ArenaItemCode } from './belt';
 
@@ -34,6 +35,18 @@ async function transact(args: {
     const { data: auth, error: authError } = await supabase.auth.getUser();
     const id = auth?.user?.id;
     if (authError || !id) throw new Error('Проверь подключение к Telegram');
+    // A failed/duplicate Dark Cave start may fence all legacy saves. Resolve
+    // its exact original operation (or a proven rollback) before joining Arena.
+    // Do not run this during an active Arena fight for item/claim actions.
+    if (args.p_action === 'join') {
+      try {
+        await reconcilePendingCaveBeforeArena(id, {
+          getState: () => useGame.get(), applyState: state => useGame.set(state),
+        });
+      } catch {
+        throw new Error('Есть незавершённое действие в Тёмной пещере. Восстанови бой в разделе «Бой» — новые камни не спишутся.');
+      }
+    }
     const snapshot = useGame.get();
     if (!await saveCloudSave(id, snapshot) || useGame.get() !== snapshot)
       throw new Error('Сохранение изменилось. Повтори действие.');

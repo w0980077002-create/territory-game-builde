@@ -176,10 +176,26 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         install(result);
         install(decodeSession(await requestAdventureSettlement(
           userId, { action: 'resume', sessionId: result.session_id }, hooks)));
-      } else if (await runSavedStart()) { /* original UUID and live session recovered */ }
-      else {
-        const id = currentProgress.active_session_id || localStorage.getItem(sessionKey(userId));
-        if (id) install(decodeSession(await requestAdventureSettlement(userId, { action: 'resume', sessionId: id }, hooks)));
+      } else {
+        let recoveredStart = false;
+        try {
+          recoveredStart = await runSavedStart();
+        } catch (cause) {
+          // A verified 409 proves that the pending start did NOT charge again.
+          // Its server-authorized rollback also refreshes the owner's cloud
+          // snapshot and removes the rejected start marker. Continue with the
+          // already-active server session, not a second challenge/debit.
+          if (!(cause instanceof Error) || cause.message !== 'adventure_definitively_rejected'
+            || !currentProgress.active_session_id) throw cause;
+          install(decodeSession(await requestAdventureSettlement(
+            userId, { action: 'resume', sessionId: currentProgress.active_session_id }, hooks)));
+          recoveredStart = true;
+        }
+        if (!recoveredStart) {
+          const id = currentProgress.active_session_id || localStorage.getItem(sessionKey(userId));
+          if (id) install(decodeSession(await requestAdventureSettlement(
+            userId, { action: 'resume', sessionId: id }, hooks)));
+        }
       }
       const prepared = await supabase.functions.invoke('territory-combat', { body: { action: 'prepare' } });
       if (prepared.error || !obj(prepared.data)) throw new Error('combat_unavailable');
@@ -495,12 +511,18 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         </div>
         <div className="relative z-10 mt-1.5 shrink-0 border-t border-[#68457d]/55 pt-2" data-testid="dark-cave-actions">
           {progress.completed_stage < 100 ? <>
-            <button type="button" disabled={!ready||busy||recoverable||!mayChallenge||progress.dark_stones<1}
-              onClick={()=>void start('auto')} data-testid="dark-cave-challenge"
-              className="mx-auto flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-[#dfb56c] bg-gradient-to-b from-[#f7d484] via-[#daa94f] to-[#9d672e] px-3 text-[16px] font-black text-[#2b180f] shadow-[inset_0_1px_1px_#fff0b0,0_3px_0_#392517] active:scale-[.99] disabled:cursor-not-allowed disabled:grayscale-[.35] disabled:opacity-55">
-              <img src={darkStoneArt} alt="" className="h-6 w-6 shrink-0 rounded object-cover"/>
-              {en?'Challenge':'Вызов'} <span className="rounded bg-[#4d341e]/15 px-1.5 text-[14px]">1</span>
-            </button>
+            <div className="grid grid-cols-2 gap-2" data-testid="dark-cave-start-modes">
+              {(['auto','manual'] as const).map(control => <button key={control} type="button"
+                disabled={!ready||busy||recoverable||!mayChallenge||progress.dark_stones<1}
+                onClick={()=>void start(control)}
+                data-testid={control==='auto'?'dark-cave-challenge':'dark-cave-challenge-manual'}
+                aria-label={control==='auto'?(en?'Auto challenge, 1 Dark Stone':'Авто вызов, 1 Тёмный камень'):(en?'Manual challenge, 1 Dark Stone':'Ручной вызов, 1 Тёмный камень')}
+                className="flex min-h-[46px] w-full items-center justify-center gap-1 rounded-xl border border-[#dfb56c] bg-gradient-to-b from-[#f7d484] via-[#daa94f] to-[#9d672e] px-2 text-[14px] font-black text-[#2b180f] shadow-[inset_0_1px_1px_#fff0b0,0_3px_0_#392517] active:scale-[.99] disabled:cursor-not-allowed disabled:grayscale-[.35] disabled:opacity-55">
+                <img src={darkStoneArt} alt="" className="h-5 w-5 shrink-0 rounded object-cover"/>
+                {control==='auto'?(en?'Auto':'Авто'):(en?'Manual':'Ручной')}
+                <span className="rounded bg-[#4d341e]/15 px-1 text-[13px]">1</span>
+              </button>)}
+            </div>
             {!mayChallenge?<p className="mt-1 text-center text-[11px] text-[#c7b6d8]">
               {en?'Return to your current floor to continue.':'Выбери текущий этаж, чтобы продолжить.'}
             </p>:progress.dark_stones<1?<p className="mt-1 text-center text-[11px] text-[#c9b3e8]">

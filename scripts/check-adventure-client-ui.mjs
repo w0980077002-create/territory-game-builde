@@ -5,6 +5,25 @@ const ui = read('src/components/pve/ServerAdventureScreen.tsx');
 const battle = read('src/components/BattleScreen.tsx');
 const app = read('src/App.tsx');
 const bridge = read('src/game/combatV1/receiptAdapter.ts');
+
+const arenaSecure = read('src/game/arenaSecure.ts');
+assert.match(arenaSecure, /args\.p_action === 'join'/,
+  'Cross-mode cave recovery runs on Arena entry only, not during an Arena fight');
+assert.match(arenaSecure, /await reconcilePendingCaveBeforeArena\(id,/,
+  'Arena must resolve the original cave command before performing a competing CAS save');
+assert.ok(arenaSecure.indexOf('await reconcilePendingCaveBeforeArena(id,') < arenaSecure.indexOf('const snapshot = useGame.get();'),
+  'Reconcile any pending cave receipt before capturing the Arena snapshot');
+assert.match(bridge, /export async function reconcilePendingCaveBeforeArena\(/,
+  'Original pending cave commands must be reconciled before unrelated Arena mode');
+assert.match(bridge, /await requestAdventureStart\(userId, pendingStart, hooks\)/,
+  'Replay only the original cave start UUID, never mint a new operation');
+assert.match(bridge, /await requestAdventureSettlement\(userId, pendingAdvance, hooks\)/,
+  'Replay only the original pending advance UUID before allowing Arena save');
+assert.match(bridge, /error\.message !== 'adventure_definitively_rejected'/,
+  'Only a verified 409 rollback may clear a rejected cave operation');
+assert.match(bridge, /throw new Error\('cave_recovery_required'\)/,
+  'Unknown cave results must keep Arena entry fenced and cannot be skipped');
+
 const map = read('src/components/MapScreen.tsx');
 const canvas = read('src/components/WorldMapCanvas.tsx');
 
@@ -54,6 +73,12 @@ assert.match(read('src/game/combatV1/receiptAdapter.ts'), /localStorage\.setItem
 assert.match(ui, /localStorage\.setItem\(sessionKey\(userId\)/, 'recover active server session across remounts');
 assert.match(ui, /busy \|\| recoverable/, 'block conflicting controls during uncertain receipt');
 assert.match(ui, /adventure_definitively_rejected/, 'After a verified server rollback the UI must explain safe recovery');
+assert.match(ui, /cause\.message !== 'adventure_definitively_rejected'/,
+  'A proven 409 rejected duplicate start must auto-recover its existing server fight');
+assert.match(ui, /!currentProgress\.active_session_id\) throw cause/,
+  'Never switch sessions on a 409 without the owner-scoped active session from the server');
+assert.match(ui, /recoveredStart = true/,
+  'After safe resume do not try another cave start or recovery request');
 assert.match(ui, /data-testid="territory-adventure-battle"/, 'server combat should have a visible battle scene');
 assert.match(ui, /data-testid="dark-cave-battle-background"/, 'Cave fights use their own approved cave portal instead of Arena scene');
 assert.match(ui, /data-testid="dark-cave-combat-panels"/, 'Cave battle provides compact equipment and elixir inspection panels');
@@ -84,7 +109,9 @@ assert.match(ui, /getCampaignStage\(i \+ 1\)/, 'All 100 floors must render from 
 assert.match(ui, /dark-cave-floor-scroll/, 'Floor list must support independent vertical scrolling');
 assert.match(ui, /floorListRef\.current/, 'Current floor scrolls into view inside the cave');
 assert.match(ui, /progress\.unlocked_stage/, 'Current stage remains server-authoritative');
-assert.match(ui, /onClick=\{\(\)=>void start\('auto'\)\}/, 'Challenge starts server-controlled automatic cave battle without a lobby mode selector');
+assert.match(ui, /onClick=\{\(\)=>void start\(control\)\}/, 'Challenge passes selected control to server start');
+assert.match(ui, /\(\['auto','manual'\] as const\)/, 'Two server-backed cave controls before Dark Stone debit');
+assert.match(ui, /dark-cave-challenge-manual/, 'Manual combat must have an actual pre-start button');
 assert.match(ui, /progress\.dark_stones<1/, 'Dark Stones must gate the Challenge');
 assert.match(ui, /setProgress\(found\)/, 'unlock progress must arrive from server');
 assert.doesNotMatch(ui, /recordBattleResult|spendStones|trialReward|Math\.random|setBalance/,

@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import { ensurePlayerSession } from '../auth';
-import { acceptAdventureSettlementReceipt, acceptAdventureStartReceipt, validateAdventureSettlementReceipt, validateAdventureStartReceipt, acceptAdventureLatestCloudSnapshot, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave } from '../cloud';
+import { acceptAdventureSettlementReceipt, acceptAdventureStartReceipt, validateAdventureSettlementReceipt, validateAdventureStartReceipt, acceptAdventureLatestCloudSnapshot, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave, saveTokens } from '../cloud';
 import type { GameState } from '../types';
 import { parseCombatCommand, type CombatCommand } from './service';
 
@@ -12,6 +12,56 @@ const key = (userId: string) => `territory_adventure_pending_v1:${userId}`;
 const startKey = (userId: string) => `territory_adventure_start_v1:${userId}`;
 const active = new Set<string>();
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+
+/** Only these machine-readable HTTP 409 responses prove this exact server
+ * operation was rejected. Never infer rollback from timeouts or generic 503s. */
+const definitelyRejected = new Set([
+  'combat_revision_conflict', 'combat_no_elapsed_time', 'combat_already_finished',
+  'combat_catchup_required', 'combat_skill_not_available',
+  'combat_active_session_exists', 'combat_session_not_found',
+  'combat_encounter_not_available', 'combat_profile_needs_reconciliation',
+  'combat_profile_not_verified', 'combat_not_enabled',
+  'combat_settlement_not_ready', 'combat_no_dark_stones', 'combat_starts_paused', 'combat_canary_not_allowed',
+]);
+
+async function isVerifiedRollback(error: unknown): Promise<boolean> {
+  if (!record(error) || !record(error.context)) return false;
+  const response = error.context;
+  if (response.status !== 409 || typeof response.clone !== 'function') return false;
+  try {
+    const payload: unknown = await (response as { clone: () => Response }).clone().json();
+    return record(payload) && typeof payload.error === 'string' && definitelyRejected.has(payload.error);
+  } catch { return false; }
+}
+
+/** Do not clear a receipt fence merely because a request failed. Only a
+ * verified 409 rollback plus a fresh owner-scoped cloud snapshot can release it.
+ * This protects both legacy autosave and the confirmed server-side wallet. */
+function checkedPendingAdvance(userId: string): boolean {
+  try { return localStorage.getItem(key(userId)) !== null; }
+  catch { return false; }
+}
+
+async function recoverRejectedOperation(
+  userId: string, error: unknown, hooks: Hooks, pendingKey: string,
+): Promise<boolean> {
+  if (!await isVerifiedRollback(error)) return false;
+  if (!await ensurePlayerSession(userId)) return false;
+  const auth = await supabase.auth.getUser();
+  if (auth.error || auth.data.user?.id !== userId) return false;
+  const snapshot = await supabase.from('players')
+    .select('id,updated_at,game_state,gold,gems').eq('id', userId).maybeSingle();
+  if (snapshot.error || !snapshot.data || typeof snapshot.data.updated_at !== 'string') return false;
+  const localRevision = saveTokens.get(userId);
+  if (!localRevision || !Number.isFinite(Date.parse(localRevision))
+    || Date.parse(snapshot.data.updated_at) < Date.parse(localRevision)) return false;
+  // Existing validator checks account, wallet, complete game state and save date.
+  const state = acceptAdventureLatestCloudSnapshot(userId, snapshot.data, snapshot.data.updated_at);
+  hooks.applyState(state);
+  localStorage.removeItem(pendingKey);
+  releaseArenaRejectedAction(userId);
+  return true;
+}
 
 /** Call before allowing autosave on remount. A pending command has an uncertain
  * outcome and must be replayed with its original ID, or resolved by reload. */
@@ -61,7 +111,13 @@ export async function requestAdventureStart(userId:string,command:Start,hooks:Ho
    }
    protectFortuneSave(userId);fenced=true;
    const {data,error}=await supabase.functions.invoke('territory-combat',{body:checked});
-   if(error||!record(data)||data.success!==true||typeof data.session_id!=='string'
+   if(error){
+     // Keep the original HTTP 409 only when its machine code verifies rollback.
+     // A timeout, 503 or unknown error remains indistinguishable from a commit.
+     if(await isVerifiedRollback(error)) throw error;
+     throw new Error('adventure_unconfirmed');
+   }
+   if(!record(data)||data.success!==true||typeof data.session_id!=='string'
      ||!record(data.start_save)||!record(data.state)||data.state.status!=='fighting')
      throw new Error('adventure_unconfirmed');
    const check=await supabase.from('players').select('id,updated_at,game_state,gold,gems').eq('id',userId).maybeSingle();
@@ -77,7 +133,19 @@ export async function requestAdventureStart(userId:string,command:Start,hooks:Ho
    localStorage.removeItem(startKey(userId));
    releaseArenaRejectedAction(userId);fenced=false;
    return data;
- }catch(error){if(fenced)protectFortuneSave(userId);throw error;}
+ }catch(error){
+   if(fenced){
+     try{
+       if(await recoverRejectedOperation(userId,error,hooks,startKey(userId)))
+         throw new Error('adventure_definitively_rejected');
+     }catch(recoveryError){
+       if(recoveryError instanceof Error && recoveryError.message==='adventure_definitively_rejected')
+         throw recoveryError;
+     }
+     protectFortuneSave(userId);
+   }
+   throw error;
+ }
  finally{active.delete(userId);}
 }
 
@@ -111,7 +179,11 @@ export async function requestAdventureSettlement(userId: string, command: Advanc
     protectFortuneSave(userId);
     fenced = true;
     const { data, error } = await supabase.functions.invoke('territory-combat', { body: checked });
-    if (error || !record(data) || data.success !== true || data.session_id !== checked.sessionId || !record(data.state)
+    if (error) {
+      if (await isVerifiedRollback(error)) throw error;
+      throw new Error('adventure_unconfirmed');
+    }
+    if (!record(data) || data.success !== true || data.session_id !== checked.sessionId || !record(data.state)
       || !Number.isSafeInteger(data.revision) || Number(data.revision)<0
       || (checked.action === 'advance' && data.revision !== checked.revision+1))
       throw new Error('adventure_unconfirmed');
@@ -144,7 +216,45 @@ export async function requestAdventureSettlement(userId: string, command: Advanc
   } catch (error) {
     // acceptAdventureSettlementReceipt installs the token before the caller's
     // state update. If that update fails, retain the fence and require reload.
-    if (fenced) protectFortuneSave(userId);
+    if (fenced) {
+      try {
+        if (checkedPendingAdvance(userId) && await recoverRejectedOperation(userId,error,hooks,key(userId)))
+          throw new Error('adventure_definitively_rejected');
+      } catch (recoveryError) {
+        if (recoveryError instanceof Error && recoveryError.message === 'adventure_definitively_rejected')
+          throw recoveryError;
+      }
+      protectFortuneSave(userId);
+    }
     throw error;
   } finally { active.delete(userId); }
+}
+
+/** Before another game mode issues a save, finish only the SAME pending cave
+ * command (its persisted UUID). A proven 409 rollback is also a resolved
+ * outcome after the verified owner-scoped cloud snapshot is installed.
+ * Never silently discard a pending operation or mint a second cave charge. */
+export async function reconcilePendingCaveBeforeArena(userId: string, hooks: Hooks): Promise<void> {
+  const pendingStart = restoreAdventureStartFence(userId);
+  if (pendingStart) {
+    try {
+      await requestAdventureStart(userId, pendingStart, hooks);
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== 'adventure_definitively_rejected')
+        throw new Error('cave_recovery_required');
+    }
+  }
+  const pendingAdvance = restoreAdventureSaveFence(userId);
+  if (pendingAdvance) {
+    try {
+      await requestAdventureSettlement(userId, pendingAdvance, hooks);
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== 'adventure_definitively_rejected')
+        throw new Error('cave_recovery_required');
+    }
+  }
+  // Only acknowledged receipts or verified rollbacks remove markers.
+  // In all other cases leave the save fence in place and fail the Arena entry.
+  if (restoreAdventureStartFence(userId) || restoreAdventureSaveFence(userId))
+    throw new Error('cave_recovery_required');
 }
