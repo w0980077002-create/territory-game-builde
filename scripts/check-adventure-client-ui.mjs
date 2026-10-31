@@ -138,7 +138,7 @@ assert.match(ui, /dark-cave-floor-list/, 'Dedicated floor selection UI is requir
 assert.match(ui, /dark-cave-realm\.svg/, 'A distinct violet abyss scene must be used by the cave');
 assert.match(read('public/assets/territory/scenes/dark-cave-realm.svg'), /<svg/, 'Original dark cave art must exist');
 assert.doesNotMatch(ui, /Добавить благословение|Режим боя|setBlessingInfo|setControl\(/, 'No fake blessing slots or extra battle mode selector in cave lobby');
-assert.match(ui, /min-h-\[156px\]/, 'Cave floor list must reserve space for 3 compact floor rows on small screens');
+assert.match(ui, /min-h-\[170px\]/, 'Cave floor panel needs at least 170px including padding for a 156px three-row viewport');
 assert.match(ui, /min-h-\[45px\]/, 'Each compact cave floor must keep a touch-sized row');
 assert.match(ui, /data-testid="dark-cave-visual"/, 'Dark cave theme illustration must be visible above floor list');
 assert.match(ui, /progress\.dark_stones<1/, 'Never enable entry when no Dark Stones are available');
