@@ -113,7 +113,6 @@ assert(!championship.includes('season-official-server'));
 // Temporarily paused championship may not be reachable from player UI.
 const featureFlags = read('src/game/uiFeatureFlags.ts');
 const topPlayers = read('src/components/LeaderboardScreen.tsx');
-const arenaLobby = read('src/components/arena/ArenaLobby.tsx');
 assert.match(featureFlags, /export const SHOW_WEEKLY_CHAMPIONSHIP = false;/,
   'Separate championship must remain paused until its ranking and payouts are unified with Arena');
 assert.match(topPlayers, /SHOW_WEEKLY_CHAMPIONSHIP && <div className="arena-rank-journey__tabs"/,
