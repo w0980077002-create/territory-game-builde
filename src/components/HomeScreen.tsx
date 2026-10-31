@@ -21,8 +21,9 @@ import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 import { getStarterMilestones } from '@/game/starterJourney';
+import { halloweenBossInSeason } from '@/game/halloweenBoss';
 
-export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events';
+export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
 // All five follower images use 512x512 canvases but have different amounts of
 // transparent space above the character. Normalize visible silhouettes in the
 // home city without changing original artwork, combat sprites or player saves.
@@ -206,6 +207,20 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
           <img src={chapter.boss.art} alt={language === 'en' ? 'Boss' : 'Босс'} className={`w-3.5 h-3.5 rounded-full object-cover object-top border ${bossReady ? 'border-red-400 animate-pulse' : 'border-white/20 grayscale opacity-70'}`} />
         </span>
       </button>
+
+      {halloweenBossInSeason() && (
+        <button
+          type="button"
+          onClick={() => onOpen('halloween-boss')}
+          aria-label={language === 'en' ? 'Halloween world boss and live damage ranking' : 'Хэллоуинский босс и рейтинг урона'}
+          style={{ top: 'calc(var(--home-chapter-top) + 27px)' }}
+          className="absolute left-1/2 z-20 flex h-9 w-[min(210px,calc(100%-110px))] -translate-x-1/2 items-center justify-center gap-1.5 rounded-xl border-2 border-orange-300/90 bg-gradient-to-b from-[#a13f17] via-[#64201a] to-[#291025] px-2 shadow-[0_3px_0_#170b08,0_4px_12px_#000a] active:translate-y-0.5"
+        >
+          <span className="text-base leading-none" aria-hidden="true">🎃</span>
+          <span className="truncate text-[11px] font-black uppercase tracking-tight text-amber-50 [text-shadow:0_2px_2px_#000]">{language === 'en' ? 'Halloween boss' : 'Хэллоуинский босс'}</span>
+          <span className="text-base leading-none" aria-hidden="true">⚔️</span>
+        </button>
+      )}
 
       <div className="home-side-stack absolute z-10 left-1.5 w-[48px] flex flex-col gap-1">
         <SideButton icon="/ic-events.webp" label={t('events')} badge={questAlerts.readyCount > 0} onClick={() => onOpen('events')} />
