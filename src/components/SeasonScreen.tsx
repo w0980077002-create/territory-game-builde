@@ -4,6 +4,8 @@ import { kyivSeasonWeekKey, seasonCountdown } from '@/game/seasonCalendar';
 import { fetchSeasonStatus, type SeasonStatus } from '@/game/seasonApi';
 import { useLanguage } from '@/game/i18n';
 import type { AuthUser } from '@/game/auth';
+import { ArenaWeeklyBoard } from './arena/ArenaWeeklyBoard';
+import './arena/arenaLobby.css';
 import './seasonJourney.css';
 
 interface Props {
@@ -14,7 +16,7 @@ interface Props {
   onRankings?: () => void;
 }
 
-/** Read-only championship. Points, standings and prizes come only from the server. */
+/** Reuse the Arena's exact mixed weekly TOP-50 display. Preserve the separate server-only prize standings below. */
 export function SeasonScreen({ user, onArena, onEvents, onMessages, onRankings }: Props) {
   const { language } = useLanguage();
   const en = language === 'en';
@@ -76,10 +78,20 @@ export function SeasonScreen({ user, onArena, onEvents, onMessages, onRankings }
       <div className="season-journey__heading">
         <span>{en ? 'ARENA · VERIFIED RESULTS' : 'АРЕНА · ПОДТВЕРЖДЁННЫЕ РЕЗУЛЬТАТЫ'}</span>
         <h2>{en ? 'Weekly championship' : 'Недельный чемпионат'}</h2>
-        <p>{en ? 'Real Arena victories decide the standings.' : 'Место зависит от настоящих побед на Арене.'}</p>
+        <p>{en ? 'The same weekly TOP-50 as in the Arena.' : 'Тот же недельный ТОП-50, что и на Арене.'}</p>
       </div>
     </header>
 
+    <div className="arena-lobby arena-approved-entry season-journey__arena-top" data-testid="season-arena-top50">
+      <ArenaWeeklyBoard />
+    </div>
+    <p className="season-journey__ranking-info">{en
+      ? 'The Arena TOP-50 combines players and virtual contenders. Official championship rewards are calculated separately from server-confirmed results.'
+      : 'ТОП-50 Арены объединяет игроков и соперников. Официальные награды чемпионата рассчитываются отдельно по подтверждённым сервером результатам.'}</p>
+
+    <details className="season-journey__details season-journey__official" data-testid="season-official-server">
+      <summary><ShieldCheck size={18} aria-hidden="true"/>{en ? 'Official standings and championship prizes' : 'Официальные места и награды чемпионата'}</summary>
+      <div className="season-journey__official-content">
     <div className="season-journey__summary" aria-live="polite">
       <div><CalendarClock size={17} aria-hidden="true"/><span>{en ? 'Until season end' : 'До конца сезона'}</span>
         <strong>{live ? seasonCountdown(remaining, language) : '—'}</strong></div>
@@ -130,6 +142,9 @@ export function SeasonScreen({ user, onArena, onEvents, onMessages, onRankings }
         <strong>{prizeText(row.reward) || `${row.points} ${en ? 'points' : 'очков'}`}</strong>
       </div>)}
     </details>}
+
+      </div>
+    </details>
 
     <nav className="season-journey__actions" aria-label={en ? 'Championship journey' : 'Путь чемпионата'}>
       {onArena && <button type="button" className="season-journey__primary" onClick={onArena}>
