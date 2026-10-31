@@ -88,6 +88,35 @@ with sync_playwright() as p:
         page.get_by_text('Victory!').wait_for()
         assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
         page.close()
+    # Actual React auto control: a server-confirmed result ends polling.
+    for lang in ('ru','en'):
+        page = browser.new_page(viewport={'width':390,'height':844})
+        page.on('pageerror',lambda e:errors.append(str(e)))
+        page.route(URL+'**',serve)
+        page.goto(URL + ('?lang=en' if lang == 'en' else ''))
+        page.get_by_test_id('dark-cave-challenge').wait_for()
+        page.get_by_role('button',name='Auto' if lang == 'en' else 'Авто', exact=True).click()
+        page.get_by_test_id('dark-cave-challenge').click()
+        page.get_by_text('Victory!' if lang == 'en' else 'Победа!', exact=True).wait_for(timeout=10000)
+        assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
+        assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
+        page.close()
+    for lang, outcome, label in [('ru','enemy_won','Поражение'),('ru','draw','Ничья'),('en','enemy_won','Defeat'),('en','draw','Draw')]:
+        page = browser.new_page(viewport={'width':360,'height':700})
+        page.on('pageerror',lambda e:errors.append(str(e)))
+        page.route(URL+'**',serve)
+        page.goto(URL + ('?lang=en' if lang == 'en' else ''))
+        page.get_by_test_id('dark-cave-challenge').wait_for()
+        page.evaluate('(result) => { window.__nextOutcome = result }', outcome)
+        page.get_by_test_id('dark-cave-challenge').click()
+        page.get_by_test_id('dark-cave-battle-background').wait_for()
+        page.get_by_role('button',name='Next combat step' if lang == 'en' else 'Следующий шаг боя').click()
+        page.get_by_text(label, exact=True).wait_for()
+        assert page.get_by_text('+10 монет').count() == 0
+        assert page.get_by_text('+10 gold').count() == 0
+        page.get_by_role('button',name='Back to cave stages' if lang == 'en' else 'К этапам пещеры').click()
+        page.get_by_text('Floor 1 / 100' if lang == 'en' else 'Этаж 1 / 100').wait_for()
+        page.close()
     assert not errors, errors
     browser.close()
 print('Adventure browser PASS: 320/360/390/430 no overflow, one server start, one advance, confirmed reward, next stage (offline fixture).')

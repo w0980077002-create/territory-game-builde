@@ -33,7 +33,7 @@ const outcome = status => ({
  state: { status, input: { stage: 1, control: window.__adventureControl || 'manual', rules: { maxEnergy: 100 } },
    actors: { hero: { energy: 35, stats: { hp: 100, maxHp: 100 }, loadout: { skills: [] } },
              enemy: { stats: { hp: status === 'fighting' ? 50 : 0, maxHp: 50 } } } },
- settlement: status === 'fighting' ? null : { outcome: status, reward: { gold: 10, xp: 20 } },
+ settlement: status === 'fighting' ? null : { outcome: status, reward: status === 'hero_won' ? { gold: 10, xp: 20 } : { gold: 0, xp: 0 } },
 });
 export const supabase = {
  rpc: async name => ({ data: name === 'territory_adventure_progress_v1' ? { ...progress, active_session_id: current?.state.status === 'fighting' ? current.session_id : null } : null, error: null }),
@@ -51,8 +51,9 @@ export const supabase = {
 export async function requestAdventureSettlement(userId, command, hooks) {
  window.__adventureCalls.push(command);
  if (command.action === 'advance') {
-   current = outcome('hero_won');
-   progress = { completed_stage: 1, unlocked_stage: 2, dark_stones: 4 };
+   const result = window.__nextOutcome || 'hero_won';
+   current = outcome(result);
+   progress = { completed_stage: result === 'hero_won' ? 1 : 0, unlocked_stage: result === 'hero_won' ? 2 : 1, dark_stones: 4 };
    hooks.applyState(oldState);
  }
  return current || outcome('fighting');

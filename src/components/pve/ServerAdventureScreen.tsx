@@ -338,7 +338,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           open={gearOpen} onToggle={() => setGearOpen(v => !v)}>
           <GearStrip equipped={game.player.equipped}/>
           <p className="mt-1.5 text-[10px] text-amber-100/75">
-            {en?'The server verifies combat stats from your equipped items. Change gear in Inventory before entering the next floor.':'Сервер проверяет характеристики надетых предметов. Меняй экипировку в Инвентаре до входа на следующий этаж.'}
+            {en?'This fight uses the server-verified stats fixed at its start. Gear shown here reflects your current save.':'В этом бою действуют подтверждённые сервером характеристики на момент входа. Здесь показана текущая экипировка.'}
           </p>
         </FoldSection>
         <FoldSection title={en?'Elixir belt':'Пояс эликсиров'}
@@ -358,8 +358,8 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         {battleLog.slice(-4).map((line, i) => <p key={i}>{line}</p>)}
       </div>}
       {finished ? <>
-        <p className="text-center text-amber-200 font-bold">{session.state.status==='hero_won'?(en?'Victory!':'Победа!'):(en?'Battle finished':'Бой завершён')}</p>
-        {session.settlement?.reward && <p className="text-center text-xs text-yellow-100">
+        <p className="text-center text-amber-200 font-bold" role="status">{session.state.status==='hero_won' ? (en?'Victory!':'Победа!') : session.state.status==='enemy_won' ? (en?'Defeat':'Поражение') : (en?'Draw':'Ничья')}</p>
+        {session.state.status==='hero_won' && session.settlement?.reward && <p className="text-center text-xs text-yellow-100">
           +{session.settlement.reward.gold} {en?'gold':'монет'} · +{session.settlement.reward.xp} XP
         </p>}
         <button onClick={clearFinished} disabled={busy} className="w-full rounded-xl bg-amber-500 text-black p-3 font-bold">{en?'Back to cave stages':'К этапам пещеры'}</button>
@@ -384,7 +384,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
               })}
             </div>
           ) : <p className="rounded-lg border border-amber-500/20 bg-amber-950/25 px-2 py-1.5 text-[11px] text-amber-100/80">
-            {en?'No server-equipped skills yet. Configure skills and runes in Hero before the next fight.':'На сервере пока не установлены боевые умения. Настрой умения и руны в разделе «Герой» перед следующим боем.'}
+            {en?'No server-equipped skills yet. Your hero continues fighting with basic attacks.':'Подтверждённых боевых умений пока нет. Герой продолжает бой обычными ударами.'}
           </p>}
           <button type="button" disabled={busy || recoverable} onClick={()=>void advance()}
             className="min-h-11 w-full rounded-xl border border-yellow-300/60 bg-gradient-to-b from-amber-400 to-amber-600 px-3 py-2 text-sm font-black text-[#2c170b] disabled:opacity-50">
