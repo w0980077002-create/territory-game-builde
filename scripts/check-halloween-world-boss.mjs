@@ -6,6 +6,7 @@ const sql = read('supabase/migrations/20261031090000_halloween_world_boss_2026.s
 const home = read('src/components/HomeScreen.tsx');
 const app = read('src/App.tsx');
 const api = read('src/game/halloweenBoss.ts');
+const season = read('src/game/halloweenBossSeason.ts');
 const screen = read('src/components/HalloweenBossScreen.tsx');
 
 for (const pattern of [
@@ -22,6 +23,8 @@ for (const pattern of [
 
 assert.doesNotMatch(sql, /UPDATE public\.players|DELETE FROM public\.players|TRUNCATE|DROP TABLE|red_gems|game_state\s*=/i, 'World boss must not mutate existing progression or economy');
 assert.match(home, /halloweenBossInSeason\(\)/);
+assert.match(home, /from '@\/game\/halloweenBossSeason'/);
+assert.doesNotMatch(season, /supabase|\.rpc\(/, 'City event visibility must be pure and offline-safe');
 assert.match(home, /onOpen\('halloween-boss'\)/);
 assert.match(app, /screen === 'halloween-boss' && <HalloweenBossScreen/);
 assert.match(api, /supabase\.rpc\(name\)/);
