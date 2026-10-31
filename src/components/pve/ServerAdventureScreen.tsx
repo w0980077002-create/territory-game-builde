@@ -176,10 +176,26 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         install(result);
         install(decodeSession(await requestAdventureSettlement(
           userId, { action: 'resume', sessionId: result.session_id }, hooks)));
-      } else if (await runSavedStart()) { /* original UUID and live session recovered */ }
-      else {
-        const id = currentProgress.active_session_id || localStorage.getItem(sessionKey(userId));
-        if (id) install(decodeSession(await requestAdventureSettlement(userId, { action: 'resume', sessionId: id }, hooks)));
+      } else {
+        let recoveredStart = false;
+        try {
+          recoveredStart = await runSavedStart();
+        } catch (cause) {
+          // A verified 409 proves that the pending start did NOT charge again.
+          // Its server-authorized rollback also refreshes the owner's cloud
+          // snapshot and removes the rejected start marker. Continue with the
+          // already-active server session, not a second challenge/debit.
+          if (!(cause instanceof Error) || cause.message !== 'adventure_definitively_rejected'
+            || !currentProgress.active_session_id) throw cause;
+          install(decodeSession(await requestAdventureSettlement(
+            userId, { action: 'resume', sessionId: currentProgress.active_session_id }, hooks)));
+          recoveredStart = true;
+        }
+        if (!recoveredStart) {
+          const id = currentProgress.active_session_id || localStorage.getItem(sessionKey(userId));
+          if (id) install(decodeSession(await requestAdventureSettlement(
+            userId, { action: 'resume', sessionId: id }, hooks)));
+        }
       }
       const prepared = await supabase.functions.invoke('territory-combat', { body: { action: 'prepare' } });
       if (prepared.error || !obj(prepared.data)) throw new Error('combat_unavailable');
