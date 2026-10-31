@@ -36,3 +36,6 @@ assert.match(forge, /disabled=\{upgrading \|\| saveUnverified\}/, 'No navigation
 assert.match(forge, /data-testid="forge-journey-navigation"/, 'Forge navigation visible');
 assert.match(forge, /const saved = await saveCloudSave\(userId, result\.next\)/, 'Forge receipt path unchanged');
 console.log('Hero journey PASS: hero → quests/equipment/forge → campaign, actual saved state, no auto-spend or unconfirmed forge exit.');
+
+// Mobile review CI also covers the complete warehouse preparation journey.
+import './check-inventory-preparation.mjs';
