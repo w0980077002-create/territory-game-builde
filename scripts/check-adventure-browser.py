@@ -41,7 +41,21 @@ with sync_playwright() as p:
         assert bounds['listBottom'] <= bounds['actionsTop'] + 2, f'Floor list overlaps actions: {bounds}'
         assert bounds['challengeBottom'] <= bounds['windowHeight'] - 60, f'Challenge hidden behind bottom navigation: {bounds}'
         assert floor_panel.evaluate('(e) => e.scrollHeight > e.clientHeight'), '100 floors must be scrollable'
-        assert floor_panel.evaluate('(e) => e.clientHeight >= 156'), 'At least three cave floors must be viewable without scrolling'
+        floor_geometry = page.evaluate("""() => {
+          const item = document.querySelector('[data-testid="dark-cave-floor-scroll"]');
+          const panel = document.querySelector('[data-testid="dark-cave-floor-list"]');
+          return {
+            viewport: [innerWidth, innerHeight],
+            list_client: item.clientHeight,
+            list_offset: item.offsetHeight,
+            panel_client: panel.clientHeight,
+            panel_offset: panel.offsetHeight,
+            list_style: getComputedStyle(item).height,
+            panel_style: getComputedStyle(panel).minHeight,
+            panel_padding: getComputedStyle(panel).padding,
+          };
+        }""")
+        assert floor_geometry['list_client'] >= 156, f'At least three cave floors must be viewable without scrolling: {floor_geometry}'
         assert page.get_by_test_id('dark-cave-visual').is_visible(), 'Dark abyss illustration must be present'
         assert page.get_by_text('Добавить благословение').count() == 0, 'Unimplemented blessings may not appear as active slots'
         assert page.get_by_text('Режим боя').count() == 0, 'Mode selection belongs in combat, not the cave lobby'
