@@ -28,6 +28,7 @@ const receipt={success:true,session_id:session,outcome:'hero_won',stage:1,comple
 let user=A,remoteToken=time2,remoteState=won,mode='offline',saveCalls=0,calls=[],current=initial,applyCalls=0,saveGate=null;
 const supabase={auth:{getUser:async()=>({data:{user:{id:user}},error:null})},functions:{invoke:async(_name,{body})=>{
  calls.push(body);if(mode==='offline')return {data:null,error:new Error('offline')};
+ if(mode==='paused')return {data:null,error:{context:new Response(JSON.stringify({error:'combat_starts_paused'}),{status:409})}};
  if(mode==='definitive')return {data:null,error:{context:new Response(JSON.stringify({error:'combat_revision_conflict'}),{status:409})}};
  if(mode==='opaque409')return {data:null,error:{context:new Response(JSON.stringify({error:'combat_unavailable'}),{status:409})}};
  if(mode==='timeout503')return {data:null,error:{context:new Response(JSON.stringify({error:'combat_revision_conflict'}),{status:503})}};
@@ -99,7 +100,7 @@ const rejectedStart={action:'start',operationId:'20000000-0000-4000-8000-0000000
 mode='offline';
 await assert.rejects(adapter.requestAdventureStart(A,rejectedStart,hooks),/adventure_unconfirmed/);
 assert.ok(storage.getItem('territory_adventure_start_v1:'+A));
-mode='definitive';
+mode='paused';
 await assert.rejects(adapter.requestAdventureStart(A,rejectedStart,hooks),/adventure_definitively_rejected/);
 assert.equal(storage.getItem('territory_adventure_start_v1:'+A),null);
 assert.equal(blocked.has(A),false);

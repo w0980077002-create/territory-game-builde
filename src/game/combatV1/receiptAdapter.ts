@@ -21,7 +21,7 @@ const definitelyRejected = new Set([
   'combat_active_session_exists', 'combat_session_not_found',
   'combat_encounter_not_available', 'combat_profile_needs_reconciliation',
   'combat_profile_not_verified', 'combat_not_enabled',
-  'combat_settlement_not_ready', 'combat_no_dark_stones',
+  'combat_settlement_not_ready', 'combat_no_dark_stones', 'combat_starts_paused',
 ]);
 
 async function isVerifiedRollback(error: unknown): Promise<boolean> {

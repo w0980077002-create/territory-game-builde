@@ -182,4 +182,17 @@ await assert.rejects(execute(player,{action:'resume',sessionId:'30000000-0000-40
 await assert.rejects(sql(`INSERT INTO territory_private.combat_sessions_v1(player_id,encounter_id,state,cursor_ms)
  SELECT player_id,encounter_id,state,cursor_ms FROM territory_private.combat_sessions_v1 WHERE session_id=${quote(next.session_id)}`),/combat_one_active_session_v1/);
 assert.equal(await sql(`SELECT count(*) FROM territory_private.combat_sessions_v1 WHERE player_id=${quote(player)} AND state->>'status'='fighting'`),'1');
+// A server-side start-only gate must drain active fights and preserve receipts.
+await sql('UPDATE territory_private.combat_config_v1 SET starts_enabled=false WHERE id=true');
+const stonesBefore=await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`);
+await assert.rejects(execute(loser,{action:'start',operationId:op(14),encounterId:'s1',control:'auto'}),/combat_starts_paused/);
+assert.equal(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`),stonesBefore, 'paused start never debits');
+assert.deepEqual(await execute(player,{action:'start',operationId:op(7),encounterId:'s2',control:'auto'}),next,'old start receipt remains replayable');
+assert.equal((await execute(player,{action:'resume',sessionId:next.session_id})).state.status,'fighting');
+await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(next.session_id)}`);
+const drained=await execute(player,{action:'advance',operationId:op(15),sessionId:next.session_id,revision:0});
+assert.equal(drained.state.status,'hero_won');
+assert.deepEqual(await execute(player,{action:'advance',operationId:op(15),sessionId:next.session_id,revision:0}),drained);
+assert.equal(await sql(`SELECT count(*) FROM territory_private.adventure_settlements_v1 WHERE session_id=${quote(next.session_id)}`),'1');
+await sql('UPDATE territory_private.combat_config_v1 SET starts_enabled=true WHERE id=true');
 console.log('PostgreSQL 17 PASS: owner-scoped recovery, unique active session, reviewed synthetic profile, locked stages, engine victory/loss, rollback and retry, durable receipts, preserved save and real concurrent lock contention.');

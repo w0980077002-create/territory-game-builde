@@ -60,6 +60,16 @@ try {
  const next=await exec({action:'start',operationId:op(5),encounterId:'s2',control:'auto'});
  assert.equal(next.state.input.stage,2,'start next stage immediately after level-up');
  const execOther=c=>executeCombatCommand(repo,noLevel,c,()=>12);
+ await db.exec('RESET ROLE');
+ await db.exec('UPDATE territory_private.combat_config_v1 SET starts_enabled=false WHERE id');
+ await db.exec('SET ROLE service_role');
+ await assert.rejects(execOther({action:'start',operationId:op(12),encounterId:'s1',control:'auto'}),/combat_starts_paused/);
+ assert.equal((await q('SELECT game_state FROM public.players WHERE id=$1',[noLevel]))[0].game_state.battleStones,10);
+ assert.equal((await exec({action:'resume',sessionId:next.session_id})).state.status,'fighting');
+ assert.deepEqual(await exec({action:'start',operationId:op(5),encounterId:'s2',control:'auto'}),next);
+ await db.exec('RESET ROLE');
+ await db.exec('UPDATE territory_private.combat_config_v1 SET starts_enabled=true WHERE id');
+ await db.exec('SET ROLE service_role');
  const otherStart=await execOther({action:'start',operationId:op(6),encounterId:'s1',control:'auto'});
  await db.exec('RESET ROLE'); await q('UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=$1',[otherStart.session_id]); await db.exec('SET ROLE service_role');
  const otherWin=await execOther({action:'advance',operationId:op(7),sessionId:otherStart.session_id,revision:0});

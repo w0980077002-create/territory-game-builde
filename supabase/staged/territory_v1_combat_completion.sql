@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS territory_private.combat_config_v1 (
   rules jsonb NOT NULL DEFAULT '{}',
   approval_reference text
 );
+-- A separate start-only switch permits draining existing fights. Adding it to
+-- an existing deployment preserves its current start behavior.
+ALTER TABLE territory_private.combat_config_v1
+ ADD COLUMN IF NOT EXISTS starts_enabled boolean NOT NULL DEFAULT true;
 INSERT INTO territory_private.combat_config_v1(id) VALUES(true) ON CONFLICT DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS territory_private.combat_profiles_v1 (
@@ -197,6 +201,7 @@ BEGIN
       version=version+1,updated_at=clock_timestamp() WHERE player_id=p_player;
     receipt:=jsonb_build_object('success',true,'profile_revision',h.version+1,'loadout',p_result->'loadout');
   ELSIF a='start' THEN
+    IF NOT c.starts_enabled THEN RAISE EXCEPTION 'combat_starts_paused'; END IF;
     IF NOT c.settlement_ready THEN RAISE EXCEPTION 'combat_settlement_not_ready'; END IF;
     SELECT * INTO e FROM territory_private.combat_encounters_v1 WHERE encounter_id=p_request->>'encounterId' FOR SHARE;
     IF NOT FOUND OR NOT e.enabled OR e.version<>(p_context->'encounter'->>'version')::integer

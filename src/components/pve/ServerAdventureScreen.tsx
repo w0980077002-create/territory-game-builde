@@ -47,6 +47,9 @@ function message(error: unknown, en: boolean) {
   if (/adventure_definitively_rejected/.test(s)) return en
     ? 'The server rejected that action without a new charge. Your save was synchronized. Recover the fight to continue.'
     : 'Сервер отклонил действие без нового списания. Сохранение синхронизировано. Восстанови бой, чтобы продолжить.';
+  if (/combat_starts_paused/.test(s)) return en
+    ? 'New cave fights are temporarily paused. Existing fights can continue.'
+    : 'Новые бои в пещере временно приостановлены. Начатые бои можно продолжить.';
   if (/dark_stone/.test(s)) return en ? 'No Dark Stones; next grant at 00:00 UTC.' : 'Тёмные камни закончились. Новые будут в 00:00 UTC.';
   if (/reconciliation|profile|ownership/.test(s)) return en
     ? 'Hero equipment must be verified before using the new campaign.'
