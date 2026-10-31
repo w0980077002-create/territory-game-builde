@@ -64,6 +64,18 @@ assert.match(ui, /data-testid="dark-cave-manual-actions"/, 'Manual combat expose
 assert.match(ui, /cooldowns\[slot\.skillId\]/, 'Skills display server cooldown status');
 assert.match(ui, /rank\.energyCost/, 'Skills respect server-reported energy costs');
 assert.doesNotMatch(ui, /assets\/territory\/scenes\/arena-viking\.webp/, 'Dark Cave battle cannot silently reuse Arena scenery');
+assert.match(ui, /getCombatAppearance\(game\.appearance\)/,
+  'Cave must use the player's currently selected hero appearance, not always a male viking');
+assert.match(ui, /const fighterSrc = heroFrames\.idle;/,
+  'Cave fallback art must belong to the selected hero');
+assert.match(ui, /setStrikeQueue\(old => \[\.\.\.old, \.\.\.confirmed\]\.slice\(-8\)\)/,
+  'Cave must replay multiple genuine server-confirmed hits in order');
+assert.match(ui, /data-testid="dark-cave-battle-log"/,
+  'Keep confirmed damage and block events visible before optional gear panels');
+assert.match(ui, /Продолжить бой/,
+  'Manual combat must show an understandable continuation control');
+assert.doesNotMatch(ui, /Умения и урон проверяет сервер|Следующий шаг боя/,
+  'Remove raw debug language and unclear old action from the live player screen');
 assert.match(ui, /<FighterFigure /, 'server combat should animate the same 2D fighters used by the classic game');
 assert.match(ui, /getEnemyCombatFrames/, 'server enemies should use existing combat pose art');
 assert.match(ui, /battleRef\.current\?\.scrollIntoView/, 'mobile must reveal battle after tapping Start');
