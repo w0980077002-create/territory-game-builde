@@ -54,8 +54,9 @@ with sync_playwright() as p:
             page.get_by_test_id('dark-cave-challenge').click()
             page.get_by_test_id('territory-adventure-battle').wait_for()
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
-            page.get_by_role('button',name='Продолжить бой').click()
-            page.get_by_text('Победа!').wait_for()
+            # The live Cave challenge starts in automatic mode: server
+            # progression is scheduled, not exposed as a manual Continue button.
+            page.get_by_text('Победа!').wait_for(timeout=15000)
             assert page.get_by_text('+10 монет').count() == 1
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
             page.get_by_role('button',name='К этапам пещеры').click()
