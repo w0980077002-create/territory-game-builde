@@ -340,6 +340,9 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         <span className="flex items-center gap-1"><Zap size={14}/>{en ? 'Energy' : 'Энергия'}: {Math.floor(session.state.actors.hero.energy)}/{session.state.input.rules.maxEnergy}</span>
         <span className="text-yellow-200">{session.state.input.control === 'auto' ? (en?'Auto':'Авто') : (en?'Manual':'Ручной')}</span>
       </div>
+      {!!battleLog.length && <div data-testid="dark-cave-battle-log" className="rounded-lg bg-black/35 border border-white/10 px-2 py-1 text-[11px] text-slate-200 max-h-24 overflow-auto" aria-live="polite">
+        {battleLog.slice(-4).map((line, i) => <p key={i}>{line}</p>)}
+      </div>}
       <div className="grid grid-cols-1 gap-1.5" data-testid="dark-cave-combat-panels">
         <FoldSection title={en?'Equipment':'Экипировка'}
           summary={<span className="text-[10px] text-amber-100">{Object.values(game.player.equipped ?? {}).filter(Boolean).length}/7</span>}
@@ -362,9 +365,6 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           </p>
         </FoldSection>
       </div>
-      {!!battleLog.length && <div className="rounded-lg bg-black/35 border border-white/10 px-2 py-1 text-[11px] text-slate-200 max-h-24 overflow-auto" aria-live="polite">
-        {battleLog.slice(-4).map((line, i) => <p key={i}>{line}</p>)}
-      </div>}
       {finished ? <>
         <p className="text-center text-amber-200 font-bold" role="status">{session.state.status==='hero_won' ? (en?'Victory!':'Победа!') : session.state.status==='enemy_won' ? (en?'Defeat':'Поражение') : (en?'Draw':'Ничья')}</p>
         {session.state.status==='hero_won' && session.settlement?.reward && <p className="text-center text-xs text-yellow-100">
