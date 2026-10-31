@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import ts from 'typescript';
 
 const inv=readFileSync('src/components/InventoryScreen.tsx','utf8');
 const profile=readFileSync('src/components/ProfileScreen.tsx','utf8');
@@ -8,6 +9,12 @@ const panel=readFileSync('src/components/FollowersPanel.tsx','utf8');
 const model=readFileSync('src/game/followers.ts','utf8');
 const app=readFileSync('src/App.tsx','utf8');
 const showcase=readFileSync('src/components/GearShowcase.tsx','utf8');
+const heroCss=readFileSync('src/components/profileHero.css','utf8');
+const campCss=readFileSync('src/components/followersCamp.css','utf8');
+for (const path of ['src/App.tsx','src/components/ProfileScreen.tsx','src/components/HeroShowcase.tsx','src/components/InventoryScreen.tsx','src/components/FollowersPanel.tsx']) {
+  const tree=ts.createSourceFile(path,readFileSync(path,'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+  assert.equal(tree.parseDiagnostics.length,0,path+' syntax');
+}
 
 assert.match(inv,/import \{ FollowersPanel \} from '\.\/FollowersPanel'/);
 assert.match(inv,/<FollowersPanel \/>/);
@@ -57,4 +64,18 @@ assert.match(model,/export function selectedFollower/,'Exactly one active follow
 assert.match(model,/export function selectFollower/);
 assert.match(model,/export function trainFollower/);
 assert.match(panel,/only PvE|только PvE|не на Арене/,'Arena must remain unaffected by companions');
+assert.match(app,/onCompanions=\\{\\(\\) => \\{ setInventoryTab\\('followers'\\); setScreen\\('inventory'\\); \\}\\}/, 'Hero opens the existing companion tab');
+assert.match(app,/onHero=\\{\\(\\) => \\{ setHeroTrainingOpen\\(false\\); setScreen\\('hero'\\); \\}\\}/, 'Camp returns to existing hero');
+assert.match(profile,/onCompanions=\\{onCompanions\\}/, 'Hero forwards real companion navigation');
+assert.match(livingHero,/selectedFollower\\(state\\)/, 'Hero companion comes from saved PvE selection');
+assert.match(livingHero,/getFollowerArt\\(activeCompanion.id\\)/, 'Hero uses canonical companion art');
+assert.match(livingHero,/data-testid="hero-open-companions"/, 'Hero camp action exists');
+assert.match(inv,/data-testid="companion-journey-actions"/, 'Camp has a pinned next step');
+assert.match(inv,/selectedFollower\\(state\\)/, 'Camp footer reflects latest selection');
+assert.match(inv,/onBattle && <button type="button" onClick=\\{onBattle\\}/, 'Camp returns to real campaign');
+assert.match(app,/onBattle=\\{\\(\\) => \\{ setBattleView\\('campaign'\\); setAutoStart\\(false\\); setScreen\\('battle'\\); \\}\\}/, 'Companion path cannot auto-spend stones');
+assert.match(heroCss,/hero-showcase__companion/, 'Hero companion has scoped wood and gold layout');
+assert.match(campCss,/companion-journey-bar/, 'Camp next-step bar has mobile styling');
+assert.doesNotMatch(livingHero,/useGame\\.set|trainFollower\\(|awardCowAwakeningStone\\(/, 'Hero preview must remain read-only');
+console.log('Companion journey PASS: saved active companion on hero, camp selection/training, pinned return to hero/campaign, no new rewards.');
 console.log('Companions moved into inventory: three accessible tabs, one active PvE companion, existing costs/levels preserved, clean profile, belt and gear intact.');
