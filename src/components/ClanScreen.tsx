@@ -155,6 +155,46 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
 
   useEffect(() => { if (view === 'rankings') void run(loadRankings); }, [view, run, loadRankings]);
 
+  // Refresh only read-only clan state after returning from another Telegram
+  // screen/device. Never replay contributions, claims or other mutations.
+  const lastResumeCheck = useRef(Date.now());
+  useEffect(() => {
+    const refreshOnReturn = () => {
+      if (document.visibilityState !== 'visible' || mutationLock.current || busy) return;
+      const now = Date.now();
+      if (now - lastResumeCheck.current < 45_000) return;
+      lastResumeCheck.current = now;
+      if (view === 'detail' && clanId) {
+        void run(async () => {
+          const directory = await fetchClanDirectory('');
+          setDir(directory);
+          if (directory.my_clan_id === clanId) {
+            await loadState(clanId);
+          } else if (directory.my_clan_id) {
+            setClanId(directory.my_clan_id);
+            setView('detail');
+          } else {
+            setClanId(null);
+            setState(null);
+            setView('home');
+          }
+        });
+      } else if (view === 'rankings') {
+        void run(loadRankings);
+      } else {
+        void run(() => loadDirectory(view === 'browse' ? search : ''));
+      }
+    };
+    document.addEventListener('visibilitychange', refreshOnReturn);
+    window.addEventListener('focus', refreshOnReturn);
+    window.addEventListener('online', refreshOnReturn);
+    return () => {
+      document.removeEventListener('visibilitychange', refreshOnReturn);
+      window.removeEventListener('focus', refreshOnReturn);
+      window.removeEventListener('online', refreshOnReturn);
+    };
+  }, [busy, clanId, view, search, run, loadState, loadRankings, loadDirectory]);
+
   const openBrowse = () => { setView('browse'); void run(() => loadDirectory(search)); };
 
   const doCreate = () => runMutation(async () => {
