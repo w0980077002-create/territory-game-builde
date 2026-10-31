@@ -21,15 +21,6 @@ export function SeasonScreen({ onArena, onEvents, onMessages, onRankings }: Prop
   const en = language === 'en';
 
   return <section className="viking-screen viking-screen--season season-journey" data-testid="season-journey">
-    <header className="season-journey__hero">
-      <img src={import.meta.env.BASE_URL + 'ic-trophy.webp'} alt="" loading="lazy" />
-      <div className="season-journey__heading">
-        <span>{en ? 'ARENA' : 'АРЕНА'}</span>
-        <h2>{en ? 'Weekly championship' : 'Недельный чемпионат'}</h2>
-        <p>{en ? 'The same weekly TOP-50 as in the Arena.' : 'Тот же недельный ТОП-50, что и на Арене.'}</p>
-      </div>
-    </header>
-
     <div className="arena-lobby arena-approved-entry season-journey__arena-top" data-testid="season-arena-top50">
       <ArenaWeeklyBoard />
     </div>
