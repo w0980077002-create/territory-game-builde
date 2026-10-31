@@ -60,7 +60,7 @@ with sync_playwright() as p:
         assert page.get_by_text('Добавить благословение').count() == 0, 'Unimplemented blessings may not appear as active slots'
         assert page.get_by_text('Режим боя').count() == 0, 'Mode selection belongs in combat, not the cave lobby'
         assert page.get_by_test_id('dark-cave-challenge').count() == 1, 'Exactly one paid Challenge is available'
-        assert page.get_by_role('button', name='Мой этаж' if width else 'My floor').count() == 1, 'Current-floor jump must remain available'
+        assert page.get_by_role('button', name='Мой этаж').count() == 1, 'Current-floor jump must remain available'
         assert page.get_by_test_id('dark-stone-balance').count() == 1, 'Server-authoritative Dark Stone balance must be visible'
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'horizontal overflow'
         page.screenshot(path=str(OUT / ('adventure-'+str(width)+'.png')), full_page=True)
