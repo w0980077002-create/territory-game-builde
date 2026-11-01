@@ -136,6 +136,7 @@ BEGIN
  INSERT INTO territory_private.rune_loadouts_v1(player_id,slots)
  SELECT u,jsonb_agg(jsonb_build_object('slotId',slot_id,'runeId',NULL) ORDER BY slot_id)
  FROM (SELECT DISTINCT slot_id FROM territory_private.rune_catalog_v1) s
+ WHERE true
  ON CONFLICT(player_id) DO NOTHING;
  SELECT * INTO current_state FROM territory_private.rune_loadouts_v1 WHERE player_id=u FOR UPDATE;
  IF current_state.revision<>p_revision THEN RAISE EXCEPTION 'rune_revision_conflict'; END IF;
