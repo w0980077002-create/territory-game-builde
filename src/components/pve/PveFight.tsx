@@ -7,7 +7,7 @@ import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
-import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, playRound, randomZones, summarizePveRound, type PveSide, type PveTacticalSummary } from '@/game/pve';
+import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, playRound, randomZones, summarizePveRound, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
@@ -102,6 +102,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const [attack, setAttack] = useState<Zone | null>(null);
   // A committed enemy guard stays fixed until the round is actually resolved.
   const [enemyIntent, setEnemyIntent] = useState(() => randomZones());
+  const [adaptiveGuard, setAdaptiveGuard] = useState(false);
   const [blocks, setBlocks] = useState<Zone[]>([]);
   const [busy, setBusy] = useState(false);
   // A speed change applies to the next round. Keep the current visual contact
@@ -238,15 +239,17 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     }));
     setAttack(null);
     setBlocks([]);
-    // Show the next guard only after the current enemy action finished.
-    setEnemyIntent(randomZones());
+    // Phase two reacts to the completed strike; never change a guard mid-round.
+    const nextIntent = nextAdaptiveEnemyIntent(res.enemy, atk, kind === 'trial' || !!enemy.isBoss);
+    setEnemyIntent(nextIntent.intent);
+    setAdaptiveGuard(nextIntent.adapted);
     if (res.enemy.hp <= 0) finish(true);
     else if (res.hero.hp <= 0) finish(false);
     } finally {
       roundFlight.current = false;
       if (alive.current) setBusy(false);
     }
-  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, enemyIntent, confirmSurrender]);
+  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, enemyIntent, confirmSurrender, kind, enemy.isBoss]);
 
   useEffect(() => {
     if (!auto || busy || outcome || confirmSurrender) return;
@@ -517,6 +520,11 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
                 ? (language === 'en' ? 'Your strike may be blocked. Choose a gap!' : 'Удар может быть заблокирован. Ищи брешь!')
                 : (language === 'en' ? 'Strike another zone to bypass this guard.' : 'Бей в другую зону, чтобы обойти щит.')}
             </span>
+            {adaptiveGuard && <span data-testid="pve-adaptive-guard" className="w-full text-[10px] font-bold text-red-200">
+              {language === 'en'
+                ? 'Phase II: the enemy learned your last strike. Switch your attack zone!'
+                : 'Фаза II: враг запомнил прошлый удар. Смени зону атаки!'}
+            </span>}
             <button type="button" data-testid="pve-choose-opening" disabled={!controls}
               onClick={() => setAttack(current => nextOpenStrike(current, guardedZone.id))}
               className="ml-auto min-h-9 shrink-0 rounded-lg border border-amber-200/70 bg-gradient-to-b from-amber-300 to-amber-600 px-2.5 text-[11px] font-black text-[#29180b] active:scale-[0.98] disabled:opacity-40">

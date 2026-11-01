@@ -154,6 +154,29 @@ assert(ignoredThreat.hero.hp < starterHero.hp, 'Ignoring the announced strike ca
 const coveredByAction = pve.coverThreatZone(['head', 'legs'], threatIntent.attack);
 const actionRound = pve.playRound(starterHero, guardEnemy, 'legs', coveredByAction, 0, '', 0, null, threatIntent);
 assert.equal(actionRound.hero.hp, starterHero.hp, 'One-tap cover must prevent the actual announced strike');
+// The existing elite encounter gets a genuinely adaptive second phase.
+const phaseRoll = { attack: 'chest', blocks: ['head', 'belly'] };
+const phaseOne = pve.nextAdaptiveEnemyIntent({ hp: 251, maxHp: 500 }, 'legs', true, phaseRoll);
+assert.equal(phaseOne.adapted, false);
+assert.equal(phaseOne.intent.blocks[0], 'head');
+const ordinary = pve.nextAdaptiveEnemyIntent({ hp: 200, maxHp: 500 }, 'legs', false, phaseRoll);
+assert.equal(ordinary.adapted, false, 'Normal enemies must keep their current AI');
+const phaseTwo = pve.nextAdaptiveEnemyIntent({ hp: 250, maxHp: 500 }, 'legs', true, phaseRoll);
+assert.equal(phaseTwo.adapted, true);
+assert.equal(phaseTwo.intent.blocks[0], 'legs', 'Elite must guard the last strike');
+assert.equal(phaseTwo.intent.attack, 'chest', 'The actual announced attack is unchanged');
+assert.equal(new Set(phaseTwo.intent.blocks).size, 2, 'Guard zones stay distinct');
+const phaseBlocked = pve.playRound(starterHero, { ...guardEnemy, hp: 250 }, 'legs', [], 0, '', 0, null, phaseTwo.intent);
+const phaseOpening = pve.playRound(starterHero, { ...guardEnemy, hp: 250 }, 'head', [], 0, '', 0, null, phaseTwo.intent);
+assert.equal(phaseBlocked.hits[0].tone, 'block', 'Repeating a remembered strike must really be blocked');
+assert.equal(phaseOpening.hits[0].tone, 'hit', 'Changing attack zones must really beat the guard');
+assert.equal(pve.nextAdaptiveEnemyIntent({ hp: 0, maxHp: 500 }, 'legs', true, phaseRoll).adapted, false);
+// A lethal hit reports only the remaining HP, not an imaginary overkill amount.
+const overkillRound = pve.playRound({ ...starterHero, hp: 7, attack: 1, defense: 0 },
+  { ...guardEnemy, attack: 200 }, 'legs', [], 0, '', 0, null,
+  { attack: 'chest', blocks: ['head', 'belly'] });
+assert.equal(overkillRound.hero.hp, 0);
+assert.equal(pve.summarizePveRound(overkillRound.hits).takenDamage, 7);
 const fightSource = source('../src/components/pve/PveFight.tsx');
 assert.match(fightSource, /data-testid="pve-round-reaction"/, 'Show actual round feedback to manual PvE players');
 assert.match(fightSource, /data-testid="pve-live-damage-totals"/, 'Show cumulative actual damage during the fight');
@@ -174,7 +197,12 @@ assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss stri
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
 
 assert.match(fightSource, /followerBonus\.defense, followerBonus, enemyIntent\)/, 'Pass the visible guard to the PvE round calculation');
-assert.match(fightSource, /setEnemyIntent\(randomZones\(\)\)/, 'Refresh guard after resolving each round');
+assert.match(fightSource, /nextAdaptiveEnemyIntent\(res\.enemy, atk, kind === 'trial' \|\| !!enemy\.isBoss\)/,
+  'Phase-two guard uses resolved HP and the actual last strike');
+assert.match(fightSource, /setEnemyIntent\(nextIntent\.intent\)/,
+  'The next guard must be the committed intent used by combat');
+assert.match(fightSource, /data-testid="pve-adaptive-guard"/,
+  'The player must see the adaptive second phase');
 
 const engine = source('../src/game/engine.ts');
 const actions = source('../src/game/actions.ts');
