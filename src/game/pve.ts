@@ -89,6 +89,10 @@ export interface PveTacticalSummary {
   heroStrike: PveHit['tone'] | null;
   enemyStrike: PveHit['tone'] | null;
   enemyZone: Zone | null;
+  /** Damage from resolved hits only; excludes blocked, dodged and healing events. */
+  dealtDamage: number;
+  takenDamage: number;
+  companionDamage: number;
 }
 
 export function summarizePveRound(hits: readonly PveHit[]): PveTacticalSummary {
@@ -98,6 +102,9 @@ export function summarizePveRound(hits: readonly PveHit[]): PveTacticalSummary {
     heroStrike: heroStrike?.tone ?? null,
     enemyStrike: enemyStrike?.tone ?? null,
     enemyZone: enemyStrike?.zone ?? null,
+    dealtDamage: hits.filter(hit => hit.targetSide === 'enemy').reduce((sum, hit) => sum + Math.max(0, hit.amount), 0),
+    takenDamage: hits.filter(hit => hit.targetSide === 'hero').reduce((sum, hit) => sum + Math.max(0, hit.amount), 0),
+    companionDamage: hits.filter(hit => hit.targetSide === 'enemy' && hit.source === 'companion').reduce((sum, hit) => sum + Math.max(0, hit.amount), 0),
   };
 }
 
