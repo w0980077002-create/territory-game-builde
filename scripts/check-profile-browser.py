@@ -172,6 +172,19 @@ with sync_playwright() as p:
             assert boxes[1]['x'] + boxes[1]['width'] + 2 < boxes[2]['x'], (width, lang, 'Hero overlaps foe', boxes)
             assert all(box['x'] > -1 and box['x'] + box['width'] < width + 1 for box in boxes), (width, lang, 'Character clipped', boxes)
             assert page.locator('[data-testid="city-enemy-slot"]').get_attribute('aria-label') is not None
+            # The three REAL City sprites have independent motions; HUD/slots do not move.
+            idle_nodes = [page.locator('.home-character-stage .city-' + who + '-idle')
+                          for who in ('follower', 'hero', 'enemy')]
+            idle_styles = [sprite.evaluate("""el => ({
+                name: getComputedStyle(el).animationName,
+                duration: getComputedStyle(el).animationDuration
+            })""") for sprite in idle_nodes]
+            assert len(set(style['name'] for style in idle_styles)) == 3, (width, lang, 'Synchronized city idles', idle_styles)
+            assert all(style['name'] != 'none' for style in idle_styles), (width, lang, 'Static city sprite', idle_styles)
+            page.emulate_media(reduced_motion='reduce')
+            assert all(sprite.evaluate("el => getComputedStyle(el).animationName") == 'none' for sprite in idle_nodes), (
+                width, lang, 'Reduced motion must disable all idle animations')
+            page.emulate_media(reduced_motion='no-preference')
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             assert page.locator('.home-side').count() >= 6
             assert page.locator('.home-side').evaluate_all('buttons => buttons.every(b => { const r=b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && r.left >= 0 && r.right <= innerWidth; })')

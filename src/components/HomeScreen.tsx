@@ -1,4 +1,5 @@
 import './halloweenRaid.css';
+import './home/cityCharacterMotion.css';
 import { useState, type ReactNode } from 'react';
 import { ChevronRight, Repeat, Crown } from 'lucide-react';
 import { useStore } from '@/game/store';
@@ -243,14 +244,14 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
                 className="home-follower-art-frame absolute inset-x-0 bottom-0 flex items-end justify-center"
                 style={{ transform: `scale(${HOME_FOLLOWER_ART_SCALE[follower.id] ?? 1})` }}
               >
-                <img src={getFollowerArt(follower.id)} alt={follower.name} className="home-follower-art relative w-full h-auto object-contain object-bottom animate-idle" />
+                <img src={getFollowerArt(follower.id)} alt={follower.name} className="home-follower-art city-follower-idle relative w-full h-auto object-contain object-bottom" />
               </span>
             </>
           )}
         </div>
         <div data-testid="city-hero-slot" className="home-hero-figure home-character-slot relative h-[84%] w-[32%] shrink-0 flex items-end justify-center">
           <span aria-hidden="true" className="absolute bottom-0 w-[85%] h-3 rounded-[50%] bg-black/65 blur-[3px]" />
-          <img src={getAppearanceIcon(state.appearance)} alt={player.name} className="home-hero-art relative max-h-full max-w-full object-contain object-bottom animate-idle" />
+          <img src={getAppearanceIcon(state.appearance)} alt={player.name} className="home-hero-art city-hero-idle relative max-h-full max-w-full object-contain object-bottom" />
         </div>
         <button
           onClick={() => onBattle('campaign', true)}
@@ -267,7 +268,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
             {nextEnemy.isBoss ? t('boss') : ''}{localizeText(nextEnemy.name, language)}
           </span>
           <span className="absolute bottom-0 w-[80%] h-2.5 rounded-[50%] bg-black/50 blur-[3px]" />
-          <img src={nextEnemy.art} alt="" className="relative min-h-0 flex-1 max-w-full object-contain object-bottom drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] transition-transform group-active:scale-95" />
+          <img src={nextEnemy.art} alt="" className="city-enemy-idle relative min-h-0 flex-1 max-w-full object-contain object-bottom drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] transition-transform group-active:scale-95" />
         </button>
       </div>
 
