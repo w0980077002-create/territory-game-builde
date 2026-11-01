@@ -72,6 +72,12 @@ def stop(proc,log):
     try: proc.wait(timeout=30)
     except subprocess.TimeoutExpired: proc.kill();proc.wait()
     log.close()
+    # `functions serve` can leave its local worker alive after the CLI exits;
+    # remove only this disposable test project's worker before changing flags.
+    names = subprocess.check_output(['docker','ps','-a','--format','{{.Names}}'], text=True).splitlines()
+    for name in names:
+        if name == 'supabase_edge_runtime_halloween-auth-project':
+            subprocess.run(['docker','rm','-f',name],check=True,stdout=subprocess.DEVNULL)
 
 proc,log=serve(False)
 try:

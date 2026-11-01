@@ -5,7 +5,9 @@
 .pumpkin-witch__body--attack { animation:pumpkin-cast .6s ease-out, pumpkin-breathe 4s .6s ease-in-out infinite; }
 .pumpkin-witch__body--heal { animation:pumpkin-heal-pose .8s ease-out, pumpkin-breathe 4s .8s ease-in-out infinite; }
 .pumpkin-witch__figure,.pumpkin-witch__blink,.pumpkin-witch__action-pose { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center bottom; }
-.pumpkin-witch__action-pose { z-index:2; animation:pumpkin-pose-frame .65s steps(1,end); }
+.pumpkin-witch__action-pose { z-index:2; }
+.pumpkin-witch__body--attack .pumpkin-witch__figure,.pumpkin-witch__body--heal .pumpkin-witch__figure { opacity:0; }
+.pumpkin-witch__body--attack .pumpkin-witch__blink,.pumpkin-witch__body--heal .pumpkin-witch__blink { display:none; }
 .pumpkin-witch__blink { opacity:0; animation:pumpkin-blink 5.2s steps(1,end) infinite; }
 .pumpkin-witch__aura { position:absolute; inset:15% 10% 5%; border-radius:50%; background:radial-gradient(ellipse, #c866f777 0%, #ff9b2630 45%, transparent 72%); animation:pumpkin-glow 3s ease-in-out infinite alternate; }
 .pumpkin-witch__spark { position:absolute; color:#ffcc69; text-shadow:0 0 6px #f9a52f; animation:pumpkin-spark 3.4s ease-in-out infinite; }
@@ -17,7 +19,6 @@
 .pumpkin-witch__effect i:nth-child(1) { left:-20%; top:10%; } .pumpkin-witch__effect i:nth-child(2) { right:0; top:-25%; } .pumpkin-witch__effect i:nth-child(3) { right:-20%; bottom:5%; }
 .pumpkin-witch__effect--heal i { color:#dcffaf; text-shadow:0 0 8px #97e793; }
 .pumpkin-witch__effect--appear { color:#ffdf83; text-align:center; font-size:clamp(12px,4vw,24px); white-space:nowrap; animation:pumpkin-appear .8s ease-out; }
-@keyframes pumpkin-pose-frame { 0%,85% { opacity:1; } 100% { opacity:0; } }
 @keyframes pumpkin-cast { 30% { transform:translateX(6%) rotate(5deg) scale(1.04); } }
 @keyframes pumpkin-heal-pose { 40% { transform:translateY(-5%) rotate(-3deg) scale(1.04); } }
 @keyframes pumpkin-blink { 0%, 91%, 95%, 100% { opacity:0; } 92%, 94% { opacity:1; } }
@@ -27,4 +28,4 @@
 @keyframes pumpkin-spark { 0%,70%,100% { opacity:0; transform:translateY(4px) scale(.6); } 80% { opacity:1; } 95% { opacity:0; transform:translateY(-9px) scale(1); } }
 @keyframes pumpkin-attack { 0% { opacity:1; transform:scale(.3); } 100% { opacity:0; transform:translateX(120%) scale(1.7); } }
 @keyframes pumpkin-heal { 0% { opacity:1; transform:scale(.3); } 100% { opacity:0; transform:translateY(-60%) scale(2); } }
-@media (prefers-reduced-motion:reduce) { .pumpkin-witch__body,.pumpkin-witch__blink,.pumpkin-witch__aura,.pumpkin-witch__spark,.pumpkin-witch__effect { animation:none; } .pumpkin-witch__blink,.pumpkin-witch__action-pose,.pumpkin-witch__spark,.pumpkin-witch__effect { display:none; } }
+@media (prefers-reduced-motion:reduce) { .pumpkin-witch__body,.pumpkin-witch__blink,.pumpkin-witch__aura,.pumpkin-witch__spark,.pumpkin-witch__effect { animation:none; } .pumpkin-witch__blink,.pumpkin-witch__action-pose,.pumpkin-witch__spark,.pumpkin-witch__effect { display:none; } .pumpkin-witch__body--attack .pumpkin-witch__figure,.pumpkin-witch__body--heal .pumpkin-witch__figure { opacity:1; } }
