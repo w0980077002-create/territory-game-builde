@@ -129,7 +129,7 @@ BEGIN
   SELECT max(created_at) INTO v_last FROM territory_private.halloween_companion_bulk_receipts_2026;
   RETURN pg_catalog.jsonb_build_object('eligible',v_count,'granted',v_granted,
     'pending',v_count-v_granted,'unexpected',v_unexpected,'duplicates',0,
-    'lastGrant',v_last,'failureAuditAvailable',false,'digest',v_digest);
+    'lastGrant',v_last,'digest',v_digest);
 END;
 $$;
 REVOKE ALL ON FUNCTION public.territory_halloween_companion_snapshot_v1() FROM PUBLIC, anon, authenticated;
@@ -182,3 +182,71 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.territory_halloween_companion_bulk_v1(uuid,bigint,text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_halloween_companion_bulk_v1(uuid,bigint,text) TO service_role;
+
+-- Operator attempts are recorded in independent RPC transactions by the
+-- authenticated admin Edge handler. A crashed caller leaves 'started', never a
+-- false success; the same request can then be reconciled and safely retried.
+CREATE TABLE IF NOT EXISTS territory_private.halloween_companion_attempts_2026 (
+  attempt_id uuid PRIMARY KEY,
+  request_id uuid NOT NULL,
+  state text NOT NULL DEFAULT 'started' CHECK (state IN ('started','succeeded','failed')),
+  error_code text CHECK (error_code IS NULL OR error_code IN ('event_active','snapshot_changed','request_conflict','invalid_request','reconcile_failed','unavailable')),
+  started_at timestamptz NOT NULL DEFAULT pg_catalog.clock_timestamp(),
+  finished_at timestamptz,
+  CHECK ((state = 'started' AND finished_at IS NULL AND error_code IS NULL)
+      OR (state = 'succeeded' AND finished_at IS NOT NULL AND error_code IS NULL)
+      OR (state = 'failed' AND finished_at IS NOT NULL AND error_code IS NOT NULL))
+);
+ALTER TABLE territory_private.halloween_companion_attempts_2026 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE territory_private.halloween_companion_attempts_2026 FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.territory_halloween_companion_attempt_start_v1(p_attempt uuid, p_request uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_request uuid;
+BEGIN
+  IF p_attempt IS NULL OR p_request IS NULL THEN RAISE EXCEPTION 'halloween_companion_invalid_request'; END IF;
+  INSERT INTO territory_private.halloween_companion_attempts_2026(attempt_id,request_id)
+    VALUES (p_attempt,p_request) ON CONFLICT (attempt_id) DO NOTHING;
+  SELECT request_id INTO v_request FROM territory_private.halloween_companion_attempts_2026 WHERE attempt_id=p_attempt;
+  IF v_request <> p_request THEN RAISE EXCEPTION 'halloween_companion_request_conflict'; END IF;
+END; $$;
+REVOKE ALL ON FUNCTION public.territory_halloween_companion_attempt_start_v1(uuid,uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.territory_halloween_companion_attempt_start_v1(uuid,uuid) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.territory_halloween_companion_attempt_finish_v1(p_attempt uuid, p_request uuid, p_error text DEFAULT NULL)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_row territory_private.halloween_companion_attempts_2026%ROWTYPE;
+BEGIN
+  IF p_error IS NOT NULL AND p_error NOT IN ('event_active','snapshot_changed','request_conflict','invalid_request','reconcile_failed','unavailable') THEN
+    RAISE EXCEPTION 'halloween_companion_invalid_request';
+  END IF;
+  SELECT * INTO v_row FROM territory_private.halloween_companion_attempts_2026 WHERE attempt_id=p_attempt FOR UPDATE;
+  IF NOT FOUND OR v_row.request_id IS DISTINCT FROM p_request THEN RAISE EXCEPTION 'halloween_companion_request_conflict'; END IF;
+  IF v_row.state <> 'started' THEN
+    IF v_row.error_code IS DISTINCT FROM p_error THEN RAISE EXCEPTION 'halloween_companion_request_conflict'; END IF;
+    RETURN;
+  END IF;
+  IF p_error IS NULL AND NOT EXISTS (SELECT 1 FROM territory_private.halloween_companion_bulk_receipts_2026 WHERE request_id=p_request) THEN
+    RAISE EXCEPTION 'halloween_companion_grant_unconfirmed';
+  END IF;
+  UPDATE territory_private.halloween_companion_attempts_2026
+    SET state=CASE WHEN p_error IS NULL THEN 'succeeded' ELSE 'failed' END,
+        error_code=p_error, finished_at=pg_catalog.clock_timestamp()
+    WHERE attempt_id=p_attempt;
+END; $$;
+REVOKE ALL ON FUNCTION public.territory_halloween_companion_attempt_finish_v1(uuid,uuid,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.territory_halloween_companion_attempt_finish_v1(uuid,uuid,text) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.territory_halloween_companion_audit_status_v1()
+RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+  SELECT pg_catalog.jsonb_build_object(
+    'failed', count(*) FILTER (WHERE state='failed'),
+    'unfinished', count(*) FILTER (WHERE state='started'),
+    'lastError', (SELECT error_code FROM territory_private.halloween_companion_attempts_2026
+                  WHERE state='failed' ORDER BY finished_at DESC, attempt_id DESC LIMIT 1),
+    'lastErrorAt', (SELECT finished_at FROM territory_private.halloween_companion_attempts_2026
+                    WHERE state='failed' ORDER BY finished_at DESC, attempt_id DESC LIMIT 1))
+  FROM territory_private.halloween_companion_attempts_2026;
+$$;
+REVOKE ALL ON FUNCTION public.territory_halloween_companion_audit_status_v1() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.territory_halloween_companion_audit_status_v1() TO service_role;

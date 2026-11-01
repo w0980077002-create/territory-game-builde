@@ -65,6 +65,28 @@ SELECT public.territory_halloween_companion_bulk_v1('00000000-0000-0000-0000-000
 ROLLBACK;
 DO $$BEGIN IF EXISTS(SELECT 1 FROM territory_private.halloween_companion_rewards_2026) OR EXISTS(SELECT 1 FROM territory_private.halloween_companion_bulk_receipts_2026) THEN RAISE EXCEPTION 'rollback failed'; END IF; END$$;
 SQL
+# Each RPC is a separate transaction, as in the owner-authenticated Edge
+# handler. A rejected grant must not erase its previously committed attempt.
+docker exec halloween-after psql -X -v ON_ERROR_STOP=1 -U postgres -c "SET ROLE service_role; SELECT public.territory_halloween_companion_attempt_start_v1('00000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-000000000008')"
+if docker exec halloween-after psql -X -v ON_ERROR_STOP=1 -U postgres -c "SET ROLE service_role; SELECT public.territory_halloween_companion_bulk_v1('00000000-0000-0000-0000-000000000008',0,'d41d8cd98f00b204e9800998ecf8427e')"; then
+  echo 'Unexpected successful grant for mismatched snapshot' >&2; exit 1
+fi
+docker exec -i halloween-after psql -X -v ON_ERROR_STOP=1 -U postgres <<'SQL'
+SET ROLE service_role;
+SELECT public.territory_halloween_companion_attempt_finish_v1('00000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-000000000008','snapshot_changed');
+-- Idempotent retry cannot double-count the same attempt.
+SELECT public.territory_halloween_companion_attempt_finish_v1('00000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-000000000008','snapshot_changed');
+DO $$DECLARE a jsonb; BEGIN
+ a:=public.territory_halloween_companion_audit_status_v1();
+ IF (a->>'failed')::int <> 1 OR (a->>'unfinished')::int <> 0 OR a->>'lastError' <> 'snapshot_changed' THEN RAISE EXCEPTION 'audit did not survive rollback: %',a; END IF;
+END$$;
+RESET ROLE;
+DO $$BEGIN
+ IF has_function_privilege('authenticated','public.territory_halloween_companion_audit_status_v1()','EXECUTE') OR
+    has_function_privilege('authenticated','public.territory_halloween_companion_attempt_start_v1(uuid,uuid)','EXECUTE') OR
+    has_table_privilege('authenticated','territory_private.halloween_companion_attempts_2026','SELECT') THEN RAISE EXCEPTION 'audit accessible to player'; END IF;
+END$$;
+SQL
 # Two independent connections race claims for the same participant.
 claim="SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',false); SELECT public.territory_halloween_companion_claim_v1();"
 docker exec halloween-after psql -X -v ON_ERROR_STOP=1 -U postgres -c "$claim" > /tmp/halloween-claim-one & p1=$!

@@ -256,11 +256,41 @@ async function handle(action: string, body: Row) {
       return data;
     }
     case "halloween_reward_status": {
-      // This handler is reached only after the existing owner token is verified.
-      // It exposes aggregates only; bulk grants remain an operator-only action.
-      const { data, error } = await db.rpc('territory_halloween_companion_snapshot_v1');
-      if (error || !data || typeof data !== 'object') throw new HttpError(503, 'halloween_reward_unavailable');
-      return data;
+      // Both RPCs return aggregates only, after owner token verification.
+      const [snapshot, auditStatus] = await Promise.all([
+        db.rpc('territory_halloween_companion_snapshot_v1'),
+        db.rpc('territory_halloween_companion_audit_status_v1'),
+      ]);
+      if (auditStatus.error || !auditStatus.data || typeof auditStatus.data !== 'object')
+        throw new HttpError(503, 'halloween_reward_unavailable');
+      return { snapshot: snapshot.error ? null : snapshot.data, audit: auditStatus.data };
+    }
+    case "halloween_reward_bulk": {
+      // Off by default; setting this requires a separate reviewed cutover.
+      if (Deno.env.get('HALLOWEEN_COMPANION_OPERATOR_ENABLED') !== 'true')
+        throw new HttpError(503, 'halloween_reward_unavailable');
+      const requestId = String(body.requestId ?? '');
+      const digest = String(body.digest ?? '');
+      const count = body.eligible;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId)
+          || !/^[0-9a-f]{32}$/.test(digest) || !Number.isSafeInteger(count) || count < 0)
+        throw new HttpError(400, 'invalid_request');
+      const attemptId = crypto.randomUUID();
+      const attempt = await db.rpc('territory_halloween_companion_attempt_start_v1', {p_attempt:attemptId,p_request:requestId});
+      if (attempt.error) throw new HttpError(503, 'halloween_reward_unavailable');
+      // Separate database requests: the audit start has committed before bulk;
+      // its failure cannot roll that transaction back. Crashes stay unfinished.
+      const result = await db.rpc('territory_halloween_companion_bulk_v1', {
+        p_request_id:requestId,p_expected_count:count,p_expected_digest:digest,
+      });
+      const allowed = ['event_active','snapshot_changed','request_conflict','invalid_request','reconcile_failed'];
+      const code = result.error
+        ? (allowed.find(k => result.error!.message.includes('halloween_companion_' + k)) ?? 'unavailable') : null;
+      const finish = await db.rpc('territory_halloween_companion_attempt_finish_v1', {
+        p_attempt:attemptId,p_request:requestId,p_error:code,
+      });
+      if (finish.error || result.error || !result.data) throw new HttpError(503, 'halloween_reward_unavailable');
+      return result.data;
     }
     case "geo_stats": {
       // Only available through the existing owner-authenticated admin-api handler.

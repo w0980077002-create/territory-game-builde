@@ -32,6 +32,13 @@ await assert.rejects(db.query('select * from territory_private.halloween_compani
 await assert.rejects(db.query('select public.territory_halloween_companion_snapshot_v1()'), /permission denied/);
 await db.exec('reset role');
 console.log('Isolated PGlite snapshot/bulk smoke passed (not PG17 or verified JWT).');
+await db.query("select public.territory_halloween_companion_attempt_start_v1('00000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-000000000008')");
+await assert.rejects(db.query("select public.territory_halloween_companion_bulk_v1('00000000-0000-0000-0000-000000000008',0,$1)",[snap.digest]), /snapshot_changed/);
+await db.query("select public.territory_halloween_companion_attempt_finish_v1('00000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-000000000008','snapshot_changed')");
+await db.query("select public.territory_halloween_companion_attempt_finish_v1('00000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-000000000008','snapshot_changed')");
+const audit=(await db.query('select public.territory_halloween_companion_audit_status_v1() as result')).rows[0].result;
+assert.equal(audit.failed,1); assert.equal(audit.unfinished,0); assert.equal(audit.lastError,'snapshot_changed');
+await assert.rejects(db.query("select public.territory_halloween_companion_attempt_finish_v1('00000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-000000000008',null)"), /request_conflict/);
 await db.close();
 
 // Independent isolated pre-deadline database. The changed date exists only in
