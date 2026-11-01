@@ -1,0 +1,57 @@
+import {PGlite} from '@electric-sql/pglite';
+import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+const db = new PGlite();
+await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+CREATE SCHEMA auth; CREATE SCHEMA territory_private;
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+CREATE TABLE public.players(id uuid primary key, game_state jsonb, gold int, vip_level int);
+CREATE TABLE public.territory_halloween_boss_2026(id text primary key,ends_at timestamptz);
+CREATE TABLE public.territory_halloween_boss_2026_players(event_id text,player_id uuid,total_hits int,primary key(event_id,player_id));
+INSERT INTO public.players VALUES ('00000000-0000-0000-0000-000000000001','{"follower_6":true}',42,3),('00000000-0000-0000-0000-000000000002','{}',8,1);
+INSERT INTO public.territory_halloween_boss_2026 VALUES ('halloween_2026','2020-01-01');
+INSERT INTO public.territory_halloween_boss_2026_players VALUES ('halloween_2026','00000000-0000-0000-0000-000000000001',1);`);
+let sql=readFileSync(new URL('../supabase/staged/halloween_companion_reward_2026.sql', import.meta.url),'utf8');
+// Isolated database only: simulate a past fixed deadline for the post-event case.
+sql=sql.replaceAll('2026-11-03 00:00:00+00','2020-01-01 00:00:00+00');
+await db.exec(sql);
+let snap=(await db.query('select public.territory_halloween_companion_snapshot_v1() as result')).rows[0].result;
+assert.equal(snap.eligible,1);assert.equal(snap.pending,1);
+const result=await db.query("select public.territory_halloween_companion_bulk_v1('00000000-0000-0000-0000-000000000003', $1, $2) as result",[snap.eligible,snap.digest]);
+assert.equal(result.rows[0].result.inserted,1);
+snap=(await db.query('select public.territory_halloween_companion_snapshot_v1() as result')).rows[0].result;
+assert.equal(snap.pending,0);
+const repeated=await db.query("select public.territory_halloween_companion_bulk_v1('00000000-0000-0000-0000-000000000003', $1, $2) as result",[snap.eligible,snap.digest]);
+assert.equal(repeated.rows[0].result.alreadyProcessed,true);
+await assert.rejects(db.query("select public.territory_halloween_companion_bulk_v1('00000000-0000-0000-0000-000000000004', 2, $1)",[snap.digest]), /snapshot_changed/);
+const state=await db.query('select game_state, gold, vip_level from public.players order by id');
+assert.deepEqual(state.rows[0],{game_state:{follower_6:true},gold:42,vip_level:3});
+assert.equal((await db.query('select count(*)::int as n from territory_private.halloween_companion_rewards_2026')).rows[0].n,1);
+await db.exec('set role authenticated');
+await assert.rejects(db.query('select * from territory_private.halloween_companion_rewards_2026'), /permission denied/);
+await assert.rejects(db.query('select public.territory_halloween_companion_snapshot_v1()'), /permission denied/);
+await db.exec('reset role');
+console.log('Isolated PGlite snapshot/bulk smoke passed (not PG17 or verified JWT).');
+await db.close();
+
+// Independent isolated pre-deadline database. The changed date exists only in
+// this test fixture; production SQL and the system clock are never changed.
+const early = new PGlite();
+await early.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+CREATE SCHEMA auth; CREATE SCHEMA territory_private;
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+CREATE TABLE public.players(id uuid primary key);
+CREATE TABLE public.territory_halloween_boss_2026(id text primary key,ends_at timestamptz);
+CREATE TABLE public.territory_halloween_boss_2026_players(event_id text,player_id uuid,total_hits int,primary key(event_id,player_id));
+INSERT INTO public.players VALUES ('00000000-0000-0000-0000-000000000001');
+INSERT INTO public.territory_halloween_boss_2026 VALUES ('halloween_2026','2999-01-01');
+INSERT INTO public.territory_halloween_boss_2026_players VALUES ('halloween_2026','00000000-0000-0000-0000-000000000001',1);`);
+await early.exec(readFileSync(new URL('../supabase/staged/halloween_companion_reward_2026.sql', import.meta.url),'utf8'));
+await early.exec("select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',false)");
+const before=(await early.query('select public.territory_halloween_companion_claim_v1() as result')).rows[0].result;
+assert.equal(before.reason,'event_active');
+await assert.rejects(early.query('select public.territory_halloween_companion_snapshot_v1()'), /event_active/);
+await assert.rejects(early.query("select public.territory_halloween_companion_bulk_v1('00000000-0000-0000-0000-000000000003',0,'d41d8cd98f00b204e9800998ecf8427e')"), /event_active/);
+assert.equal((await early.query('select count(*)::int as n from territory_private.halloween_companion_rewards_2026')).rows[0].n,0);
+await early.close();
+console.log('Isolated PGlite pre-deadline deny smoke passed.');
