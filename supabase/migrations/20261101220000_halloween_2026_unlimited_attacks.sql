@@ -17,10 +17,10 @@ BEGIN
   THEN
     RAISE EXCEPTION 'Halloween unlimited strikes aborted: live RPC definitions changed';
   END IF;
-  IF pg_catalog.position('''maxHitsToday'', 100' IN state_src) = 0
-     OR pg_catalog.position('IF v_hits >= 100 THEN RAISE EXCEPTION ''halloween_boss_daily_limit''; END IF;' IN attack_src) = 0
-     OR pg_catalog.position('INTERVAL ''8 seconds''' IN attack_src) = 0
-     OR pg_catalog.position('IF v_event.hp <= 0' IN attack_src) = 0
+  IF pg_catalog.strpos(state_src, '''maxHitsToday'', 100') = 0
+     OR pg_catalog.strpos(attack_src, 'IF v_hits >= 100 THEN RAISE EXCEPTION ''halloween_boss_daily_limit''; END IF;') = 0
+     OR pg_catalog.strpos(attack_src, 'INTERVAL ''8 seconds''') = 0
+     OR pg_catalog.strpos(attack_src, 'IF v_event.hp <= 0') = 0
   THEN
     RAISE EXCEPTION 'Halloween unlimited strikes aborted: critical guard absent';
   END IF;
