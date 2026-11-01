@@ -19,20 +19,19 @@ interface Props {
 export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, speed, className, onAssetError }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const terminalRef = useRef<'death' | 'victory' | null>(null);
-  const [finishedKey, setFinishedKey] = useState<number | null>(null);
+  const [finishedEvent, setFinishedEvent] = useState<StrikeEvent | null>(null);
   const role = strike?.attacker === name ? 'attacker' : strike?.target === name ? 'target' : null;
-  const key = role ? strike?.key : null;
   // PvP HP snapshots can precede several queued visual hits. Finish those
   // confirmed events and wait for queue retirement before any terminal pose.
   useEffect(() => {
-    if (key == null) return;
-    const timer = window.setTimeout(() => setFinishedKey(key ?? null), ACTION_MS / speed);
+    if (!role || !strike) { setFinishedEvent(null); return; }
+    const timer = window.setTimeout(() => setFinishedEvent(strike), ACTION_MS / speed);
     return () => window.clearTimeout(timer);
-  }, [key, speed]);
-  const active = role && key !== finishedKey;
+  }, [role, strike, speed]);
+  const active = role && strike !== finishedEvent;
   const swing = strike ? Math.abs(strike.key) % 3 : 0;
   const heldTerminal = !alive && terminalRef.current === 'death' ? 'death' : alive && won && terminalRef.current === 'victory' ? 'victory' : null;
-  const animationKey = active && !heldTerminal ? key : null;
+  const animationEvent = active && !heldTerminal ? strike : null;
   const critical = Boolean(active && !heldTerminal && strike?.tone === 'crit');
   const motion: FighterMotion = heldTerminal ?? (active
     ? role === 'attacker' ? (['slash', 'thrust', 'overhead'] as const)[swing]
@@ -58,7 +57,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
     apply();
     reduced.addEventListener('change', apply);
     return () => { reduced.removeEventListener('change', apply); animations.forEach(a => a.cancel()); };
-  }, [motion, animationKey, speed, critical]);
+  }, [motion, animationEvent, speed, critical, rig.id]);
   return <svg ref={svgRef} viewBox="0 0 512 512" preserveAspectRatio="xMidYMax meet" role="img" aria-label={name}
     data-rig={rig.id} data-motion={motion} data-critical={strike?.tone === 'crit' && active ? 'true' : undefined}
     className={`skeletal-fighter ${className}`} onErrorCapture={onAssetError}>
