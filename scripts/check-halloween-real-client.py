@@ -1,5 +1,5 @@
 """Actual App + saveCloudSave against isolated Supabase. Browser contexts are not physical devices."""
-import base64, json, os, pathlib, re, shlex, subprocess, time, urllib.request, uuid
+import base64, json, os, pathlib, re, shlex, subprocess, tarfile, tempfile, time, urllib.request, uuid
 from playwright.sync_api import sync_playwright
 settings={}
 for line in pathlib.Path('/tmp/halloween-supabase.env').read_text().splitlines():
@@ -37,7 +37,25 @@ participant,email,password=signup(); nonparticipant,other_email,other_password=s
 env=os.environ.copy();env.update({'VITE_SUPABASE_URL':api,'VITE_SUPABASE_ANON_KEY':anon,'VITE_TERRITORY_V1_SERVER_COMBAT':'false','VITE_TERRITORY_PROFESSIONS_STAGE8':'false'})
 log=open('/tmp/halloween-real-client-vite.log','w')
 server=subprocess.Popen(['npm','run','dev','--','--host','127.0.0.1','--port','4173','--strictPort'],env=env,stdout=log,stderr=log,start_new_session=True)
+old_server=None; old_log=None
 try:
+    old_ref=os.environ.get('TERRITORY_OLD_CLIENT_REF','')
+    if not re.fullmatch(r'[0-9a-f]{40}',old_ref): raise RuntimeError('exact PR base SHA is required for old-client test')
+    old_dir=pathlib.Path(tempfile.mkdtemp(prefix='territory-old-client-'))
+    archive=subprocess.Popen(['git','archive',old_ref],stdout=subprocess.PIPE)
+    assert archive.stdout is not None
+    with tarfile.open(fileobj=archive.stdout,mode='r|') as contents:
+        contents.extractall(old_dir,filter='data')
+    if archive.wait() != 0: raise RuntimeError('could not unpack old client')
+    (old_dir/'node_modules').symlink_to(pathlib.Path.cwd()/'node_modules',target_is_directory=True)
+    old_log=open('/tmp/halloween-old-client-vite.log','w')
+    old_server=subprocess.Popen(['npm','run','dev','--','--host','127.0.0.1','--port','4174','--strictPort'],cwd=old_dir,env=env,stdout=old_log,stderr=old_log,start_new_session=True)
+    old_url='http://127.0.0.1:4174/territory-game-builde/'
+    for _ in range(60):
+        try:
+            with urllib.request.urlopen(old_url,timeout=1): break
+        except OSError: time.sleep(1)
+    else: raise RuntimeError('isolated old-client server did not start')
     url='http://127.0.0.1:4173/territory-game-builde/'
     for _ in range(60):
         try:
@@ -46,8 +64,8 @@ try:
     else: raise RuntimeError('isolated game server did not start')
     with sync_playwright() as p:
         browser=p.chromium.launch(args=['--no-sandbox'])
-        contexts=[browser.new_context(viewport={'width':360,'height':780}) for _ in range(3)]
-        a,b,c=[context.new_page() for context in contexts]
+        contexts=[browser.new_context(viewport={'width':360,'height':780}) for _ in range(4)]
+        a,b,c,old=[context.new_page() for context in contexts]
         errors=[]; b.on('console',lambda message: errors.append(message.text))
         a.goto(url)
         seed=a.evaluate('''async () => {
@@ -61,8 +79,8 @@ try:
         encoded=base64.b64encode(json.dumps(seed,ensure_ascii=False).encode()).decode()
         for uid,hits in ((participant,1),(nonparticipant,0)):
             sql(f"INSERT INTO public.players(id,game_state,gold,gems,vip_level,level) VALUES ('{uid}',convert_from(decode('{encoded}','base64'),'utf8')::jsonb,100,10,3,50); INSERT INTO public.territory_halloween_boss_2026_players VALUES ('halloween_2026','{uid}',{hits});")
-        def login(page,user,secret):
-            page.goto(url)
+        def login(page,user,secret,page_url=url):
+            page.goto(page_url)
             result=page.evaluate('''async ([email,password]) => {
               const {supabase}=await import('/territory-game-builde/src/game/supabase.ts');
               const {error}=await supabase.auth.signInWithPassword({email,password});return error?.message ?? null;
@@ -90,6 +108,8 @@ try:
         wait_for(lambda s:s.get('halloweenCompanionVerified') is True)
         login(b,email,password); panel_b=camp(b)
         assert 'Боевая корова' in panel_b.locator('.followers-camp__active').inner_text()
+        login(old,email,password,old_url); old_panel=camp(old)
+        assert 'Боевая корова' in old_panel.locator('.followers-camp__active').inner_text()
         time.sleep(2)
         # Refresh A after B has installed its entitlement; B is now the stale client.
         a.reload();a.locator('nav.territory-nav').wait_for(timeout=30000);panel=camp(a)
@@ -118,6 +138,18 @@ try:
           return {alreadyBlocked,saved,blockedAfter:cloud.saveBlocked.has(id)};
         }""",participant)
         assert result['saved'] is False and result['blockedAfter'] is True, ('expected real stale-save fence',result,[line for line in errors if 'Save' in line or 'snapshot' in line])
+        assert read_state()['activeFollowerId']=='follower_pumpkin_witch_2026'
+        # The exact PR-base game, loaded before A's change, must also fail its
+        # real stale write; this is old source, not a synthetic save request.
+        old_panel.locator('.followers-camp__portrait').first.click()
+        old_panel.locator('.followers-camp__choose').click()
+        old_result=old.evaluate("""async (id) => {
+          const cloud=await import('/territory-game-builde/src/game/cloud.ts');
+          const {useGame}=await import('/territory-game-builde/src/game/actions.ts');
+          const saved=await cloud.saveCloudSave(id,useGame.get());
+          return {saved,blockedAfter:cloud.saveBlocked.has(id)};
+        }""",participant)
+        assert old_result['saved'] is False and old_result['blockedAfter'] is True, ('old-client stale-save fence',old_result)
         assert read_state()['activeFollowerId']=='follower_pumpkin_witch_2026'
         contexts[0].set_offline(True);time.sleep(.5);contexts[0].set_offline(False)
         a.reload();a.locator('nav.territory-nav').wait_for(timeout=30000);panel=camp(a)
@@ -149,4 +181,9 @@ finally:
     try: server.wait(timeout=10)
     except subprocess.TimeoutExpired: os.killpg(server.pid,9);server.wait()
     log.close()
-print('Actual App + saveCloudSave: two isolated browser sessions, server claim, stale save fence, reload, offline/online, nonparticipant and real PvE attack/outcome passed. Not Telegram or physical devices.')
+    if old_server is not None:
+        os.killpg(old_server.pid,15)
+        try: old_server.wait(timeout=10)
+        except subprocess.TimeoutExpired: os.killpg(old_server.pid,9);old_server.wait()
+    if old_log is not None: old_log.close()
+print('Actual App + saveCloudSave: isolated browser sessions including exact PR-base old client, server claim, stale save fence, reload, offline/online, nonparticipant and real PvE attack/outcome passed. Not Telegram or physical devices.')
