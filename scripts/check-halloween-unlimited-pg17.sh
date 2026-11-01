@@ -42,10 +42,10 @@ SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001'
 DO $$DECLARE s jsonb; h0 bigint; h1 bigint; BEGIN
  s := public.territory_halloween_boss_state_v1();
  IF jsonb_typeof(s->'maxHitsToday') <> 'null' THEN RAISE EXCEPTION 'uncapped flag missing'; END IF;
- SELECT hp INTO h0 FROM public.territory_halloween_boss_2026 WHERE id='halloween_2026';
+ h0 := (s->>'hp')::bigint;
  s := public.territory_halloween_boss_attack_v1();
  IF (s->>'hitDamage')::int <= 0 THEN RAISE EXCEPTION 'no server attack after old limit'; END IF;
- SELECT hp INTO h1 FROM public.territory_halloween_boss_2026 WHERE id='halloween_2026';
+ h1 := (s->>'hp')::bigint;
  IF h1 >= h0 THEN RAISE EXCEPTION 'server HP unchanged'; END IF;
  BEGIN
    PERFORM public.territory_halloween_boss_attack_v1();
