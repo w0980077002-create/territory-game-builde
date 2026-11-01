@@ -868,7 +868,7 @@ html.territory-desktop-webapp .home-side-stack .home-side {
   --home-side-top: 98px;
   --home-side-bottom: 196px;
   --home-character-top: 158px;
-  --home-character-bottom: 218px;
+  --home-character-bottom: 37%;
 }
 .home-top-hud { top: var(--home-hud-top); }
 .home-chapter { top: var(--home-chapter-top); }
@@ -1017,7 +1017,7 @@ html.territory-desktop-webapp .home-side-stack .home-side {
 @media (max-height: 730px) {
   .home-game-scene {
     --home-side-bottom: 187px;
-    --home-character-bottom: 192px;
+    --home-character-bottom: 37%;
   }
   .home-side-stack .home-side { flex-basis: 44px; min-height: 44px; }
 }
@@ -1056,7 +1056,7 @@ html.territory-ios-webapp .home-bottom-controls {
     --home-side-top: 88px;
     --home-side-bottom: 188px;
     --home-character-top: 138px;
-    --home-character-bottom: 188px;
+    --home-character-bottom: 37%;
   }
 }
 
