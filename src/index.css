@@ -365,6 +365,13 @@
   overflow: hidden;
   isolation: isolate;
 }
+/* The new winter artwork is a TRUE 800:1421 portrait.
+   Avoid forcing it through the old 1024:1536 harbour stage (which zoomed it).
+   The central snow platform and cliff should remain in their painted positions. */
+.live-city-stage--winter {
+  width: max(100cqw, 56.2984cqh);
+  height: max(100cqh, 177.625cqw);
+}
 .live-city-stage > * { position: absolute; pointer-events: none; }
 .live-city-ship { object-fit: fill; transform-origin: 50% 80%; will-change: transform; }
 .city-ship-near { left: 63.672%; top: 42.643%; width: 26.563%; height: 17.253%; animation: city-ship-near 5.7s ease-in-out infinite; }
@@ -861,7 +868,7 @@ html.territory-desktop-webapp .home-side-stack .home-side {
   --home-side-top: 98px;
   --home-side-bottom: 196px;
   --home-character-top: 158px;
-  --home-character-bottom: 196px;
+  --home-character-bottom: 37%;
 }
 .home-top-hud { top: var(--home-hud-top); }
 .home-chapter { top: var(--home-chapter-top); }
@@ -870,25 +877,29 @@ html.territory-desktop-webapp .home-side-stack .home-side {
   bottom: var(--home-character-bottom);
 }
 
-/* Emphasize city characters without changing the animated harbour backdrop.
-   Scale containers rather than images: idle animations still work correctly. */
+/* Approved living city: separate, foot-anchored areas for companion, hero, foe.
+   No negative overlap / enlarged figures forcing sprites into adjacent slots. */
 .home-character-stage::before {
   content: "";
   position: absolute;
   inset: 12% 7% 0;
   pointer-events: none;
-  background: radial-gradient(ellipse 58% 42% at 44% 84%, rgba(7, 13, 25, 0.27), rgba(7, 13, 25, 0.10) 62%, transparent 100%);
+  background: radial-gradient(ellipse 55% 30% at 50% 90%, rgba(7, 13, 25, 0.20), rgba(7, 13, 25, 0.06) 60%, transparent 100%);
+}
+.home-character-slot {
+  min-width: 0;
+  transform-origin: center bottom;
 }
 .home-hero-figure {
-  transform: scale(1.25);
+  transform: scale(1.04);
   transform-origin: center bottom;
 }
 .home-follower-figure {
-  /* Noticeable companion silhouette next to the hero, feet fixed on the dock. */
   z-index: 1;
-  transform: scale(1.60);
-  transform-origin: 65% 100%;
+  transform: scale(1.06);
+  transform-origin: 45% 100%;
 }
+.home-enemy-figure { z-index: 1; }
 /* Artwork-only scale compensates for each sprite's transparent margins.
    Bottom anchoring keeps every companion's feet on the same dock surface. */
 .home-follower-art-frame {
@@ -901,10 +912,10 @@ html.territory-desktop-webapp .home-side-stack .home-side {
 .home-follower-art {
   filter: drop-shadow(0 7px 8px rgba(0, 0, 0, 0.90)) drop-shadow(0 0 3px rgba(195, 235, 255, 0.90)) drop-shadow(0 0 6px rgba(75, 160, 240, 0.38));
 }
-/* Short narrow Telegram screens still need room for both side menus. */
+/* Narrow Telegram screens: keep three readable silhouettes with real gaps. */
 @media (max-width: 350px) {
-  .home-hero-figure { transform: scale(1.14); }
-  .home-follower-figure { transform: scale(1.33); }
+  .home-hero-figure { transform: scale(1); }
+  .home-follower-figure { transform: scale(1); }
 }
 @media (prefers-reduced-motion: reduce) {
   .home-character-stage .animate-idle { animation: none; }
@@ -995,7 +1006,7 @@ html.territory-desktop-webapp .home-side-stack .home-side {
     --home-character-top: 164px;
   }
   .home-side-stack { width: 41px; }
-  .home-character-stage { left: 42px; right: 42px; }
+  .home-character-stage { left: 10px; right: 10px; gap: 6px; }
   .home-side-stack .home-side { flex-basis: 44px; min-height: 44px; }
   .home-top-hud .home-profile-chip > span:first-child { width: 38px; height: 38px; }
   .home-profile-chip > span:last-child { width: 63px; }
@@ -1006,7 +1017,7 @@ html.territory-desktop-webapp .home-side-stack .home-side {
 @media (max-height: 730px) {
   .home-game-scene {
     --home-side-bottom: 187px;
-    --home-character-bottom: 192px;
+    --home-character-bottom: 37%;
   }
   .home-side-stack .home-side { flex-basis: 44px; min-height: 44px; }
 }
@@ -1045,7 +1056,7 @@ html.territory-ios-webapp .home-bottom-controls {
     --home-side-top: 88px;
     --home-side-bottom: 188px;
     --home-character-top: 138px;
-    --home-character-bottom: 188px;
+    --home-character-bottom: 37%;
   }
 }
 

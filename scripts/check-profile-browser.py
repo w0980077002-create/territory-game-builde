@@ -162,14 +162,30 @@ with sync_playwright() as p:
                 height: el.clientHeight
             })""")
             assert computed['size'] == 'cover, cover', (width, lang, 'Distorted city background', computed)
-            assert 'winter-peaks-approved.webp' in computed['image'], (width, lang, 'Wrong winter scene')
+            assert 'winter-cliff-approved.webp' in computed['image'], (width, lang, 'Wrong approved cliff scene')
             assert computed['width'] > 0 and computed['height'] > 0, (width, lang, computed)
+            assert abs(computed['width'] / computed['height'] - 800 / 1421) < 0.003, (width, lang, 'Distorted winter stage ratio', computed)
+            actors = [page.locator('[data-testid="city-' + who + '-slot"]') for who in ('follower', 'hero', 'enemy')]
+            boxes = [actor.bounding_box() for actor in actors]
+            assert all(box and box['width'] > 48 and box['height'] > 48 for box in boxes), (width, lang, 'Missing readable actor', boxes)
+            assert boxes[0]['x'] + boxes[0]['width'] + 2 < boxes[1]['x'], (width, lang, 'Companion overlaps hero', boxes)
+            assert boxes[1]['x'] + boxes[1]['width'] + 2 < boxes[2]['x'], (width, lang, 'Hero overlaps foe', boxes)
+            assert all(box['x'] > -1 and box['x'] + box['width'] < width + 1 for box in boxes), (width, lang, 'Character clipped', boxes)
+            assert page.locator('[data-testid="city-enemy-slot"]').get_attribute('aria-label') is not None
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             assert page.locator('.home-side').count() >= 6
             assert page.locator('.home-side').evaluate_all('buttons => buttons.every(b => { const r=b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && r.left >= 0 && r.right <= innerWidth; })')
             page.locator('.home-profile-chip').click()
             assert page.evaluate('window.__route') == 'hero'
-            if width == 360 and lang == 'ru': page.screenshot(path='/tmp/territory-city-360.png')
+            if width == 360 and lang == 'ru':
+                page.screenshot(path='/tmp/territory-city-short-360.png')
+                # A tall Telegram canvas resembles a real Samsung/iPhone game sheet.
+                page.set_viewport_size({'width': 360, 'height': 760})
+                page.screenshot(path='/tmp/territory-city-360.png')
+                tall_boxes = [page.locator('[data-testid="city-' + who + '-slot"]').bounding_box()
+                              for who in ('follower', 'hero', 'enemy')]
+                assert tall_boxes[0]['x'] + tall_boxes[0]['width'] + 2 < tall_boxes[1]['x'], ('tall', tall_boxes)
+                assert tall_boxes[1]['x'] + tall_boxes[1]['width'] + 2 < tall_boxes[2]['x'], ('tall', tall_boxes)
             page.close()
     browser.close()
 server.shutdown()

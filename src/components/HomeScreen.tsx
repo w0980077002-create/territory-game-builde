@@ -156,7 +156,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
       <LiveCityBackdrop animated={cityMotion} background={cityBackground} />
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-sky-500/[0.05] via-transparent to-amber-500/[0.04]" />
       <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 to-transparent pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-[230px] bg-gradient-to-t from-[#07090d] via-[#07090d]/65 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-[230px] bg-gradient-to-t from-[#0c1d30]/85 via-[#0c1d30]/35 to-transparent pointer-events-none" />
 
       <div className="home-top-hud absolute inset-x-0 z-20 px-2 flex items-start gap-2">
         <button onClick={() => onOpen('hero')} className="home-profile-chip flex items-center gap-1.5 min-w-0 shrink-0 rounded-2xl border border-amber-300/55 bg-gradient-to-br from-[#17202b]/90 via-[#090d12]/90 to-[#241706]/90 backdrop-blur-sm p-1 pr-2 active:scale-95 transition-transform" aria-label={t('profile')}>
@@ -234,8 +234,8 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
         <SideButton icon="/ic-arena-viking.webp" label={t('arena')} onClick={() => onOpen('arena')} />
       </div>
 
-      <div className="home-character-stage absolute z-0 left-[50px] right-[50px] flex items-end justify-center pointer-events-none">
-        <div className="home-follower-figure relative h-[66%] w-[28%] flex items-end justify-center">
+      <div className="home-character-stage absolute z-0 left-[14px] right-[14px] flex items-end justify-between gap-2 pointer-events-none">
+        <div data-testid="city-follower-slot" className="home-follower-figure home-character-slot relative h-[70%] w-[30%] shrink-0 flex items-end justify-center">
           {follower && (
             <>
               <span aria-hidden="true" className="home-follower-ground-shadow absolute bottom-0 w-[78%] h-[10px] rounded-[50%] bg-black/70 blur-[4px]" />
@@ -248,13 +248,14 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
             </>
           )}
         </div>
-        <div className="home-hero-figure relative h-full w-[44%] flex items-end justify-center -ml-[6%]">
+        <div data-testid="city-hero-slot" className="home-hero-figure home-character-slot relative h-[84%] w-[32%] shrink-0 flex items-end justify-center">
           <span aria-hidden="true" className="absolute bottom-0 w-[85%] h-3 rounded-[50%] bg-black/65 blur-[3px]" />
           <img src={getAppearanceIcon(state.appearance)} alt={player.name} className="home-hero-art relative max-h-full max-w-full object-contain object-bottom animate-idle" />
         </div>
         <button
           onClick={() => onBattle('campaign', true)}
-          className="relative h-[70%] w-[34%] flex flex-col items-center justify-end pointer-events-auto group"
+          data-testid="city-enemy-slot"
+          className="home-enemy-figure home-character-slot relative h-[68%] w-[26%] shrink-0 flex flex-col items-center justify-end pointer-events-auto group"
           aria-label={`${t('fight')}: ${nextEnemy.name}`}
         >
           {firstFightHelp && (

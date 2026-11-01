@@ -46,16 +46,16 @@ export function LiveCityBackdrop({ animated, background = 'winter' }: { animated
   return (
     <div className="live-city-viewport absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
       <div
-        className={`live-city-stage ${isClassic && animated ? 'live-city-running' : ''}`}
+        className={`live-city-stage ${isWinter ? 'live-city-stage--winter' : ''} ${isClassic && animated ? 'live-city-running' : ''}`}
         style={{
-          // Owner-approved original portrait Viking winter scene, 720x1279.
-          // The portrait is never stretched; center-crop is intentional on unusual phone ratios.
+          // Original 800x1421 winter cliff scene approved for the living City.
+          // Preserve the natural portrait aspect and the visible wood/rope/metal ledge.
           // Keep motion effects exclusive to the classic harbour.
           backgroundImage: isWinter
-            ? `linear-gradient(180deg, rgba(17,39,66,.06), rgba(12,26,46,.15)), url("${prefix}winter-peaks-approved.webp")`
+            ? `linear-gradient(180deg, rgba(17,39,66,.06), rgba(12,26,46,.15)), url("${prefix}winter-cliff-approved.webp")`
             : `url("${prefix}${isClassic ? 'live-city-bg.webp' : 'sunlit-harbor.webp'}")`,
           backgroundSize: isWinter ? 'cover, cover' : isClassic ? '100% 100%' : 'cover',
-          backgroundPosition: isWinter ? 'center, center 46%' : 'center',
+          backgroundPosition: isWinter ? 'center, center 50%' : 'center',
           backgroundRepeat: 'no-repeat',
         }}
       >

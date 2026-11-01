@@ -362,7 +362,7 @@ export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMot
                   className={`relative overflow-hidden rounded-lg border-2 text-left transition-colors active:scale-[0.98] ${active ? 'border-amber-300 bg-amber-500/15' : 'border-white/15 bg-black/30'}`}
                 >
                   <img
-                    src={`${import.meta.env.BASE_URL}assets/territory/scenes/${background === 'winter' ? 'winter-peaks-approved.webp' : background === 'classic' ? 'live-city-bg.webp' : 'sunlit-harbor.webp'}`}
+                    src={`${import.meta.env.BASE_URL}assets/territory/scenes/${background === 'winter' ? 'winter-cliff-approved.webp' : background === 'classic' ? 'live-city-bg.webp' : 'sunlit-harbor.webp'}`}
                     alt=""
                     loading="lazy"
                     className="h-[82px] w-full object-cover object-center"
