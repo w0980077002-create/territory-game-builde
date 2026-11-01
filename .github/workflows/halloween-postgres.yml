@@ -20,13 +20,18 @@ jobs:
           cat > /tmp/halloween-pg-image/Dockerfile <<'DOCKERFILE'
           FROM postgres:17
           RUN apt-get update && apt-get install -y --no-install-recommends libfaketime && rm -rf /var/lib/apt/lists/*
+          RUN install -d -o postgres -g postgres /var/lib/postgresql/isolated
+          USER postgres
+          RUN initdb -D /var/lib/postgresql/isolated -A trust
+          USER root
+          ENTRYPOINT ["gosu", "postgres", "env", "LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1", "FAKETIME_DONT_FAKE_MONOTONIC=1", "postgres", "-D", "/var/lib/postgresql/isolated"]
           DOCKERFILE
           docker build -t halloween-pg17 /tmp/halloween-pg-image
       - name: Start independent pre- and post-deadline databases
         run: |
           for entry in 'halloween-before|2026-11-02 12:00:00' 'halloween-after|2026-11-04 12:00:00'; do
             name=${entry%%|*}; clock=${entry#*|}
-            docker run -d --name "$name" -e POSTGRES_PASSWORD=isolated-test -e LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1 -e "FAKETIME=@$clock" -e FAKETIME_DONT_FAKE_MONOTONIC=1 halloween-pg17
+            docker run -d --name "$name" -e "FAKETIME=@$clock" halloween-pg17
             for i in $(seq 1 60); do docker exec "$name" pg_isready -U postgres && break; sleep 1; done
             docker exec "$name" pg_isready -U postgres || { docker logs "$name"; exit 1; }
           done
