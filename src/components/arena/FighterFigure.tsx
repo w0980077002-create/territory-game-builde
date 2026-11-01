@@ -2,9 +2,19 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { SkeletalFighter } from '@/components/combat2d/SkeletalFighter';
 import { CombatEffects } from '@/components/combat2d/CombatEffects';
 import { getFighterRig, rigAsset } from '@/components/combat2d/fighterRigs';
+import { ACTION_MS, CONTACT_MS, RECOVERY_MS, WINDUP_MS } from '@/components/combat2d/fighterAnimations';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { useLanguage } from '@/game/i18n';
 import './fighterEffects.css';
+
+type PosePhase = 'windup' | 'action' | 'contact' | 'recovery' | 'finished';
+const visualIds = new WeakMap<StrikeEvent, number>();
+let nextVisualId = 0;
+function visualId(event: StrikeEvent): number {
+  let id = visualIds.get(event);
+  if (id === undefined) { id = ++nextVisualId; visualIds.set(event, id); }
+  return id;
+}
 
 interface Props {
   src: string;
@@ -52,6 +62,21 @@ export function FighterFigure({
   }, [rig]);
   // The existing server/combat queue is the ONLY source for attacks and damage.
   const role = !strike ? null : strike.attacker === name ? 'attacker' : strike.target === name ? 'target' : null;
+  const speed = Number.isFinite(combatSpeed) && combatSpeed > 0 ? combatSpeed : 1;
+  const artIdentity = combatFrames?.idle ?? src;
+  const skeletalReady = !!rig && enabledRig === rig.id && assets?.id === rig.id && assets.ready;
+  const [timeline, setTimeline] = useState<{ event: StrikeEvent; src: string; art: string; name: string; phase: PosePhase } | null>(null);
+  const event = role && !skeletalReady ? strike : null;
+  useEffect(() => {
+    if (!event) { setTimeline(null); return; }
+    // Presentation only: all phases belong to this already-resolved event.
+    const timers = ([[WINDUP_MS, 'action'], [CONTACT_MS, 'contact'], [RECOVERY_MS, 'recovery'], [ACTION_MS, 'finished']] as const)
+      .map(([at, phase]) => window.setTimeout(() => setTimeline({ event, src, art: artIdentity, name, phase }), at / speed));
+    return () => timers.forEach(window.clearTimeout);
+  }, [event, speed, src, artIdentity, name]);
+  const phase: PosePhase = event && timeline?.event === event && timeline.src === src && timeline.art === artIdentity && timeline.name === name
+    ? timeline.phase : 'windup';
+  const performing = !!event && phase !== 'finished';
   useEffect(() => {
     if (!rig || (assets?.id === rig.id && !assets.ready)) setEnabledRig(null);
     else if (assets?.id === rig.id && assets.ready && !role) setEnabledRig(rig.id);
@@ -60,25 +85,25 @@ export function FighterFigure({
   }, [rig, assets, role]);
   const tone = strike?.tone;
   const swing = strike ? Math.abs(strike.key) % 3 : 0;
-  const motion = role === 'attacker' ? `battle-swing-${swing}`
+  const motion = !performing ? (!strike && alive && won ? 'fighter-victory' : '') : role === 'attacker' ? `battle-swing-${swing}`
     : role !== 'target' ? ''
     : tone === 'dodge' ? 'animate-dodge'
     : tone === 'block' ? 'animate-guard'
     : 'animate-recoil';
-  const speed = Number.isFinite(combatSpeed) && combatSpeed > 0 ? combatSpeed : 1;
   const size = Number.isFinite(scale) ? Math.min(1.35, Math.max(0.8, scale)) : 1;
+  const lowQuality = typeof navigator !== 'undefined' && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
   const style = {
     '--dir': dir,
     '--fighter-scale': size,
-    '--fighter-hit-delay': `${Math.round(350 / speed)}ms`,
-    '--fighter-impact-duration': `${Math.round(470 / speed)}ms`,
-    '--fighter-motion-duration': `${Math.round(810 / speed)}ms`,
+    '--fighter-hit-delay': `${Math.round(CONTACT_MS / speed)}ms`,
+    '--fighter-impact-duration': `${Math.round((ACTION_MS - CONTACT_MS) / speed)}ms`,
+    '--fighter-motion-duration': `${Math.round(ACTION_MS / speed)}ms`,
     '--fighter-sweep-duration': `${Math.round(440 / speed)}ms`,
     '--fighter-idle-duration': `${idleSeconds}s`,
   } as CSSProperties;
 
-  if (rig && enabledRig === rig.id && assets?.id === rig.id && assets.ready) return (
-    <div className="fighter-figure absolute inset-0 pointer-events-none" style={style}>
+  if (rig && skeletalReady) return (
+    <div className="fighter-figure absolute inset-0 pointer-events-none" style={style} data-quality={lowQuality ? 'low' : 'full'}>
       <div className="fighter-figure__size absolute inset-0">
         <div className={className}>
           <SkeletalFighter rig={rig} name={name} dir={dir} alive={alive} won={won} strike={strike} speed={speed} className="absolute inset-0 w-full h-full"
@@ -89,50 +114,50 @@ export function FighterFigure({
     </div>
   );
 
-  const pose = !alive && !role ? combatFrames?.death ?? src
-    : role === 'attacker' ? combatFrames?.attack ?? src
-    : role === 'target' && tone === 'dodge' ? combatFrames?.dodge ?? combatFrames?.idle ?? src
-    : role === 'target' && tone === 'block' ? combatFrames?.block ?? src
-    : role === 'target' ? combatFrames?.hit ?? src
-    : combatFrames?.idle ?? src;
+  const idle = combatFrames?.idle ?? src;
+  const isAction = performing && (phase === 'action' || phase === 'contact');
+  const poseKind = !strike && !alive ? 'death'
+    : isAction && role === 'attacker' ? 'attack'
+    : isAction && role === 'target' && tone === 'dodge' ? 'dodge'
+    : isAction && role === 'target' && tone === 'block' ? 'block'
+    : phase === 'contact' && role === 'target' ? 'hit' : 'idle';
+  const pose = poseKind === 'idle' ? idle : combatFrames?.[poseKind] ?? idle;
 
   return (
-    <div className="fighter-figure absolute inset-0 pointer-events-none" style={style}>
-      <div key={role ? `${strike?.key}-${role}` : 'still'} className={`fighter-figure__motion absolute inset-0 ${motion}`}>
+    <div className="fighter-figure absolute inset-0 pointer-events-none" style={style} data-quality={lowQuality ? 'low' : 'full'}>
+      <div key={event ? `${visualId(event)}-${role}` : 'still'} data-pose={poseKind} data-phase={event ? phase : 'idle'} className={`fighter-figure__motion absolute inset-0 ${motion}`}>
         <div className="fighter-figure__size absolute inset-0">
-          <div className={`fighter-figure__breath absolute inset-0 ${!role && alive ? 'fighter-figure__breath--idle' : ''}`}>
+          <div className={`fighter-figure__breath absolute inset-0 ${!performing && alive && !won ? 'fighter-figure__breath--idle' : ''}`}>
             <div className={`absolute inset-0 ${mirror ? 'battle-mirror-art' : ''}`}>
-            {role === 'attacker' && alive && (
+            {role === 'attacker' && isAction && (
               <img src={pose} alt="" aria-hidden="true" draggable={false}
+                onError={event => { event.currentTarget.style.visibility = 'hidden'; }}
                 className={`${className} fighter-figure__afterimage select-none`} />
             )}
-            <img
-              src={pose}
-              alt={name}
-              draggable={false}
-              onError={(event) => {
-                // Missing poses fall back to the same character's idle art.
-                const img = event.currentTarget;
-                const candidates = [combatFrames?.idle, src, import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp'];
-                const attempt = Number(img.dataset.artRetry ?? '0');
-                if (attempt < candidates.length) {
-                  img.dataset.artRetry = String(attempt + 1);
-                  img.src = candidates[attempt] ?? src;
-                }
-              }}
-              className={`${className} select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] ${!alive ? 'grayscale opacity-40 translate-y-2' : ''}`}
-            />
+            <SafeFighterArt key={`${pose}|${artIdentity}`} pose={pose} idle={artIdentity} name={name}
+              className={`${className} select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] ${poseKind === 'death' ? 'grayscale opacity-40 translate-y-2' : ''}`} />
             </div>
           </div>
         </div>
-        {role === 'attacker' && <>
+        {role === 'attacker' && performing && <>
           <span aria-hidden="true" className={`fighter-figure__sweep fighter-figure__sweep--${swing}`} />
           <span aria-hidden="true" className="fighter-figure__footstep" />
         </>}
       </div>
-      {role === 'target' && strike && <Impact key={strike.key} strike={strike} />}
+      {role === 'target' && strike && <Impact key={visualId(strike)} strike={strike} />}
     </div>
   );
+}
+
+/** Never substitute another character when an art file is unavailable. */
+function SafeFighterArt({ pose, idle, name, className }: { pose: string; idle: string; name: string; className: string }) {
+  const { language } = useLanguage();
+  const [attempt, setAttempt] = useState(0);
+  const candidates = pose === idle ? [idle] : [pose, idle];
+  if (attempt >= candidates.length) return <span role="img" aria-label={`${name}: ${language === 'en' ? 'image unavailable' : 'изображение недоступно'}`} data-testid="fighter-art-unavailable"
+    className="absolute inset-0 flex items-center justify-center text-2xl text-white/70">?</span>;
+  return <img src={candidates[attempt]} alt={name} draggable={false} className={className}
+    onError={() => setAttempt(current => current + 1)} />;
 }
 
 function Impact({ strike }: { strike: StrikeEvent }) {
