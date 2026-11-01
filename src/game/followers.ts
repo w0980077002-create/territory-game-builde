@@ -1,11 +1,12 @@
 import type { Follower, GameState, InventoryItem } from './types';
 import { reconcileElixirExpiry } from './elixirExpiry';
+import { HALLOWEEN_COMPANION_ID, PUMPKIN_WITCH_TEMPLATE, PUMPKIN_WITCH_COMBAT } from './halloweenCompanion2026';
 
 /** PvE-only companions. An account can have several unlocked companions but
  * exactly one active companion. PvP Arena snapshots never use these bonuses.
  * Training is a client-side gameplay feature, NOT an anti-cheat boundary.
  */
-export type FollowerRole = 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage' | 'crystal';
+export type FollowerRole = 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage' | 'crystal' | 'pumpkin';
 
 export interface FollowerTemplate {
   id: string;
@@ -29,6 +30,19 @@ export const FOLLOWER_TEMPLATES: FollowerTemplate[] = [
   { id: 'follower_6', role: 'crystal', unlockLevel: 50, name: 'Боевая корова', nameEn: 'Battle Cow', icon: '🐮', attack: 7, defense: 2, description: 'Кристальное безумие: атакует врага и немного лечит героя между раундами. Только PvE.', descriptionEn: 'Crystal Frenzy: attacks enemies and heals the hero a little between rounds. PvE only.' },
 ];
 
+/** Raid reward is NEVER in the normal level-unlock catalog. Its entitlement
+ * comes only from the Halloween 2026 server receipt after event closure. */
+export const HALLOWEEN_COMPANION_TEMPLATE: FollowerTemplate = {
+  id: HALLOWEEN_COMPANION_ID, role: 'pumpkin', unlockLevel: 101,
+  name: 'Тыквенная ведьма', nameEn: 'Pumpkin Witch', icon: '🎃',
+  attack: PUMPKIN_WITCH_TEMPLATE.attack, defense: PUMPKIN_WITCH_TEMPLATE.defense,
+  description: 'Эксклюзив за подтверждённое участие в Хэллоуинском рейде 2026. Уровень 100, сила +5% к сопоставимому обычному целителю.',
+  descriptionEn: 'Exclusive for confirmed Halloween 2026 raid fighters. Level 100, 5% stronger than the comparable standard healer.',
+};
+export const DISPLAY_FOLLOWER_TEMPLATES: FollowerTemplate[] = [
+  ...FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_TEMPLATE,
+];
+
 export function initialFollowers(): Follower[] {
   return FOLLOWER_TEMPLATES.map((f) => ({
     id: f.id, name: f.name, icon: f.icon, level: 1,
@@ -38,7 +52,7 @@ export function initialFollowers(): Follower[] {
 
 /** Preserve legacy training and all custom follower fields. Existing Loyal Shield
  * level, attack and defense values must never be reset by this migration. */
-export function reconcileFollowers(saved: Follower[] | undefined, heroLevel: number): Follower[] {
+export function reconcileFollowers(saved: Follower[] | undefined, heroLevel: number, halloweenVerified = false): Follower[] {
   const current = Array.isArray(saved) ? saved : [];
   const templates = initialFollowers();
   return templates.map((fresh, index) => {
@@ -50,7 +64,8 @@ export function reconcileFollowers(saved: Follower[] | undefined, heroLevel: num
       // Never relock a legacy follower; newly unlocked companions follow hero level.
       unlocked: old.unlocked === true || heroLevel >= template.unlockLevel,
     };
-  }).concat(current.filter((old) => old && !templates.some((f) => f.id === old.id)));
+  }).concat(current.filter((old) => old && old.id !== HALLOWEEN_COMPANION_ID && !templates.some((f) => f.id === old.id)))
+    .concat(halloweenVerified ? [{ ...PUMPKIN_WITCH_TEMPLATE }] : []);
 }
 
 export function selectedFollower(state: Pick<GameState, 'followers' | 'activeFollowerId'>): Follower | null {
@@ -59,7 +74,7 @@ export function selectedFollower(state: Pick<GameState, 'followers' | 'activeFol
 }
 
 export function selectFollower(state: GameState, followerId: string): GameState | null {
-  const target = state.followers.find((f) => f.id === followerId && f.unlocked && FOLLOWER_TEMPLATES.some((x) => x.id === f.id));
+  const target = state.followers.find((f) => f.id === followerId && f.unlocked && DISPLAY_FOLLOWER_TEMPLATES.some((x) => x.id === f.id));
   return target ? { ...state, activeFollowerId: target.id } : null;
 }
 
@@ -99,7 +114,7 @@ export function trainFollower(state: GameState, followerId: string): GameState |
   if (!Number.isSafeInteger(found.level) || found.level < 1) return null;
   // Do not spend saved stones or modify a cow's existing level before the
   // approved, server-authoritative awakening operation is available.
-  if (followerId === 'follower_6') return null;
+  if (followerId === 'follower_6' || followerId === HALLOWEEN_COMPANION_ID) return null;
   if (found.level >= MAX_FOLLOWER_LEVEL || found.level >= state.player.level) return null;
   const price = followerTrainingCost(found.level);
   if (!Number.isSafeInteger(state.player.gold) || state.player.gold < price.gold || !Number.isSafeInteger(state.forgeMaterials) || state.forgeMaterials < price.materials) return null;
@@ -120,6 +135,11 @@ export function trainFollower(state: GameState, followerId: string): GameState |
 /** Bounded combat effects (client-side PvE only). Untrusted saved stats do not
  * yield unbounded buffs; full server economy enforcement is a separate release. */
 export function followerCombat(follower: Follower | null) {
+  if (follower?.id === HALLOWEEN_COMPANION_ID) {
+    // No skill effects on PvP. This 100/100 raid companion mirrors a fully
+    // trained level-60 healer at 1.05× power (rounded combat integers).
+    return { role: 'pumpkin' as const, ...PUMPKIN_WITCH_COMBAT };
+  }
   const template = follower && FOLLOWER_TEMPLATES.find((f) => f.id === follower.id);
   const role = template?.role ?? null;
   const level = follower && Number.isSafeInteger(follower.level) ? Math.max(1, Math.min(role === 'crystal' ? MAX_BATTLE_COW_LEVEL : MAX_FOLLOWER_LEVEL, follower.level)) : 1;
