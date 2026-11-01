@@ -868,7 +868,7 @@ html.territory-desktop-webapp .home-side-stack .home-side {
   --home-side-top: 98px;
   --home-side-bottom: 196px;
   --home-character-top: 158px;
-  --home-character-bottom: 196px;
+  --home-character-bottom: 218px;
 }
 .home-top-hud { top: var(--home-hud-top); }
 .home-chapter { top: var(--home-chapter-top); }

@@ -156,7 +156,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
       <LiveCityBackdrop animated={cityMotion} background={cityBackground} />
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-sky-500/[0.05] via-transparent to-amber-500/[0.04]" />
       <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 to-transparent pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-[230px] bg-gradient-to-t from-[#07090d] via-[#07090d]/65 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-[230px] bg-gradient-to-t from-[#0c1d30]/85 via-[#0c1d30]/35 to-transparent pointer-events-none" />
 
       <div className="home-top-hud absolute inset-x-0 z-20 px-2 flex items-start gap-2">
         <button onClick={() => onOpen('hero')} className="home-profile-chip flex items-center gap-1.5 min-w-0 shrink-0 rounded-2xl border border-amber-300/55 bg-gradient-to-br from-[#17202b]/90 via-[#090d12]/90 to-[#241706]/90 backdrop-blur-sm p-1 pr-2 active:scale-95 transition-transform" aria-label={t('profile')}>

@@ -177,7 +177,15 @@ with sync_playwright() as p:
             assert page.locator('.home-side').evaluate_all('buttons => buttons.every(b => { const r=b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && r.left >= 0 && r.right <= innerWidth; })')
             page.locator('.home-profile-chip').click()
             assert page.evaluate('window.__route') == 'hero'
-            if width == 360 and lang == 'ru': page.screenshot(path='/tmp/territory-city-360.png')
+            if width == 360 and lang == 'ru':
+                page.screenshot(path='/tmp/territory-city-360.png')
+                # Realistic tall Telegram canvas: cliff/rope fence must be visible below the fighters.
+                page.set_viewport_size({'width': 360, 'height': 760})
+                page.screenshot(path='/tmp/territory-city-tall-360.png')
+                tall_boxes = [page.locator('[data-testid="city-' + who + '-slot"]').bounding_box()
+                              for who in ('follower', 'hero', 'enemy')]
+                assert tall_boxes[0]['x'] + tall_boxes[0]['width'] + 2 < tall_boxes[1]['x'], ('tall', tall_boxes)
+                assert tall_boxes[1]['x'] + tall_boxes[1]['width'] + 2 < tall_boxes[2]['x'], ('tall', tall_boxes)
             page.close()
     browser.close()
 server.shutdown()
