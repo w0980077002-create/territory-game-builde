@@ -6,10 +6,9 @@ import { useLanguage } from '@/game/i18n';
 import { getFollowerArt } from '@/game/combatArt';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import {
-  FOLLOWER_TEMPLATES, DISPLAY_FOLLOWER_TEMPLATES, followerTrainingCost, MAX_FOLLOWER_LEVEL, MAX_BATTLE_COW_LEVEL,
+  FOLLOWER_TEMPLATES, DISPLAY_FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_ID, PUMPKIN_WITCH_TEMPLATE, followerTrainingCost, MAX_FOLLOWER_LEVEL, MAX_BATTLE_COW_LEVEL,
   cowStonesOwned, cowAwakeningCost, selectedFollower, selectFollower, trainFollower,
 } from '@/game/followers';
-import { HALLOWEEN_COMPANION_ID, PUMPKIN_WITCH_TEMPLATE } from '@/game/halloweenCompanion2026';
 import './followersCamp.css';
 
 /** Real PvE companions, displayed as a compact selectable roster.
