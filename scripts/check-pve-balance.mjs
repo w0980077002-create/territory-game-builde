@@ -103,6 +103,26 @@ assert.equal(protectedSummary.heroStrike, 'hit');
 assert.equal(protectedSummary.enemyStrike, 'block');
 assert.equal(protectedSummary.enemyZone, 'belly');
 assert.equal(pve.summarizePveRound([]).enemyZone, null);
+// Manual counterplay actions must use the same committed intent as the real
+// PvE resolver. They only select zones; they cannot settle hits or mint loot.
+for (const { id: guarded } of zones) {
+  let selected = null;
+  const openings = new Set();
+  for (let i = 0; i < zones.length - 1; i++) {
+    selected = pve.nextOpenStrike(selected, guarded);
+    assert.notEqual(selected, guarded, 'Opening button must never target the shown guard');
+    openings.add(selected);
+  }
+  assert.equal(openings.size, zones.length - 1, 'All three openings must be selectable');
+  assert.equal(pve.nextOpenStrike(selected, guarded), [...openings][0], 'Openings cycle without a hidden fourth attack');
+}
+assert.equal(pve.coverThreatZone(['head'], 'head').join(','), 'head', 'Covering twice is idempotent');
+assert.equal(pve.coverThreatZone(['head'], 'belly').join(','), 'head,belly', 'Keep the first selected defense');
+assert.equal(pve.coverThreatZone(['head', 'legs'], 'chest').join(','), 'legs,chest', 'Replace only the oldest defense');
+const counterAttack = pve.nextOpenStrike('head', visibleGuard.blocks[0]);
+const counterRound = pve.playRound(starterHero, guardEnemy, counterAttack, [], 0, '', 0, null, visibleGuard);
+assert.equal(counterRound.hits[0].tone, 'hit', 'Opening action must really bypass the next committed guard');
+
 // Trials and chapter bosses show the actual committed next attack, not a
 // cosmetic warning. Choosing that defense must change the resolved HP.
 const threatIntent = { attack: 'chest', blocks: ['head', 'belly'] };
@@ -112,6 +132,9 @@ assert.equal(pve.summarizePveRound(coveredThreat.hits).enemyStrike, 'block');
 assert.equal(coveredThreat.hero.hp, starterHero.hp, 'Correct defense prevents the announced strike');
 assert.equal(pve.summarizePveRound(ignoredThreat.hits).enemyStrike, 'hit');
 assert(ignoredThreat.hero.hp < starterHero.hp, 'Ignoring the announced strike causes actual HP loss');
+const coveredByAction = pve.coverThreatZone(['head', 'legs'], threatIntent.attack);
+const actionRound = pve.playRound(starterHero, guardEnemy, 'legs', coveredByAction, 0, '', 0, null, threatIntent);
+assert.equal(actionRound.hero.hp, starterHero.hp, 'One-tap cover must prevent the actual announced strike');
 const fightSource = source('../src/components/pve/PveFight.tsx');
 assert.match(fightSource, /data-testid="pve-round-reaction"/, 'Show actual round feedback to manual PvE players');
 assert.match(fightSource, /setTacticalReport\(summarizePveRound\(res\.hits\)\)/, 'Tactical feedback must come from resolved hits');
@@ -120,6 +143,11 @@ assert.match(fightSource, /data-testid="pve-enemy-guard"/, 'Show the actual guar
 assert.match(fightSource, /\(kind === 'trial' \|\| enemy\.isBoss\) && !auto && !busy/, 'Only trial and boss manual rounds reveal their committed strike');
 assert.match(fightSource, /blocks\.includes\(enemyIntent\.attack\)/, 'The warning reflects the selected defense');
 assert.match(fightSource, /data-testid="pve-telegraphed-strike"/, 'Show the actual next strike direction for tactical trials and bosses');
+assert.match(fightSource, /data-testid="pve-choose-opening"/, 'The shown enemy guard must offer an actual manual attack choice');
+assert.match(fightSource, /setAttack\(current => nextOpenStrike\(current, guardedZone\.id\)\)/, 'Opening action must select the attack used by the real round');
+assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss strike warning must offer a manual defense action');
+assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
+
 assert.match(fightSource, /followerBonus\.defense, followerBonus, enemyIntent\)/, 'Pass the visible guard to the PvE round calculation');
 assert.match(fightSource, /setEnemyIntent\(randomZones\(\)\)/, 'Refresh guard after resolving each round');
 
