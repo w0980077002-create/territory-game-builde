@@ -54,6 +54,10 @@ with sync_playwright() as p:
                 assert ('Winter peaks' if language == 'en' else 'Ледяные вершины') in backgrounds.nth(0).inner_text()
                 backgrounds.nth(0).click()
                 assert backgrounds.nth(0).get_attribute('aria-pressed') == 'true'
+                portrait = backgrounds.nth(0).locator('img')
+                portrait.evaluate("(img) => img.decode()")
+                dimensions = portrait.evaluate("(img) => [img.naturalWidth, img.naturalHeight]")
+                assert dimensions[0] >= 640 and 1.6 < dimensions[1] / dimensions[0] < 1.9, (width, language, ios, dimensions)
                 backgrounds.nth(2).click()
                 assert backgrounds.nth(2).get_attribute('aria-pressed') == 'true'
                 assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width, language, ios, 'scenery overflow')

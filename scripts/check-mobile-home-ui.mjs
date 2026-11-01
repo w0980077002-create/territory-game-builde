@@ -55,7 +55,19 @@ assert.match(city, /export type CityBackground = 'winter' \| 'classic' \| 'sunli
   'Winter Peaks joins both existing city backgrounds');
 assert.match(city, /saved === 'classic' \|\| saved === 'sunlit' \? saved : 'winter'/,
   'New players receive winter scenery without overriding an existing explicit choice');
-assert.match(city, /winter-peaks-v2\.webp/, 'Winter Peaks must be linked to the approved V2 image');
+assert.match(city, /winter-peaks-approved\.webp/, 'Owner-approved portrait winter image must be rendered');
+assert.match(city, /backgroundSize: isWinter \? 'cover, cover'/,
+  'Winter scenery must keep aspect ratio via cover, never stretch to 100% x 100%');
+assert.match(city, /backgroundPosition: isWinter \? 'center, center 46%'/,
+  'Portrait crop must remain centered over different mobile aspect ratios');
+const winterPortrait = await readFile(new URL('public/assets/territory/scenes/winter-peaks-approved.webp', root));
+assert.equal(winterPortrait.toString('ascii', 0, 4), 'RIFF');
+assert.equal(winterPortrait.toString('ascii', 8, 12), 'WEBP');
+assert.equal(winterPortrait.toString('ascii', 12, 16), 'VP8 ');
+const winterWidth = winterPortrait.readUInt16LE(26) & 0x3fff;
+const winterHeight = winterPortrait.readUInt16LE(28) & 0x3fff;
+assert.ok(winterWidth >= 640 && winterHeight / winterWidth > 1.6 && winterHeight / winterWidth < 1.9,
+  'Approved artwork must be a true tall portrait, not a stretched square');
 assert.match(sheets, /\['winter', 'classic', 'sunlit'\]/,
   'Settings must let the player restore either of the previous backgrounds');
 assert.match(sheets, /Ледяные вершины/, 'Russian winter background label must be visible');
