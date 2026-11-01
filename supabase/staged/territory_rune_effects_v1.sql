@@ -82,7 +82,7 @@ DECLARE snap jsonb; selected jsonb; effects jsonb:='[]'::jsonb;
  totals jsonb:='{}'::jsonb; rune text; effect text;
  unit_bp integer; level_num integer; amount integer; i integer;
 BEGIN
- IF p_player IS NULL OR p_battle IS NULL OR p_kind NOT IN ('pve','arena')
+ IF p_player IS NULL OR p_battle IS NULL OR p_kind IS NULL OR p_kind NOT IN ('pve','arena')
  THEN RAISE EXCEPTION 'rune_effect_invalid_request'; END IF;
  SELECT snapshot INTO snap FROM territory_private.rune_battle_snapshots_v1
  WHERE player_id=p_player AND battle_id=p_battle AND kind=p_kind;
