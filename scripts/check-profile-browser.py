@@ -178,10 +178,10 @@ with sync_playwright() as p:
             page.locator('.home-profile-chip').click()
             assert page.evaluate('window.__route') == 'hero'
             if width == 360 and lang == 'ru':
-                page.screenshot(path='/tmp/territory-city-360.png')
-                # Realistic tall Telegram canvas: cliff/rope fence must be visible below the fighters.
+                page.screenshot(path='/tmp/territory-city-short-360.png')
+                # A tall Telegram canvas resembles a real Samsung/iPhone game sheet.
                 page.set_viewport_size({'width': 360, 'height': 760})
-                page.screenshot(path='/tmp/territory-city-tall-360.png')
+                page.screenshot(path='/tmp/territory-city-360.png')
                 tall_boxes = [page.locator('[data-testid="city-' + who + '-slot"]').bounding_box()
                               for who in ('follower', 'hero', 'enemy')]
                 assert tall_boxes[0]['x'] + tall_boxes[0]['width'] + 2 < tall_boxes[1]['x'], ('tall', tall_boxes)
