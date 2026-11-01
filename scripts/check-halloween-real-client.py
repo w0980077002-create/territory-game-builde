@@ -48,6 +48,7 @@ try:
         browser=p.chromium.launch(args=['--no-sandbox'])
         contexts=[browser.new_context(viewport={'width':360,'height':780}) for _ in range(3)]
         a,b,c=[context.new_page() for context in contexts]
+        errors=[]; b.on('console',lambda message: errors.append(message.text))
         a.goto(url)
         seed=a.evaluate('''async () => {
           const {createInitialGame}=await import('/territory-game-builde/src/game/engine.ts');
@@ -105,13 +106,18 @@ try:
         assert sql(f"select vip_level from public.players where id='{participant}'")=='3'
         # B's real saveCloudSave is based on the older row revision and must
         # fail closed instead of overwriting A's new selection and inventory.
-        errors=[]; b.on('console',lambda message: errors.append(message.text))
         panel_b.locator('.followers-camp__portrait').first.click()
         panel_b.locator('.followers-camp__choose').click()
-        for _ in range(40):
-            if any('Save conflict' in line for line in errors): break
-            time.sleep(.25)
-        assert any('Save conflict' in line for line in errors), 'expected real stale-save fence'
+        # Inspect the actual cloud module rather than relying on a warning that
+        # might have been emitted by an earlier autosave in the same session.
+        result=b.evaluate("""async (id) => {
+          const cloud=await import('/territory-game-builde/src/game/cloud.ts');
+          const {useGame}=await import('/territory-game-builde/src/game/actions.ts');
+          const alreadyBlocked=cloud.saveBlocked.has(id);
+          const saved=await cloud.saveCloudSave(id,useGame.get());
+          return {alreadyBlocked,saved,blockedAfter:cloud.saveBlocked.has(id)};
+        }""",participant)
+        assert result['saved'] is False and result['blockedAfter'] is True, ('expected real stale-save fence',result,[line for line in errors if 'Save' in line or 'snapshot' in line])
         assert read_state()['activeFollowerId']=='follower_pumpkin_witch_2026'
         contexts[0].set_offline(True);time.sleep(.5);contexts[0].set_offline(False)
         a.reload();a.locator('nav.territory-nav').wait_for(timeout=30000);panel=camp(a)
