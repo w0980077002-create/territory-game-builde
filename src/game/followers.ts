@@ -1,12 +1,40 @@
 import type { Follower, GameState, InventoryItem } from './types';
 import { reconcileElixirExpiry } from './elixirExpiry';
-import { HALLOWEEN_COMPANION_ID, PUMPKIN_WITCH_TEMPLATE, PUMPKIN_WITCH_COMBAT } from './halloweenCompanion2026';
+
 
 /** PvE-only companions. An account can have several unlocked companions but
  * exactly one active companion. PvP Arena snapshots never use these bonuses.
  * Training is a client-side gameplay feature, NOT an anti-cheat boundary.
  */
 export type FollowerRole = 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage' | 'crystal' | 'pumpkin';
+
+/** Static pure model belongs here: all legacy test harnesses compile this
+ * module independently, without the Supabase runtime. Server entitlement and
+ * one-time claims live separately in halloweenCompanion2026.ts. */
+export const HALLOWEEN_COMPANION_ID = 'follower_pumpkin_witch_2026';
+export const HALLOWEEN_COMPANION_LEVEL = 100;
+export const HALLOWEEN_COMPANION_ADVANTAGE = 1.05;
+export const PUMPKIN_WITCH_BASELINE = { attack: 62, heal: 15 } as const;
+export const PUMPKIN_WITCH_COMBAT = {
+  attack: Math.round(PUMPKIN_WITCH_BASELINE.attack * HALLOWEEN_COMPANION_ADVANTAGE),
+  defense: 0,
+  heal: Math.round(PUMPKIN_WITCH_BASELINE.heal * HALLOWEEN_COMPANION_ADVANTAGE),
+  crit: 0,
+  pierce: 0,
+};
+export const PUMPKIN_WITCH_TEMPLATE: Follower = {
+  id: HALLOWEEN_COMPANION_ID,
+  name: 'Тыквенная ведьма',
+  icon: '🎃',
+  level: HALLOWEEN_COMPANION_LEVEL,
+  attack: PUMPKIN_WITCH_COMBAT.attack,
+  defense: 1,
+  unlocked: true,
+  role: 'pumpkin',
+  description: 'Эксклюзивный дар участнику Хэллоуинского рейда 2026. Уровень 100. Помогает герою в PvE.',
+};
+
+
 
 export interface FollowerTemplate {
   id: string;
