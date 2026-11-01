@@ -35,6 +35,7 @@ jobs:
       - run: node scripts/check-halloween-world-boss.mjs
       - run: node scripts/check-halloween-companion-reward.mjs
       - run: node scripts/check-halloween-admin.mjs
+      - run: python3 scripts/check-halloween-operator.py
       - run: node scripts/check-halloween-bulk-pglite.mjs
       - run: npm run test:stage1
       - run: npm run test:slots
