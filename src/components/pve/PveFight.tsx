@@ -130,6 +130,8 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [tacticalReport, setTacticalReport] = useState<PveTacticalSummary | null>(null);
+  const [battleTotals, setBattleTotals] = useState({ dealt: 0, taken: 0, companion: 0 });
+  const [confirmSurrender, setConfirmSurrender] = useState(false);
   const [gearOpen, setGearOpen] = useState(false);
   const alive = useRef(true);
   const done = useRef(false);
@@ -197,7 +199,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   }, [enemy, kind]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
-    if (roundFlight.current || busy || outcome || done.current || !alive.current) return;
+    if (roundFlight.current || busy || outcome || confirmSurrender || done.current || !alive.current) return;
     roundFlight.current = true;
     setTacticalReport(null);
     setBusy(true);
@@ -227,7 +229,13 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
       pushLog(language === 'en' ? `Companion healed ${res.healAmount} HP` : `Спутник восстановил ${res.healAmount} HP`);
     }
     setStrike(null);
-    setTacticalReport(summarizePveRound(res.hits));
+    const report = summarizePveRound(res.hits);
+    setTacticalReport(report);
+    setBattleTotals(previous => ({
+      dealt: previous.dealt + report.dealtDamage,
+      taken: previous.taken + report.takenDamage,
+      companion: previous.companion + report.companionDamage,
+    }));
     setAttack(null);
     setBlocks([]);
     // Show the next guard only after the current enemy action finished.
@@ -238,16 +246,16 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
       roundFlight.current = false;
       if (alive.current) setBusy(false);
     }
-  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, enemyIntent]);
+  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, enemyIntent, confirmSurrender]);
 
   useEffect(() => {
-    if (!auto || busy || outcome) return;
+    if (!auto || busy || outcome || confirmSurrender) return;
     const t = setTimeout(() => {
       const z = randomZones();
       runRound(z.attack, z.blocks);
     }, 350 / speed);
     return () => clearTimeout(t);
-  }, [auto, busy, outcome, speed, runRound]);
+  }, [auto, busy, outcome, confirmSurrender, speed, runRound]);
 
   useEffect(() => {
     if (!toast) return;
@@ -280,7 +288,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     pushLog(`${item.name}: ${r.text}`);
   };
 
-  const controls = !busy && !outcome && !auto;
+  const controls = !busy && !outcome && !auto && !confirmSurrender;
   const ready = controls && !!attack && blocks.length === 2;
   const firstFightHelp = kind === 'stage' && state.totalBattlesWon === 0;
   const guardedZone = ZONES.find(zone => zone.id === enemyIntent.blocks[0]);
@@ -344,15 +352,15 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     <div className="space-y-2 animate-fade-in">
       <div className="flex items-center gap-2 h-10">
         <button
+          type="button"
+          disabled={busy || confirmSurrender}
           onClick={() => {
-            if (outcome) {
-              nextCancelled.current = true;
-              onExit();
-            } else {
-              finish(false);
-            }
+            // An accidental tap must not consume a battle attempt. Pause auto
+            // and require a second explicit confirmation before conceding.
+            setSettings({ auto: false });
+            setConfirmSurrender(true);
           }}
-          className="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-200 flex items-center gap-1.5 active:scale-95 transition-transform"
+          className="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-200 flex items-center gap-1.5 active:scale-95 transition-transform disabled:opacity-40"
         >
           <Flag className="w-3.5 h-3.5" /> {outcome ? (kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')) : (language === 'en' ? 'Surrender' : 'Сдаться')}
         </button>
@@ -363,6 +371,39 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
         <span className="h-9 px-2.5 rounded-xl bg-black/40 border border-white/10 flex items-center">
           <Currency kind="stones" value={state.battleStones} size={18} className="text-xs text-amber-100" />
         </span>
+      </div>
+
+      {confirmSurrender && (
+        <div data-testid="pve-surrender-confirm" role="alertdialog" aria-modal="true"
+          aria-label={language === 'en' ? 'Confirm surrender' : 'Подтвердить сдачу'}
+          className="rounded-xl border-2 border-red-300/60 bg-[#321a18] p-3 text-amber-50 shadow-lg">
+          <p className="text-sm font-bold">{language === 'en' ? 'Leave this fight?' : 'Сдаться в этом бою?'}</p>
+          <p className="mt-1 text-xs text-amber-100/85">{language === 'en'
+            ? 'The attempt will count as a defeat. No victory reward will be granted.'
+            : 'Попытка завершится поражением. Награда за победу не выдаётся.'}</p>
+          <div className="mt-3 flex gap-2">
+            <button type="button" data-testid="pve-surrender-cancel" onClick={() => setConfirmSurrender(false)}
+              className="min-h-11 flex-1 rounded-lg border border-emerald-300/50 bg-emerald-900/60 px-2 text-sm font-bold">
+              {language === 'en' ? 'Continue fighting' : 'Продолжить бой'}
+            </button>
+            <button type="button" data-testid="pve-surrender-accept" disabled={busy}
+              onClick={() => {
+                if (roundFlight.current || done.current) return;
+                setConfirmSurrender(false);
+                finish(false);
+              }}
+              className="min-h-11 flex-1 rounded-lg border border-red-300/60 bg-red-900/70 px-2 text-sm font-bold disabled:opacity-40">
+              {language === 'en' ? 'Surrender' : 'Сдаться'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div data-testid="pve-live-damage-totals" role="status" aria-live="off"
+        className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-lg border border-amber-300/25 bg-black/60 px-2 py-1.5 text-[11px] font-bold tabular-nums">
+        <span className="text-emerald-200">{language === 'en' ? 'Damage dealt' : 'Нанесено'}: {battleTotals.dealt}</span>
+        <span className="text-red-200">{language === 'en' ? 'Damage taken' : 'Получено'}: {battleTotals.taken}</span>
+        {battleTotals.companion > 0 && <span className="text-sky-200">{language === 'en' ? 'Companion' : 'Спутник'}: {battleTotals.companion}</span>}
       </div>
 
       {firstFightHelp && !outcome && !auto && <p className="rounded-xl border border-amber-400/40 bg-amber-950/50 px-3 py-2 text-xs leading-relaxed text-amber-100" role="note">
@@ -507,6 +548,9 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
 
         {!auto && !busy && tacticalReport && (
           <div data-testid="pve-round-reaction" className="relative mx-2 mb-1 rounded-lg border border-sky-300/35 bg-[#0d2631]/95 px-2.5 py-1.5 text-[11px] leading-4 text-sky-100" role="status" aria-live="polite">
+            <p className="mb-1 font-extrabold text-white" data-testid="pve-last-round-damage">
+              {language === 'en' ? 'This round' : 'Этот раунд'}: +{tacticalReport.dealtDamage} {language === 'en' ? 'damage' : 'урона'} / −{tacticalReport.takenDamage} HP
+            </p>
             {tacticalReport.heroStrike === 'block' && <p>{language === 'en' ? 'Your strike met a shield — switch your attack zone next round.' : 'Враг отбил удар — в следующем раунде смени зону атаки.'}</p>}
             {tacticalReport.heroStrike === 'dodge' && <p>{language === 'en' ? 'The enemy dodged. Try another opening.' : 'Враг уклонился. Ищи другую брешь.'}</p>}
             {tacticalReport.heroStrike === 'crit' && <p>{language === 'en' ? 'Critical hit! Your attack broke through.' : 'Критический удар! Атака прошла.'}</p>}
