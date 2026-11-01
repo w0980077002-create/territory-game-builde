@@ -17,7 +17,7 @@ assert.match(inventory,/spareConsumables/,'Stocked and empty warehouses need dis
 assert.match(inventory,/onArena && <button type="button" onClick=\{onArena\}/,'Open real Arena lobby');
 assert.match(inventory,/onBattle && <button type="button" onClick=\{onBattle\}/,'Open real Campaign');
 assert.match(app,/onArena=\{\(\) => setScreen\('arena'\)\}/,'Arena navigation cannot auto-start a fight');
-assert.match(app,/onBattle=\{\(\) => \{ setBattleView\('campaign'\); setAutoStart\(false\); setScreen\('battle'\); \}\}/,'Campaign cannot auto-spend stones');
+assert.match(app,/onBattle=\{\(\) => \{ setBattleView\(forgeReturnBattleView \?\? 'campaign'\); setForgeReturnBattleView\(null\); setAutoStart\(false\); setScreen\('battle'\); \}\}/,'Returning from Forge cannot auto-spend stones');
 assert.match(inventory,/putInBelt\(latest, item\.id, beltContext\(latest, useArena\.get\(\)\.wins\)\)/,'Existing belt mutation uses latest state');
 assert.match(inventory,/takeFromBelt\(current, i\)/,'Return-to-warehouse action remains');
 assert.match(inventory,/<BeltCells/,'Seven real belt cells remain');
