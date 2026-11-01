@@ -48,12 +48,15 @@ export function LiveCityBackdrop({ animated, background = 'winter' }: { animated
       <div
         className={`live-city-stage ${isClassic && animated ? 'live-city-running' : ''}`}
         style={{
-          // Winter Peaks comes from TERRITORY 2.0's approved winter stage.
-          // A subtle blue-grey veil softens glare; the image itself never animates.
+          // Owner-approved original portrait Viking winter scene, 720x1279.
+          // The portrait is never stretched; center-crop is intentional on unusual phone ratios.
+          // Keep motion effects exclusive to the classic harbour.
           backgroundImage: isWinter
-            ? `linear-gradient(180deg, rgba(28,55,83,.07), rgba(22,41,58,.18)), url("${prefix}winter-peaks-v2.webp")`
+            ? `linear-gradient(180deg, rgba(17,39,66,.06), rgba(12,26,46,.15)), url("${prefix}winter-peaks-approved.webp")`
             : `url("${prefix}${isClassic ? 'live-city-bg.webp' : 'sunlit-harbor.webp'}")`,
-          backgroundSize: isWinter || isClassic ? '100% 100%' : 'cover',
+          backgroundSize: isWinter ? 'cover, cover' : isClassic ? '100% 100%' : 'cover',
+          backgroundPosition: isWinter ? 'center, center 46%' : 'center',
+          backgroundRepeat: 'no-repeat',
         }}
       >
         {isClassic && animated && (

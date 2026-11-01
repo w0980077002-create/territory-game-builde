@@ -151,6 +151,19 @@ with sync_playwright() as p:
             search.fill('')
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?city')
             page.locator('.home-game-scene').wait_for()
+            # Check the actual rendered City scene, not only Settings thumbnails.
+            stage = page.locator('.live-city-stage')
+            assert stage.count() == 1, (width, lang, 'Missing city scene')
+            computed = stage.evaluate("""el => ({
+                size: getComputedStyle(el).backgroundSize,
+                image: getComputedStyle(el).backgroundImage,
+                position: getComputedStyle(el).backgroundPosition,
+                width: el.clientWidth,
+                height: el.clientHeight
+            })""")
+            assert computed['size'] == 'cover, cover', (width, lang, 'Distorted city background', computed)
+            assert 'winter-peaks-approved.webp' in computed['image'], (width, lang, 'Wrong winter scene')
+            assert computed['width'] > 0 and computed['height'] > 0, (width, lang, computed)
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             assert page.locator('.home-side').count() >= 6
             assert page.locator('.home-side').evaluate_all('buttons => buttons.every(b => { const r=b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && r.left >= 0 && r.right <= innerWidth; })')
