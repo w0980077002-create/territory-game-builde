@@ -7,7 +7,7 @@ permissions:
 jobs:
   postgres-17:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - name: Build isolated PostgreSQL 17 with test clock
@@ -49,6 +49,23 @@ jobs:
         run: |
           command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
           python3 scripts/check-halloween-admin-edge.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install isolated browser test dependencies
+        run: |
+          npm ci --ignore-scripts
+          python3 -m pip install playwright==1.55.0
+          python3 -m playwright install chromium --with-deps
+      - name: Test actual game client and save fencing
+        run: python3 scripts/check-halloween-real-client.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: halloween-isolated-client-evidence
+          path: /tmp/halloween-real-client-evidence/
+          if-no-files-found: ignore
       - name: Stop isolated stack
         if: always()
         run: |

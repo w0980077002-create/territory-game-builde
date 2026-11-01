@@ -1,5 +1,5 @@
 """Real local admin-api HTTP integration. Uses only the throwaway Supabase stack."""
-import hashlib, json, os, pathlib, shlex, shutil, signal, subprocess, time, urllib.error, urllib.request, uuid
+import hashlib, json, os, pathlib, shlex, shutil, signal, subprocess, threading, time, urllib.error, urllib.request, uuid
 
 settings = {}
 for line in pathlib.Path('/tmp/halloween-supabase.env').read_text().splitlines():
@@ -112,5 +112,44 @@ try:
     assert '00000000-0000-0000-0000-000000000001' not in json.dumps(status)
     assert sql('select count(*) from territory_private.halloween_companion_rewards_2026') == '1'
     assert sql("select gold || ':' || vip_level || ':' || (game_state->>'activeFollowerId') from public.players") == '42:3:follower_6'
-finally: stop(proc,log)
-print('Real isolated admin Edge HTTP: owner authentication, disabled flag, failed/successful audited bulk, repeat and reconcile passed. Interrupted-call and real game client remain separate gates.')
+    # Hold the same event row that bulk locks. Once the separate start RPC is
+    # committed, stop the actual local Edge worker while bulk is blocked.
+    lock_env=os.environ.copy();lock_env['PGAPPNAME']='halloween_edge_interrupt_test'
+    lock=subprocess.Popen(['psql',db_url,'-X','-v','ON_ERROR_STOP=1','-c',"BEGIN; SELECT 1 FROM public.territory_halloween_boss_2026 WHERE id='halloween_2026' FOR UPDATE; SELECT pg_sleep(60); COMMIT;"],env=lock_env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    try:
+        for _ in range(80):
+            if sql("select count(*) from pg_stat_activity where application_name='halloween_edge_interrupt_test' and wait_event='PgSleep'") == '1': break
+            time.sleep(.1)
+        else: raise AssertionError('test event lock not acquired')
+        interrupted=str(uuid.uuid4())
+        payload2={**payload,'requestId':interrupted}
+        def send_interrupted():
+            try: call(payload2)
+            except Exception: pass  # The deliberately killed worker may close the socket.
+        worker=threading.Thread(target=send_interrupted,daemon=True);worker.start()
+        for _ in range(120):
+            attempt=sql(f"select attempt_id from territory_private.halloween_companion_attempts_2026 where request_id='{interrupted}' and state='started'")
+            if attempt: break
+            time.sleep(.1)
+        else: raise AssertionError('interrupted request was not recorded')
+        # stop() removes only the disposable local project's Edge runtime.
+        stop(proc,log);proc=log=None
+        sql("select pg_terminate_backend(pid) from pg_stat_activity where application_name='halloween_edge_interrupt_test' and pid<>pg_backend_pid()")
+        lock.wait(timeout=10);worker.join(timeout=10)
+        assert sql(f"select state from territory_private.halloween_companion_attempts_2026 where attempt_id='{attempt}'") == 'started'
+        proc,log=serve(True)
+        code,unfinished=call({'action':'halloween_reward_status','token':owner})
+        assert code==200 and unfinished['audit']['unfinished']==1
+        # Reconcile under the same event lock: either the blocked transaction
+        # committed a receipt or it rolled back; both are safe to classify.
+        sql(f"BEGIN; SELECT 1 FROM public.territory_halloween_boss_2026 WHERE id='halloween_2026' FOR UPDATE; SELECT public.territory_halloween_companion_attempt_finish_v1('{attempt}','{interrupted}',CASE WHEN EXISTS(SELECT 1 FROM territory_private.halloween_companion_bulk_receipts_2026 WHERE request_id='{interrupted}') THEN NULL ELSE 'unavailable' END); COMMIT;")
+        code,retried=call(payload2)
+        assert code==200 and retried['snapshot']['pending']==0
+        assert sql('select count(*) from territory_private.halloween_companion_rewards_2026')=='1'
+    finally:
+        if lock.poll() is None:
+            sql("select pg_terminate_backend(pid) from pg_stat_activity where application_name='halloween_edge_interrupt_test' and pid<>pg_backend_pid()")
+            lock.wait(timeout=10)
+finally:
+    if proc is not None: stop(proc,log)
+print('Real isolated admin Edge HTTP: owner authentication, flag, failed/successful audited bulk, interrupted call, retry and reconcile passed. Not production.')
