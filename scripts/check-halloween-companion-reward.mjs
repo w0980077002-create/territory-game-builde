@@ -43,7 +43,18 @@ function load(companionRpc){
   compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS}}).outputText;
  const mod={exports:{}};
  vm.runInNewContext(out,{module:mod,exports:mod.exports,Date,Math,Error,
-  require(name){assert.equal(name,'./supabase');return {supabase:{rpc:companionRpc}};}});
+  require(name){
+    if(name==='./supabase') return {supabase:{rpc:companionRpc}};
+    if(name==='./followers') return {
+      HALLOWEEN_COMPANION_ID:'follower_pumpkin_witch_2026',
+      HALLOWEEN_COMPANION_LEVEL:100,
+      HALLOWEEN_COMPANION_ADVANTAGE:1.05,
+      PUMPKIN_WITCH_BASELINE:{attack:62,heal:15},
+      PUMPKIN_WITCH_COMBAT:{attack:65,defense:0,heal:16,crit:0,pierce:0},
+      PUMPKIN_WITCH_TEMPLATE:{id:'follower_pumpkin_witch_2026',name:'Тыквенная ведьма',level:100,attack:65,defense:1,unlocked:true,role:'pumpkin'},
+    };
+    throw new Error('Unexpected dependency: '+name);
+  }});
  return mod.exports;
 }
 const valid={eligible:true,rewardId:'follower_pumpkin_witch_2026',level:100,claimedAt:'2026-11-03T00:00:01Z'};
