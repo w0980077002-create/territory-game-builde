@@ -5,7 +5,8 @@ import { SLOT_ART, equipmentArt } from '@/game/art';
 import { rarityColor } from '@/game/ui';
 import { findHeroGearOpportunity } from '@/game/heroGearOpportunity';
 import { useLanguage } from '@/game/i18n';
-import { selectedFollower, FOLLOWER_TEMPLATES } from '@/game/followers';
+import { selectedFollower, DISPLAY_FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_ID } from '@/game/followers';
+import { PumpkinWitch } from './PumpkinWitch';
 import { getFollowerArt } from '@/game/combatArt';
 import type { Equipment, GameState } from '@/game/types';
 import './profileHero.css';
@@ -48,7 +49,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
   const readyQuest = state.quests.some(quest => !quest.claimed && quest.current >= quest.target);
   const forgeCandidate = Object.values(player.equipped).find((item): item is Equipment => !!item && item.level < player.level);
   const activeCompanion = selectedFollower(state);
-  const activeCompanionTemplate = FOLLOWER_TEMPLATES.find(unit => unit.id === activeCompanion?.id);
+  const activeCompanionTemplate = DISPLAY_FOLLOWER_TEMPLATES.find(unit => unit.id === activeCompanion?.id);
   const text = (ru: string, en: string) => language === 'en' ? en : ru;
 
   const renderSlot = ({ slot, item }: { slot: (typeof EQUIPMENT_SLOTS)[number]; item: Equipment | undefined }) => (
@@ -113,16 +114,16 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
 
       <section className="hero-showcase__companion" data-testid="hero-companion-journey"
         aria-label={text('Спутник героя', 'Hero companion')}>
-        <img src={activeCompanion ? getFollowerArt(activeCompanion.id)
+        {activeCompanion?.id === HALLOWEEN_COMPANION_ID ? <span style={{gridRow:"1 / 3", width: "100%", height: 88}}><PumpkinWitch /></span> : <img src={activeCompanion ? getFollowerArt(activeCompanion.id)
           : import.meta.env.BASE_URL + 'assets/territory/map/icons/companions-v1.webp'}
-          alt="" loading="lazy" draggable={false}/>
+          alt="" loading="lazy" draggable={false}/>}
         <div className="hero-showcase__companion-copy">
-          <span>{text('ПОМОЩНИК В ПОХОДЕ', 'CAMPAIGN COMPANION')}</span>
+          <span>{activeCompanion?.id === HALLOWEEN_COMPANION_ID ? text('РЕЙД · 2026', 'RAID · 2026') : text('ПОМОЩНИК В ПОХОДЕ', 'CAMPAIGN COMPANION')}</span>
           <strong>{activeCompanion
             ? (language === 'en' ? (activeCompanionTemplate?.nameEn ?? activeCompanion.name) : activeCompanion.name)
             : text('Спутник ещё не открыт', 'No companion unlocked yet')}</strong>
           <small>{activeCompanion
-            ? text(`Ур. ${activeCompanion.level} · Атака ${activeCompanion.attack} · Защита ${activeCompanion.defense}`,
+            ? activeCompanion.id === HALLOWEEN_COMPANION_ID ? text('Ур. 100/100 · Атака 65 · Лечение 16', 'Lv. 100/100 · Attack 65 · Healing 16') : text(`Ур. ${activeCompanion.level} · Атака ${activeCompanion.attack} · Защита ${activeCompanion.defense}`,
                 `Lv. ${activeCompanion.level} · Attack ${activeCompanion.attack} · Defense ${activeCompanion.defense}`)
             : text('Первый спутник откроется на 3 уровне', 'First companion unlocks at hero level 3')}</small>
           <small>{text('Помогает в Походе и Испытаниях, не на Арене', 'Helps in Campaign and Trials, not Arena')}</small>

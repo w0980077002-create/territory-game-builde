@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { Check, Coins, Crown, LockKeyhole, Shield, Sparkles, Swords, Wrench } from 'lucide-react';
+import { Check, Coins, Crown, Heart, LockKeyhole, Shield, Sparkles, Swords, Wrench } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
 import { getFollowerArt } from '@/game/combatArt';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import {
-  FOLLOWER_TEMPLATES, followerTrainingCost, MAX_FOLLOWER_LEVEL, MAX_BATTLE_COW_LEVEL,
+  FOLLOWER_TEMPLATES, DISPLAY_FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_ID, PUMPKIN_WITCH_TEMPLATE, followerTrainingCost, MAX_FOLLOWER_LEVEL, MAX_BATTLE_COW_LEVEL,
   cowStonesOwned, cowAwakeningCost, selectedFollower, selectFollower, trainFollower,
 } from '@/game/followers';
+import { PumpkinWitch } from './PumpkinWitch';
 import './followersCamp.css';
 
 /** Real PvE companions, displayed as a compact selectable roster.
@@ -21,10 +22,11 @@ export function FollowersPanel() {
   const active = selectedFollower(state);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [witchAppearance, setWitchAppearance] = useState(0);
 
   const choose = (id: string) => {
     const result = selectFollower(useGame.get(), id);
-    if (result) { useGame.set(result); setNote(en ? 'Companion selected' : 'Спутник выбран'); }
+    if (result) { useGame.set(result); if (id === HALLOWEEN_COMPANION_ID) setWitchAppearance(n => n + 1); setNote(en ? 'Companion selected' : 'Спутник выбран'); }
   };
 
   const train = (id: string) => {
@@ -40,20 +42,22 @@ export function FollowersPanel() {
         : (en ? 'Not enough materials, gold or hero level' : 'Не хватает золота, материалов или уровня героя'));
   };
 
-  const unlockedCount = FOLLOWER_TEMPLATES.filter(template =>
+  const unlockedCount = DISPLAY_FOLLOWER_TEMPLATES.filter(template =>
     state.followers.find(f => f.id === template.id)?.unlocked).length;
   const currentId = selectedId ?? active?.id ?? FOLLOWER_TEMPLATES[0].id;
-  const template = FOLLOWER_TEMPLATES.find(f => f.id === currentId) ?? FOLLOWER_TEMPLATES[0];
-  const follower = state.followers.find(f => f.id === template.id);
+  const template = DISPLAY_FOLLOWER_TEMPLATES.find(f => f.id === currentId) ?? FOLLOWER_TEMPLATES[0];
+  const follower = state.followers.find(f => f.id === template.id)
+    ?? (template.id === HALLOWEEN_COMPANION_ID ? { ...PUMPKIN_WITCH_TEMPLATE, unlocked: false } : undefined);
   const unlocked = follower?.unlocked === true;
   const selected = active?.id === follower?.id && unlocked;
   const isCow = template.id === 'follower_6';
+  const isSeasonal = template.id === HALLOWEEN_COMPANION_ID;
   const stoneCount = cowStonesOwned(state);
   const stonePrice = follower ? cowAwakeningCost(follower.level) : 1;
-  const maxed = !!follower && (isCow ? follower.level >= MAX_BATTLE_COW_LEVEL : (follower.level >= state.player.level || follower.level >= MAX_FOLLOWER_LEVEL));
+  const maxed = !!follower && (isSeasonal ? true : isCow ? follower.level >= MAX_BATTLE_COW_LEVEL : (follower.level >= state.player.level || follower.level >= MAX_FOLLOWER_LEVEL));
   const price = follower ? followerTrainingCost(follower.level) : { gold: 0, materials: 0 };
   const canTrain = unlocked && !maxed && !isCow && state.player.gold >= price.gold && state.forgeMaterials >= price.materials;
-  const cap = isCow ? MAX_BATTLE_COW_LEVEL : Math.max(1, Math.min(state.player.level, MAX_FOLLOWER_LEVEL));
+  const cap = isSeasonal ? 100 : isCow ? MAX_BATTLE_COW_LEVEL : Math.max(1, Math.min(state.player.level, MAX_FOLLOWER_LEVEL));
   const progress = follower ? Math.min(100, Math.round(follower.level / cap * 100)) : 0;
   const nextUnlock = FOLLOWER_TEMPLATES.find(f => !state.followers.find(x => x.id === f.id)?.unlocked);
 
@@ -64,18 +68,18 @@ export function FollowersPanel() {
         <WoodenPlaque>{en ? 'COMPANIONS' : 'СПУТНИКИ'}</WoodenPlaque>
         <p>{en ? 'Companion camp' : 'Лагерь последователей'}</p>
       </div>
-      <div className="followers-camp__count">{unlockedCount}/{FOLLOWER_TEMPLATES.length}</div>
+      <div className="followers-camp__count">{unlockedCount}/{DISPLAY_FOLLOWER_TEMPLATES.length}</div>
     </header>
 
     <div className="followers-camp__active">
       {active ? <>
         <div className="followers-camp__active-art">
-          <img src={getFollowerArt(active.id)} loading="lazy" alt="" draggable={false}/>
+          {active.id === HALLOWEEN_COMPANION_ID ? <PumpkinWitch /> : <img src={getFollowerArt(active.id)} loading="lazy" alt="" draggable={false}/>}
         </div>
         <div className="followers-camp__active-info">
           <span className="followers-camp__eyebrow"><Check size={13}/>{en ? 'ACTIVE IN PvE' : 'АКТИВЕН В PvE'}</span>
-          <h3>{en ? (FOLLOWER_TEMPLATES.find(f => f.id === active.id)?.nameEn ?? active.name) : active.name}</h3>
-          <p>{en ? 'Level' : 'Уровень'} {active.level} <span>·</span> <Swords size={12}/> {active.attack} <span>·</span> <Shield size={12}/> {active.defense}</p>
+          <h3>{en ? (DISPLAY_FOLLOWER_TEMPLATES.find(f => f.id === active.id)?.nameEn ?? active.name) : active.name}</h3>
+          <p>{en ? 'Level' : 'Уровень'} {active.level} <span>·</span> <Swords size={12}/> {active.attack} <span>·</span> {active.id === HALLOWEEN_COMPANION_ID ? <><Heart size={12}/> 16</> : <><Shield size={12}/> {active.defense}</>}</p>
           <small>{en ? 'Helps in Campaign and Trials, not in Arena' : 'Помогает в Походе и Испытаниях, не на Арене'}</small>
         </div>
       </> : <div className="followers-camp__locked-start">
@@ -83,27 +87,33 @@ export function FollowersPanel() {
       </div>}
     </div>
 
-    {follower && <section className="followers-camp__detail" aria-live="polite">
-      <div className="followers-camp__detail-top">
-        <div className="followers-camp__detail-art"><img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/></div>
+    {follower && <section className={`followers-camp__detail ${isSeasonal ? "followers-camp__detail--seasonal" : ""}`} aria-live="polite">
+      <div className={`followers-camp__detail-top ${isSeasonal ? "followers-camp__detail-top--seasonal" : ""}`}>
+        <div className="followers-camp__detail-art">{isSeasonal ? <PumpkinWitch appear={witchAppearance} /> : <img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/>}</div>
         <div>
           <span className="followers-camp__eyebrow"><Sparkles size={12}/>{selected
             ? (en ? 'ACTIVE COMPANION' : 'АКТИВНЫЙ СПУТНИК')
             : (en ? 'VIEWING COMPANION' : 'ПРОСМОТР СПУТНИКА')}</span>
           <h3>{en ? template.nameEn : template.name}</h3>
+          {isSeasonal && <span className="followers-camp__legendary">{en ? 'RAID · 2026' : 'РЕЙД · 2026'}</span>}
           {template.id === 'follower_6' && <span className="followers-camp__legendary"><Sparkles size={12}/>{en ? 'LEGENDARY LOOK' : 'ЛЕГЕНДАРНЫЙ ОБРАЗ'}</span>}
-          <p>{en ? template.descriptionEn : template.description}</p>
+          <p>{isSeasonal ? (en ? 'A legendary gift for Halloween raid fighters.' : 'Легендарный подарок участникам Хэллоуинского рейда.') : (en ? template.descriptionEn : template.description)}</p>
           <span className={unlocked ? 'followers-camp__availability' : 'followers-camp__availability followers-camp__availability--locked'}>
-            {unlocked ? en ? 'Unlocked' : 'Открыт' : `${en ? 'Unlocks at hero level' : 'Откроется на уровне героя'} ${template.unlockLevel}`}
+            {unlocked ? en ? 'Unlocked' : 'Открыт' : isSeasonal
+              ? (en ? 'Halloween 2026 raid participation reward' : 'Награда за участие в Хэллоуинском рейде 2026')
+              : `${en ? 'Unlocks at hero level' : 'Откроется на уровне героя'} ${template.unlockLevel}`}
           </span>
         </div>
       </div>
 
+      {isSeasonal && !unlocked && <p className="followers-camp__footnote">{en
+        ? 'After the raid ends, every fighter with at least one server-confirmed hit receives this level-100 companion. No rank requirement.'
+        : 'После окончания рейда этот спутник 100-го уровня достанется каждому, кто нанёс хотя бы один подтверждённый удар. Место в рейтинге не важно.'}</p>}
       {unlocked && <>
         {template.role === 'crystal' && <div className="followers-camp__special"><Sparkles size={15}/>{en ? 'Crystal Frenzy: extra strike, light healing each round, slight armor piercing.' : 'Кристальное безумие: дополнительный удар, небольшое лечение каждый раунд и пробивание брони.'}</div>}
         <div className="followers-camp__stats">
           <div><Swords size={16}/><span>{en ? 'Attack' : 'Атака'}</span><b>{follower.attack}</b></div>
-          <div><Shield size={16}/><span>{en ? 'Defense' : 'Защита'}</span><b>{follower.defense}</b></div>
+          <div>{isSeasonal ? <Heart size={16}/> : <Shield size={16}/>}<span>{isSeasonal ? (en ? 'Healing' : 'Лечение') : (en ? 'Defense' : 'Защита')}</span><b>{isSeasonal ? 16 : follower.defense}</b></div>
           <div><Crown size={16}/><span>{en ? 'Level' : 'Уровень'}</span><b>{follower.level}/{cap}</b></div>
         </div>
         <div className="followers-camp__progress" role="progressbar" aria-label={en ? 'Training level' : 'Уровень развития'} aria-valuemin={0} aria-valuemax={cap} aria-valuenow={Math.min(follower.level, cap)}>
@@ -114,10 +124,10 @@ export function FollowersPanel() {
             className="followers-camp__choose">
             <Check size={16}/>{selected ? en ? 'Selected' : 'Выбран' : en ? 'Choose' : 'Выбрать'}
           </button>
-          <button type="button" onClick={() => train(follower.id)} disabled={!canTrain}
+          {!isSeasonal && <button type="button" onClick={() => train(follower.id)} disabled={!canTrain}
             className="followers-camp__train">
             {isCow ? <Sparkles size={16}/> : <Wrench size={16}/>}{maxed ? en ? 'Level cap' : 'Лимит уровня' : isCow ? (en ? 'Awakening unavailable' : 'Пробуждение закрыто') : en ? 'Train' : 'Обучить'}
-          </button>
+          </button>}
         </div>
         {isCow && <div className="followers-camp__awakening" aria-label={en ? 'Awakening stone' : 'Камень пробуждения'}>
           <img src={import.meta.env.BASE_URL + 'assets/territory/ui/items/awakening-stone.svg'} alt="" loading="lazy" draggable={false}/>
@@ -141,13 +151,13 @@ export function FollowersPanel() {
       {nextUnlock && <span>{en ? 'Next unlock' : 'Следующий'}: {en ? 'Lv.' : 'Ур.'} {nextUnlock.unlockLevel}</span>}
     </div>
     <div className="followers-camp__roster" role="group" aria-label={en ? 'Choose companion to inspect' : 'Выбор последователя'}>
-      {FOLLOWER_TEMPLATES.map(candidate => {
+      {DISPLAY_FOLLOWER_TEMPLATES.map(candidate => {
         const unit = state.followers.find(f => f.id === candidate.id);
         const isActive = active?.id === candidate.id;
         const focus = candidate.id === template.id;
         return <button key={candidate.id} type="button" onClick={() => { setSelectedId(candidate.id); setNote(''); }}
           className={`followers-camp__portrait ${focus ? 'followers-camp__portrait--focus' : ''} ${isActive ? 'followers-camp__portrait--active' : ''}`}
-          aria-pressed={focus} aria-label={`${en ? candidate.nameEn : candidate.name} — ${unit?.unlocked ? (en ? 'Level' : 'Уровень') + ' ' + unit.level : (en ? 'Unlocks at level' : 'Откроется на уровне') + ' ' + candidate.unlockLevel}`}>
+          aria-pressed={focus} aria-label={`${en ? candidate.nameEn : candidate.name} — ${unit?.unlocked ? (en ? 'Level' : 'Уровень') + ' ' + unit.level : candidate.id === HALLOWEEN_COMPANION_ID ? (en ? 'Halloween reward' : 'Награда Хэллоуина') : (en ? 'Unlocks at level' : 'Откроется на уровне') + ' ' + candidate.unlockLevel}`}>
           <img src={getFollowerArt(candidate.id)} loading="lazy" draggable={false} alt=""
             className={unit?.unlocked ? '' : 'followers-camp__portrait-img--locked'}/>
           {isActive && <span className="followers-camp__portrait-status"><Check size={11}/></span>}

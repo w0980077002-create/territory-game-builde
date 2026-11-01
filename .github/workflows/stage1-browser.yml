@@ -47,6 +47,8 @@ jobs:
         if: matrix.suite == 'hero'
       - run: node scripts/build-companion-preview.mjs && python scripts/check-companion-browser.py
         if: matrix.suite == 'hero'
+      - run: node scripts/build-pumpkin-motion-preview.mjs && python scripts/check-pumpkin-motion-browser.py
+        if: matrix.suite == 'hero'
       - run: python scripts/check-inventory-preparation-browser.py
         if: matrix.suite == 'hero'
       - run: node scripts/build-adventure-preview.mjs

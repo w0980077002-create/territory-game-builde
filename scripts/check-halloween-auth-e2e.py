@@ -1,0 +1,127 @@
+"""Isolated Supabase Auth -> PostgREST -> staged RPC; never targets production."""
+import base64, concurrent.futures, hashlib, hmac, json, os, shlex, subprocess, time, urllib.error, urllib.request, uuid
+
+settings = {}
+with open('/tmp/halloween-supabase.env', encoding='utf8') as file:
+    for line in file:
+        if '=' in line:
+            key, value = line.strip().split('=', 1)
+            if key.isidentifier():
+                parsed = shlex.split(value)
+                settings[key] = parsed[0] if parsed else ''
+api, anon, secret = (settings[name] for name in ('API_URL', 'ANON_KEY', 'JWT_SECRET'))
+assert api.startswith('http://127.0.0.1:') and len(secret) >= 32
+
+def request(url, payload=None, token=None, key=None):
+    headers = {'Content-Type': 'application/json'}
+    if token: headers['Authorization'] = 'Bearer ' + token
+    if key: headers['apikey'] = key
+    data = None if payload is None else json.dumps(payload).encode()
+    req = urllib.request.Request(url, data=data, headers=headers, method='POST' if payload is not None else 'GET')
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            return response.status, json.loads(response.read() or b'{}')
+    except urllib.error.HTTPError as error:
+        return error.code, json.loads(error.read() or b'{}')
+
+def signup():
+    email = f'halloween-{uuid.uuid4()}@example.test'
+    status, data = request(api + '/auth/v1/signup', {'email': email, 'password': 'isolated-Only-Password-7832!'}, key=anon)
+    assert status == 200 and data.get('access_token') and data.get('user', {}).get('id'), ('signup', status)
+    return str(uuid.UUID(data['user']['id'])), data['access_token'], email
+
+participant, participant_token, participant_email = signup()
+nonparticipant, nonparticipant_token, _ = signup()
+status, second_session = request(api + '/auth/v1/token?grant_type=password', {'email': participant_email, 'password':'isolated-Only-Password-7832!'}, key=anon)
+assert status == 200 and second_session.get('access_token') and second_session.get('user',{}).get('id') == participant
+second_token = second_session['access_token']
+assert participant != nonparticipant
+# Current Supabase Auth signs user sessions with its configured asymmetric key.
+# Configure the independent PostgREST with Auth's public JWKS, plus a separate
+# local HS256 key used solely to create a correctly signed expired test token.
+status, jwks = request(api + '/auth/v1/.well-known/jwks.json', key=anon)
+assert status == 200 and isinstance(jwks.get('keys'), list) and jwks['keys'], ('JWKS unavailable', status)
+def b64(data): return base64.urlsafe_b64encode(data).rstrip(b'=').decode()
+jwks['keys'].append({'kty':'oct','k':b64(secret.encode()),'alg':'HS256','kid':'expired-test'})
+verification_keys = json.dumps(jwks, separators=(',',':'))
+network = 'halloween-auth-e2e'
+subprocess.run(['docker', 'network', 'create', network], check=True, stdout=subprocess.DEVNULL)
+for container in ('halloween-before', 'halloween-after'):
+    subprocess.run(['docker', 'network', 'connect', network, container], check=True)
+    sql = f"""CREATE ROLE halloween_authenticator LOGIN NOINHERIT;
+GRANT anon, authenticated TO halloween_authenticator;
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+INSERT INTO public.players(id,game_state,gold,vip_level) VALUES
+ ('{participant}','{{"activeFollowerId":"follower_6"}}',100,3),
+ ('{nonparticipant}','{{"inventory":["keep"]}}',200,2);
+INSERT INTO public.territory_halloween_boss_2026_players VALUES
+ ('halloween_2026','{participant}',1), ('halloween_2026','{nonparticipant}',0);"""
+    subprocess.run(['docker', 'exec', '-i', container, 'psql', '-X', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres'], input=sql, text=True, check=True, stdout=subprocess.DEVNULL)
+    port = '3111' if container.endswith('before') else '3112'
+    subprocess.run(['docker', 'run', '-d', '--name', container + '-rest', '--network', network,
+                    '-p', '127.0.0.1:' + port + ':3000',
+                    '-e', 'PGRST_DB_URI=postgres://halloween_authenticator@' + container + ':5432/postgres',
+                    '-e', 'PGRST_DB_SCHEMAS=public', '-e', 'PGRST_DB_ANON_ROLE=anon',
+                    '-e', 'PGRST_JWT_SECRET=' + verification_keys, 'postgrest/postgrest:v12.2.3'],
+                   check=True, stdout=subprocess.DEVNULL)
+    for attempt in range(60):
+        try:
+            with urllib.request.urlopen('http://127.0.0.1:' + port + '/', timeout=1): break
+        except urllib.error.HTTPError as error:
+            if error.code < 500: break
+            time.sleep(1)
+        except OSError: time.sleep(1)
+    else: raise RuntimeError('PostgREST did not start')
+
+before = 'http://127.0.0.1:3111/rpc/territory_halloween_companion_claim_v1'
+after = 'http://127.0.0.1:3112/rpc/territory_halloween_companion_claim_v1'
+status, data = request(before, {}, participant_token)
+assert status == 200 and data['reason'] == 'event_active', ('before deadline',status,data)
+status, data = request(after, {}, nonparticipant_token)
+assert status == 200 and data['reason'] == 'no_confirmed_hits', ('nonparticipant',status,data)
+status, _ = request(after, {})
+assert status in (401,403,404), ('anonymous',status)
+# JWT cryptography is exercised at PostgREST, not simulated with set_config.
+header, payload, signature = participant_token.split('.')
+def decode(data): return json.loads(base64.urlsafe_b64decode(data + '=' * (-len(data) % 4)))
+expired = decode(payload); expired['exp'] = 1
+expired_header = b64(json.dumps({'alg':'HS256','typ':'JWT','kid':'expired-test'},separators=(',',':')).encode())
+body = expired_header + '.' + b64(json.dumps(expired,separators=(',',':')).encode())
+expired_token = body + '.' + b64(hmac.new(secret.encode(),body.encode(),hashlib.sha256).digest())
+# A fresh control signed by the same test-only key proves that an expired
+# token is rejected for expiry rather than because its signing key is invalid.
+control_claims = decode(nonparticipant_token.split('.')[1])
+control_claims['exp'] = int(time.time()) + 300
+control_body = expired_header + '.' + b64(json.dumps(control_claims,separators=(',',':')).encode())
+control = control_body + '.' + b64(hmac.new(secret.encode(),control_body.encode(),hashlib.sha256).digest())
+status, data = request(after, {}, control)
+assert status == 200 and data.get('reason') == 'no_confirmed_hits', ('expiry control', status, data)
+for invalid in (expired_token, header + '.' + payload + '.' + ('A' * len(signature))):
+    status, _ = request(after, {}, invalid)
+    assert status == 401, ('invalid JWT accepted',status)
+# A client cannot pass a player ID to the zero-argument owner-scoped RPC.
+status, _ = request(after, {'player_id': nonparticipant}, participant_token)
+assert status in (400,404), ('foreign player argument accepted',status)
+with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+    responses = list(pool.map(lambda _: request(after, {}, participant_token), range(2)))
+assert all(status == 200 and data.get('eligible') is True and data.get('level') == 100 for status, data in responses)
+assert any(data['alreadyClaimed'] is True for _, data in responses)
+status, data = request(after, {}, second_token)
+assert status == 200 and data['alreadyClaimed'] is True
+# A stale saved game cannot remove the separate server-owned entitlement.
+stale = f"UPDATE public.players SET game_state='{{\"activeFollowerId\":\"follower_6\"}}' WHERE id='{participant}';"
+subprocess.run(['docker','exec','halloween-after','psql','-X','-v','ON_ERROR_STOP=1','-U','postgres','-c',stale],check=True,stdout=subprocess.DEVNULL)
+status, data = request(after, {}, second_token)
+assert status == 200 and data['alreadyClaimed'] is True
+# The private schema is not exposed by PostgREST and the authenticated role has no table privileges.
+status, _ = request('http://127.0.0.1:3112/halloween_companion_rewards_2026', {}, participant_token)
+assert status in (401,403,404,405), ('direct ledger access',status)
+check = f"SELECT count(*) FROM territory_private.halloween_companion_rewards_2026 WHERE player_id='{participant}';"
+count = subprocess.check_output(['docker','exec','halloween-after','psql','-X','-At','-U','postgres','-c',check],text=True).strip()
+assert count == '1'
+status, data = request(after, {}, nonparticipant_token)
+assert status == 200 and data.get('reason') == 'no_confirmed_hits'
+check = f"SELECT json_build_object('active',game_state->>'activeFollowerId','gold',gold,'vip',vip_level)::text FROM public.players WHERE id='{participant}';"
+state = json.loads(subprocess.check_output(['docker','exec','halloween-after','psql','-X','-At','-U','postgres','-c',check],text=True))
+assert state == {'active':'follower_6','gold':100,'vip':3}, 'entitlement must not mutate saved player data'
+print('Supabase Auth issued two independent JWTs; PostgREST verified signatures, expiry, owner-scoped claim, deadline, denial and repeat. Isolated test DB only.')

@@ -5,6 +5,8 @@ import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
+import { readPumpkinWitchEntitlement, installVerifiedPumpkinWitch } from '@/game/halloweenCompanion2026';
+import { watchPumpkinEntitlement } from '@/game/halloweenCompanionRefresh';
 import { restoreAdventureSaveFence, restoreAdventureStartFence } from '@/game/combatV1/receiptAdapter';
 import { createImmediateSaveController } from '@/game/immediateSave';
 import { HomeScreen } from '@/components/HomeScreen';
@@ -297,6 +299,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
+    let removeCompanionOnline = () => {};
     loadCloudSave(user.id, user.displayName)
       .then(async (profile) => {
         if (cancelled) return;
@@ -326,10 +329,17 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         useAccount.set({ vip: profile.vip, permanentVip:profile.vip, vipUntil:null, vipRemaining:0, vipCheckedAt:performance.now() });
         void refreshFortuneVip();
         setLoaded(true);
+        // The server owns the deadline; resume events and a server-supplied
+        // delay refresh a still-open session without trusting the device clock.
+        removeCompanionOnline = watchPumpkinEntitlement(readPumpkinWitchEntitlement, () => {
+          if (!cancelled && !useGame.get().halloweenCompanionVerified)
+            useGame.set((current) => installVerifiedPumpkinWitch(current));
+        });
       })
       .catch(() => !cancelled && setLoadError('failedLoad'));
     return () => {
       cancelled = true;
+      removeCompanionOnline();
     };
   }, [user.id, user.displayName]);
 

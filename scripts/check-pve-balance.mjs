@@ -82,6 +82,17 @@ checkRound('ch10_boss', true, 400);
 checkRound('trial_100', false, 340);
 checkRound('ch1_enemy_0', false, 1000);
 
+// The visual cue is driven by the actual companion hit, including when names collide.
+const witchHero = { ...hero, name: 'Same name', hp: 800, attack: 10, critChance: 0 };
+const witchEnemy = { name: 'Enemy', hp: 1000, maxHp: 1000, attack: 30, defense: 0, critChance: 0, critDamage: 50 };
+const witchRound = pve.playRound(witchHero, witchEnemy, 'head', [], 65, 'Same name', 0,
+  { role: 'pumpkin', attack: 65, defense: 0, heal: 16, crit: 0, pierce: 0 });
+assert.equal(witchRound.hits.filter(h => h.source === 'companion').length, 1);
+assert.equal(witchRound.hits.find(h => h.source === 'companion').amount, 65);
+assert.equal(witchRound.healAmount, 16);
+const lethal = zones.map(z => pve.playRound({ ...witchHero, attack: 100000 }, witchEnemy, z.id, [], 65, 'Same name')).find(r => r.hits[0].amount > 0);
+assert(lethal, 'fixture must contain an unblocked strike');
+assert.equal(lethal.hits.filter(h => h.source === 'companion').length, 0, 'no visual strike if the hero already defeated the enemy');
 // The classic PvE guard tell must be real: an advertised defense changes the hit outcome.
 const starterHero = { name: 'Hero', hp: 1000, maxHp: 1000, attack: 100, defense: 10, critChance: 0, critDamage: 50 };
 const guardEnemy = { name: 'Guard', hp: 500, maxHp: 500, attack: 5, defense: 5, critChance: 0, critDamage: 50, enemyId: 'ch1_enemy_0', isBoss: false };

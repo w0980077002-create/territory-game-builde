@@ -11,6 +11,7 @@ import { TopTab } from '@/admin/tabs/TopTab';
 import { SeasonAdminTab } from '@/admin/tabs/SeasonAdminTab';
 import { HallAdminTab } from '@/admin/tabs/HallAdminTab';
 import { AuditAdminTab } from '@/admin/tabs/AuditAdminTab';
+import { HalloweenRewardTab } from '@/admin/tabs/HalloweenRewardTab';
 import { GeographyTab } from '@/admin/tabs/GeographyTab';
 import { NewPlayersTab } from '@/admin/tabs/NewPlayersTab';
 import { getTelegramWebApp } from '@/game/telegram';
@@ -20,6 +21,7 @@ const TABS = [
   { id: 'players', label: 'Игроки & Онлайн', icon: ShieldAlert },
   { id: 'newplayers', label: 'Новые игроки', icon: UserPlus },
   { id: 'geography', label: 'География', icon: Globe2 },
+  { id: 'halloweenReward', label: 'Награда рейда', icon: Trophy },
   { id: 'mail', label: 'Почта & Рассылки', icon: Mail },
   { id: 'finance', label: 'Финансы & Лавка', icon: Wallet },
   { id: 'arenaEconomy', label: 'Экономика Арены', icon: Swords },
@@ -196,6 +198,7 @@ export function AdminApp() {
         {tab === 'players' && <PlayersTab confirm={confirm} />}
         {tab === 'newplayers' && <NewPlayersTab />}
         {tab === 'geography' && <GeographyTab />}
+        {tab === 'halloweenReward' && <HalloweenRewardTab />}
         {tab === 'mail' && <MailTab confirm={confirm} />}
         {tab === 'finance' && <FinanceTab confirm={confirm} />}
         {tab === 'arenaEconomy' && <ArenaEconomyTab />}

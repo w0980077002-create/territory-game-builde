@@ -1,0 +1,78 @@
+name: Halloween companion PostgreSQL 17 integration
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgres-17:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build isolated PostgreSQL 17 with test clock
+        run: |
+          mkdir -p /tmp/halloween-pg-image
+          cat > /tmp/halloween-pg-image/Dockerfile <<'DOCKERFILE'
+          FROM postgres:17
+          RUN apt-get update && apt-get install -y --no-install-recommends libfaketime && rm -rf /var/lib/apt/lists/*
+          RUN install -d -o postgres -g postgres /var/lib/postgresql/isolated
+          USER postgres
+          RUN initdb -D /var/lib/postgresql/isolated -A trust && echo 'host all all 172.0.0.0/8 trust' >> /var/lib/postgresql/isolated/pg_hba.conf
+          USER root
+          ENTRYPOINT ["gosu", "postgres", "env", "LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1", "FAKETIME_DONT_FAKE_MONOTONIC=1", "postgres", "-D", "/var/lib/postgresql/isolated", "-c", "listen_addresses=*"]
+          DOCKERFILE
+          docker build -t halloween-pg17 /tmp/halloween-pg-image
+      - name: Start independent pre- and post-deadline databases
+        run: |
+          for entry in 'halloween-before|2026-11-02 12:00:00' 'halloween-after|2026-11-04 12:00:00'; do
+            name=${entry%%|*}; clock=${entry#*|}
+            docker run -d --name "$name" -e "FAKETIME=@$clock" halloween-pg17
+            for i in $(seq 1 60); do docker exec "$name" pg_isready -U postgres && break; sleep 1; done
+            docker exec "$name" pg_isready -U postgres || { docker logs "$name"; exit 1; }
+          done
+      - name: Test staged SQL and concurrent transactions
+        run: scripts/check-halloween-postgres17.sh
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.79.0
+      - name: Start separate local Supabase Auth stack
+        run: |
+          mkdir -p /tmp/halloween-auth-project
+          cd /tmp/halloween-auth-project
+          supabase init > /tmp/halloween-supabase-init.log 2>&1
+          supabase start > /tmp/halloween-supabase-start.log 2>&1 || { echo 'Isolated Supabase stack failed to start'; exit 1; }
+          supabase status -o env > /tmp/halloween-supabase.env
+      - name: Test signed Auth JWTs through PostgREST
+        run: python3 scripts/check-halloween-auth-e2e.py
+      - name: Test real owner admin Edge HTTP flow
+        run: |
+          command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
+          python3 scripts/check-halloween-admin-edge.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install isolated browser test dependencies
+        run: |
+          npm ci --ignore-scripts
+          python3 -m pip install playwright==1.55.0
+          python3 -m playwright install chromium --with-deps
+      - name: Fetch the exact PR base for the old-client scenario
+        env:
+          OLD_CLIENT_REF: ${{ github.event.pull_request.base.sha || github.event.repository.default_branch }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$OLD_CLIENT_REF"
+          echo "TERRITORY_OLD_CLIENT_REF=$(git rev-parse FETCH_HEAD)" >> "$GITHUB_ENV"
+      - name: Test actual game client and save fencing
+        run: python3 scripts/check-halloween-real-client.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: halloween-isolated-client-evidence
+          path: /tmp/halloween-real-client-evidence/
+          if-no-files-found: ignore
+      - name: Stop isolated stack
+        if: always()
+        run: |
+          if [ -d /tmp/halloween-auth-project/supabase ]; then cd /tmp/halloween-auth-project && supabase stop --no-backup >/dev/null 2>&1 || true; fi

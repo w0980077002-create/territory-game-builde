@@ -1,0 +1,15 @@
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const edge = readFileSync('supabase/functions/admin-api/index.ts','utf8');
+const tab = readFileSync('src/admin/tabs/HalloweenRewardTab.tsx','utf8');
+const main = readFileSync('src/admin/AdminApp.tsx','utf8');
+const branch = edge.slice(edge.indexOf('case "halloween_reward_status"'), edge.indexOf('case "geo_stats"'));
+assert.match(branch,/territory_halloween_companion_snapshot_v1/);
+assert.match(branch,/territory_halloween_companion_audit_status_v1/);
+assert.match(branch,/HALLOWEEN_COMPANION_OPERATOR_ENABLED/);
+assert.match(branch,/attempt_start_v1[\s\S]*bulk_v1[\s\S]*attempt_finish_v1/);
+assert.match(edge,/if \(!\(await verifyToken\(body\.token\)\)\) return json\(\{ error: "unauthorized" \}, 401\);[\s\S]*return json\(await handle\(action, body\)\)/);
+assert.match(tab,/adminCall<Status>\('halloween_reward_status'\)/);
+assert.match(tab,/status.audit.failed/);
+assert.match(main,/<HalloweenRewardTab \/>/);
+console.log('Halloween admin source contract: owner-authenticated aggregate read, operator gated; aggregate status displayed.');

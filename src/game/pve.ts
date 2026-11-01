@@ -21,6 +21,7 @@ export interface PveSide {
 
 export interface PveHit {
   attacker: string;
+  source?: 'companion';
   target: string;
   targetSide: 'hero' | 'enemy';
   zone: Zone;
@@ -124,7 +125,7 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   if (enemyHp > 0 && followerAttack > 0 && damageBudget > 0) {
     const companionDamage = Math.min(Math.max(0, Math.floor(followerAttack)), damageBudget, enemyHp);
     if (companionDamage > 0) {
-      const f: PveHit = { attacker: followerName, target: enemy.name, targetSide: 'enemy', zone: pick(ZONES).id, tone: 'hit', amount: companionDamage };
+      const f: PveHit = { source: 'companion', attacker: followerName, target: enemy.name, targetSide: 'enemy', zone: pick(ZONES).id, tone: 'hit', amount: companionDamage };
       hits.push(f);
       enemyHp = Math.max(0, enemyHp - companionDamage);
     }
