@@ -166,6 +166,11 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [shopTab, setShopTab] = useState<'potions' | 'equipment'>('potions');
   const [heroTrainingOpen, setHeroTrainingOpen] = useState(false);
   const [forgeFocusId, setForgeFocusId] = useState<string | null>(null);
+  // Only a victory-to-forge journey remembers the originating classic PvE mode.
+  const [forgeReturnBattleView, setForgeReturnBattleView] = useState<'campaign' | 'trial' | null>(null);
+  useEffect(() => {
+    if (screen !== 'forge') setForgeReturnBattleView(null);
+  }, [screen]);
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const [battleLocked, setBattleLocked] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -382,7 +387,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     if (id === 'hero') setHeroTrainingOpen(false);
     setScreen(id);
   };
-  const openForge = (equipmentId?: string) => {
+  const openForge = (equipmentId?: string, returnBattleView?: 'campaign' | 'trial') => {
+    setForgeReturnBattleView(returnBattleView ?? null);
     setForgeFocusId(equipmentId ?? null);
     setScreen('forge');
   };
@@ -469,6 +475,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             onAutoStartHandled={() => setAutoStart(false)}
             onShop={() => { setShopTab('potions'); setScreen('shop'); }}
             onQuests={() => setScreen('quests')}
+            onForge={() => openForge(undefined, battleView === 'trial' ? 'trial' : 'campaign')}
             onEquipment={() => {
               setBattlePrepReturn(battleView === 'trial' ? 'trial' : 'campaign');
               setInventoryTab('equipment');
@@ -516,7 +523,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'forge' && <ForgeScreen focusEquipmentId={forgeFocusId} userId={user.id}
           onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')}
           onProfessions={() => setScreen('professions')}
-          onBattle={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }} />}
+          onBattle={() => { setBattleView(forgeReturnBattleView ?? 'campaign'); setForgeReturnBattleView(null); setAutoStart(false); setScreen('battle'); }} />}
         {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => { setLeaderboardInitialTab('rating'); setScreen('leaderboard'); }} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
         {screen === 'leaderboard' && <LeaderboardScreen key={leaderboardInitialTab} user={user} initialTab={leaderboardInitialTab} onArena={() => setScreen('arena')} onEvents={() => setScreen('events')} onMessages={() => setScreen('messages')} />}
         {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} onSocialNavigate={setScreen} onMail={() => setScreen('messages')} onDaily={() => setEventDailyOpen(true)} onNavigate={(target) => {
