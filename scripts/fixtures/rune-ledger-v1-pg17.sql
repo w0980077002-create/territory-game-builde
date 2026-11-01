@@ -46,7 +46,7 @@ BEGIN
  IF has_function_privilege('authenticated',
  'public.territory_runes_admin_set_level_v1(uuid,text,integer,uuid,text)','EXECUTE')
  THEN RAISE EXCEPTION 'client_can_admin_grant'; END IF;
- IF has_table_privilege('authenticated','territory_private.rune_ownership_v1','INSERT')
+ IF has_schema_privilege('authenticated','territory_private','USAGE')
  THEN RAISE EXCEPTION 'client_can_write_ownership'; END IF;
  r:=public.territory_runes_status_v1();
  IF r->>'revision'<>'0' OR jsonb_array_length(r->'slots')<>15
