@@ -305,7 +305,7 @@ with sync_playwright() as playwright:
             assert page.locator('#fixture-hero img').get_attribute('src').endswith('/male_rogue/idle.webp')
         elif broken == 'attack.webp':
             set_visual(page, {'strike': strike(46, 'hit')})
-            page.wait_for_timeout(100)
+            page.wait_for_timeout(220)
             assert page.locator('#fixture-hero img:not(.fighter-figure__afterimage)').get_attribute('src').endswith('/male_rogue/idle.webp')
             assert page.locator('#fixture-hero .fighter-figure__afterimage').evaluate("el=>getComputedStyle(el).visibility=='hidden'")
         else:

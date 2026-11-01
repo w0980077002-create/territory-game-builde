@@ -2,6 +2,9 @@
  * positive x faces the opponent. Contact is the existing PvE 350ms boundary. */
 export const CONTACT_MS = 350;
 export const ACTION_MS = 810;
+/** Shared presentation timeline for approved full-character poses and rigs. */
+export const WINDUP_MS = 160;
+export const RECOVERY_MS = 610;
 export type FighterMotion = 'idle' | 'slash' | 'thrust' | 'overhead' | 'block' | 'dodge' | 'hit' | 'crit-hit' | 'victory' | 'death';
 export type Joint = 'root' | 'torso' | 'head' | 'arm-right' | 'forearm-right' | 'weapon' | 'arm-left' | 'forearm-left' | 'shield' | 'leg-right' | 'leg-left' | 'knee-right' | 'knee-left' | 'hair';
 type Pose = Partial<Record<Joint, string>>;
