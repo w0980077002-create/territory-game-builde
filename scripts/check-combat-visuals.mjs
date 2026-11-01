@@ -40,6 +40,23 @@ assert.match(arena, /getFollowerArt\(portraitFollower\.id\)/, 'Use the selected 
 assert(!arena.includes('h-[52%] w-[48%]'), 'Do not restore the invisible follower layout');
 assert.match(pve, /getEnemyCombatFrames\(enemy\.art\)/, 'PvE enemy animations disconnected');
 assert.match(pve, /getFollowerCombatFrames\(follower\.id\)/, 'PvE companion animation frames missing');
+ 
+// After a PvE win or loss the outcome must replace (not trail below) the tall
+// arena, so the primary CTA stays above the Telegram bottom navigation.
+const pveResultBranch = pve.indexOf('if (outcome) {', pve.indexOf('const hint ='));
+const pveCombatScreen = pve.indexOf('<div className="space-y-2 animate-fade-in">', pveResultBranch);
+assert(pveResultBranch > 0 && pveCombatScreen > pveResultBranch,
+  'PvE result must early-return its own screen before mounting the battle arena');
+assert(pve.indexOf('<OutcomePanel outcome={outcome}', pveResultBranch) < pveCombatScreen,
+  'Result card must be rendered on the separate outcome route');
+assert.match(pve, /data-testid="pve-result-screen"/, 'Mobile outcome screen selector missing');
+assert.match(pve, /data-testid="pve-outcome-card"/, 'Victory and defeat must share a compact result card');
+assert.match(pve, /data-testid="pve-result-next"/, 'Next fight / retry action missing');
+assert.match(pve, /data-testid="pve-result-exit"/, 'Return from outcome missing');
+assert.match(pve, /outcome\.won[\s\S]*?'Повторить бой'/, 'Defeat must offer the same existing paid start flow for retry');
+assert(pve.indexOf('data-testid="pve-result-actions"') < pve.indexOf('data-testid="victory-next-goal"'),
+  'Primary result actions must appear before the optional next-goal panel');
+
 for (const image of ['helmet', 'amulet', 'armor', 'weapon', 'shield', 'ring', 'boots', 'sword', 'knight-blade', 'hero-sword', 'plate-armor']) {
   assert(existsSync(`public/assets/territory/ui/equipment-cartoon/${image}.webp`), `Missing approved cartoon gear: ${image}`);
 }

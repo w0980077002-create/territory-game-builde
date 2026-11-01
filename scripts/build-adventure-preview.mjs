@@ -9,16 +9,24 @@ import autoprefixer from 'autoprefixer';
 const fixture = String.raw`
 let progress = { completed_stage: 0, unlocked_stage: 1, dark_stones: 5 };
 let current = null;
-const oldState = { player: { gold: 100 }, inventory: [] };
+// Exercise duplicate delivery of one server-confirmed batch on pending advance + resume.
+let pendingRecovery = new URLSearchParams(location.search).get('pending') === '1';
+const oldState = { player: { gold: 100, equipped: {} }, inventory: [], belt: Array(7).fill(null), appearance: 'm2', activeDays: 1 };
 window.__adventureCalls = [];
-export const useGame = { get: () => oldState, set: () => {} };
-export const useLanguage = () => ({ language: 'ru' });
+export const useGame = { get: () => oldState, set: () => {}, subscribe: () => () => {} };
+const arenaState = { wins: 0, losses: 0, rating: 1000 };
+export const useArena = { get: () => arenaState, set: () => {}, subscribe: () => () => {} };
+export const useLanguage = () => ({ language: new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'ru' });
+export const localizeText = (item, language) => typeof item === 'string' ? item : item?.[language] || item?.ru || '';
 export async function ensurePlayerSession() { return true; }
-export function restoreAdventureSaveFence() { return null; }
+export function restoreAdventureSaveFence() {
+ return pendingRecovery ? { action:'advance', operationId:'22222222-2222-4222-8222-222222222222',
+   sessionId:'11111111-1111-4111-8111-111111111111', revision:0 } : null;
+}
 export function restoreAdventureStartFence() { return null; }
 export async function requestAdventureStart(userId,command,hooks) {
  window.__adventureCalls.push(command);
- window.__adventureControl=command.control;
+ window.__adventureControl=new URLSearchParams(location.search).get('manual') === '1' ? 'manual' : command.control;
  progress = {...progress, dark_stones: progress.dark_stones - 1};
  current=outcome('fighting');
  hooks.applyState(oldState);
@@ -30,13 +38,13 @@ const outcome = status => ({
  state: { status, input: { stage: 1, control: window.__adventureControl || 'manual', rules: { maxEnergy: 100 } },
    actors: { hero: { energy: 35, stats: { hp: 100, maxHp: 100 }, loadout: { skills: [] } },
              enemy: { stats: { hp: status === 'fighting' ? 50 : 0, maxHp: 50 } } } },
- settlement: status === 'fighting' ? null : { outcome: status, reward: { gold: 10, xp: 20 } },
+ settlement: status === 'fighting' ? null : { outcome: status, reward: status === 'hero_won' ? { gold: 10, xp: 20 } : { gold: 0, xp: 0 } },
 });
 export const supabase = {
- rpc: async name => ({ data: name === 'territory_adventure_progress_v1' ? progress : null, error: null }),
+ rpc: async name => ({ data: name === 'territory_adventure_progress_v1' ? { ...progress, active_session_id: current?.state.status === 'fighting' ? current.session_id : null } : null, error: null }),
  functions: { invoke: async (name, args) => {
    window.__adventureCalls.push(args.body);
-   if (args.body.action === 'prepare') return { data: { status: 'ready' }, error: null };
+   if (args.body.action === 'prepare') return { data: window.__profileChanged ? { status: 'reconciliation_required', reason: 'active_session' } : { status: 'ready' }, error: null };
    if (args.body.action === 'start') {
      window.__adventureControl = args.body.control;
      current = outcome('fighting');
@@ -48,8 +56,13 @@ export const supabase = {
 export async function requestAdventureSettlement(userId, command, hooks) {
  window.__adventureCalls.push(command);
  if (command.action === 'advance') {
-   current = outcome('hero_won');
-   progress = { completed_stage: 1, unlocked_stage: 2, dark_stones: 4 };
+   pendingRecovery = false;
+   const result = window.__nextOutcome || 'hero_won';
+   current = { ...outcome(result), events: [
+     { id: 'confirmed-1', atMs: 1000, actor: 'hero', target: 'enemy', type: 'impact', value: 10 },
+     { id: 'confirmed-2', atMs: 1700, actor: 'enemy', target: 'hero', type: 'block', value: 5 },
+   ] };
+   progress = { completed_stage: result === 'hero_won' ? 1 : 0, unlocked_stage: result === 'hero_won' ? 2 : 1, dark_stones: 4 };
    hooks.applyState(oldState);
  }
  return current || outcome('fighting');

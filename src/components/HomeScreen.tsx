@@ -21,7 +21,7 @@ import { LiveCityBackdrop, CITY_MOTION_KEY, CITY_BACKGROUND_KEY, initialCityMoti
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
-import { getStarterMilestones } from '@/game/starterJourney';
+import { getStarterMilestones, shouldShowStarterJourney } from '@/game/starterJourney';
 import { halloweenBossInSeason } from '@/game/halloweenBossSeason';
 
 export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
@@ -117,7 +117,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
   const follower = selectedFollower(state);
   // A first-time hero needs one unmistakable action, not an intrusive tour.
   // Already active players never see onboarding overlays.
-  const firstFightHelp = player.level <= 2 && state.totalBattlesWon === 0;
+  const firstFightHelp = state.totalBattlesWon === 0;
   const atMaxLevel = player.level >= HERO_MAX_LEVEL;
   const xpPct = atMaxLevel ? 100 : Math.min(100, (player.xp / Math.max(1, player.xpToNext)) * 100);
   const adminMail = useStore(useLive).mail.length;
@@ -126,7 +126,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
   const quest = state.quests.find((q) => !q.claimed && q.current >= q.target) ?? state.quests.find((q) => !q.claimed);
   // A saved-progress guide appears in the existing quest strip, not as a new overlay.
   // Keep veterans' city unchanged and never issue tutorial rewards in the client.
-  const starterSteps = player.level < 5 ? getStarterMilestones(state) : [];
+  const starterSteps = shouldShowStarterJourney(state) ? getStarterMilestones(state) : [];
   const starterDone = starterSteps.filter(step => step.done).length;
   const starterNext = starterSteps.find(step => !step.done);
 

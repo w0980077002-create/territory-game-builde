@@ -77,10 +77,9 @@ BEGIN
  PERFORM 1 FROM territory_private.adventure_progress_v1 WHERE player_id=p_player AND r.stage=unlocked_stage AND completed_stage<r.stage FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'adventure_stage_locked'; END IF;
  IF outcome='hero_won' THEN
-   -- The player row was locked above. A browser-side equipment or stat change
-   -- during the fight must not be silently trusted by reward settlement.
-   IF NOT territory_private.combat_profile_is_current_v1(p_player)
-     THEN RAISE EXCEPTION 'combat_profile_needs_reconciliation'; END IF;
+   -- Settlement validates the original trusted profile under lock in
+   -- combat_refresh_reward_v1. A changed equipped slot is preserved in the
+   -- save, but never promoted to a trusted future fighter.
    before_projection:=territory_private.combat_source_projection_v1(p);
    old_level:=p.level;
    old_updated_at:=p.updated_at;

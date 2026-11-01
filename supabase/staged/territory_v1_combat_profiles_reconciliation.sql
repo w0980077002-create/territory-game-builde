@@ -89,6 +89,24 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
   );
 $$;
 
+-- Explicit owner-scoped detection for an operator or trusted service. It never
+-- attests or updates player/projection data and does not invoke preparation.
+-- Detection and start serialize on the same player row.
+CREATE OR REPLACE FUNCTION territory_private.detect_combat_profile_v1(p_player uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
+BEGIN
+ PERFORM 1 FROM public.players WHERE id=p_player AND NOT coalesce(banned,false) FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'combat_account_unavailable'; END IF;
+ IF territory_private.combat_profile_is_current_v1(p_player) THEN
+   RETURN jsonb_build_object('status','current');
+ END IF;
+ INSERT INTO territory_private.combat_profile_reconciliation_v1(player_id,reason)
+   VALUES(p_player,'trusted_projection_missing_or_stale') ON CONFLICT(player_id) DO NOTHING;
+ RETURN jsonb_build_object('status','reconciliation_required');
+END $$;
+REVOKE ALL ON FUNCTION territory_private.detect_combat_profile_v1(uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION territory_private.detect_combat_profile_v1(uuid) TO service_role;
+
 CREATE OR REPLACE FUNCTION territory_private.prepare_combat_profile_v1(p_player uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
 DECLARE p public.players%ROWTYPE;
@@ -198,11 +216,12 @@ BEGIN
  SELECT * INTO p FROM public.players WHERE id=p_player FOR UPDATE;
  SELECT * INTO h FROM territory_private.combat_profiles_v1 WHERE player_id=p_player FOR UPDATE;
  SELECT * INTO src FROM territory_private.combat_profile_sources_v1 WHERE player_id=p_player FOR UPDATE;
- IF NOT FOUND OR src.projection IS DISTINCT FROM p_before OR NOT h.verified
+ IF NOT FOUND OR (src.projection - 'equipped') IS DISTINCT FROM (p_before - 'equipped') OR NOT h.verified
     OR h.approval_reference IS DISTINCT FROM src.attestation_id::text
     OR h.fighter-'loadout' IS DISTINCT FROM src.fighter
     OR NOT EXISTS(SELECT 1 FROM territory_private.combat_profile_attestations_v1 a
-       WHERE a.attestation_id=src.attestation_id AND a.player_id=p_player AND a.revoked_at IS NULL)
+       WHERE a.attestation_id=src.attestation_id AND a.player_id=p_player AND a.revoked_at IS NULL
+         AND h.equipped_item_ids=a.equipped_item_ids AND h.legacy_equipped_ids=a.legacy_equipped_ids)
     OR (p_before->>'level')::int IS DISTINCT FROM p_old_level
     OR (h.fighter#>>'{ownership,heroLevel}')::int IS DISTINCT FROM p_old_level
  THEN RAISE EXCEPTION 'combat_profile_needs_reconciliation'; END IF;
@@ -237,7 +256,12 @@ BEGIN
    v_fighter:=jsonb_set(v_fighter,'{ownership,heroLevel}',to_jsonb(p.level));
  END IF;
  UPDATE territory_private.combat_profiles_v1 SET fighter=v_fighter,version=version+1,updated_at=clock_timestamp() WHERE player_id=p_player;
- UPDATE territory_private.combat_profile_sources_v1 SET projection=after_projection,fighter=v_fighter-'loadout' WHERE player_id=p_player;
+ -- Preserve the previously reviewed equipment projection, even when the
+ -- player's mutable save changed during the fight. The next start then fails
+ -- the existing current-profile check until that difference is reconciled.
+ UPDATE territory_private.combat_profile_sources_v1 SET
+   projection=jsonb_set(after_projection,'{equipped}',src.projection->'equipped'),
+   fighter=v_fighter-'loadout' WHERE player_id=p_player;
 END $$;
 
 -- Edge calls this in a separate transaction so a queued review survives a

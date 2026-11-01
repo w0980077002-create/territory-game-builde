@@ -14,6 +14,20 @@ CREATE TABLE IF NOT EXISTS territory_private.combat_config_v1 (
   rules jsonb NOT NULL DEFAULT '{}',
   approval_reference text
 );
+-- A separate start-only switch permits draining existing fights. Adding it to
+-- an existing deployment preserves its current start behavior.
+ALTER TABLE territory_private.combat_config_v1
+ ADD COLUMN IF NOT EXISTS starts_enabled boolean NOT NULL DEFAULT true;
+ALTER TABLE territory_private.combat_config_v1
+ ADD COLUMN IF NOT EXISTS canary_only boolean NOT NULL DEFAULT false;
+-- Empty private allowlist; no users are enrolled by installation.
+CREATE TABLE IF NOT EXISTS territory_private.cave_canary_v1 (
+ player_id uuid PRIMARY KEY REFERENCES public.players(id),
+ evidence_reference text NOT NULL CHECK(length(btrim(evidence_reference)) > 0)
+);
+ALTER TABLE territory_private.cave_canary_v1 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON territory_private.cave_canary_v1 FROM PUBLIC,anon,authenticated,service_role;
+GRANT SELECT ON territory_private.cave_canary_v1 TO service_role;
 INSERT INTO territory_private.combat_config_v1(id) VALUES(true) ON CONFLICT DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS territory_private.combat_profiles_v1 (
@@ -197,6 +211,9 @@ BEGIN
       version=version+1,updated_at=clock_timestamp() WHERE player_id=p_player;
     receipt:=jsonb_build_object('success',true,'profile_revision',h.version+1,'loadout',p_result->'loadout');
   ELSIF a='start' THEN
+    IF NOT c.starts_enabled THEN RAISE EXCEPTION 'combat_starts_paused'; END IF;
+    IF c.canary_only AND NOT EXISTS (SELECT 1 FROM territory_private.cave_canary_v1 WHERE player_id=p_player)
+      THEN RAISE EXCEPTION 'combat_canary_not_allowed'; END IF;
     IF NOT c.settlement_ready THEN RAISE EXCEPTION 'combat_settlement_not_ready'; END IF;
     SELECT * INTO e FROM territory_private.combat_encounters_v1 WHERE encounter_id=p_request->>'encounterId' FOR SHARE;
     IF NOT FOUND OR NOT e.enabled OR e.version<>(p_context->'encounter'->>'version')::integer
@@ -205,18 +222,18 @@ BEGIN
     PERFORM territory_private.adventure_check_start_v1(p_player,e.encounter_id);
     IF EXISTS(SELECT 1 FROM territory_private.combat_sessions_v1 WHERE player_id=p_player AND state->>'status'='fighting')
       THEN RAISE EXCEPTION 'combat_active_session_exists'; END IF;
-    -- The real V1 PvE consumes one battle stone per accepted start. Debit
-    -- only after all stage/profile/session checks, inside the same operation
-    -- transaction as the session and its durable replay receipt.
+    -- The Cave has its own server-owned wallet. Its debit, session and
+    -- operation receipt commit atomically under the player lock. Legacy
+    -- campaign battleStones remain unchanged, including when zero.
+    PERFORM territory_private.dark_stone_take_v1(p_player);
     SELECT * INTO wallet FROM public.players WHERE id=p_player FOR UPDATE;
     IF jsonb_typeof(wallet.game_state->'battleStones') IS DISTINCT FROM 'number'
-      OR (wallet.game_state->>'battleStones')::numeric < 1
+      OR (wallet.game_state->>'battleStones')::numeric < 0
       OR (wallet.game_state->>'battleStones')::numeric > 2147483647
       OR trunc((wallet.game_state->>'battleStones')::numeric) <> (wallet.game_state->>'battleStones')::numeric
-      THEN RAISE EXCEPTION 'adventure_no_battle_stones'; END IF;
+      THEN RAISE EXCEPTION 'combat_invalid_battle_stones'; END IF;
     available_stones := (wallet.game_state->>'battleStones')::bigint;
-    UPDATE public.players SET game_state=jsonb_set(game_state,'{battleStones}',to_jsonb(available_stones-1)),
-      updated_at=greatest(clock_timestamp(),updated_at+interval '1 millisecond')
+    UPDATE public.players SET updated_at=greatest(clock_timestamp(),updated_at+interval '1 millisecond')
       WHERE id=p_player RETURNING * INTO wallet;
     -- If a live trigger unexpectedly alters combat-relevant fields, fail
     -- the entire transaction instead of spending currency with stale stats.
@@ -248,7 +265,7 @@ BEGIN
       receipt:=receipt||jsonb_build_object('start_save',jsonb_build_object(
         'success',true,'session_id',s.session_id,'updated_at',wallet.updated_at,
         'wallet_gold',wallet.gold,'wallet_gems',wallet.gems,
-        'battle_stones',available_stones-1,'game_state',wallet.game_state));
+        'battle_stones',available_stones,'game_state',wallet.game_state));
     END IF;
   END IF;
   INSERT INTO territory_private.combat_operations_v1(player_id,operation_id,request,receipt)

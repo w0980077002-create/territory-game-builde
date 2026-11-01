@@ -1,5 +1,5 @@
 import type { GameState, InventoryItem } from './types';
-import { elixirExpiryTime, isElixirExpired, isPerishableItem } from './elixirExpiry';
+import { isElixirExpired, isPerishableItem } from './elixirExpiry';
 
 export const BELT_STACK = 5;
 
@@ -81,16 +81,15 @@ export function beltAction(item: InventoryItem): BeltAction | null {
 export function putInBelt(state: GameState, itemId: string, c: BeltContext): GameState | null {
   const requested = state.inventory.find((i) => i.id === itemId);
   if (!requested || !canBelt(requested)) return null;
-  // All potions/elixirs go on the belt earliest-expiry first, regardless of tapped stack.
-  const item = isPerishableItem(requested)
-    ? state.inventory.filter((i) => i.type === requested.type && i.name === requested.name
-      && i.rarity === requested.rarity && JSON.stringify(i.effect ?? null) === JSON.stringify(requested.effect ?? null)
-      && !isElixirExpired(i))
-      .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0]
-    : requested;
-  if (!item) return null;
+  // Respect the exact inventory batch the player tapped. Picking an older lot
+  // silently can move only 1 when the selected tile visibly contains 5.
+  // Never mix expiry dates in a belt slot: that would lose per-batch provenance.
+  if (!Number.isSafeInteger(requested.qty) || requested.qty <= 0) return null;
+  const item = requested;
   const belt = [...state.belt];
   let index = belt.findIndex((s, i) => s?.name === item.name && s.type === item.type
+    && s.rarity === item.rarity && s.arenaEffect === item.arenaEffect
+    && JSON.stringify(s.effect ?? null) === JSON.stringify(item.effect ?? null)
     && s.qty < BELT_STACK && isSlotOpen(i, c)
     && (!isPerishableItem(item) || s.expiresAt === item.expiresAt));
   if (index < 0) index = belt.findIndex((s, i) => !s && isSlotOpen(i, c));

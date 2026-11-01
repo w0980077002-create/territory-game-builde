@@ -1,5 +1,7 @@
 -- Territory 1.0: separate Dark Cave entrance currency, no changes to player saves.
--- First visit grants 5 stones. Each UTC day thereafter grants 3, up to 30.
+-- First visit grants 5 stones. Each subsequent UTC day grants 3; missed
+-- days accrue from the stored grant_day without changing existing balances.
+-- Past days already hidden by an earlier grant_day cannot be reconstructed here.
 CREATE TABLE IF NOT EXISTS territory_private.dark_stones_v1 (
   player_id uuid PRIMARY KEY REFERENCES public.players(id) ON DELETE CASCADE,
   balance integer NOT NULL DEFAULT 5 CHECK(balance >= 0),
@@ -16,7 +18,7 @@ BEGIN
   INSERT INTO territory_private.dark_stones_v1(player_id,balance,grant_day)
     VALUES(p_player,5,today_utc) ON CONFLICT DO NOTHING;
   UPDATE territory_private.dark_stones_v1 SET
-    balance=CASE WHEN balance<30 THEN least(30,balance+3) ELSE balance END,
+    balance=(balance::bigint + 3::bigint * (today_utc-grant_day))::integer,
     grant_day=today_utc
     WHERE player_id=p_player AND grant_day<today_utc;
   SELECT balance INTO amount FROM territory_private.dark_stones_v1 WHERE player_id=p_player FOR UPDATE;
@@ -43,15 +45,17 @@ GRANT EXECUTE ON FUNCTION territory_private.dark_stone_touch_v1(uuid),
 -- The player's existing progress RPC now also supplies a server-owned stone balance.
 CREATE OR REPLACE FUNCTION public.territory_adventure_progress_v1()
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $rpc$
-DECLARE u uuid:=auth.uid(); completed integer; unlocked integer; stones integer;
+DECLARE u uuid:=auth.uid(); completed integer; unlocked integer; stones integer; active_session uuid;
 BEGIN
   IF u IS NULL OR NOT EXISTS(SELECT 1 FROM public.players WHERE id=u AND NOT coalesce(banned,false))
     THEN RAISE EXCEPTION 'adventure_account_unavailable'; END IF;
   stones:=territory_private.dark_stone_touch_v1(u);
   SELECT completed_stage,unlocked_stage INTO completed,unlocked
     FROM territory_private.adventure_progress_v1 WHERE player_id=u;
+  SELECT session_id INTO active_session FROM territory_private.combat_sessions_v1
+    WHERE player_id=u AND state->>'status'='fighting';
   RETURN jsonb_build_object('completed_stage',coalesce(completed,0),
-    'unlocked_stage',coalesce(unlocked,1),'dark_stones',stones);
+    'unlocked_stage',coalesce(unlocked,1),'dark_stones',stones,'active_session_id',active_session);
 END $rpc$;
 REVOKE ALL ON FUNCTION public.territory_adventure_progress_v1() FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_adventure_progress_v1() TO authenticated;

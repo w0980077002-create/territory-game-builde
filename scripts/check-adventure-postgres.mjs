@@ -8,9 +8,10 @@ const connection = process.env.ADVENTURE_TEST_DATABASE_URL;
 const target = connection ? new URL(connection) : null;
 if (!target || !['postgres:', 'postgresql:'].includes(target.protocol)
   || !['127.0.0.1', 'localhost', '[::1]'].includes(target.hostname)
-  || target.pathname !== '/territory_adventure_ci' || target.search || target.hash) {
+  || !['/territory_adventure_ci','/territory_adventure_clone_ci'].includes(target.pathname) || target.search || target.hash) {
   throw new Error('ADVENTURE_TEST_DATABASE_URL must identify local disposable territory_adventure_ci');
 }
+const isClone = target.pathname === '/territory_adventure_clone_ci';
 const run = promisify(execFile);
 async function sql(statement, app = 'adventure-ci') {
   try {
@@ -34,11 +35,14 @@ const weak = { ...fighter, stats: { ...fighter.stats, hp: 1, maxHp: 1, attack: 1
 const enemy = { ...fighter, stats: { ...fighter.stats, hp: 10, maxHp: 10, attack: 1 } };
 const rules = { stepMs: 10, maxDurationMs: 10000, approachMs: 20, attackIntervalMs: 200, basicWindupMs: 20, basicMultiplier: 1, defenseFactor: 0.5, magicDefenseFactor: 0.2, minimumDamage: 1, critMultiplier: 2, blockMultiplier: 0, maxEnergy: 100, initialEnergy: 100, energyPerSecond: 0, modeDamageMultiplier: { pve: 1, boss: 1, pvp: 1 } };
 const save = { player: { gold: 50, xp: 90, level: 1, xpToNext: 100, maxEnergy: 20, stats: { hp: 100, maxHp: 100, attack: 20, defense: 5 }, equipped: { weapon: { id: 'old' } } }, inventory: [{ id: 'old' }], battleStones: 10, vip: 7, redGems: 45, achievements: [{ id: 'old' }] };
-const noLevelSave = structuredClone(save); noLevelSave.player.xp = 0;
+const noLevelSave = structuredClone(save); noLevelSave.player.xp = 0; noLevelSave.battleStones = 0;
 
 // Refuse to reuse any database that already contains application data.
 assert.equal(await sql("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p')"), '0', 'test database must be empty');
-await sql(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
+await sql(`DO $$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role BYPASSRLS; END IF; END $$;
  CREATE SCHEMA auth;
  CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.test_uid',true),'')::uuid $$;
  CREATE TABLE public.players(id uuid PRIMARY KEY,banned boolean DEFAULT false,game_state jsonb,gold integer,gems integer,xp integer,level integer,max_energy integer,updated_at timestamptz DEFAULT clock_timestamp());
@@ -48,7 +52,18 @@ await sql(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role
  INSERT INTO public.players(id,game_state,gold,gems,xp,level,max_energy) VALUES
  (${quote(player)},${json(save)},50,9,90,1,20),(${quote(loser)},${json(save)},50,9,90,1,20),
  (${quote(noLevel)},${json(noLevelSave)},50,9,0,1,20);`);
-for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supabase/staged/territory_v1_adventure_settlement.sql', 'supabase/staged/territory_v1_combat_profiles_reconciliation.sql', 'supabase/staged/territory_v1_adventure_cutover_mode.sql', 'supabase/staged/territory_v1_adventure_cached_client_guard_v2.sql', 'supabase/staged/territory_v1_adventure_in_game_gate_v3.sql']) await file(path);
+for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supabase/staged/territory_v1_adventure_settlement.sql', 'supabase/staged/territory_v1_combat_profiles_reconciliation.sql', 'supabase/staged/territory_dark_stones_20261030.sql', 'supabase/staged/territory_v1_adventure_cutover_mode.sql', 'supabase/staged/territory_v1_adventure_cached_client_guard_v2.sql', 'supabase/staged/territory_v1_adventure_in_game_gate_v3.sql']) await file(path);
+if (isClone) {
+ // Live-equivalent function baseline, synthetic schema/data. The guarded patch
+ // validates exact pg_get_functiondef hashes before changing any function.
+ await sql(`DROP TABLE territory_private.cave_canary_v1;
+   ALTER TABLE territory_private.combat_config_v1 DROP COLUMN starts_enabled, DROP COLUMN canary_only;`);
+ await file('scripts/fixtures/c1-live-function-baseline.sql');
+ await file('supabase/staged/territory_c1_live_guarded_patch_DRAFT_20261031.sql');
+ assert.equal(await sql('SELECT starts_enabled OR NOT canary_only FROM territory_private.combat_config_v1 WHERE id'), 'f');
+ await assert.rejects(file('supabase/staged/territory_c1_live_guarded_patch_DRAFT_20261031.sql'),/C1 live drift/);
+ await sql('UPDATE territory_private.combat_config_v1 SET starts_enabled=true,canary_only=false WHERE id');
+}
 assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`), save, 'installation leaves the old save untouched');
 await sql(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
  VALUES (${quote(player)},${json(save)},1,${json(fighter)},'{}',ARRAY['old']::text[],'synthetic evidence','test reviewer'),
@@ -81,9 +96,12 @@ const repo = {
 };
 const execute = (p,c,repository=repo) => executeCombatCommand(repository,p,c,() => 12);
 await assert.rejects(execute(player,{action:'start',operationId:op(1),encounterId:'s2',control:'auto'}), /adventure_stage_locked/);
-const start = await execute(player,{action:'start',operationId:op(2),encounterId:'s1',control:'auto'});
-assert.equal(start.start_save.battle_stones,9);
-assert.equal((await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`)).battleStones,9);
+const startCommand={action:'start',operationId:op(2),encounterId:'s1',control:'auto'};
+const [start,startReplay]=await Promise.all([execute(player,startCommand),execute(player,startCommand)]);
+assert.deepEqual(startReplay,start,'two devices replay one start UUID');
+assert.equal(start.start_save.battle_stones,10);
+assert.equal(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(player)}`),'4');
+assert.equal((await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`)).battleStones,10);
 assert.deepEqual(await execute(player,{action:'start',operationId:op(2),encounterId:'s1',control:'auto'}),start);
 await assert.rejects(execute(player,{action:'start',operationId:op(12),encounterId:'s1',control:'auto'}),/combat_active_session_exists/);
 await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(start.session_id)};
@@ -139,12 +157,14 @@ assert.deepEqual(row.game_state.inventory,save.inventory); assert.deepEqual(row.
 assert.equal(row.game_state.vip,7); assert.equal(row.game_state.redGems,45); assert.deepEqual(row.game_state.achievements,save.achievements);
 assert.equal(await sql(`SELECT count(*) FROM territory_private.adventure_settlements_v1 WHERE session_id=${quote(start.session_id)}`),'1');
 const progress=await scalar(`SET ROLE authenticated; SELECT set_config('request.test_uid',${quote(player)},false); SELECT public.territory_adventure_progress_v1()` .replace(`SELECT set_config('request.test_uid',${quote(player)},false);`, `SET request.test_uid=${quote(player)};`));
-assert.deepEqual(progress,{completed_stage:1,unlocked_stage:2});
+assert.deepEqual(progress,{completed_stage:1,unlocked_stage:2,dark_stones:4,active_session_id:null});
 const next=await execute(player,{action:'start',operationId:op(7),encounterId:'s2',control:'auto'});
 assert.equal(next.state.input.stage,2,'next stage starts immediately after level-up');
 const profile=await scalar(`SELECT fighter FROM territory_private.combat_profiles_v1 WHERE player_id=${quote(player)}`);
 assert.equal(profile.ownership.heroLevel,2); assert.equal(profile.stats.attack,105); assert.equal(profile.stats.maxHp,1020);
 const noLevelStart=await execute(noLevel,{action:'start',operationId:op(8),encounterId:'s1',control:'auto'});
+assert.equal(noLevelStart.start_save.battle_stones,0,'Cave does not require ordinary stones');
+assert.equal(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(noLevel)}`),'4');
 await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(noLevelStart.session_id)}`);
 const noLevelWin=await execute(noLevel,{action:'advance',operationId:op(9),sessionId:noLevelStart.session_id,revision:0});
 assert.equal(noLevelWin.settlement.game_state.player.level,1);
@@ -152,8 +172,16 @@ const noLevelNext=await execute(noLevel,{action:'start',operationId:op(10),encou
 assert.equal(noLevelNext.state.input.stage,2,'next stage starts immediately without level-up');
 await sql(`UPDATE public.players SET game_state=jsonb_set(game_state,'{player,equipped,weapon,id}','"tampered"') WHERE id=${quote(noLevel)};
  UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(noLevelNext.session_id)}`);
-await assert.rejects(execute(noLevel,{action:'advance',operationId:op(11),sessionId:noLevelNext.session_id,revision:0}),/combat_profile_needs_reconciliation/);
-assert.equal(await sql(`SELECT revision FROM territory_private.combat_sessions_v1 WHERE session_id=${quote(noLevelNext.session_id)}`),'0');
+const finishChanged={action:'advance',operationId:op(11),sessionId:noLevelNext.session_id,revision:0};
+const changedWin=await execute(noLevel,finishChanged);
+assert.equal(changedWin.state.status,'hero_won');
+assert.equal(changedWin.settlement.game_state.player.equipped.weapon.id,'tampered');
+assert.equal(changedWin.settlement.wallet_gold,80);
+assert.deepEqual(await execute(noLevel,finishChanged),changedWin,'replayed receipt cannot duplicate payout');
+assert.equal(await sql(`SELECT count(*) FROM territory_private.adventure_settlements_v1 WHERE session_id=${quote(noLevelNext.session_id)}`),'1');
+assert.equal((await scalar(`SELECT projection FROM territory_private.combat_profile_sources_v1 WHERE player_id=${quote(noLevel)}`)).equipped.weapon.id,'old');
+assert.equal(await sql(`SELECT territory_private.combat_profile_is_current_v1(${quote(noLevel)})`),'f');
+await assert.rejects(execute(noLevel,{action:'start',operationId:op(13),encounterId:'s2',control:'auto'}),/combat_profile_needs_reconciliation/);
 // The second synthetic player loses a genuine engine fight; no win reward is paid.
 const strongEnemy={...fighter,stats:{...fighter.stats,attack:1000}};
 await sql(`UPDATE territory_private.combat_encounters_v1 SET enemy=${json(strongEnemy)} WHERE encounter_id='s1'`);
@@ -161,5 +189,85 @@ const lostStart=await execute(loser,{action:'start',operationId:op(5),encounterI
 await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(lostStart.session_id)}`);
 const lost=await execute(loser,{action:'advance',operationId:op(6),sessionId:lostStart.session_id,revision:0});
 assert.equal(lost.state.status,'enemy_won'); assert.equal(lost.settlement.reward.gold,0); assert.equal(lost.settlement.reward.xp,0);
-assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`),{...save,battleStones:9},'a defeat consumes one entry stone but awards no gold or XP');
-console.log('PostgreSQL 17 PASS: reviewed synthetic profile, locked stages, engine victory/loss, rollback and retry, durable receipts, preserved save and real concurrent lock contention.');
+assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`),save,'a defeat consumes one entry stone but awards no gold or XP');
+// A real zero balance must reject before creating any new session/receipt.
+await sql(`UPDATE territory_private.dark_stones_v1 SET balance=0 WHERE player_id=${quote(loser)}`);
+const depletedBefore=await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`);
+await assert.rejects(execute(loser,{action:'start',operationId:op(20),encounterId:'s1',control:'auto'}),/combat_no_dark_stones/);
+assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`),depletedBefore);
+assert.equal(await sql(`SELECT count(*) FROM territory_private.combat_operations_v1 WHERE player_id=${quote(loser)} AND operation_id=${quote(op(20))}`),'0');
+await sql(`UPDATE territory_private.dark_stones_v1 SET balance=4 WHERE player_id=${quote(loser)}`);
+
+// Install the staged cave wallet/RPC against this disposable PG17 database.
+// The unique partial index is the invariant that lets the RPC return one ID.
+// Dark Stone RPC was installed before starting any fixture fights.
+const progressAs = id => scalar(`SET ROLE authenticated; SET request.test_uid=${quote(id)}; SELECT public.territory_adventure_progress_v1()`);
+assert.equal((await progressAs(player)).active_session_id,next.session_id, 'owner can recover active session after device loss');
+assert.equal((await progressAs(noLevel)).active_session_id,null, 'finished session is not active');
+assert.equal((await progressAs(loser)).active_session_id,null, 'another player cannot see the active ID');
+await assert.rejects(execute(noLevel,{action:'resume',sessionId:next.session_id}),/combat_session_not_found/);
+await assert.rejects(execute(player,{action:'resume',sessionId:'30000000-0000-4000-8000-000000000099'}),/combat_session_not_found/);
+await assert.rejects(sql(`INSERT INTO territory_private.combat_sessions_v1(player_id,encounter_id,state,cursor_ms)
+ SELECT player_id,encounter_id,state,cursor_ms FROM territory_private.combat_sessions_v1 WHERE session_id=${quote(next.session_id)}`),/combat_one_active_session_v1/);
+assert.equal(await sql(`SELECT count(*) FROM territory_private.combat_sessions_v1 WHERE player_id=${quote(player)} AND state->>'status'='fighting'`),'1');
+// A server-side start-only gate must drain active fights and preserve receipts.
+await sql('UPDATE territory_private.combat_config_v1 SET starts_enabled=false WHERE id=true');
+const stonesBefore=await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`);
+await assert.rejects(execute(loser,{action:'start',operationId:op(14),encounterId:'s1',control:'auto'}),/combat_starts_paused/);
+assert.equal(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`),stonesBefore, 'paused start never debits');
+assert.deepEqual(await execute(player,{action:'start',operationId:op(7),encounterId:'s2',control:'auto'}),next,'old start receipt remains replayable');
+assert.equal((await execute(player,{action:'resume',sessionId:next.session_id})).state.status,'fighting');
+await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(next.session_id)}`);
+const drained=await execute(player,{action:'advance',operationId:op(15),sessionId:next.session_id,revision:0});
+assert.equal(drained.state.status,'hero_won');
+assert.deepEqual(await execute(player,{action:'advance',operationId:op(15),sessionId:next.session_id,revision:0}),drained);
+assert.equal(await sql(`SELECT count(*) FROM territory_private.adventure_settlements_v1 WHERE session_id=${quote(next.session_id)}`),'1');
+await sql('UPDATE territory_private.combat_config_v1 SET starts_enabled=true,canary_only=true WHERE id=true');
+await assert.rejects(execute(player,{action:'start',operationId:op(16),encounterId:'s1',control:'auto'}),/combat_canary_not_allowed/);
+await assert.rejects(sql(`SET ROLE authenticated; INSERT INTO territory_private.cave_canary_v1 VALUES(${quote(player)},'forged')`),/permission denied/);
+await sql(`INSERT INTO territory_private.cave_canary_v1 VALUES(${quote(loser)},'synthetic case')`);
+const canaryBefore=Number(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`));
+const canaryCmd={action:'start',operationId:op(17),encounterId:'s1',control:'auto'};
+const canaryStart=await execute(loser,canaryCmd);
+assert.deepEqual(await execute(loser,canaryCmd),canaryStart);
+assert.equal(Number(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`)),canaryBefore-1);
+if (isClone) {
+ await file('supabase/staged/territory_c1_pause_new_starts_DRAFT_20261031.sql');
+ await assert.rejects(file('supabase/staged/territory_c1_restore_functions_DRAFT_20261031.sql'),/requires drained sessions/);
+} else await sql('UPDATE territory_private.combat_config_v1 SET starts_enabled=false WHERE id=true');
+assert.equal((await execute(loser,{action:'resume',sessionId:canaryStart.session_id})).state.status,'fighting');
+await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(canaryStart.session_id)}`);
+const canaryFinish={action:'advance',operationId:op(18),sessionId:canaryStart.session_id,revision:0};
+const canaryResult=await execute(loser,canaryFinish);
+assert.equal(canaryResult.state.status,'enemy_won');
+assert.deepEqual(await execute(loser,canaryFinish),canaryResult);
+assert.equal(Number(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`)),canaryBefore-1);
+// Eight individually stale owners simulate accounts that never called prepare.
+// Clone only synthetic fixture records, never production data.
+for (let i=1;i<=8;i++) {
+ const id=`40000000-0000-4000-8000-${String(i).padStart(12,'0')}`;
+ await sql(`INSERT INTO public.players(id,banned,game_state,gold,gems,xp,level,max_energy,updated_at)
+  SELECT ${quote(id)},banned,game_state,gold,gems,xp,level,max_energy,updated_at FROM public.players WHERE id=${quote(player)};
+  WITH a AS (INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
+    SELECT ${quote(id)},a.source_game_state,a.source_player_level,a.fighter,a.equipped_item_ids,a.legacy_equipped_ids,'synthetic evidence','reviewer'
+    FROM territory_private.combat_profile_sources_v1 src JOIN territory_private.combat_profile_attestations_v1 a ON a.attestation_id=src.attestation_id WHERE src.player_id=${quote(player)} RETURNING attestation_id)
+  INSERT INTO territory_private.combat_profiles_v1(player_id,version,verified,fighter,equipped_item_ids,legacy_equipped_ids,approval_reference)
+    SELECT ${quote(id)},h.version,h.verified,h.fighter,h.equipped_item_ids,h.legacy_equipped_ids,a.attestation_id::text FROM territory_private.combat_profiles_v1 h CROSS JOIN a WHERE h.player_id=${quote(player)};
+  INSERT INTO territory_private.combat_profile_sources_v1(player_id,attestation_id,projection,fighter)
+    SELECT ${quote(id)},h.approval_reference::uuid,src.projection,src.fighter FROM territory_private.combat_profile_sources_v1 src JOIN territory_private.combat_profiles_v1 h ON h.player_id=${quote(id)} WHERE src.player_id=${quote(player)};
+  UPDATE public.players SET game_state=jsonb_set(game_state,'{player,equipped,weapon,id}','"stale"') WHERE id=${quote(id)};`);
+ assert.equal((await scalar(`SET ROLE service_role; SELECT territory_private.detect_combat_profile_v1(${quote(id)})`)).status,'reconciliation_required');
+ assert.equal((await scalar(`SET ROLE service_role; SELECT territory_private.detect_combat_profile_v1(${quote(id)})`)).status,'reconciliation_required');
+}
+assert.equal(await sql("SELECT count(*) FROM territory_private.combat_profile_reconciliation_v1 WHERE player_id::text LIKE '40000000-%'"),'8');
+await assert.rejects(sql(`SET ROLE authenticated; SELECT territory_private.detect_combat_profile_v1(${quote(player)})`),/permission denied/);
+if (isClone) {
+ const beforeRollback=await scalar(`SELECT jsonb_build_object('players',(SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM public.players p),'wallets',(SELECT jsonb_agg(to_jsonb(w) ORDER BY player_id) FROM territory_private.dark_stones_v1 w),'receipts',(SELECT count(*) FROM territory_private.adventure_settlements_v1),'operations',(SELECT count(*) FROM territory_private.combat_operations_v1))`);
+ await file('supabase/staged/territory_c1_restore_functions_DRAFT_20261031.sql');
+ assert.deepEqual(await scalar(`SELECT jsonb_build_object('players',(SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM public.players p),'wallets',(SELECT jsonb_agg(to_jsonb(w) ORDER BY player_id) FROM territory_private.dark_stones_v1 w),'receipts',(SELECT count(*) FROM territory_private.adventure_settlements_v1),'operations',(SELECT count(*) FROM territory_private.combat_operations_v1))`),beforeRollback);
+ assert.deepEqual(await execute(loser,canaryFinish),canaryResult, 'terminal receipt replay survives phase B');
+ assert.equal((await execute(loser,{action:'resume',sessionId:canaryStart.session_id})).state.status,'enemy_won');
+ await assert.rejects(execute(loser,{action:'start',operationId:op(19),encounterId:'s1',control:'auto'}),/combat_not_enabled/);
+ await assert.rejects(file('supabase/staged/territory_c1_restore_functions_DRAFT_20261031.sql'),/refuses changed functions/);
+}
+console.log('PostgreSQL 17 PASS: owner-scoped recovery, unique active session, reviewed synthetic profile, locked stages, engine victory/loss, rollback and retry, durable receipts, preserved save and real concurrent lock contention.');

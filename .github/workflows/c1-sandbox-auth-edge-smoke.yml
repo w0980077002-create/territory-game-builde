@@ -1,0 +1,85 @@
+name: C1 isolated auth and Edge smoke (not a production release gate)
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sandbox-jwt-edge-smoke:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 128 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Real JWT + isolated RLS/Edge (NOT the full C1 game)
+        env:
+          C1_LAB_URL: https://ksikzkrvuuhermhnbycn.supabase.co
+          # Public publishable key, not service_role or server secret.
+          C1_LAB_PUBLISHABLE_KEY: "sb_publishable_Wr9NxENExIMjwxOQeuecmA_myOoGSb_"
+          # Two pre-created, email-confirmed users in the isolated lab project only.
+          # Never pass service_role, production credentials, or create Auth users in CI.
+          C1_LAB_TEST_EMAIL_A: ${{ secrets.C1_LAB_TEST_EMAIL_A }}
+          C1_LAB_TEST_PASSWORD_A: ${{ secrets.C1_LAB_TEST_PASSWORD_A }}
+          C1_LAB_TEST_EMAIL_B: ${{ secrets.C1_LAB_TEST_EMAIL_B }}
+          C1_LAB_TEST_PASSWORD_B: ${{ secrets.C1_LAB_TEST_PASSWORD_B }}
+        run: |
+          node --input-type=module <<'JS'
+            import assert from 'node:assert/strict';
+            import { randomUUID } from 'node:crypto';
+            import { createClient } from '@supabase/supabase-js';
+            const url = process.env.C1_LAB_URL;
+            const key = process.env.C1_LAB_PUBLISHABLE_KEY;
+            // Refuse to run this smoke against production or an arbitrary project.
+            assert.equal(url, 'https://ksikzkrvuuhermhnbycn.supabase.co', 'C1 auth smoke must use isolated lab');
+            const required = ['C1_LAB_TEST_EMAIL_A','C1_LAB_TEST_PASSWORD_A','C1_LAB_TEST_EMAIL_B','C1_LAB_TEST_PASSWORD_B'];
+            for (const name of required) {
+              assert.ok(process.env[name]?.trim(), 'Missing GitHub Actions secret: ' + name);
+            }
+            assert.notEqual(process.env.C1_LAB_TEST_EMAIL_A.toLowerCase(), process.env.C1_LAB_TEST_EMAIL_B.toLowerCase(), 'C1 needs two distinct lab Auth users for RLS isolation');
+            const prefix = url + '/functions/v1/territory-c1-auth-smoke';
+            const create = () => createClient(url, key, { auth: { persistSession:false, autoRefreshToken:false } });
+            async function invoke(token, body) {
+              const res = await fetch(prefix, {method:'POST', headers:{apikey:key, Authorization:'Bearer '+token, 'Content-Type':'application/json'}, body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
+              return {status:res.status, payload:await res.json().catch(()=>null)};
+            }
+            const invalid = await invoke('invalid-jwt-for-negative-test', {action:'health'});
+            assert.notEqual(invalid.status, 200, 'Invalid JWT must not enter the Edge Function');
+            const a=create(),b=create();
+            const first=await a.auth.signInWithPassword({
+              email:process.env.C1_LAB_TEST_EMAIL_A, password:process.env.C1_LAB_TEST_PASSWORD_A
+            });
+            if(first.error) throw new Error('Lab test login A rejected: ' + (first.error.code || 'unknown'));
+            assert.ok(first.data.session?.access_token && first.data.user?.id,'first real JWT missing');
+            const second=await b.auth.signInWithPassword({
+              email:process.env.C1_LAB_TEST_EMAIL_B, password:process.env.C1_LAB_TEST_PASSWORD_B
+            });
+            if(second.error) throw new Error('Lab test login B rejected: ' + (second.error.code || 'unknown'));
+            assert.ok(second.data.session?.access_token && second.data.user?.id,'second real JWT missing');
+            const tokenA=first.data.session.access_token, tokenB=second.data.session.access_token;
+            const ownA=first.data.user.id,ownB=second.data.user.id;
+            assert.notEqual(ownA,ownB,'test users must differ');
+            assert.equal((await invoke(tokenA,{action:'health'})).status,200,'real JWT A rejected by Edge');
+            assert.equal((await invoke(tokenB,{action:'health'})).status,200,'real JWT B rejected by Edge');
+            const nonceA=randomUUID(),nonceB=randomUUID(),badNonce=randomUUID();
+            assert.equal((await invoke(tokenA,{action:'write',nonce:nonceA})).status,200,'A cannot write own RLS row');
+            const beforeB=await invoke(tokenB,{action:'read'});
+            assert.equal(beforeB.status,200,'B RLS read failed');
+            assert.ok(!beforeB.payload?.visible_nonces?.includes(nonceA),'B leaked A row');
+            const denied=await invoke(tokenB,{action:'write',nonce:badNonce,owner_id:ownA});
+            assert.equal(denied.status,403,'B must not insert as A');
+            assert.equal((await invoke(tokenB,{action:'write',nonce:nonceB})).status,200,'B own row failed');
+            const readA=await invoke(tokenA,{action:'read'});
+            assert.equal(readA.status,200);
+            assert.ok(readA.payload.visible_nonces.includes(nonceA),'A cannot read own row');
+            assert.ok(!readA.payload.visible_nonces.includes(nonceB),'A can read B row');
+            console.log('REAL JWT/RLS/EDGE sandbox smoke PASS: 2 separate Auth users; owner read+write, cross-account denied, invalid bearer denied.');
+            console.log('Only isolated territory_c1_lab_auth_probe_20261031 and two existing lab Auth users were used.');
+            
+          JS
