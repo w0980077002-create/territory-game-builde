@@ -115,6 +115,7 @@ export function FighterFigure({
             <div className={`absolute inset-0 ${mirror ? 'battle-mirror-art' : ''}`}>
             {role === 'attacker' && alive && (
               <img src={pose} alt="" aria-hidden="true" draggable={false}
+                onError={event => { event.currentTarget.style.visibility = 'hidden'; }}
                 className={`${className} fighter-figure__afterimage select-none`} />
             )}
             <SafeFighterArt key={`${pose}|${artIdentity}`} pose={pose} idle={artIdentity} name={name}

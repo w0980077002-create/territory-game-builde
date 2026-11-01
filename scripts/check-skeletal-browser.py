@@ -286,7 +286,7 @@ with sync_playwright() as playwright:
 
     # A missing pose may only fall back to the same appearance; an unavailable
     # idle must never silently substitute the default male Viking.
-    for broken in ('hit.webp', 'idle.webp'):
+    for broken in ('hit.webp', 'idle.webp', 'attack.webp'):
         page = browser.new_page(viewport={'width': 360, 'height': 844})
         page.on('pageerror', lambda error: report['errors'].append(str(error)))
         def broken_rogue(route):
@@ -303,6 +303,11 @@ with sync_playwright() as playwright:
             set_visual(page, {'strike': strike(45, 'hit', attacker='Противник')})
             page.wait_for_timeout(430)
             assert page.locator('#fixture-hero img').get_attribute('src').endswith('/male_rogue/idle.webp')
+        elif broken == 'attack.webp':
+            set_visual(page, {'strike': strike(46, 'hit')})
+            page.wait_for_timeout(100)
+            assert page.locator('#fixture-hero img:not(.fighter-figure__afterimage)').get_attribute('src').endswith('/male_rogue/idle.webp')
+            assert page.locator('#fixture-hero .fighter-figure__afterimage').evaluate("el=>getComputedStyle(el).visibility=='hidden'")
         else:
             page.wait_for_selector('#fixture-hero [data-testid="fighter-art-unavailable"]')
             assert page.locator('#fixture-hero img[src*="male_viking"]').count() == 0
