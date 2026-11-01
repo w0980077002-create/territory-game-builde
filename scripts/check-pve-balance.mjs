@@ -108,11 +108,19 @@ const blockedSummary = pve.summarizePveRound(blockedRound.hits);
 assert.equal(blockedSummary.heroStrike, 'block');
 assert.equal(blockedSummary.enemyStrike, 'hit');
 assert.equal(blockedSummary.enemyZone, 'belly');
+assert.equal(blockedSummary.dealtDamage, 0, 'Blocked strike cannot inflate damage counters');
+assert.equal(blockedSummary.takenDamage, starterHero.hp - blockedRound.hero.hp);
+assert.equal(blockedSummary.companionDamage, 0);
 const protectedRound = pve.playRound(starterHero, guardEnemy, 'legs', ['belly', 'head'], 0, '', 0, null, visibleGuard);
 const protectedSummary = pve.summarizePveRound(protectedRound.hits);
 assert.equal(protectedSummary.heroStrike, 'hit');
 assert.equal(protectedSummary.enemyStrike, 'block');
 assert.equal(protectedSummary.enemyZone, 'belly');
+assert.equal(protectedSummary.takenDamage, 0, 'A covered enemy strike deals zero real damage');
+assert.equal(protectedSummary.dealtDamage, starterHero.hp > 0 ? protectedRound.hits[0].amount : 0);
+const companionSummary = pve.summarizePveRound(witchRound.hits);
+assert.equal(companionSummary.companionDamage, 65, 'Only actual companion hits contribute');
+assert.equal(companionSummary.dealtDamage, witchRound.hits.filter(hit => hit.targetSide === 'enemy').reduce((total, hit) => total + hit.amount, 0));
 assert.equal(pve.summarizePveRound([]).enemyZone, null);
 // Manual counterplay actions must use the same committed intent as the real
 // PvE resolver. They only select zones; they cannot settle hits or mint loot.
@@ -148,6 +156,12 @@ const actionRound = pve.playRound(starterHero, guardEnemy, 'legs', coveredByActi
 assert.equal(actionRound.hero.hp, starterHero.hp, 'One-tap cover must prevent the actual announced strike');
 const fightSource = source('../src/components/pve/PveFight.tsx');
 assert.match(fightSource, /data-testid="pve-round-reaction"/, 'Show actual round feedback to manual PvE players');
+assert.match(fightSource, /data-testid="pve-live-damage-totals"/, 'Show cumulative actual damage during the fight');
+assert.match(fightSource, /setBattleTotals\(previous => \(\{[\s\S]*report\.dealtDamage/, 'Cumulative totals must come from resolved hits');
+assert.match(fightSource, /data-testid="pve-surrender-confirm"/, 'Surrender must require an explicit second action');
+assert.match(fightSource, /data-testid="pve-surrender-cancel"/, 'Players must be able to return to the same fight');
+assert.match(fightSource, /data-testid="pve-surrender-accept"/, 'The surrender confirmation must be explicit');
+assert.match(fightSource, /if \(roundFlight\.current \|\| done\.current\) return;/, 'Cannot concede during an unresolved round');
 assert.match(fightSource, /setTacticalReport\(summarizePveRound\(res\.hits\)\)/, 'Tactical feedback must come from resolved hits');
 assert.match(fightSource, /setTacticalReport\(null\)/, 'Clear previous feedback during the next move');
 assert.match(fightSource, /data-testid="pve-enemy-guard"/, 'Show the actual guard during classic manual combat');
@@ -172,7 +186,7 @@ assert(!engine.includes('Math.pow(1.15, num)'), 'no accidental exponential boss 
 const classicFight = source('../src/components/pve/PveFight.tsx');
 assert.match(classicFight, /const roundFlight = useRef\(false\)/,
   'Classic campaign and trials need a synchronous one-round-at-a-time guard');
-assert.match(classicFight, /if \(roundFlight\.current \|\| busy \|\| outcome \|\| done\.current \|\| !alive\.current\) return;/,
+assert.match(classicFight, /if \(roundFlight\.current \|\| busy \|\| outcome \|\| confirmSurrender \|\| done\.current \|\| !alive\.current\) return;/,
   'Repeated attack taps and unmounted fights must not run another round');
 assert.match(classicFight, /roundFlight\.current = true;[\s\S]*?try \{/,
   'Lock the round before animation or referral bookkeeping');
