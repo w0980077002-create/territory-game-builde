@@ -82,12 +82,19 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
   const [recoverable, setRecoverable] = useState(false);
+  // Automatic stepping uses the SAME receipt-checked advance as manual input.
+  // The single Challenge creates only one server-manual session / Dark Stone debit.
+  const [autoFight, setAutoFight] = useState(false);
+  const autoFightSession = useRef('');
   const [visible, setVisible] = useState(() => document.visibilityState === 'visible');
   const mounted = useRef(true);
   const lock = useRef(false);
   const sessionRef = useRef<Session | null>(null);
   const battleRef = useRef<HTMLDivElement | null>(null);
   const strikeId = useRef(0);
+  // Resume/retry may return the same authoritative event batch more than once.
+  // Event IDs belong to a single server session, not to a React render.
+  const seenServerEvents = useRef<{ sessionId: string; keys: Set<string> }>({ sessionId: '', keys: new Set() });
   const [strikeQueue, setStrikeQueue] = useState<StrikeEvent[]>([]);
   const strike = strikeQueue[0] ?? null;
   const [battleLog, setBattleLog] = useState<string[]>([]);
@@ -96,9 +103,23 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const install = useCallback((value: Session) => {
     if (!mounted.current) return;
     sessionRef.current = value;
+    if (autoFightSession.current !== value.session_id) {
+      autoFightSession.current = value.session_id;
+      setAutoFight(value.state.input.control === 'auto'); // legacy auto sessions
+    }
     setSession(value);
     // Visual effects follow the authoritative server event stream, never invented client hits.
-    const events = Array.isArray(value.events) ? value.events : [];
+    if (seenServerEvents.current.sessionId !== value.session_id) {
+      seenServerEvents.current = { sessionId: value.session_id, keys: new Set() };
+      setStrikeQueue([]);
+      setBattleLog([]);
+    }
+    const events = (Array.isArray(value.events) ? value.events : []).filter((event, index) => {
+      const identity = event.id ? `event:${event.id}` : `revision:${value.revision}:index:${index}`;
+      if (seenServerEvents.current.keys.has(identity)) return false;
+      seenServerEvents.current.keys.add(identity);
+      return true;
+    });
     const hits = events.filter(event =>
       ['impact', 'critical', 'block', 'dodge'].includes(event.type)
       && (event.target === 'hero' || event.target === 'enemy')).slice(-6);
@@ -219,13 +240,13 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     return () => { mounted.current = false; onActiveChange?.(false); };
   }, [restore, onActiveChange]);
 
-  const start = async (control: 'auto' | 'manual') => {
+  const start = async () => {
     if (lock.current || !ready || !progress || sessionRef.current?.state.status === 'fighting') return;
     lock.current = true; setBusy(true); setError('');
     try {
       const command=restoreAdventureStartFence(userId) || {
         action: 'start' as const, operationId: crypto.randomUUID(),
-        encounterId: 'adventure_v1_stage_' + progress.unlocked_stage, control,
+        encounterId: 'adventure_v1_stage_' + progress.unlocked_stage, control: 'manual' as const,
       };
       install(decodeSession(await requestAdventureStart(userId,command,hooks)));
       await readProgress();
@@ -257,16 +278,18 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!session || session.state.status !== 'fighting' || session.state.input.control !== 'auto'
+    if (!session || session.state.status !== 'fighting' || !autoFight
       || busy || recoverable || !visible) return;
     const timer = window.setTimeout(() => { void advance(); }, 1100);
     return () => window.clearTimeout(timer);
-  }, [session, busy, recoverable, visible, advance]);
+  }, [session, busy, recoverable, visible, autoFight, advance]);
 
   const clearFinished = () => {
     if (lock.current || sessionRef.current?.state.status === 'fighting') return;
     localStorage.removeItem(sessionKey(userId));
-    sessionRef.current = null; setSession(null); setStrikeQueue([]); setBattleLog([]); onActiveChange?.(false);
+    sessionRef.current = null; autoFightSession.current = ''; setAutoFight(false);
+    seenServerEvents.current = { sessionId: '', keys: new Set() };
+    setSession(null); setStrikeQueue([]); setBattleLog([]); onActiveChange?.(false);
     // A finished pinned session does not approve the new equipment. Recheck
     // before offering a new start, including on a different device.
     setReady(false);
@@ -394,7 +417,18 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         </p>}
         <button onClick={clearFinished} disabled={busy} className="w-full rounded-xl bg-amber-500 text-black p-3 font-bold">{en?'Back to cave stages':'К этапам пещеры'}</button>
       </> : <>
-        {session.state.input.control==='manual' && <div className="space-y-1.5" data-testid="dark-cave-manual-actions">
+        <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-black/30 px-3 py-2" data-testid="dark-cave-control-panel">
+          <span className="text-xs font-semibold text-amber-100">{en ? 'Battle control' : 'Управление боем'}</span>
+          <button type="button" data-testid="dark-cave-toggle-auto"
+            aria-pressed={autoFight}
+            aria-label={en ? 'Toggle automatic battle' : 'Переключить автоматический бой'}
+            disabled={busy || recoverable || session.state.input.control === 'auto'}
+            onClick={() => setAutoFight(v => !v)}
+            className="min-h-11 rounded-lg border border-yellow-400/50 bg-amber-900/55 px-3 py-2 text-sm font-black text-amber-100 disabled:opacity-50">
+            {autoFight ? (en ? 'Auto on' : 'Авто включено') : (en ? 'Auto off' : 'Авто выключено')}
+          </button>
+        </div>
+        {session.state.input.control==='manual' && !autoFight && <div className="space-y-1.5" data-testid="dark-cave-manual-actions">
           {session.state.actors.hero.loadout.skills.length > 0 ? (
             <div className="grid grid-cols-2 gap-1.5">
               {session.state.actors.hero.loadout.skills.map(slot=>{
@@ -421,7 +455,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
             <Swords size={18} aria-hidden="true" className="inline-block mr-2 align-[-3px]"/>{en?'Continue battle':'Продолжить бой'}
           </button>
         </div>}
-        <p className="text-center text-xs text-amber-100/70">{session.state.input.control==='auto'
+        <p className="text-center text-xs text-amber-100/70">{autoFight
           ? (en?'The hero fights automatically':'Герой сражается автоматически')
           : (en?'Each tap advances the ongoing battle':'Каждое нажатие продолжает текущий бой')}</p>
       </>}
@@ -452,7 +486,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         {stoneInfo&&<div className="relative z-20 mt-1 rounded-lg border border-violet-500/50 bg-[#160e28] px-2.5 py-1.5 text-[11px] text-violet-100">
           {en?'Entry costs 1 Dark Stone; +3 daily at 00:00 UTC, starting grant 5.':'Вход — 1 Тёмный камень. При первом посещении — 5, далее +3 ежедневно в 00:00 UTC.'}
         </div>}
-        <div className="relative mt-1.5 h-[clamp(76px,13dvh,120px)] shrink-0 overflow-hidden rounded-xl border border-[#6e4389]/70 bg-[#090615] shadow-[inset_0_0_28px_#090415,0_0_13px_rgba(107,41,155,.3)]" data-testid="dark-cave-visual">
+        <div className="relative mt-1.5 h-[clamp(52px,9dvh,92px)] shrink-0 overflow-hidden rounded-xl border border-[#6e4389]/70 bg-[#090615] shadow-[inset_0_0_28px_#090415,0_0_13px_rgba(107,41,155,.3)]" data-testid="dark-cave-visual">
           <img src={realmArt} alt={en?'Violet abyss beneath the mountains':'Фиолетовая бездна в глубине подземелья'} draggable={false}
             className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover object-center" data-testid="dark-cave-portal"/>
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#070511]/90 via-transparent to-[#070511]/10"/>
@@ -468,7 +502,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           </div>
           <button onClick={jumpToCurrent} type="button" className="shrink-0 rounded-md border border-[#8056a7]/60 bg-[#28183e] px-2.5 py-1 text-[11px] font-bold text-[#f5d7ff]">{en?'My floor':'Мой этаж'}</button>
         </div>
-        <div className="relative min-h-[168px] flex-1 overflow-hidden rounded-xl border border-[#51416c]/80 bg-[#080a17]/90 p-1.5 shadow-[inset_0_4px_18px_#050711]" data-testid="dark-cave-floor-list">
+        <div className="relative min-h-[170px] flex-1 overflow-hidden rounded-xl border border-[#51416c]/80 bg-[#080a17]/90 p-1.5 shadow-[inset_0_4px_18px_#050711]" data-testid="dark-cave-floor-list">
           <div ref={floorListRef} data-testid="dark-cave-floor-scroll" role="region" aria-label={en?'Scrollable cave floors':'Прокручиваемый список этажей'}
             tabIndex={0} className="dark-cave-floor-scroll relative h-full min-h-0 space-y-1 overflow-y-auto overscroll-contain pr-1 touch-pan-y">
             {floors.map(floor=>{
@@ -476,7 +510,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
               const current = floor.index === progress.unlocked_stage && progress.completed_stage < 100;
               const locked = floor.index > progress.unlocked_stage || progress.completed_stage === 100 && !cleared;
               const highlighted = floor.index === floorFocus;
-              const rowClass = 'relative flex min-h-[49px] w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors ' +
+              const rowClass = 'relative flex min-h-[45px] w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors ' +
                 (current ? 'border-[#bf7df0] bg-gradient-to-r from-[#422052] via-[#271833] to-[#1a112b] text-[#fff1fc] shadow-[inset_0_0_12px_rgba(163,89,231,.14),0_0_10px_rgba(147,70,211,.2)]' :
                   locked ? 'border-[#322c46] bg-[#141426] text-[#86829d]' :
                     highlighted ? 'border-[#8063a2] bg-[#28223f] text-[#eaddfb]' :
@@ -511,18 +545,16 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         </div>
         <div className="relative z-10 mt-1.5 shrink-0 border-t border-[#68457d]/55 pt-2" data-testid="dark-cave-actions">
           {progress.completed_stage < 100 ? <>
-            <div className="grid grid-cols-2 gap-2" data-testid="dark-cave-start-modes">
-              {(['auto','manual'] as const).map(control => <button key={control} type="button"
-                disabled={!ready||busy||recoverable||!mayChallenge||progress.dark_stones<1}
-                onClick={()=>void start(control)}
-                data-testid={control==='auto'?'dark-cave-challenge':'dark-cave-challenge-manual'}
-                aria-label={control==='auto'?(en?'Auto challenge, 1 Dark Stone':'Авто вызов, 1 Тёмный камень'):(en?'Manual challenge, 1 Dark Stone':'Ручной вызов, 1 Тёмный камень')}
-                className="flex min-h-[46px] w-full items-center justify-center gap-1 rounded-xl border border-[#dfb56c] bg-gradient-to-b from-[#f7d484] via-[#daa94f] to-[#9d672e] px-2 text-[14px] font-black text-[#2b180f] shadow-[inset_0_1px_1px_#fff0b0,0_3px_0_#392517] active:scale-[.99] disabled:cursor-not-allowed disabled:grayscale-[.35] disabled:opacity-55">
-                <img src={darkStoneArt} alt="" className="h-5 w-5 shrink-0 rounded object-cover"/>
-                {control==='auto'?(en?'Auto':'Авто'):(en?'Manual':'Ручной')}
-                <span className="rounded bg-[#4d341e]/15 px-1 text-[13px]">1</span>
-              </button>)}
-            </div>
+            <button type="button"
+              disabled={!ready||busy||recoverable||!mayChallenge||progress.dark_stones<1}
+              onClick={()=>void start()}
+              data-testid="dark-cave-challenge"
+              aria-label={en?'Challenge, 1 Dark Stone':'Вызов, 1 Тёмный камень'}
+              className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-[#dfb56c] bg-gradient-to-b from-[#f7d484] via-[#daa94f] to-[#9d672e] px-3 text-[16px] font-black text-[#2b180f] shadow-[inset_0_1px_1px_#fff0b0,0_3px_0_#392517] active:scale-[.99] disabled:cursor-not-allowed disabled:grayscale-[.35] disabled:opacity-55">
+              <img src={darkStoneArt} alt="" className="h-5 w-5 shrink-0 rounded object-cover"/>
+              {en?'Challenge':'Вызов'}
+              <span className="rounded bg-[#4d341e]/15 px-2 text-[13px]">1</span>
+            </button>
             {!mayChallenge?<p className="mt-1 text-center text-[11px] text-[#c7b6d8]">
               {en?'Return to your current floor to continue.':'Выбери текущий этаж, чтобы продолжить.'}
             </p>:progress.dark_stones<1?<p className="mt-1 text-center text-[11px] text-[#c9b3e8]">

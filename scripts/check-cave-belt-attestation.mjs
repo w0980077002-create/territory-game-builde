@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { PGlite } from '@electric-sql/pglite';
+
+const db=new PGlite();
+const p='10000000-0000-4000-8000-000000000001', q='10000000-0000-4000-8000-000000000002';
+const item={id:'belt_0',type:'potion',qty:2,effect:{stat:'hp',value:50},expiresAt:'2099-01-01T00:00:00Z'};
+const belt=[item,null,null,null,null,null,null];
+const run=async(sql,args=[]) => (await db.query(sql,args)).rows;
+try {
+ await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
+ CREATE SCHEMA territory_private;
+ CREATE TABLE public.players(id uuid PRIMARY KEY,banned boolean DEFAULT false,arena_wins integer,game_state jsonb);
+ GRANT USAGE ON SCHEMA territory_private TO service_role; GRANT SELECT ON public.players TO service_role;`);
+ await run('INSERT INTO public.players VALUES($1,false,0,$2),($3,false,0,$2)',[p,{belt},q]);
+ await db.exec(readFileSync('supabase/staged/territory_cave_belt_attestation_v1.sql','utf8'));
+ await db.exec('SET ROLE service_role');
+ const valid=async(id,slot=0)=>(await run('SELECT territory_private.cave_belt_attestation_valid_v1($1,$2) AS ok',[id,slot]))[0].ok;
+ assert.equal(await valid(p),false,'unreviewed items fail closed');
+ await assert.rejects(run(`INSERT INTO territory_private.cave_belt_attestations_v1(player_id,slot,source_reference,reviewed_by,slot_snapshot,expires_at) VALUES($1,0,'forged','forged',$2,'2099-01-01')`,[p,item]),/permission denied/);
+ await db.exec('RESET ROLE');
+ await run(`INSERT INTO territory_private.cave_belt_attestations_v1(player_id,slot,source_reference,reviewed_by,slot_snapshot,expires_at) VALUES($1,0,'review-1','reviewer',$2,'2099-01-01')`,[p,item]);
+ await assert.rejects(run(`INSERT INTO territory_private.cave_belt_attestations_v1(player_id,slot,source_reference,reviewed_by,slot_snapshot,expires_at) VALUES($1,0,'review-1','reviewer',$2,'2099-01-01')`,[q,item]),/duplicate key/);
+ await run(`INSERT INTO territory_private.cave_belt_attestations_v1(player_id,slot,source_reference,reviewed_by,slot_snapshot,expires_at) VALUES($1,1,'review-2','reviewer',$2,'2099-01-01')`,[p,item]);
+ await run('UPDATE public.players SET game_state=$2 WHERE id=$1',[p,{belt:[item,item,null,null,null,null,null]}]);
+ await db.exec('SET ROLE service_role');
+ assert.equal(await valid(p),true); assert.equal(await valid(q),false,'owner isolation');
+ assert.equal(await valid(p,1),false,'locked slot cannot be used');
+ await db.exec('RESET ROLE');
+ await run(`UPDATE public.players SET game_state=jsonb_set(game_state,'{belt,0,qty}','3') WHERE id=$1`,[p]);
+ await db.exec('SET ROLE service_role'); assert.equal(await valid(p),false,'quantity or effect changes invalidate review'); await db.exec('RESET ROLE');
+ await run('UPDATE public.players SET game_state=$2 WHERE id=$1',[p,{belt}]);
+ await run(`UPDATE territory_private.cave_belt_attestations_v1 SET expires_at='2000-01-01' WHERE player_id=$1`,[p]);
+ await db.exec('SET ROLE service_role'); assert.equal(await valid(p),false,'server expiry'); await db.exec('RESET ROLE');
+ await run(`UPDATE territory_private.cave_belt_attestations_v1 SET expires_at='2099-01-01',revoked_at=now() WHERE player_id=$1`,[p]);
+ await db.exec('SET ROLE service_role'); assert.equal(await valid(p),false,'revocation'); await db.exec('RESET ROLE');
+ await run(`UPDATE public.players SET game_state='{"belt":{}}' WHERE id=$1`,[p]);
+ await db.exec('SET ROLE service_role'); assert.equal(await valid(p),false,'malformed belt fails closed');
+ console.log('Cave belt attestation foundation PASS: no auto-trust, owner, exact slot, expiry and revocation.');
+} finally {await db.close();}

@@ -47,15 +47,15 @@ with sync_playwright() as playwright:
             horizontalOverflow: document.documentElement.scrollWidth > innerWidth,
           };
         }""")
-        assert measurements['floorHeight'] >= 99, f'Floor list too short at {width}x{height}: {measurements}'
+        assert measurements['floorHeight'] >= 156, f'Fewer than three cave floors visible at {width}x{height}: {measurements}'
         assert measurements['scrollHeight'] > measurements['clientHeight'], f'Floors cannot scroll: {measurements}'
         assert measurements['floorBottom'] <= measurements['actionsTop'] + 2, f'Floors overlap Challenge: {measurements}'
         assert measurements['challengeBottom'] <= height - 60, f'Challenge hidden behind nav: {measurements}'
         assert not measurements['horizontalOverflow'], f'Horizontal overflow at {width}x{height}'
-        assert page.get_by_test_id('dark-cave-challenge').is_visible(), 'Challenge must be visible'
-        # The current Cave does not render the old placeholder blessing buttons.
-        # Guard the actual compact realm and its playable floor/challenge UI.
-        assert page.get_by_test_id('dark-cave-realm').is_visible(), 'Current Cave realm must remain visible'
+        assert page.get_by_test_id('dark-cave-challenge').is_visible(), 'Single Challenge must be visible'
+        assert page.get_by_text('Добавить благословение').count() == 0, 'Do not advertise nonexistent blessing mechanics'
+        assert page.get_by_text('Режим боя').count() == 0, 'Do not expose battle mode before the fight'
+        assert page.get_by_test_id('dark-cave-visual').is_visible(), 'The cavern backdrop must be present'
         floor_scroll = page.get_by_test_id('dark-cave-floor-scroll')
         floor_scroll.evaluate('(element) => { element.scrollTop = element.scrollHeight; }')
         assert floor_scroll.evaluate('(element) => element.scrollTop > 0'), 'Touch-scroll floor list must move'

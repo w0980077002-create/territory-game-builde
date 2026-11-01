@@ -109,9 +109,12 @@ assert.match(ui, /getCampaignStage\(i \+ 1\)/, 'All 100 floors must render from 
 assert.match(ui, /dark-cave-floor-scroll/, 'Floor list must support independent vertical scrolling');
 assert.match(ui, /floorListRef\.current/, 'Current floor scrolls into view inside the cave');
 assert.match(ui, /progress\.unlocked_stage/, 'Current stage remains server-authoritative');
-assert.match(ui, /onClick=\{\(\)=>void start\(control\)\}/, 'Challenge passes selected control to server start');
-assert.match(ui, /\(\['auto','manual'\] as const\)/, 'Two server-backed cave controls before Dark Stone debit');
-assert.match(ui, /dark-cave-challenge-manual/, 'Manual combat must have an actual pre-start button');
+assert.match(ui, /onClick=\{\(\)=>void start\(\)\}/, 'One Challenge action uses a single server start');
+assert.match(ui, /control: 'manual' as const/, 'Server-manual permits genuine skill input');
+assert.match(ui, /data-testid="dark-cave-toggle-auto"/, 'Auto toggle is inside combat');
+assert.match(ui, /setAutoFight\(v => !v\)/, 'Auto switch never calls start again');
+assert.match(ui, /!autoFight/, 'Auto off exposes actual server skills');
+assert.doesNotMatch(ui, /data-testid="dark-cave-challenge-manual"|dark-cave-start-modes/, 'Do not show a second paid challenge');
 assert.match(ui, /progress\.dark_stones<1/, 'Dark Stones must gate the Challenge');
 assert.match(ui, /setProgress\(found\)/, 'unlock progress must arrive from server');
 assert.doesNotMatch(ui, /recordBattleResult|spendStones|trialReward|Math\.random|setBalance/,
@@ -135,7 +138,8 @@ assert.match(ui, /dark-cave-floor-list/, 'Dedicated floor selection UI is requir
 assert.match(ui, /dark-cave-realm\.svg/, 'A distinct violet abyss scene must be used by the cave');
 assert.match(read('public/assets/territory/scenes/dark-cave-realm.svg'), /<svg/, 'Original dark cave art must exist');
 assert.doesNotMatch(ui, /Добавить благословение|Режим боя|setBlessingInfo|setControl\(/, 'No fake blessing slots or extra battle mode selector in cave lobby');
-assert.match(ui, /min-h-\[168px\]/, 'Cave floor list must reserve space for 3 floor rows on small screens');
+assert.match(ui, /min-h-\[170px\]/, 'Cave floor panel needs at least 170px including padding for a 156px three-row viewport');
+assert.match(ui, /min-h-\[45px\]/, 'Each compact cave floor must keep a touch-sized row');
 assert.match(ui, /data-testid="dark-cave-visual"/, 'Dark cave theme illustration must be visible above floor list');
 assert.match(ui, /progress\.dark_stones<1/, 'Never enable entry when no Dark Stones are available');
 assert.match(ui, /await readProgress\(\)/, 'Recheck stone balance after server start');
