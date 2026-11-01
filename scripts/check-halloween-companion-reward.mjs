@@ -19,7 +19,7 @@ for (const pattern of [
   /FROM PUBLIC, anon, authenticated/,
   /auth.uid\(\)/,
   /total_hits\s*>\s*0/,
-  /clock_timestamp\(\)\s*<\s*v_end/,
+  /clock_timestamp\(\)\s*<\s*GREATEST\(v_end, '2026-11-03 00:00:00\+00'::timestamptz\)/,
   /ON CONFLICT \(event_id,player_id,reward_id\) DO NOTHING/,
   /'rewardId','follower_pumpkin_witch_2026'/,
   /'level',100/,
@@ -28,7 +28,7 @@ for (const pattern of [
 assert.doesNotMatch(sql,/\b(?:UPDATE|DELETE|TRUNCATE|DROP)\s+public\.players\b/i);
 assert.match(cloud,/halloweenCompanionVerified: false/,'never trust saved entitlement');
 assert.match(app,/claimPumpkinWitchEntitlement\(\)/);
-assert.match(app,/2026-11-03T00:00:00Z/);
+assert.match(app,/addEventListener\('online', refreshCompanion\)/);
 assert.match(followers,/old\.id !== HALLOWEEN_COMPANION_ID/);
 assert.match(followers,/halloweenVerified \? \[\{ \.\.\.PUMPKIN_WITCH_TEMPLATE \}\] : \[\]/);
 assert.match(panel,/DISPLAY_FOLLOWER_TEMPLATES.map/);

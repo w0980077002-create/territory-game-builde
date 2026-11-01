@@ -293,6 +293,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
+    let removeCompanionOnline = () => {};
     loadCloudSave(user.id, user.displayName)
       .then(async (profile) => {
         if (cancelled) return;
@@ -322,19 +323,23 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         useAccount.set({ vip: profile.vip, permanentVip:profile.vip, vipUntil:null, vipRemaining:0, vipCheckedAt:performance.now() });
         void refreshFortuneVip();
         setLoaded(true);
-        // Separate authenticated raid ledger: never trust a saved seasonal follower.
-        // The claim RPC itself refuses claims before 2026-11-03 00:00 UTC.
-        if (Date.now() >= Date.parse('2026-11-03T00:00:00Z')) {
+        // A server receipt is the only evidence of ownership. The server, not
+        // the device clock, enforces the deadline. Retry after reconnecting.
+        const refreshCompanion = () => {
           void claimPumpkinWitchEntitlement()
             .then((eligible) => {
               if (!cancelled && eligible) useGame.set((current) => installVerifiedPumpkinWitch(current));
             })
             .catch((error) => console.warn('Halloween companion entitlement unavailable:', error));
-        }
+        };
+        refreshCompanion();
+        window.addEventListener('online', refreshCompanion);
+        removeCompanionOnline = () => window.removeEventListener('online', refreshCompanion);
       })
       .catch(() => !cancelled && setLoadError('failedLoad'));
     return () => {
       cancelled = true;
+      removeCompanionOnline();
     };
   }, [user.id, user.displayName]);
 

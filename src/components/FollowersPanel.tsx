@@ -9,6 +9,7 @@ import {
   FOLLOWER_TEMPLATES, DISPLAY_FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_ID, PUMPKIN_WITCH_TEMPLATE, followerTrainingCost, MAX_FOLLOWER_LEVEL, MAX_BATTLE_COW_LEVEL,
   cowStonesOwned, cowAwakeningCost, selectedFollower, selectFollower, trainFollower,
 } from '@/game/followers';
+import { PumpkinWitch } from './PumpkinWitch';
 import './followersCamp.css';
 
 /** Real PvE companions, displayed as a compact selectable roster.
@@ -72,11 +73,11 @@ export function FollowersPanel() {
     <div className="followers-camp__active">
       {active ? <>
         <div className="followers-camp__active-art">
-          <img src={getFollowerArt(active.id)} loading="lazy" alt="" draggable={false}/>
+          {active.id === HALLOWEEN_COMPANION_ID ? <PumpkinWitch /> : <img src={getFollowerArt(active.id)} loading="lazy" alt="" draggable={false}/>}
         </div>
         <div className="followers-camp__active-info">
           <span className="followers-camp__eyebrow"><Check size={13}/>{en ? 'ACTIVE IN PvE' : 'АКТИВЕН В PvE'}</span>
-          <h3>{en ? (FOLLOWER_TEMPLATES.find(f => f.id === active.id)?.nameEn ?? active.name) : active.name}</h3>
+          <h3>{en ? (DISPLAY_FOLLOWER_TEMPLATES.find(f => f.id === active.id)?.nameEn ?? active.name) : active.name}</h3>
           <p>{en ? 'Level' : 'Уровень'} {active.level} <span>·</span> <Swords size={12}/> {active.attack} <span>·</span> <Shield size={12}/> {active.defense}</p>
           <small>{en ? 'Helps in Campaign and Trials, not in Arena' : 'Помогает в Походе и Испытаниях, не на Арене'}</small>
         </div>
@@ -87,12 +88,13 @@ export function FollowersPanel() {
 
     {follower && <section className="followers-camp__detail" aria-live="polite">
       <div className="followers-camp__detail-top">
-        <div className="followers-camp__detail-art"><img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/></div>
+        <div className="followers-camp__detail-art">{isSeasonal ? <PumpkinWitch /> : <img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/>}</div>
         <div>
           <span className="followers-camp__eyebrow"><Sparkles size={12}/>{selected
             ? (en ? 'ACTIVE COMPANION' : 'АКТИВНЫЙ СПУТНИК')
             : (en ? 'VIEWING COMPANION' : 'ПРОСМОТР СПУТНИКА')}</span>
           <h3>{en ? template.nameEn : template.name}</h3>
+          {isSeasonal && <span className="followers-camp__legendary">{en ? 'RAID · 2026' : 'РЕЙД · 2026'}</span>}
           {template.id === 'follower_6' && <span className="followers-camp__legendary"><Sparkles size={12}/>{en ? 'LEGENDARY LOOK' : 'ЛЕГЕНДАРНЫЙ ОБРАЗ'}</span>}
           <p>{en ? template.descriptionEn : template.description}</p>
           <span className={unlocked ? 'followers-camp__availability' : 'followers-camp__availability followers-camp__availability--locked'}>
@@ -110,7 +112,7 @@ export function FollowersPanel() {
         {template.role === 'crystal' && <div className="followers-camp__special"><Sparkles size={15}/>{en ? 'Crystal Frenzy: extra strike, light healing each round, slight armor piercing.' : 'Кристальное безумие: дополнительный удар, небольшое лечение каждый раунд и пробивание брони.'}</div>}
         <div className="followers-camp__stats">
           <div><Swords size={16}/><span>{en ? 'Attack' : 'Атака'}</span><b>{follower.attack}</b></div>
-          <div><Shield size={16}/><span>{en ? 'Defense' : 'Защита'}</span><b>{follower.defense}</b></div>
+          <div><Shield size={16}/><span>{isSeasonal ? (en ? 'Healing' : 'Лечение') : (en ? 'Defense' : 'Защита')}</span><b>{isSeasonal ? 16 : follower.defense}</b></div>
           <div><Crown size={16}/><span>{en ? 'Level' : 'Уровень'}</span><b>{follower.level}/{cap}</b></div>
         </div>
         <div className="followers-camp__progress" role="progressbar" aria-label={en ? 'Training level' : 'Уровень развития'} aria-valuemin={0} aria-valuemax={cap} aria-valuenow={Math.min(follower.level, cap)}>
@@ -121,10 +123,10 @@ export function FollowersPanel() {
             className="followers-camp__choose">
             <Check size={16}/>{selected ? en ? 'Selected' : 'Выбран' : en ? 'Choose' : 'Выбрать'}
           </button>
-          <button type="button" onClick={() => train(follower.id)} disabled={!canTrain}
+          {!isSeasonal && <button type="button" onClick={() => train(follower.id)} disabled={!canTrain}
             className="followers-camp__train">
             {isCow ? <Sparkles size={16}/> : <Wrench size={16}/>}{maxed ? en ? 'Level cap' : 'Лимит уровня' : isCow ? (en ? 'Awakening unavailable' : 'Пробуждение закрыто') : en ? 'Train' : 'Обучить'}
-          </button>
+          </button>}
         </div>
         {isCow && <div className="followers-camp__awakening" aria-label={en ? 'Awakening stone' : 'Камень пробуждения'}>
           <img src={import.meta.env.BASE_URL + 'assets/territory/ui/items/awakening-stone.svg'} alt="" loading="lazy" draggable={false}/>

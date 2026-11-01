@@ -23,7 +23,7 @@ AS $$
 DECLARE
   v_uid uuid := auth.uid();
   v_end timestamptz;
-  v_previous timestamptz;
+  v_inserted timestamptz;
   v_awarded_at timestamptz;
 BEGIN
   IF v_uid IS NULL THEN
@@ -35,11 +35,11 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'halloween_companion_event_missing';
   END IF;
-  IF pg_catalog.clock_timestamp() < v_end THEN
+  IF pg_catalog.clock_timestamp() < GREATEST(v_end, '2026-11-03 00:00:00+00'::timestamptz) THEN
     RETURN pg_catalog.jsonb_build_object('eligible', false, 'reason', 'event_active');
   END IF;
   IF NOT EXISTS (
-    SELECT 1 FROM public.players WHERE id = v_uid AND NOT COALESCE(banned,false)
+    SELECT 1 FROM public.players WHERE id = v_uid
   ) THEN
     RAISE EXCEPTION 'halloween_companion_player_unavailable';
   END IF;
@@ -50,14 +50,11 @@ BEGIN
   ) THEN
     RETURN pg_catalog.jsonb_build_object('eligible', false, 'reason', 'no_confirmed_hits');
   END IF;
-  SELECT claimed_at INTO v_previous
-  FROM territory_private.halloween_companion_rewards_2026
-  WHERE event_id = 'halloween_2026' AND player_id = v_uid
-    AND reward_id = 'follower_pumpkin_witch_2026';
   INSERT INTO territory_private.halloween_companion_rewards_2026
     (event_id, player_id, reward_id, reward_level)
   VALUES ('halloween_2026',v_uid,'follower_pumpkin_witch_2026',100)
-  ON CONFLICT (event_id,player_id,reward_id) DO NOTHING;
+  ON CONFLICT (event_id,player_id,reward_id) DO NOTHING
+  RETURNING claimed_at INTO v_inserted;
   SELECT claimed_at INTO v_awarded_at
   FROM territory_private.halloween_companion_rewards_2026
   WHERE event_id = 'halloween_2026' AND player_id = v_uid
@@ -69,7 +66,7 @@ BEGIN
     'eligible',true,
     'rewardId','follower_pumpkin_witch_2026',
     'level',100,
-    'alreadyClaimed', v_previous IS NOT NULL,
+    'alreadyClaimed', v_inserted IS NULL,
     'claimedAt',v_awarded_at
   );
 END;
