@@ -36,6 +36,14 @@ status, second_session = request(api + '/auth/v1/token?grant_type=password', {'e
 assert status == 200 and second_session.get('access_token') and second_session.get('user',{}).get('id') == participant
 second_token = second_session['access_token']
 assert participant != nonparticipant
+# Current Supabase Auth signs user sessions with its configured asymmetric key.
+# Configure the independent PostgREST with Auth's public JWKS, plus a separate
+# local HS256 key used solely to create a correctly signed expired test token.
+status, jwks = request(api + '/auth/v1/.well-known/jwks.json', key=anon)
+assert status == 200 and isinstance(jwks.get('keys'), list) and jwks['keys'], ('JWKS unavailable', status)
+def b64(data): return base64.urlsafe_b64encode(data).rstrip(b'=').decode()
+jwks['keys'].append({'kty':'oct','k':b64(secret.encode()),'alg':'HS256','kid':'expired-test'})
+verification_keys = json.dumps(jwks, separators=(',',':'))
 network = 'halloween-auth-e2e'
 subprocess.run(['docker', 'network', 'create', network], check=True, stdout=subprocess.DEVNULL)
 for container in ('halloween-before', 'halloween-after'):
@@ -54,7 +62,7 @@ INSERT INTO public.territory_halloween_boss_2026_players VALUES
                     '-p', '127.0.0.1:' + port + ':3000',
                     '-e', 'PGRST_DB_URI=postgres://halloween_authenticator@' + container + ':5432/postgres',
                     '-e', 'PGRST_DB_SCHEMAS=public', '-e', 'PGRST_DB_ANON_ROLE=anon',
-                    '-e', 'PGRST_JWT_SECRET=' + secret, 'postgrest/postgrest:v12.2.3'],
+                    '-e', 'PGRST_JWT_SECRET=' + verification_keys, 'postgrest/postgrest:v12.2.3'],
                    check=True, stdout=subprocess.DEVNULL)
     for attempt in range(60):
         try:
@@ -75,10 +83,10 @@ status, _ = request(after, {})
 assert status in (401,403,404), ('anonymous',status)
 # JWT cryptography is exercised at PostgREST, not simulated with set_config.
 header, payload, signature = participant_token.split('.')
-def b64(data): return base64.urlsafe_b64encode(data).rstrip(b'=').decode()
 def decode(data): return json.loads(base64.urlsafe_b64decode(data + '=' * (-len(data) % 4)))
 expired = decode(payload); expired['exp'] = 1
-body = header + '.' + b64(json.dumps(expired,separators=(',',':')).encode())
+expired_header = b64(json.dumps({'alg':'HS256','typ':'JWT','kid':'expired-test'},separators=(',',':')).encode())
+body = expired_header + '.' + b64(json.dumps(expired,separators=(',',':')).encode())
 expired_token = body + '.' + b64(hmac.new(secret.encode(),body.encode(),hashlib.sha256).digest())
 for invalid in (expired_token, header + '.' + payload + '.' + ('A' * len(signature))):
     status, _ = request(after, {}, invalid)
