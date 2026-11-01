@@ -177,4 +177,20 @@ assert.match(fight, /onEquipment=\{onEquipment \? \(\) => \{ nextCancelled\.curr
   'Equipment navigation must close the fight and cancel pending next-battle work');
 assert.match(battle, /onEquipment=\{onEquipment\}/,
   'Use the existing inventory route rather than a duplicate equipment screen');
+// A real material drop must lead to the existing Forge, not a fake inventory reward.
+// The route is available in both classic modes and returning never auto-spends a stone.
+const appForForge = readFileSync('src/App.tsx', 'utf8');
+assert.match(fight, /outcome\.won && outcome\.materials > 0 && onForge/, 'Forge CTA requires confirmed positive material delta');
+assert.match(fight, /data-testid="pve-visit-forge"/, 'Material loot must offer the actual Forge');
+assert.match(fight, /onForge=\{onForge \? \(\) => \{ nextCancelled\.current = true; onExit\(\); onForge\(\); \} : undefined\}/,
+  'Forge navigation must cancel pending next fight and exit combat');
+assert.match(battle, /onForge=\{onForge\}/, 'Battle must pass the existing Forge action into its result');
+assert.match(appForForge, /onForge=\{\(\) => openForge\(undefined, battleView === 'trial' \? 'trial' : 'campaign'\)\}/,
+  'Victory Forge route must preserve Campaign vs Trials');
+assert.match(appForForge, /setBattleView\(forgeReturnBattleView \?\? 'campaign'\); setForgeReturnBattleView\(null\); setAutoStart\(false\)/,
+  'Forge return must not spend stones or lose the selected classic mode');
+assert.match(battle, /import\.meta\.env\.BASE_URL \+ "city-bg\.webp"/,
+  'Campaign chapter artwork must resolve under the published GitHub Pages subpath');
+console.log('PvE forge loop PASS: actual material delta -> existing Forge -> original classic mode, no auto-spend.');
+
 console.log('PvE real forge loot and equipment preparation PASS: saved deltas, no invented drops or duplicate battle.');
