@@ -197,9 +197,9 @@ assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss stri
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
 
 assert.match(fightSource, /followerBonus\.defense, followerBonus, enemyIntent\)/, 'Pass the visible guard to the PvE round calculation');
-assert.match(fightSource, /nextAdaptiveEnemyIntent\\(res\\.enemy, atk, kind === 'trial' \\|\\| !!enemy\\.isBoss\\)/,
+assert.match(fightSource, /nextAdaptiveEnemyIntent\(res\.enemy, atk, kind === 'trial' \|\| !!enemy\.isBoss\)/,
   'Phase-two guard uses resolved HP and the actual last strike');
-assert.match(fightSource, /setEnemyIntent\\(nextIntent\\.intent\\)/,
+assert.match(fightSource, /setEnemyIntent\(nextIntent\.intent\)/,
   'The next guard must be the committed intent used by combat');
 assert.match(fightSource, /data-testid="pve-adaptive-guard"/,
   'The player must see the adaptive second phase');
