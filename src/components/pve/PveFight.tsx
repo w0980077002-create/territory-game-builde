@@ -33,6 +33,7 @@ interface Props {
   onNext?: () => boolean;
   onQuests?: () => void;
   onEquipment?: () => void;
+  onForge?: () => void;
 }
 
 interface Outcome {
@@ -88,7 +89,7 @@ function ZoneBtn({ label, sub, on, tone, disabled, onClick }: { label: string; s
   );
 }
 
-export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment }: Props) {
+export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, onForge }: Props) {
   const { language } = useLanguage();
   const state = useStore(useGame);
   const arena = useStore(useArena);
@@ -277,6 +278,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment }:
           questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
           onQuests={onQuests ? () => { nextCancelled.current = true; onQuests(); } : undefined}
           onEquipment={onEquipment ? () => { nextCancelled.current = true; onExit(); onEquipment(); } : undefined}
+          onForge={onForge ? () => { nextCancelled.current = true; onExit(); onForge(); } : undefined}
           nextPending={nextPending} nextError={nextError}
           onNext={onNext ? () => {
             if (nextRequested.current) return;
@@ -494,7 +496,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment }:
   );
 }
 
-function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questReady, onQuests, onEquipment, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; onEquipment?: () => void; nextPending: boolean; nextError: boolean }) {
+function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questReady, onQuests, onEquipment, onForge, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; onEquipment?: () => void; onForge?: () => void; nextPending: boolean; nextError: boolean }) {
   const { language } = useLanguage();
   return (
     <div className="relative mx-auto w-full max-w-lg px-1 pb-2 pt-1 animate-pop">
@@ -580,6 +582,13 @@ function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questRead
               </div>
             </div>
           </section>
+        )}
+        {outcome.won && outcome.materials > 0 && onForge && (
+          <button type="button" data-testid="pve-visit-forge" onClick={onForge}
+            className="relative mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-amber-300/60 bg-amber-700/70 px-3 text-sm font-extrabold text-amber-50 active:scale-[0.98]">
+            <Hammer size={17} aria-hidden="true" />
+            {language === 'en' ? 'Open Forge with your materials' : 'В кузницу с добытыми материалами'}
+          </button>
         )}
         {outcome.won && onEquipment && (
           <button type="button" data-testid="pve-prepare-equipment" onClick={onEquipment}
