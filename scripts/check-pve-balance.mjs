@@ -93,6 +93,20 @@ assert.equal(witchRound.healAmount, 16);
 const lethal = zones.map(z => pve.playRound({ ...witchHero, attack: 100000 }, witchEnemy, z.id, [], 65, 'Same name')).find(r => r.hits[0].amount > 0);
 assert(lethal, 'fixture must contain an unblocked strike');
 assert.equal(lethal.hits.filter(h => h.source === 'companion').length, 0, 'no visual strike if the hero already defeated the enemy');
+// The classic PvE guard tell must be real: an advertised defense changes the hit outcome.
+const starterHero = { name: 'Hero', hp: 1000, maxHp: 1000, attack: 100, defense: 10, critChance: 0, critDamage: 50 };
+const guardEnemy = { name: 'Guard', hp: 500, maxHp: 500, attack: 5, defense: 5, critChance: 0, critDamage: 50, enemyId: 'ch1_enemy_0', isBoss: false };
+const visibleGuard = { attack: 'belly', blocks: ['head', 'chest'] };
+const blockedRound = pve.playRound(starterHero, guardEnemy, 'head', [], 0, '', 0, null, visibleGuard);
+const smartRound = pve.playRound(starterHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+assert.equal(blockedRound.hits[0].tone, 'block', 'Telegraphed head guard must block a head attack');
+assert.equal(blockedRound.hits[0].amount, 0);
+assert.equal(smartRound.hits[0].tone, 'hit', 'Attacking outside the telegraphed guard should hit');
+assert(smartRound.hits[0].amount > 0, 'Choosing a gap should cause genuine combat damage');
+const fightSource = source('../src/components/pve/PveFight.tsx');
+assert.match(fightSource, /data-testid="pve-enemy-guard"/, 'Show the actual guard during classic manual combat');
+assert.match(fightSource, /followerBonus\.defense, followerBonus, enemyIntent\)/, 'Pass the visible guard to the PvE round calculation');
+assert.match(fightSource, /setEnemyIntent\(randomZones\(\)\)/, 'Refresh guard after resolving each round');
 
 const engine = source('../src/game/engine.ts');
 const actions = source('../src/game/actions.ts');

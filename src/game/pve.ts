@@ -75,8 +75,10 @@ export interface RoundResult {
   healAmount: number;
 }
 
-export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null): RoundResult {
-  const ai = randomZones();
+export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null, enemyIntent: ReturnType<typeof randomZones> | null = null): RoundResult {
+  // The visible enemy guard is the actual defense used by this round, not a decorative hint.
+  // Other callers retain their original random AI by omitting enemyIntent.
+  const ai = enemyIntent ?? randomZones();
   const hits: PveHit[] = [];
   const cap = eliteRoundDamageCap(enemy.enemyId ?? '', !!enemy.isBoss, enemy.maxHp);
   let damageBudget = cap ?? Number.POSITIVE_INFINITY;
