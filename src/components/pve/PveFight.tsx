@@ -206,7 +206,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
       roundFlight.current = false;
       if (alive.current) setBusy(false);
     }
-  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language]);
+  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, enemyIntent]);
 
   useEffect(() => {
     if (!auto || busy || outcome) return;
