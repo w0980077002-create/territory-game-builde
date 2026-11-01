@@ -7,7 +7,7 @@ import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
-import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, summarizePveRound, type PveSide, type PveTacticalSummary } from '@/game/pve';
+import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, playRound, randomZones, summarizePveRound, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
@@ -446,7 +446,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
         </div>
 
         {!outcome && !auto && guardedZone && (
-          <div data-testid="pve-enemy-guard" className="relative mx-2 mb-1 flex items-center gap-1.5 rounded-lg border border-amber-300/50 bg-[#321f14]/95 px-2 py-1.5 text-[11px] font-semibold text-amber-100">
+          <div data-testid="pve-enemy-guard" className="relative mx-2 mb-1 flex flex-wrap items-center gap-1.5 rounded-lg border border-amber-300/50 bg-[#321f14]/95 px-2 py-1.5 text-[11px] font-semibold text-amber-100">
             <Shield className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
             <span className="min-w-0 leading-tight" role="status" aria-live="polite">
               {language === 'en' ? 'Enemy guards' : 'Враг прикрывает'} <strong className="text-amber-300">{guardedZoneLabel}</strong>.
@@ -454,11 +454,16 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
                 ? (language === 'en' ? 'Your strike may be blocked. Choose a gap!' : 'Удар может быть заблокирован. Ищи брешь!')
                 : (language === 'en' ? 'Strike another zone to bypass this guard.' : 'Бей в другую зону, чтобы обойти щит.')}
             </span>
+            <button type="button" data-testid="pve-choose-opening" disabled={!controls}
+              onClick={() => setAttack(current => nextOpenStrike(current, guardedZone.id))}
+              className="ml-auto min-h-9 shrink-0 rounded-lg border border-amber-200/70 bg-gradient-to-b from-amber-300 to-amber-600 px-2.5 text-[11px] font-black text-[#29180b] active:scale-[0.98] disabled:opacity-40">
+              {language === 'en' ? 'Choose opening' : 'Выбрать брешь'}
+            </button>
           </div>
         )}
 
         {showThreatTell && (
-          <div data-testid="pve-telegraphed-strike" className="relative mx-2 mb-1 flex items-center gap-1.5 rounded-lg border border-red-300/55 bg-[#391b1a]/95 px-2.5 py-2 text-[11px] font-semibold leading-4 text-amber-100" role="status" aria-live="polite">
+          <div data-testid="pve-telegraphed-strike" className="relative mx-2 mb-1 flex flex-wrap items-center gap-1.5 rounded-lg border border-red-300/55 bg-[#391b1a]/95 px-2.5 py-2 text-[11px] font-semibold leading-4 text-amber-100" role="status" aria-live="polite">
             <Sword className="h-4 w-4 shrink-0 text-red-300" aria-hidden="true" />
             <span>
               {language === 'en' ? 'Enemy prepares a strike at ' : 'Враг готовит удар в '}
@@ -467,6 +472,14 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
                 ? (language === 'en' ? 'Your block covers it.' : 'Твой блок прикрывает эту зону.')
                 : (language === 'en' ? 'Protect this zone before STRIKE.' : 'Прикрой эту зону до нажатия «УДАР».')}
             </span>
+            <button type="button" data-testid="pve-cover-threat"
+              disabled={!controls || blocks.includes(enemyIntent.attack)}
+              onClick={() => setBlocks(current => coverThreatZone(current, enemyIntent.attack))}
+              className="ml-auto min-h-9 shrink-0 rounded-lg border border-red-200/70 bg-gradient-to-b from-amber-300 to-amber-600 px-2.5 text-[11px] font-black text-[#29180b] active:scale-[0.98] disabled:opacity-40">
+              {blocks.includes(enemyIntent.attack)
+                ? (language === 'en' ? 'Covered' : 'Прикрыто')
+                : (language === 'en' ? 'Cover strike' : 'Прикрыть удар')}
+            </button>
           </div>
         )}
 
