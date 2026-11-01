@@ -92,7 +92,21 @@ assert.equal(blockedRound.hits[0].tone, 'block', 'Telegraphed head guard must bl
 assert.equal(blockedRound.hits[0].amount, 0);
 assert.equal(smartRound.hits[0].tone, 'hit', 'Attacking outside the telegraphed guard should hit');
 assert(smartRound.hits[0].amount > 0, 'Choosing a gap should cause genuine combat damage');
+// The same strikes that changed HP must drive the visible tactical feedback.
+const blockedSummary = pve.summarizePveRound(blockedRound.hits);
+assert.equal(blockedSummary.heroStrike, 'block');
+assert.equal(blockedSummary.enemyStrike, 'hit');
+assert.equal(blockedSummary.enemyZone, 'belly');
+const protectedRound = pve.playRound(starterHero, guardEnemy, 'legs', ['belly', 'head'], 0, '', 0, null, visibleGuard);
+const protectedSummary = pve.summarizePveRound(protectedRound.hits);
+assert.equal(protectedSummary.heroStrike, 'hit');
+assert.equal(protectedSummary.enemyStrike, 'block');
+assert.equal(protectedSummary.enemyZone, 'belly');
+assert.equal(pve.summarizePveRound([]).enemyZone, null);
 const fightSource = source('../src/components/pve/PveFight.tsx');
+assert.match(fightSource, /data-testid="pve-round-reaction"/, 'Show actual round feedback to manual PvE players');
+assert.match(fightSource, /setTacticalReport\(summarizePveRound\(res\.hits\)\)/, 'Tactical feedback must come from resolved hits');
+assert.match(fightSource, /setTacticalReport\(null\)/, 'Clear previous feedback during the next move');
 assert.match(fightSource, /data-testid="pve-enemy-guard"/, 'Show the actual guard during classic manual combat');
 assert.match(fightSource, /followerBonus\.defense, followerBonus, enemyIntent\)/, 'Pass the visible guard to the PvE round calculation');
 assert.match(fightSource, /setEnemyIntent\(randomZones\(\)\)/, 'Refresh guard after resolving each round');
