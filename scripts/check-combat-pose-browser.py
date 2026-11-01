@@ -33,9 +33,13 @@ with sync_playwright() as p:
             set_visual(page,{'strike':event(100)})
             assert page.locator(h).get_attribute('data-pose')=='idle', 'Windup must retain original idle'
             assert page.locator(f).get_attribute('data-pose')=='idle', 'Target cannot react before contact'
+            if width==320:
+                assert float(page.locator('#fixture-enemy .fighter-impact__label').evaluate('el=>getComputedStyle(el).opacity')) < .01, 'Reduced-motion label cannot precede contact'
             wait_pose(page,h,'attack')
             assert page.locator(f).get_attribute('data-pose')=='idle'
             wait_pose(page,f,'hit')
+            if width==320:
+                page.wait_for_function("Number(getComputedStyle(document.querySelector('#fixture-enemy .fighter-impact__label')).opacity)>.9",timeout=300)
             page.screenshot(path=str(OUT/f'contact-{width}-{lang}.png'))
             wait_pose(page,h,'idle')
             wait_pose(page,f,'idle')

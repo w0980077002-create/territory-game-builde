@@ -275,7 +275,11 @@
   .fighter-figure__footstep, .fighter-impact__flash { display: none; }
   .fighter-figure__sweep, .fighter-impact__arc, .fighter-impact__spark, .fighter-impact__shock,
   .fighter-impact__shield, .fighter-impact__trail { display: none; }
-  .fighter-impact__label { animation: none !important; opacity: 1 !important; transform: translateX(-50%) !important; }
+  .fighter-impact__label { animation: fighter-label-reduced var(--fighter-impact-duration) steps(1,end) var(--fighter-hit-delay) forwards !important; }
+}
+@keyframes fighter-label-reduced {
+  0%, 90% { opacity: 1; transform: translateX(-50%); }
+  100% { opacity: 0; transform: translateX(-50%); }
 }
 
 
