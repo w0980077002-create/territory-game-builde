@@ -47,6 +47,8 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
     achievements: migrated.achievements?.length ? migrated.achievements : defaults.achievements,
     inventory: inventory ?? defaults.inventory,
     followers: reconcileFollowers(migrated.followers, heroLevel),
+    // Ignore client-persisted reward claims until the authenticated RPC verifies them.
+    halloweenCompanionVerified: false,
     activeFollowerId: migrated.activeFollowerId ?? null,
     belt: Array.from({ length: 7 }, (_, i) => belt?.[i] ?? null),
     activeDays: migrated.activeDays ?? 1,
