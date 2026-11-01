@@ -35,6 +35,8 @@ jobs:
         run: scripts/check-halloween-postgres17.sh
       - name: Test unlimited raid hits on PostgreSQL 17
         run: bash scripts/check-halloween-unlimited-pg17.sh
+      - name: Test end-of-raid top-ten mail bonuses on PG17
+        run: bash scripts/check-halloween-top10-postgres17.sh
       - uses: supabase/setup-cli@v1
         with:
           version: 2.79.0

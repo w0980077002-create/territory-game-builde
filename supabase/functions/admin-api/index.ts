@@ -292,6 +292,37 @@ async function handle(action: string, body: Row) {
       if (finish.error || result.error || !result.data) throw new HttpError(503, 'halloween_reward_unavailable');
       return result.data;
     }
+    case "halloween_top10_status": {
+      // Read-only aggregate after the event closes; keep IDs and rankings private.
+      const { data, error } = await db.rpc('territory_halloween_top10_preview_v1');
+      if (error) {
+        if (error.message.includes('halloween_top10_event_active')) return { snapshot: null };
+        throw new HttpError(503, 'halloween_top10_unavailable');
+      }
+      if (!data || typeof data !== 'object') throw new HttpError(503, 'halloween_top10_unavailable');
+      return { snapshot: data };
+    }
+    case "halloween_top10_bulk": {
+      // Independent owner-only cutover, disabled until after audited raid closure.
+      if (Deno.env.get('HALLOWEEN_TOP10_OPERATOR_ENABLED') !== 'true')
+        throw new HttpError(503, 'halloween_top10_unavailable');
+      const requestId = String(body.requestId ?? '');
+      const digest = String(body.digest ?? '');
+      const count = body.eligible;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId)
+          || !/^[0-9a-f]{32}$/.test(digest)
+          || !Number.isSafeInteger(count) || count < 0 || count > 10)
+        throw new HttpError(400, 'invalid_request');
+      const { data, error } = await db.rpc('territory_halloween_top10_bulk_v1', {
+        p_request_id:requestId,p_expected_count:count,p_expected_digest:digest,
+      });
+      if (error || !data || typeof data !== 'object')
+        throw new HttpError(503, 'halloween_top10_unavailable');
+      await audit('halloween_top10_bulk', {
+        event:'halloween_2026',requestId,inserted:data.inserted,alreadyProcessed:data.alreadyProcessed,
+      });
+      return data;
+    }
     case "geo_stats": {
       // Only available through the existing owner-authenticated admin-api handler.
       // Read an aggregated RPC; do not expose player IDs, IPs or location history.
