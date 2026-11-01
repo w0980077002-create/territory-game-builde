@@ -26,7 +26,7 @@ interface Props {
   onShop: () => void;
   onQuests: () => void;
   onEquipment: () => void;
-  onForge: () => void;
+  onForge?: () => void;
   onActiveChange?: (active: boolean) => void;
 }
 
