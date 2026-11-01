@@ -1,0 +1,34 @@
+name: Halloween companion PostgreSQL 17 integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/staged/halloween_companion_reward_2026.sql'
+      - 'scripts/check-halloween-postgres17.sh'
+      - '.github/workflows/halloween-postgres.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgres-17:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build isolated PostgreSQL 17 with test clock
+        run: |
+          mkdir -p /tmp/halloween-pg-image
+          cat > /tmp/halloween-pg-image/Dockerfile <<'DOCKERFILE'
+          FROM postgres:17
+          RUN apt-get update && apt-get install -y --no-install-recommends libfaketime && rm -rf /var/lib/apt/lists/*
+          DOCKERFILE
+          docker build -t halloween-pg17 /tmp/halloween-pg-image
+      - name: Start independent pre- and post-deadline databases
+        run: |
+          for entry in 'halloween-before|2026-11-02 12:00:00' 'halloween-after|2026-11-04 12:00:00'; do
+            name=${entry%%|*}; clock=${entry#*|}
+            docker run -d --name "$name" -e POSTGRES_PASSWORD=isolated-test -e LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1 -e "FAKETIME=$clock" -e FAKETIME_DONT_FAKE_MONOTONIC=1 halloween-pg17
+            for i in $(seq 1 60); do docker exec "$name" pg_isready -U postgres && break; sleep 1; done
+            docker exec "$name" pg_isready -U postgres
+          done
+      - name: Test staged SQL and concurrent transactions
+        run: scripts/check-halloween-postgres17.sh
