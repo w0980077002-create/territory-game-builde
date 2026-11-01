@@ -152,7 +152,7 @@ export function HalloweenBossScreen() {
             : en ? 'STRIKE THE BOSS!' : 'УДАРИТЬ БОССА!'}
         </button>
         <p className="relative mt-2 text-[11px] text-amber-100/85">
-          {en ? 'Free attacks' : 'Бесплатные удары'}: <b>{state ? hitsLeft : '…'}/{state?.maxHitsToday ?? 40}</b> · {en ? 'Resets at 00:00 UTC' : 'Обновление в 00:00 UTC'}
+          {en ? 'Free attacks' : 'Бесплатные удары'}: <b>{state ? hitsLeft : '…'}/{state?.maxHitsToday ?? 100}</b> · {en ? 'Resets at 00:00 UTC' : 'Обновление в 00:00 UTC'}
         </p>
         {message && <p role="alert" className="relative mt-2 rounded-lg border border-red-500/50 bg-red-950/60 px-2 py-2 text-xs text-red-100">{message}</p>}
       </section>
