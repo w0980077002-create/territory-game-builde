@@ -123,4 +123,16 @@ assert.match(app, /reconcileLockedBelt\(timedState, profile\.arenaWins\)/,
 assert.match(app, /\|\| beltReconciled\)/,
   'persist returned potions in the existing cloud save migration queue');
 
-console.log('Belt wins ONLY: thresholds, exact boundaries, no days/levels, migration without loss, cloud save: PASS');
+// Player request: tapping a lock must explain the actual server-win requirement.
+const beltCells = read('src/components/ui/BeltCells.tsx');
+assert.match(beltCells, /setLockedSlot\(i\)/, 'locked slot tap opens requirements');
+assert.match(beltCells, /BELT_WIN_GOALS\[lockedSlot\]/, 'use the canonical Arena wins thresholds');
+assert.match(beltCells, /data-testid="belt-slot-unlock-info"/, 'requirements are visible in a dialog');
+assert.match(beltCells, /Math\.max\(0, requiredWins - wins\)/, 'remaining victories never go negative');
+assert.match(beltCells, /language === 'en'/, 'lock details are localized RU and EN');
+assert.match(beltCells, /<Modal[\s\S]*onClose=\{\(\) => setLockedSlot\(null\)\}/,
+  'unlock dialog is dismissible');
+assert.match(beltCells, /open \? onTap\(i, true\) : setLockedSlot\(i\)/,
+  'open slots keep their original action and locked slots cannot mutate equipment');
+
+console.log('Belt wins ONLY: thresholds, exact boundaries, no days/levels, migration without loss, cloud save, locked-slot hints: PASS');
