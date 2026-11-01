@@ -74,3 +74,5 @@ jobs:
         run: PGPASSWORD=postgres psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d territory_runes_ci -f scripts/fixtures/rune-battle-snapshot-v1-pg17.sql
       - name: Test pinned PvE and Arena rune effects on disposable PostgreSQL 17
         run: PGPASSWORD=postgres psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d territory_runes_ci -f scripts/fixtures/rune-effects-v1-pg17.sql
+      - name: Test server-only pinned rune damage bridge on disposable PostgreSQL 17
+        run: PGPASSWORD=postgres psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d territory_runes_ci -f scripts/fixtures/rune-damage-bridge-v1-pg17.sql
