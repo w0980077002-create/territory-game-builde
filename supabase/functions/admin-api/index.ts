@@ -255,6 +255,13 @@ async function handle(action: string, body: Row) {
       }
       return data;
     }
+    case "halloween_reward_status": {
+      // This handler is reached only after the existing owner token is verified.
+      // It exposes aggregates only; bulk grants remain an operator-only action.
+      const { data, error } = await db.rpc('territory_halloween_companion_snapshot_v1');
+      if (error || !data || typeof data !== 'object') throw new HttpError(503, 'halloween_reward_unavailable');
+      return data;
+    }
     case "geo_stats": {
       // Only available through the existing owner-authenticated admin-api handler.
       // Read an aggregated RPC; do not expose player IDs, IPs or location history.
