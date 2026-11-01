@@ -81,11 +81,16 @@ BEGIN
    OR fresh#>>'{slots,0,level}'<>'0'
    OR fresh->>'revision'<>'4'
  THEN RAISE EXCEPTION 'rune_battle_snapshot_not_immutable'; END IF;
+END $assert$;
+RESET ROLE;
+-- Only the fixture owner may inspect private tables directly; service_role
+-- has EXECUTE on the pin function but deliberately has no table privileges.
+DO $assert$
+BEGIN
  IF (SELECT count(*) FROM territory_private.rune_battle_snapshots_v1)<>3
  THEN RAISE EXCEPTION 'rune_battle_duplicate_snapshot'; END IF;
  IF (SELECT game_state FROM public.players WHERE id='10000000-0000-4000-8000-000000000001')
    <> '{"vip":7,"gold":50,"runes":"legacy"}'::jsonb
  THEN RAISE EXCEPTION 'rune_battle_changed_legacy_save'; END IF;
 END $assert$;
-RESET ROLE;
 \echo 'PASS: server-only immutable rune snapshots, trusted ranks, revision, replay, privacy, post-save and post-revoke stability (PG17)'
