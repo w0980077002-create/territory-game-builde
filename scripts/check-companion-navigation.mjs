@@ -73,7 +73,7 @@ assert.match(livingHero,/data-testid="hero-open-companions"/, 'Hero camp action 
 assert.match(inv,/data-testid="companion-journey-actions"/, 'Camp has a pinned next step');
 assert.match(inv,/selectedFollower\(state\)/, 'Camp footer reflects latest selection');
 assert.match(inv,/onBattle && <button type="button" onClick=\{onBattle\}/, 'Camp returns to real campaign');
-assert.match(app,/onBattle=\{\(\) => \{ setBattleView\('campaign'\); setAutoStart\(false\); setScreen\('battle'\); \}\}/, 'Companion path cannot auto-spend stones');
+assert.match(app,/onBattle=\{\(\) => \{ setBattleView\(forgeReturnBattleView \?\? 'campaign'\); setForgeReturnBattleView\(null\); setAutoStart\(false\); setScreen\('battle'\); \}\}/, 'Companion path cannot auto-spend stones; Forge defaults to Campaign');
 assert.match(heroCss,/hero-showcase__companion/, 'Hero companion has scoped wood and gold layout');
 assert.match(campCss,/companion-journey-bar/, 'Camp next-step bar has mobile styling');
 assert.doesNotMatch(livingHero,/useGame\.set|trainFollower\(|awardCowAwakeningStone\(/, 'Hero preview must remain read-only');
