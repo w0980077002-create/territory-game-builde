@@ -249,6 +249,15 @@ with sync_playwright() as playwright:
     assert page.locator('#fixture-hero svg[data-rig]').count() == 0
     assert page.locator('#fixture-hero img').get_attribute('src').endswith('/heroes/male_viking/idle.webp')
     assert page.locator('#fixture-hero img').evaluate('img=>img.complete&&img.naturalWidth>0')
+    set_visual(page, {'strike': strike(31, 'hit', attacker='Противник')})
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/idle.webp'), 'Damage art must wait for contact'
+    page.wait_for_timeout(360)
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/hit.webp'), 'Damage art must appear at contact'
+    set_visual(page, {'strike': None})
+    set_visual(page, {'strike': strike(32, 'crit', attacker='Противник'), 'speed': 2})
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/idle.webp')
+    page.wait_for_timeout(190)
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/hit.webp'), 'Contact follows combat speed'
     report['missing_cutout_same_hero_fallback'] = True
     page.close()
 

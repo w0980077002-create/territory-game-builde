@@ -52,6 +52,17 @@ export function FighterFigure({
   }, [rig]);
   // The existing server/combat queue is the ONLY source for attacks and damage.
   const role = !strike ? null : strike.attacker === name ? 'attacker' : strike.target === name ? 'target' : null;
+  const speed = Number.isFinite(combatSpeed) && combatSpeed > 0 ? combatSpeed : 1;
+  const [contactKey, setContactKey] = useState<number | null>(null);
+  const damageKey = role === 'target' && (strike?.tone === 'hit' || strike?.tone === 'crit') ? strike.key : null;
+  useEffect(() => {
+    if (damageKey === null) return;
+    // Unrigged art must not show a damage pose before the same contact boundary
+    // used by the rig, effects and PvE HP update. Retire obsolete timers on a
+    // new strike or unmount so an old hit cannot animate the next one.
+    const timer = window.setTimeout(() => setContactKey(damageKey), 350 / speed);
+    return () => window.clearTimeout(timer);
+  }, [damageKey, speed]);
   useEffect(() => {
     if (!rig || (assets?.id === rig.id && !assets.ready)) setEnabledRig(null);
     else if (assets?.id === rig.id && assets.ready && !role) setEnabledRig(rig.id);
@@ -65,7 +76,6 @@ export function FighterFigure({
     : tone === 'dodge' ? 'animate-dodge'
     : tone === 'block' ? 'animate-guard'
     : 'animate-recoil';
-  const speed = Number.isFinite(combatSpeed) && combatSpeed > 0 ? combatSpeed : 1;
   const size = Number.isFinite(scale) ? Math.min(1.35, Math.max(0.8, scale)) : 1;
   const style = {
     '--dir': dir,
@@ -93,7 +103,7 @@ export function FighterFigure({
     : role === 'attacker' ? combatFrames?.attack ?? src
     : role === 'target' && tone === 'dodge' ? combatFrames?.dodge ?? combatFrames?.idle ?? src
     : role === 'target' && tone === 'block' ? combatFrames?.block ?? src
-    : role === 'target' ? combatFrames?.hit ?? src
+    : role === 'target' ? (damageKey === contactKey ? combatFrames?.hit : combatFrames?.idle) ?? src
     : combatFrames?.idle ?? src;
 
   return (
