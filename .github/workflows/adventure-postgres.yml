@@ -70,3 +70,5 @@ jobs:
         run: |
           PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres territory_runes_ci
           PGPASSWORD=postgres psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d territory_runes_ci -f scripts/fixtures/rune-ledger-v1-pg17.sql
+      - name: Test immutable rune battle snapshots on the same disposable PostgreSQL 17 database
+        run: PGPASSWORD=postgres psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d territory_runes_ci -f scripts/fixtures/rune-battle-snapshot-v1-pg17.sql
