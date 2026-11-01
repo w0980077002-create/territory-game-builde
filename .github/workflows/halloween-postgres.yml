@@ -26,9 +26,9 @@ jobs:
         run: |
           for entry in 'halloween-before|2026-11-02 12:00:00' 'halloween-after|2026-11-04 12:00:00'; do
             name=${entry%%|*}; clock=${entry#*|}
-            docker run -d --name "$name" -e POSTGRES_PASSWORD=isolated-test -e LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1 -e "FAKETIME=$clock" -e FAKETIME_DONT_FAKE_MONOTONIC=1 halloween-pg17
+            docker run -d --name "$name" -e POSTGRES_PASSWORD=isolated-test -e LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1 -e "FAKETIME=@$clock" -e FAKETIME_DONT_FAKE_MONOTONIC=1 halloween-pg17
             for i in $(seq 1 60); do docker exec "$name" pg_isready -U postgres && break; sleep 1; done
-            docker exec "$name" pg_isready -U postgres
+            docker exec "$name" pg_isready -U postgres || { docker logs "$name"; exit 1; }
           done
       - name: Test staged SQL and concurrent transactions
         run: scripts/check-halloween-postgres17.sh
