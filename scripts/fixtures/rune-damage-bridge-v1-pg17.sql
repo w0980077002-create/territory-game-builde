@@ -12,7 +12,7 @@ BEGIN
 END $test$;
 SET ROLE service_role;
 DO $test$
-DECLARE pve integer; guarded integer; arena integer; pve_replayed integer;
+DECLARE pve integer; guarded integer; arena integer; arena_open integer; pve_replayed integer;
 BEGIN
  pve:=public.territory_runes_resolve_damage_v1(
   '10000000-0000-4000-8000-000000000001',NULL,
@@ -27,7 +27,15 @@ BEGIN
   '10000000-0000-4000-8000-000000000002',
   '10000000-0000-4000-8000-000000000002',
   '40000000-0000-4000-8000-000000000006','arena',1000,true);
- IF arena<>998 THEN RAISE EXCEPTION 'rune_arena_damage_wrong: %',arena; END IF;
+ -- 15-slot Arena fixture: +100bp attack, +130bp versus guard, -120bp guard.
+ -- round(1000 * 1.023 * 0.988) = 1011. The old expected 998
+ -- omitted the attacker's guard-breaking bonus and made PG17 CI red.
+ IF arena<>1011 THEN RAISE EXCEPTION 'rune_arena_guard_damage_wrong: %',arena; END IF;
+ arena_open:=public.territory_runes_resolve_damage_v1(
+  '10000000-0000-4000-8000-000000000002',
+  '10000000-0000-4000-8000-000000000002',
+  '40000000-0000-4000-8000-000000000006','arena',1000,false);
+ IF arena_open<>1010 THEN RAISE EXCEPTION 'rune_arena_unguarded_damage_wrong: %',arena_open; END IF;
  pve_replayed:=public.territory_runes_resolve_damage_v1(
   '10000000-0000-4000-8000-000000000001',NULL,
   '40000000-0000-4000-8000-000000000004','pve',1000,false);
