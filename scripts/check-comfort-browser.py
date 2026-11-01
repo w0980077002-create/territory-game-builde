@@ -50,9 +50,13 @@ with sync_playwright() as p:
                 switches.nth(3).click()
                 assert switches.nth(3).get_attribute('aria-checked') == 'false'
                 backgrounds = page.locator('.territory-settings button[aria-pressed]')
-                assert backgrounds.count() == 2
-                backgrounds.nth(1).click()
-                assert backgrounds.nth(1).get_attribute('aria-pressed') == 'true'
+                assert backgrounds.count() == 3, 'Winter Peaks and both previous scenery choices remain available'
+                assert ('Winter peaks' if language == 'en' else 'Ледяные вершины') in backgrounds.nth(0).inner_text()
+                backgrounds.nth(0).click()
+                assert backgrounds.nth(0).get_attribute('aria-pressed') == 'true'
+                backgrounds.nth(2).click()
+                assert backgrounds.nth(2).get_attribute('aria-pressed') == 'true'
+                assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width, language, ios, 'scenery overflow')
                 assert page.locator('.territory-modal-close').is_visible()
                 if width == 360 and language == 'ru' and ios:
                     page.screenshot(path='/tmp/comfort-screenshots/settings-360-ru-ios.png')
