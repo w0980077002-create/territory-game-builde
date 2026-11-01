@@ -27,16 +27,32 @@ export function seasonWindow(now: number = Date.now()): SeasonWindow {
   return { weekKey, startsAt, endsAt, remainingMs: endsAt - now };
 }
 
-/** Arena TOP-50 only: the approved PvP week is Sunday-to-Sunday, 00:00 UTC.
- * Keep the quest/event calendar separate; changing its week would also affect
- * unrelated rewards. The server RPC remains the authority for recorded wins.
+/** Arena TOP-50 runs Monday-to-Monday, 00:00 UTC.
+ * The already-running season that began Sunday 25 October 2026 is extended
+ * through Monday 2 November UTC to protect recorded player victories.
+ * This client clock is only a preview; server RPC determines official wins.
  */
+const ARENA_CUTOVER = Date.parse('2026-11-02T00:00:00Z');
+const ARENA_TRANSITION_START = Date.parse('2026-10-25T00:00:00Z');
+const UTC_DAY = 86_400_000;
+
 export function arenaSeasonWindow(now: number = Date.now()): SeasonWindow {
   if (!Number.isFinite(now)) throw new RangeError('Invalid Arena clock');
-  const date = new Date(now);
-  const midnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-  const startsAt = midnight - date.getUTCDay() * 86_400_000;
-  const endsAt = startsAt + 7 * 86_400_000;
+  let startsAt: number;
+  let endsAt: number;
+  if (now >= ARENA_TRANSITION_START && now < ARENA_CUTOVER) {
+    startsAt = ARENA_TRANSITION_START;
+    endsAt = ARENA_CUTOVER;
+  } else {
+    const date = new Date(now);
+    const midnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    const dayOfWeek = date.getUTCDay();
+    const offset = now < ARENA_TRANSITION_START
+      ? dayOfWeek // Historical Sunday-start weeks are unchanged.
+      : (dayOfWeek + 6) % 7; // Monday = 0.
+    startsAt = midnight - offset * UTC_DAY;
+    endsAt = startsAt + 7 * UTC_DAY;
+  }
   if (!(startsAt <= now && now < endsAt)) throw new RangeError('Arena week mismatch');
   return {
     weekKey: new Date(startsAt).toISOString().slice(0, 10),

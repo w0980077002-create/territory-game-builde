@@ -72,12 +72,12 @@ export function arenaWeeklyWithBots(
   if (season.startsAt !== start || season.endsAt !== end) {
     return { leaders: humans, displayRank: verified.my_rank, isDisplayRankVerified: true };
   }
-  // UTC day boundaries are identical across regions and have no DST jumps.
+  // UTC days, globally identical; an extra transition day retains the
+  // season's final bot totals until Monday instead of resetting on Sunday.
   const today = new Date(now).toISOString().slice(0, 10);
   const dayUtc = utcMidnight(today);
-  const [startYear, startMonth, startDay] = season.weekKey.split('-').map(Number);
-  const startDayUtc = Date.UTC(startYear, startMonth - 1, startDay);
-  const currentDay = Math.min(6, Math.max(0, Math.round((dayUtc - startDayUtc) / 86_400_000)));
+  const startDayUtc = utcMidnight(season.weekKey);
+  const currentDay = Math.max(0, Math.min(7, Math.floor((dayUtc - startDayUtc) / 86_400_000)));
   const week = season.weekKey;
 
   // 25 Cyrillic + 25 Latin bot identities, no duplicated or numbered names.
@@ -89,16 +89,15 @@ export function arenaWeeklyWithBots(
   // The minimum 3-win gap between neighbouring weekly targets produces
   // distinct, widely spaced Friday/Saturday scores without changing any
   // real-player victories or granting bot wins in bulk.
-  // Early on Sunday there can legitimately be score ties near zero.
+  // Early in a new season there can legitimately be score ties near zero.
   const skillOrder = [...botNames].sort((a, b) =>
     stableHash(week + ':' + a + ':skill') - stableHash(week + ':' + b + ':skill')
     || a.localeCompare(b));
   const skillIndex = new Map(skillOrder.map((name, index) => [name, index]));
 
-  // Elapsed UTC time is monotonic and each UTC calendar day lasts 1,440 min.
-  const tomorrow = new Date(dayUtc + 86_400_000).toISOString().slice(0, 10);
-  const midnight = utcMidnight(today);
-  const nextMidnight = utcMidnight(tomorrow);
+  // Every UTC day has 1,440 minutes, unaffected by local timezone/DST.
+  const midnight = dayUtc;
+  const nextMidnight = midnight + 86_400_000;
   const availableMinutes = (nextMidnight - midnight) / 60_000;
   const elapsedMinutes = Math.max(0, Math.min(availableMinutes, (now - midnight) / 60_000));
 
@@ -107,12 +106,13 @@ export function arenaWeeklyWithBots(
     const index = skillIndex.get(name)!;
     // Broad, strictly distinct WEEKLY goals rather than near-equal scores:
     // bottom 1, middle roughly 80, top 175. No bot exceeds 25/day.
-    // Names exchange activity tiers every Sunday via skillOrder.
+    // Names exchange activity tiers at each new season via skillOrder.
     const strength = 49 - index;
     const weeklyGoal = 1 + strength * 3
       + Math.round(27 * (strength / 49) ** 2);
+    // The transitional eighth day preserves final simulated wins, no reset.
     const winsBeforeToday = Math.floor(weeklyGoal * currentDay / 7);
-    const winsAtDayEnd = Math.floor(weeklyGoal * (currentDay + 1) / 7);
+    const winsAtDayEnd = Math.floor(weeklyGoal * Math.min(7, currentDay + 1) / 7);
     const todayWins = winsAtDayEnd - winsBeforeToday;
     let victories = winsBeforeToday;
 
