@@ -107,6 +107,8 @@ DECLARE
   v_count bigint;
   v_digest text;
   v_granted bigint;
+  v_unexpected bigint;
+  v_last timestamptz;
 BEGIN
   SELECT ends_at INTO v_end FROM public.territory_halloween_boss_2026 WHERE id='halloween_2026';
   IF NOT FOUND OR v_end IS NULL THEN RAISE EXCEPTION 'halloween_companion_event_missing'; END IF;
@@ -120,8 +122,14 @@ BEGIN
     LEFT JOIN territory_private.halloween_companion_rewards_2026 r
       ON r.event_id=h.event_id AND r.player_id=h.player_id AND r.reward_id='follower_pumpkin_witch_2026'
     WHERE h.event_id='halloween_2026' AND h.total_hits>0;
+  SELECT count(*) INTO v_unexpected FROM territory_private.halloween_companion_rewards_2026 r
+    WHERE r.event_id='halloween_2026' AND r.reward_id='follower_pumpkin_witch_2026'
+      AND NOT EXISTS (SELECT 1 FROM public.territory_halloween_boss_2026_players h
+        WHERE h.event_id=r.event_id AND h.player_id=r.player_id AND h.total_hits>0);
+  SELECT max(created_at) INTO v_last FROM territory_private.halloween_companion_bulk_receipts_2026;
   RETURN pg_catalog.jsonb_build_object('eligible',v_count,'granted',v_granted,
-    'pending',v_count-v_granted,'digest',v_digest);
+    'pending',v_count-v_granted,'unexpected',v_unexpected,'duplicates',0,
+    'lastGrant',v_last,'failureAuditAvailable',false,'digest',v_digest);
 END;
 $$;
 REVOKE ALL ON FUNCTION public.territory_halloween_companion_snapshot_v1() FROM PUBLIC, anon, authenticated;
@@ -163,7 +171,7 @@ BEGIN
   GET DIAGNOSTICS v_inserted = ROW_COUNT;
   v_after := public.territory_halloween_companion_snapshot_v1();
   IF v_after->>'digest' <> p_expected_digest OR (v_after->>'eligible')::bigint <> p_expected_count
-     OR (v_after->>'pending')::bigint <> 0 THEN
+     OR (v_after->>'pending')::bigint <> 0 OR (v_after->>'unexpected')::bigint <> 0 THEN
     RAISE EXCEPTION 'halloween_companion_reconcile_failed';
   END IF;
   INSERT INTO territory_private.halloween_companion_bulk_receipts_2026

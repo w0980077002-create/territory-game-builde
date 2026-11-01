@@ -22,10 +22,11 @@ export function FollowersPanel() {
   const active = selectedFollower(state);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [witchAppearance, setWitchAppearance] = useState(0);
 
   const choose = (id: string) => {
     const result = selectFollower(useGame.get(), id);
-    if (result) { useGame.set(result); setNote(en ? 'Companion selected' : 'Спутник выбран'); }
+    if (result) { useGame.set(result); if (id === HALLOWEEN_COMPANION_ID) setWitchAppearance(n => n + 1); setNote(en ? 'Companion selected' : 'Спутник выбран'); }
   };
 
   const train = (id: string) => {
@@ -88,7 +89,7 @@ export function FollowersPanel() {
 
     {follower && <section className="followers-camp__detail" aria-live="polite">
       <div className="followers-camp__detail-top">
-        <div className="followers-camp__detail-art">{isSeasonal ? <PumpkinWitch /> : <img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/>}</div>
+        <div className="followers-camp__detail-art">{isSeasonal ? <PumpkinWitch appear={witchAppearance} /> : <img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/>}</div>
         <div>
           <span className="followers-camp__eyebrow"><Sparkles size={12}/>{selected
             ? (en ? 'ACTIVE COMPANION' : 'АКТИВНЫЙ СПУТНИК')
