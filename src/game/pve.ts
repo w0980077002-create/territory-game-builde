@@ -67,6 +67,23 @@ function strike(from: PveSide, to: PveSide, targetSide: PveHit['targetSide'], zo
   return { ...base, tone: crit ? 'crit' : 'hit', amount: Math.round(dmg) };
 }
 
+/** Read-only feedback from actual strikes; never modifies AI, damage or rewards. */
+export interface PveTacticalSummary {
+  heroStrike: PveHit['tone'] | null;
+  enemyStrike: PveHit['tone'] | null;
+  enemyZone: Zone | null;
+}
+
+export function summarizePveRound(hits: readonly PveHit[]): PveTacticalSummary {
+  const heroStrike = hits.find(hit => hit.targetSide === 'enemy');
+  const enemyStrike = hits.find(hit => hit.targetSide === 'hero');
+  return {
+    heroStrike: heroStrike?.tone ?? null,
+    enemyStrike: enemyStrike?.tone ?? null,
+    enemyZone: enemyStrike?.zone ?? null,
+  };
+}
+
 export interface RoundResult {
   hits: PveHit[];
   hero: PveSide;

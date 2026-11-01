@@ -7,7 +7,7 @@ import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
-import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, type PveSide } from '@/game/pve';
+import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, summarizePveRound, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
@@ -110,6 +110,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const [log, setLog] = useState<string[]>([language === 'en' ? `Battle started: ${localizeText(enemy.name, language)}` : `Бой начался: ${enemy.name}`]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [tacticalReport, setTacticalReport] = useState<PveTacticalSummary | null>(null);
   const [gearOpen, setGearOpen] = useState(false);
   const alive = useRef(true);
   const done = useRef(false);
@@ -179,6 +180,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
     if (roundFlight.current || busy || outcome || done.current || !alive.current) return;
     roundFlight.current = true;
+    setTacticalReport(null);
     setBusy(true);
     try {
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
@@ -203,6 +205,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
       pushLog(language === 'en' ? `Companion healed ${res.healAmount} HP` : `Спутник восстановил ${res.healAmount} HP`);
     }
     setStrike(null);
+    setTacticalReport(summarizePveRound(res.hits));
     setAttack(null);
     setBlocks([]);
     // Show the next guard only after the current enemy action finished.
@@ -261,6 +264,12 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const guardedZone = ZONES.find(zone => zone.id === enemyIntent.blocks[0]);
   const guardedZoneLabel = guardedZone
     ? language === 'en' ? ({ head: 'Head', chest: 'Chest', belly: 'Belly', legs: 'Legs' } as Record<string, string>)[guardedZone.id] : guardedZone.label
+    : '';
+  const enemyStrikeZone = tacticalReport?.enemyZone
+    ? ZONES.find(zone => zone.id === tacticalReport.enemyZone)
+    : null;
+  const enemyStrikeLabel = enemyStrikeZone
+    ? language === 'en' ? ({ head: 'head', chest: 'chest', belly: 'belly', legs: 'legs' } as Record<string, string>)[enemyStrikeZone.id] : enemyStrikeZone.label.toLowerCase()
     : '';
   const victoryJourney = outcome?.won ? getVictoryJourney(state,kind,levelAtFightStart.current) : null;
   const hint = busy ? (language === 'en' ? 'Round in progress…' : 'Идёт раунд…')
@@ -438,6 +447,18 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
                 ? (language === 'en' ? 'Your strike may be blocked. Choose a gap!' : 'Удар может быть заблокирован. Ищи брешь!')
                 : (language === 'en' ? 'Strike another zone to bypass this guard.' : 'Бей в другую зону, чтобы обойти щит.')}
             </span>
+          </div>
+        )}
+
+        {!auto && !busy && tacticalReport && (
+          <div data-testid="pve-round-reaction" className="relative mx-2 mb-1 rounded-lg border border-sky-300/35 bg-[#0d2631]/95 px-2.5 py-1.5 text-[11px] leading-4 text-sky-100" role="status" aria-live="polite">
+            {tacticalReport.heroStrike === 'block' && <p>{language === 'en' ? 'Your strike met a shield — switch your attack zone next round.' : 'Враг отбил удар — в следующем раунде смени зону атаки.'}</p>}
+            {tacticalReport.heroStrike === 'dodge' && <p>{language === 'en' ? 'The enemy dodged. Try another opening.' : 'Враг уклонился. Ищи другую брешь.'}</p>}
+            {tacticalReport.heroStrike === 'crit' && <p>{language === 'en' ? 'Critical hit! Your attack broke through.' : 'Критический удар! Атака прошла.'}</p>}
+            {tacticalReport.heroStrike === 'hit' && <p>{language === 'en' ? 'Your attack landed. Keep watching the enemy guard.' : 'Попадание! Следи, какую зону прикрывает враг.'}</p>}
+            {tacticalReport.enemyStrike === 'block' && <p className="text-emerald-200">{language === 'en' ? 'Great block! You stopped the enemy strike.' : 'Отличный блок! Ты остановил удар врага.'}</p>}
+            {tacticalReport.enemyStrike === 'dodge' && <p className="text-emerald-200">{language === 'en' ? 'You dodged the enemy strike.' : 'Ты уклонился от удара врага.'}</p>}
+            {(tacticalReport.enemyStrike === 'hit' || tacticalReport.enemyStrike === 'crit') && <p className="text-amber-200">{language === 'en' ? `Enemy hit your ${enemyStrikeLabel} — reconsider your defense.` : `Враг попал в зону «${enemyStrikeLabel}» — пересмотри защиту.`}</p>}
           </div>
         )}
 
