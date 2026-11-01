@@ -265,6 +265,13 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const guardedZoneLabel = guardedZone
     ? language === 'en' ? ({ head: 'Head', chest: 'Chest', belly: 'Belly', legs: 'Legs' } as Record<string, string>)[guardedZone.id] : guardedZone.label
     : '';
+  // The trial/boss warning reads the committed AI attack for the very next
+  // round. It never predicts a new random roll or changes combat resolution.
+  const threatenedZone = ZONES.find(zone => zone.id === enemyIntent.attack);
+  const threatenedZoneLabel = threatenedZone
+    ? language === 'en' ? ({ head: 'head', chest: 'chest', belly: 'belly', legs: 'legs' } as Record<string, string>)[threatenedZone.id] : threatenedZone.label.toLowerCase()
+    : '';
+  const showThreatTell = (kind === 'trial' || enemy.isBoss) && !auto && !busy && !!threatenedZone;
   const enemyStrikeZone = tacticalReport?.enemyZone
     ? ZONES.find(zone => zone.id === tacticalReport.enemyZone)
     : null;
@@ -446,6 +453,19 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
               {' '}{attack === guardedZone.id
                 ? (language === 'en' ? 'Your strike may be blocked. Choose a gap!' : 'Удар может быть заблокирован. Ищи брешь!')
                 : (language === 'en' ? 'Strike another zone to bypass this guard.' : 'Бей в другую зону, чтобы обойти щит.')}
+            </span>
+          </div>
+        )}
+
+        {showThreatTell && (
+          <div data-testid="pve-telegraphed-strike" className="relative mx-2 mb-1 flex items-center gap-1.5 rounded-lg border border-red-300/55 bg-[#391b1a]/95 px-2.5 py-2 text-[11px] font-semibold leading-4 text-amber-100" role="status" aria-live="polite">
+            <Sword className="h-4 w-4 shrink-0 text-red-300" aria-hidden="true" />
+            <span>
+              {language === 'en' ? 'Enemy prepares a strike at ' : 'Враг готовит удар в '}
+              <strong className="text-amber-300">{threatenedZoneLabel}</strong>.
+              {' '}{blocks.includes(enemyIntent.attack)
+                ? (language === 'en' ? 'Your block covers it.' : 'Твой блок прикрывает эту зону.')
+                : (language === 'en' ? 'Protect this zone before STRIKE.' : 'Прикрой эту зону до нажатия «УДАР».')}
             </span>
           </div>
         )}

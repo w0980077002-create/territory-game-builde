@@ -103,11 +103,23 @@ assert.equal(protectedSummary.heroStrike, 'hit');
 assert.equal(protectedSummary.enemyStrike, 'block');
 assert.equal(protectedSummary.enemyZone, 'belly');
 assert.equal(pve.summarizePveRound([]).enemyZone, null);
+// Trials and chapter bosses show the actual committed next attack, not a
+// cosmetic warning. Choosing that defense must change the resolved HP.
+const threatIntent = { attack: 'chest', blocks: ['head', 'belly'] };
+const coveredThreat = pve.playRound(starterHero, guardEnemy, 'legs', ['chest', 'legs'], 0, '', 0, null, threatIntent);
+const ignoredThreat = pve.playRound(starterHero, guardEnemy, 'legs', ['head', 'legs'], 0, '', 0, null, threatIntent);
+assert.equal(pve.summarizePveRound(coveredThreat.hits).enemyStrike, 'block');
+assert.equal(coveredThreat.hero.hp, starterHero.hp, 'Correct defense prevents the announced strike');
+assert.equal(pve.summarizePveRound(ignoredThreat.hits).enemyStrike, 'hit');
+assert(ignoredThreat.hero.hp < starterHero.hp, 'Ignoring the announced strike causes actual HP loss');
 const fightSource = source('../src/components/pve/PveFight.tsx');
 assert.match(fightSource, /data-testid="pve-round-reaction"/, 'Show actual round feedback to manual PvE players');
 assert.match(fightSource, /setTacticalReport\(summarizePveRound\(res\.hits\)\)/, 'Tactical feedback must come from resolved hits');
 assert.match(fightSource, /setTacticalReport\(null\)/, 'Clear previous feedback during the next move');
 assert.match(fightSource, /data-testid="pve-enemy-guard"/, 'Show the actual guard during classic manual combat');
+assert.match(fightSource, /\(kind === 'trial' \|\| enemy\.isBoss\) && !auto && !busy/, 'Only trial and boss manual rounds reveal their committed strike');
+assert.match(fightSource, /blocks\.includes\(enemyIntent\.attack\)/, 'The warning reflects the selected defense');
+assert.match(fightSource, /data-testid="pve-telegraphed-strike"/, 'Show the actual next strike direction for tactical trials and bosses');
 assert.match(fightSource, /followerBonus\.defense, followerBonus, enemyIntent\)/, 'Pass the visible guard to the PvE round calculation');
 assert.match(fightSource, /setEnemyIntent\(randomZones\(\)\)/, 'Refresh guard after resolving each round');
 
