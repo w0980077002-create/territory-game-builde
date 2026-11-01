@@ -42,6 +42,22 @@ export function randomZones(): { attack: Zone; blocks: Zone[] } {
   return { attack: pick(ZONES).id, blocks: ids.slice(0, 2) };
 }
 
+/** Pick a real opening in the enemy's announced guard, cycling through the
+ * unguarded zones rather than silently changing damage or enemy AI. */
+export function nextOpenStrike(current: Zone | null, guarded: Zone): Zone {
+  const openings = ZONES.map(zone => zone.id).filter(zone => zone !== guarded);
+  if (!openings.length) return current ?? guarded;
+  const index = current === null ? -1 : openings.indexOf(current);
+  return openings[(index + 1) % openings.length];
+}
+
+/** One-tap defense against an announced strike. Preserve the other selected
+ * block when both slots are occupied; never add a third defense zone. */
+export function coverThreatZone(current: readonly Zone[], threat: Zone): Zone[] {
+  if (current.includes(threat)) return [...current];
+  return current.length < 2 ? [...current, threat] : [current[current.length - 1], threat];
+}
+
 export function heroSide(state: GameState): PveSide {
   const s = getComputedStats(state);
   const forge = forgeSetBonus(state.player.equipped);
