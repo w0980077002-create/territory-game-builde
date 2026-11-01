@@ -22,7 +22,7 @@ with sync_playwright() as playwright:
             panel = page.locator('[data-testid="followers-panel"]')
             panel.wait_for()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-            assert panel.locator('.followers-camp__portrait').count() == 6
+            assert panel.locator('.followers-camp__portrait').count() == 7
             assert panel.locator('.followers-camp__portrait[aria-pressed="true"]').count() == 1
             assert panel.locator('.followers-camp__detail-top img').evaluate('(el) => el.complete && el.naturalWidth > 0')
             panel.locator('.followers-camp__portrait').nth(1).click()
@@ -34,8 +34,12 @@ with sync_playwright() as playwright:
             choose.click()
             assert choose.is_disabled()
             assert ('ACTIVE COMPANION' if language == 'en' else 'АКТИВНЫЙ СПУТНИК') in panel.locator('.followers-camp__detail').inner_text()
-            panel.locator('.followers-camp__portrait').last.click()
+            panel.locator('.followers-camp__portrait').nth(5).click()
             assert ('Battle Cow' if language == 'en' else 'Боевая корова') in panel.locator('.followers-camp__detail h3').inner_text()
+            assert panel.locator('.followers-camp__availability--locked').is_visible()
+            panel.locator('.followers-camp__portrait').last.click()
+            assert ('Pumpkin Witch' if language == 'en' else 'Тыквенная ведьма') in panel.locator('.followers-camp__detail h3').inner_text()
+            assert ('Halloween' if language == 'en' else 'Хэллоуин') in panel.locator('.followers-camp__detail').inner_text()
             assert panel.locator('.followers-camp__availability--locked').is_visible()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             if width == 360 and language == 'ru': page.screenshot(path='/tmp/territory-companion-360.png')
