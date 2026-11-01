@@ -26,10 +26,11 @@ interface Props {
   onShop: () => void;
   onQuests: () => void;
   onEquipment: () => void;
+  onForge: () => void;
   onActiveChange?: (active: boolean) => void;
 }
 
-export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onQuests, onEquipment, onActiveChange }: Props) {
+export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onQuests, onEquipment, onForge, onActiveChange }: Props) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
@@ -112,6 +113,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         onNext={() => { fightStartLocked.current = false; return start(fight.kind); }}
         onQuests={() => { fightStartLocked.current = false; onActiveChange?.(false); onQuests(); }}
         onEquipment={onEquipment}
+        onForge={onForge}
       />
     );
   }
@@ -207,7 +209,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
             </div>
           )}
           <div className="relative rounded-2xl overflow-hidden border border-amber-500/20">
-            <img src="/city-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
+            <img src={import.meta.env.BASE_URL + "city-bg.webp"} alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
             <div className="relative p-4">
               <p className="text-[11px] uppercase tracking-[0.2em] text-amber-300">{t('chapter')} {chapter.number}</p>
