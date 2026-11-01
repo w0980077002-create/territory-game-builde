@@ -13,6 +13,7 @@ const [home, app, css, html, city, sheets, telegram] = await Promise.all([
   read('src/game/telegram.ts'),
 ]);
 const worldMap = await read('src/components/WorldMapCanvas.tsx');
+const cityMotion = await read('src/components/home/cityCharacterMotion.css');
 
 const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventure] = await Promise.all([
   read('src/components/ForgeScreen.tsx'),
@@ -26,6 +27,14 @@ const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventu
 
 assert.match(home, /<LiveCityBackdrop animated=\{cityMotion\}/, 'Home must render the approved layered city backdrop');
 assert.match(home, /className="home-hero-figure/, 'City hero must have a separate sizing wrapper');
+assert.match(home, /import '\\.\/home\\/cityCharacterMotion\\.css'/, 'The City animation must be loaded only on the City screen');
+for (const role of ['follower', 'hero', 'enemy']) {
+  assert.match(home, new RegExp('city-' + role + '-idle'), role + ' must have a distinct idle class');
+  assert.match(cityMotion, new RegExp('\\.city-' + role + '-idle'), role + ' must have a real animation rule');
+}
+assert.match(cityMotion, /@media \\(prefers-reduced-motion: reduce\\)/, 'City animation must respect accessibility motion controls');
+assert.doesNotMatch(cityMotion, /\\.home-bottom-controls|\\.territory-nav|\\.home-top-hud|\\.home-side-stack/,
+  'City actor animations cannot move HUD, navigation or buttons');
 assert.match(home, /className="home-follower-figure/, 'City follower must have a separate sizing wrapper');
 for (const [id, scale] of [
   ['follower_1', '1.00'],
