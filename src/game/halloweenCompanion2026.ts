@@ -1,36 +1,10 @@
 import { supabase } from './supabase';
-import type { Follower, GameState } from './types';
-
-/** Distinct from follower_6 (Battle Cow). Never award this from level progression. */
-export const HALLOWEEN_COMPANION_ID = 'follower_pumpkin_witch_2026';
-export const HALLOWEEN_COMPANION_LEVEL = 100;
-export const HALLOWEEN_COMPANION_ADVANTAGE = 1.05;
-
-/** Baseline: a fully trained level-60 Forest Healer has 62 attack and 15 heal.
- * The seasonal level-100 reward has 5% more of each, rounded to whole combat
- * numbers at the presentation boundary (65 attack, 16 heal). This does not
- * grant 5% to the HERO's global stats, PvP, item economy or premium resources.
- */
-export const PUMPKIN_WITCH_BASELINE = { attack: 62, heal: 15 };
-export const PUMPKIN_WITCH_COMBAT = {
-  attack: Math.round(PUMPKIN_WITCH_BASELINE.attack * HALLOWEEN_COMPANION_ADVANTAGE),
-  defense: 0,
-  heal: Math.round(PUMPKIN_WITCH_BASELINE.heal * HALLOWEEN_COMPANION_ADVANTAGE),
-  crit: 0,
-  pierce: 0,
-};
-
-export const PUMPKIN_WITCH_TEMPLATE: Follower = {
-  id: HALLOWEEN_COMPANION_ID,
-  name: 'Тыквенная ведьма',
-  icon: '🎃',
-  level: HALLOWEEN_COMPANION_LEVEL,
-  attack: PUMPKIN_WITCH_COMBAT.attack,
-  defense: 1,
-  unlocked: true,
-  role: 'pumpkin',
-  description: 'Эксклюзивный дар участнику Хэллоуинского рейда 2026. Уровень 100. Помогает герою в PvE.',
-};
+import type { GameState } from './types';
+import { HALLOWEEN_COMPANION_ID, HALLOWEEN_COMPANION_LEVEL, PUMPKIN_WITCH_TEMPLATE } from './followers';
+export {
+  HALLOWEEN_COMPANION_ID, HALLOWEEN_COMPANION_LEVEL, HALLOWEEN_COMPANION_ADVANTAGE,
+  PUMPKIN_WITCH_BASELINE, PUMPKIN_WITCH_COMBAT, PUMPKIN_WITCH_TEMPLATE,
+} from './followers';
 
 /** Only the server may establish eligibility, from the signed-in user's
  * actual boss hits after 2026-11-03T00:00Z. Never infer entitlement from
