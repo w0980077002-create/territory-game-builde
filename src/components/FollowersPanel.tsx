@@ -87,8 +87,8 @@ export function FollowersPanel() {
       </div>}
     </div>
 
-    {follower && <section className="followers-camp__detail" aria-live="polite">
-      <div className="followers-camp__detail-top">
+    {follower && <section className={`followers-camp__detail ${isSeasonal ? "followers-camp__detail--seasonal" : ""}`} aria-live="polite">
+      <div className={`followers-camp__detail-top ${isSeasonal ? "followers-camp__detail-top--seasonal" : ""}`}>
         <div className="followers-camp__detail-art">{isSeasonal ? <PumpkinWitch appear={witchAppearance} /> : <img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/>}</div>
         <div>
           <span className="followers-camp__eyebrow"><Sparkles size={12}/>{selected
@@ -97,7 +97,7 @@ export function FollowersPanel() {
           <h3>{en ? template.nameEn : template.name}</h3>
           {isSeasonal && <span className="followers-camp__legendary">{en ? 'RAID · 2026' : 'РЕЙД · 2026'}</span>}
           {template.id === 'follower_6' && <span className="followers-camp__legendary"><Sparkles size={12}/>{en ? 'LEGENDARY LOOK' : 'ЛЕГЕНДАРНЫЙ ОБРАЗ'}</span>}
-          <p>{en ? template.descriptionEn : template.description}</p>
+          <p>{isSeasonal ? (en ? 'A legendary gift for Halloween raid fighters.' : 'Легендарный подарок участникам Хэллоуинского рейда.') : (en ? template.descriptionEn : template.description)}</p>
           <span className={unlocked ? 'followers-camp__availability' : 'followers-camp__availability followers-camp__availability--locked'}>
             {unlocked ? en ? 'Unlocked' : 'Открыт' : isSeasonal
               ? (en ? 'Halloween 2026 raid participation reward' : 'Награда за участие в Хэллоуинском рейде 2026')

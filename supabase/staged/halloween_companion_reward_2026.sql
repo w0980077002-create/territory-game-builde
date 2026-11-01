@@ -36,7 +36,9 @@ BEGIN
     RAISE EXCEPTION 'halloween_companion_event_missing';
   END IF;
   IF pg_catalog.clock_timestamp() < GREATEST(v_end, '2026-11-03 00:00:00+00'::timestamptz) THEN
-    RETURN pg_catalog.jsonb_build_object('eligible', false, 'reason', 'event_active');
+    RETURN pg_catalog.jsonb_build_object('eligible', false, 'reason', 'event_active',
+      'retryAfterMs', GREATEST(1000, LEAST(2140000000,
+        CEIL(EXTRACT(EPOCH FROM (GREATEST(v_end, '2026-11-03 00:00:00+00'::timestamptz) - pg_catalog.clock_timestamp())) * 1000)::bigint)));
   END IF;
   IF NOT EXISTS (
     SELECT 1 FROM public.players WHERE id = v_uid

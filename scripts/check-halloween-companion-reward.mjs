@@ -27,8 +27,7 @@ for (const pattern of [
 ]) assert.match(sql,pattern);
 assert.doesNotMatch(sql,/\b(?:UPDATE|DELETE|TRUNCATE|DROP)\s+public\.players\b/i);
 assert.match(cloud,/halloweenCompanionVerified: false/,'never trust saved entitlement');
-assert.match(app,/claimPumpkinWitchEntitlement\(\)/);
-assert.match(app,/addEventListener\('online', refreshCompanion\)/);
+assert.match(app,/watchPumpkinEntitlement\(readPumpkinWitchEntitlement/);
 assert.match(followers,/old\.id !== HALLOWEEN_COMPANION_ID/);
 assert.match(followers,/halloweenVerified \? \[\{ \.\.\.PUMPKIN_WITCH_TEMPLATE \}\] : \[\]/);
 assert.match(panel,/DISPLAY_FOLLOWER_TEMPLATES.map/);

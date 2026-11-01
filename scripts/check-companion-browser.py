@@ -47,10 +47,17 @@ with sync_playwright() as playwright:
             panel = page.locator('[data-testid="followers-panel"]')
             panel.locator('.followers-camp__portrait').last.click()
             detail = panel.locator('.followers-camp__detail')
+            assert detail.locator('.pumpkin-witch__figure').evaluate('(el) => el.complete && el.naturalWidth > 0')
+            assert detail.locator('.pumpkin-witch__body').evaluate('(el) => getComputedStyle(el).animationName') == 'none'
+            assert detail.locator('.followers-camp__detail-art').bounding_box()['height'] >= 220
             assert '100/100' in detail.inner_text() and '65' in detail.inner_text() and '16' in detail.inner_text()
             assert panel.locator('.followers-camp__choose').is_enabled()
             assert ('РЕЙД · 2026' if language == 'ru' else 'RAID · 2026') in detail.inner_text()
             if width == 360 and language == 'ru': detail.screenshot(path='/tmp/territory-companion-eligible-360.png')
+            capture_dir = os.environ.get('TERRITORY_SCREENSHOTS_DIR')
+            if capture_dir:
+                os.makedirs(capture_dir, exist_ok=True)
+                detail.screenshot(path=os.path.join(capture_dir, f'eligible-{width}-{language}.png'))
             panel.locator('.followers-camp__choose').click()
             assert panel.locator('.followers-camp__choose').is_disabled()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')

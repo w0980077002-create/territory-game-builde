@@ -41,7 +41,7 @@ export function getFollowerArt(id: string | null | undefined): string {
   const defaultArt = root + 'followers/moon_hunter/idle.webp';
   // The approved Battle Cow is an isolated self-contained SVG sprite, not an invented six-pose rig.
   if (id === 'follower_6') return root + 'followers/battle_cow/idle.svg';
-  if (id === 'follower_pumpkin_witch_2026') return root + 'followers/pumpkin_witch_2026/idle.svg';
+  if (id === 'follower_pumpkin_witch_2026') return root + 'followers/pumpkin_witch_2026/idle.webp';
   return id ? getFollowerCombatFrames(id)?.idle ?? defaultArt : defaultArt;
 }
 

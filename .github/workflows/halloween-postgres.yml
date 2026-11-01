@@ -45,6 +45,10 @@ jobs:
           supabase status -o env > /tmp/halloween-supabase.env
       - name: Test signed Auth JWTs through PostgREST
         run: python3 scripts/check-halloween-auth-e2e.py
+      - name: Test real owner admin Edge HTTP flow
+        run: |
+          command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
+          python3 scripts/check-halloween-admin-edge.py
       - name: Stop isolated stack
         if: always()
         run: |
