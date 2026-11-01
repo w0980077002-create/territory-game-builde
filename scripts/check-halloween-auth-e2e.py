@@ -88,6 +88,14 @@ expired = decode(payload); expired['exp'] = 1
 expired_header = b64(json.dumps({'alg':'HS256','typ':'JWT','kid':'expired-test'},separators=(',',':')).encode())
 body = expired_header + '.' + b64(json.dumps(expired,separators=(',',':')).encode())
 expired_token = body + '.' + b64(hmac.new(secret.encode(),body.encode(),hashlib.sha256).digest())
+# A fresh control signed by the same test-only key proves that an expired
+# token is rejected for expiry rather than because its signing key is invalid.
+control_claims = decode(nonparticipant_token.split('.')[1])
+control_claims['exp'] = int(time.time()) + 300
+control_body = expired_header + '.' + b64(json.dumps(control_claims,separators=(',',':')).encode())
+control = control_body + '.' + b64(hmac.new(secret.encode(),control_body.encode(),hashlib.sha256).digest())
+status, data = request(after, {}, control)
+assert status == 200 and data.get('reason') == 'no_confirmed_hits', ('expiry control', status, data)
 for invalid in (expired_token, header + '.' + payload + '.' + ('A' * len(signature))):
     status, _ = request(after, {}, invalid)
     assert status == 401, ('invalid JWT accepted',status)
@@ -111,4 +119,9 @@ assert status in (401,403,404,405), ('direct ledger access',status)
 check = f"SELECT count(*) FROM territory_private.halloween_companion_rewards_2026 WHERE player_id='{participant}';"
 count = subprocess.check_output(['docker','exec','halloween-after','psql','-X','-At','-U','postgres','-c',check],text=True).strip()
 assert count == '1'
+status, data = request(after, {}, nonparticipant_token)
+assert status == 200 and data.get('reason') == 'no_confirmed_hits'
+check = f"SELECT json_build_object('active',game_state->>'activeFollowerId','gold',gold,'vip',vip_level)::text FROM public.players WHERE id='{participant}';"
+state = json.loads(subprocess.check_output(['docker','exec','halloween-after','psql','-X','-At','-U','postgres','-c',check],text=True))
+assert state == {'active':'follower_6','gold':100,'vip':3}, 'entitlement must not mutate saved player data'
 print('Supabase Auth issued two independent JWTs; PostgREST verified signatures, expiry, owner-scoped claim, deadline, denial and repeat. Isolated test DB only.')
