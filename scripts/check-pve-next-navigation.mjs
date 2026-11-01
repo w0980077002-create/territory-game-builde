@@ -150,3 +150,31 @@ assert.match(heroShowcase, /const nextEnemy = bossReady \? chapter\.boss : \(cha
 assert.match(heroShowcase, /findHeroGearOpportunity\(state\.inventory, player\.equipped\)/,
   'upgrade recommendation must be based on saved gear, not fabricated rewards');
 console.log('Hero next-encounter and owned gear-upgrade journey PASS.');
+
+
+// #136: reveal only the forge materials actually committed by the existing
+// Campaign/Trials reward functions. The post-victory equipment action must
+// leave the completed fight before navigating, never debit another stone.
+const progressionSource = readFileSync('src/game/progression.ts', 'utf8');
+const actionsSource = readFileSync('src/game/actions.ts', 'utf8');
+assert.match(progressionSource, /forgeMaterials: next\.forgeMaterials \+ 1/,
+  'Trials must continue to grant exactly one existing forge material');
+assert.match(actionsSource, /forgeMaterials: state\.forgeMaterials \+ \(enemy\.isBoss \? 3 : Math\.random\(\) < 0\.35 \? 1 : 0\)/,
+  'Campaign material drops must keep their existing boss/normal probabilities');
+assert.match(fight, /const nextState = recordTrialWin\(s, enemy\);/,
+  'Trial victory must read the committed next state');
+assert.match(fight, /const nextState = recordBattleResult\(consumeBlessing\(s\), enemy, \{ gold, xp: enemy\.rewardXp \}\);/,
+  'Campaign victory must read the committed next state');
+assert.equal((fight.match(/materials: Math\.max\(0, nextState\.forgeMaterials - s\.forgeMaterials\)/g) || []).length, 2,
+  'Both victory paths must display the actual saved material delta, never a guessed drop');
+assert.match(fight, /outcome\.materials > 0 &&/,
+  'Do not advertise forge loot when the player received none');
+assert.match(fight, /data-testid="pve-real-forge-loot"/,
+  'Real material reward must be visible after victory');
+assert.match(fight, /data-testid="pve-prepare-equipment"/,
+  'Victory must offer an equipment preparation action');
+assert.match(fight, /onEquipment=\{onEquipment \? \(\) => \{ nextCancelled\.current = true; onExit\(\); onEquipment\(\); \} : undefined\}/,
+  'Equipment navigation must close the fight and cancel pending next-battle work');
+assert.match(battle, /onEquipment=\{onEquipment\}/,
+  'Use the existing inventory route rather than a duplicate equipment screen');
+console.log('PvE real forge loot and equipment preparation PASS: saved deltas, no invented drops or duplicate battle.');

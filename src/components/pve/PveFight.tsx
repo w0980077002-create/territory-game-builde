@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Shield, Sword, Check, Flag, Loader2, Trophy } from 'lucide-react';
+import { Shield, Sword, Check, Flag, Loader2, Trophy, Hammer, Shirt } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { getVictoryJourney, type VictoryJourney } from '@/game/victoryJourney';
 import { useGame, useArena, recordBattleResult } from '@/game/actions';
@@ -32,6 +32,7 @@ interface Props {
   onExit: () => void;
   onNext?: () => boolean;
   onQuests?: () => void;
+  onEquipment?: () => void;
 }
 
 interface Outcome {
@@ -39,6 +40,7 @@ interface Outcome {
   gold: number;
   xp: number;
   gems: number;
+  materials: number;
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -86,7 +88,7 @@ function ZoneBtn({ label, sub, on, tone, disabled, onClick }: { label: string; s
   );
 }
 
-export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
+export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment }: Props) {
   const { language } = useLanguage();
   const state = useStore(useGame);
   const arena = useStore(useArena);
@@ -154,19 +156,23 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
         ? finishReferralFight(ticket, won, referralRounds.current).catch(() => false)
         : false);
     if (!won) {
-      setOutcome({ won: false, gold: 0, xp: 0, gems: 0 });
+      setOutcome({ won: false, gold: 0, xp: 0, gems: 0, materials: 0 });
       return;
     }
     const s = useGame.get();
     if (kind === 'trial') {
       const r = trialReward(s.trialLevel);
-      useGame.set(recordTrialWin(s, enemy));
-      setOutcome({ won: true, gold: r.gold ?? 0, xp: enemy.rewardXp, gems: r.gems ?? 0 });
+      const nextState = recordTrialWin(s, enemy);
+      useGame.set(nextState);
+      setOutcome({ won: true, gold: r.gold ?? 0, xp: enemy.rewardXp, gems: r.gems ?? 0,
+        materials: Math.max(0, nextState.forgeMaterials - s.forgeMaterials) });
       return;
     }
     const gold = blessedGold(s, enemy.rewardGold);
-    useGame.set(recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp }));
-    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0 });
+    const nextState = recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp });
+    useGame.set(nextState);
+    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0,
+      materials: Math.max(0, nextState.forgeMaterials - s.forgeMaterials) });
   }, [enemy, kind]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
@@ -270,6 +276,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
           onExit={() => { nextCancelled.current = true; onExit(); }}
           questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
           onQuests={onQuests ? () => { nextCancelled.current = true; onQuests(); } : undefined}
+          onEquipment={onEquipment ? () => { nextCancelled.current = true; onExit(); onEquipment(); } : undefined}
           nextPending={nextPending} nextError={nextError}
           onNext={onNext ? () => {
             if (nextRequested.current) return;
@@ -487,7 +494,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   );
 }
 
-function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questReady, onQuests, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; nextPending: boolean; nextError: boolean }) {
+function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questReady, onQuests, onEquipment, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; onEquipment?: () => void; nextPending: boolean; nextError: boolean }) {
   const { language } = useLanguage();
   return (
     <div className="relative mx-auto w-full max-w-lg px-1 pb-2 pt-1 animate-pop">
@@ -500,6 +507,11 @@ function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questRead
             <Currency kind="gold" value={`+${outcome.gold}`} size={18} />
             <span className="font-semibold text-sky-200">+{outcome.xp} {language === 'en' ? 'XP' : 'опыта'}</span>
             {outcome.gems > 0 && <Currency kind="gems" value={`+${outcome.gems}`} size={18} />}
+            {outcome.materials > 0 && (
+              <span data-testid="pve-real-forge-loot" className="inline-flex items-center gap-1 rounded-lg border border-amber-300/40 bg-amber-500/15 px-2 py-1 text-xs font-bold text-amber-100">
+                <Hammer size={15} aria-hidden="true" /> +{outcome.materials} {language === 'en' ? 'Forge materials' : 'Материалы кузницы'}
+              </span>
+            )}
           </div>
         ) : (
           <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>
@@ -568,6 +580,13 @@ function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questRead
               </div>
             </div>
           </section>
+        )}
+        {outcome.won && onEquipment && (
+          <button type="button" data-testid="pve-prepare-equipment" onClick={onEquipment}
+            className="relative mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-sky-300/50 bg-sky-900/60 px-3 text-sm font-extrabold text-sky-100 active:scale-[0.98]">
+            <Shirt size={17} aria-hidden="true" />
+            {language === 'en' ? 'Compare gear before the next fight' : 'Сравнить снаряжение перед следующим боем'}
+          </button>
         )}
         {outcome.won && questReady && onQuests && <button type="button" onClick={onQuests} className="relative mt-3 w-full min-h-11 rounded-xl border border-emerald-300/60 bg-emerald-700/70 px-3 text-sm font-bold text-white active:scale-[0.98]">
           {language === 'en' ? 'Quest reward ready — claim it' : 'Награда за задание готова — забрать'}

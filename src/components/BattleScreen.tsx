@@ -111,6 +111,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         }}
         onNext={() => { fightStartLocked.current = false; return start(fight.kind); }}
         onQuests={() => { fightStartLocked.current = false; onActiveChange?.(false); onQuests(); }}
+        onEquipment={onEquipment}
       />
     );
   }
