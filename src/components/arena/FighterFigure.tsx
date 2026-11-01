@@ -53,16 +53,17 @@ export function FighterFigure({
   // The existing server/combat queue is the ONLY source for attacks and damage.
   const role = !strike ? null : strike.attacker === name ? 'attacker' : strike.target === name ? 'target' : null;
   const speed = Number.isFinite(combatSpeed) && combatSpeed > 0 ? combatSpeed : 1;
-  const [contactKey, setContactKey] = useState<number | null>(null);
-  const damageKey = role === 'target' && (strike?.tone === 'hit' || strike?.tone === 'crit') ? strike.key : null;
+  const artIdentity = combatFrames?.idle ?? src;
+  const [contact, setContact] = useState<{ event: StrikeEvent; src: string; art: string; name: string } | null>(null);
+  const damageEvent = role === 'target' && (strike?.tone === 'hit' || strike?.tone === 'crit') ? strike : null;
   useEffect(() => {
-    if (damageKey === null) return;
+    if (!damageEvent) { setContact(null); return; }
     // Unrigged art must not show a damage pose before the same contact boundary
     // used by the rig, effects and PvE HP update. Retire obsolete timers on a
     // new strike or unmount so an old hit cannot animate the next one.
-    const timer = window.setTimeout(() => setContactKey(damageKey), 350 / speed);
+    const timer = window.setTimeout(() => setContact({ event: damageEvent, src, art: artIdentity, name }), 350 / speed);
     return () => window.clearTimeout(timer);
-  }, [damageKey, speed]);
+  }, [damageEvent, speed, src, artIdentity, name]);
   useEffect(() => {
     if (!rig || (assets?.id === rig.id && !assets.ready)) setEnabledRig(null);
     else if (assets?.id === rig.id && assets.ready && !role) setEnabledRig(rig.id);
@@ -103,7 +104,7 @@ export function FighterFigure({
     : role === 'attacker' ? combatFrames?.attack ?? src
     : role === 'target' && tone === 'dodge' ? combatFrames?.dodge ?? combatFrames?.idle ?? src
     : role === 'target' && tone === 'block' ? combatFrames?.block ?? src
-    : role === 'target' ? (damageKey === contactKey ? combatFrames?.hit : combatFrames?.idle) ?? src
+    : role === 'target' ? (contact?.event === damageEvent && contact?.src === src && contact?.art === artIdentity && contact?.name === name ? combatFrames?.hit : combatFrames?.idle) ?? src
     : combatFrames?.idle ?? src;
 
   return (

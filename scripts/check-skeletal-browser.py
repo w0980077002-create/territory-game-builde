@@ -162,6 +162,9 @@ with sync_playwright() as playwright:
     assert durations and max(durations) <= 450, ('x2 must halve event durations', durations)
     page.wait_for_timeout(480)
     assert page.locator('#fixture-hero svg').get_attribute('data-motion') == 'idle'
+    set_visual(page, {'strike': None})
+    set_visual(page, {'strike': strike(10)})
+    assert page.locator('#fixture-hero svg').get_attribute('data-motion') != 'idle', 'A later event may reuse the previous key'
     set_visual(page, {'strike': strike(11)})
     page.evaluate('window.__combat.unmount()')
     page.wait_for_timeout(40)
@@ -258,6 +261,23 @@ with sync_playwright() as playwright:
     assert page.locator('#fixture-hero img').get_attribute('src').endswith('/idle.webp')
     page.wait_for_timeout(190)
     assert page.locator('#fixture-hero img').get_attribute('src').endswith('/hit.webp'), 'Contact follows combat speed'
+    # A new event can legitimately reuse a numeric key after a new encounter.
+    set_visual(page, {'strike': None, 'speed': 1})
+    set_visual(page, {'strike': strike(32, 'hit', attacker='Противник')})
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/idle.webp'), 'Reused key cannot reuse old contact'
+    set_visual(page, {'strike': None})
+    page.wait_for_timeout(390)
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/idle.webp'), 'Cancelled hit cannot appear later'
+    set_visual(page, {'strike': strike(33, 'hit', attacker='Противник'), 'speed': .5})
+    page.wait_for_timeout(380)
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/idle.webp'), 'Slow contact cannot occur early'
+    page.wait_for_timeout(350)
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/hit.webp')
+    set_visual(page, {'appearance': 'm1'})
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/male_rogue/idle.webp'), 'New art cannot inherit old contact'
+    set_visual(page, {'strike': None})
+    page.evaluate('window.__combat.unmount()')
+    page.wait_for_timeout(50)
     report['missing_cutout_same_hero_fallback'] = True
     page.close()
 
