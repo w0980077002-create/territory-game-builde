@@ -52,6 +52,27 @@ export function nextOpenStrike(current: Zone | null, guarded: Zone): Zone {
   return openings[(index + 1) % openings.length];
 }
 
+/** In elite phase two, guard the player's last strike. The next intent is
+ * committed before the next move and is the same intent used by playRound.
+ * This changes no damage multipliers, rewards or resources. */
+export function nextAdaptiveEnemyIntent(
+  enemy: Pick<PveSide, 'hp' | 'maxHp'>,
+  lastHeroAttack: Zone,
+  eliteEncounter: boolean,
+  rolledIntent: ReturnType<typeof randomZones> = randomZones(),
+): { intent: ReturnType<typeof randomZones>; adapted: boolean } {
+  if (!eliteEncounter || !Number.isFinite(enemy.hp) || !Number.isFinite(enemy.maxHp)
+    || enemy.hp <= 0 || enemy.maxHp <= 0 || enemy.hp > enemy.maxHp / 2) {
+    return { intent: rolledIntent, adapted: false };
+  }
+  const otherGuard = rolledIntent.blocks.find(zone => zone !== lastHeroAttack)
+    ?? ZONES.find(zone => zone.id !== lastHeroAttack)?.id;
+  return {
+    intent: { attack: rolledIntent.attack, blocks: otherGuard ? [lastHeroAttack, otherGuard] : [lastHeroAttack] },
+    adapted: true,
+  };
+}
+
 /** One-tap defense against an announced strike. Preserve the other selected
  * block when both slots are occupied; never add a third defense zone. */
 export function coverThreatZone(current: readonly Zone[], threat: Zone): Zone[] {
@@ -141,7 +162,8 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   if (enemyHp > 0) {
     const rawEnemyHit = strike(enemy, hero, 'hero', ai.attack, blocks);
     const mitigated = rawEnemyHit.amount > 0 ? followerGuardDamage(rawEnemyHit.amount, followerDefense) : 0;
-    const h2 = { ...rawEnemyHit, amount: mitigated };
+    // Only actual HP loss belongs in the hit log and tactical damage counters.
+    const h2 = { ...rawEnemyHit, amount: Math.min(mitigated, heroHp) };
     hits.push(h2);
     heroHp = Math.max(0, heroHp - h2.amount);
   }
