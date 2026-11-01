@@ -162,7 +162,7 @@ assert.match(fightSource, /data-testid="pve-surrender-confirm"/, 'Surrender must
 assert.match(fightSource, /data-testid="pve-surrender-cancel"/, 'Players must be able to return to the same fight');
 assert.match(fightSource, /data-testid="pve-surrender-accept"/, 'The surrender confirmation must be explicit');
 assert.match(fightSource, /if \(roundFlight\.current \|\| done\.current\) return;/, 'Cannot concede during an unresolved round');
-assert.match(fightSource, /setTacticalReport\(summarizePveRound\(res\.hits\)\)/, 'Tactical feedback must come from resolved hits');
+assert.match(fightSource, /const report = summarizePveRound\(res\.hits\);\s*setTacticalReport\(report\)/, 'Tactical feedback must come from resolved hits');
 assert.match(fightSource, /setTacticalReport\(null\)/, 'Clear previous feedback during the next move');
 assert.match(fightSource, /data-testid="pve-enemy-guard"/, 'Show the actual guard during classic manual combat');
 assert.match(fightSource, /\(kind === 'trial' \|\| enemy\.isBoss\) && !auto && !busy/, 'Only trial and boss manual rounds reveal their committed strike');
