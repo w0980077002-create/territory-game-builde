@@ -31,10 +31,10 @@ $choices$;
 -- The service role can issue an audited rank, but clients cannot mint.
 SET ROLE service_role;
 SELECT public.territory_runes_admin_set_level_v1(
- '10000000-0000-4000-8000-000000000001','heavy_strike_r1',2,
+ '10000000-0000-4000-8000-000000000001','shield_wall_r1',2,
  '20000000-0000-4000-8000-000000000001','synthetic-ci-admin');
 SELECT public.territory_runes_admin_set_level_v1(
- '10000000-0000-4000-8000-000000000001','heavy_strike_r1',2,
+ '10000000-0000-4000-8000-000000000001','shield_wall_r1',2,
  '20000000-0000-4000-8000-000000000001','synthetic-ci-admin');
 RESET ROLE;
 
@@ -54,15 +54,15 @@ BEGIN
  THEN RAISE EXCEPTION 'initial_status_failed: %',r; END IF;
  first_receipt:=public.territory_runes_save_v1(
  '20000000-0000-4000-8000-000000000002',0,
- public.test_rune_choices('heavy_strike_r1'));
+ public.test_rune_choices('shield_wall_r1'));
  replay:=public.territory_runes_save_v1(
  '20000000-0000-4000-8000-000000000002',0,
- public.test_rune_choices('heavy_strike_r1'));
+ public.test_rune_choices('shield_wall_r1'));
  IF first_receipt<>replay OR first_receipt->>'revision'<>'1'
  THEN RAISE EXCEPTION 'save_replay_failed'; END IF;
  BEGIN
    PERFORM public.territory_runes_save_v1(
-     '20000000-0000-4000-8000-000000000003',0,public.test_rune_choices('heavy_strike_r1'));
+     '20000000-0000-4000-8000-000000000003',0,public.test_rune_choices('shield_wall_r1'));
    RAISE EXCEPTION 'expected_revision_rejection';
  EXCEPTION WHEN OTHERS THEN
    IF SQLERRM<>'rune_revision_conflict' THEN RAISE; END IF;
@@ -76,13 +76,13 @@ BEGIN
  END;
  BEGIN
    PERFORM public.territory_runes_save_v1(
-     '20000000-0000-4000-8000-000000000004',1,public.test_rune_choices('heavy_strike_r2'));
+     '20000000-0000-4000-8000-000000000004',1,public.test_rune_choices('shield_wall_r2'));
    RAISE EXCEPTION 'expected_unowned_rejection';
  EXCEPTION WHEN OTHERS THEN
    IF SQLERRM<>'rune_not_owned_or_wrong_slot' THEN RAISE; END IF;
  END;
  r:=public.territory_runes_status_v1();
- IF r->>'revision'<>'1' OR r#>>'{slots,0,runeId}'<>'heavy_strike_r1'
+ IF r->>'revision'<>'1' OR r#>>'{slots,0,runeId}'<>'shield_wall_r1'
  THEN RAISE EXCEPTION 'saved_status_failed: %',r; END IF;
 END $test$;
 RESET ROLE;
@@ -93,7 +93,7 @@ DO $test$
 BEGIN
  BEGIN
    PERFORM public.territory_runes_admin_set_level_v1(
-    '10000000-0000-4000-8000-000000000001','heavy_strike_r1',0,
+    '10000000-0000-4000-8000-000000000001','shield_wall_r1',0,
     '20000000-0000-4000-8000-000000000005','synthetic-ci-admin');
    RAISE EXCEPTION 'expected_equipped_rejection';
  EXCEPTION WHEN OTHERS THEN
@@ -112,7 +112,7 @@ BEGIN
  THEN RAISE EXCEPTION 'other_player_leak'; END IF;
  BEGIN
    PERFORM public.territory_runes_save_v1(
-    '20000000-0000-4000-8000-000000000006',0,public.test_rune_choices('heavy_strike_r1'));
+    '20000000-0000-4000-8000-000000000006',0,public.test_rune_choices('shield_wall_r1'));
    RAISE EXCEPTION 'expected_foreign_ownership_rejection';
  EXCEPTION WHEN OTHERS THEN
    IF SQLERRM<>'rune_not_owned_or_wrong_slot' THEN RAISE; END IF;
@@ -127,7 +127,7 @@ SELECT public.territory_runes_save_v1(
 RESET ROLE;
 SET ROLE service_role;
 SELECT public.territory_runes_admin_set_level_v1(
- '10000000-0000-4000-8000-000000000001','heavy_strike_r1',0,
+ '10000000-0000-4000-8000-000000000001','shield_wall_r1',0,
  '20000000-0000-4000-8000-000000000005','synthetic-ci-admin');
 RESET ROLE;
 
