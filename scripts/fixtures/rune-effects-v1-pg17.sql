@@ -103,12 +103,11 @@ RESET ROLE;
 -- Full 15-slot loadout for player 2: verify all 15 effects on Arena snapshots.
 SET ROLE service_role;
 DO $grant$
-DECLARE r record;
+DECLARE rune text;
 BEGIN
- FOR r IN SELECT rune_id FROM territory_private.rune_catalog_v1
-   WHERE rune_id LIKE '%_r1' ORDER BY slot_id LOOP
+ FOREACH rune IN ARRAY ARRAY['shield_wall_r1','axe_storm_r1','hawk_shot_r1','frost_oath_r1','battle_chant_r1','runic_bolt_r1','rune_snare_r1','quickstep_r1','fire_net_r1','ancestral_surge_r1','blood_rush_r1','forest_awakening_r1','storm_judgement_r1','winter_breaker_r1','wolf_king_r1'] LOOP
   PERFORM public.territory_runes_admin_set_level_v1(
-    '10000000-0000-4000-8000-000000000002',r.rune_id,1,
+    '10000000-0000-4000-8000-000000000002',rune,1,
     gen_random_uuid(),'synthetic-effects-test');
  END LOOP;
 END $grant$;
@@ -117,8 +116,9 @@ SET ROLE authenticated;
 SET request.test_uid='10000000-0000-4000-8000-000000000002';
 SELECT public.territory_runes_save_v1(
  '50000000-0000-4000-8000-000000000007',0,
- (SELECT jsonb_agg(jsonb_build_object('slotId',slot_id,'runeId',rune_id) ORDER BY slot_id)
-  FROM territory_private.rune_catalog_v1 WHERE rune_id LIKE '%_r1'));
+ (SELECT jsonb_agg(jsonb_build_object('slotId','rune_slot_'||lpad(i::text,2,'0'),
+    'runeId',(ARRAY['shield_wall_r1','axe_storm_r1','hawk_shot_r1','frost_oath_r1','battle_chant_r1','runic_bolt_r1','rune_snare_r1','quickstep_r1','fire_net_r1','ancestral_surge_r1','blood_rush_r1','forest_awakening_r1','storm_judgement_r1','winter_breaker_r1','wolf_king_r1'])[i]) ORDER BY i)
+  FROM generate_series(1,15) i));
 RESET ROLE;
 SET ROLE service_role;
 DO $assert$
