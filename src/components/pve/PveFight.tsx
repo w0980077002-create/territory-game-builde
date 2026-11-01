@@ -96,6 +96,8 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const [hero, setHero] = useState<PveSide>(() => heroSide(useGame.get()));
   const [foe, setFoe] = useState<PveSide>(() => enemySide(enemy));
   const [attack, setAttack] = useState<Zone | null>(null);
+  // A committed enemy guard stays fixed until the round is actually resolved.
+  const [enemyIntent, setEnemyIntent] = useState(() => randomZones());
   const [blocks, setBlocks] = useState<Zone[]>([]);
   const [busy, setBusy] = useState(false);
   // A speed change applies to the next round. Keep the current visual contact
@@ -174,7 +176,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     try {
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     hapticImpact('light');
-    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus);
+    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, enemyIntent);
     const currentSpeed = useGame.get().settings.speed;
     setRoundSpeed(currentSpeed);
     const pace = 1 / currentSpeed;
@@ -196,13 +198,15 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     setStrike(null);
     setAttack(null);
     setBlocks([]);
+    // Show the next guard only after the current enemy action finished.
+    setEnemyIntent(randomZones());
     if (res.enemy.hp <= 0) finish(true);
     else if (res.hero.hp <= 0) finish(false);
     } finally {
       roundFlight.current = false;
       if (alive.current) setBusy(false);
     }
-  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language]);
+  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, enemyIntent]);
 
   useEffect(() => {
     if (!auto || busy || outcome) return;
@@ -247,6 +251,10 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const controls = !busy && !outcome && !auto;
   const ready = controls && !!attack && blocks.length === 2;
   const firstFightHelp = kind === 'stage' && state.totalBattlesWon === 0;
+  const guardedZone = ZONES.find(zone => zone.id === enemyIntent.blocks[0]);
+  const guardedZoneLabel = guardedZone
+    ? language === 'en' ? ({ head: 'Head', chest: 'Chest', belly: 'Belly', legs: 'Legs' } as Record<string, string>)[guardedZone.id] : guardedZone.label
+    : '';
   const victoryJourney = outcome?.won ? getVictoryJourney(state,kind,levelAtFightStart.current) : null;
   const hint = busy ? (language === 'en' ? 'Round in progress…' : 'Идёт раунд…')
     : auto ? (language === 'en' ? 'Auto-battle: zones are selected automatically' : 'Автобой: зоны выбираются сами')
@@ -411,6 +419,18 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
             ))}
           </div>
         </div>
+
+        {!outcome && !auto && guardedZone && (
+          <div data-testid="pve-enemy-guard" className="relative mx-2 mb-1 flex items-center gap-1.5 rounded-lg border border-amber-300/50 bg-[#321f14]/95 px-2 py-1.5 text-[11px] font-semibold text-amber-100">
+            <Shield className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
+            <span className="min-w-0 leading-tight" role="status" aria-live="polite">
+              {language === 'en' ? 'Enemy guards' : 'Враг прикрывает'} <strong className="text-amber-300">{guardedZoneLabel}</strong>.
+              {' '}{attack === guardedZone.id
+                ? (language === 'en' ? 'Your strike may be blocked. Choose a gap!' : 'Удар может быть заблокирован. Ищи брешь!')
+                : (language === 'en' ? 'Strike another zone to bypass this guard.' : 'Бей в другую зону, чтобы обойти щит.')}
+            </span>
+          </div>
+        )}
 
         {!outcome && (
           <div className="relative px-2 pb-2">
