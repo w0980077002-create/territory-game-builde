@@ -1,10 +1,6 @@
 name: Halloween companion PostgreSQL 17 integration
 on:
   pull_request:
-    paths:
-      - 'supabase/staged/halloween_companion_reward_2026.sql'
-      - 'scripts/check-halloween-postgres17.sh'
-      - '.github/workflows/halloween-postgres.yml'
   workflow_dispatch:
 permissions:
   contents: read

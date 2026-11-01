@@ -107,6 +107,22 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const [strike, setStrike] = useState<StrikeEvent | null>(null);
   const [witchAttack, setWitchAttack] = useState(0);
   const [witchHeal, setWitchHeal] = useState(0);
+  const [witchPose, setWitchPose] = useState<{ kind: 'attack' | 'heal'; sequence: number } | null>(null);
+  useEffect(() => {
+    if (!witchPose) return;
+    const timer = setTimeout(() => setWitchPose(null), witchPose.kind === 'attack' ? 650 : 900);
+    return () => clearTimeout(timer);
+  }, [witchPose]);
+  useEffect(() => {
+    if (!witchAttack) return;
+    const timer = setTimeout(() => setWitchAttack(0), 650);
+    return () => clearTimeout(timer);
+  }, [witchAttack]);
+  useEffect(() => {
+    if (!witchHeal) return;
+    const timer = setTimeout(() => setWitchHeal(0), 900);
+    return () => clearTimeout(timer);
+  }, [witchHeal]);
   const [log, setLog] = useState<string[]>([language === 'en' ? `Battle started: ${localizeText(enemy.name, language)}` : `Бой начался: ${enemy.name}`]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -187,7 +203,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
       if (!alive.current || done.current) return;
       setStrike({ key: ++keyRef.current, attacker: hit.attacker, target: hit.target, tone: hit.tone, amount: hit.amount || null });
       if (follower?.id === 'follower_pumpkin_witch_2026' && hit.source === 'companion' && hit.amount > 0)
-        setWitchAttack(keyRef.current);
+        { setWitchAttack(keyRef.current); setWitchPose({kind: 'attack', sequence: keyRef.current}); }
       await wait(350 * pace);
       if (!alive.current) return;
       if (hit.targetSide === 'enemy') setFoe((f) => ({ ...f, hp: Math.max(0, f.hp - hit.amount) }));
@@ -197,7 +213,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     }
     if (!alive.current) return;
     if (res.healAmount > 0) {
-      if (follower?.id === 'follower_pumpkin_witch_2026') setWitchHeal(++keyRef.current);
+      if (follower?.id === 'follower_pumpkin_witch_2026') { const sequence = ++keyRef.current; setWitchHeal(sequence); setWitchPose({kind: 'heal', sequence}); }
       setHero((h) => ({ ...h, hp: Math.min(h.maxHp, h.hp + res.healAmount) }));
       pushLog(language === 'en' ? `Companion healed ${res.healAmount} HP` : `Спутник восстановил ${res.healAmount} HP`);
     }
@@ -367,7 +383,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
               <div className="relative flex-1 mt-1">
                 {follower && (
                   <div className={follower.id === 'follower_6' ? 'absolute left-0 bottom-0 z-30 h-[64%] w-[64%] pointer-events-none' : 'absolute -left-[8%] bottom-0 z-10 h-[52%] w-[48%] pointer-events-none'}>
-                    {follower.id === 'follower_pumpkin_witch_2026' ? <PumpkinWitch attack={witchAttack} heal={witchHeal} /> : <FighterFigure
+                    {follower.id === 'follower_pumpkin_witch_2026' ? <PumpkinWitch attack={witchAttack} heal={witchHeal} pose={witchPose} /> : <FighterFigure
                       src={getFollowerArt(follower.id)}
                       combatFrames={getFollowerCombatFrames(follower.id)}
                       name={follower.name}
