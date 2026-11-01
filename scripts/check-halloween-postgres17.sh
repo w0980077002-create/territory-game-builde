@@ -27,7 +27,7 @@ done
 docker exec -i halloween-before psql -X -v ON_ERROR_STOP=1 -U postgres <<'SQL'
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',false);
-DO $$BEGIN IF public.territory_halloween_companion_claim_v1()->>'reason' <> 'event_active' THEN RAISE EXCEPTION 'claim before deadline'; END IF; END$$;
+DO $$DECLARE r jsonb; BEGIN r:=public.territory_halloween_companion_claim_v1(); IF r->>'reason' <> 'event_active' OR (r->>'retryAfterMs')::bigint < 1000 THEN RAISE EXCEPTION 'claim before deadline or server delay invalid'; END IF; END$$;
 RESET ROLE;
 DO $$BEGIN
  BEGIN PERFORM public.territory_halloween_companion_snapshot_v1(); RAISE EXCEPTION 'snapshot unexpectedly allowed'; EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'halloween_companion_event_active' THEN RAISE; END IF; END;

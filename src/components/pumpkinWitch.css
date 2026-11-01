@@ -1,4 +1,6 @@
 .pumpkin-witch { position:relative; display:block; width:100%; height:100%; pointer-events:none; }
+.pumpkin-witch__preload { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; }
+.pumpkin-witch__preload img { width:1px; height:1px; }
 .pumpkin-witch__body { position:relative; display:block; width:100%; height:100%; animation:pumpkin-breathe 4s ease-in-out infinite; transform-origin:50% 95%; }
 .pumpkin-witch__body--attack { animation:pumpkin-cast .6s ease-out, pumpkin-breathe 4s .6s ease-in-out infinite; }
 .pumpkin-witch__body--heal { animation:pumpkin-heal-pose .8s ease-out, pumpkin-breathe 4s .8s ease-in-out infinite; }

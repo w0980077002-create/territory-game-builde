@@ -94,7 +94,7 @@ try:
     code,_=call({'action':'halloween_reward_bulk','token':owner,'requestId':reqid,'eligible':0,'digest':snap['digest']})
     assert code == 503
     code,after_failure=call({'action':'halloween_reward_status','token':owner})
-    assert code == 200 and after_failure['audit']['failed'] == 1 and after_failure['audit']['lastError'] == 'snapshot_changed'
+    assert code == 200 and after_failure['audit']['failed'] == 1 and after_failure['audit']['lastError'] == 'snapshot_changed', ('audit after refused bulk', code, after_failure)
     reqid=str(uuid.uuid4()); payload={'action':'halloween_reward_bulk','token':owner,'requestId':reqid,'eligible':snap['eligible'],'digest':snap['digest']}
     code,receipt=call(payload)
     assert code == 200 and receipt['inserted'] == 1 and receipt['alreadyProcessed'] is False
