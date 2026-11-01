@@ -37,7 +37,7 @@ assert.match(home, /onOpen\('halloween-boss'\)/);
 assert.match(app, /screen === 'halloween-boss' && <HalloweenBossScreen/);
 assert.match(api, /supabase\.rpc\(name\)/);
 assert.match(screen, /getHalloweenBossState/);
-assert.match(screen, /maxHitsToday \\?\\? 100/);
+assert.match(screen, /maxHitsToday \?\? 100/);
 assert.match(screen, /hitHalloweenBoss/);
 assert.match(screen, /state\.top10\.map/);
 assert.doesNotMatch(screen, /saveCloudSave|useGame\.set|redGems|spendStones|spendEnergy/);
