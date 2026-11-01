@@ -121,3 +121,32 @@ assert.match(fight, /data-testid="victory-xp-label"/, 'victory does not show sav
 assert.ok(fight.includes('outcome?.won ? getVictoryJourney(state,kind,levelAtFightStart.current)'),
   'victory path must be derived from committed game save, not invented rewards');
 console.log('PvE victory motivation PASS: selected hero, saved XP, level up, next enemy/boss/trial and no state mutation.');
+
+
+// #136: the hero's next goal must be the actual upcoming enemy, and only
+// genuinely owned, strictly stronger equipment can be advertised as an upgrade.
+const gearBundle = await build({
+  entryPoints: ['src/game/heroGearOpportunity.ts'],
+  bundle: true, write: false, platform: 'node', format: 'esm',
+});
+const { findHeroGearOpportunity, strictlyStrongerGear } = await import(
+  'data:text/javascript;base64,' + Buffer.from(gearBundle.outputFiles[0].text).toString('base64')
+);
+const worn = { id: 'old-sword', slot: 'weapon', name: 'Old sword', attack: 12, defense: 4 };
+const stronger = { id: 'new-sword', slot: 'weapon', name: 'New sword', attack: 14, defense: 4 };
+const tradeoff = { id: 'risky-sword', slot: 'weapon', name: 'Risky sword', attack: 20, defense: 1 };
+const gearItem = (gear, qty = 1) => ({ id: gear.id, type: 'equipment', qty, equipment: gear });
+assert.equal(strictlyStrongerGear(stronger, worn), true);
+assert.equal(strictlyStrongerGear(tradeoff, worn), false, 'tradeoffs are not guaranteed upgrades');
+assert.equal(strictlyStrongerGear(worn, worn), false);
+assert.equal(findHeroGearOpportunity([gearItem(stronger)], {weapon:worn})?.kind, 'upgrade');
+assert.equal(findHeroGearOpportunity([gearItem(tradeoff)], {weapon:worn}), null);
+assert.equal(findHeroGearOpportunity([gearItem(stronger,0)], {weapon:worn}), null, 'no phantom loot');
+assert.equal(findHeroGearOpportunity([gearItem(stronger)], {})?.kind, 'empty');
+assert.equal(findHeroGearOpportunity([], {weapon:worn}), null);
+const heroShowcase = readFileSync('src/components/HeroShowcase.tsx', 'utf8');
+assert.match(heroShowcase, /const nextEnemy = bossReady \? chapter\.boss : \(chapter\.enemies\[chapterWins\]/,
+  'hero must show actual next encounter, not the boss before it is unlocked');
+assert.match(heroShowcase, /findHeroGearOpportunity\(state\.inventory, player\.equipped\)/,
+  'upgrade recommendation must be based on saved gear, not fabricated rewards');
+console.log('Hero next-encounter and owned gear-upgrade journey PASS.');
