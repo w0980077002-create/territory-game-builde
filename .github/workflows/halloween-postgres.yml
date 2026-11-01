@@ -18,9 +18,9 @@ jobs:
           RUN apt-get update && apt-get install -y --no-install-recommends libfaketime && rm -rf /var/lib/apt/lists/*
           RUN install -d -o postgres -g postgres /var/lib/postgresql/isolated
           USER postgres
-          RUN initdb -D /var/lib/postgresql/isolated -A trust
+          RUN initdb -D /var/lib/postgresql/isolated -A trust && echo 'host all all 172.0.0.0/8 trust' >> /var/lib/postgresql/isolated/pg_hba.conf
           USER root
-          ENTRYPOINT ["gosu", "postgres", "env", "LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1", "FAKETIME_DONT_FAKE_MONOTONIC=1", "postgres", "-D", "/var/lib/postgresql/isolated"]
+          ENTRYPOINT ["gosu", "postgres", "env", "LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1", "FAKETIME_DONT_FAKE_MONOTONIC=1", "postgres", "-D", "/var/lib/postgresql/isolated", "-c", "listen_addresses=*"]
           DOCKERFILE
           docker build -t halloween-pg17 /tmp/halloween-pg-image
       - name: Start independent pre- and post-deadline databases

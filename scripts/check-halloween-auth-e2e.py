@@ -28,10 +28,13 @@ def signup():
     email = f'halloween-{uuid.uuid4()}@example.test'
     status, data = request(api + '/auth/v1/signup', {'email': email, 'password': 'isolated-Only-Password-7832!'}, key=anon)
     assert status == 200 and data.get('access_token') and data.get('user', {}).get('id'), ('signup', status)
-    return str(uuid.UUID(data['user']['id'])), data['access_token']
+    return str(uuid.UUID(data['user']['id'])), data['access_token'], email
 
-participant, participant_token = signup()
-nonparticipant, nonparticipant_token = signup()
+participant, participant_token, participant_email = signup()
+nonparticipant, nonparticipant_token, _ = signup()
+status, second_session = request(api + '/auth/v1/token?grant_type=password', {'email': participant_email, 'password':'isolated-Only-Password-7832!'}, key=anon)
+assert status == 200 and second_session.get('access_token') and second_session.get('user',{}).get('id') == participant
+second_token = second_session['access_token']
 assert participant != nonparticipant
 network = 'halloween-auth-e2e'
 subprocess.run(['docker', 'network', 'create', network], check=True, stdout=subprocess.DEVNULL)
@@ -56,7 +59,10 @@ INSERT INTO public.territory_halloween_boss_2026_players VALUES
     for attempt in range(60):
         try:
             with urllib.request.urlopen('http://127.0.0.1:' + port + '/', timeout=1): break
-        except (OSError, urllib.error.HTTPError): time.sleep(1)
+        except urllib.error.HTTPError as error:
+            if error.code < 500: break
+            time.sleep(1)
+        except OSError: time.sleep(1)
     else: raise RuntimeError('PostgREST did not start')
 
 before = 'http://127.0.0.1:3111/rpc/territory_halloween_companion_claim_v1'
@@ -84,7 +90,12 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
     responses = list(pool.map(lambda _: request(after, {}, participant_token), range(2)))
 assert all(status == 200 and data.get('eligible') is True and data.get('level') == 100 for status, data in responses)
 assert any(data['alreadyClaimed'] is True for _, data in responses)
-status, data = request(after, {}, participant_token)
+status, data = request(after, {}, second_token)
+assert status == 200 and data['alreadyClaimed'] is True
+# A stale saved game cannot remove the separate server-owned entitlement.
+stale = f"UPDATE public.players SET game_state='{{\"activeFollowerId\":\"follower_6\"}}' WHERE id='{participant}';"
+subprocess.run(['docker','exec','halloween-after','psql','-X','-v','ON_ERROR_STOP=1','-U','postgres','-c',stale],check=True,stdout=subprocess.DEVNULL)
+status, data = request(after, {}, second_token)
 assert status == 200 and data['alreadyClaimed'] is True
 # The private schema is not exposed by PostgREST and the authenticated role has no table privileges.
 status, _ = request('http://127.0.0.1:3112/halloween_companion_rewards_2026', {}, participant_token)
