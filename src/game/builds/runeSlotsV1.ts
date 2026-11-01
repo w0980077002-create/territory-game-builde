@@ -67,9 +67,16 @@ export function migrateLegacyRunes(
     seen.add(skill.skillId);
     if (skill.runes.length>1) throw Error('rune_legacy_ambiguous');
     if (!skill.runes.length) continue;
+    // The new model derives rank from ownership. A legacy selection can carry
+    // a lower rank: migrating it would silently change its combat effect.
+    // Preserve the original record and require reconciliation instead.
+    const equipped = skill.runes[0];
+    if (!integer(equipped.level) || equipped.level < 1
+      || !Object.prototype.hasOwnProperty.call(trusted, equipped.runeId)
+      || trusted[equipped.runeId] !== equipped.level) throw Error('rune_legacy_rank_conflict');
     const slot=next.slots.find(s=>s.slotId===skill.skillId);
     if (!slot) throw Error('rune_unknown_skill');
-    slot.runeId=skill.runes[0].runeId;
+    slot.runeId=equipped.runeId;
   }
   return validateRuneSlots(next,defs,trusted,revision);
 }

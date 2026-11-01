@@ -26,9 +26,11 @@ assert.throws(()=>api.validateRuneSlots(full,defs,owned,8),/rune_revision_confli
 assert.throws(()=>api.migrateLegacyRunes([{skillId:defs[0].slotId,runes:[
   {runeId:defs[0].options[0],level:1},{runeId:defs[0].options[1],level:1}]}],defs,owned),
   /rune_legacy_ambiguous/);
-const legacy=defs.slice(0,5).map(d=>({skillId:d.slotId,runes:[{runeId:d.options[0],level:1}]}));
+const legacy=defs.slice(0,5).map(d=>({skillId:d.slotId,runes:[{runeId:d.options[0],level:3}]}));
 const migrated=api.migrateLegacyRunes(legacy,defs,owned);
 assert.equal(migrated.slots.length,15);
 assert.equal(migrated.slots.filter(s=>s.runeId!==null).length,5);
 assert.deepEqual(api.migrateLegacyRunes([],defs,owned).slots,empty.slots);
+assert.throws(()=>api.migrateLegacyRunes([{skillId:defs[0].slotId,runes:[{runeId:defs[0].options[0],level:1}]}],defs,owned),/rune_legacy_rank_conflict/,'Never silently upgrade a legacy selected rank');
+assert.throws(()=>api.migrateLegacyRunes([{skillId:defs[0].slotId,runes:[{runeId:defs[0].options[0],level:3}]}],defs,{}),/rune_legacy_rank_conflict/,'Never migrate unverified ownership');
 console.log('15-slot rune contract: 15 choices, 45 options, trusted ownership, revision and legacy losslessness PASS');
