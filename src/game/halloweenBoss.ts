@@ -15,7 +15,8 @@ export interface HalloweenBossState {
   myDamage: number;
   myRank: number | null;
   myHitsToday: number;
-  maxHitsToday: number;
+  /** null means no daily attack quota; 8-second server cooldown remains. */
+  maxHitsToday: number | null;
   nextHitAt: string | null;
   top10: HalloweenBossRank[];
   serverNow: string;
@@ -38,7 +39,7 @@ function decodeBossState(raw: unknown): HalloweenBossState {
     myDamage: integer(data.myDamage),
     myRank: data.myRank == null ? null : integer(data.myRank),
     myHitsToday: integer(data.myHitsToday),
-    maxHitsToday: integer(data.maxHitsToday),
+    maxHitsToday: data.maxHitsToday === null ? null : integer(data.maxHitsToday),
     nextHitAt: typeof data.nextHitAt === 'string' ? data.nextHitAt : null,
     serverNow: String(data.serverNow ?? ''),
     hitDamage: data.hitDamage == null ? undefined : integer(data.hitDamage),
