@@ -118,7 +118,7 @@ assert.match(fightSource, /setTacticalReport\(summarizePveRound\(res\.hits\)\)/,
 assert.match(fightSource, /setTacticalReport\(null\)/, 'Clear previous feedback during the next move');
 assert.match(fightSource, /data-testid="pve-enemy-guard"/, 'Show the actual guard during classic manual combat');
 assert.match(fightSource, /\(kind === 'trial' \|\| enemy\.isBoss\) && !auto && !busy/, 'Only trial and boss manual rounds reveal their committed strike');
-assert.match(fightSource, /blocks\.includes\(enemyIntent\.attack\)/, 'The warning reflects the player's real defense selection');
+assert.match(fightSource, /blocks\.includes\(enemyIntent\.attack\)/, 'The warning reflects the selected defense');
 assert.match(fightSource, /data-testid="pve-telegraphed-strike"/, 'Show the actual next strike direction for tactical trials and bosses');
 assert.match(fightSource, /followerBonus\.defense, followerBonus, enemyIntent\)/, 'Pass the visible guard to the PvE round calculation');
 assert.match(fightSource, /setEnemyIntent\(randomZones\(\)\)/, 'Refresh guard after resolving each round');
