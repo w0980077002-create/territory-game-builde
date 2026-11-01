@@ -5,6 +5,7 @@ import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
+import { claimPumpkinWitchEntitlement, installVerifiedPumpkinWitch } from '@/game/halloweenCompanion2026';
 import { restoreAdventureSaveFence, restoreAdventureStartFence } from '@/game/combatV1/receiptAdapter';
 import { createImmediateSaveController } from '@/game/immediateSave';
 import { HomeScreen } from '@/components/HomeScreen';
@@ -321,6 +322,15 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         useAccount.set({ vip: profile.vip, permanentVip:profile.vip, vipUntil:null, vipRemaining:0, vipCheckedAt:performance.now() });
         void refreshFortuneVip();
         setLoaded(true);
+        // Separate authenticated raid ledger: never trust a saved seasonal follower.
+        // The claim RPC itself refuses claims before 2026-11-03 00:00 UTC.
+        if (Date.now() >= Date.parse('2026-11-03T00:00:00Z')) {
+          void claimPumpkinWitchEntitlement()
+            .then((eligible) => {
+              if (!cancelled && eligible) useGame.set((current) => installVerifiedPumpkinWitch(current));
+            })
+            .catch((error) => console.warn('Halloween companion entitlement unavailable:', error));
+        }
       })
       .catch(() => !cancelled && setLoadError('failedLoad'));
     return () => {
