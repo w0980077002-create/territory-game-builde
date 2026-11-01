@@ -1,5 +1,5 @@
 """Actual App + saveCloudSave against isolated Supabase. Browser contexts are not physical devices."""
-import base64, json, os, pathlib, shlex, subprocess, time, urllib.request, uuid
+import base64, json, os, pathlib, re, shlex, subprocess, time, urllib.request, uuid
 from playwright.sync_api import sync_playwright
 settings={}
 for line in pathlib.Path('/tmp/halloween-supabase.env').read_text().splitlines():
@@ -52,7 +52,7 @@ try:
         a.goto(url)
         seed=a.evaluate('''async () => {
           const {createInitialGame}=await import('/territory-game-builde/src/game/engine.ts');
-          const s=createInitialGame(); s.player.level=50; s.activeFollowerId='follower_6';
+          const s=createInitialGame(); s.player.level=50; s.currentChapter=5; s.activeFollowerId='follower_6';
           s.followers=s.followers.map(f=>({...f,unlocked:true}));
           s.player.equipped.weapon={id:'kept_weapon',slot:'weapon',name:'Учебный меч',icon:'⚔️',rarity:'common',level:1,attack:2};
           s.inventory.push({id:'kept_material',name:'Материал',icon:'🪨',type:'material',rarity:'common',qty:2});
@@ -130,10 +130,23 @@ try:
         pathlib.Path('/tmp/halloween-real-client-evidence').mkdir(exist_ok=True)
         panel.screenshot(path='/tmp/halloween-real-client-evidence/participant.png')
         panel_c.screenshot(path='/tmp/halloween-real-client-evidence/nonparticipant.png')
+        # Exercise the actual campaign route after the verified companion has
+        # survived reload. The DOM observer records the real PvE pose event;
+        # this is not a synthetic motion-fixture button.
+        a.locator('nav.territory-nav button').nth(3).click()
+        a.locator('.journey-encounter button').first.click(timeout=15000)
+        a.locator('.pumpkin-witch').wait_for(timeout=15000)
+        a.evaluate('''() => { window.__witchAttacks=0; new MutationObserver(() => {
+          if (document.querySelector('.pumpkin-witch__action-pose[src$="attack.webp"]')) window.__witchAttacks++;
+        }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['src']}); }''')
+        a.get_by_role('button',name=re.compile('Авто')).click()
+        a.locator('[data-testid="pve-result-screen"]').wait_for(timeout=60000)
+        assert a.evaluate('window.__witchAttacks') > 0, 'actual PvE did not render the companion strike'
+        a.locator('[data-testid="pve-result-screen"]').screenshot(path='/tmp/halloween-real-client-evidence/pve-result.png')
         browser.close()
 finally:
     os.killpg(server.pid,15)
     try: server.wait(timeout=10)
     except subprocess.TimeoutExpired: os.killpg(server.pid,9);server.wait()
     log.close()
-print('Actual App + saveCloudSave: two isolated browser sessions, server claim, stale save fence, reload, offline/online and nonparticipant passed. Not Telegram or physical devices.')
+print('Actual App + saveCloudSave: two isolated browser sessions, server claim, stale save fence, reload, offline/online, nonparticipant and real PvE attack/outcome passed. Not Telegram or physical devices.')
