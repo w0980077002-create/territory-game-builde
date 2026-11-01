@@ -51,6 +51,16 @@ assert.match(css, /\.home-hero-art\s*\{[\s\S]*?drop-shadow/, 'Hero must remain l
 assert.match(home, /onClick=\{\(\) => onBattle\('campaign', true\)\}/, 'Enemy tap target must remain active');
 
 assert.match(city, /live-city-bg\.webp/, 'Portrait Viking harbour backdrop must be installed');
+assert.match(city, /export type CityBackground = 'winter' \| 'classic' \| 'sunlit'/,
+  'Winter Peaks joins both existing city backgrounds');
+assert.match(city, /saved === 'classic' \|\| saved === 'sunlit' \? saved : 'winter'/,
+  'New players receive winter scenery without overriding an existing explicit choice');
+assert.match(city, /winter-peaks-v2\.webp/, 'Winter Peaks must be linked to the approved V2 image');
+assert.match(sheets, /\['winter', 'classic', 'sunlit'\]/,
+  'Settings must let the player restore either of the previous backgrounds');
+assert.match(sheets, /Ледяные вершины/, 'Russian winter background label must be visible');
+assert.ok((await access(new URL('public/assets/territory/scenes/winter-peaks-v2.webp', root)).then(() => true, () => false)),
+  'Approved winter image must be present in the shipped public assets');
 assert.match(city, /live-city-ship\.webp/, 'Viking ships must have a subtle motion overlay');
 assert.match(city, /live-city-waterfall/, 'Waterfalls must have visual motion');
 assert.match(sheets, /Живой город/, 'Animated city must have an on/off setting');

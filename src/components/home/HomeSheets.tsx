@@ -346,11 +346,13 @@ export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMot
           <p className="mb-1 text-sm font-bold text-amber-100">{language === 'en' ? 'City background' : 'Фон города'}</p>
           <p className="mb-2 text-[11px] text-gray-400">{language === 'en' ? 'Choose your scenery. Your original background remains available.' : 'Выбери фон по вкусу. Наш прежний фон никуда не исчезнет.'}</p>
           <div className="grid grid-cols-2 gap-2">
-            {([ 'classic', 'sunlit' ] as const).map((background) => {
+            {(['winter', 'classic', 'sunlit'] as const).map((background) => {
               const active = selectedBackground === background;
-              const title = background === 'classic'
-                ? (language === 'en' ? 'Classic harbour' : 'Родная гавань')
-                : (language === 'en' ? 'Sunny coast' : 'Солнечный берег');
+              const title = background === 'winter'
+                ? (language === 'en' ? 'Winter peaks' : 'Ледяные вершины')
+                : background === 'classic'
+                  ? (language === 'en' ? 'Classic harbour' : 'Родная гавань')
+                  : (language === 'en' ? 'Sunny coast' : 'Солнечный берег');
               return (
                 <button
                   key={background}
@@ -360,7 +362,7 @@ export function SettingsSheet({ onClose, saveStatus, cityMotion, onToggleCityMot
                   className={`relative overflow-hidden rounded-lg border-2 text-left transition-colors active:scale-[0.98] ${active ? 'border-amber-300 bg-amber-500/15' : 'border-white/15 bg-black/30'}`}
                 >
                   <img
-                    src={`${import.meta.env.BASE_URL}assets/territory/scenes/${background === 'classic' ? 'live-city-bg.webp' : 'sunlit-harbor.webp'}`}
+                    src={`${import.meta.env.BASE_URL}assets/territory/scenes/${background === 'winter' ? 'winter-peaks-v2.webp' : background === 'classic' ? 'live-city-bg.webp' : 'sunlit-harbor.webp'}`}
                     alt=""
                     loading="lazy"
                     className="h-[82px] w-full object-cover object-center"
