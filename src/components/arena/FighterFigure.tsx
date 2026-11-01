@@ -117,22 +117,8 @@ export function FighterFigure({
               <img src={pose} alt="" aria-hidden="true" draggable={false}
                 className={`${className} fighter-figure__afterimage select-none`} />
             )}
-            <img
-              src={pose}
-              alt={name}
-              draggable={false}
-              onError={(event) => {
-                // Missing poses fall back to the same character's idle art.
-                const img = event.currentTarget;
-                const candidates = [combatFrames?.idle, src, import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp'];
-                const attempt = Number(img.dataset.artRetry ?? '0');
-                if (attempt < candidates.length) {
-                  img.dataset.artRetry = String(attempt + 1);
-                  img.src = candidates[attempt] ?? src;
-                }
-              }}
-              className={`${className} select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] ${!alive ? 'grayscale opacity-40 translate-y-2' : ''}`}
-            />
+            <SafeFighterArt key={`${pose}|${artIdentity}`} pose={pose} idle={artIdentity} name={name}
+              className={`${className} select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] ${!alive ? 'grayscale opacity-40 translate-y-2' : ''}`} />
             </div>
           </div>
         </div>
@@ -144,6 +130,17 @@ export function FighterFigure({
       {role === 'target' && strike && <Impact key={strike.key} strike={strike} />}
     </div>
   );
+}
+
+/** Never substitute another character when an art file is unavailable. */
+function SafeFighterArt({ pose, idle, name, className }: { pose: string; idle: string; name: string; className: string }) {
+  const { language } = useLanguage();
+  const [attempt, setAttempt] = useState(0);
+  const candidates = pose === idle ? [idle] : [pose, idle];
+  if (attempt >= candidates.length) return <span role="img" aria-label={`${name}: ${language === 'en' ? 'image unavailable' : 'изображение недоступно'}`} data-testid="fighter-art-unavailable"
+    className="absolute inset-0 flex items-center justify-center text-2xl text-white/70">?</span>;
+  return <img src={candidates[attempt]} alt={name} draggable={false} className={className}
+    onError={() => setAttempt(current => current + 1)} />;
 }
 
 function Impact({ strike }: { strike: StrikeEvent }) {

@@ -158,6 +158,9 @@ with sync_playwright() as playwright:
 
     page = load(browser)
     set_visual(page, {'speed': 2, 'strike': strike(10)})
+    count = page.evaluate('window.__waapi.length')
+    set_visual(page, {'appearance': 'm2'})
+    assert page.evaluate('window.__waapi.length') == count, 'Unrelated rerender must not restart a strike'
     durations = page.evaluate("window.__waapi.filter(a=>a.effect.target.closest('#fixture-hero')).map(a=>a.effect.getTiming().duration).filter(d=>Number.isFinite(d))")
     assert durations and max(durations) <= 450, ('x2 must halve event durations', durations)
     page.wait_for_timeout(480)
@@ -280,6 +283,30 @@ with sync_playwright() as playwright:
     page.wait_for_timeout(50)
     report['missing_cutout_same_hero_fallback'] = True
     page.close()
+
+    # A missing pose may only fall back to the same appearance; an unavailable
+    # idle must never silently substitute the default male Viking.
+    for broken in ('hit.webp', 'idle.webp'):
+        page = browser.new_page(viewport={'width': 360, 'height': 844})
+        page.on('pageerror', lambda error: report['errors'].append(str(error)))
+        def broken_rogue(route):
+            if '/heroes/male_rogue/' in route.request.url and route.request.url.endswith('/' + broken):
+                route.fulfill(status=404, body='intentional missing pose')
+            else:
+                serve(route)
+        page.route(ORIGIN + '/**', broken_rogue)
+        page.route('https://**/*', lambda route: route.abort())
+        page.goto(ORIGIN + '/')
+        page.wait_for_selector('#fixture-enemy svg[data-rig="goblin"]')
+        set_visual(page, {'appearance': 'm1'})
+        if broken == 'hit.webp':
+            set_visual(page, {'strike': strike(45, 'hit', attacker='Противник')})
+            page.wait_for_timeout(430)
+            assert page.locator('#fixture-hero img').get_attribute('src').endswith('/male_rogue/idle.webp')
+        else:
+            page.wait_for_selector('#fixture-hero [data-testid="fighter-art-unavailable"]')
+            assert page.locator('#fixture-hero img[src*="male_viking"]').count() == 0
+        page.close()
 
     # Informational renderer pacing in this headless environment only.
     page = load(browser)
