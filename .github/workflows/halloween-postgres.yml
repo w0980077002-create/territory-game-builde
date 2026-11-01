@@ -7,7 +7,7 @@ permissions:
 jobs:
   postgres-17:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Build isolated PostgreSQL 17 with test clock
@@ -33,3 +33,19 @@ jobs:
           done
       - name: Test staged SQL and concurrent transactions
         run: scripts/check-halloween-postgres17.sh
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.79.0
+      - name: Start separate local Supabase Auth stack
+        run: |
+          mkdir -p /tmp/halloween-auth-project
+          cd /tmp/halloween-auth-project
+          supabase init > /tmp/halloween-supabase-init.log 2>&1
+          supabase start > /tmp/halloween-supabase-start.log 2>&1 || { echo 'Isolated Supabase stack failed to start'; exit 1; }
+          supabase status -o env > /tmp/halloween-supabase.env
+      - name: Test signed Auth JWTs through PostgREST
+        run: python3 scripts/check-halloween-auth-e2e.py
+      - name: Stop isolated stack
+        if: always()
+        run: |
+          if [ -d /tmp/halloween-auth-project/supabase ]; then cd /tmp/halloween-auth-project && supabase stop --no-backup >/dev/null 2>&1 || true; fi

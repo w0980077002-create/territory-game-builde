@@ -6,7 +6,7 @@ for db in halloween-before halloween-after; do
   docker exec -i "$db" psql -X -v ON_ERROR_STOP=1 -U postgres <<'SQL'
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
 CREATE SCHEMA auth; CREATE SCHEMA territory_private;
-CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT COALESCE(nullif(current_setting('request.jwt.claim.sub',true),''), nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$;
 CREATE TABLE public.players (id uuid PRIMARY KEY, game_state jsonb, gold integer, vip_level integer);
 CREATE TABLE public.territory_halloween_boss_2026 (id text PRIMARY KEY, ends_at timestamptz NOT NULL);
 CREATE TABLE public.territory_halloween_boss_2026_players (event_id text, player_id uuid, total_hits integer, PRIMARY KEY(event_id,player_id));
