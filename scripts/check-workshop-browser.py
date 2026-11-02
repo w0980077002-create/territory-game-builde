@@ -20,11 +20,11 @@ with sync_playwright() as p:
     assert close.evaluate('(e)=>document.activeElement===e');page.keyboard.press('Escape');assert dialog.count()==0 and gear.evaluate('(e)=>document.activeElement===e')
     page.goto(f'http://127.0.0.1:{server.server_port}/territory-workshop-after.html?shop');page.wait_for_timeout(400);assert not errors,errors
     # Full stage, hanging sign, horizontal product rows and all visual assets.
-    assert page.locator('.territory-shop-sign').evaluate(
-      "(el) => getComputedStyle(el).backgroundImage.includes('shop-reference-sign.webp')"
-    ), (width,lang,'shop missing plank texture')
+    assert page.locator('.territory-shop-facade__scenery').evaluate(
+      "(el) => getComputedStyle(el).backgroundImage.includes('" + ('shop-approved-facade.webp' if lang=='ru' else 'shop-reference-market.webp') + "')"
+    ), (width,lang,'owner-approved market missing')
     assert page.evaluate("""async () => {
-      const paths = ['shop-wood-planks.webp','shop-wood-beams.webp','shop-rope-wrap.svg','shop-iron-corner.svg','shop-market-stage.svg','shop-hanging-sign.svg','shop-reference-sign.webp','shop-reference-market.webp','shop-reference-license-frame.webp','shop-reference-product-frame.webp'];
+      const paths = ['shop-wood-planks.webp','shop-wood-beams.webp','shop-rope-wrap.svg','shop-iron-corner.svg','shop-market-stage.svg','shop-hanging-sign.svg','shop-reference-sign.webp','shop-reference-market.webp','shop-reference-license-frame.webp','shop-reference-product-frame.webp','shop-approved-facade.webp','shop-approved-license-border.webp','shop-approved-product-border.webp','shop-approved-tabs-border.webp'];
       return (await Promise.all(paths.map(name => new Promise(resolve => {
         const img = new Image();
         img.onload = () => resolve(img.naturalWidth > 0);
@@ -36,12 +36,20 @@ with sync_playwright() as p:
       "(el) => getComputedStyle(el).backgroundImage.includes('shop-reference-market.webp')"
     ), (width,lang,'painted shop background missing')
     assert page.locator('.territory-shop-license').evaluate(
-      "(el) => getComputedStyle(el,'::after').borderImageSource.includes('shop-reference-license-frame.webp')"
+      "(el) => getComputedStyle(el,'::after').borderImageSource.includes('shop-approved-license-border.webp')"
     ), (width,lang,'license illustrated frame missing')
     assert page.locator('.territory-shop-product').first.evaluate(
-      "(el) => getComputedStyle(el,'::before').borderImageSource.includes('shop-reference-product-frame.webp')"
+      "(el) => getComputedStyle(el,'::before').borderImageSource.includes('shop-approved-product-border.webp')"
     ), (width,lang,'product illustrated frame missing')
     assert page.locator('.territory-shop-facade').count()==1
+    assert page.locator('.territory-shop-approved').count()==1
+    assert page.locator('.territory-shop-products .territory-shop-product').count()>=2
+    assert page.locator('.territory-shop-product__buy').first.bounding_box()['height']>=43.99
+    if lang=='ru':
+      assert page.locator('.territory-shop-sign__title').evaluate("(el)=>getComputedStyle(el).opacity==='0'"),'duplicate printed title'
+    else:
+      assert page.locator('.territory-shop-sign__title').evaluate("(el)=>getComputedStyle(el).opacity!=='0'"),'English translation invisible'
+    assert page.locator('.territory-shop-product__stock').first.count()==1
     assert page.locator('.territory-shop-wallet__cell').count()==4
     assert page.locator('.territory-shop-product').count()>0
     assert page.locator('.territory-shop-tab').count()==3
@@ -52,7 +60,7 @@ with sync_playwright() as p:
       # the actual product rows. Capture a taller mobile viewport too.
       page.set_viewport_size({'width':width,'height':1050})
       page.wait_for_timeout(100)
-      page.screenshot(path=f'/tmp/territory-stage1-ui/shop-rpg-{width}.png',full_page=True)
+      page.screenshot(path=f'/tmp/territory-stage1-ui/shop-approved-{width}.png',full_page=True)
       page.set_viewport_size({'width':width,'height':500})
     item=page.get_by_role('button').filter(has_text='Health Potion' if lang=='en' else 'Зелье здоровья').first;item.click();dialog=page.get_by_role('dialog');assert ('Health Potion' if lang=='en' else 'Зелье здоровья') in dialog.locator('h2').inner_text();close=dialog.locator('.territory-modal-close');assert close.bounding_box()['height']>=43.99
     plus=dialog.get_by_role('button',name='Increase quantity' if lang=='en' else 'Увеличить количество');assert plus.bounding_box()['width']>=43.99;plus.click();assert dialog.locator('input[type="range"]').input_value()=='2';page.keyboard.press('Escape');assert dialog.count()==0 and item.evaluate('(e)=>document.activeElement===e')
