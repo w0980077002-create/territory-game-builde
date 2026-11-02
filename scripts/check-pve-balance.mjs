@@ -305,7 +305,8 @@ assert.match(fightSource, /setEnemyIntent\(nextIntent\.intent\)/,
 assert.match(fightSource, /data-testid="pve-adaptive-guard"/,
   'The player must see the adaptive second phase');
 assert.match(fightSource, /guardPhase === 3/, 'The player must see a distinct phase III warning');
-assert.match(fightSource, /lastHeroAttack\.current = atk/, 'Phase III memory must use actual submitted hero strikes');
+assert.match(fightSource, /const attackHistory = rememberDistinctHeroAttacks\(recentDistinctHeroAttacks\.current, atk\);\s*recentDistinctHeroAttacks\.current = attackHistory;/,
+  'Phase III memory must update two distinct resolved strikes from the actual submitted attack');
 assert.match(fightSource, /setGuardPhase\(nextIntent\.phase\)/, 'The displayed phase must come from the same resolved intent');
 
 const engine = source('../src/game/engine.ts');
