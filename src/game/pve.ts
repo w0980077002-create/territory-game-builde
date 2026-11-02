@@ -200,6 +200,8 @@ export interface RoundResult {
   hero: PveSide;
   enemy: PveSide;
   healAmount: number;
+  /** Portion of healing supplied by a real rune, not the companion. */
+  runeHealAmount?: number;
 }
 
 export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null, enemyIntent: ReturnType<typeof randomZones> | null = null, riposteReady = false, momentumReady = false, runes: PveRuneTotals | null = null): RoundResult {
@@ -209,7 +211,14 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   const hits: PveHit[] = [];
   const cap = eliteRoundDamageCap(enemy.enemyId ?? '', !!enemy.isBoss, enemy.maxHp);
   let damageBudget = cap ?? Number.POSITIVE_INFINITY;
-  const piercedEnemy = bonus?.pierce ? { ...enemy, defense: Math.max(0, Math.floor(enemy.defense * (1 - bonus.pierce))) } : enemy;
+  // Armor penetration stacks after the existing companion piercing effect.
+  // This only changes hit damage, not the opponent's persisted equipment.
+  const followerPiercedDefense = bonus?.pierce
+    ? Math.max(0, Math.floor(enemy.defense * (1 - bonus.pierce)))
+    : enemy.defense;
+  const piercedEnemy = {
+    ...enemy, defense: Math.max(0, Math.floor(followerPiercedDefense * (1 - runeBp(runes, 'armor_pen_bp') / 10000))),
+  };
   // A successful manual elite guard grants ONE stronger next strike. Apply
   // the bonus to actual damage only after dodge/block/crit resolution, then
   // pass through the existing elite cap and remaining HP clamp.
@@ -234,6 +243,7 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   const attackBonusBp = Math.min(2500,
     runeBp(runes, 'damage_bonus_bp')
     + runeBp(runes, 'single_target_damage_bp')
+    + (enemy.hp > 0 && enemy.hp <= enemy.maxHp * 0.3 ? runeBp(runes, 'finisher_damage_bp') : 0)
     + (ai.blocks.includes(attack) ? runeBp(runes, 'damage_vs_guard_bp') : 0)
     + (riposteReady ? runeBp(runes, 'counter_damage_bp') : 0)
     + (momentumReady ? runeBp(runes, 'attack_chain_damage_bp') : 0));
@@ -256,17 +266,30 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   let heroHp = hero.hp;
   if (enemyHp > 0) {
     const rawEnemyHit = strike(enemy, hero, 'hero', ai.attack, blocks, {
-      dodgeBp: runeBp(runes, 'dodge_chance_bp'),
+      dodgeBp: Math.min(2500,
+        runeBp(runes, 'dodge_chance_bp') + runeBp(runes, 'enemy_accuracy_reduction_bp')),
     });
     const followerMitigated = rawEnemyHit.amount > 0 ? followerGuardDamage(rawEnemyHit.amount, followerDefense) : 0;
-    const mitigated = Math.round(followerMitigated * (1 - runeBp(runes, 'guard_absorb_bp') / 10000));
+    const defenseBonusBp = Math.min(2500,
+      runeBp(runes, 'guard_absorb_bp')
+      + (momentumReady ? runeBp(runes, 'rage_damage_reduction_bp') : 0));
+    const mitigated = Math.round(followerMitigated * (1 - defenseBonusBp / 10000));
     // Only actual HP loss belongs in the hit log and tactical damage counters.
     const h2 = { ...rawEnemyHit, amount: Math.min(mitigated, heroHp) };
     hits.push(h2);
     heroHp = Math.max(0, heroHp - h2.amount);
   }
-  const healAmount = heroHp > 0 && enemyHp > 0 && bonus?.heal ? Math.min(Math.max(0, hero.maxHp - heroHp), bonus.heal) : 0;
-  return { hits, hero: { ...hero, hp: heroHp + healAmount }, enemy: { ...enemy, hp: enemyHp }, healAmount };
+  const companionHeal = heroHp > 0 && enemyHp > 0 && bonus?.heal
+    ? Math.min(Math.max(0, hero.maxHp - heroHp), bonus.heal) : 0;
+  // Regeneration only heals a living hero during an ongoing fight; never
+  // revives a defeated hero, inflates max HP, or grants extra rewards.
+  const regenBp = runeBp(runes, 'regen_bp');
+  const runeHealAmount = heroHp > 0 && enemyHp > 0 && regenBp > 0
+    ? Math.min(Math.max(0, hero.maxHp - heroHp - companionHeal),
+      Math.max(1, Math.floor(hero.maxHp * regenBp / 10000)))
+    : 0;
+  const healAmount = companionHeal + runeHealAmount;
+  return { hits, hero: { ...hero, hp: heroHp + healAmount }, enemy: { ...enemy, hp: enemyHp }, healAmount, runeHealAmount };
 }
 
 export type PotionUse =
