@@ -167,6 +167,17 @@ assert.equal(findHeroGearOpportunity([gearItem(stronger), gearItem(strongest)], 
   'the best strictly stronger weapon must win regardless of inventory order');
 assert.equal(findHeroGearOpportunity([gearItem(strongest), gearItem(stronger)], {weapon:worn})?.item.equipment.id, 'best-sword',
   'reversing inventory order must not hide a dominating upgrade');
+
+const wornHelmet = { id: 'old-helm', slot: 'helmet', name: 'Old helm', defense: 3 };
+const spareHelmet = { id: 'new-helm', slot: 'helmet', name: 'New helm', defense: 4 };
+const gearWithInterleavedSlots = [gearItem(stronger), gearItem(spareHelmet), gearItem(strongest)];
+assert.equal(findHeroGearOpportunity(gearWithInterleavedSlots, {weapon:worn, helmet:wornHelmet})?.item.equipment.id, 'best-sword',
+  'An interleaved helmet must not hide the strongest owned sword in the first eligible slot');
+assert.equal(findHeroGearOpportunity([gearItem(stronger), gearItem(spareHelmet), gearItem(strongest)], {helmet:wornHelmet})?.item.equipment.id, 'best-sword',
+  'An empty weapon slot must select the strongest weapon even if another slot appears between copies');
+assert.equal(findHeroGearOpportunity([gearItem(spareHelmet), gearItem(stronger), gearItem(strongest)], {weapon:worn, helmet:wornHelmet})?.item.equipment.id, 'new-helm',
+  'Different eligible slots preserve the first-slot preference without inventing cross-slot stat weights');
+
 const saferTradeoff = { ...tradeoff, id: 'safer-sword', attack: 22, defense: 2 };
 assert.equal(findHeroGearOpportunity([gearItem(tradeoff), gearItem(saferTradeoff)], {weapon:worn})?.item.equipment.id, 'safer-sword',
   'a dominating trade-off must be offered without calling it a guaranteed upgrade');
