@@ -77,8 +77,14 @@ export function nextTacticalMomentum(
   result: PveHit['tone'] | null,
   manualElite: boolean,
 ): TacticalMomentum {
-  if (!manualElite || (result !== 'hit' && result !== 'crit')) return { lastZone: null, streak: 0 };
-  // The charged attack consumes the bonus, and can start a fresh chain.
+  if (!manualElite) return { lastZone: null, streak: 0 };
+  // The UI promises the next LANDED strike. A shield or dodge must not
+  // silently consume an earned combo; the same charged attack can be tried
+  // again in the next manual elite round. A partial (1/2) chain still breaks
+  // on a miss, and auto/ordinary encounters never preserve the charge.
+  if (result !== 'hit' && result !== 'crit')
+    return current.streak === 2 ? current : { lastZone: null, streak: 0 };
+  // The first landed charged attack consumes the bonus and begins a new chain.
   if (current.streak === 2) return { lastZone: zone, streak: 1 };
   if (current.streak === 1 && current.lastZone !== null && current.lastZone !== zone)
     return { lastZone: zone, streak: 2 };
