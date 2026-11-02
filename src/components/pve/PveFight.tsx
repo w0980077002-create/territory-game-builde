@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shield, Sword, Check, Flag, Loader2, Trophy, Hammer, Shirt } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { getVictoryJourney, type VictoryJourney } from '@/game/victoryJourney';
+import { findHeroGearOpportunity, type HeroGearOpportunity } from '@/game/heroGearOpportunity';
 import { useGame, useArena, recordBattleResult } from '@/game/actions';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
@@ -320,6 +321,10 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     ? language === 'en' ? ({ head: 'head', chest: 'chest', belly: 'belly', legs: 'legs' } as Record<string, string>)[enemyStrikeZone.id] : enemyStrikeZone.label.toLowerCase()
     : '';
   const victoryJourney = outcome?.won ? getVictoryJourney(state,kind,levelAtFightStart.current) : null;
+  // Only recommend equipment that already exists in the committed save.
+  // This is not a claim that the last battle dropped an item.
+  const gearOpportunity = outcome?.won ? findHeroGearOpportunity(state.inventory, state.player.equipped) : null;
+  const equippedGear = gearOpportunity ? state.player.equipped[gearOpportunity.item.equipment.slot] : undefined;
   const hint = busy ? (language === 'en' ? 'Round in progress…' : 'Идёт раунд…')
     : auto ? (language === 'en' ? 'Auto-battle: zones are selected automatically' : 'Автобой: зоны выбираются сами')
     : blocks.length < 2 ? (language === 'en' ? `Choose ${2 - blocks.length} more defense zone(s)` : `Защита: выбери ещё ${2 - blocks.length}`) : !attack ? (language === 'en' ? 'Choose an attack zone' : 'Выбери зону удара') : (language === 'en' ? 'Press STRIKE' : 'Жми УДАР');
@@ -331,6 +336,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     return (
       <div data-testid="pve-result-screen" className="mx-auto w-full max-w-xl animate-fade-in pb-[max(1rem,env(safe-area-inset-bottom))]">
         <OutcomePanel outcome={outcome} kind={kind} victoryJourney={victoryJourney}
+          gearOpportunity={gearOpportunity} equippedGear={equippedGear}
           onExit={() => { nextCancelled.current = true; onExit(); }}
           questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
           onQuests={onQuests ? () => { nextCancelled.current = true; onQuests(); } : undefined}
@@ -641,8 +647,13 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   );
 }
 
-function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questReady, onQuests, onEquipment, onForge, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; onEquipment?: () => void; onForge?: () => void; nextPending: boolean; nextError: boolean }) {
+function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equippedGear, onExit, onNext, questReady, onQuests, onEquipment, onForge, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; gearOpportunity: HeroGearOpportunity | null; equippedGear?: HeroGearOpportunity['item']['equipment']; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; onEquipment?: () => void; onForge?: () => void; nextPending: boolean; nextError: boolean }) {
   const { language } = useLanguage();
+  const gearImprovements = gearOpportunity?.kind === 'upgrade' && equippedGear
+    ? (['attack', 'defense', 'hp', 'critChance'] as const)
+      .map(stat => ({ stat, delta: (gearOpportunity.item.equipment[stat] ?? 0) - (equippedGear[stat] ?? 0) }))
+      .filter(change => Number.isFinite(change.delta) && change.delta > 0)
+    : [];
   return (
     <div className="relative mx-auto w-full max-w-lg px-1 pb-2 pt-1 animate-pop">
       <div data-testid="pve-outcome-card" className={`relative overflow-hidden rounded-2xl border-2 p-3 text-center backdrop-blur-md ${outcome.won ? 'bg-amber-950/80 border-amber-400/60 shadow-[0_0_22px_rgba(245,158,11,0.15)]' : 'bg-red-950/70 border-red-400/40'}`}>
@@ -755,11 +766,27 @@ function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questRead
             {language === 'en' ? 'Open Forge with your materials' : 'В кузницу с добытыми материалами'}
           </button>
         )}
+        {outcome.won && gearOpportunity && onEquipment && (
+          <div data-testid="pve-owned-gear-opportunity" className="relative mt-2 rounded-lg border border-emerald-300/50 bg-emerald-950/55 px-3 py-2 text-left text-xs text-emerald-100">
+            <p className="font-extrabold">{gearOpportunity.kind === 'empty'
+              ? (language === 'en' ? 'Equipment slot available!' : 'Есть предмет для пустого слота!')
+              : (language === 'en' ? 'A stronger item is already in your inventory!' : 'В инвентаре уже есть предмет сильнее!')}</p>
+            <p className="mt-0.5 break-words font-semibold text-white">{gearOpportunity.item.equipment.name}</p>
+            {gearImprovements.length > 0 && (
+              <p className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5" data-testid="pve-owned-gear-stats">
+                {gearImprovements.map(({ stat, delta }) => <span key={stat}>+{delta} {{ attack: language === 'en' ? 'attack' : 'атака', defense: language === 'en' ? 'defense' : 'защита', hp: 'HP', critChance: language === 'en' ? 'crit' : 'крит' }[stat]}</span>)}
+              </p>
+            )}
+            <p className="mt-1 text-[10px] text-emerald-100/80">{language === 'en' ? 'From your saved inventory, not an extra battle reward.' : 'Из сохранённого инвентаря, не дополнительная награда за бой.'}</p>
+          </div>
+        )}
         {outcome.won && onEquipment && (
           <button type="button" data-testid="pve-prepare-equipment" onClick={onEquipment}
             className="relative mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-sky-300/50 bg-sky-900/60 px-3 text-sm font-extrabold text-sky-100 active:scale-[0.98]">
             <Shirt size={17} aria-hidden="true" />
-            {language === 'en' ? 'Compare gear before the next fight' : 'Сравнить снаряжение перед следующим боем'}
+            {gearOpportunity
+              ? (language === 'en' ? 'Equip or compare this item' : 'Надеть или сравнить этот предмет')
+              : (language === 'en' ? 'Compare gear before the next fight' : 'Сравнить снаряжение перед следующим боем')}
           </button>
         )}
         {outcome.won && questReady && onQuests && <button type="button" onClick={onQuests} className="relative mt-3 w-full min-h-11 rounded-xl border border-emerald-300/60 bg-emerald-700/70 px-3 text-sm font-bold text-white active:scale-[0.98]">
