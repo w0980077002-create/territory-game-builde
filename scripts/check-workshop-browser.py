@@ -33,7 +33,7 @@ with sync_playwright() as p:
       })))).every(Boolean);
     }"""), (width,lang,'shop asset missing')
     assert page.locator('.territory-shop-facade__scenery').evaluate(
-      "(el) => getComputedStyle(el).backgroundImage.includes('shop-reference-market.webp')"
+      "(el) => getComputedStyle(el).backgroundImage.includes('" + ('shop-approved-facade.webp' if lang=='ru' else 'shop-reference-market.webp') + "')"
     ), (width,lang,'painted shop background missing')
     assert page.locator('.territory-shop-license').evaluate(
       "(el) => getComputedStyle(el,'::after').borderImageSource.includes('shop-approved-license-border.webp')"
