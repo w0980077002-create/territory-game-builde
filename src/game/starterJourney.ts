@@ -29,3 +29,15 @@ export function getStarterMilestones(state: Pick<GameState, 'player' | 'inventor
     { id: 'level-five', done: state.player.level >= 5, destination: 'battle', titleRu: 'Достигни 5-го уровня', titleEn: 'Reach level 5', actionRu: 'Развивать героя', actionEn: 'Level up' },
   ];
 }
+
+/** After the first win, put an actually OWNED equippable item ahead of
+ * repetitive fights. Do not send players to a shop or claim a drop occurred
+ * when the saved inventory has no valid equipment. Pure read-only guidance. */
+export function getNextStarterMilestone(steps: readonly StarterMilestone[]): StarterMilestone | undefined {
+  const firstFight = steps.find(step => step.id === 'first-fight');
+  const equipment = steps.find(step => step.id === 'first-equipment');
+  if (firstFight?.done && equipment && !equipment.done && equipment.destination === 'inventory') {
+    return equipment;
+  }
+  return steps.find(step => !step.done);
+}
