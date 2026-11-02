@@ -187,6 +187,18 @@ assert.match(fight, /data-testid="pve-real-forge-loot"/,
   'Real material reward must be visible after victory');
 assert.match(fight, /data-testid="pve-prepare-equipment"/,
   'Victory must offer an equipment preparation action');
+assert.match(fight, /outcome\?\.won \? findHeroGearOpportunity\(state\.inventory, state\.player\.equipped\) : null/,
+  'Post-victory suggestion must read only saved inventory and currently equipped items');
+assert.match(fight, /data-testid="pve-owned-gear-opportunity"/,
+  'Show an actual owned upgrade or empty-slot opportunity in the victory path');
+assert.match(fight, /gearOpportunity\.kind === 'empty'/,
+  'An empty slot must not be described as an upgrade over equipped gear');
+assert.match(fight, /gearImprovements\.map\(\(\{ stat, delta \}\)/,
+  'Only actual positive stat deltas may be displayed');
+assert.match(fight, /Из сохранённого инвентаря, не дополнительная награда за бой/,
+  'Do not misrepresent a pre-owned item as new battle loot');
+assert.match(fight, /onEquipment=\{onEquipment \? \(\) => \{ nextCancelled\.current = true; onExit\(\); onEquipment\(\); \} : undefined\}/,
+  'Upgrade route must reuse existing inventory without spending another stone');
 assert.match(fight, /onEquipment=\{onEquipment \? \(\) => \{ nextCancelled\.current = true; onExit\(\); onEquipment\(\); \} : undefined\}/,
   'Equipment navigation must close the fight and cancel pending next-battle work');
 assert.match(battle, /onEquipment=\{onEquipment\}/,
