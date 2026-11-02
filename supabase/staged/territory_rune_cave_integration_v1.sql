@@ -30,12 +30,12 @@ BEGIN
  resolved:=public.territory_runes_battle_effects_v1(NEW.player_id,NEW.session_id,'pve');
  totals:=resolved->'totals';
  pinned:=jsonb_build_object('battleId',NEW.session_id,
-   'damage_bonus_bp',coalesce((totals->>'damage_bonus_bp')::integer,0),
+   'damage_bonus_bp',least(2500,coalesce((totals->>'damage_bonus_bp')::integer,0)+coalesce((totals->>'rune_combat_damage_bp')::integer,0)),
    'damage_vs_guard_bp',coalesce((totals->>'damage_vs_guard_bp')::integer,0),
-   'guard_absorb_bp',coalesce((totals->>'guard_absorb_bp')::integer,0),
-   'crit_chance_bp',coalesce((totals->>'crit_chance_bp')::integer,0),
-   'dodge_chance_bp',coalesce((totals->>'dodge_chance_bp')::integer,0),
-   'accuracy_bp',coalesce((totals->>'accuracy_bp')::integer,0));
+   'guard_absorb_bp',least(2500,coalesce((totals->>'guard_absorb_bp')::integer,0)+coalesce((totals->>'rune_combat_guard_bp')::integer,0)),
+   'crit_chance_bp',least(2500,coalesce((totals->>'crit_chance_bp')::integer,0)+coalesce((totals->>'rune_combat_crit_bp')::integer,0)),
+   'dodge_chance_bp',least(2500,coalesce((totals->>'dodge_chance_bp')::integer,0)+coalesce((totals->>'rune_combat_dodge_bp')::integer,0)),
+   'accuracy_bp',least(2500,coalesce((totals->>'accuracy_bp')::integer,0)+coalesce((totals->>'rune_combat_accuracy_bp')::integer,0)));
  NEW.state:=jsonb_set(NEW.state,'{input,serverRuneEffects}',pinned,true);
  RETURN NEW;
 END $runes$;
