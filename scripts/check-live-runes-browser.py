@@ -46,6 +46,11 @@ with sync_playwright() as p:
             dialog.get_by_test_id('rune-option-1').click()
             assert dialog.get_by_test_id('rune-option-1').get_attribute('aria-pressed') == 'true'
             assert (('Not saved' in slot.inner_text()) if lang == 'en' else ('Не сохранено' in slot.inner_text())), 'Draft must not be marked server-equipped'
+            # A daily claim reloads the confirmed loadout: unsaved selections
+            # must never disappear silently during that refresh.
+            daily = page.get_by_test_id('rune-daily-claim')
+            assert daily.is_disabled(), 'Daily claim must wait for a saved build'
+            assert (('Save build first' in daily.inner_text()) if lang == 'en' else ('Сначала сохрани сборку' in daily.inner_text()))
             dialog.get_by_role('button', name=('Save build' if lang == 'en' else 'Сохранить сборку')).click()
             page.wait_for_function("""() => {
               const selected = document.querySelector('[data-testid="rune-slot-9"]');
