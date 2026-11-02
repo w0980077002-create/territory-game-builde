@@ -5,6 +5,15 @@ import {
   RUNE_SCHEMA, parseRuneServerStatus, runeSlotCatalog, validateRuneSlots,
   type RuneServerStatus, type RuneSlot,
 } from '@/game/builds/runeSlotsV1';
+import { runeTacticalEquivalent } from '@/game/builds/runePveEffectsV1';
+
+const bonusLabels: Record<string, { ru: string; en: string }> = {
+  rune_combat_damage_bp: { ru: 'урону', en: 'damage' },
+  rune_combat_guard_bp: { ru: 'защите', en: 'guard' },
+  rune_combat_crit_bp: { ru: 'шансу крита', en: 'critical chance' },
+  rune_combat_dodge_bp: { ru: 'уклонению', en: 'dodge chance' },
+  rune_combat_accuracy_bp: { ru: 'точности', en: 'accuracy' },
+};
 
 // The real ledger exists only in staged SQL. Do not expose an editable book
 // until server-issued ownership, production battle effects (PvE + tactical
@@ -195,6 +204,11 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
           {slot.options.map(option => {
             const level = status.owned[option.runeId] ?? 0;
             const active = selected === option.runeId;
+            // Specialized runes also have an honest, shared tactical bonus
+            // when a mode has no corresponding spell, area or status engine.
+            const fallback = runeTacticalEquivalent(option.runeId, level || 1);
+            const family = fallback && bonusLabels[fallback.key];
+            const percent = fallback ? (fallback.bp / 100).toFixed(2).replace(/\\.00$/, '') : '';
             return <button type="button" key={option.runeId} aria-pressed={active}
               disabled={!level || saving.current || !!pending.current}
               onClick={() => choose(slot.slotId, option.runeId)}
@@ -203,6 +217,10 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
                 : 'border-amber-500/25 bg-black/30 text-amber-100'}`}>
               <span className="block font-extrabold">{en ? option.nameEn : option.nameRu} {active ? '✓' : ''}</span>
               <span className="block text-[11px]">{en ? option.effectEn : option.effectRu}</span>
+              {family && <span className="block text-[10px] text-amber-200">
+                {en ? `All battles: +${percent}% ${family.en}`
+                  : `Во всех боях: +${percent}% к ${family.ru}`}
+              </span>}
               <span className="block text-[10px] font-bold text-sky-200">{level
                 ? (en ? `Owned · level ${level}` : `Получена · уровень ${level}`)
                 : (en ? 'Locked' : 'Не получена')}</span>
