@@ -162,6 +162,21 @@ assert.equal(pve.nextOpenStrike('head', ['head', 'chest', 'belly', 'legs']), 'he
 assert.equal(pve.coverThreatZone(['head'], 'head').join(','), 'head', 'Covering twice is idempotent');
 assert.equal(pve.coverThreatZone(['head'], 'belly').join(','), 'head,belly', 'Keep the first selected defense');
 assert.equal(pve.coverThreatZone(['head', 'legs'], 'chest').join(','), 'legs,chest', 'Replace only the oldest defense');
+// A perfect manual guard followed by a landed open leg riposte can stagger
+// an elite for ONE round. The displayed guard and resolver must agree; no
+// rerolled enemy attack, fake loot, permanent debuff or auto-battle bonus.
+const staggeredIntent = pve.staggerEnemyGuard(visibleGuard, true);
+assert.equal(staggeredIntent.attack, visibleGuard.attack, 'Stagger cannot secretly change the announced enemy attack');
+assert.equal(staggeredIntent.blocks.join(','), 'head', 'Stagger removes exactly the second guard');
+assert.equal(pve.staggerEnemyGuard(visibleGuard, false), visibleGuard, 'No earned stagger leaves the guard untouched');
+assert.equal(pve.staggerEnemyGuard(staggeredIntent, true), staggeredIntent, 'Stagger cannot remove the last guard');
+const guardBeforeStagger = pve.playRound(starterHero, guardEnemy, 'chest', [], 0, '', 0, null, visibleGuard);
+const guardAfterStagger = pve.playRound(starterHero, guardEnemy, 'chest', [], 0, '', 0, null, staggeredIntent);
+assert.equal(guardBeforeStagger.hits[0].tone, 'block', 'Second guard normally protects the chest');
+assert.equal(guardAfterStagger.hits[0].tone, 'hit', 'Staggered second guard must be a REAL opening in playRound');
+assert(guardAfterStagger.enemy.hp < guardEnemy.hp, 'The opening must deal actual HP damage');
+assert.equal(pve.staggerEnemyGuard(visibleGuard, false).blocks.length, 2, 'Next round restores the regular guard');
+
 const counterAttack = pve.nextOpenStrike('head', visibleGuard.blocks);
 assert(!visibleGuard.blocks.includes(counterAttack), 'Opening must not pick the hidden second guard');
 const counterRound = pve.playRound(starterHero, guardEnemy, counterAttack, [], 0, '', 0, null, visibleGuard);
@@ -297,7 +312,13 @@ assert.match(fightSource, /const guardedZoneLabels = enemyIntent\.blocks\.map\(/
 assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss strike warning must offer a manual defense action');
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
 
-assert.match(fightSource, /followerBonus\.defense, followerBonus, enemyIntent, elite && !auto && riposteReady\)/, 'Pass the committed enemy intent and earned manual riposte to the same PvE resolver');
+assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady\)/, 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
+assert.match(fightSource, /staggerEnemyGuard\(enemyIntent, staggerReady && !auto\)/, 'Only manual combat can consume the one-round stagger');
+assert.match(fightSource, /setStaggerReady\(elite && !auto && riposteReady && atk === 'legs'/, 'Only a real manual elite leg riposte can earn stagger');
+assert.match(fightSource, /!committedEnemyIntent\.blocks\.includes\(atk\)/, 'A guarded leg strike must not earn stagger');
+assert.match(fightSource, /report\.heroStrike === 'hit' \|\| report\.heroStrike === 'crit'/, 'Only actual landed hits can earn stagger');
+assert.match(fightSource, /data-testid="pve-staggered-guard"/, 'The real temporary guard change must be visible');
+assert.match(fightSource, /nextOpenStrike\(current, committedEnemyIntent\.blocks\)/, 'Target helper must use the staggered guard too');
 assert.match(fightSource, /nextAdaptiveEnemyIntent\(res\.enemy, atk, kind === 'trial' \|\| !!enemy\.isBoss, undefined, attackHistory\[1\] \?\? null\)/,
   'Phase-II/III guard uses resolved HP and the two distinct resolved strikes');
 assert.match(fightSource, /setEnemyIntent\(nextIntent\.intent\)/,
