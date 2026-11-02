@@ -161,7 +161,7 @@ function strike(from: PveSide, to: PveSide, targetSide: PveHit['targetSide'], zo
   const dodgeChance = Math.max(0, Math.min(50,
     DODGE_CHANCE + (adjustments.dodgeBp ?? 0) / 100 - (adjustments.accuracyBp ?? 0) / 100));
   if (Math.random() * 100 < dodgeChance) return { ...base, tone: 'dodge', amount: 0 };
-  const crit = Math.random() * 100 < Math.min(95, from.critChance + (adjustments.critBp ?? 0) / 100);
+  const crit = Math.random() * 100 < Math.min(100, from.critChance + (adjustments.critBp ?? 0) / 100);
   const isBlocked = blocked.includes(zone);
   if (isBlocked && !crit) return { ...base, tone: 'block', amount: 0 };
   const spread = 0.9 + Math.random() * 0.2;
