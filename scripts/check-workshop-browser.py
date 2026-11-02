@@ -43,6 +43,11 @@ with sync_playwright() as p:
     ), (width,lang,'product illustrated frame missing')
     assert page.locator('.territory-shop-facade').count()==1
     assert page.locator('.territory-shop-approved').count()==1
+    assert page.locator('.territory-shop-facade').evaluate(
+      "(el) => Math.abs(el.getBoundingClientRect().width/el.getBoundingClientRect().height - 941/291)<0.06"
+    ),(width,lang,'approved fascia aspect ratio distorted')
+    if page.locator('.territory-shop-license__owned').count():
+      assert page.locator('.territory-shop-license__buy').count()==0,(width,lang,'redundant purchased license button')
     assert page.locator('.territory-shop-products .territory-shop-product').count()>=2
     assert page.locator('.territory-shop-product__buy').first.bounding_box()['height']>=43.99
     assert page.locator('.territory-shop-tab').first.evaluate(
