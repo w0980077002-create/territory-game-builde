@@ -149,7 +149,11 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   // A successful manual elite guard grants ONE stronger next strike. Apply
   // the bonus to actual damage only after dodge/block/crit resolution, then
   // pass through the existing elite cap and remaining HP clamp.
-  const rawHit = strike(hero, piercedEnemy, 'enemy', attack, ai.blocks.slice(0, 1));
+  // Both displayed enemy guard slots are committed to this round. The
+  // previous slice(0, 1) silently ignored the second guard, so a player
+  // could hit a supposedly protected zone. Critical guard-piercing remains
+  // governed by strike(), exactly as before.
+  const rawHit = strike(hero, piercedEnemy, 'enemy', attack, ai.blocks);
   const enhancedHit = riposteReady && rawHit.amount > 0
     ? { ...rawHit, amount: Math.round(rawHit.amount * 1.2) }
     : rawHit;
