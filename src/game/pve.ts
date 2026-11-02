@@ -244,8 +244,8 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   // could hit a supposedly protected zone. Critical guard-piercing remains
   // governed by strike(), exactly as before.
   const rawHit = strike(hero, piercedEnemy, 'enemy', attack, ai.blocks, {
-    critBp: runeBp(runes, 'crit_chance_bp'),
-    accuracyBp: runeBp(runes, 'accuracy_bp'),
+    critBp: Math.min(2500, runeBp(runes, 'crit_chance_bp') + runeBp(runes, 'rune_combat_crit_bp')),
+    accuracyBp: Math.min(2500, runeBp(runes, 'accuracy_bp') + runeBp(runes, 'rune_combat_accuracy_bp')),
   });
   const enhancedHit = riposteReady && rawHit.amount > 0
     ? { ...rawHit, amount: Math.round(rawHit.amount * 1.2) }
@@ -258,7 +258,7 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   // A selected rune modifies actual HP loss, not merely a combat label.
   // Keep the established guard/riposte/combo order and elite boss cap.
   const attackBonusBp = Math.min(2500,
-    runeBp(runes, 'damage_bonus_bp')
+    runeBp(runes, 'damage_bonus_bp') + runeBp(runes, 'rune_combat_damage_bp')
     + runeBp(runes, 'single_target_damage_bp')
     + (enemy.hp > 0 && enemy.hp <= enemy.maxHp * 0.3 ? runeBp(runes, 'finisher_damage_bp') : 0)
     + (previous.slow > 0 ? runeBp(runes, 'damage_vs_slow_bp') : 0)
@@ -305,11 +305,11 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
       : enemy;
     const rawEnemyHit = strike(actingEnemy, hero, 'hero', ai.attack, blocks, {
       dodgeBp: Math.min(2500,
-        runeBp(runes, 'dodge_chance_bp') + runeBp(runes, 'enemy_accuracy_reduction_bp')),
+        runeBp(runes, 'dodge_chance_bp') + runeBp(runes, 'enemy_accuracy_reduction_bp') + runeBp(runes, 'rune_combat_dodge_bp')),
     });
     const followerMitigated = rawEnemyHit.amount > 0 ? followerGuardDamage(rawEnemyHit.amount, followerDefense) : 0;
     const defenseBonusBp = Math.min(2500,
-      runeBp(runes, 'guard_absorb_bp')
+      runeBp(runes, 'guard_absorb_bp') + runeBp(runes, 'rune_combat_guard_bp')
       + (momentumReady ? runeBp(runes, 'rage_damage_reduction_bp') : 0));
     const mitigated = Math.round(followerMitigated * (1 - defenseBonusBp / 10000));
     // Only actual HP loss belongs in the hit log and tactical damage counters.
