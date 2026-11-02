@@ -190,6 +190,7 @@ const phaseTwo = pve.nextAdaptiveEnemyIntent({ hp: 250, maxHp: 500 }, 'legs', tr
 assert.equal(phaseTwo.adapted, true);
 assert.equal(phaseTwo.intent.blocks[0], 'legs', 'Elite must guard the last strike');
 assert.equal(phaseTwo.intent.attack, 'chest', 'The actual announced attack is unchanged');
+assert.equal(phaseTwo.phase, 2, 'Half-HP elite remains in phase II');
 assert.equal(new Set(phaseTwo.intent.blocks).size, 2, 'Guard zones stay distinct');
 const phaseBlocked = pve.playRound(starterHero, { ...guardEnemy, hp: 250 }, 'legs', [], 0, '', 0, null, phaseTwo.intent);
 const phaseOpeningTarget = pve.nextOpenStrike('legs', phaseTwo.intent.blocks);
@@ -198,6 +199,31 @@ const phaseOpening = pve.playRound(starterHero, { ...guardEnemy, hp: 250 }, phas
 assert.equal(phaseBlocked.hits[0].tone, 'block', 'Repeating a remembered strike must really be blocked');
 assert.equal(phaseOpening.hits[0].tone, 'hit', 'Changing attack zones must really beat the guard');
 assert.equal(pve.nextAdaptiveEnemyIntent({ hp: 0, maxHp: 500 }, 'legs', true, phaseRoll).adapted, false);
+// Phase III remembers two distinct *resolved* hero attacks below 25% HP.
+// Both advertised guards must actually block; the other two zones stay open.
+const phaseThree = pve.nextAdaptiveEnemyIntent({ hp: 125, maxHp: 500 }, 'legs', true, phaseRoll, 'head');
+assert.equal(phaseThree.phase, 3, 'Quarter-HP elite with two distinct attacks enters phase III');
+assert.equal(phaseThree.intent.blocks.join(','), 'legs,head', 'Phase III covers exactly the last two distinct attacks');
+assert.equal(phaseThree.intent.attack, phaseRoll.attack, 'Phase III must not invent a new telegraphed attack');
+assert.equal(new Set(phaseThree.intent.blocks).size, 2, 'Phase III never creates a duplicate or third guard');
+for (const defended of phaseThree.intent.blocks) {
+  const round = pve.playRound(starterHero, { ...guardEnemy, hp: 125 }, defended, [], 0, '', 0, null, phaseThree.intent);
+  assert.equal(round.hits[0].tone, 'block', 'Phase III remembered zone must really block: ' + defended);
+  assert.equal(round.enemy.hp, 125, 'Blocked phase III strike cannot leak damage');
+}
+for (const opening of zones.filter(z => !phaseThree.intent.blocks.includes(z.id))) {
+  const round = pve.playRound(starterHero, { ...guardEnemy, hp: 125 }, opening.id, [], 0, '', 0, null, phaseThree.intent);
+  assert.equal(round.hits[0].tone, 'hit', 'Phase III opening must remain hittable: ' + opening.id);
+  assert(round.enemy.hp < 125, 'Phase III opening must lower actual HP');
+}
+assert.equal(pve.nextAdaptiveEnemyIntent({ hp: 126, maxHp: 500 }, 'legs', true, phaseRoll, 'head').phase, 2,
+  'Phase III cannot begin above quarter HP');
+assert.equal(pve.nextAdaptiveEnemyIntent({ hp: 125, maxHp: 500 }, 'legs', true, phaseRoll).phase, 2,
+  'Missing attack history must not invent a second remembered zone');
+assert.equal(pve.nextAdaptiveEnemyIntent({ hp: 125, maxHp: 500 }, 'legs', true, phaseRoll, 'legs').phase, 2,
+  'Repeating the same attack must not create duplicate guards');
+assert.equal(pve.nextAdaptiveEnemyIntent({ hp: 125, maxHp: 500 }, 'legs', false, phaseRoll, 'head').phase, 1,
+  'Ordinary enemies must never gain elite phase III');
 // A lethal hit reports only the remaining HP, not an imaginary overkill amount.
 const overkillRound = pve.playRound({ ...starterHero, hp: 7, attack: 1, defense: 0 },
   { ...guardEnemy, attack: 200 }, 'legs', [], 0, '', 0, null,
@@ -246,12 +272,15 @@ assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss stri
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
 
 assert.match(fightSource, /followerBonus\.defense, followerBonus, enemyIntent, elite && !auto && riposteReady\)/, 'Pass the committed enemy intent and earned manual riposte to the same PvE resolver');
-assert.match(fightSource, /nextAdaptiveEnemyIntent\(res\.enemy, atk, kind === 'trial' \|\| !!enemy\.isBoss\)/,
+assert.match(fightSource, /nextAdaptiveEnemyIntent\(res\.enemy, atk, kind === 'trial' \|\| !!enemy\.isBoss, undefined, previousAttack\)/,
   'Phase-two guard uses resolved HP and the actual last strike');
 assert.match(fightSource, /setEnemyIntent\(nextIntent\.intent\)/,
   'The next guard must be the committed intent used by combat');
 assert.match(fightSource, /data-testid="pve-adaptive-guard"/,
   'The player must see the adaptive second phase');
+assert.match(fightSource, /guardPhase === 3/, 'The player must see a distinct phase III warning');
+assert.match(fightSource, /lastHeroAttack\.current = atk/, 'Phase III memory must use actual submitted hero strikes');
+assert.match(fightSource, /setGuardPhase\(nextIntent\.phase\)/, 'The displayed phase must come from the same resolved intent');
 
 const engine = source('../src/game/engine.ts');
 const actions = source('../src/game/actions.ts');
