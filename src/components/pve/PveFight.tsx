@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Shield, Sword, Check, Flag, Loader2, Trophy, Hammer, Shirt } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { getVictoryJourney, type VictoryJourney } from '@/game/victoryJourney';
@@ -8,7 +8,7 @@ import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
-import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, playRound, randomZones, summarizePveRound, type PveSide, type PveTacticalSummary } from '@/game/pve';
+import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, playRound, randomZones, summarizePveRound, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
@@ -111,6 +111,8 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   // Only an actual blocked elite strike in manual mode earns a riposte.
   // This is per-fight state, never a currency or a saved player attribute.
   const [riposteReady, setRiposteReady] = useState(false);
+  // A landed, unguarded leg riposte briefly breaks one elite guard slot.
+  const [staggerReady, setStaggerReady] = useState(false);
   const [blocks, setBlocks] = useState<Zone[]>([]);
   const [busy, setBusy] = useState(false);
   // A speed change applies to the next round. Keep the current visual contact
@@ -163,6 +165,12 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   foeRef.current = foe;
 
   const { speed, auto } = state.settings;
+  // UI, manual target helper and actual resolver must see the SAME guard.
+  // Auto-battle never earns or uses the manual leg-riposte stagger.
+  const committedEnemyIntent = useMemo(
+    () => staggerEnemyGuard(enemyIntent, staggerReady && !auto),
+    [enemyIntent, staggerReady, auto],
+  );
   const setSettings = (patch: Partial<typeof state.settings>) =>
     useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
 
@@ -216,7 +224,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     hapticImpact('light');
     const elite = kind === 'trial' || !!enemy.isBoss;
-    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, enemyIntent, elite && !auto && riposteReady);
+    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady);
     const currentSpeed = useGame.get().settings.speed;
     setRoundSpeed(currentSpeed);
     const pace = 1 / currentSpeed;
@@ -241,6 +249,14 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     setStrike(null);
     const report = summarizePveRound(res.hits);
     setTacticalReport(report);
+    // Actual open leg hit after an earned manual riposte weakens ONE guard
+    // on the NEXT round. A block, dodge, auto round or ordinary enemy never
+    // creates this effect. It expires after one resolved round unless earned
+    // again by another valid counterattack.
+    setStaggerReady(elite && !auto && riposteReady && atk === 'legs'
+      && !committedEnemyIntent.blocks.includes(atk)
+      && (report.heroStrike === 'hit' || report.heroStrike === 'crit')
+      && res.enemy.hp > 0);
     // A displayed warning is not sufficient: only the resolved 'block'
     // event earns a counterattack. Auto cannot farm this manual tactic.
     setRiposteReady(elite && !auto && report.enemyStrike === 'block'
@@ -266,7 +282,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
       roundFlight.current = false;
       if (alive.current) setBusy(false);
     }
-  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, enemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto]);
+  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, committedEnemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto]);
 
   useEffect(() => {
     if (!auto || busy || outcome || confirmSurrender) return;
@@ -311,10 +327,10 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const controls = !busy && !outcome && !auto && !confirmSurrender;
   const ready = controls && !!attack && blocks.length === 2;
   const firstFightHelp = kind === 'stage' && state.totalBattlesWon === 0;
-  const guardedZone = ZONES.find(zone => zone.id === enemyIntent.blocks[0]);
+  const guardedZone = ZONES.find(zone => zone.id === committedEnemyIntent.blocks[0]);
   // Display both zones actually committed to the next round's resolver.
   // Previously the second guard was invisible and "Choose opening" could hit it.
-  const guardedZoneLabels = enemyIntent.blocks.map(id => {
+  const guardedZoneLabels = committedEnemyIntent.blocks.map(id => {
     const zone = ZONES.find(item => item.id === id);
     return zone ? (language === 'en' ? ({ head: 'Head', chest: 'Chest', belly: 'Belly', legs: 'Legs' } as Record<string, string>)[id] : zone.label) : '';
   }).filter(Boolean).join(language === 'en' ? ' & ' : ' и ');
@@ -438,8 +454,17 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
         <div data-testid="pve-riposte-ready" role="status" aria-live="polite"
           className="rounded-xl border border-emerald-300/55 bg-[#17352b]/95 px-3 py-2 text-xs font-bold text-emerald-100">
           ⚔️ {language === 'en'
-            ? 'Perfect guard! Your next strike gets +20% damage before caps. Find an opening to avoid the enemy shield.'
-            : 'Идеальный блок! Следующий удар усилен на 20%. Найди брешь в защите врага.'}
+            ? 'Perfect guard! Next strike +20%. Hit open legs to break one enemy guard for the following round, or choose another opening.'
+            : 'Идеальный блок! Следующий удар +20%. Попади в открытые ноги — сбей один блок врага на следующий раунд.'}
+        </div>
+      )}
+
+      {staggerReady && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
+        <div data-testid="pve-staggered-guard" role="status" aria-live="polite"
+          className="rounded-xl border border-sky-300/60 bg-[#17333a]/95 px-3 py-2 text-xs font-bold text-sky-100">
+          {language === 'en'
+            ? '⚔️ Enemy staggered! Your leg counter broke one guard: only one zone is protected this round.'
+            : '⚔️ Враг пошатнулся! Контрудар по ногам сбил один блок: в этом раунде защищена только одна зона.'}
         </div>
       )}
 
@@ -550,7 +575,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
             <Shield className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
             <span className="min-w-0 leading-tight" role="status" aria-live="polite">
               {language === 'en' ? 'Enemy guards' : 'Враг прикрывает'} <strong className="text-amber-300">{guardedZoneLabels}</strong>.
-              {' '}{attack !== null && enemyIntent.blocks.includes(attack)
+              {' '}{attack !== null && committedEnemyIntent.blocks.includes(attack)
                 ? (language === 'en' ? 'This zone is guarded. Choose a gap!' : 'Эта зона под защитой. Ищи брешь!')
                 : (language === 'en' ? 'Strike an unguarded zone to bypass the shield.' : 'Бей в свободную зону, чтобы обойти щит.')}
             </span>
@@ -564,7 +589,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
                   : 'Фаза II: враг запомнил прошлый удар. Смени зону атаки!')}
             </span>}
             <button type="button" data-testid="pve-choose-opening" disabled={!controls}
-              onClick={() => setAttack(current => nextOpenStrike(current, enemyIntent.blocks))}
+              onClick={() => setAttack(current => nextOpenStrike(current, committedEnemyIntent.blocks))}
               className="ml-auto min-h-9 shrink-0 rounded-lg border border-amber-200/70 bg-gradient-to-b from-amber-300 to-amber-600 px-2.5 text-[11px] font-black text-[#29180b] active:scale-[0.98] disabled:opacity-40">
               {language === 'en' ? 'Choose opening' : 'Выбрать брешь'}
             </button>
