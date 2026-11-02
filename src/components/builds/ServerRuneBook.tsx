@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { Check, Crown, Flame, Heart, Shield, Snowflake, Sparkles, Swords, Target, Wind, X, Zap } from 'lucide-react';
+import './serverRuneBook.css';
 import { supabase } from '@/game/supabase';
 import catalog from '@/game/config/territory-independent-rune-slots-v1.json';
 import {
@@ -22,6 +24,26 @@ const FIFTEEN_SLOT_CONTRACT_READY = import.meta.env.VITE_TERRITORY_RUNES === 'en
 const definitions = runeSlotCatalog(catalog);
 type PendingSave = { operationId: string; revision: number; slots: RuneSlot[] };
 
+const RUNE_GROUPS = [
+  { ru: 'База', en: 'Base', symbol: 'ᛉ' },
+  { ru: 'Ядро', en: 'Core', symbol: 'ᚠ' },
+  { ru: 'Контроль', en: 'Control', symbol: 'ᚦ' },
+  { ru: 'Пробуждение', en: 'Awakening', symbol: 'ᛟ' },
+  { ru: 'Финал', en: 'Final', symbol: 'ᛞ' },
+];
+const runeIcons = [Shield, Swords, Target, Snowflake, Crown, Zap, Wind, Flame, Sparkles, Heart];
+const runeTones = ['ember', 'frost', 'forest', 'violet', 'gold'];
+function RuneStone({ slotIndex, variant = 0, faded = false }: {
+  slotIndex: number; variant?: number; faded?: boolean;
+}) {
+  const Icon = runeIcons[(slotIndex * 3 + variant) % runeIcons.length];
+  return <span aria-hidden="true" className={'territory-rune__stone territory-rune__stone--' +
+    runeTones[(slotIndex + variant) % runeTones.length] + (faded ? ' territory-rune__stone--faded' : '')}>
+    <Icon size={24} strokeWidth={2.8}/>
+  </span>;
+}
+
+
 export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   const en = language === 'en';
   const alive = useRef(false);
@@ -33,6 +55,25 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   const [claiming, setClaiming] = useState(false);
   const [dailyReceipt, setDailyReceipt] = useState<{ dayUtc: string; runeId: string; level: number } | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const [activeSlot, setActiveSlot] = useState<number | null>(null);
+  const openerRef = useRef<HTMLButtonElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (activeSlot === null) return;
+    closeRef.current?.focus({ preventScroll: true });
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setActiveSlot(null); return; }
+      if (event.key !== 'Tab') return;
+      const dialog = document.getElementById('territory-rune-dialog');
+      if (!dialog) return;
+      const buttons = Array.from(dialog.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+      if (!buttons.length) return;
+      if (event.shiftKey && document.activeElement === buttons[0]) { event.preventDefault(); buttons[buttons.length - 1].focus(); }
+      else if (!event.shiftKey && document.activeElement === buttons[buttons.length - 1]) { event.preventDefault(); buttons[0].focus(); }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => { document.removeEventListener('keydown', onKeyDown); openerRef.current?.focus({ preventScroll: true }); };
+  }, [activeSlot]);
 
   useEffect(() => {
     alive.current = true;
@@ -164,13 +205,13 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
     }
   };
 
+
   if (!FIFTEEN_SLOT_CONTRACT_READY) {
     return <p role="status" className="rounded-lg border border-amber-500/40 bg-slate-900/90 p-3 text-xs text-amber-100">
-      {en ? 'The 15-slot rune system is not available yet. Existing hero training remains unchanged.'
-        : 'Система из 15 слотов рун пока недоступна. Существующая тренировка героя сохранена.'}
+      {en ? 'Runes are temporarily unavailable. Your saved build remains intact.'
+        : 'Руны временно недоступны. Твоя сохранённая сборка не изменена.'}
     </p>;
   }
-
   if (!status) return <div role="status" className="rounded-xl border border-amber-500/40 bg-slate-900 p-3 text-amber-100">
     <p>{notice || (en ? 'Checking server-owned runes…' : 'Проверяем руны на сервере…')}</p>
     <button type="button" onClick={() => setRefresh(value => value + 1)}
@@ -184,74 +225,140 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   const dailyRuneName = dailyReceipt
     ? catalog.slots.flatMap(slot => slot.options).find(option => option.runeId === dailyReceipt.runeId)
     : null;
-  return <section aria-label={en ? 'Fifteen rune slots' : 'Пятнадцать слотов рун'} className="space-y-3">
-    <div className="rounded-xl border border-amber-300/50 bg-[#302017] p-3 text-xs text-amber-100">
-      <p className="font-black text-amber-200">{en ? 'Rune book · 15 independent slots' : 'Книга рун · 15 независимых слотов'}</p>
-      <p className="mt-1">{en ? 'Only server-owned runes can be selected. No rune is a combat skill slot.'
-        : 'Можно выбрать только подтверждённые сервером руны. Слоты рун не заменяют боевые навыки.'}</p>
-    </div>
-    <button type="button" onClick={() => void claimDaily()}
-      disabled={claiming || saving.current || !!pending.current || claimedToday}
-      data-testid="rune-daily-claim"
-      className="min-h-12 w-full rounded-xl border border-amber-300 bg-gradient-to-b from-[#9f6825] to-[#62401a] px-3 font-black text-amber-50 disabled:opacity-50">
-      {claiming
-        ? (en ? 'Checking the daily rune…' : 'Проверяем ежедневную руну…')
-        : claimedToday
-          ? (en ? 'Today’s rune received ✓' : 'Руна дня получена ✓')
-          : (en ? 'Claim daily rune' : 'Получить руну дня')}
-    </button>
-    {dailyReceipt && dailyRuneName && (
-      <p role="status" data-testid="rune-daily-receipt" aria-live="polite"
-        className="rounded-lg border border-emerald-400/40 bg-[#183128] px-3 py-2 text-xs font-semibold text-emerald-100">
-        {en
-          ? `Received: ${dailyRuneName.nameEn} · level ${dailyReceipt.level}. Choose it below, then save your build.`
-          : `Получено: ${dailyRuneName.nameRu} · уровень ${dailyReceipt.level}. Выбери руну ниже и сохрани сборку.`}
-      </p>
-    )}
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-      {catalog.slots.map((slot, index) => {
-        const selected = draft[index]?.runeId ?? null;
-        return <section key={slot.slotId} className="rounded-xl border border-amber-500/40 bg-[#261b19]/95 p-2.5">
-          <h3 className="mb-2 text-sm font-black text-amber-200">{en ? slot.nameEn : slot.nameRu}</h3>
-          <button type="button" aria-pressed={selected === null} disabled={saving.current || !!pending.current}
-            onClick={() => choose(slot.slotId, null)}
-            className="mb-1.5 min-h-10 w-full rounded-lg border border-amber-200/30 px-2 text-left text-xs text-amber-100 disabled:opacity-50">
-            {en ? 'No rune' : 'Без руны'} {selected === null ? '✓' : ''}
-          </button>
-          {slot.options.map(option => {
-            const level = status.owned[option.runeId] ?? 0;
-            const active = selected === option.runeId;
-            // Specialized runes also have an honest, shared tactical bonus
-            // when a mode has no corresponding spell, area or status engine.
-            const fallback = runeTacticalEquivalent(option.runeId, level || 1);
-            const family = fallback && bonusLabels[fallback.key];
-            const percent = fallback ? (fallback.bp / 100).toFixed(2).replace(/\\.00$/, '') : '';
-            return <button type="button" key={option.runeId} aria-pressed={active}
-              disabled={!level || saving.current || !!pending.current}
-              onClick={() => choose(slot.slotId, option.runeId)}
-              className={`mb-1.5 min-h-12 w-full rounded-lg border px-2 py-1.5 text-left text-xs disabled:opacity-45 ${active
-                ? 'border-amber-200 bg-amber-700/45 text-white'
-                : 'border-amber-500/25 bg-black/30 text-amber-100'}`}>
-              <span className="block font-extrabold">{en ? option.nameEn : option.nameRu} {active ? '✓' : ''}</span>
-              <span className="block text-[11px]">{en ? option.effectEn : option.effectRu}</span>
-              {family && <span className="block text-[10px] text-amber-200">
-                {en ? `All battles: +${percent}% ${family.en}`
-                  : `Во всех боях: +${percent}% к ${family.ru}`}
-              </span>}
-              <span className="block text-[10px] font-bold text-sky-200">{level
-                ? (en ? `Owned · level ${level}` : `Получена · уровень ${level}`)
-                : (en ? 'Locked' : 'Не получена')}</span>
+  const equippedCount = draft.filter(slot => slot.runeId !== null).length;
+  const ownedCount = Object.values(status.owned).filter(level => level > 0).length;
+  const modalSlot = activeSlot === null ? null : catalog.slots[activeSlot];
+  const draftSelection = activeSlot === null ? null : draft[activeSlot]?.runeId ?? null;
+  const currentSave = activeSlot === null ? null : status.slots[activeSlot]?.runeId ?? null;
+  const totalBonuses: Record<string, number> = {};
+  draft.forEach(slot => {
+    if (!slot.runeId) return;
+    const fallback = runeTacticalEquivalent(slot.runeId, status.owned[slot.runeId] || 1);
+    if (fallback) totalBonuses[fallback.key] = (totalBonuses[fallback.key] || 0) + fallback.bp;
+  });
+
+  return <section data-testid="territory-server-rune-book" className="territory-rune"
+    aria-label={en ? 'Fifteen rune slots' : 'Пятнадцать слотов рун'}>
+    <header className="territory-rune__header">
+      <div className="territory-rune__crystal" aria-hidden="true"><Sparkles size={29}/></div>
+      <h2>{en ? 'Runes of Power' : 'Руны навыков'}</h2>
+      <p>{en ? '15 slots · 45 variants' : '15 слотов · 45 вариантов'}</p>
+    </header>
+    <div className="territory-rune__board">
+      {RUNE_GROUPS.map((group, row) => <div key={group.en} className="territory-rune__row">
+        <div className="territory-rune__group">
+          <span className="territory-rune__glyph" aria-hidden="true">{group.symbol}</span>
+          <strong>{en ? group.en : group.ru}</strong>
+        </div>
+        <div className="territory-rune__choices">
+          {catalog.slots.slice(row * 3, row * 3 + 3).map((slot, col) => {
+            const index = row * 3 + col;
+            const chosen = draft[index]?.runeId;
+            const variant = slot.options.findIndex(option => option.runeId === chosen);
+            const hasOwned = slot.options.some(option => !!status.owned[option.runeId]);
+            return <button key={slot.slotId} type="button" data-testid={'rune-slot-' + (index + 1)}
+              className={'territory-rune__tile' + (chosen ? ' territory-rune__tile--equipped' : '')}
+              aria-label={(en ? 'Rune slot ' : 'Рунный слот ') + (index + 1) +
+                (chosen ? (en ? ', equipped' : ', установлена') : (hasOwned ? (en ? ', available' : ', доступны руны') : (en ? ', none owned' : ', нет полученных рун')))}
+              aria-pressed={chosen !== null && chosen !== undefined}
+              onClick={event => { openerRef.current = event.currentTarget; setActiveSlot(index); }}>
+              <RuneStone slotIndex={index} variant={Math.max(0, variant)} faded={!chosen}/>
+              <small>{index + 1}</small>
+              {chosen && <span className="territory-rune__equipped"><Check size={11}/></span>}
+              {chosen ? <span className="territory-rune__tile-label">{en ? 'Equipped' : 'Установлено'}</span>
+                : <span className="territory-rune__tile-hint">{hasOwned ? '●' : '○'}</span>}
             </button>;
           })}
-        </section>;
-      })}
+        </div>
+      </div>)}
     </div>
-    {notice && <p role="status" className="rounded-lg border border-amber-400/40 bg-slate-900 p-2 text-xs text-amber-100">{notice}</p>}
-    <button type="button" onClick={() => void save()}
-      disabled={saving.current || (!changed && !pending.current)}
-      className="min-h-12 w-full rounded-xl border border-amber-200 bg-gradient-to-b from-amber-300 to-amber-600 px-3 font-black text-[#29180b] disabled:opacity-50">
-      {pending.current ? (en ? 'Retry same save' : 'Повторить сохранение')
-        : (en ? 'Save 15 slots' : 'Сохранить 15 слотов')}
-    </button>
+    <div className="territory-rune__passives">
+      <strong>{en ? 'Rune collection' : 'Коллекция рун'}</strong>
+      <div className="territory-rune__totals">
+        <span><Sparkles size={17}/>{en ? 'Owned' : 'Получено'} <b>{ownedCount}/45</b></span>
+        <span><Shield size={17}/>{en ? 'Equipped' : 'Установлено'} <b>{equippedCount}/15</b></span>
+      </div>
+      <div className="territory-rune__stats" aria-label={en ? 'Bonuses from selected runes' : 'Бонусы выбранных рун'}>
+        <b>{en ? 'Build bonuses' : 'Бонусы сборки'}:</b>
+        {Object.keys(totalBonuses).length === 0
+          ? <span>{en ? 'Equip a rune to see its effects' : 'Установи руну, чтобы увидеть эффекты'}</span>
+          : Object.entries(totalBonuses).map(([key, bp]) => <span key={key}>+
+            {(bp / 100).toFixed(2).replace(/\.00$/, '')}% {en ? (bonusLabels[key]?.en ?? key) : (bonusLabels[key]?.ru ?? key)}</span>)}
+      </div>
+    </div>
+    <div className="territory-rune__footer">
+      <button type="button" onClick={() => void claimDaily()} data-testid="rune-daily-claim"
+        disabled={claiming || saving.current || !!pending.current || claimedToday} className="territory-rune__daily">
+        <Sparkles size={19}/>
+        {claiming ? (en ? 'Checking…' : 'Проверяем…') : claimedToday
+          ? (en ? 'Rune received ✓' : 'Руна дня получена ✓') : (en ? 'Claim daily rune' : 'Получить руну дня')}
+      </button>
+      <button type="button" onClick={() => void save()} data-testid="rune-save-build"
+        disabled={saving.current || (!changed && !pending.current)} className="territory-rune__save">
+        {pending.current ? (en ? 'Retry save' : 'Повторить запись')
+          : changed ? (en ? 'Save build' : 'Сохранить сборку')
+            : (en ? 'Build saved ✓' : 'Сборка сохранена ✓')}
+      </button>
+    </div>
+    {dailyReceipt && dailyRuneName && <p role="status" data-testid="rune-daily-receipt"
+      aria-live="polite" className="territory-rune__receipt">
+      <Sparkles size={19}/>
+      {en ? 'Received: ' : 'Получено: '}
+      {en ? dailyRuneName.nameEn : dailyRuneName.nameRu} · {en ? 'level' : 'уровень'} {dailyReceipt.level}
+    </p>}
+    {notice && <p role="status" aria-live="polite" className="territory-rune__notice">{notice}</p>}
+    {modalSlot && activeSlot !== null && <div className="territory-rune__veil"
+      onMouseDown={event => { if (event.target === event.currentTarget) setActiveSlot(null); }}>
+      <section id="territory-rune-dialog" role="dialog" aria-modal="true"
+        aria-label={(en ? 'Rune slot ' : 'Рунный слот ') + (activeSlot + 1)}
+        className="territory-rune__dialog">
+        <div className="territory-rune__dialog-head">
+          <strong>{en ? 'Rune details' : 'Подробности руны'} · {activeSlot + 1}</strong>
+          <button ref={closeRef} type="button" onClick={() => setActiveSlot(null)}
+            aria-label={en ? 'Close' : 'Закрыть'}><X size={22}/></button>
+        </div>
+        <div className="territory-rune__dialog-body">
+          <h3>{en ? 'Choose a rune' : 'Выбери руну'}</h3>
+          <p className="territory-rune__help">{en ? 'Three options. Only server-owned runes can be equipped.'
+            : 'Три варианта. Установить можно только полученные руны.'}</p>
+          <div className="territory-rune__variants">
+            {modalSlot.options.map((option, variant) => {
+              const level = status.owned[option.runeId] ?? 0;
+              const picked = draftSelection === option.runeId;
+              const fallback = runeTacticalEquivalent(option.runeId, level || 1);
+              const family = fallback && bonusLabels[fallback.key];
+              return <button type="button" key={option.runeId} aria-pressed={picked}
+                data-testid={'rune-option-' + variant} disabled={!level || saving.current || !!pending.current}
+                className={'territory-rune__variant' + (picked ? ' territory-rune__variant--picked' : '')}
+                onClick={() => choose(modalSlot.slotId, option.runeId)}>
+                <RuneStone slotIndex={activeSlot} variant={variant} faded={!level}/>
+                <strong>{en ? option.nameEn : option.nameRu}</strong>
+                <span className="territory-rune__variant-effect">{en ? option.effectEn : option.effectRu}</span>
+                {family && <small>{en ? 'All battles' : 'Во всех боях'}: +
+                  {(fallback.bp / 100).toFixed(2).replace(/\.00$/, '')}% {en ? family.en : family.ru}</small>}
+                <em>{picked ? (en ? '✓ Equipped' : '✓ Выбрана')
+                  : level ? ((en ? 'Level ' : 'Уровень ') + level)
+                    : (en ? 'Not owned' : 'Не получена')}</em>
+              </button>;
+            })}
+          </div>
+          <button type="button" className="territory-rune__unequip" aria-pressed={draftSelection === null}
+            disabled={saving.current || !!pending.current} onClick={() => choose(modalSlot.slotId, null)}>
+            {en ? 'Remove rune from slot' : 'Снять руну со слота'}
+          </button>
+          {draftSelection !== currentSave && <p role="status" className="territory-rune__draft">
+            {en ? 'Your choice is not saved yet.' : 'Выбор ещё не сохранён на сервере.'}
+          </p>}
+        </div>
+        <div className="territory-rune__dialog-actions">
+          <button type="button" onClick={() => setActiveSlot(null)}
+            className="territory-rune__cancel">{en ? 'Back' : 'Назад'}</button>
+          <button type="button" onClick={() => void save()} disabled={saving.current || (!changed && !pending.current)}
+            className="territory-rune__save">
+            {en ? 'Save build' : 'Сохранить сборку'}
+          </button>
+        </div>
+      </section>
+    </div>}
   </section>;
 }
