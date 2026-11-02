@@ -177,9 +177,26 @@ const overkillRound = pve.playRound({ ...starterHero, hp: 7, attack: 1, defense:
   { attack: 'chest', blocks: ['head', 'belly'] });
 assert.equal(overkillRound.hero.hp, 0);
 assert.equal(pve.summarizePveRound(overkillRound.hits).takenDamage, 7);
+// Earned riposte is resolved by the SAME battle engine: it is not a fake
+// visual buff, and a boss damage cap still applies to hero + follower.
+const baselineRiposte = pve.playRound(starterHero, guardEnemy, 'legs', ['chest', 'head'], 0, '', 0, null, threatIntent);
+const boostedRiposte = pve.playRound(starterHero, guardEnemy, 'legs', ['chest', 'head'], 0, '', 0, null, threatIntent, true);
+assert.equal(pve.summarizePveRound(baselineRiposte.hits).enemyStrike, 'block', 'Only an actual block can earn the next riposte');
+assert(boostedRiposte.hits[0].amount > baselineRiposte.hits[0].amount, 'Riposte must increase actual enemy HP damage');
+assert.equal(guardEnemy.hp - boostedRiposte.enemy.hp, boostedRiposte.hits[0].amount);
+const blockedRiposte = pve.playRound(starterHero, guardEnemy, 'head', ['chest', 'head'], 0, '', 0, null, threatIntent, true);
+assert.equal(blockedRiposte.hits[0].amount, 0, 'Riposte cannot bypass the enemy guard');
+const cappedRiposte = pve.playRound(hero, { ...guardEnemy, hp: 1000, maxHp: 1000, enemyId: 'ch10_boss', isBoss: true },
+  'legs', [], 100000, 'Follower', 0, null, threatIntent, true);
+assert.equal(cappedRiposte.hits.filter(hit => hit.targetSide === 'enemy').reduce((sum, hit) => sum + hit.amount, 0), 400,
+  'Riposte cannot exceed the existing elite per-round cap');
+
 const fightSource = source('../src/components/pve/PveFight.tsx');
 assert.match(fightSource, /data-testid="pve-round-reaction"/, 'Show actual round feedback to manual PvE players');
 assert.match(fightSource, /data-testid="pve-live-damage-totals"/, 'Show cumulative actual damage during the fight');
+assert.match(fightSource, /data-testid="pve-riposte-ready"/, 'Show an earned manual riposte');
+assert.match(fightSource, /report\.enemyStrike === 'block'/, 'Only a real enemy block grants riposte');
+assert.match(fightSource, /elite && !auto && riposteReady/, 'Auto cannot consume a fake manual riposte');
 assert.match(fightSource, /setBattleTotals\(previous => \(\{[\s\S]*report\.dealtDamage/, 'Cumulative totals must come from resolved hits');
 assert.match(fightSource, /data-testid="pve-surrender-confirm"/, 'Surrender must require an explicit second action');
 assert.match(fightSource, /data-testid="pve-surrender-cancel"/, 'Players must be able to return to the same fight');
