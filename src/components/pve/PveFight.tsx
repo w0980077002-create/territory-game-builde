@@ -421,7 +421,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
         <div data-testid="pve-riposte-ready" role="status" aria-live="polite"
           className="rounded-xl border border-emerald-300/55 bg-[#17352b]/95 px-3 py-2 text-xs font-bold text-emerald-100">
           ⚔️ {language === 'en'
-            ? 'Perfect guard! Your next strike deals up to 20% more damage. Find an opening to avoid the enemy shield.'
+            ? 'Perfect guard! Your next strike gets +20% damage before caps. Find an opening to avoid the enemy shield.'
             : 'Идеальный блок! Следующий удар усилен на 20%. Найди брешь в защите врага.'}
         </div>
       )}
