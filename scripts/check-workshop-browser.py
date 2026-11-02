@@ -24,7 +24,7 @@ with sync_playwright() as p:
       "(el) => getComputedStyle(el).backgroundImage.includes('" + ('shop-approved-facade.webp' if lang=='ru' else 'shop-reference-market.webp') + "')"
     ), (width,lang,'owner-approved market missing')
     assert page.evaluate("""async () => {
-      const paths = ['shop-wood-planks.webp','shop-wood-beams.webp','shop-rope-wrap.svg','shop-iron-corner.svg','shop-market-stage.svg','shop-hanging-sign.svg','shop-reference-sign.webp','shop-reference-market.webp','shop-reference-license-frame.webp','shop-reference-product-frame.webp','shop-approved-facade.webp','shop-approved-license-border.webp','shop-approved-product-border.webp','shop-approved-tabs-border.webp'];
+      const paths = ['shop-wood-planks.webp','shop-wood-beams.webp','shop-rope-wrap.svg','shop-iron-corner.svg','shop-market-stage.svg','shop-hanging-sign.svg','shop-reference-sign.webp','shop-reference-market.webp','shop-reference-license-frame.webp','shop-reference-product-frame.webp','shop-approved-facade.webp','shop-approved-license-border.webp','shop-approved-product-border.webp','shop-approved-product-border-v2.webp','shop-approved-tabs-border.webp'];
       return (await Promise.all(paths.map(name => new Promise(resolve => {
         const img = new Image();
         img.onload = () => resolve(img.naturalWidth > 0);
@@ -39,7 +39,7 @@ with sync_playwright() as p:
       "(el) => getComputedStyle(el,'::after').borderImageSource.includes('shop-approved-license-border.webp')"
     ), (width,lang,'license illustrated frame missing')
     assert page.locator('.territory-shop-product').first.evaluate(
-      "(el) => getComputedStyle(el,'::before').borderImageSource.includes('shop-approved-product-border.webp')"
+      "(el) => getComputedStyle(el,'::before').backgroundImage.includes('shop-approved-product-border-v2.webp')"
     ), (width,lang,'product illustrated frame missing')
     assert page.locator('.territory-shop-facade').count()==1
     assert page.locator('.territory-shop-approved').count()==1
