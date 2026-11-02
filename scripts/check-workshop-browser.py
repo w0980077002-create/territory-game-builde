@@ -68,6 +68,13 @@ with sync_playwright() as p:
     assert page.locator('.territory-shop-wallet__cell').count()==4
     assert page.locator('.territory-shop-product').count()>0
     assert page.locator('.territory-shop-tab').count()==3
+    assert page.locator('.territory-shop-tab').evaluate_all(
+      """(tabs) => tabs.every(tab => {
+        const label=tab.querySelector('span').getBoundingClientRect();
+        const outer=tab.getBoundingClientRect();
+        return label.left>=outer.left+7 && label.right<=outer.right-7;
+      })"""
+    ),(width,lang,'tab text touches forged border')
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(width,lang,'shop overflow')
     if width in (320,360,390,430) and lang=='ru' and not ios:
       os.makedirs('/tmp/territory-stage1-ui',exist_ok=True)
