@@ -13,6 +13,7 @@ const [home, app, css, html, city, sheets, telegram] = await Promise.all([
   read('src/game/telegram.ts'),
 ]);
 const worldMap = await read('src/components/WorldMapCanvas.tsx');
+const cityMotion = await read('src/components/home/cityCharacterMotion.css');
 
 const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventure] = await Promise.all([
   read('src/components/ForgeScreen.tsx'),
@@ -26,6 +27,15 @@ const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventu
 
 assert.match(home, /<LiveCityBackdrop animated=\{cityMotion\}/, 'Home must render the approved layered city backdrop');
 assert.match(home, /className="home-hero-figure/, 'City hero must have a separate sizing wrapper');
+assert.ok(home.includes("import './home/cityCharacterMotion.css';"), 'City-specific motion stylesheet must be imported');
+for (const role of ['follower', 'hero', 'enemy']) {
+  assert.ok(home.includes('city-' + role + '-idle'), role + ' must have a distinct idle class');
+  assert.ok(cityMotion.includes('.city-' + role + '-idle'), role + ' must have a real animation rule');
+}
+assert.ok(cityMotion.includes('@media (prefers-reduced-motion: reduce)'), 'City animation must respect accessibility motion controls');
+for (const forbidden of ['.home-bottom-controls', '.territory-nav', '.home-top-hud', '.home-side-stack']) {
+  assert.ok(!cityMotion.includes(forbidden), 'Actor motion cannot adjust HUD/buttons: ' + forbidden);
+}
 assert.match(home, /className="home-follower-figure/, 'City follower must have a separate sizing wrapper');
 for (const [id, scale] of [
   ['follower_1', '1.00'],
@@ -40,17 +50,45 @@ assert.match(home, /HOME_FOLLOWER_ART_SCALE\[follower\.id\]/, 'The selected comp
 assert.match(home, /home-follower-art-frame absolute inset-x-0 bottom-0/, 'Companions must remain grounded regardless of their sprite');
 assert.match(css, /\.home-follower-art-frame\s*\{\s*transform-origin: center bottom;/, 'Sprite scaling must be foot-anchored');
 
-assert.match(css, /\.home-hero-figure\s*\{\s*transform: scale\(1\.25\)/, 'Main hero grows by 25%');
-assert.match(css, /\.home-follower-figure\s*\{[\s\S]*?transform: scale\(1\.60\)/, 'Companion is enlarged enough to see at normal phone size');
-assert.match(css, /\.home-follower-figure \{ transform: scale\(1\.33\); \}/, 'Keep companion visible without side-menu overlap on very narrow screens');
+assert.match(css, /\.home-hero-figure\s*\{\s*transform: scale\(1\.04\)/, 'Hero must not be oversized into the next slot');
+assert.match(css, /\.home-follower-figure\s*\{[\s\S]*?transform: scale\(1\.06\)/, 'Companion stays inside its visual area');
+assert.match(css, /\.home-follower-figure \{ transform: scale\(1\); \}/, 'Narrow phones must not enlarge companions across hero');
 assert.match(home, /home-follower-ground-shadow/, 'Companion must have a separate ground shadow');
 assert.match(css, /\.home-follower-figure\s*\{[\s\S]*?z-index: 1;/, 'Companion must not disappear behind the hero');
-assert.match(home, /home-follower-figure relative h-\[66%\] w-\[28%\]/, 'Companion has increased stage room');
+for (const slot of ['city-follower-slot', 'city-hero-slot', 'city-enemy-slot']) {
+  assert.ok(home.includes(`data-testid="${slot}"`), `City must expose an independent placement for ${slot}`);
+}
+assert.doesNotMatch(home, /-ml-\[6%\]/, 'Hero may never overlap the follower via negative margin');
+assert.match(home, /justify-between gap-2 pointer-events-none/, 'Three characters must have separate spaces');
 assert.match(css, /\.home-character-stage::before/, 'Background contrast must stay local to characters');
 assert.match(css, /\.home-hero-art\s*\{[\s\S]*?drop-shadow/, 'Hero must remain legible over the harbor');
 assert.match(home, /onClick=\{\(\) => onBattle\('campaign', true\)\}/, 'Enemy tap target must remain active');
 
 assert.match(city, /live-city-bg\.webp/, 'Portrait Viking harbour backdrop must be installed');
+assert.match(city, /export type CityBackground = 'winter' \| 'classic' \| 'sunlit'/,
+  'Winter Peaks joins both existing city backgrounds');
+assert.match(city, /saved === 'classic' \|\| saved === 'sunlit' \? saved : 'winter'/,
+  'New players receive winter scenery without overriding an existing explicit choice');
+assert.match(city, /winter-cliff-approved\.webp/, 'Owner-approved wood-and-cliff portrait winter image must render');
+assert.match(city, /backgroundSize: isWinter \? 'cover, cover'/,
+  'Winter scenery must keep aspect ratio via cover, never stretch to 100% x 100%');
+assert.match(city, /backgroundPosition: isWinter \? 'center, center 50%'/,
+  'Portrait crop must remain centered over different mobile aspect ratios');
+const winterPortrait = await readFile(new URL('public/assets/territory/scenes/winter-cliff-approved.webp', root));
+assert.equal(winterPortrait.toString('ascii', 0, 4), 'RIFF');
+assert.equal(winterPortrait.toString('ascii', 8, 12), 'WEBP');
+assert.equal(winterPortrait.toString('ascii', 12, 16), 'VP8 ');
+const winterWidth = winterPortrait.readUInt16LE(26) & 0x3fff;
+const winterHeight = winterPortrait.readUInt16LE(28) & 0x3fff;
+assert.ok(winterWidth >= 640 && winterHeight / winterWidth > 1.6 && winterHeight / winterWidth < 1.9,
+  'Approved artwork must be a true tall portrait, not a stretched square');
+assert.match(sheets, /\['winter', 'classic', 'sunlit'\]/,
+  'Settings must let the player restore either of the previous backgrounds');
+assert.match(sheets, /Ледяные вершины/, 'Russian winter background label must be visible');
+assert.match(sheets, /winter-cliff-approved\.webp/, 'Winter thumbnail shows the same cliff artwork as the City');
+assert.match(css, /\.live-city-stage--winter \{[\s\S]*?56\.2984cqh/, 'Winter artwork must use its own non-distorting portrait aspect');
+assert.ok((await access(new URL('public/assets/territory/scenes/winter-peaks-v2.webp', root)).then(() => true, () => false)),
+  'Approved winter image must be present in the shipped public assets');
 assert.match(city, /live-city-ship\.webp/, 'Viking ships must have a subtle motion overlay');
 assert.match(city, /live-city-waterfall/, 'Waterfalls must have visual motion');
 assert.match(sheets, /Живой город/, 'Animated city must have an on/off setting');

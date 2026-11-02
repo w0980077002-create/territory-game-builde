@@ -21,6 +21,7 @@ export interface PveSide {
 
 export interface PveHit {
   attacker: string;
+  source?: 'companion';
   target: string;
   targetSide: 'hero' | 'enemy';
   zone: Zone;
@@ -40,6 +41,76 @@ export function randomZones(): { attack: Zone; blocks: Zone[] } {
     [ids[i], ids[j]] = [ids[j], ids[i]];
   }
   return { attack: pick(ZONES).id, blocks: ids.slice(0, 2) };
+}
+
+/** Pick an actually open zone against BOTH committed enemy guard slots.
+ * The earlier single-zone helper could select the second blocked zone while
+ * claiming to have found a breach. This only changes manual target selection:
+ * damage, AI, rewards and existing PvP remain untouched. */
+export function nextOpenStrike(current: Zone | null, guarded: readonly Zone[]): Zone {
+  const openings = ZONES.map(zone => zone.id).filter(zone => !guarded.includes(zone));
+  if (!openings.length) return current ?? ZONES[0].id;
+  const index = current === null ? -1 : openings.indexOf(current);
+  return openings[(index + 1) % openings.length];
+}
+
+/** Keep the two most recent DISTINCT resolved strikes, not merely the last
+ * two rounds. Repeating the same zone must not erase the boss's knowledge of
+ * another zone or cause phase III to disappear. Fight-local only: no save,
+ * economy or server-owned state is changed. */
+export function rememberDistinctHeroAttacks(history: readonly Zone[], resolved: Zone): Zone[] {
+  return [resolved, ...history.filter(zone => zone !== resolved)].slice(0, 2);
+}
+
+/** Elite enemies learn attack patterns as their HP falls: at half HP they
+ * cover the last attack, at quarter HP they cover the last TWO distinct
+ * attacks. The announced guard is committed to the same playRound resolver.
+ * Always leave two real openings; never alter rewards, damage or resources. */
+export function nextAdaptiveEnemyIntent(
+  enemy: Pick<PveSide, 'hp' | 'maxHp'>,
+  lastHeroAttack: Zone,
+  eliteEncounter: boolean,
+  rolledIntent: ReturnType<typeof randomZones> = randomZones(),
+  previousHeroAttack: Zone | null = null,
+): { intent: ReturnType<typeof randomZones>; adapted: boolean; phase: 1 | 2 | 3 } {
+  if (!eliteEncounter || !Number.isFinite(enemy.hp) || !Number.isFinite(enemy.maxHp)
+    || enemy.hp <= 0 || enemy.maxHp <= 0 || enemy.hp > enemy.maxHp / 2) {
+    return { intent: rolledIntent, adapted: false, phase: 1 };
+  }
+  // Phase III only starts after two actual, different hero attacks. No
+  // invented history on the first round, and no third/hidden guard zone.
+  if (enemy.hp <= enemy.maxHp / 4 && previousHeroAttack
+    && previousHeroAttack !== lastHeroAttack
+    && ZONES.some(zone => zone.id === previousHeroAttack)) {
+    return {
+      intent: { attack: rolledIntent.attack, blocks: [lastHeroAttack, previousHeroAttack] },
+      adapted: true,
+      phase: 3,
+    };
+  }
+  const otherGuard = rolledIntent.blocks.find(zone => zone !== lastHeroAttack)
+    ?? ZONES.find(zone => zone.id !== lastHeroAttack)?.id;
+  return {
+    intent: { attack: rolledIntent.attack, blocks: otherGuard ? [lastHeroAttack, otherGuard] : [lastHeroAttack] },
+    adapted: true,
+    phase: 2,
+  };
+}
+
+/** A successful manual leg riposte staggers an elite guard for ONE next round.
+ * The announced attack remains exactly the same; only the second guarded
+ * zone becomes an opening. This is a fight-local tactical effect, not loot,
+ * a saved buff, a new enemy roll or a change to PvP/server combat. */
+export function staggerEnemyGuard(intent: ReturnType<typeof randomZones>, active: boolean): ReturnType<typeof randomZones> {
+  if (!active || intent.blocks.length < 2) return intent;
+  return { attack: intent.attack, blocks: intent.blocks.slice(0, 1) };
+}
+
+/** One-tap defense against an announced strike. Preserve the other selected
+ * block when both slots are occupied; never add a third defense zone. */
+export function coverThreatZone(current: readonly Zone[], threat: Zone): Zone[] {
+  if (current.includes(threat)) return [...current];
+  return current.length < 2 ? [...current, threat] : [current[current.length - 1], threat];
 }
 
 export function heroSide(state: GameState): PveSide {
@@ -67,6 +138,30 @@ function strike(from: PveSide, to: PveSide, targetSide: PveHit['targetSide'], zo
   return { ...base, tone: crit ? 'crit' : 'hit', amount: Math.round(dmg) };
 }
 
+/** Read-only feedback from actual strikes; never modifies AI, damage or rewards. */
+export interface PveTacticalSummary {
+  heroStrike: PveHit['tone'] | null;
+  enemyStrike: PveHit['tone'] | null;
+  enemyZone: Zone | null;
+  /** Damage from resolved hits only; excludes blocked, dodged and healing events. */
+  dealtDamage: number;
+  takenDamage: number;
+  companionDamage: number;
+}
+
+export function summarizePveRound(hits: readonly PveHit[]): PveTacticalSummary {
+  const heroStrike = hits.find(hit => hit.targetSide === 'enemy');
+  const enemyStrike = hits.find(hit => hit.targetSide === 'hero');
+  return {
+    heroStrike: heroStrike?.tone ?? null,
+    enemyStrike: enemyStrike?.tone ?? null,
+    enemyZone: enemyStrike?.zone ?? null,
+    dealtDamage: hits.filter(hit => hit.targetSide === 'enemy').reduce((sum, hit) => sum + Math.max(0, hit.amount), 0),
+    takenDamage: hits.filter(hit => hit.targetSide === 'hero').reduce((sum, hit) => sum + Math.max(0, hit.amount), 0),
+    companionDamage: hits.filter(hit => hit.targetSide === 'enemy' && hit.source === 'companion').reduce((sum, hit) => sum + Math.max(0, hit.amount), 0),
+  };
+}
+
 export interface RoundResult {
   hits: PveHit[];
   hero: PveSide;
@@ -74,22 +169,34 @@ export interface RoundResult {
   healAmount: number;
 }
 
-export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null): RoundResult {
-  const ai = randomZones();
+export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null, enemyIntent: ReturnType<typeof randomZones> | null = null, riposteReady = false): RoundResult {
+  // The visible enemy guard is the actual defense used by this round, not a decorative hint.
+  // Other callers retain their original random AI by omitting enemyIntent.
+  const ai = enemyIntent ?? randomZones();
   const hits: PveHit[] = [];
   const cap = eliteRoundDamageCap(enemy.enemyId ?? '', !!enemy.isBoss, enemy.maxHp);
   let damageBudget = cap ?? Number.POSITIVE_INFINITY;
   const piercedEnemy = bonus?.pierce ? { ...enemy, defense: Math.max(0, Math.floor(enemy.defense * (1 - bonus.pierce))) } : enemy;
-  const rawHit = strike(hero, piercedEnemy, 'enemy', attack, ai.blocks.slice(0, 1));
-  const firstDamage = Math.min(rawHit.amount, damageBudget, enemy.hp);
-  const h1 = { ...rawHit, amount: firstDamage };
+  // A successful manual elite guard grants ONE stronger next strike. Apply
+  // the bonus to actual damage only after dodge/block/crit resolution, then
+  // pass through the existing elite cap and remaining HP clamp.
+  // Both displayed enemy guard slots are committed to this round. The
+  // previous slice(0, 1) silently ignored the second guard, so a player
+  // could hit a supposedly protected zone. Critical guard-piercing remains
+  // governed by strike(), exactly as before.
+  const rawHit = strike(hero, piercedEnemy, 'enemy', attack, ai.blocks);
+  const enhancedHit = riposteReady && rawHit.amount > 0
+    ? { ...rawHit, amount: Math.round(rawHit.amount * 1.2) }
+    : rawHit;
+  const firstDamage = Math.min(enhancedHit.amount, damageBudget, enemy.hp);
+  const h1 = { ...enhancedHit, amount: firstDamage };
   hits.push(h1);
   damageBudget -= firstDamage;
   let enemyHp = Math.max(0, enemy.hp - firstDamage);
   if (enemyHp > 0 && followerAttack > 0 && damageBudget > 0) {
     const companionDamage = Math.min(Math.max(0, Math.floor(followerAttack)), damageBudget, enemyHp);
     if (companionDamage > 0) {
-      const f: PveHit = { attacker: followerName, target: enemy.name, targetSide: 'enemy', zone: pick(ZONES).id, tone: 'hit', amount: companionDamage };
+      const f: PveHit = { source: 'companion', attacker: followerName, target: enemy.name, targetSide: 'enemy', zone: pick(ZONES).id, tone: 'hit', amount: companionDamage };
       hits.push(f);
       enemyHp = Math.max(0, enemyHp - companionDamage);
     }
@@ -98,7 +205,8 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   if (enemyHp > 0) {
     const rawEnemyHit = strike(enemy, hero, 'hero', ai.attack, blocks);
     const mitigated = rawEnemyHit.amount > 0 ? followerGuardDamage(rawEnemyHit.amount, followerDefense) : 0;
-    const h2 = { ...rawEnemyHit, amount: mitigated };
+    // Only actual HP loss belongs in the hit log and tactical damage counters.
+    const h2 = { ...rawEnemyHit, amount: Math.min(mitigated, heroHp) };
     hits.push(h2);
     heroHp = Math.max(0, heroHp - h2.amount);
   }

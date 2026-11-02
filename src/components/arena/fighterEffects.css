@@ -57,6 +57,13 @@
 .fighter-figure .animate-dodge {
   animation: fighter-dodge var(--fighter-motion-duration) ease-out both;
 }
+/* Winner is taken from the completed game result; no outcome is inferred here. */
+.fighter-figure .fighter-victory { animation: fighter-victory var(--fighter-motion-duration) ease-out both; }
+@keyframes fighter-victory {
+  0%, 100% { transform: translate3d(0,0,0) rotate(0); }
+  34% { transform: translate3d(0,-7px,0) rotate(calc(var(--dir) * -5deg)); }
+  62% { transform: translate3d(0,0,0) rotate(calc(var(--dir) * 3deg)); }
+}
 /* Three recognizable attacks: diagonal slash, forward thrust, overhead chop. */
 @keyframes fighter-cut {
   0%, 100% { transform: translate3d(0,0,0) rotate(0); }
@@ -84,8 +91,8 @@
 }
 /* Reactions start when the opponent's blade arrives, not at event start. */
 @keyframes fighter-recoil {
-  0%, 33%, 100% { transform: translate3d(0,0,0) rotate(0); filter: none; }
-  45% { transform: translate3d(calc(var(--dir) * -22px),-4px,0) rotate(calc(var(--dir) * -9deg)); filter: brightness(1.5); }
+  0%, 43%, 100% { transform: translate3d(0,0,0) rotate(0); filter: none; }
+  52% { transform: translate3d(calc(var(--dir) * -22px),-4px,0) rotate(calc(var(--dir) * -9deg)); filter: brightness(1.5); }
   62% { transform: translate3d(calc(var(--dir) * -8px),1px,0) rotate(calc(var(--dir) * 3deg)); filter: brightness(1.1); }
   80% { transform: translate3d(calc(var(--dir) * 3px),0,0) rotate(0); filter: none; }
 }
@@ -256,16 +263,23 @@
   74% { opacity: 1; transform: translate(-50%,-12px) scale(1); }
   100% { opacity: 0; transform: translate(-50%,-23px) scale(.96); }
 }
+.fighter-figure[data-quality=low] :is(.fighter-figure__afterimage,.fighter-figure__sweep,.fighter-figure__footstep,.fighter-impact__spark,.fighter-impact__shock,.fighter-impact__arc) { display: none; }
+.fighter-figure[data-quality=low] .fighter-figure__motion { filter: none !important; }
 /* Override the shorthand defaults above so target effects wait for blade contact. */
 .fighter-impact > span { animation-delay: var(--fighter-hit-delay); animation-fill-mode: both; }
 @media (prefers-reduced-motion: reduce) {
   .fighter-figure .battle-swing-0, .fighter-figure .battle-swing-1, .fighter-figure .battle-swing-2,
-  .fighter-figure .animate-recoil, .fighter-figure .animate-guard, .fighter-figure .animate-dodge { animation: none !important; }
+  .fighter-figure .animate-recoil, .fighter-figure .animate-guard, .fighter-figure .animate-dodge,
+  .fighter-figure .fighter-victory { animation: none !important; }
   .fighter-figure__breath--idle { animation: none !important; }
   .fighter-figure__footstep, .fighter-impact__flash { display: none; }
   .fighter-figure__sweep, .fighter-impact__arc, .fighter-impact__spark, .fighter-impact__shock,
   .fighter-impact__shield, .fighter-impact__trail { display: none; }
-  .fighter-impact__label { animation: none !important; opacity: 1 !important; transform: translateX(-50%) !important; }
+  .fighter-impact__label { animation: fighter-label-reduced var(--fighter-impact-duration) steps(1,end) var(--fighter-hit-delay) forwards !important; }
+}
+@keyframes fighter-label-reduced {
+  0%, 90% { opacity: 1; transform: translateX(-50%); }
+  100% { opacity: 0; transform: translateX(-50%); }
 }
 
 

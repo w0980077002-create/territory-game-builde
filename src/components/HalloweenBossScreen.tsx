@@ -13,7 +13,8 @@ function bossError(error: unknown, en: boolean): string {
   const raw = error instanceof Error ? error.message : String(error);
   if (raw.includes('halloween_boss_daily_limit')) return en ? 'Your attacks for today are used. Return after 00:00 UTC.' : 'Удары на сегодня закончились. Возвращайся после 00:00 UTC.';
   if (raw.includes('halloween_boss_cooldown')) return en ? 'The sword is recharging. Try again in a moment.' : 'Оружие перезаряжается. Повтори через несколько секунд.';
-  if (raw.includes('halloween_boss_event_ended') || raw.includes('halloween_boss_defeated')) return en ? 'The event has ended.' : 'Событие завершилось.';
+  if (raw.includes('halloween_boss_defeated')) return en ? 'The Pumpkin King has been defeated!' : 'Тыквенный король повержен!';
+  if (raw.includes('halloween_boss_event_ended')) return en ? 'The event has ended.' : 'Событие завершилось.';
   if (raw.includes('auth_required') || raw.includes('JWT') || raw.includes('session')) return en ? 'Reopen the game in Telegram to confirm your session.' : 'Перезапусти игру через Telegram для подтверждения входа.';
   return en ? 'Connection failed. Progress is safe; try refreshing.' : 'Ошибка соединения. Прогресс сохранён, обнови данные.';
 }
@@ -106,9 +107,11 @@ export function HalloweenBossScreen() {
   const hpPercent = state?.maxHp ? Math.max(0, Math.min(100, state.hp / state.maxHp * 100)) : 0;
   const nextAttackTime = state?.nextHitAt ? Date.parse(state.nextHitAt) : 0;
   const cooldown = Math.max(0, Math.ceil((nextAttackTime - now) / 1000) || 0);
-  const hitsLeft = Math.max(0, (state?.maxHitsToday ?? 0) - (state?.myHitsToday ?? 0));
+  const unlimitedHits = state?.maxHitsToday === null;
+  const hitsLeft = unlimitedHits ? null : Math.max(0, (state?.maxHitsToday ?? 0) - (state?.myHitsToday ?? 0));
+  const bossDefeated = state !== null && state.hp === 0;
   const remaining = state ? Math.max(0, Math.floor((Date.parse(state.endsAt) - now) / 1000) || 0) : 0;
-  const canAttack = !!state?.active && !attacking && cooldown === 0 && hitsLeft > 0;
+  const canAttack = !!state?.active && !attacking && cooldown === 0 && (unlimitedHits || (hitsLeft ?? 0) > 0);
 
   return (
     <div className="mx-auto w-full max-w-[430px] space-y-3 pb-8 text-amber-50">
@@ -124,8 +127,12 @@ export function HalloweenBossScreen() {
         </p>
         <div className={`raid-arena ${impact ? 'raid-arena--striking' : ''}`} style={{ backgroundImage: `url(${import.meta.env.BASE_URL}assets/territory/halloween/arena.webp)` }} role="img" aria-label={en ? 'Pumpkin King, Halloween world boss' : 'Тыквенный король, общий босс'}>
           <div className="raid-mist" aria-hidden="true" />
-          <img className="raid-boss" src={`${import.meta.env.BASE_URL}assets/territory/halloween/pumpkin-king.webp`} alt="" />
+          <img className={`raid-boss ${bossDefeated ? "raid-boss--defeated" : ""}`} src={`${import.meta.env.BASE_URL}assets/territory/halloween/pumpkin-king.webp`} alt="" />
           <img className="raid-hero" src={impact ? getCombatAppearance(appearance).attack : getCombatAppearance(appearance).idle} alt="" />
+          {bossDefeated && <div className="raid-defeated" role="status">
+            <strong>{en ? 'PUMPKIN KING DEFEATED!' : 'ТЫКВЕННЫЙ КОРОЛЬ ПОВЕРЖЕН!'}</strong>
+            <small>{en ? 'The raid is over. Rewards are awarded after the scheduled event close.' : 'Рейд завершён! Награды после окончания таймера события.'}</small>
+          </div>}
           {impact && <><span className="raid-slash" aria-hidden="true"/><span className="raid-impact" aria-hidden="true">✦</span><span className="raid-damage" aria-live="polite">−{formatDamage(lastDamage ?? 0, en)}</span></>}
         </div>
 
@@ -145,14 +152,16 @@ export function HalloweenBossScreen() {
           className="relative mt-3 flex w-full min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-yellow-300 bg-gradient-to-b from-amber-400 via-orange-600 to-red-800 px-4 py-3 text-base font-black text-white shadow-[0_4px_0_#4a160a,0_7px_15px_#0008] [text-shadow:0_2px_2px_#5c1c06] transition-transform active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-50">
           <Sword size={22} />
           {loading ? (en ? 'LOADING…' : 'ЗАГРУЗКА…')
-            : !state?.active ? (en ? 'EVENT FINISHED' : 'СОБЫТИЕ ЗАВЕРШЕНО')
-            : hitsLeft === 0 ? (en ? 'COME BACK TOMORROW' : 'ВОЗВРАЩАЙСЯ ЗАВТРА')
+            : !state?.active ? (bossDefeated ? (en ? 'BOSS DEFEATED!' : 'БОСС ПОВЕРЖЕН!') : (en ? 'EVENT FINISHED' : 'СОБЫТИЕ ЗАВЕРШЕНО'))
+            : !unlimitedHits && hitsLeft === 0 ? (en ? 'COME BACK TOMORROW' : 'ВОЗВРАЩАЙСЯ ЗАВТРА')
             : cooldown > 0 ? (en ? `READY IN ${cooldown}s` : `УДАР ЧЕРЕЗ ${cooldown} СЕК.`)
             : attacking ? (en ? 'ATTACKING…' : 'АТАКУЕМ…')
             : en ? 'STRIKE THE BOSS!' : 'УДАРИТЬ БОССА!'}
         </button>
         <p className="relative mt-2 text-[11px] text-amber-100/85">
-          {en ? 'Free attacks' : 'Бесплатные удары'}: <b>{state ? hitsLeft : '…'}/{state?.maxHitsToday ?? 100}</b> · {en ? 'Resets at 00:00 UTC' : 'Обновление в 00:00 UTC'}
+          {en ? 'Strikes today' : 'Удары сегодня'}: <b>{state ? (state.maxHitsToday === null ? (en ? 'Unlimited' : 'Без лимита') : `${hitsLeft}/${state.maxHitsToday}`) : '…'}</b> · {unlimitedHits
+            ? (en ? 'One hit every 8 seconds' : 'Один удар раз в 8 секунд')
+            : (en ? 'Resets at 00:00 UTC' : 'Обновление в 00:00 UTC')}
         </p>
         {message && <p role="alert" className="relative mt-2 rounded-lg border border-red-500/50 bg-red-950/60 px-2 py-2 text-xs text-red-100">{message}</p>}
       </section>

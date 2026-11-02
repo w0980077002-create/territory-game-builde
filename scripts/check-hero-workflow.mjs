@@ -22,7 +22,7 @@ const forge = readFileSync(files[4], 'utf8');
 const battle = readFileSync(files[5], 'utf8');
 assert.match(app, /onForge=\{\(equipmentId\) => openForge\(equipmentId\)\}/, 'Hero must focus the real forge item');
 assert.match(app, /onQuests=\{\(\) => setScreen\('quests'\)\}/, 'Hero must open real quests');
-assert.match(app, /<ForgeScreen[\s\S]*?onBattle=\{\(\) => \{ setBattleView\('campaign'\); setAutoStart\(false\); setScreen\('battle'\); \}\}/, 'Forge must return to real campaign without auto-spend');
+assert.match(app, /<ForgeScreen[\s\S]*?onBattle=\{\(\) => \{ setBattleView\(forgeReturnBattleView \?\? 'campaign'\); setForgeReturnBattleView\(null\); setAutoStart\(false\); setScreen\('battle'\); \}\}/, 'Forge returns to the saved classic mode without auto-spend');
 assert.match(app, /returnBattleView=\{battlePrepReturn\}/, 'Inventory receives only deliberate battle preparation return context');
 assert.match(app, /setBattleView\(battlePrepReturn \?\? 'campaign'\)/, 'Inventory returns to the selected classic mode or defaults to campaign');
 assert.match(app, /setBattlePrepReturn\(battleView === 'trial' \? 'trial' : 'campaign'\)/, 'Battle records the actual classic mode before opening equipment');

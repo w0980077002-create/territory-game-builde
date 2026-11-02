@@ -5,6 +5,8 @@ import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
+import { readPumpkinWitchEntitlement, installVerifiedPumpkinWitch } from '@/game/halloweenCompanion2026';
+import { watchPumpkinEntitlement } from '@/game/halloweenCompanionRefresh';
 import { restoreAdventureSaveFence, restoreAdventureStartFence } from '@/game/combatV1/receiptAdapter';
 import { createImmediateSaveController } from '@/game/immediateSave';
 import { HomeScreen } from '@/components/HomeScreen';
@@ -166,6 +168,11 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const [shopTab, setShopTab] = useState<'potions' | 'equipment'>('potions');
   const [heroTrainingOpen, setHeroTrainingOpen] = useState(false);
   const [forgeFocusId, setForgeFocusId] = useState<string | null>(null);
+  // Only a victory-to-forge journey remembers the originating classic PvE mode.
+  const [forgeReturnBattleView, setForgeReturnBattleView] = useState<'campaign' | 'trial' | null>(null);
+  useEffect(() => {
+    if (screen !== 'forge') setForgeReturnBattleView(null);
+  }, [screen]);
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const [battleLocked, setBattleLocked] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -292,6 +299,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
+    let removeCompanionOnline = () => {};
     loadCloudSave(user.id, user.displayName)
       .then(async (profile) => {
         if (cancelled) return;
@@ -321,10 +329,17 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         useAccount.set({ vip: profile.vip, permanentVip:profile.vip, vipUntil:null, vipRemaining:0, vipCheckedAt:performance.now() });
         void refreshFortuneVip();
         setLoaded(true);
+        // The server owns the deadline; resume events and a server-supplied
+        // delay refresh a still-open session without trusting the device clock.
+        removeCompanionOnline = watchPumpkinEntitlement(readPumpkinWitchEntitlement, () => {
+          if (!cancelled && !useGame.get().halloweenCompanionVerified)
+            useGame.set((current) => installVerifiedPumpkinWitch(current));
+        });
       })
       .catch(() => !cancelled && setLoadError('failedLoad'));
     return () => {
       cancelled = true;
+      removeCompanionOnline();
     };
   }, [user.id, user.displayName]);
 
@@ -382,7 +397,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     if (id === 'hero') setHeroTrainingOpen(false);
     setScreen(id);
   };
-  const openForge = (equipmentId?: string) => {
+  const openForge = (equipmentId?: string, returnBattleView?: 'campaign' | 'trial') => {
+    setForgeReturnBattleView(returnBattleView ?? null);
     setForgeFocusId(equipmentId ?? null);
     setScreen('forge');
   };
@@ -469,6 +485,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             onAutoStartHandled={() => setAutoStart(false)}
             onShop={() => { setShopTab('potions'); setScreen('shop'); }}
             onQuests={() => setScreen('quests')}
+            onForge={() => openForge(undefined, battleView === 'trial' ? 'trial' : 'campaign')}
             onEquipment={() => {
               setBattlePrepReturn(battleView === 'trial' ? 'trial' : 'campaign');
               setInventoryTab('equipment');
@@ -516,7 +533,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'forge' && <ForgeScreen focusEquipmentId={forgeFocusId} userId={user.id}
           onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')}
           onProfessions={() => setScreen('professions')}
-          onBattle={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }} />}
+          onBattle={() => { setBattleView(forgeReturnBattleView ?? 'campaign'); setForgeReturnBattleView(null); setAutoStart(false); setScreen('battle'); }} />}
         {screen === 'arena' && <ArenaScreen onActiveChange={setBattleLocked} onBack={() => setScreen('city')} backDisabled={battleLocked} onLeaderboard={() => { setLeaderboardInitialTab('rating'); setScreen('leaderboard'); }} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} onMessages={() => { if (!battleLocked) setScreen('messages'); }} saveStatus={saveStatus} />}
         {screen === 'leaderboard' && <LeaderboardScreen key={leaderboardInitialTab} user={user} initialTab={leaderboardInitialTab} onArena={() => setScreen('arena')} onEvents={() => setScreen('events')} onMessages={() => setScreen('messages')} />}
         {screen === 'quests' && <QuestsScreen userId={user.id} onSocialStatusChange={onSocialStatusChange} onSocialNavigate={setScreen} onMail={() => setScreen('messages')} onDaily={() => setEventDailyOpen(true)} onNavigate={(target) => {

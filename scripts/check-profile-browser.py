@@ -151,12 +151,54 @@ with sync_playwright() as p:
             search.fill('')
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?city')
             page.locator('.home-game-scene').wait_for()
+            # Check the actual rendered City scene, not only Settings thumbnails.
+            stage = page.locator('.live-city-stage')
+            assert stage.count() == 1, (width, lang, 'Missing city scene')
+            computed = stage.evaluate("""el => ({
+                size: getComputedStyle(el).backgroundSize,
+                image: getComputedStyle(el).backgroundImage,
+                position: getComputedStyle(el).backgroundPosition,
+                width: el.clientWidth,
+                height: el.clientHeight
+            })""")
+            assert computed['size'] == 'cover, cover', (width, lang, 'Distorted city background', computed)
+            assert 'winter-cliff-approved.webp' in computed['image'], (width, lang, 'Wrong approved cliff scene')
+            assert computed['width'] > 0 and computed['height'] > 0, (width, lang, computed)
+            assert abs(computed['width'] / computed['height'] - 800 / 1421) < 0.003, (width, lang, 'Distorted winter stage ratio', computed)
+            actors = [page.locator('[data-testid="city-' + who + '-slot"]') for who in ('follower', 'hero', 'enemy')]
+            boxes = [actor.bounding_box() for actor in actors]
+            assert all(box and box['width'] > 48 and box['height'] > 48 for box in boxes), (width, lang, 'Missing readable actor', boxes)
+            assert boxes[0]['x'] + boxes[0]['width'] + 2 < boxes[1]['x'], (width, lang, 'Companion overlaps hero', boxes)
+            assert boxes[1]['x'] + boxes[1]['width'] + 2 < boxes[2]['x'], (width, lang, 'Hero overlaps foe', boxes)
+            assert all(box['x'] > -1 and box['x'] + box['width'] < width + 1 for box in boxes), (width, lang, 'Character clipped', boxes)
+            assert page.locator('[data-testid="city-enemy-slot"]').get_attribute('aria-label') is not None
+            # The three REAL City sprites have independent motions; HUD/slots do not move.
+            idle_nodes = [page.locator('.home-character-stage .city-' + who + '-idle')
+                          for who in ('follower', 'hero', 'enemy')]
+            idle_styles = [sprite.evaluate("""el => ({
+                name: getComputedStyle(el).animationName,
+                duration: getComputedStyle(el).animationDuration
+            })""") for sprite in idle_nodes]
+            assert len(set(style['name'] for style in idle_styles)) == 3, (width, lang, 'Synchronized city idles', idle_styles)
+            assert all(style['name'] != 'none' for style in idle_styles), (width, lang, 'Static city sprite', idle_styles)
+            page.emulate_media(reduced_motion='reduce')
+            assert all(sprite.evaluate("el => getComputedStyle(el).animationName") == 'none' for sprite in idle_nodes), (
+                width, lang, 'Reduced motion must disable all idle animations')
+            page.emulate_media(reduced_motion='no-preference')
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             assert page.locator('.home-side').count() >= 6
             assert page.locator('.home-side').evaluate_all('buttons => buttons.every(b => { const r=b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && r.left >= 0 && r.right <= innerWidth; })')
             page.locator('.home-profile-chip').click()
             assert page.evaluate('window.__route') == 'hero'
-            if width == 360 and lang == 'ru': page.screenshot(path='/tmp/territory-city-360.png')
+            if width == 360 and lang == 'ru':
+                page.screenshot(path='/tmp/territory-city-short-360.png')
+                # A tall Telegram canvas resembles a real Samsung/iPhone game sheet.
+                page.set_viewport_size({'width': 360, 'height': 760})
+                page.screenshot(path='/tmp/territory-city-360.png')
+                tall_boxes = [page.locator('[data-testid="city-' + who + '-slot"]').bounding_box()
+                              for who in ('follower', 'hero', 'enemy')]
+                assert tall_boxes[0]['x'] + tall_boxes[0]['width'] + 2 < tall_boxes[1]['x'], ('tall', tall_boxes)
+                assert tall_boxes[1]['x'] + tall_boxes[1]['width'] + 2 < tall_boxes[2]['x'], ('tall', tall_boxes)
             page.close()
     browser.close()
 server.shutdown()

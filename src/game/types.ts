@@ -107,7 +107,7 @@ export interface Achievement {
 
 export interface Follower {
   /** Companion role added in release 4; old saves omit it safely. */
-  role?: 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage' | 'crystal';
+  role?: 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage' | 'crystal' | 'pumpkin';
   id: string;
   name: string;
   icon: string;
@@ -176,6 +176,8 @@ export interface GameState {
   totalBattlesWon: number;
   totalBossesDefeated: number;
   followers: Follower[];
+  /** Session-scoped verification of server-owned Halloween raid entitlement. Always reset on cloud load. */
+  halloweenCompanionVerified?: boolean;
   /** Exactly one companion is active in PvE; old saves use the first unlocked. */
   activeFollowerId?: string | null;
   quests: Quest[];

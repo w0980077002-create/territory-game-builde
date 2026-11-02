@@ -158,10 +158,16 @@ with sync_playwright() as playwright:
 
     page = load(browser)
     set_visual(page, {'speed': 2, 'strike': strike(10)})
+    count = page.evaluate('window.__waapi.length')
+    set_visual(page, {'appearance': 'm2'})
+    assert page.evaluate('window.__waapi.length') == count, 'Unrelated rerender must not restart a strike'
     durations = page.evaluate("window.__waapi.filter(a=>a.effect.target.closest('#fixture-hero')).map(a=>a.effect.getTiming().duration).filter(d=>Number.isFinite(d))")
     assert durations and max(durations) <= 450, ('x2 must halve event durations', durations)
     page.wait_for_timeout(480)
     assert page.locator('#fixture-hero svg').get_attribute('data-motion') == 'idle'
+    set_visual(page, {'strike': None})
+    set_visual(page, {'strike': strike(10)})
+    assert page.locator('#fixture-hero svg').get_attribute('data-motion') != 'idle', 'A later event may reuse the previous key'
     set_visual(page, {'strike': strike(11)})
     page.evaluate('window.__combat.unmount()')
     page.wait_for_timeout(40)
@@ -249,8 +255,63 @@ with sync_playwright() as playwright:
     assert page.locator('#fixture-hero svg[data-rig]').count() == 0
     assert page.locator('#fixture-hero img').get_attribute('src').endswith('/heroes/male_viking/idle.webp')
     assert page.locator('#fixture-hero img').evaluate('img=>img.complete&&img.naturalWidth>0')
+    set_visual(page, {'strike': strike(31, 'hit', attacker='Противник')})
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/idle.webp'), 'Damage art must wait for contact'
+    page.wait_for_timeout(360)
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/hit.webp'), 'Damage art must appear at contact'
+    set_visual(page, {'strike': None})
+    set_visual(page, {'strike': strike(32, 'crit', attacker='Противник'), 'speed': 2})
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/idle.webp')
+    page.wait_for_timeout(190)
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/hit.webp'), 'Contact follows combat speed'
+    # A new event can legitimately reuse a numeric key after a new encounter.
+    set_visual(page, {'strike': None, 'speed': 1})
+    set_visual(page, {'strike': strike(32, 'hit', attacker='Противник')})
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/idle.webp'), 'Reused key cannot reuse old contact'
+    set_visual(page, {'strike': None})
+    page.wait_for_timeout(390)
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/idle.webp'), 'Cancelled hit cannot appear later'
+    set_visual(page, {'strike': strike(33, 'hit', attacker='Противник'), 'speed': .5})
+    page.wait_for_timeout(380)
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/idle.webp'), 'Slow contact cannot occur early'
+    page.wait_for_timeout(350)
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/hit.webp')
+    set_visual(page, {'appearance': 'm1'})
+    assert page.locator('#fixture-hero img').get_attribute('src').endswith('/male_rogue/idle.webp'), 'New art cannot inherit old contact'
+    set_visual(page, {'strike': None})
+    page.evaluate('window.__combat.unmount()')
+    page.wait_for_timeout(50)
     report['missing_cutout_same_hero_fallback'] = True
     page.close()
+
+    # A missing pose may only fall back to the same appearance; an unavailable
+    # idle must never silently substitute the default male Viking.
+    for broken in ('hit.webp', 'idle.webp', 'attack.webp'):
+        page = browser.new_page(viewport={'width': 360, 'height': 844})
+        page.on('pageerror', lambda error: report['errors'].append(str(error)))
+        def broken_rogue(route):
+            if '/heroes/male_rogue/' in route.request.url and route.request.url.endswith('/' + broken):
+                route.fulfill(status=404, body='intentional missing pose')
+            else:
+                serve(route)
+        page.route(ORIGIN + '/**', broken_rogue)
+        page.route('https://**/*', lambda route: route.abort())
+        page.goto(ORIGIN + '/')
+        page.wait_for_selector('#fixture-enemy svg[data-rig="goblin"]')
+        set_visual(page, {'appearance': 'm1'})
+        if broken == 'hit.webp':
+            set_visual(page, {'strike': strike(45, 'hit', attacker='Противник')})
+            page.wait_for_timeout(430)
+            assert page.locator('#fixture-hero img').get_attribute('src').endswith('/male_rogue/idle.webp')
+        elif broken == 'attack.webp':
+            set_visual(page, {'strike': strike(46, 'hit')})
+            page.wait_for_timeout(220)
+            assert page.locator('#fixture-hero img:not(.fighter-figure__afterimage)').get_attribute('src').endswith('/male_rogue/idle.webp')
+            assert page.locator('#fixture-hero .fighter-figure__afterimage').evaluate("el=>getComputedStyle(el).visibility=='hidden'")
+        else:
+            page.wait_for_selector('#fixture-hero [data-testid="fighter-art-unavailable"]')
+            assert page.locator('#fixture-hero img[src*="male_viking"]').count() == 0
+        page.close()
 
     # Informational renderer pacing in this headless environment only.
     page = load(browser)

@@ -101,3 +101,14 @@
   border:2px solid #ffde9a;background:linear-gradient(#ffe7a9,#dba24a,#a4692c);color:#2a180d;
 }
 .companion-journey-bar__buttons button:focus-visible {outline:3px solid #fff1be;outline-offset:1px}
+
+/* The seasonal portrait is the centre of its own reward card. */
+.followers-camp__detail-top--seasonal{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;align-items:start}
+.followers-camp__detail-top--seasonal .followers-camp__detail-art{width:100%;height:clamp(220px,70vw,280px);overflow:visible;border:1px solid #d5a75b80;border-radius:14px;background:radial-gradient(ellipse at 50% 60%,#a149ae66,#4c284f55 46%,transparent 75%),linear-gradient(135deg,#40281c,#1f182a)}
+.followers-camp__detail-top--seasonal .followers-camp__detail-art img{filter:drop-shadow(0 5px 5px #120616cc)}
+.followers-camp__detail-top--seasonal>div:not(.followers-camp__detail-art){min-width:0}
+.followers-camp__detail-top--seasonal h3{font-size:clamp(18px,5vw,22px)}
+.followers-camp__detail-top--seasonal p{font-size:13px;line-height:1.3}
+
+.followers-camp__detail--seasonal{border:2px solid #c5964e;background:repeating-linear-gradient(94deg,#8b572414 0 2px,transparent 3px 19px),linear-gradient(145deg,#694020,#382115 64%,#231524);box-shadow:inset 0 1px #ffe1a76b,inset 0 0 12px #160b08,0 3px 7px #0008}
+.followers-camp__detail--seasonal .followers-camp__stats>div{border-color:#c6924c88;background:linear-gradient(#332024,#221820)}

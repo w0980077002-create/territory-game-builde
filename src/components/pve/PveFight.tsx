@@ -1,18 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Shield, Sword, Check, Flag, Loader2, Trophy } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Shield, Sword, Check, Flag, Loader2, Trophy, Hammer, Shirt } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { getVictoryJourney, type VictoryJourney } from '@/game/victoryJourney';
+import { findHeroGearOpportunity, type HeroGearOpportunity } from '@/game/heroGearOpportunity';
 import { useGame, useArena, recordBattleResult } from '@/game/actions';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
-import { applyPotion, describeHit, enemySide, heroSide, playRound, randomZones, type PveSide } from '@/game/pve';
+import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, playRound, randomZones, summarizePveRound, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
 import { getEnemyCombatFrames, getFollowerArt, getFollowerCombatFrames, resolveCombatArtUrl } from '@/game/combatArt';
 import { hapticImpact } from '@/game/telegram';
+import { PumpkinWitch } from '@/components/PumpkinWitch';
 import { FighterFigure } from '@/components/arena/FighterFigure';
 import { VictorySparks } from '@/components/arena/VictorySparks';
 import { FoldSection } from '@/components/arena/FoldSection';
@@ -32,6 +34,8 @@ interface Props {
   onExit: () => void;
   onNext?: () => boolean;
   onQuests?: () => void;
+  onEquipment?: () => void;
+  onForge?: () => void;
 }
 
 interface Outcome {
@@ -39,6 +43,7 @@ interface Outcome {
   gold: number;
   xp: number;
   gems: number;
+  materials: number;
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -86,7 +91,7 @@ function ZoneBtn({ label, sub, on, tone, disabled, onClick }: { label: string; s
   );
 }
 
-export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
+export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, onForge }: Props) {
   const { language } = useLanguage();
   const state = useStore(useGame);
   const arena = useStore(useArena);
@@ -96,15 +101,48 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   const [hero, setHero] = useState<PveSide>(() => heroSide(useGame.get()));
   const [foe, setFoe] = useState<PveSide>(() => enemySide(enemy));
   const [attack, setAttack] = useState<Zone | null>(null);
+  // A committed enemy guard stays fixed until the round is actually resolved.
+  const [enemyIntent, setEnemyIntent] = useState(() => randomZones());
+  const [adaptiveGuard, setAdaptiveGuard] = useState(false);
+  const [guardPhase, setGuardPhase] = useState<1 | 2 | 3>(1);
+  // Remember two distinct attacks actually resolved in this fight, even if
+  // the player repeats one. Never persist this AI memory or alter rewards.
+  const recentDistinctHeroAttacks = useRef<Zone[]>([]);
+  // Only an actual blocked elite strike in manual mode earns a riposte.
+  // This is per-fight state, never a currency or a saved player attribute.
+  const [riposteReady, setRiposteReady] = useState(false);
+  // A landed, unguarded leg riposte briefly breaks one elite guard slot.
+  const [staggerReady, setStaggerReady] = useState(false);
   const [blocks, setBlocks] = useState<Zone[]>([]);
   const [busy, setBusy] = useState(false);
   // A speed change applies to the next round. Keep the current visual contact
   // aligned with the HP update scheduled from this round's original pace.
   const [roundSpeed, setRoundSpeed] = useState(() => useGame.get().settings.speed);
   const [strike, setStrike] = useState<StrikeEvent | null>(null);
+  const [witchAttack, setWitchAttack] = useState(0);
+  const [witchHeal, setWitchHeal] = useState(0);
+  const [witchPose, setWitchPose] = useState<{ kind: 'attack' | 'heal'; sequence: number } | null>(null);
+  useEffect(() => {
+    if (!witchPose) return;
+    const timer = setTimeout(() => setWitchPose(null), witchPose.kind === 'attack' ? 650 : 900);
+    return () => clearTimeout(timer);
+  }, [witchPose]);
+  useEffect(() => {
+    if (!witchAttack) return;
+    const timer = setTimeout(() => setWitchAttack(0), 650);
+    return () => clearTimeout(timer);
+  }, [witchAttack]);
+  useEffect(() => {
+    if (!witchHeal) return;
+    const timer = setTimeout(() => setWitchHeal(0), 900);
+    return () => clearTimeout(timer);
+  }, [witchHeal]);
   const [log, setLog] = useState<string[]>([language === 'en' ? `Battle started: ${localizeText(enemy.name, language)}` : `Бой начался: ${enemy.name}`]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [tacticalReport, setTacticalReport] = useState<PveTacticalSummary | null>(null);
+  const [battleTotals, setBattleTotals] = useState({ dealt: 0, taken: 0, companion: 0 });
+  const [confirmSurrender, setConfirmSurrender] = useState(false);
   const [gearOpen, setGearOpen] = useState(false);
   const alive = useRef(true);
   const done = useRef(false);
@@ -127,6 +165,12 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   foeRef.current = foe;
 
   const { speed, auto } = state.settings;
+  // UI, manual target helper and actual resolver must see the SAME guard.
+  // Auto-battle never earns or uses the manual leg-riposte stagger.
+  const committedEnemyIntent = useMemo(
+    () => staggerEnemyGuard(enemyIntent, staggerReady && !auto),
+    [enemyIntent, staggerReady, auto],
+  );
   const setSettings = (patch: Partial<typeof state.settings>) =>
     useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
 
@@ -152,35 +196,43 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
         ? finishReferralFight(ticket, won, referralRounds.current).catch(() => false)
         : false);
     if (!won) {
-      setOutcome({ won: false, gold: 0, xp: 0, gems: 0 });
+      setOutcome({ won: false, gold: 0, xp: 0, gems: 0, materials: 0 });
       return;
     }
     const s = useGame.get();
     if (kind === 'trial') {
       const r = trialReward(s.trialLevel);
-      useGame.set(recordTrialWin(s, enemy));
-      setOutcome({ won: true, gold: r.gold ?? 0, xp: enemy.rewardXp, gems: r.gems ?? 0 });
+      const nextState = recordTrialWin(s, enemy);
+      useGame.set(nextState);
+      setOutcome({ won: true, gold: r.gold ?? 0, xp: enemy.rewardXp, gems: r.gems ?? 0,
+        materials: Math.max(0, nextState.forgeMaterials - s.forgeMaterials) });
       return;
     }
     const gold = blessedGold(s, enemy.rewardGold);
-    useGame.set(recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp }));
-    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0 });
+    const nextState = recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp });
+    useGame.set(nextState);
+    setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0,
+      materials: Math.max(0, nextState.forgeMaterials - s.forgeMaterials) });
   }, [enemy, kind]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
-    if (roundFlight.current || busy || outcome || done.current || !alive.current) return;
+    if (roundFlight.current || busy || outcome || confirmSurrender || done.current || !alive.current) return;
     roundFlight.current = true;
+    setTacticalReport(null);
     setBusy(true);
     try {
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     hapticImpact('light');
-    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus);
+    const elite = kind === 'trial' || !!enemy.isBoss;
+    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady);
     const currentSpeed = useGame.get().settings.speed;
     setRoundSpeed(currentSpeed);
     const pace = 1 / currentSpeed;
     for (const hit of res.hits) {
       if (!alive.current || done.current) return;
       setStrike({ key: ++keyRef.current, attacker: hit.attacker, target: hit.target, tone: hit.tone, amount: hit.amount || null });
+      if (follower?.id === 'follower_pumpkin_witch_2026' && hit.source === 'companion' && hit.amount > 0)
+        { setWitchAttack(keyRef.current); setWitchPose({kind: 'attack', sequence: keyRef.current}); }
       await wait(350 * pace);
       if (!alive.current) return;
       if (hit.targetSide === 'enemy') setFoe((f) => ({ ...f, hp: Math.max(0, f.hp - hit.amount) }));
@@ -190,28 +242,56 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     }
     if (!alive.current) return;
     if (res.healAmount > 0) {
+      if (follower?.id === 'follower_pumpkin_witch_2026') { const sequence = ++keyRef.current; setWitchHeal(sequence); setWitchPose({kind: 'heal', sequence}); }
       setHero((h) => ({ ...h, hp: Math.min(h.maxHp, h.hp + res.healAmount) }));
       pushLog(language === 'en' ? `Companion healed ${res.healAmount} HP` : `Спутник восстановил ${res.healAmount} HP`);
     }
     setStrike(null);
+    const report = summarizePveRound(res.hits);
+    setTacticalReport(report);
+    // Actual open leg hit after an earned manual riposte weakens ONE guard
+    // on the NEXT round. A block, dodge, auto round or ordinary enemy never
+    // creates this effect. It expires after one resolved round unless earned
+    // again by another valid counterattack.
+    setStaggerReady(elite && !auto && riposteReady && atk === 'legs'
+      && !committedEnemyIntent.blocks.includes(atk)
+      && (report.heroStrike === 'hit' || report.heroStrike === 'crit')
+      && res.enemy.hp > 0);
+    // A displayed warning is not sufficient: only the resolved 'block'
+    // event earns a counterattack. Auto cannot farm this manual tactic.
+    setRiposteReady(elite && !auto && report.enemyStrike === 'block'
+      && res.hero.hp > 0 && res.enemy.hp > 0);
+    setBattleTotals(previous => ({
+      dealt: previous.dealt + report.dealtDamage,
+      taken: previous.taken + report.takenDamage,
+      companion: previous.companion + report.companionDamage,
+    }));
     setAttack(null);
     setBlocks([]);
+    // Phase changes only AFTER a resolved round. Repeating a strike must not
+    // make a phase-III boss forget the other distinct zone it learned.
+    const attackHistory = rememberDistinctHeroAttacks(recentDistinctHeroAttacks.current, atk);
+    recentDistinctHeroAttacks.current = attackHistory;
+    const nextIntent = nextAdaptiveEnemyIntent(res.enemy, atk, kind === 'trial' || !!enemy.isBoss, undefined, attackHistory[1] ?? null);
+    setEnemyIntent(nextIntent.intent);
+    setAdaptiveGuard(nextIntent.adapted);
+    setGuardPhase(nextIntent.phase);
     if (res.enemy.hp <= 0) finish(true);
     else if (res.hero.hp <= 0) finish(false);
     } finally {
       roundFlight.current = false;
       if (alive.current) setBusy(false);
     }
-  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language]);
+  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, committedEnemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto]);
 
   useEffect(() => {
-    if (!auto || busy || outcome) return;
+    if (!auto || busy || outcome || confirmSurrender) return;
     const t = setTimeout(() => {
       const z = randomZones();
       runRound(z.attack, z.blocks);
     }, 350 / speed);
     return () => clearTimeout(t);
-  }, [auto, busy, outcome, speed, runRound]);
+  }, [auto, busy, outcome, confirmSurrender, speed, runRound]);
 
   useEffect(() => {
     if (!toast) return;
@@ -244,10 +324,34 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     pushLog(`${item.name}: ${r.text}`);
   };
 
-  const controls = !busy && !outcome && !auto;
+  const controls = !busy && !outcome && !auto && !confirmSurrender;
   const ready = controls && !!attack && blocks.length === 2;
   const firstFightHelp = kind === 'stage' && state.totalBattlesWon === 0;
+  const guardedZone = ZONES.find(zone => zone.id === committedEnemyIntent.blocks[0]);
+  // Display both zones actually committed to the next round's resolver.
+  // Previously the second guard was invisible and "Choose opening" could hit it.
+  const guardedZoneLabels = committedEnemyIntent.blocks.map(id => {
+    const zone = ZONES.find(item => item.id === id);
+    return zone ? (language === 'en' ? ({ head: 'Head', chest: 'Chest', belly: 'Belly', legs: 'Legs' } as Record<string, string>)[id] : zone.label) : '';
+  }).filter(Boolean).join(language === 'en' ? ' & ' : ' и ');
+  // The trial/boss warning reads the committed AI attack for the very next
+  // round. It never predicts a new random roll or changes combat resolution.
+  const threatenedZone = ZONES.find(zone => zone.id === enemyIntent.attack);
+  const threatenedZoneLabel = threatenedZone
+    ? language === 'en' ? ({ head: 'head', chest: 'chest', belly: 'belly', legs: 'legs' } as Record<string, string>)[threatenedZone.id] : threatenedZone.label.toLowerCase()
+    : '';
+  const showThreatTell = (kind === 'trial' || enemy.isBoss) && !auto && !busy && !!threatenedZone;
+  const enemyStrikeZone = tacticalReport?.enemyZone
+    ? ZONES.find(zone => zone.id === tacticalReport.enemyZone)
+    : null;
+  const enemyStrikeLabel = enemyStrikeZone
+    ? language === 'en' ? ({ head: 'head', chest: 'chest', belly: 'belly', legs: 'legs' } as Record<string, string>)[enemyStrikeZone.id] : enemyStrikeZone.label.toLowerCase()
+    : '';
   const victoryJourney = outcome?.won ? getVictoryJourney(state,kind,levelAtFightStart.current) : null;
+  // Only recommend equipment that already exists in the committed save.
+  // This is not a claim that the last battle dropped an item.
+  const gearOpportunity = outcome?.won ? findHeroGearOpportunity(state.inventory, state.player.equipped) : null;
+  const equippedGear = gearOpportunity ? state.player.equipped[gearOpportunity.item.equipment.slot] : undefined;
   const hint = busy ? (language === 'en' ? 'Round in progress…' : 'Идёт раунд…')
     : auto ? (language === 'en' ? 'Auto-battle: zones are selected automatically' : 'Автобой: зоны выбираются сами')
     : blocks.length < 2 ? (language === 'en' ? `Choose ${2 - blocks.length} more defense zone(s)` : `Защита: выбери ещё ${2 - blocks.length}`) : !attack ? (language === 'en' ? 'Choose an attack zone' : 'Выбери зону удара') : (language === 'en' ? 'Press STRIKE' : 'Жми УДАР');
@@ -259,9 +363,12 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     return (
       <div data-testid="pve-result-screen" className="mx-auto w-full max-w-xl animate-fade-in pb-[max(1rem,env(safe-area-inset-bottom))]">
         <OutcomePanel outcome={outcome} kind={kind} victoryJourney={victoryJourney}
+          gearOpportunity={gearOpportunity} equippedGear={equippedGear}
           onExit={() => { nextCancelled.current = true; onExit(); }}
           questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
           onQuests={onQuests ? () => { nextCancelled.current = true; onQuests(); } : undefined}
+          onEquipment={onEquipment ? () => { nextCancelled.current = true; onExit(); onEquipment(); } : undefined}
+          onForge={onForge ? () => { nextCancelled.current = true; onExit(); onForge(); } : undefined}
           nextPending={nextPending} nextError={nextError}
           onNext={onNext ? () => {
             if (nextRequested.current) return;
@@ -289,15 +396,15 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
     <div className="space-y-2 animate-fade-in">
       <div className="flex items-center gap-2 h-10">
         <button
+          type="button"
+          disabled={busy || confirmSurrender}
           onClick={() => {
-            if (outcome) {
-              nextCancelled.current = true;
-              onExit();
-            } else {
-              finish(false);
-            }
+            // An accidental tap must not consume a battle attempt. Pause auto
+            // and require a second explicit confirmation before conceding.
+            setSettings({ auto: false });
+            setConfirmSurrender(true);
           }}
-          className="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-200 flex items-center gap-1.5 active:scale-95 transition-transform"
+          className="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-200 flex items-center gap-1.5 active:scale-95 transition-transform disabled:opacity-40"
         >
           <Flag className="w-3.5 h-3.5" /> {outcome ? (kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')) : (language === 'en' ? 'Surrender' : 'Сдаться')}
         </button>
@@ -309,6 +416,57 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
           <Currency kind="stones" value={state.battleStones} size={18} className="text-xs text-amber-100" />
         </span>
       </div>
+
+      {confirmSurrender && (
+        <div data-testid="pve-surrender-confirm" role="alertdialog" aria-modal="true"
+          aria-label={language === 'en' ? 'Confirm surrender' : 'Подтвердить сдачу'}
+          className="rounded-xl border-2 border-red-300/60 bg-[#321a18] p-3 text-amber-50 shadow-lg">
+          <p className="text-sm font-bold">{language === 'en' ? 'Leave this fight?' : 'Сдаться в этом бою?'}</p>
+          <p className="mt-1 text-xs text-amber-100/85">{language === 'en'
+            ? 'The attempt will count as a defeat. No victory reward will be granted.'
+            : 'Попытка завершится поражением. Награда за победу не выдаётся.'}</p>
+          <div className="mt-3 flex gap-2">
+            <button type="button" data-testid="pve-surrender-cancel" onClick={() => setConfirmSurrender(false)}
+              className="min-h-11 flex-1 rounded-lg border border-emerald-300/50 bg-emerald-900/60 px-2 text-sm font-bold">
+              {language === 'en' ? 'Continue fighting' : 'Продолжить бой'}
+            </button>
+            <button type="button" data-testid="pve-surrender-accept" disabled={busy}
+              onClick={() => {
+                if (roundFlight.current || done.current) return;
+                setConfirmSurrender(false);
+                finish(false);
+              }}
+              className="min-h-11 flex-1 rounded-lg border border-red-300/60 bg-red-900/70 px-2 text-sm font-bold disabled:opacity-40">
+              {language === 'en' ? 'Surrender' : 'Сдаться'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div data-testid="pve-live-damage-totals" role="status" aria-live="off"
+        className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-lg border border-amber-300/25 bg-black/60 px-2 py-1.5 text-[11px] font-bold tabular-nums">
+        <span className="text-emerald-200">{language === 'en' ? 'Damage dealt' : 'Нанесено'}: {battleTotals.dealt}</span>
+        <span className="text-red-200">{language === 'en' ? 'Damage taken' : 'Получено'}: {battleTotals.taken}</span>
+        {battleTotals.companion > 0 && <span className="text-sky-200">{language === 'en' ? 'Companion' : 'Спутник'}: {battleTotals.companion}</span>}
+      </div>
+
+      {riposteReady && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
+        <div data-testid="pve-riposte-ready" role="status" aria-live="polite"
+          className="rounded-xl border border-emerald-300/55 bg-[#17352b]/95 px-3 py-2 text-xs font-bold text-emerald-100">
+          ⚔️ {language === 'en'
+            ? 'Perfect guard! Next strike +20%. Hit open legs to break one enemy guard for the following round, or choose another opening.'
+            : 'Идеальный блок! Следующий удар +20%. Попади в открытые ноги — сбей один блок врага на следующий раунд.'}
+        </div>
+      )}
+
+      {staggerReady && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
+        <div data-testid="pve-staggered-guard" role="status" aria-live="polite"
+          className="rounded-xl border border-sky-300/60 bg-[#17333a]/95 px-3 py-2 text-xs font-bold text-sky-100">
+          {language === 'en'
+            ? '⚔️ Enemy staggered! Your leg counter broke one guard: only one zone is protected this round.'
+            : '⚔️ Враг пошатнулся! Контрудар по ногам сбил один блок: в этом раунде защищена только одна зона.'}
+        </div>
+      )}
 
       {firstFightHelp && !outcome && !auto && <p className="rounded-xl border border-amber-400/40 bg-amber-950/50 px-3 py-2 text-xs leading-relaxed text-amber-100" role="note">
         {language === 'en'
@@ -353,7 +511,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
               <div className="relative flex-1 mt-1">
                 {follower && (
                   <div className={follower.id === 'follower_6' ? 'absolute left-0 bottom-0 z-30 h-[64%] w-[64%] pointer-events-none' : 'absolute -left-[8%] bottom-0 z-10 h-[52%] w-[48%] pointer-events-none'}>
-                    <FighterFigure
+                    {follower.id === 'follower_pumpkin_witch_2026' ? <PumpkinWitch attack={witchAttack} heal={witchHeal} pose={witchPose} preloadActions /> : <FighterFigure
                       src={getFollowerArt(follower.id)}
                       combatFrames={getFollowerCombatFrames(follower.id)}
                       name={follower.name}
@@ -364,7 +522,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
                       combatSpeed={busy || outcome ? roundSpeed : speed}
                       idleSeconds={3.7}
                       className="absolute left-0 bottom-0 h-full w-full object-contain object-left-bottom"
-                    />
+                    />}
                   </div>
                 )}
                 <div className="absolute inset-0 z-20 pointer-events-none">
@@ -411,6 +569,68 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
             ))}
           </div>
         </div>
+
+        {!outcome && !auto && guardedZone && (
+          <div data-testid="pve-enemy-guard" className="relative mx-2 mb-1 flex flex-wrap items-center gap-1.5 rounded-lg border border-amber-300/50 bg-[#321f14]/95 px-2 py-1.5 text-[11px] font-semibold text-amber-100">
+            <Shield className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
+            <span className="min-w-0 leading-tight" role="status" aria-live="polite">
+              {language === 'en' ? 'Enemy guards' : 'Враг прикрывает'} <strong className="text-amber-300">{guardedZoneLabels}</strong>.
+              {' '}{attack !== null && committedEnemyIntent.blocks.includes(attack)
+                ? (language === 'en' ? 'This zone is guarded. Choose a gap!' : 'Эта зона под защитой. Ищи брешь!')
+                : (language === 'en' ? 'Strike an unguarded zone to bypass the shield.' : 'Бей в свободную зону, чтобы обойти щит.')}
+            </span>
+            {adaptiveGuard && <span data-testid="pve-adaptive-guard" className="w-full text-[10px] font-bold text-red-200">
+              {guardPhase === 3
+                ? (language === 'en'
+                  ? 'Phase III: the enemy remembers your last two different strikes. Attack another opening!'
+                  : 'Фаза III: враг помнит два последних разных удара. Ищи новую брешь!')
+                : (language === 'en'
+                  ? 'Phase II: the enemy learned your last strike. Switch your attack zone!'
+                  : 'Фаза II: враг запомнил прошлый удар. Смени зону атаки!')}
+            </span>}
+            <button type="button" data-testid="pve-choose-opening" disabled={!controls}
+              onClick={() => setAttack(current => nextOpenStrike(current, committedEnemyIntent.blocks))}
+              className="ml-auto min-h-9 shrink-0 rounded-lg border border-amber-200/70 bg-gradient-to-b from-amber-300 to-amber-600 px-2.5 text-[11px] font-black text-[#29180b] active:scale-[0.98] disabled:opacity-40">
+              {language === 'en' ? 'Choose opening' : 'Выбрать брешь'}
+            </button>
+          </div>
+        )}
+
+        {showThreatTell && (
+          <div data-testid="pve-telegraphed-strike" className="relative mx-2 mb-1 flex flex-wrap items-center gap-1.5 rounded-lg border border-red-300/55 bg-[#391b1a]/95 px-2.5 py-2 text-[11px] font-semibold leading-4 text-amber-100" role="status" aria-live="polite">
+            <Sword className="h-4 w-4 shrink-0 text-red-300" aria-hidden="true" />
+            <span>
+              {language === 'en' ? 'Enemy prepares a strike at ' : 'Враг готовит удар в '}
+              <strong className="text-amber-300">{threatenedZoneLabel}</strong>.
+              {' '}{blocks.includes(enemyIntent.attack)
+                ? (language === 'en' ? 'Your block covers it.' : 'Твой блок прикрывает эту зону.')
+                : (language === 'en' ? 'Protect this zone before STRIKE.' : 'Прикрой эту зону до нажатия «УДАР».')}
+            </span>
+            <button type="button" data-testid="pve-cover-threat"
+              disabled={!controls || blocks.includes(enemyIntent.attack)}
+              onClick={() => setBlocks(current => coverThreatZone(current, enemyIntent.attack))}
+              className="ml-auto min-h-9 shrink-0 rounded-lg border border-red-200/70 bg-gradient-to-b from-amber-300 to-amber-600 px-2.5 text-[11px] font-black text-[#29180b] active:scale-[0.98] disabled:opacity-40">
+              {blocks.includes(enemyIntent.attack)
+                ? (language === 'en' ? 'Covered' : 'Прикрыто')
+                : (language === 'en' ? 'Cover strike' : 'Прикрыть удар')}
+            </button>
+          </div>
+        )}
+
+        {!auto && !busy && tacticalReport && (
+          <div data-testid="pve-round-reaction" className="relative mx-2 mb-1 rounded-lg border border-sky-300/35 bg-[#0d2631]/95 px-2.5 py-1.5 text-[11px] leading-4 text-sky-100" role="status" aria-live="polite">
+            <p className="mb-1 font-extrabold text-white" data-testid="pve-last-round-damage">
+              {language === 'en' ? 'This round' : 'Этот раунд'}: +{tacticalReport.dealtDamage} {language === 'en' ? 'damage' : 'урона'} / −{tacticalReport.takenDamage} HP
+            </p>
+            {tacticalReport.heroStrike === 'block' && <p>{language === 'en' ? 'Your strike met a shield — switch your attack zone next round.' : 'Враг отбил удар — в следующем раунде смени зону атаки.'}</p>}
+            {tacticalReport.heroStrike === 'dodge' && <p>{language === 'en' ? 'The enemy dodged. Try another opening.' : 'Враг уклонился. Ищи другую брешь.'}</p>}
+            {tacticalReport.heroStrike === 'crit' && <p>{language === 'en' ? 'Critical hit! Your attack broke through.' : 'Критический удар! Атака прошла.'}</p>}
+            {tacticalReport.heroStrike === 'hit' && <p>{language === 'en' ? 'Your attack landed. Keep watching the enemy guard.' : 'Попадание! Следи, какую зону прикрывает враг.'}</p>}
+            {tacticalReport.enemyStrike === 'block' && <p className="text-emerald-200">{language === 'en' ? 'Great block! You stopped the enemy strike.' : 'Отличный блок! Ты остановил удар врага.'}</p>}
+            {tacticalReport.enemyStrike === 'dodge' && <p className="text-emerald-200">{language === 'en' ? 'You dodged the enemy strike.' : 'Ты уклонился от удара врага.'}</p>}
+            {(tacticalReport.enemyStrike === 'hit' || tacticalReport.enemyStrike === 'crit') && <p className="text-amber-200">{language === 'en' ? `Enemy hit your ${enemyStrikeLabel} — reconsider your defense.` : `Враг попал в зону «${enemyStrikeLabel}» — пересмотри защиту.`}</p>}
+          </div>
+        )}
 
         {!outcome && (
           <div className="relative px-2 pb-2">
@@ -467,8 +687,13 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests }: Props) {
   );
 }
 
-function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questReady, onQuests, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; nextPending: boolean; nextError: boolean }) {
+function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equippedGear, onExit, onNext, questReady, onQuests, onEquipment, onForge, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; gearOpportunity: HeroGearOpportunity | null; equippedGear?: HeroGearOpportunity['item']['equipment']; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; onEquipment?: () => void; onForge?: () => void; nextPending: boolean; nextError: boolean }) {
   const { language } = useLanguage();
+  const gearImprovements = gearOpportunity?.kind === 'upgrade' && equippedGear
+    ? (['attack', 'defense', 'hp', 'critChance'] as const)
+      .map(stat => ({ stat, delta: (gearOpportunity.item.equipment[stat] ?? 0) - (equippedGear[stat] ?? 0) }))
+      .filter(change => Number.isFinite(change.delta) && change.delta > 0)
+    : [];
   return (
     <div className="relative mx-auto w-full max-w-lg px-1 pb-2 pt-1 animate-pop">
       <div data-testid="pve-outcome-card" className={`relative overflow-hidden rounded-2xl border-2 p-3 text-center backdrop-blur-md ${outcome.won ? 'bg-amber-950/80 border-amber-400/60 shadow-[0_0_22px_rgba(245,158,11,0.15)]' : 'bg-red-950/70 border-red-400/40'}`}>
@@ -480,6 +705,11 @@ function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questRead
             <Currency kind="gold" value={`+${outcome.gold}`} size={18} />
             <span className="font-semibold text-sky-200">+{outcome.xp} {language === 'en' ? 'XP' : 'опыта'}</span>
             {outcome.gems > 0 && <Currency kind="gems" value={`+${outcome.gems}`} size={18} />}
+            {outcome.materials > 0 && (
+              <span data-testid="pve-real-forge-loot" className="inline-flex items-center gap-1 rounded-lg border border-amber-300/40 bg-amber-500/15 px-2 py-1 text-xs font-bold text-amber-100">
+                <Hammer size={15} aria-hidden="true" /> +{outcome.materials} {language === 'en' ? 'Forge materials' : 'Материалы кузницы'}
+              </span>
+            )}
           </div>
         ) : (
           <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>
@@ -529,6 +759,26 @@ function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questRead
                 </p>
               </div>
             </div>
+            {victoryJourney.kind === 'stage' && victoryJourney.chapterBoss && victoryJourney.fightsUntilBoss !== null && (
+              <div data-testid="pve-boss-path" className="mt-2 rounded-lg border border-red-300/30 bg-red-950/35 px-2 py-1.5 text-[11px] text-amber-100">
+                <p className="font-extrabold text-amber-200">
+                  {victoryJourney.fightsUntilBoss === 0
+                    ? (language === 'en' ? '⚔️ Chapter boss unlocked!' : '⚔️ Босс главы открыт!')
+                    : (language === 'en'
+                      ? `⚔️ ${victoryJourney.fightsUntilBoss} encounter(s) until chapter boss`
+                      : `⚔️ До босса главы: ${victoryJourney.fightsUntilBoss} боёв`)}
+                </p>
+                <p className="mt-0.5 leading-4">
+                  {localizeText(victoryJourney.chapterBoss.name, language)}
+                  {' · HP '}{victoryJourney.chapterBoss.maxHp}
+                  {' · '}{language === 'en' ? 'Attack ' : 'Атака '}{victoryJourney.chapterBoss.attack}
+                </p>
+                <p className="mt-0.5 text-[10px] text-amber-100/70">
+                  {language === 'en' ? 'Chapter encounters: ' : 'Победы в главе: '}
+                  {victoryJourney.chapterFightsCompleted}/{victoryJourney.chapterFightsTotal}
+                </p>
+              </div>
+            )}
             <div className="mt-2 border-t border-amber-300/20 pt-1.5">
               <div className="mb-1 flex justify-between gap-2 text-[11px] font-semibold">
                 <span className={victoryJourney.leveledUp ? 'text-emerald-300' : 'text-amber-100'}>
@@ -548,6 +798,36 @@ function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questRead
               </div>
             </div>
           </section>
+        )}
+        {outcome.won && outcome.materials > 0 && onForge && (
+          <button type="button" data-testid="pve-visit-forge" onClick={onForge}
+            className="relative mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-amber-300/60 bg-amber-700/70 px-3 text-sm font-extrabold text-amber-50 active:scale-[0.98]">
+            <Hammer size={17} aria-hidden="true" />
+            {language === 'en' ? 'Open Forge with your materials' : 'В кузницу с добытыми материалами'}
+          </button>
+        )}
+        {outcome.won && gearOpportunity && onEquipment && (
+          <div data-testid="pve-owned-gear-opportunity" className="relative mt-2 rounded-lg border border-emerald-300/50 bg-emerald-950/55 px-3 py-2 text-left text-xs text-emerald-100">
+            <p className="font-extrabold">{gearOpportunity.kind === 'empty'
+              ? (language === 'en' ? 'Equipment slot available!' : 'Есть предмет для пустого слота!')
+              : (language === 'en' ? 'A stronger item is already in your inventory!' : 'В инвентаре уже есть предмет сильнее!')}</p>
+            <p className="mt-0.5 break-words font-semibold text-white">{gearOpportunity.item.equipment.name}</p>
+            {gearImprovements.length > 0 && (
+              <p className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5" data-testid="pve-owned-gear-stats">
+                {gearImprovements.map(({ stat, delta }) => <span key={stat}>+{delta} {{ attack: language === 'en' ? 'attack' : 'атака', defense: language === 'en' ? 'defense' : 'защита', hp: 'HP', critChance: language === 'en' ? 'crit' : 'крит' }[stat]}</span>)}
+              </p>
+            )}
+            <p className="mt-1 text-[10px] text-emerald-100/80">{language === 'en' ? 'From your saved inventory, not an extra battle reward.' : 'Из сохранённого инвентаря, не дополнительная награда за бой.'}</p>
+          </div>
+        )}
+        {outcome.won && onEquipment && (
+          <button type="button" data-testid="pve-prepare-equipment" onClick={onEquipment}
+            className="relative mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-sky-300/50 bg-sky-900/60 px-3 text-sm font-extrabold text-sky-100 active:scale-[0.98]">
+            <Shirt size={17} aria-hidden="true" />
+            {gearOpportunity
+              ? (language === 'en' ? 'Equip or compare this item' : 'Надеть или сравнить этот предмет')
+              : (language === 'en' ? 'Compare gear before the next fight' : 'Сравнить снаряжение перед следующим боем')}
+          </button>
         )}
         {outcome.won && questReady && onQuests && <button type="button" onClick={onQuests} className="relative mt-3 w-full min-h-11 rounded-xl border border-emerald-300/60 bg-emerald-700/70 px-3 text-sm font-bold text-white active:scale-[0.98]">
           {language === 'en' ? 'Quest reward ready — claim it' : 'Награда за задание готова — забрать'}

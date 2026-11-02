@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 440" role="img" aria-label="Тыквенная ведьма">
+<defs>
+ <linearGradient id="cape" x2=".8" y2="1"><stop stop-color="#69239d"/><stop offset=".52" stop-color="#311361"/><stop offset="1" stop-color="#160c35"/></linearGradient>
+ <linearGradient id="fur" x2=".5" y2="1"><stop stop-color="#fff4db"/><stop offset=".6" stop-color="#f7d9ca"/><stop offset="1" stop-color="#cc9f9c"/></linearGradient>
+ <linearGradient id="armor" x2=".4" y2="1"><stop stop-color="#ffe9a4"/><stop offset=".38" stop-color="#f8a532"/><stop offset="1" stop-color="#a94d15"/></linearGradient>
+ <linearGradient id="hat" x2=".3" y2="1"><stop stop-color="#8837c2"/><stop offset=".6" stop-color="#411267"/><stop offset="1" stop-color="#200930"/></linearGradient>
+ <radialGradient id="pump"><stop stop-color="#ffed85"/><stop offset=".5" stop-color="#ff8b13"/><stop offset="1" stop-color="#c33b0b"/></radialGradient>
+ <filter id="shadow"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#050311" flood-opacity=".75"/></filter>
+</defs>
+<g filter="url(#shadow)" stroke-linejoin="round" stroke-linecap="round">
+ <path d="M85 245Q37 280 26 364Q102 423 185 416Q272 421 318 354Q311 281 243 231Z" fill="url(#cape)" stroke="#e7a943" stroke-width="8"/>
+ <path d="M101 339L59 408M243 334L279 408" fill="none" stroke="#ef9f29" stroke-width="9"/>
+ <path d="M101 327Q89 376 94 411Q120 428 150 412L155 332" fill="url(#fur)" stroke="#8f567d" stroke-width="5"/>
+ <path d="M193 333Q198 381 196 416Q235 428 259 408Q249 354 252 327" fill="url(#fur)" stroke="#8f567d" stroke-width="5"/>
+ <path d="M88 407Q121 388 153 413L150 429Q116 436 86 425ZM195 409Q233 396 263 408L270 426Q224 436 194 427Z" fill="#352234" stroke="#e8a23b" stroke-width="7"/>
+ <path d="M93 248Q104 217 153 211L231 225Q265 239 264 292L245 355Q170 395 93 345Q68 286 93 248Z" fill="url(#fur)" stroke="#9e6b8c" stroke-width="6"/>
+ <path d="M123 256Q142 237 164 260Q161 291 145 309Q116 305 123 256ZM222 290Q239 299 225 328Q206 330 205 308Z" fill="#513850" opacity=".8"/>
+ <path d="M102 220Q65 235 55 196Q68 166 107 185L130 200Z" fill="url(#fur)" stroke="#a26c91" stroke-width="7"/>
+ <path d="M249 201Q293 165 307 200Q294 240 252 224Z" fill="url(#fur)" stroke="#a26c91" stroke-width="7"/>
+ <path d="M112 135Q116 104 135 92L160 133M239 139L276 94Q281 119 267 160" fill="#eee6c7" stroke="#dba963" stroke-width="6"/>
+ <path d="M105 170Q108 121 168 113Q243 108 271 171Q282 228 249 257Q206 276 147 253Q99 239 105 170Z" fill="url(#fur)" stroke="#9c638c" stroke-width="7"/>
+ <path d="M137 198Q151 185 171 193M213 194Q232 184 248 195" stroke="#271429" stroke-width="7" fill="none"/>
+ <path d="M145 201Q156 207 167 201M220 201Q231 207 242 201" fill="none" stroke="#4b234b" stroke-width="6"/>
+ <path d="M130 178Q157 163 178 176M211 175Q235 162 253 179" fill="none" stroke="#513259" stroke-width="8"/>
+ <path d="M157 223Q164 209 197 209Q239 207 255 226Q264 254 230 267Q174 276 149 251Q141 237 157 223Z" fill="#f7a1b1" stroke="#bb6489" stroke-width="5"/>
+ <ellipse cx="176" cy="230" rx="7" ry="6" fill="#8d4364"/><ellipse cx="224" cy="230" rx="7" ry="6" fill="#8d4364"/>
+ <path d="M173 254Q194 241 220 249Q238 261 219 267Q196 273 173 254Z" fill="#ef4268" stroke="#ac193e" stroke-width="5"/>
+ <path d="M132 137Q86 136 67 155Q177 178 293 133Q258 113 239 114Q171 119 132 137Z" fill="url(#hat)" stroke="#ffca60" stroke-width="8"/>
+ <path d="M113 136Q133 99 145 52Q155 31 179 24Q190 56 202 72Q227 53 250 55Q239 97 243 123Q177 150 113 136Z" fill="url(#hat)" stroke="#dc9d4e" stroke-width="7"/>
+ <path d="M131 118Q190 137 252 107" fill="none" stroke="url(#armor)" stroke-width="13"/>
+ <rect x="176" y="111" width="24" height="16" rx="5" fill="#e8ba56" stroke="#8f3f1c" stroke-width="3"/>
+ <path d="M181 62Q166 83 180 101" fill="none" stroke="#a15ad3" stroke-width="6"/>
+ <path d="M115 276Q170 312 244 278L263 317Q178 353 91 309Z" fill="url(#cape)" stroke="#edbd57" stroke-width="9"/>
+ <path d="M170 309l17-21 18 21-18 30Z" fill="#d64bfb" stroke="#ffe2a4" stroke-width="6"/>
+ <path d="M178 354Q195 332 220 353Q248 385 218 399Q178 411 167 385Q165 368 178 354Z" fill="url(#pump)" stroke="#ffd063" stroke-width="6"/>
+ <path d="M177 369l13-5-3 12zM217 365l-14 4 14 8zM180 386Q196 396 217 384" fill="#54220c" stroke="#ffdb69" stroke-width="3"/>
+ <path d="M196 356l5-13" stroke="#426c26" stroke-width="7"/>
+ <path d="M83 233Q56 248 53 282M267 235Q304 253 307 284" fill="none" stroke="#f3b64c" stroke-width="9"/>
+</g>
+</svg>

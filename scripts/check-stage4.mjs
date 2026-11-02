@@ -21,7 +21,11 @@ function loadTs(file, dependencies = {}) {
 }
 
 const expiryMock = { reconcileElixirExpiry: (state) => state };
-const followers = loadTs('src/game/followers.ts', { './elixirExpiry': expiryMock });
+const followers = loadTs('src/game/followers.ts', { './elixirExpiry': expiryMock, './halloweenCompanion2026': {
+  HALLOWEEN_COMPANION_ID: 'follower_pumpkin_witch_2026',
+  PUMPKIN_WITCH_TEMPLATE: { id: 'follower_pumpkin_witch_2026', name: 'Тыквенная ведьма', level: 100, attack: 65, defense: 1, unlocked: true, role: 'pumpkin' },
+  PUMPKIN_WITCH_COMBAT: { attack: 65, defense: 0, heal: 16, crit: 0, pierce: 0 },
+} });
 assert.equal(followers.FOLLOWER_TEMPLATES.length, 6);
 assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.role)).size, 6);
 assert.equal(new Set(followers.FOLLOWER_TEMPLATES.map((f) => f.id)).size, 6);

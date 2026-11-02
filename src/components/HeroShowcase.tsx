@@ -3,8 +3,10 @@ import { EQUIPMENT_SLOTS, HERO_MAX_LEVEL, generateChapter, getComputedStats } fr
 import { getAppearanceIcon } from '@/game/appearance';
 import { SLOT_ART, equipmentArt } from '@/game/art';
 import { rarityColor } from '@/game/ui';
+import { findHeroGearOpportunity } from '@/game/heroGearOpportunity';
 import { useLanguage } from '@/game/i18n';
-import { selectedFollower, FOLLOWER_TEMPLATES } from '@/game/followers';
+import { selectedFollower, DISPLAY_FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_ID } from '@/game/followers';
+import { PumpkinWitch } from './PumpkinWitch';
 import { getFollowerArt } from '@/game/combatArt';
 import type { Equipment, GameState } from '@/game/types';
 import './profileHero.css';
@@ -39,15 +41,15 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
   const chapterWins = Number.isFinite(state.chapterWins)
     ? Math.max(0, Math.min(chapter.winsNeeded, Math.floor(state.chapterWins))) : 0;
   const bossReady = chapterWins >= chapter.winsNeeded;
+  const nextEnemy = bossReady ? chapter.boss : (chapter.enemies[chapterWins] ?? chapter.boss);
   // Only suggest gear that is already in the player's saved inventory and
   // would fill an empty real slot. This is navigation, not proof of ownership
   // for server combat or an automatic equip/grant.
-  const readyGear = state.inventory.find(item => item.type === 'equipment'
-    && item.qty > 0 && item.equipment && !player.equipped[item.equipment.slot]);
+  const readyGear = findHeroGearOpportunity(state.inventory, player.equipped);
   const readyQuest = state.quests.some(quest => !quest.claimed && quest.current >= quest.target);
   const forgeCandidate = Object.values(player.equipped).find((item): item is Equipment => !!item && item.level < player.level);
   const activeCompanion = selectedFollower(state);
-  const activeCompanionTemplate = FOLLOWER_TEMPLATES.find(unit => unit.id === activeCompanion?.id);
+  const activeCompanionTemplate = DISPLAY_FOLLOWER_TEMPLATES.find(unit => unit.id === activeCompanion?.id);
   const text = (ru: string, en: string) => language === 'en' ? en : ru;
 
   const renderSlot = ({ slot, item }: { slot: (typeof EQUIPMENT_SLOTS)[number]; item: Equipment | undefined }) => (
@@ -112,16 +114,16 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
 
       <section className="hero-showcase__companion" data-testid="hero-companion-journey"
         aria-label={text('Спутник героя', 'Hero companion')}>
-        <img src={activeCompanion ? getFollowerArt(activeCompanion.id)
+        {activeCompanion?.id === HALLOWEEN_COMPANION_ID ? <span style={{gridRow:"1 / 3", width: "100%", height: 88}}><PumpkinWitch /></span> : <img src={activeCompanion ? getFollowerArt(activeCompanion.id)
           : import.meta.env.BASE_URL + 'assets/territory/map/icons/companions-v1.webp'}
-          alt="" loading="lazy" draggable={false}/>
+          alt="" loading="lazy" draggable={false}/>}
         <div className="hero-showcase__companion-copy">
-          <span>{text('ПОМОЩНИК В ПОХОДЕ', 'CAMPAIGN COMPANION')}</span>
+          <span>{activeCompanion?.id === HALLOWEEN_COMPANION_ID ? text('РЕЙД · 2026', 'RAID · 2026') : text('ПОМОЩНИК В ПОХОДЕ', 'CAMPAIGN COMPANION')}</span>
           <strong>{activeCompanion
             ? (language === 'en' ? (activeCompanionTemplate?.nameEn ?? activeCompanion.name) : activeCompanion.name)
             : text('Спутник ещё не открыт', 'No companion unlocked yet')}</strong>
           <small>{activeCompanion
-            ? text(`Ур. ${activeCompanion.level} · Атака ${activeCompanion.attack} · Защита ${activeCompanion.defense}`,
+            ? activeCompanion.id === HALLOWEEN_COMPANION_ID ? text('Ур. 100/100 · Атака 65 · Лечение 16', 'Lv. 100/100 · Attack 65 · Healing 16') : text(`Ур. ${activeCompanion.level} · Атака ${activeCompanion.attack} · Защита ${activeCompanion.defense}`,
                 `Lv. ${activeCompanion.level} · Attack ${activeCompanion.attack} · Defense ${activeCompanion.defense}`)
             : text('Первый спутник откроется на 3 уровне', 'First companion unlocks at hero level 3')}</small>
           <small>{text('Помогает в Походе и Испытаниях, не на Арене', 'Helps in Campaign and Trials, not Arena')}</small>
@@ -150,15 +152,16 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
         </div>
         <div className="hero-showcase__next" data-testid="hero-next-goal">
           <img className="hero-showcase__boss-art"
-            src={import.meta.env.BASE_URL + (chapter.boss.art.startsWith('/') ? chapter.boss.art.slice(1) : chapter.boss.art)}
+            src={import.meta.env.BASE_URL + (nextEnemy.art.startsWith('/') ? nextEnemy.art.slice(1) : nextEnemy.art)}
             alt="" loading="lazy" draggable={false} />
           <div className="hero-showcase__next-copy">
             <strong>{bossReady
               ? text('Босс готов к бою!', 'Boss battle unlocked!')
-              : text('Путь к боссу', 'Road to the boss')}</strong>
+              : text('Следующий противник', 'Next opponent')}</strong>
             <span>{language === 'en'
               ? `Chapter ${chapterNumber} · ${chapterWins}/${chapter.winsNeeded} fights`
               : `${chapter.title} · ${chapterWins}/${chapter.winsNeeded} побед`}</span>
+            <span className="text-[11px] font-bold text-amber-100">{nextEnemy.name} · HP {nextEnemy.maxHp} · ⚔ {nextEnemy.attack} · 🛡 {nextEnemy.defense}</span>
             <div className="hero-showcase__chapter-track" role="progressbar"
               aria-label={text('Победы до босса главы', 'Chapter victories before boss')}
               aria-valuemin={0} aria-valuemax={chapter.winsNeeded} aria-valuenow={chapterWins}>
@@ -186,13 +189,15 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
             )}
           </div>
         )}
-        {readyGear?.equipment && (
+        {readyGear && (
           <button type="button" className="hero-showcase__loot" onClick={onEquipment}
-            aria-label={text('Открыть экипировку: ', 'Open equipment: ') + readyGear.equipment.name}>
-            <img src={equipmentArt(readyGear.equipment)} alt="" loading="lazy" draggable={false}
-              style={{ borderColor: rarityColor(readyGear.equipment.rarity) }} />
-            <span><strong>{text('Добыча ждёт!', 'Gear ready!')}</strong>
-              {readyGear.equipment.name}</span>
+            aria-label={text('Открыть экипировку: ', 'Open equipment: ') + readyGear.item.equipment.name}>
+            <img src={equipmentArt(readyGear.item.equipment)} alt="" loading="lazy" draggable={false}
+              style={{ borderColor: rarityColor(readyGear.item.equipment.rarity) }} />
+            <span><strong>{readyGear.kind === 'upgrade'
+              ? text('Есть усиление героя!', 'Stronger gear available!')
+              : text('Добыча ждёт!', 'Gear ready!')}</strong>
+              {readyGear.item.equipment.name}</span>
             <ChevronRight size={17} aria-hidden="true" />
           </button>
         )}

@@ -146,14 +146,14 @@ export function ServerPveFight({enemy,kind,encounterId,sessionId,onExit,onNext}:
           <div className="relative flex-1 mt-1">
             <FighterFigure src={import.meta.env.BASE_URL+'assets/territory/characters/heroes/male_viking/idle.webp'}
               combatFrames={getCombatAppearance(game.appearance)} name={game.player.name} dir={1} alive={(hero?.stats.hp??0)>0}
-              strike={strike} idleSeconds={3.1} className="absolute right-0 bottom-0 h-[96%] w-full object-contain object-right-bottom"/>
+              won={state?.status==='hero_won'} strike={strike} idleSeconds={3.1} className="absolute right-0 bottom-0 h-[96%] w-full object-contain object-right-bottom"/>
           </div>
         </div>
         <div className="flex flex-col min-w-0">
           <Health label={enemy.name} value={foe?.stats.hp??0} max={foe?.stats.maxHp??1}/>
           <div className="relative flex-1 mt-1">
             <FighterFigure src={resolveCombatArtUrl(enemy.art)} combatFrames={getEnemyCombatFrames(enemy.art)}
-              name={enemy.name} dir={-1} alive={(foe?.stats.hp??0)>0} strike={strike}
+              name={enemy.name} dir={-1} alive={(foe?.stats.hp??0)>0} won={state?.status==='enemy_won'} strike={strike}
               idleSeconds={2.8} className="absolute left-0 bottom-0 h-[83%] w-full object-contain object-left-bottom"/>
           </div>
         </div>

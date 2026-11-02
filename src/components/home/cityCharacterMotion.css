@@ -1,0 +1,60 @@
+/* TERRITORY city: three independent, foot-anchored idle performances.
+ * All silhouettes retain their approved sizes/positions; no character hitbox,
+ * HUD, navigation, currencies or game mechanics are changed.
+ * These are low-cost art motions, NOT skeletal/lip/limb combat animation. */
+.home-character-stage .city-follower-idle {
+  transform-origin: 51% 94%;
+  animation: cityFollowerSway 5.6s ease-in-out -1.7s infinite;
+  will-change: transform;
+}
+.home-character-stage .city-hero-idle {
+  transform-origin: 51% 95%;
+  animation: cityHeroStand 3.9s ease-in-out -.8s infinite;
+  will-change: transform;
+}
+.home-character-stage .city-enemy-idle {
+  transform-origin: 54% 96%;
+  animation: cityEnemyVigil 6.3s ease-in-out -3.1s infinite;
+  will-change: transform;
+}
+
+/* Weighted breathing: the boots remain planted and the full-body portrait
+ * moves less than 3 px; no fake disconnected attacks or sideways roaming. */
+@keyframes cityHeroStand {
+  0%, 100% { transform: translate3d(0,0,0) rotate(0deg); }
+  23% { transform: translate3d(0,-1.1px,0) rotate(-.35deg); }
+  52% { transform: translate3d(.6px,-2.1px,0) rotate(.5deg) scaleY(1.008); }
+  76% { transform: translate3d(0,-.5px,0) rotate(0deg); }
+}
+
+/* The follower shifts its weight independently from the hero. */
+@keyframes cityFollowerSway {
+  0%, 100% { transform: translate3d(0,0,0) rotate(0deg); }
+  27% { transform: translate3d(-1px,-1.6px,0) rotate(-1.25deg); }
+  55% { transform: translate3d(0,-.5px,0) rotate(.4deg); }
+  78% { transform: translate3d(1px,-1.3px,0) rotate(1deg); }
+}
+
+/* A watchful enemy holds still, briefly leans toward the opponent, recovers.
+ * The enemy button and real click-to-fight behavior remain untouched. */
+@keyframes cityEnemyVigil {
+  0%, 27%, 100% { transform: translate3d(0,0,0) rotate(0deg); }
+  40% { transform: translate3d(-1.5px,-.8px,0) rotate(-1.3deg); }
+  49% { transform: translate3d(-1.5px,-1.8px,0) rotate(-.4deg); }
+  62%, 84% { transform: translate3d(0,0,0) rotate(0deg); }
+}
+
+/* Keep the previous press feedback instead of letting idle transforms override it. */
+.home-enemy-figure:active .city-enemy-idle {
+  animation-play-state: paused;
+  transform: scale(.95);
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-character-stage .city-follower-idle,
+  .home-character-stage .city-hero-idle,
+  .home-character-stage .city-enemy-idle {
+    animation: none !important;
+    will-change: auto;
+    transform: none !important;
+  }
+}
