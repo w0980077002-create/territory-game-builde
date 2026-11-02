@@ -106,3 +106,25 @@ export function runeBattleSnapshot(
   return {schema:RUNE_SCHEMA,revision:checked.revision,
     slots:checked.slots.map(s=>({...s,level:s.runeId===null?0:trusted[s.runeId]}))};
 }
+
+/** Parse the actual server status RPC. No client-owned skill or rune list is trusted.
+ * The 15 selections must be valid against the server-owned ranks returned with
+ * the same status response; callers never manufacture an empty replacement. */
+export type RuneServerStatus = RuneSlotState & { owned: Readonly<Record<string, number>> };
+export function parseRuneServerStatus(raw: unknown, defs: readonly RuneSlotConfig[]): RuneServerStatus {
+  if (!obj(raw) || raw.schema !== RUNE_SCHEMA || !integer(raw.revision)
+    || !Array.isArray(raw.owned)) throw Error('rune_status_invalid');
+  checkDefs(defs);
+  const known = new Set(defs.flatMap(def => def.options));
+  const owned: Record<string, number> = Object.create(null) as Record<string, number>;
+  for (const item of raw.owned) {
+    if (!obj(item) || typeof item.runeId !== 'string' || !known.has(item.runeId)
+      || !integer(item.level) || item.level < 1 || item.level > 3
+      || Object.prototype.hasOwnProperty.call(owned, item.runeId)) {
+      throw Error('rune_status_ownership_invalid');
+    }
+    owned[item.runeId] = item.level;
+  }
+  const verified = validateRuneSlots(raw, defs, owned, raw.revision);
+  return { ...verified, owned };
+}
