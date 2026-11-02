@@ -158,10 +158,10 @@
   position:absolute;
   inset:0;
   z-index:2;
-  background-image:var(--shop-iron),var(--shop-iron),var(--shop-iron),var(--shop-iron);
+  background-image:var(--shop-iron),var(--shop-iron);
   background-repeat:no-repeat;
-  background-size:34px 34px;
-  background-position:left top,right top,left bottom,right bottom;
+  background-size:32px 32px;
+  background-position:left top,right top;
   pointer-events:none;
   opacity:.95;
 }
