@@ -1,4 +1,5 @@
 import type { GameState } from './types';
+import { findHeroGearOpportunity } from './heroGearOpportunity';
 
 export type StarterDestination = 'battle' | 'inventory' | 'shop' | 'arena';
 export type StarterMilestone = {
@@ -21,7 +22,9 @@ export const shouldShowStarterJourney = (state: Pick<GameState,'player' | 'total
 /** A read-only guide over saved gameplay progress. No new currency or tutorial flags. */
 export function getStarterMilestones(state: Pick<GameState, 'player' | 'inventory' | 'totalBattlesWon'>): StarterMilestone[] {
   const hasEquipment = Object.values(state.player.equipped ?? {}).some(Boolean);
-  const canEquip = (state.inventory ?? []).some((item) => item.type === 'equipment' && !!item.equipment);
+  // Use the same positive-quantity, valid-slot ownership filter as the real
+  // post-victory equipment suggestion. A zero-count legacy stack is not loot.
+  const canEquip = !!findHeroGearOpportunity(state.inventory ?? [], state.player.equipped ?? {});
   return [
     { id: 'first-fight', done: state.totalBattlesWon >= 1, destination: 'battle', titleRu: 'Победи первого врага', titleEn: 'Win your first fight', actionRu: 'В бой', actionEn: 'Fight' },
     { id: 'three-fights', done: state.totalBattlesWon >= 3, destination: 'battle', titleRu: 'Победи 3 врагов', titleEn: 'Win 3 fights', actionRu: 'Продолжить бой', actionEn: 'Keep fighting' },
