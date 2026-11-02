@@ -11,7 +11,7 @@ import { MAX_SHOP_PURCHASE_QTY } from '@/game/purchaseGuard';
 import { calendarDayKey } from '@/game/weeklyQuests';
 import { utcMidnight } from '@/game/seasonCalendar';
 import { rarityColor } from '@/game/ui';
-import { CheckCircle2, Sword, Shield, Heart, Star, Minus, Plus, Clock, Crown, Sparkles, LockKeyhole, X } from 'lucide-react';
+import { CheckCircle2, Sword, Shield, Heart, Star, Minus, Plus, Clock, Crown, Sparkles, LockKeyhole, X, FlaskConical, Gem, Swords } from 'lucide-react';
 import type { GameState, ShopItem } from '@/game/types';
 import { ItemArt } from './ui/ItemArt';
 import { Currency, formatAmount } from './ui/Currency';
@@ -86,6 +86,8 @@ function formatDuration(ms: number): string {
 }
 
 const shopMaterialStyles = {
+  '--shop-market': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-market-stage.svg")',
+  '--shop-sign-art': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-hanging-sign.svg")',
   '--shop-planks': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-wood-planks.webp")`,
   '--shop-beams': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-wood-beams.webp")`,
   '--shop-rope': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-rope-wrap.svg")`,
@@ -143,6 +145,12 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
   });
   const [tab, setTab] = useState<Tab>(initialTab);
   const [picked, setPicked] = useState<ShopItem | null>(null);
+  const [dialogQty, setDialogQty] = useState(1);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const inspectItem = (item: ShopItem, quantity = 1) => {
+    setDialogQty(quantity);
+    setPicked(item);
+  };
   const [result, setResult] = useState<{ item: ShopItem; text: string } | null>(null);
   const items = allItems.filter((i) => inTab(i, tab));
   const firstGearResult = !!onInventory && result?.item.type === 'equipment' && state.player.level < 5
@@ -259,98 +267,127 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
   };
 
   return (
-    <div className="viking-screen viking-screen--shop space-y-3 animate-fade-in pb-2" style={shopMaterialStyles}>
-      <div className="territory-shop-sign relative rounded-2xl overflow-hidden border border-amber-500/20 p-4">
-        <div className="territory-shop-sign__shade absolute inset-0 bg-gradient-to-br from-amber-900/40 via-[#16130d] to-[#0f1115]" />
-        <div className="relative flex items-center gap-3">
-          <img src="/ic-shop.webp" alt="" className="w-12 h-12 object-contain" />
-          <div className="flex-1 min-w-0">
-            <h2 className="territory-shop-sign__title text-lg font-bold text-amber-100">{t('shop')}</h2>
-            <p className="territory-shop-sign__subtitle text-xs text-gray-400">{t('shopDescription')}</p>
-          </div>
+    <div className="viking-screen viking-screen--shop territory-shop-showcase animate-fade-in pb-2" style={shopMaterialStyles}>
+      <section className="territory-shop-facade" aria-label={language === 'en' ? 'Viking market stall' : 'Торговая лавка викингов'}>
+        <div className="territory-shop-facade__scenery" aria-hidden="true" />
+        <div className="territory-shop-sign" role="group" aria-label={t('shop')}>
+          <h2 className="territory-shop-sign__title">{t('shop')}</h2>
+          <p className="territory-shop-sign__subtitle">{t('shopDescription')}</p>
           {shopSale && !shopStatus?.enabled && (
-            <span className="shrink-0 rounded-lg bg-gradient-to-b from-red-500 to-rose-700 px-2 py-1 text-xs font-bold text-white shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse">-20%</span>
+            <span className="territory-shop-sale" aria-label={language==='en'?'20% discount':'Скидка 20%'}>-20%</span>
           )}
         </div>
-        <div className="relative flex flex-wrap gap-2 mt-3">
-          {([['gold', state.player.gold], ['gems', shopStatus?.enabled ? shopStatus.gems : state.player.gems], ['redGems',licenseStatus?.redBalance??state.player.redGems], ['stones', shopStatus?.enabled ? shopStatus.stones : state.battleStones]] as const).map(([k, v]) => (
-            <span key={k} className="hud-chip pl-1.5"><Currency kind={k} value={formatAmount(v)} size={16} className="text-xs text-white" /></span>
-          ))}
-        </div>
-      </div>
+      </section>
 
-      <div className="territory-shop-license relative overflow-hidden rounded-2xl border border-amber-300/60 bg-gradient-to-br from-[#423017] via-[#24192a] to-[#131c2f] p-3 shadow-[0_0_25px_rgba(245,158,11,0.12)]">
-        <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-amber-400/15 blur-2xl" />
-        <div className="relative flex items-center gap-3">
-          <div className="territory-shop-license__art flex h-[94px] w-[94px] shrink-0 items-center justify-center rounded-2xl border border-amber-400/30 bg-black/30">
-            <img src={MASTER_LICENSE_ART} loading="lazy" alt={language==='en'?'Master License':'Лицензия мастера'} className="h-[88px] w-[88px] object-contain drop-shadow-[0_3px_12px_rgba(251,191,36,0.3)]" />
-          </div>
-          <div className="min-w-0 flex-1 space-y-1">
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-300/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-200"><Sparkles className="h-3 w-3" /> {language==='en'?'Legendary':'Легендарное'}</span>
-            <p className="territory-shop-license__title flex items-center gap-1.5 text-sm font-extrabold text-amber-100"><Crown className="h-4 w-4 text-amber-300" />{language==='en'?'Master License':'Лицензия мастера'}</p>
-            <p className="text-[11px] leading-snug text-slate-300">{language==='en'?'Permanent access to level 300 recipes.':'Навсегда открывает рецепты 300-го уровня.'}</p>
-            <div className="inline-flex items-center gap-1 rounded-lg bg-rose-950/40 px-2 py-1 text-sm font-black text-rose-100">
-              {licenseStatus?.owned?<span className="text-emerald-300">✓ {language==='en'?'Owned forever':'Куплено навсегда'}</span>:<Currency kind="redGems" value={MASTER_LICENSE_PRICE_RED} size={18}/>}
-            </div>
-          </div>
-        </div>
-        <button type="button" onClick={()=>setLicenseOpen(true)} disabled={!licenseStatus||licenseBusy||licenseStatus.owned||!!licensePending}
-          className="relative mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-yellow-200/50 bg-gradient-to-b from-yellow-300 via-amber-400 to-amber-600 text-sm font-black text-[#32200b] shadow-[0_3px_0_#9a5816] transition active:translate-y-0.5 disabled:opacity-60">
-          {licenseStatus?.owned?<><CheckCircle2 className="h-4 w-4"/>{language==='en'?'Purchased':'Уже куплена'}</>
-            :<><Crown className="h-4 w-4"/>{language==='en'?'Buy permanent license':'Купить навсегда'}</>}
-        </button>
-        {!licenseStatus && !licenseError&&<p className="mt-2 text-center text-[11px] text-amber-200">{language==='en'?'Checking the shop server…':'Проверяем сервер лавки…'}</p>}
-        {licensePending&&<button disabled={licenseBusy} onClick={()=>{void retryLicense();}} className="mt-2 w-full rounded-lg border border-sky-400/40 bg-sky-500/10 p-2 text-xs font-bold text-sky-200 disabled:opacity-40">{language==='en'?'Retry saved license purchase':'Повторить сохранённую покупку без двойного списания'}</button>}
-        {licenseError&&<p role="alert" className="mt-2 rounded-lg bg-red-950/50 p-2 text-xs text-red-200">{licenseError}</p>}
-        {licenseNotice&&<p role="status" className="mt-2 rounded-lg bg-emerald-950/50 p-2 text-xs text-emerald-200">{licenseNotice}</p>}
-      </div>
+      <section className="territory-shop-wallet" aria-label={language==='en'?'Your currencies':'Ваши валюты'}>
+        {([['gold', state.player.gold], ['gems', shopStatus?.enabled ? shopStatus.gems : state.player.gems],
+           ['redGems',licenseStatus?.redBalance??state.player.redGems],
+           ['stones', shopStatus?.enabled ? shopStatus.stones : state.battleStones]] as const).map(([k,v])=>(
+          <span key={k} className="territory-shop-wallet__cell">
+            <Currency kind={k} value={formatAmount(v)} size={19} className="territory-shop-wallet__currency" />
+          </span>
+        ))}
+      </section>
 
-      <div className="territory-shop-tabs viking-screen-tabs grid grid-cols-3 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10" role="tablist">
-        {TABS.map((tabItem) => (
-          <button
-            key={tabItem.id}
-            type="button" role="tab" aria-selected={tab === tabItem.id}
-            onClick={() => setTab(tabItem.id)}
-            className={`territory-shop-tab h-11 rounded-xl text-xs font-semibold transition-all ${tab === tabItem.id ? 'bg-gradient-to-b from-amber-400 to-amber-600 text-black' : 'text-gray-400'}`}
-          >
-            {t(tabItem.labelKey)}
+      <section className="territory-shop-license" aria-label={language==='en'?'Master License offer':'Лицензия мастера'}>
+        <div className="territory-shop-license__glow" aria-hidden="true" />
+        <div className="territory-shop-license__art">
+          <img src={MASTER_LICENSE_ART} loading="lazy" alt={language==='en'?'Master License':'Лицензия мастера'} />
+        </div>
+        <div className="territory-shop-license__copy">
+          <div className="territory-shop-license__rarity"><Sparkles aria-hidden="true" size={13} /> {language==='en'?'LEGENDARY':'ЛЕГЕНДАРНОЕ'}</div>
+          <h3 className="territory-shop-license__title">{language==='en'?'Master License':'Лицензия мастера'}</h3>
+          <p className="territory-shop-license__description">{language==='en'?'Permanent access to level 300 recipes.':'Навсегда открывает рецепты 300-го уровня.'}</p>
+          {licenseStatus?.owned
+            ? <p className="territory-shop-license__owned"><CheckCircle2 size={16} aria-hidden="true"/>{language==='en'?'Owned forever':'Куплено навсегда'}</p>
+            : <p className="territory-shop-license__cost"><Currency kind="redGems" value={MASTER_LICENSE_PRICE_RED} size={16}/></p>}
+          <button type="button" onClick={()=>setLicenseOpen(true)}
+            disabled={!licenseStatus||licenseBusy||licenseStatus.owned||!!licensePending}
+            className="territory-shop-license__buy">
+            {licenseStatus?.owned?<><CheckCircle2 size={16}/>{language==='en'?'Purchased':'Уже куплена'}</>
+              :<><Crown size={16}/>{language==='en'?'Buy license':'Купить лицензию'}</>}
+          </button>
+        </div>
+        {!licenseStatus&&!licenseError&&<p className="territory-shop-license__message">{language==='en'?'Checking shop server…':'Проверяем сервер лавки…'}</p>}
+        {licensePending&&<button disabled={licenseBusy} onClick={()=>{void retryLicense();}} className="territory-shop-license__retry">{language==='en'?'Retry saved license purchase':'Повторить сохранённую покупку'}</button>}
+        {licenseError&&<p role="alert" className="territory-shop-license__error">{licenseError}</p>}
+        {licenseNotice&&<p role="status" className="territory-shop-license__notice">{licenseNotice}</p>}
+      </section>
+
+      <nav className="territory-shop-tabs" role="tablist" aria-label={language==='en'?'Shop categories':'Категории лавки'}>
+        {TABS.map((tabItem)=>(
+          <button key={tabItem.id} type="button" role="tab" aria-selected={tab === tabItem.id}
+            onClick={()=>setTab(tabItem.id)}
+            className={'territory-shop-tab ' + (tab===tabItem.id?'territory-shop-tab--active':'')}>
+            {tabItem.id==='potions'?<FlaskConical aria-hidden="true"/>:
+             tabItem.id==='equipment'?<Swords aria-hidden="true"/>:<Gem aria-hidden="true"/>}
+            <span>{t(tabItem.labelKey)}</span>
           </button>
         ))}
-      </div>
+      </nav>
 
-      <div className="grid grid-cols-2 gap-2">
-        {items.map((item) => {
-          const color = rarityColor(item.rarity);
-          const ok = shopCheck === 'ready' && !buying && !pendingShop && (shopStatus?.enabled ? (item.type==='stone' && shopStatus.gems >= (item.priceGems??0) && (25-shopStatus.boughtToday)>=(item.amount??1)) : (canAfford(state, item) && (item.type !== 'stone' || stonesRemainingToday(state) >= (item.amount ?? 1))));
+      <section className="territory-shop-products" aria-label={language==='en'?'Available shop items':'Товары лавки'}>
+        {items.map((item)=>{
+          const unitPrice=item.priceGems ? item.priceGems : (item.priceGold??0);
+          const balance=item.priceGems
+            ? (shopStatus?.enabled?shopStatus.gems:state.player.gems)
+            : state.player.gold;
+          const walletCap=unitPrice>0?Math.floor(balance/unitPrice):1;
+          const quotaCap=item.type==='stone'
+            ? shopStatus?.enabled
+              ? Math.floor(Math.max(0,DAILY_STONE_LIMIT-shopStatus.boughtToday)/Math.max(1,item.amount??1))
+              : maxStoneQty(state,item)
+            : MAX_SHOP_PURCHASE_QTY;
+          const quantityCap=Math.max(0,Math.min(MAX_SHOP_PURCHASE_QTY,walletCap,quotaCap));
+          const qty=Math.max(1,Math.min(quantities[item.id]??1,Math.max(1,quantityCap)));
+          const canPurchase=shopCheck==='ready'&&!buying&&!pendingShop&&quantityCap>=qty
+            && (shopStatus?.enabled
+              ? (item.type==='stone'&&item.priceGems!==undefined)
+              : canAfford(state,item,qty));
+          const setQty=(value:number)=>setQuantities(old=>({...old,[item.id]:Math.max(1,Math.min(Math.max(1,quantityCap),value))}));
           return (
-            <button
-              key={item.id}
-              onClick={() => setPicked(item)}
-              className="territory-shop-product relative text-left rounded-2xl border bg-gradient-to-b from-[#1f232d] to-[#12151b] p-2.5 flex flex-col transition-all active:scale-[0.97] hover:brightness-110"
-              style={{ borderColor: `${color}55` }}
-            >
-              <div className="territory-shop-product__art h-24 flex items-center justify-center rounded-xl bg-black/30 mb-2">
-                <ItemArt item={item} size={80} />
+            <article key={item.id} className="territory-shop-product">
+              <button type="button" className="territory-shop-product__art" aria-label={(language==='en'?'View ':'Открыть ')+localizeText(item.name,language)}
+                onClick={()=>inspectItem(item,qty)}>
+                <ItemArt item={item} size={90} />
+              </button>
+              <div className="territory-shop-product__information">
+                <button type="button" className="territory-shop-product__detail" onClick={()=>inspectItem(item,qty)}>
+                  <span className="territory-shop-product__name" style={{color:rarityColor(item.rarity)}}>
+                    {localizeText(item.name,language)}
+                  </span>
+                  <span className="territory-shop-product__description">{localizeText(item.description,language)}</span>
+                </button>
+                {(item.type==='elixir'||item.type==='potion'||item.type==='arena'||item.id==='shop_forge_material')&&
+                  <span className="territory-shop-product__expiry"><Clock size={12} aria-hidden="true"/>{language==='en'?'7-day shelf life':'Срок 7 суток'}</span>}
+                {item.amount&&item.type!=='equipment'&&<span className="territory-shop-product__amount">×{item.amount}</span>}
               </div>
-              <p className="territory-shop-product__name text-sm font-bold leading-tight min-h-[34px] break-words" style={{ color }}>{localizeText(item.name, language)}</p>
-              {(item.type === 'elixir' || item.type === 'potion' || item.type === 'arena' || item.id === 'shop_forge_material') && <p className="text-[10px] text-amber-300">⏳ {language === 'en' ? '7-day shelf life' : 'Срок 7 суток'}</p>}
-              {item.amount && item.type !== 'equipment' && (
-                <p className="text-[10px] text-gray-400">x{item.amount}</p>
-              )}
-              <span className={`territory-shop-product__price mt-1.5 min-h-9 rounded-lg flex items-center justify-center text-xs font-bold ${ok ? 'bg-amber-500/90 text-black' : 'bg-white/5 text-gray-500'}`}>
-                <Price item={item} />
-              </span>
-            </button>
+              <div className="territory-shop-product__actions">
+                <div className="territory-shop-product__stepper" aria-label={language==='en'?'Purchase quantity':'Количество для покупки'}>
+                  <button type="button" onClick={()=>setQty(qty-1)} disabled={qty<=1}
+                    aria-label={language==='en'?'Decrease quantity':'Уменьшить количество'}><Minus size={16}/></button>
+                  <output aria-label={language==='en'?'Selected quantity':'Выбрано'}>{qty}</output>
+                  <button type="button" onClick={()=>setQty(qty+1)} disabled={qty>=quantityCap}
+                    aria-label={language==='en'?'Increase quantity':'Увеличить количество'}><Plus size={16}/></button>
+                </div>
+                <button type="button" className="territory-shop-product__buy" disabled={!canPurchase}
+                  onClick={()=>inspectItem(item,qty)}
+                  aria-label={(language==='en'?'Buy ':'Купить ')+localizeText(item.name,language)}>
+                  <Currency kind={item.priceGems?'gems':'gold'} value={unitPrice*qty} size={16}/>
+                  <span>{language==='en'?'Buy':'Купить'}</span>
+                </button>
+              </div>
+            </article>
           );
         })}
-      </div>
+      </section>
 
       {purchaseError && <p role="alert" className="rounded-lg border border-red-500/40 bg-red-950/30 p-3 text-xs text-red-200">{purchaseError}</p>}
       {shopCheck==='error' && <p role="alert" className="rounded-lg border border-red-500/40 bg-red-950/30 p-3 text-xs text-red-200">{language==='en'?'Shop server unavailable. Purchases paused.':'Сервер магазина недоступен. Покупки остановлены.'}</p>}
       {pendingShop && <button className="w-full rounded-xl border border-amber-400/40 bg-amber-500/10 p-3 text-sm font-bold text-amber-200 disabled:opacity-50" onClick={()=>{void retryServerPurchase();}} disabled={buying}>{language==='en'?'Retry pending purchase (same transaction)':'Повторить неподтверждённую покупку (тот же запрос)'}</button>}
       {picked && (
         <Modal title={localizeText(picked.name, language)} onClose={() => setPicked(null)}>
-          <PurchaseSheet item={picked} state={shopStatus?.enabled ? {...state, player:{...state.player,gems:shopStatus.gems},battleStones:shopStatus.stones,dailyStonesBought:shopStatus.boughtToday,dailyStonesDate:calendarDayKey()} : state} onBuy={(qty) => {void buy(picked, qty);}} />
+          <PurchaseSheet item={picked} initialQty={dialogQty} state={shopStatus?.enabled ? {...state, player:{...state.player,gems:shopStatus.gems},battleStones:shopStatus.stones,dailyStonesBought:shopStatus.boughtToday,dailyStonesDate:calendarDayKey()} : state} onBuy={(qty) => {void buy(picked, qty);}} />
         </Modal>
       )}
 
@@ -387,7 +424,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
   );
 }
 
-function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameState; onBuy: (qty: number) => void }) {
+function PurchaseSheet({ item, state, initialQty = 1, onBuy }: { item: ShopItem; state: GameState; initialQty?: number; onBuy: (qty: number) => void }) {
   const { t, language } = useLanguage();
   const isStone = item.type === 'stone';
   const stonePerUnit = isStone ? (item.amount ?? 1) : 0;
@@ -402,15 +439,15 @@ function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameStat
 
   const countdownMs = useMidnightCountdown();
 
-  const [qty, setQty] = useState(1);
+  const [qty, setQty] = useState(initialQty);
   const qtyClamped = Math.min(qty, maxQty);
   const totalCost = priceEach * qtyClamped;
   const totalStones = stonePerUnit * qtyClamped;
   const ok = maxQty >= 1 && qtyClamped >= 1 && (!isStone || stonesLeft >= totalStones);
 
   useEffect(() => {
-    setQty(1);
-  }, [item.id]);
+    setQty(initialQty);
+  }, [item.id, initialQty]);
 
   const clamp = useCallback((v: number) => Math.max(1, Math.min(v, maxQty)), [maxQty]);
 
