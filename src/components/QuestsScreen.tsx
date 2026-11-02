@@ -9,7 +9,7 @@ import { SocialQuestsSection } from './SocialQuestsSection';
 import { RewardJourney } from './RewardJourney';
 import { SocialTrail, type SocialDestination } from './social/SocialTrail';
 import type { SocialStatus } from '@/game/socialQuests';
-import { getStarterMilestones, shouldShowStarterJourney, type StarterDestination } from '@/game/starterJourney';
+import { getNextStarterMilestone, getStarterMilestones, shouldShowStarterJourney, type StarterDestination } from '@/game/starterJourney';
 import { questAction } from '@/game/eventsBoard';
 
 const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
