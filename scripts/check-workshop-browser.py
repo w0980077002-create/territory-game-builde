@@ -54,7 +54,8 @@ with sync_playwright() as p:
         const info=el.querySelector('.territory-shop-product__information').getBoundingClientRect();
         const actions=el.querySelector('.territory-shop-product__actions').getBoundingClientRect();
         const outer=el.getBoundingClientRect();
-        return art.right<=info.left+1 && info.right<=actions.left+1 &&
+        const separated=(a,b)=>a.right<=b.left+1||b.right<=a.left+1||a.bottom<=b.top+1||b.bottom<=a.top+1;
+        return separated(art,info)&&separated(info,actions)&&separated(art,actions)&&
           actions.right<=outer.right+1 && art.left>=outer.left-1 &&
           el.scrollWidth<=el.clientWidth+2;
       }"""
