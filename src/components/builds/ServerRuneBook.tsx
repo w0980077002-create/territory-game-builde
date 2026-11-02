@@ -3,6 +3,7 @@ import { Check, Crown, Flame, Heart, LockKeyhole, Shield, Snowflake, Sparkles, S
 import './serverRuneBook.css';
 import { supabase } from '@/game/supabase';
 import catalog from '@/game/config/territory-independent-rune-slots-v1.json';
+import skillCatalog from '@/game/config/territory-rune-skill-book-v1.json';
 import {
   RUNE_SCHEMA, parseRuneServerStatus, runeSlotCatalog, validateRuneSlots,
   type RuneServerStatus, type RuneSlot,
@@ -33,6 +34,19 @@ const RUNE_GROUPS = [
 ];
 const runeIcons = [Shield, Swords, Target, Snowflake, Crown, Zap, Wind, Flame, Sparkles, Heart];
 const runeTones = ['ember', 'frost', 'forest', 'violet', 'gold'];
+// Visual-only legacy archetypes. The 15 server slots remain independent:
+// names and symbols do NOT add or imply skill effects, ownership or passive grants.
+const runeArchetypes = skillCatalog.groups.flatMap(group => group.skills);
+const archetypeById = new Map(runeArchetypes.map(skill => [skill.id, skill]));
+const skillGlyphs = { shield: Shield, swords: Swords, target: Target, snowflake: Snowflake,
+  crown: Crown, zap: Zap, wind: Wind, flame: Flame } as const;
+function SkillSigil({ skillId }: { skillId: string }) {
+  const archetype = archetypeById.get(skillId);
+  const Icon = archetype ? (skillGlyphs[archetype.icon as keyof typeof skillGlyphs] ?? Sparkles) : Sparkles;
+  const tone = archetype?.tone ?? 'gold';
+  return <span aria-hidden="true" className={'territory-rune__stone territory-rune__stone--' + tone +
+    ' territory-rune__skill-sigil'}><Icon size={29} strokeWidth={2.7}/></span>;
+}
 function RuneStone({ slotIndex, variant = 0, faded = false }: {
   slotIndex: number; variant?: number; faded?: boolean;
 }) {
@@ -278,7 +292,7 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
             const index = row * 3 + col;
             const chosen = draft[index]?.runeId;
             const synced = chosen === status.slots[index]?.runeId;
-            const variant = slot.options.findIndex(option => option.runeId === chosen);
+            const archetype = archetypeById.get(slot.legacySkillId);
             const hasOwned = slot.options.some(option => !!status.owned[option.runeId]);
             return <button key={slot.slotId} type="button" data-testid={'rune-slot-' + (index + 1)}
               className={'territory-rune__tile' + (chosen ? ' territory-rune__tile--equipped' : hasOwned ? ' territory-rune__tile--available' : ' territory-rune__tile--locked')}
@@ -286,10 +300,11 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
                 (chosen ? (synced ? (en ? ', equipped' : ', установлена') : (en ? ', pending save' : ', ожидает сохранения')) : (hasOwned ? (en ? ', available' : ', доступны руны') : (en ? ', none owned' : ', нет полученных рун')))}
               aria-pressed={chosen !== null && chosen !== undefined}
               onClick={event => { openerRef.current = event.currentTarget; setActiveSlot(index); }}>
-              <RuneStone slotIndex={index} variant={Math.max(0, variant)} faded={!chosen}/>
+              <SkillSigil skillId={slot.legacySkillId}/>
               <small>{index + 1}</small>
               {chosen && synced && <span className="territory-rune__equipped"><Check size={11}/></span>}
               {!chosen && !hasOwned && <span className="territory-rune__locked" aria-hidden="true"><LockKeyhole size={12}/></span>}
+              <span className="territory-rune__skill-name">{archetype ? (en ? archetype.nameEn : archetype.nameRu) : (en ? 'Rune' : 'Руна')}</span>
               {chosen ? <span className="territory-rune__tile-label">{synced ? (en ? 'Equipped' : 'Установлено') : (en ? 'Not saved' : 'Не сохранено')}</span>
                 : <span className="territory-rune__tile-label">{hasOwned ? (en ? 'Select' : 'Выбрать') : (en ? 'Not owned' : 'Нет руны')}</span>}
             </button>;
@@ -329,9 +344,9 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
             aria-label={en ? 'Close' : 'Закрыть'}><X size={22}/></button>
         </div>
         <div className="territory-rune__dialog-body">
-          <h3>{en ? 'Choose a rune' : 'Выбери руну'}</h3>
-          <p className="territory-rune__help">{en ? 'Three options. Only server-owned runes can be equipped.'
-            : 'Три варианта. Установить можно только полученные руны.'}</p>
+          <h3>{(() => { const skill = archetypeById.get(modalSlot.legacySkillId); return skill ? (en ? skill.nameEn : skill.nameRu) : (en ? 'Choose a rune' : 'Выбери руну'); })()}</h3>
+          <p className="territory-rune__help">{en ? 'Choose one of 3 independently equipped runes. Only server-owned runes can be used.'
+            : 'Выбери одну из трёх независимых рун. Установить можно только полученную руну.'}</p>
           <div className="territory-rune__variants">
             {modalSlot.options.map((option, variant) => {
               const level = status.owned[option.runeId] ?? 0;
