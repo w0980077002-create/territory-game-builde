@@ -48,6 +48,7 @@ const InventoryScreen = lazy(() => import('@/components/InventoryScreen').then(m
 const ShopScreen = lazy(() => import('@/components/ShopScreen').then(m => ({ default: m.ShopScreen })));
 const QuestsScreen = lazy(() => import('@/components/QuestsScreen').then(m => ({ default: m.QuestsScreen })));
 const ProfileScreen = lazy(() => import('@/components/ProfileScreen').then(m => ({ default: m.ProfileScreen })));
+const RuneScreen = lazy(() => import('@/components/builds/ServerRuneBook').then(m => ({ default: m.ServerRuneBook })));
 const ArenaScreen = lazy(() => import('@/components/ArenaScreen').then(m => ({ default: m.ArenaScreen })));
 const ForgeScreen = lazy(() => import('@/components/ForgeScreen').then(m => ({ default: m.ForgeScreen })));
 const LeaderboardScreen = lazy(() => import('@/components/LeaderboardScreen').then(m => ({ default: m.LeaderboardScreen })));
@@ -67,7 +68,7 @@ const EventsScreen = lazy(() => import('@/components/EventsScreen').then(m => ({
 const HalloweenBossScreen = lazy(() => import('@/components/HalloweenBossScreen').then(m => ({ default: m.HalloweenBossScreen })));
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
-type SubScreen = 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
+type SubScreen = 'runes' | 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
 type Screen = NavId | SubScreen;
 
 /** Warm only the navigation chunks people are most likely to open.
@@ -80,6 +81,7 @@ const sectionPreloaders: Partial<Record<Screen, () => Promise<unknown>>> = {
   map: () => Promise.resolve(),
   games: () => import('@/components/GamesScreen'),
   hero: () => import('@/components/ProfileScreen'),
+  runes: () => import('@/components/builds/ServerRuneBook'),
   arena: () => import('@/components/ArenaScreen'),
   clan: () => import('@/components/ClanScreen'),
   shop: () => import('@/components/ShopScreen'),
@@ -108,6 +110,7 @@ const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
 ];
 
 const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> = {
+  runes: { title: 'Руны', icon: '/assets/territory/map/icons/rune-stones-v1.webp' },
   shop: { title: 'Лавка', icon: '/ic-shop.webp' },
   forge: { title: 'Кузница', icon: '/ic-forge.webp' },
   arena: { title: 'Арена', icon: '/ic-arena-viking.webp' },
@@ -389,7 +392,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   if (!loaded) return <Splash text={translate('loadingHero')} />;
 
   const sub = SUB_SCREENS[screen as SubScreen];
-  const navActive: NavId = screen === 'hall-play' ? 'games' : screen === 'arena' ? 'battle' : sub ? 'city' : (screen as NavId);
+  const navActive: NavId = screen === 'runes' ? 'map' : screen === 'hall-play' ? 'games' : screen === 'arena' ? 'battle' : sub ? 'city' : (screen as NavId);
   const slotImmersive = screen === 'hall-play' && hallGame === 'slots';
 
   const goNav = (id: NavId) => {
@@ -439,8 +442,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
       )}
       {sub && screen !== 'arena' && (
         <header className="territory-section-head shrink-0 z-30 h-12 px-2 flex items-center gap-2 border-b border-amber-500/20 bg-[#0c1117]/95">
-          <button disabled={battleLocked} onClick={() => setScreen('city')} className="h-9 pl-1.5 pr-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 text-sm font-semibold text-amber-100 bg-white/5 border border-white/10 active:scale-95 transition-transform">
-            <ChevronLeft className="w-4 h-4" /> {translate('cityBack')}
+          <button disabled={battleLocked} onClick={() => setScreen(screen === 'runes' ? 'map' : 'city')} className="h-9 pl-1.5 pr-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 text-sm font-semibold text-amber-100 bg-white/5 border border-white/10 active:scale-95 transition-transform">
+            <ChevronLeft className="w-4 h-4" /> {screen === 'runes' ? (language === 'en' ? 'To map' : 'К карте') : translate('cityBack')}
           </button>
           <img src={sub.icon} alt="" className="w-7 h-7 object-contain" />
           <h1 className="viking-title min-w-0 flex-1 text-sm leading-tight">
@@ -451,7 +454,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         </header>
       )}
 
-      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : screen === 'map' ? 'overflow-hidden !px-0 !py-0' : slotImmersive ? 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide !px-0 !py-0' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
+      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : screen === 'map' ? 'overflow-hidden !px-0 !py-0' : screen === 'runes' ? 'overflow-y-auto overflow-x-hidden overscroll-contain !px-1 !py-1' : slotImmersive ? 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide !px-0 !py-0' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
         <SectionErrorBoundary key={screen} language={language} onBack={() => setScreen('city')}>
         <Suspense fallback={<div role="status" className="flex min-h-32 items-center justify-center text-center text-sm text-amber-100/80">{language === 'en' ? 'Opening section…' : 'Открываем раздел…'}</div>}>
         {screen === 'city' && (
@@ -511,6 +514,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           onForge={(equipmentId) => openForge(equipmentId)}
           onQuests={() => setScreen('quests')}
            onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }} />}
+        {screen === 'runes' && <RuneScreen language={language}/>}
         {screen === 'map' && <MapScreen
           attentionPlaces={[
             ...(mapForgeReady ? ['forge' as const] : []),
@@ -527,7 +531,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           onTrial={() => { setBattleView('trial'); setAutoStart(false); setScreen('battle'); }}
           onCave={() => { setBattleView('cave'); setAutoStart(false); setScreen('battle'); }}
           onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }}
-          onRunes={() => { setHeroTrainingOpen(true); setScreen('hero'); }}
+          onRunes={() => setScreen('runes')}
         />}
         {screen === 'shop' && <ShopScreen key={shopTab} initialTab={shopTab} onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} />}
         {screen === 'forge' && <ForgeScreen focusEquipmentId={forgeFocusId} userId={user.id}
