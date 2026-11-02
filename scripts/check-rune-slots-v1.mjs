@@ -82,6 +82,29 @@ assert.throws(()=>api.parseRuneServerStatus({...serverStatus,owned:[
   {...serverStatus.owned[0],level:4},...serverStatus.owned.slice(1)]},defs),/rune_status_ownership_invalid/);
 assert.throws(()=>api.parseRuneServerStatus({...serverStatus,slots:full.slots.slice(0,5)},defs),/rune_count_invalid/);
 assert.throws(()=>api.parseRuneServerStatus({...serverStatus,schema:'legacy-skills'},defs),/rune_status_invalid/);
+// Validate the complete 45-rune local PvE definition mirror against the
+// reviewed, server-owned effect catalog. Never invent player ownership.
+const pveBundle=await build({entryPoints:['src/game/builds/runePveEffectsV1.ts'],
+  bundle:true,platform:'node',format:'esm',write:false,logLevel:'silent'});
+const localPve=await import('data:text/javascript;base64,'+Buffer.from(pveBundle.outputFiles[0].text).toString('base64'));
+const effectSql=readFileSync('supabase/staged/territory_rune_effects_v1.sql','utf8');
+const rows=[...effectSql.matchAll(/\\('([a-z_0-9]+)','([a-z_0-9]+)',(\\d+)\\)/g)];
+assert.equal(rows.length,45,'All 45 effect definitions must match the server catalog');
+assert.equal(Object.keys(localPve.RUNE_PVE_CATALOG).length,45);
+for(const [,runeId,key,perLevel] of rows) {
+  assert.deepEqual(localPve.RUNE_PVE_CATALOG[runeId],
+    {key,perLevelBp:Number(perLevel)},'No client/server rune effect drift: '+runeId);
+}
+const twoEquipped=api.parseRuneServerStatus({...serverStatus,
+  slots:defs.map((def,index)=>({slotId:def.slotId,runeId:index<2?def.options[0]:null}))},defs);
+const pveTotals=localPve.localPveRuneTotals(twoEquipped);
+assert.equal(pveTotals.guard_absorb_bp,360);
+assert.equal(pveTotals.damage_bonus_bp,300);
+assert(Object.isFrozen(pveTotals),'A battle must freeze the rune effect snapshot');
+assert.deepEqual(localPve.localPveRuneTotals(api.parseRuneServerStatus({...serverStatus,
+  slots:empty.slots},defs)),{},'An empty verified set has no invented effects');
+assert.throws(()=>localPve.localPveRuneTotals({...twoEquipped,owned:{}}),/rune_not_owned/);
+
 const runeUi=readFileSync('src/components/builds/ServerRuneBook.tsx','utf8');
 assert(runeUi.includes("territory_runes_status_v1") && runeUi.includes("territory_runes_save_v1"));
 assert(runeUi.includes("p_operation: command.operationId") && runeUi.includes("p_revision: command.revision"));
