@@ -12,7 +12,7 @@ import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
-import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
+import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
@@ -109,11 +109,13 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   // A server-verified rune set is frozen ONCE per local PvE fight. Never read
   // editable local game_state as rune ownership, or change runes mid-fight.
   const runeEffectsAtStart = useRef<PveRuneTotals | null>(null);
+  const runeAilments = useRef<PveRuneAilments>({ ...EMPTY_PVE_RUNE_AILMENTS });
   const [runesReady, setRunesReady] = useState(!RUNE_PVE_STAGED);
   useEffect(() => {
     if (!RUNE_PVE_STAGED) return;
     let cancelled = false;
     runeEffectsAtStart.current = null;
+    runeAilments.current = { ...EMPTY_PVE_RUNE_AILMENTS };
     setRunesReady(false);
     void (async () => {
       try {
@@ -263,7 +265,8 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     hapticImpact('light');
     const elite = kind === 'trial' || !!enemy.isBoss;
-    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum.streak === 2, runeEffectsAtStart.current);
+    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum.streak === 2, runeEffectsAtStart.current, runeAilments.current);
+    if (runeEffectsAtStart.current) runeAilments.current = res.runeAilments ?? runeAilments.current;
     const currentSpeed = useGame.get().settings.speed;
     setRoundSpeed(currentSpeed);
     const pace = 1 / currentSpeed;
@@ -276,7 +279,9 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
       if (!alive.current) return;
       if (hit.targetSide === 'enemy') setFoe((f) => ({ ...f, hp: Math.max(0, f.hp - hit.amount) }));
       else setHero((h) => ({ ...h, hp: Math.max(0, h.hp - hit.amount) }));
-      pushLog(describeHit(hit));
+      pushLog(hit.source === 'rune'
+        ? language === 'en' ? `Rune damage: -${hit.amount} HP` : `Урон от руны: −${hit.amount} HP`
+        : describeHit(hit));
       await wait(520 * pace);
     }
     if (!alive.current) return;
