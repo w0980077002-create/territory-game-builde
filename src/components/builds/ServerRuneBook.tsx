@@ -21,6 +21,7 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   const [status, setStatus] = useState<RuneServerStatus | null>(null);
   const [draft, setDraft] = useState<RuneSlot[]>([]);
   const [notice, setNotice] = useState('');
+  const [claiming, setClaiming] = useState(false);
   const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
@@ -48,6 +49,30 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
     })();
     return () => { cancelled = true; alive.current = false; };
   }, [refresh, en]);
+
+  const claimDaily = async () => {
+    if (claiming || saving.current || pending.current) return;
+    setClaiming(true);
+    try {
+      const { data, error } = await supabase.rpc('territory_runes_claim_daily_v1');
+      if (error) throw error;
+      if (!data || data.schema !== 'territory-rune-daily/1'
+        || typeof data.runeId !== 'string' || !definitions.some(s => s.options.includes(data.runeId))
+        || !Number.isSafeInteger(data.level) || data.level < 1 || data.level > 3) {
+        throw Error('rune_daily_receipt_invalid');
+      }
+      setNotice(en
+        ? `Daily rune received · level ${data.level}. Reloading collection…`
+        : `Ежедневная руна получена · уровень ${data.level}. Обновляем коллекцию…`);
+      setRefresh(value => value + 1);
+    } catch {
+      setNotice(en
+        ? 'Daily rune could not be confirmed. You can safely try again.'
+        : 'Не удалось подтвердить ежедневную руну. Можно безопасно повторить.');
+    } finally {
+      setClaiming(false);
+    }
+  };
 
   const choose = (slotId: string, runeId: string | null) => {
     if (!status || saving.current || pending.current) return;
@@ -149,6 +174,14 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
       <p className="mt-1">{en ? 'Only server-owned runes can be selected. No rune is a combat skill slot.'
         : 'Можно выбрать только подтверждённые сервером руны. Слоты рун не заменяют боевые навыки.'}</p>
     </div>
+    <button type="button" onClick={() => void claimDaily()}
+      disabled={claiming || saving.current || !!pending.current}
+      data-testid="rune-daily-claim"
+      className="min-h-12 w-full rounded-xl border border-amber-300 bg-gradient-to-b from-[#9f6825] to-[#62401a] px-3 font-black text-amber-50 disabled:opacity-50">
+      {claiming
+        ? (en ? 'Checking the daily rune…' : 'Проверяем ежедневную руну…')
+        : (en ? 'Claim daily rune' : 'Получить руну дня')}
+    </button>
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {catalog.slots.map((slot, index) => {
         const selected = draft[index]?.runeId ?? null;
