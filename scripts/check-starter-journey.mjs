@@ -39,6 +39,12 @@ assert.equal(getStarterMilestones(state)[2].destination, 'inventory', 'Players w
 state.totalBattlesWon = 1;
 assert.equal(getNextStarterMilestone(getStarterMilestones(state))?.id, 'first-equipment', 'Owned loot after first victory takes priority over two repetitive fights');
 assert.equal(getHeroPathDestination(getNextStarterMilestone(getStarterMilestones(state)), 0), 'inventory', 'Owned gear opens equipment from City');
+state.player.equipped.weapon = { id: 'equipped', slot: 'weapon', attack: 12, defense: 4 };
+state.inventory = [{ id: 'choice', type: 'equipment', qty: 1, equipment: { id: 'choice', slot: 'weapon', attack: 20, defense: 1 } }];
+assert.equal(getNextStarterMilestone(getStarterMilestones(state))?.id, 'three-fights',
+  'already equipped heroes continue their next fight rather than repeating the first-equipment milestone');
+state.player.equipped = {};
+state.inventory = [{ type: 'equipment', qty: 1, equipment: { slot: 'weapon' } }];
 state.totalBattlesWon = 3;
 state.player.equipped.weapon = { name: 'Starter sword' };
 assert.equal(getStarterMilestones(state)[2].done, true, 'Only actually equipped gear completes the step');
