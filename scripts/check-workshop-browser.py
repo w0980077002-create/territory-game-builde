@@ -21,10 +21,10 @@ with sync_playwright() as p:
     page.goto(f'http://127.0.0.1:{server.server_port}/territory-workshop-after.html?shop');page.wait_for_timeout(400);assert not errors,errors
     # Full stage, hanging sign, horizontal product rows and all visual assets.
     assert page.locator('.territory-shop-facade__scenery').evaluate(
-      "(el) => getComputedStyle(el).backgroundImage.includes('" + ('shop-approved-facade.webp' if lang=='ru' else 'shop-reference-market.webp') + "')"
+      "(el) => getComputedStyle(el).backgroundImage.includes('" + ('shop-approved-facade.webp' if lang=='ru' else 'shop-market-stage.svg') + "')"
     ), (width,lang,'owner-approved market missing')
     assert page.evaluate("""async () => {
-      const paths = ['shop-wood-planks.webp','shop-wood-beams.webp','shop-rope-wrap.svg','shop-iron-corner.svg','shop-market-stage.svg','shop-hanging-sign.svg','shop-reference-sign.webp','shop-reference-market.webp','shop-reference-license-frame.webp','shop-reference-product-frame.webp','shop-approved-facade.webp','shop-approved-license-border.webp','shop-approved-product-border.webp','shop-approved-product-border-v2.webp','shop-approved-tabs-border.webp'];
+      const paths = ['shop-wood-planks.webp','shop-wood-beams.webp','shop-rope-wrap.svg','shop-iron-corner.svg','shop-market-stage.svg','shop-hanging-sign.svg','shop-reference-sign.webp','shop-reference-market.webp','shop-reference-license-frame.webp','shop-reference-product-frame.webp','shop-approved-facade.webp','shop-approved-license-border.webp','shop-approved-product-border.webp','shop-approved-product-border-v2.webp','shop-approved-tabs-border.webp','crafted-product-frame.svg','crafted-license-frame.svg','crafted-tab-frame.svg'];
       return (await Promise.all(paths.map(name => new Promise(resolve => {
         const img = new Image();
         img.onload = () => resolve(img.naturalWidth > 0);
@@ -33,18 +33,32 @@ with sync_playwright() as p:
       })))).every(Boolean);
     }"""), (width,lang,'shop asset missing')
     assert page.locator('.territory-shop-facade__scenery').evaluate(
-      "(el) => getComputedStyle(el).backgroundImage.includes('" + ('shop-approved-facade.webp' if lang=='ru' else 'shop-reference-market.webp') + "')"
+      "(el) => getComputedStyle(el).backgroundImage.includes('" + ('shop-approved-facade.webp' if lang=='ru' else 'shop-market-stage.svg') + "')"
     ), (width,lang,'painted shop background missing')
     assert page.locator('.territory-shop-license').evaluate(
-      "(el) => getComputedStyle(el,'::after').borderImageSource.includes('shop-approved-license-border.webp')"
+      "(el) => getComputedStyle(el,'::after').borderImageSource.includes('crafted-license-frame.svg')"
     ), (width,lang,'license illustrated frame missing')
     assert page.locator('.territory-shop-product').first.evaluate(
-      "(el) => getComputedStyle(el,'::before').backgroundImage.includes('shop-approved-product-border-v2.webp')"
+      "(el) => getComputedStyle(el,'::before').borderImageSource.includes('crafted-product-frame.svg')"
     ), (width,lang,'product illustrated frame missing')
     assert page.locator('.territory-shop-facade').count()==1
     assert page.locator('.territory-shop-approved').count()==1
     assert page.locator('.territory-shop-products .territory-shop-product').count()>=2
     assert page.locator('.territory-shop-product__buy').first.bounding_box()['height']>=43.99
+    assert page.locator('.territory-shop-tab').first.evaluate(
+      "(el)=>getComputedStyle(el,'::before').borderImageSource.includes('crafted-tab-frame.svg')"
+    ),(width,lang,'new forged tab border not applied')
+    assert page.locator('.territory-shop-product').first.evaluate(
+      """(el) => {
+        const art=el.querySelector('.territory-shop-product__art').getBoundingClientRect();
+        const info=el.querySelector('.territory-shop-product__information').getBoundingClientRect();
+        const actions=el.querySelector('.territory-shop-product__actions').getBoundingClientRect();
+        const outer=el.getBoundingClientRect();
+        return art.right<=info.left+1 && info.right<=actions.left+1 &&
+          actions.right<=outer.right+1 && art.left>=outer.left-1 &&
+          el.scrollWidth<=el.clientWidth+2;
+      }"""
+    ), (width,lang,'product layout collision or overflow')
     if lang=='ru':
       assert page.locator('.territory-shop-sign__title').evaluate("(el)=>getComputedStyle(el).opacity==='0'"),'duplicate printed title'
     else:
