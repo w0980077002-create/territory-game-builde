@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { build } from 'esbuild';
 
 const result = await build({ entryPoints: ['src/game/starterJourney.ts'], bundle: true, write: false, platform: 'node', format: 'esm' });
-const { getNextStarterMilestone, getStarterMilestones, shouldShowStarterJourney } = await import('data:text/javascript;base64,' + Buffer.from(result.outputFiles[0].text).toString('base64'));
+const { getHeroPathDestination, getNextStarterMilestone, getStarterMilestones, shouldShowStarterJourney } = await import('data:text/javascript;base64,' + Buffer.from(result.outputFiles[0].text).toString('base64'));
 const state = { player: { level: 1, equipped: {} }, inventory: [], totalBattlesWon: 0 };
 
 let steps = getStarterMilestones(state);
@@ -11,14 +11,18 @@ assert.deepEqual(steps.map(step => step.done), [false, false, false, false]);
 assert.deepEqual(steps.map(step => step.destination), ['battle', 'battle', 'shop', 'battle']);
 assert.equal(steps[0].titleRu, 'Победи первого врага');
 assert.equal(getNextStarterMilestone(steps)?.id, 'first-fight', 'First fight always comes first');
+assert.equal(getHeroPathDestination(getNextStarterMilestone(steps), 0), 'battle', 'City first objective opens real campaign, not quests');
+assert.equal(getHeroPathDestination(getNextStarterMilestone(steps), 1), 'quests', 'Claimable quest takes priority over first fight');
 state.totalBattlesWon = 1;
 steps = getStarterMilestones(state);
 assert.equal(getNextStarterMilestone(steps)?.id, 'three-fights', 'No owned equipment: continue fighting, never push an unfunded shop purchase');
+assert.equal(getHeroPathDestination(getNextStarterMilestone(steps), 0), 'battle', 'After first win, City continues campaign');
 
 state.totalBattlesWon = 3;
 steps = getStarterMilestones(state);
 assert.deepEqual(steps.map(step => step.done), [true, true, false, false]);
 assert.equal(steps[2].destination, 'shop', 'Players without gear should be sent to the Shop');
+assert.equal(getHeroPathDestination(getNextStarterMilestone(steps), 0), 'shop', 'After three wins with no gear, City opens existing shop');
 
 state.inventory = [{ type: 'equipment' }];
 assert.equal(getStarterMilestones(state)[2].destination, 'shop', 'A malformed item must not send a player to an empty equipment tab');
@@ -34,6 +38,7 @@ state.inventory = [{ type: 'equipment', qty: 1, equipment: { slot: 'weapon' } }]
 assert.equal(getStarterMilestones(state)[2].destination, 'inventory', 'Players with real positive-count gear in the bag should be sent to Inventory');
 state.totalBattlesWon = 1;
 assert.equal(getNextStarterMilestone(getStarterMilestones(state))?.id, 'first-equipment', 'Owned loot after first victory takes priority over two repetitive fights');
+assert.equal(getHeroPathDestination(getNextStarterMilestone(getStarterMilestones(state)), 0), 'inventory', 'Owned gear opens equipment from City');
 state.totalBattlesWon = 3;
 state.player.equipped.weapon = { name: 'Starter sword' };
 assert.equal(getStarterMilestones(state)[2].done, true, 'Only actually equipped gear completes the step');
@@ -41,6 +46,8 @@ assert.equal(getNextStarterMilestone(getStarterMilestones(state))?.id, 'level-fi
 state.player.level = 5;
 assert.ok(getStarterMilestones(state).every(step => step.done));
 assert.equal(getNextStarterMilestone(getStarterMilestones(state)), undefined, 'Completed guide must not invent another objective');
+assert.equal(getHeroPathDestination(undefined, 0), 'quests', 'Completed roadmap falls back to existing quests');
+assert.equal(getHeroPathDestination(undefined, 2), 'quests', 'Claimable quest always remains reachable');
 
 const quests = readFileSync('src/components/QuestsScreen.tsx', 'utf8');
 const app = readFileSync('src/App.tsx', 'utf8');
@@ -68,9 +75,12 @@ assert.match(fight, /Check equipment before retrying/,
 assert.match(home, /state\.totalBattlesWon === 0/, 'Preserve existing first-fight hint on the home scene');
 assert.match(home, /shouldShowStarterJourney\(state\) \? getStarterMilestones\(state\)/, 'Home roadmap must serve all heroes missing first victories');
 assert.match(home, /data-testid="home-hero-path"/, 'The existing quest strip is the roadmap entry point');
-assert.match(home, /starterNext\?\.destination === 'inventory'\) onInventory\('equipment'\)/, 'Owned first loot must be one tap away from City');
-assert.match(home, /questAlerts\.readyCount === 0 && starterNext/, 'Ready quest rewards must keep priority over gear guidance');
-assert.match(home, /else onOpen\('quests'\)/, 'Without owned gear, the roadmap still opens the real quest screen');
+assert.match(home, /getHeroPathDestination\(starterNext, questAlerts\.readyCount\)/, 'City must resolve the real destination with quest-claim priority');
+assert.match(home, /heroPathDestination === 'inventory'\) onInventory\('equipment'\)/, 'Owned gear opens the equipment tab');
+assert.match(home, /heroPathDestination === 'battle'\) onBattle\('campaign'\)/, 'First-fight roadmap opens manual campaign without automatic stone debit');
+assert.match(home, /heroPathDestination === 'shop'\) onOpen\('shop'\)/, 'Missing equipment routes to the existing shop');
+assert.match(home, /heroPathDestination === 'arena'\) onOpen\('arena'\)/, 'Future arena objectives route to the existing Arena');
+assert.match(home, /else onOpen\('quests'\)/, 'Ready quest claims and completed roadmap open existing quests');
 assert.match(home, /getNextStarterMilestone\(starterSteps\)/, 'City must prioritize actual owned loot after the first win');
 assert.match(quests, /getNextStarterMilestone\(starterSteps\)/, 'Quest screen must show the same next objective as City');
 assert.match(home, /questAlerts\.readyCount === 0/, 'Ready rewards must take visual priority');

@@ -22,7 +22,7 @@ import { LiveCityBackdrop, CITY_MOTION_KEY, CITY_BACKGROUND_KEY, initialCityMoti
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
-import { getNextStarterMilestone, getStarterMilestones, shouldShowStarterJourney } from '@/game/starterJourney';
+import { getHeroPathDestination, getNextStarterMilestone, getStarterMilestones, shouldShowStarterJourney } from '@/game/starterJourney';
 import { halloweenBossInSeason } from '@/game/halloweenBossSeason';
 
 export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
@@ -130,6 +130,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
   const starterSteps = shouldShowStarterJourney(state) ? getStarterMilestones(state) : [];
   const starterDone = starterSteps.filter(step => step.done).length;
   const starterNext = getNextStarterMilestone(starterSteps);
+  const heroPathDestination = getHeroPathDestination(starterNext, questAlerts.readyCount);
 
   const setSettings = (patch: Partial<typeof state.settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
   const toggleCityMotion = () => setCityMotion((previous) => {
@@ -297,9 +298,12 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => {
-              // A newly won, already-owned item deserves a direct equipment route.
-              // Claimable quest rewards still take precedence over the guide.
-              if (questAlerts.readyCount === 0 && starterNext?.destination === 'inventory') onInventory('equipment');
+              // The visible objective must open the matching EXISTING playable section.
+              // Claimable quest rewards take precedence, with no automatic battle debit.
+              if (heroPathDestination === 'inventory') onInventory('equipment');
+              else if (heroPathDestination === 'battle') onBattle('campaign');
+              else if (heroPathDestination === 'shop') onOpen('shop');
+              else if (heroPathDestination === 'arena') onOpen('arena');
               else onOpen('quests');
             }}
             data-testid="home-hero-path"
