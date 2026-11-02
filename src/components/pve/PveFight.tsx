@@ -304,9 +304,12 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const ready = controls && !!attack && blocks.length === 2;
   const firstFightHelp = kind === 'stage' && state.totalBattlesWon === 0;
   const guardedZone = ZONES.find(zone => zone.id === enemyIntent.blocks[0]);
-  const guardedZoneLabel = guardedZone
-    ? language === 'en' ? ({ head: 'Head', chest: 'Chest', belly: 'Belly', legs: 'Legs' } as Record<string, string>)[guardedZone.id] : guardedZone.label
-    : '';
+  // Display both zones actually committed to the next round's resolver.
+  // Previously the second guard was invisible and "Choose opening" could hit it.
+  const guardedZoneLabels = enemyIntent.blocks.map(id => {
+    const zone = ZONES.find(item => item.id === id);
+    return zone ? (language === 'en' ? ({ head: 'Head', chest: 'Chest', belly: 'Belly', legs: 'Legs' } as Record<string, string>)[id] : zone.label) : '';
+  }).filter(Boolean).join(language === 'en' ? ' & ' : ' и ');
   // The trial/boss warning reads the committed AI attack for the very next
   // round. It never predicts a new random roll or changes combat resolution.
   const threatenedZone = ZONES.find(zone => zone.id === enemyIntent.attack);
@@ -538,10 +541,10 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
           <div data-testid="pve-enemy-guard" className="relative mx-2 mb-1 flex flex-wrap items-center gap-1.5 rounded-lg border border-amber-300/50 bg-[#321f14]/95 px-2 py-1.5 text-[11px] font-semibold text-amber-100">
             <Shield className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
             <span className="min-w-0 leading-tight" role="status" aria-live="polite">
-              {language === 'en' ? 'Enemy guards' : 'Враг прикрывает'} <strong className="text-amber-300">{guardedZoneLabel}</strong>.
-              {' '}{attack === guardedZone.id
-                ? (language === 'en' ? 'Your strike may be blocked. Choose a gap!' : 'Удар может быть заблокирован. Ищи брешь!')
-                : (language === 'en' ? 'Strike another zone to bypass this guard.' : 'Бей в другую зону, чтобы обойти щит.')}
+              {language === 'en' ? 'Enemy guards' : 'Враг прикрывает'} <strong className="text-amber-300">{guardedZoneLabels}</strong>.
+              {' '}{attack !== null && enemyIntent.blocks.includes(attack)
+                ? (language === 'en' ? 'This zone is guarded. Choose a gap!' : 'Эта зона под защитой. Ищи брешь!')
+                : (language === 'en' ? 'Strike an unguarded zone to bypass the shield.' : 'Бей в свободную зону, чтобы обойти щит.')}
             </span>
             {adaptiveGuard && <span data-testid="pve-adaptive-guard" className="w-full text-[10px] font-bold text-red-200">
               {language === 'en'
@@ -549,7 +552,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
                 : 'Фаза II: враг запомнил прошлый удар. Смени зону атаки!'}
             </span>}
             <button type="button" data-testid="pve-choose-opening" disabled={!controls}
-              onClick={() => setAttack(current => nextOpenStrike(current, guardedZone.id))}
+              onClick={() => setAttack(current => nextOpenStrike(current, enemyIntent.blocks))}
               className="ml-auto min-h-9 shrink-0 rounded-lg border border-amber-200/70 bg-gradient-to-b from-amber-300 to-amber-600 px-2.5 text-[11px] font-black text-[#29180b] active:scale-[0.98] disabled:opacity-40">
               {language === 'en' ? 'Choose opening' : 'Выбрать брешь'}
             </button>
