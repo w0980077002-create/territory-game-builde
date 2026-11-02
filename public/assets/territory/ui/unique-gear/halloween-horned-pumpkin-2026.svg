@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="Рогатая тыква, раритетный шлем Хэллоуина"><defs>
+<radialGradient id="pump" cx=".33" cy=".2" r=".85"><stop stop-color="#ffb24d"/><stop offset=".45" stop-color="#f97912"/><stop offset=".83" stop-color="#a9350c"/><stop offset="1" stop-color="#66220a"/></radialGradient>
+<linearGradient id="horn" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#fffce6"/><stop offset=".45" stop-color="#edcca0"/><stop offset=".8" stop-color="#b78d5a"/><stop offset="1" stop-color="#705033"/></linearGradient>
+<linearGradient id="metal" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#fff7b3"/><stop offset=".3" stop-color="#eab84b"/><stop offset=".65" stop-color="#a46c1c"/><stop offset="1" stop-color="#ffe180"/></linearGradient>
+<radialGradient id="shine"><stop stop-color="#f8fff5"/><stop offset=".15" stop-color="#ffd863"/><stop offset=".45" stop-color="#f59a2b" stop-opacity=".5"/><stop offset="1" stop-color="#f59a2b" stop-opacity="0"/></radialGradient>
+<linearGradient id="gem" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#ffc3ff"/><stop offset=".4" stop-color="#cc54ef"/><stop offset=".8" stop-color="#7f21ac"/><stop offset="1" stop-color="#4b116b"/></linearGradient>
+<filter id="shadow"><feGaussianBlur stdDeviation="3"/></filter></defs>
+<ellipse cx="160" cy="164" rx="134" ry="126" fill="#ffb322" opacity=".14" filter="url(#shadow)"/>
+<path d="M92 112C50 106 28 62 29 19C12 46 9 101 48 151L94 168Z" fill="url(#horn)" stroke="#694d31" stroke-width="6"/>
+<path d="M228 112C270 106 292 62 291 19C308 46 311 101 272 151L226 168Z" fill="url(#horn)" stroke="#694d31" stroke-width="6"/>
+<path d="M93 109C64 111 43 84 36 54M227 109C256 111 277 84 284 54" fill="none" stroke="#fff5c8" stroke-width="6" stroke-linecap="round" opacity=".65"/>
+<path d="M83 124C104 78 121 61 160 60C199 61 216 78 237 124C260 166 251 238 231 262H89C69 238 60 166 83 124Z" fill="url(#pump)" stroke="#68310f" stroke-width="7"/>
+<path d="M117 76C98 111 103 228 118 255M203 76C222 111 217 228 202 255M160 70C148 132 148 208 160 263" fill="none" stroke="#8d3510" stroke-width="9" opacity=".55"/>
+<path d="M160 65C147 55 152 31 161 27C174 31 166 57 160 65" fill="#556d20" stroke="#293812" stroke-width="5"/>
+<path d="M163 52C188 35 211 49 203 64C196 77 180 61 185 57" fill="none" stroke="#698c29" stroke-width="7" stroke-linecap="round"/>
+<path d="M87 120L75 153L94 173L108 132Z M233 120L245 153L226 173L212 132Z" fill="#41404b" stroke="#c08a37" stroke-width="6"/>
+<path d="M91 134C117 92 199 92 229 134" fill="none" stroke="url(#metal)" stroke-width="11"/>
+<path d="M149 78H171L181 143H139Z" fill="#5c3c2a" stroke="url(#metal)" stroke-width="6"/>
+<path d="M160 105L184 128L160 152L136 128Z" fill="url(#gem)" stroke="#ffdb66" stroke-width="6"/>
+<path d="M160 111L173 128L160 143L147 128Z" fill="none" stroke="#f9c6ff" stroke-width="3"/>
+<path d="M96 163L136 176L112 190Z M224 163L184 176L208 190Z" fill="#ffe477" stroke="#62320d" stroke-width="5"/>
+<path d="M99 213C116 239 143 220 160 235C177 220 204 239 221 213L214 242C190 260 131 260 106 242Z" fill="#ffe178" stroke="#62320d" stroke-width="7"/>
+<path d="M87 253Q160 231 233 253L223 277Q160 261 97 277Z" fill="#32201d" stroke="url(#metal)" stroke-width="9"/>
+<path d="M105 258Q160 249 215 258" fill="none" stroke="#806049" stroke-width="4" stroke-dasharray="6 6"/>
+<path d="M88 206L65 213L73 254L94 255Z M232 206L255 213L247 254L226 255Z" fill="url(#metal)" stroke="#593a24" stroke-width="5"/>
+<circle cx="80" cy="232" r="7" fill="#ffe17a"/><circle cx="240" cy="232" r="7" fill="#ffe17a"/>
+<path d="M85 271L77 309L97 295L108 312L107 276Z M235 271L243 309L223 295L212 312L213 276Z" fill="#682e92" stroke="#ecc04f" stroke-width="3"/>
+<path d="M35 182L44 189L35 196L26 189Z M284 182L293 189L284 196L275 189Z M158 8L165 21L158 34L151 21Z" fill="#ffe4a1"/>
+<circle cx="38" cy="189" r="19" fill="url(#shine)" opacity=".6"/><circle cx="282" cy="189" r="19" fill="url(#shine)" opacity=".6"/>
+</svg>
