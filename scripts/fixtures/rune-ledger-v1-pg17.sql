@@ -36,6 +36,19 @@ SELECT public.territory_runes_admin_set_level_v1(
 SELECT public.territory_runes_admin_set_level_v1(
  '10000000-0000-4000-8000-000000000001','shield_wall_r1',2,
  '20000000-0000-4000-8000-000000000001','synthetic-ci-admin');
+DO $test$ DECLARE r jsonb; BEGIN
+ r:=public.territory_runes_admin_status_v1('10000000-0000-4000-8000-000000000001');
+ IF r#>>'{owned,0,runeId}'<>'shield_wall_r1' OR r#>>'{owned,0,level}'<>'2'
+ THEN RAISE EXCEPTION 'admin_status_failed: %',r; END IF;
+ BEGIN
+   PERFORM public.territory_runes_admin_set_level_v1(
+    '10000000-0000-4000-8000-000000000001','shield_wall_r1',3,
+    '20000000-0000-4000-8000-000000000001','synthetic-ci-admin');
+   RAISE EXCEPTION 'expected_admin_collision';
+ EXCEPTION WHEN OTHERS THEN
+   IF SQLERRM<>'rune_operation_reused' THEN RAISE; END IF;
+ END;
+END $test$;
 RESET ROLE;
 
 SET ROLE authenticated;
@@ -46,6 +59,9 @@ BEGIN
  IF has_function_privilege('authenticated',
  'public.territory_runes_admin_set_level_v1(uuid,text,integer,uuid,text)','EXECUTE')
  THEN RAISE EXCEPTION 'client_can_admin_grant'; END IF;
+ IF has_function_privilege('authenticated',
+ 'public.territory_runes_admin_status_v1(uuid)','EXECUTE')
+ THEN RAISE EXCEPTION 'client_can_read_admin_status'; END IF;
  IF has_schema_privilege('authenticated','territory_private','USAGE')
  THEN RAISE EXCEPTION 'client_can_write_ownership'; END IF;
  r:=public.territory_runes_status_v1();

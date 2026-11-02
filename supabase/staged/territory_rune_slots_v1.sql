@@ -167,7 +167,19 @@ BEGIN
 END $runes$;
 
 -- Restricted staging admin primitive; NOT a public/client mint endpoint.
--- This is not a complete admin UI or reward pipeline.
+-- Admin API authenticates the owner before calling these service-only RPCs.
+CREATE OR REPLACE FUNCTION public.territory_runes_admin_status_v1(p_player uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $runes$
+DECLARE owned jsonb;
+BEGIN
+ IF p_player IS NULL OR NOT EXISTS(SELECT 1 FROM public.players WHERE id=p_player)
+ THEN RAISE EXCEPTION 'rune_account_unavailable'; END IF;
+ SELECT coalesce(jsonb_agg(jsonb_build_object('runeId',rune_id,'level',level)
+   ORDER BY rune_id),'[]'::jsonb) INTO owned
+ FROM territory_private.rune_ownership_v1 WHERE player_id=p_player;
+ RETURN jsonb_build_object('playerId',p_player,'owned',owned);
+END $runes$;
+
 CREATE OR REPLACE FUNCTION public.territory_runes_admin_set_level_v1(
  p_player uuid,p_rune text,p_level integer,p_operation uuid,p_source text
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $runes$
@@ -175,7 +187,7 @@ DECLARE old territory_private.rune_operations_v1%ROWTYPE;
   request_body jsonb; result jsonb; previous integer; equipped boolean;
 BEGIN
  IF p_player IS NULL OR p_rune IS NULL OR p_level IS NULL OR p_level NOT BETWEEN 0 AND 3
-    OR p_operation IS NULL OR p_source IS NULL OR length(btrim(p_source))<4
+    OR p_operation IS NULL OR p_source IS NULL OR length(btrim(p_source)) NOT BETWEEN 4 AND 140
  THEN RAISE EXCEPTION 'rune_admin_invalid_request'; END IF;
  IF NOT EXISTS(SELECT 1 FROM public.players WHERE id=p_player AND NOT coalesce(banned,false) FOR UPDATE)
  THEN RAISE EXCEPTION 'rune_account_unavailable'; END IF;
@@ -212,10 +224,12 @@ END $runes$;
 
 REVOKE ALL ON FUNCTION public.territory_runes_status_v1(),
  public.territory_runes_save_v1(uuid,bigint,jsonb),
+ public.territory_runes_admin_status_v1(uuid),
  public.territory_runes_admin_set_level_v1(uuid,text,integer,uuid,text)
  FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.territory_runes_status_v1(),
  public.territory_runes_save_v1(uuid,bigint,jsonb) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_runes_admin_set_level_v1(uuid,text,integer,uuid,text)
  TO service_role;
+GRANT EXECUTE ON FUNCTION public.territory_runes_admin_status_v1(uuid) TO service_role;
 COMMIT;
