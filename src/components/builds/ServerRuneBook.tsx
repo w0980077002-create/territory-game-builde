@@ -31,6 +31,7 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   const [draft, setDraft] = useState<RuneSlot[]>([]);
   const [notice, setNotice] = useState('');
   const [claiming, setClaiming] = useState(false);
+  const [dailyReceipt, setDailyReceipt] = useState<{ dayUtc: string; runeId: string; level: number } | null>(null);
   const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
@@ -60,16 +61,18 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   }, [refresh, en]);
 
   const claimDaily = async () => {
-    if (claiming || saving.current || pending.current) return;
+    if (claiming || saving.current || pending.current || dailyReceipt?.dayUtc === new Date().toISOString().slice(0, 10)) return;
     setClaiming(true);
     try {
       const { data, error } = await supabase.rpc('territory_runes_claim_daily_v1');
       if (error) throw error;
       if (!data || data.schema !== 'territory-rune-daily/1'
+        || typeof data.dayUtc !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(data.dayUtc)
         || typeof data.runeId !== 'string' || !definitions.some(s => s.options.includes(data.runeId))
         || !Number.isSafeInteger(data.level) || data.level < 1 || data.level > 3) {
         throw Error('rune_daily_receipt_invalid');
       }
+      setDailyReceipt({ dayUtc: data.dayUtc, runeId: data.runeId, level: data.level });
       setNotice(en
         ? `Daily rune received · level ${data.level}. Reloading collection…`
         : `Ежедневная руна получена · уровень ${data.level}. Обновляем коллекцию…`);
@@ -177,6 +180,10 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   </div>;
 
   const changed = JSON.stringify(draft) !== JSON.stringify(status.slots);
+  const claimedToday = dailyReceipt?.dayUtc === new Date().toISOString().slice(0, 10);
+  const dailyRuneName = dailyReceipt
+    ? catalog.slots.flatMap(slot => slot.options).find(option => option.runeId === dailyReceipt.runeId)
+    : null;
   return <section aria-label={en ? 'Fifteen rune slots' : 'Пятнадцать слотов рун'} className="space-y-3">
     <div className="rounded-xl border border-amber-300/50 bg-[#302017] p-3 text-xs text-amber-100">
       <p className="font-black text-amber-200">{en ? 'Rune book · 15 independent slots' : 'Книга рун · 15 независимых слотов'}</p>
@@ -184,13 +191,23 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
         : 'Можно выбрать только подтверждённые сервером руны. Слоты рун не заменяют боевые навыки.'}</p>
     </div>
     <button type="button" onClick={() => void claimDaily()}
-      disabled={claiming || saving.current || !!pending.current}
+      disabled={claiming || saving.current || !!pending.current || claimedToday}
       data-testid="rune-daily-claim"
       className="min-h-12 w-full rounded-xl border border-amber-300 bg-gradient-to-b from-[#9f6825] to-[#62401a] px-3 font-black text-amber-50 disabled:opacity-50">
       {claiming
         ? (en ? 'Checking the daily rune…' : 'Проверяем ежедневную руну…')
-        : (en ? 'Claim daily rune' : 'Получить руну дня')}
+        : claimedToday
+          ? (en ? 'Today’s rune received ✓' : 'Руна дня получена ✓')
+          : (en ? 'Claim daily rune' : 'Получить руну дня')}
     </button>
+    {dailyReceipt && dailyRuneName && (
+      <p role="status" data-testid="rune-daily-receipt" aria-live="polite"
+        className="rounded-lg border border-emerald-400/40 bg-[#183128] px-3 py-2 text-xs font-semibold text-emerald-100">
+        {en
+          ? `Received: ${dailyRuneName.nameEn} · level ${dailyReceipt.level}. Choose it below, then save your build.`
+          : `Получено: ${dailyRuneName.nameRu} · уровень ${dailyReceipt.level}. Выбери руну ниже и сохрани сборку.`}
+      </p>
+    )}
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {catalog.slots.map((slot, index) => {
         const selected = draft[index]?.runeId ?? null;
