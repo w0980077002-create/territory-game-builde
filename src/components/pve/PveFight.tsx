@@ -104,6 +104,10 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   // A committed enemy guard stays fixed until the round is actually resolved.
   const [enemyIntent, setEnemyIntent] = useState(() => randomZones());
   const [adaptiveGuard, setAdaptiveGuard] = useState(false);
+  const [guardPhase, setGuardPhase] = useState<1 | 2 | 3>(1);
+  // Remember only attacks actually submitted to the round resolver.
+  // This is fight-local; never persisted or sent as a client reward.
+  const lastHeroAttack = useRef<Zone | null>(null);
   // Only an actual blocked elite strike in manual mode earns a riposte.
   // This is per-fight state, never a currency or a saved player attribute.
   const [riposteReady, setRiposteReady] = useState(false);
@@ -249,9 +253,12 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     setAttack(null);
     setBlocks([]);
     // Phase two reacts to the completed strike; never change a guard mid-round.
-    const nextIntent = nextAdaptiveEnemyIntent(res.enemy, atk, kind === 'trial' || !!enemy.isBoss);
+    const previousAttack = lastHeroAttack.current;
+    lastHeroAttack.current = atk;
+    const nextIntent = nextAdaptiveEnemyIntent(res.enemy, atk, kind === 'trial' || !!enemy.isBoss, undefined, previousAttack);
     setEnemyIntent(nextIntent.intent);
     setAdaptiveGuard(nextIntent.adapted);
+    setGuardPhase(nextIntent.phase);
     if (res.enemy.hp <= 0) finish(true);
     else if (res.hero.hp <= 0) finish(false);
     } finally {
@@ -547,9 +554,13 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
                 : (language === 'en' ? 'Strike an unguarded zone to bypass the shield.' : 'Бей в свободную зону, чтобы обойти щит.')}
             </span>
             {adaptiveGuard && <span data-testid="pve-adaptive-guard" className="w-full text-[10px] font-bold text-red-200">
-              {language === 'en'
-                ? 'Phase II: the enemy learned your last strike. Switch your attack zone!'
-                : 'Фаза II: враг запомнил прошлый удар. Смени зону атаки!'}
+              {guardPhase === 3
+                ? (language === 'en'
+                  ? 'Phase III: the enemy remembers your last two different strikes. Attack another opening!'
+                  : 'Фаза III: враг помнит два последних разных удара. Ищи новую брешь!')
+                : (language === 'en'
+                  ? 'Phase II: the enemy learned your last strike. Switch your attack zone!'
+                  : 'Фаза II: враг запомнил прошлый удар. Смени зону атаки!')}
             </span>}
             <button type="button" data-testid="pve-choose-opening" disabled={!controls}
               onClick={() => setAttack(current => nextOpenStrike(current, enemyIntent.blocks))}
