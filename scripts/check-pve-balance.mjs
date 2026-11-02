@@ -296,6 +296,19 @@ assert.equal(pve.nextTacticalMomentum(firstMomentum, 'legs', 'hit', false).strea
   'Auto and ordinary enemies must not earn combo power');
 assert.equal(pve.nextTacticalMomentum(chargedMomentum, 'belly', 'hit', true).streak, 1,
   'Charged strike must consume the one-use boost and start a new chain');
+// The visible message says NEXT LANDED hit, not next attempted attack.
+// A defended or dodged strike cannot waste the earned combo. It remains
+// charged until one successful manual elite hit, and never carries into auto.
+for (const missed of ['block', 'dodge', null]) {
+  const retained = pve.nextTacticalMomentum(chargedMomentum, 'head', missed, true);
+  assert.equal(retained.streak, 2, 'A missed charged strike must preserve the one-use bonus');
+  assert.equal(retained.lastZone, chargedMomentum.lastZone, 'A miss cannot rewrite the charged combo history');
+  const consumed = pve.nextTacticalMomentum(retained, 'belly', 'hit', true);
+  assert.equal(consumed.streak, 1, 'First landed hit after a miss must consume the charge');
+  assert.equal(consumed.lastZone, 'belly', 'Successful charged hit starts a fresh chain');
+}
+assert.equal(pve.nextTacticalMomentum(chargedMomentum, 'belly', 'block', false).streak, 0,
+  'Switching to auto or ordinary combat must clear any manual combo charge');
 const normalComboStrike = pve.playRound(starterHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard, false, false);
 const poweredComboStrike = pve.playRound(starterHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard, false, true);
 assert(poweredComboStrike.hits[0].amount > normalComboStrike.hits[0].amount,
