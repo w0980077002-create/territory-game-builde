@@ -15,6 +15,7 @@ import type { GameState, ShopItem } from '@/game/types';
 import { ItemArt } from './ui/ItemArt';
 import { Currency, formatAmount } from './ui/Currency';
 import { IosGamePortal, Modal } from './ui/Modal';
+import './shopWoodFinish.css';
 import { useLive, SHOP_SALE_FACTOR } from '@/game/live';
 import { fetchShopStatus, purchaseServerStones, readPendingShop, keepPendingShop, type ShopStatus, type PendingShop } from '@/game/shopApi';
 import {
@@ -251,13 +252,13 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
 
   return (
     <div className="viking-screen viking-screen--shop space-y-3 animate-fade-in pb-2">
-      <div className="relative rounded-2xl overflow-hidden border border-amber-500/20 p-4">
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/40 via-[#16130d] to-[#0f1115]" />
+      <div className="territory-shop-sign relative rounded-2xl overflow-hidden border border-amber-500/20 p-4">
+        <div className="territory-shop-sign__shade absolute inset-0 bg-gradient-to-br from-amber-900/40 via-[#16130d] to-[#0f1115]" />
         <div className="relative flex items-center gap-3">
           <img src="/ic-shop.webp" alt="" className="w-12 h-12 object-contain" />
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-amber-100">{t('shop')}</h2>
-            <p className="text-xs text-gray-400">{t('shopDescription')}</p>
+            <h2 className="territory-shop-sign__title text-lg font-bold text-amber-100">{t('shop')}</h2>
+            <p className="territory-shop-sign__subtitle text-xs text-gray-400">{t('shopDescription')}</p>
           </div>
           {shopSale && !shopStatus?.enabled && (
             <span className="shrink-0 rounded-lg bg-gradient-to-b from-red-500 to-rose-700 px-2 py-1 text-xs font-bold text-white shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse">-20%</span>
@@ -270,15 +271,15 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl border border-amber-300/60 bg-gradient-to-br from-[#423017] via-[#24192a] to-[#131c2f] p-3 shadow-[0_0_25px_rgba(245,158,11,0.12)]">
+      <div className="territory-shop-license relative overflow-hidden rounded-2xl border border-amber-300/60 bg-gradient-to-br from-[#423017] via-[#24192a] to-[#131c2f] p-3 shadow-[0_0_25px_rgba(245,158,11,0.12)]">
         <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-amber-400/15 blur-2xl" />
         <div className="relative flex items-center gap-3">
-          <div className="flex h-[94px] w-[94px] shrink-0 items-center justify-center rounded-2xl border border-amber-400/30 bg-black/30">
+          <div className="territory-shop-license__art flex h-[94px] w-[94px] shrink-0 items-center justify-center rounded-2xl border border-amber-400/30 bg-black/30">
             <img src={MASTER_LICENSE_ART} loading="lazy" alt={language==='en'?'Master License':'Лицензия мастера'} className="h-[88px] w-[88px] object-contain drop-shadow-[0_3px_12px_rgba(251,191,36,0.3)]" />
           </div>
           <div className="min-w-0 flex-1 space-y-1">
             <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-300/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-200"><Sparkles className="h-3 w-3" /> {language==='en'?'Legendary':'Легендарное'}</span>
-            <p className="flex items-center gap-1.5 text-sm font-extrabold text-amber-100"><Crown className="h-4 w-4 text-amber-300" />{language==='en'?'Master License':'Лицензия мастера'}</p>
+            <p className="territory-shop-license__title flex items-center gap-1.5 text-sm font-extrabold text-amber-100"><Crown className="h-4 w-4 text-amber-300" />{language==='en'?'Master License':'Лицензия мастера'}</p>
             <p className="text-[11px] leading-snug text-slate-300">{language==='en'?'Permanent access to level 300 recipes.':'Навсегда открывает рецепты 300-го уровня.'}</p>
             <div className="inline-flex items-center gap-1 rounded-lg bg-rose-950/40 px-2 py-1 text-sm font-black text-rose-100">
               {licenseStatus?.owned?<span className="text-emerald-300">✓ {language==='en'?'Owned forever':'Куплено навсегда'}</span>:<Currency kind="redGems" value={MASTER_LICENSE_PRICE_RED} size={18}/>}
@@ -296,13 +297,13 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
         {licenseNotice&&<p role="status" className="mt-2 rounded-lg bg-emerald-950/50 p-2 text-xs text-emerald-200">{licenseNotice}</p>}
       </div>
 
-      <div className="viking-screen-tabs grid grid-cols-3 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10" role="tablist">
+      <div className="territory-shop-tabs viking-screen-tabs grid grid-cols-3 gap-1 p-1 rounded-2xl bg-black/30 border border-white/10" role="tablist">
         {TABS.map((tabItem) => (
           <button
             key={tabItem.id}
             type="button" role="tab" aria-selected={tab === tabItem.id}
             onClick={() => setTab(tabItem.id)}
-            className={`h-9 rounded-xl text-xs font-semibold transition-all ${tab === tabItem.id ? 'bg-gradient-to-b from-amber-400 to-amber-600 text-black' : 'text-gray-400'}`}
+            className={`territory-shop-tab h-11 rounded-xl text-xs font-semibold transition-all ${tab === tabItem.id ? 'bg-gradient-to-b from-amber-400 to-amber-600 text-black' : 'text-gray-400'}`}
           >
             {t(tabItem.labelKey)}
           </button>
@@ -317,18 +318,18 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
             <button
               key={item.id}
               onClick={() => setPicked(item)}
-              className="relative text-left rounded-2xl border bg-gradient-to-b from-[#1f232d] to-[#12151b] p-2.5 flex flex-col transition-all active:scale-[0.97] hover:brightness-110"
+              className="territory-shop-product relative text-left rounded-2xl border bg-gradient-to-b from-[#1f232d] to-[#12151b] p-2.5 flex flex-col transition-all active:scale-[0.97] hover:brightness-110"
               style={{ borderColor: `${color}55` }}
             >
-              <div className="h-24 flex items-center justify-center rounded-xl bg-black/30 mb-2">
+              <div className="territory-shop-product__art h-24 flex items-center justify-center rounded-xl bg-black/30 mb-2">
                 <ItemArt item={item} size={80} />
               </div>
-              <p className="text-sm font-bold leading-tight min-h-[34px] break-words" style={{ color }}>{localizeText(item.name, language)}</p>
+              <p className="territory-shop-product__name text-sm font-bold leading-tight min-h-[34px] break-words" style={{ color }}>{localizeText(item.name, language)}</p>
               {(item.type === 'elixir' || item.type === 'potion' || item.type === 'arena' || item.id === 'shop_forge_material') && <p className="text-[10px] text-amber-300">⏳ {language === 'en' ? '7-day shelf life' : 'Срок 7 суток'}</p>}
               {item.amount && item.type !== 'equipment' && (
                 <p className="text-[10px] text-gray-400">x{item.amount}</p>
               )}
-              <span className={`mt-1.5 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${ok ? 'bg-amber-500/90 text-black' : 'bg-white/5 text-gray-500'}`}>
+              <span className={`territory-shop-product__price mt-1.5 min-h-9 rounded-lg flex items-center justify-center text-xs font-bold ${ok ? 'bg-amber-500/90 text-black' : 'bg-white/5 text-gray-500'}`}>
                 <Price item={item} />
               </span>
             </button>
@@ -406,7 +407,7 @@ function PurchaseSheet({ item, state, onBuy }: { item: ShopItem; state: GameStat
   const clamp = useCallback((v: number) => Math.max(1, Math.min(v, maxQty)), [maxQty]);
 
   return (
-    <div className="space-y-4">
+    <div className="territory-shop-purchase space-y-4">
       <div className="flex items-center gap-4">
         <div className="w-24 h-24 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center shrink-0">
           <ItemArt item={item} size={80} />
