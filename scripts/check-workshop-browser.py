@@ -22,10 +22,10 @@ with sync_playwright() as p:
     # The shop must use its own real plank/rope/iron artwork, never a stretched
     # wooden-plaque image or a CSS-only imitation.  All three paths must load.
     assert page.locator('.territory-shop-sign').evaluate(
-      "(el) => getComputedStyle(el).backgroundImage.includes('shop-wood-planks.webp')"
+      "(el) => getComputedStyle(el).backgroundImage.includes('shop-wood-beams.webp')"
     ), (width,lang,'shop missing plank texture')
     assert page.evaluate("""async () => {
-      const paths = ['shop-wood-planks.webp','shop-rope-wrap.svg','shop-iron-corner.svg'];
+      const paths = ['shop-wood-planks.webp','shop-wood-beams.webp','shop-rope-wrap.svg','shop-iron-corner.svg'];
       return (await Promise.all(paths.map(name => new Promise(resolve => {
         const img = new Image();
         img.onload = () => resolve(img.naturalWidth > 0);

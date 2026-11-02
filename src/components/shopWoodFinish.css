@@ -9,7 +9,7 @@
 .viking-screen--shop .territory-shop-product { position: relative; isolation: isolate; box-sizing: border-box; }
 .viking-screen--shop .territory-shop-sign {
   border: 3px solid #94603d;
-  background-image: linear-gradient(100deg, #1d1010c7, #492615a3 54%, #1b1111c9), var(--shop-planks);
+  background-image: linear-gradient(100deg, #1d1010d0, #49261591 54%, #1b1111d0), var(--shop-beams);
   background-size: auto, cover;
   background-position: center;
   border-radius: 19px;
@@ -35,12 +35,9 @@
   background-position: left top;
 }
 .viking-screen--shop .territory-shop-sign::after {
-  width: 50px; height: 50px;
-  top: -13px; right: 16px;
-  background-image: var(--shop-rope);
-  background-size: contain;
-  background-position: center;
-  filter: drop-shadow(1px 3px 2px #100908a1);
+  /* The structural rope is painted into the timber beam artwork;
+     no floating decorative rope strip is added over the UI. */
+  display: none;
 }
 .viking-screen--shop .territory-shop-sign__title {
   font-size: 1.18rem; font-weight: 900; color: #ffe6a8;
@@ -62,11 +59,9 @@
   background-position: left top, right top;
 }
 .viking-screen--shop .territory-shop-license::after {
-  width: 43px; height: 42px;
-  top: -6px; right: 10px;
-  background-image: var(--shop-rope);
-  background-position: center; background-size: contain;
-  filter: drop-shadow(1px 2px 2px #120a05a0);
+  /* License remains a carved wooden case with forged brackets; the
+     rope appears only on its actual structural beam, not over badges. */
+  display: none;
 }
 .viking-screen--shop .territory-shop-license__art {
   border: 2px solid #b38a59;
@@ -132,6 +127,5 @@
   .viking-screen--shop .territory-shop-sign { padding: 12px; }
   .viking-screen--shop .territory-shop-product { padding: 8px; }
   .viking-screen--shop .territory-shop-tab { font-size: .73rem; }
-  .viking-screen--shop .territory-shop-sign::after { right: 8px; width: 39px; }
 }
 @media(prefers-reduced-motion:reduce){.viking-screen--shop .territory-shop-product { transition: none; }}

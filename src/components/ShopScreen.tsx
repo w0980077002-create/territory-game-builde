@@ -87,6 +87,7 @@ function formatDuration(ms: number): string {
 
 const shopMaterialStyles = {
   '--shop-planks': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-wood-planks.webp")`,
+  '--shop-beams': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-wood-beams.webp")`,
   '--shop-rope': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-rope-wrap.svg")`,
   '--shop-iron': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-iron-corner.svg")`,
 } as CSSProperties;
