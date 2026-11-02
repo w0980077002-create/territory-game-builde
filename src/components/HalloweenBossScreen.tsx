@@ -168,16 +168,16 @@ export function HalloweenBossScreen() {
 
       <section className="rounded-2xl border border-amber-600/50 bg-gradient-to-b from-[#49301d] to-[#151315] p-3 shadow-lg">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="flex items-center gap-1.5 text-sm font-black text-amber-100"><Trophy size={19} className="text-yellow-400"/>{en ? 'TOP 10 BY DAMAGE' : 'ТОП-10 ПО УРОНУ'}</h3>
+          <h3 className="flex items-center gap-1.5 text-sm font-black text-amber-100"><Trophy size={19} className="text-yellow-400"/>{en ? 'TOP 20 BY DAMAGE' : 'ТОП-20 ПО УРОНУ'}</h3>
           <button type="button" onClick={() => void refresh()} aria-label={en ? 'Refresh ranking' : 'Обновить рейтинг'} className="rounded-lg border border-amber-400/40 bg-black/40 p-2 text-amber-200 active:scale-95"><RefreshCw size={15}/></button>
         </div>
         <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-orange-400/40 bg-orange-900/35 p-2 text-xs">
           <span><Sparkles size={13} className="mr-1 inline text-yellow-300"/>{en ? 'Your damage' : 'Твой урон'} {state?.myRank ? `· #${state.myRank}` : ''}</span>
           <b className="tabular-nums text-amber-100">{state ? formatDamage(state.myDamage, en) : '…'}</b>
         </div>
-        {state?.top10.length ? (
-          <ol className="mt-2 space-y-1.5" aria-label={en ? 'Top 10 damage leaderboard' : 'Десятка лидеров по урону'}>
-            {state.top10.map((item) => (
+        {state?.top20.length ? (
+          <ol className="mt-2 space-y-1.5" aria-label={en ? 'Top 20 damage leaderboard' : 'Двадцать лидеров по урону'}>
+            {state.top20.map((item) => (
               <li key={item.rank} className="flex min-w-0 items-center gap-2 rounded-lg border border-white/5 bg-black/30 px-2 py-2 text-xs">
                 <span className={`w-6 shrink-0 text-center font-black ${item.rank === 1 ? 'text-yellow-300' : item.rank === 2 ? 'text-slate-200' : item.rank === 3 ? 'text-orange-400' : 'text-amber-200/65'}`}>{item.rank <= 3 ? ['🥇','🥈','🥉'][item.rank - 1] : `#${item.rank}`}</span>
                 <span className="min-w-0 flex-1 truncate font-bold text-amber-50">{item.name}</span>
