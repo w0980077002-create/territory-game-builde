@@ -251,6 +251,22 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
       <h2>{en ? 'Runes of Power' : 'Руны навыков'}</h2>
       <p>{en ? '15 slots · 45 variants' : '15 слотов · 45 вариантов'}</p>
     </header>
+    <div className="territory-rune__footer">
+      <button type="button" onClick={() => void claimDaily()} data-testid="rune-daily-claim"
+        disabled={claiming || saving.current || !!pending.current || claimedToday || changed} className="territory-rune__daily">
+        <Sparkles size={19}/>
+        {claiming ? (en ? 'Checking…' : 'Проверяем…') : claimedToday
+          ? (en ? 'Rune received ✓' : 'Руна дня получена ✓') : changed
+            ? (en ? 'Save build first' : 'Сначала сохрани сборку')
+            : (en ? 'Claim daily rune' : 'Получить руну дня')}
+      </button>
+      <button type="button" onClick={() => void save()} data-testid="rune-save-build"
+        disabled={claiming || saving.current || (!changed && !pending.current)} className="territory-rune__save">
+        {pending.current ? (en ? 'Retry save' : 'Повторить запись')
+          : changed ? (en ? 'Save build' : 'Сохранить сборку')
+            : (en ? 'Build saved ✓' : 'Сборка сохранена ✓')}
+      </button>
+    </div>
     <div className="territory-rune__board">
       {RUNE_GROUPS.map((group, row) => <div key={group.en} className="territory-rune__row">
         <div className="territory-rune__group">
@@ -294,22 +310,6 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
           : Object.entries(totalBonuses).map(([key, bp]) => <span key={key}>+
             {(bp / 100).toFixed(2).replace(/\.00$/, '')}% {en ? (bonusLabels[key]?.en ?? key) : (bonusLabels[key]?.ru ?? key)}</span>)}
       </div>
-    </div>
-    <div className="territory-rune__footer">
-      <button type="button" onClick={() => void claimDaily()} data-testid="rune-daily-claim"
-        disabled={claiming || saving.current || !!pending.current || claimedToday || changed} className="territory-rune__daily">
-        <Sparkles size={19}/>
-        {claiming ? (en ? 'Checking…' : 'Проверяем…') : claimedToday
-          ? (en ? 'Rune received ✓' : 'Руна дня получена ✓') : changed
-            ? (en ? 'Save build first' : 'Сначала сохрани сборку')
-            : (en ? 'Claim daily rune' : 'Получить руну дня')}
-      </button>
-      <button type="button" onClick={() => void save()} data-testid="rune-save-build"
-        disabled={claiming || saving.current || (!changed && !pending.current)} className="territory-rune__save">
-        {pending.current ? (en ? 'Retry save' : 'Повторить запись')
-          : changed ? (en ? 'Save build' : 'Сохранить сборку')
-            : (en ? 'Build saved ✓' : 'Сборка сохранена ✓')}
-      </button>
     </div>
     {dailyReceipt && dailyRuneName && <p role="status" data-testid="rune-daily-receipt"
       aria-live="polite" className="territory-rune__receipt">
