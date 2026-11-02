@@ -25,7 +25,13 @@ const expected = [
 assert.equal(adminKeys.length, expected.length, 'Every admin grant type must be covered');
 assert.deepEqual([...adminKeys].sort(), [...expected].sort(), 'Unexpected grant type in admin');
 const visualItemKeys = Object.keys(MAIL_ITEM_VISUALS);
-assert.equal(visualItemKeys.length, 7);
+assert.equal(visualItemKeys.length, 8, 'Seven admin supplies plus one server-earned seasonal trophy');
+assert.ok(visualItemKeys.includes('halloween_horned_pumpkin_2026'));
+assert.ok(!adminKeys.includes('halloween_horned_pumpkin_2026'), 'Seasonal trophy must never be in the owner bulk mail resource picker');
+const relic = mailRewardVisuals({ items: { halloween_horned_pumpkin_2026: 1 }});
+assert.equal(relic.length, 1);
+assert.equal(relic[0].name, 'Рогатая тыква · Хэллоуин 2026');
+assert.ok(existsSync('public/' + relic[0].image), 'Halloween trophy artwork missing');
 for (const key of expected) {
   const payload = key.startsWith('shop_') ? { items: { [key]: 2 } } : { [key]: 2 };
   const rewards = mailRewardVisuals(payload);
