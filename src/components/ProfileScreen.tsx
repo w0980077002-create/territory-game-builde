@@ -13,7 +13,7 @@ import { HeroShowcase } from './HeroShowcase';
 const BuildTrainingPanel = lazy(() => import('./builds/BuildTrainingPanel').then(module => ({ default: module.BuildTrainingPanel })));
 const RuneSkillBook = lazy(() => import('./builds/ServerRuneBook').then(module => ({ default: module.ServerRuneBook })));
 // Do not show an unfinished skill book to live players before the verified combat cutover.
-const VERIFIED_RUNE_BOOK = import.meta.env.VITE_TERRITORY_V1_SERVER_COMBAT === 'verified';
+const VERIFIED_RUNE_BOOK = import.meta.env.VITE_TERRITORY_RUNES === 'enabled';
 
 export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, onAdventure, onForge, onQuests, onCompanions }: { user: AuthUser; initialTrainingOpen?: boolean; onEquipment: () => void; onAdventure: () => void; onForge: (equipmentId: string) => void; onQuests: () => void; onCompanions: () => void }) {
   const { t, language } = useLanguage();
