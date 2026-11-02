@@ -777,10 +777,10 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
 
 function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equippedGear, onExit, onNext, questReady, onQuests, onEquipment, onForge, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; gearOpportunity: HeroGearOpportunity | null; equippedGear?: HeroGearOpportunity['item']['equipment']; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; onEquipment?: () => void; onForge?: () => void; nextPending: boolean; nextError: boolean }) {
   const { language } = useLanguage();
-  const gearImprovements = gearOpportunity?.kind === 'upgrade' && equippedGear
+  const gearImprovements = gearOpportunity?.kind !== 'empty' && equippedGear
     ? (['attack', 'defense', 'hp', 'critChance'] as const)
       .map(stat => ({ stat, delta: (gearOpportunity.item.equipment[stat] ?? 0) - (equippedGear[stat] ?? 0) }))
-      .filter(change => Number.isFinite(change.delta) && change.delta > 0)
+      .filter(change => Number.isFinite(change.delta) && change.delta !== 0)
     : [];
   return (
     <div className="relative mx-auto w-full max-w-lg px-1 pb-2 pt-1 animate-pop">
@@ -900,11 +900,13 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
           <div data-testid="pve-owned-gear-opportunity" className="relative mt-2 rounded-lg border border-emerald-300/50 bg-emerald-950/55 px-3 py-2 text-left text-xs text-emerald-100">
             <p className="font-extrabold">{gearOpportunity.kind === 'empty'
               ? (language === 'en' ? 'Equipment slot available!' : 'Есть предмет для пустого слота!')
-              : (language === 'en' ? 'A stronger item is already in your inventory!' : 'В инвентаре уже есть предмет сильнее!')}</p>
+              : gearOpportunity.kind === 'compare'
+                ? (language === 'en' ? 'Tactical choice: compare attack and defense!' : 'Тактический выбор: сравни атаку и защиту!')
+                : (language === 'en' ? 'A stronger item is already in your inventory!' : 'В инвентаре уже есть предмет сильнее!')}</p>
             <p className="mt-0.5 break-words font-semibold text-white">{gearOpportunity.item.equipment.name}</p>
             {gearImprovements.length > 0 && (
               <p className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5" data-testid="pve-owned-gear-stats">
-                {gearImprovements.map(({ stat, delta }) => <span key={stat}>+{delta} {{ attack: language === 'en' ? 'attack' : 'атака', defense: language === 'en' ? 'defense' : 'защита', hp: 'HP', critChance: language === 'en' ? 'crit' : 'крит' }[stat]}</span>)}
+                {gearImprovements.map(({ stat, delta }) => <span key={stat} className={delta < 0 ? 'text-red-300' : 'text-emerald-200'}>{delta > 0 ? '+' : ''}{delta} {{ attack: language === 'en' ? 'attack' : 'атака', defense: language === 'en' ? 'defense' : 'защита', hp: 'HP', critChance: language === 'en' ? 'crit' : 'крит' }[stat]}</span>)}
               </p>
             )}
             <p className="mt-1 text-[10px] text-emerald-100/80">{language === 'en' ? 'From your saved inventory, not an extra battle reward.' : 'Из сохранённого инвентаря, не дополнительная награда за бой.'}</p>
