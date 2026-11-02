@@ -97,6 +97,15 @@ export function nextAdaptiveEnemyIntent(
   };
 }
 
+/** A successful manual leg riposte staggers an elite guard for ONE next round.
+ * The announced attack remains exactly the same; only the second guarded
+ * zone becomes an opening. This is a fight-local tactical effect, not loot,
+ * a saved buff, a new enemy roll or a change to PvP/server combat. */
+export function staggerEnemyGuard(intent: ReturnType<typeof randomZones>, active: boolean): ReturnType<typeof randomZones> {
+  if (!active || intent.blocks.length < 2) return intent;
+  return { attack: intent.attack, blocks: intent.blocks.slice(0, 1) };
+}
+
 /** One-tap defense against an announced strike. Preserve the other selected
  * block when both slots are occupied; never add a third defense zone. */
 export function coverThreatZone(current: readonly Zone[], threat: Zone): Zone[] {
