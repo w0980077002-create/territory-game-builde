@@ -54,6 +54,47 @@ export const RUNE_PVE_CATALOG: Readonly<Record<string, { key: string; perLevelBp
   wolf_king_r2: { key: 'finisher_damage_bp', perLevelBp: 140 },
   wolf_king_r3: { key: 'control_resist_bp', perLevelBp: 110 },
 };
+/** Explicit shared-battle equivalents for mechanics that do not exist in
+ * every game mode (e.g. a multi-target spell during a single-target duel).
+ * The original effect remains unchanged; these are additional small bonuses.
+ * Keep this mapping identical to territory_rune_effects_v1.sql.
+ */
+export const RUNE_TACTICAL_FAMILIES: Readonly<Record<string,string>> = {
+  counter_damage_bp: 'rune_combat_damage_bp',
+  bleed_chance_bp: 'rune_combat_damage_bp',
+  haste_bp: 'rune_combat_damage_bp',
+  damage_vs_slow_bp: 'rune_combat_damage_bp',
+  next_attack_bp: 'rune_combat_damage_bp',
+  energy_gain_bp: 'rune_combat_damage_bp',
+  chain_chance_bp: 'rune_combat_damage_bp',
+  spell_damage_bp: 'rune_combat_damage_bp',
+  area_radius_bp: 'rune_combat_damage_bp',
+  burn_chance_bp: 'rune_combat_damage_bp',
+  attack_chain_damage_bp: 'rune_combat_damage_bp',
+  single_target_damage_bp: 'rune_combat_damage_bp',
+  dot_damage_bp: 'rune_combat_damage_bp',
+  cooldown_reduction_bp: 'rune_combat_damage_bp',
+  finisher_damage_bp: 'rune_combat_damage_bp',
+  guard_duration_bp: 'rune_combat_guard_bp',
+  buff_duration_bp: 'rune_combat_guard_bp',
+  next_enemy_damage_reduction_bp: 'rune_combat_guard_bp',
+  rage_damage_reduction_bp: 'rune_combat_guard_bp',
+  regen_bp: 'rune_combat_guard_bp',
+  control_resist_bp: 'rune_combat_guard_bp',
+  root_duration_bp: 'rune_combat_guard_bp',
+  dispel_chance_bp: 'rune_combat_crit_bp',
+  root_chance_bp: 'rune_combat_dodge_bp',
+  slow_chance_bp: 'rune_combat_dodge_bp',
+  enemy_accuracy_reduction_bp: 'rune_combat_dodge_bp',
+  armor_pen_bp: 'rune_combat_accuracy_bp',
+  slow_duration_bp: 'rune_combat_accuracy_bp',
+};
+export function runeTacticalEquivalent(runeId: string, level: number): { key:string; bp:number } | null {
+  const definition = RUNE_PVE_CATALOG[runeId];
+  const key = definition && RUNE_TACTICAL_FAMILIES[definition.key];
+  if (!key || !Number.isSafeInteger(level) || level < 1 || level > 3) return null;
+  return { key, bp: Math.max(1, Math.floor(definition.perLevelBp * level / 2)) };
+}
 const definitions = runeSlotCatalog(catalog);
 
 /** Freeze the selected rune ranks and their effects at fight entry, not on each strike.
@@ -72,6 +113,9 @@ export function localPveRuneTotals(status: RuneServerStatus): PveRuneTotals {
       throw Error('rune_pve_invalid_ownership');
     }
     totals[effect.key] = Math.min(2500, (totals[effect.key] ?? 0) + effect.perLevelBp * level);
+    const equivalent = runeTacticalEquivalent(slot.runeId, level);
+    if (equivalent) totals[equivalent.key] = Math.min(2500,
+      (totals[equivalent.key] ?? 0) + equivalent.bp);
   }
   return Object.freeze(totals);
 }
