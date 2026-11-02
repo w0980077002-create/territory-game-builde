@@ -32,7 +32,7 @@ import { runDeferredNextBattle } from '@/game/pveNextAction';
 
 // Do not enable until the staged rune ledger, authenticated combat tests and
 // PvP/Cave adapters are released together. Existing PvE is unchanged by default.
-const RUNE_PVE_STAGED = false;
+const RUNE_PVE_STAGED = import.meta.env.VITE_TERRITORY_RUNES === 'enabled';
 const runeDefinitions = runeSlotCatalog(runeCatalog);
 export type FightKind = 'stage' | 'trial';
 
