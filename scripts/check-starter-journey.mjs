@@ -60,7 +60,9 @@ assert.match(fight, /Check equipment before retrying/,
 assert.match(home, /state\.totalBattlesWon === 0/, 'Preserve existing first-fight hint on the home scene');
 assert.match(home, /shouldShowStarterJourney\(state\) \? getStarterMilestones\(state\)/, 'Home roadmap must serve all heroes missing first victories');
 assert.match(home, /data-testid="home-hero-path"/, 'The existing quest strip is the roadmap entry point');
-assert.match(home, /onClick=\{\(\) => onOpen\('quests'\)\}/, 'Roadmap button opens the real quest screen');
+assert.match(home, /starterNext\?\.destination === 'inventory'\) onInventory\('equipment'\)/, 'Owned first loot must be one tap away from City');
+assert.match(home, /questAlerts\.readyCount === 0 && starterNext/, 'Ready quest rewards must keep priority over gear guidance');
+assert.match(home, /else onOpen\('quests'\)/, 'Without owned gear, the roadmap still opens the real quest screen');
 assert.match(home, /getNextStarterMilestone\(starterSteps\)/, 'City must prioritize actual owned loot after the first win');
 assert.match(quests, /getNextStarterMilestone\(starterSteps\)/, 'Quest screen must show the same next objective as City');
 assert.match(home, /questAlerts\.readyCount === 0/, 'Ready rewards must take visual priority');
