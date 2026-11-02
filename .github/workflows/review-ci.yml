@@ -73,4 +73,6 @@ jobs:
       - run: npm run test:elixir-expiry
       - run: node scripts/check-arena-matchmaking.mjs
       - run: node scripts/check-rune-skill-book.mjs
+      - run: node scripts/check-rune-15-slot-gate.mjs
+      - run: node scripts/check-rune-slots-v1.mjs
       - run: node scripts/check-v1-full-combat-catalog.mjs

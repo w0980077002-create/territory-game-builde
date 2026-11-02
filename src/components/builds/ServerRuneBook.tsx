@@ -1,75 +1,189 @@
-import {useEffect,useRef,useState} from 'react';
-import {supabase} from '@/game/supabase';
-import {requestCombat,pendingCombatCommand} from '@/game/combatV1/api';
-import type {IdleCatalog,IdleLoadout,IdleOwnership} from '@/game/idleEngine/types';
-import visual from '@/game/config/territory-rune-skill-book-v1.json';
-import {RuneSkillBook,type RuneSkillBookSelection} from './RuneSkillBook';
-type Status={enabled:true;revision:number;catalog:IdleCatalog;ownership:IdleOwnership;loadout:IdleLoadout};
-function isRecord(x:unknown):x is Record<string,unknown>{return x!==null&&typeof x==='object'&&!Array.isArray(x);}
-function verified(x:unknown):x is Status{
- if(!isRecord(x)||x.enabled!==true||!Number.isSafeInteger(x.revision)||!isRecord(x.catalog)||!isRecord(x.ownership)||!isRecord(x.loadout))return false;
- const c=x.catalog as Record<string,unknown>,o=x.ownership as Record<string,unknown>,l=x.loadout as Record<string,unknown>;
- if(!Array.isArray(c.skills)||!Array.isArray(c.runes)||!Array.isArray(c.passives)||!isRecord(o.skills)||!isRecord(o.runes)||!isRecord(o.passives)||!Array.isArray(l.skills)||!Array.isArray(l.passives))return false;
- const skills=new Set(c.skills.filter(isRecord).map(s=>s.id)), runes=new Set(c.runes.filter(isRecord).map(s=>s.id)),passives=new Set(c.passives.filter(isRecord).map(s=>s.id));
- return visual.groups.every(g=>g.skills.every(s=>skills.has(s.id)&&s.runes.every(r=>runes.has(r.id))))&&visual.passives.every(p=>passives.has(p.id));
-}
-function selections(status:Status):RuneSkillBookSelection{
- const active=Object.fromEntries(visual.groups.map(group=>[group.id,status.loadout.skills.find(skill=>status.catalog.skills.some(x=>x.id===skill.skillId&&x.category===group.id))?.skillId??'']));
- const runes=Object.fromEntries(status.loadout.skills.flatMap(s=>s.runes.length?[[s.skillId,s.runes[0].runeId]]:[]));
- return {skillIds:active,runeIds:runes,passiveIds:status.loadout.passives.map(x=>x.passiveId)};
-}
-function compose(status:Status,choice:RuneSkillBookSelection):IdleLoadout{
- return{
-  skills:visual.groups.flatMap(g=>{
-    const id=choice.skillIds[g.id], level=status.ownership.skills[id]??0;
-    const entry=status.catalog.skills.find(s=>s.id===id&&s.category===g.id);
-    if(!entry||level<1)return[];
-    const rune=choice.runeIds[id],runeLevel=status.ownership.runes[rune]??0;
-    const compatible=status.catalog.runes.find(r=>r.id===rune&&r.compatibleSkillIds.includes(id));
-    return[{skillId:id,level,runes:compatible&&runeLevel>0?[{runeId:rune,level:runeLevel}]:[]}];
-  }),
-  passives:choice.passiveIds.flatMap(id=>{
-    const level=status.ownership.passives[id]??0;
-    return level>0&&status.catalog.passives.some(p=>p.id===id)?[{passiveId:id,level}]:[];
-  }),
- };
-}
-export function ServerRuneBook({language}:{language:'ru'|'en'}){
- const en=language==='en';const alive=useRef(true),saving=useRef(false);
- const [status,setStatus]=useState<Status|null>(null),[notice,setNotice]=useState(''),[version,setVersion]=useState(0);
- useEffect(()=>{
-  alive.current=true;
-  void(async()=>{
-    try{
-      const {data,error}=await supabase.rpc('territory_combat_loadout_status_v1');
-      if(alive.current&& !error&&verified(data))setStatus(data);
-    }catch{/* Non-deployed/disabled RPC leaves the visual preview intact. */}
-  })();
-  return()=>{alive.current=false;};
- },[version]);
- const handle=async(choice:RuneSkillBookSelection)=>{
-  if(!status||saving.current)return;
-  saving.current=true;setNotice(en?'Saving with server…':'Сохранение на сервере…');
-  try{
-    const old=await pendingCombatCommand();
-    if(old&&old.action!=='loadout')throw new Error('previous_combat_pending');
-    const command=old??{action:'loadout' as const,operationId:crypto.randomUUID(),revision:status.revision,loadout:compose(status,choice)};
-    await requestCombat(command);
-    if(alive.current){setNotice(en?'Build saved by server.':'Сборка подтверждена сервером.');setVersion(v=>v+1);}
-  }catch{
-    if(alive.current){setNotice(en?'Could not confirm. Previous saved build remains on server.':'Нет подтверждения. На сервере остаётся прежняя сборка.');setVersion(v=>v+1);}
-  }finally{saving.current=false;}
- };
- if (!status) return <p role="status" className="rounded-lg border border-amber-500/40 bg-slate-900/90 p-3 text-xs text-amber-100">{en?'Server skills are not yet available. Existing hero training remains unchanged.':'Боевые руны пока недоступны на сервере. Существующая тренировка героя сохранена.'}</p>;
- return <>
-  {status&&<p role="status" className="mb-2 rounded-lg border border-amber-500/35 bg-amber-900/30 p-2 text-[11px] text-amber-100">
-    {en?'Server-verified runes. Changes need server confirmation. Combat migration is separate.':'Руны проверены сервером. Выбор сохраняется только после подтверждения. Перенос самой боёвки выполняется отдельно.'}
-  </p>}
-  <RuneSkillBook key={status?String(status.revision)+'/'+version:'preview'} language={language}
-    initialSelection={status?selections(status):undefined}
-    onSelectionChange={status?(handle):undefined}
-    serverConnected={!!status}
-    available={status?{skills:status.ownership.skills,runes:status.ownership.runes,passives:status.ownership.passives}:undefined}/>
-  {notice&&<p className="mt-2 rounded-lg border border-amber-400/40 bg-slate-800 p-2 text-xs text-amber-100" role="status">{notice}</p>}
- </>;
+import { useEffect, useRef, useState } from 'react';
+import { supabase } from '@/game/supabase';
+import catalog from '@/game/config/territory-independent-rune-slots-v1.json';
+import {
+  RUNE_SCHEMA, parseRuneServerStatus, runeSlotCatalog, validateRuneSlots,
+  type RuneServerStatus, type RuneSlot,
+} from '@/game/builds/runeSlotsV1';
+
+// The real ledger exists only in staged SQL. Do not expose an editable book
+// until server-issued ownership, production battle effects (PvE + tactical
+// Arena), admin grants, safe cutover and mobile acceptance have all passed.
+const FIFTEEN_SLOT_CONTRACT_READY = false;
+const definitions = runeSlotCatalog(catalog);
+type PendingSave = { operationId: string; revision: number; slots: RuneSlot[] };
+
+export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
+  const en = language === 'en';
+  const alive = useRef(false);
+  const saving = useRef(false);
+  const pending = useRef<PendingSave | null>(null);
+  const [status, setStatus] = useState<RuneServerStatus | null>(null);
+  const [draft, setDraft] = useState<RuneSlot[]>([]);
+  const [notice, setNotice] = useState('');
+  const [refresh, setRefresh] = useState(0);
+
+  useEffect(() => {
+    alive.current = true;
+    if (!FIFTEEN_SLOT_CONTRACT_READY) return () => { alive.current = false; };
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data, error } = await supabase.rpc('territory_runes_status_v1');
+        if (error) throw error;
+        const verified = parseRuneServerStatus(data, definitions);
+        if (!cancelled && alive.current) {
+          setStatus(verified);
+          setDraft(verified.slots.map(slot => ({ ...slot })));
+          setNotice('');
+        }
+      } catch {
+        if (!cancelled && alive.current) {
+          setStatus(null);
+          setNotice(en
+            ? 'The server could not verify your runes. Your existing build was not changed.'
+            : 'Сервер не подтвердил руны. Сохранённая сборка не изменена.');
+        }
+      }
+    })();
+    return () => { cancelled = true; alive.current = false; };
+  }, [refresh, en]);
+
+  const choose = (slotId: string, runeId: string | null) => {
+    if (!status || saving.current || pending.current) return;
+    if (runeId !== null && !status.owned[runeId]) return;
+    setDraft(current => current.map(slot => slot.slotId === slotId ? { ...slot, runeId } : slot));
+  };
+
+  const save = async () => {
+    if (!status || saving.current) return;
+    let command = pending.current;
+    if (!command) {
+      try {
+        const verified = validateRuneSlots(
+          { schema: RUNE_SCHEMA, revision: status.revision, slots: draft },
+          definitions, status.owned, status.revision,
+        );
+        if (JSON.stringify(verified.slots) === JSON.stringify(status.slots)) return;
+        command = {
+          operationId: crypto.randomUUID(),
+          revision: status.revision,
+          slots: verified.slots.map(slot => ({ ...slot })),
+        };
+        pending.current = command;
+      } catch {
+        setNotice(en ? 'Invalid or unavailable rune. No changes saved.' : 'Руна недоступна или выбор неверен. Изменения не сохранены.');
+        return;
+      }
+    }
+    saving.current = true;
+    setNotice(en ? 'Saving 15 slots on the server…' : 'Сохраняем 15 слотов на сервере…');
+    try {
+      const { data, error } = await supabase.rpc('territory_runes_save_v1', {
+        p_operation: command.operationId,
+        p_revision: command.revision,
+        p_slots: command.slots,
+      });
+      if (error) throw error;
+      // A receipt is not a client grant: verify it matches the submitted
+      // operation before claiming success, then re-read the server status.
+      // PostgreSQL jsonb may reorder object keys; compare slot fields rather
+      // than serialized JSON so a valid server receipt is not rejected.
+      const receiptSlots: unknown = data?.slots;
+      const matchesSlots = Array.isArray(receiptSlots)
+        && receiptSlots.length === command.slots.length
+        && receiptSlots.every((slot: unknown, index: number) => {
+          if (slot === null || typeof slot !== 'object' || Array.isArray(slot)) return false;
+          const value = slot as Record<string, unknown>;
+          return value.slotId === command.slots[index].slotId
+            && value.runeId === command.slots[index].runeId;
+        });
+      if (!data || data.schema !== RUNE_SCHEMA
+        || data.operationId !== command.operationId
+        || data.revision !== command.revision + 1
+        || !matchesSlots) {
+        throw Error('rune_receipt_mismatch');
+      }
+      pending.current = null;
+      if (alive.current) {
+        setNotice(en ? 'Server confirmed your 15-slot build.' : 'Сервер подтвердил сборку из 15 слотов.');
+        setRefresh(value => value + 1);
+      }
+    } catch (error) {
+      if (alive.current) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.includes('rune_revision_conflict') || message.includes('rune_not_owned')) {
+          pending.current = null;
+          setNotice(en ? 'The build changed on the server. Reload before saving.' : 'Сборка на сервере изменилась. Обнови её перед сохранением.');
+        } else {
+          // A lost response may mean the transaction committed. Keep the
+          // exact UUID/revision/slots for an idempotent retry, not a new grant.
+          setNotice(en ? 'No confirmation. Retry the same operation; do not choose new runes yet.'
+            : 'Нет подтверждения. Повтори ту же операцию, пока не меняй руны.');
+        }
+      }
+    } finally {
+      saving.current = false;
+    }
+  };
+
+  if (!FIFTEEN_SLOT_CONTRACT_READY) {
+    return <p role="status" className="rounded-lg border border-amber-500/40 bg-slate-900/90 p-3 text-xs text-amber-100">
+      {en ? 'The 15-slot rune system is not available yet. Existing hero training remains unchanged.'
+        : 'Система из 15 слотов рун пока недоступна. Существующая тренировка героя сохранена.'}
+    </p>;
+  }
+
+  if (!status) return <div role="status" className="rounded-xl border border-amber-500/40 bg-slate-900 p-3 text-amber-100">
+    <p>{notice || (en ? 'Checking server-owned runes…' : 'Проверяем руны на сервере…')}</p>
+    <button type="button" onClick={() => setRefresh(value => value + 1)}
+      className="mt-2 min-h-11 rounded-lg border border-amber-300 px-3 font-bold">
+      {en ? 'Retry' : 'Повторить'}
+    </button>
+  </div>;
+
+  const changed = JSON.stringify(draft) !== JSON.stringify(status.slots);
+  return <section aria-label={en ? 'Fifteen rune slots' : 'Пятнадцать слотов рун'} className="space-y-3">
+    <div className="rounded-xl border border-amber-300/50 bg-[#302017] p-3 text-xs text-amber-100">
+      <p className="font-black text-amber-200">{en ? 'Rune book · 15 independent slots' : 'Книга рун · 15 независимых слотов'}</p>
+      <p className="mt-1">{en ? 'Only server-owned runes can be selected. No rune is a combat skill slot.'
+        : 'Можно выбрать только подтверждённые сервером руны. Слоты рун не заменяют боевые навыки.'}</p>
+    </div>
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {catalog.slots.map((slot, index) => {
+        const selected = draft[index]?.runeId ?? null;
+        return <section key={slot.slotId} className="rounded-xl border border-amber-500/40 bg-[#261b19]/95 p-2.5">
+          <h3 className="mb-2 text-sm font-black text-amber-200">{en ? slot.nameEn : slot.nameRu}</h3>
+          <button type="button" aria-pressed={selected === null} disabled={saving.current || !!pending.current}
+            onClick={() => choose(slot.slotId, null)}
+            className="mb-1.5 min-h-10 w-full rounded-lg border border-amber-200/30 px-2 text-left text-xs text-amber-100 disabled:opacity-50">
+            {en ? 'No rune' : 'Без руны'} {selected === null ? '✓' : ''}
+          </button>
+          {slot.options.map(option => {
+            const level = status.owned[option.runeId] ?? 0;
+            const active = selected === option.runeId;
+            return <button type="button" key={option.runeId} aria-pressed={active}
+              disabled={!level || saving.current || !!pending.current}
+              onClick={() => choose(slot.slotId, option.runeId)}
+              className={`mb-1.5 min-h-12 w-full rounded-lg border px-2 py-1.5 text-left text-xs disabled:opacity-45 ${active
+                ? 'border-amber-200 bg-amber-700/45 text-white'
+                : 'border-amber-500/25 bg-black/30 text-amber-100'}`}>
+              <span className="block font-extrabold">{en ? option.nameEn : option.nameRu} {active ? '✓' : ''}</span>
+              <span className="block text-[11px]">{en ? option.effectEn : option.effectRu}</span>
+              <span className="block text-[10px] font-bold text-sky-200">{level
+                ? (en ? `Owned · level ${level}` : `Получена · уровень ${level}`)
+                : (en ? 'Locked' : 'Не получена')}</span>
+            </button>;
+          })}
+        </section>;
+      })}
+    </div>
+    {notice && <p role="status" className="rounded-lg border border-amber-400/40 bg-slate-900 p-2 text-xs text-amber-100">{notice}</p>}
+    <button type="button" onClick={() => void save()}
+      disabled={saving.current || (!changed && !pending.current)}
+      className="min-h-12 w-full rounded-xl border border-amber-200 bg-gradient-to-b from-amber-300 to-amber-600 px-3 font-black text-[#29180b] disabled:opacity-50">
+      {pending.current ? (en ? 'Retry same save' : 'Повторить сохранение')
+        : (en ? 'Save 15 slots' : 'Сохранить 15 слотов')}
+    </button>
+  </section>;
 }
