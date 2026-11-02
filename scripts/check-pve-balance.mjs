@@ -303,11 +303,11 @@ assert.match(fightSource, /\(kind === 'trial' \|\| enemy\.isBoss\) && !auto && !
 assert.match(fightSource, /blocks\.includes\(enemyIntent\.attack\)/, 'The warning reflects the selected defense');
 assert.match(fightSource, /data-testid="pve-telegraphed-strike"/, 'Show the actual next strike direction for tactical trials and bosses');
 assert.match(fightSource, /data-testid="pve-choose-opening"/, 'The shown enemy guard must offer an actual manual attack choice');
-assert.match(fightSource, /setAttack\(current => nextOpenStrike\(current, enemyIntent\.blocks\)\)/,
+assert.match(fightSource, /setAttack\(current => nextOpenStrike\(current, committedEnemyIntent\.blocks\)\)/,
   'Opening action must use both committed enemy guard slots');
-assert.match(fightSource, /enemyIntent\.blocks\.includes\(attack\)/,
+assert.match(fightSource, /committedEnemyIntent\.blocks\.includes\(attack\)/,
   'Manual attack warning must recognize the second guarded zone too');
-assert.match(fightSource, /const guardedZoneLabels = enemyIntent\.blocks\.map\(/,
+assert.match(fightSource, /const guardedZoneLabels = committedEnemyIntent\.blocks\.map\(/,
   'Show both actual enemy guard directions, not a misleading single guard');
 assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss strike warning must offer a manual defense action');
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
