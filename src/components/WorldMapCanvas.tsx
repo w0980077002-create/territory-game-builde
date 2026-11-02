@@ -635,7 +635,7 @@ export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegio
               <div className="grid grid-cols-2 gap-2">
                 {OTHER_PLACES.map(renderDestination)}
               </div>
-              <p className="mt-3 text-center text-[10px] font-medium text-amber-100/70">{language === 'en' ? 'Runes are in Hero → Combat training.' : 'Руны находятся в разделе «Герой» → «Тренировка».'}</p>
+              <p className="mt-3 text-center text-[10px] font-medium text-amber-100/70">{language === 'en' ? 'Runes have their own location on this Map.' : 'Руны находятся здесь, в отдельной локации на Карте.'}</p>
             </div>
           </div>
         </div>
