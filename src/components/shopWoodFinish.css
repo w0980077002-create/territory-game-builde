@@ -3,7 +3,7 @@
    docs/art-reference/territory-owner-wood-rope-metal-20261101.webp.
    This is deliberately scoped to ShopScreen and alters no game logic. */
 .viking-screen--shop {
-  --shop-wood: url('/assets/territory/ui/wooden-plaque.webp');
+  --shop-wood: var(--viking-plaque, linear-gradient(115deg, #5e351c, #271711));
 }
 .viking-screen--shop .territory-shop-sign,
 .viking-screen--shop .territory-shop-license,
