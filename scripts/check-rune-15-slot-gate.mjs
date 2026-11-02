@@ -41,7 +41,7 @@ const testModule = new Module('rune-gate-test');
 testModule.paths = Module._nodeModulePaths(process.cwd());
 testModule.require = require;
 testModule._compile(ui.outputFiles[0].text, 'rune-gate-test.cjs');
-for (const [language, expected] of [['ru', '15 слотов рун пока недоступна'], ['en', '15-slot rune system is not available yet']]) {
+for (const [language, expected] of [['ru', 'Руны временно недоступны'], ['en', 'Runes are temporarily unavailable']]) {
   const html = renderToStaticMarkup(React.createElement(testModule.exports.ServerRuneBook, { language }));
   assert(html.includes(expected), `${language} must explain the gate`);
   assert(!html.includes('<button'), `${language} must not offer an editable choice`);
