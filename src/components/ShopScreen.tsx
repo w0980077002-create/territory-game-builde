@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import type { CSSProperties } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { useGame, buyItem, DAILY_STONE_LIMIT, stonesRemainingToday, maxStoneQty } from '@/game/actions';
@@ -83,6 +84,12 @@ function formatDuration(ms: number): string {
   const s = String(totalSec % 60).padStart(2, '0');
   return `${h}:${m}:${s}`;
 }
+
+const shopMaterialStyles = {
+  '--shop-planks': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-wood-planks.webp")`,
+  '--shop-rope': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-rope-wrap.svg")`,
+  '--shop-iron': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-iron-corner.svg")`,
+} as CSSProperties;
 
 export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab?: Tab; onInventory?: () => void }) {
   const { t, language } = useLanguage();
@@ -251,7 +258,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
   };
 
   return (
-    <div className="viking-screen viking-screen--shop space-y-3 animate-fade-in pb-2">
+    <div className="viking-screen viking-screen--shop space-y-3 animate-fade-in pb-2" style={shopMaterialStyles}>
       <div className="territory-shop-sign relative rounded-2xl overflow-hidden border border-amber-500/20 p-4">
         <div className="territory-shop-sign__shade absolute inset-0 bg-gradient-to-br from-amber-900/40 via-[#16130d] to-[#0f1115]" />
         <div className="relative flex items-center gap-3">
