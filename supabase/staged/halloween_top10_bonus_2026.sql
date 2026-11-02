@@ -139,7 +139,9 @@ BEGIN
     v_gems := CASE WHEN v_row.place=1 THEN 300 WHEN v_row.place=2 THEN 200 WHEN v_row.place=3 THEN 150 ELSE 75 END;
     v_gold := CASE WHEN v_row.place=1 THEN 6000 WHEN v_row.place=2 THEN 4000 WHEN v_row.place=3 THEN 3000 ELSE 1500 END;
     v_stones := CASE WHEN v_row.place=1 THEN 10 WHEN v_row.place=2 THEN 7 WHEN v_row.place=3 THEN 5 ELSE 3 END;
-    v_payload := pg_catalog.jsonb_build_object('gems',v_gems,'gold',v_gold,'stones',v_stones);
+    -- Helmet is delivered as an authenticated one-time mail attachment, not a client save edit.
+    v_payload := pg_catalog.jsonb_build_object('gems',v_gems,'gold',v_gold,'stones',v_stones,
+      'items',pg_catalog.jsonb_build_object('halloween_horned_pumpkin_2026',1));
     v_mail_id := pg_catalog.gen_random_uuid();
     INSERT INTO public.admin_grants(id,player_id,kind,subject,body,payload)
       VALUES (v_mail_id,v_row.player_id,'mail',
@@ -148,6 +150,8 @@ BEGIN
           '-е место в Хэллоуинском рейде TERRITORY! Дополнительный подарок: '||
           v_gems::text||' синих алмазов, '||v_gold::text||' золота, '||
           v_stones::text||' боевых камней. Забери его из письма. '||
+          'Раритетный головной убор «Рогатая тыква» (+6 защита, +40 HP, +1% крит) '||
+          'тоже в этом письме и останется навсегда. '||
           'Легендарная Тыквенная ведьма начисляется отдельно всем участникам.',
         v_payload);
     INSERT INTO territory_private.halloween_top20_bonus_2026
