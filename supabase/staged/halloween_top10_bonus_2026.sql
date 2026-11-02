@@ -136,9 +136,9 @@ BEGIN
     IF EXISTS (SELECT 1 FROM territory_private.halloween_top20_bonus_2026
                WHERE event_id='halloween_2026' AND player_id=v_row.player_id)
     THEN CONTINUE; END IF;
-    v_gems := CASE WHEN v_row.place=1 THEN 300 WHEN v_row.place=2 THEN 200 WHEN v_row.place=3 THEN 150 WHEN v_row.place<=5 THEN 100 WHEN v_row.place<=10 THEN 75 ELSE 40 END;
-    v_gold := CASE WHEN v_row.place=1 THEN 6000 WHEN v_row.place=2 THEN 4000 WHEN v_row.place=3 THEN 3000 WHEN v_row.place<=5 THEN 2000 WHEN v_row.place<=10 THEN 1500 ELSE 750 END;
-    v_stones := CASE WHEN v_row.place=1 THEN 10 WHEN v_row.place=2 THEN 7 WHEN v_row.place=3 THEN 5 WHEN v_row.place<=5 THEN 4 WHEN v_row.place<=10 THEN 3 ELSE 2 END;
+    v_gems := CASE WHEN v_row.place=1 THEN 300 WHEN v_row.place=2 THEN 200 WHEN v_row.place=3 THEN 150 ELSE 75 END;
+    v_gold := CASE WHEN v_row.place=1 THEN 6000 WHEN v_row.place=2 THEN 4000 WHEN v_row.place=3 THEN 3000 ELSE 1500 END;
+    v_stones := CASE WHEN v_row.place=1 THEN 10 WHEN v_row.place=2 THEN 7 WHEN v_row.place=3 THEN 5 ELSE 3 END;
     v_payload := pg_catalog.jsonb_build_object('gems',v_gems,'gold',v_gold,'stones',v_stones);
     v_mail_id := pg_catalog.gen_random_uuid();
     INSERT INTO public.admin_grants(id,player_id,kind,subject,body,payload)
