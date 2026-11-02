@@ -45,6 +45,11 @@
   line-height: 1.2;
   margin-top: 3px;
   text-shadow: 0 2px 2px #1e0c08, 0 0 4px #0c0604;
+  position: relative;
+  z-index: 1;
+  padding: 3px 10px;
+  background: linear-gradient(90deg, transparent, #482613f5 11%, #482613f5 89%, transparent);
+  border-radius: 4px;
 }
 .viking-screen--shop .territory-shop-wallet {
   border-top: 3px ridge #ca9658;
@@ -80,6 +85,8 @@
   border-image-slice: 24 26 24 26;
   border-image-width: 20px 22px;
   border-image-repeat: stretch;
+  /* Hide printed content at the lower edge of the art source. */
+  clip-path: inset(0 0 10% 0);
   opacity: 1;
   pointer-events: none;
 }
@@ -136,6 +143,8 @@
   border-image-slice: 23 25 23 25;
   border-image-width: 17px 18px;
   border-image-repeat: stretch;
+  /* Retain structural top/side forging, never the painted potion interior. */
+  clip-path: inset(0 0 13% 0);
   pointer-events: none;
 }
 .viking-screen--shop .territory-shop-product::after { display: none; }
