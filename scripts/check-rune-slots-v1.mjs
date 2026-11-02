@@ -88,7 +88,7 @@ const pveBundle=await build({entryPoints:['src/game/builds/runePveEffectsV1.ts']
   bundle:true,platform:'node',format:'esm',write:false,logLevel:'silent'});
 const localPve=await import('data:text/javascript;base64,'+Buffer.from(pveBundle.outputFiles[0].text).toString('base64'));
 const effectSql=readFileSync('supabase/staged/territory_rune_effects_v1.sql','utf8');
-const rows=[...effectSql.matchAll(/\\('([a-z_0-9]+)','([a-z_0-9]+)',(\\d+)\\)/g)];
+const rows=[...effectSql.matchAll(/\('([a-z_0-9]+)','([a-z_0-9]+)',(\d+)\)/g)];
 assert.equal(rows.length,45,'All 45 effect definitions must match the server catalog');
 assert.equal(Object.keys(localPve.RUNE_PVE_CATALOG).length,45);
 for(const [,runeId,key,perLevel] of rows) {
