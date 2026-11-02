@@ -145,7 +145,8 @@ BEGIN
    IF jsonb_typeof(choice) IS DISTINCT FROM 'object'
       OR NOT (choice ? 'slotId' AND choice ? 'runeId')
       OR (SELECT count(*) FROM jsonb_object_keys(choice))<>2
-      OR choice->>'slotId'<>'rune_slot_'||lpad(idx::text,2,'0')
+      OR jsonb_typeof(choice->'slotId') IS DISTINCT FROM 'string'
+      OR choice->>'slotId' IS DISTINCT FROM 'rune_slot_'||lpad(idx::text,2,'0')
       OR jsonb_typeof(choice->'runeId') NOT IN ('string','null')
    THEN RAISE EXCEPTION 'rune_invalid_slot'; END IF;
    selected:=choice->>'runeId';

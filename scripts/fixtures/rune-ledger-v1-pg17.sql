@@ -81,6 +81,15 @@ BEGIN
  EXCEPTION WHEN OTHERS THEN
    IF SQLERRM<>'rune_not_owned_or_wrong_slot' THEN RAISE; END IF;
  END;
+ -- NULL must not pass the slot comparison through SQL's three-valued logic.
+ BEGIN
+   PERFORM public.territory_runes_save_v1(
+     '20000000-0000-4000-8000-000000000008',1,
+     jsonb_set(public.test_rune_choices('shield_wall_r1'),'{1,slotId}','null'::jsonb));
+   RAISE EXCEPTION 'expected_null_slot_rejection';
+ EXCEPTION WHEN OTHERS THEN
+   IF SQLERRM<>'rune_invalid_slot' THEN RAISE; END IF;
+ END;
  r:=public.territory_runes_status_v1();
  IF r->>'revision'<>'1' OR r#>>'{slots,0,runeId}'<>'shield_wall_r1'
  THEN RAISE EXCEPTION 'saved_status_failed: %',r; END IF;
