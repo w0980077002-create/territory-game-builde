@@ -1,28 +1,28 @@
 /* Owner-approved Lootborn-inspired layout, original TERRITORY visuals.
    Presentation ONLY; existing authoritative ledger and save receipts stay intact. */
-.territory-rune{--rune-brown:#623519;--rune-gold:#f7cb65;position:relative;display:grid;gap:10px;max-width:480px;margin:0 auto;padding:7px 5px 16px;color:#552c15;font-family:system-ui,-apple-system,sans-serif}
+.territory-rune{--rune-brown:#623519;--rune-gold:#f7cb65;position:relative;display:grid;gap:7px;max-width:480px;margin:0 auto;padding:5px 4px 14px;color:#552c15;font-family:system-ui,-apple-system,sans-serif}
 .territory-rune *{box-sizing:border-box}
 .territory-rune button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
 .territory-rune button:disabled{cursor:not-allowed;opacity:.55}
 .territory-rune button:focus-visible{outline:3px solid #2497ff;outline-offset:2px}
-.territory-rune__header{display:grid;justify-items:center;gap:2px;border:3px ridge #f9cc62;border-radius:14px;background:linear-gradient(125deg,#342119,#85502a 35%,#4c2d1e 75%,#2f1e1b);padding:10px 8px;box-shadow:inset 0 0 0 2px #a16b38,0 4px 1px #140c0a}
-.territory-rune__header h2{color:#ffdd79;font:bold 21px/1.08 Georgia,serif;text-shadow:1px 2px #24110d;letter-spacing:.5px}
-.territory-rune__header p{color:#ffe1a5;font:bold 10px/1.2 system-ui,sans-serif}
-.territory-rune__crystal{width:44px;height:44px;display:grid;place-items:center;clip-path:polygon(50% 0%,90% 23%,90% 77%,50% 100%,10% 77%,10% 23%);background:radial-gradient(circle at 40% 25%,#f8beff,#b139f6 40%,#5b1674 85%);color:#fff6ff;filter:drop-shadow(0 0 7px #f255fd)}
-.territory-rune__board{padding:8px 5px;background:linear-gradient(132deg,#ffdfac,#f5c686 50%,#e9ae6b);border:3px ridge #bd7c36;border-radius:14px;box-shadow:inset 0 0 0 2px #ffefca,0 3px 4px #381d15}
-.territory-rune__row{display:grid;grid-template-columns:68px minmax(0,1fr);min-width:0;gap:4px;align-items:center;min-height:93px;border-bottom:2px solid #a9773b50;padding:3px 0}
+.territory-rune__header{display:grid;grid-template-columns:48px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;justify-items:start;column-gap:10px;row-gap:0;border:3px ridge #f9cc62;border-radius:14px;background:linear-gradient(125deg,#342119,#85502a 35%,#4c2d1e 75%,#2f1e1b);padding:8px 11px;box-shadow:inset 0 0 0 2px #a16b38,0 4px 1px #140c0a}
+.territory-rune__header h2{color:#ffdd79;font:bold 19px/1.1 Georgia,serif;text-shadow:1px 2px #24110d;letter-spacing:.5px}
+.territory-rune__header p{color:#ffe1a5;font:bold 11px/1.2 system-ui,sans-serif}
+.territory-rune__crystal{grid-row:1/3;width:44px;height:44px;display:grid;place-items:center;clip-path:polygon(50% 0%,90% 23%,90% 77%,50% 100%,10% 77%,10% 23%);background:radial-gradient(circle at 40% 25%,#f8beff,#b139f6 40%,#5b1674 85%);color:#fff6ff;filter:drop-shadow(0 0 7px #f255fd)}
+.territory-rune__board{padding:5px 5px;background:linear-gradient(132deg,#ffdfac,#f5c686 50%,#e9ae6b);border:3px ridge #bd7c36;border-radius:14px;box-shadow:inset 0 0 0 2px #ffefca,0 3px 4px #381d15}
+.territory-rune__row{display:grid;grid-template-columns:74px minmax(0,1fr);min-width:0;gap:3px;align-items:center;min-height:75px;border-bottom:2px solid #a9773b50;padding:2px 0}
 .territory-rune__row:last-child{border-bottom:0}
 .territory-rune__group{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;min-width:0;text-align:center}
-.territory-rune__glyph{display:grid;place-items:center;width:42px;height:42px;border:2px solid #986b38;border-radius:12px;background:linear-gradient(#fffbea,#d6b68f);font:bold 27px Georgia,serif;color:#845a34;text-shadow:0 1px white}
-.territory-rune__group strong{font-size:10px;line-height:1.05;font-weight:900;overflow-wrap:anywhere}
-.territory-rune__choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;min-width:0}
-.territory-rune__tile{position:relative;min-width:0;min-height:79px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 1px 2px;background:transparent;color:#573114;border:2px solid transparent;border-radius:13px}
+.territory-rune__glyph{display:grid;place-items:center;width:35px;height:35px;border:2px solid #986b38;border-radius:11px;background:linear-gradient(#fff6d5,#dbb983);color:#71421b;text-shadow:0 1px white}
+.territory-rune__group strong{font-size:10px;line-height:1.1;font-weight:900;overflow-wrap:normal;word-break:normal;max-width:100%;}
+.territory-rune__choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;min-width:0}
+.territory-rune__tile{position:relative;min-width:0;min-height:67px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:3px 1px 2px;background:transparent;color:#573114;border:2px solid transparent;border-radius:13px}
 .territory-rune__tile--equipped{border-color:#dda537;background:radial-gradient(ellipse at top,#fff0ad,#f3c474 68%,#dfb377);box-shadow:0 1px 5px #a76936,inset 0 0 0 1px #fff4b9}
 .territory-rune__tile>small{position:absolute;top:1px;left:2px;font-size:9px;color:#73471a;font-weight:900}
-.territory-rune__tile-label{font-size:8px;line-height:1.05;font-weight:900;max-width:100%;white-space:nowrap;letter-spacing:-.2px}
+.territory-rune__tile-label{font-size:9px;line-height:1.07;font-weight:900;max-width:100%;white-space:nowrap;letter-spacing:-.2px}
 .territory-rune__tile-hint{font-size:11px;line-height:9px;color:#8a6f52}
 .territory-rune__equipped{position:absolute;top:2px;right:2px;display:grid;place-items:center;width:17px;height:17px;border-radius:50%;background:#15a64d;color:white;border:1px solid #fff6be}
-.territory-rune__stone{--stone1:#fbe35d;--stone2:#c25417;display:grid;place-items:center;flex-shrink:0;width:53px;height:54px;clip-path:polygon(50% 0,92% 22%,92% 75%,50% 100%,8% 75%,8% 22%);background:linear-gradient(125deg,#fff2b5 0%,#6b402b 42%,#f7d784 90%);filter:drop-shadow(0 2px 2px #44251650);position:relative;color:#fff2d9}
+.territory-rune__stone{--stone1:#fbe35d;--stone2:#c25417;display:grid;place-items:center;flex-shrink:0;width:46px;height:47px;clip-path:polygon(50% 0,92% 22%,92% 75%,50% 100%,8% 75%,8% 22%);background:linear-gradient(125deg,#fff2b5 0%,#6b402b 42%,#f7d784 90%);filter:drop-shadow(0 2px 2px #44251650);position:relative;color:#fff2d9}
 .territory-rune__stone:before{content:"";position:absolute;inset:4px;clip-path:inherit;background:linear-gradient(125deg,var(--stone1),var(--stone2));}
 .territory-rune__stone svg{position:relative;z-index:1;filter:drop-shadow(0 1px 2px #21111c66)}
 .territory-rune__stone--ember{--stone1:#ffbb36;--stone2:#b82c1e}
@@ -30,8 +30,8 @@
 .territory-rune__stone--forest{--stone1:#c1ee63;--stone2:#27813d}
 .territory-rune__stone--violet{--stone1:#e6a8fd;--stone2:#6927af}
 .territory-rune__stone--gold{--stone1:#fff5a4;--stone2:#a96b17}
-.territory-rune__stone--faded{filter:grayscale(.92) brightness(.85);opacity:.8}
-.territory-rune__passives{padding:9px;border:2px solid #b27939;border-radius:12px;background:linear-gradient(130deg,#f4dfb7,#e7bf85);box-shadow:inset 0 1px 1px #ffefcb}
+.territory-rune__stone--faded{filter:saturate(.83) brightness(.94);opacity:.88}
+.territory-rune__passives{padding:7px;border:2px solid #b27939;border-radius:12px;background:linear-gradient(130deg,#f4dfb7,#e7bf85);box-shadow:inset 0 1px 1px #ffefcb}
 .territory-rune__passives>strong{display:block;text-align:center;font:bold 15px Georgia,serif;margin-bottom:8px}
 .territory-rune__totals{display:flex;justify-content:space-around;gap:7px;flex-wrap:wrap;font-size:12px}
 .territory-rune__totals>span{display:flex;align-items:center;gap:5px}
@@ -68,3 +68,20 @@
 .territory-rune__dialog-actions .territory-rune__save{font-size:13px}
 @media(max-width:349px){.territory-rune{padding-inline:1px}.territory-rune__row{grid-template-columns:56px minmax(0,1fr)}.territory-rune__stone{width:47px;height:49px}.territory-rune__tile-label{font-size:7px}.territory-rune__group strong{font-size:9px}.territory-rune__variant{padding-inline:2px}.territory-rune__variant .territory-rune__stone{width:44px;height:48px}}
 @media(prefers-reduced-motion:reduce){.territory-rune *{animation:none!important;transition:none!important}}
+
+
+/* A visible rune icon is NOT proof of ownership. The lock or select state always tells the truth. */
+.territory-rune__tile--locked{background:#755b4520;color:#81624b}
+.territory-rune__tile--available{background:linear-gradient(#f5f1ce55,#d6d78c33)}
+.territory-rune__tile--available .territory-rune__stone{filter:drop-shadow(0 0 3px #d5b75d7a);opacity:1}
+.territory-rune__tile--locked .territory-rune__stone{opacity:.77}
+.territory-rune__locked{position:absolute;top:3px;right:2px;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;color:#ffebc5;background:#704c35;border:1px solid #ffe6a6}
+.territory-rune__tile--locked .territory-rune__tile-label{color:#795c4a}
+.territory-rune__tile--available .territory-rune__tile-label{color:#2b723b}
+@media(max-width:349px){
+ .territory-rune__row{grid-template-columns:62px minmax(0,1fr);min-height:72px}
+ .territory-rune__stone{width:42px;height:44px}
+ .territory-rune__group strong{font-size:9px}
+ .territory-rune__tile-label{font-size:8px}
+ .territory-rune__header h2{font-size:17px}
+}

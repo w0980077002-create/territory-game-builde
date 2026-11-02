@@ -26,6 +26,18 @@ with sync_playwright() as p:
             page.get_by_test_id('territory-server-rune-book').wait_for()
             assert page.locator('.territory-rune__tile').count() == 15
             assert page.locator('.territory-rune__row').count() == 5
+            # Real mobile UX acceptance: compact header, colorful but honestly locked choices,
+            # and the claim action visible before scrolling the whole board.
+            assert page.locator('.territory-rune__tile--locked').count() >= 1, 'No unavailable rune state'
+            assert page.locator('.territory-rune__locked').count() >= 1, 'Missing visual lock'
+            assert page.locator('.territory-rune__tile--available').count() >= 1, 'Available rune status lost'
+            faded_filter = page.locator('.territory-rune__tile--locked .territory-rune__stone').first.evaluate('(el) => getComputedStyle(el).filter')
+            assert 'grayscale' not in faded_filter, 'Unowned runes must stay colorful with a distinct lock'
+            header = page.locator('.territory-rune__header').bounding_box()
+            board = page.locator('.territory-rune__board').bounding_box()
+            claim = page.get_by_test_id('rune-daily-claim').bounding_box()
+            assert header['height'] < 110, 'Header consumes too much mobile height'
+            assert claim['y'] + claim['height'] < board['y'], 'Daily claim is hidden after the long board'
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Horizontal overflow on board'
             if width == 390:
                 page.screenshot(path='/tmp/territory-rune-screenshots/board-' + lang + '.png', full_page=True)

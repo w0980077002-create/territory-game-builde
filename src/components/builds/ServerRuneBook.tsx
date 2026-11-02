@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Crown, Flame, Heart, Shield, Snowflake, Sparkles, Swords, Target, Wind, X, Zap } from 'lucide-react';
+import { Check, Crown, Flame, Heart, LockKeyhole, Shield, Snowflake, Sparkles, Swords, Target, Wind, X, Zap } from 'lucide-react';
 import './serverRuneBook.css';
 import { supabase } from '@/game/supabase';
 import catalog from '@/game/config/territory-independent-rune-slots-v1.json';
@@ -247,14 +247,30 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   return <section data-testid="territory-server-rune-book" className="territory-rune"
     aria-label={en ? 'Fifteen rune slots' : 'Пятнадцать слотов рун'}>
     <header className="territory-rune__header">
-      <div className="territory-rune__crystal" aria-hidden="true"><Sparkles size={29}/></div>
+      <div className="territory-rune__crystal" aria-hidden="true"><Sparkles size={27}/></div>
       <h2>{en ? 'Runes of Power' : 'Руны навыков'}</h2>
       <p>{en ? '15 slots · 45 variants' : '15 слотов · 45 вариантов'}</p>
     </header>
+    <div className="territory-rune__footer">
+      <button type="button" onClick={() => void claimDaily()} data-testid="rune-daily-claim"
+        disabled={claiming || saving.current || !!pending.current || claimedToday || changed} className="territory-rune__daily">
+        <Sparkles size={19}/>
+        {claiming ? (en ? 'Checking…' : 'Проверяем…') : claimedToday
+          ? (en ? 'Rune received ✓' : 'Руна дня получена ✓') : changed
+            ? (en ? 'Save build first' : 'Сначала сохрани сборку')
+            : (en ? 'Claim daily rune' : 'Получить руну дня')}
+      </button>
+      <button type="button" onClick={() => void save()} data-testid="rune-save-build"
+        disabled={claiming || saving.current || (!changed && !pending.current)} className="territory-rune__save">
+        {pending.current ? (en ? 'Retry save' : 'Повторить запись')
+          : changed ? (en ? 'Save build' : 'Сохранить сборку')
+            : (en ? 'Build saved ✓' : 'Сборка сохранена ✓')}
+      </button>
+    </div>
     <div className="territory-rune__board">
       {RUNE_GROUPS.map((group, row) => <div key={group.en} className="territory-rune__row">
         <div className="territory-rune__group">
-          <span className="territory-rune__glyph" aria-hidden="true">{group.symbol}</span>
+          <span className="territory-rune__glyph" aria-hidden="true">{[<Shield key="base" size={23}/>, <Flame key="core" size={23}/>, <Wind key="control" size={23}/>, <Sparkles key="awake" size={23}/>, <Crown key="final" size={23}/>][row]}</span>
           <strong>{en ? group.en : group.ru === 'Пробуждение' ? <>Пробуж<br/>дение</> : group.ru}</strong>
         </div>
         <div className="territory-rune__choices">
@@ -265,7 +281,7 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
             const variant = slot.options.findIndex(option => option.runeId === chosen);
             const hasOwned = slot.options.some(option => !!status.owned[option.runeId]);
             return <button key={slot.slotId} type="button" data-testid={'rune-slot-' + (index + 1)}
-              className={'territory-rune__tile' + (chosen ? ' territory-rune__tile--equipped' : '')}
+              className={'territory-rune__tile' + (chosen ? ' territory-rune__tile--equipped' : hasOwned ? ' territory-rune__tile--available' : ' territory-rune__tile--locked')}
               aria-label={(en ? 'Rune slot ' : 'Рунный слот ') + (index + 1) +
                 (chosen ? (synced ? (en ? ', equipped' : ', установлена') : (en ? ', pending save' : ', ожидает сохранения')) : (hasOwned ? (en ? ', available' : ', доступны руны') : (en ? ', none owned' : ', нет полученных рун')))}
               aria-pressed={chosen !== null && chosen !== undefined}
@@ -273,8 +289,9 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
               <RuneStone slotIndex={index} variant={Math.max(0, variant)} faded={!chosen}/>
               <small>{index + 1}</small>
               {chosen && synced && <span className="territory-rune__equipped"><Check size={11}/></span>}
+              {!chosen && !hasOwned && <span className="territory-rune__locked" aria-hidden="true"><LockKeyhole size={12}/></span>}
               {chosen ? <span className="territory-rune__tile-label">{synced ? (en ? 'Equipped' : 'Установлено') : (en ? 'Not saved' : 'Не сохранено')}</span>
-                : <span className="territory-rune__tile-hint">{hasOwned ? '●' : '○'}</span>}
+                : <span className="territory-rune__tile-label">{hasOwned ? (en ? 'Select' : 'Выбрать') : (en ? 'Not owned' : 'Нет руны')}</span>}
             </button>;
           })}
         </div>
@@ -293,22 +310,6 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
           : Object.entries(totalBonuses).map(([key, bp]) => <span key={key}>+
             {(bp / 100).toFixed(2).replace(/\.00$/, '')}% {en ? (bonusLabels[key]?.en ?? key) : (bonusLabels[key]?.ru ?? key)}</span>)}
       </div>
-    </div>
-    <div className="territory-rune__footer">
-      <button type="button" onClick={() => void claimDaily()} data-testid="rune-daily-claim"
-        disabled={claiming || saving.current || !!pending.current || claimedToday || changed} className="territory-rune__daily">
-        <Sparkles size={19}/>
-        {claiming ? (en ? 'Checking…' : 'Проверяем…') : claimedToday
-          ? (en ? 'Rune received ✓' : 'Руна дня получена ✓') : changed
-            ? (en ? 'Save build first' : 'Сначала сохрани сборку')
-            : (en ? 'Claim daily rune' : 'Получить руну дня')}
-      </button>
-      <button type="button" onClick={() => void save()} data-testid="rune-save-build"
-        disabled={claiming || saving.current || (!changed && !pending.current)} className="territory-rune__save">
-        {pending.current ? (en ? 'Retry save' : 'Повторить запись')
-          : changed ? (en ? 'Save build' : 'Сохранить сборку')
-            : (en ? 'Build saved ✓' : 'Сборка сохранена ✓')}
-      </button>
     </div>
     {dailyReceipt && dailyRuneName && <p role="status" data-testid="rune-daily-receipt"
       aria-live="polite" className="territory-rune__receipt">
