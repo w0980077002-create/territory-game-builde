@@ -16,12 +16,13 @@ CREATE OR REPLACE FUNCTION territory_private.runes_cave_pin_session_v1()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $runes$
 DECLARE active boolean; resolved jsonb; totals jsonb; pinned jsonb;
 BEGIN
+ SELECT enabled INTO active FROM territory_private.rune_cave_config_v1 WHERE id=true;
+ -- With the feature disabled, the trigger must never disrupt old sessions.
+ IF NOT coalesce(active,false) THEN RETURN NEW; END IF;
  IF jsonb_typeof(NEW.state) IS DISTINCT FROM 'object'
    OR jsonb_typeof(NEW.state->'input') IS DISTINCT FROM 'object'
    OR (NEW.state->'input') ? 'serverRuneEffects'
  THEN RAISE EXCEPTION 'rune_cave_invalid_start_state'; END IF;
- SELECT enabled INTO active FROM territory_private.rune_cave_config_v1 WHERE id=true;
- IF NOT coalesce(active,false) THEN RETURN NEW; END IF;
  IF NEW.session_id IS NULL OR NEW.player_id IS NULL
    OR NEW.state#>>'{input,mode}' IS NULL
    OR NEW.state#>>'{input,mode}' NOT IN ('pve','boss')
