@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420">
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#3c526a"/><stop offset=".7" stop-color="#7a8b94"/><stop offset="1" stop-color="#b99c69"/></linearGradient>
+ <linearGradient id="wood" x2=".8" y2="1"><stop stop-color="#965a30"/><stop offset=".23" stop-color="#4d291a"/><stop offset=".52" stop-color="#773b20"/><stop offset=".8" stop-color="#3e2318"/><stop offset="1" stop-color="#1f1513"/></linearGradient>
+ <linearGradient id="roof" x2="0" y2="1"><stop stop-color="#fece9a"/><stop offset=".32" stop-color="#9b2d2b"/><stop offset="1" stop-color="#4b171b"/></linearGradient>
+ <linearGradient id="steel" x2="0" y2="1"><stop stop-color="#d7d0bc"/><stop offset=".29" stop-color="#7f8485"/><stop offset=".6" stop-color="#34393e"/><stop offset="1" stop-color="#171b21"/></linearGradient>
+ <radialGradient id="warm"><stop stop-color="#ffe5a0" stop-opacity=".95"/><stop offset=".34" stop-color="#f9ab3c" stop-opacity=".5"/><stop offset="1" stop-color="#f6ae44" stop-opacity="0"/></radialGradient>
+ <linearGradient id="flask" x2=".8" y2="1"><stop stop-color="#dfbaff"/><stop offset=".4" stop-color="#ab35ff"/><stop offset=".75" stop-color="#5726ac"/><stop offset="1" stop-color="#261c65"/></linearGradient>
+ <pattern id="grain" width="140" height="68" patternUnits="userSpaceOnUse"><path d="M-20 15 Q40 -2 100 12T190 13 M-20 38 Q42 27 110 38T170 37 M-20 57 Q80 49 172 57" fill="none" stroke="#1f120d" stroke-opacity=".37" stroke-width="2"/><path d="M9 26 Q65 17 105 29" fill="none" stroke="#e7a66a" stroke-opacity=".23" stroke-width="3"/><ellipse cx="95" cy="31" rx="13" ry="4" fill="none" stroke="#3b1c14" stroke-opacity=".45" stroke-width="2"/></pattern>
+ <filter id="glow"><feGaussianBlur stdDeviation="15"/></filter>
+</defs>
+<rect width="900" height="420" fill="url(#sky)"/>
+<path d="M0 226L90 172l42 30 93-88 104 91 69-59 70 49 99-99 126 91 61-43 146 76v205H0" fill="#344858" opacity=".54"/>
+<path d="M0 267L113 203l110 49 81-46 87 44 104-67 80 52 117-64 94 59 114-18v208H0" fill="#5b6e55" opacity=".45"/>
+<g opacity=".8"><path d="M648 233v-115l53-37 56 38v114Z" fill="#735044"/><path d="M640 123l61-53 67 53Z" fill="#804d36"/><path d="M692 92v-55h18v57" fill="#8d6447"/><path d="M762 246v-64l38-34 49 36v65Z" fill="#684a3b"/><path d="M756 189l44-53 60 53Z" fill="#93543b"/></g>
+<!-- Heavy real timber stall support posts -->
+<path d="M0 77h115v343H0z M786 77h114v343H786z" fill="url(#wood)" stroke="#2b1710" stroke-width="9"/>
+<path d="M0 77h115v343H0z M786 77h114v343H786z" fill="url(#grain)" opacity=".85"/>
+<path d="M23 70h59v350H23z M810 70h59v350h-59z" fill="#a96d3d" opacity=".22"/>
+<g stroke="url(#steel)" stroke-width="18" fill="none"><path d="M4 134h104 M797 134h100 M8 353h100 M800 353h97"/></g>
+<g fill="#b7b6ab" stroke="#292a2c" stroke-width="4"><circle cx="31" cy="135" r="8"/><circle cx="84" cy="135" r="8"/><circle cx="819" cy="135" r="8"/><circle cx="870" cy="135" r="8"/></g>
+<!-- vivid striped awning -->
+<path d="M-25 0H925l-27 107q-45 47-93 0-44 43-90 0-45 43-90 0-45 43-90 0-45 43-90 0-45 43-90 0-45 43-90 0-45 43-90 0-45 43-90 0Z" fill="url(#roof)" stroke="#3c1715" stroke-width="13"/>
+<path d="M-15 6h94l-12 94q-37 42-93 0ZM171 6h94l-12 94q-37 42-93 0ZM358 6h94l-12 94q-37 42-93 0ZM545 6h94l-12 94q-37 42-93 0ZM733 6h94l-12 94q-37 42-93 0Z" fill="#f5c89f" opacity=".97"/>
+<path d="M0 12H900" stroke="#3c1612" stroke-width="17"/><path d="M0 19H900" stroke="#fbd2a6" stroke-opacity=".6" stroke-width="4"/>
+<path d="M0 93 Q40 112 80 93T170 93T260 93T350 93T440 93T530 93T620 93T710 93T800 93T900 93" stroke="#e5b16e" stroke-width="5" fill="none"/>
+<!-- left foreground barrel and potion -->
+<ellipse cx="88" cy="372" rx="88" ry="20" fill="#0d0b0a" opacity=".6"/>
+<path d="M26 263Q6 317 28 379Q85 414 151 378Q175 317 149 264Z" fill="url(#wood)" stroke="#362014" stroke-width="8"/>
+<path d="M20 270Q87 289 155 270M18 365Q88 385 158 365" fill="none" stroke="url(#steel)" stroke-width="17"/>
+<path d="M68 279v92M107 282v94" stroke="#362014" stroke-width="3" opacity=".6"/>
+<ellipse cx="88" cy="264" rx="64" ry="19" fill="#694027" stroke="#24201c" stroke-width="9"/>
+<ellipse cx="88" cy="259" rx="49" ry="11" fill="#452616"/>
+<!-- left lantern -->
+<path d="M140 56v108" stroke="#21191b" stroke-width="10"/>
+<ellipse cx="141" cy="207" rx="85" ry="103" fill="url(#warm)" filter="url(#glow)"/>
+<path d="M109 165l32-22 32 22v79l-32 19-32-19Z" fill="#3c2920" stroke="#bd9c63" stroke-width="7"/>
+<path d="M121 170h40v66l-20 11-20-11Z" fill="#ffdb70" stroke="#f5b642" stroke-width="5"/>
+<path d="M120 175v61M161 175v61" stroke="#5e4430" stroke-width="7"/>
+<path d="M104 160l37-22 37 22M110 244l31 17 31-17" fill="none" stroke="#2e2727" stroke-width="9"/>
+<path d="M126 201q14-32 28-2-8 34-19 32" fill="#fff8be" opacity=".8"/>
+<!-- Right lantern -->
+<path d="M770 54v114" stroke="#231a16" stroke-width="10"/>
+<ellipse cx="768" cy="205" rx="83" ry="90" fill="url(#warm)" filter="url(#glow)"/>
+<path d="M739 165l30-23 31 23v81l-31 17-30-17Z" fill="#292323" stroke="#ab895c" stroke-width="6"/>
+<path d="M750 174h38v62l-19 13-19-13Z" fill="#fbd375"/>
+<path d="M747 181v58M791 181v58" stroke="#47372a" stroke-width="7"/>
+<path d="M737 164l32-26 34 26M735 244l34 23 34-23" fill="none" stroke="#2c2928" stroke-width="8"/>
+<!-- bottom right vivid glass phials on shelf -->
+<path d="M702 344h188v26H702" fill="#63371e" stroke="#29190f" stroke-width="8"/>
+<path d="M823 240h26v30l13 8-6 61q-27 19-52-1l-5-60 17-9v-29Z" fill="url(#flask)" stroke="#b9a6ce" stroke-width="6"/>
+<path d="M815 242h42" stroke="#f8c57c" stroke-width="9"/>
+<path d="M824 279l-9 48M851 286l-6 35" stroke="#ffe3fa" stroke-width="5" opacity=".8"/>
+<path d="M712 277h24v21q30 21 20 46q-30 17-61 0-11-31 20-47Z" fill="#2366d8" stroke="#a8eaf7" stroke-width="5"/>
+<path d="M701 273h44" stroke="#dbb977" stroke-width="9"/>
+<!-- architectural gold highlights -->
+<path d="M110 114V420 M790 114V420" stroke="#e2a460" stroke-opacity=".27" stroke-width="5"/>
+<rect width="900" height="420" fill="#1a0f0b" opacity=".18"/>
+</svg>
