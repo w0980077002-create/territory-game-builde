@@ -193,7 +193,7 @@ export function ServerPveFight({enemy,kind,encounterId,sessionId,onExit,onNext}:
     {busy&&!receipt&&<p className="text-center text-xs text-amber-200"><Loader2 className="inline animate-spin" size={14}/> {en?'Connecting battle…':'Подключаем бой…'}</p>}
     {!!fault&&<div className="rounded-lg border border-red-400/40 bg-red-950/50 p-2 text-xs text-red-100" role="alert">{fault}
       <button type="button" className="block mt-2 rounded bg-amber-600 px-3 py-1.5" onClick={()=>{if(receipt)tick();else void connect();}} disabled={busy}>
-        {en?'Retry saved move':'Повторить ход'}</button></div>}
+        {receipt?(en?'Retry saved move':'Повторить ход'):(en?'Retry connection':'Повторить подключение')}</button></div>}
     {state&&state.status!=='fighting'&&<div className="rounded-xl bg-slate-900 p-3 text-center text-amber-100">
       <Shield className="mx-auto mb-1" size={20}/>
       <b>{state.status==='hero_won'?(en?'Victory':'Победа'):(en?'Battle ended':'Бой окончен')}</b>
