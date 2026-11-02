@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="315" viewBox="0 0 760 315">
+<defs>
+<linearGradient id="timber" x2=".8" y2="1"><stop stop-color="#b97843"/><stop offset=".12" stop-color="#824722"/><stop offset=".4" stop-color="#4d2819"/><stop offset=".76" stop-color="#60331d"/><stop offset="1" stop-color="#29160f"/></linearGradient>
+<linearGradient id="iron" x2="0" y2="1"><stop stop-color="#f4e9cf"/><stop offset=".15" stop-color="#858b89"/><stop offset=".54" stop-color="#33383e"/><stop offset=".85" stop-color="#616466"/><stop offset="1" stop-color="#1b2129"/></linearGradient>
+<linearGradient id="gold" x2="0" y2="1"><stop stop-color="#ffed9e"/><stop offset=".45" stop-color="#d6a04d"/><stop offset="1" stop-color="#76441e"/></linearGradient>
+<pattern id="grain" width="185" height="59" patternUnits="userSpaceOnUse"><path d="M-17 13Q45 5 104 16T203 13 M0 44Q61 30 121 42T202 41" stroke="#221009" stroke-width="3" fill="none" opacity=".58"/><path d="M8 29Q65 22 122 32" stroke="#edb67c" stroke-width="2" fill="none" opacity=".24"/><ellipse cx="149" cy="22" rx="14" ry="6" fill="none" stroke="#2c170e" stroke-width="2" opacity=".55"/></pattern>
+<filter id="shadow"><feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#0c0706" flood-opacity=".87"/></filter>
+</defs>
+<!-- structural ropes from the stall canopy -->
+<g stroke="#543017" stroke-width="22" stroke-linecap="round"><path d="M116 -10Q106 38 144 66T153 103M633 -10Q642 32 616 65T608 103"/></g>
+<g stroke="#d7aa67" stroke-width="15" stroke-linecap="round" fill="none"><path d="M116 -10Q106 38 144 66T153 103M633 -10Q642 32 616 65T608 103"/></g>
+<g stroke="#fff0ba" stroke-width="3.4" stroke-dasharray="7 10" opacity=".68" fill="none"><path d="M116 -10Q106 38 144 66T153 103M633 -10Q642 32 616 65T608 103"/></g>
+<g fill="none" stroke-linecap="round">
+<path d="M138 75q-20-30 7-40q28-9 36 27q3 38-30 45q-32-13-18-43q24-19 44 6" stroke="#573015" stroke-width="27"/>
+<path d="M138 75q-20-30 7-40q28-9 36 27q3 38-30 45q-32-13-18-43q24-19 44 6" stroke="#cf9f59" stroke-width="20"/>
+<path d="M623 75q20-30-7-40q-28-9-36 27q-3 38 30 45q32-13 18-43q-24-19-44 6" stroke="#573015" stroke-width="27"/>
+<path d="M623 75q20-30-7-40q-28-9-36 27q-3 38 30 45q32-13 18-43q24-19 44 6" stroke="#cf9f59" stroke-width="20"/>
+</g>
+<!-- cast iron and timber plaque -->
+<path d="M56 86L92 70H668l38 16 15 34v148l-24 25H61l-21-24V124Z" fill="#0e0b0b" filter="url(#shadow)"/>
+<path d="M55 85L90 72H669l34 14 16 38v137l-21 32H63l-23-29V124Z" fill="url(#timber)" stroke="url(#iron)" stroke-width="21" stroke-linejoin="round"/>
+<path d="M64 112H694M64 169H693M63 223H693M65 276H691" stroke="#28150e" stroke-width="5" opacity=".8"/>
+<path d="M70 105H688M72 164H688M73 217H688M74 270H686" stroke="#f0bc7b" stroke-width="2.2" opacity=".35"/>
+<path d="M66 99H695V274H65Z" fill="url(#grain)" opacity=".6"/>
+<path d="M66 110l26-21 51 2-27 22-4 31-40 3M697 109l-26-19-45 4 25 22 7 28 40 4M67 256l46-3 15-24M696 254l-46-1-15-25" fill="none" stroke="url(#iron)" stroke-width="20" stroke-linejoin="round"/>
+<g fill="url(#gold)" stroke="#251710" stroke-width="4"><circle cx="96" cy="118" r="9"/><circle cx="668" cy="118" r="9"/><circle cx="93" cy="255" r="9"/><circle cx="668" cy="255" r="9"/><circle cx="381" cy="285" r="7"/></g>
+<path d="M113 285q39 13 85 0M567 285q39 13 85 0" stroke="#d5a15e" fill="none" stroke-width="5"/>
+<!-- medallion top centre -->
+<path d="M307 78Q315 41 378 35Q440 43 456 78L445 110H319Z" fill="url(#iron)" stroke="#1a1412" stroke-width="9"/>
+<path d="M334 71Q380 29 430 71" stroke="url(#gold)" stroke-width="7" fill="none"/>
+<circle cx="379" cy="73" r="22" fill="#59331e" stroke="#d9ae64" stroke-width="6"/>
+<path d="M373 55h12v15q13 12 5 22-11 12-23 0-8-10 6-22Z" fill="#ffb42c" stroke="#d36e16" stroke-width="3"/>
+<path d="M370 83q9-12 17 0" fill="none" stroke="#fff3ac" stroke-width="5"/>
+</svg>
