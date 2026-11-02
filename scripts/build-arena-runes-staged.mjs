@@ -100,9 +100,9 @@ BEGIN
  IF NOT FOUND THEN RAISE EXCEPTION 'rune_arena_snapshot_missing'; END IF;
  SELECT totals INTO d FROM territory_private.rune_arena_fighters_v1 WHERE room_id=p_room AND participant_id=p_defender;
  IF NOT FOUND THEN RAISE EXCEPTION 'rune_arena_snapshot_missing'; END IF;
- attack_bp:=coalesce((a->>'damage_bonus_bp')::integer,0);
+ attack_bp:=least(2500,coalesce((a->>'damage_bonus_bp')::integer,0)+coalesce((a->>'rune_combat_damage_bp')::integer,0));
  versus_guard:=CASE WHEN p_guarded THEN coalesce((a->>'damage_vs_guard_bp')::integer,0) ELSE 0 END;
- guard_bp:=CASE WHEN p_guarded THEN coalesce((d->>'guard_absorb_bp')::integer,0) ELSE 0 END;
+ guard_bp:=least(2500,(CASE WHEN p_guarded THEN coalesce((d->>'guard_absorb_bp')::integer,0) ELSE 0 END)+coalesce((d->>'rune_combat_guard_bp')::integer,0));
  RETURN territory_private.runes_apply_damage_v1(attack_bp,versus_guard,guard_bp,p_base);
 END $damage$;
 CREATE OR REPLACE FUNCTION territory_private.runes_arena_chance_v1(
@@ -118,9 +118,9 @@ BEGIN
  SELECT totals INTO d FROM territory_private.rune_arena_fighters_v1 WHERE room_id=p_room AND participant_id=p_defender;
  IF NOT FOUND THEN RAISE EXCEPTION 'rune_arena_snapshot_missing'; END IF;
  IF p_kind='dodge' THEN
-   delta_bp:=coalesce((d->>'dodge_chance_bp')::integer,0)-coalesce((a->>'accuracy_bp')::integer,0);
- ELSE delta_bp:=coalesce((a->>'crit_chance_bp')::integer,0); END IF;
- IF delta_bp NOT BETWEEN -2500 AND 2500 THEN RAISE EXCEPTION 'rune_arena_invalid_chance'; END IF;
+   delta_bp:=coalesce((d->>'dodge_chance_bp')::integer,0)+coalesce((d->>'rune_combat_dodge_bp')::integer,0)-coalesce((a->>'accuracy_bp')::integer,0)-coalesce((a->>'rune_combat_accuracy_bp')::integer,0);
+ ELSE delta_bp:=coalesce((a->>'crit_chance_bp')::integer,0)+coalesce((a->>'rune_combat_crit_bp')::integer,0); END IF;
+ delta_bp:=greatest(-2500,least(2500,delta_bp));
  RETURN greatest(0,least(100,p_base+delta_bp::numeric/100));
 END $chance$;
 REVOKE ALL ON FUNCTION territory_private.runes_pin_arena_room_v1(uuid),
