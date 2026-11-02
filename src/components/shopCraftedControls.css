@@ -376,3 +376,53 @@
   .viking-screen--shop.territory-shop-approved .territory-shop-tab,
   .viking-screen--shop.territory-shop-approved .territory-shop-product__buy{transition:none;}
 }
+
+/*
+ * Approved mobile composition correction.
+ * The illustrated fascia is a 941x291 crop of the owner-approved artwork;
+ * respect its real aspect ratio instead of stretching it to 148px.
+ * "Already purchased" is redundant with the green owned label: shrink only
+ * the permanent-license card and show live merchandise above the bottom dock.
+ * NO brightness, color, product pricing, or interaction adjustments.
+ */
+.viking-screen--shop.territory-shop-approved .territory-shop-facade {
+  height:auto;
+  min-height:0;
+  aspect-ratio:941 / 291;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license--owned {
+  grid-template-columns:clamp(76px,23%,98px) minmax(0,1fr);
+  padding:11px 13px;
+  gap:10px;
+  margin:8px 8px 7px;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license--owned .territory-shop-license__art {
+  width:100%;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-tabs {
+  margin:4px 8px 6px;
+  padding:6px;
+  gap:5px;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-tab {
+  min-height:44px;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product {
+  min-height:clamp(128px,34vw,150px);
+  padding:11px 10px;
+}
+@media(max-width:359px){
+  .viking-screen--shop.territory-shop-approved .territory-shop-facade {
+    height:auto;
+    min-height:0;
+  }
+  .viking-screen--shop.territory-shop-approved .territory-shop-product {
+    min-height:150px;
+    padding:12px 11px;
+  }
+  .viking-screen--shop.territory-shop-approved .territory-shop-license--owned {
+    grid-template-columns:75px minmax(0,1fr);
+    padding:10px 11px;
+    gap:7px;
+  }
+}
