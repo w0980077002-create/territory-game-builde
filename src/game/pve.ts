@@ -54,6 +54,14 @@ export function nextOpenStrike(current: Zone | null, guarded: readonly Zone[]): 
   return openings[(index + 1) % openings.length];
 }
 
+/** Keep the two most recent DISTINCT resolved strikes, not merely the last
+ * two rounds. Repeating the same zone must not erase the boss's knowledge of
+ * another zone or cause phase III to disappear. Fight-local only: no save,
+ * economy or server-owned state is changed. */
+export function rememberDistinctHeroAttacks(history: readonly Zone[], resolved: Zone): Zone[] {
+  return [resolved, ...history.filter(zone => zone !== resolved)].slice(0, 2);
+}
+
 /** Elite enemies learn attack patterns as their HP falls: at half HP they
  * cover the last attack, at quarter HP they cover the last TWO distinct
  * attacks. The announced guard is committed to the same playRound resolver.
