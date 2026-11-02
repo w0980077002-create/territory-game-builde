@@ -234,7 +234,7 @@ assert.equal((await progressAs(loser)).active_session_id,null, 'another player c
 await assert.rejects(execute(noLevel,{action:'resume',sessionId:next.session_id}),/combat_session_not_found/);
 await assert.rejects(execute(player,{action:'resume',sessionId:'30000000-0000-4000-8000-000000000099'}),/combat_session_not_found/);
 await assert.rejects(sql(`INSERT INTO territory_private.combat_sessions_v1(player_id,encounter_id,state,cursor_ms)
- SELECT player_id,encounter_id,state,cursor_ms FROM territory_private.combat_sessions_v1 WHERE session_id=${quote(next.session_id)}`),/combat_one_active_session_v1/);
+ SELECT player_id,encounter_id,state #- '{input,serverRuneEffects}',cursor_ms FROM territory_private.combat_sessions_v1 WHERE session_id=${quote(next.session_id)}`),/combat_one_active_session_v1/);
 assert.equal(await sql(`SELECT count(*) FROM territory_private.combat_sessions_v1 WHERE player_id=${quote(player)} AND state->>'status'='fighting'`),'1');
 // A server-side start-only gate must drain active fights and preserve receipts.
 await sql('UPDATE territory_private.combat_config_v1 SET starts_enabled=false WHERE id=true');
