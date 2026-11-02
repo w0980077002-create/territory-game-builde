@@ -298,7 +298,12 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   }
   let heroHp = hero.hp;
   if (enemyHp > 0 && previous.root <= 0) {
-    const rawEnemyHit = strike(enemy, hero, 'hero', ai.attack, blocks, {
+    // A slowed enemy still attacks, but at reduced force. The root effect
+    // above is stronger and can skip a strike for its remaining duration.
+    const actingEnemy = previous.slow > 0
+      ? { ...enemy, attack: Math.max(1, Math.round(enemy.attack * 0.9)) }
+      : enemy;
+    const rawEnemyHit = strike(actingEnemy, hero, 'hero', ai.attack, blocks, {
       dodgeBp: Math.min(2500,
         runeBp(runes, 'dodge_chance_bp') + runeBp(runes, 'enemy_accuracy_reduction_bp')),
     });
