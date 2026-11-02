@@ -64,4 +64,30 @@ assert.throws(()=>api.runeSlotCatalog(badLegacy),/rune_slots_invalid/);
 const badOptions=structuredClone(runeCatalog);
 badOptions.slots[1].options[0].runeId=badOptions.slots[0].options[0].runeId;
 assert.throws(()=>api.runeSlotCatalog(badOptions),/rune_duplicate_id/);
+// The actual 15-slot status RPC is the only source of ownership for the
+// editable book. Reject malformed ownership, duplicate entries and stale
+// selections rather than replacing a legacy save with an empty build.
+const serverStatus={schema:api.RUNE_SCHEMA,revision:9,slots:full.slots,
+  owned:Object.entries(ownership).map(([runeId,level])=>({runeId,level}))};
+const parsed=api.parseRuneServerStatus(serverStatus,defs);
+assert.equal(parsed.slots.length,15);
+assert.equal(parsed.owned[defs[0].options[0]],3);
+assert.deepEqual(parsed.slots,full.slots);
+assert.throws(()=>api.parseRuneServerStatus({...serverStatus,owned:[]},defs),/rune_not_owned/);
+assert.throws(()=>api.parseRuneServerStatus({...serverStatus,owned:[
+  ...serverStatus.owned,serverStatus.owned[0]]},defs),/rune_status_ownership_invalid/);
+assert.throws(()=>api.parseRuneServerStatus({...serverStatus,owned:[
+  {runeId:'not_a_rune',level:3},...serverStatus.owned]},defs),/rune_status_ownership_invalid/);
+assert.throws(()=>api.parseRuneServerStatus({...serverStatus,owned:[
+  {...serverStatus.owned[0],level:4},...serverStatus.owned.slice(1)]},defs),/rune_status_ownership_invalid/);
+assert.throws(()=>api.parseRuneServerStatus({...serverStatus,slots:full.slots.slice(0,5)},defs),/rune_count_invalid/);
+assert.throws(()=>api.parseRuneServerStatus({...serverStatus,schema:'legacy-skills'},defs),/rune_status_invalid/);
+const runeUi=readFileSync('src/components/builds/ServerRuneBook.tsx','utf8');
+assert(runeUi.includes("territory_runes_status_v1") && runeUi.includes("territory_runes_save_v1"));
+assert(runeUi.includes("p_operation: command.operationId") && runeUi.includes("p_revision: command.revision"));
+assert(runeUi.includes("parseRuneServerStatus(data, definitions)"));
+assert(!runeUi.includes("territory_combat_loadout_status_v1"),'No five-skill RPC in the 15-slot book');
+assert(!runeUi.includes("RuneSkillBookSelection"),'No skill-bound rune mapping');
+assert(runeUi.includes('const FIFTEEN_SLOT_CONTRACT_READY = false;'),'Unreleased PvE/PvP effects must remain gated');
+
 console.log('Independent rune slots: 15 stable IDs, 45 options, trusted ownership, explicit legacy mapping, rank and revision checks PASS');
