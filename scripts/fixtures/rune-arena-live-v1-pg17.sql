@@ -11,6 +11,8 @@ CREATE FUNCTION public.arena_bot_say(uuid,text[]) RETURNS void LANGUAGE sql AS $
 CREATE FUNCTION public.arena_zone_ru(text) RETURNS text LANGUAGE sql AS $$ SELECT $1 $$;
 CREATE FUNCTION public.arena_finish(p_room uuid,p_team int) RETURNS void LANGUAGE sql AS $$ UPDATE public.arena_rooms SET status='finished' WHERE id=p_room $$;
 \ir rune-arena-original-v1.sql
+REVOKE ALL ON FUNCTION public.arena_move(uuid,uuid,text,text[]) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.arena_move(uuid,uuid,text,text[]) TO authenticated;
 \ir ../../supabase/staged/territory_rune_battle_snapshot_v1.sql
 \ir ../../supabase/staged/territory_rune_effects_v1.sql
 \ir ../../supabase/staged/territory_rune_damage_bridge_v1.sql
@@ -28,7 +30,7 @@ SELECT public.territory_runes_save_v1('90000000-0000-4000-8000-000000000003',2,
  '{7,runeId}',to_jsonb('quickstep_r1'::text)),'{10,runeId}',to_jsonb('blood_rush_r3'::text)));
 RESET ROLE;
 INSERT INTO arena_rooms(id,mode) VALUES
- ('41000000-0000-4000-8000-000000000001','duel'),('41000000-0000-4000-8000-000000000002','duel'),('41000000-0000-4000-8000-000000000003','duel'),('41000000-0000-4000-8000-000000000004','duel');
+ ('41000000-0000-4000-8000-000000000001','duel'),('41000000-0000-4000-8000-000000000002','duel'),('41000000-0000-4000-8000-000000000003','duel'),('41000000-0000-4000-8000-000000000004','duel'),('41000000-0000-4000-8000-000000000005','duel');
 INSERT INTO arena_participants(id,room_id,user_id,is_bot,name,attack,defense,crit_chance,max_hp,hp) VALUES
  ('51000000-0000-4000-8000-000000000001','41000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',false,'rune hero',1000,0,0,100000,100000),
  ('51000000-0000-4000-8000-000000000002','41000000-0000-4000-8000-000000000001',NULL,true,'bot one',1000,0,0,100000,100000),
@@ -36,13 +38,16 @@ INSERT INTO arena_participants(id,room_id,user_id,is_bot,name,attack,defense,cri
  ('51000000-0000-4000-8000-000000000004','41000000-0000-4000-8000-000000000002',NULL,true,'bot two',1000,0,0,100000,100000),
  ('51000000-0000-4000-8000-000000000005','41000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000001',false,'rune hero',1000,0,0,100000,100000),
  ('51000000-0000-4000-8000-000000000006','41000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000002',false,'base hero',1000,0,0,100000,100000),
- ('51000000-0000-4000-8000-000000000007','41000000-0000-4000-8000-000000000004','10000000-0000-4000-8000-000000000002',false,'bot lobby',1000,0,0,100000,100000);
+ ('51000000-0000-4000-8000-000000000007','41000000-0000-4000-8000-000000000004','10000000-0000-4000-8000-000000000002',false,'bot lobby',1000,0,0,100000,100000),
+ ('51000000-0000-4000-8000-000000000008','41000000-0000-4000-8000-000000000005','10000000-0000-4000-8000-000000000001',false,'rune hero',1000,0,0,100000,100000),
+ ('51000000-0000-4000-8000-000000000009','41000000-0000-4000-8000-000000000005','10000000-0000-4000-8000-000000000002',false,'base hero',1000,0,0,100000,100000);
 SELECT public.arena_start_room('41000000-0000-4000-8000-000000000001');
 SELECT public.arena_start_room('41000000-0000-4000-8000-000000000002');
 SELECT public.arena_start_room('41000000-0000-4000-8000-000000000003');
 SELECT public.arena_start_room('41000000-0000-4000-8000-000000000004');
+SELECT public.arena_start_room('41000000-0000-4000-8000-000000000005');
 DO $assert$ BEGIN
- IF (SELECT count(*) FROM territory_private.rune_arena_fighters_v1)<>8
+ IF (SELECT count(*) FROM territory_private.rune_arena_fighters_v1)<>10
  OR (SELECT totals->>'damage_bonus_bp' FROM territory_private.rune_arena_fighters_v1 WHERE participant_id='51000000-0000-4000-8000-000000000001')<>'300'
  OR (SELECT totals FROM territory_private.rune_arena_fighters_v1 WHERE participant_id='51000000-0000-4000-8000-000000000002')<>'{}'::jsonb
  THEN RAISE EXCEPTION 'arena_start_snapshot_failed'; END IF;
@@ -69,9 +74,34 @@ RESET ROLE;
 SET ROLE service_role;
 SELECT public.territory_runes_admin_set_level_v1('10000000-0000-4000-8000-000000000001','axe_storm_r1',0,'90000000-0000-4000-8000-000000000005','synthetic arena');
 RESET ROLE;
-UPDATE arena_participants SET team=CASE WHEN id IN ('51000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000003','51000000-0000-4000-8000-000000000005') THEN 1 ELSE 2 END WHERE room_id<>'41000000-0000-4000-8000-000000000004';
+UPDATE arena_participants SET team=CASE WHEN id IN ('51000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000003','51000000-0000-4000-8000-000000000005','51000000-0000-4000-8000-000000000008') THEN 1 ELSE 2 END WHERE room_id<>'41000000-0000-4000-8000-000000000004';
 INSERT INTO arena_moves(room_id,round_no,participant_id,target_id,attack_zone,block_zones)
-SELECT a.room_id,1,a.id,t.id,'chest',ARRAY['head','legs'] FROM arena_participants a JOIN arena_participants t ON t.room_id=a.room_id AND t.team<>a.team WHERE a.room_id<>'41000000-0000-4000-8000-000000000004';
+SELECT a.room_id,1,a.id,t.id,'chest',ARRAY['head','legs'] FROM arena_participants a JOIN arena_participants t ON t.room_id=a.room_id AND t.team<>a.team WHERE a.room_id IN ('41000000-0000-4000-8000-000000000001','41000000-0000-4000-8000-000000000002','41000000-0000-4000-8000-000000000003');
+-- Exercise the actual authenticated player entry point, including rejection
+-- of a foreign user and a duplicate move before the second player acts.
+SET ROLE authenticated;
+SET request.test_uid='10000000-0000-4000-8000-000000000099';
+DO $assert$ BEGIN
+ BEGIN
+  PERFORM public.arena_move('41000000-0000-4000-8000-000000000005','51000000-0000-4000-8000-000000000009','chest',ARRAY['head','legs']);
+  RAISE EXCEPTION 'expected_foreign_user_denial';
+ EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'not_member' THEN RAISE; END IF; END;
+END $assert$;
+SET request.test_uid='10000000-0000-4000-8000-000000000001';
+SELECT public.arena_move('41000000-0000-4000-8000-000000000005','51000000-0000-4000-8000-000000000009','chest',ARRAY['head','legs']);
+DO $assert$ BEGIN
+ BEGIN
+  PERFORM public.arena_move('41000000-0000-4000-8000-000000000005','51000000-0000-4000-8000-000000000009','chest',ARRAY['head','legs']);
+  RAISE EXCEPTION 'expected_duplicate_move_denial';
+ EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'already_moved' THEN RAISE; END IF; END;
+END $assert$;
+SET request.test_uid='10000000-0000-4000-8000-000000000002';
+SELECT public.arena_move('41000000-0000-4000-8000-000000000005','51000000-0000-4000-8000-000000000008','chest',ARRAY['head','legs']);
+RESET ROLE;
+DO $assert$ BEGIN
+ IF (SELECT round_no FROM arena_rooms WHERE id='41000000-0000-4000-8000-000000000005')<>2
+ THEN RAISE EXCEPTION 'arena_player_rpc_round_failed'; END IF;
+END $assert$;
 -- A real bot is generated by arena_start_room and makes its own move.
 INSERT INTO arena_moves(room_id,round_no,participant_id,target_id,attack_zone,block_zones)
 SELECT a.room_id,1,a.id,t.id,'chest',ARRAY['head','legs'] FROM arena_participants a JOIN arena_participants t ON t.room_id=a.room_id AND t.is_bot WHERE a.id='51000000-0000-4000-8000-000000000007';

@@ -17,6 +17,11 @@ const tickStart=tickFile.indexOf('CREATE OR REPLACE FUNCTION arena_tick(');
 const tickEnd=tickFile.indexOf('$$;',tickFile.indexOf('AS $$',tickStart)+5);
 if(tickStart<0 || tickEnd<0) throw Error('missing arena_tick');
 const originalTick=tickFile.slice(tickStart,tickEnd+3);
+const moveFile=readFileSync('supabase/migrations/20261002201946_arena_four_zones_auto_battle_vip.sql','utf8');
+const moveStart=moveFile.indexOf('CREATE OR REPLACE FUNCTION arena_move(');
+const moveEnd=moveFile.indexOf('$$;',moveFile.indexOf('AS $$',moveStart)+5);
+if(moveStart<0 || moveEnd<0) throw Error('missing arena_move');
+const originalMove=moveFile.slice(moveStart,moveEnd+3);
 const body=sql=>sql.split('AS $function$')[1].split('$function$;')[0];
 function replaceOnce(sql,from,to){if(sql.split(from).length!==2) throw Error('arena hook anchor drift'); return sql.replace(from,to);}
 const start=replaceOnce(originalStart,"UPDATE arena_rooms SET status = 'active', round_no = 1, round_started_at = now(),",`-- Snapshot only after all participants, including bots, have been created.
@@ -126,7 +131,7 @@ REVOKE ALL ON FUNCTION territory_private.runes_pin_arena_room_v1(uuid),
 const output=header+start+'\n\n'+resolve+'\nCOMMIT;\n';
 const path='supabase/staged/territory_rune_arena_integration_v1.sql';
 const fixturePath='scripts/fixtures/rune-arena-original-v1.sql';
-const fixture='-- Generated exact checked-in Arena functions for disposable database tests.\n'+originalStart+'\n\n'+originalResolve+'\n\n'+originalBot+'\n\n'+originalTick+'\n';
+const fixture='-- Generated exact checked-in Arena functions for disposable database tests.\n'+originalStart+'\n\n'+originalResolve+'\n\n'+originalBot+'\n\n'+originalTick+'\n\n'+originalMove+'\n';
 if(process.argv.includes('--check')) {
  if(readFileSync(path,'utf8')!==output || readFileSync(fixturePath,'utf8')!==fixture) throw Error('staged Arena patch is out of date');
 } else {writeFileSync(path,output);writeFileSync(fixturePath,fixture);}

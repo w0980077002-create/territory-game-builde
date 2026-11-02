@@ -270,3 +270,34 @@ BEGIN
   END IF;
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION arena_move(p_room uuid, p_target uuid, p_attack text, p_blocks text[]) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_room arena_rooms%ROWTYPE;
+  v_me arena_participants%ROWTYPE;
+  v_zones text[] := ARRAY['head','chest','belly','legs'];
+  v_cnt int;
+BEGIN
+  SELECT * INTO v_room FROM arena_rooms WHERE id = p_room FOR UPDATE;
+  IF NOT FOUND OR v_room.status <> 'active' THEN RAISE EXCEPTION 'not_active'; END IF;
+  SELECT * INTO v_me FROM arena_participants WHERE room_id = p_room AND user_id = auth.uid() AND left_at IS NULL;
+  IF NOT FOUND THEN RAISE EXCEPTION 'not_member'; END IF;
+  IF v_me.hp <= 0 THEN RAISE EXCEPTION 'dead'; END IF;
+  IF p_attack IS NULL OR NOT (p_attack = ANY(v_zones)) OR p_blocks IS NULL OR array_length(p_blocks, 1) IS DISTINCT FROM 2
+     OR p_blocks[1] = p_blocks[2] OR NOT (p_blocks <@ v_zones) THEN
+    RAISE EXCEPTION 'invalid_zones';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM arena_participants WHERE id = p_target AND room_id = p_room AND team <> v_me.team AND hp > 0) THEN
+    RAISE EXCEPTION 'invalid_target';
+  END IF;
+
+  INSERT INTO arena_moves (room_id, round_no, participant_id, target_id, attack_zone, block_zones)
+  VALUES (p_room, v_room.round_no, v_me.id, p_target, p_attack, p_blocks)
+  ON CONFLICT (room_id, round_no, participant_id) DO NOTHING;
+  GET DIAGNOSTICS v_cnt = ROW_COUNT;
+  IF v_cnt = 0 THEN RAISE EXCEPTION 'already_moved'; END IF;
+
+  PERFORM arena_tick(p_room);
+END;
+$$;
