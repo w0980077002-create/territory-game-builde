@@ -105,12 +105,26 @@ assert.deepEqual(localPve.localPveRuneTotals(api.parseRuneServerStatus({...serve
   slots:empty.slots},defs)),{},'An empty verified set has no invented effects');
 assert.throws(()=>localPve.localPveRuneTotals({...twoEquipped,owned:{}}),/rune_not_owned/);
 
+const sharedKeys=new Set(['damage_bonus_bp','guard_absorb_bp','crit_chance_bp',
+  'dodge_chance_bp','accuracy_bp','damage_vs_guard_bp']);
+const recognized=new Set(Object.values(localPve.RUNE_PVE_CATALOG).map(v=>v.key));
+for(const key of recognized) {
+  assert(sharedKeys.has(key)||localPve.RUNE_TACTICAL_FAMILIES[key],
+    'Every one of the 45 runes must affect an actual single-target combat mode: '+key);
+}
+const sqlFamilies=[...effectSql.matchAll(/WHEN effect = ANY\(ARRAY\[([^\]]+)\]\) THEN '([^']+)'/g)];
+const serverFamilies=Object.fromEntries(sqlFamilies.flatMap(([,ids,family])=>
+  [...ids.matchAll(/'([^']+)'/g)].map(m=>[m[1],family])));
+assert.deepEqual(Object.keys(localPve.RUNE_TACTICAL_FAMILIES).sort(),Object.keys(serverFamilies).sort(),
+  'Client/server tactical family mapping must cover the same 28 non-native mechanics');
+for(const [key,family] of Object.entries(serverFamilies))
+  assert.equal(localPve.RUNE_TACTICAL_FAMILIES[key],family,'No client/server tactical-family drift '+key);
 const runeUi=readFileSync('src/components/builds/ServerRuneBook.tsx','utf8');
 assert(runeUi.includes("territory_runes_status_v1") && runeUi.includes("territory_runes_save_v1"));
 assert(runeUi.includes("p_operation: command.operationId") && runeUi.includes("p_revision: command.revision"));
 assert(runeUi.includes("parseRuneServerStatus(data, definitions)"));
 assert(!runeUi.includes("territory_combat_loadout_status_v1"),'No five-skill RPC in the 15-slot book');
 assert(!runeUi.includes("RuneSkillBookSelection"),'No skill-bound rune mapping');
-assert(runeUi.includes('const FIFTEEN_SLOT_CONTRACT_READY = false;'),'Unreleased PvE/PvP effects must remain gated');
+assert(runeUi.includes("const FIFTEEN_SLOT_CONTRACT_READY = import.meta.env.VITE_TERRITORY_RUNES === 'enabled';"),'Rune book must default OFF unless explicit release flag enabled');
 
 console.log('Independent rune slots: 15 stable IDs, 45 options, trusted ownership, explicit legacy mapping, rank and revision checks PASS');
