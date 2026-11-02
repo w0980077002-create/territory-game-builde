@@ -26,7 +26,7 @@ assert(validateIdleLoadout(fifteen, catalog).includes('slot_limit'));
 // Render the real component with the build flag effectively irrelevant. It
 // must not expose the old editable book for either language while gated.
 const ui = await build({ entryPoints: ['src/components/builds/ServerRuneBook.tsx'], bundle: true,
-  platform: 'node', format: 'cjs', jsx: 'automatic', write: false, logLevel: 'silent', external: ['react'], alias: { '@': resolve('src') },
+  platform: 'node', format: 'cjs', jsx: 'automatic', write: false, logLevel: 'silent', external: ['react'], loader: { '.css': 'empty' }, alias: { '@': resolve('src') },
   define: { 'import.meta.env.BASE_URL': '"/"', 'import.meta.env.VITE_TERRITORY_RUNES': '"disabled"' },
   plugins: [{ name: 'test-dependencies', setup(b) {
     b.onResolve({ filter: /^@\/game\/supabase$|^@\/game\/combatV1\/api$|^\.\/RuneSkillBook$/ }, args => ({ path: args.path, namespace: 'stub' }));
@@ -41,7 +41,7 @@ const testModule = new Module('rune-gate-test');
 testModule.paths = Module._nodeModulePaths(process.cwd());
 testModule.require = require;
 testModule._compile(ui.outputFiles[0].text, 'rune-gate-test.cjs');
-for (const [language, expected] of [['ru', '15 слотов рун пока недоступна'], ['en', '15-slot rune system is not available yet']]) {
+for (const [language, expected] of [['ru', 'Руны временно недоступны'], ['en', 'Runes are temporarily unavailable']]) {
   const html = renderToStaticMarkup(React.createElement(testModule.exports.ServerRuneBook, { language }));
   assert(html.includes(expected), `${language} must explain the gate`);
   assert(!html.includes('<button'), `${language} must not offer an editable choice`);

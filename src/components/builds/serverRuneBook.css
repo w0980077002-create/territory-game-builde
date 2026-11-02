@@ -1,0 +1,70 @@
+/* Owner-approved Lootborn-inspired layout, original TERRITORY visuals.
+   Presentation ONLY; existing authoritative ledger and save receipts stay intact. */
+.territory-rune{--rune-brown:#623519;--rune-gold:#f7cb65;position:relative;display:grid;gap:10px;max-width:480px;margin:0 auto;padding:7px 5px 16px;color:#552c15;font-family:system-ui,-apple-system,sans-serif}
+.territory-rune *{box-sizing:border-box}
+.territory-rune button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
+.territory-rune button:disabled{cursor:not-allowed;opacity:.55}
+.territory-rune button:focus-visible{outline:3px solid #2497ff;outline-offset:2px}
+.territory-rune__header{display:grid;justify-items:center;gap:2px;border:3px ridge #f9cc62;border-radius:14px;background:linear-gradient(125deg,#342119,#85502a 35%,#4c2d1e 75%,#2f1e1b);padding:10px 8px;box-shadow:inset 0 0 0 2px #a16b38,0 4px 1px #140c0a}
+.territory-rune__header h2{color:#ffdd79;font:bold 21px/1.08 Georgia,serif;text-shadow:1px 2px #24110d;letter-spacing:.5px}
+.territory-rune__header p{color:#ffe1a5;font:bold 10px/1.2 system-ui,sans-serif}
+.territory-rune__crystal{width:44px;height:44px;display:grid;place-items:center;clip-path:polygon(50% 0%,90% 23%,90% 77%,50% 100%,10% 77%,10% 23%);background:radial-gradient(circle at 40% 25%,#f8beff,#b139f6 40%,#5b1674 85%);color:#fff6ff;filter:drop-shadow(0 0 7px #f255fd)}
+.territory-rune__board{padding:8px 5px;background:linear-gradient(132deg,#ffdfac,#f5c686 50%,#e9ae6b);border:3px ridge #bd7c36;border-radius:14px;box-shadow:inset 0 0 0 2px #ffefca,0 3px 4px #381d15}
+.territory-rune__row{display:grid;grid-template-columns:68px minmax(0,1fr);min-width:0;gap:4px;align-items:center;min-height:93px;border-bottom:2px solid #a9773b50;padding:3px 0}
+.territory-rune__row:last-child{border-bottom:0}
+.territory-rune__group{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;min-width:0;text-align:center}
+.territory-rune__glyph{display:grid;place-items:center;width:42px;height:42px;border:2px solid #986b38;border-radius:12px;background:linear-gradient(#fffbea,#d6b68f);font:bold 27px Georgia,serif;color:#845a34;text-shadow:0 1px white}
+.territory-rune__group strong{font-size:10px;line-height:1.05;font-weight:900;overflow-wrap:anywhere}
+.territory-rune__choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;min-width:0}
+.territory-rune__tile{position:relative;min-width:0;min-height:79px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 1px 2px;background:transparent;color:#573114;border:2px solid transparent;border-radius:13px}
+.territory-rune__tile--equipped{border-color:#dda537;background:radial-gradient(ellipse at top,#fff0ad,#f3c474 68%,#dfb377);box-shadow:0 1px 5px #a76936,inset 0 0 0 1px #fff4b9}
+.territory-rune__tile>small{position:absolute;top:1px;left:2px;font-size:9px;color:#73471a;font-weight:900}
+.territory-rune__tile-label{font-size:8px;line-height:1.05;font-weight:900;max-width:100%;white-space:nowrap;letter-spacing:-.2px}
+.territory-rune__tile-hint{font-size:11px;line-height:9px;color:#8a6f52}
+.territory-rune__equipped{position:absolute;top:2px;right:2px;display:grid;place-items:center;width:17px;height:17px;border-radius:50%;background:#15a64d;color:white;border:1px solid #fff6be}
+.territory-rune__stone{--stone1:#fbe35d;--stone2:#c25417;display:grid;place-items:center;flex-shrink:0;width:53px;height:54px;clip-path:polygon(50% 0,92% 22%,92% 75%,50% 100%,8% 75%,8% 22%);background:linear-gradient(125deg,#fff2b5 0%,#6b402b 42%,#f7d784 90%);filter:drop-shadow(0 2px 2px #44251650);position:relative;color:#fff2d9}
+.territory-rune__stone:before{content:"";position:absolute;inset:4px;clip-path:inherit;background:linear-gradient(125deg,var(--stone1),var(--stone2));}
+.territory-rune__stone svg{position:relative;z-index:1;filter:drop-shadow(0 1px 2px #21111c66)}
+.territory-rune__stone--ember{--stone1:#ffbb36;--stone2:#b82c1e}
+.territory-rune__stone--frost{--stone1:#95e7ff;--stone2:#2360ae}
+.territory-rune__stone--forest{--stone1:#c1ee63;--stone2:#27813d}
+.territory-rune__stone--violet{--stone1:#e6a8fd;--stone2:#6927af}
+.territory-rune__stone--gold{--stone1:#fff5a4;--stone2:#a96b17}
+.territory-rune__stone--faded{filter:grayscale(.92) brightness(.85);opacity:.8}
+.territory-rune__passives{padding:9px;border:2px solid #b27939;border-radius:12px;background:linear-gradient(130deg,#f4dfb7,#e7bf85);box-shadow:inset 0 1px 1px #ffefcb}
+.territory-rune__passives>strong{display:block;text-align:center;font:bold 15px Georgia,serif;margin-bottom:8px}
+.territory-rune__totals{display:flex;justify-content:space-around;gap:7px;flex-wrap:wrap;font-size:12px}
+.territory-rune__totals>span{display:flex;align-items:center;gap:5px}
+.territory-rune__totals svg{color:#ac6419}
+.territory-rune__stats{margin-top:7px;padding:8px;border:1px solid #b18048;border-radius:8px;background:#ffedd1;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;font-size:11px}
+.territory-rune__stats b{width:100%}
+.territory-rune__stats span{color:#297036;font-weight:800}
+.territory-rune__footer{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.territory-rune__footer button,.territory-rune__dialog-actions button{min-height:47px;border-radius:11px;border:2px solid #955724;box-shadow:0 3px 0 #492413;padding:7px;font-weight:900;font-size:12px}
+.territory-rune__daily{display:flex;align-items:center;justify-content:center;gap:5px;color:#fcf7dd;background:linear-gradient(#2679b8,#15416e)}
+.territory-rune__save{color:#3d210f;background:linear-gradient(#ffe885,#edb634);border:2px solid #946029;border-radius:10px;box-shadow:0 3px 0 #4f2f1a;font-weight:900}
+.territory-rune__notice,.territory-rune__receipt{margin:0;border-radius:9px;padding:8px 10px;background:#284a39;color:#faffdc;border:1px solid #94b56c;font-size:12px;font-weight:700}
+.territory-rune__receipt{display:flex;align-items:center;gap:6px}
+.territory-rune__veil{position:fixed;inset:0;z-index:200;display:flex;justify-content:center;align-items:center;padding:12px 10px calc(12px + env(safe-area-inset-bottom, 0px));background:#140a08ba;backdrop-filter:blur(3px)}
+.territory-rune__dialog{display:flex;flex-direction:column;width:min(100%,450px);max-height:min(94dvh,750px);overflow:hidden;background:#f9ebd7;border:3px solid #774123;border-radius:17px;box-shadow:0 0 0 2px #e7b35f,0 16px 42px #120806b3;color:#3d281d}
+.territory-rune__dialog-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px 7px 15px;background:linear-gradient(#72402d,#432820);color:#ffdc86;font:bold 18px Georgia,serif}
+.territory-rune__dialog-head button{min-width:44px;min-height:44px;display:grid;place-items:center;border:2px solid #a73d42;border-radius:50%;color:white;background:linear-gradient(#ff6691,#c12643)}
+.territory-rune__dialog-body{overflow-y:auto;overscroll-behavior:contain;padding:12px 10px;flex:1;min-height:0}
+.territory-rune__dialog-body h3{margin:0;text-align:center;color:#397e25;font:bold 18px Georgia,serif}
+.territory-rune__help{text-align:center;margin:5px 0 10px;font-size:11px}
+.territory-rune__variants{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.territory-rune__variant{min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 8px;background:#f4d5a8;color:#4f2c20;border:2px solid #c18d4f;border-radius:11px;text-align:center;min-height:203px}
+.territory-rune__variant--picked{background:#ffe4a7;border-color:#e6a51d;box-shadow:inset 0 0 0 1px #fff8bb,0 0 8px #feb92e}
+.territory-rune__variant .territory-rune__stone{width:55px;height:57px}
+.territory-rune__variant strong{font-size:11px;line-height:1.07;overflow-wrap:anywhere}
+.territory-rune__variant-effect{font-size:10px;line-height:1.15}
+.territory-rune__variant small{font-size:9px;line-height:1.1;color:#855118}
+.territory-rune__variant em{margin-top:auto;font-size:10px;font-style:normal;font-weight:900;color:#336a34}
+.territory-rune__variant:disabled em{color:#7f6c60}
+.territory-rune__unequip{display:block;margin:10px auto 0;border:1px solid #a77e58;border-radius:8px;background:#fff2da;padding:10px 14px;min-height:44px;color:#603f2a;font-weight:800;font-size:11px}
+.territory-rune__draft{text-align:center;margin:8px 0 0;color:#a04b1e;font-size:11px}
+.territory-rune__dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px;border-top:1px solid #d9b681}
+.territory-rune__cancel{background:linear-gradient(#f1f0ee,#c7bbb0);color:#3d322c}
+.territory-rune__dialog-actions .territory-rune__save{font-size:13px}
+@media(max-width:349px){.territory-rune{padding-inline:1px}.territory-rune__row{grid-template-columns:56px minmax(0,1fr)}.territory-rune__stone{width:47px;height:49px}.territory-rune__tile-label{font-size:7px}.territory-rune__group strong{font-size:9px}.territory-rune__variant{padding-inline:2px}.territory-rune__variant .territory-rune__stone{width:44px;height:48px}}
+@media(prefers-reduced-motion:reduce){.territory-rune *{animation:none!important;transition:none!important}}
