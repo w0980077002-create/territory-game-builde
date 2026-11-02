@@ -254,18 +254,19 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
           {catalog.slots.slice(row * 3, row * 3 + 3).map((slot, col) => {
             const index = row * 3 + col;
             const chosen = draft[index]?.runeId;
+            const synced = chosen === status.slots[index]?.runeId;
             const variant = slot.options.findIndex(option => option.runeId === chosen);
             const hasOwned = slot.options.some(option => !!status.owned[option.runeId]);
             return <button key={slot.slotId} type="button" data-testid={'rune-slot-' + (index + 1)}
               className={'territory-rune__tile' + (chosen ? ' territory-rune__tile--equipped' : '')}
               aria-label={(en ? 'Rune slot ' : 'Рунный слот ') + (index + 1) +
-                (chosen ? (en ? ', equipped' : ', установлена') : (hasOwned ? (en ? ', available' : ', доступны руны') : (en ? ', none owned' : ', нет полученных рун')))}
+                (chosen ? (synced ? (en ? ', equipped' : ', установлена') : (en ? ', pending save' : ', ожидает сохранения')) : (hasOwned ? (en ? ', available' : ', доступны руны') : (en ? ', none owned' : ', нет полученных рун')))}
               aria-pressed={chosen !== null && chosen !== undefined}
               onClick={event => { openerRef.current = event.currentTarget; setActiveSlot(index); }}>
               <RuneStone slotIndex={index} variant={Math.max(0, variant)} faded={!chosen}/>
               <small>{index + 1}</small>
-              {chosen && <span className="territory-rune__equipped"><Check size={11}/></span>}
-              {chosen ? <span className="territory-rune__tile-label">{en ? 'Equipped' : 'Установлено'}</span>
+              {chosen && synced && <span className="territory-rune__equipped"><Check size={11}/></span>}
+              {chosen ? <span className="territory-rune__tile-label">{synced ? (en ? 'Equipped' : 'Установлено') : (en ? 'Not saved' : 'Не сохранено')}</span>
                 : <span className="territory-rune__tile-hint">{hasOwned ? '●' : '○'}</span>}
             </button>;
           })}
