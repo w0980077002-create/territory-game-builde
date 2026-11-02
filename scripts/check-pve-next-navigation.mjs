@@ -160,6 +160,22 @@ assert.equal(findHeroGearOpportunity([gearItem(tradeoff)], {weapon:worn})?.kind,
   'owned mixed-stat gear must be offered for manual comparison');
 assert.equal(findHeroGearOpportunity([gearItem(tradeoff), gearItem(stronger)], {weapon:worn})?.kind, 'upgrade',
   'an unequivocal upgrade outranks a trade-off');
+// A real inventory can contain multiple weapons in arbitrary order. Show the
+// strongest Pareto-dominant option, not merely the first item in the bag.
+const strongest = { ...stronger, id: 'best-sword', attack: 19, defense: 5 };
+assert.equal(findHeroGearOpportunity([gearItem(stronger), gearItem(strongest)], {weapon:worn})?.item.equipment.id, 'best-sword',
+  'the best strictly stronger weapon must win regardless of inventory order');
+assert.equal(findHeroGearOpportunity([gearItem(strongest), gearItem(stronger)], {weapon:worn})?.item.equipment.id, 'best-sword',
+  'reversing inventory order must not hide a dominating upgrade');
+const saferTradeoff = { ...tradeoff, id: 'safer-sword', attack: 22, defense: 2 };
+assert.equal(findHeroGearOpportunity([gearItem(tradeoff), gearItem(saferTradeoff)], {weapon:worn})?.item.equipment.id, 'safer-sword',
+  'a dominating trade-off must be offered without calling it a guaranteed upgrade');
+assert.equal(findHeroGearOpportunity([gearItem(tradeoff), gearItem(saferTradeoff)], {weapon:worn})?.kind, 'compare');
+const differentBuild = { ...tradeoff, id: 'defender-sword', attack: 14, defense: 6 };
+assert.equal(findHeroGearOpportunity([gearItem(tradeoff), gearItem(differentBuild)], {weapon:worn})?.item.equipment.id, 'risky-sword',
+  'incomparable attack/defense builds must not be ranked with invented stat weights');
+assert.equal(findHeroGearOpportunity([gearItem(strongest, 0), gearItem(stronger)], {weapon:worn})?.item.equipment.id, 'new-sword',
+  'zero-quantity dominant equipment must never be suggested');
 assert.equal(findHeroGearOpportunity([gearItem(tradeoff, 0)], {weapon:worn}), null,
   'zero-count trade-off cannot be advertised');
 assert.equal(findHeroGearOpportunity([gearItem({ ...tradeoff, id: 'weaker', attack: 10 })], {weapon:worn}), null,
