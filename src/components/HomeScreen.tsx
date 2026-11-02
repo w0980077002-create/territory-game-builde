@@ -296,7 +296,12 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
 
         <div className="flex items-center gap-1.5">
           <button
-            onClick={() => onOpen('quests')}
+            onClick={() => {
+              // A newly won, already-owned item deserves a direct equipment route.
+              // Claimable quest rewards still take precedence over the guide.
+              if (questAlerts.readyCount === 0 && starterNext?.destination === 'inventory') onInventory('equipment');
+              else onOpen('quests');
+            }}
             data-testid="home-hero-path"
             aria-label={starterNext && questAlerts.readyCount === 0
               ? (language === 'en' ? 'Hero path: ' + starterNext.titleEn : 'Путь героя: ' + starterNext.titleRu)
