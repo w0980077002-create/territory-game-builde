@@ -279,6 +279,36 @@ const cappedRiposte = pve.playRound(hero, { ...guardEnemy, hp: 1000, maxHp: 1000
 assert.equal(cappedRiposte.hits.filter(hit => hit.targetSide === 'enemy').reduce((sum, hit) => sum + hit.amount, 0), 400,
   'Riposte cannot exceed the existing elite per-round cap');
 
+// Two DIFFERENT landed manual strikes earn a one-use combo. A repeated zone,
+// dodge, block or auto round never grants it. The real resolver consumes it.
+const emptyMomentum = { lastZone: null, streak: 0 };
+const firstMomentum = pve.nextTacticalMomentum(emptyMomentum, 'head', 'hit', true);
+assert.equal(firstMomentum.streak, 1);
+const chargedMomentum = pve.nextTacticalMomentum(firstMomentum, 'legs', 'crit', true);
+assert.equal(chargedMomentum.streak, 2, 'Distinct confirmed strikes must charge the combo');
+assert.equal(pve.nextTacticalMomentum(firstMomentum, 'head', 'hit', true).streak, 1,
+  'Repeated direction cannot charge the combo');
+for (const outcome of ['block', 'dodge', null]) {
+  assert.equal(pve.nextTacticalMomentum(firstMomentum, 'legs', outcome, true).streak, 0,
+    'Only real landed hits may charge the combo');
+}
+assert.equal(pve.nextTacticalMomentum(firstMomentum, 'legs', 'hit', false).streak, 0,
+  'Auto and ordinary enemies must not earn combo power');
+assert.equal(pve.nextTacticalMomentum(chargedMomentum, 'belly', 'hit', true).streak, 1,
+  'Charged strike must consume the one-use boost and start a new chain');
+const normalComboStrike = pve.playRound(starterHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard, false, false);
+const poweredComboStrike = pve.playRound(starterHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard, false, true);
+assert(poweredComboStrike.hits[0].amount > normalComboStrike.hits[0].amount,
+  'Earned combo must change REAL enemy HP damage');
+assert.equal(guardEnemy.hp - poweredComboStrike.enemy.hp, poweredComboStrike.hits[0].amount);
+const blockedComboStrike = pve.playRound(starterHero, guardEnemy, 'head', [], 0, '', 0, null, visibleGuard, false, true);
+assert.equal(blockedComboStrike.hits[0].amount, 0, 'Combo cannot bypass a guarded zone');
+const cappedComboStrike = pve.playRound(hero,
+  { ...guardEnemy, hp: 1000, maxHp: 1000, enemyId: 'ch10_boss', isBoss: true },
+  'legs', [], 100000, 'Follower', 0, null, threatIntent, true, true);
+assert.equal(cappedComboStrike.hits.filter(hit => hit.targetSide === 'enemy').reduce((sum, hit) => sum + hit.amount, 0), 400,
+  'Stacked riposte + combo cannot bypass the existing boss damage cap');
+
 const fightSource = source('../src/components/pve/PveFight.tsx');
 assert.match(fightSource, /rememberDistinctHeroAttacks\(recentDistinctHeroAttacks\.current, atk\)/,
   'Battle must update the two distinct directions only after the resolved round');
@@ -289,6 +319,9 @@ assert.doesNotMatch(fightSource, /lastHeroAttack\.current = atk/,
 assert.match(fightSource, /data-testid="pve-round-reaction"/, 'Show actual round feedback to manual PvE players');
 assert.match(fightSource, /data-testid="pve-live-damage-totals"/, 'Show cumulative actual damage during the fight');
 assert.match(fightSource, /data-testid="pve-riposte-ready"/, 'Show an earned manual riposte');
+assert.match(fightSource, /data-testid="pve-tactical-momentum"/, 'Show real combo progress in the existing elite fight');
+assert.match(fightSource, /setMomentum\(previous => nextTacticalMomentum\(previous, atk, report\.heroStrike, elite && !auto/, 'Combo must come from resolved hits, never guessed input');
+assert.match(fightSource, /elite && !auto && momentum\.streak === 2\)/, 'Only charged manual elite rounds receive the combo bonus');
 assert.match(fightSource, /report\.enemyStrike === 'block'/, 'Only a real enemy block grants riposte');
 assert.match(fightSource, /elite && !auto && riposteReady/, 'Auto cannot consume a fake manual riposte');
 assert.match(fightSource, /setBattleTotals\(previous => \(\{[\s\S]*report\.dealtDamage/, 'Cumulative totals must come from resolved hits');
@@ -312,7 +345,7 @@ assert.match(fightSource, /const guardedZoneLabels = committedEnemyIntent\.block
 assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss strike warning must offer a manual defense action');
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
 
-assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady\)/, 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
+assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum\.streak === 2\)/, 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
 assert.match(fightSource, /staggerEnemyGuard\(enemyIntent, staggerReady && !auto\)/, 'Only manual combat can consume the one-round stagger');
 assert.match(fightSource, /setStaggerReady\(elite && !auto && riposteReady && atk === 'legs'/, 'Only a real manual elite leg riposte can earn stagger');
 assert.match(fightSource, /!committedEnemyIntent\.blocks\.includes\(atk\)/, 'A guarded leg strike must not earn stagger');

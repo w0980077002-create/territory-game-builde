@@ -62,6 +62,29 @@ export function rememberDistinctHeroAttacks(history: readonly Zone[], resolved: 
   return [resolved, ...history.filter(zone => zone !== resolved)].slice(0, 2);
 }
 
+/** Fight-local manual combo: two consecutive successful strikes into DIFFERENT
+ * zones charge a one-use +15% attack on the following round. A block, dodge,
+ * repeated zone or auto round cannot charge the bonus. No persistence, loot,
+ * new currency or PvP effect. */
+export interface TacticalMomentum {
+  lastZone: Zone | null;
+  streak: 0 | 1 | 2;
+}
+
+export function nextTacticalMomentum(
+  current: TacticalMomentum,
+  zone: Zone,
+  result: PveHit['tone'] | null,
+  manualElite: boolean,
+): TacticalMomentum {
+  if (!manualElite || (result !== 'hit' && result !== 'crit')) return { lastZone: null, streak: 0 };
+  // The charged attack consumes the bonus, and can start a fresh chain.
+  if (current.streak === 2) return { lastZone: zone, streak: 1 };
+  if (current.streak === 1 && current.lastZone !== null && current.lastZone !== zone)
+    return { lastZone: zone, streak: 2 };
+  return { lastZone: zone, streak: 1 };
+}
+
 /** Elite enemies learn attack patterns as their HP falls: at half HP they
  * cover the last attack, at quarter HP they cover the last TWO distinct
  * attacks. The announced guard is committed to the same playRound resolver.
@@ -169,7 +192,7 @@ export interface RoundResult {
   healAmount: number;
 }
 
-export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null, enemyIntent: ReturnType<typeof randomZones> | null = null, riposteReady = false): RoundResult {
+export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null, enemyIntent: ReturnType<typeof randomZones> | null = null, riposteReady = false, momentumReady = false): RoundResult {
   // The visible enemy guard is the actual defense used by this round, not a decorative hint.
   // Other callers retain their original random AI by omitting enemyIntent.
   const ai = enemyIntent ?? randomZones();
@@ -188,8 +211,13 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   const enhancedHit = riposteReady && rawHit.amount > 0
     ? { ...rawHit, amount: Math.round(rawHit.amount * 1.2) }
     : rawHit;
-  const firstDamage = Math.min(enhancedHit.amount, damageBudget, enemy.hp);
-  const h1 = { ...enhancedHit, amount: firstDamage };
+  // A charged manual combo is real HP damage, not a display-only label.
+  // Apply it after guard/dodge and riposte, BEFORE the existing elite cap.
+  const comboHit = momentumReady && enhancedHit.amount > 0
+    ? { ...enhancedHit, amount: Math.round(enhancedHit.amount * 1.15) }
+    : enhancedHit;
+  const firstDamage = Math.min(comboHit.amount, damageBudget, enemy.hp);
+  const h1 = { ...comboHit, amount: firstDamage };
   hits.push(h1);
   damageBudget -= firstDamage;
   let enemyHp = Math.max(0, enemy.hp - firstDamage);
