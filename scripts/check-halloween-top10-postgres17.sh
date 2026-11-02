@@ -81,7 +81,7 @@ DO $$ DECLARE p jsonb; r jsonb; n integer; g integer; golds integer; stones inte
  THEN RAISE EXCEPTION 'receipt replay failed %',r; END IF;
  SELECT count(*),sum((payload->>'gems')::int),sum((payload->>'gold')::int),sum((payload->>'stones')::int)
  INTO n,g,golds,stones FROM public.admin_grants;
- IF n<>20 OR g<>1625 OR golds<>32000 OR stones<>65 THEN
+ IF n<>20 OR g<>1925 OR golds<>38500 OR stones<>73 THEN
    RAISE EXCEPTION 'incorrect reward quantity % % % %',n,g,golds,stones; END IF;
  IF EXISTS(SELECT 1 FROM public.admin_grants WHERE payload ? 'redGems') THEN
    RAISE EXCEPTION 'premium currency introduced'; END IF;
