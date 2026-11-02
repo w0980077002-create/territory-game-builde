@@ -32,7 +32,7 @@ FROM generate_series(1,22) n;
 -- Ranks 21 and 22 have server-confirmed hits but must receive no top-20 mail.
 CREATE TABLE public.before_players AS TABLE public.players;
 SQL
-  docker exec -i "$db" psql -X -v ON_ERROR_STOP=1 -U postgres -d halloween_bonus < supabase/staged/halloween_top20_bonus_2026.sql
+  docker exec -i "$db" psql -X -v ON_ERROR_STOP=1 -U postgres -d halloween_bonus < supabase/staged/halloween_top10_bonus_2026.sql
 done
 
 docker exec -i halloween-before psql -X -v ON_ERROR_STOP=1 -U postgres -d halloween_bonus <<'SQL'
