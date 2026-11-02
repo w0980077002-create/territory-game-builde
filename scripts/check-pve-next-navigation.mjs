@@ -106,10 +106,21 @@ assert.match(first.enemy.id, /ch1_enemy_0/, 'next fight must be determined by sa
 assert.equal(JSON.stringify(saved), intact, 'read-only victory UI may not change saved hero data');
 const atBoss = getVictoryJourney({ ...saved, chapterWins: 5 }, 'stage', 2);
 assert.equal(atBoss.enemy.isBoss, true, 'show actual next boss, never an invented enemy');
+assert.equal(first.fightsUntilBoss, 5, 'campaign countdown comes from five actual chapter enemies');
+assert.equal(first.chapterFightsCompleted, 0);
+assert.equal(first.chapterFightsTotal, 5);
+assert.equal(first.chapterBoss.id, atBoss.enemy.id, 'preview must reference the real chapter boss');
+assert.equal(atBoss.fightsUntilBoss, 0, 'boss is ready after all chapter encounters');
+assert.equal(atBoss.chapterFightsCompleted, 5);
+assert.equal(getVictoryJourney({ ...saved, chapterWins: 99 }, 'stage', 2).fightsUntilBoss, 0,
+  'malformed old counters must never display negative boss distance');
 const nextChapter = getVictoryJourney({ ...saved, currentChapter: 2, chapterWins: 0 }, 'stage', 2);
 assert.match(nextChapter.enemy.id, /ch2_enemy_0/, 'show the next chapter after the defeated boss');
+assert.equal(nextChapter.chapterFightsCompleted, 0, 'new chapter restarts its real boss path');
 const nextTrial = getVictoryJourney({ ...saved, trialLevel: 4 }, 'trial', 2);
 assert.equal(nextTrial.enemy.id, 'trial_4', 'trial victory must advance according to stored trial level');
+assert.equal(nextTrial.chapterBoss, null, 'trials cannot claim a campaign boss');
+assert.equal(nextTrial.fightsUntilBoss, null, 'trials have no campaign countdown');
 const capped = getVictoryJourney({
   ...saved, player: { level: 100, xp: 0, xpToNext: 0 },
 }, 'stage', 99);
@@ -118,6 +129,9 @@ assert.equal(capped.xpPercent, 100);
 assert.match(fight, /src=\{getCombatAppearance\(state\.appearance\)\.idle\}/, 'battle still forces male Viking portrait over the selected hero');
 assert.match(fight, /data-testid="victory-next-goal"/, 'visible next opponent is missing from PvE victory');
 assert.match(fight, /data-testid="victory-xp-label"/, 'victory does not show saved XP progress');
+assert.match(fight, /data-testid="pve-boss-path"/, 'real chapter boss path must be visible after victory');
+assert.match(fight, /victoryJourney\.fightsUntilBoss === 0/, 'boss-unlocked state must use saved wins');
+assert.match(fight, /victoryJourney\.chapterBoss\.maxHp/, 'boss preview must show real catalog stats');
 assert.ok(fight.includes('outcome?.won ? getVictoryJourney(state,kind,levelAtFightStart.current)'),
   'victory path must be derived from committed game save, not invented rewards');
 console.log('PvE victory motivation PASS: selected hero, saved XP, level up, next enemy/boss/trial and no state mutation.');

@@ -708,6 +708,26 @@ function OutcomePanel({ outcome, kind, victoryJourney, onExit, onNext, questRead
                 </p>
               </div>
             </div>
+            {victoryJourney.kind === 'stage' && victoryJourney.chapterBoss && victoryJourney.fightsUntilBoss !== null && (
+              <div data-testid="pve-boss-path" className="mt-2 rounded-lg border border-red-300/30 bg-red-950/35 px-2 py-1.5 text-[11px] text-amber-100">
+                <p className="font-extrabold text-amber-200">
+                  {victoryJourney.fightsUntilBoss === 0
+                    ? (language === 'en' ? '⚔️ Chapter boss unlocked!' : '⚔️ Босс главы открыт!')
+                    : (language === 'en'
+                      ? `⚔️ ${victoryJourney.fightsUntilBoss} encounter(s) until chapter boss`
+                      : `⚔️ До босса главы: ${victoryJourney.fightsUntilBoss} боёв`)}
+                </p>
+                <p className="mt-0.5 leading-4">
+                  {localizeText(victoryJourney.chapterBoss.name, language)}
+                  {' · HP '}{victoryJourney.chapterBoss.maxHp}
+                  {' · '}{language === 'en' ? 'Attack ' : 'Атака '}{victoryJourney.chapterBoss.attack}
+                </p>
+                <p className="mt-0.5 text-[10px] text-amber-100/70">
+                  {language === 'en' ? 'Chapter encounters: ' : 'Победы в главе: '}
+                  {victoryJourney.chapterFightsCompleted}/{victoryJourney.chapterFightsTotal}
+                </p>
+              </div>
+            )}
             <div className="mt-2 border-t border-amber-300/20 pt-1.5">
               <div className="mb-1 flex justify-between gap-2 text-[11px] font-semibold">
                 <span className={victoryJourney.leveledUp ? 'text-emerald-300' : 'text-amber-100'}>
