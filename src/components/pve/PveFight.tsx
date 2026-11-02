@@ -8,7 +8,7 @@ import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
-import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, playRound, randomZones, summarizePveRound, type PveSide, type PveTacticalSummary } from '@/game/pve';
+import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, playRound, randomZones, summarizePveRound, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
@@ -105,9 +105,9 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const [enemyIntent, setEnemyIntent] = useState(() => randomZones());
   const [adaptiveGuard, setAdaptiveGuard] = useState(false);
   const [guardPhase, setGuardPhase] = useState<1 | 2 | 3>(1);
-  // Remember only attacks actually submitted to the round resolver.
-  // This is fight-local; never persisted or sent as a client reward.
-  const lastHeroAttack = useRef<Zone | null>(null);
+  // Remember two distinct attacks actually resolved in this fight, even if
+  // the player repeats one. Never persist this AI memory or alter rewards.
+  const recentDistinctHeroAttacks = useRef<Zone[]>([]);
   // Only an actual blocked elite strike in manual mode earns a riposte.
   // This is per-fight state, never a currency or a saved player attribute.
   const [riposteReady, setRiposteReady] = useState(false);
@@ -252,10 +252,11 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     }));
     setAttack(null);
     setBlocks([]);
-    // Phase two reacts to the completed strike; never change a guard mid-round.
-    const previousAttack = lastHeroAttack.current;
-    lastHeroAttack.current = atk;
-    const nextIntent = nextAdaptiveEnemyIntent(res.enemy, atk, kind === 'trial' || !!enemy.isBoss, undefined, previousAttack);
+    // Phase changes only AFTER a resolved round. Repeating a strike must not
+    // make a phase-III boss forget the other distinct zone it learned.
+    const attackHistory = rememberDistinctHeroAttacks(recentDistinctHeroAttacks.current, atk);
+    recentDistinctHeroAttacks.current = attackHistory;
+    const nextIntent = nextAdaptiveEnemyIntent(res.enemy, atk, kind === 'trial' || !!enemy.isBoss, undefined, attackHistory[1] ?? null);
     setEnemyIntent(nextIntent.intent);
     setAdaptiveGuard(nextIntent.adapted);
     setGuardPhase(nextIntent.phase);
