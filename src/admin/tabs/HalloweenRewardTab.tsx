@@ -19,7 +19,7 @@ export function HalloweenRewardTab() {
       setStatus(result); setError(null);
       // Independent optional status: never break the approved Witch dashboard if bonus is staged.
       try {
-        const b = await adminCall<{ snapshot: BonusSnapshot | null }>('halloween_top10_status');
+        const b = await adminCall<{ snapshot: BonusSnapshot | null }>('halloween_top20_status');
         if (b.snapshot && [b.snapshot.eligible,b.snapshot.sent,b.snapshot.pending,b.snapshot.claimed,b.snapshot.unexpected,b.snapshot.duplicates]
             .every(v => Number.isSafeInteger(v) && v >= 0)) setBonus(b.snapshot);
         else setBonus(null);
@@ -41,7 +41,7 @@ export function HalloweenRewardTab() {
       <p>Отказов: {status.audit.failed} · Незавершённых попыток: {status.audit.unfinished}</p>
       <p>Последняя ошибка: {status.audit.lastError ?? 'нет'} {status.audit.lastErrorAt ?? ''}</p>
       <div className="mt-3 border-t border-slate-600/50 pt-3">
-        <strong className="text-amber-200">Дополнительные призы топ‑10</strong>
+        <strong className="text-amber-200">Дополнительные призы топ‑20</strong>
         {bonus ? <>
           <p>Победителей: {bonus.eligible} · Писем с призами: {bonus.sent} · Ожидают: {bonus.pending}</p>
           <p>Забрано: {bonus.claimed} · Ошибочных: {bonus.unexpected} · Дубликатов: {bonus.duplicates}</p>
