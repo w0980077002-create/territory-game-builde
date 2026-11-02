@@ -129,6 +129,7 @@ assert(runeUi.includes("const FIFTEEN_SLOT_CONTRACT_READY = import.meta.env.VITE
 assert(runeUi.includes("territory_runes_claim_daily_v1"),'Daily rune must be issued by server RPC');
 assert(runeUi.includes('data.dayUtc') && runeUi.includes('dailyReceipt?.dayUtc'),'Daily award must use server UTC date');
 assert(runeUi.includes('data-testid="rune-daily-receipt"'),'Daily awarded rune and level must remain visible after refreshing ownership');
-assert(runeUi.includes('disabled={claiming || saving.current || !!pending.current || claimedToday}'),'Already claimed rune must not be presented as a new daily reward');
+assert(runeUi.includes('disabled={claiming || saving.current || !!pending.current || claimedToday || changed}'),'Already claimed rune or unsaved draft must block daily claim');
+assert(runeUi.includes('hasUnsavedDraft()'),'Async daily claim must also guard unsaved drafts at invocation');
 
 console.log('Independent rune slots: 15 stable IDs, 45 options, trusted ownership, explicit legacy mapping, rank and revision checks PASS');
