@@ -98,6 +98,26 @@ const starterHero = { name: 'Hero', hp: 1000, maxHp: 1000, attack: 100, defense:
 const guardEnemy = { name: 'Guard', hp: 500, maxHp: 500, attack: 5, defense: 5, critChance: 0, critDamage: 50, enemyId: 'ch1_enemy_0', isBoss: false };
 const visibleGuard = { attack: 'belly', blocks: ['head', 'chest'] };
 const blockedRound = pve.playRound(starterHero, guardEnemy, 'head', [], 0, '', 0, null, visibleGuard);
+// Regression: the UI advertises TWO real enemy guards. The resolver must
+// block either slot, not only the first (critical strikes can still pierce).
+const secondGuardRound = pve.playRound(starterHero, guardEnemy, 'chest', [], 0, '', 0, null, visibleGuard);
+assert.equal(secondGuardRound.hits[0].tone, 'block', 'Second advertised enemy guard must block a non-critical strike');
+assert.equal(secondGuardRound.hits[0].amount, 0, 'Second guard cannot silently leak damage');
+assert.equal(secondGuardRound.enemy.hp, guardEnemy.hp, 'Blocked second zone must preserve enemy HP');
+for (const first of zones) for (const second of zones) {
+  if (first.id === second.id) continue;
+  const intent = { attack: 'belly', blocks: [first.id, second.id] };
+  for (const defended of intent.blocks) {
+    const round = pve.playRound(starterHero, guardEnemy, defended, [], 0, '', 0, null, intent);
+    assert.equal(round.hits[0].tone, 'block', 'Both committed guards must resolve as blocks: ' + intent.blocks.join('/'));
+    assert.equal(round.enemy.hp, guardEnemy.hp, 'Guarded zone must not damage enemy HP');
+  }
+  for (const open of zones.filter(z => !intent.blocks.includes(z.id))) {
+    const round = pve.playRound(starterHero, guardEnemy, open.id, [], 0, '', 0, null, intent);
+    assert.equal(round.hits[0].tone, 'hit', 'Real opening must remain hittable: ' + open.id);
+    assert(round.enemy.hp < guardEnemy.hp, 'Real opening must lower enemy HP');
+  }
+}
 const smartRound = pve.playRound(starterHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
 assert.equal(blockedRound.hits[0].tone, 'block', 'Telegraphed head guard must block a head attack');
 assert.equal(blockedRound.hits[0].amount, 0);
