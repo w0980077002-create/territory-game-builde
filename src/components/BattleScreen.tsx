@@ -263,7 +263,16 @@ function StageRow({ enemy, index, status, gold, onFight, blocked, t, language }:
           <span><Heart size={15} aria-hidden="true" />{enemy.maxHp}</span>
           <span><SwordIcon size={15} aria-hidden="true" />{enemy.attack}</span>
         </div>
-        <div className="journey-encounter__reward"><span>{language === 'en' ? 'Victory reward' : 'Награда за победу'}</span><Currency kind="gold" value={gold} size={17} /></div>
+        <div data-testid="campaign-real-loot-preview" className="journey-encounter__reward">
+          <span>{language === 'en' ? 'Victory reward' : 'Награда за победу'}</span>
+          <Currency kind="gold" value={gold} size={17} />
+          <span className="font-bold text-sky-200">+{enemy.rewardXp} XP</span>
+        </div>
+        <p data-testid="campaign-material-drop-odds" className="text-[10px] leading-tight text-amber-200/90">
+          {enemy.isBoss
+            ? (language === 'en' ? 'Boss loot: +3 Forge materials guaranteed' : 'Добыча босса: +3 материала кузницы гарантированно')
+            : (language === 'en' ? '35% chance: +1 Forge material' : '35% шанс: +1 материал кузницы')}
+        </p>
         <button type="button" onClick={onFight} disabled={blocked} aria-describedby={blocked ? 'pending-cave-recovery' : undefined}>
           <Swords size={18} aria-hidden="true" />{language === 'en' ? 'Fight' : 'Бой'}
         </button>
