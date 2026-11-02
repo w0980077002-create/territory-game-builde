@@ -35,13 +35,15 @@ const fixtureModule = [
   ' }};',
 ].join('\n');
 const entry = [
-  "import React from 'react';",
+  "import React, { useState } from 'react';",
   "import { createRoot } from 'react-dom/client';",
   "import { ServerRuneBook } from './src/components/builds/ServerRuneBook';",
-  "const language = localStorage.getItem('territory-language') === 'en' ? 'en' : 'ru';",
-  "createRoot(document.getElementById('root')).render(",
-  "<div className='territory-shell' style={{height:'100dvh',overflow:'auto',padding:4,background:'#1e1411'}}>",
-  "<ServerRuneBook language={language}/></div>);",
+  "function Preview() {",
+  "const [language, setLanguage] = useState(localStorage.getItem('territory-language') === 'en' ? 'en' : 'ru');",
+  "window.__setRuneLanguage = setLanguage;",
+  "return <div className='territory-shell' style={{height:'100dvh',overflow:'auto',padding:4,background:'#1e1411'}}>",
+  "<ServerRuneBook language={language}/></div>; }",
+  "createRoot(document.getElementById('root')).render(<Preview/>);",
 ].join('\n');
 const result = await build({
   stdin: { contents: entry, resolveDir: resolve('.'), loader: 'tsx' },

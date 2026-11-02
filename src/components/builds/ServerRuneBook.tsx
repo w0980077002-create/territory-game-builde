@@ -46,6 +46,9 @@ function RuneStone({ slotIndex, variant = 0, faded = false }: {
 
 export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   const en = language === 'en';
+  // Changing the UI language must never refetch and overwrite an unsaved rune draft.
+  const languageRef = useRef(language);
+  languageRef.current = language;
   const alive = useRef(false);
   const saving = useRef(false);
   const pending = useRef<PendingSave | null>(null);
@@ -92,14 +95,14 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
       } catch {
         if (!cancelled && alive.current) {
           setStatus(null);
-          setNotice(en
+          setNotice(languageRef.current === 'en'
             ? 'The server could not verify your runes. Your existing build was not changed.'
             : 'Сервер не подтвердил руны. Сохранённая сборка не изменена.');
         }
       }
     })();
     return () => { cancelled = true; alive.current = false; };
-  }, [refresh, en]);
+  }, [refresh]);
 
   // The daily grant refreshes server ownership and the saved loadout. Never
   // discard an unsaved 15-slot draft as a side effect of collecting it.
