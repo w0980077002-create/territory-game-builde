@@ -504,3 +504,41 @@
 @media(prefers-reduced-motion:reduce) {
   .territory-shop-product__buy,.territory-shop-tab {transition:none;}
 }
+
+/* Mobile composition review from the owner's actual Telegram screenshots:
+ * keep the rich shop art, but bring the first products above the fold.
+ * These are layout-only refinements: touch targets, currencies and purchases
+ * still use the unchanged game components and authoritative pricing. */
+@media (max-width: 430px) {
+  .territory-shop-facade {
+    height: clamp(145px, 41vw, 172px);
+    min-height: 145px;
+    border-bottom-width: 5px;
+  }
+  .territory-shop-sign {
+    top: 5%;
+    height: 92%;
+    width: 93%;
+    padding: 29px 20px 11px;
+  }
+  .territory-shop-sign__title { font-size: clamp(26px, 7.6vw, 36px); }
+  .territory-shop-sign__subtitle { font-size: clamp(10px, 2.85vw, 12px); line-height: 1.18; margin-top: 3px; }
+  .territory-shop-wallet { min-height: 44px; }
+  .territory-shop-wallet__cell { padding-top: 3px; padding-bottom: 3px; }
+  .territory-shop-license {
+    margin: 8px 8px 7px;
+    padding: 10px;
+    grid-template-columns: clamp(80px, 24vw, 99px) minmax(0, 1fr);
+    gap: 8px;
+  }
+  .territory-shop-license__copy { gap: 3px; }
+  .territory-shop-license__rarity { font-size: 10px; padding: 2px 6px; }
+  .territory-shop-license__title { font-size: clamp(14px, 4vw, 17px); line-height: 1.12; }
+  .territory-shop-license__description { font-size: 11px; line-height: 1.22; }
+  .territory-shop-license__owned { font-size: 11px; }
+  .territory-shop-license__buy { min-height: 44px; padding: 4px 7px; }
+  .territory-shop-tabs { margin: 0 7px 7px; padding: 4px; gap: 4px; }
+  .territory-shop-tab { min-height: 44px; padding: 4px 1px; }
+  .territory-shop-tab svg { width: 18px; height: 18px; }
+  .territory-shop-product { min-height: 144px; }
+}
