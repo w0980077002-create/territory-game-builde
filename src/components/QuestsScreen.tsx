@@ -9,7 +9,7 @@ import { SocialQuestsSection } from './SocialQuestsSection';
 import { RewardJourney } from './RewardJourney';
 import { SocialTrail, type SocialDestination } from './social/SocialTrail';
 import type { SocialStatus } from '@/game/socialQuests';
-import { getStarterMilestones, shouldShowStarterJourney, type StarterDestination } from '@/game/starterJourney';
+import { getNextStarterMilestone, getStarterMilestones, shouldShowStarterJourney, type StarterDestination } from '@/game/starterJourney';
 import { questAction } from '@/game/eventsBoard';
 
 const SECTIONS: { type: Quest['type']; titleKey: string; hintKey: string }[] = [
@@ -25,7 +25,7 @@ export function QuestsScreen({ userId, onSocialStatusChange, onNavigate, onSocia
   const ready = readyQuests.length;
   const starterSteps = shouldShowStarterJourney(state) ? getStarterMilestones(state) : [];
   const starterDone = starterSteps.filter(step => step.done).length;
-  const starterNext = starterSteps.find(step => !step.done);
+  const starterNext = getNextStarterMilestone(starterSteps);
   // Promote an existing actionable quest when no reward or starter step is
   // already directing the player. This does not create progress or rewards.
   const featuredQuest = !ready && !starterNext

@@ -22,7 +22,7 @@ import { LiveCityBackdrop, CITY_MOTION_KEY, CITY_BACKGROUND_KEY, initialCityMoti
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
-import { getStarterMilestones, shouldShowStarterJourney } from '@/game/starterJourney';
+import { getNextStarterMilestone, getStarterMilestones, shouldShowStarterJourney } from '@/game/starterJourney';
 import { halloweenBossInSeason } from '@/game/halloweenBossSeason';
 
 export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
@@ -129,7 +129,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
   // Keep veterans' city unchanged and never issue tutorial rewards in the client.
   const starterSteps = shouldShowStarterJourney(state) ? getStarterMilestones(state) : [];
   const starterDone = starterSteps.filter(step => step.done).length;
-  const starterNext = starterSteps.find(step => !step.done);
+  const starterNext = getNextStarterMilestone(starterSteps);
 
   const setSettings = (patch: Partial<typeof state.settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
   const toggleCityMotion = () => setCityMotion((previous) => {
@@ -296,7 +296,12 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
 
         <div className="flex items-center gap-1.5">
           <button
-            onClick={() => onOpen('quests')}
+            onClick={() => {
+              // A newly won, already-owned item deserves a direct equipment route.
+              // Claimable quest rewards still take precedence over the guide.
+              if (questAlerts.readyCount === 0 && starterNext?.destination === 'inventory') onInventory('equipment');
+              else onOpen('quests');
+            }}
             data-testid="home-hero-path"
             aria-label={starterNext && questAlerts.readyCount === 0
               ? (language === 'en' ? 'Hero path: ' + starterNext.titleEn : 'Путь героя: ' + starterNext.titleRu)
