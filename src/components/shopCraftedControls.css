@@ -332,15 +332,37 @@
   }
   .viking-screen--shop.territory-shop-approved .territory-shop-license__title {font-size:14px;}
   .viking-screen--shop.territory-shop-approved .territory-shop-product {
-    grid-template-columns:73px minmax(0,1fr) 88px;
-    gap:5px;padding:12px 8px;min-height:133px;
+    /* The 320px case needs two rows instead of squeezed three columns. */
+    grid-template-columns:76px minmax(0,1fr);
+    column-gap:9px;row-gap:7px;
+    min-height:154px;
+    padding:12px 11px;
+  }
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__art {grid-column:1;}
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__information {grid-column:2;}
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__actions {
+    grid-column:1/-1;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    align-items:center;
+    gap:8px;
+    min-width:0;
+    width:100%;
   }
   .viking-screen--shop.territory-shop-approved .territory-shop-product__stepper {
-    grid-template-columns:30px minmax(0,1fr) 30px;
+    width:100%;min-width:0;max-width:none;
+    grid-template-columns:44px minmax(0,1fr) 44px;
   }
-  .viking-screen--shop.territory-shop-approved .territory-shop-product__name {font-size:12px;}
-  .viking-screen--shop.territory-shop-approved .territory-shop-product__description {font-size:10px;}
-  .viking-screen--shop.territory-shop-approved .territory-shop-product__buy {font-size:11px;}
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__stepper button {
+    min-width:44px;
+  }
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__buy {
+    width:100%;min-width:0;max-width:none;min-height:44px;
+    flex-direction:row;gap:4px;
+    font-size:12px;
+  }
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__name {font-size:14px;}
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__description {font-size:11px;}
 }
 @media(prefers-reduced-motion:reduce){
   .viking-screen--shop.territory-shop-approved .territory-shop-tab,
