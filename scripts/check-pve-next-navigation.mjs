@@ -261,3 +261,21 @@ assert.match(battle, /import\.meta\.env\.BASE_URL \+ "city-bg\.webp"/,
 console.log('PvE forge loop PASS: actual material delta -> existing Forge -> original classic mode, no auto-spend.');
 
 console.log('PvE real forge loot and equipment preparation PASS: saved deltas, no invented drops or duplicate battle.');
+
+
+// #136: the encounter preview must explain only the rewards that the
+// existing classic Campaign actually grants, before spending a battle stone.
+// This is a read-only UI change: no new loot roll, currency, or entitlement.
+assert.match(battle, /data-testid="campaign-real-loot-preview"/,
+  'The current Campaign enemy must display its actual victory loot');
+assert.match(battle, /\+\{enemy\.rewardXp\} XP/,
+  'XP preview must use the real enemy reward rather than an invented number');
+assert.match(battle, /data-testid="campaign-material-drop-odds"/,
+  'Show material drop probability before the player spends a stone');
+assert.match(battle, /enemy\.isBoss[\s\S]*?35% chance: \+1 Forge material/,
+  'Distinguish guaranteed boss loot from the regular encounter chance');
+assert.match(battle, /\+3 Forge materials guaranteed/,
+  'The boss material preview must state the guaranteed three-material drop');
+assert.match(actionsSource, /enemy\.isBoss \? 3 : Math\.random\(\) < 0\.35 \? 1 : 0/,
+  'The shown 35% / +3 material rules must match the existing reward function');
+console.log('Campaign loot preview PASS: real XP, 35% normal material and +3 guaranteed boss material.');
