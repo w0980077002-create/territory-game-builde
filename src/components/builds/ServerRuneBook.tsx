@@ -87,10 +87,21 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
       if (error) throw error;
       // A receipt is not a client grant: verify it matches the submitted
       // operation before claiming success, then re-read the server status.
+      // PostgreSQL jsonb may reorder object keys; compare slot fields rather
+      // than serialized JSON so a valid server receipt is not rejected.
+      const receiptSlots: unknown = data?.slots;
+      const matchesSlots = Array.isArray(receiptSlots)
+        && receiptSlots.length === command.slots.length
+        && receiptSlots.every((slot: unknown, index: number) => {
+          if (slot === null || typeof slot !== 'object' || Array.isArray(slot)) return false;
+          const value = slot as Record<string, unknown>;
+          return value.slotId === command.slots[index].slotId
+            && value.runeId === command.slots[index].runeId;
+        });
       if (!data || data.schema !== RUNE_SCHEMA
         || data.operationId !== command.operationId
         || data.revision !== command.revision + 1
-        || JSON.stringify(data.slots) !== JSON.stringify(command.slots)) {
+        || !matchesSlots) {
         throw Error('rune_receipt_mismatch');
       }
       pending.current = null;
