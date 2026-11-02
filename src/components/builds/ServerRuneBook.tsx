@@ -18,7 +18,7 @@ const bonusLabels: Record<string, { ru: string; en: string }> = {
 // The real ledger exists only in staged SQL. Do not expose an editable book
 // until server-issued ownership, production battle effects (PvE + tactical
 // Arena), admin grants, safe cutover and mobile acceptance have all passed.
-const FIFTEEN_SLOT_CONTRACT_READY = false;
+const FIFTEEN_SLOT_CONTRACT_READY = import.meta.env.VITE_TERRITORY_RUNES === 'enabled';
 const definitions = runeSlotCatalog(catalog);
 type PendingSave = { operationId: string; revision: number; slots: RuneSlot[] };
 
