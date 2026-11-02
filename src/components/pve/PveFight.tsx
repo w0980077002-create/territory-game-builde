@@ -8,7 +8,7 @@ import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
-import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, playRound, randomZones, summarizePveRound, type PveSide, type PveTacticalSummary } from '@/game/pve';
+import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
@@ -113,6 +113,8 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const [riposteReady, setRiposteReady] = useState(false);
   // A landed, unguarded leg riposte briefly breaks one elite guard slot.
   const [staggerReady, setStaggerReady] = useState(false);
+  // Two distinct, landed manual elite strikes charge a one-use real damage boost.
+  const [momentum, setMomentum] = useState<TacticalMomentum>({ lastZone: null, streak: 0 });
   const [blocks, setBlocks] = useState<Zone[]>([]);
   const [busy, setBusy] = useState(false);
   // A speed change applies to the next round. Keep the current visual contact
@@ -224,7 +226,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     hapticImpact('light');
     const elite = kind === 'trial' || !!enemy.isBoss;
-    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady);
+    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum.streak === 2);
     const currentSpeed = useGame.get().settings.speed;
     setRoundSpeed(currentSpeed);
     const pace = 1 / currentSpeed;
@@ -249,6 +251,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     setStrike(null);
     const report = summarizePveRound(res.hits);
     setTacticalReport(report);
+    setMomentum(previous => nextTacticalMomentum(previous, atk, report.heroStrike, elite && !auto && res.hero.hp > 0 && res.enemy.hp > 0));
     // Actual open leg hit after an earned manual riposte weakens ONE guard
     // on the NEXT round. A block, dodge, auto round or ordinary enemy never
     // creates this effect. It expires after one resolved round unless earned
@@ -282,7 +285,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
       roundFlight.current = false;
       if (alive.current) setBusy(false);
     }
-  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, committedEnemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto]);
+  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, committedEnemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto, momentum.streak]);
 
   useEffect(() => {
     if (!auto || busy || outcome || confirmSurrender) return;
@@ -456,6 +459,20 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
           ⚔️ {language === 'en'
             ? 'Perfect guard! Next strike +20%. Hit open legs to break one enemy guard for the following round, or choose another opening.'
             : 'Идеальный блок! Следующий удар +20%. Попади в открытые ноги — сбей один блок врага на следующий раунд.'}
+        </div>
+      )}
+
+      {momentum.streak > 0 && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
+        <div data-testid="pve-tactical-momentum" role="status" aria-live="polite"
+          className="rounded-xl border border-amber-300/60 bg-[#382413]/95 px-3 py-2 text-xs font-bold text-amber-100">
+          <Sword className="mr-1 inline h-4 w-4 text-amber-300" aria-hidden="true" />
+          {momentum.streak === 2
+            ? (language === 'en'
+              ? 'Combo ready! Next landed strike +15% damage (enemy guards and boss damage cap still apply).'
+              : 'Комбо готово! Следующий успешный удар +15% урона (защита и лимит урона босса действуют).')
+            : (language === 'en'
+              ? 'Combo 1/2: hit a DIFFERENT open zone next round to charge a stronger strike.'
+              : 'Комбо 1/2: попади в ДРУГУЮ открытую зону, чтобы зарядить усиленный удар.')}
         </div>
       )}
 
