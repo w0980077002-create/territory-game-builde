@@ -48,7 +48,9 @@
   position: relative;
   z-index: 1;
   padding: 3px 10px;
-  background: linear-gradient(90deg, transparent, #482613f5 11%, #482613f5 89%, transparent);
+  width: 100%;
+  max-width: 100%;
+  background: linear-gradient(90deg, transparent, #482613fc 8%, #482613fc 92%, transparent);
   border-radius: 4px;
 }
 .viking-screen--shop .territory-shop-wallet {
