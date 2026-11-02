@@ -49,7 +49,7 @@ assert.match(screen, /unlimitedHits/);
 assert.match(screen, /bossDefeated/);
 assert.match(screen, /БОСС ПОВЕРЖЕН/);
 assert.match(screen, /hitHalloweenBoss/);
-assert.match(screen, /state\.top10\.map/);
+assert.match(screen, /state\.top20\.map/);
 assert.doesNotMatch(screen, /saveCloudSave|useGame\.set|redGems|spendStones|spendEnergy/);
 assert.match(screen, /ТОП-20 ПО УРОНУ/);
 assert.match(screen, /TOP 20 BY DAMAGE/);
