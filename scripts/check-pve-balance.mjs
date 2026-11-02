@@ -213,7 +213,7 @@ assert.match(fightSource, /setAttack\(current => nextOpenStrike\(current, guarde
 assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss strike warning must offer a manual defense action');
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
 
-assert.match(fightSource, /followerBonus\.defense, followerBonus, enemyIntent\)/, 'Pass the visible guard to the PvE round calculation');
+assert.match(fightSource, /followerBonus\.defense, followerBonus, enemyIntent, elite && !auto && riposteReady\)/, 'Pass the committed enemy intent and earned manual riposte to the same PvE resolver');
 assert.match(fightSource, /nextAdaptiveEnemyIntent\(res\.enemy, atk, kind === 'trial' \|\| !!enemy\.isBoss\)/,
   'Phase-two guard uses resolved HP and the actual last strike');
 assert.match(fightSource, /setEnemyIntent\(nextIntent\.intent\)/,
