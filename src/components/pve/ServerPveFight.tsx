@@ -53,6 +53,9 @@ export function ServerPveFight({enemy,kind,encounterId,sessionId,onExit,onNext}:
   const [busy,setBusy]=useState(true);
   const [strike,setStrike]=useState<StrikeEvent|null>(null);
   const running=useRef(false),alive=useRef(true),strikeKey=useRef(0);
+  // Keep the same start id on reconnect, including malformed server replies.
+  // A new UUID after an ambiguous response could create a second battle.
+  const initialOperationId=useRef<string|null>(null);
 
   const apply=useCallback((result:Record<string,unknown>)=>{
     if(!validReceipt(result))throw Error('combat_invalid_server_receipt');
@@ -88,23 +91,32 @@ export function ServerPveFight({enemy,kind,encounterId,sessionId,onExit,onNext}:
     }finally{running.current=false;if(alive.current)setBusy(false);}
   },[apply,en]);
 
+  // The initial connection is also the recovery action. If a response was
+  // lost, replay the durable pending command; never create a fresh start id.
+  const connect=useCallback(async()=>{
+    if(running.current)return;
+    running.current=true;setBusy(true);setFault('');
+    try{
+      const pending=await pendingCombatCommand();
+      if(pending&&pending.action==='loadout')throw Error('combat_pending_loadout');
+      const command:CombatCommand=pending??(sessionId?
+        {action:'resume',sessionId}:{action:'start',
+          operationId:initialOperationId.current??(initialOperationId.current=crypto.randomUUID()),
+          encounterId,control:game.settings.auto?'auto':'manual'});
+      const result=await requestCombat(command);
+      apply(result);
+    }catch{
+      if(alive.current)setFault(en?'Server connection was not confirmed. Retry the same operation safely.'
+        :'Сервер не подтвердил подключение. Безопасно повтори ту же операцию.');
+    }finally{running.current=false;if(alive.current)setBusy(false);}
+  },[apply,en,encounterId,sessionId,game.settings.auto]);
+
   useEffect(()=>{
     alive.current=true;
-    void(async()=>{
-      try{
-        const pending=await pendingCombatCommand();
-        if(pending&&pending.action==='loadout')throw Error('combat_pending_loadout');
-        const command:CombatCommand=pending??(sessionId?
-          {action:'resume',sessionId}:{action:'start',operationId:crypto.randomUUID(),encounterId,control:game.settings.auto?'auto':'manual'});
-        const result=await requestCombat(command);
-        apply(result);
-      }catch{
-        if(alive.current)setFault(en?'Battle server is unavailable. Return to map and retry.'
-          :'Боевой сервер недоступен. Вернись на карту и попробуй снова.');
-      }finally{if(alive.current)setBusy(false);}
-    })();
+    void connect();
     return()=>{alive.current=false;};
-  // Route identity is fixed for the lifetime of the mounted battle.
+  // Route identity is fixed for the lifetime of the mounted battle. A change
+  // to language or auto preference must not start another paid session.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[encounterId,sessionId]);
 
@@ -180,7 +192,7 @@ export function ServerPveFight({enemy,kind,encounterId,sessionId,onExit,onNext}:
     </div>}
     {busy&&!receipt&&<p className="text-center text-xs text-amber-200"><Loader2 className="inline animate-spin" size={14}/> {en?'Connecting battle…':'Подключаем бой…'}</p>}
     {!!fault&&<div className="rounded-lg border border-red-400/40 bg-red-950/50 p-2 text-xs text-red-100" role="alert">{fault}
-      <button type="button" className="block mt-2 rounded bg-amber-600 px-3 py-1.5" onClick={()=>tick()} disabled={busy||!receipt}>
+      <button type="button" className="block mt-2 rounded bg-amber-600 px-3 py-1.5" onClick={()=>{if(receipt)tick();else void connect();}} disabled={busy}>
         {en?'Retry saved move':'Повторить ход'}</button></div>}
     {state&&state.status!=='fighting'&&<div className="rounded-xl bg-slate-900 p-3 text-center text-amber-100">
       <Shield className="mx-auto mb-1" size={20}/>
