@@ -54,24 +54,38 @@ export function nextOpenStrike(current: Zone | null, guarded: readonly Zone[]): 
   return openings[(index + 1) % openings.length];
 }
 
-/** In elite phase two, guard the player's last strike. The next intent is
- * committed before the next move and is the same intent used by playRound.
- * This changes no damage multipliers, rewards or resources. */
+/** Elite enemies learn attack patterns as their HP falls: at half HP they
+ * cover the last attack, at quarter HP they cover the last TWO distinct
+ * attacks. The announced guard is committed to the same playRound resolver.
+ * Always leave two real openings; never alter rewards, damage or resources. */
 export function nextAdaptiveEnemyIntent(
   enemy: Pick<PveSide, 'hp' | 'maxHp'>,
   lastHeroAttack: Zone,
   eliteEncounter: boolean,
   rolledIntent: ReturnType<typeof randomZones> = randomZones(),
-): { intent: ReturnType<typeof randomZones>; adapted: boolean } {
+  previousHeroAttack: Zone | null = null,
+): { intent: ReturnType<typeof randomZones>; adapted: boolean; phase: 1 | 2 | 3 } {
   if (!eliteEncounter || !Number.isFinite(enemy.hp) || !Number.isFinite(enemy.maxHp)
     || enemy.hp <= 0 || enemy.maxHp <= 0 || enemy.hp > enemy.maxHp / 2) {
-    return { intent: rolledIntent, adapted: false };
+    return { intent: rolledIntent, adapted: false, phase: 1 };
+  }
+  // Phase III only starts after two actual, different hero attacks. No
+  // invented history on the first round, and no third/hidden guard zone.
+  if (enemy.hp <= enemy.maxHp / 4 && previousHeroAttack
+    && previousHeroAttack !== lastHeroAttack
+    && ZONES.some(zone => zone.id === previousHeroAttack)) {
+    return {
+      intent: { attack: rolledIntent.attack, blocks: [lastHeroAttack, previousHeroAttack] },
+      adapted: true,
+      phase: 3,
+    };
   }
   const otherGuard = rolledIntent.blocks.find(zone => zone !== lastHeroAttack)
     ?? ZONES.find(zone => zone.id !== lastHeroAttack)?.id;
   return {
     intent: { attack: rolledIntent.attack, blocks: otherGuard ? [lastHeroAttack, otherGuard] : [lastHeroAttack] },
     adapted: true,
+    phase: 2,
   };
 }
 
