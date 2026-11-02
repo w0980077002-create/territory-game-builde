@@ -111,12 +111,14 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const runeEffectsAtStart = useRef<PveRuneTotals | null>(null);
   const runeAilments = useRef<PveRuneAilments>({ ...EMPTY_PVE_RUNE_AILMENTS });
   const [runesReady, setRunesReady] = useState(!RUNE_PVE_STAGED);
+  const [runesUnavailable, setRunesUnavailable] = useState(false);
   useEffect(() => {
     if (!RUNE_PVE_STAGED) return;
     let cancelled = false;
     runeEffectsAtStart.current = null;
     runeAilments.current = { ...EMPTY_PVE_RUNE_AILMENTS };
     setRunesReady(false);
+    setRunesUnavailable(false);
     void (async () => {
       try {
         const { data, error } = await supabase.rpc('territory_runes_status_v1');
@@ -128,10 +130,12 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
           setRunesReady(true);
         }
       } catch {
-        // Fail closed: no unverified effect and no battle while staged is on.
+        // No unverified rune bonus is allowed; preserve existing PvE access if
+        // the rune service is temporarily unavailable during a live game.
         if (!cancelled) {
           runeEffectsAtStart.current = null;
-          setRunesReady(false);
+          setRunesUnavailable(true);
+          setRunesReady(true);
         }
       }
     })();
@@ -450,6 +454,12 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
 
   return (
     <div className="space-y-2 animate-fade-in">
+      {RUNE_PVE_STAGED && runesUnavailable && <p role="status"
+        className="rounded-lg border border-amber-400/50 bg-[#302017] p-2 text-xs text-amber-100">
+        {language === 'en'
+          ? 'Rune verification is unavailable. You can still fight normally without rune bonuses.'
+          : 'Проверка рун недоступна. Можно продолжать обычный бой без бонусов рун.'}
+      </p>}
       {RUNE_PVE_STAGED && !runesReady && <p role="status" data-testid="pve-runes-pending"
         className="rounded-lg border border-amber-400/50 bg-[#302017] p-2 text-xs text-amber-100">
         {language === 'en'
