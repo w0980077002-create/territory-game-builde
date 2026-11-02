@@ -4,6 +4,10 @@ import { useStore } from '@/game/store';
 import { getVictoryJourney, type VictoryJourney } from '@/game/victoryJourney';
 import { findHeroGearOpportunity, type HeroGearOpportunity } from '@/game/heroGearOpportunity';
 import { useGame, useArena, recordBattleResult } from '@/game/actions';
+import { supabase } from '@/game/supabase';
+import runeCatalog from '@/game/config/territory-independent-rune-slots-v1.json';
+import { parseRuneServerStatus, runeSlotCatalog } from '@/game/builds/runeSlotsV1';
+import { localPveRuneTotals, type PveRuneTotals } from '@/game/builds/runePveEffectsV1';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
@@ -26,6 +30,10 @@ import { beginReferralFight, finishReferralFight, type ReferralRound } from '@/g
 import { captureGameEvent } from '@/game/analytics';
 import { runDeferredNextBattle } from '@/game/pveNextAction';
 
+// Do not enable until the staged rune ledger, authenticated combat tests and
+// PvP/Cave adapters are released together. Existing PvE is unchanged by default.
+const RUNE_PVE_STAGED = false;
+const runeDefinitions = runeSlotCatalog(runeCatalog);
 export type FightKind = 'stage' | 'trial';
 
 interface Props {
@@ -98,6 +106,35 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const follower = selectedFollower(state);
   const followerBonus = followerCombat(follower);
   const levelAtFightStart = useRef(useGame.get().player.level);
+  // A server-verified rune set is frozen ONCE per local PvE fight. Never read
+  // editable local game_state as rune ownership, or change runes mid-fight.
+  const runeEffectsAtStart = useRef<PveRuneTotals | null>(null);
+  const [runesReady, setRunesReady] = useState(!RUNE_PVE_STAGED);
+  useEffect(() => {
+    if (!RUNE_PVE_STAGED) return;
+    let cancelled = false;
+    runeEffectsAtStart.current = null;
+    setRunesReady(false);
+    void (async () => {
+      try {
+        const { data, error } = await supabase.rpc('territory_runes_status_v1');
+        if (error) throw error;
+        const verified = parseRuneServerStatus(data, runeDefinitions);
+        const pinned = localPveRuneTotals(verified);
+        if (!cancelled) {
+          runeEffectsAtStart.current = pinned;
+          setRunesReady(true);
+        }
+      } catch {
+        // Fail closed: no unverified effect and no battle while staged is on.
+        if (!cancelled) {
+          runeEffectsAtStart.current = null;
+          setRunesReady(false);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [kind, enemy.id]);
   const [hero, setHero] = useState<PveSide>(() => heroSide(useGame.get()));
   const [foe, setFoe] = useState<PveSide>(() => enemySide(enemy));
   const [attack, setAttack] = useState<Zone | null>(null);
@@ -218,7 +255,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   }, [enemy, kind]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
-    if (roundFlight.current || busy || outcome || confirmSurrender || done.current || !alive.current) return;
+    if (roundFlight.current || busy || outcome || confirmSurrender || done.current || !alive.current || (RUNE_PVE_STAGED && !runesReady)) return;
     roundFlight.current = true;
     setTacticalReport(null);
     setBusy(true);
@@ -226,7 +263,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     hapticImpact('light');
     const elite = kind === 'trial' || !!enemy.isBoss;
-    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum.streak === 2);
+    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum.streak === 2, runeEffectsAtStart.current);
     const currentSpeed = useGame.get().settings.speed;
     setRoundSpeed(currentSpeed);
     const pace = 1 / currentSpeed;
@@ -285,16 +322,16 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
       roundFlight.current = false;
       if (alive.current) setBusy(false);
     }
-  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, committedEnemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto, momentum.streak]);
+  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, committedEnemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto, momentum.streak, runesReady]);
 
   useEffect(() => {
-    if (!auto || busy || outcome || confirmSurrender) return;
+    if (!auto || busy || outcome || confirmSurrender || (RUNE_PVE_STAGED && !runesReady)) return;
     const t = setTimeout(() => {
       const z = randomZones();
       runRound(z.attack, z.blocks);
     }, 350 / speed);
     return () => clearTimeout(t);
-  }, [auto, busy, outcome, confirmSurrender, speed, runRound]);
+  }, [auto, busy, outcome, confirmSurrender, speed, runRound, runesReady]);
 
   useEffect(() => {
     if (!toast) return;
@@ -397,6 +434,12 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
 
   return (
     <div className="space-y-2 animate-fade-in">
+      {RUNE_PVE_STAGED && !runesReady && <p role="status" data-testid="pve-runes-pending"
+        className="rounded-lg border border-amber-400/50 bg-[#302017] p-2 text-xs text-amber-100">
+        {language === 'en'
+          ? 'Checking your rune build with the server. Battle is paused until verification.'
+          : 'Проверяем сборку рун на сервере. До подтверждения бой приостановлен.'}
+      </p>}
       <div className="flex items-center gap-2 h-10">
         <button
           type="button"
