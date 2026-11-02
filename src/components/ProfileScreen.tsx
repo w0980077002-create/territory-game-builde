@@ -49,7 +49,7 @@ export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, 
       {VERIFIED_RUNE_BOOK && <details className="card group" data-testid="profile-rune-skill-book" open={runeBookOpen}
         onToggle={event => setRuneBookOpen(event.currentTarget.open)}>
         <summary className="cursor-pointer list-none flex items-center justify-between gap-3 text-sm font-semibold text-amber-200">
-          <span>✨ {language === 'en' ? 'Skills and runes · Preview' : 'Навыки и руны · Предпросмотр'}</span>
+          <span>✨ {language === 'en' ? 'Runes · 15 slots' : 'Руны · 15 слотов'}</span>
           <span className="text-xs text-gray-400 group-open:hidden">▾</span>
           <span className="text-xs text-gray-400 hidden group-open:inline">▴</span>
         </summary>
