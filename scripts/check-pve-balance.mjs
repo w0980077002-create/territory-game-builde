@@ -410,6 +410,13 @@ assert.equal(procResult.runeAilments.slow, 4, 'Slow duration rune must extend a 
 assert.equal(procResult.runeAilments.root, 2, 'Root duration rune must extend a proc');
 assert.equal(procResult.hits.filter(hit => hit.source === 'rune').length, 0,
   'New damage-over-time effects must wait until the following round');
+const slowEnemy = { ...guardEnemy, hp: 1200, maxHp: 1200, attack: 210 };
+const slowHero = { ...starterHero, hp: 800, maxHp: 800 };
+const normalIncoming = pve.playRound(slowHero, slowEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const slowedIncoming = pve.playRound(slowHero, slowEnemy, 'legs', [], 0, '', 0, null, visibleGuard,
+  false, false, { slow_duration_bp: 1000 }, {bleed:0,burn:0,slow:1,root:0});
+assert(slowedIncoming.hero.hp > normalIncoming.hero.hp,
+  'Slow must weaken enemy damage itself, even without a second synergy rune');
 assert.match(source('../src/components/pve/PveFight.tsx'), /const RUNE_PVE_STAGED = false;/,
   'Player rune rollout must remain disabled until server cutover');
 assert.match(source('../src/components/pve/PveFight.tsx'), /parseRuneServerStatus\(data, runeDefinitions\)/,
