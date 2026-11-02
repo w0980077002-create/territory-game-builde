@@ -224,6 +224,26 @@ assert.equal(pve.nextAdaptiveEnemyIntent({ hp: 125, maxHp: 500 }, 'legs', true, 
   'Repeating the same attack must not create duplicate guards');
 assert.equal(pve.nextAdaptiveEnemyIntent({ hp: 125, maxHp: 500 }, 'legs', false, phaseRoll, 'head').phase, 1,
   'Ordinary enemies must never gain elite phase III');
+// Regression: a player repeating the same strike cannot reset a phase-III
+// boss to phase II. Keep the last two DISTINCT resolved directions across
+// multiple rounds, and update the older direction only when tactics change.
+let remembered = [];
+for (const resolved of ['head', 'legs', 'legs', 'legs']) {
+  remembered = pve.rememberDistinctHeroAttacks(remembered, resolved);
+}
+assert.equal(remembered.join(','), 'legs,head', 'Repeated strikes must retain the previous distinct attack');
+const repeatPhase = pve.nextAdaptiveEnemyIntent(
+  { hp: 100, maxHp: 500 }, remembered[0], true, phaseRoll, remembered[1]);
+assert.equal(repeatPhase.phase, 3, 'Repeating a strike must not downgrade a phase-III boss');
+assert.equal(repeatPhase.intent.blocks.join(','), 'legs,head', 'Both learned guards must remain real');
+remembered = pve.rememberDistinctHeroAttacks(remembered, 'belly');
+assert.equal(remembered.join(','), 'belly,legs', 'A changed tactic must replace only the oldest distinct zone');
+const changedPhase = pve.nextAdaptiveEnemyIntent(
+  { hp: 100, maxHp: 500 }, remembered[0], true, phaseRoll, remembered[1]);
+assert.equal(changedPhase.intent.blocks.join(','), 'belly,legs', 'Boss must react to the newest two distinct zones');
+assert.equal(pve.rememberDistinctHeroAttacks([], 'head').join(','), 'head',
+  'A first attack must not fabricate a second guard');
+
 // A lethal hit reports only the remaining HP, not an imaginary overkill amount.
 const overkillRound = pve.playRound({ ...starterHero, hp: 7, attack: 1, defense: 0 },
   { ...guardEnemy, attack: 200 }, 'legs', [], 0, '', 0, null,
@@ -245,6 +265,12 @@ assert.equal(cappedRiposte.hits.filter(hit => hit.targetSide === 'enemy').reduce
   'Riposte cannot exceed the existing elite per-round cap');
 
 const fightSource = source('../src/components/pve/PveFight.tsx');
+assert.match(fightSource, /rememberDistinctHeroAttacks\(recentDistinctHeroAttacks\.current, atk\)/,
+  'Battle must update the two distinct directions only after the resolved round');
+assert.match(fightSource, /attackHistory\[1\] \?\? null/,
+  'Phase III must receive the older distinct direction, not simply the previous round');
+assert.doesNotMatch(fightSource, /lastHeroAttack\.current = atk/,
+  'The old one-round memory incorrectly downgrades phase III on repeated attacks');
 assert.match(fightSource, /data-testid="pve-round-reaction"/, 'Show actual round feedback to manual PvE players');
 assert.match(fightSource, /data-testid="pve-live-damage-totals"/, 'Show cumulative actual damage during the fight');
 assert.match(fightSource, /data-testid="pve-riposte-ready"/, 'Show an earned manual riposte');
