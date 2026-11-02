@@ -49,7 +49,7 @@ const result = await build({
   jsx: 'automatic', alias: { '@': resolve('src') },
   define: { 'import.meta.env.BASE_URL': '"/"', 'import.meta.env.VITE_TERRITORY_RUNES': '"enabled"', 'process.env.NODE_ENV': '"production"' },
   plugins: [{ name: 'fake-rune-ledger', setup(b) {
-    b.onResolve({ filter: /^@\/game\/supabase$/ }, () => ({ path: 'rune-fixture', namespace: 'rune-fixture' }));
+    b.onResolve({ filter: /(^@\/game\/supabase$|\/game\/supabase$)/ }, () => ({ path: 'rune-fixture', namespace: 'rune-fixture' }));
     b.onLoad({ filter: /.*/, namespace: 'rune-fixture' }, () => ({ contents: fixtureModule, loader: 'js' }));
   }}],
 });
