@@ -124,21 +124,26 @@ assert.equal(companionSummary.dealtDamage, witchRound.hits.filter(hit => hit.tar
 assert.equal(pve.summarizePveRound([]).enemyZone, null);
 // Manual counterplay actions must use the same committed intent as the real
 // PvE resolver. They only select zones; they cannot settle hits or mint loot.
-for (const { id: guarded } of zones) {
+for (const first of zones) for (const second of zones) {
+  if (first.id === second.id) continue;
+  const guarded = [first.id, second.id];
   let selected = null;
   const openings = new Set();
-  for (let i = 0; i < zones.length - 1; i++) {
+  for (let i = 0; i < zones.length - guarded.length; i++) {
     selected = pve.nextOpenStrike(selected, guarded);
-    assert.notEqual(selected, guarded, 'Opening button must never target the shown guard');
+    assert(!guarded.includes(selected), 'Opening action must bypass BOTH committed guards');
     openings.add(selected);
   }
-  assert.equal(openings.size, zones.length - 1, 'All three openings must be selectable');
-  assert.equal(pve.nextOpenStrike(selected, guarded), [...openings][0], 'Openings cycle without a hidden fourth attack');
+  assert.equal(openings.size, 2, 'Both real unguarded attack zones must be selectable');
+  assert.equal(pve.nextOpenStrike(selected, guarded), [...openings][0], 'Only the two real openings cycle');
 }
+assert.equal(pve.nextOpenStrike('head', ['head', 'chest', 'belly', 'legs']), 'head',
+  'Malformed fully guarded intent must not create a phantom zone');
 assert.equal(pve.coverThreatZone(['head'], 'head').join(','), 'head', 'Covering twice is idempotent');
 assert.equal(pve.coverThreatZone(['head'], 'belly').join(','), 'head,belly', 'Keep the first selected defense');
 assert.equal(pve.coverThreatZone(['head', 'legs'], 'chest').join(','), 'legs,chest', 'Replace only the oldest defense');
-const counterAttack = pve.nextOpenStrike('head', visibleGuard.blocks[0]);
+const counterAttack = pve.nextOpenStrike('head', visibleGuard.blocks);
+assert(!visibleGuard.blocks.includes(counterAttack), 'Opening must not pick the hidden second guard');
 const counterRound = pve.playRound(starterHero, guardEnemy, counterAttack, [], 0, '', 0, null, visibleGuard);
 assert.equal(counterRound.hits[0].tone, 'hit', 'Opening action must really bypass the next committed guard');
 
@@ -167,7 +172,9 @@ assert.equal(phaseTwo.intent.blocks[0], 'legs', 'Elite must guard the last strik
 assert.equal(phaseTwo.intent.attack, 'chest', 'The actual announced attack is unchanged');
 assert.equal(new Set(phaseTwo.intent.blocks).size, 2, 'Guard zones stay distinct');
 const phaseBlocked = pve.playRound(starterHero, { ...guardEnemy, hp: 250 }, 'legs', [], 0, '', 0, null, phaseTwo.intent);
-const phaseOpening = pve.playRound(starterHero, { ...guardEnemy, hp: 250 }, 'head', [], 0, '', 0, null, phaseTwo.intent);
+const phaseOpeningTarget = pve.nextOpenStrike('legs', phaseTwo.intent.blocks);
+assert(!phaseTwo.intent.blocks.includes(phaseOpeningTarget), 'Phase II must expose a real opening');
+const phaseOpening = pve.playRound(starterHero, { ...guardEnemy, hp: 250 }, phaseOpeningTarget, [], 0, '', 0, null, phaseTwo.intent);
 assert.equal(phaseBlocked.hits[0].tone, 'block', 'Repeating a remembered strike must really be blocked');
 assert.equal(phaseOpening.hits[0].tone, 'hit', 'Changing attack zones must really beat the guard');
 assert.equal(pve.nextAdaptiveEnemyIntent({ hp: 0, maxHp: 500 }, 'legs', true, phaseRoll).adapted, false);
@@ -209,7 +216,12 @@ assert.match(fightSource, /\(kind === 'trial' \|\| enemy\.isBoss\) && !auto && !
 assert.match(fightSource, /blocks\.includes\(enemyIntent\.attack\)/, 'The warning reflects the selected defense');
 assert.match(fightSource, /data-testid="pve-telegraphed-strike"/, 'Show the actual next strike direction for tactical trials and bosses');
 assert.match(fightSource, /data-testid="pve-choose-opening"/, 'The shown enemy guard must offer an actual manual attack choice');
-assert.match(fightSource, /setAttack\(current => nextOpenStrike\(current, guardedZone\.id\)\)/, 'Opening action must select the attack used by the real round');
+assert.match(fightSource, /setAttack\(current => nextOpenStrike\(current, enemyIntent\.blocks\)\)/,
+  'Opening action must use both committed enemy guard slots');
+assert.match(fightSource, /enemyIntent\.blocks\.includes\(attack\)/,
+  'Manual attack warning must recognize the second guarded zone too');
+assert.match(fightSource, /const guardedZoneLabels = enemyIntent\.blocks\.map\(/,
+  'Show both actual enemy guard directions, not a misleading single guard');
 assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss strike warning must offer a manual defense action');
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
 
