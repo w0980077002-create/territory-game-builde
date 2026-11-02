@@ -39,7 +39,12 @@ with sync_playwright() as p:
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(width,lang,'shop overflow')
     if width in (320,360,390,430) and lang=='ru' and not ios:
       os.makedirs('/tmp/territory-stage1-ui',exist_ok=True)
+      # The fixture shell scrolls at 100dvh; a 500px screenshot cuts off
+      # the actual product rows. Capture a taller mobile viewport too.
+      page.set_viewport_size({'width':width,'height':1050})
+      page.wait_for_timeout(100)
       page.screenshot(path=f'/tmp/territory-stage1-ui/shop-rpg-{width}.png',full_page=True)
+      page.set_viewport_size({'width':width,'height':500})
     item=page.get_by_role('button').filter(has_text='Health Potion' if lang=='en' else 'Зелье здоровья').first;item.click();dialog=page.get_by_role('dialog');assert ('Health Potion' if lang=='en' else 'Зелье здоровья') in dialog.locator('h2').inner_text();close=dialog.locator('.territory-modal-close');assert close.bounding_box()['height']>=43.99
     plus=dialog.get_by_role('button',name='Increase quantity' if lang=='en' else 'Увеличить количество');assert plus.bounding_box()['width']>=43.99;plus.click();assert dialog.locator('input[type="range"]').input_value()=='2';page.keyboard.press('Escape');assert dialog.count()==0 and item.evaluate('(e)=>document.activeElement===e')
     page.goto(f'http://127.0.0.1:{server.server_port}/territory-workshop-after.html?professions');page.wait_for_timeout(300);assert not errors,errors
