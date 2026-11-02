@@ -171,7 +171,7 @@ const saferTradeoff = { ...tradeoff, id: 'safer-sword', attack: 22, defense: 2 }
 assert.equal(findHeroGearOpportunity([gearItem(tradeoff), gearItem(saferTradeoff)], {weapon:worn})?.item.equipment.id, 'safer-sword',
   'a dominating trade-off must be offered without calling it a guaranteed upgrade');
 assert.equal(findHeroGearOpportunity([gearItem(tradeoff), gearItem(saferTradeoff)], {weapon:worn})?.kind, 'compare');
-const differentBuild = { ...tradeoff, id: 'defender-sword', attack: 14, defense: 6 };
+const differentBuild = { ...tradeoff, id: 'defender-sword', attack: 11, defense: 6 };
 assert.equal(findHeroGearOpportunity([gearItem(tradeoff), gearItem(differentBuild)], {weapon:worn})?.item.equipment.id, 'risky-sword',
   'incomparable attack/defense builds must not be ranked with invented stat weights');
 assert.equal(findHeroGearOpportunity([gearItem(strongest, 0), gearItem(stronger)], {weapon:worn})?.item.equipment.id, 'new-sword',
