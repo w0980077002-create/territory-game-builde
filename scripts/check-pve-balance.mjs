@@ -345,7 +345,7 @@ assert.match(fightSource, /const guardedZoneLabels = committedEnemyIntent\.block
 assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss strike warning must offer a manual defense action');
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
 
-assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum\.streak === 2\), 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
+assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum\.streak === 2\)/, 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
 assert.match(fightSource, /staggerEnemyGuard\(enemyIntent, staggerReady && !auto\)/, 'Only manual combat can consume the one-round stagger');
 assert.match(fightSource, /setStaggerReady\(elite && !auto && riposteReady && atk === 'legs'/, 'Only a real manual elite leg riposte can earn stagger');
 assert.match(fightSource, /!committedEnemyIntent\.blocks\.includes\(atk\)/, 'A guarded leg strike must not earn stagger');
