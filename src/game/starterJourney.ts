@@ -44,3 +44,13 @@ export function getNextStarterMilestone(steps: readonly StarterMilestone[]): Sta
   }
   return steps.find(step => !step.done);
 }
+
+/** The City roadmap is a real one-tap action, not a link to unrelated quests.
+ * A claimable quest still wins priority; this helper never grants rewards.
+ */
+export function getHeroPathDestination(
+  next: StarterMilestone | undefined,
+  readyQuestCount: number,
+): StarterDestination | 'quests' {
+  return readyQuestCount > 0 ? 'quests' : next?.destination ?? 'quests';
+}
