@@ -6,6 +6,8 @@ export type HeroGearOpportunity = {
   kind: 'empty' | 'upgrade';
 };
 const stats = ['attack', 'defense', 'hp', 'critChance'] as const;
+// A malformed legacy inventory entry must not masquerade as equipable loot.
+const validSlots = new Set<Equipment['slot']>(['helmet', 'amulet', 'armor', 'weapon', 'shield', 'ring', 'boots']);
 const value = (gear: Equipment, key: (typeof stats)[number]) =>
   Number.isFinite(gear[key]) ? (gear[key] ?? 0) : 0;
 
@@ -21,7 +23,7 @@ export function findHeroGearOpportunity(
   equipped: Partial<Record<Equipment['slot'], Equipment>>,
 ): HeroGearOpportunity | null {
   const owned = inventory.filter((item): item is InventoryItem & { equipment: Equipment } =>
-    item.type === 'equipment' && Number.isFinite(item.qty) && item.qty > 0 && !!item.equipment);
+    item.type === 'equipment' && Number.isFinite(item.qty) && item.qty > 0 && !!item.equipment && validSlots.has(item.equipment.slot));
   const empty = owned.find(item => !equipped[item.equipment.slot]);
   if (empty) return { item: empty, kind: 'empty' };
   const upgrade = owned.find(item => {
