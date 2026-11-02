@@ -18,10 +18,14 @@ CREATE FUNCTION public.arena_finish(p_room uuid,p_team int) RETURNS void LANGUAG
 SET ROLE service_role;
 SELECT public.territory_runes_admin_set_level_v1('10000000-0000-4000-8000-000000000001','axe_storm_r1',3,'90000000-0000-4000-8000-000000000001','synthetic arena');
 SELECT public.territory_runes_admin_set_level_v1('10000000-0000-4000-8000-000000000001','shield_wall_r1',3,'90000000-0000-4000-8000-000000000002','synthetic arena');
+SELECT public.territory_runes_admin_set_level_v1('10000000-0000-4000-8000-000000000001','quickstep_r1',3,'90000000-0000-4000-8000-000000000006','synthetic arena');
+SELECT public.territory_runes_admin_set_level_v1('10000000-0000-4000-8000-000000000001','blood_rush_r3',3,'90000000-0000-4000-8000-000000000007','synthetic arena');
 RESET ROLE;
 SET ROLE authenticated;
 SET request.test_uid='10000000-0000-4000-8000-000000000001';
-SELECT public.territory_runes_save_v1('90000000-0000-4000-8000-000000000003',2,jsonb_set(public.test_rune_choices('shield_wall_r1'),'{1,runeId}',to_jsonb('axe_storm_r1'::text)));
+SELECT public.territory_runes_save_v1('90000000-0000-4000-8000-000000000003',2,
+ jsonb_set(jsonb_set(jsonb_set(public.test_rune_choices('shield_wall_r1'),'{1,runeId}',to_jsonb('axe_storm_r1'::text)),
+ '{7,runeId}',to_jsonb('quickstep_r1'::text)),'{10,runeId}',to_jsonb('blood_rush_r3'::text)));
 RESET ROLE;
 INSERT INTO arena_rooms(id,mode) VALUES
  ('41000000-0000-4000-8000-000000000001','duel'),('41000000-0000-4000-8000-000000000002','duel'),('41000000-0000-4000-8000-000000000003','duel'),('41000000-0000-4000-8000-000000000004','duel');
@@ -50,6 +54,11 @@ DO $assert$ BEGIN
  THEN RAISE EXCEPTION 'arena_damage_exposed'; END IF;
  IF territory_private.runes_arena_damage_v1('41000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000002','51000000-0000-4000-8000-000000000001',1000,true)<>964
  THEN RAISE EXCEPTION 'bot_vs_human_guard_failed'; END IF;
+ IF territory_private.runes_arena_chance_v1('41000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000002','51000000-0000-4000-8000-000000000001','dodge',6)<>8.4
+ OR territory_private.runes_arena_chance_v1('41000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000002','crit',5)<>7.7
+ THEN RAISE EXCEPTION 'arena_rune_chance_failed'; END IF;
+ IF territory_private.runes_arena_chance_v1('41000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000002','crit',150)<>100
+ THEN RAISE EXCEPTION 'arena_existing_high_crit_failed'; END IF;
 END $assert$;
 -- Change the player's selected runes after the rooms start; existing snapshots
 -- must retain their original levels and effects in both bot and player fights.
