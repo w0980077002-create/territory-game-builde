@@ -1,0 +1,203 @@
+/* TERRITORY — genuine illustrated shop materials.
+   Painted frame elements are derived from the owner's approved shop concept.
+   Their inner areas are transparent. Live UI supplies all localized labels,
+   balances, quantities, live offers, real item art and purchase confirmation.
+   All selectors are scoped to the single shop screen. */
+.viking-screen--shop.territory-shop-showcase {
+  background-image:
+    linear-gradient(90deg,#170b09d6,#482711bd 5%,#26160bb5 49%,#482711bd 95%,#160908d6),
+    var(--shop-planks);
+  background-size: cover, 420px auto;
+}
+.viking-screen--shop .territory-shop-facade {
+  background: #392017;
+  border: 3px solid #825022;
+  border-bottom: 5px ridge #ad7748;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 5px 10px #0e07059c, inset 0 0 0 2px #dfaf7169;
+}
+.viking-screen--shop .territory-shop-facade__scenery {
+  background-image: linear-gradient(180deg,#140d071a,#13090404 46%,#26170d32),
+    var(--shop-painted-market),
+    var(--shop-market);
+  background-size: cover, 100% 100%, cover;
+  background-position: center, center, center;
+  image-rendering: auto;
+}
+.viking-screen--shop .territory-shop-sign {
+  top: 12%;
+  width: min(96%,575px);
+  height: 81%;
+  background: var(--shop-painted-sign) center / 100% 100% no-repeat;
+  padding: 42px 30px 10px;
+  filter: drop-shadow(0 7px 7px #140906b0);
+}
+.viking-screen--shop .territory-shop-sign__title {
+  font-size: clamp(27px,8.5vw,42px);
+  color: #ffe7b3;
+  -webkit-text-stroke: .55px #331505;
+  text-shadow: 0 3px 1px #341208, 0 0 7px #f2c56c55, 1px -1px #fbe3aa;
+  letter-spacing: .017em;
+}
+.viking-screen--shop .territory-shop-sign__subtitle {
+  color: #fff1d9;
+  font-size: clamp(10px,2.96vw,14px);
+  line-height: 1.2;
+  margin-top: 3px;
+  text-shadow: 0 2px 2px #1e0c08, 0 0 4px #0c0604;
+  position: relative;
+  z-index: 1;
+  padding: 3px 10px;
+  width: 100%;
+  max-width: 100%;
+  background: linear-gradient(90deg, transparent, #482613fc 8%, #482613fc 92%, transparent);
+  border-radius: 4px;
+}
+.viking-screen--shop .territory-shop-wallet {
+  border-top: 3px ridge #ca9658;
+  border-bottom: 4px ridge #8d4a20;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 10px,#10070250 11px 12px),
+    linear-gradient(180deg,#a66d40,#4b2a16 24%,#311a10 59%,#7d4927 89%,#2a130e);
+  box-shadow: inset 0 1px #f8d9a0b3, inset 0 -2px #130906ad, 0 3px 8px #100706c2;
+}
+.viking-screen--shop .territory-shop-wallet__cell {
+  border-right: 2px solid #2b1308;
+  border-left: 1px solid #edc18351;
+  text-shadow: 0 1px #1b0704;
+}
+
+.viking-screen--shop .territory-shop-license {
+  border: 2px solid #ac682a;
+  border-radius: 6px;
+  background:
+    linear-gradient(110deg,#170b0ab8,#482412e6 48%,#1d0e09cc),
+    var(--shop-planks) center / cover;
+  box-shadow: inset 0 2px #fac779ba, inset 0 -3px #180b05b5, 0 6px 13px #090405a6, 0 0 8px #d58a2b3d;
+}
+.viking-screen--shop .territory-shop-license::after {
+  content:"";
+  z-index: 2;
+  inset: -2px;
+  width: auto;
+  height: auto;
+  background: none;
+  border: 20px solid transparent;
+  border-image-source: var(--shop-painted-license);
+  border-image-slice: 24 26 24 26;
+  border-image-width: 20px 22px;
+  border-image-repeat: stretch;
+  /* Hide printed content at the lower edge of the art source. */
+  clip-path: inset(0 0 10% 0);
+  opacity: 1;
+  pointer-events: none;
+}
+.viking-screen--shop .territory-shop-license::before { opacity: .33; }
+.viking-screen--shop .territory-shop-license__art {
+  border-color:#e7b96b;
+  box-shadow: 0 0 21px #f6ad404d, inset 0 0 0 2px #37180f, 0 5px 12px #0b0606a8;
+}
+.viking-screen--shop .territory-shop-license__title {
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing:-.01em;
+  color:#ffebbd;
+  text-shadow: 0 2px 2px #210d06, 1px 0 #6b3813;
+}
+.viking-screen--shop .territory-shop-license__buy {
+  border-color: #b8ada0;
+  box-shadow: inset 0 2px #f7eee0b0, inset 0 -3px #161d26, 0 3px #150b06;
+}
+.viking-screen--shop .territory-shop-tabs {
+  border: 3px ridge #9d602a;
+  background:
+    linear-gradient(180deg,#a16a3b,#452519 30%,#28140d 85%,#824924),
+    var(--shop-planks);
+  box-shadow: 0 4px 10px #1207069e, inset 0 2px #edbb7e9a;
+}
+.viking-screen--shop .territory-shop-tab {
+  border: 3px ridge #95969b;
+  background: linear-gradient(180deg,#a2a3a6 0%,#49505b 10%,#28272e 43%,#20202a 74%,#686a73 100%);
+  box-shadow: inset 0 2px #faf3e092,inset 0 -3px #161719,0 2px 3px #140804b5;
+}
+.viking-screen--shop .territory-shop-tab--active {
+  border: 3px ridge #f4cc72;
+  background: linear-gradient(180deg,#fff2b6 0%,#df9b41 14%,#b86615 60%,#e8b85d 96%);
+  box-shadow: inset 0 2px #fff6c4,inset 0 -3px #703909,0 2px 8px #f8c04b77;
+}
+.viking-screen--shop .territory-shop-product {
+  border: 2px solid #80502a;
+  border-radius: 7px;
+  background:
+    linear-gradient(96deg,#27120add,#593013c2 50%,#27130bd8),
+    var(--shop-planks) center / cover;
+  box-shadow: inset 0 1px #f5c18291,inset 0 -4px #1308039e,0 5px 9px #090504b4;
+}
+.viking-screen--shop .territory-shop-product::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: -2px;
+  width: auto;
+  height: auto;
+  border: 18px solid transparent;
+  background: none;
+  border-image-source: var(--shop-painted-product);
+  border-image-slice: 23 25 23 25;
+  border-image-width: 17px 18px;
+  border-image-repeat: stretch;
+  /* Retain structural top/side forging, never the painted potion interior. */
+  clip-path: inset(0 0 13% 0);
+  pointer-events: none;
+}
+.viking-screen--shop .territory-shop-product::after { display: none; }
+.viking-screen--shop .territory-shop-product__art {
+  border: 3px ridge #9e6b88;
+  border-radius: 3px;
+  background: radial-gradient(circle at 50% 35%,#823f72,#301a38 55%,#170f19 89%);
+  box-shadow: inset 0 0 20px #b0549566, 0 2px 5px #0e0603bc;
+}
+.viking-screen--shop .territory-shop-product__name {
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: -.015em;
+  text-shadow: 1px 2px #1b0a05;
+}
+.viking-screen--shop .territory-shop-product__stepper button {
+  border: 2px outset #8e99a1;
+  background: linear-gradient(135deg,#b7b1ab 0%,#555a62 14%,#26282f 48%,#3d4046 84%,#99918c);
+  box-shadow: inset 0 2px #d6d6d08c, inset 0 -3px #171720, 0 2px 4px #120907ba;
+}
+.viking-screen--shop .territory-shop-product__buy {
+  border: 3px ridge #e7bd63;
+  border-radius: 4px;
+  background: linear-gradient(180deg,#9cdb59 0%,#3f9c2d 16%,#176323 63%,#15521d 84%,#337327);
+  box-shadow: inset 0 2px #e5fac7a2, inset 0 -4px #063810b7, 0 3px 2px #150b0580;
+}
+.viking-screen--shop .territory-shop-product__buy:not(:disabled) {
+  filter: drop-shadow(0 2px 1px #100805a8);
+}
+/* Match the approved mobile composition without crushing 44px controls. */
+@media (max-width: 430px) {
+  .viking-screen--shop .territory-shop-facade {
+    height: clamp(160px, 45vw, 194px);
+    min-height: 160px;
+  }
+  .viking-screen--shop .territory-shop-sign {
+    top: 10%;
+    height: 87%;
+    padding: 42px 22px 11px;
+  }
+  .viking-screen--shop .territory-shop-license {
+    margin: 10px 8px 9px;
+    padding: 10px;
+  }
+  .viking-screen--shop .territory-shop-license__buy { min-height: 44px; }
+  .viking-screen--shop .territory-shop-tab { min-height: 44px; }
+}
+@media(max-width:359px) {
+  .viking-screen--shop .territory-shop-facade { height: 155px;min-height:155px; }
+  .viking-screen--shop .territory-shop-sign { padding: 38px 17px 8px; }
+  .viking-screen--shop .territory-shop-sign__title { font-size: 27px; }
+  .viking-screen--shop .territory-shop-sign__subtitle {font-size: 10px;}
+  .viking-screen--shop .territory-shop-license::after {border-width: 15px;border-image-width: 15px;}
+  .viking-screen--shop .territory-shop-product::before {border-width: 13px;border-image-width: 13px;}
+}
