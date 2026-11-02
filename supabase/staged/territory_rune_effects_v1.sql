@@ -80,7 +80,7 @@ CREATE OR REPLACE FUNCTION public.territory_runes_battle_effects_v1(
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $runes$
 DECLARE snap jsonb; selected jsonb; effects jsonb:='[]'::jsonb;
  totals jsonb:='{}'::jsonb; rune text; effect text;
- unit_bp integer; level_num integer; amount integer; i integer;
+ unit_bp integer; level_num integer; amount integer; i integer; combat_family text;
 BEGIN
  IF p_player IS NULL OR p_battle IS NULL OR p_kind IS NULL OR p_kind NOT IN ('pve','arena')
  THEN RAISE EXCEPTION 'rune_effect_invalid_request'; END IF;
@@ -123,6 +123,21 @@ BEGIN
      'effectKey',effect,'amountBp',amount));
    totals:=jsonb_set(totals,ARRAY[effect],
      to_jsonb(least(2500,coalesce((totals->>effect)::integer,0)+amount)),true);
+   -- Every selected rune receives a common tactical bonus in single-target
+   -- PvE, Arena and Cave; its specialized effect remains available too.
+   combat_family := CASE
+      WHEN effect = ANY(ARRAY['counter_damage_bp','bleed_chance_bp','haste_bp','damage_vs_slow_bp','next_attack_bp','energy_gain_bp','chain_chance_bp','spell_damage_bp','area_radius_bp','burn_chance_bp','attack_chain_damage_bp','single_target_damage_bp','dot_damage_bp','cooldown_reduction_bp','finisher_damage_bp']) THEN 'rune_combat_damage_bp'
+      WHEN effect = ANY(ARRAY['guard_duration_bp','buff_duration_bp','next_enemy_damage_reduction_bp','rage_damage_reduction_bp','regen_bp','control_resist_bp','root_duration_bp']) THEN 'rune_combat_guard_bp'
+      WHEN effect = ANY(ARRAY['dispel_chance_bp']) THEN 'rune_combat_crit_bp'
+      WHEN effect = ANY(ARRAY['root_chance_bp','slow_chance_bp','enemy_accuracy_reduction_bp']) THEN 'rune_combat_dodge_bp'
+      WHEN effect = ANY(ARRAY['armor_pen_bp','slow_duration_bp']) THEN 'rune_combat_accuracy_bp'
+      ELSE NULL
+   END;
+   IF combat_family IS NOT NULL THEN
+     totals:=jsonb_set(totals,ARRAY[combat_family],
+       to_jsonb(least(2500,coalesce((totals->>combat_family)::integer,0)
+         +greatest(1,amount/2))),true);
+   END IF;
  END LOOP;
  RETURN jsonb_build_object(
    'schema','territory-rune-effects/1','battleId',p_battle,'kind',p_kind,
