@@ -16,7 +16,43 @@ GRANT EXECUTE ON FUNCTION public.arena_move(uuid,uuid,text,text[]) TO authentica
 \ir ../../supabase/staged/territory_rune_battle_snapshot_v1.sql
 \ir ../../supabase/staged/territory_rune_effects_v1.sql
 \ir ../../supabase/staged/territory_rune_damage_bridge_v1.sql
+-- A real battle was already in progress BEFORE the code migration.
+-- Its two fighters have no rune snapshot; it must keep working unchanged.
+INSERT INTO public.arena_rooms(id,mode,status,round_no,timeout_seconds)
+VALUES('41000000-0000-4000-8000-000000000099','duel','active',1,60);
+INSERT INTO public.arena_participants
+(id,room_id,user_id,is_bot,name,attack,defense,crit_chance,max_hp,hp,team)
+VALUES
+('51000000-0000-4000-8000-000000000098','41000000-0000-4000-8000-000000000099','10000000-0000-4000-8000-000000000001',false,'legacy A',100,20,5,1000,1000,1),
+('51000000-0000-4000-8000-000000000099','41000000-0000-4000-8000-000000000099','10000000-0000-4000-8000-000000000002',false,'legacy B',100,20,5,1000,1000,2);
+INSERT INTO public.arena_moves(room_id,round_no,participant_id,target_id,attack_zone,block_zones)
+VALUES
+('41000000-0000-4000-8000-000000000099',1,'51000000-0000-4000-8000-000000000098','51000000-0000-4000-8000-000000000099','chest',ARRAY['head','legs']),
+('41000000-0000-4000-8000-000000000099',1,'51000000-0000-4000-8000-000000000099','51000000-0000-4000-8000-000000000098','legs',ARRAY['head','chest']);
 \ir ../../supabase/staged/territory_rune_arena_integration_v1.sql
+-- Resolving an in-flight legacy room after cutover must NEVER require pinned
+-- rune rows or accidentally award new rune effects to existing moves.
+DO $legacy$ BEGIN
+ IF territory_private.runes_arena_damage_v1(
+ '41000000-0000-4000-8000-000000000099',
+ '51000000-0000-4000-8000-000000000098',
+ '51000000-0000-4000-8000-000000000099',123,false)<>123
+ THEN RAISE EXCEPTION 'legacy_room_damage_changed'; END IF;
+ IF territory_private.runes_arena_chance_v1(
+ '41000000-0000-4000-8000-000000000099',
+ '51000000-0000-4000-8000-000000000098',
+ '51000000-0000-4000-8000-000000000099','crit',7)<>7
+ THEN RAISE EXCEPTION 'legacy_room_crit_changed'; END IF;
+END $legacy$;
+SELECT public.arena_resolve_round('41000000-0000-4000-8000-000000000099');
+DO $legacy$ BEGIN
+ IF EXISTS(SELECT 1 FROM territory_private.rune_arena_fighters_v1
+ WHERE room_id='41000000-0000-4000-8000-000000000099')
+ THEN RAISE EXCEPTION 'legacy_room_invented_runes'; END IF;
+ IF (SELECT round_no FROM public.arena_rooms
+ WHERE id='41000000-0000-4000-8000-000000000099')<>2
+ THEN RAISE EXCEPTION 'legacy_room_did_not_continue'; END IF;
+END $legacy$;
 SET ROLE service_role;
 SELECT public.territory_runes_admin_set_level_v1('10000000-0000-4000-8000-000000000001','axe_storm_r1',3,'90000000-0000-4000-8000-000000000001','synthetic arena');
 SELECT public.territory_runes_admin_set_level_v1('10000000-0000-4000-8000-000000000001','shield_wall_r1',3,'90000000-0000-4000-8000-000000000002','synthetic arena');
