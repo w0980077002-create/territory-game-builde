@@ -436,7 +436,7 @@ assert.match(fightSource, /data-testid="pve-live-damage-totals"/, 'Show cumulati
 assert.match(fightSource, /data-testid="pve-riposte-ready"/, 'Show an earned manual riposte');
 assert.match(fightSource, /data-testid="pve-tactical-momentum"/, 'Show real combo progress in the existing elite fight');
 assert.match(fightSource, /setMomentum\(previous => nextTacticalMomentum\(previous, atk, report\.heroStrike, elite && !auto/, 'Combo must come from resolved hits, never guessed input');
-assert.match(fightSource, /elite && !auto && momentum\.streak === 2, runeEffectsAtStart\.current\)/, 'Only charged manual elite rounds receive the combo bonus');
+assert.match(fightSource, /elite && !auto && momentum\.streak === 2, runeEffectsAtStart\.current, runeAilments\.current\)/, 'Only charged manual elite rounds receive the combo bonus');
 assert.match(fightSource, /report\.enemyStrike === 'block'/, 'Only a real enemy block grants riposte');
 assert.match(fightSource, /elite && !auto && riposteReady/, 'Auto cannot consume a fake manual riposte');
 assert.match(fightSource, /setBattleTotals\(previous => \(\{[\s\S]*report\.dealtDamage/, 'Cumulative totals must come from resolved hits');
