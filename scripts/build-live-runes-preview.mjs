@@ -11,7 +11,7 @@ const slots = catalog.slots.map((slot, i) => ({
   slotId: slot.slotId,
   runeId: i % 2 === 0 ? slot.options[0].runeId : null,
 }));
-const owned = catalog.slots.flatMap((slot, i) => [
+const owned = catalog.slots.flatMap((slot, i) => i === 3 ? [] : [
   { runeId: slot.options[0].runeId, level: (i % 3) + 1 },
   { runeId: slot.options[1].runeId, level: 1 },
 ]);
