@@ -309,6 +309,34 @@ const cappedComboStrike = pve.playRound(hero,
 assert.equal(cappedComboStrike.hits.filter(hit => hit.targetSide === 'enemy').reduce((sum, hit) => sum + hit.amount, 0), 400,
   'Stacked riposte + combo cannot bypass the existing boss damage cap');
 
+// Staged rune combat must preserve old damage when no verified snapshot exists.
+// These are actual resolved HP effects, not decorative UI text.
+const noRuneAttack = pve.playRound(starterHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const runeAttack = pve.playRound(starterHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard,
+  false, false, { damage_bonus_bp: 1200 });
+assert(runeAttack.hits[0].amount > noRuneAttack.hits[0].amount, 'Rune damage must change real enemy HP');
+assert.equal(guardEnemy.hp - runeAttack.enemy.hp, runeAttack.hits[0].amount);
+const noRuneGuard = pve.playRound(starterHero, { ...guardEnemy, attack: 120 }, 'legs', [], 0, '', 0,
+  null, visibleGuard);
+const withRuneGuard = pve.playRound(starterHero, { ...guardEnemy, attack: 120 }, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, { guard_absorb_bp: 1500 });
+assert(withRuneGuard.hits.find(h => h.targetSide === 'hero').amount <
+  noRuneGuard.hits.find(h => h.targetSide === 'hero').amount, 'Rune guard must reduce actual HP loss');
+const noRuneCrit = pve.playRound({ ...starterHero, critChance: 30 }, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const withRuneCrit = pve.playRound({ ...starterHero, critChance: 30 }, guardEnemy, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, { crit_chance_bp: 2500 });
+assert.equal(noRuneCrit.hits[0].tone, 'hit');
+assert.equal(withRuneCrit.hits[0].tone, 'crit', 'Rune critical chance must alter a resolved strike');
+const blockedRune = pve.playRound(starterHero, guardEnemy, 'head', [], 0, '', 0, null, visibleGuard,
+  false, false, { damage_bonus_bp: 2500, damage_vs_guard_bp: 2500 });
+assert.equal(blockedRune.hits[0].amount, 0, 'Rune damage cannot pierce a real noncritical block');
+assert.match(source('../src/components/pve/PveFight.tsx'), /const RUNE_PVE_STAGED = false;/,
+  'Player rune rollout must remain disabled until server cutover');
+assert.match(source('../src/components/pve/PveFight.tsx'), /parseRuneServerStatus\(data, runeDefinitions\)/,
+  'Rune effects must be sourced from a server-confirmed 15-slot status');
+assert.match(source('../src/components/pve/PveFight.tsx'), /runeEffectsAtStart\.current = pinned/,
+  'Rune effects must be frozen at battle entry, not loaded every round');
+
 const fightSource = source('../src/components/pve/PveFight.tsx');
 assert.match(fightSource, /rememberDistinctHeroAttacks\(recentDistinctHeroAttacks\.current, atk\)/,
   'Battle must update the two distinct directions only after the resolved round');
@@ -345,7 +373,7 @@ assert.match(fightSource, /const guardedZoneLabels = committedEnemyIntent\.block
 assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss strike warning must offer a manual defense action');
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
 
-assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum\.streak === 2\)/, 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
+assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum\.streak === 2, runeEffectsAtStart\.current\)/, 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
 assert.match(fightSource, /staggerEnemyGuard\(enemyIntent, staggerReady && !auto\)/, 'Only manual combat can consume the one-round stagger');
 assert.match(fightSource, /setStaggerReady\(elite && !auto && riposteReady && atk === 'legs'/, 'Only a real manual elite leg riposte can earn stagger');
 assert.match(fightSource, /!committedEnemyIntent\.blocks\.includes\(atk\)/, 'A guarded leg strike must not earn stagger');
@@ -373,7 +401,7 @@ assert(!engine.includes('Math.pow(1.15, num)'), 'no accidental exponential boss 
 const classicFight = source('../src/components/pve/PveFight.tsx');
 assert.match(classicFight, /const roundFlight = useRef\(false\)/,
   'Classic campaign and trials need a synchronous one-round-at-a-time guard');
-assert.match(classicFight, /if \(roundFlight\.current \|\| busy \|\| outcome \|\| confirmSurrender \|\| done\.current \|\| !alive\.current\) return;/,
+assert.match(classicFight, /if \(roundFlight\.current \|\| busy \|\| outcome \|\| confirmSurrender \|\| done\.current \|\| !alive\.current \|\| \(RUNE_PVE_STAGED && !runesReady\)\) return;/,
   'Repeated attack taps and unmounted fights must not run another round');
 assert.match(classicFight, /roundFlight\.current = true;[\s\S]*?try \{/,
   'Lock the round before animation or referral bookkeeping');
