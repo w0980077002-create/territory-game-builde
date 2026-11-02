@@ -43,11 +43,13 @@ export function randomZones(): { attack: Zone; blocks: Zone[] } {
   return { attack: pick(ZONES).id, blocks: ids.slice(0, 2) };
 }
 
-/** Pick a real opening in the enemy's announced guard, cycling through the
- * unguarded zones rather than silently changing damage or enemy AI. */
-export function nextOpenStrike(current: Zone | null, guarded: Zone): Zone {
-  const openings = ZONES.map(zone => zone.id).filter(zone => zone !== guarded);
-  if (!openings.length) return current ?? guarded;
+/** Pick an actually open zone against BOTH committed enemy guard slots.
+ * The earlier single-zone helper could select the second blocked zone while
+ * claiming to have found a breach. This only changes manual target selection:
+ * damage, AI, rewards and existing PvP remain untouched. */
+export function nextOpenStrike(current: Zone | null, guarded: readonly Zone[]): Zone {
+  const openings = ZONES.map(zone => zone.id).filter(zone => !guarded.includes(zone));
+  if (!openings.length) return current ?? ZONES[0].id;
   const index = current === null ? -1 : openings.indexOf(current);
   return openings[(index + 1) % openings.length];
 }
