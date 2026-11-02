@@ -35,12 +35,20 @@ export function findHeroGearOpportunity(
   // items compete for the same slot, prefer one that is at least as strong
   // in EVERY combat stat and strictly stronger in one. Incomparable builds
   // remain genuine tactical choices: never invent a universal stat weight.
-  const pickDominant = (candidates: typeof owned) => candidates.reduce<(typeof owned)[number] | null>((best, item) => {
-    if (!best) return item;
-    if (best.equipment.slot !== item.equipment.slot) return best;
-    const deltas = stats.map(key => value(item.equipment, key) - value(best.equipment, key));
-    return deltas.every(delta => delta >= 0) && deltas.some(delta => delta > 0) ? item : best;
-  }, null);
+  const pickDominant = (candidates: typeof owned) => {
+    // Preserve the first eligible slot rather than inventing a global stat
+    // weight across weapons, armor and rings. But inspect ALL owned items in
+    // that slot: interleaved inventory order must not hide a better weapon.
+    const firstSlot = candidates[0]?.equipment.slot;
+    if (!firstSlot) return null;
+    return candidates
+      .filter(item => item.equipment.slot === firstSlot)
+      .reduce<(typeof owned)[number] | null>((best, item) => {
+        if (!best) return item;
+        const deltas = stats.map(key => value(item.equipment, key) - value(best.equipment, key));
+        return deltas.every(delta => delta >= 0) && deltas.some(delta => delta > 0) ? item : best;
+      }, null);
+  };
   const empty = pickDominant(owned.filter(item => !equipped[item.equipment.slot]));
   if (empty) return { item: empty, kind: 'empty' };
   const upgrade = pickDominant(owned.filter(item => {
