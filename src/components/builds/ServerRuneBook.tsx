@@ -46,6 +46,9 @@ function RuneStone({ slotIndex, variant = 0, faded = false }: {
 
 export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   const en = language === 'en';
+  // Changing the UI language must never refetch and overwrite an unsaved rune draft.
+  const languageRef = useRef(language);
+  languageRef.current = language;
   const alive = useRef(false);
   const saving = useRef(false);
   const pending = useRef<PendingSave | null>(null);
@@ -92,17 +95,21 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
       } catch {
         if (!cancelled && alive.current) {
           setStatus(null);
-          setNotice(en
+          setNotice(languageRef.current === 'en'
             ? 'The server could not verify your runes. Your existing build was not changed.'
             : 'Сервер не подтвердил руны. Сохранённая сборка не изменена.');
         }
       }
     })();
     return () => { cancelled = true; alive.current = false; };
-  }, [refresh, en]);
+  }, [refresh]);
 
+  // The daily grant refreshes server ownership and the saved loadout. Never
+  // discard an unsaved 15-slot draft as a side effect of collecting it.
+  const hasUnsavedDraft = () => !!status && JSON.stringify(draft) !== JSON.stringify(status.slots);
   const claimDaily = async () => {
-    if (claiming || saving.current || pending.current || dailyReceipt?.dayUtc === new Date().toISOString().slice(0, 10)) return;
+    if (!status || claiming || saving.current || pending.current || hasUnsavedDraft()
+      || dailyReceipt?.dayUtc === new Date().toISOString().slice(0, 10)) return;
     setClaiming(true);
     try {
       const { data, error } = await supabase.rpc('territory_runes_claim_daily_v1');
@@ -128,13 +135,13 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   };
 
   const choose = (slotId: string, runeId: string | null) => {
-    if (!status || saving.current || pending.current) return;
+    if (!status || claiming || saving.current || pending.current) return;
     if (runeId !== null && !status.owned[runeId]) return;
     setDraft(current => current.map(slot => slot.slotId === slotId ? { ...slot, runeId } : slot));
   };
 
   const save = async () => {
-    if (!status || saving.current) return;
+    if (!status || claiming || saving.current) return;
     let command = pending.current;
     if (!command) {
       try {
@@ -289,13 +296,15 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
     </div>
     <div className="territory-rune__footer">
       <button type="button" onClick={() => void claimDaily()} data-testid="rune-daily-claim"
-        disabled={claiming || saving.current || !!pending.current || claimedToday} className="territory-rune__daily">
+        disabled={claiming || saving.current || !!pending.current || claimedToday || changed} className="territory-rune__daily">
         <Sparkles size={19}/>
         {claiming ? (en ? 'Checking…' : 'Проверяем…') : claimedToday
-          ? (en ? 'Rune received ✓' : 'Руна дня получена ✓') : (en ? 'Claim daily rune' : 'Получить руну дня')}
+          ? (en ? 'Rune received ✓' : 'Руна дня получена ✓') : changed
+            ? (en ? 'Save build first' : 'Сначала сохрани сборку')
+            : (en ? 'Claim daily rune' : 'Получить руну дня')}
       </button>
       <button type="button" onClick={() => void save()} data-testid="rune-save-build"
-        disabled={saving.current || (!changed && !pending.current)} className="territory-rune__save">
+        disabled={claiming || saving.current || (!changed && !pending.current)} className="territory-rune__save">
         {pending.current ? (en ? 'Retry save' : 'Повторить запись')
           : changed ? (en ? 'Save build' : 'Сохранить сборку')
             : (en ? 'Build saved ✓' : 'Сборка сохранена ✓')}
@@ -329,7 +338,7 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
               const fallback = runeTacticalEquivalent(option.runeId, level || 1);
               const family = fallback && bonusLabels[fallback.key];
               return <button type="button" key={option.runeId} aria-pressed={picked}
-                data-testid={'rune-option-' + variant} disabled={!level || saving.current || !!pending.current}
+                data-testid={'rune-option-' + variant} disabled={!level || claiming || saving.current || !!pending.current}
                 className={'territory-rune__variant' + (picked ? ' territory-rune__variant--picked' : '')}
                 onClick={() => choose(modalSlot.slotId, option.runeId)}>
                 <RuneStone slotIndex={activeSlot} variant={variant} faded={!level}/>
@@ -344,7 +353,7 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
             })}
           </div>
           <button type="button" className="territory-rune__unequip" aria-pressed={draftSelection === null}
-            disabled={saving.current || !!pending.current} onClick={() => choose(modalSlot.slotId, null)}>
+            disabled={claiming || saving.current || !!pending.current} onClick={() => choose(modalSlot.slotId, null)}>
             {en ? 'Remove rune from slot' : 'Снять руну со слота'}
           </button>
           {draftSelection !== currentSave && <p role="status" className="territory-rune__draft">
@@ -354,7 +363,7 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
         <div className="territory-rune__dialog-actions">
           <button type="button" onClick={() => setActiveSlot(null)}
             className="territory-rune__cancel">{en ? 'Back' : 'Назад'}</button>
-          <button type="button" onClick={() => void save()} disabled={saving.current || (!changed && !pending.current)}
+          <button type="button" onClick={() => void save()} disabled={claiming || saving.current || (!changed && !pending.current)}
             className="territory-rune__save">
             {en ? 'Save build' : 'Сохранить сборку'}
           </button>

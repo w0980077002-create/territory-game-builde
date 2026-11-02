@@ -46,6 +46,22 @@ with sync_playwright() as p:
             dialog.get_by_test_id('rune-option-1').click()
             assert dialog.get_by_test_id('rune-option-1').get_attribute('aria-pressed') == 'true'
             assert (('Not saved' in slot.inner_text()) if lang == 'en' else ('Не сохранено' in slot.inner_text())), 'Draft must not be marked server-equipped'
+            # A daily claim reloads the confirmed loadout: unsaved selections
+            # must never disappear silently during that refresh.
+            daily = page.get_by_test_id('rune-daily-claim')
+            assert daily.is_disabled(), 'Daily claim must wait for a saved build'
+            assert (('Save build first' in daily.inner_text()) if lang == 'en' else ('Сначала сохрани сборку' in daily.inner_text()))
+            # Changing RU/EN in the mounted component must not trigger a
+            # status reload that silently discards the unsaved 15-slot draft.
+            other_lang = 'en' if lang == 'ru' else 'ru'
+            for new_lang in (other_lang, lang):
+                page.evaluate('(language) => window.__setRuneLanguage(language)', new_lang)
+                page.wait_for_function("""(language) => {
+                  const label = document.querySelector('[data-testid="rune-slot-9"]')?.getAttribute('aria-label') || '';
+                  return label.startsWith(language === 'en' ? 'Rune slot' : 'Рунный слот');
+                }""", arg=new_lang)
+                assert (('Not saved' in slot.inner_text()) if new_lang == 'en' else ('Не сохранено' in slot.inner_text())), 'Language switch erased unsaved rune selection'
+                assert daily.is_disabled(), 'Language switch must not enable daily claim for unsaved draft'
             dialog.get_by_role('button', name=('Save build' if lang == 'en' else 'Сохранить сборку')).click()
             page.wait_for_function("""() => {
               const selected = document.querySelector('[data-testid="rune-slot-9"]');
