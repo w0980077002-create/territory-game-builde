@@ -3,13 +3,17 @@ import { readFileSync } from 'node:fs';
 import { build } from 'esbuild';
 
 const result = await build({ entryPoints: ['src/game/starterJourney.ts'], bundle: true, write: false, platform: 'node', format: 'esm' });
-const { getStarterMilestones, shouldShowStarterJourney } = await import('data:text/javascript;base64,' + Buffer.from(result.outputFiles[0].text).toString('base64'));
+const { getNextStarterMilestone, getStarterMilestones, shouldShowStarterJourney } = await import('data:text/javascript;base64,' + Buffer.from(result.outputFiles[0].text).toString('base64'));
 const state = { player: { level: 1, equipped: {} }, inventory: [], totalBattlesWon: 0 };
 
 let steps = getStarterMilestones(state);
 assert.deepEqual(steps.map(step => step.done), [false, false, false, false]);
 assert.deepEqual(steps.map(step => step.destination), ['battle', 'battle', 'shop', 'battle']);
 assert.equal(steps[0].titleRu, 'Победи первого врага');
+assert.equal(getNextStarterMilestone(steps)?.id, 'first-fight', 'First fight always comes first');
+state.totalBattlesWon = 1;
+steps = getStarterMilestones(state);
+assert.equal(getNextStarterMilestone(steps)?.id, 'three-fights', 'No owned equipment: continue fighting, never push an unfunded shop purchase');
 
 state.totalBattlesWon = 3;
 steps = getStarterMilestones(state);
@@ -20,10 +24,15 @@ state.inventory = [{ type: 'equipment' }];
 assert.equal(getStarterMilestones(state)[2].destination, 'shop', 'A malformed item must not send a player to an empty equipment tab');
 state.inventory = [{ type: 'equipment', equipment: { slot: 'weapon' } }];
 assert.equal(getStarterMilestones(state)[2].destination, 'inventory', 'Players with gear in the bag should be sent to Inventory');
+state.totalBattlesWon = 1;
+assert.equal(getNextStarterMilestone(getStarterMilestones(state))?.id, 'first-equipment', 'Owned loot after first victory takes priority over two repetitive fights');
+state.totalBattlesWon = 3;
 state.player.equipped.weapon = { name: 'Starter sword' };
 assert.equal(getStarterMilestones(state)[2].done, true, 'Only actually equipped gear completes the step');
+assert.equal(getNextStarterMilestone(getStarterMilestones(state))?.id, 'level-five', 'After equipping and three wins, level-up is next');
 state.player.level = 5;
 assert.ok(getStarterMilestones(state).every(step => step.done));
+assert.equal(getNextStarterMilestone(getStarterMilestones(state)), undefined, 'Completed guide must not invent another objective');
 
 const quests = readFileSync('src/components/QuestsScreen.tsx', 'utf8');
 const app = readFileSync('src/App.tsx', 'utf8');
@@ -52,6 +61,8 @@ assert.match(home, /state\.totalBattlesWon === 0/, 'Preserve existing first-figh
 assert.match(home, /shouldShowStarterJourney\(state\) \? getStarterMilestones\(state\)/, 'Home roadmap must serve all heroes missing first victories');
 assert.match(home, /data-testid="home-hero-path"/, 'The existing quest strip is the roadmap entry point');
 assert.match(home, /onClick=\{\(\) => onOpen\('quests'\)\}/, 'Roadmap button opens the real quest screen');
+assert.match(home, /getNextStarterMilestone\(starterSteps\)/, 'City must prioritize actual owned loot after the first win');
+assert.match(quests, /getNextStarterMilestone\(starterSteps\)/, 'Quest screen must show the same next objective as City');
 assert.match(home, /questAlerts\.readyCount === 0/, 'Ready rewards must take visual priority');
 assert.match(home, /starterNext\.titleRu/, 'Home must reveal the next real objective from saved progress');
 assert.match(home, /\{starterDone\}\/4/, 'The hero path progress must update with completed milestones');
@@ -67,4 +78,4 @@ assert.equal(shouldShowStarterJourney({ ...noWinsHighLevel, totalBattlesWon: 3 }
   'Experienced players stop receiving early journey guidance');
 assert.match(fight, /kind === 'stage' && state\.totalBattlesWon === 0/,
   'First manual battle must teach zones even if hero level was administratively raised');
-console.log('Starter journey PASS: first fights regardless of hero level, gear/shop routing, level 5, existing progress only, quiet for veterans, real navigation.');
+console.log('Starter journey PASS: owned loot prioritized after first victory, first fights regardless of hero level, gear/shop routing, level 5, existing progress only, quiet for veterans, real navigation.');
