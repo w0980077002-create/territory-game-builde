@@ -126,5 +126,9 @@ assert(runeUi.includes("parseRuneServerStatus(data, definitions)"));
 assert(!runeUi.includes("territory_combat_loadout_status_v1"),'No five-skill RPC in the 15-slot book');
 assert(!runeUi.includes("RuneSkillBookSelection"),'No skill-bound rune mapping');
 assert(runeUi.includes("const FIFTEEN_SLOT_CONTRACT_READY = import.meta.env.VITE_TERRITORY_RUNES === 'enabled';"),'Rune book must default OFF unless explicit release flag enabled');
+assert(runeUi.includes("territory_runes_claim_daily_v1"),'Daily rune must be issued by server RPC');
+assert(runeUi.includes('data.dayUtc') && runeUi.includes('dailyReceipt?.dayUtc'),'Daily award must use server UTC date');
+assert(runeUi.includes('data-testid="rune-daily-receipt"'),'Daily awarded rune and level must remain visible after refreshing ownership');
+assert(runeUi.includes('disabled={claiming || saving.current || !!pending.current || claimedToday}'),'Already claimed rune must not be presented as a new daily reward');
 
 console.log('Independent rune slots: 15 stable IDs, 45 options, trusted ownership, explicit legacy mapping, rank and revision checks PASS');
