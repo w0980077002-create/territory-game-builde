@@ -708,6 +708,34 @@ async function handle(action: string, body: Row) {
       }
       return data;
     }
+    case "runes_player": {
+      const player=playerId(body.playerId);
+      const {data,error}=await db.rpc('territory_runes_admin_status_v1',{p_player:player});
+      if(error||!data)throw new HttpError(503,'runes_unavailable');
+      return data;
+    }
+    case "runes_set_level": {
+      const player=playerId(body.playerId);
+      const rune=String(body.runeId??'');
+      const level=body.level;
+      const reason=typeof body.reason==='string'?body.reason.trim():'';
+      const request=String(body.requestId??'');
+      if(!/^[a-z][a-z0-9_]{0,63}$/.test(rune) || !Number.isInteger(level)
+        || Number(level)<0 || Number(level)>3 || reason.length<4 || reason.length>140
+        || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(request))
+        throw new HttpError(400,'invalid_request');
+      const {data,error}=await db.rpc('territory_runes_admin_set_level_v1',{
+        p_player:player,p_rune:rune,p_level:level,p_operation:request,p_source:reason,
+      });
+      if(error) {
+        const code=['rune_still_equipped','rune_operation_reused','rune_unknown_id','rune_account_unavailable']
+          .find(value=>error.message.includes(value));
+        throw new HttpError(code?409:503,code??'runes_unavailable');
+      }
+      if(!data || data.playerId!==player || data.runeId!==rune || data.level!==level || data.operationId!==request)
+        throw new HttpError(503,'runes_unavailable');
+      return data;
+    }
     case "hall_stats": {
       const {data,error}=await db.rpc('territory_hall_admin_overview_v2');
       if(error||!data)throw new HttpError(500,'db_error');

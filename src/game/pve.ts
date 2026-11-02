@@ -1,6 +1,7 @@
 import { ZONES, type Zone } from './arenaApi';
 import type { Enemy, GameState, InventoryItem } from './types';
 import { getComputedStats } from './engine';
+import type { PveRuneTotals } from './builds/runePveEffectsV1';
 import { eliteRoundDamageCap, followerGuardDamage } from './pveBalance';
 import { followerCombat, selectedFollower } from './followers';
 import { forgeSetBonus } from './forge';
@@ -21,7 +22,7 @@ export interface PveSide {
 
 export interface PveHit {
   attacker: string;
-  source?: 'companion';
+  source?: 'companion' | 'rune';
   target: string;
   targetSide: 'hero' | 'enemy';
   zone: Zone;
@@ -154,10 +155,19 @@ export function enemySide(e: Enemy): PveSide {
   return { name: e.name, hp: e.maxHp, maxHp: e.maxHp, attack: e.attack, defense: e.defense, critChance: e.isBoss ? 8 : 4, critDamage: 50, enemyId: e.id, isBoss: e.isBoss };
 }
 
-function strike(from: PveSide, to: PveSide, targetSide: PveHit['targetSide'], zone: Zone, blocked: Zone[]): PveHit {
+/** A rune snapshot contains basis points, never client-issued ownership. */
+function runeBp(runes: PveRuneTotals | null, key: string): number {
+  const value = runes?.[key] ?? 0;
+  return Number.isFinite(value) ? Math.min(2500, Math.max(0, Math.floor(value))) : 0;
+}
+
+function strike(from: PveSide, to: PveSide, targetSide: PveHit['targetSide'], zone: Zone, blocked: Zone[],
+  adjustments: { dodgeBp?: number; accuracyBp?: number; critBp?: number } = {}): PveHit {
   const base = { attacker: from.name, target: to.name, targetSide, zone };
-  if (Math.random() * 100 < DODGE_CHANCE) return { ...base, tone: 'dodge', amount: 0 };
-  const crit = Math.random() * 100 < from.critChance;
+  const dodgeChance = Math.max(0, Math.min(50,
+    DODGE_CHANCE + (adjustments.dodgeBp ?? 0) / 100 - (adjustments.accuracyBp ?? 0) / 100));
+  if (Math.random() * 100 < dodgeChance) return { ...base, tone: 'dodge', amount: 0 };
+  const crit = Math.random() * 100 < Math.min(100, from.critChance + (adjustments.critBp ?? 0) / 100);
   const isBlocked = blocked.includes(zone);
   if (isBlocked && !crit) return { ...base, tone: 'block', amount: 0 };
   const spread = 0.9 + Math.random() * 0.2;
@@ -191,21 +201,47 @@ export function summarizePveRound(hits: readonly PveHit[]): PveTacticalSummary {
   };
 }
 
+/** Persistent fight-local debuffs; never stored in the hero's inventory. */
+export interface PveRuneAilments {
+  bleed: number;
+  burn: number;
+  slow: number;
+  root: number;
+}
+export const EMPTY_PVE_RUNE_AILMENTS: Readonly<PveRuneAilments> = Object.freeze({
+  bleed: 0, burn: 0, slow: 0, root: 0,
+});
+
 export interface RoundResult {
   hits: PveHit[];
   hero: PveSide;
   enemy: PveSide;
   healAmount: number;
+  /** Portion of healing supplied by a real rune, not the companion. */
+  runeHealAmount?: number;
+  /** Debuffs produced by resolved attacks; the next round consumes them. */
+  runeAilments?: PveRuneAilments;
 }
 
-export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null, enemyIntent: ReturnType<typeof randomZones> | null = null, riposteReady = false, momentumReady = false): RoundResult {
+export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null, enemyIntent: ReturnType<typeof randomZones> | null = null, riposteReady = false, momentumReady = false, runes: PveRuneTotals | null = null,
+  priorAilments: Readonly<PveRuneAilments> = EMPTY_PVE_RUNE_AILMENTS): RoundResult {
   // The visible enemy guard is the actual defense used by this round, not a decorative hint.
   // Other callers retain their original random AI by omitting enemyIntent.
   const ai = enemyIntent ?? randomZones();
   const hits: PveHit[] = [];
+  // Ailments only exist with a verified rune build. A rune-free round retains
+  // the original combat resolution, RNG calls and reward contract.
+  const previous = runes ? priorAilments : EMPTY_PVE_RUNE_AILMENTS;
   const cap = eliteRoundDamageCap(enemy.enemyId ?? '', !!enemy.isBoss, enemy.maxHp);
   let damageBudget = cap ?? Number.POSITIVE_INFINITY;
-  const piercedEnemy = bonus?.pierce ? { ...enemy, defense: Math.max(0, Math.floor(enemy.defense * (1 - bonus.pierce))) } : enemy;
+  // Armor penetration stacks after the existing companion piercing effect.
+  // This only changes hit damage, not the opponent's persisted equipment.
+  const followerPiercedDefense = bonus?.pierce
+    ? Math.max(0, Math.floor(enemy.defense * (1 - bonus.pierce)))
+    : enemy.defense;
+  const piercedEnemy = {
+    ...enemy, defense: Math.max(0, Math.floor(followerPiercedDefense * (1 - runeBp(runes, 'armor_pen_bp') / 10000))),
+  };
   // A successful manual elite guard grants ONE stronger next strike. Apply
   // the bonus to actual damage only after dodge/block/crit resolution, then
   // pass through the existing elite cap and remaining HP clamp.
@@ -213,7 +249,10 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   // previous slice(0, 1) silently ignored the second guard, so a player
   // could hit a supposedly protected zone. Critical guard-piercing remains
   // governed by strike(), exactly as before.
-  const rawHit = strike(hero, piercedEnemy, 'enemy', attack, ai.blocks);
+  const rawHit = strike(hero, piercedEnemy, 'enemy', attack, ai.blocks, {
+    critBp: Math.min(2500, runeBp(runes, 'crit_chance_bp') + runeBp(runes, 'rune_combat_crit_bp')),
+    accuracyBp: Math.min(2500, runeBp(runes, 'accuracy_bp') + runeBp(runes, 'rune_combat_accuracy_bp')),
+  });
   const enhancedHit = riposteReady && rawHit.amount > 0
     ? { ...rawHit, amount: Math.round(rawHit.amount * 1.2) }
     : rawHit;
@@ -222,8 +261,21 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   const comboHit = momentumReady && enhancedHit.amount > 0
     ? { ...enhancedHit, amount: Math.round(enhancedHit.amount * 1.15) }
     : enhancedHit;
-  const firstDamage = Math.min(comboHit.amount, damageBudget, enemy.hp);
-  const h1 = { ...comboHit, amount: firstDamage };
+  // A selected rune modifies actual HP loss, not merely a combat label.
+  // Keep the established guard/riposte/combo order and elite boss cap.
+  const attackBonusBp = Math.min(2500,
+    runeBp(runes, 'damage_bonus_bp') + runeBp(runes, 'rune_combat_damage_bp')
+    + runeBp(runes, 'single_target_damage_bp')
+    + (enemy.hp > 0 && enemy.hp <= enemy.maxHp * 0.3 ? runeBp(runes, 'finisher_damage_bp') : 0)
+    + (previous.slow > 0 ? runeBp(runes, 'damage_vs_slow_bp') : 0)
+    + (ai.blocks.includes(attack) ? runeBp(runes, 'damage_vs_guard_bp') : 0)
+    + (riposteReady ? runeBp(runes, 'counter_damage_bp') : 0)
+    + (momentumReady ? runeBp(runes, 'attack_chain_damage_bp') : 0));
+  const runeHit = attackBonusBp > 0 && comboHit.amount > 0
+    ? { ...comboHit, amount: Math.round(comboHit.amount * (1 + attackBonusBp / 10000)) }
+    : comboHit;
+  const firstDamage = Math.min(runeHit.amount, damageBudget, enemy.hp);
+  const h1 = { ...runeHit, amount: firstDamage };
   hits.push(h1);
   damageBudget -= firstDamage;
   let enemyHp = Math.max(0, enemy.hp - firstDamage);
@@ -235,17 +287,76 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
       enemyHp = Math.max(0, enemyHp - companionDamage);
     }
   }
+  // Existing bleed and burn resolve after attacks, using the very same
+  // enemy HP and boss damage budget. No phantom damage, extra loot or KO
+  // beyond the original engine cap.
+  if (runes && enemyHp > 0 && damageBudget > 0 && (previous.bleed > 0 || previous.burn > 0)) {
+    const normalDot = Math.floor(enemy.maxHp * (Math.min(1, previous.bleed) * 0.008
+      + Math.min(1, previous.burn) * 0.012));
+    const dotAmount = Math.min(enemyHp, damageBudget, Math.max(1,
+      Math.round(normalDot * (1 + runeBp(runes, 'dot_damage_bp') / 10000))));
+    if (dotAmount > 0) {
+      hits.push({ source: 'rune', attacker: hero.name, target: enemy.name, targetSide: 'enemy',
+        zone: attack, tone: 'hit', amount: dotAmount });
+      enemyHp -= dotAmount;
+      damageBudget -= dotAmount;
+    }
+  }
   let heroHp = hero.hp;
-  if (enemyHp > 0) {
-    const rawEnemyHit = strike(enemy, hero, 'hero', ai.attack, blocks);
-    const mitigated = rawEnemyHit.amount > 0 ? followerGuardDamage(rawEnemyHit.amount, followerDefense) : 0;
+  if (enemyHp > 0 && previous.root <= 0) {
+    // A slowed enemy still attacks, but at reduced force. The root effect
+    // above is stronger and can skip a strike for its remaining duration.
+    const actingEnemy = previous.slow > 0
+      ? { ...enemy, attack: Math.max(1, Math.round(enemy.attack * 0.9)) }
+      : enemy;
+    const rawEnemyHit = strike(actingEnemy, hero, 'hero', ai.attack, blocks, {
+      dodgeBp: Math.min(2500,
+        runeBp(runes, 'dodge_chance_bp') + runeBp(runes, 'enemy_accuracy_reduction_bp') + runeBp(runes, 'rune_combat_dodge_bp')),
+    });
+    const followerMitigated = rawEnemyHit.amount > 0 ? followerGuardDamage(rawEnemyHit.amount, followerDefense) : 0;
+    const defenseBonusBp = Math.min(2500,
+      runeBp(runes, 'guard_absorb_bp') + runeBp(runes, 'rune_combat_guard_bp')
+      + (momentumReady ? runeBp(runes, 'rage_damage_reduction_bp') : 0));
+    const mitigated = Math.round(followerMitigated * (1 - defenseBonusBp / 10000));
     // Only actual HP loss belongs in the hit log and tactical damage counters.
     const h2 = { ...rawEnemyHit, amount: Math.min(mitigated, heroHp) };
     hits.push(h2);
     heroHp = Math.max(0, heroHp - h2.amount);
   }
-  const healAmount = heroHp > 0 && enemyHp > 0 && bonus?.heal ? Math.min(Math.max(0, hero.maxHp - heroHp), bonus.heal) : 0;
-  return { hits, hero: { ...hero, hp: heroHp + healAmount }, enemy: { ...enemy, hp: enemyHp }, healAmount };
+  const companionHeal = heroHp > 0 && enemyHp > 0 && bonus?.heal
+    ? Math.min(Math.max(0, hero.maxHp - heroHp), bonus.heal) : 0;
+  // Regeneration only heals a living hero during an ongoing fight; never
+  // revives a defeated hero, inflates max HP, or grants extra rewards.
+  const regenBp = runeBp(runes, 'regen_bp');
+  const runeHealAmount = heroHp > 0 && enemyHp > 0 && regenBp > 0
+    ? Math.min(Math.max(0, hero.maxHp - heroHp - companionHeal),
+      Math.max(1, Math.floor(hero.maxHp * regenBp / 10000)))
+    : 0;
+  const healAmount = companionHeal + runeHealAmount;
+  const ailments: PveRuneAilments = {
+    bleed: Math.max(0, previous.bleed - 1),
+    burn: Math.max(0, previous.burn - 1),
+    slow: Math.max(0, previous.slow - 1),
+    root: Math.max(0, previous.root - 1),
+  };
+  // All proc rolls are conditional on an actual landed hit. This is
+  // intentionally checked AFTER resolving this round: new ailments only
+  // affect later rounds, never retroactively change the current strike.
+  if (runes && h1.amount > 0 && enemyHp > 0) {
+    const proc = (key: string) => {
+      const chance = runeBp(runes, key);
+      return chance > 0 && Math.random() * 10000 < chance;
+    };
+    // An absent rune must not consume random numbers and change future AI rolls.
+    if (proc('bleed_chance_bp')) ailments.bleed = Math.max(ailments.bleed, 2);
+    if (proc('burn_chance_bp')) ailments.burn = Math.max(ailments.burn, 2);
+    if (proc('slow_chance_bp')) ailments.slow =
+      Math.max(ailments.slow, 2 + Math.floor(runeBp(runes, 'slow_duration_bp') / 1000));
+    if (proc('root_chance_bp')) ailments.root =
+      Math.max(ailments.root, 1 + Math.floor(runeBp(runes, 'root_duration_bp') / 1000));
+  }
+  return { hits, hero: { ...hero, hp: heroHp + healAmount }, enemy: { ...enemy, hp: enemyHp },
+    healAmount, runeHealAmount, runeAilments: ailments };
 }
 
 export type PotionUse =

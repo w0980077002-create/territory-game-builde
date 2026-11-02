@@ -11,12 +11,13 @@ const rpc=async(name,args)=>(await q(`SELECT public.${name}(${args.map((_,i)=>'$
 const repo={context:(p,c)=>rpc('territory_combat_context_v1',[p,c]),commit:(p,c,x,r)=>rpc('territory_combat_commit_v1',[p,c,x,r])};
 const exec=c=>executeCombatCommand(repo,player,c,()=>12);
 const fighter={stats:{hp:1000,maxHp:1000,attack:100,defense:4,critChance:0,dodgeChance:0,blockChance:0},ownership:{heroLevel:1,skills:{},runes:{},passives:{}},loadout:{skills:[],passives:[]}};
-const enemy={...fighter,stats:{...fighter.stats,hp:10,maxHp:10,attack:1}};
+const runeCave = process.env.RUNE_CAVE_TEST === '1';
+const enemy={...fighter,stats:{...fighter.stats,hp:runeCave?101:10,maxHp:runeCave?101:10,attack:1}};
 const rules={stepMs:10,maxDurationMs:10000,approachMs:20,attackIntervalMs:200,basicWindupMs:20,basicMultiplier:1,defenseFactor:0.5,magicDefenseFactor:0.2,minimumDamage:1,critMultiplier:2,blockMultiplier:0,maxEnergy:100,initialEnergy:100,energyPerSecond:0,modeDamageMultiplier:{pve:1,boss:1,pvp:1}};
 const save={player:{gold:50,xp:90,level:1,xpToNext:100,maxEnergy:20,stats:{hp:100,maxHp:100,attack:20,defense:5},equipped:{weapon:{id:'old'}}},inventory:[{id:'old'}],belt:[{id:'belt_0',qty:1},null,null,null,null,null,null],battleStones:10,vip:7,redGems:45,achievements:[{id:'old'}]};
 try {
  await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
- CREATE SCHEMA auth; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT NULL::uuid $$;
+ CREATE SCHEMA auth; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('test.uid',true),'')::uuid $$;
  CREATE TABLE public.players(id uuid primary key,banned bool default false,game_state jsonb,gold int,gems int,xp int,level int,max_energy int,updated_at timestamptz default clock_timestamp());
  GRANT SELECT,UPDATE ON public.players TO service_role;`);
  await q('INSERT INTO players(id,game_state,gold,gems,xp,level,max_energy) VALUES($1,$2,50,9,90,1,20)',[player,save]);
@@ -26,6 +27,16 @@ try {
  await db.exec(readFileSync('supabase/staged/territory_v1_adventure_settlement.sql','utf8'));
  await db.exec(readFileSync('supabase/staged/territory_v1_combat_profiles_reconciliation.sql','utf8'));
  await db.exec(readFileSync('supabase/staged/territory_dark_stones_20261030.sql','utf8'));
+ if (runeCave) {
+   for (const path of ['supabase/staged/territory_rune_slots_v1.sql','supabase/staged/territory_rune_battle_snapshot_v1.sql','supabase/staged/territory_rune_effects_v1.sql','supabase/staged/territory_rune_cave_integration_v1.sql']) await db.exec(readFileSync(path,'utf8'));
+   assert.equal((await q('SELECT enabled FROM territory_private.rune_cave_config_v1'))[0].enabled,false,'runes default to off');
+   await db.exec('SET ROLE service_role');
+   await rpc('territory_runes_admin_set_level_v1',[player,'axe_storm_r1',3,op(100),'synthetic cave test']);
+   await db.exec(`RESET ROLE; SET ROLE authenticated; SET test.uid='${player}'`);
+   const slots=Array.from({length:15},(_,i)=>({slotId:`rune_slot_${String(i+1).padStart(2,'0')}`,runeId:i===1?'axe_storm_r1':null}));
+   await rpc('territory_runes_save_v1',[op(101),0,slots]);
+   await db.exec('RESET ROLE');
+ }
  if (process.env.C1_LIVE_CLONE === '1') {
    await db.exec('DROP TABLE territory_private.cave_canary_v1; ALTER TABLE territory_private.combat_config_v1 DROP COLUMN starts_enabled, DROP COLUMN canary_only;');
    await db.exec(readFileSync('scripts/fixtures/c1-live-function-baseline.sql','utf8'));
@@ -43,11 +54,49 @@ try {
  assert.equal(prepared.status,'ready');
  assert.equal((await q('SELECT territory_private.prepare_combat_profile_v1($1) result',[noLevel]))[0].result.status,'ready');
  await q(`INSERT INTO territory_private.combat_encounters_v1(encounter_id,mode,stage,enemy,enabled,approval_reference) VALUES('s1','pve',1,$1,true,'test only'),('s2','pve',2,$1,true,'test only')`,[enemy]);
+ if (runeCave) {
+   await db.exec('BEGIN');
+   const disabled=(await q(`INSERT INTO territory_private.combat_sessions_v1(player_id,encounter_id,state,cursor_ms)
+     VALUES($1,'s1','{"input":{"mode":"pve"},"status":"fighting"}',0) RETURNING state`,[player]))[0].state;
+   assert.equal(disabled.input.serverRuneEffects,undefined,'disabled feature does not affect new sessions');
+   await db.exec('ROLLBACK; BEGIN');
+   await assert.rejects(q(`INSERT INTO territory_private.combat_sessions_v1(player_id,encounter_id,state,cursor_ms)
+     VALUES($1,'s1','{"input":{"mode":"pve","serverRuneEffects":{}},"status":"fighting"}',0)`,[player]),/rune_cave_invalid_start_state/);
+   await db.exec('ROLLBACK');
+   assert.equal((await q('SELECT count(*)::int n FROM territory_private.rune_battle_snapshots_v1'))[0].n,0);
+   await db.exec('UPDATE territory_private.rune_cave_config_v1 SET enabled=true');
+ }
  await db.exec(`INSERT INTO territory_private.adventure_rewards_v1(stage,encounter_id,enabled,gold,xp,approval_reference) VALUES(1,'s1',true,15,20,'test only'),(2,'s2',true,15,20,'test only')`);
  await q(`UPDATE territory_private.combat_config_v1 SET catalog=$1,rules=$2,enabled=true,settlement_ready=true,approval_reference='test only'`,[{skills:[],runes:[],passives:[]},rules]);
+ if (runeCave) {
+   // A stale/corrupt owned selection must roll back the whole start, including
+   // the dark-stone debit, session and snapshot. Only the fixture owner can
+   // create this otherwise-unreachable state.
+   await q(`DELETE FROM territory_private.rune_ownership_v1 WHERE player_id=$1 AND rune_id='axe_storm_r1'`,[player]);
+   await db.exec('SET ROLE service_role');
+   await assert.rejects(exec({action:'start',operationId:op(105),encounterId:'s1',control:'auto'}),/rune_battle_unverified_ownership/);
+   await db.exec('RESET ROLE');
+   assert.equal((await q('SELECT count(*)::int n FROM territory_private.combat_sessions_v1 WHERE player_id=$1',[player]))[0].n,0);
+   assert.equal((await q('SELECT count(*)::int n FROM territory_private.dark_stones_v1 WHERE player_id=$1',[player]))[0].n,0);
+   assert.equal((await q('SELECT count(*)::int n FROM territory_private.rune_battle_snapshots_v1 WHERE player_id=$1',[player]))[0].n,0);
+   await db.exec('SET ROLE service_role');
+   await rpc('territory_runes_admin_set_level_v1',[player,'axe_storm_r1',3,op(106),'synthetic cave test']);
+   await db.exec('RESET ROLE');
+ }
  await db.exec('SET ROLE service_role');
  await assert.rejects(exec({action:'start',operationId:op(1),encounterId:'s2',control:'auto'}),/adventure_stage_locked/);
  const start=await exec({action:'start',operationId:op(2),encounterId:'s1',control:'auto'});
+ if (runeCave) {
+   assert.equal(start.state.input.serverRuneEffects.battleId,start.session_id);
+   assert.equal(start.state.input.serverRuneEffects.damage_bonus_bp,300);
+   await assert.rejects(exec({action:'start',operationId:op(102),encounterId:'s1',control:'auto',serverRuneEffects:{damage_bonus_bp:2500}}),/combat_invalid_command/);
+   await db.exec(`RESET ROLE; SET ROLE authenticated; SET test.uid='${player}'`);
+   const empty=Array.from({length:15},(_,i)=>({slotId:`rune_slot_${String(i+1).padStart(2,'0')}`,runeId:null}));
+   await rpc('territory_runes_save_v1',[op(103),1,empty]);
+   await db.exec('RESET ROLE; SET ROLE service_role');
+   await rpc('territory_runes_admin_set_level_v1',[player,'axe_storm_r1',0,op(104),'synthetic cave test']);
+   assert.deepEqual((await exec({action:'resume',sessionId:start.session_id})).state.input.serverRuneEffects,start.state.input.serverRuneEffects,'changing ownership does not alter an active fight');
+ }
  assert.equal(start.state.input.hero.stats.attack,100,'use the attested fighter strength, not base stats or empty UUID equipment');
  assert.deepEqual((await q('SELECT legacy_equipped_ids,equipped_item_ids FROM territory_private.combat_profiles_v1 WHERE player_id=$1',[player]))[0],{legacy_equipped_ids:['old'],equipped_item_ids:[]});
  assert.deepEqual(start.start_save.game_state.belt,save.belt,'a populated legacy belt is retained, not consumed');
@@ -64,6 +113,7 @@ try {
  const winners=attempts.filter(x=>x.status==='fulfilled'); const failures=attempts.filter(x=>x.status==='rejected');
  assert.equal(winners.length,1); assert.equal(failures.length,1); assert.match(String(failures[0].reason),/combat_revision_conflict|combat_already_finished/);
  const won=winners[0].value; assert.equal(won.state.status,'hero_won'); assert.equal(won.settlement.reward.gold,15); assert.equal(won.settlement.reward.xp,20);
+ if (runeCave) assert.ok(won.events.some(event=>event.actor==='hero' && event.type==='impact' && event.value===101),'pinned 3% rune changes actual server combat damage');
  assert.equal(won.settlement.unlocked_stage,2); assert.equal(won.settlement.game_state.player.gold,65); assert.equal(won.settlement.game_state.player.level,2); assert.equal(won.settlement.game_state.player.xp,10);
  const winningCommand=attempts[0].status==='fulfilled'?command:{...command,operationId:op(4)};
  assert.deepEqual(await exec(winningCommand),won);

@@ -4,11 +4,15 @@ import { useStore } from '@/game/store';
 import { getVictoryJourney, type VictoryJourney } from '@/game/victoryJourney';
 import { findHeroGearOpportunity, type HeroGearOpportunity } from '@/game/heroGearOpportunity';
 import { useGame, useArena, recordBattleResult } from '@/game/actions';
+import { supabase } from '@/game/supabase';
+import runeCatalog from '@/game/config/territory-independent-rune-slots-v1.json';
+import { parseRuneServerStatus, runeSlotCatalog } from '@/game/builds/runeSlotsV1';
+import { localPveRuneTotals, type PveRuneTotals } from '@/game/builds/runePveEffectsV1';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
-import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
+import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
@@ -26,6 +30,10 @@ import { beginReferralFight, finishReferralFight, type ReferralRound } from '@/g
 import { captureGameEvent } from '@/game/analytics';
 import { runDeferredNextBattle } from '@/game/pveNextAction';
 
+// Do not enable until the staged rune ledger, authenticated combat tests and
+// PvP/Cave adapters are released together. Existing PvE is unchanged by default.
+const RUNE_PVE_STAGED = import.meta.env.VITE_TERRITORY_RUNES === 'enabled';
+const runeDefinitions = runeSlotCatalog(runeCatalog);
 export type FightKind = 'stage' | 'trial';
 
 interface Props {
@@ -98,6 +106,41 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   const follower = selectedFollower(state);
   const followerBonus = followerCombat(follower);
   const levelAtFightStart = useRef(useGame.get().player.level);
+  // A server-verified rune set is frozen ONCE per local PvE fight. Never read
+  // editable local game_state as rune ownership, or change runes mid-fight.
+  const runeEffectsAtStart = useRef<PveRuneTotals | null>(null);
+  const runeAilments = useRef<PveRuneAilments>({ ...EMPTY_PVE_RUNE_AILMENTS });
+  const [runesReady, setRunesReady] = useState(!RUNE_PVE_STAGED);
+  const [runesUnavailable, setRunesUnavailable] = useState(false);
+  useEffect(() => {
+    if (!RUNE_PVE_STAGED) return;
+    let cancelled = false;
+    runeEffectsAtStart.current = null;
+    runeAilments.current = { ...EMPTY_PVE_RUNE_AILMENTS };
+    setRunesReady(false);
+    setRunesUnavailable(false);
+    void (async () => {
+      try {
+        const { data, error } = await supabase.rpc('territory_runes_status_v1');
+        if (error) throw error;
+        const verified = parseRuneServerStatus(data, runeDefinitions);
+        const pinned = localPveRuneTotals(verified);
+        if (!cancelled) {
+          runeEffectsAtStart.current = pinned;
+          setRunesReady(true);
+        }
+      } catch {
+        // No unverified rune bonus is allowed; preserve existing PvE access if
+        // the rune service is temporarily unavailable during a live game.
+        if (!cancelled) {
+          runeEffectsAtStart.current = null;
+          setRunesUnavailable(true);
+          setRunesReady(true);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [kind, enemy.id]);
   const [hero, setHero] = useState<PveSide>(() => heroSide(useGame.get()));
   const [foe, setFoe] = useState<PveSide>(() => enemySide(enemy));
   const [attack, setAttack] = useState<Zone | null>(null);
@@ -218,7 +261,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   }, [enemy, kind]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
-    if (roundFlight.current || busy || outcome || confirmSurrender || done.current || !alive.current) return;
+    if (roundFlight.current || busy || outcome || confirmSurrender || done.current || !alive.current || (RUNE_PVE_STAGED && !runesReady)) return;
     roundFlight.current = true;
     setTacticalReport(null);
     setBusy(true);
@@ -228,7 +271,8 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     // an already paid battle before its first resolved round.
     try { hapticImpact('light'); } catch { /* Continue the paid fight. */ }
     const elite = kind === 'trial' || !!enemy.isBoss;
-    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum.streak === 2);
+    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum.streak === 2, runeEffectsAtStart.current, runeAilments.current);
+    if (runeEffectsAtStart.current) runeAilments.current = res.runeAilments ?? runeAilments.current;
     const currentSpeed = useGame.get().settings.speed;
     setRoundSpeed(currentSpeed);
     const pace = 1 / currentSpeed;
@@ -241,14 +285,27 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
       if (!alive.current) return;
       if (hit.targetSide === 'enemy') setFoe((f) => ({ ...f, hp: Math.max(0, f.hp - hit.amount) }));
       else setHero((h) => ({ ...h, hp: Math.max(0, h.hp - hit.amount) }));
-      pushLog(describeHit(hit));
+      pushLog(hit.source === 'rune'
+        ? language === 'en' ? `Rune damage: -${hit.amount} HP` : `Урон от руны: −${hit.amount} HP`
+        : describeHit(hit));
       await wait(520 * pace);
     }
     if (!alive.current) return;
     if (res.healAmount > 0) {
-      if (follower?.id === 'follower_pumpkin_witch_2026') { const sequence = ++keyRef.current; setWitchHeal(sequence); setWitchPose({kind: 'heal', sequence}); }
+      const runeHealing = res.runeHealAmount ?? 0;
+      const companionHealing = res.healAmount - runeHealing;
+      if (companionHealing > 0 && follower?.id === 'follower_pumpkin_witch_2026') {
+        const sequence = ++keyRef.current;
+        setWitchHeal(sequence);
+        setWitchPose({ kind: 'heal', sequence });
+      }
       setHero((h) => ({ ...h, hp: Math.min(h.maxHp, h.hp + res.healAmount) }));
-      pushLog(language === 'en' ? `Companion healed ${res.healAmount} HP` : `Спутник восстановил ${res.healAmount} HP`);
+      if (companionHealing > 0) pushLog(language === 'en'
+        ? `Companion healed ${companionHealing} HP`
+        : `Спутник восстановил ${companionHealing} HP`);
+      if (runeHealing > 0) pushLog(language === 'en'
+        ? `Rune regeneration restored ${runeHealing} HP`
+        : `Руна восстановления вернула ${runeHealing} HP`);
     }
     setStrike(null);
     const report = summarizePveRound(res.hits);
@@ -287,16 +344,16 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
       roundFlight.current = false;
       if (alive.current) setBusy(false);
     }
-  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, committedEnemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto, momentum.streak]);
+  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, committedEnemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto, momentum.streak, runesReady]);
 
   useEffect(() => {
-    if (!auto || busy || outcome || confirmSurrender) return;
+    if (!auto || busy || outcome || confirmSurrender || (RUNE_PVE_STAGED && !runesReady)) return;
     const t = setTimeout(() => {
       const z = randomZones();
       runRound(z.attack, z.blocks);
     }, 350 / speed);
     return () => clearTimeout(t);
-  }, [auto, busy, outcome, confirmSurrender, speed, runRound]);
+  }, [auto, busy, outcome, confirmSurrender, speed, runRound, runesReady]);
 
   useEffect(() => {
     if (!toast) return;
@@ -399,6 +456,18 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
 
   return (
     <div className="space-y-2 animate-fade-in">
+      {RUNE_PVE_STAGED && runesUnavailable && <p role="status"
+        className="rounded-lg border border-amber-400/50 bg-[#302017] p-2 text-xs text-amber-100">
+        {language === 'en'
+          ? 'Rune verification is unavailable. You can still fight normally without rune bonuses.'
+          : 'Проверка рун недоступна. Можно продолжать обычный бой без бонусов рун.'}
+      </p>}
+      {RUNE_PVE_STAGED && !runesReady && <p role="status" data-testid="pve-runes-pending"
+        className="rounded-lg border border-amber-400/50 bg-[#302017] p-2 text-xs text-amber-100">
+        {language === 'en'
+          ? 'Checking your rune build with the server. Battle is paused until verification.'
+          : 'Проверяем сборку рун на сервере. До подтверждения бой приостановлен.'}
+      </p>}
       <div className="flex items-center gap-2 h-10">
         <button
           type="button"

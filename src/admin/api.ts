@@ -2,6 +2,12 @@ const URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-api`;
 const TOKEN_KEY = 'territory_admin_token';
 
 const ERRORS: Record<string, string> = {
+  network: 'Нет связи с сервером. Повторите тот же запрос после восстановления сети.',
+  runes_unavailable: 'Сервер рун недоступен. Повторите тот же запрос после восстановления связи.',
+  rune_still_equipped: 'Сначала игрок должен снять эту руну.',
+  rune_operation_reused: 'Идентификатор операции уже использован для другого запроса.',
+  rune_unknown_id: 'Неизвестная руна.',
+  rune_account_unavailable: 'Игрок недоступен для изменения рун.',
   season_unavailable: 'Управление сезоном пока не подключено на сервере',
   season_invalid_prize: 'Награды должны содержать положительное целое золото или синие алмазы',
   season_config_changed: 'Награды изменены в другой вкладке. Обнови данные и повтори',

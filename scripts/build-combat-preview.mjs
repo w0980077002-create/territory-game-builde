@@ -48,7 +48,7 @@ function App(){
 }
 createRoot(document.getElementById('root')).render(<LanguageProvider><App/></LanguageProvider>);
 `;
-const out = await build({stdin:{contents:entry,resolveDir:resolve('.'),loader:'tsx'},bundle:true,write:false,outdir:'/tmp/combat-browser',format:'iife',jsx:'automatic',minify:true,alias:{'@':resolve('src')},define:{'import.meta.env.BASE_URL':JSON.stringify('/'),'import.meta.env.DEV':'false','process.env.NODE_ENV':'"production"'},plugins:[{name:'offline-combat',setup(b){b.onResolve({filter:/(?:\/game\/|^\.\/)(?:supabase|live|referrals|analytics)$/},()=>({path:'offline',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:offline,loader:'js'}));}}]});
+const out = await build({stdin:{contents:entry,resolveDir:resolve('.'),loader:'tsx'},bundle:true,write:false,outdir:'/tmp/combat-browser',format:'iife',jsx:'automatic',minify:true,alias:{'@':resolve('src')},define:{'import.meta.env.BASE_URL':JSON.stringify('/'),'import.meta.env.DEV':'false','import.meta.env.VITE_TERRITORY_RUNES':'"disabled"','process.env.NODE_ENV':'"production"'},plugins:[{name:'offline-combat',setup(b){b.onResolve({filter:/(?:\/game\/|^\.\/)(?:supabase|live|referrals|analytics)$/},()=>({path:'offline',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:offline,loader:'js'}));}}]});
 const shellCss=(await postcss([tailwindcss(),autoprefixer()]).process(readFileSync('src/index.css','utf8'),{from:'src/index.css'})).css;
 const css=shellCss+'\n'+(out.outputFiles.find(f=>f.path.endsWith('.css'))?.text??'');
 const js=out.outputFiles.find(f=>f.path.endsWith('.js')).text;

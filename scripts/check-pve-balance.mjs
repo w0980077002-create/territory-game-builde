@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const require = createRequire(import.meta.url);
 const ts = require('typescript');
 const source = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
-function load(sourceCode, dependencies = {}) {
+function load(sourceCode, dependencies = {}, rng = () => 0.5) {
   const compiled = ts.transpileModule(sourceCode, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
     reportDiagnostics: true,
@@ -14,7 +14,7 @@ function load(sourceCode, dependencies = {}) {
   assert.equal((compiled.diagnostics ?? []).filter((d) => d.category === ts.DiagnosticCategory.Error).length, 0);
   const module = { exports: {} };
   const fakeMath = Object.create(Math);
-  fakeMath.random = () => 0.5; // Repeatable dodge, block, critical and zone choices.
+  fakeMath.random = rng; // Repeatable dodge, block, critical and zone choices.
   vm.runInNewContext(compiled.outputText, {
     module, exports: module.exports, Math: fakeMath,
     require: (name) => {
@@ -58,14 +58,15 @@ assert.equal(followerGuardDamage(100, 1000), 88, 'guardian mitigation remains ca
 
 const zones = ['head', 'chest', 'belly', 'legs'].map((id) => ({ id, label: id, mult: 1 }));
 const elixirExpiry = load(source('../src/game/elixirExpiry.ts'));
-const pve = load(source('../src/game/pve.ts'), {
+const pveDependencies = {
   './arenaApi': { ZONES: zones },
   './engine': { getComputedStats: () => { throw Error('not needed'); } },
   './pveBalance': balance,
   './followers': { followerCombat: () => ({}), selectedFollower: () => null },
   './forge': { forgeSetBonus: () => ({ hp: 0, attack: 0, defense: 0 }) },
   './elixirExpiry': elixirExpiry,
-});
+};
+const pve = load(source('../src/game/pve.ts'), pveDependencies);
 const hero = { name: 'Hero', hp: 1000, maxHp: 1000, attack: 100000, defense: 100, critChance: 100, critDamage: 50 };
 function checkRound(id, isBoss, expectedCap) {
   const enemy = { name: 'Enemy', hp: 1000, maxHp: 1000, attack: 1, defense: 1, critChance: 0, critDamage: 50, enemyId: id, isBoss };
@@ -322,6 +323,120 @@ const cappedComboStrike = pve.playRound(hero,
 assert.equal(cappedComboStrike.hits.filter(hit => hit.targetSide === 'enemy').reduce((sum, hit) => sum + hit.amount, 0), 400,
   'Stacked riposte + combo cannot bypass the existing boss damage cap');
 
+// Staged rune combat must preserve old damage when no verified snapshot exists.
+// These are actual resolved HP effects, not decorative UI text.
+const noRuneAttack = pve.playRound(starterHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const runeAttack = pve.playRound(starterHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard,
+  false, false, { damage_bonus_bp: 1200 });
+assert(runeAttack.hits[0].amount > noRuneAttack.hits[0].amount, 'Rune damage must change real enemy HP');
+assert.equal(guardEnemy.hp - runeAttack.enemy.hp, runeAttack.hits[0].amount);
+const noRuneGuard = pve.playRound(starterHero, { ...guardEnemy, attack: 120 }, 'legs', [], 0, '', 0,
+  null, visibleGuard);
+const withRuneGuard = pve.playRound(starterHero, { ...guardEnemy, attack: 120 }, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, { guard_absorb_bp: 1500 });
+assert(withRuneGuard.hits.find(h => h.targetSide === 'hero').amount <
+  noRuneGuard.hits.find(h => h.targetSide === 'hero').amount, 'Rune guard must reduce actual HP loss');
+const noRuneCrit = pve.playRound({ ...starterHero, critChance: 30 }, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const withRuneCrit = pve.playRound({ ...starterHero, critChance: 30 }, guardEnemy, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, { crit_chance_bp: 2500 });
+assert.equal(noRuneCrit.hits[0].tone, 'hit');
+assert.equal(withRuneCrit.hits[0].tone, 'crit', 'Rune critical chance must alter a resolved strike');
+const blockedRune = pve.playRound(starterHero, guardEnemy, 'head', [], 0, '', 0, null, visibleGuard,
+  false, false, { damage_bonus_bp: 2500, damage_vs_guard_bp: 2500 });
+assert.equal(blockedRune.hits[0].amount, 0, 'Rune damage cannot pierce a real noncritical block');
+// More server-defined runes now alter battle resolution, not just tooltips.
+const armoredEnemy = { ...guardEnemy, defense: 120 };
+const armorBaseline = pve.playRound(starterHero, armoredEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const armorPierced = pve.playRound(starterHero, armoredEnemy, 'legs', [], 0, '', 0, null, visibleGuard,
+  false, false, { armor_pen_bp: 2500 });
+assert(armorPierced.hits[0].amount > armorBaseline.hits[0].amount,
+  'Armor penetration must increase real damage without changing the enemy equipment');
+assert.equal(armoredEnemy.defense, 120, 'Rune armor piercing must not mutate the original opponent');
+const finishingEnemy = { ...guardEnemy, hp: 140, maxHp: 500 };
+const finisherBaseline = pve.playRound(starterHero, finishingEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const finisherRune = pve.playRound(starterHero, finishingEnemy, 'legs', [], 0, '', 0, null, visibleGuard,
+  false, false, { finisher_damage_bp: 2000 });
+assert(finisherRune.hits[0].amount > finisherBaseline.hits[0].amount,
+  'Finisher rune must change HP damage below 30 percent enemy health');
+const healthyEnemy = { ...guardEnemy, hp: 300, maxHp: 500 };
+const healthyBase = pve.playRound(starterHero, healthyEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const healthyFinisher = pve.playRound(starterHero, healthyEnemy, 'legs', [], 0, '', 0, null, visibleGuard,
+  false, false, { finisher_damage_bp: 2000 });
+assert.equal(healthyFinisher.hits[0].amount, healthyBase.hits[0].amount,
+  'Finisher cannot boost damage outside its defined threshold');
+const woundedHero = { ...starterHero, hp: 500, maxHp: 1000 };
+const noRegen = pve.playRound(woundedHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const runeRegen = pve.playRound(woundedHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard,
+  false, false, { regen_bp: 1200 });
+assert(runeRegen.hero.hp > noRegen.hero.hp && runeRegen.runeHealAmount > 0,
+  'Rune regeneration must restore actual HP after the opponent attack');
+assert.equal(runeRegen.healAmount, runeRegen.runeHealAmount,
+  'A regeneration-only rune must not be falsely reported as follower healing');
+const defeatedHero = { ...woundedHero, hp: 1 };
+const noRevive = pve.playRound(defeatedHero, { ...guardEnemy, attack: 1000 }, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, { regen_bp: 2500 });
+assert.equal(noRevive.hero.hp, 0, 'Regeneration must not resurrect a defeated hero');
+assert.equal(noRevive.runeHealAmount, 0, 'No healing after a lethal enemy strike');
+// An already-earned rune status persists between rounds (and only in this
+// fight). Damage over time respects live enemy HP, blocks and elite caps.
+const afflictedEnemy = { ...guardEnemy, hp: 1800, maxHp: 1800, attack: 120 };
+const ailmentsBefore = { bleed: 2, burn: 1, slow: 2, root: 1 };
+const withoutAilment = pve.playRound(woundedHero, afflictedEnemy, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, { dot_damage_bp: 2000 });
+const withAilment = pve.playRound(woundedHero, afflictedEnemy, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, { dot_damage_bp: 2000, damage_vs_slow_bp: 800 }, ailmentsBefore);
+const runeTick = withAilment.hits.find(hit => hit.source === 'rune');
+assert(runeTick && runeTick.amount > 0, 'A bleeding/burning foe must take actual rune damage');
+assert(withAilment.enemy.hp < withoutAilment.enemy.hp, 'Slow-bonus and DOT must lower enemy HP');
+assert.equal(withAilment.hits.filter(hit => hit.targetSide === 'hero').length, 0,
+  'An existing root prevents the next enemy strike');
+assert.equal(withAilment.runeAilments.bleed, 1, 'Bleed lasts across rounds and then expires');
+assert.equal(withAilment.runeAilments.root, 0, 'Root must expire instead of permanently disabling AI');
+assert.deepEqual(ailmentsBefore, { bleed: 2, burn: 1, slow: 2, root: 1 },
+  'Resolving a round must not mutate the previous status');
+const withoutRunes = pve.playRound(woundedHero, afflictedEnemy, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, null, ailmentsBefore);
+assert.equal(withoutRunes.hits.filter(hit => hit.source === 'rune').length, 0,
+  'A fight without a verified rune snapshot cannot import stale rune effects');
+assert(withoutRunes.hits.some(hit => hit.targetSide === 'hero'),
+  'A rune-free enemy cannot be rooted by an unverified or stale ailment');
+const cappedDotEnemy = { ...afflictedEnemy, enemyId: 'ch10_boss', isBoss: true };
+const cappedRuneRound = pve.playRound(hero, cappedDotEnemy, 'legs', [], 100000, 'Follower', 0,
+  null, visibleGuard, false, false, { dot_damage_bp: 2500 }, ailmentsBefore);
+assert(cappedRuneRound.hits.filter(h => h.targetSide === 'enemy').reduce((sum,h) => sum + h.amount, 0) <=
+  balance.eliteRoundDamageCap(cappedDotEnemy.enemyId,true,cappedDotEnemy.maxHp),
+  'Rune DOT cannot exceed the same existing boss per-round damage cap');
+// Deterministic chance-roll regression: a rune triggers only after a real
+// landed attack, and the statuses are applied to a LATER round.
+let chanceRolls = 0;
+const procPve = load(source('../src/game/pve.ts'), pveDependencies, () => chanceRolls++ < 6 ? 0.5 : 0);
+const procResult = procPve.playRound(starterHero, afflictedEnemy, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, {
+    bleed_chance_bp: 1200, burn_chance_bp: 1200,
+    slow_chance_bp: 1200, root_chance_bp: 1200,
+    slow_duration_bp: 2000, root_duration_bp: 1000,
+  });
+assert(procResult.hits[0].amount > 0, 'Proc setup must include an actual landed strike');
+assert.equal(procResult.runeAilments.bleed, 2, 'Bleeding requires a landed rune proc');
+assert.equal(procResult.runeAilments.burn, 2, 'Burning requires a landed rune proc');
+assert.equal(procResult.runeAilments.slow, 4, 'Slow duration rune must extend a proc');
+assert.equal(procResult.runeAilments.root, 2, 'Root duration rune must extend a proc');
+assert.equal(procResult.hits.filter(hit => hit.source === 'rune').length, 0,
+  'New damage-over-time effects must wait until the following round');
+const slowEnemy = { ...guardEnemy, hp: 1200, maxHp: 1200, attack: 210 };
+const slowHero = { ...starterHero, hp: 800, maxHp: 800 };
+const normalIncoming = pve.playRound(slowHero, slowEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const slowedIncoming = pve.playRound(slowHero, slowEnemy, 'legs', [], 0, '', 0, null, visibleGuard,
+  false, false, { slow_duration_bp: 1000 }, {bleed:0,burn:0,slow:1,root:0});
+assert(slowedIncoming.hero.hp > normalIncoming.hero.hp,
+  'Slow must weaken enemy damage itself, even without a second synergy rune');
+assert.match(source('../src/components/pve/PveFight.tsx'), /const RUNE_PVE_STAGED = import\.meta\.env\.VITE_TERRITORY_RUNES === 'enabled';/,
+  'Player rune rollout must remain disabled until server cutover');
+assert.match(source('../src/components/pve/PveFight.tsx'), /parseRuneServerStatus\(data, runeDefinitions\)/,
+  'Rune effects must be sourced from a server-confirmed 15-slot status');
+assert.match(source('../src/components/pve/PveFight.tsx'), /runeEffectsAtStart\.current = pinned/,
+  'Rune effects must be frozen at battle entry, not loaded every round');
+
 const fightSource = source('../src/components/pve/PveFight.tsx');
 assert.match(fightSource, /rememberDistinctHeroAttacks\(recentDistinctHeroAttacks\.current, atk\)/,
   'Battle must update the two distinct directions only after the resolved round');
@@ -334,7 +449,7 @@ assert.match(fightSource, /data-testid="pve-live-damage-totals"/, 'Show cumulati
 assert.match(fightSource, /data-testid="pve-riposte-ready"/, 'Show an earned manual riposte');
 assert.match(fightSource, /data-testid="pve-tactical-momentum"/, 'Show real combo progress in the existing elite fight');
 assert.match(fightSource, /setMomentum\(previous => nextTacticalMomentum\(previous, atk, report\.heroStrike, elite && !auto/, 'Combo must come from resolved hits, never guessed input');
-assert.match(fightSource, /elite && !auto && momentum\.streak === 2\)/, 'Only charged manual elite rounds receive the combo bonus');
+assert.match(fightSource, /elite && !auto && momentum\.streak === 2, runeEffectsAtStart\.current, runeAilments\.current\)/, 'Only charged manual elite rounds receive the combo bonus');
 assert.match(fightSource, /report\.enemyStrike === 'block'/, 'Only a real enemy block grants riposte');
 assert.match(fightSource, /elite && !auto && riposteReady/, 'Auto cannot consume a fake manual riposte');
 assert.match(fightSource, /setBattleTotals\(previous => \(\{[\s\S]*report\.dealtDamage/, 'Cumulative totals must come from resolved hits');
@@ -358,7 +473,7 @@ assert.match(fightSource, /const guardedZoneLabels = committedEnemyIntent\.block
 assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss strike warning must offer a manual defense action');
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
 
-assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum\.streak === 2\)/, 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
+assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum\.streak === 2, runeEffectsAtStart\.current, runeAilments\.current\)/, 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
 assert.match(fightSource, /staggerEnemyGuard\(enemyIntent, staggerReady && !auto\)/, 'Only manual combat can consume the one-round stagger');
 assert.match(fightSource, /setStaggerReady\(elite && !auto && riposteReady && atk === 'legs'/, 'Only a real manual elite leg riposte can earn stagger');
 assert.match(fightSource, /!committedEnemyIntent\.blocks\.includes\(atk\)/, 'A guarded leg strike must not earn stagger');
@@ -386,7 +501,7 @@ assert(!engine.includes('Math.pow(1.15, num)'), 'no accidental exponential boss 
 const classicFight = source('../src/components/pve/PveFight.tsx');
 assert.match(classicFight, /const roundFlight = useRef\(false\)/,
   'Classic campaign and trials need a synchronous one-round-at-a-time guard');
-assert.match(classicFight, /if \(roundFlight\.current \|\| busy \|\| outcome \|\| confirmSurrender \|\| done\.current \|\| !alive\.current\) return;/,
+assert.match(classicFight, /if \(roundFlight\.current \|\| busy \|\| outcome \|\| confirmSurrender \|\| done\.current \|\| !alive\.current \|\| \(RUNE_PVE_STAGED && !runesReady\)\) return;/,
   'Repeated attack taps and unmounted fights must not run another round');
 assert.match(classicFight, /roundFlight\.current = true;[\s\S]*?try \{/,
   'Lock the round before animation or referral bookkeeping');

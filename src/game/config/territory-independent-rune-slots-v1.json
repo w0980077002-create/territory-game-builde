@@ -1,0 +1,457 @@
+{
+  "schema": "territory-rune-slot-catalog/1",
+  "phase": "STAGED_NO_LIVE_EFFECTS",
+  "description": "Independent 15 positions. Skill identifiers are retained only as explicit one-time migration references, never as slot IDs or a requirement to equip the corresponding skill.",
+  "slots": [
+    {
+      "slotId": "rune_slot_01",
+      "ordinal": 1,
+      "nameRu": "Рунный слот 1",
+      "nameEn": "Rune slot 1",
+      "legacySkillId": "shield_wall",
+      "options": [
+        {
+          "runeId": "shield_wall_r1",
+          "nameRu": "Стойкость",
+          "nameEn": "Guard",
+          "effectRu": "Усиливает поглощение урона",
+          "effectEn": "Increases damage absorption"
+        },
+        {
+          "runeId": "shield_wall_r2",
+          "nameRu": "Ответный выпад",
+          "nameEn": "Riposte",
+          "effectRu": "Добавляет ответный удар после блока",
+          "effectEn": "Adds a counterattack after blocking"
+        },
+        {
+          "runeId": "shield_wall_r3",
+          "nameRu": "Железная воля",
+          "nameEn": "Iron Will",
+          "effectRu": "Удлиняет время защиты",
+          "effectEn": "Extends protection duration"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_02",
+      "ordinal": 2,
+      "nameRu": "Рунный слот 2",
+      "nameEn": "Rune slot 2",
+      "legacySkillId": "axe_storm",
+      "options": [
+        {
+          "runeId": "axe_storm_r1",
+          "nameRu": "Острый край",
+          "nameEn": "Keen Edge",
+          "effectRu": "Усиливает каждый удар вихря",
+          "effectEn": "Improves each whirlwind hit"
+        },
+        {
+          "runeId": "axe_storm_r2",
+          "nameRu": "Кровавая метка",
+          "nameEn": "Blood Mark",
+          "effectRu": "Может накладывать кровотечение",
+          "effectEn": "May apply bleeding"
+        },
+        {
+          "runeId": "axe_storm_r3",
+          "nameRu": "Разгон",
+          "nameEn": "Momentum",
+          "effectRu": "Ускоряет следующую атаку",
+          "effectEn": "Speeds up the next attack"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_03",
+      "ordinal": 3,
+      "nameRu": "Рунный слот 3",
+      "nameEn": "Rune slot 3",
+      "legacySkillId": "hawk_shot",
+      "options": [
+        {
+          "runeId": "hawk_shot_r1",
+          "nameRu": "Метка охотника",
+          "nameEn": "Hunter's Mark",
+          "effectRu": "Повышает точность повторного удара",
+          "effectEn": "Improves follow-up accuracy"
+        },
+        {
+          "runeId": "hawk_shot_r2",
+          "nameRu": "Пробитие",
+          "nameEn": "Piercing",
+          "effectRu": "Позволяет частично игнорировать защиту",
+          "effectEn": "Partly ignores defense"
+        },
+        {
+          "runeId": "hawk_shot_r3",
+          "nameRu": "Оперённая стрела",
+          "nameEn": "Fletched Arrow",
+          "effectRu": "Повышает шанс критического удара",
+          "effectEn": "Improves critical strike chance"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_04",
+      "ordinal": 4,
+      "nameRu": "Рунный слот 4",
+      "nameEn": "Rune slot 4",
+      "legacySkillId": "frost_oath",
+      "options": [
+        {
+          "runeId": "frost_oath_r1",
+          "nameRu": "Морозная хватка",
+          "nameEn": "Frost Grip",
+          "effectRu": "Увеличивает время замедления",
+          "effectEn": "Extends slow duration"
+        },
+        {
+          "runeId": "frost_oath_r2",
+          "nameRu": "Ледяной осколок",
+          "nameEn": "Ice Shard",
+          "effectRu": "Усиливает урон по замедленной цели",
+          "effectEn": "Improves damage to slowed enemies"
+        },
+        {
+          "runeId": "frost_oath_r3",
+          "nameRu": "Стужа",
+          "nameEn": "Deep Freeze",
+          "effectRu": "Может ненадолго сковать цель",
+          "effectEn": "May briefly root the target"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_05",
+      "ordinal": 5,
+      "nameRu": "Рунный слот 5",
+      "nameEn": "Rune slot 5",
+      "legacySkillId": "battle_chant",
+      "options": [
+        {
+          "runeId": "battle_chant_r1",
+          "nameRu": "Громкий зов",
+          "nameEn": "Loud Call",
+          "effectRu": "Продлевает эффект напева",
+          "effectEn": "Extends the chant effect"
+        },
+        {
+          "runeId": "battle_chant_r2",
+          "nameRu": "Ярость",
+          "nameEn": "Fury",
+          "effectRu": "Усиливает следующую атаку",
+          "effectEn": "Empowers the next attack"
+        },
+        {
+          "runeId": "battle_chant_r3",
+          "nameRu": "Стяг",
+          "nameEn": "Banner",
+          "effectRu": "Добавляет защиту во время напева",
+          "effectEn": "Adds protection during the chant"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_06",
+      "ordinal": 6,
+      "nameRu": "Рунный слот 6",
+      "nameEn": "Rune slot 6",
+      "legacySkillId": "runic_bolt",
+      "options": [
+        {
+          "runeId": "runic_bolt_r1",
+          "nameRu": "Искра",
+          "nameEn": "Spark",
+          "effectRu": "Ускоряет накопление заряда",
+          "effectEn": "Accelerates charge accumulation"
+        },
+        {
+          "runeId": "runic_bolt_r2",
+          "nameRu": "Цепь молний",
+          "nameEn": "Chain Lightning",
+          "effectRu": "Может поразить дополнительную цель",
+          "effectEn": "May strike another target"
+        },
+        {
+          "runeId": "runic_bolt_r3",
+          "nameRu": "Перегрузка",
+          "nameEn": "Overload",
+          "effectRu": "Повышает силу разряда",
+          "effectEn": "Increases bolt power"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_07",
+      "ordinal": 7,
+      "nameRu": "Рунный слот 7",
+      "nameEn": "Rune slot 7",
+      "legacySkillId": "rune_snare",
+      "options": [
+        {
+          "runeId": "rune_snare_r1",
+          "nameRu": "Крепкая вязь",
+          "nameEn": "Tight Weave",
+          "effectRu": "Продлевает удержание цели",
+          "effectEn": "Extends the snare"
+        },
+        {
+          "runeId": "rune_snare_r2",
+          "nameRu": "Ловчий круг",
+          "nameEn": "Hunter's Circle",
+          "effectRu": "Расширяет область ловушки",
+          "effectEn": "Expands snare area"
+        },
+        {
+          "runeId": "rune_snare_r3",
+          "nameRu": "Рассеивание",
+          "nameEn": "Dispel",
+          "effectRu": "Может ослабить усиление врага",
+          "effectEn": "May weaken an enemy buff"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_08",
+      "ordinal": 8,
+      "nameRu": "Рунный слот 8",
+      "nameEn": "Rune slot 8",
+      "legacySkillId": "quickstep",
+      "options": [
+        {
+          "runeId": "quickstep_r1",
+          "nameRu": "Отражение",
+          "nameEn": "Reflection",
+          "effectRu": "Улучшает шанс увернуться",
+          "effectEn": "Improves dodge chance"
+        },
+        {
+          "runeId": "quickstep_r2",
+          "nameRu": "Скрытность",
+          "nameEn": "Stealth",
+          "effectRu": "Ослабляет следующий удар противника",
+          "effectEn": "Weakens the next enemy strike"
+        },
+        {
+          "runeId": "quickstep_r3",
+          "nameRu": "Контратака",
+          "nameEn": "Counterstroke",
+          "effectRu": "Усиливает ответный удар",
+          "effectEn": "Improves the counterattack"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_09",
+      "ordinal": 9,
+      "nameRu": "Рунный слот 9",
+      "nameEn": "Rune slot 9",
+      "legacySkillId": "fire_net",
+      "options": [
+        {
+          "runeId": "fire_net_r1",
+          "nameRu": "Тлеющие путы",
+          "nameEn": "Smoldering Bonds",
+          "effectRu": "Дольше удерживает цель",
+          "effectEn": "Holds the target for longer"
+        },
+        {
+          "runeId": "fire_net_r2",
+          "nameRu": "Горящий след",
+          "nameEn": "Burning Trail",
+          "effectRu": "Может поджечь цель",
+          "effectEn": "May ignite the target"
+        },
+        {
+          "runeId": "fire_net_r3",
+          "nameRu": "Пепельная завеса",
+          "nameEn": "Ash Veil",
+          "effectRu": "Уменьшает точность врага",
+          "effectEn": "Reduces enemy accuracy"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_10",
+      "ordinal": 10,
+      "nameRu": "Рунный слот 10",
+      "nameEn": "Rune slot 10",
+      "legacySkillId": "ancestral_surge",
+      "options": [
+        {
+          "runeId": "ancestral_surge_r1",
+          "nameRu": "Родовая память",
+          "nameEn": "Ancestral Memory",
+          "effectRu": "Увеличивает время усиления",
+          "effectEn": "Extends the empowered state"
+        },
+        {
+          "runeId": "ancestral_surge_r2",
+          "nameRu": "Дух защитника",
+          "nameEn": "Guardian Spirit",
+          "effectRu": "Даёт дополнительную защиту",
+          "effectEn": "Grants extra defense"
+        },
+        {
+          "runeId": "ancestral_surge_r3",
+          "nameRu": "Зов предков",
+          "nameEn": "Ancestors' Call",
+          "effectRu": "Ускоряет накопление энергии",
+          "effectEn": "Builds energy faster"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_11",
+      "ordinal": 11,
+      "nameRu": "Рунный слот 11",
+      "nameEn": "Rune slot 11",
+      "legacySkillId": "blood_rush",
+      "options": [
+        {
+          "runeId": "blood_rush_r1",
+          "nameRu": "Бешенство",
+          "nameEn": "Frenzy",
+          "effectRu": "Усиливает серию атак",
+          "effectEn": "Empowers attack chains"
+        },
+        {
+          "runeId": "blood_rush_r2",
+          "nameRu": "Несгибаемый",
+          "nameEn": "Unbroken",
+          "effectRu": "Снижает урон во время ярости",
+          "effectEn": "Reduces damage during frenzy"
+        },
+        {
+          "runeId": "blood_rush_r3",
+          "nameRu": "Алый удар",
+          "nameEn": "Crimson Strike",
+          "effectRu": "Повышает шанс критического удара",
+          "effectEn": "Improves crit chance"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_12",
+      "ordinal": 12,
+      "nameRu": "Рунный слот 12",
+      "nameEn": "Rune slot 12",
+      "legacySkillId": "forest_awakening",
+      "options": [
+        {
+          "runeId": "forest_awakening_r1",
+          "nameRu": "Корни",
+          "nameEn": "Roots",
+          "effectRu": "Может замедлить атакующего",
+          "effectEn": "May slow an attacker"
+        },
+        {
+          "runeId": "forest_awakening_r2",
+          "nameRu": "Живой сок",
+          "nameEn": "Vital Sap",
+          "effectRu": "Постепенно восстанавливает здоровье",
+          "effectEn": "Gradually restores health"
+        },
+        {
+          "runeId": "forest_awakening_r3",
+          "nameRu": "Звериный слух",
+          "nameEn": "Wild Instinct",
+          "effectRu": "Улучшает уклонение",
+          "effectEn": "Improves dodging"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_13",
+      "ordinal": 13,
+      "nameRu": "Рунный слот 13",
+      "nameEn": "Rune slot 13",
+      "legacySkillId": "storm_judgement",
+      "options": [
+        {
+          "runeId": "storm_judgement_r1",
+          "nameRu": "Раскат грома",
+          "nameEn": "Thunderclap",
+          "effectRu": "Усиливает удар по одной цели",
+          "effectEn": "Empowers single-target damage"
+        },
+        {
+          "runeId": "storm_judgement_r2",
+          "nameRu": "Грозовой след",
+          "nameEn": "Storm Trail",
+          "effectRu": "Оставляет краткий эффект после удара",
+          "effectEn": "Leaves a short lingering effect"
+        },
+        {
+          "runeId": "storm_judgement_r3",
+          "nameRu": "Небесный разряд",
+          "nameEn": "Sky Bolt",
+          "effectRu": "Ускоряет повторное применение",
+          "effectEn": "Speeds up recast"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_14",
+      "ordinal": 14,
+      "nameRu": "Рунный слот 14",
+      "nameEn": "Rune slot 14",
+      "legacySkillId": "winter_breaker",
+      "options": [
+        {
+          "runeId": "winter_breaker_r1",
+          "nameRu": "Ледолом",
+          "nameEn": "Icebreaker",
+          "effectRu": "Усиливает удар по защищённой цели",
+          "effectEn": "Improves damage against guarded targets"
+        },
+        {
+          "runeId": "winter_breaker_r2",
+          "nameRu": "Кристальная буря",
+          "nameEn": "Crystal Storm",
+          "effectRu": "Расширяет область действия",
+          "effectEn": "Extends effect area"
+        },
+        {
+          "runeId": "winter_breaker_r3",
+          "nameRu": "Вечная мерзлота",
+          "nameEn": "Permafrost",
+          "effectRu": "Продлевает замедление",
+          "effectEn": "Extends slowing effect"
+        }
+      ]
+    },
+    {
+      "slotId": "rune_slot_15",
+      "ordinal": 15,
+      "nameRu": "Рунный слот 15",
+      "nameEn": "Rune slot 15",
+      "legacySkillId": "wolf_king",
+      "options": [
+        {
+          "runeId": "wolf_king_r1",
+          "nameRu": "Рёв стаи",
+          "nameEn": "Pack Roar",
+          "effectRu": "Увеличивает длительность клича",
+          "effectEn": "Increases roar duration"
+        },
+        {
+          "runeId": "wolf_king_r2",
+          "nameRu": "Волчий клык",
+          "nameEn": "Wolf Fang",
+          "effectRu": "Усиливает завершающую атаку",
+          "effectEn": "Empowers finishing attack"
+        },
+        {
+          "runeId": "wolf_king_r3",
+          "nameRu": "Бесстрашие",
+          "nameEn": "Fearless",
+          "effectRu": "Даёт защиту от контроля",
+          "effectEn": "Grants control resistance"
+        }
+      ]
+    }
+  ]
+}

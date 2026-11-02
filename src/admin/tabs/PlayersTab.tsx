@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import { ArrowLeft, Ban, Hammer, Minus, Plus, Search, ShieldAlert, ShieldCheck, UserRound, Ticket, RotateCcw, Trash2 } from 'lucide-react';
 import { RESOURCES, MAX_ADMIN_REWARD_QUANTITY, maxAdminRewardQuantity, adminCall, payloadFor, type PlayerSummary } from '@/admin/api';
 import { ActivityPanel } from '@/admin/tabs/ActivityPanel';
+import { PlayerRunes } from '@/admin/tabs/PlayerRunes';
 import { Empty, ErrorLine, Loading, Panel, fmt, fmtDate, inputCls, type Confirm } from '@/admin/ui';
 
 const SLOT_LABELS: Record<string, string> = {
@@ -177,6 +178,7 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
         </p>
       )}
 
+      <PlayerRunes key={p.id} playerId={p.id} playerName={p.name} confirm={confirm} />
       <Panel title="Баланс и ресурсы">
         <div className="space-y-2">
           {RESOURCES.map((r) => {
