@@ -328,7 +328,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
 
       <section className="territory-shop-products" aria-label={language==='en'?'Available shop items':'Товары лавки'}>
         {items.map((item)=>{
-          const unitPrice=item.priceGems??item.priceGold??0;
+          const unitPrice=item.priceGems ? item.priceGems : (item.priceGold??0);
           const balance=item.priceGems
             ? (shopStatus?.enabled?shopStatus.gems:state.player.gems)
             : state.player.gold;
