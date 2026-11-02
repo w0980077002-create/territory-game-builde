@@ -27,7 +27,7 @@ assert(validateIdleLoadout(fifteen, catalog).includes('slot_limit'));
 // must not expose the old editable book for either language while gated.
 const ui = await build({ entryPoints: ['src/components/builds/ServerRuneBook.tsx'], bundle: true,
   platform: 'node', format: 'cjs', jsx: 'automatic', write: false, logLevel: 'silent', external: ['react'], alias: { '@': resolve('src') },
-  define: { 'import.meta.env.BASE_URL': '"/"' },
+  define: { 'import.meta.env.BASE_URL': '"/"', 'import.meta.env.VITE_TERRITORY_RUNES': '"disabled"' },
   plugins: [{ name: 'test-dependencies', setup(b) {
     b.onResolve({ filter: /^@\/game\/supabase$|^@\/game\/combatV1\/api$|^\.\/RuneSkillBook$/ }, args => ({ path: args.path, namespace: 'stub' }));
     b.onLoad({ filter: /.*/, namespace: 'stub' }, args => ({ contents: args.path.endsWith('supabase')
