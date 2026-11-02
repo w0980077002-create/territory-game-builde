@@ -19,6 +19,7 @@ export interface MailRewardVisual {
 }
 
 export const MAIL_ITEM_VISUALS: Record<string, { name: string; nameEn: string; image: string }> = {
+  halloween_horned_pumpkin_2026: { name: 'Рогатая тыква · Хэллоуин 2026', nameEn: 'Horned Pumpkin · Halloween 2026', image: 'assets/territory/ui/unique-gear/halloween-horned-pumpkin-2026.svg' },
   shop_potion_hp: { name: 'Зелье здоровья', nameEn: 'Health potion', image: 'potion-hp-viking.webp' },
   shop_potion_hp_large: { name: 'Большое зелье здоровья', nameEn: 'Large health potion', image: 'potion-hp-large-viking.webp' },
   shop_elixir_atk: { name: 'Эликсир силы', nameEn: 'Attack elixir', image: 'elixir-attack-viking.webp' },
