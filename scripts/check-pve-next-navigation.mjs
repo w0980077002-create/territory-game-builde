@@ -144,7 +144,7 @@ const gearBundle = await build({
   entryPoints: ['src/game/heroGearOpportunity.ts'],
   bundle: true, write: false, platform: 'node', format: 'esm',
 });
-const { findHeroGearOpportunity, strictlyStrongerGear } = await import(
+const { findHeroGearOpportunity, strictlyStrongerGear, tradeoffGear } = await import(
   'data:text/javascript;base64,' + Buffer.from(gearBundle.outputFiles[0].text).toString('base64')
 );
 const worn = { id: 'old-sword', slot: 'weapon', name: 'Old sword', attack: 12, defense: 4 };
@@ -155,7 +155,15 @@ assert.equal(strictlyStrongerGear(stronger, worn), true);
 assert.equal(strictlyStrongerGear(tradeoff, worn), false, 'tradeoffs are not guaranteed upgrades');
 assert.equal(strictlyStrongerGear(worn, worn), false);
 assert.equal(findHeroGearOpportunity([gearItem(stronger)], {weapon:worn})?.kind, 'upgrade');
-assert.equal(findHeroGearOpportunity([gearItem(tradeoff)], {weapon:worn}), null);
+assert.equal(tradeoffGear(tradeoff, worn), true, 'mixed combat stats create a choice, not a free upgrade');
+assert.equal(findHeroGearOpportunity([gearItem(tradeoff)], {weapon:worn})?.kind, 'compare',
+  'owned mixed-stat gear must be offered for manual comparison');
+assert.equal(findHeroGearOpportunity([gearItem(tradeoff), gearItem(stronger)], {weapon:worn})?.kind, 'upgrade',
+  'an unequivocal upgrade outranks a trade-off');
+assert.equal(findHeroGearOpportunity([gearItem(tradeoff, 0)], {weapon:worn}), null,
+  'zero-count trade-off cannot be advertised');
+assert.equal(findHeroGearOpportunity([gearItem({ ...tradeoff, id: 'weaker', attack: 10 })], {weapon:worn}), null,
+  'strictly weaker gear is never advertised as a tactical choice');
 assert.equal(findHeroGearOpportunity([gearItem(stronger,0)], {weapon:worn}), null, 'no phantom loot');
 assert.equal(findHeroGearOpportunity([gearItem(stronger)], {})?.kind, 'empty');
 assert.equal(findHeroGearOpportunity([], {weapon:worn}), null);
@@ -194,6 +202,10 @@ assert.match(fight, /data-testid="pve-owned-gear-opportunity"/,
   'Show an actual owned upgrade or empty-slot opportunity in the victory path');
 assert.match(fight, /gearOpportunity\.kind === 'empty'/,
   'An empty slot must not be described as an upgrade over equipped gear');
+assert.match(fight, /gearOpportunity\.kind === 'compare'/,
+  'a trade-off must have an honest label instead of a false upgrade claim');
+assert.match(fight, /delta < 0 \? 'text-red-300'/,
+  'a trade-off must reveal negative combat stat deltas before equipping');
 assert.match(fight, /gearImprovements\.map\(\(\{ stat, delta \}\)/,
   'Only actual positive stat deltas may be displayed');
 assert.match(fight, /Из сохранённого инвентаря, не дополнительная награда за бой/,
