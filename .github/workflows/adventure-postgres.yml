@@ -82,3 +82,12 @@ jobs:
           PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres territory_rune_migration_ci
           PGPASSWORD=postgres psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d territory_rune_migration_ci -f scripts/fixtures/rune-ledger-v1-pg17.sql
           PGPASSWORD=postgres psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d territory_rune_migration_ci -f scripts/fixtures/rune-migration-v1-pg17.sql
+      - name: Test actual Arena functions with pinned rune effects and concurrent ticks
+        run: |
+          node scripts/build-arena-runes-staged.mjs --check
+          PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres territory_rune_arena_ci
+          PGPASSWORD=postgres psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d territory_rune_arena_ci -f scripts/fixtures/rune-ledger-v1-pg17.sql
+          PGPASSWORD=postgres psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d territory_rune_arena_ci -f scripts/fixtures/rune-arena-live-v1-pg17.sql
+          bash scripts/check-rune-arena-concurrency.sh
+        env:
+          RUNE_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/territory_rune_arena_ci
