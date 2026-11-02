@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const require = createRequire(import.meta.url);
 const ts = require('typescript');
 const source = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
-function load(sourceCode, dependencies = {}) {
+function load(sourceCode, dependencies = {}, rng = () => 0.5) {
   const compiled = ts.transpileModule(sourceCode, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
     reportDiagnostics: true,
@@ -14,7 +14,7 @@ function load(sourceCode, dependencies = {}) {
   assert.equal((compiled.diagnostics ?? []).filter((d) => d.category === ts.DiagnosticCategory.Error).length, 0);
   const module = { exports: {} };
   const fakeMath = Object.create(Math);
-  fakeMath.random = () => 0.5; // Repeatable dodge, block, critical and zone choices.
+  fakeMath.random = rng; // Repeatable dodge, block, critical and zone choices.
   vm.runInNewContext(compiled.outputText, {
     module, exports: module.exports, Math: fakeMath,
     require: (name) => {
@@ -58,14 +58,15 @@ assert.equal(followerGuardDamage(100, 1000), 88, 'guardian mitigation remains ca
 
 const zones = ['head', 'chest', 'belly', 'legs'].map((id) => ({ id, label: id, mult: 1 }));
 const elixirExpiry = load(source('../src/game/elixirExpiry.ts'));
-const pve = load(source('../src/game/pve.ts'), {
+const pveDependencies = {
   './arenaApi': { ZONES: zones },
   './engine': { getComputedStats: () => { throw Error('not needed'); } },
   './pveBalance': balance,
   './followers': { followerCombat: () => ({}), selectedFollower: () => null },
   './forge': { forgeSetBonus: () => ({ hp: 0, attack: 0, defense: 0 }) },
   './elixirExpiry': elixirExpiry,
-});
+};
+const pve = load(source('../src/game/pve.ts'), pveDependencies);
 const hero = { name: 'Hero', hp: 1000, maxHp: 1000, attack: 100000, defense: 100, critChance: 100, critDamage: 50 };
 function checkRound(id, isBoss, expectedCap) {
   const enemy = { name: 'Enemy', hp: 1000, maxHp: 1000, attack: 1, defense: 1, critChance: 0, critDamage: 50, enemyId: id, isBoss };
@@ -392,6 +393,23 @@ const cappedRuneRound = pve.playRound(hero, cappedDotEnemy, 'legs', [], 100000, 
 assert(cappedRuneRound.hits.filter(h => h.targetSide === 'enemy').reduce((sum,h) => sum + h.amount, 0) <=
   balance.eliteRoundDamageCap(cappedDotEnemy.enemyId,true,cappedDotEnemy.maxHp),
   'Rune DOT cannot exceed the same existing boss per-round damage cap');
+// Deterministic chance-roll regression: a rune triggers only after a real
+// landed attack, and the statuses are applied to a LATER round.
+let chanceRolls = 0;
+const procPve = load(source('../src/game/pve.ts'), pveDependencies, () => chanceRolls++ < 6 ? 0.5 : 0);
+const procResult = procPve.playRound(starterHero, afflictedEnemy, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, {
+    bleed_chance_bp: 1200, burn_chance_bp: 1200,
+    slow_chance_bp: 1200, root_chance_bp: 1200,
+    slow_duration_bp: 2000, root_duration_bp: 1000,
+  });
+assert(procResult.hits[0].amount > 0, 'Proc setup must include an actual landed strike');
+assert.equal(procResult.runeAilments.bleed, 2, 'Bleeding requires a landed rune proc');
+assert.equal(procResult.runeAilments.burn, 2, 'Burning requires a landed rune proc');
+assert.equal(procResult.runeAilments.slow, 4, 'Slow duration rune must extend a proc');
+assert.equal(procResult.runeAilments.root, 2, 'Root duration rune must extend a proc');
+assert.equal(procResult.hits.filter(hit => hit.source === 'rune').length, 0,
+  'New damage-over-time effects must wait until the following round');
 assert.match(source('../src/components/pve/PveFight.tsx'), /const RUNE_PVE_STAGED = false;/,
   'Player rune rollout must remain disabled until server cutover');
 assert.match(source('../src/components/pve/PveFight.tsx'), /parseRuneServerStatus\(data, runeDefinitions\)/,
