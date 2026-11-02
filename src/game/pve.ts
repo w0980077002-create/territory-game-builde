@@ -337,11 +337,16 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   // intentionally checked AFTER resolving this round: new ailments only
   // affect later rounds, never retroactively change the current strike.
   if (runes && h1.amount > 0 && enemyHp > 0) {
-    if (Math.random() * 10000 < runeBp(runes, 'bleed_chance_bp')) ailments.bleed = Math.max(ailments.bleed, 2);
-    if (Math.random() * 10000 < runeBp(runes, 'burn_chance_bp')) ailments.burn = Math.max(ailments.burn, 2);
-    if (Math.random() * 10000 < runeBp(runes, 'slow_chance_bp')) ailments.slow =
+    const proc = (key: string) => {
+      const chance = runeBp(runes, key);
+      return chance > 0 && Math.random() * 10000 < chance;
+    };
+    // An absent rune must not consume random numbers and change future AI rolls.
+    if (proc('bleed_chance_bp')) ailments.bleed = Math.max(ailments.bleed, 2);
+    if (proc('burn_chance_bp')) ailments.burn = Math.max(ailments.burn, 2);
+    if (proc('slow_chance_bp')) ailments.slow =
       Math.max(ailments.slow, 2 + Math.floor(runeBp(runes, 'slow_duration_bp') / 1000));
-    if (Math.random() * 10000 < runeBp(runes, 'root_chance_bp')) ailments.root =
+    if (proc('root_chance_bp')) ailments.root =
       Math.max(ailments.root, 1 + Math.floor(runeBp(runes, 'root_duration_bp') / 1000));
   }
   return { hits, hero: { ...hero, hp: heroHp + healAmount }, enemy: { ...enemy, hp: enemyHp },
