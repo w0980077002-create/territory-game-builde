@@ -35,6 +35,19 @@ assert.match(app, /if \(target === 'shop'\) setShopTab\('equipment'\)/, 'Shop gu
 assert.match(app, /if \(target === 'battle'\) \{ setBattleView\('campaign'\); setAutoStart\(false\); \}/, 'Beginner battle guidance opens the campaign without charging automatically');
 const fight = readFileSync('src/components/pve/PveFight.tsx', 'utf8');
 assert.match(fight, /state\.quests\.some\(q => !q\.claimed && q\.current >= q\.target\)/, 'Only genuinely ready quests are suggested after combat');
+assert.match(fight, /try \{ hapticImpact\('light'\); \} catch \{/,
+  'A missing Telegram haptics bridge must not cancel an already paid PvE round');
+assert.match(fight, /onQuests=\{onQuests \? \(\) => \{ nextCancelled\.current = true; onExit\(\); onQuests\(\); \} : undefined\}/,
+  'Collecting a ready quest must close the settled fight before navigating away');
+assert.match(fight, /onForge=\{onForge \? \(\) => \{ nextCancelled\.current = true; onExit\(\); onForge\(\); \} : undefined\}/,
+  'Forge navigation must close the settled fight before returning to adventure');
+assert.match(fight, /\{onForge && \(outcome\.materials > 0 \|\| !outcome\.won\) && \(/,
+  'A defeated hero must be able to open the existing Forge without inventing loot');
+assert.match(fight, /\{onEquipment && \(/,
+  'A defeated hero must be able to compare and equip owned gear before retrying');
+assert.match(fight, /Check equipment before retrying/,
+  'The defeat route must explain why equipment preparation matters');
+
 assert.match(home, /state\.totalBattlesWon === 0/, 'Preserve existing first-fight hint on the home scene');
 assert.match(home, /shouldShowStarterJourney\(state\) \? getStarterMilestones\(state\)/, 'Home roadmap must serve all heroes missing first victories');
 assert.match(home, /data-testid="home-hero-path"/, 'The existing quest strip is the roadmap entry point');

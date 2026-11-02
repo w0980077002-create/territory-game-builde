@@ -224,7 +224,9 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     setBusy(true);
     try {
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
-    hapticImpact('light');
+    // Telegram haptics are optional. A WebView SDK exception must never abort
+    // an already paid battle before its first resolved round.
+    try { hapticImpact('light'); } catch { /* Continue the paid fight. */ }
     const elite = kind === 'trial' || !!enemy.isBoss;
     const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum.streak === 2);
     const currentSpeed = useGame.get().settings.speed;
@@ -369,7 +371,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
           gearOpportunity={gearOpportunity} equippedGear={equippedGear}
           onExit={() => { nextCancelled.current = true; onExit(); }}
           questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
-          onQuests={onQuests ? () => { nextCancelled.current = true; onQuests(); } : undefined}
+          onQuests={onQuests ? () => { nextCancelled.current = true; onExit(); onQuests(); } : undefined}
           onEquipment={onEquipment ? () => { nextCancelled.current = true; onExit(); onEquipment(); } : undefined}
           onForge={onForge ? () => { nextCancelled.current = true; onExit(); onForge(); } : undefined}
           nextPending={nextPending} nextError={nextError}
@@ -816,11 +818,13 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
             </div>
           </section>
         )}
-        {outcome.won && outcome.materials > 0 && onForge && (
+        {onForge && (outcome.materials > 0 || !outcome.won) && (
           <button type="button" data-testid="pve-visit-forge" onClick={onForge}
             className="relative mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-amber-300/60 bg-amber-700/70 px-3 text-sm font-extrabold text-amber-50 active:scale-[0.98]">
             <Hammer size={17} aria-hidden="true" />
-            {language === 'en' ? 'Open Forge with your materials' : 'В кузницу с добытыми материалами'}
+            {outcome.won
+              ? (language === 'en' ? 'Open Forge with your materials' : 'В кузницу с добытыми материалами')
+              : (language === 'en' ? 'Prepare in the Forge before retrying' : 'Подготовиться в Кузнице перед повторным боем')}
           </button>
         )}
         {outcome.won && gearOpportunity && onEquipment && (
@@ -837,13 +841,15 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
             <p className="mt-1 text-[10px] text-emerald-100/80">{language === 'en' ? 'From your saved inventory, not an extra battle reward.' : 'Из сохранённого инвентаря, не дополнительная награда за бой.'}</p>
           </div>
         )}
-        {outcome.won && onEquipment && (
+        {onEquipment && (
           <button type="button" data-testid="pve-prepare-equipment" onClick={onEquipment}
             className="relative mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-sky-300/50 bg-sky-900/60 px-3 text-sm font-extrabold text-sky-100 active:scale-[0.98]">
             <Shirt size={17} aria-hidden="true" />
-            {gearOpportunity
-              ? (language === 'en' ? 'Equip or compare this item' : 'Надеть или сравнить этот предмет')
-              : (language === 'en' ? 'Compare gear before the next fight' : 'Сравнить снаряжение перед следующим боем')}
+            {!outcome.won
+              ? (language === 'en' ? 'Check equipment before retrying' : 'Проверить снаряжение перед повторным боем')
+              : gearOpportunity
+                ? (language === 'en' ? 'Equip or compare this item' : 'Надеть или сравнить этот предмет')
+                : (language === 'en' ? 'Compare gear before the next fight' : 'Сравнить снаряжение перед следующим боем')}
           </button>
         )}
         {outcome.won && questReady && onQuests && <button type="button" onClick={onQuests} className="relative mt-3 w-full min-h-11 rounded-xl border border-emerald-300/60 bg-emerald-700/70 px-3 text-sm font-bold text-white active:scale-[0.98]">
