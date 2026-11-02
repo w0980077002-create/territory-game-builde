@@ -19,6 +19,23 @@ with sync_playwright() as p:
     gear=page.get_by_role('button',name='Iron Helmet' if lang=='en' else 'Железный шлем');gear.click();dialog=page.get_by_role('dialog');close=dialog.get_by_role('button',name='Close' if lang=='en' else 'Закрыть');r=close.bounding_box();assert r['width']>=43.99 and r['height']>=43.99,(width,lang,ios,r)
     assert close.evaluate('(e)=>document.activeElement===e');page.keyboard.press('Escape');assert dialog.count()==0 and gear.evaluate('(e)=>document.activeElement===e')
     page.goto(f'http://127.0.0.1:{server.server_port}/territory-workshop-after.html?shop');page.wait_for_timeout(400);assert not errors,errors
+    # The shop must use its own real plank/rope/iron artwork, never a stretched
+    # wooden-plaque image or a CSS-only imitation.  All three paths must load.
+    assert page.locator('.territory-shop-sign').evaluate(
+      "(el) => getComputedStyle(el).backgroundImage.includes('shop-wood-planks.webp')"
+    ), (width,lang,'shop missing plank texture')
+    assert page.evaluate("""async () => {
+      const paths = ['shop-wood-planks.webp','shop-rope-wrap.svg','shop-iron-corner.svg'];
+      return (await Promise.all(paths.map(name => new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(img.naturalWidth > 0);
+        img.onerror = () => resolve(false);
+        img.src = '/assets/territory/ui/shop/' + name;
+      })))).every(Boolean);
+    }"""), (width,lang,'shop asset missing')
+    if width == 360 and lang == 'ru' and not ios:
+      os.makedirs('/tmp/territory-stage1-ui',exist_ok=True)
+      page.screenshot(path='/tmp/territory-stage1-ui/shop-real-materials-360.png',full_page=True)
     item=page.get_by_role('button').filter(has_text='Health Potion' if lang=='en' else 'Зелье здоровья').first;item.click();dialog=page.get_by_role('dialog');assert ('Health Potion' if lang=='en' else 'Зелье здоровья') in dialog.locator('h2').inner_text();close=dialog.locator('.territory-modal-close');assert close.bounding_box()['height']>=43.99
     plus=dialog.get_by_role('button',name='Increase quantity' if lang=='en' else 'Увеличить количество');assert plus.bounding_box()['width']>=43.99;plus.click();assert dialog.locator('input[type="range"]').input_value()=='2';page.keyboard.press('Escape');assert dialog.count()==0 and item.evaluate('(e)=>document.activeElement===e')
     page.goto(f'http://127.0.0.1:{server.server_port}/territory-workshop-after.html?professions');page.wait_for_timeout(300);assert not errors,errors
