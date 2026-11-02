@@ -104,6 +104,14 @@ const repo = {
   async commit(p, c, x, r) { return scalar(`SET ROLE service_role; SELECT ${invocation('territory_combat_commit_v1', [p,c,x,r])}`); },
 };
 const execute = (p,c,repository=repo) => executeCombatCommand(repository,p,c,() => 12);
+if (runeCave) {
+ await sql(`DELETE FROM territory_private.rune_ownership_v1 WHERE player_id=${quote(player)} AND rune_id='axe_storm_r1'`);
+ await assert.rejects(execute(player,{action:'start',operationId:op(105),encounterId:'s1',control:'auto'}),/rune_battle_unverified_ownership/);
+ assert.equal(await sql(`SELECT count(*) FROM territory_private.combat_sessions_v1 WHERE player_id=${quote(player)}`),'0');
+ assert.equal(await sql(`SELECT count(*) FROM territory_private.dark_stones_v1 WHERE player_id=${quote(player)}`),'0');
+ assert.equal(await sql(`SELECT count(*) FROM territory_private.rune_battle_snapshots_v1 WHERE player_id=${quote(player)}`),'0');
+ await sql(`SET ROLE service_role; SELECT public.territory_runes_admin_set_level_v1(${quote(player)},'axe_storm_r1',3,${quote(op(106))},'synthetic cave test')`);
+}
 await assert.rejects(execute(player,{action:'start',operationId:op(1),encounterId:'s2',control:'auto'}), /adventure_stage_locked/);
 const startCommand={action:'start',operationId:op(2),encounterId:'s1',control:'auto'};
 const [start,startReplay]=await Promise.all([execute(player,startCommand),execute(player,startCommand)]);

@@ -68,6 +68,21 @@ try {
  }
  await db.exec(`INSERT INTO territory_private.adventure_rewards_v1(stage,encounter_id,enabled,gold,xp,approval_reference) VALUES(1,'s1',true,15,20,'test only'),(2,'s2',true,15,20,'test only')`);
  await q(`UPDATE territory_private.combat_config_v1 SET catalog=$1,rules=$2,enabled=true,settlement_ready=true,approval_reference='test only'`,[{skills:[],runes:[],passives:[]},rules]);
+ if (runeCave) {
+   // A stale/corrupt owned selection must roll back the whole start, including
+   // the dark-stone debit, session and snapshot. Only the fixture owner can
+   // create this otherwise-unreachable state.
+   await q(`DELETE FROM territory_private.rune_ownership_v1 WHERE player_id=$1 AND rune_id='axe_storm_r1'`,[player]);
+   await db.exec('SET ROLE service_role');
+   await assert.rejects(exec({action:'start',operationId:op(105),encounterId:'s1',control:'auto'}),/rune_battle_unverified_ownership/);
+   await db.exec('RESET ROLE');
+   assert.equal((await q('SELECT count(*)::int n FROM territory_private.combat_sessions_v1 WHERE player_id=$1',[player]))[0].n,0);
+   assert.equal((await q('SELECT count(*)::int n FROM territory_private.dark_stones_v1 WHERE player_id=$1',[player]))[0].n,0);
+   assert.equal((await q('SELECT count(*)::int n FROM territory_private.rune_battle_snapshots_v1 WHERE player_id=$1',[player]))[0].n,0);
+   await db.exec('SET ROLE service_role');
+   await rpc('territory_runes_admin_set_level_v1',[player,'axe_storm_r1',3,op(106),'synthetic cave test']);
+   await db.exec('RESET ROLE');
+ }
  await db.exec('SET ROLE service_role');
  await assert.rejects(exec({action:'start',operationId:op(1),encounterId:'s2',control:'auto'}),/adventure_stage_locked/);
  const start=await exec({action:'start',operationId:op(2),encounterId:'s1',control:'auto'});
