@@ -363,6 +363,35 @@ const noRevive = pve.playRound(defeatedHero, { ...guardEnemy, attack: 1000 }, 'l
   null, visibleGuard, false, false, { regen_bp: 2500 });
 assert.equal(noRevive.hero.hp, 0, 'Regeneration must not resurrect a defeated hero');
 assert.equal(noRevive.runeHealAmount, 0, 'No healing after a lethal enemy strike');
+// An already-earned rune status persists between rounds (and only in this
+// fight). Damage over time respects live enemy HP, blocks and elite caps.
+const afflictedEnemy = { ...guardEnemy, hp: 1800, maxHp: 1800, attack: 120 };
+const ailmentsBefore = { bleed: 2, burn: 1, slow: 2, root: 1 };
+const withoutAilment = pve.playRound(woundedHero, afflictedEnemy, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, { dot_damage_bp: 2000 });
+const withAilment = pve.playRound(woundedHero, afflictedEnemy, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, { dot_damage_bp: 2000, damage_vs_slow_bp: 800 }, ailmentsBefore);
+const runeTick = withAilment.hits.find(hit => hit.source === 'rune');
+assert(runeTick && runeTick.amount > 0, 'A bleeding/burning foe must take actual rune damage');
+assert(withAilment.enemy.hp < withoutAilment.enemy.hp, 'Slow-bonus and DOT must lower enemy HP');
+assert.equal(withAilment.hits.filter(hit => hit.targetSide === 'hero').length, 0,
+  'An existing root prevents the next enemy strike');
+assert.equal(withAilment.runeAilments.bleed, 1, 'Bleed lasts across rounds and then expires');
+assert.equal(withAilment.runeAilments.root, 0, 'Root must expire instead of permanently disabling AI');
+assert.deepEqual(ailmentsBefore, { bleed: 2, burn: 1, slow: 2, root: 1 },
+  'Resolving a round must not mutate the previous status');
+const withoutRunes = pve.playRound(woundedHero, afflictedEnemy, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, null, ailmentsBefore);
+assert.equal(withoutRunes.hits.filter(hit => hit.source === 'rune').length, 0,
+  'A fight without a verified rune snapshot cannot import stale rune effects');
+assert(withoutRunes.hits.some(hit => hit.targetSide === 'hero'),
+  'A rune-free enemy cannot be rooted by an unverified or stale ailment');
+const cappedDotEnemy = { ...afflictedEnemy, enemyId: 'ch10_boss', isBoss: true };
+const cappedRuneRound = pve.playRound(hero, cappedDotEnemy, 'legs', [], 100000, 'Follower', 0,
+  null, visibleGuard, false, false, { dot_damage_bp: 2500 }, ailmentsBefore);
+assert(cappedRuneRound.hits.filter(h => h.targetSide === 'enemy').reduce((sum,h) => sum + h.amount, 0) <=
+  balance.eliteRoundDamageCap(cappedDotEnemy.enemyId,true,cappedDotEnemy.maxHp),
+  'Rune DOT cannot exceed the same existing boss per-round damage cap');
 assert.match(source('../src/components/pve/PveFight.tsx'), /const RUNE_PVE_STAGED = false;/,
   'Player rune rollout must remain disabled until server cutover');
 assert.match(source('../src/components/pve/PveFight.tsx'), /parseRuneServerStatus\(data, runeDefinitions\)/,
@@ -406,7 +435,7 @@ assert.match(fightSource, /const guardedZoneLabels = committedEnemyIntent\.block
 assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss strike warning must offer a manual defense action');
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
 
-assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum\.streak === 2, runeEffectsAtStart\.current\)/, 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
+assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum\.streak === 2, runeEffectsAtStart\.current, runeAilments\.current\)/, 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
 assert.match(fightSource, /staggerEnemyGuard\(enemyIntent, staggerReady && !auto\)/, 'Only manual combat can consume the one-round stagger');
 assert.match(fightSource, /setStaggerReady\(elite && !auto && riposteReady && atk === 'legs'/, 'Only a real manual elite leg riposte can earn stagger');
 assert.match(fightSource, /!committedEnemyIntent\.blocks\.includes\(atk\)/, 'A guarded leg strike must not earn stagger');
