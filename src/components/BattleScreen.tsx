@@ -54,9 +54,8 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const nextIndex = Math.min(state.chapterWins, chapter.enemies.length);
   // Read-only classic PvE preparation; server Cave stats and ownership are never inferred here.
   const equippedCount = EQUIPMENT_SLOTS.filter(({ id }) => !!state.player.equipped[id]).length;
-  const heroStats = getComputedStats(state);
-  const heroAttack = heroStats.attack;
-  const heroDefense = heroStats.defense;
+  const heroAttack = getComputedStats(state).attack;
+  const heroDefense = getComputedStats(state).defense;
   const autoHandled = useRef(false);
   const fightStartLocked = useRef(false);
 
