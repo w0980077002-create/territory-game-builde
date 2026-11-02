@@ -316,7 +316,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
 
       <nav className="territory-shop-tabs" role="tablist" aria-label={language==='en'?'Shop categories':'Категории лавки'}>
         {TABS.map((tabItem)=>(
-          <button key={tabItem.id} type="button" role="tab" aria-selected={tab===tabItem.id}
+          <button key={tabItem.id} type="button" role="tab" aria-selected={tab === tabItem.id}
             onClick={()=>setTab(tabItem.id)}
             className={'territory-shop-tab ' + (tab===tabItem.id?'territory-shop-tab--active':'')}>
             {tabItem.id==='potions'?<FlaskConical aria-hidden="true"/>:
