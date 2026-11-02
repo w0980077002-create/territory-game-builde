@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="140" viewBox="0 0 180 140">
+<defs>
+ <linearGradient id="hemp" x1="0" y1="0" x2=".2" y2="1"><stop stop-color="#ffe0a1"/><stop offset=".22" stop-color="#e0ad5c"/><stop offset=".55" stop-color="#a56b31"/><stop offset=".75" stop-color="#e1ad67"/><stop offset="1" stop-color="#533015"/></linearGradient>
+ <filter id="shadow" x="-25%" y="-50%" width="150%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+</defs>
+<g opacity=".38" filter="url(#shadow)" stroke="#1c0b05" stroke-width="27" stroke-linecap="round" fill="none">
+<path d="M-15 27 C39 5 79 46 147 18"/><path d="M-8 68 C40 43 99 89 189 51"/><path d="M-18 106 C35 82 113 124 197 92"/>
+</g>
+<g fill="none" stroke-linecap="round">
+<path d="M-15 21 C39 -1 79 40 147 12" stroke="#4c2712" stroke-width="28"/>
+<path d="M-15 21 C39 -1 79 40 147 12" stroke="url(#hemp)" stroke-width="21"/>
+<path d="M-8 62 C40 37 99 83 189 45" stroke="#4c2712" stroke-width="28"/>
+<path d="M-8 62 C40 37 99 83 189 45" stroke="url(#hemp)" stroke-width="21"/>
+<path d="M-18 100 C35 76 113 118 197 86" stroke="#4c2712" stroke-width="28"/>
+<path d="M-18 100 C35 76 113 118 197 86" stroke="url(#hemp)" stroke-width="21"/>
+<g stroke="#ffe0a0" stroke-width="4.2" stroke-dasharray="6 8" opacity=".8">
+<path d="M-15 18 C39 -4 79 37 147 9"/><path d="M-8 59 C40 34 99 80 189 42"/><path d="M-18 97 C35 73 113 115 197 83"/>
+</g>
+<g stroke="#78431e" stroke-width="3.6" stroke-dasharray="2.5 9" opacity=".8">
+<path d="M-15 27 C39 5 79 46 147 18"/><path d="M-8 68 C40 43 99 89 189 51"/><path d="M-18 106 C35 82 113 124 197 92"/>
+</g></g>
+<path d="M88 54 C75 35 97 25 112 37 C128 52 110 71 92 70 C78 69 75 82 85 92" fill="none" stroke="#43230f" stroke-width="19" stroke-linecap="round"/>
+<path d="M88 54 C75 35 97 25 112 37 C128 52 110 71 92 70 C78 69 75 82 85 92" fill="none" stroke="url(#hemp)" stroke-width="14" stroke-linecap="round"/>
+<path d="M88 54 C75 35 97 25 112 37 C128 52 110 71 92 70 C78 69 75 82 85 92" fill="none" stroke="#ffdf9a" stroke-width="2" stroke-dasharray="5 6" opacity=".8"/>
+</svg>
