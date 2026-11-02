@@ -777,7 +777,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
 
 function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equippedGear, onExit, onNext, questReady, onQuests, onEquipment, onForge, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; gearOpportunity: HeroGearOpportunity | null; equippedGear?: HeroGearOpportunity['item']['equipment']; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; onEquipment?: () => void; onForge?: () => void; nextPending: boolean; nextError: boolean }) {
   const { language } = useLanguage();
-  const gearImprovements = gearOpportunity?.kind !== 'empty' && equippedGear
+  const gearImprovements = gearOpportunity && gearOpportunity.kind !== 'empty' && equippedGear
     ? (['attack', 'defense', 'hp', 'critChance'] as const)
       .map(stat => ({ stat, delta: (gearOpportunity.item.equipment[stat] ?? 0) - (equippedGear[stat] ?? 0) }))
       .filter(change => Number.isFinite(change.delta) && change.delta !== 0)
