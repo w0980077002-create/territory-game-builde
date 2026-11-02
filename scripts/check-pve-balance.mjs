@@ -330,6 +330,39 @@ assert.equal(withRuneCrit.hits[0].tone, 'crit', 'Rune critical chance must alter
 const blockedRune = pve.playRound(starterHero, guardEnemy, 'head', [], 0, '', 0, null, visibleGuard,
   false, false, { damage_bonus_bp: 2500, damage_vs_guard_bp: 2500 });
 assert.equal(blockedRune.hits[0].amount, 0, 'Rune damage cannot pierce a real noncritical block');
+// More server-defined runes now alter battle resolution, not just tooltips.
+const armoredEnemy = { ...guardEnemy, defense: 120 };
+const armorBaseline = pve.playRound(starterHero, armoredEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const armorPierced = pve.playRound(starterHero, armoredEnemy, 'legs', [], 0, '', 0, null, visibleGuard,
+  false, false, { armor_pen_bp: 2500 });
+assert(armorPierced.hits[0].amount > armorBaseline.hits[0].amount,
+  'Armor penetration must increase real damage without changing the enemy equipment');
+assert.equal(armoredEnemy.defense, 120, 'Rune armor piercing must not mutate the original opponent');
+const finishingEnemy = { ...guardEnemy, hp: 140, maxHp: 500 };
+const finisherBaseline = pve.playRound(starterHero, finishingEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const finisherRune = pve.playRound(starterHero, finishingEnemy, 'legs', [], 0, '', 0, null, visibleGuard,
+  false, false, { finisher_damage_bp: 2000 });
+assert(finisherRune.hits[0].amount > finisherBaseline.hits[0].amount,
+  'Finisher rune must change HP damage below 30 percent enemy health');
+const healthyEnemy = { ...guardEnemy, hp: 300, maxHp: 500 };
+const healthyBase = pve.playRound(starterHero, healthyEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const healthyFinisher = pve.playRound(starterHero, healthyEnemy, 'legs', [], 0, '', 0, null, visibleGuard,
+  false, false, { finisher_damage_bp: 2000 });
+assert.equal(healthyFinisher.hits[0].amount, healthyBase.hits[0].amount,
+  'Finisher cannot boost damage outside its defined threshold');
+const woundedHero = { ...starterHero, hp: 500, maxHp: 1000 };
+const noRegen = pve.playRound(woundedHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard);
+const runeRegen = pve.playRound(woundedHero, guardEnemy, 'legs', [], 0, '', 0, null, visibleGuard,
+  false, false, { regen_bp: 1200 });
+assert(runeRegen.hero.hp > noRegen.hero.hp && runeRegen.runeHealAmount > 0,
+  'Rune regeneration must restore actual HP after the opponent attack');
+assert.equal(runeRegen.healAmount, runeRegen.runeHealAmount,
+  'A regeneration-only rune must not be falsely reported as follower healing');
+const defeatedHero = { ...woundedHero, hp: 1 };
+const noRevive = pve.playRound(defeatedHero, { ...guardEnemy, attack: 1000 }, 'legs', [], 0, '', 0,
+  null, visibleGuard, false, false, { regen_bp: 2500 });
+assert.equal(noRevive.hero.hp, 0, 'Regeneration must not resurrect a defeated hero');
+assert.equal(noRevive.runeHealAmount, 0, 'No healing after a lethal enemy strike');
 assert.match(source('../src/components/pve/PveFight.tsx'), /const RUNE_PVE_STAGED = false;/,
   'Player rune rollout must remain disabled until server cutover');
 assert.match(source('../src/components/pve/PveFight.tsx'), /parseRuneServerStatus\(data, runeDefinitions\)/,
