@@ -22,8 +22,16 @@ assert.equal(steps[2].destination, 'shop', 'Players without gear should be sent 
 
 state.inventory = [{ type: 'equipment' }];
 assert.equal(getStarterMilestones(state)[2].destination, 'shop', 'A malformed item must not send a player to an empty equipment tab');
-state.inventory = [{ type: 'equipment', equipment: { slot: 'weapon' } }];
-assert.equal(getStarterMilestones(state)[2].destination, 'inventory', 'Players with gear in the bag should be sent to Inventory');
+state.inventory = [{ type: 'equipment', qty: 0, equipment: { slot: 'weapon' } }];
+assert.equal(getStarterMilestones(state)[2].destination, 'shop', 'Zero-count legacy stacks must not advertise equippable loot');
+state.inventory = [{ type: 'equipment', qty: -2, equipment: { slot: 'weapon' } }];
+assert.equal(getStarterMilestones(state)[2].destination, 'shop', 'Negative-count inventory entries cannot unlock equipment guidance');
+state.inventory = [{ type: 'equipment', qty: Number.NaN, equipment: { slot: 'weapon' } }];
+assert.equal(getStarterMilestones(state)[2].destination, 'shop', 'Invalid quantities cannot unlock equipment guidance');
+state.inventory = [{ type: 'equipment', qty: 1, equipment: { slot: 'unknown' } }];
+assert.equal(getStarterMilestones(state)[2].destination, 'shop', 'Unknown legacy slots cannot unlock equipment guidance');
+state.inventory = [{ type: 'equipment', qty: 1, equipment: { slot: 'weapon' } }];
+assert.equal(getStarterMilestones(state)[2].destination, 'inventory', 'Players with real positive-count gear in the bag should be sent to Inventory');
 state.totalBattlesWon = 1;
 assert.equal(getNextStarterMilestone(getStarterMilestones(state))?.id, 'first-equipment', 'Owned loot after first victory takes priority over two repetitive fights');
 state.totalBattlesWon = 3;
