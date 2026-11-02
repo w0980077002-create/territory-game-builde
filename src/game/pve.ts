@@ -1,6 +1,7 @@
 import { ZONES, type Zone } from './arenaApi';
 import type { Enemy, GameState, InventoryItem } from './types';
 import { getComputedStats } from './engine';
+import type { PveRuneTotals } from './builds/runePveEffectsV1';
 import { eliteRoundDamageCap, followerGuardDamage } from './pveBalance';
 import { followerCombat, selectedFollower } from './followers';
 import { forgeSetBonus } from './forge';
@@ -148,10 +149,19 @@ export function enemySide(e: Enemy): PveSide {
   return { name: e.name, hp: e.maxHp, maxHp: e.maxHp, attack: e.attack, defense: e.defense, critChance: e.isBoss ? 8 : 4, critDamage: 50, enemyId: e.id, isBoss: e.isBoss };
 }
 
-function strike(from: PveSide, to: PveSide, targetSide: PveHit['targetSide'], zone: Zone, blocked: Zone[]): PveHit {
+/** A rune snapshot contains basis points, never client-issued ownership. */
+function runeBp(runes: PveRuneTotals | null, key: string): number {
+  const value = runes?.[key] ?? 0;
+  return Number.isFinite(value) ? Math.min(2500, Math.max(0, Math.floor(value))) : 0;
+}
+
+function strike(from: PveSide, to: PveSide, targetSide: PveHit['targetSide'], zone: Zone, blocked: Zone[],
+  adjustments: { dodgeBp?: number; accuracyBp?: number; critBp?: number } = {}): PveHit {
   const base = { attacker: from.name, target: to.name, targetSide, zone };
-  if (Math.random() * 100 < DODGE_CHANCE) return { ...base, tone: 'dodge', amount: 0 };
-  const crit = Math.random() * 100 < from.critChance;
+  const dodgeChance = Math.max(0, Math.min(50,
+    DODGE_CHANCE + (adjustments.dodgeBp ?? 0) / 100 - (adjustments.accuracyBp ?? 0) / 100));
+  if (Math.random() * 100 < dodgeChance) return { ...base, tone: 'dodge', amount: 0 };
+  const crit = Math.random() * 100 < Math.min(95, from.critChance + (adjustments.critBp ?? 0) / 100);
   const isBlocked = blocked.includes(zone);
   if (isBlocked && !crit) return { ...base, tone: 'block', amount: 0 };
   const spread = 0.9 + Math.random() * 0.2;
@@ -192,7 +202,7 @@ export interface RoundResult {
   healAmount: number;
 }
 
-export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null, enemyIntent: ReturnType<typeof randomZones> | null = null, riposteReady = false, momentumReady = false): RoundResult {
+export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null, enemyIntent: ReturnType<typeof randomZones> | null = null, riposteReady = false, momentumReady = false, runes: PveRuneTotals | null = null): RoundResult {
   // The visible enemy guard is the actual defense used by this round, not a decorative hint.
   // Other callers retain their original random AI by omitting enemyIntent.
   const ai = enemyIntent ?? randomZones();
@@ -207,7 +217,10 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   // previous slice(0, 1) silently ignored the second guard, so a player
   // could hit a supposedly protected zone. Critical guard-piercing remains
   // governed by strike(), exactly as before.
-  const rawHit = strike(hero, piercedEnemy, 'enemy', attack, ai.blocks);
+  const rawHit = strike(hero, piercedEnemy, 'enemy', attack, ai.blocks, {
+    critBp: runeBp(runes, 'crit_chance_bp'),
+    accuracyBp: runeBp(runes, 'accuracy_bp'),
+  });
   const enhancedHit = riposteReady && rawHit.amount > 0
     ? { ...rawHit, amount: Math.round(rawHit.amount * 1.2) }
     : rawHit;
@@ -216,8 +229,19 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   const comboHit = momentumReady && enhancedHit.amount > 0
     ? { ...enhancedHit, amount: Math.round(enhancedHit.amount * 1.15) }
     : enhancedHit;
-  const firstDamage = Math.min(comboHit.amount, damageBudget, enemy.hp);
-  const h1 = { ...comboHit, amount: firstDamage };
+  // A selected rune modifies actual HP loss, not merely a combat label.
+  // Keep the established guard/riposte/combo order and elite boss cap.
+  const attackBonusBp = Math.min(2500,
+    runeBp(runes, 'damage_bonus_bp')
+    + runeBp(runes, 'single_target_damage_bp')
+    + (ai.blocks.includes(attack) ? runeBp(runes, 'damage_vs_guard_bp') : 0)
+    + (riposteReady ? runeBp(runes, 'counter_damage_bp') : 0)
+    + (momentumReady ? runeBp(runes, 'attack_chain_damage_bp') : 0));
+  const runeHit = attackBonusBp > 0 && comboHit.amount > 0
+    ? { ...comboHit, amount: Math.round(comboHit.amount * (1 + attackBonusBp / 10000)) }
+    : comboHit;
+  const firstDamage = Math.min(runeHit.amount, damageBudget, enemy.hp);
+  const h1 = { ...runeHit, amount: firstDamage };
   hits.push(h1);
   damageBudget -= firstDamage;
   let enemyHp = Math.max(0, enemy.hp - firstDamage);
@@ -231,8 +255,11 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   }
   let heroHp = hero.hp;
   if (enemyHp > 0) {
-    const rawEnemyHit = strike(enemy, hero, 'hero', ai.attack, blocks);
-    const mitigated = rawEnemyHit.amount > 0 ? followerGuardDamage(rawEnemyHit.amount, followerDefense) : 0;
+    const rawEnemyHit = strike(enemy, hero, 'hero', ai.attack, blocks, {
+      dodgeBp: runeBp(runes, 'dodge_chance_bp'),
+    });
+    const followerMitigated = rawEnemyHit.amount > 0 ? followerGuardDamage(rawEnemyHit.amount, followerDefense) : 0;
+    const mitigated = Math.round(followerMitigated * (1 - runeBp(runes, 'guard_absorb_bp') / 10000));
     // Only actual HP loss belongs in the hit log and tactical damage counters.
     const h2 = { ...rawEnemyHit, amount: Math.min(mitigated, heroHp) };
     hits.push(h2);
