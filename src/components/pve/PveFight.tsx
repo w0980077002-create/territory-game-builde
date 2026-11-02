@@ -103,6 +103,9 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
   // A committed enemy guard stays fixed until the round is actually resolved.
   const [enemyIntent, setEnemyIntent] = useState(() => randomZones());
   const [adaptiveGuard, setAdaptiveGuard] = useState(false);
+  // Only an actual blocked elite strike in manual mode earns a riposte.
+  // This is per-fight state, never a currency or a saved player attribute.
+  const [riposteReady, setRiposteReady] = useState(false);
   const [blocks, setBlocks] = useState<Zone[]>([]);
   const [busy, setBusy] = useState(false);
   // A speed change applies to the next round. Keep the current visual contact
@@ -207,7 +210,8 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     try {
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     hapticImpact('light');
-    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, enemyIntent);
+    const elite = kind === 'trial' || !!enemy.isBoss;
+    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, enemyIntent, elite && !auto && riposteReady);
     const currentSpeed = useGame.get().settings.speed;
     setRoundSpeed(currentSpeed);
     const pace = 1 / currentSpeed;
@@ -232,6 +236,10 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     setStrike(null);
     const report = summarizePveRound(res.hits);
     setTacticalReport(report);
+    // A displayed warning is not sufficient: only the resolved 'block'
+    // event earns a counterattack. Auto cannot farm this manual tactic.
+    setRiposteReady(elite && !auto && report.enemyStrike === 'block'
+      && res.hero.hp > 0 && res.enemy.hp > 0);
     setBattleTotals(previous => ({
       dealt: previous.dealt + report.dealtDamage,
       taken: previous.taken + report.takenDamage,
@@ -249,7 +257,7 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
       roundFlight.current = false;
       if (alive.current) setBusy(false);
     }
-  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, enemyIntent, confirmSurrender, kind, enemy.isBoss]);
+  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, enemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto]);
 
   useEffect(() => {
     if (!auto || busy || outcome || confirmSurrender) return;
@@ -408,6 +416,15 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
         <span className="text-red-200">{language === 'en' ? 'Damage taken' : 'Получено'}: {battleTotals.taken}</span>
         {battleTotals.companion > 0 && <span className="text-sky-200">{language === 'en' ? 'Companion' : 'Спутник'}: {battleTotals.companion}</span>}
       </div>
+
+      {riposteReady && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
+        <div data-testid="pve-riposte-ready" role="status" aria-live="polite"
+          className="rounded-xl border border-emerald-300/55 bg-[#17352b]/95 px-3 py-2 text-xs font-bold text-emerald-100">
+          ⚔️ {language === 'en'
+            ? 'Perfect guard! Your next strike gets +20% damage before caps. Find an opening to avoid the enemy shield.'
+            : 'Идеальный блок! Следующий удар усилен на 20%. Найди брешь в защите врага.'}
+        </div>
+      )}
 
       {firstFightHelp && !outcome && !auto && <p className="rounded-xl border border-amber-400/40 bg-amber-950/50 px-3 py-2 text-xs leading-relaxed text-amber-100" role="note">
         {language === 'en'

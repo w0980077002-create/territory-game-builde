@@ -136,7 +136,7 @@ export interface RoundResult {
   healAmount: number;
 }
 
-export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null, enemyIntent: ReturnType<typeof randomZones> | null = null): RoundResult {
+export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null, enemyIntent: ReturnType<typeof randomZones> | null = null, riposteReady = false): RoundResult {
   // The visible enemy guard is the actual defense used by this round, not a decorative hint.
   // Other callers retain their original random AI by omitting enemyIntent.
   const ai = enemyIntent ?? randomZones();
@@ -144,9 +144,15 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   const cap = eliteRoundDamageCap(enemy.enemyId ?? '', !!enemy.isBoss, enemy.maxHp);
   let damageBudget = cap ?? Number.POSITIVE_INFINITY;
   const piercedEnemy = bonus?.pierce ? { ...enemy, defense: Math.max(0, Math.floor(enemy.defense * (1 - bonus.pierce))) } : enemy;
+  // A successful manual elite guard grants ONE stronger next strike. Apply
+  // the bonus to actual damage only after dodge/block/crit resolution, then
+  // pass through the existing elite cap and remaining HP clamp.
   const rawHit = strike(hero, piercedEnemy, 'enemy', attack, ai.blocks.slice(0, 1));
-  const firstDamage = Math.min(rawHit.amount, damageBudget, enemy.hp);
-  const h1 = { ...rawHit, amount: firstDamage };
+  const enhancedHit = riposteReady && rawHit.amount > 0
+    ? { ...rawHit, amount: Math.round(rawHit.amount * 1.2) }
+    : rawHit;
+  const firstDamage = Math.min(enhancedHit.amount, damageBudget, enemy.hp);
+  const h1 = { ...enhancedHit, amount: firstDamage };
   hits.push(h1);
   damageBudget -= firstDamage;
   let enemyHp = Math.max(0, enemy.hp - firstDamage);
