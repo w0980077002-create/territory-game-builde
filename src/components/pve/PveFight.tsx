@@ -281,9 +281,20 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
     }
     if (!alive.current) return;
     if (res.healAmount > 0) {
-      if (follower?.id === 'follower_pumpkin_witch_2026') { const sequence = ++keyRef.current; setWitchHeal(sequence); setWitchPose({kind: 'heal', sequence}); }
+      const runeHealing = res.runeHealAmount ?? 0;
+      const companionHealing = res.healAmount - runeHealing;
+      if (companionHealing > 0 && follower?.id === 'follower_pumpkin_witch_2026') {
+        const sequence = ++keyRef.current;
+        setWitchHeal(sequence);
+        setWitchPose({ kind: 'heal', sequence });
+      }
       setHero((h) => ({ ...h, hp: Math.min(h.maxHp, h.hp + res.healAmount) }));
-      pushLog(language === 'en' ? `Companion healed ${res.healAmount} HP` : `Спутник восстановил ${res.healAmount} HP`);
+      if (companionHealing > 0) pushLog(language === 'en'
+        ? `Companion healed ${companionHealing} HP`
+        : `Спутник восстановил ${companionHealing} HP`);
+      if (runeHealing > 0) pushLog(language === 'en'
+        ? `Rune regeneration restored ${runeHealing} HP`
+        : `Руна восстановления вернула ${runeHealing} HP`);
     }
     setStrike(null);
     const report = summarizePveRound(res.hits);
