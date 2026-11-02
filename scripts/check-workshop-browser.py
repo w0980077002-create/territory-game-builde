@@ -21,10 +21,10 @@ with sync_playwright() as p:
     page.goto(f'http://127.0.0.1:{server.server_port}/territory-workshop-after.html?shop');page.wait_for_timeout(400);assert not errors,errors
     # Full stage, hanging sign, horizontal product rows and all visual assets.
     assert page.locator('.territory-shop-sign').evaluate(
-      "(el) => getComputedStyle(el).backgroundImage.includes('shop-hanging-sign.svg')"
+      "(el) => getComputedStyle(el).backgroundImage.includes('shop-reference-sign.webp')"
     ), (width,lang,'shop missing plank texture')
     assert page.evaluate("""async () => {
-      const paths = ['shop-wood-planks.webp','shop-wood-beams.webp','shop-rope-wrap.svg','shop-iron-corner.svg','shop-market-stage.svg','shop-hanging-sign.svg'];
+      const paths = ['shop-wood-planks.webp','shop-wood-beams.webp','shop-rope-wrap.svg','shop-iron-corner.svg','shop-market-stage.svg','shop-hanging-sign.svg','shop-reference-sign.webp','shop-reference-market.webp','shop-reference-license-frame.webp','shop-reference-product-frame.webp'];
       return (await Promise.all(paths.map(name => new Promise(resolve => {
         const img = new Image();
         img.onload = () => resolve(img.naturalWidth > 0);
@@ -32,6 +32,15 @@ with sync_playwright() as p:
         img.src = '/assets/territory/ui/shop/' + name;
       })))).every(Boolean);
     }"""), (width,lang,'shop asset missing')
+    assert page.locator('.territory-shop-facade__scenery').evaluate(
+      "(el) => getComputedStyle(el).backgroundImage.includes('shop-reference-market.webp')"
+    ), (width,lang,'painted shop background missing')
+    assert page.locator('.territory-shop-license').evaluate(
+      "(el) => getComputedStyle(el,'::after').borderImageSource.includes('shop-reference-license-frame.webp')"
+    ), (width,lang,'license illustrated frame missing')
+    assert page.locator('.territory-shop-product').first.evaluate(
+      "(el) => getComputedStyle(el,'::before').borderImageSource.includes('shop-reference-product-frame.webp')"
+    ), (width,lang,'product illustrated frame missing')
     assert page.locator('.territory-shop-facade').count()==1
     assert page.locator('.territory-shop-wallet__cell').count()==4
     assert page.locator('.territory-shop-product').count()>0
