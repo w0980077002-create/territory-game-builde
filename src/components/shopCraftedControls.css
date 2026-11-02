@@ -1,0 +1,378 @@
+/* TERRITORY / SHOP — approved 2026-11-03 mobile presentation.
+ * The bright hanging shop facade is the approved picture, used unchanged.
+ * All functional containers use independent hand-drawn, clean nine-slice SVG
+ * frames. NO crops, duplicated printed prices, or sliced merchandise images.
+ * Touch targets stay >=44px. Live prices/transactions never use decorative art.
+ */
+.viking-screen--shop.territory-shop-approved {
+  isolation:isolate;
+  background:
+    linear-gradient(90deg,#3a170b70,#b56d2e29 10%,#c47b3b28 90%,#36150865),
+    var(--shop-planks) center / 430px auto repeat;
+  border-left:2px solid #b97a38;
+  border-right:2px solid #b97a38;
+  box-shadow:inset 3px 0 8px #341003, inset -3px 0 8px #341003;
+  padding-bottom:12px;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-facade {
+  position:relative;
+  height:clamp(148px,43vw,216px);
+  min-height:148px;
+  overflow:hidden;
+  border:0;
+  border-bottom:4px ridge #e6a455;
+  border-radius:0;
+  background:#9d5d37;
+  box-shadow:0 5px 10px #2a0c05aa;
+}
+.viking-screen--shop.territory-shop-approved--ru .territory-shop-facade__scenery {
+  background:var(--shop-approved-facade) center / 100% 100% no-repeat;
+}
+.viking-screen--shop.territory-shop-approved--en .territory-shop-facade__scenery {
+  background:var(--shop-market) center / cover no-repeat;
+}
+.viking-screen--shop.territory-shop-approved--ru .territory-shop-sign {
+  background:none;filter:none;pointer-events:none;
+}
+.viking-screen--shop.territory-shop-approved--ru .territory-shop-sign__title,
+.viking-screen--shop.territory-shop-approved--ru .territory-shop-sign__subtitle {
+  /* RU title is painted into the exact owner-approved canopy.
+     Keep the live semantic heading for assistive readers, not a double print. */
+  opacity:0;
+}
+.viking-screen--shop.territory-shop-approved--en .territory-shop-sign {
+  background:var(--shop-sign-art) center / 100% 100% no-repeat;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-sign {
+  z-index:1;top:9%;height:88%;width:min(95%,550px);
+  padding:37px 27px 11px;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-sign__title {
+  color:#ffebae;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(28px,8vw,40px);
+  text-shadow:0 3px #3d1607,0 0 6px #ffcb6360;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-sign__subtitle {
+  color:#fff1d9; font-size:clamp(10px,3vw,14px);
+  text-shadow:1px 2px #301006;
+  line-height:1.15;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-wallet {
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  min-height:48px;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 11px,#2711092e 11px 13px),
+    linear-gradient(180deg,#bd8043,#70391c 20%,#3e200f 55%,#9b602e 91%,#30150b);
+  border-top:2px ridge #ffcf85;
+  border-bottom:4px ridge #bd763c;
+  box-shadow:inset 0 1px #fff0b18c,0 4px 9px #170905cc;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-wallet__cell {
+  min-width:0;padding:4px 1px;
+  border-right:2px solid #321707;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-wallet__currency {
+  max-width:100%;
+  font-size:clamp(11px,3.25vw,16px);
+  font-weight:900;
+  color:#ffedc4;
+  text-shadow:0 2px 1px #240a04;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license {
+  position:relative;isolation:isolate;
+  display:grid;
+  grid-template-columns:clamp(86px,25%,116px) minmax(0,1fr);
+  align-items:center;
+  gap:clamp(8px,2.5vw,14px);
+  min-width:0;
+  margin:10px 8px 8px;
+  padding:15px;
+  border:1px solid #b27c45;
+  border-radius:3px;
+  overflow:visible;
+  background:
+    radial-gradient(circle at 16% 50%,#ecae4e9c,transparent 36%),
+    linear-gradient(90deg,#51270edc,#84421bd1 48%,#3a1a0de7),
+    var(--shop-planks) center / cover;
+  box-shadow:inset 0 1px #ffdf9eaa,inset 0 -3px #3c1a08,0 4px 11px #240b04c9;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license::after {
+  content:"";z-index:4;pointer-events:none;
+  position:absolute;inset:0;width:auto;height:auto;
+  border:14px solid transparent;
+  border-image-source:var(--shop-crafted-license);
+  border-image-slice:22;
+  border-image-width:14px;
+  border-image-repeat:stretch;
+  background:none;
+  clip-path:none;
+  opacity:1;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license::before {
+  content:"";position:absolute;inset:14px;
+  z-index:0;pointer-events:none;
+  background:repeating-linear-gradient(-2deg,transparent 0 18px,#f1c08818 19px 20px,transparent 21px 35px);
+  opacity:.7;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license__glow {
+  width:140px;height:150px;left:-12px;
+  background:radial-gradient(circle,#ffda6ba0 0%,#ffbe5c76 35%,transparent 74%);
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license__art {
+  z-index:1;position:relative;
+  aspect-ratio:1;
+  background:radial-gradient(circle,#ed9f4272 0%,#471e166e 75%);
+  border:2px solid #eebf64;
+  border-radius:7px;
+  box-shadow:0 0 14px #ffd05971,inset 0 0 0 2px #4c2013;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license__art img {
+  width:106%;height:106%;object-fit:contain;
+  filter:drop-shadow(0 0 9px #ffca63b8) drop-shadow(0 3px 3px #240a06);
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license__copy {
+  min-width:0;z-index:2;gap:4px;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license__rarity {
+  color:#fff2bd;
+  background:linear-gradient(#aa6629,#4e260c);
+  border:1px solid #eac16d;
+  border-radius:3px;
+  font-size:clamp(9px,2.8vw,12px);
+  padding:2px 6px;
+  text-shadow:0 1px #351407;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license__title {
+  color:#ffedb7;
+  font-family:Georgia,"Times New Roman",serif;
+  font-weight:900;
+  font-size:clamp(15px,4.15vw,20px);
+  line-height:1.1;
+  text-shadow:0 2px #2e0d06,0 0 5px #ffc15358;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license__description {
+  color:#fff0d6;
+  font-size:clamp(11px,2.85vw,14px);line-height:1.24;
+  text-shadow:0 1px 1px #32120a;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license__owned {
+  color:#8bfa98;font-size:clamp(11px,3vw,14px);font-weight:900;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license__buy {
+  position:relative;z-index:2;
+  width:100%;min-height:44px;
+  border:2px ridge #d8c4a5;border-radius:5px;clip-path:none;
+  color:#f6e7cc;
+  background:linear-gradient(180deg,#a5adb1,#56606b 18%,#303642 75%,#77818a);
+  box-shadow:inset 0 2px #eee6d1aa,inset 0 -3px #1b1e26,0 3px 2px #2a1007;
+  font-size:clamp(11px,3vw,14px);text-shadow:0 1px #281608;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-license__buy:not(:disabled) {
+  background:linear-gradient(#ffe59b,#db9e38 55%,#a35a1e);
+  color:#3b1e0c;text-shadow:0 1px #ffefc2;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-tabs {
+  position:relative;isolation:isolate;
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;margin:4px 8px 8px;padding:8px;
+  border:2px ridge #ac6b34;border-radius:5px;
+  background:linear-gradient(#b4763a,#4c260e 35%,#371908 78%,#8b4e29);
+  box-shadow:inset 0 2px #fff0bb80,0 4px 8px #1a0606b8;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-tab {
+  position:relative;min-width:0;min-height:46px;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:5px 9px;
+  color:#ffe5b5;text-shadow:0 2px #1b1415;
+  background:linear-gradient(#969ca4,#4b4d57 20%,#25242e 76%,#6c6d73);
+  border:1px solid #a6acb2;border-radius:4px;
+  box-shadow:inset 0 1px #f8f3d29c,inset 0 -3px #20212a,0 2px 3px #1b0805;
+  font-size:clamp(9px,2.3vw,12px);
+  font-weight:900;
+  gap:3px;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-tab::before {
+  content:"";position:absolute;inset:0;pointer-events:none;
+  border:9px solid transparent;
+  border-image-source:var(--shop-crafted-tab);
+  border-image-slice:22;
+  border-image-width:9px;
+  border-image-repeat:stretch;
+  border-radius:0;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-tab svg {
+  width:clamp(14px,3.7vw,18px);height:clamp(14px,3.7vw,18px);
+  flex:none;
+  color:#f1d19d;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-tab span {
+  display:block;
+  min-width:0;
+  white-space:nowrap;
+  letter-spacing:-.025em;
+  overflow:visible;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-tab--active {
+  color:#fff6d1;
+  background:linear-gradient(#ffe9a1,#de9c41 17%,#a75d18 72%,#e4af60);
+  border-color:#ffe2a0;text-shadow:0 1px #512508;
+  box-shadow:inset 0 2px #fff2bf,inset 0 -3px #7d3c0b,0 0 8px #ffbf4896;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-tab--active svg {
+  color:#fff6ca;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-products {
+  display:flex;flex-direction:column;gap:8px;padding:0 8px 8px;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product {
+  position:relative;isolation:isolate;
+  display:grid;
+  grid-template-columns:clamp(79px,24vw,105px) minmax(0,1fr) clamp(94px,27vw,116px);
+  align-items:center;
+  gap:7px;
+  min-height:clamp(135px,36vw,154px);
+  padding:13px 11px;
+  border:1px solid #b17a39;border-radius:4px;
+  background:
+    radial-gradient(circle at 10% 36%,#b1753a51,transparent 35%),
+    linear-gradient(100deg,#48230ef2,#7e3c18e6 47%,#451e0ff2),
+    var(--shop-planks) center / cover;
+  box-shadow:inset 0 1px #ffca8691,inset 0 -3px #270f06a0,0 5px 8px #110704d0;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product::before {
+  content:"";position:absolute;inset:-1px;z-index:3;
+  width:auto;height:auto;pointer-events:none;
+  background:none;clip-path:none;
+  border:13px solid transparent;
+  border-image-source:var(--shop-crafted-product);
+  border-image-slice:22;
+  border-image-width:13px;
+  border-image-repeat:stretch;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product::after { display:none; }
+.viking-screen--shop.territory-shop-approved .territory-shop-product__art {
+  min-width:0;position:relative;z-index:1;
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  padding:2px;
+  border:3px ridge #c18ac9;
+  border-radius:5px;
+  background:radial-gradient(circle at 50% 38%,#ae66bf,#612b75 65%,#291333);
+  box-shadow:inset 0 0 15px #ce77cf78,0 3px 5px #18060dc4;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__art img {
+  max-width:100%;max-height:100%;object-fit:contain;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__information {
+  position:relative;min-width:0;z-index:1;gap:4px;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__detail {
+  width:100%;min-width:0;gap:5px;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__name {
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(12px,3.5vw,18px);
+  line-height:1.15;font-weight:900;
+  overflow-wrap:anywhere;
+  text-shadow:0 2px #160705,0 0 3px #2d0806;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__description {
+  font-size:clamp(10px,2.65vw,13px);
+  color:#fff0d8;line-height:1.23;overflow-wrap:anywhere;
+  text-shadow:0 1px #1d0b08;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__stock,
+.viking-screen--shop.territory-shop-approved .territory-shop-product__expiry,
+.viking-screen--shop.territory-shop-approved .territory-shop-product__amount {
+  color:#ffe0a3;font-size:clamp(9px,2.5vw,12px);
+  font-weight:800;
+  display:flex;align-items:center;gap:4px;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__actions {
+  position:relative;min-width:0;z-index:1;
+  display:flex;flex-direction:column;align-items:stretch;gap:6px;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__stepper {
+  width:100%;min-height:44px;
+  display:grid;grid-template-columns:35px minmax(0,1fr) 35px;
+  align-items:center;
+  border:1px ridge #9e8069;border-radius:3px;
+  background:linear-gradient(#322520,#171417);
+  box-shadow:inset 0 1px #e6c08a80,0 2px 3px #250905;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__stepper button {
+  display:flex;align-items:center;justify-content:center;
+  min-height:44px;
+  border:2px ridge #abb0b6;border-radius:3px;
+  background:linear-gradient(#b7bcc1,#535762 22%,#292a34 80%,#777b83);
+  color:#fff6e8;
+  box-shadow:inset 0 1px #fff6dfa4,inset 0 -2px #1a1b23;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__stepper button:disabled {opacity:.45;}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__stepper output {
+  font-size:15px;color:#ffe5aa;font-weight:900;text-align:center;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__buy {
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:0;
+  width:100%;min-height:44px;padding:3px 2px;
+  border:3px ridge #e9bf66;border-radius:5px;
+  color:#fff9dd;font-size:clamp(11px,3vw,14px);font-weight:900;
+  text-shadow:0 1px #15390c;
+  background:linear-gradient(#b5f57b,#61bf39 19%,#25852b 68%,#18631d);
+  box-shadow:inset 0 1px #e8ffcba3,inset 0 -3px #0d4014,0 3px 3px #250a05;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__buy:disabled {
+  filter:saturate(.6);opacity:.55;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__buy .inline-flex {
+  font-size:clamp(11px,3.1vw,15px);font-weight:900;white-space:nowrap;
+}
+.viking-screen--shop.territory-shop-approved .territory-shop-product__buy:not(:disabled):active {
+  transform:translateY(1px);
+}
+@media(max-width:359px) {
+  .viking-screen--shop.territory-shop-approved .territory-shop-facade {height:148px;}
+  .viking-screen--shop.territory-shop-approved .territory-shop-license {
+    grid-template-columns:80px minmax(0,1fr);
+    margin:8px 6px;padding:11px;gap:7px;
+  }
+  .viking-screen--shop.territory-shop-approved .territory-shop-license__title {font-size:14px;}
+  .viking-screen--shop.territory-shop-approved .territory-shop-product {
+    /* The 320px case needs two rows instead of squeezed three columns. */
+    grid-template-columns:76px minmax(0,1fr);
+    column-gap:9px;row-gap:7px;
+    min-height:154px;
+    padding:12px 11px;
+  }
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__art {grid-column:1;}
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__information {grid-column:2;}
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__actions {
+    grid-column:1/-1;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    align-items:center;
+    gap:8px;
+    min-width:0;
+    width:100%;
+  }
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__stepper {
+    width:100%;min-width:0;max-width:none;
+    grid-template-columns:44px minmax(0,1fr) 44px;
+  }
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__stepper button {
+    min-width:44px;
+  }
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__buy {
+    width:100%;min-width:0;max-width:none;min-height:44px;
+    flex-direction:row;gap:4px;
+    font-size:12px;
+  }
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__name {font-size:14px;}
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__description {font-size:11px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .viking-screen--shop.territory-shop-approved .territory-shop-tab,
+  .viking-screen--shop.territory-shop-approved .territory-shop-product__buy{transition:none;}
+}

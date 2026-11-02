@@ -11,13 +11,13 @@ import { MAX_SHOP_PURCHASE_QTY } from '@/game/purchaseGuard';
 import { calendarDayKey } from '@/game/weeklyQuests';
 import { utcMidnight } from '@/game/seasonCalendar';
 import { rarityColor } from '@/game/ui';
-import { CheckCircle2, Sword, Shield, Heart, Star, Minus, Plus, Clock, Crown, Sparkles, LockKeyhole, X, FlaskConical, Gem, Swords } from 'lucide-react';
+import { CheckCircle2, Sword, Shield, Heart, Star, Minus, Plus, Clock, Crown, Sparkles, LockKeyhole, X, FlaskConical, Gem, Swords, Package } from 'lucide-react';
 import type { GameState, ShopItem } from '@/game/types';
 import { ItemArt } from './ui/ItemArt';
 import { Currency, formatAmount } from './ui/Currency';
 import { IosGamePortal, Modal } from './ui/Modal';
 import './shopWoodFinish.css';
-import './shopIllustratedFinish.css';
+import './shopCraftedControls.css';
 import { useLive, SHOP_SALE_FACTOR } from '@/game/live';
 import { fetchShopStatus, purchaseServerStones, readPendingShop, keepPendingShop, type ShopStatus, type PendingShop } from '@/game/shopApi';
 import {
@@ -88,6 +88,14 @@ function formatDuration(ms: number): string {
 
 const shopMaterialStyles = {
   '--shop-market': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-market-stage.svg")',
+  '--shop-approved-facade': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-facade.webp")',
+  '--shop-crafted-product': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/crafted-product-frame.svg")',
+  '--shop-crafted-license': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/crafted-license-frame.svg")',
+  '--shop-crafted-tab': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/crafted-tab-frame.svg")',
+  '--shop-approved-license-border': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-license-border.webp")',
+  '--shop-approved-product-border': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-product-border.webp")',
+  '--shop-approved-product-v2': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-product-border-v2.webp")',
+  '--shop-approved-tabs-border': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-tabs-border.webp")',
   '--shop-painted-market': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-reference-market.webp")',
   '--shop-painted-sign': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-reference-sign.webp")',
   '--shop-painted-license': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-reference-license-frame.webp")',
@@ -272,7 +280,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
   };
 
   return (
-    <div className="viking-screen viking-screen--shop territory-shop-showcase animate-fade-in pb-2" style={shopMaterialStyles}>
+    <div className={`viking-screen viking-screen--shop territory-shop-showcase territory-shop-approved ${language === 'ru' ? 'territory-shop-approved--ru' : 'territory-shop-approved--en'} animate-fade-in pb-2`} style={shopMaterialStyles}>
       <section className="territory-shop-facade" aria-label={language === 'en' ? 'Viking market stall' : 'Торговая лавка викингов'}>
         <div className="territory-shop-facade__scenery" aria-hidden="true" />
         <div className="territory-shop-sign" role="group" aria-label={t('shop')}>
@@ -363,8 +371,10 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
                   </span>
                   <span className="territory-shop-product__description">{localizeText(item.description,language)}</span>
                 </button>
-                {(item.type==='elixir'||item.type==='potion'||item.type==='arena'||item.id==='shop_forge_material')&&
-                  <span className="territory-shop-product__expiry"><Clock size={12} aria-hidden="true"/>{language==='en'?'7-day shelf life':'Срок 7 суток'}</span>}
+                {item.type==='potion'
+                  ? <span className="territory-shop-product__stock"><Package size={13} aria-hidden="true"/>{language==='en'?'Owned: ':'В наличии: '}{state.inventory.filter(entry=>entry.type==='potion'&&entry.name===item.name).reduce((total,entry)=>total+entry.qty,0)}</span>
+                  : (item.type==='elixir'||item.type==='arena'||item.id==='shop_forge_material')&&
+                    <span className="territory-shop-product__expiry"><Clock size={12} aria-hidden="true"/>{language==='en'?'7-day shelf life':'Срок 7 суток'}</span>}
                 {item.amount&&item.type!=='equipment'&&<span className="territory-shop-product__amount">×{item.amount}</span>}
               </div>
               <div className="territory-shop-product__actions">
