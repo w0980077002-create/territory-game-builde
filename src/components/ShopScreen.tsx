@@ -92,6 +92,7 @@ const shopMaterialStyles = {
   '--shop-approved-facade': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-facade.webp")',
   '--shop-approved-license-border': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-license-border.webp")',
   '--shop-approved-product-border': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-product-border.webp")',
+  '--shop-approved-product-v2': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-product-border-v2.webp")',
   '--shop-approved-tabs-border': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-tabs-border.webp")',
   '--shop-painted-market': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-reference-market.webp")',
   '--shop-painted-sign': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-reference-sign.webp")',
