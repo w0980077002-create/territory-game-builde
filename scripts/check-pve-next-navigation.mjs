@@ -279,3 +279,40 @@ assert.match(battle, /\+3 Forge materials guaranteed/,
 assert.match(actionsSource, /enemy\.isBoss \? 3 : Math\.random\(\) < 0\.35 \? 1 : 0/,
   'The shown 35% / +3 material rules must match the existing reward function');
 console.log('Campaign loot preview PASS: real XP, 35% normal material and +3 guaranteed boss material.');
+
+// #136: a real pre-boss tactical decision before spending a stone. This
+// compares existing stats and exposes only mechanics the live classic elite
+// resolver already applies; no fake win chance or client-side reward.
+const eliteBriefBundle = await build({
+  entryPoints: ['src/game/eliteEncounterBrief.ts'],
+  bundle: true, write: false, platform: 'node', format: 'esm',
+});
+const { getEliteEncounterBrief } = await import(
+  'data:text/javascript;base64,' + Buffer.from(eliteBriefBundle.outputFiles[0].text).toString('base64')
+);
+const eliteEnemy = { attack: 31, defense: 22 };
+const savedHero = { attack: 18, defense: 10 };
+const originalHero = JSON.stringify(savedHero);
+const originalEnemy = JSON.stringify(eliteEnemy);
+const eliteBrief = getEliteEncounterBrief(eliteEnemy, savedHero);
+assert.equal(eliteBrief.attackAtOrBelowDefense, true, 'a heavily armored enemy must trigger the weapon comparison');
+assert.equal(eliteBrief.enemyAttackExceedsDefense, true, 'a dangerous enemy must trigger block/heal preparation');
+assert.equal(eliteBrief.enemyDefense, 22);
+assert.equal(eliteBrief.heroAttack, 18);
+assert.equal(getEliteEncounterBrief({ attack: 5, defense: 3 }, { attack: 30, defense: 20 }).attackAtOrBelowDefense, false,
+  'a stronger hero must not be warned about nonexistent armor disadvantage');
+assert.equal(getEliteEncounterBrief({ attack: 5, defense: 3 }, { attack: 30, defense: 20 }).enemyAttackExceedsDefense, false,
+  'a stronger hero must not be warned about nonexistent defense disadvantage');
+assert.equal(JSON.stringify(savedHero), originalHero, 'tactical advice must never mutate the saved hero');
+assert.equal(JSON.stringify(eliteEnemy), originalEnemy, 'tactical advice must never mutate the enemy');
+assert.match(battle, /enemy\.isBoss && <EliteTacticPreview/, 'only the unlocked campaign boss gets elite guidance');
+assert.match(battle, /<TrialPanel[^\n]*heroAttack=\{heroAttack\} heroDefense=\{heroDefense\}/,
+  'Trials must use the same actual hero stats');
+assert.match(battle, /<EliteTacticPreview enemy=\{enemy\} heroAttack=\{heroAttack\} heroDefense=\{heroDefense\} language=\{language\} \/>/,
+  'the current Trial must show the real elite tactical guidance');
+assert.match(battle, /data-testid="elite-tactic-preview"/, 'the pre-spend tactical hint must be visible');
+assert.match(fight, /nextAdaptiveEnemyIntent\(res\.enemy, atk, kind === 'trial' \|\| !!enemy\.isBoss/,
+  'do not advertise adaptive elite guards if they are not wired to real PvE rounds');
+assert.match(fight, /nextTacticalMomentum\(previous, atk, report\.heroStrike, elite && !auto/,
+  'manual elite combo must remain connected to actual resolved strikes');
+console.log('PvE elite preparation PASS: real hero/enemy comparisons, boss/trial tactics, no mutations or invented odds.');
