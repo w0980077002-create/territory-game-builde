@@ -302,7 +302,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
         ))}
       </section>
 
-      <section className="territory-shop-license" aria-label={language==='en'?'Master License offer':'Лицензия мастера'}>
+      <section className={'territory-shop-license' + (licenseStatus?.owned ? ' territory-shop-license--owned' : '')} aria-label={language==='en'?'Master License offer':'Лицензия мастера'}>
         <div className="territory-shop-license__glow" aria-hidden="true" />
         <div className="territory-shop-license__art">
           <img src={MASTER_LICENSE_ART} loading="lazy" alt={language==='en'?'Master License':'Лицензия мастера'} />
@@ -314,12 +314,11 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
           {licenseStatus?.owned
             ? <p className="territory-shop-license__owned"><CheckCircle2 size={16} aria-hidden="true"/>{language==='en'?'Owned forever':'Куплено навсегда'}</p>
             : <p className="territory-shop-license__cost"><Currency kind="redGems" value={MASTER_LICENSE_PRICE_RED} size={16}/></p>}
-          <button type="button" onClick={()=>setLicenseOpen(true)}
-            disabled={!licenseStatus||licenseBusy||licenseStatus.owned||!!licensePending}
+          {!licenseStatus?.owned && <button type="button" onClick={()=>setLicenseOpen(true)}
+            disabled={!licenseStatus||licenseBusy||!!licensePending}
             className="territory-shop-license__buy">
-            {licenseStatus?.owned?<><CheckCircle2 size={16}/>{language==='en'?'Purchased':'Уже куплена'}</>
-              :<><Crown size={16}/>{language==='en'?'Buy license':'Купить лицензию'}</>}
-          </button>
+            <Crown size={16}/>{language==='en'?'Buy license':'Купить лицензию'}
+          </button>}
         </div>
         {!licenseStatus&&!licenseError&&<p className="territory-shop-license__message">{language==='en'?'Checking shop server…':'Проверяем сервер лавки…'}</p>}
         {licensePending&&<button disabled={licenseBusy} onClick={()=>{void retryLicense();}} className="territory-shop-license__retry">{language==='en'?'Retry saved license purchase':'Повторить сохранённую покупку'}</button>}
