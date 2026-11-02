@@ -17,6 +17,7 @@ import { ItemArt } from './ui/ItemArt';
 import { Currency, formatAmount } from './ui/Currency';
 import { IosGamePortal, Modal } from './ui/Modal';
 import './shopWoodFinish.css';
+import './shopIllustratedFinish.css';
 import { useLive, SHOP_SALE_FACTOR } from '@/game/live';
 import { fetchShopStatus, purchaseServerStones, readPendingShop, keepPendingShop, type ShopStatus, type PendingShop } from '@/game/shopApi';
 import {
@@ -87,6 +88,10 @@ function formatDuration(ms: number): string {
 
 const shopMaterialStyles = {
   '--shop-market': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-market-stage.svg")',
+  '--shop-painted-market': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-reference-market.webp")',
+  '--shop-painted-sign': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-reference-sign.webp")',
+  '--shop-painted-license': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-reference-license-frame.webp")',
+  '--shop-painted-product': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-reference-product-frame.webp")',
   '--shop-sign-art': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-hanging-sign.svg")',
   '--shop-planks': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-wood-planks.webp")`,
   '--shop-beams': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-wood-beams.webp")`,
