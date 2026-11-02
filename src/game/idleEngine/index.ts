@@ -114,6 +114,11 @@ function emit(state: IdleCombatState, events: IdleCombatEvent[], event: Omit<Idl
 function validateInput(input: IdleCombatInput) {
   if (!input || !integer(input.seed, 0, 0xffffffff) || !integer(input.stage, 1)
     || !['pve', 'boss', 'pvp'].includes(input.mode) || !['manual', 'auto'].includes(input.control)) fail('invalid input');
+  const runes = input.serverRuneEffects;
+  if (runes !== undefined && (!runes || typeof runes !== 'object'
+    || typeof runes.battleId !== 'string' || !/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(runes.battleId)
+    || Object.keys(runes).sort().join(',') !== 'accuracy_bp,battleId,crit_chance_bp,damage_bonus_bp,damage_vs_guard_bp,dodge_chance_bp,guard_absorb_bp'
+    || ![runes.damage_bonus_bp,runes.damage_vs_guard_bp,runes.guard_absorb_bp,runes.crit_chance_bp,runes.dodge_chance_bp,runes.accuracy_bp].every(v => integer(v,0,2500)))) fail('invalid server rune effects');
   const r = input.rules;
   if (!r || !integer(r.stepMs, 10, 1000) || !integer(r.maxDurationMs, r.stepMs, 600_000)
     || r.maxDurationMs % r.stepMs || !integer(r.approachMs, 0, 600_000)
@@ -272,9 +277,11 @@ function resolveAttack(state: IdleCombatState, events: IdleCombatEvent[], actor:
   const skill = skillId ? state.input.catalog.skills.find(s => s.id === skillId) : undefined;
   const selected = attacker.loadout.skills.find(s => s.skillId === skillId);
   const level = skill && selected ? skill.levels[selected.level - 1] : undefined;
-  const precision = probability(modifier(attacker, 'precision'));
+  const runes = state.input.serverRuneEffects;
+  const precision = probability(modifier(attacker, 'precision') + (actor === 'hero' ? (runes?.accuracy_bp ?? 0) / 10000 : 0));
   const blind = probability(modifier(attacker, 'blind'));
-  if (random(state) < probability(defender.stats.dodgeChance + modifier(defender, 'evasion') + blind - precision)) {
+  if (random(state) < probability(defender.stats.dodgeChance + modifier(defender, 'evasion') + blind - precision
+    + (target === 'hero' ? (runes?.dodge_chance_bp ?? 0) / 10000 : 0))) {
     emit(state, events, { actor: target, target: actor, type: 'dodge', skillId });
     return;
   }
@@ -285,15 +292,25 @@ function resolveAttack(state: IdleCombatState, events: IdleCombatEvent[], actor:
     * rules.modeDamageMultiplier[state.input.mode]
     - defender.stats.defense * (1 + modifier(defender, 'defense'))
     * (phase(defender)?.defenseMultiplier ?? 1) * rules.defenseFactor);
-  if (random(state) < probability(attacker.stats.critChance + modifier(attacker, 'crit'))) {
+  if (random(state) < probability(attacker.stats.critChance + modifier(attacker, 'crit')
+    + (actor === 'hero' ? (runes?.crit_chance_bp ?? 0) / 10000 : 0))) {
     value *= attacker.stats.critMultiplier ?? rules.critMultiplier;
     emit(state, events, { actor, target, type: 'critical', skillId });
   }
-  if (random(state) < defender.stats.blockChance) {
+  const blocked = random(state) < defender.stats.blockChance;
+  if (blocked) {
     value *= rules.blockMultiplier;
     emit(state, events, { actor: target, target: actor, type: 'block', skillId });
   }
   value *= 1 - probability(modifier(defender, 'mitigation'));
+  const bonus = actor === 'hero' ? (runes?.damage_bonus_bp ?? 0) : 0;
+  const againstGuard = actor === 'hero' && blocked ? (runes?.damage_vs_guard_bp ?? 0) : 0;
+  const absorb = target === 'hero' && blocked ? (runes?.guard_absorb_bp ?? 0) : 0;
+  if (bonus || againstGuard || absorb) {
+    // Match the server damage bridge's integer basis-point formula; do not
+    // alter legacy rounding when no independent rune affects this hit.
+    value = Math.round(Math.floor(value) * (10000 + bonus + againstGuard) / 10000 * (10000 - absorb) / 10000);
+  }
   damage(state, events, actor, target, value, skillId, undefined, undefined, skill?.vfxKey);
   for (const effect of level?.effects ?? []) applyEffect(state, events, actor, effect, skillId);
   for (const equipped of selected?.runes ?? []) {

@@ -12,6 +12,7 @@ if (!target || !['postgres:', 'postgresql:'].includes(target.protocol)
   throw new Error('ADVENTURE_TEST_DATABASE_URL must identify local disposable territory_adventure_ci');
 }
 const isClone = target.pathname === '/territory_adventure_clone_ci';
+const runeCave = process.env.RUNE_CAVE_TEST === '1';
 const run = promisify(execFile);
 async function sql(statement, app = 'adventure-ci') {
   try {
@@ -32,7 +33,7 @@ const noLevel = '10000000-0000-4000-8000-000000000003';
 const op = n => `20000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const fighter = { stats: { hp: 1000, maxHp: 1000, attack: 100, defense: 4, critChance: 0, dodgeChance: 0, blockChance: 0 }, ownership: { heroLevel: 1, skills: {}, runes: {}, passives: {} }, loadout: { skills: [], passives: [] } };
 const weak = { ...fighter, stats: { ...fighter.stats, hp: 1, maxHp: 1, attack: 1 } };
-const enemy = { ...fighter, stats: { ...fighter.stats, hp: 10, maxHp: 10, attack: 1 } };
+const enemy = { ...fighter, stats: { ...fighter.stats, hp: runeCave ? 101 : 10, maxHp: runeCave ? 101 : 10, attack: 1 } };
 const rules = { stepMs: 10, maxDurationMs: 10000, approachMs: 20, attackIntervalMs: 200, basicWindupMs: 20, basicMultiplier: 1, defenseFactor: 0.5, magicDefenseFactor: 0.2, minimumDamage: 1, critMultiplier: 2, blockMultiplier: 0, maxEnergy: 100, initialEnergy: 100, energyPerSecond: 0, modeDamageMultiplier: { pve: 1, boss: 1, pvp: 1 } };
 const save = { player: { gold: 50, xp: 90, level: 1, xpToNext: 100, maxEnergy: 20, stats: { hp: 100, maxHp: 100, attack: 20, defense: 5 }, equipped: { weapon: { id: 'old' } } }, inventory: [{ id: 'old' }], battleStones: 10, vip: 7, redGems: 45, achievements: [{ id: 'old' }] };
 const noLevelSave = structuredClone(save); noLevelSave.player.xp = 0; noLevelSave.battleStones = 0;
@@ -63,6 +64,14 @@ if (isClone) {
  assert.equal(await sql('SELECT starts_enabled OR NOT canary_only FROM territory_private.combat_config_v1 WHERE id'), 'f');
  await assert.rejects(file('supabase/staged/territory_c1_live_guarded_patch_DRAFT_20261031.sql'),/C1 live drift/);
  await sql('UPDATE territory_private.combat_config_v1 SET starts_enabled=true,canary_only=false WHERE id');
+}
+if (runeCave) {
+ for (const path of ['supabase/staged/territory_rune_slots_v1.sql','supabase/staged/territory_rune_battle_snapshot_v1.sql','supabase/staged/territory_rune_effects_v1.sql','supabase/staged/territory_rune_cave_integration_v1.sql']) await file(path);
+ assert.equal(await sql('SELECT enabled FROM territory_private.rune_cave_config_v1'),'f');
+ await sql(`SET ROLE service_role; SELECT public.territory_runes_admin_set_level_v1(${quote(player)},'axe_storm_r1',3,${quote(op(100))},'synthetic cave test')`);
+ const slots=Array.from({length:15},(_,i)=>({slotId:`rune_slot_${String(i+1).padStart(2,'0')}`,runeId:i===1?'axe_storm_r1':null}));
+ await sql(`SET ROLE authenticated; SET request.test_uid=${quote(player)}; SELECT public.territory_runes_save_v1(${quote(op(101))},0,${json(slots)})`);
+ await sql('UPDATE territory_private.rune_cave_config_v1 SET enabled=true');
 }
 assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`), save, 'installation leaves the old save untouched');
 await sql(`INSERT INTO territory_private.combat_profile_attestations_v1(player_id,source_game_state,source_player_level,fighter,equipped_item_ids,legacy_equipped_ids,evidence_reference,reviewed_by)
@@ -99,6 +108,14 @@ await assert.rejects(execute(player,{action:'start',operationId:op(1),encounterI
 const startCommand={action:'start',operationId:op(2),encounterId:'s1',control:'auto'};
 const [start,startReplay]=await Promise.all([execute(player,startCommand),execute(player,startCommand)]);
 assert.deepEqual(startReplay,start,'two devices replay one start UUID');
+if (runeCave) {
+ assert.equal(start.state.input.serverRuneEffects.battleId,start.session_id);
+ assert.equal(start.state.input.serverRuneEffects.damage_bonus_bp,300);
+ const empty=Array.from({length:15},(_,i)=>({slotId:`rune_slot_${String(i+1).padStart(2,'0')}`,runeId:null}));
+ await sql(`SET ROLE authenticated; SET request.test_uid=${quote(player)}; SELECT public.territory_runes_save_v1(${quote(op(102))},1,${json(empty)})`);
+ await sql(`SET ROLE service_role; SELECT public.territory_runes_admin_set_level_v1(${quote(player)},'axe_storm_r1',0,${quote(op(103))},'synthetic cave test')`);
+ assert.deepEqual((await execute(player,{action:'resume',sessionId:start.session_id})).state.input.serverRuneEffects,start.state.input.serverRuneEffects);
+}
 assert.equal(start.start_save.battle_stones,10);
 assert.equal(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(player)}`),'4');
 assert.equal((await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`)).battleStones,10);
@@ -148,6 +165,7 @@ assert.equal(attempts.filter(x=>x.status==='rejected').length,1);
 assert.match(String(attempts.find(x=>x.status==='rejected').reason),/combat_revision_conflict/);
 const won=attempts.find(x=>x.status==='fulfilled').value;
 assert.equal(won.state.status,'hero_won'); assert.equal(won.settlement.reward.gold,15); assert.equal(won.settlement.reward.xp,20);
+if (runeCave) assert.ok(won.events.some(e=>e.actor==='hero' && e.type==='impact' && e.value===101),'rune effect changes actual server damage');
 assert.equal(won.settlement.unlocked_stage,2);
 assert.deepEqual(await execute(player,cmd),won, 'retry must return the committed receipt');
 assert.deepEqual((await execute(player,{action:'resume',sessionId:start.session_id})).settlement,won.settlement);

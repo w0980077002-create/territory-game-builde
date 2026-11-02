@@ -113,6 +113,16 @@ export interface IdleCombatInput {
   enemy: IdleFighterInput;
   catalog: IdleCatalog;
   rules: IdleCombatRules;
+  /** Server-injected at session creation. Never accept this from a player command. */
+  serverRuneEffects?: {
+    battleId: string;
+    damage_bonus_bp: number;
+    damage_vs_guard_bp: number;
+    guard_absorb_bp: number;
+    crit_chance_bp: number;
+    dodge_chance_bp: number;
+    accuracy_bp: number;
+  };
 }
 export interface IdleCombatEvent {
   id: string;
