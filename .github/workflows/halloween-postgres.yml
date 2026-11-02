@@ -51,6 +51,8 @@ jobs:
           supabase status -o env > /tmp/halloween-supabase.env
       - name: Test signed Auth JWTs through PostgREST
         run: python3 scripts/check-halloween-auth-e2e.py
+      - name: Test real signed JWT claim of Halloween top-20 helmet
+        run: python3 scripts/check-halloween-helmet-auth-e2e.py
       - name: Test real owner admin Edge HTTP flow
         run: |
           command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
