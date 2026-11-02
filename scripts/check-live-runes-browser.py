@@ -26,6 +26,11 @@ with sync_playwright() as p:
             page.get_by_test_id('territory-server-rune-book').wait_for()
             assert page.locator('.territory-rune__tile').count() == 15
             assert page.locator('.territory-rune__row').count() == 5
+            # All fifteen positions carry their own skill-archetype identities.
+            # These are visual labels, never fabricated grants or battle effects.
+            assert page.locator('.territory-rune__skill-name').count() == 15
+            names = [n.strip() for n in page.locator('.territory-rune__skill-name').all_text_contents()]
+            assert len(set(names)) == 15, 'Skill identities are repeated or missing'
             # Real mobile UX acceptance: compact header, colorful but honestly locked choices,
             # and the claim action visible before scrolling the whole board.
             assert page.locator('.territory-rune__tile--locked').count() >= 1, 'No unavailable rune state'
