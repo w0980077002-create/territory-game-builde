@@ -34,7 +34,7 @@ outsider,outsider_token=signup()
 assert winner!=outsider
 
 sql="""CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
-$SELECT COALESCE(nullif(current_setting('request.jwt.claim.sub',true),''), NULLIF(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid$;
+$jwt$SELECT COALESCE(nullif(current_setting('request.jwt.claim.sub',true),''), NULLIF(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid$jwt$;
 GRANT USAGE ON SCHEMA public TO authenticated,anon;
 DELETE FROM territory_private.halloween_top20_bonus_2026 WHERE place=4;
 DELETE FROM public.admin_grants WHERE player_id='00000000-0000-0000-0000-000000000004';
