@@ -13,6 +13,7 @@ import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
 import { Currency } from './ui/Currency';
 import { DailyShareCard } from '@/game/DailyShareCard';
 import { getAppearanceIcon } from '@/game/appearance';
+import { getEliteEncounterBrief } from '@/game/eliteEncounterBrief';
 import './battleJourney.css';
 // Independent: the old campaign, Trials, and server-operated Dark Cave.
 export type BattleView = 'campaign' | 'trial' | 'cave';
@@ -53,7 +54,9 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const nextIndex = Math.min(state.chapterWins, chapter.enemies.length);
   // Read-only classic PvE preparation; server Cave stats and ownership are never inferred here.
   const equippedCount = EQUIPMENT_SLOTS.filter(({ id }) => !!state.player.equipped[id]).length;
-  const heroAttack = getComputedStats(state).attack;
+  const heroStats = getComputedStats(state);
+  const heroAttack = heroStats.attack;
+  const heroDefense = heroStats.defense;
   const autoHandled = useRef(false);
   const fightStartLocked = useRef(false);
 
@@ -234,6 +237,8 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
                 index={i}
                 status={i < nextIndex ? 'done' : i === nextIndex ? 'current' : 'locked'}
                 gold={blessedGold(state, e.rewardGold)}
+                heroAttack={heroAttack}
+                heroDefense={heroDefense}
                 onFight={() => start('stage')}
                 blocked={caveRecoveryNeeded}
               />
@@ -243,7 +248,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       ) : (
         <div className="space-y-3">
           <DailyShareCard task="trials" userId={userId}/>
-          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={caveRecoveryNeeded} t={t} language={language} />
+          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={caveRecoveryNeeded} t={t} language={language} heroAttack={heroAttack} heroDefense={heroDefense} />
         </div>
       )}
       </>}
@@ -251,7 +256,35 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   );
 }
 
-function StageRow({ enemy, index, status, gold, onFight, blocked, t, language }: { enemy: Enemy; index: number; status: 'done' | 'current' | 'locked'; gold: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en' }) {
+/** Read-only advice for the existing manual elite PvE resolver.
+ * The numbers are real hero/enemy stats, not a predicted win rate or a buff.
+ * The elite guard and combo already run in PveFight/playRound. */
+function EliteTacticPreview({ enemy, heroAttack, heroDefense, language }: {
+  enemy: Enemy; heroAttack: number; heroDefense: number; language: 'ru' | 'en';
+}) {
+  const brief = getEliteEncounterBrief(enemy, { attack: heroAttack, defense: heroDefense });
+  const en = language === 'en';
+  return (
+    <div data-testid="elite-tactic-preview" role="note"
+      className="mt-2 rounded-xl border border-amber-400/40 bg-black/45 px-2.5 py-2 text-[11px] leading-snug text-amber-50">
+      <strong className="block text-amber-200">{en ? 'Elite tactics · before spending a stone' : 'Тактика элиты · до расхода камня'}</strong>
+      <p className="mt-1">{en
+        ? `Your attack ${brief.heroAttack} / enemy defense ${brief.enemyDefense}. Your defense ${brief.heroDefense} / enemy attack ${brief.enemyAttack}.`
+        : `Твоя атака ${brief.heroAttack} / защита врага ${brief.enemyDefense}. Твоя защита ${brief.heroDefense} / атака врага ${brief.enemyAttack}.`}</p>
+      {brief.attackAtOrBelowDefense && <p className="mt-1 font-bold text-orange-200">{en
+        ? 'Enemy defense matches or exceeds your attack. Compare owned weapons before the fight.'
+        : 'Защита врага не ниже твоей атаки. Сравни своё оружие перед боем.'}</p>}
+      {brief.enemyAttackExceedsDefense && <p className="mt-1 font-bold text-orange-200">{en
+        ? 'Enemy attack exceeds your defense. Plan blocks and healing.'
+        : 'Атака врага выше твоей защиты. Продумай блоки и лечение.'}</p>}
+      <p className="mt-1 text-sky-100">{en
+        ? 'Manual fight: below half HP the elite adapts its guard. Alternate successful strike zones to charge a +15% next-hit combo.'
+        : 'Ручной бой: ниже половины HP элита меняет блоки. Чередуй успешные удары по разным зонам, чтобы зарядить +15% к следующему попаданию.'}</p>
+    </div>
+  );
+}
+
+function StageRow({ enemy, index, status, gold, onFight, blocked, t, language, heroAttack, heroDefense }: { enemy: Enemy; index: number; status: 'done' | 'current' | 'locked'; gold: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en'; heroAttack: number; heroDefense: number }) {
   const current = status === 'current';
   if (current) return (
     <article className="journey-encounter" aria-label={language === 'en' ? 'Next encounter' : 'Следующий противник'}>
@@ -273,6 +306,7 @@ function StageRow({ enemy, index, status, gold, onFight, blocked, t, language }:
             ? (language === 'en' ? 'Boss loot: +3 Forge materials guaranteed' : 'Добыча босса: +3 материала кузницы гарантированно')
             : (language === 'en' ? '35% chance: +1 Forge material' : '35% шанс: +1 материал кузницы')}
         </p>
+        {enemy.isBoss && <EliteTacticPreview enemy={enemy} heroAttack={heroAttack} heroDefense={heroDefense} language={language} />}
         <button type="button" onClick={onFight} disabled={blocked} aria-describedby={blocked ? 'pending-cave-recovery' : undefined}>
           <Swords size={18} aria-hidden="true" />{language === 'en' ? 'Fight' : 'Бой'}
         </button>
@@ -306,7 +340,7 @@ function StageRow({ enemy, index, status, gold, onFight, blocked, t, language }:
   );
 }
 
-function TrialPanel({ level, onFight, blocked, t, language }: { level: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en' }) {
+function TrialPanel({ level, onFight, blocked, t, language, heroAttack, heroDefense }: { level: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en'; heroAttack: number; heroDefense: number }) {
   const enemy = generateTrial(level);
   const upcoming = Array.from({ length: 5 }, (_, i) => level + i);
   return (
@@ -328,6 +362,7 @@ function TrialPanel({ level, onFight, blocked, t, language }: { level: number; o
         </div>
       </div>
 
+      <EliteTacticPreview enemy={enemy} heroAttack={heroAttack} heroDefense={heroDefense} language={language} />
       <button onClick={onFight} disabled={blocked} aria-describedby={blocked ? 'pending-cave-recovery' : undefined} className="w-full h-12 rounded-2xl bg-gradient-to-b from-sky-400 to-sky-700 border border-sky-200/30 text-white font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-40 disabled:cursor-not-allowed">
         <Swords className="w-5 h-5" /> {t('startTrial')}
       </button>
