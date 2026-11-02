@@ -17,8 +17,7 @@ import { ItemArt } from './ui/ItemArt';
 import { Currency, formatAmount } from './ui/Currency';
 import { IosGamePortal, Modal } from './ui/Modal';
 import './shopWoodFinish.css';
-import './shopIllustratedFinish.css';
-import './shopApprovedLocked.css';
+import './shopCraftedControls.css';
 import { useLive, SHOP_SALE_FACTOR } from '@/game/live';
 import { fetchShopStatus, purchaseServerStones, readPendingShop, keepPendingShop, type ShopStatus, type PendingShop } from '@/game/shopApi';
 import {
@@ -90,6 +89,9 @@ function formatDuration(ms: number): string {
 const shopMaterialStyles = {
   '--shop-market': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-market-stage.svg")',
   '--shop-approved-facade': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-facade.webp")',
+  '--shop-crafted-product': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/crafted-product-frame.svg")',
+  '--shop-crafted-license': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/crafted-license-frame.svg")',
+  '--shop-crafted-tab': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/crafted-tab-frame.svg")',
   '--shop-approved-license-border': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-license-border.webp")',
   '--shop-approved-product-border': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-product-border.webp")',
   '--shop-approved-product-v2': 'url("' + import.meta.env.BASE_URL + 'assets/territory/ui/shop/shop-approved-product-border-v2.webp")',
