@@ -417,7 +417,7 @@ const slowedIncoming = pve.playRound(slowHero, slowEnemy, 'legs', [], 0, '', 0, 
   false, false, { slow_duration_bp: 1000 }, {bleed:0,burn:0,slow:1,root:0});
 assert(slowedIncoming.hero.hp > normalIncoming.hero.hp,
   'Slow must weaken enemy damage itself, even without a second synergy rune');
-assert.match(source('../src/components/pve/PveFight.tsx'), /const RUNE_PVE_STAGED = false;/,
+assert.match(source('../src/components/pve/PveFight.tsx'), /const RUNE_PVE_STAGED = import\.meta\.env\.VITE_TERRITORY_RUNES === 'enabled';/,
   'Player rune rollout must remain disabled until server cutover');
 assert.match(source('../src/components/pve/PveFight.tsx'), /parseRuneServerStatus\(data, runeDefinitions\)/,
   'Rune effects must be sourced from a server-confirmed 15-slot status');
