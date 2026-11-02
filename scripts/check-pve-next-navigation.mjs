@@ -36,7 +36,8 @@ assert.equal(await runDeferredNextBattle(Promise.resolve(), () => true, () => { 
 const fight = readFileSync('src/components/pve/PveFight.tsx', 'utf8');
 const battle = readFileSync('src/components/BattleScreen.tsx', 'utf8');
 assert.match(fight, /nextCancelled\.current = true; onExit\(\)/, 'Back must cancel a pending next fight');
-assert.match(fight, /nextCancelled\.current = true; onQuests\(\)/, 'Opening quests must cancel a pending next fight');
+assert.match(fight, /nextCancelled\.current = true; onExit\(\); onQuests\(\)/,
+  'Opening quests must cancel a pending next fight AND close its settled result');
 assert.match(fight, /alive\.current && !nextCancelled\.current/, 'Deferred start must check the mounted battle');
 assert.match(fight, /questReady=\{state\.quests\.some\(/, 'Claim-ready quests must be offered at every hero level');
 assert.doesNotMatch(fight, /questReady=\{state\.player\.level < 5/, 'Do not hide quest rewards from veteran players');
@@ -206,7 +207,8 @@ assert.match(battle, /onEquipment=\{onEquipment\}/,
 // A real material drop must lead to the existing Forge, not a fake inventory reward.
 // The route is available in both classic modes and returning never auto-spends a stone.
 const appForForge = readFileSync('src/App.tsx', 'utf8');
-assert.match(fight, /outcome\.won && outcome\.materials > 0 && onForge/, 'Forge CTA requires confirmed positive material delta');
+assert.match(fight, /onForge && \(outcome\.materials > 0 \|\| !outcome\.won\) &&/,
+  'Victory Forge CTA requires a positive material drop; defeat may offer existing Forge preparation');
 assert.match(fight, /data-testid="pve-visit-forge"/, 'Material loot must offer the actual Forge');
 assert.match(fight, /onForge=\{onForge \? \(\) => \{ nextCancelled\.current = true; onExit\(\); onForge\(\); \} : undefined\}/,
   'Forge navigation must cancel pending next fight and exit combat');
