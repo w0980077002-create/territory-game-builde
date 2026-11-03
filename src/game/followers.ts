@@ -7,18 +7,23 @@ import { reconcileElixirExpiry } from './elixirExpiry';
  * Training is a client-side gameplay feature, NOT an anti-cheat boundary.
  */
 export type FollowerRole = 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage' | 'crystal' | 'pumpkin';
+/** Presentation rarity is derived from the trusted roster ID, never from editable saved data. */
+export type FollowerRarity = 'common' | 'rare' | 'epic' | 'legendary';
+export const FOLLOWER_RARITY_ORDER: readonly FollowerRarity[] = ['common', 'rare', 'epic', 'legendary'];
 
 /** Static pure model belongs here: all legacy test harnesses compile this
  * module independently, without the Supabase runtime. Server entitlement and
  * one-time claims live separately in halloweenCompanion2026.ts. */
 export const HALLOWEEN_COMPANION_ID = 'follower_pumpkin_witch_2026';
 export const HALLOWEEN_COMPANION_LEVEL = 100;
-export const HALLOWEEN_COMPANION_ADVANTAGE = 1.05;
-export const PUMPKIN_WITCH_BASELINE = { attack: 62, heal: 15 } as const;
+/** Epic raid companion: stronger direct PvE damage than the maximum level-60 Common warrior (129).
+ * Existing elite per-round damage caps still apply; PvP remains unaffected. */
+export const HALLOWEEN_COMPANION_ADVANTAGE = 1.16;
+export const PUMPKIN_WITCH_BASELINE = { attack: 129, heal: 15 } as const;
 export const PUMPKIN_WITCH_COMBAT = {
   attack: Math.round(PUMPKIN_WITCH_BASELINE.attack * HALLOWEEN_COMPANION_ADVANTAGE),
   defense: 0,
-  heal: Math.round(PUMPKIN_WITCH_BASELINE.heal * HALLOWEEN_COMPANION_ADVANTAGE),
+  heal: Math.round(PUMPKIN_WITCH_BASELINE.heal * 1.05),
   crit: 0,
   pierce: 0,
 };
@@ -31,7 +36,7 @@ export const PUMPKIN_WITCH_TEMPLATE: Follower = {
   defense: 1,
   unlocked: true,
   role: 'pumpkin',
-  description: 'Эксклюзивный дар участнику Хэллоуинского рейда 2026. Уровень 100. Помогает герою в PvE.',
+  description: 'Эпический дар участнику Хэллоуинского рейда 2026. Уровень 100. Самая высокая прямая атака спутника в PvE и лечение героя.',
 };
 
 
@@ -39,6 +44,7 @@ export const PUMPKIN_WITCH_TEMPLATE: Follower = {
 export interface FollowerTemplate {
   id: string;
   role: FollowerRole;
+  rarity: FollowerRarity;
   unlockLevel: number;
   name: string;
   nameEn: string;
@@ -50,26 +56,31 @@ export interface FollowerTemplate {
 }
 
 export const FOLLOWER_TEMPLATES: FollowerTemplate[] = [
-  { id: 'follower_1', role: 'guardian', unlockLevel: 3, name: 'Верный щит', nameEn: 'Loyal Shield', icon: '🛡️', attack: 5, defense: 10, description: 'Прикрывает героя и уменьшает входящий урон.', descriptionEn: 'Protects the hero against incoming hits.' },
-  { id: 'follower_2', role: 'warrior', unlockLevel: 8, name: 'Северный воин', nameEn: 'Northern Warrior', icon: '⚔️', attack: 11, defense: 1, description: 'Наносит дополнительный урон врагам.', descriptionEn: 'Deals extra damage to enemies.' },
-  { id: 'follower_3', role: 'healer', unlockLevel: 15, name: 'Лесная целительница', nameEn: 'Forest Healer', icon: '🌿', attack: 3, defense: 1, description: 'Восстанавливает немного HP между раундами.', descriptionEn: 'Restores some HP between rounds.' },
-  { id: 'follower_4', role: 'hunter', unlockLevel: 25, name: 'Лунный охотник', nameEn: 'Moon Hunter', icon: '🏹', attack: 7, defense: 1, description: 'Немного повышает шанс критического удара героя.', descriptionEn: 'Slightly improves the hero’s critical-hit chance.' },
-  { id: 'follower_5', role: 'mage', unlockLevel: 40, name: 'Рунный маг', nameEn: 'Rune Mage', icon: '🔮', attack: 5, defense: 1, description: 'Ослабляет защиту врага в Походе и Испытаниях.', descriptionEn: 'Weakens enemy defense in PvE battles.' },
-  { id: 'follower_6', role: 'crystal', unlockLevel: 50, name: 'Боевая корова', nameEn: 'Battle Cow', icon: '🐮', attack: 7, defense: 2, description: 'Кристальное безумие: атакует врага и немного лечит героя между раундами. Только PvE.', descriptionEn: 'Crystal Frenzy: attacks enemies and heals the hero a little between rounds. PvE only.' },
+  { id: 'follower_1', role: 'guardian', rarity: 'common', unlockLevel: 3, name: 'Верный щит', nameEn: 'Loyal Shield', icon: '🛡️', attack: 5, defense: 10, description: 'Прикрывает героя и уменьшает входящий урон.', descriptionEn: 'Protects the hero against incoming hits.' },
+  { id: 'follower_2', role: 'warrior', rarity: 'common', unlockLevel: 8, name: 'Северный воин', nameEn: 'Northern Warrior', icon: '⚔️', attack: 11, defense: 1, description: 'Наносит дополнительный урон врагам.', descriptionEn: 'Deals extra damage to enemies.' },
+  { id: 'follower_3', role: 'healer', rarity: 'common', unlockLevel: 15, name: 'Лесная целительница', nameEn: 'Forest Healer', icon: '🌿', attack: 3, defense: 1, description: 'Восстанавливает немного HP между раундами.', descriptionEn: 'Restores some HP between rounds.' },
+  { id: 'follower_4', role: 'hunter', rarity: 'common', unlockLevel: 25, name: 'Лунный охотник', nameEn: 'Moon Hunter', icon: '🏹', attack: 7, defense: 1, description: 'Немного повышает шанс критического удара героя.', descriptionEn: 'Slightly improves the hero’s critical-hit chance.' },
+  { id: 'follower_5', role: 'mage', rarity: 'common', unlockLevel: 40, name: 'Рунный маг', nameEn: 'Rune Mage', icon: '🔮', attack: 5, defense: 1, description: 'Ослабляет защиту врага в Походе и Испытаниях.', descriptionEn: 'Weakens enemy defense in PvE battles.' },
+  { id: 'follower_6', role: 'crystal', rarity: 'legendary', unlockLevel: 50, name: 'Боевая корова', nameEn: 'Battle Cow', icon: '🐮', attack: 7, defense: 2, description: 'Кристальное безумие: атакует врага и немного лечит героя между раундами. Только PvE.', descriptionEn: 'Crystal Frenzy: attacks enemies and heals the hero a little between rounds. PvE only.' },
 ];
 
 /** Raid reward is NEVER in the normal level-unlock catalog. Its entitlement
  * comes only from the Halloween 2026 server receipt after event closure. */
 export const HALLOWEEN_COMPANION_TEMPLATE: FollowerTemplate = {
-  id: HALLOWEEN_COMPANION_ID, role: 'pumpkin', unlockLevel: 101,
+  id: HALLOWEEN_COMPANION_ID, role: 'pumpkin', rarity: 'epic', unlockLevel: 101,
   name: 'Тыквенная ведьма', nameEn: 'Pumpkin Witch', icon: '🎃',
   attack: PUMPKIN_WITCH_TEMPLATE.attack, defense: PUMPKIN_WITCH_TEMPLATE.defense,
-  description: 'Эксклюзив за подтверждённое участие в Хэллоуинском рейде 2026. Уровень 100, сила +5% к сопоставимому обычному целителю.',
-  descriptionEn: 'Exclusive for confirmed Halloween 2026 raid fighters. Level 100, 5% stronger than the comparable standard healer.',
+  description: 'Эпический спутник за участие в рейде 2026. Уровень 100, атака выше максимально прокачанного обычного воина и лечение героя.',
+  descriptionEn: 'Epic Halloween 2026 raid companion. Level 100; more direct damage than a max-trained common warrior, plus healing.',
 };
 export const DISPLAY_FOLLOWER_TEMPLATES: FollowerTemplate[] = [
   ...FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_TEMPLATE,
-];
+].sort((a, b) => FOLLOWER_RARITY_ORDER.indexOf(a.rarity) - FOLLOWER_RARITY_ORDER.indexOf(b.rarity));
+
+/** Rare is supported but reserved for future companions; the five launch companions stay Common. */
+export function followerRarity(id: string | null | undefined): FollowerRarity {
+  return DISPLAY_FOLLOWER_TEMPLATES.find(f => f.id === id)?.rarity ?? 'common';
+}
 
 export function initialFollowers(): Follower[] {
   return FOLLOWER_TEMPLATES.map((f) => ({
@@ -164,8 +175,8 @@ export function trainFollower(state: GameState, followerId: string): GameState |
  * yield unbounded buffs; full server economy enforcement is a separate release. */
 export function followerCombat(follower: Follower | null) {
   if (follower?.id === HALLOWEEN_COMPANION_ID) {
-    // No skill effects on PvP. This 100/100 raid companion mirrors a fully
-    // trained level-60 healer at 1.05× power (rounded combat integers).
+    // No skill effects on PvP. Epic level-100 raid companion exceeds the
+    // highest direct-damage Common follower; heal retains its existing 16 HP.
     return { role: 'pumpkin' as const, ...PUMPKIN_WITCH_COMBAT };
   }
   const template = follower && FOLLOWER_TEMPLATES.find((f) => f.id === follower.id);

@@ -47,10 +47,10 @@ function load(companionRpc){
     if(name==='./followers') return {
       HALLOWEEN_COMPANION_ID:'follower_pumpkin_witch_2026',
       HALLOWEEN_COMPANION_LEVEL:100,
-      HALLOWEEN_COMPANION_ADVANTAGE:1.05,
-      PUMPKIN_WITCH_BASELINE:{attack:62,heal:15},
-      PUMPKIN_WITCH_COMBAT:{attack:65,defense:0,heal:16,crit:0,pierce:0},
-      PUMPKIN_WITCH_TEMPLATE:{id:'follower_pumpkin_witch_2026',name:'Тыквенная ведьма',level:100,attack:65,defense:1,unlocked:true,role:'pumpkin'},
+      HALLOWEEN_COMPANION_ADVANTAGE:1.16,
+      PUMPKIN_WITCH_BASELINE:{attack:129,heal:15},
+      PUMPKIN_WITCH_COMBAT:{attack:150,defense:0,heal:16,crit:0,pierce:0},
+      PUMPKIN_WITCH_TEMPLATE:{id:'follower_pumpkin_witch_2026',name:'Тыквенная ведьма',level:100,attack:150,defense:1,unlocked:true,role:'pumpkin'},
     };
     throw new Error('Unexpected dependency: '+name);
   }});
@@ -63,7 +63,7 @@ const denied=load(async()=>({data:{eligible:false,reason:'event_active'},error:n
 assert.equal(await denied.claimPumpkinWitchEntitlement(),false);
 const fake=load(async()=>({data:{...valid,level:99},error:null}));
 await assert.rejects(fake.claimPumpkinWitchEntitlement(),/bad_receipt/);
-assert.equal(m.PUMPKIN_WITCH_COMBAT.attack,65);
+assert.equal(m.PUMPKIN_WITCH_COMBAT.attack,150);
 assert.equal(m.PUMPKIN_WITCH_COMBAT.heal,16);
 assert.equal(m.PUMPKIN_WITCH_COMBAT.defense,0);
 const saved={ player:{level:53,gold:900,redGems:3}, inventory:[{id:'keep',qty:7}],
@@ -72,9 +72,10 @@ const saved={ player:{level:53,gold:900,redGems:3}, inventory:[{id:'keep',qty:7}
 const gifted=m.installVerifiedPumpkinWitch(saved);
 assert.equal(gifted.followers.length,2);
 assert.equal(gifted.followers.find(f=>f.id==='follower_pumpkin_witch_2026').level,100);
+assert.equal(gifted.followers.find(f=>f.id==='follower_pumpkin_witch_2026').attack,150);
 assert.deepEqual(gifted.followers[0],saved.followers[0]);
 assert.equal(gifted.activeFollowerId,'follower_6');
 assert.equal(gifted.player,saved.player);
 assert.equal(gifted.inventory,saved.inventory);
 assert.equal(m.installVerifiedPumpkinWitch(gifted).followers.length,2,'idempotent client installation');
-console.log('Halloween companion contract checks passed: server gate, entitlement, 100/100, +5% PvE and preserved Battle Cow.');
+console.log('Halloween epic companion contract passed: server gate, entitlement, level 100, 150 attack, 16 heal, preserved Battle Cow.');
