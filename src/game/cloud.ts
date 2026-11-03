@@ -363,27 +363,44 @@ export function acceptMasterLicenseReceipt(userId:string,receipt:{
   return state;
 }
 
+/** Read verified 65% per-item refund quote from the authenticated server. */
+export async function readForgeRefundQuote(itemId: string): Promise<{ itemId: string; spent: number; refund: number } | null> {
+  if (!itemId || itemId.length > 150) return null;
+  const { data, error } = await supabase.rpc('territory_forge_refund_quote_65_v1', { p_item: itemId });
+  if (error || !data || typeof data !== 'object' || data.eligible !== true
+    || data.item_id !== itemId || !Number.isSafeInteger(data.spent_verified)
+    || data.spent_verified < 1 || !Number.isSafeInteger(data.refund)
+    || data.refund < 1 || data.refund !== Math.floor(data.spent_verified * 65 / 100)) return null;
+  return { itemId, spent: data.spent_verified, refund: data.refund };
+}
+
 /** One verified server-side inventory mutation. Call after awaiting saveCloudSave
  * for the EXACT current state; old snapshots must never resurrect consumed gear. */
 export async function recycleCloudEquipment(
   userId: string,
   itemId: string,
   action: 'discard' | 'salvage',
+  verifiedRefund = false,
 ): Promise<{ state: GameState; remainingToday: number; awarded: number }> {
   const revision = saveTokens.get(userId);
   if (!validSaveToken(revision) || saveBlocked.has(userId) || !itemId || itemId.length > 150) {
     throw new Error('recycle_reload_required');
   }
-  const { data, error } = await supabase.rpc('territory_inventory_recycle_v1', {
-    p_item: itemId, p_action: action, p_expected: revision,
-  });
+  if (verifiedRefund && action !== 'salvage') throw new Error('refund_invalid_action');
+  const { data, error } = verifiedRefund
+    ? await supabase.rpc('territory_inventory_recycle_refund_65_v1', { p_item: itemId, p_expected: revision })
+    : await supabase.rpc('territory_inventory_recycle_v1', { p_item: itemId, p_action: action, p_expected: revision });
   if (error) throw new Error(error.message || 'recycle_unavailable');
   if (!data || typeof data !== 'object' || data.success !== true
       || data.item_id !== itemId || data.action !== action
       || !validSaveToken(data.updated_at)
       || !Number.isSafeInteger(data.remaining_today)
       || data.remaining_today < 0 || data.remaining_today > 3
-      || data.awarded !== (action === 'salvage' ? 1 : 0)
+      || (verifiedRefund
+        ? !Number.isSafeInteger(data.spent_verified) || data.spent_verified < 1
+          || !Number.isSafeInteger(data.awarded) || data.awarded < 1
+          || data.awarded !== Math.floor(data.spent_verified * 65 / 100)
+        : data.awarded !== (action === 'salvage' ? 1 : 0))
       || !validEconomySnapshot(data.game_state as GameState)) {
     throw new Error('recycle_invalid_receipt');
   }
@@ -391,6 +408,8 @@ export async function recycleCloudEquipment(
   if (state.inventory.some((item) => item.id === itemId)) throw new Error('recycle_item_still_present');
   const wallet = safeWalletVersion({ gold: data.gold, gems: data.gems }, state.player);
   if (!walletMatchesVersion(wallet, state.player)) throw new Error('recycle_wallet_mismatch');
+  // Prevent a queued old snapshot from restoring recycled equipment.
+  saveGenerations.set(userId, (saveGenerations.get(userId) ?? 0) + 1);
   // CAS token must follow the server's atomic update, not a guessed timestamp.
   saveTokens.set(userId, data.updated_at);
   walletVersions.set(userId, wallet);

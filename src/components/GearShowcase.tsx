@@ -8,7 +8,7 @@ import { EQUIPMENT_SLOTS } from '@/game/engine';
 import { equipmentArt, SLOT_ART } from '@/game/art';
 import { rarityColor } from '@/game/ui';
 import { GEAR_STATS, gearScore, canSalvageEquipment } from '@/game/gearTools';
-import { recycleCloudEquipment, saveCloudSave } from '@/game/cloud';
+import { readForgeRefundQuote, recycleCloudEquipment, saveCloudSave } from '@/game/cloud';
 import { ItemArt } from './ui/ItemArt';
 import type { Equipment, InventoryItem } from '@/game/types';
 import { Check, ChevronDown, ChevronUp, Hammer, Info, Recycle, RotateCcw, ShieldCheck, Trash2, X } from 'lucide-react';
@@ -115,6 +115,7 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
   const [error, setError] = useState<string | null>(null);
   const [mustReload, setMustReload] = useState(false);
   const [remainingToday, setRemainingToday] = useState<number | null>(null);
+  const [refundQuote, setRefundQuote] = useState<{ itemId: string; spent: number; refund: number } | null>(null);
   const [heroExpanded, setHeroExpanded] = useState(false);
   const compareRef = useRef<HTMLElement | null>(null);
 
@@ -143,6 +144,18 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
     ? state.player.equipped[selectedItem.equipment.slot] : undefined;
   const bag = selectedWornSlot ? undefined : selectedItem;
   const canSalvage = !!bag && canSalvageEquipment(bag);
+  // A client level/upgradeCount is NOT a refund quote; require a verified server ledger.
+  useEffect(() => {
+    if (!selectedItem?.id) { setRefundQuote(null); return; }
+    let cancelled = false;
+    setRefundQuote(null);
+    void readForgeRefundQuote(selectedItem.id)
+      .then((quote) => { if (!cancelled) setRefundQuote(quote); })
+      .catch(() => { if (!cancelled) setRefundQuote(null); });
+    return () => { cancelled = true; };
+  }, [selectedItem?.id, selectedItem?.equipment?.level]);
+  const canRefund = !!bag && refundQuote?.itemId === bag.id && refundQuote.refund > 0;
+
   const candidate = bag?.equipment;
   const isComparing = !!candidate;
   const miniHero = selection?.kind === 'bag' && !heroExpanded;
@@ -178,7 +191,8 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
     const action = confirm;
     const snapshot = useGame.get();
     const current = snapshot.inventory.find((item) => item.id === id && item.type === 'equipment');
-    if (!current || (action === 'salvage' && !canSalvageEquipment(current))) {
+    if (!current || (action === 'salvage' && !canSalvageEquipment(current)
+      && !(refundQuote?.itemId === current.id && refundQuote.refund > 0))) {
       setError(language === 'en' ? 'Item changed. Choose it again.' : 'Предмет изменился. Выбери его заново.');
       return;
     }
@@ -188,7 +202,8 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
       // Existing cloud writer guarantees ordered saves. CAS protects against other tabs.
       const saved = await saveCloudSave(userId, snapshot);
       if (!saved || useGame.get() !== snapshot) throw new Error('stale_inventory_snapshot');
-      const receipt = await recycleCloudEquipment(userId, id, action);
+      const receipt = await recycleCloudEquipment(userId, id, action,
+        action === 'salvage' && !!(refundQuote?.itemId === id && refundQuote.refund > 0));
       if (useGame.get() !== snapshot) {
         window.location.reload();
         return;
@@ -290,16 +305,31 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
               {onForge && candidate && <button type="button" disabled={busy || mustReload} onClick={() => onForge(candidate.id)} className="gear-action-salvage">
                 <Hammer size={16}/>{language === 'en' ? 'Upgrade' : 'В кузницу'}
               </button>}
-              {canSalvage && (
+              {(canSalvage || canRefund) && (
                 <button type="button" className="gear-action-salvage" disabled={busy || mustReload}
                   onClick={() => setConfirm('salvage')}>
-                  <Hammer size={16}/>{language === 'en' ? 'Salvage +1' : 'Разобрать +1'}
+                  <Hammer size={16}/>{canRefund
+                    ? (language === 'en' ? 'Salvage +' : 'Разобрать +') + refundQuote!.refund
+                    : (language === 'en' ? 'Salvage +1' : 'Разобрать +1')}
                 </button>
               )}
-              <button type="button" className="gear-action-discard" disabled={busy || mustReload}
-                onClick={() => setConfirm('discard')}>
-                <Trash2 size={16}/>{language === 'en' ? 'Delete' : 'Удалить'}
-              </button>
+              {canRefund && <p className="gear-weight-hint" role="status">
+                {language === 'en'
+                  ? `65% returned from ${refundQuote!.spent} verified forge materials. Item is destroyed.`
+                  : `Возврат 65% из ${refundQuote!.spent} подтверждённых материалов кузницы. Вещь уничтожается.`}
+              </p>}
+              {!(candidate && (candidate.upgradeCount ?? 0) > 0 && !canRefund) ? (
+                <button type="button" className="gear-action-discard" disabled={busy || mustReload}
+                  onClick={() => setConfirm('discard')}>
+                  <Trash2 size={16}/>{language === 'en' ? 'Delete' : 'Удалить'}
+                </button>
+              ) : (
+                <p className="gear-weight-hint" role="status">
+                  {language === 'en'
+                    ? 'This upgraded item is protected until its material spending can be verified on the server.'
+                    : 'Улучшенная вещь защищена от удаления, пока сервер не подтвердит затраты материалов.'}
+                </p>
+              )}
             </div>
           </>
         ) : (
@@ -342,7 +372,9 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
               <button type="button" onClick={() => setConfirm(null)} disabled={busy} aria-label={language === 'en' ? 'Cancel' : 'Отмена'}><X size={16}/></button>
             </div>
             <p>{confirm === 'salvage'
-              ? (language === 'en' ? 'Destroy this unused boss drop for 1 forge material? Maximum 3 per UTC day.' : 'Разобрать эту вещь навсегда за 1 материал кузницы? Не более 3 в сутки.')
+              ? (canRefund
+                  ? (language === 'en' ? `Destroy this equipment forever and refund ${refundQuote!.refund} of ${refundQuote!.spent} verified forge materials (65%)?` : `Уничтожить эту вещь навсегда и вернуть ${refundQuote!.refund} из ${refundQuote!.spent} подтверждённых материалов кузницы (65%)?`)
+                  : (language === 'en' ? 'Destroy this unused boss drop for 1 forge material? Maximum 3 per UTC day.' : 'Разобрать эту вещь навсегда за 1 материал кузницы? Не более 3 в сутки.'))
               : (language === 'en' ? 'Delete this spare item forever without any reward?' : 'Навсегда удалить этот запасной предмет без награды?')}</p>
             <div className="gear-confirm-buttons">
               <button type="button" disabled={busy} onClick={() => void recycle()}>

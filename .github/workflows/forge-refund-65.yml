@@ -1,0 +1,64 @@
+name: Forge Refund 65 (staged)
+
+on:
+  push:
+    branches: [feature/forge-refund-65-253]
+  pull_request:
+    paths:
+      - 'supabase/staged/territory_gear_refund_65_v1.sql'
+      - 'supabase/staged/territory_gear_refund_65_v1_rollback.sql'
+      - 'scripts/check-gear-refund-65.mjs'
+      - 'scripts/pg17-gear-refund-65.sql'
+      - 'src/game/cloud.ts'
+      - 'src/components/GearShowcase.tsx'
+      - 'package.json'
+      - '.github/workflows/forge-refund-65.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  refund-fixture:
+    name: Private ledger and atomic 65% refund
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:gear-refund-65
+      - run: npm run typecheck
+      - run: npm run build
+
+  postgres17-fixture:
+    name: PostgreSQL 17 / owner, grant and replay verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: territory_refund_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: fixture_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d territory_refund_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: fixture_only
+      PGDATABASE: territory_refund_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Test PostgreSQL 17 refund SQL on synthetic users
+        run: psql -v ON_ERROR_STOP=1 -f scripts/pg17-gear-refund-65.sql
