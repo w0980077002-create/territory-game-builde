@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Check, Coins, Crown, Heart, LockKeyhole, Shield, Sparkles, Swords, Wrench } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
-import { useLanguage } from '@/game/i18n';
+import { useLanguage, localizeRarity } from '@/game/i18n';
 import { getFollowerArt } from '@/game/combatArt';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import {
   FOLLOWER_TEMPLATES, DISPLAY_FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_ID, PUMPKIN_WITCH_TEMPLATE, followerTrainingCost, MAX_FOLLOWER_LEVEL, MAX_BATTLE_COW_LEVEL,
-  cowStonesOwned, cowAwakeningCost, selectedFollower, selectFollower, trainFollower,
+  cowStonesOwned, cowAwakeningCost, selectedFollower, selectFollower, trainFollower, followerRarity,
 } from '@/game/followers';
 import { PumpkinWitch } from './PumpkinWitch';
 import './followersCamp.css';
@@ -95,8 +95,8 @@ export function FollowersPanel() {
             ? (en ? 'ACTIVE COMPANION' : 'АКТИВНЫЙ СПУТНИК')
             : (en ? 'VIEWING COMPANION' : 'ПРОСМОТР СПУТНИКА')}</span>
           <h3>{en ? template.nameEn : template.name}</h3>
-          {isSeasonal && <span className="followers-camp__legendary">{en ? 'RAID · 2026' : 'РЕЙД · 2026'}</span>}
-          {template.id === 'follower_6' && <span className="followers-camp__legendary"><Sparkles size={12}/>{en ? 'EPIC COMPANION' : 'ЭПИЧЕСКИЙ СПУТНИК'}</span>}
+          {isSeasonal && <span className="followers-camp__legendary">{en ? 'EPIC · RAID 2026' : 'ЭПИЧЕСКИЙ · РЕЙД 2026'}</span>}
+          {template.id === 'follower_6' && <span className="followers-camp__legendary"><Sparkles size={12}/>{en ? 'LEGENDARY' : 'ЛЕГЕНДАРНЫЙ'}</span>}
           <p>{isSeasonal ? (en ? 'An epic companion for Halloween raid fighters.' : 'Эпический спутник за участие в Хэллоуинском рейде.') : (en ? template.descriptionEn : template.description)}</p>
           <span className={unlocked ? 'followers-camp__availability' : 'followers-camp__availability followers-camp__availability--locked'}>
             {unlocked ? en ? 'Unlocked' : 'Открыт' : isSeasonal
