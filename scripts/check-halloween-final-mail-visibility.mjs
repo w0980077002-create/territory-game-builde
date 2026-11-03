@@ -34,4 +34,9 @@ assert.match(inbox, /Награды уже зачислены/);
 assert.match(inbox, /Your rewards are already in your inventory/);
 assert.ok(inbox.includes('mail.id === id && mail.subject === HALLOWEEN_FINAL_SUBJECT'),
   'Final companion mail must not reappear in New after its normal claim');
+for (const fixture of ['build-daily-hero-preview.mjs', 'build-journal-preview.mjs', 'build-comfort-preview.mjs']) {
+  const source = read('scripts/' + fixture);
+  assert.ok(source.includes('getUnseenHalloweenFinalMail'), fixture + ' must mock inbox read RPC');
+  assert.ok(source.includes('acknowledgeHalloweenFinalMail'), fixture + ' must mock one-time notice acknowledgement');
+}
 console.log('HALLOWEEN FINAL VISIBILITY PASS: one new informational read, private RLS, no double claim.');
