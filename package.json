@@ -48,7 +48,7 @@
     "test:seasons": "node scripts/check-weekly-seasons.mjs && node scripts/check-season-admin-api.mjs",
     "test:arena-prizes": "node scripts/check-arena-auto-prizes.mjs && node scripts/check-arena-prizes-ui.mjs && node scripts/check-arena-bot-leaderboard.mjs",
     "test:stage1": "npm run test:clans && npm run test:stage5 && npm run test:seasons",
-    "test:wheel": "node scripts/check-fortune.mjs && node scripts/check-fortune-client.mjs",
+    "test:wheel": "node scripts/check-fortune.mjs && node scripts/check-fortune-client.mjs && node scripts/check-scene-art-loading.mjs",
     "test:wheel:browser": "node scripts/build-fortune-preview.mjs && python scripts/check-fortune-browser.py",
     "test:expansion-catalog": "node scripts/check-territory-expansion-catalog.mjs",
     "test:build-training": "node scripts/check-build-training.mjs",
