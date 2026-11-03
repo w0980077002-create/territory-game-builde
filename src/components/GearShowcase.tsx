@@ -245,11 +245,17 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
       setBatchOffer(offer);
       setBatchSelected([]);
       setBatchConfirm(false);
-    } catch {
-      setError(language==='en'
-        ? 'Cannot verify items on the server. Reload the game.'
-        : 'Не удалось подтвердить вещи на сервере. Перезапусти игру.');
-      setMustReload(true);
+    } catch (cause) {
+      const unavailable=cause instanceof Error &&
+        ['batch_quote_unavailable','batch_unavailable'].includes(cause.message);
+      setError(unavailable
+        ? (language==='en'
+            ? 'Batch salvage is not available for these items yet. Individual salvage still works.'
+            : 'Массовый разбор этих вещей пока недоступен. Обычный разбор продолжает работать.')
+        : (language==='en'
+            ? 'Inventory changed. Reload to verify it on the server.'
+            : 'Инвентарь изменился. Перезапусти игру для синхронизации.'));
+      if (!unavailable) setMustReload(true);
     } finally {setBusy(false);}
   };
 
