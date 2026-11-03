@@ -306,5 +306,5 @@ assert.doesNotMatch(caveUi, /\? \(en\?'Auto':'Авто'\) : \(en\?'Manual':'Ру
   'The debug-like Auto/Manual cave status must not clutter combat');
 assert.match(caveUi, /restoreAdventureSaveFence/, 'Server session recovery must remain intact');
 assert.match(caveUi, /requestAdventureSettlement/, 'Server-owned settlement must remain intact');
-assert.match(caveUi, /session\.state\.input\.control === 'auto'/,
+assert.match(caveUi, /value\.state\.input\.control === 'auto'/,
   'Existing combat control state still works without a visible debug label');
