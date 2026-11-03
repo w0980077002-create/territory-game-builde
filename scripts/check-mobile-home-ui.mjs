@@ -292,3 +292,19 @@ for (const icon of ['ic-events.webp', 'ic-quests.webp', 'ic-invite.webp',
   assert.ok(home.includes('<SideButton icon="/' + icon + '"'),
     'Declutter must never conceal a working City destination: ' + icon);
 }
+
+
+// Owner's real Cave gameplay: show player-facing actions, not transport internals.
+// The trusted server session, receipt fencing and manual/auto input model stay intact.
+const caveUi = await read('src/components/pve/ServerAdventureScreen.tsx');
+assert.match(caveUi, /Восстановить бой/, 'Cave recovery remains clearly available to the player');
+assert.match(caveUi, /Подключаем бой/, 'Cave uses a natural loading message');
+assert.match(caveUi, /Ничего из пояса не расходуется/, 'Elixir limitations remain honest about no debits');
+assert.doesNotMatch(caveUi, /Восстановить серверный бой|Синхронизация|серверным боям пещеры/,
+  'Players should not see internal network and implementation jargon');
+assert.doesNotMatch(caveUi, /\? \(en\?'Auto':'Авто'\) : \(en\?'Manual':'Ручной'\)/,
+  'The debug-like Auto/Manual cave status must not clutter combat');
+assert.match(caveUi, /restoreAdventureSaveFence/, 'Server session recovery must remain intact');
+assert.match(caveUi, /requestAdventureSettlement/, 'Server-owned settlement must remain intact');
+assert.match(caveUi, /session\.state\.input\.control === 'auto'/,
+  'Existing combat control state still works without a visible debug label');
