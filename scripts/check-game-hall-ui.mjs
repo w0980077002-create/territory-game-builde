@@ -121,6 +121,13 @@ for(const name of ['targets-hd.webp','targets-mobile.webp']) {
  assert.ok(statSync(p).size>5_000&&statSync(p).size<250_000,'Mobile-optimized Sharpshooter art missing or oversized: '+name);
 }
 
+// The real phone video showed overprinted small Viking Treasures labels.
+assert.match(hall, /ruHint:'От 5 золота · бонусы и риск'/,
+  'The live slots card has a short, truthful subtitle');
+assert.match(skin, /hall-game\[data-testid="hall-game-slots"\] \.hall-game__info[\s\S]*?pointer-events:none/,
+  'Slots label has its own readable visual band but never steals the play tap');
+assert.match(skin, /hall-game\[data-testid="hall-game-slots"\] \.hall-game__hint[\s\S]*?text-overflow:ellipsis/,
+  'Small-screen hint must stay on a single line rather than overlap the play badge');
 assert.match(sql,/REVOKE ALL ON FUNCTION public\.territory_hall_start_v1/);
 assert.match(sql,/REVOKE ALL ON territory_private\.hall_accounts_v1/);
 assert.doesNotMatch(sql,/redGems|red_gems|p_reward_gold/,'No premium debit or caller-driven gold');

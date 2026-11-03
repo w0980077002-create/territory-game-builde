@@ -1,0 +1,55 @@
+/* Android Telegram 03 Nov 2026: declutter the approved City without
+   moving bottom navigation, hiding any of the six live side destinations, or
+   changing touch hitboxes. These are lighter floating wooden markers instead
+   of six opaque blocks covering the cliffs and the combatants. */
+.home-game-scene .home-side-stack .home-side {
+  border:1px solid rgba(226,182,111,.70);
+  border-radius:13px;
+  background:linear-gradient(155deg,rgba(80,51,27,.76),rgba(26,24,22,.82));
+  box-shadow:inset 0 1px 0 rgba(255,230,169,.38),0 2px 7px rgba(9,9,12,.57);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+.home-game-scene .home-side-stack .home-side::before {
+  inset:3px;
+  border-color:rgba(255,224,153,.14);
+  border-radius:10px;
+}
+.home-game-scene .home-side-stack .home-side img {
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.86));
+}
+.home-game-scene .home-side-stack .home-side span:not([aria-hidden]) {
+  color:#fff0d0;
+  text-shadow:0 1px 2px #120b08,0 0 3px #120b08;
+}
+.home-game-scene .home-side-stack .home-side:focus-visible {
+  outline:3px solid #ffe7b4;
+  outline-offset:2px;
+}
+.home-game-scene .home-top-hud .home-profile-chip {
+  background:linear-gradient(140deg,rgba(79,52,29,.88),rgba(25,25,24,.9));
+  box-shadow:inset 0 1px 0 #ffe1a052,0 3px 8px #09090b9c;
+}
+.home-game-scene .home-wallet-row .hud-chip {
+  background:rgba(23,24,25,.74);
+  box-shadow:inset 0 1px 0 #ffebaa32,0 2px 4px #0007;
+}
+.home-game-scene .home-hud-actions .hud-utility-button {
+  box-shadow:inset 0 1px 0 #ffe0a03a,0 2px 4px #0008;
+}
+.home-game-scene .home-brand-plaque {filter:drop-shadow(0 2px 5px #110c09c9);}
+
+/* More of the original characters, not wider/overlapping character hitboxes.
+   Only phones with room below their fixed HUD get the slightly taller stage. */
+@media (min-width:360px) and (min-height:750px) {
+  .home-game-scene {
+    --home-character-top:152px;
+    --home-character-bottom:35%;
+  }
+}
+@media (max-width:349px) {
+  .home-game-scene .home-side-stack .home-side {border-radius:10px;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .home-game-scene .home-side-stack .home-side {transition:none;}
+}

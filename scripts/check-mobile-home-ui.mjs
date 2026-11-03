@@ -271,3 +271,24 @@ for (const cls of ['friends-founder-panel', 'friends-invite-panel', 'friends-sta
 assert.match(liveRuneStyle, /@media \(max-width:480px\)/, '15-slot rune board uses phone layout');
 assert.match(liveRuneStyle, /\.territory-rune__group \{[\s\S]*?flex-direction:row/, 'Rune group captions move above their cards');
 assert.match(liveRuneStyle, /\.territory-rune__skill-name \{[\s\S]*?font-size:clamp\(11px/, 'Rune titles use legible mobile font sizes');
+
+
+// Third pass over the real Android video: remove duplicated HUD chrome without
+// hiding any playable side route, and eliminate the partial loading-card screen.
+const cityVisual = await read('src/components/home/cityVisualClarity.css');
+assert.match(home, /import '\.\/home\/cityVisualClarity\.css'/, 'City clarity style must load on the live screen');
+assert.match(cityVisual, /\.home-game-scene \.home-side-stack \.home-side/, 'Lighter carved side markers must be scoped to the City');
+assert.match(cityVisual, /--home-character-bottom:35%/, 'Tall phones have more space for complete figures');
+assert.match(cityVisual, /@media \(min-width:360px\) and \(min-height:750px\)/, 'Extra figure space must be tall-phone-only');
+assert.doesNotMatch(home, /<span className="mt-1 h-1 w-full rounded-full bg-white\/10 overflow-hidden">/,
+  'Do not duplicate EXP at the top when the main EXP bar is already above HP/energy');
+assert.match(home, /relative flex-1 h-5 rounded-full/, 'The full real EXP bar remains visible above HP/energy');
+assert.match(css, /\.territory-screen \.territory-section-loading \{[\s\S]*?min-height:100%/,
+  'Section loader must fill the gameplay viewport instead of floating above a black void');
+assert.match(app, /<Suspense fallback=\{[\s\S]*?territory-section-loading/,
+  'Original lazy loading keeps its accessible, Viking-themed status screen');
+for (const icon of ['ic-events.webp', 'ic-quests.webp', 'ic-invite.webp',
+  'ic-shop.webp', 'ic-trials.webp', 'ic-arena-viking.webp']) {
+  assert.ok(home.includes('<SideButton icon="/' + icon + '"'),
+    'Declutter must never conceal a working City destination: ' + icon);
+}

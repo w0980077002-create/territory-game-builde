@@ -242,7 +242,7 @@ export function GamesScreen({
 
       <section className="hall-games" aria-label={en ? 'Choose a game' : 'Выбери игру'}>
         {availableGames.map((configuredGame, index) => {
-          const game = configuredGame.id==='slots' && slotsEnabled ? {...configuredGame,demo:false,ruHint:'Ставки и выигрыши золотом героя · бонусы и риск',enHint:'Hero gold stakes and prizes · bonus and risk'} : configuredGame;
+          const game = configuredGame.id==='slots' && slotsEnabled ? {...configuredGame,demo:false,ruHint:'От 5 золота · бонусы и риск',enHint:'From 5 gold · bonuses and risk'} : configuredGame;
           const featured = index === 0;
           const locked = game.id==='slots' && slotsEnabled ? (slotsStatus?.coins??0)<5
             : game.id === 'wheel' ? (!!state && state.tickets < 1)
