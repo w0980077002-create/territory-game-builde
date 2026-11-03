@@ -10,18 +10,33 @@ export type FollowerRole = 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage'
 /** Presentation rarity is derived from the trusted roster ID, never from editable saved data. */
 export type FollowerRarity = 'common' | 'rare' | 'epic' | 'legendary';
 export const FOLLOWER_RARITY_ORDER: readonly FollowerRarity[] = ['common', 'rare', 'epic', 'legendary'];
+/** Owner-approved, combat-only base stat multipliers. Existing saved attack/levels stay raw.
+ * Special abilities (healing, crit, pierce, shielding) are balanced separately,
+ * and the PvP Arena never receives follower bonuses. */
+export const FOLLOWER_RARITY_MULTIPLIERS: Readonly<Record<FollowerRarity, number>> = Object.freeze({
+  common: 1,
+  rare: 1.15,
+  epic: 1.35,
+  legendary: 1.6,
+});
+/** Only call for a validated base stat. Never persist the boosted result as a new base. */
+export function rarityScaledStat(base: number, rarity: FollowerRarity): number {
+  return Number.isFinite(base) && base > 0
+    ? Math.round(base * FOLLOWER_RARITY_MULTIPLIERS[rarity])
+    : 0;
+}
 
 /** Static pure model belongs here: all legacy test harnesses compile this
  * module independently, without the Supabase runtime. Server entitlement and
  * one-time claims live separately in halloweenCompanion2026.ts. */
 export const HALLOWEEN_COMPANION_ID = 'follower_pumpkin_witch_2026';
 export const HALLOWEEN_COMPANION_LEVEL = 100;
-/** Epic raid companion: stronger direct PvE damage than the maximum level-60 Common warrior (129).
- * Existing elite per-round damage caps still apply; PvP remains unaffected. */
-export const HALLOWEEN_COMPANION_ADVANTAGE = 1.16;
-export const PUMPKIN_WITCH_BASELINE = { attack: 129, heal: 15 } as const;
+/** The Epic multiplier gives the already approved 150 attack (111 × 135%, rounded).
+ * Witch healing remains its existing special 16 HP; elite PvE caps still apply. */
+export const HALLOWEEN_COMPANION_ADVANTAGE = FOLLOWER_RARITY_MULTIPLIERS.epic;
+export const PUMPKIN_WITCH_BASELINE = { attack: 111, heal: 15 } as const;
 export const PUMPKIN_WITCH_COMBAT = {
-  attack: Math.round(PUMPKIN_WITCH_BASELINE.attack * HALLOWEEN_COMPANION_ADVANTAGE),
+  attack: rarityScaledStat(PUMPKIN_WITCH_BASELINE.attack, 'epic'),
   defense: 0,
   heal: Math.round(PUMPKIN_WITCH_BASELINE.heal * 1.05),
   crit: 0,
@@ -185,8 +200,10 @@ export function followerCombat(follower: Follower | null) {
   const clamp = (value: number | undefined, max: number) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(max, Math.floor(value))) : 0;
   return {
     role,
-    attack: template ? clamp(follower?.attack, template.attack + (role === 'crystal' ? MAX_BATTLE_COW_LEVEL : MAX_FOLLOWER_LEVEL) * 2) : 0,
-    defense: role === 'guardian' ? clamp(follower?.defense, 10 + MAX_FOLLOWER_LEVEL * 2) : 0,
+    attack: template
+      ? rarityScaledStat(clamp(follower?.attack, template.attack + (role === 'crystal' ? MAX_BATTLE_COW_LEVEL : MAX_FOLLOWER_LEVEL) * 2), template.rarity)
+      : 0,
+    defense: role === 'guardian' && template ? rarityScaledStat(clamp(follower?.defense, 10 + MAX_FOLLOWER_LEVEL * 2), template.rarity) : 0,
     heal: role === 'healer' ? Math.min(15, 3 + Math.floor(level / 4)) : role === 'crystal' ? Math.min(10, 4 + Math.floor(level / 10)) : 0,
     crit: role === 'hunter' ? Math.min(5, 2 + Math.floor(level / 10)) : 0,
     pierce: role === 'mage' ? Math.min(0.08, 0.04 + level * 0.0008) : role === 'crystal' ? 0.02 : 0,

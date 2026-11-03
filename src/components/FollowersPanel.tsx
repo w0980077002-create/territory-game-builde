@@ -7,7 +7,7 @@ import { getFollowerArt } from '@/game/combatArt';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import {
   FOLLOWER_TEMPLATES, DISPLAY_FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_ID, PUMPKIN_WITCH_TEMPLATE, followerTrainingCost, MAX_FOLLOWER_LEVEL, MAX_BATTLE_COW_LEVEL,
-  cowStonesOwned, cowAwakeningCost, selectedFollower, selectFollower, trainFollower, followerRarity, followerCombat,
+  cowStonesOwned, cowAwakeningCost, selectedFollower, selectFollower, trainFollower, followerRarity, followerCombat, FOLLOWER_RARITY_MULTIPLIERS,
 } from '@/game/followers';
 import { PumpkinWitch } from './PumpkinWitch';
 import './followersCamp.css';
@@ -80,7 +80,7 @@ export function FollowersPanel() {
           <span className="followers-camp__eyebrow"><Check size={13}/>{en ? 'ACTIVE IN PvE' : 'АКТИВЕН В PvE'}</span>
           <h3>{en ? (DISPLAY_FOLLOWER_TEMPLATES.find(f => f.id === active.id)?.nameEn ?? active.name) : active.name}</h3>
           <span className={`followers-camp__rarity followers-camp__rarity--${followerRarity(active.id)}`}>{localizeRarity(followerRarity(active.id), language)}</span>
-          <p>{en ? 'Level' : 'Уровень'} {active.level} <span>·</span> <Swords size={12}/> {active.id === HALLOWEEN_COMPANION_ID ? followerCombat(active).attack : active.attack} <span>·</span> {active.id === HALLOWEEN_COMPANION_ID ? <><Heart size={12}/> 16</> : <><Shield size={12}/> {active.defense}</>}</p>
+          <p>{en ? 'Level' : 'Уровень'} {active.level} <span>·</span> <Swords size={12}/> {followerCombat(active).attack} <span>·</span> {active.id === HALLOWEEN_COMPANION_ID || active.id === 'follower_6' ? <><Heart size={12}/> {followerCombat(active).heal}</> : <><Shield size={12}/> {active.defense}</>}</p>
           <small>{en ? 'Helps in Campaign and Trials, not in Arena' : 'Помогает в Походе и Испытаниях, не на Арене'}</small>
         </div>
       </> : <div className="followers-camp__locked-start">
@@ -97,6 +97,7 @@ export function FollowersPanel() {
             : (en ? 'VIEWING COMPANION' : 'ПРОСМОТР СПУТНИКА')}</span>
           <h3>{en ? template.nameEn : template.name}</h3>
           <span className={`followers-camp__rarity followers-camp__rarity--${template.rarity}`}>{localizeRarity(template.rarity, language)}</span>
+          <small className="followers-camp__power-factor">{en ? 'Base attack factor' : 'Коэффициент базовой атаки'}: ×{FOLLOWER_RARITY_MULTIPLIERS[template.rarity].toFixed(2)}</small>
           {isSeasonal && <span className="followers-camp__raid-tag">{en ? 'RAID · 2026' : 'РЕЙД · 2026'}</span>}
           <p>{isSeasonal ? (en ? 'An epic companion for Halloween raid fighters.' : 'Эпический спутник за участие в Хэллоуинском рейде.') : (en ? template.descriptionEn : template.description)}</p>
           <span className={unlocked ? 'followers-camp__availability' : 'followers-camp__availability followers-camp__availability--locked'}>
@@ -113,8 +114,8 @@ export function FollowersPanel() {
       {unlocked && <>
         {template.role === 'crystal' && <div className="followers-camp__special"><Sparkles size={15}/>{en ? 'Crystal Frenzy: extra strike, light healing each round, slight armor piercing.' : 'Кристальное безумие: дополнительный удар, небольшое лечение каждый раунд и пробивание брони.'}</div>}
         <div className="followers-camp__stats">
-          <div><Swords size={16}/><span>{en ? 'Attack' : 'Атака'}</span><b>{isSeasonal ? followerCombat(follower).attack : follower.attack}</b></div>
-          <div>{isSeasonal ? <Heart size={16}/> : <Shield size={16}/>}<span>{isSeasonal ? (en ? 'Healing' : 'Лечение') : (en ? 'Defense' : 'Защита')}</span><b>{isSeasonal ? 16 : follower.defense}</b></div>
+          <div><Swords size={16}/><span>{en ? 'Attack' : 'Атака'}</span><b>{followerCombat(follower).attack}</b></div>
+          <div>{isSeasonal || isCow ? <Heart size={16}/> : <Shield size={16}/>}<span>{isSeasonal || isCow ? (en ? 'Healing' : 'Лечение') : (en ? 'Defense' : 'Защита')}</span><b>{isSeasonal || isCow ? followerCombat(follower).heal : follower.defense}</b></div>
           <div><Crown size={16}/><span>{en ? 'Level' : 'Уровень'}</span><b>{follower.level}/{cap}</b></div>
         </div>
         <div className="followers-camp__progress" role="progressbar" aria-label={en ? 'Training level' : 'Уровень развития'} aria-valuemin={0} aria-valuemax={cap} aria-valuenow={Math.min(follower.level, cap)}>

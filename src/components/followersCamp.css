@@ -71,6 +71,7 @@
 .followers-camp__rarity--rare{border-color:#5fb7fb;background:#1a5087e8;color:#d8f3ff}
 .followers-camp__rarity--epic{border-color:#db95ff;background:#623384e8;color:#f5dcff}
 .followers-camp__rarity--legendary{border-color:#ffc567;background:#80501be8;color:#fff0c3}
+.followers-camp__power-factor{display:block;margin:0 0 6px;color:#f4d8ab;font-size:10px;font-weight:800;line-height:1.2}
 .followers-camp__raid-tag{display:inline-flex;vertical-align:top;margin:1px 0 5px;border:1px solid #d2ab72;border-radius:7px;padding:2px 6px;background:#453326;color:#ffe2b2;font-size:9px;font-weight:900}
 .followers-camp__portrait-rarity{position:absolute;left:3px;top:3px;z-index:1;margin:0;padding:2px 4px;font-size:8px;line-height:1.1;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .followers-camp__portrait--common{border-color:#8a8e9c9c}
