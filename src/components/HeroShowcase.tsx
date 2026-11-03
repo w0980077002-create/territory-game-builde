@@ -4,8 +4,8 @@ import { getAppearanceIcon } from '@/game/appearance';
 import { SLOT_ART, equipmentArt } from '@/game/art';
 import { rarityColor } from '@/game/ui';
 import { findHeroGearOpportunity } from '@/game/heroGearOpportunity';
-import { useLanguage } from '@/game/i18n';
-import { selectedFollower, DISPLAY_FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_ID } from '@/game/followers';
+import { useLanguage, localizeRarity } from '@/game/i18n';
+import { selectedFollower, DISPLAY_FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_ID, followerRarity, followerCombat } from '@/game/followers';
 import { PumpkinWitch } from './PumpkinWitch';
 import { getFollowerArt } from '@/game/combatArt';
 import type { Equipment, GameState } from '@/game/types';
@@ -122,8 +122,9 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
           <strong>{activeCompanion
             ? (language === 'en' ? (activeCompanionTemplate?.nameEn ?? activeCompanion.name) : activeCompanion.name)
             : text('Спутник ещё не открыт', 'No companion unlocked yet')}</strong>
+          {activeCompanion && <small style={{color:rarityColor(followerRarity(activeCompanion.id)),fontWeight:900}}>{localizeRarity(followerRarity(activeCompanion.id), language)}</small>}
           <small>{activeCompanion
-            ? activeCompanion.id === HALLOWEEN_COMPANION_ID ? text('Ур. 100/100 · Атака 65 · Лечение 16', 'Lv. 100/100 · Attack 65 · Healing 16') : text(`Ур. ${activeCompanion.level} · Атака ${activeCompanion.attack} · Защита ${activeCompanion.defense}`,
+            ? activeCompanion.id === HALLOWEEN_COMPANION_ID ? text(`Ур. 100/100 · Атака ${followerCombat(activeCompanion).attack} · Лечение ${followerCombat(activeCompanion).heal}`, `Lv. 100/100 · Attack ${followerCombat(activeCompanion).attack} · Healing ${followerCombat(activeCompanion).heal}`) : text(`Ур. ${activeCompanion.level} · Атака ${activeCompanion.attack} · Защита ${activeCompanion.defense}`,
                 `Lv. ${activeCompanion.level} · Attack ${activeCompanion.attack} · Defense ${activeCompanion.defense}`)
             : text('Первый спутник откроется на 3 уровне', 'First companion unlocks at hero level 3')}</small>
           <small>{text('Помогает в Походе и Испытаниях, не на Арене', 'Helps in Campaign and Trials, not Arena')}</small>
