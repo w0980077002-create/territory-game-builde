@@ -22,6 +22,8 @@ export function grantRewards(state){return state;}
 export function updateProgress(state){return state;}
 export async function claimMailGrant(){return false;}
 export async function getClaimedMailHistory(){return {letters:[],hasMore:false};}
+export async function getUnseenHalloweenFinalMail(){return null;}
+export async function acknowledgeHalloweenFinalMail(){return true;}
 export function captureGameEvent(){}
 const active=query.has('active')?{token:'11111111-1111-4111-8111-111111111111',game:'treasury',question:{chests:[1,2,3]}}:null;
 let hall={tickets:3,points:0,played:0,wins:0,pending_gold:0,claimed_gold:0,position:0,daily_remaining:10,free_ready:true,active};
