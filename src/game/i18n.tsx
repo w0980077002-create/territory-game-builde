@@ -452,6 +452,7 @@ const dictionaries: Record<Language, Dictionary> = {
   },
 };
 const contentEnglish: Record<string, string> = {
+  'Рогатая тыква · Хэллоуин 2026': 'Horned Pumpkin · Halloween 2026',
   'Шлем': 'Helmet',
   'Амулет': 'Amulet',
   'Броня': 'Armor',
