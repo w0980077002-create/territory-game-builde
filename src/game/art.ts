@@ -184,6 +184,10 @@ function inventoryMaterialArt(item: ArtSource): string {
  * Cosmetic only — no item properties or combat statistics are altered.
  */
 export function equipmentArt(equipment: Equipment): string {
+  // Server-entitled Halloween 2026 trophy: visual-only override, never change ownership or stats.
+  if (equipment.id === 'halloween_horned_pumpkin_2026' && equipment.slot === 'helmet') {
+    return ui + 'unique-gear/halloween-horned-pumpkin-2026.svg';
+  }
   const name = normalizeItemName(equipment.name);
   const special = UNIQUE_EQUIPMENT_BY_NAME[name];
   if (special) return uniqueGearIcon(special);
