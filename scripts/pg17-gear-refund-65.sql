@@ -106,3 +106,20 @@ BEGIN
   THEN RAISE EXCEPTION 'rollback changed award ledger or player assets'; END IF;
   RAISE NOTICE 'PG17 rollback PASS: entrypoints disabled, player materials and audit retained';
 END $rollback$;
+
+-- Exercise the actual database roles, not only a GUC under postgres.
+SET ROLE authenticated;
+SELECT public.territory_forge_refund_quote_65_v1('loot_refund17');
+RESET ROLE;
+SET ROLE anon;
+DO $anon_block$
+BEGIN
+  BEGIN
+    PERFORM public.territory_inventory_recycle_refund_65_v1(
+      'loot_refund17','2026-01-01T00:00:00+00'::timestamptz);
+    RAISE EXCEPTION 'anonymous role was able to call refund';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'PG17 PASS: anon is denied refund RPC';
+  END;
+END $anon_block$;
+RESET ROLE;
