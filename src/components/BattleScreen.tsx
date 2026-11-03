@@ -245,7 +245,20 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
                 </p>
               </div>
             </div>
-            <button type="button" data-testid="campaign-next-fight" onClick={() => start('stage')}
+            {state.battleStones < PVE_STONE_COST && !caveRecoveryNeeded && (
+              <p role="status" className="mt-2 text-xs font-semibold text-amber-200">
+                {language === 'en'
+                  ? 'Not enough battle stones. Visit the shop before challenging this enemy.'
+                  : 'Не хватает боевых камней. Загляни в лавку перед следующим боем.'}
+              </p>
+            )}
+            <button type="button" data-testid="campaign-next-fight" onClick={() => {
+              if (state.battleStones < PVE_STONE_COST && !caveRecoveryNeeded) {
+                onShop();
+                return;
+              }
+              start('stage');
+            }}
               disabled={caveRecoveryNeeded || fightStartLocked.current}
               className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-amber-200/70 bg-gradient-to-b from-amber-300 to-amber-600 px-3 py-2 text-sm font-black text-[#241509] shadow-md active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-50">
               <Swords size={17} aria-hidden="true" />
