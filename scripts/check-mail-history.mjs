@@ -16,7 +16,8 @@ assert.match(live, /\.eq\('kind', 'mail'\)/, 'only real letters, not admin adjus
 assert.match(live, /\.not\('claimed_at', 'is', null\)/, 'only claimed letters appear in history');
 assert.match(live, /\.range\(start, start \+ size\)/, 'older letters must be reachable through pagination');
 assert.match(home, /setTab\('received'\)/, 'claimed letters should open in the received tab');
-assert.match(home, /shownAdminMail = received \? history : adminMail/);
+assert.match(home, /shownAdminMail = received\s*\? history\.filter\(/, 'Received must retain history except the single newly announced finale');
+assert.match(home, /unseenHalloweenFinal \? \[unseenHalloweenFinal/, 'Already-claimed Halloween finale must appear in New until acknowledged');
 assert.match(home, /getClaimedMailHistory\(offset\)/);
 assert.match(home, /historyHasMore/, 'older letters must be loadable');
 assert.match(home, /export function MailInbox/, 'mail must be embedded within Messages, not a city modal');
