@@ -226,6 +226,27 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
             </div>
           </div>
 
+          <div data-testid="campaign-next-goal" role="status" aria-live="polite"
+            className="rounded-xl border border-amber-400/50 bg-gradient-to-r from-[#51321c] to-[#241c19] px-3 py-2.5 shadow-inner">
+            <div className="flex items-center gap-2">
+              <Crown size={18} className="shrink-0 text-amber-300" aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <strong className="block text-sm font-black text-amber-100">
+                  {nextIndex === chapter.enemies.length
+                    ? (language === 'en' ? 'Boss unlocked — final fight!' : 'Босс открыт — решающий бой!')
+                    : (language === 'en'
+                      ? `To the boss: ${chapter.enemies.length - nextIndex} ${chapter.enemies.length - nextIndex === 1 ? 'fight' : 'fights'}`
+                      : `До босса: ${chapter.enemies.length - nextIndex} боёв`)}
+                </strong>
+                <p className="text-[11px] leading-snug text-amber-100/85">
+                  {nextIndex === chapter.enemies.length
+                    ? (language === 'en' ? 'Check equipment, choose attack and block zones, then challenge the boss.' : 'Проверь снаряжение, выбирай зоны удара и блока — и бросай вызов боссу.')
+                    : (language === 'en' ? 'Win the next encounter to advance. After the fight, check your actual loot and equipment.' : 'Победи следующего врага, чтобы продвинуться. После боя проверь настоящую добычу и снаряжение.')}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             {stages.map((e, i) => (
               <StageRow
