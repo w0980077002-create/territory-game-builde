@@ -159,6 +159,13 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
     try {
       const ok = await claimMailGrant(id);
       if (ok) {
+        // A not-yet-claimed companion-only finale was already read via the
+        // normal claim action; do not show that same letter as New again.
+        if (adminMail.some((mail) => mail.id === id && mail.subject === HALLOWEEN_FINAL_SUBJECT)) {
+          void acknowledgeHalloweenFinalMail(id).catch(() => {
+            /* Claim already succeeded; an ack error must never roll back a prize. */
+          });
+        }
         setTab('received');
         setExpandedId(`admin:${id}`);
         void loadHistory();
