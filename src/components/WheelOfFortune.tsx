@@ -3,8 +3,21 @@ import { useLanguage } from '@/game/i18n';
 import { hapticNotify, hapticSelection } from '@/game/telegram';
 import { FORTUNE_PRIZES, acknowledgeFortune, playFortune, recoverFortune, fortuneIndex, fortuneLabel, fortuneError, fortuneRotation, type FortuneReceipt, type FortuneStatus } from '@/game/fortune';
 import { FortuneDialog } from './FortuneDialog';
+import { useSceneArt } from './ui/useSceneArt';
 import './fortune.css';
 const base=import.meta.env.BASE_URL;
+// Everything that makes up the original, painted Fortune scene loads together.
+const WHEEL_SCENE_ART = [
+  'fortune/original-floor.webp',
+  'fortune/original-scene.webp',
+  'fortune/original-wheel.webp',
+  'fortune/original-title.webp',
+  'fortune/original-pointer.webp',
+  'fortune/original-ticket-panel.webp',
+  'fortune/original-rules-panel.webp',
+  'fortune/original-spin-frame.webp',
+  'fortune/original-ticket.webp',
+] as const;
 // Presentation order of the original painting, clockwise from its top sector.
 // Server order/weights and transaction logic remain unchanged.
 const ORIGINAL_SLOT=[11,0,6,8,9,2,3,10,1,5,4,7] as const;
@@ -39,6 +52,8 @@ function Wheel({rotation,spinning,reduced,onDone,en}:{rotation:number;spinning:b
 }
 export function WheelOfFortune({userId,onBack}:{userId:string;onBack:()=>void}){
  const {language}=useLanguage(),en=language==='en';
+ const { status: artStatus, retry: retryArt } = useSceneArt(WHEEL_SCENE_ART);
+ const artReady = artStatus === 'ready';
  const [status,setStatus]=useState<FortuneStatus|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [receipt,setReceipt]=useState<FortuneReceipt|null>(null),[reveal,setReveal]=useState(false),[rules,setRules]=useState(false);
  const [rotation,setRotation]=useState(0),[spinning,setSpinning]=useState(false);
@@ -73,7 +88,7 @@ export function WheelOfFortune({userId,onBack}:{userId:string;onBack:()=>void}){
   catch{setError(en?'Could not confirm receipt. Retry safely.':'Не удалось подтвердить получение. Повтори безопасно.');}
   finally{lock.current=false;setBusy(false);}
  };
- return <div className="fortune-screen" data-testid="wheel-of-fortune" style={{backgroundImage:`url(${base}fortune/original-floor.webp)`}}>
+ return <div className={'fortune-screen '+(artReady?'fortune-screen--art-ready':'fortune-screen--art-pending')} data-testid="wheel-of-fortune" aria-busy={artStatus==='loading'} style={{backgroundImage:artReady?`url(${base}fortune/original-floor.webp)`:undefined}}>
   <div className="fortune-original-scene" style={{backgroundImage:`url(${base}fortune/original-scene.webp)`}}>
    <div className="fortune-toolbar">
     <strong className="fortune-ticket" aria-label={en?'Ticket balance':'Баланс билетов'} style={{backgroundImage:`url(${base}fortune/original-ticket-panel.webp)`}}><span>{status?.tickets.toLocaleString(en?'en-US':'ru-RU')??'—'}</span></strong>
@@ -87,12 +102,19 @@ export function WheelOfFortune({userId,onBack}:{userId:string;onBack:()=>void}){
    <Wheel rotation={rotation} spinning={spinning} reduced={reduced} en={en} onDone={()=>{if(spinning)done();}}/>
    <img className="fortune-pointer" src={base+'fortune/original-pointer.webp'} width={108} height={124} alt="" aria-hidden="true" draggable={false}/>
    <div className="fortune-controls">
-    <button className="fortune-button fortune-spin" aria-label={busy?(en?'Connecting':'Связь с сервером'):spinning?(en?'Fortune is spinning':'Фортуна вращается'):(en?'SPIN — 1 TICKET':'КРУТИТЬ — 1 БИЛЕТ')} aria-busy={busy} disabled={busy||spinning||!!receipt||!status||!status.tickets||!!error} onClick={()=>void spin()} style={{backgroundImage:`url(${base}fortune/original-spin-frame.webp)`}}>
+    <button className="fortune-button fortune-spin" aria-label={busy?(en?'Connecting':'Связь с сервером'):spinning?(en?'Fortune is spinning':'Фортуна вращается'):(en?'SPIN — 1 TICKET':'КРУТИТЬ — 1 БИЛЕТ')} aria-busy={busy} disabled={!artReady||busy||spinning||!!receipt||!status||!status.tickets||!!error} onClick={()=>void spin()} style={{backgroundImage:`url(${base}fortune/original-spin-frame.webp)`}}>
      <span className={`fortune-spin__label ${busy||spinning?'fortune-spin__label--busy':''}`}>{busy?(en?'CONNECTING…':'СВЯЗЬ…'):spinning?(en?'SPINNING…':'ВРАЩАЕТСЯ…'):(en?'Spin':'Крутить')}</span>
      <span className="fortune-spin__cost" aria-hidden="true"><img src={base+'fortune/original-ticket.webp'} alt=""/> 1</span>
     </button>
    </div>
   </div>
+  {!artReady && <div className="fortune-art-gate" role="status" aria-live="polite" data-testid="fortune-art-gate">
+    <span className="fortune-art-gate__crest" aria-hidden="true">ᛟ</span>
+    <strong>{artStatus==='error'?(en?'Artwork could not load':'Не удалось загрузить оформление'):(en?'Preparing the Wheel of Fortune…':'Открываем Колесо фортуны…')}</strong>
+    <span>{artStatus==='error'?(en?'Your tickets and prize are safe.':'Билеты и награды сохранены.'):(en?'The original scene will appear all at once.':'Покажем всю сцену целиком.')}</span>
+    {artStatus==='error' && <button type="button" onClick={retryArt}>{en?'Retry artwork':'Повторить загрузку'}</button>}
+    <button type="button" onClick={onBack}>{en?'Back to Game Hall':'Вернуться в игровой зал'}</button>
+  </div>}
   {spinning&&<button className="fortune-skip" onClick={done}>{en?'Skip animation':'Пропустить анимацию'}</button>}
   {status?.tickets===0&&<p className="fortune-status">{en?'Collect +2 daily tickets in the Hall.':'Забери +2 ежедневных билета в зале.'}</p>}
   {error&&<p className="fortune-status" role="alert">{error} <button onClick={()=>void recover()} disabled={busy}>{en?'Recover':'Восстановить'}</button></p>}
