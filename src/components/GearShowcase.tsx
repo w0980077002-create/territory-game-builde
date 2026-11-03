@@ -191,7 +191,8 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
     const action = confirm;
     const snapshot = useGame.get();
     const current = snapshot.inventory.find((item) => item.id === id && item.type === 'equipment');
-    if (!current || (action === 'salvage' && !canSalvageEquipment(current))) {
+    if (!current || (action === 'salvage' && !canSalvageEquipment(current)
+      && !(refundQuote?.itemId === current.id && refundQuote.refund > 0))) {
       setError(language === 'en' ? 'Item changed. Choose it again.' : 'Предмет изменился. Выбери его заново.');
       return;
     }
