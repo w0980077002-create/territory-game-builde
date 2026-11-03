@@ -25,7 +25,12 @@ const expected = [
 assert.equal(adminKeys.length, expected.length, 'Every admin grant type must be covered');
 assert.deepEqual([...adminKeys].sort(), [...expected].sort(), 'Unexpected grant type in admin');
 const visualItemKeys = Object.keys(MAIL_ITEM_VISUALS);
-assert.equal(visualItemKeys.length, 7);
+assert.equal(visualItemKeys.length, 8, 'Seven shop consumables plus the Halloween raid trophy');
+const pumpkin = mailRewardVisuals({ items: { halloween_horned_pumpkin_2026: 1 } });
+assert.equal(pumpkin.length, 1);
+assert.equal(pumpkin[0].key, 'halloween_horned_pumpkin_2026');
+assert.equal(pumpkin[0].amount, 1);
+assert.ok(existsSync('public/' + pumpkin[0].image), 'Approved Halloween helmet art must be shipped');
 for (const key of expected) {
   const payload = key.startsWith('shop_') ? { items: { [key]: 2 } } : { [key]: 2 };
   const rewards = mailRewardVisuals(payload);
