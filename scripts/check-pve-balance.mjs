@@ -160,6 +160,38 @@ for (const first of zones) for (const second of zones) {
 }
 assert.equal(pve.nextOpenStrike('head', ['head', 'chest', 'belly', 'legs']), 'head',
   'Malformed fully guarded intent must not create a phantom zone');
+// The real manual boss combo needs a DIFFERENT open target after 1/2.
+// One tap should prepare that attack without resolving a free hit or changing
+// the committed guard. Subsequent taps must still let the player choose.
+for (const first of zones) for (const second of zones) {
+  if (first.id === second.id) continue;
+  const guards = [first.id, second.id];
+  const openings = zones.map(z => z.id).filter(id => !guards.includes(id));
+  for (const previous of zones.map(z => z.id)) {
+    const chosen = pve.nextComboOpening(null, guards, previous);
+    assert(openings.includes(chosen), 'Combo button must choose an actually open zone');
+    if (openings.some(id => id !== previous))
+      assert.notEqual(chosen, previous, 'First tap must not repeat the landed combo direction');
+    const other = pve.nextComboOpening(chosen, guards, previous);
+    assert(openings.includes(other) && other !== chosen, 'Second tap cycles real openings');
+  }
+}
+const comboIntent = { attack: 'belly', blocks: ['head', 'chest'] };
+const comboFirst = pve.nextTacticalMomentum({ lastZone: null, streak: 0 }, 'head', 'hit', true);
+const comboTarget = pve.nextComboOpening(null, comboIntent.blocks, comboFirst.lastZone);
+assert.equal(comboTarget, 'belly', 'First combo tap must pick a different open target');
+const comboHit = pve.playRound(starterHero, guardEnemy, comboTarget, [], 0, '', 0, null, comboIntent);
+assert.equal(comboHit.hits[0].tone, 'hit', 'Suggested combo target must damage the REAL enemy');
+assert.equal(pve.nextTacticalMomentum(comboFirst, comboTarget, comboHit.hits[0].tone, true).streak, 2,
+  'One-tap different opening must charge the existing real +15% combo');
+assert.equal(pve.nextComboOpening('head', ['head', 'chest', 'belly', 'legs'], 'head'), 'head',
+  'Malformed all-guarded input must not invent an opening');
+const comboUi = source('../src/components/pve/PveFight.tsx');
+assert.match(comboUi, /setAttack\(current => nextComboOpening\(/,
+  'Visible opening button must use the combo-aware pure target selector');
+assert.match(comboUi, /momentum\.streak === 1 \? momentum\.lastZone : null/,
+  'Only an earned 1\/2 combo can influence the opening suggestion');
+
 assert.equal(pve.coverThreatZone(['head'], 'head').join(','), 'head', 'Covering twice is idempotent');
 assert.equal(pve.coverThreatZone(['head'], 'belly').join(','), 'head,belly', 'Keep the first selected defense');
 assert.equal(pve.coverThreatZone(['head', 'legs'], 'chest').join(','), 'legs,chest', 'Replace only the oldest defense');
@@ -464,8 +496,8 @@ assert.match(fightSource, /\(kind === 'trial' \|\| enemy\.isBoss\) && !auto && !
 assert.match(fightSource, /blocks\.includes\(enemyIntent\.attack\)/, 'The warning reflects the selected defense');
 assert.match(fightSource, /data-testid="pve-telegraphed-strike"/, 'Show the actual next strike direction for tactical trials and bosses');
 assert.match(fightSource, /data-testid="pve-choose-opening"/, 'The shown enemy guard must offer an actual manual attack choice');
-assert.match(fightSource, /setAttack\(current => nextOpenStrike\(current, committedEnemyIntent\.blocks\)\)/,
-  'Opening action must use both committed enemy guard slots');
+assert.match(fightSource, /setAttack\(current => nextComboOpening\(\s*current, committedEnemyIntent\.blocks, momentum\.streak === 1 \? momentum\.lastZone : null,/,
+  'Opening action must use both committed guards and only earned combo history');
 assert.match(fightSource, /committedEnemyIntent\.blocks\.includes\(attack\)/,
   'Manual attack warning must recognize the second guarded zone too');
 assert.match(fightSource, /const guardedZoneLabels = committedEnemyIntent\.blocks\.map\(/,
@@ -479,7 +511,7 @@ assert.match(fightSource, /setStaggerReady\(elite && !auto && riposteReady && at
 assert.match(fightSource, /!committedEnemyIntent\.blocks\.includes\(atk\)/, 'A guarded leg strike must not earn stagger');
 assert.match(fightSource, /report\.heroStrike === 'hit' \|\| report\.heroStrike === 'crit'/, 'Only actual landed hits can earn stagger');
 assert.match(fightSource, /data-testid="pve-staggered-guard"/, 'The real temporary guard change must be visible');
-assert.match(fightSource, /nextOpenStrike\(current, committedEnemyIntent\.blocks\)/, 'Target helper must use the staggered guard too');
+assert.match(fightSource, /nextComboOpening\(\s*current, committedEnemyIntent\.blocks,/, 'Combo target helper must use the actual staggered guard too');
 assert.match(fightSource, /nextAdaptiveEnemyIntent\(res\.enemy, atk, kind === 'trial' \|\| !!enemy\.isBoss, undefined, attackHistory\[1\] \?\? null\)/,
   'Phase-II/III guard uses resolved HP and the two distinct resolved strikes');
 assert.match(fightSource, /setEnemyIntent\(nextIntent\.intent\)/,
