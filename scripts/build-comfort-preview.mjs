@@ -27,7 +27,9 @@ export const useGame=create({settings:{speed:1,auto:false},battleStones:25});`;
 const mockLive = `import {create} from '@/game/store';
 export const useLive=create({mail:[]});
 export async function claimMailGrant(){return false}
-export async function getClaimedMailHistory(){return {letters:[],hasMore:false}}`;
+export async function getClaimedMailHistory(){return {letters:[],hasMore:false}}
+export async function getUnseenHalloweenFinalMail(){return null}
+export async function acknowledgeHalloweenFinalMail(){return true}`;
 const mockProgression = `export const DAILY_REWARDS=[];
 export const MAIL=[];
 export const claimDaily=()=>null;

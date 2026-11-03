@@ -5,7 +5,7 @@ import { DAILY_REWARDS, MAIL, claimDaily, claimMail, dailyStatus, type Reward } 
 import { Modal } from '@/components/ui/Modal';
 import { Currency } from '@/components/ui/Currency';
 import { RewardLootStrip } from '@/components/ui/RewardLootStrip';
-import { useLive, claimMailGrant, getClaimedMailHistory, type ClaimedMailGrant } from '@/game/live';
+import { useLive, claimMailGrant, getClaimedMailHistory, getUnseenHalloweenFinalMail, acknowledgeHalloweenFinalMail, type ClaimedMailGrant } from '@/game/live';
 import './mailVisuals.css';
 import { mailRewardVisuals } from '@/game/mailRewardVisuals';
 import { HALLOWEEN_FINAL_SUBJECT, localizedHalloweenMail } from '@/game/halloweenMailLocalization';
@@ -88,6 +88,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
   const [tab, setTab] = useState<'new' | 'received'>('new');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [history, setHistory] = useState<ClaimedMailGrant[]>([]);
+  const [unseenHalloweenFinal, setUnseenHalloweenFinal] = useState<ClaimedMailGrant | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState(false);
   const [historyHasMore, setHistoryHasMore] = useState(false);
@@ -122,6 +123,35 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
     return () => { historyRequest.current += 1; };
   }, [loadHistory]);
 
+  useEffect(() => {
+    let active = true;
+    void getUnseenHalloweenFinalMail()
+      .then((letter) => { if (active) setUnseenHalloweenFinal(letter); })
+      .catch(() => { /* Keep the ordinary archive available if final-mail RPC is offline. */ });
+    return () => { active = false; };
+  }, []);
+
+  /** A previously claimed TOP20 prize should be announced as a NEW letter
+   * once, without claiming its valuable payload a second time.
+   */
+  const acknowledgeFinal = async (id: string) => {
+    if (!unseenHalloweenFinal || unseenHalloweenFinal.id !== id || claiming) return;
+    setClaiming(id);
+    try {
+      const ok = await acknowledgeHalloweenFinalMail(id);
+      if (!ok) throw new Error('final_mail_not_acknowledged');
+      setUnseenHalloweenFinal(null);
+      setTab('received');
+      setExpandedId(`admin:${id}`);
+      void loadHistory();
+      notify(language === 'en' ? 'Halloween letter read. Rewards were already credited.' : 'Поздравление прочитано. Награды уже зачислены.');
+    } catch {
+      notify(language === 'en' ? 'Could not mark letter as read.' : 'Не удалось отметить письмо прочитанным.');
+    } finally {
+      setClaiming(null);
+    }
+  };
+
   const claimAdmin = async (id: string) => {
     if (claimInFlight.current) return;
     claimInFlight.current = true;
@@ -129,6 +159,13 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
     try {
       const ok = await claimMailGrant(id);
       if (ok) {
+        // A not-yet-claimed companion-only finale was already read via the
+        // normal claim action; do not show that same letter as New again.
+        if (adminMail.some((mail) => mail.id === id && mail.subject === HALLOWEEN_FINAL_SUBJECT)) {
+          void acknowledgeHalloweenFinalMail(id).catch(() => {
+            /* Claim already succeeded; an ack error must never roll back a prize. */
+          });
+        }
         setTab('received');
         setExpandedId(`admin:${id}`);
         void loadHistory();
@@ -152,9 +189,11 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
   };
 
   const received = tab === 'received';
-  const shownAdminMail = received ? history : adminMail;
+  const shownAdminMail = received
+    ? history.filter((m) => m.id !== unseenHalloweenFinal?.id)
+    : unseenHalloweenFinal ? [unseenHalloweenFinal, ...adminMail.filter((m) => m.id !== unseenHalloweenFinal.id)] : adminMail;
   const shownGameMail = MAIL.filter((letter) => state.mailClaimed.includes(letter.id) === received);
-  const newCount = adminMail.length + MAIL.filter((letter) => !state.mailClaimed.includes(letter.id)).length;
+  const newCount = adminMail.length + (unseenHalloweenFinal ? 1 : 0) + MAIL.filter((letter) => !state.mailClaimed.includes(letter.id)).length;
 
   return (
     <section className="territory-mail space-y-1.5" aria-label={language === 'en' ? 'Messages' : 'Сообщения'}>
@@ -183,6 +222,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
           const rewards = mailRewardVisuals(m.payload);
           const copy = localizedHalloweenMail(m, language);
           const expanded = expandedId === `admin:${m.id}`;
+          const previouslyClaimedFinal = !received && unseenHalloweenFinal?.id === m.id;
           return (
             <article key={m.id} className={`territory-mail__letter rounded-lg border ${received ? 'border-white/10 bg-black/20' : 'border-sky-400/30 bg-sky-500/5'}`}>
               <button type="button" className="flex min-h-11 w-full items-center gap-2 px-2 py-2 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `admin:${m.id}`)}>
@@ -195,6 +235,9 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
               </button>
               {expanded && <div className="border-t border-white/10 px-2 pb-2 pt-1.5">
               <p className="text-[11px] text-gray-300 leading-snug mb-2 whitespace-pre-line break-words">{copy.body}</p>
+              {previouslyClaimedFinal && <p className="mb-1 text-[10px] font-semibold text-emerald-200">
+                {language === 'en' ? 'Your rewards are already in your inventory. This is your final celebration letter.' : 'Все награды уже начислены. Это итоговое поздравление — повторно получать подарки не нужно.'}
+              </p>}
               {received && <p className="mb-1 text-[9px] text-gray-500">
                 {language === 'en' ? 'Claimed' : 'Получено'}: {new Date((m as ClaimedMailGrant).claimed_at).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU')}
               </p>}
@@ -225,6 +268,11 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
                 )}
                 {received ? (
                   <span className="shrink-0 text-[10px] text-emerald-300">✓ {t('claimed')}</span>
+                ) : previouslyClaimedFinal ? (
+                  <button type="button" onClick={() => void acknowledgeFinal(m.id)} disabled={claiming === m.id}
+                    className="shrink-0 min-h-11 px-3 rounded-lg text-[11px] font-bold bg-amber-400 text-black disabled:opacity-50">
+                    {claiming === m.id ? '...' : language === 'en' ? 'Read' : 'Прочитано'}
+                  </button>
                 ) : (
                   <button
                     onClick={() => void claimAdmin(m.id)}

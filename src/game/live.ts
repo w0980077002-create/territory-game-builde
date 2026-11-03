@@ -57,6 +57,28 @@ export async function getClaimedMailHistory(offset = 0, pageSize = 30): Promise<
   return { letters: rows.slice(0, size), hasMore: rows.length > size };
 }
 
+/** A claimed prize and a read celebration are different operations.
+ * Never reopen a grant or alter the player's inventory to display this letter.
+ */
+export async function getUnseenHalloweenFinalMail(): Promise<ClaimedMailGrant | null> {
+  const { data, error } = await supabase.rpc('territory_halloween_final_mail_unseen_v1');
+  if (error) throw new Error('halloween_final_mail_unavailable');
+  if (data == null) return null;
+  if (typeof data !== 'object' || Array.isArray(data)) throw new Error('halloween_final_mail_invalid');
+  const m = data as Partial<ClaimedMailGrant>;
+  if (typeof m.id !== 'string' || typeof m.subject !== 'string'
+    || typeof m.body !== 'string' || typeof m.claimed_at !== 'string'
+    || typeof m.created_at !== 'string' || !m.payload || typeof m.payload !== 'object'
+    || Array.isArray(m.payload)) throw new Error('halloween_final_mail_invalid');
+  return m as ClaimedMailGrant;
+}
+
+export async function acknowledgeHalloweenFinalMail(id: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('territory_halloween_final_mail_ack_v1', { p_mail_id: id });
+  if (error) throw new Error('halloween_final_mail_ack_failed');
+  return data === true;
+}
+
 interface LiveState {
   maintenance: boolean;
   shopSale: boolean;
