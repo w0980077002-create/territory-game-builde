@@ -143,3 +143,54 @@
 @keyframes fortune-confetti { from { top: 0; opacity: 1; transform: scale(.7); } to { top: 90%; opacity: 0; transform: scale(1.2); } }
 @keyframes fortune-chest { to { transform: rotate(5deg) scale(1.05); } }
 @media (prefers-reduced-motion: reduce) { .fortune-screen *, .fortune-screen *::before, .fortune-screen *::after, .fortune-dialog *, .fortune-treasury * { animation: none !important; transition: none !important; } }
+
+/* Original wheel, numbers and controls are a single visual scene.
+   Hide every artwork layer until all critical WebP assets have decoded. */
+.fortune-screen--art-pending {
+  background:
+    radial-gradient(ellipse at 50% 24%,#69503577,transparent 62%),
+    linear-gradient(160deg,#38291c,#121b27 76%,#090d17);
+}
+.fortune-screen--art-pending .fortune-original-scene,
+.fortune-screen--art-pending .fortune-scene-tail {
+  visibility:hidden;
+}
+.fortune-art-gate {
+  position:absolute;z-index:12;inset:0;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:12px;padding:22px 18px calc(22px + env(safe-area-inset-bottom,0px));
+  text-align:center;color:#ffe8b3;
+  background:
+    radial-gradient(ellipse at 50% 37%,#99652b46,transparent 66%),
+    linear-gradient(145deg,#3e2a1e,#181c25 75%,#10131e);
+}
+.fortune-art-gate__crest {
+  width:86px;height:86px;display:grid;place-items:center;
+  border:3px solid #e1b86f;border-radius:22px;
+  background:linear-gradient(145deg,#8c603a,#39251a);
+  box-shadow:inset 0 0 0 2px #ffdf9b44,0 5px 16px #0008;
+  color:#ffdf94;font:900 48px Georgia,serif;
+  text-shadow:0 0 12px #f3bb5b88;
+  animation:fortune-art-breathe 1.6s ease-in-out infinite;
+}
+.fortune-art-gate strong {
+  max-width:290px;color:#ffecb8;
+  font:900 clamp(19px,5vw,25px)/1.2 Georgia,serif;
+  text-shadow:0 2px 4px #100b09;
+}
+.fortune-art-gate>span:not(.fortune-art-gate__crest) {
+  max-width:295px;font-size:13px;line-height:1.4;color:#f5d6aa;
+}
+.fortune-art-gate button {
+  min-width:185px;min-height:44px;padding:9px 16px;
+  border:2px solid #d6a762;border-radius:10px;
+  background:linear-gradient(#8e6038,#4c301d);color:#fff0c6;
+  font-size:13px;font-weight:900;
+}
+.fortune-art-gate button:focus-visible {outline:3px solid #fff5af;outline-offset:2px;}
+@keyframes fortune-art-breathe {
+  50% {box-shadow:inset 0 0 0 2px #ffdf9b99,0 0 16px #ffd27366;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .fortune-art-gate__crest {animation:none;}
+}

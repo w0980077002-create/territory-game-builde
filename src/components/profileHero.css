@@ -497,3 +497,37 @@
 
 /* Keep the battle goal legible if an enemy asset is missing or temporarily unreachable. */
 .territory-profile .hero-showcase__boss-art--fallback { display:grid; place-items:center; color:#f8d589; background:radial-gradient(circle at 45% 35%,#775230,#281a17 75%); border:1px solid #b99057; border-radius:10px; }
+
+/* Hero harbor must decode before becoming visible. Reuse the approved artwork,
+   and show a warm Viking surface rather than a flash of bare green. */
+.territory-profile .hero-showcase__stage {position:relative;isolation:isolate;}
+.territory-profile .hero-showcase__stage--art-pending {background-color:#2f251e;}
+.territory-profile .hero-showcase__art-gate {
+  position:absolute;z-index:5;inset:0;display:flex;
+  align-items:center;justify-content:center;flex-direction:column;gap:11px;
+  padding:15px;text-align:center;
+  border-radius:15px;
+  color:#ffe9b8;
+  background:radial-gradient(ellipse at 50% 40%,#885c375c,transparent 55%),
+    linear-gradient(145deg,#4d3828e8,#232226f9);
+}
+.territory-profile .hero-showcase__art-gate-sigil {
+  display:grid;place-items:center;width:61px;height:61px;
+  border:2px solid #d9b46f;border-radius:17px;
+  background:linear-gradient(#8c5e34,#3f2a20);
+  color:#ffdd99;font:900 37px Georgia,serif;
+  text-shadow:0 0 10px #f9bd64;
+}
+.territory-profile .hero-showcase__art-gate strong {
+  color:#ffe8b8;font:900 clamp(15px,4vw,19px)/1.2 Georgia,serif;
+  text-shadow:0 2px 3px #100a06;
+}
+.territory-profile .hero-showcase__art-gate button {
+  min-height:44px;padding:8px 18px;
+  border:2px solid #d7a65f;border-radius:10px;
+  background:linear-gradient(#a47740,#53351f);color:#fff4cb;
+  font-size:13px;font-weight:900;
+}
+.territory-profile .hero-showcase__art-gate button:focus-visible {
+  outline:3px solid #fff3b3;outline-offset:2px;
+}
