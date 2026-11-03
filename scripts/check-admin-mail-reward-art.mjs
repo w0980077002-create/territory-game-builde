@@ -89,6 +89,11 @@ assert.equal(localizedHalloweenMail({subject:'Unrelated',body:'Hello',payload:{}
   'Other player mail must remain unmodified');
 const finalSubject = localeSandbox.exports.HALLOWEEN_FINAL_SUBJECT;
 assert.equal(finalSubject, '🎃 Поздравляем! Награды за Хэллоуин 2026');
+const oldHalloweenLetter = { subject: finalSubject, body: 'Легендарная Тыквенная ведьма', payload: {} };
+assert.equal(localizedHalloweenMail(oldHalloweenLetter, 'ru').body, 'Эпическая Тыквенная ведьма',
+  'Read-only mail display must use current owner-approved Epic rarity');
+assert.equal(oldHalloweenLetter.body, 'Легендарная Тыквенная ведьма',
+  'Old stored messages must not be mutated');
 const finalWinner = {
   subject: finalSubject,
   body: '🎃 Поздравляем! Ты занял 3-е место в Хэллоуинском рейде. Шлем и спутник получены.',
