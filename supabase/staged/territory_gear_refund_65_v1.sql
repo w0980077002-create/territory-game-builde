@@ -41,7 +41,7 @@ BEGIN
   IF NEW.game_state IS NOT DISTINCT FROM OLD.game_state
     OR NEW.gold IS NULL OR OLD.gold IS NULL
     OR NEW.forge_materials IS NULL OR OLD.forge_materials IS NULL
-    OR NEW.gold>=OLD.gold OR NEW.forge_materials>=OLD.forge_materials
+    OR NEW.gold >= OLD.gold OR NEW.forge_materials >= OLD.forge_materials
   THEN RETURN NULL; END IF;
   IF jsonb_typeof(OLD.game_state->'inventory') IS DISTINCT FROM 'array'
     OR jsonb_typeof(NEW.game_state->'inventory') IS DISTINCT FROM 'array'
@@ -235,8 +235,10 @@ BEGIN
     RAISE EXCEPTION 'refund_material_batches_unverified';
   END IF;
   IF EXISTS (
-    SELECT 1 FROM jsonb_array_elements(batches) AS batch(value)
-    WHERE batch.value->>'qty' !~ '^[1-9][0-9]{0,8}
+    SELECT 1 FROM jsonb_array_elements(batches) AS b(value)
+    WHERE (b.value->>'qty') IS NULL
+      OR (b.value->>'qty') !~ '^[1-9][0-9]{0,8}
+  state:=jsonb_set(state,'{forgeMaterialBatches}',
     batches || jsonb_build_array(jsonb_build_object('qty',refund,
       'expiresAt',to_char((clock_timestamp() AT TIME ZONE 'UTC')+interval '7 days',
         'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))));
@@ -255,8 +257,8 @@ END $$;
 REVOKE ALL ON FUNCTION public.territory_inventory_recycle_refund_65_v1(text,timestamptz) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.territory_inventory_recycle_refund_65_v1(text,timestamptz) TO authenticated;
 
-      OR batch.value->>'expiresAt' IS NULL
-      OR (batch.value->>'expiresAt')::timestamptz <= clock_timestamp()
+      OR (b.value->>'expiresAt') IS NULL
+      OR (b.value->>'expiresAt')::timestamptz <= clock_timestamp()
   ) THEN RAISE EXCEPTION 'refund_material_batches_invalid_or_expired'; END IF;
   SELECT coalesce(sum((value->>'qty')::bigint),0) INTO tracked
     FROM jsonb_array_elements(batches);
