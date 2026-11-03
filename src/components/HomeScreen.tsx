@@ -266,7 +266,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
             </span>
           )}
           <span className="home-enemy-name mb-1 rounded-md bg-black/70 border border-red-500/40 px-1.5 py-1 text-[9px] font-bold text-red-100 text-center">
-            {nextEnemy.isBoss ? t('boss') : ''}{localizeText(nextEnemy.name, language)}
+            {nextEnemy.isBoss ? `${t('boss')} · ` : ''}{localizeText(nextEnemy.name, language)}
           </span>
           <span className="absolute bottom-0 w-[80%] h-2.5 rounded-[50%] bg-black/50 blur-[3px]" />
           <img src={nextEnemy.art} alt="" className="city-enemy-idle relative min-h-0 flex-1 max-w-full object-contain object-bottom drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] transition-transform group-active:scale-95" />
