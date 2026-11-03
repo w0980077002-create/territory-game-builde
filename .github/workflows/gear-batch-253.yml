@@ -1,0 +1,32 @@
+name: Gear batch salvage 253
+
+on:
+  push:
+    branches: [feature/gear-batch-salvage-253]
+  pull_request:
+    paths:
+      - 'supabase/staged/territory_inventory_batch_salvage_253.sql'
+      - 'scripts/check-gear-batch-253.mjs'
+      - 'src/components/GearShowcase.tsx'
+      - 'src/game/cloud.ts'
+      - '.github/workflows/gear-batch-253.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  batch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/check-gear-batch-253.mjs
+      - run: npm run test:gear-showcase
+      - run: npm run test:companion-navigation
+      - run: npm run typecheck
+      - run: npm run build
