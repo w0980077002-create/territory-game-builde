@@ -45,8 +45,8 @@ function decodeProgress(data: unknown): Progress {
 function message(error: unknown, en: boolean) {
   const s = error instanceof Error ? error.message : String(error);
   if (/adventure_definitively_rejected/.test(s)) return en
-    ? 'The server rejected that action without a new charge. Your save was synchronized. Recover the fight to continue.'
-    : 'Сервер отклонил действие без нового списания. Сохранение синхронизировано. Восстанови бой, чтобы продолжить.';
+    ? 'This action could not continue. Nothing was charged again. Tap Restore fight to return.'
+    : 'Не удалось продолжить действие. Повторного списания нет. Нажми «Восстановить бой».';
   if (/combat_starts_paused/.test(s)) return en
     ? 'New cave fights are temporarily paused. Existing fights can continue.'
     : 'Новые бои в пещере временно приостановлены. Начатые бои можно продолжить.';
@@ -55,13 +55,13 @@ function message(error: unknown, en: boolean) {
     ? 'Hero equipment must be verified before using the new campaign.'
     : 'Для новой кампании требуется сверка характеристик героя и экипировки.';
   if (/adventure_reload_required|adventure_save_blocked/.test(s)) return en
-    ? 'A newer save exists. Reopen Telegram to synchronize safely.'
-    : 'Есть более новое сохранение. Перезапусти Telegram для синхронизации.';
+    ? 'Your progress changed on another screen. Close and reopen the game to load it safely.'
+    : 'Прогресс обновился. Закрой игру и открой её заново, чтобы загрузить изменения.';
   if (/settlement|not_enabled|not_configured|unavailable|not_ready/.test(s)) return en
     ? 'This adventure is not available yet. Your progress is safe.'
     : 'Этот поход пока недоступен. Твой прогресс сохранён.';
-  return en ? 'Cannot confirm the result. Use recovery; no duplicate reward will be sent.'
-    : 'Не удалось подтвердить результат. Используй восстановление — награда не задвоится.';
+  return en ? 'Could not confirm the result. Tap Restore fight; rewards will not be duplicated.'
+    : 'Пока не удалось подтвердить результат. Нажми «Восстановить бой» — повторной награды не будет.';
 }
 
 /** Separate V1 server campaign: NEVER computes a win, cost, loot or stats in the browser. */
@@ -350,9 +350,9 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     <h2 className="sr-only">{en ? 'Dark Cave' : 'Тёмная пещера'}</h2>
     {error && <p role="alert" className="rounded-xl border border-red-400/40 bg-red-950/50 p-3 text-xs text-red-100">{error}</p>}
     {recoverable && <button disabled={busy} onClick={()=>void restore()} className="w-full rounded-xl border border-amber-500/60 bg-amber-900/30 p-3 font-semibold text-amber-100">
-      {en ? 'Recover server session' : 'Восстановить серверный бой'}
+      {en ? 'Restore fight' : 'Восстановить бой'}
     </button>}
-    {busy && <p role="status" className="text-center text-amber-100 text-xs"><Loader2 className="w-4 h-4 animate-spin inline mr-2"/>{en?'Synchronizing':'Синхронизация'}</p>}
+    {busy && <p role="status" className="text-center text-amber-100 text-xs"><Loader2 className="w-4 h-4 animate-spin inline mr-2"/>{en?'Connecting to fight…':'Подключаем бой…'}</p>}
     {session ? <div ref={battleRef} data-testid="territory-adventure-battle" className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-amber-600/50 bg-gradient-to-b from-amber-950/70 to-slate-950 p-2 space-y-3 scroll-mt-3">
       <p className="text-center text-xs text-amber-200 font-bold">{en?'Dark Cave':'Тёмная пещера'} · {en?'Floor':'Этаж'} {session.state.input.stage} · {enemyName}</p>
       <div className="relative min-h-[340px] overflow-hidden rounded-xl border border-amber-400/25 bg-slate-900">
@@ -379,9 +379,8 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           </div>)}
         </div>
       </div>
-      <div className="flex justify-between items-center gap-2 text-xs text-amber-100">
+      <div className="flex items-center justify-center gap-2 text-xs text-amber-100">
         <span className="flex items-center gap-1"><Zap size={14}/>{en ? 'Energy' : 'Энергия'}: {Math.floor(session.state.actors.hero.energy)}/{session.state.input.rules.maxEnergy}</span>
-        <span className="text-yellow-200">{session.state.input.control === 'auto' ? (en?'Auto':'Авто') : (en?'Manual':'Ручной')}</span>
       </div>
       {!!battleLog.length && <div data-testid="dark-cave-battle-log" className="rounded-lg bg-black/35 border border-white/10 px-2 py-1 text-[11px] text-slate-200 max-h-24 overflow-auto" aria-live="polite">
         {battleLog.slice(-4).map((line, i) => <p key={i}>{line}</p>)}
@@ -392,7 +391,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           open={gearOpen} onToggle={() => setGearOpen(v => !v)}>
           <GearStrip equipped={game.player.equipped}/>
           <p className="mt-1.5 text-[10px] text-amber-100/75">
-            {en?'This fight uses the server-verified stats fixed at its start. Gear shown here reflects your current save.':'В этом бою действуют подтверждённые сервером характеристики на момент входа. Здесь показана текущая экипировка.'}
+            {en?'Your combat stats were locked when this fight started. Gear here reflects your current hero.':'Характеристики зафиксированы при входе в бой. Здесь показана текущая экипировка героя.'}
           </p>
         </FoldSection>
         <FoldSection title={en?'Elixir belt':'Пояс эликсиров'}
@@ -404,7 +403,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
             <p className="mt-1 text-[11px] text-amber-200">{game.belt[selectedElixir]?.name}</p>
           )}
           <p className="mt-1.5 text-[10px] text-amber-100/75" role="note">
-            {en?'View only: cave elixir effects are not enabled on the combat server. The belt is not consumed or charged here.':'Только просмотр: эффекты эликсиров ещё не подключены к серверным боям пещеры. Здесь они не расходуются и не списываются.'}
+            {en?'Elixirs are not available in Cave fights yet. Nothing is consumed from your belt.':'Эликсиры в Пещере пока недоступны. Ничего из пояса не расходуется.'}
           </p>
         </FoldSection>
       </div>
