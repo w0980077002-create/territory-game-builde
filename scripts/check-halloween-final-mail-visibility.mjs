@@ -32,4 +32,6 @@ assert.match(inbox, /previouslyClaimedFinal \? \(/);
 assert.match(inbox, /onClick=\{\(\) => void claimAdmin\(m\.id\)\}/);
 assert.match(inbox, /Награды уже зачислены/);
 assert.match(inbox, /Your rewards are already in your inventory/);
+assert.ok(inbox.includes('mail.id === id && mail.subject === HALLOWEEN_FINAL_SUBJECT'),
+  'Final companion mail must not reappear in New after its normal claim');
 console.log('HALLOWEEN FINAL VISIBILITY PASS: one new informational read, private RLS, no double claim.');
