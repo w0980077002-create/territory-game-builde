@@ -374,6 +374,87 @@ export async function readForgeRefundQuote(itemId: string): Promise<{ itemId: st
   return { itemId, spent: data.spent_verified, refund: data.refund };
 }
 
+export interface GearBatchCandidate {
+  itemId: string;
+  kind: 'base' | 'refunded';
+  awarded: number;
+  spent: number;
+}
+
+export interface GearBatchQuote {
+  eligible: GearBatchCandidate[];
+  remainingToday: number;
+}
+
+/** Server-owned preview; no client price calculations or speculative legacy refunds. */
+export async function readGearBatchQuote(): Promise<GearBatchQuote> {
+  const { data, error } = await supabase.rpc('territory_inventory_batch_quote_253');
+  if (error) throw new Error(error.message || 'batch_unavailable');
+  if (!data || data.ready !== true || !Array.isArray(data.eligible)
+    || data.eligible.length > 300
+    || !Number.isSafeInteger(data.remaining_today)
+    || data.remaining_today < 0 || data.remaining_today > 3) throw new Error('batch_quote_unavailable');
+  const eligible: GearBatchCandidate[] = data.eligible.map((e: Record<string, unknown>) => {
+    if (!e || typeof e !== 'object' || typeof e.item_id !== 'string'
+      || e.item_id.length < 3 || e.item_id.length > 150
+      || !['base', 'refunded'].includes(String(e.kind))
+      || !Number.isSafeInteger(e.awarded) || (e.awarded as number) < 1
+      || !Number.isSafeInteger(e.spent_verified) || (e.spent_verified as number) < 0
+      || (e.kind === 'base' && (e.awarded !== 1 || e.spent_verified !== 0))
+      || (e.kind === 'refunded' && e.awarded !== Math.floor((e.spent_verified as number) * 65 / 100))
+    ) throw new Error('batch_quote_invalid');
+    return { itemId: e.item_id, kind: e.kind as GearBatchCandidate['kind'],
+      awarded: e.awarded as number, spent: e.spent_verified as number };
+  });
+  if (new Set(eligible.map((e) => e.itemId)).size !== eligible.length)
+    throw new Error('batch_quote_duplicate');
+  return { eligible, remainingToday: data.remaining_today };
+}
+
+/** Atomic batch settlement using the SAME revision/anti-stale protection as single salvage. */
+export async function recycleCloudEquipmentBatch(
+  userId: string, ids: string[],
+): Promise<{ state: GameState; awarded: number; remainingToday: number }> {
+  const revision = saveTokens.get(userId);
+  if (!validSaveToken(revision) || saveBlocked.has(userId)
+    || ids.length < 1 || ids.length > 10 || new Set(ids).size !== ids.length
+    || ids.some((id) => id.length < 3 || id.length > 150)) throw new Error('batch_reload_required');
+  const { data, error } = await supabase.rpc('territory_inventory_batch_salvage_253', {
+    p_ids: ids, p_expected: revision,
+  });
+  if (error) throw new Error(error.message || 'batch_unavailable');
+  if (!data || data.success !== true || data.action !== 'batch_salvage'
+    || !validSaveToken(data.updated_at)
+    || !Array.isArray(data.removed) || data.removed.length !== ids.length
+    || !Number.isSafeInteger(data.awarded) || data.awarded < 1
+    || !Number.isSafeInteger(data.remaining_today)
+    || data.remaining_today < 0 || data.remaining_today > 3
+    || !validEconomySnapshot(data.game_state as GameState)) throw new Error('batch_invalid_receipt');
+  const state = data.game_state as GameState;
+  const got = new Set<string>();
+  let total = 0;
+  for (const r of data.removed as { item_id?: string; awarded?: number; kind?: string; spent_verified?: number }[]) {
+    if (!r || typeof r.item_id !== 'string' || !ids.includes(r.item_id)
+      || got.has(r.item_id) || !Number.isSafeInteger(r.awarded) || (r.awarded ?? 0) < 1
+      || !Number.isSafeInteger(r.spent_verified) || (r.spent_verified ?? 0) < 0
+      || !['base', 'refunded'].includes(r.kind ?? '')
+      || (r.kind === 'base' && (r.awarded !== 1 || r.spent_verified !== 0))
+      || (r.kind === 'refunded' && r.awarded !== Math.floor((r.spent_verified ?? 0) * 65 / 100)))
+      throw new Error('batch_invalid_receipt');
+    got.add(r.item_id);
+    total += r.awarded!;
+  }
+  if (got.size !== ids.length || total !== data.awarded
+    || ids.some((id) => state.inventory.some((item) => item.id === id))) throw new Error('batch_invalid_receipt');
+  const wallet = safeWalletVersion({ gold: data.gold, gems: data.gems }, state.player);
+  if (!walletMatchesVersion(wallet, state.player)) throw new Error('batch_wallet_mismatch');
+  saveGenerations.set(userId, (saveGenerations.get(userId) ?? 0) + 1);
+  saveTokens.set(userId, data.updated_at);
+  walletVersions.set(userId, wallet);
+  saveBlocked.delete(userId);
+  return { state, awarded: total, remainingToday: data.remaining_today };
+}
+
 /** One verified server-side inventory mutation. Call after awaiting saveCloudSave
  * for the EXACT current state; old snapshots must never resurrect consumed gear. */
 export async function recycleCloudEquipment(
