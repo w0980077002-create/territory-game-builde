@@ -21,7 +21,18 @@ export function localizedHalloweenMail(
   mail: HalloweenMailSummary,
   language: HalloweenMailLanguage,
 ): { subject: string; body: string } {
-  if (language !== 'en') return { subject: mail.subject, body: mail.body };
+  if (language !== 'en') {
+    // Read-only correction of outdated rarity wording in already-issued Halloween letters.
+    // Never alter the stored mail, payload, reward receipt or player data.
+    const halloweenLetter = [HALLOWEEN_FINAL_SUBJECT, participationSubject, top20Subject].includes(mail.subject);
+    return {
+      subject: mail.subject,
+      body: halloweenLetter
+        ? mail.body.replace(/Легендарная Тыквенная ведьма/gi, 'Эпическая Тыквенная ведьма')
+          .replace(/легендарную Тыквенную ведьму/gi, 'эпическую Тыквенную ведьму')
+        : mail.body,
+    };
+  }
 
   if (mail.subject === HALLOWEEN_FINAL_SUBJECT) {
     const helmet = mail.payload.items?.halloween_horned_pumpkin_2026 === 1;
