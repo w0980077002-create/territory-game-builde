@@ -237,26 +237,7 @@ BEGIN
   IF EXISTS (
     SELECT 1 FROM jsonb_array_elements(batches) AS b(value)
     WHERE (b.value->>'qty') IS NULL
-      OR (b.value->>'qty') !~ '^[1-9][0-9]{0,8}
-  state:=jsonb_set(state,'{forgeMaterialBatches}',
-    batches || jsonb_build_array(jsonb_build_object('qty',refund,
-      'expiresAt',to_char((clock_timestamp() AT TIME ZONE 'UTC')+interval '7 days',
-        'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))));
-  UPDATE public.players SET game_state=state,forge_materials=(balance+refund)::integer
-  WHERE id=user_id RETURNING * INTO row_record;
-  UPDATE territory_private.forge_upgrade_receipts_65_v1
-    SET refunded_at=clock_timestamp()
-    WHERE player_id=user_id AND item_id=p_item AND refunded_at IS NULL;
-  SELECT 3-awarded INTO remaining FROM territory_private.equipment_salvage_daily_v1
-    WHERE player_id=user_id AND salvage_day=(clock_timestamp() AT TIME ZONE 'UTC')::date;
-  RETURN jsonb_build_object('success',true,'action','salvage','item_id',p_item,
-    'spent_verified',spent,'awarded',refund,'remaining_today',coalesce(remaining,3),
-    'game_state',row_record.game_state,'updated_at',row_record.updated_at,
-    'gold',row_record.gold,'gems',row_record.gems);
-END $$;
-REVOKE ALL ON FUNCTION public.territory_inventory_recycle_refund_65_v1(text,timestamptz) FROM PUBLIC,anon;
-GRANT EXECUTE ON FUNCTION public.territory_inventory_recycle_refund_65_v1(text,timestamptz) TO authenticated;
-
+      OR (b.value->>'qty') !~ '^[1-9][0-9]{0,8}$'
       OR (b.value->>'expiresAt') IS NULL
       OR (b.value->>'expiresAt')::timestamptz <= clock_timestamp()
   ) THEN RAISE EXCEPTION 'refund_material_batches_invalid_or_expired'; END IF;
