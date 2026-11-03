@@ -27,6 +27,12 @@ const followers = loadTs('src/game/followers.ts', { './elixirExpiry': expiryMock
   PUMPKIN_WITCH_COMBAT: { attack: 65, defense: 0, heal: 16, crit: 0, pierce: 0 },
 } });
 assert.equal(followers.FOLLOWER_TEMPLATES.length, 6);
+assert.equal(followers.FOLLOWER_RARITY_MULTIPLIERS.common, 1);
+assert.equal(followers.FOLLOWER_RARITY_MULTIPLIERS.rare, 1.15);
+assert.equal(followers.FOLLOWER_RARITY_MULTIPLIERS.epic, 1.35);
+assert.equal(followers.FOLLOWER_RARITY_MULTIPLIERS.legendary, 1.6);
+assert.equal(followers.HALLOWEEN_COMPANION_ADVANTAGE, 1.35);
+assert.equal(followers.PUMPKIN_WITCH_BASELINE.attack, 111, 'Epic 135% applies to unboosted Witch base, not already boosted 150');
 assert.deepEqual([...followers.FOLLOWER_RARITY_ORDER], ['common', 'rare', 'epic', 'legendary'], 'Every rarity tier stays supported');
 assert.equal(followers.FOLLOWER_TEMPLATES.filter(f => f.rarity === 'common').length, 5, 'Five initial companions remain Common');
 assert.equal(followers.FOLLOWER_TEMPLATES.find(f => f.id === 'follower_6').rarity, 'legendary', 'Battle Cow is Legendary');
@@ -46,6 +52,9 @@ const roster = followers.reconcileFollowers([oldShield], 81);
 assert.equal(roster.length, 6);
 const fullyTrainedCommonWarrior = { ...roster.find(f => f.id === 'follower_2'), level: 60, attack: 129 };
 assert.equal(followers.followerCombat(fullyTrainedCommonWarrior).attack, 129);
+assert.equal(fullyTrainedCommonWarrior.attack, 129, 'Common has no double boost');
+assert.equal(followers.followerCombat(followers.PUMPKIN_WITCH_TEMPLATE).attack, 150, 'Epic Witch stays at approved 150 PvE attack');
+assert.equal(followers.followerCombat(followers.PUMPKIN_WITCH_TEMPLATE).heal, 16, 'Special Epic healing stays 16 HP');
 assert(followers.followerCombat(followers.PUMPKIN_WITCH_TEMPLATE).attack > followers.followerCombat(fullyTrainedCommonWarrior).attack);
 const refreshedWitch = followers.reconcileFollowers([...roster, { ...followers.PUMPKIN_WITCH_TEMPLATE, attack: 65 }], 81, true);
 assert.equal(refreshedWitch.find(f => f.id === followers.HALLOWEEN_COMPANION_ID).attack, 150, 'Verified event reward refreshes safely without modifying other followers');
@@ -118,6 +127,16 @@ assert(!pveSource.includes('awakeningStones'), 'victory must not advertise unava
 assert(campSource.includes('!isCow &&'), 'cow awakening must remain disabled in live UI');
 
 const oldCow = { ...roster.find((f) => f.id === 'follower_6'), level: 59, attack: 65 };
+assert.equal(followers.followerCombat(oldCow).attack, 104, 'Legendary Cow uses 160% of 65 saved attack (rounded)');
+assert.equal(followers.followerCombat(oldCow).heal, 9, 'Legendary multiplier must not amplify a special healing skill');
+assert.equal(followers.followerCombat(oldCow).pierce, 0.02, 'Legendary multiplier must not amplify a special armor-piercing skill');
+assert.equal(oldCow.attack, 65, 'Read-only combat coefficient does not rewrite saved test cow attack');
+const cowRoundTrip = followers.reconcileFollowers([...roster.filter(f => f.id !== 'follower_6'), oldCow], 81);
+assert.equal(cowRoundTrip.find(f => f.id === 'follower_6').attack, 65, 'Legacy save round-trip keeps raw Cow attack');
+assert.equal(followers.followerCombat(cowRoundTrip.find(f => f.id === 'follower_6')).attack, 104,
+  'Reconcile must not apply rarity multipliers twice');
+assert.equal(followers.followerCombat({ ...oldCow, level: 100, attack: 106 }).attack, 170,
+  'At maximum unlocked potential, Legendary Cow can exceed Epic Witch attack');
 const existingCow = {
   ...starter,
   player: { ...starter.player, level: 59, gold: 987654, gems: 111, redGems: 2 },
