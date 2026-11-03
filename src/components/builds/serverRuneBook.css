@@ -122,3 +122,49 @@
  .territory-rune__skill-name {font-size:10px;min-height:27px;max-height:40px;}
  .territory-rune__group strong {font-size:10px;}
 }
+
+
+/* November 3 mobile-video acceptance: keep all 15 independent rune slots and
+   three options per group, but put the group caption ABOVE the cards on phones.
+   The old side caption squeezed 3 names into ~70px cells and clipped text. */
+@media (max-width:480px) {
+  .territory-rune__board { padding:6px 6px 8px; }
+  .territory-rune__row {
+    grid-template-columns:minmax(0,1fr);
+    min-height:0;gap:6px;align-items:stretch;
+    padding:9px 2px 12px;
+  }
+  .territory-rune__group {
+    flex-direction:row;align-items:center;justify-content:flex-start;
+    gap:8px;padding:0 7px;text-align:left;
+  }
+  .territory-rune__glyph {width:31px;height:31px;border-radius:9px;flex-shrink:0;}
+  .territory-rune__group strong {
+    font-size:clamp(12px,3.3vw,14px);line-height:1.2;
+    overflow-wrap:normal;word-break:normal;
+  }
+  .territory-rune__choices {grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+  .territory-rune__tile {
+    min-height:117px;gap:4px;padding:7px 3px 7px;
+    justify-content:flex-start;
+    border-radius:11px;
+  }
+  .territory-rune__skill-sigil {width:48px;height:49px;}
+  .territory-rune__skill-name {
+    width:100%;min-height:34px;max-height:none;
+    -webkit-line-clamp:3;
+    font-size:clamp(11px,3vw,13px);line-height:1.18;
+    overflow-wrap:anywhere;
+  }
+  .territory-rune__tile-label {
+    font-size:clamp(10px,2.7vw,12px);line-height:1.15;
+    white-space:normal;letter-spacing:0;overflow-wrap:anywhere;
+  }
+  .territory-rune__tile>small {font-size:10px;left:5px;}
+}
+@media (max-width:349px) {
+  .territory-rune__choices {gap:3px;}
+  .territory-rune__tile {padding-inline:2px;}
+  .territory-rune__skill-sigil {width:43px;height:45px;}
+  .territory-rune__skill-name {font-size:11px;}
+}

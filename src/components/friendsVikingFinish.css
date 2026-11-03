@@ -1,0 +1,105 @@
+/* November 2026 Android Telegram audit: paint the existing real referral flow
+   as Viking wood, rope and gold. All server requests, balances, grants, and
+   navigation remain in FriendsScreen and are not changed by this sheet. */
+.viking-screen--friends {
+  --friends-wood-dark:#29180f;
+  --friends-wood-mid:#60391f;
+  --friends-gold:#e4bb77;
+  min-width:0;
+  padding:10px 8px 16px;
+  border:2px solid #a77942;
+  border-radius:16px;
+  color:#ffedd1;
+  background:
+    repeating-linear-gradient(177deg,#f4bd6122 0 1px,transparent 1px 12px),
+    radial-gradient(ellipse at 50% -5%,#87562d88,transparent 55%),
+    linear-gradient(145deg,#58361f,#2a1a13 54%,#181512);
+  box-shadow:inset 0 0 0 2px #f2c67c29,0 4px 17px #10090283;
+}
+.viking-screen--friends .friends-founder-panel {
+  border:2px solid #dfb46f;
+  background:
+    radial-gradient(circle at 100% 0,#d8a95b40,transparent 36%),
+    repeating-linear-gradient(169deg,#e9b87808 0 3px,transparent 4px 12px),
+    linear-gradient(138deg,#81512b,#4d301e 61%,#291b14);
+  box-shadow:inset 0 1px 0 #ffe0a65a,0 5px 16px #0008;
+}
+.viking-screen--friends .friends-founder-panel h2 {
+  color:#fff1c7;
+  text-shadow:0 2px 3px #2a1208;
+  line-height:1.22;
+}
+.viking-screen--friends .friends-founder-panel p {color:#f6dcb9;}
+.viking-screen--friends .friends-founder-benefit {
+  background:linear-gradient(145deg,#664426,#392819);
+  border-color:#c59b5c;
+  box-shadow:inset 0 1px 0 #f9d59d38;
+}
+.viking-screen--friends .friends-founder-benefit--gem {
+  border-color:#d49b88;
+  background:linear-gradient(145deg,#6e3731,#39231e);
+}
+.viking-screen--friends .friends-invite-panel,
+.viking-screen--friends .friends-milestone-panel,
+.viking-screen--friends .friends-list-panel,
+.viking-screen--friends .friends-rules-panel {
+  border:2px solid #b38855;
+  background:
+    repeating-linear-gradient(176deg,#eac1860c 0 1px,transparent 2px 11px),
+    linear-gradient(140deg,#603e27,#33231b 66%,#241a16);
+  box-shadow:inset 0 1px 0 #ffe4a73b,0 3px 9px #0005;
+}
+.viking-screen--friends .friends-stat-card {
+  min-width:0;
+  border:1px solid #c49758;
+  background:linear-gradient(145deg,#704525,#38271b 78%);
+  box-shadow:inset 0 1px 0 #ffe3a444;
+}
+.viking-screen--friends .friends-stat-card strong {color:#ffe7a5;}
+.viking-screen--friends .friends-stat-card p {color:#ead3ad;line-height:1.22;}
+.viking-screen--friends .friends-gem-panel {
+  border:1px solid #b36f65;
+  background:linear-gradient(135deg,#683b33,#34221f 73%);
+}
+.viking-screen--friends .friends-list-entry {
+  border:1px solid #8c694a;
+  background:linear-gradient(140deg,#493020,#241a16);
+}
+.viking-screen--friends .friends-list-avatar {
+  background:linear-gradient(140deg,#926034,#4d2d1c);
+  border-color:#b99259;
+}
+.viking-screen--friends .friends-list-panel .text-violet-200\/80,
+.viking-screen--friends .friends-list-panel .text-violet-200 {
+  color:#eed0a0;
+}
+.viking-screen--friends .friends-list-panel .bg-gradient-to-r.from-violet-500.to-amber-400 {
+  background-image:linear-gradient(90deg,#b47730,#f0c26d);
+}
+.viking-screen--friends .friends-refresh-button,
+.viking-screen--friends .friends-copy-button {
+  min-height:42px;
+  border:1px solid #aa8255;
+  border-radius:9px;
+  color:#fbe1b4;
+  background:linear-gradient(180deg,#694329,#3e271d);
+}
+.viking-screen--friends .friends-invite-button {
+  min-height:46px;
+  border:2px solid #ffe7a4;
+  border-radius:11px;
+  color:#42200e;
+  background:linear-gradient(#ffe4a3,#e8ad54 54%,#b6742b);
+  text-shadow:0 1px 0 #fff3bf88;
+  box-shadow:inset 0 1px 0 #fff5c4,0 3px 0 #643719;
+}
+.viking-screen--friends .friends-invite-button:disabled {opacity:.65;}
+.viking-screen--friends :is(button,summary):focus-visible {
+  outline:3px solid #ffe6a0;
+  outline-offset:2px;
+}
+@media(max-width:349px) {
+  .viking-screen--friends {padding-inline:5px;}
+  .viking-screen--friends .friends-stat-card {padding-inline:5px;}
+  .viking-screen--friends .friends-founder-benefit {padding-inline:5px;}
+}

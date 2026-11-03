@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Currency } from './ui/Currency';
 import { SocialTrail, type SocialDestination } from './social/SocialTrail';
+import './friendsVikingFinish.css';
 import { prepareRichShareMessage } from '@/game/dailyShare';
 import { captureGameEvent } from '@/game/analytics';
 import { getTelegramWebApp } from '@/game/telegram';
@@ -177,20 +178,20 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
         </button>
       </section>}
       {/* ONE lead message and ONE primary call to action. */}
-      <section className="relative overflow-hidden rounded-2xl border border-amber-400/60 bg-gradient-to-br from-[#482333] via-[#2d173b] to-[#14182a] p-3.5 shadow-[0_6px_24px_#0006]">
+      <section className="friends-founder-panel relative overflow-hidden rounded-2xl border border-amber-400/60 bg-gradient-to-br from-[#482333] via-[#2d173b] to-[#14182a] p-3.5 shadow-[0_6px_24px_#0006]">
         <div className="absolute -top-5 -right-5 opacity-10 pointer-events-none"><Crown size={125} /></div>
         <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-amber-300"><Sparkles size={15} />{en ? 'FOUNDER SEASON' : 'СЕЗОН ОСНОВАТЕЛЕЙ'}</p>
         <h2 className="mt-1 text-xl font-black tracking-tight text-white">{en ? 'Invite friends — earn rewards!' : 'Зови друзей — забирай награды!'}</h2>
         <p className="mt-1 text-xs text-purple-100/85">{en ? 'For EACH active friend:' : 'ЗА КАЖДОГО активного друга:'}</p>
         <div className="grid grid-cols-2 gap-2 mt-2.5">
-          <div className="flex items-center gap-2 rounded-xl border border-rose-400/35 bg-[#2d111e]/80 p-2.5">
+          <div className="friends-founder-benefit friends-founder-benefit--gem flex items-center gap-2 rounded-xl border border-rose-400/35 bg-[#2d111e]/80 p-2.5">
             <Gem size={29} className="shrink-0 text-red-400 drop-shadow-[0_0_6px_#ff4068]" />
             <div className="min-w-0">
               <div className="text-xl leading-none font-black text-rose-200">+0,2</div>
               <p className="mt-1 text-[11px] leading-tight text-rose-100">{en ? 'red diamond' : 'красного алмаза'}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-xl border border-amber-400/30 bg-[#382819]/80 p-2.5">
+          <div className="friends-founder-benefit flex items-center gap-2 rounded-xl border border-amber-400/30 bg-[#382819]/80 p-2.5">
             <Gift size={29} className="shrink-0 text-amber-300" />
             <div>
               <div className="text-xl leading-none font-black text-amber-100">+1</div>
@@ -204,7 +205,7 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
       </section>
 
       {/* No fake zeroes/dashes for accounts not authorized for referral rewards. */}
-      <section className="rounded-2xl border border-amber-500/25 bg-[#171c28] p-3.5 space-y-2.5">
+      <section className="friends-invite-panel rounded-2xl border border-amber-500/25 bg-[#171c28] p-3.5 space-y-2.5">
         <h3 className="flex items-center gap-2 text-base font-bold text-amber-100"><Send size={18} />{en ? 'Your invitation' : 'Твоя реферальная ссылка'}</h3>
         {!isLinked ? (
           <div className="space-y-2.5" data-testid="unlinked-telegram-state">
@@ -225,10 +226,10 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
           </div>
         ) : (url || preparedId) ? (
           <>
-            <button type="button" className="btn-primary w-full py-3.5 text-base font-black flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(245,158,11,.22)]" onClick={share} disabled={!url && preparing}>
+            <button type="button" className="friends-invite-button btn-primary w-full py-3.5 text-base font-black flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(245,158,11,.22)]" onClick={share} disabled={!url && preparing}>
               <Send size={20}/>{en ? 'INVITE A FRIEND' : 'ПРИГЛАСИТЬ ДРУГА'}
             </button>
-            {url && <button type="button" onClick={() => void copy()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm font-bold text-gray-200">
+            {url && <button type="button" onClick={() => void copy()} className="friends-copy-button flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm font-bold text-gray-200">
               <Copy size={16}/>{en ? 'Copy my link' : 'Скопировать мою ссылку'}
             </button>}
           </>
@@ -253,7 +254,7 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
               [status.qualified, en ? 'Active' : 'Засчитаны', ShieldCheck],
               [status.sealed_chests, en ? 'Chests' : 'Сундуки', Gift],
             ] as const).map(([value, label, Icon]) => (
-              <div key={label} className="rounded-xl border border-[#644672] bg-[#21182c] p-2.5 text-center">
+              <div key={label} className="friends-stat-card rounded-xl border border-[#644672] bg-[#21182c] p-2.5 text-center">
                 <Icon size={17} className="mx-auto text-amber-300"/>
                 <strong className="block text-xl font-black tabular-nums leading-tight mt-1">{value}</strong>
                 <p className="text-[11px] text-purple-100/70">{label}</p>
@@ -262,7 +263,7 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
           </section>
 
           {/* Red diamonds + chest: one tight visual summary, no duplicate panels. */}
-          <section className="rounded-xl border border-rose-500/30 bg-[#281622] p-3">
+          <section className="friends-gem-panel rounded-xl border border-rose-500/30 bg-[#281622] p-3">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 font-bold text-sm text-rose-100"><Gem size={18} className="text-rose-400"/>{en ? 'Red diamond' : 'Красный алмаз'}</div>
               <span className="font-black text-base tabular-nums text-rose-200">{(status.red_fragments * 0.2).toFixed(1).replace('.', ',')} / 1</span>
@@ -276,7 +277,7 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
           </section>
 
           {next && (
-            <section className="rounded-xl border border-amber-400/30 bg-[#1c1b29] px-3 py-2.5">
+            <section className="friends-milestone-panel rounded-xl border border-amber-400/30 bg-[#1c1b29] px-3 py-2.5">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[11px] text-gray-400">{en ? 'Next milestone' : 'Ближайшая награда'}</p>
@@ -290,14 +291,14 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
           )}
 
 
-          <section id="referral-friend-list" className="rounded-xl border border-violet-400/25 bg-[#19182b] p-3" data-testid="referral-friend-list">
+          <section id="referral-friend-list" className="friends-list-panel rounded-xl border border-violet-400/25 bg-[#19182b] p-3" data-testid="referral-friend-list">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-black text-amber-100 flex items-center gap-2">
                 <UsersRound size={17} />{en ? 'My invited friends' : 'Мои друзья'}
                 <span className="text-xs text-amber-300">({status.registered})</span>
               </h3>
               <button type="button" onClick={() => void loadFriends()}
-                className="text-xs text-violet-200 border border-violet-300/20 rounded-lg px-2 py-1.5"
+                className="friends-refresh-button text-xs text-violet-200 border border-violet-300/20 rounded-lg px-2 py-1.5"
                 aria-label={en ? 'Refresh friends' : 'Обновить друзей'}><RefreshCw size={15}/></button>
             </div>
             {friendsLoading ? <p className="mt-3 text-xs text-gray-400">{en ? 'Loading friends…' : 'Загружаем друзей…'}</p> :
@@ -318,9 +319,9 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
                   // Do not display or infer a friend's hero level; only battle progress is public.
                   const progress = friend.qualified ? 100 : Math.min(99,Math.round(100 * wins / 10));
                   return (
-                    <div key={friend.joined_at + index} className="rounded-xl border border-white/10 bg-black/25 p-2.5">
+                    <div key={friend.joined_at + index} className="friends-list-entry rounded-xl border border-white/10 bg-black/25 p-2.5">
                       <div className="flex gap-2 items-center">
-                        <div className="h-9 w-9 rounded-lg bg-violet-900/45 border border-violet-400/25 flex items-center justify-center text-amber-200 shrink-0">
+                        <div className="friends-list-avatar h-9 w-9 rounded-lg bg-violet-900/45 border border-violet-400/25 flex items-center justify-center text-amber-200 shrink-0">
                           <UsersRound size={19}/>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -359,7 +360,7 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
       )}
 
       {/* All optional information lives under a single collapsed disclosure. */}
-      <details className="group rounded-xl border border-white/10 bg-[#171c27] p-3" data-testid="friends-rewards-details">
+      <details className="group rounded-xl friends-rules-panel border border-white/10 bg-[#171c27] p-3" data-testid="friends-rewards-details">
         <summary className="cursor-pointer list-none flex items-center gap-2 text-sm font-bold text-amber-100">
           <Trophy size={18} className="text-amber-400"/>
           <span className="flex-1">{en ? 'All rewards & rules' : 'Все награды и правила'}</span>

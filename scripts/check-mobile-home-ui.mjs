@@ -249,3 +249,25 @@ assert.match(expeditionCss, /env\(safe-area-inset-bottom/, 'Map expedition must 
 assert.doesNotMatch(mapJourney, /setInterval\(\(\) => refreshGather/, 'Do not poll the server during a four-hour expedition');
 
 console.log('Mobile home UI checks passed: living city, responsive sides and nav, Telegram fullscreen, safe-area, language, gear.');
+
+
+// Real November 3 Android Telegram video regression: correct enemy name,
+// legible 15-slot runes, and consistent Viking wood/gold Friends screen.
+// These checks are strictly visual; no economy, referrals, or combat changes.
+const [friendsUi, friendsStyle, liveRuneStyle] = await Promise.all([
+  read('src/components/FriendsScreen.tsx'),
+  read('src/components/friendsVikingFinish.css'),
+  read('src/components/builds/serverRuneBook.css'),
+]);
+assert.match(home, /home-enemy-name/, 'Next enemy must have a mobile-readable caption');
+assert.doesNotMatch(home, /text-red-100 truncate/, 'Enemy name must not be single-line truncated');
+assert.match(cityMotion, /\.home-character-stage \.home-enemy-name[\s\S]*?-webkit-line-clamp:2/, 'Long enemy names wrap to two lines');
+assert.match(friendsUi, /import '\.\/friendsVikingFinish\.css'/, 'Friends style must ship with the live screen');
+for (const cls of ['friends-founder-panel', 'friends-invite-panel', 'friends-stat-card',
+  'friends-gem-panel', 'friends-milestone-panel', 'friends-list-panel', 'friends-rules-panel']) {
+  assert.ok(friendsUi.includes(cls), cls + ': real referral section must use themed style');
+  assert.ok(friendsStyle.includes('.' + cls), cls + ': wood/gold style must exist');
+}
+assert.match(liveRuneStyle, /@media \(max-width:480px\)/, '15-slot rune board uses phone layout');
+assert.match(liveRuneStyle, /\.territory-rune__group \{[\s\S]*?flex-direction:row/, 'Rune group captions move above their cards');
+assert.match(liveRuneStyle, /\.territory-rune__skill-name \{[\s\S]*?font-size:clamp\(11px/, 'Rune titles use legible mobile font sizes');

@@ -26,6 +26,17 @@ with sync_playwright() as p:
             page.get_by_test_id('territory-server-rune-book').wait_for()
             assert page.locator('.territory-rune__tile').count() == 15
             assert page.locator('.territory-rune__row').count() == 5
+            # Mobile-video improvement: group heading is ABOVE the entire triple,
+            # not consuming a quarter of each row's width.
+            first_row = page.locator('.territory-rune__row').first
+            group_box = first_row.locator('.territory-rune__group').bounding_box()
+            choices_box = first_row.locator('.territory-rune__choices').bounding_box()
+            assert group_box['y'] + group_box['height'] <= choices_box['y'] + 2, 'Rune caption still squeezes the cards horizontally'
+            option = first_row.locator('.territory-rune__tile').first
+            assert option.bounding_box()['width'] >= 85, f'Rune card too narrow at {width}px'
+            label = option.locator('.territory-rune__skill-name')
+            label_size = float(label.evaluate('(el) => getComputedStyle(el).fontSize.replace("px", "")'))
+            assert label_size >= 11, f'Unreadable rune name ({label_size}px) at {width}px'
             # All fifteen positions carry their own skill-archetype identities.
             # These are visual labels, never fabricated grants or battle effects.
             assert page.locator('.territory-rune__skill-name').count() == 15
