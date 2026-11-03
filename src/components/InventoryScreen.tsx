@@ -9,7 +9,7 @@ import { BeltCells } from './ui/BeltCells';
 import { GearShowcase } from './GearShowcase';
 import { FollowersPanel } from './FollowersPanel';
 import './followersCamp.css'; // Shared pinned companion journey styles, including offline mobile preview.
-import { FOLLOWER_TEMPLATES, selectedFollower } from '@/game/followers';
+import { DISPLAY_FOLLOWER_TEMPLATES, selectedFollower, followerRarity } from '@/game/followers';
 import { getFollowerArt } from '@/game/combatArt';
 import { AWAKENING_STONE_ITEM, cowStonesOwned } from '@/game/followers';
 import { CompactWarehouse } from './CompactWarehouse';
@@ -52,7 +52,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
     : (language === 'en' ? 'Open Campaign' : 'Открыть Поход');
   const equippedCount = EQUIPMENT_SLOTS.filter(({ id }) => !!state.player.equipped[id]).length;
   const activeCompanion = selectedFollower(state);
-  const activeCompanionTemplate = FOLLOWER_TEMPLATES.find(unit => unit.id === activeCompanion?.id);
+  const activeCompanionTemplate = DISPLAY_FOLLOWER_TEMPLATES.find(unit => unit.id === activeCompanion?.id);
 
   useEffect(() => {
     if (tab !== 'items') return;
@@ -211,7 +211,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
                 ? (language === 'en' ? (activeCompanionTemplate?.nameEn ?? activeCompanion.name) : activeCompanion.name)
                 : (language === 'en' ? 'Companion not unlocked' : 'Спутник ещё не открыт')}</strong>
               <span>{activeCompanion
-                ? `${language === 'en' ? 'Level' : 'Уровень'} ${activeCompanion.level} · PvE`
+                ? `${localizeRarity(followerRarity(activeCompanion.id), language)} · ${language === 'en' ? 'Level' : 'Уровень'} ${activeCompanion.level} · PvE`
                 : (language === 'en' ? 'Unlocks from hero level 3' : 'Открывается с 3 уровня героя')}</span>
             </div>
           </div>
