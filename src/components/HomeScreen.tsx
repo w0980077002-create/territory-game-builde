@@ -1,5 +1,6 @@
 import './halloweenRaid.css';
 import './home/cityCharacterMotion.css';
+import './home/cityVisualClarity.css';
 import { useState, type ReactNode } from 'react';
 import { ChevronRight, Repeat, Crown } from 'lucide-react';
 import { useStore } from '@/game/store';
@@ -171,9 +172,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
               <span className="text-amber-200 font-semibold shrink-0 whitespace-nowrap">{t('level')} {player.level}</span>
               <span className="inline-flex shrink-0 items-center gap-0.5 px-1 rounded bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold text-[9px]"><Crown className="h-2.5 w-2.5" strokeWidth={2.8} />VIP {vip}{remainingVip>0&&<span title={account.vipUntil??undefined}> · {Math.ceil(remainingVip/3600000)}h</span>}</span>
             </span>
-            <span className="mt-1 h-1 w-full rounded-full bg-white/10 overflow-hidden">
-              <span className="block h-full bg-gradient-to-r from-emerald-400 to-emerald-600" style={{ width: `${xpPct}%` }} />
-            </span>
+            {/* The full EXP bar is already shown above HP/energy; avoid duplicating it in the small top profile chip. */}
           </span>
         </button>
 
