@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Fragment, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useStore } from '@/game/store';
 import { useGame, equipItem, unequipItem } from '@/game/actions';
 import { captureGameEvent } from '@/game/analytics';
@@ -11,7 +11,7 @@ import { GEAR_STATS, gearScore, canSalvageEquipment } from '@/game/gearTools';
 import { readForgeRefundQuote, readGearBatchQuote, recycleCloudEquipment, recycleCloudEquipmentBatch, saveCloudSave, type GearBatchQuote } from '@/game/cloud';
 import { ItemArt } from './ui/ItemArt';
 import type { Equipment, InventoryItem } from '@/game/types';
-import { Check, ChevronDown, ChevronUp, Hammer, Info, Recycle, RotateCcw, ShieldCheck, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Hammer, Info, Layers3, Recycle, RotateCcw, ShieldCheck, Trash2, X } from 'lucide-react';
 import './GearShowcase.css';
 
 type Slot = Equipment['slot'];
@@ -45,6 +45,20 @@ const rarityLabel = {
   epic: { ru: 'Эпический', en: 'Epic' },
   legendary: { ru: 'Легендарный', en: 'Legendary' },
 };
+
+/** A visual signature, never an inventory identity. Every underlying ID stays distinct. */
+function equipmentVisualKey(item: InventoryItem): string {
+  const eq = item.equipment!;
+  return JSON.stringify([
+    item.name, item.icon, item.rarity, eq.slot, eq.name, eq.icon, eq.rarity,
+    eq.level, eq.attack ?? null, eq.defense ?? null, eq.hp ?? null,
+    eq.critChance ?? null, eq.baseLevel ?? null, eq.upgradeCount ?? null,
+    eq.baseStats?.attack ?? null, eq.baseStats?.defense ?? null,
+    eq.baseStats?.hp ?? null, eq.baseStats?.critChance ?? null,
+    eq.adminTestLevel ?? null,
+  ]);
+}
+
 const eqToItem = (eq: Equipment): InventoryItem => ({
   id: eq.id, type: 'equipment', name: eq.name, icon: eq.icon, rarity: eq.rarity,
   qty: 1, description: '', equipment: eq,
@@ -120,6 +134,8 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
   const [batchSelected, setBatchSelected] = useState<string[]>([]);
   const [batchConfirm, setBatchConfirm] = useState(false);
   const [heroExpanded, setHeroExpanded] = useState(false);
+  const [stackSimilar, setStackSimilar] = useState(true);
+  const [expandedStacks, setExpandedStacks] = useState<string[]>([]);
   const compareRef = useRef<HTMLElement | null>(null);
 
   // A spare item should reveal its comparison immediately without a large scroll.
@@ -138,6 +154,20 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
     if (sort === 'rarity') return rarityRank[b.rarity] - rarityRank[a.rarity] || (b.equipment!.level - a.equipment!.level);
     return (b.equipment!.level - a.equipment!.level) || rarityRank[b.rarity] - rarityRank[a.rarity];
   });
+  // Group only visually identical equipment. Tapping a stack exposes every
+  // real item; selection, equip, forge, receipts and salvage still use its ID.
+  const equipmentGroups: { key: string; items: InventoryItem[] }[] = [];
+  const groupIndex = new Map<string, number>();
+  for (const item of displayed) {
+    const key = stackSimilar ? equipmentVisualKey(item) : item.id;
+    const index = groupIndex.get(key);
+    if (index === undefined) {
+      groupIndex.set(key, equipmentGroups.length);
+      equipmentGroups.push({ key, items: [item] });
+    } else {
+      equipmentGroups[index].items.push(item);
+    }
+  }
   const chosen = selection?.kind === 'bag' ? equipment.find((item) => item.id === selection.id) : undefined;
   const chosenVisible = chosen && (filter === 'all' || chosen.equipment?.slot === filter);
   // Do not auto-select the first item: keep the bag visible when opening the tab.
@@ -497,6 +527,19 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
             </select><ChevronDown size={13}/>
           </div>
         </div>
+        <div className="gear-stack-toolbar">
+          <button type="button" className="gear-stack-toggle"
+            aria-pressed={stackSimilar}
+            onClick={() => { setStackSimilar(value => !value); setExpandedStacks([]); }}>
+            <Layers3 size={16} aria-hidden="true" />
+            {stackSimilar
+              ? (language === 'en' ? 'Similar gear stacked' : 'Одинаковые вещи в стопках')
+              : (language === 'en' ? 'Stack similar gear' : 'Сгруппировать одинаковые')}
+          </button>
+          <span aria-live="polite">{stackSimilar
+            ? (language === 'en' ? `${equipmentGroups.length} groups · ${displayed.length} items` : `${equipmentGroups.length} групп · ${displayed.length} вещей`)
+            : (language === 'en' ? `${displayed.length} individual items` : `${displayed.length} отдельных вещей`)}</span>
+        </div>
         <div className="gear-filter-strip" role="group" aria-label={language === 'en' ? 'Filter equipment by slot' : 'Фильтр по типу экипировки'}>
           {filters.map((slot) => (
             <button type="button" key={slot} className={'gear-filter-chip ' + (filter === slot ? 'gear-filter-on' : '')}
@@ -558,24 +601,61 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
         </section>}
         {displayed.length ? (
           <div className="gear-bag-grid">
-            {displayed.map(item => {
+            {equipmentGroups.map(({ key, items }) => {
+              const item = items[0];
               const eq = item.equipment!;
-              const selected = isComparing && bag?.id === item.id;
+              const isStack = items.length > 1;
+              const expanded = isStack && expandedStacks.includes(key);
+              const selected = isComparing && items.some(copy => copy.id === bag?.id);
               const current = state.player.equipped[eq.slot];
               const comparison = current ? gearScore(eq) - gearScore(current) : 1;
               return (
-                <button type="button" key={item.id}
-                  className={'gear-bag-tile ' + (selected ? 'gear-bag-tile-active' : '')}
-                  style={{ '--tile-rarity': rarityColor(item.rarity) } as CSSProperties}
-                  onClick={() => chooseBag(item.id)}
-                  aria-pressed={!!selected}
-                  aria-label={localizeText(item.name, language) + ', ' + slotLabel(eq.slot) + ', ' + (language === 'en' ? 'level ' : 'уровень ') + eq.level}>
-                  <span className="gear-bag-art"><ItemArt item={item} size={47}/></span>
-                  <span className="gear-bag-level">{language === 'en' ? 'Lv.' : 'Ур.'}{eq.level}</span>
-                  <span className={'gear-bag-indicator ' + (comparison > 0 ? 'gear-bag-better' : '')} aria-hidden="true">
-                    {slotNames[eq.slot].ru.slice(0, 1)}
-                  </span>
-                </button>
+                <Fragment key={key}>
+                  <button type="button"
+                    className={'gear-bag-tile ' + (selected ? 'gear-bag-tile-active ' : '') + (isStack ? 'gear-bag-tile--stack' : '')}
+                    style={{ '--tile-rarity': rarityColor(item.rarity) } as CSSProperties}
+                    onClick={() => {
+                      if (isStack) {
+                        setExpandedStacks(previous => previous.includes(key)
+                          ? previous.filter(entry => entry !== key)
+                          : [...previous, key]);
+                      } else chooseBag(item.id);
+                    }}
+                    aria-expanded={isStack ? expanded : undefined}
+                    aria-pressed={!isStack ? selected : undefined}
+                    aria-label={localizeText(item.name, language) + ', ' + slotLabel(eq.slot) + ', ' +
+                      (language === 'en' ? 'level ' : 'уровень ') + eq.level +
+                      (isStack ? (language === 'en' ? `, ${items.length} copies, ` : `, ${items.length} шт., `) +
+                        (expanded ? (language === 'en' ? 'collapse stack' : 'свернуть стопку') : (language === 'en' ? 'expand stack' : 'развернуть стопку')) : '')}
+                  >
+                    <span className="gear-bag-art"><ItemArt item={item} size={47}/></span>
+                    <span className="gear-bag-level">{language === 'en' ? 'Lv.' : 'Ур.'}{eq.level}</span>
+                    <span className={'gear-bag-indicator ' + (comparison > 0 ? 'gear-bag-better' : '')} aria-hidden="true">
+                      {slotNames[eq.slot].ru.slice(0, 1)}
+                    </span>
+                    {isStack && <span className="gear-stack-badge" aria-hidden="true">×{items.length}</span>}
+                    {isStack && <span className="gear-stack-chevron" aria-hidden="true">
+                      {expanded ? <ChevronUp size={13}/> : <ChevronDown size={13}/>}
+                    </span>}
+                  </button>
+                  {expanded && items.map((copy, index) => {
+                    const active = isComparing && bag?.id === copy.id;
+                    return (
+                      <button type="button" key={copy.id}
+                        className={'gear-bag-tile gear-bag-tile--copy ' + (active ? 'gear-bag-tile-active' : '')}
+                        style={{ '--tile-rarity': rarityColor(copy.rarity) } as CSSProperties}
+                        onClick={() => chooseBag(copy.id)}
+                        aria-pressed={!!active}
+                        aria-label={localizeText(copy.name, language) + ', ' +
+                          (language === 'en' ? 'copy ' : 'экземпляр ') + (index + 1) + '/' + items.length +
+                          ', ' + (language === 'en' ? 'level ' : 'уровень ') + copy.equipment!.level}>
+                        <span className="gear-bag-art"><ItemArt item={copy} size={47}/></span>
+                        <span className="gear-bag-level">{language === 'en' ? 'Lv.' : 'Ур.'}{copy.equipment!.level}</span>
+                        <span className="gear-stack-copy-number">{index + 1}</span>
+                      </button>
+                    );
+                  })}
+                </Fragment>
               );
             })}
           </div>
