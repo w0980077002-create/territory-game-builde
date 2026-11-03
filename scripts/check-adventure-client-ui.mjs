@@ -93,7 +93,7 @@ assert.match(ui, /data-testid="dark-cave-battle-background"/, 'Cave fights use t
 assert.match(ui, /data-testid="dark-cave-combat-panels"/, 'Cave battle provides compact equipment and elixir inspection panels');
 assert.match(ui, /<GearStrip equipped=\{game\.player\.equipped\}/, 'Only saved equipped items are displayed; do not invent combat stats');
 assert.match(ui, /<BeltCells belt=\{game\.belt\}/, 'Display the existing seven elixir slots without client-side consumption');
-assert.match(ui, /Только просмотр: эффекты эликсиров/, 'Unimplemented cave elixir usage must be labeled truthfully');
+assert.match(ui, /Эликсиры в Пещере пока недоступны\. Ничего из пояса не расходуется\./, 'Unsupported cave elixirs must remain visibly disabled and never imply a belt charge');
 assert.match(ui, /data-testid="dark-cave-manual-actions"/, 'Manual combat exposes actual server equipped skills');
 assert.match(ui, /cooldowns\[slot\.skillId\]/, 'Skills display server cooldown status');
 assert.match(ui, /rank\.energyCost/, 'Skills respect server-reported energy costs');
