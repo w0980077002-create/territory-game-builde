@@ -97,7 +97,7 @@ export function FollowersPanel() {
             : (en ? 'VIEWING COMPANION' : 'ПРОСМОТР СПУТНИКА')}</span>
           <h3>{en ? template.nameEn : template.name}</h3>
           <span className={`followers-camp__rarity followers-camp__rarity--${template.rarity}`}>{localizeRarity(template.rarity, language)}</span>
-          {isSeasonal && <span className="followers-camp__raid-tag">{en ? 'RAID 2026' : 'РЕЙД 2026'}</span>}
+          {isSeasonal && <span className="followers-camp__raid-tag">{en ? 'RAID · 2026' : 'РЕЙД · 2026'}</span>}
           <p>{isSeasonal ? (en ? 'An epic companion for Halloween raid fighters.' : 'Эпический спутник за участие в Хэллоуинском рейде.') : (en ? template.descriptionEn : template.description)}</p>
           <span className={unlocked ? 'followers-camp__availability' : 'followers-camp__availability followers-camp__availability--locked'}>
             {unlocked ? en ? 'Unlocked' : 'Открыт' : isSeasonal
