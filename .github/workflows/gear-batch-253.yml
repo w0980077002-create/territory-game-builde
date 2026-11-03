@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - 'supabase/staged/territory_inventory_batch_salvage_253.sql'
+      - 'supabase/staged/territory_inventory_batch_salvage_253_rollback.sql'
       - 'scripts/check-gear-batch-253.mjs'
       - 'scripts/pg17-gear-batch-253.sql'
       - 'src/components/GearShowcase.tsx'
