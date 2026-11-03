@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - 'supabase/staged/territory_gear_refund_65_v1.sql'
+      - 'supabase/staged/territory_gear_refund_65_v1_rollback.sql'
       - 'scripts/check-gear-refund-65.mjs'
       - 'scripts/pg17-gear-refund-65.sql'
       - 'src/game/cloud.ts'
