@@ -2,7 +2,8 @@ name: Quarter-hour repository health monitor
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    # Offset from the top of the hour to reduce GitHub schedule congestion.
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
 
 permissions:
