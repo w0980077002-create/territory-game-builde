@@ -79,6 +79,7 @@ export function FollowersPanel() {
         <div className="followers-camp__active-info">
           <span className="followers-camp__eyebrow"><Check size={13}/>{en ? 'ACTIVE IN PvE' : 'АКТИВЕН В PvE'}</span>
           <h3>{en ? (DISPLAY_FOLLOWER_TEMPLATES.find(f => f.id === active.id)?.nameEn ?? active.name) : active.name}</h3>
+          <span className={`followers-camp__rarity followers-camp__rarity--${followerRarity(active.id)}`}>{localizeRarity(followerRarity(active.id), language)}</span>
           <p>{en ? 'Level' : 'Уровень'} {active.level} <span>·</span> <Swords size={12}/> {active.attack} <span>·</span> {active.id === HALLOWEEN_COMPANION_ID ? <><Heart size={12}/> 16</> : <><Shield size={12}/> {active.defense}</>}</p>
           <small>{en ? 'Helps in Campaign and Trials, not in Arena' : 'Помогает в Походе и Испытаниях, не на Арене'}</small>
         </div>
@@ -95,6 +96,7 @@ export function FollowersPanel() {
             ? (en ? 'ACTIVE COMPANION' : 'АКТИВНЫЙ СПУТНИК')
             : (en ? 'VIEWING COMPANION' : 'ПРОСМОТР СПУТНИКА')}</span>
           <h3>{en ? template.nameEn : template.name}</h3>
+          <span className={`followers-camp__rarity followers-camp__rarity--${template.rarity}`}>{localizeRarity(template.rarity, language)}</span>
           {isSeasonal && <span className="followers-camp__legendary">{en ? 'EPIC · RAID 2026' : 'ЭПИЧЕСКИЙ · РЕЙД 2026'}</span>}
           {template.id === 'follower_6' && <span className="followers-camp__legendary"><Sparkles size={12}/>{en ? 'LEGENDARY' : 'ЛЕГЕНДАРНЫЙ'}</span>}
           <p>{isSeasonal ? (en ? 'An epic companion for Halloween raid fighters.' : 'Эпический спутник за участие в Хэллоуинском рейде.') : (en ? template.descriptionEn : template.description)}</p>
@@ -158,6 +160,7 @@ export function FollowersPanel() {
         return <button key={candidate.id} type="button" onClick={() => { setSelectedId(candidate.id); setNote(''); }}
           className={`followers-camp__portrait ${focus ? 'followers-camp__portrait--focus' : ''} ${isActive ? 'followers-camp__portrait--active' : ''}`}
           aria-pressed={focus} aria-label={`${en ? candidate.nameEn : candidate.name} — ${unit?.unlocked ? (en ? 'Level' : 'Уровень') + ' ' + unit.level : candidate.id === HALLOWEEN_COMPANION_ID ? (en ? 'Halloween reward' : 'Награда Хэллоуина') : (en ? 'Unlocks at level' : 'Откроется на уровне') + ' ' + candidate.unlockLevel}`}>
+          <span className={`followers-camp__rarity followers-camp__rarity--${candidate.rarity} followers-camp__portrait-rarity`}>{localizeRarity(candidate.rarity, language)}</span>
           <img src={getFollowerArt(candidate.id)} loading="lazy" draggable={false} alt=""
             className={unit?.unlocked ? '' : 'followers-camp__portrait-img--locked'}/>
           {isActive && <span className="followers-camp__portrait-status"><Check size={11}/></span>}
