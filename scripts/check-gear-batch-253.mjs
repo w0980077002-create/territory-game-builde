@@ -14,7 +14,8 @@ const starting={inventoryCleanupVersion:1,player:{gold:2000,gems:8,level:60,equi
  battleStones:25,chapterWins:13,
  inventory:['loot_a','loot_b','loot_c','loot_d'].map(id=>gear(id)).concat([
   gear('forged_a',{level:6,base:4,rarity:'rare',upgrades:2,name:'Клинок рыцаря'}),
-  gear('legendary_a',{level:7,base:4,rarity:'legendary',upgrades:3})
+  gear('legendary_a',{level:7,base:4,rarity:'legendary',upgrades:3}),
+  gear('halloween_rare',{level:6,base:4,rarity:'rare',upgrades:2,name:'Праздничный меч'})
  ])};
 const q=async(sql,params=[]) => (await db.query(sql,params)).rows;
 const profile=async(id=uid)=>(await q('SELECT * FROM public.players WHERE id=$1',[id]))[0];
@@ -45,6 +46,7 @@ try {
  `);
  await db.query('INSERT INTO public.players(id,game_state,forge_materials,gold,gems) VALUES($1,$2,30,2000,8),($3,$2,30,2000,8)',[uid,starting,other]);
  await db.query('INSERT INTO territory_private.forge_upgrade_receipts_65_v1(player_id,item_id,upgrade_to,material_cost) VALUES($1,$2,6,4)',[uid,'forged_a']);
+ await db.query('INSERT INTO territory_private.forge_upgrade_receipts_65_v1(player_id,item_id,upgrade_to,material_cost) VALUES($1,$2,6,4)',[uid,'halloween_rare']);
  await db.exec(readFileSync('supabase/staged/territory_inventory_batch_salvage_253.sql','utf8'));
  await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[uid]);
  let offer=await quote();
@@ -52,6 +54,7 @@ try {
  assert.equal(offer.eligible.length,5);
  assert.equal(offer.eligible.find(x=>x.item_id==='forged_a').awarded,2);
  assert.equal(offer.eligible.some(x=>x.item_id==='legendary_a'),false);
+ assert.equal(offer.eligible.some(x=>x.item_id==='halloween_rare'),false,'rare holiday item must remain protected');
  let initial=await profile();
  await assert.rejects(salvage(['loot_a','legendary_a'],initial.updated_at),/batch_item_unverified/);
  assert.deepEqual((await profile()).game_state,initial.game_state,'invalid mixed batch rolled back');
@@ -67,7 +70,7 @@ try {
  assert.equal(receipt.game_state.player.gold,2000);
  assert.equal(receipt.game_state.inventory.some(x=>x.id==='legendary_a'),true);
  assert.equal((await profile()).forge_materials,33);
- assert.equal((await q("SELECT count(*)::int AS n FROM territory_private.forge_upgrade_receipts_65_v1 WHERE refunded_at IS NULL"))[0].n,0);
+ assert.equal((await q("SELECT count(*)::int AS n FROM territory_private.forge_upgrade_receipts_65_v1 WHERE refunded_at IS NULL"))[0].n,1,'holiday receipt retained');
  await assert.rejects(salvage(['loot_a','forged_a'],initial.updated_at),/batch_conflict_reload/);
  let next=await profile();
  await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[other]);
