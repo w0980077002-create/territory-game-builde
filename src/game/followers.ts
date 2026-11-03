@@ -13,12 +13,14 @@ export type FollowerRole = 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage'
  * one-time claims live separately in halloweenCompanion2026.ts. */
 export const HALLOWEEN_COMPANION_ID = 'follower_pumpkin_witch_2026';
 export const HALLOWEEN_COMPANION_LEVEL = 100;
-export const HALLOWEEN_COMPANION_ADVANTAGE = 1.05;
-export const PUMPKIN_WITCH_BASELINE = { attack: 62, heal: 15 } as const;
+/** Epic raid companion: stronger direct PvE damage than the maximum level-60 Common warrior (129).
+ * Existing elite per-round damage caps still apply; PvP remains unaffected. */
+export const HALLOWEEN_COMPANION_ADVANTAGE = 1.16;
+export const PUMPKIN_WITCH_BASELINE = { attack: 129, heal: 15 } as const;
 export const PUMPKIN_WITCH_COMBAT = {
   attack: Math.round(PUMPKIN_WITCH_BASELINE.attack * HALLOWEEN_COMPANION_ADVANTAGE),
   defense: 0,
-  heal: Math.round(PUMPKIN_WITCH_BASELINE.heal * HALLOWEEN_COMPANION_ADVANTAGE),
+  heal: Math.round(PUMPKIN_WITCH_BASELINE.heal * 1.05),
   crit: 0,
   pierce: 0,
 };
@@ -31,7 +33,7 @@ export const PUMPKIN_WITCH_TEMPLATE: Follower = {
   defense: 1,
   unlocked: true,
   role: 'pumpkin',
-  description: 'Эксклюзивный дар участнику Хэллоуинского рейда 2026. Уровень 100. Помогает герою в PvE.',
+  description: 'Эпический дар участнику Хэллоуинского рейда 2026. Уровень 100. Самая высокая прямая атака спутника в PvE и лечение героя.',
 };
 
 
@@ -64,8 +66,8 @@ export const HALLOWEEN_COMPANION_TEMPLATE: FollowerTemplate = {
   id: HALLOWEEN_COMPANION_ID, role: 'pumpkin', unlockLevel: 101,
   name: 'Тыквенная ведьма', nameEn: 'Pumpkin Witch', icon: '🎃',
   attack: PUMPKIN_WITCH_TEMPLATE.attack, defense: PUMPKIN_WITCH_TEMPLATE.defense,
-  description: 'Эксклюзив за подтверждённое участие в Хэллоуинском рейде 2026. Уровень 100, сила +5% к сопоставимому обычному целителю.',
-  descriptionEn: 'Exclusive for confirmed Halloween 2026 raid fighters. Level 100, 5% stronger than the comparable standard healer.',
+  description: 'Эпический спутник за участие в рейде 2026. Уровень 100, атака выше максимально прокачанного обычного воина и лечение героя.',
+  descriptionEn: 'Epic Halloween 2026 raid companion. Level 100; more direct damage than a max-trained common warrior, plus healing.',
 };
 export const DISPLAY_FOLLOWER_TEMPLATES: FollowerTemplate[] = [
   ...FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_TEMPLATE,
@@ -164,8 +166,8 @@ export function trainFollower(state: GameState, followerId: string): GameState |
  * yield unbounded buffs; full server economy enforcement is a separate release. */
 export function followerCombat(follower: Follower | null) {
   if (follower?.id === HALLOWEEN_COMPANION_ID) {
-    // No skill effects on PvP. This 100/100 raid companion mirrors a fully
-    // trained level-60 healer at 1.05× power (rounded combat integers).
+    // No skill effects on PvP. Epic level-100 raid companion exceeds the
+    // highest direct-damage Common follower; heal retains its existing 16 HP.
     return { role: 'pumpkin' as const, ...PUMPKIN_WITCH_COMBAT };
   }
   const template = follower && FOLLOWER_TEMPLATES.find((f) => f.id === follower.id);
