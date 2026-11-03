@@ -494,3 +494,6 @@
   .territory-profile .hero-showcase__companion {grid-template-columns:54px minmax(0,1fr);gap:6px;padding:7px}
   .territory-profile .hero-showcase__companion > img {width:54px;height:88px}
 }
+
+/* Keep the battle goal legible if an enemy asset is missing or temporarily unreachable. */
+.territory-profile .hero-showcase__boss-art--fallback { display:grid; place-items:center; color:#f8d589; background:radial-gradient(circle at 45% 35%,#775230,#281a17 75%); border:1px solid #b99057; border-radius:10px; }

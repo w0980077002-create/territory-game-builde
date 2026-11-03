@@ -1,4 +1,5 @@
-import { Coins, Gem, Zap, Heart, Sword, Shield, Star, ChevronRight, Shirt, Hammer, ScrollText, UsersRound } from 'lucide-react';
+import { Coins, Gem, Zap, Heart, Sword, Swords, Shield, Star, ChevronRight, Shirt, Hammer, ScrollText, UsersRound } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { EQUIPMENT_SLOTS, HERO_MAX_LEVEL, generateChapter, getComputedStats } from '@/game/engine';
 import { getAppearanceIcon } from '@/game/appearance';
 import { SLOT_ART, equipmentArt } from '@/game/art';
@@ -42,6 +43,9 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
     ? Math.max(0, Math.min(chapter.winsNeeded, Math.floor(state.chapterWins))) : 0;
   const bossReady = chapterWins >= chapter.winsNeeded;
   const nextEnemy = bossReady ? chapter.boss : (chapter.enemies[chapterWins] ?? chapter.boss);
+  // A failed asset must never show a browser's broken-image marker in the hero journey.
+  const [enemyImageFailed, setEnemyImageFailed] = useState(false);
+  useEffect(() => { setEnemyImageFailed(false); }, [nextEnemy.art]);
   // Only suggest gear that is already in the player's saved inventory and
   // would fill an empty real slot. This is navigation, not proof of ownership
   // for server combat or an automatic equip/grant.
@@ -154,9 +158,16 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
           <div><strong>{chapterNumber}</strong><span>{t('chapter')}</span></div>
         </div>
         <div className="hero-showcase__next" data-testid="hero-next-goal">
-          <img className="hero-showcase__boss-art"
-            src={import.meta.env.BASE_URL + (nextEnemy.art.startsWith('/') ? nextEnemy.art.slice(1) : nextEnemy.art)}
-            alt="" loading="lazy" draggable={false} />
+          {enemyImageFailed ? (
+            <span className="hero-showcase__boss-art hero-showcase__boss-art--fallback" aria-hidden="true">
+              <Swords size={34} />
+            </span>
+          ) : (
+            <img className="hero-showcase__boss-art"
+              src={import.meta.env.BASE_URL + nextEnemy.art.replace(/^\/+/, '')}
+              alt="" loading="lazy" draggable={false}
+              onError={() => setEnemyImageFailed(true)} />
+          )}
           <div className="hero-showcase__next-copy">
             <strong>{bossReady
               ? text('Босс готов к бою!', 'Boss battle unlocked!')

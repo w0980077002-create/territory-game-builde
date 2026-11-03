@@ -46,10 +46,11 @@ try:
                 assert page.evaluate('window.__route') == 'quests'
                 assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
                 page.goto(start+'?view=hall')
-                next_game=page.locator('[data-testid=hall-next-play]')
+                next_game=page.locator('[data-testid=hall-game-monopoly]')
                 next_game.wait_for()
-                assert next_game.locator('.hall-hero-mission__art img').count()==1
+                assert next_game.locator('.hall-game__scene img').count()==1
                 assert next_game.bounding_box()['height']>=130
+                assert page.locator('[data-testid=hall-next-play]').count()==0, 'Do not duplicate Monopoly entry'
                 next_game.click()
                 assert page.evaluate('window.__hallGame')=='monopoly'
                 assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Game Hall overflow'

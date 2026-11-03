@@ -116,7 +116,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
         <div data-testid="equipment-responsive-layout" className="flex min-h-full w-full min-w-0 flex-col">
           {onBattle && <section data-testid="equipment-campaign-return" className="mb-1 flex min-w-0 items-center gap-2 rounded-xl border-2 border-amber-500/70 bg-gradient-to-r from-[#59361e] to-[#261b16] p-2 text-amber-100 shadow-lg">
             <img className="h-16 w-16 shrink-0 object-contain" loading="lazy" draggable={false} alt=""
-              src={battleEnemyArt.startsWith('/') ? battleEnemyArt : import.meta.env.BASE_URL + battleEnemyArt} />
+              src={import.meta.env.BASE_URL + battleEnemyArt.replace(/^\/+/, '')} />
             <div className="min-w-0 flex-1">
               <strong className="block text-xs font-black leading-tight">{language === 'en' ? 'Ready for the next encounter?' : 'Готов к следующему бою?'}</strong>
               <span className="block text-[11px] leading-tight text-amber-200">{returningToTrial

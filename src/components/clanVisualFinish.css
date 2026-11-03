@@ -1,0 +1,67 @@
+
+/* Public clan experience: Viking fortress atmosphere, scoped to clan only.
+   No global navigation or clan data/actions are changed. */
+.viking-screen--clan {
+  min-height:100%;
+  padding:8px 8px 24px;
+  border-radius:14px;
+  background:
+    radial-gradient(ellipse at 50% 0%,#6d472d5c,transparent 64%),
+    linear-gradient(180deg,#2e1e17 0%,#191718 58%,#10141a 100%);
+}
+.viking-screen--clan .clan-fortress-hero {
+  position:relative;isolation:isolate;overflow:hidden;
+  border:3px solid #b58649;border-radius:18px;
+  box-shadow:inset 0 0 0 2px #3c2413,0 5px 15px #0009;
+  padding:20px 14px 17px;
+  background-size:cover;background-position:center 56%;
+}
+.viking-screen--clan .clan-fortress-hero::before {
+  content:"";position:absolute;z-index:-1;inset:4px;pointer-events:none;
+  border:1px solid #f3d79e88;border-radius:12px;
+  box-shadow:inset 0 -55px 45px #100b0a66;
+}
+.viking-screen--clan .clan-fortress-hero__crest {
+  display:grid;place-items:center;width:88px;height:92px;
+  margin:0 auto 7px;position:relative;
+  background:radial-gradient(ellipse,#a77136aa,#31201577 70%);
+  filter:drop-shadow(0 3px 4px #0009);
+}
+.viking-screen--clan .clan-fortress-hero__crest::after {
+  content:"";position:absolute;inset:4px;border:2px solid #f1cd8788;
+  border-radius:45% 45% 20% 20%;pointer-events:none;
+}
+.viking-screen--clan .clan-fortress-hero__crest img {
+  width:72px;height:76px;object-fit:contain;
+}
+.viking-screen--clan .clan-fortress-hero h2 {
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(22px,6vw,29px);line-height:1.16;
+  color:#ffe8b0;text-shadow:0 2px 5px #150c08,0 0 8px #120a05;
+}
+.viking-screen--clan .clan-fortress-hero p {
+  max-width:340px;margin:8px auto 15px;
+  color:#ffe7ca;font-size:clamp(12px,3.2vw,14px);
+  line-height:1.4;text-shadow:0 2px 4px #160e09,0 0 3px #160e09;
+}
+.viking-screen--clan .clan-fortress-hero__actions {
+  display:flex;gap:9px;justify-content:center;flex-wrap:wrap;
+}
+.viking-screen--clan .clan-fortress-hero__actions button {
+  flex:1 1 126px;min-height:46px;max-width:210px;
+  border:2px solid #d1a05f;border-radius:12px;
+  font-size:clamp(12px,3.5vw,15px);font-weight:900;
+  box-shadow:inset 0 1px #ffefb899,0 3px 5px #120a07b0;
+}
+.viking-screen--clan .clan-fortress-hero__actions button:first-child {
+  background:linear-gradient(#ffe8a6,#e3a345 65%,#b77729);color:#40210c;
+}
+.viking-screen--clan .clan-fortress-hero__actions button:last-child {
+  background:linear-gradient(#795035,#3c271b);color:#ffe4b5;
+}
+.viking-screen--clan button:focus-visible {outline:3px solid #ffe8a8;outline-offset:2px;}
+@media(max-width:359px){
+ .viking-screen--clan {padding-inline:5px;}
+ .viking-screen--clan .clan-fortress-hero{padding-inline:9px;}
+ .viking-screen--clan .clan-fortress-hero__actions{gap:6px;}
+}

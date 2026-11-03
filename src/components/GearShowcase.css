@@ -538,3 +538,52 @@ html.territory-ios-webapp .gear-filter-strip::-webkit-scrollbar-thumb {
   border-radius: 4px;
   background: #b68a54;
 }
+
+
+/* Grouped bag presentation: all underlying equipment IDs stay intact. */
+.gear-stack-toolbar {
+  display:flex;align-items:center;justify-content:space-between;gap:7px;
+  margin:4px 0 7px;min-width:0;
+}
+.gear-stack-toggle {
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:38px;padding:7px 10px;border:1px solid #ad7a42;border-radius:9px;
+  background:linear-gradient(#f4d5a7,#ce9a5f);color:#4b2b17;
+  font-size:11px;font-weight:900;
+}
+.gear-stack-toggle[aria-pressed="true"] {
+  background:linear-gradient(#ffe7b7,#eab157);
+  border-color:#94602e;
+  box-shadow:inset 0 1px #fff4d6;
+}
+.gear-stack-toolbar > span {
+  text-align:right;font-size:10px;color:#65452d;font-weight:800;line-height:1.2;
+}
+.gear-bag-tile--stack { border-color:#e8c16c;box-shadow:inset 0 0 0 1px #fff5,0 4px 6px #3e261d8a; }
+.gear-stack-badge {
+  position:absolute;z-index:2;right:-4px;top:-5px;
+  min-width:29px;min-height:23px;display:grid;place-items:center;
+  border:2px solid #f2d58f;border-radius:10px;padding:2px 4px;
+  color:#35200f;background:linear-gradient(#ffe9b0,#db9b3a);
+  font-size:11px;font-weight:900;line-height:1;
+  box-shadow:0 2px 4px #0007;
+}
+.gear-stack-chevron {
+  position:absolute;bottom:2px;left:2px;color:#ffdd95;
+  filter:drop-shadow(0 1px 1px #000);
+}
+.gear-bag-tile--copy {
+  background:linear-gradient(145deg,#6a4c50,#30272d 64%,#1d1a1a);
+}
+.gear-stack-copy-number {
+  position:absolute;top:2px;left:3px;color:#fce8c2;
+  font-size:10px;font-weight:900;text-shadow:0 1px 2px #000;
+}
+.gear-stack-toggle:focus-visible,
+.gear-bag-tile--stack:focus-visible,
+.gear-bag-tile--copy:focus-visible { outline:3px solid #fff2a5;outline-offset:2px; }
+@media(max-width:360px) {
+  .gear-stack-toolbar { gap:5px; }
+  .gear-stack-toggle { padding-inline:6px;font-size:10px; }
+  .gear-stack-toolbar > span {font-size:9px;}
+}

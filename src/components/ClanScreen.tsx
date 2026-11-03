@@ -17,6 +17,7 @@ import { Users, Swords, Crown, Shield, Coins, ChevronLeft, Send, ScrollText, Gem
 import { useLanguage } from '@/game/i18n';
 import { SocialTrail, type SocialDestination } from './social/SocialTrail';
 import { ClanNextStep } from './social/ClanNextStep';
+import './clanVisualFinish.css';
 
 const CLAN_COLORS = ['#eab308', '#ef4444', '#22c55e', '#3b82f6', '#f97316', '#ec4899', '#14b8a6', '#a3e635'];
 const EMBLEMS = ['🐺', '🦁', '🐉', '🦅', '🐻', '🐺', '⚔️', '🛡️', '🔥', '🌊', '⚡', '🌟'];
@@ -287,13 +288,15 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
               {language === 'en' ? 'Retry clan directory' : 'Повторить загрузку кланов'}
             </button>
           </div>}
-          <div className="rounded-2xl border border-amber-500/25 bg-gradient-to-b from-[#1a1610] to-[#0e0c08] p-4 text-center">
-            <div className="mx-auto mb-3 w-16 h-16 rounded-2xl border-2 border-amber-400/50 bg-amber-500/10 flex items-center justify-center">
-              <Users className="w-8 h-8 text-amber-300" />
+          <div className="clan-fortress-hero text-center" style={{
+            backgroundImage: `linear-gradient(180deg,rgba(18,14,11,.26),rgba(23,13,8,.9) 77%),url("${import.meta.env.BASE_URL}assets/territory/scenes/winter-cliff-approved.webp")`,
+          }}>
+            <div className="clan-fortress-hero__crest" aria-hidden="true">
+              <img src={import.meta.env.BASE_URL + 'nav-clan.webp'} alt="" draggable={false} />
             </div>
             <h2 className="text-lg font-bold text-white mb-1">{t('clanTitle')}</h2>
             <p className="text-xs text-gray-400 leading-relaxed mb-4">{t('clanIntro')}</p>
-            <div className="flex gap-2 justify-center">
+            <div className="clan-fortress-hero__actions">
               <ApplyButton onResult={async () => { openBrowse(); return { ok: true }; }} className="rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 px-4 py-2.5 text-sm font-extrabold text-black shadow-lg active:scale-95 transition-transform">
                 {t('clanFind')}
               </ApplyButton>

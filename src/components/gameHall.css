@@ -293,3 +293,19 @@
  .hall-hero-mission__body>span{font-size:11px;}
 }
 @media(prefers-reduced-motion:reduce){.hall-hero-mission{transition:none;}}
+
+/* Small Viking Treasures card: protect its live labels from overlapping the artwork. */
+.territory-game-hall .hall-game[data-testid="hall-game-slots"] .hall-game__glow {
+  background: linear-gradient(180deg,transparent 29%,#05081255 51%,#070a18ee 72%,#060816 100%);
+}
+.territory-game-hall .hall-game[data-testid="hall-game-slots"] .hall-game__info {
+  bottom: 42px; left: 9px; right: 8px;
+}
+.territory-game-hall .hall-game[data-testid="hall-game-slots"] .hall-game__name {
+  font-size: clamp(12px,3.35vw,16px); letter-spacing: -.2px; line-height:1.14;
+  overflow-wrap:anywhere;
+}
+.territory-game-hall .hall-game[data-testid="hall-game-slots"] .hall-game__hint {
+  font-size: clamp(9px,2.45vw,11px); line-height:1.15;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
+}
