@@ -103,3 +103,15 @@ BEGIN
  THEN RAISE EXCEPTION 'PG17 RPC permissions mismatch'; END IF;
  RAISE NOTICE 'PG17 PASS batch atomic, replay, 65%%, base quota, owner isolation';
 END $batch$;
+
+\i supabase/staged/territory_inventory_batch_salvage_253_rollback.sql
+DO $rollback$
+BEGIN
+ IF to_regprocedure('public.territory_inventory_batch_salvage_253(text[],timestamptz)') IS NOT NULL
+  OR to_regprocedure('public.territory_inventory_batch_quote_253()') IS NOT NULL
+ THEN RAISE EXCEPTION 'batch rollback left public entrypoints'; END IF;
+ IF (SELECT forge_materials FROM public.players WHERE id='10000000-0000-0000-0000-000000000091')<>33
+  OR (SELECT count(*) FROM territory_private.forge_upgrade_receipts_65_v1)<>1
+ THEN RAISE EXCEPTION 'batch rollback mutated player material balance or ledger'; END IF;
+ RAISE NOTICE 'PG17 PASS: batch rollback retained resources and receipt';
+END $rollback$;
