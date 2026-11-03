@@ -3,7 +3,7 @@ import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { saveCloudSave } from '@/game/cloud';
 import { supabase } from '@/game/supabase';
-import { useLanguage, localizeText } from '@/game/i18n';
+import { useLanguage, localizeText, localizeRarity } from '@/game/i18n';
 import { rarityColor, rarityGlow } from '@/game/ui';
 import { Hammer, ArrowUp, X, Package, MapPinned, CheckCircle2, Sword } from 'lucide-react';
 import { hapticNotify } from '@/game/telegram';
@@ -165,7 +165,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
       type: 'equipment' as const,
       rarity: eq.rarity,
       qty: 1,
-      description: `${language === 'en' ? 'Equipped · Level' : 'Надето · Уровень'} ${eq.level} · ${eq.rarity}`,
+      description: `${language === 'en' ? 'Equipped · Level' : 'Надето · Уровень'} ${eq.level} · ${localizeRarity(eq.rarity, language)}`,
       equipment: eq,
     })),
     ...equipment,
@@ -361,7 +361,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
                 <h3 className="font-bold text-base">
                   {localizeText(selectedCurrent.name, language)}
                 </h3>
-                <p className="text-xs text-gray-400">{t('level')} {selectedCurrent.equipment.level} · {selectedCurrent.rarity}</p>
+                <p className="text-xs text-gray-400">{t('level')} {selectedCurrent.equipment.level} · {localizeRarity(selectedCurrent.rarity, language)}</p>
               </div>
               <button ref={forgeCloseRef} type="button" disabled={upgrading} aria-label={language === 'en' ? 'Close' : 'Закрыть'} onClick={() => { if (!upgrading) setSelected(null); }} className="text-gray-500 hover:text-white">
                 <X className="w-5 h-5" />

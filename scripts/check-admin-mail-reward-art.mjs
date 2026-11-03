@@ -57,6 +57,44 @@ assert.match(mail, /mailRewardVisuals\(m\.payload\)/);
 assert.match(mail, /reward\.image/);
 assert.match(mail, /reward\.amount/);
 assert.doesNotMatch(mail, /grantItemsText\(/);
+const localizationSource = read('src/game/halloweenMailLocalization.ts');
+const localizedCode = ts.transpileModule(localizationSource, {
+  compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS },
+});
+const localeSandbox = { exports: {} };
+runInNewContext(localizedCode.outputText, localeSandbox, { filename: 'halloweenMailLocalization.js' });
+const { localizedHalloweenMail } = localeSandbox.exports;
+const prizeMail = {
+  subject: '🎃 Награда за место в топ-20 рейда!',
+  body: 'Поздравляем! Ты занял 3-е место в Хэллоуинском рейде TERRITORY!',
+  payload: { gold: 3000, gems: 150, stones: 5 },
+};
+const enPrize = localizedHalloweenMail(prizeMail, 'en');
+assert.ok(enPrize.subject.includes('Top 20'));
+assert.ok(enPrize.body.includes('#3'));
+for (const text of ['3000','150','5','Horned Pumpkin']) {
+  assert.ok(enPrize.body.includes(text), 'English bonus mail missing '+text);
+}
+assert.equal(localizedHalloweenMail(prizeMail,'ru').body,prizeMail.body,
+  'RU bonus mail must keep approved original copy');
+const notice = {
+  subject: '🎃 Твоя награда за Хэллоуинский рейд!',
+  body: 'Поздравляем с победой!\n\nCongratulations on defeating the Pumpkin King!',
+  payload: {},
+};
+assert.equal(localizedHalloweenMail(notice,'en').body,
+  'Congratulations on defeating the Pumpkin King!');
+assert.equal(localizedHalloweenMail(notice,'ru').body,notice.body);
+assert.equal(localizedHalloweenMail({subject:'Unrelated',body:'Hello',payload:{}},'en').body,'Hello',
+  'Other player mail must remain unmodified');
+assert.match(mail, /localizedHalloweenMail\(m, language\)/,
+  'The live mailbox must call localized prize copy');
+assert.match(mail, /copy\.subject/);
+assert.match(mail, /copy\.body/);
+const translations = read('src/game/i18n.tsx');
+assert.match(translations, /'Рогатая тыква · Хэллоуин 2026': 'Horned Pumpkin · Halloween 2026'/);
+assert.match(read('src/components/ForgeScreen.tsx'), /localizeRarity\(selectedCurrent\.rarity, language\)/);
+assert.match(read('src/components/InventoryScreen.tsx'), /localizeRarity\(selected\.rarity, language\)/);
 const art = read('src/game/art.ts');
 assert.match(art, /e\.value >= 150/);
 assert.match(art, /potion-hp-large-viking\.webp/);

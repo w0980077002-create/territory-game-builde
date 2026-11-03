@@ -453,6 +453,8 @@ const dictionaries: Record<Language, Dictionary> = {
 };
 const contentEnglish: Record<string, string> = {
   'Рогатая тыква · Хэллоуин 2026': 'Horned Pumpkin · Halloween 2026',
+  'Раритетный рогатый шлем. Защита +6, HP +40, крит +1%. Память о рейде 2026.': 'Rare commemorative horned helmet: +6 Defense, +40 HP, +1% Critical Chance. A memento of the 2026 raid.',
+  'Раритетный рогатый шлем. Награда за место в топ-20 рейда 2026. Защита +6, HP +40, крит +1%.': 'Rare horned helmet awarded to the Halloween 2026 raid top 20: +6 Defense, +40 HP, +1% Critical Chance.',
   'Шлем': 'Helmet',
   'Амулет': 'Amulet',
   'Броня': 'Armor',
@@ -581,6 +583,17 @@ const contentEnglish: Record<string, string> = {
   'Получи 15 кристаллов': 'Receive 15 crystals.',
   '1 материал для улучшения экипировки': '1 gear upgrade material.'
 };
+
+/** The saved rarity ID is not the localized label; never alter item rarity data. */
+export function localizeRarity(rarity: string, language: Language): string {
+  const labels: Record<string, { ru: string; en: string }> = {
+    common: { ru: 'Обычный', en: 'Common' },
+    rare: { ru: 'Редкий', en: 'Rare' },
+    epic: { ru: 'Эпический', en: 'Epic' },
+    legendary: { ru: 'Легендарный', en: 'Legendary' },
+  };
+  return labels[rarity]?.[language] ?? rarity;
+}
 
 export function localizeText(text: string, language: Language): string {
   return language === 'en' ? (contentEnglish[text] ?? text) : text;
