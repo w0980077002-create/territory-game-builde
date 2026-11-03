@@ -87,6 +87,30 @@ assert.equal(localizedHalloweenMail(notice,'en').body,
 assert.equal(localizedHalloweenMail(notice,'ru').body,notice.body);
 assert.equal(localizedHalloweenMail({subject:'Unrelated',body:'Hello',payload:{}},'en').body,'Hello',
   'Other player mail must remain unmodified');
+const finalSubject = localeSandbox.exports.HALLOWEEN_FINAL_SUBJECT;
+assert.equal(finalSubject, '🎃 Поздравляем! Награды за Хэллоуин 2026');
+const finalWinner = {
+  subject: finalSubject,
+  body: '🎃 Поздравляем! Ты занял 3-е место в Хэллоуинском рейде. Шлем и спутник получены.',
+  payload: { gold: 3000, gems: 150, stones: 5, items: { halloween_horned_pumpkin_2026: 1 } },
+};
+const finalEn = localizedHalloweenMail(finalWinner, 'en');
+assert.ok(finalEn.subject.includes('Congratulations'));
+for (const text of ['#3', '3000', '150', '5', 'Pumpkin Witch', 'Horned Pumpkin']) {
+  assert.ok(finalEn.body.includes(text), 'Unified English Halloween prize letter missing '+text);
+}
+assert.equal(localizedHalloweenMail(finalWinner, 'ru').body, finalWinner.body);
+const finalParticipant = {
+  subject: finalSubject,
+  body: 'Поздравляем! Тыквенная ведьма закреплена за героем.',
+  payload: {},
+};
+const participantEnglish = localizedHalloweenMail(finalParticipant,'en');
+assert.ok(participantEnglish.body.includes('Pumpkin Witch'));
+assert.ok(!participantEnglish.body.includes('Horned Pumpkin'));
+assert.ok(!participantEnglish.body.includes('Top-20 prizes are separate'));
+assert.match(mail, /m\.subject === HALLOWEEN_FINAL_SUBJECT/, 'Final letter shows companion art');
+assert.match(mail, /getFollowerArt\('follower_pumpkin_witch_2026'\)/, 'Use original confirmed companion portrait');
 assert.match(mail, /localizedHalloweenMail\(m, language\)/,
   'The live mailbox must call localized prize copy');
 assert.match(mail, /copy\.subject/);
