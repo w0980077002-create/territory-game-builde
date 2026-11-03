@@ -8,6 +8,7 @@ import { RewardLootStrip } from '@/components/ui/RewardLootStrip';
 import { useLive, claimMailGrant, getClaimedMailHistory, type ClaimedMailGrant } from '@/game/live';
 import './mailVisuals.css';
 import { mailRewardVisuals } from '@/game/mailRewardVisuals';
+import { localizedHalloweenMail } from '@/game/halloweenMailLocalization';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/game/i18n';
 import { CITY_BACKGROUND_KEY, initialCityBackground, type CityBackground } from '@/components/home/LiveCityBackdrop';
@@ -179,19 +180,20 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
         )}
         {shownAdminMail.map((m) => {
           const rewards = mailRewardVisuals(m.payload);
+          const copy = localizedHalloweenMail(m, language);
           const expanded = expandedId === `admin:${m.id}`;
           return (
             <article key={m.id} className={`territory-mail__letter rounded-lg border ${received ? 'border-white/10 bg-black/20' : 'border-sky-400/30 bg-sky-500/5'}`}>
               <button type="button" className="flex min-h-11 w-full items-center gap-2 px-2 py-2 text-left" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : `admin:${m.id}`)}>
                 <img src={import.meta.env.BASE_URL + 'ic-mail.webp'} alt="" className="h-5 w-5 shrink-0 object-contain" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[11px] font-bold text-white">{m.subject}</span>
+                  <span className="block truncate text-[11px] font-bold text-white">{copy.subject}</span>
                   <span className="block truncate text-[9px] text-slate-400">{t('administration')}{received ? ` · ${new Date((m as ClaimedMailGrant).claimed_at).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU')}` : ''}</span>
                 </span>
                 {expanded ? <ChevronDown className="h-3.5 w-3.5 text-amber-200" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-400" />}
               </button>
               {expanded && <div className="border-t border-white/10 px-2 pb-2 pt-1.5">
-              <p className="text-[11px] text-gray-300 leading-snug mb-2 whitespace-pre-line break-words">{m.body}</p>
+              <p className="text-[11px] text-gray-300 leading-snug mb-2 whitespace-pre-line break-words">{copy.body}</p>
               {received && <p className="mb-1 text-[9px] text-gray-500">
                 {language === 'en' ? 'Claimed' : 'Получено'}: {new Date((m as ClaimedMailGrant).claimed_at).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU')}
               </p>}
