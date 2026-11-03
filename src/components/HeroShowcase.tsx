@@ -11,6 +11,9 @@ import { PumpkinWitch } from './PumpkinWitch';
 import { getFollowerArt } from '@/game/combatArt';
 import type { Equipment, GameState } from '@/game/types';
 import './profileHero.css';
+import { useSceneArt } from './ui/useSceneArt';
+
+const HERO_HARBOR_ART = ['assets/territory/scenes/sunlit-harbor.webp'] as const;
 
 type HeroStats = ReturnType<typeof getComputedStats>;
 
@@ -29,6 +32,8 @@ interface Props {
 export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, onQuests, onCompanions }: Props) {
   const { t, language } = useLanguage();
   const player = state.player;
+  const { status: harborStatus, retry: retryHarbor } = useSceneArt(HERO_HARBOR_ART);
+  const harborReady = harborStatus === 'ready';
   const isMax = player.level >= HERO_MAX_LEVEL;
   const hasRealXp = Number.isFinite(player.xp) && Number.isFinite(player.xpToNext) && player.xpToNext > 0 && !isMax;
   const xp = hasRealXp ? Math.min(Math.max(0, player.xp), player.xpToNext) : 0;
@@ -102,7 +107,11 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
         ) : null}
       </header>
 
-      <div className="hero-showcase__stage" style={{ backgroundImage: `linear-gradient(180deg, #173c5120, #4c321d40), url("${import.meta.env.BASE_URL}assets/territory/scenes/sunlit-harbor.webp")` }}>
+      <div className={'hero-showcase__stage ' + (!harborReady ? 'hero-showcase__stage--art-pending' : '')}
+        aria-busy={harborStatus==='loading'}
+        style={{ backgroundImage: harborReady
+          ? `linear-gradient(180deg, #173c5120, #4c321d40), url("${import.meta.env.BASE_URL}assets/territory/scenes/sunlit-harbor.webp")`
+          : 'linear-gradient(160deg,#57402c,#292521 62%,#1d2630)' }}>
         <div className="hero-showcase__gear-column">{slots.slice(0, 3).map(renderSlot)}</div>
         <div className="hero-showcase__character">
           <img className="hero-showcase__hero-art" src={getAppearanceIcon(state.appearance)}
@@ -110,6 +119,15 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
           <div className="hero-showcase__character-floor" aria-hidden="true" />
         </div>
         <div className="hero-showcase__gear-column">{slots.slice(3).map(renderSlot)}</div>
+        {!harborReady && <div className="hero-showcase__art-gate" role="status" aria-live="polite">
+          <span className="hero-showcase__art-gate-sigil" aria-hidden="true">ᛟ</span>
+          <strong>{harborStatus==='error'
+            ? text('Не удалось загрузить гавань', 'Harbor artwork unavailable')
+            : text('Готовим сцену героя…', 'Preparing hero scene…')}</strong>
+          {harborStatus==='error' && <button type="button" onClick={retryHarbor}>
+            {text('Повторить', 'Retry')}
+          </button>}
+        </div>}
       </div>
 
       <button type="button" className="hero-showcase__equipment-link" onClick={onEquipment}>
