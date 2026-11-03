@@ -138,7 +138,7 @@ BEGIN
   THEN RAISE EXCEPTION 'refund_invalid_item'; END IF;
   SELECT game_state INTO row_state FROM public.players WHERE id=user_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'refund_player_missing'; END IF;
-  SELECT count(*), min(value->'equipment'::text)::jsonb INTO matched,eq
+  SELECT count(*), min((value->'equipment')::text)::jsonb INTO matched,eq
     FROM jsonb_array_elements(coalesce(row_state->'inventory','[]'::jsonb))
     WHERE value->>'id'=p_item AND value->>'type'='equipment'
       AND jsonb_typeof(value->'equipment')='object';
@@ -190,8 +190,8 @@ BEGIN
   SELECT count(*), min(value::text)::jsonb INTO matched,item
   FROM jsonb_array_elements(state->'inventory')
   WHERE value->>'id'=p_item;
-  IF matched<>1 OR item->>'type'<>'equipment' OR item->>'qty'<>'1'
-    OR jsonb_typeof(item->'equipment')<>'object'
+  IF matched<>1 OR item->>'type' IS DISTINCT FROM 'equipment' OR item->>'qty' IS DISTINCT FROM '1'
+    OR jsonb_typeof(item->'equipment') IS DISTINCT FROM 'object'
   THEN RAISE EXCEPTION 'refund_item_invalid'; END IF;
   eq:=item->'equipment';
   IF eq->>'adminTestLevel'='true' OR eq->>'id'<>p_item
