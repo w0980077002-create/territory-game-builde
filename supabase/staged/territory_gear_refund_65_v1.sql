@@ -149,6 +149,7 @@ BEGIN
   IF spent=0 OR (eq->>'level') !~ '^[1-9][0-9]{0,2}$'
     OR (eq->>'level')::integer<>last_level
     OR eq->>'adminTestLevel'='true'
+    OR jsonb_typeof(row_state->'forgeMaterialBatches') IS DISTINCT FROM 'array'
   THEN RETURN jsonb_build_object('eligible',false,'item_id',p_item,'spent_verified',0,'refund',0); END IF;
   RETURN jsonb_build_object('eligible',true,'item_id',p_item,
     'spent_verified',spent,'refund',floor(spent*65.0/100)::bigint);
@@ -223,11 +224,15 @@ BEGIN
   -- Preserve all previously dated material lots; add a fresh, independently
   -- expiring 7-day receipt without refreshing any older lot's expiration.
   batches:=state->'forgeMaterialBatches';
-  IF jsonb_typeof(batches)='array' THEN
-    state:=jsonb_set(state,'{forgeMaterialBatches}',
-      batches || jsonb_build_array(jsonb_build_object('qty',refund,
-        'expiresAt',to_char(clock_timestamp()+interval '7 days','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))));
+  -- Fail closed when the material wallet is still in legacy format. Otherwise
+  -- reconciling later could restart the expiry of materials the player already owned.
+  IF jsonb_typeof(batches) IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'refund_material_batches_unverified';
   END IF;
+  state:=jsonb_set(state,'{forgeMaterialBatches}',
+    batches || jsonb_build_array(jsonb_build_object('qty',refund,
+      'expiresAt',to_char((clock_timestamp() AT TIME ZONE 'UTC')+interval '7 days',
+        'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))));
   UPDATE public.players SET game_state=state,forge_materials=(balance+refund)::integer
   WHERE id=user_id RETURNING * INTO row_record;
   UPDATE territory_private.forge_upgrade_receipts_65_v1
