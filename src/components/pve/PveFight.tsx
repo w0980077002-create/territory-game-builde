@@ -12,7 +12,7 @@ import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
-import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
+import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextOpenStrike, nextComboOpening, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
 import { getCombatAppearance } from '@/game/appearance';
@@ -677,9 +677,13 @@ export function PveFight({ enemy, kind, onExit, onNext, onQuests, onEquipment, o
                   : 'Фаза II: враг запомнил прошлый удар. Смени зону атаки!')}
             </span>}
             <button type="button" data-testid="pve-choose-opening" disabled={!controls}
-              onClick={() => setAttack(current => nextOpenStrike(current, committedEnemyIntent.blocks))}
+              onClick={() => setAttack(current => nextComboOpening(
+                current, committedEnemyIntent.blocks, momentum.streak === 1 ? momentum.lastZone : null,
+              ))}
               className="ml-auto min-h-9 shrink-0 rounded-lg border border-amber-200/70 bg-gradient-to-b from-amber-300 to-amber-600 px-2.5 text-[11px] font-black text-[#29180b] active:scale-[0.98] disabled:opacity-40">
-              {language === 'en' ? 'Choose opening' : 'Выбрать брешь'}
+              {momentum.streak === 1 && ZONES.some(zone => !committedEnemyIntent.blocks.includes(zone.id) && zone.id !== momentum.lastZone)
+                ? (language === 'en' ? 'Combo opening' : 'Брешь для комбо')
+                : (language === 'en' ? 'Choose opening' : 'Выбрать брешь')}
             </button>
           </div>
         )}
