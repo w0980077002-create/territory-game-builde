@@ -265,7 +265,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
               {language === 'en' ? 'TAP ENEMY — FIRST FIGHT' : 'НАЖМИ НА ВРАГА — ПЕРВЫЙ БОЙ'}
             </span>
           )}
-          <span className="mb-1 max-w-full rounded-md bg-black/70 border border-red-500/40 px-1.5 py-0.5 text-[9px] font-bold text-red-100 truncate">
+          <span className="home-enemy-name mb-1 rounded-md bg-black/70 border border-red-500/40 px-1.5 py-1 text-[9px] font-bold text-red-100 text-center">
             {nextEnemy.isBoss ? t('boss') : ''}{localizeText(nextEnemy.name, language)}
           </span>
           <span className="absolute bottom-0 w-[80%] h-2.5 rounded-[50%] bg-black/50 blur-[3px]" />
