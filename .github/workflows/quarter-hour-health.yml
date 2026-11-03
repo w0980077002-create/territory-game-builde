@@ -67,3 +67,25 @@ jobs:
           line("")
           line("Monitoring only: no production writes, no deployment, no Codex/ChatGPT invocation.")
           PY
+
+  public-game-http:
+    name: Independent public game HTTP and asset check
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify published HTML and loaded game bundle (no login or writes)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if node scripts/check-published-pages.mjs; then
+            echo 'Public game HTTP: PASS — homepage and built JS verified from GitHub-hosted runner. Does not verify Telegram login or gameplay.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Public game HTTP: FAIL from this runner; check next independent run and deployment before declaring player outage.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
