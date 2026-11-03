@@ -161,8 +161,8 @@ for (const first of zones) for (const second of zones) {
 assert.equal(pve.nextOpenStrike('head', ['head', 'chest', 'belly', 'legs']), 'head',
   'Malformed fully guarded intent must not create a phantom zone');
 // The real manual boss combo needs a DIFFERENT open target after 1/2.
- // One tap should prepare that attack without resolving a free hit or changing
- // the committed guard. Subsequent taps must still let the player choose.
+// One tap should prepare that attack without resolving a free hit or changing
+// the committed guard. Subsequent taps must still let the player choose.
 for (const first of zones) for (const second of zones) {
   if (first.id === second.id) continue;
   const guards = [first.id, second.id];
@@ -496,8 +496,8 @@ assert.match(fightSource, /\(kind === 'trial' \|\| enemy\.isBoss\) && !auto && !
 assert.match(fightSource, /blocks\.includes\(enemyIntent\.attack\)/, 'The warning reflects the selected defense');
 assert.match(fightSource, /data-testid="pve-telegraphed-strike"/, 'Show the actual next strike direction for tactical trials and bosses');
 assert.match(fightSource, /data-testid="pve-choose-opening"/, 'The shown enemy guard must offer an actual manual attack choice');
-assert.match(fightSource, /setAttack\(current => nextOpenStrike\(current, committedEnemyIntent\.blocks\)\)/,
-  'Opening action must use both committed enemy guard slots');
+assert.match(fightSource, /setAttack\(current => nextComboOpening\(\s*current, committedEnemyIntent\.blocks, momentum\.streak === 1 \? momentum\.lastZone : null,/,
+  'Opening action must use both committed guards and only earned combo history');
 assert.match(fightSource, /committedEnemyIntent\.blocks\.includes\(attack\)/,
   'Manual attack warning must recognize the second guarded zone too');
 assert.match(fightSource, /const guardedZoneLabels = committedEnemyIntent\.blocks\.map\(/,
