@@ -19,6 +19,16 @@ for (let chapter = 1; chapter <= 5; chapter++) {
 }
 assert.equal(new Set(stages.filter(s => s.kind === 'boss').map(s => s.enemyId)).size, 10);
 assert.equal(new Set(stages.filter(s => s.kind !== 'boss').map(s => s.enemyId)).size, 5);
+// The floor selected in the visible cave grid must resolve to the exact same
+// server catalog entry; never display one enemy and start another stage.
+for (let floor = 1; floor <= stages.length; floor++) {
+  const selected = getCampaignStage(floor);
+  assert.deepEqual(selected, stages[floor - 1], `floor ${floor} must match its catalog entry`);
+  assert.ok(selected.enemyId, `floor ${floor} must have a real enemy`);
+  assert.ok(selected.enemyArt, `floor ${floor} must have visible enemy art`);
+}
+assert.equal(new Set(stages.map(s => s.enemyArt)).size >= 5, true,
+  'The campaign must retain multiple visually distinct opponents');
 for (const stage of stages) {
   assert.ok(existsSync(`public/assets/territory/characters/${stage.enemyArt}`), `missing approved art ${stage.enemyArt}`);
   assert.equal('stats' in stage, false);
