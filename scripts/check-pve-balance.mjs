@@ -511,7 +511,7 @@ assert.match(fightSource, /setStaggerReady\(elite && !auto && riposteReady && at
 assert.match(fightSource, /!committedEnemyIntent\.blocks\.includes\(atk\)/, 'A guarded leg strike must not earn stagger');
 assert.match(fightSource, /report\.heroStrike === 'hit' \|\| report\.heroStrike === 'crit'/, 'Only actual landed hits can earn stagger');
 assert.match(fightSource, /data-testid="pve-staggered-guard"/, 'The real temporary guard change must be visible');
-assert.match(fightSource, /nextOpenStrike\(current, committedEnemyIntent\.blocks\)/, 'Target helper must use the staggered guard too');
+assert.match(fightSource, /nextComboOpening\(\s*current, committedEnemyIntent\.blocks,/, 'Combo target helper must use the actual staggered guard too');
 assert.match(fightSource, /nextAdaptiveEnemyIntent\(res\.enemy, atk, kind === 'trial' \|\| !!enemy\.isBoss, undefined, attackHistory\[1\] \?\? null\)/,
   'Phase-II/III guard uses resolved HP and the two distinct resolved strikes');
 assert.match(fightSource, /setEnemyIntent\(nextIntent\.intent\)/,
