@@ -6,6 +6,11 @@ const css = readFileSync('src/components/GearShowcase.css', 'utf8');
 const inventory = readFileSync('src/components/InventoryScreen.tsx', 'utf8');
 const app = readFileSync('src/App.tsx','utf8');
 const cloud = readFileSync('src/game/cloud.ts','utf8');
+const i18n = readFileSync('src/game/i18n.tsx', 'utf8');
+assert.ok(i18n.includes("'Рогатая тыква · Хэллоуин 2026': 'Horned Pumpkin · Halloween 2026'"),
+  'Halloween helmet must display an English name when EN is selected');
+assert.match(component, /localizeText\(eq\.name, language\)/,
+  'Equipment comparison must localize actual saved item names');
 
 for (const slot of ['helmet','amulet','armor','weapon','shield','ring','boots']) {
   assert.match(component, new RegExp('gear-slot-' + slot), 'Missing interactive slot ' + slot);
