@@ -31,6 +31,13 @@ assert.equal(followers.FOLLOWER_RARITY_MULTIPLIERS.common, 1);
 assert.equal(followers.FOLLOWER_RARITY_MULTIPLIERS.rare, 1.15);
 assert.equal(followers.FOLLOWER_RARITY_MULTIPLIERS.epic, 1.35);
 assert.equal(followers.FOLLOWER_RARITY_MULTIPLIERS.legendary, 1.6);
+for (const [rarity, expected] of [['common', 100], ['rare', 115], ['epic', 135], ['legendary', 160]]) {
+  assert.equal(followers.rarityScaledStat(100, rarity), expected, rarity + ' multiplies the same base attack precisely');
+}
+assert.equal(followers.rarityScaledStat(-100, 'legendary'), 0, 'Invalid negative values must not create damage');
+assert.equal(followers.rarityScaledStat(Number.NaN, 'epic'), 0, 'Invalid damage must not leak NaN');
+assert.equal(followers.rarityScaledStat(0, 'rare'), 0);
+assert.equal(followers.rarityScaledStat(111, 'epic'), 150, 'Witch Epic 135% rounding produces exactly 150');
 assert.equal(followers.HALLOWEEN_COMPANION_ADVANTAGE, 1.35);
 assert.equal(followers.PUMPKIN_WITCH_BASELINE.attack, 111, 'Epic 135% applies to unboosted Witch base, not already boosted 150');
 assert.deepEqual([...followers.FOLLOWER_RARITY_ORDER], ['common', 'rare', 'epic', 'legendary'], 'Every rarity tier stays supported');
