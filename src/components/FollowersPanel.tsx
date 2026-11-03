@@ -7,7 +7,7 @@ import { getFollowerArt } from '@/game/combatArt';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import {
   FOLLOWER_TEMPLATES, DISPLAY_FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_ID, PUMPKIN_WITCH_TEMPLATE, followerTrainingCost, MAX_FOLLOWER_LEVEL, MAX_BATTLE_COW_LEVEL,
-  cowStonesOwned, cowAwakeningCost, selectedFollower, selectFollower, trainFollower, followerRarity, followerCombat,
+  cowStonesOwned, cowAwakeningCost, selectedFollower, selectFollower, trainFollower, followerRarity, followerCombat, FOLLOWER_RARITY_MULTIPLIERS,
 } from '@/game/followers';
 import { PumpkinWitch } from './PumpkinWitch';
 import './followersCamp.css';
@@ -97,6 +97,7 @@ export function FollowersPanel() {
             : (en ? 'VIEWING COMPANION' : 'ПРОСМОТР СПУТНИКА')}</span>
           <h3>{en ? template.nameEn : template.name}</h3>
           <span className={`followers-camp__rarity followers-camp__rarity--${template.rarity}`}>{localizeRarity(template.rarity, language)}</span>
+          <small className="followers-camp__power-factor">{en ? 'Base attack factor' : 'Коэффициент базовой атаки'}: ×{FOLLOWER_RARITY_MULTIPLIERS[template.rarity].toFixed(2)}</small>
           {isSeasonal && <span className="followers-camp__raid-tag">{en ? 'RAID · 2026' : 'РЕЙД · 2026'}</span>}
           <p>{isSeasonal ? (en ? 'An epic companion for Halloween raid fighters.' : 'Эпический спутник за участие в Хэллоуинском рейде.') : (en ? template.descriptionEn : template.description)}</p>
           <span className={unlocked ? 'followers-camp__availability' : 'followers-camp__availability followers-camp__availability--locked'}>
