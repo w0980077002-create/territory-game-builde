@@ -158,8 +158,8 @@ export function FollowersPanel() {
         const isActive = active?.id === candidate.id;
         const focus = candidate.id === template.id;
         return <button key={candidate.id} type="button" onClick={() => { setSelectedId(candidate.id); setNote(''); }}
-          className={`followers-camp__portrait ${focus ? 'followers-camp__portrait--focus' : ''} ${isActive ? 'followers-camp__portrait--active' : ''}`}
-          aria-pressed={focus} aria-label={`${en ? candidate.nameEn : candidate.name} — ${unit?.unlocked ? (en ? 'Level' : 'Уровень') + ' ' + unit.level : candidate.id === HALLOWEEN_COMPANION_ID ? (en ? 'Halloween reward' : 'Награда Хэллоуина') : (en ? 'Unlocks at level' : 'Откроется на уровне') + ' ' + candidate.unlockLevel}`}>
+          className={`followers-camp__portrait followers-camp__portrait--${candidate.rarity} ${focus ? 'followers-camp__portrait--focus' : ''} ${isActive ? 'followers-camp__portrait--active' : ''}`}
+          aria-pressed={focus} aria-label={`${en ? candidate.nameEn : candidate.name} — ${localizeRarity(candidate.rarity, language)} — ${unit?.unlocked ? (en ? 'Level' : 'Уровень') + ' ' + unit.level : candidate.id === HALLOWEEN_COMPANION_ID ? (en ? 'Halloween reward' : 'Награда Хэллоуина') : (en ? 'Unlocks at level' : 'Откроется на уровне') + ' ' + candidate.unlockLevel}`}>
           <span className={`followers-camp__rarity followers-camp__rarity--${candidate.rarity} followers-camp__portrait-rarity`}>{localizeRarity(candidate.rarity, language)}</span>
           <img src={getFollowerArt(candidate.id)} loading="lazy" draggable={false} alt=""
             className={unit?.unlocked ? '' : 'followers-camp__portrait-img--locked'}/>
