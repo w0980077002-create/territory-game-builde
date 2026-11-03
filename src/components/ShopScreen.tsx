@@ -365,7 +365,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
               </button>
               <div className="territory-shop-product__information">
                 <button type="button" className="territory-shop-product__detail" onClick={()=>inspectItem(item,qty)}>
-                  <span className="territory-shop-product__name" style={{color:rarityColor(item.rarity)}}>
+                  <span className="territory-shop-product__name" style={{ '--item-rarity': rarityColor(item.rarity) } as CSSProperties}>
                     {localizeText(item.name,language)}
                   </span>
                   <span className="territory-shop-product__description">{localizeText(item.description,language)}</span>
