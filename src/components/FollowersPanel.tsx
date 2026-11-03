@@ -96,8 +96,8 @@ export function FollowersPanel() {
             : (en ? 'VIEWING COMPANION' : 'ПРОСМОТР СПУТНИКА')}</span>
           <h3>{en ? template.nameEn : template.name}</h3>
           {isSeasonal && <span className="followers-camp__legendary">{en ? 'RAID · 2026' : 'РЕЙД · 2026'}</span>}
-          {template.id === 'follower_6' && <span className="followers-camp__legendary"><Sparkles size={12}/>{en ? 'LEGENDARY LOOK' : 'ЛЕГЕНДАРНЫЙ ОБРАЗ'}</span>}
-          <p>{isSeasonal ? (en ? 'A legendary gift for Halloween raid fighters.' : 'Легендарный подарок участникам Хэллоуинского рейда.') : (en ? template.descriptionEn : template.description)}</p>
+          {template.id === 'follower_6' && <span className="followers-camp__legendary"><Sparkles size={12}/>{en ? 'EPIC COMPANION' : 'ЭПИЧЕСКИЙ СПУТНИК'}</span>}
+          <p>{isSeasonal ? (en ? 'An epic companion for Halloween raid fighters.' : 'Эпический спутник за участие в Хэллоуинском рейде.') : (en ? template.descriptionEn : template.description)}</p>
           <span className={unlocked ? 'followers-camp__availability' : 'followers-camp__availability followers-camp__availability--locked'}>
             {unlocked ? en ? 'Unlocked' : 'Открыт' : isSeasonal
               ? (en ? 'Halloween 2026 raid participation reward' : 'Награда за участие в Хэллоуинском рейде 2026')
