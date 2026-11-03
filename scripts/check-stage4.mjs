@@ -27,6 +27,14 @@ const followers = loadTs('src/game/followers.ts', { './elixirExpiry': expiryMock
   PUMPKIN_WITCH_COMBAT: { attack: 65, defense: 0, heal: 16, crit: 0, pierce: 0 },
 } });
 assert.equal(followers.FOLLOWER_TEMPLATES.length, 6);
+assert.deepEqual([...followers.FOLLOWER_RARITY_ORDER], ['common', 'rare', 'epic', 'legendary'], 'Every rarity tier stays supported');
+assert.equal(followers.FOLLOWER_TEMPLATES.filter(f => f.rarity === 'common').length, 5, 'Five initial companions remain Common');
+assert.equal(followers.FOLLOWER_TEMPLATES.find(f => f.id === 'follower_6').rarity, 'legendary', 'Battle Cow is Legendary');
+assert.equal(followers.HALLOWEEN_COMPANION_TEMPLATE.rarity, 'epic', 'Pumpkin Witch is Epic');
+assert.deepEqual(followers.DISPLAY_FOLLOWER_TEMPLATES.map(f => f.rarity), ['common', 'common', 'common', 'common', 'common', 'epic', 'legendary'], 'Camp follows rarity rank, with Rare reserved');
+assert.equal(followers.followerRarity('follower_6'), 'legendary');
+assert.equal(followers.followerRarity('follower_pumpkin_witch_2026'), 'epic');
+assert.equal(followers.followerRarity('follower_4'), 'common');
 assert.equal(followers.PUMPKIN_WITCH_COMBAT.attack, 150, 'Epic witch must exceed max common-warrior attack');
 assert.equal(followers.PUMPKIN_WITCH_COMBAT.heal, 16, 'Preserve approved witch healing');
 assert.equal(followers.PUMPKIN_WITCH_TEMPLATE.level, 100);
