@@ -26,16 +26,17 @@ export function useSceneArt(assets: readonly string[]) {
         image.onerror = null;
         resolve(ok);
       };
-      image.onerror = () => finish(false);
-      image.onload = () => {
+      const onLoaded = () => {
         if (typeof image.decode === 'function') {
           void image.decode().then(() => finish(true), () => finish(true));
         } else finish(true);
       };
+      image.onerror = () => finish(false);
+      image.onload = onLoaded;
       image.src = import.meta.env.BASE_URL + path.replace(/^\/+/, '');
-      // Cached images may be complete before their load event is dispatched.
+      // A cached image can be complete before the queued load event fires.
       if (image.complete) {
-        if (image.naturalWidth > 0) image.onload?.(new Event('load'));
+        if (image.naturalWidth > 0) onLoaded();
         else finish(false);
       }
     });
