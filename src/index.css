@@ -1252,3 +1252,51 @@ html.territory-ios-webapp .territory-nav-label {
 @media(prefers-reduced-motion:reduce) {
  .territory-section-loading__sigil{animation:none}
 }
+
+/* Native Telegram recording: a 185px loading card above a blank dark viewport
+   looked like a half-rendered website. Fill the actual scroll pane with an
+   original CSS Viking twilight stage (no extra network request or new artwork).
+   The animated emblem and the existing 7-button navigation remain untouched. */
+.territory-screen .territory-section-loading {
+  position:relative;
+  isolation:isolate;
+  width:100%;
+  max-width:none;
+  min-height:100%;
+  height:100%;
+  margin:0;
+  padding:clamp(26px,7vh,70px) 20px;
+  border:2px solid rgba(197,144,73,.77);
+  border-radius:16px;
+  background:
+    radial-gradient(ellipse 53% 43% at 50% 36%,rgba(185,124,59,.31),transparent 78%),
+    repeating-linear-gradient(162deg,rgba(243,188,100,.07) 0 1px,transparent 1px 17px),
+    linear-gradient(170deg,#5d402b,#332b29 46%,#121d2b 78%,#0c151f);
+  box-shadow:inset 0 0 0 3px rgba(30,19,15,.65),inset 0 0 0 5px rgba(240,183,98,.26);
+}
+.territory-screen .territory-section-loading::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:13px;
+  border:1px solid rgba(247,209,142,.28);
+  border-radius:9px;
+  pointer-events:none;
+}
+.territory-screen .territory-section-loading__sigil {
+  width:clamp(76px,21vw,105px);
+  height:clamp(76px,21vw,105px);
+  font-size:clamp(42px,12vw,57px);
+  border-radius:22px;
+  box-shadow:inset 0 0 0 2px rgba(255,231,167,.34),0 6px 20px #080c139e;
+}
+.territory-screen .territory-section-loading strong {
+  max-width:280px;
+  font-size:clamp(17px,4.8vw,22px);
+  line-height:1.3;
+  color:#ffebbd;
+}
+@media (max-height:500px) {
+  .territory-screen .territory-section-loading {padding:18px 14px;}
+  .territory-screen .territory-section-loading__sigil {width:62px;height:62px;font-size:35px;}
+}
