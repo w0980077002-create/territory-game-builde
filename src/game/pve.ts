@@ -55,6 +55,23 @@ export function nextOpenStrike(current: Zone | null, guarded: readonly Zone[]): 
   return openings[(index + 1) % openings.length];
 }
 
+/** One-tap combo setup for the EXISTING manual elite battle.
+ * A freshly earned 1/2 combo needs a DIFFERENT landed strike next round.
+ * Prefer a real unguarded zone other than the last landed attack on the
+ * first tap; subsequent taps cycle both real openings so the player retains
+ * control. This only selects a target; playRound still resolves the hit,
+ * blocks, dodge and +15% bonus. No extra attack, cost or reward. */
+export function nextComboOpening(
+  current: Zone | null,
+  guarded: readonly Zone[],
+  lastLandedZone: Zone | null,
+): Zone {
+  const openings = ZONES.map(zone => zone.id).filter(zone => !guarded.includes(zone));
+  if (!openings.length) return current ?? ZONES[0].id;
+  if (current !== null && openings.includes(current)) return nextOpenStrike(current, guarded);
+  return openings.find(zone => zone !== lastLandedZone) ?? openings[0];
+}
+
 /** Keep the two most recent DISTINCT resolved strikes, not merely the last
  * two rounds. Repeating the same zone must not erase the boss's knowledge of
  * another zone or cause phase III to disappear. Fight-local only: no save,
