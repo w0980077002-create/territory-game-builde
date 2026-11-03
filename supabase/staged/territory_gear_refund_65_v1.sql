@@ -38,7 +38,11 @@ DECLARE
   old_mat bigint;
   new_mat bigint;
 BEGIN
-  IF NEW.game_state IS NOT DISTINCT FROM OLD.game_state THEN RETURN NULL; END IF;
+  IF NEW.game_state IS NOT DISTINCT FROM OLD.game_state
+    OR NEW.gold IS NULL OR OLD.gold IS NULL
+    OR NEW.forge_materials IS NULL OR OLD.forge_materials IS NULL
+    OR NEW.gold>=OLD.gold OR NEW.forge_materials>=OLD.forge_materials
+  THEN RETURN NULL; END IF;
   IF jsonb_typeof(OLD.game_state->'inventory') IS DISTINCT FROM 'array'
     OR jsonb_typeof(NEW.game_state->'inventory') IS DISTINCT FROM 'array'
     OR jsonb_typeof(OLD.game_state->'player'->'equipped') IS DISTINCT FROM 'object'
