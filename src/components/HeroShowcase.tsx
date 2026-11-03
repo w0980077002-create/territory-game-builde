@@ -124,8 +124,10 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
             : text('Спутник ещё не открыт', 'No companion unlocked yet')}</strong>
           {activeCompanion && <small style={{color:rarityColor(followerRarity(activeCompanion.id)),fontWeight:900}}>{localizeRarity(followerRarity(activeCompanion.id), language)}</small>}
           <small>{activeCompanion
-            ? activeCompanion.id === HALLOWEEN_COMPANION_ID ? text(`Ур. 100/100 · Атака ${followerCombat(activeCompanion).attack} · Лечение ${followerCombat(activeCompanion).heal}`, `Lv. 100/100 · Attack ${followerCombat(activeCompanion).attack} · Healing ${followerCombat(activeCompanion).heal}`) : text(`Ур. ${activeCompanion.level} · Атака ${activeCompanion.attack} · Защита ${activeCompanion.defense}`,
-                `Lv. ${activeCompanion.level} · Attack ${activeCompanion.attack} · Defense ${activeCompanion.defense}`)
+            ? activeCompanion.id === HALLOWEEN_COMPANION_ID ? text(`Ур. 100/100 · Атака ${followerCombat(activeCompanion).attack} · Лечение ${followerCombat(activeCompanion).heal}`, `Lv. 100/100 · Attack ${followerCombat(activeCompanion).attack} · Healing ${followerCombat(activeCompanion).heal}`)
+              : activeCompanion.id === 'follower_6' ? text(`Ур. ${activeCompanion.level} · Атака ${followerCombat(activeCompanion).attack} · Лечение ${followerCombat(activeCompanion).heal}`, `Lv. ${activeCompanion.level} · Attack ${followerCombat(activeCompanion).attack} · Healing ${followerCombat(activeCompanion).heal}`)
+              : text(`Ур. ${activeCompanion.level} · Атака ${followerCombat(activeCompanion).attack} · Защита ${activeCompanion.defense}`,
+                `Lv. ${activeCompanion.level} · Attack ${followerCombat(activeCompanion).attack} · Defense ${activeCompanion.defense}`)
             : text('Первый спутник откроется на 3 уровне', 'First companion unlocks at hero level 3')}</small>
           <small>{text('Помогает в Походе и Испытаниях, не на Арене', 'Helps in Campaign and Trials, not Arena')}</small>
         </div>
