@@ -318,10 +318,18 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
                   ? `65% returned from ${refundQuote!.spent} verified forge materials. Item is destroyed.`
                   : `Возврат 65% из ${refundQuote!.spent} подтверждённых материалов кузницы. Вещь уничтожается.`}
               </p>}
-              <button type="button" className="gear-action-discard" disabled={busy || mustReload}
-                onClick={() => setConfirm('discard')}>
-                <Trash2 size={16}/>{language === 'en' ? 'Delete' : 'Удалить'}
-              </button>
+              {!(candidate && (candidate.upgradeCount ?? 0) > 0 && !canRefund) ? (
+                <button type="button" className="gear-action-discard" disabled={busy || mustReload}
+                  onClick={() => setConfirm('discard')}>
+                  <Trash2 size={16}/>{language === 'en' ? 'Delete' : 'Удалить'}
+                </button>
+              ) : (
+                <p className="gear-weight-hint" role="status">
+                  {language === 'en'
+                    ? 'This upgraded item is protected until its material spending can be verified on the server.'
+                    : 'Улучшенная вещь защищена от удаления, пока сервер не подтвердит затраты материалов.'}
+                </p>
+              )}
             </div>
           </>
         ) : (
