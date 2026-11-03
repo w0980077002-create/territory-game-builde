@@ -89,3 +89,20 @@ BEGIN
   THEN RAISE EXCEPTION 'unconsumed ledger after refund'; END IF;
   RAISE NOTICE 'PG17 PASS: protected owner, 2 spent -> 1 refund, atomic consume, CAS replay, grants, and isolated user';
 END $test$;
+
+-- Simulate emergency rollback after a confirmed award: never erase audit ledger,
+-- never alter the already credited materials or a remaining player's gear.
+\i supabase/staged/territory_gear_refund_65_v1_rollback.sql
+DO $rollback$
+BEGIN
+  IF to_regprocedure('public.territory_forge_refund_quote_65_v1(text)') IS NOT NULL
+    OR to_regprocedure('public.territory_inventory_recycle_refund_65_v1(text,timestamp with time zone)') IS NOT NULL
+    OR EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.players'::regclass
+      AND tgname='territory_capture_forge_spend_65_v1') THEN
+    RAISE EXCEPTION 'rollback left refund entry points active';
+  END IF;
+  IF (SELECT count(*) FROM territory_private.forge_upgrade_receipts_65_v1)<>1
+    OR (SELECT forge_materials FROM public.players WHERE id='10000000-0000-0000-0000-000000000071')<>99
+  THEN RAISE EXCEPTION 'rollback changed award ledger or player assets'; END IF;
+  RAISE NOTICE 'PG17 rollback PASS: entrypoints disabled, player materials and audit retained';
+END $rollback$;
