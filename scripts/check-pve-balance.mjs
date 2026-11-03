@@ -86,10 +86,10 @@ checkRound('ch1_enemy_0', false, 1000);
 // The visual cue is driven by the actual companion hit, including when names collide.
 const witchHero = { ...hero, name: 'Same name', hp: 800, attack: 10, critChance: 0 };
 const witchEnemy = { name: 'Enemy', hp: 1000, maxHp: 1000, attack: 30, defense: 0, critChance: 0, critDamage: 50 };
-const witchRound = pve.playRound(witchHero, witchEnemy, 'head', [], 65, 'Same name', 0,
-  { role: 'pumpkin', attack: 65, defense: 0, heal: 16, crit: 0, pierce: 0 });
+const witchRound = pve.playRound(witchHero, witchEnemy, 'head', [], 150, 'Same name', 0,
+  { role: 'pumpkin', attack: 150, defense: 0, heal: 16, crit: 0, pierce: 0 });
 assert.equal(witchRound.hits.filter(h => h.source === 'companion').length, 1);
-assert.equal(witchRound.hits.find(h => h.source === 'companion').amount, 65);
+assert.equal(witchRound.hits.find(h => h.source === 'companion').amount, 150);
 assert.equal(witchRound.healAmount, 16);
 const lethal = zones.map(z => pve.playRound({ ...witchHero, attack: 100000 }, witchEnemy, z.id, [], 65, 'Same name')).find(r => r.hits[0].amount > 0);
 assert(lethal, 'fixture must contain an unblocked strike');
@@ -140,7 +140,7 @@ assert.equal(protectedSummary.enemyZone, 'belly');
 assert.equal(protectedSummary.takenDamage, 0, 'A covered enemy strike deals zero real damage');
 assert.equal(protectedSummary.dealtDamage, starterHero.hp > 0 ? protectedRound.hits[0].amount : 0);
 const companionSummary = pve.summarizePveRound(witchRound.hits);
-assert.equal(companionSummary.companionDamage, 65, 'Only actual companion hits contribute');
+assert.equal(companionSummary.companionDamage, 150, 'Only actual companion hits contribute');
 assert.equal(companionSummary.dealtDamage, witchRound.hits.filter(hit => hit.targetSide === 'enemy').reduce((total, hit) => total + hit.amount, 0));
 assert.equal(pve.summarizePveRound([]).enemyZone, null);
 // Manual counterplay actions must use the same committed intent as the real
