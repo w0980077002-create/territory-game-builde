@@ -102,7 +102,7 @@ try:
         login(a,email,password)
         panel=camp(a)
         assert 'Боевая корова' in panel.locator('.followers-camp__active').inner_text()
-        panel.locator('.followers-camp__portrait').last.click()
+        panel.locator('.followers-camp__portrait--epic').click()
         panel.locator('.followers-camp__choose').wait_for(state='visible',timeout=20000)
         assert '100/100' in panel.locator('.followers-camp__detail').inner_text()
         wait_for(lambda s:s.get('halloweenCompanionVerified') is True)
@@ -113,7 +113,7 @@ try:
         time.sleep(2)
         # Refresh A after B has installed its entitlement; B is now the stale client.
         a.reload();a.locator('nav.territory-nav').wait_for(timeout=30000);panel=camp(a)
-        panel.locator('.followers-camp__portrait').last.click()
+        panel.locator('.followers-camp__portrait--epic').click()
         wait_for(lambda s:s.get('halloweenCompanionVerified') is True)
         time.sleep(2)
         cow_before=next(f for f in read_state()['followers'] if f['id']=='follower_6')
@@ -155,7 +155,7 @@ try:
         a.reload();a.locator('nav.territory-nav').wait_for(timeout=30000);panel=camp(a)
         assert 'Тыквенная ведьма' in panel.locator('.followers-camp__active').inner_text()
         assert sql(f"select count(*) from territory_private.halloween_companion_rewards_2026 where player_id='{participant}'")=='1'
-        login(c,other_email,other_password);panel_c=camp(c);panel_c.locator('.followers-camp__portrait').last.click()
+        login(c,other_email,other_password);panel_c=camp(c);panel_c.locator('.followers-camp__portrait--epic').click()
         assert panel_c.locator('.followers-camp__availability--locked').is_visible()
         assert panel_c.locator('.followers-camp__choose').count()==0
         assert sql(f"select count(*) from territory_private.halloween_companion_rewards_2026 where player_id='{nonparticipant}'")=='0'
