@@ -46,7 +46,13 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const chapter = generateChapter(chapterNumber);
   const chapterWins = Math.max(0, Math.min(chapter.winsNeeded, state.chapterWins || 0));
   const returningToTrial = returnBattleView === 'trial';
-  const battleEnemyArt = returningToTrial ? generateTrial(state.trialLevel).art : chapter.boss.art;
+  // Display the actual next enemy (the boss only after all chapter encounters).
+  // This is presentation-only: it does not change PvE combat state or rewards.
+  const nextCampaignEnemy = chapterWins >= chapter.winsNeeded
+    ? chapter.boss : (chapter.enemies[chapterWins] ?? chapter.boss);
+  const battleEnemy = returningToTrial ? generateTrial(state.trialLevel) : nextCampaignEnemy;
+  const battleEnemyArt = battleEnemy.art;
+  const [failedBattleArt, setFailedBattleArt] = useState<string | null>(null);
   const battleReturnLabel = returningToTrial
     ? (language === 'en' ? 'Back to Trials' : 'К Испытаниям')
     : (language === 'en' ? 'Open Campaign' : 'Открыть Поход');
@@ -115,8 +121,17 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
       {tab === 'equipment' ? (
         <div data-testid="equipment-responsive-layout" className="flex min-h-full w-full min-w-0 flex-col">
           {onBattle && <section data-testid="equipment-campaign-return" className="mb-1 flex min-w-0 items-center gap-2 rounded-xl border-2 border-amber-500/70 bg-gradient-to-r from-[#59361e] to-[#261b16] p-2 text-amber-100 shadow-lg">
-            <img className="h-16 w-16 shrink-0 object-contain" loading="lazy" draggable={false} alt=""
-              src={import.meta.env.BASE_URL + battleEnemyArt.replace(/^\/+/, '')} />
+            {failedBattleArt === battleEnemyArt ? (
+              <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-amber-500/50 bg-[#1d1612] text-amber-300"
+                data-testid="equipment-battle-enemy-fallback" role="img"
+                aria-label={language === 'en' ? 'Opponent artwork unavailable' : 'Изображение противника недоступно'}>
+                <Swords size={28} aria-hidden="true" />
+              </span>
+            ) : (
+              <img className="h-16 w-16 shrink-0 object-contain" loading="eager" draggable={false} alt=""
+                src={import.meta.env.BASE_URL + battleEnemyArt.replace(/^\/+/, '')}
+                onError={() => setFailedBattleArt(battleEnemyArt)} />
+            )}
             <div className="min-w-0 flex-1">
               <strong className="block text-xs font-black leading-tight">{language === 'en' ? 'Ready for the next encounter?' : 'Готов к следующему бою?'}</strong>
               <span className="block text-[11px] leading-tight text-amber-200">{returningToTrial

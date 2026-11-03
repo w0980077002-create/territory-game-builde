@@ -38,7 +38,11 @@ assert.doesNotMatch(hero, /useGame\.set|claimQuest|rewardGold|grantReward/, 'Her
 assert.match(inventory, /data-testid="equipment-campaign-return"/, 'Equipment return path exists for all hero levels');
 assert.doesNotMatch(inventory, /onBattle && state\.player\.level < 5/, 'Veterans must not lose return path');
 assert.match(inventory, /EQUIPMENT_SLOTS\.filter/, 'Equipped count uses actual saved slots');
-assert.match(inventory, /returningToTrial \? generateTrial\(state\.trialLevel\)\.art : chapter\.boss\.art/, 'Inventory shows the actual enemy for the return mode');
+assert.match(inventory, /chapterWins >= chapter\.winsNeeded/, 'Inventory shows chapter boss only after all regular enemies');
+assert.match(inventory, /chapter\.enemies\[chapterWins\]/, 'Inventory previews the real next campaign enemy');
+assert.match(inventory, /returningToTrial \? generateTrial\(state\.trialLevel\) : nextCampaignEnemy/, 'Inventory preserves the real trial enemy in return mode');
+assert.match(inventory, /data-testid="equipment-battle-enemy-fallback"/, 'A failed opponent image renders an accessible in-game fallback');
+assert.match(inventory, /onError=\{\(\) => setFailedBattleArt\(battleEnemyArt\)\}/, 'Image failure is guarded without mutating combat');
 assert.match(inventory, /returningToTrial \? battleReturnLabel/, 'Equipment and consumables offer a correctly labeled return');
 assert.match(inventory, /\{battleReturnLabel\} <ChevronRight/, 'Companions also preserve the return label');
 assert.match(battle, /data-testid="battle-preparation-journey"/, 'Battle has an actual hero preparation route');
