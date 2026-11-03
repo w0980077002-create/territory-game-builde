@@ -1,0 +1,32 @@
+name: Forge Refund 65 (staged)
+
+on:
+  push:
+    branches: [feature/forge-refund-65-253]
+  pull_request:
+    paths:
+      - 'supabase/staged/territory_gear_refund_65_v1.sql'
+      - 'scripts/check-gear-refund-65.mjs'
+      - 'src/game/cloud.ts'
+      - 'src/components/GearShowcase.tsx'
+      - 'package.json'
+      - '.github/workflows/forge-refund-65.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  refund-fixture:
+    name: Private ledger and atomic 65% refund
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:gear-refund-65
+      - run: npm run typecheck
+      - run: npm run build
