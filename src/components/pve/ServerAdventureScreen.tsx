@@ -143,7 +143,13 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           ? (en ? 'Rune activated' : 'Сработала руна')
           : `${event.actor === 'hero' ? (en ? 'Hero' : 'Герой') : getCampaignStage(value.state.input.stage).enemyName}: ${event.type === 'critical' ? (en ? 'Critical hit' : 'Критический удар') : event.type === 'block' ? (en ? 'Block' : 'Блок') : event.type === 'dodge' ? (en ? 'Dodge' : 'Уклонение') : (en ? 'Hit' : 'Удар')}${typeof event.value === 'number' ? ' −' + Math.floor(event.value) : ''}`)
     ].slice(-8));
-    localStorage.setItem(sessionKey(userId), value.session_id);
+    // Telegram WebView can deny storage writes (private mode/quota). A confirmed
+    // server receipt must still render and remain recoverable via server progress.
+    try {
+      localStorage.setItem(sessionKey(userId), value.session_id);
+    } catch {
+      // The authoritative session is already held in memory and on the server.
+    }
     onActiveChange?.(value.state.status === 'fighting');
   }, [userId, onActiveChange, en]);
 

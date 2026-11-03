@@ -71,6 +71,15 @@ for (const name of ['territory_adventure_progress_v1','requestAdventureStart','r
 assert.match(read('src/game/combatV1/receiptAdapter.ts'), /localStorage\.setItem\(startKey\(userId\)/,
  'persist original start operation UUID before any wager request');
 assert.match(ui, /localStorage\.setItem\(sessionKey\(userId\)/, 'recover active server session across remounts');
+// A denied localStorage write must never discard a confirmed server session.
+// Keep the storage exception isolated inside install(), before the active-fight callback.
+const installBody = ui.slice(ui.indexOf('const install = useCallback('), ui.indexOf('// The stage grid is tall on phones.'));
+assert.match(installBody, /setSession\(value\);/, 'install confirmed server session in React state');
+assert.match(installBody, /try\s*\{\s*localStorage\.setItem\(sessionKey\(userId\), value\.session_id\);\s*\}\s*catch\s*\{/, 'denied storage writes must not throw from install');
+assert.ok(installBody.indexOf('setSession(value)') < installBody.indexOf('localStorage.setItem(sessionKey(userId)')
+  && installBody.indexOf('localStorage.setItem(sessionKey(userId)') < installBody.indexOf('onActiveChange?.('),
+  'a failed storage write cannot prevent the server-confirmed fight from being installed or announced');
+
 assert.match(ui, /busy \|\| recoverable/, 'block conflicting controls during uncertain receipt');
 assert.match(ui, /adventure_definitively_rejected/, 'After a verified server rollback the UI must explain safe recovery');
 assert.match(ui, /cause\.message !== 'adventure_definitively_rejected'/,
