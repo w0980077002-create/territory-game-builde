@@ -7,6 +7,7 @@ on:
     paths:
       - 'supabase/staged/territory_inventory_batch_salvage_253.sql'
       - 'scripts/check-gear-batch-253.mjs'
+      - 'scripts/pg17-gear-batch-253.sql'
       - 'src/components/GearShowcase.tsx'
       - 'src/game/cloud.ts'
       - '.github/workflows/gear-batch-253.yml'
@@ -30,3 +31,32 @@ jobs:
       - run: npm run test:companion-navigation
       - run: npm run typecheck
       - run: npm run build
+
+  postgres17:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: territory_batch_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: fixture_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d territory_batch_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: fixture_only
+      PGDATABASE: territory_batch_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: True PostgreSQL 17 fixture
+        run: psql -v ON_ERROR_STOP=1 -f scripts/pg17-gear-batch-253.sql
