@@ -19,6 +19,12 @@ export const FOLLOWER_RARITY_MULTIPLIERS: Readonly<Record<FollowerRarity, number
   epic: 1.35,
   legendary: 1.6,
 });
+/** Only call for a validated base stat. Never persist the boosted result as a new base. */
+export function rarityScaledStat(base: number, rarity: FollowerRarity): number {
+  return Number.isFinite(base) && base > 0
+    ? Math.round(base * FOLLOWER_RARITY_MULTIPLIERS[rarity])
+    : 0;
+}
 
 /** Static pure model belongs here: all legacy test harnesses compile this
  * module independently, without the Supabase runtime. Server entitlement and
@@ -30,7 +36,7 @@ export const HALLOWEEN_COMPANION_LEVEL = 100;
 export const HALLOWEEN_COMPANION_ADVANTAGE = FOLLOWER_RARITY_MULTIPLIERS.epic;
 export const PUMPKIN_WITCH_BASELINE = { attack: 111, heal: 15 } as const;
 export const PUMPKIN_WITCH_COMBAT = {
-  attack: Math.round(PUMPKIN_WITCH_BASELINE.attack * HALLOWEEN_COMPANION_ADVANTAGE),
+  attack: rarityScaledStat(PUMPKIN_WITCH_BASELINE.attack, 'epic'),
   defense: 0,
   heal: Math.round(PUMPKIN_WITCH_BASELINE.heal * 1.05),
   crit: 0,
@@ -195,10 +201,9 @@ export function followerCombat(follower: Follower | null) {
   return {
     role,
     attack: template
-      ? Math.round(clamp(follower?.attack, template.attack + (role === 'crystal' ? MAX_BATTLE_COW_LEVEL : MAX_FOLLOWER_LEVEL) * 2)
-        * FOLLOWER_RARITY_MULTIPLIERS[template.rarity])
+      ? rarityScaledStat(clamp(follower?.attack, template.attack + (role === 'crystal' ? MAX_BATTLE_COW_LEVEL : MAX_FOLLOWER_LEVEL) * 2), template.rarity)
       : 0,
-    defense: role === 'guardian' ? clamp(follower?.defense, 10 + MAX_FOLLOWER_LEVEL * 2) : 0,
+    defense: role === 'guardian' && template ? rarityScaledStat(clamp(follower?.defense, 10 + MAX_FOLLOWER_LEVEL * 2), template.rarity) : 0,
     heal: role === 'healer' ? Math.min(15, 3 + Math.floor(level / 4)) : role === 'crystal' ? Math.min(10, 4 + Math.floor(level / 10)) : 0,
     crit: role === 'hunter' ? Math.min(5, 2 + Math.floor(level / 10)) : 0,
     pierce: role === 'mage' ? Math.min(0.08, 0.04 + level * 0.0008) : role === 'crystal' ? 0.02 : 0,
