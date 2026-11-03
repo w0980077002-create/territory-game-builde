@@ -8,7 +8,7 @@ import { EQUIPMENT_SLOTS } from '@/game/engine';
 import { equipmentArt, SLOT_ART } from '@/game/art';
 import { rarityColor } from '@/game/ui';
 import { GEAR_STATS, gearScore, canSalvageEquipment } from '@/game/gearTools';
-import { readForgeRefundQuote, recycleCloudEquipment, saveCloudSave } from '@/game/cloud';
+import { readForgeRefundQuote, readGearBatchQuote, recycleCloudEquipment, recycleCloudEquipmentBatch, saveCloudSave, type GearBatchQuote } from '@/game/cloud';
 import { ItemArt } from './ui/ItemArt';
 import type { Equipment, InventoryItem } from '@/game/types';
 import { Check, ChevronDown, ChevronUp, Hammer, Info, Recycle, RotateCcw, ShieldCheck, Trash2, X } from 'lucide-react';
@@ -116,6 +116,9 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
   const [mustReload, setMustReload] = useState(false);
   const [remainingToday, setRemainingToday] = useState<number | null>(null);
   const [refundQuote, setRefundQuote] = useState<{ itemId: string; spent: number; refund: number } | null>(null);
+  const [batchOffer, setBatchOffer] = useState<GearBatchQuote | null>(null);
+  const [batchSelected, setBatchSelected] = useState<string[]>([]);
+  const [batchConfirm, setBatchConfirm] = useState(false);
   const [heroExpanded, setHeroExpanded] = useState(false);
   const compareRef = useRef<HTMLElement | null>(null);
 
@@ -222,6 +225,78 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
     } finally {
       setBusy(false);
     }
+  };
+
+  const openBatch = async () => {
+    if (busy || mustReload) return;
+    if (batchOffer) {
+      setBatchOffer(null);
+      setBatchSelected([]);
+      setBatchConfirm(false);
+      return;
+    }
+    const snapshot=useGame.get();
+    setBusy(true); setError(null);
+    try {
+      if (!await saveCloudSave(userId,snapshot) || useGame.get()!==snapshot)
+        throw new Error('batch_snapshot_changed');
+      const offer=await readGearBatchQuote();
+      if (useGame.get()!==snapshot) throw new Error('batch_snapshot_changed');
+      setBatchOffer(offer);
+      setBatchSelected([]);
+      setBatchConfirm(false);
+    } catch {
+      setError(language==='en'
+        ? 'Cannot verify items on the server. Reload the game.'
+        : 'Не удалось подтвердить вещи на сервере. Перезапусти игру.');
+      setMustReload(true);
+    } finally {setBusy(false);}
+  };
+
+  const toggleBatchItem = (id: string) => {
+    if (busy || batchConfirm || !batchOffer) return;
+    if (batchSelected.includes(id)) {
+      setBatchSelected(batchSelected.filter((value)=>value!==id));
+      return;
+    }
+    const candidate=batchOffer.eligible.find((e)=>e.itemId===id);
+    if (!candidate || batchSelected.length>=10) return;
+    const picked=batchOffer.eligible.filter((e)=>batchSelected.includes(e.itemId));
+    const baseCount=picked.filter((e)=>e.kind==='base').length;
+    if (candidate.kind==='base' && baseCount>=batchOffer.remainingToday) return;
+    setBatchSelected([...batchSelected,id]);
+  };
+  const batchEntries=batchOffer?.eligible.filter((e)=>batchSelected.includes(e.itemId)) ?? [];
+  const batchTotal=batchEntries.reduce((sum,e)=>sum+e.awarded,0);
+  const runBatch = async () => {
+    if (!batchOffer || !batchConfirm || !batchSelected.length || busy || mustReload) return;
+    const snapshot=useGame.get();
+    const ids=[...batchSelected];
+    if (ids.some((id)=>!snapshot.inventory.some((item)=>item.id===id))) {
+      setError(language==='en' ? 'Inventory changed. Reload.' : 'Инвентарь изменился. Перезапусти игру.');
+      setMustReload(true);
+      return;
+    }
+    setBusy(true); setError(null);
+    try {
+      if (!await saveCloudSave(userId,snapshot) || useGame.get()!==snapshot)
+        throw new Error('batch_snapshot_changed');
+      const receipt=await recycleCloudEquipmentBatch(userId,ids);
+      if (receipt.awarded!==batchTotal) throw new Error('batch_reward_changed');
+      if (useGame.get()!==snapshot) { window.location.reload(); return; }
+      useGame.set(receipt.state);
+      captureGameEvent('territory_salvage_completed',{outcome:'success'});
+      setRemainingToday(receipt.remainingToday);
+      setBatchOffer(null);
+      setBatchSelected([]);
+      setBatchConfirm(false);
+      setSelection(null);
+    } catch {
+      setError(language==='en'
+        ? 'Batch was not confirmed. Reload to check items and materials.'
+        : 'Разбор не подтверждён. Перезапусти игру для проверки вещей и материалов.');
+      setMustReload(true);
+    } finally {setBusy(false);}
   };
 
   return (
@@ -397,9 +472,12 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
           {language === 'en' ? 'Tap an item below, compare it, then press Equip.' : 'Нажми на вещь в сумке ниже, сравни её и выбери «Надеть».'}
         </p>}
         <div className="gear-bag-toolbar">
-          <button type="button" disabled={!bag || !canSalvage || busy || mustReload}
-            onClick={() => setConfirm('salvage')} className="gear-bag-salvage">
-            <Recycle size={17}/>{language === 'en' ? 'Salvage' : 'Разобрать'}
+          <button type="button" disabled={busy || mustReload}
+            onClick={() => void openBatch()} aria-expanded={!!batchOffer}
+            className="gear-bag-salvage">
+            <Recycle size={17}/>{batchOffer
+              ? (language === 'en' ? 'Close salvage' : 'Закрыть разбор')
+              : (language === 'en' ? 'Salvage multiple' : 'Разобрать несколько')}
           </button>
           <div className="gear-bag-count"><strong>{equipment.length}</strong>
             <span>{language === 'en' ? 'items' : 'вещей'}</span>
@@ -422,6 +500,56 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
             </button>
           ))}
         </div>
+        {batchOffer && <section className="mb-3 rounded-xl border border-amber-500/50 bg-stone-950/75 p-3 text-amber-100" aria-label={language==='en'?'Batch salvage':'Массовый разбор'}>
+          <h3 className="text-sm font-bold">{language==='en'?'Select spare items to salvage':'Выбери ненужные вещи для разбора'}</h3>
+          <p className="mt-1 text-xs">{language==='en'
+            ? 'Only server-verified items. Maximum 10 per batch; common/rare items only.'
+            : 'Только вещи, подтверждённые сервером. Не более 10 за раз, обычные и редкие.'}</p>
+          {batchOffer.eligible.length===0 ? <p className="mt-2 text-xs">{language==='en'
+            ? 'No eligible items. Existing upgraded items without receipts are protected.'
+            : 'Пока нет доступных вещей. Старые улучшенные предметы без квитанций защищены.'}</p>
+          : <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {batchOffer.eligible.map((entry)=>{
+              const matching=equipment.find((item)=>item.id===entry.itemId);
+              if (!matching) return null;
+              const checked=batchSelected.includes(entry.itemId);
+              const baseCount=batchEntries.filter((e)=>e.kind==='base').length;
+              const disabled=!checked && (batchSelected.length>=10 ||
+                (entry.kind==='base' && baseCount>=batchOffer.remainingToday));
+              return <label key={entry.itemId} className={'flex items-center gap-2 rounded-lg border px-2 py-2 text-xs '+(checked?'border-amber-300/70 bg-amber-400/20':'border-white/15 bg-black/20')}>
+                <input type="checkbox" checked={checked} disabled={busy || batchConfirm || disabled}
+                  onChange={()=>toggleBatchItem(entry.itemId)}
+                  aria-label={(language==='en'?'Salvage ':'Разобрать ')+localizeText(matching.name,language)}/>
+                <span className="min-w-0 flex-1 truncate">{localizeText(matching.name,language)} · {language==='en'?'Lv.':'Ур.'}{matching.equipment!.level}</span>
+                <strong className="shrink-0 text-amber-300">+{entry.awarded} 🔩</strong>
+              </label>;
+            })}
+          </div>}
+          <p className="mt-2 text-xs">{language==='en'?'Base salvage remaining today: ':'Бесплатных разборов сегодня осталось: '}{batchOffer.remainingToday}/3</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <strong className="text-sm">{language==='en'?'Total':'Итого'}: {batchSelected.length} · +{batchTotal} 🔩</strong>
+            <button type="button" disabled={busy || mustReload || batchSelected.length===0}
+              onClick={()=>setBatchConfirm(true)}
+              className="rounded-lg border border-amber-400 bg-amber-600/80 px-3 py-2 text-xs font-bold text-white">
+              {language==='en'?'Continue':'Продолжить'}
+            </button>
+          </div>
+          {batchConfirm && <div role="group" className="mt-3 rounded-lg border border-red-400/50 bg-black/40 p-3">
+            <p className="text-xs font-semibold">{language==='en'
+              ? `Destroy ${batchSelected.length} items permanently for ${batchTotal} forge materials?`
+              : `Навсегда уничтожить ${batchSelected.length} вещей и получить ${batchTotal} материалов кузницы?`}</p>
+            <div className="mt-2 flex gap-2">
+              <button type="button" onClick={()=>void runBatch()} disabled={busy}
+                className="rounded-lg border border-red-400/70 bg-red-900/60 px-3 py-2 text-xs font-bold">
+                {language==='en'?'Confirm destruction':'Подтвердить уничтожение'}
+              </button>
+              <button type="button" onClick={()=>setBatchConfirm(false)} disabled={busy}
+                className="rounded-lg border border-white/25 px-3 py-2 text-xs">
+                {language==='en'?'Cancel':'Отмена'}
+              </button>
+            </div>
+          </div>}
+        </section>}
         {displayed.length ? (
           <div className="gear-bag-grid">
             {displayed.map(item => {
@@ -449,7 +577,7 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
           <div className="gear-bag-empty"><Info size={20}/>{language === 'en' ? 'No gear in this category yet.' : 'Пока нет вещей этого типа.'}</div>
         )}
         <div className="gear-bag-footer">
-          <span>{language === 'en' ? 'Tap a spare item to compare or salvage it (+1 material, up to 3 daily).' : 'Нажми на запасную вещь: сравни или разбери за +1 материал (до 3 в сутки).'}</span>
+          <span>{language === 'en' ? 'Compare gear, or select up to 10 verified spare items for batch salvage.' : 'Сравни вещи или выбери до 10 подтверждённых предметов для разбора.'}</span>
           <span><Hammer size={12}/>{state.forgeMaterials}
             {remainingToday !== null && <small>{language === 'en' ? ' • ' + remainingToday + '/3 left today' : ' • ' + remainingToday + '/3 сегодня'}</small>}</span>
         </div>
