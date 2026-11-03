@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
-import { useLanguage, localizeText } from '@/game/i18n';
+import { useLanguage, localizeText, localizeRarity } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
 import { BELT_RULES, BELT_STACK, beltContext, canBelt, isSlotOpen, putInBelt, takeFromBelt } from '@/game/belt';
 import { ItemArt } from './ui/ItemArt';
@@ -254,7 +254,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
                 style={{ border: '1px solid ' + rarityColor(selected.rarity) }}>
                 <ItemArt item={selected} size={52}/>
               </div>
-              <p className="text-sm capitalize" style={{ color: rarityColor(selected.rarity) }}>{selected.rarity}</p>
+              <p className="text-sm capitalize" style={{ color: rarityColor(selected.rarity) }}>{localizeRarity(selected.rarity, language)}</p>
             </div>
             <p className="text-sm text-gray-300 mb-3">{selected.id === AWAKENING_STONE_ITEM.id
               ? (language === 'en'
