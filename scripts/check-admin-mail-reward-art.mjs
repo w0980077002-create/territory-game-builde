@@ -79,7 +79,7 @@ assert.equal(localizedHalloweenMail(prizeMail,'ru').body,prizeMail.body,
   'RU bonus mail must keep approved original copy');
 const notice = {
   subject: '🎃 Твоя награда за Хэллоуинский рейд!',
-  body: 'Поздравляем с победой!\\n\\nCongratulations on defeating the Pumpkin King!',
+  body: 'Поздравляем с победой!\n\nCongratulations on defeating the Pumpkin King!',
   payload: {},
 };
 assert.equal(localizedHalloweenMail(notice,'en').body,
@@ -87,14 +87,14 @@ assert.equal(localizedHalloweenMail(notice,'en').body,
 assert.equal(localizedHalloweenMail(notice,'ru').body,notice.body);
 assert.equal(localizedHalloweenMail({subject:'Unrelated',body:'Hello',payload:{}},'en').body,'Hello',
   'Other player mail must remain unmodified');
-assert.match(mail, /localizedHalloweenMail\\(m, language\\)/,
+assert.match(mail, /localizedHalloweenMail\(m, language\)/,
   'The live mailbox must call localized prize copy');
-assert.match(mail, /copy\\.subject/);
-assert.match(mail, /copy\\.body/);
+assert.match(mail, /copy\.subject/);
+assert.match(mail, /copy\.body/);
 const translations = read('src/game/i18n.tsx');
 assert.match(translations, /'Рогатая тыква · Хэллоуин 2026': 'Horned Pumpkin · Halloween 2026'/);
-assert.match(read('src/components/ForgeScreen.tsx'), /localizeRarity\\(selectedCurrent\\.rarity, language\\)/);
-assert.match(read('src/components/InventoryScreen.tsx'), /localizeRarity\\(selected\\.rarity, language\\)/);
+assert.match(read('src/components/ForgeScreen.tsx'), /localizeRarity\(selectedCurrent\.rarity, language\)/);
+assert.match(read('src/components/InventoryScreen.tsx'), /localizeRarity\(selected\.rarity, language\)/);
 const art = read('src/game/art.ts');
 assert.match(art, /e\.value >= 150/);
 assert.match(art, /potion-hp-large-viking\.webp/);
