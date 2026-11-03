@@ -360,7 +360,7 @@ export function FriendsScreen({ user, onHero, onNavigate }: { user: AuthUser; on
       )}
 
       {/* All optional information lives under a single collapsed disclosure. */}
-      <details className="friends-rules-panel group rounded-xl border border-white/10 bg-[#171c27] p-3" data-testid="friends-rewards-details">
+      <details className="group rounded-xl friends-rules-panel border border-white/10 bg-[#171c27] p-3" data-testid="friends-rewards-details">
         <summary className="cursor-pointer list-none flex items-center gap-2 text-sm font-bold text-amber-100">
           <Trophy size={18} className="text-amber-400"/>
           <span className="flex-1">{en ? 'All rewards & rules' : 'Все награды и правила'}</span>
