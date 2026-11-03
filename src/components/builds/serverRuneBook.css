@@ -103,3 +103,22 @@
   .territory-rune__skill-sigil{width:41px;height:42px}
   .territory-rune__skill-name{font-size:8px}
 }
+
+/* Mobile rune readability: three-line names must never collide with status text.
+   Slot IDs, rune ownership, selection and server receipts are unchanged. */
+.territory-rune__row {min-height:108px;}
+.territory-rune__tile {min-height:103px;gap:3px;padding:4px 2px 5px;}
+.territory-rune__skill-name {
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;
+  min-height:27px;max-height:40px;white-space:normal;
+  font-size:clamp(10px,2.75vw,12px);line-height:1.13;overflow-wrap:anywhere;
+}
+.territory-rune__tile-hint {font-size:clamp(10px,2.65vw,12px);line-height:1.2;}
+.territory-rune__group strong {font-size:clamp(10px,2.8vw,12px);line-height:1.16;overflow-wrap:anywhere;}
+.territory-rune__tile:focus-visible {outline:3px solid #2e7dcc;outline-offset:1px;}
+@media(max-width:349px) {
+ .territory-rune__row {min-height:108px;}
+ .territory-rune__tile {min-height:103px;}
+ .territory-rune__skill-name {font-size:10px;min-height:27px;max-height:40px;}
+ .territory-rune__group strong {font-size:10px;}
+}
