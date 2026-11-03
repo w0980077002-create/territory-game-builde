@@ -81,7 +81,7 @@ try {
   // Another authenticated player may only see their own inventory and receipts.
   await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[other]);
   assert.equal((await quote()).eligible,false);
-  await assert.rejects(refund('loot_test',before.updated_at),/refund_history_unverified/);
+  await assert.rejects(refund('loot_test',(await read(other)).updated_at),/refund_history_unverified/);
   await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[owner]);
 
   await assert.rejects(refund('loot_test','2020-01-01T00:00:00Z'),/refund_conflict_reload/);
