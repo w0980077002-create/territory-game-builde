@@ -238,21 +238,7 @@ export function GamesScreen({
           </span>
         </button>
       )}
-      {!state?.active && !loading && state && state.tickets > 0 && (
-        <button type="button" className="hall-hero-mission" data-testid="hall-next-play"
-          onClick={() => play(GAMES[0])}
-          aria-label={en ? 'Start Monopoly for one ticket' : 'Начать Монополию за один билет'}>
-          <span className="hall-hero-mission__art" aria-hidden="true">
-            <img src={base + 'hall-art/monopoly-hd.webp'} alt="" loading="lazy" decoding="async" />
-          </span>
-          <span className="hall-hero-mission__body">
-            <small>{en ? 'YOUR NEXT ADVENTURE' : 'ТВОЁ СЛЕДУЮЩЕЕ ПРИКЛЮЧЕНИЕ'}</small>
-            <strong>{en ? 'Roll in Monopoly' : 'Сделай ход в Монополии'}</strong>
-            <span>{en ? `${state.tickets.toLocaleString('en-US')} tickets ready · 1 ticket per round` : `${state.tickets.toLocaleString('ru-RU')} билетов · 1 билет за раунд`}</span>
-            <b>{en ? 'Play for 1 ticket' : 'Играть за 1 билет'} <Ticket size={16} aria-hidden="true"/></b>
-          </span>
-        </button>
-      )}
+      {/* One clear Monopoly entry point: the featured card below. Saved rounds still resume above. */}
 
       <section className="hall-games" aria-label={en ? 'Choose a game' : 'Выбери игру'}>
         {availableGames.map((configuredGame, index) => {
