@@ -5,16 +5,16 @@ CREATE OR REPLACE FUNCTION territory_private.batch_salvage_candidate_253(p_playe
 RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'pg_catalog' AS $$
 DECLARE
   eq jsonb:=p_item->'equipment';
-  item_id text:=p_item->>'id';
+  candidate_id text:=p_item->>'id';
   invested bigint;
   last_level integer;
   reward bigint;
 BEGIN
-  IF p_player IS NULL OR item_id IS NULL OR length(item_id) NOT BETWEEN 3 AND 150
+  IF p_player IS NULL OR candidate_id IS NULL OR length(candidate_id) NOT BETWEEN 3 AND 150
     OR p_item->>'type' IS DISTINCT FROM 'equipment'
     OR p_item->>'qty' IS DISTINCT FROM '1'
     OR jsonb_typeof(eq) IS DISTINCT FROM 'object'
-    OR eq->>'id' IS DISTINCT FROM item_id
+    OR eq->>'id' IS DISTINCT FROM candidate_id
     OR eq->>'rarity' NOT IN ('common','rare')
     OR p_item->>'rarity' IS DISTINCT FROM eq->>'rarity'
     OR p_item->>'name' IS DISTINCT FROM eq->>'name'
@@ -27,19 +27,19 @@ BEGIN
     AND eq->>'level' ~ '^[1-9][0-9]{0,2}$'
     AND eq->>'baseLevel'=eq->>'level'
     AND eq->>'upgradeCount'='0'
-  THEN RETURN jsonb_build_object('item_id',item_id,'kind','base',
+  THEN RETURN jsonb_build_object('item_id',candidate_id,'kind','base',
     'awarded',1,'spent_verified',0); END IF;
 
   SELECT coalesce(sum(material_cost),0), max(upgrade_to)
     INTO invested,last_level
     FROM territory_private.forge_upgrade_receipts_65_v1
-    WHERE player_id=p_player AND item_id=item_id AND refunded_at IS NULL;
+    WHERE player_id=p_player AND item_id=candidate_id AND refunded_at IS NULL;
   IF invested<1 OR last_level IS NULL OR eq->>'level' !~ '^[1-9][0-9]{0,2}$'
     OR (eq->>'level')::integer<>last_level
   THEN RETURN NULL; END IF;
   reward:=floor(invested*0.65)::bigint;
   IF reward<1 THEN RETURN NULL; END IF;
-  RETURN jsonb_build_object('item_id',item_id,'kind','refunded',
+  RETURN jsonb_build_object('item_id',candidate_id,'kind','refunded',
     'awarded',reward,'spent_verified',invested);
 END $$;
 REVOKE ALL ON FUNCTION territory_private.batch_salvage_candidate_253(uuid,jsonb)
