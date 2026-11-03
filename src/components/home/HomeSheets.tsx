@@ -8,7 +8,8 @@ import { RewardLootStrip } from '@/components/ui/RewardLootStrip';
 import { useLive, claimMailGrant, getClaimedMailHistory, type ClaimedMailGrant } from '@/game/live';
 import './mailVisuals.css';
 import { mailRewardVisuals } from '@/game/mailRewardVisuals';
-import { localizedHalloweenMail } from '@/game/halloweenMailLocalization';
+import { HALLOWEEN_FINAL_SUBJECT, localizedHalloweenMail } from '@/game/halloweenMailLocalization';
+import { getFollowerArt } from '@/game/combatArt';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/game/i18n';
 import { CITY_BACKGROUND_KEY, initialCityBackground, type CityBackground } from '@/components/home/LiveCityBackdrop';
@@ -198,8 +199,14 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
                 {language === 'en' ? 'Claimed' : 'Получено'}: {new Date((m as ClaimedMailGrant).claimed_at).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU')}
               </p>}
               <div className="flex flex-wrap items-center justify-between gap-1.5">
-                {rewards.length > 0 && (
+                {(rewards.length > 0 || m.subject === HALLOWEEN_FINAL_SUBJECT) && (
                   <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1" aria-label={language === 'en' ? 'Mail rewards' : 'Награды письма'}>
+                    {m.subject === HALLOWEEN_FINAL_SUBJECT && (
+                      <span className="territory-mail__reward inline-flex shrink-0 items-center gap-0.5 rounded border border-purple-400/35 bg-violet-800/20 px-1 py-0.5 text-[10px] font-bold text-amber-50" title={language === 'en' ? 'Legendary Pumpkin Witch · Level 100 — server entitlement' : 'Легендарная Тыквенная ведьма · уровень 100 — серверная награда'} aria-label={language === 'en' ? 'Legendary Pumpkin Witch: 1' : 'Легендарная Тыквенная ведьма: 1'}>
+                        <img src={getFollowerArt('follower_pumpkin_witch_2026')} alt="" width={20} height={20} className="h-5 w-5 shrink-0 object-contain" />
+                        <span>×1</span>
+                      </span>
+                    )}
                     {rewards.map((reward) => {
                       const name = language === 'en' ? reward.nameEn : reward.name;
                       return (
@@ -224,7 +231,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
                     disabled={claiming === m.id}
                     className="shrink-0 min-h-11 px-3 rounded-lg text-[11px] font-bold bg-sky-400 text-black disabled:opacity-50 transition-colors"
                   >
-                    {claiming === m.id ? '...' : t('claimReward')}
+                    {claiming === m.id ? '...' : m.subject === HALLOWEEN_FINAL_SUBJECT && rewards.length === 0 ? (language === 'en' ? 'Acknowledge' : 'Прочитано') : t('claimReward')}
                   </button>
                 )}
               </div>
