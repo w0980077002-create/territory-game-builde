@@ -6,6 +6,7 @@ import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions'
 import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
 import { pendingPveVictoryJournal, recoverPveVictoryOnBoot } from '@/game/pveVictoryRecovery';
+import { hasPendingVipClaims, recoverVipClaimsOnBoot } from '@/game/vipBootRecovery';
 import { pveVictorySaveState, subscribePveVictorySave } from '@/game/pveVictorySaveFence';
 import { readPumpkinWitchEntitlement, installVerifiedPumpkinWitch } from '@/game/halloweenCompanion2026';
 import { watchPumpkinEntitlement } from '@/game/halloweenCompanionRefresh';
@@ -313,6 +314,17 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         // overwritten by a legacy save after a release flag or network change.
         restoreAdventureSaveFence(user.id);
         restoreAdventureStartFence(user.id);
+        // Two durable operations cannot be safely ordered from their local
+        // markers alone. Preserve both until they can be reconciled.
+        try {
+          if (hasPendingVipClaims(user.id) && pendingPveVictoryJournal(user.id)) {
+            setLoadError('vip_recovery_pending');
+            return;
+          }
+        } catch {
+          setLoadError('vip_recovery_pending');
+          return;
+        }
         // Reconcile an interrupted classic victory BEFORE any game hydration,
         // time effects or automatic cloud writes. Never overwrite a newer row.
         const recovery = await recoverPveVictoryOnBoot(user.id, profile);
@@ -321,7 +333,14 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           setLoadError('pve_recovery_pending');
           return;
         }
-        const bootState = recovery.state;
+        let bootState;
+        try {
+          bootState = await recoverVipClaimsOnBoot(user.id, recovery.state);
+        } catch {
+          if (!cancelled) setLoadError('vip_recovery_pending');
+          return;
+        }
+        if (cancelled) return;
         const timedState = applyTimeEffects(bootState);
         // Historic belt slots can become locked by harder win requirements.
         // Return their consumables to the inventory before showing or saving.
@@ -408,7 +427,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   if (live.banned) return <BannedScreen />;
   if (live.maintenance && !isAdmin) return <MaintenanceScreen />;
-  if (loadError) return <Splash text={loadError === 'failedLoad' ? translate('failedLoad') : loadError === 'adventure_storage_unavailable' ? (language === 'en' ? 'Cannot safely restore adventure. Reopen Telegram.' : 'Не удалось безопасно восстановить приключение. Перезапусти Telegram.') : loadError === 'pve_recovery_pending' ? (language === 'en' ? 'A previous PvE victory needs safe recovery. Your local checkpoint was kept. Check connection and reopen Telegram; if it repeats, contact game support without clearing browser data.' : 'Победа в Походе или Испытаниях ожидает безопасного восстановления. Локальная запись сохранена. Проверь интернет и перезапусти Telegram. Если ошибка повторяется, обратись в поддержку игры, не очищая данные браузера.') : loadError} />;
+  if (loadError) return <Splash text={loadError === 'failedLoad' ? translate('failedLoad') : loadError === 'vip_recovery_pending' ? (language === 'en' ? 'A VIP gift needs safe recovery. Check your connection and reopen Telegram. If this persists, contact support without clearing browser data.' : 'VIP-подарок ожидает безопасного восстановления. Проверь интернет и перезапусти Telegram. Если ошибка повторяется, обратись в поддержку, не очищая данные браузера.') : loadError === 'adventure_storage_unavailable' ? (language === 'en' ? 'Cannot safely restore adventure. Reopen Telegram.' : 'Не удалось безопасно восстановить приключение. Перезапусти Telegram.') : loadError === 'pve_recovery_pending' ? (language === 'en' ? 'A previous PvE victory needs safe recovery. Your local checkpoint was kept. Check connection and reopen Telegram; if it repeats, contact game support without clearing browser data.' : 'Победа в Походе или Испытаниях ожидает безопасного восстановления. Локальная запись сохранена. Проверь интернет и перезапусти Telegram. Если ошибка повторяется, обратись в поддержку игры, не очищая данные браузера.') : loadError} />;
   if (!loaded) return <Splash text={translate('loadingHero')} />;
 
   const sub = SUB_SCREENS[screen as SubScreen];

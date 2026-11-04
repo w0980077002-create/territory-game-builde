@@ -60,7 +60,7 @@
     "test:gear-refund-65": "node scripts/check-gear-refund-65.mjs",
     "test:vip-belt": "node scripts/check-vip-belt-refill.mjs",
     "test:vip-daily": "node scripts/check-vip-daily-pglite.mjs && node scripts/check-vip-daily-client.mjs",
-    "test:vip-weekly": "node scripts/check-vip-weekly-pglite.mjs && node scripts/check-vip-weekly-client.mjs"
+    "test:vip-weekly": "node scripts/check-vip-weekly-pglite.mjs && node scripts/check-vip-weekly-client.mjs && node scripts/check-vip-boot-recovery.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

@@ -7,6 +7,8 @@ on:
       - 'src/game/vipDaily.ts'
       - 'src/game/vipWeekly.ts'
       - 'src/game/vipClaimQueue.ts'
+      - 'src/game/vipBootRecovery.ts'
+      - 'src/App.tsx'
       - 'src/game/vipProgram.ts'
       - 'src/components/VipStatusPanel.tsx'
       - 'src/components/InventoryScreen.tsx'
