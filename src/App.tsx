@@ -5,7 +5,8 @@ import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
-import { recoverPveVictoryOnBoot } from '@/game/pveVictoryRecovery';
+import { pendingPveVictoryJournal, recoverPveVictoryOnBoot } from '@/game/pveVictoryRecovery';
+import { pveVictorySaveState, subscribePveVictorySave } from '@/game/pveVictorySaveFence';
 import { readPumpkinWitchEntitlement, installVerifiedPumpkinWitch } from '@/game/halloweenCompanion2026';
 import { watchPumpkinEntitlement } from '@/game/halloweenCompanionRefresh';
 import { restoreAdventureSaveFence, restoreAdventureStartFence } from '@/game/combatV1/receiptAdapter';
@@ -362,10 +363,18 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     // start a cloud write immediately. Only one is in flight; newer changes
     // are sent as soon as its confirmed response arrives.
     const controller = createImmediateSaveController(
-      () => saveCloudSave(user.id, useGame.get()),
+      // A classic PvE victory WAL must win over background autosaves.
+      // Otherwise the coalescing writer could ACK a later snapshot while
+      // the victory's exact read-back still remains unconfirmed.
+      () => pendingPveVictoryJournal(user.id)
+        ? Promise.resolve(false)
+        : saveCloudSave(user.id, useGame.get()),
       setSaveStatus,
     );
     const unsubscribe = useGame.subscribe(controller.changed);
+    const unsubscribeVictory = subscribePveVictorySave(user.id, () => {
+      if (pveVictorySaveState(user.id) === 'confirmed') controller.flush();
+    });
     // iOS Telegram WebViews can suspend on close before an old debounce fires.
     const flush = () => controller.flush();
     document.addEventListener('visibilitychange', flush);
@@ -392,6 +401,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
       window.removeEventListener('pageshow', flush);
       window.removeEventListener('online', flush);
       clearInterval(tick);
+      unsubscribeVictory();
       controller.stop();
     };
   }, [loaded, user.id]);
