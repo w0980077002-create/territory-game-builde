@@ -17,6 +17,17 @@
   animation: cityEnemyVigil 6.3s ease-in-out -3.1s infinite;
   will-change: transform;
 }
+/* The approved goblin cutout has independent joints. Offset its head from
+   the hero's movement cycle so both fighters do not look synchronized. */
+.home-character-stage [data-testid="city-enemy-joint-rig"] .skeletal-fighter[data-motion=idle] .rig-head {
+  animation: cityGoblinLook 5.7s ease-in-out -2.2s infinite;
+}
+@keyframes cityGoblinLook {
+  0%, 100% { transform: rotate(1deg); }
+  35% { transform: rotate(-2deg); }
+  66% { transform: rotate(.5deg); }
+}
+
 
 /* Weighted breathing: the boots remain planted and the full-body portrait
  * moves less than 3 px; no fake disconnected attacks or sideways roaming. */
