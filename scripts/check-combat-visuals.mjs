@@ -90,6 +90,9 @@ assert.match(effects, /prefers-reduced-motion: reduce/, 'Motion accessibility sa
 
 // Regression coverage for the reported Android arena/trials defects.
 const figure = read('src/components/arena/FighterFigure.tsx');
+assert.match(figure, /typeof img\\.decode === 'function'/, 'Legacy Telegram WebView must not require Image.decode');
+assert.match(figure, /img\\.onload = \\(\\) => resolve\\(\\)/, 'Legacy rig parts must wait for onload');
+assert.match(figure, /img\\.onerror = \\(\\) => reject/, 'Broken rig part must fall back to original art');
 const enemyArt = read('src/game/combatArt.ts');
 const engine = read('src/game/engine.ts');
 const strikes = read('src/game/useStrikeQueue.ts');

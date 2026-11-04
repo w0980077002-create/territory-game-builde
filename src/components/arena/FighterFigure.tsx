@@ -55,7 +55,18 @@ export function FighterFigure({
       img.src = rigAsset(rig, part);
       return img;
     });
-    Promise.all(images.map(img => img.decode())).then(() => {
+    // Older Telegram WebViews may not implement HTMLImageElement.decode().
+    // Wait for actual load/error before enabling the joint rig; a failed part
+    // must leave the original pose artwork visible instead of a broken sprite.
+    const loaded = (img: HTMLImageElement): Promise<void> => {
+      if (img.complete) return img.naturalWidth > 0 ? Promise.resolve() : Promise.reject(new Error('Rig image unavailable'));
+      if (typeof img.decode === 'function') return img.decode();
+      return new Promise((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Rig image unavailable'));
+      });
+    };
+    Promise.all(images.map(loaded)).then(() => {
       if (!cancelled) setAssets({ id: rig.id, ready: true });
     }, () => { if (!cancelled) setAssets({ id: rig.id, ready: false }); });
     return () => { cancelled = true; };
