@@ -7,7 +7,7 @@ import { captureGameEvent } from '@/game/analytics';
 import { EQUIPMENT_SLOTS, generateChapter, generateTrial, getComputedStats, PVE_STONE_COST } from '@/game/engine';
 import { spendStones, trialReward, blessedGold } from '@/game/progression';
 import { saveBlocked, saveCloudSave } from '@/game/cloud';
-import { confirmPveVictorySave, pveVictorySaveBlocked } from '@/game/pveVictorySaveFence';
+import { confirmPveVictorySave, pveVictorySaveBlocked, pveVictorySaveState, subscribePveVictorySave } from '@/game/pveVictorySaveFence';
 import { hapticImpact } from '@/game/telegram';
 import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
@@ -52,6 +52,11 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
     });
   const [error, setError] = useState<string | null>(null);
   const [retryingVictorySave, setRetryingVictorySave] = useState(false);
+  // A late save acknowledgement must immediately re-enable Campaign/Trials.
+  // The battle screen may be mounted even when its result view has been closed.
+  const [, refreshVictoryFence] = useState(0);
+  useEffect(() => subscribePveVictorySave(userId, () => refreshVictoryFence(v => v + 1)), [userId]);
+  const victorySaveStillPending = pveVictorySaveState(userId) === 'pending';
   const blockedBySave = pveVictorySaveBlocked(userId) || saveBlocked.has(userId);
   const battleStartBlocked = caveRecoveryNeeded || blockedBySave;
   const chapter = useMemo(() => generateChapter(state.currentChapter), [state.currentChapter]);
@@ -177,7 +182,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
               ? 'The server has a newer save. Restart the game to reload safely; unconfirmed local changes may be lost.'
               : 'На сервере более новое сохранение. Перезапусти игру для безопасной загрузки; неподтверждённые изменения могут не сохраниться.'}</p>
           ) : (
-            <button type="button" disabled={retryingVictorySave} data-testid="pve-retry-save-before-fight"
+            <button type="button" disabled={retryingVictorySave || victorySaveStillPending} data-testid="pve-retry-save-before-fight"
               onClick={() => {
                 if (retryingVictorySave) return;
                 const snapshot = useGame.get();
@@ -189,7 +194,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
                   .finally(() => setRetryingVictorySave(false));
               }}
               className="mt-2 min-h-11 rounded-lg border border-amber-200 bg-gradient-to-b from-amber-400 to-amber-700 px-4 font-extrabold text-[#251508] disabled:opacity-50">
-              {retryingVictorySave
+              {retryingVictorySave || victorySaveStillPending
                 ? (language === 'en' ? 'Saving…' : 'Сохраняем…')
                 : (language === 'en' ? 'Retry saving victory' : 'Повторить сохранение победы')}
             </button>
