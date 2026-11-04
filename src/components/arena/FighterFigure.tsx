@@ -70,7 +70,8 @@ export function FighterFigure({
   const role = !strike ? null : strike.attacker === name ? 'attacker' : strike.target === name ? 'target' : null;
   const speed = Number.isFinite(combatSpeed) && combatSpeed > 0 ? combatSpeed : 1;
   const artIdentity = combatFrames?.idle ?? src;
-  const skeletalReady = !!rig && enabledRig === rig.id && assets?.id === rig.id && assets.ready;
+  const canAnimateRig = typeof Element !== 'undefined' && typeof Element.prototype.animate === 'function';
+  const skeletalReady = !!rig && canAnimateRig && enabledRig === rig.id && assets?.id === rig.id && assets.ready;
   const [timeline, setTimeline] = useState<{ event: StrikeEvent; src: string; art: string; name: string; phase: PosePhase } | null>(null);
   const event = role && !skeletalReady ? strike : null;
   useEffect(() => {
