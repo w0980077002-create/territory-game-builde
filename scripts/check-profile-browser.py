@@ -172,19 +172,36 @@ with sync_playwright() as p:
             assert boxes[1]['x'] + boxes[1]['width'] + 2 < boxes[2]['x'], (width, lang, 'Hero overlaps foe', boxes)
             assert all(box['x'] > -1 and box['x'] + box['width'] < width + 1 for box in boxes), (width, lang, 'Character clipped', boxes)
             assert page.locator('[data-testid="city-enemy-slot"]').get_attribute('aria-label') is not None
-            # The three REAL City sprites have independent motions; HUD/slots do not move.
-            idle_nodes = [page.locator('.home-character-stage .city-' + who + '-idle')
-                          for who in ('follower', 'hero', 'enemy')]
-            idle_styles = [sprite.evaluate("""el => ({
+            # The original hand-cut Viking now has independent joints in the
+            # real City scene. Other unchanged appearances retain their sprite.
+            rig = page.locator('[data-testid="city-hero-joint-rig"] svg[data-rig="male_viking"]')
+            rig.wait_for(timeout=10000)
+            assert rig.locator('[data-rig-part="head"]').count() == 1
+            assert rig.locator('[data-rig-part="arm-right"]').count() == 1
+            assert rig.locator('[data-rig-part="leg-left"]').count() == 1
+            assert rig.get_attribute('data-motion') == 'idle'
+            idle_nodes = [
+                page.locator('.home-character-stage .city-follower-idle'),
+                rig.locator('[data-rig-part="head"]'),
+                page.locator('.home-character-stage .city-enemy-idle'),
+            ]
+            idle_styles = [node.evaluate("""el => ({
                 name: getComputedStyle(el).animationName,
                 duration: getComputedStyle(el).animationDuration
-            })""") for sprite in idle_nodes]
+            })""") for node in idle_nodes]
             assert len(set(style['name'] for style in idle_styles)) == 3, (width, lang, 'Synchronized city idles', idle_styles)
-            assert all(style['name'] != 'none' for style in idle_styles), (width, lang, 'Static city sprite', idle_styles)
+            assert all(style['name'] != 'none' for style in idle_styles), (width, lang, 'Static city character', idle_styles)
             page.emulate_media(reduced_motion='reduce')
-            assert all(sprite.evaluate("el => getComputedStyle(el).animationName") == 'none' for sprite in idle_nodes), (
-                width, lang, 'Reduced motion must disable all idle animations')
+            original = page.locator('.home-character-stage .city-hero-idle')
+            original.wait_for(timeout=5000)
+            assert page.locator('[data-testid="city-hero-joint-rig"]').count() == 0
+            assert all(node.evaluate("el => getComputedStyle(el).animationName") == 'none' for node in [
+                page.locator('.home-character-stage .city-follower-idle'),
+                original,
+                page.locator('.home-character-stage .city-enemy-idle'),
+            ]), (width, lang, 'Reduced motion must show static original art')
             page.emulate_media(reduced_motion='no-preference')
+            rig.wait_for(timeout=10000)
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             assert page.locator('.home-side').count() >= 6
             assert page.locator('.home-side').evaluate_all('buttons => buttons.every(b => { const r=b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && r.left >= 0 && r.right <= innerWidth; })')
