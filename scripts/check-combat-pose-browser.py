@@ -112,7 +112,7 @@ with sync_playwright() as p:
         page.emulate_media(reduced_motion='reduce')
         assert hero.evaluate("el=>getComputedStyle(el).display==='none'"), (appearance,'reduced motion should use original pose')
         assert page.locator('#fixture-hero .original-hero-approved-pose').evaluate(
-            "el=>getComputedStyle(el).visibility==='visible'"), (appearance,'original reduced-motion art hidden')
+            "el=>getComputedStyle(el).opacity==='1'"), (appearance,'original reduced-motion art hidden')
         page.close()
     # Existing PvE controls trigger playRound; no synthetic StrikeEvent here.
     page=b.new_page(viewport={'width':390,'height':760})
