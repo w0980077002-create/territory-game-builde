@@ -75,7 +75,7 @@ assert.match(fight, /data-testid="pve-victory-save-retry"/,
   'Failed saves can be retried without granting another reward');
 assert.match(fight, /disabled=\{nextPending \|\| \(outcome\.won && saveState !== 'confirmed'\)\}/,
   'Next cannot spend stones while a victory is unsaved');
-assert.match(battle, /if \(pveVictorySaveBlocked\(userId\) \|\| saveBlocked\.has\(userId\)\)/,
+assert.match(battle, /if \(pveVictorySaveBlocked\(userId\) \|\| saveBlocked\.has\(userId\) \|\| pendingPveVictoryJournal\(userId\)\)/,
   'Returning to Campaign/Trials must not bypass a pending victory checkpoint');
 assert.match(battle, /subscribePveVictorySave\(userId/,
   'BattleScreen must refresh after a pending save is acknowledged');
