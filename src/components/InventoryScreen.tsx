@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText, localizeRarity } from '@/game/i18n';
-import { useGame, useArena } from '@/game/actions';
-import { BELT_RULES, BELT_STACK, beltContext, canBelt, isSlotOpen, putInBelt, sameBeltKind, takeFromBelt } from '@/game/belt';
+import { useGame, useArena, useAccount } from '@/game/actions';
+import { BELT_RULES, BELT_STACK, beltContext, canBelt, isSlotOpen, putInBelt, refillBeltFromInventory, sameBeltKind, takeFromBelt } from '@/game/belt';
 import { ItemArt } from './ui/ItemArt';
 import { Modal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
@@ -36,6 +36,9 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const arena = useStore(useArena);
+  const account = useStore(useAccount);
+  const permanentVip = account.permanentVip;
+  const canAutoRefill = permanentVip >= 3;
   const [tab, setTab] = useState<'items' | 'equipment' | 'followers'>(initialTab);
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const [beltNote, setBeltNote] = useState<string | null>(null);
@@ -112,6 +115,21 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
     setSelected(null);
     setBeltNote(null);
     setPreparedNotice(language === 'en' ? 'Consumable moved to your battle belt.' : 'Расходник перемещён на боевой пояс.');
+  };
+  const refill = () => {
+    let changed = false;
+    useGame.set(current => {
+      const next = refillBeltFromInventory(current, beltContext(current, useArena.get().wins));
+      changed = next !== current;
+      return next;
+    });
+    setPreparedNotice(changed
+      ? (language === 'en' ? 'Belt refilled from your warehouse.' : 'Пояс пополнен из твоего склада.')
+      : (language === 'en' ? 'No matching available stock for your saved belt choices.' : 'Для выбранных видов расходников пока нет подходящего запаса.'));
+  };
+  const toggleAutoRefill = () => {
+    if (!canAutoRefill) return;
+    useGame.set(current => ({ ...current, autoRefillBelt: !current.autoRefillBelt }));
   };
   const close = () => { setSelected(null); setBeltNote(null); };
 
@@ -216,6 +234,17 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
               if (removed) setPreparedNotice(language === 'en' ? 'Consumable returned to the warehouse.' : 'Расходник возвращён на склад.');
             }}
           />
+          <div className="mt-1.5 flex items-center gap-1.5" data-testid="belt-refill-controls">
+            <button type="button" onClick={refill}
+              className="min-h-9 flex-1 rounded-lg border border-amber-500/45 bg-gradient-to-b from-[#70431e] to-[#38251b] px-2 text-[11px] font-extrabold text-amber-100 active:scale-[0.98]">
+              {language === 'en' ? 'Refill belt' : 'Пополнить пояс'}
+            </button>
+            {canAutoRefill && <button type="button" onClick={toggleAutoRefill}
+              aria-pressed={!!state.autoRefillBelt} data-testid="belt-auto-refill-toggle"
+              className={`min-h-9 flex-1 rounded-lg border px-2 text-[11px] font-bold ${state.autoRefillBelt ? 'border-emerald-400/70 bg-emerald-900/45 text-emerald-100' : 'border-amber-500/35 bg-black/40 text-amber-200'}`}>
+              {language === 'en' ? `Auto VIP: ${state.autoRefillBelt ? 'ON' : 'OFF'}` : `Авто VIP: ${state.autoRefillBelt ? 'ВКЛ' : 'ВЫКЛ'}`}
+            </button>}
+          </div>
         </section>
       )}
 
