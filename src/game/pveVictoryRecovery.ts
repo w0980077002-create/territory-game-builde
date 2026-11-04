@@ -141,6 +141,13 @@ export async function persistPveVictoryJournal(playerId: string, snapshot: GameS
   return clearMatchingJournal(playerId, stored);
 }
 
+/** Retry the exact journaled win, never an unrelated newer local state. */
+export async function retryPveVictoryJournal(playerId: string): Promise<boolean> {
+  const stored = readJournal(playerId);
+  if (!stored || stored === 'invalid') return false;
+  return persistPveVictoryJournal(playerId, stored.journal.snapshot);
+}
+
 /**
  * Runs after authenticated cloud load but BEFORE hydrating useGame or starting
  * autosaves. On mismatched revisions, preserve the local WAL for manual
