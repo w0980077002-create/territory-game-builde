@@ -95,3 +95,35 @@
     font-size:9px;
   }
 }
+
+/* VIP 5+ prestige is intentionally a subtle silhouette halo, not a combat buff.
+   It cannot cover enemy targets or other tappable elements and reduces on
+   lower-power / reduced-motion devices. */
+.city-vip-aura::before {
+  content:'';
+  position:absolute;
+  z-index:0;
+  left:10%;
+  right:10%;
+  bottom:3%;
+  height:79%;
+  border-radius:50%;
+  background:radial-gradient(ellipse 55% 64% at 50% 68%,
+    rgba(250,185,72,.34) 0%, rgba(224,117,33,.16) 45%, transparent 78%);
+  filter:blur(7px);
+  pointer-events:none;
+  animation:cityVipBreath 5s ease-in-out infinite;
+}
+.city-vip-aura[data-vip-aura="9"]::before,
+.city-vip-aura[data-vip-aura="10"]::before {
+  background:radial-gradient(ellipse 58% 68% at 50% 67%,
+    rgba(255,225,145,.47) 0%, rgba(231,154,54,.25) 42%, transparent 78%);
+}
+.city-vip-aura > * { z-index:1; }
+@keyframes cityVipBreath {
+  0%,100% { opacity:.7; }
+  50% { opacity:1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .city-vip-aura::before {animation:none;}
+}
