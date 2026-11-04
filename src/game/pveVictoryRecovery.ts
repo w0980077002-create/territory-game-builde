@@ -48,6 +48,33 @@ function sameJson(a: unknown, b: unknown): boolean {
     && sameJson(left[k], right[k]));
 }
 
+/**
+ * PostgreSQL's territory_normalize_state_v4 rewrites derived baseline stats
+ * and balanceVersion during every guarded save. They are not reward fields.
+ * Compare every other serialized key exactly so a coalesced unrelated save,
+ * missing loot, inventory change, or a stale victory can never look confirmed.
+ */
+function comparableStoredVictory(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const copy = JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
+  delete copy.balanceVersion; // normalized to 4 by the live trigger
+  if (copy.player && typeof copy.player === 'object' && !Array.isArray(copy.player)) {
+    const player = copy.player as Record<string, unknown>;
+    const existing = player.stats;
+    if (existing && typeof existing === 'object' && !Array.isArray(existing)) {
+      const stats = existing as Record<string, unknown>;
+      for (const field of ['maxHp','hp','attack','defense','critChance','critDamage']) delete stats[field];
+      player.stats = stats;
+    } else {
+      player.stats = {};
+    }
+  }
+  return copy;
+}
+function samePersistedVictory(a: unknown, b: unknown): boolean {
+  return sameJson(comparableStoredVictory(a), comparableStoredVictory(b));
+}
+
 function readJournal(playerId: string): StoredJournal | null | 'invalid' {
   if (!playerId) return 'invalid';
   try {
@@ -122,7 +149,7 @@ async function serverHasExactVictory(playerId: string, snapshot: GameState): Pro
       .select('game_state,gold,gems,updated_at').eq('id', playerId).maybeSingle();
     return !error && !!data && validSaveToken(data.updated_at)
       && data.gold === snapshot.player.gold && data.gems === snapshot.player.gems
-      && sameJson(data.game_state, JSON.parse(JSON.stringify(snapshot)))
+      && samePersistedVictory(data.game_state, snapshot)
       ? data.updated_at : null;
   } catch {
     return null;
@@ -169,7 +196,7 @@ export async function recoverPveVictoryOnBoot(
   if (stored === null) return { state: profile.state, recovered: false };
   if (stored === 'invalid') return null;
   const snapshot = stored.journal.snapshot;
-  if (sameJson(profile.savedGameState, snapshot)
+  if (samePersistedVictory(profile.savedGameState, snapshot)
     && profile.walletGold === snapshot.player.gold && profile.walletGems === snapshot.player.gems) {
     if (!clearMatchingJournal(playerId, stored)) return null;
     return { state: profile.state, recovered: true };
