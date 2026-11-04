@@ -61,7 +61,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
           // contact pose instead, otherwise legacy engines show no reaction.
           const visibleFrame = motion === 'death' || motion === 'victory'
             ? frames[frames.length - 1]
-            : frames.find((frame, index) => index > 0 && frame.offset >= 350 / ACTION_MS) ?? frames[frames.length - 1];
+            : frames.find((frame, index) => index > 0 && typeof frame.offset === 'number' && frame.offset >= 350 / ACTION_MS) ?? frames[frames.length - 1];
           joint.style.transform = String(visibleFrame.transform ?? '');
           return [];
         }
