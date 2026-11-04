@@ -48,6 +48,10 @@ export interface ArenaView {
     deadline: number | null;
     startsAt: number;
     winnerTeam: number | null;
+    /** New team matches: each team loses after 60 seconds without an attack. */
+    teamLive?: boolean;
+    teamDeadline1?: number | null;
+    teamDeadline2?: number | null;
   };
   me: {
     id: string;
@@ -56,6 +60,7 @@ export interface ArenaView {
     revivesUsed: number;
     ratingChange: number | null;
     moved: boolean;
+    nextStrikeAt?: number | null;
     auto: boolean;
     vip: number;
     autoMinVip: number;
@@ -83,6 +88,7 @@ const ERRORS: Record<string, string> = {
   invalid_zones: 'Выбери 1 зону удара и 2 разные зоны защиты',
   invalid_target: 'Эта цель недоступна',
   already_moved: 'Ход в этом раунде уже сделан',
+  attack_cooldown: 'Подожди 3 секунды перед следующим ударом',
   too_fast: 'Не так быстро',
   min_timeout: 'Тайм уже минимальный — 30 сек.',
   revive_limit: 'Адреналин можно использовать не больше 3 раз за бой',
