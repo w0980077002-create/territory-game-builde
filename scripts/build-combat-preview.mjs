@@ -15,6 +15,10 @@ export const saveBlocked = new Set();
 export async function saveCloudSave(){return true;}
 export async function beginReferralFight(){return null;}
 export async function finishReferralFight(){throw new Error('No real referral ticket in combat fixture');}
+export function getTelegramInitData(){return '';}
+export function initTelegramWebApp(){}
+export function getTelegramUser(){return null;}
+export async function ensurePlayerSession(){return true;}
 export function captureGameEvent(name,details){window.__events.push({name,details});}
 `;
 const entry = `
