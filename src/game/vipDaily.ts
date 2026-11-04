@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { exclusiveVipClaim } from './vipClaimQueue';
 import { useGame } from './actions';
 import {
   acceptMonopolyClaimReceipt, protectFortuneSave, releaseArenaRejectedAction,
@@ -35,7 +36,6 @@ type VipDailyReply = {
   replayed?: boolean;
 };
 type Pending = { operation: string; expected: string };
-const tasks = new Map<string, Promise<void>>();
 const pendingKey = (userId: string) => `territory.vip.daily.pending.v1:${userId}`;
 
 function loadPending(userId: string): Pending | null {
@@ -81,18 +81,8 @@ function validateReward(data: VipDailyReply): VipDailyReward {
     throw new Error('vip_daily_invalid_reward');
   return reward;
 }
-function exclusive<T>(userId:string, work:()=>Promise<T>): Promise<T> {
-  // Different operations have different return types and side effects: a status
-  // request must never swallow a simultaneous claim (or vice versa).
-  const previous=tasks.get(userId) ?? Promise.resolve();
-  const task=previous.then(work);
-  const tail=task.then(()=>{},()=>{});
-  tasks.set(userId,tail);
-  void tail.then(()=>{if(tasks.get(userId)===tail)tasks.delete(userId);});
-  return task;
-}
 export function fetchVipDailyStatus(userId:string): Promise<VipDailyStatus> {
-  return exclusive(userId,async()=>{
+  return exclusiveVipClaim(userId,async()=>{
     const pending=loadPending(userId);
     if (pending) {
       // An uncertain payout must be recovered before presenting a fresh claim.
@@ -130,14 +120,14 @@ async function settle(userId:string,pending:Pending):Promise<VipDailyReward> {
   }
 }
 export function recoverVipDaily(userId:string):Promise<VipDailyReward | null> {
-  return exclusive(userId,()=>{
+  return exclusiveVipClaim(userId,()=>{
     // This path is safe even after an app restart: use the original UUID.
     const pending=loadPending(userId);
     return pending ? settle(userId,pending) : Promise.resolve(null);
   });
 }
 export function claimVipDaily(userId:string): Promise<VipDailyReward> {
-  return exclusive(userId,async()=>{
+  return exclusiveVipClaim(userId,async()=>{
     if (loadPending(userId)) return settle(userId,loadPending(userId)!);
     if (saveBlocked.has(userId)) throw new Error('vip_daily_reload_required');
     const snapshot=useGame.get();
