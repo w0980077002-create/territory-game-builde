@@ -1,5 +1,5 @@
-import type { GameState, InventoryItem } from './types';
-import { isElixirExpired, isPerishableItem } from './elixirExpiry';
+import type { GameState, InventoryItem, BeltRefillChoice } from './types';
+import { isElixirExpired, isPerishableItem, elixirExpiryTime } from './elixirExpiry';
 
 export const BELT_STACK = 5;
 
@@ -72,6 +72,58 @@ export const sameBeltKind = (a: InventoryItem, b: InventoryItem): boolean =>
   && a.arenaEffect === b.arenaEffect
   && JSON.stringify(a.effect ?? null) === JSON.stringify(b.effect ?? null);
 
+/** Remember a kind, never a particular inventory batch or balance. */
+const asRefillChoice = (item: InventoryItem): BeltRefillChoice => ({
+  type: item.type as BeltRefillChoice['type'],
+  name: item.name,
+  rarity: item.rarity,
+  ...(item.arenaEffect ? { arenaEffect: item.arenaEffect } : {}),
+  ...(item.effect ? { effect: item.effect } : {}),
+});
+
+const matchesChoice = (item: InventoryItem, choice: BeltRefillChoice): boolean =>
+  canBelt(item) && item.type === choice.type && item.name === choice.name
+  && item.rarity === choice.rarity && item.arenaEffect === choice.arenaEffect
+  && JSON.stringify(item.effect ?? null) === JSON.stringify(choice.effect ?? null);
+
+const refillChoices = (state: GameState): (BeltRefillChoice | null)[] =>
+  Array.from({ length: BELT_WIN_GOALS.length }, (_, i) =>
+    state.beltRefillChoices?.[i] ?? (state.belt[i] ? asRefillChoice(state.belt[i]!) : null));
+
+/** Pure, quantity-preserving refill. No purchases, invented stock, slot unlocks,
+ * cross-expiry batch mixing, or use during an active fight.
+ * Caller must confirm the battle is over before automatic use.
+ */
+export function refillBeltFromInventory(state: GameState, c: BeltContext): GameState {
+  const choices = refillChoices(state);
+  const belt = [...state.belt];
+  const inventory = state.inventory.map(item => ({ ...item }));
+  let moved = 0;
+  const kindsSeen: BeltRefillChoice[] = [];
+  for (let i = 0; i < BELT_WIN_GOALS.length; i++) {
+    if (!isSlotOpen(i, c)) continue;
+    const choice = choices[i];
+    if (!choice || kindsSeen.some(s => JSON.stringify(s) === JSON.stringify(choice))) continue;
+    kindsSeen.push(choice);
+    const current = belt[i];
+    if (current && (!matchesChoice(current, choice) || current.qty >= BELT_STACK)) continue;
+    // Oldest-expiring-first; never merge batches with distinct deadlines.
+    const available = inventory
+      .filter(item => item.qty > 0 && matchesChoice(item, choice)
+        && (!current || !isPerishableItem(item) || item.expiresAt === current.expiresAt))
+      .sort((a,b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0];
+    if (!available) continue;
+    const n = Math.min(BELT_STACK - (current?.qty ?? 0), available.qty);
+    if (!n) continue;
+    const source = inventory.find(item => item.id === available.id)!;
+    source.qty -= n;
+    belt[i] = { ...(current ?? available), id: `belt_${i}`, qty: (current?.qty ?? 0) + n };
+    moved += n;
+  }
+  return moved ? { ...state, belt, inventory: inventory.filter(item => item.qty > 0),
+    beltRefillChoices: choices } : state;
+}
+
 export type ArenaItemCode = 'heal_small' | 'heal_large' | 'attack' | 'defense' | 'crit';
 
 export type BeltAction =
@@ -121,14 +173,18 @@ export function putInBelt(state: GameState, itemId: string, c: BeltContext): Gam
   const inventory = state.inventory
     .map((i) => (i.id === item.id ? { ...i, qty: i.qty - moved } : i))
     .filter((i) => i.qty > 0);
-  return { ...state, belt, inventory };
+  const choices = refillChoices(state);
+  choices[index] = asRefillChoice(item);
+  return { ...state, belt, inventory, beltRefillChoices: choices };
 }
 
 export function takeFromBelt(state: GameState, index: number): GameState {
   const slot = state.belt[index];
   if (!slot) return state;
   const belt = state.belt.map((s, i) => (i === index ? null : s));
-  if (isElixirExpired(slot)) return { ...state, belt };
+  const choices = refillChoices(state);
+  choices[index] = null;
+  if (isElixirExpired(slot)) return { ...state, belt, beltRefillChoices: choices };
   const existing = state.inventory.find((i) =>
     i.type === slot.type && i.name === slot.name && i.rarity === slot.rarity
     && i.arenaEffect === slot.arenaEffect && JSON.stringify(i.effect ?? null) === JSON.stringify(slot.effect ?? null)
@@ -137,7 +193,7 @@ export function takeFromBelt(state: GameState, index: number): GameState {
   const inventory = existing
     ? state.inventory.map((i) => (i.id === existing.id ? { ...i, qty: i.qty + slot.qty } : i))
     : [...state.inventory, { ...slot, id: `inv_${Date.now()}_${Math.random().toString(36).slice(2)}` }];
-  return { ...state, belt, inventory };
+  return { ...state, belt, inventory, beltRefillChoices: choices };
 }
 
 export function consumeBelt(state: GameState, index: number): GameState {
