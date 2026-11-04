@@ -31,7 +31,7 @@ import { captureGameEvent } from '@/game/analytics';
 import { runDeferredNextBattle } from '@/game/pveNextAction';
 import { saveBlocked } from '@/game/cloud';
 import { confirmPveVictorySave, pveVictorySaveBlocked } from '@/game/pveVictorySaveFence';
-import { persistPveVictoryJournal, stagePveVictoryJournal } from '@/game/pveVictoryRecovery';
+import { pendingPveVictoryJournal, persistPveVictoryJournal, stagePveVictoryJournal } from '@/game/pveVictoryRecovery';
 
 // Do not enable until the staged rune ledger, authenticated combat tests and
 // PvP/Cave adapters are released together. Existing PvE is unchanged by default.
