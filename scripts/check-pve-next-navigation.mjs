@@ -237,9 +237,9 @@ assert.match(fight, /gearImprovements\.map\(\(\{ stat, delta \}\)/,
   'Only actual positive stat deltas may be displayed');
 assert.match(fight, /Из сохранённого инвентаря, не дополнительная награда за бой/,
   'Do not misrepresent a pre-owned item as new battle loot');
-assert.match(fight, /onEquipment=\{onEquipment \? \(\) => \{ nextCancelled\.current = true; onExit\(\); onEquipment\(\); \} : undefined\}/,
+assert.match(fight, /onEquipment=\{onEquipment \? \(\) => \{[\s\S]*?nextCancelled\.current = true; onExit\(\); onEquipment\(\);[\s\S]*?\} : undefined\}/,
   'Upgrade route must reuse existing inventory without spending another stone');
-assert.match(fight, /onEquipment=\{onEquipment \? \(\) => \{ nextCancelled\.current = true; onExit\(\); onEquipment\(\); \} : undefined\}/,
+assert.match(fight, /onEquipment=\{onEquipment \? \(\) => \{[\s\S]*?nextCancelled\.current = true; onExit\(\); onEquipment\(\);[\s\S]*?\} : undefined\}/,
   'Equipment navigation must close the fight and cancel pending next-battle work');
 assert.match(battle, /onEquipment=\{onEquipment\}/,
   'Use the existing inventory route rather than a duplicate equipment screen');
@@ -249,7 +249,7 @@ const appForForge = readFileSync('src/App.tsx', 'utf8');
 assert.match(fight, /onForge && \(outcome\.materials > 0 \|\| !outcome\.won\) &&/,
   'Victory Forge CTA requires a positive material drop; defeat may offer existing Forge preparation');
 assert.match(fight, /data-testid="pve-visit-forge"/, 'Material loot must offer the actual Forge');
-assert.match(fight, /onForge=\{onForge \? \(\) => \{ nextCancelled\.current = true; onExit\(\); onForge\(\); \} : undefined\}/,
+assert.match(fight, /onForge=\{onForge \? \(\) => \{[\s\S]*?nextCancelled\.current = true; onExit\(\); onForge\(\);[\s\S]*?\} : undefined\}/,
   'Forge navigation must cancel pending next fight and exit combat');
 assert.match(battle, /onForge=\{onForge\}/, 'Battle must pass the existing Forge action into its result');
 assert.match(appForForge, /onForge=\{\(\) => openForge\(undefined, battleView === 'trial' \? 'trial' : 'campaign'\)\}/,
