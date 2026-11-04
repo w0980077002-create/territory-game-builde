@@ -31,7 +31,7 @@ import { captureGameEvent } from '@/game/analytics';
 import { runDeferredNextBattle } from '@/game/pveNextAction';
 import { saveBlocked } from '@/game/cloud';
 import { confirmPveVictorySave, pveVictorySaveBlocked } from '@/game/pveVictorySaveFence';
-import { pendingPveVictoryJournal, persistPveVictoryJournal, stagePveVictoryJournal } from '@/game/pveVictoryRecovery';
+import { persistPveVictoryJournal, stagePveVictoryJournal } from '@/game/pveVictoryRecovery';
 
 // Do not enable until the staged rune ledger, authenticated combat tests and
 // PvP/Cave adapters are released together. Existing PvE is unchanged by default.
@@ -461,20 +461,20 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         <OutcomePanel outcome={outcome} kind={kind} victoryJourney={victoryJourney}
           gearOpportunity={gearOpportunity} equippedGear={equippedGear}
           onExit={() => {
-            if (outcome.won && victorySave !== 'confirmed' && !pendingPveVictoryJournal(userId)) return;
+            if (outcome.won && victorySave !== 'confirmed') return;
             nextCancelled.current = true; onExit();
           }}
           questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
           onQuests={onQuests ? () => {
-            if (outcome.won && victorySave !== 'confirmed' && !pendingPveVictoryJournal(userId)) return;
+            if (outcome.won && victorySave !== 'confirmed') return;
             nextCancelled.current = true; onExit(); onQuests();
           } : undefined}
           onEquipment={onEquipment ? () => {
-            if (outcome.won && victorySave !== 'confirmed' && !pendingPveVictoryJournal(userId)) return;
+            if (outcome.won && victorySave !== 'confirmed') return;
             nextCancelled.current = true; onExit(); onEquipment();
           } : undefined}
           onForge={onForge ? () => {
-            if (outcome.won && victorySave !== 'confirmed' && !pendingPveVictoryJournal(userId)) return;
+            if (outcome.won && victorySave !== 'confirmed') return;
             nextCancelled.current = true; onExit(); onForge();
           } : undefined}
           nextPending={nextPending} nextError={nextError}
