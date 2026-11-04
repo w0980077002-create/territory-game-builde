@@ -14,6 +14,7 @@ const [home, app, css, html, city, sheets, telegram] = await Promise.all([
 ]);
 const worldMap = await read('src/components/WorldMapCanvas.tsx');
 const cityMotion = await read('src/components/home/cityCharacterMotion.css');
+const livingHero = await read('src/components/home/CityLivingHero.tsx');
 
 const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventure] = await Promise.all([
   read('src/components/ForgeScreen.tsx'),
@@ -27,9 +28,21 @@ const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventu
 
 assert.match(home, /<LiveCityBackdrop animated=\{cityMotion\}/, 'Home must render the approved layered city backdrop');
 assert.match(home, /className="home-hero-figure/, 'City hero must have a separate sizing wrapper');
+assert.match(home, /<CityLivingHero appearance=\{state\.appearance\} name=\{player\.name\} \/>/,
+  'City hero must use the actual articulated figure when verified');
+assert.match(livingHero, /<SkeletalFighter[\s\S]*?strike=\{null\}/,
+  'City is peaceful: independently moving limbs, never fake damage');
+assert.match(livingHero, /RIG_PARTS\.map/,
+  'Do not mount incomplete hand-rigs before all existing artwork decodes');
+assert.match(livingHero, /hasRig && rig \?/,
+  'Only verified existing appearances may use the articulated skeleton');
+assert.match(livingHero, /prefers-reduced-motion: reduce/,
+  'Reduced-motion users keep the approved still pose');
+assert.match(livingHero, /onAssetError=\{\(\) => setReady/,
+  'An invalid rig falls back to the original character without substitution');
 assert.ok(home.includes("import './home/cityCharacterMotion.css';"), 'City-specific motion stylesheet must be imported');
 for (const role of ['follower', 'hero', 'enemy']) {
-  assert.ok(home.includes('city-' + role + '-idle'), role + ' must have a distinct idle class');
+  assert.ok((role === 'hero' ? livingHero : home).includes('city-' + role + '-idle'), role + ' must have a distinct idle class');
   assert.ok(cityMotion.includes('.city-' + role + '-idle'), role + ' must have a real animation rule');
 }
 assert.ok(cityMotion.includes('@media (prefers-reduced-motion: reduce)'), 'City animation must respect accessibility motion controls');
@@ -249,3 +262,62 @@ assert.match(expeditionCss, /env\(safe-area-inset-bottom/, 'Map expedition must 
 assert.doesNotMatch(mapJourney, /setInterval\(\(\) => refreshGather/, 'Do not poll the server during a four-hour expedition');
 
 console.log('Mobile home UI checks passed: living city, responsive sides and nav, Telegram fullscreen, safe-area, language, gear.');
+
+
+// Real November 3 Android Telegram video regression: correct enemy name,
+// legible 15-slot runes, and consistent Viking wood/gold Friends screen.
+// These checks are strictly visual; no economy, referrals, or combat changes.
+const [friendsUi, friendsStyle, liveRuneStyle] = await Promise.all([
+  read('src/components/FriendsScreen.tsx'),
+  read('src/components/friendsVikingFinish.css'),
+  read('src/components/builds/serverRuneBook.css'),
+]);
+assert.match(home, /home-enemy-name/, 'Next enemy must have a mobile-readable caption');
+assert.doesNotMatch(home, /text-red-100 truncate/, 'Enemy name must not be single-line truncated');
+assert.match(cityMotion, /\.home-character-stage \.home-enemy-name[\s\S]*?-webkit-line-clamp:2/, 'Long enemy names wrap to two lines');
+assert.match(friendsUi, /import '\.\/friendsVikingFinish\.css'/, 'Friends style must ship with the live screen');
+for (const cls of ['friends-founder-panel', 'friends-invite-panel', 'friends-stat-card',
+  'friends-gem-panel', 'friends-milestone-panel', 'friends-list-panel', 'friends-rules-panel']) {
+  assert.ok(friendsUi.includes(cls), cls + ': real referral section must use themed style');
+  assert.ok(friendsStyle.includes('.' + cls), cls + ': wood/gold style must exist');
+}
+assert.match(liveRuneStyle, /@media \(max-width:480px\)/, '15-slot rune board uses phone layout');
+assert.match(liveRuneStyle, /\.territory-rune__group \{[\s\S]*?flex-direction:row/, 'Rune group captions move above their cards');
+assert.match(liveRuneStyle, /\.territory-rune__skill-name \{[\s\S]*?font-size:clamp\(11px/, 'Rune titles use legible mobile font sizes');
+
+
+// Third pass over the real Android video: remove duplicated HUD chrome without
+// hiding any playable side route, and eliminate the partial loading-card screen.
+const cityVisual = await read('src/components/home/cityVisualClarity.css');
+assert.match(home, /import '\.\/home\/cityVisualClarity\.css'/, 'City clarity style must load on the live screen');
+assert.match(cityVisual, /\.home-game-scene \.home-side-stack \.home-side/, 'Lighter carved side markers must be scoped to the City');
+assert.match(cityVisual, /--home-character-bottom:35%/, 'Tall phones have more space for complete figures');
+assert.match(cityVisual, /@media \(min-width:360px\) and \(min-height:750px\)/, 'Extra figure space must be tall-phone-only');
+assert.doesNotMatch(home, /<span className="mt-1 h-1 w-full rounded-full bg-white\/10 overflow-hidden">/,
+  'Do not duplicate EXP at the top when the main EXP bar is already above HP/energy');
+assert.match(home, /relative flex-1 h-5 rounded-full/, 'The full real EXP bar remains visible above HP/energy');
+assert.match(css, /\.territory-screen \.territory-section-loading \{[\s\S]*?min-height:100%/,
+  'Section loader must fill the gameplay viewport instead of floating above a black void');
+assert.match(app, /<Suspense fallback=\{[\s\S]*?territory-section-loading/,
+  'Original lazy loading keeps its accessible, Viking-themed status screen');
+for (const icon of ['ic-events.webp', 'ic-quests.webp', 'ic-invite.webp',
+  'ic-shop.webp', 'ic-trials.webp', 'ic-arena-viking.webp']) {
+  assert.ok(home.includes('<SideButton icon="/' + icon + '"'),
+    'Declutter must never conceal a working City destination: ' + icon);
+}
+
+
+// Owner's real Cave gameplay: show player-facing actions, not transport internals.
+// The trusted server session, receipt fencing and manual/auto input model stay intact.
+const caveUi = await read('src/components/pve/ServerAdventureScreen.tsx');
+assert.match(caveUi, /Восстановить бой/, 'Cave recovery remains clearly available to the player');
+assert.match(caveUi, /Подключаем бой/, 'Cave uses a natural loading message');
+assert.match(caveUi, /Ничего из пояса не расходуется/, 'Elixir limitations remain honest about no debits');
+assert.doesNotMatch(caveUi, /Восстановить серверный бой|Синхронизация|серверным боям пещеры/,
+  'Players should not see internal network and implementation jargon');
+assert.doesNotMatch(caveUi, /\? \(en\?'Auto':'Авто'\) : \(en\?'Manual':'Ручной'\)/,
+  'The debug-like Auto/Manual cave status must not clutter combat');
+assert.match(caveUi, /restoreAdventureSaveFence/, 'Server session recovery must remain intact');
+assert.match(caveUi, /requestAdventureSettlement/, 'Server-owned settlement must remain intact');
+assert.match(caveUi, /value\.state\.input\.control === 'auto'/,
+  'Existing combat control state still works without a visible debug label');
