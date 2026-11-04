@@ -72,7 +72,16 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   }, [confirmLeave]);
 
   const room = view?.room;
-  const countdown = useCountdown(room ? (room.status === 'waiting' ? room.startsAt : room.deadline) : null, clockOffset);
+  const teamLive = room?.teamLive === true;
+  const ownDeadline = teamLive
+    ? (view?.me.team === 1 ? room?.teamDeadline1 : room?.teamDeadline2) ?? null
+    : null;
+  const enemyDeadline = teamLive
+    ? (view?.me.team === 1 ? room?.teamDeadline2 : room?.teamDeadline1) ?? null
+    : null;
+  const countdown = useCountdown(room ? (room.status === 'waiting' ? room.startsAt : ownDeadline ?? room.deadline) : null, clockOffset);
+  const enemyCountdown = useCountdown(enemyDeadline, clockOffset);
+  const attackCooldown = useCountdown(teamLive ? view?.me.nextStrikeAt ?? null : null, clockOffset);
   const finished = room?.status === 'finished';
   const chatSeconds = useCountdown(finished ? postFightDeadline : null, clockOffset);
   const chatExpired = finished && postFightDeadline !== null && chatSeconds === 0;
@@ -170,7 +179,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
     setBlocks((b) => (b.includes(z) ? b.filter((x) => x !== z) : b.length < 2 ? [...b, z] : [b[1], z]));
 
   const strike = () => {
-    if (actionFlight.current || busy || !isActive || !alive || view?.me.moved || view?.me.auto
+    if (actionFlight.current || busy || !isActive || !alive || view?.me.moved || view?.me.auto || attackCooldown > 0
       || !shownEnemy || shownEnemy.hp <= 0 || !attack || blocks.length !== 2) return;
     hapticImpact('medium');
     const move = { attack, blocks };
@@ -262,16 +271,23 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
         {offline && <WifiOff className="w-3.5 h-3.5 text-red-400 shrink-0" />}
         {room.status !== 'finished' && (
           <div
-            title={isActive ? (language === 'en' ? `Turn timer: ${room.timeout} sec.` : `Тайм на ход: ${room.timeout} сек.`) : undefined}
+            title={isActive ? (teamLive ? (language === 'en' ? 'Your team: time left to attack' : 'Вашей команде осталось до следующего удара') : (language === 'en' ? `Turn timer: ${room.timeout} sec.` : `Тайм на ход: ${room.timeout} сек.`)) : undefined}
             className={`flex items-center gap-1 h-6 px-2 rounded-lg text-xs font-bold tabular-nums shrink-0 ${
               isActive && countdown <= 10 ? 'bg-red-500/20 text-red-300 animate-pulse' : 'bg-black/40 text-white'
             }`}
           >
             <Timer className="w-3 h-3" /> {countdown}{language === 'en' ? 's' : 'с'}
-            {isActive && <span className="text-[9px] font-normal text-gray-500">/{room.timeout}</span>}
+            {isActive && <span className="text-[9px] font-normal text-gray-500">/{teamLive ? 60 : room.timeout}</span>}
           </div>
         )}
       </div>
+
+      {isActive && teamLive && (
+        <p className="text-[11px] text-center text-amber-100/90 tabular-nums" data-testid="arena-team-timers">
+          {language === 'en' ? 'Your team' : 'Ваша команда'}: {countdown}{language === 'en' ? 's' : 'с'} · {language === 'en' ? 'Opponents' : 'Противники'}: {enemyCountdown}{language === 'en' ? 's' : 'с'}
+          {' · '}{language === 'en' ? 'At least one team strike each 60s!' : 'Хоть один удар команды за 60 сек.!'}
+        </p>
+      )}
 
       {room.status === 'waiting' && (
         <div className="card text-center py-6">
@@ -292,6 +308,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
           won={won}
           draw={draw}
           moved={view.me.moved}
+          cooldown={attackCooldown}
           auto={view.me.auto}
           autoLocked={view.me.vip < view.me.autoMinVip}
           autoMinVip={view.me.autoMinVip}
