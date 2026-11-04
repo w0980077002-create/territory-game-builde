@@ -50,12 +50,18 @@ export function FighterFigure({
   useEffect(() => {
     if (!rig) return;
     let cancelled = false;
-    const images = ['head', 'torso', 'arm-right', 'arm-left', 'leg-right', 'leg-left', 'weapon', 'shield'].map(part => {
+    const loads = ['head', 'torso', 'arm-right', 'arm-left', 'leg-right', 'leg-left', 'weapon', 'shield'].map(part => {
       const img = new Image();
+      // Telegram WebViews can omit decode(). Install both handlers before src
+      // so cached images and failed cutouts cannot leave half a rig on screen.
+      const loaded = new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Missing combat rig cutout: ' + part));
+      });
       img.src = rigAsset(rig, part);
-      return img;
+      return typeof img.decode === 'function' ? img.decode().catch(() => loaded) : loaded;
     });
-    Promise.all(images.map(img => img.decode())).then(() => {
+    void Promise.all(loads).then(() => {
       if (!cancelled) setAssets({ id: rig.id, ready: true });
     }, () => { if (!cancelled) setAssets({ id: rig.id, ready: false }); });
     return () => { cancelled = true; };
