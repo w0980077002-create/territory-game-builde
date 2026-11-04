@@ -202,9 +202,9 @@ export function ArenaWeeklyBoard() {
       {current && (
         <div className="arena-weekly-foot arena-weekly-personal">
           <span>{en ? 'MY WEEK' : 'МОЯ НЕДЕЛЯ'}: <strong>{en ? `${status.my_wins} WINS` : `${status.my_wins} ПОБЕД`}</strong>{display?.displayRank != null && <span className="arena-weekly-my-rank">{en ? `#${display.displayRank}` : `№${display.displayRank}`}</span>}</span>
-          {rows.length > 3 && (
+          {rows.length > 0 && (
             <button type="button" className="arena-weekly-expand" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
-              {expanded ? (en ? 'Collapse' : 'Свернуть') : (en ? 'TOP 50' : 'ВЕСЬ ТОП-50')} <ChevronRight className="h-4 w-4" />
+              {expanded ? (en ? 'Collapse ranking' : 'Свернуть рейтинг') : (en ? 'Full ranking (1–50)' : 'Полный рейтинг (1–50)')} <ChevronRight className="h-4 w-4" />
             </button>
           )}
         </div>

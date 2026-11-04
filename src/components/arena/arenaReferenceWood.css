@@ -1,0 +1,87 @@
+/* Arena entrance material palette matched to the owner's SHOP screenshot.
+ * The screenshot uses deep reddish walnut (not orange pine), aged forged
+ * iron and muted brass. Keep the approved fight art, actions and HUD intact.
+ */
+.arena-approved-entry {
+  --arena-walnut-shadow: #210f0a;
+  --arena-walnut-dark: #34190f;
+  --arena-walnut-core: #542916;
+  --arena-walnut-highlight: #7b4323;
+  --arena-aged-iron: #777078;
+  --arena-brass: #c18c48;
+  background-color: var(--arena-walnut-shadow);
+  background-image:
+    radial-gradient(ellipse 80% 30% at 49% 12%, #a567282b, transparent 72%),
+    linear-gradient(90deg, #422316, #69391f 48%, #361a10),
+    var(--arena-wood-grain);
+  background-size: auto, auto, 340px auto;
+  background-repeat: no-repeat, no-repeat, repeat;
+  background-blend-mode: screen, multiply, normal;
+  border-inline: 2px solid #67432b;
+  box-shadow: inset 5px 0 11px #120807a8, inset -5px 0 11px #120807a8;
+}
+.arena-approved-entry .arena-approved-hero {
+  background: linear-gradient(180deg, #5d2b17, #32170f 78%, #1a0d09);
+  border-bottom: 2px ridge #8c6946;
+}
+.arena-approved-entry .arena-approved-stats {
+  /* Keep the real statistics and the existing illustrated ornament. */
+  background-color: #32180e;
+  filter: drop-shadow(0 3px 3px #130806b0);
+}
+.arena-approved-entry .arena-approved-modes {
+  gap: 6px;
+  margin-inline: 2px;
+}
+.arena-approved-entry .arena-approved-mode {
+  border: 2px ridge var(--arena-aged-iron);
+  border-radius: 8px;
+  outline: 1px solid #241008;
+  box-shadow: inset 0 0 0 2px #35190f, 0 0 0 2px #79502f, 0 4px 8px #0c0605d4;
+}
+.arena-approved-entry .arena-approved-mode-gold {
+  box-shadow: inset 0 0 0 2px #b88c48, 0 0 0 2px #79502f, 0 3px 9px #0c0605d4;
+}
+.arena-approved-entry .arena-approved-mode-blue {
+  box-shadow: inset 0 0 0 2px #6b8798, 0 0 0 2px #79502f, 0 3px 9px #0c0605d4;
+}
+.arena-approved-entry .arena-approved-mode-red {
+  box-shadow: inset 0 0 0 2px #a06558, 0 0 0 2px #79502f, 0 3px 9px #0c0605d4;
+}
+.arena-approved-entry .arena-approved-fight-tip {
+  color: #f5dfbe;
+  border: 2px ridge #9a764e;
+  background: linear-gradient(180deg, #64361c, #34190f 60%, #1d100c);
+  box-shadow: inset 0 1px #d4ad7454, 0 3px 6px #110706aa;
+}
+.arena-approved-entry .arena-weekly {
+  border: 3px ridge #8e796c;
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, #30160e, #7c4527 48%, #32170e),
+    var(--arena-wood-grain) center / 360px auto repeat;
+  background-blend-mode: multiply;
+  box-shadow:
+    inset 0 0 0 2px #2a130c,
+    inset 0 2px 0 #bc864b7a,
+    0 4px 12px #0a0504dc;
+}
+.arena-approved-entry .arena-weekly-player {
+  border: 2px ridge #786a62;
+  border-radius: 6px;
+  background: linear-gradient(155deg, #5e321b, #32170f 58%, #1d100d);
+  box-shadow: inset 0 1px #be94604c, 0 2px 4px #0e0605ba;
+}
+.arena-approved-entry .arena-weekly-podium {
+  border-color: #b18a56;
+  background: linear-gradient(150deg, #714023, #3d2015 60%, #25130c);
+}
+.arena-approved-entry .arena-weekly-player-name {
+  color: #ffedc9;
+}
+.arena-approved-entry .arena-weekly-note {
+  color: #dbbc93;
+}
+@media (max-width: 365px) {
+  .arena-approved-entry .arena-approved-modes { gap: 4px; margin-inline: 0; }
+}

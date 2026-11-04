@@ -1,0 +1,251 @@
+/* TERRITORY Arena — approved hand-carved OLD OAK.
+   Independent transparent wood / forged-iron / rope SVG pieces are shared by
+   the real, data-driven UI. No names, numbers or controls are rasterized.
+   Mobile WebView safe: no heavy animation, canvas, SVG turbulence or layout shifts. */
+.arena-approved-entry {
+  --arena-oak: var(--arena-old-oak-grain, var(--arena-wood-grain));
+  background:
+    linear-gradient(90deg,#1c0e09e0,#32190e99 45%,#1b0c08e2),
+    var(--arena-oak) center top / 510px auto repeat;
+  border-inline:3px ridge #6b4931;
+  box-shadow:inset 3px 0 8px #170a05,inset -3px 0 8px #170a05;
+}
+.arena-approved-entry .arena-approved-hero {
+  background:var(--arena-oak) center / 600px auto repeat;
+  border-bottom:3px ridge #a47440;
+  box-shadow:0 5px 8px #1409059c;
+}
+.arena-approved-entry .arena-approved-stadium {
+  border-bottom:7px ridge #80502e;
+  box-shadow:inset 0 -7px 9px #241108c0;
+}
+.arena-approved-entry .arena-approved-stadium::after {
+  border-bottom:4px solid #9d7248;
+  box-shadow:inset 0 0 10px #ce965569,inset 0 -9px 9px #150b05;
+}
+.arena-approved-entry .arena-approved-stats {
+  background-image:
+    linear-gradient(180deg,#180d092a,#180c0b82),
+    var(--arena-oak) !important;
+  background-size:auto, 690px auto !important;
+  background-position:center,center 44% !important;
+  min-height:72px;
+  height:clamp(70px,17.8vw,83px);
+  padding:8px 8px;
+  margin:0;
+  border:3px ridge #8e633c;
+  border-radius:6px;
+  box-shadow:inset 0 0 0 2px #241209,inset 0 2px 0 #c69e6259,0 3px 5px #0b0403;
+  filter:none;
+}
+.arena-approved-entry .arena-approved-stat {
+  border-right:3px ridge #55515a;
+  padding:3px 4px;
+  grid-template-columns:minmax(23px,.4fr) minmax(0,1fr);
+}
+.arena-approved-entry .arena-approved-stat:last-child {border-right:0;}
+.arena-approved-entry .arena-approved-stat .arena-approved-stat-info strong {font-size:clamp(18px,5.9vw,28px);color:#fff1ce;text-shadow:0 2px 3px #130b0a;}
+.arena-approved-entry .arena-approved-stat .arena-approved-stat-info>span {font-size:clamp(8px,2.3vw,11px);color:#ffe3ae;}
+.arena-approved-entry .arena-approved-stat-icon {filter:drop-shadow(0 2px 2px #0c0502e0);}
+.arena-approved-entry .arena-approved-modes {gap:5px;margin:9px 2px 10px;}
+.arena-approved-entry .arena-approved-mode {
+  isolation:isolate;
+  padding:4px;
+  border:3px ridge #9a6a43;
+  border-radius:13px;
+  background:var(--arena-oak) center / 350px auto;
+  box-shadow:inset 0 0 0 1px #dfa76b,0 3px 8px #090403;
+  outline:0;
+  overflow:hidden;
+}
+.arena-approved-entry .arena-approved-mode::after {
+  content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:
+    var(--arena-iron) top left / 23px 23px no-repeat,
+    var(--arena-iron) bottom right / 23px 23px no-repeat;
+  filter:drop-shadow(0 1px 1px #000a);
+}
+.arena-approved-entry .arena-approved-mode:focus-visible {outline:3px solid #fff4ad;outline-offset:1px;}
+.arena-approved-entry .arena-approved-mode-gold {border-color:#b58c4f;}
+.arena-approved-entry .arena-approved-mode-blue {border-color:#7799a9;}
+.arena-approved-entry .arena-approved-mode-red {border-color:#a47564;}
+.arena-approved-entry .arena-approved-mode-image {border-radius:7px;object-fit:fill;}
+.arena-approved-entry .arena-approved-fight-tip {
+  display:flex;align-items:center;justify-content:center;min-height:39px;
+  margin:4px 4px 9px;
+  padding:8px 5px;
+  background:
+    linear-gradient(180deg,#3a1a0b33,#15070482),
+    var(--arena-oak) center / 480px auto;
+  border:3px ridge #836143;border-radius:10px;
+  color:#ffe7ba;font-size:clamp(11px,3vw,14px);
+  box-shadow:inset 0 0 0 1px #2a130a,0 2px 6px #0e0705a8;
+}
+.arena-approved-entry .arena-approved-fight-tip>span {justify-content:center;font-weight:850;}
+.arena-approved-entry .arena-approved-fight-tip button {display:none;}
+.arena-approved-entry .arena-weekly {
+  position:relative;isolation:isolate;
+  margin:8px 1px 7px;padding:10px 9px 8px;
+  border:4px ridge #967148;border-radius:15px;
+  background:
+    linear-gradient(180deg,#1a0e0973,#29120b9b),
+    var(--arena-oak) center / 540px auto repeat;
+  box-shadow:inset 0 0 0 2px #341a0d,inset 0 2px 0 #d7a96a83,0 5px 12px #0b0603e0;
+  color:#fff3cf;
+}
+.arena-approved-entry .arena-weekly::before {
+  content:"";position:absolute;top:3px;left:3px;right:3px;height:18px;
+  background:var(--arena-rope) center / 74px 20px repeat-x;
+  pointer-events:none;opacity:.72;z-index:0;
+}
+.arena-approved-entry .arena-weekly-head {
+  position:relative;z-index:1;display:flex;
+  margin:0 0 5px;
+  padding:9px 6px 9px;
+  background:
+    linear-gradient(180deg,#713819a6,#2e160bd9),
+    var(--arena-oak) center / 370px auto;
+  border:2px ridge #b88b4c;border-radius:7px;
+  box-shadow:inset 0 2px #dda66670,0 3px 7px #120703;
+}
+.arena-approved-entry .arena-weekly-heading {min-width:0;gap:5px;}
+.arena-approved-entry .arena-weekly-heading h3 {
+  color:#ffe2a0;font-size:clamp(13px,4vw,20px);
+  text-transform:uppercase;font-weight:1000;letter-spacing:-.015em;
+  text-shadow:0 2px #1a0903,0 0 4px #000c;
+}
+.arena-approved-entry .arena-weekly-heading svg {color:#ffd16d;filter:drop-shadow(0 1px 2px #000);}
+.arena-approved-entry .arena-weekly-prize-button {
+  min-width:34px;min-height:34px;width:34px;height:34px;
+  border:2px ridge #f6cd6e;border-radius:9px;
+  background:linear-gradient(#f7c457,#a75b11);
+  box-shadow:inset 0 1px #fff5c2,0 2px 6px #170908;
+}
+.arena-approved-entry .arena-weekly-timer {
+  min-height:32px;padding:5px 6px;border:2px ridge #c18b4e;
+  background:linear-gradient(180deg,#172a3e,#0d1729);
+  box-shadow:inset 0 2px #54667e3d;
+  color:#ffe3a6;font-size:clamp(9px,2.65vw,12px);
+}
+.arena-approved-entry .arena-weekly-winners {
+  position:relative;display:grid;grid-template-columns:1fr 1.12fr 1fr;align-items:end;
+  margin:5px 0 6px;padding:8px 2px 5px;
+  gap:6px;
+  background:radial-gradient(ellipse at 50% 58%,#d3913b40,transparent 62%);
+}
+.arena-approved-entry .arena-weekly-winner {
+  min-height:132px;
+  margin:0;
+  padding:9px 5px 9px;
+  border:3px ridge #9eabba;
+  border-radius:17px 17px 9px 9px;
+  background:
+    linear-gradient(180deg,#14253b81,#09111e99),
+    var(--arena-oak) center / 280px auto;
+  box-shadow:inset 0 0 0 2px #1b100d,inset 0 3px #b6c2cd75,0 3px 0 #684026,0 5px 9px #080402c9;
+}
+.arena-approved-entry .arena-weekly-winner-1 {
+  min-height:155px;
+  transform:translateY(-4px);
+  border-color:#ffcf67;
+  background:
+    radial-gradient(ellipse at 50% 25%,#f5be6088,transparent 68%),
+    linear-gradient(180deg,#60412055,#1a0c0a95),
+    var(--arena-oak) center / 300px auto;
+  box-shadow:inset 0 0 0 2px #412309,inset 0 3px #ffe2a8c0,0 0 15px #ffbc3a85,0 4px 0 #794318,0 7px 10px #100804cc;
+}
+.arena-approved-entry .arena-weekly-winner-3 {
+  border-color:#d69c74;
+  box-shadow:inset 0 0 0 2px #3b1d12,inset 0 3px #ffd3b27d,0 4px 7px #090402;
+}
+.arena-approved-entry .arena-weekly-winner::after {
+  content:"";position:absolute;bottom:1px;left:8%;right:8%;height:5px;
+  background:linear-gradient(90deg,#646778,#d2d7da,#5e5d67);
+  border-radius:6px;opacity:.9;
+}
+.arena-approved-entry .arena-weekly-winner-1::after{background:linear-gradient(90deg,#7b480e,#ffe7a0,#89531a);}
+.arena-approved-entry .arena-weekly-winner-3::after{background:linear-gradient(90deg,#753c24,#ebbb95,#8b472b);}
+.arena-approved-entry .arena-weekly-champion-crown {
+  color:#ffe186;fill:#db9623;
+  width:34px;height:34px;top:-20px;
+  filter:drop-shadow(0 2px 2px #170907) drop-shadow(0 0 7px #ffbe48);
+}
+.arena-approved-entry .arena-weekly-winner-portrait {
+  width:clamp(56px,16vw,82px);height:clamp(70px,20vw,101px);
+  border:2px ridge #9babc0;border-radius:45% 45% 8px 8px;
+  background:radial-gradient(ellipse at center 42%,#28415b,#10172a 64%,#080a13);
+  box-shadow:0 0 8px #05040b, inset 0 0 4px #67768a;
+}
+.arena-approved-entry .arena-weekly-winner-1 .arena-weekly-winner-portrait {
+  width:clamp(67px,18vw,92px);height:clamp(80px,22vw,108px);
+  border-color:#f7cd68;
+  box-shadow:0 0 13px #f9b4438a,inset 0 1px 8px #e2b260;
+}
+.arena-approved-entry .arena-weekly-winner-medal {
+  top:0;left:1px;transform:none;
+  width:clamp(21px,5.5vw,28px);height:clamp(24px,6vw,32px);
+  border:2px ridge #d0d9ed;
+  box-shadow:0 2px 4px #0c0604;
+}
+.arena-approved-entry .arena-weekly-winner-1 .arena-weekly-winner-medal {
+  top:1px;left:2px;transform:none;
+}
+.arena-approved-entry .arena-weekly-winner-name {
+  color:#fff8e6;width:100%;padding:2px 1px;
+  font-size:clamp(9px,2.8vw,13px);line-height:1.15;
+  background:linear-gradient(90deg,transparent,#0d1628df 15%,#0d1628df 85%,transparent);
+}
+.arena-approved-entry .arena-weekly-winner-wins {color:#ffe0a3;margin-top:3px;font-size:clamp(10px,2.8vw,13px);}
+.arena-approved-entry .arena-weekly-personal {
+  display:flex;flex-direction:column;align-items:stretch;gap:6px;
+  margin:5px 0 0;padding:0;border:0;
+}
+.arena-approved-entry .arena-weekly-personal>span {
+  order:2;align-self:center;
+  font-size:10px;color:#dcc09c;
+}
+.arena-approved-entry .arena-weekly-personal .arena-weekly-expand {
+  order:1;display:flex;justify-content:center;
+  width:100%;min-height:43px;margin:0;padding:8px 10px;
+  border:3px ridge #f5c665;border-radius:11px;
+  color:#35210b;
+  background:linear-gradient(180deg,#ffe48b 0%,#d88d25 50%,#a95e14 100%);
+  font-size:clamp(11px,3.3vw,15px);font-weight:1000;
+  box-shadow:inset 0 2px #fff3bd,0 3px 0 #582b0d,0 5px 9px #100803;
+  text-shadow:0 1px #ffe7a6;
+}
+.arena-approved-entry .arena-weekly-personal .arena-weekly-expand svg {margin-left:6px;}
+.arena-approved-entry .arena-weekly-note {
+  margin-top:4px;text-align:center;font-size:9px;line-height:1.3;color:#e5c7a0;
+}
+.arena-approved-entry .arena-weekly-rows-expanded {
+  background:linear-gradient(#120e0bc9,#1e110ebd),var(--arena-oak) center / 420px auto;
+  border:2px ridge #ae7740;max-height:min(45vh,340px);
+}
+.arena-approved-entry .arena-weekly-rows-expanded .arena-weekly-player {
+  background:linear-gradient(180deg,#263f53,#121f2f);border:1px solid #8e6d51;
+}
+.arena-approved-entry .arena-weekly-chase {
+  border:2px ridge #987143;border-radius:8px;
+  background:linear-gradient(#512c18,#28150f);
+}
+@media(max-width:365px) {
+  .arena-approved-entry .arena-approved-stats {min-height:64px;height:64px;padding:5px 4px;}
+  .arena-approved-entry .arena-approved-stat {padding:2px;grid-template-columns:24px 1fr;}
+  .arena-approved-entry .arena-approved-stat .arena-approved-stat-info strong {font-size:clamp(15px,5.3vw,20px);}
+  .arena-approved-entry .arena-approved-modes {gap:3px;margin-inline:0;}
+  .arena-approved-entry .arena-approved-mode {padding:3px;border-width:2px;}
+  .arena-approved-entry .arena-approved-mode::after {background-size:18px 18px,18px 18px;}
+  .arena-approved-entry .arena-weekly {padding:7px 5px;}
+  .arena-approved-entry .arena-weekly-winners {gap:4px;}
+  .arena-approved-entry .arena-weekly-winner {min-height:124px;padding:7px 2px;}
+  .arena-approved-entry .arena-weekly-winner-1 {min-height:142px;}
+  .arena-approved-entry .arena-weekly-winner-portrait {width:53px;height:65px;}
+  .arena-approved-entry .arena-weekly-winner-1 .arena-weekly-winner-portrait {width:59px;height:74px;}
+  .arena-approved-entry .arena-weekly-heading h3 {font-size:12px;}
+  .arena-approved-entry .arena-weekly-timer {padding:4px 4px;font-size:9px;}
+  .arena-approved-entry .arena-weekly-prize-button {min-width:30px;width:30px;height:30px;min-height:30px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .arena-approved-entry .arena-approved-mode {transition:none;}
+}

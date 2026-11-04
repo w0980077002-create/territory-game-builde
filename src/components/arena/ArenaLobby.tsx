@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import { useStore } from '@/game/store';
 import { useGame, useArena } from '@/game/actions';
 import { currentArenaRoom, type ArenaMode } from '@/game/arenaApi';
@@ -11,6 +11,8 @@ import { ArenaWeeklyBoard } from './ArenaWeeklyBoard';
 import { SHOW_WEEKLY_CHAMPIONSHIP } from '@/game/uiFeatureFlags';
 import { RulesModal } from './ArenaRulesModal';
 import './arenaLobby.css';
+import './arenaReferenceWood.css';
+import './arenaOldOakFinish.css';
 
 const ENERGY_COST = 1;
 const ORIGINAL = import.meta.env.BASE_URL + 'assets/territory/characters/';
@@ -110,7 +112,15 @@ export function ArenaLobby({ onJoined, onBack, onSeason, backDisabled = false }:
   };
 
   return (
-    <div className="arena-lobby arena-approved-entry animate-fade-in">
+    <div
+      className="arena-lobby arena-approved-entry animate-fade-in"
+      style={{
+        '--arena-wood-grain': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-wood-planks.webp")`,
+        '--arena-old-oak-grain': `url("${import.meta.env.BASE_URL}assets/territory/arena-ui/old-oak-grain.svg")`,
+        '--arena-iron': `url("${import.meta.env.BASE_URL}assets/territory/arena-ui/iron-corner.svg")`,
+        '--arena-rope': `url("${import.meta.env.BASE_URL}assets/territory/arena-ui/rope-wrap.svg")`,
+      } as CSSProperties}
+    >
       <section className="arena-approved-hero" aria-label={en ? 'Viking Arena' : 'Арена викингов'}>
         {!artFailed ? (
           <div className={`arena-approved-stadium ${en ? 'arena-approved-stadium-en' : ''}`}>
@@ -172,7 +182,6 @@ export function ArenaLobby({ onJoined, onBack, onSeason, backDisabled = false }:
 
       <div className={`arena-approved-fight-tip ${noEnergy ? 'arena-approved-fight-tip-empty' : ''}`}>
         <span><Zap aria-hidden="true" />{en ? `Battle: ${ENERGY_COST} energy · Available: ${state.player.energy}` : `Бой: ${ENERGY_COST} энергия · Доступно: ${state.player.energy}`}</span>
-        <button type="button" onClick={() => setShowRules(true)}><Info aria-hidden="true" />{en ? 'Rules' : 'Правила'}</button>
       </div>
       {error && <p role="alert" className="arena-lobby-warning">{error}</p>}
       {recoveryRequired && (
