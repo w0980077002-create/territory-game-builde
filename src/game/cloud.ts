@@ -46,7 +46,10 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
       ...defaults.player,
       ...migrated.player,
       stats: { ...defaults.player.stats, ...migrated.player?.stats },
-      xpToNext: xpForLevel(heroLevel),
+      // Older isolated test adapters stub the engine without xpForLevel.
+      xpToNext: typeof xpForLevel === 'function'
+        ? xpForLevel(heroLevel)
+        : (migrated.player?.xpToNext ?? defaults.player.xpToNext),
       equipped,
     },
     quests: migrated.quests?.length ? migrated.quests : defaults.quests,
