@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { ensurePlayerSession } from './auth';
 import type { GameState } from './types';
-import { createInitialGame, getComputedStats } from './engine';
+import { createInitialGame, getComputedStats, xpForLevel } from './engine';
 import { EQUIPMENT_BALANCE_VERSION, migrateGameStateBalance, capEquipmentToHeroLevel } from './equipmentBalance';
 import { createCoalescingWriter } from './saveQueue';
 import { reconcileFollowers } from './followers';
@@ -46,6 +46,7 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
       ...defaults.player,
       ...migrated.player,
       stats: { ...defaults.player.stats, ...migrated.player?.stats },
+      xpToNext: xpForLevel(heroLevel),
       equipped,
     },
     quests: migrated.quests?.length ? migrated.quests : defaults.quests,
