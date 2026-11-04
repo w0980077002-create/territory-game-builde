@@ -23,7 +23,8 @@ function App() {
 }
 createRoot(document.getElementById('root')).render(<LanguageProvider><App/></LanguageProvider>);`;
 const mockActions = `import {create} from '@/game/store';
-export const useGame=create({settings:{speed:1,auto:false},battleStones:25});`;
+export const useGame=create({settings:{speed:1,auto:false},battleStones:25});
+export const useAccount=create({vip:0,permanentVip:0,vipRemaining:0,vipCheckedAt:0});`;
 const mockLive = `import {create} from '@/game/store';
 export const useLive=create({mail:[]});
 export async function claimMailGrant(){return false}

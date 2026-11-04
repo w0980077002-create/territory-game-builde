@@ -86,6 +86,11 @@ const matchesChoice = (item: InventoryItem, choice: BeltRefillChoice): boolean =
   && item.rarity === choice.rarity && item.arenaEffect === choice.arenaEffect
   && JSON.stringify(item.effect ?? null) === JSON.stringify(choice.effect ?? null);
 
+const sameChoice = (a: BeltRefillChoice, b: BeltRefillChoice): boolean =>
+  a.type === b.type && a.name === b.name && a.rarity === b.rarity
+  && a.arenaEffect === b.arenaEffect
+  && JSON.stringify(a.effect ?? null) === JSON.stringify(b.effect ?? null);
+
 const refillChoices = (state: GameState): (BeltRefillChoice | null)[] =>
   Array.from({ length: BELT_WIN_GOALS.length }, (_, i) =>
     state.beltRefillChoices?.[i] ?? (state.belt[i] ? asRefillChoice(state.belt[i]!) : null));
@@ -103,22 +108,32 @@ export function refillBeltFromInventory(state: GameState, c: BeltContext): GameS
   for (let i = 0; i < BELT_WIN_GOALS.length; i++) {
     if (!isSlotOpen(i, c)) continue;
     const choice = choices[i];
-    if (!choice || kindsSeen.some(s => JSON.stringify(s) === JSON.stringify(choice))) continue;
+    if (!choice || kindsSeen.some(s => sameChoice(s, choice))) continue;
+    // A remembered empty slot must never duplicate a kind that was manually
+    // equipped in another slot after the original stack ran out.
+    if (belt.some((slot, index) => index !== i && slot && sameChoice(asRefillChoice(slot), choice))) continue;
     kindsSeen.push(choice);
     const current = belt[i];
     if (current && (!matchesChoice(current, choice) || current.qty >= BELT_STACK)) continue;
     // Oldest-expiring-first; never merge batches with distinct deadlines.
-    const available = inventory
+    const candidates = inventory
       .filter(item => item.qty > 0 && matchesChoice(item, choice)
         && (!current || !isPerishableItem(item) || item.expiresAt === current.expiresAt))
-      .sort((a,b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0];
-    if (!available) continue;
-    const n = Math.min(BELT_STACK - (current?.qty ?? 0), available.qty);
-    if (!n) continue;
-    const source = inventory.find(item => item.id === available.id)!;
-    source.qty -= n;
-    belt[i] = { ...(current ?? available), id: `belt_${i}`, qty: (current?.qty ?? 0) + n };
-    moved += n;
+      .sort((a,b) => elixirExpiryTime(a) - elixirExpiryTime(b));
+    const first = candidates[0];
+    if (!first) continue;
+    let quantity = current?.qty ?? 0;
+    // Fill from all compatible stacks in this batch in one pass. A later
+    // callback must not move more items merely because stock was split.
+    for (const source of candidates) {
+      if (isPerishableItem(first) && source.expiresAt !== first.expiresAt) continue;
+      const n = Math.min(BELT_STACK - quantity, source.qty);
+      if (n <= 0) break;
+      source.qty -= n;
+      quantity += n;
+      moved += n;
+    }
+    belt[i] = { ...(current ?? first), id: `belt_${i}`, qty: quantity };
   }
   return moved ? { ...state, belt, inventory: inventory.filter(item => item.qty > 0),
     beltRefillChoices: choices } : state;
@@ -174,7 +189,11 @@ export function putInBelt(state: GameState, itemId: string, c: BeltContext): Gam
     .map((i) => (i.id === item.id ? { ...i, qty: i.qty - moved } : i))
     .filter((i) => i.qty > 0);
   const choices = refillChoices(state);
-  choices[index] = asRefillChoice(item);
+  const choice = asRefillChoice(item);
+  for (let i = 0; i < choices.length; i++) {
+    if (i !== index && choices[i] && sameChoice(choices[i]!, choice)) choices[i] = null;
+  }
+  choices[index] = choice;
   return { ...state, belt, inventory, beltRefillChoices: choices };
 }
 

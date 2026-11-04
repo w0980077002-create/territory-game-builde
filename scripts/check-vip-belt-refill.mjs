@@ -46,6 +46,29 @@ assert.equal(fromFar.belt[0].expiresAt,farDeadline,'new lot keeps its own deadli
 assert.equal(total(fromFar),total(usedAll));
 assert.equal(belt.refillBeltFromInventory(fromFar,ctx()),fromFar);
 
+const splitBatch = {...usedAll, inventory:[item('split1','Healing',2,farDeadline),
+  item('split2','Healing',3,farDeadline),item('later','Healing',3,days(7))]};
+const filledSplit = belt.refillBeltFromInventory(splitBatch,ctx());
+assert.equal(filledSplit.belt[0].qty,5,'compatible stacks fill in one operation');
+assert.equal(filledSplit.belt[0].expiresAt,farDeadline);
+assert.equal(total(filledSplit),total(splitBatch));
+assert.equal(belt.refillBeltFromInventory(filledSplit,ctx()),filledSplit,'repeat callback is a no-op');
+
+// A remembered empty slot can coexist with a later manual move of that kind
+// to another slot in an older or cross-device save. Never duplicate the kind.
+const relocated = {...usedAll, belt:[null,{...original.inventory[0],id:'belt_1',qty:2},...Array(5).fill(null)],
+  beltRefillChoices:[usedAll.beltRefillChoices[0],usedAll.beltRefillChoices[0],...Array(5).fill(null)]};
+const relocatedRefill = belt.refillBeltFromInventory(relocated,ctx(100));
+assert.equal(relocatedRefill.belt[0],null,'stale choice must not duplicate the occupied slot');
+assert.equal(relocatedRefill.belt.filter(Boolean).length,1);
+assert.equal(total(relocatedRefill),total(relocated),'relocation preserves every consumable');
+
+const selectedElsewhere = {...usedAll, belt:[item('occupied','Attack',1,nearDeadline,'elixir'),...Array(6).fill(null)]};
+const movedChoice = belt.putInBelt(selectedElsewhere,'far',ctx(100));
+assert(movedChoice);
+assert.equal(movedChoice.beltRefillChoices[0],null,'manual selection clears the stale empty-slot choice');
+assert.equal(movedChoice.belt[1].name,'Healing');
+
 const wrongKind = { ...usedAll, inventory: [item('other','Attack',5,days(3),'elixir')] };
 assert.equal(belt.refillBeltFromInventory(wrongKind,ctx()),wrongKind,
   'auto refill may not substitute a different consumable kind');
