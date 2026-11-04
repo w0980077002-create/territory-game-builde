@@ -1,0 +1,65 @@
+/* Arena mode cards — finish pass from the owner's 22:24 Telegram screenshot.
+ * The photographic/illustrated cards are useful but the three neon colors
+ * together overpower the warm old-oak screen. Retain the distinct artwork,
+ * embedded Russian CTA and entire button hit area. No gameplay changes. */
+.arena-approved-entry .arena-approved-modes {
+  gap: clamp(3px, 1.1vw, 6px);
+}
+
+/* One material system: aged oak/iron with three quiet identifying accents. */
+.arena-approved-entry .arena-approved-mode {
+  border: 2px solid #9b7650;
+  border-radius: 9px;
+  padding: 2px;
+  background: var(--arena-oak) center / 360px auto;
+  box-shadow:
+    inset 0 0 0 1px #d2a36d8c,
+    inset 0 2px 0 #e4b47852,
+    0 2px 5px #070403b0;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.arena-approved-entry .arena-approved-mode-gold {
+  border-color: #b28b5a;
+}
+.arena-approved-entry .arena-approved-mode-blue {
+  border-color: #7b95a5;
+}
+.arena-approved-entry .arena-approved-mode-red {
+  border-color: #a17a69;
+}
+
+/* Soften the painted fire, electric blue and aggressive red.
+ * The CTA labels remain inside the source images and must stay legible. */
+.arena-approved-entry .arena-approved-mode-image {
+  border-radius: 6px;
+  filter: saturate(.78) contrast(.96) brightness(.96);
+  transition: filter .15s ease;
+}
+
+/* The button remains a single large touch target, and no decorative
+ * overlays cover the text or the combat action. */
+.arena-approved-entry .arena-approved-mode::before,
+.arena-approved-entry .arena-approved-mode::after {
+  content: none;
+}
+.arena-approved-entry .arena-approved-mode:active:not(:disabled) {
+  transform: translateY(1px);
+  filter: none;
+  box-shadow: inset 0 0 0 1px #eed5a584, 0 1px 3px #080403;
+}
+.arena-approved-entry .arena-approved-mode:active:not(:disabled) .arena-approved-mode-image {
+  filter: saturate(.85) contrast(.98) brightness(1.01);
+}
+.arena-approved-entry .arena-approved-mode:focus-visible {
+  outline: 3px solid #fff1a5;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arena-approved-entry .arena-approved-mode,
+  .arena-approved-entry .arena-approved-mode-image { transition: none; }
+}
+@media (prefers-contrast: more) {
+  .arena-approved-entry .arena-approved-mode-image {
+    filter: saturate(.9) contrast(1.08);
+  }
+}
