@@ -35,7 +35,7 @@ const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventu
 
 assert.match(home, /<LiveCityBackdrop animated=\{cityMotion\}/, 'Home must render the approved layered city backdrop');
 assert.match(home, /className="home-hero-figure/, 'City hero must have a separate sizing wrapper');
-assert.match(home, /<CityLivingHero appearance=\{state\.appearance\} name=\{player\.name\} \/>/,
+assert.match(home, /<CityLivingHero appearance=\{state\.appearance\} name=\{player\.name\} vip=\{vip\} \/>/,
   'City hero must use the existing joint-rig when its art is verified');
 assert.match(livingHero, /<SkeletalFighter[\s\S]*?strike=\{null\}/,
   'City motion uses independent limbs without fake damage');
