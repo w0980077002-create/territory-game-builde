@@ -11,7 +11,7 @@ const RIG_PARTS = ['head', 'torso', 'arm-right', 'arm-left', 'leg-right', 'leg-l
  * Other appearances keep their original sprite, with no character substitution.
  * This component does not trigger fights, strikes, damage, healing or rewards.
  */
-export function CityLivingHero({ appearance, name }: { appearance: string; name: string }) {
+export function CityLivingHero({ appearance, name, vip = 0 }: { appearance: string; name: string; vip?: number }) {
   const art = getAppearanceIcon(appearance);
   const rig = getFighterRig(art);
   const originalCutout = getOriginalArticulatedHero(art);
@@ -67,7 +67,7 @@ export function CityLivingHero({ appearance, name }: { appearance: string; name:
   // Prefer the existing original 2D art on small/reduced-motion devices.
   const hasRig = !!rig && !reducedMotion && ready?.id === rig.id && ready.ok;
   return (
-    <div data-testid="city-living-hero" className="relative h-full w-full flex items-end justify-center pointer-events-none">
+    <div data-testid="city-living-hero" data-vip-aura={vip >= 5 ? Math.min(10, Math.floor(vip)) : undefined} className={`relative isolate h-full w-full flex items-end justify-center pointer-events-none ${vip >= 5 ? 'city-vip-aura' : ''}`}>
       {hasRig && rig ? (
         <div data-testid="city-hero-joint-rig" className="absolute inset-0">
           <SkeletalFighter
