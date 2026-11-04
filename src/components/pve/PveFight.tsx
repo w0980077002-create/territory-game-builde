@@ -897,7 +897,7 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
                   : (language === 'en' ? 'Try again' : 'Повторить бой')}
             </button>
           )}
-          <button type="button" data-testid="pve-result-exit" onClick={onExit}
+          <button type="button" data-testid="pve-result-exit" onClick={onExit} disabled={outcome.won && saveState !== 'confirmed'}
             className="flex-1 min-h-12 rounded-xl border border-amber-300/40 bg-[#291d18] px-2 py-2 text-[12px] leading-tight sm:text-sm font-bold text-amber-100 active:scale-[0.98] transition-transform">
             {kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')}
           </button>
@@ -972,7 +972,7 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
           </section>
         )}
         {onForge && (outcome.materials > 0 || !outcome.won) && (
-          <button type="button" data-testid="pve-visit-forge" onClick={onForge}
+          <button type="button" data-testid="pve-visit-forge" onClick={onForge} disabled={outcome.won && saveState !== 'confirmed'}
             className="relative mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-amber-300/60 bg-amber-700/70 px-3 text-sm font-extrabold text-amber-50 active:scale-[0.98]">
             <Hammer size={17} aria-hidden="true" />
             {outcome.won
@@ -997,7 +997,7 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
           </div>
         )}
         {onEquipment && (
-          <button type="button" data-testid="pve-prepare-equipment" onClick={onEquipment}
+          <button type="button" data-testid="pve-prepare-equipment" onClick={onEquipment} disabled={outcome.won && saveState !== 'confirmed'}
             className="relative mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-sky-300/50 bg-sky-900/60 px-3 text-sm font-extrabold text-sky-100 active:scale-[0.98]">
             <Shirt size={17} aria-hidden="true" />
             {!outcome.won
@@ -1007,7 +1007,7 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
                 : (language === 'en' ? 'Compare gear before the next fight' : 'Сравнить снаряжение перед следующим боем')}
           </button>
         )}
-        {outcome.won && questReady && onQuests && <button type="button" onClick={onQuests} className="relative mt-3 w-full min-h-11 rounded-xl border border-emerald-300/60 bg-emerald-700/70 px-3 text-sm font-bold text-white active:scale-[0.98]">
+        {outcome.won && questReady && onQuests && <button type="button" onClick={onQuests} disabled={saveState !== 'confirmed'} className="relative mt-3 w-full min-h-11 rounded-xl border border-emerald-300/60 bg-emerald-700/70 px-3 text-sm font-bold text-white active:scale-[0.98]">
           {language === 'en' ? 'Quest reward ready — claim it' : 'Награда за задание готова — забрать'}
         </button>}
 
