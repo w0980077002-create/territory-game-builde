@@ -1,0 +1,65 @@
+/* Final mobile QA from the owner's 22:04 Telegram screenshot.
+ * Cosmetic only: real combat buttons, leaderboard data and payouts stay untouched. */
+
+/* The three original card pictures already contain forged corner hardware.
+ * A second CSS corner was appearing directly ON TOP of each Start Fight button. */
+.arena-approved-entry .arena-approved-mode::after {
+  content: none;
+}
+
+/* The champion's crown must sit INSIDE the gold frame, not under the TOP-50
+ * heading above. Keep the badge for first place at its own top-left. */
+.arena-approved-entry .arena-weekly-winner-1 .arena-weekly-champion-crown {
+  top: 3px;
+  right: 5px;
+  width: 21px;
+  height: 21px;
+  z-index: 2;
+  filter: drop-shadow(0 2px 2px #160902) drop-shadow(0 0 4px #efad37);
+}
+
+/* Separate the little podium bases from the dark panel without adding height:
+ * first = gold, second = steel, third = bronze. */
+.arena-approved-entry .arena-weekly-winner::after {
+  left: 4px;
+  right: 4px;
+  bottom: -3px;
+  height: 7px;
+  border-radius: 1px 1px 6px 6px;
+  box-shadow: 0 2px 4px #0a0402cc;
+}
+.arena-approved-entry .arena-weekly-winner-1::after {
+  height: 9px;
+  background: linear-gradient(180deg,#ffe4a2,#d99f36 55%,#704015);
+}
+.arena-approved-entry .arena-weekly-winner-2::after {
+  background: linear-gradient(180deg,#e1edf4,#8b9ba9 55%,#414a59);
+}
+.arena-approved-entry .arena-weekly-winner-3::after {
+  background: linear-gradient(180deg,#ffceac,#bb7b55 55%,#633322);
+}
+
+/* The champions' names and win counts must remain legible on 320–390 px
+ * Telegram displays. Truncation is intentional for lengthy usernames. */
+.arena-approved-entry .arena-weekly-winner-name {
+  font-size: clamp(10px, 3.05vw, 13px);
+  letter-spacing: 0;
+  text-shadow: 0 1px 2px #000, 0 0 3px #000;
+}
+.arena-approved-entry .arena-weekly-winner-wins {
+  font-size: clamp(10px, 2.9vw, 13px);
+}
+
+/* Do not let the mode art crop or overlap its real clickable button area. */
+.arena-approved-entry .arena-approved-mode:focus-visible {
+  outline: 3px solid #ffef9c;
+  outline-offset: 2px;
+}
+@media (max-width:359px) {
+  .arena-approved-entry .arena-weekly-winner-1 .arena-weekly-champion-crown {
+    width: 18px;
+    height: 18px;
+    right: 3px;
+    top: 3px;
+  }
+}
