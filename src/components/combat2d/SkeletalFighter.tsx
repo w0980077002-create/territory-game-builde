@@ -50,8 +50,13 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
       const stops = motionStops(motion, critical);
       animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).flatMap(joint => {
         // Web Animations may be missing on older embedded SVG implementations.
-        if (typeof joint.animate !== 'function') return [];
         const frames = jointFrames(joint.dataset.rigPart as Joint, stops);
+        // Older Telegram WebViews may lack SVG Web Animations entirely.
+        // Keep the resolved pose visible instead of silently freezing every joint.
+        if (typeof joint.animate !== 'function') {
+          joint.style.transform = String(frames[frames.length - 1].transform ?? '');
+          return [];
+        }
         // Retain readable final outcome poses without large movement in reduced mode.
         const selected = reduced?.matches ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
         return [joint.animate(selected, { duration: reduced?.matches ? 1 : ACTION_MS / speed, fill: 'forwards' })];
@@ -64,6 +69,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
       if (typeof reduced?.removeEventListener === 'function') reduced.removeEventListener('change', apply);
       else if (typeof reduced?.removeListener === 'function') reduced.removeListener(apply);
       animations.forEach(a => a.cancel());
+      svg.querySelectorAll<SVGGElement>('[data-rig-part]').forEach(joint => { joint.style.transform = ''; });
     };
   }, [motion, animationEvent, speed, critical, rig.id]);
   return <svg ref={svgRef} viewBox="0 0 512 512" preserveAspectRatio="xMidYMax meet" role="img" aria-label={name}
