@@ -5,6 +5,7 @@ import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
+import { recoverPveVictoryOnBoot } from '@/game/pveVictoryRecovery';
 import { readPumpkinWitchEntitlement, installVerifiedPumpkinWitch } from '@/game/halloweenCompanion2026';
 import { watchPumpkinEntitlement } from '@/game/halloweenCompanionRefresh';
 import { restoreAdventureSaveFence, restoreAdventureStartFence } from '@/game/combatV1/receiptAdapter';
@@ -311,20 +312,29 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         // overwritten by a legacy save after a release flag or network change.
         restoreAdventureSaveFence(user.id);
         restoreAdventureStartFence(user.id);
-        const timedState = applyTimeEffects(profile.state);
+        // Reconcile an interrupted classic victory BEFORE any game hydration,
+        // time effects or automatic cloud writes. Never overwrite a newer row.
+        const recovery = await recoverPveVictoryOnBoot(user.id, profile);
+        if (cancelled) return;
+        if (!recovery) {
+          setLoadError('pve_recovery_pending');
+          return;
+        }
+        const bootState = recovery.state;
+        const timedState = applyTimeEffects(bootState);
         // Historic belt slots can become locked by harder win requirements.
         // Return their consumables to the inventory before showing or saving.
         const loadedState = reconcileLockedBelt(timedState, profile.arenaWins);
         const beltReconciled = loadedState !== timedState;
         useGame.set(loadedState);
-        const hasNewTimeEffects = loadedState.dailyResetDay !== profile.state.dailyResetDay
-          || loadedState.weeklyResetWeek !== profile.state.weeklyResetWeek
-          || loadedState.player.energy !== profile.state.player.energy
-          || loadedState.inventory !== profile.state.inventory
-          || loadedState.belt !== profile.state.belt
-          || loadedState.elixirExpiryStartedAt !== profile.state.elixirExpiryStartedAt
-          || loadedState.forgeMaterials !== profile.state.forgeMaterials
-          || loadedState.forgeMaterialBatches !== profile.state.forgeMaterialBatches;
+        const hasNewTimeEffects = loadedState.dailyResetDay !== bootState.dailyResetDay
+          || loadedState.weeklyResetWeek !== bootState.weeklyResetWeek
+          || loadedState.player.energy !== bootState.player.energy
+          || loadedState.inventory !== bootState.inventory
+          || loadedState.belt !== bootState.belt
+          || loadedState.elixirExpiryStartedAt !== bootState.elixirExpiryStartedAt
+          || loadedState.forgeMaterials !== bootState.forgeMaterials
+          || loadedState.forgeMaterialBatches !== bootState.forgeMaterialBatches;
         // Start the first migration save through the same tracked autosave queue.
         // A separate fire-and-forget write could collide with iOS gameplay saves.
         needsInitialSave.current = !!(profile.balanceMigrated || profile.rosterMigrated || hasNewTimeEffects || beltReconciled);
@@ -388,7 +398,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   if (live.banned) return <BannedScreen />;
   if (live.maintenance && !isAdmin) return <MaintenanceScreen />;
-  if (loadError) return <Splash text={loadError === 'failedLoad' ? translate('failedLoad') : loadError === 'adventure_storage_unavailable' ? (language === 'en' ? 'Cannot safely restore adventure. Reopen Telegram.' : 'Не удалось безопасно восстановить приключение. Перезапусти Telegram.') : loadError} />;
+  if (loadError) return <Splash text={loadError === 'failedLoad' ? translate('failedLoad') : loadError === 'adventure_storage_unavailable' ? (language === 'en' ? 'Cannot safely restore adventure. Reopen Telegram.' : 'Не удалось безопасно восстановить приключение. Перезапусти Telegram.') : loadError === 'pve_recovery_pending' ? (language === 'en' ? 'A previous PvE victory needs safe recovery. Your local checkpoint was kept. Check connection and reopen Telegram; if it repeats, contact game support without clearing browser data.' : 'Победа в Походе или Испытаниях ожидает безопасного восстановления. Локальная запись сохранена. Проверь интернет и перезапусти Telegram. Если ошибка повторяется, обратись в поддержку игры, не очищая данные браузера.') : loadError} />;
   if (!loaded) return <Splash text={translate('loadingHero')} />;
 
   const sub = SUB_SCREENS[screen as SubScreen];
