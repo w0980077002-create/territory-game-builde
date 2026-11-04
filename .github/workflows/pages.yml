@@ -58,6 +58,7 @@ jobs:
           node scripts/check-admin-top-diamonds.mjs
           node scripts/check-adventure-receipt-adapter.mjs
           node scripts/check-adventure-client-ui.mjs
+          node scripts/check-pve-victory-save-fence.mjs
           node scripts/check-pve-recovery-controls.mjs
           node scripts/check-pve-next-navigation.mjs
           npm run test:events
