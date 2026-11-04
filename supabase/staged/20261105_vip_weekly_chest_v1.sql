@@ -127,7 +127,7 @@ BEGIN
       WHERE jsonb_typeof(e) IS DISTINCT FROM 'object'
          OR (e->>'qty') !~ '^[1-9][0-9]{0,9}$'
          OR (e->>'expiresAt') IS NULL
-         OR (e->>'expiresAt') !~ '^\\d{4}-\\d{2}-\\d{2}T') THEN
+         OR (e->>'expiresAt') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T') THEN
       RAISE EXCEPTION 'vip_weekly_material_batches_invalid';
     END IF;
     SELECT COALESCE(sum((e->>'qty')::numeric),0) INTO v_batch_total
