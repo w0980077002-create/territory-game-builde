@@ -1,0 +1,205 @@
+/* Compact-first mobile Arena: the TOP-3 must be visible without scrolling.
+   Live server statistics, fighting behavior and weekly ranking are untouched. */
+.arena-approved-entry{
+  padding:0 4px 5px;
+  border-inline:1px solid #694c36;
+  background-color:#111724;
+}
+.arena-approved-entry .arena-approved-hero{margin:0 -4px 2px;}
+.arena-approved-entry .arena-approved-stadium{
+  height:clamp(73px,25vw,94px);min-height:0;aspect-ratio:auto;
+  border-bottom:3px ridge #98642f;
+}
+.arena-approved-entry .arena-approved-stadium>img{
+  width:100%;height:100%;object-fit:fill;
+}
+.arena-approved-entry .arena-approved-stats{
+  box-sizing:border-box;
+  height:clamp(46px,14.4vw,55px)!important;
+  min-height:46px;
+  padding:3px 6px;
+  border-width:2px;
+  background-color:#342015;
+}
+.arena-approved-entry .arena-approved-stat{
+  grid-template-columns:clamp(18px,5.7vw,27px) minmax(0,1fr);
+  padding:2px 3px;
+  column-gap:2px;
+}
+.arena-approved-entry .arena-approved-stat>.arena-approved-stat-icon{
+  width:clamp(17px,5.3vw,26px);
+  height:clamp(21px,6vw,30px);
+}
+.arena-approved-entry .arena-approved-stat .arena-approved-stat-info strong{
+  font-size:clamp(16px,5vw,23px);
+  line-height:1;
+}
+.arena-approved-entry .arena-approved-stat .arena-approved-stat-info>span{
+  font-size:clamp(7px,1.9vw,10px);
+  line-height:1.05;
+}
+.arena-approved-entry .arena-weekly{
+  padding:5px 5px 5px;
+  margin:4px 2px 5px;
+  border-width:2px;
+  border-radius:10px;
+  box-shadow:inset 0 0 0 1px #38210f,0 2px 7px #070303a8;
+}
+.arena-approved-entry .arena-weekly::before{height:10px;background-size:58px 13px;opacity:.35;}
+.arena-approved-entry .arena-weekly-head{
+  min-height:34px;
+  margin:0 0 3px;
+  padding:3px 5px;
+  border-width:1px;
+  border-radius:6px;
+}
+.arena-approved-entry .arena-weekly-heading{gap:4px;}
+.arena-approved-entry .arena-weekly-heading svg{width:17px;height:17px;}
+.arena-approved-entry .arena-weekly-heading h3{
+  font-size:clamp(11px,3.4vw,16px);
+  white-space:nowrap;
+}
+.arena-approved-entry .arena-weekly-head-actions{gap:4px;}
+.arena-approved-entry .arena-weekly-prize-button{
+  width:30px;height:30px;min-width:30px;min-height:30px;
+  border-width:1px;border-radius:8px;
+}
+.arena-approved-entry .arena-weekly-timer{
+  min-height:28px;padding:4px 5px;
+  border-width:1px;border-radius:8px;
+  font-size:clamp(9px,2.5vw,11px);
+}
+.arena-approved-entry .arena-weekly-winners{
+  box-sizing:border-box;
+  min-height:104px;
+  margin:5px 0 2px;
+  padding:7px 1px 0;
+  gap:4px;
+}
+.arena-approved-entry .arena-weekly-winner{
+  box-sizing:border-box;
+  min-height:0;height:94px;
+  padding:5px 2px 4px;
+  border-width:2px;
+  border-radius:10px 10px 6px 6px;
+  justify-content:flex-end;
+  overflow:visible;
+}
+.arena-approved-entry .arena-weekly-winner-1{
+  height:105px;min-height:0;
+  transform:translateY(-2px);
+}
+.arena-approved-entry .arena-weekly-winner-portrait,
+.arena-approved-entry .arena-weekly-winner-1 .arena-weekly-winner-portrait{
+  width:clamp(39px,12.4vw,53px);
+  height:clamp(42px,13.6vw,56px);
+  border-width:1px;
+  margin-bottom:1px;
+}
+.arena-approved-entry .arena-weekly-winner-1 .arena-weekly-winner-portrait{
+  width:clamp(47px,14vw,60px);
+  height:clamp(52px,15vw,65px);
+}
+.arena-approved-entry .arena-weekly-winner-medal{
+  width:21px;height:23px;
+  font-size:13px;
+  top:0;
+}
+.arena-approved-entry .arena-weekly-winner-1 .arena-weekly-winner-medal{
+  width:22px;height:24px;font-size:14px;
+}
+.arena-approved-entry .arena-weekly-champion-crown{
+  width:25px;height:25px;top:-17px;
+}
+.arena-approved-entry .arena-weekly-winner-name{
+  font-size:clamp(9px,2.65vw,12px);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.arena-approved-entry .arena-weekly-winner-wins{
+  font-size:clamp(9px,2.5vw,11px);
+  margin-top:1px;
+}
+.arena-approved-entry .arena-weekly-winner-wins svg{width:12px;height:12px;}
+.arena-approved-entry .arena-weekly-personal{
+  gap:2px;
+  margin-top:2px;padding:0;
+}
+.arena-approved-entry .arena-weekly-personal .arena-weekly-expand{
+  width:100%;min-height:34px;
+  padding:5px 8px;margin:0;
+  border-width:2px;
+  border-radius:7px;
+  font-size:clamp(11px,3vw,13px);
+  letter-spacing:0;
+  box-shadow:inset 0 1px #ffe8ab,0 2px 0 #683d11;
+}
+.arena-approved-entry .arena-weekly:not(.arena-weekly--expanded) .arena-weekly-personal>span{
+  display:none;
+}
+.arena-approved-entry .arena-weekly:not(.arena-weekly--expanded) .arena-weekly-chase{
+  display:none;
+}
+.arena-approved-entry .arena-weekly:not(.arena-weekly--expanded) .arena-weekly-note{
+  display:none;
+}
+.arena-approved-entry .arena-approved-modes{
+  gap:4px;
+  margin:3px 2px 3px;
+  padding:0;
+}
+.arena-approved-entry .arena-approved-mode{
+  height:clamp(125px,38.4vw,155px);
+  min-height:0;
+  padding:2px;
+  border-width:2px;
+  border-radius:8px;
+  overflow:hidden;
+  box-shadow:0 2px 5px #000c,inset 0 0 0 1px #ba8d4d;
+}
+.arena-approved-entry .arena-approved-mode-image{
+  width:100%;height:100%;
+  object-fit:fill;
+  border-radius:5px;
+}
+.arena-approved-entry .arena-approved-mode::after{
+  background-size:15px 15px,15px 15px;
+}
+.arena-approved-entry .arena-approved-fight-tip{
+  min-height:28px;
+  margin:3px 4px 4px;
+  padding:4px 3px;
+  border-width:2px;
+  border-radius:7px;
+  font-size:clamp(10px,2.85vw,12px);
+}
+.arena-approved-entry .arena-approved-fight-tip>span{gap:3px;}
+.arena-approved-entry .arena-approved-fight-tip>span svg{width:13px;height:13px;}
+/* Extended TOP-50 is accessible after a deliberate tap, not forced on entry. */
+.arena-approved-entry .arena-weekly--expanded .arena-weekly-rows-expanded{
+  max-height: min(38dvh,310px);overflow:auto;overscroll-behavior:contain;
+}
+/* Keep 320px wide Telegram phones safe from overlap. */
+@media(max-width:359px){
+  .arena-approved-entry .arena-approved-hero{margin:0 -4px 1px;}
+  .arena-approved-entry .arena-approved-stadium{height:73px;}
+  .arena-approved-entry .arena-approved-stats{min-height:45px;height:45px!important;}
+  .arena-approved-entry .arena-weekly{margin:3px 1px;padding:4px;}
+  .arena-approved-entry .arena-weekly-head{padding:3px;}
+  .arena-approved-entry .arena-weekly-heading h3{font-size:11px;}
+  .arena-approved-entry .arena-weekly-timer{font-size:9px;padding:3px;}
+  .arena-approved-entry .arena-weekly-winners{min-height:103px;gap:3px;}
+  .arena-approved-entry .arena-weekly-winner{height:91px;padding:4px 1px 3px;}
+  .arena-approved-entry .arena-weekly-winner-1{height:102px;}
+  .arena-approved-entry .arena-approved-mode{
+    height:125px;padding:1px;border-width:2px;
+  }
+  .arena-approved-entry .arena-approved-modes{margin:3px 0;gap:3px;}
+  .arena-approved-entry .arena-approved-fight-tip{font-size:10px;}
+}
+@media(min-width:650px){
+  .arena-approved-entry .arena-approved-mode{height:clamp(160px,26vw,220px);}
+  .arena-approved-entry .arena-weekly-winner{height:114px;}
+  .arena-approved-entry .arena-weekly-winner-1{height:133px;}
+}
