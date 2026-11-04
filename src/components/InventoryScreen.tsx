@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText, localizeRarity } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
-import { BELT_RULES, BELT_STACK, beltContext, canBelt, isSlotOpen, putInBelt, takeFromBelt } from '@/game/belt';
+import { BELT_RULES, BELT_STACK, beltContext, canBelt, isSlotOpen, putInBelt, sameBeltKind, takeFromBelt } from '@/game/belt';
 import { ItemArt } from './ui/ItemArt';
 import { Modal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
@@ -100,7 +100,12 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
     const latest = useGame.get();
     const next = putInBelt(latest, item.id, beltContext(latest, useArena.get().wins));
     if (!next) {
-      setBeltNote(t('noFreeBeltSlot'));
+      const alreadyEquipped = latest.belt.some((slot) => slot && sameBeltKind(slot, item));
+      setBeltNote(alreadyEquipped
+        ? (language === 'en'
+          ? 'This consumable already has a belt slot (maximum 5). Use a different kind in another slot.'
+          : 'Этот вид зелья или эликсира уже на поясе (максимум 5 шт.). В другой слот положи другой вид.')
+        : t('noFreeBeltSlot'));
       return;
     }
     useGame.set(next);
@@ -292,8 +297,8 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
             {canBelt(selected) && (
               <p className="text-xs text-amber-300/80 mb-3">
                 {language === 'en'
-                  ? 'Use consumables in battle from the belt only: up to ' + BELT_STACK + ' per slot.'
-                  : 'В бою пьётся только с пояса: до ' + BELT_STACK + ' шт. в одном слоте.'}
+                  ? 'Use consumables in battle from the belt only: up to ' + BELT_STACK + ' per slot, one slot per consumable kind.'
+                  : 'В бою пьётся только с пояса: до ' + BELT_STACK + ' шт. в слоте, один слот на каждый вид расходника.'}
               </p>
             )}
             {beltNote && <p className="text-xs text-red-400 mb-3">{beltNote}</p>}
