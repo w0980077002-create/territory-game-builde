@@ -13,6 +13,23 @@ type Fence = {
   promise: Promise<boolean>;
 };
 const pendingByPlayer = new Map<string, Fence>();
+const changeListeners = new Map<string, Set<() => void>>();
+
+export function subscribePveVictorySave(playerId: string, listener: () => void): () => void {
+  let listeners = changeListeners.get(playerId);
+  if (!listeners) {
+    listeners = new Set();
+    changeListeners.set(playerId, listeners);
+  }
+  listeners.add(listener);
+  return () => {
+    listeners?.delete(listener);
+    if (!listeners?.size) changeListeners.delete(playerId);
+  };
+}
+function notifyPveVictorySave(playerId: string): void {
+  changeListeners.get(playerId)?.forEach(listener => listener());
+}
 
 export function pveVictorySaveBlocked(playerId: string): boolean {
   const record = pendingByPlayer.get(playerId);
@@ -37,15 +54,22 @@ export function confirmPveVictorySave(
 
   const next: Fence = { state: 'pending', promise: Promise.resolve(false) };
   pendingByPlayer.set(playerId, next);
+  notifyPveVictorySave(playerId);
   next.promise = Promise.resolve()
     .then(persistSnapshot)
     .then(saved => {
       const confirmed = saved === true;
-      if (pendingByPlayer.get(playerId) === next) next.state = confirmed ? 'confirmed' : 'failed';
+      if (pendingByPlayer.get(playerId) === next) {
+        next.state = confirmed ? 'confirmed' : 'failed';
+        notifyPveVictorySave(playerId);
+      }
       return confirmed;
     })
     .catch(() => {
-      if (pendingByPlayer.get(playerId) === next) next.state = 'failed';
+      if (pendingByPlayer.get(playerId) === next) {
+        next.state = 'failed';
+        notifyPveVictorySave(playerId);
+      }
       return false;
     });
   return next.promise;
