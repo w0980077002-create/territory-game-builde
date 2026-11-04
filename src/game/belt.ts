@@ -32,16 +32,22 @@ export const BELT_RULES: SlotRule[] = BELT_WIN_GOALS.map((requiredWins) => ({
   }),
 }));
 
-/** Returning items in newly locked slots happens exactly once at save loading.
- * Copies of the same consumable are stacked if possible; nothing is destroyed.
+/** Reconcile saved belts after login: locked slots and duplicate consumable kinds
+ * return safely to inventory. Never discard a player's existing stock.
  * The validated arena win count comes from players.arena_wins, not game_state.
  */
 export function reconcileLockedBelt(state: GameState, arenaWins: number): GameState {
   const c = beltContext(state, arenaWins);
   let next = state;
+  const assignedKinds: InventoryItem[] = [];
   for (let i = 0; i < BELT_WIN_GOALS.length; i++) {
-    if (next.belt[i] && !isSlotOpen(i, c)) {
+    const slot = next.belt[i];
+    if (!slot) continue;
+    if (!isSlotOpen(i, c) || slot.qty > BELT_STACK ||
+        assignedKinds.some((assigned) => sameBeltKind(assigned, slot))) {
       next = takeFromBelt(next, i);
+    } else {
+      assignedKinds.push(slot);
     }
   }
   return next;
@@ -57,6 +63,14 @@ export const isSlotOpen = (i: number, c: BeltContext) => BELT_RULES[i].check(c).
 
 export const canBelt = (item: InventoryItem) =>
   (item.type === 'potion' || item.type === 'elixir' || item.type === 'arena') && !isElixirExpired(item);
+
+/** One consumable kind can occupy only one belt slot. Expiry batches do not
+ * create a different kind; they must not spread across additional slots.
+ */
+export const sameBeltKind = (a: InventoryItem, b: InventoryItem): boolean =>
+  a.type === b.type && a.name === b.name && a.rarity === b.rarity
+  && a.arenaEffect === b.arenaEffect
+  && JSON.stringify(a.effect ?? null) === JSON.stringify(b.effect ?? null);
 
 export type ArenaItemCode = 'heal_small' | 'heal_large' | 'attack' | 'defense' | 'crit';
 
@@ -87,13 +101,19 @@ export function putInBelt(state: GameState, itemId: string, c: BeltContext): Gam
   if (!Number.isSafeInteger(requested.qty) || requested.qty <= 0) return null;
   const item = requested;
   const belt = [...state.belt];
-  let index = belt.findIndex((s, i) => s?.name === item.name && s.type === item.type
-    && s.rarity === item.rarity && s.arenaEffect === item.arenaEffect
-    && JSON.stringify(s.effect ?? null) === JSON.stringify(item.effect ?? null)
-    && s.qty < BELT_STACK && isSlotOpen(i, c)
-    && (!isPerishableItem(item) || s.expiresAt === item.expiresAt));
-  if (index < 0) index = belt.findIndex((s, i) => !s && isSlotOpen(i, c));
-  if (index < 0) return null;
+  // A full (or differently dated) slot never spills the same kind into
+  // another slot. Free slots are reserved for different consumables.
+  const occupiedIndex = belt.findIndex((slot) => slot && sameBeltKind(slot, item));
+  let index: number;
+  if (occupiedIndex >= 0) {
+    const existing = belt[occupiedIndex]!;
+    if (!isSlotOpen(occupiedIndex, c) || existing.qty >= BELT_STACK
+      || (isPerishableItem(item) && existing.expiresAt !== item.expiresAt)) return null;
+    index = occupiedIndex;
+  } else {
+    index = belt.findIndex((slot, i) => !slot && isSlotOpen(i, c));
+    if (index < 0) return null;
+  }
 
   const current = belt[index]?.qty ?? 0;
   const moved = Math.min(BELT_STACK - current, item.qty);

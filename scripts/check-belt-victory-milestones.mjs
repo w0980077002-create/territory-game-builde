@@ -59,7 +59,13 @@ assert.equal(sum(repaired), originalQty, 'migration must never lose or duplicate
 assert.equal(repaired.inventory.find(x => x.id === 'inv_0')?.qty, 9, 'identical effects stack safely');
 assert.equal(repaired.inventory.find(x => x.id === 'inv_diff_effect')?.qty, 6, 'different effects must not merge');
 assert.equal(reconcileLockedBelt(repaired, 99), repaired, 'migration is idempotent');
-assert.equal(reconcileLockedBelt(state, 5000), state, 'fully unlocked players untouched');
+const duplicateRepaired = reconcileLockedBelt(state, 5000);
+assert.equal(duplicateRepaired.belt[1]?.name, 'Healing', 'first kind keeps its slot');
+assert.equal(duplicateRepaired.belt[2], null, 'duplicate healing moves back to inventory');
+assert.equal(duplicateRepaired.belt[4]?.name, 'Mystic', 'distinct kind keeps its slot');
+assert.equal(duplicateRepaired.belt[5], null, 'duplicate mystic moves back to inventory');
+assert.equal(sum(duplicateRepaired), originalQty, 'legacy duplicate cleanup never loses stock');
+assert.equal(reconcileLockedBelt(duplicateRepaired, 5000), duplicateRepaired, 'duplicate cleanup is idempotent');
 
 const put = putInBelt({ ...state, belt: [null, null, null, null, null, null, null],
   inventory: [elixir('inv_added', 'Healing', 4)] }, 'inv_added',
@@ -92,6 +98,32 @@ assert(partial, 'compatible stack must allow top-up');
 assert.equal(partial.belt[0].qty, 5, 'top up 2 to 5');
 assert.equal(partial.inventory[0].qty, 2, 'leave exactly two behind in the selected lot');
 assert.equal(sum(partial), 7, 'top-up conserves inventory plus belt');
+
+// Every unlocked slot can carry a DIFFERENT kind, but never a second stack
+// of the same exact potion/elixir, even across expiry batches.
+const allOpen = { level: 99, activeDays: 99, arenaWins: 5000 };
+const otherKind = { ...chosenLot, id: 'lot-defense', name: 'Defense elixir',
+  type: 'elixir', effect: { stat: 'defense', value: 10 }, qty: 5 };
+const withKinds = { ...withLots, belt: Array(7).fill(null),
+  inventory: [chosenLot, otherKind] };
+const equippedHeal = putInBelt(withKinds, 'lot-five', allOpen);
+assert(equippedHeal, 'first kind can occupy first open slot');
+assert.equal(putInBelt(equippedHeal, 'lot-five', allOpen), null,
+  'same item is no longer in inventory');
+const equippedDefense = putInBelt(equippedHeal, 'lot-defense', allOpen);
+assert(equippedDefense, 'a different kind may use another unlocked slot');
+assert.equal(equippedDefense.belt[0]?.qty, 5);
+assert.equal(equippedDefense.belt[1]?.name, 'Defense elixir');
+assert.equal(sum(equippedDefense), sum(withKinds), 'different kinds conserve all stock');
+
+const fullWithSpare = { ...withLots, inventory: [{ ...chosenLot, id: 'lot-spare', qty: 5 }],
+  belt: [{ ...chosenLot, id: 'belt_0', qty: 5 }, ...Array(6).fill(null)] };
+assert.equal(putInBelt(fullWithSpare, 'lot-spare', allOpen), null,
+  'a full stack must not occupy a second unlocked slot');
+assert.equal(fullWithSpare.inventory[0].qty, 5, 'rejected transfer preserves inventory');
+const mixedExpiry = { ...fullWithSpare, belt: [{ ...chosenLot, id: 'belt_0', qty: 2, expiresAt: oldExpiry }, ...Array(6).fill(null)] };
+assert.equal(putInBelt(mixedExpiry, 'lot-spare', allOpen), null,
+  'a newer batch of the same kind must not occupy a second slot');
 
 for (const [name, incompatible] of [
   ['expiry', { ...chosenLot, id: 'belt_0', expiresAt: oldExpiry, qty: 1 }],

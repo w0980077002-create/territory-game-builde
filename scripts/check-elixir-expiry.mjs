@@ -88,14 +88,19 @@ assert.equal(first.belt[0].qty, 5);
 assert.equal(first.inventory.find((i) => i.id === earlier.id).qty, 8);
 assert.equal(first.inventory.find((i) => i.id === later.id).qty, 3);
 const second = belt.putInBelt(first, earlier.id, ctx);
-assert.equal(second.belt[0].qty, 5, 'different expiry must not be mixed into a slot');
-assert.equal(second.belt[1].expiresAt, earlier.expiresAt);
-assert.equal(second.belt[1].qty, 5);
-const third = belt.putInBelt(second, later.id, ctx);
-assert.equal(third.belt[2].expiresAt, later.expiresAt);
-assert.equal(third.belt[2].qty, 3);
-const returned = belt.takeFromBelt(third, 1);
-assert.equal(returned.inventory.find((i) => i.expiresAt === earlier.expiresAt).qty, 8);
+assert.equal(second, null, 'the same kind cannot spill into another slot, even with different expiry');
+assert.equal(first.belt[0].qty, 5, 'different expiry must never be mixed into an existing slot');
+assert.equal(first.belt[1], null, 'the second slot stays free for a different kind');
+assert.equal(first.inventory.find((i) => i.id === earlier.id).qty, 8, 'rejected transfer keeps older lot intact');
+const differentKind = { ...earlier, id: 'defense', name: 'Эликсир защиты',
+  effect: { stat: 'defense', value: 10, duration: 'battle' } };
+const withDifferent = { ...first, inventory: [...first.inventory, differentKind] };
+const equippedDifferent = belt.putInBelt(withDifferent, differentKind.id, ctx);
+assert.equal(equippedDifferent.belt[1].name, 'Эликсир защиты', 'a different kind can use the second slot');
+assert.equal(equippedDifferent.belt[1].expiresAt, earlier.expiresAt, 'a different kind keeps its own expiry');
+const returned = belt.takeFromBelt(first, 0);
+assert.equal(returned.inventory.find((i) => i.id === earlier.id).qty, 8, 'untouched older lot keeps its own expiry');
+assert.equal(returned.inventory.find((i) => i.id === later.id).qty, 8, 'return restores selected lot without loss');
 assert.equal(belt.beltAction(elixir('bad', 2, elixirAt(-1))), null);
 assert.equal(belt.canBelt(elixir('bad', 2, new Date(Date.now() - 1000).toISOString())), false);
 
