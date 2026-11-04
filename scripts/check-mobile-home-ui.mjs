@@ -18,6 +18,7 @@ const livingHero = await read('src/components/home/CityLivingHero.tsx');
 const livingFollower = await read('src/components/home/CityLivingFollower.tsx');
 const livingEnemy = await read('src/components/home/CityLivingEnemy.tsx');
 const fighterFigure = await read('src/components/arena/FighterFigure.tsx');
+const skeletalFighter = await read('src/components/combat2d/SkeletalFighter.tsx');
 const battleScene = await read('src/components/arena/BattleScene.tsx');
 
 const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventure] = await Promise.all([
@@ -72,6 +73,12 @@ assert.match(livingEnemy, /typeof image\.decode === 'function'/,
   'Enemy cutouts must support old Telegram WebViews');
 assert.match(fighterFigure, /typeof img\.decode === 'function'/,
   'Battle rigs must support old Telegram WebViews for live hit/block animation');
+assert.match(fighterFigure, /typeof Element\.prototype\.animate === 'function'/,
+  'Old Telegram without Web Animations must safely use original battle pose frames');
+assert.match(skeletalFighter, /typeof window\.matchMedia === 'function'/,
+  'Live skeletal battle must not crash if old Telegram lacks matchMedia');
+assert.match(skeletalFighter, /typeof joint\.animate !== 'function'/,
+  'Unsupported SVG joint animations may never crash a live fight');
 assert.match(battleScene, /portraitFollower\.id === 'follower_pumpkin_witch_2026'[\s\S]*?<PumpkinWitch\s*\/>/,
   'Arena Witch must be visibly alive as spectator without inventing a PvP strike');
 assert.ok(cityMotion.includes('@media (prefers-reduced-motion: reduce)'), 'City animation must respect accessibility motion controls');
