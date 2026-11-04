@@ -48,11 +48,13 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
     const apply = () => {
       animations.forEach(a => a.cancel());
       const stops = motionStops(motion, critical);
-      animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).map(joint => {
+      animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).flatMap(joint => {
+        // Web Animations may be missing on older embedded SVG implementations.
+        if (typeof joint.animate !== 'function') return [];
         const frames = jointFrames(joint.dataset.rigPart as Joint, stops);
         // Retain readable final outcome poses without large movement in reduced mode.
         const selected = reduced?.matches ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
-        return joint.animate(selected, { duration: reduced?.matches ? 1 : ACTION_MS / speed, fill: 'forwards' });
+        return [joint.animate(selected, { duration: reduced?.matches ? 1 : ACTION_MS / speed, fill: 'forwards' })];
       });
     };
     apply();
