@@ -35,7 +35,7 @@ type VipDailyReply = {
   replayed?: boolean;
 };
 type Pending = { operation: string; expected: string };
-const tasks = new Map<string, Promise<unknown>>();
+const tasks = new Map<string, Promise<void>>();
 const pendingKey = (userId: string) => `territory.vip.daily.pending.v1:${userId}`;
 
 function loadPending(userId: string): Pending | null {
@@ -62,7 +62,8 @@ async function rpc(action: 'status' | 'claim', operation?: string, expected?: st
     p_action:action,p_operation:operation ?? null,p_expected:expected ?? null,
   });
   if (error) throw Object.assign(new Error(error.message || 'vip_daily_unavailable'), {
-    definiteRollback: /^(?:[0-9A-Z]{5}|PGRST\d+)$/.test(error.code ?? ''),
+    // PostgREST and transport errors do not prove whether a claim committed.
+    definiteRollback: /^[0-9A-Z]{5}$/.test(error.code ?? ''),
   });
   if (!data || typeof data !== 'object' || data.success !== true
     || typeof data.updated_at !== 'string' || !Number.isFinite(Date.parse(data.updated_at))
@@ -81,16 +82,21 @@ function validateReward(data: VipDailyReply): VipDailyReward {
   return reward;
 }
 function exclusive<T>(userId:string, work:()=>Promise<T>): Promise<T> {
-  if (tasks.has(userId)) return tasks.get(userId) as Promise<T>;
-  const task=work(); tasks.set(userId,task);
-  void task.finally(()=>{if(tasks.get(userId)===task)tasks.delete(userId);}).catch(()=>{});
+  // Different operations have different return types and side effects: a status
+  // request must never swallow a simultaneous claim (or vice versa).
+  const previous=tasks.get(userId) ?? Promise.resolve();
+  const task=previous.then(work);
+  const tail=task.then(()=>{},()=>{});
+  tasks.set(userId,tail);
+  void tail.then(()=>{if(tasks.get(userId)===tail)tasks.delete(userId);});
   return task;
 }
 export function fetchVipDailyStatus(userId:string): Promise<VipDailyStatus> {
   return exclusive(userId,async()=>{
-    if (loadPending(userId)) {
+    const pending=loadPending(userId);
+    if (pending) {
       // An uncertain payout must be recovered before presenting a fresh claim.
-      await recoverVipDaily(userId);
+      await settle(userId,pending);
     }
     return validatedStatus(await rpc('status'));
   });
@@ -124,10 +130,11 @@ async function settle(userId:string,pending:Pending):Promise<VipDailyReward> {
   }
 }
 export function recoverVipDaily(userId:string):Promise<VipDailyReward | null> {
-  // This path is safe even after an app restart: use the original UUID.
-  const pending=loadPending(userId);
-  if(!pending)return Promise.resolve(null);
-  return settle(userId,pending);
+  return exclusive(userId,()=>{
+    // This path is safe even after an app restart: use the original UUID.
+    const pending=loadPending(userId);
+    return pending ? settle(userId,pending) : Promise.resolve(null);
+  });
 }
 export function claimVipDaily(userId:string): Promise<VipDailyReward> {
   return exclusive(userId,async()=>{
