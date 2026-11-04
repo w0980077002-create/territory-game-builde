@@ -253,7 +253,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
         </div>
         <div data-testid="city-hero-slot" className="home-hero-figure home-character-slot relative h-[84%] w-[32%] shrink-0 flex items-end justify-center">
           <span aria-hidden="true" className="absolute bottom-0 w-[85%] h-3 rounded-[50%] bg-black/65 blur-[3px]" />
-          <CityLivingHero appearance={state.appearance} name={player.name} />
+          <CityLivingHero appearance={state.appearance} name={player.name} vip={vip} />
         </div>
         <button
           onClick={() => onBattle('campaign', true)}
