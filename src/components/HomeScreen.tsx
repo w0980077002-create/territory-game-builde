@@ -1,5 +1,6 @@
 import './halloweenRaid.css';
 import './home/cityCharacterMotion.css';
+import './home/cityVisualClarity.css';
 import { useState, type ReactNode } from 'react';
 import { ChevronRight, Repeat, Crown } from 'lucide-react';
 import { useStore } from '@/game/store';
@@ -19,10 +20,11 @@ import { BeltCells } from '@/components/ui/BeltCells';
 import { Currency, formatAmount } from '@/components/ui/Currency';
 import { DailySheet, SettingsSheet, StonesSheet, type SaveStatus } from '@/components/home/HomeSheets';
 import { LiveCityBackdrop, CITY_MOTION_KEY, CITY_BACKGROUND_KEY, initialCityMotion, initialCityBackground, type CityBackground } from '@/components/home/LiveCityBackdrop';
+import { CityLivingHero } from '@/components/home/CityLivingHero';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
-import { getStarterMilestones, shouldShowStarterJourney } from '@/game/starterJourney';
+import { getHeroPathDestination, getNextStarterMilestone, getStarterMilestones, shouldShowStarterJourney } from '@/game/starterJourney';
 import { halloweenBossInSeason } from '@/game/halloweenBossSeason';
 
 export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
@@ -129,7 +131,8 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
   // Keep veterans' city unchanged and never issue tutorial rewards in the client.
   const starterSteps = shouldShowStarterJourney(state) ? getStarterMilestones(state) : [];
   const starterDone = starterSteps.filter(step => step.done).length;
-  const starterNext = starterSteps.find(step => !step.done);
+  const starterNext = getNextStarterMilestone(starterSteps);
+  const heroPathDestination = getHeroPathDestination(starterNext, questAlerts.readyCount);
 
   const setSettings = (patch: Partial<typeof state.settings>) => useGame.set((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
   const toggleCityMotion = () => setCityMotion((previous) => {
@@ -170,9 +173,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
               <span className="text-amber-200 font-semibold shrink-0 whitespace-nowrap">{t('level')} {player.level}</span>
               <span className="inline-flex shrink-0 items-center gap-0.5 px-1 rounded bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold text-[9px]"><Crown className="h-2.5 w-2.5" strokeWidth={2.8} />VIP {vip}{remainingVip>0&&<span title={account.vipUntil??undefined}> · {Math.ceil(remainingVip/3600000)}h</span>}</span>
             </span>
-            <span className="mt-1 h-1 w-full rounded-full bg-white/10 overflow-hidden">
-              <span className="block h-full bg-gradient-to-r from-emerald-400 to-emerald-600" style={{ width: `${xpPct}%` }} />
-            </span>
+            {/* The full EXP bar is already shown above HP/energy; avoid duplicating it in the small top profile chip. */}
           </span>
         </button>
 
@@ -251,7 +252,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
         </div>
         <div data-testid="city-hero-slot" className="home-hero-figure home-character-slot relative h-[84%] w-[32%] shrink-0 flex items-end justify-center">
           <span aria-hidden="true" className="absolute bottom-0 w-[85%] h-3 rounded-[50%] bg-black/65 blur-[3px]" />
-          <img src={getAppearanceIcon(state.appearance)} alt={player.name} className="home-hero-art city-hero-idle relative max-h-full max-w-full object-contain object-bottom" />
+          <CityLivingHero appearance={state.appearance} name={player.name} />
         </div>
         <button
           onClick={() => onBattle('campaign', true)}
@@ -264,8 +265,8 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
               {language === 'en' ? 'TAP ENEMY — FIRST FIGHT' : 'НАЖМИ НА ВРАГА — ПЕРВЫЙ БОЙ'}
             </span>
           )}
-          <span className="mb-1 max-w-full rounded-md bg-black/70 border border-red-500/40 px-1.5 py-0.5 text-[9px] font-bold text-red-100 truncate">
-            {nextEnemy.isBoss ? t('boss') : ''}{localizeText(nextEnemy.name, language)}
+          <span className="home-enemy-name mb-1 rounded-md bg-black/70 border border-red-500/40 px-1.5 py-1 text-[9px] font-bold text-red-100 text-center">
+            {nextEnemy.isBoss ? `${t('boss')} · ` : ''}{localizeText(nextEnemy.name, language)}
           </span>
           <span className="absolute bottom-0 w-[80%] h-2.5 rounded-[50%] bg-black/50 blur-[3px]" />
           <img src={nextEnemy.art} alt="" className="city-enemy-idle relative min-h-0 flex-1 max-w-full object-contain object-bottom drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] transition-transform group-active:scale-95" />
@@ -296,7 +297,15 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
 
         <div className="flex items-center gap-1.5">
           <button
-            onClick={() => onOpen('quests')}
+            onClick={() => {
+              // The visible objective must open the matching EXISTING playable section.
+              // Claimable quest rewards take precedence, with no automatic battle debit.
+              if (heroPathDestination === 'inventory') onInventory('equipment');
+              else if (heroPathDestination === 'battle') onBattle('campaign');
+              else if (heroPathDestination === 'shop') onOpen('shop');
+              else if (heroPathDestination === 'arena') onOpen('arena');
+              else onOpen('quests');
+            }}
             data-testid="home-hero-path"
             aria-label={starterNext && questAlerts.readyCount === 0
               ? (language === 'en' ? 'Hero path: ' + starterNext.titleEn : 'Путь героя: ' + starterNext.titleRu)
