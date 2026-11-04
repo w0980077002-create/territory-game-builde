@@ -50,4 +50,12 @@ for(const rig of [viking,goblin])for(const part of ['head','torso','arm-right','
  assert.equal(buffer.toString('ascii',0,4),'RIFF');assert.equal(buffer.toString('ascii',8,12),'WEBP');bytes+=statSync(file).size;
 }
 assert(bytes<600_000,'Two prepared rigs must stay within mobile download budget');
+
+// Legacy Telegram SVG engines must not leave stale inline poses after a
+// reduced-motion preference change or an event cleanup.
+const skeletalSource=readFileSync('src/components/combat2d/SkeletalFighter.tsx','utf8');
+const applyBody=skeletalSource.split('const apply = () => {')[1]?.split('const stops =')[0] ?? '';
+assert.match(applyBody,/style\.transform = ''/, 'Reapply must clear stale legacy inline transforms');
+assert.match(skeletalSource,/typeof joint\.animate !== 'function'/, 'Legacy SVG animation fallback must remain');
+assert.match(skeletalSource.split('return () => {').at(-1),/style\.transform = ''/, 'Effect cleanup must restore base rig poses');
 console.log(`Skeletal contract PASS: two explicit rigs, safe fallback, independent joints, contact/recovery, distinct attacks, critical windup, Pages paths; ${Math.round(bytes/1024)} KiB assets.`);
