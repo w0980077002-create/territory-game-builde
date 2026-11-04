@@ -47,6 +47,9 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
     let animations: Animation[] = [];
     const apply = () => {
       animations.forEach(a => a.cancel());
+      // A reduced-motion preference change may switch from the legacy inline
+      // fallback to Web Animations; clear the stale inline transform first.
+      svg.querySelectorAll<SVGGElement>('[data-rig-part]').forEach(joint => { joint.style.transform = ''; });
       const stops = motionStops(motion, critical);
       animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).flatMap(joint => {
         // Web Animations may be missing on older embedded SVG implementations.
