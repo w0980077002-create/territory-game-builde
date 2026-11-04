@@ -8,7 +8,6 @@ import { selectedFollower } from '@/game/followers';
 import { useGame, useArena, useAccount } from '@/game/actions';
 import { generateChapter, getComputedStats, HERO_MAX_LEVEL } from '@/game/engine';
 import { beltContext } from '@/game/belt';
-import { getAppearanceIcon } from '@/game/appearance';
 import { getFollowerArt } from '@/game/combatArt';
 import { MAIL, blessingReady, claimBlessing } from '@/game/progression';
 import type { AuthUser } from '@/game/auth';
@@ -20,6 +19,7 @@ import { BeltCells } from '@/components/ui/BeltCells';
 import { Currency, formatAmount } from '@/components/ui/Currency';
 import { DailySheet, SettingsSheet, StonesSheet, type SaveStatus } from '@/components/home/HomeSheets';
 import { LiveCityBackdrop, CITY_MOTION_KEY, CITY_BACKGROUND_KEY, initialCityMotion, initialCityBackground, type CityBackground } from '@/components/home/LiveCityBackdrop';
+import { CityLivingHero } from '@/components/home/CityLivingHero';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
@@ -251,7 +251,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
         </div>
         <div data-testid="city-hero-slot" className="home-hero-figure home-character-slot relative h-[84%] w-[32%] shrink-0 flex items-end justify-center">
           <span aria-hidden="true" className="absolute bottom-0 w-[85%] h-3 rounded-[50%] bg-black/65 blur-[3px]" />
-          <img src={getAppearanceIcon(state.appearance)} alt={player.name} className="home-hero-art city-hero-idle relative max-h-full max-w-full object-contain object-bottom" />
+          <CityLivingHero appearance={state.appearance} name={player.name} />
         </div>
         <button
           onClick={() => onBattle('campaign', true)}
