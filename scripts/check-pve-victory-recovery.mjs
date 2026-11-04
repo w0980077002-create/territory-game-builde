@@ -109,6 +109,25 @@ assert.deepEqual(await recoverPveVictoryOnBoot('hero-a', profile()), {state:vict
 assert.equal(globalThis.__mockWrites, 0);
 assert.equal(pendingPveVictoryJournal('hero-a'), false);
 
+// Live PostgreSQL normalizes player.stats and balanceVersion. A successful
+// normalized victory is still recoverable, but missing reward inventory is NOT.
+reset();
+assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
+const normalized = {...victory(), balanceVersion:4, player:{
+  ...victory().player,
+  stats:{attack:20,defense:5,maxHp:100,hp:100,critChance:5,critDamage:50},
+}};
+globalThis.__mockServer = {revision:nextRevision,state:normalized,gold:30,gems:2};
+assert.deepEqual(await recoverPveVictoryOnBoot('hero-a', profile()), {state:normalized,recovered:true});
+assert.equal(globalThis.__mockWrites, 0);
+reset();
+assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
+const missingLoot = {...normalized, inventory:[]};
+globalThis.__mockServer = {revision:nextRevision,state:missingLoot,gold:30,gems:2};
+assert.equal(await recoverPveVictoryOnBoot('hero-a', profile()), null,
+  'Normalized stats may differ, but missing loot must never be accepted');
+assert.equal(pendingPveVictoryJournal('hero-a'), true);
+
 // Lost ACK in a *running* session with an obsolete CAS token must not
 // unlock a new battle. Boot reloads the authoritative token before clearing.
 reset();
