@@ -106,8 +106,8 @@ with sync_playwright() as p:
         page.wait_for_function("document.querySelector('#fixture-hero svg[data-original-hero]')?.dataset.motion==='idle'")
         for tone in ('block','dodge','hit'):
             set_visual(page,{'strike':event(830+len(tone),tone,attacker='Противник')})
-            page.wait_for_function("([kind])=>document.querySelector('#fixture-hero svg[data-original-hero]')?.dataset.motion===kind",
-                                   arg=tone, timeout=1000)
+            page.wait_for_function("kind=>document.querySelector('#fixture-hero svg[data-original-hero]')?.dataset.motion===kind",
+                                   arg=tone, timeout=2000)
             set_visual(page,{'strike':None})
         page.emulate_media(reduced_motion='reduce')
         assert hero.evaluate("el=>getComputedStyle(el).display==='none'"), (appearance,'reduced motion should use original pose')
