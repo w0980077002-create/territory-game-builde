@@ -1,6 +1,6 @@
-import { Check, ChevronDown, ChevronRight, Cloud, CloudOff } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Cloud, CloudOff, Crown } from 'lucide-react';
 import { useStore } from '@/game/store';
-import { useGame } from '@/game/actions';
+import { useGame, useAccount } from '@/game/actions';
 import { DAILY_REWARDS, MAIL, claimDaily, claimMail, dailyStatus, type Reward } from '@/game/progression';
 import { Modal } from '@/components/ui/Modal';
 import { Currency } from '@/components/ui/Currency';
@@ -9,6 +9,7 @@ import { useLive, claimMailGrant, getClaimedMailHistory, getUnseenHalloweenFinal
 import './mailVisuals.css';
 import { mailRewardVisuals } from '@/game/mailRewardVisuals';
 import { HALLOWEEN_FINAL_SUBJECT, localizedHalloweenMail } from '@/game/halloweenMailLocalization';
+import { VIP_TESTER_MAIL_SUBJECT, localizedVipTesterMail } from '@/game/vipTesterMail';
 import { getFollowerArt } from '@/game/combatArt';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/game/i18n';
@@ -84,6 +85,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const { mail: adminMail } = useStore(useLive);
+  const permanentVip = useStore(useAccount).permanentVip;
   const [claiming, setClaiming] = useState<string | null>(null);
   const [tab, setTab] = useState<'new' | 'received'>('new');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -220,7 +222,8 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
         )}
         {shownAdminMail.map((m) => {
           const rewards = mailRewardVisuals(m.payload);
-          const copy = localizedHalloweenMail(m, language);
+          const testerVip = m.subject === VIP_TESTER_MAIL_SUBJECT;
+          const copy = testerVip ? localizedVipTesterMail(m,language) : localizedHalloweenMail(m, language);
           const expanded = expandedId === `admin:${m.id}`;
           const previouslyClaimedFinal = !received && unseenHalloweenFinal?.id === m.id;
           return (
@@ -235,6 +238,9 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
               </button>
               {expanded && <div className="border-t border-white/10 px-2 pb-2 pt-1.5">
               <p className="text-[11px] text-gray-300 leading-snug mb-2 whitespace-pre-line break-words">{copy.body}</p>
+              {testerVip && permanentVip >= 5 && <p className="mb-2 inline-flex items-center gap-1 rounded-lg border border-amber-400/45 bg-amber-500/10 px-2 py-1 text-[11px] font-black text-amber-200" data-testid="vip-tester-confirmed">
+                <Crown size={14}/>{language === 'en' ? 'Permanent VIP 5 already active' : 'Постоянный VIP 5 уже активирован'}
+              </p>}
               {previouslyClaimedFinal && <p className="mb-1 text-[10px] font-semibold text-emerald-200">
                 {language === 'en' ? 'Your rewards are already in your inventory. This is your final celebration letter.' : 'Все награды уже начислены. Это итоговое поздравление — повторно получать подарки не нужно.'}
               </p>}
@@ -279,7 +285,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
                     disabled={claiming === m.id}
                     className="shrink-0 min-h-11 px-3 rounded-lg text-[11px] font-bold bg-sky-400 text-black disabled:opacity-50 transition-colors"
                   >
-                    {claiming === m.id ? '...' : m.subject === HALLOWEEN_FINAL_SUBJECT && rewards.length === 0 ? (language === 'en' ? 'Acknowledge' : 'Прочитано') : t('claimReward')}
+                    {claiming === m.id ? '...' : testerVip ? (language === 'en' ? 'Claim gift' : 'Получить подарок') : m.subject === HALLOWEEN_FINAL_SUBJECT && rewards.length === 0 ? (language === 'en' ? 'Acknowledge' : 'Прочитано') : t('claimReward')}
                   </button>
                 )}
               </div>
