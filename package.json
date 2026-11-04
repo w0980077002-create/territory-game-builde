@@ -42,7 +42,7 @@
     "test:admin-master": "node scripts/check-admin-master.mjs && node scripts/check-admin-ui.mjs && node scripts/check-admin-quantity.mjs && node scripts/check-admin-ticket-unlimited.mjs && node scripts/check-admin-gear-relevel-v4.mjs && node scripts/check-admin-claim-atomic-v2.mjs && node scripts/check-admin-claim-client.mjs",
     "test:admin-gear": "node scripts/check-admin-gear-relevel-v4.mjs",
     "test:admin-mail": "node scripts/check-admin-mail.mjs && node scripts/check-admin-mail-reward-art.mjs && node scripts/check-mail-history.mjs && node scripts/check-halloween-final-mail-visibility.mjs",
-    "test:elixir-expiry": "node scripts/check-elixir-expiry.mjs",
+    "test:elixir-expiry": "node scripts/check-elixir-expiry.mjs && node scripts/check-vip-belt-refill.mjs",
     "test:admin-geography": "node scripts/check-admin-geography.mjs",
     "test:clans": "node scripts/check-clans.mjs",
     "test:seasons": "node scripts/check-weekly-seasons.mjs && node scripts/check-season-admin-api.mjs",
@@ -57,7 +57,8 @@
     "test:combat:browser": "node scripts/build-combat-preview.mjs && python scripts/check-skeletal-browser.py",
     "test:combat:poses": "node scripts/build-combat-preview.mjs && python scripts/check-combat-pose-browser.py",
     "test:adventure-server": "node scripts/check-idle-engine.mjs && node scripts/check-adventure-server-skills.mjs && node scripts/check-adventure-campaign.mjs && node scripts/check-combat-profile-reconciliation.mjs && node scripts/check-adventure-settlement-sql.mjs && node scripts/check-adventure-service-sql.mjs && node scripts/check-adventure-balance-candidate.mjs && node scripts/check-adventure-receipt-adapter.mjs && node scripts/check-adventure-v1-guards.mjs && node scripts/check-dark-stones.mjs && node scripts/check-cave-belt-attestation.mjs",
-    "test:gear-refund-65": "node scripts/check-gear-refund-65.mjs"
+    "test:gear-refund-65": "node scripts/check-gear-refund-65.mjs",
+    "test:vip-belt": "node scripts/check-vip-belt-refill.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
