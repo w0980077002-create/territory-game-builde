@@ -1,0 +1,45 @@
+name: VIP staged validation (never deploy)
+on:
+  pull_request:
+    paths:
+      - 'src/game/belt.ts'
+      - 'src/game/types.ts'
+      - 'src/game/vipDaily.ts'
+      - 'src/game/vipProgram.ts'
+      - 'src/components/VipStatusPanel.tsx'
+      - 'src/components/InventoryScreen.tsx'
+      - 'src/components/BattleScreen.tsx'
+      - 'src/components/arena/ArenaRoom.tsx'
+      - 'src/components/home/CityLivingHero.tsx'
+      - 'supabase/staged/20261104_vip_daily_chest_v1.sql'
+      - 'scripts/check-vip-*.mjs'
+      - '.github/workflows/vip-stage-validation.yml'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vip-staged-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  client-and-staged-db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: TypeScript and production build
+        run: npm run typecheck && npm run build
+      - name: Existing belt and save regressions
+        run: node scripts/check-belt-victory-milestones.mjs && npm run test:elixir-expiry
+      - name: VIP smart belt invariants
+        run: npm run test:vip-belt
+      - name: VIP daily staged database and security receipt tests
+        run: npm run test:vip-daily
