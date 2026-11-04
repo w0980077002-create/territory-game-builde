@@ -29,8 +29,9 @@ import { useLanguage, localizeText } from '@/game/i18n';
 import { beginReferralFight, finishReferralFight, type ReferralRound } from '@/game/referrals';
 import { captureGameEvent } from '@/game/analytics';
 import { runDeferredNextBattle } from '@/game/pveNextAction';
-import { saveBlocked, saveCloudSave } from '@/game/cloud';
+import { saveBlocked } from '@/game/cloud';
 import { confirmPveVictorySave, pveVictorySaveBlocked } from '@/game/pveVictorySaveFence';
+import { pendingPveVictoryJournal, persistPveVictoryJournal, stagePveVictoryJournal } from '@/game/pveVictoryRecovery';
 
 // Do not enable until the staged rune ledger, authenticated combat tests and
 // PvP/Cave adapters are released together. Existing PvE is unchanged by default.
@@ -188,6 +189,9 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   const [log, setLog] = useState<string[]>([language === 'en' ? `Battle started: ${localizeText(enemy.name, language)}` : `Бой начался: ${enemy.name}`]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [victorySave, setVictorySave] = useState<'idle' | 'pending' | 'confirmed' | 'failed'>('idle');
+  // Retain an unwritten victory in memory if WebView storage fails mid-fight.
+  // The retry path must never rebuild or award the victory a second time.
+  const victorySnapshotRef = useRef<ReturnType<typeof useGame.get> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [tacticalReport, setTacticalReport] = useState<PveTacticalSummary | null>(null);
   const [battleTotals, setBattleTotals] = useState({ dealt: 0, taken: 0, companion: 0 });
@@ -238,7 +242,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   // This is save durability, NOT an attestation of locally resolved PvE.
   const confirmVictory = useCallback((snapshot: ReturnType<typeof useGame.get>) => {
     setVictorySave('pending');
-    void confirmPveVictorySave(userId, () => saveCloudSave(userId, snapshot))
+    void confirmPveVictorySave(userId, () => persistPveVictoryJournal(userId, snapshot))
       .then(ok => {
         if (alive.current) setVictorySave(ok ? 'confirmed' : 'failed');
       });
@@ -263,19 +267,25 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     if (kind === 'trial') {
       const r = trialReward(s.trialLevel);
       const nextState = recordTrialWin(s, enemy);
-      useGame.set(nextState);
-      confirmVictory(nextState);
+      victorySnapshotRef.current = nextState;
+      if (stagePveVictoryJournal(userId, nextState)) {
+        useGame.set(nextState);
+        confirmVictory(nextState);
+      } else setVictorySave('failed');
       setOutcome({ won: true, gold: r.gold ?? 0, xp: enemy.rewardXp, gems: r.gems ?? 0,
         materials: Math.max(0, nextState.forgeMaterials - s.forgeMaterials) });
       return;
     }
     const gold = blessedGold(s, enemy.rewardGold);
     const nextState = recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp });
-    useGame.set(nextState);
-    confirmVictory(nextState);
+    victorySnapshotRef.current = nextState;
+    if (stagePveVictoryJournal(userId, nextState)) {
+      useGame.set(nextState);
+      confirmVictory(nextState);
+    } else setVictorySave('failed');
     setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0,
       materials: Math.max(0, nextState.forgeMaterials - s.forgeMaterials) });
-  }, [enemy, kind, confirmVictory]);
+  }, [enemy, kind, confirmVictory, userId]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
     if (roundFlight.current || busy || outcome || confirmSurrender || done.current || !alive.current || (RUNE_PVE_STAGED && !runesReady)) return;
@@ -441,16 +451,43 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   if (outcome) {
     return (
       <div data-testid="pve-result-screen" className="mx-auto w-full max-w-xl animate-fade-in pb-[max(1rem,env(safe-area-inset-bottom))]">
+        {outcome.won && victorySave === 'failed' && !pendingPveVictoryJournal(userId) && (
+          <p role="alert" className="mb-2 rounded-lg border border-red-400/70 bg-red-950/70 p-3 text-sm text-red-100">
+            {language === 'en'
+              ? 'Device storage is unavailable. This victory is not committed; do not close Telegram. Enable storage and retry the save.'
+              : 'Хранилище телефона недоступно. Победа не записана. Не закрывай Telegram: восстанови доступ к хранилищу и повтори сохранение.'}
+          </p>
+        )}
         <OutcomePanel outcome={outcome} kind={kind} victoryJourney={victoryJourney}
           gearOpportunity={gearOpportunity} equippedGear={equippedGear}
-          onExit={() => { nextCancelled.current = true; onExit(); }}
+          onExit={() => {
+            if (outcome.won && victorySave !== 'confirmed') return;
+            nextCancelled.current = true; onExit();
+          }}
           questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
-          onQuests={onQuests ? () => { nextCancelled.current = true; onExit(); onQuests(); } : undefined}
-          onEquipment={onEquipment ? () => { nextCancelled.current = true; onExit(); onEquipment(); } : undefined}
-          onForge={onForge ? () => { nextCancelled.current = true; onExit(); onForge(); } : undefined}
+          onQuests={onQuests ? () => {
+            if (outcome.won && victorySave !== 'confirmed') return;
+            nextCancelled.current = true; onExit(); onQuests();
+          } : undefined}
+          onEquipment={onEquipment ? () => {
+            if (outcome.won && victorySave !== 'confirmed') return;
+            nextCancelled.current = true; onExit(); onEquipment();
+          } : undefined}
+          onForge={onForge ? () => {
+            if (outcome.won && victorySave !== 'confirmed') return;
+            nextCancelled.current = true; onExit(); onForge();
+          } : undefined}
           nextPending={nextPending} nextError={nextError}
           saveState={victorySave} saveConflict={saveBlocked.has(userId)}
-          onRetrySave={() => confirmVictory(useGame.get())}
+          onRetrySave={() => {
+            const snapshot = victorySnapshotRef.current;
+            if (!snapshot || !stagePveVictoryJournal(userId, snapshot)) {
+              setVictorySave('failed');
+              return;
+            }
+            if (useGame.get() !== snapshot) useGame.set(snapshot);
+            confirmVictory(snapshot);
+          }}
           onNext={onNext ? () => {
             if (nextRequested.current || (outcome.won && (victorySave !== 'confirmed' || pveVictorySaveBlocked(userId)))) return;
             nextRequested.current = true;
@@ -860,7 +897,7 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
                   : (language === 'en' ? 'Try again' : 'Повторить бой')}
             </button>
           )}
-          <button type="button" data-testid="pve-result-exit" onClick={onExit}
+          <button type="button" data-testid="pve-result-exit" onClick={onExit} disabled={outcome.won && saveState !== 'confirmed'}
             className="flex-1 min-h-12 rounded-xl border border-amber-300/40 bg-[#291d18] px-2 py-2 text-[12px] leading-tight sm:text-sm font-bold text-amber-100 active:scale-[0.98] transition-transform">
             {kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')}
           </button>
@@ -935,7 +972,7 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
           </section>
         )}
         {onForge && (outcome.materials > 0 || !outcome.won) && (
-          <button type="button" data-testid="pve-visit-forge" onClick={onForge}
+          <button type="button" data-testid="pve-visit-forge" onClick={onForge} disabled={outcome.won && saveState !== 'confirmed'}
             className="relative mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-amber-300/60 bg-amber-700/70 px-3 text-sm font-extrabold text-amber-50 active:scale-[0.98]">
             <Hammer size={17} aria-hidden="true" />
             {outcome.won
@@ -960,7 +997,7 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
           </div>
         )}
         {onEquipment && (
-          <button type="button" data-testid="pve-prepare-equipment" onClick={onEquipment}
+          <button type="button" data-testid="pve-prepare-equipment" onClick={onEquipment} disabled={outcome.won && saveState !== 'confirmed'}
             className="relative mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-sky-300/50 bg-sky-900/60 px-3 text-sm font-extrabold text-sky-100 active:scale-[0.98]">
             <Shirt size={17} aria-hidden="true" />
             {!outcome.won
@@ -970,7 +1007,7 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
                 : (language === 'en' ? 'Compare gear before the next fight' : 'Сравнить снаряжение перед следующим боем')}
           </button>
         )}
-        {outcome.won && questReady && onQuests && <button type="button" onClick={onQuests} className="relative mt-3 w-full min-h-11 rounded-xl border border-emerald-300/60 bg-emerald-700/70 px-3 text-sm font-bold text-white active:scale-[0.98]">
+        {outcome.won && questReady && onQuests && <button type="button" onClick={onQuests} disabled={saveState !== 'confirmed'} className="relative mt-3 w-full min-h-11 rounded-xl border border-emerald-300/60 bg-emerald-700/70 px-3 text-sm font-bold text-white active:scale-[0.98]">
           {language === 'en' ? 'Quest reward ready — claim it' : 'Награда за задание готова — забрать'}
         </button>}
 

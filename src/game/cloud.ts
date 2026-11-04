@@ -17,6 +17,11 @@ export interface CloudProfile {
   arenaLosses: number;
   vip: number;
   photoUrl: string | null;
+  /** Raw server snapshot and revision, before local migrations or daily effects. */
+  saveRevision: string;
+  savedGameState: unknown;
+  walletGold: number;
+  walletGems: number;
   balanceMigrated?: boolean;
   rosterMigrated?: boolean;
 }
@@ -84,7 +89,9 @@ export async function loadCloudSave(userId: string, displayName: string): Promis
     saveTokens.set(userId, inserted.updated_at);
     walletVersions.set(userId, safeWalletVersion(inserted, state.player));
     saveBlocked.delete(userId);
-    return { state, arenaRating: 1000, arenaWins: 0, arenaLosses: 0, vip: 0, photoUrl: null };
+    return { state, arenaRating: 1000, arenaWins: 0, arenaLosses: 0, vip: 0, photoUrl: null,
+      saveRevision: inserted.updated_at, savedGameState: state,
+      walletGold: inserted.gold, walletGems: inserted.gems };
   }
 
   if (!validSaveToken(data.updated_at)) throw new Error('Missing save revision');
@@ -95,6 +102,10 @@ export async function loadCloudSave(userId: string, displayName: string): Promis
   const balanceMigrated = !savedState || (savedState.balanceVersion ?? 0) < EQUIPMENT_BALANCE_VERSION;
   return {
     state: mergeWithDefaults(savedState, data.display_name || displayName),
+    saveRevision: data.updated_at,
+    savedGameState: data.game_state,
+    walletGold: data.gold,
+    walletGems: data.gems,
     balanceMigrated,
     rosterMigrated: !savedState || !savedState.followers?.some((f) => f.id === 'follower_6'),
     arenaRating: data.arena_rating,

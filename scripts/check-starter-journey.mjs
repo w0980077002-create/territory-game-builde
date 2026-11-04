@@ -67,9 +67,9 @@ const fight = readFileSync('src/components/pve/PveFight.tsx', 'utf8');
 assert.match(fight, /state\.quests\.some\(q => !q\.claimed && q\.current >= q\.target\)/, 'Only genuinely ready quests are suggested after combat');
 assert.match(fight, /try \{ hapticImpact\('light'\); \} catch \{/,
   'A missing Telegram haptics bridge must not cancel an already paid PvE round');
-assert.match(fight, /onQuests=\{onQuests \? \(\) => \{ nextCancelled\.current = true; onExit\(\); onQuests\(\); \} : undefined\}/,
+assert.match(fight, /onQuests=\{onQuests \? \(\) => \{[\s\S]*?nextCancelled\.current = true; onExit\(\); onQuests\(\);[\s\S]*?\} : undefined\}/,
   'Collecting a ready quest must close the settled fight before navigating away');
-assert.match(fight, /onForge=\{onForge \? \(\) => \{ nextCancelled\.current = true; onExit\(\); onForge\(\); \} : undefined\}/,
+assert.match(fight, /onForge=\{onForge \? \(\) => \{[\s\S]*?nextCancelled\.current = true; onExit\(\); onForge\(\);[\s\S]*?\} : undefined\}/,
   'Forge navigation must close the settled fight before returning to adventure');
 assert.match(fight, /\{onForge && \(outcome\.materials > 0 \|\| !outcome\.won\) && \(/,
   'A defeated hero must be able to open the existing Forge without inventing loot');

@@ -6,8 +6,9 @@ import { useLanguage, localizeText } from '@/game/i18n';
 import { captureGameEvent } from '@/game/analytics';
 import { EQUIPMENT_SLOTS, generateChapter, generateTrial, getComputedStats, PVE_STONE_COST } from '@/game/engine';
 import { spendStones, trialReward, blessedGold } from '@/game/progression';
-import { saveBlocked, saveCloudSave } from '@/game/cloud';
+import { saveBlocked } from '@/game/cloud';
 import { confirmPveVictorySave, pveVictorySaveBlocked, pveVictorySaveState, subscribePveVictorySave } from '@/game/pveVictorySaveFence';
+import { canJournalPveVictory, pendingPveVictoryJournal, retryPveVictoryJournal } from '@/game/pveVictoryRecovery';
 import { hapticImpact } from '@/game/telegram';
 import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
@@ -57,8 +58,9 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const [, refreshVictoryFence] = useState(0);
   useEffect(() => subscribePveVictorySave(userId, () => refreshVictoryFence(v => v + 1)), [userId]);
   const victorySaveStillPending = pveVictorySaveState(userId) === 'pending';
-  const blockedBySave = pveVictorySaveBlocked(userId) || saveBlocked.has(userId);
-  const battleStartBlocked = caveRecoveryNeeded || blockedBySave;
+  const storageAvailable = canJournalPveVictory();
+  const blockedBySave = pveVictorySaveBlocked(userId) || saveBlocked.has(userId) || pendingPveVictoryJournal(userId);
+  const battleStartBlocked = caveRecoveryNeeded || blockedBySave || !storageAvailable;
   const chapter = useMemo(() => generateChapter(state.currentChapter), [state.currentChapter]);
   const stages = [...chapter.enemies, chapter.boss];
   const nextIndex = Math.min(state.chapterWins, chapter.enemies.length);
@@ -70,7 +72,13 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const fightStartLocked = useRef(false);
 
   const start = (kind: FightKind) => {
-    if (pveVictorySaveBlocked(userId) || saveBlocked.has(userId)) {
+    if (!canJournalPveVictory()) {
+      setError(language === 'en'
+        ? 'Device storage is unavailable. Classic battles are paused to prevent loss of rewards after restart.'
+        : 'Хранилище телефона недоступно. Бои приостановлены, чтобы не потерять награды при перезапуске.');
+      return false;
+    }
+    if (pveVictorySaveBlocked(userId) || saveBlocked.has(userId) || pendingPveVictoryJournal(userId)) {
       setError(language === 'en'
         ? 'The last victory has not been safely saved. Confirm it before another fight.'
         : 'Последняя победа ещё не сохранена. Подтверди сохранение перед новым боем.');
@@ -171,6 +179,13 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
           </button>
         </div>
       )}
+      {!storageAvailable && (
+        <div data-testid="pve-storage-unavailable" role="alert" className="rounded-xl border border-red-400/65 bg-red-950/60 p-3 text-xs text-red-100">
+          {language === 'en'
+            ? 'Phone storage is unavailable. Campaign and Trials are paused to protect victory progress. Enable browser storage and reopen Telegram.'
+            : 'Хранилище телефона недоступно. Поход и Испытания приостановлены для защиты прогресса. Разреши хранение данных и перезапусти Telegram.'}
+        </div>
+      )}
       {blockedBySave && (
         <div id="pending-pve-save" data-testid="pending-pve-save" role="alert"
           className="rounded-xl border border-amber-400/70 bg-amber-950/65 p-3 text-xs text-amber-100">
@@ -185,9 +200,8 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
             <button type="button" disabled={retryingVictorySave || victorySaveStillPending} data-testid="pve-retry-save-before-fight"
               onClick={() => {
                 if (retryingVictorySave) return;
-                const snapshot = useGame.get();
                 setRetryingVictorySave(true);
-                void confirmPveVictorySave(userId, () => saveCloudSave(userId, snapshot))
+                void confirmPveVictorySave(userId, () => retryPveVictoryJournal(userId))
                   .then(ok => setError(ok ? null : (language === 'en'
                     ? 'Could not save yet. Check your connection and retry without starting another fight.'
                     : 'Пока не удалось сохранить победу. Проверь соединение и повтори без нового боя.')))
@@ -199,6 +213,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
                 : (language === 'en' ? 'Retry saving victory' : 'Повторить сохранение победы')}
             </button>
           )}
+          {error && <p role="alert" className="mt-2 text-red-200">{error}</p>}
         </div>
       )}
       {view === 'cave' ? (
