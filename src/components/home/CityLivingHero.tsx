@@ -81,7 +81,7 @@ export function CityLivingHero({ appearance, name }: { appearance: string; name:
             onAssetError={() => setReady({ id: rig.id, ok: false })}
           />
         </div>
-      ) : originalCutout && !reducedMotion ? (
+      ) : originalCutout && typeof SVGMaskElement !== 'undefined' && !reducedMotion ? (
         <span data-testid="city-hero-articulated" className="absolute inset-0">
           <ArticulatedHero kind={originalCutout} art={art} name={name}
             motion="idle" className="absolute inset-0 h-full w-full" />
