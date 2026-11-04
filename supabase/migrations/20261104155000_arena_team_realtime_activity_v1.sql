@@ -322,10 +322,6 @@ IF p_attack IS NULL OR NOT (p_attack = ANY(v_zones)) OR p_blocks IS NULL OR arra
 OR p_blocks[1] = p_blocks[2] OR NOT (p_blocks <@ v_zones) THEN
 RAISE EXCEPTION 'invalid_zones';
 END IF;
-IF NOT EXISTS (SELECT 1 FROM arena_participants WHERE id = p_target AND room_id = p_room AND team <> v_me.team AND hp > 0) THEN
-RAISE EXCEPTION 'invalid_target';
-END IF;
-
 IF v_room.team_live_v1 THEN
   -- Important: tick first; an expired team must lose before its next late attack.
   -- If tick finishes the match, RETURN (not RAISE) to commit that result.
@@ -335,6 +331,10 @@ IF v_room.team_live_v1 THEN
   IF NOT EXISTS(SELECT 1 FROM public.arena_participants WHERE id=v_me.id AND hp>0) THEN RETURN; END IF;
   PERFORM territory_private.arena_team_strike_actor_v1(p_room,v_me.id,p_target,p_attack,p_blocks);
   RETURN;
+END IF;
+
+IF NOT EXISTS (SELECT 1 FROM arena_participants WHERE id = p_target AND room_id = p_room AND team <> v_me.team AND hp > 0) THEN
+RAISE EXCEPTION 'invalid_target';
 END IF;
 
 INSERT INTO arena_moves (room_id, round_no, participant_id, target_id, attack_zone, block_zones)
