@@ -19,6 +19,7 @@ interface Props {
   won: boolean;
   draw: boolean;
   moved: boolean;
+  cooldown: number;
   auto: boolean;
   autoLocked: boolean;
   autoMinVip: number;
@@ -84,7 +85,7 @@ function ZoneButton({ label, sub, selected, tone, disabled, onClick }: {
 
 export function BattleScene(props: Props) {
   const {
-    me, enemy, active, finished, won, draw, moved, auto, autoLocked, autoMinVip, attack, blocks, busy,
+    me, enemy, active, finished, won, draw, moved, cooldown, auto, autoLocked, autoMinVip, attack, blocks, busy,
     movedCount, aliveCount, strike, canRepeat, onAttack, onToggleBlock, onStrike, onRepeat, onToggleAuto, resultPanel,
   } = props;
   const game = useStore(useGame);
@@ -92,7 +93,7 @@ export function BattleScene(props: Props) {
   const { language } = useLanguage();
   const alive = me.hp > 0;
   const controls = active && alive && !moved && !auto;
-  const ready = controls && !!attack && blocks.length === 2 && !!enemy && enemy.hp > 0;
+  const ready = controls && cooldown === 0 && !!attack && blocks.length === 2 && !!enemy && enemy.hp > 0;
 
   const status = !active ? null
     : !alive ? { icon: Skull, text: language === 'en' ? 'You fell' : 'Ты пал', tone: 'text-gray-200' }
@@ -100,7 +101,7 @@ export function BattleScene(props: Props) {
     : moved ? { icon: Hourglass, text: language === 'en' ? `Waiting ${movedCount}/${aliveCount}` : `Ждём ${movedCount}/${aliveCount}`, tone: 'text-emerald-200' }
     : null;
 
-  const hint = !controls ? '' : !enemy ? (language === 'en' ? 'Choose a target' : 'Выбери цель') : blocks.length < 2
+  const hint = !controls ? '' : cooldown > 0 ? (language === 'en' ? `Next strike in ${cooldown}s` : `Следующий удар через ${cooldown} с`) : !enemy ? (language === 'en' ? 'Choose a target' : 'Выбери цель') : blocks.length < 2
     ? (language === 'en' ? `Choose ${2 - blocks.length} more defense zone(s)` : `Защита: выбери ещё ${2 - blocks.length}`) : !attack ? (language === 'en' ? 'Choose an attack zone' : 'Выбери зону удара') : (language === 'en' ? `Attack ${enemy.name}` : `Удар по ${enemy.name}`);
 
   return (
@@ -244,7 +245,7 @@ export function BattleScene(props: Props) {
                 ready && !busy ? 'animate-strike-ready' : ''
               }`}
             >
-              {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sword className="w-5 h-5" />} {language === 'en' ? 'STRIKE' : 'УДАР'}
+              {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sword className="w-5 h-5" />} {cooldown > 0 ? `${cooldown}${language === 'en' ? 's' : 'с'}` : language === 'en' ? 'STRIKE' : 'УДАР'}
             </button>
 
             <button
