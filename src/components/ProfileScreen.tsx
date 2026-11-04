@@ -40,7 +40,7 @@ export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, 
   return (
     <div className="territory-profile space-y-4 animate-fade-in pb-4">
       <HeroShowcase state={state} stats={computed} onEquipment={onEquipment} onAdventure={onAdventure} onForge={onForge} onQuests={onQuests} onCompanions={onCompanions} />
-      <VipStatusPanel />
+      <VipStatusPanel userId={user.id} />
       {/* Runes are reached exclusively from the Map's Rune location. */}
 
       {/* Build lab runs only when opened; it cannot change the saved character. */}
