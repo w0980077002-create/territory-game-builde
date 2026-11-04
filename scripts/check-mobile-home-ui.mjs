@@ -14,6 +14,7 @@ const [home, app, css, html, city, sheets, telegram] = await Promise.all([
 ]);
 const worldMap = await read('src/components/WorldMapCanvas.tsx');
 const cityMotion = await read('src/components/home/cityCharacterMotion.css');
+const livingHero = await read('src/components/home/CityLivingHero.tsx');
 
 const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventure] = await Promise.all([
   read('src/components/ForgeScreen.tsx'),
@@ -27,9 +28,21 @@ const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventu
 
 assert.match(home, /<LiveCityBackdrop animated=\{cityMotion\}/, 'Home must render the approved layered city backdrop');
 assert.match(home, /className="home-hero-figure/, 'City hero must have a separate sizing wrapper');
+assert.match(home, /<CityLivingHero appearance=\{state\.appearance\} name=\{player\.name\} \/>/,
+  'City hero must use the existing joint-rig when its art is verified');
+assert.match(livingHero, /<SkeletalFighter[\s\S]*?strike=\{null\}/,
+  'City motion uses independent limbs without fake damage');
+assert.match(livingHero, /RIG_PARTS\.map/,
+  'An incomplete hand-rig may not be mounted');
+assert.match(livingHero, /hasRig && rig \?/,
+  'Non-rig appearances keep their original hero artwork');
+assert.match(livingHero, /prefers-reduced-motion: reduce/,
+  'Respect reduced-motion preference');
+assert.match(livingHero, /onAssetError=\{\(\) => setReady/,
+  'Failed rig assets must return to the approved hero sprite');
 assert.ok(home.includes("import './home/cityCharacterMotion.css';"), 'City-specific motion stylesheet must be imported');
 for (const role of ['follower', 'hero', 'enemy']) {
-  assert.ok(home.includes('city-' + role + '-idle'), role + ' must have a distinct idle class');
+  assert.ok((role === 'hero' ? livingHero : home).includes('city-' + role + '-idle'), role + ' must have a distinct idle class');
   assert.ok(cityMotion.includes('.city-' + role + '-idle'), role + ' must have a real animation rule');
 }
 assert.ok(cityMotion.includes('@media (prefers-reduced-motion: reduce)'), 'City animation must respect accessibility motion controls');
