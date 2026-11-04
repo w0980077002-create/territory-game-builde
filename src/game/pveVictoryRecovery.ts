@@ -116,14 +116,16 @@ function clearMatchingJournal(playerId: string, stored: StoredJournal): boolean 
 }
 
 /** A boolean ACK from a coalescing save queue alone is not proof of this victory. */
-async function serverHasExactVictory(playerId: string, snapshot: GameState): Promise<boolean> {
+async function serverHasExactVictory(playerId: string, snapshot: GameState): Promise<string | null> {
   try {
     const { data, error } = await supabase.from('players')
-      .select('game_state,gold,gems').eq('id', playerId).maybeSingle();
-    return !error && !!data && data.gold === snapshot.player.gold && data.gems === snapshot.player.gems
-      && sameJson(data.game_state, JSON.parse(JSON.stringify(snapshot)));
+      .select('game_state,gold,gems,updated_at').eq('id', playerId).maybeSingle();
+    return !error && !!data && validSaveToken(data.updated_at)
+      && data.gold === snapshot.player.gold && data.gems === snapshot.player.gems
+      && sameJson(data.game_state, JSON.parse(JSON.stringify(snapshot)))
+      ? data.updated_at : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -135,9 +137,15 @@ export async function persistPveVictoryJournal(playerId: string, snapshot: GameS
   const stored = readJournal(playerId);
   if (!stored || stored === 'invalid' || !sameJson(stored.journal.snapshot, JSON.parse(JSON.stringify(snapshot)))) return false;
   // A write may have succeeded just before the browser was killed/ACK was lost.
-  if (await serverHasExactVictory(playerId, snapshot)) return clearMatchingJournal(playerId, stored);
+  const existingRevision = await serverHasExactVictory(playerId, snapshot);
+  if (existingRevision) {
+    // The network ACK may have vanished after DB commit. Until bootstrap
+    // reloads its CAS token, the current session must NOT start a new fight.
+    return existingRevision === saveTokens.get(playerId) && clearMatchingJournal(playerId, stored);
+  }
   if (!await saveCloudSave(playerId, snapshot)) return false;
-  if (!await serverHasExactVictory(playerId, snapshot)) return false;
+  const committedRevision = await serverHasExactVictory(playerId, snapshot);
+  if (!committedRevision || committedRevision !== saveTokens.get(playerId)) return false;
   return clearMatchingJournal(playerId, stored);
 }
 
