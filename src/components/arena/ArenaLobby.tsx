@@ -14,6 +14,7 @@ import './arenaLobby.css';
 import './arenaReferenceWood.css';
 import './arenaOldOakFinish.css';
 import './arenaCompactFirst.css';
+import './arenaScreenshotPolish.css';
 
 const ENERGY_COST = 1;
 const ORIGINAL = import.meta.env.BASE_URL + 'assets/territory/characters/';
