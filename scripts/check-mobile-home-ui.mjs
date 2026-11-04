@@ -19,6 +19,8 @@ const livingFollower = await read('src/components/home/CityLivingFollower.tsx');
 const livingEnemy = await read('src/components/home/CityLivingEnemy.tsx');
 const fighterFigure = await read('src/components/arena/FighterFigure.tsx');
 const skeletalFighter = await read('src/components/combat2d/SkeletalFighter.tsx');
+const originalHeroes = await read('src/components/combat2d/ArticulatedHero.tsx');
+const originalHeroMotion = await read('src/components/combat2d/articulatedHero.css');
 const battleScene = await read('src/components/arena/BattleScene.tsx');
 
 const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventure] = await Promise.all([
@@ -40,7 +42,25 @@ assert.match(livingHero, /<SkeletalFighter[\s\S]*?strike=\{null\}/,
 assert.match(livingHero, /RIG_PARTS\.map/,
   'An incomplete hand-rig may not be mounted');
 assert.match(livingHero, /hasRig && rig \?/,
-  'Non-rig appearances keep their original hero artwork');
+  'Canonical Viking continues to use its approved rig');
+assert.match(livingHero, /<ArticulatedHero kind=\{originalCutout\}/,
+  'Other three playable appearances now have independent City cutouts');
+for (const skin of ['male_rogue','female_warrior','female_archer']) {
+  assert.ok(originalHeroes.includes(skin + ': {'), skin + ' must have its own original hand-traced joints');
+}
+for (const part of ['head','weapon','guard','legLeft','legRight']) {
+  assert.ok(originalHeroes.includes('data-articulated-part={part}'), 'Every original hero joint must be a real DOM part');
+}
+assert.match(originalHeroes, /maskUnits="userSpaceOnUse"/,
+  'Do not duplicate arms over unchanged originals; mask out moved regions');
+assert.match(fighterFigure, /<ArticulatedHero kind=\{originalCutout\} art=\{artIdentity\}/,
+  'Three original hero limbs must react in real fight scenes, not City only');
+assert.match(fighterFigure, /role === 'attacker' \? 'attack'/,
+  'Hero strikes must derive from the confirmed role and queue');
+assert.match(originalHeroMotion, /original-hero-strike/,
+  'Independent sword/bow/knife action must exist');
+assert.match(originalHeroMotion, /prefers-reduced-motion: reduce/,
+  'Animation must fall back to existing canonical combat pose for reduced motion');
 assert.match(livingHero, /prefers-reduced-motion: reduce/,
   'Respect reduced-motion preference');
 assert.match(livingHero, /typeof window\.matchMedia === 'function'/,
