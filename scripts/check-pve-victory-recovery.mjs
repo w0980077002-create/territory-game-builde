@@ -45,7 +45,7 @@ const mocks = {
     "   async maybeSingle() {",
     "    if (globalThis.__mockOffline) throw Error('offline');",
     "    const row = globalThis.__mockServer;",
-    "    return {data:{game_state:row.state,gold:row.gold,gems:row.gems},error:null};",
+    "    return {data:{game_state:row.state,gold:row.gold,gems:row.gems,updated_at:row.revision},error:null};",
     "   },",
     "  };",
     " },",
@@ -107,6 +107,16 @@ assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
 globalThis.__mockServer = {revision:nextRevision,state:victory(),gold:30,gems:2};
 assert.deepEqual(await recoverPveVictoryOnBoot('hero-a', profile()), {state:victory(),recovered:true});
 assert.equal(globalThis.__mockWrites, 0);
+assert.equal(pendingPveVictoryJournal('hero-a'), false);
+
+// Lost ACK in a *running* session with an obsolete CAS token must not
+// unlock a new battle. Boot reloads the authoritative token before clearing.
+reset();
+assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
+globalThis.__mockServer = {revision:nextRevision,state:victory(),gold:30,gems:2};
+assert.equal(await retryPveVictoryJournal('hero-a'), false);
+assert.equal(pendingPveVictoryJournal('hero-a'), true);
+assert.deepEqual(await recoverPveVictoryOnBoot('hero-a', profile()), {state:victory(),recovered:true});
 assert.equal(pendingPveVictoryJournal('hero-a'), false);
 
 // Concurrent server change: no stale overwrite; retain WAL for support.
