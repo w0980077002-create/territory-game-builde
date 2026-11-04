@@ -5,6 +5,8 @@ on:
       - 'src/game/belt.ts'
       - 'src/game/types.ts'
       - 'src/game/vipDaily.ts'
+      - 'src/game/vipWeekly.ts'
+      - 'src/game/vipClaimQueue.ts'
       - 'src/game/vipProgram.ts'
       - 'src/components/VipStatusPanel.tsx'
       - 'src/components/InventoryScreen.tsx'
@@ -12,6 +14,7 @@ on:
       - 'src/components/arena/ArenaRoom.tsx'
       - 'src/components/home/CityLivingHero.tsx'
       - 'supabase/staged/20261104_vip_daily_chest_v1.sql'
+      - 'supabase/staged/20261105_vip_weekly_chest_v1.sql'
       - 'scripts/check-vip-*.mjs'
       - '.github/workflows/vip-stage-validation.yml'
       - 'package.json'
@@ -43,3 +46,5 @@ jobs:
         run: npm run test:vip-belt
       - name: VIP daily staged database and security receipt tests
         run: npm run test:vip-daily
+      - name: VIP weekly staged database, expiry and client receipts
+        run: npm run test:vip-weekly
