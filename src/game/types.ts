@@ -56,6 +56,15 @@ export interface InventoryItem {
   equipment?: Equipment;
 }
 
+/** Selected consumable kind; no ownership, expiry or item quantity is stored here. */
+export interface BeltRefillChoice {
+  type: 'potion' | 'elixir' | 'arena';
+  name: string;
+  rarity: InventoryItem['rarity'];
+  arenaEffect?: ArenaEffect;
+  effect?: InventoryItem['effect'];
+}
+
 export interface Enemy {
   id: string;
   name: string;
@@ -189,6 +198,10 @@ export interface GameState {
   /** Week anchor for weekly quest reset. Missing on legacy saves; initialized without resetting progress. */
   weeklyResetWeek?: string;
   belt: (InventoryItem | null)[];
+  /** Preferences survive after a consumable stack reaches zero. */
+  beltRefillChoices?: (BeltRefillChoice | null)[];
+  /** Off by default. Only effective when server-confirmed VIP is at least 3. */
+  autoRefillBelt?: boolean;
   activeDays: number;
   battleStones: number;
   settings: { speed: 1 | 2; auto: boolean };
