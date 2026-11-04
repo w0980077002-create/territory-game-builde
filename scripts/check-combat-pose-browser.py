@@ -84,6 +84,36 @@ with sync_playwright() as p:
     page.evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'))")
     assert page.locator('#fixture-hero .fighter-figure__motion').get_attribute('data-pose')=='idle'
     set_visual(page,{'strike':None});page.close()
+    # The three approved non-Viking hero portraits now have actual independent
+    # SVG cutout joints. Validate against existing queued confirmed events.
+    for appearance, portrait in (('m1','male_rogue'), ('f1','female_warrior'), ('f2','female_archer')):
+        page=b.new_page(viewport={'width':390,'height':760})
+        page.route(ORIGIN+'/**',serve);page.route('https://**/*',lambda r:r.abort())
+        page.goto(ORIGIN+'/');page.wait_for_function('!!window.__combat')
+        set_visual(page,{'appearance':appearance,'strike':None})
+        hero=page.locator('#fixture-hero svg[data-original-hero="' + portrait + '"]')
+        hero.wait_for(timeout=4000)
+        assert hero.locator('[data-articulated-part]').count()==5, (appearance,'missing real joint layers')
+        assert hero.get_attribute('data-motion')=='idle'
+        assert hero.locator('[data-articulated-part="head"]').evaluate(
+            "el=>getComputedStyle(el).animationName!='none'"), (appearance,'no independent head motion')
+        set_visual(page,{'strike':event(810,'crit')})
+        page.wait_for_function("document.querySelector('#fixture-hero svg[data-original-hero]')?.dataset.motion==='attack'")
+        assert hero.locator('[data-articulated-part="weapon"]').evaluate(
+            "el=>getComputedStyle(el).animationName!='none'"), (appearance,'weapon did not strike')
+        wait_pose(page,'#fixture-hero .fighter-figure__motion','attack')
+        set_visual(page,{'strike':None})
+        page.wait_for_function("document.querySelector('#fixture-hero svg[data-original-hero]')?.dataset.motion==='idle'")
+        for tone in ('block','dodge','hit'):
+            set_visual(page,{'strike':event(830+len(tone),tone,attacker='Противник')})
+            page.wait_for_function("kind=>document.querySelector('#fixture-hero svg[data-original-hero]')?.dataset.motion===kind",
+                                   arg=tone, timeout=2000)
+            set_visual(page,{'strike':None})
+        page.emulate_media(reduced_motion='reduce')
+        assert hero.evaluate("el=>getComputedStyle(el).display==='none'"), (appearance,'reduced motion should use original pose')
+        assert page.locator('#fixture-hero .original-hero-approved-pose').evaluate(
+            "el=>getComputedStyle(el).opacity==='1'"), (appearance,'original reduced-motion art hidden')
+        page.close()
     # Existing PvE controls trigger playRound; no synthetic StrikeEvent here.
     page=b.new_page(viewport={'width':390,'height':760})
     page.route(ORIGIN+'/**',serve);page.route('https://**/*',lambda r:r.abort())

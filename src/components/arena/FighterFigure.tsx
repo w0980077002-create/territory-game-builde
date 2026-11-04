@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { SkeletalFighter } from '@/components/combat2d/SkeletalFighter';
+import { ArticulatedHero, getOriginalArticulatedHero, type ArticulatedMotion } from '@/components/combat2d/ArticulatedHero';
 import { CombatEffects } from '@/components/combat2d/CombatEffects';
 import { getFighterRig, rigAsset } from '@/components/combat2d/fighterRigs';
 import { ACTION_MS, CONTACT_MS, RECOVERY_MS, WINDUP_MS } from '@/components/combat2d/fighterAnimations';
@@ -70,6 +71,7 @@ export function FighterFigure({
   const role = !strike ? null : strike.attacker === name ? 'attacker' : strike.target === name ? 'target' : null;
   const speed = Number.isFinite(combatSpeed) && combatSpeed > 0 ? combatSpeed : 1;
   const artIdentity = combatFrames?.idle ?? src;
+  const originalCutout = typeof SVGMaskElement !== 'undefined' ? getOriginalArticulatedHero(artIdentity) : null;
   const canAnimateRig = typeof Element !== 'undefined' && typeof Element.prototype.animate === 'function';
   const skeletalReady = !!rig && canAnimateRig && enabledRig === rig.id && assets?.id === rig.id && assets.ready;
   const [timeline, setTimeline] = useState<{ event: StrikeEvent; src: string; art: string; name: string; phase: PosePhase } | null>(null);
@@ -129,6 +131,12 @@ export function FighterFigure({
     : isAction && role === 'target' && tone === 'block' ? 'block'
     : phase === 'contact' && role === 'target' ? 'hit' : 'idle';
   const pose = poseKind === 'idle' ? idle : combatFrames?.[poseKind] ?? idle;
+  // The existing confirmed event, never an idle timer, drives these limbs.
+  const articulatedMotion: ArticulatedMotion = !strike && !alive ? 'death'
+    : !strike && won ? 'victory'
+    : !performing ? 'idle'
+    : role === 'attacker' ? 'attack'
+    : tone === 'block' ? 'block' : tone === 'dodge' ? 'dodge' : 'hit';
 
   return (
     <div className="fighter-figure absolute inset-0 pointer-events-none" style={style} data-quality={lowQuality ? 'low' : 'full'}>
@@ -139,10 +147,20 @@ export function FighterFigure({
             {role === 'attacker' && isAction && (
               <img src={pose} alt="" aria-hidden="true" draggable={false}
                 onError={event => { event.currentTarget.style.visibility = 'hidden'; }}
-                className={`${className} fighter-figure__afterimage select-none`} />
+                className={`${className} fighter-figure__afterimage ${originalCutout ? 'hidden' : ''} select-none`} />
             )}
+            {originalCutout ? (
+              <>
+            <SafeFighterArt key={`${pose}|${artIdentity}`} pose={pose} idle={artIdentity} name={name}
+              className={`${className} original-hero-approved-pose select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] ${poseKind === 'death' ? 'grayscale opacity-40 translate-y-2' : ''}`} />
+                <ArticulatedHero kind={originalCutout} art={artIdentity} name={name}
+                  dir={mirror ? 1 : dir} motion={articulatedMotion} speed={speed}
+                  className={`${className} original-hero-combat-joints drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)]`} />
+              </>
+            ) : (
             <SafeFighterArt key={`${pose}|${artIdentity}`} pose={pose} idle={artIdentity} name={name}
               className={`${className} select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] ${poseKind === 'death' ? 'grayscale opacity-40 translate-y-2' : ''}`} />
+            )}
             </div>
           </div>
         </div>

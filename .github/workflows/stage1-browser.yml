@@ -96,6 +96,7 @@ jobs:
             /tmp/territory-profile-360.png
             /tmp/territory-item-360.png
             /tmp/territory-city-360.png
+            /tmp/territory-city-live-*.png
             /tmp/social-quests-screenshots
             /tmp/comfort-screenshots
             /tmp/territory-rune-screenshots

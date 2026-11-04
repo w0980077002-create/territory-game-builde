@@ -222,6 +222,29 @@ with sync_playwright() as p:
                 assert tall_boxes[0]['x'] + tall_boxes[0]['width'] + 2 < tall_boxes[1]['x'], ('tall', tall_boxes)
                 assert tall_boxes[1]['x'] + tall_boxes[1]['width'] + 2 < tall_boxes[2]['x'], ('tall', tall_boxes)
             page.close()
+            # Render all three original non-Viking heroes in the actual HomeScreen.
+            # Different heads, weapon arms, guard hands and legs must retain their
+            # own original artwork; no substitute Viking/generic sprite is allowed.
+            for appearance, portrait in (('m1', 'male_rogue'), ('f1', 'female_warrior'), ('f2', 'female_archer')):
+                alt = browser.new_page(viewport={'width': width, 'height': 500})
+                alt.add_init_script(f"localStorage.setItem('territory-language', '{lang}')")
+                alt.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?city&appearance={appearance}')
+                art = alt.locator('[data-testid="city-hero-articulated"] svg[data-original-hero="' + portrait + '"]')
+                art.wait_for(timeout=10000)
+                assert art.locator('[data-articulated-part]').count() == 5, (width, lang, appearance, 'Missing body joints')
+                assert art.locator('image').count() == 6, (width, lang, appearance, 'Original art layers')
+                assert art.locator('[data-articulated-part="head"]').evaluate(
+                    "el=>getComputedStyle(el).animationName !== 'none'"), (width, lang, appearance, 'Head not alive')
+                assert art.locator('[data-articulated-part="weapon"]').evaluate(
+                    "el=>getComputedStyle(el).animationName !== 'none'"), (width, lang, appearance, 'Weapon not alive')
+                assert alt.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width, lang, appearance, 'City clips')
+                assert alt.locator('[data-testid="city-enemy-slot"]').get_attribute('aria-label')
+                if width == 360 and lang == 'ru':
+                    alt.screenshot(path=f'/tmp/territory-city-live-{appearance}-360.png')
+                alt.emulate_media(reduced_motion='reduce')
+                alt.locator('.home-character-stage .city-hero-idle').wait_for(timeout=5000)
+                assert alt.locator('[data-testid="city-hero-articulated"]').count() == 0
+                alt.close()
     browser.close()
 server.shutdown()
 print('City, profile and inventory browser checks passed: 320/360/390/430, RU/EN, short height and item dialogs.')
