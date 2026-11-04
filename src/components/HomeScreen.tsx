@@ -9,6 +9,7 @@ import { useGame, useArena, useAccount } from '@/game/actions';
 import { generateChapter, getComputedStats, HERO_MAX_LEVEL } from '@/game/engine';
 import { beltContext } from '@/game/belt';
 import { getFollowerArt } from '@/game/combatArt';
+import { getAppearanceIcon } from '@/game/appearance';
 import { MAIL, blessingReady, claimBlessing } from '@/game/progression';
 import type { AuthUser } from '@/game/auth';
 import type { QuestAlerts } from '@/game/questAttention';
