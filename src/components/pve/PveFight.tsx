@@ -798,7 +798,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   );
 }
 
-function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equippedGear, onExit, onNext, questReady, onQuests, onEquipment, onForge, nextPending, nextError }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; gearOpportunity: HeroGearOpportunity | null; equippedGear?: HeroGearOpportunity['item']['equipment']; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; onEquipment?: () => void; onForge?: () => void; nextPending: boolean; nextError: boolean }) {
+function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equippedGear, onExit, onNext, questReady, onQuests, onEquipment, onForge, nextPending, nextError, saveState, saveConflict, onRetrySave }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; gearOpportunity: HeroGearOpportunity | null; equippedGear?: HeroGearOpportunity['item']['equipment']; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; onEquipment?: () => void; onForge?: () => void; nextPending: boolean; nextError: boolean; saveState: 'idle' | 'pending' | 'confirmed' | 'failed'; saveConflict: boolean; onRetrySave: () => void }) {
   const { language } = useLanguage();
   const gearImprovements = gearOpportunity && gearOpportunity.kind !== 'empty' && equippedGear
     ? (['attack', 'defense', 'hp', 'critChance'] as const)
@@ -825,9 +825,33 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
         ) : (
           <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>
         )}
+        {outcome.won && <div className="mt-3 rounded-lg border border-amber-300/45 bg-[#251b16]/80 px-3 py-2 text-xs text-amber-100"
+          data-testid="pve-victory-save-status" role="status" aria-live="polite">
+          {saveState === 'confirmed' ? (
+            <p className="font-bold text-emerald-300">{language === 'en' ? 'Victory progress saved ✓' : 'Победа и награда сохранены ✓'}</p>
+          ) : saveState === 'failed' ? (
+            <>
+              <p className="font-bold text-amber-200">{language === 'en'
+                ? 'Your victory was not confirmed in the cloud. Another fight is paused.'
+                : 'Победа пока не сохранена. Следующий бой приостановлен.'}</p>
+              {saveConflict ? (
+                <p className="mt-1">{language === 'en'
+                  ? 'A newer save exists. Reopen the game to safely load the server state; local changes may be lost.'
+                  : 'Есть более новое сохранение. Перезапусти игру, чтобы безопасно загрузить данные; неподтверждённый прогресс может быть потерян.'}</p>
+              ) : (
+                <button type="button" onClick={onRetrySave} data-testid="pve-victory-save-retry"
+                  className="mt-2 min-h-11 rounded-lg border border-amber-200 bg-amber-700/70 px-4 font-extrabold text-white">
+                  {language === 'en' ? 'Retry saving victory' : 'Повторить сохранение победы'}
+                </button>
+              )}
+            </>
+          ) : (
+            <p>{language === 'en' ? 'Saving the victory and reward…' : 'Сохраняем победу и награду…'}</p>
+          )}
+        </div>}
         <div className="mt-3 flex gap-2" data-testid="pve-result-actions">
           {onNext && (
-            <button type="button" data-testid="pve-result-next" onClick={onNext} disabled={nextPending} aria-busy={nextPending}
+            <button type="button" data-testid="pve-result-next" onClick={onNext} disabled={nextPending || (outcome.won && saveState !== 'confirmed')} aria-busy={nextPending || (outcome.won && saveState === 'pending')}
               className="flex-1 min-h-12 rounded-xl border border-amber-200 bg-gradient-to-b from-amber-300 to-amber-600 px-2 py-2 text-[12px] leading-tight sm:text-sm font-black text-[#251409] shadow-[0_3px_0_rgba(87,45,14,.7)] active:scale-[0.98] transition-transform disabled:opacity-60">
               {nextPending
                 ? (language === 'en' ? 'Starting…' : 'Начинаем…')
