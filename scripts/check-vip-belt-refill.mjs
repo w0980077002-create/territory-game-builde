@@ -20,8 +20,9 @@ const total = (state) => [...state.inventory, ...state.belt.filter(Boolean)]
   .reduce((acc, part) => acc + part.qty, 0);
 const base = { belt: Array(7).fill(null), inventory: [], player: { level: 90 }, activeDays: 0 };
 
+const nearDeadline=days(2), farDeadline=days(6);
 const original = { ...base, inventory: [
-  item('near','Healing',5,days(2)), item('far','Healing',5,days(6)),
+  item('near','Healing',5,nearDeadline), item('far','Healing',5,farDeadline),
 ]};
 const selected = belt.putInBelt(original,'near',ctx());
 assert(selected);
@@ -41,7 +42,7 @@ assert.equal(usedAll.belt[0],null,'last potion is consumed');
 assert.equal(usedAll.beltRefillChoices[0].name,'Healing','choice persists after empty');
 const fromFar = belt.refillBeltFromInventory(usedAll,ctx());
 assert.equal(fromFar.belt[0].qty,5);
-assert.equal(fromFar.belt[0].expiresAt,days(6),'new lot keeps its own deadline');
+assert.equal(fromFar.belt[0].expiresAt,farDeadline,'new lot keeps its own deadline');
 assert.equal(total(fromFar),total(usedAll));
 assert.equal(belt.refillBeltFromInventory(fromFar,ctx()),fromFar);
 
