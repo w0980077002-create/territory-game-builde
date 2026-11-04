@@ -1,6 +1,6 @@
-.fighter-figure .original-hero-approved-pose { visibility: hidden; }
+.fighter-figure .original-hero-approved-pose { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
-  .fighter-figure .original-hero-approved-pose { visibility: visible; }
+  .fighter-figure .original-hero-approved-pose { opacity: 1; }
   .fighter-figure .original-hero-combat-joints { display: none; }
 }
 /* Individually traced original TERRITORY hero portraits; no generic body and
