@@ -17,6 +17,7 @@ if(query.has('quests')){
   state.quests=[{id:'q_daily_1',type:'daily',current:3,target:3,claimed:false,title:'Battle victory',description:'Win three fights',reward:{gold:20}}];
 }
 export const useGame=create(state);
+export const useAccount=create({permanentVip:0,vip:0,vipRemaining:0,vipCheckedAt:0});
 export const useLive=create({mail:[]});
 export function grantRewards(state){return state;}
 export function updateProgress(state){return state;}
