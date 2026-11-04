@@ -38,6 +38,12 @@ assert.match(livingHero, /hasRig && rig \?/,
   'Non-rig appearances keep their original hero artwork');
 assert.match(livingHero, /prefers-reduced-motion: reduce/,
   'Respect reduced-motion preference');
+assert.match(livingHero, /typeof window\.matchMedia === 'function'/,
+  'Do not crash old Telegram WebViews without matchMedia during initial render');
+assert.match(livingHero, /typeof window\.matchMedia !== 'function'\) return/,
+  'Do not call unsupported matchMedia from City idle motion effect');
+assert.match(livingHero, /typeof media\.addListener === 'function'/,
+  'Register legacy MediaQueryList listener only if supported');
 assert.match(livingHero, /onAssetError=\{\(\) => setReady/,
   'Failed rig assets must return to the approved hero sprite');
 assert.ok(home.includes("import './home/cityCharacterMotion.css';"), 'City-specific motion stylesheet must be imported');
