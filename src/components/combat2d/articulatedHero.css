@@ -1,0 +1,116 @@
+/* Individually traced original TERRITORY hero portraits; no generic body and
+   no invented action data. Animated only by CSS compositor transforms. */
+.articulated-hero {
+  overflow: visible;
+  pointer-events: none;
+  contain: paint;
+}
+.articulated-hero__part {
+  transform-box: view-box;
+  transform: rotate(0deg);
+}
+.articulated-hero[data-motion=idle] .articulated-hero__part--head {
+  animation: original-hero-look 4.3s ease-in-out -1.1s infinite;
+}
+.articulated-hero[data-motion=idle] .articulated-hero__part--weapon {
+  animation: original-hero-weapon-breathe 3.7s ease-in-out -.5s infinite;
+}
+.articulated-hero[data-motion=idle] .articulated-hero__part--guard {
+  animation: original-hero-guard-breathe 4.7s ease-in-out -2.4s infinite;
+}
+.articulated-hero[data-motion=idle] .articulated-hero__part--legLeft {
+  animation: original-hero-weight-left 5.1s ease-in-out -.8s infinite;
+}
+.articulated-hero[data-motion=idle] .articulated-hero__part--legRight {
+  animation: original-hero-weight-right 5.1s ease-in-out -.8s infinite;
+}
+@keyframes original-hero-look {
+  0%,100% { transform: rotate(-.35deg); }
+  46% { transform: rotate(1.35deg); }
+}
+@keyframes original-hero-weapon-breathe {
+  0%,100% { transform: rotate(-.7deg); }
+  54% { transform: rotate(2deg); }
+}
+@keyframes original-hero-guard-breathe {
+  0%,100% { transform: rotate(1deg); }
+  42% { transform: rotate(-1.3deg); }
+}
+@keyframes original-hero-weight-left {
+  0%,100% { transform: rotate(0); }
+  45% { transform: rotate(.8deg); }
+}
+@keyframes original-hero-weight-right {
+  0%,100% { transform: rotate(0); }
+  45% { transform: rotate(-.8deg); }
+}
+/* All movements below are played only on an actual queued strike. Windup,
+   contact and recovery fit the same established 810ms combat timeline. */
+.articulated-hero[data-motion=attack] .articulated-hero__part--weapon {
+  animation: original-hero-strike var(--articulated-action-ms,810ms) cubic-bezier(.2,.6,.3,1) both;
+}
+.articulated-hero[data-motion=attack] .articulated-hero__part--guard {
+  animation: original-hero-offhand var(--articulated-action-ms,810ms) ease-out both;
+}
+.articulated-hero[data-motion=attack] :is(.articulated-hero__part--head,.articulated-hero__part--legLeft) {
+  animation: original-hero-step var(--articulated-action-ms,810ms) ease-out both;
+}
+@keyframes original-hero-strike {
+  0%,12%,100% { transform: rotate(0); }
+  22% { transform: rotate(-12deg); }
+  42% { transform: rotate(17deg); }
+  55% { transform: rotate(8deg); }
+  81% { transform: rotate(-1deg); }
+}
+@keyframes original-hero-offhand {
+  0%,100% { transform: rotate(0); }
+  20% { transform: rotate(5deg); }
+  45% { transform: rotate(-6deg); }
+  72% { transform: rotate(1deg); }
+}
+@keyframes original-hero-step {
+  0%,100% { transform: rotate(0); }
+  35% { transform: rotate(1.9deg); }
+  57% { transform: rotate(-1.1deg); }
+}
+.articulated-hero[data-motion=block] .articulated-hero__part--guard {
+  animation: original-hero-block var(--articulated-action-ms,810ms) ease-out both;
+}
+.articulated-hero[data-motion=block] .articulated-hero__part--head {
+  animation: original-hero-flinch var(--articulated-action-ms,810ms) ease-out both;
+}
+@keyframes original-hero-block {
+  0%,100% { transform: rotate(0); }
+  32% { transform: rotate(-12deg); }
+  50% { transform: rotate(-16deg); }
+  74% { transform: rotate(-3deg); }
+}
+.articulated-hero[data-motion=dodge] .articulated-hero__part--head,
+.articulated-hero[data-motion=hit] .articulated-hero__part--head {
+  animation: original-hero-flinch var(--articulated-action-ms,810ms) ease-out both;
+}
+.articulated-hero[data-motion=hit] .articulated-hero__part--guard {
+  animation: original-hero-hit-arm var(--articulated-action-ms,810ms) ease-out both;
+}
+@keyframes original-hero-flinch {
+  0%,42%,100% { transform: rotate(0); }
+  52% { transform: rotate(-6deg); }
+  67% { transform: rotate(2deg); }
+}
+@keyframes original-hero-hit-arm {
+  0%,42%,100% { transform: rotate(0); }
+  53% { transform: rotate(9deg); }
+  70% { transform: rotate(-3deg); }
+}
+.articulated-hero[data-motion=victory] .articulated-hero__part--weapon {
+  animation: original-hero-victory var(--articulated-action-ms,810ms) ease-out both;
+}
+@keyframes original-hero-victory {
+  0%,100% { transform: rotate(0); }
+  30%,65% { transform: rotate(-20deg); }
+}
+.articulated-hero[data-motion=death] { filter: grayscale(1); opacity:.5; }
+@media (prefers-reduced-motion: reduce) {
+  .articulated-hero .articulated-hero__part { animation:none!important; transform:none!important; }
+  .articulated-hero[data-motion=death] { filter:none; opacity:1; }
+}
