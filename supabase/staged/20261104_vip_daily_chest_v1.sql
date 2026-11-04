@@ -62,7 +62,9 @@ BEGIN
     RETURN jsonb_build_object('success',true,'vip',v_tier,
       'server_day',v_day,'next_reset_at',(v_day+1)::timestamp AT TIME ZONE 'UTC',
       'claimed_today',EXISTS(SELECT 1 FROM territory_private.vip_daily_claims_v1
-        WHERE player_id=u AND claim_day=v_day));
+        WHERE player_id=u AND claim_day=v_day),
+      'updated_at',p.updated_at,'game_state',p.game_state,
+      'wallet_gold',p.gold,'wallet_gems',p.gems);
   END IF;
   IF p_operation IS NULL THEN RAISE EXCEPTION 'vip_missing_operation'; END IF;
 
