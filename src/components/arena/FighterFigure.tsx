@@ -144,10 +144,10 @@ export function FighterFigure({
         <div className="fighter-figure__size absolute inset-0">
           <div className={`fighter-figure__breath absolute inset-0 ${!performing && alive && !won ? 'fighter-figure__breath--idle' : ''}`}>
             <div className={`absolute inset-0 ${mirror ? 'battle-mirror-art' : ''}`}>
-            {role === 'attacker' && isAction && !originalCutout && (
+            {role === 'attacker' && isAction && (
               <img src={pose} alt="" aria-hidden="true" draggable={false}
                 onError={event => { event.currentTarget.style.visibility = 'hidden'; }}
-                className={`${className} fighter-figure__afterimage select-none`} />
+                className={`${className} fighter-figure__afterimage ${originalCutout ? 'hidden' : ''} select-none`} />
             )}
             {originalCutout ? (
               <>
