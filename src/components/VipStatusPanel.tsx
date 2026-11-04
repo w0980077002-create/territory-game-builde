@@ -26,9 +26,12 @@ export function VipStatusPanel({ userId }: { userId:string }) {
   const [weeklyReward,setWeeklyReward] = useState('');
   const { language } = useLanguage();
   const en = language === 'en';
-  const level = Math.max(0, Math.min(10, account.permanentVip));
+  const permanentLevel = Math.max(0, Math.min(10, account.permanentVip));
+  const remainingVip = Math.max(0, account.vipRemaining - (performance.now() - account.vipCheckedAt));
+  const level = Math.max(permanentLevel, remainingVip>0 ? account.vip : 0);
   const current = vipTier(level);
-  const next = vipNextThreshold(level);
+  // Paid progress cannot be inferred from temporary status or a gifted VIP.
+  const next = vipNextThreshold(permanentLevel);
   useEffect(() => {
     if (!LIVE_DAILY_CHEST || !userId) return;
     let active=true;
@@ -60,7 +63,7 @@ export function VipStatusPanel({ userId }: { userId:string }) {
     }finally {setWeeklyBusy(false);}
   };
   const takeDaily = async () => {
-    if(!LIVE_DAILY_CHEST || dailyBusy || daily?.claimedToday || level<1)return;
+    if(!LIVE_DAILY_CHEST || dailyBusy || daily?.claimedToday || (daily?.vip ?? 0)<1)return;
     setDailyBusy(true); setDailyError('');
     try {
       const recovered=await recoverVipDaily(userId);
@@ -87,9 +90,11 @@ export function VipStatusPanel({ userId }: { userId:string }) {
       </summary>
       <div className="border-t border-amber-500/25 pt-2">
         <p className="mb-2 text-[11px] leading-relaxed text-amber-100/85">
-          {en
-            ? 'Your VIP status is permanent. A promotional grant does not count as paid spending.'
-            : 'Твой VIP-статус постоянный. Подарочный VIP не считается оплаченным донатом.'}
+          {remainingVip>0 && account.vip>permanentLevel
+            ? (en ? `Temporary VIP ${account.vip} is active; permanent VIP ${permanentLevel} remains unchanged.`
+              : `Временный VIP ${account.vip} активен; постоянный VIP ${permanentLevel} не меняется.`)
+            : (en ? 'Permanent VIP and gifts never count as confirmed paid spending.'
+              : 'Постоянный подарочный VIP не считается подтверждённым донатом.')}
         </p>
         <div className="flex items-center gap-2 rounded-lg border border-amber-300/20 bg-black/25 px-2 py-1.5">
           <ShieldCheck className="h-4 w-4 shrink-0 text-amber-300"/>
@@ -99,7 +104,7 @@ export function VipStatusPanel({ userId }: { userId:string }) {
               : (en ? `Next tier target: $${next} in confirmed cumulative purchases` : `Порог следующей ступени: $${next} подтверждённых покупок суммарно`)}
           </p>
         </div>
-        {LIVE_DAILY_CHEST && daily && level>=1 && (
+        {LIVE_DAILY_CHEST && daily && daily.vip>=1 && (
           <div className="mb-2 rounded-xl border border-amber-400/50 bg-black/25 p-2" data-testid="vip-daily-chest">
             <div className="mb-1.5 flex items-center gap-1.5 text-xs font-extrabold text-amber-100">
               <Gift size={16}/>{en?'Your daily VIP chest':'Твой ежедневный VIP-сундук'}
