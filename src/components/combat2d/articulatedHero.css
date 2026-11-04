@@ -1,3 +1,8 @@
+.fighter-figure .original-hero-approved-pose { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .fighter-figure .original-hero-approved-pose { visibility: visible; }
+  .fighter-figure .original-hero-combat-joints { display: none; }
+}
 /* Individually traced original TERRITORY hero portraits; no generic body and
    no invented action data. Animated only by CSS compositor transforms. */
 .articulated-hero {
