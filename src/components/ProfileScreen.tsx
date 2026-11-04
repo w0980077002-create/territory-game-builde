@@ -9,6 +9,7 @@ import { Heart, Sword, Shield, Star, Send, Check, Link2, Loader2 } from 'lucide-
 import type { ReactNode } from 'react';
 import { APPEARANCE_PRESETS, getPlayableAppearance } from '@/game/appearance';
 import { HeroShowcase } from './HeroShowcase';
+import { VipStatusPanel } from './VipStatusPanel';
 
 const BuildTrainingPanel = lazy(() => import('./builds/BuildTrainingPanel').then(module => ({ default: module.BuildTrainingPanel })));
 
@@ -39,6 +40,7 @@ export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, 
   return (
     <div className="territory-profile space-y-4 animate-fade-in pb-4">
       <HeroShowcase state={state} stats={computed} onEquipment={onEquipment} onAdventure={onAdventure} onForge={onForge} onQuests={onQuests} onCompanions={onCompanions} />
+      <VipStatusPanel />
       {/* Runes are reached exclusively from the Map's Rune location. */}
 
       {/* Build lab runs only when opened; it cannot change the saved character. */}
