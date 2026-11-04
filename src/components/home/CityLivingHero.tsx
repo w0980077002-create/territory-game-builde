@@ -38,8 +38,16 @@ export function CityLivingHero({ appearance, name }: { appearance: string; name:
     // while a missing cutout is loading or when a character changes appearance.
     const load = RIG_PARTS.map((part) => {
       const image = new Image();
+      const loaded = new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error(`Missing city rig asset: ${part}`));
+      });
       image.src = rigAsset(rig, part);
-      return image.decode();
+      // Some Telegram WebViews lack HTMLImageElement.decode().
+      // The load/error handlers are registered before src to avoid cached-image races.
+      return typeof image.decode === 'function'
+        ? image.decode().catch(() => loaded)
+        : loaded;
     });
     void Promise.all(load).then(
       () => { if (active) setReady({ id: rig.id, ok: true }); },
