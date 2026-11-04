@@ -44,6 +44,15 @@ await assert.rejects(submitAuctionAction({ action: 'buy', listingId: lot }, op),
 
 const api = readFileSync('src/game/auctionApi.ts', 'utf8');
 const ui = readFileSync('src/components/AuctionScreen.tsx', 'utf8');
+assert.match(ui, /const marketUnavailable = !auctionLoading && auction\?\.enabled !== true && !pendingOperation/,
+  'Only hide unavailable trade controls after status resolves, preserving pending recoveries');
+assert.match(ui, /if \(marketUnavailable && tab !== 'chat'\) setTab\('chat'\)/,
+  'Disabled trade status must take players to the working lobby chat');
+assert.match(ui, /\{!marketUnavailable && <div className="grid grid-cols-4 gap-1\.5">/,
+  'Market tabs must be hidden while the live trade backend is unavailable');
+assert.match(ui, /\{marketUnavailable && \([\s\S]*?<p role="status"/,
+  'Display honest trading status without inventing listings');
+
 assert.match(api, /withAuctionDeadline\(supabase\.rpc\('territory_auction_overview_v1'/,
   'A hung catalog should not freeze the auction screen');
 assert.match(api, /withAuctionDeadline\(supabase\.rpc\('territory_auction_trade_v1'[\s\S]*?15_000\)/,
