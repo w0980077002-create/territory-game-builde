@@ -180,10 +180,15 @@ with sync_playwright() as p:
             assert rig.locator('[data-rig-part="arm-right"]').count() == 1
             assert rig.locator('[data-rig-part="leg-left"]').count() == 1
             assert rig.get_attribute('data-motion') == 'idle'
+            # A prepared goblin may now show true head/arm/leg joints;
+            # other enemies must keep their original sprite and hitbox.
+            assert page.locator('[data-testid="city-living-enemy"]').count() == 1
+            enemy_rig = page.locator('[data-testid="city-enemy-joint-rig"] svg[data-rig="goblin"]')
+            enemy_idle = enemy_rig.locator('[data-rig-part="head"]') if enemy_rig.count() else page.locator('.home-character-stage .city-enemy-idle')
             idle_nodes = [
                 page.locator('.home-character-stage .city-follower-idle'),
                 rig.locator('[data-rig-part="head"]'),
-                page.locator('.home-character-stage .city-enemy-idle'),
+                enemy_idle,
             ]
             idle_styles = [node.evaluate("""el => ({
                 name: getComputedStyle(el).animationName,

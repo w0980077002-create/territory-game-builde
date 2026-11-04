@@ -8,7 +8,6 @@ import { selectedFollower } from '@/game/followers';
 import { useGame, useArena, useAccount } from '@/game/actions';
 import { generateChapter, getComputedStats, HERO_MAX_LEVEL } from '@/game/engine';
 import { beltContext } from '@/game/belt';
-import { getFollowerArt } from '@/game/combatArt';
 import { getAppearanceIcon } from '@/game/appearance';
 import { MAIL, blessingReady, claimBlessing } from '@/game/progression';
 import type { AuthUser } from '@/game/auth';
@@ -21,6 +20,8 @@ import { Currency, formatAmount } from '@/components/ui/Currency';
 import { DailySheet, SettingsSheet, StonesSheet, type SaveStatus } from '@/components/home/HomeSheets';
 import { LiveCityBackdrop, CITY_MOTION_KEY, CITY_BACKGROUND_KEY, initialCityMotion, initialCityBackground, type CityBackground } from '@/components/home/LiveCityBackdrop';
 import { CityLivingHero } from '@/components/home/CityLivingHero';
+import { CityLivingFollower } from '@/components/home/CityLivingFollower';
+import { CityLivingEnemy } from '@/components/home/CityLivingEnemy';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
@@ -245,7 +246,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
                 className="home-follower-art-frame absolute inset-x-0 bottom-0 flex items-end justify-center"
                 style={{ transform: `scale(${HOME_FOLLOWER_ART_SCALE[follower.id] ?? 1})` }}
               >
-                <img src={getFollowerArt(follower.id)} alt={follower.name} className="home-follower-art city-follower-idle relative w-full h-auto object-contain object-bottom" />
+                <CityLivingFollower id={follower.id} name={follower.name} />
               </span>
             </>
           )}
@@ -269,7 +270,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
             {nextEnemy.isBoss ? `${t('boss')} · ` : ''}{localizeText(nextEnemy.name, language)}
           </span>
           <span className="absolute bottom-0 w-[80%] h-2.5 rounded-[50%] bg-black/50 blur-[3px]" />
-          <img src={nextEnemy.art} alt="" className="city-enemy-idle relative min-h-0 flex-1 max-w-full object-contain object-bottom drop-shadow-[0_6px_8px_rgba(0,0,0,0.7)] transition-transform group-active:scale-95" />
+          <CityLivingEnemy art={nextEnemy.art} name={nextEnemy.name} />
         </button>
       </div>
 

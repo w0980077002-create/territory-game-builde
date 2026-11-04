@@ -15,6 +15,11 @@ const [home, app, css, html, city, sheets, telegram] = await Promise.all([
 const worldMap = await read('src/components/WorldMapCanvas.tsx');
 const cityMotion = await read('src/components/home/cityCharacterMotion.css');
 const livingHero = await read('src/components/home/CityLivingHero.tsx');
+const livingFollower = await read('src/components/home/CityLivingFollower.tsx');
+const livingEnemy = await read('src/components/home/CityLivingEnemy.tsx');
+const fighterFigure = await read('src/components/arena/FighterFigure.tsx');
+const skeletalFighter = await read('src/components/combat2d/SkeletalFighter.tsx');
+const battleScene = await read('src/components/arena/BattleScene.tsx');
 
 const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventure] = await Promise.all([
   read('src/components/ForgeScreen.tsx'),
@@ -48,9 +53,34 @@ assert.match(livingHero, /onAssetError=\{\(\) => setReady/,
   'Failed rig assets must return to the approved hero sprite');
 assert.ok(home.includes("import './home/cityCharacterMotion.css';"), 'City-specific motion stylesheet must be imported');
 for (const role of ['follower', 'hero', 'enemy']) {
-  assert.ok((role === 'hero' ? livingHero : home).includes('city-' + role + '-idle'), role + ' must have a distinct idle class');
+  const source = role === 'hero' ? livingHero : role === 'follower' ? livingFollower : livingEnemy;
+  assert.ok(source.includes('city-' + role + '-idle'), role + ' must retain its original animation fallback');
   assert.ok(cityMotion.includes('.city-' + role + '-idle'), role + ' must have a real animation rule');
 }
+assert.match(home, /<CityLivingFollower id=\{follower\.id\} name=\{follower\.name\}/,
+  'The real selected companion must render in the approved City slot');
+assert.match(home, /<CityLivingEnemy art=\{nextEnemy\.art\} name=\{nextEnemy\.name\}/,
+  'The real current enemy must keep its existing campaign identity');
+assert.match(livingFollower, /follower_pumpkin_witch_2026[\s\S]*?<PumpkinWitch/,
+  'Witch must blink in City without fake heal/attack effects');
+assert.match(livingEnemy, /getFighterRig\(art\)/,
+  'City enemies may only use prepared original joints');
+assert.match(livingEnemy, /<SkeletalFighter[\s\S]*?strike=\{null\}/,
+  'City enemy joints must not invent strikes');
+assert.match(livingEnemy, /showRig && rig/,
+  'Enemies without a verified rig must keep their original sprite');
+assert.match(livingEnemy, /typeof image\.decode === 'function'/,
+  'Enemy cutouts must support old Telegram WebViews');
+assert.match(fighterFigure, /typeof img\.decode === 'function'/,
+  'Battle rigs must support old Telegram WebViews for live hit/block animation');
+assert.match(fighterFigure, /typeof Element\.prototype\.animate === 'function'/,
+  'Old Telegram without Web Animations must safely use original battle pose frames');
+assert.match(skeletalFighter, /typeof window\.matchMedia === 'function'/,
+  'Live skeletal battle must not crash if old Telegram lacks matchMedia');
+assert.match(skeletalFighter, /typeof joint\.animate !== 'function'/,
+  'Unsupported SVG joint animations may never crash a live fight');
+assert.match(battleScene, /portraitFollower\.id === 'follower_pumpkin_witch_2026'[\s\S]*?<PumpkinWitch\s*\/>/,
+  'Arena Witch must be visibly alive as spectator without inventing a PvP strike');
 assert.ok(cityMotion.includes('@media (prefers-reduced-motion: reduce)'), 'City animation must respect accessibility motion controls');
 for (const forbidden of ['.home-bottom-controls', '.territory-nav', '.home-top-hud', '.home-side-stack']) {
   assert.ok(!cityMotion.includes(forbidden), 'Actor motion cannot adjust HUD/buttons: ' + forbidden);

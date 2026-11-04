@@ -42,21 +42,29 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
     if (!svg) return;
     terminalRef.current = motion === 'death' || motion === 'victory' ? motion : null;
     if (motion === 'idle') return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const reduced = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
     let animations: Animation[] = [];
     const apply = () => {
       animations.forEach(a => a.cancel());
       const stops = motionStops(motion, critical);
-      animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).map(joint => {
+      animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).flatMap(joint => {
+        // Web Animations may be missing on older embedded SVG implementations.
+        if (typeof joint.animate !== 'function') return [];
         const frames = jointFrames(joint.dataset.rigPart as Joint, stops);
         // Retain readable final outcome poses without large movement in reduced mode.
-        const selected = reduced.matches ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
-        return joint.animate(selected, { duration: reduced.matches ? 1 : ACTION_MS / speed, fill: 'forwards' });
+        const selected = reduced?.matches ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
+        return [joint.animate(selected, { duration: reduced?.matches ? 1 : ACTION_MS / speed, fill: 'forwards' })];
       });
     };
     apply();
-    reduced.addEventListener('change', apply);
-    return () => { reduced.removeEventListener('change', apply); animations.forEach(a => a.cancel()); };
+    if (typeof reduced?.addEventListener === 'function') reduced.addEventListener('change', apply);
+    else if (typeof reduced?.addListener === 'function') reduced.addListener(apply);
+    return () => {
+      if (typeof reduced?.removeEventListener === 'function') reduced.removeEventListener('change', apply);
+      else if (typeof reduced?.removeListener === 'function') reduced.removeListener(apply);
+      animations.forEach(a => a.cancel());
+    };
   }, [motion, animationEvent, speed, critical, rig.id]);
   return <svg ref={svgRef} viewBox="0 0 512 512" preserveAspectRatio="xMidYMax meet" role="img" aria-label={name}
     data-rig={rig.id} data-motion={motion} data-critical={strike?.tone === 'crit' && active ? 'true' : undefined}
