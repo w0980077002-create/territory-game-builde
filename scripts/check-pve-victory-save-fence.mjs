@@ -65,8 +65,8 @@ unsubscribe();
 const fight = readFileSync('src/components/pve/PveFight.tsx', 'utf8');
 const battle = readFileSync('src/components/BattleScreen.tsx', 'utf8');
 const cloud = readFileSync('src/game/cloud.ts', 'utf8');
-assert.match(fight, /confirmPveVictorySave\(userId, \(\) => saveCloudSave\(userId, snapshot\)\)/,
-  'Each local victory must await the existing cloud save writer');
+assert.match(fight, /confirmPveVictorySave\(userId, \(\) => persistPveVictoryJournal\(userId, snapshot\)\)/,
+  'Each local victory must verify the journaled cloud save');
 assert.equal((fight.match(/confirmVictory\(nextState\);/g) || []).length, 2,
   'Campaign AND Trials wins must request durable save confirmation');
 assert.match(fight, /data-testid="pve-victory-save-status"/,
