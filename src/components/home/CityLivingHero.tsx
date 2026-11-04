@@ -15,10 +15,14 @@ export function CityLivingHero({ appearance, name }: { appearance: string; name:
   const rig = getFighterRig(art);
   const [ready, setReady] = useState<{ id: string; ok: boolean } | null>(null);
   const [reducedMotion, setReducedMotion] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
 
   useEffect(() => {
+    // Some embedded/older Telegram WebViews do not implement matchMedia at all.
+    // Keep their original hero visible while the art rig is being verified.
+    if (typeof window.matchMedia !== 'function') return;
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
     const update = () => setReducedMotion(media.matches);
     update();
@@ -27,8 +31,10 @@ export function CityLivingHero({ appearance, name }: { appearance: string; name:
       media.addEventListener('change', update);
       return () => media.removeEventListener('change', update);
     }
-    media.addListener(update);
-    return () => media.removeListener(update);
+    if (typeof media.addListener === 'function') {
+      media.addListener(update);
+      return () => media.removeListener?.(update);
+    }
   }, []);
 
   useEffect(() => {
