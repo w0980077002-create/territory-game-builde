@@ -9,12 +9,14 @@ const bundle = await build({
   bundle: true, write: false, format: 'esm', platform: 'node',
 });
 const {
-  pveVictorySaveBlocked, pveVictorySaveState, confirmPveVictorySave,
+  pveVictorySaveBlocked, pveVictorySaveState, confirmPveVictorySave, subscribePveVictorySave,
 } = await import('data:text/javascript;base64,' +
   Buffer.from(bundle.outputFiles[0].text).toString('base64'));
 
 assert.equal(pveVictorySaveBlocked('hero-a'), false);
 assert.equal(pveVictorySaveState('hero-a'), null);
+const publishedStates = [];
+const unsubscribe = subscribePveVictorySave('hero-a', () => publishedStates.push(pveVictorySaveState('hero-a')));
 
 let release, writes = 0;
 const first = confirmPveVictorySave('hero-a', () => {
@@ -56,6 +58,9 @@ assert.equal(await confirmPveVictorySave('hero-b', async () => false), false);
 assert.equal(pveVictorySaveBlocked('hero-b'), true);
 assert.equal(pveVictorySaveBlocked('hero-a'), false, 'A different hero must never inherit someone else\'s fence');
 assert.equal(await confirmPveVictorySave('hero-b', async () => true), true);
+assert.ok(['pending','confirmed','failed'].every(state => publishedStates.includes(state)),
+  'Navigating back from the result must receive asynchronous save state changes');
+unsubscribe();
 
 const fight = readFileSync('src/components/pve/PveFight.tsx', 'utf8');
 const battle = readFileSync('src/components/BattleScreen.tsx', 'utf8');
@@ -72,6 +77,8 @@ assert.match(fight, /disabled=\{nextPending \|\| \(outcome\.won && saveState !==
   'Next cannot spend stones while a victory is unsaved');
 assert.match(battle, /if \(pveVictorySaveBlocked\(userId\) \|\| saveBlocked\.has\(userId\)\)/,
   'Returning to Campaign/Trials must not bypass a pending victory checkpoint');
+assert.match(battle, /subscribePveVictorySave\(userId/,
+  'BattleScreen must refresh after a pending save is acknowledged');
 assert.match(battle, /data-testid="pending-pve-save"/,
   'Players can recover after leaving the result panel');
 assert.match(battle, /data-testid="pve-retry-save-before-fight"/,
