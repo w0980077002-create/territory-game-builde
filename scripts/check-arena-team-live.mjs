@@ -54,8 +54,8 @@ assert.match(resolve,/IF v_room.team_live_v1 THEN RETURN; END IF;/,
 assert.match(resolve,/не сделал ход/, 'Legacy 1v1 timeout behavior stays unchanged');
 assert.match(potion,/team2_clock_penalty/, 'Enemy team time potion still must have an effect');
 assert.match(potion,/team1_clock_penalty/, 'Time potion must work for both sides');
-assert.match(state,/'teamDeadline1'/, 'Show own team's authoritative deadline');
-assert.match(state,/'teamDeadline2'/, 'Show opposing team's authoritative deadline');
+assert.match(state,/'teamDeadline1'/, "Show own team's authoritative deadline");
+assert.match(state,/'teamDeadline2'/, "Show opposing team's authoritative deadline");
 assert.match(state,/'nextStrikeAt'/, 'Show attack cooldown without locally guessing it');
 assert.match(state,/WHEN v_room.team_live_v1 THEN false/, 'No personal waiting state after a live strike');
 
