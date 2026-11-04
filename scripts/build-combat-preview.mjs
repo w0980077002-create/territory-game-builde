@@ -8,11 +8,40 @@ import tailwindcss from 'tailwindcss';
 import autoprefixer from 'autoprefixer';
 
 const offline = `
-export const supabase = new Proxy({}, {get(){throw new Error('Combat fixture must not call Supabase');}});
+const fixtureSaves = new Map();
+export const saveTokens = new Map([['fixture-pve','2026-11-04T06:00:00.000Z']]);
+export const supabase = {
+  from(table) {
+    if (table !== 'players') throw Error('Combat fixture must not call other Supabase tables');
+    let playerId = null;
+    return {
+      select() { return this; },
+      eq(field, value) {
+        if (field !== 'id') throw Error('Fixture requires player ownership filter');
+        playerId = value;
+        return this;
+      },
+      async maybeSingle() {
+        const state = fixtureSaves.get(playerId);
+        return {data: state ? {
+          game_state: state,
+          gold: state.player.gold,
+          gems: state.player.gems,
+          updated_at: saveTokens.get(playerId),
+        } : null, error: null};
+      },
+    };
+  },
+  rpc() { throw Error('Combat fixture must not call real Supabase RPC'); },
+};
 export const useLive = {get:()=>({goldX2:false})};
-// Offline browser fixture: emulate a successful SAVE ACK, never a reward grant.
+// Isolated browser fixture: emulate cloud ACK with an exact owner-scoped readback.
 export const saveBlocked = new Set();
-export async function saveCloudSave(){return true;}
+export async function saveCloudSave(playerId, snapshot) {
+  fixtureSaves.set(playerId, JSON.parse(JSON.stringify(snapshot)));
+  saveTokens.set(playerId, '2026-11-04T06:01:00.000Z');
+  return true;
+}
 export async function beginReferralFight(){return null;}
 export async function finishReferralFight(){throw new Error('No real referral ticket in combat fixture');}
 export function getTelegramInitData(){return '';}
