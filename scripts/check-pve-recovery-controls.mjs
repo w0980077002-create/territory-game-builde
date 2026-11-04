@@ -8,7 +8,7 @@ const battle = readFileSync('src/components/BattleScreen.tsx', 'utf8');
 assert.match(battle, /const caveRecoveryNeeded = view !== 'cave'/);
 assert.match(battle, /if \(caveRecoveryNeeded\) \{/, 'Keep the authoritative start fence');
 assert.match(battle, /id="pending-cave-recovery" role="alert"/, 'Recovery explanation must be accessible');
-assert.match(battle, /const battleStartBlocked = caveRecoveryNeeded \|\| blockedBySave;/,
+assert.match(battle, /const battleStartBlocked = caveRecoveryNeeded \|\| blockedBySave \|\| !storageAvailable;/,
   'Save and Cave recovery fences must both block new local PvE spends');
 assert.equal((battle.match(/blocked=\{battleStartBlocked\}/g) || []).length, 2,
   'Both Campaign and Trials must receive the combined recovery fence');
