@@ -6,6 +6,8 @@ import { useLanguage, localizeText } from '@/game/i18n';
 import { captureGameEvent } from '@/game/analytics';
 import { EQUIPMENT_SLOTS, generateChapter, generateTrial, getComputedStats, PVE_STONE_COST } from '@/game/engine';
 import { spendStones, trialReward, blessedGold } from '@/game/progression';
+import { saveBlocked, saveCloudSave } from '@/game/cloud';
+import { confirmPveVictorySave, pveVictorySaveBlocked } from '@/game/pveVictorySaveFence';
 import { hapticImpact } from '@/game/telegram';
 import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
@@ -49,6 +51,9 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       catch { return true; } // Unreadable storage must not authorize a new spend.
     });
   const [error, setError] = useState<string | null>(null);
+  const [retryingVictorySave, setRetryingVictorySave] = useState(false);
+  const blockedBySave = pveVictorySaveBlocked(userId) || saveBlocked.has(userId);
+  const battleStartBlocked = caveRecoveryNeeded || blockedBySave;
   const chapter = useMemo(() => generateChapter(state.currentChapter), [state.currentChapter]);
   const stages = [...chapter.enemies, chapter.boss];
   const nextIndex = Math.min(state.chapterWins, chapter.enemies.length);
@@ -60,6 +65,12 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const fightStartLocked = useRef(false);
 
   const start = (kind: FightKind) => {
+    if (pveVictorySaveBlocked(userId) || saveBlocked.has(userId)) {
+      setError(language === 'en'
+        ? 'The last victory has not been safely saved. Confirm it before another fight.'
+        : 'Последняя победа ещё не сохранена. Подтверди сохранение перед новым боем.');
+      return false;
+    }
     if (caveRecoveryNeeded) {
       setError(language === 'en'
         ? 'Recover your pending Dark Cave fight before starting a Campaign battle.'
@@ -105,6 +116,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
     return (
       <PveFight
         key={fight.id}
+        userId={userId}
         enemy={fight.enemy}
         kind={fight.kind}
         onExit={() => {
@@ -154,6 +166,36 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
           </button>
         </div>
       )}
+      {blockedBySave && (
+        <div id="pending-pve-save" data-testid="pending-pve-save" role="alert"
+          className="rounded-xl border border-amber-400/70 bg-amber-950/65 p-3 text-xs text-amber-100">
+          <p className="font-bold">{language === 'en'
+            ? 'A previous victory has not been safely saved. New Campaign and Trials fights are paused.'
+            : 'Предыдущая победа ещё не сохранена. Новые бои Похода и Испытаний приостановлены.'}</p>
+          {saveBlocked.has(userId) ? (
+            <p className="mt-1">{language === 'en'
+              ? 'The server has a newer save. Restart the game to reload safely; unconfirmed local changes may be lost.'
+              : 'На сервере более новое сохранение. Перезапусти игру для безопасной загрузки; неподтверждённые изменения могут не сохраниться.'}</p>
+          ) : (
+            <button type="button" disabled={retryingVictorySave} data-testid="pve-retry-save-before-fight"
+              onClick={() => {
+                if (retryingVictorySave) return;
+                const snapshot = useGame.get();
+                setRetryingVictorySave(true);
+                void confirmPveVictorySave(userId, () => saveCloudSave(userId, snapshot))
+                  .then(ok => setError(ok ? null : (language === 'en'
+                    ? 'Could not save yet. Check your connection and retry without starting another fight.'
+                    : 'Пока не удалось сохранить победу. Проверь соединение и повтори без нового боя.')))
+                  .finally(() => setRetryingVictorySave(false));
+              }}
+              className="mt-2 min-h-11 rounded-lg border border-amber-200 bg-gradient-to-b from-amber-400 to-amber-700 px-4 font-extrabold text-[#251508] disabled:opacity-50">
+              {retryingVictorySave
+                ? (language === 'en' ? 'Saving…' : 'Сохраняем…')
+                : (language === 'en' ? 'Retry saving victory' : 'Повторить сохранение победы')}
+            </button>
+          )}
+        </div>
+      )}
       {view === 'cave' ? (
         <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} />
       ) : <>
@@ -194,7 +236,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         </div>
       </section>
 
-      {error && (
+      {error && !blockedBySave && (
         <div className="rounded-xl border border-red-400/30 bg-red-950/40 p-3 animate-fade-in">
           <p className="text-xs text-red-200">{error}</p>
           <button onClick={caveRecoveryNeeded ? () => { setError(null); onView('cave'); } : onShop} className="mt-2 h-9 px-3 rounded-lg bg-amber-500 text-black text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform">
@@ -259,7 +301,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
               }
               start('stage');
             }}
-              disabled={caveRecoveryNeeded || fightStartLocked.current}
+              disabled={battleStartBlocked || fightStartLocked.current}
               className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-amber-200/70 bg-gradient-to-b from-amber-300 to-amber-600 px-3 py-2 text-sm font-black text-[#241509] shadow-md active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-50">
               <Swords size={17} aria-hidden="true" />
               {nextIndex === chapter.enemies.length
@@ -281,7 +323,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
                 heroAttack={heroAttack}
                 heroDefense={heroDefense}
                 onFight={() => start('stage')}
-                blocked={caveRecoveryNeeded}
+                blocked={battleStartBlocked}
               />
             ))}
           </div>
@@ -289,7 +331,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       ) : (
         <div className="space-y-3">
           <DailyShareCard task="trials" userId={userId}/>
-          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={caveRecoveryNeeded} t={t} language={language} heroAttack={heroAttack} heroDefense={heroDefense} />
+          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={battleStartBlocked} t={t} language={language} heroAttack={heroAttack} heroDefense={heroDefense} />
         </div>
       )}
       </>}
