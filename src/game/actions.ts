@@ -103,7 +103,8 @@ export function addXp(state: GameState, amount: number): Partial<GameState> {
 
   let xp = state.player.xp + amount;
   let level = state.player.level;
-  let xpToNext = state.player.xpToNext > 0 ? state.player.xpToNext : xpForLevel(level);
+  // Use the current progression curve, not a stale XP threshold in an old save.
+  let xpToNext = xpForLevel(level);
   let stats = { ...state.player.stats };
   let maxEnergy = state.player.maxEnergy;
 

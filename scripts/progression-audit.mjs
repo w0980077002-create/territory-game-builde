@@ -8,7 +8,7 @@ const source = readFileSync(new URL('../src/game/engine.ts', import.meta.url), '
 for (const literal of [
   'Math.floor(100 * Math.pow(1.15, current - 1))',
   'export const HERO_MAX_LEVEL = 100;',
-  'export const HERO_SLOW_GROWTH_FROM = 83;',
+  'export const HERO_SLOW_GROWTH_FROM = 61;',
   'const baseHp = 75 + num * 25;',
   'const baseAtk = 12 + num * 4;',
   'const baseDef = 3 + num * 2;',
@@ -24,10 +24,10 @@ const enemyCount = (source.match(/const ENEMY_NAMES = \[([\s\S]*?)\];/)?.[1] ?? 
 assert.equal(enemyCount,5);
 const xp = (level) => level >= 100 ? 0 : Math.floor(
   Math.floor(100 * Math.pow(1.15, level - 1)) *
-  (level < 83 ? 1 : 3 + 0.12 * (level - 83))
+  (level < 61 ? 1 : 3 + 0.12 * (level - 61))
 );
-assert.equal(xp(82), Math.floor(100 * Math.pow(1.15, 81)), 'previous levels stay accessible');
-assert(xp(83) >= 3 * Math.floor(100 * Math.pow(1.15, 82)), 'progression slows after level 83');
+assert.equal(xp(60), Math.floor(100 * Math.pow(1.15, 59)), 'levels through 60 retain original thresholds');
+assert(xp(61) >= 3 * Math.floor(100 * Math.pow(1.15, 60)), 'progression slows from level 61');
 assert.equal(xp(100), 0, '100 is the maximum hero level');
 const totalXp = (level) => Array.from({length:level-1}, (_,i)=>xp(i+1)).reduce((s,v)=>s+v,0);
 const stage = (c) => {
@@ -52,4 +52,4 @@ const stage = (c) => {
 for (const level of [5,20,50,81]) console.log(`Level ${level}: cumulative XP ${totalXp(level).toLocaleString('en-US')}`);
 console.log('Base 25 purchased stones/day / 6 battles per chapter = 4 complete chapters/day, without daily/quest stones.');
 for (const c of [1,5,20,58,81,3000]) console.log(JSON.stringify(stage(c)));
-console.log('PvE audit PASS: enemy strength, stones and pre-83 XP unchanged; post-83 XP slowed and hero capped at 100. Not an anti-cheat audit.');
+console.log('PvE audit PASS: enemy strength, stones and pre-61 XP unchanged; level 61+ XP slowed and hero capped at 100. Not an anti-cheat audit.');

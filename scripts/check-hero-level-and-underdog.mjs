@@ -32,15 +32,16 @@ const actions = loadTs('src/game/actions.ts', {
   './elixirExpiry': { reconcileElixirExpiry: (state) => state, newElixirExpiry: () => new Date().toISOString() },
 });
 assert.equal(engine.HERO_MAX_LEVEL, 100);
-assert.equal(engine.HERO_SLOW_GROWTH_FROM, 83);
-for (const lvl of [1, 25, 49, 50, 59, 82]) {
+assert.equal(engine.HERO_SLOW_GROWTH_FROM, 61);
+for (const lvl of [1, 25, 49, 50, 59, 60]) {
   assert.equal(engine.xpForLevel(lvl), Math.floor(100 * 1.15 ** (lvl - 1)),
     'unchanged catch-up progress at level ' + lvl);
 }
-assert.equal(engine.xpForLevel(82), 8251351, 'existing level 82 threshold remains valid');
-assert(engine.xpForLevel(83) >= Math.floor(100 * 1.15 ** 82) * 3,
-  '83-to-84 takes at least three times the previous requirement');
-assert(engine.xpForLevel(90) > engine.xpForLevel(83), 'level 90 must be slower');
+assert.equal(engine.xpForLevel(60), Math.floor(100 * 1.15 ** 59), 'level 60 threshold is unchanged');
+assert(engine.xpForLevel(61) >= Math.floor(100 * 1.15 ** 60) * 3,
+  '61-to-62 takes at least three times the original requirement');
+assert(engine.xpForLevel(82) > Math.floor(100 * 1.15 ** 81), 'old high-level saves get the new curve');
+assert(engine.xpForLevel(90) > engine.xpForLevel(61), 'level 90 must be slower');
 assert.equal(engine.xpForLevel(100), 0, 'max level has no XP requirement');
 const state = (level, xp = 0) => ({
   player: {
@@ -48,11 +49,15 @@ const state = (level, xp = 0) => ({
     stats: { hp: 500, maxHp: 500, attack: 100, defense: 40, critChance: 5, critDamage: 50 },
   }, followers: [],
 });
-const on82 = actions.addXp(state(82, engine.xpForLevel(82) - 1), 1);
-assert.equal(on82.player.level, 83);
-assert.equal(on82.player.xpToNext, engine.xpForLevel(83));
-const slow = actions.addXp({ ...state(83), player: { ...state(83).player, xp: engine.xpForLevel(83) - 1 } }, 1);
-assert.equal(slow.player.level, 84);
+const on60 = actions.addXp(state(60, engine.xpForLevel(60) - 1), 1);
+assert.equal(on60.player.level, 61);
+assert.equal(on60.player.xpToNext, engine.xpForLevel(61));
+const slow = actions.addXp({ ...state(61), player: { ...state(61).player, xp: engine.xpForLevel(61) - 1 } }, 1);
+assert.equal(slow.player.level, 62);
+const legacyThreshold = Math.floor(100 * 1.15 ** 60);
+const stale = actions.addXp({ ...state(61), player: { ...state(61).player, xp: legacyThreshold - 1, xpToNext: legacyThreshold } }, 1);
+assert.equal(stale.player.level, 61, 'stale level 61 save cannot bypass the new XP curve');
+assert.equal(stale.player.xpToNext, engine.xpForLevel(61));
 const max = actions.addXp(state(99), engine.xpForLevel(99) + 3_000_000_000);
 assert.equal(max.player.level, 100, 'arbitrarily large XP cannot exceed 100');
 assert.equal(max.player.xpToNext, 0);
