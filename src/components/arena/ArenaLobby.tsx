@@ -13,6 +13,7 @@ import { RulesModal } from './ArenaRulesModal';
 import './arenaLobby.css';
 import './arenaReferenceWood.css';
 import './arenaOldOakFinish.css';
+import './arenaCompactFirst.css';
 
 const ENERGY_COST = 1;
 const ORIGINAL = import.meta.env.BASE_URL + 'assets/territory/characters/';
@@ -116,7 +117,7 @@ export function ArenaLobby({ onJoined, onBack, onSeason, backDisabled = false }:
       className="arena-lobby arena-approved-entry animate-fade-in"
       style={{
         '--arena-wood-grain': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-wood-planks.webp")`,
-        '--arena-old-oak-grain': `url("${import.meta.env.BASE_URL}assets/territory/arena-ui/old-oak-grain.svg")`,
+        '--arena-old-oak-grain': `url("${import.meta.env.BASE_URL}assets/territory/arena-ui/old-oak-photographic.svg")`,
         '--arena-iron': `url("${import.meta.env.BASE_URL}assets/territory/arena-ui/iron-corner.svg")`,
         '--arena-rope': `url("${import.meta.env.BASE_URL}assets/territory/arena-ui/rope-wrap.svg")`,
       } as CSSProperties}
@@ -151,6 +152,9 @@ export function ArenaLobby({ onJoined, onBack, onSeason, backDisabled = false }:
           <div className="arena-approved-stat arena-approved-stat-losses"><img className="arena-approved-stat-icon" src={APPROVED + 'icon-skull.svg'} alt="" aria-hidden="true" /><span className="arena-approved-stat-info"><strong>{arena.losses.toLocaleString('ru-RU')}</strong><span>{en ? 'LOSSES' : 'ПОРАЖЕНИЯ'}</span></span></div>
         </div>
       </section>
+
+      {/* Ranking is a primary Arena destination: show champions before battle choices. */}
+      <ArenaWeeklyBoard />
 
       <section className="arena-approved-modes" aria-label={en ? 'Battle modes' : 'Режимы боя'}>
         {MODES.map((m) => {
@@ -197,7 +201,6 @@ export function ArenaLobby({ onJoined, onBack, onSeason, backDisabled = false }:
           </div>
         </div>
       )}
-      <ArenaWeeklyBoard />
       {SHOW_WEEKLY_CHAMPIONSHIP && onSeason && <button type="button" data-testid="arena-season-journey"
         onClick={onSeason} disabled={!!joining || recovering || backDisabled}
         className="mx-3 mb-4 flex min-h-[58px] w-[calc(100%-24px)] items-center gap-3 rounded-2xl border-2 border-amber-300/80 bg-gradient-to-r from-[#754520] via-[#52301c] to-[#352015] px-3 py-2 text-left text-amber-50 shadow-[inset_0_2px_0_#ffe1a077,0_4px_12px_#0008] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-100">

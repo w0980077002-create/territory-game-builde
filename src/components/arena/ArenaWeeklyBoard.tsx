@@ -146,7 +146,7 @@ export function ArenaWeeklyBoard() {
   }, [expanded]);
 
   return (
-    <section className="arena-weekly" aria-label={en ? 'Arena weekly top 50' : 'Топ 50 арены за неделю'}>
+    <section className={`arena-weekly ${expanded ? 'arena-weekly--expanded' : ''}`} aria-label={en ? 'Arena weekly top 50' : 'Топ 50 арены за неделю'}>
       <div className="arena-weekly-head">
         <div className="arena-weekly-heading">
           <Crown className="h-5 w-5 text-yellow-300 shrink-0" />
