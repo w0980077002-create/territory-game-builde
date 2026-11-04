@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { SkeletalFighter } from '@/components/combat2d/SkeletalFighter';
+import { ArticulatedHero, getOriginalArticulatedHero } from '@/components/combat2d/ArticulatedHero';
 import { getFighterRig, rigAsset } from '@/components/combat2d/fighterRigs';
 import { getAppearanceIcon } from '@/game/appearance';
 
@@ -13,6 +14,7 @@ const RIG_PARTS = ['head', 'torso', 'arm-right', 'arm-left', 'leg-right', 'leg-l
 export function CityLivingHero({ appearance, name }: { appearance: string; name: string }) {
   const art = getAppearanceIcon(appearance);
   const rig = getFighterRig(art);
+  const originalCutout = getOriginalArticulatedHero(art);
   const [ready, setReady] = useState<{ id: string; ok: boolean } | null>(null);
   const [reducedMotion, setReducedMotion] = useState(() =>
     typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
@@ -79,6 +81,11 @@ export function CityLivingHero({ appearance, name }: { appearance: string; name:
             onAssetError={() => setReady({ id: rig.id, ok: false })}
           />
         </div>
+      ) : originalCutout && !reducedMotion ? (
+        <span data-testid="city-hero-articulated" className="absolute inset-0">
+          <ArticulatedHero kind={originalCutout} art={art} name={name}
+            motion="idle" className="absolute inset-0 h-full w-full" />
+        </span>
       ) : (
         <img src={art} alt={name}
           className="home-hero-art city-hero-idle relative max-h-full max-w-full object-contain object-bottom"
