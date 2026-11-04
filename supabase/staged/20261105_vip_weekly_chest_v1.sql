@@ -100,11 +100,11 @@ BEGIN
   IF jsonb_typeof(st) IS DISTINCT FROM 'object'
     OR jsonb_typeof(hero) IS DISTINCT FROM 'object'
     OR jsonb_typeof(st->'inventory') IS DISTINCT FROM 'array'
-    OR (hero->>'gold') !~ '^[0-9]{1,10}$'
-    OR (hero->>'gems') !~ '^[0-9]{1,10}$'
-    OR (hero->>'level') !~ '^[0-9]{1,10}$'
-    OR (st->>'battleStones') !~ '^[0-9]{1,10}$'
-    OR (st->>'forgeMaterials') !~ '^[0-9]{1,10}$'
+    OR coalesce(hero->>'gold','') !~ '^[0-9]{1,10}$'
+    OR coalesce(hero->>'gems','') !~ '^[0-9]{1,10}$'
+    OR coalesce(hero->>'level','') !~ '^[0-9]{1,10}$'
+    OR coalesce(st->>'battleStones','') !~ '^[0-9]{1,10}$'
+    OR coalesce(st->>'forgeMaterials','') !~ '^[0-9]{1,10}$'
   THEN RAISE EXCEPTION 'vip_weekly_invalid_save'; END IF;
   IF (hero->>'gold')::bigint IS DISTINCT FROM p.gold
     OR (hero->>'gems')::bigint IS DISTINCT FROM p.gems
@@ -125,7 +125,7 @@ BEGIN
     END IF;
     IF EXISTS (SELECT 1 FROM jsonb_array_elements(st->'forgeMaterialBatches') e
       WHERE jsonb_typeof(e) IS DISTINCT FROM 'object'
-         OR (e->>'qty') !~ '^[1-9][0-9]{0,9}$'
+         OR coalesce(e->>'qty','') !~ '^[1-9][0-9]{0,9}$'
          OR (e->>'expiresAt') IS NULL
          OR (e->>'expiresAt') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T') THEN
       RAISE EXCEPTION 'vip_weekly_material_batches_invalid';

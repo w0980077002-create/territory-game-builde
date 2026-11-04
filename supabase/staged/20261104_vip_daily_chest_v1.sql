@@ -96,7 +96,7 @@ BEGIN
     OR (hero->>'gold')::integer IS DISTINCT FROM p.gold
     OR (hero->>'gems')::integer IS DISTINCT FROM p.gems
     OR (hero->>'level')::integer IS DISTINCT FROM p.level
-    OR (st->>'battleStones') !~ '^[0-9]{1,10}$'
+    OR coalesce(st->>'battleStones','') !~ '^[0-9]{1,10}$'
   THEN RAISE EXCEPTION 'vip_invalid_save'; END IF;
   v_old_stones:=(st->>'battleStones')::bigint;
   IF v_old_stones>2147483647 THEN RAISE EXCEPTION 'vip_invalid_wallet'; END IF;

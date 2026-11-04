@@ -72,6 +72,17 @@ try {
   assert.equal(maxAward.reward.stones,3);
   assert.equal(maxAward.wallet_gold,1700);
 
+  const C='10000000-0000-0000-0000-000000000003';
+  const {battleStones: omitted, ...withoutStones}=fixture;
+  for (const state of [withoutStones,{...fixture,battleStones:null}]) {
+    await sql('INSERT INTO public.players(id,vip_level,game_state) VALUES($1,5,$2) ON CONFLICT(id) DO UPDATE SET game_state=excluded.game_state',[C,state]);
+    await as(C);
+    const status=await rpc();
+    await assert.rejects(rpc('claim',key(6),status.updated_at),/vip_invalid_save/);
+    const row=(await sql('SELECT gold,gems,game_state FROM public.players WHERE id=$1',[C]))[0];
+    assert.deepEqual(row,{gold:100,gems:20,game_state:state},'invalid save is untouched');
+    assert.equal((await sql('SELECT count(*)::int n FROM territory_private.vip_daily_claims_v1 WHERE player_id=$1',[C]))[0].n,0);
+  }
   await as(null);
   await assert.rejects(rpc(),/vip_login_required/);
   console.log('VIP daily staged: RLS, account identity, USD-neutral earned rewards, CAS, replay, zero-VIP deny, max tier: PASS');

@@ -24,6 +24,9 @@ VALUES (
 ),(
   '10000000-0000-0000-0000-000000000002',1,
   '{"player":{"gold":100,"gems":20,"redGems":7,"level":40},"inventory":[],"belt":[null,null,null,null,null,null,null],"battleStones":8,"forgeMaterials":0}'::jsonb
+),(
+  '10000000-0000-0000-0000-000000000003',5,
+  '{"player":{"gold":100,"gems":20,"redGems":7,"level":40},"inventory":[],"battleStones":8,"forgeMaterials":0,"forgeMaterialBatches":[{"expiresAt":"2099-01-01T00:00:00Z"}]}'::jsonb
 );
 \i supabase/staged/20261105_vip_weekly_chest_v1.sql
 
@@ -115,4 +118,25 @@ BEGIN
     RAISE EXCEPTION 'VIP1 denial changed wallet';
   END IF;
 END $wallet$;
+SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000003',false);
+SET ROLE authenticated;
+DO $invalid_batch$
+BEGIN
+  BEGIN
+    PERFORM public.territory_vip_weekly_v1('claim',
+      '30000000-0000-0000-0000-000000000004',
+      (public.territory_vip_weekly_v1('status')->>'updated_at')::timestamptz);
+    RAISE EXCEPTION 'Missing material batch quantity accepted';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM<>'vip_weekly_material_batches_invalid' THEN RAISE; END IF;
+  END;
+END $invalid_batch$;
+RESET ROLE;
+DO $unchanged$
+BEGIN
+  IF (SELECT gold FROM public.players WHERE id='10000000-0000-0000-0000-000000000003')<>100
+    OR EXISTS(SELECT 1 FROM territory_private.vip_weekly_claims_v1 WHERE player_id='10000000-0000-0000-0000-000000000003') THEN
+    RAISE EXCEPTION 'Invalid material batch changed wallet or ledger';
+  END IF;
+END $unchanged$;
 SELECT 'VIP weekly on PostgreSQL 17: auth/RLS/UTC/CAS/replay/expiry/deny PASS' AS verified;

@@ -69,6 +69,22 @@ try {
   const corrupt=await rpc();
   await assert.rejects(rpc('claim',key(6),corrupt.updated_at),/vip_weekly_material_batches_mismatch/);
   assert.equal((await sql('SELECT gold FROM public.players WHERE id=$1',[C]))[0].gold,100);
+  const invalidStates=[
+    Object.fromEntries(Object.entries(fixture).filter(([k])=>k!=='battleStones')),
+    {...fixture,battleStones:null},
+    Object.fromEntries(Object.entries(fixture).filter(([k])=>k!=='forgeMaterials')),
+    {...fixture,forgeMaterials:null},
+    {...fixture,forgeMaterialBatches:[{expiresAt:new Date(Date.now()+86400000).toISOString()}]},
+    {...fixture,forgeMaterialBatches:[{qty:null,expiresAt:new Date(Date.now()+86400000).toISOString()}]},
+  ];
+  for(const state of invalidStates){
+    await sql('UPDATE public.players SET game_state=$2 WHERE id=$1',[C,state]);
+    const status=await rpc();
+    await assert.rejects(rpc('claim',key(7),status.updated_at),/vip_weekly_(invalid_save|material_batches_invalid)/);
+    const row=(await sql('SELECT gold,gems,game_state FROM public.players WHERE id=$1',[C]))[0];
+    assert.deepEqual(row,{gold:100,gems:20,game_state:state},'invalid save is untouched');
+    assert.equal((await sql('SELECT count(*)::int n FROM territory_private.vip_weekly_claims_v1 WHERE player_id=$1',[C]))[0].n,0);
+  }
   await as(null);
   await assert.rejects(rpc(),/vip_weekly_login_required/);
   console.log('VIP weekly staged: UTC Monday, protected ledger, wallet+expiry lots, replay, deny, CAS, max tier: PASS');
