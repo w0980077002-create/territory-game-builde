@@ -8,6 +8,7 @@ import { getCombatAppearance } from '@/game/appearance';
 import { selectedFollower } from '@/game/followers';
 import { getFollowerArt, getFollowerCombatFrames } from '@/game/combatArt';
 import { FighterFigure } from './FighterFigure';
+import { PumpkinWitch } from '@/components/PumpkinWitch';
 import { useLanguage } from '@/game/i18n';
 
 interface Props {
@@ -159,17 +160,19 @@ export function BattleScene(props: Props) {
                   title={portraitFollower.name}
                   className="absolute left-0 bottom-0 z-30 h-[68%] w-[66%] pointer-events-none"
                 >
-                  <FighterFigure
-                    src={getFollowerArt(portraitFollower.id)}
-                    combatFrames={getFollowerCombatFrames(portraitFollower.id)}
-                    name={portraitFollower.name}
-                    dir={1}
-                    scale={1.03}
-                    alive={alive}
-                    strike={null}
-                    idleSeconds={3.7}
-                    className="absolute left-0 bottom-0 h-full w-full object-contain object-left-bottom"
-                  />
+                  {portraitFollower.id === 'follower_pumpkin_witch_2026'
+                    ? <PumpkinWitch />
+                    : <FighterFigure
+                        src={getFollowerArt(portraitFollower.id)}
+                        combatFrames={getFollowerCombatFrames(portraitFollower.id)}
+                        name={portraitFollower.name}
+                        dir={1}
+                        scale={1.03}
+                        alive={alive}
+                        strike={null}
+                        idleSeconds={3.7}
+                        className="absolute left-0 bottom-0 h-full w-full object-contain object-left-bottom"
+                      />}
                 </div>
               )}
             </div>
