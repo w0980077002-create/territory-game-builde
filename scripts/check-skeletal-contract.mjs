@@ -61,6 +61,6 @@ assert.match(skeletalSource,/try \{\s*return \[joint\.animate\(selected,/, 'SVG 
 assert.match(skeletalSource,/catch \{[\s\S]*?showLegacyPose\(\)/, 'Thrown SVG animate must fall back to a visible pose');
 assert.equal((skeletalSource.match(/showLegacyPose\(\);/g) ?? []).length, 2, 'Both legacy paths must use the same contact pose');
 assert.match(skeletalSource,/reduced\?\.matches \|\| motion === 'death' \|\| motion === 'victory'/, 'Legacy SVG fallback must respect reduced motion');
-assert.match(skeletalSource,/frames\.find\(\(frame, index\) => index > 0 && typeof frame\.offset === 'number' && frame\.offset >= 350 \/ ACTION_MS\)/, 'Legacy nonterminal reactions must show contact instead of the idle recovery frame');
+assert.match(skeletalSource,/frames\.find\(\(frame, index\) => index > 0 && typeof frame\.offset === 'number' && frame\.offset >= CONTACT_MS \/ ACTION_MS\)/, 'Legacy nonterminal reactions must show contact instead of the idle recovery frame');
 assert.match(skeletalSource.split('return () => {').at(-1),/style\.transform = ''/, 'Effect cleanup must restore base rig poses');
 console.log(`Skeletal contract PASS: two explicit rigs, safe fallback, independent joints, contact/recovery, distinct attacks, critical windup, Pages paths; ${Math.round(bytes/1024)} KiB assets.`);
