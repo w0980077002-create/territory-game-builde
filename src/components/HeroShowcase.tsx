@@ -111,7 +111,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
         {!harborReady && <div className="hero-showcase__art-gate" role="status" aria-live="polite">
           <span className="hero-showcase__art-gate-sigil" aria-hidden="true">ᛟ</span>
           <strong>{harborStatus==='error'
-            ? text('Не удалось загрузить гавань', 'Harbor artwork unavailable')
+            ? text('Не удалось загрузить фон героя', 'Hero background unavailable')
             : text('Готовим сцену героя…', 'Preparing hero scene…')}</strong>
           {harborStatus==='error' && <button type="button" onClick={retryHarbor}>
             {text('Повторить', 'Retry')}
