@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { useGame } from './actions';
 import { acceptMonopolyClaimReceipt, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave, saveTokens } from './cloud';
 import { reconcilePendingCaveBeforeArena } from './combatV1/receiptAdapter';
+import { persistArenaVipBeltAfterClaim } from './vipBeltCave';
 import type { ArenaMode, ArenaReward } from './arenaApi';
 import type { ArenaItemCode } from './belt';
 
@@ -104,6 +105,19 @@ export async function secureArenaClaim(room: string): Promise<{
   alreadyClaimed: boolean;
 }> {
   const receipt = await transact({ p_action: 'claim', p_room: room });
+  // transact() has already verified the server result and installed its saved
+  // wallet revision. A replayed claim is still valid evidence that this room
+  // finished; it must not generate another reward or a second belt transfer.
+  // Belt refill is a separate CAS save of EXISTING inventory, never a payout.
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (!error && data.user?.id)
+      await persistArenaVipBeltAfterClaim(data.user.id, room,
+        receipt.reward && Number.isSafeInteger(receipt.reward.wins) ? receipt.reward.wins : undefined);
+  } catch {
+    // A failed post-fight convenience action must not undo a server claim.
+    // Its durable pending marker prevents a blind retry of an uncertain save.
+  }
   return {
     reward: receipt.already_claimed ? null : receipt.reward ?? null,
     alreadyClaimed: receipt.already_claimed === true,
