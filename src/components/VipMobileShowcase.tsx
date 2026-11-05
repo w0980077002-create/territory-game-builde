@@ -79,12 +79,12 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
     </div>
 
     <div className={`rounded-xl p-1.5 ${texture}`}>
-      <div className="flex gap-1 overflow-x-auto pb-1" role="group" aria-label={en?'VIP levels':'Уровни VIP'}>
+      <div className="grid grid-cols-5 gap-1" role="group" aria-label={en?'VIP levels':'Уровни VIP'}>
         {VIP_TIERS.slice(1).map(t=><button type="button" key={t.level}
           onClick={()=>setChosenTier(t.level)} aria-pressed={preview.level===t.level}
-          className={`flex min-w-[55px] flex-1 shrink-0 flex-col items-center rounded-lg border px-0.5 py-1 ${preview.level===t.level?'border-[#ffdd81] bg-[#875122]':'border-[#9b6c42]/40 bg-black/20'}`}>
+          className={`flex min-w-0 min-h-[56px] flex-col items-center justify-center rounded-md border px-0.5 py-0.5 ${preview.level===t.level?'border-[#ffdd81] bg-[#875122]':'border-[#9b6c42]/40 bg-black/20'}`}>
           <img src={badge(t.level)} alt="" loading="lazy" draggable={false}
-            className={`h-10 w-10 object-contain ${level<t.level?'grayscale opacity-65':''}`}/>
+            className={`h-8 w-8 object-contain`}/>
           <span className="text-[10px] font-black text-amber-100">{t.level}</span>
         </button>)}
       </div>
@@ -97,10 +97,10 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
       {[{id:'daily',image:dailyChest(level),min:1,title:en?'Daily chest':'Ежедневный сундук'},
         {id:'weekly',image:weeklyChest(level),min:2,title:en?'Weekly chest':'Еженедельный сундук'}].map(chest=>
         <button key={chest.id} type="button" onClick={toRewards}
-          className={`relative flex min-h-[138px] flex-col items-center justify-between rounded-xl px-1.5 py-2 text-center ${texture}`}>
-          <img src={chest.image} alt="" draggable={false} className="h-[70px] w-full object-contain"/>
+          className={`relative flex min-h-[110px] flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center ${texture}`}>
+          <img src={chest.image} alt="" draggable={false} className="h-[55px] w-full object-contain"/>
           <strong className="text-[11px] leading-tight text-amber-100">{chest.title}</strong>
-          <span className="mt-1 w-full rounded-lg border border-amber-200/50 bg-gradient-to-b from-[#ffdc88] to-[#a96d27] px-1 py-1.5 text-[11px] font-black text-[#2a150c]">
+          <span className="flex items-center justify-center gap-1 text-[10px] font-semibold text-amber-200/90">
             {level<chest.min?<><LockKeyhole className="mr-1 inline h-3 w-3"/>VIP {chest.min}</>:(en?'Details':'Подробнее')}
           </span>
         </button>)}
@@ -108,20 +108,24 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
 
     <div className={`rounded-xl p-2 ${texture}`}>
       <div className="mb-2 flex items-center justify-center gap-2 text-center text-base font-black text-[#ffe0a0]"><Crown size={17}/>{en?'VIP benefits':'Преимущества VIP'}</div>
-      <div className="grid grid-cols-2 gap-2 min-[390px]:grid-cols-3">
+      <div className="grid grid-cols-2 gap-1.5 min-[390px]:grid-cols-3">
         {featureCards.map(card=>{
-          const content=<><img src={`${import.meta.env.BASE_URL}${card.asset}`} alt="" draggable={false} className="h-12 w-12 object-contain"/>
+          const content=<><img src={`${import.meta.env.BASE_URL}${card.asset}`} alt="" draggable={false} className="h-9 w-9 shrink-0 object-contain"/>
             <strong className="text-[11px] leading-tight text-amber-100">{card.label}</strong>
             <span className="text-[10px] text-[#f7c96f]">{card.value}</span></>;
-          const className='flex min-h-[98px] flex-col items-center justify-center gap-1 rounded-lg border border-[#8e582b] bg-[#3c2017] px-1.5 py-2 text-center';
+          const className='flex min-h-[66px] min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[#8e582b] bg-[#2f1c15] px-1.5 py-1 text-center';
           return card.action?<button type="button" key={card.id} onClick={card.action} className={className}>{content}</button>
             :<div key={card.id} className={className}>{content}</div>;
         })}
       </div>
     </div>
 
-    <div className={`rounded-xl p-2 ${texture}`}>
-      <h3 className="mb-2 text-center text-sm font-black text-[#ffdf98]">{en?'VIP decoration':'VIP оформление'}</h3>
+    <details className={`group rounded-xl p-2 ${texture}`} data-testid="vip-cosmetic-gallery">
+      <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-2 px-1 text-sm font-black text-[#ffdf98]">
+        <span>{en?'VIP decoration':'VIP оформление'}</span>
+        <span className="text-[11px] text-amber-100/80">{en?'Open gallery':'Посмотреть'} ▾</span>
+      </summary>
+      <div className="mt-1 border-t border-amber-700/30 pt-2">
       <div className="flex gap-1 overflow-x-auto pb-2">
         {(['frame','aura','crown','crest','skin','throne'] as const).map(category=>
           <button key={category} type="button" aria-pressed={cosmeticsCategory===category}
@@ -154,19 +158,11 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
       </p>
     </div>
 
-    <button type="button" onClick={toRewards}
-      className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-[#fff1b2] bg-gradient-to-b from-[#ffe294] via-[#eaa83e] to-[#a65d18] text-sm font-black text-[#2a140c] shadow-[0_3px_0_#5a3116,inset_0_2px_0_#fff4b6]" data-testid="vip-open-rewards">
-      <Crown size={19}/>{en?'VIP gifts and features':'VIP-награды и возможности'}
-    </button>
-    <div ref={rewards} id="vip-hub-rewards" className="scroll-mt-2" data-testid="vip-real-rewards">
-      <div className="rounded-xl border border-amber-400/45 bg-[#352219] p-3 text-center text-xs text-[#fce2ae]" data-testid="vip-preview-not-live">
-        <ShieldCheck className="mx-auto mb-2 h-5 w-5 text-amber-300"/>
-        <p className="font-bold">{en?'VIP artwork and navigation preview':'Предпросмотр VIP-оформления и разделов'}</p>
-        <p className="mt-1 text-[11px] text-amber-100/75">
-          {en?'Daily and weekly chest claims, boosts and VIP purchases are not enabled until the server is ready.'
-            :'Получение сундуков, бонусы и покупки VIP включатся после готовности серверной части.'}
-        </p>
-      </div>
-    </div>
+    </details>
+    <p className="px-2 pb-2 text-center text-[10px] text-amber-100/65" data-testid="vip-preview-not-live">
+      <ShieldCheck size={12} className="mr-1 inline text-amber-300"/>
+      {en?"Visual preview only: VIP rewards and purchases are not live."
+        :"Оформление для просмотра. Начисления VIP и покупки пока выключены."}
+    </p>
   </section>;
 }
