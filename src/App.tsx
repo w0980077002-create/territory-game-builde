@@ -536,6 +536,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'hero' && <ProfileScreen key={heroTrainingOpen ? 'runes' : 'hero'} user={user} initialTrainingOpen={heroTrainingOpen}
           onEquipment={() => { setInventoryTab('equipment'); setScreen('inventory'); }}
           onAdventure={() => { setBattleView('campaign'); setAutoStart(false); setScreen('battle'); }}
+          onRunes={() => setScreen('runes')}
+          onBelt={() => { setInventoryTab('items'); setScreen('inventory'); }}
           onForge={(equipmentId) => openForge(equipmentId)}
           onQuests={() => setScreen('quests')}
            onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }} />}

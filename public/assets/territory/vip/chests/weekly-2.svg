@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="440" viewBox="0 0 512 440" role="img" aria-hidden="true">
+<defs>
+ <linearGradient id="wood" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#cb8654"/><stop offset=".22" stop-color="#82472c"/><stop offset=".66" stop-color="#4a281b"/><stop offset="1" stop-color="#271810"/></linearGradient>
+ <linearGradient id="iron" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#ededeb"/><stop offset=".18" stop-color="#a2a5a8"/><stop offset=".55" stop-color="#343d49"/><stop offset="1" stop-color="#1b2029"/></linearGradient>
+ <linearGradient id="gold" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#fff5c7"/><stop offset=".2" stop-color="#e4c7ff"/><stop offset=".52" stop-color="#6336bb"/><stop offset=".75" stop-color="#fff0a0"/><stop offset="1" stop-color="#995627"/></linearGradient>
+ <radialGradient id="gem"><stop stop-color="#fff9fa"/><stop offset=".2" stop-color="#cd96ff"/><stop offset=".78" stop-color="#6336bb"/><stop offset="1" stop-color="#251535"/></radialGradient>
+ <pattern id="grain" width="58" height="85" patternUnits="userSpaceOnUse"><path d="M0 10q35 31 1 71M34-19q23 36 0 95" stroke="#f5bf78" stroke-width="3" opacity=".2" fill="none"/></pattern>
+ <filter id="shadow" x="-30%" y="-40%" width="160%" height="190%"><feDropShadow dx="0" dy="15" stdDeviation="15" flood-color="#12070c" flood-opacity=".72"/></filter>
+ <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="12"/></filter>
+</defs>
+<ellipse cx="256" cy="381" rx="183" ry="25" fill="#1b070a" opacity=".25"/>
+
+<g filter="url(#shadow)">
+ 
+ <path d="M90 214 256 167 421 214 421 344 255 396 90 344Z" fill="url(#wood)" stroke="url(#gold)" stroke-width="11" stroke-linejoin="round"/>
+ <path d="M98 228 256 273 412 229V336L256 387 98 336Z" fill="url(#wood)"/>
+ <path d="M101 239 255 283 409 238V335L255 376 101 335Z" fill="url(#grain)"/>
+ <path d="M255 277V386" stroke="#5e3923" stroke-width="7"/>
+ <path d="M80 212Q80 116 130 100 256 60 385 102 428 128 434 213L256 270Z" fill="url(#wood)" stroke="url(#gold)" stroke-width="13"/>
+ <path d="M92 199Q92 127 136 113 250 81 376 115 412 134 421 200L255 255Z" fill="#6336bb" opacity=".7" stroke="#291b1c" stroke-width="5"/>
+ <path d="M94 210 256 260 419 209" fill="none" stroke="#f3d5a2" stroke-width="8"/>
+ <path d="M110 193Q254 141 406 193" fill="none" stroke="url(#iron)" stroke-width="18"/>
+ <path d="M120 151Q255 101 393 151" fill="none" stroke="url(#gold)" stroke-width="9"/>
+ <path d="M105 114 135 110 126 341 99 334Z M391 108 419 115 412 334 382 342Z" fill="url(#iron)" stroke="#dbb68b" stroke-width="5"/>
+ <path d="M204 89 238 76 240 379 212 371Z M276 76 308 89 299 372 272 379Z" fill="url(#gold)" stroke="#55301d" stroke-width="6"/>
+ <path d="m94 281 161 48 161-47M95 340l160 43 161-43" fill="none" stroke="#e0ad70" stroke-width="7"/>
+ <path d="m246 241 18 0 29 27-3 74-30 20-29-20-3-74Z" fill="url(#gold)" stroke="#5c321b" stroke-width="9"/>
+ <path d="m260 258 18 26-18 35-18-35Z" fill="url(#gem)" stroke="#fce9ba" stroke-width="6"/>
+ <circle cx="255" cy="338" r="8" fill="#51341e" stroke="#fff1ab" stroke-width="4"/>
+ <circle cx="123" cy="158" r="7" fill="#ffecbb" stroke="#5c391f" stroke-width="3"/><circle cx="214" cy="158" r="7" fill="#ffecbb" stroke="#5c391f" stroke-width="3"/><circle cx="305" cy="158" r="7" fill="#ffecbb" stroke="#5c391f" stroke-width="3"/><circle cx="396" cy="158" r="7" fill="#ffecbb" stroke="#5c391f" stroke-width="3"/>
+ <path d="M154 306q52 25 92 12 M275 317q47 12 86-12" fill="none" stroke="#e4c7ff" stroke-width="5" opacity=".7"/>
+ 
+ <path d="M134 180q-31-40-9-81l34 30M378 180q31-40 9-81l-34 30" stroke="#e1c7fc" stroke-width="11" fill="none" stroke-linecap="round"/>
+ <path d="M228 140q28-16 56 0" fill="none" stroke="#fff2b9" stroke-width="7" opacity=".8"/>
+</g>
+<path d="M177.0 275l12-9 14 15-12 14Z" fill="#cd96ff" stroke="#fff4d7" stroke-width="2" opacity=".78"/><path d="M189.0 275l12-9 14 15-12 14Z" fill="#cd96ff" stroke="#fff4d7" stroke-width="2" opacity=".78"/><path d="M201.0 275l12-9 14 15-12 14Z" fill="#cd96ff" stroke="#fff4d7" stroke-width="2" opacity=".78"/><path d="M213.0 275l12-9 14 15-12 14Z" fill="#cd96ff" stroke="#fff4d7" stroke-width="2" opacity=".78"/>
+</svg>
