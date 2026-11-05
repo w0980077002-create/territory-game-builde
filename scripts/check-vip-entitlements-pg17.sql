@@ -151,8 +151,44 @@ BEGIN
  END;
 END $duplicates$;
 
+-- Neither privileged mistakes nor retries may rewrite or erase grant history.
+DO $append_only_grants$
+BEGIN
+ BEGIN
+  UPDATE territory_private.vip_entitlement_grants_v1 SET vip_level=10
+   WHERE grant_id='20000000-0000-0000-0000-000000000001';
+  RAISE EXCEPTION 'Gift grant was rewritten';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'vip_entitlement_history_immutable' THEN RAISE; END IF;
+ END;
+ BEGIN
+  DELETE FROM territory_private.vip_entitlement_grants_v1
+   WHERE grant_id='20000000-0000-0000-0000-000000000002';
+  RAISE EXCEPTION 'Temporary grant was deleted';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'vip_entitlement_history_immutable' THEN RAISE; END IF;
+ END;
+END $append_only_grants$;
+
 INSERT INTO territory_private.vip_entitlement_revocations_v1 (grant_id,reason)
  VALUES ('20000000-0000-0000-0000-000000000002','Temporary promotion revoked');
+DO $append_only_revocations$
+BEGIN
+ BEGIN
+  UPDATE territory_private.vip_entitlement_revocations_v1
+   SET reason='tampered' WHERE grant_id='20000000-0000-0000-0000-000000000002';
+  RAISE EXCEPTION 'Revocation was rewritten';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'vip_entitlement_history_immutable' THEN RAISE; END IF;
+ END;
+ BEGIN
+  DELETE FROM territory_private.vip_entitlement_revocations_v1
+   WHERE grant_id='20000000-0000-0000-0000-000000000002';
+  RAISE EXCEPTION 'Revocation was deleted';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'vip_entitlement_history_immutable' THEN RAISE; END IF;
+ END;
+END $append_only_revocations$;
 SET ROLE authenticated;
 DO $revoked_temp$
 DECLARE j jsonb;
