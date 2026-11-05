@@ -262,6 +262,12 @@
 .territory-shell.territory-oak-heritage .territory-profile > details.card > summary > span:not(:first-child) {
   flex: 0 0 auto;
 }
+/* Base statistics label is a text node, so its FIRST element is already
+ * the caret; keep that caret right-aligned rather than flex-growing it. */
+.territory-shell.territory-oak-heritage .territory-profile > details[data-testid="profile-base-stats"] > summary > span:first-of-type {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
 /* The VIP entrance needs timber as well, rather than an unrelated matte
  * brown Tailwind-gradient chip. Keep its tap target and dynamic badge. */
 .territory-shell.territory-oak-heritage .territory-profile > [data-testid="vip-open-page"] {
