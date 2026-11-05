@@ -158,6 +158,19 @@ BEGIN
  END;
 END $duplicates$;
 
+-- Refund timestamps must not predate the immutable payment receipt.
+DO $refund_chronology$
+BEGIN
+ BEGIN
+  UPDATE territory_private.vip_payment_ledger_v1
+   SET status='refunded',refunded_at=recorded_at-interval '1 second'
+   WHERE provider_transaction_id='pending-stars-0000000002';
+  RAISE EXCEPTION 'Backdated refund accepted';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'vip_payment_refund_before_receipt' THEN RAISE; END IF;
+ END;
+END $refund_chronology$;
+
 -- Neither privileged mistakes nor retries may rewrite or erase grant history.
 DO $append_only_grants$
 BEGIN
