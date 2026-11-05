@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
-import { ArrowLeft, Crown, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Crown, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useStore } from '@/game/store';
-import { useAccount } from '@/game/actions';
+import { useAccount, useGame } from '@/game/actions';
+import { getAppearanceIcon } from '@/game/appearance';
 import { useLanguage } from '@/game/i18n';
-import { vipTier, VIP_TIERS, vipNextThreshold } from '@/game/vipProgram';
+import { vipTier, VIP_TIERS } from '@/game/vipProgram';
 import { VIP_COSMETICS, activeVipCosmetic, setVipCosmetic, vipArtUrl, type VipCosmeticCategory } from '@/game/vipCosmetics';
 
 
@@ -27,17 +28,18 @@ const texture='border border-[#a86c36] bg-[linear-gradient(135deg,#6b3822_0%,#3b
  * Visual-only checkout and chest claim buttons remain disabled until their server entitlement RPC is released. */
 export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Props){
   const account=useStore(useAccount);
+  const game=useStore(useGame);
   const {language}=useLanguage();
   const en=language==='en';
-  const rewards=useRef<HTMLDivElement>(null);
+  const [selectedChest,setSelectedChest]=useState<'daily'|'weekly'|null>(null);
   const [chosenTier,setChosenTier]=useState<number|null>(null);
   const [cosmeticsCategory,setCosmeticsCategory]=useState<VipCosmeticCategory>('frame');
   const [cosmeticRevision,setCosmeticRevision]=useState(0);
   const remaining=Math.max(0,(account.vipRemaining??0)-(performance.now()-(account.vipCheckedAt??0)));
   const level=Math.min(10,Math.max(0,account.permanentVip??0,remaining>0?account.vip:0));
-  const threshold=vipNextThreshold(level);
+
   const preview=vipTier(chosenTier??Math.max(1,level));
-  const toRewards=()=>rewards.current?.scrollIntoView({behavior:'smooth',block:'start'});
+  const toRewards=()=>setSelectedChest(prev=>prev==='daily' ? null : 'daily');
   const selectedCosmetic=activeVipCosmetic(userId,cosmeticsCategory,level);
   const cosmetics=VIP_COSMETICS.filter(item=>item.category===cosmeticsCategory);
   const featureCards=[
@@ -58,30 +60,21 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
     </header>
 
     <div className={`relative overflow-hidden rounded-2xl ${texture}`}>
-      <div className="relative h-[168px] min-[390px]:h-[196px] bg-[radial-gradient(ellipse_at_50%_15%,#865239_0%,#2d1f1a_64%,#1a1110_100%)]">
-        <div className="absolute inset-x-0 top-2 flex items-center justify-center gap-2 text-[11px] font-bold text-[#ffe7b5]">
-          <Sparkles size={15} className="text-amber-300"/>{en?'Prestige in TERRITORY':'Слава героя TERRITORY'}
+      <div className="relative grid h-[164px] grid-cols-[46%_54%] overflow-hidden bg-[radial-gradient(ellipse_at_35%_20%,#75422b_0%,#39231d_58%,#231710_100%)] min-[390px]:h-[180px]">
+        <div className="absolute inset-0 opacity-15" style={{backgroundImage:"url(" + import.meta.env.BASE_URL + "assets/territory/ui/wooden-plaque.webp)", backgroundSize:"cover", backgroundPosition:"center"}} />
+        <div className="relative min-w-0">
+          <img src={getAppearanceIcon(game.appearance)} alt="" draggable={false} data-testid="vip-real-hero-art" className="absolute bottom-[-4px] left-0 h-[160px] w-full object-contain object-bottom drop-shadow-[0_6px_7px_#120b09] min-[390px]:h-[177px]"/>
         </div>
-        <img src={vipArtUrl('skins/hero-vip5.svg')} alt="" draggable={false}
-          className="absolute bottom-0 left-[-4%] h-[145px] w-[61%] object-contain object-bottom min-[390px]:h-[175px]"/>
-        <img src={vipArtUrl('skins/companion-vip7.svg')} alt="" draggable={false}
-          className="absolute bottom-0 right-[-4%] h-[110px] w-[48%] object-contain object-bottom min-[390px]:h-[132px]"/>
-        <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2 flex-col items-center">
-          <img src={badge(level)} alt="" draggable={false} className="h-[100px] w-[100px] drop-shadow-[0_4px_8px_#000] min-[390px]:h-[116px] min-[390px]:w-[116px]"/>
-          <span className="relative -mt-3 rounded-full border border-[#cc8d42] bg-[#2b170f]/90 px-3 py-0.5 text-[11px] font-black text-[#ffdf96]">
-            VIP {level}
-          </span>
+        <div className="relative flex min-w-0 flex-col items-center justify-center pr-2 text-center">
+          <span className="text-[10px] font-bold text-amber-200/90">TERRITORY VIP</span>
+          <img src={badge(level)} alt="" draggable={false} className="mt-1 h-20 w-20 object-contain drop-shadow-[0_4px_6px_#100908]" />
+          <strong className="text-lg font-black leading-tight text-[#ffe2ab]">VIP {level}</strong>
+          <span className="truncate text-[11px] text-amber-100">{en?current.nameEn:current.nameRu}</span>
         </div>
       </div>
-      <div className="space-y-1 border-t-2 border-[#a96b35] bg-[#301c15] px-3 py-2">
-        <div className="flex justify-between gap-2 text-[11px] font-semibold text-[#f9dcaa]">
-          <span>{en?'Next VIP tier':'Следующая ступень VIP'}</span>
-          <span>{threshold===null?'VIP 10':`VIP ${Math.min(10,level+1)}`}</span>
-        </div>
-        <div className="h-3 overflow-hidden rounded-full border border-amber-500/40 bg-[#170f0b]">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#ac6723] via-[#ffc35a] to-[#fff2a1]" style={{width:'0%'}}/>
-        </div>
-        <p className="text-[10px] text-amber-100/70">{en?'Upgrade payments are not yet enabled.':'Покупки VIP пока не подключены.'}</p>
+      <div className="flex min-h-10 items-center justify-between gap-2 border-t border-[#96643d] bg-[#301c15] px-3 text-[11px] text-amber-100">
+        <span>{en?"Next VIP rank":"Следующий ранг"}</span>
+        <strong className="text-[#ffe0a4]">{level>=10?"VIP 10":`VIP ${level+1}`}</strong>
       </div>
     </div>
 
