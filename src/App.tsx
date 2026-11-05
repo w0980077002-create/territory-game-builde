@@ -359,7 +359,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         // A separate fire-and-forget write could collide with iOS gameplay saves.
         needsInitialSave.current = !!(profile.balanceMigrated || profile.rosterMigrated || hasNewTimeEffects || beltReconciled);
         useArena.set({ rating: profile.arenaRating, wins: profile.arenaWins, losses: profile.arenaLosses });
-        useAccount.set({ vip: profile.vip, permanentVip:profile.vip, vipUntil:null, vipRemaining:0, vipCheckedAt:performance.now() });
+        useAccount.set({ vip: profile.vip, permanentVip:profile.vip, vipUntil:null, vipRemaining:0, vipCheckedAt:performance.now(), paidVip:0, giftVip:0, paidSpendCents:0, entitlementVerified:false });
         void refreshFortuneVip();
         setLoaded(true);
         // The server owns the deadline; resume events and a server-supplied
