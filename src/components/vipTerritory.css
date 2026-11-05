@@ -1,148 +1,291 @@
-/* TERRITORY 1.0: owner-first VIP hall using the approved cliff, wood and forged metal.
-   Purely visual; never changes player state, rewards, currencies or server access. */
+/* Owner-approved TERRITORY VIP 1 / VIP 5 / VIP 10: responsive, functional, client-only preview. */
 .territory-vip-rebuild {
-  color:#ffe4b1;
-  background:#16100e;
-  overflow-x:clip;
+  position:relative;isolation:isolate;min-height:100%;width:100%;overflow-x:clip;
+  padding:8px 8px 24px;display:flex;flex-direction:column;gap:9px;
+  color:#ffe4b1;background:#172131;
 }
 .territory-vip-rebuild .vip-world-bg {
-  position:absolute;
-  inset:0;
-  z-index:-1;
-  pointer-events:none;
-  background-image:linear-gradient(180deg,rgba(16,24,36,.34),rgba(18,16,17,.7) 37%,rgba(19,11,10,.9) 100%),
-    url('/assets/territory/scenes/winter-cliff-approved.webp');
-  background-position:center top;
-  background-size:cover;
-  background-repeat:no-repeat;
+  position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(7,22,39,.23),rgba(22,13,16,.68) 54%,rgba(19,9,10,.9)),
+    url('/assets/territory/scenes/winter-cliff-approved.webp') center top/cover no-repeat;
 }
 .territory-vip-rebuild .vip-main-heading {
-  border:2px solid #c39255;
-  border-radius:14px;
-  box-shadow:0 4px 10px #0c0809cc,inset 0 1px 0 #ffedbb70,inset 0 -2px 0 #150c08;
-  background-image:linear-gradient(130deg,rgba(27,13,10,.36),rgba(48,20,14,.32)),
-    url('/assets/territory/ui/shop/shop-wood-planks.webp');
-  background-position:center;
-  background-size:cover;
-  overflow:hidden;
+  height:56px;min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:7px;
+  border:2px solid #c8954d;border-radius:14px;padding:3px 8px;
+  box-shadow:inset 0 2px #ffdf9b75,inset 0 -3px #140a06,0 4px 9px #13080abf;
+  background:linear-gradient(145deg,#411a1599,#1c1212a8),
+    url('/assets/territory/ui/shop/shop-wood-planks.webp') center/cover;
 }
-.territory-vip-rebuild .vip-main-heading::before,
-.territory-vip-rebuild .vip-main-heading::after {
-  content:'';
-  position:absolute;
-  top:0;
-  height:100%;
-  width:8px;
-  background:linear-gradient(90deg,#251c19,#8d8580 36%,#3e3938 65%,#c29a5c 76%,#2d1b17);
-  pointer-events:none;
-}
-.territory-vip-rebuild .vip-main-heading::before {left:0;}
-.territory-vip-rebuild .vip-main-heading::after {right:0;}
-.territory-vip-rebuild .vip-main-heading .territory-wooden-plaque {
-  width:clamp(150px,49vw,215px);
-  height:48px;
-}
+.territory-vip-rebuild .vip-main-heading .territory-wooden-plaque {width:min(54vw,222px);height:48px;}
 .territory-vip-rebuild .vip-main-heading .territory-wooden-plaque__label {
-  font-size:clamp(20px,5.5vw,27px);
-  color:#ffe295;
-  text-shadow:1px 2px 0 #2b1208,0 0 5px #22120b;
+  font-size:clamp(19px,5.5vw,27px);color:#ffdc7c;
+  text-shadow:2px 2px #34130a,-1px -1px #28110b,0 0 7px #8c2d09;
 }
 .territory-vip-rebuild .vip-back-button {
-  z-index:1;
-  flex-shrink:0;
-  border:1px solid #b88d57;
-  border-radius:10px;
-  background:linear-gradient(145deg,#6b5541,#252326 58%,#5e4635);
-  box-shadow:inset 0 1px #d2b488,0 2px 5px #1a0e09c9;
+  min-width:42px;height:42px;display:grid;place-items:center;
+  border:1.5px solid #d9a562;border-radius:10px;color:#ffdea1;
+  background:linear-gradient(145deg,#665343,#1c1f21 55%,#5a341e);
+  box-shadow:inset 0 1px #ffe9b382,0 3px 5px #0c0808ad;
 }
+.territory-vip-rebuild .vip-top-crown {flex-shrink:0;color:#ffe084;filter:drop-shadow(0 0 5px #f0ad3b);}
 .territory-vip-rebuild .vip-carved-panel {
-  position:relative;
-  min-width:0;
-  border:2px solid #c29155;
-  border-radius:15px;
-  background-image:radial-gradient(ellipse at 38% 0%,rgba(166,98,48,.27),transparent 65%),
-    linear-gradient(125deg,rgba(29,12,8,.64),rgba(30,15,12,.79)),
-    url('/assets/territory/ui/shop/shop-wood-planks.webp');
-  background-position:center;
-  background-size:cover;
-  box-shadow:inset 0 1px 0 #ffedb077,inset 0 -2px 1px #130c09c2,0 3px 9px #080606b8;
+  position:relative;min-width:0;border:2px solid #b98546;border-radius:16px;
+  background:linear-gradient(140deg,#2d100bbd,#2a130eec 70%),
+    url('/assets/territory/ui/shop/shop-wood-planks.webp') center/cover;
+  box-shadow:inset 0 1px #ffde967b,inset 0 -2px #1b0b07,0 4px 10px #080608b5;
 }
 .territory-vip-rebuild .vip-carved-panel::after {
-  content:'';
-  position:absolute;
-  inset:3px;
-  border:1px solid #ffdb9652;
-  border-radius:11px;
-  pointer-events:none;
+  content:"";position:absolute;inset:4px;z-index:0;pointer-events:none;
+  border:1px solid #efbf726b;border-radius:11px;
 }
+.territory-vip-rebuild .vip-hero-panel {overflow:hidden;}
 .territory-vip-rebuild .vip-stage {
-  background-image:
-    linear-gradient(180deg,rgba(14,31,45,.08),rgba(19,23,30,.1) 44%,rgba(22,13,12,.35) 100%),
-    url('/assets/territory/scenes/winter-cliff-approved.webp');
-  background-position:center 33%;
-  background-size:cover;
+  height:206px;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#1c395321,#18141b1f 59%,#1c0e0ec4),
+    url('/assets/territory/scenes/winter-cliff-approved.webp') center 34%/cover no-repeat;
 }
-.territory-vip-rebuild .vip-stage::after {
-  content:'';
-  position:absolute;
-  inset:auto 0 0;
-  height:25%;
-  pointer-events:none;
-  background:linear-gradient(transparent,#1b12109c);
+.territory-vip-rebuild .vip-stage-title {
+  position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:7;
+  min-width:55%;max-width:93%;display:flex;justify-content:center;align-items:center;gap:5px;
+  font-size:12px;line-height:1.15;font-weight:900;white-space:nowrap;
+  color:#ffedb4;padding:6px 12px;letter-spacing:.02em;text-shadow:0 2px 2px #3c1208;
+  border:1px solid #f1c06d;border-radius:2px 14px 2px 14px;
+  background:linear-gradient(100deg,#41120a,#8d2215 50%,#40110b);box-shadow:0 2px 4px #100609;
 }
-.territory-vip-rebuild .vip-actual-hero,
+.territory-vip-rebuild .vip-actual-hero {
+  position:absolute;bottom:-3px;left:-5%;z-index:3;width:54%;height:186px;
+  object-fit:contain;object-position:bottom;
+  filter:drop-shadow(0 7px 5px #100a0b) drop-shadow(0 0 4px #ecbf7969);
+}
 .territory-vip-rebuild .vip-actual-companion {
-  z-index:1;
-  filter:drop-shadow(1px 6px 4px rgba(8,9,13,.9)) drop-shadow(0 0 3px rgba(255,202,115,.45));
+  position:absolute;bottom:-5px;right:-5%;z-index:3;width:43%;height:147px;
+  object-fit:contain;object-position:bottom;
+  filter:drop-shadow(0 6px 4px #100a0c) drop-shadow(0 0 5px #f3aa5380);
+}
+.territory-vip-rebuild .vip-crown-on-hero {
+  position:absolute;left:18%;top:30px;z-index:4;width:51px;height:45px;
+  object-fit:contain;transform:rotate(-6deg);
+  filter:drop-shadow(0 2px 3px #2d1108) drop-shadow(0 0 5px #facc61);
+}
+.territory-vip-rebuild .vip-prestige-throne {
+  position:absolute;bottom:-13px;left:0;z-index:1;width:58%;height:204px;
+  object-fit:contain;filter:drop-shadow(0 0 14px #e6a6438c);
+}
+.territory-vip-rebuild .vip-aura-effect {
+  position:absolute;left:2%;bottom:11px;z-index:1;width:51%;height:150px;
+  border-radius:50%;background:radial-gradient(ellipse,#ffdb8f80 2%,#e4a32152 43%,transparent 75%);
+  filter:drop-shadow(0 0 13px #ffc555);animation:vip-aurora 3.2s ease-in-out infinite;
 }
 .territory-vip-rebuild .vip-stage-emblem {
-  z-index:2;
-  filter:drop-shadow(0 3px 4px #160a07);
+  position:absolute;left:51%;top:57%;transform:translate(-50%,-50%);
+  z-index:6;display:flex;flex-direction:column;align-items:center;
+  filter:drop-shadow(0 5px 7px #140808);
 }
-.territory-vip-rebuild .vip-tier-grid > button {
-  background-image:linear-gradient(155deg,rgba(173,108,41,.26),rgba(22,13,10,.45)),
-    url('/assets/territory/ui/shop/shop-wood-planks.webp');
-  background-size:cover;
-  border:1px solid #9c703f;
-  box-shadow:inset 0 1px #f8dfac42,0 2px 3px #100a07a8;
+.territory-vip-rebuild .vip-emblem-glow {
+  width:96px;height:96px;display:grid;place-items:center;
+  border-radius:50%;background:radial-gradient(ellipse,#e8ae3c78,transparent 73%);
 }
-.territory-vip-rebuild .vip-tier-grid > button[aria-pressed='true'] {
-  background:linear-gradient(145deg,#b07b3a,#593119 78%);
-  outline:2px solid #ffde93;
-  outline-offset:-2px;
-  box-shadow:0 0 9px #fcb95580,inset 0 1px #fff0b6;
+.territory-vip-rebuild .vip-emblem-glow img {width:98px;height:98px;object-fit:contain;}
+.territory-vip-rebuild .vip-stage-emblem strong {
+  margin-top:-11px;z-index:1;border:2px solid #edbf69;border-radius:8px;
+  background:linear-gradient(#4c1d12,#1e100d);color:#ffe4a3;
+  padding:2px 10px;font-size:12px;white-space:nowrap;text-shadow:0 2px #1e0909;
 }
+.territory-vip-rebuild.vip-prestige-duke .vip-emblem-glow,
+.territory-vip-rebuild.vip-prestige-legend .vip-emblem-glow {background:radial-gradient(ellipse,#ffd059ad,transparent 75%);}
+.territory-vip-rebuild.vip-prestige-legend .vip-stage {
+  background-image:linear-gradient(180deg,#120f2b55,#47101236 65%,#1b0c0bbd),
+    url('/assets/territory/scenes/winter-cliff-approved.webp');
+}
+.territory-vip-rebuild.vip-prestige-legend .vip-stage-title {background:linear-gradient(90deg,#5b1716,#9d3216,#591612);}
+.territory-vip-rebuild .vip-hero-caption {
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:8px 5px 9px;background:linear-gradient(90deg,#29130fe8,#422017ef,#2b130fdc);
+  border-top:2px solid #b88749;line-height:1.3;
+}
+.territory-vip-rebuild .vip-hero-caption strong {font-size:16px;color:#ffe199;text-shadow:1px 2px #180b08;}
+.territory-vip-rebuild .vip-hero-caption span {font-size:12px;font-weight:700;color:#ffe2ad;}
+.territory-vip-rebuild .vip-tier-panel {padding:7px 6px 6px;}
+.territory-vip-rebuild .vip-tier-grid {
+  display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:2px;
+  position:relative;z-index:1;
+}
+.territory-vip-rebuild .vip-tier-button {
+  min-width:0;height:62px;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  background:linear-gradient(165deg,#74401b,#321b12 72%);
+  border:1px solid #ac7342;border-radius:8px;
+  box-shadow:inset 0 1px #ffe6ab41,0 2px 2px #140906a8;
+  color:#ffde9f;
+}
+.territory-vip-rebuild .vip-tier-button img {width:90%;height:34px;object-fit:contain;}
+.territory-vip-rebuild .vip-tier-button strong {font-size:11px;font-weight:900;line-height:1.1;}
+.territory-vip-rebuild .vip-tier-button[aria-pressed="true"] {
+  border-color:#ffe2a1;outline:2px solid #f9cd67;outline-offset:-2px;
+  background:linear-gradient(145deg,#a95e1e,#633013);
+  box-shadow:inset 0 1px #fff1b6,0 0 12px #ffbf45b8;
+}
+.territory-vip-rebuild .vip-tier-milestone img {filter:drop-shadow(0 0 4px #f1b746);}
+.territory-vip-rebuild .vip-tier-bottom {
+  margin-top:6px;display:flex;align-items:center;justify-content:space-between;gap:4px;
+  font-size:11px;line-height:1.3;position:relative;z-index:1;color:#ffe8b5;
+}
+.territory-vip-rebuild .vip-tier-bottom small {color:#ddb989;font-size:10px;text-align:right;}
+.territory-vip-rebuild .vip-content-tabs {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;
+  padding:4px;border:2px solid #a7753b;border-radius:12px;
+  background:linear-gradient(#482416,#2a160f);
+}
+.territory-vip-rebuild .vip-content-tabs button {
+  min-height:39px;border:1px solid #9d6938;border-radius:8px;
+  font-size:12px;font-weight:900;color:#ffdfaf;
+  background:linear-gradient(#502719,#26120e);
+}
+.territory-vip-rebuild .vip-content-tabs button[aria-pressed="true"] {
+  color:#321709;border-color:#ffe5a5;
+  background:linear-gradient(#ffe7a1,#daa34d 62%,#ba711d);
+  box-shadow:inset 0 1px #fff4d2,0 0 6px #ffbd488a;
+}
+.territory-vip-rebuild .vip-content-panel {padding:9px 9px 10px;}
+.territory-vip-rebuild .vip-section-title {
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  font-size:clamp(14px,4.3vw,19px);font-weight:950;color:#ffe095;
+  text-align:center;text-shadow:0 2px #2a100b;
+  padding:0 4px 8px;margin:0;
+}
+.territory-vip-rebuild .vip-section-title svg {flex-shrink:0;}
+.territory-vip-rebuild .vip-benefits-grid {
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;
+}
+.territory-vip-rebuild.vip-prestige-legend .vip-benefits-grid {grid-template-columns:repeat(5,minmax(0,1fr));}
+.territory-vip-rebuild .vip-benefit-card {
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;
+  min-width:0;min-height:119px;padding:7px 3px 6px;
+  border:1.5px solid #d09b58;border-radius:11px;
+  background:linear-gradient(165deg,#7b401d99,#27130ded),url('/assets/territory/ui/shop/shop-wood-planks.webp') center/cover;
+  color:#ffedce;box-shadow:inset 0 1px #f9dca451,0 3px 5px #1007089c;
+}
+.territory-vip-rebuild .vip-benefit-card img {
+  width:100%;height:62px;object-fit:contain;filter:drop-shadow(0 4px 5px #110909);
+}
+.territory-vip-rebuild .vip-benefit-card strong {
+  font-size:11px;line-height:1.14;font-weight:900;text-align:center;overflow-wrap:anywhere;
+  text-shadow:0 1px 2px #150906;
+}
+.territory-vip-rebuild .vip-benefit-card small {font-weight:800;color:#f9c96d;}
+.territory-vip-rebuild .vip-gold-action {
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:35px;border:1.5px solid #ffdfa2;border-radius:9px;padding:5px 9px;
+  background:linear-gradient(#fff1ac,#edbc5b 46%,#b76e18);color:#381806;
+  font-size:12px;font-weight:950;text-align:center;
+  box-shadow:inset 0 2px #fff6d2,0 2px #4e210f;
+}
+.territory-vip-rebuild .vip-short-action {position:relative;z-index:1;display:flex;margin:9px auto 0;}
+.territory-vip-rebuild .vip-cosmetic-tabs {
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;
+}
+.territory-vip-rebuild .vip-cosmetic-tabs button {
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  min-height:53px;min-width:0;padding:4px 1px;border:1px solid #a16d40;border-radius:8px;
+  font-size:10px;font-weight:850;line-height:1.1;color:#ffdda9;
+  background:linear-gradient(#65361f,#28150f);
+}
+.territory-vip-rebuild .vip-cosmetic-tabs button span {font-size:21px;line-height:1.1;color:#ffcd65;}
+.territory-vip-rebuild .vip-cosmetic-tabs button[aria-pressed="true"] {
+  border-color:#fff0b4;background:linear-gradient(#ffde81,#9d5319);
+  color:#281107;box-shadow:0 0 8px #ffbd4f82;
+}
+.territory-vip-rebuild .vip-tryon-feature {
+  margin-top:8px;display:grid;grid-template-columns:47% minmax(0,1fr);gap:4px;
+  border:1px solid #aa7945;border-radius:11px;background:linear-gradient(115deg,#2a1110e8,#31180eea);
+  min-height:158px;overflow:hidden;
+}
+.territory-vip-rebuild .vip-tryon-art {position:relative;min-height:158px;overflow:hidden;
+  background:radial-gradient(ellipse at center,#f7a74d4f,#33161b 68%,#1b0c12);}
+.territory-vip-rebuild .vip-tryon-hero {
+  position:absolute;z-index:2;left:0;bottom:-3px;width:100%;height:162px;object-fit:contain;object-position:bottom;
+  filter:drop-shadow(0 4px 5px #090505);
+}
+.territory-vip-rebuild .vip-preview-cosmetic {position:absolute;z-index:3;left:17%;top:3px;
+  width:67%;height:67px;object-fit:contain;filter:drop-shadow(0 0 7px #ffd15c);}
+.territory-vip-rebuild .vip-preview-aura {position:absolute;inset:17px 0;
+  border:5px solid #ffcd6c8c;filter:blur(9px);border-radius:50%;}
+.territory-vip-rebuild .vip-preview-aura+.vip-tryon-hero {z-index:2;}
+.territory-vip-rebuild .vip-preview-aura~.vip-preview-aura {pointer-events:none;}
+.territory-vip-rebuild .vip-preview-crest {top:auto;bottom:18px;left:56%;width:45%;height:80px;}
+.territory-vip-rebuild .vip-preview-aura {left:9%;width:85%;}
+.territory-vip-rebuild .vip-preview-skin {top:40px;left:35%;width:50%;height:85px;opacity:.58;}
+.territory-vip-rebuild .vip-preview-throne {position:absolute;z-index:0;bottom:0;left:0;width:100%;height:145px;object-fit:contain;}
+.territory-vip-rebuild .vip-preview-throne~.vip-tryon-hero {height:140px;}
+.territory-vip-rebuild .vip-preview-throne~.vip-preview-cosmetic {display:none;}
+.territory-vip-rebuild .vip-tryon-detail {
+  position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:6px;padding:8px 5px;
+  text-align:center;min-width:0;
+}
+.territory-vip-rebuild .vip-tryon-detail>strong {font-size:14px;line-height:1.2;color:#ffe29a;}
+.territory-vip-rebuild .vip-tryon-detail>span {font-size:11px;color:#ecc995;}
+.territory-vip-rebuild .vip-tryon-controls {display:flex;justify-content:space-between;align-items:center;width:100%;gap:6px;font-size:11px;}
+.territory-vip-rebuild .vip-tryon-controls button {height:32px;min-width:32px;display:grid;place-items:center;
+  border:1px solid #caa061;border-radius:7px;background:#4c2817;}
+.territory-vip-rebuild .vip-locked-label {display:flex;align-items:center;justify-content:center;gap:4px;
+  width:100%;padding:7px 4px;border:1px solid #c29457;border-radius:8px;font-size:10px;color:#ffdaa4;background:#311b10;}
+.territory-vip-rebuild .vip-demo-disclaimer {position:relative;z-index:1;text-align:center;margin:9px 2px 0;
+  font-size:10px;line-height:1.3;color:#e5c393;}
+.territory-vip-rebuild .vip-chests-row {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}
 .territory-vip-rebuild .vip-chest-card {
-  background-image:linear-gradient(160deg,rgba(62,27,15,.43),rgba(16,10,10,.64)),
-    url('/assets/territory/ui/shop/shop-wood-planks.webp');
-  background-size:cover;
-  box-shadow:inset 0 1px #ffdf9870,0 4px 8px #0c0808bc;
+  min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:5px;
+  padding:7px 5px;min-height:165px;border:2px solid #c39355;border-radius:12px;
+  background:linear-gradient(#68401a80,#301812e6),
+    url('/assets/territory/ui/shop/shop-wood-planks.webp') center/cover;
+  color:#ffe6b6;box-shadow:inset 0 1px #ffe2a665,0 3px 6px #0b0608;
 }
-.territory-vip-rebuild .vip-claim-demo {
-  border:1px solid #f9e0a4;
-  background:linear-gradient(#ffe8a9 0%,#dd9e42 42%,#b86d24 100%);
-  box-shadow:inset 0 2px #fff6d6,0 2px #36180c;
-  color:#32180b;
+.territory-vip-rebuild .vip-chest-card img {width:100%;height:93px;object-fit:contain;filter:drop-shadow(0 5px 6px #0f0607);}
+.territory-vip-rebuild .vip-chest-card strong {font-size:12px;line-height:1.15;text-align:center;}
+.territory-vip-rebuild .vip-chest-card .vip-gold-action {width:100%;pointer-events:none;}
+.territory-vip-rebuild .vip-teaser-line {
+  padding:5px 7px;display:grid;align-items:center;grid-template-columns:73px minmax(0,1fr) auto;gap:5px;
 }
-.territory-vip-rebuild button:focus-visible,
-.territory-vip-rebuild summary:focus-visible {
-  outline:3px solid #fff0ba;
-  outline-offset:2px;
+.territory-vip-rebuild .vip-teaser-line>img {width:73px;height:67px;object-fit:contain;}
+.territory-vip-rebuild .vip-teaser-line div {display:flex;flex-direction:column;gap:3px;min-width:0;}
+.territory-vip-rebuild .vip-teaser-line strong {font-size:12px;line-height:1.15;color:#ffe3a0;}
+.territory-vip-rebuild .vip-teaser-line small {font-size:10px;color:#f9d49b;}
+.territory-vip-rebuild .vip-teaser-line button {position:relative;z-index:1;padding:5px 6px;font-size:10px;}
+.territory-vip-rebuild .vip-founder-line {padding:9px;display:flex;gap:9px;justify-content:center;align-items:center;text-align:center;color:#ffe4a4;}
+.territory-vip-rebuild .vip-founder-line div {display:flex;flex-direction:column;gap:3px;}
+.territory-vip-rebuild .vip-founder-line strong {font-size:12px;}
+.territory-vip-rebuild .vip-founder-line small {font-size:10px;}
+.territory-vip-rebuild .vip-preview-notice {display:flex;justify-content:center;align-items:center;gap:5px;
+  font-size:10px;line-height:1.3;text-align:center;color:#dac9b4;padding:2px 8px;}
+.territory-vip-rebuild .vip-preview-notice svg {flex:0 0 auto;}
+.territory-vip-rebuild .vip-secondary-links {display:flex;justify-content:center;gap:7px;padding-bottom:6px;}
+.territory-vip-rebuild .vip-secondary-links button {color:#f6d7a2;border-bottom:1px solid #ae7d43;font-size:11px;padding:4px 5px;}
+.territory-vip-rebuild .vip-chest-overlay {position:fixed;z-index:100;inset:0;display:flex;
+  align-items:center;justify-content:center;padding:18px;background:#0a0506e8;}
+.territory-vip-rebuild .vip-chest-dialog {width:min(100%,340px);display:flex;flex-direction:column;
+  align-items:center;gap:10px;padding:18px 12px;text-align:center;}
+.territory-vip-rebuild .vip-chest-dialog h3 {font-size:17px;font-weight:900;color:#ffe09a;}
+.territory-vip-rebuild .vip-opening-chest {height:175px;width:94%;object-fit:contain;filter:drop-shadow(0 0 9px #ffcc64);}
+.territory-vip-rebuild .vip-opening-revealed {animation:vip-reveal .5s ease-out;}
+.territory-vip-rebuild .vip-chest-dialog p {font-size:11px;color:#e2c198;}
+.territory-vip-rebuild .vip-sample-rewards {display:flex;gap:7px;justify-content:center;margin:9px 0;}
+.territory-vip-rebuild .vip-sample-rewards img {width:65px;height:65px;border:1px solid #c89953;
+  border-radius:8px;background:#392015;object-fit:contain;}
+.territory-vip-rebuild .vip-close-demo {padding:8px 16px;border:1px solid #ce9c5b;
+  background:#30180d;border-radius:9px;color:#ffe3b0;font-size:12px;}
+.territory-vip-rebuild button:focus-visible {outline:3px solid #fff1ba;outline-offset:2px;}
+@keyframes vip-aurora {0%,100%{opacity:.65;transform:scale(.96)}50%{opacity:1;transform:scale(1.04)}}
+@keyframes vip-reveal {0%{transform:scale(.9);filter:brightness(3)}65%{transform:scale(1.08)}100%{transform:scale(1)}}
+@media(max-width:370px){
+  .territory-vip-rebuild .vip-tier-grid {grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;}
+  .territory-vip-rebuild .vip-tier-button {height:43px;flex-direction:row;gap:2px;}
+  .territory-vip-rebuild .vip-tier-button img {height:29px;width:34px;}
+  .territory-vip-rebuild .vip-stage {height:188px;}
+  .territory-vip-rebuild .vip-actual-hero {height:172px;}
+  .territory-vip-rebuild .vip-benefit-card {min-height:108px;}
+  .territory-vip-rebuild .vip-benefit-card img {height:50px;}
+  .territory-vip-rebuild .vip-benefit-card strong {font-size:10px;}
+  .territory-vip-rebuild.vip-prestige-legend .vip-benefits-grid {grid-template-columns:repeat(3,minmax(0,1fr));}
 }
-.territory-vip-rebuild .vip-carved-panel > .grid button,
-.territory-vip-rebuild .vip-carved-panel > .grid > div {
-  border-color:#b78951;
-  background-image:linear-gradient(120deg,rgba(90,48,26,.45),rgba(22,14,11,.6)),
-    url('/assets/territory/ui/shop/shop-wood-planks.webp');
-  background-size:cover;
-}
-@media (max-width:350px) {
-  .territory-vip-rebuild .vip-stage {height:176px;}
-  .territory-vip-rebuild .vip-actual-hero {height:164px;}
-  .territory-vip-rebuild .vip-actual-companion {height:115px;}
-  .territory-vip-rebuild .vip-tier-grid img {width:32px;height:32px;}
-  .territory-vip-rebuild .vip-main-heading .territory-wooden-plaque {width:150px;}
-}
-@media (prefers-reduced-motion:reduce) {
-  .territory-vip-rebuild .animate-bounce {animation:none;}
+@media(prefers-reduced-motion:reduce){
+  .territory-vip-rebuild .vip-aura-effect,.territory-vip-rebuild .vip-opening-revealed {animation:none;}
 }
