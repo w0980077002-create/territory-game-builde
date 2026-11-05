@@ -50,7 +50,7 @@ const result=await build({entryPoints:['src/game/vipBeltCave.ts'],bundle:true,wr
     b.onResolve({filter:/^\.\/(actions|cloud|supabase)$/},arg=>({path:arg.path,namespace:'vip-cave'}));
     b.onLoad({filter:/.*/,namespace:'vip-cave'},arg=>({contents:sources[arg.path],loader:'js'}));
   }}]});
-const {persistCaveVipBeltAfterSettlement:refill}=await import(
+const {persistCaveVipBeltAfterSettlement:refill,persistArenaVipBeltAfterClaim:arenaRefill}=await import(
   'data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
 const verified=(id=session,outcome='hero_won')=>({session_id:id,state:{status:outcome},
   settlement:{outcome}});
@@ -94,4 +94,17 @@ assert.equal(await refill(user,verified(thirdSession,'draw')),false,
   'cloud mismatch after CAS must not install a potentially stale state');
 assert.equal(state.belt[0],null);
 assert.equal(storage.get(`territory.vip.belt.cave.v1:${user}:${thirdSession}`),'pending');
-console.log('VIP Cave post-settlement: verified receipt, one in-flight save, CAS readback, replay, fail-closed PASS');
+// The same durable save path must accept a *server-verified Arena claim*
+// (including its already-claimed replay) without minting more stock.
+changedServer=false;state=fresh();serverState=structuredClone(state);accepted=true;
+const beforeArena=writes;
+assert.equal(await arenaRefill(user,session,100),true,
+  'Arena claim should commit inventory-to-belt movement via CAS');
+assert.equal(writes,beforeArena+1);
+assert.equal(state.belt[0].qty,5);
+assert.equal(state.inventory.length,0);
+assert.equal(storage.get(`territory.vip.belt.arena.v1:${user}:${session}`),'done');
+assert.equal(await arenaRefill(user,session,100),false,'Arena claim replay does not transfer twice');
+assert.equal(writes,beforeArena+1,'Arena replay does not issue another save');
+assert.equal(await arenaRefill(user,'invalid-room'),false);
+console.log('VIP post-settlement Cave/Arena: verified result, one CAS save, terminal replay, fail-closed PASS');
