@@ -72,8 +72,8 @@ export function FighterFigure({
   const speed = Number.isFinite(combatSpeed) && combatSpeed > 0 ? combatSpeed : 1;
   const artIdentity = combatFrames?.idle ?? src;
   const originalCutout = typeof SVGMaskElement !== 'undefined' ? getOriginalArticulatedHero(artIdentity) : null;
-  const canAnimateRig = typeof Element !== 'undefined' && typeof Element.prototype.animate === 'function';
-  const skeletalReady = !!rig && canAnimateRig && enabledRig === rig.id && assets?.id === rig.id && assets.ready;
+  // SkeletalFighter itself handles missing/throwing SVG animate(); do not bypass that fallback.
+  const skeletalReady = !!rig && enabledRig === rig.id && assets?.id === rig.id && assets.ready;
   const [timeline, setTimeline] = useState<{ event: StrikeEvent; src: string; art: string; name: string; phase: PosePhase } | null>(null);
   const event = role && !skeletalReady ? strike : null;
   useEffect(() => {
