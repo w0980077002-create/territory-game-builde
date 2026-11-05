@@ -13,8 +13,8 @@ type TerminalCaveReceipt = {
 const sessionIdPattern = /^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i;
 const playerIdPattern = sessionIdPattern;
 const pending = new Map<string, Promise<boolean>>();
-const markerKey = (userId: string, sessionId: string) =>
-  `territory.vip.belt.cave.v1:${userId}:${sessionId}`;
+const markerKey = (userId: string, source: 'cave' | 'arena', sessionId: string) =>
+  `territory.vip.belt.${source}.v1:${userId}:${sessionId}`;
 
 function currentVip() {
   const account = useAccount.get();
@@ -51,10 +51,25 @@ export function persistCaveVipBeltAfterSettlement(
   userId: string, receipt: TerminalCaveReceipt,
 ): Promise<boolean> {
   const status = receipt?.state?.status;
-  if (!playerIdPattern.test(userId) || !sessionIdPattern.test(receipt?.session_id ?? '')
-    || !['hero_won', 'enemy_won', 'draw'].includes(status)
+  if (!['hero_won', 'enemy_won', 'draw'].includes(status)
     || receipt?.settlement?.outcome !== status) return Promise.resolve(false);
-  const key = markerKey(userId, receipt.session_id);
+  return persistVipBeltAfterConfirmedReceipt(userId, 'cave', receipt.session_id);
+}
+
+/** Call only AFTER secureArenaClaim accepted the authenticated server receipt.
+ * The 'already_claimed' replay is a valid receipt, not a second payout. */
+export function persistArenaVipBeltAfterClaim(
+  userId: string, roomId: string, verifiedWins?: number,
+): Promise<boolean> {
+  return persistVipBeltAfterConfirmedReceipt(userId, 'arena', roomId, verifiedWins);
+}
+
+function persistVipBeltAfterConfirmedReceipt(
+  userId: string, source: 'cave' | 'arena', sessionId: string, verifiedWins?: number,
+): Promise<boolean> {
+  if (!playerIdPattern.test(userId) || !sessionIdPattern.test(sessionId))
+    return Promise.resolve(false);
+  const key = markerKey(userId, source, sessionId);
   const inFlight = pending.get(key);
   if (inFlight) return inFlight;
   const task = (async () => {
@@ -63,7 +78,9 @@ export function persistCaveVipBeltAfterSettlement(
       return false;
     const before = useGame.get();
     if (!before.autoRefillBelt) return false;
-    const next = refillBeltFromInventory(before, beltContext(before, useArena.get().wins));
+    const wins = verifiedWins !== undefined && Number.isSafeInteger(verifiedWins) && verifiedWins >= 0
+      ? verifiedWins : useArena.get().wins;
+    const next = refillBeltFromInventory(before, beltContext(before, wins));
     if (next === before) return false;
 
     // If local storage is disabled or a previous attempt is uncertain, leave
