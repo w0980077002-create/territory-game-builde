@@ -764,3 +764,29 @@
   .territory-profile .hero-showcase__character{min-height:275px;}
   .territory-profile .hero-showcase__banner{font-size:27px;min-height:55px;}
 }
+
+
+/* Owner visual review: the canonical character was dwarfed by the scenery,
+ * and the lower menu required excessive scrolling at 360 px. No change to
+ * equipment, progression, route handling or the approved bottom navigation. */
+.territory-profile > :not([hidden]) ~ :not([hidden]) { margin-top: 9px; }
+.territory-profile .hero-showcase { gap: 7px; }
+.territory-profile .hero-showcase__hero-art {
+  width: 126%;
+  transform: translateY(0) scale(1.20);
+  transform-origin: center bottom;
+}
+@keyframes territoryHeroBreathe {
+  0%,100% { transform:translateY(0) scale(1.20); }
+  50% { transform:translateY(-3px) scale(1.20); }
+}
+.territory-profile .hero-showcase__journey { padding:8px; }
+.territory-profile .hero-showcase__records { margin-bottom:7px; gap:5px; }
+.territory-profile .hero-showcase__records > div { padding:5px 2px; }
+.territory-profile .hero-showcase__records strong {font-size:19px;}
+.territory-profile .hero-showcase__next {min-height:83px;margin-bottom:7px;}
+.territory-profile .hero-showcase__companion {padding:7px;gap:7px;}
+.territory-profile .hero-showcase__companion > button {min-height:42px;}
+@media(max-width:350px) {
+  .territory-profile .hero-showcase__hero-art {width:126%;}
+}
