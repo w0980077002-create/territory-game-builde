@@ -41,6 +41,11 @@ BEGIN
      OR p_base_gold < 0 OR p_base_xp < 0 THEN
     RAISE EXCEPTION 'vip_pve_invalid_reward';
   END IF;
+  -- Reject missing or banned players even while the staged bonus is disabled.
+  -- A disabled feature must not turn an invalid settlement into a payout.
+  PERFORM 1 FROM public.players WHERE id=p_player AND NOT banned;
+  IF NOT FOUND THEN RAISE EXCEPTION 'vip_pve_player_unavailable'; END IF;
+
   SELECT enabled INTO v_enabled
     FROM territory_private.vip_pve_bonus_config_v1 WHERE id=true;
   IF v_enabled IS NULL THEN RAISE EXCEPTION 'vip_pve_config_missing'; END IF;
