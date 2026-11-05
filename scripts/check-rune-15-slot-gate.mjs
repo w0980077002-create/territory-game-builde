@@ -27,7 +27,11 @@ assert(validateIdleLoadout(fifteen, catalog).includes('slot_limit'));
 // must not expose the old editable book for either language while gated.
 const ui = await build({ entryPoints: ['src/components/builds/ServerRuneBook.tsx'], bundle: true,
   platform: 'node', format: 'cjs', jsx: 'automatic', write: false, logLevel: 'silent', external: ['react'], loader: { '.css': 'empty' }, alias: { '@': resolve('src') },
-  define: { 'import.meta.env.BASE_URL': '"/"', 'import.meta.env.VITE_TERRITORY_RUNES': '"disabled"' },
+  // Node's esbuild CJS bundle has no Vite import.meta.env. Provide a closed,
+  // explicit test environment for transitive modules (including Supabase),
+  // keeping the production rune gate disabled in this fixture.
+  define: { 'import.meta.env': JSON.stringify({ BASE_URL: '/', VITE_TERRITORY_RUNES: 'disabled',
+    VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' }) },
   plugins: [{ name: 'test-dependencies', setup(b) {
     b.onResolve({ filter: /^@\/game\/supabase$|^@\/game\/combatV1\/api$|^\.\/RuneSkillBook$/ }, args => ({ path: args.path, namespace: 'stub' }));
     b.onLoad({ filter: /.*/, namespace: 'stub' }, args => ({ contents: args.path.endsWith('supabase')
