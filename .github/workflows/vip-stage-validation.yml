@@ -24,6 +24,8 @@ on:
       - 'src/game/fortuneVip.ts'
       - 'src/game/actions.ts'
       - 'src/components/VipStatusPanel.tsx'
+      - 'public/assets/territory/vip/**'
+      - 'scripts/check-vip-art.mjs'
       - 'src/components/InventoryScreen.tsx'
       - 'src/components/BattleScreen.tsx'
       - 'src/components/arena/ArenaRoom.tsx'
@@ -73,6 +75,8 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: TypeScript and production build
         run: npm run typecheck && npm run build
+      - name: VIP badge and chest assets linked to live screen
+        run: node scripts/check-vip-art.mjs
       - name: Existing belt and save regressions
         run: node scripts/check-belt-victory-milestones.mjs && npm run test:elixir-expiry
       - name: VIP smart belt invariants
