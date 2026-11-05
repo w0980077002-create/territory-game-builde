@@ -37,6 +37,9 @@ BEGIN
        OR (OLD.status='refunded' AND NEW.status='refunded')) THEN
     RAISE EXCEPTION 'vip_payment_status_regression';
   END IF;
+  IF NEW.status='refunded' AND NEW.refunded_at < NEW.recorded_at THEN
+    RAISE EXCEPTION 'vip_payment_refund_before_receipt';
+  END IF;
   IF OLD.status='refunded' AND NEW.refunded_at IS DISTINCT FROM OLD.refunded_at
   THEN RAISE EXCEPTION 'vip_payment_refund_immutable'; END IF;
   RETURN NEW;
