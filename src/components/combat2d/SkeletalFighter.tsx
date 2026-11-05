@@ -89,11 +89,23 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
       });
     };
     apply();
-    if (typeof reduced?.addEventListener === 'function') reduced.addEventListener('change', apply);
-    else if (typeof reduced?.addListener === 'function') reduced.addListener(apply);
+    // Some legacy MediaQueryList objects expose listeners but throw on registration.
+    // The initial pose is already applied; failure to subscribe must not break combat.
+    let listenerKind: 'modern' | 'legacy' | null = null;
+    try {
+      if (typeof reduced?.addEventListener === 'function') {
+        reduced.addEventListener('change', apply);
+        listenerKind = 'modern';
+      } else if (typeof reduced?.addListener === 'function') {
+        reduced.addListener(apply);
+        listenerKind = 'legacy';
+      }
+    } catch { listenerKind = null; }
     return () => {
-      if (typeof reduced?.removeEventListener === 'function') reduced.removeEventListener('change', apply);
-      else if (typeof reduced?.removeListener === 'function') reduced.removeListener(apply);
+      try {
+        if (listenerKind === 'modern') reduced?.removeEventListener('change', apply);
+        else if (listenerKind === 'legacy') reduced?.removeListener(apply);
+      } catch { /* Legacy MediaQueryList teardown must not block rig cleanup. */ }
       animations.forEach(a => a.cancel());
       svg.querySelectorAll<SVGGElement>('[data-rig-part]').forEach(joint => { joint.style.transform = ''; });
     };
