@@ -94,9 +94,10 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
     </div>
 
     <div className="grid grid-cols-2 gap-2">
-      {[{id:'daily',image:dailyChest(level),min:1,title:en?'Daily chest':'Ежедневный сундук'},
-        {id:'weekly',image:weeklyChest(level),min:2,title:en?'Weekly chest':'Еженедельный сундук'}].map(chest=>
-        <button key={chest.id} type="button" onClick={toRewards}
+      {[{id:'daily' as const,image:dailyChest(level),min:1,title:en?'Daily chest':'Ежедневный сундук'},
+        {id:'weekly' as const,image:weeklyChest(level),min:2,title:en?'Weekly chest':'Еженедельный сундук'}].map(chest=>
+        <button key={chest.id} type="button" aria-expanded={selectedChest===chest.id}
+          onClick={()=>setSelectedChest(prev=>prev===chest.id?null:chest.id)}
           className={`relative flex min-h-[110px] flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center ${texture}`}>
           <img src={chest.image} alt="" draggable={false} className="h-[55px] w-full object-contain"/>
           <strong className="text-[11px] leading-tight text-amber-100">{chest.title}</strong>
@@ -106,6 +107,11 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
         </button>)}
     </div>
 
+    {selectedChest && <p role="status" className="rounded-lg border border-amber-500/35 bg-[#302018] px-3 py-2 text-center text-[11px] text-amber-100">
+      {selectedChest==='daily'
+        ?(en?'Daily chest requires VIP 1. Claims will be available after release.':'Ежедневный сундук с VIP 1. Получение откроется после запуска.')
+        :(en?'Weekly chest requires VIP 2. Claims will be available after release.':'Недельный сундук с VIP 2. Получение откроется после запуска.')}
+    </p>}
     <div className={`rounded-xl p-2 ${texture}`}>
       <div className="mb-2 flex items-center justify-center gap-2 text-center text-base font-black text-[#ffe0a0]"><Crown size={17}/>{en?'VIP benefits':'Преимущества VIP'}</div>
       <div className="grid grid-cols-2 gap-1.5 min-[390px]:grid-cols-3">
