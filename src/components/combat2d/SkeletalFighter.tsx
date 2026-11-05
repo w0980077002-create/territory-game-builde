@@ -42,8 +42,12 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
     if (!svg) return;
     terminalRef.current = motion === 'death' || motion === 'victory' ? motion : null;
     if (motion === 'idle') return;
-    const reduced = typeof window.matchMedia === 'function'
-      ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    // Some embedded browsers expose matchMedia but throw when evaluating it.
+    // Treat that as no preference rather than losing all confirmed hit poses.
+    let reduced: MediaQueryList | null = null;
+    try {
+      if (typeof window.matchMedia === 'function') reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    } catch { reduced = null; }
     let animations: Animation[] = [];
     const apply = () => {
       animations.forEach(a => a.cancel());
