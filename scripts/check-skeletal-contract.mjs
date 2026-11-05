@@ -62,6 +62,7 @@ assert.match(figureSource,/skeletalReady\s*=\s*!!rig\s*&&\s*enabledRig\s*===\s*r
 const skeletalSource=readFileSync('src/components/combat2d/SkeletalFighter.tsx','utf8');
 const applyBody=skeletalSource.split('const apply = () => {')[1]?.split('const stops =')[0] ?? '';
 assert.match(applyBody,/style\.transform = ''/, 'Reapply must clear stale legacy inline transforms');
+assert.match(applyBody,/animations\.forEach\(a => a\.cancel\(\)\);\s*animations = \[\];/, 'Reapply must discard cancelled SVG animations before rebuilding the list');
 assert.match(skeletalSource,/typeof joint\.animate !== 'function'/, 'Legacy SVG animation fallback must remain');
 assert.match(skeletalSource,/try \{\s*return \[joint\.animate\(selected,/, 'SVG animate failures must be caught per joint');
 assert.match(skeletalSource,/catch \{[\s\S]*?showLegacyPose\(\)/, 'Thrown SVG animate must fall back to a visible pose');
