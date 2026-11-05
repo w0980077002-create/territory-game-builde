@@ -76,7 +76,20 @@ with sync_playwright() as p:
             assert page.locator('[data-testid="living-hero-showcase"]').count() == 0, 'VIP screen did not replace hero details'
             badges = vip.get_by_role('group', name='VIP levels' if lang == 'en' else 'Уровни VIP').locator('button')
             assert badges.count() == 10, 'VIP 1–10 artwork missing'
-            assert vip.locator('img').evaluate_all('images => images.filter(el => el.getClientRects().length > 0).every(el => el.complete && el.naturalWidth > 0)'), (width, lang, 'Visible VIP art missing')
+            # Scroll images into the actual viewport before checking lazy-loaded
+            # original game art and standalone transparent VIP assets.
+            for art in vip.locator('img').all():
+                if not art.is_visible():
+                    continue
+                art.scroll_into_view_if_needed(timeout=5000)
+                ok=art.evaluate("""img=>new Promise(resolve=>{
+                    if(img.complete){resolve(img.naturalWidth>0);return;}
+                    img.addEventListener('load',()=>resolve(img.naturalWidth>0),{once:true});
+                    img.addEventListener('error',()=>resolve(false),{once:true});
+                    setTimeout(()=>resolve(img.complete&&img.naturalWidth>0),5000);
+                })""")
+                assert ok, (width,lang,'Broken VIP art',art.get_attribute('src'))
+            vip.scroll_into_view_if_needed(timeout=5000)
             assert vip.locator('[data-testid="vip-real-hero-art"]').evaluate(
                 "el => el.complete && el.naturalWidth > 0 && el.getAttribute('src').includes('/characters/heroes/')"), (
                     width, lang, 'VIP uses an unrelated cartoon hero instead of player character')
