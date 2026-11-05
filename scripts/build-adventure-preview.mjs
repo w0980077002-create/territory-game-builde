@@ -86,7 +86,7 @@ const output = await build({
  alias: { '@':resolve('src') },
  define: { 'import.meta.env.BASE_URL':JSON.stringify('/'), 'import.meta.env.DEV':'false', 'process.env.NODE_ENV':'"production"' },
  plugins: [{ name:'adventure-fixture', setup(b) {
-   b.onResolve({ filter:/\/game\/(?:i18n|actions|auth|supabase|combatV1\/receiptAdapter)$/ }, () => ({ path:'fixture', namespace:'adventure-fixture' }));
+   b.onResolve({ filter:/(?:\/game\/(?:i18n|actions|auth|supabase|combatV1\/receiptAdapter)$|^\.\/supabase$)/ }, () => ({ path:'fixture', namespace:'adventure-fixture' }));
    b.onLoad({ filter:/.*/, namespace:'adventure-fixture' }, () => ({ contents:fixture, loader:'js' }));
  } }],
 });
