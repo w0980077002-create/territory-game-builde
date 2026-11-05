@@ -241,7 +241,7 @@ with sync_playwright() as p:
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             assert page.locator('.home-side').count() >= 6
             assert page.locator('.home-side').evaluate_all('buttons => buttons.every(b => { const r=b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && r.left >= 0 && r.right <= innerWidth; })')
-            page.locator('.home-profile-chip').click()
+            page.locator('.home-profile-chip button').first.click()
             assert page.evaluate('window.__route') == 'hero'
             if width == 360 and lang == 'ru':
                 page.screenshot(path='/tmp/territory-city-short-360.png')
