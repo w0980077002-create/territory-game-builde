@@ -22,7 +22,7 @@ const stubs={
 async function bundle(enabled) {
   const built=await build({entryPoints:['src/game/fortuneVip.ts'],bundle:true,platform:'node',
     format:'esm',write:false,
-    define:{'import.meta.env.VITE_VIP_ENTITLEMENTS_ENABLED':JSON.stringify(enabled?'true':'false')},
+    define:{'import.meta.env':JSON.stringify({VITE_VIP_ENTITLEMENTS_ENABLED:enabled?'true':'false'})},
     plugins:[{name:'fixtures',setup(b){
       b.onResolve({filter:/^\.\/(supabase|actions)$/},args=>({path:args.path,namespace:'vip-fixture'}));
       b.onLoad({filter:/.*/,namespace:'vip-fixture'},args=>({contents:stubs[args.path],loader:'js'}));
