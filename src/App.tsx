@@ -74,6 +74,15 @@ type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan'
 type SubScreen = 'vip' | 'runes' | 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
 type Screen = NavId | SubScreen;
 
+/** Visual-only scope for the approved old-oak finish.
+ * Leave the painted City/Map, Shop, Arena, battle modes, VIP art,
+ * and all fullscreen minigames untouched until the owner sees the result. */
+const OAK_HERITAGE_SCREENS = new Set<Screen>([
+  'inventory', 'hero', 'runes', 'forge', 'leaderboard',
+  'quests', 'professions', 'auction', 'friends', 'messages',
+  'events', 'clan', 'games',
+]);
+
 /** Warm only the navigation chunks people are most likely to open.
  * React.lazy and these import() calls share the same browser module cache.
  * No server requests, game state writes, or speculative mini-game sessions.
@@ -431,7 +440,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   return (
     <div
-      className={`territory-shell flex flex-col max-w-md mx-auto overflow-hidden relative ${screen === 'hall-play' && hallGame === 'wheel' ? 'territory-wheel-open' : ''} ${slotImmersive ? 'territory-slots-open' : ''} ${screen === 'arena' ? 'territory-arena-theme' : ''}`}
+      className={`territory-shell flex flex-col max-w-md mx-auto overflow-hidden relative ${screen === 'hall-play' && hallGame === 'wheel' ? 'territory-wheel-open' : ''} ${slotImmersive ? 'territory-slots-open' : ''} ${screen === 'arena' ? 'territory-arena-theme' : ''} ${OAK_HERITAGE_SCREENS.has(screen) ? 'territory-oak-heritage' : ''}`}
       // Android Chrome/WebView displays the public image URL on long-press.
       // Block native context menus only on game art and controls, never on
       // chat messages, input fields, or other selectable player content.
