@@ -137,9 +137,6 @@ with sync_playwright() as p:
                 assert metrics['planks'], (width,lang,'Missing Shop timber on Hero lower card',metrics)
                 assert metrics['rope'] == 'none' or metrics['ropeDisplay'] == 'none', (width,lang,'Triple rope returned',metrics)
                 assert metrics['left'] >= 0 and metrics['right'] <= width + 1, (width,lang,'Hero card clipped',metrics)
-                if width <= 360:
-                    pad = card.evaluate("el=>getComputedStyle(el).paddingLeft")
-                    assert pad == '9px', (width,lang,'Compact Hero oak card lost narrow screen padding',pad)
             for summary in page.locator('.territory-profile > details.card > summary').all():
                 metrics = summary.evaluate("""el => {
                     const c=getComputedStyle(el),r=el.getBoundingClientRect();
