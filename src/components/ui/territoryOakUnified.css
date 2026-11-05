@@ -284,7 +284,7 @@
 }
 @media (max-width: 360px) {
   .territory-shell.territory-oak-heritage .territory-screen .territory-profile > details.card {
-    padding: 8px 9px;
+    padding: 8px 9px !important; /* Overrides existing .card utility padding on 320-360px WebView */
   }
   .territory-shell.territory-oak-heritage .territory-profile > details.card > summary {
     padding-right: 13px;
