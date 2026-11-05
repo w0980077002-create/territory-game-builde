@@ -17,7 +17,6 @@ for (const protectedRoute of ['city', 'map', 'battle', 'arena', 'shop', 'vip', '
 assert(app.includes('OAK_HERITAGE_SCREENS.has(screen)'), 'Skin scope must follow the actual game screen');
 assert(entry.includes("import './components/ui/territoryOakUnified.css';"), 'Skin must be loaded in the real app');
 for (const path of [
-  '/assets/territory/arena-ui/old-oak-photographic.svg',
   '/assets/territory/arena-ui/rope-wrap.svg',
   '/assets/territory/arena-ui/iron-corner.svg',
   '/assets/territory/ui/shop/shop-wood-planks.webp',
@@ -25,7 +24,10 @@ for (const path of [
   assert(existsSync('public' + path), 'Real approved material missing: ' + path);
   assert(skin.includes(path), 'Real approved material not applied: ' + path);
 }
+assert(!skin.includes('old-oak-photographic.svg'), 'Mirrored oak grain must not return to standard menus');
+assert(skin.includes("--oak-heritage-grain: url('/assets/territory/ui/shop/shop-wood-planks.webp')"), 'Menus must use owner-approved Shop planks');
+assert(!/440px 220px|400px 200px|480px 240px/.test(skin), 'Do not stretch wood grain into artificial waves');
 assert(skin.includes('.territory-shell.territory-oak-heritage'),
   'Do not recolour the full game or change approved screens');
 assert(!skin.includes('.territory-nav'), 'Bottom navigation must not change');
-console.log('TERRITORY old-oak visual scope PASS: 13 standard screens, approved images, protected Arena/Shop/City/Map/PvE/VIP and bottom nav.');
+console.log('TERRITORY old-oak visual scope PASS: 13 standard screens, Shop-approved natural plank grain, no mirrored waves, protected Arena/Shop/City/Map/PvE/VIP and bottom nav.');
