@@ -40,6 +40,9 @@ BEGIN
   IF NEW.status='refunded' AND NEW.refunded_at < NEW.recorded_at THEN
     RAISE EXCEPTION 'vip_payment_refund_before_receipt';
   END IF;
+  IF NEW.status='refunded' AND NEW.refunded_at>statement_timestamp()+interval '5 minutes' THEN
+    RAISE EXCEPTION 'vip_payment_refund_in_future';
+  END IF;
   IF OLD.status='refunded' AND NEW.refunded_at IS DISTINCT FROM OLD.refunded_at
   THEN RAISE EXCEPTION 'vip_payment_refund_immutable'; END IF;
   RETURN NEW;
