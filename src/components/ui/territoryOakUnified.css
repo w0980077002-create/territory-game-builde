@@ -1,0 +1,187 @@
+/*
+ * TERRITORY — first mobile consistency pass, approved old-oak material.
+ * Reuse the already shipped Arena/Shop artwork; do not simulate oak using
+ * solid brown gradients. Exclusively cosmetic. No changes to gameplay,
+ * Arena, Shop, City, map, PvE, VIP artwork, or the bottom navigation.
+ *
+ * Deliberate opt-in from App.tsx protects the owner-approved screens.
+ * The image paths are public assets rewritten under the GitHub Pages base.
+ */
+.territory-shell.territory-oak-heritage {
+  --oak-heritage-grain: url('/assets/territory/arena-ui/old-oak-photographic.svg');
+  --oak-heritage-planks: url('/assets/territory/ui/shop/shop-wood-planks.webp');
+  --oak-heritage-rope: url('/assets/territory/arena-ui/rope-wrap.svg');
+  --oak-heritage-iron: url('/assets/territory/arena-ui/iron-corner.svg');
+  --oak-heritage-frame: url('/assets/territory/ui/shop/shop-approved-product-border-v2.webp');
+  --oak-heritage-cream: #ffe6b3;
+  --oak-heritage-gold: #d7a65e;
+  --viking-panel-bg: linear-gradient(110deg, #25110ed4, #4a2518c8 55%, #1c0d0cdb),
+    var(--oak-heritage-grain) center / 480px 240px;
+  --viking-panel-border: #c99a61;
+}
+
+/* Timber must be visible between cards, not hidden under a flat brown fill. */
+.territory-shell.territory-oak-heritage > .territory-screen {
+  background-color: #25120d;
+  background-image:
+    linear-gradient(90deg,#100908bc 0%,#1c0d0b4f 8%,#1a0b0942 92%,#0e0707b8 100%),
+    linear-gradient(180deg,#4a1e12a8,transparent 16%,transparent 84%,#170b0ad6),
+    var(--oak-heritage-grain);
+  background-size: 100% 100%,100% 100%, 440px 220px;
+  background-repeat: no-repeat,no-repeat,repeat;
+  background-position: center;
+  box-shadow: inset 5px 0 8px #110605ad, inset -5px 0 8px #110605ad;
+}
+
+/* Carved header with a real braided rope and two forged fittings. */
+.territory-shell.territory-oak-heritage > .territory-section-head {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  border-bottom: 3px ridge #c79859;
+  background-color: #2b150e;
+  background-image:
+    linear-gradient(180deg,#502b1a9c 0%,#1c0b0bbe 100%),
+    var(--oak-heritage-grain);
+  background-size: 100% 100%, 400px 200px;
+  background-position: center;
+  box-shadow: inset 0 2px #f1cf8b70, 0 4px 8px #140907bc;
+}
+.territory-shell.territory-oak-heritage > .territory-section-head::before {
+  content: '';
+  position:absolute;
+  z-index:0;
+  inset:auto 0 -9px;
+  height:17px;
+  pointer-events:none;
+  background:var(--oak-heritage-rope) left center / 100px 17px repeat-x;
+  filter:drop-shadow(0 2px 2px #110706);
+}
+.territory-shell.territory-oak-heritage > .territory-section-head::after {
+  content: '';
+  position:absolute;
+  z-index:0;
+  inset:0;
+  pointer-events:none;
+  background-image:var(--oak-heritage-iron),var(--oak-heritage-iron);
+  background-position:left top,right top;
+  background-size:30px 30px;
+  background-repeat:no-repeat;
+}
+.territory-shell.territory-oak-heritage > .territory-section-head > * {
+  position:relative;
+  z-index:1;
+}
+.territory-shell.territory-oak-heritage > .territory-section-head > button {
+  min-height:40px;
+  border-color:#cead70;
+  background:linear-gradient(170deg,#25130fd0,#5a301bd0),
+    var(--oak-heritage-grain) center / 260px 130px;
+  box-shadow:inset 0 1px #eed4a65e,0 2px 4px #130809;
+}
+.territory-shell.territory-oak-heritage > .territory-section-head .viking-title {
+  color:#ffe8b8;
+  text-shadow:1px 2px #21100b,0 0 6px #f4c26d3d;
+}
+
+/* Existing game panels and cards: wood fibre, carved outline, warm riveted metal.
+ * Do not alter rarity colours or click handlers. */
+.territory-shell.territory-oak-heritage .territory-screen :is(.card,.viking-panel,.viking-card) {
+  border:2px solid #bd9257;
+  background-color:#361a12;
+  background-image:
+    linear-gradient(115deg,#2b120dba 0%,#3d1b129c 48%,#1b0c09c7 100%),
+    var(--oak-heritage-grain);
+  background-size:100% 100%,440px 220px;
+  background-position:center;
+  box-shadow:inset 0 2px #f5d09661,inset 0 -3px #1b0b09a6,
+    0 3px 8px #11070592,0 0 0 1px #2d130c;
+  color:var(--oak-heritage-cream);
+}
+
+/* Apply real corner hardware to major blocks only, never every inventory item. */
+.territory-shell.territory-oak-heritage .territory-screen :is(
+ .viking-screen > .card,
+ .viking-screen > section.card,
+ .territory-profile > .card
+) {
+  position:relative;
+  isolation:isolate;
+}
+.territory-shell.territory-oak-heritage .territory-screen :is(
+ .viking-screen > .card,
+ .viking-screen > section.card,
+ .territory-profile > .card
+)::after {
+  content:'';
+  position:absolute;
+  z-index:0;
+  inset:0;
+  pointer-events:none;
+  background-image:var(--oak-heritage-iron),var(--oak-heritage-iron);
+  background-size:25px 25px;
+  background-repeat:no-repeat;
+  background-position:left top,right top;
+  opacity:.91;
+}
+
+/* A rope-bound title rail where there is already a full-width tab bar.
+ * Leave its content, active-state colours, spacing and focus alone. */
+.territory-shell.territory-oak-heritage .territory-screen :is(
+ .viking-screen-tabs,
+ .territory-mail__tabs
+) {
+  position:relative;
+  border-color:#bb9053;
+  background-color:#33190e;
+  background-image:linear-gradient(130deg,#271109c0,#4c2816a9),
+    var(--oak-heritage-grain);
+  background-size:100% 100%,360px 180px;
+  box-shadow:inset 0 1px #f8d6a47c,0 2px 6px #140706b4;
+}
+.territory-shell.territory-oak-heritage .territory-screen :is(
+ .viking-screen-tabs,
+ .territory-mail__tabs
+)::after {
+  content:'';
+  position:absolute;
+  inset:auto 4px -8px;
+  height:14px;
+  background:var(--oak-heritage-rope) center / 90px 14px repeat-x;
+  pointer-events:none;
+}
+.territory-shell.territory-oak-heritage .territory-screen :is(
+ .viking-screen-tabs > button:not([aria-selected="true"]),
+ .territory-mail__tabs > button:not([aria-selected="true"])
+) {
+  background-image:linear-gradient(145deg,#301510cd,#4d291db0),var(--oak-heritage-planks);
+  background-size:100% 100%,cover;
+  border-color:#93683c;
+}
+
+/* Existing gold title plaques remain actual approved artwork, not a brown box. */
+.territory-shell.territory-oak-heritage .territory-screen :is(
+ .viking-screen .card > h2,
+ .viking-screen .card > h3,
+ .viking-screen .card > header > h2,
+ .viking-screen .card > header > h3
+) {
+  color:#ffe4a3;
+  text-shadow:1px 2px #241009,-1px -1px #29120a;
+}
+
+/* Preserve readable forms, danger/success states and 44px mobile controls.
+ * No text selection, panel sizes, scroll heights or gameplay styles changed. */
+@media(max-width:349px) {
+  .territory-shell.territory-oak-heritage > .territory-section-head::after {
+    background-size:23px 23px;
+  }
+  .territory-shell.territory-oak-heritage > .territory-section-head {
+    gap:4px;
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+ .territory-shell.territory-oak-heritage > .territory-section-head::before {
+   filter:none;
+ }
+}
