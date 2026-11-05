@@ -2,6 +2,7 @@ import { Crown, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { fetchVipDailyStatus, claimVipDaily, recoverVipDaily, type VipDailyStatus } from '@/game/vipDaily';
 import { fetchVipWeeklyStatus, claimVipWeekly, recoverVipWeekly, type VipWeeklyStatus } from '@/game/vipWeekly';
+import { fetchVipChestHistory, type VipChestClaim } from '@/game/vipHistory';
 import { useStore } from '@/game/store';
 import { useAccount } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
@@ -28,6 +29,7 @@ export function VipStatusPanel({ userId }: { userId:string }) {
   const [weeklyBusy,setWeeklyBusy] = useState(false);
   const [weeklyError,setWeeklyError] = useState('');
   const [weeklyReward,setWeeklyReward] = useState('');
+  const [history,setHistory] = useState<VipChestClaim[]|null>(null);
   const { language } = useLanguage();
   const en = language === 'en';
   const permanentLevel = Math.max(0, Math.min(10, account.permanentVip));
@@ -55,6 +57,12 @@ export function VipStatusPanel({ userId }: { userId:string }) {
     }).catch(() => { if (active) setWeeklyError('unavailable'); });
     return () => { active=false; };
   },[userId]);
+  useEffect(() => {
+    if ((!LIVE_DAILY_CHEST && !LIVE_WEEKLY_CHEST) || !userId) return;
+    let active=true;
+    void fetchVipChestHistory().then(data=>{if(active)setHistory(data);}).catch(()=>{});
+    return ()=>{active=false;};
+  },[userId]);
   const takeWeekly = async () => {
     if (!LIVE_WEEKLY_CHEST || weeklyBusy || weekly?.claimedThisWeek || (weekly?.vip ?? 0)<2) return;
     setWeeklyBusy(true); setWeeklyError('');
@@ -65,6 +73,7 @@ export function VipStatusPanel({ userId }: { userId:string }) {
         ? `+ ${reward.gold} gold, ${reward.gems} gems, ${reward.stones} stones, ${reward.materials} forge materials`
         : `+ ${reward.gold} золота, ${reward.gems} самоцветов, ${reward.stones} камней, ${reward.materials} материалов`);
       setWeekly(prev=>prev?{...prev,claimedThisWeek:true}:prev);
+      void fetchVipChestHistory().then(setHistory).catch(()=>{});
     }catch {
       setWeeklyError('retry');
     }finally {setWeeklyBusy(false);}
@@ -79,6 +88,7 @@ export function VipStatusPanel({ userId }: { userId:string }) {
         ? `+ ${reward.gold} gold, ${reward.gems} gems, ${reward.stones} stones`
         : `+ ${reward.gold} золота, ${reward.gems} самоцветов, ${reward.stones} камней`);
       setDaily(prev=>prev?{...prev,claimedToday:true}:prev);
+      void fetchVipChestHistory().then(setHistory).catch(()=>{});
     }catch {
       setDailyError('retry');
     }finally {setDailyBusy(false);}
@@ -140,6 +150,10 @@ export function VipStatusPanel({ userId }: { userId:string }) {
               <img src={vipDailyChestSrc(daily.vip)} alt="" loading="lazy" width={46} height={40}
                 className="h-10 w-12 shrink-0 object-contain" />{en?'Your daily VIP chest':'Твой ежедневный VIP-сундук'}
             </div>
+            <p className="mb-1.5 text-[10px] text-amber-100/75">
+              {en?'Next chest: ':'Следующий сундук: '}
+              <time dateTime={daily.nextResetAt}>{new Date(daily.nextResetAt).toLocaleString(en?'en-GB':'ru-RU',{timeZone:'UTC',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} UTC</time>
+            </p>
             <button type="button" onClick={() => void takeDaily()} disabled={daily.claimedToday || dailyBusy}
               className="min-h-10 w-full rounded-lg border border-amber-200/70 bg-gradient-to-b from-[#ffe2a1] to-[#b9792f] px-2 text-xs font-black text-[#281609] disabled:opacity-55">
               {dailyBusy ? (en?'Confirming…':'Подтверждаем…') : daily.claimedToday
@@ -159,6 +173,10 @@ export function VipStatusPanel({ userId }: { userId:string }) {
             <p className="mb-1.5 text-[10px] text-amber-100/80">
               {en ? 'Resets Monday 00:00 UTC' : 'Обновление: понедельник 00:00 UTC'}
             </p>
+            <p className="mb-1.5 text-[10px] text-amber-100/75">
+              {en?'Next chest: ':'Следующий сундук: '}
+              <time dateTime={weekly.nextResetAt}>{new Date(weekly.nextResetAt).toLocaleString(en?'en-GB':'ru-RU',{timeZone:'UTC',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} UTC</time>
+            </p>
             <button type="button" onClick={() => void takeWeekly()} disabled={weekly.claimedThisWeek || weeklyBusy}
               className="min-h-10 w-full rounded-lg border border-amber-200/70 bg-gradient-to-b from-[#ffe2a1] to-[#b9792f] px-2 text-xs font-black text-[#281609] disabled:opacity-55">
               {weeklyBusy ? (en ? 'Confirming…' : 'Подтверждаем…') : weekly.claimedThisWeek
@@ -170,6 +188,22 @@ export function VipStatusPanel({ userId }: { userId:string }) {
               {en ? 'Check existing gift before retrying.' : 'Перед повтором проверь получение подарка.'}
             </p>}
           </div>
+        )}
+        {(LIVE_DAILY_CHEST || LIVE_WEEKLY_CHEST) && history && history.length>0 && (
+          <details className="my-2 rounded-lg border border-amber-300/20 bg-black/25 p-2">
+            <summary className="cursor-pointer text-[11px] font-bold text-amber-100">
+              {en?'Received VIP gifts':'История VIP-подарков'} · {history.length}
+            </summary>
+            <div className="mt-1 max-h-36 space-y-1 overflow-y-auto">
+              {history.map((entry,i)=><div key={entry.source+entry.period+i}
+                className="flex justify-between gap-2 border-t border-amber-200/10 py-1 text-[10px] text-amber-100/85">
+                <span>{entry.source==='weekly'?(en?'Weekly':'Недельный'):(en?'Daily':'Дневной')}
+                  {' · '}{entry.period}{' · VIP '}{entry.vip}</span>
+                <span className="text-right">+{entry.gold} {en?'gold':'зол.'}, +{entry.gems} {en?'gems':'алм.'},
+                  +{entry.stones} {en?'stones':'кам.'}{entry.materials>0?', +'+entry.materials+(en?' mats':' мат.'):''}</span>
+              </div>)}
+            </div>
+          </details>
         )}
         <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label={en ? 'Explore VIP tiers' : 'Уровни VIP'} data-testid="vip-tier-selector">
           {VIP_TIERS.slice(1).map(tier => {
