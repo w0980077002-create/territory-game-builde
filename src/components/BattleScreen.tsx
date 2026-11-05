@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, ShoppingBag, Shirt, ScrollText, ChevronRight } from 'lucide-react';
 import { useStore } from '@/game/store';
-import { useGame, useArena, useAccount } from '@/game/actions';
-import { beltContext, refillBeltFromInventory } from '@/game/belt';
+import { useGame } from '@/game/actions';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { captureGameEvent } from '@/game/analytics';
 import { EQUIPMENT_SLOTS, generateChapter, generateTrial, getComputedStats, PVE_STONE_COST } from '@/game/engine';
@@ -52,12 +51,6 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       try { return !!localStorage.getItem(prefix + userId); }
       catch { return true; } // Unreadable storage must not authorize a new spend.
     });
-  const refillAfterConfirmedBattle = () => {
-    if (useAccount.get().permanentVip < 3 || !useGame.get().autoRefillBelt
-      || saveBlocked.has(userId) || pveVictorySaveBlocked(userId)
-      || pendingPveVictoryJournal(userId)) return;
-    useGame.set(current => refillBeltFromInventory(current, beltContext(current, useArena.get().wins)));
-  };
   const [error, setError] = useState<string | null>(null);
   const [retryingVictorySave, setRetryingVictorySave] = useState(false);
   // A late save acknowledgement must immediately re-enable Campaign/Trials.
@@ -140,12 +133,12 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         enemy={fight.enemy}
         kind={fight.kind}
         onExit={() => {
-          refillAfterConfirmedBattle();
+          // Classic PvE now journals the refill inside the terminal snapshot.
           fightStartLocked.current = false;
           setFight(null);
           onActiveChange?.(false);
         }}
-        onNext={() => { refillAfterConfirmedBattle(); fightStartLocked.current = false; return start(fight.kind); }}
+        onNext={() => { fightStartLocked.current = false; return start(fight.kind); }}
         onQuests={() => { fightStartLocked.current = false; onActiveChange?.(false); onQuests(); }}
         onEquipment={onEquipment}
         onForge={onForge}
