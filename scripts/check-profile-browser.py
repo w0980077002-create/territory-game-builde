@@ -68,6 +68,22 @@ with sync_playwright() as p:
             companion.locator('[data-testid="hero-open-companions"]').click()
             assert page.evaluate('window.__route') == 'companions'
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            # Approved VIP artwork is reachable from the real hero page.
+            # Every badge/chest/cosmetic icon must be an independent loaded SVG.
+            page.locator('[data-testid="vip-open-page"]').click()
+            vip = page.locator('[data-testid="vip-mobile-showcase"]')
+            vip.wait_for(timeout=5000)
+            assert page.locator('[data-testid="living-hero-showcase"]').count() == 0, 'VIP screen did not replace hero details'
+            badges = vip.get_by_role('group', name='VIP levels' if lang == 'en' else 'Уровни VIP').locator('button')
+            assert badges.count() == 10, 'VIP 1–10 artwork missing'
+            assert vip.locator('img').evaluate_all('images => images.every(el => el.complete && el.naturalWidth > 0)'), (width, lang, 'VIP art missing')
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width,lang,'VIP page causes horizontal scrolling')
+            assert vip.locator('[data-testid="vip-preview-not-live"]').count() == 1, 'Unreleased VIP purchases/claims must not be advertised as live'
+            if width == 360 and lang == 'ru':
+                page.screenshot(path='/tmp/territory-vip-preview-360.png')
+            page.get_by_role('button', name='Back to hero' if lang == 'en' else 'Назад к герою').click()
+            hero.wait_for(timeout=5000)
+            assert page.locator('[data-testid="vip-mobile-showcase"]').count() == 0
             page.locator('[data-testid="profile-appearance"] summary').click()
             assert page.locator('[data-testid="profile-appearance"] button').count() >= 4
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
