@@ -58,7 +58,8 @@ const applyBody=skeletalSource.split('const apply = () => {')[1]?.split('const s
 assert.match(applyBody,/style\.transform = ''/, 'Reapply must clear stale legacy inline transforms');
 assert.match(skeletalSource,/typeof joint\.animate !== 'function'/, 'Legacy SVG animation fallback must remain');
 assert.match(skeletalSource,/try \{\s*return \[joint\.animate\(selected,/, 'SVG animate failures must be caught per joint');
-assert.match(skeletalSource,/catch \{[\s\S]*?joint\.style\.transform = String\(visibleFrame\.transform/, 'Thrown SVG animate must fall back to a visible pose');
+assert.match(skeletalSource,/catch \\{[\\s\\S]*?showLegacyPose\\(\\)/, 'Thrown SVG animate must fall back to a visible pose');
+assert.equal((skeletalSource.match(/showLegacyPose\\(\\);/g) ?? []).length, 2, 'Both legacy paths must use the same contact pose');
 assert.match(skeletalSource,/reduced\?\.matches \|\| motion === 'death' \|\| motion === 'victory'/, 'Legacy SVG fallback must respect reduced motion');
 assert.match(skeletalSource,/frames\.find\(\(frame, index\) => index > 0 && typeof frame\.offset === 'number' && frame\.offset >= 350 \/ ACTION_MS\)/, 'Legacy nonterminal reactions must show contact instead of the idle recovery frame');
 assert.match(skeletalSource.split('return () => {').at(-1),/style\.transform = ''/, 'Effect cleanup must restore base rig poses');
