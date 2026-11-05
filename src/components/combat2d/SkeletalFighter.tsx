@@ -59,7 +59,10 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
         if (typeof joint.animate !== 'function') {
           // Nonterminal actions recover to idle at the last frame. Hold the
           // contact pose instead, otherwise legacy engines show no reaction.
-          const visibleFrame = motion === 'death' || motion === 'victory'
+          // Respect reduced motion even on engines without SVG Web Animations.
+          // Showing a contact pose for the entire action would still imply
+          // movement when the player has explicitly disabled it.
+          const visibleFrame = reduced?.matches || motion === 'death' || motion === 'victory'
             ? frames[frames.length - 1]
             : frames.find((frame, index) => index > 0 && typeof frame.offset === 'number' && frame.offset >= 350 / ACTION_MS) ?? frames[frames.length - 1];
           joint.style.transform = String(visibleFrame.transform ?? '');
