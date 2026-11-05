@@ -148,6 +148,15 @@ with sync_playwright() as p:
             assert page.locator('[data-testid="vip-open-page"]').evaluate(
                 "el=>getComputedStyle(el).backgroundImage.includes('shop-wood-planks.webp')"), (width,lang,'VIP entry still flat')
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            # Exercise the real 500px-tall scrolling viewport at the bottom,
+            # rather than relying only on a full-page stitched screenshot.
+            last_card = cards.last
+            last_card.scroll_into_view_if_needed()
+            lower = last_card.bounding_box()
+            assert lower and lower['y'] < 500 and lower['y'] + lower['height'] > 0, (width,lang,'Bottom Hero card unreachable',lower)
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width,lang,'Bottom Hero viewport overflows')
+            if width == 360:
+                page.screenshot(path=f'/tmp/territory-profile-bottom-360-{lang}.png', animations='disabled')
             if width == 360:
                 # Capture both actual RU/EN labels, not just the Russian oak
                 # screen. These are fixture images, NOT Telegram device proof.
