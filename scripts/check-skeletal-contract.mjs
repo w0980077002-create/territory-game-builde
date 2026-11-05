@@ -66,6 +66,8 @@ assert.match(applyBody,/animations\.forEach\(a => a\.cancel\(\)\);\s*animations 
 assert.match(skeletalSource,/typeof joint\.animate !== 'function'/, 'Legacy SVG animation fallback must remain');
 assert.match(skeletalSource,/try \{\s*if \(typeof window\.matchMedia === 'function'\) reduced = window\.matchMedia\(/, 'Throwing matchMedia must not prevent contact poses');
 assert.match(skeletalSource,/catch \{ reduced = null; \}/, 'Legacy matchMedia failures must fall back safely');
+assert.match(skeletalSource,/try \{[\s\S]*?reduced\.addEventListener\('change', apply\);[\s\S]*?catch \{ listenerKind = null; \}/, 'Broken media query subscriptions must not interrupt contact poses');
+assert.match(skeletalSource,/if \(listenerKind === 'modern'\)[\s\S]*?else if \(listenerKind === 'legacy'\)[\s\S]*?catch \{/, 'Legacy listener teardown must not interrupt rig cleanup');
 assert.match(skeletalSource,/try \{\s*return \[joint\.animate\(selected,/, 'SVG animate failures must be caught per joint');
 assert.match(skeletalSource,/catch \{[\s\S]*?showLegacyPose\(\)/, 'Thrown SVG animate must fall back to a visible pose');
 assert.equal((skeletalSource.match(/showLegacyPose\(\);/g) ?? []).length, 2, 'Both legacy paths must use the same contact pose');
