@@ -84,6 +84,13 @@ BEGIN
   IF SQLERRM<>'vip_payment_snapshot_immutable' THEN RAISE; END IF;
  END;
  BEGIN
+  DELETE FROM territory_private.vip_payment_ledger_v1
+   WHERE provider_transaction_id='verified-stars-00000001';
+  RAISE EXCEPTION 'Verified payment evidence deleted';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'vip_payment_history_immutable' THEN RAISE; END IF;
+ END;
+ BEGIN
   UPDATE territory_private.vip_payment_ledger_v1
    SET status='pending' WHERE provider_transaction_id='verified-stars-00000001';
   RAISE EXCEPTION 'Settled payment regressed';
