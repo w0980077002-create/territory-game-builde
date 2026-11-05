@@ -31,21 +31,25 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
   const en=language==='en';
   const rewards=useRef<HTMLDivElement>(null);
   const [chosenTier,setChosenTier]=useState<number|null>(null);
+  // Visual-only sandbox. Never writes rewards, VIP entitlements or player saves.
+  const [chestDemo,setChestDemo]=useState<'daily'|'weekly'|null>(null);
+  const [chestRevealed,setChestRevealed]=useState(false);
   const [cosmeticsCategory,setCosmeticsCategory]=useState<VipCosmeticCategory>('frame');
   const [cosmeticRevision,setCosmeticRevision]=useState(0);
   const remaining=Math.max(0,(account.vipRemaining??0)-(performance.now()-(account.vipCheckedAt??0)));
   const level=Math.min(10,Math.max(0,account.permanentVip??0,remaining>0?account.vip:0));
   const threshold=vipNextThreshold(level);
   const preview=vipTier(chosenTier??Math.max(1,level));
+  const previewLevel=preview.level;
   const toRewards=()=>rewards.current?.scrollIntoView({behavior:'smooth',block:'start'});
   const selectedCosmetic=activeVipCosmetic(userId,cosmeticsCategory,level);
   const cosmetics=VIP_COSMETICS.filter(item=>item.category===cosmeticsCategory);
   const featureCards=[
-    {id:'gold',asset:'assets/territory/vip/perks/gold.svg',label:en?'Gold bonus':'Бонус золота',value:`+${level*2}%`,action:null},
-    {id:'xp',asset:'assets/territory/vip/perks/experience.svg',label:en?'Experience bonus':'Бонус опыта',value:`+${level*2}%`,action:null},
-    {id:'belt',asset:'assets/territory/vip/perks/belt.svg',label:en?'Smart belt':'Умный пояс',value:level>=3?'VIP 3+':'VIP 3',action:onBelt},
-    {id:'gear',asset:'assets/territory/vip/perks/equipment.svg',label:en?'Equipment sets':'Пресеты вещей',value:level>=4?'VIP 4+':'VIP 4',action:onEquipment},
-    {id:'runes',asset:'assets/territory/vip/perks/runes.svg',label:en?'Rune sets':'Пресеты рун',value:level>=3?'VIP 3+':'VIP 3',action:onRunes},
+    {id:'gold',asset:'assets/territory/vip/perks/gold.svg',label:en?'Gold bonus':'Бонус золота',value:`+${previewLevel*2}%`,action:null},
+    {id:'xp',asset:'assets/territory/vip/perks/experience.svg',label:en?'Experience bonus':'Бонус опыта',value:`+${previewLevel*2}%`,action:null},
+    {id:'belt',asset:'assets/territory/vip/perks/belt.svg',label:en?'Smart belt':'Умный пояс',value:previewLevel>=3?'VIP 3+':'VIP 3',action:onBelt},
+    {id:'gear',asset:'assets/territory/vip/perks/equipment.svg',label:en?'Equipment sets':'Пресеты вещей',value:previewLevel>=4?'VIP 4+':'VIP 4',action:onEquipment},
+    {id:'runes',asset:'assets/territory/vip/perks/runes.svg',label:en?'Rune sets':'Пресеты рун',value:previewLevel>=3?'VIP 3+':'VIP 3',action:onRunes},
     {id:'awards',asset:'assets/territory/vip/perks/rewards.svg',label:en?'VIP rewards':'VIP награды',value:en?'Chests':'Сундуки',action:toRewards},
   ];
   return <section className="territory-vip-mobile animate-fade-in space-y-2 pb-5" data-testid="vip-mobile-showcase" aria-label={en?'VIP status':'VIP статус'}>
@@ -67,13 +71,16 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
         <img src={vipArtUrl('skins/companion-vip7.svg')} alt="" draggable={false}
           className="absolute bottom-0 right-[-4%] h-[110px] w-[48%] object-contain object-bottom min-[390px]:h-[132px]"/>
         <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2 flex-col items-center">
-          <img src={badge(level)} alt="" draggable={false} className="h-[100px] w-[100px] drop-shadow-[0_4px_8px_#000] min-[390px]:h-[116px] min-[390px]:w-[116px]"/>
+          <img src={badge(previewLevel)} alt="" draggable={false} className="h-[100px] w-[100px] drop-shadow-[0_4px_8px_#000] min-[390px]:h-[116px] min-[390px]:w-[116px]"/>
           <span className="relative -mt-3 rounded-full border border-[#cc8d42] bg-[#2b170f]/90 px-3 py-0.5 text-[11px] font-black text-[#ffdf96]">
-            VIP {level}
+            VIP {previewLevel} {chosenTier!==null&&(en?'· preview':'· просмотр')}
           </span>
         </div>
       </div>
       <div className="space-y-1 border-t-2 border-[#a96b35] bg-[#301c15] px-3 py-2">
+        <p className="text-center text-xs font-bold text-[#ffdf96]" data-testid="vip-owner-test-info">
+          {en? `Your VIP: ${level} · Viewing VIP ${previewLevel}` : `Ваш VIP: ${level} · Смотрите VIP ${previewLevel}`}
+        </p>
         <div className="flex justify-between gap-2 text-[11px] font-semibold text-[#f9dcaa]">
           <span>{en?'Next VIP tier':'Следующая ступень VIP'}</span>
           <span>{threshold===null?'VIP 10':`VIP ${Math.min(10,level+1)}`}</span>
@@ -88,10 +95,10 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
     <div className={`rounded-xl p-1.5 ${texture}`}>
       <div className="flex gap-1 overflow-x-auto pb-1" role="group" aria-label={en?'VIP levels':'Уровни VIP'}>
         {VIP_TIERS.slice(1).map(t=><button type="button" key={t.level}
-          onClick={()=>setChosenTier(t.level)} aria-pressed={preview.level===t.level}
+          onClick={()=>{setChosenTier(t.level);setChestDemo(null);setChestRevealed(false);}} aria-pressed={preview.level===t.level}
           className={`flex min-w-[55px] flex-1 shrink-0 flex-col items-center rounded-lg border px-0.5 py-1 ${preview.level===t.level?'border-[#ffdd81] bg-[#875122]':'border-[#9b6c42]/40 bg-black/20'}`}>
           <img src={badge(t.level)} alt="" loading="lazy" draggable={false}
-            className={`h-10 w-10 object-contain ${level<t.level?'grayscale opacity-65':''}`}/>
+            className="h-10 w-10 object-contain"/>
           <span className="text-[10px] font-black text-amber-100">{t.level}</span>
         </button>)}
       </div>
@@ -101,17 +108,55 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
     </div>
 
     <div className="grid grid-cols-2 gap-2">
-      {[{id:'daily',image:dailyChest(level),min:1,title:en?'Daily chest':'Ежедневный сундук'},
-        {id:'weekly',image:weeklyChest(level),min:2,title:en?'Weekly chest':'Еженедельный сундук'}].map(chest=>
-        <button key={chest.id} type="button" onClick={toRewards}
+      {[{id:'daily' as const,image:dailyChest(previewLevel),title:en?'Daily chest':'Ежедневный сундук'},
+        {id:'weekly' as const,image:weeklyChest(previewLevel),title:en?'Weekly chest':'Еженедельный сундук'}].map(chest=>
+        <button key={chest.id} type="button" onClick={()=>{setChestDemo(chest.id);setChestRevealed(false);}}
           className={`relative flex min-h-[138px] flex-col items-center justify-between rounded-xl px-1.5 py-2 text-center ${texture}`}>
           <img src={chest.image} alt="" draggable={false} className="h-[70px] w-full object-contain"/>
           <strong className="text-[11px] leading-tight text-amber-100">{chest.title}</strong>
           <span className="mt-1 w-full rounded-lg border border-amber-200/50 bg-gradient-to-b from-[#ffdc88] to-[#a96d27] px-1 py-1.5 text-[11px] font-black text-[#2a150c]">
-            {level<chest.min?<><LockKeyhole className="mr-1 inline h-3 w-3"/>VIP {chest.min}</>:(en?'Details':'Подробнее')}
+            {en?'Try chest':'Проверить сундук'}
           </span>
         </button>)}
     </div>
+
+    {chestDemo && <div data-testid="vip-chest-demo" className={`animate-fade-in rounded-xl p-3 text-center ${texture}`}>
+      <div className="flex items-start justify-between gap-2">
+        <span className="flex-1 text-center text-sm font-black text-[#ffe5a3]">
+          {en ? (chestDemo==='daily'?'Daily chest demo':'Weekly chest demo') : (chestDemo==='daily'?'Проба ежедневного сундука':'Проба недельного сундука')} · VIP {previewLevel}
+        </span>
+        <button type="button" aria-label={en?'Close chest demo':'Закрыть пробу сундука'}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-amber-400/40 bg-[#21150e] text-[#ffe5a3]"
+          onClick={()=>setChestDemo(null)}>×</button>
+      </div>
+      <div className="mx-auto my-2 flex h-32 w-40 items-center justify-center rounded-2xl bg-[radial-gradient(ellipse,#a36c39_0%,#3a2017_63%,transparent_75%)]">
+        <img draggable={false} className={`h-28 w-32 object-contain drop-shadow-[0_6px_9px_#120902] ${chestRevealed?'animate-bounce':''}`}
+          src={chestDemo==='daily'?dailyChest(previewLevel):weeklyChest(previewLevel)} alt=""/>
+      </div>
+      {chestRevealed ? <div data-testid="vip-chest-demo-reward" className="animate-fade-in space-y-2">
+        <p className="text-sm font-black text-[#ffdf85]">{en?'Chest opened!':'Сундук открыт!'}</p>
+        <div className="grid grid-cols-3 gap-1.5">
+          {[
+            {asset:'perks/gold.svg',ru:'Золото',en:'Gold'},
+            {asset:'perks/experience.svg',ru:'Опыт',en:'XP'},
+            {asset:'perks/rewards.svg',ru:'Предметы',en:'Items'},
+          ].map(item=><div key={item.asset} className="rounded-lg border border-amber-500/30 bg-[#27170f] p-1.5">
+            <img src={base+item.asset} alt="" className="mx-auto h-10 w-10 object-contain"/>
+            <span className="text-[10px] font-bold text-amber-100">{en?item.en:item.ru}</span>
+          </div>)}
+        </div>
+        <button type="button" onClick={()=>setChestRevealed(false)} className="min-h-10 rounded-lg border border-[#f4d28b] bg-[#885122] px-5 text-xs font-black text-[#fff0c2]">
+          {en?'Try again':'Открыть ещё раз'}
+        </button>
+      </div> : <button data-testid="vip-chest-demo-open" type="button" onClick={()=>setChestRevealed(true)}
+        className="min-h-11 w-full rounded-lg border-2 border-[#fff0b5] bg-gradient-to-b from-[#ffe49d] to-[#bd7829] text-sm font-black text-[#30180d]">
+        {en?'Open demo chest':'Открыть сундук'}
+      </button>}
+      <p className="mt-2 text-[10px] text-amber-100/70">
+        {en?'Visual test only. No items, VIP or payments are granted. Contents shown are examples, not final loot.'
+          :'Только визуальный тест. Предметы и VIP не начисляются, платежей нет. Показаны примеры, а не утверждённые награды.'}
+      </p>
+    </div>}
 
     <div className={`rounded-xl p-2 ${texture}`}>
       <div className="mb-2 flex items-center justify-center gap-2 text-center text-base font-black text-[#ffe0a0]"><Crown size={17}/>{en?'VIP benefits':'Преимущества VIP'}</div>
