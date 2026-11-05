@@ -8,7 +8,7 @@ import {
 } from '@/game/arenaApi';
 import { useArenaRoom, useCountdown } from '@/game/useArenaRoom';
 import { useStrikeQueue } from '@/game/useStrikeQueue';
-import { beltAction } from '@/game/belt';
+import { beltAction, beltContext } from '@/game/belt';
 import { hapticImpact, hapticNotify } from '@/game/telegram';
 import { FighterList } from './FighterList';
 import { BattleScene } from './BattleScene';
