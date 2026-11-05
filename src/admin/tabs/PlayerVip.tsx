@@ -38,7 +38,7 @@ export function PlayerVip({playerId,playerName,confirm}:{playerId:string;playerN
     const tier=Number(level);
     const key=campaign.trim();
     const msg=reason.trim();
-    const expiry=kind==='temporary'?new Date(expires).toISOString():null;
+    const expiry=kind==='temporary'&&Number.isFinite(Date.parse(expires))?new Date(expires).toISOString():null;
     if(!Number.isInteger(tier)||tier<1||tier>10||!/^[a-zA-Z0-9:_.-]{3,120}$/.test(key)
       ||msg.length<4||msg.length>500||(kind==='temporary'&&!Number.isFinite(Date.parse(expires)))) {
       setError('Укажи уровень 1–10, уникальный ключ, причину и срок временного VIP.');return;
