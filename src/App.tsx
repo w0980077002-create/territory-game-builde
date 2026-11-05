@@ -50,6 +50,7 @@ const InventoryScreen = lazy(() => import('@/components/InventoryScreen').then(m
 const ShopScreen = lazy(() => import('@/components/ShopScreen').then(m => ({ default: m.ShopScreen })));
 const QuestsScreen = lazy(() => import('@/components/QuestsScreen').then(m => ({ default: m.QuestsScreen })));
 const ProfileScreen = lazy(() => import('@/components/ProfileScreen').then(m => ({ default: m.ProfileScreen })));
+const VipMobileShowcase = lazy(() => import('@/components/VipMobileShowcase').then(m => ({ default: m.VipMobileShowcase })));
 const RuneScreen = lazy(() => import('@/components/builds/ServerRuneBook').then(m => ({ default: m.ServerRuneBook })));
 const ArenaScreen = lazy(() => import('@/components/ArenaScreen').then(m => ({ default: m.ArenaScreen })));
 const ForgeScreen = lazy(() => import('@/components/ForgeScreen').then(m => ({ default: m.ForgeScreen })));
@@ -70,7 +71,7 @@ const EventsScreen = lazy(() => import('@/components/EventsScreen').then(m => ({
 const HalloweenBossScreen = lazy(() => import('@/components/HalloweenBossScreen').then(m => ({ default: m.HalloweenBossScreen })));
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
-type SubScreen = 'runes' | 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
+type SubScreen = 'vip' | 'runes' | 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
 type Screen = NavId | SubScreen;
 
 /** Warm only the navigation chunks people are most likely to open.
@@ -83,6 +84,7 @@ const sectionPreloaders: Partial<Record<Screen, () => Promise<unknown>>> = {
   map: () => Promise.resolve(),
   games: () => import('@/components/GamesScreen'),
   hero: () => import('@/components/ProfileScreen'),
+  vip: () => import('@/components/VipMobileShowcase'),
   runes: () => import('@/components/builds/ServerRuneBook'),
   arena: () => import('@/components/ArenaScreen'),
   clan: () => import('@/components/ClanScreen'),
@@ -112,6 +114,7 @@ const NAV: { id: NavId; label: string; icon: string; soon?: boolean }[] = [
 ];
 
 const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> = {
+  vip: { title: 'VIP', icon: '/nav-hero-crown.webp' },
   runes: { title: 'Руны', icon: '/assets/territory/map/icons/rune-stones-v1.webp' },
   shop: { title: 'Лавка', icon: '/ic-shop.webp' },
   forge: { title: 'Кузница', icon: '/ic-forge.webp' },
@@ -460,7 +463,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             : 'Прогресс не сохранён! Не закрывайте игру, проверьте сеть.'}
         </div>
       )}
-      {sub && screen !== 'arena' && (
+      {sub && screen !== 'arena' && screen !== 'vip' && (
         <header className="territory-section-head shrink-0 z-30 h-12 px-2 flex items-center gap-2 border-b border-amber-500/20 bg-[#0c1117]/95">
           <button disabled={battleLocked} onClick={() => setScreen(screen === 'runes' ? 'map' : 'city')} className="h-9 pl-1.5 pr-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 text-sm font-semibold text-amber-100 bg-white/5 border border-white/10 active:scale-95 transition-transform">
             <ChevronLeft className="w-4 h-4" /> {screen === 'runes' ? (language === 'en' ? 'To map' : 'К карте') : translate('cityBack')}
@@ -474,7 +477,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         </header>
       )}
 
-      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : screen === 'map' ? 'overflow-hidden !px-0 !py-0' : screen === 'runes' ? 'overflow-y-auto overflow-x-hidden overscroll-contain !px-1 !py-1' : slotImmersive ? 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide !px-0 !py-0' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
+      <main className={`territory-screen flex-1 min-h-0 min-w-0 ${screen === 'city' ? 'territory-city-screen overflow-y-auto overflow-x-hidden' : screen === 'inventory' ? 'overflow-hidden px-3 pt-3 pb-1' : screen === 'map' || screen === 'vip' ? 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide !px-0 !py-0' : screen === 'runes' ? 'overflow-y-auto overflow-x-hidden overscroll-contain !px-1 !py-1' : slotImmersive ? 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide !px-0 !py-0' : 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-hide px-3 py-3'}`}>
         <SectionErrorBoundary key={screen} language={language} onBack={() => setScreen('city')}>
         <Suspense fallback={
           <div role="status" className="territory-section-loading" aria-live="polite">
@@ -541,6 +544,10 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           onForge={(equipmentId) => openForge(equipmentId)}
           onQuests={() => setScreen('quests')}
            onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }} />}
+        {screen === 'vip' && <VipMobileShowcase userId={user.id} onBack={() => setScreen('city')}
+          onEquipment={() => { setInventoryTab('equipment'); setScreen('inventory'); }}
+          onRunes={() => setScreen('runes')}
+          onBelt={() => { setInventoryTab('items'); setScreen('inventory'); }}/>} 
         {screen === 'runes' && <RuneScreen language={language}/>}
         {screen === 'map' && <MapScreen
           attentionPlaces={[
