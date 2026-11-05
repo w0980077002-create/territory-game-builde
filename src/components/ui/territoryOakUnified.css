@@ -283,7 +283,7 @@
     0 4px 8px #0e0606a9;
 }
 @media (max-width: 360px) {
-  .territory-shell.territory-oak-heritage .territory-profile > details.card {
+  .territory-shell.territory-oak-heritage .territory-screen .territory-profile > details.card {
     padding: 8px 9px;
   }
   .territory-shell.territory-oak-heritage .territory-profile > details.card > summary {
