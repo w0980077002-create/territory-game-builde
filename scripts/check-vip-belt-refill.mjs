@@ -91,6 +91,22 @@ const unexpired = belt.refillBeltFromInventory(dated,ctx());
 assert.equal(unexpired.belt[0].qty,3);
 assert.equal(unexpired.inventory[0].qty,100,'expired batch cannot be used');
 
+// Malformed quantities must not be dropped or create fractional stacks when
+// a separate, otherwise valid stack is refilled.
+for (const qty of [0, -1, 1.5, null]) {
+  const broken = {...usedAll, inventory:[item('valid','Healing',3,farDeadline),item('broken','Other',qty,farDeadline)]};
+  assert.equal(belt.refillBeltFromInventory(broken,ctx()),broken,`invalid inventory quantity ${qty} fails closed`);
+}
+for (const qty of [0, -1, 1.5, 6]) {
+  const broken = {...usedAll, belt:[item('belt_0','Healing',qty,farDeadline),...Array(6).fill(null)],
+    inventory:[item('valid','Healing',3,farDeadline)]};
+  assert.equal(belt.refillBeltFromInventory(broken,ctx()),broken,`invalid belt quantity ${qty} fails closed`);
+}
+for (const expiresAt of [undefined, 'not-a-date']) {
+  const broken = {...usedAll,inventory:[item('bad-date','Healing',3,expiresAt)]};
+  assert.equal(belt.refillBeltFromInventory(broken,ctx()),broken,'a missing or invalid expiry never replenishes the belt');
+}
+
 const multi = { ...base, inventory: [
   item('heal','Healing',5,days(3)),
   item('attack','Attack',5,days(3),'elixir'),

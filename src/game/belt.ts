@@ -100,6 +100,12 @@ const refillChoices = (state: GameState): (BeltRefillChoice | null)[] =>
  * Caller must confirm the battle is over before automatic use.
  */
 export function refillBeltFromInventory(state: GameState, c: BeltContext): GameState {
+  // A partial or damaged snapshot must never be rewritten as a side effect of
+  // moving another stack. In particular, filtering a zero/invalid quantity
+  // would otherwise silently discard an unrelated inventory entry.
+  if (!Array.isArray(state.inventory) || !Array.isArray(state.belt)
+    || state.inventory.some(item => !item || !Number.isSafeInteger(item.qty) || item.qty <= 0)
+    || state.belt.some(item => item && (!Number.isSafeInteger(item.qty) || item.qty <= 0 || item.qty > BELT_STACK))) return state;
   const choices = refillChoices(state);
   const belt = [...state.belt];
   const inventory = state.inventory.map(item => ({ ...item }));
@@ -114,10 +120,12 @@ export function refillBeltFromInventory(state: GameState, c: BeltContext): GameS
     if (belt.some((slot, index) => index !== i && slot && sameChoice(asRefillChoice(slot), choice))) continue;
     kindsSeen.push(choice);
     const current = belt[i];
-    if (current && (!matchesChoice(current, choice) || current.qty >= BELT_STACK)) continue;
+    if (current && (!matchesChoice(current, choice) || current.qty >= BELT_STACK
+      || (isPerishableItem(current) && !Number.isFinite(elixirExpiryTime(current))))) continue;
     // Oldest-expiring-first; never merge batches with distinct deadlines.
     const candidates = inventory
       .filter(item => item.qty > 0 && matchesChoice(item, choice)
+        && (!isPerishableItem(item) || Number.isFinite(elixirExpiryTime(item)))
         && (!current || !isPerishableItem(item) || item.expiresAt === current.expiresAt))
       .sort((a,b) => elixirExpiryTime(a) - elixirExpiryTime(b));
     const first = candidates[0];
