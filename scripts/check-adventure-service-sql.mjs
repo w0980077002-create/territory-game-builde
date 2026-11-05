@@ -31,7 +31,7 @@ try {
  if (vipPve) {
    await db.exec(`ALTER TABLE public.players ADD COLUMN vip_level integer NOT NULL DEFAULT 0;
      CREATE FUNCTION territory_private.fortune_vip_v1(u uuid) RETURNS integer
-     LANGUAGE sql STABLE AS $ SELECT vip_level FROM public.players WHERE id=u $;`);
+     LANGUAGE sql STABLE AS 'SELECT vip_level FROM public.players WHERE id=u';`);
    await db.exec(readFileSync('supabase/staged/20261105_vip_entitlements_v1.sql','utf8'));
    await db.exec(readFileSync('supabase/staged/20261105_vip_pve_bonus_v1.sql','utf8'));
    // The staged module cannot modify existing rewards until enabled.
