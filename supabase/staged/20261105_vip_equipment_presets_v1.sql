@@ -238,6 +238,25 @@ BEGIN
     'wallet_gold',p.gold,'wallet_gems',p.gems);
 END $vip_apply$;
 
+-- Query only the owner's saved references. No client-visible direct table grants.
+CREATE OR REPLACE FUNCTION public.territory_vip_equipment_presets_status_v1()
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='pg_catalog'
+AS $vip_status$
+DECLARE
+ u uuid:=auth.uid();
+ v_level integer;
+ v_presets jsonb;
+BEGIN
+ IF u IS NULL THEN RAISE EXCEPTION 'vip_preset_login_required'; END IF;
+ v_level:=(territory_private.vip_entitlement_status_v1(u)->>'vip')::integer;
+ SELECT coalesce(jsonb_agg(jsonb_build_object(
+   'slot',preset_no,'equipment_ids',equipment_ids) ORDER BY preset_no),'[]'::jsonb)
+ INTO v_presets FROM territory_private.vip_equipment_presets_v1 WHERE player_id=u;
+ RETURN jsonb_build_object('vip',v_level,'presets',v_presets);
+END $vip_status$;
+REVOKE ALL ON FUNCTION public.territory_vip_equipment_presets_status_v1() FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.territory_vip_equipment_presets_status_v1() TO authenticated;
+
 REVOKE ALL ON FUNCTION public.territory_vip_equipment_preset_save_v1(integer,timestamptz),
  public.territory_vip_equipment_preset_apply_v1(integer,timestamptz,uuid)
  FROM PUBLIC,anon;
