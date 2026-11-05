@@ -32,7 +32,7 @@ assert.match(wheelCss, /visibility:hidden/, 'Prevent text rendering before the w
 
 assert.match(hero, /useSceneArt\(HERO_HARBOR_ART\)/);
 assert.match(hero, /hero-showcase__stage--art-pending/);
-assert.match(hero, /harborReady[\s\S]*?sunlit-harbor.webp/, 'Approved harbor is revealed only after decode');
+assert.match(hero, /harborReady[\s\S]*?winter-peaks-approved.webp/, 'Approved winter Hero scene is revealed only after decode');
 assert.match(heroCss, /hero-showcase__art-gate/, 'Hero has a scenic loading guard');
 assert.match(hero, /onClick=\{retryHarbor\}/, 'Failed artwork can be retried');
 console.log('Scene-art loading PASS: original Wheel and Hero compositions reveal only when ready, retries and server receipts preserved.');

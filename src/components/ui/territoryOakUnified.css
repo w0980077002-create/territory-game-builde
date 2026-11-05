@@ -199,3 +199,96 @@
    filter:none;
  }
 }
+
+
+/* Owner mobile Hero parity — deliberate single forged edge, NOT triple rope
+ * stamps. Reuses the approved Shop plank artwork as an actual game texture;
+ * the old decorative repeating ::before was producing three identical knots
+ * over every compact accordion in the real Telegram Hero view.
+ */
+.territory-shell.territory-oak-heritage .territory-screen .territory-profile > :is(details.card,div.card) {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  min-width: 0;
+  padding: 11px 13px;
+  border: 2px solid #a77b49;
+  border-radius: 12px;
+  background-color: #2e180e;
+  background-image:
+    linear-gradient(100deg,#1a0a08b8 0%,#422315a6 44%,#1e0c09bb 100%),
+    var(--oak-heritage-planks);
+  background-size: 100% 100%, 470px auto;
+  background-position: center;
+  background-repeat: no-repeat, repeat;
+  box-shadow: inset 0 2px 0 #f2c7834f,inset 0 -3px #10060596,
+    0 3px 8px #100704ad;
+}
+/* Disable only the erroneous repeated rope trim on the Hero's compact cards.
+ * Structural rope elsewhere in the game is unchanged. */
+.territory-shell.territory-oak-heritage .territory-screen .territory-profile > :is(details.card,div.card)::before {
+  content: none;
+  display: none;
+}
+.territory-shell.territory-oak-heritage .territory-screen .territory-profile > :is(details.card,div.card)::after {
+  content: '';
+  background-image: var(--oak-heritage-iron), var(--oak-heritage-iron);
+  background-size: 20px 20px;
+  background-position: left top, right top;
+  background-repeat: no-repeat;
+  opacity: .66;
+}
+/* Only one disclosure glyph may be shown; the browser-native marker and
+ * our own triangle must not appear together. These are real HTML controls. */
+.territory-shell.territory-oak-heritage .territory-profile > details.card > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 3px 12px 3px 5px;
+  color: #ffe4b2;
+  font-size: clamp(13px,3.8vw,16px);
+  line-height: 1.23;
+  font-weight: 850;
+  text-shadow: 1px 2px #140806;
+}
+.territory-shell.territory-oak-heritage .territory-profile > details.card > summary::-webkit-details-marker { display: none; }
+.territory-shell.territory-oak-heritage .territory-profile > details.card > summary > :first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.territory-shell.territory-oak-heritage .territory-profile > details.card > summary > span:not(:first-child) {
+  flex: 0 0 auto;
+}
+/* Base statistics label is a text node, so its FIRST element is already
+ * the caret; keep that caret right-aligned rather than flex-growing it. */
+.territory-shell.territory-oak-heritage .territory-profile > details[data-testid="profile-base-stats"] > summary > span:first-of-type {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+/* The VIP entrance needs timber as well, rather than an unrelated matte
+ * brown Tailwind-gradient chip. Keep its tap target and dynamic badge. */
+.territory-shell.territory-oak-heritage .territory-profile > [data-testid="vip-open-page"] {
+  border-color: #be8b50;
+  border-radius: 12px;
+  background-color: #32170d;
+  background-image:
+    linear-gradient(100deg,#210c0bb0,#5129139a 54%,#1a0908b8),
+    var(--oak-heritage-planks);
+  background-position: center;
+  background-size: 100% 100%, 480px auto;
+  box-shadow: inset 0 2px #ffe4a55a,inset 0 -3px #100806ad,
+    0 4px 8px #0e0606a9;
+}
+@media (max-width: 360px) {
+  .territory-shell.territory-oak-heritage .territory-screen .territory-profile > details.card {
+    padding: 8px 9px !important; /* Overrides existing .card utility padding on 320-360px WebView */
+  }
+  .territory-shell.territory-oak-heritage .territory-profile > details.card > summary {
+    padding-right: 13px;
+    gap: 5px;
+    font-size: 13px;
+  }
+}

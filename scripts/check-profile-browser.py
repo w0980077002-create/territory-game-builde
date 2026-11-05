@@ -24,6 +24,13 @@ with sync_playwright() as p:
             hero.wait_for()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             assert hero.locator('.hero-showcase__stat').count() == 4
+            banner = hero.locator('.hero-showcase__banner')
+            assert banner.count() == 1 and banner.is_visible(), (width,lang,'Carved Hero sign missing')
+            assert ('Герой' if lang == 'ru' else 'Hero') in banner.inner_text()
+            stage = hero.locator('.hero-showcase__stage')
+            assert stage.bounding_box()['height'] >= 310, (width,lang,'Hero figure stage too small')
+            assert hero.locator('.hero-showcase__progress').count() == 1
+            assert hero.locator('.hero-showcase__stats').bounding_box()['y'] > stage.bounding_box()['y'], (width,lang,'Stats should follow full hero')
             assert hero.locator('.hero-showcase__slot').count() == 7
             image = hero.locator('.hero-showcase__hero-art')
             assert image.evaluate('(el) => el.complete && el.naturalWidth > 0'), 'Missing canonical hero art'
@@ -105,6 +112,49 @@ with sync_playwright() as p:
             if width == 360 and lang == 'ru':
                 page.locator('.territory-shell').evaluate('(el) => el.scrollTop = 0')
                 page.screenshot(path='/tmp/territory-profile-360.png')
+            # Owner-approved oak parity: fixture must render the SAME new CSS as
+            # the live Hero wrapper, not only the old unskinned hero showcase.
+            # The earlier 500px screenshot missed the ugly lower card section.
+            page.locator('[data-testid="profile-appearance"] summary').click()
+            page.locator('.territory-shell').evaluate("""el => {
+                el.classList.add('territory-oak-heritage');
+                const profile = el.querySelector('.territory-profile');
+                const screen = document.createElement('div');
+                screen.className = 'territory-screen';
+                profile.before(screen);
+                screen.append(profile);
+            }""")
+            cards = page.locator('.territory-profile > .card')
+            assert cards.count() >= 4, 'Hero lower menu cards missing'
+            for card in cards.all():
+                metrics = card.evaluate("""el => {
+                    const c = getComputedStyle(el), rope = getComputedStyle(el, '::before');
+                    const r = el.getBoundingClientRect();
+                    return {planks:c.backgroundImage.includes('shop-wood-planks.webp'),
+                            rope:rope.content, ropeDisplay:rope.display,
+                            width:r.width, left:r.left, right:r.right};
+                }""")
+                assert metrics['planks'], (width,lang,'Missing Shop timber on Hero lower card',metrics)
+                assert metrics['rope'] == 'none' or metrics['ropeDisplay'] == 'none', (width,lang,'Triple rope returned',metrics)
+                assert metrics['left'] >= 0 and metrics['right'] <= width + 1, (width,lang,'Hero card clipped',metrics)
+            for summary in page.locator('.territory-profile > details.card > summary').all():
+                metrics = summary.evaluate("""el => {
+                    const c=getComputedStyle(el),r=el.getBoundingClientRect();
+                    return {height:r.height,left:r.left,right:r.right,display:c.display,
+                            list:c.listStyleType};
+                }""")
+                assert metrics['height'] >= 44 and metrics['display'] == 'flex', (width,lang,'Disclosure touch target',metrics)
+                assert metrics['right'] <= width + 1, (width,lang,'Disclosure clipped',metrics)
+            assert page.locator('[data-testid="vip-open-page"]').evaluate(
+                "el=>getComputedStyle(el).backgroundImage.includes('shop-wood-planks.webp')"), (width,lang,'VIP entry still flat')
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            if width == 360:
+                # Capture both actual RU/EN labels, not just the Russian oak
+                # screen. These are fixture images, NOT Telegram device proof.
+                page.locator('.territory-shell').evaluate("(el)=>{el.style.height='auto';el.style.overflow='visible';}")
+                page.screenshot(path=f'/tmp/territory-profile-oak-360-{lang}.png', full_page=True, animations='disabled')
+                if lang == 'ru':
+                    page.screenshot(path='/tmp/territory-profile-oak-360.png', full_page=True, animations='disabled')
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?companion')
             companion = page.locator('[data-testid="hero-companion-journey"]')
             companion.wait_for()
