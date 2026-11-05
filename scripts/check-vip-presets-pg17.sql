@@ -5,6 +5,9 @@ ALTER TABLE public.players ADD COLUMN game_state jsonb NOT NULL DEFAULT '{}'::js
 ALTER TABLE public.players ADD COLUMN updated_at timestamptz NOT NULL DEFAULT clock_timestamp();
 ALTER TABLE public.players ADD COLUMN gold integer NOT NULL DEFAULT 0;
 ALTER TABLE public.players ADD COLUMN gems integer NOT NULL DEFAULT 0;
+ALTER TABLE public.players ENABLE ROW LEVEL SECURITY;
+CREATE POLICY vip_fixture_owner_read ON public.players FOR SELECT TO authenticated USING(id=auth.uid());
+GRANT SELECT ON public.players TO authenticated;
 CREATE TABLE public.arena_rooms(id uuid PRIMARY KEY,status text NOT NULL);
 CREATE TABLE public.arena_participants(room_id uuid NOT NULL REFERENCES public.arena_rooms(id),
  user_id uuid NOT NULL,left_at timestamptz);
