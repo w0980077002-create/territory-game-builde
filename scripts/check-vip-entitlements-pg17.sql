@@ -171,6 +171,19 @@ BEGIN
  END;
 END $refund_chronology$;
 
+-- A trusted refund timestamp cannot be forged in the future either.
+DO $refund_future$
+BEGIN
+ BEGIN
+  UPDATE territory_private.vip_payment_ledger_v1
+   SET status='refunded',refunded_at=statement_timestamp()+interval '1 day'
+   WHERE provider_transaction_id='pending-stars-0000000002';
+  RAISE EXCEPTION 'Future-dated refund accepted';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'vip_payment_refund_in_future' THEN RAISE; END IF;
+ END;
+END $refund_future$;
+
 -- Neither privileged mistakes nor retries may rewrite or erase grant history.
 DO $append_only_grants$
 BEGIN
