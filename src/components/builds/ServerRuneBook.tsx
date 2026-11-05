@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Crown, Flame, Heart, LockKeyhole, Shield, Snowflake, Sparkles, Swords, Target, Wind, X, Zap } from 'lucide-react';
 import './serverRuneBook.css';
+import { RuneWorkshop } from './RuneWorkshop';
 import { supabase } from '@/game/supabase';
 import catalog from '@/game/config/territory-independent-rune-slots-v1.json';
 import skillCatalog from '@/game/config/territory-rune-skill-book-v1.json';
@@ -228,10 +229,7 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
 
 
   if (!FIFTEEN_SLOT_CONTRACT_READY) {
-    return <p role="status" className="rounded-lg border border-amber-500/40 bg-slate-900/90 p-3 text-xs text-amber-100">
-      {en ? 'Runes are temporarily unavailable. Your saved build remains intact.'
-        : 'Руны временно недоступны. Твоя сохранённая сборка не изменена.'}
-    </p>;
+    return <RuneWorkshop language={language} />;
   }
   if (!status) return <div role="status" className="rounded-xl border border-amber-500/40 bg-slate-900 p-3 text-amber-100">
     <p>{notice || (en ? 'Checking server-owned runes…' : 'Проверяем руны на сервере…')}</p>
