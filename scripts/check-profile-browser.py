@@ -86,13 +86,18 @@ with sync_playwright() as p:
             assert vip.locator('[data-testid="vip-preview-not-live"]').count() == 1, 'Unreleased VIP purchases/claims must not be advertised as live'
             if width == 360 and lang == 'ru':
                 page.screenshot(path='/tmp/territory-vip-preview-360.png')
+            badges.nth(4).click()
+            assert ('Граф' if lang == 'ru' else 'Count') in vip.locator('.vip-tier-bottom strong').inner_text()
+            badges.nth(9).click()
+            assert ('Легенда TERRITORY' if lang == 'ru' else 'TERRITORY Legend') in vip.locator('.vip-tier-bottom strong').inner_text()
             badges.nth(6).click()  # VIP 7 previews without granting VIP.
             assert vip.locator('[data-testid="vip-live-tryon"]').count() == 1
-            vip.locator('.vip-cosmetic-tabs button').nth(3).click()  # Full-size skin, not a ghost overlay.
+            vip.locator('.vip-cosmetic-tabs button').nth(4).click()  # Skin comes after Frame, Crown, Aura, Crest.
             assert vip.locator('.vip-stage-skin img[data-testid="vip-stage-art"]').count() == 1
             assert 'companion-vip7.svg' in vip.locator('[data-testid="vip-stage-art"]').get_attribute('src')
             assert vip.locator('[data-testid="vip-stage-transformation"]').get_attribute('data-vip-subject') == 'companion'
-            assert vip.locator('.vip-actual-companion, .vip-tryon-art').count() == 0
+            assert vip.locator('.vip-actual-companion').count() == 1, 'Moon wolf must be a standalone companion'
+            assert vip.locator('.vip-actual-hero, .vip-tryon-art').count() == 0, 'Companion preview cannot overlay a second hero'
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'VIP try-on horizontal scroll'
             if width == 360 and lang == 'ru':
                 page.screenshot(path='/tmp/territory-vip-tryon-360.png')
