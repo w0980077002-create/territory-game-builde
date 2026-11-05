@@ -40,9 +40,25 @@ DO $isolation$
 DECLARE history jsonb;
 BEGIN
  history:=public.territory_vip_claim_history_v1();
- IF jsonb_array_length(history->'claims')<>0
- THEN RAISE EXCEPTION 'Other player VIP claims exposed: %',history; END IF;
+ -- This synthetic user already claimed its own weekly chest in the
+ -- preceding entitlement fixture. Seeing that receipt is correct; seeing
+ -- the first player's DAILY receipt would be a cross-account leak.
+ IF jsonb_array_length(history->'claims')<>1
+   OR history#>>'{claims,0,source}'<>'weekly'
+   OR history#>>'{claims,0,gold}'<>'600'
+ THEN RAISE EXCEPTION 'Owner claim history mixed between players: %',history; END IF;
 END $isolation$;
+RESET ROLE;
+-- A third synthetic player never claimed either daily or weekly rewards.
+SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000003',false);
+SET ROLE authenticated;
+DO $third_player$
+DECLARE history jsonb;
+BEGIN
+ history:=public.territory_vip_claim_history_v1();
+ IF jsonb_array_length(history->'claims')<>0
+ THEN RAISE EXCEPTION 'Third player saw somebody else claims: %',history; END IF;
+END $third_player$;
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub','',false);
 SET ROLE authenticated;
