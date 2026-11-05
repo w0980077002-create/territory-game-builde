@@ -1,0 +1,148 @@
+/* TERRITORY 1.0: owner-first VIP hall using the approved cliff, wood and forged metal.
+   Purely visual; never changes player state, rewards, currencies or server access. */
+.territory-vip-rebuild {
+  color:#ffe4b1;
+  background:#16100e;
+  overflow-x:clip;
+}
+.territory-vip-rebuild .vip-world-bg {
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background-image:linear-gradient(180deg,rgba(16,24,36,.34),rgba(18,16,17,.7) 37%,rgba(19,11,10,.9) 100%),
+    url('/assets/territory/scenes/winter-cliff-approved.webp');
+  background-position:center top;
+  background-size:cover;
+  background-repeat:no-repeat;
+}
+.territory-vip-rebuild .vip-main-heading {
+  border:2px solid #c39255;
+  border-radius:14px;
+  box-shadow:0 4px 10px #0c0809cc,inset 0 1px 0 #ffedbb70,inset 0 -2px 0 #150c08;
+  background-image:linear-gradient(130deg,rgba(27,13,10,.36),rgba(48,20,14,.32)),
+    url('/assets/territory/ui/shop/shop-wood-planks.webp');
+  background-position:center;
+  background-size:cover;
+  overflow:hidden;
+}
+.territory-vip-rebuild .vip-main-heading::before,
+.territory-vip-rebuild .vip-main-heading::after {
+  content:'';
+  position:absolute;
+  top:0;
+  height:100%;
+  width:8px;
+  background:linear-gradient(90deg,#251c19,#8d8580 36%,#3e3938 65%,#c29a5c 76%,#2d1b17);
+  pointer-events:none;
+}
+.territory-vip-rebuild .vip-main-heading::before {left:0;}
+.territory-vip-rebuild .vip-main-heading::after {right:0;}
+.territory-vip-rebuild .vip-main-heading .territory-wooden-plaque {
+  width:clamp(150px,49vw,215px);
+  height:48px;
+}
+.territory-vip-rebuild .vip-main-heading .territory-wooden-plaque__label {
+  font-size:clamp(20px,5.5vw,27px);
+  color:#ffe295;
+  text-shadow:1px 2px 0 #2b1208,0 0 5px #22120b;
+}
+.territory-vip-rebuild .vip-back-button {
+  z-index:1;
+  flex-shrink:0;
+  border:1px solid #b88d57;
+  border-radius:10px;
+  background:linear-gradient(145deg,#6b5541,#252326 58%,#5e4635);
+  box-shadow:inset 0 1px #d2b488,0 2px 5px #1a0e09c9;
+}
+.territory-vip-rebuild .vip-carved-panel {
+  position:relative;
+  min-width:0;
+  border:2px solid #c29155;
+  border-radius:15px;
+  background-image:radial-gradient(ellipse at 38% 0%,rgba(166,98,48,.27),transparent 65%),
+    linear-gradient(125deg,rgba(29,12,8,.64),rgba(30,15,12,.79)),
+    url('/assets/territory/ui/shop/shop-wood-planks.webp');
+  background-position:center;
+  background-size:cover;
+  box-shadow:inset 0 1px 0 #ffedb077,inset 0 -2px 1px #130c09c2,0 3px 9px #080606b8;
+}
+.territory-vip-rebuild .vip-carved-panel::after {
+  content:'';
+  position:absolute;
+  inset:3px;
+  border:1px solid #ffdb9652;
+  border-radius:11px;
+  pointer-events:none;
+}
+.territory-vip-rebuild .vip-stage {
+  background-image:
+    linear-gradient(180deg,rgba(14,31,45,.08),rgba(19,23,30,.1) 44%,rgba(22,13,12,.35) 100%),
+    url('/assets/territory/scenes/winter-cliff-approved.webp');
+  background-position:center 33%;
+  background-size:cover;
+}
+.territory-vip-rebuild .vip-stage::after {
+  content:'';
+  position:absolute;
+  inset:auto 0 0;
+  height:25%;
+  pointer-events:none;
+  background:linear-gradient(transparent,#1b12109c);
+}
+.territory-vip-rebuild .vip-actual-hero,
+.territory-vip-rebuild .vip-actual-companion {
+  z-index:1;
+  filter:drop-shadow(1px 6px 4px rgba(8,9,13,.9)) drop-shadow(0 0 3px rgba(255,202,115,.45));
+}
+.territory-vip-rebuild .vip-stage-emblem {
+  z-index:2;
+  filter:drop-shadow(0 3px 4px #160a07);
+}
+.territory-vip-rebuild .vip-tier-grid > button {
+  background-image:linear-gradient(155deg,rgba(173,108,41,.26),rgba(22,13,10,.45)),
+    url('/assets/territory/ui/shop/shop-wood-planks.webp');
+  background-size:cover;
+  border:1px solid #9c703f;
+  box-shadow:inset 0 1px #f8dfac42,0 2px 3px #100a07a8;
+}
+.territory-vip-rebuild .vip-tier-grid > button[aria-pressed='true'] {
+  background:linear-gradient(145deg,#b07b3a,#593119 78%);
+  outline:2px solid #ffde93;
+  outline-offset:-2px;
+  box-shadow:0 0 9px #fcb95580,inset 0 1px #fff0b6;
+}
+.territory-vip-rebuild .vip-chest-card {
+  background-image:linear-gradient(160deg,rgba(62,27,15,.43),rgba(16,10,10,.64)),
+    url('/assets/territory/ui/shop/shop-wood-planks.webp');
+  background-size:cover;
+  box-shadow:inset 0 1px #ffdf9870,0 4px 8px #0c0808bc;
+}
+.territory-vip-rebuild .vip-claim-demo {
+  border:1px solid #f9e0a4;
+  background:linear-gradient(#ffe8a9 0%,#dd9e42 42%,#b86d24 100%);
+  box-shadow:inset 0 2px #fff6d6,0 2px #36180c;
+  color:#32180b;
+}
+.territory-vip-rebuild button:focus-visible,
+.territory-vip-rebuild summary:focus-visible {
+  outline:3px solid #fff0ba;
+  outline-offset:2px;
+}
+.territory-vip-rebuild .vip-carved-panel > .grid button,
+.territory-vip-rebuild .vip-carved-panel > .grid > div {
+  border-color:#b78951;
+  background-image:linear-gradient(120deg,rgba(90,48,26,.45),rgba(22,14,11,.6)),
+    url('/assets/territory/ui/shop/shop-wood-planks.webp');
+  background-size:cover;
+}
+@media (max-width:350px) {
+  .territory-vip-rebuild .vip-stage {height:176px;}
+  .territory-vip-rebuild .vip-actual-hero {height:164px;}
+  .territory-vip-rebuild .vip-actual-companion {height:115px;}
+  .territory-vip-rebuild .vip-tier-grid img {width:32px;height:32px;}
+  .territory-vip-rebuild .vip-main-heading .territory-wooden-plaque {width:150px;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .territory-vip-rebuild .animate-bounce {animation:none;}
+}
