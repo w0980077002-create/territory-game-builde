@@ -102,7 +102,9 @@ with sync_playwright() as p:
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width,lang,'VIP page causes horizontal scrolling')
             assert vip.locator('[data-testid="vip-preview-not-live"]').count() == 1, 'Unreleased VIP purchases/claims must not be advertised as live'
             if width == 360 and lang == 'ru':
-                page.screenshot(path='/tmp/territory-vip-preview-360.png', full_page=True)
+                page.locator('.territory-shell').evaluate('(el) => el.scrollTop = 0')
+                page.screenshot(path='/tmp/territory-vip-top-360.png', animations='disabled')
+                vip.screenshot(path='/tmp/territory-vip-preview-360.png', animations='disabled')
             page.get_by_role('button', name='Back to hero' if lang == 'en' else 'Назад к герою').click()
             hero.wait_for(timeout=5000)
             assert page.locator('[data-testid="vip-mobile-showcase"]').count() == 0
