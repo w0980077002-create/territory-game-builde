@@ -7,6 +7,7 @@ import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
 import { pendingPveVictoryJournal, recoverPveVictoryOnBoot } from '@/game/pveVictoryRecovery';
 import { hasPendingVipClaims, recoverVipClaimsOnBoot } from '@/game/vipBootRecovery';
+import { restoreVipEquipmentPresetFence } from '@/game/vipEquipmentPresets';
 import { pveVictorySaveState, subscribePveVictorySave } from '@/game/pveVictorySaveFence';
 import { readPumpkinWitchEntitlement, installVerifiedPumpkinWitch } from '@/game/halloweenCompanion2026';
 import { watchPumpkinEntitlement } from '@/game/halloweenCompanionRefresh';
@@ -312,12 +313,17 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         // Always restore durable server-adventure fences before any autosave.
         // No marker = no state change; a pending server debit must never be
         // overwritten by a legacy save after a release flag or network change.
-        restoreAdventureSaveFence(user.id);
-        restoreAdventureStartFence(user.id);
-        // Two durable operations cannot be safely ordered from their local
-        // markers alone. Preserve both until they can be reconciled.
+        const cavePendingAdvance = restoreAdventureSaveFence(user.id);
+        const cavePendingStart = restoreAdventureStartFence(user.id);
+        const equipmentPending = restoreVipEquipmentPresetFence(user.id);
+        // An unconfirmed equipment switch cannot race a victory or a reward
+        // claim. Freeze autosaves, preserve all WAL keys, and require exact
+        // original-operation recovery from the VIP equipment screen.
         try {
-          if (hasPendingVipClaims(user.id) && pendingPveVictoryJournal(user.id)) {
+          const rewardPending = hasPendingVipClaims(user.id);
+          const victoryPending = pendingPveVictoryJournal(user.id);
+          if ((equipmentPending && (cavePendingAdvance || cavePendingStart || rewardPending || victoryPending))
+            || (rewardPending && victoryPending)) {
             setLoadError('vip_recovery_pending');
             return;
           }
