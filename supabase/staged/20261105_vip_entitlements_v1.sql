@@ -20,6 +20,35 @@ CREATE TABLE IF NOT EXISTS territory_private.vip_payment_ledger_v1 (
   refunded_at timestamptz,
   CHECK ((status='refunded') = (refunded_at IS NOT NULL))
 );
+-- A provider transaction is immutable after verification. Only its lifecycle
+-- can advance; retries must never rewrite the SKU, owner or price snapshot.
+CREATE OR REPLACE FUNCTION territory_private.vip_payment_immutable_v1()
+RETURNS trigger LANGUAGE plpgsql SET search_path='pg_catalog'
+AS $vip_payment_guard$
+BEGIN
+  IF ROW(NEW.provider_transaction_id,NEW.player_id,NEW.sku,NEW.price_version,
+         NEW.currency,NEW.stars_amount,NEW.verified_usd_cents,NEW.recorded_at)
+     IS DISTINCT FROM
+     ROW(OLD.provider_transaction_id,OLD.player_id,OLD.sku,OLD.price_version,
+         OLD.currency,OLD.stars_amount,OLD.verified_usd_cents,OLD.recorded_at)
+  THEN RAISE EXCEPTION 'vip_payment_snapshot_immutable'; END IF;
+  IF NOT ((OLD.status='pending' AND NEW.status IN ('pending','settled','refunded'))
+       OR (OLD.status='settled' AND NEW.status IN ('settled','refunded'))
+       OR (OLD.status='refunded' AND NEW.status='refunded')) THEN
+    RAISE EXCEPTION 'vip_payment_status_regression';
+  END IF;
+  IF OLD.status='refunded' AND NEW.refunded_at IS DISTINCT FROM OLD.refunded_at
+  THEN RAISE EXCEPTION 'vip_payment_refund_immutable'; END IF;
+  RETURN NEW;
+END $vip_payment_guard$;
+DROP TRIGGER IF EXISTS vip_payment_immutable_guard_v1
+  ON territory_private.vip_payment_ledger_v1;
+CREATE TRIGGER vip_payment_immutable_guard_v1
+BEFORE UPDATE ON territory_private.vip_payment_ledger_v1
+FOR EACH ROW EXECUTE FUNCTION territory_private.vip_payment_immutable_v1();
+REVOKE ALL ON FUNCTION territory_private.vip_payment_immutable_v1()
+ FROM PUBLIC,anon,authenticated;
+
 CREATE INDEX IF NOT EXISTS vip_payment_ledger_v1_player_idx
   ON territory_private.vip_payment_ledger_v1(player_id,status);
 ALTER TABLE territory_private.vip_payment_ledger_v1 ENABLE ROW LEVEL SECURITY;
