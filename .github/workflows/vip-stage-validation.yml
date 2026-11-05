@@ -20,6 +20,9 @@ on:
       - 'supabase/staged/20261104_vip_daily_chest_v1.sql'
       - 'supabase/staged/20261105_vip_weekly_chest_v1.sql'
       - 'supabase/staged/20261105_vip_entitlements_v1.sql'
+      - 'supabase/staged/20261105_vip_pve_bonus_v1.sql'
+      - 'supabase/staged/territory_v1_adventure_settlement.sql'
+      - 'scripts/check-adventure-service-sql.mjs'
       - 'scripts/check-vip-entitlements-pg17.sql'
       - 'scripts/check-vip-*.mjs'
       - '.github/workflows/vip-stage-validation.yml'
@@ -58,6 +61,8 @@ jobs:
         run: node scripts/check-vip-chest-entitlements-pglite.mjs
       - name: VIP profile uses verified entitlement, expiry and legacy fallback
         run: node scripts/check-vip-entitlement-client.mjs
+      - name: VIP gold and XP in real PvE settlement (PGlite)
+        run: VIP_PVE_TEST=1 node scripts/check-adventure-service-sql.mjs
 
   weekly-native-pg17:
     runs-on: ubuntu-latest
