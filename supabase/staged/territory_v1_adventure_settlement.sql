@@ -59,6 +59,9 @@ DECLARE s territory_private.combat_sessions_v1%ROWTYPE; e territory_private.comb
  r territory_private.adventure_rewards_v1%ROWTYPE; p public.players%ROWTYPE;
  existing territory_private.adventure_settlements_v1%ROWTYPE;
  st jsonb; stats jsonb; followers jsonb; receipt jsonb; outcome text;
+ -- Final payouts are chosen once under the server settlement/session lock.
+ v_reward_gold integer := 0; v_reward_xp integer := 0;
+ v_vip_level integer := 0; v_vip_percent integer := 0; v_bonus jsonb;
  lv integer; v_max_energy integer; balance bigint; threshold bigint; before_projection jsonb; old_level integer; old_updated_at timestamptz;
 BEGIN
  SELECT * INTO p FROM public.players WHERE id=p_player FOR UPDATE;
@@ -94,8 +97,31 @@ BEGIN
      OR coalesce((stats->>'maxHp')::int,0) <=0 OR coalesce((stats->>'attack')::int,-1)<0 OR coalesce((stats->>'defense')::int,-1)<0
      OR (st#>>'{player,xpToNext}')::bigint IS DISTINCT FROM (CASE WHEN p.level>=100 THEN 0 ELSE floor(floor(100*power(1.15::double precision,p.level-1))*(CASE WHEN p.level>=83 THEN 3::double precision+0.12::double precision*(p.level-83) ELSE 1 END))::bigint END)
      THEN RAISE EXCEPTION 'adventure_save_needs_reconciliation'; END IF;
-   IF p.gold::bigint+r.gold>2147483647 THEN RAISE EXCEPTION 'adventure_wallet_limit'; END IF;
-   lv:=p.level; v_max_energy:=p.max_energy; balance:=p.xp::bigint+r.xp;
+   v_reward_gold:=r.gold; v_reward_xp:=r.xp;
+   -- Optional STAGED VIP module. Missing or disabled means the exact
+   -- original payout. Never read a client-supplied VIP level or multiply
+   -- a prior bonus; call only for a verified PvE victory.
+   IF to_regprocedure('territory_private.vip_pve_bonus_v1(uuid,integer,integer)') IS NOT NULL THEN
+     EXECUTE 'SELECT territory_private.vip_pve_bonus_v1($1,$2,$3)'
+       INTO v_bonus USING p_player,r.gold,r.xp;
+     IF jsonb_typeof(v_bonus) IS DISTINCT FROM 'object'
+       OR jsonb_typeof(v_bonus->'gold') IS DISTINCT FROM 'number'
+       OR jsonb_typeof(v_bonus->'xp') IS DISTINCT FROM 'number'
+       OR jsonb_typeof(v_bonus->'vip') IS DISTINCT FROM 'number'
+       OR jsonb_typeof(v_bonus->'percent') IS DISTINCT FROM 'number'
+       THEN RAISE EXCEPTION 'adventure_vip_bonus_invalid'; END IF;
+     v_reward_gold:=(v_bonus->>'gold')::integer;
+     v_reward_xp:=(v_bonus->>'xp')::integer;
+     v_vip_level:=(v_bonus->>'vip')::integer;
+     v_vip_percent:=(v_bonus->>'percent')::integer;
+     IF v_vip_level NOT BETWEEN 0 AND 10 OR v_vip_percent<>v_vip_level*2
+       OR v_reward_gold<r.gold OR v_reward_xp<r.xp
+       OR v_reward_gold::bigint>r.gold::bigint+floor(r.gold::numeric*v_vip_percent/100)::bigint
+       OR v_reward_xp::bigint>r.xp::bigint+floor(r.xp::numeric*v_vip_percent/100)::bigint
+       THEN RAISE EXCEPTION 'adventure_vip_bonus_invalid'; END IF;
+   END IF;
+   IF p.gold::bigint+v_reward_gold>2147483647 THEN RAISE EXCEPTION 'adventure_wallet_limit'; END IF;
+   lv:=p.level; v_max_energy:=p.max_energy; balance:=p.xp::bigint+v_reward_xp;
    WHILE lv<100 LOOP
      threshold:=coalesce((st#>>'{player,xpToNext}')::bigint,0);
      IF threshold<=0 THEN threshold:=floor(floor(100*power(1.15::double precision,lv-1))*(CASE WHEN lv>=83 THEN 3::double precision+0.12::double precision*(lv-83) ELSE 1 END))::bigint; END IF;
@@ -111,7 +137,7 @@ BEGIN
    END LOOP;
    IF lv>=100 THEN balance:=0; st:=jsonb_set(st,'{player,xpToNext}','0'::jsonb); END IF;
    IF balance>2147483647 THEN RAISE EXCEPTION 'adventure_xp_limit'; END IF;
-   st:=jsonb_set(st,'{player,gold}',to_jsonb(p.gold+r.gold));
+   st:=jsonb_set(st,'{player,gold}',to_jsonb(p.gold+v_reward_gold));
    st:=jsonb_set(st,'{player,xp}',to_jsonb(balance));
    st:=jsonb_set(st,'{player,level}',to_jsonb(lv));
    st:=jsonb_set(st,'{player,maxEnergy}',to_jsonb(v_max_energy));
@@ -123,7 +149,7 @@ BEGIN
        FROM jsonb_array_elements(st->'followers') WITH ORDINALITY f(value,ordinality);
      st:=jsonb_set(st,'{followers}',followers);
    END IF;
-   UPDATE public.players SET game_state=st,gold=p.gold+r.gold,xp=balance::integer,level=lv,max_energy=v_max_energy,
+   UPDATE public.players SET game_state=st,gold=p.gold+v_reward_gold,xp=balance::integer,level=lv,max_energy=v_max_energy,
      updated_at=greatest(clock_timestamp(),p.updated_at+interval '1 millisecond')
      WHERE id=p_player RETURNING * INTO p;
    IF p.updated_at IS NULL OR p.updated_at<=old_updated_at THEN RAISE EXCEPTION 'adventure_save_needs_reconciliation'; END IF;
@@ -132,8 +158,11 @@ BEGIN
      unlocked_stage=least(100,greatest(completed_stage,r.stage)+1) WHERE player_id=p_player;
  END IF;
  SELECT jsonb_build_object('success',true,'session_id',p_session,'outcome',outcome,'stage',r.stage,
-   'reward',jsonb_build_object('gold',CASE WHEN outcome='hero_won' THEN r.gold ELSE 0 END,
-     'xp',CASE WHEN outcome='hero_won' THEN r.xp ELSE 0 END,'items','[]'::jsonb),
+   'reward',jsonb_build_object('gold',v_reward_gold,
+     'xp',v_reward_xp,'items','[]'::jsonb),
+   'vip_bonus',jsonb_build_object('vip',v_vip_level,'percent',v_vip_percent,
+     'gold',CASE WHEN outcome='hero_won' THEN v_reward_gold-r.gold ELSE 0 END,
+     'xp',CASE WHEN outcome='hero_won' THEN v_reward_xp-r.xp ELSE 0 END),
    'completed_stage',completed_stage,'unlocked_stage',unlocked_stage,
    'updated_at',p.updated_at,'wallet_gold',p.gold,'wallet_gems',p.gems,'game_state',p.game_state)
    INTO receipt FROM territory_private.adventure_progress_v1 WHERE player_id=p_player;
