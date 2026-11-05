@@ -101,7 +101,10 @@ BEGIN
  IF (j->>'paid_vip')::integer<>2 OR (j->>'gift_vip')::integer<>5
   OR (j->>'temporary_vip')::integer<>8
   OR (j->>'permanent_vip')::integer<>5 OR (j->>'vip')::integer<>8
-  OR (j->>'paid_spend_cents')::numeric<>1000 THEN
+  OR (j->>'paid_spend_cents')::numeric<>1000
+  OR (j->>'temporary_until')::timestamptz<=statement_timestamp()
+  OR (j->>'temporary_until') IS NULL
+  OR (j->>'server_now')::timestamptz IS NULL THEN
   RAISE EXCEPTION 'Paid/gift/temporary not separated: %',j;
  END IF;
 END $gift_temp$;
@@ -135,7 +138,7 @@ DECLARE j jsonb;
 BEGIN
  j:=public.territory_vip_entitlement_v1();
  IF (j->>'vip')::integer<>5 OR (j->>'temporary_vip')::integer<>0
-  OR (j->>'gift_vip')::integer<>5 THEN
+  OR (j->>'gift_vip')::integer<>5 OR j->'temporary_until'<>'null'::jsonb THEN
   RAISE EXCEPTION 'Temporary revocation removed permanent gift: %',j;
  END IF;
 END $revoked_temp$;
