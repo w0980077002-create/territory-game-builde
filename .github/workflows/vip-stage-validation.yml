@@ -31,6 +31,11 @@ on:
       - 'supabase/staged/20261104_vip_daily_chest_v1.sql'
       - 'supabase/staged/20261105_vip_weekly_chest_v1.sql'
       - 'supabase/staged/20261105_vip_entitlements_v1.sql'
+      - 'supabase/staged/20261105_vip_admin_v1.sql'
+      - 'supabase/functions/admin-api/index.ts'
+      - 'src/admin/tabs/PlayerVip.tsx'
+      - 'src/admin/tabs/PlayersTab.tsx'
+      - 'scripts/check-vip-admin-pg17.sql'
       - 'src/game/vipRunePresets.ts'
       - 'src/components/builds/VipRunePresets.tsx'
       - 'src/components/builds/ServerRuneBook.tsx'
@@ -151,7 +156,7 @@ jobs:
           sudo apt-get install -y postgresql-client
           psql -v ON_ERROR_STOP=1 -c 'SELECT version();'
       - name: VIP entitlements and equipment presets PG17 JWT/RLS CAS/replay
-        run: psql -v ON_ERROR_STOP=1 -f scripts/check-vip-entitlements-pg17.sql -f scripts/check-vip-presets-pg17.sql
+        run: psql -v ON_ERROR_STOP=1 -f scripts/check-vip-entitlements-pg17.sql -f scripts/check-vip-presets-pg17.sql -f scripts/check-vip-admin-pg17.sql
 
   runes-native-pg17:
     runs-on: ubuntu-latest
