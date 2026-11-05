@@ -50,3 +50,7 @@
 .rune-workshop__options button>svg{color:#ffe398;flex-shrink:0}
 .rune-workshop__remove{width:100%;min-height:44px;border:1px solid #9b7649;border-radius:10px;background:#331a12;color:#f0c99a;font-size:12px;font-weight:900;margin-top:12px}
 @media(max-width:345px){.rune-workshop__slots{gap:3px}.rune-workshop__slot{padding-inline:2px}.rune-workshop__glyph{width:42px;height:47px}.rune-workshop__header{gap:6px;padding:8px}.rune-workshop__slot strong{font-size:10px}}
+
+.rune-workshop__mode-button{display:block;margin:8px auto 13px;width:min(100% - 18px,460px);min-height:46px;padding:8px 12px;border:2px solid #d5a45f;border-radius:11px;
+ background:linear-gradient(#f2d184,#b56f28);color:#2f140b;font-size:12px;font-weight:950;text-align:center;box-shadow:inset 0 1px #fff0b4,0 3px #422012}
+.rune-workshop__mode-button:focus-visible{outline:3px solid #fff4aa;outline-offset:2px}
