@@ -10,6 +10,8 @@ on:
       - 'src/game/vipBootRecovery.ts'
       - 'src/App.tsx'
       - 'src/game/vipProgram.ts'
+      - 'src/game/fortuneVip.ts'
+      - 'src/game/actions.ts'
       - 'src/components/VipStatusPanel.tsx'
       - 'src/components/InventoryScreen.tsx'
       - 'src/components/BattleScreen.tsx'
@@ -54,6 +56,8 @@ jobs:
         run: npm run test:vip-weekly
       - name: Chest eligibility from the real VIP entitlement ledger
         run: node scripts/check-vip-chest-entitlements-pglite.mjs
+      - name: VIP profile uses verified entitlement, expiry and legacy fallback
+        run: node scripts/check-vip-entitlement-client.mjs
 
   weekly-native-pg17:
     runs-on: ubuntu-latest
