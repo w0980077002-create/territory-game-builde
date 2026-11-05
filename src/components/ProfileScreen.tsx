@@ -10,16 +10,18 @@ import type { ReactNode } from 'react';
 import { APPEARANCE_PRESETS, getPlayableAppearance } from '@/game/appearance';
 import { HeroShowcase } from './HeroShowcase';
 import { VipStatusPanel } from './VipStatusPanel';
+import { VipMobileShowcase } from './VipMobileShowcase';
 
 const BuildTrainingPanel = lazy(() => import('./builds/BuildTrainingPanel').then(module => ({ default: module.BuildTrainingPanel })));
 
-export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, onAdventure, onForge, onQuests, onCompanions }: { user: AuthUser; initialTrainingOpen?: boolean; onEquipment: () => void; onAdventure: () => void; onForge: (equipmentId: string) => void; onQuests: () => void; onCompanions: () => void }) {
+export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, onAdventure, onRunes, onBelt, onForge, onQuests, onCompanions }: { user: AuthUser; initialTrainingOpen?: boolean; onEquipment: () => void; onAdventure: () => void; onRunes?:()=>void; onBelt?:()=>void; onForge: (equipmentId: string) => void; onQuests: () => void; onCompanions: () => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const computed = getComputedStats(state);
   const [linking, setLinking] = useState(false);
   const [linkResult, setLinkResult] = useState<string | null>(null);
   const [trainingOpen, setTrainingOpen] = useState(initialTrainingOpen);
+  const [vipPageOpen, setVipPageOpen] = useState(false);
   const canLink = user.telegramId === null && !!getTelegramInitData();
 
   const handleLink = async () => {
@@ -37,10 +39,15 @@ export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, 
     }
   };
 
+  if(vipPageOpen) {
+    return <VipMobileShowcase userId={user.id} onBack={() => setVipPageOpen(false)}
+      onEquipment={onEquipment} onRunes={onRunes ?? onAdventure} onBelt={onBelt ?? onEquipment}/>;
+  }
+
   return (
     <div className="territory-profile space-y-4 animate-fade-in pb-4">
       <HeroShowcase state={state} stats={computed} onEquipment={onEquipment} onAdventure={onAdventure} onForge={onForge} onQuests={onQuests} onCompanions={onCompanions} />
-      <VipStatusPanel userId={user.id} />
+      <VipStatusPanel userId={user.id} onOpenPage={() => setVipPageOpen(true)} />
       {/* Runes are reached exclusively from the Map's Rune location. */}
 
       {/* Build lab runs only when opened; it cannot change the saved character. */}
