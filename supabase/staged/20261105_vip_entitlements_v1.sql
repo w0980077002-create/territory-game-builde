@@ -73,6 +73,28 @@ CREATE TABLE IF NOT EXISTS territory_private.vip_entitlement_revocations_v1 (
   reason text NOT NULL CHECK (length(trim(reason)) BETWEEN 1 AND 500),
   created_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
+-- Grant and revocation evidence is append-only, including for trusted writers.
+-- Corrections use a distinct campaign grant or an audited revocation, never
+-- silent rewriting or deletion of historical VIP entitlement evidence.
+CREATE OR REPLACE FUNCTION territory_private.vip_entitlement_append_only_v1()
+RETURNS trigger LANGUAGE plpgsql SET search_path='pg_catalog'
+AS $vip_append_only$
+BEGIN
+  RAISE EXCEPTION 'vip_entitlement_history_immutable';
+END $vip_append_only$;
+DROP TRIGGER IF EXISTS vip_grants_append_only_v1
+ ON territory_private.vip_entitlement_grants_v1;
+CREATE TRIGGER vip_grants_append_only_v1
+ BEFORE UPDATE OR DELETE ON territory_private.vip_entitlement_grants_v1
+ FOR EACH ROW EXECUTE FUNCTION territory_private.vip_entitlement_append_only_v1();
+DROP TRIGGER IF EXISTS vip_revocations_append_only_v1
+ ON territory_private.vip_entitlement_revocations_v1;
+CREATE TRIGGER vip_revocations_append_only_v1
+ BEFORE UPDATE OR DELETE ON territory_private.vip_entitlement_revocations_v1
+ FOR EACH ROW EXECUTE FUNCTION territory_private.vip_entitlement_append_only_v1();
+REVOKE ALL ON FUNCTION territory_private.vip_entitlement_append_only_v1()
+ FROM PUBLIC,anon,authenticated;
+
 ALTER TABLE territory_private.vip_entitlement_grants_v1 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE territory_private.vip_entitlement_revocations_v1 ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON territory_private.vip_entitlement_grants_v1,
