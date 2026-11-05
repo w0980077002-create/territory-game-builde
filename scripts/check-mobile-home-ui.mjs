@@ -91,7 +91,7 @@ assert.match(livingEnemy, /showRig && rig/,
   'Enemies without a verified rig must keep their original sprite');
 assert.match(livingEnemy, /typeof image\.decode === 'function'/,
   'Enemy cutouts must support old Telegram WebViews');
-assert.match(fighterFigure, /typeof img\.decode === 'function'/,
+assert.match(fighterFigure, /typeof img\.decode !== 'function'/,
   'Battle rigs must support old Telegram WebViews for live hit/block animation');
 assert.doesNotMatch(fighterFigure, /canAnimateRig\s*&&\s*enabledRig/,
   'Old Telegram without Web Animations must still mount prepared original rigs');
