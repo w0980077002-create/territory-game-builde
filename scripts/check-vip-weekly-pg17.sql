@@ -148,8 +148,8 @@ INSERT INTO territory_private.vip_entitlement_grants_v1
  ('20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002','gift','gift',5,NULL,'fixture'),
  ('20000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002','event','temporary',8,now()+interval '1 day','fixture');
 INSERT INTO territory_private.vip_payment_ledger_v1
- (provider_transaction_id,player_id,sku,price_version,stars_amount,verified_usd_cents,status,refunded_at)
- VALUES ('fixture-refunded-payment','10000000-0000-0000-0000-000000000002','pack','v1',50,1000,'refunded',now());
+ (provider_transaction_id,player_id,sku,price_version,stars_amount,verified_usd_cents,status,recorded_at,refunded_at)
+ VALUES ('fixture-refunded-payment','10000000-0000-0000-0000-000000000002','pack','v1',50,1000,'refunded',now()-interval '1 second',now());
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000002',false);
 SET ROLE authenticated;
 DO $temporary_tier$
