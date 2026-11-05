@@ -63,7 +63,8 @@ BEGIN
     SELECT * INTO p FROM public.players WHERE id=u AND NOT banned FOR NO KEY UPDATE;
   END IF;
   IF NOT FOUND THEN RAISE EXCEPTION 'vip_weekly_player_not_found'; END IF;
-  v_tier:=territory_private.fortune_vip_v1(u);
+  -- Install the staged VIP entitlement ledger first. Fail closed if absent.
+  v_tier:=(territory_private.vip_entitlement_status_v1(u)->>'vip')::integer;
   IF v_tier IS NULL OR v_tier NOT BETWEEN 0 AND 10 THEN
     RAISE EXCEPTION 'vip_weekly_invalid_entitlement';
   END IF;

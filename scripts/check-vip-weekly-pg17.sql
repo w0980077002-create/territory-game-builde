@@ -2,6 +2,7 @@
 -- Isolated PostgreSQL 17 instance only. NEVER point this file at production.
 CREATE ROLE anon;
 CREATE ROLE authenticated;
+CREATE ROLE service_role;
 CREATE SCHEMA auth;
 CREATE SCHEMA territory_private;
 GRANT USAGE ON SCHEMA auth TO authenticated;
@@ -28,6 +29,7 @@ VALUES (
   '10000000-0000-0000-0000-000000000003',5,
   '{"player":{"gold":100,"gems":20,"redGems":7,"level":40},"inventory":[],"battleStones":8,"forgeMaterials":0,"forgeMaterialBatches":[{"expiresAt":"2099-01-01T00:00:00Z"}]}'::jsonb
 );
+\i supabase/staged/20261105_vip_entitlements_v1.sql
 \i supabase/staged/20261105_vip_weekly_chest_v1.sql
 
 DO $guard$
@@ -139,4 +141,36 @@ BEGIN
     RAISE EXCEPTION 'Invalid material batch changed wallet or ledger';
   END IF;
 END $unchanged$;
-SELECT 'VIP weekly on PostgreSQL 17: auth/RLS/UTC/CAS/replay/expiry/deny PASS' AS verified;
+-- Real ledger, not the legacy Fortune tier: gift survives a paid refund,
+-- while a higher temporary entitlement expires/revokes independently.
+INSERT INTO territory_private.vip_entitlement_grants_v1
+ (grant_id,player_id,campaign_key,kind,vip_level,expires_at,reason) VALUES
+ ('20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002','gift','gift',5,NULL,'fixture'),
+ ('20000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002','event','temporary',8,now()+interval '1 day','fixture');
+INSERT INTO territory_private.vip_payment_ledger_v1
+ (provider_transaction_id,player_id,sku,price_version,stars_amount,verified_usd_cents,status,refunded_at)
+ VALUES ('fixture-refunded-payment','10000000-0000-0000-0000-000000000002','pack','v1',50,1000,'refunded',now());
+SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000002',false);
+SET ROLE authenticated;
+DO $temporary_tier$
+BEGIN
+ IF (public.territory_vip_weekly_v1('status')->>'vip')::int<>8 THEN
+   RAISE EXCEPTION 'Weekly chest ignored active temporary entitlement';
+ END IF;
+END $temporary_tier$;
+RESET ROLE;
+INSERT INTO territory_private.vip_entitlement_revocations_v1(grant_id,reason)
+ VALUES ('20000000-0000-0000-0000-000000000002','event ended');
+SET ROLE authenticated;
+DO $gift_tier$
+DECLARE s jsonb; r jsonb;
+BEGIN
+ s:=public.territory_vip_weekly_v1('status');
+ IF (s->>'vip')::int<>5 THEN RAISE EXCEPTION 'Refund or revocation damaged gift: %',s; END IF;
+ r:=public.territory_vip_weekly_v1('claim','30000000-0000-0000-0000-000000000005',(s->>'updated_at')::timestamptz);
+ IF (r->'reward'->>'vip')::int<>5 OR (r->'reward'->>'gold')::int<>600 THEN
+  RAISE EXCEPTION 'Gift entitlement chest incorrect: %',r;
+ END IF;
+END $gift_tier$;
+RESET ROLE;
+SELECT 'VIP weekly on PostgreSQL 17: auth/RLS/UTC/CAS/replay/expiry/entitlements PASS' AS verified;

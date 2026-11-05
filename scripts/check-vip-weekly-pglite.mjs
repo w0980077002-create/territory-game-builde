@@ -13,7 +13,7 @@ const rpc=async(action='status',id=null,rev=null) =>
 const fixture={player:{gold:100,gems:20,redGems:7,level:40,equipped:{}},
   inventory:[],belt:Array(7).fill(null),battleStones:8,forgeMaterials:0};
 try {
-  await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE SCHEMA auth;CREATE SCHEMA territory_private;
+  await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role;CREATE SCHEMA auth;CREATE SCHEMA territory_private;
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
       'SELECT nullif(current_setting(''request.jwt.claim.sub'',true),'''')::uuid';
     CREATE TABLE public.players(
@@ -24,6 +24,7 @@ try {
     CREATE FUNCTION territory_private.fortune_vip_v1(u uuid) RETURNS int
       LANGUAGE sql STABLE AS 'SELECT vip_level FROM public.players WHERE id=u';`);
   await sql('INSERT INTO public.players(id,vip_level,game_state) VALUES($1,5,$3),($2,1,$3)',[A,B,fixture]);
+  await db.exec(readFileSync('supabase/staged/20261105_vip_entitlements_v1.sql','utf8'));
   await db.exec(readFileSync('supabase/staged/20261105_vip_weekly_chest_v1.sql','utf8'));
   assert.equal((await sql("SELECT relrowsecurity AS enabled FROM pg_class WHERE oid='territory_private.vip_weekly_claims_v1'::regclass"))[0].enabled,true);
   assert.equal((await sql("SELECT has_table_privilege('authenticated','territory_private.vip_weekly_claims_v1','UPDATE') AS yes"))[0].yes,false);

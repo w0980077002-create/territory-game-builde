@@ -52,6 +52,8 @@ jobs:
         run: npm run test:vip-daily
       - name: VIP weekly staged database, expiry and client receipts
         run: npm run test:vip-weekly
+      - name: Chest eligibility from the real VIP entitlement ledger
+        run: node scripts/check-vip-chest-entitlements-pglite.mjs
 
   weekly-native-pg17:
     runs-on: ubuntu-latest

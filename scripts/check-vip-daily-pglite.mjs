@@ -13,7 +13,7 @@ const rpc = async(action='status',id=null,rev=null) =>
 const fixture = { player:{ gold:100,gems:20,redGems:7,level:40,equipped:{} },
   inventory:[],belt:Array(7).fill(null),battleStones:8 };
 try {
-  await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE SCHEMA auth;CREATE SCHEMA territory_private;
+  await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role;CREATE SCHEMA auth;CREATE SCHEMA territory_private;
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
       'SELECT nullif(current_setting(''request.jwt.claim.sub'',true),'''')::uuid';
     CREATE TABLE public.players (
@@ -28,6 +28,7 @@ try {
     `);
   await sql('INSERT INTO public.players(id,vip_level,game_state) VALUES($1,5,$3),($2,0,$3)',
     [A,B,fixture]);
+  await db.exec(readFileSync('supabase/staged/20261105_vip_entitlements_v1.sql','utf8'));
   const source=readFileSync('supabase/staged/20261104_vip_daily_chest_v1.sql','utf8');
   await db.exec(source);
   assert.equal((await sql("SELECT relrowsecurity AS enabled FROM pg_class WHERE oid='territory_private.vip_daily_claims_v1'::regclass"))[0].enabled,true);
