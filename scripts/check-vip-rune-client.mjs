@@ -89,6 +89,6 @@ assert.equal(api.hasPendingVipRunePreset(user),false,'verified rollback retires 
 const book=readFileSync('src/components/builds/ServerRuneBook.tsx','utf8');
 const ui=readFileSync('src/components/builds/VipRunePresets.tsx','utf8');
 assert.match(book,/<VipRunePresets en=\{en\} revision=\{status\.revision\} dirty=\{changed\}/);
-assert.match(ui,/locked=\{claiming/);
+assert.match(book,/locked=\{claiming/);
 assert.match(ui,/dirty\|\|pending/);
 console.log('VIP rune client: 15 verified slots, saved preset, retries, rollback, draft gate, RU/EN UI PASS');
