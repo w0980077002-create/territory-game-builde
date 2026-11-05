@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { FighterRig } from './FighterRig';
-import { ACTION_MS, jointFrames, motionStops, type FighterMotion, type Joint } from './fighterAnimations';
+import { ACTION_MS, CONTACT_MS, jointFrames, motionStops, type FighterMotion, type Joint } from './fighterAnimations';
 import type { FighterRigDefinition } from './fighterRigs';
 import './combat2d.css';
 
@@ -58,7 +58,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
         // SVG Web Animations implementations.
         const visibleFrame = reduced?.matches || motion === 'death' || motion === 'victory'
           ? frames[frames.length - 1]
-          : frames.find((frame, index) => index > 0 && typeof frame.offset === 'number' && frame.offset >= 350 / ACTION_MS) ?? frames[frames.length - 1];
+          : frames.find((frame, index) => index > 0 && typeof frame.offset === 'number' && frame.offset >= CONTACT_MS / ACTION_MS) ?? frames[frames.length - 1];
         const showLegacyPose = () => { joint.style.transform = String(visibleFrame.transform ?? ''); };
         // Older Telegram WebViews may lack SVG Web Animations entirely.
         // Keep the resolved pose visible instead of silently freezing every joint.
