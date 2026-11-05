@@ -73,8 +73,12 @@ assert.match(fight, /data-testid="pve-victory-save-status"/,
   'The player sees pending/confirmed/failed victory save');
 assert.match(fight, /data-testid="pve-victory-save-retry"/,
   'Failed saves can be retried without granting another reward');
-assert.match(fight, /disabled=\{nextPending \|\| \(outcome\.won && saveState !== 'confirmed'\)\}/,
-  'Next cannot spend stones while a victory is unsaved');
+assert.match(fight, /disabled=\{nextPending \|\| \(saveRequired && saveState !== 'confirmed'\)\}/,
+  'Next cannot spend stones while a win or VIP loss refill remains unsaved');
+assert.match(fight, /saveRequired = outcome\.won \|\| victorySnapshotRef\.current !== null/,
+  'Defeat with a replenished belt uses the same durable save fence');
+assert.match(fight, /stagePveVictoryJournal\(userId, refilledState\)/,
+  'Classic defeat refills are journaled before changing the in-memory belt');
 assert.match(battle, /if \(pveVictorySaveBlocked\(userId\) \|\| saveBlocked\.has\(userId\) \|\| pendingPveVictoryJournal\(userId\)\)/,
   'Returning to Campaign/Trials must not bypass a pending victory checkpoint');
 assert.match(battle, /subscribePveVictorySave\(userId/,
