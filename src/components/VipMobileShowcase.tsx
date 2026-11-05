@@ -3,9 +3,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Crown, Sparkles, LockKeyhole, Shi
 import { useStore } from '@/game/store';
 import { useGame, useAccount } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
-import { selectedFollower } from '@/game/followers';
 import { getAppearanceIcon } from '@/game/appearance';
-import { getFollowerArt } from '@/game/combatArt';
 import { VIP_TIERS, vipTier } from '@/game/vipProgram';
 import { VIP_COSMETICS, activeVipCosmetic, setVipCosmetic, vipArtUrl, type VipCosmeticCategory } from '@/game/vipCosmetics';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
@@ -14,8 +12,9 @@ import './vipTerritory.css';
 const root = import.meta.env.BASE_URL;
 const vipRoot = root + 'assets/territory/vip/';
 const emblem = (n:number) => vipRoot + 'badges/vip-' + String(n).padStart(2,'0') + '.svg';
-const chestArt = (kind:'daily'|'weekly') => kind==='daily'
-  ? root + 'assets/territory/ui/shop/gem-chest-large.webp' : root + 'ic-events.webp';
+const chestArt = (kind:'daily'|'weekly',level:number) => vipRoot+'chests/' +
+  (kind==='daily'?'daily-'+Math.min(5,Math.ceil(level/2)):
+    'weekly-'+(level<=3?1:level<=5?2:level===6?3:level<=8?4:5)) + '.svg';
 const plannedPrices = [0,1,10,100,300,500,1000,3000,5000,8000,10000] as const;
 type Mode = 'benefits'|'tryon'|'chests';
 type Tab = Exclude<VipCosmeticCategory,'frame'>;
@@ -33,12 +32,11 @@ type Props={userId:string;onBack:()=>void;backToCity?:boolean;
   onEquipment:()=>void;onRunes:()=>void;onBelt:()=>void};
 
 /** Player-visible VIP mockup. Changing a preview tier never grants entitlements, rewards or payments. */
-export function VipMobileShowcase({userId,onBack,backToCity=false,onEquipment,onRunes,onBelt}:Props){
+export function VipMobileShowcase({userId,onBack,backToCity=false,onRunes,onBelt}:Props){
   const game=useStore(useGame);
   const account=useStore(useAccount);
   const {language}=useLanguage();
   const en=language==='en';
-  const companion=selectedFollower(game);
   const remaining=Math.max(0,(account.vipRemaining??0)-(performance.now()-(account.vipCheckedAt??0)));
   const realVip=Math.min(10,Math.max(0,account.permanentVip??0,remaining>0?account.vip:0));
   const [chosen,setChosen]=useState<number|null>(null);
@@ -52,10 +50,14 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onEquipment,on
   const cosmetics=VIP_COSMETICS.filter(item=>item.category===tab)
     .sort((a,b)=>Number(b.minVip<=tier)-Number(a.minVip<=tier)||b.minVip-a.minVip);
   const cosmetic=cosmetics[cosmeticIndex%Math.max(1,cosmetics.length)]??null;
-  const crown=tab==='crown'&&cosmetic&&cosmetic.minVip<=tier ? cosmetic :
+  // Show the actual hero OR one complete skin, never two overlaid characters.
+  const previewSkin=mode==='tryon'&&tab==='skin'?cosmetic:null;
+  const previewCrest=mode==='tryon'&&tab==='crest'?cosmetic:null;
+  const previewThrone=mode==='tryon'&&tab==='throne'?cosmetic?.asset:
+    mode==='benefits'&&tier===10?'cosmetics/throne-vip10.svg':null;
+  const previewAura=mode==='tryon'?tab==='aura':tier>=5;
+  const crown=mode==='tryon'?(tab==='crown'?cosmetic:null):
     VIP_COSMETICS.filter(x=>x.category==='crown'&&x.minVip<=tier).sort((a,b)=>b.minVip-a.minVip)[0];
-  const hasAura=tier>=5;
-  const hasThrone=tier===10;
   const equipped=Boolean(cosmetic&&activeVipCosmetic(userId,tab,realVip)?.id===cosmetic.id);
   const eligible=Boolean(cosmetic&&cosmetic.minVip<=realVip);
   const changeTier=(n:number)=>{setChosen(n);setCosmeticIndex(0);setChest(null);
@@ -81,29 +83,6 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onEquipment,on
       <Crown size={23} className="vip-top-crown"/>
     </header>
 
-    <div className="vip-hero-panel vip-carved-panel">
-      <div className="vip-stage" data-testid="vip-stage-transformation">
-        <div className="vip-stage-title"><Sparkles size={15}/>
-          {tier===10?(en?'PINNACLE OF GLORY':'ВЕРШИНА СЛАВЫ')
-            :tier>=5?(en?'VIP TRANSFORMATION':'ПРИМЕРКА VIP')
-            :(en?'PATH TO LEGEND':'ПУТЬ К ЛЕГЕНДЕ')}
-        </div>
-        {hasThrone&&<img className="vip-prestige-throne" src={vipArtUrl('cosmetics/throne-vip10.svg')} alt="" draggable={false}/>}
-        {hasAura&&<span className="vip-aura-effect" aria-hidden="true"/>}
-        <img className="vip-actual-hero" src={getAppearanceIcon(game.appearance)} alt="" draggable={false}/>
-        {crown&&<img className="vip-crown-on-hero" src={vipArtUrl(crown.asset)} alt="" draggable={false}/>}
-        {companion&&<img className="vip-actual-companion" src={getFollowerArt(companion.id)} alt="" draggable={false}/>}
-        <div className="vip-stage-emblem">
-          <div className="vip-emblem-glow"><img src={emblem(tier)} alt="" draggable={false}/></div>
-          <strong>VIP {tier}</strong>
-        </div>
-      </div>
-      <div className="vip-hero-caption">
-        <strong>VIP {tier} · {tierName(tier,en)}</strong>
-        <span data-testid="vip-owner-test-info">{en?'Your VIP':'Ваш VIP'}: {realVip} · {en?'Previewing':'Смотрите'} VIP {tier}</span>
-      </div>
-    </div>
-
     <div className="vip-tier-panel vip-carved-panel">
       <div className="vip-tier-grid" role="group" aria-label={en?'VIP levels':'Уровни VIP'}>
         {VIP_TIERS.slice(1).map(t=><button key={t.level} type="button"
@@ -116,6 +95,33 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onEquipment,on
       <div className="vip-tier-bottom">
         <strong>VIP {tier} · {tierName(tier,en)}</strong>
         <small>{en?'Planned price':'Плановая цена'}: {'$'}{plannedPrices[tier]} · {en?'Preview':'Просмотр'}</small>
+      </div>
+    </div>
+
+    <div className="vip-hero-panel vip-carved-panel">
+      <div className={'vip-stage'+(previewSkin?' vip-stage-skin':'')}
+        data-testid="vip-stage-transformation" data-vip-subject={previewSkin?.id==='companion-vip7'?'companion':'hero'}>
+        <div className="vip-stage-title"><Sparkles size={14}/>
+          {tier===10?(en?'FOUNDER LEGEND':'ЛЕГЕНДА TERRITORY')
+            :tier>=5?(en?'THE POWER OF VIP':'СИЛА VIP')
+            :(en?'PATH TO LEGEND':'ПУТЬ К ЛЕГЕНДЕ')}
+        </div>
+        {previewThrone&&<img className="vip-prestige-throne" src={vipArtUrl(previewThrone)} alt="" draggable={false}/>}
+        {previewAura&&<span className="vip-aura-effect" aria-hidden="true"/>}
+        <img className="vip-actual-hero" data-testid="vip-stage-art"
+          src={previewSkin?vipArtUrl(previewSkin.asset):getAppearanceIcon(game.appearance)}
+          alt={previewSkin?(en?previewSkin.en:previewSkin.ru):(en?'Your hero':'Ваш герой')}
+          draggable={false}/>
+        {crown&&!previewSkin&&<img className="vip-crown-on-hero" src={vipArtUrl(crown.asset)} alt="" draggable={false}/>}
+        {previewCrest&&<img className="vip-stage-crest" src={vipArtUrl(previewCrest.asset)} alt="" draggable={false}/>}
+        <div className="vip-stage-emblem">
+          <div className="vip-emblem-glow"><img src={emblem(tier)} alt="" draggable={false}/></div>
+          <strong>VIP {tier}</strong>
+        </div>
+      </div>
+      <div className="vip-hero-caption">
+        <strong>VIP {tier} · {tierName(tier,en)}</strong>
+        <span data-testid="vip-owner-test-info">{en?'Your VIP':'Ваш VIP'}: {realVip} · {en?'Previewing':'Смотрите'} VIP {tier}</span>
       </div>
     </div>
 
@@ -135,11 +141,10 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onEquipment,on
           {img:vipArtUrl('cosmetics/throne-vip10.svg'),ru:'Королевский трон',en:'Royal throne',cat:'throne' as Tab},
           {img:vipArtUrl('cosmetics/heraldry/crest-4.svg'),ru:'Личный герб',en:'Personal crest',cat:'crest' as Tab},
           {img:root+'assets/territory/ui/shop/plate-armor.webp',ru:'Эпический облик',en:'Epic skin',cat:'skin' as Tab},
-          {img:chestArt('daily'),ru:'Премиум сундук',en:'Premium chest',cat:null},
         ]:tier>=5?[
           {img:vipArtUrl('cosmetics/crowns/crown-1.svg'),ru:'Элитная корона',en:'Elite crown',cat:'crown' as Tab},
           {img:vipArtUrl('cosmetics/auras/aura-1.svg'),ru:'Золотая аура',en:'Golden aura',cat:'aura' as Tab},
-          {img:chestArt('daily'),ru:'Расширенный сундук',en:'Special chest',cat:null},
+          {img:chestArt('daily',tier),ru:'Расширенный сундук',en:'Special chest',cat:null},
           {img:vipArtUrl('cosmetics/heraldry/crest-2.svg'),ru:'Престижный герб',en:'Prestige crest',cat:'crest' as Tab},
         ]:[
           {img:root+'gold-coin.webp',ru:'Бонус золота',en:'Gold +'+tier*2+'%',cat:null},
@@ -147,7 +152,7 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onEquipment,on
           {img:root+'potion-hp-viking.webp',ru:'Умный пояс · VIP 3',en:'Smart belt · VIP 3',cat:null},
           {img:root+'assets/territory/map/icons/rune-stones-v1.webp',ru:'Пресеты рун · VIP 3',en:'Rune sets · VIP 3',cat:null},
         ]).map((x,i)=><button type="button" className="vip-benefit-card" key={i}
-          onClick={()=>x.cat?changeTab(x.cat):setMode('chests')}>
+          disabled={tier<5&&i<2} onClick={()=>x.cat?changeTab(x.cat):tier<5&&i===2?onBelt():tier<5&&i===3?onRunes():setMode('chests')}>
           <img src={x.img} alt="" draggable={false}/>
           <strong>{en?x.en:x.ru}</strong>
           {tier<5&&i<2&&<small>+{tier*2}%</small>}
@@ -166,31 +171,25 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onEquipment,on
           <span>{tabLabels[cat].symbol}</span>{en?tabLabels[cat].en:tabLabels[cat].ru}
         </button>)}
       </div>
-      {cosmetic&&<div className="vip-tryon-feature">
-        <div className="vip-tryon-art">
-          {tab==='aura'&&<span className="vip-preview-aura" aria-hidden="true"/>}
-          {tab==='throne'&&<img className="vip-preview-throne" src={vipArtUrl('cosmetics/throne-vip10.svg')} alt=""/>}
-          <img className="vip-tryon-hero" src={getAppearanceIcon(game.appearance)} alt="" draggable={false}/>
-          <img className={'vip-preview-cosmetic vip-preview-'+tab} src={tab==='skin'?getAppearanceIcon(game.appearance):vipArtUrl(cosmetic.asset)} alt="" draggable={false}/>
-        </div>
+      {cosmetic&&<div className="vip-tryon-feature" data-testid="vip-tryon-choice">
         <div className="vip-tryon-detail">
           <strong>{en?cosmetic.en:cosmetic.ru}</strong>
-          <span>{en?'Unlocks at VIP':'Открывается с VIP'} {cosmetic.minVip}</span>
+          <span>{en?'Unlocks at VIP':'Доступно с VIP'} {cosmetic.minVip}</span>
           <div className="vip-tryon-controls">
             <button type="button" onClick={()=>setCosmeticIndex(n=>(n+cosmetics.length-1)%cosmetics.length)}
-              aria-label={en?'Previous cosmetic':'Предыдущее оформление'}><ChevronLeft size={20}/></button>
+              aria-label={en?'Previous cosmetic':'Предыдущее оформление'}><ChevronLeft size={19}/></button>
             <span>{cosmeticIndex%cosmetics.length+1} / {cosmetics.length}</span>
             <button type="button" onClick={()=>setCosmeticIndex(n=>(n+1)%cosmetics.length)}
-              aria-label={en?'Next cosmetic':'Следующее оформление'}><ChevronRight size={20}/></button>
+              aria-label={en?'Next cosmetic':'Следующее оформление'}><ChevronRight size={19}/></button>
           </div>
           {eligible?<button type="button" className="vip-gold-action" onClick={equip}>
             {equipped?<><Check size={15}/>{en?'Equipped — remove':'Надето — снять'}</>:en?'Equip':'Надеть'}
           </button>:<div className="vip-locked-label"><LockKeyhole size={14}/>
-            {en?'Preview · requires VIP '+cosmetic.minVip:'Примерка · нужен VIP '+cosmetic.minVip}
+            {en?'View only · unlocks at VIP '+cosmetic.minVip:'Только просмотр · доступно с VIP '+cosmetic.minVip}
           </div>}
         </div>
       </div>}
-      <p className="vip-demo-disclaimer">{en?'Locked cosmetics are only previewed, never granted.':'Закрытые украшения можно примерить, но нельзя получить.'}</p>
+      <p className="vip-demo-disclaimer">{en?'All cosmetics can be viewed. Only unlocked VIP cosmetics can be equipped.':'Любой облик можно посмотреть. Надеть его можно только при нужном VIP.'}</p>
     </div>}
 
     {mode==='chests'&&<div className="vip-carved-panel vip-content-panel" data-testid="vip-chest-gallery">
@@ -198,7 +197,7 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onEquipment,on
       <div className="vip-chests-row">
         {(['daily','weekly'] as const).map(kind=><button type="button" key={kind}
           onClick={()=>openChest(kind)} className="vip-chest-card">
-          <img src={chestArt(kind)} alt="" draggable={false}/>
+          <img src={chestArt(kind,tier)} alt="" draggable={false}/>
           <strong>{kind==='daily'?(en?'Daily chest':'Ежедневный сундук'):(en?'Weekly chest':'Еженедельный сундук')}</strong>
           <span className="vip-gold-action">{en?'Preview':'Посмотреть'}</span>
         </button>)}
@@ -206,38 +205,17 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onEquipment,on
       <p className="vip-demo-disclaimer">{en?'Example rewards only; actual contents are not yet final.':'Примеры наград. Реальный состав сундуков пока не утверждён.'}</p>
     </div>}
 
-    {mode==='benefits'&&<div className="vip-teaser-line vip-carved-panel">
-      <img src={chestArt('daily')} alt="" draggable={false}/>
-      <div><strong>{en?'Premium VIP chests':'Премиальные VIP-сундуки'}</strong>
-        <small>{en?'Preview VIP '+tier+' rewards':'Примеры наград VIP '+tier}</small></div>
-      <button type="button" className="vip-gold-action" onClick={()=>setMode('chests')}>
-        {en?'View':'Смотреть'}
-      </button>
-    </div>}
-
-    {tier===10&&<div className="vip-founder-line vip-carved-panel"><Crown size={21}/>
-      <div><strong>{en?'MAXIMUM VIP STATUS':'МАКСИМАЛЬНЫЙ СТАТУС VIP'}</strong>
-        <small>{en?'Prestige for the founders of TERRITORY':'Престижное оформление Основателей TERRITORY'}</small>
-      </div>
-    </div>}
-
     <div className="vip-preview-notice" data-testid="vip-preview-not-live">
       <ShieldCheck size={15}/>
       <span>{en?'Purchases and real rewards are disabled. This is a visual preview.'
         :'Платежи и реальные награды выключены. Это визуальная примерка.'}</span>
     </div>
-    <div className="vip-secondary-links">
-      <button type="button" onClick={onBelt}>{en?'Belt':'Пояс'}</button>
-      <button type="button" onClick={onRunes}>{en?'Runes':'Руны'}</button>
-      <button type="button" onClick={onEquipment}>{en?'Equipment':'Экипировка'}</button>
-    </div>
-
     {chest&&<div className="vip-chest-overlay" role="dialog" aria-modal="true"
       aria-label={en?'VIP chest preview':'Предпросмотр VIP-сундука'}>
       <div className="vip-chest-dialog vip-carved-panel" data-testid="vip-chest-demo">
         <h3>{en?'VIP chest preview':'VIP сундук · предпросмотр'}</h3>
         <img className={'vip-opening-chest '+(chestOpened?'vip-opening-revealed':'')}
-          src={chestArt(chest)} alt="" draggable={false}/>
+          src={chestArt(chest,tier)} alt="" draggable={false}/>
         {chestOpened?<div data-testid="vip-chest-demo-reward">
           <strong>{en?'Example rewards':'Примеры наград'}</strong>
           <div className="vip-sample-rewards">

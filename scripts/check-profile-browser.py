@@ -76,11 +76,26 @@ with sync_playwright() as p:
             assert page.locator('[data-testid="living-hero-showcase"]').count() == 0, 'VIP screen did not replace hero details'
             badges = vip.get_by_role('group', name='VIP levels' if lang == 'en' else 'Уровни VIP').locator('button')
             assert badges.count() == 10, 'VIP 1–10 artwork missing'
+            # Owner mobile review: all 10 tiers are readable in two rows,
+            # with one character/artwork in the live stage, not stacked portraits.
+            assert badges.nth(0).bounding_box()['y'] < badges.nth(5).bounding_box()['y'], 'VIP ranks are not in two rows'
+            assert vip.locator('[data-testid="vip-stage-art"]').count() == 1, 'VIP must use one main preview model'
+            assert vip.locator('.vip-actual-companion, .vip-tryon-art').count() == 0, 'Duplicated character overlay reintroduced'
             assert vip.locator('img').evaluate_all('images => images.every(el => el.complete && el.naturalWidth > 0)'), (width, lang, 'VIP art missing')
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width,lang,'VIP page causes horizontal scrolling')
             assert vip.locator('[data-testid="vip-preview-not-live"]').count() == 1, 'Unreleased VIP purchases/claims must not be advertised as live'
             if width == 360 and lang == 'ru':
                 page.screenshot(path='/tmp/territory-vip-preview-360.png')
+            badges.nth(6).click()  # VIP 7 previews without granting VIP.
+            assert vip.locator('[data-testid="vip-live-tryon"]').count() == 1
+            vip.locator('.vip-cosmetic-tabs button').nth(3).click()  # Full-size skin, not a ghost overlay.
+            assert vip.locator('.vip-stage-skin img[data-testid="vip-stage-art"]').count() == 1
+            assert 'companion-vip7.svg' in vip.locator('[data-testid="vip-stage-art"]').get_attribute('src')
+            assert vip.locator('[data-testid="vip-stage-transformation"]').get_attribute('data-vip-subject') == 'companion'
+            assert vip.locator('.vip-actual-companion, .vip-tryon-art').count() == 0
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'VIP try-on horizontal scroll'
+            if width == 360 and lang == 'ru':
+                page.screenshot(path='/tmp/territory-vip-tryon-360.png')
             page.get_by_role('button', name='Back to hero' if lang == 'en' else 'Назад к герою').click()
             hero.wait_for(timeout=5000)
             assert page.locator('[data-testid="vip-mobile-showcase"]').count() == 0
@@ -226,7 +241,7 @@ with sync_playwright() as p:
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             assert page.locator('.home-side').count() >= 6
             assert page.locator('.home-side').evaluate_all('buttons => buttons.every(b => { const r=b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && r.left >= 0 && r.right <= innerWidth; })')
-            page.locator('.home-profile-chip').click()
+            page.locator('.home-profile-chip button').first.click()
             assert page.evaluate('window.__route') == 'hero'
             if width == 360 and lang == 'ru':
                 page.screenshot(path='/tmp/territory-city-short-360.png')
