@@ -50,7 +50,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
     } catch { reduced = null; }
     let animations: Animation[] = [];
     const apply = () => {
-      animations.forEach(a => a.cancel());
+      animations.forEach(a => { try { a.cancel(); } catch { /* Legacy SVG animation teardown may throw. */ } });
       animations = [];
       // A reduced-motion preference change may switch from the legacy inline
       // fallback to Web Animations; clear the stale inline transform first.
@@ -106,7 +106,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
         if (listenerKind === 'modern') reduced?.removeEventListener('change', apply);
         else if (listenerKind === 'legacy') reduced?.removeListener(apply);
       } catch { /* Legacy MediaQueryList teardown must not block rig cleanup. */ }
-      animations.forEach(a => a.cancel());
+      animations.forEach(a => { try { a.cancel(); } catch { /* Legacy SVG animation teardown may throw. */ } });
       svg.querySelectorAll<SVGGElement>('[data-rig-part]').forEach(joint => { joint.style.transform = ''; });
     };
   }, [motion, animationEvent, speed, critical, rig.id]);
