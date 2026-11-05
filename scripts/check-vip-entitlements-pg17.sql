@@ -184,6 +184,39 @@ BEGIN
  END;
 END $refund_future$;
 
+-- A provider may report a refund before we have seen the settlement.
+-- The same chronology guard must reject malformed INSERT receipts.
+DO $refund_insert_chronology$
+BEGIN
+ BEGIN
+  INSERT INTO territory_private.vip_payment_ledger_v1
+   (provider_transaction_id,player_id,sku,price_version,stars_amount,
+    verified_usd_cents,status,recorded_at,refunded_at)
+   VALUES ('refund-first-backdated-0001','10000000-0000-0000-0000-000000000002',
+    'potion_pack','v1',50,1000,'refunded',
+    statement_timestamp(),statement_timestamp()-interval '1 day');
+  RAISE EXCEPTION 'Backdated first-seen refund accepted';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'vip_payment_refund_before_receipt' THEN RAISE; END IF;
+ END;
+ BEGIN
+  INSERT INTO territory_private.vip_payment_ledger_v1
+   (provider_transaction_id,player_id,sku,price_version,stars_amount,
+    verified_usd_cents,status,recorded_at,refunded_at)
+   VALUES ('refund-first-future-000002','10000000-0000-0000-0000-000000000002',
+    'potion_pack','v1',50,1000,'refunded',
+    statement_timestamp(),statement_timestamp()+interval '1 day');
+  RAISE EXCEPTION 'Future-dated first-seen refund accepted';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'vip_payment_refund_in_future' THEN RAISE; END IF;
+ END;
+ IF EXISTS (SELECT 1 FROM territory_private.vip_payment_ledger_v1
+   WHERE provider_transaction_id IN
+    ('refund-first-backdated-0001','refund-first-future-000002')) THEN
+  RAISE EXCEPTION 'Invalid first-seen refund persisted';
+ END IF;
+END $refund_insert_chronology$;
+
 -- Neither privileged mistakes nor retries may rewrite or erase grant history.
 DO $append_only_grants$
 BEGIN
