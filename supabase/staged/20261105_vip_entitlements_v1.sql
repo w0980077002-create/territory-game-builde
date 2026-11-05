@@ -41,6 +41,22 @@ BEGIN
   THEN RAISE EXCEPTION 'vip_payment_refund_immutable'; END IF;
   RETURN NEW;
 END $vip_payment_guard$;
+-- Even privileged maintenance must not erase settled/refunded payment evidence.
+-- Refunds are represented by a status transition, never by deleting a row.
+CREATE OR REPLACE FUNCTION territory_private.vip_payment_no_delete_v1()
+RETURNS trigger LANGUAGE plpgsql SET search_path='pg_catalog'
+AS $vip_payment_delete$
+BEGIN
+  RAISE EXCEPTION 'vip_payment_history_immutable';
+END $vip_payment_delete$;
+DROP TRIGGER IF EXISTS vip_payment_no_delete_guard_v1
+  ON territory_private.vip_payment_ledger_v1;
+CREATE TRIGGER vip_payment_no_delete_guard_v1
+BEFORE DELETE ON territory_private.vip_payment_ledger_v1
+FOR EACH ROW EXECUTE FUNCTION territory_private.vip_payment_no_delete_v1();
+REVOKE ALL ON FUNCTION territory_private.vip_payment_no_delete_v1()
+ FROM PUBLIC,anon,authenticated;
+
 DROP TRIGGER IF EXISTS vip_payment_immutable_guard_v1
   ON territory_private.vip_payment_ledger_v1;
 CREATE TRIGGER vip_payment_immutable_guard_v1
