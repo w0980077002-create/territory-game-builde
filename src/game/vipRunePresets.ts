@@ -8,6 +8,9 @@ const UUID = /^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12
 type Slot = 1 | 2;
 type Pending = {version:1;slot:Slot;revision:number;operation:string};
 const active=new Map<string,Promise<boolean>>();
+// A second synchronous tap must reuse the SAME request even while auth.getUser
+// has not resolved yet. The per-user map alone cannot fence that await.
+let activeRequest: Promise<boolean> | null = null;
 const key = (userId:string)=>'territory:vip-rune-preset:v1:'+userId;
 export type VipRunePresetStatus = {vip:number;presets:{slot:Slot;slots:{slotId:string;runeId:string|null}[]}[]};
 function validSlot(x:unknown):x is Slot{return x===1||x===2;}
@@ -85,6 +88,7 @@ export async function saveVipRunePreset(slot:Slot,revision:number):Promise<void>
 export function applyVipRunePreset(slot:Slot,revision:number):Promise<boolean>{
  if(!ENABLED||!validSlot(slot)||!Number.isSafeInteger(revision)||revision<0)
    return Promise.reject(Error('vip_rune_invalid_request'));
+ if(activeRequest) return activeRequest;
  const job=(async()=>{
    const userId=await owner();
    const existing=active.get(userId);
@@ -134,5 +138,7 @@ export function applyVipRunePreset(slot:Slot,revision:number):Promise<boolean>{
    void task.finally(()=>{if(active.get(userId)===task)active.delete(userId);}).catch(()=>{});
    return task;
  })();
+ activeRequest = job;
+ void job.finally(() => { if(activeRequest===job) activeRequest=null; }).catch(()=>{});
  return job;
 }
