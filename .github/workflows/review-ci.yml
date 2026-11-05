@@ -70,6 +70,7 @@ jobs:
       - run: npm run test:feature-separation
       - run: npm run test:mobile-home
       - run: npm run test:visual-viking
+      - run: node scripts/check-territory-oak-unified.mjs
       - run: npm run test:events
       - run: npm run test:arena-prizes
       - run: node scripts/check-combat-visuals.mjs
