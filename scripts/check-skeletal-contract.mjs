@@ -51,6 +51,12 @@ for(const rig of [viking,goblin])for(const part of ['head','torso','arm-right','
 }
 assert(bytes<600_000,'Two prepared rigs must stay within mobile download budget');
 
+// Prepared rigs must mount even when SVG Web Animations are unavailable;
+// otherwise SkeletalFighter's legacy contact-pose fallback is unreachable.
+const figureSource=readFileSync('src/components/arena/FighterFigure.tsx','utf8');
+assert.doesNotMatch(figureSource,/canAnimateRig\s*&&\s*enabledRig/, 'Do not gate prepared rigs on SVG animate()');
+assert.match(figureSource,/skeletalReady\s*=\s*!!rig\s*&&\s*enabledRig\s*===\s*rig\.id/, 'Prepared rig must remain mounted for legacy fallback');
+
 // Legacy Telegram SVG engines must not leave stale inline poses after a
 // reduced-motion preference change or an event cleanup.
 const skeletalSource=readFileSync('src/components/combat2d/SkeletalFighter.tsx','utf8');
