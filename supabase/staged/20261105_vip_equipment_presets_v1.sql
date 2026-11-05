@@ -157,7 +157,7 @@ BEGIN
  v_equipped:=p.game_state#>'{player,equipped}';
  v_inventory:=p.game_state->'inventory';
  IF jsonb_typeof(v_recipe) IS DISTINCT FROM 'object'
-   OR jsonb_object_length(v_recipe)<>7
+   OR (SELECT count(*) FROM jsonb_object_keys(v_recipe))<>7
    OR jsonb_typeof(v_equipped) IS DISTINCT FROM 'object'
    OR jsonb_typeof(v_inventory) IS DISTINCT FROM 'array'
  THEN RAISE EXCEPTION 'vip_preset_invalid_state'; END IF;
@@ -193,7 +193,58 @@ BEGIN
    END LOOP;
    IF v_seen<>1 OR jsonb_typeof(v_gear) IS DISTINCT FROM 'object'
      OR v_gear->>'slot' IS DISTINCT FROM v_slot
-     OR NOT (v_gear->>'level') ~ '^[0-9]{1,3}$'
+     OR (v_gear->>'level') IS NULL
+     OR NOT (v_gear->>'level') ~ '^[0-9]{1,3}     OR (v_gear->>'level')::int> (p.game_state#>>'{player,level}')::int
+   THEN RAISE EXCEPTION 'vip_preset_gear_missing_or_invalid'; END IF;
+   v_new_equipped:=v_new_equipped||jsonb_build_object(v_slot,v_gear);
+ END LOOP;
+
+ -- Keep all unrelated inventory lots byte-for-byte; only remove the exact
+ -- selected equipment wrapper. Reject duplicates instead of minting items.
+ FOR v_element IN SELECT value FROM jsonb_array_elements(v_inventory) LOOP
+   IF v_element->>'type'='equipment'
+      AND v_element->'equipment'->>'id'=ANY(v_selected) THEN CONTINUE; END IF;
+   v_new_inventory:=v_new_inventory||jsonb_build_array(v_element);
+ END LOOP;
+ FOREACH v_slot IN ARRAY ARRAY['helmet','amulet','armor','weapon','shield','ring','boots'] LOOP
+   v_current:=v_equipped->v_slot;
+   IF v_current IS NULL OR v_current='null'::jsonb THEN CONTINUE; END IF;
+   IF jsonb_typeof(v_current) IS DISTINCT FROM 'object'
+     OR v_current->>'slot' IS DISTINCT FROM v_slot
+     OR NULLIF(v_current->>'id','') IS NULL
+   THEN RAISE EXCEPTION 'vip_preset_invalid_equipment'; END IF;
+   IF v_current->>'id'=ANY(v_selected) THEN CONTINUE; END IF;
+   v_return_id:='inv_vip_preset_'||replace(p_operation::text,'-','')||'_'||v_slot;
+   IF EXISTS(SELECT 1 FROM jsonb_array_elements(v_new_inventory) i
+      WHERE i->>'id'=v_return_id) THEN
+     RAISE EXCEPTION 'vip_preset_inventory_id_conflict'; END IF;
+   v_new_inventory:=v_new_inventory||jsonb_build_array(jsonb_build_object(
+     'id',v_return_id,'name',v_current->>'name','icon',v_current->>'icon',
+     'type','equipment','rarity',v_current->>'rarity','qty',1,
+     'description','VIP preset • preserved equipment','equipment',v_current));
+ END LOOP;
+
+ v_state:=jsonb_set(jsonb_set(p.game_state,'{inventory}',v_new_inventory),
+    '{player,equipped}',v_new_equipped);
+ v_token:=greatest(clock_timestamp(),p_expected+interval '1 microsecond');
+ UPDATE public.players SET game_state=v_state,updated_at=v_token WHERE id=u
+ RETURNING * INTO p;
+ INSERT INTO territory_private.vip_equipment_preset_receipts_v1
+   (operation_id,player_id,preset_no,updated_at)
+ VALUES (p_operation,u,p_slot,p.updated_at);
+ RETURN jsonb_build_object('success',true,'already_applied',false,
+    'operation_id',p_operation,'updated_at',p.updated_at,'game_state',p.game_state,
+    'wallet_gold',p.gold,'wallet_gems',p.gems);
+END $vip_apply$;
+
+REVOKE ALL ON FUNCTION public.territory_vip_equipment_preset_save_v1(integer,timestamptz),
+ public.territory_vip_equipment_preset_apply_v1(integer,timestamptz,uuid)
+ FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.territory_vip_equipment_preset_save_v1(integer,timestamptz),
+ public.territory_vip_equipment_preset_apply_v1(integer,timestamptz,uuid)
+ TO authenticated;
+COMMIT;
+
      OR (v_gear->>'level')::int> (p.game_state#>>'{player,level}')::int
    THEN RAISE EXCEPTION 'vip_preset_gear_missing_or_invalid'; END IF;
    v_new_equipped:=v_new_equipped||jsonb_build_object(v_slot,v_gear);
