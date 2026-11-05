@@ -137,6 +137,9 @@ with sync_playwright() as p:
                 assert metrics['planks'], (width,lang,'Missing Shop timber on Hero lower card',metrics)
                 assert metrics['rope'] == 'none' or metrics['ropeDisplay'] == 'none', (width,lang,'Triple rope returned',metrics)
                 assert metrics['left'] >= 0 and metrics['right'] <= width + 1, (width,lang,'Hero card clipped',metrics)
+                if width <= 360:
+                    pad = card.evaluate("el=>getComputedStyle(el).paddingLeft")
+                    assert pad == '9px', (width,lang,'Compact Hero oak card lost narrow screen padding',pad)
             for summary in page.locator('.territory-profile > details.card > summary').all():
                 metrics = summary.evaluate("""el => {
                     const c=getComputedStyle(el),r=el.getBoundingClientRect();
@@ -148,11 +151,13 @@ with sync_playwright() as p:
             assert page.locator('[data-testid="vip-open-page"]').evaluate(
                 "el=>getComputedStyle(el).backgroundImage.includes('shop-wood-planks.webp')"), (width,lang,'VIP entry still flat')
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-            if width == 360 and lang == 'ru':
-                # Save the *whole* live-styled Hero, especially accordions and
-                # Telegram card at the bottom, for an actual visual review.
+            if width == 360:
+                # Capture both actual RU/EN labels, not just the Russian oak
+                # screen. These are fixture images, NOT Telegram device proof.
                 page.locator('.territory-shell').evaluate("(el)=>{el.style.height='auto';el.style.overflow='visible';}")
-                page.screenshot(path='/tmp/territory-profile-oak-360.png', full_page=True, animations='disabled')
+                page.screenshot(path=f'/tmp/territory-profile-oak-360-{lang}.png', full_page=True, animations='disabled')
+                if lang == 'ru':
+                    page.screenshot(path='/tmp/territory-profile-oak-360.png', full_page=True, animations='disabled')
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-profile-preview.html?companion')
             companion = page.locator('[data-testid="hero-companion-journey"]')
             companion.wait_for()
