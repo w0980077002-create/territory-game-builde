@@ -30,4 +30,12 @@ assert(!/440px 220px|400px 200px|480px 240px/.test(skin), 'Do not stretch wood g
 assert(skin.includes('.territory-shell.territory-oak-heritage'),
   'Do not recolour the full game or change approved screens');
 assert(!skin.includes('.territory-nav'), 'Bottom navigation must not change');
+
+const heroParity = skin.slice(skin.indexOf('Owner mobile Hero parity'));
+assert(heroParity.includes('.territory-profile > :is(details.card,div.card)::before'), 'Hero compact cards require separate rope override');
+assert(heroParity.includes('content: none;') && heroParity.includes('display: none;'), 'Do not stamp repetitive rope trim on every Hero accordion');
+assert(heroParity.includes('summary::-webkit-details-marker'), 'Hero disclosures must hide native duplicate markers');
+assert(heroParity.includes('min-height: 44px;'), 'Hero accordion tap targets must remain 44px tall');
+assert(heroParity.includes('[data-testid="vip-open-page"]'), 'Hero VIP entry must share approved real timber finish');
+
 console.log('TERRITORY old-oak visual scope PASS: 13 standard screens, Shop-approved natural plank grain, no mirrored waves, protected Arena/Shop/City/Map/PvE/VIP and bottom nav.');
