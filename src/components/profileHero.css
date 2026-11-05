@@ -531,3 +531,236 @@
 .territory-profile .hero-showcase__art-gate button:focus-visible {
   outline:3px solid #fff3b3;outline-offset:2px;
 }
+
+
+/* 2026-11-05 actual mobile Hero visual rebuild.
+ * Keep the REAL stored hero, equipped items, XP, stats, campaign and routes.
+ * Approved Shop raster timber/forged fittings, no flat brown CSS facsimile
+ * and no repeating rope stamps on individual action rows. */
+.territory-profile .hero-showcase {
+  --hero-oak: var(--oak-heritage-planks, url('/assets/territory/ui/shop/shop-wood-planks.webp'));
+  --hero-beams: url('/assets/territory/ui/shop/shop-wood-beams.webp');
+  --hero-iron: var(--oak-heritage-iron, url('/assets/territory/arena-ui/iron-corner.svg'));
+  gap: 9px;
+  padding: 10px 8px 12px;
+  margin: 0 -2px;
+  border: 2px solid #87512e;
+  border-radius: 15px;
+  background:
+    linear-gradient(90deg,#140908db 0%,transparent 9%,transparent 91%,#140908db),
+    linear-gradient(#1709098c,#2a10098c),
+    var(--hero-oak) center / 480px auto repeat;
+  box-shadow: inset 0 0 0 2px #b477376b, 0 7px 15px #0c0608c4;
+}
+.territory-profile .hero-showcase__header {
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 2px ridge #b08049;
+  background:
+    linear-gradient(100deg,#21100dd0,#3d2113a1 54%,#150808cc),
+    var(--hero-beams) center / cover no-repeat;
+  box-shadow: inset 0 2px #ffd59951,0 3px 6px #130907b8;
+}
+.territory-profile .hero-showcase__identity h2 {
+  font-family: Georgia,system-ui,serif;
+  font-size: clamp(18px,5vw,23px);
+  text-shadow: 0 2px 2px #130804,1px 1px #120605;
+}
+.territory-profile .hero-showcase__resources {
+  padding-top: 5px;
+}
+.territory-profile .hero-showcase__banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  min-height: 59px;
+  padding: 6px 28px 7px;
+  border: 3px ridge #d5a65c;
+  border-radius: 16px 16px 7px 7px;
+  background:
+    linear-gradient(180deg,#70401e4d,#180908bc),
+    var(--hero-beams) center / cover no-repeat;
+  box-shadow: inset 0 3px #f1c77b78,inset 0 -4px #1a0b06bf,0 4px 9px #0e0607b8;
+  font: 900 clamp(27px,8vw,39px)/1 Georgia,system-ui,serif;
+  color:#ffe2a3;
+  -webkit-text-stroke:.35px #381504;
+  text-shadow: 0 3px #2e1009,0 0 7px #f7ac4b70;
+}
+.territory-profile .hero-showcase__banner > span {
+  color:#e1a951;
+  font: 700 14px Georgia,serif;
+  text-shadow:0 2px #271207;
+}
+.territory-profile .hero-showcase__banner::before,
+.territory-profile .hero-showcase__banner::after {
+  content:'';
+  position:absolute;
+  top:0;
+  width:29px;
+  height:29px;
+  background:var(--hero-iron) center / contain no-repeat;
+  pointer-events:none;
+}
+.territory-profile .hero-showcase__banner::before {left:0;}
+.territory-profile .hero-showcase__banner::after {right:0;transform:scaleX(-1);}
+.territory-profile .hero-showcase__stage {
+  min-height:clamp(320px,93vw,410px);
+  grid-template-columns:minmax(45px,58px) minmax(0,1fr) minmax(45px,58px);
+  align-items:stretch;
+  padding:9px 10px 27px;
+  border:4px ridge #b57b3e;
+  border-radius:10px;
+  background-color:#283d55;
+  background-position:center 43% !important;
+  background-size:cover !important;
+  box-shadow:inset 0 0 0 2px #211008d6,inset 0 -40px 42px #2810099c,
+    0 6px 10px #140806d9;
+}
+.territory-profile .hero-showcase__stage::before,
+.territory-profile .hero-showcase__stage::after {
+  content:'';
+  pointer-events:none;
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:11px;
+  z-index:2;
+  background:
+    linear-gradient(90deg,#140905e0,#a3693b60,#1b0b07c9),
+    var(--hero-beams) center/ auto 100% repeat-y;
+  box-shadow:1px 0 3px #0e0508ad;
+}
+.territory-profile .hero-showcase__stage::before {left:0;}
+.territory-profile .hero-showcase__stage::after {right:0;transform:scaleX(-1);}
+.territory-profile .hero-showcase__gear-column {
+  z-index:3;
+  justify-content:space-around;
+  gap:8px;
+}
+.territory-profile .hero-showcase__slot {
+  min-height:47px;
+  border:2px ridge #e1af6e;
+  border-radius:7px;
+  padding:3px;
+  background:
+    linear-gradient(140deg,#43211288,#1e1412c2),
+    var(--hero-oak) center / 200px auto repeat;
+  box-shadow: inset 0 0 0 2px #21140e,inset 0 1px #ffebb17a,
+    0 3px 5px #050305aa;
+}
+.territory-profile .hero-showcase__slot--empty img {opacity:.6;filter:drop-shadow(0 1px 2px #0b0709);}
+.territory-profile .hero-showcase__slot--equipped img {opacity:1;}
+.territory-profile .hero-showcase__character {
+  z-index:1;
+  min-height:clamp(275px,84vw,385px);
+  align-items:flex-end;
+}
+.territory-profile .hero-showcase__character::before {
+  inset:7% -18% 2%;
+  border-radius:50%;
+  background:radial-gradient(ellipse,#f9bc6594,transparent 66%);
+}
+.territory-profile .hero-showcase__hero-art {
+  width:112%;
+  max-width:none;
+  height:clamp(294px,86vw,390px);
+  object-fit:contain;
+  object-position:center bottom;
+  filter:drop-shadow(0 6px 7px #100806df);
+}
+.territory-profile .hero-showcase__stage-level {
+  position:absolute;
+  left:50%;
+  bottom:3px;
+  z-index:4;
+  transform:translateX(-50%);
+  min-width:82px;
+  max-width:56%;
+  padding:2px 12px;
+  border:1px solid #e6b86a;
+  border-radius:7px;
+  background:linear-gradient(#9c5c22,#412011);
+  text-align:center;
+  color:#ffe5af;
+  font-size:13px;
+  font-weight:900;
+  text-shadow:1px 2px #301206;
+}
+.territory-profile .hero-showcase__progress {
+  padding:8px 11px;
+  background:
+    linear-gradient(#241109c2,#311509d1),
+    var(--hero-oak) center/440px auto;
+  border:2px solid #a6763e;
+  border-radius:8px;
+  box-shadow:inset 0 1px #f3c37c61;
+}
+.territory-profile .hero-showcase__xp {margin:0;}
+.territory-profile .hero-showcase__xp-label {font-size:12px;}
+.territory-profile .hero-showcase__xp-track {height:13px;}
+.territory-profile .hero-showcase__stats {
+  border:2px solid #b8864f;
+  border-radius:8px;
+  padding:10px 8px 8px;
+  background:
+    linear-gradient(145deg,#210d0bbc,#412012a9),
+    var(--hero-oak) center/480px auto;
+  box-shadow:inset 0 1px #ffe3a25c,inset 0 -2px #1a0a08,0 3px 7px #100603a1;
+}
+.territory-profile .hero-showcase__stat-grid {gap:6px;}
+.territory-profile .hero-showcase__stat {
+  border:1px solid #b8864b;
+  border-radius:6px;
+  padding:6px 7px;
+  background:
+    linear-gradient(140deg,#321307b8,#140a09a9),
+    var(--hero-oak) center/300px auto;
+}
+.territory-profile .hero-showcase__stat strong {font-size:clamp(16px,4.2vw,20px);}
+.territory-profile .hero-showcase__equipment-link {
+  min-height:53px;
+  font-size:clamp(15px,4.5vw,19px);
+  border:3px ridge #e8bf70;
+  border-radius:10px;
+  color:#fff5be;
+  text-shadow:1px 2px #183109,0 0 5px #80c43e4a;
+  background:linear-gradient(#497f31,#23521f 52%,#173516);
+  box-shadow:inset 0 2px #c4e39b8c,inset 0 -4px #10300a,0 4px 7px #0b0609aa;
+}
+.territory-profile .hero-showcase__companion,
+.territory-profile .hero-showcase__journey {
+  border-radius:9px;
+  background:
+    linear-gradient(125deg,#28110da8,#412215b8),
+    var(--hero-oak) center/480px auto;
+}
+.territory-profile .hero-showcase__journey {padding:10px;}
+.territory-profile .hero-showcase__next {
+  background:
+    linear-gradient(95deg,#20100acb,#3720149f),
+    var(--hero-oak) center/420px auto;
+}
+.territory-profile .hero-showcase__loot {
+  background:
+    linear-gradient(95deg,#2e140cce,#412310a7),
+    var(--hero-oak) center/420px auto;
+}
+.territory-profile .hero-showcase__adventure {
+  min-height:51px;
+  border:2px ridge #e6b972;
+  background:linear-gradient(#f9db8c,#cb8b34,#7c441c);
+}
+@media(max-width:350px){
+  .territory-profile .hero-showcase {padding-inline:5px;}
+  .territory-profile .hero-showcase__stage {
+    grid-template-columns:44px minmax(0,1fr) 44px;
+    min-height:315px;
+    padding:7px 7px 25px;
+    gap:3px;
+  }
+  .territory-profile .hero-showcase__hero-art{height:286px;width:114%;}
+  .territory-profile .hero-showcase__character{min-height:275px;}
+  .territory-profile .hero-showcase__banner{font-size:27px;min-height:55px;}
+}
