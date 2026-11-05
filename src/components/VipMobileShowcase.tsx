@@ -131,7 +131,8 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onEquipment,on
         </button>)}
     </div>
 
-    {chestDemo && <div data-testid="vip-chest-demo" className={`animate-fade-in rounded-xl p-3 text-center ${texture}`}>
+    {chestDemo && <div className="vip-chest-overlay fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-3 py-4" role="dialog" aria-modal="true" aria-label={en?'VIP chest preview':'Предпросмотр VIP-сундука'}>
+      <div data-testid="vip-chest-demo" className={`vip-chest-dialog animate-fade-in w-full max-w-[340px] rounded-xl p-3 text-center ${texture}`}>
       <div className="flex items-start justify-between gap-2">
         <span className="flex-1 text-center text-sm font-black text-[#ffe5a3]">
           {en ? (chestDemo==='daily'?'Daily chest demo':'Weekly chest demo') : (chestDemo==='daily'?'Проба ежедневного сундука':'Проба недельного сундука')} · VIP {previewLevel}
@@ -167,6 +168,7 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onEquipment,on
         {en?'Visual test only. No items, VIP or payments are granted. Contents shown are examples, not final loot.'
           :'Только визуальный тест. Предметы и VIP не начисляются, платежей нет. Показаны примеры, а не утверждённые награды.'}
       </p>
+      </div>
     </div>}
 
     <div className={`rounded-xl p-2 ${texture}`}>
