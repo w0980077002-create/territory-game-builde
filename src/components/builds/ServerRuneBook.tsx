@@ -8,6 +8,7 @@ import {
   RUNE_SCHEMA, parseRuneServerStatus, runeSlotCatalog, validateRuneSlots,
   type RuneServerStatus, type RuneSlot,
 } from '@/game/builds/runeSlotsV1';
+import { VipRunePresets } from './VipRunePresets';
 import { runeTacticalEquivalent } from '@/game/builds/runePveEffectsV1';
 
 const bonusLabels: Record<string, { ru: string; en: string }> = {
@@ -265,6 +266,9 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
       <h2>{en ? 'Runes of Power' : 'Руны навыков'}</h2>
       <p>{en ? '15 slots · 45 variants' : '15 слотов · 45 вариантов'}</p>
     </header>
+    <VipRunePresets en={en} revision={status.revision} dirty={changed}
+      locked={claiming || saving.current || !!pending.current}
+      onApplied={() => setRefresh(value => value + 1)}/>
     <div className="territory-rune__footer">
       <button type="button" onClick={() => void claimDaily()} data-testid="rune-daily-claim"
         disabled={claiming || saving.current || !!pending.current || claimedToday || changed} className="territory-rune__daily">
