@@ -28,7 +28,7 @@ import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 import { getHeroPathDestination, getNextStarterMilestone, getStarterMilestones, shouldShowStarterJourney } from '@/game/starterJourney';
 import { halloweenBossInSeason } from '@/game/halloweenBossSeason';
 
-export type HomeTarget = 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
+export type HomeTarget = 'vip' | 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'halloween-boss';
 // All five follower images use 512x512 canvases but have different amounts of
 // transparent space above the character. Normalize visible silhouettes in the
 // home city without changing original artwork, combat sprites or player saves.
@@ -164,19 +164,26 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
       <div className="absolute inset-x-0 bottom-0 h-[230px] bg-gradient-to-t from-[#0c1d30]/85 via-[#0c1d30]/35 to-transparent pointer-events-none" />
 
       <div className="home-top-hud absolute inset-x-0 z-20 px-2 flex items-start gap-2">
-        <button onClick={() => onOpen('hero')} className="home-profile-chip flex items-center gap-1.5 min-w-0 shrink-0 rounded-2xl border border-amber-300/55 bg-gradient-to-br from-[#17202b]/90 via-[#090d12]/90 to-[#241706]/90 backdrop-blur-sm p-1 pr-2 active:scale-95 transition-transform" aria-label={t('profile')}>
-          <span className="relative w-11 h-11 rounded-xl overflow-hidden border-2 border-amber-300/90 bg-[#1b1a16] shadow-[0_0_9px_rgba(245,158,11,0.24)] shrink-0">
+        <div className="home-profile-chip flex items-center gap-1.5 min-w-0 shrink-0 rounded-2xl border border-amber-300/55 bg-gradient-to-br from-[#17202b]/90 via-[#090d12]/90 to-[#241706]/90 backdrop-blur-sm p-1 pr-2">
+          <button type="button" onClick={() => onOpen('hero')}
+            className="relative w-11 h-11 rounded-xl overflow-hidden border-2 border-amber-300/90 bg-[#1b1a16] shadow-[0_0_9px_rgba(245,158,11,0.24)] shrink-0 active:scale-95"
+            aria-label={t('profile')}>
             <img src={getAppearanceIcon(state.appearance)} alt="" className="w-full h-full object-contain object-top" />
-          </span>
-          <span className="flex flex-col items-start min-w-0 w-[clamp(74px,23vw,96px)]">
-            <span className="block text-[12px] font-bold text-white truncate w-full text-left leading-tight" title={player.name}>{player.name}</span>
-            <span className="flex flex-nowrap items-center gap-1 text-[10px] leading-tight whitespace-nowrap">
+          </button>
+          <div className="flex flex-col items-start min-w-0 w-[clamp(74px,23vw,96px)]">
+            <button type="button" onClick={() => onOpen('hero')}
+              className="block text-[12px] font-bold text-white truncate w-full text-left leading-tight active:text-amber-200"
+              title={player.name}>{player.name}</button>
+            <div className="flex flex-nowrap items-center gap-1 text-[10px] leading-tight whitespace-nowrap">
               <span className="text-amber-200 font-semibold shrink-0 whitespace-nowrap">{t('level')} {player.level}</span>
-              <span className="inline-flex shrink-0 items-center gap-0.5 px-1 rounded bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold text-[9px]"><Crown className="h-2.5 w-2.5" strokeWidth={2.8} />VIP {vip}{remainingVip>0&&<span title={account.vipUntil??undefined}> · {Math.ceil(remainingVip/3600000)}h</span>}</span>
-            </span>
-            {/* The full EXP bar is already shown above HP/energy; avoid duplicating it in the small top profile chip. */}
-          </span>
-        </button>
+              <button type="button" onClick={() => onOpen('vip')} data-testid="city-vip-shortcut"
+                aria-label={language === 'en' ? 'Open VIP directly' : 'Открыть VIP сразу'}
+                className="inline-flex min-h-7 shrink-0 items-center gap-0.5 px-1.5 rounded-md border border-[#fff2a3] bg-gradient-to-b from-[#ffe7a4] via-[#e7ae4a] to-[#9b581a] text-[#27140a] font-black text-[10px] shadow-[0_2px_0_#422309,inset_0_1px_0_#fffad7] active:scale-95">
+                <Crown className="h-3 w-3" strokeWidth={2.8} />VIP {vip}
+              </button>
+            </div>
+          </div>
+        </div>
 
         <div className="home-hud-actions flex-1 min-w-0 flex flex-col items-end gap-1.5">
           <div className="home-wallet-row flex items-center gap-1 w-full justify-end">
