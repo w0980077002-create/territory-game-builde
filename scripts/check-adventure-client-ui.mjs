@@ -59,7 +59,7 @@ assert.match(canvas, /'city', 'battle', 'cave', 'arena'/);
 assert.match(app, /onCave=\{\(\) => \{ setBattleView\('cave'\)/);
 assert.doesNotMatch(app, /<BattleScreen[^>]*isAdmin=/s);
 
-assert.match(app, /restoreAdventureSaveFence\(user\.id\);\s*restoreAdventureStartFence\(user\.id\);/,'Restore fences on EVERY save load, not only on a compile-time flag');
+assert.match(app, /(?:const cavePendingAdvance = )?restoreAdventureSaveFence\(user\.id\);\s*(?:const cavePendingStart = )?restoreAdventureStartFence\(user\.id\);/,'Restore fences on EVERY save load, not only on a compile-time flag');
 assert.match(app,/restoreAdventureStartFence\(user.id\)/,'fence a pending start before autosave');
 assert.ok(app.indexOf('restoreAdventureSaveFence(user.id)') < app.indexOf('setLoaded(true)'),
   'pending server receipt must be fenced before the global autosave subscription begins');
