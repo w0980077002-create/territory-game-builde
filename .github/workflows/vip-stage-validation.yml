@@ -27,6 +27,8 @@ on:
       - 'supabase/staged/20261104_vip_daily_chest_v1.sql'
       - 'supabase/staged/20261105_vip_weekly_chest_v1.sql'
       - 'supabase/staged/20261105_vip_entitlements_v1.sql'
+      - 'supabase/staged/20261105_vip_equipment_presets_v1.sql'
+      - 'scripts/check-vip-presets-pg17.sql'
       - 'supabase/staged/20261105_vip_pve_bonus_v1.sql'
       - 'supabase/staged/territory_v1_adventure_settlement.sql'
       - 'scripts/check-adventure-service-sql.mjs'
@@ -134,5 +136,5 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y postgresql-client
           psql -v ON_ERROR_STOP=1 -c 'SELECT version();'
-      - name: VIP entitlements JWT/RLS/refund/expiry/replay
-        run: psql -v ON_ERROR_STOP=1 -f scripts/check-vip-entitlements-pg17.sql
+      - name: VIP entitlements and equipment presets PG17 JWT/RLS CAS/replay
+        run: psql -v ON_ERROR_STOP=1 -f scripts/check-vip-entitlements-pg17.sql -f scripts/check-vip-presets-pg17.sql
