@@ -5,7 +5,7 @@ import { fetchVipWeeklyStatus, claimVipWeekly, recoverVipWeekly, type VipWeeklyS
 import { useStore } from '@/game/store';
 import { useAccount } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
-import { VIP_TIERS, vipTier } from '@/game/vipProgram';
+import { VIP_TIERS, vipTier, vipNextThreshold } from '@/game/vipProgram';
 
 /** Prestige page renders only actual permanent entitlement from the server.
  * The amount of donated money is deliberately NOT inferred from gift VIP levels.
@@ -33,6 +33,8 @@ export function VipStatusPanel({ userId }: { userId:string }) {
   // A gifted VIP level is NOT evidence of a paid purchase or a paid-progress balance.
   const [selectedLevel,setSelectedLevel] = useState<number|null>(null);
   const inspected = vipTier(selectedLevel ?? Math.max(1, level));
+  const nextPaidTarget = account.entitlementVerified ? vipNextThreshold(account.paidVip) : null;
+  const verifiedSpent = (account.paidSpendCents / 100).toFixed(2);
   useEffect(() => {
     if (!LIVE_DAILY_CHEST || !userId) return;
     let active=true;
@@ -94,16 +96,36 @@ export function VipStatusPanel({ userId }: { userId:string }) {
           {remainingVip>0 && account.vip>permanentLevel
             ? (en ? `Temporary VIP ${account.vip} is active; permanent VIP ${permanentLevel} remains unchanged.`
               : `Временный VIP ${account.vip} активен; постоянный VIP ${permanentLevel} не меняется.`)
-            : (en ? 'Permanent VIP and gifts never count as confirmed paid spending.'
-              : 'Постоянный подарочный VIP не считается подтверждённым донатом.')}
+            : account.entitlementVerified && account.giftVip>0
+              ? (en ? `Gifted VIP ${account.giftVip} is confirmed; gifts do not count as paid purchases.`
+                : `Подтверждён подарочный VIP ${account.giftVip}; подарки не считаются покупками.`)
+              : account.entitlementVerified && permanentLevel>account.paidVip
+                ? (en ? `Existing permanent VIP ${permanentLevel} is preserved separately from paid purchases.`
+                  : `Существующий постоянный VIP ${permanentLevel} сохранён отдельно от покупок.`)
+                : (en ? 'VIP status is server-verified; gifts never count as paid spending.'
+                  : 'VIP подтверждается сервером; подарки не считаются донатом.')}
         </p>
-        <div className="flex items-center gap-2 rounded-lg border border-amber-300/20 bg-black/25 px-2 py-1.5">
-          <ShieldCheck className="h-4 w-4 shrink-0 text-amber-300"/>
-          <p className="text-[11px] text-amber-100">
-            {en
-              ? 'Verified purchase progress will appear after the payment service is enabled. Gifted VIP is not paid spending.'
-              : 'Прогресс подтверждённых покупок появится после запуска платежей. Подаренный VIP не считается донатом.'}
-          </p>
+        <div className="flex items-start gap-2 rounded-lg border border-amber-300/20 bg-black/25 px-2 py-1.5">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-300"/>
+          <div className="text-[11px] text-amber-100">
+            {account.entitlementVerified ? (
+              <>
+                <strong className="block">
+                  {en
+                    ? `Verified purchases: $${verifiedSpent} · paid VIP ${account.paidVip}`
+                    : `Подтверждённые покупки: $${verifiedSpent} · оплаченный VIP ${account.paidVip}`}
+                </strong>
+                <span className="mt-0.5 block text-amber-100/80">
+                  {nextPaidTarget === null
+                    ? (en ? 'Highest paid tier reached.' : 'Максимальная оплаченная ступень достигнута.')
+                    : (en ? `Next paid tier at $${nextPaidTarget}; $${Math.max(0,nextPaidTarget-account.paidSpendCents/100).toFixed(2)} remaining.`
+                      : `Следующий оплаченный уровень от $${nextPaidTarget}; осталось $${Math.max(0,nextPaidTarget-account.paidSpendCents/100).toFixed(2)}.`)}
+                </span>
+              </>
+            ) : (en
+              ? 'Paid progress is unavailable until the protected VIP payment service is deployed; gifted VIP is not paid spending.'
+              : 'Прогресс покупок появится после запуска защищённого платежного сервиса; подаренный VIP не считается донатом.')}
+          </div>
         </div>
         {LIVE_DAILY_CHEST && daily && daily.vip>=1 && (
           <div className="mb-2 rounded-xl border border-amber-400/50 bg-black/25 p-2" data-testid="vip-daily-chest">
