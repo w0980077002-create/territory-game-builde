@@ -68,7 +68,8 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
         </div>
         <div className="relative flex min-w-0 flex-col items-center justify-center pr-2 text-center">
           <span className="text-[10px] font-bold text-amber-200/90">TERRITORY VIP</span>
-          <img src={badge(level)} alt="" draggable={false} className="mt-1 h-20 w-20 object-contain drop-shadow-[0_4px_6px_#100908]" />
+          {level>0 ? <img src={badge(level)} alt="" draggable={false} className="mt-1 h-20 w-20 object-contain drop-shadow-[0_4px_6px_#100908]" />
+            : <span className="mt-2 flex h-16 w-16 items-center justify-center rounded-full border border-amber-600/60 bg-[#301b16]"><Crown size={34} className="text-amber-300"/></span>}
           <strong className="text-lg font-black leading-tight text-[#ffe2ab]">VIP {level}</strong>
           <span className="truncate text-[11px] text-amber-100">{en?current.nameEn:current.nameRu}</span>
         </div>
