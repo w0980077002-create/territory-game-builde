@@ -203,6 +203,26 @@ BEGIN
  END;
 END $append_only_grants$;
 
+-- Exercise authoritative VIP PvE reward calculation while a temporary
+-- tier is active. A VIP8 temporary grant overrides (does not stack with)
+-- VIP5 gift and VIP2 paid entitlement, with integer floor rounding.
+UPDATE territory_private.vip_pve_bonus_config_v1
+ SET enabled=true,approval_reference='disposable PG17 temporary entitlement test'
+ WHERE id=true;
+SET ROLE service_role;
+DO $temporary_pve$
+DECLARE j jsonb;
+BEGIN
+ j:=territory_private.vip_pve_bonus_v1('10000000-0000-0000-0000-000000000002',19,29);
+ IF (j->>'vip')::integer<>8 OR (j->>'percent')::integer<>16
+    OR (j->>'gold')::integer<>22 OR (j->>'xp')::integer<>33 THEN
+  RAISE EXCEPTION 'Temporary VIP8 PvE floor/override incorrect: %',j;
+ END IF;
+END $temporary_pve$;
+RESET ROLE;
+UPDATE territory_private.vip_pve_bonus_config_v1
+ SET enabled=false,approval_reference='not approved' WHERE id=true;
+
 INSERT INTO territory_private.vip_entitlement_revocations_v1 (grant_id,reason)
  VALUES ('20000000-0000-0000-0000-000000000002','Temporary promotion revoked');
 DO $append_only_revocations$
@@ -233,6 +253,24 @@ BEGIN
  END IF;
 END $revoked_temp$;
 RESET ROLE;
+
+-- Revoking VIP8 leaves VIP5 gift (not VIP2 paid) as the effective tier.
+UPDATE territory_private.vip_pve_bonus_config_v1
+ SET enabled=true,approval_reference='disposable PG17 gift fallback test'
+ WHERE id=true;
+SET ROLE service_role;
+DO $gift_pve$
+DECLARE j jsonb;
+BEGIN
+ j:=territory_private.vip_pve_bonus_v1('10000000-0000-0000-0000-000000000002',19,29);
+ IF (j->>'vip')::integer<>5 OR (j->>'percent')::integer<>10
+    OR (j->>'gold')::integer<>20 OR (j->>'xp')::integer<>31 THEN
+  RAISE EXCEPTION 'Gift VIP5 PvE fallback/floor incorrect: %',j;
+ END IF;
+END $gift_pve$;
+RESET ROLE;
+UPDATE territory_private.vip_pve_bonus_config_v1
+ SET enabled=false,approval_reference='not approved' WHERE id=true;
 
 UPDATE territory_private.vip_payment_ledger_v1
  SET status='refunded', refunded_at=clock_timestamp()
