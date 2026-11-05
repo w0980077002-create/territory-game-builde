@@ -60,7 +60,14 @@ export function FighterFigure({
         img.onerror = () => reject(new Error('Missing combat rig cutout: ' + part));
       });
       img.src = rigAsset(rig, part);
-      return typeof img.decode === 'function' ? img.decode().catch(() => loaded) : loaded;
+      // Some embedded WebViews expose decode() but throw synchronously (or
+      // return a non-Promise). Keep the onload/onerror fallback in both cases.
+      if (typeof img.decode !== 'function') return loaded;
+      try {
+        return Promise.resolve(img.decode()).catch(() => loaded);
+      } catch {
+        return loaded;
+      }
     });
     void Promise.all(loads).then(() => {
       if (!cancelled) setAssets({ id: rig.id, ready: true });
