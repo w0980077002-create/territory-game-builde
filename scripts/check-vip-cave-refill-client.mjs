@@ -8,7 +8,8 @@ const thirdSession = '20000000-0000-4000-8000-000000000004';
 const choice = { type:'potion', name:'Healing', rarity:'common',
   effect:{stat:'hp',value:50} };
 const item = (qty=5) => ({id:'stock',name:'Healing',qty,type:'potion',
-  rarity:'common',icon:'potion.webp',description:'Healing',effect:choice.effect});
+  rarity:'common',icon:'potion.webp',description:'Healing',effect:choice.effect,
+  expiresAt:'2099-01-01T00:00:00Z'});
 const fresh = () => ({player:{level:90,gold:100,gems:20},
   activeDays:90,belt:Array(7).fill(null),inventory:[item()],
   beltRefillChoices:[choice,...Array(6).fill(null)],autoRefillBelt:true});
