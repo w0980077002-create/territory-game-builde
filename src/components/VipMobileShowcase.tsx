@@ -1,5 +1,11 @@
 import { useRef, useState } from 'react';
 import { ArrowLeft, Crown, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react';
+import { useGame } from '@/game/actions';
+import { selectedFollower } from '@/game/followers';
+import { getAppearanceIcon } from '@/game/appearance';
+import { getFollowerArt } from '@/game/combatArt';
+import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
+import './vipTerritory.css';
 import { useStore } from '@/game/store';
 import { useAccount } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
@@ -9,23 +15,26 @@ import { VIP_COSMETICS, activeVipCosmetic, setVipCosmetic, vipArtUrl, type VipCo
 
 const base = `${import.meta.env.BASE_URL}assets/territory/vip/`;
 const badge = (level:number) => base + 'badges/vip-' + String(Math.max(1,Math.min(10,level))).padStart(2,'0') + '.svg';
-const dailyChest = (level:number) => base + 'chests/daily-' + Math.max(1,Math.min(5,Math.ceil(Math.max(1,level)/2))) + '.svg';
-const weeklyChest = (level:number) => base + 'chests/weekly-' + (level<=3?1:level<=5?2:level===6?3:level<=8?4:5) + '.svg';
+const dailyChest = (_level:number) => `${import.meta.env.BASE_URL}assets/territory/ui/shop/gem-chest-large.webp`;
+const weeklyChest = (_level:number) => `${import.meta.env.BASE_URL}ic-events.webp`;
 
 type Props = {
   userId:string;
   onBack:()=>void;
+  backToCity?:boolean;
   onEquipment:()=>void;
   onRunes:()=>void;
   onBelt:()=>void;
 };
 
-const texture='border border-[#a86c36] bg-[linear-gradient(135deg,#6b3822_0%,#3b2119_42%,#231611_100%)] shadow-[inset_0_2px_0_#d1a05b50,0_5px_12px_#11080499]';
+const texture='vip-carved-panel';
 
 /** Player-facing VIP screen. Every picture is its own transparent-background
  * asset inside public/assets/territory/vip (no sprite-sheet crop).
  * Visual-only checkout and chest claim buttons remain disabled until their server entitlement RPC is released. */
-export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Props){
+export function VipMobileShowcase({userId,onBack,backToCity=false,onEquipment,onRunes,onBelt}:Props){
+  const game=useStore(useGame);
+  const selectedCompanion=selectedFollower(game);
   const account=useStore(useAccount);
   const {language}=useLanguage();
   const en=language==='en';
@@ -45,39 +54,40 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
   const selectedCosmetic=activeVipCosmetic(userId,cosmeticsCategory,level);
   const cosmetics=VIP_COSMETICS.filter(item=>item.category===cosmeticsCategory);
   const featureCards=[
-    {id:'gold',asset:'assets/territory/vip/perks/gold.svg',label:en?'Gold bonus':'Бонус золота',value:`+${previewLevel*2}%`,action:null},
+    {id:'gold',asset:'gold-coin.webp',label:en?'Gold bonus':'Бонус золота',value:`+${previewLevel*2}%`,action:null},
     {id:'xp',asset:'assets/territory/vip/perks/experience.svg',label:en?'Experience bonus':'Бонус опыта',value:`+${previewLevel*2}%`,action:null},
-    {id:'belt',asset:'assets/territory/vip/perks/belt.svg',label:en?'Smart belt':'Умный пояс',value:previewLevel>=3?'VIP 3+':'VIP 3',action:onBelt},
-    {id:'gear',asset:'assets/territory/vip/perks/equipment.svg',label:en?'Equipment sets':'Пресеты вещей',value:previewLevel>=4?'VIP 4+':'VIP 4',action:onEquipment},
-    {id:'runes',asset:'assets/territory/vip/perks/runes.svg',label:en?'Rune sets':'Пресеты рун',value:previewLevel>=3?'VIP 3+':'VIP 3',action:onRunes},
-    {id:'awards',asset:'assets/territory/vip/perks/rewards.svg',label:en?'VIP rewards':'VIP награды',value:en?'Chests':'Сундуки',action:toRewards},
+    {id:'belt',asset:'potion-hp-viking.webp',label:en?'Smart belt':'Умный пояс',value:previewLevel>=3?'VIP 3+':'VIP 3',action:onBelt},
+    {id:'gear',asset:'assets/territory/ui/shop/plate-armor.webp',label:en?'Equipment sets':'Пресеты вещей',value:previewLevel>=4?'VIP 4+':'VIP 4',action:onEquipment},
+    {id:'runes',asset:'assets/territory/map/icons/rune-stones-v1.webp',label:en?'Rune sets':'Пресеты рун',value:previewLevel>=3?'VIP 3+':'VIP 3',action:onRunes},
+    {id:'awards',asset:'assets/territory/ui/shop/gem-chest-large.webp',label:en?'VIP rewards':'VIP награды',value:en?'Chests':'Сундуки',action:toRewards},
   ];
-  return <section className="territory-vip-mobile animate-fade-in space-y-2 pb-5" data-testid="vip-mobile-showcase" aria-label={en?'VIP status':'VIP статус'}>
-    <header className={`relative flex min-h-12 items-center gap-2 rounded-xl px-2 ${texture}`}>
-      <button type="button" onClick={onBack} className="flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-amber-400/40 bg-[#2d1c16] text-[#f9dba5]" aria-label={en?'Back to hero':'Назад к герою'}>
+  return <section className="territory-vip-mobile territory-vip-rebuild animate-fade-in space-y-2 pb-6 px-2 pt-2 relative isolate min-h-full" data-testid="vip-mobile-showcase" aria-label={en?'VIP status':'VIP статус'}>
+    <div className="vip-world-bg" aria-hidden="true"/>
+    <header className="vip-main-heading relative flex min-h-14 items-center gap-2 px-2">
+      <button type="button" onClick={onBack} className="vip-back-button flex min-h-10 min-w-10 items-center justify-center text-[#f9dba5]" aria-label={backToCity?(en?'Back to city':'Назад в город'):(en?'Back to hero':'Назад к герою')}>
         <ArrowLeft size={20}/>
       </button>
-      <h2 className="flex-1 text-center text-lg font-black tracking-wide text-[#ffdc93] [text-shadow:0_2px_2px_#1b0b05]">{en?'VIP status':'VIP статус'}</h2>
-      <Crown size={22} className="text-amber-300"/>
+      <h2 className="flex-1 text-center"><WoodenPlaque variant="section">{en?'VIP HALL':'ЗАЛ VIP'}</WoodenPlaque></h2>
+      <Crown size={24} className="text-amber-300 drop-shadow-[0_2px_3px_#160800]"/>
     </header>
 
-    <div className={`relative overflow-hidden rounded-2xl ${texture}`}>
-      <div className="relative h-[168px] min-[390px]:h-[196px] bg-[radial-gradient(ellipse_at_50%_15%,#865239_0%,#2d1f1a_64%,#1a1110_100%)]">
+    <div className={`vip-hero-panel relative overflow-hidden rounded-2xl ${texture}`}>
+      <div className="vip-stage relative h-[198px] min-[390px]:h-[222px]">
         <div className="absolute inset-x-0 top-2 flex items-center justify-center gap-2 text-[11px] font-bold text-[#ffe7b5]">
-          <Sparkles size={15} className="text-amber-300"/>{en?'Prestige in TERRITORY':'Слава героя TERRITORY'}
+          <Sparkles size={15} className="text-amber-300"/>{en?'PATH TO LEGEND':'ПУТЬ К ЛЕГЕНДЕ'}
         </div>
-        <img src={vipArtUrl('skins/hero-vip5.svg')} alt="" draggable={false}
-          className="absolute bottom-0 left-[-4%] h-[145px] w-[61%] object-contain object-bottom min-[390px]:h-[175px]"/>
-        <img src={vipArtUrl('skins/companion-vip7.svg')} alt="" draggable={false}
-          className="absolute bottom-0 right-[-4%] h-[110px] w-[48%] object-contain object-bottom min-[390px]:h-[132px]"/>
-        <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2 flex-col items-center">
-          <img src={badge(previewLevel)} alt="" draggable={false} className="h-[100px] w-[100px] drop-shadow-[0_4px_8px_#000] min-[390px]:h-[116px] min-[390px]:w-[116px]"/>
-          <span className="relative -mt-3 rounded-full border border-[#cc8d42] bg-[#2b170f]/90 px-3 py-0.5 text-[11px] font-black text-[#ffdf96]">
+        <img src={getAppearanceIcon(game.appearance)} alt="" draggable={false}
+          className="vip-actual-hero absolute bottom-0 left-[-5%] h-[178px] w-[57%] object-contain object-bottom min-[390px]:h-[200px]"/>
+        {selectedCompanion && <img src={getFollowerArt(selectedCompanion.id)} alt="" draggable={false}
+          className="vip-actual-companion absolute bottom-0 right-[-5%] h-[126px] w-[37%] object-contain object-bottom min-[390px]:h-[142px]"/>}
+        <div className="vip-stage-emblem absolute bottom-3 right-[21%] flex flex-col items-center">
+          <img src={badge(previewLevel)} alt="" draggable={false} className="h-[92px] w-[92px] drop-shadow-[0_5px_8px_#140802] min-[390px]:h-[106px] min-[390px]:w-[106px]"/>
+          <span className="relative -mt-2 rounded-lg border-2 border-[#efd08f] bg-[#29170f]/95 px-2 py-0.5 text-[11px] font-black text-[#ffdf96]">
             VIP {previewLevel} {chosenTier!==null&&(en?'· preview':'· просмотр')}
           </span>
         </div>
       </div>
-      <div className="space-y-1 border-t-2 border-[#a96b35] bg-[#301c15] px-3 py-2">
+      <div className="space-y-1 border-t-2 border-[#b48b54] bg-[#25170f]/90 px-3 py-2">
         <p className="text-center text-xs font-bold text-[#ffdf96]" data-testid="vip-owner-test-info">
           {en? `Your VIP: ${level} · Viewing VIP ${previewLevel}` : `Ваш VIP: ${level} · Смотрите VIP ${previewLevel}`}
         </p>
@@ -93,12 +103,12 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
     </div>
 
     <div className={`rounded-xl p-1.5 ${texture}`}>
-      <div className="flex gap-1 overflow-x-auto pb-1" role="group" aria-label={en?'VIP levels':'Уровни VIP'}>
+      <div className="vip-tier-grid grid grid-cols-5 gap-1" role="group" aria-label={en?'VIP levels':'Уровни VIP'}>
         {VIP_TIERS.slice(1).map(t=><button type="button" key={t.level}
           onClick={()=>{setChosenTier(t.level);setChestDemo(null);setChestRevealed(false);}} aria-pressed={preview.level===t.level}
-          className={`flex min-w-[55px] flex-1 shrink-0 flex-col items-center rounded-lg border px-0.5 py-1 ${preview.level===t.level?'border-[#ffdd81] bg-[#875122]':'border-[#9b6c42]/40 bg-black/20'}`}>
+          className={`vip-tier-button flex min-w-0 w-full flex-col items-center rounded-lg border px-0.5 py-1 ${preview.level===t.level?'border-[#ffdd81] bg-[#875122]':'border-[#9b6c42]/40 bg-black/30'}`}>
           <img src={badge(t.level)} alt="" loading="lazy" draggable={false}
-            className="h-10 w-10 object-contain"/>
+            className="h-[38px] w-[38px] max-w-full object-contain"/>
           <span className="text-[10px] font-black text-amber-100">{t.level}</span>
         </button>)}
       </div>
@@ -107,14 +117,15 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
       </p>
     </div>
 
-    <div className="grid grid-cols-2 gap-2">
+    <div className="vip-chests-row grid grid-cols-2 gap-2">
       {[{id:'daily' as const,image:dailyChest(previewLevel),title:en?'Daily chest':'Ежедневный сундук'},
         {id:'weekly' as const,image:weeklyChest(previewLevel),title:en?'Weekly chest':'Еженедельный сундук'}].map(chest=>
         <button key={chest.id} type="button" onClick={()=>{setChestDemo(chest.id);setChestRevealed(false);}}
-          className={`relative flex min-h-[138px] flex-col items-center justify-between rounded-xl px-1.5 py-2 text-center ${texture}`}>
-          <img src={chest.image} alt="" draggable={false} className="h-[70px] w-full object-contain"/>
+          className={`vip-chest-card relative flex min-h-[154px] flex-col items-center justify-between rounded-xl px-1.5 py-2 text-center ${texture}`}>
+          <img src={chest.image} alt="" draggable={false} className="h-[83px] w-full object-contain drop-shadow-[0_5px_6px_#110806]"/>
+          <img src={badge(previewLevel)} alt="" draggable={false} className="absolute top-2 right-2 h-9 w-9 object-contain drop-shadow-[0_2px_3px_#110806]"/>
           <strong className="text-[11px] leading-tight text-amber-100">{chest.title}</strong>
-          <span className="mt-1 w-full rounded-lg border border-amber-200/50 bg-gradient-to-b from-[#ffdc88] to-[#a96d27] px-1 py-1.5 text-[11px] font-black text-[#2a150c]">
+          <span className="vip-claim-demo mt-1 w-full rounded-lg px-1 py-1.5 text-[11px] font-black text-[#2a150c]">
             {en?'Try chest':'Проверить сундук'}
           </span>
         </button>)}
@@ -172,8 +183,8 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
       </div>
     </div>
 
-    <div className={`rounded-xl p-2 ${texture}`}>
-      <h3 className="mb-2 text-center text-sm font-black text-[#ffdf98]">{en?'VIP decoration':'VIP оформление'}</h3>
+    <details className={`rounded-xl p-2 ${texture}`}>
+      <summary className="cursor-pointer list-none text-center text-sm font-black text-[#ffdf98] py-1">{en?'VIP decoration ▾':'VIP оформление ▾'}</summary>
       <div className="flex gap-1 overflow-x-auto pb-2">
         {(['frame','aura','crown','crest','skin','throne'] as const).map(category=>
           <button key={category} type="button" aria-pressed={cosmeticsCategory===category}
@@ -204,7 +215,7 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
       <p className="mt-1.5 text-[10px] text-amber-100/60">
         {en?'Cosmetic selection is local; it does not add combat power.':'Выбор оформления не добавляет боевой силы.'}
       </p>
-    </div>
+    </details>
 
     <button type="button" onClick={toRewards}
       className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-[#fff1b2] bg-gradient-to-b from-[#ffe294] via-[#eaa83e] to-[#a65d18] text-sm font-black text-[#2a140c] shadow-[0_3px_0_#5a3116,inset_0_2px_0_#fff4b6]" data-testid="vip-open-rewards">
