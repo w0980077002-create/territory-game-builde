@@ -112,6 +112,20 @@
  .viking-screen > .card,
  .viking-screen > section.card,
  .territory-profile > .card
+)::before {
+  content:'';
+  position:absolute;
+  inset:-4px 9px auto;
+  height:14px;
+  z-index:0;
+  pointer-events:none;
+  background:var(--oak-heritage-rope) center / 94px 14px repeat-x;
+  filter:drop-shadow(0 2px 2px #160905);
+}
+.territory-shell.territory-oak-heritage .territory-screen :is(
+ .viking-screen > .card,
+ .viking-screen > section.card,
+ .territory-profile > .card
 )::after {
   content:'';
   position:absolute;
