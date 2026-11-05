@@ -63,6 +63,7 @@ DECLARE
   v_paid integer;
   v_gift integer;
   v_temporary integer;
+  v_temporary_until timestamptz;
   v_paid_cents numeric;
   v_permanent integer;
   v_current integer;
@@ -98,9 +99,20 @@ BEGIN
   END IF;
   v_permanent:=greatest(v_legacy,v_paid,v_gift);
   v_current:=greatest(v_permanent,v_temporary,v_fortune);
+  -- A temporary status must never become permanent in a cached client.
+  -- Only the expiry for the currently effective tier is relevant.
+  IF v_current>v_permanent THEN
+    SELECT max(g.expires_at) INTO v_temporary_until
+      FROM territory_private.vip_entitlement_grants_v1 g
+      WHERE g.player_id=p_player AND g.kind='temporary'
+        AND g.vip_level=v_current AND g.expires_at>statement_timestamp()
+        AND NOT EXISTS (SELECT 1 FROM territory_private.vip_entitlement_revocations_v1 r
+          WHERE r.grant_id=g.grant_id);
+  END IF;
   RETURN jsonb_build_object('vip',v_current,'permanent_vip',v_permanent,
     'legacy_vip',v_legacy,'paid_vip',v_paid,'gift_vip',v_gift,
-    'temporary_vip',v_temporary,'paid_spend_cents',v_paid_cents);
+    'temporary_vip',v_temporary,'temporary_until',v_temporary_until,
+    'server_now',statement_timestamp(),'paid_spend_cents',v_paid_cents);
 END $vip_entitlement$;
 REVOKE ALL ON FUNCTION territory_private.vip_entitlement_status_v1(uuid)
   FROM PUBLIC,anon,authenticated;
