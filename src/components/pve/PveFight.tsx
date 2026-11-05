@@ -3,13 +3,14 @@ import { Shield, Sword, Check, Flag, Loader2, Trophy, Hammer, Shirt } from 'luci
 import { useStore } from '@/game/store';
 import { getVictoryJourney, type VictoryJourney } from '@/game/victoryJourney';
 import { findHeroGearOpportunity, type HeroGearOpportunity } from '@/game/heroGearOpportunity';
-import { useGame, useArena, recordBattleResult } from '@/game/actions';
+import { useGame, useArena, useAccount, recordBattleResult } from '@/game/actions';
 import { supabase } from '@/game/supabase';
 import runeCatalog from '@/game/config/territory-independent-rune-slots-v1.json';
 import { parseRuneServerStatus, runeSlotCatalog } from '@/game/builds/runeSlotsV1';
 import { localPveRuneTotals, type PveRuneTotals } from '@/game/builds/runePveEffectsV1';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
+import { prepareClassicPveBeltSnapshot } from '@/game/vipBeltClassic';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
 import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextComboOpening, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
@@ -237,8 +238,8 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
 
   const pushLog = (line: string) => setLog((l) => [line, ...l].slice(0, 30));
 
-  // Keep the already-played local victory visible, but never allow the next
-  // stone debit before the existing cloud CAS writer confirms the new save.
+  // Keep the already-played local result visible, but never allow another
+  // stone debit while the exact crash-recoverable terminal snapshot is unsaved.
   // This is save durability, NOT an attestation of locally resolved PvE.
   const confirmVictory = useCallback((snapshot: ReturnType<typeof useGame.get>) => {
     setVictorySave('pending');
@@ -260,13 +261,27 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         ? finishReferralFight(ticket, won, referralRounds.current).catch(() => false)
         : false);
     if (!won) {
+      const before = useGame.get();
+      const refilledState = prepareClassicPveBeltSnapshot(
+        before, useAccount.get(), useArena.get().wins,
+      );
+      // A defeat grants nothing. If VIP moves existing potions, journal that
+      // exact post-battle inventory+belt together before showing a usable Next.
+      // A retry never replays the fight, moves stock twice, or grants rewards.
+      if (refilledState !== before) {
+        victorySnapshotRef.current = refilledState;
+        if (stagePveVictoryJournal(userId, refilledState)) {
+          useGame.set(refilledState);
+          confirmVictory(refilledState);
+        } else setVictorySave('failed');
+      }
       setOutcome({ won: false, gold: 0, xp: 0, gems: 0, materials: 0 });
       return;
     }
     const s = useGame.get();
     if (kind === 'trial') {
       const r = trialReward(s.trialLevel);
-      const nextState = recordTrialWin(s, enemy);
+      const nextState = prepareClassicPveBeltSnapshot(recordTrialWin(s, enemy), useAccount.get(), useArena.get().wins);
       victorySnapshotRef.current = nextState;
       if (stagePveVictoryJournal(userId, nextState)) {
         useGame.set(nextState);
@@ -277,7 +292,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
       return;
     }
     const gold = blessedGold(s, enemy.rewardGold);
-    const nextState = recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp });
+    const nextState = prepareClassicPveBeltSnapshot(recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp }), useAccount.get(), useArena.get().wins);
     victorySnapshotRef.current = nextState;
     if (stagePveVictoryJournal(userId, nextState)) {
       useGame.set(nextState);
@@ -447,11 +462,13 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
 
   // The result replaces the entire battle scene. Keeping the tall arena
   // above the outcome pushed the primary button below Android navigation.
-  // Hooks and reward settlement above this point remain unchanged.
+  // A VIP loss with moved consumables must use the same durable save fence as
+  // a victory. No refill is performed by the result buttons.
   if (outcome) {
+    const saveRequired = outcome.won || victorySnapshotRef.current !== null;
     return (
       <div data-testid="pve-result-screen" className="mx-auto w-full max-w-xl animate-fade-in pb-[max(1rem,env(safe-area-inset-bottom))]">
-        {outcome.won && victorySave === 'failed' && !pendingPveVictoryJournal(userId) && (
+        {saveRequired && victorySave === 'failed' && !pendingPveVictoryJournal(userId) && (
           <p role="alert" className="mb-2 rounded-lg border border-red-400/70 bg-red-950/70 p-3 text-sm text-red-100">
             {language === 'en'
               ? 'Device storage is unavailable. This victory is not committed; do not close Telegram. Enable storage and retry the save.'
@@ -461,23 +478,23 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         <OutcomePanel outcome={outcome} kind={kind} victoryJourney={victoryJourney}
           gearOpportunity={gearOpportunity} equippedGear={equippedGear}
           onExit={() => {
-            if (outcome.won && victorySave !== 'confirmed') return;
+            if (saveRequired && victorySave !== 'confirmed') return;
             nextCancelled.current = true; onExit();
           }}
           questReady={state.quests.some(q => !q.claimed && q.current >= q.target)}
           onQuests={onQuests ? () => {
-            if (outcome.won && victorySave !== 'confirmed') return;
+            if (saveRequired && victorySave !== 'confirmed') return;
             nextCancelled.current = true; onExit(); onQuests();
           } : undefined}
           onEquipment={onEquipment ? () => {
-            if (outcome.won && victorySave !== 'confirmed') return;
+            if (saveRequired && victorySave !== 'confirmed') return;
             nextCancelled.current = true; onExit(); onEquipment();
           } : undefined}
           onForge={onForge ? () => {
-            if (outcome.won && victorySave !== 'confirmed') return;
+            if (saveRequired && victorySave !== 'confirmed') return;
             nextCancelled.current = true; onExit(); onForge();
           } : undefined}
-          nextPending={nextPending} nextError={nextError}
+          saveRequired={saveRequired} nextPending={nextPending} nextError={nextError}
           saveState={victorySave} saveConflict={saveBlocked.has(userId)}
           onRetrySave={() => {
             const snapshot = victorySnapshotRef.current;
@@ -489,7 +506,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
             confirmVictory(snapshot);
           }}
           onNext={onNext ? () => {
-            if (nextRequested.current || (outcome.won && (victorySave !== 'confirmed' || pveVictorySaveBlocked(userId)))) return;
+            if (nextRequested.current || (saveRequired && (victorySave !== 'confirmed' || pveVictorySaveBlocked(userId)))) return;
             nextRequested.current = true;
             setNextPending(true);
             setNextError(false);
