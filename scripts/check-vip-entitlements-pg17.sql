@@ -236,6 +236,20 @@ BEGIN
  END;
 END $append_only_grants$;
 
+-- The staged bonus must never be enabled by a bare flag flip without
+-- an explicit owner-reviewed approval reference.
+DO $vip_pve_approval_gate$
+BEGIN
+ BEGIN
+  UPDATE territory_private.vip_pve_bonus_config_v1 SET enabled=true WHERE id=true;
+  RAISE EXCEPTION 'Unapproved VIP PvE enable accepted';
+ EXCEPTION WHEN check_violation THEN NULL;
+ END;
+ IF (SELECT enabled FROM territory_private.vip_pve_bonus_config_v1 WHERE id=true) THEN
+  RAISE EXCEPTION 'Rejected VIP PvE enable changed configuration';
+ END IF;
+END $vip_pve_approval_gate$;
+
 -- Exercise authoritative VIP PvE reward calculation while a temporary
 -- tier is active. A VIP8 temporary grant overrides (does not stack with)
 -- VIP5 gift and VIP2 paid entitlement, with integer floor rounding.
