@@ -100,7 +100,16 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
         reduced.addListener(apply);
         listenerKind = 'legacy';
       }
-    } catch { listenerKind = null; }
+    } catch {
+      // A few embedded engines expose a broken modern listener API while
+      // their legacy addListener implementation still works.
+      if (listenerKind === null && typeof reduced?.addListener === 'function') {
+        try {
+          reduced.addListener(apply);
+          listenerKind = 'legacy';
+        } catch { listenerKind = null; }
+      }
+    }
     return () => {
       try {
         if (listenerKind === 'modern') reduced?.removeEventListener('change', apply);
