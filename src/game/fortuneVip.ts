@@ -4,7 +4,7 @@ import { useAccount } from './actions';
 // Keep the legacy Fortune entitlement path active until the reviewed staged
 // VIP ledger and public RPC have both been deployed and verified. No client
 // callback, local storage, or unverified payment can grant a VIP tier.
-const LEDGER_ENABLED = import.meta.env.VITE_VIP_ENTITLEMENTS_ENABLED === 'true';
+const LEDGER_ENABLED = import.meta.env?.VITE_VIP_ENTITLEMENTS_ENABLED === 'true';
 
 type ServerVipStatus = {
   vip: number;
