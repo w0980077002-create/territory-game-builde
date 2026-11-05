@@ -141,7 +141,6 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onRunes,onBelt
           {img:vipArtUrl('cosmetics/throne-vip10.svg'),ru:'Королевский трон',en:'Royal throne',cat:'throne' as Tab},
           {img:vipArtUrl('cosmetics/heraldry/crest-4.svg'),ru:'Личный герб',en:'Personal crest',cat:'crest' as Tab},
           {img:root+'assets/territory/ui/shop/plate-armor.webp',ru:'Эпический облик',en:'Epic skin',cat:'skin' as Tab},
-          {img:chestArt('daily',tier),ru:'Премиум сундук',en:'Premium chest',cat:null},
         ]:tier>=5?[
           {img:vipArtUrl('cosmetics/crowns/crown-1.svg'),ru:'Элитная корона',en:'Elite crown',cat:'crown' as Tab},
           {img:vipArtUrl('cosmetics/auras/aura-1.svg'),ru:'Золотая аура',en:'Golden aura',cat:'aura' as Tab},
