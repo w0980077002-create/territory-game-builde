@@ -26,6 +26,17 @@ CREATE OR REPLACE FUNCTION territory_private.vip_payment_immutable_v1()
 RETURNS trigger LANGUAGE plpgsql SET search_path='pg_catalog'
 AS $vip_payment_guard$
 BEGIN
+  -- A trusted provider can deliver a refund as the first observed event.
+  -- Validate its receipt chronology on INSERT as well as UPDATE.
+  IF TG_OP='INSERT' THEN
+    IF NEW.status='refunded' AND NEW.refunded_at<NEW.recorded_at THEN
+      RAISE EXCEPTION 'vip_payment_refund_before_receipt';
+    END IF;
+    IF NEW.status='refunded' AND NEW.refunded_at>statement_timestamp()+interval '5 minutes' THEN
+      RAISE EXCEPTION 'vip_payment_refund_in_future';
+    END IF;
+    RETURN NEW;
+  END IF;
   IF ROW(NEW.provider_transaction_id,NEW.player_id,NEW.sku,NEW.price_version,
          NEW.currency,NEW.stars_amount,NEW.verified_usd_cents,NEW.recorded_at)
      IS DISTINCT FROM
@@ -66,7 +77,7 @@ REVOKE ALL ON FUNCTION territory_private.vip_payment_no_delete_v1()
 DROP TRIGGER IF EXISTS vip_payment_immutable_guard_v1
   ON territory_private.vip_payment_ledger_v1;
 CREATE TRIGGER vip_payment_immutable_guard_v1
-BEFORE UPDATE ON territory_private.vip_payment_ledger_v1
+BEFORE INSERT OR UPDATE ON territory_private.vip_payment_ledger_v1
 FOR EACH ROW EXECUTE FUNCTION territory_private.vip_payment_immutable_v1();
 REVOKE ALL ON FUNCTION territory_private.vip_payment_immutable_v1()
  FROM PUBLIC,anon,authenticated;
