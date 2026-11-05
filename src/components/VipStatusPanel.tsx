@@ -19,7 +19,7 @@ const vipBadgeSrc = (n:number) => vipAssetBase + 'badges/vip-' + String(n).padSt
 const vipDailyChestSrc = (n:number) => vipAssetBase + 'chests/daily-' + Math.max(1,Math.min(5,Math.ceil(n/2))) + '.svg';
 const vipWeeklyChestSrc = (n:number) => vipAssetBase + 'chests/weekly-' + (n<=3?1:n<=5?2:n===6?3:n<=8?4:5) + '.svg';
 
-export function VipStatusPanel({ userId }: { userId:string }) {
+export function VipStatusPanel({ userId, initialOpen = false, onOpenPage }: { userId:string; initialOpen?:boolean; onOpenPage?:()=>void }) {
   const account = useStore(useAccount);
   const [daily,setDaily] = useState<VipDailyStatus|null>(null);
   const [dailyBusy,setDailyBusy]=useState(false);
@@ -95,8 +95,9 @@ export function VipStatusPanel({ userId }: { userId:string }) {
   };
 
   return (
-    <details className="group rounded-2xl border-2 border-[#9e6831] bg-[linear-gradient(140deg,#4b2c1b,#231710_65%,#402719)] p-2.5 shadow-[inset_0_1px_0_#f3c77c50,0_4px_14px_#0007]" data-testid="vip-status-panel">
-      <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2">
+    <details open={initialOpen} className="group rounded-2xl border-2 border-[#9e6831] bg-[linear-gradient(140deg,#4b2c1b,#231710_65%,#402719)] p-2.5 shadow-[inset_0_1px_0_#f3c77c50,0_4px_14px_#0007]" data-testid="vip-status-panel">
+      <summary onClick={onOpenPage ? (event) => {event.preventDefault(); onOpenPage();} : undefined}
+        className="flex min-h-10 cursor-pointer list-none items-center gap-2">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/70 bg-[#4d2d12] text-amber-200">
           {level>=1 ? <img src={vipBadgeSrc(level)} alt="" width={39} height={39}
             className="h-10 w-10 object-contain" /> : <Crown size={23}/>}
@@ -105,8 +106,9 @@ export function VipStatusPanel({ userId }: { userId:string }) {
           <strong className="block text-sm font-black text-[#ffdf98]">{en ? 'VIP Program' : 'Программа VIP'} · {level}/10</strong>
           <span className="block truncate text-[11px] text-amber-100/85">{en ? current.nameEn : current.nameRu}</span>
         </span>
-        <span className="text-amber-200 group-open:hidden">▾</span>
-        <span className="hidden text-amber-200 group-open:inline">▴</span>
+        {onOpenPage ? <span className="rounded-lg border border-amber-300/50 bg-[#a16b2b]/80 px-2 py-1 text-[11px] font-black text-[#fff0be]">{en?'Open VIP':'Открыть VIP'}</span>
+          : <span className="text-amber-200 group-open:hidden">▾</span>}
+        {!onOpenPage && <span className="hidden text-amber-200 group-open:inline">▴</span>}
       </summary>
       <div className="border-t border-amber-500/25 pt-2">
         <p className="mb-2 text-[11px] leading-relaxed text-amber-100/85">
