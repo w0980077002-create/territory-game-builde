@@ -63,7 +63,21 @@ assert.equal(calls.at(-1).name,'territory_vip_rune_preset_save_v1');
 assert.equal(calls.at(-1).args.p_revision,1);
 await assert.rejects(api.saveVipRunePreset(3,1),/invalid_request/);
 
-assert.equal(await api.applyVipRunePreset(1,revision),true);
+// Double tapping before Telegram auth completes is one logical operation.
+const originalGetUser=globalThis.__runeVipFixture.auth.getUser;
+let releaseAuth;
+globalThis.__runeVipFixture.auth.getUser=async()=>{
+  await new Promise(resolve=>{releaseAuth=resolve;});
+  return originalGetUser();
+};
+const firstApply=api.applyVipRunePreset(1,revision);
+const duplicateApply=api.applyVipRunePreset(1,revision);
+assert.strictEqual(firstApply,duplicateApply,'double tap during auth must reuse the same promise');
+for(let i=0;i<5&&!releaseAuth;i++)await new Promise(resolve=>setTimeout(resolve,0));
+assert.equal(typeof releaseAuth,'function');
+releaseAuth();
+assert.equal(await firstApply,true);
+globalThis.__runeVipFixture.auth.getUser=originalGetUser;
 assert.equal(revision,2);
 assert.equal(api.hasPendingVipRunePreset(user),false);
 assert.equal(calls.filter(x=>x.name==='territory_vip_rune_preset_apply_v1').length,1);
