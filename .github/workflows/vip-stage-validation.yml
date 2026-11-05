@@ -4,6 +4,10 @@ on:
     paths:
       - 'src/game/belt.ts'
       - 'src/game/vipBeltCave.ts'
+      - 'src/game/vipEquipmentPresets.ts'
+      - 'src/components/VipEquipmentPresets.tsx'
+      - 'src/components/GearShowcase.tsx'
+      - 'scripts/check-vip-equipment-client.mjs'
       - 'src/game/vipBeltClassic.ts'
       - 'src/components/pve/PveFight.tsx'
       - 'src/components/BattleScreen.tsx'
@@ -64,6 +68,8 @@ jobs:
         run: npm run test:vip-belt
       - name: Cave and Arena verified receipts, CAS and replay-safe belt refill
         run: node scripts/check-vip-cave-refill-client.mjs
+      - name: VIP equipment preset client owner CAS and lost-ack replay
+        run: node scripts/check-vip-equipment-client.mjs
       - name: Campaign and Trials victory/defeat WAL-bundled belt refill
         run: node scripts/check-vip-classic-refill.mjs && node scripts/check-pve-victory-save-fence.mjs && node scripts/check-pve-victory-recovery.mjs
       - name: VIP daily staged database and security receipt tests
