@@ -10,7 +10,10 @@ CREATE TABLE IF NOT EXISTS territory_private.vip_pve_bonus_config_v1 (
   id boolean PRIMARY KEY DEFAULT true CHECK (id),
   enabled boolean NOT NULL DEFAULT false,
   approval_reference text NOT NULL DEFAULT 'not approved'
-    CHECK (length(trim(approval_reference)) > 0)
+    CHECK (length(trim(approval_reference)) > 0),
+  CONSTRAINT vip_pve_enabled_requires_approval CHECK (
+    NOT enabled OR lower(trim(approval_reference)) <> 'not approved'
+  )
 );
 INSERT INTO territory_private.vip_pve_bonus_config_v1(id,enabled)
  VALUES (true,false) ON CONFLICT (id) DO NOTHING;
