@@ -180,6 +180,7 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
       )}
 
       <PlayerRunes key={p.id} playerId={p.id} playerName={p.name} confirm={confirm} />
+      <PlayerVip key={`vip-${p.id}`} playerId={p.id} playerName={p.name} confirm={confirm} />
       <Panel title="Баланс и ресурсы">
         <div className="space-y-2">
           {RESOURCES.map((r) => {
