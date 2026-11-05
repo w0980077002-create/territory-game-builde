@@ -4,6 +4,7 @@ import { useLanguage } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
 import { useStore } from '@/game/store';
 import { beltContext } from '@/game/belt';
+import { persistCaveVipBeltAfterSettlement } from '@/game/vipBeltCave';
 import { BeltCells } from '@/components/ui/BeltCells';
 import { GearStrip } from '@/components/arena/GearStrip';
 import { FoldSection } from '@/components/arena/FoldSection';
@@ -185,8 +186,11 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     const started = decodeSession(await requestAdventureStart(userId,command,hooks));
     install(started);
     // Start receipt replay may predate a finished fight. Load its live status.
-    install(decodeSession(await requestAdventureSettlement(
-      userId, { action: 'resume', sessionId: started.session_id }, hooks)));
+    const resumed = decodeSession(await requestAdventureSettlement(
+      userId, { action: 'resume', sessionId: started.session_id }, hooks));
+    install(resumed);
+    // Only this owner-scoped server receipt may authorize a post-fight refill.
+    await persistCaveVipBeltAfterSettlement(userId, resumed);
     return true;
   }, [install, userId]);
 
@@ -201,8 +205,10 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
       if (pending) {
         const result = decodeSession(await requestAdventureSettlement(userId, pending, hooks));
         install(result);
-        install(decodeSession(await requestAdventureSettlement(
-          userId, { action: 'resume', sessionId: result.session_id }, hooks)));
+        const resumed = decodeSession(await requestAdventureSettlement(
+          userId, { action: 'resume', sessionId: result.session_id }, hooks));
+        install(resumed);
+        await persistCaveVipBeltAfterSettlement(userId, resumed);
       } else {
         let recoveredStart = false;
         try {
@@ -214,14 +220,20 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           // already-active server session, not a second challenge/debit.
           if (!(cause instanceof Error) || cause.message !== 'adventure_definitively_rejected'
             || !currentProgress.active_session_id) throw cause;
-          install(decodeSession(await requestAdventureSettlement(
-            userId, { action: 'resume', sessionId: currentProgress.active_session_id }, hooks)));
+          const resumed = decodeSession(await requestAdventureSettlement(
+            userId, { action: 'resume', sessionId: currentProgress.active_session_id }, hooks));
+          install(resumed);
+          await persistCaveVipBeltAfterSettlement(userId, resumed);
           recoveredStart = true;
         }
         if (!recoveredStart) {
           const id = currentProgress.active_session_id || localStorage.getItem(sessionKey(userId));
-          if (id) install(decodeSession(await requestAdventureSettlement(
-            userId, { action: 'resume', sessionId: id }, hooks)));
+          if (id) {
+            const resumed = decodeSession(await requestAdventureSettlement(
+              userId, { action: 'resume', sessionId: id }, hooks));
+            install(resumed);
+            await persistCaveVipBeltAfterSettlement(userId, resumed);
+          }
         }
       }
       const prepared = await supabase.functions.invoke('territory-combat', { body: { action: 'prepare' } });
@@ -270,7 +282,10 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         sessionId: current.session_id, revision: current.revision, ...(skillId ? { skillId } : {}) };
       const result = decodeSession(await requestAdventureSettlement(userId, cmd, hooks));
       install(result);
-      if (result.state.status !== 'fighting') await readProgress();
+      if (result.state.status !== 'fighting') {
+        await persistCaveVipBeltAfterSettlement(userId, result);
+        await readProgress();
+      }
       setRecoverable(false);
     } catch (cause) {
       if (mounted.current) { setError(message(cause, en)); setRecoverable(true); }
