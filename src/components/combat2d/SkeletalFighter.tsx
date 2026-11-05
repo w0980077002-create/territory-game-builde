@@ -54,6 +54,12 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
       animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).flatMap(joint => {
         // Web Animations may be missing on older embedded SVG implementations.
         const frames = jointFrames(joint.dataset.rigPart as Joint, stops);
+        // Resolve one consistent visible pose for both unsupported and throwing
+        // SVG Web Animations implementations.
+        const visibleFrame = reduced?.matches || motion === 'death' || motion === 'victory'
+          ? frames[frames.length - 1]
+          : frames.find((frame, index) => index > 0 && typeof frame.offset === 'number' && frame.offset >= 350 / ACTION_MS) ?? frames[frames.length - 1];
+        const showLegacyPose = () => { joint.style.transform = String(visibleFrame.transform ?? ''); };
         // Older Telegram WebViews may lack SVG Web Animations entirely.
         // Keep the resolved pose visible instead of silently freezing every joint.
         if (typeof joint.animate !== 'function') {
@@ -62,10 +68,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
           // Respect reduced motion even on engines without SVG Web Animations.
           // Showing a contact pose for the entire action would still imply
           // movement when the player has explicitly disabled it.
-          const visibleFrame = reduced?.matches || motion === 'death' || motion === 'victory'
-            ? frames[frames.length - 1]
-            : frames.find((frame, index) => index > 0 && typeof frame.offset === 'number' && frame.offset >= 350 / ACTION_MS) ?? frames[frames.length - 1];
-          joint.style.transform = String(visibleFrame.transform ?? '');
+          showLegacyPose();
           return [];
         }
         // Retain readable final outcome poses without large movement in reduced mode.
@@ -75,10 +78,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
         try {
           return [joint.animate(selected, { duration: reduced?.matches ? 1 : ACTION_MS / speed, fill: 'forwards' })];
         } catch {
-          const visibleFrame = reduced?.matches || motion === 'death' || motion === 'victory'
-            ? frames[frames.length - 1]
-            : frames.find((frame, index) => index > 0 && typeof frame.offset === 'number' && frame.offset >= 350 / ACTION_MS) ?? frames[frames.length - 1];
-          joint.style.transform = String(visibleFrame.transform ?? '');
+          showLegacyPose();
           return [];
         }
       });
