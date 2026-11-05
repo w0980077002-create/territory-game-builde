@@ -19,6 +19,7 @@ export const useArena = { get: () => arenaState, set: () => {}, subscribe: () =>
 export const useLanguage = () => ({ language: new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'ru' });
 export const localizeText = (item, language) => typeof item === 'string' ? item : item?.[language] || item?.ru || '';
 export async function ensurePlayerSession() { return true; }
+export async function persistCaveVipBeltAfterSettlement(){return false;}
 export function restoreAdventureSaveFence() {
  return pendingRecovery ? { action:'advance', operationId:'22222222-2222-4222-8222-222222222222',
    sessionId:'11111111-1111-4111-8111-111111111111', revision:0 } : null;
@@ -86,7 +87,7 @@ const output = await build({
  alias: { '@':resolve('src') },
  define: { 'import.meta.env.BASE_URL':JSON.stringify('/'), 'import.meta.env.DEV':'false', 'process.env.NODE_ENV':'"production"' },
  plugins: [{ name:'adventure-fixture', setup(b) {
-   b.onResolve({ filter:/(?:\/game\/(?:i18n|actions|auth|supabase|combatV1\/receiptAdapter)$|^\.\/supabase$)/ }, () => ({ path:'fixture', namespace:'adventure-fixture' }));
+   b.onResolve({ filter:/(?:\/game\/(?:i18n|actions|auth|supabase|vipBeltCave|combatV1\/receiptAdapter)$|^\.\/supabase$)/ }, () => ({ path:'fixture', namespace:'adventure-fixture' }));
    b.onLoad({ filter:/.*/, namespace:'adventure-fixture' }, () => ({ contents:fixture, loader:'js' }));
  } }],
 });
