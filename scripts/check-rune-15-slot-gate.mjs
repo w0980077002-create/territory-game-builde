@@ -33,7 +33,7 @@ const ui = await build({ entryPoints: ['src/components/builds/ServerRuneBook.tsx
   define: { 'import.meta.env': JSON.stringify({ BASE_URL: '/', VITE_TERRITORY_RUNES: 'disabled',
     VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' }) },
   plugins: [{ name: 'test-dependencies', setup(b) {
-    b.onResolve({ filter: /^@\/game\/supabase$|^@\/game\/combatV1\/api$|^\.\/RuneSkillBook$/ }, args => ({ path: args.path, namespace: 'stub' }));
+    b.onResolve({ filter: /^(?:@\/game\/supabase|\.\/supabase|@\/game\/combatV1\/api|\.\/RuneSkillBook)$/ }, args => ({ path: args.path, namespace: 'stub' }));
     b.onLoad({ filter: /.*/, namespace: 'stub' }, args => ({ contents: args.path.endsWith('supabase')
       ? 'export const supabase = { rpc() { throw new Error("unexpected RPC") } };'
       : args.path.endsWith('/api') ? 'export const requestCombat = () => { throw new Error("unexpected write") }; export const pendingCombatCommand = () => null;'
