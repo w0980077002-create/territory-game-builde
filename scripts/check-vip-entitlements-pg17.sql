@@ -72,6 +72,26 @@ INSERT INTO territory_private.vip_payment_ledger_v1
     'potion_pack','v1',50,1000,'settled'),
   ('pending-stars-0000000002','10000000-0000-0000-0000-000000000002',
     'potion_pack','v1',50,500000,'pending');
+-- Trusted ledger writers may settle/refund, but cannot alter price snapshots
+-- or reverse refunds (even with service privileges).
+DO $immutable_payment$
+BEGIN
+ BEGIN
+  UPDATE territory_private.vip_payment_ledger_v1
+   SET verified_usd_cents=999999 WHERE provider_transaction_id='verified-stars-00000001';
+  RAISE EXCEPTION 'Payment snapshot changed';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'vip_payment_snapshot_immutable' THEN RAISE; END IF;
+ END;
+ BEGIN
+  UPDATE territory_private.vip_payment_ledger_v1
+   SET status='pending' WHERE provider_transaction_id='verified-stars-00000001';
+  RAISE EXCEPTION 'Settled payment regressed';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'vip_payment_status_regression' THEN RAISE; END IF;
+ END;
+END $immutable_payment$;
+
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000002',false);
 SET ROLE authenticated;
 DO $paid$
