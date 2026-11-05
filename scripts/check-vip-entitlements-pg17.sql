@@ -20,6 +20,7 @@ INSERT INTO public.players (id,vip_level) VALUES
  ('10000000-0000-0000-0000-000000000002',0),
  ('10000000-0000-0000-0000-000000000003',0);
 \i supabase/staged/20261105_vip_entitlements_v1.sql
+\i supabase/staged/20261105_vip_pve_bonus_v1.sql
 
 DO $permissions$
 BEGIN
@@ -169,6 +170,44 @@ BEGIN
   RAISE EXCEPTION 'Gift revocation did not leave paid/refunded tier at zero: %',j;
  END IF;
 END $revoked_gift$;
+RESET ROLE;
+
+-- Verify isolated server-only VIP PvE calculation. It starts disabled,
+-- grants no power to authenticated clients, and never reads client tiers.
+DO $vip_pve_rights$
+BEGIN
+ IF has_function_privilege('authenticated','territory_private.vip_pve_bonus_v1(uuid,integer,integer)','EXECUTE')
+ OR has_table_privilege('authenticated','territory_private.vip_pve_bonus_config_v1','UPDATE')
+ THEN RAISE EXCEPTION 'Client can mint VIP PvE rewards'; END IF;
+END $vip_pve_rights$;
+SET ROLE service_role;
+DO $vip_pve_disabled$
+DECLARE j jsonb;
+BEGIN
+ j:=territory_private.vip_pve_bonus_v1('10000000-0000-0000-0000-000000000001',15,20);
+ IF (j->>'gold')::int<>15 OR (j->>'xp')::int<>20 OR (j->>'percent')::int<>0
+ THEN RAISE EXCEPTION 'Disabled VIP bonus changed existing rewards: %',j; END IF;
+END $vip_pve_disabled$;
+RESET ROLE;
+UPDATE territory_private.vip_pve_bonus_config_v1
+ SET enabled=true,approval_reference='disposable PG17 test only' WHERE id=true;
+SET ROLE service_role;
+DO $vip_pve_legacy$
+DECLARE j jsonb;
+BEGIN
+ j:=territory_private.vip_pve_bonus_v1('10000000-0000-0000-0000-000000000001',15,20);
+ IF (j->>'gold')::int<>16 OR (j->>'xp')::int<>22 OR (j->>'percent')::int<>10
+ THEN RAISE EXCEPTION 'Legacy VIP5 did not apply 10 percent with floor: %',j; END IF;
+ j:=territory_private.vip_pve_bonus_v1('10000000-0000-0000-0000-000000000002',15,20);
+ IF (j->>'gold')::int<>15 OR (j->>'xp')::int<>20
+ THEN RAISE EXCEPTION 'Revoked/refunded player still gained VIP bonus: %',j; END IF;
+ BEGIN
+  PERFORM territory_private.vip_pve_bonus_v1('10000000-0000-0000-0000-000000000001',2147483647,2147483647);
+  RAISE EXCEPTION 'Overflow reward was accepted';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'vip_pve_reward_overflow' THEN RAISE; END IF;
+ END;
+END $vip_pve_legacy$;
 RESET ROLE;
 
 SELECT set_config('request.jwt.claim.sub','',false);
