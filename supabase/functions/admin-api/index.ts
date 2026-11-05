@@ -240,6 +240,69 @@ async function handle(action: string, body: Row) {
         settings: settings.data,
       };
     }
+    case "vip_player": {
+      const player = playerId(body.playerId);
+      const { data, error } = await db.rpc("territory_vip_admin_player_v1", {p_player:player});
+      if (error || !data || data.playerId !== player || typeof data.entitlement !== 'object') {
+        if (error?.message?.includes('vip_entitlement_player_unavailable'))
+          throw new HttpError(404, 'not_found');
+        throw new HttpError(503, 'vip_admin_unavailable');
+      }
+      return data;
+    }
+    case "vip_grant": {
+      const player = playerId(body.playerId);
+      const request = String(body.requestId ?? '');
+      const campaign = String(body.campaignKey ?? '').trim();
+      const kind = body.kind;
+      const tier = intIn(body.level,1,10);
+      const reason = String(body.reason ?? '').trim();
+      const rawExpiry = body.expiresAt;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(request)
+        || !/^[a-zA-Z0-9:_.-]{3,120}$/.test(campaign)
+        || !['gift','temporary'].includes(String(kind))
+        || reason.length < 4 || reason.length > 500
+        || (kind === 'gift' && rawExpiry != null)
+        || (kind === 'temporary' && (typeof rawExpiry !== 'string'
+          || !Number.isFinite(Date.parse(rawExpiry))
+          || Date.parse(rawExpiry) <= Date.now()
+          || Date.parse(rawExpiry) > Date.now() + 365*24*60*60*1000))) {
+        throw new HttpError(400, 'vip_admin_invalid_grant');
+      }
+      const { data, error } = await db.rpc("territory_vip_admin_grant_v1", {
+        p_player:player, p_operation:request, p_campaign:campaign, p_kind:kind,
+        p_level:tier, p_expires:kind==='temporary'?rawExpiry:null, p_reason:reason,
+      });
+      if (error || !data || data.operationId !== request || data.playerId !== player
+        || data.success !== true) {
+        const known = ['vip_admin_operation_conflict','vip_admin_campaign_exists',
+          'vip_admin_invalid_grant','vip_admin_player_unavailable'];
+        const match = known.find(code => error?.message?.includes(code));
+        throw new HttpError(match ? 409 : 503, match ?? 'vip_admin_unavailable');
+      }
+      return data;
+    }
+    case "vip_revoke": {
+      const player = playerId(body.playerId);
+      const grant = String(body.grantId ?? '');
+      const request = String(body.requestId ?? '');
+      const reason = String(body.reason ?? '').trim();
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(grant)
+        || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(request)
+        || reason.length < 4 || reason.length > 500)
+        throw new HttpError(400, 'vip_admin_invalid_revoke');
+      const { data, error } = await db.rpc("territory_vip_admin_revoke_v1", {
+        p_player:player, p_grant:grant, p_operation:request, p_reason:reason,
+      });
+      if (error || !data || data.operationId !== request || data.playerId !== player
+        || data.success !== true) {
+        const known = ['vip_admin_operation_conflict','vip_admin_already_revoked',
+          'vip_admin_grant_not_found','vip_admin_player_unavailable'];
+        const match = known.find(code => error?.message?.includes(code));
+        throw new HttpError(match ? 409 : 503, match ?? 'vip_admin_unavailable');
+      }
+      return data;
+    }
     case "arena_economy": {
       // Available only after verifyToken() in the owner-admin request handler.
       // Report RPC additionally requires service_role and returns aggregates,
