@@ -184,6 +184,30 @@ BEGIN
  END;
 END $refund_future$;
 
+-- A trusted writer cannot backfill a future-dated payment receipt,
+-- regardless of whether its first observed state is pending or settled.
+DO $future_receipt$
+DECLARE v_status text;
+BEGIN
+ FOREACH v_status IN ARRAY ARRAY['pending','settled'] LOOP
+  BEGIN
+   INSERT INTO territory_private.vip_payment_ledger_v1
+    (provider_transaction_id,player_id,sku,price_version,stars_amount,
+     verified_usd_cents,status,recorded_at)
+   VALUES ('future-receipt-'||v_status||'-00001',
+    '10000000-0000-0000-0000-000000000002',
+    'potion_pack','v1',50,1000,v_status,statement_timestamp()+interval '1 day');
+   RAISE EXCEPTION 'Future payment receipt accepted';
+  EXCEPTION WHEN raise_exception THEN
+   IF SQLERRM<>'vip_payment_receipt_in_future' THEN RAISE; END IF;
+  END;
+ END LOOP;
+ IF EXISTS (SELECT 1 FROM territory_private.vip_payment_ledger_v1
+  WHERE provider_transaction_id LIKE 'future-receipt-%') THEN
+  RAISE EXCEPTION 'Future-dated payment evidence persisted';
+ END IF;
+END $future_receipt$;
+
 -- A provider may report a refund before we have seen the settlement.
 -- The same chronology guard must reject malformed INSERT receipts.
 DO $refund_insert_chronology$
