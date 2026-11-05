@@ -390,6 +390,28 @@ BEGIN
 END $vip_pve_invalid_amounts$;
 RESET ROLE;
 
+-- Disabled VIP bonuses must not permit settlement for a missing or banned
+-- player. Rejection is independent of the bonus feature gate.
+UPDATE public.players SET banned=true WHERE id='10000000-0000-0000-0000-000000000003';
+SET ROLE service_role;
+DO $vip_pve_owner_guard$
+DECLARE v_player uuid;
+BEGIN
+ FOR v_player IN SELECT unnest(ARRAY[
+  '99999999-0000-0000-0000-000000000001'::uuid,
+  '10000000-0000-0000-0000-000000000003'::uuid
+ ]) LOOP
+  BEGIN
+   PERFORM territory_private.vip_pve_bonus_v1(v_player,10,10);
+   RAISE EXCEPTION 'Unavailable PvE owner accepted';
+  EXCEPTION WHEN raise_exception THEN
+   IF SQLERRM<>'vip_pve_player_unavailable' THEN RAISE; END IF;
+  END;
+ END LOOP;
+END $vip_pve_owner_guard$;
+RESET ROLE;
+UPDATE public.players SET banned=false WHERE id='10000000-0000-0000-0000-000000000003';
+
 -- Verify isolated server-only VIP PvE calculation. It starts disabled,
 -- grants no power to authenticated clients, and never reads client tiers.
 DO $vip_pve_rights$
