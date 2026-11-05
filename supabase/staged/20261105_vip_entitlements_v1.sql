@@ -48,6 +48,9 @@ ALTER TABLE territory_private.vip_entitlement_grants_v1 ENABLE ROW LEVEL SECURIT
 ALTER TABLE territory_private.vip_entitlement_revocations_v1 ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON territory_private.vip_entitlement_grants_v1,
   territory_private.vip_entitlement_revocations_v1 FROM PUBLIC,anon,authenticated;
+GRANT SELECT,INSERT,UPDATE ON territory_private.vip_payment_ledger_v1 TO service_role;
+GRANT SELECT,INSERT ON territory_private.vip_entitlement_grants_v1,
+  territory_private.vip_entitlement_revocations_v1 TO service_role;
 
 -- Server-owned status. USD cents below are verified price snapshots, never
 -- invented from a gifted VIP level, never Stars converted on the client.
