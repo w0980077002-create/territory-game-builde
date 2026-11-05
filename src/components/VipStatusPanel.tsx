@@ -5,7 +5,7 @@ import { fetchVipWeeklyStatus, claimVipWeekly, recoverVipWeekly, type VipWeeklyS
 import { useStore } from '@/game/store';
 import { useAccount } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
-import { VIP_TIERS, vipTier, vipNextThreshold } from '@/game/vipProgram';
+import { VIP_TIERS, vipTier } from '@/game/vipProgram';
 
 /** Prestige page renders only actual permanent entitlement from the server.
  * The amount of donated money is deliberately NOT inferred from gift VIP levels.
@@ -30,8 +30,9 @@ export function VipStatusPanel({ userId }: { userId:string }) {
   const remainingVip = Math.max(0, account.vipRemaining - (performance.now() - account.vipCheckedAt));
   const level = Math.max(permanentLevel, remainingVip>0 ? account.vip : 0);
   const current = vipTier(level);
-  // Paid progress cannot be inferred from temporary status or a gifted VIP.
-  const next = vipNextThreshold(permanentLevel);
+  // A gifted VIP level is NOT evidence of a paid purchase or a paid-progress balance.
+  const [selectedLevel,setSelectedLevel] = useState<number|null>(null);
+  const inspected = vipTier(selectedLevel ?? Math.max(1, level));
   useEffect(() => {
     if (!LIVE_DAILY_CHEST || !userId) return;
     let active=true;
@@ -99,9 +100,9 @@ export function VipStatusPanel({ userId }: { userId:string }) {
         <div className="flex items-center gap-2 rounded-lg border border-amber-300/20 bg-black/25 px-2 py-1.5">
           <ShieldCheck className="h-4 w-4 shrink-0 text-amber-300"/>
           <p className="text-[11px] text-amber-100">
-            {next === null
-              ? (en ? 'Maximum prestige achieved' : 'Высшая ступень престижа достигнута')
-              : (en ? `Next tier target: $${next} in confirmed cumulative purchases` : `Порог следующей ступени: $${next} подтверждённых покупок суммарно`)}
+            {en
+              ? 'Verified purchase progress will appear after the payment service is enabled. Gifted VIP is not paid spending.'
+              : 'Прогресс подтверждённых покупок появится после запуска платежей. Подаренный VIP не считается донатом.'}
           </p>
         </div>
         {LIVE_DAILY_CHEST && daily && daily.vip>=1 && (
@@ -139,19 +140,33 @@ export function VipStatusPanel({ userId }: { userId:string }) {
             </p>}
           </div>
         )}
-        <div className="mt-2 grid grid-cols-2 gap-1.5">
+        <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label={en ? 'Explore VIP tiers' : 'Уровни VIP'} data-testid="vip-tier-selector">
           {VIP_TIERS.slice(1).map(tier => {
             const reached = level >= tier.level;
+            const selected = tier.level === inspected.level;
             return (
-              <div key={tier.level} className={`flex min-w-0 items-start gap-1.5 rounded-lg border p-2 text-left ${reached ? 'border-amber-400/45 bg-amber-500/10' : 'border-white/10 bg-black/20'}`}>
-                {reached ? <Check className="h-3.5 w-3.5 shrink-0 text-emerald-300"/> : <LockKeyhole className="h-3.5 w-3.5 shrink-0 text-amber-700"/>}
-                <span className="min-w-0">
-                  <strong className={`block text-[11px] font-black ${reached ? 'text-amber-100' : 'text-amber-200/70'}`}>VIP {tier.level} · $${tier.usd}</strong>
-                  <small className="block text-[10px] leading-tight text-amber-100/80">{en ? tier.nameEn : tier.nameRu}</small>
-                </span>
-              </div>
+              <button type="button" key={tier.level} onClick={() => setSelectedLevel(tier.level)}
+                aria-pressed={selected} data-testid={`vip-tier-${tier.level}`}
+                className={`flex min-h-12 min-w-[65px] shrink-0 flex-col items-center justify-center rounded-lg border px-1.5 py-1 text-center ${selected ? 'border-amber-200 bg-[#8e602b] text-amber-50' : reached ? 'border-amber-400/45 bg-amber-500/10 text-amber-100' : 'border-white/10 bg-black/20 text-amber-200/70'}`}>
+                {reached ? <Check size={13} aria-hidden="true"/> : <LockKeyhole size={13} aria-hidden="true"/>}
+                <strong className="text-[11px] font-black">VIP {tier.level}</strong>
+              </button>
             );
           })}
+        </div>
+        <div className="rounded-lg border border-amber-300/20 bg-black/25 p-2" data-testid="vip-tier-detail" aria-live="polite">
+          <strong className="text-xs font-black text-[#ffdf98]">
+            VIP {inspected.level} · {en ? inspected.nameEn : inspected.nameRu}
+          </strong>
+          <p className="mt-1 text-[11px] text-amber-100/90">
+            {en ? `Planned PvE gold and XP bonus: +${inspected.goldXpBonusPercent}%`
+              : `Планируемый бонус золота и опыта PvE: +${inspected.goldXpBonusPercent}%`}
+          </p>
+          <p className="mt-1 text-[11px] text-amber-100/80">{en ? inspected.perkEn : inspected.perkRu}</p>
+          <p className="mt-1 text-[10px] text-amber-200/70">
+            {en ? `Cumulative paid-tier target: $${inspected.usd} (not an active checkout)`
+              : `Ориентир покупок для ступени: $${inspected.usd} (покупка пока недоступна)`}
+          </p>
         </div>
         <p className="mt-2 text-[10px] text-gray-300">
           {en
