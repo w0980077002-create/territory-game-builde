@@ -29,6 +29,11 @@ BEGIN
   -- A trusted provider can deliver a refund as the first observed event.
   -- Validate its receipt chronology on INSERT as well as UPDATE.
   IF TG_OP='INSERT' THEN
+    -- The server records receipt time; reject future-dated provider evidence
+    -- before it can affect paid-tier calculations or refund chronology.
+    IF NEW.recorded_at>statement_timestamp()+interval '5 minutes' THEN
+      RAISE EXCEPTION 'vip_payment_receipt_in_future';
+    END IF;
     IF NEW.status='refunded' AND NEW.refunded_at<NEW.recorded_at THEN
       RAISE EXCEPTION 'vip_payment_refund_before_receipt';
     END IF;
