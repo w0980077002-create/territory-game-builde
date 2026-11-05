@@ -12,6 +12,7 @@ const repo={context:(p,c)=>rpc('territory_combat_context_v1',[p,c]),commit:(p,c,
 const exec=c=>executeCombatCommand(repo,player,c,()=>12);
 const fighter={stats:{hp:1000,maxHp:1000,attack:100,defense:4,critChance:0,dodgeChance:0,blockChance:0},ownership:{heroLevel:1,skills:{},runes:{},passives:{}},loadout:{skills:[],passives:[]}};
 const runeCave = process.env.RUNE_CAVE_TEST === '1';
+const vipPve = process.env.VIP_PVE_TEST === '1';
 const enemy={...fighter,stats:{...fighter.stats,hp:runeCave?101:10,maxHp:runeCave?101:10,attack:1}};
 const rules={stepMs:10,maxDurationMs:10000,approachMs:20,attackIntervalMs:200,basicWindupMs:20,basicMultiplier:1,defenseFactor:0.5,magicDefenseFactor:0.2,minimumDamage:1,critMultiplier:2,blockMultiplier:0,maxEnergy:100,initialEnergy:100,energyPerSecond:0,modeDamageMultiplier:{pve:1,boss:1,pvp:1}};
 const save={player:{gold:50,xp:90,level:1,xpToNext:100,maxEnergy:20,stats:{hp:100,maxHp:100,attack:20,defense:5},equipped:{weapon:{id:'old'}}},inventory:[{id:'old'}],belt:[{id:'belt_0',qty:1},null,null,null,null,null,null],battleStones:10,vip:7,redGems:45,achievements:[{id:'old'}]};
@@ -27,6 +28,21 @@ try {
  await db.exec(readFileSync('supabase/staged/territory_v1_adventure_settlement.sql','utf8'));
  await db.exec(readFileSync('supabase/staged/territory_v1_combat_profiles_reconciliation.sql','utf8'));
  await db.exec(readFileSync('supabase/staged/territory_dark_stones_20261030.sql','utf8'));
+ if (vipPve) {
+   await db.exec(`ALTER TABLE public.players ADD COLUMN vip_level integer NOT NULL DEFAULT 0;
+     CREATE FUNCTION territory_private.fortune_vip_v1(u uuid) RETURNS integer
+     LANGUAGE sql STABLE AS $ SELECT vip_level FROM public.players WHERE id=u $;`);
+   await db.exec(readFileSync('supabase/staged/20261105_vip_entitlements_v1.sql','utf8'));
+   await db.exec(readFileSync('supabase/staged/20261105_vip_pve_bonus_v1.sql','utf8'));
+   // The staged module cannot modify existing rewards until enabled.
+   await q('UPDATE public.players SET vip_level=5 WHERE id=$1',[player]);
+   const disabled=(await q('SELECT territory_private.vip_pve_bonus_v1($1,15,20) AS bonus',[player]))[0].bonus;
+   assert.deepEqual([disabled.gold,disabled.xp,disabled.percent],[15,20,0]);
+   await db.exec("UPDATE territory_private.vip_pve_bonus_config_v1 SET enabled=true,approval_reference='disposable integration test' WHERE id=true");
+   const enabled=(await q('SELECT territory_private.vip_pve_bonus_v1($1,15,20) AS bonus',[player]))[0].bonus;
+   assert.deepEqual([enabled.gold,enabled.xp,enabled.vip,enabled.percent],[16,22,5,10],
+     'effective server VIP5 applies floor(10%) once');
+ }
  if (runeCave) {
    for (const path of ['supabase/staged/territory_rune_slots_v1.sql','supabase/staged/territory_rune_battle_snapshot_v1.sql','supabase/staged/territory_rune_effects_v1.sql','supabase/staged/territory_rune_cave_integration_v1.sql']) await db.exec(readFileSync(path,'utf8'));
    assert.equal((await q('SELECT enabled FROM territory_private.rune_cave_config_v1'))[0].enabled,false,'runes default to off');
@@ -112,9 +128,15 @@ try {
  const attempts=await Promise.allSettled([exec(command),exec({...command,operationId:op(4)})]);
  const winners=attempts.filter(x=>x.status==='fulfilled'); const failures=attempts.filter(x=>x.status==='rejected');
  assert.equal(winners.length,1); assert.equal(failures.length,1); assert.match(String(failures[0].reason),/combat_revision_conflict|combat_already_finished/);
- const won=winners[0].value; assert.equal(won.state.status,'hero_won'); assert.equal(won.settlement.reward.gold,15); assert.equal(won.settlement.reward.xp,20);
+ const won=winners[0].value; assert.equal(won.state.status,'hero_won');
+ assert.equal(won.settlement.reward.gold,vipPve?16:15);
+ assert.equal(won.settlement.reward.xp,vipPve?22:20);
+ if (vipPve) assert.deepEqual(won.settlement.vip_bonus,{vip:5,percent:10,gold:1,xp:2});
  if (runeCave) assert.ok(won.events.some(event=>event.actor==='hero' && event.type==='impact' && event.value===101),'pinned 3% rune changes actual server combat damage');
- assert.equal(won.settlement.unlocked_stage,2); assert.equal(won.settlement.game_state.player.gold,65); assert.equal(won.settlement.game_state.player.level,2); assert.equal(won.settlement.game_state.player.xp,10);
+ assert.equal(won.settlement.unlocked_stage,2);
+ assert.equal(won.settlement.game_state.player.gold,vipPve?66:65);
+ assert.equal(won.settlement.game_state.player.level,2);
+ assert.equal(won.settlement.game_state.player.xp,vipPve?12:10);
  const winningCommand=attempts[0].status==='fulfilled'?command:{...command,operationId:op(4)};
  assert.deepEqual(await exec(winningCommand),won);
  const resume=await exec({action:'resume',sessionId:start.session_id}); assert.deepEqual(resume.settlement,won.settlement);
@@ -185,7 +207,7 @@ try {
  await assert.rejects(exec({action:'advance',operationId:op(10),sessionId:next.session_id,revision:0}),/combat_profile_needs_reconciliation/);
  assert.equal((await q('SELECT revision FROM territory_private.combat_sessions_v1 WHERE session_id=$1',[next.session_id]))[0].revision,0);
  await db.exec('RESET ROLE'); const row=(await q('SELECT * FROM players WHERE id=$1',[player]))[0];
- assert.equal(row.gold,65); assert.equal(row.xp,10); assert.deepEqual(row.game_state.inventory,save.inventory); assert.deepEqual(row.game_state.player.equipped,save.player.equipped); assert.equal(row.game_state.redGems,45); assert.equal(row.game_state.vip,7);
+ assert.equal(row.gold,vipPve?66:65); assert.equal(row.xp,vipPve?12:10); assert.deepEqual(row.game_state.inventory,save.inventory); assert.deepEqual(row.game_state.player.equipped,save.player.equipped); assert.equal(row.game_state.redGems,45); assert.equal(row.game_state.vip,7);
  if (process.env.C1_LIVE_CLONE === '1') {
    await db.exec(readFileSync('supabase/staged/territory_c1_pause_new_starts_DRAFT_20261031.sql','utf8'));
    const phaseB=readFileSync('supabase/staged/territory_c1_restore_functions_DRAFT_20261031.sql','utf8');
