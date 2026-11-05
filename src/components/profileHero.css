@@ -790,3 +790,11 @@
 @media(max-width:350px) {
   .territory-profile .hero-showcase__hero-art {width:126%;}
 }
+
+
+/* Full-body figure must remain completely visible. Original component clipped
+ * the scaled real saved hero to its narrow center column, cutting off the
+ * shield and weapon. The gear slots retain a higher z-index and hit targets. */
+.territory-profile .hero-showcase__character {
+  overflow: visible;
+}
