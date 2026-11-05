@@ -1,4 +1,4 @@
-import { Crown, Check, LockKeyhole, ShieldCheck, Gift } from 'lucide-react';
+import { Crown, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { fetchVipDailyStatus, claimVipDaily, recoverVipDaily, type VipDailyStatus } from '@/game/vipDaily';
 import { fetchVipWeeklyStatus, claimVipWeekly, recoverVipWeekly, type VipWeeklyStatus } from '@/game/vipWeekly';
@@ -13,6 +13,10 @@ import { VIP_TIERS, vipTier, vipNextThreshold } from '@/game/vipProgram';
  */
 const LIVE_DAILY_CHEST = import.meta.env.VITE_VIP_DAILY_ENABLED === 'true';
 const LIVE_WEEKLY_CHEST = import.meta.env.VITE_VIP_WEEKLY_ENABLED === 'true';
+const vipAssetBase = `${import.meta.env.BASE_URL}assets/territory/vip/`;
+const vipBadgeSrc = (n:number) => vipAssetBase + 'badges/vip-' + String(n).padStart(2,'0') + '.svg';
+const vipDailyChestSrc = (n:number) => vipAssetBase + 'chests/daily-' + Math.max(1,Math.min(5,Math.ceil(n/2))) + '.svg';
+const vipWeeklyChestSrc = (n:number) => vipAssetBase + 'chests/weekly-' + (n<=3?1:n<=5?2:n===6?3:n<=8?4:5) + '.svg';
 
 export function VipStatusPanel({ userId }: { userId:string }) {
   const account = useStore(useAccount);
@@ -83,7 +87,10 @@ export function VipStatusPanel({ userId }: { userId:string }) {
   return (
     <details className="group rounded-2xl border-2 border-[#9e6831] bg-[linear-gradient(140deg,#4b2c1b,#231710_65%,#402719)] p-2.5 shadow-[inset_0_1px_0_#f3c77c50,0_4px_14px_#0007]" data-testid="vip-status-panel">
       <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/70 bg-[#4d2d12] text-amber-200"><Crown size={23}/></span>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/70 bg-[#4d2d12] text-amber-200">
+          {level>=1 ? <img src={vipBadgeSrc(level)} alt="" width={39} height={39}
+            className="h-10 w-10 object-contain" /> : <Crown size={23}/>}
+        </span>
         <span className="min-w-0 flex-1">
           <strong className="block text-sm font-black text-[#ffdf98]">{en ? 'VIP Program' : 'Программа VIP'} · {level}/10</strong>
           <span className="block truncate text-[11px] text-amber-100/85">{en ? current.nameEn : current.nameRu}</span>
@@ -130,7 +137,8 @@ export function VipStatusPanel({ userId }: { userId:string }) {
         {LIVE_DAILY_CHEST && daily && daily.vip>=1 && (
           <div className="mb-2 rounded-xl border border-amber-400/50 bg-black/25 p-2" data-testid="vip-daily-chest">
             <div className="mb-1.5 flex items-center gap-1.5 text-xs font-extrabold text-amber-100">
-              <Gift size={16}/>{en?'Your daily VIP chest':'Твой ежедневный VIP-сундук'}
+              <img src={vipDailyChestSrc(daily.vip)} alt="" loading="lazy" width={46} height={40}
+                className="h-10 w-12 shrink-0 object-contain" />{en?'Your daily VIP chest':'Твой ежедневный VIP-сундук'}
             </div>
             <button type="button" onClick={() => void takeDaily()} disabled={daily.claimedToday || dailyBusy}
               className="min-h-10 w-full rounded-lg border border-amber-200/70 bg-gradient-to-b from-[#ffe2a1] to-[#b9792f] px-2 text-xs font-black text-[#281609] disabled:opacity-55">
@@ -145,7 +153,8 @@ export function VipStatusPanel({ userId }: { userId:string }) {
         {LIVE_WEEKLY_CHEST && weekly && weekly.vip>=2 && (
           <div className="mb-2 rounded-xl border border-amber-400/50 bg-black/25 p-2" data-testid="vip-weekly-chest">
             <div className="mb-1.5 flex items-center gap-1.5 text-xs font-extrabold text-amber-100">
-              <Gift size={16}/>{en ? 'Your weekly VIP chest' : 'Твой еженедельный VIP-сундук'}
+              <img src={vipWeeklyChestSrc(weekly.vip)} alt="" loading="lazy" width={46} height={40}
+                className="h-10 w-12 shrink-0 object-contain" />{en ? 'Your weekly VIP chest' : 'Твой еженедельный VIP-сундук'}
             </div>
             <p className="mb-1.5 text-[10px] text-amber-100/80">
               {en ? 'Resets Monday 00:00 UTC' : 'Обновление: понедельник 00:00 UTC'}
@@ -170,7 +179,8 @@ export function VipStatusPanel({ userId }: { userId:string }) {
               <button type="button" key={tier.level} onClick={() => setSelectedLevel(tier.level)}
                 aria-pressed={selected} data-testid={`vip-tier-${tier.level}`}
                 className={`flex min-h-12 min-w-[65px] shrink-0 flex-col items-center justify-center rounded-lg border px-1.5 py-1 text-center ${selected ? 'border-amber-200 bg-[#8e602b] text-amber-50' : reached ? 'border-amber-400/45 bg-amber-500/10 text-amber-100' : 'border-white/10 bg-black/20 text-amber-200/70'}`}>
-                {reached ? <Check size={13} aria-hidden="true"/> : <LockKeyhole size={13} aria-hidden="true"/>}
+                <img src={vipBadgeSrc(tier.level)} alt="" loading="lazy" width={29} height={29}
+                  className={`h-7 w-7 object-contain ${reached?'':'opacity-60 grayscale'}`}/>
                 <strong className="text-[11px] font-black">VIP {tier.level}</strong>
               </button>
             );
