@@ -10,6 +10,7 @@ import { rarityColor } from '@/game/ui';
 import { GEAR_STATS, gearScore, canSalvageEquipment } from '@/game/gearTools';
 import { readForgeRefundQuote, readGearBatchQuote, recycleCloudEquipment, recycleCloudEquipmentBatch, saveCloudSave, type GearBatchQuote } from '@/game/cloud';
 import { ItemArt } from './ui/ItemArt';
+import { VipEquipmentPresets } from './VipEquipmentPresets';
 import type { Equipment, InventoryItem } from '@/game/types';
 import { Check, ChevronDown, ChevronUp, Hammer, Info, Layers3, Recycle, RotateCcw, ShieldCheck, Trash2, X } from 'lucide-react';
 import './GearShowcase.css';
@@ -395,6 +396,8 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
         </>)}
       </div>
 
+      <VipEquipmentPresets userId={userId}
+        onApplied={() => { setSelection(null); setConfirm(null); setError(null); }}/>
       {selection && <section ref={compareRef} className="gear-compare-panel" aria-live="polite">
         {isComparing ? (
           <>
