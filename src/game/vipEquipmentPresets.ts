@@ -56,6 +56,13 @@ async function owner(userId: string) {
     throw new Error('vip_preset_login_required');
 }
 export function vipEquipmentPresetsEnabled(): boolean { return ENABLED; }
+/** Returns the original preset slot for an exact operation replay, never
+ * guesses a new operation when a WebView lost its acknowledgement. */
+export function pendingVipEquipmentPresetSlot(userId: string): 1 | 2 | null {
+  if (!ENABLED) return null;
+  try { return readPending(userId)?.slot ?? null; }
+  catch { return null; }
+}
 export function hasPendingVipEquipmentPreset(userId: string): boolean {
   if (!ENABLED) return false;
   // Unreadable storage is NOT evidence that a pending save can be discarded.
