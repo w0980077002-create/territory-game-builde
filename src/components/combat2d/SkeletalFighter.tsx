@@ -70,7 +70,17 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
         }
         // Retain readable final outcome poses without large movement in reduced mode.
         const selected = reduced?.matches ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
-        return [joint.animate(selected, { duration: reduced?.matches ? 1 : ACTION_MS / speed, fill: 'forwards' })];
+        // Some embedded SVG engines expose animate() but throw for SVG groups.
+        // Fall back per joint so one unsupported part cannot freeze the whole rig.
+        try {
+          return [joint.animate(selected, { duration: reduced?.matches ? 1 : ACTION_MS / speed, fill: 'forwards' })];
+        } catch {
+          const visibleFrame = reduced?.matches || motion === 'death' || motion === 'victory'
+            ? frames[frames.length - 1]
+            : frames.find((frame, index) => index > 0 && typeof frame.offset === 'number' && frame.offset >= 350 / ACTION_MS) ?? frames[frames.length - 1];
+          joint.style.transform = String(visibleFrame.transform ?? '');
+          return [];
+        }
       });
     };
     apply();
