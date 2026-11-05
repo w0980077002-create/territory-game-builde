@@ -38,6 +38,7 @@ export function VipMobileShowcase({userId,onBack,onEquipment,onRunes,onBelt}:Pro
   const remaining=Math.max(0,(account.vipRemaining??0)-(performance.now()-(account.vipCheckedAt??0)));
   const level=Math.min(10,Math.max(0,account.permanentVip??0,remaining>0?account.vip:0));
 
+  const current=vipTier(level);
   const preview=vipTier(chosenTier??Math.max(1,level));
   const toRewards=()=>setSelectedChest(prev=>prev==='daily' ? null : 'daily');
   const selectedCosmetic=activeVipCosmetic(userId,cosmeticsCategory,level);
