@@ -370,6 +370,26 @@ BEGIN
 END $revoked_gift$;
 RESET ROLE;
 
+-- Invalid server settlement amounts must fail closed even while VIP is
+-- disabled. No negative or NULL rewards may reach a wallet via this helper.
+SET ROLE service_role;
+DO $vip_pve_invalid_amounts$
+DECLARE v_gold integer; v_xp integer;
+BEGIN
+ FOR v_gold,v_xp IN
+  SELECT * FROM (VALUES (-1,0),(0,-1),(NULL::integer,0),(0,NULL::integer)) AS x(gold,xp)
+ LOOP
+  BEGIN
+   PERFORM territory_private.vip_pve_bonus_v1(
+    '10000000-0000-0000-0000-000000000001',v_gold,v_xp);
+   RAISE EXCEPTION 'Invalid VIP PvE reward accepted';
+  EXCEPTION WHEN raise_exception THEN
+   IF SQLERRM<>'vip_pve_invalid_reward' THEN RAISE; END IF;
+  END;
+ END LOOP;
+END $vip_pve_invalid_amounts$;
+RESET ROLE;
+
 -- Verify isolated server-only VIP PvE calculation. It starts disabled,
 -- grants no power to authenticated clients, and never reads client tiers.
 DO $vip_pve_rights$
