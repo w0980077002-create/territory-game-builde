@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
-import { useGame, useArena, useAccount } from '@/game/actions';
+import { useGame, useArena } from '@/game/actions';
 import { secureArenaClaim, secureArenaItem } from '@/game/arenaSecure';
 import {
   TEAM_NAMES, leaveArena, submitArenaMove,
@@ -8,7 +8,7 @@ import {
 } from '@/game/arenaApi';
 import { useArenaRoom, useCountdown } from '@/game/useArenaRoom';
 import { useStrikeQueue } from '@/game/useStrikeQueue';
-import { beltAction, beltContext, refillBeltFromInventory } from '@/game/belt';
+import { beltAction } from '@/game/belt';
 import { hapticImpact, hapticNotify } from '@/game/telegram';
 import { FighterList } from './FighterList';
 import { BattleScene } from './BattleScene';
@@ -142,7 +142,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   }, [myHp]);
 
   useEffect(() => {
-    if (!view || view.room.status !== 'finished' || view.me.rewarded || claiming.current) return;
+    if (!view || view.room.status !== 'finished' || claiming.current) return;
     claiming.current = true;
     secureArenaClaim(roomId)
       .then(({ reward: r, alreadyClaimed }) => {
@@ -150,12 +150,6 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
         if (!r) { claiming.current = false; return; }
         // No local gold/XP award. Server transaction already credited the saved profile.
         useArena.set({ rating: r.rating, wins: r.wins, losses: r.losses });
-        // The secure claim installed the fresh authoritative server receipt.
-        // Only now may VIP move existing stock from inventory to the belt.
-        if (useAccount.get().permanentVip >= 3 && useGame.get().autoRefillBelt) {
-          useGame.set(current => refillBeltFromInventory(current,
-            beltContext(current, useArena.get().wins)));
-        }
         setReward(r);
         hapticNotify(r.won ? 'success' : r.draw ? 'warning' : 'error');
       })
