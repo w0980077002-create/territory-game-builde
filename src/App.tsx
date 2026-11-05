@@ -544,7 +544,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           onForge={(equipmentId) => openForge(equipmentId)}
           onQuests={() => setScreen('quests')}
            onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }} />}
-        {screen === 'vip' && <VipMobileShowcase userId={user.id} onBack={() => setScreen('city')}
+        {screen === 'vip' && <VipMobileShowcase userId={user.id} backToCity onBack={() => setScreen('city')}
           onEquipment={() => { setInventoryTab('equipment'); setScreen('inventory'); }}
           onRunes={() => setScreen('runes')}
           onBelt={() => { setInventoryTab('items'); setScreen('inventory'); }}/>} 
