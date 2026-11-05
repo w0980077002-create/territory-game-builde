@@ -13,7 +13,7 @@ import type { Equipment, GameState } from '@/game/types';
 import './profileHero.css';
 import { useSceneArt } from './ui/useSceneArt';
 
-const HERO_HARBOR_ART = ['assets/territory/scenes/sunlit-harbor.webp'] as const;
+const HERO_HARBOR_ART = ['assets/territory/scenes/winter-peaks-approved.webp'] as const;
 
 type HeroStats = ReturnType<typeof getComputedStats>;
 
@@ -90,27 +90,16 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
           <span><Gem size={15} aria-hidden="true" />{player.gems}</span>
           <span><Zap size={15} aria-hidden="true" />{player.energy}/{player.maxEnergy}</span>
         </div>
-        {hasRealXp ? (
-          <div className="hero-showcase__xp">
-            <div className="hero-showcase__xp-label">
-              <span>XP</span>
-              <span>{xp} / {player.xpToNext}</span>
-            </div>
-            <div className="hero-showcase__xp-track" role="progressbar"
-              aria-label={text('Опыт до следующего уровня', 'Experience to next level')}
-              aria-valuemin={0} aria-valuemax={player.xpToNext} aria-valuenow={xp}>
-              <span style={{ width: xpPercent + '%' }} />
-            </div>
-          </div>
-        ) : isMax ? (
-          <p className="hero-showcase__max">{text('Максимальный уровень', 'Maximum level')}</p>
-        ) : null}
       </header>
+
+      <div className="hero-showcase__banner" role="heading" aria-level={2}>
+        <span aria-hidden="true">◆</span>{text('Герой','Hero')}<span aria-hidden="true">◆</span>
+      </div>
 
       <div className={'hero-showcase__stage ' + (!harborReady ? 'hero-showcase__stage--art-pending' : '')}
         aria-busy={harborStatus==='loading'}
         style={{ backgroundImage: harborReady
-          ? `linear-gradient(180deg, #173c5120, #4c321d40), url("${import.meta.env.BASE_URL}assets/territory/scenes/sunlit-harbor.webp")`
+          ? `linear-gradient(180deg, #173c5120, #4c321d40), url("${import.meta.env.BASE_URL}assets/territory/scenes/winter-peaks-approved.webp")`
           : 'linear-gradient(160deg,#57402c,#292521 62%,#1d2630)' }}>
         <div className="hero-showcase__gear-column">{slots.slice(0, 3).map(renderSlot)}</div>
         <div className="hero-showcase__character">
@@ -128,10 +117,40 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
             {text('Повторить', 'Retry')}
           </button>}
         </div>}
+        <span className="hero-showcase__stage-level">{t('levelWord')} {player.level}</span>
       </div>
 
+      <div className="hero-showcase__progress" aria-label={text('Прогресс героя','Hero progress')}>
+        {hasRealXp ? (
+          <div className="hero-showcase__xp">
+            <div className="hero-showcase__xp-label">
+              <span>XP</span>
+              <span>{xp} / {player.xpToNext}</span>
+            </div>
+            <div className="hero-showcase__xp-track" role="progressbar"
+              aria-label={text('Опыт до следующего уровня', 'Experience to next level')}
+              aria-valuemin={0} aria-valuemax={player.xpToNext} aria-valuenow={xp}>
+              <span style={{ width: xpPercent + '%' }} />
+            </div>
+          </div>
+        ) : isMax ? (
+          <p className="hero-showcase__max">{text('Максимальный уровень', 'Maximum level')}</p>
+        ) : null}
+      </div>
+
+      <div className="hero-showcase__stats" aria-label={t('withEquipment')}>
+        <h3 className="hero-showcase__plaque-title">{t('withEquipment')}</h3>
+        <div className="hero-showcase__stat-grid">
+          <div className="hero-showcase__stat"><Heart size={18} className="hero-showcase__heart" aria-hidden="true"/><span>{t('heroHealth')}<strong>{stats.maxHp}</strong></span></div>
+          <div className="hero-showcase__stat"><Sword size={18} className="hero-showcase__attack" aria-hidden="true"/><span>{t('attack')}<strong>{stats.attack}</strong></span></div>
+          <div className="hero-showcase__stat"><Shield size={18} className="hero-showcase__defense" aria-hidden="true"/><span>{t('defense')}<strong>{stats.defense}</strong></span></div>
+          <div className="hero-showcase__stat"><Star size={18} className="hero-showcase__crit" aria-hidden="true"/><span>{t('critChance')}<strong>{stats.critChance}%</strong></span></div>
+        </div>
+      </div>
+
+
       <button type="button" className="hero-showcase__equipment-link" onClick={onEquipment}>
-        <Shirt size={17} aria-hidden="true" />{text('Моя экипировка', 'My equipment')}<ChevronRight size={17} aria-hidden="true" />
+        <Shirt size={17} aria-hidden="true" />{text('Снаряжение героя', 'Hero equipment')}<ChevronRight size={17} aria-hidden="true" />
       </button>
 
       <section className="hero-showcase__companion" data-testid="hero-companion-journey"
@@ -157,16 +176,6 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
           <UsersRound size={16} aria-hidden="true"/>{text('Лагерь', 'Camp')}<ChevronRight size={15} aria-hidden="true"/>
         </button>
       </section>
-
-      <div className="hero-showcase__stats" aria-label={t('withEquipment')}>
-        <h3 className="hero-showcase__plaque-title">{t('withEquipment')}</h3>
-        <div className="hero-showcase__stat-grid">
-          <div className="hero-showcase__stat"><Heart size={18} className="hero-showcase__heart" aria-hidden="true"/><span>{t('heroHealth')}<strong>{stats.maxHp}</strong></span></div>
-          <div className="hero-showcase__stat"><Sword size={18} className="hero-showcase__attack" aria-hidden="true"/><span>{t('attack')}<strong>{stats.attack}</strong></span></div>
-          <div className="hero-showcase__stat"><Shield size={18} className="hero-showcase__defense" aria-hidden="true"/><span>{t('defense')}<strong>{stats.defense}</strong></span></div>
-          <div className="hero-showcase__stat"><Star size={18} className="hero-showcase__crit" aria-hidden="true"/><span>{t('critChance')}<strong>{stats.critChance}%</strong></span></div>
-        </div>
-      </div>
 
       <div className="hero-showcase__journey">
         <h3 className="hero-showcase__plaque-title">{t('battlePath')}</h3>
