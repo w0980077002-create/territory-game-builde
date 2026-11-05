@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'src/game/belt.ts'
+      - 'src/game/vipBeltCave.ts'
+      - 'src/components/pve/ServerAdventureScreen.tsx'
       - 'src/game/types.ts'
       - 'src/game/vipDaily.ts'
       - 'src/game/vipWeekly.ts'
@@ -53,6 +55,8 @@ jobs:
         run: node scripts/check-belt-victory-milestones.mjs && npm run test:elixir-expiry
       - name: VIP smart belt invariants
         run: npm run test:vip-belt
+      - name: Cave confirmed combat receipt and durable belt refill
+        run: node scripts/check-vip-cave-refill-client.mjs
       - name: VIP daily staged database and security receipt tests
         run: npm run test:vip-daily
       - name: VIP weekly staged database, expiry and client receipts
