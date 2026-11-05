@@ -1,24 +1,27 @@
 import { lazy, Suspense, useState } from 'react';
 import { useStore } from '@/game/store';
-import { useGame } from '@/game/actions';
+import { useGame, useAccount } from '@/game/actions';
 import { getTelegramInitData } from '@/game/telegram';
 import { linkTelegram, type AuthUser } from '@/game/auth';
 import { useLanguage } from '@/game/i18n';
 import { getComputedStats } from '@/game/engine';
-import { Heart, Sword, Shield, Star, Send, Check, Link2, Loader2 } from 'lucide-react';
+import { Heart, Sword, Shield, Star, Send, Check, Link2, Loader2, Crown } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { APPEARANCE_PRESETS, getPlayableAppearance } from '@/game/appearance';
 import { HeroShowcase } from './HeroShowcase';
+import { VipMobileShowcase } from './VipMobileShowcase';
 
 const BuildTrainingPanel = lazy(() => import('./builds/BuildTrainingPanel').then(module => ({ default: module.BuildTrainingPanel })));
 
-export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, onAdventure, onForge, onQuests, onCompanions }: { user: AuthUser; initialTrainingOpen?: boolean; onEquipment: () => void; onAdventure: () => void; onForge: (equipmentId: string) => void; onQuests: () => void; onCompanions: () => void }) {
+export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, onAdventure, onRunes, onBelt, onForge, onQuests, onCompanions }: { user: AuthUser; initialTrainingOpen?: boolean; onEquipment: () => void; onAdventure: () => void; onRunes?:()=>void; onBelt?:()=>void; onForge: (equipmentId: string) => void; onQuests: () => void; onCompanions: () => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
+  const account = useStore(useAccount);
   const computed = getComputedStats(state);
   const [linking, setLinking] = useState(false);
   const [linkResult, setLinkResult] = useState<string | null>(null);
   const [trainingOpen, setTrainingOpen] = useState(initialTrainingOpen);
+  const [vipPageOpen,setVipPageOpen] = useState(false);
   const canLink = user.telegramId === null && !!getTelegramInitData();
 
   const handleLink = async () => {
@@ -36,9 +39,23 @@ export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, 
     }
   };
 
+  if(vipPageOpen) return <VipMobileShowcase userId={user.id} onBack={()=>setVipPageOpen(false)}
+    onEquipment={onEquipment} onRunes={onRunes??onAdventure} onBelt={onBelt??onEquipment}/>;
+
   return (
     <div className="territory-profile space-y-4 animate-fade-in pb-4">
       <HeroShowcase state={state} stats={computed} onEquipment={onEquipment} onAdventure={onAdventure} onForge={onForge} onQuests={onQuests} onCompanions={onCompanions} />
+      <button type="button" onClick={()=>setVipPageOpen(true)} data-testid="vip-open-page"
+        className="flex min-h-14 w-full items-center gap-3 rounded-xl border-2 border-[#ad753b] bg-[linear-gradient(125deg,#62321d,#2c1c14_75%,#50251a)] px-3 py-2 text-left shadow-[inset_0_1px_0_#ffe7a644,0_4px_10px_#14090388]">
+        {Math.max(account.permanentVip,account.vip)>0
+          ? <img src={`${import.meta.env.BASE_URL}assets/territory/vip/badges/vip-${String(Math.max(1,Math.min(10,Math.max(account.permanentVip,account.vip)))).padStart(2,'0')}.svg`} alt="" className="h-11 w-11 object-contain"/>
+          : <Crown className="h-10 w-10 text-amber-300"/>}
+        <span className="min-w-0 flex-1">
+          <strong className="block text-sm font-black text-[#ffdb96]">{language==='en'?'VIP status':'VIP статус'} · {Math.max(account.permanentVip,account.vip)}/10</strong>
+          <span className="block text-[11px] text-amber-100/80">{language==='en'?'Chests, badges, benefits':'Сундуки, эмблемы, преимущества'}</span>
+        </span>
+        <span className="rounded-lg border border-amber-400/50 bg-[#8f5827] px-2 py-1 text-[11px] font-black text-amber-50">{language==='en'?'Open':'Открыть'}</span>
+      </button>
       {/* Runes are reached exclusively from the Map's Rune location. */}
 
       {/* Build lab runs only when opened; it cannot change the saved character. */}
