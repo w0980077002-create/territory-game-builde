@@ -24,6 +24,13 @@ with sync_playwright() as p:
             hero.wait_for()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             assert hero.locator('.hero-showcase__stat').count() == 4
+            banner = hero.locator('.hero-showcase__banner')
+            assert banner.count() == 1 and banner.is_visible(), (width,lang,'Carved Hero sign missing')
+            assert ('Герой' if lang == 'ru' else 'Hero') in banner.inner_text()
+            stage = hero.locator('.hero-showcase__stage')
+            assert stage.bounding_box()['height'] >= 310, (width,lang,'Hero figure stage too small')
+            assert hero.locator('.hero-showcase__progress').count() == 1
+            assert hero.locator('.hero-showcase__stats').bounding_box()['y'] > stage.bounding_box()['y'], (width,lang,'Stats should follow full hero')
             assert hero.locator('.hero-showcase__slot').count() == 7
             image = hero.locator('.hero-showcase__hero-art')
             assert image.evaluate('(el) => el.complete && el.naturalWidth > 0'), 'Missing canonical hero art'
