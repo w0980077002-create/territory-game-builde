@@ -60,6 +60,9 @@ assert.match(figureSource,/skeletalReady\s*=\s*!!rig\s*&&\s*enabledRig\s*===\s*r
 // Legacy Telegram SVG engines must not leave stale inline poses after a
 // reduced-motion preference change or an event cleanup.
 const skeletalSource=readFileSync('src/components/combat2d/SkeletalFighter.tsx','utf8');
+assert.match(skeletalSource, /const safeSpeed = Number\.isFinite\(speed\) && speed > 0 \? speed : 1;/, 'Invalid combat speed must fall back to a finite positive duration');
+assert.doesNotMatch(skeletalSource, /ACTION_MS \/ speed/, 'Both strike timers and SVG animations must use validated speed');
+assert.match(skeletalSource, /ACTION_MS \/ safeSpeed/, 'Validated speed must drive combat timing');
 const applyBody=skeletalSource.split('const apply = () => {')[1]?.split('const stops =')[0] ?? '';
 assert.match(applyBody,/style\.transform = ''/, 'Reapply must clear stale legacy inline transforms');
 assert.match(applyBody,/animations\.forEach\(a => \{ try \{ a\.cancel\(\); \} catch \{[^}]*\} \}\);\s*animations = \[\];/, 'Reapply must safely discard cancelled SVG animations before rebuilding the list');
