@@ -63,7 +63,7 @@ export function UmbraGear({ en, hero, clearedDepth, onBack }: {
   const labels = {
     all: en ? 'All' : 'Все',
     gear: en ? 'Gear' : 'Вещи',
-    gems: en ? 'Gems' : 'Камни',
+    gems: en ? 'Gems' : 'Самоцветы',
     materials: en ? 'Materials' : 'Материалы',
   };
   const shown = CAVE_ITEMS.filter(item => filter === 'all' || item.category === filter);
