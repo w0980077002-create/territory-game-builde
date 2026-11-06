@@ -72,9 +72,10 @@ assert.match(skeletalSource,/if \(listenerKind === null && typeof reduced\?\.add
 assert.match(skeletalSource,/reduced\.addListener\(apply\);\s*listenerKind = 'legacy';/, 'Legacy fallback must track the installed listener for cleanup');
 assert.match(skeletalSource,/catch \{\s*\/\/ Legacy WebViews may also throw when reading addListener itself\.[\s\S]*?try \{\s*if \(listenerKind === null && typeof reduced\?\.addListener === 'function'\)/, 'Broken legacy listener getter must be guarded inside the recovery catch');
 assert.match(skeletalSource,/if \(listenerKind === 'modern'\)[\s\S]*?else if \(listenerKind === 'legacy'\)[\s\S]*?catch \{/, 'Legacy listener teardown must not interrupt rig cleanup');
-assert.match(skeletalSource,/try \{\s*return \[joint\.animate\(selected,/, 'SVG animate failures must be caught per joint');
+assert.match(skeletalSource,/try \{\s*const animation = joint\.animate\(selected,/, 'SVG animate failures must be caught per joint');
+assert.match(skeletalSource,/if \(!animation \|\| typeof animation\.cancel !== 'function'\) \{\s*showLegacyPose\(\);\s*return \[\];/, 'Incomplete Web Animations polyfills must retain the visible contact pose');
 assert.match(skeletalSource,/catch \{[\s\S]*?showLegacyPose\(\)/, 'Thrown SVG animate must fall back to a visible pose');
-assert.equal((skeletalSource.match(/showLegacyPose\(\);/g) ?? []).length, 2, 'Both legacy paths must use the same contact pose');
+assert.equal((skeletalSource.match(/showLegacyPose\(\);/g) ?? []).length, 3, 'Missing, throwing and incomplete Web Animations paths must share the contact pose');
 assert.match(skeletalSource,/try \{ prefersReducedMotion = reduced\?\.matches === true; \} catch \{/, 'Throwing legacy MediaQueryList.matches getter must not abort rig animation');
 assert.match(skeletalSource,/prefersReducedMotion \|\| motion === 'death' \|\| motion === 'victory'/, 'Legacy SVG fallback must respect reduced motion');
 assert.doesNotMatch(skeletalSource,/duration: reduced\?\.matches/, 'Animation duration must use guarded reduced-motion snapshot');
