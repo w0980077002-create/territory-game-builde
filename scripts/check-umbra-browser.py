@@ -44,7 +44,10 @@ with sync_playwright() as p:
             for i in range(16):
                 screen.get_by_test_id('umbra-item').nth(i).click()
                 page.get_by_role('dialog').wait_for()
+                assert page.get_by_role('dialog').locator('img').evaluate('(img) => img.complete && img.naturalWidth > 0'), 'Artwork failed to load'
+                scroll = screen.evaluate('(e) => e.scrollTop')
                 page.get_by_role('button', name='Close' if lang == 'en' else 'Закрыть').click()
+                assert screen.evaluate('(e) => e.scrollTop') == scroll, 'Closing detail changed storage scroll'
             for label, count in (('Gear' if lang == 'en' else 'Вещи',11), ('Gems' if lang == 'en' else 'Самоцветы',3), ('Materials' if lang == 'en' else 'Материалы',2), ('All' if lang == 'en' else 'Все',16)):
                 screen.get_by_role('button', name=label, exact=True).click()
                 assert screen.get_by_test_id('umbra-item').count() == count
