@@ -66,6 +66,12 @@
   color: #ffe9c2;
   box-shadow: inset 0 2px 3px #000b;
 }
+.territory-shell .viking-screen:is(.viking-screen--auction,.viking-screen--clan,.viking-screen--profession-stage8)
+  :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea):focus-visible {
+  outline: none;
+  border-color: #f4a830;
+  box-shadow: inset 0 2px 3px #000b, 0 0 0 2px #f4a83055;
+}
 
 /* Main actions: the approved chunky gold button. */
 .territory-shell .viking-screen:is(.viking-screen--auction,.viking-screen--clan,.viking-screen--profession-stage8)
