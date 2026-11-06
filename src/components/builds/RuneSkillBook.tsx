@@ -91,7 +91,7 @@ export function RuneSkillBook({
     <div className="rune-book__rows" aria-label={en ? 'Five skill groups' : 'Пять групп навыков'}>
       {catalog.groups.map(group => <div className="rune-book__row" key={group.id} data-testid={`rune-row-${group.id}`}>
         <div className="rune-book__group"><span aria-hidden="true">{group.symbol}</span>
-          <b>{name(group, en)}</b></div>
+          <b lang={en ? 'en' : 'ru'}>{name(group, en)}</b></div>
         <div className="rune-book__choices">
           {group.skills.map(skill => {
             const picked = selection.skillIds[group.id] === skill.id;

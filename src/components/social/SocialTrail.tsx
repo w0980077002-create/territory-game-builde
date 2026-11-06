@@ -38,7 +38,7 @@ export function SocialTrail({ active, onNavigate, detail }: {
               ? 'border-yellow-200 bg-gradient-to-b from-yellow-300 to-amber-600 text-[#40230e]'
               : 'border-[#b78a4c] bg-[#2d2018] text-amber-100 active:bg-[#644126]'}`}>
             <img src={import.meta.env.BASE_URL + route.icon} alt="" className="h-6 w-6 shrink-0 object-contain" />
-            <span className="min-w-0 break-words">{en ? route.en : route.ru}</span>
+            <span className="min-w-0 break-words hyphens-auto">{en ? route.en : route.ru}</span>
           </button>
         ))}
       </div>

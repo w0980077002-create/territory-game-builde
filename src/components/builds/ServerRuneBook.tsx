@@ -285,7 +285,7 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
       {RUNE_GROUPS.map((group, row) => <div key={group.en} className="territory-rune__row">
         <div className="territory-rune__group">
           <span className="territory-rune__glyph" aria-hidden="true">{[<Shield key="base" size={23}/>, <Flame key="core" size={23}/>, <Wind key="control" size={23}/>, <Sparkles key="awake" size={23}/>, <Crown key="final" size={23}/>][row]}</span>
-          <strong>{en ? group.en : group.ru === 'Пробуждение' ? <>Пробуж<br/>дение</> : group.ru}</strong>
+          <strong>{en ? group.en : group.ru === 'Пробуждение' ? 'Пробуж\u00ADдение' : group.ru}</strong>
         </div>
         <div className="territory-rune__choices">
           {catalog.slots.slice(row * 3, row * 3 + 3).map((slot, col) => {

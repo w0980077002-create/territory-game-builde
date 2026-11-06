@@ -278,7 +278,7 @@
 .mono-scene-shortcuts{position:absolute;right:5px;bottom:7px;z-index:10;display:grid;gap:4px;width:29%;max-width:115px}
 .mono-scene-shortcuts button{position:relative;display:flex;align-items:center;gap:3px;min-height:36px;width:100%;padding:3px 5px;border:1px solid #e6b961;border-radius:8px;background:linear-gradient(120deg,#633d22ed,#342822f5);box-shadow:inset 0 1px #fff6b766,0 2px #001d25;color:#fff1c1}
 .mono-scene-shortcuts .mono-art{width:23px}
-.mono-scene-shortcuts button span{font:800 10px/1.1 Arial,sans-serif;text-align:left;overflow-wrap:anywhere}
+.mono-scene-shortcuts button span{font:800 10px/1.1 Arial,sans-serif;text-align:left;overflow-wrap:anywhere;-webkit-hyphens:auto;hyphens:auto;}
 .mono-scene-shortcuts i{position:absolute;top:0;right:1px;width:8px;height:8px;border:1px solid #fff5bf;border-radius:50%;background:#ff5478}
 .mono-after-scene:empty{display:none}
 .mono-after-scene .mono-choose,.mono-after-scene .mono-pending{margin:5px 3px;padding:8px;border:1px solid #cbaa70;border-radius:10px;background:#123c45}
@@ -826,3 +826,10 @@ html.territory-ios-webapp .territory-monopoly .mono-scene {
 .mono-overlay:not(.mono-celebration) .mono-panel-body{
   min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
 }
+
+/* Larger invisible tap areas for the small round "+" and the ×1/×10 switch.
+   The approved look is unchanged; only the touch target grows toward 40px. */
+.mono-wallet button{position:relative}
+.mono-wallet button::after{content:"";position:absolute;inset:-9px}
+.mono-multiplier button{position:relative}
+.mono-multiplier button::after{content:"";position:absolute;inset:-8px 0}
