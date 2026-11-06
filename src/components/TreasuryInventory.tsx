@@ -12,6 +12,7 @@ export function TreasuryInventory({userId}:{userId:string}){
   try{setState(await recoverFortune(userId));setError('');}catch{setError(en?'Recover before opening another chest. Restart if your save changed on another device.':'Восстанови результат перед открытием сундука. Если сохранение изменилось на другом устройстве — перезапусти игру.');}
   finally{locked.current=false;setBusy(false);}
  };
+ // eslint-disable-next-line react-hooks/exhaustive-deps -- recover once per player; recover is recreated every render
  useEffect(()=>{void recover();return ()=>clearTimeout(timer.current);},[userId]);
  const open=async(kind:FortuneAction)=>{
   if(locked.current||state?.receipt||error)return;locked.current=true;setBusy(true);

@@ -76,6 +76,7 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
     try {setPending(readPendingSlots(userId));setRecovered(true);}
     catch {setError(en?'Saved operation cannot be read. Trading locked.':'Не удалось прочитать сохранённую операцию. Игра заблокирована.');}
     return ()=>{alive.current=false;if(animationTimer.current)clearTimeout(animationTimer.current);};
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- recover the pending operation once per player; a language switch must not re-read it
   },[userId]);
   useEffect(()=>{
     if (winnings.length<2 || tracks) return;
@@ -151,6 +152,7 @@ function ServerVikingSlots({userId,onBack,initial}:{userId:string;onBack:()=>voi
       else {setAuto(n=>Math.max(0,n-1));void command({action:'spin',lines,bet});}
     },600);
     return ()=>clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- command is recreated every render; listing it would restart the auto-spin timer
   },[auto,busy,tracks,pending,recovered,help,state.phase,status.coins,lines,bet]);
   const disabled=busy || !!pending || !recovered || !!tracks;
   const refresh=async()=>{

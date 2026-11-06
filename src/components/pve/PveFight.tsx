@@ -371,6 +371,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
       roundFlight.current = false;
       if (alive.current) setBusy(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- followerBonus is rebuilt each render; its used fields are listed individually
   }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, committedEnemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto, momentum.streak, runesReady]);
 
   useEffect(() => {

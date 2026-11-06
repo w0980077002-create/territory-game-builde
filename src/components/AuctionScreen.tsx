@@ -58,6 +58,7 @@ export function AuctionScreen() {
     }).catch(() => { if (alive) setAuctionError(language === 'en' ? 'Market unavailable.' : 'Аукцион временно недоступен.');
     }).finally(() => { if (alive) setAuctionLoading(false); });
     return () => { alive = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- subscribe/recover once on mount
   }, []);
 
   const trade = async (action: AuctionAction, pending?: { action: AuctionAction; id: string }) => {
@@ -143,6 +144,7 @@ export function AuctionScreen() {
       channelRef.current = null;
       void supabase.removeChannel(channel);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- subscribe/recover once on mount
   }, []);
 
   useEffect(() => {

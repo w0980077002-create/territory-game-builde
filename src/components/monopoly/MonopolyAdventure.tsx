@@ -178,6 +178,7 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
   if(today===statusDay.current)return;
   statusDay.current=today;
   if(mounted.current)void request('status');
+ // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh only when the calendar day changes (see comment above)
  },[today]);
  const point=boardPoint(position);
  const claimed=(key:string)=>p?.claimed.includes(key)??false;

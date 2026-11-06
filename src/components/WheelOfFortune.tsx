@@ -76,6 +76,7 @@ export function WheelOfFortune({userId,onBack}:{userId:string;onBack:()=>void}){
   try{show(await recoverFortune(userId),false);}catch{setError(en?'Connection interrupted. Recover the same transaction, or restart the app. No new spin will be sent.':'Связь прервана. Восстанови ту же операцию или перезапусти игру. Новый билет не списывается.');}
   finally{lock.current=false;setBusy(false);}
  };
+ // eslint-disable-next-line react-hooks/exhaustive-deps -- recover once per player; recover is recreated every render
  useEffect(()=>{mounted.current=true;void recover();return ()=>{mounted.current=false;clearTimeout(timer.current);clearInterval(tick.current);};},[userId]);
  const spin=async()=>{
   if(lock.current||receipt||spinning)return;lock.current=true;setBusy(true);setError('');

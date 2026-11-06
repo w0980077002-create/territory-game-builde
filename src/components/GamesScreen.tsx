@@ -131,6 +131,7 @@ export function GamesScreen({
     let mounted=true;
     void refresh(()=>mounted);
     return ()=>{mounted=false;};
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh is recreated every render; reload only on language or player change
   },[en,userId]);
 
   const takeDaily=async()=>{

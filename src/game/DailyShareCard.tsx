@@ -31,6 +31,7 @@ export function DailyShareCard({task,userId,onClaimed}:{task:DailyShareTask;user
   const resume=()=>{if(!document.hidden){setNow(Date.now());void refresh();}};
   document.addEventListener('visibilitychange',resume);
   return()=>{alive=false;window.clearInterval(timer);document.removeEventListener('visibilitychange',resume);};
+ // eslint-disable-next-line react-hooks/exhaustive-deps -- subscribe once per task and language; refresh/supportsRich are recreated every render
  },[task,en]);
  const entry=status?.tasks.find(t=>t.task===task);
  const remaining=entry?.next_at?Math.max(0,Date.parse(entry.next_at)-now):0;

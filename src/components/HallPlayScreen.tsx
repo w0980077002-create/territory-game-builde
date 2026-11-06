@@ -134,6 +134,7 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
   }catch(e){setError(hallError(e,en));}
   finally{setLoading(false);}
  };
+ // eslint-disable-next-line react-hooks/exhaustive-deps -- init is recreated every render; reload when the game or language changes
  useEffect(()=>{void init();},[game,en]);
  const start=async()=>{
   if(busy)return;setBusy(true);setError('');setResult(null);setSelectedChoice(null);

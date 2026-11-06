@@ -130,6 +130,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
         if(mounted){setLicenseStatus(status);setLicensePending(pending);}
       }).catch(()=>{if(mounted)setLicenseError(language==='en'?'License server unavailable.':'Сервер лицензий временно недоступен.');});
     return ()=>{mounted=false;};
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- once-on-mount license status fetch
   },[]);
   useEffect(() => {
     let mounted = true;

@@ -76,10 +76,11 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   // Keep inventory sorting stable while the visible expiry clock updates.
   const consumables = useMemo(() => state.inventory.filter(isPerishableItem)
     .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b)), [state.inventory]);
+  const cowStones = cowStonesOwned(state);
   const materials = useMemo(() => [
     ...state.inventory.filter(item => item.type === 'material' && item.id !== AWAKENING_STONE_ITEM.id),
-    { ...AWAKENING_STONE_ITEM, qty: cowStonesOwned(state) },
-  ], [state.inventory]);
+    { ...AWAKENING_STONE_ITEM, qty: cowStones },
+  ], [state.inventory, cowStones]);
   const earliestOnBelt = useMemo(() => state.belt.filter((item): item is InventoryItem => !!item && isPerishableItem(item))
     .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0], [state.belt]);
   // Read-only preparation; existing belt inventory and Arena win gates are authoritative.
