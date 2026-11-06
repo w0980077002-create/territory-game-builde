@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { FighterRig } from './FighterRig';
-import { ACTION_MS, jointFrames, motionStops, type FighterMotion, type Joint } from './fighterAnimations';
+import { ACTION_MS, CONTACT_MS, jointFrames, motionStops, type FighterMotion, type Joint } from './fighterAnimations';
 import type { FighterRigDefinition } from './fighterRigs';
 import './combat2d.css';
 
@@ -20,14 +20,17 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
   const svgRef = useRef<SVGSVGElement>(null);
   const terminalRef = useRef<'death' | 'victory' | null>(null);
   const [finishedEvent, setFinishedEvent] = useState<StrikeEvent | null>(null);
+  // Bound positive speeds too: tiny values can overflow setTimeout's 32-bit delay,
+  // while huge values collapse contact frames in older SVG WebViews.
+  const safeSpeed = Number.isFinite(speed) && speed > 0 ? Math.min(8, Math.max(0.1, speed)) : 1;
   const role = strike?.attacker === name ? 'attacker' : strike?.target === name ? 'target' : null;
   // PvP HP snapshots can precede several queued visual hits. Finish those
   // confirmed events and wait for queue retirement before any terminal pose.
   useEffect(() => {
     if (!role || !strike) { setFinishedEvent(null); return; }
-    const timer = window.setTimeout(() => setFinishedEvent(strike), ACTION_MS / speed);
+    const timer = window.setTimeout(() => setFinishedEvent(strike), ACTION_MS / safeSpeed);
     return () => window.clearTimeout(timer);
-  }, [role, strike, speed]);
+  }, [role, strike, safeSpeed]);
   const active = role && strike !== finishedEvent;
   const swing = strike ? Math.abs(strike.key) % 3 : 0;
   const heldTerminal = !alive && terminalRef.current === 'death' ? 'death' : alive && won && terminalRef.current === 'victory' ? 'victory' : null;
@@ -42,30 +45,88 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
     if (!svg) return;
     terminalRef.current = motion === 'death' || motion === 'victory' ? motion : null;
     if (motion === 'idle') return;
-    const reduced = typeof window.matchMedia === 'function'
-      ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    // Some embedded browsers expose matchMedia but throw when evaluating it.
+    // Treat that as no preference rather than losing all confirmed hit poses.
+    let reduced: MediaQueryList | null = null;
+    try {
+      if (typeof window.matchMedia === 'function') reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    } catch { reduced = null; }
     let animations: Animation[] = [];
     const apply = () => {
-      animations.forEach(a => a.cancel());
+      animations.forEach(a => { try { a.cancel(); } catch { /* Legacy SVG animation teardown may throw. */ } });
+      animations = [];
+      // A reduced-motion preference change may switch from the legacy inline
+      // fallback to Web Animations; clear the stale inline transform first.
+      svg.querySelectorAll<SVGGElement>('[data-rig-part]').forEach(joint => { joint.style.transform = ''; });
+      // Broken legacy MediaQueryList implementations can throw from matches.
+      let prefersReducedMotion = false;
+      try { prefersReducedMotion = reduced?.matches === true; } catch { /* Keep the confirmed pose visible. */ }
       const stops = motionStops(motion, critical);
       animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).flatMap(joint => {
         // Web Animations may be missing on older embedded SVG implementations.
-        if (typeof joint.animate !== 'function') return [];
         const frames = jointFrames(joint.dataset.rigPart as Joint, stops);
-        // Retain readable final outcome poses without large movement in reduced mode.
-        const selected = reduced?.matches ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
-        return [joint.animate(selected, { duration: reduced?.matches ? 1 : ACTION_MS / speed, fill: 'forwards' })];
+        // Resolve one consistent visible pose for both unsupported and throwing
+        // SVG Web Animations implementations.
+        const visibleFrame = prefersReducedMotion || motion === 'death' || motion === 'victory'
+          ? frames[frames.length - 1]
+          : frames.find((frame, index) => index > 0 && typeof frame.offset === 'number' && frame.offset >= CONTACT_MS / ACTION_MS) ?? frames[frames.length - 1];
+        const showLegacyPose = () => { joint.style.transform = String(visibleFrame.transform ?? ''); };
+        // Older Telegram WebViews may lack SVG Web Animations entirely.
+        // Keep the resolved pose visible instead of silently freezing every joint.
+        // Even reading animate can throw on partial SVG Web Animations shims.
+        // Keep feature detection inside the per-joint recovery boundary.
+        try {
+          if (typeof joint.animate !== 'function') {
+            showLegacyPose();
+            return [];
+          }
+          // Retain readable final outcome poses without large movement in reduced mode.
+          const selected = prefersReducedMotion ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
+          const animation = joint.animate(selected, { duration: prefersReducedMotion ? 1 : ACTION_MS / safeSpeed, fill: 'forwards' });
+          // Some partial Web Animations polyfills return no Animation object.
+          // Preserve the confirmed contact pose rather than losing the hit.
+          if (!animation || typeof animation.cancel !== 'function') {
+            showLegacyPose();
+            return [];
+          }
+          return [animation];
+        } catch {
+          showLegacyPose();
+          return [];
+        }
       });
     };
     apply();
-    if (typeof reduced?.addEventListener === 'function') reduced.addEventListener('change', apply);
-    else if (typeof reduced?.addListener === 'function') reduced.addListener(apply);
+    // Some legacy MediaQueryList objects expose listeners but throw on registration.
+    // The initial pose is already applied; failure to subscribe must not break combat.
+    let listenerKind: 'modern' | 'legacy' | null = null;
+    try {
+      if (typeof reduced?.addEventListener === 'function') {
+        reduced.addEventListener('change', apply);
+        listenerKind = 'modern';
+      } else if (typeof reduced?.addListener === 'function') {
+        reduced.addListener(apply);
+        listenerKind = 'legacy';
+      }
+    } catch {
+      // Legacy WebViews may also throw when reading addListener itself.
+      // Keep the already-rendered pose and never abort effect cleanup.
+      try {
+        if (listenerKind === null && typeof reduced?.addListener === 'function') {
+          reduced.addListener(apply);
+          listenerKind = 'legacy';
+        }
+      } catch { listenerKind = null; }
+    }
     return () => {
-      if (typeof reduced?.removeEventListener === 'function') reduced.removeEventListener('change', apply);
-      else if (typeof reduced?.removeListener === 'function') reduced.removeListener(apply);
-      animations.forEach(a => a.cancel());
+      try {
+        if (listenerKind === 'modern') reduced?.removeEventListener('change', apply);
+        else if (listenerKind === 'legacy') reduced?.removeListener(apply);
+      } catch { /* Legacy MediaQueryList teardown must not block rig cleanup. */ }
+      animations.forEach(a => { try { a.cancel(); } catch { /* Legacy SVG animation teardown may throw. */ } });
+      svg.querySelectorAll<SVGGElement>('[data-rig-part]').forEach(joint => { joint.style.transform = ''; });
     };
-  }, [motion, animationEvent, speed, critical, rig.id]);
+  }, [motion, animationEvent, safeSpeed, critical, rig.id]);
   return <svg ref={svgRef} viewBox="0 0 512 512" preserveAspectRatio="xMidYMax meet" role="img" aria-label={name}
     data-rig={rig.id} data-motion={motion} data-critical={strike?.tone === 'crit' && active ? 'true' : undefined}
     className={`skeletal-fighter ${className}`} onErrorCapture={onAssetError}>

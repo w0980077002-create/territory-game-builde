@@ -91,10 +91,12 @@ assert.match(livingEnemy, /showRig && rig/,
   'Enemies without a verified rig must keep their original sprite');
 assert.match(livingEnemy, /typeof image\.decode === 'function'/,
   'Enemy cutouts must support old Telegram WebViews');
-assert.match(fighterFigure, /typeof img\.decode === 'function'/,
+assert.match(fighterFigure, /typeof img\.decode !== 'function'/,
   'Battle rigs must support old Telegram WebViews for live hit/block animation');
-assert.match(fighterFigure, /typeof Element\.prototype\.animate === 'function'/,
-  'Old Telegram without Web Animations must safely use original battle pose frames');
+assert.doesNotMatch(fighterFigure, /canAnimateRig\s*&&\s*enabledRig/,
+  'Old Telegram without Web Animations must still mount prepared original rigs');
+assert.match(fighterFigure, /skeletalReady\s*=\s*!!rig\s*&&\s*enabledRig\s*===\s*rig\.id/,
+  'Battle rigs must remain available for the legacy joint-pose fallback');
 assert.match(skeletalFighter, /typeof window\.matchMedia === 'function'/,
   'Live skeletal battle must not crash if old Telegram lacks matchMedia');
 assert.match(skeletalFighter, /typeof joint\.animate !== 'function'/,

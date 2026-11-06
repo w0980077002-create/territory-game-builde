@@ -128,6 +128,8 @@ assert.match(fighterMotionCss, /\.fighter-figure__footstep, \.fighter-impact__fl
 assert.match(figure, /getFighterRig\(combatFrames\?\.idle \?\? src\)/, 'Rig selection must follow actual appearance, not default portrait');
 assert.match(figure, /<SkeletalFighter/, 'Shared arena/PvE rendering must use real rig');
 assert.match(figure, /img\.decode\(\)/, 'Missing cutout art must fall back safely');
+assert.match(figure, /try \{\s*return Promise\.resolve\(img\.decode\(\)\)\.catch\(\(\) => loaded\);\s*\} catch \{\s*return loaded;/,
+  'Synchronous decode errors in legacy WebViews must fall back to onload/onerror');
 console.log('Battle visuals OK: all character poses/assets, opponent, companion, sword, chat and seven-slot UI.');
 
 // Existing review CI invokes this entrypoint, including the real rig contract.
