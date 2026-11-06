@@ -65,6 +65,7 @@ assert.match(applyBody,/style\.transform = ''/, 'Reapply must clear stale legacy
 assert.match(applyBody,/animations\.forEach\(a => \{ try \{ a\.cancel\(\); \} catch \{[^}]*\} \}\);\s*animations = \[\];/, 'Reapply must safely discard cancelled SVG animations before rebuilding the list');
 assert.equal((skeletalSource.match(/try \{ a\.cancel\(\); \} catch \{/g) ?? []).length, 2, 'Both reapply and cleanup must tolerate throwing SVG cancellation');
 assert.match(skeletalSource,/typeof joint\.animate !== 'function'/, 'Legacy SVG animation fallback must remain');
+assert.match(skeletalSource,/try \{\s*if \(typeof joint\.animate !== 'function'\)/, 'Throwing SVG animate getters must be caught per joint');
 assert.match(skeletalSource,/try \{\s*if \(typeof window\.matchMedia === 'function'\) reduced = window\.matchMedia\(/, 'Throwing matchMedia must not prevent contact poses');
 assert.match(skeletalSource,/catch \{ reduced = null; \}/, 'Legacy matchMedia failures must fall back safely');
 assert.match(skeletalSource,/try \{[\s\S]*?reduced\.addEventListener\('change', apply\);[\s\S]*?catch \{ listenerKind = null; \}/, 'Broken media query subscriptions must not interrupt contact poses');
