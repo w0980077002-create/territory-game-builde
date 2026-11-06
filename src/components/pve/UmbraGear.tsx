@@ -70,7 +70,7 @@ export function UmbraGear({ en, hero, clearedDepth, onBack }: {
   const selectedSlot = detail?.kind === 'slot' ? slots[detail.index] : null;
   const selectedItem = detail?.kind === 'item' ? detail.item :
     selectedSlot && selectedSlot[2] !== null ? CAVE_ITEMS[selectedSlot[2]] : null;
-  const actions = en ? ['Guide', 'Dismantle', 'Enhance all'] : ['Справочник', 'Разобрать', 'Усилить всё'];
+  const actions = en ? ['Guide', 'Dismantle', 'Enhance all'] : ['Справочник', 'Разобрать', 'Усилить в один клик'];
   const info = en ? [
     'The Dark Energy reference screen contains 12 additional positions and its own storage. Slot labels and unlock rules are preliminary. The ordinary hero equipment is unchanged.',
     'Dismantling will be available only after real Dark Gear inventory is implemented and confirmed. This preview cannot destroy an item or grant materials.',
