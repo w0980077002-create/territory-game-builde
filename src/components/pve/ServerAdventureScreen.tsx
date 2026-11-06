@@ -13,6 +13,7 @@ import { restoreAdventureSaveFence, restoreAdventureStartFence, requestAdventure
 import { getCampaignStage } from '@/game/idleContent/campaign';
 import { caveLootPreview } from '@/game/combatV1/caveLootPreview';
 import { CavePreview } from './CavePreview';
+import { UmbraGear } from './UmbraGear';
 import './cavePreview.css';
 import type { IdleCombatState, IdleCombatEvent } from '@/game/idleEngine/types';
 import { getCombatAppearance } from '@/game/appearance';
@@ -82,6 +83,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const [stoneInfo, setStoneInfo] = useState(false);
   const [blessing, setBlessing] = useState(false);
   const [caveTab, setCaveTab] = useState<'floors'|'loot'|'enhance'|'fund'>('floors');
+  const [umbraOpen, setUmbraOpen] = useState(false);
   const [lootPreviewOpen, setLootPreviewOpen] = useState(false);
   const floorListRef = useRef<HTMLDivElement | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -478,7 +480,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           : (en?'Each tap advances the ongoing battle':'Каждое нажатие продолжает текущий бой')}</p>
       </>}
     </div> : progress ? <>
-      <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden rounded-[18px] border border-[#624478] bg-[#090b1b] p-2 shadow-[inset_0_0_42px_rgba(66,21,94,.45),0_8px_24px_rgba(0,0,0,.48)]" data-testid="dark-cave-realm">
+      {umbraOpen ? <UmbraGear en={en} hero={fighterSrc} clearedDepth={progress.completed_stage} onBack={() => setUmbraOpen(false)}/> : <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden rounded-[18px] border border-[#624478] bg-[#090b1b] p-2 shadow-[inset_0_0_42px_rgba(66,21,94,.45),0_8px_24px_rgba(0,0,0,.48)]" data-testid="dark-cave-realm">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_4%,rgba(129,56,205,.19),transparent_62%)]" />
         <div className="relative shrink-0 text-center">
           <div className="mx-auto mb-0.5 flex max-w-[88%] items-center gap-2 text-[#a46bcd]">
@@ -510,10 +512,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           <img src={realmArt} alt={en?'Violet abyss beneath the mountains':'Фиолетовая бездна в глубине подземелья'} draggable={false}
             className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover object-center" data-testid="dark-cave-portal"/>
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#070511]/90 via-transparent to-[#070511]/10"/>
-          <div className="absolute bottom-1.5 left-2.5 right-2.5 flex items-end justify-between gap-2 text-[11px] font-bold text-[#e9caff]">
-            <span className="rounded-md bg-[#0b091b]/65 px-2 py-0.5">{en?'Depth':'Глубина'} {highlightedFloor.chapter} / 5</span>
-            <span className="text-[#c99eec]">{en?'The abyss awaits':'Бездна ждёт'}</span>
-          </div>
+          <button type="button" onClick={() => setUmbraOpen(true)} className="absolute inset-x-2 bottom-1 min-h-10 rounded-lg border border-[#b28a5c] bg-[#211326]/95 px-2 text-xs font-black text-[#ffe3ae]" data-testid="open-umbra">{en ? 'Additional Umbra Gear' : 'Дополнительное тёмное снаряжение'}</button>
         </div>
         <div className="relative mt-1 grid shrink-0 grid-cols-4 gap-1" aria-label={en?'Cave sections':'Разделы пещеры'}>
           {([['floors',en?'Floors':'Этажи'],['loot',en?'Loot':'Добыча'],['enhance',en?'Enhance':'Усиление'],['fund',en?'Fund':'Фонд']] as const).map(([id,label]) => <button key={id} type="button" onClick={()=>setCaveTab(id)} aria-pressed={caveTab===id} className="min-h-11 rounded-lg border border-[#79558a] bg-[#241731] px-1 text-[11px] font-bold text-[#f2ddfa] aria-pressed:bg-[#704184]">{label}</button>)}
@@ -620,7 +619,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           </>:<p className="text-center text-sm font-black text-[#e7c1f8]">{en?'All 100 cave floors cleared!':'Все 100 этажей подземелья пройдены!'}</p>}
         </div>
         </>}
-      </div>
+      </div>}
     </> : <p role="status" className="rounded-xl border border-amber-700/30 bg-black/25 p-3 text-xs text-amber-100">
       {en ? 'Loading verified cave progress…' : 'Загружаем подтверждённый прогресс пещеры…'}
     </p>}
