@@ -17,9 +17,9 @@ $anchor$;
  -- This runs before the durable unique session receipt is INSERTed. Retry exits
  -- at RETURN existing.receipt, so repeated resume/advance cannot mint stones.
  IF outcome <> 'hero_won' THEN
-   UPDATE territory_private.dark_stones_v1
-     SET balance=balance+1
-     WHERE player_id=p_player AND balance < 2147483647;
+   UPDATE territory_private.dark_stones_v1 AS stones
+     SET balance=stones.balance+1
+     WHERE stones.player_id=p_player AND stones.balance < 2147483647;
    IF NOT FOUND THEN RAISE EXCEPTION 'cave_stone_refund_unavailable'; END IF;
  END IF;
 $refund$;
