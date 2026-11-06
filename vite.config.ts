@@ -94,4 +94,20 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Libraries change far less often than game code. Keeping them in their
+        // own files lets Telegram's cache reuse them across the frequent game
+        // releases, so players re-download only the game code after an update.
+        // These chunks load at startup with the entry (no new lazy loading).
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (/[\\/]node_modules[\\/]@supabase[\\/]/.test(id)) return 'vendor-supabase';
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react';
+          return undefined;
+        },
+      },
+    },
+  },
 });
