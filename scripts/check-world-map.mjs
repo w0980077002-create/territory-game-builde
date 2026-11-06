@@ -121,7 +121,11 @@ for (const action of ['territory_gather_status', 'territory_gather_start', 'terr
 assert.match(map, /<ChamberModal /, 'Preserve cosmetic appearance selection');
 assert.doesNotMatch(map, /\{\/\* Resource Regions \*\/\}/, 'Old text-card map must not remain on screen');
 
-assert.match(app, /screen === 'map' \? 'overflow-hidden !px-0 !py-0'/);
+assert.match(
+  app,
+  /screen === 'map'(?:\s*\|\|\s*screen === 'vip')?\s*\?\s*'[^']*overflow-x-hidden[^']*!px-0 !py-0'/,
+  'The real map route must retain its full-bleed, horizontally clipped touch viewport',
+);
 assert.match(app, /mapForgeReady/, 'Forge notice must rely on actually affordable equipment upgrades');
 assert.match(app, /questAlerts\.readyCount > 0/, 'Quest notices must reflect real completed quests');
 assert.match(app, /live\.mail\.length > 0/, 'Message notices must reflect existing received mail');
