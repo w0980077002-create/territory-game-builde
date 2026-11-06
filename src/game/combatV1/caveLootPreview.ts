@@ -42,7 +42,7 @@ export const CAVE_LOOT_MILESTONES: readonly CaveLootMilestone[] = [
 
 export function caveLootPreview(floor: number) {
   // Pure presentation only. Never use this to grant an item or decide combat.
-  const depth = Number.isFinite(floor) ? Math.min(100, Math.max(1, Math.floor(floor))) : 1;
+  const depth = Number.isFinite(floor) ? Math.min(100, Math.max(0, Math.floor(floor))) : 0;
   return CAVE_LOOT_MILESTONES.map(reward => ({
     ...reward,
     unlockedAtDepth: depth >= reward.unlockFloor,
