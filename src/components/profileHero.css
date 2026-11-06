@@ -798,3 +798,190 @@
 .territory-profile .hero-showcase__character {
   overflow: visible;
 }
+
+/* Real Telegram hero — compact portrait layout, not a static mockup.
+   This changes presentation only. All hero art, equipped items, XP, VIP level,
+   button actions and saved progress continue to come from game state. */
+.territory-profile .hero-showcase__vip {
+  color: #ffe6aa;
+  background:
+    linear-gradient(110deg,#3f090a97,#1809077a 55%,#421411a8),
+    var(--hero-oak) center / 440px auto repeat;
+  border: 2px ridge #ca9558;
+  border-radius: 9px;
+  box-shadow: inset 0 1px #ffe6aa70, 0 3px 8px #110705a8;
+  min-width: 0;
+  min-height: 50px;
+}
+.territory-profile .hero-showcase__vip > svg,
+.territory-profile .hero-showcase__vip > img {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+}
+.territory-profile .hero-showcase__vip > span:last-child {
+  min-width: 67px;
+  background: linear-gradient(#f8c970,#bb722b 53%,#8d421b);
+  border: 2px ridge #ffd58a;
+  box-shadow: inset 0 1px #ffeaaf9e, 0 2px #37180c;
+  color: #fff9da;
+  font-size: 12px;
+  text-align: center;
+  text-shadow: 0 1px 2px #3d1908;
+}
+.territory-profile .hero-showcase__vip:focus-visible {
+  outline: 3px solid #fff1aa;
+  outline-offset: 2px;
+}
+
+/* Use the approved natural straight-grain shop timber on disclosure rows.
+   No repeated fake rope borders, wave filters or unclickable fake actions. */
+.territory-profile :is([data-testid="profile-build-training"],[data-testid="profile-appearance"],[data-testid="profile-base-stats"]) {
+  border: 2px ridge #ab7948;
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg,#16080580,#391a0d3b 50%,#16080580),
+    var(--oak-heritage-planks, url('/assets/territory/ui/shop/shop-wood-planks.webp')) center/410px auto repeat;
+  box-shadow: inset 0 1px #ffe4a065, 0 3px 5px #0b0506ad;
+  color:#fff0c8;
+}
+.territory-profile :is([data-testid="profile-build-training"],[data-testid="profile-appearance"],[data-testid="profile-base-stats"]) > summary {
+  min-height: 44px;
+  display:flex;
+  align-items:center;
+  gap: 6px;
+  padding: 8px 10px;
+  color:#ffe2a5;
+  font-weight:900;
+  line-height:1.22;
+}
+.territory-profile :is([data-testid="profile-build-training"],[data-testid="profile-appearance"],[data-testid="profile-base-stats"]) > summary::-webkit-details-marker {display:none;}
+.territory-profile :is([data-testid="profile-build-training"],[data-testid="profile-appearance"],[data-testid="profile-base-stats"]) > summary::marker {content:'';}
+.territory-profile :is([data-testid="profile-build-training"],[data-testid="profile-appearance"],[data-testid="profile-base-stats"]) > summary > span:first-child {flex:1;min-width:0;}
+.territory-profile :is([data-testid="profile-build-training"],[data-testid="profile-appearance"],[data-testid="profile-base-stats"]) > :not(summary) {margin-inline: 8px;}
+@media (max-width: 600px) {
+  .territory-profile.space-y-4 {display:flex;flex-direction:column;gap:6px;}
+  .territory-profile > :not([hidden]) ~ :not([hidden]) {margin-top:0;}
+  .territory-profile .hero-showcase {
+    gap:5px;
+    padding:6px;
+    margin:0;
+    border:2px solid #9f6b36;
+    border-radius:9px;
+    background:
+      linear-gradient(90deg,#1a0906cf,transparent 14%,transparent 86%,#1a0906cf),
+      var(--hero-oak) center/410px auto repeat;
+  }
+  .territory-profile .hero-showcase__header {
+    padding:6px 9px;
+    border:2px ridge #b48347;
+    background:
+      linear-gradient(95deg,#220e08c9,#36211470,#220e08c9),
+      var(--hero-beams) center/cover no-repeat;
+  }
+  .territory-profile .hero-showcase__identity {gap:2px 8px;}
+  .territory-profile .hero-showcase__identity h2 {font-size:17px;line-height:1.15;}
+  .territory-profile .hero-showcase__level {font-size:11px;}
+  .territory-profile .hero-showcase__resources {
+    flex-wrap:nowrap;
+    gap:4px;
+    padding-top:3px;
+  }
+  .territory-profile .hero-showcase__resources span {
+    flex:0 1 auto;
+    min-width:0;
+    font-size:clamp(10px,3.1vw,13px);
+    white-space:nowrap;
+  }
+  .territory-profile .hero-showcase__banner {
+    min-height:43px;
+    padding:3px 28px 4px;
+    border-width:2px;
+    border-radius:8px;
+    font-size:clamp(24px,7vw,29px);
+    line-height:1.15;
+  }
+  .territory-profile .hero-showcase__banner::before,
+  .territory-profile .hero-showcase__banner::after {width:22px;height:22px;}
+  .territory-profile .hero-showcase__stage {
+    height:clamp(310px,82vw,350px);
+    min-height:0;
+    grid-template-columns:clamp(45px,15vw,56px) minmax(0,1fr) clamp(45px,15vw,56px);
+    gap:4px;
+    padding:5px 8px 21px;
+    border-width:3px;
+    background-position:center 45%!important;
+  }
+  .territory-profile .hero-showcase__stage::before,
+  .territory-profile .hero-showcase__stage::after {width:8px;}
+  .territory-profile .hero-showcase__gear-column {gap:5px;justify-content:space-around;}
+  .territory-profile .hero-showcase__slot {min-height:44px;padding:2px;border-radius:7px;}
+  .territory-profile .hero-showcase__item-level {font-size:10px;}
+  .territory-profile .hero-showcase__character {
+    min-height:0;
+    height:100%;
+    align-items:flex-end;
+    overflow:visible;
+  }
+  .territory-profile .hero-showcase__hero-art {
+    width:129%;
+    height:100%;
+    max-height:315px;
+    object-fit:contain;
+    object-position:center bottom;
+    animation:territoryHeroMobileBreathe 4s ease-in-out infinite;
+    transform:scale(1.16);
+  }
+  .territory-profile .hero-showcase__stage-level {
+    min-width:76px;
+    bottom:2px;
+    padding:1px 9px;
+    font-size:11px;
+  }
+  .territory-profile .hero-showcase__progress {
+    padding:5px 8px;
+    border-width:1px;
+  }
+  .territory-profile .hero-showcase__xp-label {margin-bottom:3px;font-size:11px;}
+  .territory-profile .hero-showcase__xp-track {height:10px;}
+  .territory-profile .hero-showcase__stats {
+    padding:5px;
+    border-width:1px;
+  }
+  .territory-profile .hero-showcase__stats > .hero-showcase__plaque-title {display:none;}
+  .territory-profile .hero-showcase__stat-grid {grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;}
+  .territory-profile .hero-showcase__stat {flex-direction:column;justify-content:center;gap:0;padding:4px 1px;text-align:center;border-radius:5px;}
+  .territory-profile .hero-showcase__stat svg {width:16px;height:16px;}
+  .territory-profile .hero-showcase__stat span {font-size:10px;line-height:1.12;}
+  .territory-profile .hero-showcase__stat strong {font-size:clamp(13px,3.9vw,17px);margin-top:2px;}
+  .territory-profile .hero-showcase__equipment-link {
+    min-height:45px;
+    padding:5px 8px;
+    font-size:clamp(15px,4.4vw,18px);
+    border-width:2px;
+  }
+  .territory-profile .hero-showcase__vip {
+    min-height:48px;
+    gap:7px;
+    padding:5px 7px;
+  }
+  .territory-profile .hero-showcase__vip > svg,
+  .territory-profile .hero-showcase__vip > img {width:31px;height:31px;flex-basis:31px;}
+  .territory-profile .hero-showcase__vip strong {font-size:12px;}
+  .territory-profile .hero-showcase__vip span span {font-size:10px;}
+  .territory-profile .hero-showcase__vip > span:last-child {min-width:62px;padding:4px 5px;}
+  .territory-profile .hero-showcase__companion {padding:6px;}
+  .territory-profile .hero-showcase__journey {padding:7px;}
+  .territory-profile :is([data-testid="profile-build-training"],[data-testid="profile-appearance"],[data-testid="profile-base-stats"]) > summary {font-size:12px;}
+}
+@media (max-width: 350px) {
+  .territory-profile .hero-showcase__stage {height:310px;grid-template-columns:45px minmax(0,1fr) 45px;}
+  .territory-profile .hero-showcase__hero-art {width:125%;}
+}
+@keyframes territoryHeroMobileBreathe {
+  0%,100% {transform:translateY(0) scale(1.16);}
+  50% {transform:translateY(-3px) scale(1.16);}
+}
+@media (prefers-reduced-motion:reduce) {
+  .territory-profile .hero-showcase__hero-art {animation:none;}
+}

@@ -44,9 +44,9 @@ export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, 
 
   return (
     <div className="territory-profile space-y-4 animate-fade-in pb-4">
-      <HeroShowcase state={state} stats={computed} onEquipment={onEquipment} onAdventure={onAdventure} onForge={onForge} onQuests={onQuests} onCompanions={onCompanions} />
-      <button type="button" onClick={()=>setVipPageOpen(true)} data-testid="vip-open-page"
-        className="flex min-h-14 w-full items-center gap-3 rounded-xl border-2 border-[#ad753b] bg-[linear-gradient(125deg,#62321d,#2c1c14_75%,#50251a)] px-3 py-2 text-left shadow-[inset_0_1px_0_#ffe7a644,0_4px_10px_#14090388]">
+      <HeroShowcase state={state} stats={computed} onEquipment={onEquipment} onAdventure={onAdventure} onForge={onForge} onQuests={onQuests} onCompanions={onCompanions}
+        vipEntry={<button type="button" onClick={()=>setVipPageOpen(true)} data-testid="vip-open-page"
+        className="hero-showcase__vip flex min-h-14 w-full items-center gap-3 rounded-xl border-2 border-[#ad753b] px-3 py-2 text-left">
         {Math.max(account.permanentVip,account.vip)>0
           ? <img src={`${import.meta.env.BASE_URL}assets/territory/vip/badges/vip-${String(Math.max(1,Math.min(10,Math.max(account.permanentVip,account.vip)))).padStart(2,'0')}.svg`} alt="" className="h-11 w-11 object-contain"/>
           : <Crown className="h-10 w-10 text-amber-300"/>}
@@ -55,7 +55,7 @@ export function ProfileScreen({ user, initialTrainingOpen = false, onEquipment, 
           <span className="block text-[11px] text-amber-100/80">{language==='en'?'Chests, badges, benefits':'Сундуки, эмблемы, преимущества'}</span>
         </span>
         <span className="rounded-lg border border-amber-400/50 bg-[#8f5827] px-2 py-1 text-[11px] font-black text-amber-50">{language==='en'?'Open':'Открыть'}</span>
-      </button>
+      </button>} />
       {/* Runes are reached exclusively from the Map's Rune location. */}
 
       {/* Build lab runs only when opened; it cannot change the saved character. */}

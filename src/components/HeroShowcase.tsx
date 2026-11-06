@@ -1,5 +1,5 @@
 import { Coins, Gem, Zap, Heart, Sword, Swords, Shield, Star, ChevronRight, Shirt, Hammer, ScrollText, UsersRound } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { EQUIPMENT_SLOTS, HERO_MAX_LEVEL, generateChapter, getComputedStats } from '@/game/engine';
 import { getAppearanceIcon } from '@/game/appearance';
 import { SLOT_ART, equipmentArt } from '@/game/art';
@@ -25,11 +25,12 @@ interface Props {
   onForge: (equipmentId: string) => void;
   onQuests: () => void;
   onCompanions: () => void;
+  vipEntry?: ReactNode;
 }
 
 /** Presentation only: all values and equipment are taken from the saved game state.
  * No grants, XP updates or inventory mutations happen in this component. */
-export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, onQuests, onCompanions }: Props) {
+export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, onQuests, onCompanions, vipEntry }: Props) {
   const { t, language } = useLanguage();
   const player = state.player;
   const { status: harborStatus, retry: retryHarbor } = useSceneArt(HERO_HARBOR_ART);
@@ -152,6 +153,8 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
       <button type="button" className="hero-showcase__equipment-link" onClick={onEquipment}>
         <Shirt size={17} aria-hidden="true" />{text('Снаряжение героя', 'Hero equipment')}<ChevronRight size={17} aria-hidden="true" />
       </button>
+
+      {vipEntry}
 
       <section className="hero-showcase__companion" data-testid="hero-companion-journey"
         aria-label={text('Спутник героя', 'Hero companion')}>
