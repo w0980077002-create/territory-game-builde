@@ -104,14 +104,14 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
         listenerKind = 'legacy';
       }
     } catch {
-      // A few embedded engines expose a broken modern listener API while
-      // their legacy addListener implementation still works.
-      if (listenerKind === null && typeof reduced?.addListener === 'function') {
-        try {
+      // Legacy WebViews may also throw when reading addListener itself.
+      // Keep the already-rendered pose and never abort effect cleanup.
+      try {
+        if (listenerKind === null && typeof reduced?.addListener === 'function') {
           reduced.addListener(apply);
           listenerKind = 'legacy';
-        } catch { listenerKind = null; }
-      }
+        }
+      } catch { listenerKind = null; }
     }
     return () => {
       try {
