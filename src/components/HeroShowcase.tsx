@@ -151,7 +151,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
 
 
       <button type="button" className="hero-showcase__equipment-link" onClick={onEquipment}>
-        <Shirt size={17} aria-hidden="true" />{text('Снаряжение героя', 'Hero equipment')}<ChevronRight size={17} aria-hidden="true" />
+        <Shirt size={17} aria-hidden="true" />{text('Усилить героя', 'Strengthen hero')}<ChevronRight size={17} aria-hidden="true" />
       </button>
 
       {vipEntry}
