@@ -12,6 +12,8 @@ import { supabase } from '@/game/supabase';
 import { restoreAdventureSaveFence, restoreAdventureStartFence, requestAdventureStart, requestAdventureSettlement } from '@/game/combatV1/receiptAdapter';
 import { getCampaignStage } from '@/game/idleContent/campaign';
 import { caveLootPreview } from '@/game/combatV1/caveLootPreview';
+import { CavePreview } from './CavePreview';
+import './cavePreview.css';
 import type { IdleCombatState, IdleCombatEvent } from '@/game/idleEngine/types';
 import { getCombatAppearance } from '@/game/appearance';
 import { getEnemyCombatFrames } from '@/game/combatArt';
@@ -78,6 +80,8 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
   const [stoneInfo, setStoneInfo] = useState(false);
+  const [blessing, setBlessing] = useState(false);
+  const [caveTab, setCaveTab] = useState<'floors'|'loot'|'enhance'|'fund'>('floors');
   const [lootPreviewOpen, setLootPreviewOpen] = useState(false);
   const floorListRef = useRef<HTMLDivElement | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -326,7 +330,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const floors = Array.from({ length: 100 }, (_, i) => getCampaignStage(i + 1));
   const floorFocus = selectedFloor ?? currentStage;
   const highlightedFloor = getCampaignStage(floorFocus);
-  const lootPreview = caveLootPreview(floorFocus);
+  const lootPreview = caveLootPreview(progress?.completed_stage ?? 0);
   const mayChallenge = progress !== null && floorFocus === progress.unlocked_stage && progress.completed_stage < 100;
   const jumpToCurrent = () => {
     setSelectedFloor(null);
@@ -493,14 +497,16 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
             {progress.dark_stones}
             <Info size={13} className="ml-0.5 text-[#ceacfa]"/>
           </button>
+          <button type="button" onClick={()=>setBlessing(v=>!v)} aria-expanded={blessing} className="min-h-11 rounded-lg border border-[#8a628f] px-2 text-[11px] font-bold text-[#eed6f7]">{en?'Blessing':'Благословение'}</button>
           <span className="rounded-full border border-[#8a628f]/50 bg-[#0a0818]/90 px-3 py-1.5 text-[11px] font-bold text-[#eed6f7]">
             {en?'Floor':'Этаж'} {currentStage} / 100
           </span>
         </div>
+        {blessing&&<div role="note" className="relative z-20 rounded-lg bg-[#261936] p-2 text-xs text-[#eed6fa]">{en?'Blessing is a future feature. No bonuses apply yet.':'Благословение — будущая функция. Бонусы пока не действуют.'}</div>}
         {stoneInfo&&<div className="relative z-20 mt-1 rounded-lg border border-violet-500/50 bg-[#160e28] px-2.5 py-1.5 text-[11px] text-violet-100">
           {en?'Entry costs 1 Dark Stone; +3 daily at 00:00 UTC, starting grant 5.':'Вход — 1 Тёмный камень. При первом посещении — 5, далее +3 ежедневно в 00:00 UTC.'}
         </div>}
-        <div className="relative mt-1.5 h-[clamp(52px,9dvh,92px)] shrink-0 overflow-hidden rounded-xl border border-[#6e4389]/70 bg-[#090615] shadow-[inset_0_0_28px_#090415,0_0_13px_rgba(107,41,155,.3)]" data-testid="dark-cave-visual">
+        <div className="dark-cave-portal-wrap relative mt-1.5 h-[clamp(52px,9dvh,92px)] shrink-0 overflow-hidden rounded-xl border border-[#6e4389]/70 bg-[#090615] shadow-[inset_0_0_28px_#090415,0_0_13px_rgba(107,41,155,.3)]" data-testid="dark-cave-visual">
           <img src={realmArt} alt={en?'Violet abyss beneath the mountains':'Фиолетовая бездна в глубине подземелья'} draggable={false}
             className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover object-center" data-testid="dark-cave-portal"/>
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#070511]/90 via-transparent to-[#070511]/10"/>
@@ -509,10 +515,15 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
             <span className="text-[#c99eec]">{en?'The abyss awaits':'Бездна ждёт'}</span>
           </div>
         </div>
+        <div className="relative mt-1 grid shrink-0 grid-cols-4 gap-1" aria-label={en?'Cave sections':'Разделы пещеры'}>
+          {([['floors',en?'Floors':'Этажи'],['loot',en?'Loot':'Добыча'],['enhance',en?'Enhance':'Усиление'],['fund',en?'Fund':'Фонд']] as const).map(([id,label]) => <button key={id} type="button" onClick={()=>setCaveTab(id)} aria-pressed={caveTab===id} className="min-h-11 rounded-lg border border-[#79558a] bg-[#241731] px-1 text-[11px] font-bold text-[#f2ddfa] aria-pressed:bg-[#704184]">{label}</button>)}
+        </div>
+        {caveTab !== 'floors' && <CavePreview tab={caveTab} en={en} depth={progress.completed_stage}/>}
+        {caveTab === 'floors' && <>
         <div className="relative mt-1.5 flex shrink-0 items-center justify-between gap-2 px-1 py-0.5">
           <div className="flex min-w-0 items-center gap-1.5">
             <span className="h-1.5 w-1.5 shrink-0 rotate-45 bg-[#ad65ed] shadow-[0_0_6px_#a25cfa]"/>
-            <h4 className="truncate text-[12px] font-black uppercase tracking-[.10em] text-[#edcfef]">{en?'Cave floors':'Этажи подземелья'}</h4>
+            <h4 className="truncate text-[12px] font-black uppercase tracking-[.10em] text-[#edcfef]">{en?'Floor':'Этаж'} {floorFocus} · {highlightedFloor.enemyName}</h4>
           </div>
           <button onClick={jumpToCurrent} type="button" className="shrink-0 rounded-md border border-[#8056a7]/60 bg-[#28183e] px-2.5 py-1 text-[11px] font-bold text-[#f5d7ff]">{en?'My floor':'Мой этаж'}</button>
         </div>
@@ -533,14 +544,14 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
                 {floor.index % 20 === 1 && <p className="px-2 pt-0.5 text-[9px] font-extrabold uppercase tracking-[.14em] text-[#9e8db7]">
                   {en?'Depth':'Глубина'} {floor.chapter}
                 </p>}
-                {locked?<div aria-label={(en?'Floor ':'Этаж ')+floor.index+(en?' locked':' закрыт')} className={rowClass}>
+                {locked?<button type="button" onClick={()=>setSelectedFloor(floor.index)} aria-pressed={highlighted} aria-label={(en?'Floor ':'Этаж ')+floor.index+(en?' locked':' закрыт')} className={rowClass}>
                   <Lock size={16} className="shrink-0 text-[#706987]"/>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-black">{en?'Floor':'Этаж'} {floor.index}</p>
-                    <p className="truncate text-[10px] text-[#827e9a]">{en?'Not unlocked':'Ещё не открыт'}</p>
+                    <p className="truncate text-[10px] text-[#827e9a]">{en?'Clear the previous floor first':'Сначала пройди предыдущий этаж'}</p>
                   </div>
                   {floor.kind==='boss'&&<Crown size={17} className="shrink-0 text-[#83648c]"/>}
-                </div>:<button type="button" aria-pressed={highlighted} data-current-floor={current?'true':undefined}
+                </button>:<button type="button" aria-pressed={highlighted} data-current-floor={current?'true':undefined}
                   data-testid={current?'dark-cave-current-floor':undefined} onClick={()=>setSelectedFloor(floor.index)}
                   className={rowClass}>
                   {floor.kind==='boss'?<Crown size={17} className="shrink-0 text-[#e2a9f4]"/>:
@@ -557,13 +568,13 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
             })}
           </div>
         </div>
-        <div className="relative z-10 mt-1 shrink-0 rounded-lg border border-[#79578a]/60 bg-[#160f27]/95" data-testid="dark-cave-loot-preview">
+        <div className="dark-cave-rewards relative z-10 mt-1 shrink-0 rounded-lg border border-[#79578a]/60 bg-[#160f27]/95" data-testid="dark-cave-loot-preview">
           <button type="button" onClick={() => setLootPreviewOpen(value => !value)} aria-expanded={lootPreviewOpen}
             aria-controls="dark-cave-loot-milestones"
             className="flex min-h-11 w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-[11px] font-bold text-[#f0dafa]">
             <span className="min-w-0">
-              <span className="block text-[12px]">{en ? 'Floor rewards' : 'Награды этажа'} {floorFocus}</span>
-              <span className="block truncate font-normal text-[#c1a4d5]">{en ? 'Now: gold & XP · More loot in development' : 'Сейчас: монеты и опыт · Другая добыча в разработке'}</span>
+              <span className="block text-[12px]">{en ? 'Floor' : 'Этаж'} {floorFocus} · {highlightedFloor.enemyName}</span>
+              <span className="block truncate font-normal text-[#c1a4d5]">{floorFocus > progress.unlocked_stage ? (en ? 'Clear the previous floor first' : 'Сначала пройди предыдущий этаж') : floorFocus <= progress.completed_stage ? (en ? 'Cleared · repeat farming planned' : 'Пройден · повторный фарм планируется') : (en ? 'Victory: gold & XP · More loot in development' : 'За победу: монеты и опыт · Другая добыча в разработке')}</span>
             </span>
             <ChevronRight size={16} className={'shrink-0 transition-transform ' + (lootPreviewOpen ? 'rotate-90' : '')}/>
           </button>
@@ -572,7 +583,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
               ? 'Confirmed today: the server awards gold and XP on victory.'
               : 'Реально выдаются: монеты и опыт за победу, подтверждённые сервером.'}</p>
             {lootPreview.map(reward => <div key={reward.type} className="flex items-start gap-2 rounded-md bg-[#251b35] px-2 py-1.5">
-              <span aria-hidden="true" className="mt-0.5 text-sm">{reward.type === 'dark_equipment' ? '⚔️' : reward.type === 'socket_gem' ? '💎' : '🛡️'}</span>
+
               <span className="min-w-0 flex-1">
                 <span className="block text-[11px] font-bold text-[#ffe7be]">{en ? reward.en : reward.ru}</span>
                 <span className="block text-[10px] text-[#cfbadb]">{en ? reward.detailEn : reward.detailRu}</span>
@@ -597,8 +608,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
               aria-label={en?'Challenge, 1 Dark Stone':'Вызов, 1 Тёмный камень'}
               className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-[#dfb56c] bg-gradient-to-b from-[#f7d484] via-[#daa94f] to-[#9d672e] px-3 text-[16px] font-black text-[#2b180f] shadow-[inset_0_1px_1px_#fff0b0,0_3px_0_#392517] active:scale-[.99] disabled:cursor-not-allowed disabled:grayscale-[.35] disabled:opacity-55">
               <img src={darkStoneArt} alt="" className="h-5 w-5 shrink-0 rounded object-cover"/>
-              {en?'Challenge':'Вызов'}
-              <span className="rounded bg-[#4d341e]/15 px-2 text-[13px]">1</span>
+              {en?'Challenge · 1 Dark Stone':'Вызов · 1 Тёмный камень'}
             </button>
             {!mayChallenge?<p className="mt-1 text-center text-[11px] text-[#c7b6d8]">
               {en?'Return to your current floor to continue.':'Выбери текущий этаж, чтобы продолжить.'}
@@ -609,6 +619,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
             </p>}
           </>:<p className="text-center text-sm font-black text-[#e7c1f8]">{en?'All 100 cave floors cleared!':'Все 100 этажей подземелья пройдены!'}</p>}
         </div>
+        </>}
       </div>
     </> : <p role="status" className="rounded-xl border border-amber-700/30 bg-black/25 p-3 text-xs text-amber-100">
       {en ? 'Loading verified cave progress…' : 'Загружаем подтверждённый прогресс пещеры…'}

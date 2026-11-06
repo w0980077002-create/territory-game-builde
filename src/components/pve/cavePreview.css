@@ -1,0 +1,5 @@
+@media (max-height: 650px) {
+  .dark-cave-portal-wrap { height: 14px; }
+  .dark-cave-portal-wrap > div { display: none; }
+  .dark-cave-rewards { display: none; }
+}
