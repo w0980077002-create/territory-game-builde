@@ -57,6 +57,8 @@ jobs:
         if: matrix.suite == 'adventure'
       - run: python scripts/check-cave-compact-layout.py
         if: matrix.suite == 'adventure'
+      - run: python scripts/check-umbra-browser.py
+        if: matrix.suite == 'adventure'
       - run: node scripts/build-journey-preview.mjs && python scripts/check-journey-browser.py
         if: matrix.suite == 'gameplay-ui'
       - run: node scripts/build-arena-room-preview.mjs && python scripts/check-arena-room-browser.py
@@ -91,6 +93,7 @@ jobs:
             /tmp/territory-stage1-ui
             /tmp/slots-screenshots
             /tmp/adventure-screenshots
+            /tmp/umbra-screenshots
             /tmp/territory-companion-360.png
             /tmp/territory-hero-360.png
             /tmp/territory-profile-360.png

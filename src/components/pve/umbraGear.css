@@ -1,0 +1,247 @@
+/* Twelve independent preview slots. Actual equipment/inventory is intentionally never touched. */
+.umbra-screen {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  padding: 0 9px calc(24px + env(safe-area-inset-bottom, 0px));
+  border: 2px solid #9c6a3e;
+  border-radius: 13px;
+  color: #fbeacf;
+  background-color: #25120f;
+  background-size: cover, 450px auto;
+  background-position: center, center top;
+  box-shadow: inset 0 0 0 2px #2e160f, inset 0 0 20px #000b;
+}
+.umbra-screen button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.umbra-screen button:focus-visible {
+  outline: 2px solid #ffdb78;
+  outline-offset: 2px;
+}
+.umbra-header {
+  position: sticky;
+  z-index: 5;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 61px;
+  margin: 0 -9px 6px;
+  padding: 6px 7px;
+  background: linear-gradient(180deg, #3a2019 0%, #1d0e17 100%);
+  border-bottom: 2px solid #90613d;
+  box-shadow: 0 5px 10px #0008;
+}
+.umbra-nav-back,
+.umbra-storage-jump {
+  flex: none;
+  border: 1px solid #aa7447;
+  background: linear-gradient(145deg,#593b25,#2d1b17);
+  color: #ffe4ad;
+  border-radius: 8px;
+  font-weight: 900;
+}
+.umbra-nav-back { width: 38px; height: 42px; font-size: 27px; line-height: 1; }
+.umbra-storage-jump { padding: 0 7px; min-height: 38px; font-size: 11px; }
+.umbra-heading { flex: 1; min-width: 0; }
+.umbra-heading h3 {
+  margin: 0;
+  font-size: clamp(13px, 3.5vw, 16px);
+  line-height: 1.12;
+  color: #ffdfab;
+  font-weight: 900;
+  text-wrap: balance;
+  text-shadow: 0 2px 3px #000;
+}
+.umbra-heading span { display: block; margin-top: 3px; color: #dfc29e; font-size: 9px; line-height: 1.15; }
+.umbra-scene {
+  display: grid;
+  grid-template-columns: clamp(44px, 16%, 66px) minmax(0, 1fr) clamp(44px, 16%, 66px);
+  align-items: stretch;
+  gap: 4px;
+  height: clamp(254px, 35dvh, 325px);
+  width: 100%;
+  position: relative;
+  isolation: isolate;
+  border: 1px solid #926040;
+  border-radius: 9px;
+  padding: 5px 4px;
+  background:
+    radial-gradient(ellipse at 50% 43%, rgba(136,77,159,.35), transparent 70%),
+    linear-gradient(90deg, #130d17a6, #30192a80 48%, #120c17ad);
+  box-shadow: inset 0 0 24px #07040dbd, 0 3px 10px #0009;
+}
+.umbra-slots {
+  z-index: 2;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  gap: 3px;
+}
+.umbra-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 1px 1px 2px;
+  border: 1px solid #ac8254;
+  border-radius: 6px;
+  background: linear-gradient(140deg,#513223 0%,#28191e 58%,#351b39 100%);
+  box-shadow: inset 0 1px 3px #ffcb753a, inset 0 -2px 5px #0009;
+}
+.umbra-slot--locked { border-color: #665260; opacity: .8; }
+.umbra-slot--empty { border-color: #97718a; }
+.umbra-slot-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.umbra-slot-icon img { display: block; width: 100%; height: 100%; max-height: 33px; object-fit: contain; filter: drop-shadow(0 1px 3px #a865d955); }
+.umbra-slot-symbol { font-size: 22px; font-weight: 600; line-height: 1; color: #b78cc9; }
+.umbra-slot-state { display: block; flex: none; text-align: center; font-size: clamp(7.5px, 2.1vw, 9px); line-height: 1; color: #f5dba9; white-space: nowrap; }
+.umbra-hero { position: relative; display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 0; isolation: isolate; }
+.umbra-hero-halo {
+  position: absolute;
+  z-index: -1;
+  inset: 6% 0 13%;
+  background: radial-gradient(ellipse at center,#b159db58 0%,#642c9c21 47%,transparent 78%);
+  filter: blur(2px);
+}
+.umbra-hero::after {
+  content: '';
+  position: absolute;
+  bottom: 7px;
+  left: 3%;
+  right: 3%;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #d09b6b88, #58304a88 60%,transparent 75%);
+  box-shadow: 0 0 9px #bd68cf7b;
+  z-index: -1;
+}
+.umbra-hero > img {
+  display: block;
+  width: 100%;
+  height: calc(100% - 24px);
+  min-height: 0;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 5px 5px #000);
+}
+.umbra-hero-caption {
+  position: absolute;
+  bottom: 1px;
+  left: 0;
+  right: 0;
+  color: #ffe5af;
+  text-align: center;
+  text-shadow: 0 1px 5px #000, 0 1px 5px #000;
+  font-size: 9px;
+  font-weight: 900;
+}
+.umbra-scene-caption { margin: 5px 2px 10px; font-size: 10px; color: #e2c2cf; text-align: center; line-height: 1.25; }
+.umbra-storage {
+  scroll-margin-top: 66px;
+  padding: 7px;
+  border: 1px solid #815239;
+  border-radius: 9px;
+  background: linear-gradient(160deg, #341c19f2, #1a1019f2 68%);
+  box-shadow: inset 0 2px 5px #db985527, 0 4px 13px #0005;
+}
+.umbra-storage-title { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 0 0 8px; }
+.umbra-storage-title h3 { margin: 0 0 2px; color: #ffdc98; font-size: 17px; font-weight: 900; }
+.umbra-storage-title span { color: #ddc0b2; font-size: 10px; line-height: 1.15; }
+.umbra-storage-title strong { border: 1px solid #a67c50; border-radius: 7px; padding: 3px 9px; background: #25151a; color: #ffdaa1; font-size: 15px; }
+.umbra-actions { display: grid; grid-template-columns: .95fr .95fr 1.35fr; gap: 4px; margin-bottom: 7px; }
+.umbra-actions button, .umbra-filters button, .umbra-back {
+  min-width: 0;
+  min-height: 40px;
+  border: 1px solid #a67a50;
+  border-radius: 6px;
+  padding: 4px;
+  background: linear-gradient(#67442c 0%,#37231b 90%);
+  color: #ffe8bb;
+  box-shadow: inset 0 1px 2px #ffd17b55, 0 2px 3px #0008;
+  font-size: clamp(10px,2.6vw,12px);
+  font-weight: 800;
+  line-height: 1.12;
+  text-align: center;
+}
+.umbra-filters { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; }
+.umbra-filters button { min-height: 35px; background: linear-gradient(#3e2a2a,#23171b); font-size: clamp(9px, 2.5vw, 11px); }
+.umbra-filters button[aria-pressed="true"] { border-color: #e1b86b; background: linear-gradient(#7c4d2f,#44301f); color: #ffe2a4; }
+.umbra-result-count { margin: 6px 0; color: #d9bdc8; font-size: 10px; }
+.umbra-items { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; }
+.umbra-items button {
+  min-width: 0;
+  min-height: 90px;
+  padding: 3px 2px;
+  border: 1px solid #775e52;
+  border-radius: 6px;
+  background: linear-gradient(155deg,#4a2b2c,#221822 76%);
+  color: #ffe5cb;
+  box-shadow: inset 0 1px 3px #ecac6c33;
+}
+.umbra-items img { display: block; width: 100%; height: 53px; object-fit: contain; filter: drop-shadow(0 2px 3px #000b); }
+.umbra-items span { display: -webkit-box; min-height: 26px; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; font-size: 10px; line-height: 1.25; }
+.umbra-storage-footnote { margin: 9px 1px 1px; font-size: 10px; line-height: 1.35; color: #d2b1b8; }
+.umbra-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(12px, env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px));
+  background: #080409dd;
+}
+.umbra-dialog {
+  width: 100%;
+  max-width: 400px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 13px;
+  border: 2px solid #b68d58;
+  border-radius: 12px;
+  background: linear-gradient(155deg,#4a2725,#23151d 62%,#1b1020);
+  box-shadow: inset 0 0 0 2px #281711, 0 6px 30px #000d;
+  color: #f7e1ce;
+}
+.umbra-dialog h3 { color: #ffe0a0; font-size: 18px; font-weight: 900; margin: 4px 0 9px; }
+.umbra-dialog p { font-size: 13px; line-height: 1.4; margin: 7px 0; }
+.umbra-dialog-kicker { color: #dfb4c8; font-weight: 900; font-size: 10px !important; text-transform: uppercase; }
+.umbra-dialog-hint { color: #e4becf; }
+.umbra-detail-art { display: block; width: 100%; height: 116px; object-fit: contain; }
+.umbra-close { float: right; width: 40px; height: 40px; border: 1px solid #a67b49; border-radius: 7px; color: #ffe3b0; background: #39231c; font-size: 26px; }
+.umbra-back { width: 100%; margin-top: 12px; font-size: 13px; }
+@media (max-height: 630px) {
+  .umbra-header { min-height: 54px; }
+  .umbra-scene { height: 244px; }
+  .umbra-scene-caption { margin-bottom: 7px; }
+  .umbra-storage { scroll-margin-top: 60px; }
+}
+@media (max-width: 345px) {
+  .umbra-screen { padding-left: 6px; padding-right: 6px; }
+  .umbra-header { margin-left: -6px; margin-right: -6px; }
+  .umbra-heading h3 { font-size: 12px; }
+  .umbra-storage-jump { padding: 0 4px; font-size: 10px; }
+  .umbra-slot-state { font-size: 7px; }
+}
+@media (min-width: 620px) {
+  .umbra-scene, .umbra-storage, .umbra-scene-caption { max-width: 480px; margin-left: auto; margin-right: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .umbra-screen { scroll-behavior: auto; } }
