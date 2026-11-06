@@ -10,9 +10,13 @@ on:
       - 'supabase/staged/halloween*'
       - 'supabase/functions/admin-api/**'
       - 'supabase/config.toml'
+      - 'src/App.tsx'
+      - 'src/components/InventoryScreen.tsx'
+      - 'src/components/FollowersPanel.tsx'
       - 'src/game/actions.ts'
       - 'src/game/cloud.ts'
       - 'src/game/engine.ts'
+      - 'src/game/followers.ts'
       - 'src/game/supabase.ts'
       - 'src/**/*alloween*'
   workflow_dispatch:
