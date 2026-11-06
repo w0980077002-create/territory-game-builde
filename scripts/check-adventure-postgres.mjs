@@ -65,6 +65,8 @@ if (isClone) {
  await assert.rejects(file('supabase/staged/territory_c1_live_guarded_patch_DRAFT_20261031.sql'),/C1 live drift/);
  await sql('UPDATE territory_private.combat_config_v1 SET starts_enabled=true,canary_only=false WHERE id');
 }
+await file('supabase/staged/territory_cave_stone_refund_on_defeat_20261106.sql');
+await file('supabase/staged/territory_cave_stone_refund_on_defeat_20261106.sql'); // idempotent patch
 if (runeCave) {
  for (const path of ['supabase/staged/territory_rune_slots_v1.sql','supabase/staged/territory_rune_battle_snapshot_v1.sql','supabase/staged/territory_rune_effects_v1.sql','supabase/staged/territory_rune_cave_integration_v1.sql']) await file(path);
  assert.equal(await sql('SELECT enabled FROM territory_private.rune_cave_config_v1'),'f');
@@ -173,6 +175,7 @@ assert.equal(attempts.filter(x=>x.status==='rejected').length,1);
 assert.match(String(attempts.find(x=>x.status==='rejected').reason),/combat_revision_conflict/);
 const won=attempts.find(x=>x.status==='fulfilled').value;
 assert.equal(won.state.status,'hero_won'); assert.equal(won.settlement.reward.gold,15); assert.equal(won.settlement.reward.xp,20);
+assert.equal(won.settlement.dark_stone_refunded,false,'victory consumes one entry stone');
 if (runeCave) assert.ok(won.events.some(e=>e.actor==='hero' && e.type==='impact' && e.value===101),'rune effect changes actual server damage');
 assert.equal(won.settlement.unlocked_stage,2);
 assert.deepEqual(await execute(player,cmd),won, 'retry must return the committed receipt');
@@ -215,7 +218,11 @@ const lostStart=await execute(loser,{action:'start',operationId:op(5),encounterI
 await sql(`UPDATE territory_private.combat_sessions_v1 SET cursor_ms=cursor_ms-1000 WHERE session_id=${quote(lostStart.session_id)}`);
 const lost=await execute(loser,{action:'advance',operationId:op(6),sessionId:lostStart.session_id,revision:0});
 assert.equal(lost.state.status,'enemy_won'); assert.equal(lost.settlement.reward.gold,0); assert.equal(lost.settlement.reward.xp,0);
-assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`),save,'a defeat consumes one entry stone but awards no gold or XP');
+assert.equal(lost.settlement.dark_stone_refunded,true,'defeat returns entry stone in durable receipt');
+assert.equal(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`),'5','defeat refunds the stone charged at start');
+assert.deepEqual((await execute(loser,{action:'resume',sessionId:lostStart.session_id})).settlement,lost.settlement);
+assert.equal(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`),'5','retry cannot duplicate refund');
+assert.deepEqual(await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`),save,'defeat returns entry stone but grants no gold/XP');
 // A real zero balance must reject before creating any new session/receipt.
 await sql(`UPDATE territory_private.dark_stones_v1 SET balance=0 WHERE player_id=${quote(loser)}`);
 const depletedBefore=await scalar(`SELECT game_state FROM public.players WHERE id=${quote(loser)}`);
@@ -267,7 +274,10 @@ const canaryFinish={action:'advance',operationId:op(18),sessionId:canaryStart.se
 const canaryResult=await execute(loser,canaryFinish);
 assert.equal(canaryResult.state.status,'enemy_won');
 assert.deepEqual(await execute(loser,canaryFinish),canaryResult);
-assert.equal(Number(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`)),canaryBefore-1);
+assert.equal(Number(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`)),canaryBefore,'canary defeat returns entry stone');
+assert.equal(canaryResult.settlement.dark_stone_refunded,true);
+assert.deepEqual((await execute(loser,{action:'resume',sessionId:canaryStart.session_id})).settlement,canaryResult.settlement);
+assert.equal(Number(await sql(`SELECT balance FROM territory_private.dark_stones_v1 WHERE player_id=${quote(loser)}`)),canaryBefore,'canary replay cannot duplicate refund');
 // Eight individually stale owners simulate accounts that never called prepare.
 // Clone only synthetic fixture records, never production data.
 for (let i=1;i<=8;i++) {
