@@ -34,7 +34,21 @@ with sync_playwright() as p:
             screen = page.get_by_test_id('umbra-screen')
             assert screen.get_by_test_id('umbra-slot').count() == 12
             assert screen.get_by_test_id('umbra-item').count() == 16
+            scene = page.locator('.umbra-scene').bounding_box()
+            hero = page.locator('.umbra-hero').bounding_box()
+            assert scene and hero and hero['width'] >= 110 and hero['height'] >= 220, (
+                f'Hero must remain the center of a useful 12-slot scene: {scene}, {hero}')
+            assert page.locator('.umbra-hero > img').evaluate(
+                '(img) => img.complete && img.naturalWidth > 0'), 'Hero artwork failed to load'
+            for slot in screen.get_by_test_id('umbra-slot').all():
+                bounds = slot.bounding_box()
+                assert bounds and bounds['height'] >= 30 and bounds['width'] >= 35, (
+                    f'Slot too small: {bounds}')
             page.screenshot(path=str(out / f'umbra-{lang}-{width}.png'))
+            screen.get_by_role('button', name='Storage ↓' if lang == 'en' else 'Склад ↓').click()
+            page.wait_for_timeout(250)
+            assert screen.evaluate('(e) => e.scrollTop > 0'), 'Storage shortcut must scroll on a small screen'
+            page.screenshot(path=str(out / f'umbra-storage-{lang}-{width}.png'))
             before = page.evaluate('JSON.stringify(localStorage)')
             calls = page.evaluate('JSON.stringify(window.__adventureCalls)')
             for i in range(12):
