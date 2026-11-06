@@ -37,6 +37,7 @@ jobs:
       # Guard cave/PvE routing, dark-stone conservation and battle receipts.
       # These checks complement, not replace, isolated PG17/Auth/Edge gates.
       - run: node scripts/check-adventure-client-ui.mjs
+      - run: node scripts/check-cave-loot-preview.mjs
       - run: node scripts/check-dark-stones.mjs
       - run: node scripts/check-adventure-receipt-adapter.mjs
       - run: npm run test:stage1
