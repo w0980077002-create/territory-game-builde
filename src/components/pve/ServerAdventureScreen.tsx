@@ -11,6 +11,7 @@ import { ensurePlayerSession } from '@/game/auth';
 import { supabase } from '@/game/supabase';
 import { restoreAdventureSaveFence, restoreAdventureStartFence, requestAdventureStart, requestAdventureSettlement } from '@/game/combatV1/receiptAdapter';
 import { getCampaignStage } from '@/game/idleContent/campaign';
+import { caveLootPreview } from '@/game/combatV1/caveLootPreview';
 import type { IdleCombatState, IdleCombatEvent } from '@/game/idleEngine/types';
 import { getCombatAppearance } from '@/game/appearance';
 import { getEnemyCombatFrames } from '@/game/combatArt';
@@ -77,6 +78,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
   const [stoneInfo, setStoneInfo] = useState(false);
+  const [lootPreviewOpen, setLootPreviewOpen] = useState(false);
   const floorListRef = useRef<HTMLDivElement | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [busy, setBusy] = useState(true);
@@ -324,6 +326,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const floors = Array.from({ length: 100 }, (_, i) => getCampaignStage(i + 1));
   const floorFocus = selectedFloor ?? currentStage;
   const highlightedFloor = getCampaignStage(floorFocus);
+  const lootPreview = caveLootPreview(floorFocus);
   const mayChallenge = progress !== null && floorFocus === progress.unlocked_stage && progress.completed_stage < 100;
   const jumpToCurrent = () => {
     setSelectedFloor(null);
@@ -548,6 +551,37 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
               </div>;
             })}
           </div>
+        </div>
+        <div className="relative z-10 mt-1 shrink-0 rounded-lg border border-[#79578a]/60 bg-[#160f27]/95" data-testid="dark-cave-loot-preview">
+          <button type="button" onClick={() => setLootPreviewOpen(value => !value)} aria-expanded={lootPreviewOpen}
+            aria-controls="dark-cave-loot-milestones"
+            className="flex min-h-11 w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-[11px] font-bold text-[#f0dafa]">
+            <span className="min-w-0">
+              <span className="block text-[12px]">{en ? 'Floor rewards' : 'Награды этажа'} {floorFocus}</span>
+              <span className="block truncate font-normal text-[#c1a4d5]">{en ? 'Now: gold & XP · More loot in development' : 'Сейчас: монеты и опыт · Другая добыча в разработке'}</span>
+            </span>
+            <ChevronRight size={16} className={'shrink-0 transition-transform ' + (lootPreviewOpen ? 'rotate-90' : '')}/>
+          </button>
+          {lootPreviewOpen && <div id="dark-cave-loot-milestones" className="max-h-44 space-y-1.5 overflow-y-auto border-t border-[#654476] px-2.5 py-2" data-testid="dark-cave-loot-milestones">
+            <p className="text-[11px] text-[#eed6fa]">{en
+              ? 'Confirmed today: the server awards gold and XP on victory.'
+              : 'Реально выдаются: монеты и опыт за победу, подтверждённые сервером.'}</p>
+            {lootPreview.map(reward => <div key={reward.type} className="flex items-start gap-2 rounded-md bg-[#251b35] px-2 py-1.5">
+              <span aria-hidden="true" className="mt-0.5 text-sm">{reward.type === 'dark_equipment' ? '⚔️' : reward.type === 'socket_gem' ? '💎' : '🛡️'}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[11px] font-bold text-[#ffe7be]">{en ? reward.en : reward.ru}</span>
+                <span className="block text-[10px] text-[#cfbadb]">{en ? reward.detailEn : reward.detailRu}</span>
+              </span>
+              <span className="shrink-0 rounded border border-[#80539b]/60 px-1 py-0.5 text-[9px] text-[#dfc4ed]">
+                {reward.unlockedAtDepth
+                  ? (en ? 'Preview' : 'План')
+                  : (en ? 'From ' : 'С ') + reward.unlockFloor}
+              </span>
+            </div>)}
+            <p className="text-[10px] leading-snug text-amber-200/85" role="note">{en
+              ? 'Preview only. The new items are not granted yet; no rates or stone rules have changed.'
+              : 'Это предварительный просмотр. Новые предметы пока не выдаются. Шансы выпадения и расход камней не изменены.'}</p>
+          </div>}
         </div>
         <div className="relative z-10 mt-1.5 shrink-0 border-t border-[#68457d]/55 pt-2" data-testid="dark-cave-actions">
           {progress.completed_stage < 100 ? <>
