@@ -22,7 +22,6 @@ type Settlement = { outcome: string; reward?: { gold: number; xp: number } };
 type Session = { session_id: string; revision: number; state: IdleCombatState; events?: IdleCombatEvent[]; settlement?: Settlement | null };
 type Props = { userId: string; onActiveChange?: (active: boolean) => void };
 const sessionKey = (id: string) => 'territory_adventure_session_v1:' + id;
-const startKey = (id: string) => 'territory_adventure_start_v1:' + id;
 const obj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
 
 function decodeSession(data: unknown): Session {

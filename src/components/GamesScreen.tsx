@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowRight, ChevronRight, Coins, Gift, Loader2, RefreshCw, Ticket,
+  ArrowRight, ChevronRight, Coins, Gift, Loader2, Ticket,
 } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { captureGameEvent } from '@/game/analytics';

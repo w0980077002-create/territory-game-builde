@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   fetchClanDirectory, fetchClanState, fetchClanRankings,
-  createClan, contributeClan, claimClanBoss, claimClanQuest,
+  createClan, claimClanBoss, claimClanQuest,
   CLAN_CREATION_RED_GEMS_COST,
   clanApply, clanCancelApplication, clanAcceptInvite, clanDeclineInvite,
   clanLeave, clanKick, clanSetRole, clanTransfer,
@@ -13,7 +13,7 @@ import {
 import { useGame } from '@/game/actions';
 import { useStore } from '@/game/store';
 import { validEconomySnapshot } from '@/game/economyInvariant';
-import { Users, Swords, Crown, Shield, Coins, ChevronLeft, Send, ScrollText, Gem } from 'lucide-react';
+import { Swords, Crown, Shield, Coins, ChevronLeft, Send, Gem } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { SocialTrail, type SocialDestination } from './social/SocialTrail';
 import { ClanNextStep } from './social/ClanNextStep';
@@ -21,7 +21,6 @@ import './clanVisualFinish.css';
 
 const CLAN_COLORS = ['#eab308', '#ef4444', '#22c55e', '#3b82f6', '#f97316', '#ec4899', '#14b8a6', '#a3e635'];
 const EMBLEMS = ['🐺', '🦁', '🐉', '🦅', '🐻', '🐺', '⚔️', '🛡️', '🔥', '🌊', '⚡', '🌟'];
-const ROLE_ORDER: Record<string, number> = { leader: 0, deputy: 1, officer: 2, veteran: 3, member: 4 };
 
 type Props = { userId: string; notify: (text: string) => void; onNavigate: (destination: SocialDestination) => void };
 
@@ -208,13 +207,6 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
     setClanId(receipt.clan_id);
     setView('detail');
     notify(t('clanCreated'));
-  });
-
-  const doContribute = (gold: number, materials: number) => runMutation(async () => {
-    if (!clanId) return;
-    const receipt = await contributeClan(userId, clanId, gold, materials);
-    applyState(receipt);
-    await loadState(clanId);
   });
 
   const doBossClaim = (bossNo?: number) => runMutation(async () => {

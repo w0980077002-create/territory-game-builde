@@ -10,7 +10,6 @@ import type {
   Equipment,
   Quest,
   Achievement,
-  Follower,
   ShopItem,
 } from './types';
 
@@ -380,7 +379,7 @@ function generateShopEquipment(): ShopItem[] {
   return shopEquipmentCache;
 }
 
-export function generateShopItems(chapter: number): ShopItem[] {
+export function generateShopItems(_chapter: number): ShopItem[] {
   const consumables: ShopItem[] = [
     {
       id: 'shop_potion_hp',

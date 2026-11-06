@@ -3,7 +3,7 @@ import { TreasuryInventory } from './TreasuryInventory';
 import { lazy, Suspense, useEffect, useState } from 'react';
 const VikingSlots = lazy(() => import('./VikingSlots').then(m => ({default: m.VikingSlots})));
 import { MonopolyAdventure } from './monopoly/MonopolyAdventure';
-import { ArrowLeft, Coins, Dice5, Dices, DoorOpen, Gift, Loader2, RefreshCw, ShieldCheck, Target, Ticket, Trophy } from 'lucide-react';
+import { ArrowLeft, Dice5, Dices, DoorOpen, Gift, Loader2, RefreshCw, ShieldCheck, Target, Ticket, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { captureGameEvent } from '@/game/analytics';
 import { hallStatus, hallStart, hallFinish, autoClaimHallGold, hallError, type HallGame, type HallSession, type HallState, type HallResult } from '@/game/gameHall';

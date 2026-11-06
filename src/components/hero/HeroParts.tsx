@@ -41,7 +41,7 @@ export function gearStatLine(g: GearView, language: 'ru' | 'en' = 'ru') {
 }
 
 export function StatGrid({ stats }: { stats: StatView }) {
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
   const rows = [
     { label: language === 'en' ? 'Strength' : 'Сила', value: stats.attack, icon: Sword, tone: 'text-orange-300' },
     { label: language === 'en' ? 'Defense' : 'Стойкость', value: stats.defense, icon: Shield, tone: 'text-sky-300' },
