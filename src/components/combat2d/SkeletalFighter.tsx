@@ -84,7 +84,14 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
         // Some embedded SVG engines expose animate() but throw for SVG groups.
         // Fall back per joint so one unsupported part cannot freeze the whole rig.
         try {
-          return [joint.animate(selected, { duration: prefersReducedMotion ? 1 : ACTION_MS / speed, fill: 'forwards' })];
+          const animation = joint.animate(selected, { duration: prefersReducedMotion ? 1 : ACTION_MS / speed, fill: 'forwards' });
+          // Some partial Web Animations polyfills return no Animation object.
+          // Preserve the confirmed contact pose rather than losing the hit.
+          if (!animation || typeof animation.cancel !== 'function') {
+            showLegacyPose();
+            return [];
+          }
+          return [animation];
         } catch {
           showLegacyPose();
           return [];
