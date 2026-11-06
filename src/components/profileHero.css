@@ -904,7 +904,7 @@
   .territory-profile .hero-showcase__banner::before,
   .territory-profile .hero-showcase__banner::after {width:22px;height:22px;}
   .territory-profile .hero-showcase__stage {
-    height:clamp(258px,76vw,325px);
+    height:clamp(310px,82vw,350px);
     min-height:0;
     grid-template-columns:clamp(45px,15vw,56px) minmax(0,1fr) clamp(45px,15vw,56px);
     gap:4px;
@@ -975,7 +975,7 @@
   .territory-profile :is([data-testid="profile-build-training"],[data-testid="profile-appearance"],[data-testid="profile-base-stats"]) > summary {font-size:12px;}
 }
 @media (max-width: 350px) {
-  .territory-profile .hero-showcase__stage {height:258px;grid-template-columns:45px minmax(0,1fr) 45px;}
+  .territory-profile .hero-showcase__stage {height:310px;grid-template-columns:45px minmax(0,1fr) 45px;}
   .territory-profile .hero-showcase__hero-art {width:125%;}
 }
 @keyframes territoryHeroMobileBreathe {
