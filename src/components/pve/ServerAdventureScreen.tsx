@@ -19,7 +19,7 @@ import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { FighterFigure } from '@/components/arena/FighterFigure';
 
 type Progress = { completed_stage: number; unlocked_stage: number; dark_stones: number; active_session_id?: string | null };
-type Settlement = { outcome: string; reward?: { gold: number; xp: number } };
+type Settlement = { outcome: string; reward?: { gold: number; xp: number }; dark_stone_refunded?: boolean };
 type Session = { session_id: string; revision: number; state: IdleCombatState; events?: IdleCombatEvent[]; settlement?: Settlement | null };
 type Props = { userId: string; onActiveChange?: (active: boolean) => void };
 // Reads and writes the live store; no component state, so one module-level object.
@@ -424,6 +424,11 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         {session.state.status !== 'hero_won' && <p className="text-center text-xs text-amber-100/80">
           {en ? 'Try this floor again when you are ready.' : 'Попробуй пройти этот этаж ещё раз, когда будешь готов.'}
         </p>}
+        {session.state.status !== 'hero_won' && session.settlement?.dark_stone_refunded === true && (
+          <p className="rounded-lg border border-emerald-400/45 bg-emerald-950/45 px-3 py-2 text-center text-sm font-bold text-emerald-100" data-testid="dark-cave-stone-refunded">
+            {en ? 'Dark Stone returned — try again!' : 'Тёмный камень возвращён — попробуй ещё раз!'}
+          </p>
+        )}
         <button onClick={clearFinished} disabled={busy} className="w-full rounded-xl bg-amber-500 text-black p-3 font-bold">{en?'Back to cave stages':'К этапам пещеры'}</button>
       </> : <>
         <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-black/30 px-3 py-2" data-testid="dark-cave-control-panel">
