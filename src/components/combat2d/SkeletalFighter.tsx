@@ -70,20 +70,15 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
         const showLegacyPose = () => { joint.style.transform = String(visibleFrame.transform ?? ''); };
         // Older Telegram WebViews may lack SVG Web Animations entirely.
         // Keep the resolved pose visible instead of silently freezing every joint.
-        if (typeof joint.animate !== 'function') {
-          // Nonterminal actions recover to idle at the last frame. Hold the
-          // contact pose instead, otherwise legacy engines show no reaction.
-          // Respect reduced motion even on engines without SVG Web Animations.
-          // Showing a contact pose for the entire action would still imply
-          // movement when the player has explicitly disabled it.
-          showLegacyPose();
-          return [];
-        }
-        // Retain readable final outcome poses without large movement in reduced mode.
-        const selected = prefersReducedMotion ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
-        // Some embedded SVG engines expose animate() but throw for SVG groups.
-        // Fall back per joint so one unsupported part cannot freeze the whole rig.
+        // Even reading animate can throw on partial SVG Web Animations shims.
+        // Keep feature detection inside the per-joint recovery boundary.
         try {
+          if (typeof joint.animate !== 'function') {
+            showLegacyPose();
+            return [];
+          }
+          // Retain readable final outcome poses without large movement in reduced mode.
+          const selected = prefersReducedMotion ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
           const animation = joint.animate(selected, { duration: prefersReducedMotion ? 1 : ACTION_MS / speed, fill: 'forwards' });
           // Some partial Web Animations polyfills return no Animation object.
           // Preserve the confirmed contact pose rather than losing the hit.
