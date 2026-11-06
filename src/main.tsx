@@ -4,6 +4,7 @@ import App from './App.tsx';
 import './index.css';
 import './components/ui/vikingScreenSkin.css';
 import './components/ui/territoryOakUnified.css';
+import './components/ui/oakScreens.css';
 import { LanguageProvider } from '@/game/i18n';
 import { captureGameOpen, captureGameEvent } from '@/game/analytics';
 
