@@ -5,6 +5,7 @@ import { useGame, useAccount } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
 import { getAppearanceIcon } from '@/game/appearance';
 import { VIP_TIERS, vipTier } from '@/game/vipProgram';
+import { VIP_VISUAL_PRICE_USD } from '@/game/vipVisualPreview';
 import { VIP_COSMETICS, activeVipCosmetic, setVipCosmetic, vipArtUrl, type VipCosmeticCategory } from '@/game/vipCosmetics';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import './vipTerritory.css';
@@ -15,19 +16,18 @@ const emblem = (n:number) => vipRoot + 'badges/vip-' + String(n).padStart(2,'0')
 const chestArt = (kind:'daily'|'weekly',level:number) => vipRoot+'chests/' +
   (kind==='daily'?'daily-'+Math.min(5,Math.ceil(level/2)):
     'weekly-'+(level<=3?1:level<=5?2:level===6?3:level<=8?4:5)) + '.svg';
-const plannedPrices = [0,1,10,100,300,500,1000,3000,5000,8000,10000] as const;
 type Mode = 'benefits'|'tryon'|'chests';
-type Tab = Exclude<VipCosmeticCategory,'frame'>;
-const tabs:readonly Tab[]=['crown','aura','crest','skin','throne'];
+type Tab = VipCosmeticCategory;
+const tabs:readonly Tab[]=['frame','crown','aura','crest','skin','throne'];
 const tabLabels:Record<Tab,{ru:string;en:string;symbol:string}>={
+  frame:{ru:'Рамка',en:'Frame',symbol:'▣'},
   crown:{ru:'Корона',en:'Crown',symbol:'♛'},
   aura:{ru:'Аура',en:'Aura',symbol:'✧'},
   crest:{ru:'Герб',en:'Crest',symbol:'♜'},
   skin:{ru:'Облик',en:'Skin',symbol:'⚔'},
   throne:{ru:'Трон',en:'Throne',symbol:'♔'},
 };
-const tierName=(n:number,en:boolean)=>n===10?(en?'Founder':'Основатель'):
-  n===5?(en?'Duke':'Герцог'):(en?vipTier(n).nameEn:vipTier(n).nameRu);
+const tierName=(n:number,en:boolean)=>en?vipTier(n).nameEn:vipTier(n).nameRu;
 type Props={userId:string;onBack:()=>void;backToCity?:boolean;
   onEquipment:()=>void;onRunes:()=>void;onBelt:()=>void};
 
@@ -52,20 +52,23 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onRunes,onBelt
   const cosmetic=cosmetics[cosmeticIndex%Math.max(1,cosmetics.length)]??null;
   // Show the actual hero OR one complete skin, never two overlaid characters.
   const previewSkin=mode==='tryon'&&tab==='skin'?cosmetic:null;
+  const previewCompanion=previewSkin?.id.startsWith('companion-')??false;
+  const previewFrame=mode==='tryon'&&tab==='frame'?cosmetic:null;
   const previewCrest=mode==='tryon'&&tab==='crest'?cosmetic:null;
-  const previewThrone=mode==='tryon'&&tab==='throne'?cosmetic?.asset:
-    mode==='benefits'&&tier===10?'cosmetics/throne-vip10.svg':null;
+  const previewThrone=mode==='tryon'&&tab==='throne'?cosmetic?.asset:null;
   const previewAura=mode==='tryon'?tab==='aura':tier>=5;
   const crown=mode==='tryon'?(tab==='crown'?cosmetic:null):
     VIP_COSMETICS.filter(x=>x.category==='crown'&&x.minVip<=tier).sort((a,b)=>b.minVip-a.minVip)[0];
   const equipped=Boolean(cosmetic&&activeVipCosmetic(userId,tab,realVip)?.id===cosmetic.id);
   const eligible=Boolean(cosmetic&&cosmetic.minVip<=realVip);
+  // The current skin illustrations are concepts, not rigged/compatible game appearances.
+  const canEquip=eligible&&tab!=='skin'&&tab!=='throne';
   const changeTier=(n:number)=>{setChosen(n);setCosmeticIndex(0);setChest(null);
     setMode(n>=5?'tryon':'benefits');};
   const changeTab=(next:Tab)=>{setTab(next);setCosmeticIndex(0);setMode('tryon');};
   const openChest=(kind:'daily'|'weekly')=>{setChest(kind);setChestOpened(false);};
   const equip=()=>{
-    if(!cosmetic||!eligible)return;
+    if(!cosmetic||!canEquip)return;
     if(setVipCosmetic(userId,tab,equipped?null:cosmetic.id,realVip))setRevision(n=>n+1);
   };
   void revision;
@@ -94,25 +97,26 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onRunes,onBelt
       </div>
       <div className="vip-tier-bottom">
         <strong>VIP {tier} · {tierName(tier,en)}</strong>
-        <small>{en?'Planned price':'Плановая цена'}: {'$'}{plannedPrices[tier]} · {en?'Preview':'Просмотр'}</small>
+        <small>{en?'Planned price':'Плановая цена'}: {'$'}{VIP_VISUAL_PRICE_USD[tier]} · {en?'Preview':'Просмотр'}</small>
       </div>
     </div>
 
     <div className="vip-hero-panel vip-carved-panel">
       <div className={'vip-stage'+(previewSkin?' vip-stage-skin':'')}
-        data-testid="vip-stage-transformation" data-vip-subject={previewSkin?.id==='companion-vip7'?'companion':'hero'}>
+        data-testid="vip-stage-transformation" data-vip-subject={previewCompanion?'companion':'hero'}>
         <div className="vip-stage-title"><Sparkles size={14}/>
-          {tier===10?(en?'FOUNDER LEGEND':'ЛЕГЕНДА TERRITORY')
+          {tier===10?(en?'TERRITORY LEGEND':'ЛЕГЕНДА TERRITORY')
             :tier>=5?(en?'THE POWER OF VIP':'СИЛА VIP')
             :(en?'PATH TO LEGEND':'ПУТЬ К ЛЕГЕНДЕ')}
         </div>
         {previewThrone&&<img className="vip-prestige-throne" src={vipArtUrl(previewThrone)} alt="" draggable={false}/>}
         {previewAura&&<span className="vip-aura-effect" aria-hidden="true"/>}
-        <img className="vip-actual-hero" data-testid="vip-stage-art"
+        <img className={previewCompanion?'vip-actual-companion':'vip-actual-hero'} data-testid="vip-stage-art"
           src={previewSkin?vipArtUrl(previewSkin.asset):getAppearanceIcon(game.appearance)}
           alt={previewSkin?(en?previewSkin.en:previewSkin.ru):(en?'Your hero':'Ваш герой')}
           draggable={false}/>
-        {crown&&!previewSkin&&<img className="vip-crown-on-hero" src={vipArtUrl(crown.asset)} alt="" draggable={false}/>}
+        {crown&&!previewSkin&&<img className="vip-crown-display" src={vipArtUrl(crown.asset)} alt={en?crown.en:crown.ru} draggable={false}/>}
+        {previewFrame&&<img className="vip-frame-display" src={vipArtUrl(previewFrame.asset)} alt={en?previewFrame.en:previewFrame.ru} draggable={false}/>}
         {previewCrest&&<img className="vip-stage-crest" src={vipArtUrl(previewCrest.asset)} alt="" draggable={false}/>}
         <div className="vip-stage-emblem">
           <div className="vip-emblem-glow"><img src={emblem(tier)} alt="" draggable={false}/></div>
@@ -182,14 +186,14 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onRunes,onBelt
             <button type="button" onClick={()=>setCosmeticIndex(n=>(n+1)%cosmetics.length)}
               aria-label={en?'Next cosmetic':'Следующее оформление'}><ChevronRight size={19}/></button>
           </div>
-          {eligible?<button type="button" className="vip-gold-action" onClick={equip}>
+          {canEquip?<button type="button" className="vip-gold-action" onClick={equip}>
             {equipped?<><Check size={15}/>{en?'Equipped — remove':'Надето — снять'}</>:en?'Equip':'Надеть'}
           </button>:<div className="vip-locked-label"><LockKeyhole size={14}/>
-            {en?'View only · unlocks at VIP '+cosmetic.minVip:'Только просмотр · доступно с VIP '+cosmetic.minVip}
+            {eligible?(en?'Concept preview · cannot equip yet':'Предпросмотр облика · пока нельзя надеть'):(en?'View only · unlocks at VIP '+cosmetic.minVip:'Только просмотр · доступно с VIP '+cosmetic.minVip)}
           </div>}
         </div>
       </div>}
-      <p className="vip-demo-disclaimer">{en?'All cosmetics can be viewed. Only unlocked VIP cosmetics can be equipped.':'Любой облик можно посмотреть. Надеть его можно только при нужном VIP.'}</p>
+      <p className="vip-demo-disclaimer">{en?'Concept skins and thrones are preview only. Supported VIP decorations may be selected locally.':'Облики и троны пока только для просмотра. Доступное оформление можно выбрать локально.'}</p>
     </div>}
 
     {mode==='chests'&&<div className="vip-carved-panel vip-content-panel" data-testid="vip-chest-gallery">

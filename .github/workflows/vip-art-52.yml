@@ -1,0 +1,28 @@
+name: VIP ART 52 file integrity gate
+
+on:
+  pull_request:
+    paths:
+      - 'docs/TERRITORY_VIP_ART_52_CODEX_TZ_RU.md'
+      - 'scripts/check-vip-art-52.py'
+      - 'public/assets/territory/vip/**'
+      - 'artwork/territory/vip/v2/**'
+      - 'src/components/VipMobileShowcase.tsx'
+      - '.github/workflows/vip-art-52.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-art:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Read image files with Pillow
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Validate 52 client illustrations, 52 masters and 10 new badges
+        run: python scripts/check-vip-art-52.py

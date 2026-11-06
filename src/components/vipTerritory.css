@@ -10,7 +10,7 @@
     url('/assets/territory/scenes/winter-cliff-approved.webp') center top/cover no-repeat;
 }
 .territory-vip-rebuild .vip-main-heading {
-  height:56px;min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:7px;
+  height:52px;min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:7px;
   border:2px solid #c8954d;border-radius:14px;padding:3px 8px;
   box-shadow:inset 0 2px #ffdf9b75,inset 0 -3px #140a06,0 4px 9px #13080abf;
   background:linear-gradient(145deg,#411a1599,#1c1212a8),
@@ -53,18 +53,18 @@
   background:linear-gradient(100deg,#41120a,#8d2215 50%,#40110b);box-shadow:0 2px 4px #100609;
 }
 .territory-vip-rebuild .vip-actual-hero {
-  position:absolute;bottom:-3px;left:-5%;z-index:3;width:54%;height:186px;
+  position:absolute;bottom:-3px;left:1%;z-index:3;width:50%;height:178px;
   object-fit:contain;object-position:bottom;
   filter:drop-shadow(0 7px 5px #100a0b) drop-shadow(0 0 4px #ecbf7969);
 }
 .territory-vip-rebuild .vip-actual-companion {
-  position:absolute;bottom:-5px;right:-5%;z-index:3;width:43%;height:147px;
+  position:absolute;bottom:0;left:5%;right:auto;z-index:3;width:67%;height:165px;
   object-fit:contain;object-position:bottom;
   filter:drop-shadow(0 6px 4px #100a0c) drop-shadow(0 0 5px #f3aa5380);
 }
-.territory-vip-rebuild .vip-crown-on-hero {
-  position:absolute;left:18%;top:30px;z-index:4;width:51px;height:45px;
-  object-fit:contain;transform:rotate(-6deg);
+.territory-vip-rebuild .vip-crown-display {
+  position:absolute;right:11%;bottom:23px;z-index:4;width:56px;height:55px;
+  object-fit:contain;
   filter:drop-shadow(0 2px 3px #2d1108) drop-shadow(0 0 5px #facc61);
 }
 .territory-vip-rebuild .vip-prestige-throne {
@@ -107,17 +107,17 @@
 .territory-vip-rebuild .vip-hero-caption span {font-size:12px;font-weight:700;color:#ffe2ad;}
 .territory-vip-rebuild .vip-tier-panel {padding:7px 6px 6px;}
 .territory-vip-rebuild .vip-tier-grid {
-  display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:2px;
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;
   position:relative;z-index:1;
 }
 .territory-vip-rebuild .vip-tier-button {
-  min-width:0;height:62px;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  min-width:0;height:49px;display:flex;align-items:center;justify-content:center;flex-direction:column;
   background:linear-gradient(165deg,#74401b,#321b12 72%);
   border:1px solid #ac7342;border-radius:8px;
   box-shadow:inset 0 1px #ffe6ab41,0 2px 2px #140906a8;
   color:#ffde9f;
 }
-.territory-vip-rebuild .vip-tier-button img {width:90%;height:34px;object-fit:contain;}
+.territory-vip-rebuild .vip-tier-button img {width:90%;height:29px;object-fit:contain;}
 .territory-vip-rebuild .vip-tier-button strong {font-size:11px;font-weight:900;line-height:1.1;}
 .territory-vip-rebuild .vip-tier-button[aria-pressed="true"] {
   border-color:#ffe2a1;outline:2px solid #f9cd67;outline-offset:-2px;
@@ -181,7 +181,7 @@
 }
 .territory-vip-rebuild .vip-short-action {position:relative;z-index:1;display:flex;margin:9px auto 0;}
 .territory-vip-rebuild .vip-cosmetic-tabs {
-  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;
 }
 .territory-vip-rebuild .vip-cosmetic-tabs button {
   display:flex;align-items:center;justify-content:center;flex-direction:column;
@@ -361,3 +361,10 @@
   .territory-vip-rebuild .vip-benefit-card {min-height:89px;}
   .territory-vip-rebuild .vip-benefit-card img {height:43px;}
 }
+
+/* VIP ART 52 readiness: show unanchored ornaments separately, never on a hero's eyes. */
+.territory-vip-rebuild .vip-frame-display {position:absolute;right:6%;bottom:20px;z-index:4;width:86px;height:86px;object-fit:contain;filter:drop-shadow(0 3px 5px #100708);}
+.territory-vip-rebuild .vip-tier-button {touch-action:manipulation;}
+.territory-vip-rebuild .vip-cosmetic-tabs button {min-height:44px;}
+.territory-vip-rebuild .vip-tryon-controls button {height:44px;min-width:44px;}
+@media (prefers-reduced-motion:reduce){.territory-vip-rebuild .vip-aura-effect,.territory-vip-rebuild .vip-opening-chest{animation:none!important;transition:none!important;}}
