@@ -55,7 +55,10 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
       // A reduced-motion preference change may switch from the legacy inline
       // fallback to Web Animations; clear the stale inline transform first.
       svg.querySelectorAll<SVGGElement>('[data-rig-part]').forEach(joint => { joint.style.transform = ''; });
-      // Broken legacy MediaQueryList implementations can throw from matches.\n      let prefersReducedMotion = false;\n      try { prefersReducedMotion = reduced?.matches === true; } catch { /* Keep the confirmed pose visible. */ }\n      const stops = motionStops(motion, critical);
+      // Broken legacy MediaQueryList implementations can throw from matches.
+      let prefersReducedMotion = false;
+      try { prefersReducedMotion = reduced?.matches === true; } catch { /* Keep the confirmed pose visible. */ }
+      const stops = motionStops(motion, critical);
       animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).flatMap(joint => {
         // Web Animations may be missing on older embedded SVG implementations.
         const frames = jointFrames(joint.dataset.rigPart as Joint, stops);
