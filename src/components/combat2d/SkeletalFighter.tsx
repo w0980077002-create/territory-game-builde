@@ -22,7 +22,8 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
   const [finishedEvent, setFinishedEvent] = useState<StrikeEvent | null>(null);
   // A transient zero/non-finite speed must never schedule an infinite timeout 
   // or pass an invalid duration into SVG Web Animations. 
-  const safeSpeed = Number.isFinite(speed) && speed > 0 ? speed : 1;\n  const role = strike?.attacker === name ? 'attacker' : strike?.target === name ? 'target' : null;
+  const safeSpeed = Number.isFinite(speed) && speed > 0 ? speed : 1;
+  const role = strike?.attacker === name ? 'attacker' : strike?.target === name ? 'target' : null;
   // PvP HP snapshots can precede several queued visual hits. Finish those
   // confirmed events and wait for queue retirement before any terminal pose.
   useEffect(() => {
