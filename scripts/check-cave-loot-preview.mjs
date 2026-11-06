@@ -20,14 +20,15 @@ assert.deepEqual(at(6), { dark_equipment: true, socket_gem: true, set_equipment:
 assert.deepEqual(at(40), { dark_equipment: true, socket_gem: true, set_equipment: false });
 assert.deepEqual(at(41), { dark_equipment: true, socket_gem: true, set_equipment: true });
 assert.deepEqual(at(100), { dark_equipment: true, socket_gem: true, set_equipment: true });
-assert.deepEqual(at(-4), at(1));
-assert.deepEqual(at(Number.NaN), at(1));
+assert.deepEqual(at(0), { dark_equipment: false, socket_gem: false, set_equipment: false });
+assert.deepEqual(at(-4), at(0));
+assert.deepEqual(at(Number.NaN), at(0));
 
 // Reward preview is visible in the REAL cave, accessible, and never settles a fight.
 assert.match(ui, /data-testid="dark-cave-loot-preview"/);
 assert.match(ui, /data-testid="dark-cave-loot-milestones"/);
 assert.match(ui, /aria-expanded=\{lootPreviewOpen\}/);
-assert.match(ui, /caveLootPreview\(floorFocus\)/);
+assert.match(ui, /caveLootPreview\(progress\?\.completed_stage \?\? 0\)/);
 assert.match(ui, /Новые предметы пока не выдаются/);
 assert.match(ui, /session\.settlement\.reward\.gold/, 'Real victory gold must come from a server receipt');
 assert.match(ui, /session\.settlement\.reward\.xp/, 'Real victory XP must come from a server receipt');
