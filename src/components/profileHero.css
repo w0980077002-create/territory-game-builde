@@ -985,3 +985,51 @@
 @media (prefers-reduced-motion:reduce) {
   .territory-profile .hero-showcase__hero-art {animation:none;}
 }
+
+/* Actual browser screenshot acceptance: remove the stretched duplicated stats
+   plaque (the real computed values remain intact), and tighten oak typography. */
+@media (max-width:600px) {
+  .territory-profile .hero-showcase .hero-showcase__stats > .hero-showcase__plaque-title {
+    display:none;
+  }
+  .territory-profile .hero-showcase .hero-showcase__journey > .hero-showcase__plaque-title {
+    display:flex;
+    width:min(100%,272px);
+    min-height:42px;
+    height:auto;
+    margin:0 auto 8px;
+    padding:6px 13px;
+    font-size:clamp(16px,4.6vw,18px);
+    line-height:1.08;
+    background:var(--viking-plaque) center/100% 100% no-repeat;
+  }
+  .territory-profile .hero-showcase__banner {
+    border-color:#b9853f;
+    box-shadow:inset 0 1px #ffedbc9c,inset 0 -3px #1e0d09c9,
+               0 2px 0 #5a2a14,0 4px 7px #0c0506a8;
+  }
+  .territory-profile .hero-showcase__stage {
+    border-color:#c99045;
+    box-shadow:inset 0 0 0 2px #1d0b08df,
+               inset 0 -34px 40px #200c0896,
+               0 2px 0 #e5ae5e85,0 6px 11px #0b0405ac;
+  }
+  .territory-profile .hero-showcase__slot {
+    border-color:#d4a15c;
+    box-shadow:inset 0 1px #ffe3a38c,
+               inset 0 0 0 1px #2c130c,
+               0 2px 0 #3a190e,0 3px 5px #080204c6;
+  }
+  .territory-profile .hero-showcase__equipment-link {
+    border-color:#e2af5d;
+    background:linear-gradient(#5a9a32,#326921 44%,#153c17 94%);
+    box-shadow:inset 0 2px #e7ffc37d,inset 0 -3px #153511,
+               0 3px 0 #32180a,0 5px 10px #0b0508a3;
+    text-shadow:0 1px 2px #11310b;
+  }
+  .territory-profile .hero-showcase__vip {
+    border-color:#c39354;
+    box-shadow:inset 0 1px #ffe2a291,inset 0 -2px #30160d,
+               0 3px 7px #0a0507b9;
+  }
+}
