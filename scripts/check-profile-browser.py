@@ -28,7 +28,8 @@ with sync_playwright() as p:
             assert banner.count() == 1 and banner.is_visible(), (width,lang,'Carved Hero sign missing')
             assert ('Герой' if lang == 'ru' else 'Hero') in banner.inner_text()
             stage = hero.locator('.hero-showcase__stage')
-            assert stage.bounding_box()['height'] >= 310, (width,lang,'Hero figure stage too small')
+            # The CSS minimum is exactly 310px; layout floats can report 309.99998.
+            assert stage.bounding_box()['height'] >= 309.5, (width,lang,'Hero figure stage too small')
             assert hero.locator('.hero-showcase__progress').count() == 1
             assert hero.locator('.hero-showcase__stats').bounding_box()['y'] > stage.bounding_box()['y'], (width,lang,'Stats should follow full hero')
             assert hero.locator('.hero-showcase__slot').count() == 7
