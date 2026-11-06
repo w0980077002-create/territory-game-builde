@@ -20,14 +20,14 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
   const svgRef = useRef<SVGSVGElement>(null);
   const terminalRef = useRef<'death' | 'victory' | null>(null);
   const [finishedEvent, setFinishedEvent] = useState<StrikeEvent | null>(null);
-  const role = strike?.attacker === name ? 'attacker' : strike?.target === name ? 'target' : null;
+  // A transient zero/non-finite speed must never schedule an infinite timeout\n  // or pass an invalid duration into SVG Web Animations.\n  const safeSpeed = Number.isFinite(speed) && speed > 0 ? speed : 1;\n  const role = strike?.attacker === name ? 'attacker' : strike?.target === name ? 'target' : null;
   // PvP HP snapshots can precede several queued visual hits. Finish those
   // confirmed events and wait for queue retirement before any terminal pose.
   useEffect(() => {
     if (!role || !strike) { setFinishedEvent(null); return; }
-    const timer = window.setTimeout(() => setFinishedEvent(strike), ACTION_MS / speed);
+    const timer = window.setTimeout(() => setFinishedEvent(strike), ACTION_MS / safeSpeed);
     return () => window.clearTimeout(timer);
-  }, [role, strike, speed]);
+  }, [role, strike, safeSpeed]);
   const active = role && strike !== finishedEvent;
   const swing = strike ? Math.abs(strike.key) % 3 : 0;
   const heldTerminal = !alive && terminalRef.current === 'death' ? 'death' : alive && won && terminalRef.current === 'victory' ? 'victory' : null;
@@ -79,7 +79,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
           }
           // Retain readable final outcome poses without large movement in reduced mode.
           const selected = prefersReducedMotion ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
-          const animation = joint.animate(selected, { duration: prefersReducedMotion ? 1 : ACTION_MS / speed, fill: 'forwards' });
+          const animation = joint.animate(selected, { duration: prefersReducedMotion ? 1 : ACTION_MS / safeSpeed, fill: 'forwards' });
           // Some partial Web Animations polyfills return no Animation object.
           // Preserve the confirmed contact pose rather than losing the hit.
           if (!animation || typeof animation.cancel !== 'function') {
@@ -123,7 +123,7 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
       animations.forEach(a => { try { a.cancel(); } catch { /* Legacy SVG animation teardown may throw. */ } });
       svg.querySelectorAll<SVGGElement>('[data-rig-part]').forEach(joint => { joint.style.transform = ''; });
     };
-  }, [motion, animationEvent, speed, critical, rig.id]);
+  }, [motion, animationEvent, safeSpeed, critical, rig.id]);
   return <svg ref={svgRef} viewBox="0 0 512 512" preserveAspectRatio="xMidYMax meet" role="img" aria-label={name}
     data-rig={rig.id} data-motion={motion} data-critical={strike?.tone === 'crit' && active ? 'true' : undefined}
     className={`skeletal-fighter ${className}`} onErrorCapture={onAssetError}>
