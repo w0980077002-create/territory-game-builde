@@ -55,13 +55,13 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
       // A reduced-motion preference change may switch from the legacy inline
       // fallback to Web Animations; clear the stale inline transform first.
       svg.querySelectorAll<SVGGElement>('[data-rig-part]').forEach(joint => { joint.style.transform = ''; });
-      const stops = motionStops(motion, critical);
+      // Broken legacy MediaQueryList implementations can throw from matches.\n      let prefersReducedMotion = false;\n      try { prefersReducedMotion = reduced?.matches === true; } catch { /* Keep the confirmed pose visible. */ }\n      const stops = motionStops(motion, critical);
       animations = Array.from(svg.querySelectorAll<SVGGElement>('[data-rig-part]')).flatMap(joint => {
         // Web Animations may be missing on older embedded SVG implementations.
         const frames = jointFrames(joint.dataset.rigPart as Joint, stops);
         // Resolve one consistent visible pose for both unsupported and throwing
         // SVG Web Animations implementations.
-        const visibleFrame = reduced?.matches || motion === 'death' || motion === 'victory'
+        const visibleFrame = prefersReducedMotion || motion === 'death' || motion === 'victory'
           ? frames[frames.length - 1]
           : frames.find((frame, index) => index > 0 && typeof frame.offset === 'number' && frame.offset >= CONTACT_MS / ACTION_MS) ?? frames[frames.length - 1];
         const showLegacyPose = () => { joint.style.transform = String(visibleFrame.transform ?? ''); };
@@ -77,11 +77,11 @@ export function SkeletalFighter({ rig, name, dir, alive, won = false, strike, sp
           return [];
         }
         // Retain readable final outcome poses without large movement in reduced mode.
-        const selected = reduced?.matches ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
+        const selected = prefersReducedMotion ? [frames[frames.length - 1], frames[frames.length - 1]] : frames;
         // Some embedded SVG engines expose animate() but throw for SVG groups.
         // Fall back per joint so one unsupported part cannot freeze the whole rig.
         try {
-          return [joint.animate(selected, { duration: reduced?.matches ? 1 : ACTION_MS / speed, fill: 'forwards' })];
+          return [joint.animate(selected, { duration: prefersReducedMotion ? 1 : ACTION_MS / speed, fill: 'forwards' })];
         } catch {
           showLegacyPose();
           return [];
