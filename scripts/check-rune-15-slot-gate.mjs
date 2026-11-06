@@ -41,9 +41,12 @@ const testModule = new Module('rune-gate-test');
 testModule.paths = Module._nodeModulePaths(process.cwd());
 testModule.require = require;
 testModule._compile(ui.outputFiles[0].text, 'rune-gate-test.cjs');
-for (const [language, expected] of [['ru', 'Руны временно недоступны'], ['en', 'Runes are temporarily unavailable']]) {
+for (const [language, expected] of [['ru', '15 слотов'], ['en', '15 slots']]) {
   const html = renderToStaticMarkup(React.createElement(testModule.exports.ServerRuneBook, { language }));
-  assert(html.includes(expected), `${language} must explain the gate`);
-  assert(!html.includes('<button'), `${language} must not offer an editable choice`);
+  assert(html.includes(expected), `${language} must show the 15-slot offline visual prototype`);
+  assert.equal((html.match(/data-testid="rune-preview-slot-/g) ?? []).length, 15,
+    `${language} must show exactly 15 preview buttons`);
+  assert(!html.includes('rune-daily-claim') && !html.includes('rune-save-build'),
+    `${language} must not expose server award or save controls in visual mode`);
 }
-console.log('Rune gate OK: 15 visual candidates cannot fit the current five-skill loadout; RU/EN stay unavailable.');
+console.log('Rune gate OK: visual playtest offers 15 slots without server writes; production loadout remains separate.');

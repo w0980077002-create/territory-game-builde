@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Crown, Flame, Heart, LockKeyhole, Shield, Snowflake, Sparkles, Swords, Target, Wind, X, Zap } from 'lucide-react';
 import './serverRuneBook.css';
+import { RuneWorkshop } from './RuneWorkshop';
 import { supabase } from '@/game/supabase';
 import catalog from '@/game/config/territory-independent-rune-slots-v1.json';
 import skillCatalog from '@/game/config/territory-rune-skill-book-v1.json';
@@ -66,6 +67,7 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   const alive = useRef(false);
   const saving = useRef(false);
   const pending = useRef<PendingSave | null>(null);
+  const [visualPreview, setVisualPreview] = useState(true);
   const [status, setStatus] = useState<RuneServerStatus | null>(null);
   const [draft, setDraft] = useState<RuneSlot[]>([]);
   const [notice, setNotice] = useState('');
@@ -94,7 +96,7 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
 
   useEffect(() => {
     alive.current = true;
-    if (!FIFTEEN_SLOT_CONTRACT_READY) return () => { alive.current = false; };
+    if (!FIFTEEN_SLOT_CONTRACT_READY || visualPreview) return () => { alive.current = false; };
     let cancelled = false;
     void (async () => {
       try {
@@ -116,7 +118,7 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
       }
     })();
     return () => { cancelled = true; alive.current = false; };
-  }, [refresh]);
+  }, [refresh, visualPreview]);
 
   // The daily grant refreshes server ownership and the saved loadout. Never
   // discard an unsaved 15-slot draft as a side effect of collecting it.
@@ -227,11 +229,14 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
   };
 
 
-  if (!FIFTEEN_SLOT_CONTRACT_READY) {
-    return <p role="status" className="rounded-lg border border-amber-500/40 bg-slate-900/90 p-3 text-xs text-amber-100">
-      {en ? 'Runes are temporarily unavailable. Your saved build remains intact.'
-        : 'Руны временно недоступны. Твоя сохранённая сборка не изменена.'}
-    </p>;
+  if (visualPreview || !FIFTEEN_SLOT_CONTRACT_READY) {
+    return <>
+      <RuneWorkshop language={language} />
+      {FIFTEEN_SLOT_CONTRACT_READY && <button type="button" className="rune-workshop__mode-button"
+        onClick={() => setVisualPreview(false)}>
+        {en ? 'Open existing combat runes' : 'Открыть действующие боевые руны'}
+      </button>}
+    </>;
   }
   if (!status) return <div role="status" className="rounded-xl border border-amber-500/40 bg-slate-900 p-3 text-amber-100">
     <p>{notice || (en ? 'Checking server-owned runes…' : 'Проверяем руны на сервере…')}</p>
@@ -260,6 +265,10 @@ export function ServerRuneBook({ language }: { language: 'ru' | 'en' }) {
 
   return <section data-testid="territory-server-rune-book" className="territory-rune"
     aria-label={en ? 'Fifteen rune slots' : 'Пятнадцать слотов рун'}>
+    <button type="button" className="rune-workshop__mode-button"
+      onClick={() => setVisualPreview(true)}>
+      {en ? 'Try visual rune combinations' : 'Примерка рун — тестовый режим'}
+    </button>
     <header className="territory-rune__header">
       <div className="territory-rune__crystal" aria-hidden="true"><Sparkles size={27}/></div>
       <h2>{en ? 'Runes of Power' : 'Руны навыков'}</h2>

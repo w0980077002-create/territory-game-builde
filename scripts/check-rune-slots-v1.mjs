@@ -131,7 +131,7 @@ assert(runeUi.includes('data.dayUtc') && runeUi.includes('dailyReceipt?.dayUtc')
 assert(runeUi.includes('data-testid="rune-daily-receipt"'),'Daily awarded rune and level must remain visible after refreshing ownership');
 assert(runeUi.includes('disabled={claiming || saving.current || !!pending.current || claimedToday || changed}'),'Already claimed rune or unsaved draft must block daily claim');
 assert(runeUi.includes('hasUnsavedDraft()'),'Async daily claim must also guard unsaved drafts at invocation');
-assert(runeUi.includes('languageRef.current = language;') && runeUi.includes('}, [refresh]);'),
+assert(runeUi.includes('languageRef.current = language;') && runeUi.includes('}, [refresh, visualPreview]);'),
   'Changing language must not re-fetch the ledger and erase unsaved rune selections');
 
 console.log('Independent rune slots: 15 stable IDs, 45 options, trusted ownership, explicit legacy mapping, rank and revision checks PASS');
