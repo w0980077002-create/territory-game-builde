@@ -856,6 +856,9 @@ html.territory-desktop-webapp .home-side-stack .home-side {
   max-height: 22px;
   overflow: hidden;
   overflow-wrap: anywhere;
+  /* Break long single-word labels by syllable ("Инвен-тарь"), not mid-letter. */
+  -webkit-hyphens: auto;
+  hyphens: auto;
   white-space: normal;
   text-align: center;
   line-height: 1.08;
