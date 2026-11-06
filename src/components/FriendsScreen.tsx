@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/game/i18n';
 import type { AuthUser } from '@/game/auth';
 import {
-  CheckCircle2, ChevronDown, Copy, Crown, Gift, Gem, HelpCircle, Link2,
+  CheckCircle2, ChevronDown, Copy, Crown, Gift, Gem, HelpCircle,
   LoaderCircle, LockKeyhole, RefreshCw, Send, ShieldCheck, Sparkles, Trophy, UsersRound
 } from 'lucide-react';
 import { Currency } from './ui/Currency';

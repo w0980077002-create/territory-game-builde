@@ -443,7 +443,6 @@ function PurchaseSheet({ item, state, initialQty = 1, onBuy }: { item: ShopItem;
   const isStone = item.type === 'stone';
   const stonePerUnit = isStone ? (item.amount ?? 1) : 0;
   const stonesLeft = isStone ? stonesRemainingToday(state) : 0;
-  const stonesBought = isStone ? DAILY_STONE_LIMIT - stonesLeft : 0;
 
   const priceEach = item.priceGems ?? item.priceGold ?? 0;
   const balance = item.priceGems ? state.player.gems : state.player.gold;

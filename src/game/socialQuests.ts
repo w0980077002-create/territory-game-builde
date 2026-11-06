@@ -5,6 +5,18 @@ import { saveCloudSave, saveTokens, walletVersions, saveBlocked } from './cloud'
 import { validSaveToken } from './saveToken';
 import { validEconomySnapshot } from './economyInvariant';
 import { safeWalletVersion, walletMatchesVersion } from './walletVersion';
+import type { GameState } from './types';
+
+/** Untrusted Edge Function payload; every field is validated before use. */
+type SocialReceipt = {
+  success?: unknown; task?: unknown; gold?: unknown; stones?: unknown; updated_at?: unknown;
+  wallet_gold?: unknown; wallet_gems?: unknown; game_state: GameState;
+};
+type SocialResponse = {
+  error?: unknown;
+  claimed?: { chat?: unknown; news?: unknown };
+  receipt?: SocialReceipt;
+};
 
 export type SocialTask = 'chat' | 'news';
 export type SocialStatus = Record<SocialTask, boolean>;
@@ -20,7 +32,7 @@ export function openSocialLink(task: SocialTask) {
   else window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-async function call(body: Record<string, unknown>): Promise<Record<string, any>> {
+async function call(body: Record<string, unknown>): Promise<SocialResponse> {
   const { data, error } = await supabase.functions.invoke('social-quests', { body });
   if (error) {
     let code = 'service_unavailable';
@@ -36,7 +48,7 @@ async function call(body: Record<string, unknown>): Promise<Record<string, any>>
   }
   if (!data || typeof data !== 'object' || typeof data.error === 'string')
     throw new Error(typeof data?.error === 'string' ? data.error : 'service_unavailable');
-  return data as Record<string, any>;
+  return data as SocialResponse;
 }
 
 export async function socialStatus(): Promise<SocialStatus> {

@@ -8,7 +8,7 @@ export type DailyShareTask='monopoly'|'trials';
 export type ShareEntry={task:DailyShareTask;reward_kind:'tickets'|'stones';reward_amount:number;enabled:boolean;ready:boolean;next_at:string|null};
 export type ShareStatus={server_time:string;tasks:ShareEntry[];tickets:number|null};
 export type ShareReceipt={success:true;task:DailyShareTask;added:number;next_at:string;tickets?:number};
-const object=(x:unknown):x is Record<string,any>=>!!x&&typeof x==='object'&&!Array.isArray(x);
+const object=(x:unknown):x is Record<string,unknown>=>!!x&&typeof x==='object'&&!Array.isArray(x);
 export async function dailyShareStatus():Promise<ShareStatus>{
  const {data,error}=await supabase.rpc('territory_daily_share_v1',{p_action:'status'});
  if(error)throw new Error(error.message);
@@ -67,7 +67,7 @@ export async function claimDailyShare(task:DailyShareTask,userId:string):Promise
   typeof data.next_at!=='string'||!Number.isFinite(Date.parse(data.next_at)))throw new Error('daily_share_invalid_receipt');
  if(task==='trials'){
   useGame.set(acceptMonopolyClaimReceipt(userId,data));
- }else if(!Number.isSafeInteger(data.tickets)||data.tickets<0||data.tickets>20){
+ }else if(typeof data.tickets!=='number'||!Number.isSafeInteger(data.tickets)||data.tickets<0||data.tickets>20){
   throw new Error('daily_share_invalid_receipt');
  }
  return data as ShareReceipt;

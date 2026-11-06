@@ -51,21 +51,20 @@ export function createImmediateSaveController(
       ok = await saveLatest();
     } catch (error) {
       console.error('Cloud autosave failed:', error);
-    } finally {
-      busy = false;
-      if (stopped) return;
-      if (ok) {
-        savedRevision = sentRevision;
-        failed = false;
-        retryDelay = 2000;
-        if (revision === savedRevision) report('saved');
-        else void send();
-      } else {
-        // In particular, do NOT turn a CAS conflict into a blind overwrite.
-        failed = true;
-        report('error');
-        retryLater();
-      }
+    }
+    busy = false;
+    if (stopped) return;
+    if (ok) {
+      savedRevision = sentRevision;
+      failed = false;
+      retryDelay = 2000;
+      if (revision === savedRevision) report('saved');
+      else void send();
+    } else {
+      // In particular, do NOT turn a CAS conflict into a blind overwrite.
+      failed = true;
+      report('error');
+      retryLater();
     }
   }
 

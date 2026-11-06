@@ -105,7 +105,7 @@ export function addXp(state: GameState, amount: number): Partial<GameState> {
   let level = state.player.level;
   // Use the current progression curve, not a stale XP threshold in an old save.
   let xpToNext = xpForLevel(level);
-  let stats = { ...state.player.stats };
+  const stats = { ...state.player.stats };
   let maxEnergy = state.player.maxEnergy;
 
   while (level < HERO_MAX_LEVEL && xp >= xpToNext) {
@@ -256,7 +256,7 @@ export function equipItem(state: GameState, item: InventoryItem): GameState {
   const slot = eq.slot;
   const currentEquipped = state.player.equipped[slot];
 
-  let inventory = state.inventory.filter((i) => i.id !== item.id);
+  const inventory = state.inventory.filter((i) => i.id !== item.id);
 
   if (currentEquipped) {
     inventory.push({
@@ -318,7 +318,7 @@ export function claimQuest(state: GameState, questId: string): GameState {
       q.id === questId ? { ...q, claimed: true } : q,
     ),
     player: {
-      ...(xpResult as any).player || state.player,
+      ...(xpResult.player ?? state.player),
       gold: state.player.gold + quest.rewardGold,
       gems: state.player.gems + quest.rewardGems,
     },
