@@ -330,7 +330,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const floors = Array.from({ length: 100 }, (_, i) => getCampaignStage(i + 1));
   const floorFocus = selectedFloor ?? currentStage;
   const highlightedFloor = getCampaignStage(floorFocus);
-  const lootPreview = caveLootPreview(progress?.completed_stage ?? 0);
+  const lootPreview = caveLootPreview(progress?.unlocked_stage ?? 1);
   const mayChallenge = progress !== null && floorFocus === progress.unlocked_stage && progress.completed_stage < 100;
   const jumpToCurrent = () => {
     setSelectedFloor(null);
@@ -518,7 +518,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
         <div className="relative mt-1 grid shrink-0 grid-cols-4 gap-1" aria-label={en?'Cave sections':'Разделы пещеры'}>
           {([['floors',en?'Floors':'Этажи'],['loot',en?'Loot':'Добыча'],['enhance',en?'Enhance':'Усиление'],['fund',en?'Fund':'Фонд']] as const).map(([id,label]) => <button key={id} type="button" onClick={()=>setCaveTab(id)} aria-pressed={caveTab===id} className="min-h-11 rounded-lg border border-[#79558a] bg-[#241731] px-1 text-[11px] font-bold text-[#f2ddfa] aria-pressed:bg-[#704184]">{label}</button>)}
         </div>
-        {caveTab !== 'floors' && <CavePreview tab={caveTab} en={en} depth={progress.completed_stage}/>}
+        {caveTab !== 'floors' && <CavePreview tab={caveTab} en={en} depth={progress.unlocked_stage} clearedDepth={progress.completed_stage}/>}
         {caveTab === 'floors' && <>
         <div className="relative mt-1.5 flex shrink-0 items-center justify-between gap-2 px-1 py-0.5">
           <div className="flex min-w-0 items-center gap-1.5">
@@ -527,7 +527,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           </div>
           <button onClick={jumpToCurrent} type="button" className="shrink-0 rounded-md border border-[#8056a7]/60 bg-[#28183e] px-2.5 py-1 text-[11px] font-bold text-[#f5d7ff]">{en?'My floor':'Мой этаж'}</button>
         </div>
-        <div className="relative min-h-[170px] flex-1 overflow-hidden rounded-xl border border-[#51416c]/80 bg-[#080a17]/90 p-1.5 shadow-[inset_0_4px_18px_#050711]" data-testid="dark-cave-floor-list">
+        <div className="relative dark-cave-floor-wrap min-h-[170px] flex-1 overflow-hidden rounded-xl border border-[#51416c]/80 bg-[#080a17]/90 p-1.5 shadow-[inset_0_4px_18px_#050711]" data-testid="dark-cave-floor-list">
           <div ref={floorListRef} data-testid="dark-cave-floor-scroll" role="region" aria-label={en?'Scrollable cave floors':'Прокручиваемый список этажей'}
             tabIndex={0} className="dark-cave-floor-scroll relative h-full min-h-0 space-y-1 overflow-y-auto overscroll-contain pr-1 touch-pan-y">
             {floors.map(floor=>{
