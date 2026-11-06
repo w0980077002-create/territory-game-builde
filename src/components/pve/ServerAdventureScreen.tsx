@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, ChevronRight, Crown, Info, Loader2, Lock, Swords, Zap } from 'lucide-react';
+import { Check, ChevronRight, Crown, Info, Loader2, Lock, Shield, Swords, Zap } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
 import { useStore } from '@/game/store';
@@ -358,10 +358,14 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
 
   return <section className="flex h-full min-h-0 flex-1 flex-col gap-1.5 overflow-hidden" data-testid="territory-adventure-v1">
     <h2 className="sr-only">{en ? 'Dark Cave' : 'Тёмная пещера'}</h2>
-    {error && <p role="alert" className="rounded-xl border border-red-400/40 bg-red-950/50 p-3 text-xs text-red-100">{error}</p>}
-    {recoverable && <button disabled={busy} onClick={()=>void restore()} className="w-full rounded-xl border border-amber-500/60 bg-amber-900/30 p-3 font-semibold text-amber-100">
-      {en ? 'Restore fight' : 'Восстановить бой'}
-    </button>}
+    {(error || recoverable) && <div className="flex shrink-0 items-center gap-2 rounded-lg border border-[#92524a] bg-[#271319] px-2 py-1.5 text-[#ffdfd4]" role="alert" data-testid="dark-cave-alert">
+      <Info size={17} className="shrink-0 text-[#e5af81]" aria-hidden="true"/>
+      <span className="min-w-0 flex-1 text-[11px] leading-snug">{error || (en?'Reconnect to your fight.':'Подключись к бою повторно.')}</span>
+      {recoverable && <button type="button" disabled={busy} onClick={()=>void restore()}
+        className="min-h-9 shrink-0 rounded-md border border-[#ac7b4a] bg-[#4d2c24] px-2 text-[11px] font-bold text-[#ffe5af] disabled:opacity-50">
+        {session ? (en?'Restore fight':'Восстановить бой') : (en?'Retry check':'Проверить снова')}
+      </button>}
+    </div>
     {busy && <p role="status" className="text-center text-amber-100 text-xs"><Loader2 className="w-4 h-4 animate-spin inline mr-2"/>{en?'Connecting to fight…':'Подключаем бой…'}</p>}
     {session ? <div ref={battleRef} data-testid="territory-adventure-battle" className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-amber-600/50 bg-gradient-to-b from-amber-950/70 to-slate-950 p-2 space-y-3 scroll-mt-3">
       <p className="text-center text-xs text-amber-200 font-bold">{en?'Dark Cave':'Тёмная пещера'} · {en?'Floor':'Этаж'} {session.state.input.stage} · {enemyName}</p>
@@ -512,7 +516,12 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           <img src={realmArt} alt={en?'Violet abyss beneath the mountains':'Фиолетовая бездна в глубине подземелья'} draggable={false}
             className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover object-center" data-testid="dark-cave-portal"/>
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#070511]/90 via-transparent to-[#070511]/10"/>
-          <button type="button" onClick={() => setUmbraOpen(true)} className="absolute inset-x-2 bottom-1 min-h-10 rounded-lg border border-[#b28a5c] bg-[#211326]/95 px-2 text-xs font-black text-[#ffe3ae]" data-testid="open-umbra">{en ? 'Additional Umbra Gear' : 'Дополнительное тёмное снаряжение'}</button>
+          <button type="button" onClick={() => setUmbraOpen(true)} aria-label={en?'Additional Dark Gear':'Дополнительное тёмное снаряжение'}
+            className="absolute bottom-2 right-2 z-10 inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#b28a5c]/90 bg-[#271825]/90 px-2.5 py-1 text-[11px] font-bold text-[#ffe3ae] shadow-[0_2px_8px_#000b] backdrop-blur-[3px]"
+            data-testid="open-umbra">
+            <Shield size={16} aria-hidden="true" className="shrink-0 text-[#eac992]"/>
+            <span>{en?'Dark Gear':'Тёмный комплект'}</span>
+          </button>
         </div>
         <div className="relative mt-1 grid shrink-0 grid-cols-4 gap-1" aria-label={en?'Cave sections':'Разделы пещеры'}>
           {([['floors',en?'Floors':'Этажи'],['loot',en?'Loot':'Добыча'],['enhance',en?'Enhance':'Усиление'],['fund',en?'Fund':'Фонд']] as const).map(([id,label]) => <button key={id} type="button" onClick={()=>setCaveTab(id)} aria-pressed={caveTab===id} className="min-h-11 rounded-lg border border-[#79558a] bg-[#241731] px-1 text-[11px] font-bold text-[#f2ddfa] aria-pressed:bg-[#704184]">{label}</button>)}
