@@ -1,6 +1,20 @@
 name: Halloween companion PostgreSQL 17 integration
 on:
+  # The 2026 event is over and rewards are delivered. Run only when code this
+  # suite exercises changes (or manually), not on every unrelated PR.
   pull_request:
+    paths:
+      - '.github/workflows/halloween-postgres.yml'
+      - 'scripts/check-halloween-*'
+      - 'supabase/migrations/**'
+      - 'supabase/staged/halloween*'
+      - 'supabase/functions/admin-api/**'
+      - 'supabase/config.toml'
+      - 'src/game/actions.ts'
+      - 'src/game/cloud.ts'
+      - 'src/game/engine.ts'
+      - 'src/game/supabase.ts'
+      - 'src/**/*alloween*'
   workflow_dispatch:
 permissions:
   contents: read
