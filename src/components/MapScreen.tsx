@@ -167,6 +167,7 @@ export function MapScreen({ onNavigate, onTrial, onCave, onCompanions, onRunes, 
     }
     const wakeup = window.setTimeout(() => setClock(Date.now()), Math.min(delay + 20, 2_147_483_647));
     return () => window.clearTimeout(wakeup);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reschedule only when the finish time changes, not on every gather object refresh
   }, [gather?.active?.finishes_at, serverOffset, selected]);
 
   useEffect(() => {

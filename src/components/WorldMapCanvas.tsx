@@ -394,6 +394,7 @@ export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegio
       viewport.removeEventListener('touchcancel', touchCancel);
       stopInertia();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- touch listeners are attached once; handlers read live refs
   }, []);
 
   useLayoutEffect(() => {

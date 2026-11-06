@@ -60,6 +60,7 @@ export function ArenaEconomyTab() {
 
   useEffect(() => {
     void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- request is a request counter, not a DOM ref; bumping it cancels stale responses
     return () => { request.current++; };
   }, [load]);
 

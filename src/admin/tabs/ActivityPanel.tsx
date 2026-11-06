@@ -52,6 +52,7 @@ export function ActivityPanel({ onOpen }: { onOpen: (playerId: string) => void }
     void load();
     const interval = setInterval(() => void load(), 30_000);
     return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- requestId is a request counter, not a DOM ref; bumping it cancels stale responses
       requestId.current++;
       clearInterval(interval);
     };

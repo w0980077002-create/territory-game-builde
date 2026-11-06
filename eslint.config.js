@@ -21,10 +21,9 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       // A leading underscore marks an intentionally unused, kept-for-API argument.
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
-      ],
+      // Dev-server hot reload hint only: files that also export helpers fall
+      // back to a full reload while developing. No effect on the built game.
+      'react-refresh/only-export-components': 'off',
     },
   }
 );

@@ -21,6 +21,8 @@ type Progress = { completed_stage: number; unlocked_stage: number; dark_stones: 
 type Settlement = { outcome: string; reward?: { gold: number; xp: number } };
 type Session = { session_id: string; revision: number; state: IdleCombatState; events?: IdleCombatEvent[]; settlement?: Settlement | null };
 type Props = { userId: string; onActiveChange?: (active: boolean) => void };
+// Reads and writes the live store; no component state, so one module-level object.
+const hooks = { getState: () => useGame.get(), applyState: (state: ReturnType<typeof useGame.get>) => useGame.set(state) };
 const sessionKey = (id: string) => 'territory_adventure_session_v1:' + id;
 const obj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
 
@@ -97,7 +99,6 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const [strikeQueue, setStrikeQueue] = useState<StrikeEvent[]>([]);
   const strike = strikeQueue[0] ?? null;
   const [battleLog, setBattleLog] = useState<string[]>([]);
-  const hooks = { getState: () => useGame.get(), applyState: (state: ReturnType<typeof useGame.get>) => useGame.set(state) };
 
   const install = useCallback((value: Session) => {
     if (!mounted.current) return;
@@ -343,6 +344,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
       }
     });
     return () => cancelAnimationFrame(frame);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- scroll only when the session or unlocked floor changes
   }, [session?.session_id, progress?.unlocked_stage]);
 
   return <section className="flex h-full min-h-0 flex-1 flex-col gap-1.5 overflow-hidden" data-testid="territory-adventure-v1">

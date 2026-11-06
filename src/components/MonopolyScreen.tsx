@@ -166,6 +166,7 @@ export function MonopolyScreen({ onBack }: { onBack: () => void }) {
       setClaimedMilestones((prev) => new Set(prev).add(nextMilestone));
       setRewardModal({ icon: '/gem-pack.webp', text: language === 'en' ? `Reward for ${nextMilestone} laps!` : `Награда за ${nextMilestone} кругов!` });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- a language switch must not reopen the same milestone reward
   }, [nextMilestone]);
 
   const rewardMultiplier = 1 + laps * 0.1;

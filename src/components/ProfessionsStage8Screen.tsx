@@ -48,6 +48,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
     }catch{setStatus(null);setError(language==='en'?'Verified crafting is unavailable. Check saved pending operations before attempting another.':'Нет связи с защищённым ремеслом. Сначала проверь сохранённую операцию — повторную пока не начинай.');}
     finally{setLoading(false);}
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- once-on-mount server status fetch
   useEffect(()=>{void refresh();},[]); // Intentional once-on-mount server status fetch.
 
   const currentProfession=status?.profession??null;

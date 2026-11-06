@@ -129,6 +129,7 @@ export function ServerPveFight({enemy,kind,encounterId,sessionId,onExit,onNext}:
     if(!receipt||receipt.state.status!=='fighting'||busy)return;
     const timer=window.setInterval(()=>tick(),1500);
     return()=>window.clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- restart the timer only when the receipt's identity or state changes
   },[busy,receipt?.session_id,receipt?.revision,receipt?.state.status,tick]);
   useEffect(()=>{
     if(!strike)return;

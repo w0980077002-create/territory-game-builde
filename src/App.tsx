@@ -288,6 +288,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   useEffect(() => {
     if (!loaded || screen !== 'quests') return;
     setSeenQuestKeys(rememberSeenQuests(user.id, game, socialClaims));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only quest fields matter; any other game change must not re-mark quests as seen
   }, [loaded, screen, user.id, game.quests, game.dailyResetDay, game.weeklyResetWeek, socialClaims]);
 
   useEffect(() => {
