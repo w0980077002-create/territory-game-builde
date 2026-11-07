@@ -9,8 +9,9 @@ import runeCatalog from '@/game/config/territory-independent-rune-slots-v1.json'
 import { parseRuneServerStatus, runeSlotCatalog } from '@/game/builds/runeSlotsV1';
 import { localPveRuneTotals, type PveRuneTotals } from '@/game/builds/runePveEffectsV1';
 import { ZONES, type Zone } from '@/game/arenaApi';
+import { PVE_STONE_COST } from '@/game/engine';
 import { beltContext, consumeBelt } from '@/game/belt';
-import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
+import { blessedGold, consumeBlessing, recordTrialWin, spendStones, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
 import { buildTrialGauntlet } from '@/game/trialGauntlet';
 import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextComboOpening, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
@@ -53,6 +54,7 @@ interface Props {
 
 interface Outcome {
   won: boolean;
+  reason?: 'out_of_stones';
   gold: number;
   xp: number;
   gems: number;
@@ -256,7 +258,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
       });
   }, [userId]);
 
-  const finish = useCallback((won: boolean) => {
+  const finish = useCallback((won: boolean, reason?: Outcome['reason']) => {
     if (done.current) return;
     done.current = true;
     // Telemetry is optional: an unavailable browser API must not abort the
@@ -268,7 +270,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         ? finishReferralFight(ticket, won, referralRounds.current).catch(() => false)
         : false);
     if (!won) {
-      setOutcome({ won: false, gold: 0, xp: 0, gems: 0, materials: 0 });
+      setOutcome({ won: false, reason, gold: 0, xp: 0, gems: 0, materials: 0 });
       return;
     }
     const s = useGame.get();
@@ -301,6 +303,19 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     setTacticalReport(null);
     setBusy(true);
     try {
+    // This is the only Trials currency debit: one stone for one submitted
+    // attack, even if the strike is blocked or dodged. Do not charge for
+    // selecting guard zones, drinking a potion or switching to the next enemy.
+    // roundFlight is acquired before reading the wallet, so Android double
+    // taps cannot consume two stones or resolve two rounds.
+    if (kind === 'trial') {
+      const paidStrike = spendStones(useGame.get(), PVE_STONE_COST);
+      if (!paidStrike) {
+        finish(false, 'out_of_stones');
+        return;
+      }
+      useGame.set(paidStrike);
+    }
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     // Telegram haptics are optional. A WebView SDK exception must never abort
     // an already paid battle before its first resolved round.
@@ -373,28 +388,35 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     setEnemyIntent(nextIntent.intent);
     setAdaptiveGuard(nextIntent.adapted);
     setGuardPhase(nextIntent.phase);
+    // Run out of stones before the guardian falls => lose the whole floor.
+    // A lethal strike on the FINAL boss remains a victory, even if it used
+    // the last stone. A lethal strike on an intermediate enemy is not enough.
+    const stonesExhausted = kind === 'trial' && useGame.get().battleStones < PVE_STONE_COST;
     if (res.enemy.hp <= 0) {
       if (kind === 'trial' && waveIndex + 1 < trialWaves.length) {
-        // One paid attempt and one floor reward; retain hero HP, spent belt
-        // consumables and applied buffs while advancing the opponent.
-        const nextWave = trialWaves[waveIndex + 1];
-        const nextFoe = enemySide(nextWave);
-        foeRef.current = nextFoe;
-        setFoe(nextFoe);
-        setWaveIndex(waveIndex + 1);
-        setEnemyIntent(randomZones());
-        setAdaptiveGuard(false);
-        setGuardPhase(1);
-        setRiposteReady(false);
-        setStaggerReady(false);
-        setMomentum({ lastZone: null, streak: 0 });
-        recentDistinctHeroAttacks.current = [];
-        setTacticalReport(null);
-        pushLog(language === 'en'
-          ? `Wave ${waveIndex + 2}/${trialWaves.length}: new enemy!`
-          : `Волна ${waveIndex + 2}/${trialWaves.length}: новый противник!`);
+        if (stonesExhausted) {
+          finish(false, 'out_of_stones');
+        } else {
+          const nextWave = trialWaves[waveIndex + 1];
+          const nextFoe = enemySide(nextWave);
+          foeRef.current = nextFoe;
+          setFoe(nextFoe);
+          setWaveIndex(waveIndex + 1);
+          setEnemyIntent(randomZones());
+          setAdaptiveGuard(false);
+          setGuardPhase(1);
+          setRiposteReady(false);
+          setStaggerReady(false);
+          setMomentum({ lastZone: null, streak: 0 });
+          recentDistinctHeroAttacks.current = [];
+          setTacticalReport(null);
+          pushLog(language === 'en'
+            ? `Wave ${waveIndex + 2}/${trialWaves.length}: new enemy!`
+            : `Волна ${waveIndex + 2}/${trialWaves.length}: новый противник!`);
+        }
       } else finish(true);
     } else if (res.hero.hp <= 0) finish(false);
+    else if (stonesExhausted) finish(false, 'out_of_stones');
     } finally {
       roundFlight.current = false;
       if (alive.current) setBusy(false);
@@ -606,57 +628,44 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         </div>
       )}
 
-      <div data-testid="pve-live-damage-totals" role="status" aria-live="off"
+      {kind !== 'trial' && <div data-testid="pve-live-damage-totals" role="status" aria-live="off"
         className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-lg border border-amber-300/25 bg-black/60 px-2 py-1.5 text-[11px] font-bold tabular-nums">
         <span className="text-emerald-200">{language === 'en' ? 'Damage dealt' : 'Нанесено'}: {battleTotals.dealt}</span>
         <span className="text-red-200">{language === 'en' ? 'Damage taken' : 'Получено'}: {battleTotals.taken}</span>
         {battleTotals.companion > 0 && <span className="text-sky-200">{language === 'en' ? 'Companion' : 'Спутник'}: {battleTotals.companion}</span>}
-      </div>
+      </div>}
 
-      {/* Keep earned tactical bonuses visible without covering the Trial arena. */}
-      {riposteReady && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
+      {/* Only Campaign has instructional combat cards. Trials are fully manual,
+           with no revealed enemy attack/guard or tactical prompts. */}
+      {kind !== 'trial' && riposteReady && !auto && !busy && enemy.isBoss && (
         <div data-testid="pve-riposte-ready" role="status" aria-live="polite"
-          className={kind === 'trial'
-            ? 'rounded-md border border-emerald-300/35 bg-[#17352b]/80 px-2 py-1 text-[10px] font-bold text-emerald-100'
-            : 'rounded-xl border border-emerald-300/55 bg-[#17352b]/95 px-3 py-2 text-xs font-bold text-emerald-100'}>
-          ⚔️ {kind === 'trial'
-            ? (language === 'en' ? 'Counter +20%' : 'Контрудар +20%')
-            : (language === 'en'
-              ? 'Perfect guard! Next strike +20%. Hit open legs to break one enemy guard for the following round, or choose another opening.'
-              : 'Идеальный блок! Следующий удар +20%. Попади в открытые ноги — сбей один блок врага на следующий раунд.')}
+          className="rounded-xl border border-emerald-300/55 bg-[#17352b]/95 px-3 py-2 text-xs font-bold text-emerald-100">
+          ⚔️ {language === 'en'
+            ? 'Perfect guard! Next strike +20%. Hit open legs to break one enemy guard for the following round, or choose another opening.'
+            : 'Идеальный блок! Следующий удар +20%. Попади в открытые ноги — сбей один блок врага на следующий раунд.'}
         </div>
       )}
 
-      {momentum.streak > 0 && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
+      {kind !== 'trial' && momentum.streak > 0 && !auto && !busy && enemy.isBoss && (
         <div data-testid="pve-tactical-momentum" role="status" aria-live="polite"
-          className={kind === 'trial'
-            ? 'rounded-md border border-amber-300/35 bg-[#382413]/80 px-2 py-1 text-[10px] font-bold text-amber-100'
-            : 'rounded-xl border border-amber-300/60 bg-[#382413]/95 px-3 py-2 text-xs font-bold text-amber-100'}>
+          className="rounded-xl border border-amber-300/60 bg-[#382413]/95 px-3 py-2 text-xs font-bold text-amber-100">
           <Sword className="mr-1 inline h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
-          {kind === 'trial'
-            ? (momentum.streak === 2
-              ? (language === 'en' ? 'Combo +15%' : 'Комбо +15%')
-              : (language === 'en' ? 'Combo 1/2' : 'Комбо 1/2'))
-            : momentum.streak === 2
-              ? (language === 'en'
-                ? 'Combo ready! Next landed strike +15% damage (enemy guards and boss damage cap still apply).'
-                : 'Комбо готово! Следующий успешный удар +15% урона (защита и лимит урона босса действуют).')
-              : (language === 'en'
-                ? 'Combo 1/2: hit a DIFFERENT open zone next round to charge a stronger strike.'
-                : 'Комбо 1/2: попади в ДРУГУЮ открытую зону, чтобы зарядить усиленный удар.')}
+          {momentum.streak === 2
+            ? (language === 'en'
+              ? 'Combo ready! Next landed strike +15% damage (enemy guards and boss damage cap still apply).'
+              : 'Комбо готово! Следующий успешный удар +15% урона (защита и лимит урона босса действуют).')
+            : (language === 'en'
+              ? 'Combo 1/2: hit a DIFFERENT open zone next round to charge a stronger strike.'
+              : 'Комбо 1/2: попади в ДРУГУЮ открытую зону, чтобы зарядить усиленный удар.')}
         </div>
       )}
 
-      {staggerReady && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
+      {kind !== 'trial' && staggerReady && !auto && !busy && enemy.isBoss && (
         <div data-testid="pve-staggered-guard" role="status" aria-live="polite"
-          className={kind === 'trial'
-            ? 'rounded-md border border-sky-300/35 bg-[#17333a]/80 px-2 py-1 text-[10px] font-bold text-sky-100'
-            : 'rounded-xl border border-sky-300/60 bg-[#17333a]/95 px-3 py-2 text-xs font-bold text-sky-100'}>
-          {kind === 'trial'
-            ? (language === 'en' ? '⚔️ Guard broken' : '⚔️ Щит сбит')
-            : (language === 'en'
-              ? '⚔️ Enemy staggered! Your leg counter broke one guard: only one zone is protected this round.'
-              : '⚔️ Враг пошатнулся! Контрудар по ногам сбил один блок: в этом раунде защищена только одна зона.')}
+          className="rounded-xl border border-sky-300/60 bg-[#17333a]/95 px-3 py-2 text-xs font-bold text-sky-100">
+          {language === 'en'
+            ? '⚔️ Enemy staggered! Your leg counter broke one guard: only one zone is protected this round.'
+            : '⚔️ Враг пошатнулся! Контрудар по ногам сбил один блок: в этом раунде защищена только одна зона.'}
         </div>
       )}
 
@@ -762,8 +771,9 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
           </div>
         </div>
 
-        {/* Live tactical controls replace the two oversized message panels. */}
-        {!auto && (guardedZone || showThreatTell) && (
+        {/* Only Campaign may reveal enemy guard and incoming strike.
+            Trials have no spoilers or one-tap tactical answers. */}
+        {kind !== 'trial' && !auto && (guardedZone || showThreatTell) && (
           <div data-testid="pve-compact-tactics" className="relative flex gap-1 px-2 pb-1">
             {guardedZone && (
               <div data-testid="pve-enemy-guard" className="min-w-0 flex-1">
@@ -796,24 +806,26 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
           </div>
         )}
 
-        {!auto && !busy && tacticalReport && (
-          <div data-testid="pve-round-reaction" className={kind === 'trial' ? 'mx-2 mb-1 rounded-md border border-sky-300/20 bg-black/50 px-2 py-1 text-[10px] text-sky-100' : 'relative mx-2 mb-1 rounded-lg border border-sky-300/35 bg-[#0d2631]/95 px-2.5 py-1.5 text-[11px] leading-4 text-sky-100'} role="status" aria-live="polite">
+        {kind !== 'trial' && !auto && !busy && tacticalReport && (
+          <div data-testid="pve-round-reaction" className="relative mx-2 mb-1 rounded-lg border border-sky-300/35 bg-[#0d2631]/95 px-2.5 py-1.5 text-[11px] leading-4 text-sky-100" role="status" aria-live="polite">
             <p className="mb-1 font-extrabold text-white" data-testid="pve-last-round-damage">
               {language === 'en' ? 'This round' : 'Этот раунд'}: +{tacticalReport.dealtDamage} {language === 'en' ? 'damage' : 'урона'} / −{tacticalReport.takenDamage} HP
             </p>
-            {kind !== 'trial' && tacticalReport.heroStrike === 'block' && <p>{language === 'en' ? 'Your strike met a shield — switch your attack zone next round.' : 'Враг отбил удар — в следующем раунде смени зону атаки.'}</p>}
-            {kind !== 'trial' && tacticalReport.heroStrike === 'dodge' && <p>{language === 'en' ? 'The enemy dodged. Try another opening.' : 'Враг уклонился. Ищи другую брешь.'}</p>}
-            {kind !== 'trial' && tacticalReport.heroStrike === 'crit' && <p>{language === 'en' ? 'Critical hit! Your attack broke through.' : 'Критический удар! Атака прошла.'}</p>}
-            {kind !== 'trial' && tacticalReport.heroStrike === 'hit' && <p>{language === 'en' ? 'Your attack landed. Keep watching the enemy guard.' : 'Попадание! Следи, какую зону прикрывает враг.'}</p>}
-            {kind !== 'trial' && tacticalReport.enemyStrike === 'block' && <p className="text-emerald-200">{language === 'en' ? 'Great block! You stopped the enemy strike.' : 'Отличный блок! Ты остановил удар врага.'}</p>}
-            {kind !== 'trial' && tacticalReport.enemyStrike === 'dodge' && <p className="text-emerald-200">{language === 'en' ? 'You dodged the enemy strike.' : 'Ты уклонился от удара врага.'}</p>}
-            {kind !== 'trial' && (tacticalReport.enemyStrike === 'hit' || tacticalReport.enemyStrike === 'crit') && <p className="text-amber-200">{language === 'en' ? `Enemy hit your ${enemyStrikeLabel} — reconsider your defense.` : `Враг попал в зону «${enemyStrikeLabel}» — пересмотри защиту.`}</p>}
+            {tacticalReport.heroStrike === 'block' && <p>{language === 'en' ? 'Your strike met a shield — switch your attack zone next round.' : 'Враг отбил удар — в следующем раунде смени зону атаки.'}</p>}
+            {tacticalReport.heroStrike === 'dodge' && <p>{language === 'en' ? 'The enemy dodged. Try another opening.' : 'Враг уклонился. Ищи другую брешь.'}</p>}
+            {tacticalReport.heroStrike === 'crit' && <p>{language === 'en' ? 'Critical hit! Your attack broke through.' : 'Критический удар! Атака прошла.'}</p>}
+            {tacticalReport.heroStrike === 'hit' && <p>{language === 'en' ? 'Your attack landed. Keep watching the enemy guard.' : 'Попадание! Следи, какую зону прикрывает враг.'}</p>}
+            {tacticalReport.enemyStrike === 'block' && <p className="text-emerald-200">{language === 'en' ? 'Great block! You stopped the enemy strike.' : 'Отличный блок! Ты остановил удар врага.'}</p>}
+            {tacticalReport.enemyStrike === 'dodge' && <p className="text-emerald-200">{language === 'en' ? 'You dodged the enemy strike.' : 'Ты уклонился от удара врага.'}</p>}
+            {(tacticalReport.enemyStrike === 'hit' || tacticalReport.enemyStrike === 'crit') && <p className="text-amber-200">{language === 'en' ? `Enemy hit your ${enemyStrikeLabel} — reconsider your defense.` : `Враг попал в зону «${enemyStrikeLabel}» — пересмотри защиту.`}</p>}
           </div>
         )}
 
         {!outcome && (
           <div className="relative px-2 pb-2">
-            <p className="min-h-4 mb-1 text-center text-[11px] leading-4 text-gray-200" role="status" aria-live="polite">{toast ?? hint}</p>
+            {kind === 'trial'
+              ? (toast && <p className="mb-1 text-center text-[11px] leading-4 text-amber-200" role="status" aria-live="polite">{toast}</p>)
+              : <p className="min-h-4 mb-1 text-center text-[11px] leading-4 text-gray-200" role="status" aria-live="polite">{toast ?? hint}</p>}
             <div className="flex items-center gap-1.5">
               {kind !== 'trial' && <button
                 type="button"
@@ -832,6 +844,9 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                 className={`flex-1 min-w-0 h-11 rounded-xl font-black tracking-[0.2em] text-base flex items-center justify-center gap-2 transition-all active:scale-[0.97] disabled:opacity-40 bg-gradient-to-b from-red-500 to-red-700 text-white border border-red-300/40 ${ready ? 'animate-strike-ready' : ''}`}
               >
                 {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sword className="w-5 h-5" />} {language === 'en' ? 'STRIKE' : 'УДАР'}
+                {kind === 'trial' && <span className="inline-flex items-center gap-1 text-xs font-bold tracking-normal" aria-label={language === 'en' ? 'Costs one battle stone' : 'Стоимость: один боевой камень'}>
+                  <Currency kind="stones" value="−1" size={16} />
+                </span>}
               </button>
               {kind !== 'trial' && <button
                 onClick={() => setSettings({ speed: speed === 1 ? 2 : 1 })}
@@ -857,11 +872,11 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         <GearStrip equipped={state.player.equipped} />
       </FoldSection>
 
-      <div className="rounded-xl border border-white/10 bg-black/30 p-2 max-h-32 overflow-y-auto scrollbar-hide">
+      {kind !== 'trial' && <div className="rounded-xl border border-white/10 bg-black/30 p-2 max-h-32 overflow-y-auto scrollbar-hide">
         {log.map((line, i) => (
           <p key={log.length - i} className={`text-[11px] leading-relaxed ${i === 0 ? 'text-gray-100' : 'text-gray-500'}`}>{line}</p>
         ))}
-      </div>
+      </div>}
     </div>
   );
 }
@@ -891,7 +906,11 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
             )}
           </div>
         ) : (
-          <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>
+          <p className="text-xs text-gray-300 mt-1.5">
+            {outcome.reason === 'out_of_stones'
+              ? (language === 'en' ? 'Battle stones are gone. The floor was lost; return with more stones.' : 'Боевые камни закончились. Этаж проигран — возвращайся с новыми камнями.')
+              : (language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.')}
+          </p>
         )}
         {outcome.won && <div className="mt-3 rounded-lg border border-amber-300/45 bg-[#251b16]/80 px-3 py-2 text-xs text-amber-100"
           data-testid="pve-victory-save-status" role="status" aria-live="polite">
