@@ -1,79 +1,98 @@
-name: TERRITORY approved agent dispatch
+name: TERRITORY free autonomous agents
 
-# Explicit owner approval only. Never run on arbitrary public issue creation.
+# No subscription, external API key, paid model provider, or production access.
+# An explicit issue created by the owner with the [AI:ROLE] prefix triggers the agent.
 on:
   issues:
-    types: [labeled]
+    types: [opened]
 
 permissions:
-  contents: read
-  issues: read
+  contents: write
+  pull-requests: write
+  issues: write
 
 concurrency:
-  group: territory-agent-issue-${{ github.event.issue.number }}
+  group: territory-free-agent-${{ github.event.issue.number }}
   cancel-in-progress: false
 
 jobs:
-  dispatch:
+  act:
     if: >-
-      github.event.label.name == 'agent:approved' &&
       github.actor == 'w0980077002-create' &&
-      github.event.issue.state == 'open'
+      github.event.issue.user.login == 'w0980077002-create' &&
+      startsWith(github.event.issue.title, '[AI:')
     runs-on: ubuntu-latest
-    env:
-      TERRITORY_AGENT_USER_TOKEN: ${{ secrets.TERRITORY_AGENT_USER_TOKEN }}
+    timeout-minutes: 40
     steps:
-      - name: Report that agent dispatch is not yet connected
-        if: env.TERRITORY_AGENT_USER_TOKEN == ''
-        run: echo "::notice::Agent dispatch is configured but inactive. Requires Copilot cloud agent enabled and a user-to-server GitHub token stored as TERRITORY_AGENT_USER_TOKEN."
-
-      - name: Assign only this explicitly approved issue to Copilot
-        if: env.TERRITORY_AGENT_USER_TOKEN != ''
-        uses: actions/github-script@v7
+      - name: Check out production code for isolated changes
+        uses: actions/checkout@v4
         with:
-          github-token: ${{ secrets.TERRITORY_AGENT_USER_TOKEN }}
-          script: |
-            const issue = context.payload.issue;
-            const { owner, repo } = context.repo;
-            // The issue and the label must originate from the project owner.
-            if (issue.user?.login !== 'w0980077002-create') {
-              core.notice('Skipped: issue was not created by the owner.');
-              return;
-            }
-            if (issue.assignees?.some(a => a.login === 'copilot-swe-agent[bot]')) {
-              core.notice('Already assigned to Copilot; not dispatching twice.');
-              return;
-            }
-            const roles = {
-              'agent:art': '.github/agents/art-director.agent.md',
-              'agent:animation': '.github/agents/combat-animator.agent.md',
-              'agent:gameplay': '.github/agents/gameplay-designer.agent.md',
-              'agent:economy': '.github/agents/economy-guardian.agent.md',
-              'agent:qa': '.github/agents/release-qa.agent.md'
-            };
-            const labels = (issue.labels || []).map(l => typeof l === 'string' ? l : l.name);
-            const roleLabels = labels.filter(l => Object.hasOwn(roles, l));
-            if (roleLabels.length !== 1) {
-              core.setFailed('Exactly one role label is required: ' + Object.keys(roles).join(', '));
-              return;
-            }
-            // No external content is executed, and no secrets are exposed to issues.
-            const instructions = [
-              'Implement the approved task in GitHub issue #' + issue.number + '.',
-              'Use specialist instructions in ' + roles[roleLabels[0]] + ' and AGENTS.md.',
-              'Work on an isolated branch and open a pull request. Never merge into main.',
-              'Never alter production Supabase, players, progress, VIP, wallets, payment settings, or secrets.',
-              'For visual game tasks, provide mobile 360px evidence; run relevant tests.',
-              'No false completion claims. Report in Russian what was actually tested.',
-              'Read-only agent roles must only review and report, not modify gameplay code.'
-            ].join('\n');
-            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/assignees', {
-              owner, repo, issue_number: issue.number,
-              assignees: ['copilot-swe-agent[bot]'],
-              agent_assignment: {
-                target_repo: owner + '/' + repo,
-                base_branch: 'main',
-                custom_instructions: instructions
-              }
-            });
-            core.notice('Assigned issue #' + issue.number + ' as ' + roleLabels[0]);
+          ref: main
+          persist-credentials: true
+
+      - name: Verify owner-issued request and strict target scope
+        id: task
+        run: python3 scripts/agents/free_issue_agent.py plan >> "$GITHUB_OUTPUT"
+
+      - name: Prepare project tools
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Start free local open-source code model
+        if: steps.task.outputs.role != 'QA'
+        run: |
+          docker run -d --name territory-agent-model --pull always -p 127.0.0.1:11434:11434 ollama/ollama:latest
+          docker exec territory-agent-model ollama pull qwen2.5-coder:3b
+
+      - name: Generate one small isolated code edit
+        if: steps.task.outputs.role != 'QA'
+        run: |
+          python3 scripts/agents/free_issue_agent.py edit
+          git diff --check
+          test "$(git diff --name-only | wc -l)" -eq 1
+          test "$(git diff --name-only)" = "${{ steps.task.outputs.target }}"
+
+      - name: Verify TypeScript
+        run: npm run typecheck
+
+      - name: Verify lint
+        run: npm run lint
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Open draft PR without changing live game
+        if: steps.task.outputs.role != 'QA'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NO: ${{ steps.task.outputs.issue }}
+          ROLE: ${{ steps.task.outputs.role }}
+          TARGET: ${{ steps.task.outputs.target }}
+        run: |
+          branch="agent/free-issue-$ISSUE_NO"
+          git switch -c "$branch"
+          git add -- "$TARGET"
+          git -c user.name="territory-free-agent[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "agent($ROLE): draft change for issue #$ISSUE_NO"
+          git push -u origin "$branch"
+          gh pr create --draft --base main --head "$branch" \
+            --title "AI $ROLE: safe draft for #$ISSUE_NO" \
+            --body "Generated by local Qwen2.5-Coder 3B via free public-repo GitHub Actions. Closes #$ISSUE_NO only after human acceptance. Typecheck, lint and build passed on the agent branch. **Not deployed, not visually accepted.** Confirm actual in-game result and mobile layout before merge."
+
+      - name: Confirm free QA report
+        if: steps.task.outputs.role == 'QA'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NO: ${{ steps.task.outputs.issue }}
+        run: gh issue comment "$ISSUE_NO" --body "✅ Free QA agent: npm ci, typecheck, lint and build passed on current main. No live-game changes."
+
+      - name: Report failure without applying any live changes
+        if: failure() && steps.task.outputs.issue != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NO: ${{ steps.task.outputs.issue }}
+        run: gh issue comment "$ISSUE_NO" --body "⚠️ Free agent could not safely finish this task. No automatic merge or production change was made. See the GitHub Actions run for the failing step."
