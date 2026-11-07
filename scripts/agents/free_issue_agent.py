@@ -64,9 +64,43 @@ def request_model(prompt):
     with urllib.request.urlopen(req, timeout=850) as response:
         generated = json.loads(response.read().decode())["response"]
     data = json.loads(generated)
-    if not isinstance(data, dict) or not isinstance(data.get("search"), str) or not isinstance(data.get("replace"), str):
-        raise ValueError("Model must produce JSON with string search and replace")
+    if not isinstance(data, dict):
+        raise ValueError("Model must produce one JSON object")
     return data
+
+
+def apply_css_property(original, patch):
+    """Change exactly one pre-existing safe CSS declaration; never accept free-form CSS code."""
+    selector = patch.get("selector")
+    prop = patch.get("property")
+    value = patch.get("value")
+    allowed = {
+        "background", "background-color", "color", "border-color",
+        "outline-color", "box-shadow", "text-shadow", "opacity", "gap",
+        "padding", "margin", "font-size", "line-height", "border-radius",
+        "transition-duration", "animation-duration"
+    }
+    if not all(isinstance(x, str) for x in (selector, prop, value)):
+        raise ValueError("CSS patch needs string selector, property and value")
+    selector, prop, value = selector.strip(), prop.strip().lower(), value.strip()
+    if not selector.startswith(".") or len(selector) > 100 or prop not in allowed:
+        raise ValueError("CSS selector/property not allowed")
+    if not value or len(value) > 380 or any(x in value for x in (";", "{", "}", "\n")):
+        raise ValueError("CSS value is too long or contains unsafe syntax")
+    if re.search(r"(url\s*\(|@import|expression\s*\(|javascript:|data:|!important)", value, re.I):
+        raise ValueError("CSS patch may not fetch remote assets or bypass safety")
+    blocks = list(re.finditer(re.escape(selector) + r"\s*\{([^{}]*)\}", original))
+    if len(blocks) != 1:
+        raise ValueError("CSS selector must have exactly one existing block")
+    block = blocks[0]
+    rule = re.compile(r"(^|;)(\s*" + re.escape(prop) + r"\s*:\s*)([^;]+)", re.I)
+    hits = list(rule.finditer(block.group(1)))
+    if len(hits) != 1:
+        raise ValueError("Property must exist exactly once in the CSS selector")
+    hit = hits[0]
+    start = block.start(1) + hit.start(3)
+    end = block.start(1) + hit.end(3)
+    return original[:start] + value + original[end:]
 
 
 def perform_edit(role, target_name, task):
@@ -80,27 +114,38 @@ def perform_edit(role, target_name, task):
     }[role]
     feedback = ""
     for attempt in range(2):
+        is_css = target_name.endswith(".css")
+        output_format = (
+            'Return ONLY {"selector":".existing-class","property":"background","value":"new CSS value"}. '
+            "Edit ONE existing CSS declaration, not an entire rule. "
+            "Use the exact class selector and property name visible in the source. "
+            "Only output the new PROPERTY VALUE, without a semicolon or curly braces. "
+            if is_css else
+            'Return ONLY {"search":"EXACT existing substring","replace":"new substring"}. '
+            "Select ONE short existing unique substring, preserving all unrelated text. "
+        )
         prompt = (
-            "You are a cautious TERRITORY code assistant. Return ONLY a JSON object "
-            'with two string keys: {"search":"EXACT old text", "replace":"new text"}. '
-            "Select ONE short unique existing substring (roughly 2-25 lines) and replace it; "
-            "do not rewrite or remove unrelated code. If no safe small edit is possible, "
-            'return {"search":"","replace":""}. '
-            "Your search MUST appear in source text exactly once, including whitespace. "
-            "Never change external files or any game economy, auth, save or server logic.\n"
-            f"ROLE: {role}\nSPECIALIST GUIDANCE: {style}\n"
-            f"OWNER TASK: {task}\nREPO RULES EXCERPT:\n{rules}\n"
-            f"FILE PATH: {target_name}\nCURRENT FILE (verbatim):\n{original}\n"
-            f"{feedback}"
+            "You are a cautious TERRITORY code assistant. "
+            + output_format
+            + "Never change external files or any game economy, auth, save or server logic.\n"
+            + f"ROLE: {role}\nSPECIALIST GUIDANCE: {style}\n"
+            + f"OWNER TASK: {task}\nREPO RULES EXCERPT:\n{rules}\n"
+            + f"FILE PATH: {target_name}\nCURRENT FILE (verbatim):\n{original}\n"
+            + f"{feedback}"
         )
         try:
             patch = request_model(prompt)
-            old, new = patch["search"], patch["replace"]
-            if len(old.strip()) < 12 or len(old) > 3500 or len(new) > 5000:
-                raise ValueError("Replacement is empty or exceeds one-edit safety bounds")
-            if original.count(old) != 1:
-                raise ValueError("Search span is not an exact, unique substring")
-            result = original.replace(old, new, 1)
+            if is_css:
+                result = apply_css_property(original, patch)
+            else:
+                old, new = patch["search"], patch["replace"]
+                if not isinstance(old, str) or not isinstance(new, str):
+                    raise ValueError("TSX patch must contain two strings")
+                if len(old.strip()) < 12 or len(old) > 3500 or len(new) > 5000:
+                    raise ValueError("Replacement is empty or exceeds one-edit safety bounds")
+                if original.count(old) != 1:
+                    raise ValueError("Search span is not an exact, unique substring")
+                result = original.replace(old, new, 1)
             plus = minus = 0
             for ln in difflib.unified_diff(original.splitlines(), result.splitlines()):
                 if ln.startswith("+") and not ln.startswith("+++"):
@@ -115,10 +160,10 @@ def perform_edit(role, target_name, task):
             print(f"Free {role} agent edited {target_name}, added {plus} / removed {minus} lines.")
             return
         except (ValueError, KeyError, json.JSONDecodeError) as error:
-            feedback = f"\nYOUR PREVIOUS PATCH WAS REJECTED: {error}. Copy the exact old substring and try one minimal edit.\n"
+            feedback = f"\nYOUR PREVIOUS PATCH WAS REJECTED: {error}. Follow the JSON schema precisely and choose one existing declaration only.\n"
             print(f"Attempt {attempt + 1} failed: {error}", file=sys.stderr)
             if attempt == 1:
-                raise ValueError("No safe exact-match patch generated; repository unchanged") from error
+                raise ValueError("No safe scoped patch generated; repository unchanged") from error
             time.sleep(1)
 
 
