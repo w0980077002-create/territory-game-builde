@@ -303,14 +303,17 @@ export function ClanScreen({ userId, notify, onNavigate }: Props) {
             <div id="clan-invites" className="rounded-2xl border border-sky-500/30 bg-sky-950/30 p-3">
               <h3 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-sky-200"><Gem className="w-4 h-4" /> {t('clanInvites')}</h3>
               {dir.my_invites.map((inv) => (
-                <div key={inv.id} className="mb-2 flex items-center gap-2 rounded-xl bg-black/30 p-2 last:mb-0">
+                <div key={inv.id} className="mb-2 flex flex-wrap items-center gap-2 rounded-xl bg-black/30 p-2 last:mb-0">
                   <Emblem emblem={inv.emblem} color1={inv.color1} color2={inv.color2} size={32} />
-                  <div className="flex-1 min-w-0">
+                  {/* Name gets its own line on phones; actions wrap below instead of squeezing it. */}
+                  <div className="min-w-0 flex-1 basis-[calc(100%-44px)]">
                     <p className="truncate text-sm font-bold text-white">{inv.name} <span className="text-amber-300">[{inv.tag}]</span></p>
                     <p className="text-[10px] text-gray-400">{inv.members} {t('clanMembersShort')}</p>
                   </div>
+                  <div className="ml-auto flex gap-2">
                   <button onClick={() => void simple(() => clanAcceptInvite(inv.clan_id), () => loadDirectory(''))} className="rounded-lg bg-emerald-500/20 border border-emerald-400/40 px-2.5 py-1.5 text-xs font-bold text-emerald-200">{t('clanAccept')}</button>
                   <button onClick={() => void simple(() => clanDeclineInvite(inv.clan_id), () => loadDirectory(''))} className="rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 text-xs font-bold text-gray-300">{t('clanDecline')}</button>
+                  </div>
                 </div>
               ))}
             </div>
