@@ -1,3 +1,4 @@
+import type { TrialChestReward } from './trialLoot';
 export interface PlayerStats {
   hp: number;
   maxHp: number;
@@ -196,6 +197,12 @@ export interface GameState {
   dailyReward: { streak: number; lastDay: string };
   mailClaimed: string[];
   trialLevel: number;
+  /** Permanent, non-transferable reputation for future bracelet slots. */
+  territoryCityReputation?: number;
+  /** Granted only once per completed floor, including after test floor resets. */
+  trialChestClaims?: number[];
+  /** The last committed Trial chest for reward/result UI. */
+  lastTrialChest?: TrialChestReward | null;
   appearance: string;
   dailyStonesBought: number;
   dailyStonesDate: string;
