@@ -169,7 +169,9 @@ export function hasAssembledTrialBlueprint(state: Pick<GameState, 'inventory'>, 
  */
 export function assembleTrialBlueprint(state: GameState, blueprint: TrialBlueprintId): GameState | null {
   const definition = TRIAL_BLUEPRINTS.find(x => x.id === blueprint);
-  if (!definition || hasAssembledTrialBlueprint(state, blueprint)) return null;
+  // Fragments are tradable hunt loot, but only the matching profession may
+  // assemble its working blueprint. Others keep or eventually sell the parts.
+  if (!definition || state.professions?.active !== definition.profession || hasAssembledTrialBlueprint(state, blueprint)) return null;
   if (![1, 2, 3, 4, 5, 6].every(part => ownedTrialFragmentCount(state, blueprint, part) >= 1)) return null;
   const spent = state.inventory
     .map(item => {
