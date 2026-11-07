@@ -760,7 +760,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                   className={`flex min-h-9 w-full items-center gap-1 rounded-lg border px-2 text-[10px] font-bold disabled:opacity-60 ${attack !== null && committedEnemyIntent.blocks.includes(attack) ? 'border-red-400/60 bg-red-950/55 text-red-100' : 'border-amber-400/40 bg-black/65 text-amber-100'}`}>
                   <Shield className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   <span className="min-w-0 flex-1 truncate">{language === 'en' ? 'Guard' : 'Щит'}: {committedEnemyIntent.blocks.map(id => compactZoneLabels[id]).join(' · ')}</span>
-                  {adaptiveGuard && <span data-testid="pve-adaptive-guard" className="text-amber-300" title={`Phase ${guardPhase}`}>↻</span>}
+                  {adaptiveGuard && <span data-testid="pve-adaptive-guard" className="text-amber-300" title={`Phase ${guardPhase}`}>{guardPhase === 3 ? "III" : "II"}</span>}
                   <span aria-hidden="true">↗</span>
                 </button>
               </div>
