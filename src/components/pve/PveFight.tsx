@@ -9,8 +9,9 @@ import runeCatalog from '@/game/config/territory-independent-rune-slots-v1.json'
 import { parseRuneServerStatus, runeSlotCatalog } from '@/game/builds/runeSlotsV1';
 import { localPveRuneTotals, type PveRuneTotals } from '@/game/builds/runePveEffectsV1';
 import { ZONES, type Zone } from '@/game/arenaApi';
+import { PVE_STONE_COST } from '@/game/engine';
 import { beltContext, consumeBelt } from '@/game/belt';
-import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
+import { blessedGold, consumeBlessing, recordTrialWin, spendStones, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
 import { buildTrialGauntlet } from '@/game/trialGauntlet';
 import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextComboOpening, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
@@ -53,6 +54,7 @@ interface Props {
 
 interface Outcome {
   won: boolean;
+  reason?: 'out_of_stones';
   gold: number;
   xp: number;
   gems: number;
@@ -256,7 +258,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
       });
   }, [userId]);
 
-  const finish = useCallback((won: boolean) => {
+  const finish = useCallback((won: boolean, reason?: Outcome['reason']) => {
     if (done.current) return;
     done.current = true;
     // Telemetry is optional: an unavailable browser API must not abort the
@@ -268,7 +270,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         ? finishReferralFight(ticket, won, referralRounds.current).catch(() => false)
         : false);
     if (!won) {
-      setOutcome({ won: false, gold: 0, xp: 0, gems: 0, materials: 0 });
+      setOutcome({ won: false, reason, gold: 0, xp: 0, gems: 0, materials: 0 });
       return;
     }
     const s = useGame.get();
@@ -301,6 +303,19 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     setTacticalReport(null);
     setBusy(true);
     try {
+    // This is the only Trials currency debit: one stone for one submitted
+    // attack, even if the strike is blocked or dodged. Do not charge for
+    // selecting guard zones, drinking a potion or switching to the next enemy.
+    // roundFlight is acquired before reading the wallet, so Android double
+    // taps cannot consume two stones or resolve two rounds.
+    if (kind === 'trial') {
+      const paidStrike = spendStones(useGame.get(), PVE_STONE_COST);
+      if (!paidStrike) {
+        finish(false, 'out_of_stones');
+        return;
+      }
+      useGame.set(paidStrike);
+    }
     referralRounds.current.push({ attack: atk, blocks: [...blk] });
     // Telegram haptics are optional. A WebView SDK exception must never abort
     // an already paid battle before its first resolved round.
@@ -373,28 +388,35 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     setEnemyIntent(nextIntent.intent);
     setAdaptiveGuard(nextIntent.adapted);
     setGuardPhase(nextIntent.phase);
+    // Run out of stones before the guardian falls => lose the whole floor.
+    // A lethal strike on the FINAL boss remains a victory, even if it used
+    // the last stone. A lethal strike on an intermediate enemy is not enough.
+    const stonesExhausted = kind === 'trial' && useGame.get().battleStones < PVE_STONE_COST;
     if (res.enemy.hp <= 0) {
       if (kind === 'trial' && waveIndex + 1 < trialWaves.length) {
-        // One paid attempt and one floor reward; retain hero HP, spent belt
-        // consumables and applied buffs while advancing the opponent.
-        const nextWave = trialWaves[waveIndex + 1];
-        const nextFoe = enemySide(nextWave);
-        foeRef.current = nextFoe;
-        setFoe(nextFoe);
-        setWaveIndex(waveIndex + 1);
-        setEnemyIntent(randomZones());
-        setAdaptiveGuard(false);
-        setGuardPhase(1);
-        setRiposteReady(false);
-        setStaggerReady(false);
-        setMomentum({ lastZone: null, streak: 0 });
-        recentDistinctHeroAttacks.current = [];
-        setTacticalReport(null);
-        pushLog(language === 'en'
-          ? `Wave ${waveIndex + 2}/${trialWaves.length}: new enemy!`
-          : `Волна ${waveIndex + 2}/${trialWaves.length}: новый противник!`);
+        if (stonesExhausted) {
+          finish(false, 'out_of_stones');
+        } else {
+          const nextWave = trialWaves[waveIndex + 1];
+          const nextFoe = enemySide(nextWave);
+          foeRef.current = nextFoe;
+          setFoe(nextFoe);
+          setWaveIndex(waveIndex + 1);
+          setEnemyIntent(randomZones());
+          setAdaptiveGuard(false);
+          setGuardPhase(1);
+          setRiposteReady(false);
+          setStaggerReady(false);
+          setMomentum({ lastZone: null, streak: 0 });
+          recentDistinctHeroAttacks.current = [];
+          setTacticalReport(null);
+          pushLog(language === 'en'
+            ? `Wave ${waveIndex + 2}/${trialWaves.length}: new enemy!`
+            : `Волна ${waveIndex + 2}/${trialWaves.length}: новый противник!`);
+        }
       } else finish(true);
     } else if (res.hero.hp <= 0) finish(false);
+    else if (stonesExhausted) finish(false, 'out_of_stones');
     } finally {
       roundFlight.current = false;
       if (alive.current) setBusy(false);
@@ -891,7 +913,11 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
             )}
           </div>
         ) : (
-          <p className="text-xs text-gray-300 mt-1.5">{language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.'}</p>
+          <p className="text-xs text-gray-300 mt-1.5">
+            {outcome.reason === 'out_of_stones'
+              ? (language === 'en' ? 'Battle stones are gone. The floor was lost; return with more stones.' : 'Боевые камни закончились. Этаж проигран — возвращайся с новыми камнями.')
+              : (language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.')}
+          </p>
         )}
         {outcome.won && <div className="mt-3 rounded-lg border border-amber-300/45 bg-[#251b16]/80 px-3 py-2 text-xs text-amber-100"
           data-testid="pve-victory-save-status" role="status" aria-live="polite">
