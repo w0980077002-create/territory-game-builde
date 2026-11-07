@@ -1,5 +1,5 @@
 /* Tiny opt-in cost explanation beneath real forge attempt price. */
-.forge-forecast-hint{margin-top:9px;border:1px solid #b58a50a8;border-radius:10px;overflow:hidden;background:linear-gradient(110deg,#283348,#332617)}
+.forge-forecast-hint{margin-top:9px;border:1px solid #b58a50a8;border-radius:10px;overflow:hidden;background:#332617}
 .forge-forecast-hint__toggle{display:flex;align-items:center;gap:7px;width:100%;min-height:37px;padding:7px 9px;text-align:left;font-size:11px;font-weight:850;color:#f9e3b0}
 .forge-forecast-hint__toggle>svg:first-child{color:#ffdd9e;flex-shrink:0}
 .forge-forecast-hint__toggle>svg:last-child{margin-left:auto;flex-shrink:0}
