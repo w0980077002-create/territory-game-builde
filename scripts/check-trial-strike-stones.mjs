@@ -16,6 +16,7 @@ vm.runInNewContext(pg.outputText, {
     if (name === './actions') return { grantRewards: () => {}, updateProgress: () => {} };
     if (name === './live') return { useLive: { get: () => ({ goldX2: false }) } };
     if (name === './weeklyQuests') return { calendarDayKey: () => 'today', previousCalendarDayKey: () => 'yesterday' };
+    if (name === './trialLoot') return { applyTrialChest: s => s, rollTrialChest: () => null, trialChestTier: () => null };
     throw Error('Unexpected import in progression.ts: ' + name);
   },
 });
