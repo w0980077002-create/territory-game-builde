@@ -90,14 +90,13 @@ def apply_css_property(original, patch):
     if re.search(r"(url\s*\(|@import|expression\s*\(|javascript:|data:|!important)", value, re.I):
         raise ValueError("CSS patch may not fetch remote assets or bypass safety")
     blocks = list(re.finditer(re.escape(selector) + r"\s*\{([^{}]*)\}", original))
-    if len(blocks) != 1:
-        raise ValueError("CSS selector must have exactly one existing block")
-    block = blocks[0]
+    if not blocks:
+        raise ValueError("CSS selector not present")
     rule = re.compile(r"(^|;)(\s*" + re.escape(prop) + r"\s*:\s*)([^;]+)", re.I)
-    hits = list(rule.finditer(block.group(1)))
-    if len(hits) != 1:
-        raise ValueError("Property must exist exactly once in the CSS selector")
-    hit = hits[0]
+    candidates = [(block, hit) for block in blocks for hit in rule.finditer(block.group(1))]
+    if len(candidates) != 1:
+        raise ValueError("Property must exist exactly once across responsive CSS rules")
+    block, hit = candidates[0]
     previous_value = hit.group(3).strip()
     # Preserve authored material depth: flat colors must not replace textured gradients.
     if prop == "background" and "gradient(" in previous_value and "gradient(" not in value:
