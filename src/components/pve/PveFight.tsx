@@ -613,35 +613,50 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         {battleTotals.companion > 0 && <span className="text-sky-200">{language === 'en' ? 'Companion' : 'Спутник'}: {battleTotals.companion}</span>}
       </div>
 
+      {/* Keep earned tactical bonuses visible without covering the Trial arena. */}
       {riposteReady && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
         <div data-testid="pve-riposte-ready" role="status" aria-live="polite"
-          className="rounded-xl border border-emerald-300/55 bg-[#17352b]/95 px-3 py-2 text-xs font-bold text-emerald-100">
-          ⚔️ {language === 'en'
-            ? 'Perfect guard! Next strike +20%. Hit open legs to break one enemy guard for the following round, or choose another opening.'
-            : 'Идеальный блок! Следующий удар +20%. Попади в открытые ноги — сбей один блок врага на следующий раунд.'}
+          className={kind === 'trial'
+            ? 'rounded-md border border-emerald-300/35 bg-[#17352b]/80 px-2 py-1 text-[10px] font-bold text-emerald-100'
+            : 'rounded-xl border border-emerald-300/55 bg-[#17352b]/95 px-3 py-2 text-xs font-bold text-emerald-100'}>
+          ⚔️ {kind === 'trial'
+            ? (language === 'en' ? 'Counter +20%' : 'Контрудар +20%')
+            : (language === 'en'
+              ? 'Perfect guard! Next strike +20%. Hit open legs to break one enemy guard for the following round, or choose another opening.'
+              : 'Идеальный блок! Следующий удар +20%. Попади в открытые ноги — сбей один блок врага на следующий раунд.')}
         </div>
       )}
 
       {momentum.streak > 0 && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
         <div data-testid="pve-tactical-momentum" role="status" aria-live="polite"
-          className="rounded-xl border border-amber-300/60 bg-[#382413]/95 px-3 py-2 text-xs font-bold text-amber-100">
-          <Sword className="mr-1 inline h-4 w-4 text-amber-300" aria-hidden="true" />
-          {momentum.streak === 2
-            ? (language === 'en'
-              ? 'Combo ready! Next landed strike +15% damage (enemy guards and boss damage cap still apply).'
-              : 'Комбо готово! Следующий успешный удар +15% урона (защита и лимит урона босса действуют).')
-            : (language === 'en'
-              ? 'Combo 1/2: hit a DIFFERENT open zone next round to charge a stronger strike.'
-              : 'Комбо 1/2: попади в ДРУГУЮ открытую зону, чтобы зарядить усиленный удар.')}
+          className={kind === 'trial'
+            ? 'rounded-md border border-amber-300/35 bg-[#382413]/80 px-2 py-1 text-[10px] font-bold text-amber-100'
+            : 'rounded-xl border border-amber-300/60 bg-[#382413]/95 px-3 py-2 text-xs font-bold text-amber-100'}>
+          <Sword className="mr-1 inline h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
+          {kind === 'trial'
+            ? (momentum.streak === 2
+              ? (language === 'en' ? 'Combo +15%' : 'Комбо +15%')
+              : (language === 'en' ? 'Combo 1/2' : 'Комбо 1/2'))
+            : momentum.streak === 2
+              ? (language === 'en'
+                ? 'Combo ready! Next landed strike +15% damage (enemy guards and boss damage cap still apply).'
+                : 'Комбо готово! Следующий успешный удар +15% урона (защита и лимит урона босса действуют).')
+              : (language === 'en'
+                ? 'Combo 1/2: hit a DIFFERENT open zone next round to charge a stronger strike.'
+                : 'Комбо 1/2: попади в ДРУГУЮ открытую зону, чтобы зарядить усиленный удар.')}
         </div>
       )}
 
       {staggerReady && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
         <div data-testid="pve-staggered-guard" role="status" aria-live="polite"
-          className="rounded-xl border border-sky-300/60 bg-[#17333a]/95 px-3 py-2 text-xs font-bold text-sky-100">
-          {language === 'en'
-            ? '⚔️ Enemy staggered! Your leg counter broke one guard: only one zone is protected this round.'
-            : '⚔️ Враг пошатнулся! Контрудар по ногам сбил один блок: в этом раунде защищена только одна зона.'}
+          className={kind === 'trial'
+            ? 'rounded-md border border-sky-300/35 bg-[#17333a]/80 px-2 py-1 text-[10px] font-bold text-sky-100'
+            : 'rounded-xl border border-sky-300/60 bg-[#17333a]/95 px-3 py-2 text-xs font-bold text-sky-100'}>
+          {kind === 'trial'
+            ? (language === 'en' ? '⚔️ Guard broken' : '⚔️ Щит сбит')
+            : (language === 'en'
+              ? '⚔️ Enemy staggered! Your leg counter broke one guard: only one zone is protected this round.'
+              : '⚔️ Враг пошатнулся! Контрудар по ногам сбил один блок: в этом раунде защищена только одна зона.')}
         </div>
       )}
 
