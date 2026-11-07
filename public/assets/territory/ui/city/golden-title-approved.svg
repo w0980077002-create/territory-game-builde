@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1130" height="338" viewBox="0 0 1130 338" role="img" aria-labelledby="title desc">
+<title id="title">TERRITORY</title><desc id="desc">Королевская золотая надпись на резной дубовой вывеске.</desc>
+<defs>
+ <linearGradient id="oak" x1="0" y1="0" x2=".05" y2="1"><stop stop-color="#75401e"/><stop offset=".18" stop-color="#3e1b0b"/><stop offset=".48" stop-color="#51280f"/><stop offset=".73" stop-color="#351408"/><stop offset="1" stop-color="#170807"/></linearGradient>
+ <linearGradient id="edge" x1="0" y1="0" x2=".25" y2="1"><stop stop-color="#fff4bb"/><stop offset=".13" stop-color="#ecba62"/><stop offset=".36" stop-color="#b26b30"/><stop offset=".56" stop-color="#442111"/><stop offset=".79" stop-color="#eea64c"/><stop offset="1" stop-color="#6b301a"/></linearGradient>
+ <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fae3ae"/><stop offset=".17" stop-color="#b78b62"/><stop offset=".38" stop-color="#643e27"/><stop offset=".65" stop-color="#34201b"/><stop offset=".84" stop-color="#9b6844"/><stop offset="1" stop-color="#2e1b12"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff7bd"/><stop offset=".12" stop-color="#ffe69a"/><stop offset=".36" stop-color="#fdbb30"/><stop offset=".56" stop-color="#f1a223"/><stop offset=".72" stop-color="#9f4d17"/><stop offset=".90" stop-color="#ffd96e"/><stop offset="1" stop-color="#fff0a2"/></linearGradient>
+ <radialGradient id="rivet" cx=".27" cy=".2" r=".9"><stop stop-color="#fff1c4"/><stop offset=".38" stop-color="#ad8151"/><stop offset=".66" stop-color="#5a3d26"/><stop offset="1" stop-color="#191310"/></radialGradient>
+ <filter id="drop" x="-15%" y="-30%" width="130%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/><feOffset in="blur" dy="5" result="offset"/><feComponentTransfer in="offset" result="shadow"><feFuncA type="linear" slope=".83"/></feComponentTransfer><feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <filter id="letters" x="-10%" y="-25%" width="125%" height="160%"><feDropShadow dx="3" dy="6" stdDeviation="2" flood-color="#140503" flood-opacity=".88"/></filter>
+</defs>
+<g filter="url(#drop)">
+ <path d="M72 73L191 52H460L501 40H629L670 52H940L1058 73L1113 145L1104 238L1041 296L930 309H204L84 296L25 239L16 151Z" fill="url(#oak)" stroke="#1a0905" stroke-width="13"/>
+ <path d="M65 78H1064L1086 126L1079 246L1038 282H91L51 250L46 132Z" fill="none" stroke="url(#edge)" stroke-width="16"/>
+ <path d="M145 89H985M96 286H1033" stroke="#e6b66e" stroke-opacity=".8" stroke-width="7" fill="none"/>
+ <path d="M123 112H1008M125 262H1004" stroke="#140804" stroke-opacity=".9" stroke-width="3" fill="none"/>
+ <path d="M80 102q-17 -4 90 1t170 -1t198 1t220 -2t287 1" fill="none" stroke="#120502" stroke-opacity=".29" stroke-width="1"/>
+<path d="M123 113q0 -4 90 1t170 -1t198 1t220 -2t258 1" fill="none" stroke="#e2a060" stroke-opacity=".16" stroke-width="2"/>
+<path d="M166 124q17 -4 90 1t170 -1t198 1t220 -2t229 1" fill="none" stroke="#120502" stroke-opacity=".29" stroke-width="3"/>
+<path d="M89 135q-17 -4 90 1t170 -1t198 1t220 -2t200 1" fill="none" stroke="#e2a060" stroke-opacity=".16" stroke-width="1"/>
+<path d="M132 146q0 -4 90 1t170 -1t198 1t220 -2t261 1" fill="none" stroke="#120502" stroke-opacity=".29" stroke-width="2"/>
+<path d="M175 157q17 -4 90 1t170 -1t198 1t220 -2t232 1" fill="none" stroke="#e2a060" stroke-opacity=".16" stroke-width="3"/>
+<path d="M98 168q-17 -4 90 1t170 -1t198 1t220 -2t203 1" fill="none" stroke="#120502" stroke-opacity=".29" stroke-width="1"/>
+<path d="M141 179q0 -4 90 1t170 -1t198 1t220 -2t264 1" fill="none" stroke="#e2a060" stroke-opacity=".16" stroke-width="2"/>
+<path d="M184 190q17 -4 90 1t170 -1t198 1t220 -2t235 1" fill="none" stroke="#120502" stroke-opacity=".29" stroke-width="3"/>
+<path d="M107 201q-17 -4 90 1t170 -1t198 1t220 -2t206 1" fill="none" stroke="#e2a060" stroke-opacity=".16" stroke-width="1"/>
+<path d="M150 212q0 -4 90 1t170 -1t198 1t220 -2t267 1" fill="none" stroke="#120502" stroke-opacity=".29" stroke-width="2"/>
+<path d="M193 223q17 -4 90 1t170 -1t198 1t220 -2t238 1" fill="none" stroke="#e2a060" stroke-opacity=".16" stroke-width="3"/>
+<path d="M116 234q-17 -4 90 1t170 -1t198 1t220 -2t209 1" fill="none" stroke="#120502" stroke-opacity=".29" stroke-width="1"/>
+<path d="M159 245q0 -4 90 1t170 -1t198 1t220 -2t270 1" fill="none" stroke="#e2a060" stroke-opacity=".16" stroke-width="2"/>
+<path d="M82 256q17 -4 90 1t170 -1t198 1t220 -2t241 1" fill="none" stroke="#120502" stroke-opacity=".29" stroke-width="3"/>
+<path d="M125 267q-17 -4 90 1t170 -1t198 1t220 -2t212 1" fill="none" stroke="#e2a060" stroke-opacity=".16" stroke-width="1"/>
+ <path d="M68 72L161 52L193 70L136 111L123 172L82 153L107 101L51 114Z" fill="url(#steel)" stroke="#321b16" stroke-width="5"/>
+ <path d="M1062 72L969 52L937 70L994 111L1007 172L1048 153L1023 101L1079 114Z" fill="url(#steel)" stroke="#321b16" stroke-width="5"/>
+ <path d="M50 222L99 206L122 254L177 286L154 307L88 288L34 252Z" fill="url(#steel)" stroke="#321b16" stroke-width="5"/>
+ <path d="M1080 222L1031 206L1008 254L953 286L976 307L1042 288L1096 252Z" fill="url(#steel)" stroke="#321b16" stroke-width="5"/>
+ <path d="M80 156L53 191L97 203L128 173Z M1050 156L1077 191L1033 203L1002 173Z" fill="url(#edge)" stroke="#28110a" stroke-width="5"/>
+ <g transform="translate(85 95)"><circle r="11" fill="#170c0b" stroke="#a97744" stroke-width="3"/><circle r="7" fill="url(#rivet)"/><circle cx="-2" cy="-3" r="2" fill="#ffe6bd" opacity=".72"/></g>
+<g transform="translate(1044 95)"><circle r="11" fill="#170c0b" stroke="#a97744" stroke-width="3"/><circle r="7" fill="url(#rivet)"/><circle cx="-2" cy="-3" r="2" fill="#ffe6bd" opacity=".72"/></g>
+<g transform="translate(78 256)"><circle r="11" fill="#170c0b" stroke="#a97744" stroke-width="3"/><circle r="7" fill="url(#rivet)"/><circle cx="-2" cy="-3" r="2" fill="#ffe6bd" opacity=".72"/></g>
+<g transform="translate(1048 256)"><circle r="11" fill="#170c0b" stroke="#a97744" stroke-width="3"/><circle r="7" fill="url(#rivet)"/><circle cx="-2" cy="-3" r="2" fill="#ffe6bd" opacity=".72"/></g>
+<g transform="translate(125 72)"><circle r="11" fill="#170c0b" stroke="#a97744" stroke-width="3"/><circle r="7" fill="url(#rivet)"/><circle cx="-2" cy="-3" r="2" fill="#ffe6bd" opacity=".72"/></g>
+<g transform="translate(1005 72)"><circle r="11" fill="#170c0b" stroke="#a97744" stroke-width="3"/><circle r="7" fill="url(#rivet)"/><circle cx="-2" cy="-3" r="2" fill="#ffe6bd" opacity=".72"/></g>
+<g transform="translate(123 299)"><circle r="11" fill="#170c0b" stroke="#a97744" stroke-width="3"/><circle r="7" fill="url(#rivet)"/><circle cx="-2" cy="-3" r="2" fill="#ffe6bd" opacity=".72"/></g>
+<g transform="translate(1007 299)"><circle r="11" fill="#170c0b" stroke="#a97744" stroke-width="3"/><circle r="7" fill="url(#rivet)"/><circle cx="-2" cy="-3" r="2" fill="#ffe6bd" opacity=".72"/></g>
+ <path d="M504 71L480 22L530 49L561 3L598 48L649 22L625 72L610 90H521Z" fill="url(#gold)" stroke="#4b210d" stroke-width="7"/>
+ <path d="M494 71Q565 80 636 71L625 103Q563 114 505 103Z" fill="url(#edge)" stroke="#422110" stroke-width="4"/>
+ <path d="M525 96Q565 102 608 96" stroke="#ffed9a" stroke-width="5" fill="none"/>
+ <circle cx="564" cy="65" r="11" fill="#a30816" stroke="#efc46d" stroke-width="4"/>
+ <text x="565" y="232" text-anchor="middle" textLength="803" lengthAdjust="spacingAndGlyphs"
+   font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="129"
+   fill="#220a05" stroke="#160601" stroke-width="10" stroke-linejoin="round"
+   filter="url(#letters)">TERRITORY</text>
+ <text x="565" y="228" text-anchor="middle" textLength="803" lengthAdjust="spacingAndGlyphs"
+   font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="129"
+   fill="url(#gold)" stroke="#ffe1a0" stroke-width="1.8" paint-order="stroke fill">TERRITORY</text>
+ <path d="M523 300L561 286L606 300L563 307Z" fill="url(#edge)" stroke="#291009" stroke-width="3"/>
+</g>
+</svg>
