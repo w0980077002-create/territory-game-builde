@@ -98,6 +98,12 @@ def apply_css_property(original, patch):
     if len(hits) != 1:
         raise ValueError("Property must exist exactly once in the CSS selector")
     hit = hits[0]
+    previous_value = hit.group(3).strip()
+    # Preserve authored material depth: flat colors must not replace textured gradients.
+    if prop == "background" and "gradient(" in previous_value and "gradient(" not in value:
+        raise ValueError("Refusing to flatten an existing textured background")
+    if prop == "background" and "url(" in previous_value and "url(" not in value:
+        raise ValueError("Refusing to remove an existing image-backed texture")
     start = block.start(1) + hit.start(3)
     end = block.start(1) + hit.end(3)
     return original[:start] + value + original[end:]
@@ -108,10 +114,17 @@ def perform_edit(role, target_name, task):
     original = path.read_text(encoding="utf-8")
     rules = (ROOT / "AGENTS.md").read_text(encoding="utf-8")[:3100]
     style = {
-        "UI": "Prioritize compact 360px mobile layout, approved Shop/Arena dark-oak wood, warm gold and forged metal. Never add huge buttons or flat brown cards.",
+        "UI": "Prioritize compact 360px mobile layout, approved Shop/Arena natural textured dark-oak wood, warm gold and forged metal. Never add huge buttons, flat brown cards, mirrored wood patterns, or remove existing artwork.",
         "ANIMATION": "Improve one small CSS animation/effect. Maintain accessibility, reduced motion and mobile performance. Do not claim sprite animation from CSS alone.",
         "GAMEPLAY": "Improve ONLY a visual, non-reward, test-stage interface in this component. No currency, player state, inventory, game outcomes or API changes."
     }[role]
+    specialist = {
+        "UI": "art-director.agent.md",
+        "ANIMATION": "combat-animator.agent.md",
+        "GAMEPLAY": "gameplay-designer.agent.md",
+    }[role]
+    specialist_path = ROOT / ".github" / "agents" / specialist
+    specialist_guidance = specialist_path.read_text(encoding="utf-8")[:2300]
     feedback = ""
     for attempt in range(2):
         is_css = target_name.endswith(".css")
@@ -128,7 +141,7 @@ def perform_edit(role, target_name, task):
             "You are a cautious TERRITORY code assistant. "
             + output_format
             + "Never change external files or any game economy, auth, save or server logic.\n"
-            + f"ROLE: {role}\nSPECIALIST GUIDANCE: {style}\n"
+            + f"ROLE: {role}\nSPECIALIST GUIDANCE: {style}\nEXISTING SPECIALIST PROFILE:\n{specialist_guidance}\n"
             + f"OWNER TASK: {task}\nREPO RULES EXCERPT:\n{rules}\n"
             + f"FILE PATH: {target_name}\nCURRENT FILE (verbatim):\n{original}\n"
             + f"{feedback}"
