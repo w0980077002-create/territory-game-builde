@@ -13,6 +13,7 @@ import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
 import { buildTrialGauntlet } from '@/game/trialGauntlet';
+import { trialThreatCandidates, coverTrialThreat } from '@/game/trialTactics';
 import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextComboOpening, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
@@ -155,6 +156,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   const [attack, setAttack] = useState<Zone | null>(null);
   // A committed enemy guard stays fixed until the round is actually resolved.
   const [enemyIntent, setEnemyIntent] = useState(() => randomZones());
+  const [trialThreat, setTrialThreat] = useState<Zone[]>(() => trialThreatCandidates(enemyIntent.attack));
   const [adaptiveGuard, setAdaptiveGuard] = useState(false);
   const [guardPhase, setGuardPhase] = useState<1 | 2 | 3>(1);
   // Remember two distinct attacks actually resolved in this fight, even if
@@ -371,6 +373,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     recentDistinctHeroAttacks.current = attackHistory;
     const nextIntent = nextAdaptiveEnemyIntent(res.enemy, atk, kind === 'trial' || !!enemy.isBoss, undefined, attackHistory[1] ?? null);
     setEnemyIntent(nextIntent.intent);
+    if (kind === 'trial') setTrialThreat(trialThreatCandidates(nextIntent.intent.attack));
     setAdaptiveGuard(nextIntent.adapted);
     setGuardPhase(nextIntent.phase);
     if (res.enemy.hp <= 0) {
@@ -382,7 +385,9 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         foeRef.current = nextFoe;
         setFoe(nextFoe);
         setWaveIndex(waveIndex + 1);
-        setEnemyIntent(randomZones());
+        const nextWaveIntent = randomZones();
+        setEnemyIntent(nextWaveIntent);
+        setTrialThreat(trialThreatCandidates(nextWaveIntent.attack));
         setAdaptiveGuard(false);
         setGuardPhase(1);
         setRiposteReady(false);
@@ -783,12 +788,18 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
             {showThreatTell && (
               <div data-testid="pve-telegraphed-strike" className="min-w-0 flex-1">
                 <button type="button" data-testid="pve-cover-threat"
-                  disabled={!controls || blocks.includes(enemyIntent.attack)}
-                  aria-label={language === 'en' ? `Enemy strikes ${threatenedZoneLabel}. Cover attack` : `Враг бьёт в ${threatenedZoneLabel}. Прикрыть удар`}
-                  onClick={() => setBlocks(current => coverThreatZone(current, enemyIntent.attack))}
-                  className={`flex min-h-9 w-full items-center gap-1 rounded-lg border px-2 text-[10px] font-bold disabled:opacity-70 ${blocks.includes(enemyIntent.attack) ? 'border-emerald-400/40 bg-emerald-950/50 text-emerald-200' : 'border-red-400/40 bg-black/65 text-red-100'}`}>
+                  disabled={!controls || (kind !== 'trial' && blocks.includes(enemyIntent.attack))}
+                  aria-label={kind === 'trial'
+                    ? (language === 'en'
+                      ? `Possible enemy strikes: ${trialThreat.map(z => compactZoneLabels[z]).join(', ')}. Protect two zones`
+                      : `Враг может ударить: ${trialThreat.map(z => compactZoneLabels[z]).join(', ')}. Прикрой две зоны`)
+                    : (language === 'en' ? `Enemy strikes ${threatenedZoneLabel}. Cover attack` : `Враг бьёт в ${threatenedZoneLabel}. Прикрыть удар`)}
+                  onClick={() => kind === 'trial'
+                    ? setBlocks(current => coverTrialThreat(current, trialThreat))
+                    : setBlocks(current => coverThreatZone(current, enemyIntent.attack))}
+                  className={`flex min-h-9 w-full items-center gap-1 rounded-lg border px-2 text-[10px] font-bold disabled:opacity-70 ${kind !== 'trial' && blocks.includes(enemyIntent.attack) ? 'border-emerald-400/40 bg-emerald-950/50 text-emerald-200' : 'border-red-400/40 bg-black/65 text-red-100'}`}>
                   <Sword className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  <span className="min-w-0 flex-1 truncate">{language === 'en' ? 'Strike' : 'Удар'}: {compactZoneLabels[enemyIntent.attack]}</span>
+                  <span className="min-w-0 flex-1 truncate">{language === 'en' ? (kind === 'trial' ? 'Risk' : 'Strike') : (kind === 'trial' ? 'Угроза' : 'Удар')}: {kind === 'trial' ? trialThreat.map(id => compactZoneLabels[id]).join(' · ') : compactZoneLabels[enemyIntent.attack]}</span>
                   <Shield className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 </button>
               </div>
