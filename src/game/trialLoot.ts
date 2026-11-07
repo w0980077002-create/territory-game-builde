@@ -152,3 +152,36 @@ export function applyTrialChest(state: GameState, loot: TrialChestReward | null,
 export function ownedTrialFragmentCount(state: Pick<GameState, 'inventory'>, blueprint: TrialBlueprintId, part: number): number {
   return state.inventory.find(i => i.id === trialFragmentItemId(blueprint, part))?.qty ?? 0;
 }
+
+
+export function trialBlueprintItemId(blueprint: TrialBlueprintId): string {
+  return 'trial_blueprint_' + blueprint;
+}
+
+export function hasAssembledTrialBlueprint(state: Pick<GameState, 'inventory'>, blueprint: TrialBlueprintId): boolean {
+  return state.inventory.some(item => item.id === trialBlueprintItemId(blueprint) && item.qty > 0);
+}
+
+/**
+ * Only a full set of six DISTINCT numbered fragments can be assembled.
+ * This creates an owned, permanent recipe document, NOT finished equipment.
+ * Crafting must still respect the player's profession, mastery and ingredients.
+ */
+export function assembleTrialBlueprint(state: GameState, blueprint: TrialBlueprintId): GameState | null {
+  const definition = TRIAL_BLUEPRINTS.find(x => x.id === blueprint);
+  if (!definition || hasAssembledTrialBlueprint(state, blueprint)) return null;
+  if (![1, 2, 3, 4, 5, 6].every(part => ownedTrialFragmentCount(state, blueprint, part) >= 1)) return null;
+  const spent = state.inventory
+    .map(item => {
+      if (![1, 2, 3, 4, 5, 6].some(part => item.id === trialFragmentItemId(blueprint, part))) return item;
+      return { ...item, qty: item.qty - 1 };
+    }).filter(item => item.qty > 0);
+  const assembled: InventoryItem = {
+    id: trialBlueprintItemId(blueprint),
+    name: 'Чертёж · ' + definition.name,
+    icon: '📜',
+    type: 'material', rarity: 'legendary', qty: 1,
+    description: 'Постоянный чертёж мастера. Для создания готового предмета нужны профессия, мастерство и редкие материалы. Крафт по этому чертежу пока готовится.',
+  };
+  return { ...state, inventory: [...spent, assembled] };
+}
