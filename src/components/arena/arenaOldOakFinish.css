@@ -59,11 +59,9 @@
   overflow:hidden;
 }
 .arena-approved-entry .arena-approved-mode::after {
-  content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
-  background:
-    var(--arena-iron) top left / 23px 23px no-repeat,
-    var(--arena-iron) bottom right / 23px 23px no-repeat;
-  filter:drop-shadow(0 1px 1px #000a);
+  /* No stray metal L-shaped stickers over approved mode artwork / buttons. */
+  content:none;
+  display:none;
 }
 .arena-approved-entry .arena-approved-mode:focus-visible {outline:3px solid #fff4ad;outline-offset:1px;}
 .arena-approved-entry .arena-approved-mode-gold {border-color:#b58c4f;}

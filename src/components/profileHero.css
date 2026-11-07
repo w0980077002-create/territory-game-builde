@@ -540,7 +540,6 @@
 .territory-profile .hero-showcase {
   --hero-oak: var(--oak-heritage-planks, url('/assets/territory/ui/shop/shop-wood-planks.webp'));
   --hero-beams: url('/assets/territory/ui/shop/shop-wood-beams.webp');
-  --hero-iron: var(--oak-heritage-iron, url('/assets/territory/arena-ui/iron-corner.svg'));
   gap: 9px;
   padding: 10px 8px 12px;
   margin: 0 -2px;
@@ -595,16 +594,10 @@
 }
 .territory-profile .hero-showcase__banner::before,
 .territory-profile .hero-showcase__banner::after {
-  content:'';
-  position:absolute;
-  top:0;
-  width:29px;
-  height:29px;
-  background:var(--hero-iron) center / contain no-repeat;
-  pointer-events:none;
+  /* Hero title keeps its timber rim, without obsolete steel corner stickers. */
+  content:none;
+  display:none;
 }
-.territory-profile .hero-showcase__banner::before {left:0;}
-.territory-profile .hero-showcase__banner::after {right:0;transform:scaleX(-1);}
 .territory-profile .hero-showcase__stage {
   min-height:clamp(320px,93vw,410px);
   grid-template-columns:minmax(45px,58px) minmax(0,1fr) minmax(45px,58px);

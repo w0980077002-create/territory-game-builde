@@ -18,13 +18,15 @@ assert(app.includes('OAK_HERITAGE_SCREENS.has(screen)'), 'Skin scope must follow
 assert(entry.includes("import './components/ui/territoryOakUnified.css';"), 'Skin must be loaded in the real app');
 for (const path of [
   '/assets/territory/arena-ui/rope-wrap.svg',
-  '/assets/territory/arena-ui/iron-corner.svg',
+  '/assets/territory/ui/shop/shop-approved-product-border-v2.webp',
   '/assets/territory/ui/shop/shop-wood-planks.webp',
 ]) {
   assert(existsSync('public' + path), 'Real approved material missing: ' + path);
   assert(skin.includes(path), 'Real approved material not applied: ' + path);
 }
 assert(!skin.includes('old-oak-photographic.svg'), 'Mirrored oak grain must not return to standard menus');
+assert(!skin.includes('iron-corner.svg'), 'Legacy steel-corner stamps must not return to standard menus');
+assert(skin.includes('content:none;') && skin.includes('display:none;'), 'Legacy corner overlays must remain disabled');
 assert(skin.includes("--oak-heritage-grain: url('/assets/territory/ui/shop/shop-wood-planks.webp')"), 'Menus must use owner-approved Shop planks');
 assert(!/440px 220px|400px 200px|480px 240px/.test(skin), 'Do not stretch wood grain into artificial waves');
 assert(skin.includes('.territory-shell.territory-oak-heritage'),

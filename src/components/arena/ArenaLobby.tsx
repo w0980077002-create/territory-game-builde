@@ -120,7 +120,6 @@ export function ArenaLobby({ onJoined, onBack, onSeason, backDisabled = false }:
       style={{
         '--arena-wood-grain': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-wood-planks.webp")`,
         '--arena-old-oak-grain': `url("${import.meta.env.BASE_URL}assets/territory/arena-ui/old-oak-photographic.svg")`,
-        '--arena-iron': `url("${import.meta.env.BASE_URL}assets/territory/arena-ui/iron-corner.svg")`,
         '--arena-rope': `url("${import.meta.env.BASE_URL}assets/territory/arena-ui/rope-wrap.svg")`,
       } as CSSProperties}
     >
