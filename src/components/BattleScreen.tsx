@@ -16,6 +16,7 @@ import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
 import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
 import { Currency } from './ui/Currency';
+import { DailyShareCard } from '@/game/DailyShareCard';
 import { getAppearanceIcon } from '@/game/appearance';
 import { getEliteEncounterBrief } from '@/game/eliteEncounterBrief';
 import './battleJourney.css';
@@ -352,6 +353,12 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       ) : (
         <div className="space-y-3">
           <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={battleStartBlocked} t={t} language={language} heroAttack={heroAttack} heroDefense={heroDefense} />
+          <details className="rounded-xl border border-amber-500/20 bg-black/25 px-3 py-2">
+            <summary className="cursor-pointer text-xs font-semibold text-amber-200">
+              {language === 'en' ? 'Share TERRITORY · optional +2 gems' : 'Поделиться игрой · необязательно, +2 алмаза'}
+            </summary>
+            <div className="mt-2"><DailyShareCard task="trials" userId={userId}/></div>
+          </details>
         </div>
       )}
       </>}
