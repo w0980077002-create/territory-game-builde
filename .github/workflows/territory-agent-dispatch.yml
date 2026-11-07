@@ -47,6 +47,19 @@ jobs:
         if: steps.task.outputs.role != 'QA'
         run: |
           docker run -d --name territory-agent-model --pull always -p 127.0.0.1:11434:11434 ollama/ollama:latest
+          ready=0
+          for attempt in $(seq 1 45); do
+            if docker exec territory-agent-model ollama list >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            docker logs territory-agent-model
+            echo "::error::Ollama server did not become ready"
+            exit 1
+          fi
           docker exec territory-agent-model ollama pull qwen2.5-coder:3b
 
       - name: Generate one small isolated code edit
