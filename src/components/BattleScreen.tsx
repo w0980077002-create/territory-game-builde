@@ -10,6 +10,8 @@ import { saveBlocked } from '@/game/cloud';
 import { confirmPveVictorySave, pveVictorySaveBlocked, pveVictorySaveState, subscribePveVictorySave } from '@/game/pveVictorySaveFence';
 import { canJournalPveVictory, pendingPveVictoryJournal, retryPveVictoryJournal } from '@/game/pveVictoryRecovery';
 import { hapticImpact } from '@/game/telegram';
+import { buildTrialGauntlet } from '@/game/trialGauntlet';
+import { heroSide } from '@/game/pve';
 import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
 import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
@@ -224,7 +226,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         <Currency kind="stones" value={state.battleStones} size={20} className="text-sm text-amber-100" />
       </div>
 
-      <section data-testid="battle-preparation-journey" aria-label={language === 'en' ? 'Prepare your hero for classic battles' : 'Подготовка героя к обычным боям'}
+      {view === 'campaign' && <section data-testid="battle-preparation-journey" aria-label={language === 'en' ? 'Prepare your hero for classic battles' : 'Подготовка героя к обычным боям'}
         className="rounded-2xl border-2 border-amber-600/60 bg-gradient-to-r from-[#4d2e1b] via-[#30221b] to-[#171b24] p-2.5 shadow-[inset_0_1px_0_rgba(255,225,155,.22),0_5px_15px_rgba(0,0,0,.22)]">
         <div className="flex items-center gap-2.5">
           <img src={getAppearanceIcon(state.appearance)} alt="" loading="lazy" draggable={false}
@@ -254,7 +256,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
             <ScrollText size={16} aria-hidden="true"/>{language === 'en' ? 'Quests' : 'Задания'}<ChevronRight size={15} aria-hidden="true"/>
           </button>
         </div>
-      </section>
+      </section>}
 
       {error && !blockedBySave && (
         <div className="rounded-xl border border-red-400/30 bg-red-950/40 p-3 animate-fade-in">
@@ -350,8 +352,13 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         </>
       ) : (
         <div className="space-y-3">
-          <DailyShareCard task="trials" userId={userId}/>
           <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={battleStartBlocked} t={t} language={language} heroAttack={heroAttack} heroDefense={heroDefense} />
+          <details className="rounded-xl border border-amber-500/20 bg-black/25 px-3 py-2">
+            <summary className="cursor-pointer text-xs font-semibold text-amber-200">
+              {language === 'en' ? 'Share TERRITORY · optional +2 gems' : 'Поделиться игрой · необязательно, +2 алмаза'}
+            </summary>
+            <div className="mt-2"><DailyShareCard task="trials" userId={userId}/></div>
+          </details>
         </div>
       )}
       </>}
@@ -445,6 +452,7 @@ function StageRow({ enemy, index, status, gold, onFight, blocked, t, language, h
 
 function TrialPanel({ level, onFight, blocked, t, language, heroAttack, heroDefense }: { level: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en'; heroAttack: number; heroDefense: number }) {
   const enemy = generateTrial(level);
+  const firstWave = buildTrialGauntlet(enemy, heroSide(useGame.get()))[0];
   const upcoming = Array.from({ length: 5 }, (_, i) => level + i);
   return (
     <div className="space-y-3">
@@ -452,26 +460,36 @@ function TrialPanel({ level, onFight, blocked, t, language, heroAttack, heroDefe
         <img src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
         <div className="relative p-4 flex items-end gap-3 min-h-[180px]">
-          <img src={enemy.art} alt={enemy.name} className="w-28 h-36 object-contain object-bottom drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] animate-idle" />
+          <img src={firstWave.art} alt={firstWave.name} className="w-28 h-36 object-contain object-bottom drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] animate-idle" />
           <div className="flex-1 min-w-0 pb-1">
             <p className="text-[11px] uppercase tracking-[0.2em] text-sky-300">{t('trialTower')}</p>
             <h2 className="text-lg font-bold text-white">{t('floor')} {level}</h2>
-            <p className="text-xs text-gray-300">{localizeText(enemy.name, language)}</p>
+            <p className="text-xs text-gray-300">{localizeText(firstWave.name, language)}</p>
             <div className="flex items-center gap-2.5 text-[11px] text-gray-300 mt-1">
-              <span className="flex items-center gap-0.5"><Heart className="w-3 h-3 text-red-400" />{enemy.maxHp}</span>
-              <span className="flex items-center gap-0.5"><SwordIcon className="w-3 h-3 text-amber-400" />{enemy.attack}</span>
+              <span className="flex items-center gap-0.5"><Heart className="w-3 h-3 text-red-400" />{firstWave.maxHp}</span>
+              <span className="flex items-center gap-0.5"><SwordIcon className="w-3 h-3 text-amber-400" />{firstWave.attack}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <EliteTacticPreview enemy={enemy} heroAttack={heroAttack} heroDefense={heroDefense} language={language} />
       <button onClick={onFight} disabled={blocked} aria-describedby={blocked ? 'pending-cave-recovery' : undefined} className="w-full h-12 rounded-2xl bg-gradient-to-b from-sky-400 to-sky-700 border border-sky-200/30 text-white font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-40 disabled:cursor-not-allowed">
         <Swords className="w-5 h-5" /> {t('startTrial')}
       </button>
-
-      <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-        <p className="text-xs font-semibold text-gray-300 mb-2">{t('floorRewards')}</p>
+      {level <= 10 && <p className="text-center text-xs text-amber-200 font-semibold">
+        {language === 'en' ? 'Three waves · one stone · one reward' : 'Три волны врагов · один камень · одна награда'}
+      </p>}
+      <details className="rounded-xl border border-amber-500/30 bg-black/30 px-3 py-2">
+        <summary className="cursor-pointer text-sm font-bold text-amber-200">
+          {language === 'en' ? 'Tactical hints' : 'Советы перед боем'}
+        </summary>
+        <div className="mt-2">
+          <EliteTacticPreview enemy={firstWave} heroAttack={heroAttack} heroDefense={heroDefense} language={language} />
+        </div>
+      </details>
+      <details className="rounded-xl border border-white/10 bg-black/25 px-3 py-2">
+        <summary className="cursor-pointer text-sm font-bold text-gray-200">{t('floorRewards')}</summary>
+        <div className="mt-2">
         <div className="space-y-1.5">
           {upcoming.map((l) => {
             const r = trialReward(l);
@@ -487,7 +505,8 @@ function TrialPanel({ level, onFight, blocked, t, language, heroAttack, heroDefe
             );
           })}
         </div>
-      </div>
+        </div>
+      </details>
     </div>
   );
 }

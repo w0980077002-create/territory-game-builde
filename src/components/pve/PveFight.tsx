@@ -12,6 +12,7 @@ import { ZONES, type Zone } from '@/game/arenaApi';
 import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
+import { buildTrialGauntlet } from '@/game/trialGauntlet';
 import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextComboOpening, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
@@ -146,7 +147,11 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     return () => { cancelled = true; };
   }, [kind, enemy.id]);
   const [hero, setHero] = useState<PveSide>(() => heroSide(useGame.get()));
-  const [foe, setFoe] = useState<PveSide>(() => enemySide(enemy));
+  const [trialWaves] = useState<Enemy[]>(() => kind === 'trial'
+    ? buildTrialGauntlet(enemy, heroSide(useGame.get())) : [enemy]);
+  const [waveIndex, setWaveIndex] = useState(0);
+  const activeEnemy = trialWaves[waveIndex];
+  const [foe, setFoe] = useState<PveSide>(() => enemySide(trialWaves[0]));
   const [attack, setAttack] = useState<Zone | null>(null);
   // A committed enemy guard stays fixed until the round is actually resolved.
   const [enemyIntent, setEnemyIntent] = useState(() => randomZones());
@@ -217,7 +222,10 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   heroRef.current = hero;
   foeRef.current = foe;
 
-  const { speed, auto } = state.settings;
+  const { speed } = state.settings;
+  // Trial attacks must be selected by the player, without changing their
+  // saved Campaign auto-battle preference.
+  const auto = kind === 'trial' ? false : state.settings.auto;
   // UI, manual target helper and actual resolver must see the SAME guard.
   // Auto-battle never earns or uses the manual leg-riposte stagger.
   const committedEnemyIntent = useMemo(
@@ -365,14 +373,34 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     setEnemyIntent(nextIntent.intent);
     setAdaptiveGuard(nextIntent.adapted);
     setGuardPhase(nextIntent.phase);
-    if (res.enemy.hp <= 0) finish(true);
-    else if (res.hero.hp <= 0) finish(false);
+    if (res.enemy.hp <= 0) {
+      if (kind === 'trial' && waveIndex + 1 < trialWaves.length) {
+        // One paid attempt and one floor reward; retain hero HP, spent belt
+        // consumables and applied buffs while advancing the opponent.
+        const nextWave = trialWaves[waveIndex + 1];
+        const nextFoe = enemySide(nextWave);
+        foeRef.current = nextFoe;
+        setFoe(nextFoe);
+        setWaveIndex(waveIndex + 1);
+        setEnemyIntent(randomZones());
+        setAdaptiveGuard(false);
+        setGuardPhase(1);
+        setRiposteReady(false);
+        setStaggerReady(false);
+        setMomentum({ lastZone: null, streak: 0 });
+        recentDistinctHeroAttacks.current = [];
+        setTacticalReport(null);
+        pushLog(language === 'en'
+          ? `Wave ${waveIndex + 2}/${trialWaves.length}: new enemy!`
+          : `Волна ${waveIndex + 2}/${trialWaves.length}: новый противник!`);
+      } else finish(true);
+    } else if (res.hero.hp <= 0) finish(false);
     } finally {
       roundFlight.current = false;
       if (alive.current) setBusy(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- followerBonus is rebuilt each render; its used fields are listed individually
-  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, committedEnemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto, momentum.streak, runesReady]);
+  }, [busy, outcome, follower, followerBonus.attack, followerBonus.defense, followerBonus.heal, followerBonus.crit, followerBonus.pierce, finish, language, committedEnemyIntent, confirmSurrender, kind, enemy.isBoss, riposteReady, auto, momentum.streak, runesReady, waveIndex, trialWaves]);
 
   useEffect(() => {
     if (!auto || busy || outcome || confirmSurrender || (RUNE_PVE_STAGED && !runesReady)) return;
@@ -540,8 +568,8 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
           <Flag className="w-3.5 h-3.5" /> {outcome ? (kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')) : (language === 'en' ? 'Surrender' : 'Сдаться')}
         </button>
         <div className="flex-1 min-w-0 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-amber-300/80">{kind === 'trial' ? (language === 'en' ? `Trial ${state.trialLevel}` : `Испытание ${state.trialLevel}`) : enemy.isBoss ? (language === 'en' ? 'Chapter boss' : 'Босс главы') : (language === 'en' ? `Chapter ${state.currentChapter}` : `Глава ${state.currentChapter}`)}</p>
-          <p className="text-sm font-bold text-white truncate">{enemy.name}</p>
+          <p className="text-[10px] uppercase tracking-wider text-amber-300/80">{kind === 'trial' ? (language === 'en' ? `Trial ${state.trialLevel} · Wave ${waveIndex + 1}/${trialWaves.length}` : `Испытание ${state.trialLevel} · Волна ${waveIndex + 1}/${trialWaves.length}`) : enemy.isBoss ? (language === 'en' ? 'Chapter boss' : 'Босс главы') : (language === 'en' ? `Chapter ${state.currentChapter}` : `Глава ${state.currentChapter}`)}</p>
+          <p className="text-sm font-bold text-white truncate">{foe.name}</p>
         </div>
         <span className="h-9 px-2.5 rounded-xl bg-black/40 border border-white/10 flex items-center">
           <Currency kind="stones" value={state.battleStones} size={18} className="text-xs text-amber-100" />
@@ -691,17 +719,17 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
               <Plate side={foe} tone="enemy" />
               <div className="relative flex-1 mt-1">
                 <FighterFigure
-                  src={resolveCombatArtUrl(enemy.art)}
-                  combatFrames={getEnemyCombatFrames(enemy.art)}
+                  src={resolveCombatArtUrl(activeEnemy.art)}
+                  combatFrames={getEnemyCombatFrames(activeEnemy.art)}
                   name={foe.name}
                   dir={-1}
-                  scale={enemy.isBoss ? 1.07 : 1.1}
+                  scale={activeEnemy.isBoss ? 1.07 : 1.1}
                   alive={foe.hp > 0}
                   won={false}
                   strike={strike}
                   combatSpeed={busy || outcome ? roundSpeed : speed}
                   idleSeconds={2.8}
-                  className={`absolute left-0 bottom-0 object-contain object-left-bottom ${enemy.isBoss ? 'h-[96%] w-[100%]' : 'h-[84%] w-[88%]'}`}
+                  className={`absolute left-0 bottom-0 object-contain object-left-bottom ${activeEnemy.isBoss ? 'h-[96%] w-[100%]' : 'h-[84%] w-[88%]'}`}
                 />
               </div>
             </div>
@@ -785,7 +813,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
           <div className="relative px-2 pb-2">
             <p className="min-h-4 mb-1 text-center text-[11px] leading-4 text-gray-200" role="status" aria-live="polite">{toast ?? hint}</p>
             <div className="flex items-center gap-1.5">
-              <button
+              {kind !== 'trial' && <button
                 type="button"
                 onClick={() => setSettings({ auto: !auto })}
                 aria-pressed={auto}
@@ -795,7 +823,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                   {auto && <Check className="w-3 h-3 text-black" strokeWidth={3} />}
                 </span>
                 <span className="text-[10px] font-semibold text-gray-100 leading-tight text-left">{language === 'en' ? <>Auto<br />battle</> : <>Авто<br />бой</>}</span>
-              </button>
+              </button>}
               <button
                 disabled={!ready}
                 onClick={() => attack && runRound(attack, blocks)}
