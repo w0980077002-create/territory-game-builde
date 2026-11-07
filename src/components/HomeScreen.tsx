@@ -21,7 +21,6 @@ import { LiveCityBackdrop, CITY_MOTION_KEY, CITY_BACKGROUND_KEY, initialCityMoti
 import { CityLivingHero } from '@/components/home/CityLivingHero';
 import { CityLivingFollower } from '@/components/home/CityLivingFollower';
 import { CityLivingEnemy } from '@/components/home/CityLivingEnemy';
-import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 import { getHeroPathDestination, getNextStarterMilestone, getStarterMilestones, shouldShowStarterJourney } from '@/game/starterJourney';
@@ -198,8 +197,14 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
         </div>
       </div>
 
-      <div className="home-brand-plaque absolute left-1/2 z-10 -translate-x-1/2 pointer-events-none" aria-label="TERRITORY">
-        <WoodenPlaque variant="logo">TERRITORY</WoodenPlaque>
+      <div className="home-brand-plaque absolute left-1/2 z-10 -translate-x-1/2 pointer-events-none" role="img" aria-label="TERRITORY">
+        <img
+          className="home-brand-plaque__image"
+          src={`${import.meta.env.BASE_URL}assets/territory/ui/city/golden-title-approved.svg`}
+          alt=""
+          draggable={false}
+          decoding="async"
+        />
       </div>
 
       <button
