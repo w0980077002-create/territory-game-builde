@@ -628,15 +628,16 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         </div>
       )}
 
-      <div data-testid="pve-live-damage-totals" role="status" aria-live="off"
+      {kind !== 'trial' && <div data-testid="pve-live-damage-totals" role="status" aria-live="off"
         className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-lg border border-amber-300/25 bg-black/60 px-2 py-1.5 text-[11px] font-bold tabular-nums">
         <span className="text-emerald-200">{language === 'en' ? 'Damage dealt' : 'Нанесено'}: {battleTotals.dealt}</span>
         <span className="text-red-200">{language === 'en' ? 'Damage taken' : 'Получено'}: {battleTotals.taken}</span>
         {battleTotals.companion > 0 && <span className="text-sky-200">{language === 'en' ? 'Companion' : 'Спутник'}: {battleTotals.companion}</span>}
-      </div>
+      </div>}
 
-      {/* Keep earned tactical bonuses visible without covering the Trial arena. */}
-      {riposteReady && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
+      {/* Only Campaign has instructional combat cards. Trials are fully manual,
+           with no revealed enemy attack/guard or tactical prompts. */}
+      {kind !== 'trial' && riposteReady && !auto && !busy && enemy.isBoss && (
         <div data-testid="pve-riposte-ready" role="status" aria-live="polite"
           className={kind === 'trial'
             ? 'rounded-md border border-emerald-300/35 bg-[#17352b]/80 px-2 py-1 text-[10px] font-bold text-emerald-100'
@@ -649,7 +650,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         </div>
       )}
 
-      {momentum.streak > 0 && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
+      {kind !== 'trial' && momentum.streak > 0 && !auto && !busy && enemy.isBoss && (
         <div data-testid="pve-tactical-momentum" role="status" aria-live="polite"
           className={kind === 'trial'
             ? 'rounded-md border border-amber-300/35 bg-[#382413]/80 px-2 py-1 text-[10px] font-bold text-amber-100'
@@ -669,7 +670,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         </div>
       )}
 
-      {staggerReady && !auto && !busy && (kind === 'trial' || enemy.isBoss) && (
+      {kind !== 'trial' && staggerReady && !auto && !busy && enemy.isBoss && (
         <div data-testid="pve-staggered-guard" role="status" aria-live="polite"
           className={kind === 'trial'
             ? 'rounded-md border border-sky-300/35 bg-[#17333a]/80 px-2 py-1 text-[10px] font-bold text-sky-100'
@@ -784,8 +785,9 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
           </div>
         </div>
 
-        {/* Live tactical controls replace the two oversized message panels. */}
-        {!auto && (guardedZone || showThreatTell) && (
+        {/* Only Campaign may reveal enemy guard and incoming strike.
+            Trials have no spoilers or one-tap tactical answers. */}
+        {kind !== 'trial' && !auto && (guardedZone || showThreatTell) && (
           <div data-testid="pve-compact-tactics" className="relative flex gap-1 px-2 pb-1">
             {guardedZone && (
               <div data-testid="pve-enemy-guard" className="min-w-0 flex-1">
@@ -818,7 +820,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
           </div>
         )}
 
-        {!auto && !busy && tacticalReport && (
+        {kind !== 'trial' && !auto && !busy && tacticalReport && (
           <div data-testid="pve-round-reaction" className={kind === 'trial' ? 'mx-2 mb-1 rounded-md border border-sky-300/20 bg-black/50 px-2 py-1 text-[10px] text-sky-100' : 'relative mx-2 mb-1 rounded-lg border border-sky-300/35 bg-[#0d2631]/95 px-2.5 py-1.5 text-[11px] leading-4 text-sky-100'} role="status" aria-live="polite">
             <p className="mb-1 font-extrabold text-white" data-testid="pve-last-round-damage">
               {language === 'en' ? 'This round' : 'Этот раунд'}: +{tacticalReport.dealtDamage} {language === 'en' ? 'damage' : 'урона'} / −{tacticalReport.takenDamage} HP
@@ -835,7 +837,9 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
 
         {!outcome && (
           <div className="relative px-2 pb-2">
-            <p className="min-h-4 mb-1 text-center text-[11px] leading-4 text-gray-200" role="status" aria-live="polite">{toast ?? hint}</p>
+            {kind === 'trial'
+              ? (toast && <p className="mb-1 text-center text-[11px] leading-4 text-amber-200" role="status" aria-live="polite">{toast}</p>)
+              : <p className="min-h-4 mb-1 text-center text-[11px] leading-4 text-gray-200" role="status" aria-live="polite">{toast ?? hint}</p>}
             <div className="flex items-center gap-1.5">
               {kind !== 'trial' && <button
                 type="button"
@@ -854,6 +858,9 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                 className={`flex-1 min-w-0 h-11 rounded-xl font-black tracking-[0.2em] text-base flex items-center justify-center gap-2 transition-all active:scale-[0.97] disabled:opacity-40 bg-gradient-to-b from-red-500 to-red-700 text-white border border-red-300/40 ${ready ? 'animate-strike-ready' : ''}`}
               >
                 {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sword className="w-5 h-5" />} {language === 'en' ? 'STRIKE' : 'УДАР'}
+                {kind === 'trial' && <span className="inline-flex items-center gap-1 text-xs font-bold tracking-normal" aria-label={language === 'en' ? 'Costs one battle stone' : 'Стоимость: один боевой камень'}>
+                  <Currency kind="stones" value="−1" size={16} />
+                </span>}
               </button>
               {kind !== 'trial' && <button
                 onClick={() => setSettings({ speed: speed === 1 ? 2 : 1 })}
@@ -879,11 +886,11 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         <GearStrip equipped={state.player.equipped} />
       </FoldSection>
 
-      <div className="rounded-xl border border-white/10 bg-black/30 p-2 max-h-32 overflow-y-auto scrollbar-hide">
+      {kind !== 'trial' && <div className="rounded-xl border border-white/10 bg-black/30 p-2 max-h-32 overflow-y-auto scrollbar-hide">
         {log.map((line, i) => (
           <p key={log.length - i} className={`text-[11px] leading-relaxed ${i === 0 ? 'text-gray-100' : 'text-gray-500'}`}>{line}</p>
         ))}
-      </div>
+      </div>}
     </div>
   );
 }
