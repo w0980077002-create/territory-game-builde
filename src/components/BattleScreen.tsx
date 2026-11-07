@@ -476,9 +476,11 @@ function TrialPanel({ level, onFight, blocked, t, language, heroAttack, heroDefe
       <button onClick={onFight} disabled={blocked} aria-describedby={blocked ? 'pending-cave-recovery' : undefined} className="w-full h-12 rounded-2xl bg-gradient-to-b from-sky-400 to-sky-700 border border-sky-200/30 text-white font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-40 disabled:cursor-not-allowed">
         <Swords className="w-5 h-5" /> {t('startTrial')}
       </button>
-      {level <= 10 && <p className="text-center text-xs text-amber-200 font-semibold">
-        {language === 'en' ? 'Three waves · one stone · one reward' : 'Три волны врагов · один камень · одна награда'}
-      </p>}
+      <p className="text-center text-xs text-amber-200 font-semibold">
+        {language === 'en'
+          ? '1 floor = 5 enemies + boss · 1 stone · reward after boss'
+          : '1 этаж = 5 врагов + босс · 1 камень · награда за босса'}
+      </p>
       <details className="rounded-xl border border-amber-500/30 bg-black/30 px-3 py-2">
         <summary className="cursor-pointer text-sm font-bold text-amber-200">
           {language === 'en' ? 'Tactical hints' : 'Советы перед боем'}
