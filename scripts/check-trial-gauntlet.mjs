@@ -182,3 +182,15 @@ for (const stock of [25, 100, 500, 831, 871]) {
 }
 const sample = simulateLevel61(20261107, 871, equipped61[0], { defense: 'informed' });
 console.log('LEVEL61_EXAMPLE', JSON.stringify({ ...sample, perFloor: sample.perFloor.filter(x=>x.floor<=12 || x.floor>=sample.complete-2) }));
+
+for (const mode of ['informed', 'uncertain']) {
+  const runs = Array.from({ length: 40 }, (_, i) =>
+    simulateLevel61(333 + i * 997, 100000, equipped61[i%2], { defense: mode, maxFloor: 300 }));
+  const floors = runs.map(x=>x.complete).sort((a,b)=>a-b);
+  const spent = runs.map(x=>x.spent).sort((a,b)=>a-b);
+  console.log('LEVEL61_UNLIMITED', JSON.stringify({
+    mode, minFloor:floors[0], medianFloor:floors[Math.floor(floors.length/2)],
+    maxFloor:floors.at(-1), medianSpent:spent[Math.floor(spent.length/2)],
+    reasons:[...new Set(runs.map(x=>x.reason))].map(reason=>[reason,runs.filter(x=>x.reason===reason).length]),
+  }));
+}
