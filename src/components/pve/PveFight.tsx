@@ -639,47 +639,33 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
            with no revealed enemy attack/guard or tactical prompts. */}
       {kind !== 'trial' && riposteReady && !auto && !busy && enemy.isBoss && (
         <div data-testid="pve-riposte-ready" role="status" aria-live="polite"
-          className={kind === 'trial'
-            ? 'rounded-md border border-emerald-300/35 bg-[#17352b]/80 px-2 py-1 text-[10px] font-bold text-emerald-100'
-            : 'rounded-xl border border-emerald-300/55 bg-[#17352b]/95 px-3 py-2 text-xs font-bold text-emerald-100'}>
-          ⚔️ {kind === 'trial'
-            ? (language === 'en' ? 'Counter +20%' : 'Контрудар +20%')
-            : (language === 'en'
-              ? 'Perfect guard! Next strike +20%. Hit open legs to break one enemy guard for the following round, or choose another opening.'
-              : 'Идеальный блок! Следующий удар +20%. Попади в открытые ноги — сбей один блок врага на следующий раунд.')}
+          className="rounded-xl border border-emerald-300/55 bg-[#17352b]/95 px-3 py-2 text-xs font-bold text-emerald-100">
+          ⚔️ {language === 'en'
+            ? 'Perfect guard! Next strike +20%. Hit open legs to break one enemy guard for the following round, or choose another opening.'
+            : 'Идеальный блок! Следующий удар +20%. Попади в открытые ноги — сбей один блок врага на следующий раунд.'}
         </div>
       )}
 
       {kind !== 'trial' && momentum.streak > 0 && !auto && !busy && enemy.isBoss && (
         <div data-testid="pve-tactical-momentum" role="status" aria-live="polite"
-          className={kind === 'trial'
-            ? 'rounded-md border border-amber-300/35 bg-[#382413]/80 px-2 py-1 text-[10px] font-bold text-amber-100'
-            : 'rounded-xl border border-amber-300/60 bg-[#382413]/95 px-3 py-2 text-xs font-bold text-amber-100'}>
+          className="rounded-xl border border-amber-300/60 bg-[#382413]/95 px-3 py-2 text-xs font-bold text-amber-100">
           <Sword className="mr-1 inline h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
-          {kind === 'trial'
-            ? (momentum.streak === 2
-              ? (language === 'en' ? 'Combo +15%' : 'Комбо +15%')
-              : (language === 'en' ? 'Combo 1/2' : 'Комбо 1/2'))
-            : momentum.streak === 2
-              ? (language === 'en'
-                ? 'Combo ready! Next landed strike +15% damage (enemy guards and boss damage cap still apply).'
-                : 'Комбо готово! Следующий успешный удар +15% урона (защита и лимит урона босса действуют).')
-              : (language === 'en'
-                ? 'Combo 1/2: hit a DIFFERENT open zone next round to charge a stronger strike.'
-                : 'Комбо 1/2: попади в ДРУГУЮ открытую зону, чтобы зарядить усиленный удар.')}
+          {momentum.streak === 2
+            ? (language === 'en'
+              ? 'Combo ready! Next landed strike +15% damage (enemy guards and boss damage cap still apply).'
+              : 'Комбо готово! Следующий успешный удар +15% урона (защита и лимит урона босса действуют).')
+            : (language === 'en'
+              ? 'Combo 1/2: hit a DIFFERENT open zone next round to charge a stronger strike.'
+              : 'Комбо 1/2: попади в ДРУГУЮ открытую зону, чтобы зарядить усиленный удар.')}
         </div>
       )}
 
       {kind !== 'trial' && staggerReady && !auto && !busy && enemy.isBoss && (
         <div data-testid="pve-staggered-guard" role="status" aria-live="polite"
-          className={kind === 'trial'
-            ? 'rounded-md border border-sky-300/35 bg-[#17333a]/80 px-2 py-1 text-[10px] font-bold text-sky-100'
-            : 'rounded-xl border border-sky-300/60 bg-[#17333a]/95 px-3 py-2 text-xs font-bold text-sky-100'}>
-          {kind === 'trial'
-            ? (language === 'en' ? '⚔️ Guard broken' : '⚔️ Щит сбит')
-            : (language === 'en'
-              ? '⚔️ Enemy staggered! Your leg counter broke one guard: only one zone is protected this round.'
-              : '⚔️ Враг пошатнулся! Контрудар по ногам сбил один блок: в этом раунде защищена только одна зона.')}
+          className="rounded-xl border border-sky-300/60 bg-[#17333a]/95 px-3 py-2 text-xs font-bold text-sky-100">
+          {language === 'en'
+            ? '⚔️ Enemy staggered! Your leg counter broke one guard: only one zone is protected this round.'
+            : '⚔️ Враг пошатнулся! Контрудар по ногам сбил один блок: в этом раунде защищена только одна зона.'}
         </div>
       )}
 
@@ -821,17 +807,17 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         )}
 
         {kind !== 'trial' && !auto && !busy && tacticalReport && (
-          <div data-testid="pve-round-reaction" className={kind === 'trial' ? 'mx-2 mb-1 rounded-md border border-sky-300/20 bg-black/50 px-2 py-1 text-[10px] text-sky-100' : 'relative mx-2 mb-1 rounded-lg border border-sky-300/35 bg-[#0d2631]/95 px-2.5 py-1.5 text-[11px] leading-4 text-sky-100'} role="status" aria-live="polite">
+          <div data-testid="pve-round-reaction" className="relative mx-2 mb-1 rounded-lg border border-sky-300/35 bg-[#0d2631]/95 px-2.5 py-1.5 text-[11px] leading-4 text-sky-100" role="status" aria-live="polite">
             <p className="mb-1 font-extrabold text-white" data-testid="pve-last-round-damage">
               {language === 'en' ? 'This round' : 'Этот раунд'}: +{tacticalReport.dealtDamage} {language === 'en' ? 'damage' : 'урона'} / −{tacticalReport.takenDamage} HP
             </p>
-            {kind !== 'trial' && tacticalReport.heroStrike === 'block' && <p>{language === 'en' ? 'Your strike met a shield — switch your attack zone next round.' : 'Враг отбил удар — в следующем раунде смени зону атаки.'}</p>}
-            {kind !== 'trial' && tacticalReport.heroStrike === 'dodge' && <p>{language === 'en' ? 'The enemy dodged. Try another opening.' : 'Враг уклонился. Ищи другую брешь.'}</p>}
-            {kind !== 'trial' && tacticalReport.heroStrike === 'crit' && <p>{language === 'en' ? 'Critical hit! Your attack broke through.' : 'Критический удар! Атака прошла.'}</p>}
-            {kind !== 'trial' && tacticalReport.heroStrike === 'hit' && <p>{language === 'en' ? 'Your attack landed. Keep watching the enemy guard.' : 'Попадание! Следи, какую зону прикрывает враг.'}</p>}
-            {kind !== 'trial' && tacticalReport.enemyStrike === 'block' && <p className="text-emerald-200">{language === 'en' ? 'Great block! You stopped the enemy strike.' : 'Отличный блок! Ты остановил удар врага.'}</p>}
-            {kind !== 'trial' && tacticalReport.enemyStrike === 'dodge' && <p className="text-emerald-200">{language === 'en' ? 'You dodged the enemy strike.' : 'Ты уклонился от удара врага.'}</p>}
-            {kind !== 'trial' && (tacticalReport.enemyStrike === 'hit' || tacticalReport.enemyStrike === 'crit') && <p className="text-amber-200">{language === 'en' ? `Enemy hit your ${enemyStrikeLabel} — reconsider your defense.` : `Враг попал в зону «${enemyStrikeLabel}» — пересмотри защиту.`}</p>}
+            {tacticalReport.heroStrike === 'block' && <p>{language === 'en' ? 'Your strike met a shield — switch your attack zone next round.' : 'Враг отбил удар — в следующем раунде смени зону атаки.'}</p>}
+            {tacticalReport.heroStrike === 'dodge' && <p>{language === 'en' ? 'The enemy dodged. Try another opening.' : 'Враг уклонился. Ищи другую брешь.'}</p>}
+            {tacticalReport.heroStrike === 'crit' && <p>{language === 'en' ? 'Critical hit! Your attack broke through.' : 'Критический удар! Атака прошла.'}</p>}
+            {tacticalReport.heroStrike === 'hit' && <p>{language === 'en' ? 'Your attack landed. Keep watching the enemy guard.' : 'Попадание! Следи, какую зону прикрывает враг.'}</p>}
+            {tacticalReport.enemyStrike === 'block' && <p className="text-emerald-200">{language === 'en' ? 'Great block! You stopped the enemy strike.' : 'Отличный блок! Ты остановил удар врага.'}</p>}
+            {tacticalReport.enemyStrike === 'dodge' && <p className="text-emerald-200">{language === 'en' ? 'You dodged the enemy strike.' : 'Ты уклонился от удара врага.'}</p>}
+            {(tacticalReport.enemyStrike === 'hit' || tacticalReport.enemyStrike === 'crit') && <p className="text-amber-200">{language === 'en' ? `Enemy hit your ${enemyStrikeLabel} — reconsider your defense.` : `Враг попал в зону «${enemyStrikeLabel}» — пересмотри защиту.`}</p>}
           </div>
         )}
 
