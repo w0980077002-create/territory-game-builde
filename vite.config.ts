@@ -4,8 +4,9 @@ import { fileURLToPath, URL } from 'node:url';
 import { existsSync, readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-// Vercel serves the app at /; GitHub Pages keeps the repository subpath.
-const base = process.env.VERCEL === '1' ? '/' : '/territory-game-builde/';
+// TERRITORY is published exclusively to its existing GitHub Pages path.
+// Never switch the asset base for another platform at build time.
+const base = '/territory-game-builde/';
 
 /** Attach the exact source revision to the published HTML, not just to a CI log.
  * This is inert for local builds and never changes game state or assets. */
