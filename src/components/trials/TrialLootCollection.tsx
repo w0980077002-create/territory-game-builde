@@ -64,7 +64,8 @@ export function TrialLootCollection({ language }: { language: 'ru' | 'en' }) {
                   </div>
                 ))}
               </div>
-              {ready && !done && <button type="button" className="mt-2 min-h-11 w-full rounded-lg border border-amber-300 bg-gradient-to-b from-amber-300 to-amber-700 px-2 text-xs font-black text-[#241309]" onClick={() => {
+              {ready && !done && state.professions?.active !== blueprint.profession && <p className="mt-2 text-[11px] text-amber-200">{en ? 'Assembly requires the matching profession; keep the parts for future auction trade.' : 'Собрать чертёж может только соответствующий мастер. Фрагменты можно сохранить для будущей продажи на аукционе.'}</p>}
+              {ready && !done && state.professions?.active === blueprint.profession && <button type="button" className="mt-2 min-h-11 w-full rounded-lg border border-amber-300 bg-gradient-to-b from-amber-300 to-amber-700 px-2 text-xs font-black text-[#241309]" onClick={() => {
                 let assembled = false;
                 useGame.set(current => {
                   const next = assembleTrialBlueprint(current, blueprint.id);
