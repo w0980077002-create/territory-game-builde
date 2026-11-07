@@ -358,7 +358,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         </>
       ) : (
         <div className="space-y-3">
-          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={battleStartBlocked} t={t} language={language} heroAttack={heroAttack} heroDefense={heroDefense} />
+          <TrialPanel level={state.trialLevel} onFight={() => start('trial')} blocked={battleStartBlocked} t={t} language={language} />
           <details className="rounded-xl border border-amber-500/20 bg-black/25 px-3 py-2">
             <summary className="cursor-pointer text-xs font-semibold text-amber-200">
               {language === 'en' ? 'Share TERRITORY · optional +2 gems' : 'Поделиться игрой · необязательно, +2 алмаза'}
@@ -456,7 +456,7 @@ function StageRow({ enemy, index, status, gold, onFight, blocked, t, language, h
   );
 }
 
-function TrialPanel({ level, onFight, blocked, t, language, heroAttack, heroDefense }: { level: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en'; heroAttack: number; heroDefense: number }) {
+function TrialPanel({ level, onFight, blocked, t, language }: { level: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en' }) {
   const enemy = generateTrial(level);
   const firstWave = buildTrialGauntlet(enemy, heroSide(useGame.get()))[0];
   const upcoming = Array.from({ length: 5 }, (_, i) => level + i);
@@ -487,14 +487,6 @@ function TrialPanel({ level, onFight, blocked, t, language, heroAttack, heroDefe
           ? '1 floor = 5 enemies + boss · 1 stone per strike'
           : '1 этаж = 5 врагов + босс · 1 камень за удар'}
       </p>
-      <details className="rounded-xl border border-amber-500/30 bg-black/30 px-3 py-2">
-        <summary className="cursor-pointer text-sm font-bold text-amber-200">
-          {language === 'en' ? 'Tactical hints' : 'Советы перед боем'}
-        </summary>
-        <div className="mt-2">
-          <EliteTacticPreview enemy={firstWave} heroAttack={heroAttack} heroDefense={heroDefense} language={language} />
-        </div>
-      </details>
       <details className="rounded-xl border border-white/10 bg-black/25 px-3 py-2">
         <summary className="cursor-pointer text-sm font-bold text-gray-200">{t('floorRewards')}</summary>
         <div className="mt-2">
