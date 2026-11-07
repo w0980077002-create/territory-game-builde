@@ -92,23 +92,25 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         : 'Сначала восстанови незавершённый бой в Тёмной пещере. Награды и камни сохранятся.');
       return false;
     }
-    // One user gesture = at most one stone. Prevent overlapping taps/autostart
-    // callbacks from charging twice before React commits setFight.
+    // Starting a Trial is FREE: its first real strike consumes one stone.
+    // Campaign keeps the existing one-stone entry cost. The synchronous lock
+    // prevents repeated mobile taps/autostart callbacks from double charging.
     if (fightStartLocked.current) return false;
     fightStartLocked.current = true;
     const s = useGame.get();
-    const paid = spendStones(s, PVE_STONE_COST);
+    const paid = kind === 'trial'
+      ? (s.battleStones >= PVE_STONE_COST ? s : null)
+      : spendStones(s, PVE_STONE_COST);
     if (!paid) {
       fightStartLocked.current = false;
       setError(t('noBattleStones'));
       return false;
     }
-    // Haptics and analytics are best-effort; an SDK error must never prevent
-    // a paid battle from being committed or leave the Next button locked.
+    // Haptics and analytics are optional. A trial's wallet is untouched here.
     try { hapticImpact('medium'); } catch { /* Unsupported Telegram haptics. */ }
     try { captureGameEvent('territory_pve_fight_start', { mode: kind === 'trial' ? 'trial' : 'campaign' }); } catch { /* Optional telemetry. */ }
     setError(null);
-    useGame.set(paid);
+    if (kind !== 'trial') useGame.set(paid);
     const ch = generateChapter(paid.currentChapter);
     const enemy = kind === 'trial'
       ? generateTrial(paid.trialLevel)
@@ -222,7 +224,11 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} />
       ) : <>
       <div className="flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11">
-        <span className="text-xs text-gray-400">{t('oneFightCost')} {PVE_STONE_COST} {t('stone')}</span>
+        <span className="text-xs text-gray-400">
+          {view === 'trial'
+            ? (language === 'en' ? '1 strike = 1 stone · no stones = defeat' : '1 удар = 1 камень · без камней — поражение')
+            : <>{t('oneFightCost')} {PVE_STONE_COST} {t('stone')}</>}
+        </span>
         <Currency kind="stones" value={state.battleStones} size={20} className="text-sm text-amber-100" />
       </div>
 
@@ -478,8 +484,8 @@ function TrialPanel({ level, onFight, blocked, t, language, heroAttack, heroDefe
       </button>
       <p className="text-center text-xs text-amber-200 font-semibold">
         {language === 'en'
-          ? '1 floor = 5 enemies + boss · 1 stone · reward after boss'
-          : '1 этаж = 5 врагов + босс · 1 камень · награда за босса'}
+          ? '1 floor = 5 enemies + boss · 1 stone per strike'
+          : '1 этаж = 5 врагов + босс · 1 камень за удар'}
       </p>
       <details className="rounded-xl border border-amber-500/30 bg-black/30 px-3 py-2">
         <summary className="cursor-pointer text-sm font-bold text-amber-200">
