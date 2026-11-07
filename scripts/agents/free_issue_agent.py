@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+"""Opt-in, keyless TERRITORY agent: one guarded local AI edit per approved issue."""
+import difflib
+import json
+import os
+from pathlib import Path
+import re
+import sys
+import time
+import urllib.request
+
+OWNER = "w0980077002-create"
+ROLES = {"UI", "ANIMATION", "GAMEPLAY", "QA"}
+ROOT = Path.cwd().resolve()
+LIMIT = 16000
+BANNED = re.compile(r"(?:^|[/_-])(admin|auth|payment|wallet|supabase|economy|rewards?|vip|secrets?|tokens?|security)(?:[/_.-]|$)", re.I)
+
+
+def issue_info():
+    event_file = os.environ.get("GITHUB_EVENT_PATH")
+    if not event_file:
+        raise ValueError("GITHUB_EVENT_PATH is required")
+    event = json.loads(Path(event_file).read_text(encoding="utf-8"))
+    issue = event["issue"]
+    if os.environ.get("GITHUB_ACTOR") != OWNER or issue["user"]["login"] != OWNER:
+        raise ValueError("Only the repository owner can launch an agent")
+    match = re.match(r"^\[AI:(UI|ANIMATION|GAMEPLAY|QA)\]\s+(.+)", issue["title"])
+    if not match:
+        raise ValueError("Issue title must start with [AI:UI], [AI:ANIMATION], [AI:GAMEPLAY] or [AI:QA]")
+    role = match.group(1)
+    body = issue.get("body") or ""
+    if not body or len(body) > 5000:
+        raise ValueError("Issue body required, max 5000 characters")
+    if role == "QA":
+        return role, "", body, issue["number"]
+    match_file = re.search(r"(?mi)^TARGET_FILE:\s*(src/components/[A-Za-z0-9_./-]+\.(?:css|tsx))\s*$", body)
+    if not match_file:
+        raise ValueError("Exactly one TARGET_FILE in src/components/*.css or *.tsx is required")
+    target_name = match_file.group(1)
+    if ".." in target_name or BANNED.search(target_name):
+        raise ValueError("Target is prohibited by safety policy")
+    target = (ROOT / target_name).resolve()
+    if not target.is_relative_to(ROOT / "src" / "components") or not target.is_file():
+        raise ValueError("Target must be an existing component file")
+    if target.stat().st_size > LIMIT:
+        raise ValueError("Target too large for reliable small-model editing; split the task")
+    if role == "ANIMATION" and not target_name.endswith(".css"):
+        raise ValueError("Free ANIMATION agent is limited to CSS effects (not character rigs)")
+    task_match = re.search(r"(?mis)^REQUEST:\s*(.+)$", body)
+    if not task_match or len(task_match.group(1).strip()) < 15:
+        raise ValueError("REQUEST: with a precise description is required")
+    return role, target_name, task_match.group(1)[:2800].strip(), issue["number"]
+
+
+def request_model(prompt):
+    payload = json.dumps({
+        "model": "qwen2.5-coder:3b", "prompt": prompt, "stream": False, "format": "json",
+        "options": {"temperature": 0.1, "num_ctx": 8192, "num_predict": 1000}
+    }).encode()
+    req = urllib.request.Request(
+        "http://127.0.0.1:11434/api/generate", data=payload,
+        headers={"Content-Type": "application/json"}
+    )
+    with urllib.request.urlopen(req, timeout=850) as response:
+        generated = json.loads(response.read().decode())["response"]
+    data = json.loads(generated)
+    if not isinstance(data, dict) or not isinstance(data.get("search"), str) or not isinstance(data.get("replace"), str):
+        raise ValueError("Model must produce JSON with string search and replace")
+    return data
+
+
+def perform_edit(role, target_name, task):
+    path = ROOT / target_name
+    original = path.read_text(encoding="utf-8")
+    rules = (ROOT / "AGENTS.md").read_text(encoding="utf-8")[:3100]
+    style = {
+        "UI": "Prioritize compact 360px mobile layout, approved Shop/Arena dark-oak wood, warm gold and forged metal. Never add huge buttons or flat brown cards.",
+        "ANIMATION": "Improve one small CSS animation/effect. Maintain accessibility, reduced motion and mobile performance. Do not claim sprite animation from CSS alone.",
+        "GAMEPLAY": "Improve ONLY a visual, non-reward, test-stage interface in this component. No currency, player state, inventory, game outcomes or API changes."
+    }[role]
+    feedback = ""
+    for attempt in range(2):
+        prompt = (
+            "You are a cautious TERRITORY code assistant. Return ONLY a JSON object "
+            'with two string keys: {"search":"EXACT old text", "replace":"new text"}. '
+            "Select ONE short unique existing substring (roughly 2-25 lines) and replace it; "
+            "do not rewrite or remove unrelated code. If no safe small edit is possible, "
+            'return {"search":"","replace":""}. '
+            "Your search MUST appear in source text exactly once, including whitespace. "
+            "Never change external files or any game economy, auth, save or server logic.\n"
+            f"ROLE: {role}\nSPECIALIST GUIDANCE: {style}\n"
+            f"OWNER TASK: {task}\nREPO RULES EXCERPT:\n{rules}\n"
+            f"FILE PATH: {target_name}\nCURRENT FILE (verbatim):\n{original}\n"
+            f"{feedback}"
+        )
+        try:
+            patch = request_model(prompt)
+            old, new = patch["search"], patch["replace"]
+            if len(old.strip()) < 12 or len(old) > 3500 or len(new) > 5000:
+                raise ValueError("Replacement is empty or exceeds one-edit safety bounds")
+            if original.count(old) != 1:
+                raise ValueError("Search span is not an exact, unique substring")
+            result = original.replace(old, new, 1)
+            plus = minus = 0
+            for ln in difflib.unified_diff(original.splitlines(), result.splitlines()):
+                if ln.startswith("+") and not ln.startswith("+++"):
+                    plus += 1
+                if ln.startswith("-") and not ln.startswith("---"):
+                    minus += 1
+            if plus + minus > 100 or len(result) - len(original) > 3500 or len(original) - len(result) > 1500:
+                raise ValueError("Change too large for automated coding")
+            if result == original:
+                raise ValueError("No change produced")
+            path.write_text(result, encoding="utf-8")
+            print(f"Free {role} agent edited {target_name}, added {plus} / removed {minus} lines.")
+            return
+        except (ValueError, KeyError, json.JSONDecodeError) as error:
+            feedback = f"\nYOUR PREVIOUS PATCH WAS REJECTED: {error}. Copy the exact old substring and try one minimal edit.\n"
+            print(f"Attempt {attempt + 1} failed: {error}", file=sys.stderr)
+            if attempt == 1:
+                raise ValueError("No safe exact-match patch generated; repository unchanged") from error
+            time.sleep(1)
+
+
+def main():
+    role, target, task, number = issue_info()
+    if len(sys.argv) != 2 or sys.argv[1] not in ("plan", "edit"):
+        raise ValueError("Expected plan or edit")
+    if sys.argv[1] == "plan":
+        print(f"role={role}")
+        print(f"target={target}")
+        print(f"issue={number}")
+    elif role != "QA":
+        perform_edit(role, target, task)
+    else:
+        raise ValueError("QA mode runs checks, not code edits")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as exc:
+        print(f"TERRITORY FREE AGENT: {exc}", file=sys.stderr)
+        sys.exit(1)
