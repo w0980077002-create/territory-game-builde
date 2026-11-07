@@ -171,6 +171,17 @@ function consumableArt(item: ArtSource): string | null {
 }
 
 function inventoryMaterialArt(item: ArtSource): string {
+  if (item.id.startsWith('trial_fragment_') || item.id.startsWith('trial_blueprint_')) {
+    return import.meta.env.BASE_URL + 'assets/territory/ui/trial-loot/blueprint-fragment.svg';
+  }
+  const trialIngredientArt: Record<string, string> = {
+    trial_component_guardian_shard: 'guardian-shard.svg',
+    trial_component_trial_essence: 'trial-essence.svg',
+    trial_component_ancient_mechanism: 'ancient-mechanism.svg',
+  };
+  if (trialIngredientArt[item.id]) {
+    return import.meta.env.BASE_URL + 'assets/territory/ui/trial-loot/' + trialIngredientArt[item.id];
+  }
   if (item.id === 'cow_awakening_stone') return import.meta.env.BASE_URL + 'assets/territory/ui/items/awakening-stone.svg';
   const asset = MATERIAL_BY_ID[item.id]
     ?? MATERIAL_BY_NAME[item.name.trim().toLocaleLowerCase()]

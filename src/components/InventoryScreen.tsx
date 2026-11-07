@@ -18,6 +18,7 @@ import { EQUIPMENT_SLOTS, generateChapter, generateTrial } from '@/game/engine';
 import { elixirExpiryTime, elixirTimeLeftLabel, isElixirExpired, isPerishableItem } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
 import { Package, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned, ChevronRight, ShieldCheck, Swords } from 'lucide-react';
+import { TrialLootCollection } from './trials/TrialLootCollection';
 import './inventoryPreparation.css';
 
 /** Equipment, consumables/belt and companions share the inventory route.
@@ -173,6 +174,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
             </div>
             {preparedNotice && <p className="inventory-preparation__notice" role="status">{preparedNotice}</p>}
           </section>
+          <TrialLootCollection language={language} />
           <CompactWarehouse
             consumables={consumables}
             materials={materials}
