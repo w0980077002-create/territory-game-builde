@@ -1,0 +1,79 @@
+name: TERRITORY approved agent dispatch
+
+# Explicit owner approval only. Never run on arbitrary public issue creation.
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: territory-agent-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: >-
+      github.event.label.name == 'agent:approved' &&
+      github.actor == 'w0980077002-create' &&
+      github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    env:
+      TERRITORY_AGENT_USER_TOKEN: ${{ secrets.TERRITORY_AGENT_USER_TOKEN }}
+    steps:
+      - name: Report that agent dispatch is not yet connected
+        if: env.TERRITORY_AGENT_USER_TOKEN == ''
+        run: echo "::notice::Agent dispatch is configured but inactive. Requires Copilot cloud agent enabled and a user-to-server GitHub token stored as TERRITORY_AGENT_USER_TOKEN."
+
+      - name: Assign only this explicitly approved issue to Copilot
+        if: env.TERRITORY_AGENT_USER_TOKEN != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.TERRITORY_AGENT_USER_TOKEN }}
+          script: |
+            const issue = context.payload.issue;
+            const { owner, repo } = context.repo;
+            // The issue and the label must originate from the project owner.
+            if (issue.user?.login !== 'w0980077002-create') {
+              core.notice('Skipped: issue was not created by the owner.');
+              return;
+            }
+            if (issue.assignees?.some(a => a.login === 'copilot-swe-agent[bot]')) {
+              core.notice('Already assigned to Copilot; not dispatching twice.');
+              return;
+            }
+            const roles = {
+              'agent:art': '.github/agents/art-director.agent.md',
+              'agent:animation': '.github/agents/combat-animator.agent.md',
+              'agent:gameplay': '.github/agents/gameplay-designer.agent.md',
+              'agent:economy': '.github/agents/economy-guardian.agent.md',
+              'agent:qa': '.github/agents/release-qa.agent.md'
+            };
+            const labels = (issue.labels || []).map(l => typeof l === 'string' ? l : l.name);
+            const roleLabels = labels.filter(l => Object.hasOwn(roles, l));
+            if (roleLabels.length !== 1) {
+              core.setFailed('Exactly one role label is required: ' + Object.keys(roles).join(', '));
+              return;
+            }
+            // No external content is executed, and no secrets are exposed to issues.
+            const instructions = [
+              'Implement the approved task in GitHub issue #' + issue.number + '.',
+              'Use specialist instructions in ' + roles[roleLabels[0]] + ' and AGENTS.md.',
+              'Work on an isolated branch and open a pull request. Never merge into main.',
+              'Never alter production Supabase, players, progress, VIP, wallets, payment settings, or secrets.',
+              'For visual game tasks, provide mobile 360px evidence; run relevant tests.',
+              'No false completion claims. Report in Russian what was actually tested.',
+              'Read-only agent roles must only review and report, not modify gameplay code.'
+            ].join('\n');
+            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/assignees', {
+              owner, repo, issue_number: issue.number,
+              assignees: ['copilot-swe-agent[bot]'],
+              agent_assignment: {
+                target_repo: owner + '/' + repo,
+                base_branch: 'main',
+                custom_instructions: instructions
+              }
+            });
+            core.notice('Assigned issue #' + issue.number + ' as ' + roleLabels[0]);
