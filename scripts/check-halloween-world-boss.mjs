@@ -8,8 +8,6 @@ const unlimited = read('supabase/migrations/20261101220000_halloween_2026_unlimi
 const home = read('src/components/HomeScreen.tsx');
 const app = read('src/App.tsx');
 const api = read('src/game/halloweenBoss.ts');
-const season = read('src/game/halloweenBossSeason.ts');
-const screen = read('src/components/HalloweenBossScreen.tsx');
 
 for (const pattern of [
   /SECURITY DEFINER[\s\S]*?SET search_path = ''/i,
@@ -37,21 +35,13 @@ assert.match(unlimited,/maxHitsToday'', NULL/);
 assert.match(unlimited,/Daily cap removed by owner/);
 assert.match(unlimited,/INTERVAL ''8 seconds''/);
 assert.doesNotMatch(unlimited,/UPDATE public\.players|DELETE FROM public\.players|TRUNCATE|DROP TABLE|game_state\s*=/i);
-assert.match(home, /halloweenBossInSeason\(\)/);
-assert.match(home, /from '@\/game\/halloweenBossSeason'/);
-assert.doesNotMatch(season, /supabase|\.rpc\(/, 'City event visibility must be pure and offline-safe');
-assert.match(home, /onOpen\('halloween-boss'\)/);
-assert.match(app, /screen === 'halloween-boss' && <HalloweenBossScreen/);
+// The 2026 event is closed. Retire only its public screen, preserving the SQL
+// history, earned rewards and server-side administration contracts.
+assert.doesNotMatch(home, /halloweenBossInSeason|halloween-boss|halloweenRaid\.css/,
+  'Expired Halloween boss must not remain in the City UI');
+assert.doesNotMatch(app, /HalloweenBossScreen|halloween-boss/,
+  'Expired Halloween route must not be included in the live game');
 assert.match(api, /supabase\.rpc\(name\)/);
-assert.match(screen, /getHalloweenBossState/);
 assert.match(api, /maxHitsToday: number \| null/);
-assert.match(screen, /unlimitedHits/);
-assert.match(screen, /bossDefeated/);
-assert.match(screen, /БОСС ПОВЕРЖЕН/);
-assert.match(screen, /hitHalloweenBoss/);
-assert.match(screen, /state\.top20\.map/);
-assert.doesNotMatch(screen, /saveCloudSave|useGame\.set|redGems|spendStones|spendEnergy/);
-assert.match(screen, /ТОП-20 ПО УРОНУ/);
-assert.match(screen, /TOP 20 BY DAMAGE/);
 assert.match(api, /ranking\.slice\(0, 20\)/);
-console.log('Halloween world boss: game route, read-only client, protected RPC, HP serialization, UTC quota and leaderboard: PASS');
+console.log('Halloween world boss: historical server contracts preserved, expired frontend retired: PASS');

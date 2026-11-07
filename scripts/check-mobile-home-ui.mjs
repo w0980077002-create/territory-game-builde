@@ -23,13 +23,12 @@ const originalHeroes = await read('src/components/combat2d/ArticulatedHero.tsx')
 const originalHeroMotion = await read('src/components/combat2d/articulatedHero.css');
 const battleScene = await read('src/components/arena/BattleScene.tsx');
 
-const [forge, modal, inventory, arenaLobby, arenaRoom, monopoly, monopolyAdventure] = await Promise.all([
+const [forge, modal, inventory, arenaLobby, arenaRoom, monopolyAdventure] = await Promise.all([
   read('src/components/ForgeScreen.tsx'),
   read('src/components/ui/Modal.tsx'),
   read('src/components/InventoryScreen.tsx'),
   read('src/components/arena/ArenaRulesModal.tsx'),
   read('src/components/arena/ArenaRoom.tsx'),
-  read('src/components/MonopolyScreen.tsx'),
   read('src/components/monopoly/MonopolyAdventure.tsx'),
 ]);
 
@@ -250,7 +249,7 @@ assert.match(css, /html\.territory-ios-webapp \.forge-upgrade-actions\s*\{[\s\S]
   'Upgrade button must stay visible when stats scroll');
 for (const [name, source] of [
   ['arena rules', arenaLobby],
-  ['arena confirmation', arenaRoom], ['Monopoly reward', monopoly],
+  ['arena confirmation', arenaRoom],
 ]) {
   assert.match(source, /<IosGamePortal>/, name + ' must also overlay the navigation');
 }
