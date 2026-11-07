@@ -37,11 +37,11 @@ assert.match(unlimited,/INTERVAL ''8 seconds''/);
 assert.doesNotMatch(unlimited,/UPDATE public\.players|DELETE FROM public\.players|TRUNCATE|DROP TABLE|game_state\s*=/i);
 // The 2026 event is closed. Retire only its public screen, preserving the SQL
 // history, earned rewards and server-side administration contracts.
-assert.doesNotMatch(home, /halloweenBossInSeason|halloween-boss|halloweenRaid\\.css/,
+assert.doesNotMatch(home, /halloweenBossInSeason|halloween-boss|halloweenRaid\.css/,
   'Expired Halloween boss must not remain in the City UI');
 assert.doesNotMatch(app, /HalloweenBossScreen|halloween-boss/,
   'Expired Halloween route must not be included in the live game');
-assert.match(api, /supabase\\.rpc\\(name\\)/);
-assert.match(api, /maxHitsToday: number \\| null/);
-assert.match(api, /ranking\\.slice\\(0, 20\\)/);
+assert.match(api, /supabase\.rpc\(name\)/);
+assert.match(api, /maxHitsToday: number \| null/);
+assert.match(api, /ranking\.slice\(0, 20\)/);
 console.log('Halloween world boss: historical server contracts preserved, expired frontend retired: PASS');
