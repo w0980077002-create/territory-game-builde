@@ -10,6 +10,8 @@ import { saveBlocked } from '@/game/cloud';
 import { confirmPveVictorySave, pveVictorySaveBlocked, pveVictorySaveState, subscribePveVictorySave } from '@/game/pveVictorySaveFence';
 import { canJournalPveVictory, pendingPveVictoryJournal, retryPveVictoryJournal } from '@/game/pveVictoryRecovery';
 import { hapticImpact } from '@/game/telegram';
+import { buildTrialGauntlet } from '@/game/trialGauntlet';
+import { heroSide } from '@/game/pve';
 import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
 import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
@@ -443,6 +445,7 @@ function StageRow({ enemy, index, status, gold, onFight, blocked, t, language, h
 
 function TrialPanel({ level, onFight, blocked, t, language, heroAttack, heroDefense }: { level: number; onFight: () => void; blocked: boolean; t: (key: string) => string; language: 'ru' | 'en'; heroAttack: number; heroDefense: number }) {
   const enemy = generateTrial(level);
+  const firstWave = buildTrialGauntlet(enemy, heroSide(useGame.get()))[0];
   const upcoming = Array.from({ length: 5 }, (_, i) => level + i);
   return (
     <div className="space-y-3">
@@ -450,14 +453,14 @@ function TrialPanel({ level, onFight, blocked, t, language, heroAttack, heroDefe
         <img src={import.meta.env.BASE_URL + 'assets/territory/scenes/arena-viking.webp'} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
         <div className="relative p-4 flex items-end gap-3 min-h-[180px]">
-          <img src={enemy.art} alt={enemy.name} className="w-28 h-36 object-contain object-bottom drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] animate-idle" />
+          <img src={firstWave.art} alt={firstWave.name} className="w-28 h-36 object-contain object-bottom drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)] animate-idle" />
           <div className="flex-1 min-w-0 pb-1">
             <p className="text-[11px] uppercase tracking-[0.2em] text-sky-300">{t('trialTower')}</p>
             <h2 className="text-lg font-bold text-white">{t('floor')} {level}</h2>
-            <p className="text-xs text-gray-300">{localizeText(enemy.name, language)}</p>
+            <p className="text-xs text-gray-300">{localizeText(firstWave.name, language)}</p>
             <div className="flex items-center gap-2.5 text-[11px] text-gray-300 mt-1">
-              <span className="flex items-center gap-0.5"><Heart className="w-3 h-3 text-red-400" />{enemy.maxHp}</span>
-              <span className="flex items-center gap-0.5"><SwordIcon className="w-3 h-3 text-amber-400" />{enemy.attack}</span>
+              <span className="flex items-center gap-0.5"><Heart className="w-3 h-3 text-red-400" />{firstWave.maxHp}</span>
+              <span className="flex items-center gap-0.5"><SwordIcon className="w-3 h-3 text-amber-400" />{firstWave.attack}</span>
             </div>
           </div>
         </div>
@@ -474,7 +477,7 @@ function TrialPanel({ level, onFight, blocked, t, language, heroAttack, heroDefe
           {language === 'en' ? 'Tactical hints' : 'Советы перед боем'}
         </summary>
         <div className="mt-2">
-          <EliteTacticPreview enemy={enemy} heroAttack={heroAttack} heroDefense={heroDefense} language={language} />
+          <EliteTacticPreview enemy={firstWave} heroAttack={heroAttack} heroDefense={heroDefense} language={language} />
         </div>
       </details>
       <details className="rounded-xl border border-white/10 bg-black/25 px-3 py-2">
