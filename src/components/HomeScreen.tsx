@@ -200,7 +200,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
       <div className="home-brand-plaque absolute left-1/2 z-10 -translate-x-1/2 pointer-events-none" role="img" aria-label="TERRITORY">
         <img
           className="home-brand-plaque__image"
-          src={`${import.meta.env.BASE_URL}assets/territory/ui/city/golden-title-approved.svg`}
+          src={`${import.meta.env.BASE_URL}assets/territory/ui/city/golden-title-approved.webp`}
           alt=""
           draggable={false}
           decoding="async"
