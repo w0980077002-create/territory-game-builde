@@ -11,7 +11,6 @@
   --oak-heritage-grain: url('/assets/territory/ui/shop/shop-wood-planks.webp');
   --oak-heritage-planks: url('/assets/territory/ui/shop/shop-wood-planks.webp');
   --oak-heritage-rope: url('/assets/territory/arena-ui/rope-wrap.svg');
-  --oak-heritage-iron: url('/assets/territory/arena-ui/iron-corner.svg');
   --oak-heritage-frame: url('/assets/territory/ui/shop/shop-approved-product-border-v2.webp');
   --oak-heritage-cream: #ffe6b3;
   --oak-heritage-gold: #d7a65e;
@@ -58,15 +57,9 @@
   filter:drop-shadow(0 2px 2px #110706);
 }
 .territory-shell.territory-oak-heritage > .territory-section-head::after {
-  content: '';
-  position:absolute;
-  z-index:0;
-  inset:0;
-  pointer-events:none;
-  background-image:var(--oak-heritage-iron),var(--oak-heritage-iron);
-  background-position:left top,right top;
-  background-size:30px 30px;
-  background-repeat:no-repeat;
+  /* Retire the crude steel L-shapes; the actual wooden title frame remains. */
+  content:none;
+  display:none;
 }
 .territory-shell.territory-oak-heritage > .territory-section-head > * {
   position:relative;
@@ -99,7 +92,7 @@
   color:var(--oak-heritage-cream);
 }
 
-/* Apply real corner hardware to major blocks only, never every inventory item. */
+/* Major blocks retain carved wood and rope; never stamp duplicate steel L-corners. */
 .territory-shell.territory-oak-heritage .territory-screen :is(
  .viking-screen > .card,
  .viking-screen > section.card,
@@ -127,16 +120,8 @@
  .viking-screen > section.card,
  .territory-profile > .card
 )::after {
-  content:'';
-  position:absolute;
-  z-index:0;
-  inset:0;
-  pointer-events:none;
-  background-image:var(--oak-heritage-iron),var(--oak-heritage-iron);
-  background-size:25px 25px;
-  background-repeat:no-repeat;
-  background-position:left top,right top;
-  opacity:.91;
+  content:none;
+  display:none;
 }
 
 /* A rope-bound title rail where there is already a full-width tab bar.
@@ -231,12 +216,9 @@
   display: none;
 }
 .territory-shell.territory-oak-heritage .territory-screen .territory-profile > :is(details.card,div.card)::after {
-  content: '';
-  background-image: var(--oak-heritage-iron), var(--oak-heritage-iron);
-  background-size: 20px 20px;
-  background-position: left top, right top;
-  background-repeat: no-repeat;
-  opacity: .66;
+  /* Do not reintroduce obsolete metal corner stamps on Hero panels. */
+  content:none;
+  display:none;
 }
 /* Only one disclosure glyph may be shown; the browser-native marker and
  * our own triangle must not appear together. These are real HTML controls. */
