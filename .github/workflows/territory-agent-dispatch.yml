@@ -88,7 +88,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NO: ${{ steps.task.outputs.issue }}
-        run: gh issue comment "$ISSUE_NO" --body "✅ Free QA agent: npm ci, typecheck, lint and build passed on current main. No live-game changes."
+        run: |
+          gh issue comment "$ISSUE_NO" --body "✅ Free QA agent: npm ci, typecheck, lint and build passed on current main. No live-game changes."
 
       - name: Report failure without applying any live changes
         if: failure() && steps.task.outputs.issue != ''
