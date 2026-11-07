@@ -306,11 +306,13 @@ assert.equal(getEliteEncounterBrief({ attack: 5, defense: 3 }, { attack: 30, def
 assert.equal(JSON.stringify(savedHero), originalHero, 'tactical advice must never mutate the saved hero');
 assert.equal(JSON.stringify(eliteEnemy), originalEnemy, 'tactical advice must never mutate the enemy');
 assert.match(battle, /enemy\.isBoss && <EliteTacticPreview/, 'only the unlocked campaign boss gets elite guidance');
-assert.match(battle, /<TrialPanel[^\n]*heroAttack=\{heroAttack\} heroDefense=\{heroDefense\}/,
-  'Trials must use the same actual hero stats');
+assert.match(battle, /buildTrialGauntlet\(enemy, heroSide\(useGame\.get\(\)\)\)\[0\]/,
+  'Trials still build opponents from the real computed hero stats without disclosing tactical hints');
 assert.match(battle, /<EliteTacticPreview enemy=\{enemy\} heroAttack=\{heroAttack\} heroDefense=\{heroDefense\} language=\{language\} \/>/,
-  'the current Trial must show the real elite tactical guidance');
-assert.match(battle, /data-testid="elite-tactic-preview"/, 'the pre-spend tactical hint must be visible');
+  'Campaign bosses retain their legitimate optional tactical guidance');
+assert.match(battle, /data-testid="elite-tactic-preview"/, 'Campaign tactical component remains available');
+assert.doesNotMatch(battle, /<TrialPanel[^\n]*heroAttack=\{heroAttack\}/, 'Trials must not display tactical suggestions');
+assert.doesNotMatch(battle, /<EliteTacticPreview enemy=\{firstWave\}/, 'No pre-fight enemy tactical spoilers in Trials');
 assert.match(fight, /nextAdaptiveEnemyIntent\(res\.enemy, atk, kind === 'trial' \|\| !!enemy\.isBoss/,
   'do not advertise adaptive elite guards if they are not wired to real PvE rounds');
 assert.match(fight, /nextTacticalMomentum\(previous, atk, report\.heroStrike, elite && !auto/,
