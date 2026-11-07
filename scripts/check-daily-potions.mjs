@@ -22,6 +22,7 @@ const potion = {
 };
 const dependencies = {
   './engine': { generateShopItems: () => [potion] },
+  './trialLoot': { applyTrialChest: s => s, rollTrialChest: () => null, trialChestTier: () => null },
   './actions': { grantRewards: () => { throw new Error('unrelated'); }, updateProgress: () => { throw new Error('unrelated'); } },
   './live': { useLive: { get: () => ({ goldX2: false }) } },
   './weeklyQuests': {
