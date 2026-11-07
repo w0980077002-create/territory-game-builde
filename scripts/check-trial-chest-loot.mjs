@@ -45,6 +45,7 @@ const base = {
   player: { gold: 200, gems: 40, redGems: 0 },
   inventory: [{id:'original-material',type:'material',name:'Original',qty:4}],
   forgeMaterials: 6, trialLevel: 5, battleStones: 12, territoryCityReputation: 0,
+  professions: {active:'smith',masteryLevel:1,masteryXp:0},
   trialChestClaims: [], currentChapter: 7, followers:[{id:'keep'}], belt:[{id:'keep-potion'}],
 };
 const unchanged = snap(base);
@@ -77,6 +78,7 @@ const fragments = [1,2,3,4,5].map(part=>({id:trialFragmentItemId('guardian_blade
 const partial={...base,inventory:[...fragments,{id:trialFragmentItemId('guardian_blade',1),qty:5,type:'material'}]};
 assert.equal(assembleTrialBlueprint(partial,'guardian_blade'),null);
 const full={...base,inventory:[...fragments,{id:trialFragmentItemId('guardian_blade',6),qty:1,type:'material'},{id:trialFragmentItemId('guardian_amulet',6),qty:1,type:'material'}]};
+assert.equal(assembleTrialBlueprint({...full,professions:{active:'jeweler'}},'guardian_blade'),null,'non-masters cannot assemble another profession blueprint');
 const created=assembleTrialBlueprint(full,'guardian_blade');
 assert.ok(created);
 assert.equal(ownedTrialFragmentCount(created,'guardian_blade',6),0);
