@@ -126,6 +126,10 @@ def perform_edit(role, target_name, task):
     specialist_path = ROOT / ".github" / "agents" / specialist
     specialist_guidance = specialist_path.read_text(encoding="utf-8")[:2300]
     feedback = ""
+    # Optional explicit component/property locks prevent the small model from
+    # hallucinating CSS selectors and editing a different existing component.
+    selector_lock = re.search(r"(?mi)^TARGET_SELECTOR:\s*(\.[A-Za-z0-9_-]+)\s*$", task)
+    property_lock = re.search(r"(?mi)^TARGET_PROPERTY:\s*([a-z-]+)\s*$", task)
     for attempt in range(2):
         is_css = target_name.endswith(".css")
         output_format = (
@@ -142,13 +146,17 @@ def perform_edit(role, target_name, task):
             + output_format
             + "Never change external files or any game economy, auth, save or server logic.\n"
             + f"ROLE: {role}\nSPECIALIST GUIDANCE: {style}\nEXISTING SPECIALIST PROFILE:\n{specialist_guidance}\n"
-            + f"OWNER TASK: {task}\nREPO RULES EXCERPT:\n{rules}\n"
+            + f"OWNER TASK: {task}\nEXPLICIT SELECTOR LOCK: {selector_lock.group(1) if selector_lock else 'none'}\nEXPLICIT PROPERTY LOCK: {property_lock.group(1) if property_lock else 'none'}\nREPO RULES EXCERPT:\n{rules}\n"
             + f"FILE PATH: {target_name}\nCURRENT FILE (verbatim):\n{original}\n"
             + f"{feedback}"
         )
         try:
             patch = request_model(prompt)
             if is_css:
+                if selector_lock:
+                    patch["selector"] = selector_lock.group(1)
+                if property_lock:
+                    patch["property"] = property_lock.group(1).lower()
                 result = apply_css_property(original, patch)
             else:
                 old, new = patch["search"], patch["replace"]
