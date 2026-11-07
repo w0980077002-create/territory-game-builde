@@ -14,7 +14,7 @@
   text-shadow: 1px 2px 0 #291407, -1px -1px 0 #291407;
 }
 .territory-settings-heading img { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
-.territory-settings-toggle { border-color: #ab7b43; background: linear-gradient(145deg,#50311f,#2d1d15); }
+.territory-settings-toggle { border-color: #ab7b43; background: linear-gradient(145deg,#a06c3866,#684025,#3c2417 70%,#2b1b13); }
 .territory-settings-toggle:focus-visible,
 .territory-settings button:focus-visible { outline: 3px solid #ffe6a5; outline-offset: 2px; }
 .territory-settings-toggle > span:first-child { overflow-wrap: anywhere; }
