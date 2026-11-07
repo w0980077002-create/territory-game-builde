@@ -48,8 +48,24 @@
   font-weight: 1000;
   text-shadow: 1px 2px 0 #281006, -1px -1px 0 #281006, 2px 2px 1px #281006, 0 0 4px #281006;
 }
-.home-brand-plaque { top: 71px; }
-.territory-city-screen .home-game-scene { --home-chapter-top: 121px; }
+/* The City alone uses the approved crowned gold serif sign. Preserve the
+ * reusable translated wooden plaques everywhere else in the game. */
+.home-brand-plaque {
+  top: clamp(57px, 15.5vw, 66px);
+  width: clamp(205px, 62vw, 270px);
+  max-width: calc(100% - 116px);
+}
+.home-brand-plaque__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1130 / 338;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(13, 6, 5, .65));
+}
+.territory-city-screen .home-game-scene {
+  --home-chapter-top: clamp(129px, 35.5vw, 154px);
+}
 @container territory-city (max-height: 620px) {
   html.territory-ios-webapp .home-brand-plaque { display: none; }
 }
