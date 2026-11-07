@@ -103,7 +103,7 @@ for (const [floor,tier] of [[5,'explorer'],[10,'guardian'],[25,'legendary']]) {
   }
 }
 for(const file of [
-  'city-reputation.svg','chest-explorer.svg','chest-guardian.svg','chest-legendary.svg',
+  'chest-explorer.svg','chest-guardian.svg','chest-legendary.svg',
   'blueprint-fragment.svg','guardian-shard.svg','trial-essence.svg','ancient-mechanism.svg'
 ]) {
   const path='public/assets/territory/ui/trial-loot/'+file;
@@ -111,7 +111,15 @@ for(const file of [
   const svg=readFileSync(path,'utf8');
   assert.match(svg,/<svg[^>]*viewBox=/);
 }
+const badge = readFileSync('public/assets/territory/ui/trial-loot/city-reputation.png');
+assert.equal(badge.subarray(0,8).toString('hex'), '89504e470d0a1a0a', 'the approved royal badge must be a real PNG');
+assert.ok(badge.length > 5000, 'approved royal badge must contain actual artwork');
+const collectionSource = readFileSync('src/components/trials/TrialLootCollection.tsx','utf8');
+assert.match(collectionSource, /city-reputation\.png/, 'collection must display the newly approved royal crest');
+assert.doesNotMatch(collectionSource, /city-reputation\.svg/, 'old badge must not be shown in the collection');
 const sourceFight=readFileSync('src/components/pve/PveFight.tsx','utf8');
+assert.match(sourceFight, /city-reputation\.png/, 'victory reward must display the same royal crest');
+assert.doesNotMatch(sourceFight, /city-reputation\.svg/, 'old badge must not be shown in battle rewards');
 const sourceVictory=readFileSync('src/game/progression.ts','utf8');
 assert.match(sourceVictory, /applyTrialChest\(next, canRollChest \? rollTrialChest\(floor\) : null\)/);
 assert.match(sourceFight,/data-testid="trial-earned-chest"/);

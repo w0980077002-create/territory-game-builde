@@ -936,7 +936,7 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
             <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-semibold">
               <span className="rounded-md border border-white/10 bg-black/40 px-2 py-1">{language === 'en' ? 'Attack elixirs' : 'Эликсиры силы'} ×{loot.elixirs}</span>
               {loot.reputation > 0 && <span data-testid="trial-earned-reputation" className="inline-flex items-center gap-1 rounded-md border border-violet-400/55 bg-violet-950/65 px-2 py-1">
-                <img src={import.meta.env.BASE_URL + TRIAL_LOOT_ASSET_BASE + 'city-reputation.svg'} width="22" height="22" alt="" />
+                <img src={import.meta.env.BASE_URL + TRIAL_LOOT_ASSET_BASE + 'city-reputation.png'} width="28" height="28" className="h-7 w-7 shrink-0 object-contain drop-shadow-[0_0_8px_rgba(246,190,84,.45)]" alt="" />
                 {language === 'en' ? 'TERRITORY-CITY reputation +1' : 'Репутация TERRITORY-CITY +1'}
               </span>}
               {loot.fragment && <span data-testid="trial-earned-fragment" className="rounded-md border border-amber-400/40 bg-black/40 px-2 py-1">📜 {language === 'en' ? (fragmentName?.nameEn ?? '') : (fragmentName?.name ?? '')} · {loot.fragment.part}/6</span>}

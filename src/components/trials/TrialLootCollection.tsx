@@ -17,7 +17,7 @@ export function TrialLootCollection({ language }: { language: 'ru' | 'en' }) {
   return (
     <details data-testid="territory-city-rewards" className="overflow-hidden rounded-2xl border-2 border-[#aa824d]/60 bg-[#241913] text-amber-50 shadow-[inset_0_1px_0_rgba(255,216,139,.15)]">
       <summary className="flex min-h-16 cursor-pointer list-none items-center gap-2.5 px-3 py-2">
-        <img src={art('city-reputation.svg')} alt="" width="53" height="53" className="h-[53px] w-[53px] shrink-0 object-contain" />
+        <img src={art('city-reputation.png')} alt="" width="64" height="64" className="h-16 w-16 shrink-0 object-contain drop-shadow-[0_0_12px_rgba(247,180,62,0.40)]" />
         <span className="min-w-0 flex-1">
           <strong className="block text-sm font-black text-amber-200">{en ? 'TERRITORY-CITY reputation' : 'Репутация TERRITORY-CITY'}</strong>
           <span className="block text-[11px] leading-4 text-amber-100/80">{en ? 'Future bracelet slots · permanent, non-tradable' : 'Для будущих слотов браслетов · навсегда, не продаётся'}</span>
