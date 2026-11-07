@@ -171,7 +171,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   const [busy, setBusy] = useState(false);
   // A speed change applies to the next round. Keep the current visual contact
   // aligned with the HP update scheduled from this round's original pace.
-  const [roundSpeed, setRoundSpeed] = useState(() => useGame.get().settings.speed);
+  const [roundSpeed, setRoundSpeed] = useState(() => kind === 'trial' ? 1 : useGame.get().settings.speed);
   const [strike, setStrike] = useState<StrikeEvent | null>(null);
   const [witchAttack, setWitchAttack] = useState(0);
   const [witchHeal, setWitchHeal] = useState(0);
@@ -222,7 +222,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   heroRef.current = hero;
   foeRef.current = foe;
 
-  const { speed } = state.settings;
+  const speed = kind === 'trial' ? 1 : state.settings.speed;
   // Trial attacks must be selected by the player, without changing their
   // saved Campaign auto-battle preference.
   const auto = kind === 'trial' ? false : state.settings.auto;
@@ -308,7 +308,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     const elite = kind === 'trial' || !!enemy.isBoss;
     const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum.streak === 2, runeEffectsAtStart.current, runeAilments.current);
     if (runeEffectsAtStart.current) runeAilments.current = res.runeAilments ?? runeAilments.current;
-    const currentSpeed = useGame.get().settings.speed;
+    const currentSpeed = kind === 'trial' ? 1 : useGame.get().settings.speed;
     setRoundSpeed(currentSpeed);
     const pace = 1 / currentSpeed;
     for (const hit of res.hits) {
@@ -572,7 +572,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
           <Flag className="w-3.5 h-3.5" /> {outcome ? (kind === 'trial' ? (language === 'en' ? 'Trials' : 'К испытаниям') : (language === 'en' ? 'Campaign' : 'К походу')) : (language === 'en' ? 'Surrender' : 'Сдаться')}
         </button>
         <div className="flex-1 min-w-0 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-amber-300/80">{kind === 'trial' ? (language === 'en' ? `Trial ${state.trialLevel} · Wave ${waveIndex + 1}/${trialWaves.length}` : `Испытание ${state.trialLevel} · Волна ${waveIndex + 1}/${trialWaves.length}`) : enemy.isBoss ? (language === 'en' ? 'Chapter boss' : 'Босс главы') : (language === 'en' ? `Chapter ${state.currentChapter}` : `Глава ${state.currentChapter}`)}</p>
+          <p className="text-[10px] uppercase tracking-wider text-amber-300/80">{kind === 'trial' ? (language === 'en' ? `Trial ${state.trialLevel} · ${waveIndex === trialWaves.length - 1 ? 'Boss' : 'Enemy'} ${waveIndex + 1}/${trialWaves.length}` : `Испытание ${state.trialLevel} · ${waveIndex === trialWaves.length - 1 ? 'Босс' : 'Враг'} ${waveIndex + 1}/${trialWaves.length}`) : enemy.isBoss ? (language === 'en' ? 'Chapter boss' : 'Босс главы') : (language === 'en' ? `Chapter ${state.currentChapter}` : `Глава ${state.currentChapter}`)}</p>
           <p className="text-sm font-bold text-white truncate">{foe.name}</p>
         </div>
         <span className="h-9 px-2.5 rounded-xl bg-black/40 border border-white/10 flex items-center">
@@ -833,13 +833,13 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
               >
                 {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sword className="w-5 h-5" />} {language === 'en' ? 'STRIKE' : 'УДАР'}
               </button>
-              <button
+              {kind !== 'trial' && <button
                 onClick={() => setSettings({ speed: speed === 1 ? 2 : 1 })}
                 aria-label={language === 'en' ? 'Battle speed' : 'Скорость боя'}
                 className={`shrink-0 w-11 h-11 rounded-xl border text-sm font-black transition-colors ${speed === 2 ? 'bg-amber-400 text-black border-amber-300' : 'bg-black/55 text-gray-100 border-white/15'}`}
               >
                 x2
-              </button>
+              </button>}
             </div>
           </div>
         )}
