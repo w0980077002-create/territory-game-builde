@@ -492,6 +492,9 @@ assert.match(fightSource, /if \(roundFlight\.current \|\| done\.current\) return
 assert.match(fightSource, /const report = summarizePveRound\(res\.hits\);\s*setTacticalReport\(report\)/, 'Tactical feedback must come from resolved hits');
 assert.match(fightSource, /setTacticalReport\(null\)/, 'Clear previous feedback during the next move');
 assert.match(fightSource, /data-testid="pve-enemy-guard"/, 'Show the actual guard during classic manual combat');
+assert.match(fightSource, /data-testid="pve-compact-tactics"/, 'Tactical instructions should fit in a single short strip, not block the arena');
+assert.match(fightSource, /min-h-9 w-full items-center/, 'Compact combat buttons must remain tappable');
+assert.match(fightSource, /kind !== 'trial' && tacticalReport\.heroStrike/, 'Verbose round explanations must not cover the Trials battle controls');
 assert.match(fightSource, /\(kind === 'trial' \|\| enemy\.isBoss\) && !auto && !busy/, 'Only trial and boss manual rounds reveal their committed strike');
 assert.match(fightSource, /blocks\.includes\(enemyIntent\.attack\)/, 'The warning reflects the selected defense');
 assert.match(fightSource, /data-testid="pve-telegraphed-strike"/, 'Show the actual next strike direction for tactical trials and bosses');
