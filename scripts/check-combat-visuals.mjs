@@ -38,7 +38,7 @@ assert(arena.includes("portraitFollower ? '-right-[12%]' : 'right-0'"), 'Make ro
 assert(arena.includes('strike={null}'), 'Companion in PvP is visual-only: never inject bonus hits');
 assert.match(arena, /getFollowerArt\(portraitFollower\.id\)/, 'Use the selected companion image');
 assert(!arena.includes('h-[52%] w-[48%]'), 'Do not restore the invisible follower layout');
-assert.match(pve, /getEnemyCombatFrames\(enemy\.art\)/, 'PvE enemy animations disconnected');
+assert.match(pve, /getEnemyCombatFrames\((?:enemy|activeEnemy)\.art\)/, 'PvE enemy animations disconnected');
 assert.match(pve, /getFollowerCombatFrames\(follower\.id\)/, 'PvE companion animation frames missing');
  
 // After a PvE win or loss the outcome must replace (not trail below) the tall
