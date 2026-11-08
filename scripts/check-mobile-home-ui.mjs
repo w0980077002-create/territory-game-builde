@@ -80,6 +80,7 @@ assert.match(home, /<CityLivingFollower id=\{follower\.id\} name=\{follower\.nam
   'The real selected companion must render in the approved City slot');
 assert.match(home, /<CityLivingEnemy art=\{nextEnemy\.art\} name=\{nextEnemy\.name\}/,
   'The real current enemy must keep its existing campaign identity');
+assert.match(livingFollower, /id === 'follower_6'[\s\S]*?<ArticulatedCow/, 'Cow must articulate original source in City');
 assert.match(livingFollower, /follower_pumpkin_witch_2026[\s\S]*?<PumpkinWitch/,
   'Witch must blink in City without fake heal/attack effects');
 assert.match(livingEnemy, /getFighterRig\(art\)/,
