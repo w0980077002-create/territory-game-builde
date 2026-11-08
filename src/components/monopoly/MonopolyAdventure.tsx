@@ -149,11 +149,11 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
     if(!alive())return;
     setBatch({done:i,total});
     // An interrupted round is resumed, never charged for again.
-    const nextValue=total===10&&(latest??data).progress.lucky_next?106:rollValue;
-    const d=i===0&&active?data:await monopoly('roll',nextValue);
+    const nextValue:number=total===10&&(latest??data).progress.lucky_next?106:rollValue;
+    const d:MonopolyData=i===0&&active?data:await monopoly('roll',nextValue);
     if(!alive())return;
     setData(d);
-    const session=d.hall.active;
+    const session:MonopolyData['hall']['active']=d.hall.active;
     if(!session||session.game!=='monopoly')throw new Error('monopoly_other_game');
     const turn=session.question as MonopolyQuestion;
     const steps=turn.steps??turn.roll??1;
@@ -166,7 +166,7 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
     if(!alive())return;
     setFace(turn.roll??1);setPosition(turn.new_position??0);
     // finish is idempotent by session token; retrying a lost response cannot pay twice.
-    const finished=await monopoly('finish',1,session.token).catch(async original=>{
+    const finished:MonopolyData=await monopoly('finish',1,session.token).catch(async original=>{
      try{return await monopoly('finish',1,session.token);}
      catch{throw original;}
     });
