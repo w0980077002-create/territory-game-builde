@@ -23,15 +23,40 @@ const {
   TRIAL_FRAGMENT_WEIGHTS, TRIAL_CHEST_RULES,
 } = m.exports;
 const snap = JSON.stringify;
+const withChoicesFactory = values => {
+  let p=0; return () => values[p++] ?? 0.99;
+};
+
 assert.equal(trialChestTier(0), null);
-assert.equal(trialChestTier(1), null);
+assert.equal(trialChestTier(1), 'common');
+assert.equal(trialChestTier(2), 'common');
+assert.equal(trialChestTier(4), 'common');
+assert.equal(trialChestTier(6), 'common');
 assert.equal(trialChestTier(5), 'explorer');
 assert.equal(trialChestTier(10), 'guardian');
 assert.equal(trialChestTier(25), 'legendary');
 assert.equal(trialChestTier(50), 'legendary', '25-floor chest supersedes 10-floor chest');
 assert.equal(trialChestTier(100), 'legendary');
 assert.equal(TRIAL_FRAGMENT_WEIGHTS.reduce((a,b)=>a+b,0), 100);
-assert.equal(rollTrialChest(1, () => 0), null);
+assert.equal(rollTrialChest(0, () => 0), null);
+const common = rollTrialChest(1, withChoicesFactory([0, 0]));
+assert.equal(common.tier, 'common');
+assert.equal(common.gold, 20);
+assert.equal(common.potions, 1);
+assert.equal(common.gems, 0);
+assert.equal(common.materials, 0);
+assert.equal(common.elixirs, 0);
+assert.equal(common.reputation, 0);
+assert.equal(common.fragment, undefined);
+assert.equal(common.component, undefined);
+// Exactly one ordinary bonus with transparent non-overlapping thresholds.
+for (const [drawn, bonus] of [[0, 'potions'], [0.449, 'potions'], [0.45, 'materials'], [0.799, 'materials'], [0.8, 'elixirs'], [0.949, 'elixirs'], [0.95, 'gems'], [0.999, 'gems']]) {
+  const loot = rollTrialChest(1, withChoicesFactory([drawn, 0.5]));
+  assert.equal(loot.gold, 30);
+  assert.equal(['potions','materials','elixirs','gems'].filter(kind => loot[kind] > 0).length, 1, String(drawn));
+  assert.equal(loot[bonus], 1, String(drawn));
+}
+
 const withChoices = values => {
   let p=0; return () => values[p++] ?? 0.99;
 };
@@ -73,6 +98,25 @@ assert.equal(replay.inventory.length,won.inventory.length);
 assert.equal(replay.trialChestClaims.length,1);
 assert.equal(replay.lastTrialChest,null,'replay cannot re-display rewarded chest');
 
+// Ordinary chests are earned once, including after a reset to floor one.
+// They never grant reputation, blueprints or the restricted red currency.
+const commonWon = applyTrialChest({ ...base, trialLevel: 1 }, common, Date.UTC(2026, 10, 8));
+assert.equal(commonWon.player.gold, 220);
+assert.equal(commonWon.player.redGems, 0);
+assert.equal(commonWon.player.gems, 40);
+assert.equal(commonWon.forgeMaterials, 6);
+assert.equal(commonWon.territoryCityReputation, 0);
+assert.equal(commonWon.inventory.find(item => item.id === 'trial_health_potion_1').qty, 1);
+assert.match(commonWon.inventory.find(item => item.id === 'trial_health_potion_1').expiresAt, /2026-11-15/);
+assert.deepEqual([...commonWon.trialChestClaims], [1]);
+const commonReset = applyTrialChest({ ...commonWon, trialLevel: 1 }, common);
+assert.equal(commonReset.lastTrialChest, null);
+assert.equal(commonReset.player.gold, commonWon.player.gold);
+assert.equal(commonReset.inventory.length, commonWon.inventory.length);
+assert.equal(commonReset.trialChestClaims.length, 1);
+// Old special chest receipts (without 'potions') remain valid.
+assert.equal(won.inventory.some(item => item.id.startsWith('trial_health_potion_')), false);
+
 // The six parts must be different, duplicates do not turn into a recipe.
 const fragments = [1,2,3,4,5].map(part=>({id:trialFragmentItemId('guardian_blade',part),qty:1,type:'material'}));
 const partial={...base,inventory:[...fragments,{id:trialFragmentItemId('guardian_blade',1),qty:5,type:'material'}]};
@@ -103,7 +147,7 @@ for (const [floor,tier] of [[5,'explorer'],[10,'guardian'],[25,'legendary']]) {
   }
 }
 for(const file of [
-  'chest-explorer.svg','chest-guardian.svg','chest-legendary.svg',
+  'chest-common.svg','chest-explorer.svg','chest-guardian.svg','chest-legendary.svg',
   'blueprint-fragment.svg','guardian-shard.svg','trial-essence.svg','ancient-mechanism.svg'
 ]) {
   const path='public/assets/territory/ui/trial-loot/'+file;
@@ -123,6 +167,11 @@ assert.doesNotMatch(sourceFight, /city-reputation\.svg/, 'old badge must not be 
 const sourceVictory=readFileSync('src/game/progression.ts','utf8');
 assert.match(sourceVictory, /applyTrialChest\(next, canRollChest \? rollTrialChest\(floor\) : null\)/);
 assert.match(sourceFight,/data-testid="trial-earned-chest"/);
+assert.match(sourceFight,/data-testid="trial-open-chest"/);
+assert.match(sourceFight,/data-testid="trial-chest-revealed"/);
+assert.match(sourceFight,/trial-chest-already-claimed/);
+assert.match(sourceFight,/saveState !== 'confirmed' \|\| chestOpened/, 'never open a chest before saving, and never credit loot on click');
+assert.ok(existsSync('src/components/pve/trialChestReveal.css'), 'missing live opening animation');
 assert.match(readFileSync('src/components/InventoryScreen.tsx','utf8'),/<TrialLootCollection language=\{language\} \/>/);
 assert.match(readFileSync('src/components/BattleScreen.tsx','utf8'),/<TrialLootCollection language=\{language\} \/>/);
-console.log('TRIAL LOOT PASS: chest schedule, rates, first-clear uniqueness, permanent reputation, six unique fragments, crafted document, visuals and victory/UI integration');
+console.log('TRIAL LOOT PASS: all-floor common chests, exclusive one-in-four rewards, special odds, reset replay protection, visuals and saved victory reveal');
