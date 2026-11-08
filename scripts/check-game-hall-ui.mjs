@@ -148,29 +148,27 @@ assert.match(monoCss,/\.mono-celebration \.mono-reward-footer\s*\{[\s\S]*?flex: 
 assert.doesNotMatch(mono,/Золото ожидает в игровом зале|Ресурсы готовы к получению под полем/,
   'Automatic payouts must not be described as requiring manual collection');
 
-// Owner-approved treasure presentation: reuse actual Shop/Arena raster wood,
-// keep real prize amounts and the previously secured compact mobile footer.
+// Never reintroduce the giant Shop-beam background behind chest rewards,
+// a separate rope-bordered prize shelf, or cyan product-border decoration.
 assert.match(mono,/--mono-reward-oak[\s\S]*?territory-dark-oak-mobile\.webp/,
-  'Monopoly reward must load approved dark oak art rather than a flat purple fill');
-assert.doesNotMatch(mono,/--mono-reward-frame/,
-  'Do not load the Shop border image that painted cyan artifacts in the reward frame');
-assert.match(monoCss,/FINAL TREASURE COMPOSITION[\s\S]*?border-image: none/,
-  'Treasure frame must keep a clean wooden/gold inset without cyan strips');
-assert.match(monoCss,/\.mono-celebration \.mono-extra-rewards\s*\{[\s\S]*?var\(--mono-reward-beams\)/,
-  'Prize cards must sit on a wood-textured reward shelf');
+  'Treasure backdrop must keep the approved natural dark oak');
+assert.doesNotMatch(mono,/--mono-reward-beams|--mono-reward-frame|shop-wood-beams\.webp/,
+  'The reward JSX must not load the rejected Shop beam or border artwork');
+assert.doesNotMatch(monoCss,/--mono-reward-beams|--mono-reward-frame|shop-wood-beams\.webp/,
+  'The reward stylesheet must not reference the rejected decorative panels');
+assert.match(monoCss,/Rewards sit directly on the chest's oak field/,
+  'Loot must sit directly on approved oak without a second giant wooden shelf');
+assert.match(monoCss,/\.mono-celebration \.mono-extra-rewards\s*\{[\s\S]*?background: none;/,
+  'Reward list must not draw an oversized secondary backdrop');
+assert.match(monoCss,/\.mono-celebration \.mono-reward-footer\s*\{[\s\S]*?var\(--mono-reward-oak\)/,
+  'The action footer must use the same approved oak, not another Shop facade');
 assert.match(monoCss,/\.mono-celebration \.mono-reward-footer \.mono-cta::before\s*\{[\s\S]*?inset: 5px 0/,
-  'A compact visual CTA keeps the full-sized button tap target');
+  'Keep a compact visual CTA and a 44px touch target');
 assert.match(mono,/className="mono-reward-status"/,
-  'Reward modal should present a single concise payout status');
+  'The reward dialog shows a single concise status');
 assert.doesNotMatch(mono,/Ресурсы начисляются автоматически\. При задержке выдачи/,
-  'Remove lengthy repeated crediting instructions from chest modal');
-assert.match(monoCss,/OWNER APPROVED MONOPOLY TREASURE OAK/,
-  'Monopoly treasure skin must be scoped to the reward screen');
-assert.match(monoCss,/\.mono-celebration \.mono-resource\s*\{[\s\S]*?var\(--mono-reward-oak\)/,
-  'Reward item tiles must read as wood, not purple boxes');
-assert.match(monoCss,/\.mono-celebration \.mono-reward-footer\s*\{[\s\S]*?var\(--mono-reward-beams\)/,
-  'Reward bottom action must sit on a textured timber beam');
+  'Long duplicate payout instructions must stay removed');
 assert.doesNotMatch(monoCss,/mono-reward-card[^\n]*iron-corner\.svg/,
-  'Do not restore the rejected iron-corner overlays');
+  'Do not return the rejected legacy metal corner overlay');
 
 console.log('Game Hall UI PASS: tickets only, automatic protected gold + inventory collection, pending payout recovery, safe mock art, server-owned wallet.');
