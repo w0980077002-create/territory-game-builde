@@ -22,7 +22,8 @@ assert.match(treasury, /!opening&&<h3>/, 'reward label must not be shown during 
 assert.match(css, /\.fortune-chest-base\s*\{[^}]*clip-path:\s*inset\(49% 0 0 0\)/s, 'base must be clipped below the hinge');
 assert.match(css, /\.fortune-chest-lid\s*\{[^}]*clip-path:\s*inset\(0 0 51% 0\)/s, 'lid must be clipped above the hinge');
 assert.match(css, /\.fortune-chest-reveal\.is-opening \.fortune-chest-lid\s*\{[^}]*animation:\s*fortune-lid-rise/s, 'opening must animate the lid, not shake the whole chest');
-assert.match(css, /\.fortune-chest-reveal\.is-open \.fortune-chest-lid\s*\{[^}]*rotateX\(-46deg\)/s, 'open state must keep the lid raised');
+assert.match(css, /\.fortune-chest-reveal\.is-open \.fortune-chest-lid\s*\{[^}]*rotateX\(-27deg\)/s, 'open state must keep the lid raised');
+assert.match(css, /fortune-chest-stage::after/, 'opened lid must reveal a warm interior seam');
 assert.match(css, /@media \(max-width:359px\)/, 'narrow WebView layout must be present');
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)/, 'reduced motion should still show an open chest');
 assert.doesNotMatch(css, /\.fortune-chest-reveal img\s*\{/s, 'old generic image rules must not override the independent layers');

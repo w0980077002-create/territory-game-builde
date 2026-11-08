@@ -153,7 +153,7 @@
 .fortune-chest-reveal { display: grid; place-items: center; min-height: 158px; padding: 4px 0; }
 .fortune-chest-stage {
   position: relative; isolation: isolate;
-  width: clamp(116px, 38vw, 154px); height: clamp(116px, 38vw, 154px);
+  width: clamp(124px, 43vw, 170px); height: clamp(124px, 43vw, 170px);
   perspective: 340px; transform-style: preserve-3d;
 }
 .fortune-chest-base,.fortune-chest-lid {
@@ -173,6 +173,18 @@
   background: radial-gradient(ellipse,#fff2be 0%,#ffc05e9c 28%,#b45b1b00 72%);
   opacity: 0; transform: scale(.3);
 }
+/* Narrow light leaking from behind the hinged lid: no floating cutout gap. */
+.fortune-chest-stage::after {
+  content: ''; position: absolute; z-index: 2;
+  left: 22%; right: 22%; top: 43%; height: 9px;
+  border-radius: 50%; pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, transparent, #ffe9ae 24%, #fff9ce 50%, #ffc65c 75%, transparent);
+  box-shadow: 0 0 15px 5px #f9b74f8c;
+  filter: blur(2px);
+}
+.fortune-chest-reveal.is-open .fortune-chest-stage::after { opacity: .65; }
+.fortune-chest-reveal.is-opening .fortune-chest-stage::after { animation: fortune-seam-glow 1.45s ease-out both; }
+@keyframes fortune-seam-glow { 0%,25% { opacity: 0; } 65% { opacity: .95; } 100% { opacity: .65; } }
 .fortune-chest-stars {
   position: absolute; z-index: 4; inset: 0; opacity: 0; pointer-events: none;
   background:
@@ -193,14 +205,14 @@
 .fortune-chest-reveal.is-opening .fortune-chest-stars {
   animation: fortune-stars-burst 1.45s ease-out both;
 }
-.fortune-chest-reveal.is-open .fortune-chest-lid { transform: translateY(-11%) rotateX(-46deg); }
+.fortune-chest-reveal.is-open .fortune-chest-lid { transform: translateY(-4%) rotateX(-27deg); }
 .fortune-chest-reveal.is-open .fortune-chest-aura { opacity: .72; transform: scale(1.6); }
 .fortune-chest-reveal.is-open.is-golden .fortune-chest-aura { opacity: 1; filter: drop-shadow(0 0 16px #ffca4e); }
 .fortune-chest-reveal.is-rare .fortune-chest-aura { background: radial-gradient(ellipse,#f7dcff,#c39cffad 31%,#72359c00 74%); }
 @keyframes fortune-lid-rise {
   0%,24% { transform: translateY(0) rotateX(0deg); }
   45% { transform: translateY(-5%) rotateX(-15deg); }
-  82%,100% { transform: translateY(-11%) rotateX(-46deg); }
+  82%,100% { transform: translateY(-4%) rotateX(-27deg); }
 }
 @keyframes fortune-base-breathe {
   0%,24%,100% { transform: scale(1); }
@@ -223,7 +235,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .fortune-chest-reveal.is-opening .fortune-chest-lid,
-  .fortune-chest-reveal.is-open .fortune-chest-lid { transform: translateY(-11%) rotateX(-46deg); }
+  .fortune-chest-reveal.is-open .fortune-chest-lid { transform: translateY(-4%) rotateX(-27deg); }
   .fortune-chest-reveal.is-opening .fortune-chest-aura { opacity: .72; transform: scale(1.6); }
 }
 @keyframes fortune-confetti { from { top: 0; opacity: 1; transform: scale(.7); } to { top: 90%; opacity: 0; transform: scale(1.2); } }
