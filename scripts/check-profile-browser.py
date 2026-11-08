@@ -101,7 +101,10 @@ with sync_playwright() as p:
             chest_images = cards.locator('img')
             art_urls = chest_images.evaluate_all('images => images.map(el => el.src)')
             assert len(set(art_urls)) == 2 and all(url.endswith('.webp') for url in art_urls), (width,lang,'VIP chest art must be 2 real WEBP assets')
-            assert chest_images.evaluate_all('images => images.every(el => el.complete && el.naturalWidth > 0)')
+            page.wait_for_function("""() => {
+                const images=[...document.querySelectorAll('.vip-chest-card img')];
+                return images.length===2 && images.every(el => el.complete && el.naturalWidth > 0);
+            }""", timeout=8000)
             cards.nth(0).click()
             assert vip.locator('[data-testid="vip-chest-demo"]').count() == 1
             vip.locator('[data-testid="vip-chest-demo-open"]').click()
