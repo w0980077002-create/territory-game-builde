@@ -16,7 +16,9 @@ const expiryMod = { exports: {} };
 vm.runInNewContext(expiryJs, { module: expiryMod, exports: expiryMod.exports, Date, Math, JSON });
 const mod = { exports: {} };
 vm.runInNewContext(js, { module: mod, exports: mod.exports, Date, Math, JSON,
-  require: (name) => { assert.equal(name, './elixirExpiry'); return expiryMod.exports; } });
+  require: (name) => { if (name === './elixirExpiry') return expiryMod.exports;
+    if (name === './vipProgram') return { VIP_AUTO_BELT_LEVEL: 3 };
+    throw new Error('Unexpected belt dependency: ' + name); } });
 const { BELT_WIN_GOALS, BELT_RULES, isSlotOpen, reconcileLockedBelt, putInBelt, takeFromBelt } = mod.exports;
 
 const goals = [0, 100, 500, 1000, 2000, 3500, 5000];
