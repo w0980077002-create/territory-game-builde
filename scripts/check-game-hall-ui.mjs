@@ -131,4 +131,21 @@ assert.match(skin, /hall-game\[data-testid="hall-game-slots"\] \.hall-game__hint
 assert.match(sql,/REVOKE ALL ON FUNCTION public\.territory_hall_start_v1/);
 assert.match(sql,/REVOKE ALL ON territory_private\.hall_accounts_v1/);
 assert.doesNotMatch(sql,/redGems|red_gems|p_reward_gold/,'No premium debit or caller-driven gold');
+// Regression: Android Telegram reward cards must not hide their primary action
+// under the fixed navigation, even after ten rolls with several resource types.
+assert.match(mono,/className="mono-reward-body"/,
+  'Treasure list should scroll independently of the action');
+assert.match(mono,/className="mono-reward-footer"/,
+  'Treasure Continue button must live in a persistent footer');
+assert.match(mono,/mono-reward-footer"><button autoFocus type="button" className="mono-cta"/,
+  'Continue must be a real focusable button inside the footer');
+assert.match(monoCss,/\.mono-celebration > section\.mono-reward-card\s*\{[\s\S]*?max-height: min\(440px, 100%\)/,
+  'Android treasure card must be compact inside the available WebView height');
+assert.match(monoCss,/\.mono-celebration \.mono-reward-body\s*\{[\s\S]*?overflow-y: auto/,
+  'Only the prize list should scroll when many rewards are shown');
+assert.match(monoCss,/\.mono-celebration \.mono-reward-footer\s*\{[\s\S]*?flex: 0 0 auto/,
+  'The Continue footer must remain visible above the bottom navigation');
+assert.doesNotMatch(mono,/Золото ожидает в игровом зале|Ресурсы готовы к получению под полем/,
+  'Automatic payouts must not be described as requiring manual collection');
+
 console.log('Game Hall UI PASS: tickets only, automatic protected gold + inventory collection, pending payout recovery, safe mock art, server-owned wallet.');
