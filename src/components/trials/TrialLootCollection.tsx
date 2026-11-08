@@ -25,9 +25,10 @@ export function TrialLootCollection({ language }: { language: 'ru' | 'en' }) {
         <strong data-testid="territory-city-reputation-count" className="rounded-lg border border-amber-400/40 bg-black/40 px-2.5 py-1.5 text-xl font-black text-amber-300 tabular-nums">{reputation}</strong>
       </summary>
       <div className="space-y-3 border-t border-amber-600/25 px-3 pb-3 pt-3">
-        <p className="text-xs text-amber-100/90">{en ? 'Exactly +1 city reputation can appear in each Trial chest. Not sold or spent; bracelet slots are not active yet.' : 'В сундуке Испытаний может выпасть ровно +1 репутация. Её нельзя продать или потратить. Слоты браслетов пока закрыты.'}</p>
-        <div className="grid grid-cols-3 gap-1.5" data-testid="trial-chest-odds">
+        <p className="text-xs text-amber-100/90">{en ? 'Only milestone Trial chests can grant +1 city reputation. Not sold or spent; bracelet slots are not active yet.' : 'В особом сундуке Испытаний может выпасть ровно +1 репутация. Её нельзя продать или потратить. Слоты браслетов пока закрыты.'}</p>
+        <div className="grid grid-cols-2 gap-1.5" data-testid="trial-chest-odds">
           {([
+            ['common', 1, en ? 'Common' : 'Обычный'],
             ['explorer', 5, en ? 'Explorer' : 'Испытатель'],
             ['guardian', 10, en ? 'Guardian' : 'Страж'],
             ['legendary', 25, en ? 'Legend' : 'Легенда'],
@@ -35,9 +36,16 @@ export function TrialLootCollection({ language }: { language: 'ru' | 'en' }) {
             <div key={tier} className="rounded-lg border border-amber-700/35 bg-[#140e0c] p-1.5 text-center">
               <img src={art('chest-' + tier + '.svg')} width="64" height="64" className="mx-auto h-16 w-16 object-contain" alt="" loading="lazy" />
               <b className="block text-[11px] text-amber-100">{title}</b>
-              <span className="block text-[10px] text-amber-300">{en ? 'every' : 'каждый'} {floor}{en ? 'th floor' : '-й этаж'}</span>
-              <span className="block text-[10px] text-amber-50">{Math.round(TRIAL_CHEST_RULES[tier].reputation * 100)}% {en ? 'reputation' : 'репутация'}</span>
-              <span className="block text-[10px] text-sky-200">{Math.round(TRIAL_CHEST_RULES[tier].fragment * 100)}% {en ? 'fragment' : 'фрагмент'}</span>
+              <span className="block text-[10px] text-amber-300">{tier === 'common'
+                ? (en ? 'Every other floor' : 'Остальные этажи')
+                : (en ? 'Every ' + floor + 'th floor' : 'Каждый ' + floor + '-й этаж')}</span>
+              {tier === 'common' ? <>
+                <span className="block text-[10px] text-amber-50">{en ? '45% health potion · 35% material' : '45% зелье · 35% материал'}</span>
+                <span className="block text-[10px] text-sky-200">{en ? '15% elixir · 5% blue diamond' : '15% эликсир · 5% синий алмаз'}</span>
+              </> : <>
+                <span className="block text-[10px] text-amber-50">{Math.round(TRIAL_CHEST_RULES[tier].reputation * 100)}% {en ? 'reputation' : 'репутация'}</span>
+                <span className="block text-[10px] text-sky-200">{Math.round(TRIAL_CHEST_RULES[tier].fragment * 100)}% {en ? 'fragment' : 'фрагмент'}</span>
+              </>}
             </div>
           ))}
         </div>
