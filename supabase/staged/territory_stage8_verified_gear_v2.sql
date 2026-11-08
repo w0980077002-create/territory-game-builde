@@ -34,7 +34,7 @@ BEGIN
   END IF;
   SELECT i.item_output->'equipment' INTO v_canonical
     FROM public.territory_profession_stage8_items i
-   WHERE i.item_id = pg_catalog.substring(v_client_id FROM 8)::uuid
+   WHERE i.item_id = pg_catalog.substr(v_client_id,8)::uuid
      AND i.player_id = p_player
      AND i.item_output->>'type' = 'equipment';
   IF NOT FOUND OR pg_catalog.jsonb_typeof(v_canonical) IS DISTINCT FROM 'object' THEN
