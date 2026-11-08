@@ -171,4 +171,21 @@ assert.doesNotMatch(mono,/Ресурсы начисляются автомати
 assert.doesNotMatch(monoCss,/mono-reward-card[^\n]*iron-corner\.svg/,
   'Do not return the rejected legacy metal corner overlay');
 
+// Lucky Rune is an actionable next-roll choice, not a line of text above
+// a selector hidden beneath the entire game board.
+assert.match(mono,/const showLuckyDice=!!reward&&!!p\?\.lucky_next&&!active/,
+  'A server-confirmed lucky rune must activate the six-die reward chooser');
+assert.match(mono,/className="mono-reward-lucky-grid"/,
+  'The reward window must show the six clickable dice, before Continue/Later');
+assert.match(mono,/mono-reward-lucky-grid[\s\S]*?faces\.map\(\(n,i\)=>[\s\S]*?roll\(101\+i\)/,
+  'Each selected lucky die must use the existing server-authenticated roll action');
+assert.match(mono,/className="mono-choose mono-choose--active"/,
+  'The six-die choice must remain accessible beside roll controls after closing the reward');
+assert.match(mono,/closeReward=[\s\S]*?luckyChoiceRef\.current\?\.scrollIntoView/,
+  'Closing the lucky reward must reveal the retained dice selector');
+assert.match(monoCss,/\.mono-celebration \.mono-reward-lucky-grid\s*\{[\s\S]*?grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,
+  'The reward window must show all six dice in a compact mobile row');
+assert.match(monoCss,/\.territory-monopoly \.mono-controls \.mono-choose--active\s*\{/,
+  'The post-reward chooser must be visible in the ordinary-flow control area');
+
 console.log('Game Hall UI PASS: tickets only, automatic protected gold + inventory collection, pending payout recovery, safe mock art, server-owned wallet.');
