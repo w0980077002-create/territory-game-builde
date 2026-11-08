@@ -49,6 +49,8 @@ createRoot(document.getElementById('root')).render(<App />);
 const result = await build({
   stdin: {contents: entry, resolveDir: resolve('.'), loader: 'tsx'},
   bundle: true, write: false, format: 'iife', jsx: 'automatic', minify: true,
+  // Vite-only env used by art/asset helpers; the harness runs at the site root.
+  define: {'import.meta.env': JSON.stringify({BASE_URL: '/', MODE: 'production', DEV: false, PROD: true})},
   alias: {'@': resolve('src')},
   plugins: [{
     name: 'antilevel-stubs',
