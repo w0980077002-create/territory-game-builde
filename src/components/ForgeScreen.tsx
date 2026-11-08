@@ -13,7 +13,7 @@ import { ForgeForecastHint } from './ForgeForecastHint';
 import { IosGamePortal } from './ui/Modal';
 import type { Equipment, InventoryItem } from '@/game/types';
 import { upgradeEquipment } from '@/game/equipmentBalance';
-import { forgeAttempt, forgeCost, forgeSetBonus, forgeSuccessRate } from '@/game/forge';
+import { forgeAttempt, forgeCost, forgeSetBonus, forgeSuccessRate, isStage8Gear } from '@/game/forge';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
 import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
 
@@ -81,6 +81,15 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
     // instant of the roll; the open modal can be stale after another game action.
     const now = useGame.get();
     const eq = item.equipment;
+    // Never debit gold/materials for a Stage8 item whose canonical server
+    // registry cannot yet commit the corresponding forge upgrade.
+    if (isStage8Gear(item.id)) {
+      setError(language === 'en'
+        ? 'Crafted gear upgrades need server confirmation. No gold or materials were spent.'
+        : 'Улучшение ремесленной вещи ожидает серверной защиты. Золото и материалы не списаны.');
+      hapticNotify('error');
+      return;
+    }
     if (eq.level >= now.player.level) {
       setError(t('upgradeMaxLevel'));
       hapticNotify('error');
@@ -171,7 +180,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
     ...equipment,
   ];
   const forgeReady = (item: InventoryItem) => {
-    if (!item.equipment || item.equipment.level>=state.player.level) return false;
+    if (!item.equipment || isStage8Gear(item.id) || item.equipment.level>=state.player.level) return false;
     const cost=forgeCost(item.equipment.level);
     return state.player.gold>=cost.gold && state.forgeMaterials>=cost.materials;
   };
@@ -378,7 +387,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
             </div>
 
             {/* Exact deterministic preview from current item template. */}
-            {selectedCurrent.equipment.level < state.player.level && (
+            {!isStage8Gear(selectedCurrent.id) && selectedCurrent.equipment.level < state.player.level && (
               <div className="rounded-xl border border-emerald-500/25 bg-emerald-950/20 p-3 mb-3">
                 <p className="text-xs font-semibold text-emerald-300 mb-2">{language === 'en' ? 'Next level (if successful)' : 'Следующий уровень (при успехе)'}</p>
                 {(['attack', 'defense', 'hp', 'critChance'] as const).map((key) => {
@@ -392,7 +401,16 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
             )}
 
             {/* Upgrade cost */}
-            {selectedCurrent.equipment.level >= state.player.level ? (
+            {isStage8Gear(selectedCurrent.id) ? (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-900/20 p-3 mb-3 text-center" data-testid="stage8-forge-server-pending">
+                <p className="text-sm text-amber-200 font-medium">
+                  {language === 'en' ? 'Server-verified upgrade in preparation' : 'Защищённая заточка готовится'}
+                </p>
+                <p className="text-xs text-gray-300 mt-1">
+                  {language === 'en' ? 'Your crafted item and materials are safe. Upgrades will be available after the authoritative registry is connected.' : 'Вещь и материалы сохраняются. Улучшение появится после подключения серверного учёта предметов.'}
+                </p>
+              </div>
+            ) : selectedCurrent.equipment.level >= state.player.level ? (
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3 text-center">
                 <p className="text-sm text-red-300 font-medium">
                   {t('upgradeMaxLevel')}
@@ -420,9 +438,11 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
             <button
               className="btn-accent w-full"
               onClick={() => tryUpgrade(selectedCurrent)}
-              disabled={upgrading || saveUnverified || selectedCurrent.equipment.level >= state.player.level}
+              disabled={upgrading || saveUnverified || isStage8Gear(selectedCurrent.id) || selectedCurrent.equipment.level >= state.player.level}
             >
-              {upgrading ? t('blacksmithWorking') : selectedCurrent.equipment.level >= state.player.level ? (
+              {upgrading ? t('blacksmithWorking') : isStage8Gear(selectedCurrent.id) ? (
+                language === 'en' ? 'Await server upgrade' : 'Ожидает серверную заточку'
+              ) : selectedCurrent.equipment.level >= state.player.level ? (
                 t('maxLevel')
               ) : (
                 <><ArrowUp className="w-4 h-4 inline mr-1" /> {t('upgrade')}</>
