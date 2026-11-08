@@ -110,7 +110,7 @@ with sync_playwright() as p:
         base=chest.locator('.fortune-chest-base')
         assert lid.count()==1 and base.count()==1, 'chest must be split into a real lid and body'
         assert lid.evaluate("(el)=>getComputedStyle(el).transform")!='none', 'opened lid must be raised even with reduced motion'
-        assert base.get_attribute('src').endswith('golden-chest.svg')
+        assert base.get_attribute('src').endswith('royal-chest.webp')
         assert lid.get_attribute('src')==base.get_attribute('src')
         chest_box=chest.bounding_box()
         dialog_box=page.get_by_role('dialog').bounding_box()

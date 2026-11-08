@@ -131,7 +131,7 @@
   padding: clamp(9px, 3vw, 15px);
   border: 2px solid #af8245;
   border-radius: 16px;
-  background: linear-gradient(145deg,#2b180da8,#180f0bbd), var(--viking-plaque) center / 100% 100% no-repeat, linear-gradient(#664123,#24170e);
+  background: radial-gradient(ellipse at 54% -15%,#98704524,transparent 66%), linear-gradient(155deg,#58371f,#382416 60%,#21140e);
   box-shadow: inset 0 0 0 2px #27170f, 0 6px 16px #100a0866;
   color: #ffe6ac;
   text-align: center;
@@ -142,7 +142,7 @@
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   border: 2px solid #ba8e50; border-radius: 12px;
   padding: 8px 3px 10px;
-  background: linear-gradient(170deg,#74502e88,#27180fd9), var(--viking-plaque) center / 100% 100% no-repeat, #322016;
+  background: linear-gradient(170deg,#76502f,#4b2f1a 44%,#25170e);
   box-shadow: inset 0 1px #f8d99e55, 0 3px 6px #130a0788;
   color: #ffebba;
 }
@@ -164,6 +164,9 @@
 }
 .fortune-chest-base { z-index: 2; clip-path: inset(49% 0 0 0); transform-origin: 50% 78%; }
 .fortune-chest-lid { z-index: 3; clip-path: inset(0 0 51% 0); transform-origin: 50% 49%; }
+/* The approved royal chest has a deeper curved lid than the old SVGs. */
+.fortune-chest-reveal.is-golden .fortune-chest-lid { clip-path: inset(0 0 55% 0); transform-origin: 50% 45%; }
+.fortune-chest-reveal.is-golden .fortune-chest-base { clip-path: inset(45% 0 0 0); }
 .fortune-chest-aura {
   position: absolute; z-index: 1; inset: 22%;
   border-radius: 50%; pointer-events: none;
@@ -190,14 +193,14 @@
 .fortune-chest-reveal.is-opening .fortune-chest-stars {
   animation: fortune-stars-burst 1.45s ease-out both;
 }
-.fortune-chest-reveal.is-open .fortune-chest-lid { transform: translateY(-20%) rotateX(-58deg); }
+.fortune-chest-reveal.is-open .fortune-chest-lid { transform: translateY(-11%) rotateX(-46deg); }
 .fortune-chest-reveal.is-open .fortune-chest-aura { opacity: .72; transform: scale(1.6); }
 .fortune-chest-reveal.is-open.is-golden .fortune-chest-aura { opacity: 1; filter: drop-shadow(0 0 16px #ffca4e); }
 .fortune-chest-reveal.is-rare .fortune-chest-aura { background: radial-gradient(ellipse,#f7dcff,#c39cffad 31%,#72359c00 74%); }
 @keyframes fortune-lid-rise {
   0%,24% { transform: translateY(0) rotateX(0deg); }
   45% { transform: translateY(-5%) rotateX(-15deg); }
-  82%,100% { transform: translateY(-20%) rotateX(-58deg); }
+  82%,100% { transform: translateY(-11%) rotateX(-46deg); }
 }
 @keyframes fortune-base-breathe {
   0%,24%,100% { transform: scale(1); }
@@ -220,7 +223,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .fortune-chest-reveal.is-opening .fortune-chest-lid,
-  .fortune-chest-reveal.is-open .fortune-chest-lid { transform: translateY(-20%) rotateX(-58deg); }
+  .fortune-chest-reveal.is-open .fortune-chest-lid { transform: translateY(-11%) rotateX(-46deg); }
   .fortune-chest-reveal.is-opening .fortune-chest-aura { opacity: .72; transform: scale(1.6); }
 }
 @keyframes fortune-confetti { from { top: 0; opacity: 1; transform: scale(.7); } to { top: 90%; opacity: 0; transform: scale(1.2); } }

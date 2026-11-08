@@ -13,6 +13,7 @@ assert.match(treasury, /state\?\.receipt&&<FortuneDialog/, 'only a server-confir
 assert.match(treasury, /closeDisabled=\{opening\|\|busy\}/, 'do not close while opening or acknowledging');
 assert.match(treasury, /fortune-chest-base/, 'the base must have an independent visual layer');
 assert.match(treasury, /fortune-chest-lid/, 'the lid must have an independent visual layer');
+assert.match(treasury, /assets\/territory\/ui\/materials\/royal-chest\.webp/, 'golden chest must use an approved detailed image, not placeholder SVG');
 assert.match(treasury, /fortune-chest-aura/, 'reward light should be visible on opening');
 assert.match(treasury, /role="status" aria-live="polite"/, 'screen readers should hear the phase change');
 assert.match(treasury, /prefers-reduced-motion: reduce/, 'honor reduced-motion preference');
@@ -21,7 +22,7 @@ assert.match(treasury, /!opening&&<h3>/, 'reward label must not be shown during 
 assert.match(css, /\.fortune-chest-base\s*\{[^}]*clip-path:\s*inset\(49% 0 0 0\)/s, 'base must be clipped below the hinge');
 assert.match(css, /\.fortune-chest-lid\s*\{[^}]*clip-path:\s*inset\(0 0 51% 0\)/s, 'lid must be clipped above the hinge');
 assert.match(css, /\.fortune-chest-reveal\.is-opening \.fortune-chest-lid\s*\{[^}]*animation:\s*fortune-lid-rise/s, 'opening must animate the lid, not shake the whole chest');
-assert.match(css, /\.fortune-chest-reveal\.is-open \.fortune-chest-lid\s*\{[^}]*rotateX\(-58deg\)/s, 'open state must keep the lid raised');
+assert.match(css, /\.fortune-chest-reveal\.is-open \.fortune-chest-lid\s*\{[^}]*rotateX\(-46deg\)/s, 'open state must keep the lid raised');
 assert.match(css, /@media \(max-width:359px\)/, 'narrow WebView layout must be present');
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)/, 'reduced motion should still show an open chest');
 assert.doesNotMatch(css, /\.fortune-chest-reveal img\s*\{/s, 'old generic image rules must not override the independent layers');
