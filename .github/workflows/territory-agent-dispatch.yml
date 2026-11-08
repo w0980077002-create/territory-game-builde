@@ -34,6 +34,9 @@ jobs:
         id: task
         run: python3 scripts/agents/free_issue_agent.py plan >> "$GITHUB_OUTPUT"
 
+      - name: Verify quality gate before agent starts
+        run: python3 -m unittest discover -s scripts/agents -p 'test_agent_acceptance.py'
+
       - name: Prepare project tools
         uses: actions/setup-node@v4
         with:
@@ -102,7 +105,7 @@ jobs:
             echo "Draft PR created by bot."
           else
             echo "::warning::Bot cannot open PR under repository settings. Code was safely pushed to $branch."
-            gh issue comment "$ISSUE_NO" --body "✅ Бесплатный агент выполнил безопасную правку, проверки прошли, ветка сохранена: [agent/free-issue-$ISSUE_NO](https://github.com/$GITHUB_REPOSITORY/tree/agent/free-issue-$ISSUE_NO). GitHub запретил боту открывать PR; проверяющий должен открыть его вручную. **Не опубликовано, мобильная визуальная приёмка не пройдена.**"
+            gh issue comment "$ISSUE_NO" --body "🧪 Бесплатный агент сохранил НЕПРИНЯТЫЙ черновик с прошедшими техническими проверками (не означает художественную приёмку), ветка: [agent/free-issue-$ISSUE_NO](https://github.com/$GITHUB_REPOSITORY/tree/agent/free-issue-$ISSUE_NO). GitHub запретил боту открывать PR; проверяющий должен открыть его вручную. **Не опубликовано, мобильная визуальная приёмка не пройдена.**"
           fi
 
       - name: Confirm free QA report
