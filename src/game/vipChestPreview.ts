@@ -4,8 +4,8 @@
  */
 export type VipChestKind='daily'|'weekly';
 export const VIP_CHEST_ART:Record<VipChestKind,string>={
-  daily:'assets/territory/ui/materials/royal-chest.webp',
-  weekly:'assets/territory/ui/shop/gem-chest-large.webp',
+  daily:'assets/territory/vip/chests/daily-premium.webp',
+  weekly:'assets/territory/vip/chests/weekly-premium.webp',
 };
 export interface VipChestPreview {gold:number;materials:number;potions:number;}
 export function previewVipChest(kind:VipChestKind,level:number):VipChestPreview {
