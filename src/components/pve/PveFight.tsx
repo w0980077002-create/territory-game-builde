@@ -1024,14 +1024,14 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
                 </span>
               </span>
             </button>
-            {chestOpened && <div data-testid="trial-chest-revealed" className="mt-2" role="status" aria-live="polite">
+            {chestOpened && <div data-testid="trial-chest-revealed" className="trial-chest-loot-panel mt-2" role="status" aria-live="polite">
               <p className="mb-2 text-center text-[11px] font-black uppercase tracking-wider text-amber-300">
                 {language === 'en' ? 'Your treasures' : 'Твоя добыча'}
               </p>
               <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                 {prizes.map((prize, index) => (
                   <div key={prize.id} data-testid={'trial-chest-item-' + prize.id}
-                    style={{ animationDelay: index * 120 + 'ms' }}
+                    style={{ animationDelay: (720 + index * 120) + 'ms' }}
                     className="trial-chest-reward flex min-h-14 items-center gap-2 rounded-lg border border-amber-500/30 bg-black/35 px-2 py-1">
                     {prize.id === 'reputation'
                       ? <img src={import.meta.env.BASE_URL + TRIAL_LOOT_ASSET_BASE + 'city-reputation.png'} alt="" width="32" height="32" className="h-8 w-8 object-contain" />
