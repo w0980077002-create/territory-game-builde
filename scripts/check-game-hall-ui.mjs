@@ -137,8 +137,8 @@ assert.match(mono,/className="mono-reward-body"/,
   'Treasure list should scroll independently of the action');
 assert.match(mono,/className="mono-reward-footer"/,
   'Treasure Continue button must live in a persistent footer');
-assert.match(mono,/mono-reward-footer"><button autoFocus type="button" className="mono-cta"/,
-  'Continue must be a real focusable button inside the footer');
+assert.match(mono,/mono-reward-footer">[\s\S]*?<button autoFocus=\{!showLuckyDice\} type="button" className="mono-cta"/,
+  'Continue/Later must remain a real focusable button inside the persistent footer');
 assert.match(monoCss,/\.mono-celebration > section\.mono-reward-card\s*\{[\s\S]*?max-height: min\(440px, 100%\)/,
   'Android treasure card must be compact inside the available WebView height');
 assert.match(monoCss,/\.mono-celebration \.mono-reward-body\s*\{[\s\S]*?overflow-y: auto/,
