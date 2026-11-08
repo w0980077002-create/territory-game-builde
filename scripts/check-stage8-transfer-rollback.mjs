@@ -105,6 +105,39 @@ try {
   assert.deepEqual(await verified(buyer, { ...gear, level: 10, attack: 1, upgradeCount: 0 }), gear);
   await assert.rejects(() => verified(buyer, { ...gear, level: 51 }), /stage8_reconciliation_required/);
 
+  // A forged client can also keep level=50 while changing stats, rarity,
+  // upgrade count or baseStats. The read-only server contract must return
+  // ONLY the canonical registry item, not merge any forged client fields.
+  const forgedSameLevel = {
+    ...gear,
+    attack: 999999,
+    defense: 999999,
+    rarity: 'legendary',
+    upgradeCount: 999,
+    baseStats: { attack: 999999, defense: 999999 },
+  };
+  assert.deepEqual(await verified(buyer, forgedSameLevel), gear,
+    'Same-level stat/rarity/upgrade forgery must be replaced by canonical registry fields');
+  assert.equal(await ownerInRegistry(), buyer,
+    'Forged save verification must not change the legitimate owner');
+  assert.deepEqual(await verified(buyer), gear,
+    'Forged save verification must not mutate the registry item');
+
+  // Never accept a client-supplied identifier for a different or missing
+  // registry row; the previous owner cannot reclaim it by changing stats.
+  await assert.rejects(
+    () => verified(buyer, { ...gear, id: 'stage8_55555555-5555-4555-8555-555555555555' }),
+    /stage8_item_not_owned/,
+  );
+  await assert.rejects(
+    () => verified(buyer, { ...gear, id: 'stage8_not-a-uuid' }),
+    /stage8_invalid_item_reference/,
+  );
+  await assert.rejects(
+    () => verified(seller, forgedSameLevel),
+    /stage8_item_not_owned/,
+  );
+
   // A low-level trader may resell without ever equipping the gear.
   // Second handoff: level-10 buyer -> level-1 reseller. Neither transfer
   // is allowed to silently reduce the canonical crafted level or stats.
