@@ -13,6 +13,18 @@ assert.match(adventure, /monopoly\/lagoon\.\$\{import\.meta\.env\.DEV\?'png':'we
 assert.match(adventure, /monopoly\/hero-frames\.\$\{import\.meta\.env\.DEV\?'png':'webp'\}/, 'Hero animation must use optimized WebP in production');
 assert.match(adventure, /statusDay=useRef\(today\)/, 'No duplicate status requests on first mount');
 assert.match(adventure, /if\(today===statusDay\.current\)return/, 'Status still updates at the daily reset');
+// Regression: ×10 must advance the server board ten times, not multiply one prize.
+assert.match(adventure, /const total=active\?1:choice===10\?10:1/, '×10 launches ten separate turns; resumed rounds stay single');
+assert.match(adventure, /const rollValue=choice>100\?choice:1/, 'Batch mode requests ordinary one-ticket rolls');
+assert.match(adventure, /for\(let i=0;i<total;i\+\+\)/, 'Execute each turn in order');
+assert.match(adventure, /await monopoly\('roll',nextValue\)/, 'Every batch step sends a separate server roll');
+assert.match(adventure, /const nextValue:number=total===10/, 'Lucky-die selection remains server-verified in batch mode');
+assert.match(adventure, /await monopoly\('finish',1,session.token\)/, 'Each turn must be finished before a new charge');
+assert.match(adventure, /earned\+=finished\.result\?\.earned_gold\?\?0/, 'Batch reward uses actual receipts');
+assert.match(adventure, /setBatch\(\{done:i,total\}\)/, 'Show true roll progress in the game');
+assert.match(adventure, /prize=cellPrize\(i\)/, 'Board prizes cannot falsely preview ×10 multiplication');
+assert.doesNotMatch(adventure, /monopoly\('roll',10\)|cellPrize\(i,ten\?10:1\)/, 'Legacy tenfold reward is not the ×10 UI action');
+assert.match(adventure, /Количество бросков/, '×10 is labelled as roll count, not reward multiplier');
 assert.equal(packageJson.scripts.build, 'vite build', 'Regular CI build must work before optional image conversion');
 assert.match(converter, /execFileSync\('ffmpeg'/, 'Require explicit image conversion instead of renaming PNGs');
 // Monopoly's isolated CI checks test:hall BEFORE npm run build.
