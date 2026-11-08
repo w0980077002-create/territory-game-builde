@@ -4,7 +4,7 @@ import { useStore } from '@/game/store';
 import { useGame, useAccount } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
 import { getAppearanceIcon } from '@/game/appearance';
-import { VIP_TIERS, vipTier } from '@/game/vipProgram';
+import { VIP_SPEND_THRESHOLDS_USD, VIP_TIERS, vipTier } from '@/game/vipProgram';
 import { VIP_COSMETICS, activeVipCosmetic, setVipCosmetic, vipArtUrl, type VipCosmeticCategory } from '@/game/vipCosmetics';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import './vipTerritory.css';
@@ -15,7 +15,7 @@ const emblem = (n:number) => vipRoot + 'badges/vip-' + String(n).padStart(2,'0')
 const chestArt = (kind:'daily'|'weekly',level:number) => vipRoot+'chests/' +
   (kind==='daily'?'daily-'+Math.min(5,Math.ceil(level/2)):
     'weekly-'+(level<=3?1:level<=5?2:level===6?3:level<=8?4:5)) + '.svg';
-const plannedPrices = [0,1,10,100,300,500,1000,3000,5000,8000,10000] as const;
+// One source of truth for approved planned prices; no purchase or entitlement changes.
 type Mode = 'benefits'|'tryon'|'chests';
 type Tab = Exclude<VipCosmeticCategory,'frame'>;
 const tabs:readonly Tab[]=['crown','aura','crest','skin','throne'];
@@ -94,7 +94,7 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onRunes,onBelt
       </div>
       <div className="vip-tier-bottom">
         <strong>VIP {tier} · {tierName(tier,en)}</strong>
-        <small>{en?'Planned price':'Плановая цена'}: {'$'}{plannedPrices[tier]} · {en?'Preview':'Просмотр'}</small>
+        <small>{en?'Planned price':'Плановая цена'}: {'$'}{VIP_SPEND_THRESHOLDS_USD[tier]} · {en?'Preview':'Просмотр'}</small>
       </div>
     </div>
 
