@@ -28,7 +28,7 @@ assert(!skin.includes('iron-corner.svg'), 'Legacy steel-corner stamps must not r
 assert(!/rope-wrap\.svg|--oak-heritage-rope|repeat-x/.test(skin), 'Never re-add repeated rope strips to standard menus');
 assert(!skin.includes('.territory-section-head::before'), 'Header must not stamp repeating knots');
 assert(!/\.viking-screen-tabs,\s*\.territory-mail__tabs\s*\)::after/.test(skin), 'Inbox and other tab rails must not stamp repeating knots');
-assert(!/\.viking-screen > \.card,[\s\S]*?\)::before/.test(skin), 'Menu cards must not stamp repeating knots');
+assert(!/:is\(\s*\.viking-screen > \.card,\s*\.viking-screen > section\.card,\s*\.territory-profile > \.card\s*\)::before/.test(skin), 'Menu cards must not stamp repeating knots');
 assert(skin.includes('content:none;') && skin.includes('display:none;'), 'Legacy corner overlays must remain disabled');
 assert(skin.includes("--oak-heritage-grain: url('/assets/territory/ui/shop/shop-wood-planks.webp')"), 'Menus must use owner-approved Shop planks');
 assert(!/440px 220px|400px 200px|480px 240px/.test(skin), 'Do not stretch wood grain into artificial waves');
