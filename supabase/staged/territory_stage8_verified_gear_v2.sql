@@ -40,8 +40,8 @@ BEGIN
   IF NOT FOUND OR pg_catalog.jsonb_typeof(v_canonical) IS DISTINCT FROM 'object' THEN
     RAISE EXCEPTION 'stage8_item_not_owned' USING ERRCODE='23514';
   END IF;
-  IF (p_item->>'level') !~ '^[0-9]{1,3}$'
-     OR (v_canonical->>'level') !~ '^[0-9]{1,3}$' THEN
+  IF ((p_item->>'level') ~ '^[0-9]{1,3}$') IS NOT TRUE
+     OR ((v_canonical->>'level') ~ '^[0-9]{1,3}$') IS NOT TRUE THEN
     RAISE EXCEPTION 'stage8_invalid_level' USING ERRCODE='23514';
   END IF;
   v_saved_level := (p_item->>'level')::integer;

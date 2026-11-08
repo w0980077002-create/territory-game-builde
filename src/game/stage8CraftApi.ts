@@ -156,6 +156,7 @@ export async function fetchStage8Items(): Promise<Stage8OwnedItem[]> {
 
 export function mirrorStage8Items(items: InventoryItem[],owned: readonly Stage8OwnedItem[],equippedItemIds: ReadonlySet<string> = new Set()): InventoryItem[] {
   const byId = new Map<string, InventoryItem>();
+  const previous = new Map(items.map((item) => [item.id, item]));
   for (const item of items) if (!item.id.startsWith('stage8_')) byId.set(item.id,item);
   for (const item of owned) {
     const id=`stage8_${item.itemId}`;
@@ -166,6 +167,13 @@ export function mirrorStage8Items(items: InventoryItem[],owned: readonly Stage8O
       masteryLevel:1,masteryXp:0});
     copy.id=id;
     if (copy.equipment) copy.equipment.id=id;
+    // Preserve evidence of historical upgrades until provenance is reviewed.
+    // The saved value is not authoritative, but silently replacing it loses data.
+    const savedLevel=previous.get(id)?.equipment?.level;
+    const registryLevel=copy.equipment?.level;
+    if (typeof savedLevel === 'number' && typeof registryLevel === 'number' && savedLevel > registryLevel) {
+      throw new Error('stage8_reconciliation_required');
+    }
     if (copy.type==='elixir'||copy.type==='potion') {
       if (!item.expiresAt) throw new Error('stage8_display_expiry_missing');
       copy.expiresAt=item.expiresAt;

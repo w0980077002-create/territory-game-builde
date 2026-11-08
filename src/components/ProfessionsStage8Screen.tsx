@@ -45,7 +45,9 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
             active:next.profession,masteryLevel:next.masteryLevel,masteryXp:next.masteryXp}});
       }
       setStatus(next);setPending(waiting);setPurchasePending(purchaseWaiting);
-    }catch{setStatus(null);setError(language==='en'?'Verified crafting is unavailable. Check saved pending operations before attempting another.':'Нет связи с защищённым ремеслом. Сначала проверь сохранённую операцию — повторную пока не начинай.');}
+    }catch(err){setStatus(null);setError(err instanceof Error && err.message==='stage8_reconciliation_required'
+      ? (language==='en'?'An item needs server history review. Its saved version was kept.':'Историю предмета нужно проверить на сервере. Сохранённая версия не изменена.')
+      : (language==='en'?'Verified crafting is unavailable. Check saved pending operations before attempting another.':'Нет связи с защищённым ремеслом. Сначала проверь сохранённую операцию — повторную пока не начинай.'));}
     finally{setLoading(false);}
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- once-on-mount server status fetch

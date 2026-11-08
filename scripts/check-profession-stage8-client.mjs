@@ -94,6 +94,13 @@ assert.equal(owned.length,1);
 const mirrored=api.mirrorStage8Items([{id:'legacy-sword',qty:1},{id:'stage8_fake',qty:1}],owned);
 assert.deepEqual(mirrored.map(i=>i.id),['legacy-sword',`stage8_${uuid}`]);
 assert.equal(mirrored[1].equipment.id,`stage8_${uuid}`);
+const registryGear={...owned[0],output:{...owned[0].output,equipment:{slot:'weapon',level:5,attack:17}}};
+const savedGear={id:`stage8_${uuid}`,type:'equipment',equipment:{id:`stage8_${uuid}`,level:59}};
+assert.throws(()=>api.mirrorStage8Items([savedGear],[registryGear]),/reconciliation_required/,
+  'A higher saved level is preserved for provenance review, not overwritten by the registry');
+assert.equal(savedGear.equipment.level,59);
+assert.equal(api.mirrorStage8Items([{...savedGear,equipment:{...savedGear.equipment,level:4}}],[registryGear])[0].equipment.level,5,
+  'A stale lower mirror is refreshed from the server');
 const equippedCopy=api.mirrorStage8Items([{id:'legacy-sword',qty:1}],owned,new Set([`stage8_${uuid}`]));
 assert.deepEqual(equippedCopy.map(i=>i.id),['legacy-sword'],'Equipped server item must not be duplicated in the backpack');
 response={data:{success:true,items:[{...response.data.items[0],item_id:'not-a-uuid'}]},error:null};
