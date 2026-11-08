@@ -1,0 +1,200 @@
+/* TERRITORY #198: verified companion attacks, original character art only.
+   Sprite movement remains owned by FighterFigure; this layer is purely cosmetic.
+   At ~350 ms the traveling spell/arrow meets the enemy's authentic hit event. */
+.pve-companion-strike-fx {
+  --companion-strike-ms: 810ms;
+  --companion-fx: #e0c58b;
+  --companion-fx-light: #fff2b8;
+  display: block;
+  contain: layout;
+  overflow: visible;
+}
+.pve-companion-strike-fx[data-kind='leaf'] {
+  --companion-fx: #75d69c;
+  --companion-fx-light: #dbffe1;
+}
+.pve-companion-strike-fx[data-kind='rune'] {
+  --companion-fx: #81bbff;
+  --companion-fx-light: #e3edff;
+}
+.pve-companion-strike-fx[data-kind='crystal'] {
+  --companion-fx: #e5a1fb;
+  --companion-fx-light: #ffddff;
+}
+.pve-companion-strike-fx[data-kind='arrow'] {
+  --companion-fx: #e9c785;
+  --companion-fx-light: #fff1d1;
+}
+.pve-companion-strike-fx__origin {
+  position: absolute;
+  left: 21%;
+  top: 58%;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--companion-fx);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--companion-fx), inset 0 0 8px var(--companion-fx);
+  animation: companion-strike-origin var(--companion-strike-ms) ease-out both;
+}
+.pve-companion-strike-fx__projectile {
+  position: absolute;
+  left: 27%;
+  top: 56%;
+  width: 23px;
+  height: 23px;
+  display: block;
+  filter: drop-shadow(0 0 5px var(--companion-fx));
+  animation: companion-strike-flight var(--companion-strike-ms) cubic-bezier(.14,.61,.26,1) both;
+}
+.pve-companion-strike-fx__core,
+.pve-companion-strike-fx__tail {
+  position: absolute;
+  display: block;
+}
+.pve-companion-strike-fx__core {
+  left: 3px;
+  top: 5px;
+  width: 15px;
+  height: 13px;
+  border: 2px solid var(--companion-fx-light);
+  background: radial-gradient(circle at 40% 35%, var(--companion-fx-light), var(--companion-fx) 48%, transparent 87%);
+  transform: rotate(-24deg);
+  border-radius: 45%;
+}
+.pve-companion-strike-fx__tail {
+  width: 24px;
+  height: 2px;
+  right: 17px;
+  top: 11px;
+  background: linear-gradient(to left, var(--companion-fx), transparent);
+  box-shadow: 0 0 6px var(--companion-fx);
+}
+.pve-companion-strike-fx[data-kind='arrow'] .pve-companion-strike-fx__core {
+  width: 27px;
+  height: 3px;
+  top: 10px;
+  left: 0;
+  border: 0;
+  border-radius: 2px;
+  transform: rotate(-15deg);
+  background: linear-gradient(90deg,#765235 0 48%,#f3d4a1 49% 89%,#fff6db);
+}
+.pve-companion-strike-fx[data-kind='arrow'] .pve-companion-strike-fx__core::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  right: -2px;
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 11px solid #efead5;
+}
+.pve-companion-strike-fx[data-kind='arrow'] .pve-companion-strike-fx__tail {
+  width: 7px;
+  height: 9px;
+  top: 8px;
+  right: 19px;
+  box-shadow: none;
+  border-left: 3px solid #a9c19a;
+  border-right: 3px solid #d6d9ab;
+  transform: rotate(-15deg);
+  background: transparent;
+}
+.pve-companion-strike-fx[data-kind='leaf'] .pve-companion-strike-fx__core {
+  width: 14px;
+  height: 18px;
+  border-radius: 1px 85% 2px 85%;
+  background: linear-gradient(135deg,#f0ffd9,#7beab8 64%,#328b67);
+  transform: rotate(48deg);
+}
+.pve-companion-strike-fx[data-kind='rune'] .pve-companion-strike-fx__core {
+  width: 16px;
+  height: 16px;
+  top: 3px;
+  left: 4px;
+  border-radius: 3px;
+  transform: rotate(45deg);
+  background: radial-gradient(circle,#f0f6ff,#85b7ef 55%,#1b4469 95%);
+}
+.pve-companion-strike-fx[data-kind='rune'] .pve-companion-strike-fx__core::after {
+  content:'';
+  position:absolute;
+  inset:4px;
+  border:1px solid #245481;
+  border-radius:1px;
+}
+.pve-companion-strike-fx[data-kind='shield'] .pve-companion-strike-fx__projectile,
+.pve-companion-strike-fx[data-kind='blade'] .pve-companion-strike-fx__projectile,
+.pve-companion-strike-fx[data-kind='crystal'] .pve-companion-strike-fx__projectile {
+  display: none; /* Melee attacks have no implausible ranged projectile. */
+}
+.pve-companion-strike-fx__contact {
+  position: absolute;
+  left: 75%;
+  top: 43%;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--companion-fx-light);
+  box-shadow: 0 0 7px var(--companion-fx), inset 0 0 12px var(--companion-fx);
+  animation: companion-strike-contact var(--companion-strike-ms) ease-out both;
+}
+.pve-companion-strike-fx__contact > i {
+  position: absolute;
+  display: block;
+  width: 2px;
+  height: 19px;
+  left: 11px;
+  top: -9px;
+  border-radius: 2px;
+  transform-origin: 50% 22px;
+  background: var(--companion-fx-light);
+  box-shadow: 0 0 5px var(--companion-fx);
+}
+.pve-companion-strike-fx__contact > i:nth-child(2) {transform:rotate(120deg);}
+.pve-companion-strike-fx__contact > i:nth-child(3) {transform:rotate(240deg);}
+.pve-companion-strike-fx[data-kind='shield'] .pve-companion-strike-fx__contact {
+  border-width: 4px;
+  border-radius: 35% 35% 50% 50%;
+}
+.pve-companion-strike-fx[data-kind='blade'] .pve-companion-strike-fx__contact {
+  width: 16px;
+  height: 34px;
+  left: 77%;
+  top: 38%;
+  border-radius: 50%;
+  transform: rotate(25deg);
+}
+.pve-companion-strike-fx[data-kind='crystal'] .pve-companion-strike-fx__contact {
+  width: 35px;
+  height: 35px;
+  border-radius: 20%;
+  transform: rotate(45deg);
+}
+@keyframes companion-strike-origin {
+  0% {opacity:0;transform:scale(.15);}
+  19% {opacity:.85;transform:scale(.8);}
+  43% {opacity:0;transform:scale(1.65);}
+  100% {opacity:0;}
+}
+@keyframes companion-strike-flight {
+  0%,17% {opacity:0;left:27%;top:56%;transform:scale(.3);}
+  25% {opacity:1;left:32%;top:54%;transform:scale(.9);}
+  42% {opacity:1;left:74%;top:43%;transform:scale(1.12);}
+  49%,100% {opacity:0;left:77%;top:42%;transform:scale(.6);}
+}
+@keyframes companion-strike-contact {
+  0%,41% {opacity:0;scale:.3;}
+  45% {opacity:1;scale:.83;}
+  58% {opacity:.9;scale:1.2;}
+  78%,100% {opacity:0;scale:1.7;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .pve-companion-strike-fx__origin,
+  .pve-companion-strike-fx__projectile,
+  .pve-companion-strike-fx__contact {
+    animation:none !important;
+    display:none !important;
+  }
+}

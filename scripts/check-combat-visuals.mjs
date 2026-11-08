@@ -162,6 +162,25 @@ assert.match(companionMotion, /@keyframes pve-companion-cast/,
   'Ranged companion requires a casting motion');
 assert.match(companionMotion, /prefers-reduced-motion:reduce/,
   'Companion choreography must honor reduced motion');
+// Each stylised projectile or melee contact belongs to a real companion
+// hit already resolved by the PvE engine; never add damage by animation.
+const strikeFx = read('src/components/pve/PveCompanionStrikeFx.tsx');
+const strikeFxCss = read('src/components/pve/pveCompanionStrikeFx.css');
+assert.match(pve, /strike && strike\.key === companionStrikeKey/,
+  'Companion contact FX must be gated on the currently confirmed hit');
+assert.match(pve, /<PveCompanionStrikeFx followerId=\{follower\.id\} eventKey=\{strike\.key\}/,
+  'Confirmed hit must drive the current original selected companion FX');
+assert.match(strikeFx, /const FOLLOWER_STRIKE: Record<string, StrikeStyle>/,
+  'Follower roles must retain distinct melee and ranged presentations');
+assert.doesNotMatch(strikeFx, /follower_pumpkin_witch_2026/,
+  'Do not duplicate the approved Pumpkin Witch projectile');
+assert.match(strikeFxCss, /@keyframes companion-strike-flight/,
+  'The archer/rune/healer projectile must visibly travel toward the real foe');
+assert.match(strikeFxCss, /@keyframes companion-strike-contact/,
+  'The foe must show a confirmed-time impact');
+assert.match(strikeFxCss, /prefers-reduced-motion:reduce/,
+  'Companion contact FX must honor reduced-motion preferences');
+
 console.log('Battle visuals OK: all character poses/assets, opponent, companion, sword, chat and seven-slot UI.');
 
 // Existing review CI invokes this entrypoint, including the real rig contract.
