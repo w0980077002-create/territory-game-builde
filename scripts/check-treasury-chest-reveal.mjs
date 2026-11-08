@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 
 const treasury = readFileSync('src/components/TreasuryInventory.tsx', 'utf8');
+const fortune = readFileSync('src/game/fortune.ts', 'utf8');
 for (const kind of ['common', 'rare']) {
   const file = `public/fortune/${kind}-chest.webp`;
   const bytes = readFileSync(file);
@@ -12,6 +13,8 @@ for (const kind of ['common', 'rare']) {
   assert.equal(bytes.toString('ascii', 8, 12), 'WEBP', 'WebP format');
   assert.ok(treasury.includes(`${kind}-chest.webp`), `Treasury must show new ${kind} art`);
 }
+assert.match(fortune, /common-chest\.webp/, 'Wheel prize must use the common new artwork');
+assert.match(fortune, /rare-chest\.webp/, 'Wheel prize must use the rare new artwork');
 assert.ok(treasury.includes('golden-key.svg'), 'Golden key remains unchanged');
 
 const css = readFileSync('src/components/fortune.css', 'utf8');
