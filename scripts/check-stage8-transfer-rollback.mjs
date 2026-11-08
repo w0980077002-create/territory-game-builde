@@ -56,6 +56,29 @@ try {
   assert.deepEqual(await verified(seller), gear);
   await assert.rejects(() => verified(buyer), /stage8_item_not_owned/);
 
+  // A failed trade must roll back both the registry handoff and any
+  // accompanying player snapshot writes in the SAME database transaction.
+  // This is only a disposable transaction fixture, not a market implementation.
+  const sellerBefore = (await one('SELECT game_state FROM public.players WHERE id=$1', [seller])).game_state;
+  const buyerBefore = (await one('SELECT game_state FROM public.players WHERE id=$1', [buyer])).game_state;
+  await db.exec('BEGIN');
+  await db.query('UPDATE public.territory_profession_stage8_items SET player_id=$1 WHERE item_id=$2',
+    [buyer, uuid]);
+  await db.query('UPDATE public.players SET game_state=$2::jsonb WHERE id=$1',
+    [seller, JSON.stringify({ player: { level: 60 }, pendingSale: id })]);
+  await db.query('UPDATE public.players SET game_state=$2::jsonb WHERE id=$1',
+    [buyer, JSON.stringify({ player: { level: 10 }, pendingPurchase: id })]);
+  assert.equal(await ownerInRegistry(), buyer);
+  assert.deepEqual(await verified(buyer), gear);
+  await db.exec('ROLLBACK');
+  assert.equal(await ownerInRegistry(), seller, 'Registry handoff must roll back');
+  assert.deepEqual((await one('SELECT game_state FROM public.players WHERE id=$1', [seller])).game_state,
+    sellerBefore, 'Seller snapshot must roll back with registry');
+  assert.deepEqual((await one('SELECT game_state FROM public.players WHERE id=$1', [buyer])).game_state,
+    buyerBefore, 'Buyer snapshot must roll back with registry');
+  assert.deepEqual(await verified(seller), gear);
+  await assert.rejects(() => verified(buyer), /stage8_item_not_owned/);
+
   // A failed trade must never leave a transferred item with the wrong owner.
   await db.exec('BEGIN');
   await db.query('UPDATE public.territory_profession_stage8_items SET player_id=$1 WHERE item_id=$2',
