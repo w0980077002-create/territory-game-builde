@@ -117,21 +117,21 @@ def verify_css_task_acceptance(task, patch):
     value = patch.get("value", "")
     if not isinstance(value, str):
         raise ValueError("CSS patch value must be a string")
-    explicit = re.search(r"(?mi)^QUALITY_MIN_GRADIENT_LAYERS:\\s*([1-4])\\s*$", task)
+    explicit = re.search(r"(?mi)^QUALITY_MIN_GRADIENT_LAYERS:\s*([1-4])\s*$", task)
     minimum = int(explicit.group(1)) if explicit else 0
     # Backward compatibility: natural-language instruction from task #375.
-    if re.search(r"(?:двух|двумя|two|2)\\s+(?:наложенн\\w+\\s+)?radial-gradient", task, re.I):
+    if re.search(r"(?:двух|двумя|two|2)\s+(?:наложенн\w+\s+)?radial-gradient", task, re.I):
         minimum = max(minimum, 2)
     if minimum:
-        actual = len(re.findall(r"(?:radial|linear|conic)-gradient\\s*\\(", value, re.I))
+        actual = len(re.findall(r"(?:radial|linear|conic)-gradient\s*\(", value, re.I))
         if actual < minimum:
             raise ValueError(
                 f"Task requires {minimum} gradient layers, but agent generated {actual}"
             )
-    if re.search(r"(?mi)^QUALITY_REQUIRE_TRANSPARENT_EDGE:\\s*yes\\s*$", task):
-        if not re.search(r"transparent|rgba?\\([^)]*,\\s*0(?:\\.0+)?\\s*\\)", value, re.I):
+    if re.search(r"(?mi)^QUALITY_REQUIRE_TRANSPARENT_EDGE:\s*yes\s*$", task):
+        if not re.search(r"transparent|rgba?\([^)]*,\s*0(?:\.0+)?\s*\)", value, re.I):
             raise ValueError("Task requires a transparent edge")
-    required = re.findall(r"(?mi)^QUALITY_REQUIRED_VALUE_TEXT:\\s*(.{3,120})$", task)
+    required = re.findall(r"(?mi)^QUALITY_REQUIRED_VALUE_TEXT:\s*(.{3,120})$", task)
     for phrase in required[:5]:
         if phrase.strip() not in value:
             raise ValueError(f"Required acceptance text missing: {phrase.strip()[:80]}")
