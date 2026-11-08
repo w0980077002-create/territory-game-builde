@@ -4,12 +4,13 @@ import { newElixirExpiry } from './elixirExpiry';
 /**
  * TERRITORY-CITY's Trial rewards. Only the first completed victory of a
  * particular floor is eligible for a chest, even if a test/admin resets floors.
+ * Common chest: every non-milestone floor; larger chests keep their original schedules.
  * No premium gems or awakening stones are generated here.
  *
  * This is the playable TEST-era loot model; trade and bracelet spending are
  * deliberately disabled until the server inventory/auction supports them.
  */
-export type TrialChestTier = 'explorer' | 'guardian' | 'legendary';
+export type TrialChestTier = 'common' | 'explorer' | 'guardian' | 'legendary';
 export type TrialBlueprintId = 'guardian_blade' | 'guardian_amulet';
 export type TrialComponentId = 'guardian_shard' | 'trial_essence' | 'ancient_mechanism';
 
@@ -37,6 +38,8 @@ export interface TrialChestReward {
   gems: number;
   materials: number;
   elixirs: number;
+  /** The ordinary chest's 150-HP potions; absent in legacy special chest receipts. */
+  potions?: number;
   reputation: number;
   fragment?: { blueprint: TrialBlueprintId; part: number };
   component?: { id: TrialComponentId; qty: number };
@@ -47,7 +50,7 @@ export function trialChestTier(floor: number): TrialChestTier | null {
   if (floor % 25 === 0) return 'legendary';
   if (floor % 10 === 0) return 'guardian';
   if (floor % 5 === 0) return 'explorer';
-  return null;
+  return 'common';
 }
 
 function draw(random: () => number): number {
@@ -58,6 +61,20 @@ function draw(random: () => number): number {
 export function rollTrialChest(floor: number, random: () => number = Math.random): TrialChestReward | null {
   const tier = trialChestTier(floor);
   if (!tier) return null;
+  if (tier === 'common') {
+    // Exactly ONE of four consumable/resource bonuses; no rare drops,
+    // reputation or premium currency on ordinary floors.
+    const bonus = draw(random);
+    return {
+      floor, tier,
+      gold: 20 + Math.floor(draw(random) * 21),
+      gems: bonus >= 0.95 ? 1 : 0,
+      materials: bonus >= 0.45 && bonus < 0.80 ? 1 : 0,
+      elixirs: bonus >= 0.80 && bonus < 0.95 ? 1 : 0,
+      potions: bonus < 0.45 ? 1 : 0,
+      reputation: 0,
+    };
+  }
   const chances = TRIAL_CHEST_RULES[tier];
   const reward: TrialChestReward = {
     floor, tier, gold: chances.gold, gems: chances.gems,
@@ -121,6 +138,18 @@ export function applyTrialChest(state: GameState, loot: TrialChestReward | null,
         qty: loot.component.qty, description: 'Редкий ингредиент из Испытаний для будущих рецептов профессий. Не портится.',
       });
     }
+  }
+  if ((loot.potions ?? 0) > 0) {
+    // Each earned floor creates a dated batch. Never refresh the expiry of an
+    // existing stack after a floor reset or duplicate award.
+    inventory = [...inventory, {
+      id: 'trial_health_potion_' + loot.floor,
+      name: 'Большое зелье здоровья',
+      icon: '⚗️', type: 'potion', rarity: 'rare',
+      qty: loot.potions!, description: 'Восстанавливает 150 HP мгновенно',
+      effect: { stat: 'hp', value: 150, duration: 'instant' },
+      expiresAt: newElixirExpiry(now),
+    }];
   }
   if (loot.elixirs > 0) {
     // Separate dated batch: 7-day consumable expiration must never extend an old batch.
