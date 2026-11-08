@@ -28,13 +28,13 @@ export function TreasuryInventory({userId}:{userId:string}){
   try{setState(await acknowledgeFortune(userId,state.receipt.id));setError('');}catch{setError(en?'Retry confirmation.':'Повтори подтверждение.');}
   finally{locked.current=false;setBusy(false);}
  };
- const revealChest = state?.receipt ? (state.receipt.action === 'golden' ? import.meta.env.BASE_URL+'assets/territory/ui/materials/royal-chest.webp' : import.meta.env.BASE_URL+`fortune/${state.receipt.action==='rare'?'rare':'common'}-chest.svg`) : '';
+ const revealChest = state?.receipt ? (state.receipt.action === 'golden' ? import.meta.env.BASE_URL+'assets/territory/ui/materials/royal-chest.webp' : import.meta.env.BASE_URL+`fortune/${state.receipt.action==='rare'?'rare':'common'}-chest.webp`) : '';
  return <section className="fortune-treasury" data-testid="treasury-inventory">
   <h2>✦ {en?'Your treasure':'Твои сокровища'} ✦</h2>
   <p>{en?'Open earned chests here — no ticket required. The rune challenge below is preserved.':'Открывай выигранные сундуки здесь — без билета. Испытание рун находится ниже.'}</p>
   <div className="fortune-chests">{([
-   ['common','common-chest',en?'Common':'Обычный',state?.common],['rare','rare-chest',en?'Rare':'Редкий',state?.rare],['golden','golden-key',en?'Golden key':'Золотой ключ',state?.golden_key],
-  ] as const).map(([kind,icon,label,count])=><button key={kind} disabled={busy||!!state?.receipt||!count||!!error} onClick={()=>void open(kind)}><img src={import.meta.env.BASE_URL+`fortune/${icon}.svg`} alt=""/><strong>{count??'—'}</strong><small>{label}</small><small>{en?'Open · free':'Открыть · бесплатно'}</small></button>)}</div>
+   ['common','common-chest.webp',en?'Common':'Обычный',state?.common],['rare','rare-chest.webp',en?'Rare':'Редкий',state?.rare],['golden','golden-key.svg',en?'Golden key':'Золотой ключ',state?.golden_key],
+  ] as const).map(([kind,icon,label,count])=><button key={kind} disabled={busy||!!state?.receipt||!count||!!error} onClick={()=>void open(kind)}><img src={import.meta.env.BASE_URL+`fortune/${icon}`} alt=""/><strong>{count??'—'}</strong><small>{label}</small><small>{en?'Open · free':'Открыть · бесплатно'}</small></button>)}</div>
   {error&&<p role="alert">{error}</p>}<button className="fortune-skip" disabled={busy} onClick={()=>void recover()}>{busy?(en?'Loading…':'Загрузка…'):(en?'Refresh / recover':'Обновить / восстановить')}</button>
   {state?.receipt&&<FortuneDialog title={opening?(en?'OPENING CHEST…':'ОТКРЫВАЕМ СУНДУК…'):(en?'YOUR REWARD':'ТВОЯ НАГРАДА')} closeDisabled={opening||busy} onClose={()=>{if(!opening&&!busy)void close();}}>
    <div className={`fortune-chest-reveal ${opening?'is-opening':'is-open'} ${state.receipt.action==='golden'?'is-golden':''} ${state.receipt.action==='rare'?'is-rare':''}`}>
