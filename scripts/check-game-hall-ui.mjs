@@ -148,4 +148,19 @@ assert.match(monoCss,/\.mono-celebration \.mono-reward-footer\s*\{[\s\S]*?flex: 
 assert.doesNotMatch(mono,/Золото ожидает в игровом зале|Ресурсы готовы к получению под полем/,
   'Automatic payouts must not be described as requiring manual collection');
 
+// Owner-approved treasure presentation: reuse actual Shop/Arena raster wood,
+// keep real prize amounts and the previously secured compact mobile footer.
+assert.match(mono,/--mono-reward-oak[\s\S]*?territory-dark-oak-mobile\.webp/,
+  'Monopoly reward must load approved dark oak art rather than a flat purple fill');
+assert.match(mono,/--mono-reward-frame[\s\S]*?shop-approved-product-border-v2\.webp/,
+  'Treasure card must use carved approved Shop trim');
+assert.match(monoCss,/OWNER APPROVED MONOPOLY TREASURE OAK/,
+  'Monopoly treasure skin must be scoped to the reward screen');
+assert.match(monoCss,/\.mono-celebration \.mono-resource\s*\{[\s\S]*?var\(--mono-reward-oak\)/,
+  'Reward item tiles must read as wood, not purple boxes');
+assert.match(monoCss,/\.mono-celebration \.mono-reward-footer\s*\{[\s\S]*?var\(--mono-reward-beams\)/,
+  'Reward bottom action must sit on a textured timber beam');
+assert.doesNotMatch(monoCss,/mono-reward-card[^\n]*iron-corner\.svg/,
+  'Do not restore the rejected iron-corner overlays');
+
 console.log('Game Hall UI PASS: tickets only, automatic protected gold + inventory collection, pending payout recovery, safe mock art, server-owned wallet.');
