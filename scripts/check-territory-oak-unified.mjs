@@ -35,6 +35,12 @@ assert(!/440px 220px|400px 200px|480px 240px/.test(skin), 'Do not stretch wood g
 assert(skin.includes('.territory-shell.territory-oak-heritage'),
   'Do not recolour the full game or change approved screens');
 assert(!skin.includes('.territory-nav'), 'Bottom navigation must not change');
+const arenaCss=readFileSync('src/components/arena/arenaOldOakFinish.css','utf8');
+const arenaLobby=readFileSync('src/components/arena/ArenaLobby.tsx','utf8');
+assert(!existsSync('public/assets/territory/arena-ui/rope-wrap.svg'), 'Delete the rejected repeat-rope sprite from GitHub');
+assert(!arenaCss.includes('--arena-rope') && !arenaCss.includes('arena-weekly::before'), 'Do not stamp repeated rope knots on Arena panels');
+assert(!arenaLobby.includes('rope-wrap.svg'), 'Arena must not load the rejected rope sprite');
+
 
 const heroParity = skin.slice(skin.indexOf('Owner mobile Hero parity'));
 assert(!heroParity.includes('.territory-profile > :is(details.card,div.card)::before'), 'Do not restore obsolete Hero rope overrides');
