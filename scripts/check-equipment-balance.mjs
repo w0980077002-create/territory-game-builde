@@ -19,7 +19,7 @@ try {
 
 const root = process.cwd();
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'territory-balance-'));
-const sources = ['types.ts', 'equipmentCatalog.ts', 'equipmentBalance.ts', 'weeklyQuests.ts', 'pveBalance.ts', 'elixirExpiry.ts', 'followers.ts', 'engine.ts'];
+const sources = ['types.ts', 'equipmentCatalog.ts', 'equipmentBalance.ts', 'antiLevelPreview.ts', 'weeklyQuests.ts', 'pveBalance.ts', 'elixirExpiry.ts', 'followers.ts', 'engine.ts'];
 
 for (const file of sources) {
   const sourcePath = path.join(root, 'src/game', file);
@@ -36,6 +36,7 @@ for (const file of sources) {
 
 const testRequire = createRequire(import.meta.url);
 const balance = testRequire(path.join(out, 'equipmentBalance.js'));
+const antiLevel = testRequire(path.join(out, 'antiLevelPreview.js'));
 const catalog = testRequire(path.join(out, 'equipmentCatalog.js'));
 const engine = testRequire(path.join(out, 'engine.js'));
 
@@ -344,6 +345,43 @@ assert.match(ownerTestSql, /REVOKE ALL ON FUNCTION public\.territory_owner_autho
   'ordinary accounts cannot authorize over-level gear on the server');
 assert.match(guardSql, /BEFORE INSERT OR UPDATE OF game_state, attack, defense, max_hp, crit_chance/);
 assert.match(guardSql, /cap_overlevel_state_20261018\(/);
+
+// Owner decision 08.11: trade/ownership is level-agnostic; Anti-Level is optional
+// and currently a non-mutating visual preview, NOT a client-side forge action.
+const traderGear = {
+  id: 'stage8_50000000-0000-4000-8000-000000000050',
+  slot: 'weapon', name: 'Меч мастера', icon: '⚔️', rarity: 'rare',
+  level: 50, baseLevel: 1, upgradeCount: 49, attack: 118,
+  baseStats: { attack: 20 },
+};
+const unchangedTradeSnapshot = structuredClone(traderGear);
+const previewForLevel10 = antiLevel.previewAntiLevel(traderGear, 10);
+assert.equal(previewForLevel10?.fromLevel, 50);
+assert.equal(previewForLevel10?.toLevel, 10);
+assert.equal(previewForLevel10?.removedLevels, 40);
+assert.equal(previewForLevel10?.estimated.id, traderGear.id,
+  'Preview must retain item identity; actual trade is NOT a re-craft');
+assert.equal(previewForLevel10?.estimated.rarity, 'rare');
+assert.equal(previewForLevel10?.estimated.level, 10);
+assert.ok((previewForLevel10?.estimated.attack ?? 0) < traderGear.attack,
+  'Low-level anti-level conversion must not keep original level-50 attack');
+assert.deepEqual(traderGear, unchangedTradeSnapshot,
+  'An ordinary level-10 merchant must retain the level-50 original unchanged');
+assert.equal(antiLevel.previewAntiLevel(traderGear, 50), null,
+  'No anti-level reduction exists when hero already meets item level');
+assert.equal(antiLevel.previewAntiLevel(traderGear, 1.5), null);
+assert.equal(antiLevel.previewAntiLevel(traderGear, 0), null);
+const adminSnapshot = { ...traderGear, adminTestLevel: true };
+assert.equal(antiLevel.previewAntiLevel(adminSnapshot, 10)?.estimated.level, 10,
+  'The preview must ignore owner-only admin test bypass flags');
+assert.deepEqual(adminSnapshot, { ...traderGear, adminTestLevel: true },
+  'Preview never alters the live object even when administrative flags exist');
+const antiLevelSource = fs.readFileSync(path.join(root, 'src/game/antiLevelPreview.ts'), 'utf8');
+assert.doesNotMatch(antiLevelSource, /saveCloudSave|supabase|forgeAttempt|inventory\.splice|localStorage/,
+  'Anti-Level preview cannot spend, change ownership, or write to the server');
+const forgeUiSource = fs.readFileSync(path.join(root, 'src/components/ForgeScreen.tsx'), 'utf8');
+assert.match(forgeUiSource, /data-testid="anti-level-preview"/,
+  'Forge must show the result preview to a hero holding over-levelled equipment');
 
 console.log('Balance checks passed: canonical item data, legacy normalization, old admin-level grants, idempotency, unknown-item safety, and a chapter-58 one-shot guard.');
 fs.rmSync(out, { recursive: true, force: true });
