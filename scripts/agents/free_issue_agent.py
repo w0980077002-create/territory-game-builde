@@ -108,6 +108,35 @@ def apply_css_property(original, patch):
     return original[:start] + value + original[end:]
 
 
+def verify_css_task_acceptance(task, patch):
+    """Fail a mechanically green but visibly incomplete visual-agent edit.
+
+    Owner tasks may provide explicit machine-checkable expectations. This is a
+    narrow acceptance gate, not a replacement for human visual review.
+    """
+    value = patch.get("value", "")
+    if not isinstance(value, str):
+        raise ValueError("CSS patch value must be a string")
+    explicit = re.search(r"(?mi)^QUALITY_MIN_GRADIENT_LAYERS:\\s*([1-4])\\s*$", task)
+    minimum = int(explicit.group(1)) if explicit else 0
+    # Backward compatibility: natural-language instruction from task #375.
+    if re.search(r"(?:двух|двумя|two|2)\\s+(?:наложенн\\w+\\s+)?radial-gradient", task, re.I):
+        minimum = max(minimum, 2)
+    if minimum:
+        actual = len(re.findall(r"(?:radial|linear|conic)-gradient\\s*\\(", value, re.I))
+        if actual < minimum:
+            raise ValueError(
+                f"Task requires {minimum} gradient layers, but agent generated {actual}"
+            )
+    if re.search(r"(?mi)^QUALITY_REQUIRE_TRANSPARENT_EDGE:\\s*yes\\s*$", task):
+        if not re.search(r"transparent|rgba?\\([^)]*,\\s*0(?:\\.0+)?\\s*\\)", value, re.I):
+            raise ValueError("Task requires a transparent edge")
+    required = re.findall(r"(?mi)^QUALITY_REQUIRED_VALUE_TEXT:\\s*(.{3,120})$", task)
+    for phrase in required[:5]:
+        if phrase.strip() not in value:
+            raise ValueError(f"Required acceptance text missing: {phrase.strip()[:80]}")
+
+
 def perform_edit(role, target_name, task):
     path = ROOT / target_name
     original = path.read_text(encoding="utf-8")
@@ -156,6 +185,7 @@ def perform_edit(role, target_name, task):
                     patch["selector"] = selector_lock.group(1)
                 if property_lock:
                     patch["property"] = property_lock.group(1).lower()
+                verify_css_task_acceptance(task, patch)
                 result = apply_css_property(original, patch)
             else:
                 old, new = patch["search"], patch["replace"]
