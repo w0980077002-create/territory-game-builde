@@ -186,6 +186,16 @@ assert.match(sourceFight,/data-testid="trial-chest-revealed"/);
 assert.match(sourceFight,/trial-chest-already-claimed/);
 assert.match(sourceFight,/saveState !== 'confirmed' \|\| chestOpened/, 'never open a chest before saving, and never credit loot on click');
 assert.ok(existsSync('src/components/pve/trialChestReveal.css'), 'missing live opening animation');
+// Visible treasure must be delayed until the real lid opens (~650ms), and
+// reduced-motion players must always see the confirmed reward immediately.
+const revealCss = readFileSync('src/components/pve/trialChestReveal.css', 'utf8');
+assert.match(sourceFight,/data-testid="trial-chest-revealed" className="trial-chest-loot-panel mt-2"/);
+assert.match(sourceFight,/animationDelay: \(720 \+ index \* 120\) \+ 'ms'/);
+assert.match(revealCss,/\.trial-chest-loot-panel\s*\{[^}]*animation:\s*territory-chest-loot-panel \.4s ease-out \.66s both/s);
+assert.match(revealCss,/@keyframes territory-chest-loot-panel/);
+assert.match(revealCss,/@media \(prefers-reduced-motion: reduce\)\s*\{[^}]*\.trial-chest-stage,[^}]*\.trial-chest-loot-panel/s);
+assert.match(revealCss,/\.trial-chest-reward, \.trial-chest-loot-panel \{ opacity: 1; \}/);
+assert.doesNotMatch(sourceFight,/\bonClick=\{\(\) =>\s*(?:applyTrialChest|rollTrialChest)/, 'opening must never roll or grant a second reward');
 assert.match(readFileSync('src/components/InventoryScreen.tsx','utf8'),/<TrialLootCollection language=\{language\} \/>/);
 assert.match(readFileSync('src/components/BattleScreen.tsx','utf8'),/<TrialLootCollection language=\{language\} \/>/);
 console.log('TRIAL LOOT PASS: all-floor common chests, exclusive one-in-four rewards, special odds, reset replay protection, visuals and saved victory reveal');

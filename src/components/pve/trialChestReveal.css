@@ -63,6 +63,12 @@
 .trial-chest-open .trial-chest-star {
   animation: territory-chest-spark 1.25s ease-out .19s both;
 }
+/* Loot follows the opening lid; nothing visually pops out while the chest is closed.
+   The server has already committed the reward before the button becomes active. */
+.trial-chest-loot-panel {
+  opacity: 0;
+  animation: territory-chest-loot-panel .4s ease-out .66s both;
+}
 .trial-chest-reward {
   opacity: 0;
   animation: territory-chest-loot .48s cubic-bezier(.2,.85,.15,1.1) both;
@@ -96,11 +102,15 @@
   from { opacity: 0; transform: translateY(10px) scale(.86); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+@keyframes territory-chest-loot-panel {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .trial-chest-stage, .trial-chest-stage *, .trial-chest-reward {
+  .trial-chest-stage, .trial-chest-stage *, .trial-chest-reward, .trial-chest-loot-panel {
     animation: none !important;
   }
-  .trial-chest-reward { opacity: 1; }
+  .trial-chest-reward, .trial-chest-loot-panel { opacity: 1; }
   .trial-chest-stage.trial-chest-open .trial-chest-lid { transform: translateY(-12px) rotateX(-55deg); }
   .trial-chest-stage.trial-chest-open .trial-chest-aura { opacity: .6; transform: scale(1.3); }
 }
