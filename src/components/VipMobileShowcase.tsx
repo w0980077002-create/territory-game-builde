@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, Crown, Sparkles, LockKeyhole, ShieldCheck, Check, Gift } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame, useAccount } from '@/game/actions';
 import { useLanguage } from '@/game/i18n';
 import { getAppearanceIcon } from '@/game/appearance';
 import { VIP_SPEND_THRESHOLDS_USD, VIP_TIERS, vipTier } from '@/game/vipProgram';
+import { VIP_CHEST_ART, previewVipChest, type VipChestKind } from '@/game/vipChestPreview';
 import { VIP_COSMETICS, activeVipCosmetic, setVipCosmetic, vipArtUrl, type VipCosmeticCategory } from '@/game/vipCosmetics';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import './vipTerritory.css';
@@ -12,9 +13,8 @@ import './vipTerritory.css';
 const root = import.meta.env.BASE_URL;
 const vipRoot = root + 'assets/territory/vip/';
 const emblem = (n:number) => vipRoot + 'badges/vip-' + String(n).padStart(2,'0') + '.svg';
-const chestArt = (kind:'daily'|'weekly',level:number) => vipRoot+'chests/' +
-  (kind==='daily'?'daily-'+Math.min(5,Math.ceil(level/2)):
-    'weekly-'+(level<=3?1:level<=5?2:level===6?3:level<=8?4:5)) + '.svg';
+// Exactly two chest appearances for the whole VIP 1–10 ladder.
+const chestArt = (kind:VipChestKind) => root + VIP_CHEST_ART[kind];
 // One source of truth for approved planned prices; no purchase or entitlement changes.
 type Mode = 'benefits'|'tryon'|'chests';
 type Tab = Exclude<VipCosmeticCategory,'frame'>;
@@ -45,8 +45,9 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onRunes,onBelt
   const [tab,setTab]=useState<Tab>('crown');
   const [cosmeticIndex,setCosmeticIndex]=useState(0);
   const [revision,setRevision]=useState(0);
-  const [chest,setChest]=useState<'daily'|'weekly'|null>(null);
-  const [chestOpened,setChestOpened]=useState(false);
+  const [chest,setChest]=useState<VipChestKind|null>(null);
+  const [chestPhase,setChestPhase]=useState<'closed'|'opening'|'open'>('closed');
+  const sampleRewards=chest?previewVipChest(chest,tier):null;
   const cosmetics=VIP_COSMETICS.filter(item=>item.category===tab)
     .sort((a,b)=>Number(b.minVip<=tier)-Number(a.minVip<=tier)||b.minVip-a.minVip);
   const cosmetic=cosmetics[cosmeticIndex%Math.max(1,cosmetics.length)]??null;
@@ -63,7 +64,14 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onRunes,onBelt
   const changeTier=(n:number)=>{setChosen(n);setCosmeticIndex(0);setChest(null);
     setMode(n>=5?'tryon':'benefits');};
   const changeTab=(next:Tab)=>{setTab(next);setCosmeticIndex(0);setMode('tryon');};
-  const openChest=(kind:'daily'|'weekly')=>{setChest(kind);setChestOpened(false);};
+  const openChest=(kind:VipChestKind)=>{setChest(kind);setChestPhase('closed');};
+  // Let the lid open before showing example rewards; never touches the wallet or inventory.
+  useEffect(()=>{
+    if(chestPhase!=='opening'||!chest)return;
+    const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches??false;
+    const timer=window.setTimeout(()=>setChestPhase('open'),reduced?0:760);
+    return ()=>window.clearTimeout(timer);
+  },[chest,chestPhase]);
   const equip=()=>{
     if(!cosmetic||!eligible)return;
     if(setVipCosmetic(userId,tab,equipped?null:cosmetic.id,realVip))setRevision(n=>n+1);
@@ -144,7 +152,7 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onRunes,onBelt
         ]:tier>=5?[
           {img:vipArtUrl('cosmetics/crowns/crown-1.svg'),ru:'Элитная корона',en:'Elite crown',cat:'crown' as Tab},
           {img:vipArtUrl('cosmetics/auras/aura-1.svg'),ru:'Золотая аура',en:'Golden aura',cat:'aura' as Tab},
-          {img:chestArt('daily',tier),ru:'Расширенный сундук',en:'Special chest',cat:null},
+          {img:chestArt('daily'),ru:'Расширенный сундук',en:'Special chest',cat:null},
           {img:vipArtUrl('cosmetics/heraldry/crest-2.svg'),ru:'Престижный герб',en:'Prestige crest',cat:'crest' as Tab},
         ]:[
           {img:root+'gold-coin.webp',ru:'Бонус золота',en:'Gold +'+tier*2+'%',cat:null},
@@ -197,8 +205,9 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onRunes,onBelt
       <div className="vip-chests-row">
         {(['daily','weekly'] as const).map(kind=><button type="button" key={kind}
           onClick={()=>openChest(kind)} className="vip-chest-card">
-          <img src={chestArt(kind,tier)} alt="" draggable={false}/>
-          <strong>{kind==='daily'?(en?'Daily chest':'Ежедневный сундук'):(en?'Weekly chest':'Еженедельный сундук')}</strong>
+          <img src={chestArt(kind)} alt="" draggable={false}/>
+          <strong>{kind==='daily'?(en?'Daily VIP chest':'Ежедневный VIP-сундук'):(en?'Weekly VIP chest':'Еженедельный VIP-сундук')}</strong>
+          <small>{en?'Rewards scale with VIP level':'Награды растут с VIP-уровнем'} · VIP {tier}</small>
           <span className="vip-gold-action">{en?'Preview':'Посмотреть'}</span>
         </button>)}
       </div>
@@ -210,25 +219,33 @@ export function VipMobileShowcase({userId,onBack,backToCity=false,onRunes,onBelt
       <span>{en?'Purchases and real rewards are disabled. This is a visual preview.'
         :'Платежи и реальные награды выключены. Это визуальная примерка.'}</span>
     </div>
-    {chest&&<div className="vip-chest-overlay" role="dialog" aria-modal="true"
+    {chest&&sampleRewards&&<div className="vip-chest-overlay" role="dialog" aria-modal="true"
       aria-label={en?'VIP chest preview':'Предпросмотр VIP-сундука'}>
       <div className="vip-chest-dialog vip-carved-panel" data-testid="vip-chest-demo">
-        <h3>{en?'VIP chest preview':'VIP сундук · предпросмотр'}</h3>
-        <img className={'vip-opening-chest '+(chestOpened?'vip-opening-revealed':'')}
-          src={chestArt(chest,tier)} alt="" draggable={false}/>
-        {chestOpened?<div data-testid="vip-chest-demo-reward">
-          <strong>{en?'Example rewards':'Примеры наград'}</strong>
-          <div className="vip-sample-rewards">
-            {[root+'gold-coin.webp',root+'potion-hp-viking.webp',
-              root+'assets/territory/ui/shop/gem-chest-large.webp'].map(asset=><img key={asset} src={asset} alt=""/>)}
+        <h3>{chest==='daily'?(en?'Daily VIP chest':'Ежедневный VIP-сундук'):(en?'Weekly VIP chest':'Еженедельный VIP-сундук')}</h3>
+        <small className="vip-chest-reward-tier">{en?'Reward example for':'Пример награды для'} VIP {tier}</small>
+        <div className={'vip-chest-stage vip-chest-stage--'+chestPhase} data-testid="vip-chest-opening-stage">
+          <span className="vip-chest-stage-glow" aria-hidden="true"/>
+          <img className="vip-chest-stage-base" src={chestArt(chest)} alt="" draggable={false}/>
+          <img className="vip-chest-stage-lid" src={chestArt(chest)} alt="" draggable={false}/>
+          <span className="vip-chest-stage-sparks" aria-hidden="true"/>
+        </div>
+        {chestPhase==='open'?<div className="vip-demo-rewards" data-testid="vip-chest-demo-reward" role="status">
+          <strong>{en?'Illustrative contents':'Пример содержимого'}</strong>
+          <div className="vip-demo-reward-grid">
+            <span><img src={root+'gold-coin.webp'} alt=""/><b>+{sampleRewards.gold}</b><small>{en?'Gold':'Золото'}</small></span>
+            <span><img src={root+'assets/territory/ui/materials/iron-ore.webp'} alt=""/><b>+{sampleRewards.materials}</b><small>{en?'Forge materials':'Материалы'}</small></span>
+            <span><img src={root+'potion-hp-viking.webp'} alt=""/><b>+{sampleRewards.potions}</b><small>{en?'Potions':'Зелья'}</small></span>
           </div>
-          <button type="button" className="vip-gold-action" onClick={()=>setChestOpened(false)}>
-            {en?'Try again':'Ещё раз'}
+          <button type="button" className="vip-gold-action" onClick={()=>setChestPhase('closed')}>
+            {en?'Preview again':'Посмотреть ещё раз'}
           </button>
-        </div>:<button type="button" className="vip-gold-action" data-testid="vip-chest-demo-open"
-          onClick={()=>setChestOpened(true)}>{en?'Open demo chest':'Открыть сундук'}</button>}
-        <p>{en?'Preview only. No items are granted.':'Только просмотр. Предметы не начисляются.'}</p>
-        <button type="button" className="vip-close-demo" onClick={()=>setChest(null)}>
+        </div>:chestPhase==='opening'
+          ?<p role="status">{en?'Opening…':'Сундук открывается…'}</p>
+          :<button type="button" className="vip-gold-action" data-testid="vip-chest-demo-open"
+            onClick={()=>setChestPhase('opening')}>{en?'Open demo chest':'Открыть сундук'}</button>}
+        <p>{en?'Preview only. No rewards are granted or saved.':'Только пример. Награды не начисляются и не сохраняются.'}</p>
+        <button type="button" className="vip-close-demo" onClick={()=>{setChest(null);setChestPhase('closed');}}>
           {en?'Close':'Закрыть'}
         </button>
       </div>
