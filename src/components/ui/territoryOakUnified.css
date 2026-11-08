@@ -1,37 +1,36 @@
 /*
  * TERRITORY — first mobile consistency pass, approved old-oak material.
- * Use the owner-approved Shop plank texture rather than the mirrored
- * grain tile, which looks like artificial waves on a phone. Exclusively cosmetic. No changes to gameplay,
+ * Use the newly approved aged dark-oak raster, not flat orange Shop planks
+ * or mirrored grain tiles. Exclusively cosmetic. No changes to gameplay,
  * Arena, Shop, City, map, PvE, VIP artwork, or the bottom navigation.
  *
  * Deliberate opt-in from App.tsx protects the owner-approved screens.
  * The image paths are public assets rewritten under the GitHub Pages base.
  */
 .territory-shell.territory-oak-heritage {
-  --oak-heritage-grain: url('/assets/territory/ui/shop/shop-wood-planks.webp');
-  --oak-heritage-planks: url('/assets/territory/ui/shop/shop-wood-planks.webp');
+  --oak-heritage-grain: url('/assets/territory/ui/approved/territory-dark-oak-mobile.webp');
+  --oak-heritage-planks: url('/assets/territory/ui/approved/territory-dark-oak-mobile.webp');
   --oak-heritage-frame: url('/assets/territory/ui/shop/shop-approved-product-border-v2.webp');
   --oak-heritage-cream: #ffe6b3;
   --oak-heritage-gold: #d7a65e;
   --viking-panel-bg: linear-gradient(110deg, #25110ed4, #4a2518c8 55%, #1c0d0cdb),
-    var(--oak-heritage-grain) center / 480px auto;
+    var(--oak-heritage-grain) center / cover no-repeat;
   --viking-panel-border: #c99a61;
 }
 
-/* Match the ACTUAL approved Shop backdrop, not the old orange plank wash.
- * Both use the original Shop raster timber. Its strong side and centre
- * shadows create deep carved oak while leaving natural grain and knots visible.
- * The same material continues through empty inbox space on short screens.
+/* The owner's approved 9:16 old walnut artwork: real knots, fissures, deep
+ * nearly-black joints and restrained amber relief. ONE continuous portrait
+ * background, never an obvious repeated tile or an orange CSS overlay.
  */
 .territory-shell.territory-oak-heritage > .territory-screen {
-  background-color: #170c09;
+  background-color: #160b08;
   background-image:
-    linear-gradient(90deg,#110b0aea,#3c2418c2 6%,#21120ee0 50%,#392116c8 94%,#150b0aeb),
+    linear-gradient(90deg,rgba(8,4,3,.13),rgba(15,7,5,.02) 45%,rgba(8,4,3,.13)),
     var(--oak-heritage-grain);
-  background-size: cover, 440px auto;
-  background-repeat: no-repeat, repeat;
-  background-position: center;
-  box-shadow: inset 5px 0 9px #130807bb, inset -5px 0 9px #130807bb;
+  background-size: 100% 100%, cover;
+  background-repeat: no-repeat, no-repeat;
+  background-position: center center, center center;
+  box-shadow: inset 5px 0 9px #090403aa,inset -5px 0 9px #090403aa;
 }
 
 /* Carved oak header without repeated rope stamps. */
@@ -44,7 +43,8 @@
   background-image:
     linear-gradient(180deg,#502b1a9c 0%,#1c0b0bbe 100%),
     var(--oak-heritage-grain);
-  background-size: 100% 100%, 400px auto;
+  background-size: 100% 100%, cover;
+  background-repeat: no-repeat;
   background-position: center;
   box-shadow: inset 0 2px #f1cf8b70, 0 4px 8px #140907bc;
 }
@@ -77,7 +77,8 @@
   background-image:
     linear-gradient(115deg,#2b120dba 0%,#3d1b129c 48%,#1b0c09c7 100%),
     var(--oak-heritage-grain);
-  background-size:100% 100%,440px auto;
+  background-size:100% 100%,cover;
+  background-repeat:no-repeat;
   background-position:center;
   box-shadow:inset 0 2px #f5d09661,inset 0 -3px #1b0b09a6,
     0 3px 8px #11070592,0 0 0 1px #2d130c;
@@ -112,7 +113,8 @@
   background-color:#33190e;
   background-image:linear-gradient(130deg,#271109c0,#4c2816a9),
     var(--oak-heritage-grain);
-  background-size:100% 100%,360px auto;
+  background-size:100% 100%,cover;
+  background-repeat:no-repeat;
   box-shadow:inset 0 1px #f8d6a47c,0 2px 6px #140706b4;
 }
 .territory-shell.territory-oak-heritage .territory-screen :is(
