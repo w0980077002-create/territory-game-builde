@@ -211,9 +211,9 @@ assert.match(progressionSource, /forgeMaterials: next\.forgeMaterials \+ 1/,
   'Trials must continue to grant exactly one existing forge material');
 assert.match(actionsSource, /forgeMaterials: state\.forgeMaterials \+ \(enemy\.isBoss \? 3 : Math\.random\(\) < 0\.35 \? 1 : 0\)/,
   'Campaign material drops must keep their existing boss/normal probabilities');
-assert.match(fight, /const nextState = recordTrialWin\(s, enemy\);/,
+assert.match(fight, /const nextState = refillAfterFight\(recordTrialWin\(s, enemy\)\);/,
   'Trial victory must read the committed next state');
-assert.match(fight, /const nextState = recordBattleResult\(consumeBlessing\(s\), enemy, \{ gold, xp: enemy\.rewardXp \}\);/,
+assert.match(fight, /const nextState = refillAfterFight\(recordBattleResult\(consumeBlessing\(s\), enemy, \{ gold, xp: enemy\.rewardXp \}\)\);/,
   'Campaign victory must read the committed next state');
 assert.equal((fight.match(/materials: Math\.max\(0, nextState\.forgeMaterials - s\.forgeMaterials\)/g) || []).length, 2,
   'Both victory paths must display the actual saved material delta, never a guessed drop');
