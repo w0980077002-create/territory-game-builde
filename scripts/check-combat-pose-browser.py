@@ -135,7 +135,9 @@ with sync_playwright() as p:
         page=b.new_page(viewport={'width':390,'height':760})
         page.route(ORIGIN+'/**',serve);page.route('https://**/*',lambda r:r.abort())
         page.goto(ORIGIN+'/?scene=pve&appearance=m1&enemy=bandit&follower='+follower_id)
-        page.wait_for_selector('[data-testid="pve-visible-follower"] img')
+        # Healer retains approved <img>; the Cow now renders its approved
+        # original SVG as separately moving art joints.
+        page.wait_for_selector('[data-testid="pve-visible-follower"] img, [data-testid="pve-visible-follower"] svg[data-original-cow]')
         assert page.locator('[data-testid="pve-companion-heal"]').count()==0, 'No cosmetic heal before a resolved round'
         assert page.locator('[data-testid="pve-companion-strike-fx"]').count()==0, 'No projectile before a resolved companion hit'
         # A mobile frame can miss a 900 ms transient while Chromium is saving
