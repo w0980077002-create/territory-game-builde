@@ -14,7 +14,6 @@ import { IosGamePortal } from './ui/Modal';
 import type { Equipment, InventoryItem } from '@/game/types';
 import { upgradeEquipment } from '@/game/equipmentBalance';
 import { previewAntiLevel } from '@/game/antiLevelPreview';
-import { previewAntiLevel } from '@/game/antiLevelPreview';
 import { forgeAttempt, forgeCost, forgeSetBonus, forgeSuccessRate, isStage8Gear } from '@/game/forge';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
 import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
@@ -435,26 +434,6 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
                   const label = key === 'attack' ? t('attack') : key === 'defense' ? t('defense') : key === 'hp' ? t('health') : t('critChance');
                   return <div key={key} className="flex justify-between text-xs py-0.5"><span className="text-gray-300">{label}</span><span className="text-emerald-200">{current} → {next}{key === 'critChance' ? '%' : ''}</span></div>;
                 })}
-              </div>
-            )}
-
-            {/* Non-spending Anti-Level concept; trading never alters gear. */}
-            {previewAntiLevel(selectedCurrent.equipment, state.player.level) && (
-              <div className="rounded-xl border border-amber-400/45 bg-gradient-to-b from-amber-950/70 to-stone-950/85 p-3 mb-3" data-testid="anti-level-preview">
-                <p className="text-sm font-black text-amber-200">{language === 'en' ? 'Anti-Level · preview' : 'Антиуровень · примерка'}</p>
-                <p className="text-xs text-amber-100 mt-1">{language === 'en' ? 'Item level' : 'Уровень вещи'}: {selectedCurrent.equipment.level} → {state.player.level}</p>
-                <div className="mt-2 space-y-1 text-xs text-stone-200">
-                  {(['attack', 'defense', 'hp', 'critChance'] as const).map((stat) => {
-                    const before = selectedCurrent.equipment![stat];
-                    const after = previewAntiLevel(selectedCurrent.equipment!, state.player.level)?.estimated[stat];
-                    if (before === undefined && after === undefined) return null;
-                    const label = stat === 'attack' ? t('attack') : stat === 'defense' ? t('defense') : stat === 'hp' ? t('health') : t('critChance');
-                    return <p key={stat} className="flex justify-between gap-2"><span>{label}</span><span>{before ?? 0} → {after ?? 0}{stat === 'critChance' ? '%' : ''}</span></p>;
-                  })}
-                </div>
-                <p className="text-[11px] leading-4 text-amber-200/85 mt-2">{language === 'en'
-                  ? 'Preview only. Nothing is consumed. Trade and resale never reduce item level.'
-                  : 'Только примерка. Ничего не расходуется. Продажа и перепродажа не снижают уровень вещи.'}</p>
               </div>
             )}
 
