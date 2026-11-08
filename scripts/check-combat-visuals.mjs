@@ -181,6 +181,21 @@ assert.match(strikeFxCss, /@keyframes companion-strike-contact/,
 assert.match(strikeFxCss, /prefers-reduced-motion:reduce/,
   'Companion contact FX must honor reduced-motion preferences');
 
+// Legendary Cow is traced from ONE approved illustration and has five
+// independently moving areas, never a generic replacement.
+const cow = read('src/components/combat2d/ArticulatedCow.tsx');
+const cowStyle = read('src/components/combat2d/articulatedCow.css');
+assert.match(cow, /getFollowerArt\('follower_6'\)/, 'Cow must reuse the currently approved original art');
+for (const part of ['head','staffHand','offHand','hindLeg','frontLeg']) {
+  assert.match(cow, new RegExp(part + ':'), 'Missing original cow part: ' + part);
+}
+assert.match(cow, /<mask id=\{uid \+ '-rest'\}/, 'Removed areas must not be duplicated behind moving parts');
+assert.match(cow, /data-cow-part=\{part\}/, 'Independent original source parts must render');
+assert.match(pve, /<ArticulatedCow name=\{follower.name\}/, 'PvE Cow must use joint art');
+assert.match(cowStyle, /\[data-motion=attack\] \.articulated-cow__joint--staffHand/, 'Cow hand must react to actual hit');
+assert.match(cowStyle, /\[data-motion=heal\] \.articulated-cow__joint--offHand/, 'Cow hand must react to confirmed healing');
+assert.match(cowStyle, /prefers-reduced-motion: reduce/, 'Cow must respect motion settings');
+
 console.log('Battle visuals OK: all character poses/assets, opponent, companion, sword, chat and seven-slot UI.');
 
 // Existing review CI invokes this entrypoint, including the real rig contract.
