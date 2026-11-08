@@ -12,9 +12,10 @@ const outDir = resolve('antilevel-browser');
 mkdirSync(outDir, {recursive: true});
 
 const stubs = {
+  // Any chained call (from().select().eq()...) resolves to empty data, so mount effects cannot crash.
   '@/game/supabase': `window.__rpcCalls=window.__rpcCalls||[];
-export const supabase={rpc:async(name,args)=>{window.__rpcCalls.push({name,args});return {data:null,error:{code:'stub',message:'antilevel_preview_stub'}};},
-  from:()=>({select:()=>({data:[],error:null})}), auth:{getUser:async()=>({data:{user:null},error:null})}};`,
+const chain=new Proxy(function(){},{get:(t,k)=>k==='then'?(res)=>res({data:null,error:null}):chain,apply:()=>chain});
+export const supabase=new Proxy({},{get:(t,k)=>k==='rpc'?(name,args)=>{window.__rpcCalls.push({name,args});return Promise.resolve({data:null,error:{code:'stub',message:'antilevel_preview_stub'}});}:chain});`,
   '@/game/cloud': `export async function saveCloudSave(){return true;}`,
 };
 

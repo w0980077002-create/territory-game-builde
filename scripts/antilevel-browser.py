@@ -24,9 +24,17 @@ with sync_playwright() as p:
         for width in WIDTHS:
             page = browser.new_page(viewport={'width': width, 'height': 844}, device_scale_factor=2)
             page.add_init_script(f"localStorage.setItem('territory-language','{lang}')")
+            errors = []
+            page.on('pageerror', lambda e: errors.append(str(e)))
+            page.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
             page.goto(PAGE.as_uri())
             card = page.locator('[data-testid="anti-level-preview"]')
-            card.wait_for(state='visible', timeout=15000)
+            try:
+                card.wait_for(state='visible', timeout=15000)
+            except Exception:
+                print(f'{lang}/{width}: card not visible. page errors: {errors[:5]}')
+                print('body text:', page.inner_text('body')[:600])
+                raise
             expected = page.evaluate('window.__expectedPreview')
             check(expected is not None, f'{lang}/{width}: preview expected for level 50 -> 10')
             text = card.inner_text()
