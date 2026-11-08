@@ -192,8 +192,10 @@ const revealCss = readFileSync('src/components/pve/trialChestReveal.css', 'utf8'
 assert.match(revealCss, /\.trial-chest-stage:not\(\.trial-chest-open\)\s*\{[^}]*animation:\s*territory-chest-idle/s, 'closed chest needs idle state');
 assert.match(revealCss, /\.trial-chest-stage\.trial-chest-open \.trial-chest-lid\s*\{[^}]*animation:\s*territory-chest-lid/s, 'opening must animate the actual lid');
 assert.match(revealCss, /\.trial-chest-open \.trial-chest-aura\s*\{[^}]*animation:\s*territory-chest-glow/s, 'opening must reveal warm glow');
-assert.match(revealCss, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?animation:\s*none !important/, 'motion-sensitive players must be able to disable chest animation');
-assert.match(revealCss, /\.trial-chest-stage\.trial-chest-open \.trial-chest-lid\s*\{\s*transform:/, 'reduced-motion open state must still show an opened lid');
+const reducedMotionCss = revealCss.slice(revealCss.indexOf('@media (prefers-reduced-motion: reduce)'));
+assert.ok(reducedMotionCss.startsWith('@media (prefers-reduced-motion: reduce)'), 'reduced-motion override must exist');
+assert.match(reducedMotionCss, /animation:\s*none !important/, 'motion-sensitive players must be able to disable chest animation');
+assert.match(reducedMotionCss, /\.trial-chest-stage\.trial-chest-open \.trial-chest-lid\s*\{\s*transform:/, 'reduced-motion open state must still show an opened lid');
 assert.match(readFileSync('src/components/InventoryScreen.tsx','utf8'),/<TrialLootCollection language=\{language\} \/>/);
 assert.match(readFileSync('src/components/BattleScreen.tsx','utf8'),/<TrialLootCollection language=\{language\} \/>/);
 console.log('TRIAL LOOT PASS: all-floor common chests, exclusive one-in-four rewards, special odds, reset replay protection, visuals and saved victory reveal');
