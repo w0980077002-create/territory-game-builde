@@ -136,6 +136,24 @@ with sync_playwright() as p:
         page.wait_for_selector('[data-testid="pve-visible-follower"] img')
         assert page.locator('[data-testid="pve-companion-heal"]').count()==0, 'No cosmetic heal before a resolved round'
         assert page.locator('[data-testid="pve-companion-strike-fx"]').count()==0, 'No projectile before a resolved companion hit'
+        # A mobile frame can miss a 900 ms transient while Chromium is saving
+        # a screenshot. Capture actual DOM appearances before submitting the
+        # real round; never inject a fake heal or companion hit.
+        page.evaluate("""() => {
+          window.__companionSeen={strikes:[],heals:[]};
+          const scan=()=>{
+            document.querySelectorAll('[data-testid="pve-companion-strike-fx"]').forEach(el=>{
+              const kind=el.getAttribute('data-kind');
+              if(kind&&!window.__companionSeen.strikes.includes(kind))window.__companionSeen.strikes.push(kind);
+            });
+            document.querySelectorAll('[data-testid="pve-companion-heal"]').forEach(el=>{
+              const label=el.textContent?.trim();
+              if(label&&!window.__companionSeen.heals.includes(label))window.__companionSeen.heals.push(label);
+            });
+          };
+          new MutationObserver(scan).observe(document.body,{childList:true,subtree:true,characterData:true});
+          scan();
+        }""")
         page.get_by_role('button',name='Защита: Голова',exact=True).click()
         page.get_by_role('button',name='Защита: Грудь',exact=True).click()
         page.get_by_role('button',name='Удар: Живот',exact=True).click()
@@ -145,10 +163,14 @@ with sync_playwright() as p:
         fx.wait_for(timeout=1200)
         assert fx.get_attribute('data-kind')==('leaf' if follower_id=='follower_3' else 'crystal'), 'Companion must keep its own real strike identity'
         page.screenshot(path=str(OUT/f'companion-real-attack-{follower_id}.png'))
-        page.wait_for_selector('[data-testid="pve-companion-heal"]',timeout=7500)
-        heal=page.locator('[data-testid="pve-companion-heal"]')
-        assert '+1' in heal.inner_text() or 'HP' in heal.inner_text(), 'Confirmed companion heal amount must be visible'
-        page.screenshot(path=str(OUT/f'companion-real-heal-{follower_id}.png'))
+        page.wait_for_function("window.__companionSeen.heals.length > 0",timeout=7500)
+        observed=page.evaluate('window.__companionSeen')
+        assert observed['strikes']==[('leaf' if follower_id=='follower_3' else 'crystal')], (follower_id,observed)
+        assert any('HP' in label for label in observed['heals']), ('Confirmed companion heal missing HP',follower_id,observed)
+        # The actual heal is verified by MutationObserver even when its
+        # transient UI expires before slow headless screenshot capture.
+        if page.locator('[data-testid="pve-companion-heal"]').count():
+            page.screenshot(path=str(OUT/f'companion-real-heal-{follower_id}.png'))
         page.close()
     b.close()
 print('Pose scene PASS: original m1/bandit, windup/contact/recovery, block/dodge, cancellation, outcomes, x1/x2, 320/360/390/430 RU/EN, reduced motion; synthetic offline events.')
