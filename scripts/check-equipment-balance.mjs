@@ -367,6 +367,11 @@ assert.ok((previewForLevel10?.estimated.attack ?? 0) < traderGear.attack,
   'Low-level anti-level conversion must not keep original level-50 attack');
 assert.deepEqual(traderGear, unchangedTradeSnapshot,
   'An ordinary level-10 merchant must retain the level-50 original unchanged');
+const previewForLevel1 = antiLevel.previewAntiLevel(traderGear, 1);
+assert.equal(previewForLevel1?.toLevel, 1,
+  'A level-1 trader can hold the high-level item and preview Anti-Level voluntarily');
+assert.deepEqual(traderGear, unchangedTradeSnapshot,
+  'Even a level-1 owner must never lose item upgrades just by opening preview');
 assert.equal(antiLevel.previewAntiLevel(traderGear, 50), null,
   'No anti-level reduction exists when hero already meets item level');
 assert.equal(antiLevel.previewAntiLevel(traderGear, 1.5), null);
