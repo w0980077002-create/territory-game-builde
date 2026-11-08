@@ -162,6 +162,15 @@ with sync_playwright() as p:
         fx=page.locator('[data-testid="pve-companion-strike-fx"]')
         fx.wait_for(timeout=1200)
         assert fx.get_attribute('data-kind')==('leaf' if follower_id=='follower_3' else 'crystal'), 'Companion must keep its own real strike identity'
+        if follower_id=='follower_6':
+            cow=page.locator('[data-original-cow="battle_cow"]')
+            assert cow.count()==1, 'Approved Cow must be articulated, never replaced'
+            cow.wait_for(state='visible')
+            parts=cow.locator('[data-cow-part]')
+            assert parts.count()==5, 'Five separate cow source-art parts must move'
+            assert cow.get_attribute('data-motion')=='attack', 'Only a confirmed hit moves the Cow hand'
+            assert cow.locator('image').evaluate_all('nodes=>new Set(nodes.map(n=>n.getAttribute("href"))).size')==1, 'Use exact one original art source'
+            assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'), 'Cow must not overflow 390px'
         page.screenshot(path=str(OUT/f'companion-real-attack-{follower_id}.png'))
         page.wait_for_function("window.__companionSeen.heals.length > 0",timeout=7500)
         observed=page.evaluate('window.__companionSeen')
