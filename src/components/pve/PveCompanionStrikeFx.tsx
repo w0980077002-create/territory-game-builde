@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import './pveCompanionStrikeFx.css';
 
 /**
  * The companion's original FighterFigure already plays the authentic attack
