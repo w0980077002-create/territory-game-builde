@@ -11,6 +11,7 @@ import { PGlite } from '@electric-sql/pglite';
 const db = new PGlite();
 const seller = '11111111-1111-4111-8111-111111111111';
 const buyer = '22222222-2222-4222-8222-222222222222';
+const reseller = '44444444-4444-4444-8444-444444444444';
 const uuid = '33333333-3333-4333-8333-333333333333';
 const id = `stage8_${uuid}`;
 const gear = Object.freeze({
@@ -44,6 +45,8 @@ try {
   await db.query('INSERT INTO public.players(id,game_state) VALUES($1,$2::jsonb),($3,$4::jsonb)',
     [seller, JSON.stringify({ player: { level: 60 } }),
       buyer, JSON.stringify({ player: { level: 10 } })]);
+  await db.query('INSERT INTO public.players(id,game_state) VALUES($1,$2::jsonb)',
+    [reseller, JSON.stringify({ player: { level: 1 } })]);
   await db.query('INSERT INTO public.territory_profession_stage8_items(item_id,player_id,item_output) VALUES($1,$2,$3::jsonb)',
     [uuid, seller, JSON.stringify(output)]);
   const sql = readFileSync(new URL('../supabase/staged/territory_stage8_verified_gear_v2.sql', import.meta.url), 'utf8');
@@ -79,12 +82,27 @@ try {
   assert.deepEqual(await verified(buyer, { ...gear, level: 10, attack: 1, upgradeCount: 0 }), gear);
   await assert.rejects(() => verified(buyer, { ...gear, level: 51 }), /stage8_reconciliation_required/);
 
+  // A low-level trader may resell without ever equipping the gear.
+  // Second handoff: level-10 buyer -> level-1 reseller. Neither transfer
+  // is allowed to silently reduce the canonical crafted level or stats.
+  await db.exec('BEGIN');
+  await db.query('UPDATE public.territory_profession_stage8_items SET player_id=$1 WHERE item_id=$2',
+    [reseller, uuid]);
+  assert.deepEqual(await verified(reseller), gear);
+  await db.exec('COMMIT');
+  assert.equal(await ownerInRegistry(), reseller);
+  assert.deepEqual(await verified(reseller), gear);
+  await assert.rejects(() => verified(buyer), /stage8_item_not_owned/);
+  await assert.rejects(() => verified(seller), /stage8_item_not_owned/);
+  assert.deepEqual((await one('SELECT game_state FROM public.players WHERE id=$1', [reseller])).game_state,
+    { player: { level: 1 } }, 'Level-1 reseller progress must not change');
+
   // An upgrade 50 -> 51 must be authorized by a future server forge operation;
   // never by an untrusted client save or an auction handoff.
-  assert.equal((await verified(buyer)).level, 50);
+  assert.equal((await verified(reseller)).level, 50);
   assert.deepEqual((await one('SELECT game_state FROM public.players WHERE id=$1', [buyer])).game_state,
     { player: { level: 10 } }, 'Transfer fixture must not mutate hero progress');
-  console.log('PASS #366: two-owner rollback, committed handoff, old-owner denial, low-level buyer preservation and forged +1 rejection');
+  console.log('PASS #366: two-hop resale through level-1 merchant, rollback, old-owner denial, item preservation and forged +1 rejection');
 } finally {
   await db.close();
 }
