@@ -1,5 +1,6 @@
 import type { GameState, InventoryItem } from './types';
 import { isElixirExpired, isPerishableItem } from './elixirExpiry';
+import { VIP_AUTO_BELT_LEVEL } from './vipProgram';
 
 export const BELT_STACK = 5;
 
@@ -146,4 +147,66 @@ export function consumeBelt(state: GameState, index: number): GameState {
   if (isElixirExpired(slot)) return { ...state, belt: state.belt.map((s, i) => i === index ? null : s) };
   const belt = state.belt.map((s, i) => (i !== index || !s ? s : s.qty > 1 ? { ...s, qty: s.qty - 1 } : null));
   return { ...state, belt };
+}
+
+/** VIP-only convenience after a completed fight. Moves *existing* inventory
+ * batches into the selected belt slots; never mints a potion or mixes expiries.
+ * The pre-fight template remembers a selection even if its last dose was spent.
+ * Non-VIP players always keep their manual belt management.
+ */
+export function refillVipBeltAfterBattle(
+  state: GameState,
+  selectedBeforeFight: ReadonlyArray<InventoryItem | null>,
+  arenaWins: number,
+  vipLevel: number,
+): GameState {
+  if (!Number.isFinite(vipLevel) || vipLevel < VIP_AUTO_BELT_LEVEL) return state;
+  if (!Number.isSafeInteger(arenaWins) || arenaWins < 0) return state;
+  const belt = [...state.belt];
+  const inventory = state.inventory.map(item => ({ ...item }));
+  const ctx = beltContext(state, arenaWins);
+  let changed = false;
+
+  for (let slotIndex = 0; slotIndex < belt.length; slotIndex++) {
+    if (!isSlotOpen(slotIndex, ctx)) continue;
+    const equipped = belt[slotIndex];
+    if (equipped && isElixirExpired(equipped)) continue;
+    const template = equipped ?? selectedBeforeFight[slotIndex];
+    if (!template || !['potion', 'elixir', 'arena'].includes(template.type)) continue;
+    if (belt.some((item, index) => index !== slotIndex && item && sameBeltKind(item, template))) continue;
+    const currentQty = equipped?.qty ?? 0;
+    if (!Number.isSafeInteger(currentQty) || currentQty < 0 || currentQty >= BELT_STACK) continue;
+
+    const candidates = inventory
+      .filter(item => Number.isSafeInteger(item.qty) && item.qty > 0
+        && canBelt(item) && sameBeltKind(item, template)
+        // Keep precisely the same expiry batch when a dose remains in the belt.
+        && (!equipped || !isPerishableItem(item) || item.expiresAt === equipped.expiresAt))
+      .sort((a, b) => {
+        const aExpiry = a.expiresAt ? Date.parse(a.expiresAt) : Number.MAX_SAFE_INTEGER;
+        const bExpiry = b.expiresAt ? Date.parse(b.expiresAt) : Number.MAX_SAFE_INTEGER;
+        return aExpiry - bExpiry;
+      });
+
+    let nextQty = currentQty;
+    let nextItem = equipped;
+    for (const candidate of candidates) {
+      if (nextQty >= BELT_STACK) break;
+      if (nextItem && isPerishableItem(candidate) && candidate.expiresAt !== nextItem.expiresAt) continue;
+      const moved = Math.min(BELT_STACK - nextQty, candidate.qty);
+      if (moved <= 0) continue;
+      // Find the exact selected inventory batch; two batches with identical
+      // names but different expiration dates remain separate.
+      const original = inventory.find(item => item.id === candidate.id);
+      if (!original || original.qty < moved) continue;
+      original.qty -= moved;
+      nextQty += moved;
+      if (!nextItem) nextItem = { ...candidate, id: `belt_${slotIndex}`, qty: 0 };
+      changed = true;
+    }
+    if (nextItem && nextQty > currentQty) belt[slotIndex] = { ...nextItem, qty: nextQty };
+  }
+
+  if (!changed) return state;
+  return { ...state, belt, inventory: inventory.filter(item => item.qty > 0) };
 }

@@ -3,14 +3,15 @@ import { Shield, Sword, Check, Flag, Loader2, Trophy, Hammer, Shirt } from 'luci
 import { useStore } from '@/game/store';
 import { getVictoryJourney, type VictoryJourney } from '@/game/victoryJourney';
 import { findHeroGearOpportunity, type HeroGearOpportunity } from '@/game/heroGearOpportunity';
-import { useGame, useArena, recordBattleResult } from '@/game/actions';
+import { useGame, useArena, useAccount, recordBattleResult } from '@/game/actions';
 import { supabase } from '@/game/supabase';
 import runeCatalog from '@/game/config/territory-independent-rune-slots-v1.json';
 import { parseRuneServerStatus, runeSlotCatalog } from '@/game/builds/runeSlotsV1';
 import { localPveRuneTotals, type PveRuneTotals } from '@/game/builds/runePveEffectsV1';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { PVE_STONE_COST } from '@/game/engine';
-import { beltContext, consumeBelt } from '@/game/belt';
+import { beltContext, consumeBelt, refillVipBeltAfterBattle } from '@/game/belt';
+import { activeVipForBenefits } from '@/game/vipProgram';
 import { blessedGold, consumeBlessing, recordTrialWin, spendStones, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
 import { buildTrialGauntlet } from '@/game/trialGauntlet';
@@ -116,6 +117,12 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   const follower = selectedFollower(state);
   const followerBonus = followerCombat(follower);
   const levelAtFightStart = useRef(useGame.get().player.level);
+  // Preserve chosen belt kinds even after their final dose is consumed.
+  const beltAtFightStart = useRef(useGame.get().belt.map(item => item ? { ...item } : null));
+  const arenaWinsAtFightStart = useRef(useArena.get().wins);
+  const refillAfterFight = useCallback((next: ReturnType<typeof useGame.get>) =>
+    refillVipBeltAfterBattle(next, beltAtFightStart.current, arenaWinsAtFightStart.current,
+      activeVipForBenefits(useAccount.get(), performance.now())), []);
   // A server-verified rune set is frozen ONCE per local PvE fight. Never read
   // editable local game_state as rune ownership, or change runes mid-fight.
   const runeEffectsAtStart = useRef<PveRuneTotals | null>(null);
@@ -273,13 +280,20 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         ? finishReferralFight(ticket, won, referralRounds.current).catch(() => false)
         : false);
     if (!won) {
+      // A real completed defeat also gets VIP convenience; an aborted
+      // attack with no battle stones does not spend or transfer anything.
+      if (reason !== 'out_of_stones') {
+        const snapshot = useGame.get();
+        const refilled = refillAfterFight(snapshot);
+        if (refilled !== snapshot) useGame.set(refilled);
+      }
       setOutcome({ won: false, reason, gold: 0, xp: 0, gems: 0, materials: 0 });
       return;
     }
     const s = useGame.get();
     if (kind === 'trial') {
       const r = trialReward(s.trialLevel);
-      const nextState = recordTrialWin(s, enemy);
+      const nextState = refillAfterFight(recordTrialWin(s, enemy));
       victorySnapshotRef.current = nextState;
       if (stagePveVictoryJournal(userId, nextState)) {
         useGame.set(nextState);
@@ -292,7 +306,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
       return;
     }
     const gold = blessedGold(s, enemy.rewardGold);
-    const nextState = recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp });
+    const nextState = refillAfterFight(recordBattleResult(consumeBlessing(s), enemy, { gold, xp: enemy.rewardXp }));
     victorySnapshotRef.current = nextState;
     if (stagePveVictoryJournal(userId, nextState)) {
       useGame.set(nextState);
@@ -300,7 +314,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     } else setVictorySave('failed');
     setOutcome({ won: true, gold, xp: enemy.rewardXp, gems: 0,
       materials: Math.max(0, nextState.forgeMaterials - s.forgeMaterials) });
-  }, [enemy, kind, confirmVictory, userId]);
+  }, [enemy, kind, confirmVictory, userId, refillAfterFight]);
 
   const runRound = useCallback(async (atk: Zone, blk: Zone[]) => {
     if (roundFlight.current || busy || outcome || confirmSurrender || done.current || !alive.current || (RUNE_PVE_STAGED && !runesReady)) return;
