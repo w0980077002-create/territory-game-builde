@@ -1,5 +1,5 @@
 /* TERRITORY Arena — approved hand-carved OLD OAK.
-   Independent transparent wood / forged-iron / rope SVG pieces are shared by
+   Independent transparent wood and forged-iron pieces are shared by
    the real, data-driven UI. No names, numbers or controls are rasterized.
    Mobile WebView safe: no heavy animation, canvas, SVG turbulence or layout shifts. */
 .arena-approved-entry {
@@ -90,11 +90,6 @@
     var(--arena-oak) center / 540px auto repeat;
   box-shadow:inset 0 0 0 2px #341a0d,inset 0 2px 0 #d7a96a83,0 5px 12px #0b0603e0;
   color:#fff3cf;
-}
-.arena-approved-entry .arena-weekly::before {
-  content:"";position:absolute;top:3px;left:3px;right:3px;height:18px;
-  background:var(--arena-rope) center / 74px 20px repeat-x;
-  pointer-events:none;opacity:.72;z-index:0;
 }
 .arena-approved-entry .arena-weekly-head {
   position:relative;z-index:1;display:flex;
