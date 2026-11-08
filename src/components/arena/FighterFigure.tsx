@@ -60,7 +60,11 @@ export function FighterFigure({
         img.onerror = () => reject(new Error('Missing combat rig cutout: ' + part));
       });
       img.src = rigAsset(rig, part);
-      return typeof img.decode === 'function' ? img.decode().catch(() => loaded) : loaded;
+      // Some Telegram WebViews expose decode() but throw synchronously.
+      // Always retain handlers installed before setting src.
+      if (typeof img.decode !== 'function') return loaded;
+      try { return Promise.resolve(img.decode()).catch(() => loaded); }
+      catch { return loaded; }
     });
     void Promise.all(loads).then(() => {
       if (!cancelled) setAssets({ id: rig.id, ready: true });
@@ -72,8 +76,9 @@ export function FighterFigure({
   const speed = Number.isFinite(combatSpeed) && combatSpeed > 0 ? combatSpeed : 1;
   const artIdentity = combatFrames?.idle ?? src;
   const originalCutout = typeof SVGMaskElement !== 'undefined' ? getOriginalArticulatedHero(artIdentity) : null;
-  const canAnimateRig = typeof Element !== 'undefined' && typeof Element.prototype.animate === 'function';
-  const skeletalReady = !!rig && canAnimateRig && enabledRig === rig.id && assets?.id === rig.id && assets.ready;
+  // Prepared rigs also work in older Telegram WebViews: SkeletalFighter uses
+  // joint-by-joint CSS transitions when SVG Web Animations are unavailable.
+  const skeletalReady = !!rig && enabledRig === rig.id && assets?.id === rig.id && assets.ready;
   const [timeline, setTimeline] = useState<{ event: StrikeEvent; src: string; art: string; name: string; phase: PosePhase } | null>(null);
   const event = role && !skeletalReady ? strike : null;
   useEffect(() => {

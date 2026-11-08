@@ -90,14 +90,20 @@ assert.match(livingEnemy, /showRig && rig/,
   'Enemies without a verified rig must keep their original sprite');
 assert.match(livingEnemy, /typeof image\.decode === 'function'/,
   'Enemy cutouts must support old Telegram WebViews');
-assert.match(fighterFigure, /typeof img\.decode === 'function'/,
-  'Battle rigs must support old Telegram WebViews for live hit/block animation');
-assert.match(fighterFigure, /typeof Element\.prototype\.animate === 'function'/,
-  'Old Telegram without Web Animations must safely use original battle pose frames');
+assert.match(fighterFigure, /typeof img\.decode !== 'function'/,
+  'Legacy Telegram rigs must not require Image.decode');
+assert.match(fighterFigure, /Promise\.resolve\(img\.decode\(\)\)\.catch\(\(\) => loaded\)/,
+  'A rejected or broken decode must recover through installed image load handlers');
+assert.doesNotMatch(fighterFigure, /canAnimateRig\s*&&\s*enabledRig/,
+  'Prepared original rigs must mount even without SVG Web Animations');
 assert.match(skeletalFighter, /typeof window\.matchMedia === 'function'/,
   'Live skeletal battle must not crash if old Telegram lacks matchMedia');
-assert.match(skeletalFighter, /typeof joint\.animate !== 'function'/,
-  'Unsupported SVG joint animations may never crash a live fight');
+assert.match(skeletalFighter, /typeof joint\.animate === 'function'/,
+  'Supported SVG animations should use joint keyframes');
+assert.match(skeletalFighter, /joint\.style\.transition =/,
+  'Unsupported SVG animation must animate the same joints via CSS transforms');
+assert.match(skeletalFighter, /fallbackTimers\.forEach\(timer => window\.clearTimeout\(timer\)\)/,
+  'Legacy joint choreography must clean up before another strike');
 assert.match(battleScene, /portraitFollower\.id === 'follower_pumpkin_witch_2026'[\s\S]*?<PumpkinWitch\s*\/>/,
   'Arena Witch must be visibly alive as spectator without inventing a PvP strike');
 assert.ok(cityMotion.includes('@media (prefers-reduced-motion: reduce)'), 'City animation must respect accessibility motion controls');
