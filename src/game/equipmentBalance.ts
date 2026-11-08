@@ -1,5 +1,5 @@
 import type { Equipment, EquipmentBaseStats, GameState, InventoryItem } from './types';
-import { EQUIPMENT_TEMPLATES, rarityForChapter, createBossLootEquipment } from './equipmentCatalog';
+import { EQUIPMENT_TEMPLATES, rarityForChapter, createBossLootEquipment, rareBossBaseStats } from './equipmentCatalog';
 
 /** Save-data version. Bump only when a new persistent migration is introduced. */
 export const EQUIPMENT_BALANCE_VERSION = 4;
@@ -131,9 +131,9 @@ function inferLegacyBase(eq: Equipment): { baseLevel: number; baseStats: Equipme
   for (let chapter = 1; chapter <= maxChapter; chapter++) {
     if (rarityForChapter(chapter) !== eq.rarity) continue;
     const isWeapon = eq.slot === 'weapon';
-    const baseStats: EquipmentBaseStats = isWeapon
-      ? { attack: 10 + chapter * 3 }
-      : { defense: 5 + chapter * 2, hp: 20 + chapter * 5 };
+    const baseStats: EquipmentBaseStats = rarityForChapter(chapter) === 'common'
+      ? (isWeapon ? { attack: 10 + chapter * 3 } : { defense: 5 + chapter * 2, hp: 20 + chapter * 5 })
+      : rareBossBaseStats(chapter, isWeapon);
     const upgrades = Math.max(0, Math.floor(eq.level) - chapter);
     const score = Math.min(
       candidateScore(baseStats, eq, upgrades, 'forge') ?? Number.POSITIVE_INFINITY,
@@ -326,12 +326,47 @@ export function upgradeEquipment(eq: Equipment): Equipment {
   return setEquipmentLevel(prepared, prepared.level + 1);
 }
 
+/** Historic combat loot was once epic/legendary. Its current LEVEL and successful
+ * forge steps survive; only rarity and rarity-appropriate stat budget change.
+ * Already-common and already-rare old loot must remain byte-for-byte untouched. */
+export function rebalanceHistoricalRarity(eq: Equipment): Equipment {
+  const oldLoot = eq.id.startsWith('loot_') &&
+    ((eq.name === 'Клинок победителя' && eq.slot === 'weapon') ||
+     (eq.name === 'Доспех воина' && eq.slot === 'armor'));
+  if (oldLoot && (eq.rarity === 'epic' || eq.rarity === 'legendary' || eq.legacyRarityBalanced === true)) {
+    const level = Number.isSafeInteger(eq.level) ? Math.max(1, eq.level) : 1;
+    const previousBase = Number.isSafeInteger(eq.baseLevel)
+      ? eq.baseLevel!
+      : level - (Number.isSafeInteger(eq.upgradeCount) ? eq.upgradeCount! : 0);
+    const baseLevel = Math.max(1, Math.min(level, previousBase));
+    const baseStats = rareBossBaseStats(baseLevel, eq.slot === 'weapon');
+    return setEquipmentLevel({ ...eq, rarity: 'rare', baseLevel, baseStats,
+      upgradeCount: level - baseLevel, legacyRarityBalanced: true }, level);
+  }
+  const hero = eq.name === 'Героический меч' && eq.slot === 'weapon';
+  const ring = eq.name === 'Кольцо силы' && eq.slot === 'ring';
+  if ((hero || ring) && eq.rarity === 'epic') {
+    const level = Number.isSafeInteger(eq.level) ? Math.max(1, eq.level) : 1;
+    const baseStats = hero ? { attack: 22, critChance: 4 } : { attack: 10, critChance: 3 };
+    if (level < 5) {
+      const reduced = { attack: Math.round(baseStats.attack * level / 5),
+        critChance: Math.round(baseStats.critChance * level / 5) };
+      return { ...eq, rarity: 'rare', level, ...reduced, baseLevel: level,
+        baseStats: reduced, upgradeCount: 0 };
+    }
+    return setEquipmentLevel({ ...eq, rarity: 'rare', baseLevel: 5,
+      baseStats, upgradeCount: level - 5 }, level);
+  }
+  return eq;
+}
+
 /** Identical ceilings to the server's territory_normalize_gear_v4.
  * Existing levels, item IDs, slots, rarities and ownership are retained.
  * Shop catalog items always follow the non-compounding forge growth table.
  * Generated loot or custom gear only changes if above generous slot caps.
  */
 export function normalizeEquipmentV4(eq: Equipment): Equipment {
+  eq = rebalanceHistoricalRarity(eq);
   const template = EQUIPMENT_TEMPLATES.find(
     (x) => x.name === eq.name && x.slot === eq.slot && x.rarity === eq.rarity,
   );
@@ -401,9 +436,29 @@ function migrateInventoryItem(item: InventoryItem): InventoryItem {
 }
 
 export function migrateGameStateBalance(saved: Partial<GameState>): Partial<GameState> {
-  // Do not reinterpret already-current saves: future crafted/custom stat rolls must
-  // survive ordinary loads. Only migrate saves whose persisted balance version is old.
-  if ((saved.balanceVersion ?? 0) >= EQUIPMENT_BALANCE_VERSION) return saved;
+  // The rare-only historic migration also runs on already-current V4 saves.
+  // Only former epic/legendary loot and the two old epic shop entries change.
+  const normalized: Partial<GameState> = {
+    ...saved,
+    inventory: Array.isArray(saved.inventory) ? saved.inventory.map(item => {
+      if (!item.equipment) return item;
+      const eq = rebalanceHistoricalRarity(item.equipment);
+      return eq === item.equipment ? item : { ...item, rarity: eq.rarity, equipment: eq,
+        description: `Уровень ${eq.level} · ${eq.rarity}` };
+    }) : saved.inventory,
+    belt: Array.isArray(saved.belt) ? saved.belt.map(item => {
+      if (!item?.equipment) return item;
+      const eq = rebalanceHistoricalRarity(item.equipment);
+      return eq === item.equipment ? item : { ...item, rarity: eq.rarity, equipment: eq };
+    }) : saved.belt,
+    player: saved.player?.equipped
+      ? { ...saved.player, equipped: Object.fromEntries(
+          Object.entries(saved.player.equipped).map(([slot, item]) =>
+            [slot, item ? rebalanceHistoricalRarity(item) : item])) as NonNullable<GameState['player']['equipped']> }
+      : saved.player,
+  };
+  if ((normalized.balanceVersion ?? 0) >= EQUIPMENT_BALANCE_VERSION) return normalized;
+  saved = normalized;
 
   const player = saved.player;
   return {
