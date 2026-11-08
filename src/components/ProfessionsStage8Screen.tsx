@@ -6,7 +6,7 @@ import { craftOutputArt, PROFESSION_ART, resourceArt } from '@/game/art';
 import { PROFESSION_DEFINITIONS, RESOURCE_DEFINITIONS } from '@/game/professions';
 import { mirrorCraftResources } from '@/game/craftApi';
 import {
-  fetchStage8Status, fetchStage8Items, mirrorStage8Items,
+  fetchStage8Status, fetchStage8Items, mirrorStage8Items, isStage8ReconciliationError,
   executeStage8, purchaseStage8, readStage8Pending, setStage8Pending,
   readStage8PurchasePending, setStage8PurchasePending, stage8XpToNext, STAGE8_RECIPES,
   type Stage8Status, type Stage8PendingOperation, type Stage8PurchaseOperation,
@@ -25,6 +25,9 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
   const [pending,setPending] = useState<Stage8PendingOperation|null>(null);
   const [purchasePending,setPurchasePending] = useState<Stage8PurchaseOperation|null>(null);
   const [notice,setNotice] = useState('');
+  // A saved item conflicts with the server registry: view stays open, crafting is blocked.
+  const [reconciliation,setReconciliation] = useState(false);
+  const equippedSnapshot=()=>{const latest=useGame.get();const equipped=Object.values(latest.player.equipped).flatMap((item)=>item?[item]:[]);return {latest,equipped,equippedIds:new Set(equipped.map((item)=>item.id))};};
   const [recipeFilter,setRecipeFilter] = useState<WorkshopRecipeFilter>('nearby');
   const [recipeSearch,setRecipeSearch] = useState('');
   const [craftedItemTab,setCraftedItemTab] = useState<'equipment'|'items'|null>(null);
@@ -35,19 +38,25 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       const [next,waiting,purchaseWaiting]=await Promise.all([
         fetchStage8Status(),readStage8Pending(),readStage8PurchasePending(),
       ]);
+      let conflict=false;
       if (next.enabled && next.profession) {
         const owned=await fetchStage8Items();
-        const latest=useGame.get();
-        const equippedIds=new Set(Object.values(latest.player.equipped).flatMap((item)=>item?[item.id]:[]));
-        useGame.set({...latest,inventory:mirrorStage8Items(
-          mirrorCraftResources(latest.inventory,next.resources),owned,equippedIds),
+        const {latest,equipped,equippedIds}=equippedSnapshot();
+        let inventory=mirrorCraftResources(latest.inventory,next.resources);
+        try {
+          inventory=mirrorStage8Items(inventory,owned,equippedIds,equipped);
+        } catch (err) {
+          if (!isStage8ReconciliationError(err)) throw err;
+          conflict=true; // keep the saved inventory exactly as it is
+        }
+        useGame.set({...latest,inventory,
           professions:{...(latest.professions??{active:null,masteryLevel:1,masteryXp:0,lastGatherAt:0}),
             active:next.profession,masteryLevel:next.masteryLevel,masteryXp:next.masteryXp}});
       }
+      setReconciliation(conflict);
+      setNotice(conflict?(language==='en'?'An item needs server history review. Its saved version was kept and crafting is paused.':'Историю предмета нужно проверить на сервере. Сохранённая версия сохранена, крафт приостановлен.'):'');
       setStatus(next);setPending(waiting);setPurchasePending(purchaseWaiting);
-    }catch(err){setStatus(null);setError(err instanceof Error && err.message==='stage8_reconciliation_required'
-      ? (language==='en'?'An item needs server history review. Its saved version was kept.':'Историю предмета нужно проверить на сервере. Сохранённая версия не изменена.')
-      : (language==='en'?'Verified crafting is unavailable. Check saved pending operations before attempting another.':'Нет связи с защищённым ремеслом. Сначала проверь сохранённую операцию — повторную пока не начинай.'));}
+    }catch{setStatus(null);setError(language==='en'?'Verified crafting is unavailable. Check saved pending operations before attempting another.':'Нет связи с защищённым ремеслом. Сначала проверь сохранённую операцию — повторную пока не начинай.');}
     finally{setLoading(false);}
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- once-on-mount server status fetch
@@ -69,15 +78,30 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       if (receipt.kind==='item' && !expired
         && !owned.some((item)=>item.itemId===receipt.itemId))
         throw new Error('stage8_item_not_in_server_inventory');
-      const latest=useGame.get();
-      const equippedIds=new Set(Object.values(latest.player.equipped).flatMap((item)=>item?[item.id]:[]));
+      // The server receipt is confirmed from here on. A local conflict must never keep
+      // this operation pending: the next retry would replay the same receipt forever.
+      const {latest,equipped,equippedIds}=equippedSnapshot();
+      let inventory=mirrorCraftResources(latest.inventory,verified.resources);
+      let conflict=false;
+      try {
+        inventory=mirrorStage8Items(inventory,owned,equippedIds,equipped);
+      } catch (err) {
+        if (!isStage8ReconciliationError(err)) throw err;
+        conflict=true; // saved copy kept; resources still reflect the verified server state
+      }
       useGame.set({...latest,
-        inventory:mirrorStage8Items(mirrorCraftResources(latest.inventory,verified.resources),owned,equippedIds),
+        inventory,
         professions:{...(latest.professions??{active:null,masteryLevel:1,masteryXp:0,lastGatherAt:0}),
           active:verified.profession,masteryLevel:verified.masteryLevel,masteryXp:verified.masteryXp},
       });
       await setStage8Pending(null);
       setPending(null);setStatus(verified);
+      setReconciliation(conflict);
+      if (conflict) {
+        setNotice(language==='en'?'Craft confirmed by the server. An older item needs review, so it was not replaced and crafting is paused.':'Изготовление подтверждено сервером. Старый предмет нужно проверить: его версия не заменена, крафт приостановлен.');
+        setCraftedItemTab(null);
+        return;
+      }
       setNotice(expired ? (language==='en'?'Previous craft confirmed. That consumable has expired.':'Прежнее изготовление подтверждено. Срок расходника уже истёк.') : language==='en'?(receipt.kind==='item'?'Verified item crafted.':'Mastery training confirmed.'):(receipt.kind==='item'?'Предмет создан и подтверждён сервером.':'Обучение подтверждено сервером.'));
       const crafted=owned.find(item=>item.itemId===receipt.itemId);
       setCraftedItemTab(!expired && receipt.kind==='item' && crafted ? (crafted.output.type==='equipment'?'equipment':'items') : null);
@@ -87,7 +111,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
   };
 
   const start = async (recipeId:string) => {
-    if (actionLock.current || busy || pending || purchasePending || !status?.enabled) return;
+    if (actionLock.current || busy || pending || purchasePending || reconciliation || !status?.enabled) return;
     actionLock.current=true;setBusy(true);
     const operationId=crypto.randomUUID();
     try {
@@ -188,7 +212,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
         const hasLicense=readiness.licenseReady;
         const hasResources=readiness.missing.length===0;
         const hasXpRoom=readiness.xpReady;
-        const canRun=readiness.ready && !pending && !busy && !purchasePending;
+        const canRun=readiness.ready && !pending && !busy && !purchasePending && !reconciliation;
         const label=recipe.kind==='practice' ? recipe.name??'Обучение мастера' : recipe.output?.name??recipe.id;
         return <article key={recipe.id} className="rounded-xl border border-amber-400/15 bg-slate-900/80 p-3">
           <div className="flex items-start gap-2"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-amber-400/15 bg-amber-400/10 p-1"><img src={recipe.output?craftOutputArt(recipe.output):PROFESSION_ART[recipe.profession]} alt="" loading="lazy" className="h-full w-full object-contain"/></div><div className="min-w-0 flex-1"><b className="text-sm">{localizeText(label,language)}</b><p className="text-xs text-amber-300">{language==='en'?'Profession mastery Lv.':'Мастерство профессии ур.'} {recipe.requiredLevel} · +{recipe.masteryXp} XP</p><p className="mt-1 text-xs text-slate-400">{recipe.kind==='practice'?(language==='en'?'Consumes resources, awards verified mastery; no inventory junk.':'Расходует ресурсы и даёт мастерство без лишних предметов.'):recipe.output?.description}</p></div>{!hasLicense&&<Lock className="h-4 w-4 text-amber-300"/>}{recipe.requiredLevel>=300&&<Sparkles className="h-4 w-4 text-violet-300"/>}</div>

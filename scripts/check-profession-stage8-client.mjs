@@ -103,6 +103,22 @@ assert.equal(api.mirrorStage8Items([{...savedGear,equipment:{...savedGear.equipm
   'A stale lower mirror is refreshed from the server');
 const equippedCopy=api.mirrorStage8Items([{id:'legacy-sword',qty:1}],owned,new Set([`stage8_${uuid}`]));
 assert.deepEqual(equippedCopy.map(i=>i.id),['legacy-sword'],'Equipped server item must not be duplicated in the backpack');
+// Worn gear: a higher saved level in the equipped slot is evidence, not noise.
+const wornHigher={id:`stage8_${uuid}`,level:59,attack:90};
+assert.throws(()=>api.mirrorStage8Items([{id:'legacy-sword',qty:1}],[registryGear],new Set([`stage8_${uuid}`]),[wornHigher]),
+  /reconciliation_required/,'Worn saved gear above the registry must stop the refresh');
+assert.equal(wornHigher.level,59,'Worn gear is never rewritten');
+const wornLower={id:`stage8_${uuid}`,level:4,attack:3};
+const wornOk=api.mirrorStage8Items([{id:'legacy-sword',qty:1}],[registryGear],new Set([`stage8_${uuid}`]),[wornLower]);
+assert.deepEqual(wornOk.map(i=>i.id),['legacy-sword'],'Worn stale gear stays out of the backpack and is not duplicated');
+assert.equal(wornLower.level,4,'Worn stale gear is left untouched');
+// Missing or invalid saved levels must not be accepted as proof of anything.
+assert.equal(api.mirrorStage8Items([{...savedGear,equipment:{...savedGear.equipment,level:undefined}}],[registryGear])[0].equipment.level,5,
+  'A saved copy without a level cannot block the refresh');
+const twice=api.mirrorStage8Items([{id:'legacy-sword',qty:1}],[registryGear],new Set(),[]);
+assert.deepEqual(api.mirrorStage8Items(twice,[registryGear],new Set(),[]),twice,'Repeated refresh is idempotent');
+assert.equal(api.isStage8ReconciliationError(new Error('stage8_reconciliation_required')),true);
+assert.equal(api.isStage8ReconciliationError(new Error('stage8_other')),false);
 response={data:{success:true,items:[{...response.data.items[0],item_id:'not-a-uuid'}]},error:null};
 await assert.rejects(()=>api.fetchStage8Items(),/inventory_invalid/);
 response={data:{success:true,items:[{...owned[0],item_id:uuid,recipe_id:itemId,
