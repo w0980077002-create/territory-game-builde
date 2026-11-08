@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGame } from '@/game/actions';
 import { useStore } from '@/game/store';
 import {
-  TRIAL_BLUEPRINTS, TRIAL_CHEST_RULES, TRIAL_LOOT_ASSET_BASE,
+  TRIAL_BLUEPRINTS, TRIAL_CHEST_RULES, TRIAL_LOOT_ASSET_BASE, TRIAL_CHEST_ART,
   assembleTrialBlueprint, hasAssembledTrialBlueprint, ownedTrialFragmentCount,
 } from '@/game/trialLoot';
 
@@ -34,7 +34,7 @@ export function TrialLootCollection({ language }: { language: 'ru' | 'en' }) {
             ['legendary', 25, en ? 'Legend' : 'Легенда'],
           ] as const).map(([tier, floor, title]) => (
             <div key={tier} className="rounded-lg border border-amber-700/35 bg-[#140e0c] p-1.5 text-center">
-              <img src={art('chest-' + tier + '.svg')} width="64" height="64" className="mx-auto h-16 w-16 object-contain" alt="" loading="lazy" />
+              <img src={import.meta.env.BASE_URL + TRIAL_CHEST_ART[tier]} width="96" height="96" className="mx-auto h-20 w-20 object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,.65)]" alt="" loading="lazy" />
               <b className="block text-[11px] text-amber-100">{title}</b>
               <span className="block text-[10px] text-amber-300">{tier === 'common'
                 ? (en ? 'Every other floor' : 'Остальные этажи')
