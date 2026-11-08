@@ -17,7 +17,6 @@ for (const protectedRoute of ['city', 'map', 'battle', 'arena', 'shop', 'vip', '
 assert(app.includes('OAK_HERITAGE_SCREENS.has(screen)'), 'Skin scope must follow the actual game screen');
 assert(entry.includes("import './components/ui/territoryOakUnified.css';"), 'Skin must be loaded in the real app');
 for (const path of [
-  '/assets/territory/arena-ui/rope-wrap.svg',
   '/assets/territory/ui/shop/shop-approved-product-border-v2.webp',
   '/assets/territory/ui/shop/shop-wood-planks.webp',
 ]) {
@@ -26,6 +25,10 @@ for (const path of [
 }
 assert(!skin.includes('old-oak-photographic.svg'), 'Mirrored oak grain must not return to standard menus');
 assert(!skin.includes('iron-corner.svg'), 'Legacy steel-corner stamps must not return to standard menus');
+assert(!/rope-wrap\.svg|--oak-heritage-rope|repeat-x/.test(skin), 'Never re-add repeated rope strips to standard menus');
+assert(!skin.includes('.territory-section-head::before'), 'Header must not stamp repeating knots');
+assert(!/\.viking-screen-tabs,\s*\.territory-mail__tabs\s*\)::after/.test(skin), 'Inbox and other tab rails must not stamp repeating knots');
+assert(!/\.viking-screen > \.card,[\s\S]*?\)::before/.test(skin), 'Menu cards must not stamp repeating knots');
 assert(skin.includes('content:none;') && skin.includes('display:none;'), 'Legacy corner overlays must remain disabled');
 assert(skin.includes("--oak-heritage-grain: url('/assets/territory/ui/shop/shop-wood-planks.webp')"), 'Menus must use owner-approved Shop planks');
 assert(!/440px 220px|400px 200px|480px 240px/.test(skin), 'Do not stretch wood grain into artificial waves');
@@ -34,8 +37,7 @@ assert(skin.includes('.territory-shell.territory-oak-heritage'),
 assert(!skin.includes('.territory-nav'), 'Bottom navigation must not change');
 
 const heroParity = skin.slice(skin.indexOf('Owner mobile Hero parity'));
-assert(heroParity.includes('.territory-profile > :is(details.card,div.card)::before'), 'Hero compact cards require separate rope override');
-assert(heroParity.includes('content: none;') && heroParity.includes('display: none;'), 'Do not stamp repetitive rope trim on every Hero accordion');
+assert(!heroParity.includes('.territory-profile > :is(details.card,div.card)::before'), 'Do not restore obsolete Hero rope overrides');
 assert(heroParity.includes('summary::-webkit-details-marker'), 'Hero disclosures must hide native duplicate markers');
 assert(heroParity.includes('min-height: 44px;'), 'Hero accordion tap targets must remain 44px tall');
 assert(heroParity.includes('[data-testid="vip-open-page"]'), 'Hero VIP entry must share approved real timber finish');
