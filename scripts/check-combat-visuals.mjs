@@ -40,6 +40,11 @@ assert.match(arena, /getFollowerArt\(portraitFollower\.id\)/, 'Use the selected 
 assert(!arena.includes('h-[52%] w-[48%]'), 'Do not restore the invisible follower layout');
 assert.match(pve, /getEnemyCombatFrames\((?:enemy|activeEnemy)\.art\)/, 'PvE enemy animations disconnected');
 assert.match(pve, /getFollowerCombatFrames\(follower\.id\)/, 'PvE companion animation frames missing');
+assert.match(pve, /data-testid="pve-visible-follower"/, 'Companion needs its own PvE foreground lane');
+assert(pve.includes('z-30 h-[72%] w-[74%]'), 'Normal companion cannot shrink behind the hero in Trials');
+assert(pve.includes("follower ? 'right-[-8%] w-[88%]' : 'right-0 w-full'"), 'Shift only the hero with a visible companion; keep solo hero centered');
+assert(!pve.includes('z-10 h-[52%] w-[48%]'), 'Do not bury a selected companion under the hero');
+
  
 // After a PvE win or loss the outcome must replace (not trail below) the tall
 // arena, so the primary CTA stays above the Telegram bottom navigation.
