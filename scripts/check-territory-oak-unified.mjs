@@ -4,11 +4,16 @@ import { existsSync, readFileSync } from 'node:fs';
 const app = readFileSync('src/App.tsx', 'utf8');
 const entry = readFileSync('src/main.tsx', 'utf8');
 const skin = readFileSync('src/components/ui/territoryOakUnified.css', 'utf8');
-const approvedShop = readFileSync('src/components/shopWoodFinish.css', 'utf8');
-const approvedDeepOak = 'linear-gradient(90deg,#110b0aea,#3c2418c2 6%,#21120ee0 50%,#392116c8 94%,#150b0aeb)';
-assert(approvedShop.includes(approvedDeepOak), 'Reference Shop artwork/finish changed; verify owner approval');
-assert(skin.includes(approvedDeepOak), 'Normal screens must match the owner-approved deep Shop oak, even in empty Mail space');
-assert(!skin.includes('#1c0d0b4f 8%,#1a0b0942 92%'), 'Rejected bright orange/light-brown backdrop must not return');
+const approvedArt = '/assets/territory/ui/approved/territory-dark-oak-mobile.webp';
+const darkOak = readFileSync('public' + approvedArt);
+const oakExtra = readFileSync('src/components/ui/oakScreens.css', 'utf8');
+assert.equal(darkOak.toString('ascii',0,4), 'RIFF', 'Owner-approved wood artwork must be a real WebP file');
+assert.equal(darkOak.toString('ascii',8,12), 'WEBP', 'WebP header must be valid');
+assert(darkOak.length > 5000 && darkOak.length < 50000, 'Fast-loading mobile artwork, not a fake flat background');
+assert(skin.includes(approvedArt), 'Standard screens must use the newly approved dark oak artwork');
+assert(oakExtra.includes(approvedArt), 'Auction, clan, profession panels use the same dark oak');
+assert(skin.includes('background-repeat: no-repeat, no-repeat;'), 'No obviously repeated grain in the empty inbox background');
+assert(!skin.includes("shop-wood-planks.webp"), 'Bright orange old Shop plank art must not be used by standard-screen skin');
 
 const list = app.match(/const OAK_HERITAGE_SCREENS = new Set<Screen>\(\[([\s\S]*?)\]\);/);
 assert(list, 'Explicit limited skin scope is required');
@@ -24,7 +29,7 @@ assert(app.includes('OAK_HERITAGE_SCREENS.has(screen)'), 'Skin scope must follow
 assert(entry.includes("import './components/ui/territoryOakUnified.css';"), 'Skin must be loaded in the real app');
 for (const path of [
   '/assets/territory/ui/shop/shop-approved-product-border-v2.webp',
-  '/assets/territory/ui/shop/shop-wood-planks.webp',
+  approvedArt,
 ]) {
   assert(existsSync('public' + path), 'Real approved material missing: ' + path);
   assert(skin.includes(path), 'Real approved material not applied: ' + path);
@@ -36,7 +41,7 @@ assert(!skin.includes('.territory-section-head::before'), 'Header must not stamp
 assert(!/\.viking-screen-tabs,\s*\.territory-mail__tabs\s*\)::after/.test(skin), 'Inbox and other tab rails must not stamp repeating knots');
 assert(!/:is\(\s*\.viking-screen > \.card,\s*\.viking-screen > section\.card,\s*\.territory-profile > \.card\s*\)::before/.test(skin), 'Menu cards must not stamp repeating knots');
 assert(skin.includes('content:none;') && skin.includes('display:none;'), 'Legacy corner overlays must remain disabled');
-assert(skin.includes("--oak-heritage-grain: url('/assets/territory/ui/shop/shop-wood-planks.webp')"), 'Menus must use owner-approved Shop planks');
+assert(skin.includes(`--oak-heritage-grain: url('${approvedArt}')`), 'Standard screens use owner-approved old walnut art');
 assert(!/440px 220px|400px 200px|480px 240px/.test(skin), 'Do not stretch wood grain into artificial waves');
 assert(skin.includes('.territory-shell.territory-oak-heritage'),
   'Do not recolour the full game or change approved screens');
@@ -54,4 +59,4 @@ assert(heroParity.includes('summary::-webkit-details-marker'), 'Hero disclosures
 assert(heroParity.includes('min-height: 44px;'), 'Hero accordion tap targets must remain 44px tall');
 assert(heroParity.includes('[data-testid="vip-open-page"]'), 'Hero VIP entry must share approved real timber finish');
 
-console.log('TERRITORY old-oak visual scope PASS: 13 standard screens, Shop-approved natural plank grain, no mirrored waves, protected Arena/Shop/City/Map/PvE/VIP and bottom nav.');
+console.log('TERRITORY old-oak visual scope PASS: actual owner-approved dark walnut WebP on 13 standard screens, no repetition or mirrored waves, protected Arena/Shop/City/Map/PvE/VIP and bottom nav.');
