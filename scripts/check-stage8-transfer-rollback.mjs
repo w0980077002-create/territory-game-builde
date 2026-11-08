@@ -14,6 +14,12 @@ const buyer = '22222222-2222-4222-8222-222222222222';
 const reseller = '44444444-4444-4444-8444-444444444444';
 const uuid = '33333333-3333-4333-8333-333333333333';
 const id = `stage8_${uuid}`;
+const untouchedUuid = '66666666-6666-4666-8666-666666666666';
+const untouchedId = `stage8_${untouchedUuid}`;
+const untouchedGear = Object.freeze({
+  id: untouchedId, slot: 'armor', rarity: 'rare', level: 34, baseLevel: 1,
+  upgradeCount: 33, defense: 77, baseStats: { defense: 11 },
+});
 const gear = Object.freeze({
   id, slot: 'weapon', rarity: 'rare', level: 50, baseLevel: 1,
   upgradeCount: 49, attack: 118, defense: 17,
@@ -49,6 +55,13 @@ try {
     [reseller, JSON.stringify({ player: { level: 1 } })]);
   await db.query('INSERT INTO public.territory_profession_stage8_items(item_id,player_id,item_output) VALUES($1,$2,$3::jsonb)',
     [uuid, seller, JSON.stringify(output)]);
+  // A second crafted item owned by the original seller must be isolated
+  // from all transfers, rollbacks and forged reads of the first item.
+  await db.query('INSERT INTO public.territory_profession_stage8_items(item_id,player_id,item_output) VALUES($1,$2,$3::jsonb)',
+    [untouchedUuid, seller, JSON.stringify({
+      type: 'equipment', name: 'Independent crafted armor',
+      equipment: { ...untouchedGear, id: 'registry-display-id-2' },
+    })]);
   const sql = readFileSync(new URL('../supabase/staged/territory_stage8_verified_gear_v2.sql', import.meta.url), 'utf8');
   assert.doesNotMatch(sql, /\bUPDATE\s+public\.(players|territory_profession_stage8_items)\b/i);
   await db.exec(sql);
@@ -190,7 +203,25 @@ try {
   assert.equal((await verified(reseller)).level, 50);
   assert.deepEqual((await one('SELECT game_state FROM public.players WHERE id=$1', [buyer])).game_state,
     { player: { level: 10 } }, 'Transfer fixture must not mutate hero progress');
-  console.log('PASS #366: two-hop resale through level-1 merchant, rollback, old-owner denial, item preservation and forged +1 rejection');
+  // Registry verification must be item-scoped. Transferring one UUID may
+  // never change the seller's OTHER gear, nor grant it to buyer/reseller.
+  const independentRow = await one(
+    'SELECT player_id::text AS owner, item_output FROM public.territory_profession_stage8_items WHERE item_id=$1',
+    [untouchedUuid],
+  );
+  assert.equal(independentRow.owner, seller,
+    'Resale of sword must not transfer unrelated armor owned by seller');
+  assert.deepEqual(independentRow.item_output.equipment.level, untouchedGear.level);
+  assert.equal(independentRow.item_output.equipment.upgradeCount, untouchedGear.upgradeCount);
+  assert.equal(independentRow.item_output.equipment.defense, untouchedGear.defense);
+  assert.deepEqual(await verified(seller, untouchedGear), untouchedGear,
+    'Original seller must still have access to independently owned armor');
+  await assert.rejects(() => verified(buyer, untouchedGear), /stage8_item_not_owned/);
+  await assert.rejects(() => verified(reseller, untouchedGear), /stage8_item_not_owned/);
+  assert.deepEqual(await verified(reseller), gear,
+    'Unrelated gear checks must not alter transferred sword');
+
+  console.log('PASS #366: two-hop resale through level-1 merchant, rollback, old-owner denial, item preservation and forged +1 rejection, unrelated-item isolation');
 } finally {
   await db.close();
 }
