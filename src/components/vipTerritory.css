@@ -432,3 +432,45 @@
   .territory-vip-rebuild .vip-chest-stage-sparks {animation:none!important;}
   .territory-vip-rebuild .vip-chest-stage-glow {transition:none!important;}
 }
+
+/* Owner-approved visual direction: illustrated treasure chests, not shop icons.
+   Make art dominant without growing action buttons or introducing new kinds. */
+.territory-vip-rebuild .vip-chests-row {gap:8px;}
+.territory-vip-rebuild .vip-chest-card {
+  min-height:174px;padding:6px 6px 8px;gap:3px;
+  border:1.5px solid #bc874c;border-radius:13px;
+  background:linear-gradient(180deg,#3820132b 0%,#160d0bec 100%),
+    url('/assets/territory/ui/approved/territory-dark-oak-mobile.webp') center/cover;
+  box-shadow:inset 0 1px 0 #f5c98f70,0 5px 12px #0c0507aa;
+  overflow:hidden;
+}
+.territory-vip-rebuild .vip-chest-card:nth-child(2) {
+  border-color:#e5b45f;
+  background:linear-gradient(180deg,#62401b40 0%,#190c0ced 100%),
+    url('/assets/territory/ui/approved/territory-dark-oak-mobile.webp') center/cover;
+}
+.territory-vip-rebuild .vip-chest-card img {
+  width:min(100%,135px);height:112px;max-height:none;object-fit:contain;
+  margin:-5px auto -8px;
+  filter:drop-shadow(0 8px 5px #100605c9);
+}
+.territory-vip-rebuild .vip-chest-card strong {
+  color:#ffe3a0;font-size:11px;line-height:1.15;
+  text-shadow:0 1px 2px #0b0505;
+}
+.territory-vip-rebuild .vip-chest-card small {
+  margin:0;font-size:9px;line-height:1.15;color:#edcba1;
+}
+.territory-vip-rebuild .vip-chest-card .vip-gold-action {
+  width:100%;min-height:29px;padding:4px 2px;
+  font-size:11px;line-height:1.1;border-radius:8px;
+}
+.territory-vip-rebuild .vip-chest-stage {height:210px;}
+@media(max-width:370px) {
+  .territory-vip-rebuild .vip-chest-card {min-height:168px;padding:5px 4px 7px;}
+  .territory-vip-rebuild .vip-chest-card img {height:101px;width:min(100%,122px);}
+  .territory-vip-rebuild .vip-chest-card strong {font-size:10px;}
+}
+@media(max-height:640px) {
+  .territory-vip-rebuild .vip-chest-stage {height:145px;}
+}

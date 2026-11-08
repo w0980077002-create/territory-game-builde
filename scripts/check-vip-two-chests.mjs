@@ -6,9 +6,15 @@ const js=await transform(source,{loader:'ts',format:'esm'});
 const {VIP_CHEST_ART,previewVipChest}=await import('data:text/javascript;base64,'+Buffer.from(js.code).toString('base64'));
 assert.equal(Object.keys(VIP_CHEST_ART).length,2,'Exactly two chest appearances');
 assert.notEqual(VIP_CHEST_ART.daily,VIP_CHEST_ART.weekly);
+assert.equal(VIP_CHEST_ART.daily,'assets/territory/vip/chests/daily-premium.webp');
+assert.equal(VIP_CHEST_ART.weekly,'assets/territory/vip/chests/weekly-premium.webp');
 for (const path of Object.values(VIP_CHEST_ART)) {
   assert.match(path,/\.webp$/);
   assert(existsSync('public/'+path),'Missing playable VIP chest art: '+path);
+  const bytes=readFileSync('public/'+path);
+  assert(bytes.byteLength>=8000,'VIP art must be rendered illustration, not a tiny icon');
+  assert.equal(bytes.toString('ascii',0,4),'RIFF');
+  assert.equal(bytes.toString('ascii',8,12),'WEBP');
 }
 for (const kind of ['daily','weekly']) {
   let previous={gold:0,materials:0,potions:0};
