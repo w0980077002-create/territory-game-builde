@@ -518,7 +518,7 @@ html.territory-ios-webapp .territory-shell > .mono-celebration > section {
   width: min(100%, 330px);
   max-width: 330px;
   max-height: min(420px, 100%);
-  padding: 12px 12px 13px;
+  padding: 0;
   border-width: 2px;
   border-radius: 16px;
 }
@@ -833,3 +833,80 @@ html.territory-ios-webapp .territory-monopoly .mono-scene {
 .mono-wallet button::after{content:"";position:absolute;inset:-9px}
 .mono-multiplier button{position:relative}
 .mono-multiplier button::after{content:"";position:absolute;inset:-8px 0}
+
+/* Android Telegram parity with the compact iPhone treasure dialog.
+   The dialog body alone scrolls: its action never hides behind the bottom bar. */
+.mono-overlay.mono-celebration {
+  padding: max(88px, calc(var(--territory-top-inset, 0px) + 26px), env(safe-area-inset-top, 0px))
+    10px max(104px, calc(var(--territory-bottom-inset, 0px) + 88px), env(safe-area-inset-bottom, 0px));
+}
+.mono-celebration > section.mono-reward-card {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 340px);
+  max-width: 340px;
+  max-height: min(440px, 100%);
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  border-width: 2px;
+  border-radius: 16px;
+}
+.mono-celebration .mono-reward-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 11px 3px;
+}
+.mono-celebration .mono-reward-body > small {
+  position: relative;
+  font: 8px Arial,sans-serif;
+  letter-spacing: 2px;
+  color: #e8cca0;
+}
+.mono-celebration .mono-reward-body > h3 { font-size: 21px; line-height: 1.12; margin: 4px 0 2px; }
+.mono-celebration .mono-opening-chest { width: 112px; max-height: 124px; margin: 0 auto -4px; }
+.mono-celebration .mono-prize-rays { top: 20px; width: 190px; height: 190px; }
+.mono-celebration .mono-winnings { margin: 2px 0 4px; }
+.mono-celebration .mono-winnings .mono-art { width: 30px; }
+.mono-celebration .mono-winnings strong { font-size: 23px; }
+.mono-celebration .mono-extra-rewards { gap: 4px; margin: 6px 0; }
+.mono-celebration .mono-resource {
+  flex: 0 0 55px;
+  width: 55px;
+  min-width: 55px;
+  max-width: 55px;
+  padding: 2px 2px 4px;
+}
+.mono-celebration .mono-resource .mono-art { width: 30px; }
+.mono-celebration .mono-resource small { font: 9px/1.1 Arial,sans-serif; }
+.mono-celebration .mono-resource b { font-size: 11px; }
+.mono-celebration .mono-reward-body > p {
+  margin: 5px 0;
+  font: 10px/1.3 Arial,sans-serif;
+  color: #e0d6bf;
+}
+.mono-celebration .mono-event { padding: 6px; margin: 4px 0; }
+.mono-celebration .mono-event .mono-art { width: 25px; }
+.mono-celebration .mono-event b { font-size: 12px; }
+.mono-celebration .mono-event p { margin: 2px 0; }
+.mono-celebration .mono-reward-footer {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  padding: 7px 12px 12px;
+  border-top: 1px solid #dcb97980;
+  background: linear-gradient(#283143,#182f3a);
+}
+.mono-celebration .mono-reward-footer .mono-cta {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 9px 12px;
+  font: 900 13px Arial,sans-serif;
+}
