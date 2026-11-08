@@ -911,9 +911,9 @@ html.territory-ios-webapp .territory-monopoly .mono-scene {
   font: 900 13px Arial,sans-serif;
 }
 
-/* OWNER APPROVED MONOPOLY TREASURE OAK — existing Shop/Arena art, not painted CSS.
-   Keep the previously fixed compact Android dialog and permanent action footer.
-   All changes are visual. No reward, roll, payment or inventory logic changes. */
+/* TERRITORY treasure window: ONLY the approved natural dark oak artwork.
+   Removed the Shop beam/rope/shelf raster and obsolete image-frame overrides.
+   This isolated finish never changes actual rewards, payouts or game logic. */
 .mono-overlay.mono-celebration {
   background: rgba(10, 6, 4, .77);
   backdrop-filter: blur(3px);
@@ -921,221 +921,132 @@ html.territory-ios-webapp .territory-monopoly .mono-scene {
 .mono-celebration > section.mono-reward-card {
   isolation: isolate;
   position: relative;
-  border: 3px solid #bd8b50;
-  border-radius: 16px;
-  background-color: #21120c;
+  border: 3px solid #b8884c;
+  border-radius: 15px;
+  background-color: #27150e;
   background-image:
-    linear-gradient(90deg, rgba(15, 7, 5, .46), rgba(41, 21, 13, .19) 48%, rgba(15, 7, 5, .46)),
+    linear-gradient(90deg, #1008057a, #29150c30 48%, #1008057a),
     var(--mono-reward-oak);
-  background-size: 100% 100%, cover;
   background-position: center, center;
+  background-size: 100% 100%, cover;
   background-repeat: no-repeat;
-  box-shadow:
-    inset 0 2px 0 #e3c48e91,
-    inset 0 0 0 2px #2b140ccf,
-    inset 0 0 22px #0d0605aa,
-    0 13px 26px #090503d9,
-    0 0 0 2px #1c0c08;
-}
-/* Genuine approved illustrated Shop carving, no old stamped L-shaped corners. */
-.mono-celebration > section.mono-reward-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  border: 9px solid transparent;
-  border-image-source: var(--mono-reward-frame);
-  border-image-slice: 16;
-  border-image-width: 9px;
-  border-image-repeat: stretch;
-  pointer-events: none;
+  box-shadow: inset 0 1px #e9c68f8c, inset 0 0 0 2px #281108c9,
+    0 12px 24px #090402d9, 0 0 0 2px #1d0d09;
 }
 .mono-celebration .mono-reward-body {
-  padding: 18px 13px 6px;
-  background:
-    radial-gradient(ellipse 78% 35% at 50% 30%, #ba85312e, transparent 72%),
-    linear-gradient(180deg, #11090717, transparent 55%, #0f07083a);
-}
-.mono-celebration .mono-reward-body::before {
-  content: "";
-  position: absolute;
-  left: 9px;
-  right: 9px;
-  top: 0;
-  height: 12px;
-  background: linear-gradient(180deg,#e9b76755,#0000 65%), var(--mono-reward-beams) center / cover no-repeat;
-  box-shadow: 0 2px 4px #0e0506b5;
-  border-bottom: 1px solid #b9874e88;
-  pointer-events: none;
+  padding: 14px 12px 7px;
+  background: radial-gradient(ellipse 74% 32% at 50% 29%, #c78a3030, transparent 73%);
 }
 .mono-celebration .mono-reward-body > small {
-  color: #e8c98f;
-  text-shadow: 0 1px 2px #120805;
-}
-.mono-celebration .mono-reward-body > h3 {
-  color: #ffe2a0;
-  font-weight: 900;
-  text-shadow: 0 2px 0 #240c06, 1px 3px 3px #0f0606, 0 0 9px #f5b74a55;
-  -webkit-text-stroke: .25px #42200e;
-}
-.mono-celebration .mono-prize-rays {
-  opacity: .42;
-  filter: sepia(.55);
-}
-.mono-celebration .mono-sparkles > i {
-  background: #fff0aa;
-  box-shadow: 0 0 6px #ffc76c;
-}
-.mono-celebration .mono-winnings strong {
-  color: #ffe29a;
-  text-shadow: 0 2px #351508, 0 0 8px #ecae4355;
-}
-.mono-celebration .mono-resource {
-  border: 2px ridge #c69a62;
-  border-radius: 9px;
-  color: #ffe5b5;
-  background-color: #2c1710;
-  background-image: linear-gradient(180deg,#7e4d2280,#170d0abc), var(--mono-reward-oak);
-  background-size: 100% 100%, auto 280px;
-  background-position: center, 22% 46%;
-  background-repeat: no-repeat;
-  box-shadow:
-    inset 0 1px #ffe0a75c,
-    inset 0 -2px #140906,
-    0 3px 5px #0d06079a;
-}
-.mono-celebration .mono-resource:nth-child(3n+2) {
-  background-position: center, 55% 36%;
-}
-.mono-celebration .mono-resource:nth-child(3n+3) {
-  background-position: center, 77% 62%;
-}
-.mono-celebration .mono-resource b {
-  color: #ffe5aa;
-  font-weight: 900;
-  text-shadow: 0 1px #1c0c05, 0 0 4px #000;
-}
-.mono-celebration .mono-resource small {
-  color: #f6dfb6;
-  font-weight: 700;
-  text-shadow: 0 1px 2px #140802;
-}
-.mono-celebration .mono-event {
-  border: 2px ridge #ca9550;
-  border-radius: 8px;
-  background: linear-gradient(110deg,#1d100cbd,#4e2c1bb9,#1c0e0bcf),
-    var(--mono-reward-oak) center / cover no-repeat;
-  box-shadow: inset 0 1px #ffe5ac52, 0 3px 7px #110605;
-}
-.mono-celebration .mono-event b {
-  color: #ffe0a0;
-  text-shadow: 0 2px #1b0a04;
-}
-.mono-celebration .mono-event p,
-.mono-celebration .mono-reward-body > p {
-  color: #f1dfc1;
-  text-shadow: 0 1px 2px #0c0504;
-}
-.mono-celebration .mono-reward-footer {
-  padding: 9px 13px 12px;
-  border-top: 3px ridge #c39458;
-  background-color: #382011;
-  background-image:
-    linear-gradient(180deg, #874c2873, #241209a6 55%, #1a0c08b3),
-    var(--mono-reward-beams);
-  background-size: 100% 100%, cover;
-  background-position: center;
-  box-shadow: inset 0 2px #f8cf8f67, 0 -3px 7px #170904ab;
-}
-.mono-celebration .mono-reward-footer .mono-cta {
-  max-width: 290px;
-  margin: 0 auto;
-  border: 2px ridge #ffe2a3;
-  border-radius: 9px;
-  background: linear-gradient(180deg,#ffe6a4 0%,#f0b94f 44%,#b87726 100%);
-  color: #46200d !important;
-  box-shadow:
-    inset 0 2px #fff8caab,
-    inset 0 -2px #82431b85,
-    0 3px 0 #402012,
-    0 5px 7px #110706a6;
-  font: 900 13px Arial,sans-serif;
-  text-shadow: 0 1px #fff5b5b0;
-}
-@media (prefers-reduced-motion: reduce) {
-  .mono-celebration .mono-prize-rays,
-  .mono-celebration .mono-sparkles > i {
-    animation: none;
-  }
-}
-
-/* FINAL TREASURE COMPOSITION — owner screenshot 2026-11-08.
-   The reused Shop border image leaks cyan strips into the chest: retire ONLY
-   that border-image. Approved oak raster and carved timber stay untouched. */
-.mono-celebration > section.mono-reward-card::before {
-  inset: 5px;
-  border: 1px solid #b987539e;
-  border-image: none;
-  border-radius: 10px;
-  background: none;
-  box-shadow: inset 0 1px 0 #f8d89e55, 0 0 0 1px #261108ae;
-}
-.mono-celebration .mono-reward-body {
-  padding-top: 15px;
-  padding-bottom: 8px;
+  color: #ead3a3;
+  font: 8px Arial,sans-serif;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 2px #120704;
 }
 .mono-celebration .mono-reward-body > h3 {
   font-size: clamp(18px, 5.4vw, 20px);
-  line-height: 1.1;
-  margin: 3px 0 1px;
+  line-height: 1.12;
+  margin: 3px 0 2px;
+  color: #ffe4a9;
+  text-shadow: 0 2px #2e1006, 0 0 8px #e7ad493b;
 }
 .mono-celebration .mono-opening-chest {
   width: 132px;
   max-height: 145px;
   margin: 2px auto -3px;
 }
-.mono-celebration .mono-winnings {
-  margin: 1px 0 3px;
+.mono-celebration .mono-prize-rays {
+  top: 20px;
+  width: 190px;
+  height: 190px;
+  opacity: .38;
+  filter: sepia(.45);
 }
+.mono-celebration .mono-sparkles > i {
+  background: #fff0ae;
+  box-shadow: 0 0 6px #ffc973;
+}
+.mono-celebration .mono-winnings {
+  margin: 2px 0 4px;
+}
+.mono-celebration .mono-winnings .mono-art { width: 30px; }
+.mono-celebration .mono-winnings strong {
+  font-size: 24px;
+  color: #ffe3a0;
+  text-shadow: 0 2px #351608;
+}
+/* Rewards sit directly on the chest's oak field: no secondary full-width panel. */
 .mono-celebration .mono-extra-rewards {
-  box-sizing: border-box;
-  width: max-content;
+  width: auto;
   max-width: 100%;
-  min-width: min(190px, 100%);
-  min-height: 70px;
-  margin: 8px auto 7px;
-  padding: 6px 8px 8px;
-  align-items: center;
+  min-height: 0;
+  margin: 8px 0 6px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 5px;
-  border: 1px solid #a87943;
-  border-radius: 10px;
-  background-color: #251309;
-  background-image:
-    linear-gradient(180deg,#2b120bba,#5b3515a8 55%,#210e07d8),
-    var(--mono-reward-beams);
-  background-size: 100% 100%, cover;
-  background-position: center;
-  box-shadow: inset 0 1px #e9c18a70, inset 0 -2px #100603, 0 3px 6px #100603c9;
+  gap: 6px;
+  border: 0;
+  background: none;
+  box-shadow: none;
 }
 .mono-celebration .mono-resource {
-  flex-basis: 56px;
-  width: 56px;
+  flex: 0 0 56px;
   min-width: 56px;
   max-width: 56px;
-  border-radius: 7px;
+  padding: 3px 2px 4px;
+  border: 1px solid #c09254;
+  border-radius: 8px;
+  background: linear-gradient(180deg,#3b1e16b5,#180b08df),
+    var(--mono-reward-oak) center / auto 270px no-repeat;
+  box-shadow: inset 0 1px #e8c78a62, 0 3px 5px #0e0504ad;
 }
+.mono-celebration .mono-resource .mono-art { width: 31px; }
+.mono-celebration .mono-resource b {
+  color: #ffe6b1;
+  font: 900 12px Arial,sans-serif;
+  text-shadow: 0 1px #100603;
+}
+.mono-celebration .mono-resource small {
+  color: #f1deb9;
+  font: 9px/1.13 Arial,sans-serif;
+  font-weight: 700;
+  text-shadow: 0 1px #100603;
+}
+.mono-celebration .mono-event {
+  border: 1px solid #ba8a4e;
+  border-radius: 9px;
+  background: linear-gradient(120deg,#26120ed0,#4b2b1abb,#251009d9),
+    var(--mono-reward-oak) center / cover no-repeat;
+  box-shadow: inset 0 1px #e7bd7e5e;
+  padding: 6px;
+  margin: 5px 0;
+}
+.mono-celebration .mono-event b {
+  color: #ffe2aa;
+  font-size: 12px;
+  text-shadow: 0 1px #1b0904;
+}
+.mono-celebration .mono-event .mono-art { width: 25px; }
+.mono-celebration .mono-event p { margin: 2px 0; }
 .mono-celebration .mono-reward-body > p.mono-reward-status {
-  color: #efddb5;
-  margin: 4px 4px 2px;
+  margin: 6px 3px 2px;
+  color: #f2dfbe;
   font: 700 10px/1.3 Arial,sans-serif;
   text-shadow: 0 1px 2px #130601;
 }
+/* Flat oak footer, not the giant Shop facade with ropes and blue corners. */
 .mono-celebration .mono-reward-footer {
   padding: 5px 12px 7px;
-  border-top-width: 2px;
+  border-top: 2px ridge #b58a52;
+  background-color: #28150f;
+  background-image: linear-gradient(180deg,#5b2d1991,#1b0b08d6),
+    var(--mono-reward-oak);
+  background-position: center;
+  background-size: 100% 100%, cover;
+  background-repeat: no-repeat;
+  box-shadow: inset 0 1px #e4b87d76;
 }
-/* 44 px tap zone with a visually 34 px high gold inlay button. */
 .mono-celebration .mono-reward-footer .mono-cta {
   isolation: isolate;
   position: relative;
@@ -1145,6 +1056,7 @@ html.territory-ios-webapp .territory-monopoly .mono-scene {
   width: 100%;
   max-width: 234px;
   min-height: 44px;
+  margin: 0 auto;
   padding: 0;
   border: 0;
   background: transparent !important;
@@ -1160,7 +1072,11 @@ html.territory-ios-webapp .territory-monopoly .mono-scene {
   inset: 5px 0;
   border: 2px ridge #ffe2a3;
   border-radius: 8px;
-  background: linear-gradient(180deg,#ffe6a4 0%,#f0b94f 44%,#b87726 100%);
-  box-shadow: inset 0 1px #fff7c9ac, inset 0 -1px #82431b85, 0 2px 0 #402012, 0 3px 5px #110706a6;
+  background: linear-gradient(180deg,#ffe6a4,#eeb548 46%,#ad7329);
+  box-shadow: inset 0 1px #fff7c9ac, inset 0 -1px #82431b85, 0 2px #402012;
   pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mono-celebration .mono-prize-rays,
+  .mono-celebration .mono-sparkles > i { animation: none; }
 }
