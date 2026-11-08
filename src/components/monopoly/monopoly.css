@@ -910,3 +910,161 @@ html.territory-ios-webapp .territory-monopoly .mono-scene {
   padding: 9px 12px;
   font: 900 13px Arial,sans-serif;
 }
+
+/* OWNER APPROVED MONOPOLY TREASURE OAK — existing Shop/Arena art, not painted CSS.
+   Keep the previously fixed compact Android dialog and permanent action footer.
+   All changes are visual. No reward, roll, payment or inventory logic changes. */
+.mono-overlay.mono-celebration {
+  background: rgba(10, 6, 4, .77);
+  backdrop-filter: blur(3px);
+}
+.mono-celebration > section.mono-reward-card {
+  isolation: isolate;
+  position: relative;
+  border: 3px solid #bd8b50;
+  border-radius: 16px;
+  background-color: #21120c;
+  background-image:
+    linear-gradient(90deg, rgba(15, 7, 5, .46), rgba(41, 21, 13, .19) 48%, rgba(15, 7, 5, .46)),
+    var(--mono-reward-oak);
+  background-size: 100% 100%, cover;
+  background-position: center, center;
+  background-repeat: no-repeat;
+  box-shadow:
+    inset 0 2px 0 #e3c48e91,
+    inset 0 0 0 2px #2b140ccf,
+    inset 0 0 22px #0d0605aa,
+    0 13px 26px #090503d9,
+    0 0 0 2px #1c0c08;
+}
+/* Genuine approved illustrated Shop carving, no old stamped L-shaped corners. */
+.mono-celebration > section.mono-reward-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border: 9px solid transparent;
+  border-image-source: var(--mono-reward-frame);
+  border-image-slice: 16;
+  border-image-width: 9px;
+  border-image-repeat: stretch;
+  pointer-events: none;
+}
+.mono-celebration .mono-reward-body {
+  padding: 18px 13px 6px;
+  background:
+    radial-gradient(ellipse 78% 35% at 50% 30%, #ba85312e, transparent 72%),
+    linear-gradient(180deg, #11090717, transparent 55%, #0f07083a);
+}
+.mono-celebration .mono-reward-body::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: 0;
+  height: 12px;
+  background: linear-gradient(180deg,#e9b76755,#0000 65%), var(--mono-reward-beams) center / cover no-repeat;
+  box-shadow: 0 2px 4px #0e0506b5;
+  border-bottom: 1px solid #b9874e88;
+  pointer-events: none;
+}
+.mono-celebration .mono-reward-body > small {
+  color: #e8c98f;
+  text-shadow: 0 1px 2px #120805;
+}
+.mono-celebration .mono-reward-body > h3 {
+  color: #ffe2a0;
+  font-weight: 900;
+  text-shadow: 0 2px 0 #240c06, 1px 3px 3px #0f0606, 0 0 9px #f5b74a55;
+  -webkit-text-stroke: .25px #42200e;
+}
+.mono-celebration .mono-prize-rays {
+  opacity: .42;
+  filter: sepia(.55);
+}
+.mono-celebration .mono-sparkles > i {
+  background: #fff0aa;
+  box-shadow: 0 0 6px #ffc76c;
+}
+.mono-celebration .mono-winnings strong {
+  color: #ffe29a;
+  text-shadow: 0 2px #351508, 0 0 8px #ecae4355;
+}
+.mono-celebration .mono-resource {
+  border: 2px ridge #c69a62;
+  border-radius: 9px;
+  color: #ffe5b5;
+  background-color: #2c1710;
+  background-image: linear-gradient(180deg,#7e4d2280,#170d0abc), var(--mono-reward-oak);
+  background-size: 100% 100%, auto 280px;
+  background-position: center, 22% 46%;
+  background-repeat: no-repeat;
+  box-shadow:
+    inset 0 1px #ffe0a75c,
+    inset 0 -2px #140906,
+    0 3px 5px #0d06079a;
+}
+.mono-celebration .mono-resource:nth-child(3n+2) {
+  background-position: center, 55% 36%;
+}
+.mono-celebration .mono-resource:nth-child(3n+3) {
+  background-position: center, 77% 62%;
+}
+.mono-celebration .mono-resource b {
+  color: #ffe5aa;
+  font-weight: 900;
+  text-shadow: 0 1px #1c0c05, 0 0 4px #000;
+}
+.mono-celebration .mono-resource small {
+  color: #f6dfb6;
+  font-weight: 700;
+  text-shadow: 0 1px 2px #140802;
+}
+.mono-celebration .mono-event {
+  border: 2px ridge #ca9550;
+  border-radius: 8px;
+  background: linear-gradient(110deg,#1d100cbd,#4e2c1bb9,#1c0e0bcf),
+    var(--mono-reward-oak) center / cover no-repeat;
+  box-shadow: inset 0 1px #ffe5ac52, 0 3px 7px #110605;
+}
+.mono-celebration .mono-event b {
+  color: #ffe0a0;
+  text-shadow: 0 2px #1b0a04;
+}
+.mono-celebration .mono-event p,
+.mono-celebration .mono-reward-body > p {
+  color: #f1dfc1;
+  text-shadow: 0 1px 2px #0c0504;
+}
+.mono-celebration .mono-reward-footer {
+  padding: 9px 13px 12px;
+  border-top: 3px ridge #c39458;
+  background-color: #382011;
+  background-image:
+    linear-gradient(180deg, #874c2873, #241209a6 55%, #1a0c08b3),
+    var(--mono-reward-beams);
+  background-size: 100% 100%, cover;
+  background-position: center;
+  box-shadow: inset 0 2px #f8cf8f67, 0 -3px 7px #170904ab;
+}
+.mono-celebration .mono-reward-footer .mono-cta {
+  max-width: 290px;
+  margin: 0 auto;
+  border: 2px ridge #ffe2a3;
+  border-radius: 9px;
+  background: linear-gradient(180deg,#ffe6a4 0%,#f0b94f 44%,#b87726 100%);
+  color: #46200d !important;
+  box-shadow:
+    inset 0 2px #fff8caab,
+    inset 0 -2px #82431b85,
+    0 3px 0 #402012,
+    0 5px 7px #110706a6;
+  font: 900 13px Arial,sans-serif;
+  text-shadow: 0 1px #fff5b5b0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mono-celebration .mono-prize-rays,
+  .mono-celebration .mono-sparkles > i {
+    animation: none;
+  }
+}
