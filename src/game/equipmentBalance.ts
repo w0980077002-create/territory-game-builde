@@ -52,6 +52,15 @@ export const FORGE_STAT_GROWTH: Record<Equipment['slot'], Record<Equipment['rari
     legendary: { attack: 0, defense: 0.5, hp: 2 },
   },
 };
+/** Paid epic shop items previously owned by players stay epic and are NEVER nerfed.
+ * New offers in the shop use separate rare versions with their own balance. */
+const HISTORIC_SHOP_EPICS: Equipment[] = [
+  { id:'historic_shop_hero', slot:'weapon', name:'Героический меч', icon:'🔱',
+    rarity:'epic', attack:35, critChance:8, level:5 },
+  { id:'historic_shop_ring', slot:'ring', name:'Кольцо силы', icon:'💍',
+    rarity:'epic', attack:15, critChance:5, level:5 },
+];
+
 const LEGACY_FORGE_GAIN = 0.15;
 
 const STAT_KEYS = ['attack', 'defense', 'hp', 'critChance'] as const;
@@ -103,7 +112,7 @@ function candidateScore(baseStats: EquipmentBaseStats, actual: Equipment, upgrad
 }
 
 function inferLegacyBase(eq: Equipment): { baseLevel: number; baseStats: EquipmentBaseStats } | null {
-  const shopTemplate = EQUIPMENT_TEMPLATES.find(
+  const shopTemplate = [...EQUIPMENT_TEMPLATES, ...HISTORIC_SHOP_EPICS].find(
     (item) => item.name === eq.name && item.slot === eq.slot && item.rarity === eq.rarity,
   );
   if (shopTemplate) {
@@ -211,7 +220,7 @@ export function setAdminEquipmentLevel(eq: Equipment, targetLevel: number): Equi
   if (targetLevel >= baseLevel) return setEquipmentLevel(eq, targetLevel);
 
   // Keep shop equipment at its canonical template baseline.
-  if (EQUIPMENT_TEMPLATES.some((t) => t.name === eq.name && t.slot === eq.slot && t.rarity === eq.rarity)) {
+  if ([...EQUIPMENT_TEMPLATES, ...HISTORIC_SHOP_EPICS].some((t) => t.name === eq.name && t.slot === eq.slot && t.rarity === eq.rarity)) {
     return setEquipmentLevel(normalizeEquipmentV4(eq), targetLevel);
   }
 
@@ -259,7 +268,7 @@ export function capEquipmentToHeroLevel(eq: Equipment, heroLevel: number): Equip
   if (eq.adminTestLevel === true && eq.level <= 500) return eq;
   const hero = Number.isSafeInteger(heroLevel) ? Math.max(1, Math.min(500, heroLevel)) : 1;
   const level = Math.min(eq.level, hero);
-  const template = EQUIPMENT_TEMPLATES.find(
+  const template = [...EQUIPMENT_TEMPLATES, ...HISTORIC_SHOP_EPICS].find(
     (t) => t.name === eq.name && t.slot === eq.slot && t.rarity === eq.rarity,
   );
   if (template) {
@@ -296,7 +305,7 @@ export function capEquipmentToHeroLevel(eq: Equipment, heroLevel: number): Equip
 }
 
 export function upgradeEquipment(eq: Equipment): Equipment {
-  const shopTemplate = EQUIPMENT_TEMPLATES.find(
+  const shopTemplate = [...EQUIPMENT_TEMPLATES, ...HISTORIC_SHOP_EPICS].find(
     (t) => t.name === eq.name && t.slot === eq.slot && t.rarity === eq.rarity,
   );
   if (shopTemplate && eq.level < shopTemplate.level) {
@@ -328,7 +337,8 @@ export function upgradeEquipment(eq: Equipment): Equipment {
 
 /** Historic combat loot was once epic/legendary. Its current LEVEL and successful
  * forge steps survive; only rarity and rarity-appropriate stat budget change.
- * Already-common and already-rare old loot must remain byte-for-byte untouched. */
+ * Already-common and already-rare old loot must remain byte-for-byte untouched.
+ * Previously purchased epic shop items remain epic and keep their full stats. */
 export function rebalanceHistoricalRarity(eq: Equipment): Equipment {
   const oldLoot = eq.id.startsWith('loot_') &&
     ((eq.name === 'Клинок победителя' && eq.slot === 'weapon') ||
@@ -343,20 +353,7 @@ export function rebalanceHistoricalRarity(eq: Equipment): Equipment {
     return setEquipmentLevel({ ...eq, rarity: 'rare', baseLevel, baseStats,
       upgradeCount: level - baseLevel, legacyRarityBalanced: true }, level);
   }
-  const hero = eq.name === 'Героический меч' && eq.slot === 'weapon';
-  const ring = eq.name === 'Кольцо силы' && eq.slot === 'ring';
-  if ((hero || ring) && eq.rarity === 'epic') {
-    const level = Number.isSafeInteger(eq.level) ? Math.max(1, eq.level) : 1;
-    const baseStats = hero ? { attack: 22, critChance: 4 } : { attack: 10, critChance: 3 };
-    if (level < 5) {
-      const reduced = { attack: Math.round(baseStats.attack * level / 5),
-        critChance: Math.round(baseStats.critChance * level / 5) };
-      return { ...eq, rarity: 'rare', level, ...reduced, baseLevel: level,
-        baseStats: reduced, upgradeCount: 0 };
-    }
-    return setEquipmentLevel({ ...eq, rarity: 'rare', baseLevel: 5,
-      baseStats, upgradeCount: level - 5 }, level);
-  }
+
   return eq;
 }
 
@@ -367,7 +364,7 @@ export function rebalanceHistoricalRarity(eq: Equipment): Equipment {
  */
 export function normalizeEquipmentV4(eq: Equipment): Equipment {
   eq = rebalanceHistoricalRarity(eq);
-  const template = EQUIPMENT_TEMPLATES.find(
+  const template = [...EQUIPMENT_TEMPLATES, ...HISTORIC_SHOP_EPICS].find(
     (x) => x.name === eq.name && x.slot === eq.slot && x.rarity === eq.rarity,
   );
   if (template) {
@@ -437,7 +434,7 @@ function migrateInventoryItem(item: InventoryItem): InventoryItem {
 
 export function migrateGameStateBalance(saved: Partial<GameState>): Partial<GameState> {
   // The rare-only historic migration also runs on already-current V4 saves.
-  // Only former epic/legendary loot and the two old epic shop entries change.
+  // Only former epic/legendary boss loot changes. Purchased epic shop gear remains untouched.
   const normalized: Partial<GameState> = {
     ...saved,
     inventory: Array.isArray(saved.inventory) ? saved.inventory.map(item => {
