@@ -91,6 +91,18 @@ try {
     buyerBefore, 'Buyer snapshot must roll back with registry');
   assert.deepEqual(await verified(seller), gear);
   await assert.rejects(() => verified(buyer), /stage8_item_not_owned/);
+  // Regression: the FIRST cancelled sale must also leave the seller's
+  // independent crafted armor unchanged, not just the traded sword.
+  const untouchedAfterFirstRollback = await one(
+    'SELECT player_id::text AS owner, item_output FROM public.territory_profession_stage8_items WHERE item_id=$1',
+    [untouchedUuid],
+  );
+  assert.equal(untouchedAfterFirstRollback.owner, seller);
+  assert.equal(untouchedAfterFirstRollback.item_output.equipment.level, 34);
+  assert.equal(untouchedAfterFirstRollback.item_output.equipment.upgradeCount, 33);
+  assert.equal(untouchedAfterFirstRollback.item_output.equipment.defense, 77);
+  assert.deepEqual(await verified(seller, untouchedGear), untouchedGear);
+  await assert.rejects(() => verified(buyer, untouchedGear), /stage8_item_not_owned/);
 
   // A failed trade must never leave a transferred item with the wrong owner.
   await db.exec('BEGIN');
