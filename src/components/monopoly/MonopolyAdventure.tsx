@@ -44,9 +44,9 @@ function monopolyError(e:unknown,en:boolean){
 export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string}){
  const {language}=useLanguage(),en=language==='en';
  const [data,setData]=useState<MonopolyData|null>(null),[error,setError]=useState('');
- const [busy,setBusy]=useState(false),[moving,setMoving]=useState(false),[position,setPosition]=useState(0);
+ const [busy,setBusy]=useState(false),[moving,setMoving]=useState(false),[position,setPosition]=useState(0),[batch,setBatch]=useState<{done:number;total:number}|null>(null);
  const [face,setFace]=useState(5),[fast,setFast]=useState(false),[ten,setTen]=useState(false);
- const [panel,setPanel]=useState<Panel>(null),[reward,setReward]=useState<{gold?:number;tickets?:number;event?:string;awards?:Prize}|null>(null);
+ const [panel,setPanel]=useState<Panel>(null),[reward,setReward]=useState<{gold?:number;tickets?:number;event?:string;events?:Record<string,number>;rolls?:number;awards?:Prize}|null>(null);
  const [today,setToday]=useState(()=>calendarDayKey(Date.now())),[notice,setNotice]=useState('');
  const lock=useRef(false),mounted=useRef(true),generation=useRef(0);
  const statusDay=useRef(today);
@@ -131,32 +131,67 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
   finally{lock.current=false;if(mounted.current)setBusy(false);}
  };
  const goToDice=()=>{setPanel(null);window.requestAnimationFrame(()=>diceButton.current?.focus());};
- const roll=async(value=ten?10:1)=>{
-  if(lock.current||!data)return;lock.current=true;setBusy(true);setMoving(true);setError('');setReward(null);
+ // ×10 is ten server-authoritative turns, never one roll with tenfold payout.
+ // Every turn spends one ticket and is settled before the next is started.
+ const roll=async(value?:number)=>{
+  if(lock.current||!data)return;
+  const choice=value??(ten?10:1);
+  const total=active?1:choice===10?10:1;
+  const rollValue=choice>100?choice:1;
+  lock.current=true;setBusy(true);setMoving(true);setError('');setReward(null);
   const currentGeneration=generation.current;
   const alive=()=>mounted.current&&generation.current===currentGeneration;
   const pause=(ms:number)=>new Promise<void>(resolve=>window.setTimeout(resolve,ms));
+  let completed=0,earned=0,latest:MonopolyData|null=null;
+  const awards:Prize={},events:Record<string,number>={};
   try{
-   const d=active?data:await monopoly('roll',value);
-   if(!alive())return;
-   setData(d);
-   const session=d.hall.active;
-   if(!session||session.game!=='monopoly')throw new Error('monopoly_other_game');
-   const turn=session.question as MonopolyQuestion;
-   const steps=turn.steps??turn.roll??1;
-   setPosition(turn.old_position??0);
-   if(!fast&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-    for(let tick=0;tick<5;tick++){if(!alive())return;setFace(tick%6+1);await pause(45);}
-    if(!alive())return;setFace(turn.roll??1);await pause(90);
-    for(let step=1;step<=steps;step++){if(!alive())return;setPosition(((turn.old_position??0)+step)%28);await pause(70);}
+   for(let i=0;i<total;i++){
+    if(!alive())return;
+    setBatch({done:i,total});
+    // An interrupted round is resumed, never charged for again.
+    const d=i===0&&active?data:await monopoly('roll',rollValue);
+    if(!alive())return;
+    setData(d);
+    const session=d.hall.active;
+    if(!session||session.game!=='monopoly')throw new Error('monopoly_other_game');
+    const turn=session.question as MonopolyQuestion;
+    const steps=turn.steps??turn.roll??1;
+    setPosition(turn.old_position??0);
+    if(!fast&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+     for(let tick=0;tick<5;tick++){if(!alive())return;setFace(tick%6+1);await pause(45);}
+     if(!alive())return;setFace(turn.roll??1);await pause(90);
+     for(let step=1;step<=steps;step++){if(!alive())return;setPosition(((turn.old_position??0)+step)%28);await pause(70);}
+    }
+    if(!alive())return;
+    setFace(turn.roll??1);setPosition(turn.new_position??0);
+    // finish is idempotent by session token; retrying a lost response cannot pay twice.
+    const finished=await monopoly('finish',1,session.token).catch(async original=>{
+     try{return await monopoly('finish',1,session.token);}
+     catch{throw original;}
+    });
+    if(!alive())return;
+    setData(finished);latest=finished;completed++;
+    earned+=finished.result?.earned_gold??0;
+    for(const [key,amount] of Object.entries(finished.result?.awards??{}))
+     awards[key as keyof Prize]=(awards[key as keyof Prize]??0)+amount;
+    const event=finished.result?.event;
+    if(event)events[event]=(events[event]??0)+1;
    }
-   if(!alive())return;setFace(turn.roll??1);setPosition(turn.new_position??0);
-   const finished=await monopoly('finish',1,session.token);
-   if(!alive())return;
-   setData(finished);setReward({gold:finished.result?.earned_gold??0,event:finished.result?.event,awards:finished.result?.awards});
-   await settleWinnings(finished);
-  }catch(e){if(alive())setError(describe(e));}
-  finally{lock.current=false;if(alive()){setBusy(false);setMoving(false);}}
+   if(alive())setReward(total===1
+    ?{gold:earned,event:latest?.result?.event,awards}
+    :{gold:earned,events,rolls:completed,awards});
+  }catch(e){
+   if(alive()){
+    if(completed>0)setReward({gold:earned,events,rolls:completed,awards});
+    const progress=total===10?t(`Выполнено ${completed} из 10 бросков. Невыполненные броски не оплачены; незавершённый ход можно продолжить.`,`${completed} of 10 rolls completed. Unstarted rolls are not charged; an unfinished turn can be resumed.`):'';
+    setError(`${describe(e)}${progress?' '+progress:''}`);
+   }
+  }finally{
+   // One wallet/inventory claim for the entire series, never speculative client rewards.
+   if(alive()&&latest)await settleWinnings(latest);
+   lock.current=false;
+   if(alive()){setBusy(false);setMoving(false);setBatch(null);}
+  }
  };
  const redeem=async()=>{
   if(lock.current)return;lock.current=true;setBusy(true);setError('');
@@ -207,10 +242,10 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
    <div className="mono-water-shimmer"/><div className="mono-fairy-lights">{Array.from({length:8},(_,i)=><i key={i} style={{left:`${14+i*11}%`,top:`${30+i%3*18}%`,animationDelay:`${i*.6}s`}}/>)}</div>
    <img className="mono-scene-ship" src={`${import.meta.env.BASE_URL}monopoly/ship.webp`} alt={t('Корабль TERRITORY в центре лагуны','TERRITORY ship at the heart of the lagoon')}/>
    <div className="mono-board" aria-label={t('Поле из 28 клеток','Board of 28 spaces')}>
-    {Array.from({length:28},(_,i)=>{const pos=boardPoint(i),mystery=[6,14,21].includes(i),prize=cellPrize(i,ten?10:1),kind=Object.keys(prize)[0] as keyof Prize|undefined;return <div key={i} data-cell-index={i} aria-label={t(`Клетка ${i+1}`,`Space ${i+1}`)} className={`mono-cell ${position===i?'current':''}`} style={{left:`${pos.x}%`,top:`${pos.y}%`}} title={i===0?t('Старт · 100 золота','Start · 100 gold'):mystery?t('Случайное событие','Random event'):`${cellGold(i)} ${t('золота','gold')}`}>
+    {Array.from({length:28},(_,i)=>{const pos=boardPoint(i),mystery=[6,14,21].includes(i),prize=cellPrize(i),kind=Object.keys(prize)[0] as keyof Prize|undefined;return <div key={i} data-cell-index={i} aria-label={t(`Клетка ${i+1}`,`Space ${i+1}`)} className={`mono-cell ${position===i?'current':''}`} style={{left:`${pos.x}%`,top:`${pos.y}%`}} title={i===0?t('Старт · 100 золота','Start · 100 gold'):mystery?t('Случайное событие','Random event'):`${cellGold(i)} ${t('золота','gold')}`}>
      <Art name={i===0?'start':mystery?'mystery':'tile'} className="mono-cell-base"/>
      {i!==0&&!mystery&&<Art name={kind??'gold'} className="mono-cell-prize"/>}
-     <small className="mono-cell-amount">{i===0?t('СТАРТ','START'):mystery?'?':kind?prize[kind]:cellGold(i)*(ten?10:1)}</small>
+     <small className="mono-cell-amount">{i===0?t('СТАРТ','START'):mystery?'?':kind?prize[kind]:cellGold(i)}</small>
     </div>;})}
     <div className={`mono-hero ${moving?'moving':''}`} style={{left:`${point.x}%`,top:`${point.y}%`}} aria-label={t(`Герой на клетке ${position+1}`,`Hero on space ${position+1}`)}><div className="mono-hero-ring"/><span className="mono-hero-sprite" style={{backgroundImage:`url("${import.meta.env.BASE_URL}monopoly/hero-frames.${import.meta.env.DEV?'png':'webp'}")`}}/></div>
    </div>
@@ -222,9 +257,9 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
   </div>
   <section className="mono-controls">
    <div className="mono-roll-row"><div className="mono-wallet"><Art name="ticket"/><span><small>{t('БИЛЕТЫ','TICKETS')}</small><b>{h?.tickets??'—'}</b></span><button aria-label={t('Получить билеты','Get tickets')} onClick={()=>setPanel('gifts')}>+</button></div>
-    <button ref={diceButton} className={`mono-dice ${moving?'rolling':''}`} disabled={disabled||(!active&&(h?.tickets??0)<(ten?10:1))||!!(h?.active&&h.active.game!=='monopoly')} onClick={()=>void roll()} aria-label={active?t('Продолжить бросок','Resume roll'):t('Бросить кубик','Roll dice')}><span className="mono-dice-glow"/><Dice value={face}/><span className="mono-dice-cta">{moving?t('Ход…','Moving…'):active?t('Продолжить','Resume'):t(`БРОСИТЬ · ${ten?10:1}`,`ROLL · ${ten?10:1}`)}</span></button>
+    <button ref={diceButton} className={`mono-dice ${moving?'rolling':''}`} disabled={disabled||(!active&&(h?.tickets??0)<(ten?10:1))||!!(h?.active&&h.active.game!=='monopoly')} onClick={()=>void roll()} aria-label={active?t('Продолжить бросок','Resume roll'):ten?t('Сделать 10 бросков','Roll ten times'):t('Бросить кубик','Roll dice')}><span className="mono-dice-glow"/><Dice value={face}/><span className="mono-dice-cta">{moving?(batch?.total===10?t(`БРОСОК ${Math.min(10,batch.done+1)}/10`,`ROLL ${Math.min(10,batch.done+1)}/10`):t('Ход…','Moving…')):active?t('Продолжить','Resume'):ten?t('10 БРОСКОВ','10 ROLLS'):t('БРОСИТЬ · 1','ROLL · 1')}</span></button>
    </div>
-   <div className="mono-toggles"><div className="mono-multiplier" role="group" aria-label={t('Множитель награды','Reward multiplier')}><button type="button" aria-pressed={!ten} className={!ten?'selected':''} disabled={busy||!!active} onClick={()=>setTen(false)}>×1</button><button type="button" aria-pressed={ten} className={ten?'selected':''} disabled={busy||!!active} onClick={()=>setTen(true)}>×10</button></div><label className="mono-skip"><input type="checkbox" checked={fast} disabled={busy} onChange={e=>setFast(e.target.checked)}/>{t('Пропустить анимацию','Skip animation')}</label></div>
+   <div className="mono-toggles"><div className="mono-multiplier" role="group" aria-label={t('Количество бросков','Number of rolls')}><button type="button" aria-pressed={!ten} className={!ten?'selected':''} disabled={busy||!!active} onClick={()=>setTen(false)}>×1</button><button type="button" aria-pressed={ten} className={ten?'selected':''} disabled={busy||!!active} onClick={()=>setTen(true)}>×10</button></div><label className="mono-skip"><input type="checkbox" checked={fast} disabled={busy} onChange={e=>setFast(e.target.checked)}/>{t('Пропустить анимацию','Skip animation')}</label></div>
   </section>
   <div className="mono-after-scene">
    {p?.lucky_next&&!active&&<div className="mono-choose"><small>{t('Выбери число — 1 билет','Choose a value — 1 ticket')}</small><div>{faces.map((n,i)=><button disabled={disabled||!h?.tickets} key={n} onClick={()=>void roll(101+i)} aria-label={String(n)}><Dice value={n}/></button>)}</div></div>}
@@ -246,9 +281,9 @@ export function MonopolyAdventure({onBack,userId}:{onBack:()=>void;userId:string
     {(panel==='quests'||panel==='offers')&&<><div className="mono-banner"><Art name={panel==='quests'?'quests':'chest'}/><div><small>TERRITORY</small><b>{panel==='quests'?t('Путь искателя','The explorer’s path'):t('Сокровища хранителя','Guardian treasures')}</b><span>{t('Выполняй задания, забирай настоящие награды','Complete objectives to earn real rewards')}</span></div></div>{panel==='quests'&&<DailyShareCard task="monopoly" userId={userId} onClaimed={()=>{void monopoly().then(d=>{if(mounted.current)setData(d);}).catch(()=>{});}}/>}{(panel==='quests'?quests:offers).map((v,i)=>{const key=`${panel==='quests'?'quest':'offer'}:${i+1}`,done=claimed(key),ready=v.current>=v.target&&!done;return <article className={`mono-quest ${done?'mono-quest-done':''} ${ready?'mono-quest-ready':''}`} key={key}><div className="mono-quest-heading"><Art name={panel==='quests'?'quests':i===0?'chest':i===1?'gift':'openChest'}/><b>{en?v.en:v.ru}</b>{done&&<span className="mono-quest-done-mark">✓</span>}</div><Prizes prize={bundlePrize(panel==='quests'?'quest':'offer',i+1)} en={en}/><div className="mono-progress" role="progressbar" aria-label={en?v.en:v.ru} aria-valuemin={0} aria-valuemax={v.target||1} aria-valuenow={Math.min(v.current,v.target)||0}><span style={{width:`${v.target?Math.min(100,v.current/v.target*100):100}%`}}/></div><div><span>{Math.min(v.current,v.target)}/{v.target} · +{v.reward} {t('билета','tickets')}</span><button type="button" disabled={disabled||done} onClick={()=>ready?void request(panel==='quests'?'quest':'offer',i+1):goToDice()}>{done?t('Получено','Claimed'):ready?t('Забрать','Claim'):t('Перейти','Go')}</button></div></article>;})}
     {(panel==='quests'?readyQuests:readyOffers)>1&&<button className="mono-claim-all" type="button" disabled={disabled} onClick={()=>void claimAllReady(panel==='quests'?'quest':'offer')}>{t('Забрать все доступные','Claim all available')} ({panel==='quests'?readyQuests:readyOffers})</button>}</>}
     {panel==='jackpot'&&<div className="mono-jackpot"><Art name="openChest"/><h4>{t('Джекпот пока недоступен','Jackpot is not available yet')}</h4><p>{t('Серверной механики джекпота нет. Здесь нет розыгрыша, списания билетов или обещания выигрыша. Рабочие награды доступны в разделе «Награды за круги».','There is no server jackpot mechanic. No drawing or ticket spending takes place here. Visit Lap rewards for available prizes.')}</p><button className="mono-cta" onClick={()=>setPanel('rewards')}>{t('Посмотреть награды за круги','View lap rewards')}</button></div>}
-    {panel==='help'&&<div className="mono-rules"><p>{t('На поле ровно 28 клеток. Один бросок стоит 1 билет. Герой получает золото и показанный приз клетки. Алмазы, камни, материалы, зелья и эликсиры забираются кнопкой под полем в настоящий баланс и инвентарь.','The circuit has exactly 28 spaces. A roll costs 1 ticket. Gold and the shown prize await on the landing space. Collect gems, stones, materials and potions below the board.')}</p><p>{t('×10 стоит 10 билетов и умножает награду. Суточный лимит золота сохраняется.','×10 costs 10 tickets and multiplies the prize. The daily gold cap still applies.')}</p>{Object.entries(eventCopy).map(([key,v])=><p key={key}><b>{v[en?2:0]}.</b> {v[en?3:1]}</p>)}<p>{t('Каждый переход через старт засчитывает круг. Прогресс сохраняется на сервере. Событие длится 72 часа, затем круги и задания обновляются. Кошелёк и неполученные ресурсы сохраняются.','Crossing start completes a lap. Progress is saved on the server. The event lasts 72 hours. Your wallet and uncollected resources are retained.')}</p></div>}
+    {panel==='help'&&<div className="mono-rules"><p>{t('На поле ровно 28 клеток. Один бросок стоит 1 билет. Герой получает золото и показанный приз клетки. Алмазы, камни, материалы, зелья и эликсиры забираются кнопкой под полем в настоящий баланс и инвентарь.','The circuit has exactly 28 spaces. A roll costs 1 ticket. Gold and the shown prize await on the landing space. Collect gems, stones, materials and potions below the board.')}</p><p>{t('×10 выполняет 10 самостоятельных бросков и передвигает героя после каждого. За каждый начатый бросок списывается 1 билет. Все события, круги, задания и награды учитываются отдельно. Если соединение прервётся, незавершённый ход можно продолжить.','×10 plays ten independent dice rolls, moving after each one. Each started roll costs 1 ticket. Events, laps, quests and rewards count separately. An interrupted turn can be resumed.')}</p>{Object.entries(eventCopy).map(([key,v])=><p key={key}><b>{v[en?2:0]}.</b> {v[en?3:1]}</p>)}<p>{t('Каждый переход через старт засчитывает круг. Прогресс сохраняется на сервере. Событие длится 72 часа, затем круги и задания обновляются. Кошелёк и неполученные ресурсы сохраняются.','Crossing start completes a lap. Progress is saved on the server. The event lasts 72 hours. Your wallet and uncollected resources are retained.')}</p></div>}
    </div>
   </section></div></IosGamePortal>}
-  {reward&&<IosGamePortal><div className="mono-overlay mono-celebration" role="dialog" aria-modal="true" aria-labelledby="mono-reward-title" onClick={()=>setReward(null)}><section onClick={e=>e.stopPropagation()}><div className="mono-prize-rays"/><div className="mono-sparkles">{Array.from({length:12},(_,i)=><i key={i} style={{'--i':i} as import('react').CSSProperties}/>)}</div><small>TERRITORY</small><h3 id="mono-reward-title">{t('Сокровище твоё!','Treasure is yours!')}</h3><Art name="openChest" className="mono-opening-chest"/>{(reward.tickets!==undefined||reward.gold!==undefined)&&<div className="mono-winnings"><Art name={reward.tickets!==undefined?'ticket':'gold'}/><strong>+{reward.tickets??reward.gold}</strong></div>}{reward.event&&eventCopy[reward.event]&&<div className="mono-event"><Art name="gems"/><b>{eventCopy[reward.event][en?2:0]}</b><p>{eventCopy[reward.event][en?3:1]}</p></div>}<Prizes prize={reward.awards} en={en}/>{Object.values(reward.awards??{}).some(n=>n>0)&&<p>{t('Ресурсы готовы к получению под полем.','Collect your resources below the board.')}</p>}<p>{reward.tickets!==undefined?t('Билеты уже в кошельке','Tickets are already in your wallet'):reward.gold!==undefined?t('Золото ожидает в игровом зале','Gold awaits in the Game Hall'):t('Сокровища зачислены в инвентарь','Treasures added to your inventory')}</p><button autoFocus className="mono-cta" onClick={()=>setReward(null)}>{t('ПРОДОЛЖИТЬ','CONTINUE')}</button></section></div></IosGamePortal>}
+  {reward&&<IosGamePortal><div className="mono-overlay mono-celebration" role="dialog" aria-modal="true" aria-labelledby="mono-reward-title" onClick={()=>setReward(null)}><section onClick={e=>e.stopPropagation()}><div className="mono-prize-rays"/><div className="mono-sparkles">{Array.from({length:12},(_,i)=><i key={i} style={{'--i':i} as import('react').CSSProperties}/>)}</div><small>TERRITORY</small><h3 id="mono-reward-title">{t('Сокровище твоё!','Treasure is yours!')}</h3><Art name="openChest" className="mono-opening-chest"/>{reward.rolls!==undefined&&<p>{t(`Выполнено бросков: ${reward.rolls}`,`Rolls completed: ${reward.rolls}`)}</p>}{(reward.tickets!==undefined||reward.gold!==undefined)&&<div className="mono-winnings"><Art name={reward.tickets!==undefined?'ticket':'gold'}/><strong>+{reward.tickets??reward.gold}</strong></div>}{reward.event&&eventCopy[reward.event]&&<div className="mono-event"><Art name="gems"/><b>{eventCopy[reward.event][en?2:0]}</b><p>{eventCopy[reward.event][en?3:1]}</p></div>}{reward.events&&Object.entries(reward.events).map(([event,count])=>eventCopy[event]&&<div className="mono-event" key={event}><Art name="gems"/><b>{eventCopy[event][en?2:0]} ×{count}</b></div>)}<Prizes prize={reward.awards} en={en}/>{Object.values(reward.awards??{}).some(n=>n>0)&&<p>{t('Ресурсы готовы к получению под полем.','Collect your resources below the board.')}</p>}<p>{reward.tickets!==undefined?t('Билеты уже в кошельке','Tickets are already in your wallet'):reward.gold!==undefined?t('Золото ожидает в игровом зале','Gold awaits in the Game Hall'):t('Сокровища зачислены в инвентарь','Treasures added to your inventory')}</p><button autoFocus className="mono-cta" onClick={()=>setReward(null)}>{t('ПРОДОЛЖИТЬ','CONTINUE')}</button></section></div></IosGamePortal>}
  </div>;
 }
