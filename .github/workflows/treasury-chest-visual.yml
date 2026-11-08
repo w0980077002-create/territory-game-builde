@@ -1,0 +1,42 @@
+name: Treasury chest visual review (never deploy)
+
+on:
+  pull_request:
+    paths:
+      - 'src/components/TreasuryInventory.tsx'
+      - 'src/components/FortuneDialog.tsx'
+      - 'src/components/fortune.css'
+      - 'scripts/check-fortune-browser.py'
+      - 'scripts/build-fortune-preview.mjs'
+      - 'scripts/check-treasury-chest-reveal.mjs'
+      - '.github/workflows/treasury-chest-visual.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  treasury-mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm ci --ignore-scripts
+      - run: python -m pip install playwright==1.55.0
+      - run: python -m playwright install chromium --with-deps
+      - name: Offline real React Treasury/Wheel at 320-430 px
+        run: npm run test:wheel:browser
+      - name: Upload treasury screenshots, including 360/390 px open/closed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: treasury-chest-mobile-review
+          path: /tmp/fortune-screenshots/
+          if-no-files-found: warn
