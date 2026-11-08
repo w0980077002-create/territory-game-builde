@@ -26,8 +26,8 @@ const tabLabels:Record<Tab,{ru:string;en:string;symbol:string}>={
   skin:{ru:'Облик',en:'Skin',symbol:'⚔'},
   throne:{ru:'Трон',en:'Throne',symbol:'♔'},
 };
-const tierName=(n:number,en:boolean)=>n===10?(en?'Founder':'Основатель'):
-  n===5?(en?'Duke':'Герцог'):(en?vipTier(n).nameEn:vipTier(n).nameRu);
+// Rank titles are canonical in vipProgram; Founder is a separate title.
+const tierName=(n:number,en:boolean)=>en?vipTier(n).nameEn:vipTier(n).nameRu;
 type Props={userId:string;onBack:()=>void;backToCity?:boolean;
   onEquipment:()=>void;onRunes:()=>void;onBelt:()=>void};
 
