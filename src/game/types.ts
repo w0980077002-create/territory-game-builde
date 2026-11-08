@@ -36,6 +36,8 @@ export interface Equipment {
   upgradeCount?: number;
   /** Display hint only. The database independently validates owner-approved test gear by item ID. */
   adminTestLevel?: boolean;
+  /** Server-restored rare balance for former epic/legendary boss loot; not a source of authority. */
+  legacyRarityBalanced?: boolean;
 }
 
 export interface InventoryItem {

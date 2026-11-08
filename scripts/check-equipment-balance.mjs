@@ -65,12 +65,43 @@ for (const shopItem of catalog.SHOP_EQUIPMENT_ITEMS) {
     ...(shopItem.equipment.critChance !== undefined ? { critChance: shopItem.equipment.critChance } : {}),
   }, `${shopItem.name} baseline must match its catalog stats`);
 }
-assert.equal(catalog.createBossLootEquipment(24, true, 'loot_test').attack, 82, 'chapter loot should use the canonical base-stat factory');
-assert.equal(catalog.createBossLootEquipment(58, false, 'loot_armor').defense, 121, 'high-chapter armor should be generated from the shared formula');
+assert.equal(catalog.createBossLootEquipment(24, true, 'loot_test').attack, 50, 'chapter loot should use the canonical base-stat factory');
+assert.equal(catalog.createBossLootEquipment(58, false, 'loot_armor').defense, 40, 'high-chapter armor should be generated from the shared formula');
 assert.equal(catalog.rarityForChapter(1), 'common');
 assert.equal(catalog.rarityForChapter(10), 'rare');
-assert.equal(catalog.rarityForChapter(20), 'epic');
-assert.equal(catalog.rarityForChapter(30), 'legendary');
+assert.equal(catalog.rarityForChapter(20), 'rare');
+assert.equal(catalog.rarityForChapter(30), 'rare');
+
+
+// Strict owner rule: old commons and old rares remain untouched, paid epic shop
+// purchases retain their original epic stats. Only higher-grade loot is changed.
+const oldCommonBoss={id:'loot_common_7',name:'Клинок победителя',icon:'⚔️',
+  slot:'weapon',rarity:'common',level:7,attack:31,baseLevel:7,baseStats:{attack:31},upgradeCount:0};
+assert.deepEqual(balance.rebalanceHistoricalRarity(oldCommonBoss),oldCommonBoss);
+const oldRareBoss={id:'loot_rare_15',name:'Доспех воина',icon:'🛡️',
+  slot:'armor',rarity:'rare',level:15,defense:35,hp:95,baseLevel:15,baseStats:{defense:35,hp:95},upgradeCount:0};
+assert.deepEqual(balance.rebalanceHistoricalRarity(oldRareBoss),oldRareBoss);
+const historicPurchased={id:'historic-paid',name:'Героический меч',icon:'🔱',
+  slot:'weapon',rarity:'epic',level:58,attack:141,critChance:8,
+  baseLevel:5,baseStats:{attack:35,critChance:8},upgradeCount:53};
+assert.deepEqual(balance.rebalanceHistoricalRarity(historicPurchased),historicPurchased,
+  'Purchased epic items are not part of the old boss-loot downgrade');
+const oldLegendary={id:'loot_legend_59',name:'Доспех воина',icon:'🛡️',
+  slot:'armor',rarity:'legendary',level:59,baseLevel:46,upgradeCount:13,
+  baseStats:{defense:200,hp:530},defense:253,hp:641};
+const rareLegendary=balance.rebalanceHistoricalRarity(oldLegendary);
+assert.equal(rareLegendary.rarity,'rare');
+assert.equal(rareLegendary.level,59);
+assert.equal(rareLegendary.baseLevel,46);
+assert.equal(rareLegendary.upgradeCount,13);
+assert.equal(rareLegendary.defense,12+Math.round(0.5*(46-3))+Math.round(0.5*13));
+assert.equal(rareLegendary.hp,80+Math.round(1.5*(46-3))+Math.round(1.5*13));
+assert.equal(balance.upgradeEquipment(rareLegendary).level,60);
+assert.equal(balance.upgradeEquipment(rareLegendary).upgradeCount,14);
+assert.deepEqual(balance.rebalanceHistoricalRarity(rareLegendary),rareLegendary);
+assert.equal(catalog.SHOP_EQUIPMENT_ITEMS.filter(x=>x.rarity==='epic').length,0);
+assert.equal(catalog.SHOP_EQUIPMENT_ITEMS.find(x=>x.id==='shop_weapon_hero').equipment.attack,22);
+assert.equal(catalog.SHOP_EQUIPMENT_ITEMS.find(x=>x.id==='shop_ring_power').equipment.critChance,3);
 
 const heroicLegacy = {
   id: 'inventory-heroic', slot: 'weapon', name: 'Героический меч', icon: '🔱',
@@ -101,7 +132,7 @@ const lootLegacy = {
 };
 const loot = balance.normalizeEquipmentForTests(lootLegacy);
 assert.equal(loot.baseLevel, 58, 'overpowered unknown boss loot is capped at its saved level');
-assert.equal(loot.attack, 388, 'huge boss loot is capped to a generous level-relative maximum');
+assert.equal(loot.attack, 101, 'huge boss loot is capped to a generous level-relative maximum');
 
 const adminScaledLoot = {
   id: 'loot_admin_scaled', slot: 'weapon', name: 'Клинок победителя', icon: '⚔️',
@@ -109,7 +140,7 @@ const adminScaledLoot = {
 };
 const adminNormalized = balance.normalizeEquipmentForTests(adminScaledLoot);
 assert.equal(adminNormalized.baseLevel, 58, 'admin-inflated loot cannot keep exponential baselines');
-assert.equal(adminNormalized.attack, 388, 'admin-scaled legacy equipment is capped on the server and client');
+assert.equal(adminNormalized.attack, 101, 'admin-scaled legacy equipment is capped on the server and client');
 
 const armorLegacy = {
   id: 'loot_armor_test', slot: 'armor', name: 'Доспех воина', icon: '🛡️',
@@ -117,8 +148,8 @@ const armorLegacy = {
 };
 const armor = balance.normalizeEquipmentForTests(armorLegacy);
 assert.equal(armor.baseLevel, 58);
-assert.equal(armor.defense, 300);
-assert.equal(armor.hp, 746);
+assert.equal(armor.defense, 40);
+assert.equal(armor.hp, 163);
 
 const unknown = {
   id: 'custom-admin-item', slot: 'weapon', name: 'Неизвестный клинок', icon: '⚔️',
@@ -146,15 +177,15 @@ assert.equal(fixedBossSword.id, highBossSword.id, 'admin correction keeps item i
 assert.equal(fixedBossSword.level, 82, 'admin correction must lower a historic boss sword');
 assert.equal(fixedBossSword.baseLevel, 82, 'corrected boss sword baseline must match target');
 assert.equal(fixedBossSword.upgradeCount, 0, 'correction resets high-chapter upgrade baseline');
-assert.equal(fixedBossSword.attack, 10 + 82 * 3, 'sword attack must drop to level-82 boss formula');
+assert.equal(fixedBossSword.attack, 18 + Math.round(1.5 * (82 - 3)), 'sword attack must drop to level-82 boss formula');
 assert.equal(balance.normalizeEquipmentForTests(fixedBossSword).attack, fixedBossSword.attack,
   'server-compatible normalization must not restore old strength');
 const highBossArmor = balance.prepareNewEquipment(catalog.createBossLootEquipment(164, false, 'historic-armor'));
 const fixedBossArmor = balance.setAdminEquipmentLevel(highBossArmor, 82);
 assert.equal(fixedBossArmor.id, highBossArmor.id);
 assert.equal(fixedBossArmor.level, 82, 'admin correction must lower historic boss armor');
-assert.equal(fixedBossArmor.defense, 5 + 82 * 2, 'level-82 boss armor defense');
-assert.equal(fixedBossArmor.hp, 20 + 82 * 5, 'level-82 boss armor HP');
+assert.equal(fixedBossArmor.defense, 12 + Math.round(0.5 * (82 - 3)), 'level-82 boss armor defense');
+assert.equal(fixedBossArmor.hp, 80 + Math.round(1.5 * (82 - 3)), 'level-82 boss armor HP');
 const customHigh = {
   id: 'custom-overlevel', name: 'Custom blade', slot: 'weapon', rarity: 'legendary',
   level: 164, attack: 900, baseLevel: 164, baseStats: { attack: 900 }, upgradeCount: 0,
@@ -192,7 +223,7 @@ const migrated = balance.migrateGameStateBalance({
 });
 assert.equal(migrated.balanceVersion, balance.EQUIPMENT_BALANCE_VERSION);
 assert.equal(migrated.player.equipped.weapon.attack, 141);
-assert.equal(migrated.inventory[0].equipment.attack, 388);
+assert.equal(migrated.inventory[0].equipment.attack, 101);
 
 // A save produced by the earlier v2 development formula must be recalculated
 // from its immutable baseline when moving to v3, not skipped as already current.
@@ -214,7 +245,7 @@ assert.equal(migratedV2.player.equipped.weapon.critChance, 8, 'migration must pr
 const migratedBelt = balance.migrateGameStateBalance({
   belt: [null, { id: 'belt-loot', name: lootLegacy.name, icon: lootLegacy.icon, type: 'equipment', rarity: lootLegacy.rarity, qty: 1, description: '', equipment: lootLegacy }],
 });
-assert.equal(migratedBelt.belt[1].equipment.attack, 388, 'inflated equipment in belt slots must also migrate');
+assert.equal(migratedBelt.belt[1].equipment.attack, 101, 'inflated equipment in belt slots must also migrate');
 assert.equal(migratedBelt.belt.length, 2, 'migration must preserve belt shape instead of padding/truncating');
 const alreadyCurrentCustom = {
   balanceVersion: balance.EQUIPMENT_BALANCE_VERSION,
@@ -232,7 +263,7 @@ const forgedRing = balance.setEquipmentLevel(balance.prepareNewEquipment(templat
 const forgedAmulet = balance.setEquipmentLevel(balance.prepareNewEquipment(templateById('shop_amulet_raven_eq')), 58);
 baseState.player.equipped = { weapon: forgedHeroic, ring: forgedRing, amulet: forgedAmulet };
 const heroStats = engine.getComputedStats(baseState);
-assert.equal(heroStats.attack, 535, 'slot-specific growth should keep a level-58 epic damage kit within the intended range');
+assert.equal(heroStats.attack, 478, 'slot-specific growth should keep a level-58 epic damage kit within the intended range');
 const lateChapter = engine.generateChapter(58);
 assert.equal(lateChapter.enemies[0].maxHp, Math.floor((75 + 58 * 25) * 0.8 * require(path.join(out, 'pveBalance.js')).chapterEnemyMultipliers(58).hp), 'chapter enemy HP should track gradual difficulty');
 const bossAt58 = require(path.join(out, 'pveBalance.js')).bossEnemyMultipliers(58);
@@ -246,23 +277,23 @@ assert.ok(worstCriticalHeadHit < weakestEnemy.maxHp, 'the strongest theoretical 
 const heroLevel47Sword = balance.capEquipmentToHeroLevel(
   catalog.createBossLootEquipment(85, true, 'old-loot-85'), 47);
 assert.equal(heroLevel47Sword.level, 47);
-assert.equal(heroLevel47Sword.attack, 151);
+assert.equal(heroLevel47Sword.attack, 84);
 assert.equal(heroLevel47Sword.id, 'old-loot-85');
 const heroLevel47Armor = balance.capEquipmentToHeroLevel(
   catalog.createBossLootEquipment(87, false, 'old-loot-87'), 47);
 assert.equal(heroLevel47Armor.level, 47);
-assert.equal(heroLevel47Armor.defense, 99);
-assert.equal(heroLevel47Armor.hp, 255);
+assert.equal(heroLevel47Armor.defense, 34);
+assert.equal(heroLevel47Armor.hp, 146);
 const levelOneEpic = balance.capEquipmentToHeroLevel(
   catalog.EQUIPMENT_TEMPLATES.find((t) => t.name === 'Героический меч'), 1);
 assert.equal(levelOneEpic.level, 1);
-assert.equal(levelOneEpic.attack, 7);
-assert.equal(levelOneEpic.critChance, 2);
+assert.equal(levelOneEpic.attack, 4);
+assert.equal(levelOneEpic.critChance, 1);
 assert.deepEqual(balance.capEquipmentToHeroLevel(levelOneEpic, 1), levelOneEpic,
   'Repeated saves cannot resurrect catalog stats');
 const upgradedEpic = balance.upgradeEquipment(levelOneEpic);
 assert.equal(upgradedEpic.level, 2);
-assert.equal(upgradedEpic.attack, 14,
+assert.equal(upgradedEpic.attack, 9,
   'Forging an item below its catalog minimum must never jump back to level 5');
 const levelThreePlate = balance.capEquipmentToHeroLevel(
   catalog.EQUIPMENT_TEMPLATES.find((t) => t.name === 'Латные доспехи'), 2);
