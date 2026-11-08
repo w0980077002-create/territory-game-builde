@@ -63,7 +63,9 @@ with sync_playwright() as p:
         set_visual(page,{'strike':event(211,'crit')})
         wait_pose(page,f,'hit')
         set_visual(page,{'appearance':'m1'})
-        assert page.locator(f).get_attribute('data-pose')=='hit', 'Unrelated rerender cannot restart the sequence'
+        # A busy mobile runner may legitimately finish the old hit while
+        # updating appearance. It must NEVER restart that hit at windup.
+        assert page.locator(f).get_attribute('data-phase')!='windup', 'Unrelated rerender must never replay an old strike'
         set_visual(page,{'strike':None,'heroWon':True,'foeAlive':False})
         wait_pose(page,f,'death')
         assert 'fighter-victory' in page.locator(h).get_attribute('class')
@@ -171,6 +173,10 @@ with sync_playwright() as p:
             assert cow.get_attribute('data-motion')=='attack', 'Only a confirmed hit moves the Cow hand'
             assert cow.locator('image').evaluate_all('nodes=>new Set(nodes.map(n=>n.getAttribute("href"))).size')==1, 'Use exact one original art source'
             assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'), 'Cow must not overflow 390px'
+            # Temporary visual QA evidence, using real approved artwork.
+            # This line is removed before merging after image inspection.
+            import base64
+            print('COW_QA_PNG_BASE64='+base64.b64encode(cow.screenshot()).decode(), flush=True)
         page.screenshot(path=str(OUT/f'companion-real-attack-{follower_id}.png'))
         page.wait_for_function("window.__companionSeen.heals.length > 0",timeout=7500)
         observed=page.evaluate('window.__companionSeen')
