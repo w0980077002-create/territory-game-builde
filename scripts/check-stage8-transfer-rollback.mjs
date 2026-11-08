@@ -69,6 +69,15 @@ try {
   assert.deepEqual(await verified(seller), gear);
   await assert.rejects(() => verified(buyer), /stage8_item_not_owned/);
 
+  // Snapshot the canonical output itself, not only the normalized verifier
+  // response. A handoff may update player_id but must not silently rewrite
+  // the registry's stored level, rarity, upgrades, base stats or provenance.
+  const registryOutputBefore = (await one(
+    'SELECT item_output FROM public.territory_profession_stage8_items WHERE item_id=$1',
+    [uuid],
+  )).item_output;
+  assert.deepEqual(registryOutputBefore, output);
+
   // A failed trade must roll back both the registry handoff and any
   // accompanying player snapshot writes in the SAME database transaction.
   // This is only a disposable transaction fixture, not a market implementation.
@@ -232,6 +241,17 @@ try {
   await assert.rejects(() => verified(reseller, untouchedGear), /stage8_item_not_owned/);
   assert.deepEqual(await verified(reseller), gear,
     'Unrelated gear checks must not alter transferred sword');
+
+  const registryOutputAfter = (await one(
+    'SELECT item_output FROM public.territory_profession_stage8_items WHERE item_id=$1',
+    [uuid],
+  )).item_output;
+  assert.deepEqual(registryOutputAfter, registryOutputBefore,
+    'Ownership handoffs, rollbacks and forged reads must never alter the canonical registry payload');
+  assert.equal(registryOutputAfter.equipment.level, 50);
+  assert.equal(registryOutputAfter.equipment.upgradeCount, 49);
+  assert.equal(registryOutputAfter.equipment.attack, 118);
+  assert.equal(registryOutputAfter.equipment.rarity, 'rare');
 
   console.log('PASS #366: two-hop resale through level-1 merchant, rollback, old-owner denial, item preservation and forged +1 rejection, unrelated-item isolation');
 } finally {
