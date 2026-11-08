@@ -90,15 +90,15 @@ def check(role, issue):
     print(report)
     return 1 if failed else 0
 
-def daily():
-    report = "### TERRITORY daily Lead Producer (read-only)\nUTC: "+datetime.now(timezone.utc).isoformat()+"\n"+"\n".join(lead_lines())+"\nNo writes or releases.\n"
+def hourly():
+    report = "### TERRITORY hourly Lead Producer (read-only)\nUTC: "+datetime.now(timezone.utc).isoformat()+"\n"+"\n".join(lead_lines())+"\nNo writes or releases.\n"
     with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f: f.write(report)
     print(report)
 
 if __name__ == "__main__":
     try:
-        if sys.argv[1:] == ["daily"]:
-            daily()
+        if sys.argv[1:] == ["hourly"]:
+            hourly()
         else:
             role, issue = event_info()
             if sys.argv[1:] == ["plan"]:
@@ -106,7 +106,7 @@ if __name__ == "__main__":
                 print("issue="+str(issue))
             elif sys.argv[1:] == ["check"]:
                 sys.exit(check(role,issue))
-            else: raise ValueError("Expected plan/check/daily")
+            else: raise ValueError("Expected plan/check/hourly")
     except Exception as error:
         print("TERRITORY SPECIALIST ERROR:",error,file=sys.stderr)
         sys.exit(1)
