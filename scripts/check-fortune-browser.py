@@ -100,6 +100,11 @@ with sync_playwright() as p:
         assert '3 синих самоцвета' in page.get_by_role('dialog').inner_text()
         page.get_by_role('dialog').get_by_role('button',name='OK',exact=True).click()
         page.wait_for_function("!document.querySelector('.fortune-chests button').disabled")
+        icons=page.locator('.fortune-chests button img')
+        assert icons.nth(0).get_attribute('src').endswith('common-chest.webp')
+        assert icons.nth(1).get_attribute('src').endswith('rare-chest.webp')
+        assert icons.nth(2).get_attribute('src').endswith('golden-key.svg')
+        assert icons.evaluate_all('(els)=>els.every(img=>img.complete && img.naturalWidth>0)')
         if width in (360,390):
             page.screenshot(path=str(OUT/f'treasury-closed-{width}.png'))
         page.locator('.fortune-chests button').last.click()
@@ -119,6 +124,16 @@ with sync_playwright() as p:
         if width in (360,390):
             page.screenshot(path=str(OUT/f'treasury-open-{width}.png'))
         page.get_by_role('dialog').get_by_role('button',name='OK',exact=True).click()
+        page.wait_for_function("!document.querySelector('.fortune-chests button').disabled")
+        if width in (360,390):
+            for index,kind in ((0,'common'),(1,'rare')):
+                page.locator('.fortune-chests button').nth(index).click()
+                page.wait_for_function("document.querySelector('.fortune-dialog h3')?.textContent==='100 золота'")
+                assert page.locator('.fortune-chest-base').get_attribute('src').endswith(f'{kind}-chest.webp')
+                assert page.locator('.fortune-chest-base').evaluate('(img)=>img.complete&&img.naturalWidth>0')
+                page.screenshot(path=str(OUT/f'treasury-{kind}-open-{width}.png'))
+                page.get_by_role('dialog').get_by_role('button',name='OK',exact=True).click()
+                page.wait_for_function("!document.querySelector('.fortune-chests button').disabled")
         report['viewports'].append({'width':width,'height':height,'wheel_width':wheel['width'],'spin_bottom':box['y']+box['height'],'navigation_top':nav['y'],'horizontal_overflow':False,'active_tab':'Игры'})
         page.close()
     page=load(browser,390,844)
