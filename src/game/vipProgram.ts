@@ -41,6 +41,19 @@ export const VIP_TIERS: readonly VipTier[] = [
     perkRu:'Легендарная корона, трон, герб и Зал основателей по согласию', perkEn:'Legendary crown, throne, crest and optional Founders Hall' },
 ] as const;
 
+/** Use only the server-derived account snapshot to decide client VIP perks.
+ * A previewed VIP tier never unlocks an actual benefit.
+ */
+export function activeVipForBenefits(
+  account: { vip?: number; permanentVip?: number; vipRemaining?: number; vipCheckedAt?: number },
+  nowMs: number,
+): number {
+  const safe = (n: unknown) => typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+  const permanent = safe(account.permanentVip);
+  const left = Math.max(0, safe(account.vipRemaining) - Math.max(0, nowMs - safe(account.vipCheckedAt)));
+  return Math.min(VIP_MAX_LEVEL, Math.max(permanent, left > 0 ? safe(account.vip) : 0));
+}
+
 export function vipTierForPaidSpend(cumulativeUsd: number): number {
   if (!Number.isFinite(cumulativeUsd) || cumulativeUsd <= 0) return 0;
   let level = 0;
