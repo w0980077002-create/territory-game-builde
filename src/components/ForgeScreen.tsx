@@ -13,6 +13,7 @@ import { ForgeForecastHint } from './ForgeForecastHint';
 import { IosGamePortal } from './ui/Modal';
 import type { Equipment, InventoryItem } from '@/game/types';
 import { upgradeEquipment } from '@/game/equipmentBalance';
+import { previewAntiLevel } from '@/game/antiLevelPreview';
 import { forgeAttempt, forgeCost, forgeSetBonus, forgeSuccessRate, isStage8Gear } from '@/game/forge';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
 import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
@@ -60,6 +61,9 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
     : null;
   const selectedCurrent = selected && freshEquipment
     ? { ...selected, equipment: freshEquipment }
+    : null;
+  const antiLevelPreview = selectedCurrent?.equipment
+    ? previewAntiLevel(selectedCurrent.equipment, state.player.level)
     : null;
   const forgeDialogRef = useRef<HTMLDivElement>(null);
   const forgeCloseRef = useRef<HTMLButtonElement>(null);
@@ -385,6 +389,39 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
               {selectedCurrent.equipment.defense ? <StatRow label={t('defense')} value={selectedCurrent.equipment.defense} /> : null}
               {selectedCurrent.equipment.hp ? <StatRow label={t('health')} value={selectedCurrent.equipment.hp} /> : null}
             </div>
+
+            {/* Optional rare Anti-Level item is only a visual design preview.
+                Ownership and resale never require the hero to reach the item level. */}
+            {antiLevelPreview && (
+              <div className="mb-3 rounded-xl border border-amber-500/40 bg-gradient-to-b from-[#382618] to-[#1b1411] p-3" data-testid="anti-level-preview">
+                <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs font-bold text-amber-200">
+                  <span>{language === 'en' ? 'Anti-Level · rare forge item' : 'Антиуровень · редкий предмет'}</span>
+                  <span className="text-[10px] font-medium text-amber-400/80">{language === 'en' ? 'PREVIEW' : 'ПРЕДПРОСМОТР'}</span>
+                </div>
+                <p className="mt-1 text-sm font-bold text-white tabular-nums">
+                  {language === 'en' ? 'Item level' : 'Уровень вещи'}: {antiLevelPreview.fromLevel} → {antiLevelPreview.toLevel}
+                </p>
+                <p className="mt-1 text-[11px] leading-snug text-amber-100/85">
+                  {language === 'en'
+                    ? 'Trading keeps the original item unchanged. Anti-Level would lower it only after confirmation in the forge.'
+                    : 'Торговля сохраняет вещь без изменений. Антиуровень уменьшит её уровень только после подтверждения в кузнице.'}
+                </p>
+                {(['attack', 'defense', 'hp'] as const).map((stat) => {
+                  const before = selectedCurrent.equipment?.[stat];
+                  const after = antiLevelPreview.estimated[stat];
+                  if (!before) return null;
+                  return <div key={stat} className="mt-1 flex justify-between text-[11px] text-stone-200">
+                    <span>{stat === 'attack' ? t('attack') : stat === 'defense' ? t('defense') : t('health')}</span>
+                    <span className="tabular-nums text-amber-200">{before} → {after ?? 0}</span>
+                  </div>;
+                })}
+                <p className="mt-2 text-[10px] leading-snug text-amber-300">
+                  {language === 'en'
+                    ? 'Estimate only. This may permanently remove upgrades. No item or resource is consumed; server conversion is not enabled.'
+                    : 'Только примерка. Часть улучшений может исчезнуть навсегда. Ничего не списывается: серверное применение пока выключено.'}
+                </p>
+              </div>
+            )}
 
             {/* Exact deterministic preview from current item template. */}
             {!isStage8Gear(selectedCurrent.id) && selectedCurrent.equipment.level < state.player.level && (
