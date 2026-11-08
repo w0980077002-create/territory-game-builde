@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
-import { useGame, useArena } from '@/game/actions';
+import { useGame, useArena, useAccount } from '@/game/actions';
 import { secureArenaClaim, secureArenaItem } from '@/game/arenaSecure';
 import {
   TEAM_NAMES, leaveArena, submitArenaMove,
@@ -8,7 +8,8 @@ import {
 } from '@/game/arenaApi';
 import { useArenaRoom, useCountdown } from '@/game/useArenaRoom';
 import { useStrikeQueue } from '@/game/useStrikeQueue';
-import { beltAction, beltContext } from '@/game/belt';
+import { beltAction, beltContext, refillVipBeltAfterBattle } from '@/game/belt';
+import { activeVipForBenefits } from '@/game/vipProgram';
 import { hapticImpact, hapticNotify } from '@/game/telegram';
 import { FighterList } from './FighterList';
 import { BattleScene } from './BattleScene';
@@ -31,6 +32,8 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const { view, messages, offline, clockOffset, refresh } = useArenaRoom(roomId, onExit);
   const game = useStore(useGame);
   const arenaStats = useStore(useArena);
+  // The starting selection survives a depleted belt slot after server-confirmed Arena fights.
+  const beltAtFightStart = useRef(useGame.get().belt.map(item => item ? { ...item } : null));
   const [targetId, setTargetId] = useState<string | null>(null);
   const [attack, setAttack] = useState<Zone | null>(null);
   const [blocks, setBlocks] = useState<Zone[]>([]);
@@ -146,6 +149,12 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
     claiming.current = true;
     secureArenaClaim(roomId)
       .then(({ reward: r, alreadyClaimed }) => {
+        // The Arena RPC has already committed the result and installed the
+        // authoritative inventory. Refill now from that inventory only.
+        const confirmed = useGame.get();
+        const filled = refillVipBeltAfterBattle(confirmed, beltAtFightStart.current,
+          useArena.get().wins, activeVipForBenefits(useAccount.get(), performance.now()));
+        if (filled !== confirmed) useGame.set(filled);
         if (alreadyClaimed) return;
         if (!r) { claiming.current = false; return; }
         // No local gold/XP award. Server transaction already credited the saved profile.
