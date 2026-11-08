@@ -361,3 +361,74 @@
   .territory-vip-rebuild .vip-benefit-card {min-height:89px;}
   .territory-vip-rebuild .vip-benefit-card img {height:43px;}
 }
+
+/* One daily and one weekly VIP chest. Tier changes contents, never the artwork. */
+.territory-vip-rebuild .vip-chest-card small {
+  font-size:10px;line-height:1.15;color:#f0c78c;text-align:center;
+}
+.territory-vip-rebuild .vip-chest-reward-tier {
+  font-size:12px;font-weight:800;color:#f6c982;
+}
+.territory-vip-rebuild .vip-chest-stage {
+  position:relative;width:min(100%,280px);height:195px;
+  perspective:650px;isolation:isolate;flex-shrink:0;
+}
+.territory-vip-rebuild .vip-chest-stage-base,
+.territory-vip-rebuild .vip-chest-stage-lid {
+  position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+  filter:drop-shadow(0 5px 8px #0b0505);
+  pointer-events:none;
+}
+.territory-vip-rebuild .vip-chest-stage-base {clip-path:inset(43% 0 0 0);}
+.territory-vip-rebuild .vip-chest-stage-lid {
+  clip-path:inset(0 0 56% 0);transform-origin:center 41%;
+  transition:transform .76s cubic-bezier(.17,.75,.2,1),filter .76s;
+  z-index:2;
+}
+.territory-vip-rebuild .vip-chest-stage--opening .vip-chest-stage-lid,
+.territory-vip-rebuild .vip-chest-stage--open .vip-chest-stage-lid {
+  transform:translateY(-19px) rotateX(42deg);
+  filter:drop-shadow(0 2px 7px #ffc46088);
+}
+.territory-vip-rebuild .vip-chest-stage-glow {
+  position:absolute;inset:25% 13% 0;border-radius:50%;z-index:0;
+  background:radial-gradient(ellipse,#ffca6382,transparent 68%);
+  opacity:0;transition:opacity .55s;
+}
+.territory-vip-rebuild .vip-chest-stage--opening .vip-chest-stage-glow,
+.territory-vip-rebuild .vip-chest-stage--open .vip-chest-stage-glow {opacity:1;}
+.territory-vip-rebuild .vip-chest-stage-sparks {
+  position:absolute;inset:5% 8% 0;pointer-events:none;z-index:3;opacity:0;
+  background:
+   radial-gradient(circle at 20% 43%,#ffe3a7 0 2px,transparent 4px),
+   radial-gradient(circle at 77% 21%,#ffe3a7 0 2px,transparent 4px),
+   radial-gradient(circle at 43% 12%,#fff3cc 0 3px,transparent 5px),
+   radial-gradient(circle at 64% 62%,#ffcf76 0 3px,transparent 5px);
+}
+.territory-vip-rebuild .vip-chest-stage--opening .vip-chest-stage-sparks {
+  opacity:1;animation:vip-chest-spark .76s ease-out;
+}
+.territory-vip-rebuild .vip-chest-stage--open .vip-chest-stage-sparks {opacity:.85;}
+.territory-vip-rebuild .vip-demo-rewards {width:100%;display:grid;gap:7px;justify-items:center;}
+.territory-vip-rebuild .vip-demo-rewards>strong {font-size:13px;color:#ffe4a0;}
+.territory-vip-rebuild .vip-demo-reward-grid {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%;
+}
+.territory-vip-rebuild .vip-demo-reward-grid span {
+  min-width:0;display:flex;flex-direction:column;align-items:center;
+  padding:5px 3px;background:#2b160d;border:1px solid #b8894b;
+  border-radius:9px;
+}
+.territory-vip-rebuild .vip-demo-reward-grid img {width:37px;height:35px;object-fit:contain;}
+.territory-vip-rebuild .vip-demo-reward-grid b {font-size:15px;color:#ffe4a0;}
+.territory-vip-rebuild .vip-demo-reward-grid small {font-size:10px;color:#f2c98f;}
+@keyframes vip-chest-spark {0%{transform:scale(.6);opacity:0}50%{opacity:1}100%{transform:scale(1.15);opacity:.85}}
+@media(max-height:640px) {
+  .territory-vip-rebuild .vip-chest-dialog {max-height:calc(100dvh - 24px);overflow:auto;gap:6px;padding:10px 12px;}
+  .territory-vip-rebuild .vip-chest-stage {height:135px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .territory-vip-rebuild .vip-chest-stage-lid {transition:none!important;}
+  .territory-vip-rebuild .vip-chest-stage-sparks {animation:none!important;}
+  .territory-vip-rebuild .vip-chest-stage-glow {transition:none!important;}
+}

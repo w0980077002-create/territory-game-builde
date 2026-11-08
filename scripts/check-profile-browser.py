@@ -94,6 +94,35 @@ with sync_playwright() as p:
             assert vip.locator('[data-testid="vip-preview-not-live"]').count() == 1, 'Unreleased VIP purchases/claims must not be advertised as live'
             if width == 360 and lang == 'ru':
                 page.screenshot(path='/tmp/territory-vip-preview-360.png')
+            # Two VIP chest appearances only, regardless of VIP 1–10.
+            vip.get_by_role('button', name='Chests' if lang == 'en' else 'Сундуки').click()
+            cards = vip.locator('.vip-chest-card')
+            assert cards.count() == 2, (width,lang,'Expected only daily and weekly VIP chests')
+            chest_images = cards.locator('img')
+            art_urls = chest_images.evaluate_all('images => images.map(el => el.src)')
+            assert len(set(art_urls)) == 2 and all(url.endswith('.webp') for url in art_urls), (width,lang,'VIP chest art must be 2 real WEBP assets')
+            page.wait_for_function("""() => {
+                const images=[...document.querySelectorAll('.vip-chest-card img')];
+                return images.length===2 && images.every(el => el.complete && el.naturalWidth > 0);
+            }""", timeout=8000)
+            cards.nth(0).click()
+            assert vip.locator('[data-testid="vip-chest-demo"]').count() == 1
+            vip.locator('[data-testid="vip-chest-demo-open"]').click()
+            assert vip.locator('[data-testid="vip-chest-opening-stage"]').count() == 1
+            page.wait_for_timeout(880)
+            assert vip.locator('[data-testid="vip-chest-demo-reward"]').count() == 1
+            assert vip.locator('.vip-demo-reward-grid span').count() == 3
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'VIP chest horizontal overflow'
+            if width == 360 and lang == 'ru':
+                page.screenshot(path='/tmp/territory-vip-chest-daily-360.png')
+            vip.locator('.vip-close-demo').click()
+            cards.nth(1).click()
+            vip.locator('[data-testid="vip-chest-demo-open"]').click()
+            page.wait_for_timeout(880)
+            assert vip.locator('[data-testid="vip-chest-demo-reward"]').count() == 1
+            if width == 360 and lang == 'ru':
+                page.screenshot(path='/tmp/territory-vip-chest-weekly-360.png')
+            vip.locator('.vip-close-demo').click()
             badges.nth(6).click()  # VIP 7 previews without granting VIP.
             assert vip.locator('[data-testid="vip-live-tryon"]').count() == 1
             vip.locator('.vip-cosmetic-tabs button').nth(3).click()  # Full-size skin, not a ghost overlay.
