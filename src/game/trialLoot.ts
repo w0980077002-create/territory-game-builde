@@ -15,6 +15,19 @@ export type TrialBlueprintId = 'guardian_blade' | 'guardian_amulet';
 export type TrialComponentId = 'guardian_shard' | 'trial_essence' | 'ancient_mechanism';
 
 export const TRIAL_LOOT_ASSET_BASE = 'assets/territory/ui/trial-loot/';
+/**
+ * Use a finished transparent WEBP chest illustration for common victories.
+ * The former generated SVG looked like a flat prototype on Android.
+ * Tier-specific assets keep their own distinct ornaments and colours.
+ * All paths are local to this game's Pages base, not third-party downloads.
+ */
+export const TRIAL_CHEST_ART: Record<TrialChestTier, string> = {
+  common: 'assets/territory/ui/materials/royal-chest.webp',
+  explorer: TRIAL_LOOT_ASSET_BASE + 'chest-explorer.svg',
+  guardian: TRIAL_LOOT_ASSET_BASE + 'chest-guardian.svg',
+  legendary: TRIAL_LOOT_ASSET_BASE + 'chest-legendary.svg',
+};
+
 export const TRIAL_BLUEPRINTS: readonly { id: TrialBlueprintId; name: string; nameEn: string; profession: string }[] = [
   { id: 'guardian_blade', name: 'Клинок Стража', nameEn: "Guardian's Blade", profession: 'smith' },
   { id: 'guardian_amulet', name: 'Амулет Стража', nameEn: "Guardian's Amulet", profession: 'jeweler' },
