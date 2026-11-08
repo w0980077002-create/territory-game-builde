@@ -64,7 +64,7 @@ assert.match(forge, /savedItem\?\.level !== expectedLevel/,
   'Forge must verify the final item level after server normalization');
 assert.match(forge, /data\.gold !== result\.next\.player\.gold/,
   'Forge must verify server-reported gold debit');
-assert.match(forge, /saveUnverified \|\| selectedCurrent\.equipment\.level/,
+assert.match(forge, /saveUnverified \|\| isStage8Gear\(selectedCurrent\.id\) \|\| selectedCurrent\.equipment\.level/,
   'No further roll is allowed when the server has not confirmed the previous one');
 assert.match(forge, /if \(result\.status === 'success'\) \{\s*setSuccess\(true\)/,
   'Only a confirmed server save may display forge success');
