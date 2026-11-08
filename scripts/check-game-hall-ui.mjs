@@ -51,7 +51,7 @@ assert.doesNotMatch(hall,/Popular' : 'Популярно/,'No invented popularit
 
 assert.match(hall,/autoClaimHallGold\(userId,next\.pending_gold\)/,'Old pending winnings should settle when hall opens');
 assert.match(api,/const autoClaims=new Map/,'Prevent concurrent duplicate payout requests');
-assert.match(mono,/await settleWinnings\(finished\)/,'Monopoly winnings must settle automatically');
+assert.match(mono,/await settleWinnings\(latest\)/,'Monopoly batch winnings must settle automatically once per completed series');
 assert.match(mono,/await claimMonopolyRewards\(\)/,'Inventory winnings must be server credited');
 assert.match(play,/await autoClaimHallGold\(userId,prize\.earned_gold\)/,'Other games must auto-credit gold');
 assert.doesNotMatch(hall,/data-testid="hall-claim-gold"/,'No manual gold collection button');
