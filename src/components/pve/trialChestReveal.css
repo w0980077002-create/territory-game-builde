@@ -1,0 +1,106 @@
+/* Victory chest is a visual reveal, not a second reward transaction. */
+.trial-chest-stage {
+  position: relative;
+  display: inline-block;
+  width: 104px;
+  height: 104px;
+  flex: 0 0 104px;
+  perspective: 340px;
+  isolation: isolate;
+}
+.trial-chest-stage .trial-chest-half {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+.trial-chest-stage .trial-chest-base {
+  clip-path: inset(51% 0 0 0);
+  z-index: 2;
+}
+.trial-chest-stage .trial-chest-lid {
+  clip-path: inset(0 0 49% 0);
+  z-index: 3;
+  transform-origin: 50% 50%;
+}
+.trial-chest-stage:not(.trial-chest-open) {
+  animation: territory-chest-idle 2.6s ease-in-out infinite;
+}
+.trial-chest-stage.trial-chest-open .trial-chest-lid {
+  animation: territory-chest-lid .65s cubic-bezier(.15,.9,.2,1) both;
+}
+.trial-chest-stage.trial-chest-open .trial-chest-base {
+  animation: territory-chest-base .65s ease-out both;
+}
+.trial-chest-aura {
+  position: absolute;
+  inset: 13px;
+  border-radius: 50%;
+  z-index: 1;
+  background: radial-gradient(circle, rgba(255,215,119,.9), rgba(242,128,35,.34) 47%, transparent 73%);
+  opacity: 0;
+  transform: scale(.35);
+  pointer-events: none;
+}
+.trial-chest-open .trial-chest-aura {
+  animation: territory-chest-glow .85s ease-out .16s both;
+}
+.trial-chest-star {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 17% 27%, #fff4b5 0 2px, transparent 3px),
+    radial-gradient(circle at 82% 20%, #ffd46e 0 3px, transparent 4px),
+    radial-gradient(circle at 33% 3%, #ffedbf 0 2px, transparent 3px),
+    radial-gradient(circle at 72% 66%, #f7b755 0 2px, transparent 3px);
+}
+.trial-chest-open .trial-chest-star {
+  animation: territory-chest-spark 1.25s ease-out .19s both;
+}
+.trial-chest-reward {
+  opacity: 0;
+  animation: territory-chest-loot .48s cubic-bezier(.2,.85,.15,1.1) both;
+  animation-delay: calc(var(--chest-loot-order, 0) * 110ms);
+}
+@keyframes territory-chest-idle {
+  0%,100% { transform: translateY(0); filter: drop-shadow(0 3px 4px rgba(0,0,0,.48)); }
+  50% { transform: translateY(-4px); filter: drop-shadow(0 8px 9px rgba(255,170,45,.32)); }
+}
+@keyframes territory-chest-lid {
+  0% { transform: translateY(0) rotateX(0deg); }
+  34% { transform: translateY(-4px) rotateX(-25deg); }
+  100% { transform: translateY(-18px) rotateX(-64deg); }
+}
+@keyframes territory-chest-base {
+  0%,25% { transform: scale(1); }
+  75% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes territory-chest-glow {
+  0% { opacity: 0; transform: scale(.35); }
+  40% { opacity: 1; transform: scale(1.15); }
+  100% { opacity: .48; transform: scale(1.4); }
+}
+@keyframes territory-chest-spark {
+  0% { opacity: 0; transform: translateY(10px) scale(.6); }
+  35% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-26px) scale(1.2); }
+}
+@keyframes territory-chest-loot {
+  from { opacity: 0; transform: translateY(10px) scale(.86); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trial-chest-stage, .trial-chest-stage *, .trial-chest-reward {
+    animation: none !important;
+  }
+  .trial-chest-reward { opacity: 1; }
+  .trial-chest-stage.trial-chest-open .trial-chest-lid { transform: translateY(-12px) rotateX(-55deg); }
+  .trial-chest-stage.trial-chest-open .trial-chest-aura { opacity: .6; transform: scale(1.3); }
+}
