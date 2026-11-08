@@ -145,6 +145,12 @@ const screen=await readFile(new URL('../src/components/ProfessionsStage8Screen.t
 assert.match(app,/VITE_TERRITORY_PROFESSIONS_STAGE8 !== 'false'/,
   'Owner approved Stage8 for release with a reversible explicit false switch');
 assert.match(screen,/!status\?\.enabled/);
+assert.match(screen,/Характеристики создаваемой экипировки/,
+  'Players must see the crafted equipment stat preview before spending materials');
+assert.match(screen,/recipe\.output\.equipment\.level/,
+  'Players must see starting item level, not mastery level, on the recipe');
+assert.match(screen,/\['attack','defense','hp','critChance'\]/,
+  'All four combat stats need visible preview for crafted gear');
 assert.match(screen,/purchaseStage8\(/);
 assert.doesNotMatch(screen,/territory_profession_unlock/,'Stage8 must never use the legacy gem-debit RPC');
 assert.doesNotMatch(screen,/craftItem\(|addMasteryXp\(/,'Stage8 must not grant local rewards');
