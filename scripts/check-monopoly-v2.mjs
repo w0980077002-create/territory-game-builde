@@ -54,6 +54,19 @@ try{
  await q('UPDATE territory_private.hall_accounts_v1 SET tickets=20,daily_gold=950,daily_day=CURRENT_DATE WHERE player_id=$1',[A]);
  d=await rpc('roll',10);session=d.hall.active;assert.equal(d.hall.tickets,10);assert.equal(session.question.multiplier,10);
  d=await rpc('finish',1,session.token);assert.equal(d.result.earned_gold,50);assert.equal(d.hall.daily_remaining,0);
+ // The ×10 UI now makes ten independent, one-ticket server turns.
+ // A failure can only leave the current turn pending, never pre-charge the next nine.
+ await q('UPDATE territory_private.hall_accounts_v1 SET tickets=20,daily_gold=0,daily_day=CURRENT_DATE WHERE player_id=$1',[A]);
+ const rollsBefore=(await rpc()).progress.rolls;
+ for(let i=0;i<10;i++){
+  d=await rpc('roll',1);session=d.hall.active;
+  assert.equal(session.question.multiplier,1,'each roll uses normal cell prizes');
+  assert.equal(d.hall.tickets,19-i,'only the current roll is charged');
+  d=await rpc('finish',1,session.token);
+  assert.equal(d.progress.rolls,rollsBefore+i+1,'each turn must count for quests');
+  assert.equal(d.hall.tickets,19-i,'finishing may not charge again');
+ }
+ assert.equal(d.hall.tickets,10,'ten real rolls cost exactly ten tickets');
  // Each mystery event, including teleport reward and next-turn buffs.
  for(const event of ['gift','teleport','double','lucky']){
   await q('UPDATE territory_private.hall_accounts_v1 SET tickets=20,daily_gold=0 WHERE player_id=$1',[A]);
