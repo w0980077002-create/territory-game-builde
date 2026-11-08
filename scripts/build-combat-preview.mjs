@@ -67,7 +67,15 @@ const goblinArt='/assets/territory/characters/enemies/goblin/idle.webp';
 const banditArt='/assets/territory/characters/enemies/bandit/idle.webp';
 const foe={id:'fixture-goblin',name:'Гоблин',art:goblinArt,maxHp:600,attack:5,defense:0,isBoss:false,rewardGold:0,rewardXp:0,icon:'',level:1};
 const options=new URLSearchParams(location.search);
-const pveFoe=options.get('enemy')==='bandit'?{...foe,id:'fixture-bandit',name:'Разбойник',art:banditArt}:foe;
+// The follower browser test must receive a genuine non-blocked enemy hit.
+// The ordinary practice foe has only 5 attack and can deal 0 after armor;
+// it cannot reliably trigger a real heal. This stronger offline-only opponent
+// changes no production encounter, user HP, battle math, or reward.
+const pveFoeBase=options.get('enemy')==='bandit'?{...foe,id:'fixture-bandit',name:'Разбойник',art:banditArt}:foe;
+const pveFoe=options.has('follower')?{...pveFoeBase,attack:80}:pveFoeBase;
+// Consistent normal RNG choices: foe strikes unguarded legs, dodge fails.
+// Actual playRound() still calculates every hit, defense, and heal.
+if(options.has('follower')) Math.random=()=>0.99;
 const initial={strike:null,heroAlive:true,foeAlive:true,heroWon:false,foeWon:false,speed:1,appearance:'m2',enemy:'goblin'};
 function seed(){const game=createInitialGame();game.player.name='Рагнар';game.player.level=10;game.player.stats.maxHp=800;game.player.stats.hp=800;game.appearance=['m1','f1','f2'].includes(options.get('appearance'))?options.get('appearance'):'m2';
  // Fixture ONLY: select a real existing follower and leave missing HP so the
