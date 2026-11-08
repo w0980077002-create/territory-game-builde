@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Shield, Sword, Check, Flag, Loader2, Trophy, Hammer, Shirt } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { getVictoryJourney, type VictoryJourney } from '@/game/victoryJourney';
@@ -17,6 +17,7 @@ import { selectedFollower, followerCombat } from '@/game/followers';
 import { buildTrialGauntlet } from '@/game/trialGauntlet';
 import { TRIAL_BLUEPRINTS, TRIAL_COMPONENTS, TRIAL_LOOT_ASSET_BASE, TRIAL_CHEST_ART, type TrialChestReward } from '@/game/trialLoot';
 import './trialChestReveal.css';
+import './pveCompanionMotion.css';
 import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextComboOpening, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
@@ -185,6 +186,15 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   // aligned with the HP update scheduled from this round's original pace.
   const [roundSpeed, setRoundSpeed] = useState(() => kind === 'trial' ? 1 : useGame.get().settings.speed);
   const [strike, setStrike] = useState<StrikeEvent | null>(null);
+  // Cosmetic keys only. The companion moves strictly after playRound resolves
+  // a real companion hit or heal; it never grants HP or creates extra damage.
+  const [companionStrikeKey, setCompanionStrikeKey] = useState(0);
+  const [companionHeal, setCompanionHeal] = useState<{ sequence: number; amount: number } | null>(null);
+  useEffect(() => {
+    if (!companionHeal) return;
+    const timer = window.setTimeout(() => setCompanionHeal(null), 960 / roundSpeed);
+    return () => window.clearTimeout(timer);
+  }, [companionHeal, roundSpeed]);
   const [witchAttack, setWitchAttack] = useState(0);
   const [witchHeal, setWitchHeal] = useState(0);
   const [witchPose, setWitchPose] = useState<{ kind: 'attack' | 'heal'; sequence: number } | null>(null);
@@ -347,7 +357,9 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     const pace = 1 / currentSpeed;
     for (const hit of res.hits) {
       if (!alive.current || done.current) return;
-      setStrike({ key: ++keyRef.current, attacker: hit.attacker, target: hit.target, tone: hit.tone, amount: hit.amount || null });
+      const actionKey = ++keyRef.current;
+      setStrike({ key: actionKey, attacker: hit.attacker, target: hit.target, tone: hit.tone, amount: hit.amount || null });
+      if (hit.source === 'companion' && hit.amount > 0) setCompanionStrikeKey(actionKey);
       if (follower?.id === 'follower_pumpkin_witch_2026' && hit.source === 'companion' && hit.amount > 0)
         { setWitchAttack(keyRef.current); setWitchPose({kind: 'attack', sequence: keyRef.current}); }
       await wait(350 * pace);
@@ -367,6 +379,10 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
         const sequence = ++keyRef.current;
         setWitchHeal(sequence);
         setWitchPose({ kind: 'heal', sequence });
+      } else if (companionHealing > 0 && follower) {
+        // Forest Healer and Battle Cow now visibly cast their confirmed
+        // recovery; rune-only healing does not animate the companion.
+        setCompanionHeal({ sequence: ++keyRef.current, amount: companionHealing });
       }
       setHero((h) => ({ ...h, hp: Math.min(h.maxHp, h.hp + res.healAmount) }));
       if (companionHealing > 0) pushLog(language === 'en'
@@ -737,18 +753,37 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                       : 'absolute left-0 bottom-[1%] z-30 h-[72%] w-[74%] pointer-events-none'}
                   >
                     <span aria-hidden="true" className="absolute inset-x-[10%] bottom-0 h-[25%] rounded-full bg-amber-300/15 blur-md" />
-                    {follower.id === 'follower_pumpkin_witch_2026' ? <PumpkinWitch attack={witchAttack} heal={witchHeal} pose={witchPose} preloadActions /> : <FighterFigure
-                      src={getFollowerArt(follower.id)}
-                      combatFrames={getFollowerCombatFrames(follower.id)}
-                      name={follower.name}
-                      dir={1}
-                      scale={1.03}
-                      alive={hero.hp > 0}
-                      strike={strike}
-                      combatSpeed={busy || outcome ? roundSpeed : speed}
-                      idleSeconds={3.7}
-                      className="absolute left-0 bottom-0 h-full w-full object-contain object-left-bottom"
-                    />}
+                    {follower.id === 'follower_pumpkin_witch_2026' ? <PumpkinWitch attack={witchAttack} heal={witchHeal} pose={witchPose} preloadActions /> : <>
+                      <div
+                        data-testid="pve-companion-action"
+                        data-action={strike?.key === companionStrikeKey ? 'attack' : companionHeal ? 'heal' : 'idle'}
+                        className={`pve-companion-action absolute inset-0 ${['follower_3', 'follower_4', 'follower_5'].includes(follower.id) ? 'pve-companion-action--ranged' : 'pve-companion-action--melee'}`}
+                        style={{ '--pve-companion-duration': `${Math.round(810 / roundSpeed)}ms` } as CSSProperties}
+                      >
+                        <FighterFigure
+                          src={getFollowerArt(follower.id)}
+                          combatFrames={getFollowerCombatFrames(follower.id)}
+                          name={follower.name}
+                          dir={1}
+                          scale={1.03}
+                          alive={hero.hp > 0}
+                          strike={strike}
+                          combatSpeed={busy || outcome ? roundSpeed : speed}
+                          idleSeconds={3.7}
+                          className="absolute left-0 bottom-0 h-full w-full object-contain object-left-bottom"
+                        />
+                      </div>
+                      {companionHeal && (
+                        <span key={companionHeal.sequence} data-testid="pve-companion-heal"
+                          className="pve-companion-heal" aria-hidden="true">
+                          <i className="pve-companion-heal__circle" />
+                          <i className="pve-companion-heal__rune pve-companion-heal__rune--one" />
+                          <i className="pve-companion-heal__rune pve-companion-heal__rune--two" />
+                          <i className="pve-companion-heal__rune pve-companion-heal__rune--three" />
+                          <b className="pve-companion-heal__amount">+{companionHeal.amount} HP</b>
+                        </span>
+                      )}
+                    </>}
                   </div>
                 )}
                 <div className="absolute inset-0 z-20 pointer-events-none">

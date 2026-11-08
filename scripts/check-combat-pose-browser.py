@@ -127,5 +127,24 @@ with sync_playwright() as p:
     page.wait_for_selector('.fighter-figure__motion[data-pose=attack]',timeout=3000)
     page.screenshot(path=str(OUT/'real-pve-attack-390.png'))
     page.close()
+    # Verify actual playRound outcomes with the existing original follower art.
+    # Never inject a synthetic StrikeEvent or a fabricated heal into the UI.
+    for follower_id in ('follower_3', 'follower_6'):
+        page=b.new_page(viewport={'width':390,'height':760})
+        page.route(ORIGIN+'/**',serve);page.route('https://**/*',lambda r:r.abort())
+        page.goto(ORIGIN+'/?scene=pve&appearance=m1&enemy=bandit&follower='+follower_id)
+        page.wait_for_selector('[data-testid="pve-visible-follower"] img')
+        assert page.locator('[data-testid="pve-companion-heal"]').count()==0, 'No cosmetic heal before a resolved round'
+        page.get_by_role('button',name='Защита: Голова',exact=True).click()
+        page.get_by_role('button',name='Защита: Грудь',exact=True).click()
+        page.get_by_role('button',name='Удар: Живот',exact=True).click()
+        page.get_by_role('button',name='УДАР',exact=True).click()
+        page.wait_for_selector('[data-testid="pve-companion-action"][data-action="attack"]',timeout=7500)
+        page.screenshot(path=str(OUT/f'companion-real-attack-{follower_id}.png'))
+        page.wait_for_selector('[data-testid="pve-companion-heal"]',timeout=7500)
+        heal=page.locator('[data-testid="pve-companion-heal"]')
+        assert '+1' in heal.inner_text() or 'HP' in heal.inner_text(), 'Confirmed companion heal amount must be visible'
+        page.screenshot(path=str(OUT/f'companion-real-heal-{follower_id}.png'))
+        page.close()
     b.close()
 print('Pose scene PASS: original m1/bandit, windup/contact/recovery, block/dodge, cancellation, outcomes, x1/x2, 320/360/390/430 RU/EN, reduced motion; synthetic offline events.')
