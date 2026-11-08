@@ -1,9 +1,19 @@
 // Non-mutating regression checks for the Treasury opening presentation.
 // In particular, the server receipt remains the only source of reward truth.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 
 const treasury = readFileSync('src/components/TreasuryInventory.tsx', 'utf8');
+for (const kind of ['common', 'rare']) {
+  const file = `public/fortune/${kind}-chest.webp`;
+  const bytes = readFileSync(file);
+  assert.ok(statSync(file).size > 10_000, `missing high-detail ${kind} chest art`);
+  assert.equal(bytes.toString('ascii', 0, 4), 'RIFF', 'WebP RIFF container');
+  assert.equal(bytes.toString('ascii', 8, 12), 'WEBP', 'WebP format');
+  assert.ok(treasury.includes(`${kind}-chest.webp`), `Treasury must show new ${kind} art`);
+}
+assert.ok(treasury.includes('golden-key.svg'), 'Golden key remains unchanged');
+
 const css = readFileSync('src/components/fortune.css', 'utf8');
 const dialog = readFileSync('src/components/FortuneDialog.tsx', 'utf8');
 
