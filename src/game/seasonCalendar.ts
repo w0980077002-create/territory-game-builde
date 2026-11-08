@@ -70,8 +70,12 @@ export function seasonCountdown(ms: number, language: 'ru' | 'en' = 'ru') {
   return language === 'en' ? `${days}d ${hours}h ${mins}m` : `${days}д ${hours}ч ${mins}м`;
 }
 
-/** The server championship starts Sunday 00:00 Europe/Kyiv (DST aware).
- * This differs from both Monday UTC quests and Sunday UTC Arena TOP-50. */
+/** LEGACY ONLY: this is the calendar of a never-launched, disabled championship.
+ * Its historical server schema is Sunday-based and MUST NOT be activated.
+ * The approved live Arena TOP-50 and weekly quests already run Monday-to-Monday
+ * 00:00 UTC. Before ever launching this separate championship, synchronize its
+ * server, UI, and tests to the same Monday UTC boundary in an authorized cutover.
+ * Do not silently change this old helper alone while its server remains Sunday-based. */
 export function kyivSeasonWeekKey(now: number = Date.now()): string {
   if (!Number.isFinite(now)) throw new RangeError('Invalid championship clock');
   const parts = new Intl.DateTimeFormat('en-US', {
