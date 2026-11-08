@@ -133,6 +133,14 @@ assert.match(fighterMotionCss, /\.fighter-figure__footstep, \.fighter-impact__fl
 assert.match(figure, /getFighterRig\(combatFrames\?\.idle \?\? src\)/, 'Rig selection must follow actual appearance, not default portrait');
 assert.match(figure, /<SkeletalFighter/, 'Shared arena/PvE rendering must use real rig');
 assert.match(figure, /img\.decode\(\)/, 'Missing cutout art must fall back safely');
+assert.doesNotMatch(figure, /canAnimateRig\s*&&\s*enabledRig/, 'Old Telegram must mount approved joint rigs');
+assert.match(figure, /Promise\.resolve\(img\.decode\(\)\)\.catch\(\(\) => loaded\)/, 'Legacy Image.decode must safely fall back to loading');
+const skeletalSource = read('src/components/combat2d/SkeletalFighter.tsx');
+assert.match(skeletalSource, /joint\.style\.transition =/, 'Legacy SVG must animate each joint with a CSS transition');
+assert.match(skeletalSource, /joint\.style\.transform = String\(frames\[i\]/, 'Legacy SVG must move joints through confirmed combat keyframes');
+assert.match(skeletalSource, /fallbackTimers\.forEach\(timer => window\.clearTimeout\(timer\)\)/, 'No stale joint timers after combat');
+assert.match(skeletalSource, /reduced\?\.matches === true/, 'Honor reduced-motion preference in old Telegram');
+
 console.log('Battle visuals OK: all character poses/assets, opponent, companion, sword, chat and seven-slot UI.');
 
 // Existing review CI invokes this entrypoint, including the real rig contract.
