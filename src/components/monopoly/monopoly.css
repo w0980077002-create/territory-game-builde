@@ -1080,3 +1080,144 @@ html.territory-ios-webapp .territory-monopoly .mono-scene {
   .mono-celebration .mono-prize-rays,
   .mono-celebration .mono-sparkles > i { animation: none; }
 }
+
+/* LUCKY RUNE IN REWARD WINDOW — six real clickable dice stay above the
+   always-visible Continue button; nothing is drawn over the game navigation. */
+.mono-celebration .mono-reward-lucky {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  width:100%;
+  margin:0 0 7px;
+  padding:5px 0 7px;
+  border-bottom:1px solid #b9925d8a;
+}
+.mono-celebration .mono-reward-lucky > strong {
+  color:#ffe4af;
+  font:900 11px/1.2 Arial,sans-serif;
+  text-align:center;
+  text-shadow:0 2px #1d0a05;
+}
+.mono-celebration .mono-reward-lucky-grid {
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:4px;
+  width:100%;
+  max-width:300px;
+  margin:0 auto;
+}
+.mono-celebration .mono-reward-lucky-grid button {
+  position:relative;
+  display:block;
+  box-sizing:border-box;
+  min-width:0;
+  width:100%;
+  min-height:58px;
+  margin:0;
+  padding:0;
+  border:1px solid #d3a566;
+  border-radius:8px;
+  background:linear-gradient(180deg,#633719d4,#21100bdc);
+  box-shadow:inset 0 1px #f7d08a72,0 2px 4px #120805;
+  color:#ffe5b2;
+  touch-action:manipulation;
+}
+.mono-celebration .mono-reward-lucky-grid button:focus-visible {
+  outline:2px solid #ffeb9c;
+  outline-offset:2px;
+}
+.mono-celebration .mono-reward-lucky-grid button:disabled {
+  opacity:.48;
+  cursor:not-allowed;
+}
+.mono-celebration .mono-reward-lucky-grid .mono-dice-perspective {
+  position:absolute;
+  left:50%;
+  top:45%;
+  width:64px;
+  height:64px;
+  transform:translate(-50%,-50%) scale(.57);
+  transform-origin:center;
+  pointer-events:none;
+}
+.mono-celebration .mono-reward-lucky-grid button > span:last-child {
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:2px;
+  font:900 10px Arial,sans-serif;
+  color:#ffe4aa;
+  text-shadow:0 1px #291104;
+}
+.mono-celebration .mono-reward-lucky > small {
+  color:#e8d5b0;
+  font:700 9px/1.2 Arial,sans-serif;
+  text-align:center;
+}
+
+/* After "Later", keep the same six real choices immediately with roll controls,
+   not buried beneath pending claims and the rest of the Game Hall. */
+.territory-monopoly .mono-controls .mono-choose--active {
+  position:relative;
+  width:100%;
+  margin:7px 0 0;
+  padding:8px 6px 10px;
+  border:1px solid #d4aa6b;
+  border-radius:10px;
+  background:linear-gradient(180deg,#63391e,#26140c);
+  box-shadow:inset 0 1px #ffe1a874,0 2px 5px #100705aa;
+}
+.territory-monopoly .mono-controls .mono-choose--active > small {
+  display:block;
+  margin:0 0 8px;
+  font:900 10px/1.25 Arial,sans-serif;
+  color:#ffe8b4;
+  text-shadow:0 1px #170a04;
+}
+.territory-monopoly .mono-controls .mono-choose--active > div {
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:4px;
+  align-items:center;
+}
+.territory-monopoly .mono-controls .mono-choose--active button {
+  position:relative;
+  box-sizing:border-box;
+  display:block;
+  width:100%;
+  min-width:0;
+  min-height:56px;
+  padding:0;
+  border:1px solid #c6985e;
+  border-radius:7px;
+  background:linear-gradient(180deg,#6d431fa3,#241209);
+  box-shadow:inset 0 1px #edc58b70,0 2px 4px #130705;
+  touch-action:manipulation;
+}
+.territory-monopoly .mono-controls .mono-choose--active button:disabled {
+  opacity:.48;
+}
+.territory-monopoly .mono-controls .mono-choose--active button:focus-visible {
+  outline:2px solid #ffe4a3;
+  outline-offset:2px;
+}
+.territory-monopoly .mono-controls .mono-choose--active .mono-dice-perspective {
+  position:absolute;
+  left:50%;
+  top:45%;
+  width:64px;
+  height:64px;
+  transform:translate(-50%,-50%) scale(.53);
+  transform-origin:center;
+  pointer-events:none;
+}
+.territory-monopoly .mono-controls .mono-choose--active button > b {
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:2px;
+  color:#ffe4b0;
+  font:900 10px Arial,sans-serif;
+  text-shadow:0 1px #190904;
+}

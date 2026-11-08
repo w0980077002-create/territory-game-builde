@@ -137,8 +137,8 @@ assert.match(mono,/className="mono-reward-body"/,
   'Treasure list should scroll independently of the action');
 assert.match(mono,/className="mono-reward-footer"/,
   'Treasure Continue button must live in a persistent footer');
-assert.match(mono,/mono-reward-footer"><button autoFocus type="button" className="mono-cta"/,
-  'Continue must be a real focusable button inside the footer');
+assert.match(mono,/mono-reward-footer">[\s\S]*?<button autoFocus=\{!showLuckyDice\} type="button" className="mono-cta"/,
+  'Continue/Later must remain a real focusable button inside the persistent footer');
 assert.match(monoCss,/\.mono-celebration > section\.mono-reward-card\s*\{[\s\S]*?max-height: min\(440px, 100%\)/,
   'Android treasure card must be compact inside the available WebView height');
 assert.match(monoCss,/\.mono-celebration \.mono-reward-body\s*\{[\s\S]*?overflow-y: auto/,
@@ -170,5 +170,22 @@ assert.doesNotMatch(mono,/Ресурсы начисляются автомати
   'Long duplicate payout instructions must stay removed');
 assert.doesNotMatch(monoCss,/mono-reward-card[^\n]*iron-corner\.svg/,
   'Do not return the rejected legacy metal corner overlay');
+
+// Lucky Rune is an actionable next-roll choice, not a line of text above
+// a selector hidden beneath the entire game board.
+assert.match(mono,/const showLuckyDice=!!reward&&!!p\?\.lucky_next&&!active/,
+  'A server-confirmed lucky rune must activate the six-die reward chooser');
+assert.match(mono,/className="mono-reward-lucky-grid"/,
+  'The reward window must show the six clickable dice, before Continue/Later');
+assert.match(mono,/mono-reward-lucky-grid[\s\S]*?faces\.map\(\(n,i\)=>[\s\S]*?roll\(101\+i\)/,
+  'Each selected lucky die must use the existing server-authenticated roll action');
+assert.match(mono,/className="mono-choose mono-choose--active"/,
+  'The six-die choice must remain accessible beside roll controls after closing the reward');
+assert.match(mono,/closeReward=[\s\S]*?luckyChoiceRef\.current\?\.scrollIntoView/,
+  'Closing the lucky reward must reveal the retained dice selector');
+assert.match(monoCss,/\.mono-celebration \.mono-reward-lucky-grid\s*\{[\s\S]*?grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,
+  'The reward window must show all six dice in a compact mobile row');
+assert.match(monoCss,/\.territory-monopoly \.mono-controls \.mono-choose--active\s*\{/,
+  'The post-reward chooser must be visible in the ordinary-flow control area');
 
 console.log('Game Hall UI PASS: tickets only, automatic protected gold + inventory collection, pending payout recovery, safe mock art, server-owned wallet.');
