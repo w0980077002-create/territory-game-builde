@@ -12,7 +12,7 @@
  *  - main actions  -> the chunky gold button already used by "К боссу".
  */
 .territory-shell .viking-screen:is(.viking-screen--auction,.viking-screen--clan,.viking-screen--profession-stage8) {
-  --oak-screen-planks: url('/assets/territory/ui/shop/shop-wood-planks.webp');
+  --oak-screen-planks: url('/assets/territory/ui/approved/territory-dark-oak-mobile.webp');
   --oak-screen-frame: url('/assets/territory/ui/shop/shop-approved-product-border-v2.webp');
 }
 
