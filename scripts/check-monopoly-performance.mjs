@@ -17,7 +17,8 @@ assert.match(adventure, /if\(today===statusDay\.current\)return/, 'Status still 
 assert.match(adventure, /const total=active\?1:choice===10\?10:1/, '×10 launches ten separate turns; resumed rounds stay single');
 assert.match(adventure, /const rollValue=choice>100\?choice:1/, 'Batch mode requests ordinary one-ticket rolls');
 assert.match(adventure, /for\(let i=0;i<total;i\+\+\)/, 'Execute each turn in order');
-assert.match(adventure, /await monopoly\('roll',rollValue\)/, 'Server must charge one ticket per turn');
+assert.match(adventure, /await monopoly\('roll',nextValue\)/, 'Every batch step sends a separate server roll');
+assert.match(adventure, /const nextValue:number=total===10/, 'Lucky-die selection remains server-verified in batch mode');
 assert.match(adventure, /await monopoly\('finish',1,session.token\)/, 'Each turn must be finished before a new charge');
 assert.match(adventure, /earned\+=finished\.result\?\.earned_gold\?\?0/, 'Batch reward uses actual receipts');
 assert.match(adventure, /setBatch\(\{done:i,total\}\)/, 'Show true roll progress in the game');
