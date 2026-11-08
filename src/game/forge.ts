@@ -13,9 +13,18 @@ export function forgeSuccessRate(level: number): number {
   return Math.max(0.5, 0.9 - level * 0.05);
 }
 
+/** Stage8 items belong to the authenticated server registry. The old local
+ * forge cannot update that registry and must never charge players for an
+ * apparent upgrade that the next inventory refresh would overwrite.
+ * This is a fail-closed bridge until the server-authoritative Stage8 forge ships.
+ */
+export const isStage8Gear = (itemId: string): boolean =>
+  itemId.startsWith('stage8_') || itemId.startsWith('equipped_stage8_');
+
 export type ForgeOutcome = { next: GameState; status: 'success' | 'failed' | 'invalid' };
 
 export function forgeAttempt(state: GameState, itemId: string, expectedLevel: number, roll: number): ForgeOutcome {
+  if (isStage8Gear(itemId)) return { next: state, status: 'invalid' };
   state = reconcileElixirExpiry(state);
   if (!Number.isFinite(roll) || roll < 0 || roll >= 1 || !Number.isSafeInteger(expectedLevel) || expectedLevel < 1) return { next: state, status: 'invalid' };
   const equippedMode = itemId.startsWith('equipped_');
