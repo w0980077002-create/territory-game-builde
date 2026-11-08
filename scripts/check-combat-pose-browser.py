@@ -63,9 +63,9 @@ with sync_playwright() as p:
         set_visual(page,{'strike':event(211,'crit')})
         wait_pose(page,f,'hit')
         set_visual(page,{'appearance':'m1'})
-        # A busy mobile runner may legitimately finish the old hit while
-        # updating appearance. It must NEVER restart that hit at windup.
-        assert page.locator(f).get_attribute('data-phase')!='windup', 'Unrelated rerender must never replay an old strike'
+        # The previous confirmed hit may finish naturally on a slow CI runner.
+        # An unrelated rerender must not start a fresh windup.
+        assert page.locator(f).get_attribute('data-phase')!='windup', 'Unrelated rerender must never replay the previous attack'
         set_visual(page,{'strike':None,'heroWon':True,'foeAlive':False})
         wait_pose(page,f,'death')
         assert 'fighter-victory' in page.locator(h).get_attribute('class')
@@ -135,9 +135,13 @@ with sync_playwright() as p:
         page=b.new_page(viewport={'width':390,'height':760})
         page.route(ORIGIN+'/**',serve);page.route('https://**/*',lambda r:r.abort())
         page.goto(ORIGIN+'/?scene=pve&appearance=m1&enemy=bandit&follower='+follower_id)
-        # Healer retains approved <img>; the Cow now renders its approved
-        # original SVG as separately moving art joints.
-        page.wait_for_selector('[data-testid="pve-visible-follower"] img, [data-testid="pve-visible-follower"] svg[data-original-cow]')
+        page.wait_for_selector('[data-testid="pve-visible-follower"] img')
+        if follower_id=='follower_6':
+            # This is the previous approved Cow image, not a fragmented mask.
+            assert page.locator('[data-original-cow]').count()==0, 'Rejected Cow SVG joint rig must be absent'
+            bounds=page.locator('[data-testid="pve-visible-follower"]').bounding_box()
+            assert bounds and bounds['width']<75, ('Battle Cow must not cover the hero',bounds)
+            page.screenshot(path=str(OUT/'cow-compact-two-characters-390.png'))
         assert page.locator('[data-testid="pve-companion-heal"]').count()==0, 'No cosmetic heal before a resolved round'
         assert page.locator('[data-testid="pve-companion-strike-fx"]').count()==0, 'No projectile before a resolved companion hit'
         # A mobile frame can miss a 900 ms transient while Chromium is saving
@@ -166,18 +170,6 @@ with sync_playwright() as p:
         fx=page.locator('[data-testid="pve-companion-strike-fx"]')
         fx.wait_for(timeout=1200)
         assert fx.get_attribute('data-kind')==('leaf' if follower_id=='follower_3' else 'crystal'), 'Companion must keep its own real strike identity'
-        if follower_id=='follower_6':
-            cow=page.locator('[data-original-cow="battle_cow"]')
-            assert cow.count()==1, 'Approved Cow must be articulated, never replaced'
-            cow.wait_for(state='visible')
-            parts=cow.locator('[data-cow-part]')
-            assert parts.count()==5, 'Five separate cow source-art parts must move'
-            assert cow.get_attribute('data-motion')=='attack', 'Only a confirmed hit moves the Cow hand'
-            assert cow.locator('image').evaluate_all('nodes=>new Set(nodes.map(n=>n.getAttribute("href"))).size')==1, 'Use exact one original art source'
-            assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'), 'Cow must not overflow 390px'
-            # Keep a real mobile snapshot of the assembled original pieces
-            # for review in the isolated browser fixture.
-            cow.screenshot(path=str(OUT/'battle-cow-original-joints-390.png'))
         page.screenshot(path=str(OUT/f'companion-real-attack-{follower_id}.png'))
         page.wait_for_function("window.__companionSeen.heals.length > 0",timeout=7500)
         observed=page.evaluate('window.__companionSeen')
