@@ -1,3 +1,5 @@
+-- LOCAL TEST FIXTURE ONLY. NEVER APPLY TO A SERVER.
+-- Obsolete disabled championship; this file is read only by an isolated PGlite test.
 -- OWNER APPROVED prizes, 2026-10-26. Reviewed deployment AFTER core+admin+cron.
 -- One-time activation; never re-run this file to overwrite future owner edits.
 BEGIN;

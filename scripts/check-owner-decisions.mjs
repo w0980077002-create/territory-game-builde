@@ -25,4 +25,8 @@ assert.match(season, /Arena TOP-50 runs Monday-to-Monday, 00:00 UTC/);
 assert.ok(policy.includes('понедельник 00:00 UTC → следующий понедельник 00:00 UTC'));
 assert.ok(policy.includes('НЕ ЗАПУЩЕН И ОТКЛЮЧЁН'));
 assert.ok(!existsSync('supabase/staged/arena_weekly_sunday_utc_restore.sql'), 'Never restore rejected rollback SQL');
+assert.ok(!existsSync('supabase/staged/territory_weekly_seasons_activate_v1.sql'),
+  'Disabled championship activation must exist only as isolated test fixture');
+assert.ok(!existsSync('supabase/staged/territory_weekly_seasons_cron_v1.sql'),
+  'Disabled championship cron must never return to staged SQL');
 console.log('Approved VIP tiers, belt privileges and Monday calendar: OK');
