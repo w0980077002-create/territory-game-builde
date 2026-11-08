@@ -1,5 +1,8 @@
--- TERRITORY 1.0 · REVIEWED RELEASE PART 2/2 (activate after install + tests).
--- Enables future Sundays only. Does not immediately issue historical rewards.
+-- HISTORICAL STAGED ACTIVATE SCRIPT: DO NOT REAPPLY TO LIVE ARENA.
+-- OWNER DECISION 2026-11-08: weeks are MONDAY 00:00 UTC to next MONDAY 00:00 UTC.
+-- Current Arena TOP-50 reward configuration and function are already live on Monday.
+-- This archived script was authored for an earlier Sunday-era setup.
+-- It is retained for reference, not as permission to re-enable/reset payouts.
 BEGIN;
 UPDATE territory_private.arena_top50_reward_config_v1
 SET enabled=true WHERE id=1 AND enabled=false;
