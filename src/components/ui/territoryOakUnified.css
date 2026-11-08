@@ -10,7 +10,6 @@
 .territory-shell.territory-oak-heritage {
   --oak-heritage-grain: url('/assets/territory/ui/shop/shop-wood-planks.webp');
   --oak-heritage-planks: url('/assets/territory/ui/shop/shop-wood-planks.webp');
-  --oak-heritage-rope: url('/assets/territory/arena-ui/rope-wrap.svg');
   --oak-heritage-frame: url('/assets/territory/ui/shop/shop-approved-product-border-v2.webp');
   --oak-heritage-cream: #ffe6b3;
   --oak-heritage-gold: #d7a65e;
@@ -32,7 +31,7 @@
   box-shadow: inset 5px 0 8px #110605ad, inset -5px 0 8px #110605ad;
 }
 
-/* Carved header with a real braided rope and two forged fittings. */
+/* Carved oak header without repeated rope stamps. */
 .territory-shell.territory-oak-heritage > .territory-section-head {
   position: relative;
   isolation: isolate;
@@ -45,16 +44,6 @@
   background-size: 100% 100%, 400px auto;
   background-position: center;
   box-shadow: inset 0 2px #f1cf8b70, 0 4px 8px #140907bc;
-}
-.territory-shell.territory-oak-heritage > .territory-section-head::before {
-  content: '';
-  position:absolute;
-  z-index:0;
-  inset:auto 0 -9px;
-  height:17px;
-  pointer-events:none;
-  background:var(--oak-heritage-rope) left center / 100px 17px repeat-x;
-  filter:drop-shadow(0 2px 2px #110706);
 }
 .territory-shell.territory-oak-heritage > .territory-section-head::after {
   /* Retire the crude steel L-shapes; the actual wooden title frame remains. */
@@ -92,7 +81,7 @@
   color:var(--oak-heritage-cream);
 }
 
-/* Major blocks retain carved wood and rope; never stamp duplicate steel L-corners. */
+/* Major blocks retain carved oak without repeated rope or steel-corner stamps. */
 .territory-shell.territory-oak-heritage .territory-screen :is(
  .viking-screen > .card,
  .viking-screen > section.card,
@@ -105,27 +94,12 @@
  .viking-screen > .card,
  .viking-screen > section.card,
  .territory-profile > .card
-)::before {
-  content:'';
-  position:absolute;
-  inset:-4px 9px auto;
-  height:14px;
-  z-index:0;
-  pointer-events:none;
-  background:var(--oak-heritage-rope) center / 94px 14px repeat-x;
-  filter:drop-shadow(0 2px 2px #160905);
-}
-.territory-shell.territory-oak-heritage .territory-screen :is(
- .viking-screen > .card,
- .viking-screen > section.card,
- .territory-profile > .card
 )::after {
   content:none;
   display:none;
 }
 
-/* A rope-bound title rail where there is already a full-width tab bar.
- * Leave its content, active-state colours, spacing and focus alone. */
+/* Carved oak tab rail without repeated ornament stamps. */
 .territory-shell.territory-oak-heritage .territory-screen :is(
  .viking-screen-tabs,
  .territory-mail__tabs
@@ -137,17 +111,6 @@
     var(--oak-heritage-grain);
   background-size:100% 100%,360px auto;
   box-shadow:inset 0 1px #f8d6a47c,0 2px 6px #140706b4;
-}
-.territory-shell.territory-oak-heritage .territory-screen :is(
- .viking-screen-tabs,
- .territory-mail__tabs
-)::after {
-  content:'';
-  position:absolute;
-  inset:auto 4px -8px;
-  height:14px;
-  background:var(--oak-heritage-rope) center / 90px 14px repeat-x;
-  pointer-events:none;
 }
 .territory-shell.territory-oak-heritage .territory-screen :is(
  .viking-screen-tabs > button:not([aria-selected="true"]),
@@ -172,25 +135,13 @@
 /* Preserve readable forms, danger/success states and 44px mobile controls.
  * No text selection, panel sizes, scroll heights or gameplay styles changed. */
 @media(max-width:349px) {
-  .territory-shell.territory-oak-heritage > .territory-section-head::after {
-    background-size:23px 23px;
-  }
   .territory-shell.territory-oak-heritage > .territory-section-head {
     gap:4px;
   }
 }
-@media(prefers-reduced-motion:reduce) {
- .territory-shell.territory-oak-heritage > .territory-section-head::before {
-   filter:none;
- }
-}
 
 
-/* Owner mobile Hero parity — deliberate single forged edge, NOT triple rope
- * stamps. Reuses the approved Shop plank artwork as an actual game texture;
- * the old decorative repeating ::before was producing three identical knots
- * over every compact accordion in the real Telegram Hero view.
- */
+/* Owner mobile Hero parity: approved Shop timber without repetitive ornaments. */
 .territory-shell.territory-oak-heritage .territory-screen .territory-profile > :is(details.card,div.card) {
   position: relative;
   isolation: isolate;
@@ -208,12 +159,6 @@
   background-repeat: no-repeat, repeat;
   box-shadow: inset 0 2px 0 #f2c7834f,inset 0 -3px #10060596,
     0 3px 8px #100704ad;
-}
-/* Disable only the erroneous repeated rope trim on the Hero's compact cards.
- * Structural rope elsewhere in the game is unchanged. */
-.territory-shell.territory-oak-heritage .territory-screen .territory-profile > :is(details.card,div.card)::before {
-  content: none;
-  display: none;
 }
 .territory-shell.territory-oak-heritage .territory-screen .territory-profile > :is(details.card,div.card)::after {
   /* Do not reintroduce obsolete metal corner stamps on Hero panels. */
