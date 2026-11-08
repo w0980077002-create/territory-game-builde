@@ -172,8 +172,8 @@ const collectionSource = readFileSync('src/components/trials/TrialLootCollection
 assert.match(collectionSource, /city-reputation\.png/, 'collection must display the newly approved royal crest');
 assert.doesNotMatch(collectionSource, /city-reputation\.svg/, 'old badge must not be shown in the collection');
 const sourceFight=readFileSync('src/components/pve/PveFight.tsx','utf8');
-assert.match(sourceFight, /TRIAL_CHEST_ART\\[loot.tier\\]/, 'victory card must use the real art mapping');
-assert.match(collectionSource, /TRIAL_CHEST_ART\\[tier\\]/, 'collection must match the actual victory chest');
+assert(sourceFight.includes('TRIAL_CHEST_ART[loot.tier]'), 'victory card must use the real art mapping');
+assert(collectionSource.includes('TRIAL_CHEST_ART[tier]'), 'collection must match the actual victory chest');
 assert.match(readFileSync('src/components/pve/trialChestReveal.css', 'utf8'), /trial-chest-stage--common/, 'missing rich common chest styling');
 
 assert.match(sourceFight, /city-reputation\.png/, 'victory reward must display the same royal crest');
