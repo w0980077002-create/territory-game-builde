@@ -175,10 +175,9 @@ with sync_playwright() as p:
             assert cow.get_attribute('data-motion')=='attack', 'Only a confirmed hit moves the Cow hand'
             assert cow.locator('image').evaluate_all('nodes=>new Set(nodes.map(n=>n.getAttribute("href"))).size')==1, 'Use exact one original art source'
             assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'), 'Cow must not overflow 390px'
-            # Temporary visual QA evidence, using real approved artwork.
-            # This line is removed before merging after image inspection.
-            import base64
-            print('COW_QA_PNG_BASE64='+base64.b64encode(cow.screenshot()).decode(), flush=True)
+            # Keep a real mobile snapshot of the assembled original pieces
+            # for review in the isolated browser fixture.
+            cow.screenshot(path=str(OUT/'battle-cow-original-joints-390.png'))
         page.screenshot(path=str(OUT/f'companion-real-attack-{follower_id}.png'))
         page.wait_for_function("window.__companionSeen.heals.length > 0",timeout=7500)
         observed=page.evaluate('window.__companionSeen')
