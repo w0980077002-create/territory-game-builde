@@ -1,12 +1,12 @@
 name: TERRITORY specialist team (offline, no release)
 
 # An owner-approved [AGENT:ROLE] issue activates a scoped specialist check.
-# Daily Lead triage is read-only. No model subscriptions or DB access.
+# Hourly Lead triage is read-only. No model subscriptions or DB access.
 on:
   issues:
     types: [opened, edited]
   schedule:
-    - cron: '17 6 * * *'
+    - cron: '17 * * * *'
 
 permissions:
   contents: read
@@ -63,7 +63,7 @@ jobs:
           fi
           gh issue comment "$ISSUE_NO" --body-file /tmp/territory-specialist-report.md
 
-  daily-lead:
+  hourly-lead:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -76,7 +76,7 @@ jobs:
         with:
           ref: main
           persist-credentials: false
-      - name: Report backlog and PRs without changing them
+      - name: Report hourly backlog and PRs without changing them
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/agents/specialist_dispatch.py daily
+        run: python3 scripts/agents/specialist_dispatch.py hourly
