@@ -18,7 +18,6 @@ import { buildTrialGauntlet } from '@/game/trialGauntlet';
 import { TRIAL_BLUEPRINTS, TRIAL_COMPONENTS, TRIAL_LOOT_ASSET_BASE, TRIAL_CHEST_ART, type TrialChestReward } from '@/game/trialLoot';
 import './trialChestReveal.css';
 import './pveCompanionMotion.css';
-import { ArticulatedCow } from '@/components/combat2d/ArticulatedCow';
 import { PveCompanionStrikeFx } from './PveCompanionStrikeFx';
 import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextComboOpening, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
@@ -751,7 +750,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                   <div
                     data-testid="pve-visible-follower"
                     className={follower.id === 'follower_6'
-                      ? 'absolute left-0 bottom-[1%] z-30 h-[75%] w-[78%] pointer-events-none'
+                      ? 'absolute left-0 bottom-[1%] z-30 h-[58%] w-[44%] pointer-events-none'
                       : 'absolute left-0 bottom-[1%] z-30 h-[72%] w-[74%] pointer-events-none'}
                   >
                     <span aria-hidden="true" className="absolute inset-x-[10%] bottom-0 h-[25%] rounded-full bg-amber-300/15 blur-md" />
@@ -759,27 +758,21 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                       <div
                         data-testid="pve-companion-action"
                         data-action={strike?.key === companionStrikeKey ? 'attack' : companionHeal ? 'heal' : 'idle'}
-                        className={`pve-companion-action absolute inset-0 ${follower.id === 'follower_6' ? 'pve-companion-action--jointed' : ['follower_3', 'follower_4', 'follower_5'].includes(follower.id) ? 'pve-companion-action--ranged' : 'pve-companion-action--melee'}`}
+                        className={`pve-companion-action absolute inset-0 ${['follower_3', 'follower_4', 'follower_5'].includes(follower.id) ? 'pve-companion-action--ranged' : 'pve-companion-action--melee'}`}
                         style={{ '--pve-companion-duration': `${Math.round(810 / roundSpeed)}ms` } as CSSProperties}
                       >
-                        {follower.id === 'follower_6'
-                          ? <ArticulatedCow name={follower.name}
-                              motion={strike?.key === companionStrikeKey ? 'attack' : companionHeal ? 'heal' : 'idle'}
-                              speed={busy || outcome ? roundSpeed : speed}
-                              className="absolute left-0 bottom-0 h-full w-full" />
-                          : <FighterFigure
-                              src={getFollowerArt(follower.id)}
-                              combatFrames={getFollowerCombatFrames(follower.id)}
-                              name={follower.name}
-                              dir={1}
-                              scale={1.03}
-                              alive={hero.hp > 0}
-                              strike={strike}
-                              combatSpeed={busy || outcome ? roundSpeed : speed}
-                              idleSeconds={3.7}
-                              className="absolute left-0 bottom-0 h-full w-full object-contain object-left-bottom"
-                            />
-                        }
+                        <FighterFigure
+                          src={getFollowerArt(follower.id)}
+                          combatFrames={getFollowerCombatFrames(follower.id)}
+                          name={follower.name}
+                          dir={1}
+                          scale={1.03}
+                          alive={hero.hp > 0}
+                          strike={strike}
+                          combatSpeed={busy || outcome ? roundSpeed : speed}
+                          idleSeconds={3.7}
+                          className="absolute left-0 bottom-0 h-full w-full object-contain object-left-bottom"
+                        />
                       </div>
                       {companionHeal && (
                         <span key={companionHeal.sequence} data-testid="pve-companion-heal"
@@ -806,7 +799,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                     strike={strike}
                     combatSpeed={busy || outcome ? roundSpeed : speed}
                     idleSeconds={3.1}
-                    className={`absolute bottom-0 h-[98%] object-contain object-right-bottom ${follower ? 'right-[-8%] w-[88%]' : 'right-0 w-full'}`}
+                    className={`absolute bottom-0 h-[98%] object-contain object-right-bottom ${follower?.id === 'follower_6' ? 'right-[-5%] w-[70%]' : follower ? 'right-[-8%] w-[88%]' : 'right-0 w-full'}`}
                   />
                 </div>
               </div>
