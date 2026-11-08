@@ -23,3 +23,7 @@ dist-ssr
 .env
 
 dist-monopoly-test
+
+# local preview builds
+antilevel-browser/
+antilevel-artifacts/

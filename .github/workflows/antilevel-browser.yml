@@ -1,0 +1,35 @@
+name: Territory anti-level preview (browser, no spend)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/build-antilevel-preview.mjs'
+      - 'scripts/antilevel-browser.py'
+      - '.github/workflows/antilevel-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --ignore-scripts
+      - run: python -m pip install playwright==1.55.0
+      - run: python -m playwright install chromium --with-deps
+      - run: node scripts/build-antilevel-preview.mjs
+      - run: python scripts/antilevel-browser.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: antilevel-preview-screenshots
+          path: antilevel-artifacts/
