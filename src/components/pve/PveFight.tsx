@@ -716,7 +716,13 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
               <Plate side={hero} tone="ally" />
               <div className="relative flex-1 mt-1">
                 {follower && (
-                  <div className={follower.id === 'follower_6' ? 'absolute left-0 bottom-0 z-30 h-[64%] w-[64%] pointer-events-none' : 'absolute -left-[8%] bottom-0 z-10 h-[52%] w-[48%] pointer-events-none'}>
+                  <div
+                    data-testid="pve-visible-follower"
+                    className={follower.id === 'follower_6'
+                      ? 'absolute left-0 bottom-[1%] z-30 h-[75%] w-[78%] pointer-events-none'
+                      : 'absolute left-0 bottom-[1%] z-30 h-[72%] w-[74%] pointer-events-none'}
+                  >
+                    <span aria-hidden="true" className="absolute inset-x-[10%] bottom-0 h-[25%] rounded-full bg-amber-300/15 blur-md" />
                     {follower.id === 'follower_pumpkin_witch_2026' ? <PumpkinWitch attack={witchAttack} heal={witchHeal} pose={witchPose} preloadActions /> : <FighterFigure
                       src={getFollowerArt(follower.id)}
                       combatFrames={getFollowerCombatFrames(follower.id)}
@@ -743,7 +749,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                     strike={strike}
                     combatSpeed={busy || outcome ? roundSpeed : speed}
                     idleSeconds={3.1}
-                    className="absolute right-0 bottom-0 h-[98%] w-full object-contain object-right-bottom"
+                    className="absolute right-[-8%] bottom-0 h-[98%] w-[88%] object-contain object-right-bottom"
                   />
                 </div>
               </div>
