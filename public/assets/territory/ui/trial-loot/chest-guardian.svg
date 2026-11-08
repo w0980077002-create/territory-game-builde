@@ -1,1 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img"><title>Сундук Испытаний TERRITORY</title><defs><radialGradient id="a"><stop stop-color="#6d399e" stop-opacity=".46"/><stop offset=".75" stop-color="#43105b" stop-opacity=".15"/><stop offset="1" stop-color="#401254" stop-opacity="0"/></radialGradient><linearGradient id="g" x1=".1" x2=".9" y1="0" y2="1"><stop stop-color="#fff1b0"/><stop offset=".23" stop-color="#f1bd55"/><stop offset=".48" stop-color="#9e5720"/><stop offset=".65" stop-color="#ffe49a"/><stop offset="1" stop-color="#985018"/></linearGradient><linearGradient id="b" x1="0" x2=".8" y1="0" y2="1"><stop stop-color="#3a74a5"/><stop offset=".5" stop-color="#15376b"/><stop offset="1" stop-color="#06172b"/></linearGradient><linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#61c5f6"/><stop offset=".55" stop-color="#1a4b77"/><stop offset="1" stop-color="#1a101b"/></linearGradient><filter id="sh"><feGaussianBlur stdDeviation="7"/></filter></defs><circle cx="128" cy="128" r="116" fill="url(#a)"/><ellipse cx="127" cy="220" rx="93" ry="13" fill="#06040a" opacity=".7" filter="url(#sh)"/><path d="M36 113Q37 64 95 47L188 57Q220 68 222 113V138H36z" fill="url(#c)" stroke="url(#g)" stroke-width="10" stroke-linejoin="round"/><path d="M37 121l91-25 94 27-92 35z" fill="#2d1a12" stroke="#e6af52" stroke-width="6"/><path d="M36 125l94 30 92-31v83l-91 27-95-29z" fill="url(#c)" stroke="#dfb463" stroke-width="8" stroke-linejoin="round"/><path d="M129 155v79M63 134l2 78M192 134l-1 79" fill="none" stroke="url(#g)" stroke-width="13"/><path d="M72 88l50-12 56 11" fill="none" stroke="#f8db91" stroke-width="9"/><path d="M129 148l17 14-3 27-14 10-14-10-3-27z" fill="#42200e" stroke="#ffe6a5" stroke-width="5"/><circle cx="129" cy="171" r="10" fill="#61c5f6" stroke="#fff4c2" stroke-width="3"/><path d="M129 143l3 14 13 3-13 4-3 13-4-13-12-4 12-3z" fill="#fff7ca"/><path d="M40 104Q44 73 85 57" fill="none" stroke="#61c5f6" opacity=".55" stroke-width="7"/><g fill="#bbecff"><path d="M63 35l4 13 12 3-12 4-4 13-4-13-12-4 12-3z"/><path d="M200 32l3 12 12 3-12 4-3 12-3-12-12-4 12-3z"/><circle cx="116" cy="18" r="3"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="label">
+<title id="label">Сундук Стража — TERRITORY</title>
+<defs>
+<linearGradient id="wood" x1=".1" y1="0" x2=".85" y2="1"><stop stop-color="#9e6039"/><stop offset=".29" stop-color="#5a342d"/><stop offset=".65" stop-color="#1d1819"/><stop offset="1" stop-color="#5a342d"/></linearGradient>
+<linearGradient id="lid" x1=".2" y1="0" x2=".83" y2="1"><stop stop-color="#9e6039"/><stop offset=".32" stop-color="#5a342d"/><stop offset=".84" stop-color="#1d1819"/><stop offset="1" stop-color="#160d0e"/></linearGradient>
+<linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe3a0"/><stop offset=".22" stop-color="#956b35"/><stop offset=".53" stop-color="#242528"/><stop offset=".8" stop-color="#956b35"/><stop offset="1" stop-color="#111315"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#fff0bd"/><stop offset=".22" stop-color="#d29a43"/><stop offset=".52" stop-color="#70451f"/><stop offset=".77" stop-color="#d29a43"/><stop offset="1" stop-color="#3b2615"/></linearGradient>
+<radialGradient id="gem"><stop stop-color="#fcffff"/><stop offset=".28" stop-color="#32e9d4"/><stop offset=".82" stop-color="#14b9ac"/><stop offset="1" stop-color="#171a26"/></radialGradient>
+<radialGradient id="aura"><stop stop-color="#14b9ac" stop-opacity="0.3"/><stop offset=".56" stop-color="#14b9ac" stop-opacity=".13"/><stop offset="1" stop-color="#14b9ac" stop-opacity="0"/></radialGradient>
+<filter id="blur"><feGaussianBlur stdDeviation="7"/></filter>
+<clipPath id="face"><path d="M34 126l94 31 94-29v81l-92 26-96-27z"/></clipPath>
+</defs>
+<ellipse cx="128" cy="127" rx="118" ry="111" fill="url(#aura)"/>
+<ellipse cx="128" cy="231" rx="105" ry="15" fill="#060608" opacity=".72" filter="url(#blur)"/>
+<g fill="#14b9ac" opacity=".8"><path d="M29 32l4 10 10 3-10 3-4 10-4-10-10-3 10-3z"/><path d="M216 27l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/><circle cx="238" cy="120" r="2.5"/><circle cx="17" cy="161" r="2.5"/></g>
+<path d="M47 85L30 56l-8 55 26 12m163-38 17-29 8 55-26 12" fill="url(#metal)" stroke="#563417" stroke-width="4"/><path d="M100 65l28-18 29 18-14 14h-30z" fill="url(#gold)" stroke="#573720" stroke-width="4"/><path d="M128 53l12 15-12 11-12-11z" fill="url(#gem)" stroke="#ccfff3" stroke-width="2"/>
+<path d="M34 126Q35 68 84 56Q125 45 176 55Q211 62 221 111L223 137 128 164 33 137Z" fill="url(#lid)" stroke="#141113" stroke-width="10" stroke-linejoin="round"/>
+<path d="M48 95Q72 64 120 62M132 61Q193 60 208 100" stroke="#9e6039" stroke-width="5" opacity=".48" fill="none"/>
+<g fill="none" stroke-linecap="round">
+<path d="M47 105Q112 76 209 108M45 115Q126 91 215 118M58 90Q125 64 196 91" stroke="#1c100e" stroke-width="3.8" opacity=".52"/>
+<path d="M54 108Q104 89 204 115M63 81Q124 64 174 83" stroke="#9e6039" stroke-width="2.1" opacity=".44"/>
+</g>
+<path d="M65 69Q60 106 77 138m114-67q10 36-9 67" stroke="#101216" stroke-width="22" fill="none" stroke-linecap="round"/>
+<path d="M65 69Q60 106 77 138m114-67q10 36-9 67" stroke="url(#metal)" stroke-width="15" fill="none" stroke-linecap="round"/>
+<path d="M68 72Q64 106 79 131m111-59q8 32-7 59" stroke="#ffe3a0" stroke-width="2" fill="none" opacity=".65"/>
+<path d="M34 127l95 30 93-29" fill="none" stroke="url(#metal)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M34 126l94 31 94-29v81l-92 26-96-27z" fill="url(#wood)" stroke="#161214" stroke-width="10" stroke-linejoin="round"/>
+<g clip-path="url(#face)" fill="none">
+<path d="M31 161Q84 178 130 191l95-29M30 184Q86 206 131 217l94-31" stroke="#170e0d" stroke-width="6" opacity=".48"/>
+<path d="M35 158q54 19 94 30l92-27M37 185q57 20 91 29l91-30" stroke="#9e6039" stroke-width="2.4" opacity=".33"/>
+<path d="M45 139l78 26m24 8 69-28M43 200l83 27m20 0 73-23" stroke="#170e0b" stroke-width="3" opacity=".44"/>
+</g>
+<path d="M34 128l95 30 93-29" stroke="url(#metal)" stroke-width="14" fill="none" stroke-linejoin="round"/>
+<path d="M34 210l95 28 92-27" stroke="url(#metal)" stroke-width="13" fill="none" stroke-linejoin="round"/>
+<path d="M62 141l-6 68 17 7 1-68m118-4 9 68-17 6-1-70" stroke="url(#metal)" stroke-width="13" fill="none" stroke-linejoin="round"/>
+<path d="M62 149v59m132-59 3 58" stroke="#ffe3a0" stroke-width="2.1" opacity=".53"/>
+<path d="M34 210l95 28 92-27" stroke="#ffe3a0" stroke-width="1.5" opacity=".6" fill="none"/>
+<path d="M98 144l30-19 31 19-4 41-27 27-27-27z" fill="url(#metal)" stroke="#38241b" stroke-width="6"/><path d="M108 149l20-12 21 12-4 32-17 18-18-18z" fill="url(#gold)" stroke="#fff4c1" stroke-width="3"/><path d="M127 145l15 20-15 25-15-25z" fill="url(#gem)" stroke="#bdfff5" stroke-width="4"/><path d="M122 159l6-7" stroke="#f4ffff" stroke-width="4"/><path d="M99 153l-21 6-8 17 24-7m63-16 21 6 8 17-24-7" fill="url(#metal)" stroke="#d4a04e" stroke-width="3"/><path d="M35 127L16 150l19-4-19 25 30-14m176-30 19 23-19-4 19 25-30-14" fill="url(#metal)" stroke="#49301b" stroke-width="4"/><path d="M19 147l17 0m201 0-17 0" stroke="#a0f9e6" stroke-width="3"/>
+<circle cx="44" cy="142" r="3.9" fill="url(#gold)" stroke="#26191a" stroke-width="1.6"/><circle cx="43" cy="141" r=".95" fill="#fff3d1"/><circle cx="210" cy="142" r="3.9" fill="url(#gold)" stroke="#26191a" stroke-width="1.6"/><circle cx="209" cy="141" r=".95" fill="#fff3d1"/><circle cx="48" cy="200" r="3.9" fill="url(#gold)" stroke="#26191a" stroke-width="1.6"/><circle cx="47" cy="199" r=".95" fill="#fff3d1"/><circle cx="207" cy="200" r="3.9" fill="url(#gold)" stroke="#26191a" stroke-width="1.6"/><circle cx="206" cy="199" r=".95" fill="#fff3d1"/><circle cx="70" cy="175" r="3.9" fill="url(#gold)" stroke="#26191a" stroke-width="1.6"/><circle cx="69" cy="174" r=".95" fill="#fff3d1"/><circle cx="187" cy="176" r="3.9" fill="url(#gold)" stroke="#26191a" stroke-width="1.6"/><circle cx="186" cy="175" r=".95" fill="#fff3d1"/><circle cx="68" cy="91" r="3.9" fill="url(#gold)" stroke="#26191a" stroke-width="1.6"/><circle cx="67" cy="90" r=".95" fill="#fff3d1"/><circle cx="188" cy="93" r="3.9" fill="url(#gold)" stroke="#26191a" stroke-width="1.6"/><circle cx="187" cy="92" r=".95" fill="#fff3d1"/>
+<path d="M78 115l6-7 5 8-6 7m93-8-6-7-5 8 6 7" fill="none" stroke="#32e9d4" stroke-width="2.2" opacity=".75"/>
+</svg>
