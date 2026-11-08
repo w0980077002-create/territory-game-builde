@@ -4,6 +4,12 @@ import { existsSync, readFileSync } from 'node:fs';
 const app = readFileSync('src/App.tsx', 'utf8');
 const entry = readFileSync('src/main.tsx', 'utf8');
 const skin = readFileSync('src/components/ui/territoryOakUnified.css', 'utf8');
+const approvedShop = readFileSync('src/components/shopWoodFinish.css', 'utf8');
+const approvedDeepOak = 'linear-gradient(90deg,#110b0aea,#3c2418c2 6%,#21120ee0 50%,#392116c8 94%,#150b0aeb)';
+assert(approvedShop.includes(approvedDeepOak), 'Reference Shop artwork/finish changed; verify owner approval');
+assert(skin.includes(approvedDeepOak), 'Normal screens must match the owner-approved deep Shop oak, even in empty Mail space');
+assert(!skin.includes('#1c0d0b4f 8%,#1a0b0942 92%'), 'Rejected bright orange/light-brown backdrop must not return');
+
 const list = app.match(/const OAK_HERITAGE_SCREENS = new Set<Screen>\(\[([\s\S]*?)\]\);/);
 assert(list, 'Explicit limited skin scope is required');
 const routes = [...list[1].matchAll(/'([^']+)'/g)].map(match => match[1]);
