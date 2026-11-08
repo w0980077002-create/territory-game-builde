@@ -1,4 +1,7 @@
--- TERRITORY 1.0: restore the approved Sunday-to-Sunday Arena Top-50.
+-- HISTORICAL ROLLBACK SCRIPT — DO NOT EXECUTE.
+-- OWNER FINAL DECISION 2026-11-08: Arena TOP-50 is MONDAY-to-MONDAY, 00:00 UTC.
+-- Reapplying this file would incorrectly restore the obsolete Sunday-to-Sunday calendar.
+-- Previous historical header: restore the approved Sunday-to-Sunday Arena Top-50.
 -- Server-authoritative wins, Sunday 00:00 UTC through the next Sunday 00:00 UTC.
 -- Read-only leaderboard. No updates to arena victories, players, prizes, or history.
 -- This supersedes the Monday-only RPC from 20261026144537 after review.
