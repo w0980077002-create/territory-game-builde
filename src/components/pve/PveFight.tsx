@@ -15,6 +15,7 @@ import { blessedGold, consumeBlessing, recordTrialWin, spendStones, trialReward 
 import { selectedFollower, followerCombat } from '@/game/followers';
 import { buildTrialGauntlet } from '@/game/trialGauntlet';
 import { TRIAL_BLUEPRINTS, TRIAL_COMPONENTS, TRIAL_LOOT_ASSET_BASE, type TrialChestReward } from '@/game/trialLoot';
+import './trialChestReveal.css';
 import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextComboOpening, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
@@ -887,6 +888,8 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
 
 function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equippedGear, onExit, onNext, questReady, onQuests, onEquipment, onForge, nextPending, nextError, saveState, saveConflict, onRetrySave }: { outcome: Outcome; kind: FightKind; victoryJourney: VictoryJourney | null; gearOpportunity: HeroGearOpportunity | null; equippedGear?: HeroGearOpportunity['item']['equipment']; onExit: () => void; onNext?: () => void; questReady: boolean; onQuests?: () => void; onEquipment?: () => void; onForge?: () => void; nextPending: boolean; nextError: boolean; saveState: 'idle' | 'pending' | 'confirmed' | 'failed'; saveConflict: boolean; onRetrySave: () => void }) {
   const { language } = useLanguage();
+  // Only reveals a prize already committed with the victory. Never grants it.
+  const [chestOpened, setChestOpened] = useState(false);
   const gearImprovements = gearOpportunity && gearOpportunity.kind !== 'empty' && equippedGear
     ? (['attack', 'defense', 'hp', 'critChance'] as const)
       .map(stat => ({ stat, delta: (gearOpportunity.item.equipment[stat] ?? 0) - (equippedGear[stat] ?? 0) }))
@@ -916,34 +919,77 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
               : (language === 'en' ? 'Upgrade your gear in the Forge or equip elixirs and try again.' : 'Улучши снаряжение в Кузнице или возьми эликсиры в пояс и попробуй снова.')}
           </p>
         )}
-        {kind === 'trial' && outcome.won && outcome.chest && (() => {
+        {kind === 'trial' && outcome.won && (outcome.chest ? (() => {
           const loot = outcome.chest;
-          const tierName = loot.tier === 'explorer'
-            ? (language === 'en' ? 'Explorer Chest' : 'Сундук Испытателя')
-            : loot.tier === 'guardian' ? (language === 'en' ? 'Guardian Chest' : 'Сундук Стража')
-            : (language === 'en' ? 'Legendary Trial Chest' : 'Легендарный сундук');
+          const tierName = loot.tier === 'common'
+            ? (language === 'en' ? 'Common Chest' : 'Обычный сундук')
+            : loot.tier === 'explorer'
+              ? (language === 'en' ? 'Explorer Chest' : 'Сундук Испытателя')
+              : loot.tier === 'guardian'
+                ? (language === 'en' ? 'Guardian Chest' : 'Сундук Стража')
+                : (language === 'en' ? 'Legendary Chest' : 'Легендарный сундук');
           const fragmentName = loot.fragment ? TRIAL_BLUEPRINTS.find(v => v.id === loot.fragment?.blueprint) : null;
           const ingredientName = loot.component ? TRIAL_COMPONENTS.find(v => v.id === loot.component?.id) : null;
-          return <section data-testid="trial-earned-chest" className="mt-3 rounded-xl border-2 border-amber-300/65 bg-[#231814]/95 px-3 py-2 text-left text-amber-100 shadow-[0_0_20px_rgba(245,158,11,.1)]">
-            <div className="flex items-center gap-3">
-              <img src={import.meta.env.BASE_URL + TRIAL_LOOT_ASSET_BASE + 'chest-' + loot.tier + '.svg'} width="88" height="88" className="h-[88px] w-[88px] shrink-0 object-contain" alt="" />
-              <div className="min-w-0">
-                <strong className="block text-base font-black text-amber-200">{tierName}</strong>
-                <span className="block text-xs text-amber-100/70">{language === 'en' ? 'Floor' : 'Этаж'} {loot.floor} · {language === 'en' ? 'First-clear treasure' : 'Добыча первой победы'}</span>
-                <span className="block text-[11px] text-emerald-200">{language === 'en' ? 'Loot is included in the victory save' : 'Добыча сохраняется вместе с победой'}</span>
+          const prizes = [
+            { id: 'gold', icon: '🪙', name: language === 'en' ? 'Gold' : 'Золото', value: '+' + loot.gold },
+            ...(loot.gems > 0 ? [{ id: 'gems', icon: '💎', name: language === 'en' ? 'Blue diamonds' : 'Синие алмазы', value: '+' + loot.gems }] : []),
+            ...(loot.materials > 0 ? [{ id: 'materials', icon: '⚒️', name: language === 'en' ? 'Forge materials' : 'Материалы кузницы', value: '+' + loot.materials }] : []),
+            ...(loot.potions ? [{ id: 'potions', icon: '⚗️', name: language === 'en' ? 'Health potion' : 'Зелье здоровья', value: '×' + loot.potions }] : []),
+            ...(loot.elixirs > 0 ? [{ id: 'elixirs', icon: '💪', name: language === 'en' ? 'Strength elixir' : 'Эликсир силы', value: '×' + loot.elixirs }] : []),
+            ...(loot.reputation > 0 ? [{ id: 'reputation', icon: '🏅', name: 'TERRITORY-CITY', value: '+1' }] : []),
+            ...(loot.fragment ? [{ id: 'fragment', icon: '📜', name: (language === 'en' ? fragmentName?.nameEn : fragmentName?.name) ?? '', value: loot.fragment.part + '/6' }] : []),
+            ...(loot.component ? [{ id: 'component', icon: '✦', name: (language === 'en' ? ingredientName?.nameEn : ingredientName?.name) ?? '', value: '×' + loot.component.qty }] : []),
+          ];
+          const chestArt = import.meta.env.BASE_URL + TRIAL_LOOT_ASSET_BASE + 'chest-' + loot.tier + '.svg';
+          return <section data-testid="trial-earned-chest" className="mt-3 overflow-hidden rounded-xl border-2 border-amber-300/65 bg-[#24160e]/95 p-2.5 text-left text-amber-100 shadow-[inset_0_2px_8px_rgba(240,181,85,.08),0_0_18px_rgba(245,158,11,.12)]">
+            <button type="button" data-testid="trial-open-chest" aria-expanded={chestOpened}
+              disabled={saveState !== 'confirmed' || chestOpened}
+              onClick={() => setChestOpened(true)}
+              className="flex w-full min-h-28 items-center gap-2 rounded-lg bg-gradient-to-r from-[#442718] via-[#2c1b13] to-[#1b1316] p-1.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 disabled:cursor-default">
+              <span className={'trial-chest-stage ' + (chestOpened ? 'trial-chest-open' : '')} aria-hidden="true">
+                <span className="trial-chest-aura" />
+                <img src={chestArt} className="trial-chest-half trial-chest-base" alt="" />
+                <img src={chestArt} className="trial-chest-half trial-chest-lid" alt="" />
+                <span className="trial-chest-star" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <strong className="block text-sm font-black text-amber-200">{tierName}</strong>
+                <span className="block text-[11px] text-amber-100/70">{language === 'en' ? 'Trial floor' : 'Этаж Испытаний'} {loot.floor}</span>
+                <span className="mt-2 inline-block rounded-md border border-amber-300/60 bg-amber-500/20 px-2 py-1 text-[11px] font-extrabold text-yellow-200">
+                  {chestOpened ? (language === 'en' ? 'CHEST OPENED!' : 'СУНДУК ОТКРЫТ!')
+                    : saveState !== 'confirmed' ? (language === 'en' ? 'Saving the reward…' : 'Сохраняем награду…')
+                    : (language === 'en' ? 'TAP TO OPEN' : 'НАЖМИ, ЧТОБЫ ОТКРЫТЬ')}
+                </span>
+              </span>
+            </button>
+            {chestOpened && <div data-testid="trial-chest-revealed" className="mt-2" role="status" aria-live="polite">
+              <p className="mb-2 text-center text-[11px] font-black uppercase tracking-wider text-amber-300">
+                {language === 'en' ? 'Your treasures' : 'Твоя добыча'}
+              </p>
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                {prizes.map((prize, index) => (
+                  <div key={prize.id} data-testid={'trial-chest-item-' + prize.id}
+                    style={{ animationDelay: index * 120 + 'ms' }}
+                    className="trial-chest-reward flex min-h-14 items-center gap-2 rounded-lg border border-amber-500/30 bg-black/35 px-2 py-1">
+                    {prize.id === 'reputation'
+                      ? <img src={import.meta.env.BASE_URL + TRIAL_LOOT_ASSET_BASE + 'city-reputation.png'} alt="" width="32" height="32" className="h-8 w-8 object-contain" />
+                      : <span aria-hidden="true" className="text-xl">{prize.icon}</span>}
+                    <span className="min-w-0">
+                      <b className="block text-xs text-amber-100">{prize.value}</b>
+                      <span className="block text-[10px] leading-tight text-amber-100/75">{prize.name}</span>
+                    </span>
+                  </div>
+                ))}
               </div>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-semibold">
-              <span className="rounded-md border border-white/10 bg-black/40 px-2 py-1">{language === 'en' ? 'Attack elixirs' : 'Эликсиры силы'} ×{loot.elixirs}</span>
-              {loot.reputation > 0 && <span data-testid="trial-earned-reputation" className="inline-flex items-center gap-1 rounded-md border border-violet-400/55 bg-violet-950/65 px-2 py-1">
-                <img src={import.meta.env.BASE_URL + TRIAL_LOOT_ASSET_BASE + 'city-reputation.png'} width="28" height="28" className="h-7 w-7 shrink-0 object-contain drop-shadow-[0_0_8px_rgba(246,190,84,.45)]" alt="" />
-                {language === 'en' ? 'TERRITORY-CITY reputation +1' : 'Репутация TERRITORY-CITY +1'}
-              </span>}
-              {loot.fragment && <span data-testid="trial-earned-fragment" className="rounded-md border border-amber-400/40 bg-black/40 px-2 py-1">📜 {language === 'en' ? (fragmentName?.nameEn ?? '') : (fragmentName?.name ?? '')} · {loot.fragment.part}/6</span>}
-              {loot.component && <span data-testid="trial-earned-component" className="rounded-md border border-amber-400/40 bg-black/40 px-2 py-1">✦ {language === 'en' ? ingredientName?.nameEn : ingredientName?.name} ×{loot.component.qty}</span>}
-            </div>
+              <p className="mt-2 text-center text-[10px] text-emerald-200">
+                {language === 'en' ? 'Already included in your saved victory. No second claim.' : 'Награды уже начислены за победу. Повторной выдачи нет.'}
+              </p>
+            </div>}
           </section>;
-        })()}
+        })() : <section data-testid="trial-chest-already-claimed"
+          className="mt-3 rounded-lg border border-amber-700/40 bg-[#211815] px-3 py-2 text-center text-[11px] text-amber-100/80">
+          {language === 'en' ? 'The chest for this floor was already claimed on an earlier clear.' : 'Сундук этого этажа уже получен ранее. Повторной выдачи нет.'}
+        </section>)}
         {outcome.won && <div className="mt-3 rounded-lg border border-amber-300/45 bg-[#251b16]/80 px-3 py-2 text-xs text-amber-100"
           data-testid="pve-victory-save-status" role="status" aria-live="polite">
           {saveState === 'confirmed' ? (
