@@ -749,7 +749,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                     strike={strike}
                     combatSpeed={busy || outcome ? roundSpeed : speed}
                     idleSeconds={3.1}
-                    className="absolute right-[-8%] bottom-0 h-[98%] w-[88%] object-contain object-right-bottom"
+                    className={`absolute bottom-0 h-[98%] object-contain object-right-bottom ${follower ? 'right-[-8%] w-[88%]' : 'right-0 w-full'}`}
                   />
                 </div>
               </div>
