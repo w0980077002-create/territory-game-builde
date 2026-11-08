@@ -135,11 +135,15 @@ with sync_playwright() as p:
         page.goto(ORIGIN+'/?scene=pve&appearance=m1&enemy=bandit&follower='+follower_id)
         page.wait_for_selector('[data-testid="pve-visible-follower"] img')
         assert page.locator('[data-testid="pve-companion-heal"]').count()==0, 'No cosmetic heal before a resolved round'
+        assert page.locator('[data-testid="pve-companion-strike-fx"]').count()==0, 'No projectile before a resolved companion hit'
         page.get_by_role('button',name='Защита: Голова',exact=True).click()
         page.get_by_role('button',name='Защита: Грудь',exact=True).click()
         page.get_by_role('button',name='Удар: Живот',exact=True).click()
         page.get_by_role('button',name='УДАР',exact=True).click()
         page.wait_for_selector('[data-testid="pve-companion-action"][data-action="attack"]',timeout=7500)
+        fx=page.locator('[data-testid="pve-companion-strike-fx"]')
+        fx.wait_for(timeout=1200)
+        assert fx.get_attribute('data-kind')==('leaf' if follower_id=='follower_3' else 'crystal'), 'Companion must keep its own real strike identity'
         page.screenshot(path=str(OUT/f'companion-real-attack-{follower_id}.png'))
         page.wait_for_selector('[data-testid="pve-companion-heal"]',timeout=7500)
         heal=page.locator('[data-testid="pve-companion-heal"]')
