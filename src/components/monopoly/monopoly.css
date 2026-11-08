@@ -1068,3 +1068,99 @@ html.territory-ios-webapp .territory-monopoly .mono-scene {
     animation: none;
   }
 }
+
+/* FINAL TREASURE COMPOSITION — owner screenshot 2026-11-08.
+   The reused Shop border image leaks cyan strips into the chest: retire ONLY
+   that border-image. Approved oak raster and carved timber stay untouched. */
+.mono-celebration > section.mono-reward-card::before {
+  inset: 5px;
+  border: 1px solid #b987539e;
+  border-image: none;
+  border-radius: 10px;
+  background: none;
+  box-shadow: inset 0 1px 0 #f8d89e55, 0 0 0 1px #261108ae;
+}
+.mono-celebration .mono-reward-body {
+  padding-top: 15px;
+  padding-bottom: 8px;
+}
+.mono-celebration .mono-reward-body > h3 {
+  font-size: clamp(18px, 5.4vw, 20px);
+  line-height: 1.1;
+  margin: 3px 0 1px;
+}
+.mono-celebration .mono-opening-chest {
+  width: 132px;
+  max-height: 145px;
+  margin: 2px auto -3px;
+}
+.mono-celebration .mono-winnings {
+  margin: 1px 0 3px;
+}
+.mono-celebration .mono-extra-rewards {
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 100%;
+  min-width: min(190px, 100%);
+  min-height: 70px;
+  margin: 8px auto 7px;
+  padding: 6px 8px 8px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #a87943;
+  border-radius: 10px;
+  background-color: #251309;
+  background-image:
+    linear-gradient(180deg,#2b120bba,#5b3515a8 55%,#210e07d8),
+    var(--mono-reward-beams);
+  background-size: 100% 100%, cover;
+  background-position: center;
+  box-shadow: inset 0 1px #e9c18a70, inset 0 -2px #100603, 0 3px 6px #100603c9;
+}
+.mono-celebration .mono-resource {
+  flex-basis: 56px;
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  border-radius: 7px;
+}
+.mono-celebration .mono-reward-body > p.mono-reward-status {
+  color: #efddb5;
+  margin: 4px 4px 2px;
+  font: 700 10px/1.3 Arial,sans-serif;
+  text-shadow: 0 1px 2px #130601;
+}
+.mono-celebration .mono-reward-footer {
+  padding: 5px 12px 7px;
+  border-top-width: 2px;
+}
+/* 44 px tap zone with a visually 34 px high gold inlay button. */
+.mono-celebration .mono-reward-footer .mono-cta {
+  isolation: isolate;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 234px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent !important;
+  box-shadow: none;
+  color: #46200d !important;
+  font: 900 12px Arial,sans-serif;
+  text-shadow: 0 1px #fff5b5b0;
+}
+.mono-celebration .mono-reward-footer .mono-cta::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 5px 0;
+  border: 2px ridge #ffe2a3;
+  border-radius: 8px;
+  background: linear-gradient(180deg,#ffe6a4 0%,#f0b94f 44%,#b87726 100%);
+  box-shadow: inset 0 1px #fff7c9ac, inset 0 -1px #82431b85, 0 2px 0 #402012, 0 3px 5px #110706a6;
+  pointer-events: none;
+}

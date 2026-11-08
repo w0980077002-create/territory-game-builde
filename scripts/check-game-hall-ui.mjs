@@ -152,8 +152,18 @@ assert.doesNotMatch(mono,/Золото ожидает в игровом зале
 // keep real prize amounts and the previously secured compact mobile footer.
 assert.match(mono,/--mono-reward-oak[\s\S]*?territory-dark-oak-mobile\.webp/,
   'Monopoly reward must load approved dark oak art rather than a flat purple fill');
-assert.match(mono,/--mono-reward-frame[\s\S]*?shop-approved-product-border-v2\.webp/,
-  'Treasure card must use carved approved Shop trim');
+assert.doesNotMatch(mono,/--mono-reward-frame/,
+  'Do not load the Shop border image that painted cyan artifacts in the reward frame');
+assert.match(monoCss,/FINAL TREASURE COMPOSITION[\s\S]*?border-image: none/,
+  'Treasure frame must keep a clean wooden/gold inset without cyan strips');
+assert.match(monoCss,/\.mono-celebration \.mono-extra-rewards\s*\{[\s\S]*?var\(--mono-reward-beams\)/,
+  'Prize cards must sit on a wood-textured reward shelf');
+assert.match(monoCss,/\.mono-celebration \.mono-reward-footer \.mono-cta::before\s*\{[\s\S]*?inset: 5px 0/,
+  'A compact visual CTA keeps the full-sized button tap target');
+assert.match(mono,/className="mono-reward-status"/,
+  'Reward modal should present a single concise payout status');
+assert.doesNotMatch(mono,/Ресурсы начисляются автоматически\. При задержке выдачи/,
+  'Remove lengthy repeated crediting instructions from chest modal');
 assert.match(monoCss,/OWNER APPROVED MONOPOLY TREASURE OAK/,
   'Monopoly treasure skin must be scoped to the reward screen');
 assert.match(monoCss,/\.mono-celebration \.mono-resource\s*\{[\s\S]*?var\(--mono-reward-oak\)/,
