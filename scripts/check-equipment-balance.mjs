@@ -73,54 +73,52 @@ assert.equal(catalog.rarityForChapter(20), 'rare');
 assert.equal(catalog.rarityForChapter(30), 'rare');
 
 
-// Corrected rarity rule: historic commons and pre-existing rare loot must NOT be touched.
+// Strict owner rule: old commons and old rares remain untouched, paid epic shop
+// purchases retain their original epic stats. Only higher-grade loot is changed.
 const oldCommonBoss={id:'loot_common_7',name:'Клинок победителя',icon:'⚔️',
   slot:'weapon',rarity:'common',level:7,attack:31,baseLevel:7,baseStats:{attack:31},upgradeCount:0};
-assert.deepEqual(balance.rebalanceHistoricalRarity(oldCommonBoss),oldCommonBoss,
-  'Original common combat loot must stay common with identical stats');
+assert.deepEqual(balance.rebalanceHistoricalRarity(oldCommonBoss),oldCommonBoss);
 const oldRareBoss={id:'loot_rare_15',name:'Доспех воина',icon:'🛡️',
   slot:'armor',rarity:'rare',level:15,defense:35,hp:95,baseLevel:15,baseStats:{defense:35,hp:95},upgradeCount:0};
-assert.deepEqual(balance.rebalanceHistoricalRarity(oldRareBoss),oldRareBoss,
-  'Already-rare old drops must not be changed');
-const legendaryForged={id:'loot_legend_59',name:'Доспех воина',icon:'🛡️',
+assert.deepEqual(balance.rebalanceHistoricalRarity(oldRareBoss),oldRareBoss);
+const historicPurchased={id:'historic-paid',name:'Героический меч',icon:'🔱',
+  slot:'weapon',rarity:'epic',level:58,attack:141,critChance:8,
+  baseLevel:5,baseStats:{attack:35,critChance:8},upgradeCount:53};
+assert.deepEqual(balance.rebalanceHistoricalRarity(historicPurchased),historicPurchased,
+  'Purchased epic items are not part of the old boss-loot downgrade');
+const oldLegendary={id:'loot_legend_59',name:'Доспех воина',icon:'🛡️',
   slot:'armor',rarity:'legendary',level:59,baseLevel:46,upgradeCount:13,
   baseStats:{defense:200,hp:530},defense:253,hp:641};
-const balanced=balance.rebalanceHistoricalRarity(legendaryForged);
-assert.equal(balanced.rarity,'rare');
-assert.equal(balanced.level,59);
-assert.equal(balanced.baseLevel,46);
-assert.equal(balanced.upgradeCount,13);
-assert.equal(balanced.defense,12+Math.round(0.5*(46-3))+Math.round(0.5*13));
-assert.equal(balanced.hp,80+Math.round(1.5*(46-3))+Math.round(1.5*13));
-assert.equal(balance.upgradeEquipment(balanced).level,60);
-assert.equal(balance.upgradeEquipment(balanced).upgradeCount,14);
-assert.deepEqual(balance.rebalanceHistoricalRarity(balanced),balanced,'Rarity conversion must be idempotent');
-const oldShopRing={id:'old-ring',name:'Кольцо силы',icon:'💍',slot:'ring',
-  rarity:'epic',level:50,attack:49,critChance:5,baseLevel:5,upgradeCount:45};
-const rareShopRing=balance.rebalanceHistoricalRarity(oldShopRing);
-assert.equal(rareShopRing.rarity,'rare');
-assert.equal(rareShopRing.attack,10+Math.round(0.5*45));
-assert.equal(rareShopRing.critChance,3);
-assert.equal(rareShopRing.upgradeCount,45);
-assert.equal(catalog.SHOP_EQUIPMENT_ITEMS.filter(x=>x.rarity==='epic').length,0,
-  'No epic gear may remain on sale in the shop');
+const rareLegendary=balance.rebalanceHistoricalRarity(oldLegendary);
+assert.equal(rareLegendary.rarity,'rare');
+assert.equal(rareLegendary.level,59);
+assert.equal(rareLegendary.baseLevel,46);
+assert.equal(rareLegendary.upgradeCount,13);
+assert.equal(rareLegendary.defense,12+Math.round(0.5*(46-3))+Math.round(0.5*13));
+assert.equal(rareLegendary.hp,80+Math.round(1.5*(46-3))+Math.round(1.5*13));
+assert.equal(balance.upgradeEquipment(rareLegendary).level,60);
+assert.equal(balance.upgradeEquipment(rareLegendary).upgradeCount,14);
+assert.deepEqual(balance.rebalanceHistoricalRarity(rareLegendary),rareLegendary);
+assert.equal(catalog.SHOP_EQUIPMENT_ITEMS.filter(x=>x.rarity==='epic').length,0);
+assert.equal(catalog.SHOP_EQUIPMENT_ITEMS.find(x=>x.id==='shop_weapon_hero').equipment.attack,22);
+assert.equal(catalog.SHOP_EQUIPMENT_ITEMS.find(x=>x.id==='shop_ring_power').equipment.critChance,3);
 
 const heroicLegacy = {
   id: 'inventory-heroic', slot: 'weapon', name: 'Героический меч', icon: '🔱',
   rarity: 'epic', attack: 64767, critChance: 8, level: 58,
 };
 const heroic = balance.normalizeEquipmentForTests(heroicLegacy);
-assert.equal(heroic.attack, 102, 'heroic sword compound growth should normalize onto the rarity-based linear curve');
+assert.equal(heroic.attack, 141, 'heroic sword compound growth should normalize onto the rarity-based linear curve');
 assert.equal(heroic.baseLevel, 5);
 assert.equal(heroic.upgradeCount, 53);
-assert.equal(balance.normalizeEquipmentForTests(heroic).attack, 102, 'normalization must be idempotent');
+assert.equal(balance.normalizeEquipmentForTests(heroic).attack, 141, 'normalization must be idempotent');
 const earlierFoundationHeroic = { ...heroic, attack: 128 };
-assert.equal(balance.normalizeEquipmentForTests(earlierFoundationHeroic).attack, 102, 'items carrying metadata from the earlier development formula must move to the current curve');
-assert.equal(balance.upgradeEquipment(heroic).attack, 103, 'the next upgrade should use rarity-based growth, not compound growth');
+assert.equal(balance.normalizeEquipmentForTests(earlierFoundationHeroic).attack, 141, 'items carrying metadata from the earlier development formula must move to the current curve');
+assert.equal(balance.upgradeEquipment(heroic).attack, 143, 'the next upgrade should use rarity-based growth, not compound growth');
 const twiceForged = balance.upgradeEquipment(balance.upgradeEquipment(heroic));
-assert.equal(twiceForged.attack, 105, 'successive upgrades must derive from the immutable baseline');
+assert.equal(twiceForged.attack, 145, 'successive upgrades must derive from the immutable baseline');
 assert.equal(twiceForged.upgradeCount, 55, 'upgrade count must track successful forge steps');
-assert.equal(twiceForged.baseStats.attack, 22, 'forge must not mutate immutable baseline stats');
+assert.equal(twiceForged.baseStats.attack, 35, 'forge must not mutate immutable baseline stats');
 
 function oldForge(value, upgrades) {
   let result = value;
@@ -166,9 +164,9 @@ const customSameName = {
   rarity: 'epic', attack: 999, critChance: 12, level: 30,
 };
 const preservedSameName = balance.normalizeEquipmentForTests(customSameName);
-assert.equal(preservedSameName.attack, 60, 'fake huge stats on recognizable shop gear must not survive');
+assert.equal(preservedSameName.attack, 85, 'fake huge stats on recognizable shop gear must not survive');
 assert.equal(preservedSameName.baseLevel, 5, 'recognized shop gear is rebuilt from catalog baseline');
-assert.equal(balance.upgradeEquipment(preservedSameName).attack, 61, 'known-name equipment uses controlled canonical growth');
+assert.equal(balance.upgradeEquipment(preservedSameName).attack, 87, 'known-name equipment uses controlled canonical growth');
 
 // The owner must be able to lower historic boss gear whose base level was
 // originally the chapter number. This action must DECREASE stats, not merely
