@@ -18,17 +18,20 @@
   --viking-panel-border: #c99a61;
 }
 
-/* Timber must be visible between cards, not hidden under a flat brown fill. */
+/* Match the ACTUAL approved Shop backdrop, not the old orange plank wash.
+ * Both use the original Shop raster timber. Its strong side and centre
+ * shadows create deep carved oak while leaving natural grain and knots visible.
+ * The same material continues through empty inbox space on short screens.
+ */
 .territory-shell.territory-oak-heritage > .territory-screen {
-  background-color: #25120d;
+  background-color: #170c09;
   background-image:
-    linear-gradient(90deg,#100908bc 0%,#1c0d0b4f 8%,#1a0b0942 92%,#0e0707b8 100%),
-    linear-gradient(180deg,#4a1e12a8,transparent 16%,transparent 84%,#170b0ad6),
+    linear-gradient(90deg,#110b0aea,#3c2418c2 6%,#21120ee0 50%,#392116c8 94%,#150b0aeb),
     var(--oak-heritage-grain);
-  background-size: 100% 100%,100% 100%, 440px auto;
-  background-repeat: no-repeat,no-repeat,repeat;
+  background-size: cover, 440px auto;
+  background-repeat: no-repeat, repeat;
   background-position: center;
-  box-shadow: inset 5px 0 8px #110605ad, inset -5px 0 8px #110605ad;
+  box-shadow: inset 5px 0 9px #130807bb, inset -5px 0 9px #130807bb;
 }
 
 /* Carved oak header without repeated rope stamps. */
