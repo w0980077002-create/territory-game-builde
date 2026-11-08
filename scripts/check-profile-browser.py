@@ -131,11 +131,11 @@ with sync_playwright() as p:
                 metrics = card.evaluate("""el => {
                     const c = getComputedStyle(el), rope = getComputedStyle(el, '::before');
                     const r = el.getBoundingClientRect();
-                    return {planks:c.backgroundImage.includes('shop-wood-planks.webp'),
+                    return {planks:c.backgroundImage.includes('territory-dark-oak-mobile.webp'),
                             rope:rope.content, ropeDisplay:rope.display,
                             width:r.width, left:r.left, right:r.right};
                 }""")
-                assert metrics['planks'], (width,lang,'Missing Shop timber on Hero lower card',metrics)
+                assert metrics['planks'], (width,lang,'Missing approved dark walnut on Hero lower card',metrics)
                 assert metrics['rope'] == 'none' or metrics['ropeDisplay'] == 'none', (width,lang,'Triple rope returned',metrics)
                 assert metrics['left'] >= 0 and metrics['right'] <= width + 1, (width,lang,'Hero card clipped',metrics)
             for summary in page.locator('.territory-profile > details.card > summary').all():
@@ -147,7 +147,7 @@ with sync_playwright() as p:
                 assert metrics['height'] >= 44 and metrics['display'] == 'flex', (width,lang,'Disclosure touch target',metrics)
                 assert metrics['right'] <= width + 1, (width,lang,'Disclosure clipped',metrics)
             assert page.locator('[data-testid="vip-open-page"]').evaluate(
-                "el=>getComputedStyle(el).backgroundImage.includes('shop-wood-planks.webp')"), (width,lang,'VIP entry still flat')
+                "el=>getComputedStyle(el).backgroundImage.includes('territory-dark-oak-mobile.webp')"), (width,lang,'VIP entry still flat')
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             if width == 360:
                 # Capture both actual RU/EN labels, not just the Russian oak
