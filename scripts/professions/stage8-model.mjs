@@ -50,7 +50,7 @@ const gather = (id, qty) => ({ id, qty });
 
 // Sidegrades: all base stats stay within comparable shop-equipment budgets.
 // 300-tier is prestige gated by the future verified master licence, not live.
-export const STAGE8_EQUIPMENT = Object.freeze([
+const STAGE8_EQUIPMENT_BASE = Object.freeze([
   equipment('s8_smith_watch_blade','smith',25,'Клинок дозорного','🗡️',[gather('gather-ore',5),gather('gather-wood',2)],'weapon','rare',3,{attack:17,critChance:2},100),
   equipment('s8_smith_north_armor','smith',100,'Латы северянина','🛡️',[gather('gather-ore',9),gather('gather-hide',6)],'armor','rare',3,{defense:11,hp:70},180),
   equipment('s8_smith_storm_axe','smith',200,'Секира бури','🪓',[gather('gather-ore',14),gather('gather-wood',8),gather('gather-crystal',4)],'weapon','epic',5,{attack:33,critChance:7},255),
@@ -72,6 +72,27 @@ export const STAGE8_EQUIPMENT = Object.freeze([
   equipment('s8_artisan_jarl_boots','artisan',300,'Сапоги великого мастера','🥾',[gather('gather-hide',28),gather('gather-wood',20),gather('gather-crystal',7)],'boots','legendary',2,{defense:4,hp:40,critChance:2},1),
 ]);
 
+/** Only NEW crafts receive this budget; historical owned gear is never rewritten. */
+export const CRAFT_RARITY_POWER = Object.freeze({"common":1,"rare":1.15,"epic":1.35,"legendary":1.6});
+const CRAFT_REFERENCES = Object.freeze({"weapon":{"common":{"attack":8},"rare":{"attack":18,"critChance":3},"epic":{"attack":35,"critChance":8}},"armor":{"common":{"defense":5,"hp":30},"rare":{"defense":12,"hp":80}},"helmet":{"common":{"defense":3,"hp":20}},"boots":{"rare":{"defense":4,"hp":40,"critChance":2}},"shield":{"common":{"defense":5,"hp":25}},"ring":{"rare":{"attack":8,"critChance":2},"epic":{"attack":15,"critChance":5}},"amulet":{"rare":{"attack":6,"critChance":3}}});
+export function craftQualityPct(level){if(level>=300)return 10;if(level>=200)return 7;if(level>=100)return 5;if(level>=25)return 3;return 0;}
+function balanceCraftRecipe(recipe){
+ if(!recipe.output?.equipment)return recipe;
+ const eq=recipe.output.equipment;
+ // Current server canonicalizes shop names. Preserve these historical recipes.
+ if((eq.name==='Клинок рыцаря'&&eq.slot==='weapon'&&eq.rarity==='rare')||(eq.name==='Кожаная броня'&&eq.slot==='armor'&&eq.rarity==='common'))return recipe;
+ const refs=CRAFT_REFERENCES[eq.slot];
+ const refRarity=refs[eq.rarity]?eq.rarity:Object.keys(refs).filter(r=>CRAFT_RARITY_POWER[r]<=CRAFT_RARITY_POWER[eq.rarity]).sort((a,b)=>CRAFT_RARITY_POWER[b]-CRAFT_RARITY_POWER[a])[0]??Object.keys(refs)[0];
+ const benchmark=refs[refRarity],factor=CRAFT_RARITY_POWER[eq.rarity]/CRAFT_RARITY_POWER[refRarity]*(1+craftQualityPct(recipe.requiredLevel)/100),level=eq.level;
+ const caps={attack:eq.slot==='weapon'?40+6*level:['ring','amulet'].includes(eq.slot)?20+4*level:10+2*level,defense:['armor','shield','helmet','boots'].includes(eq.slot)?10+5*level:10+3*level,hp:eq.slot==='armor'?50+12*level:['boots','shield','helmet'].includes(eq.slot)?40+10*level:25+5*level};
+ const balanced={...eq};
+ for(const stat of ['attack','defense','hp'])if(typeof eq[stat]==='number'&&typeof benchmark[stat]==='number')balanced[stat]=Math.min(caps[stat],Math.max(eq[stat],Math.ceil(benchmark[stat]*factor)));
+ // Crit is a bounded chance, NOT a rarity-scaled damage stat.
+ if(typeof eq.critChance==='number')balanced.critChance=Math.min(10,Math.max(eq.critChance,(benchmark.critChance??eq.critChance)+(eq.rarity==='legendary'?1:0)));
+ return {...recipe,output:{...recipe.output,equipment:balanced}};
+}
+export const STAGE8_EQUIPMENT = Object.freeze(STAGE8_EQUIPMENT_BASE.map(balanceCraftRecipe));
+
 const consumable = (id,requiredLevel,name,icon,ingredients,kind,stat,value,masteryXp) => ({
   id, profession: 'alchemist', kind:'item', requiredLevel, masteryXp, ingredients,
   output: {name,icon,type:kind,rarity:requiredLevel>=200?'epic':requiredLevel>=100?'rare':'common',description:`${name}: ${value} ${stat}.`,effect:{stat,value,duration:kind==='elixir'?'battle':'instant'}},
@@ -83,11 +104,11 @@ export const STAGE8_CONSUMABLES = Object.freeze([
   consumable('s8_alchemist_jarl_elixir',300,'Эликсир стойкости ярла','🧬',[gather('gather-herb',30),gather('gather-crystal',16)],'elixir','defense',15,1),
 ]);
 
-export const STAGE8_LEGACY_RECIPES = Object.freeze(legacyCatalogue.map((recipe) => Object.freeze({
+export const STAGE8_LEGACY_RECIPES = Object.freeze(legacyCatalogue.map((recipe) => Object.freeze(balanceCraftRecipe({
   ...recipe,
   kind:'item',
   masteryXp:recipe.requiredLevel===300 ? 1 : recipe.masteryXp,
-})));
+}))));
 
 export function bandForLevel(level) {
   return MASTERY_BANDS.find((band) => level >= band.from && level <= band.to) ?? null;
