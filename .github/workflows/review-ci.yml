@@ -28,6 +28,7 @@ jobs:
       - run: node scripts/edge-initdata-tests.cjs
       - run: node scripts/edge-identity-tests.cjs
       - run: npm run typecheck
+      - run: npm run test:owner-decisions
       - run: node scripts/check-halloween-world-boss.mjs
       - run: node scripts/check-halloween-companion-reward.mjs
       - run: node scripts/check-halloween-refresh.mjs
