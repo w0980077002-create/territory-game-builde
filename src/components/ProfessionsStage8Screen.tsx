@@ -190,6 +190,17 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
         const label=recipe.kind==='practice' ? recipe.name??'Обучение мастера' : recipe.output?.name??recipe.id;
         return <article key={recipe.id} className="rounded-xl border border-amber-400/15 bg-slate-900/80 p-3">
           <div className="flex items-start gap-2"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-amber-400/15 bg-amber-400/10 p-1"><img src={recipe.output?craftOutputArt(recipe.output):PROFESSION_ART[recipe.profession]} alt="" loading="lazy" className="h-full w-full object-contain"/></div><div className="min-w-0 flex-1"><b className="text-sm">{localizeText(label,language)}</b><p className="text-xs text-amber-300">{language==='en'?'Profession mastery Lv.':'Мастерство профессии ур.'} {recipe.requiredLevel} · +{recipe.masteryXp} XP</p><p className="mt-1 text-xs text-slate-400">{recipe.kind==='practice'?(language==='en'?'Consumes resources, awards verified mastery; no inventory junk.':'Расходует ресурсы и даёт мастерство без лишних предметов.'):recipe.output?.description}</p></div>{!hasLicense&&<Lock className="h-4 w-4 text-amber-300"/>}{recipe.requiredLevel>=300&&<Sparkles className="h-4 w-4 text-violet-300"/>}</div>
+          {recipe.output?.type==='equipment' && recipe.output.equipment && <div className="mt-2 flex flex-wrap gap-1 text-[11px] font-bold" aria-label={language==='en'?'Crafted equipment attributes':'Характеристики создаваемой экипировки'}>
+            {typeof recipe.output.equipment.level==='number' && <span className="rounded-md border border-amber-400/25 bg-amber-500/10 px-2 py-1 text-amber-200">{language==='en'?'Item Lv.':'Уровень вещи'} {recipe.output.equipment.level}</span>}
+            {(['attack','defense','hp','critChance'] as const).map(stat=>{
+              const value=recipe.output?.equipment?.[stat];
+              if(typeof value!=='number' || value<=0) return null;
+              const title=language==='en'
+                ? {attack:'ATK',defense:'DEF',hp:'HP',critChance:'CRIT'}[stat]
+                : {attack:'Атака',defense:'Защита',hp:'HP',critChance:'Крит'}[stat];
+              return <span key={stat} className="rounded-md border border-amber-400/20 bg-black/30 px-2 py-1 text-amber-100">{title} +{value}{stat==='critChance'?'%':''}</span>;
+            })}
+          </div>}
           <div className="mt-2 flex flex-wrap gap-1">{recipe.ingredients.map((ingredient)=>{
             const material=RESOURCE_DEFINITIONS.find((r)=>r.id===ingredient.id);
             const insufficient=(status.resources[ingredient.id]??0)<ingredient.qty;
