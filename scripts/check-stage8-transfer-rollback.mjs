@@ -153,6 +153,38 @@ try {
   assert.deepEqual((await one('SELECT game_state FROM public.players WHERE id=$1', [reseller])).game_state,
     { player: { level: 1 } }, 'Level-1 reseller progress must not change');
 
+  // The SECOND handoff can fail too: a level-1 trader must retain the
+  // exact item after a cancelled resale to the former level-10 buyer.
+  // This specifically covers rollback AFTER the original seller has left
+  // the ownership chain, without any live auction/payment implementation.
+  const resellerBeforeRollback = (await one(
+    'SELECT game_state FROM public.players WHERE id=$1', [reseller],
+  )).game_state;
+  const buyerBeforeRollback = (await one(
+    'SELECT game_state FROM public.players WHERE id=$1', [buyer],
+  )).game_state;
+  await db.exec('BEGIN');
+  await db.query(
+    'UPDATE public.territory_profession_stage8_items SET player_id=$1 WHERE item_id=$2',
+    [buyer, uuid],
+  );
+  await db.query('UPDATE public.players SET game_state=$2::jsonb WHERE id=$1',
+    [reseller, JSON.stringify({ player: { level: 1 }, pendingResale: id })]);
+  await db.query('UPDATE public.players SET game_state=$2::jsonb WHERE id=$1',
+    [buyer, JSON.stringify({ player: { level: 10 }, pendingRepurchase: id })]);
+  assert.deepEqual(await verified(buyer), gear);
+  await assert.rejects(() => verified(reseller), /stage8_item_not_owned/);
+  await db.exec('ROLLBACK');
+  assert.equal(await ownerInRegistry(), reseller,
+    'Cancelled second-hand resale must restore the level-1 merchant as owner');
+  assert.deepEqual(await verified(reseller), gear,
+    'Cancelled resale must preserve the canonical level-50 equipment');
+  await assert.rejects(() => verified(buyer), /stage8_item_not_owned/);
+  assert.deepEqual((await one('SELECT game_state FROM public.players WHERE id=$1', [reseller])).game_state,
+    resellerBeforeRollback, 'Cancelled resale must roll back merchant snapshot');
+  assert.deepEqual((await one('SELECT game_state FROM public.players WHERE id=$1', [buyer])).game_state,
+    buyerBeforeRollback, 'Cancelled resale must roll back repurchaser snapshot');
+
   // An upgrade 50 -> 51 must be authorized by a future server forge operation;
   // never by an untrusted client save or an auction handoff.
   assert.equal((await verified(reseller)).level, 50);
