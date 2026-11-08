@@ -19,8 +19,8 @@ const serverItem = {
   id: 'stage8_22222222-2222-4222-8222-222222222222', name: 'Crafted sword',
   type: 'equipment', qty: 1, rarity: 'rare',
   equipment: { id: 'stage8_22222222-2222-4222-8222-222222222222',
-    name: 'Crafted sword', slot: 'weapon', rarity: 'rare', level: 50,
-    baseLevel: 1, upgradeCount: 49, attack: 118, baseStats: { attack: 20 } },
+    name: 'Crafted sword', slot: 'weapon', rarity: 'rare', level: 23,
+    baseLevel: 1, upgradeCount: 22, attack: 64, baseStats: { attack: 20 } },
 };
 const original = {
   player: { level: 61, gold: 555555, equipped: { weapon: serverItem.equipment } },
@@ -29,7 +29,7 @@ const original = {
 const snapshot = JSON.stringify(original);
 
 for (const id of [serverItem.id, 'equipped_' + serverItem.equipment.id]) {
-  const out = forge.forgeAttempt(original, id, 50, 0);
+  const out = forge.forgeAttempt(original, id, serverItem.equipment.level, 0);
   assert.equal(out.status, 'invalid', 'Server-owned crafted item must not enter legacy local forge');
   assert.strictEqual(out.next, original, 'No local game state update or resource debit');
   assert.equal(JSON.stringify(original), snapshot, 'No silent stat, gold or material mutation');

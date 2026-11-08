@@ -306,22 +306,24 @@ const customReduced = balance.capEquipmentToHeroLevel(
 assert.equal(customReduced.level, 8);
 assert.equal(customReduced.defense, 20);
 assert.equal(customReduced.hp, 40);
-// A level-50 item must remain exactly the same object at handoff. Its buyer
-// continues with level 51 rather than recreating a level-1 item.
-const sellerItem=balance.setEquipmentLevel(balance.prepareNewEquipment({
-  id:'seller-legendary-123',name:'Клинок древних',slot:'weapon',icon:'🔱',rarity:'legendary',
-  attack:46,critChance:9,level:5,
-}),50);
-const buyerInventoryCopy={...sellerItem,baseStats:{...sellerItem.baseStats}};
-assert.equal(buyerInventoryCopy.level,50);
-assert.equal(buyerInventoryCopy.upgradeCount,45);
-assert.deepEqual(buyerInventoryCopy.baseStats,sellerItem.baseStats);
-const buyerNext=balance.upgradeEquipment(buyerInventoryCopy);
-assert.equal(buyerNext.id,sellerItem.id,'Transferred item must retain its original identity');
-assert.equal(buyerNext.level,51,'New owner upgrades from 50 to 51, not from its crafting baseline');
-assert.equal(buyerNext.upgradeCount,46);
-assert.equal(buyerNext.attack,sellerItem.attack+3);
-assert.equal(sellerItem.level,50,'A transfer must not mutate the former owner snapshot');
+// The same item and its upgrades must survive transfer at DIFFERENT levels.
+// The next upgrade always progresses from the preserved actual level.
+for (const target of [9, 23, 87]) {
+  const sellerItem=balance.setEquipmentLevel(balance.prepareNewEquipment({
+    id:'seller-legendary-123',name:'Клинок древних',slot:'weapon',icon:'🔱',rarity:'legendary',
+    attack:46,critChance:9,level:5,
+  }),target);
+  const buyerInventoryCopy={...sellerItem,baseStats:{...sellerItem.baseStats}};
+  assert.equal(buyerInventoryCopy.level,target);
+  assert.equal(buyerInventoryCopy.upgradeCount,target-5);
+  assert.deepEqual(buyerInventoryCopy.baseStats,sellerItem.baseStats);
+  const buyerNext=balance.upgradeEquipment(buyerInventoryCopy);
+  assert.equal(buyerNext.id,sellerItem.id,'Transferred item retains identity');
+  assert.equal(buyerNext.level,target+1,'New owner continues from the actual item level');
+  assert.equal(buyerNext.upgradeCount,target-5+1);
+  assert.equal(buyerNext.attack,sellerItem.attack+3);
+  assert.equal(sellerItem.level,target,'Transfer must not mutate former owner snapshot');
+}
 
 const actionsAfter = fs.readFileSync(path.join(root, 'src/game/actions.ts'), 'utf8');
 const cloudAfter = fs.readFileSync(path.join(root, 'src/game/cloud.ts'), 'utf8');
