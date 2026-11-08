@@ -186,9 +186,9 @@ assert.match(strikeFxCss, /prefers-reduced-motion:reduce/,
 // remains; the lower size and distinct right-aligned hero are intentional.
 assert.doesNotMatch(pve, /ArticulatedCow|pve-companion-action--jointed/,
   'Rejected joint-cutout Cow must not return to the live PvE renderer');
-assert.match(pve, /h-\\[58%\\] w-\\[44%\\]/,
+assert.match(pve, /h-\[58%\] w-\[44%\]/,
   'Battle Cow must stay in a compact companion-only lane');
-assert.match(pve, /follower\\?\\.id === 'follower_6' \\? 'right-\\[-5%\\] w-\\[70%\\]'/,
+assert.match(pve, /follower\?\.id === 'follower_6' \? 'right-\[-5%\] w-\[70%\]'/,
   'Hero should retain a separate visible lane with the Cow selected');
 
 console.log('Battle visuals OK: all character poses/assets, opponent, companion, sword, chat and seven-slot UI.');
