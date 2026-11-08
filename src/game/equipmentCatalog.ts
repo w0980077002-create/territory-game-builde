@@ -1,4 +1,4 @@
-import type { Equipment, ShopItem } from './types';
+import type { Equipment, EquipmentBaseStats, ShopItem } from './types';
 
 export type EquipmentRarity = Equipment['rarity'];
 
@@ -52,7 +52,7 @@ export function rarityForChapter(chapter: number): EquipmentRarity {
 }
 
 /** Same baseline as the rare shop-equipment forge curve, at any item level. */
-export function rareBossBaseStats(level: number, isWeapon: boolean) {
+export function rareBossBaseStats(level: number, isWeapon: boolean): EquipmentBaseStats {
   const n = Math.max(1, Math.floor(level));
   return isWeapon
     ? { attack: Math.max(1, 18 + Math.round(1.5 * (n - 3))) }
