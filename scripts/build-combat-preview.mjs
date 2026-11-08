@@ -69,7 +69,16 @@ const foe={id:'fixture-goblin',name:'Гоблин',art:goblinArt,maxHp:600,attac
 const options=new URLSearchParams(location.search);
 const pveFoe=options.get('enemy')==='bandit'?{...foe,id:'fixture-bandit',name:'Разбойник',art:banditArt}:foe;
 const initial={strike:null,heroAlive:true,foeAlive:true,heroWon:false,foeWon:false,speed:1,appearance:'m2',enemy:'goblin'};
-function seed(){const game=createInitialGame();game.player.name='Рагнар';game.player.level=10;game.player.stats.maxHp=800;game.player.stats.hp=800;game.appearance=['m1','f1','f2'].includes(options.get('appearance'))?options.get('appearance'):'m2';useGame.set(game);}
+function seed(){const game=createInitialGame();game.player.name='Рагнар';game.player.level=10;game.player.stats.maxHp=800;game.player.stats.hp=800;game.appearance=['m1','f1','f2'].includes(options.get('appearance'))?options.get('appearance'):'m2';
+ // Fixture ONLY: select a real existing follower and leave missing HP so the
+ // genuine PvE round can produce an observable companion heal, never mock it.
+ const followerId=options.get('follower');
+ if(followerId&&game.followers.some(f=>f.id===followerId)){
+   game.followers=game.followers.map(f=>f.id===followerId?{...f,unlocked:true}:f);
+   game.activeFollowerId=followerId;
+   game.player.stats.hp=200;
+ }
+ useGame.set(game);}
 seed();
 function App(){
  const [scene,setScene]=useState(new URLSearchParams(location.search).get('scene')||'figure');
