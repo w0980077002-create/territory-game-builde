@@ -20,7 +20,7 @@ vm.runInNewContext(compiled, {
 const {
   trialChestTier, rollTrialChest, applyTrialChest, assembleTrialBlueprint,
   ownedTrialFragmentCount, trialFragmentItemId, trialBlueprintItemId,
-  TRIAL_FRAGMENT_WEIGHTS, TRIAL_CHEST_RULES,
+  TRIAL_FRAGMENT_WEIGHTS, TRIAL_CHEST_RULES, TRIAL_CHEST_ART,
 } = m.exports;
 const snap = JSON.stringify;
 const withChoicesFactory = values => {
@@ -155,6 +155,16 @@ for(const file of [
   const svg=readFileSync(path,'utf8');
   assert.match(svg,/<svg[^>]*viewBox=/);
 }
+// The ordinary chest must be a finished transparent game illustration, never
+// the crude line-art SVG reported by the owner. Both UIs use the same mapping.
+assert.equal(TRIAL_CHEST_ART.common, 'assets/territory/ui/materials/royal-chest.webp');
+const commonChestArt = readFileSync('public/' + TRIAL_CHEST_ART.common);
+assert.equal(commonChestArt.toString('ascii', 0, 4), 'RIFF', 'common chest must be a real WEBP');
+assert.equal(commonChestArt.toString('ascii', 8, 12), 'WEBP', 'common chest must be a real WEBP');
+assert.ok(commonChestArt.length > 12000, 'the prize must be detailed artwork, not a placeholder');
+for (const tier of ['explorer', 'guardian', 'legendary']) {
+  assert.ok(existsSync('public/' + TRIAL_CHEST_ART[tier]), 'missing tier art ' + tier);
+}
 const badge = readFileSync('public/assets/territory/ui/trial-loot/city-reputation.png');
 assert.equal(badge.subarray(0,8).toString('hex'), '89504e470d0a1a0a', 'the approved royal badge must be a real PNG');
 assert.ok(badge.length > 5000, 'approved royal badge must contain actual artwork');
@@ -162,6 +172,10 @@ const collectionSource = readFileSync('src/components/trials/TrialLootCollection
 assert.match(collectionSource, /city-reputation\.png/, 'collection must display the newly approved royal crest');
 assert.doesNotMatch(collectionSource, /city-reputation\.svg/, 'old badge must not be shown in the collection');
 const sourceFight=readFileSync('src/components/pve/PveFight.tsx','utf8');
+assert(sourceFight.includes('TRIAL_CHEST_ART[loot.tier]'), 'victory card must use the real art mapping');
+assert(collectionSource.includes('TRIAL_CHEST_ART[tier]'), 'collection must match the actual victory chest');
+assert.match(readFileSync('src/components/pve/trialChestReveal.css', 'utf8'), /trial-chest-stage--common/, 'missing rich common chest styling');
+
 assert.match(sourceFight, /city-reputation\.png/, 'victory reward must display the same royal crest');
 assert.doesNotMatch(sourceFight, /city-reputation\.svg/, 'old badge must not be shown in battle rewards');
 const sourceVictory=readFileSync('src/game/progression.ts','utf8');

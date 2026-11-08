@@ -14,7 +14,7 @@ import { beltContext, consumeBelt } from '@/game/belt';
 import { blessedGold, consumeBlessing, recordTrialWin, spendStones, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
 import { buildTrialGauntlet } from '@/game/trialGauntlet';
-import { TRIAL_BLUEPRINTS, TRIAL_COMPONENTS, TRIAL_LOOT_ASSET_BASE, type TrialChestReward } from '@/game/trialLoot';
+import { TRIAL_BLUEPRINTS, TRIAL_COMPONENTS, TRIAL_LOOT_ASSET_BASE, TRIAL_CHEST_ART, type TrialChestReward } from '@/game/trialLoot';
 import './trialChestReveal.css';
 import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextComboOpening, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
@@ -946,13 +946,13 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
             ...(loot.fragment ? [{ id: 'fragment', icon: '📜', name: (language === 'en' ? fragmentName?.nameEn : fragmentName?.name) ?? '', value: loot.fragment.part + '/6' }] : []),
             ...(loot.component ? [{ id: 'component', icon: '✦', name: (language === 'en' ? ingredientName?.nameEn : ingredientName?.name) ?? '', value: '×' + loot.component.qty }] : []),
           ];
-          const chestArt = import.meta.env.BASE_URL + TRIAL_LOOT_ASSET_BASE + 'chest-' + loot.tier + '.svg';
+          const chestArt = import.meta.env.BASE_URL + TRIAL_CHEST_ART[loot.tier];
           return <section data-testid="trial-earned-chest" className="mt-3 overflow-hidden rounded-xl border-2 border-amber-300/65 bg-[#24160e]/95 p-2.5 text-left text-amber-100 shadow-[inset_0_2px_8px_rgba(240,181,85,.08),0_0_18px_rgba(245,158,11,.12)]">
             <button type="button" data-testid="trial-open-chest" aria-expanded={chestOpened}
               disabled={saveState !== 'confirmed' || chestOpened}
               onClick={() => setChestOpened(true)}
-              className="flex w-full min-h-28 items-center gap-2 rounded-lg bg-gradient-to-r from-[#442718] via-[#2c1b13] to-[#1b1316] p-1.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 disabled:cursor-default">
-              <span className={'trial-chest-stage ' + (chestOpened ? 'trial-chest-open' : '')} aria-hidden="true">
+              className="flex w-full min-h-28 items-center gap-2 rounded-lg border border-[#c58b43]/40 bg-[radial-gradient(ellipse_at_25%_58%,rgba(173,111,45,0.24),transparent_55%),linear-gradient(100deg,#3d2719,#221711_65%,#151216)] p-1 text-left shadow-[inset_0_1px_0_rgba(255,211,149,.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 disabled:cursor-default">
+              <span className={'trial-chest-stage ' + (loot.tier === 'common' ? 'trial-chest-stage--common ' : '') + (chestOpened ? 'trial-chest-open' : '')} aria-hidden="true">
                 <span className="trial-chest-aura" />
                 <img src={chestArt} className="trial-chest-half trial-chest-base" alt="" />
                 <img src={chestArt} className="trial-chest-half trial-chest-lid" alt="" />
