@@ -41,8 +41,8 @@ assert(!arena.includes('h-[52%] w-[48%]'), 'Do not restore the invisible followe
 assert.match(pve, /getEnemyCombatFrames\((?:enemy|activeEnemy)\.art\)/, 'PvE enemy animations disconnected');
 assert.match(pve, /getFollowerCombatFrames\(follower\.id\)/, 'PvE companion animation frames missing');
 assert.match(pve, /data-testid="pve-visible-follower"/, 'Companion needs its own PvE foreground lane');
-assert.match(pve, /z-30 h-\\[72%\\] w-\\[74%\\]/, 'Normal companion cannot shrink behind the hero in Trials');
-assert.match(pve, /right-\\[-8%\\] bottom-0 h-\\[98%\\] w-\\[88%\\]/, 'Shift the hero right to preserve a visible companion lane');
+assert(pve.includes('z-30 h-[72%] w-[74%]'), 'Normal companion cannot shrink behind the hero in Trials');
+assert(pve.includes('right-[-8%] bottom-0 h-[98%] w-[88%]'), 'Shift the hero right to preserve a visible companion lane');
 assert(!pve.includes('z-10 h-[52%] w-[48%]'), 'Do not bury a selected companion under the hero');
 
  
