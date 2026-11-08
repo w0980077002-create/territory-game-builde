@@ -71,7 +71,7 @@ export function applyTimeEffects(state: GameState, now = Date.now()): GameState 
   }
   // Weekly quests were previously never reset. A legacy save without a week
   // marker is anchored to the current week without discarding earned progress.
-  // Subsequent Sunday calendar boundaries reset only weekly quests, never story/achievements.
+  // Subsequent Monday 00:00 UTC boundaries reset only weekly quests, never story/achievements.
   const thisWeek = weeklyQuestKey(now);
   if (!state.weeklyResetWeek) {
     next = { ...next, weeklyResetWeek: thisWeek };
