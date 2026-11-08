@@ -141,6 +141,27 @@ assert.match(skeletalSource, /joint\.style\.transform = String\(frames\[i\]/, 'L
 assert.match(skeletalSource, /fallbackTimers\.forEach\(timer => window\.clearTimeout\(timer\)\)/, 'No stale joint timers after combat');
 assert.match(skeletalSource, /reduced\?\.matches === true/, 'Honor reduced-motion preference in old Telegram');
 
+// A companion action is a presentation of a resolved PvE hit/heal, never a
+// synthetic combat source. Witch keeps its own original keyed attack/heal art.
+const companionMotion = read('src/components/pve/pveCompanionMotion.css');
+assert.match(pve, /hit\.source === 'companion' && hit\.amount > 0\) setCompanionStrikeKey\(actionKey\)/,
+  'Companion attack animation must be driven only by resolved companion damage');
+assert.match(pve, /data-action=\{strike\?\.key === companionStrikeKey \? 'attack'/,
+  'Unrelated hero and rune events must not animate the companion as attacker');
+assert.match(pve, /const companionHealing = res\.healAmount - runeHealing;/,
+  'Companion animation must subtract rune-only healing');
+assert.match(pve, /setCompanionHeal\(\{ sequence: \+\+keyRef\.current, amount: companionHealing \}\)/,
+  'Forest Healer and Battle Cow must react to actual healing');
+assert.match(pve, /follower\.id === 'follower_pumpkin_witch_2026' \? <PumpkinWitch/,
+  'Never replace the approved Witch attack and heal art');
+assert.match(pve, /data-testid="pve-companion-heal"/,
+  'Show real confirmed companion heal visibly in PvE');
+assert.match(companionMotion, /@keyframes pve-companion-charge/,
+  'Melee companion requires its own step-and-recover choreography');
+assert.match(companionMotion, /@keyframes pve-companion-cast/,
+  'Ranged companion requires a casting motion');
+assert.match(companionMotion, /prefers-reduced-motion:reduce/,
+  'Companion choreography must honor reduced motion');
 console.log('Battle visuals OK: all character poses/assets, opponent, companion, sword, chat and seven-slot UI.');
 
 // Existing review CI invokes this entrypoint, including the real rig contract.
