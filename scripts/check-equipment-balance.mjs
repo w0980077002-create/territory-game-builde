@@ -223,7 +223,7 @@ const migrated = balance.migrateGameStateBalance({
 });
 assert.equal(migrated.balanceVersion, balance.EQUIPMENT_BALANCE_VERSION);
 assert.equal(migrated.player.equipped.weapon.attack, 141);
-assert.equal(migrated.inventory[0].equipment.attack, 388);
+assert.equal(migrated.inventory[0].equipment.attack, 101);
 
 // A save produced by the earlier v2 development formula must be recalculated
 // from its immutable baseline when moving to v3, not skipped as already current.
@@ -245,7 +245,7 @@ assert.equal(migratedV2.player.equipped.weapon.critChance, 8, 'migration must pr
 const migratedBelt = balance.migrateGameStateBalance({
   belt: [null, { id: 'belt-loot', name: lootLegacy.name, icon: lootLegacy.icon, type: 'equipment', rarity: lootLegacy.rarity, qty: 1, description: '', equipment: lootLegacy }],
 });
-assert.equal(migratedBelt.belt[1].equipment.attack, 388, 'inflated equipment in belt slots must also migrate');
+assert.equal(migratedBelt.belt[1].equipment.attack, 101, 'inflated equipment in belt slots must also migrate');
 assert.equal(migratedBelt.belt.length, 2, 'migration must preserve belt shape instead of padding/truncating');
 const alreadyCurrentCustom = {
   balanceVersion: balance.EQUIPMENT_BALANCE_VERSION,
