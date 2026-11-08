@@ -105,6 +105,8 @@ with sync_playwright() as p:
                 const images=[...document.querySelectorAll('.vip-chest-card img')];
                 return images.length===2 && images.every(el => el.complete && el.naturalWidth > 0);
             }""", timeout=8000)
+            assert chest_images.evaluate_all('images => images.every(el => el.naturalWidth >= 160)'), (width,lang,'Low-resolution VIP chest icon reused')
+            assert all(img.bounding_box()['height'] >= 98 for img in chest_images.all()), (width,lang,'VIP illustrations too small in cards')
             cards.nth(0).click()
             assert vip.locator('[data-testid="vip-chest-demo"]').count() == 1
             vip.locator('[data-testid="vip-chest-demo-open"]').click()
