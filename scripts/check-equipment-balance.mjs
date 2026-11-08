@@ -275,12 +275,34 @@ const customReduced = balance.capEquipmentToHeroLevel(
 assert.equal(customReduced.level, 8);
 assert.equal(customReduced.defense, 20);
 assert.equal(customReduced.hp, 40);
+// A level-50 item must remain exactly the same object at handoff. Its buyer
+// continues with level 51 rather than recreating a level-1 item.
+const sellerItem=balance.setEquipmentLevel(balance.prepareNewEquipment({
+  id:'seller-legendary-123',name:'Клинок древних',slot:'weapon',icon:'🔱',rarity:'legendary',
+  attack:46,critChance:9,level:5,
+}),50);
+const buyerInventoryCopy={...sellerItem,baseStats:{...sellerItem.baseStats}};
+assert.equal(buyerInventoryCopy.level,50);
+assert.equal(buyerInventoryCopy.upgradeCount,45);
+assert.deepEqual(buyerInventoryCopy.baseStats,sellerItem.baseStats);
+const buyerNext=balance.upgradeEquipment(buyerInventoryCopy);
+assert.equal(buyerNext.id,sellerItem.id,'Transferred item must retain its original identity');
+assert.equal(buyerNext.level,51,'New owner upgrades from 50 to 51, not from its crafting baseline');
+assert.equal(buyerNext.upgradeCount,46);
+assert.equal(buyerNext.attack,sellerItem.attack+3);
+assert.equal(sellerItem.level,50,'A transfer must not mutate the former owner snapshot');
+
 const actionsAfter = fs.readFileSync(path.join(root, 'src/game/actions.ts'), 'utf8');
 const cloudAfter = fs.readFileSync(path.join(root, 'src/game/cloud.ts'), 'utf8');
 const liveAfter = fs.readFileSync(path.join(root, 'src/game/live.ts'), 'utf8');
 const guardSql = fs.readFileSync(path.join(root, 'supabase/migrations/20261018_permanent_gear_level_rule.sql'), 'utf8');
 assert.match(actionsAfter, /capEquipmentToHeroLevel\(prepareNewEquipment/, 'shop caps every new purchased item');
 assert.match(actionsAfter, /capEquipmentToHeroLevel\(item\.equipment, state\.player\.level\)/, 'equipping never bypasses hero-level cap');
+assert.match(actionsAfter, /if \(item\.equipment\.level > state\.player\.level\) return state;/,
+  'Under-levelled users must not destroy traded equipment stats by equipping');
+const showcase=fs.readFileSync(path.join(root, 'src/components/GearShowcase.tsx'), 'utf8');
+assert.match(showcase, /candidate\?\.level \?\? 0\) > state\.player\.level/,
+  'Over-levelled item must be visibly blocked from equipping');
 assert.match(cloudAfter, /capEquipmentToHeroLevel\(eq, heroLevel\)/, 'cloud loaded equipment is capped');
 assert.match(liveAfter, /ownerApproved \? \{ \.\.\.item, adminTestLevel: true \} : capEquipmentToHeroLevel\(item, heroLevel\)/,
   'only the explicit owner test grant may bypass the local hero-level cap');

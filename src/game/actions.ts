@@ -252,6 +252,9 @@ export function buyItem(state: GameState, shopItem: ShopItem, qty: number = 1): 
 
 export function equipItem(state: GameState, item: InventoryItem): GameState {
   if (!item.equipment) return state;
+  // Never downgrade an expensive traded item when the buyer is under-levelled.
+  // The item remains unchanged in the backpack until the hero can equip it.
+  if (item.equipment.level > state.player.level) return state;
   const eq = capEquipmentToHeroLevel(item.equipment, state.player.level);
   const slot = eq.slot;
   const currentEquipped = state.player.equipped[slot];

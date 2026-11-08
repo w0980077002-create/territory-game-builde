@@ -205,6 +205,12 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
 
   const equip = () => {
     if (!bag || busy || mustReload) return;
+    if (bag.equipment && bag.equipment.level > useGame.get().player.level) {
+      setError(language === 'en'
+        ? `Reach hero level ${bag.equipment.level} to equip this item. It stays in your bag.`
+        : `Для этого предмета нужен уровень героя ${bag.equipment.level}. Предмет сохранён в сумке.`);
+      return;
+    }
     useGame.set((latest) => {
       const latestItem = latest.inventory.find((i) => i.id === bag.id && i.equipment);
       return latestItem ? equipItem(latest, latestItem) : latest;
@@ -410,9 +416,13 @@ export function GearShowcase({ userId, onForge }: { userId: string; onForge?: (e
                   : (language === 'en' ? 'Same overall rating — compare individual stats.' : 'Общая оценка равна — сравни бонусы.')}
             </p>
             <div className="gear-compare-actions">
-              <button type="button" onClick={equip} disabled={busy || mustReload} className="gear-action-equip">
+              <button type="button" onClick={equip} disabled={busy || mustReload || (candidate?.level ?? 0) > state.player.level} className="gear-action-equip">
                 <Check size={17}/>{language === 'en' ? 'Equip' : 'Надеть'}
               </button>
+              {candidate && candidate.level > state.player.level && <p className="gear-weight-hint" role="status">
+                {language === 'en' ? `Requires hero level ${candidate.level}. The item's level and stats remain intact.`
+                  : `Нужен уровень героя ${candidate.level}. Уровень и характеристики вещи сохраняются.`}
+              </p>}
               {onForge && candidate && <button type="button" disabled={busy || mustReload} onClick={() => onForge(candidate.id)} className="gear-action-salvage">
                 <Hammer size={16}/>{language === 'en' ? 'Upgrade' : 'В кузницу'}
               </button>}

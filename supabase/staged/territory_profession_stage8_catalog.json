@@ -639,8 +639,8 @@
           "slot": "weapon",
           "rarity": "rare",
           "level": 3,
-          "attack": 17,
-          "critChance": 2,
+          "attack": 19,
+          "critChance": 3,
           "name": "Клинок дозорного",
           "icon": "🗡️"
         }
@@ -672,8 +672,8 @@
           "slot": "armor",
           "rarity": "rare",
           "level": 3,
-          "defense": 11,
-          "hp": 70,
+          "defense": 13,
+          "hp": 84,
           "name": "Латы северянина",
           "icon": "🛡️"
         }
@@ -709,8 +709,8 @@
           "slot": "weapon",
           "rarity": "epic",
           "level": 5,
-          "attack": 33,
-          "critChance": 7,
+          "attack": 38,
+          "critChance": 8,
           "name": "Секира бури",
           "icon": "🪓"
         }
@@ -746,8 +746,8 @@
           "slot": "weapon",
           "rarity": "legendary",
           "level": 5,
-          "attack": 35,
-          "critChance": 8,
+          "attack": 46,
+          "critChance": 9,
           "name": "Клинок первого ярла",
           "icon": "⚔️"
         }
@@ -779,7 +779,7 @@
           "slot": "ring",
           "rarity": "rare",
           "level": 3,
-          "attack": 8,
+          "attack": 9,
           "critChance": 2,
           "name": "Кольцо искры",
           "icon": "💍"
@@ -812,7 +812,7 @@
           "slot": "amulet",
           "rarity": "rare",
           "level": 3,
-          "attack": 5,
+          "attack": 7,
           "critChance": 3,
           "name": "Оберег северных врат",
           "icon": "📿"
@@ -845,8 +845,8 @@
           "slot": "ring",
           "rarity": "epic",
           "level": 5,
-          "attack": 14,
-          "critChance": 4,
+          "attack": 17,
+          "critChance": 5,
           "name": "Сапфировое кольцо",
           "icon": "💎"
         }
@@ -878,8 +878,8 @@
           "slot": "ring",
           "rarity": "legendary",
           "level": 5,
-          "attack": 15,
-          "critChance": 5,
+          "attack": 20,
+          "critChance": 6,
           "name": "Печать ярла",
           "icon": "💍"
         }
@@ -911,8 +911,8 @@
           "slot": "helmet",
           "rarity": "common",
           "level": 1,
-          "defense": 3,
-          "hp": 20,
+          "defense": 4,
+          "hp": 21,
           "name": "Шлем дозорного",
           "icon": "⛑️"
         }
@@ -944,9 +944,9 @@
           "slot": "boots",
           "rarity": "rare",
           "level": 2,
-          "defense": 4,
-          "hp": 36,
-          "critChance": 1,
+          "defense": 5,
+          "hp": 42,
+          "critChance": 2,
           "name": "Сапоги следопыта",
           "icon": "🥾"
         }
@@ -978,8 +978,8 @@
           "slot": "shield",
           "rarity": "rare",
           "level": 2,
-          "defense": 5,
-          "hp": 25,
+          "defense": 7,
+          "hp": 31,
           "name": "Щит северной стражи",
           "icon": "🛡️"
         }
@@ -1015,8 +1015,8 @@
           "slot": "armor",
           "rarity": "legendary",
           "level": 3,
-          "defense": 12,
-          "hp": 80,
+          "defense": 19,
+          "hp": 86,
           "name": "Доспех мастера механизмов",
           "icon": "🛡️"
         }
@@ -1048,9 +1048,9 @@
           "slot": "boots",
           "rarity": "rare",
           "level": 2,
-          "defense": 3,
-          "hp": 35,
-          "critChance": 1,
+          "defense": 5,
+          "hp": 42,
+          "critChance": 2,
           "name": "Сапоги гонца",
           "icon": "🥾"
         }
@@ -1082,8 +1082,8 @@
           "slot": "armor",
           "rarity": "rare",
           "level": 3,
-          "defense": 10,
-          "hp": 65,
+          "defense": 13,
+          "hp": 84,
           "name": "Броня караванщика",
           "icon": "🦺"
         }
@@ -1115,8 +1115,8 @@
           "slot": "helmet",
           "rarity": "rare",
           "level": 1,
-          "defense": 3,
-          "hp": 20,
+          "defense": 4,
+          "hp": 25,
           "name": "Шлем старейшины",
           "icon": "⛑️"
         }
@@ -1152,9 +1152,9 @@
           "slot": "boots",
           "rarity": "legendary",
           "level": 2,
-          "defense": 4,
-          "hp": 40,
-          "critChance": 2,
+          "defense": 7,
+          "hp": 60,
+          "critChance": 3,
           "name": "Сапоги великого мастера",
           "icon": "🥾"
         }
@@ -1407,8 +1407,8 @@
           "slot": "weapon",
           "rarity": "legendary",
           "level": 5,
-          "attack": 35,
-          "critChance": 8,
+          "attack": 46,
+          "critChance": 9,
           "name": "Клинок древних",
           "icon": "🔱"
         }
@@ -1661,7 +1661,7 @@
           "slot": "ring",
           "rarity": "epic",
           "level": 5,
-          "attack": 15,
+          "attack": 16,
           "critChance": 5,
           "name": "Кольцо силы мастера",
           "icon": "💍"
@@ -1694,8 +1694,8 @@
           "slot": "ring",
           "rarity": "legendary",
           "level": 5,
-          "attack": 15,
-          "critChance": 5,
+          "attack": 20,
+          "critChance": 6,
           "name": "Кольцо древних",
           "icon": "💍"
         }
@@ -1760,8 +1760,8 @@
           "slot": "helmet",
           "rarity": "rare",
           "level": 3,
-          "defense": 3,
-          "hp": 20,
+          "defense": 4,
+          "hp": 24,
           "name": "Шлем стража",
           "icon": "⛑️"
         }

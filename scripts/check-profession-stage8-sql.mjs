@@ -297,7 +297,8 @@ try {
   assert.equal(prestige.success,true);
   assert.equal(prestige.kind,'item');
   assert.ok(prestige.item_id);
-  assert.equal(prestige.item_output.equipment.attack,35);
+  assert.equal(prestige.item_output.equipment.attack,46,'Grandmaster item must surpass the epic shop sword');
+  assert.equal(prestige.item_output.equipment.critChance,9,'Legendary bonus preserves bounded crit chance');
   assert.equal(await wallet(second),9);
   assert.deepEqual(await exec('s8_smith_jarl_blade',operations[1]),prestige);
   assert.deepEqual(await mastery(second),{mastery_level:300,mastery_xp:0},
