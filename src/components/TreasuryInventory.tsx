@@ -35,7 +35,7 @@ export function TreasuryInventory({userId}:{userId:string}){
   ] as const).map(([kind,icon,label,count])=><button key={kind} disabled={busy||!!state?.receipt||!count||!!error} onClick={()=>void open(kind)}><img src={import.meta.env.BASE_URL+`fortune/${icon}.svg`} alt=""/><strong>{count??'—'}</strong><small>{label}</small><small>{en?'Open · free':'Открыть · бесплатно'}</small></button>)}</div>
   {error&&<p role="alert">{error}</p>}<button className="fortune-skip" disabled={busy} onClick={()=>void recover()}>{busy?(en?'Loading…':'Загрузка…'):(en?'Refresh / recover':'Обновить / восстановить')}</button>
   {state?.receipt&&<FortuneDialog title={opening?(en?'TREASURY OPENS…':'СОКРОВИЩНИЦА ОТКРЫВАЕТСЯ…'):(en?'YOUR REWARD':'ТВОЯ НАГРАДА')} onClose={()=>{if(!opening)void close();}}>
-   <div className={`fortune-chest-reveal ${opening?'is-opening':''} ${state.receipt.action==='golden'?'is-golden':''}`} aria-hidden="true">{opening?'✦':'✨'}<img src={import.meta.env.BASE_URL+`fortune/${state.receipt.action==='golden'?'golden':state.receipt.action==='rare'?'rare':'common'}-chest.svg`} alt=""/></div>
+   <div className={`fortune-chest-reveal ${opening?'is-opening':'is-open'} ${state.receipt.action==='golden'?'is-golden':''}`} aria-hidden="true">{opening?'✦':'✨'}<img src={import.meta.env.BASE_URL+`fortune/${state.receipt.action==='golden'?'golden':state.receipt.action==='rare'?'rare':'common'}-chest.svg`} alt=""/></div>
    {!opening&&<h3>{state.receipt.refunded?(en?'Level 100 · ticket returned':'Уровень 100 · билет возвращён'):fortuneLabel(state.receipt,en)}</h3>}
    <p>{en?'Server-confirmed. Already credited.':'Подтверждено сервером. Уже зачислено.'}</p>{error&&<p role="alert">{error}</p>}
   </FortuneDialog>}

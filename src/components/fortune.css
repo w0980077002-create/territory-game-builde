@@ -137,6 +137,16 @@
 .fortune-chest-reveal span{display:block;font-size:100px;filter:drop-shadow(0 0 12px #c697ec)}
 .fortune-chest-reveal.is-golden span{filter:drop-shadow(0 0 30px #ffcc3b)}
 .fortune-chest-reveal.is-opening{animation:fortune-chest .4s alternate 4}
+/* Chest reveal: a real closed → opening → open sequence with a visible reward glow.
+   The art is an <img>, so the glow and sizing target the image itself. */
+.fortune-chest-reveal{isolation:isolate;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fortune-chest-reveal img{display:block;width:132px;height:132px;max-width:60vw;object-fit:contain;filter:drop-shadow(0 0 12px #c697ec);transform-origin:50% 90%;transition:filter .4s ease,transform .4s ease}
+.fortune-chest-reveal.is-golden img{filter:drop-shadow(0 0 22px #ffcc3b)}
+.fortune-chest-reveal.is-opening img{animation:fortune-chest-shake .4s ease-in-out 4 alternate}
+.fortune-chest-reveal.is-open img{transform:scale(1.06);filter:drop-shadow(0 0 20px #ffe08a) drop-shadow(0 0 6px #fff3b0)}
+.fortune-chest-reveal.is-open.is-golden img{filter:drop-shadow(0 0 34px #ffcc3b) drop-shadow(0 0 10px #fff3b0)}
+.fortune-chest-reveal.is-open::before{content:'';position:absolute;left:50%;top:50%;width:220px;height:220px;margin:-110px 0 0 -110px;border-radius:50%;background:radial-gradient(circle,#ffe08a66 0%,#ffe08a00 70%);z-index:-1;pointer-events:none}
+@keyframes fortune-chest-shake{0%{transform:rotate(-4deg)}100%{transform:rotate(4deg) scale(1.03)}}
 .fortune-chests img { width: 52px; height: 52px; object-fit: contain; }
 .fortune-chest-reveal img { width: 140px; height: 140px; display: block; margin: auto; filter: drop-shadow(0 0 18px #b86cff); }
 .fortune-chest-reveal.is-golden img { filter: drop-shadow(0 0 28px #ffca3c); }
