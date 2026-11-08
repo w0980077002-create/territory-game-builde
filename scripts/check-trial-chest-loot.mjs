@@ -186,6 +186,14 @@ assert.match(sourceFight,/data-testid="trial-chest-revealed"/);
 assert.match(sourceFight,/trial-chest-already-claimed/);
 assert.match(sourceFight,/saveState !== 'confirmed' \|\| chestOpened/, 'never open a chest before saving, and never credit loot on click');
 assert.ok(existsSync('src/components/pve/trialChestReveal.css'), 'missing live opening animation');
+// Visual reveal must remain a real three-state animation, not a static chest image.
+// Keep this independent of loot generation and protect motion-sensitive players.
+const revealCss = readFileSync('src/components/pve/trialChestReveal.css', 'utf8');
+assert.match(revealCss, /\.trial-chest-stage:not\(\.trial-chest-open\)\s*\{[^}]*animation:\s*territory-chest-idle/s, 'closed chest needs idle state');
+assert.match(revealCss, /\.trial-chest-stage\.trial-chest-open \.trial-chest-lid\s*\{[^}]*animation:\s*territory-chest-lid/s, 'opening must animate the actual lid');
+assert.match(revealCss, /\.trial-chest-open \.trial-chest-aura\s*\{[^}]*animation:\s*territory-chest-glow/s, 'opening must reveal warm glow');
+assert.match(revealCss, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?animation:\s*none !important/, 'motion-sensitive players must be able to disable chest animation');
+assert.match(revealCss, /\.trial-chest-stage\.trial-chest-open \.trial-chest-lid\s*\{\s*transform:/, 'reduced-motion open state must still show an opened lid');
 assert.match(readFileSync('src/components/InventoryScreen.tsx','utf8'),/<TrialLootCollection language=\{language\} \/>/);
 assert.match(readFileSync('src/components/BattleScreen.tsx','utf8'),/<TrialLootCollection language=\{language\} \/>/);
 console.log('TRIAL LOOT PASS: all-floor common chests, exclusive one-in-four rewards, special odds, reset replay protection, visuals and saved victory reveal');
