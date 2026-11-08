@@ -1155,3 +1155,69 @@ html.territory-ios-webapp .territory-monopoly .mono-scene {
   font:700 9px/1.2 Arial,sans-serif;
   text-align:center;
 }
+
+/* After "Later", keep the same six real choices immediately with roll controls,
+   not buried beneath pending claims and the rest of the Game Hall. */
+.territory-monopoly .mono-controls .mono-choose--active {
+  position:relative;
+  width:100%;
+  margin:7px 0 0;
+  padding:8px 6px 10px;
+  border:1px solid #d4aa6b;
+  border-radius:10px;
+  background:linear-gradient(180deg,#63391e,#26140c);
+  box-shadow:inset 0 1px #ffe1a874,0 2px 5px #100705aa;
+}
+.territory-monopoly .mono-controls .mono-choose--active > small {
+  display:block;
+  margin:0 0 8px;
+  font:900 10px/1.25 Arial,sans-serif;
+  color:#ffe8b4;
+  text-shadow:0 1px #170a04;
+}
+.territory-monopoly .mono-controls .mono-choose--active > div {
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:4px;
+  align-items:center;
+}
+.territory-monopoly .mono-controls .mono-choose--active button {
+  position:relative;
+  box-sizing:border-box;
+  display:block;
+  width:100%;
+  min-width:0;
+  min-height:56px;
+  padding:0;
+  border:1px solid #c6985e;
+  border-radius:7px;
+  background:linear-gradient(180deg,#6d431fa3,#241209);
+  box-shadow:inset 0 1px #edc58b70,0 2px 4px #130705;
+  touch-action:manipulation;
+}
+.territory-monopoly .mono-controls .mono-choose--active button:disabled {
+  opacity:.48;
+}
+.territory-monopoly .mono-controls .mono-choose--active button:focus-visible {
+  outline:2px solid #ffe4a3;
+  outline-offset:2px;
+}
+.territory-monopoly .mono-controls .mono-choose--active .mono-dice-perspective {
+  position:absolute;
+  left:50%;
+  top:45%;
+  width:64px;
+  height:64px;
+  transform:translate(-50%,-50%) scale(.53);
+  transform-origin:center;
+  pointer-events:none;
+}
+.territory-monopoly .mono-controls .mono-choose--active button > b {
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:2px;
+  color:#ffe4b0;
+  font:900 10px Arial,sans-serif;
+  text-shadow:0 1px #190904;
+}
