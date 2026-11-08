@@ -31,6 +31,9 @@ try {
   assert.equal(estimate.estimated.rarity, owned.rarity);
   assert.ok(estimate.estimated.attack <= owned.attack);
   assert.deepEqual(owned, original, 'preview must not mutate or lower auction merchandise');
+  assert.equal(previewAntiLevel(owned, 1)?.toLevel, 1,
+    'A level-1 merchant may own and resell the untouched high-level item');
+  assert.deepEqual(owned, original);
   assert.equal(previewAntiLevel(owned, 50), null);
   assert.equal(previewAntiLevel(owned, 60), null);
   assert.equal(previewAntiLevel(owned, 0), null);
