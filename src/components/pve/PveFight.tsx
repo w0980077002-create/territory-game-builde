@@ -18,6 +18,7 @@ import { buildTrialGauntlet } from '@/game/trialGauntlet';
 import { TRIAL_BLUEPRINTS, TRIAL_COMPONENTS, TRIAL_LOOT_ASSET_BASE, TRIAL_CHEST_ART, type TrialChestReward } from '@/game/trialLoot';
 import './trialChestReveal.css';
 import './pveCompanionMotion.css';
+import { PveCompanionStrikeFx } from './PveCompanionStrikeFx';
 import { applyPotion, coverThreatZone, describeHit, enemySide, heroSide, nextComboOpening, nextAdaptiveEnemyIntent, rememberDistinctHeroAttacks, staggerEnemyGuard, nextTacticalMomentum, playRound, randomZones, summarizePveRound, EMPTY_PVE_RUNE_AILMENTS, type PveRuneAilments, type TacticalMomentum, type PveSide, type PveTacticalSummary } from '@/game/pve';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import type { Enemy } from '@/game/types';
@@ -821,6 +822,12 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                 />
               </div>
             </div>
+            {/* The travelling arrow/magic or melee contact is emitted only
+                for the existing confirmed companion hit. The Witch keeps her
+                own pumpkin FX; no PvP spectator gets a phantom projectile. */}
+            {follower && strike && strike.key === companionStrikeKey && (
+              <PveCompanionStrikeFx followerId={follower.id} eventKey={strike.key} speed={roundSpeed} />
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5 pt-5">
