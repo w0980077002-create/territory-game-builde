@@ -17,6 +17,7 @@ export function TreasuryInventory({userId}:{userId:string}){
  const open=async(kind:FortuneAction)=>{
   if(locked.current||state?.receipt||error)return;locked.current=true;setBusy(true);
   try{
+   clearTimeout(timer.current);
    setState(await playFortune(userId,kind));setOpening(true);
    timer.current=setTimeout(()=>setOpening(false),window.matchMedia('(prefers-reduced-motion: reduce)').matches?0:1600);
   }catch{setError(en?'Connection interrupted. Recover the existing operation.':'Связь прервана. Восстанови существующую операцию.');}
@@ -27,6 +28,7 @@ export function TreasuryInventory({userId}:{userId:string}){
   try{setState(await acknowledgeFortune(userId,state.receipt.id));setError('');}catch{setError(en?'Retry confirmation.':'Повтори подтверждение.');}
   finally{locked.current=false;setBusy(false);}
  };
+ const revealChest = state?.receipt ? import.meta.env.BASE_URL+`fortune/${state.receipt.action==='golden'?'golden':state.receipt.action==='rare'?'rare':'common'}-chest.svg` : '';
  return <section className="fortune-treasury" data-testid="treasury-inventory">
   <h2>✦ {en?'Your treasure':'Твои сокровища'} ✦</h2>
   <p>{en?'Open earned chests here — no ticket required. The rune challenge below is preserved.':'Открывай выигранные сундуки здесь — без билета. Испытание рун находится ниже.'}</p>
@@ -34,10 +36,18 @@ export function TreasuryInventory({userId}:{userId:string}){
    ['common','common-chest',en?'Common':'Обычный',state?.common],['rare','rare-chest',en?'Rare':'Редкий',state?.rare],['golden','golden-key',en?'Golden key':'Золотой ключ',state?.golden_key],
   ] as const).map(([kind,icon,label,count])=><button key={kind} disabled={busy||!!state?.receipt||!count||!!error} onClick={()=>void open(kind)}><img src={import.meta.env.BASE_URL+`fortune/${icon}.svg`} alt=""/><strong>{count??'—'}</strong><small>{label}</small><small>{en?'Open · free':'Открыть · бесплатно'}</small></button>)}</div>
   {error&&<p role="alert">{error}</p>}<button className="fortune-skip" disabled={busy} onClick={()=>void recover()}>{busy?(en?'Loading…':'Загрузка…'):(en?'Refresh / recover':'Обновить / восстановить')}</button>
-  {state?.receipt&&<FortuneDialog title={opening?(en?'TREASURY OPENS…':'СОКРОВИЩНИЦА ОТКРЫВАЕТСЯ…'):(en?'YOUR REWARD':'ТВОЯ НАГРАДА')} onClose={()=>{if(!opening)void close();}}>
-   <div className={`fortune-chest-reveal ${opening?'is-opening':'is-open'} ${state.receipt.action==='golden'?'is-golden':''}`} aria-hidden="true">{opening?'✦':'✨'}<img src={import.meta.env.BASE_URL+`fortune/${state.receipt.action==='golden'?'golden':state.receipt.action==='rare'?'rare':'common'}-chest.svg`} alt=""/></div>
+  {state?.receipt&&<FortuneDialog title={opening?(en?'TREASURY OPENS…':'СОКРОВИЩНИЦА ОТКРЫВАЕТСЯ…'):(en?'YOUR REWARD':'ТВОЯ НАГРАДА')} closeDisabled={opening||busy} onClose={()=>{if(!opening&&!busy)void close();}}>
+   <div className={`fortune-chest-reveal ${opening?'is-opening':'is-open'} ${state.receipt.action==='golden'?'is-golden':''} ${state.receipt.action==='rare'?'is-rare':''}`}>
+    <div className="fortune-chest-stage" aria-hidden="true">
+     <span className="fortune-chest-aura"/>
+     <img className="fortune-chest-base" src={revealChest} alt=""/>
+     <img className="fortune-chest-lid" src={revealChest} alt=""/>
+     <span className="fortune-chest-stars"/>
+    </div>
+    <span className="fortune-sr-only" role="status" aria-live="polite">{opening?(en?'The chest is opening':'Сундук открывается'):(en?'Chest opened':'Сундук открыт')}</span>
+   </div>
    {!opening&&<h3>{state.receipt.refunded?(en?'Level 100 · ticket returned':'Уровень 100 · билет возвращён'):fortuneLabel(state.receipt,en)}</h3>}
-   <p>{en?'Server-confirmed. Already credited.':'Подтверждено сервером. Уже зачислено.'}</p>{error&&<p role="alert">{error}</p>}
+   {!opening&&<p>{en?'Server-confirmed. Already credited.':'Подтверждено сервером. Уже зачислено.'}</p>}{error&&<p role="alert">{error}</p>}
   </FortuneDialog>}
  </section>;
 }
