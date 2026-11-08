@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 
 /** Compact native dialog. Rules scroll inside the panel; controls always remain visible. */
-export function FortuneDialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function FortuneDialog({ title, onClose, children, closeDisabled = false }: { title: string; onClose: () => void; children: ReactNode; closeDisabled?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const { language } = useLanguage();
@@ -20,14 +20,14 @@ export function FortuneDialog({ title, onClose, children }: { title: string; onC
     };
   }, []);
 
-  return <dialog ref={ref} className="fortune-dialog" aria-label={title} onCancel={event => { event.preventDefault(); onClose(); }}>
+  return <dialog ref={ref} className="fortune-dialog" aria-label={title} onCancel={event => { event.preventDefault(); if (!closeDisabled) onClose(); }}>
     <div className="fortune-dialog__head">
       <h2>{title}</h2>
-      <button ref={closeRef} type="button" className="fortune-dialog__close" aria-label={closeLabel} onClick={onClose}><X size={21}/></button>
+      <button ref={closeRef} type="button" className="fortune-dialog__close" aria-label={closeLabel} disabled={closeDisabled} onClick={onClose}><X size={21}/></button>
     </div>
     <div className="fortune-dialog__body">{children}</div>
     <div className="fortune-dialog__foot">
-      <button type="button" className="fortune-button" onClick={onClose}>OK</button>
+      <button type="button" className="fortune-button" disabled={closeDisabled} onClick={onClose}>OK</button>
     </div>
   </dialog>;
 }

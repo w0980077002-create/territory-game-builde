@@ -100,10 +100,40 @@ with sync_playwright() as p:
         assert '3 синих самоцвета' in page.get_by_role('dialog').inner_text()
         page.get_by_role('dialog').get_by_role('button',name='OK',exact=True).click()
         page.wait_for_function("!document.querySelector('.fortune-chests button').disabled")
+        icons=page.locator('.fortune-chests button img')
+        assert icons.nth(0).get_attribute('src').endswith('common-chest.webp')
+        assert icons.nth(1).get_attribute('src').endswith('rare-chest.webp')
+        assert icons.nth(2).get_attribute('src').endswith('golden-key.svg')
+        assert icons.evaluate_all('(els)=>els.every(img=>img.complete && img.naturalWidth>0)')
+        if width in (360,390):
+            page.screenshot(path=str(OUT/f'treasury-closed-{width}.png'))
         page.locator('.fortune-chests button').last.click()
         page.wait_for_function("document.querySelector('.fortune-dialog h3')?.textContent==='100 золота'")
         assert page.evaluate("window.__fortuneCalls.filter(c=>c.p_action==='golden').length")==1
+        chest=page.locator('.fortune-chest-stage')
+        lid=chest.locator('.fortune-chest-lid')
+        base=chest.locator('.fortune-chest-base')
+        assert lid.count()==1 and base.count()==1, 'chest must be split into a real lid and body'
+        assert lid.evaluate("(el)=>getComputedStyle(el).transform")!='none', 'opened lid must be raised even with reduced motion'
+        assert base.get_attribute('src').endswith('royal-chest.webp')
+        assert lid.get_attribute('src')==base.get_attribute('src')
+        chest_box=chest.bounding_box()
+        dialog_box=page.get_by_role('dialog').bounding_box()
+        assert chest_box and dialog_box and chest_box['x']>=dialog_box['x'] and chest_box['x']+chest_box['width']<=dialog_box['x']+dialog_box['width']+2, 'chest must fit the compact dialog'
+        assert not page.evaluate('document.documentElement.scrollWidth>innerWidth'), 'treasury must not cause horizontal overflow'
+        if width in (360,390):
+            page.screenshot(path=str(OUT/f'treasury-open-{width}.png'))
         page.get_by_role('dialog').get_by_role('button',name='OK',exact=True).click()
+        page.wait_for_function("!document.querySelector('.fortune-chests button').disabled")
+        if width in (360,390):
+            for index,kind in ((0,'common'),(1,'rare')):
+                page.locator('.fortune-chests button').nth(index).click()
+                page.wait_for_function("document.querySelector('.fortune-dialog h3')?.textContent==='100 золота'")
+                assert page.locator('.fortune-chest-base').get_attribute('src').endswith(f'{kind}-chest.webp')
+                assert page.locator('.fortune-chest-base').evaluate('(img)=>img.complete&&img.naturalWidth>0')
+                page.screenshot(path=str(OUT/f'treasury-{kind}-open-{width}.png'))
+                page.get_by_role('dialog').get_by_role('button',name='OK',exact=True).click()
+                page.wait_for_function("!document.querySelector('.fortune-chests button').disabled")
         report['viewports'].append({'width':width,'height':height,'wheel_width':wheel['width'],'spin_bottom':box['y']+box['height'],'navigation_top':nav['y'],'horizontal_overflow':False,'active_tab':'Игры'})
         page.close()
     page=load(browser,390,844)
@@ -122,6 +152,22 @@ with sync_playwright() as p:
     # Existing Battle remains blue when actually selected outside the wheel.
     page.evaluate("document.querySelector('.territory-shell').classList.remove('territory-wheel-open')")
     assert 'gradient' in page.get_by_role('button',name='Бой',exact=True).evaluate('el=>getComputedStyle(el).backgroundImage')
+    page.close()
+    # Real chest reveal: lid movement is visible before the server-confirmed reward text.
+    page=load(browser,390,844,reduced=False)
+    page.locator('#fixture-treasury').evaluate('(el)=>el.click()')
+    page.wait_for_function("!document.querySelector('.fortune-chests button').disabled")
+    page.locator('.fortune-chests button').first.click()
+    page.get_by_role('dialog').wait_for()
+    assert page.locator('.fortune-chest-lid').evaluate("(el)=>getComputedStyle(el).animationName")=='fortune-lid-rise'
+    assert page.locator('.fortune-dialog__close').is_disabled(), 'do not discard an in-progress chest reveal'
+    assert page.get_by_role('dialog').get_by_role('button',name='OK',exact=True).is_disabled()
+    page.wait_for_timeout(450)
+    page.screenshot(path=str(OUT/'treasury-opening-390.png'))
+    page.wait_for_function("!document.querySelector('.fortune-dialog__close').disabled")
+    assert page.locator('.fortune-dialog h3').is_visible()
+    page.get_by_role('dialog').get_by_role('button',name='OK',exact=True).click()
+    assert page.evaluate("window.__fortuneCalls.filter(c=>c.p_action==='common').length")==1
     page.close()
     # Non-reduced animation and skip only affect presentation.
     page=load(browser,390,650,reduced=False)
