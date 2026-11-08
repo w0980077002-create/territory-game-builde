@@ -30,7 +30,7 @@ try {
  await db.exec("UPDATE territory_private.weekly_season_config_v1 SET enabled=true");
  await assert.rejects(db.exec('SELECT territory_private.weekly_season_tick_v1()'),/season_prizes_required/);
  await db.exec("UPDATE territory_private.weekly_season_config_v1 SET enabled=false");
- await db.exec(readFileSync('supabase/staged/territory_weekly_seasons_activate_v1.sql','utf8'));
+ await db.exec(readFileSync('scripts/fixtures/disabled-weekly-championship-activation.test.sql','utf8'));
  const approved=[{gold:3000,gems:90},{gold:2000,gems:65},{gold:1500,gems:45},...Array.from({length:2},()=>({gold:1000,gems:30})),...Array.from({length:5},()=>({gold:500,gems:15}))];
  assert.equal((await one('SELECT count(*)::int AS n FROM territory_private.weekly_seasons_v1')).n,1);
  // Fixtures model two missed cron weeks. Real tick uses only server time.
@@ -96,7 +96,7 @@ try {
    await assert.rejects(edit('aaaaaaaa-aaaa-4aaa-8aaa-222222222222',2,invalid),/season_invalid_prize|season_prizes_required/);
  }
  // Replaying the activation file cannot reset owner edits.
- await db.exec(readFileSync('supabase/staged/territory_weekly_seasons_activate_v1.sql','utf8'));
+ await db.exec(readFileSync('scripts/fixtures/disabled-weekly-championship-activation.test.sql','utf8'));
  assert.deepEqual((await one('SELECT territory_season_admin_status_v1() AS v')).v.prizes,future);
  for(const role of ['anon','authenticated']) {
    for(const signature of ['territory_season_admin_status_v1()','territory_season_admin_prizes_v1(uuid,integer,jsonb)']) {
