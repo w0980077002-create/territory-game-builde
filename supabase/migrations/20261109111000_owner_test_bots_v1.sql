@@ -154,7 +154,7 @@ BEGIN
  WHERE p.id=v_id;
  RETURN true;
 END
-$;
+$$;
 REVOKE ALL ON FUNCTION public.territory_admin_test_bot_update_v1(smallint,jsonb) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_admin_test_bot_update_v1(smallint,jsonb) TO service_role;
 
