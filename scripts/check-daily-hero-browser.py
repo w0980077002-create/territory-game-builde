@@ -25,7 +25,13 @@ try:
                 start = f'http://127.0.0.1:{server.server_port}/territory-daily-hero-preview.html'
                 page.goto(start+'?view=events')
                 goal = page.locator('[data-testid=events-daily-focus]')
-                goal.wait_for()
+                try:
+                    goal.wait_for()
+                except Exception:
+                    print('DAILY PREVIEW DEBUG', 'lang=', language, 'width=', width,
+                          'errors=', errors, 'body=', page.locator('body').inner_text()[:1400],
+                          'html=', page.content()[:1300], flush=True)
+                    raise
                 assert goal.locator('button').bounding_box()['height'] >= 43.99, 'primary hero action is too small'
                 assert goal.locator('h3').inner_text() == ('Забери награду дня' if language=='ru' else 'Claim today’s reward')
                 assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Events horizontal overflow'

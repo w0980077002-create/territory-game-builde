@@ -198,3 +198,19 @@ assert.match(monoCss,/\.territory-monopoly \.mono-controls \.mono-choose--active
   'The post-reward chooser must be visible in the ordinary-flow control area');
 
 console.log('Game Hall UI PASS: tickets only, automatic protected gold + inventory collection, pending payout recovery, safe mock art, server-owned wallet.');
+
+/* Chest-vault recovery: display existing server-owned chests without re-enabling Wheel. */
+const inventory=readFileSync('src/components/InventoryScreen.tsx','utf8');
+const chestVault=readFileSync('src/components/ChestVault.tsx','utf8');
+const treasuryInventory=readFileSync('src/components/TreasuryInventory.tsx','utf8');
+const fortuneApi=readFileSync('src/game/fortune.ts','utf8');
+assert.match(inventory,/const ChestVault = lazy\(/,'Chest vault must not bloat initial mobile download');
+assert.match(inventory,/switchTab\('chests'\)/,'Inventory must expose an accessible chest tab');
+assert.match(inventory,/<ChestVault userId=\{userId\} state=\{state\} \/>/,'Chest tab must mount the real vault');
+assert.match(chestVault,/trialChestClaims/,'Trial history must be derived from saved claims, not invented totals');
+assert.match(chestVault,/lastTrialChest/,'Latest Trial reward must come from the persisted receipt');
+assert.match(chestVault,/<TreasuryInventory userId=\{userId\} \/>/,'Existing Fortune inventory must be reachable');
+assert.doesNotMatch(chestVault,/rollTrialChest|applyTrialChest|playFortune|grantRewards|supabase\.rpc/,'Chest display must never grant prizes on the client');
+assert.match(treasuryInventory,/playFortune\(userId,kind\)/,'Opening must use the existing server-verified redemption');
+assert.doesNotMatch(treasuryInventory,/playFortune\(userId,['"]spin['"]\)/,'Restoring saved chests must not enable Wheel spins');
+assert.match(fortuneApi,/territory_fortune_v1/,'Saved chests must remain server-authoritative');

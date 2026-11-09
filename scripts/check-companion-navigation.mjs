@@ -18,13 +18,13 @@ for (const path of ['src/App.tsx','src/components/ProfileScreen.tsx','src/compon
 
 assert.match(inv,/import \{ FollowersPanel \} from '\.\/FollowersPanel'/);
 assert.match(inv,/<FollowersPanel \/>/);
-assert.match(inv,/useState<'items' \| 'equipment' \| 'followers'>\(initialTab\)/);
-assert.match(inv,/switchTab = \(to: 'items' \| 'equipment' \| 'followers'\)/);
-assert.match(inv,/grid shrink-0 grid-cols-3/,'Three inventory section tabs must stay in the bottom bar');
+assert.match(inv,/useState<'items' \| 'equipment' \| 'followers' \| 'chests'>\(initialTab\)/);
+assert.match(inv,/switchTab = \(to: 'items' \| 'equipment' \| 'followers' \| 'chests'\)/);
+assert.match(inv,/z-20 grid shrink-0 grid-cols-4/,'Four compact inventory section tabs must stay in the bottom bar');
 assert.ok(inv.indexOf('role="tablist"') > inv.indexOf('role="tabpanel"'),
   'Companion tab must be reached from the bottom panel');
 assert.match(inv,/role="tablist"/);
-for(const tab of ['equipment','items','followers']){
+for(const tab of ['equipment','items','followers','chests']){
   assert.match(inv,new RegExp("aria-selected=\\{tab === '"+tab+"'\\}"),"Missing tab state "+tab);
   assert.match(inv,new RegExp("switchTab\\('"+tab+"'\\)"),"Missing selectable tab "+tab);
 }
