@@ -14,12 +14,13 @@ assert.match(inventory, /<GearShowcase userId=\{userId\} onForge=\{onForge\}\/>/
 assert.match(inventory, /<FollowersPanel \/>/, 'Keep companions tab');
 assert.match(inventory, /putInBelt\(latest, item\.id/, 'Keep real belt insertion');
 assert.match(inventory, /takeFromBelt\(current, i\)/, 'Keep real belt removal');
+assert.match(inventory, /groupConsumablesForDisplay\(state\.inventory\)/, 'Aggregate identical consumables into one warehouse tile');
 assert.match(inventory, /elixirExpiryTime\(a\) - elixirExpiryTime\(b\)/, 'Preserve expiry-first sorting');
 assert.match(inventory, /role="tablist"/, 'Keep bottom tabs in position');
 assert.match(warehouse, /onClick=\{\(\) => onSelect\(item\)\}/, 'Item taps must select the precise item');
-assert.match(warehouse, /item\.id/, 'Preserve batch IDs; do not merge expiries');
+assert.match(warehouse, /item\.id/, 'Display selection retains original batch ID');
 assert.match(warehouse, /elixirTimeLeftLabel\(item, language, now\)/, 'Perishable timers must be shown');
-assert.match(warehouse, /forgeMaterialTimeLeftLabel/, 'Forge material timer must be shown');
+assert.doesNotMatch(warehouse, /forgeMaterialTimeLeftLabel|forgeTimer|Shelf life.*forge/, 'Forge materials are permanent');
 assert.match(warehouse, /forgeMaterials > 0/, 'Never create fake forge material items');
 assert.match(warehouse, /value=\{search\}/, 'Search input should be controlled');
 assert.match(warehouse, /setFilter\(id\)/, 'Filters should be interactive');
@@ -30,4 +31,4 @@ assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/, 'Compact 
 assert.match(css, /grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/, 'Five-column wide phones');
 assert.match(css, /@media\(max-width:340px\)/, 'Small Android width');
 assert.match(css, /@media\(prefers-reduced-motion:reduce\)/, 'Reduced-motion accessibility');
-console.log('Compact warehouse OK: search, filters, 4/5-col grid, batch expiry, details, belt, equipment and companions preserved.');
+console.log('Compact warehouse OK: search, filters, 4/5-col grid, grouped consumables, earliest expiry, permanent forge materials, details, belt, equipment and companions preserved.');

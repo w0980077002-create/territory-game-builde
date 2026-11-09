@@ -1,5 +1,5 @@
 import type { GameState, InventoryItem } from './types';
-import { isElixirExpired, isPerishableItem } from './elixirExpiry';
+import { elixirExpiryTime, isElixirExpired, isPerishableItem } from './elixirExpiry';
 import { VIP_AUTO_BELT_LEVEL } from './vipProgram';
 
 export const BELT_STACK = 5;
@@ -73,6 +73,20 @@ export const sameBeltKind = (a: InventoryItem, b: InventoryItem): boolean =>
   && a.arenaEffect === b.arenaEffect
   && JSON.stringify(a.effect ?? null) === JSON.stringify(b.effect ?? null);
 
+/** A single warehouse tile per identical consumable. It is a display-only
+ * aggregate: source inventory IDs and individual expiration dates remain intact.
+ * The tile ID and timer always point to the earliest valid original batch. */
+export function groupConsumablesForDisplay(items: ReadonlyArray<InventoryItem>): InventoryItem[] {
+  const groups: InventoryItem[] = [];
+  for (const item of items.filter(isPerishableItem).filter(item => item.qty > 0)
+    .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))) {
+    const existing = groups.find(group => sameBeltKind(group, item));
+    if (existing) existing.qty += item.qty;
+    else groups.push({ ...item });
+  }
+  return groups;
+}
+
 export type ArenaItemCode = 'heal_small' | 'heal_large' | 'attack' | 'defense' | 'crit';
 
 export type BeltAction =
@@ -93,35 +107,43 @@ export function beltAction(item: InventoryItem): BeltAction | null {
   return null;
 }
 
+/** Equip from the oldest unexpired lot of the tapped consumable kind.
+ * Do not mix dates inside a belt slot: its expiry must remain authoritative.
+ * When an existing slot is partly filled, only its exact lot can top it up.
+ */
 export function putInBelt(state: GameState, itemId: string, c: BeltContext): GameState | null {
-  const requested = state.inventory.find((i) => i.id === itemId);
-  if (!requested || !canBelt(requested)) return null;
-  // Respect the exact inventory batch the player tapped. Picking an older lot
-  // silently can move only 1 when the selected tile visibly contains 5.
-  // Never mix expiry dates in a belt slot: that would lose per-batch provenance.
-  if (!Number.isSafeInteger(requested.qty) || requested.qty <= 0) return null;
-  const item = requested;
+  const requested = state.inventory.find(i => i.id === itemId);
+  if (!requested || !canBelt(requested) || !Number.isSafeInteger(requested.qty) || requested.qty <= 0) return null;
+  const candidates = state.inventory.filter(i => sameBeltKind(i, requested)
+    && canBelt(i) && Number.isSafeInteger(i.qty) && i.qty > 0)
+    .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b));
+  if (!candidates.length) return null;
+
   const belt = [...state.belt];
-  // A full (or differently dated) slot never spills the same kind into
-  // another slot. Free slots are reserved for different consumables.
-  const occupiedIndex = belt.findIndex((slot) => slot && sameBeltKind(slot, item));
+  const occupiedIndex = belt.findIndex(slot => slot && sameBeltKind(slot, requested));
   let index: number;
+  let source: InventoryItem | undefined;
   if (occupiedIndex >= 0) {
     const existing = belt[occupiedIndex]!;
-    if (!isSlotOpen(occupiedIndex, c) || existing.qty >= BELT_STACK
-      || (isPerishableItem(item) && existing.expiresAt !== item.expiresAt)) return null;
+    if (!isSlotOpen(occupiedIndex, c) || existing.qty >= BELT_STACK) return null;
+    // A partially occupied belt slot cannot silently combine expiration dates.
+    source = candidates.find(i => !isPerishableItem(i) || i.expiresAt === existing.expiresAt);
+    if (!source) return null;
     index = occupiedIndex;
   } else {
     index = belt.findIndex((slot, i) => !slot && isSlotOpen(i, c));
     if (index < 0) return null;
+    source = candidates[0];
   }
 
+  if (!source) return null;
   const current = belt[index]?.qty ?? 0;
-  const moved = Math.min(BELT_STACK - current, item.qty);
-  belt[index] = { ...item, id: `belt_${index}`, qty: current + moved };
+  const moved = Math.min(BELT_STACK - current, source.qty);
+  if (moved <= 0) return null;
+  belt[index] = { ...source, id: `belt_${index}`, qty: current + moved };
   const inventory = state.inventory
-    .map((i) => (i.id === item.id ? { ...i, qty: i.qty - moved } : i))
-    .filter((i) => i.qty > 0);
+    .map(i => i.id === source.id ? { ...i, qty: i.qty - moved } : i)
+    .filter(i => i.qty > 0);
   return { ...state, belt, inventory };
 }
 

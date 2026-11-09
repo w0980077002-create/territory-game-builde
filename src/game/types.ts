@@ -172,7 +172,7 @@ export interface GameState {
   inventory: InventoryItem[];
   /** Marks that legacy elixir stacks have received their one-time 7-day grace. */
   elixirExpiryStartedAt?: string;
-  /** Dated lots of forge materials; the sum mirrors forgeMaterials. */
+  /** Legacy server wallet adapter: a single permanent lot mirrors forgeMaterials; no expiry gameplay. */
   forgeMaterialBatches?: { qty: number; expiresAt: string }[];
   currentChapter: number;
   chapterWins: number;

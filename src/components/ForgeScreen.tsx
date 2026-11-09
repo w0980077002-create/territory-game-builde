@@ -16,7 +16,6 @@ import { upgradeEquipment } from '@/game/equipmentBalance';
 import { previewAntiLevel } from '@/game/antiLevelPreview';
 import { forgeAttempt, forgeCost, forgeSetBonus, forgeSuccessRate, isStage8Gear } from '@/game/forge';
 import { EQUIPMENT_SLOTS } from '@/game/engine';
-import { forgeMaterialTimeLeftLabel } from '@/game/elixirExpiry';
 
 // Do not let navigating away and back bypass an unresolved forge confirmation.
 // A fresh Telegram launch loads the canonical server save before restoring upgrades.
@@ -205,7 +204,6 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
           <span className="text-amber-400">🪙 {state.player.gold}</span>
           <span className="text-orange-400">🔩 {state.forgeMaterials}</span>
         </div>
-        {state.forgeMaterials > 0 && <p className="mt-1 text-[11px] tabular-nums text-amber-300">⏳ {language === 'en' ? 'Materials expire in' : 'До истечения материалов'}: {forgeMaterialTimeLeftLabel(state, language, now)}</p>}
         <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
           <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-2 text-emerald-200">
             <CheckCircle2 className="mr-1 inline h-4 w-4" />{language === 'en' ? 'Ready to upgrade' : 'Готово к улучшению'}: <b>{readyCount}</b>

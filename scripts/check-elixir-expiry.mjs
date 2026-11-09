@@ -42,30 +42,30 @@ assert.equal(expired.belt[0], null);
 assert.equal(expired.player.gold, initial.player.gold);
 assert.equal(expired.player.gems, initial.player.gems);
 
-// Old forge-material wallets receive a grace batch; new gains are independent,
-// spend oldest first and expire after exactly seven days (including offline time).
-const materialsOld = expiry.reconcileElixirExpiry({ ...initial, forgeMaterials: 100 }, start);
-assert.deepEqual(materialsOld.forgeMaterialBatches, [{ qty: 100, expiresAt: elixirAt(7) }]);
+// Legacy material lots (even already expired) must NOT deplete materials.
+const pastMaterialDate = new Date(start - 86400000).toISOString();
+const materialsOld = expiry.reconcileElixirExpiry({ ...initial, forgeMaterials: 100,
+  forgeMaterialBatches: [{ qty: 100, expiresAt: pastMaterialDate }] }, start);
+assert.equal(materialsOld.forgeMaterials, 100);
+assert.deepEqual(materialsOld.forgeMaterialBatches,
+  [{ qty: 100, expiresAt: expiry.PERMANENT_FORGE_BATCH_EXPIRY }]);
 const materialAdded = expiry.reconcileElixirExpiry({ ...materialsOld, forgeMaterials: 120 }, start + 86400000);
-assert.equal(materialAdded.forgeMaterialBatches.length, 2);
-assert.equal(materialAdded.forgeMaterialBatches[1].qty, 20);
-assert.equal(materialAdded.forgeMaterialBatches[1].expiresAt, elixirAt(8));
+assert.deepEqual(materialAdded.forgeMaterialBatches,
+  [{ qty: 120, expiresAt: expiry.PERMANENT_FORGE_BATCH_EXPIRY }]);
 const materialSpent = expiry.reconcileElixirExpiry({ ...materialAdded, forgeMaterials: 85 }, start + 2 * 86400000);
-assert.equal(materialSpent.forgeMaterialBatches[0].qty, 65);
-assert.equal(materialSpent.forgeMaterialBatches[1].qty, 20);
-const materialExpired = expiry.reconcileElixirExpiry(materialSpent, start + 7 * 86400000);
-assert.equal(materialExpired.forgeMaterials, 20);
-assert.deepEqual(materialExpired.forgeMaterialBatches, [{qty:20,expiresAt:elixirAt(8)}]);
-assert.equal(expiry.reconcileElixirExpiry(materialExpired, start + 8 * 86400000).forgeMaterials, 0);
-assert.equal(expiry.reconcileElixirExpiry(materialExpired, start + 7 * 86400000), materialExpired, 'no extra expiry write');
+assert.equal(materialSpent.forgeMaterialBatches[0].qty, 85);
+const materialLater = expiry.reconcileElixirExpiry(materialSpent, start + 3650 * 86400000);
+assert.equal(materialLater.forgeMaterials, 85, 'materials must remain permanent');
+assert.deepEqual(materialLater.forgeMaterialBatches, materialSpent.forgeMaterialBatches);
 const outOfDateMaterials = { ...initial, forgeMaterials: 10,
   forgeMaterialBatches: [{qty:10,expiresAt:new Date(Date.now() - 1000).toISOString()}],
   player: { ...initial.player, gold: 10000, level: 10, equipped: {
     weapon: { id: 'old-sword', name: 'Меч', icon: '⚔️', slot: 'weapon', rarity: 'common', level: 1 },
   } } };
-const blockedForge = forge.forgeAttempt(outOfDateMaterials, 'equipped_old-sword', 1, 0);
-assert.equal(blockedForge.status, 'invalid', 'expired materials must not fund an upgrade');
-assert.equal(blockedForge.next.forgeMaterials, 0);
+const allowedForge = forge.forgeAttempt(outOfDateMaterials, 'equipped_old-sword', 1, 0);
+assert.notEqual(allowedForge.status, 'invalid', 'old material dates must not prevent forging');
+assert.equal(allowedForge.next.forgeMaterialBatches[0].expiresAt,
+  expiry.PERMANENT_FORGE_BATCH_EXPIRY);
 
 // Global game store must normalize all sources (shops, bosses, server rewards).
 actions.useGame.set({ ...initial, forgeMaterials: 10, inventory: [potion] });
@@ -74,41 +74,42 @@ assert.ok(actions.useGame.get().inventory[0].expiresAt);
 actions.useGame.set((state) => ({ ...state, forgeMaterials: state.forgeMaterials + 4 }));
 assert.equal(actions.useGame.get().forgeMaterialBatches.reduce((sum, lot) => sum + lot.qty, 0), 14);
 
-// Player selection wins over hidden oldest-first reordering. Expiry still stays per batch.
-// Relative dates keep the transfer regression valid after the fixed historical date passes.
+// One tile per consumable type; retain distinct source batches and use FEFO
+// even when the player taps a newer underlying batch ID.
 const laterFuture = new Date(Date.now() + 6 * 86400000).toISOString();
 const earlierFuture = new Date(Date.now() + 2 * 86400000).toISOString();
 const later = elixir('newer', 8, laterFuture);
 const earlier = elixir('older', 8, earlierFuture);
 const stock = { ...initial, inventory: [later, earlier], belt: Array(7).fill(null) };
 const ctx = { level: 99, activeDays: 99, arenaWins: 10000 };
+const grouped = belt.groupConsumablesForDisplay(stock.inventory);
+assert.equal(grouped.length, 1, 'one visible elixir card');
+assert.equal(grouped[0].qty, 16, 'visible quantity sums all expiry batches');
+assert.equal(grouped[0].id, earlier.id, 'visible timer points to oldest expiry');
+assert.equal(grouped[0].expiresAt, earlierFuture);
+assert.equal(stock.inventory.length, 2, 'render grouping does not rewrite inventory');
+
 const first = belt.putInBelt(stock, later.id, ctx);
-assert.equal(first.belt[0].expiresAt, later.expiresAt);
+assert.equal(first.belt[0].expiresAt, earlier.expiresAt, 'oldest inventory lot goes to belt first');
 assert.equal(first.belt[0].qty, 5);
-assert.equal(first.inventory.find((i) => i.id === earlier.id).qty, 8);
-assert.equal(first.inventory.find((i) => i.id === later.id).qty, 3);
-const second = belt.putInBelt(first, earlier.id, ctx);
-assert.equal(second, null, 'the same kind cannot spill into another slot, even with different expiry');
-assert.equal(first.belt[0].qty, 5, 'different expiry must never be mixed into an existing slot');
-assert.equal(first.belt[1], null, 'the second slot stays free for a different kind');
-assert.equal(first.inventory.find((i) => i.id === earlier.id).qty, 8, 'rejected transfer keeps older lot intact');
+assert.equal(first.inventory.find(i => i.id === earlier.id).qty, 3);
+assert.equal(first.inventory.find(i => i.id === later.id).qty, 8);
+assert.equal(belt.putInBelt(first, later.id, ctx), null, 'same kind never uses second slot');
 const differentKind = { ...earlier, id: 'defense', name: 'Эликсир защиты',
   effect: { stat: 'defense', value: 10, duration: 'battle' } };
 const withDifferent = { ...first, inventory: [...first.inventory, differentKind] };
 const equippedDifferent = belt.putInBelt(withDifferent, differentKind.id, ctx);
-assert.equal(equippedDifferent.belt[1].name, 'Эликсир защиты', 'a different kind can use the second slot');
-assert.equal(equippedDifferent.belt[1].expiresAt, earlier.expiresAt, 'a different kind keeps its own expiry');
+assert.equal(equippedDifferent.belt[1].name, 'Эликсир защиты');
 const returned = belt.takeFromBelt(first, 0);
-assert.equal(returned.inventory.find((i) => i.id === earlier.id).qty, 8, 'untouched older lot keeps its own expiry');
-assert.equal(returned.inventory.find((i) => i.id === later.id).qty, 8, 'return restores selected lot without loss');
+assert.equal(returned.inventory.find(i => i.id === earlier.id).qty, 8, 'return restores old lot');
+assert.equal(returned.inventory.find(i => i.id === later.id).qty, 8, 'new lot remains untouched');
 assert.equal(belt.beltAction(elixir('bad', 2, elixirAt(-1))), null);
 assert.equal(belt.canBelt(elixir('bad', 2, new Date(Date.now() - 1000).toISOString())), false);
 
-// Health potions must also honor the selected batch, never extending the date.
 const potionLate = { ...potion, id: 'p-late', expiresAt: laterFuture };
 const potionEarly = { ...potion, id: 'p-early', expiresAt: earlierFuture };
 const potionEquipped = belt.putInBelt({ ...stock, inventory: [potionLate, potionEarly] }, potionLate.id, ctx);
-assert.equal(potionEquipped.belt[0].expiresAt, potionLate.expiresAt);
+assert.equal(potionEquipped.belt[0].expiresAt, potionEarly.expiresAt, 'health potions use FEFO too');
 
 // Shop and crafting create new, separately dated supplies, never prolong old batches.
 const shopItem = { id: 'test-elixir', name: 'Эликсир силы', icon: '💪', type: 'elixir', rarity: 'common',
@@ -136,4 +137,4 @@ assert.ok(crafted);
 assert.equal(crafted.find((i) => i.id === earlier.id).qty, 8);
 assert.ok(crafted.some((i) => i.type === 'elixir' && i.expiresAt !== earlier.expiresAt));
 
-console.log('Seven-day elixir/potion/forge-material expiry, legacy grace, selected-batch belt and oldest-first forge spending: OK');
+console.log('Seven-day elixir/potion expiry, grouped FEFO belt and permanent forge materials: OK');

@@ -76,7 +76,8 @@ assert(put, 'potions can still be added to the unlocked first slot');
 assert.equal(put.belt[0]?.qty, 4);
 assert.equal(put.belt[1], null);
 
-/** Regression #177: the tapped tile contains 5 but another older batch contains 1. */
+/** Oldest batch is selected despite a tap originating from a newer batch.
+ * Keep all source quantities and preserve a single dated lot in the slot. */
 const oldExpiry = new Date(Date.now() + 2 * 86400000).toISOString();
 const selectedExpiry = new Date(Date.now() + 6 * 86400000).toISOString();
 const oldLot = { ...elixir('lot-old', 'Strength', 1), expiresAt: oldExpiry };
@@ -85,14 +86,18 @@ const ctx = { level: 1, activeDays: 0, arenaWins: 99 };
 const emptyBelt = Array(7).fill(null);
 const withLots = { player: { level: 1 }, activeDays: 0, belt: emptyBelt,
   inventory: [oldLot, chosenLot] };
+const grouped = mod.exports.groupConsumablesForDisplay(withLots.inventory);
+assert.equal(grouped.length, 1);
+assert.equal(grouped[0].qty, 6);
+assert.equal(grouped[0].expiresAt, oldExpiry);
 const selectedFive = putInBelt(withLots, 'lot-five', ctx);
-assert(selectedFive, 'a selected stack of five must fit in the first open belt slot');
-assert.equal(selectedFive.belt[0].qty, 5, 'do not silently choose the older x1 lot');
-assert.equal(selectedFive.belt[0].expiresAt, selectedExpiry, 'retain selected batch expiration');
-assert.equal(selectedFive.inventory.find(i => i.id === 'lot-old')?.qty, 1, 'older stock is unchanged');
-assert.equal(selectedFive.inventory.find(i => i.id === 'lot-five'), undefined, 'selected x5 moved in one click');
-assert.equal(sum(selectedFive), sum(withLots), 'transfers cannot create or lose consumables');
-assert.equal(putInBelt(selectedFive, 'lot-five', ctx), null, 'fast repeat cannot duplicate a depleted lot');
+assert(selectedFive, 'a matching kind equips oldest dated stock');
+assert.equal(selectedFive.belt[0].qty, 1, 'oldest single-dose lot is moved without mixing dates');
+assert.equal(selectedFive.belt[0].expiresAt, oldExpiry, 'earliest expiration is authoritative');
+assert.equal(selectedFive.inventory.find(i => i.id === 'lot-old'), undefined);
+assert.equal(selectedFive.inventory.find(i => i.id === 'lot-five')?.qty, 5);
+assert.equal(sum(selectedFive), sum(withLots), 'transfers conserve all consumables');
+assert.equal(putInBelt(selectedFive, 'lot-five', ctx), null, 'newer date cannot mix with older in occupied slot');
 
 const partial = putInBelt({ ...withLots, inventory: [{ ...chosenLot, qty: 5 }],
   belt: [{ ...chosenLot, id: 'belt_0', qty: 2 }, ...Array(6).fill(null)] }, 'lot-five', ctx);
@@ -139,8 +144,8 @@ for (const [name, incompatible] of [
 }
 const returned = takeFromBelt(selectedFive, 0);
 assert.equal(sum(returned), sum(withLots), 'return to inventory conserves quantities');
-assert.equal(returned.inventory.find(i => i.expiresAt === selectedExpiry)?.qty, 5,
-  'returned lot keeps its own expiry');
+assert.equal(returned.inventory.find(i => i.expiresAt === oldExpiry)?.qty, 1,
+  'returned oldest lot keeps its own expiry');
 
 const expired = { ...chosenLot, expiresAt: new Date(Date.now() - 86400000).toISOString() };
 assert.equal(putInBelt({ ...withLots, inventory: [expired] }, 'lot-five', ctx), null,
@@ -148,7 +153,7 @@ assert.equal(putInBelt({ ...withLots, inventory: [expired] }, 'lot-five', ctx), 
 for (const type of ['elixir', 'arena']) {
   const each = { ...chosenLot, type };
   const moved = putInBelt({ ...withLots, inventory: [oldLot, each] }, 'lot-five', ctx);
-  assert.equal(moved?.belt[0]?.qty, 5, type + ' also must transfer selected x5');
+  assert.equal(moved?.belt[0]?.qty, 5, type + ' also moves the only compatible type');
 }
 
 const app = read('src/App.tsx');

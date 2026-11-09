@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText, localizeRarity } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
-import { BELT_RULES, BELT_STACK, beltContext, canBelt, isSlotOpen, putInBelt, sameBeltKind, takeFromBelt } from '@/game/belt';
+import { BELT_RULES, BELT_STACK, beltContext, canBelt, isSlotOpen, putInBelt, sameBeltKind, takeFromBelt, groupConsumablesForDisplay } from '@/game/belt';
 import { ItemArt } from './ui/ItemArt';
 import { Modal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
@@ -75,7 +75,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   }, [tab]);
 
   // Keep inventory sorting stable while the visible expiry clock updates.
-  const consumables = useMemo(() => state.inventory.filter(isPerishableItem)
+  const consumables = useMemo(() => groupConsumablesForDisplay(state.inventory)
     .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b)), [state.inventory]);
   const cowStones = cowStonesOwned(state);
   const materials = useMemo(() => [
@@ -179,7 +179,6 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
             consumables={consumables}
             materials={materials}
             forgeMaterials={state.forgeMaterials}
-            forgeMaterialBatches={state.forgeMaterialBatches}
             now={now}
             language={language}
             onItemSelect={setSelected}
@@ -284,12 +283,13 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
                 ? 'A rare awakening material. Obtaining and spending are paused; existing stones are safe.'
                 : 'Редкий камень пробуждения. Получение и расход пока закрыты, имеющиеся камни сохранены.')
               : localizeText(selected.description, language)}</p>
+            {isPerishableItem(selected) && <p className="mb-2 text-sm font-bold text-amber-100">{language === 'en' ? 'Total' : 'Всего'}: {selected.qty}</p>}
             {isPerishableItem(selected) && (
               <p className={`mb-3 text-xs font-semibold ${elixirExpiryTime(selected) - now < 24 * 60 * 60 * 1000 ? 'text-red-300' : 'text-amber-300'}`}>
                 ⏳ {language === 'en' ? 'Shelf life' : 'Срок годности'}: {elixirTimeLeftLabel(selected, language, now)}
                 <span className="block pt-1 font-normal text-gray-400">{language === 'en'
-                  ? '7 days from receipt. The selected batch goes on the belt, up to 5 per slot.'
-                  : '7 суток с получения. На пояс идёт выбранная партия, до 5 шт. в ячейке.'}</span>
+                  ? 'Batches are combined on screen. The nearest expiry goes to the belt first (up to 5 per slot).'
+                  : 'Партии объединены. На пояс сначала идут эликсиры с ближайшим сроком (до 5 в ячейке).'}</span>
               </p>
             )}
             {selected.effect && (
