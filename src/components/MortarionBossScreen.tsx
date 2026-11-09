@@ -88,7 +88,7 @@ export function MortarionBossScreen() {
       </p>
 
       <div className={`mortarion-raid__arena ${impact ? 'mortarion-raid__arena--striking' : ''}`} role="img" aria-label={en ? 'Mortarion the Lord of Souls in a ruined citadel' : 'Мортарион — Властелин Душ в разрушенной цитадели'}>
-        <img className="mortarion-raid__scene" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-raid-scene.svg'} alt="" draggable={false}/>
+        <img className="mortarion-raid__scene" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-raid-scene.webp'} alt="" draggable={false}/>
         <span className="mortarion-raid__mist" aria-hidden="true"/>
         <span className="mortarion-raid__soul mortarion-raid__soul--one" aria-hidden="true">✦</span>
         <span className="mortarion-raid__soul mortarion-raid__soul--two" aria-hidden="true">✧</span>
@@ -109,7 +109,7 @@ export function MortarionBossScreen() {
         <span className="font-black text-amber-100">{en ? '5 days' : '5 суток'}</span>
       </div>
 
-      <button type="button" onClick={attack} disabled={!canHit || defeated} className="mortarion-raid__attack relative mt-3 flex w-full min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-yellow-300 bg-gradient-to-b from-amber-400 via-orange-600 to-red-800 px-4 py-3 text-base font-black text-white shadow-[0_4px_0_#4a160a,0_7px_15px_#0008] [text-shadow:0_2px_2px_#5c1c06] transition-transform active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-65" data-testid="mortarion-attack">
+      <button type="button" onClick={attack} disabled={!canHit || defeated} className="mortarion-raid__attack relative mt-3 flex w-full min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-yellow-300 bg-gradient-to-b from-amber-400 via-orange-600 to-red-800 px-4 py-3 text-base font-black text-white shadow-[0_4px_0_#4a160a,0_7px_15px_#0008] [text-shadow:0_2px_2px_#5c1c06] transition-transform active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-60" data-testid="mortarion-attack">
         <Sword size={22}/>
         {defeated ? (en ? 'BOSS DEFEATED!' : 'БОСС ПОВЕРЖЕН!')
           : cooldown ? (en ? `NEXT HIT IN ${cooldown}` : `УДАР ЧЕРЕЗ ${cooldown}`)
