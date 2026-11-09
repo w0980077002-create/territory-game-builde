@@ -314,6 +314,36 @@ async function handle(action: string, body: Row) {
       await audit("bots_gear_seed", { changed, testers: 10 });
       return { testers: 10, equipped: changed };
     }
+    case "bots_wins": {
+      const slot = intIn(body.slot, 1, 10);
+      const mode = String(body.mode ?? "");
+      if (mode !== "set" && mode !== "delta") {
+        throw new HttpError(400, "invalid_request");
+      }
+      const value = mode === "set"
+        ? intIn(body.value, 0, 1_000_000)
+        : intIn(body.value, -1000, 1000);
+      if (mode === "delta" && value === 0) throw new HttpError(400, "invalid_number");
+      const expected = mode === "set" ? intIn(body.expectedWins, 0, 1_000_000) : null;
+      const { data, error } = await db.rpc("territory_admin_test_bot_wins_v1", {
+        p_slot: slot, p_mode: mode, p_value: value, p_expected_current: expected,
+      });
+      if (error || !data || typeof data !== "object") {
+        if (error?.message?.includes("tester_wins_conflict")) {
+          throw new HttpError(409, "bots_wins_changed");
+        }
+        if (error?.message?.includes("tester_wins_out_of_range")) {
+          throw new HttpError(400, "bots_wins_range");
+        }
+        console.error("owner_tester_wins_failed", slot, mode, error?.message);
+        throw new HttpError(400, "bots_wins_failed");
+      }
+      await audit("bots_wins", {
+        slot, mode, requested: value, expected, before: (data as Row).before,
+        after: (data as Row).after,
+      });
+      return { result: data };
+    }
     case "bots_update": {
       const slot = intIn(body.slot, 1, 10);
       const patch = body.patch;
