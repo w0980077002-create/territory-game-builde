@@ -128,3 +128,15 @@
 .trial-chest-stage--common:not(.trial-chest-open) {
   animation: territory-chest-idle 2.6s ease-in-out infinite;
 }
+
+/* Keep the entire opening silhouette inside narrow Telegram WebViews. */
+@media (max-width: 359px) {
+  .trial-chest-stage {
+    width: min(112px, 31vw);
+    height: min(112px, 31vw);
+    flex-basis: min(112px, 31vw);
+  }
+  .trial-chest-stage.trial-chest-open .trial-chest-lid {
+    transform-origin: 50% 62%;
+  }
+}
