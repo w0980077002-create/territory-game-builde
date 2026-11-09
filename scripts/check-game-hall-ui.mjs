@@ -13,14 +13,21 @@ for(const game of ['monopoly','dice','tower','targets','treasury']) {
  assert.match(api,new RegExp("'"+game+"'"),'Server game type missing '+game);
 }
 assert.match(hall,/id:\s*'wheel'/,'Approved visual contains Wheel of Fortune');
-assert.match(hall,/const HIDDEN_HALL_GAMES = new Set<GameCard\['id'\]>\(\['treasury', 'dice', 'tower', 'targets'\]\)/,
- 'All four unfinished mini-games must remain hidden from the Hall');
+assert.match(hall,/const HIDDEN_HALL_GAMES = new Set<GameCard\['id'\]>\(\['treasury', 'dice', 'tower', 'targets', 'slots'\]\)/,
+ 'Owner-disabled Viking Treasures and four unfinished mini-games must stay hidden');
 assert.match(hall,/const VISIBLE_GAMES = GAMES\.filter\(game => !HIDDEN_HALL_GAMES\.has\(game\.id\)\)/,
  'Only public games may be rendered');
 assert.match(hall,/\{availableGames\.map\(/,
  'Game Hall must render only server-enabled games, not unfinished demos');
-assert.match(hall,/const availableGames = VISIBLE_GAMES\.filter\(game => game\.id !== 'slots' \|\| slotsEnabled\)/,
- 'Unverified slots demo must remain hidden unless the server game is enabled');
+assert.match(hall,/const availableGames = VISIBLE_GAMES;/,
+ 'The public Hall must never show Viking Treasures even when the server is enabled');
+assert.doesNotMatch(hall,/fetchSlotsStatus|slotsEnabled|slotsStatus/,
+ 'Hidden Viking Treasures must not be resurrected by a server status response');
+assert.match(hall,/if \(id === 'slots'\) return;/, 'Hall refuses slot selection');
+assert.match(app,/if \(gameId === 'slots'\) return;/, 'App refuses slot route');
+assert.match(play,/if\(game==='slots'\)return <section[^>]*data-testid="viking-treasures-disabled"/,
+ 'Old cached slot route cannot mount the slot cabinet');
+assert.doesNotMatch(play,/import\('\.\/VikingSlots'\)/, 'Disabled cabinet must not be lazily loaded');
 
 assert.match(hall,/const activeGame = GAMES\.find\(game => game\.id === state\?\.active\?\.game\)/,
   'An unfinished Hall round must show the actual game name in the resume action');
@@ -121,9 +128,9 @@ for(const name of ['targets-hd.webp','targets-mobile.webp']) {
  assert.ok(statSync(p).size>5_000&&statSync(p).size<250_000,'Mobile-optimized Sharpshooter art missing or oversized: '+name);
 }
 
-// The real phone video showed overprinted small Viking Treasures labels.
-assert.match(hall, /ruHint:'От 5 золота · бонусы и риск'/,
-  'The live slots card has a short, truthful subtitle');
+// Keep the old slot artwork and labels for possible restoration without advertising the game.
+assert.match(hall, /id: 'slots', ru: 'Сокровища викингов'/,
+  'Restore-ready slot definition and art must be preserved');
 assert.match(skin, /hall-game\[data-testid="hall-game-slots"\] \.hall-game__info[\s\S]*?pointer-events:none/,
   'Slots label has its own readable visual band but never steals the play tap');
 assert.match(skin, /hall-game\[data-testid="hall-game-slots"\] \.hall-game__hint[\s\S]*?text-overflow:ellipsis/,
