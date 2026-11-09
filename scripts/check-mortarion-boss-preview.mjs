@@ -30,6 +30,10 @@ for (const name of ['mortarion-background','mortarion-boss-layer','mortarion-fx-
  assert.ok(image.length > 1000, 'Missing game layer: ' + name);
  assert.equal(image.subarray(0,4).toString('ascii'), 'RIFF', 'Layer must be RIFF WebP: ' + name);
  assert.equal(image.subarray(8,12).toString('ascii'), 'WEBP', 'Layer must be WEBP: ' + name);
+ if (name !== 'mortarion-background') {
+  assert.equal(image.subarray(12,16).toString('ascii'), 'VP8X', 'Transparent layer must have WebP extended header: ' + name);
+  assert.ok((image[20] & 0x10) !== 0, 'Transparent alpha channel is required: ' + name);
+ }
 }
 assert.match(boss, /useStore\(useGame\)/, 'Selected in-game hero must be read from real game state');
 assert.match(boss, /getCombatAppearance\(game\.appearance\)/, 'Actual character skin, not a substitute');
