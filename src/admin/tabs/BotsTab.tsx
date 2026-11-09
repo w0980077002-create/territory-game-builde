@@ -193,7 +193,7 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
       // The Arena can complete a new real match between the write and read-back.
       setWinsInput(String(updated.arenaWins));
       const note='Сохранено: '+format(response.result.before)+' → '+format(response.result.after)+
-        '. Сейчас в общем рейтинге: '+format(updated.arenaWins)+' побед.';
+        '. Сейчас в общем рейтинге: '+format(updated.arenaWins)+' побед. Топ-50 обновлён.';
       setNotice(note);
       return note;
     }catch(e){
@@ -221,7 +221,7 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
     if(!current)return;
     if(value===current.arenaWins){setNotice('Это число уже сохранено.');return;}
     confirm('Установить тестеру №'+selected+' '+format(value)+' общих побед Арены вместо '+
-      format(current.arenaWins)+'? Недельный топ настоящих боёв не меняется.',
+      format(current.arenaWins)+'? Эта корректировка отразится в текущем Топ-50 Арены.',
       ()=>applyWins('set',value));
   };
   const init=()=>confirm('Создать 10 игровых тестеров 61 уровня? Существующих игроков не изменяем.',async()=>{
@@ -321,8 +321,9 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
       </Panel>
       <Panel title="Победы Арены — ручное управление" icon={<Trophy className="w-4 h-4"/>}>
         <p className="text-xs text-slate-400 mb-3">
-          Изменяет общие победы этого тестера и общий рейтинг игроков. Недельный топ
-          учитывает только реально выигранные бои. Поражения, боевой рейтинг и награды не меняются.
+          Изменяет общие победы тестера и количество побед в текущем Топ-50 Арены.
+          Ручные победы учитываются в рейтинге, но не становятся реальными боями
+          и не влияют на выдачу сезонных наград. Поражения и боевой рейтинг не меняются.
         </p>
         <div className="rounded-xl border border-sky-700/40 bg-sky-950/30 px-3 py-3 flex items-center justify-between mb-3">
           <span className="text-xs text-slate-300">Всего побед</span>
