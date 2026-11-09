@@ -1,9 +1,33 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Bot, RefreshCw, ShieldCheck, Swords, Trophy, Users } from 'lucide-react';
+import { ArrowLeft, Bot, RefreshCw, ShieldCheck, Swords, Trophy, Users, Hammer } from 'lucide-react';
 import { adminCall } from '@/admin/api';
 import { ErrorLine, Loading, Panel, Switch, inputCls, type Confirm } from '@/admin/ui';
 
+type GearSlot = 'weapon'|'armor'|'helmet'|'boots'|'shield'|'ring'|'amulet';
+interface TesterGear {
+  id:string; slot:GearSlot; name:string; icon:string; rarity:string; level:number;
+  attack?:number; defense?:number; hp?:number; critChance?:number;
+}
+const GEAR_SLOTS: Array<{slot:GearSlot; label:string; choices: Array<{id:string;name:string}>}> = [
+  {slot:'weapon',label:'Оружие',choices:[{id:'shop_weapon_knight_eq',name:'Клинок рыцаря'},{id:'shop_weapon_warrior_eq',name:'Меч воина'}]},
+  {slot:'armor',label:'Броня',choices:[{id:'shop_armor_plate_eq',name:'Латные доспехи'},{id:'shop_armor_leather_eq',name:'Кожаная броня'}]},
+  {slot:'helmet',label:'Шлем',choices:[{id:'shop_helmet_iron_eq',name:'Железный шлем'}]},
+  {slot:'shield',label:'Щит',choices:[{id:'shop_shield_oak_eq',name:'Дубовый щит'}]},
+  {slot:'boots',label:'Обувь',choices:[{id:'shop_boots_swift_eq',name:'Сапоги скорости'}]},
+  {slot:'ring',label:'Кольцо',choices:[{id:'shop_ring_power_eq',name:'Кольцо силы'}]},
+  {slot:'amulet',label:'Амулет',choices:[{id:'shop_amulet_raven_eq',name:'Амулет ворона'}]},
+];
+const defaultTemplates = ():Record<GearSlot,string>=>Object.fromEntries(GEAR_SLOTS.map(g=>[g.slot,g.choices[0].id])) as Record<GearSlot,string>;
+const equipmentCount = (bot:Tester)=>GEAR_SLOTS.filter(g=>!!bot.equipped?.[g.slot]).length;
+const statsText = (g:TesterGear)=>[
+ g.attack?'+ '+g.attack+' атака':'',
+ g.defense?'+ '+g.defense+' защита':'',
+ g.hp?'+ '+g.hp+' HP':'',
+ g.critChance?'+ '+g.critChance+'% крит':'',
+].filter(Boolean).join(' · ');
 interface Tester {
+  equipped:Partial<Record<GearSlot,TesterGear>>;
+  totalAttack:number; totalDefense:number; totalHp:number; totalCrit:number;
   slot: number; playerId: string; name: string; appearance: 'm1'|'m2'|'f1'|'f2';
   level: number; attack: number; defense: number; hp: number; crit: number; vip: number;
   gold: number; gems: number; energy: number; forgeMaterials: number; arenaRating: number;
@@ -20,10 +44,10 @@ type Editable = Pick<Tester,'name'|'appearance'|'level'|'attack'|'defense'|'hp'|
 
 const NUMBERS: Array<{key:keyof Editable;label:string;min:number;max:number}> = [
   {key:'level',label:'Уровень',min:1,max:100},
-  {key:'attack',label:'Атака',min:1,max:2000000},
-  {key:'defense',label:'Защита',min:0,max:2000000},
-  {key:'hp',label:'Здоровье',min:1,max:2000000},
-  {key:'crit',label:'Крит, %',min:0,max:75},
+  {key:'attack',label:'Атака (без экипировки)',min:1,max:2000000},
+  {key:'defense',label:'Защита (без экипировки)',min:0,max:2000000},
+  {key:'hp',label:'Здоровье (без экипировки)',min:1,max:2000000},
+  {key:'crit',label:'Крит без экипировки, %',min:0,max:75},
   {key:'vip',label:'VIP',min:0,max:10},
   {key:'arenaRating',label:'Рейтинг Арены',min:100,max:100000},
   {key:'gold',label:'Золото',min:0,max:2147483647},
@@ -48,6 +72,8 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
   const [busy,setBusy]=useState(false);
   const [dirty,setDirty]=useState<Array<keyof Editable>>([]);
   const [notice,setNotice]=useState<string|null>(null);
+  const [gearLevels,setGearLevels]=useState<Partial<Record<GearSlot,number>>>({});
+  const [gearTemplates,setGearTemplates]=useState<Record<GearSlot,string>>(defaultTemplates());
 
   const load=useCallback(async()=>{
     setError(null);
@@ -73,6 +99,12 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
 
   const open=(b:Tester)=>{
     setSelected(b.slot);setDraft(editable(b));setDirty([]);setError(null);setNotice(null);
+    setGearLevels(Object.fromEntries(GEAR_SLOTS.map(g=>[g.slot,b.equipped?.[g.slot]?.level??b.level])));
+    setGearTemplates(Object.fromEntries(GEAR_SLOTS.map(g=>{
+      const current=b.equipped?.[g.slot]?.id;
+      const choice=g.choices.find(t=>current?.endsWith('_'+t.id))??g.choices[0];
+      return [g.slot,choice.id];
+    })) as Record<GearSlot,string>);
   };
   const changeDraft=<K extends keyof Editable>(key:K,value:Editable[K])=>{
     setDraft(d=>d?{...d,[key]:value}:d);
@@ -105,6 +137,40 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
     }catch(e){setError((e as Error).message);}
     finally{setBusy(false);}
   };
+  const gearAction=async(operation:'equip'|'unequip'|'relevel',gearSlot:GearSlot)=>{
+    if(selected===null||busy)return;
+    if(dirty.length){setError('Сначала сохрани изменённые параметры персонажа.');return;}
+    const current=bots?.find(b=>b.slot===selected);
+    if(!current)return;
+    const level=gearLevels[gearSlot]??current.level;
+    if(operation!=='unequip'&&(!Number.isSafeInteger(level)||level<1||level>current.level)){
+      setError('Уровень предмета должен быть от 1 до уровня персонажа.');return;
+    }
+    setBusy(true);setError(null);setNotice(null);
+    try{
+      await adminCall('bots_gear',{
+        slot:selected,operation,gearSlot,
+        template:operation==='equip'?gearTemplates[gearSlot]:null,
+        level:operation==='unequip'?null:level,
+      });
+      const result=await adminCall<{bots:Tester[]}>('bots_list');
+      const updated=result.bots.find(b=>b.slot===selected);
+      if(!updated)throw new Error('Нет подтверждения от сервера.');
+      setBots(result.bots);setDraft(editable(updated));
+      setGearLevels(v=>({...v,[gearSlot]:updated.equipped?.[gearSlot]?.level??updated.level}));
+      setNotice('Экипировка сохранена. Боевые характеристики пересчитаны на сервере.');
+    }catch(e){setError((e as Error).message);}
+    finally{setBusy(false);}
+  };
+  const equipMissing=()=>confirm('Выдать всем 10 тестерам недостающую экипировку по их уровню? Уже надетые предметы не изменятся.',async()=>{
+    setBusy(true);
+    try{
+      const reply=await adminCall<{testers:number;equipped:number}>('bots_gear_seed');
+      const result=await adminCall<{bots:Tester[]}>('bots_list');
+      setBots(result.bots);
+      return 'Проверено 10 тестеров, выдано недостающих предметов: '+reply.equipped;
+    }finally{setBusy(false);}
+  });
   const init=()=>confirm('Создать 10 игровых тестеров 61 уровня? Существующих игроков не изменяем.',async()=>{
     setBusy(true);
     try{
@@ -165,6 +231,9 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
     </div>
     <ErrorLine text={error}/>
     {notice&&<p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200" role="status">{notice}</p>}
+    <button type="button" disabled={busy} onClick={equipMissing} className="w-full rounded-xl border border-amber-700/50 bg-amber-900/20 p-3 text-sm font-semibold text-amber-200 disabled:opacity-40">
+      <Hammer className="w-4 h-4 inline mr-2"/>Экипировать недостающие слоты у 10 тестеров
+    </button>
     {bots.length<10&&<Panel title="Создание тестеров" icon={<Users className="w-4 h-4"/>}>
       <p className="text-xs text-slate-300 mb-3">Каждый тестер получит собственный игровой аккаунт 61 уровня в общей базе игроков. Неизменённые реальные аккаунты останутся на месте. Все автопереходы изначально выключены.</p>
       <button disabled={busy} onClick={init} className="w-full h-11 rounded-xl bg-sky-700 text-white font-semibold disabled:opacity-50">Создать недостающих тестеров ({10-bots.length})</button>
@@ -174,7 +243,7 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
         <span className="w-10 h-10 rounded-full bg-gradient-to-b from-amber-800 to-slate-800 flex items-center justify-center text-amber-200 font-bold">{b.slot}</span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold text-white truncate">{b.name}</span>
-          <span className="text-[11px] text-slate-400">Ур. {b.level} · {format(b.arenaWins)} побед / {format(b.arenaLosses)} поражений</span>
+          <span className="text-[11px] text-slate-400">Ур. {b.level} · экипировка {equipmentCount(b)}/7 · {format(b.arenaWins)} побед / {format(b.arenaLosses)} поражений</span>
         </span>
         <span className={`text-[11px] font-semibold ${b.autoArena?'text-emerald-300':'text-slate-500'}`}>{b.autoArena?'Арена: авто':'Отключён'}</span>
       </button>)}
@@ -196,6 +265,50 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
         </div>
         <p className="text-xs text-slate-400 mt-3">ID: <code className="break-all">{current.playerId}</code></p>
         <p className="text-xs text-slate-400 mt-1">Профиль учитывается в общей статистике и рейтинге игроков. Это не отдельный декоративный NPC.</p>
+      </Panel>
+      <Panel title={'Экипировка · '+equipmentCount(current)+'/7'} icon={<Hammer className="w-4 h-4"/>}>
+        <p className="text-xs text-slate-400 mb-3">Обычное игровое снаряжение. Можно надеть, снять или изменить уровень предмета до уровня героя. Бонусы входят в настоящие бои и не меняют баланс соперников Арены.</p>
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          {[
+            ['Атака',current.totalAttack],['Защита',current.totalDefense],
+            ['Здоровье',current.totalHp],['Крит',current.totalCrit+'%']
+          ].map(([name,value])=><div key={name} className="rounded-xl bg-slate-950/50 border border-amber-800/30 p-2 text-center">
+            <div className="text-[11px] text-slate-400">{name} со снаряжением</div>
+            <div className="text-base font-bold text-amber-200">{value}</div>
+          </div>)}
+        </div>
+        <div className="space-y-3">
+          {GEAR_SLOTS.map(entry=>{
+            const g=current.equipped?.[entry.slot];
+            return <div key={entry.slot} className="rounded-xl border border-slate-700 bg-slate-950/70 p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl w-9 text-center">{g?.icon??'◇'}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-slate-100">{entry.label}: {g?.name??'пусто'}</div>
+                  <div className="text-[11px] text-slate-400">{g?'Уровень '+g.level+' · '+(g.rarity==='rare'?'редкое':g.rarity==='common'?'обычное':g.rarity):'Нет экипировки'}</div>
+                </div>
+              </div>
+              {g&&<p className="text-xs text-emerald-200">{statsText(g)}</p>}
+              {entry.choices.length>1&&<label className="block text-[11px] text-slate-400">Модель
+                <select disabled={busy||dirty.length>0} className={inputCls+' mt-1'} value={gearTemplates[entry.slot]} onChange={e=>setGearTemplates(v=>({...v,[entry.slot]:e.target.value}))}>
+                  {entry.choices.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </label>}
+              <label className="block text-[11px] text-slate-400">Уровень предмета
+                <input type="number" min={1} max={current.level} disabled={busy||dirty.length>0} className={inputCls+' mt-1'} value={gearLevels[entry.slot]??current.level}
+                  onChange={e=>setGearLevels(v=>({...v,[entry.slot]:Number(e.target.value)}))}/>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" disabled={busy||dirty.length>0} onClick={()=>void gearAction('equip',entry.slot)}
+                  className="flex-1 min-w-[88px] rounded-lg bg-amber-800/80 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">{g?'Заменить':'Надеть'}</button>
+                {g&&<button type="button" disabled={busy||dirty.length>0} onClick={()=>void gearAction('relevel',entry.slot)}
+                  className="flex-1 min-w-[88px] rounded-lg border border-amber-700/60 bg-slate-800 px-3 py-2 text-xs font-semibold text-amber-100 disabled:opacity-40">Изменить уровень</button>}
+                {g&&<button type="button" disabled={busy||dirty.length>0} onClick={()=>void gearAction('unequip',entry.slot)}
+                  className="rounded-lg border border-slate-600 px-3 py-2 text-xs text-slate-200 disabled:opacity-40">Снять</button>}
+              </div>
+            </div>;
+          })}
+        </div>
       </Panel>
       <Panel title="Персонаж и ресурсы" icon={<Users className="w-4 h-4"/>}>
         <div className="grid grid-cols-2 gap-3">
