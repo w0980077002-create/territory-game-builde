@@ -117,7 +117,7 @@ AS $fn$
 DECLARE u uuid:=auth.uid(); p public.players%ROWTYPE;
  chest territory_private.trial_chest_v1%ROWTYPE; st jsonb; hero jsonb; inv jsonb; loot jsonb;
  new_item jsonb; frag jsonb; comp jsonb; idx integer; part_no integer; qty integer;
- g integer; gems integer; mats integer; elix integer; pots integer; rep integer;
+ g integer; bonus_gems integer; mats integer; elix integer; pots integer; rep integer;
  item_id text; item_name text; rarity text; part_text text; comp_id text;
 BEGIN
  IF u IS NULL OR p_floor NOT BETWEEN 1 AND 10000 THEN RAISE EXCEPTION 'trial_chest_login_required'; END IF;
@@ -143,13 +143,13 @@ BEGIN
        st->'trialChestUnopenedFloors') v WHERE v.value=p_floor::text)
  THEN RAISE EXCEPTION 'trial_chest_invalid_save'; END IF;
  loot:=territory_private.roll_trial_chest_v1(p_floor,chest.tier);
- g:=(loot->>'gold')::integer; gems:=(loot->>'gems')::integer; mats:=(loot->>'materials')::integer;
+ g:=(loot->>'gold')::integer; bonus_gems:=(loot->>'gems')::integer; mats:=(loot->>'materials')::integer;
  elix:=(loot->>'elixirs')::integer; pots:=(loot->>'potions')::integer; rep:=(loot->>'reputation')::integer;
- IF p.gold > 2147483647-g OR p.gems > 2147483647-gems OR
+ IF p.gold > 2147483647-g OR p.gems > 2147483647-bonus_gems OR
     (st->>'forgeMaterials')::integer > 2147483647-mats
  THEN RAISE EXCEPTION 'trial_chest_wallet_overflow'; END IF;
  hero:=pg_catalog.jsonb_set(hero,'{gold}',pg_catalog.to_jsonb(p.gold+g));
- hero:=pg_catalog.jsonb_set(hero,'{gems}',pg_catalog.to_jsonb(p.gems+gems));
+ hero:=pg_catalog.jsonb_set(hero,'{gems}',pg_catalog.to_jsonb(p.gems+bonus_gems));
  st:=pg_catalog.jsonb_set(st,'{player}',hero);
  st:=pg_catalog.jsonb_set(st,'{forgeMaterials}',pg_catalog.to_jsonb((st->>'forgeMaterials')::integer+mats));
  st:=pg_catalog.jsonb_set(st,'{territoryCityReputation}',pg_catalog.to_jsonb(
@@ -212,7 +212,7 @@ BEGIN
  st:=pg_catalog.jsonb_set(st,'{trialChestOpenedFloors}',
    coalesce(st->'trialChestOpenedFloors','[]'::jsonb)||pg_catalog.jsonb_build_array(p_floor),true);
  st:=pg_catalog.jsonb_set(st,'{lastTrialChest}',loot,true);
- UPDATE public.players SET game_state=st,gold=p.gold+g,gems=p.gems+gems,
+ UPDATE public.players SET game_state=st,gold=p.gold+g,gems=p.gems+bonus_gems,
    forge_materials=(st->>'forgeMaterials')::integer
  WHERE id=u RETURNING * INTO p;
  UPDATE territory_private.trial_chest_v1 SET receipt=loot,opened_at=pg_catalog.clock_timestamp()
