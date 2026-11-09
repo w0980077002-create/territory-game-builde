@@ -72,6 +72,7 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
   const [busy,setBusy]=useState(false);
   const [dirty,setDirty]=useState<Array<keyof Editable>>([]);
   const [notice,setNotice]=useState<string|null>(null);
+  const [winsInput,setWinsInput]=useState('0');
   const [gearLevels,setGearLevels]=useState<Partial<Record<GearSlot,number>>>({});
   const [gearTemplates,setGearTemplates]=useState<Record<GearSlot,string>>(defaultTemplates());
 
@@ -99,6 +100,7 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
 
   const open=(b:Tester)=>{
     setSelected(b.slot);setDraft(editable(b));setDirty([]);setError(null);setNotice(null);
+    setWinsInput(String(b.arenaWins));
     setGearLevels(Object.fromEntries(GEAR_SLOTS.map(g=>[g.slot,b.equipped?.[g.slot]?.level??b.level])));
     setGearTemplates(Object.fromEntries(GEAR_SLOTS.map(g=>{
       const current=b.equipped?.[g.slot]?.id;
@@ -171,6 +173,57 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
       return 'Проверено 10 тестеров, выдано недостающих предметов: '+reply.equipped;
     }finally{setBusy(false);}
   });
+  const applyWins=async(mode:'delta'|'set',value:number):Promise<string>=>{
+    if(selected===null||busy)throw new Error('Операция уже выполняется.');
+    if(dirty.length){
+      const message='Сначала сохрани изменённые поля персонажа.';
+      setError(message);throw new Error(message);
+    }
+    const current=bots?.find(b=>b.slot===selected);
+    if(!current)throw new Error('Тестер не найден.');
+    setBusy(true);setError(null);setNotice(null);
+    try{
+      const response=await adminCall<{result:{slot:number;before:number;after:number;delta:number}}>(
+        'bots_wins',{slot:selected,mode,value,expectedWins:mode==='set'?current.arenaWins:null}
+      );
+      const result=await adminCall<{bots:Tester[]}>('bots_list');
+      const updated=result.bots.find(b=>b.slot===selected);
+      if(!updated)throw new Error('Тестер не найден после сохранения.');
+      setBots(result.bots);
+      // The Arena can complete a new real match between the write and read-back.
+      setWinsInput(String(updated.arenaWins));
+      const note='Сохранено: '+format(response.result.before)+' → '+format(response.result.after)+
+        '. Сейчас в общем рейтинге: '+format(updated.arenaWins)+' побед.';
+      setNotice(note);
+      return note;
+    }catch(e){
+      setError((e as Error).message);
+      if((e as {code?:string}).code==='bots_wins_changed'){
+        const updated=await load();
+        const tester=updated?.find(b=>b.slot===selected);
+        if(tester)setWinsInput(String(tester.arenaWins));
+      }
+      setError((e as Error).message);
+      throw e;
+    }finally{setBusy(false);}
+  };
+  const adjustWins=(delta:-10|-1|1|10)=>{
+    void applyWins('delta',delta).catch(()=>{});
+  };
+  const setExactWins=()=>{
+    if(!draft||selected===null||busy)return;
+    if(!/^\d+$/.test(winsInput)||!Number.isSafeInteger(Number(winsInput))||
+      Number(winsInput)>1000000){
+      setError('Укажи целое число побед от 0 до 1 000 000.');return;
+    }
+    const value=Number(winsInput);
+    const current=bots?.find(b=>b.slot===selected);
+    if(!current)return;
+    if(value===current.arenaWins){setNotice('Это число уже сохранено.');return;}
+    confirm('Установить тестеру №'+selected+' '+format(value)+' общих побед Арены вместо '+
+      format(current.arenaWins)+'? Недельный топ настоящих боёв не меняется.',
+      ()=>applyWins('set',value));
+  };
   const init=()=>confirm('Создать 10 игровых тестеров 61 уровня? Существующих игроков не изменяем.',async()=>{
     setBusy(true);
     try{
@@ -225,7 +278,7 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
         const fresh=await load();
         if(fresh&&selected!==null){
           const bot=fresh.find(b=>b.slot===selected);
-          if(bot)setDraft(editable(bot));
+          if(bot){setDraft(editable(bot));setWinsInput(String(bot.arenaWins));}
         }
       }} className="h-10 px-3 rounded-xl border border-slate-700 text-slate-300 disabled:opacity-50" aria-label="Обновить"><RefreshCw className="w-4 h-4"/></button>
     </div>
@@ -265,6 +318,35 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
         </div>
         <p className="text-xs text-slate-400 mt-3">ID: <code className="break-all">{current.playerId}</code></p>
         <p className="text-xs text-slate-400 mt-1">Профиль учитывается в общей статистике и рейтинге игроков. Это не отдельный декоративный NPC.</p>
+      </Panel>
+      <Panel title="Победы Арены — ручное управление" icon={<Trophy className="w-4 h-4"/>}>
+        <p className="text-xs text-slate-400 mb-3">
+          Изменяет общие победы этого тестера и общий рейтинг игроков. Недельный топ
+          учитывает только реально выигранные бои. Поражения, боевой рейтинг и награды не меняются.
+        </p>
+        <div className="rounded-xl border border-sky-700/40 bg-sky-950/30 px-3 py-3 flex items-center justify-between mb-3">
+          <span className="text-xs text-slate-300">Всего побед</span>
+          <span className="text-2xl font-bold text-amber-200">{format(current.arenaWins)}</span>
+        </div>
+        <div className="grid grid-cols-4 gap-2 mb-3">
+          {([-10,-1,1,10] as const).map(delta=><button
+            key={delta} type="button"
+            disabled={busy||dirty.length>0||current.arenaWins+delta<0||current.arenaWins+delta>1000000}
+            onClick={()=>adjustWins(delta)}
+            className="h-11 rounded-xl border border-amber-600/50 bg-slate-800 text-sm font-bold text-amber-200 disabled:opacity-30"
+          >{delta>0?'+':''}{delta}</button>)}
+        </div>
+        <label className="block text-xs text-slate-300">Установить точное количество побед
+          <input type="number" inputMode="numeric" min={0} max={1000000}
+            disabled={busy||dirty.length>0}
+            className={inputCls+' mt-1'} value={winsInput}
+            onChange={e=>setWinsInput(e.target.value)}/>
+        </label>
+        <button type="button" disabled={busy||dirty.length>0}
+          onClick={setExactWins}
+          className="w-full h-11 mt-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-semibold disabled:opacity-40">
+          {busy?'Сохранение…':'Сохранить количество побед'}
+        </button>
       </Panel>
       <Panel title={'Экипировка · '+equipmentCount(current)+'/7'} icon={<Hammer className="w-4 h-4"/>}>
         <p className="text-xs text-slate-400 mb-3">Обычное игровое снаряжение. Можно надеть, снять или изменить уровень предмета до уровня героя. Бонусы входят в настоящие бои и не меняют баланс соперников Арены.</p>
