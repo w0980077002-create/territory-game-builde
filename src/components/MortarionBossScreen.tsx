@@ -1,29 +1,20 @@
-import { useEffect, useState } from 'react';
-import { Clock3, Crown, Skull, Swords, Trophy, Zap } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Clock3, RefreshCw, Skull, Sword, Trophy, Users } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import './mortarionBoss.css';
 
-/**
- * OWNER-ONLY VISUAL PLAYTEST — NEVER records damage, rankings or inventory.
- * The real event needs an independent, server-authoritative release gate.
- */
+/** An isolated owner-only preview. No server calls or changes to player saves. */
 export const MORTARION_HP = 100_000_000;
 export const MORTARION_HITS_PER_HOUR = 5;
 export const MORTARION_HIT_COOLDOWN_MS = 60_000;
 export const MORTARION_WINDOW_MS = 3_600_000;
 export const MORTARION_EVENT_DAYS = 5;
+const TEST_HIT_DAMAGE = 15_000;
 
-type PreviewCombat = {
-  hits: number;
-  firstHitAt: number;
-  lastHitAt: number;
-  damage: number;
-  sequence: number;
-};
+type PreviewCombat = { hits: number; firstHitAt: number; lastHitAt: number; damage: number; sequence: number };
 const EMPTY: PreviewCombat = { hits: 0, firstHitAt: 0, lastHitAt: 0, damage: 0, sequence: 0 };
-const PREVIEW_DAMAGE = 15_000;
 
-export function mortarionLimitAt(combat: PreviewCombat, now: number) {
+export function mortarionLimitAt(combat: Pick<PreviewCombat, 'hits' | 'firstHitAt' | 'lastHitAt'>, now: number) {
   const expired = combat.firstHitAt > 0 && now - combat.firstHitAt >= MORTARION_WINDOW_MS;
   const hits = expired ? 0 : combat.hits;
   const quotaAt = hits >= MORTARION_HITS_PER_HOUR ? combat.firstHitAt + MORTARION_WINDOW_MS : 0;
@@ -32,108 +23,124 @@ export function mortarionLimitAt(combat: PreviewCombat, now: number) {
   return { hits, nextHitAt, canHit: now >= nextHitAt };
 }
 
-function clockLeft(ms: number) {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor(total % 3600 / 60);
-  const seconds = total % 60;
-  return hours
-    ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-    : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
+const secondsLabel = (n: number) => {
+  const sec = Math.max(0, Math.ceil(n / 1000));
+  const m = Math.floor(sec / 60);
+  return `${String(m).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+};
 
 export function MortarionBossScreen() {
   const { language } = useLanguage();
   const en = language === 'en';
   const [now, setNow] = useState(() => Date.now());
   const [combat, setCombat] = useState<PreviewCombat>(EMPTY);
-  const [showImpact, setShowImpact] = useState(false);
+  const combatRef = useRef<PreviewCombat>(EMPTY);
+  const [impact, setImpact] = useState(false);
+  const effectTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 250);
-    const onResume = () => setNow(Date.now());
-    document.addEventListener('visibilitychange', onResume);
+    const clock = window.setInterval(() => setNow(Date.now()), 300);
+    const resume = () => setNow(Date.now());
+    document.addEventListener('visibilitychange', resume);
     return () => {
-      window.clearInterval(timer);
-      document.removeEventListener('visibilitychange', onResume);
+      window.clearInterval(clock);
+      document.removeEventListener('visibilitychange', resume);
+      if (effectTimer.current !== null) window.clearTimeout(effectTimer.current);
     };
   }, []);
 
-  useEffect(() => {
-    if (!showImpact) return;
-    const timer = window.setTimeout(() => setShowImpact(false), 850);
-    return () => window.clearTimeout(timer);
-  }, [showImpact, combat.sequence]);
-
   const { hits, nextHitAt, canHit } = mortarionLimitAt(combat, now);
-  const remaining = Math.max(0, MORTARION_HP - combat.damage);
-  const hpPercent = Math.max(0, (remaining / MORTARION_HP) * 100);
-  const nextSeconds = clockLeft(nextHitAt - now);
-  const hitsLeft = Math.max(0, MORTARION_HITS_PER_HOUR - hits);
-  const format = (n: number) => n.toLocaleString(en ? 'en-US' : 'ru-RU');
+  const left = MORTARION_HP - combat.damage;
+  const hitsLeft = MORTARION_HITS_PER_HOUR - hits;
+  const format = (n: number) => Math.max(0, Math.floor(n)).toLocaleString(en ? 'en-US' : 'ru-RU');
+  const cooldown = !canHit ? secondsLabel(nextHitAt - now) : null;
+  const defeated = left <= 0;
 
-  const testHit = () => {
+  const attack = () => {
     const clickedAt = Date.now();
-    const limit = mortarionLimitAt(combat, clickedAt);
-    if (!limit.canHit || combat.damage >= MORTARION_HP) return;
-    const firstHitAt = limit.hits === 0 ? clickedAt : combat.firstHitAt;
-    setCombat(prev => ({
-      hits: limit.hits + 1,
-      firstHitAt,
-      lastHitAt: clickedAt,
-      damage: Math.min(MORTARION_HP, prev.damage + PREVIEW_DAMAGE),
-      sequence: prev.sequence + 1,
-    }));
+    const current = combatRef.current;
+    const limit = mortarionLimitAt(current, clickedAt);
+    if (!limit.canHit || current.damage >= MORTARION_HP) return;
+    if (effectTimer.current !== null) window.clearTimeout(effectTimer.current);
     setNow(clickedAt);
-    setShowImpact(true);
+    setImpact(false);
+    const next: PreviewCombat = {
+      hits: limit.hits + 1,
+      firstHitAt: limit.hits === 0 ? clickedAt : current.firstHitAt,
+      lastHitAt: clickedAt,
+      damage: Math.min(MORTARION_HP, current.damage + TEST_HIT_DAMAGE),
+      sequence: current.sequence + 1,
+    };
+    combatRef.current = next; // prevent double taps before React re-renders
+    setCombat(next);
+    // Only temporary display state: the raid is still disabled for players.
+    window.requestAnimationFrame(() => setImpact(true));
+    effectTimer.current = window.setTimeout(() => setImpact(false), 1250);
   };
 
-  return <section className="mortarion" data-testid="mortarion-boss-preview">
-    <div className="mortarion__runes" aria-hidden="true">ᛟ · ᚷ · ᛜ · ᛉ · ᚱ</div>
-    <div className="mortarion__status"><Skull size={13}/>{en ? 'OWNER PLAYTEST · NO SAVED DAMAGE' : 'ТЕСТ ДЛЯ ВЛАДЕЛЬЦА · УРОН НЕ СОХРАНЯЕТСЯ'}</div>
-    <header className="mortarion__header">
-      <span>{en ? 'WORLD BOSS · LORD OF SOULS' : 'МИРОВОЙ БОСС · ВЛАСТЕЛИН ДУШ'}</span>
-      <h2>{en ? 'MORTARION' : 'МОРТАРИОН'}</h2>
-      <p>{en ? 'The fallen souls are rising. Who will stop the Lord?' : 'Павшие души пробудились. Кто остановит Властелина?'}</p>
-    </header>
-    <div className={`mortarion__stage ${showImpact ? 'mortarion__stage--impact' : ''}`} aria-label={en ? 'Animated Mortarion boss' : 'Анимированный босс Мортарион'}>
-      <div className="mortarion__aura" aria-hidden="true"/>
-      <span className="mortarion__soul mortarion__soul--one" aria-hidden="true">✦</span>
-      <span className="mortarion__soul mortarion__soul--two" aria-hidden="true">✧</span>
-      <span className="mortarion__soul mortarion__soul--three" aria-hidden="true">✦</span>
-      <div className="mortarion__character">
-        <img src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-soul-lord.svg'} alt={en ? 'Mortarion, Lord of Souls' : 'Мортарион — Властелин Душ'} draggable={false} />
+  return <div className="mortarion-raid mx-auto w-full max-w-[430px] space-y-3 pb-8 text-amber-50" data-testid="mortarion-boss-preview">
+    <section className="mortarion-raid__card relative overflow-hidden rounded-2xl border-2 border-amber-600/75 bg-gradient-to-b from-[#2f172a] via-[#241123] to-[#0d1018] p-3 text-center shadow-[0_8px_28px_#0009]">
+      <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-purple-500/20 blur-3xl"/>
+      <p className="relative text-xs font-black uppercase tracking-widest text-orange-300">
+        ☠ {en ? 'WORLD RAID · 2026' : 'МИРОВОЙ РЕЙД · 2026'}
+      </p>
+      <h2 className="relative mt-1 text-[23px] font-black leading-tight text-amber-100 [text-shadow:0_3px_3px_#000]">
+        {en ? 'Mortarion' : 'Мортарион'}
+      </h2>
+      <p className="relative mt-1 flex items-center justify-center gap-1.5 text-[11px] text-amber-200/85">
+        <Users size={13}/>{en ? 'Lord of Souls · One boss for all heroes' : 'Властелин Душ · Один босс для всех героев'}
+      </p>
+
+      <div className={`mortarion-raid__arena ${impact ? 'mortarion-raid__arena--striking' : ''}`} style={{ backgroundImage: `url(${import.meta.env.BASE_URL}assets/territory/events/mortarion-raid-scene.webp)` }} role="img" aria-label={en ? 'Mortarion the Lord of Souls in a ruined citadel' : 'Мортарион — Властелин Душ в разрушенной цитадели'}>
+        <img className="mortarion-raid__scene" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-raid-scene.webp'} alt="" draggable={false}/>
+        <span className="mortarion-raid__mist" aria-hidden="true"/>
+        <span className="mortarion-raid__soul mortarion-raid__soul--one" aria-hidden="true">✦</span>
+        <span className="mortarion-raid__soul mortarion-raid__soul--two" aria-hidden="true">✧</span>
+        {impact && <span key={combat.sequence} className="mortarion-raid__impact" aria-hidden="true">✦</span>}
+        {impact && <span key={`damage-${combat.sequence}`} className="mortarion-raid__damage">−{format(TEST_HIT_DAMAGE)}</span>}
+        {defeated && <div className="mortarion-raid__defeated" role="status">{en ? 'MORTARION DEFEATED!' : 'МОРТАРИОН ПОВЕРЖЕН!'}</div>}
       </div>
-      <span className="mortarion__ground" aria-hidden="true"/>
-      {showImpact && <div key={combat.sequence} className="mortarion__shock" aria-hidden="true"><Zap size={68}/></div>}
-      {combat.sequence > 0 && <div key={combat.sequence} className="mortarion__damage" role="status">−{format(PREVIEW_DAMAGE)}</div>}
-    </div>
-    <div className="mortarion__hp" aria-label={en ? 'Boss health' : 'Здоровье босса'}>
-      <div className="mortarion__hp-caption"><span><Skull size={15}/>{en ? 'BOSS HEALTH' : 'ЗДОРОВЬЕ БОССА'}</span><strong>{format(remaining)} / {format(MORTARION_HP)} HP</strong></div>
-      <div className="mortarion__hp-track" role="progressbar" aria-valuemin={0} aria-valuemax={MORTARION_HP} aria-valuenow={remaining}>
-        <div className="mortarion__hp-fill" style={{ width: `${hpPercent}%` }}/>
+
+      <div className="relative mt-4 flex justify-between gap-2 text-xs font-bold">
+        <span className="flex items-center gap-1 text-red-200"><Skull size={14}/> HP</span>
+        <span className="tabular-nums">{format(left)} / {format(MORTARION_HP)}</span>
       </div>
-    </div>
-    <div className="mortarion__parameters">
-      <div><Clock3 size={17}/><span>{en ? 'EVENT DURATION' : 'СРОК СОБЫТИЯ'}</span><strong>{en ? '5 DAYS' : '5 СУТОК'}</strong></div>
-      <div><Swords size={17}/><span>{en ? 'ATTACK LIMIT' : 'ЛИМИТ УДАРОВ'}</span><strong>{en ? '5 PER HOUR' : '5 В ЧАС'}</strong></div>
-      <div><Zap size={17}/><span>{en ? 'BETWEEN HITS' : 'МЕЖДУ УДАРАМИ'}</span><strong>{en ? '60 SECONDS' : '60 СЕКУНД'}</strong></div>
-    </div>
-    <div className="mortarion__attack">
-      <div className="mortarion__attack-count">
-        <span>{en ? 'Attacks available' : 'Доступно ударов'}</span>
-        <strong>{hitsLeft} / {MORTARION_HITS_PER_HOUR}</strong>
+      <div className="relative mt-1 h-4 overflow-hidden rounded-full border border-red-400/70 bg-[#0c080b]" role="progressbar" aria-label="Boss HP" aria-valuemin={0} aria-valuemax={MORTARION_HP} aria-valuenow={left}>
+        <div className="h-full rounded-full bg-gradient-to-r from-red-800 via-orange-600 to-amber-400 transition-[width] duration-500" style={{ width: `${Math.max(0, left / MORTARION_HP * 100)}%` }} />
       </div>
-      <button type="button" onClick={testHit} disabled={!canHit || remaining === 0} data-testid="mortarion-attack">
-        <Swords size={21}/>
-        {remaining === 0 ? (en ? 'BOSS DEFEATED' : 'БОСС ПОВЕРЖЕН') : !canHit ? `${en ? 'NEXT ATTACK IN' : 'СЛЕДУЮЩИЙ УДАР ЧЕРЕЗ'} ${nextSeconds}` : (en ? 'TEST ATTACK' : 'ПРОБНЫЙ УДАР')}
+      <div className="relative mt-3 flex items-center justify-between rounded-lg bg-black/35 px-2 py-1.5 text-[11px]">
+        <span className="flex items-center gap-1 text-amber-200"><Clock3 size={13}/>{en ? 'Event duration' : 'Срок события'}</span>
+        <span className="font-black text-amber-100">{en ? '5 days' : '5 суток'}</span>
+      </div>
+
+      <button type="button" onClick={attack} disabled={!canHit || defeated} className="mortarion-raid__attack relative mt-3 flex w-full min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-yellow-300 bg-gradient-to-b from-amber-400 via-orange-600 to-red-800 px-4 py-3 text-base font-black text-white shadow-[0_4px_0_#4a160a,0_7px_15px_#0008] [text-shadow:0_2px_2px_#5c1c06] transition-transform active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-60" data-testid="mortarion-attack">
+        <Sword size={22}/>
+        {defeated ? (en ? 'BOSS DEFEATED!' : 'БОСС ПОВЕРЖЕН!')
+          : cooldown ? (en ? `NEXT HIT IN ${cooldown}` : `УДАР ЧЕРЕЗ ${cooldown}`)
+          : (en ? 'STRIKE THE BOSS!' : 'УДАРИТЬ БОССА!')}
       </button>
-      <small>{en ? 'Only preview effects are simulated. No real battle, rewards or ranking updates.' : 'Это проверка эффектов. Настоящий бой, награды и рейтинг не изменяются.'}</small>
-    </div>
-    <section className="mortarion__ranking" aria-label={en ? 'Top 10 damage ranking' : 'Топ-10 по нанесённому урону'}>
-      <h3><Trophy size={18}/>{en ? 'TOP 10 DAMAGE DEALERS' : 'ТОП-10 ПО НАНЕСЁННОМУ УРОНУ'}<Crown size={15}/></h3>
-      <p>{en ? 'Only ten leaders will appear here when the event starts.' : 'После запуска здесь будут видны только десять лидеров.'}</p>
-      <ol>{Array.from({ length: 10 }, (_, i) => <li key={i}><b>{i + 1}</b><span>—</span></li>)}</ol>
+      <p className="relative mt-2 text-[11px] text-amber-100/85">
+        {en ? 'Available strikes' : 'Доступно ударов'}: <b>{hitsLeft}/{MORTARION_HITS_PER_HOUR}</b> · {en ? 'One strike every 60 seconds' : '1 удар раз в 60 секунд'}
+      </p>
+      <p className="relative mt-1 text-[9px] text-amber-200/65">
+        {en ? 'Owner preview — damage is not saved. Live event is off.' : 'Тест владельца — урон не сохраняется. Событие выключено.'}
+      </p>
     </section>
-  </section>;
+
+    <section className="mortarion-raid__leaderboard rounded-2xl border border-amber-600/50 bg-gradient-to-b from-[#49301d] to-[#151315] p-3 shadow-lg">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="flex items-center gap-1.5 text-sm font-black text-amber-100"><Trophy size={19} className="text-yellow-400"/>{en ? 'TOP 10 BY DAMAGE' : 'ТОП-10 ПО УРОНУ'}</h3>
+        <span className="rounded-lg border border-amber-400/30 bg-black/40 p-2 text-amber-200" aria-hidden="true"><RefreshCw size={15}/></span>
+      </div>
+      <ol className="mt-2 space-y-1.5" aria-label={en ? 'Top 10 damage leaderboard' : 'Топ-10 по урону'}>
+        {Array.from({ length: 10 }, (_, i) => <li key={i} className="flex min-w-0 items-center gap-2 rounded-lg border border-white/5 bg-black/30 px-2 py-2 text-xs">
+          <span className={`w-6 shrink-0 text-center font-black ${i === 0 ? 'text-yellow-300' : i === 1 ? 'text-slate-200' : i === 2 ? 'text-orange-400' : 'text-amber-200/65'}`}>{i < 3 ? ['🥇', '🥈', '🥉'][i] : `#${i + 1}`}</span>
+          <span className="min-w-0 flex-1 truncate text-amber-100/50">—</span>
+        </li>)}
+      </ol>
+      <p className="mt-3 text-center text-[10px] leading-relaxed text-amber-200/70">
+        {en ? 'Only the ten best heroes appear here during the live event.' : 'После запуска здесь показываются только 10 лучших игроков.'}
+      </p>
+    </section>
+  </div>;
 }
