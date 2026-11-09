@@ -1,0 +1,63 @@
+/* Mortarion is an isolated, owner-only playtest. Never modifies core UI themes. */
+.mortarion{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;gap:11px;margin:-12px;padding:15px 9px 30px;min-height:100%;color:#f4e6d8;background:radial-gradient(ellipse at 51% 19%,#32164c 0%,#180e28 32%,transparent 66%),linear-gradient(174deg,#0e0a12,#1d1118 55%,#0d0b10 100%);font-family:inherit}
+.mortarion:before{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;opacity:.16;background:repeating-linear-gradient(0deg,transparent 0px,transparent 17px,#d3b17c 18px,transparent 19px,transparent 45px),repeating-linear-gradient(90deg,transparent 0px,transparent 135px,#000 136px,#000 138px);background-size:100% 100%;mix-blend-mode:overlay}
+.mortarion__runes{position:absolute;top:135px;left:0;right:0;font-size:23px;letter-spacing:23px;white-space:nowrap;text-align:center;color:#aa66e6;opacity:.22;transform:translateX(13px);pointer-events:none}
+.mortarion__status{align-self:center;display:flex;align-items:center;gap:5px;text-align:center;padding:5px 9px;border:1px solid #b98c5190;border-radius:20px;color:#edc992;font-size:9px;font-weight:800;letter-spacing:.08em;background:linear-gradient(180deg,#362a20,#171017);box-shadow:0 2px 8px #000a}
+.mortarion__header{text-align:center;z-index:1;text-shadow:0 2px 7px #000}
+.mortarion__header span{display:block;font-size:9px;letter-spacing:.24em;color:#d2a76d;font-weight:900}
+.mortarion__header h2{margin:3px 0 1px;font-family:Georgia,serif;font-weight:900;font-size:clamp(28px,8.8vw,42px);line-height:1;letter-spacing:.065em;color:#edd6af;text-shadow:0 2px #4d242c,0 0 25px #a94afa75,0 5px 8px #000}
+.mortarion__header p{margin:4px 0 0;font-size:11px;color:#c7b7ce}
+.mortarion__stage{position:relative;height:clamp(230px,65vw,310px);margin:-6px auto -14px;width:min(100%,390px);display:flex;align-items:flex-end;justify-content:center;transform:translateZ(0)}
+.mortarion__stage:before,.mortarion__stage:after{content:"";position:absolute;border-radius:50%;pointer-events:none}
+.mortarion__stage:before{inset:0 9%;background:radial-gradient(ellipse,#8c29e055 8%,#6e25952b 40%,transparent 75%);filter:blur(14px);animation:mortarion-breath 3.8s ease-in-out infinite}
+.mortarion__stage:after{bottom:4%;left:12%;width:76%;height:13%;background:#050508aa;filter:blur(10px)}
+.mortarion__aura{position:absolute;left:10%;bottom:8%;width:80%;height:75%;border-radius:50%;border:2px solid #b86ffd22;box-shadow:0 0 38px #9d44e53d,inset 0 0 30px #9d44e53c;animation:mortarion-aura 6s ease-in-out infinite}
+.mortarion__character{position:absolute;inset:-7% 1% -15%;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none;animation:mortarion-float 4s ease-in-out infinite}
+.mortarion__character img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 16px #9e38cb66) drop-shadow(0 6px 10px #000c)}
+.mortarion__ground{position:absolute;bottom:7%;left:19%;width:62%;height:11%;border:2px solid #9d48d7aa;border-radius:50%;box-shadow:0 0 19px #c45bf988,inset 0 0 20px #aa63ec55;transform:rotateX(73deg);z-index:1;animation:mortarion-ground 2.6s alternate ease-in-out infinite}
+.mortarion__soul{position:absolute;z-index:2;font-size:34px;color:#d6a4ff;text-shadow:0 0 10px #e0b4ff,0 0 25px #9a32f0;pointer-events:none;animation:mortarion-spirits 4s ease-in-out infinite}
+.mortarion__soul--one{top:23%;left:5%}.mortarion__soul--two{top:8%;right:12%;animation-delay:-1.8s;font-size:27px}.mortarion__soul--three{top:59%;right:2%;animation-delay:-3.1s;font-size:24px}
+.mortarion__stage--impact{animation:mortarion-recoil .44s ease-out}
+.mortarion__stage--impact .mortarion__character img{filter:brightness(1.75) saturate(1.4) drop-shadow(0 0 27px #f5baff)}
+.mortarion__shock{position:absolute;z-index:5;top:34%;left:40%;width:72px;height:72px;display:grid;place-items:center;color:#edd5ff;filter:drop-shadow(0 0 18px #db75ff);animation:mortarion-shock .65s ease-out forwards}
+.mortarion__damage{position:absolute;z-index:6;top:22%;left:52%;font-size:26px;font-weight:1000;color:#ffe7a0;text-shadow:0 3px 2px #3d0b0b,0 0 16px #f6a3ff;animation:mortarion-damage 1.4s ease-out forwards;pointer-events:none}
+.mortarion__hp,.mortarion__parameters>div,.mortarion__attack,.mortarion__ranking{border:1px solid #936c52aa;background:linear-gradient(175deg,#3e2a29f7,#261c20f8 53%,#130f15f9);box-shadow:inset 0 1px #b28b6255,0 5px 14px #0303079c;border-radius:10px}
+.mortarion__hp{padding:11px 12px 10px;z-index:2}
+.mortarion__hp-caption{display:flex;justify-content:space-between;gap:4px;align-items:center;font-size:10px}
+.mortarion__hp-caption span{display:flex;align-items:center;gap:4px;color:#e7aeaa;font-weight:800;letter-spacing:.05em}
+.mortarion__hp-caption strong{font-size:11px;font-weight:900;font-variant-numeric:tabular-nums;color:#fff0db}
+.mortarion__hp-track{height:18px;margin-top:7px;overflow:hidden;padding:2px;border-radius:5px;border:1px solid #c49b66aa;background:linear-gradient(#09080d,#3e0c19)}
+.mortarion__hp-fill{height:100%;border-radius:3px;background:linear-gradient(180deg,#ff9a82,#de2d50 45%,#890a32);box-shadow:0 0 11px #ff4450;position:relative;transition:width .55s ease}
+.mortarion__hp-fill:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,#fff7ff55 48%,transparent 70%);opacity:.3;animation:mortarion-shine 4s linear infinite}
+.mortarion__parameters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.mortarion__parameters>div{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:74px;padding:7px 3px;gap:2px;text-align:center}
+.mortarion__parameters svg{color:#d6a05f}
+.mortarion__parameters span{font-size:8px;color:#b9a6a3;letter-spacing:.025em}
+.mortarion__parameters strong{font-size:11px;font-weight:900;color:#fff0d2}
+.mortarion__attack{padding:11px 12px}
+.mortarion__attack-count{display:flex;justify-content:space-between;align-items:center;color:#d7c3a9;font-size:12px;margin-bottom:8px}
+.mortarion__attack-count strong{color:#ffd890;font-variant-numeric:tabular-nums;font-size:13px}
+.mortarion__attack button{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:48px;border:2px solid #f8bd75;border-radius:9px;font-weight:900;font-size:14px;letter-spacing:.035em;color:#fff6e4;background:linear-gradient(#bd4e74,#722355 54%,#3e1740);box-shadow:inset 0 2px #ffffff42,0 3px #301322,0 0 24px #882aa455;transition:filter .15s,transform .15s}
+.mortarion__attack button:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 2px #ffffff42,0 1px #301322}
+.mortarion__attack button:disabled{background:linear-gradient(#403147,#281d31);border-color:#79627e;color:#d4c5d7;box-shadow:none;cursor:not-allowed}
+.mortarion__attack small{display:block;text-align:center;font-size:9px;line-height:1.4;color:#b6a4bd;margin-top:9px}
+.mortarion__ranking{padding:12px 10px}
+.mortarion__ranking h3{display:flex;align-items:center;justify-content:center;gap:6px;margin:0;font-size:14px;color:#f4cc84;text-align:center;font-weight:900;letter-spacing:.04em}
+.mortarion__ranking h3 svg{color:#edc36d;flex-shrink:0}
+.mortarion__ranking p{margin:5px 0 9px;font-size:10px;line-height:1.3;text-align:center;color:#c0b0ba}
+.mortarion__ranking ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:column;grid-template-rows:repeat(5,minmax(0,1fr));gap:5px}
+.mortarion__ranking li{display:flex;align-items:center;gap:8px;min-width:0;height:28px;border:1px solid #98765450;border-radius:5px;padding:2px 7px;background:linear-gradient(90deg,#5a3a2857,#1c1421)}
+.mortarion__ranking li b{display:flex;align-items:center;justify-content:center;width:23px;height:22px;flex-shrink:0;color:#cda976;font-size:11px;border-radius:3px;background:#120e15}
+.mortarion__ranking li:nth-child(1) b{color:#fff1a5}.mortarion__ranking li:nth-child(2) b{color:#e8edf2}.mortarion__ranking li:nth-child(3) b{color:#e9aa82}
+.mortarion__ranking li span{font-size:11px;color:#a598a2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@keyframes mortarion-breath{50%{opacity:.55;transform:scale(1.1)}}
+@keyframes mortarion-float{50%{transform:translateY(-8px) rotate(-.7deg)}}
+@keyframes mortarion-aura{50%{transform:scale(1.08);opacity:.45}}
+@keyframes mortarion-ground{to{opacity:.38;transform:rotateX(73deg) scale(1.2)}}
+@keyframes mortarion-spirits{50%{transform:translate(8px,-24px) scale(1.16);opacity:.48}}
+@keyframes mortarion-shock{0%{opacity:1;transform:scale(.3) rotate(0)}100%{opacity:0;transform:scale(3.3) rotate(45deg)}}
+@keyframes mortarion-recoil{25%{transform:translateX(-5px)}55%{transform:translateX(6px)}75%{transform:translateX(-2px)}}
+@keyframes mortarion-damage{0%{opacity:0;transform:translateY(10px) scale(.7)}15%{opacity:1;transform:translateY(-6px) scale(1.2)}100%{opacity:0;transform:translateY(-68px) scale(1)}}
+@keyframes mortarion-shine{from{transform:translateX(-120%)}to{transform:translateX(120%)}}
+@media (max-width:350px){.mortarion{padding-left:7px;padding-right:7px;gap:8px}.mortarion__parameters span{font-size:7px}.mortarion__parameters strong{font-size:10px}.mortarion__hp-caption{font-size:9px}.mortarion__hp-caption strong{font-size:10px}}
+@media (prefers-reduced-motion:reduce){.mortarion *,.mortarion *:before,.mortarion *:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

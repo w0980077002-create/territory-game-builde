@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 660" fill="none" aria-label="Мортарион, Властелин Душ">
+<defs>
+ <radialGradient id="a"><stop stop-color="#a251fb" stop-opacity=".47"/><stop offset=".68" stop-color="#3e1475" stop-opacity=".15"/><stop offset="1" stop-color="#100a18" stop-opacity="0"/></radialGradient>
+ <linearGradient id="cloak" x1="140" y1="60" x2="440" y2="640" gradientUnits="userSpaceOnUse"><stop stop-color="#352546"/><stop offset=".42" stop-color="#140f24"/><stop offset=".83" stop-color="#100c18"/><stop offset="1" stop-color="#04050b"/></linearGradient>
+ <linearGradient id="metal" x1="140" y1="190" x2="440" y2="520" gradientUnits="userSpaceOnUse"><stop stop-color="#c3bad2"/><stop offset=".27" stop-color="#51495f"/><stop offset=".5" stop-color="#211a2d"/><stop offset=".77" stop-color="#756481"/><stop offset="1" stop-color="#1c1426"/></linearGradient>
+ <linearGradient id="gold" x1="180" y1="50" x2="380" y2="360"><stop stop-color="#ffe3aa"/><stop offset=".35" stop-color="#b77b40"/><stop offset=".77" stop-color="#4e2b25"/><stop offset="1" stop-color="#251721"/></linearGradient>
+ <radialGradient id="soul"><stop stop-color="#f0deff"/><stop offset=".18" stop-color="#d3a9ff"/><stop offset=".52" stop-color="#883af6"/><stop offset="1" stop-color="#6b17a9" stop-opacity="0"/></radialGradient>
+ <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="7"/></filter>
+ <filter id="micro" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="1" dy="8" stdDeviation="7" flood-color="#05040a" flood-opacity=".8"/></filter>
+</defs>
+<ellipse cx="282" cy="333" rx="242" ry="311" fill="url(#a)"/>
+<g stroke="#7535c4" stroke-width="2" opacity=".35"><path d="M34 340 113 280l-20-70m380 102-58-51 24-90M95 557l45-60-56-45m394 84-42-63 37-49"/><path d="m87 137 39 21-8 32m310-42-31 30 15 26"/></g>
+<g opacity=".66"><circle cx="89" cy="326" r="34" fill="url(#soul)"/><circle cx="481" cy="270" r="42" fill="url(#soul)"/><circle cx="398" cy="88" r="22" fill="url(#soul)"/><circle cx="79" cy="504" r="24" fill="url(#soul)"/></g>
+<g filter="url(#micro)">
+<!-- shredded cloak flowing from shoulders -->
+<path d="M225 177C172 192 123 215 101 300L47 620l74-56 21 88 60-70 20 70 57-39 57 43 24-75 56 71 21-94 85 61-54-341c-26-57-69-97-132-111Z" fill="url(#cloak)" stroke="#514065" stroke-width="6"/>
+<path d="M136 328 86 589l70-53 6 71 37-71m224-219 52 265-57-53-20 75-38-90" stroke="#66517a" stroke-opacity=".55" stroke-width="5"/>
+<!-- horns -->
+<path d="M201 151Q112 99 118 36q42 67 119 66l16 57ZM360 151Q449 99 443 36q-42 67-119 66l-16 57Z" fill="#241d2c" stroke="url(#metal)" stroke-width="11"/>
+<path d="M208 129 153 89m202 40 55-40" stroke="#9f87a6" stroke-opacity=".4" stroke-width="4"/>
+<!-- crown -->
+<path d="m202 158-26-81 56 24 48-77 48 77 57-24-27 81-16 36H216Z" fill="url(#gold)" stroke="#20141c" stroke-width="8"/>
+<path d="m216 143 64-83 65 83-65 23Z" fill="#341629" stroke="#cb904d" stroke-width="4"/>
+<path d="m280 90 17 27-17 27-17-27Z" fill="#be47f4" stroke="#efcbff" stroke-width="3"/>
+<!-- hood -->
+<path d="M183 179c1-99 60-111 97-111s96 12 97 111l34 73-59 33-149 1-58-34Z" fill="#140e1c" stroke="#6a536e" stroke-width="8"/>
+<path d="M211 187c12-48 42-70 68-70 32 0 61 25 72 70l-19 95h-100Z" fill="#06090f" stroke="#36283e" stroke-width="5"/>
+<!-- skull -->
+<path d="M231 171q50-37 99 0l9 53-23 37-5 28-32 22-32-22-5-28-23-37Z" fill="url(#metal)" stroke="#0b0c15" stroke-width="8"/>
+<path d="m229 210 43 6-9 18-28-3Zm101 0-43 6 9 18 28-3Z" fill="#0a0612"/>
+<path d="m238 218 28 1m28 0 28-1" stroke="#d44fff" stroke-width="7" filter="url(#glow)"/>
+<path d="m238 218 28 1m28 0 28-1" stroke="#efb4ff" stroke-width="4"/>
+<path d="m276 235-11 20 14 8 15-8-11-20Z" fill="#100a15"/>
+<path d="m257 276 44 0-6 20-32 0Z" fill="#0c0915" stroke="#ad9db2" stroke-width="3"/>
+<path d="M269 277v19m10-19v19m10-19v19" stroke="#8b7b93" stroke-width="3"/>
+<!-- armor shoulders -->
+<path d="M215 312Q171 250 119 287l-35 83 78 41 72-76Z" fill="url(#metal)" stroke="#130f1e" stroke-width="9"/>
+<path d="M347 312q44-62 96-25l35 83-78 41-72-76Z" fill="url(#metal)" stroke="#130f1e" stroke-width="9"/>
+<path d="m128 295 49 34-30 51-50-25m334-60-49 34 30 51 50-25" stroke="#b6915a" stroke-width="5"/>
+<!-- chest -->
+<path d="m210 299 70 43 70-43 38 70-28 168-81 44-82-44-28-168Z" fill="url(#metal)" stroke="#0e0b15" stroke-width="10"/>
+<path d="m207 342 71 46 75-46-30 118-45 25-44-25Z" fill="#170e20" stroke="#a27858" stroke-width="6"/>
+<path d="m279 375 39 40-39 55-39-55Z" fill="#9a3ae2" filter="url(#glow)"/>
+<path d="m279 376 35 39-35 47-35-47Z" fill="#812be3" stroke="#e9b5ff" stroke-width="4"/>
+<path d="M279 396v44m-17-25h35" stroke="#fff1ff" stroke-width="5" stroke-linecap="round"/>
+<path d="m184 378 30 83-27 88m186-170-31 83 28 88" stroke="#c29a68" stroke-width="6"/>
+<!-- gauntlets -->
+<path d="M119 393q-33 28-39 80l35 51 57-28-5-81Z" fill="url(#metal)" stroke="#16111d" stroke-width="8"/>
+<path d="M440 393q33 28 39 80l-35 51-57-28 5-81Z" fill="url(#metal)" stroke="#16111d" stroke-width="8"/>
+<path d="m97 448 63 20m243 0 63-20" stroke="#aa8eaa" stroke-width="5"/>
+<!-- chains -->
+<path d="M176 339q110 156 210 0M180 369q115 171 204 0" stroke="#b69167" stroke-width="7" stroke-dasharray="10 10" opacity=".65"/>
+<!-- staff/scythe -->
+<path d="m467 615-28-1-7-452 28-5Z" fill="url(#gold)" stroke="#1a1420" stroke-width="7"/>
+<path d="M441 197q-83-89-40-158 37 51 104 13-32 88-64 145Z" fill="url(#metal)" stroke="#d3c0dc" stroke-width="7"/>
+<circle cx="447" cy="161" r="51" fill="url(#soul)" opacity=".8"/>
+<circle cx="447" cy="161" r="17" fill="#ddb1ff" stroke="#f9dbff" stroke-width="5"/>
+</g>
+<!-- runes and dust -->
+<g stroke="#c88bff" stroke-width="4" stroke-linecap="round" opacity=".8"><path d="m81 171 13 22-14 20m-4-20h17M474 405l16-22-4 25 13 11M73 407l14 12-14 13m348-350 11-14 6 14-12 17"/></g>
+<g fill="#d78bff"><circle cx="105" cy="246" r="3"/><circle cx="480" cy="347" r="4"/><circle cx="353" cy="118" r="3"/><circle cx="152" cy="91" r="3"/><circle cx="385" cy="597" r="3"/><circle cx="52" cy="574" r="4"/></g>
+</svg>

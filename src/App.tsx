@@ -68,9 +68,10 @@ const AuctionScreen = lazy(() => import('@/components/AuctionScreen').then(m => 
 const FriendsScreen = lazy(() => import('@/components/FriendsScreen').then(m => ({ default: m.FriendsScreen })));
 const MessagesScreen = lazy(() => import('@/components/MessagesScreen').then(m => ({ default: m.MessagesScreen })));
 const EventsScreen = lazy(() => import('@/components/EventsScreen').then(m => ({ default: m.EventsScreen })));
+const MortarionBossScreen = lazy(() => import('@/components/MortarionBossScreen').then(m => ({ default: m.MortarionBossScreen })));
 
 type NavId = 'city' | 'inventory' | 'hero' | 'battle' | 'map' | 'games' | 'clan';
-type SubScreen = 'vip' | 'runes' | 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages' | 'events';
+type SubScreen = 'vip' | 'runes' | 'shop' | 'forge' | 'arena' | 'leaderboard' | 'quests' | 'hall-play' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'mortarion';
 type Screen = NavId | SubScreen;
 
 /** Visual-only scope for the approved old-oak finish.
@@ -133,6 +134,7 @@ const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> =
   friends: { title: 'Друзья', icon: '/ic-invite.webp' },
   messages: { title: 'Сообщения', icon: '/ic-mail.webp' },
   events: { title: 'События', icon: '/ic-events.webp' },
+  mortarion: { title: 'Мортарион', icon: '/ic-events.webp' },
 };
 
 function Splash({ text, onRetry, retryLabel, onContinue, continueLabel, onContinueConfirmed, confirmLabel, warning, busy }: {
@@ -647,7 +649,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} onNavigate={setScreen} />}
         {screen === 'messages' && <MessagesScreen notify={notify} onQuests={() => setScreen('quests')} onDaily={() => setEventDailyOpen(true)} />}
-        {screen === 'events' && <EventsScreen onNavigate={setScreen} onDaily={() => setEventDailyOpen(true)} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} gatherReady={gatherReady} />}
+        {screen === 'events' && <EventsScreen onNavigate={setScreen} onDaily={() => setEventDailyOpen(true)} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} gatherReady={gatherReady} bossPreview={isAdmin} onBossPreview={() => setScreen('mortarion')} />}
+        {screen === 'mortarion' && isAdmin && <MortarionBossScreen />}
         {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} onNavigate={setScreen} />}
         </Suspense>
         </SectionErrorBoundary>

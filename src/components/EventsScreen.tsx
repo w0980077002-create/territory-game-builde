@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Bell, CalendarDays, Check, ChevronRight, Clock3, Crown, Gift, Map, RefreshCw, ScrollText, Shield, Swords, Ticket, Trophy } from 'lucide-react';
+import { Bell, CalendarDays, Check, ChevronRight, Clock3, Crown, Gift, Map, RefreshCw, ScrollText, Shield, Skull, Swords, Ticket, Trophy } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { useLive } from '@/game/live';
@@ -83,11 +83,13 @@ function SevenDayJourney({ dayIndex, claimedToday, rewards, onOpen, en }: {
 }
 
 /** Real existing bonuses and competition progress; zero synthetic payouts. */
-export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
+export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady, bossPreview, onBossPreview }: {
   onNavigate: (screen: EventDestination) => void;
   onDaily: () => void;
   onSeason: () => void;
   gatherReady: boolean;
+  bossPreview?: boolean;
+  onBossPreview?: () => void;
 }) {
   const { language } = useLanguage();
   const en = language === 'en';
@@ -214,6 +216,11 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
       </div>
     </section>
 
+    {bossPreview && onBossPreview && <EventCard icon={Skull} image="assets/territory/events/mortarion-soul-lord.svg"
+      name={en ? 'MORTARION — LORD OF SOULS' : 'МОРТАРИОН — ВЛАСТЕЛИН ДУШ'}
+      description={en ? 'Owner playtest · 100,000,000 HP · 5 days · 5 hits/hour' : 'Тест для владельца · 100 000 000 HP · 5 суток · 5 ударов в час'}
+      detail={en ? 'One minute between hits. Only TOP 10 will be public.' : 'Пауза между ударами — 60 секунд. В рейтинге только Топ-10.'}
+      status="unknown" action={en ? 'Try boss effects' : 'Проверить босса'} actionId="mortarion-preview" onClick={onBossPreview} en={en}/>}
     <div className="territory-events__tabs" role="tablist" aria-label={en ? 'Event calendar' : 'Календарь событий'}>
       <button id="territory-events-daily-tab" type="button" role="tab" aria-controls="territory-events-daily-panel" aria-selected={tab === 'daily'} onClick={() => switchTab('daily')}><CalendarDays size={17}/>{en ? 'Today' : 'Сегодня'}</button>
       <button id="territory-events-weekly-tab" type="button" role="tab" aria-controls="territory-events-weekly-panel" aria-selected={tab === 'weekly'} onClick={() => switchTab('weekly')}><Trophy size={17}/>{en ? 'This week' : 'Эта неделя'}</button>
