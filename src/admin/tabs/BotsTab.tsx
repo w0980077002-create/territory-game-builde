@@ -34,6 +34,7 @@ interface Tester {
   arenaWins: number; arenaLosses: number; totalBattlesWon: number; bossesDefeated: number;
   chapter: number; chapterWins: number; arenaStarts: number;
   autoArena: boolean; autoCampaign: boolean; autoTrials: boolean; autoCave: boolean;
+  autoMortarion: boolean;
   arenaMode: 'duel'|'team'|'chaos'; intervalMinutes: number;
   lastArenaAt: string | null;
   lastEvent: { activity: string; result: string; at: string } | null;
@@ -138,6 +139,30 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
       setNotice('Настройка сохранена на сервере.');
     }catch(e){setError((e as Error).message);}
     finally{setBusy(false);}
+  };
+  // Independent server-backed toggle: no stale currencies, saved stats, or
+  // unrelated auto-mode settings are ever posted back to the server.
+  const toggleMortarion=async()=>{
+    if(selected===null||busy)return;
+    const current=bots?.find(b=>b.slot===selected);
+    if(!current)return;
+    const next=!current.autoMortarion;
+    setBusy(true);setError(null);setNotice(null);
+    try{
+      await adminCall('bots_mortarion_auto',{slot:selected,enabled:next});
+      const fresh=await adminCall<{bots:Tester[]}>('bots_list');
+      const confirmed=fresh.bots.find(b=>b.slot===selected);
+      if(!confirmed||confirmed.autoMortarion!==next){
+        throw new Error('Сервер не подтвердил настройку автоучастия Мортариона.');
+      }
+      setBots(fresh.bots);
+      setNotice(next
+        ? 'Автоучастие Мортариона включено. Удары идут по серверному лимиту 5 в час с паузой 60 секунд.'
+        : 'Автоучастие Мортариона выключено. Новых автоматических ударов не будет.');
+    }catch(e){
+      setError((e as Error).message);
+      // Leave the current UI state unchanged if the owner action was not confirmed.
+    }finally{setBusy(false);}
   };
   const gearAction=async(operation:'equip'|'unequip'|'relevel',gearSlot:GearSlot)=>{
     if(selected===null||busy)return;
@@ -298,7 +323,10 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
           <span className="block text-sm font-bold text-white truncate">{b.name}</span>
           <span className="text-[11px] text-slate-400">Ур. {b.level} · экипировка {equipmentCount(b)}/7 · {format(b.arenaWins)} побед / {format(b.arenaLosses)} поражений</span>
         </span>
-        <span className={`text-[11px] font-semibold ${b.autoArena?'text-emerald-300':'text-slate-500'}`}>{b.autoArena?'Арена: авто':'Отключён'}</span>
+        <span className="flex flex-col items-end gap-1 shrink-0">
+          <span className={`text-[11px] font-semibold ${b.autoArena?'text-emerald-300':'text-slate-500'}`}>{b.autoArena?'Арена: авто':'Арена: выкл'}</span>
+          <span className={`text-[11px] font-semibold ${b.autoMortarion?'text-amber-300':'text-slate-500'}`}>{b.autoMortarion?'Мортарион: авто':'Мортарион: выкл'}</span>
+        </span>
       </button>)}
       {bots.length===0&&<p className="text-sm text-slate-400">Тестеры ещё не созданы.</p>}
     </div>:current&&draft?<div className="space-y-4">
@@ -414,6 +442,15 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
         <div className="space-y-3">
           <Switch label="Арена — автоматически" hint="Тестер участвует в серверных боях с настоящим результатом. Начинается только после включения."
             on={draft.autoArena} tone="emerald" onToggle={()=>{void saveSetting('autoArena',!draft.autoArena);}}/>
+          <div className="rounded-xl border border-amber-700/50 bg-amber-950/20 p-2 space-y-2" data-testid="mortarion-auto-participation">
+            <Switch label="Мортарион — автоучастие" hint="Только этот тестер наносит настоящие удары мировому боссу: не более 5 в час, с паузой 60 секунд. Начинает только после твоего включения."
+              on={current.autoMortarion} tone="amber" onToggle={()=>{void toggleMortarion();}}/>
+            <p className="px-1 text-[11px] text-slate-400" role="status">
+              {current.autoMortarion
+                ? 'Включено · серверная автоматика работает до выключения или окончания события.'
+                : 'Выключено · автоудары по Мортариону не выполняются.'}
+            </p>
+          </div>
           <label className="block text-xs text-slate-300">Интервал между запусками, минуты
             <input type="number" min={2} max={1440} className={inputCls+' mt-1'} value={draft.intervalMinutes} disabled={busy}
               onChange={e=>changeDraft('intervalMinutes',Number(e.target.value))}
