@@ -62,11 +62,13 @@ assert.match(pve, /outcome\.won[\s\S]*?'Повторить бой'/, 'Defeat mus
 assert(pve.indexOf('data-testid="pve-result-actions"') < pve.indexOf('data-testid="victory-next-goal"'),
   'Primary result actions must appear before the optional next-goal panel');
 
-for (const image of ['helmet', 'amulet', 'armor', 'weapon', 'shield', 'ring', 'boots', 'sword', 'knight-blade', 'hero-sword', 'plate-armor']) {
-  assert(existsSync(`public/assets/territory/ui/equipment-cartoon/${image}.webp`), `Missing approved cartoon gear: ${image}`);
+for (const image of ['watch-helmet', 'master-raven-amulet', 'caravan-armor', 'watch-blade', 'north-shield', 'spark-ring', 'ranger-boots']) {
+  assert(existsSync(`public/assets/territory/ui/unique-gear/${image}.webp`), `Missing actual crafted gear: ${image}`);
 }
-assert.match(art, /equipment-cartoon\//, 'Cartoon shared equipment catalog missing');
-assert.match(art, /return eq\('sword'\)/, 'Sword art mapping missing');
+assert(!existsSync('public/assets/territory/ui/equipment-cartoon'), 'Generic cartoon gear still present in repo');
+assert.doesNotMatch(art, /equipment-cartoon\\//, 'Live gear artwork still references retired cartoons');
+assert.match(art, /SHOP_EQUIPMENT_ART_BY_NAME/, 'Shop equipment must map to real gear');
+assert.match(art, /return uniqueGearIcon\\('watch-blade'\\)/, 'Sword must use crafted artwork');
 assert.match(art, /if \(item\.equipment\) return equipmentArt\(item\.equipment\)/, 'Inventory still shows generic weapon');
 assert.match(gear, /equipmentArt\(item\)/, 'Arena gear still shows generic weapon');
 assert.match(room, /<ArenaChat\s+roomId=\{roomId\}/, 'Persistent arena chat missing');

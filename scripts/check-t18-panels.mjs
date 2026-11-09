@@ -45,9 +45,9 @@ for(const img of [
   'assets/territory/map/icons/rune-stones-v1.webp',
   'assets/territory/ui/materials/royal-chest.webp',
   'monopoly/ship.webp','ic-sea.webp',
-  'assets/territory/ui/equipment-cartoon/ring.webp',
-  'assets/territory/ui/equipment-cartoon/amulet.webp',
-  'assets/territory/ui/equipment-cartoon/weapon.webp',
-  'assets/territory/ui/equipment-cartoon/armor.webp'
+  'assets/territory/ui/unique-gear/sapphire-ring.webp',
+  'assets/territory/ui/unique-gear/north-gate-amulet.webp',
+  'assets/territory/ui/unique-gear/watch-blade.webp',
+  'assets/territory/ui/unique-gear/north-armor.webp'
 ]) assert.ok(existsSync('public/'+img),'Missing original art: '+img);
 console.log('T18 companion & expansion UI PASS: five real companions + no unverified purchases, relic rewards or ship claims.');
