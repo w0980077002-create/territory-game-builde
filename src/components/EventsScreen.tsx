@@ -232,11 +232,13 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady, bossP
       </div>
     </section>
 
-    {bossPreview && onBossPreview && <EventCard icon={Skull} image="assets/territory/events/mortarion-soul-lord.svg"
+    {(bossPreview || mortarionStatus?.enabled) && onBossPreview && <EventCard icon={Skull} image="assets/territory/events/mortarion-raid-scene.webp"
       name={en ? 'MORTARION — LORD OF SOULS' : 'МОРТАРИОН — ВЛАСТЕЛИН ДУШ'}
-      description={en ? 'Owner playtest · 100,000,000 HP · 5 days · 5 hits/hour' : 'Тест для владельца · 100 000 000 HP · 5 суток · 5 ударов в час'}
-      detail={en ? 'One minute between hits. Only TOP 10 will be public.' : 'Пауза между ударами — 60 секунд. В рейтинге только Топ-10.'}
-      status="unknown" action={en ? 'Try boss effects' : 'Проверить босса'} actionId="mortarion-preview" onClick={onBossPreview} en={en}/>}
+      description={en ? 'Shared 100,000,000 HP · 5 days · 5 hits per hour' : 'Общее HP 100 000 000 · 5 суток · 5 ударов в час'}
+      detail={en ? '60 seconds between strikes. Only TOP 10 is visible.' : '60 секунд между ударами. Только Топ-10 по урону.'}
+      status={mortarionStatus?.active ? 'active' : 'unknown'}
+      action={mortarionStatus?.active ? (en ? 'Strike the boss' : 'Ударить босса') : (en ? 'Open raid' : 'Открыть рейд')}
+      actionId="mortarion-live" onClick={onBossPreview} en={en}/>}
     <div className="territory-events__tabs" role="tablist" aria-label={en ? 'Event calendar' : 'Календарь событий'}>
       <button id="territory-events-daily-tab" type="button" role="tab" aria-controls="territory-events-daily-panel" aria-selected={tab === 'daily'} onClick={() => switchTab('daily')}><CalendarDays size={17}/>{en ? 'Today' : 'Сегодня'}</button>
       <button id="territory-events-weekly-tab" type="button" role="tab" aria-controls="territory-events-weekly-panel" aria-selected={tab === 'weekly'} onClick={() => switchTab('weekly')}><Trophy size={17}/>{en ? 'This week' : 'Эта неделя'}</button>
