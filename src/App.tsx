@@ -589,7 +589,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         }} />}
         {screen === 'games' && (
           <GamesScreen userId={user.id} onPlay={(gameId) => {
-            if (gameId === 'slots') return; // Viking Treasures disabled by owner.
+            if (gameId === 'slots' || gameId === 'wheel') return; // Both modes disabled by owner.
             captureGameEvent('territory_hall_game_open', { mode: gameId });
             setHallGame(gameId);
             setScreen('hall-play');
