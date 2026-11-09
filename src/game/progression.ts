@@ -3,7 +3,7 @@ import { grantRewards, updateProgress } from './actions';
 import type { Enemy } from './types';
 import { useLive } from './live';
 import { calendarDayKey, previousCalendarDayKey } from './weeklyQuests';
-import { applyTrialChest, rollTrialChest, trialChestTier } from './trialLoot';
+import { trialChestTier } from './trialLoot';
 
 export const dayKey = calendarDayKey;
 
@@ -159,11 +159,19 @@ export function trialReward(level: number): Reward {
 export function recordTrialWin(state: GameState, enemy: Enemy): GameState {
   const r = trialReward(state.trialLevel);
   let next = grantRewards(applyReward(state, { gems: r.gems }), r.gold ?? 0, enemy.rewardXp);
-  // A chest is rolled once, inside the existing all-waves/boss victory receipt.
-  // The floor is remembered even if a tester later resets Trial progress.
+  // A victory reserves ONE sealed chest; only the authenticated server can
+  // generate the contents when the player opens it from Inventory → Chests.
+  // Previously awarded floors are never converted or paid a second time.
   const floor = state.trialLevel;
-  const canRollChest = !!trialChestTier(floor) && !(state.trialChestClaims ?? []).includes(floor);
-  next = applyTrialChest(next, canRollChest ? rollTrialChest(floor) : null);
+  const canReserveChest = !!trialChestTier(floor) && !(state.trialChestClaims ?? []).includes(floor);
+  next = {
+    ...next,
+    lastTrialChest: null,
+    ...(canReserveChest ? {
+      trialChestClaims: [...(state.trialChestClaims ?? []), floor],
+      trialChestUnopenedFloors: [...(state.trialChestUnopenedFloors ?? []), floor],
+    } : {}),
+  };
   next = { ...next, trialLevel: next.trialLevel + 1, forgeMaterials: next.forgeMaterials + 1 };
   return updateProgress(next, 'battle_win', 1);
 }
