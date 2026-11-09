@@ -1,10 +1,10 @@
 /* The approved Halloween raid card and action style, scoped to Mortarion only. */
 .mortarion-raid{margin:auto;max-width:430px}
 .mortarion-raid__card{box-shadow:0 8px 28px #0009,inset 0 1px #ebc98e25}
-.mortarion-raid__arena{position:relative;overflow:hidden;height:clamp(205px,65vw,280px);margin:8px -12px 0;background:#1c102b;isolation:isolate}
+.mortarion-raid__arena{position:relative;overflow:hidden;height:clamp(205px,60vw,265px);margin:8px -12px 0;background-color:#1c102b;background-position:center;background-size:cover;isolation:isolate}
 .mortarion-raid__arena:before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 60% 35%,#7821a53a,transparent 68%);z-index:0;pointer-events:none}
 .mortarion-raid__arena:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 55%,#180e19cc);z-index:2;pointer-events:none}
-.mortarion-raid__scene{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:52% 50%;filter:saturate(1.1) drop-shadow(0 0 6px #9130a250);transform:scale(1.015);animation:mortarion-raid-breathe 4.3s ease-in-out infinite}
+.mortarion-raid__scene{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;filter:saturate(1.1) drop-shadow(0 0 6px #9130a250);transform:scale(1.015);animation:mortarion-raid-breathe 4.3s ease-in-out infinite}
 .mortarion-raid__mist{position:absolute;inset:55% -25% -15%;z-index:2;opacity:.64;background:radial-gradient(ellipse at 40% 85%,#b040d966,transparent 67%);animation:mortarion-raid-mist 8s ease-in-out alternate infinite;pointer-events:none}
 .mortarion-raid__soul{position:absolute;z-index:3;color:#f4ceff;font-size:25px;text-shadow:0 0 9px #aa4dff,0 0 20px #ac25fa;pointer-events:none;animation:mortarion-raid-soul 4.5s ease-in-out infinite}
 .mortarion-raid__soul--one{left:12%;top:19%}
