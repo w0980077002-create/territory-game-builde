@@ -64,6 +64,7 @@ const bundle = await build({
 const {
   canJournalPveVictory, pendingPveVictoryJournal, stagePveVictoryJournal,
   persistPveVictoryJournal, retryPveVictoryJournal, recoverPveVictoryOnBoot,
+  archiveUnresolvedPveVictoryForCloudEntry, hasUnresolvedPveVictoryArchive,
 } = await import('data:text/javascript;base64,' + Buffer.from(bundle.outputFiles[0].text).toString('base64'));
 
 const original = () => ({player:{gold:10,gems:2},chapterWins:0});
@@ -165,6 +166,48 @@ globalThis.__mockOffline = false;
 globalThis.__mockMode = 'normal';
 assert.equal(await retryPveVictoryJournal('hero-a'), true);
 assert.equal(pendingPveVictoryJournal('hero-a'), false);
+
+// A permanently divergent cloud snapshot must not strand the player forever:
+ // after explicit confirmation, preserve exact WAL bytes in a separate archive
+ // and continue with the latest authenticated server row, never award twice.
+reset();
+assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
+const unresolvedBytes = entries.get('territory:pve-victory-wal:v1:hero-a');
+globalThis.__mockServer = {revision:nextRevision,state:original(),gold:10,gems:2};
+assert.equal(await recoverPveVictoryOnBoot('hero-a', profile()), null);
+assert.equal(archiveUnresolvedPveVictoryForCloudEntry('hero-a'), true);
+assert.equal(pendingPveVictoryJournal('hero-a'), false);
+assert.equal(hasUnresolvedPveVictoryArchive('hero-a'), true);
+assert.equal(entries.get('territory:pve-victory-unresolved:v1:hero-a:0'), unresolvedBytes);
+const beforeCloudEntry = globalThis.__mockWrites;
+assert.deepEqual(await recoverPveVictoryOnBoot('hero-a', profile()), {
+  state:globalThis.__mockServer.state,recovered:false,
+});
+assert.equal(globalThis.__mockWrites, beforeCloudEntry,
+  'Continuing from cloud cannot issue a local PvE reward or cloud write');
+
+// Never overwrite the backup when a later, distinct WAL needs separate help.
+globalThis.__mockServer = {revision:baseRevision,state:original(),gold:10,gems:2};
+globalThis.__mockTokens.set('hero-a', baseRevision);
+assert.equal(stagePveVictoryJournal('hero-a', {...victory(),chapterWins:2}), true);
+const secondUnresolvedBytes = entries.get('territory:pve-victory-wal:v1:hero-a');
+assert.equal(archiveUnresolvedPveVictoryForCloudEntry('hero-a'), true);
+assert.equal(entries.get('territory:pve-victory-unresolved:v1:hero-a:0'), unresolvedBytes);
+assert.equal(entries.get('territory:pve-victory-unresolved:v1:hero-a:1'), secondUnresolvedBytes);
+
+// Full archive or storage failure: do not discard the blocking source WAL.
+reset();
+assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
+for (let i=0; i<16; i++) entries.set('territory:pve-victory-unresolved:v1:hero-a:'+i, 'older-'+i);
+assert.equal(archiveUnresolvedPveVictoryForCloudEntry('hero-a'), false);
+assert.equal(pendingPveVictoryJournal('hero-a'), true);
+reset();
+assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
+const originalSetItemForArchive = localStorage.setItem;
+localStorage.setItem = () => { throw Error('storage full'); };
+assert.equal(archiveUnresolvedPveVictoryForCloudEntry('hero-a'), false);
+assert.equal(pendingPveVictoryJournal('hero-a'), true);
+localStorage.setItem = originalSetItemForArchive;
 
 // Bad WAL and disabled persistent storage fail closed.
 reset();
