@@ -25,49 +25,19 @@ export function newElixirBatch(item: InventoryItem, now = Date.now()): Inventory
   return isPerishableItem(item) ? { ...item, expiresAt: newElixirExpiry(now) } : item;
 }
 
-type MaterialBatch = NonNullable<GameState['forgeMaterialBatches']>[number];
-const validQty = (n: number): boolean => Number.isSafeInteger(n) && n > 0;
+/** Legacy server APIs still require a dated material-lot record. This far-future
+ * compatibility value is NOT a gameplay expiration; forge materials never spoil.
+ * Never subtract an old expired lot from the player's saved balance. */
+export const PERMANENT_FORGE_BATCH_EXPIRY = '9999-12-31T23:59:59.000Z';
 
-/** Keep the old numeric material wallet, but track dated lots separately.
- * Server-awarded increments create new lots; crafting and training spend old ones first.
- */
-function reconcileForgeMaterialBatches(state: GameState, now: number): Pick<GameState, 'forgeMaterials' | 'forgeMaterialBatches'> | null {
+function reconcileForgeMaterialBatches(state: GameState): Pick<GameState, 'forgeMaterialBatches'> | null {
   const balance = Math.max(0, Number.isSafeInteger(state.forgeMaterials) ? state.forgeMaterials : 0);
-  const raw = state.forgeMaterialBatches;
-  if (!raw && balance === 0) return null;
-  const expiry = newElixirExpiry(now);
-  let changed = !raw;
-  let batches: MaterialBatch[] = (raw ?? []).filter((batch) => {
-    const okay = validQty(batch.qty) && Number.isFinite(Date.parse(batch.expiresAt));
-    if (!okay) changed = true;
-    return okay;
-  });
-  if (!raw && balance > 0) batches = [{ qty: balance, expiresAt: expiry }];
-
-  const tracked = batches.reduce((sum, batch) => sum + batch.qty, 0);
-  if (tracked < balance) {
-    const increase = balance - tracked;
-    // Merge receipts within one minute to keep saves compact on long farming sessions.
-    const last = batches[batches.length - 1];
-    if (last && Math.abs(Date.parse(last.expiresAt) - Date.parse(expiry)) < 60_000)
-      batches = [...batches.slice(0, -1), { ...last, qty: last.qty + increase }];
-    else batches = [...batches, { qty: increase, expiresAt: expiry }];
-    changed = true;
-  } else if (tracked > balance) {
-    let spent = tracked - balance;
-    batches = batches.slice().sort((a, b) => Date.parse(a.expiresAt) - Date.parse(b.expiresAt))
-      .map((batch) => {
-        const consumed = Math.min(batch.qty, spent);
-        spent -= consumed;
-        return consumed ? { ...batch, qty: batch.qty - consumed } : batch;
-      }).filter((batch) => batch.qty > 0);
-    changed = true;
-  }
-
-  const alive = batches.filter((batch) => Date.parse(batch.expiresAt) > now);
-  const expiredAmount = batches.reduce((total, batch) => total + (Date.parse(batch.expiresAt) <= now ? batch.qty : 0), 0);
-  if (expiredAmount > 0) changed = true;
-  return changed ? { forgeMaterials: Math.max(0, balance - expiredAmount), forgeMaterialBatches: alive } : null;
+  const existing = state.forgeMaterialBatches;
+  if (existing?.length === (balance > 0 ? 1 : 0)
+    && (balance === 0 || (existing[0].qty === balance
+      && existing[0].expiresAt === PERMANENT_FORGE_BATCH_EXPIRY))) return null;
+  return { forgeMaterialBatches: balance > 0
+    ? [{ qty: balance, expiresAt: PERMANENT_FORGE_BATCH_EXPIRY }] : [] };
 }
 
 /** One-time grace for old stocks; live updates normalize server-granted lots.
@@ -95,7 +65,7 @@ export function reconcileElixirExpiry(state: GameState, now = Date.now()): GameS
 
   const inventory = state.inventory.map(reconcile).filter((item): item is InventoryItem => item !== null);
   const belt = state.belt.map((item) => (item ? reconcile(item) : null));
-  const materialChanges = reconcileForgeMaterialBatches(state, now);
+  const materialChanges = reconcileForgeMaterialBatches(state);
   const migrated = found && !state.elixirExpiryStartedAt;
   return changed || migrated || materialChanges
     ? { ...state, inventory, belt, ...materialChanges,
@@ -117,9 +87,3 @@ export function elixirTimeLeftLabel(item: InventoryItem, language: string, now =
   return language === 'en' ? `${days}d ${clock}` : `${days}д ${clock}`;
 }
 
-export function forgeMaterialTimeLeftLabel(state: GameState, language: string, now = Date.now()): string {
-  const earliest = Math.min(...(state.forgeMaterialBatches ?? []).map((batch) => Date.parse(batch.expiresAt)));
-  return Number.isFinite(earliest)
-    ? elixirTimeLeftLabel({ type: 'elixir', expiresAt: new Date(earliest).toISOString() } as InventoryItem, language, now)
-    : language === 'en' ? '7 days' : '7 суток';
-}
