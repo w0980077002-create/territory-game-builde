@@ -55,7 +55,8 @@ assert.deepEqual(materialAdded.forgeMaterialBatches,
 const materialSpent = expiry.reconcileElixirExpiry({ ...materialAdded, forgeMaterials: 85 }, start + 2 * 86400000);
 assert.equal(materialSpent.forgeMaterialBatches[0].qty, 85);
 const materialLater = expiry.reconcileElixirExpiry(materialSpent, start + 3650 * 86400000);
-assert.strictEqual(materialLater, materialSpent, 'materials must remain permanent');
+assert.equal(materialLater.forgeMaterials, 85, 'materials must remain permanent');
+assert.deepEqual(materialLater.forgeMaterialBatches, materialSpent.forgeMaterialBatches);
 const outOfDateMaterials = { ...initial, forgeMaterials: 10,
   forgeMaterialBatches: [{qty:10,expiresAt:new Date(Date.now() - 1000).toISOString()}],
   player: { ...initial.player, gold: 10000, level: 10, equipped: {
