@@ -195,6 +195,22 @@ try {
   assert.equal(await ownerInRegistry(), reseller);
   assert.deepEqual(await verified(reseller), gear);
   await assert.rejects(() => verified(buyer), /stage8_item_not_owned/);
+
+  // A delayed replay from the intermediate buyer must not reclaim the sword
+  // after resale. The owner predicate is required for an atomic handoff.
+  // A stale request attempts to transfer the sword to a DIFFERENT owner.
+  // An unconditional UPDATE would steal it; the expected-owner predicate
+  // must reject this replay after the intermediate buyer has resold it.
+  const staleIntermediateHandoff = await db.query(
+    'UPDATE public.territory_profession_stage8_items SET player_id=$1 WHERE item_id=$2 AND player_id=$3 RETURNING item_id',
+    [seller, uuid, buyer],
+  );
+  assert.equal(staleIntermediateHandoff.rows.length, 0,
+    'Stale intermediate buyer must not reclaim an already resold UUID');
+  assert.equal(await ownerInRegistry(), reseller);
+  assert.deepEqual(await verified(reseller), gear,
+    'Replay rejection must preserve level, upgrades and canonical stats');
+  await assert.rejects(() => verified(buyer), /stage8_item_not_owned/);
   await assert.rejects(() => verified(seller), /stage8_item_not_owned/);
   assert.deepEqual((await one('SELECT game_state FROM public.players WHERE id=$1', [reseller])).game_state,
     { player: { level: 1 } }, 'Level-1 reseller progress must not change');
