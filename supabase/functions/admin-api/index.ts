@@ -272,6 +272,48 @@ async function handle(action: string, body: Row) {
       if (afterError || !Array.isArray(after)) throw new HttpError(503, "bots_unavailable");
       return { created, total: after.length };
     }
+    case "bots_gear": {
+      const slot = intIn(body.slot, 1, 10);
+      const operation = String(body.operation ?? "");
+      if (!["equip", "unequip", "relevel"].includes(operation)) {
+        throw new HttpError(400, "invalid_request");
+      }
+      const gearSlot = String(body.gearSlot ?? "");
+      if (!["weapon", "armor", "helmet", "boots", "shield", "ring", "amulet"].includes(gearSlot)) {
+        throw new HttpError(400, "invalid_request");
+      }
+      const template = body.template == null ? null : String(body.template);
+      if (template !== null && (!/^shop_[a-z_]{3,48}_eq$/.test(template) || template.length > 64)) {
+        throw new HttpError(400, "invalid_request");
+      }
+      const level = body.level == null ? null : intIn(body.level, 1, 100);
+      const { data, error } = await db.rpc("territory_admin_test_bot_gear_v1", {
+        p_slot: slot, p_operation: operation, p_gear_slot: gearSlot,
+        p_template: template, p_level: level,
+      });
+      if (error || !data || typeof data !== "object") {
+        console.error("owner_tester_gear_failed", slot, operation, error?.message);
+        throw new HttpError(400, "bots_gear_failed");
+      }
+      await audit("bots_gear", { slot, operation, gearSlot, template, level });
+      return { result: data };
+    }
+    case "bots_gear_seed": {
+      let changed = 0;
+      for (let slot = 1; slot <= 10; slot++) {
+        const { data, error } = await db.rpc("territory_admin_test_bot_gear_v1", {
+          p_slot: slot, p_operation: "seed", p_gear_slot: null,
+          p_template: null, p_level: null,
+        });
+        if (error || !data || typeof data !== "object") {
+          console.error("owner_tester_gear_seed_failed", slot, error?.message);
+          throw new HttpError(503, "bots_gear_failed");
+        }
+        changed += Number((data as Row).changed ?? 0);
+      }
+      await audit("bots_gear_seed", { changed, testers: 10 });
+      return { testers: 10, equipped: changed };
+    }
     case "bots_update": {
       const slot = intIn(body.slot, 1, 10);
       const patch = body.patch;
