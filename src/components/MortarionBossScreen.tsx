@@ -163,11 +163,13 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
       <h2 className="relative mt-1 text-[23px] font-black leading-tight text-amber-100 [text-shadow:0_3px_3px_#000]">{en ? 'Mortarion' : 'Мортарион'}</h2>
       <p className="relative mt-1 flex items-center justify-center gap-1.5 text-[11px] text-amber-200/85"><Users size={13}/>{en ? 'Lord of Souls · One boss for all heroes' : 'Властелин Душ · Один босс для всех героев'}</p>
 
-      <div className={`mortarion-raid__arena ${impact ? 'mortarion-raid__arena--striking' : ''}`} role="img" aria-label={en ? 'Your hero battles Mortarion, Lord of Souls' : 'Твой герой сражается с Мортарионом, Властелином Душ'}>
-        <picture className="mortarion-raid__boss-picture" data-testid="mortarion-full-body-boss">
-          <source type="image/avif" srcSet={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-full-body.avif'}/>
-          <img className="mortarion-raid__scene" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-raid-scene.webp'} alt="" draggable={false}/>
-        </picture>
+      <div className={`mortarion-raid__arena ${impact ? 'mortarion-raid__arena--striking' : ''}`} style={{ '--mortarion-backdrop': `url("${import.meta.env.BASE_URL}assets/territory/events/mortarion-background.webp")` } as Record<string,string>} role="img" aria-label={en ? 'Your hero battles Mortarion, Lord of Souls' : 'Твой герой сражается с Мортарионом, Властелином Душ'}>
+        <div className="mortarion-raid__layer-bg" aria-hidden="true" />
+        <img className="mortarion-raid__layer-souls" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-fx-souls.webp'} alt="" draggable={false} aria-hidden="true" />
+        <img className="mortarion-raid__layer-boss" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-boss-layer.webp'} alt="" draggable={false} data-testid="mortarion-full-body-boss" />
+        <img className="mortarion-raid__layer-core" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-fx-core.webp'} alt="" draggable={false} aria-hidden="true" />
+        <img className="mortarion-raid__layer-vortex" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-fx-vortex.webp'} alt="" draggable={false} aria-hidden="true" />
+        <img className="mortarion-raid__layer-floor-fx" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-fx-floor.webp'} alt="" draggable={false} aria-hidden="true" />
         <span className="mortarion-raid__floor" aria-hidden="true"/>
         <span className="mortarion-raid__mist" aria-hidden="true"/>
         <span className="mortarion-raid__soul mortarion-raid__soul--one" aria-hidden="true">✦</span>

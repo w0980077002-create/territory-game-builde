@@ -41,3 +41,59 @@
 @keyframes mortarion-raid-flash{0%,30%,75%,100%{opacity:0;transform:scale(.3) rotate(-30deg)}45%{opacity:1;transform:scale(1.3) rotate(15deg)}}
 @keyframes mortarion-raid-number{0%,39%{opacity:0;transform:translateY(15px) scale(.7)}48%{opacity:1;transform:translateY(0) scale(1.12)}85%{opacity:1}100%{opacity:0;transform:translateY(-35px)}}
 @media(prefers-reduced-motion:reduce){.mortarion-raid__slash-trail,.mortarion-raid__scene,.mortarion-raid__mist,.mortarion-raid__soul,.mortarion-raid__arena--striking,.mortarion-raid__arena--striking .mortarion-raid__scene,.mortarion-raid__impact,.mortarion-raid__damage{animation:none!important}.mortarion-raid__damage{opacity:1}}
+
+
+/* Layered raid stage: independent background, alpha boss, FX emitters and real game hero. */
+.mortarion-raid__arena{background:#0e091c}
+.mortarion-raid__layer-bg{
+ position:absolute;inset:0;z-index:0;pointer-events:none;
+ background-image:linear-gradient(180deg,#14092021,#160b273f),var(--mortarion-backdrop);
+ background-size:cover;background-position:center 55%
+}
+.mortarion-raid__layer-boss{
+ position:absolute;z-index:2;right:0;bottom:2%;width:67%;height:95%;
+ object-fit:contain;object-position:right bottom;pointer-events:none;
+ animation:mortarion-layer-idle 5.5s ease-in-out infinite;transform-origin:bottom center
+}
+.mortarion-raid__layer-souls{
+ position:absolute;z-index:1;right:0;top:-10%;width:66%;height:71%;
+ object-fit:contain;opacity:.6;mix-blend-mode:screen;pointer-events:none;
+ animation:mortarion-layer-float 7s ease-in-out infinite
+}
+.mortarion-raid__layer-core{
+ position:absolute;z-index:3;right:22%;top:27%;width:21%;height:23%;
+ object-fit:contain;mix-blend-mode:screen;opacity:.7;pointer-events:none;
+ animation:mortarion-layer-pulse 3s ease-in-out infinite
+}
+.mortarion-raid__layer-vortex{
+ position:absolute;z-index:3;right:0;top:8%;width:30%;height:33%;
+ object-fit:contain;mix-blend-mode:screen;opacity:.7;pointer-events:none;
+ animation:mortarion-layer-spin 15s linear infinite
+}
+.mortarion-raid__layer-floor-fx{
+ position:absolute;z-index:4;left:20%;bottom:-7%;width:80%;height:33%;
+ object-fit:contain;mix-blend-mode:screen;opacity:.65;pointer-events:none;
+ animation:mortarion-layer-pulse 5.5s ease-in-out infinite
+}
+.mortarion-raid__hero-aura{z-index:4}
+.mortarion-raid__player{z-index:6}
+.mortarion-raid__player-name{z-index:8}
+.mortarion-raid__slash-trail{z-index:7}
+.mortarion-raid__impact{z-index:8}
+.mortarion-raid__damage{z-index:9}
+.mortarion-raid__arena--striking .mortarion-raid__layer-boss{animation:mortarion-layer-hit .8s ease-out both}
+@keyframes mortarion-layer-idle{50%{transform:translateY(-3px) scale(1.008)}}
+@keyframes mortarion-layer-float{50%{transform:translate(-5px,-9px);opacity:.8}}
+@keyframes mortarion-layer-pulse{50%{transform:scale(1.11);opacity:.9}}
+@keyframes mortarion-layer-spin{to{transform:rotate(360deg)}}
+@keyframes mortarion-layer-hit{30%{transform:translate(8px,-4px);filter:brightness(1.55)}100%{transform:none;filter:none}}
+@media(max-width:360px){
+ .mortarion-raid__layer-boss{width:70%;height:92%}
+ .mortarion-raid__layer-core{right:24%}
+}
+@media(prefers-reduced-motion:reduce){
+ .mortarion-raid__layer-boss,.mortarion-raid__layer-souls,
+ .mortarion-raid__layer-core,.mortarion-raid__layer-vortex,
+ .mortarion-raid__layer-floor-fx,
+ .mortarion-raid__arena--striking .mortarion-raid__layer-boss{animation:none!important}
+}

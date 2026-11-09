@@ -14,14 +14,27 @@ assert.match(boss, /getMortarionBossState\(\)/);
 assert.match(boss, /nextHitAt/);
 assert.match(boss, /eventCountdown\(/);
 assert.match(boss, /mortarion-raid__impact/);
-assert.match(boss, /mortarion-full-body\.avif/);
+assert.match(boss, /mortarion-background\.webp/);
 assert.match(boss, /data-testid="mortarion-full-body-boss"/);
-assert.match(boss, /<picture className="mortarion-raid__boss-picture"/);
-assert.match(css, /mortarion-raid__scene\{[^}]*object-fit:contain/, 'Boss crown and armored feet must be visible, not cropped with cover');
-assert.match(css, /mortarion-raid__player\{[^}]*left:1\.2%/, 'Player figure stays on the left, separate from the boss');
-const fullBodyArt = readFileSync(new URL('../public/assets/territory/events/mortarion-full-body.avif', import.meta.url));
-assert.ok(fullBodyArt.length > 6000, 'Full-body Mortarion artwork must be bundled in the game');
-assert.equal(fullBodyArt.toString('ascii', 4, 12), 'ftypavif', 'Full-body image should be a valid AVIF container');
+assert.match(boss, /mortarion-boss-layer\.webp/);
+assert.match(boss, /mortarion-fx-souls\.webp/);
+assert.match(boss, /mortarion-fx-core\.webp/);
+assert.match(boss, /mortarion-fx-vortex\.webp/);
+assert.match(boss, /mortarion-fx-floor\.webp/);
+assert.doesNotMatch(boss, /mortarion-raid__boss-picture|mortarion-raid-scene\.webp/, 'Old one-piece boss scene must not render');
+assert.match(css, /mortarion-raid__layer-boss\{[^}]*object-fit:contain/, 'Boss is its own uncropped sprite');
+assert.match(css, /mortarion-raid__layer-bg\{[^}]*background-image:/, 'Background is independent of boss');
+assert.match(css, /mortarion-raid__player\{[^}]*left:1\.2%/, 'Real player figure stays on the left, separate from boss');
+for (const name of ['mortarion-background','mortarion-boss-layer','mortarion-fx-souls','mortarion-fx-core','mortarion-fx-vortex','mortarion-fx-floor']) {
+ const image = readFileSync(new URL('../public/assets/territory/events/' + name + '.webp', import.meta.url));
+ assert.ok(image.length > 1000, 'Missing game layer: ' + name);
+ assert.equal(image.subarray(0,4).toString('ascii'), 'RIFF', 'Layer must be RIFF WebP: ' + name);
+ assert.equal(image.subarray(8,12).toString('ascii'), 'WEBP', 'Layer must be WEBP: ' + name);
+ if (name !== 'mortarion-background') {
+  assert.equal(image.subarray(12,16).toString('ascii'), 'VP8X', 'Transparent layer must have WebP extended header: ' + name);
+  assert.ok((image[20] & 0x10) !== 0, 'Transparent alpha channel is required: ' + name);
+ }
+}
 assert.match(boss, /useStore\(useGame\)/, 'Selected in-game hero must be read from real game state');
 assert.match(boss, /getCombatAppearance\(game\.appearance\)/, 'Actual character skin, not a substitute');
 assert.match(boss, /<FighterFigure src=\{heroFrames\.idle\} combatFrames=\{heroFrames\} name=\{game\.player\.name\}/);
@@ -32,7 +45,7 @@ assert.match(boss, /contactTimeout\.current = window\.setTimeout/, 'Hero must wi
 assert.match(boss, /if \(mounted\.current\) \{ setImpact\(false\); setStrike\(null\); \}/);
 assert.match(css, /mortarion-raid__player/);
 assert.match(css, /mortarion-raid__slash-trail/);
-assert.match(css, /mortarion-raid__scene\{[^}]*filter:contrast\(1\.12\)/, 'Full-body boss remains sharp with no full-scene blur');
+assert.match(css, /mortarion-raid__arena--striking \.mortarion-raid__layer-boss/, 'Only boss animates on impact');
 assert.doesNotMatch(css, /saturate\(1\.1\) drop-shadow\(0 0 6px/, 'Avoid softening the whole boss illustration');
 
 assert.match(boss, /Array\.from\(\{length: 10\}/);
@@ -73,4 +86,4 @@ assert.equal(image.toString('ascii',8,12),'WEBP');
 assert.ok(image.length >= 6000);
 assert.match(read('src/game/halloweenBoss.ts'), /territory_halloween_boss_state_v1/);
 
-console.log('MORTARION LIVE: server-only damage, global HP, 5/hr, 60-second cooldown, only Top-10, old Halloween preserved — PASS');
+console.log('MORTARION LAYERS: boss + backdrop + four alpha emitters + actual hero, original raid rules — PASS');
