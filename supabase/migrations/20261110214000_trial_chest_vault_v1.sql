@@ -67,10 +67,10 @@ DECLARE g integer:=0; gems integer:=0; mats integer:=0; elix integer:=0; pots in
  rep_probability double precision:=0; part_no integer; blueprint text;
  component_id text; component_qty integer;
 BEGIN
- IF p_floor NOT BETWEEN 1 AND 10000 OR p_tier IS DISTINCT FROM
-    CASE WHEN p_floor % 25 = 0 THEN 'legendary'
-         WHEN p_floor % 10 = 0 THEN 'guardian'
-         WHEN p_floor % 5 = 0 THEN 'explorer' ELSE 'common' END
+ IF NOT (p_floor BETWEEN 1 AND 10000) OR p_tier IS DISTINCT FROM
+    (CASE WHEN p_floor % 25 = 0 THEN 'legendary'
+          WHEN p_floor % 10 = 0 THEN 'guardian'
+          WHEN p_floor % 5 = 0 THEN 'explorer' ELSE 'common' END)
  THEN RAISE EXCEPTION 'trial_chest_invalid_tier'; END IF;
  IF p_tier='common' THEN
    g:=20 + pg_catalog.floor(pg_catalog.random()*21)::integer;
