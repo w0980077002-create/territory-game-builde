@@ -185,7 +185,8 @@ assert.match(ui,/vslot-fx-toggles/,'Effects controls must be visible');
 assert.match(ui,/loadSlotDemo\(userId\)/,'Demo session must restore per player');
 assert.match(ui,/saveSlotDemo\(userId,snapshot\)/,'Demo state must persist');
 const hallScreen = readFileSync('src/components/HallPlayScreen.tsx','utf8');
-assert.match(hallScreen,/key=\{userId\} userId=\{userId\}/,'Slot state must isolate Telegram players');
+assert.match(hallScreen,/data-testid="viking-treasures-disabled"/,'Owner-disabled slots must not be mounted from the game hall');
+assert.doesNotMatch(hallScreen,/key=\{userId\} userId=\{userId\}/,'Disabled slots must not render the casino cabinet');
 
 for (const file of ['rune-sealed.svg','chest-sealed.svg','card-sealed.svg']) {
   assert.ok(existsSync('public/slots/'+file),'Original sealed mini-game art is required: '+file);
