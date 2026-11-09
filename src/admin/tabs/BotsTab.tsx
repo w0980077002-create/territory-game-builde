@@ -161,8 +161,7 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
         : 'Автоучастие Мортариона выключено. Новых автоматических ударов не будет.');
     }catch(e){
       setError((e as Error).message);
-      // Refresh after errors: the write may have reached the server.
-      void load();
+      // Leave the current UI state unchanged if the owner action was not confirmed.
     }finally{setBusy(false);}
   };
   const gearAction=async(operation:'equip'|'unequip'|'relevel',gearSlot:GearSlot)=>{
