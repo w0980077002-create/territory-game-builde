@@ -172,6 +172,18 @@ try {
     /stage8_item_not_owned/,
   );
 
+  // A stale seller request after the committed transfer must not overwrite
+  // the buyer's ownership. Real transfer RPCs need an owner-checked CAS;
+  // this fixture checks the PostgreSQL row-count contract only.
+  const staleHandoff = await db.query(
+    'UPDATE public.territory_profession_stage8_items SET player_id=$1 WHERE item_id=$2 AND player_id=$3 RETURNING item_id',
+    [seller, uuid, seller],
+  );
+  assert.equal(staleHandoff.rows.length, 0,
+    'Stale seller must not reclaim a transferred UUID through owner-checked update');
+  assert.equal(await ownerInRegistry(), buyer);
+  assert.deepEqual(await verified(buyer), gear);
+
   // A low-level trader may resell without ever equipping the gear.
   // Second handoff: level-10 buyer -> level-1 reseller. Neither transfer
   // is allowed to silently reduce the canonical crafted level or stats.
