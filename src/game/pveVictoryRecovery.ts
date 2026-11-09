@@ -102,15 +102,29 @@ function sameJson(a: unknown, b: unknown): boolean {
 }
 
 /**
- * PostgreSQL's territory_normalize_state_v4 rewrites derived baseline stats
- * and balanceVersion during every guarded save. They are not reward fields.
- * Compare every other serialized key exactly so a coalesced unrelated save,
- * missing loot, inventory change, or a stale victory can never look confirmed.
+ * PostgreSQL's territory_normalize_state_v4 rewrites derived baseline stats,
+ * balanceVersion and normalized equipment *stat fields* during each save.
+ * These deterministic server-only transformations do NOT change rewarded
+ * equipment identity, level, quantity, currency, XP, materials or chest state.
+ * Compare every other field exactly so missing loot or an unrelated write can
+ * never silently confirm a victory.
  */
 function comparableStoredVictory(value: unknown): unknown {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
   const copy = JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
   delete copy.balanceVersion; // normalized to 4 by the live trigger
+  // The live BEFORE UPDATE trigger territory_normalize_state_v4 also calls
+  // territory_normalize_gear_v4 for equipped, inventory and belt gear. Derived
+  // stats/base fields can change during an otherwise correctly persisted win.
+  // Keep item identity, slot, name, rarity, LEVEL, quantity and every other
+  // field exact: accepting missing/extra loot or a different item is unsafe.
+  const normalizeGearForReadback = (gear: unknown): void => {
+    if (!gear || typeof gear !== 'object' || Array.isArray(gear)) return;
+    const record = gear as Record<string, unknown>;
+    for (const field of ['attack', 'defense', 'hp', 'critChance', 'baseStats', 'baseLevel', 'upgradeCount']) {
+      delete record[field];
+    }
+  };
   if (copy.player && typeof copy.player === 'object' && !Array.isArray(copy.player)) {
     const player = copy.player as Record<string, unknown>;
     const existing = player.stats;
@@ -120,6 +134,19 @@ function comparableStoredVictory(value: unknown): unknown {
       player.stats = stats;
     } else {
       player.stats = {};
+    }
+    if (player.equipped && typeof player.equipped === 'object' && !Array.isArray(player.equipped)) {
+      for (const equipped of Object.values(player.equipped)) normalizeGearForReadback(equipped);
+    }
+  }
+  for (const group of ['inventory', 'belt'] as const) {
+    const items = copy[group];
+    if (Array.isArray(items)) {
+      for (const item of items) {
+        if (item && typeof item === 'object' && !Array.isArray(item)) {
+          normalizeGearForReadback((item as Record<string, unknown>).equipment);
+        }
+      }
     }
   }
   return copy;
