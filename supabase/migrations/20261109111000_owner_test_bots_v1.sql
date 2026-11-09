@@ -141,9 +141,20 @@ BEGIN
    interval_minutes=CASE WHEN p_patch?'intervalMinutes' THEN (p_patch->>'intervalMinutes')::int ELSE interval_minutes END,
    updated_at=clock_timestamp()
  WHERE slot=p_slot;
+ -- Keep the shared save snapshot consistent with the public player record.
+ UPDATE public.players p SET game_state=jsonb_set(
+   COALESCE(p.game_state,'{}'::jsonb),'{player}',
+   COALESCE(p.game_state->'player','{}'::jsonb) ||
+   jsonb_build_object(
+     'name',p.display_name,'level',p.level,'gold',p.gold,'gems',p.gems,
+     'attack',p.attack,'defense',p.defense,'maxHp',p.max_hp,
+     'critChance',p.crit_chance,'vipLevel',p.vip_level,
+     'appearance',(SELECT appearance FROM territory_private.owner_test_bots_v1 WHERE slot=p_slot)
+   ),true)
+ WHERE p.id=v_id;
  RETURN true;
 END
-$$;
+$;
 REVOKE ALL ON FUNCTION public.territory_admin_test_bot_update_v1(smallint,jsonb) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.territory_admin_test_bot_update_v1(smallint,jsonb) TO service_role;
 
