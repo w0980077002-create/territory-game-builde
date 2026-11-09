@@ -31,14 +31,13 @@ const ARCHIVE_PREFIX = 'territory:pve-victory-unresolved:v1:';
 const MAX_ARCHIVED_CHECKPOINTS = 16;
 
 /**
- * Last-resort, player-initiated recovery of an inaccessible account.
+ * Recovery archive for a locally unresolved legacy victory.
  * Never trust or apply the local victory to the server and never discard its
- * evidence. Copy the exact WAL bytes into a separate verified local archive
- * before releasing the blocking checkpoint. The cloud player remains canonical
- * until a support reconciliation establishes whether any rewards are missing.
+ * evidence. Copy the exact WAL bytes to a separate verified local archive
+ * before releasing the blocking marker. The cloud hero stays canonical until
+ * support can reconcile any disputed rewards.
  *
- * Caller must first successfully authenticate and load the latest cloud row;
- * this is NOT an automatic resolution of a save conflict.
+ * Caller must have freshly authenticated and loaded an owner-scoped cloud row.
  */
 export function archiveUnresolvedPveVictoryForCloudEntry(playerId: string): boolean {
   if (!playerId.trim() || !validSaveToken(saveTokens.get(playerId))) return false;
@@ -237,26 +236,58 @@ export async function retryPveVictoryJournal(playerId: string): Promise<boolean>
 }
 
 /**
- * Runs after authenticated cloud load but BEFORE hydrating useGame or starting
- * autosaves. On mismatched revisions, preserve the local WAL for manual
- * reconciliation; never restore a local snapshot on top of newer cloud data.
+ * Use a recently authenticated, owner-scoped cloud row only. A revision or
+ * wallet mismatch means the row may be stale or incomplete: keep the local WAL
+ * in place and refuse automatic continuation.
+ */
+function verifiedCloudEntry(playerId: string, profile: RecoveryProfile): boolean {
+  return !!playerId && validSaveToken(profile.saveRevision)
+    && saveTokens.get(playerId) === profile.saveRevision
+    && validEconomySnapshot(profile.state)
+    && profile.walletGold === profile.state.player.gold
+    && profile.walletGems === profile.state.player.gems;
+}
+
+/**
+ * Runs after authenticated cloud load but BEFORE hydrating useGame or autosaves.
+ *
+ * Normal path: commit the original exact victory using the guarded CAS writer
+ * or confirm its exact cloud receipt. If the cloud row has already advanced
+ * independently, or the local WAL cannot be parsed, we cannot safely replay
+ * or overwrite its rewards. Archive the original bytes atomically on THIS
+ * device, then load the verified cloud hero without a permanent login lock.
+ *
+ * This recovers ACCESS, not the unconfirmed victory reward. An archive flag
+ * must remain visible so the player can request support reconciliation.
+ * True network/save errors with an unchanged cloud revision still block.
  */
 export async function recoverPveVictoryOnBoot(
   playerId: string,
   profile: RecoveryProfile,
-): Promise<{ state: GameState; recovered: boolean } | null> {
+): Promise<{ state: GameState; recovered: boolean; archived?: boolean } | null> {
   const stored = readJournal(playerId);
   if (stored === null) return { state: profile.state, recovered: false };
-  if (stored === 'invalid') return null;
+  if (stored === 'invalid') {
+    if (!verifiedCloudEntry(playerId, profile)
+      || !archiveUnresolvedPveVictoryForCloudEntry(playerId)) return null;
+    return { state: profile.state, recovered: false, archived: true };
+  }
   const snapshot = stored.journal.snapshot;
   if (samePersistedVictory(profile.savedGameState, snapshot)
     && profile.walletGold === snapshot.player.gold && profile.walletGems === snapshot.player.gems) {
     if (!clearMatchingJournal(playerId, stored)) return null;
     return { state: profile.state, recovered: true };
   }
-  if (profile.saveRevision !== stored.journal.baseRevision) return null;
-  // The authenticated server row is still exactly at the pre-victory CAS token.
-  // Restore with the normal guarded writer, never with a blind insert/update.
+  if (profile.saveRevision !== stored.journal.baseRevision) {
+    // Only newer cloud snapshots are eligible. An older or unverified
+    // revision must never be adopted over a locally recorded victory.
+    if (!verifiedCloudEntry(playerId, profile)
+      || Date.parse(profile.saveRevision) <= Date.parse(stored.journal.baseRevision)
+      || !archiveUnresolvedPveVictoryForCloudEntry(playerId)) return null;
+    return { state: profile.state, recovered: false, archived: true };
+  }
+  // Same CAS token: retry the journaled victory. A transient offline failure
+  // may not silently fall back to the pre-victory cloud state.
   if (!await persistPveVictoryJournal(playerId, snapshot)) return null;
   return { state: snapshot, recovered: true };
 }
