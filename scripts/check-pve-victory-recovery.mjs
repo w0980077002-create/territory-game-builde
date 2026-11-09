@@ -125,9 +125,12 @@ reset();
 assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
 const missingLoot = {...normalized, inventory:[]};
 globalThis.__mockServer = {revision:nextRevision,state:missingLoot,gold:30,gems:2};
-assert.equal(await recoverPveVictoryOnBoot('hero-a', profile()), null,
-  'Normalized stats may differ, but missing loot must never be accepted');
-assert.equal(pendingPveVictoryJournal('hero-a'), true);
+globalThis.__mockTokens.set('hero-a', nextRevision);
+assert.deepEqual(await recoverPveVictoryOnBoot('hero-a', profile()), {
+  state:missingLoot,recovered:false,archived:true,
+}, 'Missing loot must NEVER be claimed as a confirmed victory: archive the proof and enter the newer cloud account');
+assert.equal(pendingPveVictoryJournal('hero-a'), false);
+assert.equal(hasUnresolvedPveVictoryArchive('hero-a'), true);
 
 // Lost ACK in a *running* session with an obsolete CAS token must not
 // unlock a new battle. Boot reloads the authoritative token before clearing.
@@ -139,14 +142,36 @@ assert.equal(pendingPveVictoryJournal('hero-a'), true);
 assert.deepEqual(await recoverPveVictoryOnBoot('hero-a', profile()), {state:victory(),recovered:true});
 assert.equal(pendingPveVictoryJournal('hero-a'), false);
 
-// Concurrent server change: no stale overwrite; retain WAL for support.
+// A newer authoritative cloud row can load with its unresolved victory safely
+// archived, NEVER blindly overwrite the cloud or fabricate the loot.
+reset();
+assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
+const beforeDiverged = entries.get('territory:pve-victory-wal:v1:hero-a');
+globalThis.__mockServer.revision = nextRevision;
+globalThis.__mockTokens.set('hero-a', nextRevision);
+assert.deepEqual(await recoverPveVictoryOnBoot('hero-a', profile()), {
+  state:globalThis.__mockServer.state,recovered:false,archived:true,
+});
+assert.equal(globalThis.__mockWrites, 0);
+assert.equal(pendingPveVictoryJournal('hero-a'), false);
+assert.equal(entries.get('territory:pve-victory-unresolved:v1:hero-a:0'), beforeDiverged);
+assert.equal(pendingPveVictoryJournal('hero-b'), false);
+
+// If the row token was not loaded from the server, never auto-release WAL.
 reset();
 assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
 globalThis.__mockServer.revision = nextRevision;
 assert.equal(await recoverPveVictoryOnBoot('hero-a', profile()), null);
-assert.equal(globalThis.__mockWrites, 0);
 assert.equal(pendingPveVictoryJournal('hero-a'), true);
-assert.equal(pendingPveVictoryJournal('hero-b'), false);
+assert.equal(hasUnresolvedPveVictoryArchive('hero-a'), false);
+
+// Offline/failed persist at the SAME token must retain the source WAL.
+reset();
+assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
+globalThis.__mockMode = 'failed';
+assert.equal(await recoverPveVictoryOnBoot('hero-a', profile()), null);
+assert.equal(pendingPveVictoryJournal('hero-a'), true);
+assert.equal(hasUnresolvedPveVictoryArchive('hero-a'), false);
 
 // An unrelated coalesced save ACK is not proof that the victory was stored.
 reset();
@@ -167,15 +192,16 @@ globalThis.__mockMode = 'normal';
 assert.equal(await retryPveVictoryJournal('hero-a'), true);
 assert.equal(pendingPveVictoryJournal('hero-a'), false);
 
-// A permanently divergent cloud snapshot must not strand the player forever:
- // after explicit confirmation, preserve exact WAL bytes in a separate archive
- // and continue with the latest authenticated server row, never award twice.
+// The primary boot now automatically archives a permanently diverged victory
+// BEFORE allowing the authenticated cloud hero to enter the game.
 reset();
 assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
 const unresolvedBytes = entries.get('territory:pve-victory-wal:v1:hero-a');
 globalThis.__mockServer = {revision:nextRevision,state:original(),gold:10,gems:2};
-assert.equal(await recoverPveVictoryOnBoot('hero-a', profile()), null);
-assert.equal(archiveUnresolvedPveVictoryForCloudEntry('hero-a'), true);
+globalThis.__mockTokens.set('hero-a', nextRevision);
+assert.deepEqual(await recoverPveVictoryOnBoot('hero-a', profile()), {
+  state:globalThis.__mockServer.state,recovered:false,archived:true,
+});
 assert.equal(pendingPveVictoryJournal('hero-a'), false);
 assert.equal(hasUnresolvedPveVictoryArchive('hero-a'), true);
 assert.equal(entries.get('territory:pve-victory-unresolved:v1:hero-a:0'), unresolvedBytes);
@@ -209,12 +235,17 @@ assert.equal(archiveUnresolvedPveVictoryForCloudEntry('hero-a'), false);
 assert.equal(pendingPveVictoryJournal('hero-a'), true);
 localStorage.setItem = originalSetItemForArchive;
 
-// Bad WAL and disabled persistent storage fail closed.
+// A corrupt WAL cannot be used as a reward. Preserve its original bytes
+// and allow a verified cloud profile to load normally.
 reset();
 entries.set('territory:pve-victory-wal:v1:hero-a', '{corrupt');
 assert.equal(pendingPveVictoryJournal('hero-a'), true);
-assert.equal(await recoverPveVictoryOnBoot('hero-a', profile()), null);
+assert.deepEqual(await recoverPveVictoryOnBoot('hero-a', profile()), {
+  state:globalThis.__mockServer.state,recovered:false,archived:true,
+});
+assert.equal(entries.get('territory:pve-victory-unresolved:v1:hero-a:0'), '{corrupt');
 assert.equal(globalThis.__mockWrites, 0);
+assert.equal(pendingPveVictoryJournal('hero-a'), false);
 reset();
 const savedSetItem = localStorage.setItem;
 localStorage.setItem = () => { throw Error('storage disabled'); };
@@ -232,6 +263,9 @@ assert.match(fight, /persistPveVictoryJournal\(userId, snapshot\)/);
 assert.match(battle, /!canJournalPveVictory\(\)/);
 assert.match(battle, /retryPveVictoryJournal\(userId\)/);
 assert.ok(app.indexOf('await recoverPveVictoryOnBoot(user.id, profile)') < app.indexOf('useGame.set(loadedState)'));
+assert.match(app, /pve-recovery-archive-notice/, 'Unconfirmed rewards must remain visible in player UI');
+assert.match(app, /recovery\.archived === true \|\| hasUnresolvedPveVictoryArchive\(user\.id\)/,
+  'Splash recovery must leave an on-screen archive alert after access is restored');
 assert.match(app, /onRetry=\{loadError === 'pve_recovery_pending'/,
   'Blocked player must have a safe retry rather than a permanent splash');
 assert.match(app, /setLoadRetry\(attempt => attempt \+ 1\)/,
