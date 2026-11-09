@@ -301,13 +301,24 @@ function cloudProvesTrialVictory(
     || !recorded.trialChestClaims.includes(floor)
     || !Array.isArray(server.trialChestClaims)
     || !server.trialChestClaims.includes(floor)
-    || !recorded.lastTrialChest
-    || !server.lastTrialChest
-    || recorded.lastTrialChest.floor !== floor
-    || !sameJson(recorded.lastTrialChest, server.lastTrialChest)
     || !Number.isSafeInteger(recorded.totalBattlesWon)
     || !Number.isSafeInteger(server.totalBattlesWon)
     || server.totalBattlesWon < recorded.totalBattlesWon) return false;
+  // Old victories used a fully credited lastTrialChest receipt.
+  // New wins persist an *unopened* floor and only the server pays out later.
+  // A later opened-floor receipt proves the saved victory without recreating
+  // the chest, while any unrelated save remains insufficient evidence.
+  const legacyPaid = !!recorded.lastTrialChest && !!server.lastTrialChest
+    && recorded.lastTrialChest.floor === floor
+    && sameJson(recorded.lastTrialChest, server.lastTrialChest);
+  const sealedConfirmed = recorded.lastTrialChest == null
+    && Array.isArray(recorded.trialChestUnopenedFloors)
+    && recorded.trialChestUnopenedFloors.includes(floor)
+    && ((Array.isArray(server.trialChestUnopenedFloors)
+        && server.trialChestUnopenedFloors.includes(floor))
+      || (Array.isArray(server.trialChestOpenedFloors)
+        && server.trialChestOpenedFloors.includes(floor)));
+  if (!legacyPaid && !sealedConfirmed) return false;
   return true;
 }
 
