@@ -5,7 +5,7 @@ import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
-import { pendingPveVictoryJournal, recoverPveVictoryOnBoot, archiveUnresolvedPveVictoryForCloudEntry } from '@/game/pveVictoryRecovery';
+import { pendingPveVictoryJournal, recoverPveVictoryOnBoot, archiveUnresolvedPveVictoryForCloudEntry, hasUnresolvedPveVictoryArchive } from '@/game/pveVictoryRecovery';
 import { pveVictorySaveState, subscribePveVictorySave } from '@/game/pveVictorySaveFence';
 import { readPumpkinWitchEntitlement, installVerifiedPumpkinWitch } from '@/game/halloweenCompanion2026';
 import { watchPumpkinEntitlement } from '@/game/halloweenCompanionRefresh';
@@ -204,6 +204,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const needsInitialSave = useRef(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadRetry, setLoadRetry] = useState(0);
+  const [unresolvedPveArchive, setUnresolvedPveArchive] = useState(false);
   const [recoveryArchiveConfirm, setRecoveryArchiveConfirm] = useState(false);
   const [recoveryArchiveBusy, setRecoveryArchiveBusy] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
@@ -344,6 +345,10 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           setLoadError('pve_recovery_pending');
           return;
         }
+        // The login is allowed only after the original WAL bytes are safely
+        // archived. This banner intentionally remains until support reviews
+        // any victory that could not be matched against a newer cloud state.
+        setUnresolvedPveArchive(recovery.archived === true || hasUnresolvedPveVictoryArchive(user.id));
         const bootState = recovery.state;
         const timedState = applyTimeEffects(bootState);
         // Historic belt slots can become locked by harder win requirements.
@@ -504,6 +509,13 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
       {live.maintenance && (
         <div className="shrink-0 z-40 flex items-center justify-center gap-1.5 bg-amber-500 py-1 text-[11px] font-bold text-black">
           <Wrench className="w-3 h-3" /> {translate('maintenance')}
+        </div>
+      )}
+      {unresolvedPveArchive && (
+        <div role="status" data-testid="pve-recovery-archive-notice" className="shrink-0 z-40 border-b border-amber-700/50 bg-[#21180c] px-3 py-1.5 text-center text-[11px] leading-4 text-amber-100">
+          {language === 'en'
+            ? 'Your hero is restored from cloud. One earlier victory is archived on this device for support review; do not clear Telegram data.'
+            : 'Герой восстановлен из облака. Запись прежней победы сохранена на устройстве для сверки; не очищай данные Telegram.'}
         </div>
       )}
       {saveStatus === 'error' && (
