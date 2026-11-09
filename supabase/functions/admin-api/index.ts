@@ -218,7 +218,33 @@ async function handle(action: string, body: Row) {
       // All shared player stats originate from actual public.players records.
       const { data, error } = await db.rpc("territory_admin_test_bots_list_v1");
       if (error || !Array.isArray(data)) throw new HttpError(503, "bots_unavailable");
-      return { bots: data };
+      // Read new auto-raid flags from a separate service-role RPC so the
+      // existing full equipment/arena tester listing stays untouched.
+      const { data: raidFlags, error: raidFlagsError } = await db.rpc(
+        "territory_admin_test_bots_mortarion_status_v1"
+      );
+      if (raidFlagsError || !Array.isArray(raidFlags)) throw new HttpError(503, "bots_unavailable");
+      const enabledSlots = new Set(raidFlags
+        .filter((row: Row) => row.enabled === true)
+        .map((row: Row) => Number(row.slot)));
+      return { bots: data.map((bot: Row) => ({
+        ...bot, autoMortarion: enabledSlots.has(Number(bot.slot)),
+      })) };
+    }
+    case "bots_mortarion_auto": {
+      const slot = intIn(body.slot, 1, 10);
+      if (typeof body.enabled !== "boolean") throw new HttpError(400, "invalid_request");
+      const enabled = body.enabled;
+      const { data, error } = await db.rpc("territory_admin_test_bot_mortarion_toggle_v1", {
+        p_slot: slot,
+        p_enabled: enabled,
+      });
+      if (error || data !== true) {
+        console.error("owner_tester_mortarion_toggle_failed", slot, error?.message);
+        throw new HttpError(400, "bots_mortarion_toggle_failed");
+      }
+      await audit("bots_mortarion_auto", { slot, enabled });
+      return { saved: true, enabled };
     }
     case "bots_seed": {
       // Synthetic auth identities are never given passwords to a human or a browser.
