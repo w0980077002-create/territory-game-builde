@@ -17,9 +17,16 @@ assert.match(boss, /MORTARION_HITS_PER_HOUR = 5/);
 assert.match(boss, /MORTARION_HIT_COOLDOWN_MS = 60_000/);
 assert.match(boss, /Array\.from\(\{ length: 10 \}/);
 assert.doesNotMatch(boss, /myRank|myPlace|yourRank|yourPlace|Ваше место|Your rank|localStorage|sessionStorage|supabase\.rpc|saveCloudSave/);
-assert.match(boss, /OWNER-ONLY VISUAL PLAYTEST/);
+assert.match(boss, /owner-only preview/i);
+assert.match(boss, /mortarion-raid-scene\.webp/);
+assert.match(boss, /bg-gradient-to-b from-amber-400 via-orange-600 to-red-800/);
+assert.match(boss, /from-red-800 via-orange-600 to-amber-400/);
+const scene = readFileSync(new URL('../public/assets/territory/events/mortarion-raid-scene.webp', import.meta.url));
+assert.ok(scene.length > 5000, 'Cinematic boss art must be shipped');
+assert.equal(scene.toString('ascii', 0, 4), 'RIFF');
+assert.equal(scene.toString('ascii', 8, 12), 'WEBP');
 assert.match(css, /prefers-reduced-motion/);
-assert.match(css, /mortarion__stage--impact/);
+assert.match(css, /mortarion-raid__arena--striking/);
 assert.match(read('src/game/halloweenBoss.ts'), /territory_halloween_boss_state_v1/);
 
 const source = ts.createSourceFile('boss.tsx', boss, ts.ScriptTarget.ES2020, true, ts.ScriptKind.TSX);
