@@ -1,17 +1,19 @@
 /* The approved Halloween raid card and action style, scoped to Mortarion only. */
 .mortarion-raid{margin:auto;max-width:430px}
 .mortarion-raid__card{box-shadow:0 8px 28px #0009,inset 0 1px #ebc98e25}
-.mortarion-raid__arena{position:relative;overflow:hidden;height:clamp(214px,59vw,260px);margin:8px -12px 0;background-color:#1c102b;background-position:center;background-size:cover;isolation:isolate}
+.mortarion-raid__arena{position:relative;overflow:hidden;height:clamp(245px,65vw,300px);margin:8px -12px 0;background:radial-gradient(ellipse at 73% 43%,#67308a 0%,#351640 47%,#150e25 86%),linear-gradient(#24112c,#0d0914);isolation:isolate}
 .mortarion-raid__arena:before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 60% 35%,#7821a53a,transparent 68%);z-index:0;pointer-events:none}
-.mortarion-raid__arena:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 55%,#180e19cc);z-index:2;pointer-events:none}
-.mortarion-raid__scene{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:55% 48%;filter:contrast(1.16) saturate(1.2);transform:scale(1);animation:mortarion-raid-breathe 6s ease-in-out infinite;backface-visibility:hidden}
-.mortarion-raid__mist{position:absolute;inset:55% -25% -15%;z-index:2;opacity:.64;background:radial-gradient(ellipse at 40% 85%,#b040d966,transparent 67%);animation:mortarion-raid-mist 8s ease-in-out alternate infinite;pointer-events:none}
+.mortarion-raid__arena:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 88%,#180e1922);z-index:2;pointer-events:none}
+.mortarion-raid__boss-picture{position:absolute;inset:0;display:block;z-index:1}
+.mortarion-raid__scene{display:block;width:100%;height:100%;object-fit:contain;object-position:right bottom;filter:contrast(1.12) saturate(1.13);transform:none;animation:mortarion-raid-breathe 6s ease-in-out infinite;backface-visibility:hidden}
+.mortarion-raid__floor{position:absolute;z-index:0;inset:auto 0 0;height:13%;pointer-events:none;background:linear-gradient(transparent,#140c1ec9 70%,#221024);border-bottom:2px solid #bd62ef4d}
+.mortarion-raid__mist{position:absolute;inset:55% -25% -15%;z-index:2;opacity:.26;background:radial-gradient(ellipse at 40% 85%,#b040d966,transparent 67%);animation:mortarion-raid-mist 8s ease-in-out alternate infinite;pointer-events:none}
 .mortarion-raid__soul{position:absolute;z-index:3;color:#f4ceff;font-size:25px;text-shadow:0 0 9px #aa4dff,0 0 20px #ac25fa;pointer-events:none;animation:mortarion-raid-soul 4.5s ease-in-out infinite}
 .mortarion-raid__soul--one{left:12%;top:19%}
 .mortarion-raid__soul--two{right:7%;top:39%;animation-delay:-2.5s}
 /* The actual player's saved appearance (same hero rig as PvE/arena) faces the boss. */
 .mortarion-raid__hero-aura{position:absolute;z-index:3;pointer-events:none;bottom:-10%;left:-15%;height:92%;width:70%;background:radial-gradient(ellipse at 48% 74%,#e5a04c38 0%,#6433843b 36%,transparent 72%)}
-.mortarion-raid__player{position:absolute;z-index:5;left:1.2%;bottom:5%;width:36%;height:72%;pointer-events:none;filter:drop-shadow(0 3px 3px #000) drop-shadow(0 0 7px #f4b35a80)}
+.mortarion-raid__player{position:absolute;z-index:5;left:1.2%;bottom:4%;width:34%;height:62%;pointer-events:none;filter:drop-shadow(0 3px 3px #000) drop-shadow(0 0 7px #f4b35a80)}
 .mortarion-raid__player .fighter-figure{inset:0!important}
 .mortarion-raid__player img{object-fit:contain;object-position:center bottom}
 .mortarion-raid__player-name{position:absolute;z-index:8;bottom:2%;left:2%;max-width:37%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 7px;font-size:10px;font-weight:800;color:#ffdf93;text-shadow:0 2px 4px #000;background:#170e19b5;border:1px solid #deac6f66;border-radius:7px}
@@ -31,7 +33,7 @@
 @keyframes mortarion-blast{0%,100%{opacity:0}27%{opacity:1}75%{opacity:.08}}
 @keyframes mortarion-wave{0%{transform:scale(1);filter:brightness(1)}45%{transform:scale(1.3);filter:brightness(1.7)}100%{transform:scale(1.07);filter:brightness(1)}}
 .mortarion-raid__leaderboard{box-shadow:inset 0 1px #bb8b5b30,0 5px 18px #05050890}
-@keyframes mortarion-raid-breathe{50%{transform:scale(1.045)}}
+@keyframes mortarion-raid-breathe{50%{transform:translateY(-2px)}}
 @keyframes mortarion-raid-mist{to{transform:translateX(11%)}}
 @keyframes mortarion-raid-soul{50%{transform:translateY(-18px) scale(1.17);opacity:.45}}
 @keyframes mortarion-raid-hit-recoil{15%,70%{transform:translateX(-2px)}40%{transform:translateX(3px)}}

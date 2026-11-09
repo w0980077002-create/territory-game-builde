@@ -14,6 +14,14 @@ assert.match(boss, /getMortarionBossState\(\)/);
 assert.match(boss, /nextHitAt/);
 assert.match(boss, /eventCountdown\(/);
 assert.match(boss, /mortarion-raid__impact/);
+assert.match(boss, /mortarion-full-body\.avif/);
+assert.match(boss, /data-testid="mortarion-full-body-boss"/);
+assert.match(boss, /<picture className="mortarion-raid__boss-picture"/);
+assert.match(css, /mortarion-raid__scene\{[^}]*object-fit:contain/, 'Boss crown and armored feet must be visible, not cropped with cover');
+assert.match(css, /mortarion-raid__player\{[^}]*left:1\.2%/, 'Player figure stays on the left, separate from the boss');
+const fullBodyArt = readFileSync(new URL('../public/assets/territory/events/mortarion-full-body.avif', import.meta.url));
+assert.ok(fullBodyArt.length > 6000, 'Full-body Mortarion artwork must be bundled in the game');
+assert.equal(fullBodyArt.toString('ascii', 4, 12), 'ftypavif', 'Full-body image should be a valid AVIF container');
 assert.match(boss, /useStore\(useGame\)/, 'Selected in-game hero must be read from real game state');
 assert.match(boss, /getCombatAppearance\(game\.appearance\)/, 'Actual character skin, not a substitute');
 assert.match(boss, /<FighterFigure src=\{heroFrames\.idle\} combatFrames=\{heroFrames\} name=\{game\.player\.name\}/);
@@ -24,7 +32,7 @@ assert.match(boss, /contactTimeout\.current = window\.setTimeout/, 'Hero must wi
 assert.match(boss, /if \(mounted\.current\) \{ setImpact\(false\); setStrike\(null\); \}/);
 assert.match(css, /mortarion-raid__player/);
 assert.match(css, /mortarion-raid__slash-trail/);
-assert.match(css, /contrast\(1\.16\)/, 'Boss art must not use the prior all-over blurring shadow');
+assert.match(css, /mortarion-raid__scene\{[^}]*filter:contrast\(1\.12\)/, 'Full-body boss remains sharp with no full-scene blur');
 assert.doesNotMatch(css, /saturate\(1\.1\) drop-shadow\(0 0 6px/, 'Avoid softening the whole boss illustration');
 
 assert.match(boss, /Array\.from\(\{length: 10\}/);
