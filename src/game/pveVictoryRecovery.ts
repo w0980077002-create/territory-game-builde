@@ -27,6 +27,59 @@ type RecoveryProfile = {
 };
 const PREFIX = 'territory:pve-victory-wal:v1:';
 const PROBE = 'territory:pve-victory-wal:probe';
+const ARCHIVE_PREFIX = 'territory:pve-victory-unresolved:v1:';
+const MAX_ARCHIVED_CHECKPOINTS = 16;
+
+/**
+ * Last-resort, player-initiated recovery of an inaccessible account.
+ * Never trust or apply the local victory to the server and never discard its
+ * evidence. Copy the exact WAL bytes into a separate verified local archive
+ * before releasing the blocking checkpoint. The cloud player remains canonical
+ * until a support reconciliation establishes whether any rewards are missing.
+ *
+ * Caller must first successfully authenticate and load the latest cloud row;
+ * this is NOT an automatic resolution of a save conflict.
+ */
+export function archiveUnresolvedPveVictoryForCloudEntry(playerId: string): boolean {
+  if (!playerId.trim() || !validSaveToken(saveTokens.get(playerId))) return false;
+  const sourceKey = key(playerId);
+  try {
+    const original = localStorage.getItem(sourceKey);
+    if (original === null) return false;
+    let destination: string | null = null;
+    for (let i = 0; i < MAX_ARCHIVED_CHECKPOINTS; i++) {
+      const candidate = ARCHIVE_PREFIX + playerId + ':' + i;
+      const saved = localStorage.getItem(candidate);
+      if (saved === original || saved === null) {
+        destination = candidate;
+        if (saved === null) localStorage.setItem(candidate, original);
+        break;
+      }
+    }
+    // Archive storage missing, full, or externally changed: keep WAL and block.
+    if (!destination || localStorage.getItem(destination) !== original
+      || localStorage.getItem(sourceKey) !== original) return false;
+    localStorage.removeItem(sourceKey);
+    return localStorage.getItem(sourceKey) === null
+      && localStorage.getItem(destination) === original;
+  } catch {
+    return false;
+  }
+}
+
+export function hasUnresolvedPveVictoryArchive(playerId: string): boolean {
+  if (!playerId.trim()) return false;
+  try {
+    for (let i = 0; i < MAX_ARCHIVED_CHECKPOINTS; i++) {
+      if (localStorage.getItem(ARCHIVE_PREFIX + playerId + ':' + i) !== null) return true;
+    }
+  } catch {
+    // Never claim a clean reconciliation when local storage cannot be read.
+    return true;
+  }
+  return false;
+}
+
 
 function key(playerId: string): string {
   return PREFIX + playerId;

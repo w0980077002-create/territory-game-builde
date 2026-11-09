@@ -63,12 +63,10 @@ try:
                 page.goto(start+'?view=hall&offline=1')
                 page.get_by_role('alert').wait_for()
                 wheel=page.locator('[data-testid=hall-game-wheel]')
-                assert wheel.is_enabled(), 'Wheel receipt recovery must survive Hall read failure'
-                wheel.click()
-                assert page.evaluate('window.__hallGame')=='wheel'
+                assert wheel.count()==0, 'Wheel of Fortune must stay disabled even when Hall status read fails'
                 assert not errors, f'Offline Hall browser error: {errors}'
                 page.close()
         browser.close()
 finally:
     server.shutdown()
-print('Integrated daily hero loop PASS: Events → reward sheet, quests, Hall Monopoly, hidden saved session, offline Wheel; 320/360/390/430 RU/EN, no live transactions.')
+print('Integrated daily hero loop PASS: Events → reward sheet, quests, Hall Monopoly, hidden saved session, disabled offline Wheel; 320/360/390/430 RU/EN, no live transactions.')
