@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Clock3, RefreshCw, Skull, Sword, Trophy, Users } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
+import { useStore } from '@/game/store';
+import { useGame } from '@/game/actions';
+import { getCombatAppearance } from '@/game/appearance';
+import { FighterFigure } from '@/components/arena/FighterFigure';
+import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { getMortarionBossState, hitMortarionBoss, type MortarionState } from '@/game/mortarionBoss';
 import './mortarionBoss.css';
 
@@ -41,6 +46,12 @@ function errorText(error: unknown, en: boolean) {
 export function MortarionBossScreen({ playerId }: { playerId: string }) {
   const { language } = useLanguage();
   const en = language === 'en';
+  // Reuse the saved character selection and genuine game animation set.
+  const game = useStore(useGame);
+  const heroFrames = getCombatAppearance(game.appearance);
+  const [strike, setStrike] = useState<StrikeEvent | null>(null);
+  const confirmedStrikeSerial = useRef(0);
+  const contactTimeout = useRef<number | null>(null);
   const [state, setState] = useState<MortarionState | null>(null);
   const [clock, setClock] = useState(() => Date.now());
   const [skew, setSkew] = useState(0);
@@ -87,6 +98,7 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
       document.removeEventListener('visibilitychange', resume);
       window.removeEventListener('online', resume);
       if (effectTimeout.current !== null) window.clearTimeout(effectTimeout.current);
+      if (contactTimeout.current !== null) window.clearTimeout(contactTimeout.current);
     };
   }, [refresh]);
 
@@ -105,11 +117,21 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
       setState(next);
       setClock(Date.now());
       if (next.hitDamage && next.hitDamage > 0) {
+        // The hero attack is purely visual and starts ONLY after a confirmed
+        // server hit. Its contact frame lines up with the damage popup.
+        const key = ++confirmedStrikeSerial.current;
         setLastDamage(next.hitDamage);
-        setStrikeId(v => v + 1);
-        setImpact(true);
+        setStrikeId(key);
+        setImpact(false);
+        setStrike({ key, attacker: game.player.name, target: 'Мортарион', tone: 'hit', amount: null });
+        if (contactTimeout.current !== null) window.clearTimeout(contactTimeout.current);
         if (effectTimeout.current !== null) window.clearTimeout(effectTimeout.current);
-        effectTimeout.current = window.setTimeout(() => setImpact(false), 1250);
+        contactTimeout.current = window.setTimeout(() => {
+          if (mounted.current) setImpact(true);
+        }, 390);
+        effectTimeout.current = window.setTimeout(() => {
+          if (mounted.current) { setImpact(false); setStrike(null); }
+        }, 1560);
       }
     } catch (error) {
       if (mounted.current) {
@@ -141,11 +163,19 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
       <h2 className="relative mt-1 text-[23px] font-black leading-tight text-amber-100 [text-shadow:0_3px_3px_#000]">{en ? 'Mortarion' : 'Мортарион'}</h2>
       <p className="relative mt-1 flex items-center justify-center gap-1.5 text-[11px] text-amber-200/85"><Users size={13}/>{en ? 'Lord of Souls · One boss for all heroes' : 'Властелин Душ · Один босс для всех героев'}</p>
 
-      <div className={`mortarion-raid__arena ${impact ? 'mortarion-raid__arena--striking' : ''}`} role="img" aria-label={en ? 'Mortarion, Lord of Souls' : 'Мортарион, Властелин Душ'}>
+      <div className={`mortarion-raid__arena ${impact ? 'mortarion-raid__arena--striking' : ''}`} role="img" aria-label={en ? 'Your hero battles Mortarion, Lord of Souls' : 'Твой герой сражается с Мортарионом, Властелином Душ'}>
         <img className="mortarion-raid__scene" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-raid-scene.webp'} alt="" draggable={false}/>
         <span className="mortarion-raid__mist" aria-hidden="true"/>
         <span className="mortarion-raid__soul mortarion-raid__soul--one" aria-hidden="true">✦</span>
         <span className="mortarion-raid__soul mortarion-raid__soul--two" aria-hidden="true">✧</span>
+        <span className="mortarion-raid__hero-aura" aria-hidden="true"/>
+        <div className="mortarion-raid__player" data-testid="mortarion-real-player-hero">
+          <FighterFigure src={heroFrames.idle} combatFrames={heroFrames} name={game.player.name}
+            dir={1} alive strike={strike} idleSeconds={3.1}
+            className="absolute inset-0 h-full w-full object-contain object-bottom"/>
+        </div>
+        <span className="mortarion-raid__player-name" aria-hidden="true">{game.player.name}</span>
+        {strike && <span key={strike.key} className="mortarion-raid__slash-trail" aria-hidden="true"/>}
         {impact && <span key={strikeId} className="mortarion-raid__impact" aria-hidden="true">✦</span>}
         {impact && <span key={`damage-${strikeId}`} className="mortarion-raid__damage">−{format(lastDamage)}</span>}
         {defeated && <div className="mortarion-raid__defeated" role="status">{en ? 'MORTARION DEFEATED!' : 'МОРТАРИОН ПОВЕРЖЕН!'}</div>}
