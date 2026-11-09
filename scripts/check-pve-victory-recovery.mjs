@@ -129,6 +129,78 @@ assert.equal(await recoverPveVictoryOnBoot('hero-a', profile()), null,
   'Normalized stats may differ, but missing loot must never be accepted');
 assert.equal(pendingPveVictoryJournal('hero-a'), true);
 
+// PostgreSQL also rewrites derived equipment stats and forge baselines in
+// equipped items, inventory AND belt. A real saved Trial win must be accepted
+// even when those benign v4 transformations differ from the original WAL.
+const gearVictory = () => ({
+  ...victory(),
+  lastTrialChest: { floor: 7, tier: 'common', gold: 26, materials: 1 },
+  trialLevel: 8,
+  forgeMaterials: 47,
+  player: {
+    gold: 30, gems: 2, xp: 110,
+    equipped: {
+      helmet: { id:'helm-33',name:'Железный шлем',slot:'helmet',rarity:'common',level:33,
+        hp:36, defense:11, baseLevel:1, baseStats:{hp:20,defense:3},upgradeCount:32 },
+    },
+  },
+  inventory: [
+    { id:'loot-1',qty:1 },
+    { id:'crafted-armor',qty:1,rarity:'common',equipment:{
+      id:'armor-1',name:'Кожаная броня',slot:'armor',rarity:'common',level:1,
+      hp:30,defense:5,attack:0,baseLevel:1,baseStats:{hp:30,defense:5},upgradeCount:0,
+    } },
+  ],
+  belt: [{id:'belt-armor',qty:1,equipment:{
+    id:'belt-armor-1',name:'Кожаная броня',slot:'armor',rarity:'common',level:1,
+    hp:30,defense:5,baseLevel:1,baseStats:{hp:30,defense:5},upgradeCount:0,
+  }}],
+});
+const normalizedGearVictory = () => {
+  const result = structuredClone(gearVictory());
+  result.balanceVersion=4;
+  result.player.stats={hp:1220,attack:300,defense:117,maxHp:1220,critChance:5,critDamage:50};
+  result.player.equipped.helmet.defense=11;
+  result.player.equipped.helmet.hp=36;
+  delete result.player.equipped.helmet.baseStats;
+  result.inventory[1].equipment.defense=5;
+  delete result.inventory[1].equipment.attack;
+  delete result.inventory[1].equipment.baseLevel;
+  result.belt[0].equipment.hp=31;
+  result.belt[0].equipment.baseStats={hp:30,defense:5};
+  return result;
+};
+reset();
+assert.equal(stagePveVictoryJournal('hero-a',gearVictory()),true);
+const canonicalTrial = normalizedGearVictory();
+globalThis.__mockServer={revision:nextRevision,state:canonicalTrial,gold:30,gems:2};
+assert.deepEqual(await recoverPveVictoryOnBoot('hero-a',profile()), {
+  state:canonicalTrial,recovered:true,
+},'Saved Trial 7 chest, XP, materials and gear must be confirmed despite server v4 stat normalization');
+assert.equal(globalThis.__mockWrites,0,'Never issue a second win write after readback confirmation');
+assert.equal(pendingPveVictoryJournal('hero-a'),false);
+
+// The gear readback exemption must NEVER hide missing rewards or item swaps.
+for (const modify of [
+  s => { s.inventory[1].qty=0; },
+  s => { s.inventory[1].equipment.id='wrong-armor'; },
+  s => { s.inventory[1].equipment.level=2; },
+  s => { s.inventory.pop(); },
+  s => { s.lastTrialChest.gold=0; },
+  s => { s.trialLevel=7; },
+  s => { s.forgeMaterials=45; },
+  s => { s.player.xp=109; },
+]) {
+  reset();
+  assert.equal(stagePveVictoryJournal('hero-a',gearVictory()),true);
+  const tampered=normalizedGearVictory();
+  modify(tampered);
+  globalThis.__mockServer={revision:nextRevision,state:tampered,gold:30,gems:2};
+  assert.equal(await recoverPveVictoryOnBoot('hero-a',profile()),null,
+    'Changed item identity/qty/level, chest, floor, materials or XP must not acknowledge victory');
+  assert.equal(pendingPveVictoryJournal('hero-a'),true);
+}
+
 // Lost ACK in a *running* session with an obsolete CAS token must not
 // unlock a new battle. Boot reloads the authoritative token before clearing.
 reset();
