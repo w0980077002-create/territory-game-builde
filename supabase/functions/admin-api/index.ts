@@ -230,7 +230,7 @@ async function handle(action: string, body: Row) {
       let created = 0;
       for (let slot = 1; slot <= 10; slot++) {
         if (current.has(slot)) continue;
-        const password = crypto.randomUUID() + crypto.randomUUID() + crypto.randomUUID();
+        const password = crypto.randomUUID(); // 36 ASCII chars; GoTrue bcrypt rejects passwords over 72 bytes
         const email = `owner-tester-${slot}@territory-game.example`;
         const { data: identity, error: authError } = await db.auth.admin.createUser({
           email, password, email_confirm: true,
