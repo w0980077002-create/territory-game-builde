@@ -220,6 +220,74 @@ assert.equal(globalThis.__mockWrites, 0);
 assert.equal(pendingPveVictoryJournal('hero-a'), true);
 assert.equal(pendingPveVictoryJournal('hero-b'), false);
 
+// A later cloud save after a fully committed Trial 7 chest cannot leave the
+// player locked at startup. The player may have earned/spent gold afterward, so
+// prove the exact chest receipt and Trial progress instead of comparing wallets
+// to a stale historical snapshot. Keep every byte of the old WAL for support.
+const trial7 = () => ({
+  ...victory(),
+  trialLevel: 8,
+  trialChestClaims: [7],
+  lastTrialChest: { floor: 7, tier: 'common', gold: 26, gems: 0,
+    materials: 1, potions: 0, elixirs: 0, reputation: 0 },
+  totalBattlesWon: 301,
+  forgeMaterials: 47,
+});
+reset();
+const recordedTrial7 = trial7();
+assert.equal(stagePveVictoryJournal('hero-a', recordedTrial7), true);
+const oldTrialWal = entries.get('territory:pve-victory-wal:v1:hero-a');
+const laterTrialSave = {...trial7(), player:{...trial7().player,gold:80},
+  totalBattlesWon: 302, forgeMaterials: 45 };
+globalThis.__mockServer = {revision:nextRevision,state:laterTrialSave,gold:80,gems:2};
+globalThis.__mockTokens.set('hero-a', nextRevision);
+assert.deepEqual(await recoverPveVictoryOnBoot('hero-a', profile()), {
+  state:laterTrialSave,recovered:true,
+}, 'Proven same Trial chest must release stale checkpoint automatically on startup');
+assert.equal(globalThis.__mockWrites,0,'Restore never replays or re-credits Trial 7');
+assert.equal(pendingPveVictoryJournal('hero-a'),false);
+assert.equal(entries.get('territory:pve-victory-unresolved:v1:hero-a:0'),oldTrialWal,
+  'Archive original victory proof verbatim before opening the game');
+
+// Unrelated newer cloud updates MUST NOT auto-close a pending victory. A bare
+// Trial level, wallet, or another chest does not prove the old win was saved.
+const rejectedTrialCloud = [
+  state => { state.trialChestClaims=[]; },
+  state => { state.lastTrialChest.gold=10; },
+  state => { state.lastTrialChest.floor=8; },
+  state => { state.trialLevel=7; },
+  state => { state.totalBattlesWon=299; },
+  state => { delete state.lastTrialChest; },
+  state => { delete state.trialChestClaims; },
+];
+for (const modify of rejectedTrialCloud) {
+  reset();
+  assert.equal(stagePveVictoryJournal('hero-a',trial7()),true);
+  const row=structuredClone(laterTrialSave);
+  modify(row);
+  globalThis.__mockServer={revision:nextRevision,state:row,gold:80,gems:2};
+  globalThis.__mockTokens.set('hero-a',nextRevision);
+  assert.equal(await recoverPveVictoryOnBoot('hero-a',profile()),null,
+    'Newer revision without exact saved Trial chest must remain blocked');
+  assert.equal(pendingPveVictoryJournal('hero-a'),true);
+  assert.equal(hasUnresolvedPveVictoryArchive('hero-a'),false);
+}
+reset();
+assert.equal(stagePveVictoryJournal('hero-a',trial7()),true);
+globalThis.__mockServer={revision:nextRevision,state:laterTrialSave,gold:80,gems:2};
+// Token from the previously loaded cloud row did not match: do not accept.
+assert.equal(await recoverPveVictoryOnBoot('hero-a',profile()),null);
+assert.equal(pendingPveVictoryJournal('hero-a'),true);
+reset();
+assert.equal(stagePveVictoryJournal('hero-a',trial7()),true);
+globalThis.__mockServer={revision:nextRevision,state:laterTrialSave,gold:80,gems:2};
+globalThis.__mockTokens.set('hero-a',nextRevision);
+const archiveWrite = localStorage.setItem;
+localStorage.setItem=(k,v)=>{if(k.startsWith('territory:pve-victory-unresolved'))throw Error('quota');return archiveWrite(k,v);};
+assert.equal(await recoverPveVictoryOnBoot('hero-a',profile()),null);
+assert.equal(pendingPveVictoryJournal('hero-a'),true);
+localStorage.setItem=archiveWrite;
+
 // An unrelated coalesced save ACK is not proof that the victory was stored.
 reset();
 assert.equal(stagePveVictoryJournal('hero-a', victory()), true);

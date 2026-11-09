@@ -264,6 +264,54 @@ export async function retryPveVictoryJournal(playerId: string): Promise<boolean>
 }
 
 /**
+ * A narrow, verifiable reason to release a stale local Trial win. The live
+ * server has already committed the EXACT chest receipt for the floor in this
+ * WAL and advanced its authoritative Trial progress. The win can then be
+ * acknowledged without overwriting newer cloud actions or granting rewards
+ * again. Unlike a plain newer revision, an unrelated save is not enough.
+ *
+ * Keep using the raw owner-scoped cloud JSON, not a default-merged client copy.
+ * All checks deliberately fail closed when fields are missing or inconsistent.
+ */
+function cloudProvesTrialVictory(
+  playerId: string,
+  stored: StoredJournal,
+  profile: RecoveryProfile,
+): boolean {
+  const recorded = stored.journal.snapshot;
+  const raw = profile.savedGameState;
+  if (!validSaveToken(profile.saveRevision)
+    || saveTokens.get(playerId) !== profile.saveRevision
+    || !validEconomySnapshot(profile.state)
+    || !raw || typeof raw !== 'object' || Array.isArray(raw)
+    || !validEconomySnapshot(raw as GameState)
+    || profile.walletGold !== profile.state.player.gold
+    || profile.walletGems !== profile.state.player.gems) return false;
+  const server = raw as GameState;
+  if (server.player.gold !== profile.walletGold
+    || server.player.gems !== profile.walletGems) return false;
+
+  const floor = recorded.trialLevel - 1;
+  // The last-trial-chest receipt proves the *same* rolled chest was saved.
+  // Do not use a bare level/win count or an unrelated later save as proof.
+  if (!Number.isSafeInteger(floor) || floor < 1
+    || !Number.isSafeInteger(server.trialLevel)
+    || server.trialLevel !== recorded.trialLevel
+    || !Array.isArray(recorded.trialChestClaims)
+    || !recorded.trialChestClaims.includes(floor)
+    || !Array.isArray(server.trialChestClaims)
+    || !server.trialChestClaims.includes(floor)
+    || !recorded.lastTrialChest
+    || !server.lastTrialChest
+    || recorded.lastTrialChest.floor !== floor
+    || !sameJson(recorded.lastTrialChest, server.lastTrialChest)
+    || !Number.isSafeInteger(recorded.totalBattlesWon)
+    || !Number.isSafeInteger(server.totalBattlesWon)
+    || server.totalBattlesWon < recorded.totalBattlesWon) return false;
+  return true;
+}
+
+/**
  * Runs after authenticated cloud load but BEFORE hydrating useGame or starting
  * autosaves. On mismatched revisions, preserve the local WAL for manual
  * reconciliation; never restore a local snapshot on top of newer cloud data.
@@ -281,7 +329,16 @@ export async function recoverPveVictoryOnBoot(
     if (!clearMatchingJournal(playerId, stored)) return null;
     return { state: profile.state, recovered: true };
   }
-  if (profile.saveRevision !== stored.journal.baseRevision) return null;
+  if (profile.saveRevision !== stored.journal.baseRevision) {
+    // E.g. a confirmed Trial 7 chest is in the server row, but the local WAL
+    // predates subsequent player actions. Preserve the WAL evidence verbatim
+    // before letting the player in with the newer authoritative cloud hero.
+    // Never use this path if the receipt is absent or mismatched.
+    if (Date.parse(profile.saveRevision) <= Date.parse(stored.journal.baseRevision)
+      || !cloudProvesTrialVictory(playerId, stored, profile)
+      || !archiveUnresolvedPveVictoryForCloudEntry(playerId)) return null;
+    return { state: profile.state, recovered: true };
+  }
   // The authenticated server row is still exactly at the pre-victory CAS token.
   // Restore with the normal guarded writer, never with a blind insert/update.
   if (!await persistPveVictoryJournal(playerId, snapshot)) return null;
