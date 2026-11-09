@@ -32,7 +32,7 @@ assert.match(boss, /contactTimeout\.current = window\.setTimeout/, 'Hero must wi
 assert.match(boss, /if \(mounted\.current\) \{ setImpact\(false\); setStrike\(null\); \}/);
 assert.match(css, /mortarion-raid__player/);
 assert.match(css, /mortarion-raid__slash-trail/);
-assert.match(css, /contrast\(1\.16\)/, 'Boss art must not use the prior all-over blurring shadow');
+assert.match(css, /mortarion-raid__scene\{[^}]*filter:contrast\(1\.12\)/, 'Full-body boss remains sharp with no full-scene blur');
 assert.doesNotMatch(css, /saturate\(1\.1\) drop-shadow\(0 0 6px/, 'Avoid softening the whole boss illustration');
 
 assert.match(boss, /Array\.from\(\{length: 10\}/);
