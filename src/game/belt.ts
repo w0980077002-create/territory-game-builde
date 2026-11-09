@@ -136,6 +136,7 @@ export function putInBelt(state: GameState, itemId: string, c: BeltContext): Gam
     source = candidates[0];
   }
 
+  if (!source) return null;
   const current = belt[index]?.qty ?? 0;
   const moved = Math.min(BELT_STACK - current, source.qty);
   if (moved <= 0) return null;
