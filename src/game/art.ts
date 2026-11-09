@@ -6,6 +6,8 @@ const itemIcon = (name: string) => ui + 'items/' + name + '.webp';
 const materialIcon = (name: string) => ui + 'materials/' + name + '.webp';
 const shopIcon = (name: string) => ui + 'shop/' + name + '.webp';
 const uniqueGearIcon = (name: string) => ui + 'unique-gear/' + name + '.webp';
+// Four previously approved item illustrations must remain in the original catalog.
+const originalEquipmentArt = (name: 'sword' | 'knight-blade' | 'hero-sword' | 'plate-armor') => ui + 'equipment-cartoon/' + name + '.webp';
 const masterPortrait = (profession: ProfessionId) => ui + 'profession-masters/' + profession + '.webp';
 
 /** Names are stable across bought, crafted and restored copies; random instance IDs aren't.
@@ -192,16 +194,8 @@ function inventoryMaterialArt(item: ArtSource): string {
 /** Shop gear and legacy loot use real, existing crafted-gear visuals.
  * Cosmetic aliases only: never change saved item identity or stats. */
 const SHOP_EQUIPMENT_ART_BY_NAME: Record<string, string> = {
-  'меч воина': 'watch-blade',
-  'warrior sword': 'watch-blade',
-  'клинок рыцаря': 'jarl-blade',
-  'knight blade': 'jarl-blade',
-  'героический меч': 'ancient-blade',
-  'heroic sword': 'ancient-blade',
   'кожаная броня': 'caravan-armor',
   'leather armor': 'caravan-armor',
-  'латные доспехи': 'north-armor',
-  'plate armor': 'north-armor',
   'железный шлем': 'watch-helmet',
   'iron helmet': 'watch-helmet',
   'сапоги скорости': 'ranger-boots',
@@ -212,8 +206,6 @@ const SHOP_EQUIPMENT_ART_BY_NAME: Record<string, string> = {
   'oak shield': 'north-shield',
   'амулет ворона': 'master-raven-amulet',
   'raven amulet': 'master-raven-amulet',
-  'клинок победителя': 'watch-blade',
-  'victor blade': 'watch-blade',
   'доспех воина': 'north-armor',
   'warrior armor': 'north-armor',
 };
@@ -224,13 +216,18 @@ export function equipmentArt(equipment: Equipment): string {
   const name = normalizeItemName(equipment.name);
   const special = UNIQUE_EQUIPMENT_BY_NAME[name];
   if (special) return uniqueGearIcon(special);
+  // The owner explicitly kept these four illustrations: do not replace them
+  // with approximate masterwork gear or any of the seven retired generic slots.
+  if (equipment.slot === 'armor' && /латные доспехи|plate armor/.test(name)) return originalEquipmentArt('plate-armor');
+  if (equipment.slot === 'weapon' && /клинок рыцаря|knight.*blade/.test(name)) return originalEquipmentArt('knight-blade');
+  if (equipment.slot === 'weapon' && /героический меч|heroic sword/.test(name)) return originalEquipmentArt('hero-sword');
   const shopArtwork = SHOP_EQUIPMENT_ART_BY_NAME[name];
   if (shopArtwork) return uniqueGearIcon(shopArtwork);
   if (equipment.slot === 'weapon') {
     if (/топор|секир|axe|hatchet/.test(name)) return uniqueGearIcon('storm-axe');
     if (/лук|арбалет|bow|crossbow/.test(name) || equipment.icon === '🏹') return itemIcon('bow');
     if (/посох|жезл|staff|wand/.test(name) || equipment.icon === '🪄') return itemIcon('staff');
-    if (/меч|клинок|сабл|рапир|sword|blade|saber|sabre|rapier/.test(name)) return uniqueGearIcon('watch-blade');
+    if (/меч|клинок|сабл|рапир|sword|blade|saber|sabre|rapier/.test(name)) return originalEquipmentArt('sword');
   }
   return SLOT_ART[equipment.slot];
 }
