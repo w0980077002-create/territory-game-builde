@@ -3,11 +3,11 @@
 .mortarion-raid__card{box-shadow:0 8px 28px #0009,inset 0 1px #ebc98e25}
 .mortarion-raid__arena{position:relative;overflow:hidden;height:clamp(245px,65vw,300px);margin:8px -12px 0;background:radial-gradient(ellipse at 73% 43%,#67308a 0%,#351640 47%,#150e25 86%),linear-gradient(#24112c,#0d0914);isolation:isolate}
 .mortarion-raid__arena:before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 60% 35%,#7821a53a,transparent 68%);z-index:0;pointer-events:none}
-.mortarion-raid__arena:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 55%,#180e19cc);z-index:2;pointer-events:none}
+.mortarion-raid__arena:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 88%,#180e1922);z-index:2;pointer-events:none}
 .mortarion-raid__boss-picture{position:absolute;inset:0;display:block;z-index:1}
 .mortarion-raid__scene{display:block;width:100%;height:100%;object-fit:contain;object-position:right bottom;filter:contrast(1.12) saturate(1.13);transform:none;animation:mortarion-raid-breathe 6s ease-in-out infinite;backface-visibility:hidden}
-.mortarion-raid__floor{position:absolute;z-index:2;inset:auto 0 0;height:13%;pointer-events:none;background:linear-gradient(transparent,#140c1ec9 70%,#221024);border-bottom:2px solid #bd62ef4d}
-.mortarion-raid__mist{position:absolute;inset:55% -25% -15%;z-index:2;opacity:.64;background:radial-gradient(ellipse at 40% 85%,#b040d966,transparent 67%);animation:mortarion-raid-mist 8s ease-in-out alternate infinite;pointer-events:none}
+.mortarion-raid__floor{position:absolute;z-index:0;inset:auto 0 0;height:13%;pointer-events:none;background:linear-gradient(transparent,#140c1ec9 70%,#221024);border-bottom:2px solid #bd62ef4d}
+.mortarion-raid__mist{position:absolute;inset:55% -25% -15%;z-index:2;opacity:.26;background:radial-gradient(ellipse at 40% 85%,#b040d966,transparent 67%);animation:mortarion-raid-mist 8s ease-in-out alternate infinite;pointer-events:none}
 .mortarion-raid__soul{position:absolute;z-index:3;color:#f4ceff;font-size:25px;text-shadow:0 0 9px #aa4dff,0 0 20px #ac25fa;pointer-events:none;animation:mortarion-raid-soul 4.5s ease-in-out infinite}
 .mortarion-raid__soul--one{left:12%;top:19%}
 .mortarion-raid__soul--two{right:7%;top:39%;animation-delay:-2.5s}
