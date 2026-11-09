@@ -66,9 +66,9 @@ for (const image of ['watch-helmet', 'master-raven-amulet', 'caravan-armor', 'wa
   assert(existsSync(`public/assets/territory/ui/unique-gear/${image}.webp`), `Missing actual crafted gear: ${image}`);
 }
 assert(!existsSync('public/assets/territory/ui/equipment-cartoon'), 'Generic cartoon gear still present in repo');
-assert.doesNotMatch(art, /equipment-cartoon\\//, 'Live gear artwork still references retired cartoons');
+assert(!art.includes('equipment-cartoon/'), 'Live gear artwork still references retired cartoons');
 assert.match(art, /SHOP_EQUIPMENT_ART_BY_NAME/, 'Shop equipment must map to real gear');
-assert.match(art, /return uniqueGearIcon\\('watch-blade'\\)/, 'Sword must use crafted artwork');
+assert(art.includes("return uniqueGearIcon('watch-blade')"), 'Sword must use crafted artwork');
 assert.match(art, /if \(item\.equipment\) return equipmentArt\(item\.equipment\)/, 'Inventory still shows generic weapon');
 assert.match(gear, /equipmentArt\(item\)/, 'Arena gear still shows generic weapon');
 assert.match(room, /<ArenaChat\s+roomId=\{roomId\}/, 'Persistent arena chat missing');
