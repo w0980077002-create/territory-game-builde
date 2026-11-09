@@ -19,6 +19,8 @@ const ERRORS: Record<string, string> = {
   geo_unavailable: 'Статистика стран пока не подключена на сервере',
   arena_economy_unavailable: 'Экономика Арены пока недоступна на сервере. Обнови страницу и повтори.',
   registrations_unavailable: 'Список новых игроков пока недоступен на сервере',
+  bots_unavailable: 'Управление тестерами пока недоступно на сервере.',
+  bots_update_failed: 'Не удалось сохранить параметры тестера. Проверь введённые значения.',
   not_found: 'Игрок не найден',
   recipient_not_found: 'Получатель не найден',
   empty_payload: 'Не указаны изменения',
