@@ -55,6 +55,16 @@ assert.match(gear, /onForge\(candidate\.id\)/, 'Spare equipment can open the for
 assert.match(gear, /onForge\(worn\.id\)/, 'Equipped gear can open the forge');
 assert.match(forge, /const readyCount = allEquipment\.filter\(forgeReady\)\.length/, 'Forge shows preparation status');
 assert.match(forge, /const listed = allEquipment\.filter/, 'Forge filters actual inventory, not dummy rewards');
+
+// The forged set must display this hero's real equipped items, not seven generic slot emojis.
+assert.match(forge, /data-testid="forge-equipped-set"/, 'Live equipped set is visible in Forge');
+assert.match(forge, /const eq = state\.player\.equipped\[id\]/, 'Forge reads the current hero equipment for each slot');
+assert.match(forge, /src=\{equipmentArt\(eq\)\}/, 'Forge renders the same item-specific art used by the hero');
+assert.match(forge, /data-testid="forge-equipped-item-art"/, 'Equipped artwork can be verified in the browser');
+assert.match(forge, /id: `equipped_\$\{eq\.id\}`/, 'Clicking equipped gear opens its real Forge item');
+assert.doesNotMatch(forge, /EQUIPMENT_SLOTS\.map\(\(\{ id, icon, name \}\)/,
+  'Never regress to generic decorative slot emojis in the set');
+
 assert.match(forge, /forgeAttempt\(latest, item\.id, eq\.level, Math\.random\(\)\)/, 'Existing forge actions preserved');
 assert.match(app, /<ForgeScreen focusEquipmentId=\{forgeFocusId\} userId=\{user\.id\}/,
   'Forge verifies saves for the authenticated hero');

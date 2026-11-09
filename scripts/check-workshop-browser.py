@@ -16,6 +16,23 @@ with sync_playwright() as p:
    for ios in (False,True):
     page=browser.new_page(viewport={'width':width,'height':500},reduced_motion='reduce');page.add_init_script(f"localStorage.setItem('territory-language','{lang}')" + (";document.addEventListener('DOMContentLoaded',()=>document.documentElement.classList.add('territory-ios-webapp'))" if ios else ''));errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     page.goto(f'http://127.0.0.1:{server.server_port}/territory-workshop-after.html?forge');page.wait_for_timeout(400);assert not errors,errors
+    # No emoji placeholders: the forged-set row uses only the player's actually equipped gear.
+    set_row=page.get_by_test_id('forge-equipped-set')
+    assert set_row.locator('button').count()==7, (width,lang,'wrong equipped slot count')
+    assert set_row.get_by_test_id('forge-equipped-item-art').count()==1, (width,lang,'generic art instead of equipped gear')
+    assert set_row.get_by_test_id('forge-empty-slot').count()==6, (width,lang,'unequipped slots must be empty')
+    assert set_row.get_by_test_id('forge-equipped-item-art').first.evaluate(
+      '(img)=>img.complete && img.naturalWidth>0'), (width,lang,'equipped image failed to load')
+    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(width,lang,'Forge horizontal overflow')
+    if lang=='ru' and not ios:
+      os.makedirs('/tmp/territory-stage1-ui',exist_ok=True)
+      page.screenshot(path=f'/tmp/territory-stage1-ui/forge-equipped-{width}.png',full_page=True)
+    equipped_button=set_row.get_by_test_id('forge-equipped-slot')
+    equipped_name=equipped_button.get_attribute('title')
+    equipped_button.click()
+    assert equipped_name in page.get_by_role('dialog').inner_text(),(width,lang,'equipped item did not open')
+    page.keyboard.press('Escape')
+    assert page.get_by_role('dialog').count()==0
     gear=page.get_by_role('button',name='Iron Helmet' if lang=='en' else 'Железный шлем');gear.click();dialog=page.get_by_role('dialog');close=dialog.get_by_role('button',name='Close' if lang=='en' else 'Закрыть');r=close.bounding_box();assert r['width']>=43.99 and r['height']>=43.99,(width,lang,ios,r)
     assert close.evaluate('(e)=>document.activeElement===e');page.keyboard.press('Escape');assert dialog.count()==0 and gear.evaluate('(e)=>document.activeElement===e')
     page.goto(f'http://127.0.0.1:{server.server_port}/territory-workshop-after.html?shop');page.wait_for_timeout(400);assert not errors,errors

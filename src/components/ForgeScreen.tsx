@@ -231,10 +231,46 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
           <p className="font-bold text-amber-200 text-sm">{language === 'en' ? 'Forged set' : 'Комплект кузнеца'}</p>
           <p className="font-bold text-amber-300 text-sm">{setBonus.slots}/7</p>
         </div>
-        <div className="grid grid-cols-7 gap-1.5 mb-2">
-          {EQUIPMENT_SLOTS.map(({ id, icon, name }) => {
-            const forged = !!state.player.equipped[id] && (state.player.equipped[id]?.upgradeCount ?? 0) > 0;
-            return <div key={id} title={name} className={`rounded-lg text-center py-2 text-lg border ${forged ? 'border-amber-400/70 bg-amber-500/25' : 'border-white/10 bg-black/20 opacity-45'}`}>{icon}</div>;
+        <div className="grid grid-cols-7 gap-1 mb-2" data-testid="forge-equipped-set">
+          {EQUIPMENT_SLOTS.map(({ id, name }) => {
+            // This set represents the seven items the current hero ACTUALLY wears.
+            // Never display the generic slot emoji or fake/example equipment here.
+            const eq = state.player.equipped[id];
+            const forged = !!eq && (eq.upgradeCount ?? 0) > 0;
+            const itemName = eq ? localizeText(eq.name, language) : name;
+            return (
+              <button
+                type="button"
+                key={id}
+                disabled={!eq}
+                title={eq ? itemName : (language === 'en' ? 'Empty equipped slot' : 'Слот не экипирован')}
+                aria-label={eq ? `${itemName}, ${language === 'en' ? 'level' : 'уровень'} ${eq.level}` : `${name}: ${language === 'en' ? 'empty' : 'пусто'}`}
+                className={`relative flex aspect-square min-w-0 items-center justify-center overflow-hidden rounded-lg border transition-transform active:scale-95 ${forged ? 'border-amber-400/75 bg-amber-800/30' : eq ? 'border-amber-700/40 bg-[#22180f]' : 'border-white/10 bg-black/20'}`}
+                style={eq ? { boxShadow: forged ? 'inset 0 0 9px #f59e0b33, 0 0 5px #f59e0b24' : undefined } : undefined}
+                onClick={() => {
+                  if (!eq) return;
+                  setSelected({
+                    id: `equipped_${eq.id}`, name: eq.name, icon: eq.icon,
+                    type: 'equipment', rarity: eq.rarity, qty: 1,
+                    description: '', equipment: eq,
+                  });
+                }}
+                data-testid={eq ? 'forge-equipped-slot' : 'forge-empty-slot'}
+              >
+                {eq ? (
+                  <>
+                    <img
+                      src={equipmentArt(eq)}
+                      alt=""
+                      draggable={false}
+                      data-testid="forge-equipped-item-art"
+                      className="h-[82%] w-[82%] object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]"
+                    />
+                    <span className="absolute inset-x-0 bottom-0 bg-black/65 text-center text-[9px] font-bold leading-tight text-amber-100 tabular-nums">{eq.level}</span>
+                  </>
+                ) : <span className="text-sm text-stone-600" aria-hidden="true">—</span>}
+              </button>
+            );
           })}
         </div>
         <p className="text-xs text-gray-300 leading-relaxed">
