@@ -244,8 +244,13 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION territory_private.owner_test_bot_arena_tick_v1() FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION territory_private.owner_test_bot_arena_tick_v1() TO service_role;
-SELECT cron.schedule('territory-owner-test-bots-v1','* * * * *',
-   'SELECT territory_private.owner_test_bot_arena_tick_v1();');
+DO $owner_bot_cron$
+BEGIN
+ IF NOT EXISTS (SELECT 1 FROM cron.job WHERE jobname='territory-owner-test-bots-v1') THEN
+   PERFORM cron.schedule('territory-owner-test-bots-v1','* * * * *',
+      'SELECT territory_private.owner_test_bot_arena_tick_v1();');
+ END IF;
+END $owner_bot_cron$;
 
 -- Only in synthetic bot-only rooms, derive new AI opponents from the actual
 -- managed tester instead of level-1 fallback. Human-room matchmaking is untouched.
