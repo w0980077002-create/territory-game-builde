@@ -34,6 +34,8 @@ export function hallError(){return 'Offline game server';}
 export async function fetchSlotsStatus(){return null;}
 export async function fetchSeasonStatus(){return {enabled:false};}
 export async function getArenaWeeklyStatus(){return null;}
+// Isolate the existing Mortarion event RPC from the offline mobile preview.
+export async function getMortarionBossState(){return null;}
 `;
 
 const entry = `
@@ -63,7 +65,7 @@ const output=await build({
  plugins:[{
   name:'inert-daily-loop',
   setup(build){
-   build.onResolve({filter:new RegExp('(?:game/|[.]/)(actions|live|analytics|gameHall|slotsApi|seasonApi|arenaWeekly)$')},()=>({path:'fixture',namespace:'fixture'}));
+   build.onResolve({filter:new RegExp('(?:game/|[.]/)(actions|live|analytics|gameHall|slotsApi|seasonApi|arenaWeekly|mortarionBoss)$')},()=>({path:'fixture',namespace:'fixture'}));
    build.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:fixture,loader:'js',resolveDir:resolve('.')}));
   },
  }],

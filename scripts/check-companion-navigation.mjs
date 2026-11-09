@@ -18,13 +18,13 @@ for (const path of ['src/App.tsx','src/components/ProfileScreen.tsx','src/compon
 
 assert.match(inv,/import \{ FollowersPanel \} from '\.\/FollowersPanel'/);
 assert.match(inv,/<FollowersPanel \/>/);
-assert.match(inv,/useState<'items' \| 'equipment' \| 'followers'>\(initialTab\)/);
-assert.match(inv,/switchTab = \(to: 'items' \| 'equipment' \| 'followers'\)/);
-assert.match(inv,/grid shrink-0 grid-cols-3/,'Three inventory section tabs must stay in the bottom bar');
+assert.match(inv,/useState<'items' \| 'equipment' \| 'followers' \| 'chests'>\(initialTab\)/);
+assert.match(inv,/switchTab = \(to: 'items' \| 'equipment' \| 'followers' \| 'chests'\)/);
+assert.match(inv,/grid shrink-0 grid-cols-4/,'Four inventory section tabs must stay in the bottom bar');
 assert.ok(inv.indexOf('role="tablist"') > inv.indexOf('role="tabpanel"'),
   'Companion tab must be reached from the bottom panel');
 assert.match(inv,/role="tablist"/);
-for(const tab of ['equipment','items','followers']){
+for(const tab of ['equipment','items','followers','chests']){
   assert.match(inv,new RegExp("aria-selected=\\{tab === '"+tab+"'\\}"),"Missing tab state "+tab);
   assert.match(inv,new RegExp("switchTab\\('"+tab+"'\\)"),"Missing selectable tab "+tab);
 }
@@ -80,3 +80,5 @@ assert.match(campCss,/companion-journey-bar/, 'Camp next-step bar has mobile sty
 assert.doesNotMatch(livingHero,/useGame\.set|trainFollower\(|awardCowAwakeningStone\(/, 'Hero preview must remain read-only');
 console.log('Companion journey PASS: saved active companion on hero, camp selection/training, pinned return to hero/campaign, no new rewards.');
 console.log('Companions moved into inventory: three accessible tabs, one active PvE companion, existing costs/levels preserved, clean profile, belt and gear intact.');
+
+assert.match(inv,/InventoryChestShelf userId=\{userId\} state=\{state\}/, 'Chest tab must mount saved-data shelf');

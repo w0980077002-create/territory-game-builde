@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText, localizeRarity } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
@@ -17,9 +17,12 @@ import { rarityColor } from '@/game/ui';
 import { EQUIPMENT_SLOTS, generateChapter, generateTrial } from '@/game/engine';
 import { elixirExpiryTime, elixirTimeLeftLabel, isElixirExpired, isPerishableItem } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
-import { Package, ArrowDownUp, UsersRound, Hammer, Pickaxe, MapPinned, ChevronRight, ShieldCheck, Swords } from 'lucide-react';
+import { Package, ArrowDownUp, UsersRound, Gift, Hammer, Pickaxe, MapPinned, ChevronRight, ShieldCheck, Swords } from 'lucide-react';
 import { TrialLootCollection } from './trials/TrialLootCollection';
 import './inventoryPreparation.css';
+
+// Keep the chest screen out of the initial mobile bundle.
+const InventoryChestShelf = lazy(() => import('./InventoryChestShelf').then(m => ({ default: m.InventoryChestShelf })));
 
 /** Equipment, consumables/belt and companions share the inventory route.
  * The follower model is unchanged: training and PvE selection stay in the global store. */
@@ -37,7 +40,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const arena = useStore(useArena);
-  const [tab, setTab] = useState<'items' | 'equipment' | 'followers'>(initialTab);
+  const [tab, setTab] = useState<'items' | 'equipment' | 'followers' | 'chests'>(initialTab);
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const [beltNote, setBeltNote] = useState<string | null>(null);
   const [preparedNotice, setPreparedNotice] = useState('');
@@ -90,7 +93,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const beltReady = state.belt.reduce((n, item, i) => n + (item && isSlotOpen(i, beltCtx) && !isElixirExpired(item, now) ? item.qty : 0), 0);
   const spareConsumables = consumables.reduce((n, item) => n + (!isElixirExpired(item, now) ? Math.max(0, item.qty) : 0), 0);
 
-  const switchTab = (to: 'items' | 'equipment' | 'followers') => {
+  const switchTab = (to: 'items' | 'equipment' | 'followers' | 'chests') => {
     // The content scrolls independently; the bottom tabs stay within reach.
     inventoryContentRef.current?.scrollTo({ top: 0, behavior: 'auto' });
     setTab(to);
@@ -185,8 +188,12 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
             onForge={onForge}
           />
         </div>
-      ) : (
+      ) : tab === 'followers' ? (
         <FollowersPanel />
+      ) : (
+        <Suspense fallback={<p className="p-3 text-xs text-amber-200">{language === 'en' ? 'Loading chests…' : 'Загружаем сундуки…'}</p>}>
+          <InventoryChestShelf userId={userId} state={state} />
+        </Suspense>
       )}
       </div>
 
@@ -249,22 +256,27 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
       )}
 
       {/* Always visible directly above the game's main navigation. */}
-      <div className="z-20 grid shrink-0 grid-cols-3 gap-1.5 rounded-2xl border border-amber-700/60 bg-[#2d1a11] p-1.5 shadow-[0_-4px_18px_rgba(0,0,0,0.45)]"
+      <div className="z-20 grid shrink-0 grid-cols-4 gap-1.5 rounded-2xl border border-amber-700/60 bg-[#2d1a11] p-1.5 shadow-[0_-4px_18px_rgba(0,0,0,0.45)]"
         role="tablist" aria-label={language === 'en' ? 'Inventory sections' : 'Разделы инвентаря'}>
         <button type="button" role="tab" aria-selected={tab === 'equipment'} aria-controls="inventory-current-section"
-          className="viking-tab flex items-center justify-center gap-1 px-1 py-1 text-[11px] leading-tight transition-colors sm:text-xs"
+          className="viking-tab min-w-0 flex flex-col items-center justify-center gap-0.5 px-0.5 py-1 text-[10px] leading-tight transition-colors sm:flex-row sm:gap-1 sm:text-xs"
           onClick={() => switchTab('equipment')}>
           <ArrowDownUp className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />{language === 'en' ? 'Equipment' : 'Снаряжение'}
         </button>
         <button type="button" role="tab" aria-selected={tab === 'items'} aria-controls="inventory-current-section"
-          className="viking-tab flex items-center justify-center gap-1 px-1 py-1 text-[11px] leading-tight transition-colors sm:text-xs"
+          className="viking-tab min-w-0 flex flex-col items-center justify-center gap-0.5 px-0.5 py-1 text-[10px] leading-tight transition-colors sm:flex-row sm:gap-1 sm:text-xs"
           onClick={() => switchTab('items')}>
           <Package className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />{language === 'en' ? 'Items' : 'Предметы'}
         </button>
         <button type="button" role="tab" aria-selected={tab === 'followers'} aria-controls="inventory-current-section"
-          className="viking-tab flex items-center justify-center gap-1 px-1 py-1 text-[11px] leading-tight transition-colors sm:text-xs"
+          className="viking-tab min-w-0 flex flex-col items-center justify-center gap-0.5 px-0.5 py-1 text-[10px] leading-tight transition-colors sm:flex-row sm:gap-1 sm:text-xs"
           onClick={() => switchTab('followers')}>
           <UsersRound className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />{language === 'en' ? 'Companions' : 'Спутники'}
+        </button>
+        <button type="button" role="tab" aria-selected={tab === 'chests'} aria-controls="inventory-current-section"
+          className="viking-tab min-w-0 flex flex-col items-center justify-center gap-0.5 px-0.5 py-1 text-[10px] leading-tight transition-colors sm:flex-row sm:gap-1 sm:text-xs"
+          onClick={() => switchTab('chests')}>
+          <Gift className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />{language === 'en' ? 'Chests' : 'Сундуки'}
         </button>
       </div>
 
