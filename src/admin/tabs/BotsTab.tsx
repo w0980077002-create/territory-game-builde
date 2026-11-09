@@ -46,6 +46,8 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
   const [draft,setDraft]=useState<Editable|null>(null);
   const [error,setError]=useState<string|null>(null);
   const [busy,setBusy]=useState(false);
+  const [dirty,setDirty]=useState<Array<keyof Editable>>([]);
+  const [notice,setNotice]=useState<string|null>(null);
 
   const load=useCallback(async()=>{
     setError(null);
@@ -68,31 +70,78 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
 
   useEffect(()=>{void load();},[load]);
 
-  const open=(b:Tester)=>{setSelected(b.slot);setDraft(editable(b));setError(null);};
+  const open=(b:Tester)=>{
+    setSelected(b.slot);setDraft(editable(b));setDirty([]);setError(null);setNotice(null);
+  };
+  const changeDraft=<K extends keyof Editable>(key:K,value:Editable[K])=>{
+    setDraft(d=>d?{...d,[key]:value}:d);
+    setDirty(keys=>keys.includes(key)?keys:[...keys,key]);
+    setNotice(null);
+  };
+  // Each auto setting is saved to the server immediately and independently.
+  // It must never resend stale currency, rating or other character fields.
+  const saveSetting=async <K extends keyof Editable>(key:K,value:Editable[K])=>{
+    if(selected===null||busy)return;
+    const slot=selected;
+    const previous=bots?.find(b=>b.slot===slot);
+    if(!previous)return;
+    if(key==='intervalMinutes'&&(!Number.isSafeInteger(Number(value))||
+      Number(value)<2||Number(value)>1440)){
+      setError('Интервал должен быть от 2 до 1440 минут.');return;
+    }
+    setBusy(true);setError(null);setNotice(null);
+    try {
+      await adminCall('bots_update',{slot,patch:{[key]:value}});
+      const result=await adminCall<{bots:Tester[]}>('bots_list');
+      const confirmed=result.bots.find(b=>b.slot===slot);
+      if(!confirmed||confirmed[key]!==value){
+        throw new Error('Сервер не подтвердил сохранение настройки.');
+      }
+      setBots(result.bots);
+      setDraft(prev=>prev?{...prev,[key]:value}:prev);
+      setDirty(keys=>keys.filter(k=>k!==key));
+      setNotice('Настройка сохранена на сервере.');
+    }catch(e){setError((e as Error).message);}
+    finally{setBusy(false);}
+  };
   const init=()=>confirm('Создать 10 игровых тестеров 61 уровня? Существующих игроков не изменяем.',async()=>{
     setBusy(true);
     try{
       const result=await adminCall<{created:number;total:number}>('bots_seed');
-      setSelected(null);setDraft(null);await load();
+      setSelected(null);setDraft(null);setDirty([]);await load();
       return `Тестеры: ${result.total} профилей, новых ${result.created}. Все режимы автозапуска выключены.`;
     }finally{setBusy(false);}
   });
   const save=()=>{
-    if(!draft||selected===null)return;
+    if(!draft||selected===null||busy)return;
+    const keys=[...dirty];
+    if(!keys.length){setNotice('Все изменения уже сохранены.');return;}
     const bad=NUMBERS.find(({key,min,max})=>{
+      if(!keys.includes(key))return false;
       const n=Number(draft[key]);
       return !Number.isSafeInteger(n)||n<min||n>max;
     });
     if(bad){setError('Проверь поле «'+bad.label+'».');return;}
-    if(draft.name.trim().length<2||draft.name.trim().length>28){
+    if(keys.includes('name')&&(draft.name.trim().length<2||draft.name.trim().length>28)){
       setError('Имя: от 2 до 28 символов.');return;
     }
-    confirm('Сохранить профиль тестера №'+selected+' и настройки активности?',async()=>{
+    const slot=selected;
+    const patch=Object.fromEntries(keys.map(k=>[k,draft[k]]));
+    confirm('Сохранить изменённые параметры тестера №'+slot+'?',async()=>{
       setBusy(true);
       try{
-        await adminCall('bots_update',{slot:selected,patch:draft});
-        setDraft(null);setSelected(null);await load();
-        return 'Параметры сохранены в общей базе игроков.';
+        await adminCall('bots_update',{slot,patch});
+        const result=await adminCall<{bots:Tester[]}>('bots_list');
+        const saved=result.bots.find(b=>b.slot===slot);
+        if(!saved)throw new Error('Профиль тестера недоступен после сохранения.');
+        for(const key of keys){
+          if(saved[key]!==draft[key]&&key!=='arenaRating'){
+            throw new Error('Сервер не подтвердил изменение «'+key+'».');
+          }
+        }
+        setBots(result.bots);setDirty([]);setDraft(null);setSelected(null);setError(null);
+        setNotice('Изменённые поля сохранены. Остальные параметры не перезаписывались.');
+        return 'Параметры сохранены. Общая статистика и настройки других режимов не перезаписывались.';
       }finally{setBusy(false);}
     });
   };
@@ -107,6 +156,7 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
       <button type="button" onClick={()=>void load()} className="h-10 px-3 rounded-xl border border-slate-700 text-slate-300" aria-label="Обновить"><RefreshCw className="w-4 h-4"/></button>
     </div>
     <ErrorLine text={error}/>
+    {notice&&<p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200" role="status">{notice}</p>}
     {bots.length<10&&<Panel title="Создание тестеров" icon={<Users className="w-4 h-4"/>}>
       <p className="text-xs text-slate-300 mb-3">Каждый тестер получит собственный игровой аккаунт 61 уровня в общей базе игроков. Неизменённые реальные аккаунты останутся на месте. Все автопереходы изначально выключены.</p>
       <button disabled={busy} onClick={init} className="w-full h-11 rounded-xl bg-sky-700 text-white font-semibold disabled:opacity-50">Создать недостающих тестеров ({10-bots.length})</button>
@@ -122,7 +172,10 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
       </button>)}
       {bots.length===0&&<p className="text-sm text-slate-400">Тестеры ещё не созданы.</p>}
     </div>:current&&draft?<div className="space-y-4">
-      <button onClick={()=>{setSelected(null);setDraft(null);}} className="flex items-center gap-1 text-sm text-sky-300"><ArrowLeft className="w-4 h-4"/> Все 10 тестеров</button>
+      <button disabled={busy} onClick={()=>{
+        if(dirty.length){setError('Есть несохранённые изменения персонажа. Нажми «Сохранить изменённые параметры».');return;}
+        setSelected(null);setDraft(null);setNotice(null);
+      }} className="flex items-center gap-1 text-sm text-sky-300 disabled:opacity-50"><ArrowLeft className="w-4 h-4"/> Все 10 тестеров</button>
       <Panel title={'Профиль №'+current.slot} icon={<ShieldCheck className="w-4 h-4"/>}>
         <div className="grid grid-cols-2 gap-2 text-center">
           {[['Побед на Арене',current.arenaWins],['Поражений на Арене',current.arenaLosses],
@@ -139,41 +192,48 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
       <Panel title="Персонаж и ресурсы" icon={<Users className="w-4 h-4"/>}>
         <div className="grid grid-cols-2 gap-3">
           <label className="col-span-2 text-xs text-slate-300">Имя
-            <input className={inputCls+' mt-1'} value={draft.name} maxLength={28} onChange={e=>setDraft({...draft,name:e.target.value})}/>
+            <input className={inputCls+' mt-1'} value={draft.name} maxLength={28} onChange={e=>changeDraft('name',e.target.value)}/>
           </label>
           <label className="col-span-2 text-xs text-slate-300">Внешность
-            <select className={inputCls+' mt-1'} value={draft.appearance} onChange={e=>setDraft({...draft,appearance:e.target.value as Tester['appearance']})}>
+            <select className={inputCls+' mt-1'} value={draft.appearance} disabled={busy} onChange={e=>{void saveSetting('appearance',e.target.value as Tester['appearance']);}}>
               <option value="m1">Воин I</option><option value="m2">Воин II</option><option value="f1">Воительница I</option><option value="f2">Воительница II</option>
             </select>
           </label>
           {NUMBERS.map(({key,label,min,max})=><label key={key} className="text-xs text-slate-300">{label}
             <input type="number" min={min} max={max} step="1" inputMode="numeric" className={inputCls+' mt-1'}
-              value={String(draft[key])} onChange={e=>setDraft({...draft,[key]:Number(e.target.value)})}/>
+              value={String(draft[key])} onChange={e=>changeDraft(key,Number(e.target.value))}/>
           </label>)}
         </div>
       </Panel>
       <Panel title="Автоповедение" icon={<Swords className="w-4 h-4"/>}>
+        <p className="text-xs text-emerald-200 mb-3">Переключатели и режим сохраняются сразу на сервере. Интервал сохраняется после ввода.</p>
         <div className="space-y-3">
           <Switch label="Арена — автоматически" hint="Тестер участвует в серверных боях с настоящим результатом. Начинается только после включения."
-            on={draft.autoArena} tone="emerald" onToggle={()=>setDraft({...draft,autoArena:!draft.autoArena})}/>
+            on={draft.autoArena} tone="emerald" onToggle={()=>{void saveSetting('autoArena',!draft.autoArena);}}/>
           <label className="block text-xs text-slate-300">Интервал между запусками, минуты
-            <input type="number" min={2} max={1440} className={inputCls+' mt-1'} value={draft.intervalMinutes}
-              onChange={e=>setDraft({...draft,intervalMinutes:Number(e.target.value)})}/>
+            <input type="number" min={2} max={1440} className={inputCls+' mt-1'} value={draft.intervalMinutes} disabled={busy}
+              onChange={e=>changeDraft('intervalMinutes',Number(e.target.value))}
+              onBlur={()=>{if(dirty.includes('intervalMinutes'))void saveSetting('intervalMinutes',draft.intervalMinutes);}}/>
           </label>
           <label className="block text-xs text-slate-300">Режим Арены
-            <select className={inputCls+' mt-1'} value={draft.arenaMode} onChange={e=>setDraft({...draft,arenaMode:e.target.value as Tester['arenaMode']})}>
+            <select className={inputCls+' mt-1'} value={draft.arenaMode} disabled={busy} onChange={e=>{void saveSetting('arenaMode',e.target.value as Tester['arenaMode']);}}>
               <option value="duel">Дуэль</option><option value="team">Отряд</option><option value="chaos">Хаос</option>
             </select>
           </label>
           <div className="border-t border-slate-700 pt-3 space-y-2">
             <p className="text-xs text-amber-200">Для Похода, Испытаний и Тёмной пещеры здесь сохраняются параметры, но серверный автоматический бой пока не подключён. Победы за несыгранные бои не начисляются.</p>
-            <Switch label="Поход — подготовить автоматизацию" hint="Параметр сохраняется, реальный запуск PvE пока не подключён." on={draft.autoCampaign} tone="emerald" onToggle={()=>setDraft({...draft,autoCampaign:!draft.autoCampaign})}/>
-            <Switch label="Испытания — подготовить автоматизацию" hint="Параметр сохраняется, реальные испытания пока не запускаются." on={draft.autoTrials} tone="emerald" onToggle={()=>setDraft({...draft,autoTrials:!draft.autoTrials})}/>
-            <Switch label="Тёмная пещера — подготовить автоматизацию" hint="Параметр сохраняется, реальные этажи пока не проходятся." on={draft.autoCave} tone="emerald" onToggle={()=>setDraft({...draft,autoCave:!draft.autoCave})}/>
+            <Switch label="Поход — подготовить автоматизацию" hint="Параметр сохраняется, реальный запуск PvE пока не подключён." on={draft.autoCampaign} tone="emerald" onToggle={()=>{void saveSetting('autoCampaign',!draft.autoCampaign);}}/>
+            <Switch label="Испытания — подготовить автоматизацию" hint="Параметр сохраняется, реальные испытания пока не запускаются." on={draft.autoTrials} tone="emerald" onToggle={()=>{void saveSetting('autoTrials',!draft.autoTrials);}}/>
+            <Switch label="Тёмная пещера — подготовить автоматизацию" hint="Параметр сохраняется, реальные этажи пока не проходятся." on={draft.autoCave} tone="emerald" onToggle={()=>{void saveSetting('autoCave',!draft.autoCave);}}/>
           </div>
         </div>
       </Panel>
-      <button disabled={busy} onClick={save} className="w-full h-12 bg-emerald-700 hover:bg-emerald-600 rounded-xl font-bold text-white disabled:opacity-50">Сохранить все параметры тестера</button>
+      {dirty.length>0&&<p className="text-xs text-amber-200" role="status">
+        Несохранённые поля персонажа: {dirty.length}. Кнопка ниже сохранит только их, не затронув рейтинг и другие настройки.
+      </p>}
+      <button disabled={busy||dirty.length===0} onClick={save} className="w-full h-12 bg-emerald-700 hover:bg-emerald-600 rounded-xl font-bold text-white disabled:opacity-50">
+        {busy?'Сохранение…':'Сохранить изменённые параметры'}
+      </button>
       <p className="text-xs text-slate-400 flex items-center gap-1"><Trophy className="w-3 h-3"/> Результаты Арены фиксируются вместе с результатами обычных игроков.</p>
     </div>:null}
   </div>;
