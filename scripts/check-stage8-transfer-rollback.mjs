@@ -198,9 +198,12 @@ try {
 
   // A delayed replay from the intermediate buyer must not reclaim the sword
   // after resale. The owner predicate is required for an atomic handoff.
+  // A stale request attempts to transfer the sword to a DIFFERENT owner.
+  // An unconditional UPDATE would steal it; the expected-owner predicate
+  // must reject this replay after the intermediate buyer has resold it.
   const staleIntermediateHandoff = await db.query(
     'UPDATE public.territory_profession_stage8_items SET player_id=$1 WHERE item_id=$2 AND player_id=$3 RETURNING item_id',
-    [buyer, uuid, buyer],
+    [seller, uuid, buyer],
   );
   assert.equal(staleIntermediateHandoff.rows.length, 0,
     'Stale intermediate buyer must not reclaim an already resold UUID');
