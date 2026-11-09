@@ -1,9 +1,9 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { Clock3, FlaskConical, Info, Package, Search } from 'lucide-react';
-import type { GameState, InventoryItem } from '@/game/types';
+import type { InventoryItem } from '@/game/types';
 import { localizeText } from '@/game/i18n';
 import { rarityColor } from '@/game/ui';
-import { elixirExpiryTime, elixirTimeLeftLabel, forgeMaterialTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
+import { elixirExpiryTime, elixirTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
 import { ItemArt } from './ui/ItemArt';
 import { Modal } from './ui/Modal';
 import './compactWarehouse.css';
@@ -12,8 +12,7 @@ type WarehouseFilter = 'all' | 'consumables' | 'materials';
 interface Props {
   consumables: InventoryItem[];
   materials: InventoryItem[];
-  forgeMaterials: GameState['forgeMaterials'];
-  forgeMaterialBatches: GameState['forgeMaterialBatches'];
+  forgeMaterials: number;
   now: number;
   language: 'ru' | 'en';
   onItemSelect: (item: InventoryItem) => void;
@@ -51,8 +50,8 @@ function WarehouseItem({ item, language, now, onSelect }: {
   </button>;
 }
 
-/** Display only: preserves every original inventory batch, identifier and expiry. */
-export function CompactWarehouse({ consumables, materials, forgeMaterials, forgeMaterialBatches, now, language, onItemSelect, onForge }: Props) {
+/** Display only: source batches stay unchanged in the real game inventory. */
+export function CompactWarehouse({ consumables, materials, forgeMaterials, now, language, onItemSelect, onForge }: Props) {
   const en = language === 'en';
   const [filter, setFilter] = useState<WarehouseFilter>('all');
   const [search, setSearch] = useState('');
@@ -71,8 +70,6 @@ export function CompactWarehouse({ consumables, materials, forgeMaterials, forge
   }, [consumables, materials, forgeMaterials, filter, search, language, en]);
   const count = groups.consumables.length + groups.materials.length + Number(groups.forge);
 
-  const forgeState = { forgeMaterials, forgeMaterialBatches } as GameState;
-  const forgeTimer = forgeMaterialTimeLeftLabel(forgeState, language, now);
 
   return <section className="compact-warehouse" data-testid="compact-warehouse" aria-label={en ? 'Warehouse' : 'Склад'}>
     <div className="compact-warehouse__sign" style={{
@@ -115,14 +112,13 @@ export function CompactWarehouse({ consumables, materials, forgeMaterials, forge
       <div className="compact-warehouse__grid">
         {groups.materials.map(item => <WarehouseItem key={item.id} item={item} language={language} now={now} onSelect={onItemSelect}/>)}
         {groups.forge && <button type="button" className="warehouse-tile warehouse-tile--forge"
-            aria-label={`${en ? 'Forge materials' : 'Материалы кузницы'}. ${forgeMaterials}. ${forgeTimer}`}
+            aria-label={`${en ? 'Forge materials' : 'Материалы кузницы'}. ${forgeMaterials}`}
             onClick={() => setForgeInfoOpen(true)}>
           <span className="warehouse-tile__art">
             <img src={import.meta.env.BASE_URL + 'forge-material.webp'} alt="" loading="lazy" draggable={false}/>
             <span className="warehouse-tile__count">×{formatQuantity(forgeMaterials)}</span>
           </span>
           <span className="warehouse-tile__name">{en ? 'Forge materials' : 'Материалы кузницы'}</span>
-          <span className="warehouse-tile__expiry"><Clock3 size={10} aria-hidden="true"/>{forgeTimer}</span>
         </button>}
       </div>
     </div>}
@@ -137,7 +133,6 @@ export function CompactWarehouse({ consumables, materials, forgeMaterials, forge
           <img src={import.meta.env.BASE_URL + 'forge-material.webp'} alt="" className="warehouse-info-card__art"/>
           <p>{en ? 'Used for equipment upgrades at the forge.' : 'Используются для улучшения экипировки в кузнице.'}</p>
           <strong>{en ? 'Quantity' : 'Количество'}: {formatQuantity(forgeMaterials)}</strong>
-          <span><Clock3 size={15} aria-hidden="true"/> {en ? 'Shelf life' : 'Срок годности'}: {forgeTimer}</span>
           {onForge && <button type="button" className="warehouse-info-card__done" onClick={() => { setForgeInfoOpen(false); onForge(); }}>{en ? 'Open forge' : 'Открыть кузницу'}</button>}
           <button type="button" className="warehouse-info-card__done warehouse-info-card__done--secondary" onClick={() => setForgeInfoOpen(false)}>
             {en ? 'Close' : 'Закрыть'}
