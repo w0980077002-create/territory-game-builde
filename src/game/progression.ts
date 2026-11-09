@@ -166,7 +166,7 @@ export function recordTrialWin(state: GameState, enemy: Enemy): GameState {
   const canReserveChest = !!trialChestTier(floor) && !(state.trialChestClaims ?? []).includes(floor);
   next = {
     ...next,
-    lastTrialChest: null,
+    // Keep the last already-paid receipt for history until the player opens a new one.
     ...(canReserveChest ? {
       trialChestClaims: [...(state.trialChestClaims ?? []), floor],
       trialChestUnopenedFloors: [...(state.trialChestUnopenedFloors ?? []), floor],
