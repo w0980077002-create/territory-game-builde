@@ -73,7 +73,15 @@ for (const image of ['sword', 'knight-blade', 'hero-sword', 'plate-armor']) {
 for (const image of ['helmet', 'amulet', 'armor', 'weapon', 'shield', 'ring', 'boots']) {
   assert(!existsSync(`public/assets/territory/ui/equipment-cartoon/${image}.webp`), `Removed placeholder was restored by mistake: ${image}`);
 }
-assert.match(art, /SHOP_EQUIPMENT_ART_BY_NAME/, 'Shop equipment must map to real gear');
+// The hero's 7-slot gallery must use the actual shop/hero artwork shown by the owner,
+ // not generic icon emojis or similarly themed master gear from another item.
+for (const slot of ['helmet', 'amulet', 'armor', 'weapon', 'shield', 'ring', 'boots']) {
+  assert(existsSync(`public/assets/territory/ui/equipment/${slot}.webp`), `Original equipment picture missing: ${slot}`);
+  assert(art.includes(` ${slot}: originalSlotArt('${slot}')`), `Original gallery not restored for ${slot}`);
+}
+assert.match(art, /const originalSlotArt = /, 'The shared slot art should use the approved existing shop catalog');
+assert.match(art, /SHOP_EQUIPMENT_ART_BY_NAME/, 'Stock shop equipment art mapping missing');
+assert.match(art, /return SLOT_ART\[shopSlot\]/, 'Stock shop art should match the original gallery');
 for (const image of ['sword', 'knight-blade', 'hero-sword', 'plate-armor']) {
   assert(art.includes(`originalEquipmentArt('${image}')`), `Original item artwork not wired: ${image}`);
 }

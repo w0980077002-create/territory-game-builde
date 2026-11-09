@@ -67,15 +67,18 @@ export const PROFESSION_ART: Record<ProfessionId, string> = {
   engineer: masterPortrait('engineer'),
 };
 
-// Existing master-crafted gear previews replace removed generic slot art.
+/** The seven ORIGINAL high-detail shop/hero equipment assets (not cartoon placeholders).
+ * Never substitute unrelated crafted items for an ordinary equipped slot.
+ * These are cosmetic only: the actual item level, rarity and stats stay intact. */
+const originalSlotArt = (slot: Equipment['slot']) => ui + 'equipment/' + slot + '.webp';
 export const SLOT_ART: Record<Equipment['slot'], string> = {
-  helmet: uniqueGearIcon('watch-helmet'),
-  amulet: uniqueGearIcon('master-raven-amulet'),
-  armor: uniqueGearIcon('caravan-armor'),
-  weapon: uniqueGearIcon('watch-blade'),
-  shield: uniqueGearIcon('north-shield'),
-  ring: uniqueGearIcon('spark-ring'),
-  boots: uniqueGearIcon('ranger-boots'),
+  helmet: originalSlotArt('helmet'),
+  amulet: originalSlotArt('amulet'),
+  armor: originalSlotArt('armor'),
+  weapon: originalSlotArt('weapon'),
+  shield: originalSlotArt('shield'),
+  ring: originalSlotArt('ring'),
+  boots: originalSlotArt('boots'),
 };
 
 export const CURRENCY_ART = {
@@ -193,21 +196,24 @@ function inventoryMaterialArt(item: ArtSource): string {
 
 /** Shop gear and legacy loot use real, existing crafted-gear visuals.
  * Cosmetic aliases only: never change saved item identity or stats. */
-const SHOP_EQUIPMENT_ART_BY_NAME: Record<string, string> = {
-  'кожаная броня': 'caravan-armor',
-  'leather armor': 'caravan-armor',
-  'железный шлем': 'watch-helmet',
-  'iron helmet': 'watch-helmet',
-  'сапоги скорости': 'ranger-boots',
-  'swift boots': 'ranger-boots',
-  'кольцо силы': 'master-power-ring',
-  'ring of power': 'master-power-ring',
-  'дубовый щит': 'north-shield',
-  'oak shield': 'north-shield',
-  'амулет ворона': 'master-raven-amulet',
-  'raven amulet': 'master-raven-amulet',
-  'доспех воина': 'north-armor',
-  'warrior armor': 'north-armor',
+/** Exact stock shop gear must display the ORIGINAL equipment pictures.
+ * Named crafted/master items still take precedence in UNIQUE_EQUIPMENT_BY_NAME;
+ * the four item-specific old originals are preserved separately below. */
+const SHOP_EQUIPMENT_ART_BY_NAME: Record<string, Equipment['slot']> = {
+  'кожаная броня': 'armor',
+  'leather armor': 'armor',
+  'железный шлем': 'helmet',
+  'iron helmet': 'helmet',
+  'сапоги скорости': 'boots',
+  'swift boots': 'boots',
+  'кольцо силы': 'ring',
+  'ring of power': 'ring',
+  'дубовый щит': 'shield',
+  'oak shield': 'shield',
+  'амулет ворона': 'amulet',
+  'raven amulet': 'amulet',
+  'доспех воина': 'armor',
+  'warrior armor': 'armor',
 };
 export function equipmentArt(equipment: Equipment): string {
   if (equipment.id === 'halloween_horned_pumpkin_2026' && equipment.slot === 'helmet') {
@@ -221,8 +227,10 @@ export function equipmentArt(equipment: Equipment): string {
   if (equipment.slot === 'armor' && /латные доспехи|plate armor/.test(name)) return originalEquipmentArt('plate-armor');
   if (equipment.slot === 'weapon' && /клинок рыцаря|knight.*blade/.test(name)) return originalEquipmentArt('knight-blade');
   if (equipment.slot === 'weapon' && /героический меч|heroic sword/.test(name)) return originalEquipmentArt('hero-sword');
-  const shopArtwork = SHOP_EQUIPMENT_ART_BY_NAME[name];
-  if (shopArtwork) return uniqueGearIcon(shopArtwork);
+  const shopSlot = SHOP_EQUIPMENT_ART_BY_NAME[name];
+  if (shopSlot === equipment.slot) return SLOT_ART[shopSlot];
+  // The owner's four approved item-specific originals stay in their own folder.
+  if (equipment.slot === 'weapon' && /меч воина|warrior sword|клинок победителя|victor blade/.test(name)) return originalEquipmentArt('sword');
   if (equipment.slot === 'weapon') {
     if (/топор|секир|axe|hatchet/.test(name)) return uniqueGearIcon('storm-axe');
     if (/лук|арбалет|bow|crossbow/.test(name) || equipment.icon === '🏹') return itemIcon('bow');
