@@ -5,7 +5,7 @@ import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { reconcileLockedBelt } from '@/game/belt';
 import { loadCloudSave, saveCloudSave } from '@/game/cloud';
-import { pendingPveVictoryJournal, recoverPveVictoryOnBoot } from '@/game/pveVictoryRecovery';
+import { pendingPveVictoryJournal, recoverPveVictoryOnBoot, archiveUnresolvedPveVictoryForCloudEntry } from '@/game/pveVictoryRecovery';
 import { pveVictorySaveState, subscribePveVictorySave } from '@/game/pveVictorySaveFence';
 import { readPumpkinWitchEntitlement, installVerifiedPumpkinWitch } from '@/game/halloweenCompanion2026';
 import { watchPumpkinEntitlement } from '@/game/halloweenCompanionRefresh';
@@ -135,13 +135,22 @@ const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> =
   events: { title: 'События', icon: '/ic-events.webp' },
 };
 
-function Splash({ text, onRetry, retryLabel }: { text: string; onRetry?: () => void; retryLabel?: string }) {
+function Splash({ text, onRetry, retryLabel, onContinue, continueLabel, onContinueConfirmed, confirmLabel, warning, busy }: {
+  text: string; onRetry?: () => void; retryLabel?: string; onContinue?: () => void;
+  continueLabel?: string; onContinueConfirmed?: () => void; confirmLabel?: string;
+  warning?: string; busy?: boolean;
+}) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-5 text-center" style={{ background: 'var(--color-bg)' }}>
       <img src={import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp'} alt="" className="w-28 h-28 object-contain mb-4 animate-float" />
       <h1 className="text-2xl font-bold text-white mb-2">Territory</h1>
       <p className="text-gray-400 text-sm max-w-sm leading-6">{text}</p>
-      {onRetry && <button type="button" onClick={onRetry} className="mt-6 px-6 py-3 rounded-lg border border-amber-600 bg-amber-900/40 text-amber-100 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300">{retryLabel}</button>}
+      {onRetry && <button type="button" disabled={busy} onClick={onRetry} className="mt-6 px-6 py-3 rounded-lg border border-amber-600 bg-amber-900/40 text-amber-100 font-semibold disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300">{retryLabel}</button>}
+      {onContinue && <button type="button" disabled={busy} onClick={onContinue} className="mt-3 block mx-auto text-sm text-gray-300 underline underline-offset-4 disabled:opacity-50">{continueLabel}</button>}
+      {onContinueConfirmed && <div className="mt-4 max-w-sm rounded-xl border border-amber-700/50 bg-amber-950/50 p-4 text-sm text-amber-100">
+        <p className="leading-6">{warning}</p>
+        <button type="button" disabled={busy} onClick={onContinueConfirmed} className="mt-4 w-full min-h-11 rounded-lg border border-amber-500 bg-amber-900/70 font-bold disabled:opacity-50">{confirmLabel}</button>
+      </div>}
     </div>
   );
 }
@@ -195,6 +204,8 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const needsInitialSave = useRef(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadRetry, setLoadRetry] = useState(0);
+  const [recoveryArchiveConfirm, setRecoveryArchiveConfirm] = useState(false);
+  const [recoveryArchiveBusy, setRecoveryArchiveBusy] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const live = useStore(useLive);
   const game = useStore(useGame);
@@ -420,7 +431,37 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   if (live.banned) return <BannedScreen />;
   if (live.maintenance && !isAdmin) return <MaintenanceScreen />;
-  if (loadError) return <Splash onRetry={loadError === 'pve_recovery_pending' ? () => { setLoadError(null); setLoadRetry(attempt => attempt + 1); } : undefined} retryLabel={language === 'en' ? 'Retry safe recovery' : 'Повторить безопасное восстановление'} text={loadError === 'failedLoad' ? translate('failedLoad') : loadError === 'adventure_storage_unavailable' ? (language === 'en' ? 'Cannot safely restore adventure. Reopen Telegram.' : 'Не удалось безопасно восстановить приключение. Перезапусти Telegram.') : loadError === 'pve_recovery_pending' ? (language === 'en' ? 'A previous PvE victory needs safe recovery. Your local checkpoint was kept. Check connection and reopen Telegram; if it repeats, contact game support without clearing browser data.' : 'Победа в Походе или Испытаниях ожидает безопасного восстановления. Локальная запись сохранена. Проверь интернет и перезапусти Telegram. Если ошибка повторяется, обратись в поддержку игры, не очищая данные браузера.') : loadError} />;
+  if (loadError) return <Splash
+    onRetry={loadError === 'pve_recovery_pending' || loadError === 'failedLoad' ? () => { setLoadError(null); setLoadRetry(attempt => attempt + 1); } : undefined}
+    retryLabel={language === 'en' ? 'Retry safe recovery' : 'Повторить безопасное восстановление'}
+    onContinue={loadError === 'pve_recovery_pending' && !recoveryArchiveConfirm ? () => setRecoveryArchiveConfirm(true) : undefined}
+    continueLabel={language === 'en' ? 'Continue from cloud save' : 'Войти с серверного сохранения'}
+    onContinueConfirmed={loadError === 'pve_recovery_pending' && recoveryArchiveConfirm ? () => {
+      if (recoveryArchiveBusy) return;
+      setRecoveryArchiveBusy(true);
+      void loadCloudSave(user.id, user.displayName)
+        .then(async profile => {
+          // Prefer confirmed exact recovery, even if the cloud row changed while
+          // this splash was open. Archive only after an authenticated fresh read.
+          const exact = await recoverPveVictoryOnBoot(user.id, profile);
+          if (exact || archiveUnresolvedPveVictoryForCloudEntry(user.id)) {
+            setLoadError(null);
+            setLoadRetry(attempt => attempt + 1);
+          } else {
+            setLoadError('pve_recovery_pending');
+          }
+        })
+        .catch(() => setLoadError('failedLoad'))
+        .finally(() => setRecoveryArchiveBusy(false));
+    } : undefined}
+    confirmLabel={recoveryArchiveBusy
+      ? (language === 'en' ? 'Checking cloud save…' : 'Проверяем сохранение…')
+      : (language === 'en' ? 'Confirm cloud continuation' : 'Подтвердить вход')}
+    warning={language === 'en'
+      ? 'An unverified victory will be archived on this device for support. The game will use your confirmed cloud save without granting any reward twice. Do not clear Telegram data.'
+      : 'Неподтверждённая победа останется в резервной копии на этом устройстве для проверки поддержкой. Игра загрузит подтверждённое серверное сохранение без повторной выдачи наград. Не очищай данные Telegram.'}
+    busy={recoveryArchiveBusy}
+    text={loadError === 'failedLoad' ? translate('failedLoad') : loadError === 'adventure_storage_unavailable' ? (language === 'en' ? 'Cannot safely restore adventure. Reopen Telegram.' : 'Не удалось безопасно восстановить приключение. Перезапусти Telegram.') : loadError === 'pve_recovery_pending' ? (language === 'en' ? 'A previous PvE victory needs safe recovery. Your local checkpoint was kept. Check connection and reopen Telegram; if it repeats, contact game support without clearing browser data.' : 'Победа в Походе или Испытаниях ожидает безопасного восстановления. Локальная запись сохранена. Проверь интернет и перезапусти Telegram. Если ошибка повторяется, обратись в поддержку игры, не очищая данные браузера.') : loadError} />;
   if (!loaded) return <Splash text={translate('loadingHero')} />;
 
   const sub = SUB_SCREENS[screen as SubScreen];
