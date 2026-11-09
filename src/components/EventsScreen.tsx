@@ -10,6 +10,7 @@ import { fetchSeasonStatus, type SeasonStatus } from '@/game/seasonApi';
 import { getArenaWeeklyStatus, type ArenaWeeklyStatus } from '@/game/arenaWeekly';
 import { dailyHeroGoal, eventCalendar, readyQuestCount, withEventStatusTimeout } from '@/game/eventsBoard';
 import { captureGameEvent } from '@/game/analytics';
+import { getMortarionBossState, type MortarionState } from '@/game/mortarionBoss';
 import { RewardLootStrip } from '@/components/ui/RewardLootStrip';
 import { kyivSeasonWeekKey, seasonCountdown } from '@/game/seasonCalendar';
 import { SHOW_WEEKLY_CHAMPIONSHIP } from '@/game/uiFeatureFlags';
@@ -101,6 +102,7 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady, bossP
   const [season, setSeason] = useState<SeasonStatus | null>(null);
   const [arena, setArena] = useState<ArenaWeeklyStatus | null>(null);
   const [checking, setChecking] = useState(false);
+  const [mortarionStatus, setMortarionStatus] = useState<MortarionState | null>(null);
   const [failed, setFailed] = useState({ hall: false, season: false, arena: false });
   const tabRef = useRef<'daily' | 'weekly'>('daily');
   const currentRequest = useRef(0);
@@ -144,6 +146,20 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady, bossP
       window.removeEventListener('online', resumed);
     };
   }, [refresh]);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetch = () => {
+      void getMortarionBossState()
+        .then(value => { if (mounted) setMortarionStatus(value); })
+        .catch(() => { /* Optional raid must not block Events. */ });
+    };
+    fetch();
+    const interval = window.setInterval(fetch, 30_000);
+    const resume = () => { if (document.visibilityState === 'visible') fetch(); };
+    document.addEventListener('visibilitychange', resume);
+    return () => { mounted = false; window.clearInterval(interval); document.removeEventListener('visibilitychange', resume); };
+  }, []);
 
   const daily = dailyStatus(state, clock);
   const blessing = blessingReady(state, clock);
