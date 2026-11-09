@@ -135,12 +135,13 @@ const SUB_SCREENS: Partial<Record<SubScreen, { title: string; icon: string }>> =
   events: { title: 'События', icon: '/ic-events.webp' },
 };
 
-function Splash({ text }: { text: string }) {
+function Splash({ text, onRetry, retryLabel }: { text: string; onRetry?: () => void; retryLabel?: string }) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: 'var(--color-bg)' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center px-5 text-center" style={{ background: 'var(--color-bg)' }}>
       <img src={import.meta.env.BASE_URL + 'assets/territory/characters/heroes/male_viking/idle.webp'} alt="" className="w-28 h-28 object-contain mb-4 animate-float" />
       <h1 className="text-2xl font-bold text-white mb-2">Territory</h1>
-      <p className="text-gray-400 text-sm">{text}</p>
+      <p className="text-gray-400 text-sm max-w-sm leading-6">{text}</p>
+      {onRetry && <button type="button" onClick={onRetry} className="mt-6 px-6 py-3 rounded-lg border border-amber-600 bg-amber-900/40 text-amber-100 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300">{retryLabel}</button>}
     </div>
   );
 }
@@ -193,6 +194,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const gatherReady = useGatherReady(loaded);
   const needsInitialSave = useRef(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadRetry, setLoadRetry] = useState(0);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const live = useStore(useLive);
   const game = useStore(useGame);
@@ -365,7 +367,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
       cancelled = true;
       removeCompanionOnline();
     };
-  }, [user.id, user.displayName]);
+  }, [user.id, user.displayName, loadRetry]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -418,7 +420,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
 
   if (live.banned) return <BannedScreen />;
   if (live.maintenance && !isAdmin) return <MaintenanceScreen />;
-  if (loadError) return <Splash text={loadError === 'failedLoad' ? translate('failedLoad') : loadError === 'adventure_storage_unavailable' ? (language === 'en' ? 'Cannot safely restore adventure. Reopen Telegram.' : 'Не удалось безопасно восстановить приключение. Перезапусти Telegram.') : loadError === 'pve_recovery_pending' ? (language === 'en' ? 'A previous PvE victory needs safe recovery. Your local checkpoint was kept. Check connection and reopen Telegram; if it repeats, contact game support without clearing browser data.' : 'Победа в Походе или Испытаниях ожидает безопасного восстановления. Локальная запись сохранена. Проверь интернет и перезапусти Telegram. Если ошибка повторяется, обратись в поддержку игры, не очищая данные браузера.') : loadError} />;
+  if (loadError) return <Splash onRetry={loadError === 'pve_recovery_pending' ? () => { setLoadError(null); setLoadRetry(attempt => attempt + 1); } : undefined} retryLabel={language === 'en' ? 'Retry safe recovery' : 'Повторить безопасное восстановление'} text={loadError === 'failedLoad' ? translate('failedLoad') : loadError === 'adventure_storage_unavailable' ? (language === 'en' ? 'Cannot safely restore adventure. Reopen Telegram.' : 'Не удалось безопасно восстановить приключение. Перезапусти Telegram.') : loadError === 'pve_recovery_pending' ? (language === 'en' ? 'A previous PvE victory needs safe recovery. Your local checkpoint was kept. Check connection and reopen Telegram; if it repeats, contact game support without clearing browser data.' : 'Победа в Походе или Испытаниях ожидает безопасного восстановления. Локальная запись сохранена. Проверь интернет и перезапусти Telegram. Если ошибка повторяется, обратись в поддержку игры, не очищая данные браузера.') : loadError} />;
   if (!loaded) return <Splash text={translate('loadingHero')} />;
 
   const sub = SUB_SCREENS[screen as SubScreen];
