@@ -50,6 +50,7 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
   const game = useStore(useGame);
   const heroFrames = getCombatAppearance(game.appearance);
   const [strike, setStrike] = useState<StrikeEvent | null>(null);
+  const leaderboardRef = useRef<HTMLElement | null>(null);
   const confirmedStrikeSerial = useRef(0);
   const contactTimeout = useRef<number | null>(null);
   const [state, setState] = useState<MortarionState | null>(null);
@@ -159,9 +160,14 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
 
   return <div className="mortarion-raid mx-auto w-full max-w-[430px] space-y-3 pb-8 text-amber-50" data-testid="mortarion-boss-live">
     <section className="mortarion-raid__card relative overflow-hidden rounded-2xl border-2 border-amber-600/75 bg-gradient-to-b from-[#2f172a] via-[#241123] to-[#0d1018] p-3 text-center shadow-[0_8px_28px_#0009]">
-      <p className="relative text-xs font-black uppercase tracking-widest text-orange-300">☠ {en ? 'WORLD RAID' : 'МИРОВОЙ РЕЙД'}</p>
-      <h2 className="relative mt-1 text-[23px] font-black leading-tight text-amber-100 [text-shadow:0_3px_3px_#000]">{en ? 'Mortarion' : 'Мортарион'}</h2>
-      <p className="relative mt-1 flex items-center justify-center gap-1.5 text-[11px] text-amber-200/85"><Users size={13}/>{en ? 'Lord of Souls · One boss for all heroes' : 'Властелин Душ · Один босс для всех героев'}</p>
+      <div className="mortarion-raid__heading relative flex items-center justify-between gap-2">
+        <p className="mortarion-raid__eyebrow font-black uppercase tracking-widest text-orange-300">☠ {en ? 'WORLD RAID' : 'МИРОВОЙ РЕЙД'}</p>
+        <button type="button" className="mortarion-raid__rank-jump" onClick={() => leaderboardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} aria-label={en ? 'Go to Top 10 by damage' : 'Перейти к Топ-10 по урону'}>
+          <Trophy size={14} aria-hidden="true"/>{en ? 'TOP 10' : 'ТОП-10'}
+        </button>
+      </div>
+      <h2 className="mortarion-raid__subtitle relative font-black leading-tight text-amber-100 [text-shadow:0_3px_3px_#000]">{en ? 'Lord of Souls' : 'Властелин Душ'}</h2>
+      <p className="mortarion-raid__tagline relative flex items-center justify-center gap-1.5 text-amber-200/85"><Users size={12} aria-hidden="true"/>{en ? 'One boss for all heroes' : 'Один босс для всех героев'}</p>
 
       <div className={`mortarion-raid__arena ${impact ? 'mortarion-raid__arena--striking' : ''}`} style={{ '--mortarion-backdrop': `url("${import.meta.env.BASE_URL}assets/territory/events/mortarion-background.webp")` } as Record<string,string>} role="img" aria-label={en ? 'Your hero battles Mortarion, Lord of Souls' : 'Твой герой сражается с Мортарионом, Властелином Душ'}>
         <div className="mortarion-raid__layer-bg" aria-hidden="true" />
@@ -175,6 +181,7 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
         <span className="mortarion-raid__soul mortarion-raid__soul--one" aria-hidden="true">✦</span>
         <span className="mortarion-raid__soul mortarion-raid__soul--two" aria-hidden="true">✧</span>
         <span className="mortarion-raid__hero-aura" aria-hidden="true"/>
+        <span className="mortarion-raid__hero-ground" aria-hidden="true"/>
         <div className="mortarion-raid__player" data-testid="mortarion-real-player-hero">
           <FighterFigure src={heroFrames.idle} combatFrames={heroFrames} name={game.player.name}
             dir={1} alive strike={strike} idleSeconds={3.1}
@@ -182,44 +189,46 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
         </div>
         <span className="mortarion-raid__player-name" aria-hidden="true">{game.player.name}</span>
         {strike && <span key={strike.key} className="mortarion-raid__slash-trail" aria-hidden="true"/>}
+        {strike && <span key={`flight-${strike.key}`} className="mortarion-raid__strike-flight" data-testid="mortarion-confirmed-hit-flight" aria-hidden="true"/>}
+        {impact && <span key={`ring-${strikeId}`} className="mortarion-raid__hit-ring" data-testid="mortarion-confirmed-hit-contact" aria-hidden="true"/>}
         {impact && <span key={strikeId} className="mortarion-raid__impact" aria-hidden="true">✦</span>}
         {impact && <span key={`damage-${strikeId}`} className="mortarion-raid__damage">−{format(lastDamage)}</span>}
         {defeated && <div className="mortarion-raid__defeated" role="status">{en ? 'MORTARION DEFEATED!' : 'МОРТАРИОН ПОВЕРЖЕН!'}</div>}
       </div>
 
-      <div className="relative mt-3 flex justify-between gap-2 text-xs font-bold"><span className="flex items-center gap-1 text-red-200"><Skull size={14}/> HP</span>
+      <div className="relative mt-2 flex justify-between gap-2 text-xs font-bold"><span className="flex items-center gap-1 text-red-200"><Skull size={14}/> HP</span>
         <span className="tabular-nums">{state ? format(health) : '…'} / {format(state?.maxHp ?? MORTARION_HP)}</span>
       </div>
-      <div className="relative mt-1 h-4 overflow-hidden rounded-full border border-red-400/70 bg-[#0c080b]" role="progressbar" aria-label="Boss HP" aria-valuemin={0} aria-valuemax={state?.maxHp ?? MORTARION_HP} aria-valuenow={health}>
+      <div className="relative mt-1 h-2.5 overflow-hidden rounded-full border border-red-400/70 bg-[#0c080b]" role="progressbar" aria-label="Boss HP" aria-valuemin={0} aria-valuemax={state?.maxHp ?? MORTARION_HP} aria-valuenow={health}>
         <div className="h-full rounded-full bg-gradient-to-r from-red-800 via-orange-600 to-amber-400 transition-[width] duration-500" style={{ width: `${Math.max(0,hpPercent)}%` }}/>
       </div>
-      <div className="relative mt-3 flex items-center justify-between rounded-lg bg-black/35 px-2 py-1.5 text-[11px]">
+      <div className="relative mt-2 flex items-center justify-between rounded-lg bg-black/35 px-2 py-1 text-[11px]">
         <span className="flex items-center gap-1 text-amber-200"><Clock3 size={13}/>{en ? 'Time remaining' : 'До конца события'}</span>
         <span className="font-black text-amber-100 tabular-nums">{loading ? '…' : defeated ? (en ? 'Defeated!' : 'Повержен!') : expired ? (en ? 'Ended' : 'Завершено') : state?.enabled ? eventCountdown(durationMs,en) : (en ? 'Not started' : 'Не началось')}</span>
       </div>
 
-      <button type="button" onClick={() => void attack()} disabled={!canHit} className="mortarion-raid__attack relative mt-3 flex w-full min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-yellow-300 bg-gradient-to-b from-amber-400 via-orange-600 to-red-800 px-4 py-3 text-base font-black text-white [text-shadow:0_2px_2px_#5c1c06] active:translate-y-1 disabled:cursor-not-allowed" data-testid="mortarion-attack">
-        <Sword size={22}/>
+      <button type="button" onClick={() => void attack()} disabled={!canHit} className="mortarion-raid__attack relative mt-2 flex w-full min-h-11 items-center justify-center gap-2 rounded-xl border-2 border-yellow-300 bg-gradient-to-b from-amber-400 via-orange-600 to-red-800 px-3 py-2 text-sm font-black text-white [text-shadow:0_2px_2px_#5c1c06] active:translate-y-1 disabled:cursor-not-allowed" data-testid="mortarion-attack">
+        <Sword size={18} aria-hidden="true"/>
         {loading ? (en ? 'LOADING…' : 'ЗАГРУЗКА…') : defeated ? (en ? 'BOSS DEFEATED' : 'БОСС ПОВЕРЖЕН') : !state?.active ? (en ? 'RAID NOT ACTIVE' : 'РЕЙД НЕ АКТИВЕН') : attacking ? (en ? 'STRIKING…' : 'НАНОСИМ УДАР…') : nextHitMs > 0 ? (en ? `NEXT STRIKE IN ${shortClock(nextHitMs)}` : `УДАР ЧЕРЕЗ ${shortClock(nextHitMs)}`) : hitsLeft === 0 ? (en ? 'HIT LIMIT REACHED' : 'ЛИМИТ УДАРОВ') : (en ? 'STRIKE THE BOSS!' : 'УДАРИТЬ БОССА!')}
       </button>
-      <p className="relative mt-2 text-[11px] text-amber-100/85">
+      <p className="relative mt-1.5 text-[11px] text-amber-100/85">
         {en ? 'Available strikes' : 'Доступно ударов'}: <b>{state ? hitsLeft : '…'}/{MORTARION_HITS_PER_HOUR}</b> · {en ? 'One strike every 60 seconds' : '1 удар раз в 60 секунд'}
       </p>
-      <p className="relative mt-1 text-[9px] text-amber-200/65">
+      <p className="relative mt-1 text-[10px] leading-tight text-amber-200/70">
         {en ? 'Shared boss health. Each hit is saved by the server. Event rewards have not been announced.' : 'Общее HP. Каждый удар сохраняется сервером. Награды события пока не объявлены.'}
       </p>
       {message && <p role="alert" className="relative mt-2 rounded-lg border border-red-500/50 bg-red-950/60 px-2 py-2 text-xs text-red-100">{message}</p>}
     </section>
 
-    <section className="mortarion-raid__leaderboard rounded-2xl border border-amber-600/50 bg-gradient-to-b from-[#49301d] to-[#151315] p-3 shadow-lg">
+    <section ref={leaderboardRef} id="mortarion-top10" className="mortarion-raid__leaderboard rounded-2xl border border-amber-600/50 bg-gradient-to-b from-[#49301d] to-[#151315] p-2.5 shadow-lg" data-testid="mortarion-top10">
       <div className="flex items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 text-sm font-black text-amber-100"><Trophy size={19} className="text-yellow-400"/>{en ? 'TOP 10 BY DAMAGE' : 'ТОП-10 ПО УРОНУ'}</h3>
         <button type="button" onClick={() => void refresh()} disabled={attacking} className="rounded-lg border border-amber-400/40 bg-black/40 p-2 text-amber-200 active:scale-95" aria-label={en ? 'Refresh ranking' : 'Обновить рейтинг'}><RefreshCw size={15}/></button>
       </div>
-      <ol className="mt-2 space-y-1.5" aria-label={en ? 'Top 10 damage leaderboard' : 'Топ-10 по урону'}>
+      <ol className="mortarion-raid__rank-list mt-2" aria-label={en ? 'Top 10 damage leaderboard' : 'Топ-10 по урону'}>
         {Array.from({length: 10}, (_, i) => {
           const item = state?.top10[i];
-          return <li key={i} className="flex min-w-0 items-center gap-2 rounded-lg border border-white/5 bg-black/30 px-2 py-2 text-xs">
+          return <li key={i} className="mortarion-raid__rank-entry flex min-w-0 items-center gap-1.5 rounded-lg border border-white/5 bg-black/30 px-2 py-1 text-xs">
             <span className={`w-6 shrink-0 text-center font-black ${i===0 ? 'text-yellow-300' : i===1 ? 'text-slate-200' : i===2 ? 'text-orange-400' : 'text-amber-200/65'}`}>{i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`}</span>
             <span className="min-w-0 flex-1 truncate font-bold text-amber-50">{item?.name ?? '—'}</span>
             <span className="shrink-0 tabular-nums font-black text-orange-200">{item ? format(item.damage) : ''}</span>
