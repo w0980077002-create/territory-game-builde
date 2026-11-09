@@ -1,7 +1,6 @@
 import { WheelOfFortune } from './WheelOfFortune';
 import { TreasuryInventory } from './TreasuryInventory';
-import { lazy, Suspense, useEffect, useState } from 'react';
-const VikingSlots = lazy(() => import('./VikingSlots').then(m => ({default: m.VikingSlots})));
+import { useEffect, useState } from 'react';
 import { MonopolyAdventure } from './monopoly/MonopolyAdventure';
 import { ArrowLeft, Dice5, Dices, DoorOpen, Gift, Loader2, RefreshCw, ShieldCheck, Target, Ticket, Trophy } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
@@ -217,6 +216,9 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
 
 export function HallPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void;userId:string}){
  if(game==='wheel')return <WheelOfFortune userId={userId} onBack={onBack}/>;
- if(game==='slots')return <Suspense fallback={<div className="p-4 text-amber-200">Загружаем автомат…</div>}><VikingSlots key={userId} userId={userId} onBack={onBack}/></Suspense>;
+ if(game==='slots')return <section className="p-4 text-center space-y-4" role="status" data-testid="viking-treasures-disabled">
+  <p className="text-amber-200">Сокровища викингов временно отключены / Viking Treasures are temporarily unavailable.</p>
+  <button type="button" onClick={onBack} className="btn-primary px-5 py-3">Вернуться в игровой зал</button>
+ </section>;
  return game==='monopoly'?<MonopolyAdventure onBack={onBack} userId={userId}/>:<HallOtherPlayScreen game={game} onBack={onBack} userId={userId}/>;
 }
