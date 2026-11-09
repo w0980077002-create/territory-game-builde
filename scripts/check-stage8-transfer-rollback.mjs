@@ -212,6 +212,21 @@ try {
     'Replay rejection must preserve level, upgrades and canonical stats');
   await assert.rejects(() => verified(buyer), /stage8_item_not_owned/);
   await assert.rejects(() => verified(seller), /stage8_item_not_owned/);
+
+  // Negative control: without the expected-owner predicate, the SAME stale
+  // request would steal the item. Roll back the unsafe update immediately.
+  // This proves the replay fixture is capable of detecting a missing guard.
+  await db.exec('BEGIN');
+  const unsafeReplay = await db.query(
+    'UPDATE public.territory_profession_stage8_items SET player_id=$1 WHERE item_id=$2 RETURNING item_id',
+    [seller, uuid],
+  );
+  assert.equal(unsafeReplay.rows.length, 1);
+  assert.equal(await ownerInRegistry(), seller);
+  await db.exec('ROLLBACK');
+  assert.equal(await ownerInRegistry(), reseller);
+  assert.deepEqual(await verified(reseller), gear);
+  await assert.rejects(() => verified(seller), /stage8_item_not_owned/);
   assert.deepEqual((await one('SELECT game_state FROM public.players WHERE id=$1', [reseller])).game_state,
     { player: { level: 1 } }, 'Level-1 reseller progress must not change');
 
