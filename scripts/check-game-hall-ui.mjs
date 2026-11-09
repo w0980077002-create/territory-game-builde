@@ -13,8 +13,8 @@ for(const game of ['monopoly','dice','tower','targets','treasury']) {
  assert.match(api,new RegExp("'"+game+"'"),'Server game type missing '+game);
 }
 assert.match(hall,/id:\s*'wheel'/,'Approved visual contains Wheel of Fortune');
-assert.match(hall,/const HIDDEN_HALL_GAMES = new Set<GameCard\['id'\]>\(\['treasury', 'dice', 'tower', 'targets', 'slots'\]\)/,
- 'Owner-disabled Viking Treasures and four unfinished mini-games must stay hidden');
+assert.match(hall,/const HIDDEN_HALL_GAMES = new Set<GameCard\['id'\]>\(\['treasury', 'dice', 'tower', 'targets', 'slots', 'wheel'\]\)/,
+ 'Owner-disabled Wheel and Viking Treasures plus unfinished mini-games must stay hidden');
 assert.match(hall,/const VISIBLE_GAMES = GAMES\.filter\(game => !HIDDEN_HALL_GAMES\.has\(game\.id\)\)/,
  'Only public games may be rendered');
 assert.match(hall,/\{availableGames\.map\(/,
@@ -23,8 +23,11 @@ assert.match(hall,/const availableGames = VISIBLE_GAMES;/,
  'The public Hall must never show Viking Treasures even when the server is enabled');
 assert.doesNotMatch(hall,/fetchSlotsStatus|slotsEnabled|slotsStatus/,
  'Hidden Viking Treasures must not be resurrected by a server status response');
-assert.match(hall,/if \(id === 'slots'\) return;/, 'Hall refuses slot selection');
-assert.match(app,/if \(gameId === 'slots'\) return;/, 'App refuses slot route');
+assert.match(hall,/if \(id === 'slots' \|\| id === 'wheel'\) return;/, 'Hall refuses disabled mini-game selection');
+assert.match(app,/if \(gameId === 'slots' \|\| gameId === 'wheel'\) return;/, 'App refuses both disabled game routes');
+assert.match(play,/if\(game==='wheel'\)return <section[^>]*data-testid="wheel-of-fortune-disabled"/,
+ 'Cached Wheel route must render an unavailable message, not a wheel that spends tickets');
+assert.doesNotMatch(play,/import \{ WheelOfFortune \}/, 'Wheel UI must not be imported into playable Hall route');
 assert.match(play,/if\(game==='slots'\)return <section[^>]*data-testid="viking-treasures-disabled"/,
  'Old cached slot route cannot mount the slot cabinet');
 assert.doesNotMatch(play,/import\('\.\/VikingSlots'\)/, 'Disabled cabinet must not be lazily loaded');
@@ -41,7 +44,7 @@ assert.match(hall,/id:\s*'targets'[\s\S]*?scene:\s*'hall-art\/targets\.svg'[\s\S
   'Keep Sharpshooter assets for recovery of existing rounds');
 assert.doesNotMatch(hall,/id:\s*'targets'[\s\S]{0,250}demo:\s*true/, 'Sharpshooter must use the real server ticket flow');
 assert.doesNotMatch(hall,/comingSoon:\s*true/,'Wheel now has a secure backend');
-assert.match(play,/game==='wheel'.*WheelOfFortune/,'Wheel has its own server-authoritative screen');
+assert.match(hall,/id: 'wheel', ru: 'Колесо фортуны'/, 'Keep original Wheel definition and art for later restoration');
 assert.match(api,/'targets'/,'Preserve existing sharpshooter server route for existing sessions');
 assert.match(hall,/loading="lazy"/,'Large scenic art must lazy load on phones');
 assert.doesNotMatch(hall,/Смотреть рекламу|Watch ad/,'Do not promise an unconnected ad provider');
@@ -50,9 +53,8 @@ assert.match(hall,/data-testid="game-hall"/);
 assert.match(hall,/data-testid={`hall-game-\${game.id}`}/,'A single actionable Monopoly game card remains available in the Hall');
 assert.doesNotMatch(hall,/data-testid="hall-next-play"/,'Avoid duplicating Monopoly in a separate next-play banner');
 assert.match(hall,/className="hall-hero-mission"/,'Game Hall must feature real play or the server-saved round');
-assert.match(hall,/if \(id === 'wheel'\)/,'Wheel must remain recoverable if the optional Hall status read fails');
-assert.match(hall,/onPlay\('wheel'\); return;/,'Wheel must keep its existing server-authoritative route');
-assert.match(hall,/game\.id!=='wheel' && \(loading \|\| !state\)/,'Hall outages may not lock the Wheel recovery screen');
+assert.doesNotMatch(hall,/onPlay\('wheel'\)/, 'Wheel cannot be launched from the public Hall');
+assert.match(hall,/autoClaimHallGold\(userId,next\.pending_gold\)/, 'Saved Hall winnings remain recoverable despite disabled Wheel');
 assert.match(hall,/YOUR ROUND IS SAVED/,'Hall must explain protected resumed rounds');
 assert.doesNotMatch(hall,/Popular' : 'Популярно/,'No invented popularity labels without analytics');
 

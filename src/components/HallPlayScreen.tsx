@@ -1,4 +1,3 @@
-import { WheelOfFortune } from './WheelOfFortune';
 import { TreasuryInventory } from './TreasuryInventory';
 import { useEffect, useState } from 'react';
 import { MonopolyAdventure } from './monopoly/MonopolyAdventure';
@@ -215,7 +214,10 @@ function HallOtherPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void
 }
 
 export function HallPlayScreen({game,onBack,userId}:{game:HallGame;onBack:()=>void;userId:string}){
- if(game==='wheel')return <WheelOfFortune userId={userId} onBack={onBack}/>;
+ if(game==='wheel')return <section className="p-4 text-center space-y-4" role="status" data-testid="wheel-of-fortune-disabled">
+  <p className="text-amber-200">Колесо фортуны временно отключено / Wheel of Fortune is temporarily unavailable.</p>
+  <button type="button" onClick={onBack} className="btn-primary px-5 py-3">Вернуться в игровой зал</button>
+ </section>;
  if(game==='slots')return <section className="p-4 text-center space-y-4" role="status" data-testid="viking-treasures-disabled">
   <p className="text-amber-200">Сокровища викингов временно отключены / Viking Treasures are temporarily unavailable.</p>
   <button type="button" onClick={onBack} className="btn-primary px-5 py-3">Вернуться в игровой зал</button>

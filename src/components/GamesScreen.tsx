@@ -64,9 +64,9 @@ const GAMES: GameCard[] = [
   },
 ];
 
-// Keep unpublished Hall games, including Viking Treasures, out of the player-facing hall.
-// Do not delete assets, saved rounds, receipts, balances or rewards.
-const HIDDEN_HALL_GAMES = new Set<GameCard['id']>(['treasury', 'dice', 'tower', 'targets', 'slots']);
+// Owner-disabled games must stay out of the public Hall without deleting the
+// existing artwork, rewards, receipts, player balances or saved sessions.
+const HIDDEN_HALL_GAMES = new Set<GameCard['id']>(['treasury', 'dice', 'tower', 'targets', 'slots', 'wheel']);
 const VISIBLE_GAMES = GAMES.filter(game => !HIDDEN_HALL_GAMES.has(game.id));
 
 export function GamesScreen({
@@ -86,7 +86,7 @@ export function GamesScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  // Owner disabled Viking Treasures regardless of backend release configuration.
+  // The owner disabled both Viking Treasures and Wheel of Fortune.
   const availableGames = VISIBLE_GAMES;
   const [payoutRecovery, setPayoutRecovery] = useState(false);
 
@@ -141,14 +141,8 @@ export function GamesScreen({
 
   const play = (game: GameCard) => {
     const id = game.id as HallGame;
-    // Slot cabinet is unpublished. Keep its saved data intact, but never open it.
-    if (id === 'slots') return;
-    // The Wheel uses its own server receipt. A failed Hall status read must not
-    // trap an existing Wheel transaction on this screen.
-    if (id === 'wheel') {
-      if (busy || state?.active) return;
-      onPlay('wheel'); return;
-    }
+    // Neither disabled game can launch, regardless of backend configuration.
+    if (id === 'slots' || id === 'wheel') return;
     if (!state || loading || busy) return;
     if (state.active) {
       if (state.active.game !== id) return;
