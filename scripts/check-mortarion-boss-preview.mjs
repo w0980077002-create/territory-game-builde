@@ -46,6 +46,21 @@ assert.match(boss, /if \(mounted\.current\) \{ setImpact\(false\); setStrike\(nu
 assert.match(css, /mortarion-raid__player/);
 assert.match(css, /mortarion-raid__slash-trail/);
 assert.match(css, /mortarion-raid__arena--striking \.mortarion-raid__layer-boss/, 'Only boss animates on impact');
+
+// Owner-approved mobile polish: no stand-in hero and no client-faked combat.
+assert.match(boss, /leaderboardRef\.current\?\.scrollIntoView/, 'Top-10 must be one tap away on mobile');
+assert.match(boss, /ref=\{leaderboardRef\} id="mortarion-top10"/, 'Top-10 jump must target the actual full ranking');
+assert.match(boss, /mortarion-raid__hero-ground/, 'Saved hero must be grounded in the encounter');
+assert.match(boss, /mortarion-confirmed-hit-flight/, 'Confirmed strikes must visibly travel to the boss');
+assert.match(boss, /mortarion-confirmed-hit-contact/, 'Confirmed contact must trigger a separate local burst');
+assert.match(css, /mortarion-raid__hero-ground\{/, 'Ground shadow must be independently layered');
+assert.match(css, /@keyframes mortarion-strike-flight/, 'Projectile animation must have a defined route');
+assert.match(css, /@keyframes mortarion-contact-ring/, 'Impact burst must have a distinct animation');
+assert.match(css, /mortarion-raid__rank-list\{display:grid/, 'Keep ten real ranks in a compact list');
+assert.match(css, /@media\(max-width:340px\)/, 'Narrow Android layout must be handled');
+assert.match(css, /prefers-reduced-motion:reduce\)[\s\S]*mortarion-raid__strike-flight/, 'Low-motion combat must not auto-travel');
+assert.doesNotMatch(boss, /<h2[^>]*>\{en \? 'Mortarion' : 'Мортарион'\}<\/h2>/, 'Do not repeat the navigation title');
+
 assert.doesNotMatch(css, /saturate\(1\.1\) drop-shadow\(0 0 6px/, 'Avoid softening the whole boss illustration');
 
 assert.match(boss, /Array\.from\(\{length: 10\}/);

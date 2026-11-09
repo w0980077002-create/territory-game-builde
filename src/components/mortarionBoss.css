@@ -97,3 +97,111 @@
  .mortarion-raid__layer-floor-fx,
  .mortarion-raid__arena--striking .mortarion-raid__layer-boss{animation:none!important}
 }
+
+
+/* Mobile combat art direction, 09.11: keep the REAL player skin and layered boss.
+ * This is a presentation-only pass: no event, inventory or hit-rule changes. */
+.mortarion-raid__heading{min-height:27px}
+.mortarion-raid__eyebrow{font-size:11px;line-height:1.25;text-align:left}
+.mortarion-raid__subtitle{font-size:20px;margin-top:1px;letter-spacing:.015em}
+.mortarion-raid__tagline{font-size:10px;margin-top:1px;line-height:1.3}
+.mortarion-raid__rank-jump{
+ display:inline-flex;align-items:center;justify-content:center;gap:4px;flex-shrink:0;
+ min-height:29px;padding:3px 9px;border-radius:8px;
+ border:1px solid #dca66f99;background:linear-gradient(#53321f,#281822);
+ color:#fce3a9;font-size:11px;font-weight:900;box-shadow:inset 0 1px #ffdca322
+}
+.mortarion-raid__rank-jump:focus-visible{outline:2px solid #fcd47e;outline-offset:2px}
+.mortarion-raid__arena{height:clamp(238px,64vw,290px);margin-top:7px}
+.mortarion-raid__layer-boss{right:.5%;bottom:3%;width:67%;height:93%;filter:contrast(1.05) saturate(.97)}
+.mortarion-raid__layer-souls{opacity:.4}
+.mortarion-raid__layer-core{opacity:.57}
+.mortarion-raid__layer-vortex{opacity:.42}
+.mortarion-raid__layer-floor-fx{bottom:-4%;height:27%;opacity:.31}
+.mortarion-raid__mist{opacity:.14}
+.mortarion-raid__soul{font-size:18px}
+.mortarion-raid__hero-aura{
+ left:-9%;bottom:-5%;width:56%;height:70%;opacity:.7;z-index:4;
+ background:radial-gradient(ellipse at 45% 60%,#c88d4940 0%,#76519127 36%,transparent 72%);
+ mix-blend-mode:screen
+}
+.mortarion-raid__hero-ground{
+ position:absolute;z-index:4;left:-2%;bottom:1.8%;width:40%;height:11%;
+ background:radial-gradient(ellipse,#11091edb 7%,#2d1932a6 36%,#a067cb4a 57%,transparent 74%);
+ transform:skewX(-17deg);pointer-events:none
+}
+.mortarion-raid__player{
+ left:1.2%;bottom:3.5%;width:36%;height:66%;z-index:6;
+ /* A cooler ambient fill and warmer edge light make the saved hero belong to this world. */
+ filter:brightness(.87) contrast(1.11) saturate(.87)
+   drop-shadow(0 5px 4px #100917e8) drop-shadow(2px -1px 5px #c18ce36e)
+}
+.mortarion-raid__player-name{
+ bottom:1%;left:2%;max-width:35%;padding:1px 5px;
+ font-size:10px;background:#170f1cde;box-shadow:0 1px 3px #0a0613aa
+}
+/* Sword gesture near the hero, then an independent, short-lived traveling glint.
+ * The contact effects are mounted only after the confirmed server strike. */
+.mortarion-raid__slash-trail{left:17%;top:54%;width:22%;height:5%;z-index:7;opacity:.82;filter:none}
+.mortarion-raid__strike-flight{
+ position:absolute;z-index:7;pointer-events:none;
+ left:26%;top:55%;width:10%;height:4px;border-radius:100%;
+ background:linear-gradient(90deg,transparent,#ffdb90 28%,#fffdf0 58%,#d79cff 84%,transparent);
+ box-shadow:0 0 8px #f8d2ff,0 0 13px #fcce86;
+ transform-origin:left center;
+ animation:mortarion-strike-flight .39s cubic-bezier(.23,.05,.71,.96) both
+}
+.mortarion-raid__strike-flight:after{
+ content:"";position:absolute;right:-2px;top:-4px;width:11px;height:11px;border-radius:50%;
+ background:radial-gradient(circle,#fffdf4 0%,#ffe2a7 35%,#a14de4aa 65%,transparent 75%);
+ box-shadow:0 0 8px #fff4d3
+}
+@keyframes mortarion-strike-flight{
+ 0%,9%{opacity:0;transform:translate(0,0) rotate(-12deg) scaleX(.2)}
+ 18%{opacity:1;transform:translate(35%,-45%) rotate(-12deg) scaleX(.55)}
+ 82%{opacity:1;transform:translate(340%,-690%) rotate(-12deg) scaleX(1.1)}
+ 100%{opacity:0;transform:translate(385%,-840%) rotate(-12deg) scaleX(.3)}
+}
+.mortarion-raid__hit-ring{
+ position:absolute;z-index:8;left:67%;top:37%;width:75px;height:75px;
+ border-radius:50%;pointer-events:none;mix-blend-mode:screen;
+ background:radial-gradient(circle,#fff7d1a1 0%,#ffef9b38 24%,transparent 53%),
+   conic-gradient(from 20deg,transparent,#d698ffb8,transparent,#ffe5a4c9,transparent,#c978ffb8,transparent);
+ box-shadow:0 0 22px #aa62f07a;
+ animation:mortarion-contact-ring .7s ease-out both
+}
+@keyframes mortarion-contact-ring{
+ 0%{opacity:0;transform:translate(-50%,-50%) scale(.18) rotate(-18deg)}
+ 23%{opacity:1;transform:translate(-50%,-50%) scale(.75) rotate(8deg)}
+ 100%{opacity:0;transform:translate(-50%,-50%) scale(1.6) rotate(35deg)}
+}
+.mortarion-raid__impact{left:64%;top:27%;font-size:64px}
+.mortarion-raid__damage{right:5%;top:16%;font-size:clamp(21px,6vw,30px)}
+.mortarion-raid__arena--striking:before{
+ background:radial-gradient(circle at 67% 37%,#fff9e67a 0%,#a23dfa4c 12%,transparent 38%)
+}
+.mortarion-raid__attack{min-height:44px;box-shadow:0 3px 0 #4a160a,0 5px 11px #0007,inset 0 1px #ffe9ad85}
+.mortarion-raid__leaderboard{scroll-margin-top:8px}
+.mortarion-raid__rank-list{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}
+.mortarion-raid__rank-entry{min-height:28px}
+@media(min-width:390px){
+ .mortarion-raid__rank-list{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:6px}
+ .mortarion-raid__rank-entry{padding-left:5px;padding-right:5px;font-size:11px}
+}
+@media(max-width:360px){
+ .mortarion-raid__arena{height:238px}
+ .mortarion-raid__layer-boss{width:68%;height:92%;right:0}
+ .mortarion-raid__player{width:36%;height:65%}
+ .mortarion-raid__layer-core{right:23%}
+ .mortarion-raid__rank-jump{padding:3px 7px}
+}
+@media(max-width:340px){
+ .mortarion-raid__subtitle{font-size:18px}
+ .mortarion-raid__arena{height:232px}
+ .mortarion-raid__player{width:35%;height:63%}
+}
+@media(prefers-reduced-motion:reduce){
+ .mortarion-raid__strike-flight,.mortarion-raid__slash-trail{display:none}
+ .mortarion-raid__hit-ring{animation:none!important;opacity:.75;transform:translate(-50%,-50%)}
+ .mortarion-raid__rank-jump{scroll-behavior:auto}
+}
