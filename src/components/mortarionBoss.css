@@ -1,10 +1,10 @@
 /* The approved Halloween raid card and action style, scoped to Mortarion only. */
 .mortarion-raid{margin:auto;max-width:430px}
 .mortarion-raid__card{box-shadow:0 8px 28px #0009,inset 0 1px #ebc98e25}
-.mortarion-raid__arena{position:relative;overflow:hidden;height:clamp(205px,60vw,265px);margin:8px -12px 0;background-color:#1c102b;background-position:center;background-size:cover;isolation:isolate}
+.mortarion-raid__arena{position:relative;overflow:hidden;height:clamp(214px,59vw,260px);margin:8px -12px 0;background-color:#1c102b;background-position:center;background-size:cover;isolation:isolate}
 .mortarion-raid__arena:before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 60% 35%,#7821a53a,transparent 68%);z-index:0;pointer-events:none}
 .mortarion-raid__arena:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 55%,#180e19cc);z-index:2;pointer-events:none}
-.mortarion-raid__scene{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;filter:saturate(1.1) drop-shadow(0 0 6px #9130a250);transform:scale(1.015);animation:mortarion-raid-breathe 4.3s ease-in-out infinite}
+.mortarion-raid__scene{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:55% 48%;filter:saturate(1.1) drop-shadow(0 0 6px #9130a250);transform:scale(1.015);animation:mortarion-raid-breathe 4.3s ease-in-out infinite}
 .mortarion-raid__mist{position:absolute;inset:55% -25% -15%;z-index:2;opacity:.64;background:radial-gradient(ellipse at 40% 85%,#b040d966,transparent 67%);animation:mortarion-raid-mist 8s ease-in-out alternate infinite;pointer-events:none}
 .mortarion-raid__soul{position:absolute;z-index:3;color:#f4ceff;font-size:25px;text-shadow:0 0 9px #aa4dff,0 0 20px #ac25fa;pointer-events:none;animation:mortarion-raid-soul 4.5s ease-in-out infinite}
 .mortarion-raid__soul--one{left:12%;top:19%}
@@ -15,7 +15,11 @@
 .mortarion-raid__damage{position:absolute;z-index:6;right:6%;top:20%;font-size:clamp(23px,7vw,36px);font-weight:950;color:#ffe99c;-webkit-text-stroke:1px #6e142a;text-shadow:0 3px #5c1015,0 0 9px #f93cff;animation:mortarion-raid-number 1.25s ease-out both;pointer-events:none}
 .mortarion-raid__defeated{position:absolute;z-index:9;top:35%;left:6%;right:6%;padding:14px 8px;border:2px solid #ffe39a;border-radius:12px;background:#321e25ea;color:#ffeabb;font-size:18px;font-weight:950;text-shadow:0 2px #421910;box-shadow:0 0 25px #b04fc570}
 .mortarion-raid__attack{box-shadow:0 4px 0 #4a160a,0 7px 15px #0008,inset 0 1px #ffe9ad85}
-.mortarion-raid__attack:disabled{filter:saturate(.7)}
+.mortarion-raid__attack:disabled{opacity:1!important;filter:saturate(.95) brightness(.88);background:linear-gradient(#d48e26,#d55b0a 58%,#8d2117);color:#fff6dd;box-shadow:inset 0 1px #ffe5a78a,0 3px 0 #4a160a,0 4px 15px #ff8f273d}
+.mortarion-raid__arena--striking:before{content:"";z-index:4;position:absolute;inset:0;background:radial-gradient(circle at 54% 42%,#fff9e680 0%,#a23dfa6b 10%,transparent 47%);animation:mortarion-blast 1.2s ease-out;pointer-events:none}
+.mortarion-raid__arena--striking .mortarion-raid__mist{animation:mortarion-wave 1.15s ease-out}
+@keyframes mortarion-blast{0%,100%{opacity:0}27%{opacity:1}75%{opacity:.08}}
+@keyframes mortarion-wave{0%{transform:scale(1);filter:brightness(1)}45%{transform:scale(1.3);filter:brightness(1.7)}100%{transform:scale(1.07);filter:brightness(1)}}
 .mortarion-raid__leaderboard{box-shadow:inset 0 1px #bb8b5b30,0 5px 18px #05050890}
 @keyframes mortarion-raid-breathe{50%{transform:scale(1.045)}}
 @keyframes mortarion-raid-mist{to{transform:translateX(11%)}}
