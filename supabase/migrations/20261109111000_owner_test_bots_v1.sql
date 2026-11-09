@@ -265,6 +265,7 @@ v_names text[] := ARRAY['Рагнар','Сигурд','Хельга','Бьорн
 v_c1 int;
 v_c2 int;
 i int;
+v_controlled record;
 BEGIN
 SELECT * INTO v_room FROM arena_rooms WHERE id = p_room;
 -- Scale newly generated combat opponents to real participating heroes.
@@ -291,6 +292,36 @@ v_total := v_present;
 END IF;
 
 FOR i IN 1..GREATEST(0, v_total - v_present) LOOP
+-- Human rooms prefer an available owner-controlled tester within the existing
+-- single ±7 level rule. No override of rating/power matchmaking.
+IF v_humans > 0 THEN
+  SELECT b.slot,b.player_id,p.display_name,p.level,p.arena_rating,
+         p.attack,p.defense,p.crit_chance,p.max_hp
+  INTO v_controlled
+  FROM territory_private.owner_test_bots_v1 b
+  JOIN public.players p ON p.id=b.player_id
+  WHERE b.auto_arena AND abs(p.level - round(v_avg_lvl)::int) <= 7
+    AND NOT EXISTS (SELECT 1 FROM public.arena_participants a
+                    WHERE a.room_id=p_room AND a.user_id=b.player_id)
+    AND NOT EXISTS (SELECT 1 FROM public.arena_participants a
+                    JOIN public.arena_rooms r ON r.id=a.room_id
+                    WHERE a.user_id=b.player_id AND r.status IN ('waiting','active')
+                    AND r.created_at>clock_timestamp()-interval '30 minutes')
+  ORDER BY b.last_arena_at NULLS FIRST,b.slot
+  LIMIT 1 FOR UPDATE OF b SKIP LOCKED;
+  IF FOUND THEN
+    INSERT INTO public.arena_participants
+      (room_id,user_id,is_bot,name,level,rating,attack,defense,crit_chance,max_hp,hp)
+    VALUES
+      (p_room,v_controlled.player_id,true,v_controlled.display_name,v_controlled.level,
+       v_controlled.arena_rating,v_controlled.attack,v_controlled.defense,
+       v_controlled.crit_chance,v_controlled.max_hp,v_controlled.max_hp);
+    UPDATE territory_private.owner_test_bots_v1 SET last_arena_at=clock_timestamp()
+      WHERE slot=v_controlled.slot;
+    PERFORM public.arena_msg(p_room,'join',NULL,v_controlled.display_name || ' входит на арену');
+    CONTINUE;
+  END IF;
+END IF;
 v_lvl := GREATEST(1, round(v_avg_lvl)::int + floor(random() * 3)::int - 1);
 v_name := v_names[1 + floor(random() * array_length(v_names, 1))::int]
 || CASE WHEN random() < 0.35 THEN '_' || (10 + floor(random() * 90)::int) ELSE '' END;
