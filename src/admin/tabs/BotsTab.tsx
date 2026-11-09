@@ -52,14 +52,10 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
     try {
       const r=await adminCall<{bots:Tester[]}>('bots_list');
       setBots(r.bots);
-      if(selected!==null && !draft){
-        const b=r.bots.find(item=>item.slot===selected);
-        if(b)setDraft(editable(b));
-      }
     } catch(e){setError((e as Error).message);}
-  },[selected,draft]);
+  },[]);
 
-  useEffect(()=>{void load();},[]); // Refresh is explicit; do not overwrite edits mid-form.
+  useEffect(()=>{void load();},[load]);
 
   const open=(b:Tester)=>{setSelected(b.slot);setDraft(editable(b));setError(null);};
   const init=()=>confirm('Создать 10 игровых тестеров 61 уровня? Существующих игроков не изменяем.',async()=>{
@@ -160,9 +156,9 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
           </label>
           <div className="border-t border-slate-700 pt-3 space-y-2">
             <p className="text-xs text-amber-200">Для Похода, Испытаний и Тёмной пещеры здесь сохраняются параметры, но серверный автоматический бой пока не подключён. Победы за несыгранные бои не начисляются.</p>
-            <Switch label="Поход — подготовить автоматизацию" on={draft.autoCampaign} tone="emerald" onToggle={()=>setDraft({...draft,autoCampaign:!draft.autoCampaign})}/>
-            <Switch label="Испытания — подготовить автоматизацию" on={draft.autoTrials} tone="emerald" onToggle={()=>setDraft({...draft,autoTrials:!draft.autoTrials})}/>
-            <Switch label="Тёмная пещера — подготовить автоматизацию" on={draft.autoCave} tone="emerald" onToggle={()=>setDraft({...draft,autoCave:!draft.autoCave})}/>
+            <Switch label="Поход — подготовить автоматизацию" hint="Параметр сохраняется, реальный запуск PvE пока не подключён." on={draft.autoCampaign} tone="emerald" onToggle={()=>setDraft({...draft,autoCampaign:!draft.autoCampaign})}/>
+            <Switch label="Испытания — подготовить автоматизацию" hint="Параметр сохраняется, реальные испытания пока не запускаются." on={draft.autoTrials} tone="emerald" onToggle={()=>setDraft({...draft,autoTrials:!draft.autoTrials})}/>
+            <Switch label="Тёмная пещера — подготовить автоматизацию" hint="Параметр сохраняется, реальные этажи пока не проходятся." on={draft.autoCave} tone="emerald" onToggle={()=>setDraft({...draft,autoCave:!draft.autoCave})}/>
           </div>
         </div>
       </Panel>
