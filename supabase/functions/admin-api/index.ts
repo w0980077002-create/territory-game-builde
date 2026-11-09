@@ -214,6 +214,79 @@ const ACTIVITY_COLS = "id, telegram_id, username, display_name, level, banned, l
 
 async function handle(action: string, body: Row) {
   switch (action) {
+    case "bots_list": {
+      // All shared player stats originate from actual public.players records.
+      const { data, error } = await db.rpc("territory_admin_test_bots_list_v1");
+      if (error || !Array.isArray(data)) throw new HttpError(503, "bots_unavailable");
+      return { bots: data };
+    }
+    case "bots_seed": {
+      // Synthetic auth identities are never given passwords to a human or a browser.
+      // A separate private registry distinguishes these owner-operated tester accounts.
+      const { data: before, error: listError } = await db.rpc("territory_admin_test_bots_list_v1");
+      if (listError || !Array.isArray(before)) throw new HttpError(503, "bots_unavailable");
+      const current = new Set(before.map((b: Row) => Number(b.slot)));
+      const names = ["Хрольф","Астрид","Варг","Сив","Эйрик","Хельга","Гуннар","Ингрид","Торстейн","Фрейя"];
+      let created = 0;
+      for (let slot = 1; slot <= 10; slot++) {
+        if (current.has(slot)) continue;
+        const password = crypto.randomUUID() + crypto.randomUUID() + crypto.randomUUID();
+        const email = `owner-tester-${slot}@territory-game.example`;
+        const { data: identity, error: authError } = await db.auth.admin.createUser({
+          email, password, email_confirm: true,
+        });
+        if (authError || !identity.user?.id) {
+          console.error("owner_tester_auth_failed", slot, authError?.message);
+          throw new HttpError(503, "bots_unavailable");
+        }
+        const playerId = identity.user.id;
+        const profile = {
+          id: playerId, telegram_id: null, username: null, display_name: names[slot - 1],
+          level: 61, attack: 650, defense: 260, max_hp: 2200,
+          crit_chance: 12, arena_rating: 1000, energy: 20, max_energy: 20,
+          gold: 100, gems: 10,
+          game_state: {
+            player: { name: names[slot - 1], level: 61, gold: 100, gems: 10, redGems: 0,
+                      attack: 650, defense: 260, maxHp: 2200, critChance: 12 },
+            battleStones: 25,
+          },
+        };
+        const { error: profileError } = await db.from("players").upsert(profile, {onConflict: "id"});
+        if (profileError) {
+          console.error("owner_tester_player_failed", slot, profileError.message);
+          await db.auth.admin.deleteUser(playerId);
+          throw new HttpError(503, "bots_unavailable");
+        }
+        const { data: registered, error: regError } = await db.rpc("territory_admin_test_bot_register_v1", {
+          p_slot: slot, p_player: playerId,
+        });
+        if (regError || registered !== true) {
+          console.error("owner_tester_register_failed", slot, regError?.message);
+          await db.auth.admin.deleteUser(playerId);
+          throw new HttpError(503, "bots_unavailable");
+        }
+        created++;
+      }
+      await audit("bots_seed", { created });
+      const { data: after, error: afterError } = await db.rpc("territory_admin_test_bots_list_v1");
+      if (afterError || !Array.isArray(after)) throw new HttpError(503, "bots_unavailable");
+      return { created, total: after.length };
+    }
+    case "bots_update": {
+      const slot = intIn(body.slot, 1, 10);
+      const patch = body.patch;
+      if (!patch || typeof patch !== "object" || Array.isArray(patch)
+          || JSON.stringify(patch).length > 5000) throw new HttpError(400, "invalid_request");
+      const { data, error } = await db.rpc("territory_admin_test_bot_update_v1", {
+        p_slot: slot, p_patch: patch,
+      });
+      if (error || data !== true) {
+        console.error("owner_tester_update_failed", slot, error?.message);
+        throw new HttpError(400, "bots_update_failed");
+      }
+      await audit("bots_update", { slot, changedFields: Object.keys(patch as Row) });
+      return { saved: true };
+    }
     case "stats": {
       const [total, online, today, week, newToday, newWeek, todayDon, settings] = await Promise.all([
         db.from("players").select("id", { count: "exact", head: true }),
