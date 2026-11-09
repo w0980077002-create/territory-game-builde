@@ -31,7 +31,7 @@ export function TreasuryInventory({userId}:{userId:string}){
  const revealChest = state?.receipt ? (state.receipt.action === 'golden' ? import.meta.env.BASE_URL+'assets/territory/ui/materials/royal-chest.webp' : import.meta.env.BASE_URL+`fortune/${state.receipt.action==='rare'?'rare':'common'}-chest.webp`) : '';
  return <section className="fortune-treasury" data-testid="treasury-inventory">
   <h2>✦ {en?'Your treasure':'Твои сокровища'} ✦</h2>
-  <p>{en?'Open earned chests here — no ticket required. The rune challenge below is preserved.':'Открывай выигранные сундуки здесь — без билета. Испытание рун находится ниже.'}</p>
+  <p>{en?'Open the chests you earned before the Wheel was disabled. No new spins or tickets required.':'Открывай сундуки, выигранные до отключения Колеса. Новые вращения недоступны, билеты не нужны.'}</p>
   <div className="fortune-chests">{([
    ['common','common-chest.webp',en?'Common':'Обычный',state?.common],['rare','rare-chest.webp',en?'Rare':'Редкий',state?.rare],['golden','golden-key.svg',en?'Golden key':'Золотой ключ',state?.golden_key],
   ] as const).map(([kind,icon,label,count])=><button key={kind} disabled={busy||!!state?.receipt||!count||!!error} onClick={()=>void open(kind)}><img src={import.meta.env.BASE_URL+`fortune/${icon}`} alt=""/><strong>{count??'—'}</strong><small>{label}</small><small>{en?'Open · free':'Открыть · бесплатно'}</small></button>)}</div>
