@@ -189,5 +189,11 @@ assert.match(fight, /persistPveVictoryJournal\(userId, snapshot\)/);
 assert.match(battle, /!canJournalPveVictory\(\)/);
 assert.match(battle, /retryPveVictoryJournal\(userId\)/);
 assert.ok(app.indexOf('await recoverPveVictoryOnBoot(user.id, profile)') < app.indexOf('useGame.set(loadedState)'));
+assert.match(app, /onRetry=\{loadError === 'pve_recovery_pending'/,
+  'Blocked player must have a safe retry rather than a permanent splash');
+assert.match(app, /setLoadRetry\(attempt => attempt \+ 1\)/,
+  'Retry must rerun cloud load and exact victory recovery without deleting WAL');
+assert.match(app, /\[user\.id, user\.displayName, loadRetry\]/,
+  'Retry must rerun authenticated bootstrap without bypassing recovery guard');
 assert.match(cloud, /\.eq\('updated_at', expected\)/);
 console.log('PvE restart recovery PASS: crash, lost ACK, stale conflict, exact save, two users, offline, corrupt WAL and storage denial.');
