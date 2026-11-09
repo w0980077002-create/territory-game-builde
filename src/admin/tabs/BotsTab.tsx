@@ -65,7 +65,8 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
         }
       }
       setBots(r.bots);
-    } catch(e){setError((e as Error).message);}
+      return r.bots;
+    } catch(e){setError((e as Error).message);return null;}
   },[]);
 
   useEffect(()=>{void load();},[load]);
@@ -153,7 +154,14 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
         <h2 className="text-xl font-bold text-white flex items-center gap-2"><Bot className="w-5 h-5 text-sky-300"/> Тестеры TERRITORY</h2>
         <p className="text-xs text-slate-400 mt-1">10 управляемых игровых профилей · общая статистика и Арена</p>
       </div>
-      <button type="button" onClick={()=>void load()} className="h-10 px-3 rounded-xl border border-slate-700 text-slate-300" aria-label="Обновить"><RefreshCw className="w-4 h-4"/></button>
+      <button type="button" disabled={busy} onClick={async()=>{
+        if(dirty.length){setError('Сначала сохрани изменённые поля персонажа.');return;}
+        const fresh=await load();
+        if(fresh&&selected!==null){
+          const bot=fresh.find(b=>b.slot===selected);
+          if(bot)setDraft(editable(bot));
+        }
+      }} className="h-10 px-3 rounded-xl border border-slate-700 text-slate-300 disabled:opacity-50" aria-label="Обновить"><RefreshCw className="w-4 h-4"/></button>
     </div>
     <ErrorLine text={error}/>
     {notice&&<p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200" role="status">{notice}</p>}
