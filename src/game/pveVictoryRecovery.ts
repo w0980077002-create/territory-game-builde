@@ -311,8 +311,7 @@ function cloudProvesTrialVictory(
   const legacyPaid = !!recorded.lastTrialChest && !!server.lastTrialChest
     && recorded.lastTrialChest.floor === floor
     && sameJson(recorded.lastTrialChest, server.lastTrialChest);
-  const sealedConfirmed = recorded.lastTrialChest == null
-    && Array.isArray(recorded.trialChestUnopenedFloors)
+  const sealedConfirmed = Array.isArray(recorded.trialChestUnopenedFloors)
     && recorded.trialChestUnopenedFloors.includes(floor)
     && ((Array.isArray(server.trialChestUnopenedFloors)
         && server.trialChestUnopenedFloors.includes(floor))
