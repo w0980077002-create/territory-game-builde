@@ -48,7 +48,7 @@ BEGIN
  INSERT INTO territory_private.trial_chest_v1(player_id,floor,tier)
  VALUES (NEW.id,floor_no,tier_name) ON CONFLICT DO NOTHING;
  RETURN NEW;
-END $fn$;
+END; $fn$;
 REVOKE ALL ON FUNCTION territory_private.reserve_trial_chest_v1() FROM PUBLIC, anon, authenticated;
 
 DROP TRIGGER IF EXISTS territory_reserve_trial_chest_v1 ON public.players;
@@ -107,7 +107,7 @@ BEGIN
    'materials',mats,'elixirs',elix,'potions',pots,'reputation',rep)
    || CASE WHEN frag IS NULL THEN '{}'::jsonb ELSE pg_catalog.jsonb_build_object('fragment',frag) END
    || CASE WHEN component IS NULL THEN '{}'::jsonb ELSE pg_catalog.jsonb_build_object('component',component) END;
-END $fn$;
+END; $fn$;
 REVOKE ALL ON FUNCTION territory_private.roll_trial_chest_v1(integer,text) FROM PUBLIC, anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public.territory_trial_chest_open_v1(p_floor integer, p_expected timestamptz)
@@ -218,7 +218,7 @@ BEGIN
  WHERE player_id=u AND floor=p_floor;
  RETURN pg_catalog.jsonb_build_object('success',true,'already_opened',false,'receipt',loot,
    'updated_at',p.updated_at,'wallet_gold',p.gold,'wallet_gems',p.gems,'game_state',p.game_state);
-END $fn$;
+END; $fn$;
 REVOKE ALL ON FUNCTION public.territory_trial_chest_open_v1(integer,timestamptz) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.territory_trial_chest_open_v1(integer,timestamptz) TO authenticated;
 COMMIT;
