@@ -203,6 +203,7 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
         const tester=updated?.find(b=>b.slot===selected);
         if(tester)setWinsInput(String(tester.arenaWins));
       }
+      setError((e as Error).message);
       throw e;
     }finally{setBusy(false);}
   };
@@ -211,7 +212,7 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
   };
   const setExactWins=()=>{
     if(!draft||selected===null||busy)return;
-    if(!/^\\d+$/.test(winsInput)||!Number.isSafeInteger(Number(winsInput))||
+    if(!/^\d+$/.test(winsInput)||!Number.isSafeInteger(Number(winsInput))||
       Number(winsInput)>1000000){
       setError('Укажи целое число побед от 0 до 1 000 000.');return;
     }
