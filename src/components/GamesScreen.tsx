@@ -9,7 +9,6 @@ import {
   type HallGame, type HallState,
 } from '@/game/gameHall';
 import './gameHall.css';
-import { fetchSlotsStatus, type SlotsStatus } from '@/game/slotsApi';
 
 interface GameCard {
   id: HallGame | 'wheel';
@@ -65,9 +64,9 @@ const GAMES: GameCard[] = [
   },
 ];
 
-// Temporarily hide unfinished Hall mini-games from players without deleting
-// their server data, tickets, rewards or the ability to resume an active round.
-const HIDDEN_HALL_GAMES = new Set<GameCard['id']>(['treasury', 'dice', 'tower', 'targets']);
+// Keep unpublished Hall games, including Viking Treasures, out of the player-facing hall.
+// Do not delete assets, saved rounds, receipts, balances or rewards.
+const HIDDEN_HALL_GAMES = new Set<GameCard['id']>(['treasury', 'dice', 'tower', 'targets', 'slots']);
 const VISIBLE_GAMES = GAMES.filter(game => !HIDDEN_HALL_GAMES.has(game.id));
 
 export function GamesScreen({
@@ -87,15 +86,8 @@ export function GamesScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [slotsStatus, setSlotsStatus] = useState<SlotsStatus|null>(null);
-  const slotsEnabled = slotsStatus?.enabled===true;
-  // Keep the existing server slots and its recovery route, but do not advertise an unfinished demo as a playable game.
-  const availableGames = VISIBLE_GAMES.filter(game => game.id !== 'slots' || slotsEnabled);
-  useEffect(()=>{
-    let alive=true;
-    void fetchSlotsStatus().then((next)=>{if(alive)setSlotsStatus(next);}).catch(()=>{});
-    return ()=>{alive=false;};
-  },[userId]);
+  // Owner disabled Viking Treasures regardless of backend release configuration.
+  const availableGames = VISIBLE_GAMES;
   const [payoutRecovery, setPayoutRecovery] = useState(false);
 
   const refresh = async (isCurrent:()=>boolean=()=>true) => {
@@ -149,8 +141,8 @@ export function GamesScreen({
 
   const play = (game: GameCard) => {
     const id = game.id as HallGame;
-    // Slot gate verifies its reviewed server installation; only an explicit disabled/missing backend opens the labelled demo.
-    if (id === 'slots') { onPlay('slots'); return; }
+    // Slot cabinet is unpublished. Keep its saved data intact, but never open it.
+    if (id === 'slots') return;
     // The Wheel uses its own server receipt. A failed Hall status read must not
     // trap an existing Wheel transaction on this screen.
     if (id === 'wheel') {
@@ -243,10 +235,9 @@ export function GamesScreen({
 
       <section className="hall-games" aria-label={en ? 'Choose a game' : 'Выбери игру'}>
         {availableGames.map((configuredGame, index) => {
-          const game = configuredGame.id==='slots' && slotsEnabled ? {...configuredGame,demo:false,ruHint:'От 5 золота · бонусы и риск',enHint:'From 5 gold · bonuses and risk'} : configuredGame;
+          const game = configuredGame;
           const featured = index === 0;
-          const locked = game.id==='slots' && slotsEnabled ? (slotsStatus?.coins??0)<5
-            : game.id === 'wheel' ? (!!state && state.tickets < 1)
+          const locked = game.id === 'wheel' ? (!!state && state.tickets < 1)
             : !state || (state.tickets < 1 && !state.active);
           const otherActive = !!state?.active && state.active.game !== game.id;
           const resumeThisGame = state?.active?.game === game.id;
