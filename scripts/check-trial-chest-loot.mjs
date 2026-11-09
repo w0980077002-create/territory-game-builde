@@ -172,30 +172,42 @@ const collectionSource = readFileSync('src/components/trials/TrialLootCollection
 assert.match(collectionSource, /city-reputation\.png/, 'collection must display the newly approved royal crest');
 assert.doesNotMatch(collectionSource, /city-reputation\.svg/, 'old badge must not be shown in the collection');
 const sourceFight=readFileSync('src/components/pve/PveFight.tsx','utf8');
-assert(sourceFight.includes('TRIAL_CHEST_ART[loot.tier]'), 'victory card must use the real art mapping');
-assert(collectionSource.includes('TRIAL_CHEST_ART[tier]'), 'collection must match the actual victory chest');
-assert.match(readFileSync('src/components/pve/trialChestReveal.css', 'utf8'), /trial-chest-stage--common/, 'missing rich common chest styling');
-
-assert.match(sourceFight, /city-reputation\.png/, 'victory reward must display the same royal crest');
-assert.doesNotMatch(sourceFight, /city-reputation\.svg/, 'old badge must not be shown in battle rewards');
 const sourceVictory=readFileSync('src/game/progression.ts','utf8');
-assert.match(sourceVictory, /applyTrialChest\(next, canRollChest \? rollTrialChest\(floor\) : null\)/);
-assert.match(sourceFight,/data-testid="trial-earned-chest"/);
-assert.match(sourceFight,/data-testid="trial-open-chest"/);
-assert.match(sourceFight,/data-testid="trial-chest-revealed"/);
-assert.match(sourceFight,/trial-chest-already-claimed/);
-assert.match(sourceFight,/saveState !== 'confirmed' \|\| chestOpened/, 'never open a chest before saving, and never credit loot on click');
-assert.ok(existsSync('src/components/pve/trialChestReveal.css'), 'missing live opening animation');
-// Visible treasure must be delayed until the real lid opens (~650ms), and
-// reduced-motion players must always see the confirmed reward immediately.
-const revealCss = readFileSync('src/components/pve/trialChestReveal.css', 'utf8');
-assert.match(sourceFight,/data-testid="trial-chest-revealed" className="trial-chest-loot-panel mt-2"/);
-assert.match(sourceFight,/animationDelay: \(720 \+ index \* 120\) \+ 'ms'/);
-assert.match(revealCss,/\.trial-chest-loot-panel\s*\{[^}]*animation:\s*territory-chest-loot-panel \.4s ease-out \.66s both/s);
-assert.match(revealCss,/@keyframes territory-chest-loot-panel/);
-assert.match(revealCss,/@media \(prefers-reduced-motion: reduce\)\s*\{[^}]*\.trial-chest-stage,[^}]*\.trial-chest-loot-panel/s);
-assert.match(revealCss,/\.trial-chest-reward, \.trial-chest-loot-panel \{ opacity: 1; \}/);
-assert.doesNotMatch(sourceFight,/\bonClick=\{\(\) =>\s*(?:applyTrialChest|rollTrialChest)/, 'opening must never roll or grant a second reward');
+const vault=readFileSync('src/components/InventoryChestShelf.tsx','utf8');
+const opener=readFileSync('src/game/trialChestVault.ts','utf8');
+const chestSql=readFileSync('supabase/migrations/20261109224945_trial_chest_vault_v1.sql','utf8');
+assert.match(sourceFight,/TRIAL_CHEST_ART\[trialChestTier\(outcome\.trialFloor\)!\]/,
+  'victory now shows the real sealed chest art');
+assert(collectionSource.includes('TRIAL_CHEST_ART[tier]'), 'collection must match the actual victory chest');
+assert.match(sourceFight,/data-testid="trial-sealed-chest-message"/,
+  'victory must explain the chest is stored in Inventory, not paid instantly');
+assert.doesNotMatch(sourceFight,/data-testid="trial-open-chest"/,
+  'the player opens the new chest only from Inventory');
+assert.match(sourceVictory,/trialChestUnopenedFloors:/,
+  'winning a new floor must reserve a sealed chest');
+assert.match(sourceVictory,/trialChestClaims:/,
+  'existing once-per-floor anti-duplication ledger must be preserved');
+assert.doesNotMatch(sourceVictory,/applyTrialChest\(next|rollTrialChest\(floor\)/,
+  'new victories must not mint chest rewards before the player opens');
+assert.match(vault,/data-testid="trial-sealed-chests"/);
+assert.match(vault,/data-testid="trial-chest-opened-receipt"/);
+assert.match(vault,/openTrialChest\(userId, floor\)/);
+assert.match(opener,/protectFortuneSave\(userId\)/,
+  'server receipt installation must fence older autosaves');
+assert.match(opener,/acceptMonopolyClaimReceipt\(userId, data\)/,
+  'server opening must update the canonical revision and wallet');
+assert.doesNotMatch(opener,/rollTrialChest|applyTrialChest|Math\.random/,
+  'client opener must never roll or grant the loot');
+assert.match(chestSql,/CREATE TRIGGER territory_reserve_trial_chest_v1/,
+  'reservation must happen in the database after a saved victory');
+assert.match(chestSql,/CREATE OR REPLACE FUNCTION public\.territory_trial_chest_open_v1/,
+  'one-time opening must be an authenticated server operation');
+assert.match(chestSql,/SELECT \* INTO chest FROM territory_private\.trial_chest_v1[\s\S]*?FOR UPDATE/,
+  'per-player chest receipt must be locked transactionally');
+assert.match(chestSql,/IF chest\.opened_at IS NOT NULL THEN/,
+  'already opened chests may never be paid twice');
+assert.match(chestSql,/REVOKE ALL ON FUNCTION public\.territory_trial_chest_open_v1/,
+  'anonymous access to the reward RPC must be revoked');
 assert.match(readFileSync('src/components/InventoryScreen.tsx','utf8'),/<TrialLootCollection language=\{language\} \/>/);
 assert.match(readFileSync('src/components/BattleScreen.tsx','utf8'),/<TrialLootCollection language=\{language\} \/>/);
-console.log('TRIAL LOOT PASS: all-floor common chests, exclusive one-in-four rewards, special odds, reset replay protection, visuals and saved victory reveal');
+console.log('TRIAL LOOT PASS: previous crediting preserved, new sealed chests saved, server draw/once-only opening, art and mobile inventory access');

@@ -203,6 +203,10 @@ export interface GameState {
   territoryCityReputation?: number;
   /** Granted only once per completed floor, including after test floor resets. */
   trialChestClaims?: number[];
+  /** Floors with sealed, server-reserved Trial chests awaiting the player's choice to open. */
+  trialChestUnopenedFloors?: number[];
+  /** Server-confirmed history of opened Trial chests; legacy awards stay in trialChestClaims. */
+  trialChestOpenedFloors?: number[];
   /** The last committed Trial chest for reward/result UI. */
   lastTrialChest?: TrialChestReward | null;
   appearance: string;

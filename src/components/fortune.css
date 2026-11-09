@@ -291,3 +291,16 @@
 @media(prefers-reduced-motion:reduce) {
   .fortune-art-gate__crest {animation:none;}
 }
+
+/* Compact embedded vault: retain the original rich chest art and server opening. */
+.fortune-treasury--embedded {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.fortune-treasury--embedded .fortune-chests { margin: 5px 0; gap: 6px; }
+.fortune-treasury--embedded .fortune-chests button { min-height: 116px; padding: 6px 2px; gap: 3px; }
+.fortune-treasury--embedded .fortune-chests img { width: clamp(43px,13vw,56px); height: clamp(43px,13vw,56px); }
+.fortune-treasury--embedded .fortune-skip { min-height: 36px; padding: 6px 10px; }

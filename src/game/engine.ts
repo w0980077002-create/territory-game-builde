@@ -106,6 +106,8 @@ export function createInitialGame(): GameState {
     trialLevel: 1,
     territoryCityReputation: 0,
     trialChestClaims: [],
+    trialChestUnopenedFloors: [],
+    trialChestOpenedFloors: [],
     lastTrialChest: null,
     appearance: 'm2',
     dailyStonesBought: 0,
