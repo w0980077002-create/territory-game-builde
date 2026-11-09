@@ -65,10 +65,18 @@ assert(pve.indexOf('data-testid="pve-result-actions"') < pve.indexOf('data-testi
 for (const image of ['watch-helmet', 'master-raven-amulet', 'caravan-armor', 'watch-blade', 'north-shield', 'spark-ring', 'ranger-boots']) {
   assert(existsSync(`public/assets/territory/ui/unique-gear/${image}.webp`), `Missing actual crafted gear: ${image}`);
 }
-assert(!existsSync('public/assets/territory/ui/equipment-cartoon'), 'Generic cartoon gear still present in repo');
-assert(!art.includes('equipment-cartoon/'), 'Live gear artwork still references retired cartoons');
+// Only the 4 item-specific pictures are restored. All 7 user-rejected
+// generic slot files must stay removed from source control and the game.
+for (const image of ['sword', 'knight-blade', 'hero-sword', 'plate-armor']) {
+  assert(existsSync(`public/assets/territory/ui/equipment-cartoon/${image}.webp`), `Owner-approved gear art missing: ${image}`);
+}
+for (const image of ['helmet', 'amulet', 'armor', 'weapon', 'shield', 'ring', 'boots']) {
+  assert(!existsSync(`public/assets/territory/ui/equipment-cartoon/${image}.webp`), `Removed placeholder was restored by mistake: ${image}`);
+}
 assert.match(art, /SHOP_EQUIPMENT_ART_BY_NAME/, 'Shop equipment must map to real gear');
-assert(art.includes("return uniqueGearIcon('watch-blade')"), 'Sword must use crafted artwork');
+for (const image of ['sword', 'knight-blade', 'hero-sword', 'plate-armor']) {
+  assert(art.includes(`originalEquipmentArt('${image}')`), `Original item artwork not wired: ${image}`);
+}
 assert.match(art, /if \(item\.equipment\) return equipmentArt\(item\.equipment\)/, 'Inventory still shows generic weapon');
 assert.match(gear, /equipmentArt\(item\)/, 'Arena gear still shows generic weapon');
 assert.match(room, /<ArenaChat\s+roomId=\{roomId\}/, 'Persistent arena chat missing');
