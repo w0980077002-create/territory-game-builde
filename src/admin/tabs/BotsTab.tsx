@@ -50,7 +50,18 @@ export function BotsTab({confirm}:{confirm:Confirm}) {
   const load=useCallback(async()=>{
     setError(null);
     try {
-      const r=await adminCall<{bots:Tester[]}>('bots_list');
+      let r=await adminCall<{bots:Tester[]}>('bots_list');
+      if(r.bots.length<10){
+        // The owner has already authorized ten testers: bootstrap on first visit,
+        // without requiring any technical steps or altering existing accounts.
+        try {
+          await adminCall('bots_seed');
+          r=await adminCall<{bots:Tester[]}>('bots_list');
+        } catch(e) {
+          setError('Автоматическое создание тестеров не завершено: '+(e as Error).message);
+          r=await adminCall<{bots:Tester[]}>('bots_list');
+        }
+      }
       setBots(r.bots);
     } catch(e){setError((e as Error).message);}
   },[]);
