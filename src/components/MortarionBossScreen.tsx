@@ -164,7 +164,11 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
       <p className="relative mt-1 flex items-center justify-center gap-1.5 text-[11px] text-amber-200/85"><Users size={13}/>{en ? 'Lord of Souls · One boss for all heroes' : 'Властелин Душ · Один босс для всех героев'}</p>
 
       <div className={`mortarion-raid__arena ${impact ? 'mortarion-raid__arena--striking' : ''}`} role="img" aria-label={en ? 'Your hero battles Mortarion, Lord of Souls' : 'Твой герой сражается с Мортарионом, Властелином Душ'}>
-        <img className="mortarion-raid__scene" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-raid-scene.webp'} alt="" draggable={false}/>
+        <picture className="mortarion-raid__boss-picture" data-testid="mortarion-full-body-boss">
+          <source type="image/avif" srcSet={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-full-body.avif'}/>
+          <img className="mortarion-raid__scene" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-raid-scene.webp'} alt="" draggable={false}/>
+        </picture>
+        <span className="mortarion-raid__floor" aria-hidden="true"/>
         <span className="mortarion-raid__mist" aria-hidden="true"/>
         <span className="mortarion-raid__soul mortarion-raid__soul--one" aria-hidden="true">✦</span>
         <span className="mortarion-raid__soul mortarion-raid__soul--two" aria-hidden="true">✧</span>
