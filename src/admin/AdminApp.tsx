@@ -14,11 +14,13 @@ import { AuditAdminTab } from '@/admin/tabs/AuditAdminTab';
 import { HalloweenRewardTab } from '@/admin/tabs/HalloweenRewardTab';
 import { GeographyTab } from '@/admin/tabs/GeographyTab';
 import { NewPlayersTab } from '@/admin/tabs/NewPlayersTab';
+import { BotsTab } from '@/admin/tabs/BotsTab';
 import { getTelegramWebApp } from '@/game/telegram';
 
 const TABS = [
   { id: 'main', label: 'Главная & Управление', icon: BarChart3 },
   { id: 'players', label: 'Игроки & Онлайн', icon: ShieldAlert },
+  { id: 'bots', label: 'Боты · 10 тестеров', icon: Gamepad2 },
   { id: 'newplayers', label: 'Новые игроки', icon: UserPlus },
   { id: 'geography', label: 'География', icon: Globe2 },
   { id: 'halloweenReward', label: 'Награда рейда', icon: Trophy },
@@ -196,6 +198,7 @@ export function AdminApp() {
       <main key={tab} className="max-w-3xl mx-auto px-4 py-4 pb-24 animate-[fadeIn_.25s_ease-out]">
         {tab === 'main' && <DashboardTab confirm={confirm} />}
         {tab === 'players' && <PlayersTab confirm={confirm} />}
+        {tab === 'bots' && <BotsTab confirm={confirm} />}
         {tab === 'newplayers' && <NewPlayersTab />}
         {tab === 'geography' && <GeographyTab />}
         {tab === 'halloweenReward' && <HalloweenRewardTab />}
