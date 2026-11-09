@@ -58,10 +58,10 @@ const fixedSummonArt: Record<SummonOption['art'], string> = {
   chest: 'assets/territory/ui/materials/royal-chest.webp',
 };
 const darkArt: Record<DarkEnergyRelic['kind'], string> = {
-  ring: 'assets/territory/ui/equipment-cartoon/ring.webp',
-  amulet: 'assets/territory/ui/equipment-cartoon/amulet.webp',
-  weapon: 'assets/territory/ui/equipment-cartoon/weapon.webp',
-  armor: 'assets/territory/ui/equipment-cartoon/armor.webp',
+  ring: 'assets/territory/ui/unique-gear/sapphire-ring.webp',
+  amulet: 'assets/territory/ui/unique-gear/north-gate-amulet.webp',
+  weapon: 'assets/territory/ui/unique-gear/watch-blade.webp',
+  armor: 'assets/territory/ui/unique-gear/north-armor.webp',
   other: 'assets/territory/map/icons/rune-stones-v1.webp',
 };
 const rarityText: Record<DarkEnergyRelic['rarity'], Translated> = {
