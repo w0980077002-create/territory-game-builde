@@ -34,6 +34,7 @@ export function MortarionBossScreen() {
   const en = language === 'en';
   const [now, setNow] = useState(() => Date.now());
   const [combat, setCombat] = useState<PreviewCombat>(EMPTY);
+  const combatRef = useRef<PreviewCombat>(EMPTY);
   const [impact, setImpact] = useState(false);
   const effectTimer = useRef<number | null>(null);
 
@@ -57,18 +58,21 @@ export function MortarionBossScreen() {
 
   const attack = () => {
     const clickedAt = Date.now();
-    const limit = mortarionLimitAt(combat, clickedAt);
-    if (!limit.canHit || defeated) return;
+    const current = combatRef.current;
+    const limit = mortarionLimitAt(current, clickedAt);
+    if (!limit.canHit || current.damage >= MORTARION_HP) return;
     if (effectTimer.current !== null) window.clearTimeout(effectTimer.current);
     setNow(clickedAt);
     setImpact(false);
-    setCombat(current => ({
+    const next: PreviewCombat = {
       hits: limit.hits + 1,
       firstHitAt: limit.hits === 0 ? clickedAt : current.firstHitAt,
       lastHitAt: clickedAt,
       damage: Math.min(MORTARION_HP, current.damage + TEST_HIT_DAMAGE),
       sequence: current.sequence + 1,
-    }));
+    };
+    combatRef.current = next; // prevent double taps before React re-renders
+    setCombat(next);
     // Only temporary display state: the raid is still disabled for players.
     window.requestAnimationFrame(() => setImpact(true));
     effectTimer.current = window.setTimeout(() => setImpact(false), 1250);
@@ -87,7 +91,7 @@ export function MortarionBossScreen() {
         <Users size={13}/>{en ? 'Lord of Souls · One boss for all heroes' : 'Властелин Душ · Один босс для всех героев'}
       </p>
 
-      <div className={`mortarion-raid__arena ${impact ? 'mortarion-raid__arena--striking' : ''}`} role="img" aria-label={en ? 'Mortarion the Lord of Souls in a ruined citadel' : 'Мортарион — Властелин Душ в разрушенной цитадели'}>
+      <div className={`mortarion-raid__arena ${impact ? 'mortarion-raid__arena--striking' : ''}`} style={{ backgroundImage: `url(${import.meta.env.BASE_URL}assets/territory/events/mortarion-raid-scene.webp)` }} role="img" aria-label={en ? 'Mortarion the Lord of Souls in a ruined citadel' : 'Мортарион — Властелин Душ в разрушенной цитадели'}>
         <img className="mortarion-raid__scene" src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-raid-scene.webp'} alt="" draggable={false}/>
         <span className="mortarion-raid__mist" aria-hidden="true"/>
         <span className="mortarion-raid__soul mortarion-raid__soul--one" aria-hidden="true">✦</span>
