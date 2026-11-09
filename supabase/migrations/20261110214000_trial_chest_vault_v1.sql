@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS territory_private.trial_chest_v1 (
   PRIMARY KEY (player_id, floor),
   CONSTRAINT trial_chest_v1_receipt_consistency CHECK ((opened_at IS NULL) = (receipt IS NULL))
 );
+ALTER TABLE territory_private.trial_chest_v1 ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON territory_private.trial_chest_v1 FROM PUBLIC, anon, authenticated;
 
 -- The row is reserved only when a newly confirmed Trial victory advances
