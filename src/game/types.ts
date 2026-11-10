@@ -1,4 +1,5 @@
 import type { TrialChestReward } from './trialLoot';
+import type { MortarionRewardReceipt } from './mortarionRewards';
 export interface PlayerStats {
   hp: number;
   maxHp: number;
@@ -209,6 +210,10 @@ export interface GameState {
   trialChestOpenedFloors?: number[];
   /** The last committed Trial chest for reward/result UI. */
   lastTrialChest?: TrialChestReward | null;
+  /** One-time server-confirmed Mortarion raid 2026 rewards. */
+  mortarionReward?: MortarionRewardReceipt | null;
+  /** Permanent cosmetic title/frame/medal awarded from the final TOP-10. */
+  mortarionHonor?: { eventId: string; place: number; title: string; frame: string; medal: string } | null;
   appearance: string;
   dailyStonesBought: number;
   dailyStonesDate: string;
