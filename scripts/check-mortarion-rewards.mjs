@@ -41,7 +41,7 @@ await run([
  'CREATE ROLE service_role;',
  'CREATE SCHEMA IF NOT EXISTS territory_private;',
  'CREATE SCHEMA IF NOT EXISTS auth;',
- 'CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $fn$ SELECT NULLIF(current_setting('+"''request.jwt.claim.sub''"+',true),'+"' '"+')::uuid $fn$;',
+ "CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $fn$ SELECT NULLIF(current_setting('request.jwt.claim.sub',true),'')::uuid $fn$;",
  'CREATE TABLE public.players (id uuid PRIMARY KEY, display_name text, level integer NOT NULL DEFAULT 1, banned boolean NOT NULL DEFAULT false, gold integer NOT NULL DEFAULT 0, gems integer NOT NULL DEFAULT 0, forge_materials integer NOT NULL DEFAULT 0, updated_at timestamptz NOT NULL DEFAULT now(), game_state jsonb NOT NULL);',
  'CREATE TABLE public.territory_mortarion_2026(id text PRIMARY KEY,max_hp bigint NOT NULL,hp bigint NOT NULL,enabled boolean NOT NULL,starts_at timestamptz NOT NULL,ends_at timestamptz NOT NULL,updated_at timestamptz NOT NULL DEFAULT now());',
  'CREATE TABLE public.territory_mortarion_2026_players(event_id text NOT NULL,player_id uuid NOT NULL,total_damage bigint NOT NULL DEFAULT 0,total_hits integer NOT NULL DEFAULT 0,hour_started_at timestamptz,hits_in_hour integer NOT NULL DEFAULT 0,last_hit_at timestamptz,PRIMARY KEY(event_id,player_id));',
