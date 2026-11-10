@@ -17,8 +17,7 @@ BEGIN
   SELECT e.starts_at INTO v_starts FROM public.territory_mortarion_2026 e
    WHERE e.id=NEW.event_id;
   IF v_starts IS NULL THEN RETURN NULL; END IF;
-  v_day:=1+pg_catalog.floor(pg_catalog.extract(epoch FROM
-    (NEW.last_hit_at-v_starts))/86400)::integer;
+  v_day:=1+pg_catalog.floor(pg_catalog.date_part('epoch', NEW.last_hit_at-v_starts)/86400)::integer;
   IF v_day BETWEEN 1 AND 5 AND NOT (v_day=ANY(NEW.hit_days)) THEN
     -- Updating ONLY hit_days does not recurse into this total_hits trigger.
     UPDATE public.territory_mortarion_2026_players
