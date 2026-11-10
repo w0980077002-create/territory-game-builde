@@ -77,9 +77,11 @@ try {
       'KNOWN DEFECT: real owner save cap currently destroys level 50 on a level-10 owner');
     assert.notEqual(result.level, sword.level, 'characterization must expose destructive cap');
   }
+  // Chain the actual first save output into the merchant's save. Reusing the
+  // pristine sword here would hide irreversible loss across successive owners.
   const secondOwnerResult = (await db.query(
     'SELECT territory_private.owner_cap_item_v1($1::jsonb,1,$2::uuid) AS gear',
-    [JSON.stringify(sword), other])).rows[0].gear;
+    [JSON.stringify(result), other])).rows[0].gear;
   assert.equal(secondOwnerResult.id, sword.id, 'second owner must receive the same item identity');
   assert.equal(secondOwnerResult.level, requireSafe ? sword.level : 1,
     'second low-level owner must follow the selected characterization or safety contract');
