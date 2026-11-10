@@ -161,7 +161,7 @@ for(const file of [
 for (const file of ['blueprint-fragment.svg','guardian-shard.svg','trial-essence.svg','ancient-mechanism.svg']) {
   const art=readFileSync('public/assets/territory/ui/trial-loot/'+file,'utf8');
   assert.ok(art.length>=6500, file+' has regressed to a minimal SVG placeholder');
-  assert.ok((art.match(/<path\\b/g)||[]).length>=20, file+' needs detailed layered illustration');
+  assert.ok((art.match(/<path\b/g)||[]).length>=20, file+' needs detailed layered illustration');
   assert.doesNotMatch(art, /<script|onload=|<foreignObject/i, file+' must remain a safe static SVG');
 }
 // The ordinary chest must be a finished transparent game illustration, never
