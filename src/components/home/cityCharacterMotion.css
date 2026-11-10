@@ -70,9 +70,9 @@
   }
 }
 
-/* Real Android city recording: long enemy names were truncated to an unreadable
-   fragment inside a 26%-wide enemy hitbox. Keep the hitbox, silhouettes and
-   controls unchanged; let the caption bridge two short lines just above the foe. */
+/* Mobile Telegram City: keep long enemy names readable without drawing over
+   the Arena shortcut. Move only the caption 56px toward the battle area;
+   preserve the 26%-wide enemy hitbox, visuals and all actual fight navigation. */
 .home-character-stage .home-enemy-name {
   display:-webkit-box;
   -webkit-box-orient:vertical;
@@ -85,13 +85,13 @@
   overflow-wrap:anywhere;
   line-height:1.16;
   text-wrap:balance;
-  transform:translateX(-6px);
+  transform:translateX(-56px);
   box-shadow:0 1px 4px #000a;
 }
 @media (max-width:349px) {
   .home-character-stage .home-enemy-name {
     width:101px;
-    transform:translateX(-8px);
+    transform:translateX(-56px);
     font-size:9px;
   }
 }
