@@ -211,6 +211,46 @@ assert.equal(pendingPveVictoryJournal('hero-a'), true);
 assert.deepEqual(await recoverPveVictoryOnBoot('hero-a', profile()), {state:victory(),recovered:true});
 assert.equal(pendingPveVictoryJournal('hero-a'), false);
 
+// Regression: live PostgreSQL keeps forge material quantity but replaces
+// stale/legacy batches with a single permanent mirror (Nov 9 migration).
+// That server-only normalization must not falsely mark an ACKed victory lost.
+reset();
+const sealed9 = {
+  ...victory(), trialLevel:10, totalBattlesWon:241, forgeMaterials:142,
+  trialChestClaims:[9], trialChestUnopenedFloors:[9], trialChestOpenedFloors:[],
+  forgeMaterialBatches:[{qty:141,expiresAt:'2026-11-09T00:00:00.000Z'}],
+};
+assert.equal(stagePveVictoryJournal('hero-a', sealed9), true);
+const canonicalSealed9 = {
+  ...sealed9,
+  forgeMaterialBatches:[{qty:142,expiresAt:'9999-12-31T23:59:59.000Z'}],
+};
+globalThis.__mockServer={revision:nextRevision,state:canonicalSealed9,gold:30,gems:2};
+globalThis.__mockTokens.set('hero-a',nextRevision);
+assert.equal(await persistPveVictoryJournal('hero-a',sealed9),true,
+  'Server-normalized material batches must not falsely reject an already saved sealed chest');
+assert.equal(globalThis.__mockWrites,0,'Do not reissue the credited victory');
+assert.equal(pendingPveVictoryJournal('hero-a'),false,'Remove acknowledged victory journal safely');
+
+// Still reject tampered/mismatched material balance or noncanonical server lots.
+for(const tamper of [
+  row => {row.forgeMaterials=143;row.forgeMaterialBatches[0].qty=143;},
+  row => {row.forgeMaterialBatches[0].qty=141;},
+  row => {row.trialChestUnopenedFloors=[];},
+]){
+  reset();
+  assert.equal(stagePveVictoryJournal('hero-a',sealed9),true);
+  const row=structuredClone(canonicalSealed9);
+  tamper(row);
+  globalThis.__mockServer={revision:nextRevision,state:row,gold:30,gems:2};
+  globalThis.__mockTokens.set('hero-a',nextRevision);
+  // A later server row must never be overwritten just to satisfy this test.
+  globalThis.__mockMode='failed';
+  assert.equal(await persistPveVictoryJournal('hero-a',sealed9),false,
+    'Material loss, a noncanonical mirror or a missing chest must never confirm');
+  assert.equal(pendingPveVictoryJournal('hero-a'),true);
+}
+
 // Concurrent server change: no stale overwrite; retain WAL for support.
 reset();
 assert.equal(stagePveVictoryJournal('hero-a', victory()), true);
@@ -372,6 +412,14 @@ assert.match(fight, /persistPveVictoryJournal\(userId, snapshot\)/);
 assert.match(battle, /!canJournalPveVictory\(\)/);
 assert.match(battle, /retryPveVictoryJournal\(userId\)/);
 assert.ok(app.indexOf('await recoverPveVictoryOnBoot(user.id, profile)') < app.indexOf('useGame.set(loadedState)'));
+assert.match(app, /if \(!pendingPveVictoryJournal\(user.id\)\) controller.changed\(\)/,
+  'A pending victory journal must not trigger a false global autosave failure');
+assert.match(app, /pveVictorySaveState\(user.id\) === 'confirmed'\) \{/,
+  'Confirmed victory must resume deferred autosaves automatically');
+assert.match(app, /controller.changed\(\);\s*controller.flush\(\);/,
+  'Verified victory must resume queued autosaves immediately');
+assert.match(app, /saveStatus === 'error' && !pendingPveVictoryJournal\(user.id\)/,
+  'The top error banner must not duplicate a pending victory checkpoint');
 assert.match(app, /onRetry=\{loadError === 'pve_recovery_pending'/,
   'Blocked player must have a safe retry rather than a permanent splash');
 assert.match(app, /setLoadRetry\(attempt => attempt \+ 1\)/,

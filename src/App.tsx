@@ -396,9 +396,21 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         : saveCloudSave(user.id, useGame.get()),
       setSaveStatus,
     );
-    const unsubscribe = useGame.subscribe(controller.changed);
+    const unsubscribe = useGame.subscribe(() => {
+      // The PvE victory journal is the exclusive writer until it verifies the
+      // committed win. Its pending checkpoint is not an autosave failure.
+      if (!pendingPveVictoryJournal(user.id)) controller.changed();
+    });
     const unsubscribeVictory = subscribePveVictorySave(user.id, () => {
-      if (pveVictorySaveState(user.id) === 'confirmed') controller.flush();
+      // Once the journal is acknowledged, save any changes made while it was
+      // pending. Do not leave the false-red autosave banner behind.
+      if (pveVictorySaveState(user.id) === 'confirmed') {
+        // A verified victory owns the prior write. Immediately resume queued
+        // autosaves, rather than showing an old transient warning.
+        setSaveStatus('saving');
+        controller.changed();
+        controller.flush();
+      }
     });
     // iOS Telegram WebViews can suspend on close before an old debounce fires.
     const flush = () => controller.flush();
@@ -508,7 +520,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           <Wrench className="w-3 h-3" /> {translate('maintenance')}
         </div>
       )}
-      {saveStatus === 'error' && (
+      {saveStatus === 'error' && !pendingPveVictoryJournal(user.id) && (
         <div role="alert" className="shrink-0 z-40 border-b border-red-500/60 bg-red-950 px-2 py-1 text-center text-[10px] font-semibold leading-tight text-red-100">
           {language === 'en'
             ? 'Progress not saved! Stay in the game; check connection.'

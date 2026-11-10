@@ -113,6 +113,10 @@ function comparableStoredVictory(value: unknown): unknown {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
   const copy = JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
   delete copy.balanceVersion; // normalized to 4 by the live trigger
+  // The permanent-material trigger replaces the legacy material lots with a
+  // single 9999-expiring mirror on every server save. This is not loot: the
+  // authoritative quantity is forgeMaterials, compared exactly below.
+  delete copy.forgeMaterialBatches;
   // The live BEFORE UPDATE trigger territory_normalize_state_v4 also calls
   // territory_normalize_gear_v4 for equipped, inventory and belt gear. Derived
   // stats/base fields can change during an otherwise correctly persisted win.
@@ -152,6 +156,20 @@ function comparableStoredVictory(value: unknown): unknown {
   return copy;
 }
 function samePersistedVictory(a: unknown, b: unknown): boolean {
+  // Accept the server's cosmetic/material expiry normalization ONLY when the
+  // raw server record contains the exact canonical mirror of its material
+  // balance. A missing or extra forge material is still an unconfirmed win.
+  // serverHasExactVictory passes the cloud row FIRST, journaled snapshot second.
+  if (a && typeof a === 'object' && !Array.isArray(a)) {
+    const server = a as Record<string, unknown>;
+    if (Object.prototype.hasOwnProperty.call(server, 'forgeMaterialBatches')) {
+      const balance = server.forgeMaterials;
+      if (!Number.isSafeInteger(balance) || (balance as number) < 0) return false;
+      const canonical = (balance as number) > 0
+        ? [{ qty: balance, expiresAt: '9999-12-31T23:59:59.000Z' }] : [];
+      if (!sameJson(server.forgeMaterialBatches, canonical)) return false;
+    }
+  }
   return sameJson(comparableStoredVictory(a), comparableStoredVictory(b));
 }
 
