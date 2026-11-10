@@ -5,6 +5,7 @@ import { ConfirmDialog, ErrorLine, inputCls, type Confirm } from '@/admin/ui';
 import { DashboardTab } from '@/admin/tabs/DashboardTab';
 import { PlayersTab } from '@/admin/tabs/PlayersTab';
 import { MailTab } from '@/admin/tabs/MailTab';
+import { NewsTab } from '@/admin/tabs/NewsTab';
 import { FinanceTab } from '@/admin/tabs/FinanceTab';
 import { ArenaEconomyTab } from '@/admin/tabs/ArenaEconomyTab';
 import { TopTab } from '@/admin/tabs/TopTab';
@@ -25,6 +26,7 @@ const TABS = [
   { id: 'geography', label: 'География', icon: Globe2 },
   { id: 'halloweenReward', label: 'Награда рейда', icon: Trophy },
   { id: 'mail', label: 'Почта & Рассылки', icon: Mail },
+  { id: 'news', label: 'TerritoryNews', icon: Mail },
   { id: 'finance', label: 'Финансы & Лавка', icon: Wallet },
   { id: 'arenaEconomy', label: 'Экономика Арены', icon: Swords },
   { id: 'top', label: 'Топ-100', icon: Trophy },
@@ -203,6 +205,7 @@ export function AdminApp() {
         {tab === 'geography' && <GeographyTab />}
         {tab === 'halloweenReward' && <HalloweenRewardTab />}
         {tab === 'mail' && <MailTab confirm={confirm} />}
+        {tab === 'news' && <NewsTab confirm={confirm} />}
         {tab === 'finance' && <FinanceTab confirm={confirm} />}
         {tab === 'arenaEconomy' && <ArenaEconomyTab />}
         {tab === 'top' && <TopTab />}
