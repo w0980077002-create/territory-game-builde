@@ -22,9 +22,9 @@ const verify = async owner => (await db.query(
   'SELECT territory_private.stage8_verified_gear_v2($1::jsonb,$2::uuid) AS gear',
   [JSON.stringify(gear), owner],
 )).rows[0].gear;
-const transfer = async owner => db.query(
-  'UPDATE public.territory_profession_stage8_items SET player_id=$1 WHERE item_id=$2',
-  [owner, uuid],
+const transfer = async (expectedOwner, nextOwner) => db.query(
+  'UPDATE public.territory_profession_stage8_items SET player_id=$1 WHERE item_id=$2 AND player_id=$3 RETURNING item_id',
+  [nextOwner, uuid, expectedOwner],
 );
 
 try {
@@ -52,23 +52,26 @@ try {
 
   assert.deepEqual(await verify(owners[0]), gear);
   // A level-1 trader may own and resell level-50 gear without changing its stats.
-  await transfer(owners[1]);
+  assert.equal((await transfer(owners[0], owners[1])).rows.length, 1);
   assert.deepEqual(await verify(owners[1]), gear);
   await assert.rejects(() => verify(owners[0]), /stage8_item_not_owned/);
-  await transfer(owners[2]);
+  assert.equal((await transfer(owners[1], owners[2])).rows.length, 1);
   assert.deepEqual(await verify(owners[2]), gear);
   await assert.rejects(() => verify(owners[1]), /stage8_item_not_owned/);
 
   // Simulate a failed resale inside an isolated transaction; rollback restores owner.
   await db.exec('BEGIN');
   try {
-    await transfer(owners[1]);
+    assert.equal((await transfer(owners[2], owners[1])).rows.length, 1);
     assert.deepEqual(await verify(owners[1]), gear);
   } finally {
     await db.exec('ROLLBACK');
   }
   assert.deepEqual(await verify(owners[2]), gear);
   await assert.rejects(() => verify(owners[1]), /stage8_item_not_owned/);
+  // A delayed request from the former merchant must not steal resold gear.
+  assert.equal((await transfer(owners[1], owners[0])).rows.length, 0);
+  assert.deepEqual(await verify(owners[2]), gear);
   const row = (await db.query(
     'SELECT player_id, item_output FROM public.territory_profession_stage8_items WHERE item_id=$1',
     [uuid],
