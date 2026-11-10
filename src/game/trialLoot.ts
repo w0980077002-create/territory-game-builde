@@ -24,7 +24,7 @@ export const TRIAL_LOOT_ASSET_BASE = 'assets/territory/ui/trial-loot/';
 export const TRIAL_CHEST_ART: Record<TrialChestTier, string> = {
   common: 'assets/territory/ui/materials/royal-chest.webp',
   explorer: TRIAL_LOOT_ASSET_BASE + 'chest-explorer.svg',
-  guardian: TRIAL_LOOT_ASSET_BASE + 'chest-guardian.svg',
+  guardian: TRIAL_LOOT_ASSET_BASE + 'chest-guardian-premium.webp',
   legendary: TRIAL_LOOT_ASSET_BASE + 'chest-legendary.svg',
 };
 
