@@ -58,6 +58,7 @@ try {
     await db.query('INSERT INTO public.players(id,level,game_state) VALUES($1,10,$2::jsonb)',
       [id, JSON.stringify(state)]);
   }
+  const beforeOwner = (await db.query('SELECT game_state FROM public.players WHERE id=$1', [owner])).rows[0].game_state;
   const beforeOther = (await db.query('SELECT game_state FROM public.players WHERE id=$1', [other])).rows[0].game_state;
   const result = (await db.query(
     'SELECT territory_private.owner_cap_item_v1($1::jsonb,10,$2::uuid) AS gear',
@@ -66,6 +67,13 @@ try {
   assert.equal(result.level, 10,
     'KNOWN DEFECT: real owner save cap currently destroys level 50 on a level-10 owner');
   assert.notEqual(result.level, sword.level, 'regression witness must actually expose destructive cap');
+  const secondOwnerResult = (await db.query(
+    'SELECT territory_private.owner_cap_item_v1($1::jsonb,10,$2::uuid) AS gear',
+    [JSON.stringify(sword), other])).rows[0].gear;
+  assert.equal(secondOwnerResult.id, sword.id, 'second owner must receive the same item identity');
+  assert.equal(secondOwnerResult.level, 10, 'destructive cap must reproduce for independent low-level owner');
+  const afterOwner = (await db.query('SELECT game_state FROM public.players WHERE id=$1', [owner])).rows[0].game_state;
+  assert.deepEqual(afterOwner, beforeOwner, 'function-only characterization must not silently write owner state');
   const afterOther = (await db.query('SELECT game_state FROM public.players WHERE id=$1', [other])).rows[0].game_state;
   assert.deepEqual(afterOther, beforeOther, 'other owner must be untouched');
   assert.equal(sword.level, 50, 'synthetic source object must not be mutated');
