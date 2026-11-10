@@ -151,7 +151,7 @@ BEGIN
  -- Probabilities are draws at claim time and each receipt is saved exactly once.
  -- 0.3% Heart: only Legendary; tradeable as a future auction material.
  -- 0.05% Awakening Stone: exceptionally rare and never premium cash.
- v_fragment:=v_rank BETWEEN 1 AND 3 OR (
+ v_fragment:=COALESCE(v_rank BETWEEN 1 AND 3,false) OR (
     v_tier='legendary' AND pg_catalog.random()<0.12
  ) OR (v_tier='hunter' AND pg_catalog.random()<0.04);
  v_ingredient:=v_tier<>'participant' AND pg_catalog.random()<
