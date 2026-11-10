@@ -15,6 +15,7 @@ import { HomeScreen } from '@/components/HomeScreen';
 import type { BattleView } from '@/components/BattleScreen';
 import { DailySheet, type SaveStatus } from '@/components/home/HomeSheets';
 import { SectionErrorBoundary } from '@/components/SectionErrorBoundary';
+import { MapScreen } from '@/components/MapScreen';
 
 
 
@@ -45,7 +46,7 @@ import { getQuestAlerts, readSeenQuests, rememberSeenQuests } from '@/game/quest
 
 // Only City is downloaded for initial login; other screens load on demand.
 // Never prefetch every game mode on a mobile connection.
-const MapScreen = lazy(() => import('@/components/MapScreen').then(m => ({ default: m.MapScreen })));
+
 const BattleScreen = lazy(() => import('@/components/BattleScreen').then(m => ({ default: m.BattleScreen })));
 const InventoryScreen = lazy(() => import('@/components/InventoryScreen').then(m => ({ default: m.InventoryScreen })));
 const ShopScreen = lazy(() => import('@/components/ShopScreen').then(m => ({ default: m.ShopScreen })));
