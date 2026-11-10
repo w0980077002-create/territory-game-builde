@@ -5,7 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 const read = p => readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const daySql=read('supabase/migrations/20261110014000_mortarion_reward_days_v1.sql');
 const statusSql=read('supabase/migrations/20261110015000_mortarion_reward_status_v1.sql');
-const claimSql=read('supabase/migrations/20261110016000_mortarion_reward_claim_v1.sql');
+const claimSql=read('supabase/migrations/20261110015500_mortarion_reward_claim_v1.sql');
 const ui=read('src/components/MortarionRewardPanel.tsx');
 const raid=read('src/components/MortarionBossScreen.tsx');
 const api=read('src/game/mortarionRewards.ts');
