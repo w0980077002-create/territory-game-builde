@@ -193,6 +193,8 @@ export interface GameState {
   /** Week anchor for weekly quest reset. Missing on legacy saves; initialized without resetting progress. */
   weeklyResetWeek?: string;
   belt: (InventoryItem | null)[];
+  /** Selection from the latest Arena entry, retained if a dose empties its slot. */
+  arenaAutoBeltPreset?: (InventoryItem | null)[];
   activeDays: number;
   battleStones: number;
   settings: { speed: 1 | 2; auto: boolean };
