@@ -10,7 +10,7 @@ import { parseRuneServerStatus, runeSlotCatalog } from '@/game/builds/runeSlotsV
 import { localPveRuneTotals, type PveRuneTotals } from '@/game/builds/runePveEffectsV1';
 import { ZONES, type Zone } from '@/game/arenaApi';
 import { PVE_STONE_COST } from '@/game/engine';
-import { beltContext, consumeBelt, refillVipBeltAfterBattle } from '@/game/belt';
+import { beltContext, canSpendSnapshottedBattleCharge, consumeBelt, refillVipBeltAfterBattle } from '@/game/belt';
 import { activeVipForBenefits } from '@/game/vipProgram';
 import { blessedGold, consumeBlessing, recordTrialWin, spendStones, trialReward } from '@/game/progression';
 import { selectedFollower, followerCombat } from '@/game/followers';
@@ -243,6 +243,9 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   // the first await, so two taps cannot run two local fights / referral rounds.
   const roundFlight = useRef(false);
   const lastPotionUse = useRef<{ slot: number; at: number } | null>(null);
+  // An encounter may spend only the charges present on its belt at entry.
+  // Count by original slot, so a second window cannot refill it mid-fight.
+  const usedPotionCharges = useRef<Record<number, number>>({});
   heroRef.current = hero;
   foeRef.current = foe;
 
@@ -487,12 +490,19 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     const latest = useGame.get();
     const item = latest.belt[i];
     if (!item) return setToast(language === 'en' ? 'Empty slot — move an elixir from inventory' : 'Слот пуст — положи эликсир из инвентаря');
+    const used = usedPotionCharges.current[i] ?? 0;
+    if (!canSpendSnapshottedBattleCharge(beltAtFightStart.current, latest.belt, i, used)) {
+      return setToast(language === 'en'
+        ? 'Battle belt is locked to its starting charges. Refill after the fight.'
+        : 'В бою можно использовать только начальный запас пояса. Пополни его после боя.');
+    }
     const now = Date.now();
     if (lastPotionUse.current?.slot === i && now - lastPotionUse.current.at < 650) return;
     const r = applyPotion(heroRef.current, item);
     setToast(r.text);
     if (!r.ok) return;
     lastPotionUse.current = { slot: i, at: now };
+    usedPotionCharges.current[i] = used + 1;
     // Publish the new local hero state before another input event, even if
     // React has not committed the visual HP yet.
     heroRef.current = r.hero;
