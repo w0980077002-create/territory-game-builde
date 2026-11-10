@@ -252,9 +252,6 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
       <p className="relative mt-1.5 text-[11px] text-amber-100/85">
         {en ? 'Available strikes' : 'Доступно ударов'}: <b>{state ? hitsLeft : '…'}/{MORTARION_HITS_PER_HOUR}</b> · {en ? 'One strike every 60 seconds' : '1 удар раз в 60 секунд'}
       </p>
-      <p className="relative mt-1 text-[10px] leading-tight text-amber-200/70">
-        {en ? 'One evolving chest for each participant. Player and tester accounts share the TOP 10.' : 'Один растущий сундук за участие. Игроки и тестеры соревнуются в общем Топ-10.'}
-      </p>
       {rewardStatus && <p data-testid="mortarion-reward-teaser" className="relative mt-2 rounded-lg border border-violet-400/35 bg-violet-950/40 px-2 py-1.5 text-[11px] font-bold text-amber-100">
         🎁 {en ? 'Your chest' : 'Твой сундук'}: {rewardStatus.tier === 'legendary' ? (en ? 'Legendary' : 'Легендарный') : rewardStatus.tier === 'hunter' ? (en ? 'Soul hunter' : 'Охотника') : (en ? 'Participant' : 'Участника')} · {rewardStatus.activeDays}/{rewardStatus.requiredDays} {en ? 'days' : 'дней'} · {rewardStatus.totalHits} {en ? 'hits' : 'ударов'}
       </p>}
