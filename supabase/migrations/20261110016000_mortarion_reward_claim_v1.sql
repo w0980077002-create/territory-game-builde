@@ -98,13 +98,13 @@ BEGIN
  -- If everybody killed the boss early, count only the event's lived 24h
  -- windows. Otherwise finishing all five days remains necessary for Legendary.
  IF v_event.hp=0 THEN
-   v_needed:=pg_catalog.greatest(1,pg_catalog.least(5,
+   v_needed:=GREATEST(1,LEAST(5,
      pg_catalog.ceil(pg_catalog.date_part('epoch',v_event.updated_at-v_event.starts_at)/86400)::integer));
  END IF;
 
  IF v_days>=v_needed AND v_part.total_hits>=15 THEN
    v_tier:='legendary';
- ELSIF v_days>=pg_catalog.least(3,v_needed) THEN
+ ELSIF v_days>=LEAST(3,v_needed) THEN
    v_tier:='hunter';
  END IF;
 
