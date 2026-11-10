@@ -31,13 +31,15 @@ interface Props {
   autoStart: boolean;
   onAutoStartHandled: () => void;
   onShop: () => void;
+  /** Opens the Shop at the Dark Cave blessing elixirs. */
+  onCaveShop?: () => void;
   onQuests: () => void;
   onEquipment: () => void;
   onForge?: () => void;
   onActiveChange?: (active: boolean) => void;
 }
 
-export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onQuests, onEquipment, onForge, onActiveChange }: Props) {
+export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onCaveShop, onQuests, onEquipment, onForge, onActiveChange }: Props) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
@@ -222,7 +224,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         </div>
       )}
       {view === 'cave' ? (
-        <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} />
+        <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} onShop={onCaveShop} />
       ) : <>
       <div className="flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11">
         <span className="text-xs text-gray-400">

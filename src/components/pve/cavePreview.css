@@ -1,7 +1,5 @@
-/* Preserve the Cave image and collapsed floor-reward panel on short phones. */
+/* Short phones: keep three floor rows and Challenge on screen. */
 @media (max-height: 650px) {
-  .dark-cave-portal-wrap { height: 34px; }
-  .dark-cave-portal-wrap > div { display: none; }
+  .dark-cave-portal-wrap { height: 40px; }
   .dark-cave-floor-wrap { min-height: 155px; }
-  .dark-cave-rewards { display: block; }
 }

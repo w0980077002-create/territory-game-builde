@@ -7,11 +7,16 @@ import autoprefixer from 'autoprefixer';
 
 // Browser-only fixture: actual React adventure UI, fake transport, never real players.
 const fixture = String.raw`
-let progress = { completed_stage: 0, unlocked_stage: 1, dark_stones: 5 };
+const query = new URLSearchParams(location.search);
+// ?cleared=N starts the fixture deeper in the cave; ?stones=N sets the entry keys.
+const cleared = Math.min(99, Math.max(0, Number(query.get('cleared')) || 0));
+let progress = { completed_stage: cleared, unlocked_stage: cleared + 1, dark_stones: query.has('stones') ? Number(query.get('stones')) : 5 };
 let current = null;
+let fightStage = cleared + 1;
 // Exercise duplicate delivery of one server-confirmed batch on pending advance + resume.
 let pendingRecovery = new URLSearchParams(location.search).get('pending') === '1';
-const oldState = { player: { gold: 100, equipped: {} }, inventory: [], belt: Array(7).fill(null), appearance: 'm2', activeDays: 1 };
+const oldState = { player: { name: 'Рагнар', gold: 100, equipped: {} }, inventory: [], belt: Array(7).fill(null), appearance: 'm2', activeDays: 1,
+  followers: [{ id: 'follower_5', unlocked: true }], activeFollowerId: 'follower_5' };
 window.__adventureCalls = [];
 export const useGame = { get: () => oldState, set: () => {}, subscribe: () => () => {} };
 const arenaState = { wins: 0, losses: 0, rating: 1000 };
@@ -28,6 +33,7 @@ export async function requestAdventureStart(userId,command,hooks) {
  window.__adventureCalls.push(command);
  window.__adventureControl=new URLSearchParams(location.search).get('manual') === '1' ? 'manual' : command.control;
  progress = {...progress, dark_stones: progress.dark_stones - 1};
+ fightStage = progress.unlocked_stage;
  current=outcome('fighting');
  hooks.applyState(oldState);
  return current;
@@ -35,7 +41,7 @@ export async function requestAdventureStart(userId,command,hooks) {
 const outcome = status => ({
  success: true, session_id: '11111111-1111-4111-8111-111111111111',
  revision: status === 'fighting' ? 0 : 1,
- state: { status, input: { stage: 1, control: window.__adventureControl || 'manual', rules: { maxEnergy: 100 } },
+ state: { status, input: { stage: fightStage, control: window.__adventureControl || 'manual', rules: { maxEnergy: 100 } },
    actors: { hero: { energy: 35, stats: { hp: 100, maxHp: 100 }, loadout: { skills: [] } },
              enemy: { stats: { hp: status === 'fighting' ? 50 : 0, maxHp: 50 } } } },
  settlement: status === 'fighting' ? null : { outcome: status, reward: status === 'hero_won' ? { gold: 10, xp: 20 } : { gold: 0, xp: 0 } },
@@ -62,7 +68,8 @@ export async function requestAdventureSettlement(userId, command, hooks) {
      { id: 'confirmed-1', atMs: 1000, actor: 'hero', target: 'enemy', type: 'impact', value: 10 },
      { id: 'confirmed-2', atMs: 1700, actor: 'enemy', target: 'hero', type: 'block', value: 5 },
    ] };
-   progress = { completed_stage: result === 'hero_won' ? 1 : 0, unlocked_stage: result === 'hero_won' ? 2 : 1, dark_stones: 4 };
+   const done = Math.min(100, progress.completed_stage + (result === 'hero_won' ? 1 : 0));
+   progress = { completed_stage: done, unlocked_stage: Math.min(100, done + 1), dark_stones: progress.dark_stones };
    hooks.applyState(oldState);
  }
  return current || outcome('fighting');

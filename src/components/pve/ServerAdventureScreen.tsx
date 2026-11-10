@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Check, ChevronRight, Crown, Info, Loader2, Lock, Swords, Zap } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
@@ -10,21 +10,27 @@ import { FoldSection } from '@/components/arena/FoldSection';
 import { ensurePlayerSession } from '@/game/auth';
 import { supabase } from '@/game/supabase';
 import { restoreAdventureSaveFence, restoreAdventureStartFence, requestAdventureStart, requestAdventureSettlement } from '@/game/combatV1/receiptAdapter';
-import { getCampaignStage } from '@/game/idleContent/campaign';
-import { caveLootPreview } from '@/game/combatV1/caveLootPreview';
-import { CavePreview } from './CavePreview';
-import { UmbraGear } from './UmbraGear';
+import { buildCaveFloors, getCaveFloor, type CaveFloor } from '@/game/cave/floors';
+import { dispatchCave, useCaveSandbox } from '@/game/cave/sandboxStore';
+import { selectedFollower } from '@/game/followers';
+import { CaveUmbraScreen } from './cave/CaveUmbraScreen';
+import { CaveGemsScreen } from './cave/CaveGemsScreen';
+import { CaveBlessingSlots, CaveFloorDialog, CaveFundPanel, CaveLootReveal } from './cave/CavePanels';
+import { Dialog, woodStyle } from './cave/caveShared';
 import './cavePreview.css';
 import type { IdleCombatState, IdleCombatEvent } from '@/game/idleEngine/types';
 import { getCombatAppearance } from '@/game/appearance';
-import { getEnemyCombatFrames } from '@/game/combatArt';
+import { getEnemyCombatFrames, getFollowerArt } from '@/game/combatArt';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { FighterFigure } from '@/components/arena/FighterFigure';
 
 type Progress = { completed_stage: number; unlocked_stage: number; dark_stones: number; active_session_id?: string | null };
 type Settlement = { outcome: string; reward?: { gold: number; xp: number }; dark_stone_refunded?: boolean };
 type Session = { session_id: string; revision: number; state: IdleCombatState; events?: IdleCombatEvent[]; settlement?: Settlement | null };
-type Props = { userId: string; onActiveChange?: (active: boolean) => void };
+type Props = { userId: string; onActiveChange?: (active: boolean) => void; onShop?: () => void };
+// The cave's own 100-floor catalog; ids follow the server encounter adventure_v1_stage_<floor>.
+const CAVE_FLOORS = buildCaveFloors();
+const floorEnemy = (stage: number, en: boolean) => { const floor = getCaveFloor(stage); return en ? floor.enemyEn : floor.enemyRu; };
 // Reads and writes the live store; no component state, so one module-level object.
 const hooks = { getState: () => useGame.get(), applyState: (state: ReturnType<typeof useGame.get>) => useGame.set(state) };
 const sessionKey = (id: string) => 'territory_adventure_session_v1:' + id;
@@ -70,7 +76,7 @@ function message(error: unknown, en: boolean) {
 }
 
 /** Separate V1 server campaign: NEVER computes a win, cost, loot or stats in the browser. */
-export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
+export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props) {
   const { language } = useLanguage();
   const en = language === 'en';
   const game = useStore(useGame);
@@ -81,10 +87,9 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
   const [stoneInfo, setStoneInfo] = useState(false);
-  const [blessing, setBlessing] = useState(false);
-  const [caveTab, setCaveTab] = useState<'floors'|'loot'|'enhance'|'fund'>('floors');
-  const [umbraOpen, setUmbraOpen] = useState(false);
-  const [lootPreviewOpen, setLootPreviewOpen] = useState(false);
+  const [floorInfo, setFloorInfo] = useState(false);
+  const [caveTab, setCaveTab] = useState<'floors'|'gear'|'gems'|'fund'>('floors');
+  const [box] = useCaveSandbox();
   const floorListRef = useRef<HTMLDivElement | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [busy, setBusy] = useState(true);
@@ -113,7 +118,8 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     sessionRef.current = value;
     if (autoFightSession.current !== value.session_id) {
       autoFightSession.current = value.session_id;
-      setAutoFight(value.state.input.control === 'auto'); // legacy auto sessions
+      // Keep the player's last Auto choice between fights; legacy auto sessions stay auto.
+      setAutoFight(previous => previous || value.state.input.control === 'auto');
     }
     setSession(value);
     // Visual effects follow the authoritative server event stream, never invented client hits.
@@ -132,7 +138,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
       ['impact', 'critical', 'block', 'dodge'].includes(event.type)
       && (event.target === 'hero' || event.target === 'enemy')).slice(-6);
     if (hits.length) {
-      const opponent = getCampaignStage(value.state.input.stage).enemyName;
+      const opponent = floorEnemy(value.state.input.stage, en);
       const hero = useGame.get().player.name;
       const confirmed: StrikeEvent[] = hits.map(hit => ({
         key: ++strikeId.current,
@@ -149,7 +155,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
       ...events.filter(event => ['impact', 'critical', 'block', 'dodge', 'rune_proc'].includes(event.type))
         .slice(-5).map(event => event.type === 'rune_proc'
           ? (en ? 'Rune activated' : 'Сработала руна')
-          : `${event.actor === 'hero' ? (en ? 'Hero' : 'Герой') : getCampaignStage(value.state.input.stage).enemyName}: ${event.type === 'critical' ? (en ? 'Critical hit' : 'Критический удар') : event.type === 'block' ? (en ? 'Block' : 'Блок') : event.type === 'dodge' ? (en ? 'Dodge' : 'Уклонение') : (en ? 'Hit' : 'Удар')}${typeof event.value === 'number' ? ' −' + Math.floor(event.value) : ''}`)
+          : `${event.actor === 'hero' ? (en ? 'Hero' : 'Герой') : floorEnemy(value.state.input.stage, en)}: ${event.type === 'critical' ? (en ? 'Critical hit' : 'Критический удар') : event.type === 'block' ? (en ? 'Block' : 'Блок') : event.type === 'dodge' ? (en ? 'Dodge' : 'Уклонение') : (en ? 'Hit' : 'Удар')}${typeof event.value === 'number' ? ' −' + Math.floor(event.value) : ''}`)
     ].slice(-8));
     // Telegram WebView can deny storage writes (private mode/quota). A confirmed
     // server receipt must still render and remain recoverable via server progress.
@@ -301,7 +307,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   const clearFinished = () => {
     if (lock.current || sessionRef.current?.state.status === 'fighting') return;
     localStorage.removeItem(sessionKey(userId));
-    sessionRef.current = null; autoFightSession.current = ''; setAutoFight(false);
+    sessionRef.current = null; autoFightSession.current = '';
     seenServerEvents.current = { sessionId: '', keys: new Set() };
     setSession(null); setStrikeQueue([]); setBattleLog([]); onActiveChange?.(false);
     // A finished pinned session does not approve the new equipment. Recheck
@@ -311,7 +317,6 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   };
 
   const currentStage = progress?.unlocked_stage ?? 1;
-  const chosen = getCampaignStage(currentStage);
   const actor = session?.state.actors;
   const hp = (side: 'hero' | 'enemy') => {
     const stats = actor?.[side]?.stats;
@@ -320,22 +325,37 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
     return { left, max, pct: Math.max(0, Math.min(100, 100 * left / max)) };
   };
   const finished = session && session.state.status !== 'fighting';
-  const battleStage = session ? getCampaignStage(session.state.input.stage) : chosen;
+  const floorFocus = selectedFloor ?? currentStage;
+  const highlightedFloor = getCaveFloor(floorFocus);
+  const battleFloor = session ? getCaveFloor(session.state.input.stage) : highlightedFloor;
   const heroName = useGame.get().player.name;
-  const enemyName = battleStage.enemyName;
+  const enemyName = en ? battleFloor.enemyEn : battleFloor.enemyRu;
   // Keep the exact hero appearance chosen by the player.
   const heroFrames = getCombatAppearance(game.appearance);
   const fighterSrc = heroFrames.idle;
-  const enemySrc = import.meta.env.BASE_URL + 'assets/territory/characters/' + battleStage.enemyArt + '/idle.webp';
+  const characterArt = (floor: CaveFloor) => import.meta.env.BASE_URL + 'assets/territory/characters/' + floor.enemyArt + '/idle.webp';
+  const enemySrc = characterArt(battleFloor);
+  const companion = Array.isArray(game.followers) ? selectedFollower(game) : null;
   const darkStoneArt = import.meta.env.BASE_URL + 'assets/territory/items/dark-stone.svg';
   const realmArt = import.meta.env.BASE_URL + 'assets/territory/scenes/dark-cave-realm.svg';
-  const floors = Array.from({ length: 100 }, (_, i) => getCampaignStage(i + 1));
-  const floorFocus = selectedFloor ?? currentStage;
-  const highlightedFloor = getCampaignStage(floorFocus);
-  const lootPreview = caveLootPreview(progress?.unlocked_stage ?? 1);
+  const sceneArt = import.meta.env.BASE_URL + 'assets/territory/cave/scene/';
+  const depthStyle = (floor: CaveFloor) => ({ '--depth': floor.depth.hue }) as CSSProperties;
   const mayChallenge = progress !== null && floorFocus === progress.unlocked_stage && progress.completed_stage < 100;
+  const floorState = (index: number): 'cleared' | 'current' | 'locked' => !progress || index > progress.unlocked_stage ? 'locked'
+    : index <= progress.completed_stage ? 'cleared' : 'current';
+  // Test loot for a server-confirmed victory: keyed by the session, so a
+  // remount, resume or double delivery can never loot the same fight twice.
+  const victoryLootId = session?.state.status === 'hero_won' && session.settlement ? 'victory:' + session.session_id : null;
+  useEffect(() => {
+    if (!victoryLootId || !session) return;
+    const floor = getCaveFloor(session.state.input.stage);
+    dispatchCave({ type: 'loot', floor: floor.index, boss: floor.kind === 'boss' }, victoryLootId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- once per confirmed victory id
+  }, [victoryLootId]);
+  const victoryLoot = victoryLootId && box.lastLoot?.opId === victoryLootId ? box.lastLoot : null;
   const jumpToCurrent = () => {
     setSelectedFloor(null);
+    setCaveTab('floors');
     const panel = floorListRef.current;
     const current = panel?.querySelector<HTMLElement>('[data-current-floor="true"]');
     if (panel && current) {
@@ -344,7 +364,7 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
   };
   // Scroll inside the floor list, not the entire Telegram WebApp or the battle page.
   useEffect(() => {
-    if (session || !progress) return;
+    if (session || !progress || caveTab !== 'floors') return;
     const frame = requestAnimationFrame(() => {
       const panel = floorListRef.current;
       const current = panel?.querySelector<HTMLElement>('[data-current-floor="true"]');
@@ -353,29 +373,34 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
       }
     });
     return () => cancelAnimationFrame(frame);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- scroll only when the session or unlocked floor changes
-  }, [session?.session_id, progress?.unlocked_stage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- scroll only when the session, tab or unlocked floor changes
+  }, [session?.session_id, progress?.unlocked_stage, caveTab]);
 
-  return <section className="flex h-full min-h-0 flex-1 flex-col gap-1.5 overflow-hidden" data-testid="territory-adventure-v1">
+  return <section className="cv-root flex h-full min-h-0 flex-1 flex-col gap-1.5 overflow-hidden" data-testid="territory-adventure-v1">
     <h2 className="sr-only">{en ? 'Dark Cave' : 'Тёмная пещера'}</h2>
     {error && <p role="alert" className="rounded-xl border border-red-400/40 bg-red-950/50 p-3 text-xs text-red-100">{error}</p>}
     {recoverable && <button disabled={busy} onClick={()=>void restore()} className="w-full rounded-xl border border-amber-500/60 bg-amber-900/30 p-3 font-semibold text-amber-100">
       {en ? 'Restore fight' : 'Восстановить бой'}
     </button>}
-    {busy && <p role="status" className="text-center text-amber-100 text-xs"><Loader2 className="w-4 h-4 animate-spin inline mr-2"/>{en?'Connecting to fight…':'Подключаем бой…'}</p>}
-    {session ? <div ref={battleRef} data-testid="territory-adventure-battle" className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-amber-600/50 bg-gradient-to-b from-amber-950/70 to-slate-950 p-2 space-y-3 scroll-mt-3">
-      <p className="text-center text-xs text-amber-200 font-bold">{en?'Dark Cave':'Тёмная пещера'} · {en?'Floor':'Этаж'} {session.state.input.stage} · {enemyName}</p>
-      <div className="relative min-h-[340px] overflow-hidden rounded-xl border border-amber-400/25 bg-slate-900">
-        <img src={realmArt} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover object-center pointer-events-none" data-testid="dark-cave-battle-background" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/75 pointer-events-none" />
-        <div className="relative grid grid-cols-2 gap-2 p-2 min-h-[340px]">
+    {busy && !session && <p role="status" className="text-center text-amber-100 text-xs"><Loader2 className="w-4 h-4 animate-spin inline mr-2"/>{en?'Connecting to fight…':'Подключаем бой…'}</p>}
+    {session ? <div ref={battleRef} data-testid="territory-adventure-battle" style={depthStyle(battleFloor)}
+      className="cv-panel min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5 space-y-1.5 scroll-mt-3">
+      <p className="text-center text-[11px] text-amber-200 font-bold">
+        {en ? battleFloor.depth.en : battleFloor.depth.ru} · {en?'Floor':'Этаж'} {session.state.input.stage}
+        {battleFloor.kind === 'boss' && <span className="ml-1 text-yellow-300">· {en ? 'BOSS' : 'БОСС'}</span>}
+        {busy && <Loader2 className="ml-1.5 inline h-3 w-3 animate-spin" aria-label={en?'Confirming…':'Подтверждаем…'}/>}
+      </p>
+      {/* Layers: background → back VFX → fighters → foreground → HUD. */}
+      <div className="cv-arena" data-testid="dark-cave-arena">
+        <img src={realmArt} alt="" draggable={false} className="cv-arena-bg" data-testid="dark-cave-battle-background" />
+        <div className="cv-arena-tint" />
+        <div className="cv-arena-rift" />
+        <img src={sceneArt + 'rune-circle.svg'} alt="" className="cv-arena-rune cv-arena-rune--hero" />
+        <img src={sceneArt + 'rune-circle.svg'} alt="" className="cv-arena-rune cv-arena-rune--foe" />
+        <div className="cv-arena-stage">
           {(['hero','enemy'] as const).map(side => <div key={side} className="relative min-w-0 flex flex-col">
-            <div className="relative z-20 rounded-lg border border-white/15 bg-black/65 p-2">
-              <p className="text-xs text-white font-semibold truncate mb-1">{side === 'hero' ? heroName : enemyName}</p>
-              <div className="h-2 bg-black rounded-full overflow-hidden"><div className={side === 'hero' ? 'h-full bg-emerald-400 transition-[width] duration-500' : 'h-full bg-red-400 transition-[width] duration-500'} style={{ width: hp(side).pct + '%' }} /></div>
-              <p className="text-[10px] text-gray-200 mt-1 text-right tabular-nums">{Math.ceil(hp(side).left)}/{Math.ceil(hp(side).max)} HP</p>
-            </div>
-            <div className="relative flex-1 z-10 min-h-[270px]">
+            <div className="cv-fig">
+              {side === 'hero' && companion && <img src={getFollowerArt(companion.id)} alt={en ? 'Companion' : 'Спутник'} className="cv-ally" data-testid="dark-cave-companion" draggable={false} />}
               {side === 'hero'
                 ? <FighterFigure src={fighterSrc} combatFrames={heroFrames}
                     name={heroName} dir={1} alive={hp(side).left > 0} won={session.state.status === 'hero_won'}
@@ -384,17 +409,85 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
                 : <FighterFigure src={enemySrc} combatFrames={getEnemyCombatFrames(enemySrc)}
                     name={enemyName} dir={-1} alive={hp(side).left > 0} won={session.state.status === 'enemy_won'}
                     strike={strike} idleSeconds={2.8}
-                    className="absolute left-0 bottom-0 h-[86%] w-full object-contain object-left-bottom" />}
+                    className={'absolute left-0 bottom-0 w-full object-contain object-left-bottom ' + (battleFloor.kind === 'boss' ? 'h-[96%]' : 'h-[86%]')} />}
             </div>
           </div>)}
         </div>
+        <img src={sceneArt + 'foreground.svg'} alt="" className="cv-arena-front" />
+        <div className="cv-arena-hud" data-testid="dark-cave-hud">
+          {(['hero','enemy'] as const).map(side => <div key={side} className={'cv-hp' + (side === 'enemy' && battleFloor.kind === 'boss' ? ' cv-hp--boss' : '')}>
+            <p className="cv-hp-name">{side === 'enemy' && battleFloor.kind === 'boss' && <Crown size={12} className="shrink-0 text-yellow-300"/>}
+              <span className="truncate">{side === 'hero' ? heroName : enemyName}</span></p>
+            <div className={'cv-hp-bar ' + (side === 'hero' ? 'cv-hp-bar--hero' : 'cv-hp-bar--foe')}><div style={{ width: hp(side).pct + '%' }} /></div>
+            <p className="cv-hp-num">{Math.ceil(hp(side).left)}/{Math.ceil(hp(side).max)} HP</p>
+          </div>)}
+        </div>
+        <div className="cv-arena-fog" />
+        {[8, 22, 37, 55, 71, 88].map((left, i) => <span key={left} className="cv-mote" style={{ left: left + '%', bottom: (6 + (i % 3) * 9) + '%', animationDelay: (-i * 0.9) + 's' }} />)}
+        {strike && <span key={strike.key} data-testid="dark-cave-impact"
+          className={'cv-burst ' + (strike.target === heroName ? 'cv-burst--hero' : 'cv-burst--foe') + (strike.tone === 'crit' ? ' cv-burst--crit' : strike.tone === 'block' || strike.tone === 'dodge' ? ' cv-burst--block' : '')} />}
+        {strike?.tone === 'crit' && <span key={'flash-' + strike.key} className="cv-flash" />}
       </div>
-      <div className="flex items-center justify-center gap-2 text-xs text-amber-100">
-        <span className="flex items-center gap-1"><Zap size={14}/>{en ? 'Energy' : 'Энергия'}: {Math.floor(session.state.actors.hero.energy)}/{session.state.input.rules.maxEnergy}</span>
+      <div className="flex items-center justify-between gap-2 text-[11px] text-amber-100">
+        <span className="flex items-center gap-1"><Zap size={13}/>{en ? 'Energy' : 'Энергия'}: {Math.floor(session.state.actors.hero.energy)}/{session.state.input.rules.maxEnergy}</span>
+        <span className="cv-chip">{battleFloor.kind === 'boss' ? (en?'Boss fight':'Битва с боссом') : battleFloor.kind === 'elite' ? (en?'Elite foe':'Элитный враг') : (en?'Cave dweller':'Обитатель пещеры')}</span>
       </div>
-      {!!battleLog.length && <div data-testid="dark-cave-battle-log" className="rounded-lg bg-black/35 border border-white/10 px-2 py-1 text-[11px] text-slate-200 max-h-24 overflow-auto" aria-live="polite">
-        {battleLog.slice(-4).map((line, i) => <p key={i}>{line}</p>)}
+      {!!battleLog.length && <div data-testid="dark-cave-battle-log" className="rounded-lg border border-white/10 bg-black/35 px-2 py-1 text-[11px] leading-tight text-slate-200" aria-live="polite">
+        {battleLog.slice(-2).map((line, i) => <p key={i} className="truncate">{line}</p>)}
       </div>}
+      {finished ? <>
+        <p className={'cv-result ' + (session.state.status==='hero_won' ? 'cv-result--win' : 'cv-result--loss')} role="status">{session.state.status==='hero_won' ? (en?'Victory!':'Победа!') : session.state.status==='enemy_won' ? (en?'Defeat':'Поражение') : (en?'Draw':'Ничья')}</p>
+        {session.state.status==='hero_won' && session.settlement?.reward && <p className="text-center text-xs text-yellow-100">
+          +{session.settlement.reward.gold} {en?'gold':'монет'} · +{session.settlement.reward.xp} XP
+        </p>}
+        {session.state.status === 'hero_won' && progress && progress.unlocked_stage > session.state.input.stage && (
+          <p className="rounded-lg border border-emerald-400/40 bg-emerald-950/40 px-3 py-1.5 text-center text-sm font-bold text-emerald-200" data-testid="dark-cave-next-floor">
+            {en ? 'Next floor unlocked: ' : 'Открыт следующий этаж: '}{progress.unlocked_stage}
+          </p>
+        )}
+        {victoryLoot && <CaveLootReveal en={en} loot={victoryLoot} />}
+        {session.state.status !== 'hero_won' && <p className="text-center text-xs text-amber-100/80">
+          {en ? 'Strengthen your build and try this floor again.' : 'Усиль сборку и попробуй пройти этот этаж ещё раз.'}
+        </p>}
+        {session.state.status !== 'hero_won' && session.settlement?.dark_stone_refunded === true && (
+          <p className="rounded-lg border border-emerald-400/45 bg-emerald-950/45 px-3 py-2 text-center text-sm font-bold text-emerald-100" data-testid="dark-cave-stone-refunded">
+            {en ? 'Dark Stone returned — try again!' : 'Тёмный камень возвращён — попробуй ещё раз!'}
+          </p>
+        )}
+        <button onClick={clearFinished} disabled={busy} className="cv-challenge">{en?'Back to cave floors':'К этажам пещеры'}</button>
+      </> : <>
+        <div className="cv-controls" data-testid="dark-cave-control-panel">
+          <button type="button" data-testid="dark-cave-toggle-auto"
+            aria-pressed={autoFight}
+            aria-label={en ? 'Toggle automatic battle' : 'Переключить автоматический бой'}
+            disabled={recoverable || session.state.input.control === 'auto'}
+            onClick={() => setAutoFight(v => !v)}
+            className={'cv-btn min-h-11 ' + (autoFight ? 'cv-btn--gold' : '')}>
+            {autoFight ? (en ? 'Auto: on' : 'Авто: вкл') : (en ? 'Auto: off' : 'Авто: выкл')}
+          </button>
+          {session.state.input.control==='manual' && !autoFight
+            ? <button type="button" disabled={busy || recoverable} onClick={()=>void advance()} className="cv-btn cv-btn--gold min-h-11 text-sm">
+                <Swords size={17} aria-hidden="true"/>{en?'Continue battle':'Продолжить бой'}
+              </button>
+            : <span className="flex items-center justify-center rounded-lg border border-amber-500/25 bg-black/30 px-2 text-center text-[11px] text-amber-100/80">{en?'The hero fights automatically':'Герой сражается автоматически'}</span>}
+        </div>
+        {session.state.input.control==='manual' && !autoFight && session.state.actors.hero.loadout.skills.length > 0 && <div className="cv-skills" data-testid="dark-cave-manual-actions">
+          {session.state.actors.hero.loadout.skills.map(slot=>{
+            const def = session.state.input.catalog.skills.find(item => item.id === slot.skillId);
+            const rank = def?.levels[slot.level - 1];
+            const onCooldown = (session.state.actors.hero.cooldowns[slot.skillId] ?? 0) > session.state.atMs;
+            const enoughEnergy = !!rank && session.state.actors.hero.energy >= rank.energyCost;
+            return <button key={slot.skillId} type="button"
+              disabled={busy || recoverable || !rank || onCooldown || !enoughEnergy}
+              onClick={()=>void advance(slot.skillId)}
+              className="cv-btn min-h-11 flex-col !gap-0"
+              aria-label={slot.skillId.replace(/_/g,' ')}>
+              <span className="block max-w-full truncate">{slot.skillId.replace(/_/g,' ')}</span>
+              <span className="block text-[10px] font-bold text-amber-200/90">{onCooldown ? (en?'Cooldown':'Откат') : rank ? `${rank.energyCost} ⚡` : (en?'Unavailable':'Недоступно')}</span>
+            </button>;
+          })}
+        </div>}
+      </>}
       <div className="grid grid-cols-1 gap-1.5" data-testid="dark-cave-combat-panels">
         <FoldSection title={en?'Equipment':'Экипировка'}
           summary={<span className="text-[10px] text-amber-100">{Object.values(game.player.equipped ?? {}).filter(Boolean).length}/7</span>}
@@ -417,208 +510,110 @@ export function ServerAdventureScreen({ userId, onActiveChange }: Props) {
           </p>
         </FoldSection>
       </div>
-      {finished ? <>
-        <p className="text-center text-amber-200 font-bold" role="status">{session.state.status==='hero_won' ? (en?'Victory!':'Победа!') : session.state.status==='enemy_won' ? (en?'Defeat':'Поражение') : (en?'Draw':'Ничья')}</p>
-        {session.state.status==='hero_won' && session.settlement?.reward && <p className="text-center text-xs text-yellow-100">
-          +{session.settlement.reward.gold} {en?'gold':'монет'} · +{session.settlement.reward.xp} XP
-        </p>}
-        {session.state.status === 'hero_won' && progress && progress.unlocked_stage > session.state.input.stage && (
-          <p className="rounded-lg border border-emerald-400/40 bg-emerald-950/40 px-3 py-2 text-center text-sm font-bold text-emerald-200" data-testid="dark-cave-next-floor">
-            {en ? 'Next floor unlocked: ' : 'Открыт следующий этаж: '}{progress.unlocked_stage}
-          </p>
-        )}
-        {session.state.status !== 'hero_won' && <p className="text-center text-xs text-amber-100/80">
-          {en ? 'Try this floor again when you are ready.' : 'Попробуй пройти этот этаж ещё раз, когда будешь готов.'}
-        </p>}
-        {session.state.status !== 'hero_won' && session.settlement?.dark_stone_refunded === true && (
-          <p className="rounded-lg border border-emerald-400/45 bg-emerald-950/45 px-3 py-2 text-center text-sm font-bold text-emerald-100" data-testid="dark-cave-stone-refunded">
-            {en ? 'Dark Stone returned — try again!' : 'Тёмный камень возвращён — попробуй ещё раз!'}
-          </p>
-        )}
-        <button onClick={clearFinished} disabled={busy} className="w-full rounded-xl bg-amber-500 text-black p-3 font-bold">{en?'Back to cave stages':'К этапам пещеры'}</button>
-      </> : <>
-        <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-black/30 px-3 py-2" data-testid="dark-cave-control-panel">
-          <span className="text-xs font-semibold text-amber-100">{en ? 'Battle control' : 'Управление боем'}</span>
-          <button type="button" data-testid="dark-cave-toggle-auto"
-            aria-pressed={autoFight}
-            aria-label={en ? 'Toggle automatic battle' : 'Переключить автоматический бой'}
-            disabled={busy || recoverable || session.state.input.control === 'auto'}
-            onClick={() => setAutoFight(v => !v)}
-            className="min-h-11 rounded-lg border border-yellow-400/50 bg-amber-900/55 px-3 py-2 text-sm font-black text-amber-100 disabled:opacity-50">
-            {autoFight ? (en ? 'Auto on' : 'Авто включено') : (en ? 'Auto off' : 'Авто выключено')}
-          </button>
-        </div>
-        {session.state.input.control==='manual' && !autoFight && <div className="space-y-1.5" data-testid="dark-cave-manual-actions">
-          {session.state.actors.hero.loadout.skills.length > 0 ? (
-            <div className="grid grid-cols-2 gap-1.5">
-              {session.state.actors.hero.loadout.skills.map(slot=>{
-                const def = session.state.input.catalog.skills.find(item => item.id === slot.skillId);
-                const rank = def?.levels[slot.level - 1];
-                const onCooldown = (session.state.actors.hero.cooldowns[slot.skillId] ?? 0) > session.state.atMs;
-                const enoughEnergy = !!rank && session.state.actors.hero.energy >= rank.energyCost;
-                return <button key={slot.skillId} type="button"
-                  disabled={busy || recoverable || !rank || onCooldown || !enoughEnergy}
-                  onClick={()=>void advance(slot.skillId)}
-                  className="min-h-11 rounded-lg border border-amber-500/50 bg-gradient-to-b from-[#5b381d] to-[#28170c] p-1.5 text-xs font-bold text-amber-100 disabled:opacity-45"
-                  aria-label={slot.skillId.replace(/_/g,' ')}>
-                  <Swords size={15} className="mx-auto text-yellow-200"/>
-                  <span className="block truncate">{slot.skillId.replace(/_/g,' ')}</span>
-                  <span className="block text-[10px] text-amber-200/90">{onCooldown ? (en?'Cooldown':'Откат') : rank ? `${rank.energyCost} ⚡` : (en?'Unavailable':'Недоступно')}</span>
-                </button>;
-              })}
-            </div>
-          ) : <p className="rounded-lg border border-amber-500/20 bg-amber-950/25 px-2 py-1.5 text-[11px] text-amber-100/80">
-            {en?'No skills equipped. Your hero fights with basic attacks; continue to see the next result.':'Боевые умения не установлены. Герой сражается обычными ударами — продолжай бой.'}
-          </p>}
-          <button type="button" disabled={busy || recoverable} onClick={()=>void advance()}
-            className="min-h-11 w-full rounded-xl border border-yellow-300/60 bg-gradient-to-b from-amber-400 to-amber-600 px-3 py-2 text-sm font-black text-[#2c170b] disabled:opacity-50">
-            <Swords size={18} aria-hidden="true" className="inline-block mr-2 align-[-3px]"/>{en?'Continue battle':'Продолжить бой'}
-          </button>
-        </div>}
-        <p className="text-center text-xs text-amber-100/70">{autoFight
-          ? (en?'The hero fights automatically':'Герой сражается автоматически')
-          : (en?'Each tap advances the ongoing battle':'Каждое нажатие продолжает текущий бой')}</p>
-      </>}
     </div> : progress ? <>
-      {umbraOpen ? <UmbraGear en={en} hero={fighterSrc} clearedDepth={progress.completed_stage} onBack={() => setUmbraOpen(false)}/> : <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden rounded-[18px] border border-[#624478] bg-[#090b1b] p-2 shadow-[inset_0_0_42px_rgba(66,21,94,.45),0_8px_24px_rgba(0,0,0,.48)]" data-testid="dark-cave-realm">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_4%,rgba(129,56,205,.19),transparent_62%)]" />
-        <div className="relative shrink-0 text-center">
-          <div className="mx-auto mb-0.5 flex max-w-[88%] items-center gap-2 text-[#a46bcd]">
-            <span className="h-px grow bg-gradient-to-r from-transparent to-[#77479a]"/>
-            <span className="h-2 w-2 rotate-45 border border-[#a97bda] bg-[#3d205a]"/>
-            <span className="h-px grow bg-gradient-to-l from-transparent to-[#77479a]"/>
-          </div>
-          <h3 className="text-[clamp(17px,4.8vw,22px)] font-black leading-tight tracking-tight text-[#f2d9ff] drop-shadow-[0_2px_5px_#060413]">
-            {en?'Realm of Dark Energy':'Царство тёмной энергии'}
-          </h3>
-        </div>
-        <div className="relative z-10 mt-1 flex shrink-0 items-center justify-between gap-2">
-          <button type="button" onClick={()=>setStoneInfo(v=>!v)} aria-expanded={stoneInfo} data-testid="dark-stone-balance"
-            className="flex min-h-9 items-center gap-1.5 rounded-xl border border-[#9860cb]/60 bg-[#0b0818]/95 py-1 pl-1.5 pr-3 font-black text-[17px] tabular-nums text-white shadow-[0_2px_12px_rgba(134,50,204,.25)]">
-            <img src={darkStoneArt} alt={en?'Dark Stone':'Тёмный камень'} className="h-7 w-7 rounded-md object-cover"/>
-            {progress.dark_stones}
-            <Info size={13} className="ml-0.5 text-[#ceacfa]"/>
+      {caveTab === 'gear' ? <CaveUmbraScreen en={en} hero={fighterSrc} onBack={() => setCaveTab('floors')}/>
+      : caveTab === 'gems' ? <CaveGemsScreen en={en} onBack={() => setCaveTab('floors')}/>
+      : <div className="cv-panel cv-lobby" style={{ ...woodStyle(), ...depthStyle(highlightedFloor) }} data-testid="dark-cave-realm">
+        <div className="cv-head">
+          <h3 className="cv-title">{en?'Realm of Dark Energy':'Царство тёмной энергии'}</h3>
+          <button type="button" className="cv-chip min-h-9" onClick={jumpToCurrent} data-testid="dark-cave-my-floor"
+            aria-label={(en?'My floor: ':'Мой этаж: ') + currentStage + (en?' of 100':' из 100')}>{en?'Floor':'Этаж'} {currentStage}/100</button>
+          <button type="button" onClick={()=>setStoneInfo(true)} data-testid="dark-stone-balance" className="cv-stone"
+            aria-label={(en?'Dark Stones: ':'Тёмные камни: ') + progress.dark_stones}>
+            <img src={darkStoneArt} alt=""/>{progress.dark_stones}<Info size={12} className="text-[#e6c88f]"/>
           </button>
-          <button type="button" onClick={()=>setBlessing(v=>!v)} aria-expanded={blessing} className="min-h-11 rounded-lg border border-[#8a628f] px-2 text-[11px] font-bold text-[#eed6f7]">{en?'Blessing':'Благословение'}</button>
-          <span className="rounded-full border border-[#8a628f]/50 bg-[#0a0818]/90 px-3 py-1.5 text-[11px] font-bold text-[#eed6f7]">
-            {en?'Floor':'Этаж'} {currentStage} / 100
-          </span>
         </div>
-        {blessing&&<div role="note" className="relative z-20 rounded-lg bg-[#261936] p-2 text-xs text-[#eed6fa]">{en?'Blessing is a future feature. No bonuses apply yet.':'Благословение — будущая функция. Бонусы пока не действуют.'}</div>}
-        {stoneInfo&&<div className="relative z-20 mt-1 rounded-lg border border-violet-500/50 bg-[#160e28] px-2.5 py-1.5 text-[11px] text-violet-100">
-          {en?'Entry costs 1 Dark Stone; +3 daily at 00:00 UTC, starting grant 5.':'Вход — 1 Тёмный камень. При первом посещении — 5, далее +3 ежедневно в 00:00 UTC.'}
-        </div>}
-        <div className="dark-cave-portal-wrap relative mt-1.5 h-[clamp(52px,9dvh,92px)] shrink-0 overflow-hidden rounded-xl border border-[#6e4389]/70 bg-[#090615] shadow-[inset_0_0_28px_#090415,0_0_13px_rgba(107,41,155,.3)]" data-testid="dark-cave-visual">
-          <img src={realmArt} alt={en?'Violet abyss beneath the mountains':'Фиолетовая бездна в глубине подземелья'} draggable={false}
-            className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover object-center" data-testid="dark-cave-portal"/>
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#070511]/90 via-transparent to-[#070511]/10"/>
-          <button type="button" onClick={() => setUmbraOpen(true)} className="absolute inset-x-2 bottom-1 min-h-10 rounded-lg border border-[#b28a5c] bg-[#211326]/95 px-2 text-xs font-black text-[#ffe3ae]" data-testid="open-umbra">{en ? 'Additional Umbra Gear' : 'Дополнительное тёмное снаряжение'}</button>
+        <div className="cv-tabs grid-cols-4" role="group" aria-label={en?'Cave sections':'Разделы пещеры'}>
+          {([['floors',en?'Floors':'Этажи'],['gear',en?'Dark gear':'Снаряжение'],['gems',en?'Gems':'Камни'],['fund',en?'Fund':'Фонд']] as const).map(([id,label]) =>
+            <button key={id} type="button" onClick={()=>setCaveTab(id)} aria-pressed={caveTab===id} className="cv-tab" data-testid={'cave-tab-'+id}>{label}</button>)}
         </div>
-        <div className="relative mt-1 grid shrink-0 grid-cols-4 gap-1" aria-label={en?'Cave sections':'Разделы пещеры'}>
-          {([['floors',en?'Floors':'Этажи'],['loot',en?'Loot':'Добыча'],['enhance',en?'Enhance':'Усиление'],['fund',en?'Fund':'Фонд']] as const).map(([id,label]) => <button key={id} type="button" onClick={()=>setCaveTab(id)} aria-pressed={caveTab===id} className="min-h-11 rounded-lg border border-[#79558a] bg-[#241731] px-1 text-[11px] font-bold text-[#f2ddfa] aria-pressed:bg-[#704184]">{label}</button>)}
-        </div>
-        {caveTab !== 'floors' && <CavePreview tab={caveTab} en={en} depth={progress.unlocked_stage} clearedDepth={progress.completed_stage}/>}
+        {caveTab === 'fund' && <CaveFundPanel en={en} clearedDepth={progress.completed_stage}/>}
         {caveTab === 'floors' && <>
-        <div className="relative mt-1.5 flex shrink-0 items-center justify-between gap-2 px-1 py-0.5">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <span className="h-1.5 w-1.5 shrink-0 rotate-45 bg-[#ad65ed] shadow-[0_0_6px_#a25cfa]"/>
-            <h4 className="truncate text-[12px] font-black uppercase tracking-[.10em] text-[#edcfef]">{en?'Floor':'Этаж'} {floorFocus} · {highlightedFloor.enemyName}</h4>
+        <div className="cv-banner dark-cave-portal-wrap" data-testid="dark-cave-visual">
+          <img src={realmArt} alt={en?'Violet abyss beneath the mountains':'Фиолетовая бездна в глубине подземелья'} draggable={false}
+            className="cv-banner-art pointer-events-none select-none" data-testid="dark-cave-portal"/>
+          <div className="cv-banner-text">
+            <small>{en ? highlightedFloor.depth.en : highlightedFloor.depth.ru}</small>
+            <strong>{en?'Floor':'Этаж'} {floorFocus} · {en ? highlightedFloor.enemyEn : highlightedFloor.enemyRu}</strong>
           </div>
-          <button onClick={jumpToCurrent} type="button" className="shrink-0 rounded-md border border-[#8056a7]/60 bg-[#28183e] px-2.5 py-1 text-[11px] font-bold text-[#f5d7ff]">{en?'My floor':'Мой этаж'}</button>
+          <img src={characterArt(highlightedFloor)} alt="" className="cv-banner-foe" draggable={false}
+            style={floorState(floorFocus) === 'locked' ? { filter: 'brightness(0) drop-shadow(0 0 6px #b46cf2)' } : undefined}/>
+          <button type="button" className="cv-banner-info" data-testid="cave-floor-info" onClick={()=>setFloorInfo(true)}
+            aria-label={(en?'Floor details: ':'Подробнее об этаже: ') + floorFocus}/>
         </div>
-        <div className="relative dark-cave-floor-wrap min-h-[170px] flex-1 overflow-hidden rounded-xl border border-[#51416c]/80 bg-[#080a17]/90 p-1.5 shadow-[inset_0_4px_18px_#050711]" data-testid="dark-cave-floor-list">
+        <div className="cv-floors dark-cave-floor-wrap min-h-[170px]" data-testid="dark-cave-floor-list">
           <div ref={floorListRef} data-testid="dark-cave-floor-scroll" role="region" aria-label={en?'Scrollable cave floors':'Прокручиваемый список этажей'}
             tabIndex={0} className="dark-cave-floor-scroll relative h-full min-h-0 space-y-1 overflow-y-auto overscroll-contain pr-1 touch-pan-y">
-            {floors.map(floor=>{
-              const cleared = floor.index <= progress.completed_stage;
-              const current = floor.index === progress.unlocked_stage && progress.completed_stage < 100;
-              const locked = floor.index > progress.unlocked_stage || progress.completed_stage === 100 && !cleared;
+            {CAVE_FLOORS.map(floor=>{
+              const state = floorState(floor.index);
+              const current = state === 'current' && progress.completed_stage < 100;
+              const locked = state === 'locked' || progress.completed_stage === 100 && state !== 'cleared';
               const highlighted = floor.index === floorFocus;
-              const rowClass = 'relative flex min-h-[45px] w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors ' +
-                (current ? 'border-[#bf7df0] bg-gradient-to-r from-[#422052] via-[#271833] to-[#1a112b] text-[#fff1fc] shadow-[inset_0_0_12px_rgba(163,89,231,.14),0_0_10px_rgba(147,70,211,.2)]' :
-                  locked ? 'border-[#322c46] bg-[#141426] text-[#86829d]' :
-                    highlighted ? 'border-[#8063a2] bg-[#28223f] text-[#eaddfb]' :
-                      'border-[#514263] bg-[#1b1b31] text-[#d4c6e5]');
               return <div key={floor.index}>
-                {floor.index % 20 === 1 && <p className="px-2 pt-0.5 text-[9px] font-extrabold uppercase tracking-[.14em] text-[#9e8db7]">
-                  {en?'Depth':'Глубина'} {floor.chapter}
+                {floor.floorInDepth === 1 && <p className="cv-depth-label" style={{ color: floor.depth.hue }}>
+                  {en?'Depth':'Глубина'} {floor.depth.id} · {en ? floor.depth.en : floor.depth.ru}
                 </p>}
-                {locked?<button type="button" onClick={()=>setSelectedFloor(floor.index)} aria-pressed={highlighted} aria-label={(en?'Floor ':'Этаж ')+floor.index+(en?' locked':' закрыт')} className={rowClass}>
-                  <Lock size={16} className="shrink-0 text-[#706987]"/>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-black">{en?'Floor':'Этаж'} {floor.index}</p>
-                    <p className="truncate text-[10px] text-[#827e9a]">{en?'Clear the previous floor first':'Сначала пройди предыдущий этаж'}</p>
-                  </div>
-                  {floor.kind==='boss'&&<Crown size={17} className="shrink-0 text-[#83648c]"/>}
-                </button>:<button type="button" aria-pressed={highlighted} data-current-floor={current?'true':undefined}
+                <button type="button" aria-pressed={highlighted} data-current-floor={current?'true':undefined}
                   data-testid={current?'dark-cave-current-floor':undefined} onClick={()=>setSelectedFloor(floor.index)}
-                  className={rowClass}>
-                  {floor.kind==='boss'?<Crown size={17} className="shrink-0 text-[#e2a9f4]"/>:
-                    cleared?<Check size={17} className="shrink-0 text-[#8ad1a4]"/>:
-                      <Swords size={17} className="shrink-0 text-[#d7a2f9]"/>}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-black">{en?'Floor':'Этаж'} {floor.index}</p>
-                    <p className="truncate text-[10px] text-[#b5a4c5]">{cleared?(en?'Cleared':'Пройден'):floor.kind==='boss'?(en?'Boss battle':'Битва с боссом'):(en?'Ready for challenge':'Можно бросить вызов')}</p>
-                  </div>
-                  {current&&<span className="rounded border border-[#ae7ad4]/50 px-1.5 py-0.5 text-[9px] font-black text-[#eec9ff]">{en?'NOW':'СЕЙЧАС'}</span>}
-                  <ChevronRight size={16} className="shrink-0 text-[#b58acd]"/>
-                </button>}
+                  aria-label={(en?'Floor ':'Этаж ')+floor.index+(locked?(en?' locked':' закрыт'):'')}
+                  className={'cv-floor min-h-[45px]' + (current ? ' cv-floor--current' : locked ? ' cv-floor--locked' : ' cv-floor--cleared') + (floor.kind==='boss' && !locked ? ' cv-floor--boss' : '')}>
+                  <span className="cv-floor-ico">{locked ? <Lock size={15} className="text-[#706987]"/> :
+                    floor.kind==='boss' ? <Crown size={16} className="text-[#f3c868]"/> :
+                    state==='cleared' ? <Check size={16} className="text-[#8ad1a4]"/> : <Swords size={16} className="text-[#f3c868]"/>}</span>
+                  <span className="cv-floor-main">
+                    <b>{en?'Floor':'Этаж'} {floor.index}{floor.kind==='boss' ? (en?' · Boss':' · Босс') : floor.kind==='elite' ? (en?' · Elite':' · Элита') : ''}</b>
+                    <span>{locked ? (en?'Clear the previous floor first':'Сначала пройди предыдущий этаж') : (en ? floor.enemyEn : floor.enemyRu)}</span>
+                  </span>
+                  {current && <span className="cv-floor-tag">{en?'NOW':'СЕЙЧАС'}</span>}
+                  {state==='cleared' && !locked && <span className="text-[9px] text-[#8ad1a4]">{en?'Cleared':'Пройден'}</span>}
+                  {locked && floor.kind==='boss' && <Crown size={15} className="shrink-0 text-[#83648c]"/>}
+                  {!locked && <ChevronRight size={15} className="shrink-0 text-[#c9a36a]"/>}
+                </button>
               </div>;
             })}
           </div>
         </div>
-        <div className="dark-cave-rewards relative z-10 mt-1 shrink-0 rounded-lg border border-[#79578a]/60 bg-[#160f27]/95" data-testid="dark-cave-loot-preview">
-          <button type="button" onClick={() => setLootPreviewOpen(value => !value)} aria-expanded={lootPreviewOpen}
-            aria-controls="dark-cave-loot-milestones"
-            className="flex min-h-11 w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-[11px] font-bold text-[#f0dafa]">
-            <span className="min-w-0">
-              <span className="block text-[12px]">{en ? 'Floor' : 'Этаж'} {floorFocus} · {highlightedFloor.enemyName}</span>
-              <span className="block truncate font-normal text-[#c1a4d5]">{floorFocus > progress.unlocked_stage ? (en ? 'Clear the previous floor first' : 'Сначала пройди предыдущий этаж') : floorFocus <= progress.completed_stage ? (en ? 'Cleared · repeat farming planned' : 'Пройден · повторный фарм планируется') : (en ? 'Victory: gold & XP · More loot in development' : 'За победу: монеты и опыт · Другая добыча в разработке')}</span>
-            </span>
-            <ChevronRight size={16} className={'shrink-0 transition-transform ' + (lootPreviewOpen ? 'rotate-90' : '')}/>
-          </button>
-          {lootPreviewOpen && <div id="dark-cave-loot-milestones" className="max-h-44 space-y-1.5 overflow-y-auto border-t border-[#654476] px-2.5 py-2" data-testid="dark-cave-loot-milestones">
-            <p className="text-[11px] text-[#eed6fa]">{en
-              ? 'Confirmed today: the server awards gold and XP on victory.'
-              : 'Реально выдаются: монеты и опыт за победу, подтверждённые сервером.'}</p>
-            {lootPreview.map(reward => <div key={reward.type} className="flex items-start gap-2 rounded-md bg-[#251b35] px-2 py-1.5">
-
-              <span className="min-w-0 flex-1">
-                <span className="block text-[11px] font-bold text-[#ffe7be]">{en ? reward.en : reward.ru}</span>
-                <span className="block text-[10px] text-[#cfbadb]">{en ? reward.detailEn : reward.detailRu}</span>
-              </span>
-              <span className="shrink-0 rounded border border-[#80539b]/60 px-1 py-0.5 text-[9px] text-[#dfc4ed]">
-                {reward.unlockedAtDepth
-                  ? (en ? 'Preview' : 'План')
-                  : (en ? 'From ' : 'С ') + reward.unlockFloor}
-              </span>
-            </div>)}
-            <p className="text-[10px] leading-snug text-amber-200/85" role="note">{en
-              ? 'Preview only. The new items are not granted yet; no rates or stone rules have changed.'
-              : 'Это предварительный просмотр. Новые предметы пока не выдаются. Шансы выпадения и расход камней не изменены.'}</p>
-          </div>}
-        </div>
-        <div className="relative z-10 mt-1.5 shrink-0 border-t border-[#68457d]/55 pt-2" data-testid="dark-cave-actions">
+        <CaveBlessingSlots en={en} floor={currentStage} onShop={onShop}/>
+        <div className="relative z-10 flex shrink-0 flex-col gap-1" data-testid="dark-cave-actions">
           {progress.completed_stage < 100 ? <>
-            <button type="button"
+            {mayChallenge ? <button type="button"
               disabled={!ready||busy||recoverable||!mayChallenge||progress.dark_stones<1}
               onClick={()=>void start()}
               data-testid="dark-cave-challenge"
               aria-label={en?'Challenge, 1 Dark Stone':'Вызов, 1 Тёмный камень'}
-              className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-[#dfb56c] bg-gradient-to-b from-[#f7d484] via-[#daa94f] to-[#9d672e] px-3 text-[16px] font-black text-[#2b180f] shadow-[inset_0_1px_1px_#fff0b0,0_3px_0_#392517] active:scale-[.99] disabled:cursor-not-allowed disabled:grayscale-[.35] disabled:opacity-55">
-              <img src={darkStoneArt} alt="" className="h-5 w-5 shrink-0 rounded object-cover"/>
+              className="cv-challenge">
+              <img src={darkStoneArt} alt=""/>
               {en?'Challenge · 1 Dark Stone':'Вызов · 1 Тёмный камень'}
-            </button>
-            {!mayChallenge?<p className="mt-1 text-center text-[11px] text-[#c7b6d8]">
-              {en?'Return to your current floor to continue.':'Выбери текущий этаж, чтобы продолжить.'}
-            </p>:progress.dark_stones<1?<p className="mt-1 text-center text-[11px] text-[#c9b3e8]">
+            </button> : <button type="button" className="cv-challenge" data-testid="dark-cave-to-current" onClick={jumpToCurrent}>
+              {en?'To my floor · ':'К моему этажу · '}{currentStage}
+            </button>}
+            {!mayChallenge?<p className="cv-hint">
+              {floorFocus <= progress.completed_stage
+                ? (en?'Floor cleared. Repeat raids are in preparation.':'Этаж пройден. Повторные рейды готовятся.')
+                : (en?'This floor is still locked.':'Этот этаж ещё закрыт.')}
+            </p>:progress.dark_stones<1?<p className="cv-hint">
               {en?'Dark Stones exhausted · +3 at 00:00 UTC':'Тёмные камни закончились · +3 в 00:00 UTC'}
-            </p>:<p className="mt-1 text-center text-[11px] text-[#bdacca]">
+            </p>:<p className="cv-hint cv-hint--optional">
               {en?'Entry costs 1 Dark Stone':'Вход — 1 Тёмный камень'}
             </p>}
-          </>:<p className="text-center text-sm font-black text-[#e7c1f8]">{en?'All 100 cave floors cleared!':'Все 100 этажей подземелья пройдены!'}</p>}
+          </>:<p className="text-center text-sm font-black text-[#ffe1a6]">{en?'All 100 cave floors cleared!':'Все 100 этажей подземелья пройдены!'}</p>}
         </div>
         </>}
+        {stoneInfo && <Dialog label={en?'Dark Stones':'Тёмные камни'} onClose={()=>setStoneInfo(false)} testId="dark-stone-info">
+          <h3>{en?'Dark Stones':'Тёмные камни'}: {progress.dark_stones}</h3>
+          <p className="cv-note">{en
+            ? 'The entry key of the cave: 1 stone per confirmed Challenge. First visit grants 5, then +3 every day at 00:00 UTC. The balance is kept by the server.'
+            : 'Ключ входа в Пещеру: 1 камень за подтверждённый «Вызов». При первом посещении — 5, далее +3 каждый день в 00:00 UTC. Баланс хранит сервер.'}</p>
+          <p className="cv-note" style={{ marginTop: 5 }}>{en
+            ? 'This is neither a socket gem nor an Awakening Stone.'
+            : 'Это не драгоценный камень для гнёзд и не Камень пробуждения.'}</p>
+          <button type="button" className="cv-btn cv-btn--wide" style={{ marginTop: 8 }} disabled data-testid="dark-stone-ad">
+            {en?'Stone for a video · not available':'Камень за просмотр видео · недоступно'}</button>
+          <p className="cv-note" style={{ marginTop: 4 }}>{en
+            ? 'Up to 3 extra stones a day for watched videos are approved, but no ad provider is connected to the game yet, so nothing is granted here.'
+            : 'До 3 дополнительных камней в день за просмотр видео одобрены, но рекламный провайдер к игре ещё не подключён — здесь ничего не начисляется.'}</p>
+        </Dialog>}
+        {floorInfo && <CaveFloorDialog en={en} floor={highlightedFloor} state={floorState(floorFocus)} onClose={()=>setFloorInfo(false)}/>}
       </div>}
     </> : <p role="status" className="rounded-xl border border-amber-700/30 bg-black/25 p-3 text-xs text-amber-100">
       {en ? 'Loading verified cave progress…' : 'Загружаем подтверждённый прогресс пещеры…'}

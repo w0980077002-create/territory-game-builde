@@ -19,6 +19,7 @@ import { IosGamePortal, Modal } from './ui/Modal';
 import './shopWoodFinish.css';
 import './shopCraftedControls.css';
 import { useLive, SHOP_SALE_FACTOR } from '@/game/live';
+import { CaveElixirShelf } from '@/components/pve/cave/CavePanels';
 import { fetchShopStatus, purchaseServerStones, readPendingShop, keepPendingShop, type ShopStatus, type PendingShop } from '@/game/shopApi';
 import {
   MASTER_LICENSE_ART, MASTER_LICENSE_PRICE_RED,
@@ -107,7 +108,7 @@ const shopMaterialStyles = {
   '--shop-iron': `url("${import.meta.env.BASE_URL}assets/territory/ui/shop/shop-iron-corner.svg")`,
 } as CSSProperties;
 
-export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab?: Tab; onInventory?: () => void }) {
+export function ShopScreen({ initialTab = 'potions', onInventory, focusCave = false }: { initialTab?: Tab; onInventory?: () => void; focusCave?: boolean }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const { shopSale } = useStore(useLive);
@@ -396,6 +397,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory }: { initialTab
           );
         })}
       </section>
+      {tab === 'potions' && <CaveElixirShelf en={language === 'en'} focus={focusCave} />}
 
       {purchaseError && <p role="alert" className="rounded-lg border border-red-500/40 bg-red-950/30 p-3 text-xs text-red-200">{purchaseError}</p>}
       {shopCheck==='error' && <p role="alert" className="rounded-lg border border-red-500/40 bg-red-950/30 p-3 text-xs text-red-200">{language==='en'?'Shop server unavailable. Purchases paused.':'Сервер магазина недоступен. Покупки остановлены.'}</p>}
