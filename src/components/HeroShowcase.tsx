@@ -84,6 +84,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
       <header className="hero-showcase__header">
         <div className="hero-showcase__identity">
           <h2>{player.name}</h2>
+          {state.mortarionHonor?.title && <span data-testid="mortarion-profile-title" className="hero-showcase__mortarion-title">♛ {state.mortarionHonor.title}</span>}
           <span className="hero-showcase__level">{t('levelWord')} {player.level}</span>
         </div>
         <div className="hero-showcase__resources" aria-label={text('Ресурсы героя', 'Hero resources')}>
@@ -103,7 +104,8 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
           ? `linear-gradient(180deg, #173c5120, #4c321d40), url("${import.meta.env.BASE_URL}assets/territory/scenes/winter-peaks-approved.webp")`
           : 'linear-gradient(160deg,#57402c,#292521 62%,#1d2630)' }}>
         <div className="hero-showcase__gear-column">{slots.slice(0, 3).map(renderSlot)}</div>
-        <div className="hero-showcase__character">
+        <div className={'hero-showcase__character' +
+          (state.mortarionHonor?.frame ? ' hero-showcase__character--' + state.mortarionHonor.frame : '')}>
           <img className="hero-showcase__hero-art" src={getAppearanceIcon(state.appearance)}
             alt={text('Герой в полный рост', 'Full-body hero')} draggable={false} />
           <div className="hero-showcase__character-floor" aria-hidden="true" />
