@@ -4,6 +4,7 @@ import { useLanguage } from '@/game/i18n';
 import { TRIAL_CHEST_ART, trialChestTier, type TrialChestReward } from '@/game/trialLoot';
 import { openTrialChest } from '@/game/trialChestVault';
 import { TreasuryInventory } from './TreasuryInventory';
+import './pve/trialChestReveal.css';
 
 function RewardDetails({ loot, en }: { loot: TrialChestReward; en: boolean }) {
   const earned = [
@@ -78,8 +79,9 @@ export function InventoryChestShelf({ userId, state }: { userId: string; state: 
             return <article key={floor} data-testid={'trial-sealed-floor-' + floor}
               className="min-w-0 rounded-xl border border-[#b68a4b]/65 bg-[linear-gradient(#5b3924,#291b13)] p-2">
               <div className="flex items-center gap-1.5">
-                <img src={import.meta.env.BASE_URL + TRIAL_CHEST_ART[tier]} alt="" draggable={false}
-                  className="h-14 w-14 max-w-[55%] shrink-0 object-contain" />
+                <div className={`trial-chest-showcase trial-chest-showcase--mini trial-chest-showcase--${tier}`} aria-hidden="true">
+                  <img src={import.meta.env.BASE_URL + TRIAL_CHEST_ART[tier]} alt="" draggable={false} />
+                </div>
                 <div className="min-w-0 text-[11px] leading-4 text-amber-100">
                   <strong className="block font-black">{en ? 'Floor' : 'Этаж'} {floor}</strong>
                   <span className="text-amber-200">{tier === 'legendary' ? (en ? 'Legend' : 'Легенда')
@@ -101,8 +103,9 @@ export function InventoryChestShelf({ userId, state }: { userId: string; state: 
       {error && <p role="alert" className="mt-2 rounded-md border border-rose-500/40 bg-rose-950/45 p-2 text-xs">{error}</p>}
       {lastOpened && <div data-testid="trial-chest-opened-receipt" role="status"
         className="mt-2 flex gap-2 rounded-lg border border-amber-300/60 bg-amber-950/50 p-2">
-        <img src={import.meta.env.BASE_URL + TRIAL_CHEST_ART[lastOpened.tier]} alt=""
-          className="h-14 w-14 shrink-0 object-contain" />
+        <div className={`trial-chest-showcase trial-chest-showcase--mini trial-chest-showcase--${lastOpened.tier}`} aria-hidden="true">
+          <img src={import.meta.env.BASE_URL + TRIAL_CHEST_ART[lastOpened.tier]} alt="" />
+        </div>
         <div>
           <strong className="text-xs font-bold text-emerald-200">{en ? 'Opened · rewards credited!' : 'Открыт · награда начислена!'}</strong>
           <RewardDetails loot={lastOpened} en={en} />
