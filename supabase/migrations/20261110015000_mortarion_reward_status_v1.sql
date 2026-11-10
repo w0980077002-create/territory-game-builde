@@ -31,14 +31,14 @@ BEGIN
  END IF;
  v_closed:=v_event.enabled AND (v_event.hp=0 OR v_now >= v_event.ends_at);
  IF v_event.hp=0 THEN
-   v_needed:=pg_catalog.greatest(1,pg_catalog.least(5,pg_catalog.ceil(
+   v_needed:=GREATEST(1,LEAST(5,pg_catalog.ceil(
      pg_catalog.date_part('epoch',v_event.updated_at-v_event.starts_at)/86400
    )::integer));
  END IF;
- v_day:=pg_catalog.greatest(1,pg_catalog.least(5,
+ v_day:=GREATEST(1,LEAST(5,
    1+pg_catalog.floor(pg_catalog.date_part('epoch',v_now-v_event.starts_at)/86400)::integer));
  IF v_days>=v_needed AND v_hits>=15 THEN v_tier:='legendary';
- ELSIF v_days>=pg_catalog.least(3,v_needed) THEN v_tier:='hunter'; END IF;
+ ELSIF v_days>=LEAST(3,v_needed) THEN v_tier:='hunter'; END IF;
  SELECT * INTO v_claim FROM territory_private.mortarion_reward_receipts_v1
  WHERE event_id=v_event.id AND player_id=v_uid;
  RETURN pg_catalog.jsonb_build_object(
