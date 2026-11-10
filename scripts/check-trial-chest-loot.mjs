@@ -161,13 +161,17 @@ for(const file of [
 for (const file of ['blueprint-fragment.svg','guardian-shard.svg','trial-essence.svg','ancient-mechanism.svg']) {
   const art=readFileSync('public/assets/territory/ui/trial-loot/'+file,'utf8');
   assert.ok(art.length>=6500, file+' has regressed to a minimal SVG placeholder');
+  if (file==='guardian-shard.svg') {
+    assert.ok(art.includes('data:image/webp;base64,UklGR'), 'guardian shard must contain actual painted pixels');
+  } else {
   assert.ok((art.match(/<path\b/g)||[]).length>=20, file+' needs detailed layered illustration');
+  }
   assert.doesNotMatch(art, /<script|onload=|<foreignObject/i, file+' must remain a safe static SVG');
 }
 // The inventory must use the painted shard, not its previous vector mockup.
 const inventoryArtSource = readFileSync('src/game/art.ts', 'utf8');
-assert.ok(inventoryArtSource.includes("trial_component_guardian_shard: 'guardian-shard-premium.svg'"));
-const paintedShard = readFileSync('public/assets/territory/ui/trial-loot/guardian-shard-premium.svg','utf8');
+assert.ok(inventoryArtSource.includes("trial_component_guardian_shard: 'guardian-shard.svg?v=painted-20261110'"));
+const paintedShard = readFileSync('public/assets/territory/ui/trial-loot/guardian-shard.svg','utf8');
 assert.ok(paintedShard.includes('data:image/webp;base64,UklGR'), 'painted transparent WebP must be embedded');
 assert.ok(paintedShard.length > 6000, 'guardian shard artwork must contain real painted pixels');
 // The ordinary chest must be a finished transparent game illustration, never
