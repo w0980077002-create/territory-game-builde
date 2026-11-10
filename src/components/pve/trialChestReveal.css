@@ -207,3 +207,35 @@
   .trial-chest-showcase::after,
   .trial-chest-showcase > img { animation: none !important; }
 }
+
+/* Inventory chest hierarchy: the 10th-floor Guardian must not appear smaller
+   or less valuable than a common 9th-floor chest at 320–430px WebView widths. */
+.trial-chest-inventory-card { min-height: 174px; }
+.trial-chest-showcase--card {
+  width: min(100%, 88px);
+  height: 96px;
+  flex: 0 0 96px;
+}
+.trial-chest-showcase--card.trial-chest-showcase--explorer {
+  width: min(100%, 108px);
+}
+.trial-chest-showcase--card.trial-chest-showcase--guardian {
+  width: min(100%, 138px);
+}
+.trial-chest-showcase--card.trial-chest-showcase--legendary {
+  width: min(100%, 142px);
+}
+.trial-chest-inventory-card--guardian {
+  border-color: #e6b45d;
+  background: linear-gradient(150deg, #77502d, #392318 64%, #2b1a14);
+  box-shadow: inset 0 1px 0 rgba(255,235,170,.32), 0 0 12px rgba(235,164,65,.14);
+}
+.trial-chest-inventory-card--legendary {
+  border-color: #f5d580;
+  background: linear-gradient(150deg, #835626, #4f2919 60%, #2f190e);
+  box-shadow: inset 0 1px 0 rgba(255,241,185,.4), 0 0 16px rgba(241,167,56,.23);
+}
+.trial-chest-inventory-card--guardian .trial-chest-showcase--card::before,
+.trial-chest-inventory-card--legendary .trial-chest-showcase--card::before {
+  filter: blur(9px);
+}
