@@ -55,10 +55,12 @@ try {
   await install('migrations/20261022_owner_test_gear_stats_receipt_v3.sql');
   await install('staged/20261027_owner_test_gear_relevel_v4.sql');
   await db.exec(patch.slice(start, end + '$owner_gear$;'.length));
-  for (const id of [owner, other]) {
-    await db.query('INSERT INTO public.players(id,level,game_state) VALUES($1,10,$2::jsonb)',
-      [id, JSON.stringify(state)]);
-  }
+  // The buyer is a level-1 merchant with an empty inventory, not a cloned owner.
+  await db.query('INSERT INTO public.players(id,level,game_state) VALUES($1,10,$2::jsonb)',
+    [owner, JSON.stringify(state)]);
+  const merchantState = {player: {level: 1, equipped: {}}, inventory: [], belt: []};
+  await db.query('INSERT INTO public.players(id,level,game_state) VALUES($1,1,$2::jsonb)',
+    [other, JSON.stringify(merchantState)]);
   const beforeOwner = (await db.query('SELECT game_state FROM public.players WHERE id=$1', [owner])).rows[0].game_state;
   const beforeOther = (await db.query('SELECT game_state FROM public.players WHERE id=$1', [other])).rows[0].game_state;
   const result = (await db.query(
@@ -76,10 +78,10 @@ try {
     assert.notEqual(result.level, sword.level, 'characterization must expose destructive cap');
   }
   const secondOwnerResult = (await db.query(
-    'SELECT territory_private.owner_cap_item_v1($1::jsonb,10,$2::uuid) AS gear',
+    'SELECT territory_private.owner_cap_item_v1($1::jsonb,1,$2::uuid) AS gear',
     [JSON.stringify(sword), other])).rows[0].gear;
   assert.equal(secondOwnerResult.id, sword.id, 'second owner must receive the same item identity');
-  assert.equal(secondOwnerResult.level, requireSafe ? sword.level : 10,
+  assert.equal(secondOwnerResult.level, requireSafe ? sword.level : 1,
     'second low-level owner must follow the selected characterization or safety contract');
   if (requireSafe) {
     assert.equal(secondOwnerResult.upgradeCount, sword.upgradeCount, 'second owner upgrades preserved');
