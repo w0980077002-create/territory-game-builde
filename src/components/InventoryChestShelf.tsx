@@ -77,21 +77,21 @@ export function InventoryChestShelf({ userId, state }: { userId: string; state: 
           {unopened.map(floor => {
             const tier = trialChestTier(floor) ?? 'common';
             return <article key={floor} data-testid={'trial-sealed-floor-' + floor}
-              className="min-w-0 rounded-xl border border-[#b68a4b]/65 bg-[linear-gradient(#5b3924,#291b13)] p-2">
-              <div className="flex items-center gap-1.5">
-                <div className={`trial-chest-showcase trial-chest-showcase--mini trial-chest-showcase--${tier}`} aria-hidden="true">
+              className={`trial-chest-inventory-card trial-chest-inventory-card--${tier} flex min-w-0 flex-col rounded-xl border border-[#b68a4b]/65 bg-[linear-gradient(#5b3924,#291b13)] p-2`}>
+              <div className="flex min-w-0 flex-col items-center">
+                <div className={`trial-chest-showcase trial-chest-showcase--card trial-chest-showcase--${tier}`} aria-hidden="true">
                   <img src={import.meta.env.BASE_URL + TRIAL_CHEST_ART[tier]} alt="" draggable={false} />
                 </div>
-                <div className="min-w-0 text-[11px] leading-4 text-amber-100">
-                  <strong className="block font-black">{en ? 'Floor' : 'Этаж'} {floor}</strong>
-                  <span className="text-amber-200">{tier === 'legendary' ? (en ? 'Legend' : 'Легенда')
+                <div className="mt-1 flex w-full min-w-0 items-baseline justify-center gap-1.5 text-center text-[11px] leading-4 text-amber-100">
+                  <strong className="shrink-0 font-black">{en ? 'Floor' : 'Этаж'} {floor}</strong>
+                  <span className="min-w-0 text-amber-200">{tier === 'legendary' ? (en ? 'Legend' : 'Легенда')
                     : tier === 'guardian' ? (en ? 'Guardian' : 'Страж')
                     : tier === 'explorer' ? (en ? 'Explorer' : 'Испытатель')
                     : (en ? 'Common' : 'Обычный')}</span>
                 </div>
               </div>
               <button type="button" disabled={busyFloor !== null} onClick={() => void open(floor)}
-                className="mt-1.5 min-h-10 w-full rounded-lg border border-amber-200/70 bg-gradient-to-b from-[#ffdf98] to-[#bc7836] px-2 text-xs font-black text-[#321909] disabled:opacity-60">
+                className="mt-auto min-h-10 w-full rounded-lg border border-amber-200/70 bg-gradient-to-b from-[#ffdf98] to-[#bc7836] px-2 text-xs font-black text-[#321909] disabled:opacity-60">
                 {busyFloor === floor ? (en ? 'Opening…' : 'Открываем…') : (en ? 'Open' : 'Открыть')}
               </button>
             </article>;
