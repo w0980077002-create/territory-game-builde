@@ -54,6 +54,19 @@ try {
   // A level-1 trader may own and resell level-50 gear without changing its stats.
   assert.equal((await transfer(owners[0], owners[1])).rows.length, 1);
   assert.deepEqual(await verify(owners[1]), gear);
+  // A level-1 owner's stale client snapshot must not downgrade canonical level 50.
+  const staleClientGear = { ...gear, level: 1, upgradeCount: 0, attack: 20 };
+  const restored = (await db.query(
+    'SELECT territory_private.stage8_verified_gear_v2($1::jsonb,$2::uuid) AS gear',
+    [JSON.stringify(staleClientGear), owners[1]],
+  )).rows[0].gear;
+  assert.deepEqual(restored, gear,
+    'Server registry must restore level 50, 49 upgrades and canonical stats despite stale level-1 client data');
+  await assert.rejects(() => db.query(
+    'SELECT territory_private.stage8_verified_gear_v2($1::jsonb,$2::uuid)',
+    [JSON.stringify({ ...gear, level: 51 }), owners[1]],
+  ), /stage8_reconciliation_required/,
+  'Unverified level 51 must not be accepted as a legitimate forge upgrade');
   await assert.rejects(() => verify(owners[0]), /stage8_item_not_owned/);
   assert.equal((await transfer(owners[1], owners[2])).rows.length, 1);
   assert.deepEqual(await verify(owners[2]), gear);
