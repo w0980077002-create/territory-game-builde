@@ -162,6 +162,13 @@ const commonChestArt = readFileSync('public/' + TRIAL_CHEST_ART.common);
 assert.equal(commonChestArt.toString('ascii', 0, 4), 'RIFF', 'common chest must be a real WEBP');
 assert.equal(commonChestArt.toString('ascii', 8, 12), 'WEBP', 'common chest must be a real WEBP');
 assert.ok(commonChestArt.length > 12000, 'the prize must be detailed artwork, not a placeholder');
+// Guardian milestones use a hand-finished lightweight WebP with warm gold,
+// carved dark oak and a red jewel, rather than the old flat turquoise SVG.
+assert.equal(TRIAL_CHEST_ART.guardian, 'assets/territory/ui/trial-loot/chest-guardian-premium.webp');
+const guardianArt = readFileSync('public/' + TRIAL_CHEST_ART.guardian);
+assert.equal(guardianArt.toString('ascii', 0, 4), 'RIFF');
+assert.equal(guardianArt.toString('ascii', 8, 12), 'WEBP');
+assert.ok(guardianArt.length > 4500 && guardianArt.length < 35000, 'premium art must be detailed and WebView-friendly');
 for (const tier of ['explorer', 'guardian', 'legendary']) {
   assert.ok(existsSync('public/' + TRIAL_CHEST_ART[tier]), 'missing tier art ' + tier);
 }
@@ -179,6 +186,11 @@ const chestSql=readFileSync('supabase/migrations/20261109224945_trial_chest_vaul
 assert.match(sourceFight,/TRIAL_CHEST_ART\[trialChestTier\(outcome\.trialFloor\)!\]/,
   'victory now shows the real sealed chest art');
 assert(collectionSource.includes('TRIAL_CHEST_ART[tier]'), 'collection must match the actual victory chest');
+assert.match(sourceFight, /trial-chest-showcase--/, 'victory displays tier-specific art and VFX');
+assert.match(vault, /trial-chest-showcase--mini/, 'inventory reuses the upgraded sprite with compact effects');
+const chestFx = readFileSync('src/components/pve/trialChestReveal.css','utf8');
+assert.match(chestFx, /territory-showcase-aura/, 'warm multilayer aura must be present');
+assert.match(chestFx, /prefers-reduced-motion/, 'chest VFX must honor accessible motion settings');
 assert.match(sourceFight,/data-testid="trial-sealed-chest-message"/,
   'victory must explain the chest is stored in Inventory, not paid instantly');
 assert.doesNotMatch(sourceFight,/data-testid="trial-open-chest"/,
