@@ -155,6 +155,15 @@ for(const file of [
   const svg=readFileSync(path,'utf8');
   assert.match(svg,/<svg[^>]*viewBox=/);
 }
+// Loot icons visible in the mobile inventory must be fully illustrated, not the
+// former 1–2 KB flat geometric placeholders. This checks only art structure;
+// final visual approval still requires an in-game phone screenshot.
+for (const file of ['blueprint-fragment.svg','guardian-shard.svg','trial-essence.svg','ancient-mechanism.svg']) {
+  const art=readFileSync('public/assets/territory/ui/trial-loot/'+file,'utf8');
+  assert.ok(art.length>=6500, file+' has regressed to a minimal SVG placeholder');
+  assert.ok((art.match(/<path\\b/g)||[]).length>=20, file+' needs detailed layered illustration');
+  assert.doesNotMatch(art, /<script|onload=|<foreignObject/i, file+' must remain a safe static SVG');
+}
 // The ordinary chest must be a finished transparent game illustration, never
 // the crude line-art SVG reported by the owner. Both UIs use the same mapping.
 assert.equal(TRIAL_CHEST_ART.common, 'assets/territory/ui/materials/royal-chest.webp');
