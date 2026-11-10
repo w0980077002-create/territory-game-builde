@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Bell, CalendarDays, Check, ChevronRight, Clock3, Crown, Gift, Map, RefreshCw, ScrollText, Shield, Skull, Swords, Ticket, Trophy } from 'lucide-react';
+import { Bell, CalendarDays, Check, ChevronRight, Clock3, Crown, Gift, Map, RefreshCw, ScrollText, Shield, Swords, Ticket, Trophy } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { useLive } from '@/game/live';
@@ -10,7 +10,6 @@ import { fetchSeasonStatus, type SeasonStatus } from '@/game/seasonApi';
 import { getArenaWeeklyStatus, type ArenaWeeklyStatus } from '@/game/arenaWeekly';
 import { dailyHeroGoal, eventCalendar, readyQuestCount, withEventStatusTimeout } from '@/game/eventsBoard';
 import { captureGameEvent } from '@/game/analytics';
-import { getMortarionBossState, type MortarionState } from '@/game/mortarionBoss';
 import { RewardLootStrip } from '@/components/ui/RewardLootStrip';
 import { kyivSeasonWeekKey, seasonCountdown } from '@/game/seasonCalendar';
 import { SHOW_WEEKLY_CHAMPIONSHIP } from '@/game/uiFeatureFlags';
@@ -84,13 +83,11 @@ function SevenDayJourney({ dayIndex, claimedToday, rewards, onOpen, en }: {
 }
 
 /** Real existing bonuses and competition progress; zero synthetic payouts. */
-export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady, bossPreview, onBossPreview }: {
+export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
   onNavigate: (screen: EventDestination) => void;
   onDaily: () => void;
   onSeason: () => void;
   gatherReady: boolean;
-  bossPreview?: boolean;
-  onBossPreview?: () => void;
 }) {
   const { language } = useLanguage();
   const en = language === 'en';
@@ -102,7 +99,6 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady, bossP
   const [season, setSeason] = useState<SeasonStatus | null>(null);
   const [arena, setArena] = useState<ArenaWeeklyStatus | null>(null);
   const [checking, setChecking] = useState(false);
-  const [mortarionStatus, setMortarionStatus] = useState<MortarionState | null>(null);
   const [failed, setFailed] = useState({ hall: false, season: false, arena: false });
   const tabRef = useRef<'daily' | 'weekly'>('daily');
   const currentRequest = useRef(0);
@@ -147,19 +143,6 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady, bossP
     };
   }, [refresh]);
 
-  useEffect(() => {
-    let mounted = true;
-    const fetch = () => {
-      void getMortarionBossState()
-        .then(value => { if (mounted) setMortarionStatus(value); })
-        .catch(() => { /* Optional raid must not block Events. */ });
-    };
-    fetch();
-    const interval = window.setInterval(fetch, 30_000);
-    const resume = () => { if (document.visibilityState === 'visible') fetch(); };
-    document.addEventListener('visibilitychange', resume);
-    return () => { mounted = false; window.clearInterval(interval); document.removeEventListener('visibilitychange', resume); };
-  }, []);
 
   const daily = dailyStatus(state, clock);
   const blessing = blessingReady(state, clock);
@@ -232,13 +215,6 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady, bossP
       </div>
     </section>
 
-    {(bossPreview || mortarionStatus?.enabled) && onBossPreview && <EventCard icon={Skull} image="assets/territory/events/mortarion-raid-scene.webp"
-      name={en ? 'MORTARION — LORD OF SOULS' : 'МОРТАРИОН — ВЛАСТЕЛИН ДУШ'}
-      description={en ? 'Shared 100,000,000 HP · 5 days · 5 hits per hour' : 'Общее HP 100 000 000 · 5 суток · 5 ударов в час'}
-      detail={en ? '60 seconds between strikes. Only TOP 10 is visible.' : '60 секунд между ударами. Только Топ-10 по урону.'}
-      status={mortarionStatus?.active ? 'active' : 'unknown'}
-      action={mortarionStatus?.active ? (en ? 'Strike the boss' : 'Ударить босса') : (en ? 'Open raid' : 'Открыть рейд')}
-      actionId="mortarion-live" onClick={onBossPreview} en={en}/>}
     <div className="territory-events__tabs" role="tablist" aria-label={en ? 'Event calendar' : 'Календарь событий'}>
       <button id="territory-events-daily-tab" type="button" role="tab" aria-controls="territory-events-daily-panel" aria-selected={tab === 'daily'} onClick={() => switchTab('daily')}><CalendarDays size={17}/>{en ? 'Today' : 'Сегодня'}</button>
       <button id="territory-events-weekly-tab" type="button" role="tab" aria-controls="territory-events-weekly-panel" aria-selected={tab === 'weekly'} onClick={() => switchTab('weekly')}><Trophy size={17}/>{en ? 'This week' : 'Эта неделя'}</button>
