@@ -66,7 +66,13 @@ try {
   const result = (await db.query(
     'SELECT territory_private.owner_cap_item_v1($1::jsonb,10,$2::uuid) AS gear',
     [JSON.stringify(sword), owner])).rows[0].gear;
+  // A destructive level cap must not silently rewrite identity or the forge receipt.
+  // These checks run in BOTH modes: a characterization PASS must not mask a
+  // second independent loss of upgrades or combat stats.
   assert.equal(result.id, sword.id, 'UUID must remain identifiable');
+  assert.equal(result.upgradeCount, sword.upgradeCount, 'first save must preserve forge upgrades');
+  assert.equal(result.attack, sword.attack, 'first save must preserve attack');
+  assert.deepEqual(result.baseStats, sword.baseStats, 'first save must preserve base stats');
   if (requireSafe) {
     assert.equal(result.level, sword.level, 'owner save must preserve crafted level 50');
     assert.equal(result.upgradeCount, sword.upgradeCount, 'owner save must preserve 49 upgrades');
