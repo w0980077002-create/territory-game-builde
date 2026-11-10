@@ -982,10 +982,12 @@ function OutcomePanel({ outcome, kind, victoryJourney, gearOpportunity, equipped
         )}
         {kind === 'trial' && outcome.won && (
           <section data-testid="trial-sealed-chest-message"
-            className="mt-3 flex items-center gap-2 rounded-xl border-2 border-amber-400/60 bg-[linear-gradient(110deg,#4f2d19,#21150e)] p-2.5 text-left shadow-[inset_0_1px_0_#e6ad5966]">
+            className="mt-3 flex items-center gap-2 rounded-xl border-2 border-amber-400/60 bg-[linear-gradient(110deg,#4f2d19,#21150e)] p-2 text-left shadow-[inset_0_1px_0_#e6ad5966]">
             {outcome.trialFloor && trialChestTier(outcome.trialFloor) && (
-              <img src={import.meta.env.BASE_URL + TRIAL_CHEST_ART[trialChestTier(outcome.trialFloor)!]}
-                alt="" className="h-20 w-20 shrink-0 object-contain" draggable={false} />
+              <div className={`trial-chest-showcase trial-chest-showcase--${trialChestTier(outcome.trialFloor)}`} aria-hidden="true">
+                <img src={import.meta.env.BASE_URL + TRIAL_CHEST_ART[trialChestTier(outcome.trialFloor)!]}
+                  alt="" draggable={false} />
+              </div>
             )}
             <div className="min-w-0">
               <strong className="block text-sm font-black text-amber-200">
