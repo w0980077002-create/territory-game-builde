@@ -396,9 +396,15 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         : saveCloudSave(user.id, useGame.get()),
       setSaveStatus,
     );
-    const unsubscribe = useGame.subscribe(controller.changed);
+    const unsubscribe = useGame.subscribe(() => {
+      // The PvE victory journal is the exclusive writer until it verifies the
+      // committed win. Its pending checkpoint is not an autosave failure.
+      if (!pendingPveVictoryJournal(user.id)) controller.changed();
+    });
     const unsubscribeVictory = subscribePveVictorySave(user.id, () => {
-      if (pveVictorySaveState(user.id) === 'confirmed') controller.flush();
+      // Once the journal is acknowledged, save any changes made while it was
+      // pending. Do not leave the false-red autosave banner behind.
+      if (pveVictorySaveState(user.id) === 'confirmed') controller.changed();
     });
     // iOS Telegram WebViews can suspend on close before an old debounce fires.
     const flush = () => controller.flush();
