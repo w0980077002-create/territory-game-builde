@@ -66,7 +66,7 @@ assert.ok(app.indexOf('restoreAdventureSaveFence(user.id)') < app.indexOf('setLo
 
 for (const name of ['territory_adventure_progress_v1','requestAdventureStart','restoreAdventureStartFence','requestAdventureSettlement','restoreAdventureSaveFence',
   "action: 'prepare'", "action: 'start'", "action: 'resume'", "action: 'advance'",
-  'crypto.randomUUID()', 'getCampaignStage', "document.addEventListener('visibilitychange'"])
+  'crypto.randomUUID()', 'getCaveFloor', "document.addEventListener('visibilitychange'"])
   assert.ok(ui.includes(name), 'missing server-authoritative control: ' + name);
 assert.match(read('src/game/combatV1/receiptAdapter.ts'), /localStorage\.setItem\(startKey\(userId\)/,
  'persist original start operation UUID before any wager request');
@@ -114,7 +114,10 @@ assert.match(ui, /<FighterFigure /, 'server combat should animate the same 2D fi
 assert.match(ui, /getEnemyCombatFrames/, 'server enemies should use existing combat pose art');
 assert.match(ui, /battleRef\.current\?\.scrollIntoView/, 'mobile must reveal battle after tapping Start');
 assert.match(ui, /Array\.isArray\(value\.events\)/, 'animation should use only confirmed server battle events');
-assert.match(ui, /getCampaignStage\(i \+ 1\)/, 'All 100 floors must render from the existing campaign catalog');
+assert.match(ui, /const CAVE_FLOORS = buildCaveFloors\(\);/, 'All 100 floors must render from the cave-specific floor catalog');
+assert.match(ui, /CAVE_FLOORS\.map\(floor=>/, 'The floor list renders the cave catalog');
+assert.doesNotMatch(ui, /getCampaignStage|idleContent\/campaign/, 'The cave must not show Campaign enemies or chapter names');
+assert.match(ui, /encounterId: 'adventure_v1_stage_' \+ progress\.unlocked_stage/, 'The server encounter contract is unchanged');
 assert.match(ui, /dark-cave-floor-scroll/, 'Floor list must support independent vertical scrolling');
 assert.match(ui, /floorListRef\.current/, 'Current floor scrolls into view inside the cave');
 assert.match(ui, /progress\.unlocked_stage/, 'Current stage remains server-authoritative');
@@ -146,7 +149,20 @@ assert.match(ui, /dark-stone\.svg/, 'Dark Stone image must show in the cave');
 assert.match(ui, /dark-cave-floor-list/, 'Dedicated floor selection UI is required');
 assert.match(ui, /dark-cave-realm\.svg/, 'A distinct violet abyss scene must be used by the cave');
 assert.match(read('public/assets/territory/scenes/dark-cave-realm.svg'), /<svg/, 'Original dark cave art must exist');
-assert.doesNotMatch(ui, /Добавить благословение|Режим боя|setBlessingInfo|setControl\(/, 'No fake blessing slots or extra battle mode selector in cave lobby');
+assert.doesNotMatch(ui, /Режим боя|setControl\(/, 'No extra battle mode selector in cave lobby');
+// Owner rule 2026-11-10: three separate cave-blessing slots above Challenge,
+// never the city blessing and never a free bonus.
+assert.match(ui, /<CaveBlessingSlots en=\{en\} floor=\{currentStage\} onShop=\{onShop\}\/>/, 'Cave blessing slots sit right above Challenge');
+assert.ok(ui.indexOf('<CaveBlessingSlots') < ui.indexOf('data-testid="dark-cave-challenge"'), 'Blessing slots come before Challenge');
+assert.doesNotMatch(ui, /claimBlessing|game\.blessing|state\.blessing\b/, 'The cave never uses the city blessing');
+// Test loot is keyed by the confirmed server session and granted to the device sandbox only.
+assert.match(ui, /session\.settlement \? 'victory:' \+ session\.session_id : null/, 'Test loot requires a server-confirmed victory');
+assert.match(ui, /dispatchCave\(\{ type: 'loot', floor: floor\.index, boss: floor\.kind === 'boss' \}, victoryLootId\)/, 'One idempotent test-loot operation per victory');
+assert.match(ui, /session\.settlement\.reward\.gold/, 'Real victory gold must come from a server receipt');
+assert.match(ui, /session\.settlement\.reward\.xp/, 'Real victory XP must come from a server receipt');
+assert.match(ui, /clearedDepth=\{progress\.completed_stage\}/, 'The fund follows the server-confirmed cleared depth');
+assert.match(ui, /data-testid="dark-stone-ad"/, 'Rewarded-ad stones are shown as unavailable, never granted by a click');
+assert.match(ui, /disabled data-testid="dark-stone-ad"/, 'No ad provider: the button stays disabled');
 assert.match(ui, /min-h-\[170px\]/, 'Cave floor panel needs at least 170px including padding for a 156px three-row viewport');
 assert.match(ui, /min-h-\[45px\]/, 'Each compact cave floor must keep a touch-sized row');
 assert.match(ui, /data-testid="dark-cave-visual"/, 'Dark cave theme illustration must be visible above floor list');

@@ -57,7 +57,7 @@ jobs:
         if: matrix.suite == 'adventure'
       - run: python scripts/check-cave-compact-layout.py
         if: matrix.suite == 'adventure'
-      - run: python scripts/check-umbra-browser.py
+      - run: python scripts/check-cave-sandbox-browser.py
         if: matrix.suite == 'adventure'
       - run: node scripts/build-journey-preview.mjs && python scripts/check-journey-browser.py
         if: matrix.suite == 'gameplay-ui'

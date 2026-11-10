@@ -57,7 +57,8 @@ with sync_playwright() as p:
         }""")
         assert floor_geometry['list_client'] >= 156, f'At least three cave floors must be viewable without scrolling: {floor_geometry}'
         assert page.get_by_test_id('dark-cave-visual').is_visible(), 'Dark abyss illustration must be present'
-        assert page.get_by_text('Добавить благословение').count() == 0, 'Unimplemented blessings may not appear as active slots'
+        assert page.get_by_test_id('cave-blessing-slot').count() == 3, 'Three cave-blessing slots sit above Challenge'
+        assert page.locator('.cv-bless-slot--full').count() == 0, 'Slots are empty until an owned elixir is placed'
         assert page.get_by_text('Режим боя').count() == 0, 'Mode selection belongs in combat, not the cave lobby'
         assert page.get_by_test_id('dark-cave-challenge').count() == 1, 'Exactly one paid Challenge is available'
         assert page.get_by_role('button', name='Мой этаж').count() == 1, 'Current-floor jump must remain available'
@@ -95,8 +96,8 @@ with sync_playwright() as p:
             page.get_by_test_id('dark-cave-next-floor').wait_for()
             assert '2' in page.get_by_test_id('dark-cave-next-floor').inner_text(), 'new floor must come from server progress'
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="advance").length') == 1
-            page.get_by_role('button',name='К этапам').click()
-            page.get_by_text('Этаж 2 / 100').wait_for()
+            page.get_by_role('button',name='К этажам пещеры').click()
+            page.get_by_text('Этаж 2/100').wait_for()
             assert page.get_by_test_id('dark-cave-challenge').is_disabled(), 'unreviewed equipment must not enable another start'
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
         page.close()
@@ -144,8 +145,8 @@ with sync_playwright() as p:
         assert page.get_by_text('+10 монет').count() == 0
         assert page.get_by_text('+10 gold').count() == 0
         assert page.get_by_test_id('dark-cave-next-floor').count() == 0, 'defeat/draw must not claim an unlocked floor'
-        page.get_by_role('button',name='Back to cave stages' if lang == 'en' else 'К этапам пещеры').click()
-        page.get_by_text('Floor 1 / 100' if lang == 'en' else 'Этаж 1 / 100').wait_for()
+        page.get_by_role('button',name='Back to cave floors' if lang == 'en' else 'К этажам пещеры').click()
+        page.get_by_text('Floor 1/100' if lang == 'en' else 'Этаж 1/100').wait_for()
         page.close()
     # Pending advance can be replayed and then resumed with the SAME confirmed
     # event IDs. One impact and one block must not become four visual log rows.

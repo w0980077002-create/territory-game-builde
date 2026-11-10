@@ -194,6 +194,9 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
     if (screen !== 'battle' && screen !== 'inventory') setBattlePrepReturn(null);
   }, [screen]);
   const [shopTab, setShopTab] = useState<'potions' | 'equipment'>('potions');
+  const [shopCaveFocus, setShopCaveFocus] = useState(false);
+  // The cave shortcut scrolls the Shop to its elixir shelf once; any other entry opens the Shop normally.
+  useEffect(() => { if (screen !== 'shop') setShopCaveFocus(false); }, [screen]);
   const [heroTrainingOpen, setHeroTrainingOpen] = useState(false);
   const [forgeFocusId, setForgeFocusId] = useState<string | null>(null);
   // Only a victory-to-forge journey remembers the originating classic PvE mode.
@@ -589,6 +592,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             autoStart={autoStart}
             onAutoStartHandled={() => setAutoStart(false)}
             onShop={() => { setShopTab('potions'); setScreen('shop'); }}
+            onCaveShop={() => { setShopTab('potions'); setShopCaveFocus(true); setScreen('shop'); }}
             onQuests={() => setScreen('quests')}
             onForge={() => openForge(undefined, battleView === 'trial' ? 'trial' : 'campaign')}
             onEquipment={() => {
@@ -641,7 +645,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
           onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }}
           onRunes={() => setScreen('runes')}
         />}
-        {screen === 'shop' && <ShopScreen key={shopTab} initialTab={shopTab} onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} />}
+        {screen === 'shop' && <ShopScreen key={shopTab} initialTab={shopTab} focusCave={shopCaveFocus} onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} />}
         {screen === 'forge' && <ForgeScreen focusEquipmentId={forgeFocusId} userId={user.id}
           onInventory={() => { setInventoryTab('equipment'); setScreen('inventory'); }} onMap={() => setScreen('map')}
           onProfessions={() => setScreen('professions')}
