@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Сердце Мортариона">
+<defs>
+<radialGradient id="a"><stop stop-color="#b756f8" stop-opacity=".75"/><stop offset=".55" stop-color="#65238f" stop-opacity=".27"/><stop offset="1" stop-color="#180d21" stop-opacity="0"/></radialGradient>
+<linearGradient id="g" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#fff6d0"/><stop offset=".3" stop-color="#cf993a"/><stop offset=".58" stop-color="#472c26"/><stop offset=".8" stop-color="#e6b65f"/><stop offset="1" stop-color="#6c4433"/></linearGradient>
+<linearGradient id="gem" x1=".12" y1=".06" x2=".91" y2=".92"><stop stop-color="#e4a5ff"/><stop offset=".19" stop-color="#ab53e7"/><stop offset=".45" stop-color="#4b137a"/><stop offset=".69" stop-color="#220d40"/><stop offset=".9" stop-color="#7f22ad"/><stop offset="1" stop-color="#160523"/></linearGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
+</defs>
+<ellipse cx="128" cy="126" rx="114" ry="116" fill="url(#a)"/>
+<path d="M128 220C108 198 34 156 34 96c0-44 55-65 89-29 36-36 99-13 99 37 0 58-72 99-94 116z" fill="#b862e8" opacity=".28" filter="url(#glow)"/>
+<path d="M128 223C98 194 29 151 31 99c2-47 65-70 97-25 33-45 98-23 98 25 0 55-69 96-98 124z" stroke="#30162e" stroke-width="17" fill="url(#g)" stroke-linejoin="round"/>
+<path d="M128 207C98 175 48 146 48 105c0-33 45-49 72-17l8 11 9-11c27-32 72-16 72 17 0 42-52 72-81 102z" fill="url(#gem)" stroke="#f3dcb7" stroke-width="4" stroke-linejoin="round"/>
+<path d="M128 101v105l-32-49-47-51 66-13z" fill="#4b176f" opacity=".6"/><path d="M128 101l40-8 40 13-48 51-32 49z" fill="#ad50d9" opacity=".43"/>
+<path d="M67 98l47-11 13 15-25 17-50-9z" fill="#f5caff" opacity=".38"/><path d="M164 89l37 13-43 19-30-18z" fill="#d69bfa" opacity=".32"/>
+<path d="M128 112l-14 28 14 52 15-52z" fill="#db8fff" opacity=".85"/><path d="M128 125l6 17-6 29-6-29z" fill="#fff7fe"/>
+<path d="M85 60l11 26 28 12M171 60l-10 26-28 12" fill="none" stroke="url(#g)" stroke-width="12" stroke-linecap="round"/>
+<path d="M128 51l9 23-9 13-9-13z" fill="#e3b45b" stroke="#513322" stroke-width="4"/>
+<path d="M21 67l5 12 13 5-13 5-5 12-5-12-13-5 13-5zM222 37l5 13 13 5-13 5-5 12-5-12-13-5 13-5z" fill="#d79bff"/>
+<g fill="#e9beff"><circle cx="224" cy="175" r="3"/><circle cx="28" cy="169" r="2.5"/><circle cx="188" cy="224" r="2"/><circle cx="84" cy="222" r="2"/></g>
+</svg>
