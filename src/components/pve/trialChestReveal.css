@@ -128,3 +128,82 @@
 .trial-chest-stage--common:not(.trial-chest-open) {
   animation: territory-chest-idle 2.6s ease-in-out infinite;
 }
+
+/* Multi-layer chest artwork used by both the Victory receipt and Inventory.
+   These are decorative-only effects: no interaction or reward mutation. */
+.trial-chest-showcase {
+  --chest-light: rgba(255, 194, 82, .56);
+  --chest-spark: #ffdb7b;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(94px, 27vw, 122px);
+  height: clamp(88px, 25vw, 106px);
+  flex: 0 0 clamp(94px, 27vw, 122px);
+  isolation: isolate;
+  pointer-events: none;
+}
+.trial-chest-showcase--common { --chest-light: rgba(226, 170, 86, .35); --chest-spark: #f5d092; }
+.trial-chest-showcase--explorer { --chest-light: rgba(78, 185, 185, .34); --chest-spark: #a6ffff; }
+.trial-chest-showcase--guardian { --chest-light: rgba(250, 135, 26, .66); --chest-spark: #fff0a2; }
+.trial-chest-showcase--legendary { --chest-light: rgba(238, 166, 69, .82); --chest-spark: #fff5b2; }
+.trial-chest-showcase::before {
+  content: "";
+  position: absolute;
+  inset: 13% 0 9%;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, var(--chest-light) 0, rgba(154, 78, 22, .19) 48%, transparent 73%);
+  filter: blur(8px);
+  transform: scale(1.1);
+  animation: territory-showcase-aura 3s ease-in-out infinite;
+}
+.trial-chest-showcase::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: 5% 0;
+  opacity: .88;
+  background:
+    radial-gradient(circle at 17% 35%, var(--chest-spark) 0 1.5px, transparent 3px),
+    radial-gradient(circle at 77% 19%, var(--chest-spark) 0 1px, transparent 3px),
+    radial-gradient(circle at 90% 63%, var(--chest-spark) 0 1.5px, transparent 3px),
+    radial-gradient(circle at 29% 81%, var(--chest-spark) 0 1px, transparent 3px);
+  animation: territory-showcase-embers 3.6s ease-in-out infinite;
+}
+.trial-chest-showcase > img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 5px rgba(0, 0, 0, .72)) drop-shadow(0 0 7px var(--chest-light));
+  animation: territory-showcase-hover 3s ease-in-out infinite;
+}
+.trial-chest-showcase--mini {
+  width: clamp(60px, 17vw, 76px);
+  height: clamp(54px, 15vw, 70px);
+  flex: 0 0 clamp(60px, 17vw, 76px);
+}
+.trial-chest-showcase--mini::after { opacity: .65; }
+.trial-chest-showcase--mini > img { animation: none; }
+@keyframes territory-showcase-hover {
+  0%, 100% { transform: translateY(1px) scale(1); }
+  50% { transform: translateY(-3px) scale(1.025); }
+}
+@keyframes territory-showcase-aura {
+  0%, 100% { opacity: .54; transform: scale(1); }
+  50% { opacity: .95; transform: scale(1.17); }
+}
+@keyframes territory-showcase-embers {
+  0%, 100% { opacity: .3; transform: translateY(4px); }
+  40% { opacity: .95; }
+  65% { opacity: .75; transform: translateY(-7px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trial-chest-showcase::before,
+  .trial-chest-showcase::after,
+  .trial-chest-showcase > img { animation: none !important; }
+}
