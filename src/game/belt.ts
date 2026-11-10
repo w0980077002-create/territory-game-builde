@@ -163,6 +163,27 @@ export function takeFromBelt(state: GameState, index: number): GameState {
   return { ...state, belt, inventory };
 }
 
+/** A classic PvE encounter snapshots its belt on entry. Only those starting
+ * charges can be used in that encounter: reloading the saved inventory in a
+ * second tab must NOT grant new charges to the already running fight.
+ * This is an in-client guard; it does not make classic PvE server-authoritative.
+ */
+export function canSpendSnapshottedBattleCharge(
+  startingBelt: ReadonlyArray<InventoryItem | null>,
+  liveBelt: ReadonlyArray<InventoryItem | null>,
+  slot: number,
+  used: number,
+): boolean {
+  if (!Number.isSafeInteger(slot) || slot < 0 || slot >= BELT_WIN_GOALS.length ||
+      !Number.isSafeInteger(used) || used < 0) return false;
+  const original = startingBelt[slot];
+  const current = liveBelt[slot];
+  if (!original || !current || !sameBeltKind(original, current) ||
+      !Number.isSafeInteger(original.qty) || original.qty < 1 ||
+      original.qty > BELT_STACK || used >= original.qty) return false;
+  return current.qty === original.qty - used;
+}
+
 export function consumeBelt(state: GameState, index: number): GameState {
   const slot = state.belt[index];
   if (!slot) return state;
