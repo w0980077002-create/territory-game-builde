@@ -7,6 +7,7 @@ import { getCombatAppearance } from '@/game/appearance';
 import { FighterFigure } from '@/components/arena/FighterFigure';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { getMortarionBossState, hitMortarionBoss, type MortarionState } from '@/game/mortarionBoss';
+import { claimMortarionReward, getMortarionRewardStatus, type MortarionRewardStatus } from '@/game/mortarionRewards';
 import './mortarionBoss.css';
 
 const MORTARION_HP = 100_000_000;
@@ -54,6 +55,9 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
   const confirmedStrikeSerial = useRef(0);
   const contactTimeout = useRef<number | null>(null);
   const [state, setState] = useState<MortarionState | null>(null);
+  const [rewardStatus, setRewardStatus] = useState<MortarionRewardStatus | null>(null);
+  const [rewardBusy, setRewardBusy] = useState(false);
+  const [rewardError, setRewardError] = useState('');
   const [clock, setClock] = useState(() => Date.now());
   const [skew, setSkew] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -66,6 +70,35 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
   const mounted = useRef(true);
   const requestNumber = useRef(0);
   const effectTimeout = useRef<number | null>(null);
+
+  const refreshRewards = useCallback(async () => {
+    try {
+      const value = await getMortarionRewardStatus();
+      if (mounted.current) {
+        setRewardStatus(value);
+        setRewardError('');
+      }
+    } catch {
+      if (mounted.current) setRewardError(en
+        ? 'Reward progress is temporarily unavailable.' : 'Пока нет связи с учётом наград.');
+    }
+  }, [en]);
+
+  const claimRewards = async () => {
+    if (!rewardStatus?.canClaim || rewardBusy) return;
+    setRewardBusy(true);
+    setRewardError('');
+    try {
+      await claimMortarionReward(playerId);
+      await refreshRewards();
+    } catch {
+      setRewardError(en
+        ? 'Claim could not be confirmed. Your reward is protected. Reopen to sync.'
+        : 'Не удалось подтвердить получение. Награда защищена. Перезайди для сверки.');
+    } finally {
+      if (mounted.current) setRewardBusy(false);
+    }
+  };
 
   const refresh = useCallback(async () => {
     if (busyRef.current) return;
@@ -86,9 +119,11 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
   useEffect(() => {
     mounted.current = true;
     void refresh();
+    void refreshRewards();
     const time = window.setInterval(() => setClock(Date.now()), 300);
     const polling = window.setInterval(() => { void refresh(); }, 10000);
-    const resume = () => { setClock(Date.now()); void refresh(); };
+    const rewardPolling = window.setInterval(() => { void refreshRewards(); }, 15000);
+    const resume = () => { setClock(Date.now()); void refresh(); void refreshRewards(); };
     document.addEventListener('visibilitychange', resume);
     window.addEventListener('online', resume);
     return () => {
@@ -96,12 +131,13 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
       requestNumber.current++;
       window.clearInterval(time);
       window.clearInterval(polling);
+      window.clearInterval(rewardPolling);
       document.removeEventListener('visibilitychange', resume);
       window.removeEventListener('online', resume);
       if (effectTimeout.current !== null) window.clearTimeout(effectTimeout.current);
       if (contactTimeout.current !== null) window.clearTimeout(contactTimeout.current);
     };
-  }, [refresh]);
+  }, [refresh, refreshRewards]);
 
   const attack = async () => {
     if (!state?.active || busyRef.current) return;
@@ -117,6 +153,7 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
       setSkew(Date.parse(next.serverNow) - Date.now());
       setState(next);
       setClock(Date.now());
+      void refreshRewards();
       if (next.hitDamage && next.hitDamage > 0) {
         // The hero attack is purely visual and starts ONLY after a confirmed
         // server hit. Its contact frame lines up with the damage popup.
@@ -215,8 +252,11 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
         {en ? 'Available strikes' : 'Доступно ударов'}: <b>{state ? hitsLeft : '…'}/{MORTARION_HITS_PER_HOUR}</b> · {en ? 'One strike every 60 seconds' : '1 удар раз в 60 секунд'}
       </p>
       <p className="relative mt-1 text-[10px] leading-tight text-amber-200/70">
-        {en ? 'Shared boss health. Each hit is saved by the server. Event rewards have not been announced.' : 'Общее HP. Каждый удар сохраняется сервером. Награды события пока не объявлены.'}
+        {en ? 'One evolving chest for each participant. Player and tester accounts share the TOP 10.' : 'Один растущий сундук за участие. Игроки и тестеры соревнуются в общем Топ-10.'}
       </p>
+      {rewardStatus && <p data-testid="mortarion-reward-teaser" className="relative mt-2 rounded-lg border border-violet-400/35 bg-violet-950/40 px-2 py-1.5 text-[11px] font-bold text-amber-100">
+        🎁 {en ? 'Your chest' : 'Твой сундук'}: {rewardStatus.tier === 'legendary' ? (en ? 'Legendary' : 'Легендарный') : rewardStatus.tier === 'hunter' ? (en ? 'Soul hunter' : 'Охотника') : (en ? 'Participant' : 'Участника')} · {rewardStatus.activeDays}/{rewardStatus.requiredDays} {en ? 'days' : 'дней'} · {rewardStatus.totalHits} {en ? 'hits' : 'ударов'}
+      </p>}
       {message && <p role="alert" className="relative mt-2 rounded-lg border border-red-500/50 bg-red-950/60 px-2 py-2 text-xs text-red-100">{message}</p>}
     </section>
 
