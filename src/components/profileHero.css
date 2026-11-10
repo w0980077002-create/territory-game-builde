@@ -1026,3 +1026,25 @@
                0 3px 7px #0a0507b9;
   }
 }
+
+/* Mortarion ranks are permanent cosmetic honors, never gameplay bonuses. */
+.hero-showcase__mortarion-title{
+  display:block;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:11px;font-weight:900;color:#ebc3ff;text-shadow:0 1px 3px #260722;
+}
+.hero-showcase__character--mortarion_lord::after,
+.hero-showcase__character--mortarion_conqueror::after,
+.hero-showcase__character--mortarion_hunter::after{
+  content:"";position:absolute;inset:5% 5% 10%;pointer-events:none;z-index:4;
+  border:3px solid #a38559;border-radius:44% 44% 24% 24%;
+  box-shadow:inset 0 0 11px #c5a35e55,0 0 13px #6c359044;
+}
+.hero-showcase__character--mortarion_lord::after{
+  border-color:#ffe2a1;box-shadow:inset 0 0 13px #f9db96,0 0 17px #c578d4;
+}
+.hero-showcase__character--mortarion_conqueror::after{
+  border-color:#beaadf;box-shadow:inset 0 0 13px #c2a5dc7c,0 0 11px #8846ac;
+}
+.hero-showcase__character--mortarion_hunter::after{
+  border-color:#9b819d;box-shadow:inset 0 0 11px #a979b477,0 0 9px #553770;
+}

@@ -23,6 +23,15 @@ async function update(id, state) {
 async function open(floor, expected) {
   return (await db.query('SELECT public.territory_trial_chest_open_v1($1,$2) AS r',[floor,expected])).rows[0].r;
 }
+/* PGlite returns timestamptz as a JS Date, dropping fractional microseconds.
+ * Preserve the exact PostgreSQL CAS token within SQL for positive test cases.
+ * Production callers use an exact cloud string, not this isolated Date fixture. */
+async function openCurrent(floor, playerId) {
+  return (await db.query(
+    'SELECT public.territory_trial_chest_open_v1($1,(SELECT updated_at FROM public.players WHERE id=$2)) AS r',
+    [floor,playerId]
+  )).rows[0].r;
+}
 try {
   await db.exec(`
     CREATE ROLE anon; CREATE ROLE authenticated;
@@ -62,7 +71,7 @@ try {
   let before=await snapshot();
   assert.equal(before.gold,1000,'victory cannot auto-pay sealed chest');
   assert.equal(before.gems,10);
-  let receipt=await open(1,before.updated_at);
+  let receipt=await openCurrent(1,playerId);
   assert.equal(receipt.success,true);
   assert.equal(receipt.already_opened,false);
   assert.equal(receipt.receipt.floor,1);
@@ -97,7 +106,7 @@ try {
     assert.equal(seen.opened_at,null);
     await assert.rejects(open(expected.floor,new Date(0)),/trial_chest_reload_required/);
     assert.equal((await snapshot()).gold,queued.gold,'stale CAS must not grant loot');
-    const value=await open(expected.floor,queued.updated_at);
+    const value=await openCurrent(expected.floor,playerId);
     assert.equal(value.receipt.tier,expected.tier);
     for(const field of ['gold','gems','materials','elixirs']) assert.equal(value.receipt[field],expected[field]);
     assert.equal(value.wallet_gold,queued.gold+expected.gold);

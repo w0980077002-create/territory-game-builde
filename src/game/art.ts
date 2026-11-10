@@ -175,6 +175,12 @@ function consumableArt(item: ArtSource): string | null {
 }
 
 function inventoryMaterialArt(item: ArtSource): string {
+  if (item.id === 'mortarion_heart') {
+    return import.meta.env.BASE_URL + 'assets/territory/events/mortarion-heart.svg';
+  }
+  if (item.id === 'mortarion_soul_essence') {
+    return import.meta.env.BASE_URL + 'assets/territory/ui/trial-loot/trial-essence.svg';
+  }
   if (item.id.startsWith('trial_fragment_') || item.id.startsWith('trial_blueprint_')) {
     return import.meta.env.BASE_URL + 'assets/territory/ui/trial-loot/blueprint-fragment.svg';
   }
