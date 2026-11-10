@@ -661,7 +661,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} onNavigate={setScreen} />}
         {screen === 'messages' && <MessagesScreen notify={notify} onQuests={() => setScreen('quests')} onDaily={() => setEventDailyOpen(true)} />}
-        {screen === 'events' && <EventsScreen onNavigate={setScreen} onDaily={() => setEventDailyOpen(true)} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} gatherReady={gatherReady} bossPreview={isAdmin} onBossPreview={() => setScreen('mortarion')} />}
+        {screen === 'events' && <EventsScreen onNavigate={setScreen} onDaily={() => setEventDailyOpen(true)} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} gatherReady={gatherReady} />}
         {screen === 'mortarion' && <MortarionBossScreen playerId={user.id} />}
         {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} onNavigate={setScreen} />}
         </Suspense>

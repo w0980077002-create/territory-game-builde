@@ -6,6 +6,8 @@ const boss = read('src/components/MortarionBossScreen.tsx');
 const api = read('src/game/mortarionBoss.ts');
 const migration = read('supabase/migrations/20261109180000_mortarion_world_raid_2026.sql');
 const events = read('src/components/EventsScreen.tsx');
+const home = read('src/components/HomeScreen.tsx');
+const cityShortcut = read('src/components/home/MortarionCityShortcut.tsx');
 const app = read('src/App.tsx');
 const css = read('src/components/mortarionBoss.css');
 
@@ -67,8 +69,10 @@ assert.match(boss, /Array\.from\(\{length: 10\}/);
 assert.doesNotMatch(boss, /TEST_HIT_DAMAGE|setCombat\(|localStorage|sessionStorage|Your rank|Ваше место|Твоё место/);
 assert.match(app, /screen === 'mortarion' && <MortarionBossScreen playerId=\{user.id\}/);
 assert.doesNotMatch(app, /screen === 'mortarion' && isAdmin/);
-assert.match(events, /bossPreview \|\| mortarionStatus\?\.enabled/);
-assert.match(events, /mortarion-live/);
+assert.doesNotMatch(events, /mortarionStatus|bossPreview|onBossPreview|mortarion-live|МОРТАРИОН/, 'Mortarion is no longer duplicated in Events');
+assert.match(home, /<MortarionCityShortcut onOpen=\{\(\) => onOpen\('mortarion'\)\} \/>/, 'City shortcut opens real raid');
+assert.match(cityShortcut, /getMortarionBossState\(\)/, 'City must fetch live raid state');
+assert.match(cityShortcut, /mortarionCityTimeRemaining\(/, 'City uses server-anchored countdown');
 
 assert.match(api, /territory_mortarion_state_v1/);
 assert.match(api, /territory_mortarion_attack_v1/);

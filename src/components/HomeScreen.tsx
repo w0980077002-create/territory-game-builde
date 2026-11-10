@@ -21,11 +21,12 @@ import { LiveCityBackdrop, CITY_MOTION_KEY, CITY_BACKGROUND_KEY, initialCityMoti
 import { CityLivingHero } from '@/components/home/CityLivingHero';
 import { CityLivingFollower } from '@/components/home/CityLivingFollower';
 import { CityLivingEnemy } from '@/components/home/CityLivingEnemy';
+import { MortarionCityShortcut } from '@/components/home/MortarionCityShortcut';
 import { useLanguage, localizeText } from '@/game/i18n';
 import { SHOW_TOP_LEADERBOARD_SHORTCUT } from '@/game/uiFeatureFlags';
 import { getHeroPathDestination, getNextStarterMilestone, getStarterMilestones, shouldShowStarterJourney } from '@/game/starterJourney';
 
-export type HomeTarget = 'vip' | 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events';
+export type HomeTarget = 'vip' | 'shop' | 'forge' | 'arena' | 'quests' | 'hero' | 'leaderboard' | 'professions' | 'auction' | 'friends' | 'messages' | 'events' | 'mortarion';
 // All five follower images use 512x512 canvases but have different amounts of
 // transparent space above the character. Normalize visible silhouettes in the
 // home city without changing original artwork, combat sprites or player saves.
@@ -222,6 +223,7 @@ export function HomeScreen({ saveStatus, questAlerts, onOpen, onBattle, onInvent
         </span>
       </button>
 
+      <MortarionCityShortcut onOpen={() => onOpen('mortarion')} />
 
       <div className="home-side-stack absolute z-10 left-1.5 w-[48px] flex flex-col gap-1">
         <SideButton icon="/ic-events.webp" label={t('events')} badge={questAlerts.readyCount > 0} onClick={() => onOpen('events')} />
