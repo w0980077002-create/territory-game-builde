@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 
+const requireSafe = process.argv.includes('--require-safe');
 const db = new PGlite();
 const owner = '11111111-1111-4111-8111-111111111111';
 const other = '22222222-2222-4222-8222-222222222222';
@@ -64,20 +65,33 @@ try {
     'SELECT territory_private.owner_cap_item_v1($1::jsonb,10,$2::uuid) AS gear',
     [JSON.stringify(sword), owner])).rows[0].gear;
   assert.equal(result.id, sword.id, 'UUID must remain identifiable');
-  assert.equal(result.level, 10,
-    'KNOWN DEFECT: real owner save cap currently destroys level 50 on a level-10 owner');
-  assert.notEqual(result.level, sword.level, 'regression witness must actually expose destructive cap');
+  if (requireSafe) {
+    assert.equal(result.level, sword.level, 'owner save must preserve crafted level 50');
+    assert.equal(result.upgradeCount, sword.upgradeCount, 'owner save must preserve 49 upgrades');
+    assert.equal(result.attack, sword.attack, 'owner save must preserve attack stat');
+    assert.deepEqual(result.baseStats, sword.baseStats, 'owner save must preserve base stats');
+  } else {
+    assert.equal(result.level, 10,
+      'KNOWN DEFECT: real owner save cap currently destroys level 50 on a level-10 owner');
+    assert.notEqual(result.level, sword.level, 'characterization must expose destructive cap');
+  }
   const secondOwnerResult = (await db.query(
     'SELECT territory_private.owner_cap_item_v1($1::jsonb,10,$2::uuid) AS gear',
     [JSON.stringify(sword), other])).rows[0].gear;
   assert.equal(secondOwnerResult.id, sword.id, 'second owner must receive the same item identity');
-  assert.equal(secondOwnerResult.level, 10, 'destructive cap must reproduce for independent low-level owner');
+  assert.equal(secondOwnerResult.level, requireSafe ? sword.level : 10,
+    'second low-level owner must follow the selected characterization or safety contract');
+  if (requireSafe) {
+    assert.equal(secondOwnerResult.upgradeCount, sword.upgradeCount, 'second owner upgrades preserved');
+    assert.equal(secondOwnerResult.attack, sword.attack, 'second owner attack preserved');
+    assert.deepEqual(secondOwnerResult.baseStats, sword.baseStats, 'second owner base stats preserved');
+  }
   const afterOwner = (await db.query('SELECT game_state FROM public.players WHERE id=$1', [owner])).rows[0].game_state;
   assert.deepEqual(afterOwner, beforeOwner, 'function-only characterization must not silently write owner state');
   const afterOther = (await db.query('SELECT game_state FROM public.players WHERE id=$1', [other])).rows[0].game_state;
   assert.deepEqual(afterOther, beforeOther, 'other owner must be untouched');
   assert.equal(sword.level, 50, 'synthetic source object must not be mutated');
-  console.warn('KNOWN FAILING PRODUCT INVARIANT #366: owner_cap_item_v1 returned level 10 for a level-50 synthetic item; this PASS only confirms the bug.');
+  if (!requireSafe) console.warn('KNOWN FAILING PRODUCT INVARIANT #366: PASS confirms downgrade, not safety. Run with --require-safe for the expected failing acceptance contract.');
 } finally {
   await db.close();
 }
