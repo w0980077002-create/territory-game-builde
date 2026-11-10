@@ -164,6 +164,12 @@ for (const file of ['blueprint-fragment.svg','guardian-shard.svg','trial-essence
   assert.ok((art.match(/<path\b/g)||[]).length>=20, file+' needs detailed layered illustration');
   assert.doesNotMatch(art, /<script|onload=|<foreignObject/i, file+' must remain a safe static SVG');
 }
+// The inventory must use the approved painted shard, not its SVG mockup.
+const inventoryArtSource = readFileSync('src/game/art.ts', 'utf8');
+assert.match(inventoryArtSource,/trial_component_guardian_shard: 'guardian-shard-premium\\.svg'/);
+const paintedShard = readFileSync('public/assets/territory/ui/trial-loot/guardian-shard-premium.svg','utf8');
+assert.match(paintedShard, /data:image\\/webp;base64,UklGR/);
+assert.ok(paintedShard.length > 6000, 'guardian shard artwork must contain real painted pixels');
 // The ordinary chest must be a finished transparent game illustration, never
 // the crude line-art SVG reported by the owner. Both UIs use the same mapping.
 assert.equal(TRIAL_CHEST_ART.common, 'assets/territory/ui/materials/royal-chest.webp');
