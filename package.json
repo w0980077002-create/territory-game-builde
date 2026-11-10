@@ -31,7 +31,7 @@
     "test:stage5": "node scripts/check-stage5.mjs && node scripts/check-auction-sql.mjs && node scripts/check-auction-client.mjs",
     "test:stage6": "node scripts/check-stage6.mjs",
     "test:stage7": "node scripts/check-stage7.mjs",
-    "test:pve": "node scripts/check-trial-chest-loot.mjs && node scripts/check-trial-vault-sql.mjs && node scripts/check-trial-strike-stones.mjs && node scripts/check-trial-gauntlet.mjs && node scripts/check-pve-balance.mjs && node scripts/check-server-pve-reconnect.mjs && node scripts/check-pve-victory-save-fence.mjs && node scripts/check-pve-victory-recovery.mjs",
+    "test:pve": "node scripts/check-pve-belt-fight-cap.mjs && node scripts/check-trial-chest-loot.mjs && node scripts/check-trial-vault-sql.mjs && node scripts/check-trial-strike-stones.mjs && node scripts/check-trial-gauntlet.mjs && node scripts/check-pve-balance.mjs && node scripts/check-server-pve-reconnect.mjs && node scripts/check-pve-victory-save-fence.mjs && node scripts/check-pve-victory-recovery.mjs",
     "test:inventory-cleanup": "node scripts/check-inventory-cleanup.mjs",
     "test:gear-recycle": "node scripts/check-gear-recycle.mjs",
     "test:gear-showcase": "node scripts/check-gear-showcase.mjs",
