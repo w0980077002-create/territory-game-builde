@@ -72,7 +72,7 @@ await assert.rejects(query('SELECT public.territory_mortarion_reward_claim_v1(no
 
 await run("UPDATE public.territory_mortarion_2026 SET ends_at=now()-interval '1 second'");
 const botBefore=(await query('SELECT updated_at,gold,gems FROM public.players WHERE id=$1',[bot]))[0];
-const b=(await query('SELECT public.territory_mortarion_reward_claim_v1($1::timestamptz) AS r',[botBefore.updated_at]))[0].r;
+const b=(await query('SELECT public.territory_mortarion_reward_claim_v1((SELECT updated_at FROM public.players WHERE id=$1)) AS r',[bot]))[0].r;
 assert.equal(b.success,true);
 assert.equal(b.already_claimed,false);
 assert.equal(b.receipt.place,1,'automated tester is eligible for real top-1 rewards');
@@ -94,7 +94,7 @@ assert.equal(botAfter.gems,124);
 
 await query("SELECT set_config('request.jwt.claim.sub',$1,false)",[human]);
 const hBefore=(await query('SELECT updated_at FROM public.players WHERE id=$1',[human]))[0];
-const h=(await query('SELECT public.territory_mortarion_reward_claim_v1($1::timestamptz) AS r',[hBefore.updated_at]))[0].r;
+const h=(await query('SELECT public.territory_mortarion_reward_claim_v1((SELECT updated_at FROM public.players WHERE id=$1)) AS r',[human]))[0].r;
 assert.equal(h.receipt.place,2);
 assert.equal(h.receipt.tier,'hunter','rank 2 has an upgraded chest');
 assert.equal(h.receipt.fragment,true,'top 2 always receives blueprint fragment');
