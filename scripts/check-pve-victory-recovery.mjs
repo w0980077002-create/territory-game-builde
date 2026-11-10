@@ -244,6 +244,8 @@ for(const tamper of [
   tamper(row);
   globalThis.__mockServer={revision:nextRevision,state:row,gold:30,gems:2};
   globalThis.__mockTokens.set('hero-a',nextRevision);
+  // A later server row must never be overwritten just to satisfy this test.
+  globalThis.__mockMode='failed';
   assert.equal(await persistPveVictoryJournal('hero-a',sealed9),false,
     'Material loss, a noncanonical mirror or a missing chest must never confirm');
   assert.equal(pendingPveVictoryJournal('hero-a'),true);
