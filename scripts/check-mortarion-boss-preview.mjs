@@ -70,9 +70,9 @@ assert.doesNotMatch(boss, /TEST_HIT_DAMAGE|setCombat\(|localStorage|sessionStora
 assert.match(app, /screen === 'mortarion' && <MortarionBossScreen playerId=\{user.id\}/);
 assert.doesNotMatch(app, /screen === 'mortarion' && isAdmin/);
 assert.doesNotMatch(events, /mortarionStatus|bossPreview|onBossPreview|mortarion-live|МОРТАРИОН/, 'Mortarion is no longer duplicated in Events');
-assert.match(home, /<MortarionCityShortcut onOpen=\\{\\(\\) => onOpen\\('mortarion'\\)\\} \\/>/, 'City shortcut opens real raid');
-assert.match(cityShortcut, /getMortarionBossState\\(\\)/, 'City must fetch live raid state');
-assert.match(cityShortcut, /mortarionCityTimeRemaining\\(/, 'City uses server-anchored countdown');
+assert.match(home, /<MortarionCityShortcut onOpen=\{\(\) => onOpen\('mortarion'\)\} \/>/, 'City shortcut opens real raid');
+assert.match(cityShortcut, /getMortarionBossState\(\)/, 'City must fetch live raid state');
+assert.match(cityShortcut, /mortarionCityTimeRemaining\(/, 'City uses server-anchored countdown');
 
 assert.match(api, /territory_mortarion_state_v1/);
 assert.match(api, /territory_mortarion_attack_v1/);
