@@ -8,6 +8,7 @@ import { FighterFigure } from '@/components/arena/FighterFigure';
 import type { StrikeEvent } from '@/game/useStrikeQueue';
 import { getMortarionBossState, hitMortarionBoss, type MortarionState } from '@/game/mortarionBoss';
 import { claimMortarionReward, getMortarionRewardStatus, type MortarionRewardStatus } from '@/game/mortarionRewards';
+import { MortarionRewardPanel } from './MortarionRewardPanel';
 import './mortarionBoss.css';
 
 const MORTARION_HP = 100_000_000;
@@ -276,5 +277,7 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
         })}
       </ol>
     </section>
+    <MortarionRewardPanel status={rewardStatus} en={en} busy={rewardBusy}
+      error={rewardError} onClaim={() => void claimRewards()}/>
   </div>;
 }
