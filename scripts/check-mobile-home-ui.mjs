@@ -338,6 +338,14 @@ const [friendsUi, friendsStyle, liveRuneStyle] = await Promise.all([
 assert.match(home, /home-enemy-name/, 'Next enemy must have a mobile-readable caption');
 assert.doesNotMatch(home, /text-red-100 truncate/, 'Enemy name must not be single-line truncated');
 assert.match(cityMotion, /\.home-character-stage \.home-enemy-name[\s\S]*?-webkit-line-clamp:2/, 'Long enemy names wrap to two lines');
+assert.match(cityMotion, /\.home-character-stage \.home-enemy-name[\s\S]*?position:absolute;[\s\S]*?bottom:clamp\(61px,38%,88px\)/,
+  'City enemy label must be anchored near bottom to the real enemy silhouette, not above the bridge');
+assert.match(cityMotion, /\.home-character-stage \.home-enemy-name[\s\S]*?transform:translateX\(-50%\)/,
+  'Enemy label follows its enemy button horizontally on compact phones');
+assert.match(cityMotion, /\.home-character-stage \.home-enemy-name[\s\S]*?pointer-events:none/,
+  'Enemy caption must not intercept battle taps');
+assert.doesNotMatch(cityMotion, /transform:translateX\(-56px\)/,
+  'Do not shift the caption to the bridge far away from the enemy');
 assert.match(friendsUi, /import '\.\/friendsVikingFinish\.css'/, 'Friends style must ship with the live screen');
 for (const cls of ['friends-founder-panel', 'friends-invite-panel', 'friends-stat-card',
   'friends-gem-panel', 'friends-milestone-panel', 'friends-list-panel', 'friends-rules-panel']) {
