@@ -1,9 +1,10 @@
 import { supabase } from './supabase';
-import { useGame } from './actions';
+import { useGame, useArena, useAccount } from './actions';
 import { acceptMonopolyClaimReceipt, protectFortuneSave, releaseArenaRejectedAction, saveBlocked, saveCloudSave, saveTokens } from './cloud';
 import { reconcilePendingCaveBeforeArena } from './combatV1/receiptAdapter';
 import type { ArenaMode, ArenaReward } from './arenaApi';
-import type { ArenaItemCode } from './belt';
+import { refillVipBeltAfterBattle, type ArenaItemCode } from './belt';
+import { activeVipForBenefits } from './vipProgram';
 
 interface ArenaSecureReceipt {
   success: boolean;
@@ -85,6 +86,16 @@ async function transact(args: {
 }
 
 export async function secureArenaJoin(mode: ArenaMode): Promise<string> {
+  // Repair a previous fight's depleted VIP belt before the next entry.
+  // This uses only existing inventory and an existing player-selected preset.
+  // Saving the preset with the atomic join also survives reconnects when the
+  // final dose emptied its original slot.
+  const current = useGame.get();
+  const selected = Array.isArray(current.arenaAutoBeltPreset) && current.arenaAutoBeltPreset.length === 7
+    ? current.arenaAutoBeltPreset : current.belt;
+  const filled = refillVipBeltAfterBattle(current, selected, useArena.get().wins,
+    activeVipForBenefits(useAccount.get(), performance.now()));
+  useGame.set({ ...filled, arenaAutoBeltPreset: filled.belt.map(item => item ? { ...item } : null) });
   const receipt = await transact({ p_action: 'join', p_mode: mode });
   if (!receipt.room_id) throw new Error('Не удалось получить комнату арены');
   return receipt.room_id;
