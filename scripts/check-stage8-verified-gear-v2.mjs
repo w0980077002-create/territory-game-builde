@@ -75,6 +75,26 @@ try {
       /stage8_reconciliation_required/,'Reject forged future levels');
   }
 
+  // A rejected/aborted server forge must be atomic for the current owner:
+  // no phantom +1 upgrade, owner swap or modified registry output.
+  const current=makeGear(73);
+  await putInRegistry(current,buyer);
+  const beforeFailedForge=await one(
+    'SELECT player_id::text AS owner,item_output FROM public.territory_profession_stage8_items WHERE item_id=$1',
+    [gearUuid]);
+  await db.exec('BEGIN');
+  await putInRegistry(makeGear(74),buyer);
+  assert.equal((await run(current,buyer)).level,74);
+  await db.exec('ROLLBACK');
+  const afterFailedForge=await one(
+    'SELECT player_id::text AS owner,item_output FROM public.territory_profession_stage8_items WHERE item_id=$1',
+    [gearUuid]);
+  assert.deepEqual(afterFailedForge,beforeFailedForge,
+    'Aborted forge must preserve owner, UUID, upgrade history and canonical stats');
+  assert.deepEqual(await run(current,buyer),current,
+    'A rolled-back +1 upgrade must not become visible on subsequent saves');
+  await assert.rejects(()=>run(current,seller),/stage8_item_not_owned/);
+
   const fixture=makeGear(72);
   assert.equal(await run({...fixture,id:'ordinary-sword'},buyer),null,
     'Non-server items use existing legacy guard');
