@@ -412,8 +412,12 @@ assert.match(battle, /retryPveVictoryJournal\(userId\)/);
 assert.ok(app.indexOf('await recoverPveVictoryOnBoot(user.id, profile)') < app.indexOf('useGame.set(loadedState)'));
 assert.match(app, /if \(!pendingPveVictoryJournal\(user.id\)\) controller.changed\(\)/,
   'A pending victory journal must not trigger a false global autosave failure');
-assert.match(app, /pveVictorySaveState\(user.id\) === 'confirmed'\) controller.changed\(\)/,
-  'Confirmed victory must flush deferred autosaves automatically');
+assert.match(app, /pveVictorySaveState\(user.id\) === 'confirmed'\) \{/,
+  'Confirmed victory must resume deferred autosaves automatically');
+assert.match(app, /controller.changed\(\);\s*controller.flush\(\);/,
+  'Verified victory must resume queued autosaves immediately');
+assert.match(app, /saveStatus === 'error' && !pendingPveVictoryJournal\(user.id\)/,
+  'The top error banner must not duplicate a pending victory checkpoint');
 assert.match(app, /onRetry=\{loadError === 'pve_recovery_pending'/,
   'Blocked player must have a safe retry rather than a permanent splash');
 assert.match(app, /setLoadRetry\(attempt => attempt \+ 1\)/,
