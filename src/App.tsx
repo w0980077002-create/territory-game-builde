@@ -26,6 +26,7 @@ import { MapScreen } from '@/components/MapScreen';
 
 
 
+
 import type { HallGame } from '@/game/gameHall';
 
 
@@ -45,6 +46,7 @@ import { getQuestAlerts, readSeenQuests, rememberSeenQuests } from '@/game/quest
 
 // Only City is downloaded for initial login; other screens load on demand.
 // Never prefetch every game mode on a mobile connection.
+
 const BattleScreen = lazy(() => import('@/components/BattleScreen').then(m => ({ default: m.BattleScreen })));
 const InventoryScreen = lazy(() => import('@/components/InventoryScreen').then(m => ({ default: m.InventoryScreen })));
 const ShopScreen = lazy(() => import('@/components/ShopScreen').then(m => ({ default: m.ShopScreen })));
@@ -246,33 +248,41 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   }, [loaded, screen]);
 
 
-  // Idle, sequential chunk warming removes Telegram WebView's first-tap
-  // JavaScript download delay. Avoid flooding constrained/mobile data.
+  // Preload only when the device has spare resources. On budget Telegram
+  // WebViews these imports compete with City art and cause visible frame drops.
   useEffect(() => {
     if (!loaded) return;
     const connection = (navigator as Navigator & {
       connection?: { saveData?: boolean; effectiveType?: string };
-    }).connection;
-    if (connection?.saveData || /2g/.test(connection?.effectiveType ?? '')) return;
-    const fast = !connection?.effectiveType || connection.effectiveType === '4g';
-    // On mobile, eager loading twelve sections competed with artwork.
-    // Other sections still load normally when the player navigates to them.
-    const screens: Screen[] = fast
-      ? ['battle', 'inventory', 'games', 'arena', 'hero']
-      : ['battle', 'inventory'];
+      deviceMemory?: number;
+    });
+    if (connection.connection?.saveData || /2g/.test(connection.connection?.effectiveType ?? '')) return;
+    const mobile = window.matchMedia('(max-width: 640px)').matches;
+    // Telegram's Android WebView often hides deviceMemory; core count alone
+    // is not a performance guarantee (budget phones also report 8 cores).
+    const lowPower = mobile && (
+      (typeof connection.deviceMemory === 'number' && connection.deviceMemory <= 4) ||
+      (connection.deviceMemory === undefined && (navigator.hardwareConcurrency ?? 0) <= 8)
+    );
+    if (lowPower) return; // Sections still load immediately on navigation.
+    const fast = !connection.connection?.effectiveType || connection.connection.effectiveType === '4g';
+    const screens: Screen[] = mobile
+      ? ['battle'] // Leave City rendering and initial image decoding alone.
+      : fast ? ['battle', 'inventory', 'games', 'arena', 'hero'] : ['battle', 'inventory'];
     let cancelled = false;
     let timer = 0;
     let nextIndex = 0;
     const warmNext = async () => {
       if (cancelled || nextIndex >= screens.length) return;
       if (document.visibilityState === 'hidden') {
-        timer = window.setTimeout(() => { void warmNext(); }, 1_500);
+        timer = window.setTimeout(() => { void warmNext(); }, 3_000);
         return;
       }
       await preloadSection(screens[nextIndex++]);
-      if (!cancelled) timer = window.setTimeout(() => { void warmNext(); }, 1_500);
+      if (!cancelled) timer = window.setTimeout(() => { void warmNext(); }, 4_000);
     };
-    timer = window.setTimeout(() => { void warmNext(); }, 1_800);
+    // Avoid the busy login/first-paint window, especially on Telegram Android.
+    timer = window.setTimeout(() => { void warmNext(); }, 8_000);
     return () => { cancelled = true; window.clearTimeout(timer); };
   }, [loaded]);
 
