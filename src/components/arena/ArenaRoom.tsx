@@ -33,7 +33,8 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   const game = useStore(useGame);
   const arenaStats = useStore(useArena);
   // The starting selection survives a depleted belt slot after server-confirmed Arena fights.
-  const beltAtFightStart = useRef(useGame.get().belt.map(item => item ? { ...item } : null));
+  const beltAtFightStart = useRef(
+    (useGame.get().arenaAutoBeltPreset ?? useGame.get().belt).map(item => item ? { ...item } : null));
   const [targetId, setTargetId] = useState<string | null>(null);
   const [attack, setAttack] = useState<Zone | null>(null);
   const [blocks, setBlocks] = useState<Zone[]>([]);
@@ -145,19 +146,26 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   }, [myHp]);
 
   useEffect(() => {
-    if (!view || view.room.status !== 'finished' || view.me.rewarded || claiming.current) return;
+    if (!view || view.room.status !== 'finished' || claiming.current) return;
+    const refill = () => {
+      const confirmed = useGame.get();
+      const filled = refillVipBeltAfterBattle(confirmed, beltAtFightStart.current,
+        useArena.get().wins, activeVipForBenefits(useAccount.get(), performance.now()));
+      if (filled !== confirmed) useGame.set(filled);
+    };
+    // A server-confirmed result can precede this screen (or be received on
+    // another device). Do not skip VIP refill merely because it was claimed.
+    if (view.me.rewarded) {
+      refill();
+      return;
+    }
     claiming.current = true;
     secureArenaClaim(roomId)
       .then(({ reward: r, alreadyClaimed }) => {
-        // The Arena RPC has already committed the result and installed the
-        // authoritative inventory. Refill now from that inventory only.
-        const confirmed = useGame.get();
-        const filled = refillVipBeltAfterBattle(confirmed, beltAtFightStart.current,
-          useArena.get().wins, activeVipForBenefits(useAccount.get(), performance.now()));
-        if (filled !== confirmed) useGame.set(filled);
+        // Only the authoritative RPC may award coins, XP or battle results.
+        refill();
         if (alreadyClaimed) return;
         if (!r) { claiming.current = false; return; }
-        // No local gold/XP award. Server transaction already credited the saved profile.
         useArena.set({ rating: r.rating, wins: r.wins, losses: r.losses });
         setReward(r);
         hapticNotify(r.won ? 'success' : r.draw ? 'warning' : 'error');
