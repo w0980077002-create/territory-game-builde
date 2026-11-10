@@ -45,7 +45,9 @@ try {
     [uuid, owners[0], JSON.stringify(output)],
   );
   const sql = readFileSync('supabase/staged/territory_stage8_verified_gear_v2.sql', 'utf8');
-  assert.doesNotMatch(sql, /\\bUPDATE\\s+public\\.(players|territory_profession_stage8_items)\\b/i);
+  const forbiddenWrite = /\bUPDATE\s+public\.(players|territory_profession_stage8_items)\b/i;
+  assert.match('UPDATE public.players SET game_state = game_state', forbiddenWrite);
+  assert.doesNotMatch(sql, forbiddenWrite);
   await db.exec(sql);
 
   assert.deepEqual(await verify(owners[0]), gear);
