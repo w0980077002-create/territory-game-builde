@@ -75,6 +75,7 @@ jobs:
       - run: node scripts/check-arena-postfight.mjs
       - run: node scripts/check-belt-victory-milestones.mjs
       - run: npm run test:elixir-expiry
+      - run: node scripts/check-arena-live-belt-guard.mjs
       - run: node scripts/check-arena-matchmaking.mjs
       - run: node scripts/check-arena-team-live.mjs
       - run: node scripts/check-rune-skill-book.mjs
