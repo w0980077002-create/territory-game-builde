@@ -1,0 +1,88 @@
+/* The old world-boss placement in City, immediately below the campaign chapter.
+   Natural straight oak grain, iron edging and restrained necromantic glow. */
+.home-mortarion-shortcut {
+  position: absolute;
+  z-index: 14;
+  top: calc(var(--home-chapter-top) + 24px);
+  left: 50%;
+  width: min(230px, calc(100% - 112px));
+  transform: translateX(-50%);
+}
+.home-mortarion-shortcut__button {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 40px;
+  min-width: 0;
+  gap: 5px;
+  padding: 2px 8px 2px 4px;
+  border: 2px solid #bc9056;
+  border-radius: 10px;
+  color: #ffecca;
+  background:
+    linear-gradient(91deg, transparent 15%, #cfa86a0b 16%, transparent 17%, transparent 40%, #e7bc770e 41%, transparent 42%, transparent 76%, #dab37b0b 77%, transparent 78%),
+    linear-gradient(180deg, #6a4626ed 0%, #372016f2 23%, #281b19f5 65%, #160f16f5 100%);
+  box-shadow: inset 0 1px 0 #f6cf8c6e, inset 0 -2px 0 #130e10, 0 3px 8px #000b, 0 0 10px #852bb72e;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  transition: filter .15s ease, transform .15s ease;
+}
+.home-mortarion-shortcut__button::before,
+.home-mortarion-shortcut__button::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 50%;
+  background: #171514;
+  box-shadow: inset 0 1px 0 #d7b77b9c;
+  pointer-events: none;
+}
+.home-mortarion-shortcut__button::before { left: 2px; }
+.home-mortarion-shortcut__button::after { right: 2px; }
+.home-mortarion-shortcut__button:active { transform: scale(.97); filter: brightness(1.13); }
+.home-mortarion-shortcut__button:focus-visible { outline: 3px solid #ffe8b3; outline-offset: 2px; }
+.home-mortarion-shortcut__art {
+  height: 32px;
+  width: 28px;
+  flex: 0 0 28px;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 0 4px #ad63d998);
+}
+.home-mortarion-shortcut__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
+  gap: 2px;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px #060308;
+}
+.home-mortarion-shortcut__copy strong {
+  font-size: 10px;
+  letter-spacing: .1em;
+  font-weight: 900;
+}
+.home-mortarion-shortcut__time {
+  font-size: 10px;
+  color: #eac7ff;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+@media (max-width: 350px) {
+  .home-mortarion-shortcut { width: calc(100% - 106px); }
+  .home-mortarion-shortcut__button { gap: 2px; padding-right: 5px; height: 38px; }
+  .home-mortarion-shortcut__art { width: 23px; flex-basis: 23px; }
+  .home-mortarion-shortcut__copy strong { font-size: 9px; }
+  .home-mortarion-shortcut__time { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-mortarion-shortcut__button { transition: none; }
+}
