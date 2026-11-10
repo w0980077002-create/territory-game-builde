@@ -159,8 +159,9 @@ function samePersistedVictory(a: unknown, b: unknown): boolean {
   // Accept the server's cosmetic/material expiry normalization ONLY when the
   // raw server record contains the exact canonical mirror of its material
   // balance. A missing or extra forge material is still an unconfirmed win.
-  if (b && typeof b === 'object' && !Array.isArray(b)) {
-    const server = b as Record<string, unknown>;
+  // serverHasExactVictory passes the cloud row FIRST, journaled snapshot second.
+  if (a && typeof a === 'object' && !Array.isArray(a)) {
+    const server = a as Record<string, unknown>;
     if (Object.prototype.hasOwnProperty.call(server, 'forgeMaterialBatches')) {
       const balance = server.forgeMaterials;
       if (!Number.isSafeInteger(balance) || (balance as number) < 0) return false;
