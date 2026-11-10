@@ -185,7 +185,7 @@ function inventoryMaterialArt(item: ArtSource): string {
     return import.meta.env.BASE_URL + 'assets/territory/ui/trial-loot/blueprint-fragment.svg';
   }
   const trialIngredientArt: Record<string, string> = {
-    trial_component_guardian_shard: 'guardian-shard.svg',
+    trial_component_guardian_shard: 'guardian-shard-premium.svg',
     trial_component_trial_essence: 'trial-essence.svg',
     trial_component_ancient_mechanism: 'ancient-mechanism.svg',
   };
