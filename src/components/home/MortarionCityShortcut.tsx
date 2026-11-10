@@ -64,6 +64,7 @@ export function MortarionCityShortcut({ onOpen }: { onOpen: () => void }) {
   return <div className="home-mortarion-shortcut">
     <button type="button" onClick={onOpen} data-testid="city-mortarion-raid"
       className="home-mortarion-shortcut__button"
+      style={{ backgroundImage: `linear-gradient(180deg, rgba(30,16,12,.52), rgba(18,10,14,.83)), url("${import.meta.env.BASE_URL}assets/territory/ui/wooden-plaque.webp")` }}
       aria-label={en ? `Mortarion, Lord of Souls. ${detail}. Open raid` : `Мортарион, Властелин душ. ${detail}. Открыть рейд`}>
       <img src={import.meta.env.BASE_URL + 'assets/territory/events/mortarion-boss-layer.webp'}
         alt="" className="home-mortarion-shortcut__art" draggable={false} decoding="async" />
