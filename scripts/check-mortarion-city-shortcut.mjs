@@ -55,10 +55,12 @@ assert.match(city, /<button type="button" onClick=\{onOpen\}/,
   'Tapping the city raid icon opens the real boss');
 assert.match(css, /top: calc\(var\(--home-chapter-top\) \+ 24px\)/,
   'Raid tile follows chapter position on short Android and iPhone screens');
-assert.match(css, /width: min\(230px, calc\(100% - 112px\)\)/,
-  'Tile stays between the two City side menus');
+assert.match(css, /width: min\(180px, calc\(100% - 112px\)\)/,
+  'Tile is compact, roughly chapter-width, and clear of both City side menus');
 assert.match(css, /prefers-reduced-motion: reduce/,
   'Respect reduced motion');
+assert.match(css, /height: 36px;/, 'Boss shortcut is a compact tap target, not a large full-width banner');
+assert.match(css, /width: min\(180px, calc\(100% - 106px\)\)/, 'Narrow phone override must never expand the raid banner back to full width');
 assert.match(city, /wooden-plaque\.webp/, 'Mortarion plaque uses the original approved wooden art via Pages base URL');
 assert.match(css, /brightness\(1\.16\) contrast\(1\.1\)/, 'Boss portrait has a restrained, readable purple glow');
 const enemyCss = source('src/components/home/cityCharacterMotion.css');
