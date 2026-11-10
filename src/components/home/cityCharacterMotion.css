@@ -70,10 +70,14 @@
   }
 }
 
-/* Mobile Telegram City: keep long enemy names readable without drawing over
-   the Arena shortcut. Move only the caption 56px toward the battle area;
-   preserve the 26%-wide enemy hitbox, visuals and all actual fight navigation. */
+/* Bind the name to the actual enemy, not the top of its tall flex slot.
+   The enemy image is bottom-anchored; the label sits just above its head.
+   Keep the full fight button intact and clear of the Arena shortcut. */
 .home-character-stage .home-enemy-name {
+  position:absolute;
+  z-index:2;
+  left:50%;
+  bottom:clamp(61px,38%,88px);
   display:-webkit-box;
   -webkit-box-orient:vertical;
   -webkit-line-clamp:2;
@@ -85,13 +89,14 @@
   overflow-wrap:anywhere;
   line-height:1.16;
   text-wrap:balance;
-  transform:translateX(-56px);
+  transform:translateX(-50%);
   box-shadow:0 1px 4px #000a;
+  pointer-events:none;
 }
 @media (max-width:349px) {
   .home-character-stage .home-enemy-name {
+    bottom:clamp(58px,38%,84px);
     width:101px;
-    transform:translateX(-56px);
     font-size:9px;
   }
 }

@@ -62,10 +62,12 @@ assert.match(css, /prefers-reduced-motion: reduce/,
 assert.match(city, /wooden-plaque\.webp/, 'Mortarion plaque uses the original approved wooden art via Pages base URL');
 assert.match(css, /brightness\(1\.16\) contrast\(1\.1\)/, 'Boss portrait has a restrained, readable purple glow');
 const enemyCss = source('src/components/home/cityCharacterMotion.css');
-assert.match(enemyCss, /\.home-character-stage \.home-enemy-name[\s\S]*?transform:translateX\(-56px\)/,
-  'Mobile enemy caption must shift away from the Arena control');
-assert.doesNotMatch(enemyCss, /transform:translateX\(-6px\)|transform:translateX\(-8px\)/,
-  'Remove old enemy caption offsets that collide with the Arena control');
+assert.match(enemyCss, /\.home-character-stage \.home-enemy-name[\s\S]*?position:absolute;[\s\S]*?bottom:clamp\(61px,38%,88px\)/,
+  'Mobile enemy caption must stay near the bottom-anchored enemy image, below the Arena shortcut');
+assert.match(enemyCss, /transform:translateX\(-50%\)/,
+  'Enemy caption stays centered on its own fighter');
+assert.doesNotMatch(enemyCss, /transform:translateX\(-56px\)|transform:translateX\(-6px\)|transform:translateX\(-8px\)/,
+  'Do not float the caption away from its fighter');
 assert.doesNotMatch(city, /hitMortarionBoss|claimMortarionReward|useGame\.set/,
   'City shortcut must never spend attacks, claim rewards or mutate game saves');
 console.log('Mortarion City navigation and five-day server countdown: PASS');
