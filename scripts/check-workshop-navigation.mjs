@@ -13,7 +13,7 @@ const module = { exports: {} };
 new Function('require', 'module', 'exports', compiled)(() => {
   throw new Error('Workshop planner must remain self-contained and read-only');
 }, module, module.exports);
-const { recipeReadiness, visibleWorkshopRecipes } = module.exports;
+const { recipeReadiness, visibleWorkshopRecipes, nextWorkshopGuidance, workshopGuidanceText } = module.exports;
 
 const status = {
   enabled: true, profession: 'smith', masteryLevel: 25, masteryXp: 0, masterLicense: false,
@@ -41,6 +41,37 @@ assert.deepEqual(visibleWorkshopRecipes(recipes, status, 'nearby', '').map(item 
 assert.deepEqual(visibleWorkshopRecipes(recipes, status, 'all', 'деревян').map(item => item.id), ['lacking']);
 assert.ok(visibleWorkshopRecipes(recipes, status, 'locked', '').every(item => item.id !== 'ready'));
 assert.equal(status.resources.ore, 12, 'Planner must never spend resources');
+
+// Player #180056600 case: engineer mastery 4, wood 0, other resources available.
+// The first practical action must be visible without scrolling to the recipe list.
+const catalog=JSON.parse(readFileSync('supabase/staged/territory_profession_stage8_catalog.json','utf8'));
+const engineer=catalog.recipes.filter(item=>item.profession==='engineer');
+const alexStatus={...status,profession:'engineer',masteryLevel:4,dailyXpUsed:90,
+  resources:{'gather-wood':0,'gather-ore':6,'gather-herb':3,'gather-hide':5,'gather-crystal':6}};
+const next=nextWorkshopGuidance(engineer,alexStatus);
+assert.equal(next?.kind,'materials');
+assert.equal(next.recipe.id,'s8_engineer_practice_1');
+assert.deepEqual(next.missing,[{id:'gather-wood',need:1}]);
+assert.equal(workshopGuidanceText(next,'ru'),'Собери 1 дерево для следующего обучения.');
+assert.equal(workshopGuidanceText(next,'en'),'Gather 1 wood for your next training.');
+assert.equal(nextWorkshopGuidance(engineer,{...alexStatus,resources:{...alexStatus.resources,'gather-wood':1}}),null,
+  'No shortage tip when the player can already train');
+for(const profession of ['smith','alchemist','artisan','jeweler','engineer']){
+  const collection=catalog.recipes.filter(item=>item.profession===profession);
+  const empty={...alexStatus,profession,masteryLevel:1,dailyXpUsed:0,
+    resources:{'gather-wood':0,'gather-ore':0,'gather-herb':0,'gather-hide':0,'gather-crystal':0}};
+  const tip=nextWorkshopGuidance(collection,empty);
+  assert.equal(tip?.kind,'materials',profession+' should recommend real resources, not a locked section');
+  assert.ok(workshopGuidanceText(tip,'ru').startsWith('Собери '));
+}
+assert.equal(nextWorkshopGuidance(engineer,{...alexStatus,dailyXpUsed:300})?.kind,'dailyCap');
+assert.equal(workshopGuidanceText({kind:'level',level:25},'ru'),
+  'Следующий рецепт откроется на уровне мастерства 25.');
+assert.equal(workshopGuidanceText({kind:'masterLicense'},'ru'),
+  'Для рецептов 300-го уровня нужна лицензия мастера.');
+assert.equal(workshopGuidanceText({kind:'materials',recipe:engineer[0],missing:[{id:'gather-wood',need:5}]},'ru'),
+  'Собери 5 деревьев для следующего обучения.');
+assert.equal(status.resources.ore, 12, 'Read-only guidance must not mutate resources');
 
 const app = readFileSync('src/App.tsx', 'utf8');
 const inventory = readFileSync('src/components/InventoryScreen.tsx', 'utf8');
@@ -80,6 +111,8 @@ assert.match(forge, /if \(result\.status === 'success'\) \{\s*setSuccess\(true\)
   'Only a confirmed server save may display forge success');
 
 assert.match(professions, /readyRecipes/, 'Server-provided craft readiness summary visible');
+assert.match(professions, /data-testid="workshop-next-step"/, 'Show actionable advice next to zero-ready summary');
+assert.match(professions, /onClick=\{\(\)=>onNavigate\('map'\)\}/, 'Gather CTA routes to the existing map');
 assert.match(professions, /readiness\.missing\.map/, 'Missing resource counts visible');
 assert.match(professions, /const canRun=readiness\.ready && !pending && !busy/, 'Unready recipes cannot execute');
 assert.match(professions, /executeStage8\(recipeId,operationId\)/, 'Server-authoritative crafting preserved');
