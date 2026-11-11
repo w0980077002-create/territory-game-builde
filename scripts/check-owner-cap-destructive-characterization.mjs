@@ -66,36 +66,31 @@ try {
   const result = (await db.query(
     'SELECT territory_private.owner_cap_item_v1($1::jsonb,10,$2::uuid) AS gear',
     [JSON.stringify(sword), owner])).rows[0].gear;
-  // A destructive level cap must not silently rewrite identity or the forge receipt.
-  // These checks run in BOTH modes: a characterization PASS must not mask a
-  // second independent loss of upgrades or combat stats.
-  assert.equal(result.id, sword.id, 'UUID must remain identifiable');
-  assert.equal(result.upgradeCount, sword.upgradeCount, 'first save must preserve forge upgrades');
-  assert.equal(result.attack, sword.attack, 'first save must preserve attack');
-  assert.deepEqual(result.baseStats, sword.baseStats, 'first save must preserve base stats');
-  if (requireSafe) {
-    assert.equal(result.level, sword.level, 'owner save must preserve crafted level 50');
-    assert.equal(result.upgradeCount, sword.upgradeCount, 'owner save must preserve 49 upgrades');
-    assert.equal(result.attack, sword.attack, 'owner save must preserve attack stat');
-    assert.deepEqual(result.baseStats, sword.baseStats, 'owner save must preserve base stats');
-  } else {
-    assert.equal(result.level, 10,
-      'KNOWN DEFECT: real owner save cap currently destroys level 50 on a level-10 owner');
-    assert.notEqual(result.level, sword.level, 'characterization must expose destructive cap');
-  }
-  // Chain the actual first save output into the merchant's save. Reusing the
-  // pristine sword here would hide irreversible loss across successive owners.
+  // Exercise BOTH owners before evaluating the contract. A first-owner failure
+  // must not hide damage introduced by the second save.
   const secondOwnerResult = (await db.query(
     'SELECT territory_private.owner_cap_item_v1($1::jsonb,1,$2::uuid) AS gear',
     [JSON.stringify(result), other])).rows[0].gear;
-  assert.equal(secondOwnerResult.id, sword.id, 'second owner must receive the same item identity');
-  assert.equal(secondOwnerResult.level, requireSafe ? sword.level : 1,
-    'second low-level owner must follow the selected characterization or safety contract');
-  if (requireSafe) {
-    assert.equal(secondOwnerResult.upgradeCount, sword.upgradeCount, 'second owner upgrades preserved');
-    assert.equal(secondOwnerResult.attack, sword.attack, 'second owner attack preserved');
-    assert.deepEqual(secondOwnerResult.baseStats, sword.baseStats, 'second owner base stats preserved');
+  const violations = [];
+  const check = (label, actual, expected) => {
+    try { assert.deepEqual(actual, expected); }
+    catch { violations.push({field: label, expected, actual}); }
+  };
+  for (const [label, gear, expectedLevel] of [
+    ['owner level 10', result, requireSafe ? 50 : 10],
+    ['merchant level 1', secondOwnerResult, requireSafe ? 50 : 1],
+  ]) {
+    check(`${label}: UUID`, gear.id, sword.id);
+    check(`${label}: level`, gear.level, expectedLevel);
+    check(`${label}: upgrades`, gear.upgradeCount, sword.upgradeCount);
+    check(`${label}: attack`, gear.attack, sword.attack);
+    check(`${label}: base stats`, gear.baseStats, sword.baseStats);
   }
+  // Never allow characterization mode to PASS when the server destroys forge
+  // receipts or stats. Report all damage in one CI run rather than stopping
+  // after the first mismatch.
+  assert.deepEqual(violations, [],
+    'owner_cap_item_v1 damages synthetic crafted equipment across two owners');
   const afterOwner = (await db.query('SELECT game_state FROM public.players WHERE id=$1', [owner])).rows[0].game_state;
   assert.deepEqual(afterOwner, beforeOwner, 'function-only characterization must not silently write owner state');
   const afterOther = (await db.query('SELECT game_state FROM public.players WHERE id=$1', [other])).rows[0].game_state;
