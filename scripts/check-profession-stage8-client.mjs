@@ -81,6 +81,8 @@ response={data:{...response.data,profession:'jeweler'},error:null};
 await assert.rejects(()=>api.purchaseStage8('smith',uuid),/purchase_not_confirmed/);
 response={data:null,error:{message:'currency_not_server_authoritative'}};
 await assert.rejects(()=>api.purchaseStage8('smith',uuid),/purchase_not_confirmed/);
+response={data:null,error:{message:'insufficient_gems'}};
+await assert.rejects(()=>api.purchaseStage8('smith',uuid),/stage8_purchase_insufficient_gems/,'A known insufficient-gems rejection must not remain an ambiguous pending purchase');
 await assert.rejects(()=>api.purchaseStage8('wrong_profession',uuid),/invalid_purchase/);
 
 response={data:{success:true,items:[{
