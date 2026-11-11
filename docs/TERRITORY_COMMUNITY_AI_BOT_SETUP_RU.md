@@ -1,54 +1,34 @@
-# TERRITORY AI — Telegram community bot (draft, issue #485)
+# TERRITORY AI — Telegram-мониторинг чата игроков
 
-## Current state
-Isolated **read-only group-monitoring MVP**, NOT connected to the live chat and NOT running 24/7 until configured and deployed. This does not replace the existing player login/news bot, and does not touch player accounts, purchases or gameplay.
+## Реальное состояние на 11 ноября 2026
+- Бот: @TerritoryGameAI_bot; создан владельцем в BotFather, добавлен в «Чат Territory».
+- Webhook успешно зарегистрирован через https://wmyrdpbwlkzsktnhookx.supabase.co/functions/v1/territory-community/connect — результат Telegram: `webhook_active: true`.
+- Рабочий Supabase: `wmyrdpbwlkzsktnhookx`, Edge Function `territory-community`, отдельная от `telegram-auth` и `territory-news`.
+- Отдельный токен уже сохранён в Supabase Secrets как `TERRITORY_COMMUNITY_BOT_TOKEN`. Не копировать токен в GitHub, не помещать в issues, логи или чат.
+- Owner Telegram ID установлен в **приватной RLS-таблице** `public.territory_community_control` и подтверждён через приватную команду `/start`. Сам ID в репозитории не хранится.
+- Группа ещё не выбрана, `enabled=false`: бот **пока не собирает сообщения**. Для старта см. следующий раздел.
+- `public.territory_community_inbox` доступна только service_role. Все сообщения автоматически удаляются через 30 дней (планировщик `territory-community-inbox-30day-prune`).
+- Бот распознаёт базовые срочные сигналы словарём RU/EN/VI, присылает личное P0-уведомление владельцу. Полный ИИ-перевод, семантические сводки и группировка жалоб ещё НЕ реализованы.
 
-The owner registered @TerritoryGameAI_bot and added it to «Чат Territory» on 11 Nov 2026. Never put the BotFather token into GitHub issues, commits, code, logs or screenshots. The initial BotFather screenshot contained it; rotation is recommended.
+## Подключение настоящей группы — действия владельца в Telegram
+1. В «Чат Territory» от своего Telegram-аккаунта отправь **`/chatid`**. Бот проверит твой Telegram ID через подписанный Telegram webhook, сохранит ID именно этого чата и ответит **в личные сообщения**.
+2. Получив личное подтверждение о выбранной группе, отправь в той же группе **`/enable`**.
+3. Бот сначала публикует уведомление о сборе новых текстовых сообщений и 30-дневном хранении (на русском и английском), затем включает сбор. Команда завершается личным подтверждением владельцу.
+4. Для безопасной остановки из группы: **`/disable`**. Данные игроков игры не изменяются.
+5. Действительно проверить после включения: написать одно тестовое групповое сообщение и затем проверить наличие новой записи в `territory_community_inbox`; тестовую срочную жалобу использовать для проверки личного алерта, предварительно уведомив тестеров.
 
-## Implemented in feature branch
-- POST-only Telegram webhook with X-Telegram-Bot-Api-Secret-Token validation and no CORS.
-- /start and /myid in private chat reveal only the sender's numeric Telegram ID.
-- /chatid in a group, from the configured owner ID, sends that group ID privately to owner.
-- Single-group allowlist, disabled-by-default switch, duplicate key by chat/message, basic RU/EN/VI keyword classification.
-- Private P0 alert for possible account loss, payment or login trouble; no public auto-replies, no moderation, no Github changes.
-- Original message links where possible. No previous-chat history, media analysis or transcription.
+## Безопасность и ограничения
+- Токен нового бота никогда не заменяет `TELEGRAM_BOT_TOKEN` / `BOT_TOKEN` уже существующего игрового бота, который обслуживает вход в TERRITORY.
+- У Telegram webhook используется отдельная HMAC-проверка заголовка `X-Telegram-Bot-Api-Secret-Token`, производная формируется сервером из переменных Supabase без публикации ключей.
+- В базе контроль и переписка доступны только service_role; RLS включён, anon/authenticated без прямого доступа.
+- Только Telegram-пользователь, подтверждённый как владелец, может назначить отслеживаемую группу, включить и остановить мониторинг.
+- Бот ничего не пишет в общий чат, кроме одного уведомления о мониторинге при `/enable`; не меняет игру и не выполняет модерацию.
+- Нельзя считать бота полноценным ИИ-агентом в группе: на этой стадии только получение новых текстовых сообщений и keyword-triage.
+- Старую историю Telegram Bot API не передаёт; фото и видео не анализируются.
+- Известный технический риск: повторные Telegram-вызовы одновременно могут повторно отправить одну тревогу; нужно доделать durable outbox.
+- Ранее токен был виден на скриншоте владельца. Периодическая ротация по соображениям безопасности рекомендована. Это не повод заменять игровой токен.
 
-## Required Edge Function secrets (do not commit values)
-- TERRITORY_COMMUNITY_BOT_TOKEN: new separate community bot token, never replace the original TELEGRAM_BOT_TOKEN/BOT_TOKEN used by game.
-- TERRITORY_COMMUNITY_WEBHOOK_SECRET: independent strong random Telegram webhook secret, matching setWebhook secret_token.
-- TERRITORY_COMMUNITY_OWNER_ID: owner numeric user ID, discovered with private /start.
-- TERRITORY_COMMUNITY_CHAT_ID: numeric group chat ID, discovered by group /chatid after setting owner ID.
-- TERRITORY_COMMUNITY_ENABLED: false until real tests pass and owner accepts.
-- SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY: Edge runtime provided, never reveal.
-
-## Steps after explicit separate authorization to change production Supabase
-1. Review the separate SQL draft in docs/territory-community-inbox-draft.sql. Generate a proper migration with Supabase CLI and review it before applying; do not execute the draft blindly.
-2. Deploy a new Edge Function named territory-community with verify_jwt=false (Telegram does not supply Supabase JWT; function verifies webhook secret itself). Set token and secret via Supabase Secrets UI, not code.
-3. In Telegram Bot API configure setWebhook to the new HTTPS endpoint with the matching secret_token and allowed_updates containing message and edited_message. Keep token out of URLs exposed in logs, docs or shared browser screenshots.
-4. DM @TerritoryGameAI_bot, send /start, use returned user ID to configure owner ID. In the group send /chatid from owner account; the bot privately sends its group ID. Configure group ID in secrets.
-5. In @BotFather /setprivacy must be Disable, not Enable; if toggled after adding the bot, remove and re-add it. Announce to members that messages are analyzed, and implement an actual 30-day scheduled deletion BEFORE storing live group messages.
-6. Test in a separate test group: wrong webhook secret, wrong chat, duplicate event, edited message, critical alert, private bot start, and noncritical silence. Only after owner approves enable the real chat.
-
-## Known limits: do not describe as completed
-- This is a keyword-based detector, NOT the ChatGPT conversation acting inside Telegram. AI translation, digest summaries, semantic grouping, and images/videos require a separate explicitly approved model provider, API credentials, budget and privacy plan.
-- Telegram does not give access to group messages from before the bot was added.
-- Concurrent retries can still produce duplicate alerts; use a durable outbox in the next iteration.
-- No automatic data retention job exists yet; the SQL draft alone is insufficient for safe production launch.
-- No production deploy, secrets or migration were modified in this branch.
-
-## Фактический серверный статус 11.11.2026, после разрешения владельца
-- Подтверждён правильный рабочий Supabase project ref: `wmyrdpbwlkzsktnhookx`, не одноимённый другой проект.
-- В рабочем Supabase **применена изолированная миграция** `20261111140136_territory_community_bot_inbox_isolated_20261111`: создана только `public.territory_community_inbox` с RLS, закрытым доступом anon/authenticated и обслуживанием через service role. Проверка: 0 записей; anon/authenticated SELECT=false.
-- Активировано ежедневное задание pg_cron `territory-community-inbox-30day-prune` (03:15 UTC) для удаления записей старше 30 дней. Проверено, что job active.
-- Отдельная Edge Function `territory-community` **развёрнута**, status ACTIVE, version 1, verify_jwt=false и проверкой собственного webhook-secret в коде.
-- **Ещё НЕ выполнено**: установка отдельного `TERRITORY_COMMUNITY_BOT_TOKEN` в безопасные секреты, создание `TERRITORY_COMMUNITY_WEBHOOK_SECRET`, регистрация Telegram webhook, owner/group ID, включение `TERRITORY_COMMUNITY_ENABLED=true` и проверка реального сообщения. До этого бот НЕ читает чат. Никогда не выдавать развёртывание Edge за готовый бот.
-- **Нельзя** помещать токен в код, PR, issues или SQL; требуется конфигурация через защищённый интерфейс Supabase Dashboard → Edge Functions → Secrets. Для Telegram setWebhook использовать server-side CLI/защищённый HTTPS-запрос, не публикацию токена в URL группы.
-
-## Упрощённая регистрация Telegram webhook — 11.11.2026
-
-После сохранения `TERRITORY_COMMUNITY_BOT_TOKEN` в рабочем Supabase открой в браузере:
-https://wmyrdpbwlkzsktnhookx.supabase.co/functions/v1/territory-community/connect
-
-Функция проверяет `getMe` и точный username `TerritoryGameAI_bot`, затем регистрирует через Telegram API **только** собственный endpoint `/functions/v1/territory-community` с разрешёнными обновлениями `message` и `edited_message`, и перепроверяет `getWebhookInfo`. Отвечает только несекретным статусом. Если `TERRITORY_COMMUNITY_WEBHOOK_SECRET` не установлен, секрет Telegram webhook **автоматически выводится HMAC-SHA256** из `SUPABASE_SERVICE_ROLE_KEY` и токена community-бота; ни токен, ни ключ, ни производная не выходят в браузер и не пишутся в GitHub. URL регистрации фиксирован, произвольный target запрещён. Повторное открытие идемпотентно, если адрес уже верный.
-
-После успешного `webhook_active: true` напиши новому боту **/start** в личку: он ответит числовым Telegram ID. Добавь в Supabase Secrets `TERRITORY_COMMUNITY_OWNER_ID` с этим ID. Затем напиши **/chatid** в группе, бот пришлёт числовой group ID в личку. Добавь `TERRITORY_COMMUNITY_CHAT_ID`. После адресного теста установи `TERRITORY_COMMUNITY_ENABLED=true` для приёма. До этого функция отвечает на команды настройки, но все обычные групповые сообщения отбрасываются без сохранения. Наличие webhook не означает включённый мониторинг.
+## Публикация и проверка
+- Деплой отдельной Edge Function делается только из этой ветки и после проверки. Не считать GitHub PR или серверный деплой доказательством реальных уведомлений — проверять сообщения на телефоне.
+- Миграции: `20261111140136_territory_community_bot_inbox_isolated_20261111` и `20261111143557_territory_community_bot_owner_control_20261111` применены к Live Supabase с разрешения владельца.
+- Ветка и PR: https://github.com/w0980077002-create/territory-game-builde/pull/486 . Задача: https://github.com/w0980077002-create/territory-game-builde/issues/485 .
