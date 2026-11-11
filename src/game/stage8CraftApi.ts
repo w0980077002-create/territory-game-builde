@@ -154,18 +154,44 @@ export async function fetchStage8Items(): Promise<Stage8OwnedItem[]> {
   });
 }
 
-export function mirrorStage8Items(items: InventoryItem[],owned: readonly Stage8OwnedItem[],equippedItemIds: ReadonlySet<string> = new Set()): InventoryItem[] {
+/** Thrown when a saved server-owned item has a higher level than its registry copy. */
+export const STAGE8_RECONCILIATION_REQUIRED='stage8_reconciliation_required';
+export function isStage8ReconciliationError(err: unknown): boolean {
+  return err instanceof Error && err.message===STAGE8_RECONCILIATION_REQUIRED;
+}
+
+/**
+ * Rebuilds the verified craft items in the backpack from the server registry.
+ * Equipped copies are never rewritten: they are only checked, so a higher saved
+ * level (possible historical upgrade) stops the refresh instead of being erased.
+ */
+export function mirrorStage8Items(
+  items: InventoryItem[],
+  owned: readonly Stage8OwnedItem[],
+  equippedItemIds: ReadonlySet<string> = new Set(),
+  equippedItems: readonly {id:string; level?:number}[] = [],
+): InventoryItem[] {
   const byId = new Map<string, InventoryItem>();
   for (const item of items) if (!item.id.startsWith('stage8_')) byId.set(item.id,item);
   for (const item of owned) {
     const id=`stage8_${item.itemId}`;
-    // An equipped item is not also a backpack item in the legacy view.
-    // Final cutover still requires the server to verify this equip ownership.
-    if (equippedItemIds.has(id)) continue;
     const copy=receiptDisplayItem({itemId:item.itemId,recipeId:item.recipeId,output:item.output,
       masteryLevel:1,masteryXp:0});
     copy.id=id;
     if (copy.equipment) copy.equipment.id=id;
+    // Saved copies may live in the backpack OR in the equipped slot. A higher saved
+    // level is evidence of a historical upgrade and must not be overwritten silently.
+    const registryLevel=copy.equipment?.level;
+    if (typeof registryLevel==='number') {
+      const savedLevels=[
+        ...items.filter((saved)=>saved.id===id).map((saved)=>saved.equipment?.level),
+        ...equippedItems.filter((saved)=>saved.id===id).map((saved)=>saved.level),
+      ];
+      if (savedLevels.some((level)=>typeof level==='number' && level>registryLevel))
+        throw new Error(STAGE8_RECONCILIATION_REQUIRED);
+    }
+    // An equipped item is not also a backpack item in the legacy view; it is left untouched.
+    if (equippedItemIds.has(id)) continue;
     if (copy.type==='elixir'||copy.type==='potion') {
       if (!item.expiresAt) throw new Error('stage8_display_expiry_missing');
       copy.expiresAt=item.expiresAt;

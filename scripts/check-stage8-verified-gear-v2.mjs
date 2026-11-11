@@ -76,6 +76,10 @@ try {
   }
 
   const fixture=makeGear(72);
+  await assert.rejects(()=>run({...fixture,level:null},buyer),/stage8_invalid_level/);
+  await putInRegistry({...fixture,level:null},buyer);
+  await assert.rejects(()=>run(fixture,buyer),/stage8_invalid_level/);
+  await putInRegistry(fixture,buyer);
   assert.equal(await run({...fixture,id:'ordinary-sword'},buyer),null,
     'Non-server items use existing legacy guard');
   await assert.rejects(()=>run({...fixture,id:'stage8_bad'},buyer),

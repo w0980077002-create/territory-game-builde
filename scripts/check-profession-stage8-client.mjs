@@ -94,8 +94,31 @@ assert.equal(owned.length,1);
 const mirrored=api.mirrorStage8Items([{id:'legacy-sword',qty:1},{id:'stage8_fake',qty:1}],owned);
 assert.deepEqual(mirrored.map(i=>i.id),['legacy-sword',`stage8_${uuid}`]);
 assert.equal(mirrored[1].equipment.id,`stage8_${uuid}`);
+const registryGear={...owned[0],output:{...owned[0].output,equipment:{slot:'weapon',level:5,attack:17}}};
+const savedGear={id:`stage8_${uuid}`,type:'equipment',equipment:{id:`stage8_${uuid}`,level:59}};
+assert.throws(()=>api.mirrorStage8Items([savedGear],[registryGear]),/reconciliation_required/,
+  'A higher saved level is preserved for provenance review, not overwritten by the registry');
+assert.equal(savedGear.equipment.level,59);
+assert.equal(api.mirrorStage8Items([{...savedGear,equipment:{...savedGear.equipment,level:4}}],[registryGear])[0].equipment.level,5,
+  'A stale lower mirror is refreshed from the server');
 const equippedCopy=api.mirrorStage8Items([{id:'legacy-sword',qty:1}],owned,new Set([`stage8_${uuid}`]));
 assert.deepEqual(equippedCopy.map(i=>i.id),['legacy-sword'],'Equipped server item must not be duplicated in the backpack');
+// Worn gear: a higher saved level in the equipped slot is evidence, not noise.
+const wornHigher={id:`stage8_${uuid}`,level:59,attack:90};
+assert.throws(()=>api.mirrorStage8Items([{id:'legacy-sword',qty:1}],[registryGear],new Set([`stage8_${uuid}`]),[wornHigher]),
+  /reconciliation_required/,'Worn saved gear above the registry must stop the refresh');
+assert.equal(wornHigher.level,59,'Worn gear is never rewritten');
+const wornLower={id:`stage8_${uuid}`,level:4,attack:3};
+const wornOk=api.mirrorStage8Items([{id:'legacy-sword',qty:1}],[registryGear],new Set([`stage8_${uuid}`]),[wornLower]);
+assert.deepEqual(wornOk.map(i=>i.id),['legacy-sword'],'Worn stale gear stays out of the backpack and is not duplicated');
+assert.equal(wornLower.level,4,'Worn stale gear is left untouched');
+// Missing or invalid saved levels must not be accepted as proof of anything.
+assert.equal(api.mirrorStage8Items([{...savedGear,equipment:{...savedGear.equipment,level:undefined}}],[registryGear])[0].equipment.level,5,
+  'A saved copy without a level cannot block the refresh');
+const twice=api.mirrorStage8Items([{id:'legacy-sword',qty:1}],[registryGear],new Set(),[]);
+assert.deepEqual(api.mirrorStage8Items(twice,[registryGear],new Set(),[]),twice,'Repeated refresh is idempotent');
+assert.equal(api.isStage8ReconciliationError(new Error('stage8_reconciliation_required')),true);
+assert.equal(api.isStage8ReconciliationError(new Error('stage8_other')),false);
 response={data:{success:true,items:[{...response.data.items[0],item_id:'not-a-uuid'}]},error:null};
 await assert.rejects(()=>api.fetchStage8Items(),/inventory_invalid/);
 response={data:{success:true,items:[{...owned[0],item_id:uuid,recipe_id:itemId,
