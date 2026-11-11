@@ -45,10 +45,17 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
   const [caveActive, setCaveActive] = useState(false);
-  // Explicit opt-in preview; never replaces an ordinary player's server Cave.
-  // It has no Supabase access, debit, rewards, or saved game writes.
-  const [cavePreviewOptIn, setCavePreviewOptIn] = useState(() =>
-    new URLSearchParams(window.location.search).get('cave-preview') === '1');
+  // Show the new playable Cave in the actual game tab by default.
+  // Unfinished server Cave receipts/sessions keep their original recovery screen.
+  // The new expedition remains a read-only sandbox: no wallet, loot or save writes.
+  const [cavePreviewOptIn, setCavePreviewOptIn] = useState(() => {
+    try {
+      const keys = ['territory_adventure_start_v1:', 'territory_adventure_pending_v1:', 'territory_adventure_session_v1:'];
+      return !keys.some(prefix => !!localStorage.getItem(prefix + userId));
+    } catch {
+      return false; // When storage cannot be inspected, preserve server recovery.
+    }
+  });
   const handleCaveActive = useCallback((active: boolean) => {
     setCaveActive(active);
     onActiveChange?.(active);
@@ -229,9 +236,33 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         </div>
       )}
       {view === 'cave' ? (
-        cavePreviewOptIn
-          ? <CaveExpeditionPreview onExit={() => setCavePreviewOptIn(false)} />
-          : <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} onShop={onCaveShop} />
+        <div className="flex min-h-0 flex-1 flex-col gap-1" data-testid="dark-cave-live-expedition-entry">
+          <div role="tablist" aria-label={language === 'en' ? 'Dark Cave modes' : 'Режимы Тёмной пещеры'}
+            className="grid shrink-0 grid-cols-2 gap-1 rounded-xl border border-amber-700/60 bg-[#24170f] p-1">
+            <button type="button" role="tab" aria-selected={cavePreviewOptIn}
+              data-testid="dark-cave-new-expedition"
+              disabled={caveActive && !cavePreviewOptIn}
+              onClick={() => setCavePreviewOptIn(true)}
+              className={`min-h-10 rounded-lg px-2 py-1 text-xs font-black disabled:opacity-40 ${cavePreviewOptIn
+                ? 'bg-gradient-to-b from-amber-200 to-amber-600 text-[#29190b]'
+                : 'bg-[#3e2a1a] text-amber-100'}`}>
+              {language === 'en' ? 'New expedition · test' : 'Новая экспедиция · тест'}
+            </button>
+            <button type="button" role="tab" aria-selected={!cavePreviewOptIn}
+              data-testid="dark-cave-saved-floors"
+              onClick={() => setCavePreviewOptIn(false)}
+              className={`min-h-10 rounded-lg px-2 py-1 text-xs font-black ${!cavePreviewOptIn
+                ? 'bg-gradient-to-b from-amber-200 to-amber-600 text-[#29190b]'
+                : 'bg-[#3e2a1a] text-amber-100'}`}>
+              {language === 'en' ? 'My floors · rewards' : 'Мои этажи · награды'}
+            </button>
+          </div>
+          <div className="battle-cave-expedition min-h-0 flex-1 overflow-hidden" role="tabpanel">
+            {cavePreviewOptIn
+              ? <CaveExpeditionPreview onExit={() => setCavePreviewOptIn(false)} />
+              : <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} onShop={onCaveShop} />}
+          </div>
+        </div>
       ) : <>
       <div className="flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11">
         <span className="text-xs text-gray-400">
