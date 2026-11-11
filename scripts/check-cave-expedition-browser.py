@@ -58,7 +58,9 @@ try:
       page.goto(URL+'/test-fixture.html');page.wait_for_function('()=>window.__caveDemo')
       screenshot(page,width,'lobby')
       page.get_by_role('button',name='Играть DEMO').tap();step(page,2)
-      assert state(page)['x']>320 and state(page)['camera']>50
+      # 0.65 s entrance + 1.35 s at 95 units/s starts at x=175 (~303).
+      # Do not depend on extra wall-clock RAFs during a slow test tap.
+      assert state(page)['x']>290 and state(page)['camera']>50, state(page)
       screenshot(page,width,'run')
       assert page.locator('.cx-focus').count()==1
       assert page.locator('.cx-stage').bounding_box()['height'] / page.viewport_size['height'] > .5
