@@ -113,7 +113,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const toBelt = (item: InventoryItem) => {
     const latest = useGame.get();
     const ctx = beltContext(latest, useArena.get().wins);
-    const next = putInBelt(latest, item.id, ctx);
+    const next = putInBelt(latest, item.id, beltContext(latest, useArena.get().wins));
     if (!next) {
       const matched = latest.belt.find(slot => slot && sameBeltKind(slot, item));
       if (isElixirExpired(item)) {
