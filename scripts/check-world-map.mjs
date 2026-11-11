@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
+import { createRequire } from 'node:module';
 
 const canvas = readFileSync('src/components/WorldMapCanvas.tsx', 'utf8');
 const css = readFileSync('src/components/worldMapCanvas.css', 'utf8');
@@ -7,6 +8,26 @@ const map = readFileSync('src/components/MapScreen.tsx', 'utf8');
 const app = readFileSync('src/App.tsx', 'utf8');
 const inventory = readFileSync('src/components/InventoryScreen.tsx', 'utf8');
 const profile = readFileSync('src/components/ProfileScreen.tsx', 'utf8');
+const require=createRequire(import.meta.url);
+const ts=require('typescript');
+const timerSource=readFileSync('src/game/gatherCountdown.ts','utf8');
+const output=ts.transpileModule(timerSource,{
+  fileName:'gatherCountdown.ts',compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}
+}).outputText;
+const timerModule={exports:{}};
+new Function('module','exports',output)(timerModule,timerModule.exports);
+const {gatherTimeLabel}=timerModule.exports;
+const finish='2026-11-11T16:00:00.000Z';
+const now=Date.parse('2026-11-11T12:00:00.000Z');
+assert.equal(gatherTimeLabel(finish,0,now,'ru'),'04:00:00');
+assert.equal(gatherTimeLabel(finish,0,now+1000,'ru'),'03:59:59');
+assert.equal(gatherTimeLabel(finish,2000,now,'ru'),'03:59:58','Server clock offset must be honored');
+assert.equal(gatherTimeLabel(finish,0,now,'ru',true),'4ч 0м');
+assert.equal(gatherTimeLabel(finish,0,now+4*3600_000-6000,'en',true),'0m 6s');
+assert.equal(gatherTimeLabel(finish,0,now+4*3600_000,'ru'),'Готово');
+assert.equal(gatherTimeLabel(finish,0,now+5*3600_000,'en'),'Ready');
+assert.equal(gatherTimeLabel('not-a-date',0,now,'ru'),null);
+assert.equal(gatherTimeLabel(finish,Number.NaN,now,'ru'),null);
 const artPath = 'public/assets/territory/map/world-map-v1-20261027.webp';
 const art = readFileSync(artPath);
 
@@ -110,6 +131,14 @@ assert.doesNotMatch(map, /100 этапов · отдельный поход|100 
   'Remove redundant cave subtitle on world map');
 
 assert.match(map, /<WorldMapCanvas /);
+assert.match(map, /activeGather=\{gather\?\.active/, 'Current server resource and finish time passed to world map');
+assert.match(canvas, /const \[now, setNow\] = useState\(Date\.now\)/, 'One tiny timer, not a full-map rerender');
+assert.match(canvas, /data-testid=\{compact\?'map-gather-pin-timer':'map-gather-drawer-timer'\}/);
+assert.match(canvas, /data-testid="map-gather-drawer-summary"/, 'Current resource visible before scrolling');
+assert.match(canvas, /activeGather\?\.regionId === place\.id/, 'Only the real active resource receives an icon timer');
+assert.match(canvas, /window\.setInterval\(tick, 1000\)/, 'Countdown ticks without backend polling');
+assert.match(css, /territory-world-map__destination-timer/, 'Drawer timer must stay readable');
+assert.match(css, /territory-world-map__place-timer/, 'Map pin timer must stay readable');
 assert.match(map, /attentionPlaces=\{attentionPlaces\}/, 'Map must forward existing attention states');
 assert.match(map, /if \(!gather\?\.active\) return;/, 'Idle map should not re-render once per second');
 assert.match(map, /case 'trial': onTrial\(\)/);
