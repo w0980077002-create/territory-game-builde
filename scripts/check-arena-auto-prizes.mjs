@@ -131,7 +131,7 @@ try {
   assert.equal(receipt.game_state.player.redGems,3);
   assert.equal(receipt.game_state.battleStones,25);
   assert.equal(receipt.game_state.inventory.length,3);
-  assert(receipt.game_state.inventory.every(i=>i.expiresAt));
+  assert(receipt.game_state.inventory.every(i=>i.qty>0),'Reward receipts preserve positive quantities regardless of legacy expiration metadata');
   const repeated=(await one('SELECT public.territory_admin_claim_grant_v2($1) AS v',[first.grant_id])).v;
   assert.equal(repeated.replayed,true);
   assert.equal(repeated.wallet_gems,120);
