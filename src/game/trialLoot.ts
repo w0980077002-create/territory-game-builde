@@ -1,5 +1,4 @@
 import type { GameState, InventoryItem } from './types';
-import { newElixirExpiry } from './elixirExpiry';
 
 /**
  * TERRITORY-CITY's Trial rewards. Only the first completed victory of a
@@ -153,19 +152,16 @@ export function applyTrialChest(state: GameState, loot: TrialChestReward | null,
     }
   }
   if ((loot.potions ?? 0) > 0) {
-    // Each earned floor creates a dated batch. Never refresh the expiry of an
-    // existing stack after a floor reset or duplicate award.
+    // Award only the earned quantity. All consumables are permanent.
     inventory = [...inventory, {
       id: 'trial_health_potion_' + loot.floor,
       name: 'Большое зелье здоровья',
       icon: '⚗️', type: 'potion', rarity: 'rare',
       qty: loot.potions!, description: 'Восстанавливает 150 HP мгновенно',
       effect: { stat: 'hp', value: 150, duration: 'instant' },
-      expiresAt: newElixirExpiry(now),
     }];
   }
   if (loot.elixirs > 0) {
-    // Separate dated batch: 7-day consumable expiration must never extend an old batch.
     inventory = [...inventory, {
       id: 'trial_elixir_' + loot.floor,
       name: 'Эликсир силы',
@@ -173,7 +169,6 @@ export function applyTrialChest(state: GameState, loot: TrialChestReward | null,
       qty: loot.elixirs,
       description: '+10 к атаке на один бой',
       effect: { stat: 'attack', value: 10, duration: 'battle' },
-      expiresAt: newElixirExpiry(now),
     }];
   }
   return {
