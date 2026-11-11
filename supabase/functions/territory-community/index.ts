@@ -11,6 +11,44 @@ const numberId = (name: string) => {
   return Number.isSafeInteger(n) && n !== 0 ? n : null;
 };
 
+type CommunityControl = {
+  owner_telegram_id: number;
+  group_chat_id: number | null;
+  enabled: boolean;
+};
+
+function communityDb() {
+  const url = env("SUPABASE_URL");
+  let key = env("SUPABASE_SERVICE_ROLE_KEY");
+  if (!key) {
+    try { key = JSON.parse(env("SUPABASE_SECRET_KEYS"))?.default || ""; }
+    catch { /* no usable secret */ }
+  }
+  if (!url || !key) throw new Error("community_db_not_configured");
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+
+async function readControl(db: ReturnType<typeof communityDb>): Promise<CommunityControl> {
+  const { data, error } = await db.from("territory_community_control")
+    .select("owner_telegram_id,group_chat_id,enabled")
+    .eq("singleton", 1).maybeSingle();
+  if (error || !data || !Number.isSafeInteger(Number(data.owner_telegram_id)))
+    throw new Error("community_control_missing");
+  return {
+    owner_telegram_id: Number(data.owner_telegram_id),
+    group_chat_id: data.group_chat_id == null ? null : Number(data.group_chat_id),
+    enabled: data.enabled === true
+  };
+}
+
+async function updateControl(db: ReturnType<typeof communityDb>, patch: Record<string, unknown>) {
+  const { data, error } = await db.from("territory_community_control")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("singleton", 1).select("singleton").maybeSingle();
+  if (error || !data) throw new Error("community_control_update_failed");
+}
+
+
 async function sendMessage(token: string, chatId: number, text: string) {
   // Token is never printed, reflected or committed.
   const response = await fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
@@ -74,13 +112,12 @@ async function connectWebhook(token: string, secret: string) {
   }
   const verify = await botApi(token, "getWebhookInfo");
   if (verify.url !== endpoint) throw new Error("webhook_not_active");
+  const control = await readControl(communityDb());
   return { bot: me.username, webhook_active: true,
     pending_updates: Number(verify.pending_update_count || 0),
-    owner_id_configured: Boolean(numberId("TERRITORY_COMMUNITY_OWNER_ID")),
-    group_id_configured: Boolean(numberId("TERRITORY_COMMUNITY_CHAT_ID")),
-    collecting: env("TERRITORY_COMMUNITY_ENABLED") === "true"
-      && Boolean(numberId("TERRITORY_COMMUNITY_OWNER_ID"))
-      && Boolean(numberId("TERRITORY_COMMUNITY_CHAT_ID")) };
+    owner_id_configured: Boolean(control.owner_telegram_id),
+    group_id_configured: Boolean(control.group_chat_id),
+    collecting: control.enabled && Boolean(control.group_chat_id) };
 }
 
 Deno.serve(async (req: Request) => {
@@ -104,7 +141,15 @@ Deno.serve(async (req: Request) => {
   if (Number(req.headers.get("content-length") || 0) > 120000)
     return ok({ error: "payload_too_large" }, 413);
 
-  const ownerId = numberId("TERRITORY_COMMUNITY_OWNER_ID");
+  let db: ReturnType<typeof communityDb>;
+  let control: CommunityControl;
+  try {
+    db = communityDb();
+    control = await readControl(db);
+  } catch {
+    return ok({ error: "community_control_not_configured" }, 503);
+  }
+  const ownerId = control.owner_telegram_id;
 
   const update = await req.json().catch(() => null);
   if (!update || !Number.isSafeInteger(update.update_id)) return ok({ error: "bad_update" }, 400);
@@ -127,28 +172,50 @@ Deno.serve(async (req: Request) => {
   if (!["group", "supergroup"].includes(msg.chat.type)) return ok();
   const body = messageText(msg);
 
-  // A command from the configured owner reveals the group ID in their private chat.
+  // Only this Telegram-authenticated owner can select the group.
+  // Selecting is NOT enabling: member notice is sent only on explicit /enable.
   if (/^\/chatid(?:@\w+)?(?:\s|$)/i.test(body)) {
-    if (ownerId && msg.from?.id === ownerId) {
-      try {
-        await sendMessage(token, ownerId, "TERRITORY AI. ID чата: " + msg.chat.id);
-      } catch {
-        return ok({ error: "owner_start_required" }, 503);
-      }
+    if (msg.from?.id !== ownerId) return ok();
+    try {
+      await updateControl(db, { group_chat_id: msg.chat.id, enabled: false });
+      await sendMessage(token, ownerId,
+        "✅ TERRITORY AI. Группа выбрана: " + (msg.chat.title || "чат") +
+        "\nID: " + msg.chat.id +
+        "\nДля старта мониторинга отправьте /enable в этой группе. Перед включением бот уведомит всех участников.");
+    } catch {
+      return ok({ error: "group_selection_failed" }, 503);
     }
     return ok();
   }
 
-  const groupId = numberId("TERRITORY_COMMUNITY_CHAT_ID");
-  if (env("TERRITORY_COMMUNITY_ENABLED") !== "true" || !groupId || msg.chat.id !== groupId)
+  if (/^\/enable(?:@\w+)?(?:\s|$)/i.test(body)) {
+    if (msg.from?.id !== ownerId || control.group_chat_id !== msg.chat.id) return ok();
+    if (control.enabled) return ok();
+    try {
+      await sendMessage(token, msg.chat.id,
+        "📣 TERRITORY AI подключён для поддержки игроков. Новые текстовые сообщения в этом чате будут автоматически анализироваться для выявления ошибок и предложений. Срочные жалобы получит владелец. Данные хранятся до 30 дней. Бот не модерирует переписку. \n🇬🇧 TERRITORY AI now monitors new text messages for bugs and feedback. Data is deleted after 30 days.");
+      await updateControl(db, { enabled: true });
+      await sendMessage(token, ownerId, "✅ TERRITORY AI: мониторинг группы включён. Для остановки напишите /disable в группе.");
+    } catch {
+      return ok({ error: "monitoring_enable_failed" }, 503);
+    }
     return ok();
-  if (!body) return ok(); // No AI/OCR/media extraction in this isolated MVP.
-  const url = env("SUPABASE_URL");
-  const serviceKey = env("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey || !ownerId) return ok({ error: "not_configured" }, 503);
+  }
+  if (/^\/disable(?:@\w+)?(?:\s|$)/i.test(body)) {
+    if (msg.from?.id !== ownerId || control.group_chat_id !== msg.chat.id) return ok();
+    try {
+      await updateControl(db, { enabled: false });
+      await sendMessage(token, ownerId, "⏸ TERRITORY AI: мониторинг группы остановлен.");
+    } catch {
+      return ok({ error: "monitoring_disable_failed" }, 503);
+    }
+    return ok();
+  }
+
+  if (!control.enabled || control.group_chat_id !== msg.chat.id) return ok();
+  if (!body || msg.from?.is_bot) return ok(); // No AI/OCR/media extraction in this MVP.
 
   const analysis = classifyMessage(body);
-  const db = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
   const record = {
     chat_id: msg.chat.id,
     message_id: msg.message_id,
