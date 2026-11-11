@@ -39,14 +39,16 @@ assert.equal(recovered.belt[0].qty,5,'Selected empty slot refills after final do
 assert.equal(recovered.inventory[0].qty,3);
 
 const batchState = {...initial,belt:empty(),inventory:[
-  elixir('later',8,sixDays),elixir('earlier',6,twoDays)]};
-const oldest = refillVipBeltAfterBattle(batchState,selected,0,3);
-assert.equal(oldest.belt[0].expiresAt,twoDays,'Oldest valid batch is used first');
-assert.equal(oldest.inventory.find(x=>x.id==='earlier').qty,1);
-assert.equal(oldest.inventory.find(x=>x.id==='later').qty,8,'Never mix expiry batches');
+  elixir('later',3,sixDays),elixir('earlier',4,twoDays)]};
+const combined = refillVipBeltAfterBattle(batchState,selected,0,3);
+assert.equal(combined.belt[0].qty,5,'VIP combines identical different-date lots');
+assert.equal(combined.belt[0].expiresAt,undefined,'No expiry remains on belt');
+assert.equal(combined.inventory.find(x=>x.id==='earlier')?.qty,2,'Keeps untouched excess doses');
+assert.equal(combined.inventory.some(x=>x.id==='later'),false);
 const existingDifferentExpiry = {...initial,inventory:[elixir('later',8,sixDays)]};
-assert.strictEqual(refillVipBeltAfterBattle(existingDifferentExpiry,selected,0,3),
-  existingDifferentExpiry,'A partly filled slot may not absorb another expiry lot');
+const toppedDifferent = refillVipBeltAfterBattle(existingDifferentExpiry,selected,0,3);
+assert.equal(toppedDifferent.belt[0].qty,5,'A partial belt accepts different historical dates');
+assert.equal(toppedDifferent.inventory[0].qty,5,'Exactly three existing doses are moved');
 
 const locked = {...initial,inventory:[elixir('stock',12)],
   belt:[null,elixir('belt_1',1),...Array(5).fill(null)]};
@@ -54,5 +56,7 @@ const blocked = refillVipBeltAfterBattle(locked,[null,elixir('belt_1',5),...Arra
 assert.strictEqual(blocked,locked,'VIP does not unlock win-gated belt slots');
 
 const expired = {...initial,inventory:[elixir('outdated',8,new Date(Date.now()-1000).toISOString())]};
-assert.strictEqual(refillVipBeltAfterBattle(expired,selected,0,3),expired,'Expired potion cannot refill');
-console.log('VIP3+ refill: manual non-VIP, quantity conservation, expiry, locked slots, idempotence OK');
+const revived = refillVipBeltAfterBattle(expired,selected,0,3);
+assert.equal(revived.belt[0].qty,5,'Even historical expired stock is valid and refills');
+assert.equal(revived.inventory[0].qty,5);
+console.log('VIP3+ permanent consumable refill: manual non-VIP, cross-lot totals, win locks, idempotence OK');

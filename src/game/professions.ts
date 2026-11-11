@@ -1,6 +1,5 @@
 import type { Equipment, InventoryItem, ProfessionId, ProfessionProgress } from './types';
 import { prepareNewEquipment } from './equipmentBalance';
-import { newElixirExpiry } from './elixirExpiry';
 
 export const PROFESSION_DEFINITIONS: {
   id: ProfessionId;
@@ -124,7 +123,6 @@ export function craftItem(inventory: InventoryItem[], recipe: CraftRecipe): Inve
     qty: 1,
     description: recipe.output.description,
     effect: recipe.output.effect,
-    expiresAt: recipe.output.type === 'elixir' || recipe.output.type === 'potion' ? newElixirExpiry() : undefined,
     equipment,
   };
 

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText, localizeRarity } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
@@ -15,7 +15,7 @@ import { AWAKENING_STONE_ITEM, cowStonesOwned } from '@/game/followers';
 import { CompactWarehouse } from './CompactWarehouse';
 import { rarityColor } from '@/game/ui';
 import { EQUIPMENT_SLOTS, generateChapter, generateTrial } from '@/game/engine';
-import { elixirExpiryTime, elixirTimeLeftLabel, isElixirExpired, isPerishableItem } from '@/game/elixirExpiry';
+import { isPerishableItem } from '@/game/elixirExpiry';
 import type { InventoryItem } from '@/game/types';
 import { Package, ArrowDownUp, UsersRound, Gift, Hammer, Pickaxe, MapPinned, ChevronRight, ShieldCheck, Swords } from 'lucide-react';
 import { TrialLootCollection } from './trials/TrialLootCollection';
@@ -44,7 +44,6 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const [beltNote, setBeltNote] = useState<string | null>(null);
   const [preparedNotice, setPreparedNotice] = useState('');
-  const [now, setNow] = useState(() => Date.now());
   const inventoryContentRef = useRef<HTMLDivElement>(null);
   const chapterNumber = Math.max(1, Math.floor(state.currentChapter || 1));
   const chapter = generateChapter(chapterNumber);
@@ -64,34 +63,18 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const activeCompanion = selectedFollower(state);
   const activeCompanionTemplate = DISPLAY_FOLLOWER_TEMPLATES.find(unit => unit.id === activeCompanion?.id);
 
-  useEffect(() => {
-    if (tab !== 'items') return;
-    const tick = setInterval(() => {
-      if (!document.hidden) setNow(Date.now());
-    }, 1000);
-    const refresh = () => setNow(Date.now());
-    document.addEventListener('visibilitychange', refresh);
-    return () => {
-      clearInterval(tick);
-      document.removeEventListener('visibilitychange', refresh);
-    };
-  }, [tab]);
-
-  // Keep inventory sorting stable while the visible expiry clock updates.
-  const consumables = useMemo(() => groupConsumablesForDisplay(state.inventory)
-    .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b)), [state.inventory]);
+  // Permanent consumables: one display tile for every matching type.
+  const consumables = useMemo(() => groupConsumablesForDisplay(state.inventory), [state.inventory]);
   const cowStones = cowStonesOwned(state);
   const materials = useMemo(() => [
     ...state.inventory.filter(item => item.type === 'material' && item.id !== AWAKENING_STONE_ITEM.id),
     { ...AWAKENING_STONE_ITEM, qty: cowStones },
   ], [state.inventory, cowStones]);
-  const earliestOnBelt = useMemo(() => state.belt.filter((item): item is InventoryItem => !!item && isPerishableItem(item))
-    .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0], [state.belt]);
   // Read-only preparation; existing belt inventory and Arena win gates are authoritative.
   const beltCtx = beltContext(state, arena.wins);
   const openBeltSlots = BELT_RULES.filter((_, i) => isSlotOpen(i, beltCtx)).length;
-  const beltReady = state.belt.reduce((n, item, i) => n + (item && isSlotOpen(i, beltCtx) && !isElixirExpired(item, now) ? item.qty : 0), 0);
-  const spareConsumables = consumables.reduce((n, item) => n + (!isElixirExpired(item, now) ? Math.max(0, item.qty) : 0), 0);
+  const beltReady = state.belt.reduce((n, item, i) => n + (item && isSlotOpen(i, beltCtx) ? item.qty : 0), 0);
+  const spareConsumables = consumables.reduce((n, item) => n + Math.max(0, item.qty), 0);
 
   const switchTab = (to: 'items' | 'equipment' | 'followers' | 'chests') => {
     // The content scrolls independently; the bottom tabs stay within reach.
@@ -105,12 +88,18 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
     const latest = useGame.get();
     const next = putInBelt(latest, item.id, beltContext(latest, useArena.get().wins));
     if (!next) {
-      const alreadyEquipped = latest.belt.some((slot) => slot && sameBeltKind(slot, item));
-      setBeltNote(alreadyEquipped
+      const equipped = latest.belt.find(slot => slot && sameBeltKind(slot, item));
+      const allSlotsOccupied = !latest.belt.some((slot, i) => !slot
+        && isSlotOpen(i, beltContext(latest, useArena.get().wins)));
+      setBeltNote(equipped
         ? (language === 'en'
-          ? 'This consumable already has a belt slot (maximum 5). Use a different kind in another slot.'
-          : 'Этот вид зелья или эликсира уже на поясе (максимум 5 шт.). В другой слот положи другой вид.')
-        : t('noFreeBeltSlot'));
+          ? 'This type is already on the belt: 5/5. Tap the filled slot to return it to storage.'
+          : 'Этот вид уже на поясе: 5/5. Нажми на занятую ячейку, чтобы вернуть зелья на склад.')
+        : allSlotsOccupied
+          ? (language === 'en'
+            ? 'All unlocked belt slots are occupied. Tap a filled slot to return its doses to storage.'
+            : 'Все открытые ячейки заняты. Нажми на занятую ячейку, чтобы вернуть флаконы на склад.')
+          : t('noFreeBeltSlot'));
       return;
     }
     useGame.set(next);
@@ -182,7 +171,6 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
             consumables={consumables}
             materials={materials}
             forgeMaterials={state.forgeMaterials}
-            now={now}
             language={language}
             onItemSelect={setSelected}
             onForge={onForge}
@@ -207,7 +195,6 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h3 className="text-sm font-bold text-amber-100">{t('belt')} <span data-testid="inventory-belt-status" className="text-xs text-amber-300">· {beltReady} / {openBeltSlots * BELT_STACK}</span></h3>
-              {earliestOnBelt && <span className="text-[10px] font-semibold text-amber-300 tabular-nums">⏳ {elixirTimeLeftLabel(earliestOnBelt, language, now)}</span>}
             </div>
             <span className="text-right text-[10px] leading-tight text-gray-400">{t('tapSlotToUnequip')}</span>
           </div>
@@ -296,14 +283,11 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
                 : 'Редкий камень пробуждения. Получение и расход пока закрыты, имеющиеся камни сохранены.')
               : localizeText(selected.description, language)}</p>
             {isPerishableItem(selected) && <p className="mb-2 text-sm font-bold text-amber-100">{language === 'en' ? 'Total' : 'Всего'}: {selected.qty}</p>}
-            {isPerishableItem(selected) && (
-              <p className={`mb-3 text-xs font-semibold ${elixirExpiryTime(selected) - now < 24 * 60 * 60 * 1000 ? 'text-red-300' : 'text-amber-300'}`}>
-                ⏳ {language === 'en' ? 'Shelf life' : 'Срок годности'}: {elixirTimeLeftLabel(selected, language, now)}
-                <span className="block pt-1 font-normal text-gray-400">{language === 'en'
-                  ? 'Batches are combined on screen. The nearest expiry goes to the belt first (up to 5 per slot).'
-                  : 'Партии объединены. На пояс сначала идут эликсиры с ближайшим сроком (до 5 в ячейке).'}</span>
-              </p>
-            )}
+            {isPerishableItem(selected) && <p className="mb-3 text-xs text-amber-200">
+              {language === 'en'
+                ? 'No expiration. Identical potions from different purchases combine automatically, up to 5 per belt slot.'
+                : 'Без срока годности. Одинаковые зелья из разных покупок объединяются автоматически — до 5 в ячейке пояса.'}
+            </p>}
             {selected.effect && (
               <div className="text-sm text-teal-400 mb-3">
                 {language === 'en' ? 'Effect' : 'Эффект'}: +{selected.effect.value} {localizeText(selected.effect.stat, language)}

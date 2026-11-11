@@ -17,30 +17,31 @@ const start = Date.parse('2026-10-25T12:00:00.000Z');
 const elixir = (id, qty, expiresAt) => ({ id, qty, name: 'Эликсир силы', icon: '💪', type: 'elixir', rarity: 'common',
   description: '+10 атаки', effect: { stat: 'attack', value: 10, duration: 'battle' }, ...(expiresAt ? { expiresAt } : {}) });
 const elixirAt = (days) => new Date(start + days * 24 * 60 * 60 * 1000).toISOString();
-assert.equal(expiry.elixirTimeLeftLabel(elixir('timer', 1, elixirAt(7)), 'ru', start), '7д 00:00:00');
-assert.equal(expiry.elixirTimeLeftLabel(elixir('timer', 1, elixirAt(7)), 'ru', start + 1000), '6д 23:59:59');
-assert.equal(expiry.elixirTimeLeftLabel(elixir('timer', 1, elixirAt(7)), 'en', start + 7000), '6d 23:59:53');
+assert.equal(expiry.elixirTimeLeftLabel(elixir('timer', 1, elixirAt(7)), 'ru', start), '',
+  'Old expiry labels are never displayed');
+assert.equal(expiry.isElixirExpired(elixir('very-old', 1, elixirAt(-100)), start + 5 * 86400000), false,
+  'No consumable ever expires, including historically dated items');
 const initial = actions.useGame.get();
 const potion = { ...elixir('health', 33), name: 'Зелье', type: 'potion' };
 const timePotion = { ...elixir('time', 4), name: 'Зелье времени', type: 'arena', arenaEffect: 'time' };
-
-// Legacy stacks receive a full, one-time 7-day grace without losing quantity.
-const oldState = { ...initial, inventory: [elixir('legacy', 933), potion, timePotion],
-  belt: [elixir('belt-old', 5), ...Array(6).fill(null)] };
-const dated = expiry.reconcileElixirExpiry(oldState, start);
-assert.equal(dated.inventory[0].qty, 933);
-assert.equal(dated.inventory[0].expiresAt, elixirAt(7));
-assert.equal(dated.inventory[1].expiresAt, elixirAt(7), 'old health potions receive grace');
-assert.equal(dated.inventory[2].expiresAt, elixirAt(7), 'old arena potions receive grace');
-assert.equal(dated.belt[0].expiresAt, elixirAt(7));
-assert.equal(dated.inventory[1].qty, potion.qty);
-assert.equal(expiry.reconcileElixirExpiry(dated, start + 1000), dated, 'expiry must never be refreshed');
-assert.equal(expiry.reconcileElixirExpiry(dated, start + 7 * 86400000 - 1).inventory.length, 3);
-const expired = expiry.reconcileElixirExpiry(dated, start + 7 * 86400000);
-assert.deepEqual(expired.inventory, [], 'elixirs, health and time potions expire together');
-assert.equal(expired.belt[0], null);
-assert.equal(expired.player.gold, initial.player.gold);
-assert.equal(expired.player.gems, initial.player.gems);
+const legacyState = { ...initial,
+  inventory: [elixir('legacy', 933, elixirAt(-100)), { ...potion, expiresAt: elixirAt(-50) },
+    { ...timePotion, expiresAt: elixirAt(1) }],
+  belt: [elixir('belt-old', 5, elixirAt(-90)), ...Array(6).fill(null)] };
+const permanent = expiry.reconcileElixirExpiry(legacyState, start);
+assert.equal(permanent.inventory[0].qty, 933);
+assert.equal(permanent.inventory[1].qty, potion.qty);
+assert.equal(permanent.inventory[2].qty, timePotion.qty);
+assert.equal(permanent.belt[0].qty, 5);
+assert(permanent.inventory.every(i => !Object.hasOwn(i, 'expiresAt')));
+assert(!Object.hasOwn(permanent.belt[0], 'expiresAt'));
+assert.strictEqual(expiry.reconcileElixirExpiry(permanent, start + 10 * 365 * 86400000), permanent,
+  'Permanent inventory must stay unchanged years later');
+assert.equal(permanent.player.gold, initial.player.gold);
+assert.equal(permanent.player.gems, initial.player.gems);
+assert.equal(expiry.newElixirBatch(elixir('legacy-batch', 3, elixirAt(-3))).expiresAt, undefined);
+assert.equal(expiry.isElixirExpired(potion), false);
+assert.equal(expiry.isElixirExpired(timePotion), false);
 
 // Legacy material lots (even already expired) must NOT deplete materials.
 const pastMaterialDate = new Date(start - 86400000).toISOString();
@@ -70,71 +71,69 @@ assert.equal(allowedForge.next.forgeMaterialBatches[0].expiresAt,
 // Global game store must normalize all sources (shops, bosses, server rewards).
 actions.useGame.set({ ...initial, forgeMaterials: 10, inventory: [potion] });
 assert.equal(actions.useGame.get().forgeMaterialBatches[0].qty, 10);
-assert.ok(actions.useGame.get().inventory[0].expiresAt);
+assert.equal(actions.useGame.get().inventory[0].expiresAt, undefined, 'Store never introduces expiry dates');
 actions.useGame.set((state) => ({ ...state, forgeMaterials: state.forgeMaterials + 4 }));
 assert.equal(actions.useGame.get().forgeMaterialBatches.reduce((sum, lot) => sum + lot.qty, 0), 14);
 
-// One tile per consumable type; retain distinct source batches and use FEFO
-// even when the player taps a newer underlying batch ID.
-const laterFuture = new Date(Date.now() + 6 * 86400000).toISOString();
-const earlierFuture = new Date(Date.now() + 2 * 86400000).toISOString();
-const later = elixir('newer', 8, laterFuture);
-const earlier = elixir('older', 8, earlierFuture);
-const stock = { ...initial, inventory: [later, earlier], belt: Array(7).fill(null) };
+// Same type, rarity and effect: multiple old lots merge into one belt slot in
+// one click, including historical expired stock. No source is lost.
+const older = elixir('older', 1, elixirAt(-300));
+const newer = elixir('newer', 5, elixirAt(6));
+const stock = { ...initial, inventory: [older, newer], belt: Array(7).fill(null) };
 const ctx = { level: 99, activeDays: 99, arenaWins: 10000 };
 const grouped = belt.groupConsumablesForDisplay(stock.inventory);
-assert.equal(grouped.length, 1, 'one visible elixir card');
-assert.equal(grouped[0].qty, 16, 'visible quantity sums all expiry batches');
-assert.equal(grouped[0].id, earlier.id, 'visible timer points to oldest expiry');
-assert.equal(grouped[0].expiresAt, earlierFuture);
-assert.equal(stock.inventory.length, 2, 'render grouping does not rewrite inventory');
-
-const first = belt.putInBelt(stock, later.id, ctx);
-assert.equal(first.belt[0].expiresAt, earlier.expiresAt, 'oldest inventory lot goes to belt first');
-assert.equal(first.belt[0].qty, 5);
-assert.equal(first.inventory.find(i => i.id === earlier.id).qty, 3);
-assert.equal(first.inventory.find(i => i.id === later.id).qty, 8);
-assert.equal(belt.putInBelt(first, later.id, ctx), null, 'same kind never uses second slot');
-const differentKind = { ...earlier, id: 'defense', name: 'Эликсир защиты',
-  effect: { stat: 'defense', value: 10, duration: 'battle' } };
-const withDifferent = { ...first, inventory: [...first.inventory, differentKind] };
-const equippedDifferent = belt.putInBelt(withDifferent, differentKind.id, ctx);
-assert.equal(equippedDifferent.belt[1].name, 'Эликсир защиты');
+assert.equal(grouped.length, 1);
+assert.equal(grouped[0].qty, 6);
+assert.equal(grouped[0].expiresAt, undefined);
+assert.equal(stock.inventory.length, 2, 'Display must not mutate original stock');
+const first = belt.putInBelt(stock, newer.id, ctx);
+assert(first);
+assert.equal(first.belt[0].qty, 5, 'All five doses equipped at once');
+assert.equal(first.belt[0].expiresAt, undefined);
+assert.equal(first.inventory.find(i => i.id === older.id), undefined);
+assert.equal(first.inventory.find(i => i.id === newer.id)?.qty, 1);
+assert.equal(belt.putInBelt(first, newer.id, ctx), null, 'One kind cannot duplicate into second slot');
 const returned = belt.takeFromBelt(first, 0);
-assert.equal(returned.inventory.find(i => i.id === earlier.id).qty, 8, 'return restores old lot');
-assert.equal(returned.inventory.find(i => i.id === later.id).qty, 8, 'new lot remains untouched');
-assert.equal(belt.beltAction(elixir('bad', 2, elixirAt(-1))), null);
-assert.equal(belt.canBelt(elixir('bad', 2, new Date(Date.now() - 1000).toISOString())), false);
+assert.equal(returned.inventory.reduce((n, i) => n + i.qty, 0), 6);
+assert.equal(returned.inventory.every(i => i.expiresAt === undefined), true,
+  'Returning doses to warehouse clears obsolete expiration metadata');
+const cleaned = expiry.reconcileElixirExpiry(returned);
+assert(cleaned.inventory.every(i => i.expiresAt === undefined));
+const topUpStart = { ...stock,
+  belt: [elixir('belt_0', 2, elixirAt(-50)), ...Array(6).fill(null)],
+  inventory: [elixir('new-1', 1, elixirAt(-10)), elixir('new-2', 5, elixirAt(10))] };
+const topUp = belt.putInBelt(topUpStart, 'new-2', ctx);
+assert.equal(topUp.belt[0].qty, 5, 'Old ×2 topped to ×5 from separate lots');
+assert.equal(topUp.inventory.find(i => i.id === 'new-2').qty, 3);
+assert.equal(topUp.inventory.reduce((n, i) => n + i.qty, 0) +
+  topUp.belt.filter(Boolean).reduce((n, i) => n + i.qty, 0), 8);
+const other = { ...newer, id: 'defense', name: 'Эликсир защиты', effect: { stat: 'defense', value: 10 } };
+const withDifferent = { ...first, inventory: [...first.inventory, other] };
+const equippedDifferent = belt.putInBelt(withDifferent, 'defense', ctx);
+assert.equal(equippedDifferent.belt[1].name, 'Эликсир защиты', 'Different kinds need separate unlocked slots');
+assert.equal(belt.canBelt(elixir('old-but-valid', 1, elixirAt(-100))), true);
 
-const potionLate = { ...potion, id: 'p-late', expiresAt: laterFuture };
-const potionEarly = { ...potion, id: 'p-early', expiresAt: earlierFuture };
-const potionEquipped = belt.putInBelt({ ...stock, inventory: [potionLate, potionEarly] }, potionLate.id, ctx);
-assert.equal(potionEquipped.belt[0].expiresAt, potionEarly.expiresAt, 'health potions use FEFO too');
-
-// Shop and crafting create new, separately dated supplies, never prolong old batches.
+// Purchases never assign a seven-day deadline; previously stored batches remain usable.
 const shopItem = { id: 'test-elixir', name: 'Эликсир силы', icon: '💪', type: 'elixir', rarity: 'common',
   priceGold: 1, description: '+10 атаки', effect: { stat: 'attack', value: 10, duration: 'battle' } };
-const buyState = { ...initial, inventory: [earlier], player: { ...initial.player, gold: 1000 } };
+const buyState = { ...initial, inventory: [newer], player: { ...initial.player, gold: 1000 } };
 const bought = actions.buyItem(buyState, shopItem, 2);
 assert.ok(bought);
 assert.equal(bought.inventory.length, 2);
-assert.equal(bought.inventory[0].expiresAt, earlier.expiresAt);
-assert.equal(bought.inventory[0].qty, 8);
+assert.equal(bought.inventory[0].qty, 5);
 assert.equal(bought.inventory[1].qty, 2);
-assert.ok(Date.parse(bought.inventory[1].expiresAt) > Date.now() + 6 * 86400000);
+assert.equal(bought.inventory[1].expiresAt, undefined, 'Purchased potion is permanent');
 const potionShopItem = { ...shopItem, id: 'health', name: potion.name, type: 'potion' };
-const boughtPotion = actions.buyItem({ ...buyState, inventory:[{...potion,expiresAt:elixirAt(2)}] }, potionShopItem, 3);
-assert.equal(boughtPotion.inventory.length, 2);
-assert.equal(boughtPotion.inventory[0].qty, 33);
+const boughtPotion = actions.buyItem({ ...buyState, inventory: [potion] }, potionShopItem, 3);
 assert.equal(boughtPotion.inventory[1].qty, 3);
-assert.ok(boughtPotion.inventory[1].expiresAt);
+assert.equal(boughtPotion.inventory[1].expiresAt, undefined, 'Purchased health potion is permanent');
 
 const recipe = professions.PROFESSION_RECIPES.find((r) => r.output.type === 'elixir');
 assert.ok(recipe, 'elixir crafting recipe should exist');
 const resources = recipe.ingredients.map((i) => ({ id: i.id, qty: i.qty + 10, type: 'material' }));
-const crafted = professions.craftItem([...resources, earlier], recipe);
+const crafted = professions.craftItem([...resources, newer], recipe);
 assert.ok(crafted);
-assert.equal(crafted.find((i) => i.id === earlier.id).qty, 8);
-assert.ok(crafted.some((i) => i.type === 'elixir' && i.expiresAt !== earlier.expiresAt));
+assert.equal(crafted.find((i) => i.id === newer.id).qty, 5);
+assert.ok(crafted.some((i) => i.type === 'elixir' && i.expiresAt === undefined));
 
-console.log('Seven-day elixir/potion expiry, grouped FEFO belt and permanent forge materials: OK');
+console.log('Permanent consumables: no expiry, old stock preserved, cross-lot belt stacking, permanent forge materials: OK');

@@ -372,10 +372,8 @@ export function ShopScreen({ initialTab = 'potions', onInventory, focusCave = fa
                   </span>
                   <span className="territory-shop-product__description">{localizeText(item.description,language)}</span>
                 </button>
-                {item.type==='potion'
-                  ? <span className="territory-shop-product__stock"><Package size={13} aria-hidden="true"/>{language==='en'?'Owned: ':'В наличии: '}{state.inventory.filter(entry=>entry.type==='potion'&&entry.name===item.name).reduce((total,entry)=>total+entry.qty,0)}</span>
-                  : (item.type==='elixir'||item.type==='arena'||item.id==='shop_forge_material')&&
-                    <span className="territory-shop-product__expiry"><Clock size={12} aria-hidden="true"/>{language==='en'?'7-day shelf life':'Срок 7 суток'}</span>}
+                {(item.type==='potion'||item.type==='elixir'||item.type==='arena') &&
+                  <span className="territory-shop-product__stock"><Package size={13} aria-hidden="true"/>{language==='en'?'Owned: ':'В наличии: '}{state.inventory.filter(entry=>entry.type===item.type&&entry.name===item.name).reduce((total,entry)=>total+entry.qty,0)}</span>}
                 {item.amount&&item.type!=='equipment'&&<span className="territory-shop-product__amount">×{item.amount}</span>}
               </div>
               <div className="territory-shop-product__actions">
@@ -476,7 +474,7 @@ function PurchaseSheet({ item, state, initialQty = 1, onBuy }: { item: ShopItem;
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wider" style={{ color: rarityColor(item.rarity) }}>{item.rarity}</p>
           <p className="text-sm text-gray-300 mt-1 leading-relaxed">{localizeText(item.description, language)}</p>
-          {(item.type === 'elixir' || item.type === 'potion' || item.type === 'arena' || item.id === 'shop_forge_material') && <p className="mt-1 text-xs text-amber-300">⏳ {language === 'en' ? 'Expires 7 days after purchase' : 'Срок годности — 7 суток после покупки'}</p>}
+          {(item.type === 'elixir' || item.type === 'potion' || item.type === 'arena') && <p className="mt-1 text-xs text-amber-300">{language === 'en' ? 'Permanent — no expiry' : 'Постоянный предмет — без срока годности'}</p>}
         </div>
       </div>
       {item.equipment && (

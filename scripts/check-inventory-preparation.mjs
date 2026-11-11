@@ -12,7 +12,8 @@ for (const [path, content] of [['src/components/InventoryScreen.tsx',inventory],
 }
 assert.match(inventory,/data-testid="inventory-battle-preparation"/,'Preparation must be reachable from items');
 assert.match(inventory,/BELT_RULES\.filter/,'Only unlocked slots count');
-assert.match(inventory,/isSlotOpen\(i, beltCtx\) && !isElixirExpired\(item, now\)/,'Do not count expired or locked consumables');
+assert.match(inventory,/isSlotOpen\(i, beltCtx\) \? item\.qty : 0/,'Only unlocked consumable slots count');
+assert.doesNotMatch(inventory,/elixirTimeLeftLabel|Shelf life|Срок годности/,'No consumable expiry timer in inventory');
 assert.match(inventory,/spareConsumables/,'Stocked and empty warehouses need distinct guidance');
 assert.match(inventory,/onArena && <button type="button" onClick=\{onArena\}/,'Open real Arena lobby');
 assert.match(inventory,/onBattle && <button type="button" onClick=\{onBattle\}/,'Open real Campaign');

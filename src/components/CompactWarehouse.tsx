@@ -1,9 +1,8 @@
 import { useMemo, useState, type CSSProperties } from 'react';
-import { Clock3, FlaskConical, Info, Package, Search } from 'lucide-react';
+import { FlaskConical, Info, Package, Search } from 'lucide-react';
 import type { InventoryItem } from '@/game/types';
 import { localizeText } from '@/game/i18n';
 import { rarityColor } from '@/game/ui';
-import { elixirExpiryTime, elixirTimeLeftLabel, isPerishableItem } from '@/game/elixirExpiry';
 import { ItemArt } from './ui/ItemArt';
 import { Modal } from './ui/Modal';
 import './compactWarehouse.css';
@@ -13,7 +12,6 @@ interface Props {
   consumables: InventoryItem[];
   materials: InventoryItem[];
   forgeMaterials: number;
-  now: number;
   language: 'ru' | 'en';
   onItemSelect: (item: InventoryItem) => void;
   onForge?: () => void;
@@ -21,22 +19,19 @@ interface Props {
 
 const formatQuantity = (quantity: number) => quantity.toLocaleString('ru-RU');
 
-function WarehouseItem({ item, language, now, onSelect }: {
+function WarehouseItem({ item, language, onSelect }: {
   item: InventoryItem;
   language: 'ru' | 'en';
-  now: number;
   onSelect: (item: InventoryItem) => void;
 }) {
   const name = localizeText(item.name, language);
-  const perishable = isPerishableItem(item);
-  const urgent = perishable && elixirExpiryTime(item) - now <= 24 * 60 * 60 * 1000;
   const style = { '--warehouse-rarity': rarityColor(item.rarity) } as CSSProperties;
   return <button
     type="button"
-    className={'warehouse-tile' + (urgent ? ' warehouse-tile--urgent' : '')}
+    className="warehouse-tile"
     style={style}
     title={name}
-    aria-label={`${name}. ${language === 'en' ? 'Quantity' : 'Количество'}: ${item.qty}${perishable ? '. ' + elixirTimeLeftLabel(item, language, now) : ''}`}
+    aria-label={`${name}. ${language === 'en' ? 'Quantity' : 'Количество'}: ${item.qty}`}
     onClick={() => onSelect(item)}
   >
     <span className="warehouse-tile__art">
@@ -44,14 +39,11 @@ function WarehouseItem({ item, language, now, onSelect }: {
       {(item.qty > 1 || item.id === 'cow_awakening_stone') && <span className="warehouse-tile__count">×{formatQuantity(item.qty)}</span>}
     </span>
     <span className="warehouse-tile__name">{name}</span>
-    {perishable && <span className="warehouse-tile__expiry">
-      <Clock3 size={10} aria-hidden="true"/>{elixirTimeLeftLabel(item, language, now)}
-    </span>}
   </button>;
 }
 
 /** Display only: source batches stay unchanged in the real game inventory. */
-export function CompactWarehouse({ consumables, materials, forgeMaterials, now, language, onItemSelect, onForge }: Props) {
+export function CompactWarehouse({ consumables, materials, forgeMaterials, language, onItemSelect, onForge }: Props) {
   const en = language === 'en';
   const [filter, setFilter] = useState<WarehouseFilter>('all');
   const [search, setSearch] = useState('');
@@ -105,12 +97,12 @@ export function CompactWarehouse({ consumables, materials, forgeMaterials, now, 
     {groups.consumables.length > 0 && <div className="compact-warehouse__group">
       <h3><FlaskConical size={14} aria-hidden="true"/>{en ? 'Consumables' : 'Расходники'}<span>{groups.consumables.length}</span></h3>
       <div className="compact-warehouse__grid">{groups.consumables.map(item =>
-        <WarehouseItem key={item.id} item={item} language={language} now={now} onSelect={onItemSelect}/>)}</div>
+        <WarehouseItem key={item.id} item={item} language={language} onSelect={onItemSelect}/>)}</div>
     </div>}
     {(groups.materials.length > 0 || groups.forge) && <div className="compact-warehouse__group">
       <h3><Package size={14} aria-hidden="true"/>{en ? 'Materials' : 'Материалы'}<span>{groups.materials.length + Number(groups.forge)}</span></h3>
       <div className="compact-warehouse__grid">
-        {groups.materials.map(item => <WarehouseItem key={item.id} item={item} language={language} now={now} onSelect={onItemSelect}/>)}
+        {groups.materials.map(item => <WarehouseItem key={item.id} item={item} language={language} onSelect={onItemSelect}/>)}
         {groups.forge && <button type="button" className="warehouse-tile warehouse-tile--forge"
             aria-label={`${en ? 'Forge materials' : 'Материалы кузницы'}. ${forgeMaterials}`}
             onClick={() => setForgeInfoOpen(true)}>
