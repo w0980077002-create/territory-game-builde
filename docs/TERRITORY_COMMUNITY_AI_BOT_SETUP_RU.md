@@ -35,3 +35,11 @@ The owner registered @TerritoryGameAI_bot and added it to «Чат Territory» o
 - Concurrent retries can still produce duplicate alerts; use a durable outbox in the next iteration.
 - No automatic data retention job exists yet; the SQL draft alone is insufficient for safe production launch.
 - No production deploy, secrets or migration were modified in this branch.
+
+## Фактический серверный статус 11.11.2026, после разрешения владельца
+- Подтверждён правильный рабочий Supabase project ref: `wmyrdpbwlkzsktnhookx`, не одноимённый другой проект.
+- В рабочем Supabase **применена изолированная миграция** `20261111140136_territory_community_bot_inbox_isolated_20261111`: создана только `public.territory_community_inbox` с RLS, закрытым доступом anon/authenticated и обслуживанием через service role. Проверка: 0 записей; anon/authenticated SELECT=false.
+- Активировано ежедневное задание pg_cron `territory-community-inbox-30day-prune` (03:15 UTC) для удаления записей старше 30 дней. Проверено, что job active.
+- Отдельная Edge Function `territory-community` **развёрнута**, status ACTIVE, version 1, verify_jwt=false и проверкой собственного webhook-secret в коде.
+- **Ещё НЕ выполнено**: установка отдельного `TERRITORY_COMMUNITY_BOT_TOKEN` в безопасные секреты, создание `TERRITORY_COMMUNITY_WEBHOOK_SECRET`, регистрация Telegram webhook, owner/group ID, включение `TERRITORY_COMMUNITY_ENABLED=true` и проверка реального сообщения. До этого бот НЕ читает чат. Никогда не выдавать развёртывание Edge за готовый бот.
+- **Нельзя** помещать токен в код, PR, issues или SQL; требуется конфигурация через защищённый интерфейс Supabase Dashboard → Edge Functions → Secrets. Для Telegram setWebhook использовать server-side CLI/защищённый HTTPS-запрос, не публикацию токена в URL группы.
