@@ -127,6 +127,9 @@ export async function purchaseStage8(profession: ProfessionId, operationId: stri
   if (!knownProfession(profession) || !uuid(operationId)) throw new Error('stage8_invalid_purchase');
   const {data,error}=await supabase.rpc('territory_profession_stage8_purchase',
     {p_profession:profession,p_operation:operationId});
+  // A SQL insufficient_gems exception rolls back the entire purchase: no debit, no receipt.
+  // Unlike a transport timeout, this known failure must not freeze the chooser forever.
+  if (error?.message === 'insufficient_gems') throw new Error('stage8_purchase_insufficient_gems');
   if (error || !obj(data) || data.success!==true || data.profession!==profession
       || !int(data.gems_after,2147483647) || data.mastery_level!==1 || data.mastery_xp!==0) {
     throw new Error('stage8_purchase_not_confirmed');
