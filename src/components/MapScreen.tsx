@@ -265,7 +265,12 @@ export function MapScreen({ onNavigate, onTrial, onCave, onCompanions, onRunes, 
 
   return (
     <div className="relative h-full min-h-0 w-full overflow-hidden">
-      <WorldMapCanvas onVisit={handleWorldVisit} readyRegion={readyRegion?.id} attentionPlaces={attentionPlaces} language={language} />
+      <WorldMapCanvas onVisit={handleWorldVisit} readyRegion={readyRegion?.id}
+        activeGather={gather?.active && activeRegion && activeResource
+          ? {regionId:activeRegion.id, resourceName:localizeText(activeResource.name,language),
+            finishesAt:gather.active.finishes_at, serverOffsetMs:serverOffset}
+          : undefined}
+        attentionPlaces={attentionPlaces} language={language} />
       {/* Separate Dark Cave entrance; never replaces the old campaign. */}
       <button
         type="button"
