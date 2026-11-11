@@ -113,7 +113,27 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       await setStage8PurchasePending(null);
       setPurchasePending(null);setStatus(verified);
       setNotice(language==='en'?'Profession purchase verified by server.':'Профессия открыта и подтверждена сервером.');
-    }catch{setNotice(language==='en'?'Purchase result uncertain. Retry the SAME operation, never buy again.':'Результат покупки пока неизвестен. Повтори ЭТУ ЖЕ операцию: алмазы повторно не спишутся.');}
+    }catch(cause){
+      if (cause instanceof Error && cause.message==='stage8_purchase_insufficient_gems') {
+        // The server explicitly rejected the request before any debit. Clear only
+        // this known failed purchase; ambiguous/network failures keep their UUID.
+        try {
+          await setStage8PurchasePending(null);
+          setPurchasePending(null);
+          setNotice(language==='en'
+            ? 'Not enough blue gems. No gems were spent; you can select a profession again when you have 1,000.'
+            : 'Не хватило синих алмазов. Ничего не списано — после пополнения до 1000 можно выбрать профессию снова.');
+        } catch {
+          setNotice(language==='en'
+            ? 'Not enough blue gems. The saved request could not be cleared; retry it when your storage is available.'
+            : 'Не хватило синих алмазов. Не удалось очистить старую заявку — повтори её после восстановления хранилища.');
+        }
+      } else {
+        setNotice(language==='en'
+          ? 'Purchase result uncertain. Retry the SAME operation, never buy again.'
+          : 'Результат покупки пока неизвестен. Повтори ЭТУ ЖЕ операцию: алмазы повторно не спишутся.');
+      }
+    }
     finally{actionLock.current=false;setBusy(false);}
   };
   const choose = async (profession:ProfessionId) => {
@@ -154,6 +174,16 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
         <div className="h-full rounded-full bg-gradient-to-r from-sky-400 to-amber-400" style={{width:`${nextXp?Math.min(100,status.masteryXp/nextXp*100):100}%`}}/>
       </div>}
     </div>
+    {purchasePending && !status.profession && <section role="alert" className="rounded-xl border border-amber-300/65 bg-amber-500/15 p-3 text-sm text-amber-100" data-testid="profession-purchase-recovery">
+      <b className="block">{language==='en'?'Previous profession choice needs attention':'Незавершённый выбор профессии'}</b>
+      <p className="mt-1 text-xs">{language==='en'
+        ? 'A previous request for this profession is saved on this device. Other choices are paused to prevent a second debit. Finish the saved request with the same transaction ID.'
+        : 'На телефоне осталась прежняя заявка. Другие профессии временно недоступны, чтобы исключить двойное списание. Можно безопасно повторить ту же покупку.'}</p>
+      <p className="mt-1 text-xs font-bold">{PROFESSION_DEFINITIONS.find((p)=>p.id===purchasePending.profession)?.name ?? purchasePending.profession} · 1000 💎</p>
+      <button type="button" disabled={busy} className="mt-2 min-h-11 w-full rounded-lg border border-amber-200 bg-gradient-to-b from-amber-300 to-amber-600 px-3 py-2 text-sm font-black text-[#251508] disabled:opacity-50" onClick={()=>{void confirmPurchase(purchasePending.profession,purchasePending.operationId);}}>
+        {language==='en'?'Verify / retry saved purchase':'Завершить прежнюю покупку'}
+      </button>
+    </section>}
     {!status.profession ? <div className="space-y-2 rounded-xl border border-white/10 p-3">
       <p className="text-xs text-slate-300">{language==='en'?'Choose one profession permanently for 1,000 blue gems.':'Выбери одну профессию навсегда за 1000 синих алмазов.'}</p>
       {PROFESSION_DEFINITIONS.map((p)=><button key={p.id} disabled={busy||!!purchasePending} onClick={()=>{void choose(p.id);}} className="flex w-full items-center gap-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-2.5 text-left text-sm font-bold disabled:opacity-40"><img src={PROFESSION_ART[p.id]} alt="" loading="lazy" className="h-16 w-16 shrink-0 rounded-lg border border-amber-400/25 bg-slate-800/40 object-contain"/><span>{p.name} · 1000 💎</span></button>)}
@@ -212,7 +242,6 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       })}
     </>}
     {pending && <button disabled={busy} className="w-full rounded-lg border border-amber-400/50 bg-amber-400/10 p-3 text-sm font-bold text-amber-200 disabled:opacity-50" onClick={()=>{void confirm(pending.recipeId,pending.operationId);}}>{language==='en'?'Retry saved operation (no double debit)':'Повторить сохранённую операцию без двойного списания'}</button>}
-    {purchasePending && <button disabled={busy} className="w-full rounded-lg border border-sky-400/50 bg-sky-400/10 p-3 text-sm font-bold text-sky-200 disabled:opacity-50" onClick={()=>{void confirmPurchase(purchasePending.profession,purchasePending.operationId);}}>{language==='en'?'Verify/retry previous purchase (no double debit)':'Проверить прежнюю покупку без повторного списания'}</button>}
     {notice && <div role="status" className="rounded-xl bg-sky-500/10 p-3 text-xs text-sky-100">{notice}</div>}
     {craftedItemTab&&onNavigate&&<button type="button" onClick={()=>onNavigate('inventory',craftedItemTab)} className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 p-3 text-sm font-black text-emerald-100"><Package size={17}/>{language==='en'?'See crafted item in Inventory':'Посмотреть созданную вещь в инвентаре'}</button>}
   </div>;
