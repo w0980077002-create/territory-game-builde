@@ -3,7 +3,7 @@ import { prepareNewEquipment, capEquipmentToHeroLevel } from './equipmentBalance
 import { calendarDayKey, weeklyQuestKey } from './weeklyQuests';
 import { reconcileFollowers } from './followers';
 import { canBuyShopItem, shopStonesBoughtToday, SHOP_STONES_PER_DAY, MAX_SHOP_PURCHASE_QTY } from './purchaseGuard';
-import { isPerishableItem, newElixirExpiry, reconcileElixirExpiry } from './elixirExpiry';
+import { isPerishableItem, reconcileElixirExpiry } from './elixirExpiry';
 import type { GameState } from './types';
 import {
   createInitialGame,
@@ -232,7 +232,6 @@ export function buyItem(state: GameState, shopItem: ShopItem, qty: number = 1): 
         description: shopItem.description,
         effect: shopItem.effect,
         arenaEffect: shopItem.arenaEffect,
-        expiresAt: shopItem.type === 'elixir' || shopItem.type === 'potion' || shopItem.type === 'arena' ? newElixirExpiry(now.getTime()) : undefined,
       };
       inventory.push(newItem);
     }
