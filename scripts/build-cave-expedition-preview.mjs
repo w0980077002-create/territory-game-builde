@@ -16,7 +16,7 @@ ${testing ? "import {update} from './src/game/cavePreviewWorld/engine';" : ''}
 const resources=${JSON.stringify(resources)};
 const assetUrl=p=>{if(!resources[p])throw Error('Unbundled asset: '+p);return resources[p]};
 const root=createRoot(document.getElementById('root'));
-root.render(<CaveExpeditionPreview assetUrl={assetUrl} ${fixture}/>);`, resolveDir: resolve('.'), loader: 'tsx' }, bundle: true, write: false, outdir: '/tmp/cave-expedition', format: 'iife', jsx: 'automatic', minify: true, define: { 'import.meta.env.BASE_URL': '"./"', 'process.env.NODE_ENV': '"production"' } });
+root.render(<CaveExpeditionPreview assetUrl={assetUrl} language={new URLSearchParams(location.search).get("lang") || "ru"} ${fixture}/>);`, resolveDir: resolve('.'), loader: 'tsx' }, bundle: true, write: false, outdir: '/tmp/cave-expedition', format: 'iife', jsx: 'automatic', minify: true, define: { 'import.meta.env.BASE_URL': '"./"', 'process.env.NODE_ENV': '"production"' } });
 const js = result.outputFiles.find(f => f.path.endsWith('.js')).text;
 const css = result.outputFiles.find(f => f.path.endsWith('.css')).text;
 const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'"><title>TERRITORY — Пещера DEMO</title><style>html,body{margin:0;background:#070b11}button{-webkit-tap-highlight-color:transparent}${css}</style></head><body><div id="root"></div><script>${js.replace(/<\/script/gi, '<\\/script')}</script></body></html>`;

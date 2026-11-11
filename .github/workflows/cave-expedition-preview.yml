@@ -42,6 +42,9 @@ jobs:
         run: |
           export CAVE_BROWSER="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
           npm run test:cave-expedition:browser
+          python scripts/check-cave-expedition-performance.py
+          node scripts/build-journey-preview.mjs
+          python scripts/check-journey-browser.py
       - name: Record a real-time playable run
         run: |
           export CAVE_BROWSER="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"

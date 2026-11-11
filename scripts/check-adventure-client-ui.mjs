@@ -48,7 +48,7 @@ assert.match(battle, /<ServerAdventureScreen /);
 assert.match(battle, /data-testid="dark-cave-live-expedition-entry"/);
 assert.match(battle, /data-testid="dark-cave-new-expedition"/);
 assert.match(battle, /data-testid="dark-cave-saved-floors"/);
-assert.match(battle, /<CaveExpeditionPreview onExit=/);
+assert.match(battle, /<CaveExpeditionPreview language=\{language\} onExit=/);
 assert.match(battle, /territory_adventure_session_v1:/);
 assert.match(battle, /return !keys\.some\(prefix => !!localStorage\.getItem\(prefix \+ userId\)\)/,
   'New cave must defer to pending server battles, starts and settlements');
