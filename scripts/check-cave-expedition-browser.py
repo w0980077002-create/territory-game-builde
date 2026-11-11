@@ -72,6 +72,7 @@ try:
       until(page,'FIGHT');screenshot(page,width,'fight')
       hp=page.evaluate('__caveDemo.world.enemies.reduce((n,e)=>n+e.hp,0)')
       page.get_by_role('button',name='Раскол',exact=True).tap()
+      step(page,.35)  # Damage lands at contact, after the visible windup.
       assert page.evaluate('__caveDemo.world.enemies.reduce((n,e)=>n+e.hp,0)') < hp
       manual_control=width==390
       if not manual_control: page.get_by_role('button',name='Авто',exact=False).tap()
@@ -117,6 +118,14 @@ try:
       context=browser.new_context(viewport={'width':width,'height':height},is_mobile=True,has_touch=True,device_scale_factor=2 if height==808 else 1,reduced_motion='reduce')
       page=context.new_page();page.goto(URL+'/test-fixture.html?lang=en');page.wait_for_function('()=>window.__caveDemo')
       page.get_by_role('button',name='Play DEMO').tap();step(page,2);visible(page)
+      if width==360 and height==640:
+        # Android fullscreen native controls occupy space outside env(safe-area).
+        page.evaluate("document.documentElement.style.setProperty('--territory-top-inset','96px');document.documentElement.style.setProperty('--territory-bottom-inset','28px')")
+        page.wait_for_timeout(150)
+        header=page.locator('.cx-header').bounding_box();controls=page.locator('.cx-controls').bounding_box()
+        assert header['y']>=96, 'Telegram close/status controls must not cover the cave header'
+        assert controls['y']+controls['height']<=height-28+1
+        page.evaluate("document.documentElement.style.removeProperty('--territory-top-inset');document.documentElement.style.removeProperty('--territory-bottom-inset')")
       assert page.get_by_role('button',name='Auto skills').is_visible()
       if width>height:
         stage=page.locator('.cx-stage').bounding_box();controls=page.locator('.cx-controls').bounding_box()
