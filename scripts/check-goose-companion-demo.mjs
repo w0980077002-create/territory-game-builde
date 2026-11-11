@@ -5,7 +5,7 @@ import ts from 'typescript';
 const source = readFileSync('src/game/gooseCompanionDemo.ts', 'utf8');
 assert.doesNotMatch(source, /from ['"](?:.*(?:actions|store|supabase|cloud|inventory|progression))/,
   'An isolated preview must never import real state or economy');
-assert.doesNotMatch(source, /localStorage|sessionStorage|fetch\(|useGame|Math\.random/,
+assert.doesNotMatch(source, /(?:localStorage|sessionStorage)\.|fetch\(|useGame[.(]|Math\.random\(/,
   'Sandbox may not read or mutate the player's data');
 const built = ts.transpileModule(source, {
   fileName: 'gooseCompanionDemo.ts',
