@@ -10,6 +10,7 @@ import {
   cowStonesOwned, cowAwakeningCost, selectedFollower, selectFollower, trainFollower, followerRarity, followerCombat, FOLLOWER_RARITY_MULTIPLIERS,
 } from '@/game/followers';
 import { PumpkinWitch } from './PumpkinWitch';
+import { LegendaryGooseDemo } from './LegendaryGooseDemo';
 import './followersCamp.css';
 
 /** Real PvE companions, displayed as a compact selectable roster.
@@ -169,6 +170,8 @@ export function FollowersPanel() {
         </button>;
       })}
     </div>
+
+    <LegendaryGooseDemo en={en} />
 
     <p className="followers-camp__footnote">{en
       ? 'Follower bonuses work in PvE only. Arena remains balanced separately.'
