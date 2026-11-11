@@ -12,7 +12,7 @@ import {
   type Stage8Status, type Stage8PendingOperation, type Stage8PurchaseOperation,
 } from '@/game/stage8CraftApi';
 import type { ProfessionId } from '@/game/types';
-import { recipeReadiness, visibleWorkshopRecipes, type WorkshopRecipeFilter } from '@/game/workshopPlanner';
+import { recipeReadiness, visibleWorkshopRecipes, nextWorkshopGuidance, workshopGuidanceText, type WorkshopRecipeFilter } from '@/game/workshopPlanner';
 
 /** Staging-only: server-authoritative replacement for legacy local crafting. */
 export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|'inventory'|'forge',inventoryTab?:'equipment'|'items')=>void} = {}) {
@@ -54,6 +54,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
   const currentProfession=status?.profession??null;
   const available=useMemo(()=>STAGE8_RECIPES.filter((recipe)=>recipe.profession===currentProfession),[currentProfession]);
   const readyRecipes=useMemo(()=>status?available.filter(recipe=>recipeReadiness(recipe,status).ready).length:0,[available,status]);
+  const guidance=useMemo(()=>status?.profession && readyRecipes===0 && !pending ? nextWorkshopGuidance(available,status):null,[available,status,readyRecipes,pending]);
   const shownRecipes=useMemo(()=>status?visibleWorkshopRecipes(available,status,recipeFilter,recipeSearch):[],[available,status,recipeFilter,recipeSearch]);
 
   const confirm = async (recipeId:string,operationId:string) => {
@@ -190,6 +191,10 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
     </div> : <>
       <section className="rounded-xl border border-amber-400/20 bg-gradient-to-br from-slate-900 to-[#1c2331] p-3" data-testid="workshop-resources">
         <div className="flex items-center justify-between gap-2"><b className="text-sm text-amber-100">{language==='en'?'Workshop warehouse':'Склад мастерской'}</b><span className="text-xs font-bold text-emerald-300">{readyRecipes} {language==='en'?'recipes ready':'рецептов готово'}</span></div>
+        {guidance&&<div role="status" data-testid="workshop-next-step" className="mt-2 flex items-center gap-2 rounded-lg border border-amber-400/50 bg-amber-500/10 p-2.5">
+          <p className="min-w-0 flex-1 text-xs font-bold leading-snug text-amber-100">{workshopGuidanceText(guidance,language==='en'?'en':'ru')}</p>
+          {guidance.kind==='materials'&&onNavigate&&<button type="button" onClick={()=>onNavigate('map')} className="flex min-h-10 shrink-0 items-center gap-1 rounded-lg border border-amber-300/70 bg-amber-500/25 px-2.5 py-2 text-xs font-bold text-amber-100"><MapPinned size={15}/>{language==='en'?'Gather':'Добыть'}</button>}
+        </div>}
         <div className="mt-2 grid grid-cols-5 gap-1">
           {RESOURCE_DEFINITIONS.map(resource=><div key={resource.id} className="min-w-0 rounded-md border border-white/10 bg-black/25 px-0.5 py-1.5 text-center" title={resource.name}>
             <img src={resourceArt(resource.id)} alt="" loading="lazy" className="mx-auto h-7 w-7 object-contain"/>
@@ -206,7 +211,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       <div className="relative"><Search size={16} className="absolute left-3 top-2.5 text-slate-400"/><input value={recipeSearch} onChange={event=>setRecipeSearch(event.target.value)} placeholder={language==='en'?'Find a recipe…':'Найти рецепт…'} aria-label={language==='en'?'Find a recipe':'Найти рецепт'} className="w-full rounded-lg border border-white/15 bg-black/30 py-2 pl-9 pr-3 text-sm text-white placeholder:text-slate-500"/></div>
       <div className="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label={language==='en'?'Recipe filters':'Фильтр рецептов'}>
         {(['ready','nearby','all','locked'] as const).map(mode=><button type="button" key={mode} aria-pressed={recipeFilter===mode} onClick={()=>setRecipeFilter(mode)} className={`shrink-0 rounded-lg border px-2.5 py-2 text-[11px] font-bold ${recipeFilter===mode?'border-amber-300 bg-amber-500/25 text-amber-100':'border-white/10 bg-white/5 text-slate-300'}`}>
-          {mode==='ready'?(language==='en'?'Ready':'Можно создать'):mode==='nearby'?(language==='en'?'Nearby':'Ближайшие'):mode==='locked'?(language==='en'?'Locked':'Недоступные'):(language==='en'?'All':'Все')}
+          {mode==='ready'?(language==='en'?'Ready':'Можно создать'):mode==='nearby'?(language==='en'?'Nearby':'Ближайшие'):mode==='locked'?(language==='en'?'Not ready':'Не готовы'):(language==='en'?'All':'Все')}
         </button>)}
       </div>
       {shownRecipes.length===0&&<div className="rounded-xl border border-dashed border-amber-400/25 bg-black/20 p-4 text-center text-xs text-slate-300">{language==='en'?'No matching recipes. Change the filter or gather materials.':'По выбранному фильтру рецептов нет. Смени фильтр или собери ресурсы.'}</div>}
