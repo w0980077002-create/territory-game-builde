@@ -92,16 +92,16 @@ BEGIN
      OR (st#>>'{player,maxEnergy}')::int IS DISTINCT FROM p.max_energy
      OR p.level NOT BETWEEN 1 AND 100 OR p.xp<0 OR p.gold<0
      OR coalesce((stats->>'maxHp')::int,0) <=0 OR coalesce((stats->>'attack')::int,-1)<0 OR coalesce((stats->>'defense')::int,-1)<0
-     OR (st#>>'{player,xpToNext}')::bigint IS DISTINCT FROM (CASE WHEN p.level>=100 THEN 0 ELSE floor(floor(100*power(1.15::double precision,p.level-1))*(CASE WHEN p.level>=83 THEN 3::double precision+0.12::double precision*(p.level-83) ELSE 1 END))::bigint END)
+     OR (st#>>'{player,xpToNext}')::bigint IS DISTINCT FROM (CASE WHEN p.level>=100 THEN 0 ELSE floor(floor(100*power(1.15::double precision,p.level-1))*(CASE WHEN p.level>=61 THEN 3::double precision+0.12::double precision*(p.level-61) ELSE 1 END))::bigint END)
      THEN RAISE EXCEPTION 'adventure_save_needs_reconciliation'; END IF;
    IF p.gold::bigint+r.gold>2147483647 THEN RAISE EXCEPTION 'adventure_wallet_limit'; END IF;
    lv:=p.level; v_max_energy:=p.max_energy; balance:=p.xp::bigint+r.xp;
    WHILE lv<100 LOOP
      threshold:=coalesce((st#>>'{player,xpToNext}')::bigint,0);
-     IF threshold<=0 THEN threshold:=floor(floor(100*power(1.15::double precision,lv-1))*(CASE WHEN lv>=83 THEN 3::double precision+0.12::double precision*(lv-83) ELSE 1 END))::bigint; END IF;
+     IF threshold<=0 THEN threshold:=floor(floor(100*power(1.15::double precision,lv-1))*(CASE WHEN lv>=61 THEN 3::double precision+0.12::double precision*(lv-61) ELSE 1 END))::bigint; END IF;
      EXIT WHEN balance<threshold;
      balance:=balance-threshold; lv:=lv+1;
-     threshold:=CASE WHEN lv>=100 THEN 0 ELSE floor(floor(100*power(1.15::double precision,lv-1))*(CASE WHEN lv>=83 THEN 3::double precision+0.12::double precision*(lv-83) ELSE 1 END))::bigint END;
+     threshold:=CASE WHEN lv>=100 THEN 0 ELSE floor(floor(100*power(1.15::double precision,lv-1))*(CASE WHEN lv>=61 THEN 3::double precision+0.12::double precision*(lv-61) ELSE 1 END))::bigint END;
      st:=jsonb_set(st,'{player,xpToNext}',to_jsonb(threshold));
      stats:=jsonb_set(stats,'{maxHp}',to_jsonb((stats->>'maxHp')::int+20));
      stats:=jsonb_set(stats,'{hp}',stats->'maxHp');
