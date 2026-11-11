@@ -95,8 +95,8 @@ assert.equal(first.inventory.find(i => i.id === newer.id)?.qty, 1);
 assert.equal(belt.putInBelt(first, newer.id, ctx), null, 'One kind cannot duplicate into second slot');
 const returned = belt.takeFromBelt(first, 0);
 assert.equal(returned.inventory.reduce((n, i) => n + i.qty, 0), 6);
-assert.equal(returned.inventory.every(i => i.expiresAt === undefined), false,
-  'Legacy source dates may remain until the next non-destructive normalization');
+assert.equal(returned.inventory.every(i => i.expiresAt === undefined), true,
+  'Returning doses to warehouse clears obsolete expiration metadata');
 const cleaned = expiry.reconcileElixirExpiry(returned);
 assert(cleaned.inventory.every(i => i.expiresAt === undefined));
 const topUpStart = { ...stock,
