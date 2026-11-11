@@ -37,7 +37,7 @@ with sync_playwright() as playwright:
             assert summary.is_visible()
             assert 'Iron' in summary.inner_text() if language == 'en' else 'Железная' in summary.inner_text()
             assert drawer.get_by_test_id('map-gather-drawer-timer').count() == 2
-            assert '03:' in summary.inner_text()
+            assert any(value in summary.inner_text() for value in ('04:00:', '03:59:'))
             assert not drawer.get_by_role('button', name='Hunting' if language == 'en' else 'Охота').get_by_test_id('map-gather-drawer-timer').count()
             drawer.get_by_role('button', name='Close' if language == 'en' else 'Закрыть').click()
             assert banner.bounding_box()['width'] <= width - 70
