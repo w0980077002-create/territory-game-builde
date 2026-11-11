@@ -237,7 +237,9 @@ Deno.serve(async (req: Request) => {
   if (insertError && insertError.code !== "23505")
     return ok({ error: "storage_unavailable" }, 503);
 
-  if (analysis.priority !== "P0") return ok();
+  // Important reproducible game failures (P1) also require a private alert:
+  // a group member need not use the literal word "bug" to be heard.
+  if (analysis.priority !== "P0" && analysis.priority !== "P1") return ok();
   if (insertError?.code === "23505") {
     const { data, error } = await db.from(TABLE).select("alert_sent_at")
       .eq("chat_id", msg.chat.id).eq("message_id", msg.message_id).maybeSingle();
