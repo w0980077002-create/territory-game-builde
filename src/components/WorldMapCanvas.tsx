@@ -1,6 +1,7 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronRight, Compass, Hand, Layers3, LocateFixed, Minus, Plus, X } from 'lucide-react';
 import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
+import { gatherTimeLabel } from '@/game/gatherCountdown';
 import './worldMapCanvas.css';
 
 export type WorldMapRegion = 'forest' | 'mountain' | 'herbs' | 'hunting' | 'rare' | 'chamber';
@@ -101,6 +102,36 @@ type Size = { width: number; height: number };
 type CameraBookmark = { centerX: number; centerY: number; zoomRatio: number };
 const CAMERA_STORAGE_KEY = 'territory-world-map-camera-v1';
 
+export type WorldMapGather = {
+  regionId: WorldMapRegion;
+  resourceName: string;
+  finishesAt: string;
+  serverOffsetMs: number;
+};
+
+// Isolate the once-per-second ticker inside a tiny badge. Panning the main map
+// still updates one composited layer, never the entire React destination tree.
+function GatherTimeBadge({gather, language, compact = false}: {
+  gather: WorldMapGather; language: 'ru' | 'en'; compact?: boolean;
+}) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const tick = () => setNow(Date.now());
+    const interval = window.setInterval(tick, 1000);
+    const resume = () => { if (document.visibilityState === 'visible') tick(); };
+    document.addEventListener('visibilitychange', resume);
+    return () => { window.clearInterval(interval); document.removeEventListener('visibilitychange', resume); };
+  }, []);
+  const time = gatherTimeLabel(gather.finishesAt,gather.serverOffsetMs,now,language,compact);
+  if (!time) return null;
+  return <span data-testid={compact?'map-gather-pin-timer':'map-gather-drawer-timer'}
+    className={compact?'territory-world-map__place-timer':'territory-world-map__destination-timer'}
+    title={language==='en'?'Gathering: '+gather.resourceName:'Добыча: '+gather.resourceName}>
+    {compact ? time : `${gather.resourceName} · ${time}`}
+  </span>;
+}
+
+
 function startingScale(width: number, height: number): number {
   return Math.max(width / WORLD_WIDTH, height / WORLD_HEIGHT) * 1.3;
 }
@@ -155,9 +186,10 @@ function sawPanHint(): boolean {
   catch { return false; }
 }
 
-export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegion, attentionPlaces = [], language }: {
+export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegion, activeGather, attentionPlaces = [], language }: {
   onVisit: (place: WorldMapPlace) => void;
   readyRegion?: WorldMapRegion;
+  activeGather?: WorldMapGather;
   attentionPlaces?: readonly WorldMapPlace[];
   language: 'ru' | 'en';
 }) {
@@ -491,6 +523,7 @@ export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegio
   const renderDestination = (place: { id: WorldMapPlace; ru: string; en: string }) => {
     const visual = PLACE_VISUALS[place.id];
     const hasAttention = readyRegion === place.id || attentionSet.has(place.id);
+    const isGatherPlace = activeGather?.regionId === place.id;
     return (
       <button
         key={place.id}
@@ -502,7 +535,10 @@ export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegio
         <span className="territory-world-map__destination-crest" aria-hidden="true">
           <img src={`${import.meta.env.BASE_URL}${visual.art}`} alt="" draggable={false} loading="lazy" decoding="async" />
         </span>
-        <span className="territory-world-map__destination-name">{language === 'en' ? place.en : place.ru}</span>
+        <span className="territory-world-map__destination-copy">
+          <span className="territory-world-map__destination-name">{language === 'en' ? place.en : place.ru}</span>
+          {isGatherPlace && activeGather && <GatherTimeBadge gather={activeGather} language={language}/>}
+        </span>
         {hasAttention && <span className="territory-world-map__destination-alert" aria-label={language === 'en' ? 'Action available' : 'Есть действие'}>!</span>}
         <ChevronRight className="territory-world-map__destination-arrow" size={15} strokeWidth={2.4} aria-hidden="true" />
       </button>
@@ -575,6 +611,7 @@ export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegio
             const resourceReady = readyRegion === place.id;
             const hasNotice = attentionSet.has(place.id);
             const hasAttention = resourceReady || hasNotice;
+            const isGatherPlace = activeGather?.regionId === place.id;
             return (
               <button
                 key={place.id}
@@ -589,6 +626,7 @@ export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegio
                 </span>
                 <span className="territory-world-map__place-name">{language === 'en' ? place.en : place.ru}</span>
                 {hasAttention && <span className="territory-world-map__place-attention" aria-hidden="true">!</span>}
+                {isGatherPlace && activeGather && <GatherTimeBadge gather={activeGather} language={language} compact/>}
               </button>
             );
           })}
@@ -627,6 +665,15 @@ export const WorldMapCanvas = memo(function WorldMapCanvas({ onVisit, readyRegio
               <WoodenPlaque>{language === 'en' ? 'All locations' : 'Все места'}</WoodenPlaque>
               <button ref={drawerCloseRef} type="button" className="territory-world-map__drawer-close" onClick={() => setDrawerOpen(false)} aria-label={language === 'en' ? 'Close' : 'Закрыть'}><X size={20} /></button>
             </div>
+            {activeGather && <button type="button" data-testid="map-gather-drawer-summary"
+              className="territory-world-map__drawer-gather" onClick={() => visit(activeGather.regionId)}>
+              <span aria-hidden="true">⌛</span>
+              <span className="min-w-0 flex-1 text-left">
+                <strong className="block text-[11px]">{language === 'en' ? 'Current gathering' : 'Сейчас добывается'}</strong>
+                <GatherTimeBadge gather={activeGather} language={language}/>
+              </span>
+              <ChevronRight size={16} aria-hidden="true"/>
+            </button>}
             <div className="territory-world-map__drawer-scroll min-h-0 overflow-y-auto pb-2">
               <p className="territory-world-map__drawer-section">{language === 'en' ? 'Discover on the map' : 'Места на карте'}</p>
               <div className="grid grid-cols-2 gap-2">
