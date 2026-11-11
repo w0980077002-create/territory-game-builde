@@ -16,6 +16,7 @@ import { heroSide } from '@/game/pve';
 import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
 import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
+import { CaveExpeditionPreview } from './pve/CaveExpeditionPreview';
 import { Currency } from './ui/Currency';
 import { DailyShareCard } from '@/game/DailyShareCard';
 import { getAppearanceIcon } from '@/game/appearance';
@@ -44,6 +45,10 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
   const [caveActive, setCaveActive] = useState(false);
+  // Explicit opt-in preview; never replaces an ordinary player's server Cave.
+  // It has no Supabase access, debit, rewards, or saved game writes.
+  const [cavePreviewOptIn, setCavePreviewOptIn] = useState(() =>
+    new URLSearchParams(window.location.search).get('cave-preview') === '1');
   const handleCaveActive = useCallback((active: boolean) => {
     setCaveActive(active);
     onActiveChange?.(active);
@@ -224,7 +229,9 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         </div>
       )}
       {view === 'cave' ? (
-        <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} onShop={onCaveShop} />
+        cavePreviewOptIn
+          ? <CaveExpeditionPreview onExit={() => setCavePreviewOptIn(false)} />
+          : <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} onShop={onCaveShop} />
       ) : <>
       <div className="flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11">
         <span className="text-xs text-gray-400">

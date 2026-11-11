@@ -82,6 +82,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Package cave expedition standalone preview
+        run: npm run build:cave-preview
+
+      - name: Publish playable cave preview alongside game (no live data)
+        run: |
+          cp artifacts/cave-expedition/territory-cave-demo.html dist/territory-cave-demo.html
+          test -s dist/territory-cave-demo.html
+
       - name: Confirm Pages artifact identifies its source commit
         run: node scripts/check-pages-build-sha.mjs
 
