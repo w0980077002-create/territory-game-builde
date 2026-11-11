@@ -43,3 +43,12 @@ The owner registered @TerritoryGameAI_bot and added it to «Чат Territory» o
 - Отдельная Edge Function `territory-community` **развёрнута**, status ACTIVE, version 1, verify_jwt=false и проверкой собственного webhook-secret в коде.
 - **Ещё НЕ выполнено**: установка отдельного `TERRITORY_COMMUNITY_BOT_TOKEN` в безопасные секреты, создание `TERRITORY_COMMUNITY_WEBHOOK_SECRET`, регистрация Telegram webhook, owner/group ID, включение `TERRITORY_COMMUNITY_ENABLED=true` и проверка реального сообщения. До этого бот НЕ читает чат. Никогда не выдавать развёртывание Edge за готовый бот.
 - **Нельзя** помещать токен в код, PR, issues или SQL; требуется конфигурация через защищённый интерфейс Supabase Dashboard → Edge Functions → Secrets. Для Telegram setWebhook использовать server-side CLI/защищённый HTTPS-запрос, не публикацию токена в URL группы.
+
+## Упрощённая регистрация Telegram webhook — 11.11.2026
+
+После сохранения `TERRITORY_COMMUNITY_BOT_TOKEN` в рабочем Supabase открой в браузере:
+https://wmyrdpbwlkzsktnhookx.supabase.co/functions/v1/territory-community/connect
+
+Функция проверяет `getMe` и точный username `TerritoryGameAI_bot`, затем регистрирует через Telegram API **только** собственный endpoint `/functions/v1/territory-community` с разрешёнными обновлениями `message` и `edited_message`, и перепроверяет `getWebhookInfo`. Отвечает только несекретным статусом. Если `TERRITORY_COMMUNITY_WEBHOOK_SECRET` не установлен, секрет Telegram webhook **автоматически выводится HMAC-SHA256** из `SUPABASE_SERVICE_ROLE_KEY` и токена community-бота; ни токен, ни ключ, ни производная не выходят в браузер и не пишутся в GitHub. URL регистрации фиксирован, произвольный target запрещён. Повторное открытие идемпотентно, если адрес уже верный.
+
+После успешного `webhook_active: true` напиши новому боту **/start** в личку: он ответит числовым Telegram ID. Добавь в Supabase Secrets `TERRITORY_COMMUNITY_OWNER_ID` с этим ID. Затем напиши **/chatid** в группе, бот пришлёт числовой group ID в личку. Добавь `TERRITORY_COMMUNITY_CHAT_ID`. После адресного теста установи `TERRITORY_COMMUNITY_ENABLED=true` для приёма. До этого функция отвечает на команды настройки, но все обычные групповые сообщения отбрасываются без сохранения. Наличие webhook не означает включённый мониторинг.
