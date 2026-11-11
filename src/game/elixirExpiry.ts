@@ -17,7 +17,7 @@ export function isElixirExpired(_item: InventoryItem, _now = Date.now()): boolea
   return false;
 }
 export function newElixirBatch(item: InventoryItem, _now = Date.now()): InventoryItem {
-  if (!isPerishableItem(item) || !Object.hasOwn(item, 'expiresAt')) return item;
+  if (!isPerishableItem(item) || !Object.prototype.hasOwnProperty.call(item, 'expiresAt')) return item;
   const next = { ...item };
   delete next.expiresAt;
   return next;
@@ -42,7 +42,7 @@ function reconcileForgeMaterialBatches(state: GameState): Pick<GameState, 'forge
 export function reconcileElixirExpiry(state: GameState, _now = Date.now()): GameState {
   let changed = false;
   const normalize = (item: InventoryItem): InventoryItem => {
-    if (!isPerishableItem(item) || !Object.hasOwn(item, 'expiresAt')) return item;
+    if (!isPerishableItem(item) || !Object.prototype.hasOwnProperty.call(item, 'expiresAt')) return item;
     changed = true;
     const next = { ...item };
     delete next.expiresAt;
