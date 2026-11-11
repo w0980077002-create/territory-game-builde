@@ -19,7 +19,7 @@ vm.runInNewContext(js, { module: mod, exports: mod.exports, Date, Math, JSON,
   require: (name) => { if (name === './elixirExpiry') return expiryMod.exports;
     if (name === './vipProgram') return { VIP_AUTO_BELT_LEVEL: 3 };
     throw new Error('Unexpected belt dependency: ' + name); } });
-const { BELT_WIN_GOALS, BELT_RULES, isSlotOpen, reconcileLockedBelt, putInBelt, takeFromBelt } = mod.exports;
+const { BELT_WIN_GOALS, BELT_RULES, isSlotOpen, reconcileLockedBelt, putInBelt, takeFromBelt, replaceBeltBatch } = mod.exports;
 
 const goals = [0, 100, 500, 1000, 2000, 3500, 5000];
 assert.equal(BELT_WIN_GOALS.length, 7);
@@ -99,6 +99,42 @@ assert.equal(selectedFive.inventory.find(i => i.id === 'lot-five')?.qty, 5);
 assert.equal(sum(selectedFive), sum(withLots), 'transfers conserve all consumables');
 assert.equal(putInBelt(selectedFive, 'lot-five', ctx), null, 'newer date cannot mix with older in occupied slot');
 
+// Players Aleksandr and Pyotr (11 Nov 2026): a partially equipped older
+// expiry lot blocks refilling from a new one. The player explicitly replaces
+// the batch; no hidden mixing, expired extension, loss, duplication, or unlock.
+const swapped = replaceBeltBatch(selectedFive, 'lot-five', ctx);
+assert(swapped, 'explicit replacement must work even if only the first slot is unlocked');
+assert.equal(swapped.belt[0]?.qty, 5, 'the replacement contains five newer doses');
+assert.equal(swapped.belt[0]?.expiresAt, selectedExpiry, 'replacement keeps its own expiry');
+assert.equal(swapped.inventory.find(i => i.expiresAt === oldExpiry)?.qty, 1,
+  'the old unused dose returns intact to warehouse');
+assert.equal(swapped.inventory.find(i => i.id === 'lot-five'), undefined,
+  'exactly five replacement doses are moved from warehouse');
+assert.equal(sum(swapped), sum(withLots), 'replacing a lot conserves total item quantity');
+assert.equal(swapped.belt[1], null, 'replacing a kind never consumes another belt slot');
+assert.equal(replaceBeltBatch(swapped, 'lot-old', ctx), null,
+  'cannot replace an already full slot; no hidden mutation');
+const swappedReturned = takeFromBelt(swapped, 0);
+assert.equal(swappedReturned.inventory.find(i => i.expiresAt === oldExpiry)?.qty, 1,
+  'returning new lot does not alter original old expiry');
+assert.equal(swappedReturned.inventory.find(i => i.expiresAt === selectedExpiry)?.qty, 5,
+  'returning new lot restores all five doses');
+assert.equal(sum(swappedReturned), sum(withLots), 'unequipping after swap preserves every item');
+
+const twoOpen = { ...withLots, belt: [
+  { ...oldLot, id: 'belt_0', qty: 3 },
+  { ...elixir('different-belt', 'Defense', 3), expiresAt: oldExpiry },
+  ...Array(5).fill(null),
+], inventory: [{ ...chosenLot, qty: 5 }] };
+const twoOpenBefore = sum(twoOpen);
+const twoOpenSwapped = replaceBeltBatch(twoOpen, 'lot-five', { arenaWins: 100 });
+assert(twoOpenSwapped, 'two unlocked occupied slots allow replacement of same kind');
+assert.equal(twoOpenSwapped.belt[0]?.qty, 5);
+assert.equal(twoOpenSwapped.belt[1]?.qty, 3, 'other existing consumable stays unchanged');
+assert.equal(twoOpenSwapped.belt.slice(2).filter(Boolean).length, 0);
+assert.equal(sum(twoOpenSwapped), twoOpenBefore, 'two-slot player retains exact total stock');
+
+
 const partial = putInBelt({ ...withLots, inventory: [{ ...chosenLot, qty: 5 }],
   belt: [{ ...chosenLot, id: 'belt_0', qty: 2 }, ...Array(6).fill(null)] }, 'lot-five', ctx);
 assert(partial, 'compatible stack must allow top-up');
@@ -174,4 +210,14 @@ assert.match(beltCells, /<Modal[\s\S]*onClose=\{\(\) => setLockedSlot\(null\)\}/
 assert.match(beltCells, /open \? onTap\(i, true\) : setLockedSlot\(i\)/,
   'open slots keep their original action and locked slots cannot mutate equipment');
 
-console.log('Belt wins ONLY: thresholds, exact boundaries, no days/levels, migration without loss, cloud save, locked-slot hints: PASS');
+const inventoryScreen = read('src/components/InventoryScreen.tsx');
+assert.match(inventoryScreen, /data-testid="belt-replace-expiry-batch"/,
+  'owner-approved explicit batch replacement must be visible in Items');
+assert.match(inventoryScreen, /Все открытые ячейки заняты/,
+  'occupied slots must explain why another consumable kind cannot be placed');
+assert.match(inventoryScreen, /Заменить партию/,
+  'Russian batch replacement CTA must be understandable');
+assert.match(inventoryScreen, /Replace batch/,
+  'English batch replacement CTA must be understandable');
+
+console.log('Belt wins, expiry-safe explicit batch replacement, zero lost doses and locked-slot messages: PASS');
