@@ -1,0 +1,672 @@
+{
+  "png": 21,
+  "webp": 21,
+  "originals": 10,
+  "source_bytes_compared": true,
+  "characters": [
+    {
+      "id": "heroes/strongman_boulder",
+      "png_sha256": "fae028eefc3b50e58ba726525132b0193bfd0cc77df14e8932f44c2a27450dc6",
+      "webp_sha256": "5b8a31717e6e78be37ac7015c6534f7eae8d36cf6e6076d5b7eae42049015c37",
+      "png": {
+        "dimensions": [
+          1236,
+          1490
+        ],
+        "alpha_bbox": [
+          86,
+          86,
+          1150,
+          1404
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          630,
+          760
+        ],
+        "alpha_bbox": [
+          41,
+          42,
+          589,
+          717
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "heroes/whitebeard_mage",
+      "png_sha256": "25c927ac91318e7adddd2446482d972942aaad2d6973630c9b2cafad425086e7",
+      "webp_sha256": "ebfacc4b83d7aee234384378c02d209c926380aace0041e27776a524afc86c28",
+      "png": {
+        "dimensions": [
+          1202,
+          1029
+        ],
+        "alpha_bbox": [
+          69,
+          69,
+          1133,
+          960
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          760,
+          651
+        ],
+        "alpha_bbox": [
+          41,
+          42,
+          717,
+          610
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "heroes/winged_helmet_warrior",
+      "png_sha256": "ca5c666084c4e0e07772b4daf46f836c1c6cc73f584d7d0e2541759ce93037e4",
+      "webp_sha256": "aa3e5cf361f0508d19f1587563deab254e8b4e893122b94a8911dfbc22ef4185",
+      "png": {
+        "dimensions": [
+          1184,
+          1273
+        ],
+        "alpha_bbox": [
+          73,
+          73,
+          1111,
+          1200
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          707,
+          760
+        ],
+        "alpha_bbox": [
+          41,
+          42,
+          666,
+          719
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "companions/goose_aviator",
+      "png_sha256": "01eecbcf099aa5838849a1c7431b4711b3bab061144518ace91d075e2c3eb203",
+      "webp_sha256": "989f17adc8accb9b9312ea2da30e11b01ace6287296882c8f8ade5c3e5728ea8",
+      "png": {
+        "dimensions": [
+          1233,
+          1392
+        ],
+        "alpha_bbox": [
+          80,
+          80,
+          1153,
+          1312
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          673,
+          760
+        ],
+        "alpha_bbox": [
+          42,
+          42,
+          630,
+          718
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "companions/brown_white_dog",
+      "png_sha256": "b0dec55a71cdae6e6bab259aed316045704331cee45da77d49558ad1520beff9",
+      "webp_sha256": "8a542c1ddd6ae59f49ad5f3d16cc26609efdbc9addcda639011f9ffb33bf1d21",
+      "png": {
+        "dimensions": [
+          1094,
+          919
+        ],
+        "alpha_bbox": [
+          63,
+          63,
+          1031,
+          856
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          760,
+          638
+        ],
+        "alpha_bbox": [
+          42,
+          42,
+          719,
+          597
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "enemies/01_sword_shield_veteran",
+      "png_sha256": "12c256ffe8fd272ddbc7e85de741ccf3c8b5c4b29dfd563eb61e1e19849e2fec",
+      "webp_sha256": "06a92bef7337cff8a91c182a4671ec7f45f6f36c4006da82398ee476f8879796",
+      "png": {
+        "dimensions": [
+          1172,
+          1199
+        ],
+        "alpha_bbox": [
+          69,
+          69,
+          1103,
+          1130
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          743,
+          760
+        ],
+        "alpha_bbox": [
+          41,
+          41,
+          702,
+          719
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "enemies/02_roman_spearman",
+      "png_sha256": "52b4fb41996e41e5ffd763c6193fde69df908a4a985a42e71931ec753538380b",
+      "webp_sha256": "3ab35924b00f2af4608c4bb5670c3c2853b47b738f1f11e2edede3fcde6249a1",
+      "png": {
+        "dimensions": [
+          1223,
+          1430
+        ],
+        "alpha_bbox": [
+          82,
+          82,
+          1141,
+          1348
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          650,
+          760
+        ],
+        "alpha_bbox": [
+          41,
+          41,
+          609,
+          719
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "enemies/03_pirate_bandit",
+      "png_sha256": "53de914606efba0e511946ac3927457f6570183de6b192d96d79490ebad7f8a0",
+      "webp_sha256": "61dc994c1dca6d230911ef1cfccaf047ae3dbc71e38cd64ff9938379e9d12d24",
+      "png": {
+        "dimensions": [
+          1154,
+          1039
+        ],
+        "alpha_bbox": [
+          66,
+          66,
+          1088,
+          973
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          760,
+          684
+        ],
+        "alpha_bbox": [
+          41,
+          41,
+          719,
+          643
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "enemies/04_club_raider",
+      "png_sha256": "0974691bfd528ac19056c4914df0322ebdd4c1bc8598b55d3c73583b55e3f504",
+      "webp_sha256": "97c919d8f1c4cad5e794853b206824bfa6b7be573181a5f789626597c5fb75ab",
+      "png": {
+        "dimensions": [
+          1167,
+          1588
+        ],
+        "alpha_bbox": [
+          91,
+          91,
+          1076,
+          1497
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          559,
+          760
+        ],
+        "alpha_bbox": [
+          42,
+          41,
+          518,
+          719
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "enemies/05_shield_spearman",
+      "png_sha256": "02a4bf81ccc6bc7967695ddff7b891b461fcc4709f807b99eb9d49fb5c729b97",
+      "webp_sha256": "951e05c6969f3ddf242c4727f5b243b8e57a58a09a274925ce2d045e78d4ac53",
+      "png": {
+        "dimensions": [
+          1143,
+          1476
+        ],
+        "alpha_bbox": [
+          85,
+          85,
+          1058,
+          1391
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          589,
+          760
+        ],
+        "alpha_bbox": [
+          41,
+          42,
+          547,
+          719
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "enemies/06_red_crest_legionary",
+      "png_sha256": "694b802c7d342edc7baf5d276c6559691dfac282660c671b3f925d32551c954b",
+      "webp_sha256": "c5dc99774bc7587e1ac841365afa68f80b40b31defac32aa47cfa20b234cae42",
+      "png": {
+        "dimensions": [
+          1201,
+          1256
+        ],
+        "alpha_bbox": [
+          72,
+          72,
+          1129,
+          1184
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          727,
+          760
+        ],
+        "alpha_bbox": [
+          41,
+          41,
+          686,
+          718
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "enemies/07_purple_mage",
+      "png_sha256": "104f07f586b71708b5258a7bb3b002b3c6283c6db66aef29855e31c1ff35a713",
+      "webp_sha256": "dfe2e1c1de5155edd31c65a92e18d1258fd3b7dbf56549d5a7e9376fc450727e",
+      "png": {
+        "dimensions": [
+          1163,
+          1304
+        ],
+        "alpha_bbox": [
+          75,
+          75,
+          1088,
+          1229
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          678,
+          760
+        ],
+        "alpha_bbox": [
+          41,
+          42,
+          637,
+          719
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "enemies/08_armored_boar",
+      "png_sha256": "0cbea888f89a437498e5a96b719a5ba326a98dc97ef976cc245fff6de5ed89ef",
+      "webp_sha256": "0501c1326f392462ee5ff73a75b1c36192bcc599164923ecf830651e61c077f4",
+      "png": {
+        "dimensions": [
+          1151,
+          1026
+        ],
+        "alpha_bbox": [
+          66,
+          66,
+          1085,
+          960
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          760,
+          677
+        ],
+        "alpha_bbox": [
+          41,
+          43,
+          719,
+          636
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "minibosses/capybara_bruiser",
+      "png_sha256": "bede1bfd4b7077d4ada0e524a739718191d7b8919d4f8ee04b659c5cfea8a0f6",
+      "webp_sha256": "93dfa752c96b0be1d7d5e07a0014e1807454b968f6befbfaa22196730d833959",
+      "png": {
+        "dimensions": [
+          1255,
+          1532
+        ],
+        "alpha_bbox": [
+          88,
+          88,
+          1167,
+          1444
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          623,
+          760
+        ],
+        "alpha_bbox": [
+          41,
+          42,
+          582,
+          719
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "minibosses/senior_driller",
+      "png_sha256": "c1a7d5cc36a96c31d8a946155826ad74d53f4882cab5fee2bd9b84ba8dfd908f",
+      "webp_sha256": "c00cc51fefd62362162f6f54945b03dbe3ea4af90398d053f17a70c4ec34d5a3",
+      "png": {
+        "dimensions": [
+          1223,
+          1185
+        ],
+        "alpha_bbox": [
+          70,
+          70,
+          1153,
+          1115
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          760,
+          736
+        ],
+        "alpha_bbox": [
+          42,
+          42,
+          719,
+          695
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "minibosses/moss_eater",
+      "png_sha256": "cc7f6747614ac03c4e2d67077e0ee00527565361bda32059c6f305e8990a7d69",
+      "webp_sha256": "f1e646fad396dfc957ceb2d26de6b13ca5272895d48d0a251e92ba9ed91145ff",
+      "png": {
+        "dimensions": [
+          1249,
+          1438
+        ],
+        "alpha_bbox": [
+          83,
+          83,
+          1166,
+          1355
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          660,
+          760
+        ],
+        "alpha_bbox": [
+          42,
+          41,
+          619,
+          718
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "bosses/spider_queen",
+      "png_sha256": "4cfbda77f5dcd7d399b1626a461442e8feaf0389782551d54dc216b10b52e262",
+      "webp_sha256": "1f96b63842f603edd6cb2d42a099632cbc00d775743358dfa5d47e4529d25bfd",
+      "png": {
+        "dimensions": [
+          1232,
+          1568
+        ],
+        "alpha_bbox": [
+          90,
+          90,
+          1142,
+          1478
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          597,
+          760
+        ],
+        "alpha_bbox": [
+          41,
+          41,
+          555,
+          718
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "bosses/fungal_king",
+      "png_sha256": "a45a8b81300c9a33519691a274bc8b560d99d651d7c02b91e5958da63736e6ea",
+      "webp_sha256": "c1f3836d4d156d48ae3abac42757cbdcea36053f31dc632b162e2a7a631a4b3b",
+      "png": {
+        "dimensions": [
+          1254,
+          1443
+        ],
+        "alpha_bbox": [
+          83,
+          83,
+          1171,
+          1360
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          660,
+          760
+        ],
+        "alpha_bbox": [
+          43,
+          42,
+          618,
+          719
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "bosses/minotaur_echo",
+      "png_sha256": "7a69614c59a5a92c6e75ef2331bb0d84f3058d4e6c73b05388e007980d386d57",
+      "webp_sha256": "2d3458ffb4a421797ab0e90612d2748f90a8150eac765e330521224b9153d95c",
+      "png": {
+        "dimensions": [
+          1265,
+          1381
+        ],
+        "alpha_bbox": [
+          79,
+          79,
+          1186,
+          1302
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          696,
+          760
+        ],
+        "alpha_bbox": [
+          41,
+          42,
+          654,
+          719
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "bosses/fire_abyss_lord",
+      "png_sha256": "155c85101ab6200753cf156a47a8a2163a6558f476b8733c9d62c328034f7982",
+      "webp_sha256": "8ec7ffe7ec688d2d7a5f14363b2e82e32a82ffb4670bfb4809b343d7de250ea8",
+      "png": {
+        "dimensions": [
+          1224,
+          1223
+        ],
+        "alpha_bbox": [
+          70,
+          70,
+          1154,
+          1153
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          760,
+          759
+        ],
+        "alpha_bbox": [
+          43,
+          42,
+          718,
+          718
+        ],
+        "frames": 1
+      }
+    },
+    {
+      "id": "special/cappuccina_approved",
+      "png_sha256": "1cf6fba1d71e1bdb280249ba9a4f6e47de9ddbf4e1e5c73f84e6c9dc7b90f34e",
+      "webp_sha256": "c9cf32fe54cca6ef6dbe2ba0ffb8a1c4d025f5134a710026bc7b4d7b8ec74fe5",
+      "png": {
+        "dimensions": [
+          1205,
+          1598
+        ],
+        "alpha_bbox": [
+          92,
+          92,
+          1113,
+          1506
+        ],
+        "frames": 1
+      },
+      "webp": {
+        "dimensions": [
+          573,
+          760
+        ],
+        "alpha_bbox": [
+          41,
+          42,
+          532,
+          717
+        ],
+        "frames": 1
+      }
+    }
+  ],
+  "owner_originals": {
+    "1000088538.png": "72f17adaca5edc8f28e5ecc55984ecaef17c279a743c84791a789b673ed4ccb3",
+    "1000088539.png": "c5da61aaba407469a45367739f71ce0c3c83ac4a23d05c69795af8489e37e0aa",
+    "1000088541.jpg": "3d591fd02cb1036c3eecf625540e1ca9e6d5fefdcbb28c6c00bc6271fa2b5206",
+    "1000088543.jpg": "2e14c901be6a4de35ed4e3a2a002a8aa0f66cbf95c8b9e44d29709251b436373",
+    "1000088544.png": "f982e44cc464a45a698155e7395eedd76bb082bdad36f9ccfd80ca1426e93717",
+    "1000088545.png": "8357319521cf32fb76d549ff7481d375fc0bae1bda7bfd59cc59ad490ef6b5ac",
+    "1000088546.png": "28a175dcd4099553aabdff10a6a3f4e8d312c2bae5d556e7ba48200a2b20db89",
+    "1000088589.jpg": "dd4ea0b5f73ee1aebe94fca2bba47de1095c844ea3767963c6ca0288f28606da",
+    "1000088591.jpg": "d9aa5c8505e9eeadd378f576cc827477a061fb49080663c48d4bb8db9ba0967e",
+    "1000088593.jpg": "a4bacefb7899d611c96b94aaf43294636fe53a04933bc45945c263961fd44ad0"
+  },
+  "limits": "Still art only. Owner likeness approval, animation, physical Android/Telegram and deployment not established."
+}

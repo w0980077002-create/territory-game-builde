@@ -1,0 +1,616 @@
+{
+  "project": "TERRITORY",
+  "build_date": "2026-11-11",
+  "scope": "art QA package; NOT installed in the game",
+  "files": [
+    {
+      "category": "heroes",
+      "id": "strongman_boulder",
+      "display_name_ru": "Богатырь с камнем",
+      "source_png": "грозный_варвар_с_каменным_рюкзаком.png",
+      "owner_reference": "1000088589.jpg",
+      "expected_facing": "right",
+      "orientation_review": "проверить в композиции героя/спутника на телефоне",
+      "master": "01_png_masters/heroes/strongman_boulder.png",
+      "still_preview": "02_webp_preview_idle_ONLY/heroes/strongman_boulder_still.webp",
+      "master_width_px": 1236,
+      "master_height_px": 1490,
+      "rgba": true,
+      "alpha_bbox": [
+        86,
+        86,
+        1150,
+        1404
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1744661,
+      "sha256": "fae028eefc3b50e58ba726525132b0193bfd0cc77df14e8932f44c2a27450dc6",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "heroes",
+      "id": "whitebeard_mage",
+      "display_name_ru": "Седой маг",
+      "source_png": "динамичный_маг_с_изумрудной_магией.png",
+      "owner_reference": "1000088589.jpg",
+      "expected_facing": "right",
+      "orientation_review": "проверить в композиции героя/спутника на телефоне",
+      "master": "01_png_masters/heroes/whitebeard_mage.png",
+      "still_preview": "02_webp_preview_idle_ONLY/heroes/whitebeard_mage_still.webp",
+      "master_width_px": 1202,
+      "master_height_px": 1029,
+      "rgba": true,
+      "alpha_bbox": [
+        69,
+        69,
+        1133,
+        960
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1287929,
+      "sha256": "25c927ac91318e7adddd2446482d972942aaad2d6973630c9b2cafad425086e7",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "heroes",
+      "id": "winged_helmet_warrior",
+      "display_name_ru": "Воин с крылатым шлемом",
+      "source_png": "герой_воин_с_мечом_и_щитом.png",
+      "owner_reference": "1000088589.jpg",
+      "expected_facing": "right",
+      "orientation_review": "проверить в композиции героя/спутника на телефоне",
+      "master": "01_png_masters/heroes/winged_helmet_warrior.png",
+      "still_preview": "02_webp_preview_idle_ONLY/heroes/winged_helmet_warrior_still.webp",
+      "master_width_px": 1184,
+      "master_height_px": 1273,
+      "rgba": true,
+      "alpha_bbox": [
+        73,
+        73,
+        1111,
+        1200
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1292363,
+      "sha256": "ca5c666084c4e0e07772b4daf46f836c1c6cc73f584d7d0e2541759ce93037e4",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "companions",
+      "id": "goose_aviator",
+      "display_name_ru": "Гусь-Обнимусь (легендарный)",
+      "source_png": "гусь_обнимусь_бесстрашный_авиатор.png",
+      "owner_reference": "1000088541.jpg",
+      "expected_facing": "right",
+      "orientation_review": "проверить в композиции героя/спутника на телефоне",
+      "master": "01_png_masters/companions/goose_aviator.png",
+      "still_preview": "02_webp_preview_idle_ONLY/companions/goose_aviator_still.webp",
+      "master_width_px": 1233,
+      "master_height_px": 1392,
+      "rgba": true,
+      "alpha_bbox": [
+        80,
+        80,
+        1153,
+        1312
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1584445,
+      "sha256": "01eecbcf099aa5838849a1c7431b4711b3bab061144518ace91d075e2c3eb203",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "companions",
+      "id": "brown_white_dog",
+      "display_name_ru": "Бело-рыжая собака",
+      "source_png": "весёлый_пёс_в_готовности_к_игре.png",
+      "owner_reference": "1000088589.jpg",
+      "expected_facing": "right",
+      "orientation_review": "проверить в композиции героя/спутника на телефоне",
+      "master": "01_png_masters/companions/brown_white_dog.png",
+      "still_preview": "02_webp_preview_idle_ONLY/companions/brown_white_dog_still.webp",
+      "master_width_px": 1094,
+      "master_height_px": 919,
+      "rgba": true,
+      "alpha_bbox": [
+        63,
+        63,
+        1031,
+        856
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 814187,
+      "sha256": "b0dec55a71cdae6e6bab259aed316045704331cee45da77d49558ad1520beff9",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "enemies",
+      "id": "01_sword_shield_veteran",
+      "display_name_ru": "Усатый мечник со щитом",
+      "source_png": "бородатый_варвар_со_щитом_и_мечом.png",
+      "owner_reference": "1000088593.jpg",
+      "expected_facing": "left",
+      "orientation_review": "визуально влево; сверено с 2 скриншотами",
+      "master": "01_png_masters/enemies/01_sword_shield_veteran.png",
+      "still_preview": "02_webp_preview_idle_ONLY/enemies/01_sword_shield_veteran_still.webp",
+      "master_width_px": 1172,
+      "master_height_px": 1199,
+      "rgba": true,
+      "alpha_bbox": [
+        69,
+        69,
+        1103,
+        1130
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1400557,
+      "sha256": "12c256ffe8fd272ddbc7e85de741ccf3c8b5c4b29dfd563eb61e1e19849e2fec",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "enemies",
+      "id": "02_roman_spearman",
+      "display_name_ru": "Римский копейщик с красным гребнем",
+      "source_png": "разъярённый_римский_центурион_с_копьём.png",
+      "owner_reference": "1000088593.jpg",
+      "expected_facing": "left",
+      "orientation_review": "визуально влево; сверено с 2 скриншотами",
+      "master": "01_png_masters/enemies/02_roman_spearman.png",
+      "still_preview": "02_webp_preview_idle_ONLY/enemies/02_roman_spearman_still.webp",
+      "master_width_px": 1223,
+      "master_height_px": 1430,
+      "rgba": true,
+      "alpha_bbox": [
+        82,
+        82,
+        1141,
+        1348
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1395649,
+      "sha256": "52b4fb41996e41e5ffd763c6193fde69df908a4a985a42e71931ec753538380b",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "enemies",
+      "id": "03_pirate_bandit",
+      "display_name_ru": "Пират-разбойник в красной бандане",
+      "source_png": "пират_бандит_в_стремительном_наскоке.png",
+      "owner_reference": "1000088593.jpg",
+      "expected_facing": "left",
+      "orientation_review": "визуально влево; сверено с 2 скриншотами",
+      "master": "01_png_masters/enemies/03_pirate_bandit.png",
+      "still_preview": "02_webp_preview_idle_ONLY/enemies/03_pirate_bandit_still.webp",
+      "master_width_px": 1154,
+      "master_height_px": 1039,
+      "rgba": true,
+      "alpha_bbox": [
+        66,
+        66,
+        1088,
+        973
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1139099,
+      "sha256": "53de914606efba0e511946ac3927457f6570183de6b192d96d79490ebad7f8a0",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "enemies",
+      "id": "04_club_raider",
+      "display_name_ru": "Светлобородый дубинщик",
+      "source_png": "златовласый_громила_с_шипастой_дубиной.png",
+      "owner_reference": "1000088591.jpg",
+      "expected_facing": "left",
+      "orientation_review": "визуально влево; сверено с 2 скриншотами",
+      "master": "01_png_masters/enemies/04_club_raider.png",
+      "still_preview": "02_webp_preview_idle_ONLY/enemies/04_club_raider_still.webp",
+      "master_width_px": 1167,
+      "master_height_px": 1588,
+      "rgba": true,
+      "alpha_bbox": [
+        91,
+        91,
+        1076,
+        1497
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1364836,
+      "sha256": "0974691bfd528ac19056c4914df0322ebdd4c1bc8598b55d3c73583b55e3f504",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "enemies",
+      "id": "05_shield_spearman",
+      "display_name_ru": "Копейщик в синем с круглым щитом",
+      "source_png": "тяжёлый_щитоносец_с_копьём.png",
+      "owner_reference": "1000088591.jpg",
+      "expected_facing": "left",
+      "orientation_review": "визуально влево; сверено с 2 скриншотами",
+      "master": "01_png_masters/enemies/05_shield_spearman.png",
+      "still_preview": "02_webp_preview_idle_ONLY/enemies/05_shield_spearman_still.webp",
+      "master_width_px": 1143,
+      "master_height_px": 1476,
+      "rgba": true,
+      "alpha_bbox": [
+        85,
+        85,
+        1058,
+        1391
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1334949,
+      "sha256": "02a4bf81ccc6bc7967695ddff7b891b461fcc4709f807b99eb9d49fb5c729b97",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "enemies",
+      "id": "06_red_crest_legionary",
+      "display_name_ru": "Римский командир с прямоугольным щитом",
+      "source_png": "разъярённый_римский_легионер_со_щитом.png",
+      "owner_reference": "1000088591.jpg",
+      "expected_facing": "left",
+      "orientation_review": "визуально влево; сверено с 2 скриншотами",
+      "master": "01_png_masters/enemies/06_red_crest_legionary.png",
+      "still_preview": "02_webp_preview_idle_ONLY/enemies/06_red_crest_legionary_still.webp",
+      "master_width_px": 1201,
+      "master_height_px": 1256,
+      "rgba": true,
+      "alpha_bbox": [
+        72,
+        72,
+        1129,
+        1184
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1278793,
+      "sha256": "694b802c7d342edc7baf5d276c6559691dfac282660c671b3f925d32551c954b",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "enemies",
+      "id": "07_purple_mage",
+      "display_name_ru": "Маг в фиолетовом капюшоне",
+      "source_png": "фиолетовый_маг_с_посохом.png",
+      "owner_reference": "1000088591.jpg",
+      "expected_facing": "left",
+      "orientation_review": "визуально влево; сверено с 2 скриншотами",
+      "master": "01_png_masters/enemies/07_purple_mage.png",
+      "still_preview": "02_webp_preview_idle_ONLY/enemies/07_purple_mage_still.webp",
+      "master_width_px": 1163,
+      "master_height_px": 1304,
+      "rgba": true,
+      "alpha_bbox": [
+        75,
+        75,
+        1088,
+        1229
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1153485,
+      "sha256": "104f07f586b71708b5258a7bb3b002b3c6283c6db66aef29855e31c1ff35a713",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "enemies",
+      "id": "08_armored_boar",
+      "display_name_ru": "Бронированный кабан",
+      "source_png": "разъярённый_бронированный_кабан_воин.png",
+      "owner_reference": "1000088591.jpg",
+      "expected_facing": "left",
+      "orientation_review": "визуально влево; сверено с 2 скриншотами",
+      "master": "01_png_masters/enemies/08_armored_boar.png",
+      "still_preview": "02_webp_preview_idle_ONLY/enemies/08_armored_boar_still.webp",
+      "master_width_px": 1151,
+      "master_height_px": 1026,
+      "rgba": true,
+      "alpha_bbox": [
+        66,
+        66,
+        1085,
+        960
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1199092,
+      "sha256": "0cbea888f89a437498e5a96b719a5ba326a98dc97ef976cc245fff6de5ed89ef",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "minibosses",
+      "id": "capybara_bruiser",
+      "display_name_ru": "Капибара-Громила",
+      "source_png": "капибара_громила_со_шипастой_булавой.png",
+      "owner_reference": "1000088546.png",
+      "expected_facing": "left",
+      "orientation_review": "направление и поза в финальном бою требуют мобильного smoke",
+      "master": "01_png_masters/minibosses/capybara_bruiser.png",
+      "still_preview": "02_webp_preview_idle_ONLY/minibosses/capybara_bruiser_still.webp",
+      "master_width_px": 1255,
+      "master_height_px": 1532,
+      "rgba": true,
+      "alpha_bbox": [
+        88,
+        88,
+        1167,
+        1444
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 2235086,
+      "sha256": "bede1bfd4b7077d4ada0e524a739718191d7b8919d4f8ee04b659c5cfea8a0f6",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "minibosses",
+      "id": "senior_driller",
+      "display_name_ru": "Старший бурильщик",
+      "source_png": "бородатый_гном_бурильщик_в_боевой_стойке.png",
+      "owner_reference": "1000088543.jpg",
+      "expected_facing": "left",
+      "orientation_review": "направление и поза в финальном бою требуют мобильного smoke",
+      "master": "01_png_masters/minibosses/senior_driller.png",
+      "still_preview": "02_webp_preview_idle_ONLY/minibosses/senior_driller_still.webp",
+      "master_width_px": 1223,
+      "master_height_px": 1185,
+      "rgba": true,
+      "alpha_bbox": [
+        70,
+        70,
+        1153,
+        1115
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1626947,
+      "sha256": "c1a7d5cc36a96c31d8a946155826ad74d53f4882cab5fee2bd9b84ba8dfd908f",
+      "qa_status": "v2_corrected_orientation_master_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "minibosses",
+      "id": "moss_eater",
+      "display_name_ru": "Пожиратель мха",
+      "source_png": "мшистый_каменный_голем_людоед.png",
+      "owner_reference": "1000088539.png",
+      "expected_facing": "left",
+      "orientation_review": "направление и поза в финальном бою требуют мобильного smoke",
+      "master": "01_png_masters/minibosses/moss_eater.png",
+      "still_preview": "02_webp_preview_idle_ONLY/minibosses/moss_eater_still.webp",
+      "master_width_px": 1249,
+      "master_height_px": 1438,
+      "rgba": true,
+      "alpha_bbox": [
+        83,
+        83,
+        1166,
+        1355
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 2229401,
+      "sha256": "cc7f6747614ac03c4e2d67077e0ee00527565361bda32059c6f305e8990a7d69",
+      "qa_status": "v2_corrected_orientation_master_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "bosses",
+      "id": "spider_queen",
+      "display_name_ru": "Королева паутины",
+      "source_png": "пурпурная_королева_пауков.png",
+      "owner_reference": "1000088543.jpg",
+      "expected_facing": "left",
+      "orientation_review": "направление и поза в финальном бою требуют мобильного smoke",
+      "master": "01_png_masters/bosses/spider_queen.png",
+      "still_preview": "02_webp_preview_idle_ONLY/bosses/spider_queen_still.webp",
+      "master_width_px": 1232,
+      "master_height_px": 1568,
+      "rgba": true,
+      "alpha_bbox": [
+        90,
+        90,
+        1142,
+        1478
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1849034,
+      "sha256": "4cfbda77f5dcd7d399b1626a461442e8feaf0389782551d54dc216b10b52e262",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "bosses",
+      "id": "fungal_king",
+      "display_name_ru": "Грибной король Морока",
+      "source_png": "грибной_король_магический_властелин.png",
+      "owner_reference": "1000088543.jpg",
+      "expected_facing": "left",
+      "orientation_review": "направление и поза в финальном бою требуют мобильного smoke",
+      "master": "01_png_masters/bosses/fungal_king.png",
+      "still_preview": "02_webp_preview_idle_ONLY/bosses/fungal_king_still.webp",
+      "master_width_px": 1254,
+      "master_height_px": 1443,
+      "rgba": true,
+      "alpha_bbox": [
+        83,
+        83,
+        1171,
+        1360
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 2412837,
+      "sha256": "a45a8b81300c9a33519691a274bc8b560d99d651d7c02b91e5958da63736e6ea",
+      "qa_status": "v2_corrected_orientation_master_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "bosses",
+      "id": "minotaur_echo",
+      "display_name_ru": "Минотавр Эха",
+      "source_png": "ревущий_минотавр_с_боевым_топором.png",
+      "owner_reference": "1000088539.png",
+      "expected_facing": "left",
+      "orientation_review": "направление и поза в финальном бою требуют мобильного smoke",
+      "master": "01_png_masters/bosses/minotaur_echo.png",
+      "still_preview": "02_webp_preview_idle_ONLY/bosses/minotaur_echo_still.webp",
+      "master_width_px": 1265,
+      "master_height_px": 1381,
+      "rgba": true,
+      "alpha_bbox": [
+        79,
+        79,
+        1186,
+        1302
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 2062523,
+      "sha256": "7a69614c59a5a92c6e75ef2331bb0d84f3058d4e6c73b05388e007980d386d57",
+      "qa_status": "v2_corrected_orientation_master_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "bosses",
+      "id": "fire_abyss_lord",
+      "display_name_ru": "Владыка Огненной Бездны",
+      "source_png": "владыка_огненной_бездны.png",
+      "owner_reference": "1000088538.png",
+      "expected_facing": "left",
+      "orientation_review": "направление и поза в финальном бою требуют мобильного smoke",
+      "master": "01_png_masters/bosses/fire_abyss_lord.png",
+      "still_preview": "02_webp_preview_idle_ONLY/bosses/fire_abyss_lord_still.webp",
+      "master_width_px": 1224,
+      "master_height_px": 1223,
+      "rgba": true,
+      "alpha_bbox": [
+        70,
+        70,
+        1154,
+        1153
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1997857,
+      "sha256": "155c85101ab6200753cf156a47a8a2163a6558f476b8733c9d62c328034f7982",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    },
+    {
+      "category": "special",
+      "id": "cappuccina_approved",
+      "display_name_ru": "Балерина Капучина, только утверждённый коричневый вариант",
+      "source_png": "капучина_в_кофейном_вихре.png",
+      "owner_reference": "1000088544.png",
+      "expected_facing": "left",
+      "orientation_review": "направление и поза в финальном бою требуют мобильного smoke",
+      "master": "01_png_masters/special/cappuccina_approved.png",
+      "still_preview": "02_webp_preview_idle_ONLY/special/cappuccina_approved_still.webp",
+      "master_width_px": 1205,
+      "master_height_px": 1598,
+      "rgba": true,
+      "alpha_bbox": [
+        92,
+        92,
+        1113,
+        1506
+      ],
+      "alpha_corner_values": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size_bytes": 1774944,
+      "sha256": "1cf6fba1d71e1bdb280249ba9a4f6e47de9ddbf4e1e5c73f84e6c9dc7b90f34e",
+      "qa_status": "transparent_master_prepared_NOT_animated_NOT_game_tested"
+    }
+  ]
+}

@@ -7,9 +7,9 @@
  */
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, mkdirSync, copyFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, mkdirSync, copyFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve, dirname, relative } from 'node:path';
+import { join, resolve, dirname } from 'node:path';
 
 const EXPECTED_ZIP_SHA256 = 'd8bd7c242accd3396232a53cae7fe47478c4b6aae558b95dbad0c68edf5c1fa1';
 const folder = 'TERRITORY_ART_PACK_2026-11-11_v2';
@@ -56,16 +56,23 @@ try {
     tasks.push([webpPath, join('public/assets/territory/cave-expedition/characters-v2', category, id, 'idle-still.webp')]);
     refs.add(owner_reference);
   }
-  for (const ref of refs) {
+  // Preserve all owner originals, including the excluded crowned-goose reference.
+  const originals = readdirSync(join(root, '03_original_owner_references'));
+  if (originals.length !== 10) fail('Expected 10 owner originals');
+  for (const ref of refs) if (!originals.includes(ref)) fail('Missing reference: ' + ref);
+  for (const ref of originals) {
     const file = checkPath(root, '03_original_owner_references/' + ref);
     if (!existsSync(file)) fail('Missing reference: ' + ref);
     tasks.push([file, join('docs/art-reference/approved-characters-20261111/originals', ref)]);
   }
   tasks.push([join(root, 'manifest.json'), 'docs/art-reference/approved-characters-20261111/manifest.json']);
+  for (const file of ['qa.csv', 'README_RU.md', 'V2_CHANGELOG_RU.md', 'HANDOFF_CODEX_CLAUDE_RU.md', 'validate_art_pack.py']) {
+    tasks.push([join(root, file), join('docs/art-reference/approved-characters-20261111', file)]);
+  }
   for (const [, target] of tasks) {
     if (existsSync(target)) fail('Refusing to overwrite existing file: ' + target);
   }
-  console.log((dryRun ? 'DRY RUN' : 'IMPORT') + ': verified v2 SHA256, 21 PNG, 21 WebP, ' + refs.size + ' originals.');
+  console.log((dryRun ? 'DRY RUN' : 'IMPORT') + ': verified v2 SHA256, 21 PNG, 21 WebP, ' + originals.length + ' originals (' + refs.size + ' referenced).');
   if (!dryRun) {
     for (const [src, target] of tasks) { mkdirSync(dirname(target), { recursive: true }); copyFileSync(src, target); }
     console.log('Wrote ' + tasks.length + ' NEW files. No existing live assets replaced.');

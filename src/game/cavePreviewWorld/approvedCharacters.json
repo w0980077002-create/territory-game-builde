@@ -1,0 +1,296 @@
+[
+  {
+    "id": "strongman_boulder",
+    "category": "heroes",
+    "display_name_ru": "Богатырь с камнем",
+    "expected_facing": "right",
+    "master_width_px": 1236,
+    "master_height_px": 1490,
+    "alpha_bbox": [
+      86,
+      86,
+      1150,
+      1404
+    ]
+  },
+  {
+    "id": "whitebeard_mage",
+    "category": "heroes",
+    "display_name_ru": "Седой маг",
+    "expected_facing": "right",
+    "master_width_px": 1202,
+    "master_height_px": 1029,
+    "alpha_bbox": [
+      69,
+      69,
+      1133,
+      960
+    ]
+  },
+  {
+    "id": "winged_helmet_warrior",
+    "category": "heroes",
+    "display_name_ru": "Воин с крылатым шлемом",
+    "expected_facing": "right",
+    "master_width_px": 1184,
+    "master_height_px": 1273,
+    "alpha_bbox": [
+      73,
+      73,
+      1111,
+      1200
+    ]
+  },
+  {
+    "id": "goose_aviator",
+    "category": "companions",
+    "display_name_ru": "Гусь-Обнимусь (легендарный)",
+    "expected_facing": "right",
+    "master_width_px": 1233,
+    "master_height_px": 1392,
+    "alpha_bbox": [
+      80,
+      80,
+      1153,
+      1312
+    ]
+  },
+  {
+    "id": "brown_white_dog",
+    "category": "companions",
+    "display_name_ru": "Бело-рыжая собака",
+    "expected_facing": "right",
+    "master_width_px": 1094,
+    "master_height_px": 919,
+    "alpha_bbox": [
+      63,
+      63,
+      1031,
+      856
+    ]
+  },
+  {
+    "id": "01_sword_shield_veteran",
+    "category": "enemies",
+    "display_name_ru": "Усатый мечник со щитом",
+    "expected_facing": "left",
+    "master_width_px": 1172,
+    "master_height_px": 1199,
+    "alpha_bbox": [
+      69,
+      69,
+      1103,
+      1130
+    ]
+  },
+  {
+    "id": "02_roman_spearman",
+    "category": "enemies",
+    "display_name_ru": "Римский копейщик с красным гребнем",
+    "expected_facing": "left",
+    "master_width_px": 1223,
+    "master_height_px": 1430,
+    "alpha_bbox": [
+      82,
+      82,
+      1141,
+      1348
+    ]
+  },
+  {
+    "id": "03_pirate_bandit",
+    "category": "enemies",
+    "display_name_ru": "Пират-разбойник в красной бандане",
+    "expected_facing": "left",
+    "master_width_px": 1154,
+    "master_height_px": 1039,
+    "alpha_bbox": [
+      66,
+      66,
+      1088,
+      973
+    ]
+  },
+  {
+    "id": "04_club_raider",
+    "category": "enemies",
+    "display_name_ru": "Светлобородый дубинщик",
+    "expected_facing": "left",
+    "master_width_px": 1167,
+    "master_height_px": 1588,
+    "alpha_bbox": [
+      91,
+      91,
+      1076,
+      1497
+    ]
+  },
+  {
+    "id": "05_shield_spearman",
+    "category": "enemies",
+    "display_name_ru": "Копейщик в синем с круглым щитом",
+    "expected_facing": "left",
+    "master_width_px": 1143,
+    "master_height_px": 1476,
+    "alpha_bbox": [
+      85,
+      85,
+      1058,
+      1391
+    ]
+  },
+  {
+    "id": "06_red_crest_legionary",
+    "category": "enemies",
+    "display_name_ru": "Римский командир с прямоугольным щитом",
+    "expected_facing": "left",
+    "master_width_px": 1201,
+    "master_height_px": 1256,
+    "alpha_bbox": [
+      72,
+      72,
+      1129,
+      1184
+    ]
+  },
+  {
+    "id": "07_purple_mage",
+    "category": "enemies",
+    "display_name_ru": "Маг в фиолетовом капюшоне",
+    "expected_facing": "left",
+    "master_width_px": 1163,
+    "master_height_px": 1304,
+    "alpha_bbox": [
+      75,
+      75,
+      1088,
+      1229
+    ]
+  },
+  {
+    "id": "08_armored_boar",
+    "category": "enemies",
+    "display_name_ru": "Бронированный кабан",
+    "expected_facing": "left",
+    "master_width_px": 1151,
+    "master_height_px": 1026,
+    "alpha_bbox": [
+      66,
+      66,
+      1085,
+      960
+    ]
+  },
+  {
+    "id": "capybara_bruiser",
+    "category": "minibosses",
+    "display_name_ru": "Капибара-Громила",
+    "expected_facing": "left",
+    "master_width_px": 1255,
+    "master_height_px": 1532,
+    "alpha_bbox": [
+      88,
+      88,
+      1167,
+      1444
+    ]
+  },
+  {
+    "id": "senior_driller",
+    "category": "minibosses",
+    "display_name_ru": "Старший бурильщик",
+    "expected_facing": "left",
+    "master_width_px": 1223,
+    "master_height_px": 1185,
+    "alpha_bbox": [
+      70,
+      70,
+      1153,
+      1115
+    ]
+  },
+  {
+    "id": "moss_eater",
+    "category": "minibosses",
+    "display_name_ru": "Пожиратель мха",
+    "expected_facing": "left",
+    "master_width_px": 1249,
+    "master_height_px": 1438,
+    "alpha_bbox": [
+      83,
+      83,
+      1166,
+      1355
+    ]
+  },
+  {
+    "id": "spider_queen",
+    "category": "bosses",
+    "display_name_ru": "Королева паутины",
+    "expected_facing": "left",
+    "master_width_px": 1232,
+    "master_height_px": 1568,
+    "alpha_bbox": [
+      90,
+      90,
+      1142,
+      1478
+    ]
+  },
+  {
+    "id": "fungal_king",
+    "category": "bosses",
+    "display_name_ru": "Грибной король Морока",
+    "expected_facing": "left",
+    "master_width_px": 1254,
+    "master_height_px": 1443,
+    "alpha_bbox": [
+      83,
+      83,
+      1171,
+      1360
+    ]
+  },
+  {
+    "id": "minotaur_echo",
+    "category": "bosses",
+    "display_name_ru": "Минотавр Эха",
+    "expected_facing": "left",
+    "master_width_px": 1265,
+    "master_height_px": 1381,
+    "alpha_bbox": [
+      79,
+      79,
+      1186,
+      1302
+    ]
+  },
+  {
+    "id": "fire_abyss_lord",
+    "category": "bosses",
+    "display_name_ru": "Владыка Огненной Бездны",
+    "expected_facing": "left",
+    "master_width_px": 1224,
+    "master_height_px": 1223,
+    "alpha_bbox": [
+      70,
+      70,
+      1154,
+      1153
+    ]
+  },
+  {
+    "id": "cappuccina_approved",
+    "category": "special",
+    "display_name_ru": "Балерина Капучина, только утверждённый коричневый вариант",
+    "expected_facing": "left",
+    "master_width_px": 1205,
+    "master_height_px": 1598,
+    "alpha_bbox": [
+      92,
+      92,
+      1113,
+      1506
+    ]
+  }
+]

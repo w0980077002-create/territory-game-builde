@@ -1,0 +1,22 @@
+﻿category,id,display_name_ru,expected_facing,owner_reference,master_width_px,master_height_px,rgba,alpha_corner_values,qa_status
+heroes,strongman_boulder,Богатырь с камнем,right,1000088589.jpg,1236,1490,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+heroes,whitebeard_mage,Седой маг,right,1000088589.jpg,1202,1029,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+heroes,winged_helmet_warrior,Воин с крылатым шлемом,right,1000088589.jpg,1184,1273,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+companions,goose_aviator,Гусь-Обнимусь (легендарный),right,1000088541.jpg,1233,1392,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+companions,brown_white_dog,Бело-рыжая собака,right,1000088589.jpg,1094,919,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+enemies,01_sword_shield_veteran,Усатый мечник со щитом,left,1000088593.jpg,1172,1199,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+enemies,02_roman_spearman,Римский копейщик с красным гребнем,left,1000088593.jpg,1223,1430,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+enemies,03_pirate_bandit,Пират-разбойник в красной бандане,left,1000088593.jpg,1154,1039,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+enemies,04_club_raider,Светлобородый дубинщик,left,1000088591.jpg,1167,1588,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+enemies,05_shield_spearman,Копейщик в синем с круглым щитом,left,1000088591.jpg,1143,1476,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+enemies,06_red_crest_legionary,Римский командир с прямоугольным щитом,left,1000088591.jpg,1201,1256,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+enemies,07_purple_mage,Маг в фиолетовом капюшоне,left,1000088591.jpg,1163,1304,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+enemies,08_armored_boar,Бронированный кабан,left,1000088591.jpg,1151,1026,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+minibosses,capybara_bruiser,Капибара-Громила,left,1000088546.png,1255,1532,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+minibosses,senior_driller,Старший бурильщик,left,1000088543.jpg,1223,1185,True,"[0, 0, 0, 0]",v2_corrected_orientation_master_NOT_animated_NOT_game_tested
+minibosses,moss_eater,Пожиратель мха,left,1000088539.png,1249,1438,True,"[0, 0, 0, 0]",v2_corrected_orientation_master_NOT_animated_NOT_game_tested
+bosses,spider_queen,Королева паутины,left,1000088543.jpg,1232,1568,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+bosses,fungal_king,Грибной король Морока,left,1000088543.jpg,1254,1443,True,"[0, 0, 0, 0]",v2_corrected_orientation_master_NOT_animated_NOT_game_tested
+bosses,minotaur_echo,Минотавр Эха,left,1000088539.png,1265,1381,True,"[0, 0, 0, 0]",v2_corrected_orientation_master_NOT_animated_NOT_game_tested
+bosses,fire_abyss_lord,Владыка Огненной Бездны,left,1000088538.png,1224,1223,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested
+special,cappuccina_approved,"Балерина Капучина, только утверждённый коричневый вариант",left,1000088544.png,1205,1598,True,"[0, 0, 0, 0]",transparent_master_prepared_NOT_animated_NOT_game_tested

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BIOMES, PORTALS, type Biome } from '../../game/cavePreviewWorld/catalog';
 import { choosePortal, collectRune, createWorld, MAX_HP, SKILLS, skill, start, update, type Skill, type World } from '../../game/cavePreviewWorld/engine';
@@ -6,18 +6,21 @@ import { loadImages, render, type Images } from './cavePreview/renderer';
 import { CaveAudio } from './cavePreview/audio';
 import './cavePreview/expedition.css';
 
+const ApprovedCharacterQa = lazy(() => import('./cavePreview/ApprovedCharacterQa').then(m => ({ default: m.ApprovedCharacterQa })));
+
 const defaultUrl = (path: string) => import.meta.env.BASE_URL + path;
 const EN_BIOMES: Record<Biome, string> = { crystal: 'Crystal rift', spore: 'Sunless garden', ember: 'Amber depths', astral: 'Star crypt', forge: 'Heart of the rift' };
 interface Props { assetUrl?: (path: string) => string; onExit?: () => void; language?: string; /** Offline browser fixture only. */ onWorld?: (world: World) => void }
 /** Isolated DEMO. Closing or reloading discards only this demonstration. */
 export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, language = 'ru' }: Props) {
+  const [artQa, setArtQa] = useState(false);
   const world = useRef(createWorld()), canvas = useRef<HTMLCanvasElement>(null), art = useRef<Images | null>(null);
   const audio = useRef<CaveAudio>();
   const [ready, setReady] = useState(false), [error, setError] = useState(''), [help, setHelp] = useState(false), [muted, setMuted] = useState(false);
   const [view, setView] = useState(() => structuredClone(world.current));
   const en = language === 'en', t = (ru: string, english: string) => en ? english : ru;
   const biomeName = (b: Biome) => en ? EN_BIOMES[b] : BIOMES[b].name;
-  const ended = view.phase === 'VICTORY' || view.phase === 'DEFEAT', playing = view.phase !== 'LOBBY' && !ended, focused = playing || ended;
+  const ended = view.phase === 'VICTORY' || view.phase === 'DEFEAT', playing = view.phase !== 'LOBBY' && !ended, focused = playing || ended || artQa;
   const names: Record<Skill, string> = { cleave: t('Раскол', 'Cleave'), ward: t('Заслон', 'Ward'), heal: t('Источник', 'Spring') };
   useEffect(() => {
     let mounted = true;
@@ -35,7 +38,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
     return () => { document.body.style.overflow = old; siblings.forEach(({ node, inert }) => { node.inert = inert; }); if (previous instanceof HTMLElement && previous.isConnected) previous.focus(); };
   }, [focused]);
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || artQa) return;
     const w = world.current; onWorld?.(w);
     let frame = 0, last = 0, hudAt = 0;
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -62,7 +65,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
     };
     frame = requestAnimationFrame(loop);
     return () => { cancelAnimationFrame(frame); document.removeEventListener('visibilitychange', visibility); document.removeEventListener('keydown', keyboard); };
-  }, [ready, onWorld, en]);
+  }, [ready, onWorld, en, artQa]);
   function refresh() { setView(structuredClone(world.current)); }
   function begin() { start(world.current); setHelp(false); void audio.current?.unlock().catch(() => setMuted(true)); refresh(); }
   function exit() { Object.assign(world.current, createWorld()); setHelp(false); audio.current?.tick(world.current); refresh(); onExit?.(); }
@@ -71,6 +74,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
   const warning = boss && boss.impact > view.time;
   const clock = `${Math.floor(view.time / 60)}:${String(Math.floor(view.time % 60)).padStart(2, '0')}`;
   const content = <main className={`cx-demo ${focused ? 'cx-focus' : ''} ${playing ? 'cx-playing' : ''}`} lang={en ? 'en' : 'ru'} style={{ '--cx-wood': `url("${assetUrl('assets/territory/ui/wooden-plaque.webp')}")`, '--cx-color': BIOMES[view.biome].color } as React.CSSProperties}>
+    {artQa ? <Suspense fallback={<div role="status">{t('Загрузка арта…', 'Loading art…')}</div>}><ApprovedCharacterQa assetUrl={assetUrl} en={en} onClose={() => setArtQa(false)} /></Suspense> : <>
     <header className="cx-header"><button aria-label={t('Вернуться ко входу', 'Return to entrance')} onClick={playing ? pause : exit}>‹</button><div><strong>{biomeName(view.biome)}</strong><span>DEMO · {t('без списаний и наград', 'no cost or real rewards')}</span></div><button aria-label={t('Звук', 'Sound')} aria-pressed={!muted} onClick={() => { const next = !muted; setMuted(next); audio.current?.mute(next); if (!next) void audio.current?.unlock().catch(() => setMuted(true)); }}>{muted ? '♫̸' : '♫'}</button><button aria-label={t('Как играть', 'How to play')} onClick={() => { if (playing) world.current.paused = true; setHelp(true); refresh(); }}>?</button>{playing && <button onClick={pause} aria-label={t(view.paused ? 'Возобновить' : 'Пауза', view.paused ? 'Resume' : 'Pause')}>{view.paused ? '▶' : 'Ⅱ'}</button>}</header>
     <div className="cx-stage" data-phase={view.phase}>
       <canvas ref={canvas} role="img" aria-label={t('Отряд движется вправо по пещере', 'The party travels right through the cave')} />
@@ -78,7 +82,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
       {boss && <div className="cx-boss"><strong>{t('Собор Бездны', 'Abyss Cathedral')} · {t('Фаза', 'Phase')} {view.bossPhase}/3</strong><div role="meter" aria-label={t('Здоровье босса', 'Boss health')} aria-valuenow={boss.hp} aria-valuemin={0} aria-valuemax={boss.maxHp}><i style={{ width: `${100 * boss.hp / boss.maxHp}%` }} /></div><small>{[t('Пробуждение', 'Awakening'), t('Раскол земли', 'Earth rupture'), t('Ярость Бездны', 'Abyss fury')][view.bossPhase - 1]}</small></div>}
       {warning && <div className={`cx-warning ${boss.heavy ? 'heavy' : ''}`} role="status">{boss.heavy ? [t('⚠ Обвал! Нажмите Заслон', '⚠ Collapse! Use Ward'), t('⚠ Разлом! Нажмите Заслон', '⚠ Rupture! Use Ward'), t('⚠ Дождь осколков! Заслон', '⚠ Shard rain! Use Ward')][view.bossPhase - 1] : t('Удар приближается', 'Incoming strike')}<i style={{ transform: `scaleX(${Math.max(0, (boss.impact - view.time) / (boss.heavy ? 1.45 : .95))})` }} /></div>}
       {(!ready || error) && <div className="cx-overlay"><strong>{error ? t('Не удалось открыть пещеру', 'Could not open the cave') : t('Пробуждаем пещеру…', 'Waking the cave…')}</strong>{error && <button onClick={() => location.reload()}>{t('Повторить загрузку', 'Reload')}</button>}</div>}
-      {view.phase === 'LOBBY' && ready && <div className="cx-lobby"><span className="cx-eyebrow">TERRITORY · DEMO</span><h1>{t('За гранью света', 'Beyond the light')}</h1><p>{t('Три комнаты. Две развилки. Один Собор.', 'Three rooms. Two choices. One Cathedral.')}</p><button className="cx-primary" onClick={begin}>{t('Играть DEMO', 'Play DEMO')} →</button><small>{t('Базовые атаки автоматические · навыки за вами', 'Automatic basic attacks · you control skills')}</small></div>}
+      {view.phase === 'LOBBY' && ready && <div className="cx-lobby"><span className="cx-eyebrow">TERRITORY · DEMO</span><h1>{t('За гранью света', 'Beyond the light')}</h1><p>{t('Три комнаты. Две развилки. Один Собор.', 'Three rooms. Two choices. One Cathedral.')}</p><button className="cx-primary" onClick={begin}>{t('Играть DEMO', 'Play DEMO')} →</button><button onClick={() => setArtQa(true)}>{t('Арт v2 · 21 стоп-кадр', 'Art v2 · 21 still frames')}</button><small>{t('Базовые атаки автоматические · навыки за вами', 'Automatic basic attacks · you control skills')}</small></div>}
       {view.phase === 'RUN_RIGHT' && !view.runeCollected && <button className="cx-rune" onClick={() => { collectRune(world.current); refresh(); }} aria-label={t('Собрать искру', 'Collect spark')}><b>✦</b><small>{t('Коснитесь', 'Touch')} · +10 ✦</small></button>}
       {view.phase === 'PORTAL_CHOICE' && <div className="cx-portals" aria-label={t('Выбор портала', 'Portal choice')}>{PORTALS[view.room].map((p, i) => <button key={p.biome} aria-label={biomeName(p.biome)} onClick={() => { if (choosePortal(world.current, i)) refresh(); }} style={{ '--portal': BIOMES[p.biome].color } as React.CSSProperties}><span className="cx-portal-touch" /><b>{biomeName(p.biome)}</b><small>{en ? ['Ranged spores', 'Armoured depths', 'Sails & Cathedral', 'Depths & Cathedral'][view.room * 2 + i] : p.hint}</small></button>)}</div>}
       {view.paused && playing && !help && <div className="cx-overlay"><strong>{t('Привал', 'Rest stop')}</strong><p>{t('Демо не сохраняется. Настоящий прогресс в безопасности.', 'Demo runs are not saved. Your real progress is safe.')}</p><button className="cx-primary" onClick={pause}>{t('Продолжить путь', 'Continue')}</button><button onClick={begin}>{t('Начать заново', 'Restart')}</button><button onClick={exit}>{t('К входному порталу', 'Back to entrance')}</button></div>}
@@ -86,6 +90,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
       {ended && <div className={`cx-result ${view.phase === 'VICTORY' ? 'cx-victory' : ''}`}><span className="cx-result-emblem">{view.phase === 'VICTORY' ? '♛' : '⛨'}</span><span className="cx-eyebrow">{view.phase === 'VICTORY' ? t('ПОБЕДА', 'VICTORY') : t('ПУТЬ ПРЕРВАН', 'DEFEAT')}</span><h1>{view.phase === 'VICTORY' ? t('Бездна отступила', 'The Abyss retreats') : t('Новый шанс ждёт', 'Another chance awaits')}</h1><p>{view.route.map(biomeName).join(' → ')}</p><p>{clock} · {view.kills} {t('врагов', 'foes')} · {view.blocks} {t('блоков', 'blocks')} · {view.casts} {t('умений', 'skills')}</p>{view.phase === 'VICTORY' && <div className="cx-loot">{['01-shadow-amulet', '02-void-axe', '04-azure-crystal'].map(p => <div key={p}><img src={assetUrl(`assets/territory/cave-loot/2026-11-06/${p}.webp`)} alt={t('Образец добычи', 'Sample loot')} /><span>{t('ТЕСТ', 'TEST')}</span></div>)}</div>}<small>{t('Превью возможных наград · без выдачи', 'Possible rewards preview · nothing granted')}</small><button className="cx-primary" onClick={begin}>{t('Повторить забег', 'Try again')} ↻</button><button onClick={exit}>{t('К входному порталу', 'Back to entrance')}</button></div>}
     </div>
     {playing && <footer className="cx-controls"><div className="cx-bars"><div><span>♥ {view.hp}/{MAX_HP}</span><div className="cx-meter"><i style={{ width: `${100 * view.hp / MAX_HP}%` }} /></div></div><div><span>✦ {t('Энергия', 'Energy')} {Math.floor(view.energy)}/100</span><div className="cx-meter cx-energy"><i style={{ width: `${view.energy}%` }} /></div></div></div><div className="cx-actions">{(Object.keys(SKILLS) as Skill[]).map(key => { const cd = Math.max(0, Math.ceil(view.cooldown[key] - view.time)); return <button key={key} aria-label={names[key]} title={key === 'cleave' ? t('Урон группе', 'Group damage') : key === 'ward' ? t('Защита −85% урона', 'Defence −85% damage') : t('Лечение +280', 'Heal +280')} disabled={view.paused || !['APPROACH', 'FIGHT', 'BOSS'].includes(view.phase) || cd > 0 || view.energy < SKILLS[key].cost || (key === 'heal' && view.hp === MAX_HP && view.followerHp.every((hp, i) => hp <= 0 || hp === (i ? 220 : 260))) || (key === 'cleave' && !view.enemies.some(e => e.hp > 0 && e.worldX - view.heroX < 240))} onClick={() => { skill(world.current, key); refresh(); }}><b>{key === 'cleave' ? '⚔' : key === 'ward' ? '⛨' : '✚'}</b><span>{names[key]}</span><small>{cd ? `${cd}${t(' с', 's')}` : `✦ ${SKILLS[key].cost}`}</small></button>; })}<button className={view.auto ? 'cx-auto active' : 'cx-auto'} title={t('Базовые удары всегда автоматические', 'Basic attacks are always automatic')} onClick={() => { world.current.auto = !world.current.auto; refresh(); }} aria-pressed={view.auto}><b>↻</b><span>{t('Авто навыков', 'Auto skills')}</span><small>{view.auto ? t('ВКЛ', 'ON') : t('ВЫКЛ', 'OFF')}</small></button></div></footer>}
+    </>}
   </main>;
   return focused ? createPortal(content, document.body) : content;
 }

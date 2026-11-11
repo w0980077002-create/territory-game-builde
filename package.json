@@ -61,6 +61,8 @@
     "test:adventure-server": "node scripts/check-idle-engine.mjs && node scripts/check-adventure-server-skills.mjs && node scripts/check-adventure-campaign.mjs && node scripts/check-combat-profile-reconciliation.mjs && node scripts/check-adventure-settlement-sql.mjs && node scripts/check-adventure-service-sql.mjs && node scripts/check-adventure-balance-candidate.mjs && node scripts/check-adventure-receipt-adapter.mjs && node scripts/check-adventure-v1-guards.mjs && node scripts/check-dark-stones.mjs && node scripts/check-cave-belt-attestation.mjs && node scripts/check-cave-systems.mjs && node scripts/check-adventure-client-ui.mjs",
     "test:gear-refund-65": "node scripts/check-gear-refund-65.mjs",
     "build:cave-preview": "node scripts/build-cave-expedition-preview.mjs",
+    "test:characters-v2": "python scripts/check-approved-characters-v2.py",
+    "test:characters-v2:browser": "node scripts/build-cave-expedition-preview.mjs --test && python scripts/check-approved-characters-v2-browser.py",
     "test:cave-expedition": "node scripts/check-cave-expedition.mjs",
     "test:cave-expedition:browser": "node scripts/build-cave-expedition-preview.mjs --test && python scripts/check-cave-expedition-browser.py"
   },

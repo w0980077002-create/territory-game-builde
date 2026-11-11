@@ -1,0 +1,56 @@
+{
+  "browser": "Chromium, emulated Android UA/touch; not physical Android or Telegram WebView",
+  "viewports": [
+    {
+      "width": 320,
+      "height": 568,
+      "language": "ru",
+      "characters": 21,
+      "errors": [],
+      "external_requests": [],
+      "result": "PASS"
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "language": "ru",
+      "characters": 21,
+      "errors": [],
+      "external_requests": [],
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "height": 808,
+      "language": "ru",
+      "characters": 21,
+      "errors": [],
+      "external_requests": [],
+      "result": "PASS"
+    },
+    {
+      "width": 430,
+      "height": 720,
+      "language": "ru",
+      "characters": 21,
+      "errors": [],
+      "external_requests": [],
+      "result": "PASS"
+    },
+    {
+      "width": 640,
+      "height": 360,
+      "language": "en",
+      "characters": 21,
+      "errors": [],
+      "external_requests": [],
+      "result": "PASS"
+    },
+    {
+      "built_asset_urls": 21,
+      "base": "/territory-game-builde/",
+      "missing_sprite_fallback": "PASS",
+      "result": "PASS"
+    }
+  ]
+}

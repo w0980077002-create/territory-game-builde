@@ -6,7 +6,9 @@ const testing = process.argv.includes('--test');
 const resources = {};
 const catalog = await build({ entryPoints: ['src/components/pve/cavePreview/renderer.ts'], bundle: true, platform: 'node', format: 'esm', write: false });
 const { assetPaths } = await import('data:text/javascript;base64,' + Buffer.from(catalog.outputFiles[0].text).toString('base64'));
-for (const path of assetPaths()) resources[path] = `data:image/webp;base64,${readFileSync('public/' + path).toString('base64')}`;
+const approved = JSON.parse(readFileSync('src/game/cavePreviewWorld/approvedCharacters.json', 'utf8'));
+const qaPaths = approved.map(c => `assets/territory/cave-expedition/characters-v2/${c.category}/${c.id}/idle-still.webp`);
+for (const path of [...assetPaths(), ...qaPaths]) resources[path] = `data:image/webp;base64,${readFileSync('public/' + path).toString('base64')}`;
 const fixture = testing ? `onWorld={w=>{window.__caveDemo={world:w,step:seconds=>{for(let t=0;t<seconds;t+=.025)update(w,.025)},unmount:()=>root.unmount()}}}` : '';
 const result = await build({ stdin: { contents: `
 import React from 'react';
