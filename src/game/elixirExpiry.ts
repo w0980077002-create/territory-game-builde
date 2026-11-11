@@ -1,33 +1,28 @@
 import type { GameState, InventoryItem } from './types';
 
-export const ELIXIR_SHELF_LIFE_MS = 7 * 24 * 60 * 60 * 1000;
-
-/** All battle consumables, including health and time potions, expire in seven days. */
+/** All potions, elixirs and Arena consumables are permanent (owner decision 11 Nov 2026).
+ * Keep the historical predicate name for API compatibility; it now simply
+ * identifies consumables and NEVER implies that they expire.
+ */
 export const isPerishableItem = (item: InventoryItem): boolean =>
   item.type === 'elixir' || item.type === 'potion' || item.type === 'arena';
 
-export function newElixirExpiry(now = Date.now()): string {
-  return new Date(now + ELIXIR_SHELF_LIFE_MS).toISOString();
+/** Older profiles may still carry an expiresAt field, but it is not authoritative.
+ * Do not delete or reject the item, even when its historical timestamp is past.
+ */
+export function elixirExpiryTime(_item: InventoryItem): number {
+  return Infinity;
+}
+export function isElixirExpired(_item: InventoryItem, _now = Date.now()): boolean {
+  return false;
+}
+export function newElixirBatch(item: InventoryItem, _now = Date.now()): InventoryItem {
+  if (!isPerishableItem(item) || !Object.hasOwn(item, 'expiresAt')) return item;
+  const next = { ...item };
+  delete next.expiresAt;
+  return next;
 }
 
-export function elixirExpiryTime(item: InventoryItem): number {
-  if (!isPerishableItem(item)) return Infinity;
-  const timestamp = item.expiresAt ? Date.parse(item.expiresAt) : NaN;
-  return Number.isFinite(timestamp) ? timestamp : Infinity;
-}
-
-export function isElixirExpired(item: InventoryItem, now = Date.now()): boolean {
-  return isPerishableItem(item) && elixirExpiryTime(item) <= now;
-}
-
-/** A new receipt gets a fresh batch. Never refresh the time of existing stock. */
-export function newElixirBatch(item: InventoryItem, now = Date.now()): InventoryItem {
-  return isPerishableItem(item) ? { ...item, expiresAt: newElixirExpiry(now) } : item;
-}
-
-/** Legacy server APIs still require a dated material-lot record. This far-future
- * compatibility value is NOT a gameplay expiration; forge materials never spoil.
- * Never subtract an old expired lot from the player's saved balance. */
 export const PERMANENT_FORGE_BATCH_EXPIRY = '9999-12-31T23:59:59.000Z';
 
 function reconcileForgeMaterialBatches(state: GameState): Pick<GameState, 'forgeMaterialBatches'> | null {
@@ -40,50 +35,27 @@ function reconcileForgeMaterialBatches(state: GameState): Pick<GameState, 'forge
     ? [{ qty: balance, expiresAt: PERMANENT_FORGE_BATCH_EXPIRY }] : [] };
 }
 
-/** One-time grace for old stocks; live updates normalize server-granted lots.
- * Expired consumables disappear from inventory and belt; equipment is untouched.
+/** Save-preserving migration: remove obsolete expiry metadata from existing
+ * consumables (inventory AND equipped belt), retaining exact quantities, type,
+ * rarity, power and every item. Forge materials keep their permanent batches.
  */
-export function reconcileElixirExpiry(state: GameState, now = Date.now()): GameState {
-  const deadline = newElixirExpiry(now);
+export function reconcileElixirExpiry(state: GameState, _now = Date.now()): GameState {
   let changed = false;
-  let found = false;
-
-  const reconcile = (item: InventoryItem): InventoryItem | null => {
-    if (!isPerishableItem(item)) return item;
-    found = true;
-    const expiry = elixirExpiryTime(item);
-    if (expiry <= now) {
-      changed = true;
-      return null;
-    }
-    if (expiry === Infinity) {
-      changed = true;
-      return { ...item, expiresAt: deadline };
-    }
-    return item;
+  const normalize = (item: InventoryItem): InventoryItem => {
+    if (!isPerishableItem(item) || !Object.hasOwn(item, 'expiresAt')) return item;
+    changed = true;
+    const next = { ...item };
+    delete next.expiresAt;
+    return next;
   };
-
-  const inventory = state.inventory.map(reconcile).filter((item): item is InventoryItem => item !== null);
-  const belt = state.belt.map((item) => (item ? reconcile(item) : null));
+  const inventory = state.inventory.map(normalize);
+  const belt = state.belt.map(item => item ? normalize(item) : null);
   const materialChanges = reconcileForgeMaterialBatches(state);
-  const migrated = found && !state.elixirExpiryStartedAt;
-  return changed || migrated || materialChanges
-    ? { ...state, inventory, belt, ...materialChanges,
-      elixirExpiryStartedAt: migrated ? new Date(now).toISOString() : state.elixirExpiryStartedAt }
-    : state;
+  return changed || materialChanges
+    ? { ...state, inventory, belt, ...materialChanges } : state;
 }
 
-export function elixirTimeLeftLabel(item: InventoryItem, language: string, now = Date.now()): string {
-  if (!isPerishableItem(item)) return '';
-  const milliseconds = Math.max(0, elixirExpiryTime(item) - now);
-  if (!Number.isFinite(milliseconds)) return language === 'en' ? '7d 00:00:00' : '7д 00:00:00';
-  if (milliseconds === 0) return language === 'en' ? 'Expired' : 'Просрочен';
-  const seconds = Math.ceil(milliseconds / 1000);
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const restSeconds = seconds % 60;
-  const clock = [hours, minutes, restSeconds].map((n) => String(n).padStart(2, '0')).join(':');
-  return language === 'en' ? `${days}d ${clock}` : `${days}д ${clock}`;
+/** Kept only for old callers; permanent consumables have no countdown. */
+export function elixirTimeLeftLabel(_item: InventoryItem, _language: string, _now = Date.now()): string {
+  return '';
 }
-
