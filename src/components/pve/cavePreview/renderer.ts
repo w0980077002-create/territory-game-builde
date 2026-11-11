@@ -118,8 +118,9 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
   if (isPortal) {
     PORTALS[Math.min(w.room, 1)].forEach((p, i) => {
       const x = w.portalX + i * 112 - w.cameraX;
-      portal(c, x, floor, BIOMES[p.biome].color, w.time, .92);
-      text(c, p.symbol, x, floor - 130, 25, BIOMES[p.biome].color);
+      c.save(); c.globalAlpha = w.selected !== null && w.selected !== i ? .38 : 1;
+      portal(c, x, floor, BIOMES[p.biome].color, w.time, w.selected === i ? 1.02 : .92);
+      text(c, p.symbol, x, floor - 130, 25, BIOMES[p.biome].color); c.restore();
     });
   }
   const heroX = w.heroX - w.cameraX;
