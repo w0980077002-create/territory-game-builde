@@ -24,13 +24,6 @@ const unverifiedForgeUsers = new Set<string>();
 export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, onProfessions, userId }: { focusEquipmentId?: string | null; onInventory?: () => void; onMap?: () => void; onBattle?: () => void; onProfessions?: () => void; userId: string }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const tick = setInterval(() => { if (!document.hidden) setNow(Date.now()); }, 1000);
-    const refresh = () => setNow(Date.now());
-    document.addEventListener('visibilitychange', refresh);
-    return () => { clearInterval(tick); document.removeEventListener('visibilitychange', refresh); };
-  }, []);
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [success, setSuccess] = useState(false);

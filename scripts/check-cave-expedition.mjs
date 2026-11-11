@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { readFileSync, readdirSync } from 'node:fs';
 const result = await build({entryPoints:['src/game/cavePreviewWorld/engine.ts'],bundle:true,write:false,format:'esm',platform:'node'});
-const { createWorld, start, update, choosePortal, skill, collectRune, MAX_HP } = await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+const { createWorld, start, update, choosePortal, skill, skillBlock, collectRune, MAX_HP } = await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
 function step(w, seconds) { for(let t=0;t<seconds;t+=.025)update(w,.025); }
 function until(w, predicate, limit=300) { for(let t=0;t<limit&&!predicate(w);t+=.025)update(w,.025);assert.ok(predicate(w),`Stuck in ${w.phase}, HP ${w.hp}, time ${w.time}`); }
 const moving=createWorld(); start(moving);step(moving,2);assert.equal(moving.phase,'RUN_RIGHT');assert.ok(moving.heroX>250);assert.ok(moving.cameraX>30);
@@ -23,6 +23,25 @@ for(const first of [0,1])for(const second of [0,1]){
  console.log(`✓ complete 3-room route ${first}/${second}, 16 deaths, boss, restart`);
 }
 const manual=createWorld();start(manual);until(manual,w=>w.phase==='FIGHT');const energy=manual.energy;assert.ok(skill(manual,'cleave'));assert.ok(manual.energy<energy);assert.equal(skill(manual,'cleave'),false,'Cooldown prevents repeat');manual.hp=300;manual.energy=100;assert.ok(skill(manual,'heal'));assert.equal(manual.hp,580);manual.energy=100;assert.ok(skill(manual,'ward'));const hp=manual.hp;step(manual,.5);assert.ok(manual.hp>=hp-10,'Ward reduces incoming damage');
+// HUD availability and authoritative input must agree at every rejection boundary.
+for (const [key, reason, setup] of [
+ ['ward', 'not-fighting', w => { w.phase = 'PORTAL_CHOICE'; }],
+ ['ward', 'paused', w => { w.paused = true; }],
+ ['ward', 'cooldown', w => { w.cooldown.ward = w.time + .01; }],
+ ['ward', 'energy', w => { w.energy = 21; }],
+ ['cleave', 'no-target', w => { w.enemies = []; }],
+ ['heal', 'full-health', w => { w.hp = MAX_HP; w.followerHp = [260, 220]; }],
+]) {
+ const w = createWorld(); start(w); until(w, x => x.phase === 'FIGHT'); setup(w);
+ const before = structuredClone(w);
+ assert.equal(skillBlock(w, key), reason);
+ assert.equal(skill(w, key), false);
+ assert.deepEqual(w, before, 'Unavailable skills must not spend energy or alter combat');
+}
+const exact = createWorld(); start(exact); until(exact, w => w.phase === 'FIGHT');
+exact.energy = 22; exact.cooldown.ward = exact.time;
+assert.equal(skillBlock(exact, 'ward'), null);
+assert.ok(skill(exact, 'ward')); assert.equal(exact.energy, 0);
 const lost=createWorld();start(lost);until(lost,w=>w.phase==='FIGHT');lost.hp=1;until(lost,w=>w.phase==='DEFEAT');assert.equal(lost.pose,'death');start(lost);assert.equal(lost.hp,MAX_HP);assert.equal(lost.phase,'ENTER');
 for (const manual of [false,true]) {
  const w=createWorld();start(w);const phases=new Set();let camera=0;

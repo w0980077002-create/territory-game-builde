@@ -39,12 +39,22 @@ function hurt(w: World, enemy: Enemy, damage: number) {
   fx(w, enemy.worldX, String(damage), 'hit', enemy.lane);
   if (!enemy.hp) { enemy.deathAt = w.time; enemy.impact = 0; w.kills++; w.energy = Math.min(100, w.energy + BALANCE.killEnergy); }
 }
-export function skill(w: World, key: Skill) {
+export type SkillBlock = 'paused' | 'not-fighting' | 'cooldown' | 'energy' | 'no-target' | 'full-health';
+/** Shared by input validation and the HUD so a lit button always means a usable skill. */
+export function skillBlock(w: World, key: Skill): SkillBlock | null {
   const spec = SKILLS[key];
-  if (!['FIGHT', 'BOSS', 'APPROACH'].includes(w.phase) || w.hp <= 0 || w.paused || w.cooldown[key] > w.time || w.energy < spec.cost) return false;
+  if (w.paused) return 'paused';
+  if (!['FIGHT', 'BOSS', 'APPROACH'].includes(w.phase) || w.hp <= 0) return 'not-fighting';
+  if (w.cooldown[key] > w.time) return 'cooldown';
+  if (w.energy < spec.cost) return 'energy';
+  if (key === 'cleave' && !w.enemies.some(e => e.hp > 0 && e.worldX - w.heroX < 240)) return 'no-target';
+  if (key === 'heal' && w.hp === MAX_HP && w.followerHp.every((hp, i) => hp <= 0 || hp === (i ? 220 : 260))) return 'full-health';
+  return null;
+}
+export function skill(w: World, key: Skill) {
+  if (skillBlock(w, key)) return false;
+  const spec = SKILLS[key];
   const targets = w.enemies.filter(e => e.hp > 0 && e.worldX - w.heroX < 240);
-  if (key === 'cleave' && !targets.length) return false;
-  if (key === 'heal' && w.hp === MAX_HP && w.followerHp.every((hp, i) => hp <= 0 || hp === (i ? 220 : 260))) return false;
   w.casts++; w.energy -= spec.cost; w.cooldown[key] = w.time + spec.cooldown;
   if (key === 'cleave') { targets.forEach(e => hurt(w, e, BALANCE.cleaveDamage)); w.pose = 'attack'; fx(w, w.heroX + 70, '', 'slash'); }
   if (key === 'ward') { w.followerPose = w.followerHp.map(hp => hp > 0 ? 'block' : 'death'); w.followerUntil = [w.time + .45, w.time + .45]; w.shieldUntil = w.time + BALANCE.wardSeconds; w.pose = 'block'; fx(w, w.heroX, 'ward', 'block'); }

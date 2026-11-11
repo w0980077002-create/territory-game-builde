@@ -124,7 +124,7 @@ function addMaterial(inventory: InventoryItem[], item: InventoryItem): Inventory
   return [...inventory, item];
 }
 
-export function applyTrialChest(state: GameState, loot: TrialChestReward | null, now = Date.now()): GameState {
+export function applyTrialChest(state: GameState, loot: TrialChestReward | null, _now = Date.now()): GameState {
   // Existing progress and the already-paid chest stay intact after floor resets.
   if (!loot || trialChestTier(loot.floor) !== loot.tier || state.trialChestClaims?.includes(loot.floor)) {
     return { ...state, lastTrialChest: null };

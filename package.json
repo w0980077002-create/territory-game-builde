@@ -62,7 +62,7 @@
     "test:gear-refund-65": "node scripts/check-gear-refund-65.mjs",
     "build:cave-preview": "node scripts/build-cave-expedition-preview.mjs",
     "test:cave-expedition": "node scripts/check-cave-expedition.mjs",
-    "test:cave-expedition:browser": "node scripts/build-cave-expedition-preview.mjs --test && python scripts/check-cave-expedition-browser.py"
+    "test:cave-expedition:browser": "node scripts/build-cave-expedition-preview.mjs && node scripts/build-cave-expedition-preview.mjs --test && python scripts/check-cave-expedition-browser.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
