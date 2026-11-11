@@ -40,6 +40,9 @@ def visible(page):
         assert box['height'] >= 44
 
 def screenshot(page, width, name):
+    # The world advances every frame; React publishes the HUD at 10 Hz.
+    # Wait for that real render before inspecting elements from the previous phase.
+    page.wait_for_function("() => document.querySelector('.cx-stage').dataset.phase === __caveDemo.world.phase")
     visible(page)
     page.screenshot(path=str(OUT / f'{width}-{name}.png'))
 
@@ -55,7 +58,9 @@ try:
       page.goto(URL+'/test-fixture.html');page.wait_for_function('()=>window.__caveDemo')
       screenshot(page,width,'lobby')
       page.get_by_role('button',name='Играть DEMO').tap();step(page,2)
-      assert state(page)['x']>320 and state(page)['camera']>50
+      # 0.65 s entrance + 1.35 s at 95 units/s starts at x=175 (~303).
+      # Do not depend on extra wall-clock RAFs during a slow test tap.
+      assert state(page)['x']>290 and state(page)['camera']>50, state(page)
       screenshot(page,width,'run')
       assert page.locator('.cx-focus').count()==1
       assert page.locator('.cx-stage').bounding_box()['height'] / page.viewport_size['height'] > .5
@@ -119,9 +124,51 @@ try:
         page.screenshot(path=str(OUT/'640-landscape.png'))
       page.get_by_role('button',name='How to play').tap();before=state(page);step(page,1);assert state(page)==before
       page.get_by_role('button',name='Got it').tap()
+      # Help must preserve a deliberately paused battle, including Escape.
+      page.get_by_role('button',name='Pause',exact=True).tap()
+      page.get_by_role('button',name='How to play').tap()
+      page.get_by_role('button',name='Got it').tap()
+      assert page.get_by_role('button',name='Continue',exact=True).is_visible()
+      before=state(page);step(page,1);assert state(page)==before
+      page.get_by_role('button',name='How to play').tap()
+      page.keyboard.press('Escape')
+      assert not page.get_by_role('heading',name='Into the depths').count()
+      assert page.get_by_role('button',name='Continue',exact=True).is_visible()
+      page.get_by_role('button',name='Continue',exact=True).tap()
+      page.get_by_role('button',name='How to play').tap()
+      page.keyboard.press('Escape')
+      assert page.get_by_role('button',name='Pause',exact=True).is_visible()
+      assert not page.get_by_role('heading',name='Into the depths').count()
       page.reload();page.get_by_role('button',name='Play DEMO').wait_for();assert state(page)['phase']=='LOBBY'
       page.get_by_role('button',name='Play DEMO').tap();step(page,2);visible(page)
       context.close()
+    # A failed image retries within the component, without reloading the game.
+    context=browser.new_context(viewport={'width':360,'height':640},has_touch=True)
+    page=context.new_page()
+    page.add_init_script("""window.__retrySentinel = Math.random();
+      const NativeImage = window.Image;
+      const source = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+      let failOnce = true;
+      window.Image = function(...args) {
+        const image = new NativeImage(...args);
+        Object.defineProperty(image, 'src', {
+          set(value) {
+            if (failOnce) { failOnce = false; setTimeout(() => image.onerror?.(new Event('error')), 0); }
+            else source.set.call(image, value);
+          },
+          get() { return source.get.call(image); }
+        });
+        return image;
+      };""")
+    page.goto(URL+'/test-fixture.html?lang=en')
+    page.get_by_text('Could not open the cave',exact=True).wait_for()
+    sentinel=page.evaluate('window.__retrySentinel')
+    page.get_by_role('button',name='Reload',exact=True).tap()
+    page.get_by_role('button',name='Play DEMO').wait_for()
+    assert page.evaluate('window.__retrySentinel')==sentinel, 'Retry must preserve the outer game document'
+    page.get_by_role('button',name='Play DEMO').tap();step(page,2)
+    assert state(page)['phase']=='RUN_RIGHT'
+    context.close()
     browser.close()
 finally:
     server.shutdown()

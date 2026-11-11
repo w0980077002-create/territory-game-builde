@@ -14,7 +14,6 @@ import './mortarionBoss.css';
 const MORTARION_HP = 100_000_000;
 const MORTARION_EVENT_DAYS = 5;
 const MORTARION_HITS_PER_HOUR = 5;
-const MORTARION_HIT_COOLDOWN_MS = 60_000;
 
 function shortClock(ms: number) {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -118,6 +117,8 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
   }, [en]);
 
   useEffect(() => {
+    // Capture the counter object; cleanup invalidates the latest in-flight request.
+    const requests = requestNumber;
     mounted.current = true;
     void refresh();
     void refreshRewards();
@@ -129,7 +130,7 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
     window.addEventListener('online', resume);
     return () => {
       mounted.current = false;
-      requestNumber.current++;
+      requests.current++;
       window.clearInterval(time);
       window.clearInterval(polling);
       window.clearInterval(rewardPolling);
