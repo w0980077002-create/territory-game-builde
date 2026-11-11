@@ -43,6 +43,19 @@ assert.match(battle, /grid-cols-3/);
 assert.match(battle, /label: language === 'en' \? 'Dark Cave' : 'Тёмная пещера'/);
 assert.match(battle, /view === 'cave' \? \(/);
 assert.match(battle, /<ServerAdventureScreen /);
+// The owner-approved side-scrolling Cave is reachable inside the actual game
+// without a special URL; genuine server floors and recovery remain available.
+assert.match(battle, /data-testid="dark-cave-live-expedition-entry"/);
+assert.match(battle, /data-testid="dark-cave-new-expedition"/);
+assert.match(battle, /data-testid="dark-cave-saved-floors"/);
+assert.match(battle, /<CaveExpeditionPreview onExit=/);
+assert.match(battle, /territory_adventure_session_v1:/);
+assert.match(battle, /return !keys\.some\(prefix => !!localStorage\.getItem\(prefix \+ userId\)\)/,
+  'New cave must defer to pending server battles, starts and settlements');
+assert.doesNotMatch(battle, /get\('cave-preview'\)/,
+  'New Cave should open from the game itself, not require special query params');
+assert.match(read('src/components/battleJourney.css'), /\.battle-cave-expedition \.cx-demo\{height:100%;min-height:0/,
+  'Embedded Cave must fit the actual game screen, not force a 100svh standalone layout');
 assert.match(battle, /if \(view === 'cave' \|\| caveRecoveryNeeded\) return;/, 'Never charge legacy stones in cave or during unresolved cave recovery');
 assert.match(battle, /generateChapter\(state.currentChapter\)/);
 assert.match(battle, /<PveFight/);
