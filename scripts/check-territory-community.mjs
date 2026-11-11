@@ -8,6 +8,10 @@ assert.equal(classifyMessage("В испытаниях ошибка, не сох�
 assert.equal(classifyMessage("Предлагаю изменить задание босса").category, "suggestion");
 assert.equal(classifyMessage("лимит ударов на боссе").category, "balance");
 assert.equal(classifyMessage("Привет, добро пожаловать!").priority, "P3");
+assert.equal(classifyMessage("Один флакон завис, теперь хрен от него избавиться, только использовать, а на него другие не плюсуются (((").priority, "P1");
+assert.equal(classifyMessage("Теперь зелья не складываются в слот").priority, "P1");
+assert.equal(classifyMessage("Stuck potion on belt, can't unequip").priority, "P1");
+assert.equal(classifyMessage("Это зависит от уровня героя").priority, "P3");
 assert.deepEqual(classifyMessage(""), classifyMessage("обычная переписка"));
 assert.equal(messageLink({ id: -1001234567890 }, 42), "https://t.me/c/1234567890/42");
 assert.equal(messageLink({ id: -1001234567890, username: "TerritoryOfficial" }, 7), "https://t.me/TerritoryOfficial/7");
@@ -18,4 +22,4 @@ const alert = formatAlert({ from: { username: "TestPlayer" }, text: "не мог
   classifyMessage("не могу зайти"), "https://t.me/c/123/1");
 assert.ok(alert.includes("@TestPlayer"));
 assert.ok(alert.includes("https://t.me/c/123/1"));
-console.log("TERRITORY community rules: 15 checks passed");
+console.log("TERRITORY community rules: 19 checks passed");
