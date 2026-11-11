@@ -1,0 +1,31 @@
+name: TERRITORY permanent consumables — regression
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  no-expiry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: node scripts/check-belt-victory-milestones.mjs
+      - run: npm run test:elixir-expiry
+      - run: node scripts/check-vip-belt-refill.mjs
+      - run: node scripts/check-inventory-preparation.mjs
+      - run: node scripts/check-compact-warehouse.mjs
+      - run: node scripts/check-arena-live-belt-guard.mjs
+      - run: npm run build
