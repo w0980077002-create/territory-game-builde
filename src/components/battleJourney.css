@@ -11,3 +11,14 @@
 .journey-encounter button{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:44px;margin-top:auto;padding:7px;border:1px solid #ffe0a0;border-radius:10px;color:#351b0a;background:linear-gradient(#ffe1a0,#e2a34a,#b9742b);box-shadow:inset 0 1px #fff4cb,0 2px 0 #653b17;font-weight:900}
 .journey-encounter button:active{transform:translateY(2px)}.journey-encounter button:disabled{opacity:.5;cursor:not-allowed}.journey-encounter button:focus-visible{outline:3px solid #fff2be;outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.journey-encounter button:active{transform:none}}
+
+
+/* Live TERRITORY cave tab embeds the existing self-contained expedition.
+   The standalone HTTPS build keeps its original full-screen sizing. */
+.battle-cave-expedition .cx-demo{height:100%;min-height:0;max-width:none}
+.battle-cave-expedition .cx-stage{min-height:135px}
+.battle-cave-expedition .cx-header{min-height:43px;padding:3px 8px}
+.battle-cave-expedition .cx-progress{min-height:43px;padding:4px 8px}
+.battle-cave-expedition .cx-controls{padding:4px 6px}
+.battle-cave-expedition .cx-actions button{min-height:49px}
+.battle-cave-expedition .cx-nav{min-height:31px}
