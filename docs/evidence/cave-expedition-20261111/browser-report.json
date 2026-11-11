@@ -1,0 +1,38 @@
+[
+  {
+    "width": 320,
+    "route": [
+      0,
+      0
+    ],
+    "result": "PASS",
+    "external_requests": 0
+  },
+  {
+    "width": 360,
+    "route": [
+      0,
+      1
+    ],
+    "result": "PASS",
+    "external_requests": 0
+  },
+  {
+    "width": 390,
+    "route": [
+      1,
+      0
+    ],
+    "result": "PASS",
+    "external_requests": 0
+  },
+  {
+    "width": 430,
+    "route": [
+      1,
+      1
+    ],
+    "result": "PASS",
+    "external_requests": 0
+  }
+]
