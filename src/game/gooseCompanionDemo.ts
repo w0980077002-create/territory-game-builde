@@ -82,7 +82,7 @@ export function setGooseDemoAuto(current: GooseDemoState, auto: boolean): GooseD
 export function stepGooseDemo(current: GooseDemoState, duration: number): GooseDemoState {
   if (!Number.isFinite(duration) || duration <= 0 || duration > 10
     || current.heroHp <= 0 || current.enemyHp <= 0) return current;
-  let state = { ...current, events: [] };
+  let state: GooseDemoState = { ...current, events: [] };
   const end = state.time + duration;
   // Resolve every attack independently, including a long browser frame.
   while (state.nextEnemyAttack <= end && state.heroHp > 0 && state.enemyHp > 0) {
