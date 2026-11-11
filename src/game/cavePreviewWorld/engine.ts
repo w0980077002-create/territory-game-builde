@@ -140,7 +140,7 @@ export function update(w: World, delta: number) {
       else { w.portalX = w.cameraX + 252; w.pose = 'idle'; phase(w, 'PORTAL_CHOICE'); }
     }
   }
-  if (w.phase === 'PORTAL_CHOICE') w.pose = 'idle';
+  if (w.phase === 'PORTAL_CHOICE') { w.pose = 'idle'; w.followerPose = w.followerHp.map(hp => hp > 0 ? 'idle' : 'death'); }
   if (w.phase === 'PORTAL_ENTER') {
     const target = w.portalX + (w.selected === 1 ? 112 : 0); w.pose = 'run';
     w.heroX = Math.min(target, w.heroX + dt * 120);

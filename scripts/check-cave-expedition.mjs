@@ -11,7 +11,7 @@ const before=moving.heroX;moving.paused=true;step(moving,5);assert.equal(moving.
 until(moving,w=>w.phase==='APPROACH');assert.ok(moving.time<4,'First meaningful encounter in 3–5 seconds');
 for(const first of [0,1])for(const second of [0,1]){
  const w=createWorld();start(w);w.auto=true;
- until(w,x=>x.phase==='PORTAL_CHOICE');assert.equal(w.kills,6);assert.equal(w.room,0);assert.equal(w.wave,2);
+ until(w,x=>x.phase==='PORTAL_CHOICE');assert.equal(w.kills,6);assert.equal(w.room,0);assert.equal(w.wave,2);assert.deepEqual(w.followerPose,['idle','idle'],'Living companions rest at the portal instead of freezing mid-attack');
  const frozen=w.heroX;step(w,4);assert.equal(w.heroX,frozen,'Choice waits for actual touch');assert.equal(w.kills,6);assert.equal(choosePortal(w,99),false);assert.equal(choosePortal(w,first),true);assert.equal(choosePortal(w,1-first),false);
  const x=w.heroX;step(w,.5);assert.ok(w.heroX>x,'Physical approach to selected arch');
  until(w,x=>x.room===1);assert.equal(w.biome,first?'ember':'spore');
