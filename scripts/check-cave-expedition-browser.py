@@ -113,6 +113,10 @@ try:
       page=context.new_page();page.goto(URL+'/test-fixture.html?lang=en');page.wait_for_function('()=>window.__caveDemo')
       page.get_by_role('button',name='Play DEMO').tap();step(page,2);visible(page)
       assert page.get_by_role('button',name='Auto skills').is_visible()
+      if width>height:
+        stage=page.locator('.cx-stage').bounding_box();controls=page.locator('.cx-controls').bounding_box()
+        assert stage['x']+stage['width']<=controls['x']+1,'Landscape controls never cover actors'
+        page.screenshot(path=str(OUT/'640-landscape.png'))
       page.get_by_role('button',name='How to play').tap();before=state(page);step(page,1);assert state(page)==before
       page.get_by_role('button',name='Got it').tap()
       page.reload();page.get_by_role('button',name='Play DEMO').wait_for();assert state(page)['phase']=='LOBBY'
