@@ -29,8 +29,9 @@ const modal = readFileSync('src/components/ui/Modal.tsx','utf8');
 assert.match(modal, /role="dialog" aria-modal="true"/, 'Shared Modal implements an accessible dialog');
 assert.doesNotMatch(warehouse, /useGame\.set|saveCloudSave|supabase\.rpc/, 'Warehouse must never modify game state or call server');
 assert.match(belt, /export const/, 'Existing belt engine remains separate');
-assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/, 'Compact four-column phones');
-assert.match(css, /grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/, 'Five-column wide phones');
+
+
+assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'Approved compact three-column warehouse layout stays unchanged');
 assert.match(css, /@media\(max-width:340px\)/, 'Small Android width');
 assert.match(css, /@media\(prefers-reduced-motion:reduce\)/, 'Reduced-motion accessibility');
-console.log('Compact warehouse OK: search, filters, 4/5-col grid, grouped consumables, permanent consumables and forge materials, details, belt, equipment and companions preserved.');
+console.log('Compact warehouse OK: search, filters, existing 3-col grid, grouped consumables, permanent consumables and forge materials, details, belt, equipment and companions preserved.');
