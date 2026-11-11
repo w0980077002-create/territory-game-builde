@@ -24,7 +24,9 @@ assert.doesNotMatch(warehouse, /forgeMaterialTimeLeftLabel|forgeTimer|Shelf life
 assert.match(warehouse, /forgeMaterials > 0/, 'Never create fake forge material items');
 assert.match(warehouse, /value=\{search\}/, 'Search input should be controlled');
 assert.match(warehouse, /setFilter\(id\)/, 'Filters should be interactive');
-assert.match(warehouse, /role="dialog" aria-modal="true"/, 'Forge material info must open a real dialog');
+assert.match(warehouse, /<Modal title=\{en \? 'Forge materials'/, 'Forge material info must use the real Modal component');
+const modal = readFileSync('src/components/ui/Modal.tsx','utf8');
+assert.match(modal, /role="dialog" aria-modal="true"/, 'Shared Modal implements an accessible dialog');
 assert.doesNotMatch(warehouse, /useGame\.set|saveCloudSave|supabase\.rpc/, 'Warehouse must never modify game state or call server');
 assert.match(belt, /export const/, 'Existing belt engine remains separate');
 assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/, 'Compact four-column phones');
