@@ -56,6 +56,30 @@ for (const manual of [false,true]) {
 }
 const strike=createWorld();start(strike);strike.auto=true;until(strike,w=>w.phase==='PORTAL_CHOICE');choosePortal(strike,0);until(strike,w=>w.phase==='PORTAL_CHOICE');choosePortal(strike,0);until(strike,w=>w.phase==='BOSS');strike.auto=false;until(strike,w=>w.enemies.some(e=>e.heavy&&e.impact>w.time));
 const protectedWorld=structuredClone(strike);strike.hp=900;protectedWorld.hp=900;protectedWorld.energy=100;assert.ok(skill(protectedWorld,'ward'));step(strike,1.6);step(protectedWorld,1.6);assert.ok(protectedWorld.hp-strike.hp>100,'Ward genuinely counters a telegraphed collapse');
+// A timed evade avoids the actual incoming hit; pressing after contact cannot undo it.
+const duel = createWorld(); start(duel); duel.phase = 'FIGHT'; duel.time = 10;
+duel.heroReady = 100; duel.followerHp = [0, 0]; duel.poseUntil = 100;
+duel.enemies = [{id:1,species:'shardling',worldX:duel.heroX+80,hp:1000,maxHp:1000,pose:'attack',poseUntil:11,ready:100,impact:10.2,deathAt:0,lane:0,attacks:1,heavy:false}];
+const evade = structuredClone(duel); assert.ok(skill(evade, 'dodge'));
+step(duel,.3); step(evade,.3);
+assert.equal(duel.hp,MAX_HP-13); assert.equal(evade.hp,MAX_HP); assert.equal(evade.dodges,1);
+const late = structuredClone(duel); assert.ok(skill(late, 'dodge')); assert.equal(late.hp,duel.hp);
+const expired = structuredClone(evade); expired.enemies[0].impact = expired.time + 1; expired.enemies[0].poseUntil = expired.time + 2; step(expired,1.1);
+assert.equal(expired.hp,MAX_HP-13,'Evade is a short window, not permanent invulnerability');
+// Melee and projectile attacks schedule one hit at contact, not at windup.
+for (const companion of [0,1]) {
+ const w = structuredClone(duel); w.hp = MAX_HP; w.enemies[0].impact = 0;
+ w.followerHp[companion] = companion ? 220 : 260; w.followerReady = [100,100]; w.followerReady[companion] = 0;
+ update(w,.025); assert.equal(w.enemies[0].hp,1000);
+ assert.ok(w.followerImpact[companion] > w.time);
+ const at = w.followerImpact[companion];
+ while(w.time < at + .06) update(w,.025);
+ assert.equal(w.enemies[0].hp,1000-(companion?12:15)); assert.equal(w.followerImpact[companion],0);
+}
+const cleave = structuredClone(duel); cleave.enemies[0].impact = 0;
+assert.ok(skill(cleave,'cleave')); assert.equal(cleave.enemies[0].hp,1000);
+step(cleave,.4); assert.equal(cleave.enemies[0].hp,895);
+console.log('✓ timed evade, expiry, no retroactive healing, contact-synced cleave and companion attacks');
 console.log('✓ manual vs idle outcomes, 3 boss phases, heavy strike counterplay, meaningful energy, two segment crossings');
 const sourceDirs=['src/game/cavePreviewWorld','src/components/pve/cavePreview'];const files=sourceDirs.flatMap(d=>readdirSync(d).filter(f=>/\.(ts|tsx)$/.test(f)).map(f=>`${d}/${f}`));files.push('src/components/pve/CaveExpeditionPreview.tsx');for(const file of files){const s=readFileSync(file,'utf8');assert.ok(!/supabase|localStorage|sessionStorage|fetch\s*\(|territory-combat|\/game\/actions/.test(s),`Isolated module ${file}`);}
 const component=readFileSync(files.at(-1),'utf8');assert.match(component,/cancelAnimationFrame/);assert.match(component,/removeEventListener\('visibilitychange'/);assert.match(component,/document.hidden/);

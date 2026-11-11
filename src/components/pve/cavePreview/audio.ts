@@ -40,7 +40,10 @@ export class CaveAudio {
       if (effect.kind === 'heal') this.tone(390, 780, .6, .3);
       else if (effect.kind === 'block') this.tone(650, 230, .22, .3, 'triangle');
       else if (effect.kind === 'shock') this.tone(130, 24, .65, .5, 'sawtooth');
-      else this.tone(190, 65, .12, .18, 'triangle');
+      else if (effect.kind === 'dodge') this.tone(440, 150, .18, .16, 'triangle');
+      else if (effect.kind === 'impact') this.tone(310, 58, .11, .24, 'triangle');
+      else if (effect.kind === 'slash') this.tone(185, 62, .13, .12, 'triangle');
+      else if (effect.kind === 'energy') this.tone(580, 820, .18, .12);
     }
     if (w.effects.length) this.lastEffect = Math.max(...w.effects.map(e => e.born));
     if (w.phase !== this.phase) {
