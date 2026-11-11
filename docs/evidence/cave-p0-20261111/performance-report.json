@@ -1,0 +1,14 @@
+{
+  "viewport": "360x640",
+  "cpu_throttle": 4,
+  "frames": 357,
+  "median_ms": 16.7,
+  "p95_ms": 16.7,
+  "js_heap_used_bytes": 3450780,
+  "dom": {
+    "documents": 1,
+    "nodes": 120,
+    "jsEventListeners": 347
+  },
+  "real_android": false
+}

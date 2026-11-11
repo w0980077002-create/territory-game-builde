@@ -259,7 +259,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
           </div>
           <div className="battle-cave-expedition min-h-0 flex-1 overflow-hidden" role="tabpanel">
             {cavePreviewOptIn
-              ? <CaveExpeditionPreview onExit={() => setCavePreviewOptIn(false)} />
+              ? <CaveExpeditionPreview language={language} onExit={() => setCavePreviewOptIn(false)} />
               : <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} onShop={onCaveShop} />}
           </div>
         </div>

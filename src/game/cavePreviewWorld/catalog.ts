@@ -5,7 +5,7 @@ export const CREATURES: Record<Species, { name: string; row: number; hp: number;
   shardling: { name: 'Осколочник', row: 0, hp: 115, damage: 13, range: 80, speed: 65 },
   moth: { name: 'Споровый парус', row: 1, hp: 100, damage: 15, range: 125, speed: 50 },
   eel: { name: 'Янтарный глубинник', row: 2, hp: 145, damage: 17, range: 85, speed: 75 },
-  boss: { name: 'Собор Бездны', row: 3, hp: 1250, damage: 55, range: 130, speed: 32 },
+  boss: { name: 'Собор Бездны', row: 3, hp: 1250, damage: 55, range: 170, speed: 32 },
 };
 export const BIOMES: Record<Biome, { name: string; color: string; sky: string; enemies: Species[]; art: number }> = {
   crystal: { name: 'Хрустальный разлом', color: '#64e7ff', sky: '#0a1c30', enemies: ['shardling', 'moth', 'shardling'], art: 0 },
