@@ -42,7 +42,7 @@ def visible(page):
 def screenshot(page, width, name):
     # The world advances every frame; React publishes the HUD at 10 Hz.
     # Wait for that real render before inspecting elements from the previous phase.
-    page.wait_for_function("document.querySelector('.cx-stage').dataset.phase === __caveDemo.world.phase")
+    page.wait_for_function("() => document.querySelector('.cx-stage').dataset.phase === __caveDemo.world.phase")
     visible(page)
     page.screenshot(path=str(OUT / f'{width}-{name}.png'))
 
@@ -145,13 +145,18 @@ try:
     page=context.new_page()
     page.add_init_script("""window.__retrySentinel = Math.random();
       const NativeImage = window.Image;
+      const source = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
       let failOnce = true;
-      window.Image = class extends NativeImage {
-        set src(value) {
-          if (failOnce) { failOnce = false; setTimeout(() => this.onerror?.(new Event('error')), 0); }
-          else super.src = value;
-        }
-        get src() { return super.src; }
+      window.Image = function(...args) {
+        const image = new NativeImage(...args);
+        Object.defineProperty(image, 'src', {
+          set(value) {
+            if (failOnce) { failOnce = false; setTimeout(() => image.onerror?.(new Event('error')), 0); }
+            else source.set.call(image, value);
+          },
+          get() { return source.get.call(image); }
+        });
+        return image;
       };""")
     page.goto(URL+'/test-fixture.html?lang=en')
     page.get_by_text('Could not open the cave',exact=True).wait_for()
