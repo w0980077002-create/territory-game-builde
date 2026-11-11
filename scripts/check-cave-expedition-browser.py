@@ -162,9 +162,9 @@ try:
     page.get_by_text('Could not open the cave',exact=True).wait_for()
     sentinel=page.evaluate('window.__retrySentinel')
     page.get_by_role('button',name='Reload',exact=True).tap()
-    page.get_by_role('button',name='Play DEMO',exact=True).wait_for()
+    page.get_by_role('button',name='Play DEMO').wait_for()
     assert page.evaluate('window.__retrySentinel')==sentinel, 'Retry must preserve the outer game document'
-    page.get_by_role('button',name='Play DEMO',exact=True).tap();step(page,2)
+    page.get_by_role('button',name='Play DEMO').tap();step(page,2)
     assert state(page)['phase']=='RUN_RIGHT'
     context.close()
     browser.close()
