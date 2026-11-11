@@ -1,0 +1,59 @@
+name: Cave expedition - isolated playable artifact
+on:
+  push:
+    branches: [codex/cave-expedition-demo]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/game/cavePreviewWorld/**'
+      - 'src/components/pve/CaveExpeditionPreview.tsx'
+      - 'src/components/pve/cavePreview/**'
+      - 'public/assets/territory/cave-expedition/**'
+      - 'scripts/*cave-expedition*'
+      - '.github/workflows/cave-expedition-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run test:cave-expedition
+      - run: node scripts/check-cave-systems.mjs
+      - run: node scripts/check-cave-belt-attestation.mjs
+      - run: node scripts/check-dark-stones.mjs
+      - run: node scripts/check-adventure-client-ui.mjs
+      - run: npm run build
+      - run: npm run build:cave-preview
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.58.0
+      - run: python -m playwright install --with-deps chromium
+      - name: Browser acceptance at four mobile widths
+        run: |
+          export CAVE_BROWSER="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
+          npm run test:cave-expedition:browser
+      - name: Record a real-time playable run
+        run: |
+          export CAVE_BROWSER="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
+          python scripts/record-cave-expedition.py
+      - name: Package only delivery files
+        if: always()
+        run: |
+          cp docs/CAVE_EXPEDITION_DEMO_RU.md artifacts/cave-expedition/READ-ME-RU.md
+          rm -f artifacts/cave-expedition/test-fixture.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: territory-cave-demo-${{ github.sha }}
+          path: artifacts/cave-expedition/
+          retention-days: 30

@@ -27,3 +27,6 @@ dist-monopoly-test
 # local preview builds
 antilevel-browser/
 antilevel-artifacts/
+
+# Standalone cave DEMO bundles and browser evidence (published as CI artifacts).
+artifacts/cave-expedition/
