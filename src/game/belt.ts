@@ -163,6 +163,41 @@ export function takeFromBelt(state: GameState, index: number): GameState {
   return { ...state, belt, inventory };
 }
 
+/** Replace a partial stack with the earliest available, DIFFERENT expiry lot.
+ * This is always an explicit user action, never automatic on "To belt".
+ * The remaining original doses return unchanged to inventory, then a fresh
+ * single-source lot is equipped. No expiry mixing or 2nd slot of the same kind.
+ */
+export function replaceBeltBatch(state: GameState, itemId: string, c: BeltContext): GameState | null {
+  const requested = state.inventory.find(item => item.id === itemId);
+  if (!requested || !canBelt(requested) || !Number.isSafeInteger(requested.qty) || requested.qty < 1) return null;
+
+  const index = state.belt.findIndex(slot => slot && sameBeltKind(slot, requested));
+  if (index < 0 || !isSlotOpen(index, c)) return null;
+  const occupied = state.belt[index];
+  if (!occupied || isElixirExpired(occupied) || !Number.isSafeInteger(occupied.qty)
+    || occupied.qty < 1 || occupied.qty >= BELT_STACK) return null;
+
+  const candidate = state.inventory
+    .filter(item => sameBeltKind(item, requested) && canBelt(item)
+      && Number.isSafeInteger(item.qty) && item.qty > 0
+      && item.expiresAt !== occupied.expiresAt)
+    .sort((a, b) => elixirExpiryTime(a) - elixirExpiryTime(b))[0];
+  if (!candidate) return null;
+
+  // First restore the exact previous batch; never discard or extend it.
+  const restored = takeFromBelt(state, index);
+  const fromWarehouse = restored.inventory.find(item => item.id === candidate.id);
+  if (!fromWarehouse || fromWarehouse.qty < 1) return null;
+  const moved = Math.min(BELT_STACK, fromWarehouse.qty);
+  const belt = [...restored.belt];
+  belt[index] = { ...fromWarehouse, id: `belt_${index}`, qty: moved };
+  const inventory = restored.inventory
+    .map(item => item.id === fromWarehouse.id ? { ...item, qty: item.qty - moved } : item)
+    .filter(item => item.qty > 0);
+  return { ...restored, belt, inventory };
+}
+
 /** A classic PvE encounter snapshots its belt on entry. Only those starting
  * charges can be used in that encounter: reloading the saved inventory in a
  * second tab must NOT grant new charges to the already running fight.
