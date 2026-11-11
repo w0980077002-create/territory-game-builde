@@ -48,7 +48,7 @@ export interface InventoryItem {
   type: 'potion' | 'elixir' | 'material' | 'equipment' | 'arena';
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   qty: number;
-  /** UTC expiry of this batch of elixirs. Non-elixirs do not expire. */
+  /** Deprecated: old saves can carry expiresAt, but no consumables expire after 11.11.2026. */
   expiresAt?: string;
   arenaEffect?: ArenaEffect;
   description: string;
