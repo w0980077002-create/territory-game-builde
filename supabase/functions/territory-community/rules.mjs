@@ -15,6 +15,14 @@ export function classifyMessage(input) {
   ];
   if (has(text, urgent)) return { category: "access_or_loss", priority: "P0", reason: "Возможная потеря доступа, ресурсов или платёжная проблема" };
 
+  // Reports like "один флакон завис, другие не плюсуются" are
+  // meaningful bug reports even though the word "ошибка" is absent.
+  // Match the word "завис" without matching "зависит".
+  if (/(?:^|[^а-яёa-z])(?:завис|зависло|зависла|зависли|подвис|застрял|застряла|застряло|застряли)(?=$|[^а-яёa-z])/iu.test(text) ||
+      /не (?:плюсуются|складываются|суммируются|объединяются|снимается|убирается|добавляется|пополняется|переходит на пояс)/iu.test(text) ||
+      /(?:can't|cannot) (?:unequip|remove|stack)|not stacking|stuck (?:potion|elixir|bottle)/iu.test(text)) {
+    return { category: "bug_report", priority: "P1", reason: "Расходник или элемент интерфейса застрял, не снимается либо не объединяется" };
+  }
   const bug = [
     "ошибка", "баг", "сломал", "сломалось", "не работает", "лагает", "лагать",
     "зависает", "вылетает", "не сохраняет", "не засчитали", "не засчитало",
