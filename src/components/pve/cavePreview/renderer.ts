@@ -159,7 +159,10 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
   }
   const atlas = images.get(ASSET_ROOT + 'cave-expedition/creatures.webp')!;
   for (const e of [...w.enemies].sort((a, b) => a.lane - b.lane)) {
-    const x = e.worldX - w.cameraX, y = floor; const spec = CREATURES[e.species];
+    // The shell extends behind the boss's contact point. Ease that art anchor
+    // inward as it approaches, keeping the full silhouette inside a narrow phone.
+    const shellOffset = e.species === 'boss' ? 25 * Math.max(0, Math.min(1, (300 - (e.worldX - w.heroX)) / 130)) : 0;
+    const x = e.worldX - w.cameraX - shellOffset, y = floor; const spec = CREATURES[e.species];
     const size = (e.species === 'boss' ? 212 : 133) * actorScale;
     if (e.species === 'boss' && e.hp > 0) {
       c.save(); c.strokeStyle = theme.color; c.globalAlpha = .2 + w.bossPhase * .08; c.lineWidth = 2;
