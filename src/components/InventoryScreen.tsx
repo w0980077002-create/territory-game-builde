@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useLanguage, localizeText, localizeRarity } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
-import { BELT_RULES, BELT_STACK, beltContext, canBelt, isSlotOpen, putInBelt, sameBeltKind, takeFromBelt, groupConsumablesForDisplay } from '@/game/belt';
+import { BELT_RULES, BELT_STACK, BELT_WIN_GOALS, beltContext, canBelt, isSlotOpen, putInBelt, sameBeltKind, takeFromBelt, replaceBeltBatch, groupConsumablesForDisplay } from '@/game/belt';
 import { ItemArt } from './ui/ItemArt';
 import { Modal } from './ui/Modal';
 import { BeltCells } from './ui/BeltCells';
@@ -91,6 +91,15 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const beltCtx = beltContext(state, arena.wins);
   const openBeltSlots = BELT_RULES.filter((_, i) => isSlotOpen(i, beltCtx)).length;
   const beltReady = state.belt.reduce((n, item, i) => n + (item && isSlotOpen(i, beltCtx) && !isElixirExpired(item, now) ? item.qty : 0), 0);
+  const selectedBeltIndex = selected ? state.belt.findIndex(slot => slot && sameBeltKind(slot, selected)) : -1;
+  const selectedBeltLot = selectedBeltIndex >= 0 ? state.belt[selectedBeltIndex] : null;
+  const canReplaceSelectedBatch = !!(selected && selectedBeltLot
+    && isSlotOpen(selectedBeltIndex, beltCtx) && !isElixirExpired(selectedBeltLot, now)
+    && selectedBeltLot.qty > 0 && selectedBeltLot.qty < BELT_STACK
+    && state.inventory.some(item => item.qty > 0 && canBelt(item)
+      && sameBeltKind(item, selected) && item.expiresAt !== selectedBeltLot.expiresAt)
+    && !state.inventory.some(item => item.qty > 0 && canBelt(item)
+      && sameBeltKind(item, selected) && item.expiresAt === selectedBeltLot.expiresAt));
   const spareConsumables = consumables.reduce((n, item) => n + (!isElixirExpired(item, now) ? Math.max(0, item.qty) : 0), 0);
 
   const switchTab = (to: 'items' | 'equipment' | 'followers' | 'chests') => {
@@ -103,20 +112,59 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   };
   const toBelt = (item: InventoryItem) => {
     const latest = useGame.get();
-    const next = putInBelt(latest, item.id, beltContext(latest, useArena.get().wins));
+    const ctx = beltContext(latest, useArena.get().wins);
+    const next = putInBelt(latest, item.id, ctx);
     if (!next) {
-      const alreadyEquipped = latest.belt.some((slot) => slot && sameBeltKind(slot, item));
-      setBeltNote(alreadyEquipped
-        ? (language === 'en'
-          ? 'This consumable already has a belt slot (maximum 5). Use a different kind in another slot.'
-          : 'Этот вид зелья или эликсира уже на поясе (максимум 5 шт.). В другой слот положи другой вид.')
-        : t('noFreeBeltSlot'));
+      const matched = latest.belt.find(slot => slot && sameBeltKind(slot, item));
+      if (isElixirExpired(item)) {
+        setBeltNote(language === 'en'
+          ? 'This batch has expired. Expired consumables cannot be equipped.'
+          : 'Срок этой партии истёк. Просроченные расходники нельзя надеть.');
+      } else if (matched && matched.qty >= BELT_STACK) {
+        setBeltNote(language === 'en'
+          ? 'This consumable is already equipped: 5/5. Tap its belt slot to return it to the warehouse before changing the kind.'
+          : 'Этот вид уже на поясе: 5/5. Нажми на его ячейку, чтобы вернуть на склад и выбрать другой вид.');
+      } else if (matched) {
+        setBeltNote(language === 'en'
+          ? 'The remaining doses on your belt have another expiry date. Different batches cannot be combined. Use “Replace batch” below; the old doses return to storage.'
+          : 'На поясе остаток партии с другим сроком годности. Смешивать сроки нельзя. Нажми «Заменить партию» ниже — старые флаконы вернутся на склад.');
+      } else {
+        const openFree = latest.belt.some((slot, i) => !slot && isSlotOpen(i, ctx));
+        const nextWinGoal = BELT_WIN_GOALS.find((goal, i) => goal > 0 && !isSlotOpen(i, ctx));
+        setBeltNote(openFree
+          ? (language === 'en' ? 'Could not equip this consumable. Check its amount and expiry.' : 'Не удалось надеть расходник. Проверь количество и срок годности.')
+          : (language === 'en'
+            ? 'All unlocked belt slots are occupied. Tap a filled slot to empty it.'
+              + (nextWinGoal ? ' Next slot: ' + nextWinGoal + ' Arena wins.' : '')
+            : 'Все открытые ячейки заняты. Нажми на флакон на поясе, чтобы освободить ячейку.'
+              + (nextWinGoal ? ' Следующая откроется после ' + nextWinGoal + ' побед на Арене.' : '')));
+      }
+      return;
+    }
+    const beforeQty = latest.belt.reduce((n, slot) => n + (slot?.qty ?? 0), 0);
+    const afterQty = next.belt.reduce((n, slot) => n + (slot?.qty ?? 0), 0);
+    const moved = Math.max(0, afterQty - beforeQty);
+    useGame.set(next);
+    setSelected(null);
+    setBeltNote(null);
+    setPreparedNotice(language === 'en'
+      ? moved + ' dose(s) equipped from the earliest-expiring batch.'
+      : 'На пояс добавлено: ' + moved + '. Сначала используются партии с ближайшим сроком.');
+  };
+  const replaceSelectedBatch = () => {
+    if (!selected) return;
+    const latest = useGame.get();
+    const next = replaceBeltBatch(latest, selected.id, beltContext(latest, useArena.get().wins));
+    if (!next) {
+      setBeltNote(language === 'en' ? 'No compatible replacement batch is available.' : 'Нет подходящей партии для замены.');
       return;
     }
     useGame.set(next);
     setSelected(null);
     setBeltNote(null);
-    setPreparedNotice(language === 'en' ? 'Consumable moved to your battle belt.' : 'Расходник перемещён на боевой пояс.');
+    setPreparedNotice(language === 'en'
+      ? 'Belt batch replaced. The unused old doses were returned to storage unchanged.'
+      : 'Партия на поясе заменена. Старые неиспользованные флаконы без изменений вернулись на склад.');
   };
   const close = () => { setSelected(null); setBeltNote(null); };
 
@@ -322,6 +370,12 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
               {canBelt(selected) && (
                 <button className="btn-ghost flex-1 border border-amber-500/30 text-amber-200" onClick={() => toBelt(selected)}>
                   {language === 'en' ? 'To belt' : 'На пояс'}
+                </button>
+              )}
+              {canReplaceSelectedBatch && (
+                <button className="btn-ghost flex-1 border border-sky-400/50 text-sky-200" onClick={replaceSelectedBatch}
+                  data-testid="belt-replace-expiry-batch">
+                  {language === 'en' ? 'Replace batch' : 'Заменить партию'}
                 </button>
               )}
               <button className="btn-ghost flex-1" onClick={close}>{language === 'en' ? 'Close' : 'Закрыть'}</button>
