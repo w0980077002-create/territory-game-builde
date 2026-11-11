@@ -64,8 +64,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       const receipt=await executeStage8(recipeId,operationId);
       const [verified,owned]=await Promise.all([fetchStage8Status(),fetchStage8Items()]);
       if (!verified.enabled || !verified.profession || verified.masteryLevel<receipt.masteryLevel) throw new Error('stage8_status_not_confirmed');
-      const expired=!!receipt.expiresAt && Date.parse(receipt.expiresAt)<=Date.now();
-      if (receipt.kind==='item' && !expired
+      if (receipt.kind==='item'
         && !owned.some((item)=>item.itemId===receipt.itemId))
         throw new Error('stage8_item_not_in_server_inventory');
       const latest=useGame.get();
@@ -77,9 +76,9 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       });
       await setStage8Pending(null);
       setPending(null);setStatus(verified);
-      setNotice(expired ? (language==='en'?'Previous craft confirmed. That consumable has expired.':'Прежнее изготовление подтверждено. Срок расходника уже истёк.') : language==='en'?(receipt.kind==='item'?'Verified item crafted.':'Mastery training confirmed.'):(receipt.kind==='item'?'Предмет создан и подтверждён сервером.':'Обучение подтверждено сервером.'));
+      setNotice(language==='en'?(receipt.kind==='item'?'Verified item crafted.':'Mastery training confirmed.'):(receipt.kind==='item'?'Предмет создан и подтверждён сервером.':'Обучение подтверждено сервером.'));
       const crafted=owned.find(item=>item.itemId===receipt.itemId);
-      setCraftedItemTab(!expired && receipt.kind==='item' && crafted ? (crafted.output.type==='equipment'?'equipment':'items') : null);
+      setCraftedItemTab(receipt.kind==='item' && crafted ? (crafted.output.type==='equipment'?'equipment':'items') : null);
     }catch{
       setNotice(language==='en'?'Response uncertain. Retry the SAME operation; never start another.':'Сервер не подтвердил результат. Повтори ЭТУ ЖЕ операцию, чтобы не списать ресурсы дважды.');
     }finally{actionLock.current=false;setBusy(false);}
