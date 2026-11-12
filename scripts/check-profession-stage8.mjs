@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import {
   STAGE8_VERSION, MAX_MASTERY_LEVEL, DAILY_SERVER_XP_CAP, GATHER_HOURS_PER_UNIT,
   MASTERY_BANDS, PROFESSION_TRACKS, STAGE8_RECIPES, STAGE8_PRACTICE_RECIPES,
-  STAGE8_EQUIPMENT, STAGE8_CONSUMABLES, STAGE8_LEGACY_RECIPES, CRAFT_RARITY_POWER, craftQualityPct,
+  STAGE8_EQUIPMENT, STAGE8_CONSUMABLES, STAGE8_LEGACY_RECIPES, STAGE8_MASTERWORK_EQUIPMENT, CRAFT_RARITY_POWER, craftQualityPct,
   STAGE8_SHOP_BASELINES, STAGE8_FORGE_GROWTH, benchmarkShopEquipment,
   MASTERWORK_MIN_PCT, MASTERWORK_MAX_PCT, masterworkBonusPct, masteryXpToNext, totalXpForLevel,
   practiceFor, simulateProgression,
@@ -12,13 +12,13 @@ import {
 const VALID_RESOURCES = new Set(['gather-ore','gather-wood','gather-hide','gather-herb','gather-crystal']);
 // The live server enforces slot/level safety caps; unlike the original draft,
 // valuable crafted gear is intentionally allowed to beat the ordinary shop.
+// Exact ceilings on the currently LIVE production PostgreSQL guard.
+// New masterworks use higher natural item levels where needed, rather
+// than raising server-wide caps or opening a forged-item bypass.
 const SERVER_STAT_CAPS = (eq) => ({
-  // Stage8's previous HP cap (86 for lvl3 armor) silently destroyed the
-  // approved +25% rare armor baseline (80 -> 100). Guardrails here are
-  // draft-only, *not* assertions about deployed production server caps.
-  attack: eq.slot === 'weapon' ? 48 + 10 * eq.level : ['ring','amulet'].includes(eq.slot) ? 24 + 5 * eq.level : 10 + 2 * eq.level,
-  defense: ['armor','shield','helmet','boots'].includes(eq.slot) ? 15 + 6 * eq.level : 10 + 3 * eq.level,
-  hp: eq.slot === 'armor' ? 90 + 20 * eq.level : ['boots','shield','helmet'].includes(eq.slot) ? 60 + 10 * eq.level : 25 + 5 * eq.level,
+  attack: eq.slot === 'weapon' ? 40 + 6 * eq.level : ['ring','amulet'].includes(eq.slot) ? 20 + 4 * eq.level : 10 + 2 * eq.level,
+  defense: ['armor','shield','helmet','boots'].includes(eq.slot) ? 10 + 5 * eq.level : 10 + 3 * eq.level,
+  hp: eq.slot === 'armor' ? 50 + 12 * eq.level : ['boots','shield','helmet'].includes(eq.slot) ? 40 + 10 * eq.level : 25 + 5 * eq.level,
   critChance:25,
 });
 
@@ -32,7 +32,8 @@ assert.equal(STAGE8_PRACTICE_RECIPES.length,35);
 assert.equal(STAGE8_EQUIPMENT.length,16);
 assert.equal(STAGE8_CONSUMABLES.length,4);
 assert.equal(STAGE8_LEGACY_RECIPES.length,17);
-assert.equal(STAGE8_RECIPES.length,72);
+assert.equal(STAGE8_MASTERWORK_EQUIPMENT.length,25);
+assert.equal(STAGE8_RECIPES.length,97);
 assert.equal(new Set(STAGE8_RECIPES.map((r)=>r.id)).size,STAGE8_RECIPES.length);
 
 for(let level=1;level<300;level++){
@@ -66,7 +67,7 @@ for(const recipe of STAGE8_RECIPES){
       assert.ok((eq[stat]??0)>=0,recipe.id);
     }
     assert.equal(eq.rarity,recipe.output.rarity);
-    assert.ok(eq.level>=1 && eq.level<=5,recipe.id);
+    assert.ok(eq.level>=1 && eq.level<=10,recipe.id);
     assert.ok(recipe.requiredLevel>=1&&recipe.requiredLevel<=300,recipe.id);
   }else if(recipe.output.type==='potion'||recipe.output.type==='elixir'){
     assert.ok(recipe.output.effect.value>0&&recipe.output.effect.value<=150,recipe.id);
@@ -87,11 +88,17 @@ const screen = await readFile(new URL('../src/components/ProfessionsScreen.tsx',
 const exported = JSON.parse(await readFile(new URL('../supabase/staged/territory_profession_stage8_catalog.json',import.meta.url),'utf8'));
 const originalRecipes = JSON.parse(await readFile(new URL('../supabase/staged/territory_craft_catalog.json',import.meta.url),'utf8'));
 const liveR2Identity=JSON.parse(await readFile(new URL('./professions/stage8-r2-live-identity.json',import.meta.url),'utf8'));
+const unchangedR2=JSON.parse(await readFile(new URL('../supabase/staged/territory_profession_stage8_r2_catalog.json',import.meta.url),'utf8'));
+assert.deepEqual(STAGE8_RECIPES.slice(0,72),unchangedR2.recipes,
+  'The ENTIRE existing 72-recipe live catalog must remain byte-equivalent; new masterworks are additive only');
+assert.ok(STAGE8_MASTERWORK_EQUIPMENT.every(r=>r.id.startsWith('mw_')),'No overwrite of old Stage8 recipe IDs');
+assert.ok(STAGE8_MASTERWORK_EQUIPMENT.every(r=>r.output.name.endsWith(' · мастерская')),'Unique masterwork name avoids shop canonicalization');
+
 assert.equal(liveR2Identity.version,'profession-stage8-draft-20261025-r2','Guard the actual live server release version');
-assert.deepEqual(STAGE8_RECIPES.map(recipe=>recipe.id).sort(),liveR2Identity.recipeIds,'All live r2 recipe IDs must survive');
+assert.deepEqual(STAGE8_RECIPES.slice(0,72).map(recipe=>recipe.id).sort(),liveR2Identity.recipeIds,'All live r2 recipe IDs must survive');
 const outputIdentity=(recipe)=>({id:recipe.id,name:recipe.output.name,type:recipe.output.type,
   rarity:recipe.output.rarity,slot:recipe.output.equipment?.slot??null,level:recipe.output.equipment?.level??null});
-assert.deepEqual(STAGE8_RECIPES.filter(recipe=>recipe.output).map(outputIdentity).sort((a,b)=>a.id.localeCompare(b.id)),
+assert.deepEqual(STAGE8_RECIPES.slice(0,72).filter(recipe=>recipe.output).map(outputIdentity).sort((a,b)=>a.id.localeCompare(b.id)),
   liveR2Identity.itemIdentities,'Never rename/repurpose recipe IDs: 325 already owned r2 items must load');
 
 for(let i=0;i<originalRecipes.length;i++){
@@ -157,7 +164,7 @@ for(const [slot,rarities] of Object.entries(canonicalGrowth))
 // unavoidable +1 rounding step for tiny integer stats (3 def -> 4 def).
 // If no matching rarity is sold, first scale the strongest lower rarity;
 // historic epic purchases count as their own benchmark, never a new sale.
-const craftedGear=STAGE8_RECIPES.filter(r=>r.output?.equipment);
+const craftedGear=STAGE8_MASTERWORK_EQUIPMENT;
 const slots=new Set(craftedGear.map(r=>r.output.equipment.slot));
 assert.deepEqual([...slots].sort(),['amulet','armor','boots','helmet','ring','shield','weapon']);
 for(const recipe of craftedGear){
@@ -186,26 +193,36 @@ for(const recipe of craftedGear){
   if(recipe.output.rarity==='common'||recipe.output.rarity==='rare')
     assert.ok(recipe.output.description.includes('Мастерское изделие'),recipe.id+' must explain the premium');
 }
-// Exact protection for the most visible old failure cases.
-assert.equal(crafted('smith_apprentice_blade').attack,10);
-assert.equal(crafted('smith_leather_armor').defense,6);
-assert.equal(crafted('smith_leather_armor').hp,36);
-assert.equal(crafted('smith_knight_blade').attack,22);
+// Old r2 shop-colliding recipes/IDs/names stay intact; 25 new IDs fix
+// their weaknesses without touching any of the 325 historical inventory rows.
+assert.equal(crafted('smith_apprentice_blade').attack,8);
+assert.equal(crafted('smith_leather_armor').defense,5);
+assert.equal(crafted('smith_leather_armor').hp,30);
+assert.equal(crafted('smith_knight_blade').attack,18);
+assert.equal(crafted('mw_smith_apprentice_blade').attack,10);
+assert.equal(crafted('mw_smith_leather_armor').defense,6);
+assert.equal(crafted('mw_smith_leather_armor').hp,36);
+assert.equal(crafted('mw_smith_knight_blade').attack,22);
 assert.equal(STAGE8_RECIPES.find(r=>r.id==='smith_knight_blade').output.name,'Клинок рыцаря');
+assert.equal(STAGE8_RECIPES.find(r=>r.id==='mw_smith_knight_blade').output.name,'Клинок рыцаря · мастерская');
 assert.equal(STAGE8_RECIPES.find(r=>r.id==='smith_leather_armor').output.name,'Кожаная броня');
-assert.equal(crafted('s8_smith_north_armor').hp,100);
-assert.equal(crafted('s8_engineer_jarl_plate').hp,145);
-assert.equal(crafted('s8_artisan_jarl_boots').hp,72);
-assert.equal(crafted('engineer_oak_shield').hp,30);
-assert.equal(crafted('s8_engineer_path_boots').hp,50);
-assert.equal(crafted('jeweler_raven_amulet').attack,8);
-assert.equal(crafted('s8_jeweler_guard_amulet').attack,8);
-assert.equal(crafted('s8_jeweler_spark_ring').attack,11);
-assert.equal(crafted('jeweler_power_ring').attack,18);
-assert.equal(crafted('s8_jeweler_sapphire_ring').attack,19);
-assert.equal(crafted('jeweler_ancient_ring').attack,23);
-assert.equal(crafted('s8_jeweler_jarl_seal').attack,23);
-assert.equal(crafted('s8_jeweler_spark_ring').attack+1,12,'Rare crafted lvl3 ring stays +20% ahead at lvl5');
+assert.equal(STAGE8_RECIPES.find(r=>r.id==='mw_smith_leather_armor').output.name,'Кожаная броня · мастерская');
+assert.equal(crafted('mw_s8_smith_north_armor').hp,104);
+assert.equal(crafted('mw_s8_smith_north_armor').level,5);
+assert.equal(crafted('mw_s8_engineer_jarl_plate').hp,165);
+assert.equal(crafted('mw_s8_engineer_jarl_plate').level,10);
+assert.equal(crafted('mw_s8_artisan_jarl_boots').hp,76);
+assert.equal(crafted('mw_s8_artisan_jarl_boots').level,4);
+assert.equal(crafted('mw_engineer_oak_shield').hp,30);
+assert.equal(crafted('mw_s8_engineer_path_boots').hp,50);
+assert.equal(crafted('mw_jeweler_raven_amulet').attack,8);
+assert.equal(crafted('mw_s8_jeweler_guard_amulet').attack,8);
+assert.equal(crafted('mw_s8_jeweler_spark_ring').attack,11);
+assert.equal(crafted('mw_jeweler_power_ring').attack,18);
+assert.equal(crafted('mw_s8_jeweler_sapphire_ring').attack,19);
+assert.equal(crafted('mw_jeweler_ancient_ring').attack,23);
+assert.equal(crafted('mw_s8_jeweler_jarl_seal').attack,23);
+assert.equal(crafted('mw_s8_jeweler_spark_ring').attack+1,12,'Rare crafted lvl3 ring stays +20% ahead at lvl5');
 for(const r of craftedGear){
   const eq=r.output.equipment;
   for(const [stat,label] of [['attack','атака'],['defense','защита'],['hp','HP'],['critChance','крит %']])
@@ -236,4 +253,4 @@ for(const perDay of [2,3,4,6]){
     assert.equal(result.milestones[300],result.days);
   }
 }
-console.log(`Stage8 PASS: ${STAGE8_RECIPES.length} draft recipes, 5 professions, 73,199 XP to level 300; 2/3/4/6 gathers per day = 483/322/310/297 days. Live game unchanged.`);
+console.log(`Stage8 PASS: ${STAGE8_RECIPES.length} draft recipes (72 immutable live r2 + 25 new masterworks), 5 professions, 73,199 XP to level 300; live DB unchanged.`);
