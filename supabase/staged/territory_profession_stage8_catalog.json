@@ -774,7 +774,7 @@
         "icon": "💍",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Ремесленная экипировка: Кольцо искры.",
+        "description": "Атака +12, шанс крита +4%.",
         "equipment": {
           "slot": "ring",
           "rarity": "rare",
@@ -807,7 +807,7 @@
         "icon": "📿",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Ремесленная экипировка: Оберег северных врат.",
+        "description": "Атака +9, шанс крита +4%.",
         "equipment": {
           "slot": "amulet",
           "rarity": "rare",
@@ -840,7 +840,7 @@
         "icon": "💎",
         "type": "equipment",
         "rarity": "epic",
-        "description": "Ремесленная экипировка: Сапфировое кольцо.",
+        "description": "Атака +21, шанс крита +6%.",
         "equipment": {
           "slot": "ring",
           "rarity": "epic",
@@ -873,7 +873,7 @@
         "icon": "💍",
         "type": "equipment",
         "rarity": "legendary",
-        "description": "Ремесленная экипировка: Печать ярла.",
+        "description": "Атака +25, шанс крита +7%.",
         "equipment": {
           "slot": "ring",
           "rarity": "legendary",
@@ -1623,7 +1623,7 @@
         "icon": "📿",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Атака +6 и шанс крита +3%.",
+        "description": "Атака +8, шанс крита +4%.",
         "equipment": {
           "slot": "amulet",
           "rarity": "rare",
@@ -1656,7 +1656,7 @@
         "icon": "💍",
         "type": "equipment",
         "rarity": "epic",
-        "description": "Атака +15 и шанс крита +5%.",
+        "description": "Атака +19, шанс крита +6%.",
         "equipment": {
           "slot": "ring",
           "rarity": "epic",
@@ -1689,7 +1689,7 @@
         "icon": "💍",
         "type": "equipment",
         "rarity": "legendary",
-        "description": "Атака +15 и шанс крита +5%. Сохраняет базовый баланс аксессуаров.",
+        "description": "Атака +25, шанс крита +7%.",
         "equipment": {
           "slot": "ring",
           "rarity": "legendary",
