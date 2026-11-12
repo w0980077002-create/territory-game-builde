@@ -155,15 +155,12 @@ function balanceCraftRecipe(recipe){
     const target=Math.max(minimum,Math.round(benchmark[stat]*factor));
     balanced[stat]=Math.max(eq[stat],stat==='critChance'?Math.min(25,target):target);
   }
-  // In the old server two legacy recipe item names exactly matched store
-  // inventory and were re-canonicalized to the WEAKER shop stats.
-  // Preserve IDs and material costs, but give newly minted Stage8 items
-  // distinct craft-only names. Existing owned V1 equipment is untouched.
-  const collidesWithShop=STAGE8_SHOP_BASELINES.some(
-    item=>!item.historic && item.slot===eq.slot && item.rarity===eq.rarity &&
-      ((eq.name==='Клинок рыцаря' && item.id==='shop_weapon_knight_eq') ||
-       (eq.name==='Кожаная броня' && item.id==='shop_armor_leather_eq')));
-  const name=collidesWithShop?eq.name+' мастера':eq.name;
+  // LIVE Stage8 already contains server-owned items and receipts keyed to
+  // these recipe IDs. Changing output.name would make the current client
+  // reject ALL previously crafted goods for that recipe on inventory reload.
+  // Keep names/IDs stable. The recipe ID and server registry prove craft
+  // provenance; the visible description explains the masterwork advantage.
+  const name=eq.name;
   const improved={...balanced,name};
   const stats=[['attack','атака'],['defense','защита'],['hp','HP'],['critChance','крит %']]
     .filter(([key])=>typeof improved[key]==='number')
