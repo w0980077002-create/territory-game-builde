@@ -34,6 +34,19 @@ const dependencies = {
     }
   },
 };
+// Load the real attendance policy so daily reward tests exercise its actual logic.
+const attendanceJs = ts.transpileModule(fs.readFileSync('src/game/dailyAttendance.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+}).outputText;
+const attendanceModule = { exports: {} };
+vm.runInNewContext(attendanceJs, {
+  module: attendanceModule, exports: attendanceModule.exports,
+  require: (name) => {
+    if (name !== './weeklyQuests') throw new Error('Unexpected attendance import: ' + name);
+    return dependencies['./weeklyQuests'];
+  }, Date, Math,
+}, { filename: 'dailyAttendance.transpiled.js' });
+dependencies['./dailyAttendance'] = attendanceModule.exports;
 vm.runInNewContext(result.outputText, {
   module: { exports }, exports,
   require: (name) => {
@@ -75,6 +88,9 @@ const stacked = claimDaily({ ...state, inventory: [
 assert.equal(stacked.inventory.length, 1, 'existing potions should stack');
 assert.equal(stacked.inventory[0].id, 'existing', 'preserve existing stack ID');
 assert.equal(stacked.inventory[0].qty, 8, 'three existing plus five earned');
-assert.match(ui, /reward\.largeHealthPotions/, 'daily UI renders the new reward');
-assert.match(ui, /<ItemArt item=\{LARGE_HEALTH_POTION\}/, 'daily UI shows potion art');
+// The current UI renders every award through a shared visual-only loot strip.
+const visual = fs.readFileSync('src/components/ui/RewardLootStrip.tsx', 'utf8');
+assert.match(ui, /<RewardLootStrip reward=\{todayReward\}/, 'daily UI renders the prize strip');
+assert.match(visual, /key: 'largeHealthPotions'/, 'the day-seven potion is listed in prize visuals');
+assert.match(visual, /potion-hp-large-viking\.webp/, 'the real potion art appears in prize visuals');
 console.log('Daily reward regression PASS: five 150-HP potions on day 7, no red gems, one claim/day, stacked in inventory.');

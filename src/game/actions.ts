@@ -1,6 +1,7 @@
 import { create } from './store';
 import { prepareNewEquipment, capEquipmentToHeroLevel } from './equipmentBalance';
 import { calendarDayKey, weeklyQuestKey } from './weeklyQuests';
+import { preserveDailyRewardStreakOnAttendance } from './dailyAttendance';
 import { reconcileFollowers } from './followers';
 import { canBuyShopItem, shopStonesBoughtToday, SHOP_STONES_PER_DAY, MAX_SHOP_PURCHASE_QTY } from './purchaseGuard';
 import { isPerishableItem, reconcileElixirExpiry } from './elixirExpiry';
@@ -54,6 +55,11 @@ export function applyTimeEffects(state: GameState, now = Date.now()): GameState 
       };
     }
   }
+
+  // Save attendance before rolling the day marker forward: playing yesterday
+  // without tapping the reward must not erase the series. No reward is paid here.
+  const dailyReward = preserveDailyRewardStreakOnAttendance(state.dailyReward, state.dailyResetDay, now);
+  if (dailyReward !== state.dailyReward) next = { ...next, dailyReward };
 
   const today = calendarDayKey(now);
   if (state.dailyResetDay === new Date(now).toDateString() && state.dailyResetDay !== today) {
