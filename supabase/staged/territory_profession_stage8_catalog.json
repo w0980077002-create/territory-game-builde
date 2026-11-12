@@ -1,5 +1,5 @@
 {
-  "version": "profession-stage8-draft-20261025-r2",
+  "version": "profession-stage8-draft-20261112-r3",
   "enabled": false,
   "requiresServerAuthority": true,
   "supportsClientLocalCraftFallback": false,
@@ -779,8 +779,8 @@
           "slot": "ring",
           "rarity": "rare",
           "level": 3,
-          "attack": 9,
-          "critChance": 2,
+          "attack": 12,
+          "critChance": 4,
           "name": "Кольцо искры",
           "icon": "💍"
         }
@@ -812,8 +812,8 @@
           "slot": "amulet",
           "rarity": "rare",
           "level": 3,
-          "attack": 7,
-          "critChance": 3,
+          "attack": 9,
+          "critChance": 4,
           "name": "Оберег северных врат",
           "icon": "📿"
         }
@@ -845,8 +845,8 @@
           "slot": "ring",
           "rarity": "epic",
           "level": 5,
-          "attack": 17,
-          "critChance": 5,
+          "attack": 21,
+          "critChance": 6,
           "name": "Сапфировое кольцо",
           "icon": "💎"
         }
@@ -878,8 +878,8 @@
           "slot": "ring",
           "rarity": "legendary",
           "level": 5,
-          "attack": 20,
-          "critChance": 6,
+          "attack": 25,
+          "critChance": 7,
           "name": "Печать ярла",
           "icon": "💍"
         }
@@ -1628,8 +1628,8 @@
           "slot": "amulet",
           "rarity": "rare",
           "level": 3,
-          "attack": 6,
-          "critChance": 3,
+          "attack": 8,
+          "critChance": 4,
           "name": "Амулет ворона мастера",
           "icon": "📿"
         }
@@ -1661,8 +1661,8 @@
           "slot": "ring",
           "rarity": "epic",
           "level": 5,
-          "attack": 16,
-          "critChance": 5,
+          "attack": 19,
+          "critChance": 6,
           "name": "Кольцо силы мастера",
           "icon": "💍"
         }
@@ -1694,8 +1694,8 @@
           "slot": "ring",
           "rarity": "legendary",
           "level": 5,
-          "attack": 20,
-          "critChance": 6,
+          "attack": 25,
+          "critChance": 7,
           "name": "Кольцо древних",
           "icon": "💍"
         }
