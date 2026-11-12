@@ -174,7 +174,7 @@ ON CONFLICT (id) DO UPDATE SET
   kind=EXCLUDED.kind,mastery_xp=EXCLUDED.mastery_xp,
   ingredients=EXCLUDED.ingredients,item_output=EXCLUDED.item_output;
 DO $$ BEGIN
-  IF (SELECT count(*) FROM public.territory_profession_stage8_catalog)<>72
+  IF (SELECT count(*) FROM public.territory_profession_stage8_catalog)<>97
     THEN RAISE EXCEPTION 'stage8_catalog_unexpected_rows'; END IF;
 END $$;
 
