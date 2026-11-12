@@ -1,5 +1,5 @@
 {
-  "version": "profession-stage8-draft-20261112-r3",
+  "version": "profession-stage8-draft-20261112-r4",
   "enabled": false,
   "requiresServerAuthority": true,
   "supportsClientLocalCraftFallback": false,
@@ -634,13 +634,13 @@
         "icon": "🗡️",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Ремесленная экипировка: Клинок дозорного.",
+        "description": "Мастерское изделие (23% к магазинной базе с учётом редкости): атака 22, крит % 4.",
         "equipment": {
           "slot": "weapon",
           "rarity": "rare",
           "level": 3,
-          "attack": 19,
-          "critChance": 3,
+          "attack": 22,
+          "critChance": 4,
           "name": "Клинок дозорного",
           "icon": "🗡️"
         }
@@ -667,13 +667,13 @@
         "icon": "🛡️",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Ремесленная экипировка: Латы северянина.",
+        "description": "Мастерское изделие (25% к магазинной базе с учётом редкости): защита 15, HP 100.",
         "equipment": {
           "slot": "armor",
           "rarity": "rare",
           "level": 3,
-          "defense": 13,
-          "hp": 84,
+          "defense": 15,
+          "hp": 100,
           "name": "Латы северянина",
           "icon": "🛡️"
         }
@@ -704,13 +704,13 @@
         "icon": "🪓",
         "type": "equipment",
         "rarity": "epic",
-        "description": "Ремесленная экипировка: Секира бури.",
+        "description": "Мастерское изделие (27% к магазинной базе с учётом редкости): атака 44, крит % 10.",
         "equipment": {
           "slot": "weapon",
           "rarity": "epic",
           "level": 5,
-          "attack": 38,
-          "critChance": 8,
+          "attack": 44,
+          "critChance": 10,
           "name": "Секира бури",
           "icon": "🪓"
         }
@@ -741,13 +741,13 @@
         "icon": "⚔️",
         "type": "equipment",
         "rarity": "legendary",
-        "description": "Ремесленная экипировка: Клинок первого ярла.",
+        "description": "Мастерское изделие (30% к магазинной базе с учётом редкости): атака 54, крит % 12.",
         "equipment": {
           "slot": "weapon",
           "rarity": "legendary",
           "level": 5,
-          "attack": 46,
-          "critChance": 9,
+          "attack": 54,
+          "critChance": 12,
           "name": "Клинок первого ярла",
           "icon": "⚔️"
         }
@@ -774,12 +774,12 @@
         "icon": "💍",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Атака +12, шанс крита +4%.",
+        "description": "Мастерское изделие (23% к магазинной базе с учётом редкости): атака 11, крит % 4.",
         "equipment": {
           "slot": "ring",
           "rarity": "rare",
           "level": 3,
-          "attack": 12,
+          "attack": 11,
           "critChance": 4,
           "name": "Кольцо искры",
           "icon": "💍"
@@ -807,12 +807,12 @@
         "icon": "📿",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Атака +9, шанс крита +4%.",
+        "description": "Мастерское изделие (25% к магазинной базе с учётом редкости): атака 8, крит % 4.",
         "equipment": {
           "slot": "amulet",
           "rarity": "rare",
           "level": 3,
-          "attack": 9,
+          "attack": 8,
           "critChance": 4,
           "name": "Оберег северных врат",
           "icon": "📿"
@@ -840,12 +840,12 @@
         "icon": "💎",
         "type": "equipment",
         "rarity": "epic",
-        "description": "Атака +21, шанс крита +6%.",
+        "description": "Мастерское изделие (27% к магазинной базе с учётом редкости): атака 19, крит % 6.",
         "equipment": {
           "slot": "ring",
           "rarity": "epic",
           "level": 5,
-          "attack": 21,
+          "attack": 19,
           "critChance": 6,
           "name": "Сапфировое кольцо",
           "icon": "💎"
@@ -873,13 +873,13 @@
         "icon": "💍",
         "type": "equipment",
         "rarity": "legendary",
-        "description": "Атака +25, шанс крита +7%.",
+        "description": "Мастерское изделие (30% к магазинной базе с учётом редкости): атака 23, крит % 8.",
         "equipment": {
           "slot": "ring",
           "rarity": "legendary",
           "level": 5,
-          "attack": 25,
-          "critChance": 7,
+          "attack": 23,
+          "critChance": 8,
           "name": "Печать ярла",
           "icon": "💍"
         }
@@ -906,13 +906,13 @@
         "icon": "⛑️",
         "type": "equipment",
         "rarity": "common",
-        "description": "Ремесленная экипировка: Шлем дозорного.",
+        "description": "Мастерское изделие (23% к магазинной базе с учётом редкости): защита 4, HP 25.",
         "equipment": {
           "slot": "helmet",
           "rarity": "common",
           "level": 1,
           "defense": 4,
-          "hp": 21,
+          "hp": 25,
           "name": "Шлем дозорного",
           "icon": "⛑️"
         }
@@ -939,14 +939,14 @@
         "icon": "🥾",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Ремесленная экипировка: Сапоги следопыта.",
+        "description": "Мастерское изделие (25% к магазинной базе с учётом редкости): защита 5, HP 50, крит % 3.",
         "equipment": {
           "slot": "boots",
           "rarity": "rare",
           "level": 2,
           "defense": 5,
-          "hp": 42,
-          "critChance": 2,
+          "hp": 50,
+          "critChance": 3,
           "name": "Сапоги следопыта",
           "icon": "🥾"
         }
@@ -973,13 +973,13 @@
         "icon": "🛡️",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Ремесленная экипировка: Щит северной стражи.",
+        "description": "Мастерское изделие (27% к магазинной базе с учётом редкости): защита 7, HP 37.",
         "equipment": {
           "slot": "shield",
           "rarity": "rare",
           "level": 2,
           "defense": 7,
-          "hp": 31,
+          "hp": 37,
           "name": "Щит северной стражи",
           "icon": "🛡️"
         }
@@ -1010,13 +1010,13 @@
         "icon": "🛡️",
         "type": "equipment",
         "rarity": "legendary",
-        "description": "Ремесленная экипировка: Доспех мастера механизмов.",
+        "description": "Мастерское изделие (30% к магазинной базе с учётом редкости): защита 22, HP 145.",
         "equipment": {
           "slot": "armor",
           "rarity": "legendary",
           "level": 3,
-          "defense": 19,
-          "hp": 86,
+          "defense": 22,
+          "hp": 145,
           "name": "Доспех мастера механизмов",
           "icon": "🛡️"
         }
@@ -1043,14 +1043,14 @@
         "icon": "🥾",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Ремесленная экипировка: Сапоги гонца.",
+        "description": "Мастерское изделие (23% к магазинной базе с учётом редкости): защита 5, HP 49, крит % 3.",
         "equipment": {
           "slot": "boots",
           "rarity": "rare",
           "level": 2,
           "defense": 5,
-          "hp": 42,
-          "critChance": 2,
+          "hp": 49,
+          "critChance": 3,
           "name": "Сапоги гонца",
           "icon": "🥾"
         }
@@ -1077,13 +1077,13 @@
         "icon": "🦺",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Ремесленная экипировка: Броня караванщика.",
+        "description": "Мастерское изделие (25% к магазинной базе с учётом редкости): защита 15, HP 100.",
         "equipment": {
           "slot": "armor",
           "rarity": "rare",
           "level": 3,
-          "defense": 13,
-          "hp": 84,
+          "defense": 15,
+          "hp": 100,
           "name": "Броня караванщика",
           "icon": "🦺"
         }
@@ -1110,13 +1110,13 @@
         "icon": "⛑️",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Ремесленная экипировка: Шлем старейшины.",
+        "description": "Мастерское изделие (27% к магазинной базе с учётом редкости): защита 5, HP 29.",
         "equipment": {
           "slot": "helmet",
           "rarity": "rare",
           "level": 1,
-          "defense": 4,
-          "hp": 25,
+          "defense": 5,
+          "hp": 29,
           "name": "Шлем старейшины",
           "icon": "⛑️"
         }
@@ -1147,14 +1147,14 @@
         "icon": "🥾",
         "type": "equipment",
         "rarity": "legendary",
-        "description": "Ремесленная экипировка: Сапоги великого мастера.",
+        "description": "Мастерское изделие (30% к магазинной базе с учётом редкости): защита 7, HP 72, крит % 4.",
         "equipment": {
           "slot": "boots",
           "rarity": "legendary",
           "level": 2,
           "defense": 7,
-          "hp": 60,
-          "critChance": 3,
+          "hp": 72,
+          "critChance": 4,
           "name": "Сапоги великого мастера",
           "icon": "🥾"
         }
@@ -1296,12 +1296,12 @@
         "icon": "⚔️",
         "type": "equipment",
         "rarity": "common",
-        "description": "Кованый меч. +8 к атаке.",
+        "description": "Мастерское изделие (20% к магазинной базе с учётом редкости): атака 10.",
         "equipment": {
           "slot": "weapon",
           "rarity": "common",
           "level": 1,
-          "attack": 8,
+          "attack": 10,
           "name": "Меч подмастерья",
           "icon": "⚔️"
         }
@@ -1324,18 +1324,18 @@
         }
       ],
       "output": {
-        "name": "Кожаная броня",
+        "name": "Кожаная броня мастера",
         "icon": "🦺",
         "type": "equipment",
         "rarity": "common",
-        "description": "Защита +5, здоровье +30.",
+        "description": "Мастерское изделие (20% к магазинной базе с учётом редкости): защита 6, HP 36.",
         "equipment": {
           "slot": "armor",
           "rarity": "common",
           "level": 1,
-          "defense": 5,
-          "hp": 30,
-          "name": "Кожаная броня",
+          "defense": 6,
+          "hp": 36,
+          "name": "Кожаная броня мастера",
           "icon": "🦺"
         }
       },
@@ -1361,18 +1361,18 @@
         }
       ],
       "output": {
-        "name": "Клинок рыцаря",
+        "name": "Клинок рыцаря мастера",
         "icon": "🗡️",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Атака +18, шанс критического удара +3%.",
+        "description": "Мастерское изделие (23% к магазинной базе с учётом редкости): атака 22, крит % 4.",
         "equipment": {
           "slot": "weapon",
           "rarity": "rare",
           "level": 3,
-          "attack": 18,
-          "critChance": 3,
-          "name": "Клинок рыцаря",
+          "attack": 22,
+          "critChance": 4,
+          "name": "Клинок рыцаря мастера",
           "icon": "🗡️"
         }
       },
@@ -1402,13 +1402,13 @@
         "icon": "🔱",
         "type": "equipment",
         "rarity": "legendary",
-        "description": "Атака +35, критический шанс +8%. Сила легендарной экипировки масштабируется по общему балансу игры.",
+        "description": "Мастерское изделие (30% к магазинной базе с учётом редкости): атака 54, крит % 12.",
         "equipment": {
           "slot": "weapon",
           "rarity": "legendary",
           "level": 5,
-          "attack": 46,
-          "critChance": 9,
+          "attack": 54,
+          "critChance": 12,
           "name": "Клинок древних",
           "icon": "🔱"
         }
@@ -1623,7 +1623,7 @@
         "icon": "📿",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Атака +8, шанс крита +4%.",
+        "description": "Мастерское изделие (20% к магазинной базе с учётом редкости): атака 8, крит % 4.",
         "equipment": {
           "slot": "amulet",
           "rarity": "rare",
@@ -1656,12 +1656,12 @@
         "icon": "💍",
         "type": "equipment",
         "rarity": "epic",
-        "description": "Атака +19, шанс крита +6%.",
+        "description": "Мастерское изделие (23% к магазинной базе с учётом редкости): атака 18, крит % 6.",
         "equipment": {
           "slot": "ring",
           "rarity": "epic",
           "level": 5,
-          "attack": 19,
+          "attack": 18,
           "critChance": 6,
           "name": "Кольцо силы мастера",
           "icon": "💍"
@@ -1689,13 +1689,13 @@
         "icon": "💍",
         "type": "equipment",
         "rarity": "legendary",
-        "description": "Атака +25, шанс крита +7%.",
+        "description": "Мастерское изделие (30% к магазинной базе с учётом редкости): атака 23, крит % 8.",
         "equipment": {
           "slot": "ring",
           "rarity": "legendary",
           "level": 5,
-          "attack": 25,
-          "critChance": 7,
+          "attack": 23,
+          "critChance": 8,
           "name": "Кольцо древних",
           "icon": "💍"
         }
@@ -1722,13 +1722,13 @@
         "icon": "🛡️",
         "type": "equipment",
         "rarity": "common",
-        "description": "Защита +5 и здоровье +25.",
+        "description": "Мастерское изделие (20% к магазинной базе с учётом редкости): защита 6, HP 30.",
         "equipment": {
           "slot": "shield",
           "rarity": "common",
           "level": 2,
-          "defense": 5,
-          "hp": 25,
+          "defense": 6,
+          "hp": 30,
           "name": "Укреплённый щит",
           "icon": "🛡️"
         }
@@ -1755,13 +1755,13 @@
         "icon": "⛑️",
         "type": "equipment",
         "rarity": "rare",
-        "description": "Защита +3 и здоровье +20.",
+        "description": "Мастерское изделие (23% к магазинной базе с учётом редкости): защита 6, HP 30.",
         "equipment": {
           "slot": "helmet",
           "rarity": "rare",
           "level": 3,
-          "defense": 4,
-          "hp": 24,
+          "defense": 6,
+          "hp": 30,
           "name": "Шлем стража",
           "icon": "⛑️"
         }
