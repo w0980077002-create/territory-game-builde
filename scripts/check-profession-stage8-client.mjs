@@ -48,6 +48,12 @@ response={data:okStatus,error:null};
 const status=await api.fetchStage8Status();
 assert.equal(status.masteryLevel,25);
 assert.equal(status.resources['gather-ore'],8);
+assert.deepEqual(catalog.compatibleServerVersions,
+  ['profession-stage8-draft-20261025-r2',catalog.version],
+  'Deploy r4 client before live server upgrade without blocking active r2 players');
+response={data:{...okStatus,version:'profession-stage8-draft-20261025-r2'},error:null};
+assert.equal((await api.fetchStage8Status()).enabled,true,'Live r2 status must remain supported');
+
 response={data:{...okStatus,version:'old-client'},error:null};
 await assert.rejects(()=>api.fetchStage8Status(),/status_mismatch/);
 response={data:{...okStatus,daily_xp_used:301},error:null};
@@ -93,6 +99,14 @@ response={data:{success:true,items:[{
 const owned=await api.fetchStage8Items();
 assert.equal(lastRpc[0],'territory_profession_stage8_inventory');
 assert.equal(owned.length,1);
+response={data:{success:true,items:[{
+  item_id:uuid,recipe_id:'smith_knight_blade',
+  item_output:{name:'Клинок рыцаря',icon:'🗡️',type:'equipment',rarity:'rare',
+    description:'Old server craft',equipment:{slot:'weapon',attack:18,critChance:3}},expires_at:null,
+}]},error:null};
+assert.equal((await api.fetchStage8Items())[0].output.name,'Клинок рыцаря',
+  'Old owned Stage8 items must remain readable even when future crafts have stronger stats');
+
 const mirrored=api.mirrorStage8Items([{id:'legacy-sword',qty:1},{id:'stage8_fake',qty:1}],owned);
 assert.deepEqual(mirrored.map(i=>i.id),['legacy-sword',`stage8_${uuid}`]);
 assert.equal(mirrored[1].equipment.id,`stage8_${uuid}`);
