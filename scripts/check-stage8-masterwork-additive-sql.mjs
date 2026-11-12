@@ -67,9 +67,11 @@ try {
  for(const rec of r4.recipes){
    const row=byId.get(rec.id);
    assert.ok(row,rec.id);
+   const expected={...rec};
+   delete expected.name; // server table deliberately has no presentation-only recipe.name
    assert.deepEqual({id:row.id,profession:row.profession,requiredLevel:row.required_level,
      kind:row.kind,masteryXp:row.mastery_xp,ingredients:row.ingredients,
-     output:row.item_output},rec,rec.id+' unchanged or added exactly');
+     output:row.item_output},expected,rec.id+' unchanged or added exactly');
  }
  assert.deepEqual(await data('SELECT * FROM public.territory_profession_stage8_items'),beforeItems);
  assert.deepEqual(await data('SELECT * FROM public.territory_profession_stage8_receipts'),beforeReceipts);
