@@ -297,8 +297,8 @@ try {
   assert.equal(prestige.success,true);
   assert.equal(prestige.kind,'item');
   assert.ok(prestige.item_id);
-  assert.equal(prestige.item_output.equipment.attack,46,'Grandmaster item must surpass the epic shop sword');
-  assert.equal(prestige.item_output.equipment.critChance,9,'Legendary bonus preserves bounded crit chance');
+  assert.equal(prestige.item_output.equipment.attack,54,'Legendary masterwork must exceed historic epic sword attack 35 plus rarity tier');
+  assert.equal(prestige.item_output.equipment.critChance,12,'Stage8 masterwork critical chance must stay under the 25% safety ceiling');
   assert.equal(await wallet(second),9);
   assert.deepEqual(await exec('s8_smith_jarl_blade',operations[1]),prestige);
   assert.deepEqual(await mastery(second),{mastery_level:300,mastery_xp:0},
