@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 // be capped because the new daily ceiling is 300 XP.
 const legacyCatalogue = JSON.parse(readFileSync(new URL('../../supabase/staged/territory_craft_catalog.json',import.meta.url),'utf8'));
 
-export const STAGE8_VERSION = 'profession-stage8-draft-20261025-r2';
+export const STAGE8_VERSION = 'profession-stage8-draft-20261112-r3';
 export const MAX_MASTERY_LEVEL = 300;
 export const DAILY_SERVER_XP_CAP = 300;
 export const GATHER_HOURS_PER_UNIT = 4;
@@ -48,7 +48,7 @@ const equipment = (id, profession, requiredLevel, name, icon, ingredients, slot,
 });
 const gather = (id, qty) => ({ id, qty });
 
-// Sidegrades: all base stats stay within comparable shop-equipment budgets.
+// Masterwork equipment is compared with current shop baselines; never weaken previously crafted items.
 // 300-tier is prestige gated by the future verified master licence, not live.
 const STAGE8_EQUIPMENT_BASE = Object.freeze([
   equipment('s8_smith_watch_blade','smith',25,'Клинок дозорного','🗡️',[gather('gather-ore',5),gather('gather-wood',2)],'weapon','rare',3,{attack:17,critChance:2},100),
@@ -74,8 +74,22 @@ const STAGE8_EQUIPMENT_BASE = Object.freeze([
 
 /** Only NEW crafts receive this budget; historical owned gear is never rewritten. */
 export const CRAFT_RARITY_POWER = Object.freeze({"common":1,"rare":1.15,"epic":1.35,"legendary":1.6});
-const CRAFT_REFERENCES = Object.freeze({"weapon":{"common":{"attack":8},"rare":{"attack":18,"critChance":3},"epic":{"attack":35,"critChance":8}},"armor":{"common":{"defense":5,"hp":30},"rare":{"defense":12,"hp":80}},"helmet":{"common":{"defense":3,"hp":20}},"boots":{"rare":{"defense":4,"hp":40,"critChance":2}},"shield":{"common":{"defense":5,"hp":25}},"ring":{"rare":{"attack":8,"critChance":2},"epic":{"attack":15,"critChance":5}},"amulet":{"rare":{"attack":6,"critChance":3}}});
+const CRAFT_REFERENCES = Object.freeze({"weapon":{"common":{"attack":8},"rare":{"attack":18,"critChance":3},"epic":{"attack":35,"critChance":8}},"armor":{"common":{"defense":5,"hp":30},"rare":{"defense":12,"hp":80}},"helmet":{"common":{"defense":3,"hp":20}},"boots":{"rare":{"defense":4,"hp":40,"critChance":2}},"shield":{"common":{"defense":5,"hp":25}},"ring":{"rare":{"attack":10,"critChance":3},"epic":{"attack":15,"critChance":5}},"amulet":{"rare":{"attack":6,"critChance":3}}});
 export function craftQualityPct(level){if(level>=300)return 10;if(level>=200)return 7;if(level>=100)return 5;if(level>=25)return 3;return 0;}
+
+// New Stage8 crafts only. Rounded values keep the jeweler ahead of current
+// shop offers, historical paid epics, and their same-level forge equivalents.
+// Do not retroactively rewrite any owned item or server receipt.
+const JEWELER_MASTERWORK_TARGETS = Object.freeze({
+  'jeweler_raven_amulet': {attack:8,critChance:4},
+  's8_jeweler_guard_amulet': {attack:9,critChance:4},
+  's8_jeweler_spark_ring': {attack:12,critChance:4},
+  'jeweler_power_ring': {attack:19,critChance:6},
+  's8_jeweler_sapphire_ring': {attack:21,critChance:6},
+  'jeweler_ancient_ring': {attack:25,critChance:7},
+  's8_jeweler_jarl_seal': {attack:25,critChance:7},
+});
+
 function balanceCraftRecipe(recipe){
  if(!recipe.output?.equipment)return recipe;
  const eq=recipe.output.equipment;
@@ -89,6 +103,11 @@ function balanceCraftRecipe(recipe){
  for(const stat of ['attack','defense','hp'])if(typeof eq[stat]==='number'&&typeof benchmark[stat]==='number')balanced[stat]=Math.min(caps[stat],Math.max(eq[stat],Math.ceil(benchmark[stat]*factor)));
  // Crit is a bounded chance, NOT a rarity-scaled damage stat.
  if(typeof eq.critChance==='number')balanced.critChance=Math.min(10,Math.max(eq.critChance,(benchmark.critChance??eq.critChance)+(eq.rarity==='legendary'?1:0)));
+ const masterwork=JEWELER_MASTERWORK_TARGETS[recipe.id];
+ if(masterwork){
+  balanced.attack=Math.max(balanced.attack??0,masterwork.attack);
+  balanced.critChance=Math.max(balanced.critChance??0,masterwork.critChance);
+ }
  return {...recipe,output:{...recipe.output,equipment:balanced}};
 }
 export const STAGE8_EQUIPMENT = Object.freeze(STAGE8_EQUIPMENT_BASE.map(balanceCraftRecipe));
