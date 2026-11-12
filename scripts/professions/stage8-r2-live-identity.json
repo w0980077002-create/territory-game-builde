@@ -1,0 +1,375 @@
+{
+  "version": "profession-stage8-draft-20261025-r2",
+  "recipeIds": [
+    "alchemist_greater_potion",
+    "alchemist_health_potion",
+    "alchemist_legendary_elixir",
+    "alchemist_strength",
+    "artisan_royal_chest",
+    "artisan_supply_crate",
+    "artisan_toolkit",
+    "engineer_ancient_device",
+    "engineer_guard_helmet",
+    "engineer_oak_shield",
+    "jeweler_ancient_ring",
+    "jeweler_power_ring",
+    "jeweler_raven_amulet",
+    "s8_alchemist_focus",
+    "s8_alchemist_health",
+    "s8_alchemist_herbal_mix",
+    "s8_alchemist_jarl_elixir",
+    "s8_alchemist_practice_1",
+    "s8_alchemist_practice_100",
+    "s8_alchemist_practice_150",
+    "s8_alchemist_practice_200",
+    "s8_alchemist_practice_25",
+    "s8_alchemist_practice_250",
+    "s8_alchemist_practice_50",
+    "s8_artisan_jarl_boots",
+    "s8_artisan_messenger_boots",
+    "s8_artisan_north_helm",
+    "s8_artisan_practice_1",
+    "s8_artisan_practice_100",
+    "s8_artisan_practice_150",
+    "s8_artisan_practice_200",
+    "s8_artisan_practice_25",
+    "s8_artisan_practice_250",
+    "s8_artisan_practice_50",
+    "s8_artisan_trader_armor",
+    "s8_engineer_guard_helm",
+    "s8_engineer_jarl_plate",
+    "s8_engineer_north_shield",
+    "s8_engineer_path_boots",
+    "s8_engineer_practice_1",
+    "s8_engineer_practice_100",
+    "s8_engineer_practice_150",
+    "s8_engineer_practice_200",
+    "s8_engineer_practice_25",
+    "s8_engineer_practice_250",
+    "s8_engineer_practice_50",
+    "s8_jeweler_guard_amulet",
+    "s8_jeweler_jarl_seal",
+    "s8_jeweler_practice_1",
+    "s8_jeweler_practice_100",
+    "s8_jeweler_practice_150",
+    "s8_jeweler_practice_200",
+    "s8_jeweler_practice_25",
+    "s8_jeweler_practice_250",
+    "s8_jeweler_practice_50",
+    "s8_jeweler_sapphire_ring",
+    "s8_jeweler_spark_ring",
+    "s8_smith_jarl_blade",
+    "s8_smith_north_armor",
+    "s8_smith_practice_1",
+    "s8_smith_practice_100",
+    "s8_smith_practice_150",
+    "s8_smith_practice_200",
+    "s8_smith_practice_25",
+    "s8_smith_practice_250",
+    "s8_smith_practice_50",
+    "s8_smith_storm_axe",
+    "s8_smith_watch_blade",
+    "smith_ancient_blade",
+    "smith_apprentice_blade",
+    "smith_knight_blade",
+    "smith_leather_armor"
+  ],
+  "itemIdentities": [
+    {
+      "id": "alchemist_greater_potion",
+      "name": "Большое зелье мастера",
+      "type": "potion",
+      "rarity": "rare",
+      "slot": null,
+      "level": null
+    },
+    {
+      "id": "alchemist_health_potion",
+      "name": "Зелье здоровья мастера",
+      "type": "potion",
+      "rarity": "common",
+      "slot": null,
+      "level": null
+    },
+    {
+      "id": "alchemist_legendary_elixir",
+      "name": "Эликсир легенды",
+      "type": "elixir",
+      "rarity": "legendary",
+      "slot": null,
+      "level": null
+    },
+    {
+      "id": "alchemist_strength",
+      "name": "Эликсир силы мастера",
+      "type": "elixir",
+      "rarity": "rare",
+      "slot": null,
+      "level": null
+    },
+    {
+      "id": "artisan_royal_chest",
+      "name": "Королевский ларец",
+      "type": "material",
+      "rarity": "legendary",
+      "slot": null,
+      "level": null
+    },
+    {
+      "id": "artisan_supply_crate",
+      "name": "Ящик припасов",
+      "type": "material",
+      "rarity": "rare",
+      "slot": null,
+      "level": null
+    },
+    {
+      "id": "artisan_toolkit",
+      "name": "Набор ремесленника",
+      "type": "material",
+      "rarity": "common",
+      "slot": null,
+      "level": null
+    },
+    {
+      "id": "engineer_ancient_device",
+      "name": "Древний механизм",
+      "type": "material",
+      "rarity": "legendary",
+      "slot": null,
+      "level": null
+    },
+    {
+      "id": "engineer_guard_helmet",
+      "name": "Шлем стража",
+      "type": "equipment",
+      "rarity": "rare",
+      "slot": "helmet",
+      "level": 3
+    },
+    {
+      "id": "engineer_oak_shield",
+      "name": "Укреплённый щит",
+      "type": "equipment",
+      "rarity": "common",
+      "slot": "shield",
+      "level": 2
+    },
+    {
+      "id": "jeweler_ancient_ring",
+      "name": "Кольцо древних",
+      "type": "equipment",
+      "rarity": "legendary",
+      "slot": "ring",
+      "level": 5
+    },
+    {
+      "id": "jeweler_power_ring",
+      "name": "Кольцо силы мастера",
+      "type": "equipment",
+      "rarity": "epic",
+      "slot": "ring",
+      "level": 5
+    },
+    {
+      "id": "jeweler_raven_amulet",
+      "name": "Амулет ворона мастера",
+      "type": "equipment",
+      "rarity": "rare",
+      "slot": "amulet",
+      "level": 3
+    },
+    {
+      "id": "s8_alchemist_focus",
+      "name": "Эликсир точности",
+      "type": "elixir",
+      "rarity": "rare",
+      "slot": null,
+      "level": null
+    },
+    {
+      "id": "s8_alchemist_health",
+      "name": "Зелье северного здоровья",
+      "type": "potion",
+      "rarity": "epic",
+      "slot": null,
+      "level": null
+    },
+    {
+      "id": "s8_alchemist_herbal_mix",
+      "name": "Травяной настой",
+      "type": "potion",
+      "rarity": "common",
+      "slot": null,
+      "level": null
+    },
+    {
+      "id": "s8_alchemist_jarl_elixir",
+      "name": "Эликсир стойкости ярла",
+      "type": "elixir",
+      "rarity": "epic",
+      "slot": null,
+      "level": null
+    },
+    {
+      "id": "s8_artisan_jarl_boots",
+      "name": "Сапоги великого мастера",
+      "type": "equipment",
+      "rarity": "legendary",
+      "slot": "boots",
+      "level": 2
+    },
+    {
+      "id": "s8_artisan_messenger_boots",
+      "name": "Сапоги гонца",
+      "type": "equipment",
+      "rarity": "rare",
+      "slot": "boots",
+      "level": 2
+    },
+    {
+      "id": "s8_artisan_north_helm",
+      "name": "Шлем старейшины",
+      "type": "equipment",
+      "rarity": "rare",
+      "slot": "helmet",
+      "level": 1
+    },
+    {
+      "id": "s8_artisan_trader_armor",
+      "name": "Броня караванщика",
+      "type": "equipment",
+      "rarity": "rare",
+      "slot": "armor",
+      "level": 3
+    },
+    {
+      "id": "s8_engineer_guard_helm",
+      "name": "Шлем дозорного",
+      "type": "equipment",
+      "rarity": "common",
+      "slot": "helmet",
+      "level": 1
+    },
+    {
+      "id": "s8_engineer_jarl_plate",
+      "name": "Доспех мастера механизмов",
+      "type": "equipment",
+      "rarity": "legendary",
+      "slot": "armor",
+      "level": 3
+    },
+    {
+      "id": "s8_engineer_north_shield",
+      "name": "Щит северной стражи",
+      "type": "equipment",
+      "rarity": "rare",
+      "slot": "shield",
+      "level": 2
+    },
+    {
+      "id": "s8_engineer_path_boots",
+      "name": "Сапоги следопыта",
+      "type": "equipment",
+      "rarity": "rare",
+      "slot": "boots",
+      "level": 2
+    },
+    {
+      "id": "s8_jeweler_guard_amulet",
+      "name": "Оберег северных врат",
+      "type": "equipment",
+      "rarity": "rare",
+      "slot": "amulet",
+      "level": 3
+    },
+    {
+      "id": "s8_jeweler_jarl_seal",
+      "name": "Печать ярла",
+      "type": "equipment",
+      "rarity": "legendary",
+      "slot": "ring",
+      "level": 5
+    },
+    {
+      "id": "s8_jeweler_sapphire_ring",
+      "name": "Сапфировое кольцо",
+      "type": "equipment",
+      "rarity": "epic",
+      "slot": "ring",
+      "level": 5
+    },
+    {
+      "id": "s8_jeweler_spark_ring",
+      "name": "Кольцо искры",
+      "type": "equipment",
+      "rarity": "rare",
+      "slot": "ring",
+      "level": 3
+    },
+    {
+      "id": "s8_smith_jarl_blade",
+      "name": "Клинок первого ярла",
+      "type": "equipment",
+      "rarity": "legendary",
+      "slot": "weapon",
+      "level": 5
+    },
+    {
+      "id": "s8_smith_north_armor",
+      "name": "Латы северянина",
+      "type": "equipment",
+      "rarity": "rare",
+      "slot": "armor",
+      "level": 3
+    },
+    {
+      "id": "s8_smith_storm_axe",
+      "name": "Секира бури",
+      "type": "equipment",
+      "rarity": "epic",
+      "slot": "weapon",
+      "level": 5
+    },
+    {
+      "id": "s8_smith_watch_blade",
+      "name": "Клинок дозорного",
+      "type": "equipment",
+      "rarity": "rare",
+      "slot": "weapon",
+      "level": 3
+    },
+    {
+      "id": "smith_ancient_blade",
+      "name": "Клинок древних",
+      "type": "equipment",
+      "rarity": "legendary",
+      "slot": "weapon",
+      "level": 5
+    },
+    {
+      "id": "smith_apprentice_blade",
+      "name": "Меч подмастерья",
+      "type": "equipment",
+      "rarity": "common",
+      "slot": "weapon",
+      "level": 1
+    },
+    {
+      "id": "smith_knight_blade",
+      "name": "Клинок рыцаря",
+      "type": "equipment",
+      "rarity": "rare",
+      "slot": "weapon",
+      "level": 3
+    },
+    {
+      "id": "smith_leather_armor",
+      "name": "Кожаная броня",
+      "type": "equipment",
+      "rarity": "common",
+      "slot": "armor",
+      "level": 1
+    }
+  ]
+}
