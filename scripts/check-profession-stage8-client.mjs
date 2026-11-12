@@ -48,12 +48,9 @@ response={data:okStatus,error:null};
 const status=await api.fetchStage8Status();
 assert.equal(status.masteryLevel,25);
 assert.equal(status.resources['gather-ore'],8);
-assert.deepEqual(catalog.compatibleServerVersions,
-  ['profession-stage8-draft-20261025-r2',catalog.version],
-  'Deploy r4 client before live server upgrade without blocking active r2 players');
 response={data:{...okStatus,version:'profession-stage8-draft-20261025-r2'},error:null};
-assert.equal((await api.fetchStage8Status()).enabled,true,'Live r2 status must remain supported');
-
+await assert.rejects(()=>api.fetchStage8Status(),/status_mismatch/,
+  'Never display r4 stats to players while active server still mints weaker r2 items');
 response={data:{...okStatus,version:'old-client'},error:null};
 await assert.rejects(()=>api.fetchStage8Status(),/status_mismatch/);
 response={data:{...okStatus,daily_xp_used:301},error:null};
