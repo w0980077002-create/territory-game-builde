@@ -23,7 +23,7 @@ const { createSequentialWriter } = loadPureTsModule('../src/game/saveQueue.ts');
 const calendar = loadPureTsModule('../src/game/weeklyQuests.ts');
 const { canBuyShopItem, shopStonesBoughtToday, MAX_SHOP_PURCHASE_QTY } = loadPureTsModule('../src/game/purchaseGuard.ts', { './weeklyQuests': calendar });
 const { spendStones } = loadPureTsModule('../src/game/progression.ts', {
-  './actions': {}, './live': {}, './weeklyQuests': calendar,
+  './actions': {}, './live': {}, './weeklyQuests': calendar, './dailyAttendance': {},
   './trialLoot': { applyTrialChest: (state) => state, rollTrialChest: () => null, trialChestTier: () => null },
   './followers': { awardCowAwakeningStone: (state) => state, cowStoneTrialReward: () => 0 },
 });
