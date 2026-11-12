@@ -12,6 +12,9 @@ import { readFileSync } from 'node:fs';
 // existing owned equipment and server receipts are never retroactively rewritten.
 // Level-300 recipe XP is capped to fit the 300 XP daily ceiling.
 const legacyCatalogue = JSON.parse(readFileSync(new URL('../../supabase/staged/territory_craft_catalog.json',import.meta.url),'utf8'));
+const liveR2Catalogue = JSON.parse(readFileSync(new URL('../../supabase/staged/territory_profession_stage8_r2_catalog.json',import.meta.url),'utf8'));
+if(liveR2Catalogue.version!=='profession-stage8-draft-20261025-r2'||liveR2Catalogue.recipes.length!==72)
+  throw new Error('Missing immutable live Stage8 r2 baseline');
 
 export const STAGE8_VERSION = 'profession-stage8-draft-20261112-r4';
 export const MAX_MASTERY_LEVEL = 300;
@@ -169,7 +172,10 @@ function balanceCraftRecipe(recipe){
     description:'Мастерское изделие ('+masterworkBonusPct(recipe.requiredLevel)+'% к магазинной базе с учётом редкости): '+stats+'.',
     equipment:improved}};
 }
-export const STAGE8_EQUIPMENT = Object.freeze(STAGE8_EQUIPMENT_BASE.map(balanceCraftRecipe));
+// These are the ORIGINAL live r2 outputs, not overwritten by the r4 release.
+// All 325 previously crafted items keep exactly their original name and stats.
+export const STAGE8_EQUIPMENT = Object.freeze(liveR2Catalogue.recipes.filter(
+  (recipe)=>recipe.id.startsWith('s8_') && recipe.output?.equipment));
 
 const consumable = (id,requiredLevel,name,icon,ingredients,kind,stat,value,masteryXp) => ({
   id, profession: 'alchemist', kind:'item', requiredLevel, masteryXp, ingredients,
@@ -182,11 +188,31 @@ export const STAGE8_CONSUMABLES = Object.freeze([
   consumable('s8_alchemist_jarl_elixir',300,'Эликсир стойкости ярла','🧬',[gather('gather-herb',30),gather('gather-crystal',16)],'elixir','defense',15,1),
 ]);
 
-export const STAGE8_LEGACY_RECIPES = Object.freeze(legacyCatalogue.map((recipe) => Object.freeze(balanceCraftRecipe({
-  ...recipe,
-  kind:'item',
-  masteryXp:recipe.requiredLevel===300 ? 1 : recipe.masteryXp,
-}))));
+export const STAGE8_LEGACY_RECIPES = Object.freeze(liveR2Catalogue.recipes.filter(
+  (recipe)=>legacyCatalogue.some((old)=>old.id===recipe.id)));
+
+// Each masterwork uses its OWN recipe ID and item name. No old shop-name
+// normalization, no r2 receipts/catalog overwrites, no historical item drops.
+// For four defensive outputs, use a suitable base item level so the real
+// production armor/boots HP cap does not strip the intended 20-30% premium.
+const MASTERWORK_MIN_ITEM_LEVEL = Object.freeze({
+  's8_smith_north_armor':5,
+  's8_artisan_trader_armor':5,
+  's8_engineer_jarl_plate':10,
+  's8_artisan_jarl_boots':4,
+});
+export const STAGE8_MASTERWORK_EQUIPMENT = Object.freeze(
+  liveR2Catalogue.recipes.filter((recipe)=>recipe.output?.equipment).map(recipe=>{
+    const original=recipe.output.equipment;
+    const level=Math.max(original.level,MASTERWORK_MIN_ITEM_LEVEL[recipe.id]??original.level);
+    const name=recipe.output.name+' · мастерская';
+    return Object.freeze(balanceCraftRecipe({
+      ...recipe,id:'mw_'+recipe.id,
+      ingredients:recipe.ingredients.map(({id,qty})=>({id,qty:Math.max(1,Math.ceil(qty*1.25))})),
+      output:{...recipe.output,name,equipment:{...original,name,level}},
+    }));
+  }),
+);
 
 export function bandForLevel(level) {
   return MASTERY_BANDS.find((band) => level >= band.from && level <= band.to) ?? null;
@@ -218,7 +244,7 @@ export const STAGE8_PRACTICE_RECIPES = Object.freeze(
   PROFESSION_TRACKS.flatMap((track) => MASTERY_BANDS.map((band) => practiceFor(track.id,band.from))),
 );
 export const STAGE8_RECIPES = Object.freeze([
-  ...STAGE8_PRACTICE_RECIPES,...STAGE8_EQUIPMENT,...STAGE8_CONSUMABLES,...STAGE8_LEGACY_RECIPES,
+  ...liveR2Catalogue.recipes,...STAGE8_MASTERWORK_EQUIPMENT,
 ]);
 
 export function totalXpForLevel(target) {
