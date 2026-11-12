@@ -86,6 +86,14 @@ const expiry = await readFile(new URL('../src/game/elixirExpiry.ts',import.meta.
 const screen = await readFile(new URL('../src/components/ProfessionsScreen.tsx',import.meta.url),'utf8');
 const exported = JSON.parse(await readFile(new URL('../supabase/staged/territory_profession_stage8_catalog.json',import.meta.url),'utf8'));
 const originalRecipes = JSON.parse(await readFile(new URL('../supabase/staged/territory_craft_catalog.json',import.meta.url),'utf8'));
+const liveR2Identity=JSON.parse(await readFile(new URL('./professions/stage8-r2-live-identity.json',import.meta.url),'utf8'));
+assert.equal(liveR2Identity.version,'profession-stage8-draft-20261025-r2','Guard the actual live server release version');
+assert.deepEqual(STAGE8_RECIPES.map(recipe=>recipe.id).sort(),liveR2Identity.recipeIds,'All live r2 recipe IDs must survive');
+const outputIdentity=(recipe)=>({id:recipe.id,name:recipe.output.name,type:recipe.output.type,
+  rarity:recipe.output.rarity,slot:recipe.output.equipment?.slot??null,level:recipe.output.equipment?.level??null});
+assert.deepEqual(STAGE8_RECIPES.filter(recipe=>recipe.output).map(outputIdentity).sort((a,b)=>a.id.localeCompare(b.id)),
+  liveR2Identity.itemIdentities,'Never rename/repurpose recipe IDs: 325 already owned r2 items must load');
+
 for(let i=0;i<originalRecipes.length;i++){
   const original=originalRecipes[i];
   const enhanced=STAGE8_LEGACY_RECIPES[i];
