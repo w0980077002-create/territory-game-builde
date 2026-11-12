@@ -110,7 +110,20 @@ with sync_playwright() as p:
     plus=dialog.get_by_role('button',name='Increase quantity' if lang=='en' else 'Увеличить количество');assert plus.bounding_box()['width']>=43.99;plus.click();assert dialog.locator('input[type="range"]').input_value()=='2';page.keyboard.press('Escape');assert dialog.count()==0 and item.evaluate('(e)=>document.activeElement===e')
     # Stone packs must switch without backing out of the dialog. The max is
     # 25 *stones*, not 25 packs. All purchases remain inert in this fixture.
+    # Owner-approved window-size reference: "Материалы кузницы".
+    # Compare REAL React purchase sheets in a normal mobile viewport, not
+    # the short 500px test window which would clamp both to max-height.
+    page.set_viewport_size({'width':width,'height':760})
     page.locator('.territory-shop-tab').last.click()
+    page.locator('.territory-shop-product__art').last.click()
+    reference_dialog=page.get_by_role('dialog')
+    assert ('Материалы кузницы' if lang=='ru' else 'Forge Materials') in reference_dialog.inner_text() or reference_dialog.locator('h2').count()==1
+    reference_height=reference_dialog.locator('.territory-modal-panel').bounding_box()['height']
+    if width==360 and lang=='ru' and not ios:
+      os.makedirs('/tmp/territory-stage1-ui',exist_ok=True)
+      reference_dialog.screenshot(path='/tmp/territory-stage1-ui/shop-material-reference-360.png')
+    page.keyboard.press('Escape')
+    assert reference_dialog.count()==0
     page.locator('.territory-shop-product__art').first.click()
     stone_dialog=page.get_by_role('dialog')
     pack_nav=stone_dialog.get_by_role('navigation',name='Battle stone pack size' if lang=='en' else 'Выбор набора боевых камней')
@@ -121,15 +134,28 @@ with sync_playwright() as p:
     for _ in range(4): stone_plus.click()
     assert stone_dialog.locator('input[type="range"]').input_value()=='5',(width,lang,ios,'five packs must equal 25 stones')
     assert stone_plus.is_disabled(),(width,lang,ios,'daily cap should disable plus')
-    assert ('Maximum available today' if lang=='en' else 'Больше нельзя') in stone_dialog.inner_text(),(width,lang,ios,'missing explanation for disabled plus')
+    assert ('Today\'s maximum' if lang=='en' else 'Максимум на сегодня') in stone_dialog.inner_text(),(width,lang,ios,'missing explanation for disabled plus')
+    # Unlike the previous overgrown stone sheet, it must fit alongside the
+    # materials reference without requiring a swipe to reach Buy or Close.
+    stone_panel=stone_dialog.locator('.territory-modal-panel')
+    stone_box=stone_panel.bounding_box()
+    assert stone_box['height']<=reference_height+18,(width,lang,ios,'stone modal taller than materials reference',stone_box['height'],reference_height)
+    assert stone_dialog.locator('.territory-modal-content').evaluate('(e)=>e.scrollHeight<=e.clientHeight+2'),(width,lang,ios,'stone sheet still overflows in normal viewport')
+    buy=stone_dialog.get_by_role('button',name=('Buy x5' if lang=='en' else 'Купить x5'))
+    buy_box=buy.bounding_box()
+    assert buy_box and buy_box['y']+buy_box['height'] <= stone_box['y']+stone_box['height']-4,(width,lang,ios,'buy button below stone frame')
     if width==360 and lang=='ru' and not ios:
       os.makedirs('/tmp/territory-stage1-ui',exist_ok=True)
       stone_dialog.screenshot(path='/tmp/territory-stage1-ui/shop-stones-limit-360.png')
     pack_nav.locator('button').first.click()
     assert pack_nav.locator('button').first.get_attribute('aria-pressed')=='true'
     assert stone_dialog.locator('input[type="range"]').get_attribute('max')=='25',(width,lang,ios,'individual stones should allow 25')
+    # Short viewports may scroll internally, but the header and exit must
+    # stay visible. At normal height the entire purchase including Buy is visible.
+    page.set_viewport_size({'width':width,'height':500})
     body=stone_dialog.locator('.territory-modal-content')
-    assert body.evaluate('(e)=>{e.scrollTop=e.scrollHeight;return e.scrollTop>0;}'),(width,lang,ios,'stone modal must be vertically scrollable')
+    assert body.evaluate('(e)=>{if(e.scrollHeight<=e.clientHeight+2)return true;e.scrollTop=e.scrollHeight;return e.scrollTop>0;}'),(width,lang,ios,'short stone modal must fit or allow internal scrolling')
+    assert stone_dialog.locator('.territory-modal-close').is_visible(),(width,lang,ios,'close button hidden')
     page.keyboard.press('Escape');assert stone_dialog.count()==0 and not errors,(width,lang,ios,errors)
     page.goto(f'http://127.0.0.1:{server.server_port}/territory-workshop-after.html?professions');page.wait_for_timeout(300);assert not errors,errors
     assert page.locator('.profession-choice').count()==5;assert page.locator('.profession-choice__action').first.bounding_box()['height']>=43.99
