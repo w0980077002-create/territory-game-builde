@@ -81,6 +81,7 @@ try {
  await db.exec('RESET ROLE;');
  await assert.rejects(()=>db.exec(sql),/expected_exactly_72|masterworks_already_present/i,
    'Reapplying migration cannot silently overwrite 25 new server-issued items');
+ await db.exec('ROLLBACK'); // failed DO block aborts the explicit migration transaction
  assert.equal((await data('SELECT count(*)::int AS count FROM public.territory_profession_stage8_catalog'))[0].count,97);
  // Never permit a rollback if even ONE new owned item/receipt exists.
  const newItemId='33333333-3333-4333-8333-333333333333';
@@ -88,6 +89,7 @@ try {
  await db.query('INSERT INTO public.territory_profession_stage8_items VALUES($1,$2,$3,$4::jsonb,NULL)',
    [newItemId,owner,newRecipe.id,JSON.stringify(newRecipe.output)]);
  await assert.rejects(()=>db.exec(rollback),/masterwork_owned_items_or_receipts_exist_refuse_rollback/i);
+ await db.exec('ROLLBACK'); // release failed rollback's aborted transaction
  assert.equal((await data('SELECT count(*)::int AS count FROM public.territory_profession_stage8_catalog'))[0].count,97);
  await db.query('DELETE FROM public.territory_profession_stage8_items WHERE item_id=$1',[newItemId]);
  await db.exec(rollback);
