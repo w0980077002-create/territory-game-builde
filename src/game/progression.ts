@@ -2,7 +2,8 @@ import type { GameState, InventoryItem } from './types';
 import { grantRewards, updateProgress } from './actions';
 import type { Enemy } from './types';
 import { useLive } from './live';
-import { calendarDayKey, previousCalendarDayKey } from './weeklyQuests';
+import { calendarDayKey } from './weeklyQuests';
+import { canContinueDailyRewardStreak, collectedDailyRewardToday } from './dailyAttendance';
 import { trialChestTier } from './trialLoot';
 
 export const dayKey = calendarDayKey;
@@ -72,12 +73,9 @@ export const DAILY_REWARDS: Reward[] = [
 ];
 
 export function dailyStatus(state: GameState, now = Date.now()) {
-  const today = dayKey(now);
-  const yesterday = previousCalendarDayKey(now);
-  const { streak, lastDay } = state.dailyReward;
-  // Respect a saved device-local receipt during the calendar migration.
-  const claimedToday = lastDay === today || lastDay === new Date(now).toDateString();
-  const continues = lastDay === yesterday || lastDay === new Date(now - 86400000).toDateString();
+  const { streak } = state.dailyReward;
+  const claimedToday = collectedDailyRewardToday(state.dailyReward, now);
+  const continues = canContinueDailyRewardStreak(state.dailyReward, now);
   const nextIndex = claimedToday ? (streak - 1) % 7 : continues ? streak % 7 : 0;
   return { claimedToday, dayIndex: nextIndex };
 }
@@ -85,9 +83,8 @@ export function dailyStatus(state: GameState, now = Date.now()) {
 export function claimDaily(state: GameState, now = Date.now()): GameState | null {
   const { claimedToday, dayIndex } = dailyStatus(state, now);
   if (claimedToday) return null;
-  const yesterday = previousCalendarDayKey(now);
-  const last = state.dailyReward.lastDay;
-  const streak = last === yesterday || last === new Date(now - 86400000).toDateString() ? state.dailyReward.streak + 1 : 1;
+  const streak = canContinueDailyRewardStreak(state.dailyReward, now)
+    ? state.dailyReward.streak + 1 : 1;
   return {
     ...applyReward(state, DAILY_REWARDS[dayIndex]),
     dailyReward: { streak, lastDay: dayKey(now) },
