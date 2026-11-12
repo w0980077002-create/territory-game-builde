@@ -34,6 +34,19 @@ const dependencies = {
     }
   },
 };
+// Load the real attendance policy so daily reward tests exercise its actual logic.
+const attendanceJs = ts.transpileModule(fs.readFileSync('src/game/dailyAttendance.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+}).outputText;
+const attendanceModule = { exports: {} };
+vm.runInNewContext(attendanceJs, {
+  module: attendanceModule, exports: attendanceModule.exports,
+  require: (name) => {
+    if (name !== './weeklyQuests') throw new Error('Unexpected attendance import: ' + name);
+    return dependencies['./weeklyQuests'];
+  }, Date, Math,
+}, { filename: 'dailyAttendance.transpiled.js' });
+dependencies['./dailyAttendance'] = attendanceModule.exports;
 vm.runInNewContext(result.outputText, {
   module: { exports }, exports,
   require: (name) => {
