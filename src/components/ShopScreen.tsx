@@ -402,7 +402,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory, focusCave = fa
       {pendingShop && <button className="w-full rounded-xl border border-amber-400/40 bg-amber-500/10 p-3 text-sm font-bold text-amber-200 disabled:opacity-50" onClick={()=>{void retryServerPurchase();}} disabled={buying}>{language==='en'?'Retry pending purchase (same transaction)':'Повторить неподтверждённую покупку (тот же запрос)'}</button>}
       {picked && (
         <Modal title={localizeText(picked.name, language)} onClose={() => setPicked(null)}>
-          <PurchaseSheet item={picked} initialQty={dialogQty} state={shopStatus?.enabled ? {...state, player:{...state.player,gems:shopStatus.gems},battleStones:shopStatus.stones,dailyStonesBought:shopStatus.boughtToday,dailyStonesDate:calendarDayKey()} : state} onBuy={(qty) => {void buy(picked, qty);}} />
+          <PurchaseSheet item={picked} initialQty={dialogQty} state={shopStatus?.enabled ? {...state, player:{...state.player,gems:shopStatus.gems},battleStones:shopStatus.stones,dailyStonesBought:shopStatus.boughtToday,dailyStonesDate:calendarDayKey()} : state} onBuy={(qty) => {void buy(picked, qty);}} stoneOptions={allItems.filter(option => option.type === 'stone')} onChooseStone={(option) => inspectItem(option)} />
         </Modal>
       )}
 
@@ -439,7 +439,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory, focusCave = fa
   );
 }
 
-function PurchaseSheet({ item, state, initialQty = 1, onBuy }: { item: ShopItem; state: GameState; initialQty?: number; onBuy: (qty: number) => void }) {
+function PurchaseSheet({ item, state, initialQty = 1, onBuy, stoneOptions = [], onChooseStone }: { item: ShopItem; state: GameState; initialQty?: number; onBuy: (qty: number) => void; stoneOptions?: ShopItem[]; onChooseStone?: (item: ShopItem) => void }) {
   const { t, language } = useLanguage();
   const isStone = item.type === 'stone';
   const stonePerUnit = isStone ? (item.amount ?? 1) : 0;
@@ -449,15 +449,20 @@ function PurchaseSheet({ item, state, initialQty = 1, onBuy }: { item: ShopItem;
   const balance = item.priceGems ? state.player.gems : state.player.gold;
   const maxByBalance = priceEach > 0 ? Math.floor(balance / priceEach) : 1;
   const maxByStoneLimit = isStone ? maxStoneQty(state, item) : Infinity;
-  const maxQty = Math.max(1, Math.min(MAX_SHOP_PURCHASE_QTY, maxByBalance, maxByStoneLimit));
+  // Zero is meaningful: neither the modal nor its buy button may manufacture
+  // a purchasable first unit when the player has no quota or no currency.
+  const maxQty = Math.max(0, Math.min(MAX_SHOP_PURCHASE_QTY, maxByBalance, maxByStoneLimit));
 
   const countdownMs = useMidnightCountdown();
 
   const [qty, setQty] = useState(initialQty);
-  const qtyClamped = Math.min(qty, maxQty);
+  const qtyClamped = maxQty >= 1 ? Math.max(1, Math.min(qty, maxQty)) : 1;
   const totalCost = priceEach * qtyClamped;
   const totalStones = stonePerUnit * qtyClamped;
   const ok = maxQty >= 1 && qtyClamped >= 1 && (!isStone || stonesLeft >= totalStones);
+  const atMaximum = isStone && maxQty >= 1 && qtyClamped >= maxQty;
+  const dailyCapExplainsMaximum = atMaximum && stonesLeft - totalStones < stonePerUnit;
+  const balanceExplainsMaximum = atMaximum && !dailyCapExplainsMaximum && maxByBalance <= maxQty;
 
   useEffect(() => {
     setQty(initialQty);
@@ -477,6 +482,15 @@ function PurchaseSheet({ item, state, initialQty = 1, onBuy }: { item: ShopItem;
           {(item.type === 'elixir' || item.type === 'potion' || item.type === 'arena') && <p className="mt-1 text-xs text-amber-300">{language === 'en' ? 'Permanent — no expiry' : 'Постоянный предмет — без срока годности'}</p>}
         </div>
       </div>
+      {isStone && stoneOptions.length > 1 && onChooseStone && (
+        <nav aria-label={language === 'en' ? 'Battle stone pack size' : 'Выбор набора боевых камней'} className="grid grid-cols-2 gap-2">
+          {stoneOptions.map(option => (
+            <button type="button" key={option.id} onClick={() => onChooseStone(option)} aria-pressed={option.id === item.id}
+              className={`min-h-11 rounded-lg border px-2 py-2 text-xs font-bold ${option.id === item.id ? 'border-amber-300 bg-amber-500/25 text-amber-100' : 'border-amber-500/30 bg-black/30 text-gray-200'}`}
+            >{language === 'en' ? `${option.amount ?? 1} stone(s) per pack` : `По ${option.amount ?? 1} камней в наборе`}</button>
+          ))}
+        </nav>
+      )}
       {item.equipment && (
         <div className="grid grid-cols-2 gap-2 text-xs">
           {item.equipment.attack ? <span className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 h-8 text-orange-300"><Sword className="w-3.5 h-3.5" />{language === 'en' ? 'Attack' : 'Атака'} +{item.equipment.attack}</span> : null}
@@ -542,6 +556,13 @@ function PurchaseSheet({ item, state, initialQty = 1, onBuy }: { item: ShopItem;
               <Plus className="w-4 h-4" />
             </button>
           </div>
+          {(dailyCapExplainsMaximum || balanceExplainsMaximum) && (
+            <p role="status" className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+              {dailyCapExplainsMaximum
+                ? (language === 'en' ? `Maximum available today: ${stonesLeft} battle stones. The daily limit is ${DAILY_STONE_LIMIT}.` : `Больше нельзя: доступно сегодня ${stonesLeft} камней из лимита ${DAILY_STONE_LIMIT}. Вы уже выбрали максимум.`)
+                : (language === 'en' ? 'Not enough blue crystals for another pack.' : 'Для ещё одного набора не хватает синих алмазов.')}
+            </p>
+          )}
           <div className="flex items-center justify-between rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 h-9 text-xs">
             <span className="text-gray-400">{t('total')}</span>
             <span className="text-amber-100 font-bold">
@@ -558,7 +579,7 @@ function PurchaseSheet({ item, state, initialQty = 1, onBuy }: { item: ShopItem;
         </div>
       ) : isStone ? (
         <div className="rounded-xl bg-red-500/10 border border-red-500/30 px-3 py-3 text-center text-xs text-red-300">
-          {t('stonesLimitGone')}
+          {stonesLeft < stonePerUnit ? t('stonesLimitGone') : t('notEnoughFunds')}
         </div>
       ) : null}
 
@@ -567,7 +588,7 @@ function PurchaseSheet({ item, state, initialQty = 1, onBuy }: { item: ShopItem;
         onClick={() => onBuy(qtyClamped)}
         className="w-full h-12 rounded-2xl bg-gradient-to-b from-amber-400 to-amber-600 text-black font-bold active:scale-[0.98] transition-transform disabled:opacity-40 disabled:bg-none disabled:bg-white/10 disabled:text-gray-400"
       >
-        {ok ? `${language === 'en' ? 'Buy' : 'Купить'} x${qtyClamped}` : isStone ? t('limitReached') : t('notEnoughFunds')}
+        {ok ? `${language === 'en' ? 'Buy' : 'Купить'} x${qtyClamped}` : isStone && stonesLeft < stonePerUnit ? t('limitReached') : t('notEnoughFunds')}
       </button>
     </div>
   );
