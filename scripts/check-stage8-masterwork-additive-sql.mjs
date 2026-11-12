@@ -9,6 +9,7 @@ import { PGlite } from '@electric-sql/pglite';
 const r2=JSON.parse(await readFile(new URL('../supabase/staged/territory_profession_stage8_r2_catalog.json',import.meta.url),'utf8'));
 const r4=JSON.parse(await readFile(new URL('../supabase/staged/territory_profession_stage8_catalog.json',import.meta.url),'utf8'));
 const sql=await readFile(new URL('../supabase/staged/territory_stage8_masterwork_additive_r4.sql',import.meta.url),'utf8');
+const rollback=await readFile(new URL('../supabase/staged/territory_stage8_masterwork_additive_r4_rollback.sql',import.meta.url),'utf8');
 assert.equal(r2.recipes.length,72);
 assert.equal(r4.recipes.length,97);
 assert.deepEqual(r4.recipes.slice(0,72),r2.recipes,'Never mutate historical r2 catalog');
@@ -81,5 +82,17 @@ try {
  await assert.rejects(()=>db.exec(sql),/expected_exactly_72|masterworks_already_present/i,
    'Reapplying migration cannot silently overwrite 25 new server-issued items');
  assert.equal((await data('SELECT count(*)::int AS count FROM public.territory_profession_stage8_catalog'))[0].count,97);
+ // Never permit a rollback if even ONE new owned item/receipt exists.
+ const newItemId='33333333-3333-4333-8333-333333333333';
+ const newRecipe=r4.recipes.find(r=>r.id==='mw_smith_knight_blade');
+ await db.query('INSERT INTO public.territory_profession_stage8_items VALUES($1,$2,$3,$4::jsonb,NULL)',
+   [newItemId,owner,newRecipe.id,JSON.stringify(newRecipe.output)]);
+ await assert.rejects(()=>db.exec(rollback),/masterwork_owned_items_or_receipts_exist_refuse_rollback/i);
+ assert.equal((await data('SELECT count(*)::int AS count FROM public.territory_profession_stage8_catalog'))[0].count,97);
+ await db.query('DELETE FROM public.territory_profession_stage8_items WHERE item_id=$1',[newItemId]);
+ await db.exec(rollback);
+ assert.equal((await data('SELECT count(*)::int AS count FROM public.territory_profession_stage8_catalog'))[0].count,72);
+ assert.deepEqual(await data('SELECT * FROM public.territory_profession_stage8_items'),beforeItems);
+ assert.deepEqual(await data('SELECT * FROM public.territory_profession_stage8_receipts'),beforeReceipts);
  console.log('Stage8 masterwork ADDITIVE SQL PASS: 72 original catalog recipes untouched, 25 new rows, 1 owned item and receipt unchanged; readiness auth gate secure; second apply denied.');
 }finally{await db.close();}
