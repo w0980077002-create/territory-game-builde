@@ -154,7 +154,7 @@ with sync_playwright() as p:
     # stay visible. At normal height the entire purchase including Buy is visible.
     page.set_viewport_size({'width':width,'height':500})
     body=stone_dialog.locator('.territory-modal-content')
-    assert body.evaluate('(e)=>{e.scrollTop=e.scrollHeight;return e.scrollTop>0;}'),(width,lang,ios,'short stone modal must allow internal scrolling')
+    assert body.evaluate('(e)=>{if(e.scrollHeight<=e.clientHeight+2)return true;e.scrollTop=e.scrollHeight;return e.scrollTop>0;}'),(width,lang,ios,'short stone modal must fit or allow internal scrolling')
     assert stone_dialog.locator('.territory-modal-close').is_visible(),(width,lang,ios,'close button hidden')
     page.keyboard.press('Escape');assert stone_dialog.count()==0 and not errors,(width,lang,ios,errors)
     page.goto(f'http://127.0.0.1:{server.server_port}/territory-workshop-after.html?professions');page.wait_for_timeout(300);assert not errors,errors
