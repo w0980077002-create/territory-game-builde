@@ -108,7 +108,8 @@ function balanceCraftRecipe(recipe){
   balanced.attack=Math.max(balanced.attack??0,masterwork.attack);
   balanced.critChance=Math.max(balanced.critChance??0,masterwork.critChance);
  }
- return {...recipe,output:{...recipe.output,equipment:balanced}};
+ const description=masterwork?`Атака +${balanced.attack}, шанс крита +${balanced.critChance}%.`:recipe.output.description;
+ return {...recipe,output:{...recipe.output,description,equipment:balanced}};
 }
 export const STAGE8_EQUIPMENT = Object.freeze(STAGE8_EQUIPMENT_BASE.map(balanceCraftRecipe));
 
