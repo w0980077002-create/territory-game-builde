@@ -104,7 +104,16 @@ assert.equal(crafted('s8_smith_watch_blade').attack,19,'Level-25 crafts must bea
 assert.equal(crafted('s8_smith_storm_axe').attack,38,'Level-200 epic crafts must beat shop epic weapons');
 assert.equal(crafted('s8_smith_jarl_blade').attack,46,'Level-300 legendary weapon must beat shop epic baseline');
 assert.equal(crafted('smith_ancient_blade').attack,46,'Legacy grandmaster recipes must share the same power budget');
-assert.equal(crafted('jeweler_ancient_ring').attack,20);
+assert.equal(crafted('jeweler_ancient_ring').attack,25);
+// Compare all seven new jeweler masterwork outputs against the actual shop.
+const jewelTargets = {"jeweler_raven_amulet":[8,4],"s8_jeweler_guard_amulet":[9,4],"s8_jeweler_spark_ring":[12,4],"jeweler_power_ring":[19,6],"s8_jeweler_sapphire_ring":[21,6],"jeweler_ancient_ring":[25,7],"s8_jeweler_jarl_seal":[25,7]};
+for (const [id,[attack,critChance]] of Object.entries(jewelTargets)) {
+  assert.equal(crafted(id).attack,attack,id+' attack');
+  assert.equal(crafted(id).critChance,critChance,id+' critChance');
+}
+// At item lvl 5, the lvl-3 rare crafted ring gains +1 atk through the rare ring forge curve.
+assert.equal(crafted('s8_jeweler_spark_ring').attack+1,13,'Master ring lvl5 exceeds shop rare lvl5 atk 10');
+
 assert.equal(crafted('s8_engineer_jarl_plate').hp,86,'Legendary armor must respect the server HP cap at level 3');
 assert.equal(crafted('s8_artisan_jarl_boots').hp,60,'Legendary boots must respect the server HP cap at level 2');
 assert.equal(crafted('smith_knight_blade').attack,18,'Shop-name collisions stay at canonical server stats');
