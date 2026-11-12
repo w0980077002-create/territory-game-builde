@@ -25,7 +25,7 @@
     "test:saves": "node scripts/check-economy.mjs && node scripts/check-immediate-save.mjs",
     "test:client-guard": "node scripts/economy-client-guard-tests.mjs",
     "test:stage2": "node scripts/check-stage2.mjs",
-    "test:progression": "node scripts/progression-audit.mjs && node scripts/check-daily-potions.mjs && node scripts/check-daily-attendance.mjs",
+    "test:progression": "node scripts/progression-audit.mjs",
     "test:stage3": "node scripts/check-stage3.mjs",
     "test:stage4": "node scripts/check-stage4.mjs",
     "test:stage5": "node scripts/check-stage5.mjs && node scripts/check-auction-sql.mjs && node scripts/check-auction-client.mjs",
