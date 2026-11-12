@@ -20,10 +20,12 @@ interface Props {
   title: string;
   icon?: string;
   onClose: () => void;
+  /** Keep dense purchase sheets within the same mobile window as simple materials. */
+  compact?: boolean;
   children: ReactNode;
 }
 
-export function Modal({ title, icon, onClose, children }: Props) {
+export function Modal({ title, icon, onClose, compact = false, children }: Props) {
   const { language } = useLanguage();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -58,7 +60,7 @@ export function Modal({ title, icon, onClose, children }: Props) {
     <IosGamePortal>
     <div ref={modalRef} className="territory-modal fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <button aria-label={language === 'en' ? 'Close' : 'Закрыть'} className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose} />
-      <div ref={panelRef} className="territory-modal-panel relative flex flex-col shadow-2xl shadow-black">
+      <div ref={panelRef} className={`territory-modal-panel relative flex flex-col shadow-2xl shadow-black${compact ? " territory-modal-panel--compact" : ""}`}>
         <div className="territory-modal-head flex items-center gap-2.5 shrink-0">
           {icon && <img src={icon} alt="" className="w-8 h-8 object-contain" />}
           <h2 id={titleId} className="flex-1">{title}</h2>
@@ -71,7 +73,7 @@ export function Modal({ title, icon, onClose, children }: Props) {
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="territory-modal-content overflow-y-auto p-4" tabIndex={0}>{children}</div>
+        <div className={`territory-modal-content overflow-y-auto ${compact ? "p-3" : "p-4"}`} tabIndex={0}>{children}</div>
       </div>
     </div>
     </IosGamePortal>
