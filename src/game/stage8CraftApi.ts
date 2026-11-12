@@ -28,10 +28,6 @@ export type Stage8Recipe = {
   };
 };
 export const STAGE8_CATALOG_VERSION = blueprint.version;
-// Active production still reports r2. Only the item stats/descriptions change
-// in r4: recipe IDs, item names, output type and rarity must stay stable so
-// existing receipts/inventory and old clients remain compatible.
-const STAGE8_ACCEPTED_SERVER_VERSIONS = new Set(blueprint.compatibleServerVersions);
 export const STAGE8_DAILY_XP_CAP = blueprint.dailyXpCapKyiv;
 export const STAGE8_RECIPES: readonly Stage8Recipe[] = blueprint.recipes as Stage8Recipe[];
 const BANDS = blueprint.masteryBands;
@@ -85,7 +81,7 @@ export async function fetchStage8Status(): Promise<Stage8Status> {
   const {data,error} = await supabase.rpc('territory_profession_stage8_status');
   if (error || !obj(data) || typeof data.enabled !== 'boolean') throw new Error('stage8_status_unavailable');
   if (!data.enabled) return {enabled:false,version:'',profession:null,masteryLevel:1,masteryXp:0,dailyXpUsed:0,dailyXpCap:STAGE8_DAILY_XP_CAP,masterLicense:false,resources:{}};
-  if (typeof data.version !== 'string' || !STAGE8_ACCEPTED_SERVER_VERSIONS.has(data.version) || (data.profession !== null && !knownProfession(data.profession))
+  if (data.version !== STAGE8_CATALOG_VERSION || (data.profession !== null && !knownProfession(data.profession))
       || !int(data.mastery_level,300) || data.mastery_level<1 || !int(data.mastery_xp,100000)
       || !int(data.daily_xp_used,STAGE8_DAILY_XP_CAP) || data.daily_xp_cap!==STAGE8_DAILY_XP_CAP
       || typeof data.master_license!=='boolean' || !obj(data.resources)) throw new Error('stage8_status_mismatch');
