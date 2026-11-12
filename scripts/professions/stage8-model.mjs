@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs';
 // Level-300 recipe XP is capped to fit the 300 XP daily ceiling.
 const legacyCatalogue = JSON.parse(readFileSync(new URL('../../supabase/staged/territory_craft_catalog.json',import.meta.url),'utf8'));
 
-export const STAGE8_VERSION = 'profession-stage8-draft-20261112-r3';
+export const STAGE8_VERSION = 'profession-stage8-draft-20261112-r4';
 export const MAX_MASTERY_LEVEL = 300;
 export const DAILY_SERVER_XP_CAP = 300;
 export const GATHER_HOURS_PER_UNIT = 4;
@@ -71,44 +71,106 @@ const STAGE8_EQUIPMENT_BASE = Object.freeze([
   equipment('s8_artisan_jarl_boots','artisan',300,'Сапоги великого мастера','🥾',[gather('gather-hide',28),gather('gather-wood',20),gather('gather-crystal',7)],'boots','legendary',2,{defense:4,hp:40,critChance:2},1),
 ]);
 
-/** Only NEW crafts receive this budget; historical owned gear is never rewritten. */
-export const CRAFT_RARITY_POWER = Object.freeze({"common":1,"rare":1.15,"epic":1.35,"legendary":1.6});
-const CRAFT_REFERENCES = Object.freeze({"weapon":{"common":{"attack":8},"rare":{"attack":18,"critChance":3},"epic":{"attack":35,"critChance":8}},"armor":{"common":{"defense":5,"hp":30},"rare":{"defense":12,"hp":80}},"helmet":{"common":{"defense":3,"hp":20}},"boots":{"rare":{"defense":4,"hp":40,"critChance":2}},"shield":{"common":{"defense":5,"hp":25}},"ring":{"rare":{"attack":10,"critChance":3},"epic":{"attack":15,"critChance":5}},"amulet":{"rare":{"attack":6,"critChance":3}}});
+/**
+ * Stage8 draft ONLY. Compare a NEW crafted item against the strongest shop
+ * offer of the SAME slot and rarity at the SAME item level. Old purchases,
+ * owned equipment, V1 inventory and existing receipt payloads are immutable.
+ * Epic historic paid items are benchmarks, never converted into rare goods.
+ */
+export const CRAFT_RARITY_POWER = Object.freeze({common:1,rare:1.15,epic:1.35,legendary:1.6});
+export const MASTERWORK_MIN_PCT = 20;
+export const MASTERWORK_MAX_PCT = 30;
 export function craftQualityPct(level){if(level>=300)return 10;if(level>=200)return 7;if(level>=100)return 5;if(level>=25)return 3;return 0;}
+export const masterworkBonusPct = (masteryLevel) => MASTERWORK_MIN_PCT + craftQualityPct(masteryLevel);
 
-// New Stage8 crafts only. Rounded values keep the jeweler ahead of current
-// shop offers, historical paid epics, and their same-level forge equivalents.
-// Do not retroactively rewrite any owned item or server receipt.
-const JEWELER_MASTERWORK_TARGETS = Object.freeze({
-  'jeweler_raven_amulet': {attack:8,critChance:4},
-  's8_jeweler_guard_amulet': {attack:9,critChance:4},
-  's8_jeweler_spark_ring': {attack:12,critChance:4},
-  'jeweler_power_ring': {attack:19,critChance:6},
-  's8_jeweler_sapphire_ring': {attack:21,critChance:6},
-  'jeweler_ancient_ring': {attack:25,critChance:7},
-  's8_jeweler_jarl_seal': {attack:25,critChance:7},
+// Mirror the actual shop equipment templates, not the outdated 8/2 ring
+// reference. The offline test verifies every row against equipmentCatalog.ts.
+export const STAGE8_SHOP_BASELINES = Object.freeze([
+  {id:'shop_weapon_warrior_eq',slot:'weapon',rarity:'common',level:1,attack:8},
+  {id:'shop_weapon_knight_eq',slot:'weapon',rarity:'rare',level:3,attack:18,critChance:3},
+  {id:'shop_weapon_hero_eq',slot:'weapon',rarity:'rare',level:5,attack:22,critChance:4},
+  {id:'shop_armor_leather_eq',slot:'armor',rarity:'common',level:1,defense:5,hp:30},
+  {id:'shop_armor_plate_eq',slot:'armor',rarity:'rare',level:3,defense:12,hp:80},
+  {id:'shop_helmet_iron_eq',slot:'helmet',rarity:'common',level:1,defense:3,hp:20},
+  {id:'shop_boots_swift_eq',slot:'boots',rarity:'rare',level:2,defense:4,hp:40,critChance:2},
+  {id:'shop_ring_power_eq',slot:'ring',rarity:'rare',level:5,attack:10,critChance:3},
+  {id:'shop_shield_oak_eq',slot:'shield',rarity:'common',level:2,defense:5,hp:25},
+  {id:'shop_amulet_raven_eq',slot:'amulet',rarity:'rare',level:3,attack:6,critChance:3},
+  // Existing historical epic purchases are protected; use their original
+  // stats as a quality threshold even though they are no longer sold.
+  {id:'historic_shop_hero',slot:'weapon',rarity:'epic',level:5,attack:35,critChance:8,historic:true},
+  {id:'historic_shop_ring',slot:'ring',rarity:'epic',level:5,attack:15,critChance:5,historic:true},
+]);
+
+// This intentionally mirrors FORGE_STAT_GROWTH from equipmentBalance.ts.
+// A regression test checks those two tables for drift.
+export const STAGE8_FORGE_GROWTH = Object.freeze({
+  weapon:{common:{attack:1},rare:{attack:1.5},epic:{attack:2},legendary:{attack:3}},
+  ring:{common:{attack:0.5,defense:0,hp:0.5},rare:{attack:0.5,defense:0.25,hp:0.75},epic:{attack:0.75,defense:0.5,hp:1},legendary:{attack:1,defense:0.5,hp:1.5}},
+  amulet:{common:{attack:0.25,defense:0,hp:0.5},rare:{attack:0.5,defense:0.25,hp:0.75},epic:{attack:0.75,defense:0.5,hp:1},legendary:{attack:1,defense:0.5,hp:1.5}},
+  armor:{common:{defense:0.25,hp:1},rare:{defense:0.5,hp:1.5},epic:{defense:0.75,hp:2},legendary:{defense:1,hp:3}},
+  helmet:{common:{defense:0.25,hp:0.5},rare:{defense:0.25,hp:0.75},epic:{defense:0.5,hp:1},legendary:{defense:0.5,hp:1.5}},
+  shield:{common:{defense:0.5,hp:0.5},rare:{defense:0.5,hp:0.75},epic:{defense:0.75,hp:1},legendary:{defense:1,hp:1.5}},
+  boots:{common:{defense:0.25,hp:0.5},rare:{defense:0.25,hp:1},epic:{defense:0.5,hp:1.5},legendary:{defense:0.5,hp:2}},
 });
 
+export function benchmarkShopEquipment(slot, rarity, itemLevel){
+  const candidates=STAGE8_SHOP_BASELINES.filter(
+    (item)=>item.slot===slot && CRAFT_RARITY_POWER[item.rarity]<=CRAFT_RARITY_POWER[rarity]);
+  if(!candidates.length)throw new Error('Missing shop benchmark: '+slot+'/'+rarity);
+  const highest=Math.max(...candidates.map(item=>CRAFT_RARITY_POWER[item.rarity]));
+  const tier=candidates.filter(item=>CRAFT_RARITY_POWER[item.rarity]===highest);
+  // First compare genuinely obtainable shop items at this level. Only when
+  // there is no such item (rare ring lvl3), project the nearest shop baseline
+  // backwards using the canonical linear forge slope.
+  const eligible=tier.filter(item=>item.level<=itemLevel);
+  const compared=(eligible.length?eligible:tier).map(item=>{
+    const curve=STAGE8_FORGE_GROWTH[item.slot][item.rarity];
+    const normalized={...item};
+    for(const key of ['attack','defense','hp']){
+      if(typeof item[key]==='number')
+        normalized[key]=Math.max(0,item[key]+Math.round((curve[key]??0)*(itemLevel-item.level)));
+    }
+    normalized.level=itemLevel;
+    return normalized;
+  });
+  return compared.sort((a,b)=>
+    ((b.attack??0)*5+(b.defense??0)*5+(b.hp??0)+(b.critChance??0)*10)-
+    ((a.attack??0)*5+(a.defense??0)*5+(a.hp??0)+(a.critChance??0)*10))[0];
+}
+
 function balanceCraftRecipe(recipe){
- if(!recipe.output?.equipment)return recipe;
- const eq=recipe.output.equipment;
- // Current server canonicalizes shop names. Preserve these historical recipes.
- if((eq.name==='Клинок рыцаря'&&eq.slot==='weapon'&&eq.rarity==='rare')||(eq.name==='Кожаная броня'&&eq.slot==='armor'&&eq.rarity==='common'))return recipe;
- const refs=CRAFT_REFERENCES[eq.slot];
- const refRarity=refs[eq.rarity]?eq.rarity:Object.keys(refs).filter(r=>CRAFT_RARITY_POWER[r]<=CRAFT_RARITY_POWER[eq.rarity]).sort((a,b)=>CRAFT_RARITY_POWER[b]-CRAFT_RARITY_POWER[a])[0]??Object.keys(refs)[0];
- const benchmark=refs[refRarity],factor=CRAFT_RARITY_POWER[eq.rarity]/CRAFT_RARITY_POWER[refRarity]*(1+craftQualityPct(recipe.requiredLevel)/100),level=eq.level;
- const caps={attack:eq.slot==='weapon'?40+6*level:['ring','amulet'].includes(eq.slot)?20+4*level:10+2*level,defense:['armor','shield','helmet','boots'].includes(eq.slot)?10+5*level:10+3*level,hp:eq.slot==='armor'?50+12*level:['boots','shield','helmet'].includes(eq.slot)?40+10*level:25+5*level};
- const balanced={...eq};
- for(const stat of ['attack','defense','hp'])if(typeof eq[stat]==='number'&&typeof benchmark[stat]==='number')balanced[stat]=Math.min(caps[stat],Math.max(eq[stat],Math.ceil(benchmark[stat]*factor)));
- // Crit is a bounded chance, NOT a rarity-scaled damage stat.
- if(typeof eq.critChance==='number')balanced.critChance=Math.min(10,Math.max(eq.critChance,(benchmark.critChance??eq.critChance)+(eq.rarity==='legendary'?1:0)));
- const masterwork=JEWELER_MASTERWORK_TARGETS[recipe.id];
- if(masterwork){
-  balanced.attack=Math.max(balanced.attack??0,masterwork.attack);
-  balanced.critChance=Math.max(balanced.critChance??0,masterwork.critChance);
- }
- const description=masterwork?`Атака +${balanced.attack}, шанс крита +${balanced.critChance}%.`:recipe.output.description;
- return {...recipe,output:{...recipe.output,description,equipment:balanced}};
+  if(!recipe.output?.equipment)return recipe;
+  const eq=recipe.output.equipment;
+  const benchmark=benchmarkShopEquipment(eq.slot,eq.rarity,eq.level);
+  const rarityScale=CRAFT_RARITY_POWER[eq.rarity]/CRAFT_RARITY_POWER[benchmark.rarity];
+  const factor=rarityScale*(1+masterworkBonusPct(recipe.requiredLevel)/100);
+  const balanced={...eq};
+  for(const stat of ['attack','defense','hp','critChance']){
+    if(typeof benchmark[stat]!=='number')continue;
+    // Craft only grants native stats for this slot; never create arbitrary
+    // crit chance on an item that did not have critical strikes before.
+    if(typeof eq[stat]!=='number')continue;
+    const minimum=Math.ceil(benchmark[stat]*rarityScale*(1+MASTERWORK_MIN_PCT/100));
+    const target=Math.max(minimum,Math.round(benchmark[stat]*factor));
+    balanced[stat]=Math.max(eq[stat],stat==='critChance'?Math.min(25,target):target);
+  }
+  // In the old server two legacy recipe item names exactly matched store
+  // inventory and were re-canonicalized to the WEAKER shop stats.
+  // Preserve IDs and material costs, but give newly minted Stage8 items
+  // distinct craft-only names. Existing owned V1 equipment is untouched.
+  const collidesWithShop=STAGE8_SHOP_BASELINES.some(
+    item=>!item.historic && item.slot===eq.slot && item.rarity===eq.rarity &&
+      ((eq.name==='Клинок рыцаря' && item.id==='shop_weapon_knight_eq') ||
+       (eq.name==='Кожаная броня' && item.id==='shop_armor_leather_eq')));
+  const name=collidesWithShop?eq.name+' мастера':eq.name;
+  const improved={...balanced,name};
+  const stats=[['attack','атака'],['defense','защита'],['hp','HP'],['critChance','крит %']]
+    .filter(([key])=>typeof improved[key]==='number')
+    .map(([key,label])=>label+' '+improved[key]).join(', ');
+  return {...recipe,output:{...recipe.output,name,
+    description:'Мастерское изделие ('+masterworkBonusPct(recipe.requiredLevel)+'% к магазинной базе с учётом редкости): '+stats+'.',
+    equipment:improved}};
 }
 export const STAGE8_EQUIPMENT = Object.freeze(STAGE8_EQUIPMENT_BASE.map(balanceCraftRecipe));
 
