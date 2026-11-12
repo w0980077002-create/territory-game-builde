@@ -110,6 +110,8 @@ const jewelTargets = {"jeweler_raven_amulet":[8,4],"s8_jeweler_guard_amulet":[9,
 for (const [id,[attack,critChance]] of Object.entries(jewelTargets)) {
   assert.equal(crafted(id).attack,attack,id+' attack');
   assert.equal(crafted(id).critChance,critChance,id+' critChance');
+  const recipe=STAGE8_RECIPES.find((r)=>r.id===id);
+  assert.match(recipe.output.description,new RegExp(String(attack)+'[\\s\\S]*'+String(critChance)+'%'),id+' description');
 }
 // At item lvl 5, the lvl-3 rare crafted ring gains +1 atk through the rare ring forge curve.
 assert.equal(crafted('s8_jeweler_spark_ring').attack+1,13,'Master ring lvl5 exceeds shop rare lvl5 atk 10');
