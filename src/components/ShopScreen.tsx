@@ -487,7 +487,7 @@ function PurchaseSheet({ item, state, initialQty = 1, onBuy, stoneOptions = [], 
           {stoneOptions.map(option => (
             <button type="button" key={option.id} onClick={() => onChooseStone(option)} aria-pressed={option.id === item.id}
               className={`min-h-11 rounded-lg border px-2 py-2 text-xs font-bold ${option.id === item.id ? 'border-amber-300 bg-amber-500/25 text-amber-100' : 'border-amber-500/30 bg-black/30 text-gray-200'}`}
-            >{language === 'en' ? `${option.amount ?? 1} stone(s) per pack` : `По ${option.amount ?? 1} камней в наборе`}</button>
+            >{language === 'en' ? `${option.amount ?? 1} stone${option.amount === 1 ? '' : 's'}` : option.amount === 1 ? '1 камень' : `${option.amount ?? 5} камней`}</button>
           ))}
         </nav>
       )}
