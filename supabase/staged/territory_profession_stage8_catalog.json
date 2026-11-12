@@ -1796,9 +1796,5 @@
       },
       "kind": "item"
     }
-  ],
-  "compatibleServerVersions": [
-    "profession-stage8-draft-20261025-r2",
-    "profession-stage8-draft-20261112-r4"
   ]
 }
