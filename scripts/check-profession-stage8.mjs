@@ -93,11 +93,9 @@ for(let i=0;i<originalRecipes.length;i++){
   assert.deepEqual(enhanced.ingredients,original.ingredients,'Never change ingredient cost during stat balancing');
   assert.equal(enhanced.requiredLevel,original.requiredLevel,'Never change existing mastery gate');
   assert.equal(enhanced.masteryXp,original.requiredLevel===300?1:original.masteryXp);
-  // A previously shop-colliding name must be unique for newly minted Stage8
-  // goods, otherwise legacy server normalization can strip the craft bonus.
-  const renamed=['smith_knight_blade','smith_leather_armor'].includes(original.id);
-  assert.equal(enhanced.output.name,original.output.name+(renamed?' мастера':''),
-    'Keep recipe IDs and distinguish Stage8 master goods from shop gear');
+  // LIVE Stage8 has historical receipts for these IDs: changing output.name
+  // makes old server-owned inventory fail the client's strict name check.
+  assert.equal(enhanced.output.name,original.output.name,'Keep historical item name and receipts readable');
   assert.equal(enhanced.output.rarity,original.output.rarity,'Keep rarity');
   if(original.output.equipment){
     assert.equal(enhanced.output.equipment.level,original.output.equipment.level,'Crafted item starts at the same level');
@@ -185,8 +183,8 @@ assert.equal(crafted('smith_apprentice_blade').attack,10);
 assert.equal(crafted('smith_leather_armor').defense,6);
 assert.equal(crafted('smith_leather_armor').hp,36);
 assert.equal(crafted('smith_knight_blade').attack,22);
-assert.equal(STAGE8_RECIPES.find(r=>r.id==='smith_knight_blade').output.name,'Клинок рыцаря мастера');
-assert.equal(STAGE8_RECIPES.find(r=>r.id==='smith_leather_armor').output.name,'Кожаная броня мастера');
+assert.equal(STAGE8_RECIPES.find(r=>r.id==='smith_knight_blade').output.name,'Клинок рыцаря');
+assert.equal(STAGE8_RECIPES.find(r=>r.id==='smith_leather_armor').output.name,'Кожаная броня');
 assert.equal(crafted('s8_smith_north_armor').hp,100);
 assert.equal(crafted('s8_engineer_jarl_plate').hp,145);
 assert.equal(crafted('s8_artisan_jarl_boots').hp,72);
