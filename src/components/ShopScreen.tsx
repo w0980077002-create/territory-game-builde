@@ -401,7 +401,7 @@ export function ShopScreen({ initialTab = 'potions', onInventory, focusCave = fa
       {shopCheck==='error' && <p role="alert" className="rounded-lg border border-red-500/40 bg-red-950/30 p-3 text-xs text-red-200">{language==='en'?'Shop server unavailable. Purchases paused.':'Сервер магазина недоступен. Покупки остановлены.'}</p>}
       {pendingShop && <button className="w-full rounded-xl border border-amber-400/40 bg-amber-500/10 p-3 text-sm font-bold text-amber-200 disabled:opacity-50" onClick={()=>{void retryServerPurchase();}} disabled={buying}>{language==='en'?'Retry pending purchase (same transaction)':'Повторить неподтверждённую покупку (тот же запрос)'}</button>}
       {picked && (
-        <Modal title={localizeText(picked.name, language)} onClose={() => setPicked(null)}>
+        <Modal title={localizeText(picked.name, language)} onClose={() => setPicked(null)} compact={picked.type === 'stone'}>
           <PurchaseSheet item={picked} initialQty={dialogQty} state={shopStatus?.enabled ? {...state, player:{...state.player,gems:shopStatus.gems},battleStones:shopStatus.stones,dailyStonesBought:shopStatus.boughtToday,dailyStonesDate:calendarDayKey()} : state} onBuy={(qty) => {void buy(picked, qty);}} stoneOptions={allItems.filter(option => option.type === 'stone')} onChooseStone={(option) => inspectItem(option)} />
         </Modal>
       )}
@@ -471,10 +471,10 @@ function PurchaseSheet({ item, state, initialQty = 1, onBuy, stoneOptions = [], 
   const clamp = useCallback((v: number) => Math.max(1, Math.min(v, maxQty)), [maxQty]);
 
   return (
-    <div className="territory-shop-purchase space-y-4">
-      <div className="flex items-center gap-4">
-        <div className="w-24 h-24 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center shrink-0">
-          <ItemArt item={item} size={80} />
+    <div className={isStone ? "territory-shop-purchase territory-shop-purchase--stone space-y-1.5" : "territory-shop-purchase space-y-4"}>
+      <div className={isStone ? "flex items-center gap-3" : "flex items-center gap-4"}>
+        <div className={isStone ? "w-[72px] h-[72px] rounded-xl bg-black/40 border border-white/10 flex items-center justify-center shrink-0" : "w-24 h-24 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center shrink-0"}>
+          <ItemArt item={item} size={isStone ? 64 : 80} />
         </div>
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wider" style={{ color: rarityColor(item.rarity) }}>{item.rarity}</p>
@@ -500,33 +500,43 @@ function PurchaseSheet({ item, state, initialQty = 1, onBuy, stoneOptions = [], 
         </div>
       )}
 
-      <div className="flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11 text-sm">
-        <span className="text-gray-400">{t('perItem')}</span>
+      <div className={isStone ? "flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 py-1.5 min-h-11 text-sm" : "flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11 text-sm"}>
+        <div>
+          <span className="text-gray-400">{t('perItem')}</span>
+          {isStone && <p className="text-[11px] text-gray-300">{t('youHave')}: {balance}</p>}
+        </div>
         <span className="text-white"><Price item={item} size={18} /></span>
       </div>
-      <p className="text-xs text-gray-500 -mt-2 px-1">{t('youHave')}: {balance}</p>
+      {!isStone && <p className="text-xs text-gray-500 -mt-2 px-1">{t('youHave')}: {balance}</p>}
 
       {isStone && (
-        <div className="space-y-2 rounded-xl bg-black/30 border border-amber-500/20 p-3">
+        <div className="space-y-1 rounded-xl bg-black/30 border border-amber-500/20 p-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-gray-400">{t('dailyAvailable')}</span>
             <span className="font-bold text-amber-200">{stonesLeft}/{DAILY_STONE_LIMIT} шт</span>
           </div>
-          <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+          <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
             <div
               className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-300"
               style={{ width: `${(stonesLeft / DAILY_STONE_LIMIT) * 100}%` }}
             />
           </div>
-          <div className="flex items-center justify-between text-xs pt-0.5">
+          <div className="flex items-center justify-between text-xs">
             <span className="text-gray-400 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {t('refreshIn')}</span>
             <span className="font-bold tabular-nums text-gray-200">{formatDuration(countdownMs)}</span>
           </div>
+          {(dailyCapExplainsMaximum || balanceExplainsMaximum) && (
+            <p role="status" className="text-[11px] leading-tight text-amber-200">
+              {dailyCapExplainsMaximum
+                ? (language === 'en' ? `Today's maximum: ${stonesLeft} stones.` : `Максимум на сегодня: ${stonesLeft} камней.`)
+                : (language === 'en' ? 'Not enough blue gems for another pack.' : 'Не хватает синих алмазов на ещё один набор.')}
+            </p>
+          )}
         </div>
       )}
 
       {maxQty >= 1 ? (
-        <div className="space-y-2">
+        <div className={isStone ? "space-y-1" : "space-y-2"}>
           <div className="flex items-center justify-between text-xs text-gray-400">
             <span>{t('quantity')}{isStone ? ` (${language === 'en' ? `${stonePerUnit} each` : `по ${stonePerUnit} шт`})` : ''}</span>
             <span className="text-amber-200 font-bold">x{qtyClamped}</span>
@@ -556,13 +566,6 @@ function PurchaseSheet({ item, state, initialQty = 1, onBuy, stoneOptions = [], 
               <Plus className="w-4 h-4" />
             </button>
           </div>
-          {(dailyCapExplainsMaximum || balanceExplainsMaximum) && (
-            <p role="status" className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-              {dailyCapExplainsMaximum
-                ? (language === 'en' ? `Maximum available today: ${stonesLeft} battle stones. The daily limit is ${DAILY_STONE_LIMIT}.` : `Больше нельзя: доступно сегодня ${stonesLeft} камней из лимита ${DAILY_STONE_LIMIT}. Вы уже выбрали максимум.`)
-                : (language === 'en' ? 'Not enough blue crystals for another pack.' : 'Для ещё одного набора не хватает синих алмазов.')}
-            </p>
-          )}
           <div className="flex items-center justify-between rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 h-9 text-xs">
             <span className="text-gray-400">{t('total')}</span>
             <span className="text-amber-100 font-bold">
@@ -570,12 +573,12 @@ function PurchaseSheet({ item, state, initialQty = 1, onBuy, stoneOptions = [], 
               {isStone && <span className="text-gray-400 ml-2">· {totalStones} {t('stones')}</span>}
             </span>
           </div>
-          <div className="flex justify-between text-[10px] text-gray-500 px-1">
+          {!isStone && <div className="flex justify-between text-[10px] text-gray-500 px-1">
             <button onClick={() => setQty(1)} className="min-w-11 min-h-11 hover:text-amber-300 transition-colors">1</button>
             <button onClick={() => setQty(clamp(Math.floor(maxQty / 4)))} className="min-w-11 min-h-11 hover:text-amber-300 transition-colors">¼</button>
             <button onClick={() => setQty(clamp(Math.floor(maxQty / 2)))} className="min-w-11 min-h-11 hover:text-amber-300 transition-colors">½</button>
             <button onClick={() => setQty(maxQty)} className="min-w-11 min-h-11 hover:text-amber-300 transition-colors">{t('max')} ({maxQty})</button>
-          </div>
+          </div>}
         </div>
       ) : isStone ? (
         <div className="rounded-xl bg-red-500/10 border border-red-500/30 px-3 py-3 text-center text-xs text-red-300">
