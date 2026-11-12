@@ -199,7 +199,7 @@ export interface GameState {
   battleStones: number;
   settings: { speed: 1 | 2; auto: boolean };
   blessing: { day: string; charges: number };
-  dailyReward: { streak: number; lastDay: string; attendanceGraceDay?: string };
+  dailyReward: { streak: number; lastDay: string };
   mailClaimed: string[];
   trialLevel: number;
   /** Permanent, non-transferable reputation for future bracelet slots. */
