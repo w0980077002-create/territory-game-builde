@@ -52,7 +52,14 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
   useEffect(()=>{void refresh();},[]); // Intentional once-on-mount server status fetch.
 
   const currentProfession=status?.profession??null;
-  const available=useMemo(()=>STAGE8_RECIPES.filter((recipe)=>recipe.profession===currentProfession),[currentProfession]);
+  // Existing 72 live r2 recipes are retained for receipts, pending operations,
+  // cross-device inventory and older clients. In the updated UI only the 25
+  // distinct premium recipes replace those old gear options.
+  const replacedGearIds=useMemo(()=>new Set(STAGE8_RECIPES.filter(r=>r.id.startsWith('mw_'))
+    .map(r=>r.id.slice(3))),[]);
+  const available=useMemo(()=>STAGE8_RECIPES.filter((recipe)=>
+    recipe.profession===currentProfession && !replacedGearIds.has(recipe.id)),
+    [currentProfession,replacedGearIds]);
   const readyRecipes=useMemo(()=>status?available.filter(recipe=>recipeReadiness(recipe,status).ready).length:0,[available,status]);
   const guidance=useMemo(()=>status?.profession && readyRecipes===0 && !pending ? nextWorkshopGuidance(available,status):null,[available,status,readyRecipes,pending]);
   const shownRecipes=useMemo(()=>status?visibleWorkshopRecipes(available,status,recipeFilter,recipeSearch):[],[available,status,recipeFilter,recipeSearch]);

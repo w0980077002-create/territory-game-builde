@@ -28,6 +28,10 @@ export type Stage8Recipe = {
   };
 };
 export const STAGE8_CATALOG_VERSION = blueprint.version;
+// The additive masterwork deployment deliberately leaves the existing live
+// r2 status and its 72 historical recipe IDs unchanged. The new UI only
+// activates after the server confirms the 25 additional authoritative recipes.
+const LIVE_STAGE8_R2_VERSION = 'profession-stage8-draft-20261025-r2';
 export const STAGE8_DAILY_XP_CAP = blueprint.dailyXpCapKyiv;
 export const STAGE8_RECIPES: readonly Stage8Recipe[] = blueprint.recipes as Stage8Recipe[];
 const BANDS = blueprint.masteryBands;
@@ -81,7 +85,12 @@ export async function fetchStage8Status(): Promise<Stage8Status> {
   const {data,error} = await supabase.rpc('territory_profession_stage8_status');
   if (error || !obj(data) || typeof data.enabled !== 'boolean') throw new Error('stage8_status_unavailable');
   if (!data.enabled) return {enabled:false,version:'',profession:null,masteryLevel:1,masteryXp:0,dailyXpUsed:0,dailyXpCap:STAGE8_DAILY_XP_CAP,masterLicense:false,resources:{}};
-  if (data.version !== STAGE8_CATALOG_VERSION || (data.profession !== null && !knownProfession(data.profession))
+  if (data.version !== STAGE8_CATALOG_VERSION && data.version !== LIVE_STAGE8_R2_VERSION) throw new Error('stage8_status_mismatch');
+  if (data.version === LIVE_STAGE8_R2_VERSION) {
+    const {data:ready,error:readyError}=await supabase.rpc('territory_profession_masterworks_ready');
+    if (readyError || ready !== true) throw new Error('stage8_masterworks_not_ready');
+  }
+  if ((data.profession !== null && !knownProfession(data.profession))
       || !int(data.mastery_level,300) || data.mastery_level<1 || !int(data.mastery_xp,100000)
       || !int(data.daily_xp_used,STAGE8_DAILY_XP_CAP) || data.daily_xp_cap!==STAGE8_DAILY_XP_CAP
       || typeof data.master_license!=='boolean' || !obj(data.resources)) throw new Error('stage8_status_mismatch');

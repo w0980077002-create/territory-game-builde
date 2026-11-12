@@ -9,9 +9,13 @@ const catalog=JSON.parse(await readFile(new URL('../supabase/staged/territory_pr
 const compiled=ts.transpileModule(code,{fileName:'stage8CraftApi.ts',compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,esModuleInterop:true}}).outputText;
 let response={data:null,error:null};
 let lastRpc=null;
+let masterworksReady=false;
 let userId='11111111-1111-4111-8111-111111111111';
 const client={
-  rpc:async (...args)=>{lastRpc=args;return response;},
+  rpc:async (...args)=>{lastRpc=args;
+    if(args[0]==='territory_profession_masterworks_ready')
+      return {data:masterworksReady,error:null};
+    return response;},
   auth:{getUser:async()=>({data:{user:{id:userId}},error:null})},
 };
 const module={exports:{}};
@@ -30,7 +34,8 @@ const uuid='22222222-2222-4222-8222-222222222222';
 
 assert.equal(api.STAGE8_CATALOG_VERSION,catalog.version);
 assert.equal(api.STAGE8_DAILY_XP_CAP,300);
-assert.equal(api.STAGE8_RECIPES.length,72);
+assert.equal(api.STAGE8_RECIPES.length,97);
+assert.equal(api.STAGE8_RECIPES.filter(r=>r.id.startsWith('mw_')).length,25);
 assert.equal(api.stage8XpToNext(1),26);
 assert.equal(api.stage8XpToNext(300),0);
 
@@ -48,6 +53,14 @@ response={data:okStatus,error:null};
 const status=await api.fetchStage8Status();
 assert.equal(status.masteryLevel,25);
 assert.equal(status.resources['gather-ore'],8);
+response={data:{...okStatus,version:'profession-stage8-draft-20261025-r2'},error:null};
+await assert.rejects(()=>api.fetchStage8Status(),/stage8_masterworks_not_ready/,
+  'Do not display r4 craft prices/stats before server confirms 25 new recipe IDs');
+masterworksReady=true;
+const additive=await api.fetchStage8Status();
+assert.equal(additive.enabled,true,'A verified additive r4 release must work alongside live r2 status');
+assert.equal(additive.version,'profession-stage8-draft-20261025-r2');
+masterworksReady=false;
 response={data:{...okStatus,version:'old-client'},error:null};
 await assert.rejects(()=>api.fetchStage8Status(),/status_mismatch/);
 response={data:{...okStatus,daily_xp_used:301},error:null};
@@ -93,6 +106,14 @@ response={data:{success:true,items:[{
 const owned=await api.fetchStage8Items();
 assert.equal(lastRpc[0],'territory_profession_stage8_inventory');
 assert.equal(owned.length,1);
+response={data:{success:true,items:[{
+  item_id:uuid,recipe_id:'smith_knight_blade',
+  item_output:{name:'Клинок рыцаря',icon:'🗡️',type:'equipment',rarity:'rare',
+    description:'Old server craft',equipment:{slot:'weapon',attack:18,critChance:3}},expires_at:null,
+}]},error:null};
+assert.equal((await api.fetchStage8Items())[0].output.name,'Клинок рыцаря',
+  'Old owned Stage8 items must remain readable even when future crafts have stronger stats');
+
 const mirrored=api.mirrorStage8Items([{id:'legacy-sword',qty:1},{id:'stage8_fake',qty:1}],owned);
 assert.deepEqual(mirrored.map(i=>i.id),['legacy-sword',`stage8_${uuid}`]);
 assert.equal(mirrored[1].equipment.id,`stage8_${uuid}`);
