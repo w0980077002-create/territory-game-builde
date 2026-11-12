@@ -297,12 +297,19 @@ try {
   assert.equal(prestige.success,true);
   assert.equal(prestige.kind,'item');
   assert.ok(prestige.item_id);
-  assert.equal(prestige.item_output.equipment.attack,54,'Legendary masterwork must exceed historic epic sword attack 35 plus rarity tier');
-  assert.equal(prestige.item_output.equipment.critChance,12,'Stage8 masterwork critical chance must stay under the 25% safety ceiling');
+  assert.equal(prestige.item_output.equipment.attack,46,'Old r2 legendary recipe stays identical for historical receipts');
+  assert.equal(prestige.item_output.equipment.critChance,9,'Old r2 legendary recipe stays identical for historical receipts');
   assert.equal(await wallet(second),9);
   assert.deepEqual(await exec('s8_smith_jarl_blade',operations[1]),prestige);
   assert.deepEqual(await mastery(second),{mastery_level:300,mastery_xp:0},
     'Mastery must never overflow the level-300 cap');
+  // Newly added IDs have distinct names and stronger values. They must
+  // never rewrite old r2 receipt outputs or historic inventory values.
+  const newMasterworkRow=serverCatalog.find(row=>row.id==='mw_s8_smith_jarl_blade');
+  assert.ok(newMasterworkRow,'25 additive new gear recipes must be installed');
+  assert.equal(newMasterworkRow.item_output.equipment.attack,54);
+  assert.equal(newMasterworkRow.item_output.equipment.critChance,12);
+  assert.equal(newMasterworkRow.item_output.equipment.name,'Клинок первого ярла · мастерская');
   const secondItems=await inventory();
   assert.equal(secondItems.success,true);
   assert.equal(secondItems.items.length,1);
