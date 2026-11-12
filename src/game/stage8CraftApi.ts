@@ -85,7 +85,7 @@ export async function fetchStage8Status(): Promise<Stage8Status> {
   const {data,error} = await supabase.rpc('territory_profession_stage8_status');
   if (error || !obj(data) || typeof data.enabled !== 'boolean') throw new Error('stage8_status_unavailable');
   if (!data.enabled) return {enabled:false,version:'',profession:null,masteryLevel:1,masteryXp:0,dailyXpUsed:0,dailyXpCap:STAGE8_DAILY_XP_CAP,masterLicense:false,resources:{}};
-  if (!STAGE8_ACCEPTED_SERVER_VERSIONS.has(String(data.version)) || (data.profession !== null && !knownProfession(data.profession))
+  if (typeof data.version !== 'string' || !STAGE8_ACCEPTED_SERVER_VERSIONS.has(data.version) || (data.profession !== null && !knownProfession(data.profession))
       || !int(data.mastery_level,300) || data.mastery_level<1 || !int(data.mastery_xp,100000)
       || !int(data.daily_xp_used,STAGE8_DAILY_XP_CAP) || data.daily_xp_cap!==STAGE8_DAILY_XP_CAP
       || typeof data.master_license!=='boolean' || !obj(data.resources)) throw new Error('stage8_status_mismatch');
