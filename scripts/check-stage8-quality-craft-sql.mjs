@@ -39,6 +39,12 @@ try {
           ready++;
           assert.equal(data.item_level,expected.itemLevel);
           assert.equal(data.baseline_shop_id,String(expected.baselineShopId));
+          if(!data.item_output?.equipment){
+            console.error('SQL preview omitted equipment',JSON.stringify({
+              recipe:recipe.id,mastery,licensed,preview:data,expected
+            }).slice(0,3500));
+            throw new Error('quality_item_equipment_missing');
+          }
           assert.equal(data.item_output.equipment.name,recipe.output.equipment.name);
           assert.equal(data.item_output.equipment.qualityVersion,'mastery-v2');
           assert.equal(data.item_output.equipment.masteryQualityPct,expected.targetPct);
