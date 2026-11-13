@@ -6,10 +6,10 @@ import { craftOutputArt, PROFESSION_ART, resourceArt } from '@/game/art';
 import { PROFESSION_DEFINITIONS, RESOURCE_DEFINITIONS } from '@/game/professions';
 import { mirrorCraftResources } from '@/game/craftApi';
 import {
-  fetchStage8Status, fetchStage8Items, mirrorStage8Items,
+  fetchStage8Status, fetchStage8Items, fetchStage8QualityPreviews, mirrorStage8Items,
   executeStage8, purchaseStage8, readStage8Pending, setStage8Pending,
   readStage8PurchasePending, setStage8PurchasePending, stage8XpToNext, STAGE8_RECIPES,
-  type Stage8Status, type Stage8PendingOperation, type Stage8PurchaseOperation,
+  type Stage8Status, type Stage8PendingOperation, type Stage8PurchaseOperation, type Stage8QualitySnapshot,
 } from '@/game/stage8CraftApi';
 import type { ProfessionId } from '@/game/types';
 import { recipeReadiness, visibleWorkshopRecipes, nextWorkshopGuidance, workshopGuidanceText, type WorkshopRecipeFilter } from '@/game/workshopPlanner';
@@ -18,6 +18,10 @@ import { recipeReadiness, visibleWorkshopRecipes, nextWorkshopGuidance, workshop
 export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|'inventory'|'forge',inventoryTab?:'equipment'|'items')=>void} = {}) {
   const {language} = useLanguage();
   const [status,setStatus] = useState<Stage8Status|null>(null);
+  const [quality,setQuality] = useState<Stage8QualitySnapshot|null>(null);
+  // Legacy backend keeps its existing 20–30% crafts until the v2 RPC is installed.
+  // Any other RPC failure blocks only new masterworks (fail closed).
+  const [qualityMode,setQualityMode] = useState<'legacy'|'v2'|'unavailable'>('unavailable');
   const [error,setError] = useState('');
   const [loading,setLoading] = useState(true);
   const [busy,setBusy] = useState(false);
@@ -35,7 +39,19 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       const [next,waiting,purchaseWaiting]=await Promise.all([
         fetchStage8Status(),readStage8Pending(),readStage8PurchasePending(),
       ]);
+      let previews:Stage8QualitySnapshot|null=null;
+      let mode:'legacy'|'v2'|'unavailable'='unavailable';
       if (next.enabled && next.profession) {
+        try {
+          previews=await fetchStage8QualityPreviews();
+          if(previews.masteryLevel!==next.masteryLevel
+            ||previews.masterLicense!==next.masterLicense) previews=null;
+          else mode='v2';
+        }catch(cause) {
+          previews=null;
+          if(cause instanceof Error&&cause.message==='stage8_quality_server_not_deployed')
+            mode='legacy';
+        }
         const owned=await fetchStage8Items();
         const latest=useGame.get();
         const equippedIds=new Set(Object.values(latest.player.equipped).flatMap((item)=>item?[item.id]:[]));
@@ -44,8 +60,8 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
           professions:{...(latest.professions??{active:null,masteryLevel:1,masteryXp:0,lastGatherAt:0}),
             active:next.profession,masteryLevel:next.masteryLevel,masteryXp:next.masteryXp}});
       }
-      setStatus(next);setPending(waiting);setPurchasePending(purchaseWaiting);
-    }catch{setStatus(null);setError(language==='en'?'Verified crafting is unavailable. Check saved pending operations before attempting another.':'Нет связи с защищённым ремеслом. Сначала проверь сохранённую операцию — повторную пока не начинай.');}
+      setQuality(previews);setQualityMode(mode);setStatus(next);setPending(waiting);setPurchasePending(purchaseWaiting);
+    }catch{setQuality(null);setQualityMode('unavailable');setStatus(null);setError(language==='en'?'Verified crafting is unavailable. Check saved pending operations before attempting another.':'Нет связи с защищённым ремеслом. Сначала проверь сохранённую операцию — повторную пока не начинай.');}
     finally{setLoading(false);}
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- once-on-mount server status fetch
@@ -60,7 +76,10 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
   const available=useMemo(()=>STAGE8_RECIPES.filter((recipe)=>
     recipe.profession===currentProfession && !replacedGearIds.has(recipe.id)),
     [currentProfession,replacedGearIds]);
-  const readyRecipes=useMemo(()=>status?available.filter(recipe=>recipeReadiness(recipe,status).ready).length:0,[available,status]);
+  const readyRecipes=useMemo(()=>status?available.filter(recipe=>
+    recipeReadiness(recipe,status).ready &&
+    (!recipe.id.startsWith('mw_')||qualityMode==='legacy'||quality?.previews[recipe.id]?.status==='ready')
+  ).length:0,[available,status,quality,qualityMode]);
   const guidance=useMemo(()=>status?.profession && readyRecipes===0 && !pending ? nextWorkshopGuidance(available,status):null,[available,status,readyRecipes,pending]);
   const shownRecipes=useMemo(()=>status?visibleWorkshopRecipes(available,status,recipeFilter,recipeSearch):[],[available,status,recipeFilter,recipeSearch]);
 
@@ -83,6 +102,17 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       });
       await setStage8Pending(null);
       setPending(null);setStatus(verified);
+      try {
+        const previews=await fetchStage8QualityPreviews();
+        if(previews.masteryLevel===verified.masteryLevel &&
+          previews.masterLicense===verified.masterLicense){
+          setQuality(previews);setQualityMode('v2');
+        }else{setQuality(null);setQualityMode('unavailable');}
+      }catch(cause) {
+        setQuality(null);
+        setQualityMode(cause instanceof Error&&cause.message==='stage8_quality_server_not_deployed'
+          ? 'legacy':'unavailable');
+      }
       setNotice(language==='en'?(receipt.kind==='item'?'Verified item crafted.':'Mastery training confirmed.'):(receipt.kind==='item'?'Предмет создан и подтверждён сервером.':'Обучение подтверждено сервером.'));
       const crafted=owned.find(item=>item.itemId===receipt.itemId);
       setCraftedItemTab(receipt.kind==='item' && crafted ? (crafted.output.type==='equipment'?'equipment':'items') : null);
@@ -119,6 +149,16 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
           masteryLevel:verified.masteryLevel,masteryXp:verified.masteryXp}});
       await setStage8PurchasePending(null);
       setPurchasePending(null);setStatus(verified);
+      try {
+        const previews=await fetchStage8QualityPreviews();
+        if(previews.masteryLevel===verified.masteryLevel&&previews.masterLicense===verified.masterLicense){
+          setQuality(previews);setQualityMode('v2');
+        }else{setQuality(null);setQualityMode('unavailable');}
+      }catch(cause){
+        setQuality(null);
+        setQualityMode(cause instanceof Error&&cause.message==='stage8_quality_server_not_deployed'
+          ?'legacy':'unavailable');
+      }
       setNotice(language==='en'?'Profession purchase verified by server.':'Профессия открыта и подтверждена сервером.');
     }catch(cause){
       if (cause instanceof Error && cause.message==='stage8_purchase_insufficient_gems') {
@@ -227,14 +267,32 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
         const hasLicense=readiness.licenseReady;
         const hasResources=readiness.missing.length===0;
         const hasXpRoom=readiness.xpReady;
-        const canRun=readiness.ready && !pending && !busy && !purchasePending;
+        const premium=recipe.id.startsWith('mw_');
+        const preview=premium?quality?.previews[recipe.id]:undefined;
+        const actualOutput=premium
+          ? qualityMode==='legacy'?recipe.output
+            : preview?.status==='ready'?preview.item_output:null
+          : recipe.output;
+        const canRun=readiness.ready && !pending && !busy && !purchasePending
+          && (!premium||qualityMode==='legacy'||preview?.status==='ready');
+        const qualityText=premium
+          ? qualityMode==='legacy'
+            ? recipe.output?.description
+            : preview?.status==='ready'
+            ? actualOutput?.description
+            : preview?.status==='locked'
+              ? (language==='en'?'Reach the required mastery tier or buy the Master License.':'Требуется мастерство или лицензия мастера.')
+              : preview?.status==='blocked'
+                ? (language==='en'?'Safety limits prevent issuing this quality tier. Resources will not be spent.':'Лимиты характеристик не позволяют изготовить вещь с этим бонусом. Ресурсы не спишутся.')
+                : (language==='en'?'Checking server-verified quality; crafting is temporarily unavailable.':'Нет подтверждённого расчёта качества. Изготовление временно недоступно.')
+          : recipe.output?.description;
         const label=recipe.kind==='practice' ? recipe.name??'Обучение мастера' : recipe.output?.name??recipe.id;
         return <article key={recipe.id} className="rounded-xl border border-amber-400/15 bg-slate-900/80 p-3">
-          <div className="flex items-start gap-2"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-amber-400/15 bg-amber-400/10 p-1"><img src={recipe.output?craftOutputArt(recipe.output):PROFESSION_ART[recipe.profession]} alt="" loading="lazy" className="h-full w-full object-contain"/></div><div className="min-w-0 flex-1"><b className="text-sm">{localizeText(label,language)}</b><p className="text-xs text-amber-300">{language==='en'?'Profession mastery Lv.':'Мастерство профессии ур.'} {recipe.requiredLevel} · +{recipe.masteryXp} XP</p><p className="mt-1 text-xs text-slate-400">{recipe.kind==='practice'?(language==='en'?'Consumes resources, awards verified mastery; no inventory junk.':'Расходует ресурсы и даёт мастерство без лишних предметов.'):recipe.output?.description}</p></div>{!hasLicense&&<Lock className="h-4 w-4 text-amber-300"/>}{recipe.requiredLevel>=300&&<Sparkles className="h-4 w-4 text-violet-300"/>}</div>
-          {recipe.output?.type==='equipment' && recipe.output.equipment && <div className="mt-2 flex flex-wrap gap-1 text-[11px] font-bold" aria-label={language==='en'?'Crafted equipment attributes':'Характеристики создаваемой экипировки'}>
-            {typeof recipe.output.equipment.level==='number' && <span className="rounded-md border border-amber-400/25 bg-amber-500/10 px-2 py-1 text-amber-200">{language==='en'?'Item Lv.':'Уровень вещи'} {recipe.output.equipment.level}</span>}
+          <div className="flex items-start gap-2"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-amber-400/15 bg-amber-400/10 p-1"><img src={recipe.output?craftOutputArt(recipe.output):PROFESSION_ART[recipe.profession]} alt="" loading="lazy" className="h-full w-full object-contain"/></div><div className="min-w-0 flex-1"><b className="text-sm">{localizeText(label,language)}</b><p className="text-xs text-amber-300">{language==='en'?'Profession mastery Lv.':'Мастерство профессии ур.'} {recipe.requiredLevel} · +{recipe.masteryXp} XP</p><p className="mt-1 text-xs text-slate-400">{recipe.kind==='practice'?(language==='en'?'Consumes resources, awards verified mastery; no inventory junk.':'Расходует ресурсы и даёт мастерство без лишних предметов.'):qualityText}</p></div>{!hasLicense&&<Lock className="h-4 w-4 text-amber-300"/>}{recipe.requiredLevel>=300&&<Sparkles className="h-4 w-4 text-violet-300"/>}</div>
+          {actualOutput?.type==='equipment' && actualOutput.equipment && <div className="mt-2 flex flex-wrap gap-1 text-[11px] font-bold" aria-label={language==='en'?'Crafted equipment attributes':'Характеристики создаваемой экипировки'}>
+            {typeof actualOutput.equipment.level==='number' && <span className="rounded-md border border-amber-400/25 bg-amber-500/10 px-2 py-1 text-amber-200">{language==='en'?'Item Lv.':'Уровень вещи'} {actualOutput.equipment.level}</span>}
             {(['attack','defense','hp','critChance'] as const).map(stat=>{
-              const value=recipe.output?.equipment?.[stat];
+              const value=actualOutput?.equipment?.[stat];
               if(typeof value!=='number' || value<=0) return null;
               const title=language==='en'
                 ? {attack:'ATK',defense:'DEF',hp:'HP',critChance:'CRIT'}[stat]

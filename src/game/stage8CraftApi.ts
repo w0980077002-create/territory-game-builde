@@ -68,6 +68,56 @@ export interface Stage8PurchaseReceipt {
   profession: ProfessionId;
   gemsAfter: number;
 }
+/** Per-account server preview; never trust hardcoded r4 stats for mastery v2. */
+export type Stage8QualityPreview = {
+  status: 'ready' | 'blocked' | 'locked';
+  quality_pct: number;
+  item_level?: number;
+  item_output?: NonNullable<Stage8Recipe['output']>;
+  reason?: string;
+};
+export type Stage8QualitySnapshot = {
+  masteryLevel: number;
+  masterLicense: boolean;
+  previews: Record<string, Stage8QualityPreview>;
+};
+export async function fetchStage8QualityPreviews(): Promise<Stage8QualitySnapshot> {
+  const {data,error}=await supabase.rpc('territory_profession_stage8_quality_previews');
+  // Compatibility during a server-first rollout: ONLY a verified missing RPC
+  // means the pre-v2 backend is still serving legacy 20–30% items.
+  if(error?.code==='PGRST202'
+      && error.message?.includes('territory_profession_stage8_quality_previews'))
+    throw new Error('stage8_quality_server_not_deployed');
+  if(error || !obj(data) || data.success!==true
+      || data.quality_version!=='mastery-v2'
+      || !int(data.mastery_level,300) || data.mastery_level<1
+      || typeof data.master_license!=='boolean' || !obj(data.previews)) {
+    throw new Error('stage8_quality_preview_unavailable');
+  }
+  const previews: Record<string,Stage8QualityPreview>={};
+  for(const [recipeId,raw] of Object.entries(data.previews)){
+    const recipe=STAGE8_RECIPES.find(r=>r.id===recipeId && r.id.startsWith('mw_')
+      && r.output?.type==='equipment');
+    if(!recipe || !obj(raw) || !['ready','locked','blocked'].includes(String(raw.status))
+        || !int(raw.quality_pct,160) || raw.quality_pct<20){
+      throw new Error('stage8_quality_preview_invalid');
+    }
+    const preview=raw as Stage8QualityPreview;
+    if(preview.status==='ready'){
+      if(!obj(raw.item_output) || !obj(raw.item_output.equipment)
+          || raw.item_output.name!==recipe.output?.name
+          || raw.item_output.rarity!==recipe.output?.rarity
+          || raw.item_output.equipment.qualityVersion!=='mastery-v2'
+          || raw.item_output.equipment.masteryQualityPct!==raw.quality_pct
+          || !int(raw.item_level,61) || raw.item_level<1){
+        throw new Error('stage8_quality_preview_invalid_equipment');
+      }
+    }
+    previews[recipeId]=preview;
+  }
+  return {masteryLevel:data.mastery_level,masterLicense:data.master_license,previews};
+}
+
 export type Stage8OwnedItem = {
   itemId: string;
   recipeId: string;
@@ -119,11 +169,12 @@ export async function executeStage8(recipeId: string, operationId: string): Prom
     if (!uuid(data.item_id) || !obj(data.item_output) || !recipe.output
         || data.item_output.name!==recipe.output.name || data.item_output.type!==recipe.output.type
         || data.item_output.rarity!==recipe.output.rarity) throw new Error('stage8_missing_item');
-    const perishable=recipe.output.type==='potion' || recipe.output.type==='elixir';
-    if (perishable !== (typeof data.expires_at==='string' && Number.isFinite(Date.parse(data.expires_at)))) {
+    // Live Stage8 consumables are permanent since the no-expiry hotfix.
+    // Older historical receipts may still have a finite server expiration.
+    const perishable=recipe.output.type==='potion'||recipe.output.type==='elixir';
+    const hasExpiry=typeof data.expires_at==='string' && Number.isFinite(Date.parse(data.expires_at));
+    if ((data.expires_at!==null&&!hasExpiry) || (!perishable&&data.expires_at!==null))
       throw new Error('stage8_invalid_expiry');
-    }
-    if (!perishable && data.expires_at!==null) throw new Error('stage8_invalid_expiry');
   }
   return {recipeId,kind:recipe.kind,itemId:recipe.kind==='item'?data.item_id as string:null,
     itemOutput:recipe.kind==='item'?data.item_output as Record<string,unknown>:null,
@@ -159,9 +210,9 @@ export async function fetchStage8Items(): Promise<Stage8OwnedItem[]> {
         || row.item_output.type!==recipe.output.type || row.item_output.rarity!==recipe.output.rarity)
       throw new Error('stage8_inventory_catalog_mismatch');
     const perishable=recipe.output.type==='potion'||recipe.output.type==='elixir';
-    if (perishable !== (typeof row.expires_at==='string' && Number.isFinite(Date.parse(row.expires_at))))
+    const hasExpiry=typeof row.expires_at==='string' && Number.isFinite(Date.parse(row.expires_at));
+    if ((row.expires_at!==null&&!hasExpiry)||(!perishable&&row.expires_at!==null))
       throw new Error('stage8_inventory_expiry_invalid');
-    if (!perishable && row.expires_at!==null) throw new Error('stage8_inventory_expiry_invalid');
     return {itemId:row.item_id,recipeId:row.recipe_id,output:row.item_output,expiresAt:row.expires_at as string|null};
   });
 }
@@ -179,8 +230,8 @@ export function mirrorStage8Items(items: InventoryItem[],owned: readonly Stage8O
     copy.id=id;
     if (copy.equipment) copy.equipment.id=id;
     if (copy.type==='elixir'||copy.type==='potion') {
-      if (!item.expiresAt) throw new Error('stage8_display_expiry_missing');
-      copy.expiresAt=item.expiresAt;
+      if (item.expiresAt) copy.expiresAt=item.expiresAt;
+      else delete copy.expiresAt; // Permanent potions never gain a synthetic expiry.
     }
     byId.set(id,copy);
   }
