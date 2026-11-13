@@ -38,6 +38,7 @@ DECLARE
   v_steps integer;
   v_position integer;
   v_found integer;
+  v_equipped_count integer;
   v_equipped_key text;
   v_cost_gold integer;
   v_cost_mat integer;
@@ -92,7 +93,8 @@ BEGIN
   v_base:=v_gear->'baseStats';
   v_slot:=v_gear->>'slot';
   v_rarity:=v_gear->>'rarity';
-  IF v_slot NOT IN('weapon','ring','amulet','armor','helmet','shield','boots')
+  IF v_slot IS NULL OR v_rarity IS NULL
+    OR v_slot NOT IN('weapon','ring','amulet','armor','helmet','shield','boots')
     OR v_rarity NOT IN('common','rare','epic','legendary')
     OR v_gear->>'name' IS DISTINCT FROM v_item.item_output->>'name'
     OR v_rarity IS DISTINCT FROM v_item.item_output->>'rarity'
@@ -108,13 +110,20 @@ BEGIN
   INTO v_found,v_position
   FROM pg_catalog.jsonb_array_elements(v_state->'inventory') WITH ORDINALITY x(value,ordinality)
   WHERE x.value->>'id'=v_id;
-  SELECT e.key,e.value INTO v_equipped_key,v_mirror
+  SELECT pg_catalog.count(*),pg_catalog.min(e.key)
+  INTO v_equipped_count,v_equipped_key
   FROM pg_catalog.jsonb_each(v_state#>'{player,equipped}') e
-  WHERE e.value->>'id'=v_id LIMIT 1;
-  IF v_found+(CASE WHEN v_equipped_key IS NULL THEN 0 ELSE 1 END)<>1
+  WHERE e.value->>'id'=v_id;
+  IF v_found+v_equipped_count<>1
+    OR (SELECT pg_catalog.count(*) FROM pg_catalog.jsonb_array_elements(
+          CASE WHEN pg_catalog.jsonb_typeof(v_state->'belt')='array'
+            THEN v_state->'belt' ELSE '[]'::jsonb END) b
+        WHERE b.value->>'id'=v_id OR b.value#>>'{equipment,id}'=v_id)>0
   THEN RAISE EXCEPTION 'stage8_forge_mirror_missing_or_duplicate'; END IF;
   IF v_found=1 THEN
     v_mirror:=v_state#>ARRAY['inventory',v_position::text,'equipment'];
+  ELSE
+    v_mirror:=v_state#>ARRAY['player','equipped',v_equipped_key];
   END IF;
   IF pg_catalog.jsonb_typeof(v_mirror)<>'object'
     OR (v_mirror->>'level')::integer<>v_level
@@ -210,7 +219,15 @@ BEGIN
     END IF;
     IF (v_mirror->>'level')::integer<>v_level+1
       OR (v_mirror->>'upgradeCount')::integer<>v_steps
+      OR (v_mirror->>'baseLevel') IS DISTINCT FROM (v_after->>'baseLevel')
+      OR (v_mirror->>'slot') IS DISTINCT FROM (v_after->>'slot')
+      OR (v_mirror->>'rarity') IS DISTINCT FROM (v_after->>'rarity')
+      OR (v_mirror->'baseStats') IS DISTINCT FROM (v_after->'baseStats')
+      OR (v_mirror->>'qualityVersion') IS DISTINCT FROM (v_after->>'qualityVersion')
+      OR (v_mirror->>'masteryQualityPct') IS DISTINCT FROM (v_after->>'masteryQualityPct')
       OR (v_mirror->>'attack') IS DISTINCT FROM (v_after->>'attack')
+      OR (v_mirror->>'defense') IS DISTINCT FROM (v_after->>'defense')
+      OR (v_mirror->>'hp') IS DISTINCT FROM (v_after->>'hp')
       OR (v_mirror->>'critChance') IS DISTINCT FROM (v_after->>'critChance')
     THEN RAISE EXCEPTION 'stage8_forge_result_normalized'; END IF;
   END IF;
