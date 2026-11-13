@@ -1,6 +1,6 @@
 /** Protected Stage8 forge. Local game_state never supplies the success roll. */
-import { supabase } from './supabase';
-import { acceptMonopolyClaimReceipt } from './cloud';
+import { supabase } from '@/game/supabase';
+import { acceptMonopolyClaimReceipt } from '@/game/cloud';
 import type { GameState } from './types';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
