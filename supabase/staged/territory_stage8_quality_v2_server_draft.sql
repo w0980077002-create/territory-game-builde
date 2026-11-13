@@ -264,8 +264,9 @@ BEGIN
   -- Training spends resources for XP and never mints an inventory item.
   IF v_recipe.kind='item' THEN
     IF v_item_output IS NULL THEN RAISE EXCEPTION 'invalid_catalog'; END IF;
-    IF v_item_output->>'type' IN ('elixir','potion')
-      THEN v_expires_at:=clock_timestamp()+INTERVAL '7 days'; END IF;
+    -- Permanent consumables: preserve the live no-expiry behavior introduced
+    -- before this v2 draft. Legacy expired receipts remain historical data.
+    -- v_expires_at intentionally stays NULL for new items of every type.
     INSERT INTO public.territory_profession_stage8_items(player_id,recipe_id,item_output,expires_at)
       VALUES(v_uid,p_recipe,v_item_output,v_expires_at) RETURNING item_id INTO v_item;
   ELSIF v_recipe.kind<>'practice' OR v_recipe.item_output IS NOT NULL THEN
