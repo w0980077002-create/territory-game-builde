@@ -19,6 +19,9 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
   const {language} = useLanguage();
   const [status,setStatus] = useState<Stage8Status|null>(null);
   const [quality,setQuality] = useState<Stage8QualitySnapshot|null>(null);
+  // Legacy backend keeps its existing 20–30% crafts until the v2 RPC is installed.
+  // Any other RPC failure blocks only new masterworks (fail closed).
+  const [qualityMode,setQualityMode] = useState<'legacy'|'v2'|'unavailable'>('unavailable');
   const [error,setError] = useState('');
   const [loading,setLoading] = useState(true);
   const [busy,setBusy] = useState(false);
@@ -37,12 +40,18 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
         fetchStage8Status(),readStage8Pending(),readStage8PurchasePending(),
       ]);
       let previews:Stage8QualitySnapshot|null=null;
+      let mode:'legacy'|'v2'|'unavailable'='unavailable';
       if (next.enabled && next.profession) {
         try {
           previews=await fetchStage8QualityPreviews();
           if(previews.masteryLevel!==next.masteryLevel
             ||previews.masterLicense!==next.masterLicense) previews=null;
-        }catch {previews=null;}
+          else mode='v2';
+        }catch(cause) {
+          previews=null;
+          if(cause instanceof Error&&cause.message==='stage8_quality_server_not_deployed')
+            mode='legacy';
+        }
         const owned=await fetchStage8Items();
         const latest=useGame.get();
         const equippedIds=new Set(Object.values(latest.player.equipped).flatMap((item)=>item?[item.id]:[]));
@@ -51,8 +60,8 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
           professions:{...(latest.professions??{active:null,masteryLevel:1,masteryXp:0,lastGatherAt:0}),
             active:next.profession,masteryLevel:next.masteryLevel,masteryXp:next.masteryXp}});
       }
-      setQuality(previews);setStatus(next);setPending(waiting);setPurchasePending(purchaseWaiting);
-    }catch{setQuality(null);setStatus(null);setError(language==='en'?'Verified crafting is unavailable. Check saved pending operations before attempting another.':'Нет связи с защищённым ремеслом. Сначала проверь сохранённую операцию — повторную пока не начинай.');}
+      setQuality(previews);setQualityMode(mode);setStatus(next);setPending(waiting);setPurchasePending(purchaseWaiting);
+    }catch{setQuality(null);setQualityMode('unavailable');setStatus(null);setError(language==='en'?'Verified crafting is unavailable. Check saved pending operations before attempting another.':'Нет связи с защищённым ремеслом. Сначала проверь сохранённую операцию — повторную пока не начинай.');}
     finally{setLoading(false);}
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- once-on-mount server status fetch
@@ -69,8 +78,8 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
     [currentProfession,replacedGearIds]);
   const readyRecipes=useMemo(()=>status?available.filter(recipe=>
     recipeReadiness(recipe,status).ready &&
-    (!recipe.id.startsWith('mw_')||quality?.previews[recipe.id]?.status==='ready')
-  ).length:0,[available,status,quality]);
+    (!recipe.id.startsWith('mw_')||qualityMode==='legacy'||quality?.previews[recipe.id]?.status==='ready')
+  ).length:0,[available,status,quality,qualityMode]);
   const guidance=useMemo(()=>status?.profession && readyRecipes===0 && !pending ? nextWorkshopGuidance(available,status):null,[available,status,readyRecipes,pending]);
   const shownRecipes=useMemo(()=>status?visibleWorkshopRecipes(available,status,recipeFilter,recipeSearch):[],[available,status,recipeFilter,recipeSearch]);
 
@@ -95,9 +104,15 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       setPending(null);setStatus(verified);
       try {
         const previews=await fetchStage8QualityPreviews();
-        setQuality(previews.masteryLevel===verified.masteryLevel &&
-          previews.masterLicense===verified.masterLicense ? previews : null);
-      }catch {setQuality(null);}
+        if(previews.masteryLevel===verified.masteryLevel &&
+          previews.masterLicense===verified.masterLicense){
+          setQuality(previews);setQualityMode('v2');
+        }else{setQuality(null);setQualityMode('unavailable');}
+      }catch(cause) {
+        setQuality(null);
+        setQualityMode(cause instanceof Error&&cause.message==='stage8_quality_server_not_deployed'
+          ? 'legacy':'unavailable');
+      }
       setNotice(language==='en'?(receipt.kind==='item'?'Verified item crafted.':'Mastery training confirmed.'):(receipt.kind==='item'?'Предмет создан и подтверждён сервером.':'Обучение подтверждено сервером.'));
       const crafted=owned.find(item=>item.itemId===receipt.itemId);
       setCraftedItemTab(receipt.kind==='item' && crafted ? (crafted.output.type==='equipment'?'equipment':'items') : null);
@@ -133,7 +148,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
         professions:{...(latest.professions??{active:null,masteryLevel:1,masteryXp:0,lastGatherAt:0}),active:profession,
           masteryLevel:verified.masteryLevel,masteryXp:verified.masteryXp}});
       await setStage8PurchasePending(null);
-      setPurchasePending(null);setStatus(verified);setQuality(null);
+      setPurchasePending(null);setStatus(verified);setQuality(null);setQualityMode('unavailable');
       setNotice(language==='en'?'Profession purchase verified by server.':'Профессия открыта и подтверждена сервером.');
     }catch(cause){
       if (cause instanceof Error && cause.message==='stage8_purchase_insufficient_gems') {
@@ -244,11 +259,16 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
         const hasXpRoom=readiness.xpReady;
         const premium=recipe.id.startsWith('mw_');
         const preview=premium?quality?.previews[recipe.id]:undefined;
-        const actualOutput=premium?(preview?.status==='ready'?preview.item_output:null):recipe.output;
+        const actualOutput=premium
+          ? qualityMode==='legacy'?recipe.output
+            : preview?.status==='ready'?preview.item_output:null
+          : recipe.output;
         const canRun=readiness.ready && !pending && !busy && !purchasePending
-          && (!premium||preview?.status==='ready');
+          && (!premium||qualityMode==='legacy'||preview?.status==='ready');
         const qualityText=premium
-          ? preview?.status==='ready'
+          ? qualityMode==='legacy'
+            ? recipe.output?.description
+            : preview?.status==='ready'
             ? actualOutput?.description
             : preview?.status==='locked'
               ? (language==='en'?'Reach the required mastery tier or buy the Master License.':'Требуется мастерство или лицензия мастера.')
