@@ -82,21 +82,21 @@ try{
   -- Rehearse the existing owner-level guard that returns an approved shield
   -- from OLD (before our new, alphabetically later masterwork trigger).
   CREATE FUNCTION public.mock_owner_level_restore() RETURNS trigger
-  LANGUAGE plpgsql AS $
+  LANGUAGE plpgsql AS $mock_restore$
   BEGIN
     IF NEW.game_state#>>'{player,equipped,shield,adminTestLevel}'='true' THEN
       NEW.game_state:=jsonb_set(NEW.game_state,'{player,equipped,shield}',
         OLD.game_state#>'{player,equipped,shield}');
     END IF;
     RETURN NEW;
-  END $;
+  END $mock_restore$;
   CREATE TRIGGER territory_gear_guard_before_v4
     BEFORE UPDATE OF game_state ON public.players
     FOR EACH ROW EXECUTE FUNCTION public.mock_owner_level_restore();
   CREATE FUNCTION public.territory_gear_recompute_columns_v4(jsonb)
-  RETURNS jsonb LANGUAGE sql STABLE AS $
+  RETURNS jsonb LANGUAGE sql STABLE AS $mock_stats$
     SELECT jsonb_build_object('attack',20,'defense',100,'max_hp',300,'crit_chance',5)
-  $;
+  $mock_stats$;
   GRANT SELECT,UPDATE ON public.players TO authenticated;
  `);
  for(const p of byName.values()){
