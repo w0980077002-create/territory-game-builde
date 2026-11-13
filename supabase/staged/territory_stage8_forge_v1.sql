@@ -203,6 +203,13 @@ BEGIN
     IF public.territory_normalize_gear_v4(v_after) IS DISTINCT FROM v_after
     THEN RAISE EXCEPTION 'stage8_forge_quality_cap_conflict'; END IF;
     v_output:=pg_catalog.jsonb_set(v_item.item_output,'{equipment}',v_after,true);
+    IF pg_catalog.jsonb_typeof(v_item.item_output->'description')='string' THEN
+      v_output:=pg_catalog.jsonb_set(v_output,'{description}',
+        pg_catalog.to_jsonb(pg_catalog.replace(
+          v_item.item_output->>'description',
+          'Уровень вещи '||v_level||'.',
+          'Уровень вещи '||(v_level+1)||'.')),true);
+    END IF;
     UPDATE public.territory_profession_stage8_items
       SET item_output=v_output WHERE item_id=p_item AND player_id=v_uid;
     v_after:=v_after||pg_catalog.jsonb_build_object('id',v_id);
