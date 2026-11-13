@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "test:balance": "node scripts/check-equipment-balance.mjs && node scripts/check-forge-economy-forecast.mjs && node scripts/check-legacy-crafted-parity.mjs",
+    "test:balance": "node scripts/check-equipment-balance.mjs && node scripts/check-forge-economy-forecast.mjs && node scripts/check-legacy-crafted-parity.mjs && node scripts/check-legacy-crafted-masterwork-sql.mjs",
     "test:owner-decisions": "node scripts/check-owner-decisions.mjs && node scripts/check-vip-belt-refill.mjs && node scripts/check-vip-two-chests.mjs",
     "test:professions": "node scripts/check-professions.mjs && node scripts/check-profession-art.mjs",
     "test:master-license": "node scripts/check-master-license-shop.mjs",
