@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import {
   MASTERY_QUALITY_TIERS,masteryQualityTier,
-  equipmentServerCaps,previewMasterworkAtMastery,masteryQualityAudit,
+  equipmentServerCaps,previewMasterworkAtMastery,masteryQualityAudit,qualityShopBenchmark,
 } from './professions/mastery-quality-v2.mjs';
 import {
-  STAGE8_MASTERWORK_EQUIPMENT,STAGE8_RECIPES,benchmarkShopEquipment,
+  STAGE8_MASTERWORK_EQUIPMENT,STAGE8_RECIPES,
   CRAFT_RARITY_POWER,
 } from './professions/stage8-model.mjs';
 
@@ -41,7 +41,7 @@ for(const row of all){
   const recipe=STAGE8_MASTERWORK_EQUIPMENT.find(r=>r.id===row.recipeId);
   assert.ok(recipe);
   if(row.status!=='ready')continue;
-  const shop=benchmarkShopEquipment(recipe.output.equipment.slot,
+  const shop=qualityShopBenchmark(recipe.output.equipment.slot,
     recipe.output.equipment.rarity,row.itemLevel);
   const ratio=CRAFT_RARITY_POWER[recipe.output.equipment.rarity]/CRAFT_RARITY_POWER[shop.rarity];
   const caps=equipmentServerCaps(recipe.output.equipment.slot,row.itemLevel);
@@ -53,7 +53,7 @@ for(const row of all){
       row.recipeId+' '+stat+' does not meet displayed percentage');
   }
 }
-assert.ok(statuses.blocked>0,'High-tier cap conflicts require server-side design, not a fake release');
+assert.equal(statuses.blocked,0,'Approved 160% prestige tier must have a safe cap-compliant item level');
 assert.ok(statuses.ready>0,'At least one validated preview must be achievable');
 assert.equal(JSON.stringify(STAGE8_MASTERWORK_EQUIPMENT),original,'Never rewrite the live catalogue in preview');
 console.log('Mastery quality v2 STAGED audit PASS',JSON.stringify(statuses),
