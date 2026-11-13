@@ -128,7 +128,7 @@ BEGIN
   THEN RAISE EXCEPTION 'stage8_forge_insufficient_resources'; END IF;
   v_gold:=v_player.gold-v_cost_gold;
   v_mat:=v_player.forge_materials-v_cost_mat;
-  v_chance:=pg_catalog.greatest(0.5::numeric,0.9::numeric-v_level*0.05::numeric);
+  v_chance:=greatest(0.5::numeric,0.9::numeric-v_level*0.05::numeric);
   v_success:=pg_catalog.random()<v_chance;
   v_steps:=v_level+1-v_base_level;
 
