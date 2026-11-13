@@ -163,7 +163,9 @@ BEGIN
         v_growth:=CASE v_key WHEN 'attack' THEN v_attack_growth
           WHEN 'defense' THEN v_def_growth ELSE v_hp_growth END;
         v_after:=pg_catalog.jsonb_set(v_after,ARRAY[v_key],
-          pg_catalog.to_jsonb(pg_catalog.round((v_base->>v_key)::numeric+v_growth*v_steps)),true);
+          pg_catalog.to_jsonb(CASE WHEN (v_base->>v_key)::numeric<=0
+            THEN (v_base->>v_key)::numeric
+            ELSE (v_base->>v_key)::numeric+pg_catalog.round(v_growth*v_steps) END),true);
       END IF;
     END LOOP;
     IF pg_catalog.jsonb_typeof(v_base->'critChance')='number' THEN
