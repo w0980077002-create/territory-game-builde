@@ -304,6 +304,75 @@ export function capEquipmentToHeroLevel(eq: Equipment, heroLevel: number): Equip
   });
 }
 
+/**
+ * Stage8 r4 ships 25 NEW masterwork recipe IDs, but legacy local crafts
+ * (crafted-<recipe>-<timestamp>-<nonce>) were already saved on real accounts.
+ * Preserve their IDs, slots, rarity, current level and forge count while
+ * enforcing the same minimum +20% over the current same-level shop offer.
+ *
+ * Strictly limit this migration to four known V1 recipes and their original
+ * names; shop gear, boss drops, random custom gear and server-owned stage8_
+ * items are deliberately excluded. The new name prevents the server's
+ * name-based shop canonicalizer from replacing a crafted bonus.
+ *
+ * Idempotent, safe on every login and after each forge upgrade; does not mint,
+ * copy, transfer, equip or delete anything.
+ */
+const LEGACY_CRAFT_UPGRADES: Record<string, {
+  oldName: string;
+  shopName: string;
+  slot: Equipment['slot'];
+  rarity: Equipment['rarity'];
+}> = {
+  smith_apprentice_blade: { oldName: 'Меч подмастерья', shopName: 'Меч воина', slot: 'weapon', rarity: 'common' },
+  smith_leather_armor: { oldName: 'Кожаная броня', shopName: 'Кожаная броня', slot: 'armor', rarity: 'common' },
+  jeweler_raven_amulet: { oldName: 'Амулет ворона мастера', shopName: 'Амулет ворона', slot: 'amulet', rarity: 'rare' },
+  engineer_oak_shield: { oldName: 'Укреплённый щит', shopName: 'Дубовый щит', slot: 'shield', rarity: 'common' },
+};
+
+export function rebalanceLegacyCraftedEquipment(eq: Equipment): Equipment {
+  const match = /^crafted-([a-z0-9_]+)-[0-9]{13}-[a-z0-9]+$/.exec(eq.id);
+  const recipe = match ? LEGACY_CRAFT_UPGRADES[match[1]] : undefined;
+  if (!recipe || eq.slot !== recipe.slot || eq.rarity !== recipe.rarity
+      || ![recipe.oldName, `${recipe.oldName} · мастерская`].includes(eq.name)
+      || !Number.isSafeInteger(eq.level) || eq.level < 1 || eq.level > 500) return eq;
+
+  const shop = EQUIPMENT_TEMPLATES.find(item =>
+    item.name === recipe.shopName && item.slot === recipe.slot && item.rarity === recipe.rarity);
+  if (!shop || eq.level < shop.level) return eq;
+
+  const baseLevel = Number.isSafeInteger(eq.baseLevel) && eq.baseLevel! >= 1
+    && eq.baseLevel! <= eq.level ? eq.baseLevel! : eq.level;
+  const upgrades = eq.level - baseLevel;
+  const shopAtLevel = calculateEquipmentStats(onlyStats(shop),
+    eq.level - shop.level, shop.rarity, shop.slot);
+  const originalBase = eq.baseStats ?? onlyStats(eq);
+  const correctedBase: EquipmentBaseStats = { ...originalBase };
+  const correctedCurrent: EquipmentBaseStats = {};
+  const growth = FORGE_STAT_GROWTH[eq.slot][eq.rarity];
+
+  for (const key of STAT_KEYS) {
+    const shopStat = shopAtLevel[key];
+    if (typeof shopStat !== 'number') continue;
+    const oldStat = typeof eq[key] === 'number' ? eq[key]! : 0;
+    const target = Math.max(oldStat, Math.ceil(shopStat * 1.20));
+    const increase = key === 'critChance' ? 0 : Math.round((growth[key] ?? 0) * upgrades);
+    correctedBase[key] = Math.max(correctedBase[key] ?? 0, target - increase);
+    correctedCurrent[key] = Math.max(oldStat, (correctedBase[key] ?? 0) + increase);
+  }
+  const name = `${recipe.oldName} · мастерская`;
+  const sameStats = STAT_KEYS.every(key => correctedCurrent[key] === undefined || correctedCurrent[key] === eq[key]);
+  if (eq.name === name && sameStats && STAT_KEYS.every(key =>
+      correctedBase[key] === originalBase[key])) return eq;
+  return {
+    ...eq, name,
+    ...correctedCurrent,
+    baseLevel,
+    baseStats: correctedBase,
+    upgradeCount: upgrades,
+  };
+}
+
 export function upgradeEquipment(eq: Equipment): Equipment {
   const shopTemplate = [...EQUIPMENT_TEMPLATES, ...HISTORIC_SHOP_EPICS].find(
     (t) => t.name === eq.name && t.slot === eq.slot && t.rarity === eq.rarity,
@@ -332,7 +401,7 @@ export function upgradeEquipment(eq: Equipment): Equipment {
               upgradeCount: 0,
             };
       })();
-  return setEquipmentLevel(prepared, prepared.level + 1);
+  return rebalanceLegacyCraftedEquipment(setEquipmentLevel(prepared, prepared.level + 1));
 }
 
 /** Historic combat loot was once epic/legendary. Its current LEVEL and successful
@@ -363,7 +432,7 @@ export function rebalanceHistoricalRarity(eq: Equipment): Equipment {
  * Generated loot or custom gear only changes if above generous slot caps.
  */
 export function normalizeEquipmentV4(eq: Equipment): Equipment {
-  eq = rebalanceHistoricalRarity(eq);
+  eq = rebalanceLegacyCraftedEquipment(rebalanceHistoricalRarity(eq));
   const template = [...EQUIPMENT_TEMPLATES, ...HISTORIC_SHOP_EPICS].find(
     (x) => x.name === eq.name && x.slot === eq.slot && x.rarity === eq.rarity,
   );
@@ -435,23 +504,24 @@ function migrateInventoryItem(item: InventoryItem): InventoryItem {
 export function migrateGameStateBalance(saved: Partial<GameState>): Partial<GameState> {
   // The rare-only historic migration also runs on already-current V4 saves.
   // Only former epic/legendary boss loot changes. Purchased epic shop gear remains untouched.
+  const restoreCraft = (eq: Equipment) => rebalanceLegacyCraftedEquipment(rebalanceHistoricalRarity(eq));
   const normalized: Partial<GameState> = {
     ...saved,
     inventory: Array.isArray(saved.inventory) ? saved.inventory.map(item => {
       if (!item.equipment) return item;
-      const eq = rebalanceHistoricalRarity(item.equipment);
-      return eq === item.equipment ? item : { ...item, rarity: eq.rarity, equipment: eq,
-        description: `Уровень ${eq.level} · ${eq.rarity}` };
+      const eq = restoreCraft(item.equipment);
+      return eq === item.equipment ? item : { ...item, name: eq.name, rarity: eq.rarity, equipment: eq,
+        description: `Уровень ${eq.level} · ${eq.rarity} · мастерская` };
     }) : saved.inventory,
     belt: Array.isArray(saved.belt) ? saved.belt.map(item => {
       if (!item?.equipment) return item;
-      const eq = rebalanceHistoricalRarity(item.equipment);
-      return eq === item.equipment ? item : { ...item, rarity: eq.rarity, equipment: eq };
+      const eq = restoreCraft(item.equipment);
+      return eq === item.equipment ? item : { ...item, name: eq.name, rarity: eq.rarity, equipment: eq };
     }) : saved.belt,
     player: saved.player?.equipped
       ? { ...saved.player, equipped: Object.fromEntries(
           Object.entries(saved.player.equipped).map(([slot, item]) =>
-            [slot, item ? rebalanceHistoricalRarity(item) : item])) as NonNullable<GameState['player']['equipped']> }
+            [slot, item ? restoreCraft(item) : item])) as NonNullable<GameState['player']['equipped']> }
       : saved.player,
   };
   if ((normalized.balanceVersion ?? 0) >= EQUIPMENT_BALANCE_VERSION) return normalized;
