@@ -60,7 +60,8 @@ try {
       }
     }
   }
-  assert.ok(ready>100 && blocked>0);
+  assert.ok(ready>100,'Every recipe must have viable mastery previews');
+  assert.equal(blocked,0,'All 25 approved masterworks must have safe cap-compliant previews');
   const denied=await db.query(`SELECT has_function_privilege('anon','territory_private.territory_stage8_quality_item_v2(text,integer,boolean,integer)','EXECUTE') AS allowed`);
   assert.equal(denied.rows[0].allowed,false);
   const issued=await db.query('SELECT COUNT(*)::int n FROM public.territory_profession_stage8_catalog');
