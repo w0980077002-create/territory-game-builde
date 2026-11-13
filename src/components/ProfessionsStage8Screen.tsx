@@ -148,7 +148,17 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
         professions:{...(latest.professions??{active:null,masteryLevel:1,masteryXp:0,lastGatherAt:0}),active:profession,
           masteryLevel:verified.masteryLevel,masteryXp:verified.masteryXp}});
       await setStage8PurchasePending(null);
-      setPurchasePending(null);setStatus(verified);setQuality(null);setQualityMode('unavailable');
+      setPurchasePending(null);setStatus(verified);
+      try {
+        const previews=await fetchStage8QualityPreviews();
+        if(previews.masteryLevel===verified.masteryLevel&&previews.masterLicense===verified.masterLicense){
+          setQuality(previews);setQualityMode('v2');
+        }else{setQuality(null);setQualityMode('unavailable');}
+      }catch(cause){
+        setQuality(null);
+        setQualityMode(cause instanceof Error&&cause.message==='stage8_quality_server_not_deployed'
+          ?'legacy':'unavailable');
+      }
       setNotice(language==='en'?'Profession purchase verified by server.':'Профессия открыта и подтверждена сервером.');
     }catch(cause){
       if (cause instanceof Error && cause.message==='stage8_purchase_insufficient_gems') {
