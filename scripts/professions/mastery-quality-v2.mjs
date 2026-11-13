@@ -5,7 +5,7 @@
  * same-item-level shop baseline. This module NEVER grants equipment or changes
  * the live Stage8 catalogue. A preview marked blocked MUST NOT be minted.
  */
-import {CRAFT_RARITY_POWER, benchmarkShopEquipment, STAGE8_MASTERWORK_EQUIPMENT} from './stage8-model.mjs';
+import {CRAFT_RARITY_POWER, STAGE8_SHOP_BASELINES, STAGE8_FORGE_GROWTH, STAGE8_MASTERWORK_EQUIPMENT} from './stage8-model.mjs';
 
 export const MASTERY_QUALITY_TIERS = Object.freeze([
   Object.freeze({level:1,pct:20}),
@@ -40,6 +40,35 @@ export function equipmentServerCaps(slot,level){
     critChance:25,
   };
 }
+/**
+ * Legendary gear has NO legendary shop equivalent. Compare to the strongest
+ * CURRENTLY SOLD lower-tier offer and apply the rarity scale. Historic epic
+ * paid purchases are protected but are no longer an active shop listing.
+ * Existing r4 crafting baseline stays completely unchanged.
+ */
+export function qualityShopBenchmark(slot,rarity,level){
+  const rank=CRAFT_RARITY_POWER;
+  const rows=STAGE8_SHOP_BASELINES.filter(item=>item.slot===slot
+    && rank[item.rarity]<=rank[rarity]
+    && !(rarity==='legendary'&&item.historic===true));
+  if(!rows.length)throw new Error('quality_missing_shop_baseline');
+  const highest=Math.max(...rows.map(item=>rank[item.rarity]));
+  const tier=rows.filter(item=>rank[item.rarity]===highest);
+  const eligible=tier.filter(item=>item.level<=level);
+  const compared=(eligible.length?eligible:tier).map(item=>{
+    const output={...item,level};
+    const gain=STAGE8_FORGE_GROWTH[item.slot][item.rarity];
+    for(const stat of ['attack','defense','hp']){
+      if(typeof item[stat]==='number')
+        output[stat]=Math.max(0,item[stat]+Math.round((gain[stat]??0)*(level-item.level)));
+    }
+    return output;
+  });
+  return compared.sort((a,b)=>
+    ((b.attack??0)*5+(b.defense??0)*5+(b.hp??0)+(b.critChance??0)*10)-
+    ((a.attack??0)*5+(a.defense??0)*5+(a.hp??0)+(a.critChance??0)*10))[0];
+}
+
 export function previewMasterworkAtMastery(recipe,masteryLevel,{
   masterLicense=false,heroLevel=MAX_HERO_LEVEL,
 }={}){
@@ -63,7 +92,7 @@ export function previewMasterworkAtMastery(recipe,masteryLevel,{
   if(initialLevel>maxLevel)return {status:'blocked',reason:'hero_below_recipe_level',targetPct:tier.pct,requiredItemLevel:initialLevel};
   let lastBlockers=[];
   for(let level=initialLevel;level<=maxLevel;level++){
-    const shop=benchmarkShopEquipment(eq.slot,eq.rarity,level);
+    const shop=qualityShopBenchmark(eq.slot,eq.rarity,level);
     const rarityScale=CRAFT_RARITY_POWER[eq.rarity]/CRAFT_RARITY_POWER[shop.rarity];
     const caps=equipmentServerCaps(eq.slot,level);
     const predicted={...eq,level};
