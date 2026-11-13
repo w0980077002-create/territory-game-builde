@@ -73,8 +73,31 @@ try{
    id uuid PRIMARY KEY,
    level integer NOT NULL,
    game_state jsonb NOT NULL,
+   attack integer DEFAULT 20,
+   defense integer DEFAULT 5,
+   max_hp integer DEFAULT 100,
+   crit_chance integer DEFAULT 5,
    updated_at timestamptz DEFAULT now()
   );
+  -- Rehearse the existing owner-level guard that returns an approved shield
+  -- from OLD (before our new, alphabetically later masterwork trigger).
+  CREATE FUNCTION public.mock_owner_level_restore() RETURNS trigger
+  LANGUAGE plpgsql AS $
+  BEGIN
+    IF NEW.game_state#>>'{player,equipped,shield,adminTestLevel}'='true' THEN
+      NEW.game_state:=jsonb_set(NEW.game_state,'{player,equipped,shield}',
+        OLD.game_state#>'{player,equipped,shield}');
+    END IF;
+    RETURN NEW;
+  END $;
+  CREATE TRIGGER territory_gear_guard_before_v4
+    BEFORE UPDATE OF game_state ON public.players
+    FOR EACH ROW EXECUTE FUNCTION public.mock_owner_level_restore();
+  CREATE FUNCTION public.territory_gear_recompute_columns_v4(jsonb)
+  RETURNS jsonb LANGUAGE sql STABLE AS $
+    SELECT jsonb_build_object('attack',20,'defense',100,'max_hp',300,'crit_chance',5)
+  $;
+  GRANT SELECT,UPDATE ON public.players TO authenticated;
  `);
  for(const p of byName.values()){
    const state={player:{level:p.lvl,stats:{attack:20,defense:5},equipped:p.equipped},
@@ -124,5 +147,11 @@ try{
    [JSON.stringify(wrong),byName.get('twOneFz').id]);
  assert.equal((await get('twOneFz')).game_state.inventory.at(-1).equipment.attack,34,
    'Player-ID bound ledger must not bless copied items');
- console.log('Legacy local craft SQL PASS: 37 gear, 8 accounts, backups, 61-lvl amulet +42/4, forged shields, shops untouched, stale-save reapply and cross-owner rejection.');
+ // The authenticated role can save normally; private ledger tables and
+ // helper functions do NOT need any direct client grants.
+ await db.exec('SET ROLE authenticated');
+ await db.query('UPDATE public.players SET game_state=game_state WHERE id=$1',[byName.get('Amiksor').id]);
+ await db.exec('RESET ROLE');
+ assert.equal((await get('Amiksor')).game_state.inventory[0].equipment.attack,42);
+ console.log('Legacy local craft SQL PASS: 37 gear, 8 accounts, backups, 61-lvl amulet +42/4, forged shields after owner guard, shops untouched, stale-save reapply and cross-owner rejection.');
 }finally{await db.close();}
