@@ -106,8 +106,8 @@ BEGIN
    IF v_shop IS NULL THEN RAISE EXCEPTION 'quality_missing_shop_baseline'; END IF;
    v_stats:='{}'::jsonb;v_block:=NULL;
    FOREACH v_stat IN ARRAY ARRAY['attack','defense','hp','critChance'] LOOP
-     IF jsonb_typeof(v_eq->v_stat)<>'number' THEN CONTINUE; END IF;
-     IF jsonb_typeof(v_shop->v_stat)<>'number'
+     IF jsonb_typeof(v_eq->v_stat) IS DISTINCT FROM 'number' THEN CONTINUE; END IF;
+     IF jsonb_typeof(v_shop->v_stat) IS DISTINCT FROM 'number'
      THEN v_block:=v_stat||'_missing_shop_reference';EXIT; END IF;
      v_growth:=CASE v_stat WHEN 'critChance' THEN 0
        ELSE COALESCE((v_shop->'growth'->>v_stat)::numeric,0) END;
