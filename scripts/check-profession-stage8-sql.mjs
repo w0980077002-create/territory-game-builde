@@ -552,10 +552,12 @@ try {
   const oldGems=(await one('SELECT gems FROM public.players WHERE id=$1',[smith])).gems;
   for(const recipe of premiumRecipes){
     await db.query(
-      'INSERT INTO public.territory_profession_stage8_catalog(id,profession,required_level,kind,mastery_xp,ingredients,item_output) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7::jsonb)',
+      'INSERT INTO public.territory_profession_stage8_catalog(id,profession,required_level,kind,mastery_xp,ingredients,item_output) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7::jsonb) ON CONFLICT (id) DO NOTHING',
       [recipe.id,recipe.profession,recipe.requiredLevel,recipe.kind,recipe.masteryXp,
        JSON.stringify(recipe.ingredients),JSON.stringify(recipe.output)]);
   }
+  assert.equal(Number((await one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_catalog')).n),97,
+    'The PGlite Stage8 fixture must contain the original 72 plus 25 masterworks');
   await db.exec(qualitySql);
   assert.equal(Number((await one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_receipts')).n),oldReceipts);
   assert.equal(Number((await one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_items')).n),oldIssued);
