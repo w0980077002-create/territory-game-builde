@@ -61,7 +61,19 @@ export async function attemptStage8Forge(
   const {data,error}=await supabase.rpc('territory_stage8_forge_v1',{
     p_item:match[1],p_expected_level:expectedLevel,p_operation:operationId,
   });
-  if(error)throw new Error(error.message||'stage8_forge_rpc_failed');
+  if(error){
+    // These PostgreSQL rejections occur BEFORE the debit; release their
+    // operation marker. Network failures or unknown results remain retriable.
+    const rejectedBeforeDebit=new Set([
+      'stage8_forge_insufficient_resources','stage8_forge_level_conflict',
+      'stage8_forge_item_not_owned','stage8_forge_reconcile_required',
+      'stage8_forge_mirror_missing_or_duplicate','stage8_forge_quality_cap_conflict',
+      'stage8_forge_bad_registry','stage8_forge_invalid_gear',
+      'stage8_forge_bad_request','stage8_forge_save_unavailable',
+    ]);
+    if(rejectedBeforeDebit.has(error.message))localStorage.removeItem(PREFIX+userId);
+    throw new Error(error.message||'stage8_forge_rpc_failed');
+  }
   if(!object(data)||data.success!==true||data.item_id!==match[1]
     ||data.level_before!==expectedLevel
     ||typeof data.upgraded!=='boolean'
