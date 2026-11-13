@@ -89,6 +89,12 @@ response={data:{...response.data,previews:{
 await assert.rejects(()=>api.fetchStage8QualityPreviews(),/preview_invalid_equipment/);
 response={data:null,error:{message:'missing endpoint'}};
 await assert.rejects(()=>api.fetchStage8QualityPreviews(),/preview_unavailable/);
+response={data:null,error:{code:'PGRST202',message:'Could not find the function public.territory_profession_stage8_quality_previews'}};
+await assert.rejects(()=>api.fetchStage8QualityPreviews(),/server_not_deployed/,
+  'Only an explicitly absent v2 RPC allows existing legacy craft behavior');
+response={data:null,error:{code:'PGRST202',message:'Could not find a DIFFERENT function'}};
+await assert.rejects(()=>api.fetchStage8QualityPreviews(),/preview_unavailable/,
+  'Other failures must not silently revert to old craft');
 
 const practiceId='s8_smith_practice_1';
 response={data:{success:true,recipe_id:practiceId,kind:'practice',item_id:null,item_output:null,
@@ -107,6 +113,27 @@ response={data:{success:true,recipe_id:itemId,kind:'item',item_id:uuid,item_outp
 assert.equal((await api.executeStage8(itemId,uuid)).itemId,uuid);
 response={data:{...response.data,kind:'practice'},error:null};
 await assert.rejects(()=>api.executeStage8(itemId,uuid),/receipt_unconfirmed/);
+
+// Production consumables intentionally have no expiration. Historical items
+// with existing server timestamps must remain readable, never rewritten.
+const consumable=catalog.recipes.find(x=>x.output?.type==='potion'||x.output?.type==='elixir');
+assert.ok(consumable?.output,'At least one consumable Stage8 recipe should exist');
+const consumableReply={success:true,recipe_id:consumable.id,kind:'item',item_id:uuid,
+  item_output:consumable.output,expires_at:null,mastery_level:25,mastery_xp:26,daily_xp_used:100};
+response={data:consumableReply,error:null};
+assert.equal((await api.executeStage8(consumable.id,uuid)).expiresAt,null,
+  'No-expiry hotfix must survive quality-v2 frontend');
+response={data:{...consumableReply,expires_at:'2026-11-15T00:00:00.000Z'},error:null};
+assert.equal((await api.executeStage8(consumable.id,uuid)).expiresAt,'2026-11-15T00:00:00.000Z',
+  'Old server-stamped expiry is retained only on historical item');
+response={data:{...consumableReply,expires_at:'not-a-date'},error:null};
+await assert.rejects(()=>api.executeStage8(consumable.id,uuid),/invalid_expiry/);
+response={data:{success:true,items:[{item_id:uuid,recipe_id:consumable.id,
+  item_output:consumable.output,expires_at:null}]},error:null};
+const permanentItems=await api.fetchStage8Items();
+assert.equal(permanentItems[0].expiresAt,null);
+const permanentMirror=api.mirrorStage8Items([],permanentItems);
+assert.equal(permanentMirror[0].expiresAt,undefined,'Display must never invent an expiration');
 
 response={data:{success:true,profession:'smith',gems_after:73,mastery_level:1,mastery_xp:0},error:null};
 const bought=await api.purchaseStage8('smith',uuid);
@@ -195,7 +222,11 @@ assert.match(screen,/Характеристики создаваемой эки�
 assert.match(screen,/actualOutput\.equipment\.level/,
   'Player must see verified item level, not the recipe mastery requirement');
 assert.match(screen,/preview\?\.status==='ready'/,
-  'Server quality preview must be ready before masterwork crafting');
+  'Server quality preview must be ready before new-quality masterwork crafting');
+assert.match(screen,/qualityMode==='legacy'/,
+  'Existing masterworks must remain usable until actual RPC migration is live');
+assert.match(screen,/stage8_quality_server_not_deployed/,
+  'Only the exact missing RPC is allowed to use legacy stats');
 assert.match(screen,/actualOutput\?\.equipment\?\.\[stat\]/,
   'Player must see server-verified dynamic stats, not old static r4 stats');
 assert.match(screen,/\['attack','defense','hp','critChance'\]/,
