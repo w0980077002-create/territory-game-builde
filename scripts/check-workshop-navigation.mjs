@@ -105,8 +105,10 @@ assert.match(forge, /savedItem\?\.level !== expectedLevel/,
   'Forge must verify the final item level after server normalization');
 assert.match(forge, /data\.gold !== result\.next\.player\.gold/,
   'Forge must verify server-reported gold debit');
-assert.match(forge, /saveUnverified \|\| isStage8Gear\(selectedCurrent\.id\) \|\| selectedCurrent\.equipment\.level/,
-  'No further roll is allowed when the server has not confirmed the previous one');
+assert.match(forge, /saveUnverified \|\| \(isStage8Gear\(selectedCurrent\.id\) && !stage8ForgeReady\) \|\| selectedCurrent\.equipment\.level/,
+  'No further roll is allowed when confirmation or the Stage8 RPC is unavailable');
+assert.match(forge, /attemptStage8Forge\(userId,eq\.id,eq\.level\)/,
+  'Stage8 upgrades must be an authenticated server operation, not legacy local forge');
 assert.match(forge, /if \(result\.status === 'success'\) \{\s*setSuccess\(true\)/,
   'Only a confirmed server save may display forge success');
 
