@@ -540,6 +540,61 @@ try {
   assert.equal((await status()).daily_xp_used,300,'Expired grant restores the normal visible daily quota');
   await denied(()=>exec('s8_smith_practice_1','f0000000-0000-4000-8000-000000000002'),/daily_mastery_xp_limit/);
   await role();
+  // STAGED owner-approved mastery-quality v2. Only ephemeral PGlite data is used.
+  // Run after all previous r2 regression checks so their immutable baseline
+  // remains meaningful and unchanged.
+  const qualitySql=await readFile(new URL('../supabase/staged/territory_stage8_quality_v2_server_draft.sql',import.meta.url),'utf8');
+  const premiumRecipes=catalog.recipes.filter(r=>r.id.startsWith('mw_'));
+  assert.equal(premiumRecipes.length,25);
+  const oldReceipts=Number((await one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_receipts')).n);
+  const oldIssued=Number((await one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_items')).n);
+  const oldGold=(await one('SELECT gold FROM public.players WHERE id=$1',[smith])).gold;
+  const oldGems=(await one('SELECT gems FROM public.players WHERE id=$1',[smith])).gems;
+  for(const recipe of premiumRecipes){
+    await db.query(
+      'INSERT INTO public.territory_profession_stage8_catalog(id,profession,required_level,kind,mastery_xp,ingredients,item_output) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7::jsonb)',
+      [recipe.id,recipe.profession,recipe.requiredLevel,recipe.kind,recipe.masteryXp,
+       JSON.stringify(recipe.ingredients),JSON.stringify(recipe.output)]);
+  }
+  await db.exec(qualitySql);
+  assert.equal(Number((await one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_receipts')).n),oldReceipts);
+  assert.equal(Number((await one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_items')).n),oldIssued);
+  await db.query('UPDATE public.territory_profession_stage8_progress SET mastery_level=25,mastery_xp=0 WHERE player_id=$1',[smith]);
+  await db.query('UPDATE public.territory_profession_stage8_daily_xp SET xp_used=0 WHERE player_id=$1',[smith]);
+  await db.query('UPDATE public.territory_resource_wallet SET quantity=100 WHERE player_id=$1',[smith]);
+  await useUser(smith);
+  const preview25=(await one('SELECT public.territory_profession_stage8_quality_previews() AS x')).x;
+  assert.equal(preview25.success,true);
+  assert.equal(preview25.quality_version,'mastery-v2');
+  assert.equal(preview25.previews.mw_s8_smith_watch_blade.status,'ready');
+  assert.equal(preview25.previews.mw_s8_smith_watch_blade.quality_pct,35);
+  const craftOp='a0000000-0000-4000-8000-000000000019';
+  const premiumReceipt=await exec('mw_s8_smith_watch_blade',craftOp);
+  assert.equal(premiumReceipt.success,true);
+  assert.equal(premiumReceipt.item_output.qualityVersion,'mastery-v2');
+  assert.equal(premiumReceipt.item_output.equipment.masteryQualityPct,35);
+  assert.equal(premiumReceipt.item_output.equipment.craftedMastery,25);
+  assert.ok(premiumReceipt.item_output.equipment.attack>22);
+  const same=await exec('mw_s8_smith_watch_blade',craftOp);
+  assert.deepEqual(same,premiumReceipt,'Repeat operation must return exact immutable original receipt');
+  assert.equal(Number((await asOwner(()=>one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_receipts'))).n),oldReceipts+1);
+  assert.equal(Number((await asOwner(()=>one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_items'))).n),oldIssued+1);
+  assert.equal((await asOwner(()=>one('SELECT gold FROM public.players WHERE id=$1',[smith]))).gold,oldGold);
+  assert.equal((await asOwner(()=>one('SELECT gems FROM public.players WHERE id=$1',[smith]))).gems,oldGems);
+  await role();
+  await db.query('UPDATE public.territory_profession_stage8_progress SET mastery_level=300,mastery_xp=0 WHERE player_id=$1',[smith]);
+  await db.query('UPDATE public.territory_profession_unlocks SET master_license=true WHERE player_id=$1',[smith]);
+  await db.query('UPDATE public.territory_profession_stage8_daily_xp SET xp_used=0 WHERE player_id=$1',[smith]);
+  await useUser(smith);
+  const preview300=(await one('SELECT public.territory_profession_stage8_quality_previews() AS x')).x;
+  assert.equal(preview300.previews.mw_s8_smith_jarl_blade.status,'blocked');
+  assert.equal(preview300.previews.mw_s8_smith_jarl_blade.quality_pct,160);
+  const countsBefore=await asOwner(()=>one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_items'));
+  await denied(()=>exec('mw_s8_smith_jarl_blade','a0000000-0000-4000-8000-000000000020'),
+    /masterwork_quality_unavailable/,'Fail closed before materials or new item for unsafe 160% sword');
+  assert.equal((await asOwner(()=>one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_items'))).n,countsBefore.n);
+  await role();
+  console.log('Stage8 mastery quality RPC PASS: 25 server recipes, dynamic 35% craft, owner snapshot, retry receipt, 160% fail closed, existing receipts and currencies preserved.');
   console.log('Stage8 SQL PASS: 72 recipes/XP bands, RLS/ACL, reviewed legacy levels, 1000-gem purchase, atomic XP/materials, protected 300/day limit, isolated expiring owner test mode, replay, license, inventory and 7-day expiry in local PGlite.');
 }finally{
   await db.close();
