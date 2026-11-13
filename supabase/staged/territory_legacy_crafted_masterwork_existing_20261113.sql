@@ -193,7 +193,7 @@ REVOKE ALL ON FUNCTION territory_private.legacy_crafted_masterwork_item_20261113
 CREATE OR REPLACE FUNCTION territory_private.legacy_crafted_masterwork_save_20261113()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'pg_catalog'
 AS $function$
-DECLARE v_inventory jsonb; v_equipped jsonb; v_belt jsonb;
+DECLARE v_inventory jsonb; v_equipped jsonb; v_belt jsonb; v_equipped_before jsonb; v_stats jsonb;
 BEGIN
  IF NEW.game_state IS NULL OR pg_catalog.jsonb_typeof(NEW.game_state)<>'object'
  OR NOT EXISTS(SELECT 1 FROM territory_private.legacy_crafted_masterwork_ledger_20261113
@@ -207,12 +207,24 @@ BEGIN
    NEW.game_state:=pg_catalog.jsonb_set(NEW.game_state,'{inventory}',v_inventory);
  END IF;
  IF pg_catalog.jsonb_typeof(NEW.game_state#>'{player,equipped}')='object' THEN
+   v_equipped_before:=NEW.game_state#>'{player,equipped}';
    SELECT COALESCE(pg_catalog.jsonb_object_agg(e.key,
      CASE WHEN pg_catalog.jsonb_typeof(e.value)='object' THEN
        territory_private.legacy_crafted_masterwork_item_20261113(e.value,NEW.id)
      ELSE e.value END),'{}'::jsonb) INTO v_equipped
    FROM pg_catalog.jsonb_each(NEW.game_state#>'{player,equipped}') e;
    NEW.game_state:=pg_catalog.jsonb_set(NEW.game_state,'{player,equipped}',v_equipped);
+   -- This specific group has zero synthetic owner-bots; refresh combat
+   -- columns only if an equipped legacy piece actually gained stats.
+   IF v_equipped IS DISTINCT FROM v_equipped_before THEN
+     v_stats:=public.territory_gear_recompute_columns_v4(NEW.game_state);
+     IF v_stats<>'{}'::jsonb THEN
+       NEW.attack:=(v_stats->>'attack')::integer;
+       NEW.defense:=(v_stats->>'defense')::integer;
+       NEW.max_hp:=(v_stats->>'max_hp')::integer;
+       NEW.crit_chance:=(v_stats->>'crit_chance')::integer;
+     END IF;
+   END IF;
  END IF;
  IF pg_catalog.jsonb_typeof(NEW.game_state->'belt')='array' THEN
    SELECT COALESCE(pg_catalog.jsonb_agg(
@@ -227,9 +239,11 @@ END $function$;
 REVOKE ALL ON FUNCTION territory_private.legacy_crafted_masterwork_save_20261113()
  FROM PUBLIC,anon,authenticated;
 
--- Sorting "territory_fcrafted..." before existing "territory_gear_guard..."
--- ensures production caps/recompute run AFTER the provenance-aware boost.
-CREATE TRIGGER territory_fcrafted_masterwork_before_20261113
+-- Sort AFTER existing gear_guard (g) but BEFORE inventory_cleanup (i):
+-- the owner-authorization legacy guard can otherwise restore a previously
+-- approved, weaker level-60 shield from OLD.game_state after our correction.
+-- Only these 8 real, non-test-bot accounts are migrated.
+CREATE TRIGGER territory_hcrafted_masterwork_before_20261113
  BEFORE UPDATE OF game_state ON public.players FOR EACH ROW
  EXECUTE FUNCTION territory_private.legacy_crafted_masterwork_save_20261113();
 
