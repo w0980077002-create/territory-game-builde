@@ -356,7 +356,7 @@ export function rebalanceLegacyCraftedEquipment(eq: Equipment): Equipment {
     if (typeof shopStat !== 'number') continue;
     const oldStat = typeof eq[key] === 'number' ? eq[key]! : 0;
     const target = Math.max(oldStat, Math.ceil(shopStat * 1.20));
-    const increase = key === 'critChance' ? 0 : Math.round((growth[key] ?? 0) * upgrades);
+    const increase = key === 'critChance' ? 0 : Math.round(growth[key] * upgrades);
     correctedBase[key] = Math.max(correctedBase[key] ?? 0, target - increase);
     correctedCurrent[key] = Math.max(oldStat, (correctedBase[key] ?? 0) + increase);
   }
@@ -511,7 +511,7 @@ export function migrateGameStateBalance(saved: Partial<GameState>): Partial<Game
       if (!item.equipment) return item;
       const eq = restoreCraft(item.equipment);
       return eq === item.equipment ? item : { ...item, name: eq.name, rarity: eq.rarity, equipment: eq,
-        description: `Уровень ${eq.level} · ${eq.rarity} · мастерская` };
+        description: `Уровень ${eq.level} · ${eq.rarity}${eq.id.startsWith('crafted-') ? ' · мастерская' : ''}` };
     }) : saved.inventory,
     belt: Array.isArray(saved.belt) ? saved.belt.map(item => {
       if (!item?.equipment) return item;
