@@ -83,6 +83,11 @@ export type Stage8QualitySnapshot = {
 };
 export async function fetchStage8QualityPreviews(): Promise<Stage8QualitySnapshot> {
   const {data,error}=await supabase.rpc('territory_profession_stage8_quality_previews');
+  // Compatibility during a server-first rollout: ONLY a verified missing RPC
+  // means the pre-v2 backend is still serving legacy 20–30% items.
+  if(error?.code==='PGRST202'
+      && error.message?.includes('territory_profession_stage8_quality_previews'))
+    throw new Error('stage8_quality_server_not_deployed');
   if(error || !obj(data) || data.success!==true
       || data.quality_version!=='mastery-v2'
       || !int(data.mastery_level,300) || data.mastery_level<1
@@ -164,11 +169,12 @@ export async function executeStage8(recipeId: string, operationId: string): Prom
     if (!uuid(data.item_id) || !obj(data.item_output) || !recipe.output
         || data.item_output.name!==recipe.output.name || data.item_output.type!==recipe.output.type
         || data.item_output.rarity!==recipe.output.rarity) throw new Error('stage8_missing_item');
-    const perishable=recipe.output.type==='potion' || recipe.output.type==='elixir';
-    if (perishable !== (typeof data.expires_at==='string' && Number.isFinite(Date.parse(data.expires_at)))) {
+    // Live Stage8 consumables are permanent since the no-expiry hotfix.
+    // Older historical receipts may still have a finite server expiration.
+    const perishable=recipe.output.type==='potion'||recipe.output.type==='elixir';
+    const hasExpiry=typeof data.expires_at==='string' && Number.isFinite(Date.parse(data.expires_at));
+    if ((data.expires_at!==null&&!hasExpiry) || (!perishable&&data.expires_at!==null))
       throw new Error('stage8_invalid_expiry');
-    }
-    if (!perishable && data.expires_at!==null) throw new Error('stage8_invalid_expiry');
   }
   return {recipeId,kind:recipe.kind,itemId:recipe.kind==='item'?data.item_id as string:null,
     itemOutput:recipe.kind==='item'?data.item_output as Record<string,unknown>:null,
@@ -204,9 +210,9 @@ export async function fetchStage8Items(): Promise<Stage8OwnedItem[]> {
         || row.item_output.type!==recipe.output.type || row.item_output.rarity!==recipe.output.rarity)
       throw new Error('stage8_inventory_catalog_mismatch');
     const perishable=recipe.output.type==='potion'||recipe.output.type==='elixir';
-    if (perishable !== (typeof row.expires_at==='string' && Number.isFinite(Date.parse(row.expires_at))))
+    const hasExpiry=typeof row.expires_at==='string' && Number.isFinite(Date.parse(row.expires_at));
+    if ((row.expires_at!==null&&!hasExpiry)||(!perishable&&row.expires_at!==null))
       throw new Error('stage8_inventory_expiry_invalid');
-    if (!perishable && row.expires_at!==null) throw new Error('stage8_inventory_expiry_invalid');
     return {itemId:row.item_id,recipeId:row.recipe_id,output:row.item_output,expiresAt:row.expires_at as string|null};
   });
 }
@@ -224,8 +230,8 @@ export function mirrorStage8Items(items: InventoryItem[],owned: readonly Stage8O
     copy.id=id;
     if (copy.equipment) copy.equipment.id=id;
     if (copy.type==='elixir'||copy.type==='potion') {
-      if (!item.expiresAt) throw new Error('stage8_display_expiry_missing');
-      copy.expiresAt=item.expiresAt;
+      if (item.expiresAt) copy.expiresAt=item.expiresAt;
+      else delete copy.expiresAt; // Permanent potions never gain a synthetic expiry.
     }
     byId.set(id,copy);
   }
