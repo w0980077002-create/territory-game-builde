@@ -269,7 +269,7 @@ BEGIN
      THEN p.game_state->'belt' ELSE '[]'::jsonb END) i
  WHERE i.value->>'id' LIKE 'crafted-%'
  )
- SELECT count(*) FILTER (WHERE eq->>'name' NOT LIKE '% · мастерская'
+ SELECT count(*) FILTER (WHERE i.eq IS NULL OR eq->>'name' NOT LIKE '% · мастерская'
    OR (eq->>'level')::int < l.original_level)
  INTO v_bad
  FROM territory_private.legacy_crafted_masterwork_ledger_20261113 l
@@ -280,7 +280,9 @@ BEGIN
    territory_private.legacy_crafted_masterwork_backup_20261113 b ON b.player_id=p.id
    WHERE p.level <> (b.original_game_state#>>'{player,level}')::int
        OR p.game_state - 'inventory' - 'player' - 'belt'
-          IS DISTINCT FROM b.original_game_state - 'inventory' - 'player' - 'belt')
+          IS DISTINCT FROM b.original_game_state - 'inventory' - 'player' - 'belt'
+       OR p.game_state#>'{player}' - 'equipped' - 'stats'
+          IS DISTINCT FROM b.original_game_state#>'{player}' - 'equipped' - 'stats')
  THEN RAISE EXCEPTION 'legacy_masterwork_unrelated_state_changed'; END IF;
 END $verify$;
 COMMIT;
