@@ -192,8 +192,12 @@ assert.match(app,/VITE_TERRITORY_PROFESSIONS_STAGE8 !== 'false'/,
 assert.match(screen,/!status\?\.enabled/);
 assert.match(screen,/Характеристики создаваемой экипировки/,
   'Players must see the crafted equipment stat preview before spending materials');
-assert.match(screen,/recipe\.output\.equipment\.level/,
-  'Players must see starting item level, not mastery level, on the recipe');
+assert.match(screen,/actualOutput\.equipment\.level/,
+  'Player must see verified item level, not the recipe mastery requirement');
+assert.match(screen,/preview\?\.status==='ready'/,
+  'Server quality preview must be ready before masterwork crafting');
+assert.match(screen,/actualOutput\?\.equipment\?\.\[stat\]/,
+  'Player must see server-verified dynamic stats, not old static r4 stats');
 assert.match(screen,/\['attack','defense','hp','critChance'\]/,
   'All four combat stats need visible preview for crafted gear');
 assert.match(screen,/purchaseStage8\(/);
