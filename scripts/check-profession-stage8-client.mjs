@@ -68,6 +68,28 @@ await assert.rejects(()=>api.fetchStage8Status(),/status_mismatch/);
 response={data:{...okStatus,resources:{...okStatus.resources,'gather-ore':-5}},error:null};
 await assert.rejects(()=>api.fetchStage8Status(),/invalid_resources/);
 
+const spark=catalog.recipes.find(r=>r.id==='mw_s8_jeweler_spark_ring');
+assert.ok(spark?.output?.equipment);
+const qualityOutput={...spark.output,equipment:{
+  ...spark.output.equipment,qualityVersion:'mastery-v2',
+  masteryQualityPct:35,craftedMastery:25,attack:13,critChance:5}};
+response={data:{success:true,quality_version:'mastery-v2',mastery_level:25,
+  master_license:false,previews:{
+    [spark.id]:{status:'ready',quality_pct:35,item_level:3,item_output:qualityOutput},
+  }},error:null};
+const quality=await api.fetchStage8QualityPreviews();
+assert.equal(quality.masteryLevel,25);
+assert.equal(quality.previews[spark.id].item_output.equipment.attack,13);
+assert.equal(lastRpc[0],'territory_profession_stage8_quality_previews');
+response={data:{...response.data,previews:{
+  [spark.id]:{status:'ready',quality_pct:35,item_level:3,
+    item_output:{...qualityOutput,equipment:{...qualityOutput.equipment,
+      masteryQualityPct:160}}},
+}},error:null};
+await assert.rejects(()=>api.fetchStage8QualityPreviews(),/preview_invalid_equipment/);
+response={data:null,error:{message:'missing endpoint'}};
+await assert.rejects(()=>api.fetchStage8QualityPreviews(),/preview_unavailable/);
+
 const practiceId='s8_smith_practice_1';
 response={data:{success:true,recipe_id:practiceId,kind:'practice',item_id:null,item_output:null,
   expires_at:null,mastery_level:2,mastery_xp:4,daily_xp_used:30},error:null};
