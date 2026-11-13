@@ -68,6 +68,51 @@ export interface Stage8PurchaseReceipt {
   profession: ProfessionId;
   gemsAfter: number;
 }
+/** Per-account server preview; never trust hardcoded r4 stats for mastery v2. */
+export type Stage8QualityPreview = {
+  status: 'ready' | 'blocked' | 'locked';
+  quality_pct: number;
+  item_level?: number;
+  item_output?: NonNullable<Stage8Recipe['output']>;
+  reason?: string;
+};
+export type Stage8QualitySnapshot = {
+  masteryLevel: number;
+  masterLicense: boolean;
+  previews: Record<string, Stage8QualityPreview>;
+};
+export async function fetchStage8QualityPreviews(): Promise<Stage8QualitySnapshot> {
+  const {data,error}=await supabase.rpc('territory_profession_stage8_quality_previews');
+  if(error || !obj(data) || data.success!==true
+      || data.quality_version!=='mastery-v2'
+      || !int(data.mastery_level,300) || data.mastery_level<1
+      || typeof data.master_license!=='boolean' || !obj(data.previews)) {
+    throw new Error('stage8_quality_preview_unavailable');
+  }
+  const previews: Record<string,Stage8QualityPreview>={};
+  for(const [recipeId,raw] of Object.entries(data.previews)){
+    const recipe=STAGE8_RECIPES.find(r=>r.id===recipeId && r.id.startsWith('mw_')
+      && r.output?.type==='equipment');
+    if(!recipe || !obj(raw) || !['ready','locked','blocked'].includes(String(raw.status))
+        || !int(raw.quality_pct,160) || raw.quality_pct<20){
+      throw new Error('stage8_quality_preview_invalid');
+    }
+    const preview=raw as Stage8QualityPreview;
+    if(preview.status==='ready'){
+      if(!obj(raw.item_output) || !obj(raw.item_output.equipment)
+          || raw.item_output.name!==recipe.output?.name
+          || raw.item_output.rarity!==recipe.output?.rarity
+          || raw.item_output.equipment.qualityVersion!=='mastery-v2'
+          || raw.item_output.equipment.masteryQualityPct!==raw.quality_pct
+          || !int(raw.item_level,61) || raw.item_level<1){
+        throw new Error('stage8_quality_preview_invalid_equipment');
+      }
+    }
+    previews[recipeId]=preview;
+  }
+  return {masteryLevel:data.mastery_level,masterLicense:data.master_license,previews};
+}
+
 export type Stage8OwnedItem = {
   itemId: string;
   recipeId: string;
