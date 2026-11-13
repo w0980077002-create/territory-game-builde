@@ -13,7 +13,7 @@
     "test:owner-decisions": "node scripts/check-owner-decisions.mjs && node scripts/check-vip-belt-refill.mjs && node scripts/check-vip-two-chests.mjs",
     "test:professions": "node scripts/check-professions.mjs && node scripts/check-profession-art.mjs",
     "test:master-license": "node scripts/check-master-license-shop.mjs",
-    "test:professions:stage8": "node scripts/check-profession-stage8.mjs && node scripts/check-profession-stage8-client.mjs && node scripts/check-profession-stage8-sql.mjs && node scripts/check-stage8-masterwork-additive-sql.mjs && node scripts/check-stage8-save-cutover.mjs && node scripts/check-stage8-forge-protection.mjs && node scripts/check-stage8-verified-gear-v2.mjs && node scripts/check-stage8-transfer-rollback.mjs && node scripts/check-mastery-quality-v2.mjs",
+    "test:professions:stage8": "node scripts/check-profession-stage8.mjs && node scripts/check-profession-stage8-client.mjs && node scripts/check-profession-stage8-sql.mjs && node scripts/check-stage8-masterwork-additive-sql.mjs && node scripts/check-stage8-save-cutover.mjs && node scripts/check-stage8-forge-protection.mjs && node scripts/check-stage8-verified-gear-v2.mjs && node scripts/check-stage8-transfer-rollback.mjs && node scripts/check-mastery-quality-v2.mjs && node scripts/check-mastery-quality-v2-sql.mjs",
     "test:professions:stage8:sql": "node scripts/check-profession-stage8-sql.mjs",
     "sync:professions:stage8:sql": "node scripts/professions/sync-stage8-sql.mjs",
     "test:feature-separation": "node scripts/check-feature-separation.mjs",
