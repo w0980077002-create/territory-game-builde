@@ -295,8 +295,8 @@ BEGIN
    WHERE p.level <> (b.original_game_state#>>'{player,level}')::int
        OR p.game_state - 'inventory' - 'player' - 'belt'
           IS DISTINCT FROM b.original_game_state - 'inventory' - 'player' - 'belt'
-       OR p.game_state#>'{player}' - 'equipped' - 'stats'
-          IS DISTINCT FROM b.original_game_state#>'{player}' - 'equipped' - 'stats')
+       OR ((p.game_state#>'{player}') - 'equipped' - 'stats')
+          IS DISTINCT FROM ((b.original_game_state#>'{player}') - 'equipped' - 'stats'))
  THEN RAISE EXCEPTION 'legacy_masterwork_unrelated_state_changed'; END IF;
 END $verify$;
 COMMIT;
