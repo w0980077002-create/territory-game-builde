@@ -589,14 +589,19 @@ try {
   await db.query('UPDATE public.territory_profession_stage8_daily_xp SET xp_used=0 WHERE player_id=$1',[smith]);
   await useUser(smith);
   const preview300=(await one('SELECT public.territory_profession_stage8_quality_previews() AS x')).x;
-  assert.equal(preview300.previews.mw_s8_smith_jarl_blade.status,'blocked');
+  assert.equal(preview300.previews.mw_s8_smith_jarl_blade.status,'ready',
+    'Legendary prestige sword must use the current-shop rarity baseline safely');
   assert.equal(preview300.previews.mw_s8_smith_jarl_blade.quality_pct,160);
   const countsBefore=await asOwner(()=>one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_items'));
-  await denied(()=>exec('mw_s8_smith_jarl_blade','a0000000-0000-4000-8000-000000000020'),
-    /masterwork_quality_unavailable/,'Fail closed before materials or new item for unsafe 160% sword');
-  assert.equal((await asOwner(()=>one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_items'))).n,countsBefore.n);
+  const prestigeReceipt=await exec('mw_s8_smith_jarl_blade','a0000000-0000-4000-8000-000000000020');
+  assert.equal(prestigeReceipt.item_output.equipment.masteryQualityPct,160);
+  assert.ok(prestigeReceipt.item_output.equipment.level<=61);
+  assert.ok(prestigeReceipt.item_output.equipment.attack<=40+6*prestigeReceipt.item_output.equipment.level);
+  assert.equal((await asOwner(()=>one('SELECT count(*)::int AS n FROM public.territory_profession_stage8_items'))).n,countsBefore.n+1);
+  const replayPrestige=await exec('mw_s8_smith_jarl_blade','a0000000-0000-4000-8000-000000000020');
+  assert.deepEqual(replayPrestige,prestigeReceipt,'Licensed 160% prestige mint must replay without extra debit');
   await role();
-  console.log('Stage8 mastery quality RPC PASS: 25 server recipes, dynamic 35% craft, owner snapshot, retry receipt, 160% fail closed, existing receipts and currencies preserved.');
+  console.log('Stage8 mastery quality RPC PASS: 25 server recipes, dynamic 35% craft, owner snapshot, retry receipt, 160% licensed prestige crafted inside caps, existing receipts and currencies preserved.');
   console.log('Stage8 SQL PASS: 72 recipes/XP bands, RLS/ACL, reviewed legacy levels, 1000-gem purchase, atomic XP/materials, protected 300/day limit, isolated expiring owner test mode, replay, license, inventory and 7-day expiry in local PGlite.');
 }finally{
   await db.close();
