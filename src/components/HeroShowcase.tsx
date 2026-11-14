@@ -15,6 +15,15 @@ import { useSceneArt } from './ui/useSceneArt';
 
 const HERO_HARBOR_ART = ['assets/territory/scenes/winter-peaks-approved.webp'] as const;
 
+// Mirrors the LIVE Mortarion reward tier honors. QA selector is visual only:
+// it does not change saved title, rank, reward receipt, or player statistics.
+const MORTARION_TEST_HONORS = {
+  top1: { title: 'Повелитель душ', frame: 'mortarion_lord', medal: 'Корона Мортариона' },
+  top2: { title: 'Покоритель тьмы', frame: 'mortarion_conqueror', medal: 'Печать Покорителя' },
+  top4: { title: 'Охотник на души', frame: 'mortarion_hunter', medal: 'Медаль Мортариона' },
+} as const;
+type MortarionPreviewRank = 'none' | keyof typeof MORTARION_TEST_HONORS;
+
 type HeroStats = ReturnType<typeof getComputedStats>;
 
 interface Props {
@@ -33,6 +42,12 @@ interface Props {
 export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, onQuests, onCompanions, vipEntry }: Props) {
   const { t, language } = useLanguage();
   const player = state.player;
+  const [mortarionPreviewRank, setMortarionPreviewRank] = useState<MortarionPreviewRank>('none');
+  const canPreviewMortarion = state.mortarionOwnerTestChest?.testOnly === true;
+  const previewHonor = canPreviewMortarion && mortarionPreviewRank !== 'none'
+    ? MORTARION_TEST_HONORS[mortarionPreviewRank] : null;
+  const displayedHonor = previewHonor ?? state.mortarionHonor;
+
   const { status: harborStatus, retry: retryHarbor } = useSceneArt(HERO_HARBOR_ART);
   const harborReady = harborStatus === 'ready';
   const isMax = player.level >= HERO_MAX_LEVEL;
@@ -84,8 +99,8 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
       <header className="hero-showcase__header">
         <div className="hero-showcase__identity">
           <h2>{player.name}</h2>
-          {state.mortarionHonor?.title && <span data-testid="mortarion-profile-title" className="hero-showcase__mortarion-title">♛ {state.mortarionHonor.title}</span>}
-          {state.mortarionHonor?.medal && <span data-testid="mortarion-profile-medal" className="hero-showcase__mortarion-medal" title={state.mortarionHonor.medal}>🏅 {state.mortarionHonor.medal}</span>}
+          {displayedHonor?.title && <span data-testid="mortarion-profile-title" className="hero-showcase__mortarion-title">{previewHonor ? 'ТЕСТ · ' : '♛ '}{displayedHonor.title}</span>}
+          {displayedHonor?.medal && <span data-testid="mortarion-profile-medal" className="hero-showcase__mortarion-medal" title={displayedHonor.medal}>🏅 {displayedHonor.medal}</span>}
           <span className="hero-showcase__level">{t('levelWord')} {player.level}</span>
         </div>
         <div className="hero-showcase__resources" aria-label={text('Ресурсы героя', 'Hero resources')}>
@@ -99,6 +114,19 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
         <span aria-hidden="true">◆</span>{text('Герой','Hero')}<span aria-hidden="true">◆</span>
       </div>
 
+      {canPreviewMortarion && <div data-testid="mortarion-owner-honor-preview"
+        className="mx-1 my-2 rounded-lg border border-violet-400/50 bg-violet-950/40 p-2 text-center">
+        <p className="mb-1 text-[10px] font-bold text-amber-200">{text('ТЕСТ · Титулы, рамки и медали Мортариона', 'TEST · Mortarion titles, frames and medals')}</p>
+        <div className="grid grid-cols-4 gap-1" role="group" aria-label={text('Выбрать пример награды', 'Select reward preview')}>
+          {([['none',text('Обычный','Real')],['top1','ТОП-1'],['top2','ТОП-2–3'],['top4','ТОП-4–10']] as const).map(([id,label]) =>
+            <button key={id} type="button" onClick={() => setMortarionPreviewRank(id)}
+              aria-pressed={mortarionPreviewRank===id} data-testid={`mortarion-owner-preview-${id}`}
+              className={`min-h-9 rounded-md border px-1 text-[10px] font-bold ${mortarionPreviewRank===id
+                ? 'border-amber-300 bg-amber-700/60 text-white' : 'border-amber-600/40 bg-black/30 text-amber-100'}`}>{label}</button>
+          )}
+        </div>
+      </div>}
+
       <div className={'hero-showcase__stage ' + (!harborReady ? 'hero-showcase__stage--art-pending' : '')}
         aria-busy={harborStatus==='loading'}
         style={{ backgroundImage: harborReady
@@ -106,7 +134,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
           : 'linear-gradient(160deg,#57402c,#292521 62%,#1d2630)' }}>
         <div className="hero-showcase__gear-column">{slots.slice(0, 3).map(renderSlot)}</div>
         <div className={'hero-showcase__character' +
-          (state.mortarionHonor?.frame ? ' hero-showcase__character--' + state.mortarionHonor.frame : '')}>
+          (displayedHonor?.frame ? ' hero-showcase__character--' + displayedHonor.frame : '')}>
           <img className="hero-showcase__hero-art" src={getAppearanceIcon(state.appearance)}
             alt={text('Герой в полный рост', 'Full-body hero')} draggable={false} />
           <div className="hero-showcase__character-floor" aria-hidden="true" />
