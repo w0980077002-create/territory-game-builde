@@ -15,8 +15,8 @@ const stubs = {
   // Any chained call (from().select().eq()...) resolves to empty data, so mount effects cannot crash.
   '@/game/supabase': `window.__rpcCalls=window.__rpcCalls||[];
 const chain=new Proxy(function(){},{get:(t,k)=>k==='then'?(res)=>res({data:null,error:null}):chain,apply:()=>chain});
-export const supabase=new Proxy({},{get:(t,k)=>k==='rpc'?(name,args)=>{window.__rpcCalls.push({name,args});return Promise.resolve({data:null,error:{code:'stub',message:'antilevel_preview_stub'}});}:chain});`,
-  '@/game/cloud': `export async function saveCloudSave(){return true;}`,
+export const supabase=new Proxy({},{get:(t,k)=>k==='rpc'?(name,args)=>{if(name==='territory_stage8_forge_ready_v1')return Promise.resolve({data:false,error:null});window.__rpcCalls.push({name,args});return Promise.resolve({data:null,error:{code:'stub',message:'antilevel_preview_stub'}});}:chain});`,
+  '@/game/cloud': `export async function saveCloudSave(){return true;} export function acceptMonopolyClaimReceipt(){throw Error('offline');}`,
 };
 
 const entry = `

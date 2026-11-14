@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { saveCloudSave } from '@/game/cloud';
+import { attemptStage8Forge, stage8ForgeAvailable } from '@/game/stage8ForgeApi';
 import { supabase } from '@/game/supabase';
 import { useLanguage, localizeText, localizeRarity } from '@/game/i18n';
 import { rarityColor, rarityGlow } from '@/game/ui';
@@ -27,6 +28,13 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [stage8ForgeReady, setStage8ForgeReady] = useState(false);
+  useEffect(() => {
+    let mounted=true;
+    void stage8ForgeAvailable().then((ready)=>{ if(mounted)setStage8ForgeReady(ready); })
+      .catch(()=>{ if(mounted)setStage8ForgeReady(false); });
+    return ()=>{mounted=false;};
+  }, []);
   const [error, setError] = useState<string | null>(null);
   // A forge result is not final until the server has persisted it.
   const [saveUnverified, setSaveUnverified] = useState(() => unverifiedForgeUsers.has(userId));
@@ -71,19 +79,52 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (pending.current) clearTimeout(pending.current); }, []);
 
+  const tryStage8Upgrade = async (item: InventoryItem) => {
+    const eq=item.equipment;
+    if(lock.current || saveUnverified || !stage8ForgeReady || !eq) return;
+    if(eq.level >= useGame.get().player.level){
+      setError(t('upgradeMaxLevel'));return;
+    }
+    lock.current=true;setUpgrading(true);setError(null);
+    try{
+      const receipt=await attemptStage8Forge(userId,eq.id,eq.level);
+      useGame.set(receipt.state);
+      setSelected(null);
+      if(receipt.upgraded){
+        setSuccess(true);
+        hapticNotify('success');
+        setTimeout(()=>setSuccess(false),2200);
+      }else{
+        setError(t('upgradeFailed'));
+        hapticNotify('error');
+      }
+    }catch(cause){
+      console.warn('Stage8 forge not verified:',cause);
+      setError(language==='en'
+        ? 'The server did not confirm this upgrade. No second roll: reopen the Forge to retry the saved operation. If progress changed, restart TERRITORY.'
+        : 'Сервер не подтвердил заточку. Не начинай новую попытку: открой Кузницу снова для безопасного повтора. Если изменился прогресс — перезапусти TERRITORY.');
+      hapticNotify('error');
+    }finally{
+      lock.current=false;setUpgrading(false);
+    }
+  };
+
   const tryUpgrade = (item: InventoryItem) => {
     if (lock.current || saveUnverified || !item.equipment) return;
     // The same item, currency, and material snapshot must be checked again at the
     // instant of the roll; the open modal can be stale after another game action.
     const now = useGame.get();
     const eq = item.equipment;
-    // Never debit gold/materials for a Stage8 item whose canonical server
-    // registry cannot yet commit the corresponding forge upgrade.
+    // Stage8 must NEVER fall through to the local forgeAttempt. The RPC
+    // updates the real item registry and the current save atomically.
     if (isStage8Gear(item.id)) {
-      setError(language === 'en'
-        ? 'Crafted gear upgrades need server confirmation. No gold or materials were spent.'
-        : 'Улучшение ремесленной вещи ожидает серверной защиты. Золото и материалы не списаны.');
-      hapticNotify('error');
+      if(!stage8ForgeReady){
+        setError(language==='en'
+          ? 'The protected forge server is unavailable. Nothing was spent.'
+          : 'Защищённая кузница пока недоступна. Ничего не списано.');
+        return;
+      }
+      void tryStage8Upgrade(item);
       return;
     }
     if (eq.level >= now.player.level) {
@@ -176,7 +217,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
     ...equipment,
   ];
   const forgeReady = (item: InventoryItem) => {
-    if (!item.equipment || isStage8Gear(item.id) || item.equipment.level>=state.player.level) return false;
+    if (!item.equipment || (isStage8Gear(item.id) && !stage8ForgeReady) || item.equipment.level>=state.player.level) return false;
     const cost=forgeCost(item.equipment.level);
     return state.player.gold>=cost.gold && state.forgeMaterials>=cost.materials;
   };
@@ -465,7 +506,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
             )}
 
             {/* Upgrade cost */}
-            {isStage8Gear(selectedCurrent.id) ? (
+            {isStage8Gear(selectedCurrent.id) && !stage8ForgeReady ? (
               <div className="rounded-lg border border-amber-500/30 bg-amber-900/20 p-3 mb-3 text-center" data-testid="stage8-forge-server-pending">
                 <p className="text-sm text-amber-200 font-medium">
                   {language === 'en' ? 'Server-verified upgrade in preparation' : 'Защищённая заточка готовится'}
@@ -502,9 +543,9 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
             <button
               className="btn-accent w-full"
               onClick={() => tryUpgrade(selectedCurrent)}
-              disabled={upgrading || saveUnverified || isStage8Gear(selectedCurrent.id) || selectedCurrent.equipment.level >= state.player.level}
+              disabled={upgrading || saveUnverified || (isStage8Gear(selectedCurrent.id) && !stage8ForgeReady) || selectedCurrent.equipment.level >= state.player.level}
             >
-              {upgrading ? t('blacksmithWorking') : isStage8Gear(selectedCurrent.id) ? (
+              {upgrading ? t('blacksmithWorking') : isStage8Gear(selectedCurrent.id) && !stage8ForgeReady ? (
                 language === 'en' ? 'Await server upgrade' : 'Ожидает серверную заточку'
               ) : selectedCurrent.equipment.level >= state.player.level ? (
                 t('maxLevel')
