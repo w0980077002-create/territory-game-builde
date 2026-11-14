@@ -85,6 +85,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
         <div className="hero-showcase__identity">
           <h2>{player.name}</h2>
           {state.mortarionHonor?.title && <span data-testid="mortarion-profile-title" className="hero-showcase__mortarion-title">♛ {state.mortarionHonor.title}</span>}
+          {state.mortarionHonor?.medal && <span data-testid="mortarion-profile-medal" className="hero-showcase__mortarion-medal" title={state.mortarionHonor.medal}>🏅 {state.mortarionHonor.medal}</span>}
           <span className="hero-showcase__level">{t('levelWord')} {player.level}</span>
         </div>
         <div className="hero-showcase__resources" aria-label={text('Ресурсы героя', 'Hero resources')}>
