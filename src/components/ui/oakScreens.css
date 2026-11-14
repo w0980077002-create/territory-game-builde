@@ -11,7 +11,7 @@
  *  - small cells   -> recessed dark timber, no frame (no frame on every row);
  *  - main actions  -> the chunky gold button already used by "К боссу".
  */
-.territory-shell .viking-screen:is(.viking-screen--auction,.viking-screen--clan,.viking-screen--professions,.viking-screen--profession-stage8) {
+.territory-shell .viking-screen:is(.viking-screen--auction,.viking-screen--clan,.viking-screen--forge,.viking-screen--professions,.viking-screen--profession-stage8) {
   --oak-screen-planks: url('/assets/territory/ui/approved/territory-dark-oak-mobile.webp');
   --oak-screen-frame: url('/assets/territory/ui/shop/shop-approved-product-border-v2.webp');
 }
@@ -105,7 +105,8 @@
 .territory-shell :is(
   .viking-screen--auction button[role="tab"],
   .viking-screen--professions button[role="tab"],
-  .viking-screen--profession-stage8 button[aria-pressed]
+  .viking-screen--profession-stage8 button[aria-pressed],
+  .viking-screen--forge button[aria-pressed]
 ) {
   min-width: 0;
   min-height: 44px;
@@ -128,7 +129,8 @@
 .territory-shell :is(
   .viking-screen--auction button[role="tab"][aria-selected="true"],
   .viking-screen--professions button[role="tab"][aria-selected="true"],
-  .viking-screen--profession-stage8 button[aria-pressed="true"]
+  .viking-screen--profession-stage8 button[aria-pressed="true"],
+  .viking-screen--forge button[aria-pressed="true"]
 ) {
   border-color: #ffe5ad;
   background-color: #c6872c;
@@ -141,7 +143,8 @@
 .territory-shell :is(
   .viking-screen--auction button[role="tab"],
   .viking-screen--professions button[role="tab"],
-  .viking-screen--profession-stage8 button[aria-pressed]
+  .viking-screen--profession-stage8 button[aria-pressed],
+  .viking-screen--forge button[aria-pressed]
 ):focus-visible {
   outline: 3px solid #ffe9b2;
   outline-offset: 2px;
