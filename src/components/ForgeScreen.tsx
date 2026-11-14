@@ -255,6 +255,18 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
     const cost=forgeCost(item.equipment.level);
     return state.player.gold>=cost.gold && state.forgeMaterials>=cost.materials;
   };
+  const forgeStatusLabel = (item: InventoryItem): string => {
+    if (item.equipment && item.equipment.level >= state.player.level) {
+      return language === 'en'
+        ? `Hero level limit: ${state.player.level}`
+        : `Предел уровня героя: ${state.player.level}`;
+    }
+    if (isStage8Gear(item.id) && !stage8ForgeReady)
+      return language === 'en' ? 'Reconnect forge server' : 'Проверь связь с сервером';
+    if (forgeReady(item))
+      return language === 'en' ? 'Ready to upgrade' : 'Можно улучшить';
+    return language === 'en' ? 'Not enough gold or materials' : 'Не хватает золота или материалов';
+  };
   const readyCount = allEquipment.filter(forgeReady).length;
   const listed = allEquipment.filter((item) => gearFilter === 'all' || (gearFilter === 'ready' ? forgeReady(item) : item.id.startsWith('equipped_')));
   const listedWorn = listed.filter((item) => item.id.startsWith('equipped_'));
@@ -402,7 +414,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
                   {localizeText(eq.name, language)}
                 </p>
                 <p className="text-xs text-gray-500">{t('level')} {eq.level}</p>
-                <p className={`mt-1 text-[10px] ${forgeReady(item) ? 'text-emerald-300' : 'text-amber-300/70'}`}>{forgeReady(item) ? (language === 'en' ? 'Ready to upgrade' : 'Можно улучшить') : (language === 'en' ? 'Not ready' : 'Пока недоступно')}</p>
+                <p className={`mt-1 text-[10px] ${forgeReady(item) ? 'text-emerald-300' : 'text-amber-300/70'}`}>{forgeStatusLabel(item)}</p>
               </button>
             );})}
           </div>
@@ -430,7 +442,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
                   {localizeText(item.name, language)}
                 </p>
                 <p className="text-xs text-gray-500">{t('level')} {item.equipment?.level || 1}</p>
-                <p className={`mt-1 text-[10px] ${forgeReady(item) ? 'text-emerald-300' : 'text-amber-300/70'}`}>{forgeReady(item) ? (language === 'en' ? 'Ready to upgrade' : 'Можно улучшить') : (language === 'en' ? 'Not ready' : 'Пока недоступно')}</p>
+                <p className={`mt-1 text-[10px] ${forgeReady(item) ? 'text-emerald-300' : 'text-amber-300/70'}`}>{forgeStatusLabel(item)}</p>
               </button>
             ))}
           </div>
