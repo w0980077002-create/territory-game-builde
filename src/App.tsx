@@ -12,6 +12,10 @@ import { watchPumpkinEntitlement } from '@/game/halloweenCompanionRefresh';
 import { restoreAdventureSaveFence, restoreAdventureStartFence } from '@/game/combatV1/receiptAdapter';
 import { createImmediateSaveController } from '@/game/immediateSave';
 import { HomeScreen } from '@/components/HomeScreen';
+import { InventoryScreen } from '@/components/InventoryScreen';
+import { ProfileScreen } from '@/components/ProfileScreen';
+import { GamesScreen } from '@/components/GamesScreen';
+import { ClanScreen } from '@/components/ClanScreen';
 import type { BattleView } from '@/components/BattleScreen';
 import { DailySheet, type SaveStatus } from '@/components/home/HomeSheets';
 import { SectionErrorBoundary } from '@/components/SectionErrorBoundary';
@@ -44,20 +48,19 @@ import { forgeCost } from '@/game/forge';
 import { socialStatus, type SocialStatus } from '@/game/socialQuests';
 import { getQuestAlerts, readSeenQuests, rememberSeenQuests } from '@/game/questAttention';
 
-// Only City is downloaded for initial login; other screens load on demand.
-// Never prefetch every game mode on a mobile connection.
+// The bottom navigation is part of the application shell. Its lightweight
+// screens and CSS must be ready at login, including on low-memory WebViews
+// where speculative imports are deliberately disabled. Keep combat and
+// secondary destinations split so they do not delay the first City paint.
 
 const BattleScreen = lazy(() => import('@/components/BattleScreen').then(m => ({ default: m.BattleScreen })));
-const InventoryScreen = lazy(() => import('@/components/InventoryScreen').then(m => ({ default: m.InventoryScreen })));
 const ShopScreen = lazy(() => import('@/components/ShopScreen').then(m => ({ default: m.ShopScreen })));
 const QuestsScreen = lazy(() => import('@/components/QuestsScreen').then(m => ({ default: m.QuestsScreen })));
-const ProfileScreen = lazy(() => import('@/components/ProfileScreen').then(m => ({ default: m.ProfileScreen })));
 const VipMobileShowcase = lazy(() => import('@/components/VipMobileShowcase').then(m => ({ default: m.VipMobileShowcase })));
 const RuneScreen = lazy(() => import('@/components/builds/ServerRuneBook').then(m => ({ default: m.ServerRuneBook })));
 const ArenaScreen = lazy(() => import('@/components/ArenaScreen').then(m => ({ default: m.ArenaScreen })));
 const ForgeScreen = lazy(() => import('@/components/ForgeScreen').then(m => ({ default: m.ForgeScreen })));
 const LeaderboardScreen = lazy(() => import('@/components/LeaderboardScreen').then(m => ({ default: m.LeaderboardScreen })));
-const GamesScreen = lazy(() => import('@/components/GamesScreen').then(m => ({ default: m.GamesScreen })));
 const HallPlayScreen = lazy(() => import('@/components/HallPlayScreen').then(m => ({ default: m.HallPlayScreen })));
 const ProfessionsScreen = lazy(() => import('@/components/ProfessionsScreen').then(m => ({ default: m.ProfessionsScreen })));
 // OFF by default. Client opt-in never overrides the server-side stage8 release gate.
@@ -65,7 +68,6 @@ const Stage8ProfessionsScreen = lazy(() => import('@/components/ProfessionsStage
 // Owner-approved TERRITORY 1.0 professions cutover, 2026-10-25.
 // Emergency stop is still possible with VITE_TERRITORY_PROFESSIONS_STAGE8=false.
 const STAGE8_CLIENT_OPT_IN = import.meta.env.VITE_TERRITORY_PROFESSIONS_STAGE8 !== 'false';
-const ClanScreen = lazy(() => import('@/components/ClanScreen').then(m => ({ default: m.ClanScreen })));
 const AuctionScreen = lazy(() => import('@/components/AuctionScreen').then(m => ({ default: m.AuctionScreen })));
 const FriendsScreen = lazy(() => import('@/components/FriendsScreen').then(m => ({ default: m.FriendsScreen })));
 const MessagesScreen = lazy(() => import('@/components/MessagesScreen').then(m => ({ default: m.MessagesScreen })));
@@ -90,15 +92,15 @@ const OAK_HERITAGE_SCREENS = new Set<Screen>([
  * No server requests, game state writes, or speculative mini-game sessions.
  */
 const sectionPreloaders: Partial<Record<Screen, () => Promise<unknown>>> = {
-  inventory: () => import('@/components/InventoryScreen'),
+  inventory: () => Promise.resolve(),
   battle: () => import('@/components/BattleScreen'),
   map: () => Promise.resolve(),
-  games: () => import('@/components/GamesScreen'),
-  hero: () => import('@/components/ProfileScreen'),
+  games: () => Promise.resolve(),
+  hero: () => Promise.resolve(),
   vip: () => import('@/components/VipMobileShowcase'),
   runes: () => import('@/components/builds/ServerRuneBook'),
   arena: () => import('@/components/ArenaScreen'),
-  clan: () => import('@/components/ClanScreen'),
+  clan: () => Promise.resolve(),
   shop: () => import('@/components/ShopScreen'),
   forge: () => import('@/components/ForgeScreen'),
   quests: () => import('@/components/QuestsScreen'),
@@ -714,6 +716,9 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
               <button
                 key={t.id}
                 disabled={battleLocked}
+                onPointerEnter={() => { void preloadSection(t.id); }}
+                onPointerDown={() => { void preloadSection(t.id); }}
+                onFocus={() => { void preloadSection(t.id); }}
                 onClick={() => goNav(t.id)}
                 aria-current={active ? 'page' : undefined}
                 aria-label={t.id === 'map' && gatherReady ? `${tNav(translate, t.label)} — ${language === 'en' ? 'resources ready' : 'ресурсы готовы'}` : tNav(translate, t.label)}
