@@ -12,6 +12,8 @@ const integer = (value:unknown):value is number =>
   Number.isSafeInteger(value) && Number(value)>=0;
 
 export type Stage8ForgeReceipt = {
+  /** Recovered a previous result only; no new paid attempt was made. */
+  recovered: boolean;
   upgraded: boolean;
   beforeLevel: number;
   afterLevel: number;
@@ -38,6 +40,56 @@ function readPending(userId:string):Pending|null{
   return p as Pending;
 }
 
+/** Resolve stale local pending records without triggering a second paid roll.
+ * A different item/level may have been saved already, but our browser lost its
+ * receipt after server commit. This API is read-only and scoped to auth.uid().
+ */
+async function recoverPreviousStage8Forge(
+  userId:string,pending:Pending,
+):Promise<Stage8ForgeReceipt>{
+  const itemMatch=ITEM_ID.exec(pending.itemId);
+  if(!itemMatch)throw new Error('stage8_forge_pending_corrupt');
+  const {data,error}=await supabase.rpc('territory_stage8_forge_pending_recovery_v1',{
+    p_item:itemMatch[1],p_expected_level:pending.level,p_operation:pending.operationId,
+  });
+  if(error)throw new Error(error.message||'stage8_forge_recovery_unavailable');
+  if(!object(data)||data.success!==true||typeof data.found!=='boolean'
+    ||data.item_id!==itemMatch[1]||data.expected_level!==pending.level
+    ||!integer(data.current_level)||data.current_level<1)
+    throw new Error('stage8_forge_recovery_unverified');
+  if(data.found){
+    const result=data.result;
+    if(!object(result)||result.success!==true
+      ||result.item_id!==itemMatch[1]||result.level_before!==pending.level
+      ||typeof result.upgraded!=='boolean'
+      ||result.level_after!==pending.level+(result.upgraded?1:0)
+      ||result.cost_gold!==50+pending.level*30
+      ||result.cost_materials!==1+Math.floor(pending.level/3))
+      throw new Error('stage8_forge_recovery_receipt_mismatch');
+  }else if(data.current_level<=pending.level){
+    // This operation was never confirmed. Never auto-roll an old item while
+    // the user is asking to upgrade something else or a newer local level.
+    throw new Error('stage8_forge_previous_operation_unconfirmed');
+  }
+  const canonical=data.game_state as GameState;
+  const gear=[
+    ...(Array.isArray(canonical?.inventory)
+      ? canonical.inventory.filter((item)=>item.id===pending.itemId).map((item)=>item.equipment)
+      : []),
+    ...(canonical?.player?.equipped
+      ? Object.values(canonical.player.equipped).filter((eq)=>eq?.id===pending.itemId)
+      : []),
+  ];
+  if(gear.length!==1||gear[0]?.level!==data.current_level)
+    throw new Error('stage8_forge_recovery_mirror_conflict');
+  // acceptMonopolyClaimReceipt updates the shared CAS save revision, so an
+  // ordinary autosave cannot restore older materials, gold or gear.
+  const state=acceptMonopolyClaimReceipt(userId,data);
+  localStorage.removeItem(PREFIX+userId);
+  return {recovered:true,upgraded:false,beforeLevel:pending.level,
+    afterLevel:data.current_level as number,goldCost:0,materialCost:0,state};
+}
+
 /** Enabled only when the authenticated server RPC has actually been installed. */
 export async function stage8ForgeAvailable():Promise<boolean>{
   const {data,error}=await supabase.rpc('territory_stage8_forge_ready_v1');
@@ -52,8 +104,11 @@ export async function attemptStage8Forge(
     throw new Error('stage8_forge_invalid_item');
   await verifyAccount(userId);
   const pending=readPending(userId);
+  // Client may be at level 23 while durable storage still remembers the
+  // successfully committed level-22 operation. Read the receipt first.
+  // Absolutely no new RNG roll or debit occurs in this recovery branch.
   if(pending && (pending.itemId!==itemId||pending.level!==expectedLevel))
-    throw new Error('stage8_forge_other_operation_pending');
+    return recoverPreviousStage8Forge(userId,pending);
   const operationId=pending?.operationId ?? crypto.randomUUID();
   if(!pending) localStorage.setItem(PREFIX+userId,
     JSON.stringify({itemId,level:expectedLevel,operationId} satisfies Pending));
@@ -87,7 +142,7 @@ export async function attemptStage8Forge(
   // second client-side save that could reintroduce old inventory or wallets.
   const state=acceptMonopolyClaimReceipt(userId,data);
   localStorage.removeItem(PREFIX+userId);
-  return {upgraded:data.upgraded,beforeLevel:expectedLevel,
+  return {recovered:data.replayed===true,upgraded:data.upgraded,beforeLevel:expectedLevel,
     afterLevel:data.level_after as number,goldCost:data.cost_gold as number,
     materialCost:data.cost_materials as number,state};
 }
