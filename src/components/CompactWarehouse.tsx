@@ -31,11 +31,12 @@ function WarehouseItem({ item, language, onSelect }: {
     className="warehouse-tile"
     style={style}
     title={name}
-    aria-label={`${name}. ${language === 'en' ? 'Quantity' : 'Количество'}: ${item.qty}`}
+    aria-label={`${item.ownerTest ? (language === 'en' ? 'Test only. ' : 'Только тест. ') : ''}${name}. ${language === 'en' ? 'Quantity' : 'Количество'}: ${item.qty}`}
     onClick={() => onSelect(item)}
   >
     <span className="warehouse-tile__art">
       <ItemArt item={item} size={70}/>
+      {item.ownerTest && <span className="absolute -top-1 -left-1 z-10 rounded border border-amber-200 bg-violet-950 px-1 text-[9px] font-black text-amber-100">{language === 'en' ? 'TEST' : 'ТЕСТ'}</span>}
       {(item.qty > 1 || item.id === 'cow_awakening_stone') && <span className="warehouse-tile__count">×{formatQuantity(item.qty)}</span>}
     </span>
     <span className="warehouse-tile__name">{name}</span>
