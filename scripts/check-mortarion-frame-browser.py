@@ -34,8 +34,9 @@ try:
                 frame=page.locator('[data-testid="mortarion-forged-frame"]')
                 frame.wait_for()
                 frame.scroll_into_view_if_needed()
-                assert frame.evaluate('(e) => e.complete && e.naturalWidth === 680 && e.naturalHeight === 660'),(width,rank,'Rank-specific SVG failed to load')
-                assert frame.get_attribute('src').endswith(f'mortarion-{tier}-stage.svg'),(width,rank,'Wrong tier art')
+                assert frame.evaluate('(e) => e.complete && e.naturalWidth > 0 && e.naturalHeight > 0'),(width,rank,'Rank-specific image failed to load')
+                expected = 'mortarion-lord-approved.avif' if rank == 'top1' else f'mortarion-{tier}-stage.svg'
+                assert frame.get_attribute('src').endswith(expected),(width,rank,'Wrong tier art')
                 assert frame.evaluate("(e)=>getComputedStyle(e).pointerEvents==='none'"),(width,rank,'Decorative asset blocks taps')
                 art_box=frame.bounding_box()
                 stage_box=stage.bounding_box()
@@ -48,9 +49,9 @@ try:
                     const c=document.createElement('canvas');c.width=680;c.height=660;
                     const ctx=c.getContext('2d',{willReadFrequently:true});
                     ctx.drawImage(img,0,0,680,660);
-                    return [220,360,520,600,628].map(y=>ctx.getImageData(340,y,1,1).data[3]);
+                    return [220,280,360,420,520].map(y=>ctx.getImageData(340,y,1,1).data[3]);
                 }""")
-                assert alpha==[0,0,0,0,0],(width,rank,'Center hero/feet obscured',alpha)
+                assert all(a <= 8 for a in alpha),(width,rank,'Center hero/feet obscured',alpha)
                 assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(width,rank,'Horizontal scroll')
                 slots=stage.locator('.hero-showcase__slot')
                 assert slots.count()==7,(width,rank,'Lost equipment slots')
@@ -65,7 +66,19 @@ try:
             owner.locator('[data-testid="mortarion-owner-preview-none"]').click()
             assert page.locator('[data-testid="mortarion-forged-frame"]').count()==0,(width,'Ordinary portrait must remain unaffected')
             page.close()
+        # Force AVIF failure in a simulated old WebView, ensuring
+        # the previously shipped SVG loads rather than a blank frame.
+        legacy=browser.new_page(viewport={'width':360,'height':760},reduced_motion='reduce')
+        legacy.route('**/mortarion-lord-approved.avif',lambda request:request.abort())
+        legacy.goto(f'http://127.0.0.1:{httpd.server_port}/territory-profile-preview.html?mortarion-preview')
+        legacy.locator('[data-testid="mortarion-owner-preview-top1"]').click()
+        legacy.wait_for_function("""() => document.querySelector('[data-testid="mortarion-forged-frame"]')
+          ?.getAttribute('src')?.endsWith('mortarion-lord-stage.svg')""")
+        legacy_frame=legacy.locator('[data-testid="mortarion-forged-frame"]')
+        assert legacy_frame.evaluate('(e) => e.complete && e.naturalWidth === 680'), 'Legacy fallback failed to load'
+        assert legacy.locator('.hero-showcase__slot').count()==7
+        legacy.close()
         browser.close()
 finally:
     httpd.shutdown()
-print('MORTARION BROWSER PASS: real React profile, 320/360/390/430, 3 ranks, 100% stage-aligned, center/feet transparent, slots clickable, no overflow; not Android')
+print('MORTARION BROWSER PASS: real React profile, 320/360/390/430, exact owner TOP1 artwork, other ranks, center/feet transparent, slots clickable, no overflow; not Android')

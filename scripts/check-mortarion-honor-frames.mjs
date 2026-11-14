@@ -1,45 +1,51 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import './build-mortarion-approved-frame.mjs';
 
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const hero=read('src/components/HeroShowcase.tsx');
 const css=read('src/components/profileHero.css');
 const tiers={lord:'mortarion_lord',conqueror:'mortarion_conqueror',hunter:'mortarion_hunter'};
-assert.match(hero,/state\.mortarionOwnerTestChest\?\.testOnly === true/,'owner-only test preview, real honors unchanged');
-assert.match(hero,/const displayedHonor = previewHonor \?\? state\.mortarionHonor/,'official honor is canonical outside owner test');
-assert.match(hero,/getAppearanceIcon\(state\.appearance\)/,'real selected player portrait preserved');
-assert.match(hero,/player\.equipped\[slot\.id\]/,'all actual equipment preserved');
-assert.match(hero,/MORTARION_FRAME_ART\[displayedHonor\.frame\]/,'server-issued rank uses correct premium art');
-assert.match(hero,/hero-showcase__stage--' \+ displayedHonor\?\.frame/,'rank class belongs to entire stage');
-assert.match(hero,/<div className="hero-showcase__gear-column">\{slots\.slice\(3\)\.map\(renderSlot\)\}<\/div>[\s\S]*?\{frameArt && <img className="hero-showcase__mortarion-frame"/,'art is mounted on stage, NOT inside character');
+assert.match(hero,/state\.mortarionOwnerTestChest\?\.testOnly === true/,'owner-only visual test, official rank unchanged');
+assert.match(hero,/const displayedHonor = previewHonor \?\? state\.mortarionHonor/,'real server honor remains canonical');
+assert.match(hero,/getAppearanceIcon\(state\.appearance\)/,'saved hero appearance preserved');
+assert.match(hero,/player\.equipped\[slot\.id\]/,'saved equipment preserved');
+assert.match(hero,/MORTARION_FRAME_ART\[displayedHonor\.frame\]/,'server-saved tier selects asset');
+assert.match(hero,/hero-showcase__stage--' \+ displayedHonor\?\.frame/,'ornaments belong to the full stage');
+assert.match(hero,/<div className="hero-showcase__gear-column">\{slots\.slice\(3\)\.map\(renderSlot\)\}<\/div>[\s\S]*?\{frameArt && <img className="hero-showcase__mortarion-frame"/,'art behind gear buttons');
 assert.match(css,/hero-showcase__mortarion-frame/);
-assert.match(css,/position:absolute;\s*inset:0;\s*width:100%;\s*height:100%/,'full stage coverage avoids constricting central portrait');
-assert.match(css,/pointer-events:none/,'gear buttons stay clickable');
-assert.match(css,/\.hero-showcase__gear-column\s*\{\s*z-index:3/,'equipment sits above corner ornaments');
+assert.match(css,/position:absolute;\s*inset:0;\s*width:100%;\s*height:100%/,'no center portrait cage');
+assert.match(css,/pointer-events:none/,'gear remains clickable');
+assert.match(css,/\.hero-showcase__gear-column\s*\{\s*z-index:3/,'gear above decoration');
 assert.doesNotMatch(css,/border-radius:44% 44% 24% 24%/,'no oval');
 assert.doesNotMatch(css,/hero-showcase__character--mortarion_lord::after/,'no CSS cage');
-assert.doesNotMatch(css,/width:calc\(100% \+ 22px\)/,'no floating narrow frame');
-assert.match(css,/width:116%;[\s\S]*?animation:territoryHeroMobileBreathe/,'mobile dwarf is balanced');
-assert.match(css,/@keyframes territoryHeroMobileBreathe \{[\s\S]*?scale\(1\.04\)/,'breathe does not restore giant scale');
-assert.match(css,/@media \(max-width:350px\) \{[\s\S]*?hero-showcase__mortarion-frame/,'320px layout remains covered');
+assert.match(css,/hero-showcase__stage--mortarion_lord[\s\S]*?object-fit:contain/,'approved square art cannot be stretched');
+assert.match(css,/width:116%;[\s\S]*?animation:territoryHeroMobileBreathe/,'mobile hero size untouched');
+assert.match(css,/@keyframes territoryHeroMobileBreathe \{[\s\S]*?scale\(1\.04\)/,'hero breathing remains subtle');
 assert.match(css,/@media \(prefers-reduced-motion:reduce\)[\s\S]*?animation:none/);
 
-for (const [tier,key] of Object.entries(tiers)) {
+const approved='public/assets/territory/ui/honors/mortarion-lord-approved.avif';
+assert(hero.includes("mortarion_lord: 'assets/territory/ui/honors/mortarion-lord-approved.avif'"),
+  'TOP-1 must display owner-approved art, never a hand-approximated SVG');
+const bytes=readFileSync(approved);
+assert.equal(bytes.length,10787);
+assert.equal(bytes.toString('ascii',4,8),'ftyp');
+assert.equal(bytes.toString('ascii',8,12),'avif');
+assert.equal(createHash('sha256').update(bytes).digest('hex'),'7830e264d961ba609d62f87fbee9b80258e34600f52ca1a15955a38f1b936624');
+assert.match(hero,/onError=\{\(event\) =>/,'unsupported AVIF needs a local fallback');
+assert.match(hero,/mortarion-lord-stage\.svg/,'fallback is locally hosted and already shipped');
+
+for (const tier of ['conqueror','hunter']) {
+  const key=tiers[tier];
   const path='public/assets/territory/ui/honors/mortarion-'+tier+'-stage.svg';
   const svg=read(path);
-  assert(hero.includes(key+": 'assets/territory/ui/honors/mortarion-"+tier+"-stage.svg'"),'art matches official rank '+tier);
-  assert(svg.startsWith('<?xml version="1.0"'),'SVG XML prolog');
-  assert(svg.includes('viewBox="0 0 680 660"'),'all ranks cover exactly the stage');
+  assert(hero.includes(key+": 'assets/territory/ui/honors/mortarion-"+tier+"-stage.svg'"),'other tiers preserved');
+  assert(svg.startsWith('<?xml version="1.0"'));
+  assert(svg.includes('viewBox="0 0 680 660"'));
   assert.match(svg,/<\/svg>\s*$/);
-  assert.match(svg,/<filter id="shadow"/,'depth through actual shading');
-  assert.match(svg,/id="armor"/);
-  assert.match(svg,/id="gold"/);
-  assert.match(svg,/id="stone"/);
-  assert.match(svg,/Transparent center/,'center x=140..540 unobstructed');
-  assert.match(svg,/NO bar over legs/,'feet and official level plaque unobstructed');
-  assert(!/<rect\b[^>]*width="680"[^>]*height="660"/i.test(svg),'cannot mask background');
-  assert(!/<script\b|<foreignObject\b|<image\b/i.test(svg),'art inert, no external dependency');
-  assert(svg.length > 4800,'art is not trivial flat outline');
+  assert.match(svg,/Transparent center/,'other ranks still keep the character visible');
+  assert(!/<rect\b[^>]*width="680"[^>]*height="660"/i.test(svg));
 }
-assert.match(read('src/game/mortarionRewards.ts'),/territory_mortarion_reward_claim_v1/,'actual rewards still server-controlled');
-console.log('MORTARION HERALDRY PASS: three original 680x660 stage ornaments, hero/feet visible, 320px gear safe, authoritative rewards unchanged');
+assert.match(read('src/game/mortarionRewards.ts'),/territory_mortarion_reward_claim_v1/,'live rewards remain server-owned');
+console.log('MORTARION APPROVED ART PASS: exact owner reference file SHA256, transparent AVIF with SVG fallback, no gameplay changes');

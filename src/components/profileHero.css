@@ -1058,6 +1058,10 @@
   filter:drop-shadow(0 2px 3px #080408a3);
 }
 .territory-profile .hero-showcase__stage--mortarion_lord .hero-showcase__mortarion-frame {
+  /* Approved transparent SQUARE image. Keep its crown, ravens and gems in
+     their original proportions on all 320–430px Telegram stage sizes. */
+  object-fit:contain;
+  object-position:center center;
   filter:drop-shadow(0 2px 3px #0c0705c4) drop-shadow(0 0 2px #ffce8460);
 }
 .territory-profile .hero-showcase__stage--mortarion_conqueror .hero-showcase__mortarion-frame {
