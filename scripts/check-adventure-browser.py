@@ -86,7 +86,8 @@ with sync_playwright() as p:
             page.get_by_role('button',name='Продолжить бой').wait_for(state='visible')
             assert page.get_by_role('button',name='Продолжить бой').is_enabled(), 'pinned fight must remain playable after restore'
             page.get_by_role('button',name='Экипировка').click()
-            page.get_by_role('button',name='Пояс эликсиров').click()
+            if page.get_by_text('Эликсиры в Пещере пока недоступны').count() == 0:
+                page.get_by_role('button',name='Пояс эликсиров').click()
             page.get_by_text('Эликсиры в Пещере пока недоступны').wait_for()
             assert page.evaluate('window.__adventureCalls.filter(c=>c.action==="start").length') == 1
             page.get_by_role('button',name='Продолжить бой').click()

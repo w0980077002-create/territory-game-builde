@@ -87,6 +87,8 @@ export interface IdleFighterInput {
   phases?: IdlePhase[];
 }
 export interface IdleCombatRules {
+  /** Opt-in server configuration for Cave sessions only; absent in legacy saves. */
+  caveActiveClock?: boolean;
   stepMs: number;
   maxDurationMs: number;
   approachMs: number;
@@ -158,6 +160,9 @@ export interface IdleFighterState extends IdleFighterInput {
   phase: number;
 }
 export interface IdleCombatState {
+  /** Pinned by the service only for explicitly enabled Cave encounters. */
+  caveRuntime?: { paused: boolean; speed: 1 | 2;
+    belt?: (import('../combatV1/caveConsumables.ts').CaveBeltCharge | null)[] };
   version: 1;
   input: IdleCombatInput;
   actors: Record<IdleActor, IdleFighterState>;

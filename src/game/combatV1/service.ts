@@ -1,14 +1,17 @@
 import { advanceIdleCombat, createIdleCombat, queueIdleSkill, validateIdleLoadout } from '../idleEngine/index.ts';
 import type { IdleCatalog, IdleCombatInput, IdleCombatState, IdleFighterInput, IdleLoadout, IdleCombatRules } from '../idleEngine/types.ts';
+import { pinCaveBelt, applyCaveCharge, type CaveBeltCharge } from './caveConsumables.ts';
 
 /** Client commands never contain combat stats, elapsed time, seeds or outcomes. */
 export type CombatCommand =
   | { action: 'loadout'; operationId: string; revision: number; loadout: IdleLoadout }
   | { action: 'start'; operationId: string; encounterId: string; control: 'auto' | 'manual' }
-  | { action: 'advance'; operationId: string; sessionId: string; revision: number; skillId?: string }
+  | { action: 'advance'; operationId: string; sessionId: string; revision: number; skillId?: string;
+      playback?: 'pause' | 'play' | 'normal' | 'fast'; beltSlot?: number }
   | { action: 'resume'; sessionId: string };
 
 export interface CombatContext {
+  caveBelt?: (CaveBeltCharge | null)[];
   serverMs: number;
   configVersion: number;
   profileVersion: number;
@@ -24,7 +27,8 @@ export interface CombatContext {
 export interface CombatRepository {
   context(player: string, command: CombatCommand): Promise<CombatContext>;
   commit(player: string, command: Exclude<CombatCommand, { action: 'resume' }>, context: CombatContext,
-    result: { state?: IdleCombatState; events?: unknown[]; loadout?: IdleLoadout; cursorMs?: number }): Promise<Record<string, unknown>>;
+    result: { state?: IdleCombatState; events?: unknown[]; loadout?: IdleLoadout; cursorMs?: number;
+      beltDebit?: ReturnType<typeof applyCaveCharge>['beltDebit'] }): Promise<Record<string, unknown>>;
 }
 
 const uuid = (v: unknown): v is string => typeof v === 'string' && /^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(v);
@@ -37,7 +41,7 @@ export function parseCombatCommand(value: unknown): CombatCommand {
   const keys: Record<string, string[]> = {
     loadout: ['action', 'operationId', 'revision', 'loadout'],
     start: ['action', 'operationId', 'encounterId', 'control'],
-    advance: ['action', 'operationId', 'sessionId', 'revision', 'skillId'],
+    advance: ['action', 'operationId', 'sessionId', 'revision', 'skillId', 'playback', 'beltSlot'],
     resume: ['action', 'sessionId'],
   };
   const action = value.action;
@@ -49,6 +53,12 @@ export function parseCombatCommand(value: unknown): CombatCommand {
       || !['auto', 'manual'].includes(String(value.control))) throw new Error('combat_invalid_encounter');
   } else if (value.action === 'advance' || value.action === 'resume') {
     if (!uuid(value.sessionId)) throw new Error('combat_invalid_session');
+    if (value.action === 'advance' && (value.playback !== undefined
+      && (typeof value.playback !== 'string' || !['pause', 'play', 'normal', 'fast'].includes(value.playback) || value.skillId !== undefined)))
+      throw new Error('combat_invalid_command');
+    if (value.action === 'advance' && value.beltSlot !== undefined
+      && (!Number.isSafeInteger(value.beltSlot) || Number(value.beltSlot) < 0 || Number(value.beltSlot) > 6
+        || value.skillId !== undefined || value.playback !== undefined)) throw new Error('combat_invalid_command');
     if (value.action === 'advance' && (!revision(value.revision)
       || (value.skillId !== undefined && (typeof value.skillId !== 'string' || value.skillId.length > 100 || !value.skillId)))) throw new Error('combat_invalid_revision');
   } else if (!revision(value.revision) || !record(value.loadout)) throw new Error('combat_invalid_loadout');
@@ -92,22 +102,49 @@ export async function executeCombatCommand(repository: CombatRepository, player:
     const state = engine(() => createIdleCombat({ seed: seed(), stage: encounter.stage, mode: encounter.mode,
       control: command.control, hero: verifiedHero(context), enemy: encounter.enemy,
       catalog: context.catalog, rules: context.rules }), 'combat_invalid_configuration');
+    // No implicit cutover: already-running sessions and every other mode keep
+    // their original clock. Enable only on an isolated, reviewed server config.
+    if (context.rules.caveActiveClock === true && encounter.mode !== 'pvp'
+      && /^adventure_v1_stage_\d+$/.test(encounter.id)) state.caveRuntime = { paused: false, speed: 1 };
+    if (state.caveRuntime && Array.isArray(context.caveBelt)) state.caveRuntime.belt = pinCaveBelt(context.caveBelt);
     return repository.commit(player, command, context, { state, events: [], cursorMs: context.serverMs });
   }
   const session = context.session;
   if (!session || session.revision !== command.revision) throw new Error('combat_revision_conflict');
   if (session.state.status !== 'fighting') throw new Error('combat_already_finished');
+  const runtime = session.state.caveRuntime;
+  if (runtime && (session.state.input.rules.caveActiveClock !== true || session.state.input.mode === 'pvp'
+    || typeof runtime.paused !== 'boolean' || ![1, 2].includes(runtime.speed))) throw new Error('combat_invalid_session_state');
+  if (command.playback) {
+    if (!runtime) throw new Error('combat_playback_not_available');
+    const state = structuredClone(session.state);
+    state.caveRuntime = {
+      ...runtime,
+      paused: command.playback === 'pause' || (command.playback !== 'play' && runtime.paused),
+      speed: command.playback === 'fast' ? 2 : command.playback === 'normal' ? 1 : runtime.speed,
+    };
+    // Control operations are revisioned, replayable, and consume no combat
+    // time or currency. Paused wall time is never replayed on resume.
+    return repository.commit(player, command, context, { state, events: [], cursorMs: context.serverMs });
+  }
+  if (runtime?.paused) throw new Error('combat_paused');
+  if (command.beltSlot !== undefined) {
+    if (!runtime?.belt) throw new Error('combat_belt_unavailable');
+    const result = applyCaveCharge(session.state, command.beltSlot);
+    return repository.commit(player, command, context, { ...result, cursorMs: context.serverMs });
+  }
   if (command.skillId && (session.state.input.control !== 'manual'
     || !session.state.actors.hero.loadout.skills.some(s => s.skillId === command.skillId))) throw new Error('combat_skill_not_available');
   // Time comes exclusively from the database. A suspended app catches up in
   // bounded chunks without dropping the rest of its server-authorized time.
-  const elapsed = Math.min(30_000, Math.max(0, context.serverMs - session.cursorMs));
-  if (command.skillId && context.serverMs - session.cursorMs > 30_000) throw new Error('combat_catchup_required');
+  const wallMs = Math.max(0, context.serverMs - session.cursorMs);
+  const elapsed = runtime ? Math.min(1100, wallMs) * runtime.speed : Math.min(30_000, wallMs);
+  if (!runtime && command.skillId && wallMs > 30_000) throw new Error('combat_catchup_required');
   if (elapsed === 0 && !command.skillId) throw new Error('combat_no_elapsed_time');
   const advanced = engine(() => advanceIdleCombat(session.state, elapsed), 'combat_invalid_session_state');
   // A newly received manual input cannot rewrite the unattended past.
   const state = command.skillId && advanced.state.status === 'fighting'
     ? engine(() => queueIdleSkill(advanced.state, command.skillId!), 'combat_skill_not_available') : advanced.state;
   return repository.commit(player, command, context, { state, events: advanced.events,
-    cursorMs: session.cursorMs + elapsed });
+    cursorMs: runtime ? context.serverMs : session.cursorMs + elapsed });
 }

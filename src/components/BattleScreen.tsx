@@ -45,20 +45,19 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
   const [caveActive, setCaveActive] = useState(false);
-  // Show the new playable Cave in the actual game tab by default.
-  // Unfinished server Cave receipts/sessions keep their original recovery screen.
-  // The new expedition remains a read-only sandbox: no wallet, loot or save writes.
-  const [cavePreviewOptIn, setCavePreviewOptIn] = useState(() => {
-    try {
-      const keys = ['territory_adventure_start_v1:', 'territory_adventure_pending_v1:', 'territory_adventure_session_v1:'];
-      return !keys.some(prefix => !!localStorage.getItem(prefix + userId));
-    } catch {
-      return false; // When storage cannot be inspected, preserve server recovery.
-    }
-  });
+  const [caveBusy, setCaveBusy] = useState(false);
+  // Candidate unified entry. Keep the old selector in production until the
+  // owner's mobile acceptance required by #314; do not delete either source.
+  const unifiedCave = import.meta.env.VITE_CAVE_UNIFIED_UI === 'true';
+  // The normal Cave entry always opens the real, recoverable server floors.
+  // Preserve the existing expedition preview as an explicit test-only choice.
+  const [cavePreviewOptIn, setCavePreviewOptIn] = useState(false);
   const handleCaveActive = useCallback((active: boolean) => {
     setCaveActive(active);
-    onActiveChange?.(active);
+  }, []);
+  const handleCaveBusy = useCallback((busy: boolean) => {
+    setCaveBusy(busy);
+    onActiveChange?.(busy);
   }, [onActiveChange]);
   // Preserve a visible and playable-looking classic campaign instead of silently
   // switching to the cave. A pending debit must still be recovered before any
@@ -178,7 +177,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
             key={t.id}
             role="tab" aria-selected={view === t.id}
             onClick={() => onView(t.id)}
-            disabled={caveActive && view === 'cave' && t.id !== 'cave'}
+            disabled={caveBusy && view === 'cave' && t.id !== 'cave'}
             className={`min-h-12 rounded-xl text-[11px] leading-tight font-semibold flex flex-col items-center justify-center gap-0.5 transition-all disabled:opacity-40 ${
               view === t.id ? 'bg-gradient-to-b from-amber-400 to-amber-600 text-black shadow-lg shadow-amber-900/30' : 'text-gray-400'
             }`}
@@ -237,11 +236,11 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       )}
       {view === 'cave' ? (
         <div className="flex min-h-0 flex-1 flex-col gap-1" data-testid="dark-cave-live-expedition-entry">
-          <div role="tablist" aria-label={language === 'en' ? 'Dark Cave modes' : 'Режимы Тёмной пещеры'}
+          {!unifiedCave && <div role="tablist" aria-label={language === 'en' ? 'Dark Cave modes' : 'Режимы Тёмной пещеры'}
             className="grid shrink-0 grid-cols-2 gap-1 rounded-xl border border-amber-700/60 bg-[#24170f] p-1">
             <button type="button" role="tab" aria-selected={cavePreviewOptIn}
               data-testid="dark-cave-new-expedition"
-              disabled={caveActive && !cavePreviewOptIn}
+              disabled={(caveActive || caveBusy) && !cavePreviewOptIn}
               onClick={() => setCavePreviewOptIn(true)}
               className={`min-h-10 rounded-lg px-2 py-1 text-xs font-black disabled:opacity-40 ${cavePreviewOptIn
                 ? 'bg-gradient-to-b from-amber-200 to-amber-600 text-[#29190b]'
@@ -256,11 +255,11 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
                 : 'bg-[#3e2a1a] text-amber-100'}`}>
               {language === 'en' ? 'My floors · rewards' : 'Мои этажи · награды'}
             </button>
-          </div>
+          </div>}
           <div className="battle-cave-expedition min-h-0 flex-1 overflow-hidden" role="tabpanel">
-            {cavePreviewOptIn
+            {!unifiedCave && cavePreviewOptIn
               ? <CaveExpeditionPreview language={language} onExit={() => setCavePreviewOptIn(false)} />
-              : <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} onShop={onCaveShop} />}
+              : <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} onBusyChange={handleCaveBusy} onShop={onCaveShop} />}
           </div>
         </div>
       ) : <>

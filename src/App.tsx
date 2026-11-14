@@ -498,7 +498,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
   const slotImmersive = screen === 'hall-play' && hallGame === 'slots';
 
   const goNav = (id: NavId) => {
-    if (id === 'battle') setBattleView('campaign');
+    if (id === 'battle' && battleView !== 'cave') setBattleView('campaign');
     if (id === 'hero') setHeroTrainingOpen(false);
     setScreen(id);
   };

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const read = p => readFileSync(p, 'utf8');
 const ui = read('src/components/pve/ServerAdventureScreen.tsx');
+const scene = read('src/components/pve/cave/CaveBattleScene.tsx');
 const battle = read('src/components/BattleScreen.tsx');
 const app = read('src/App.tsx');
 const bridge = read('src/game/combatV1/receiptAdapter.ts');
@@ -49,9 +50,8 @@ assert.match(battle, /data-testid="dark-cave-live-expedition-entry"/);
 assert.match(battle, /data-testid="dark-cave-new-expedition"/);
 assert.match(battle, /data-testid="dark-cave-saved-floors"/);
 assert.match(battle, /<CaveExpeditionPreview language=\{language\} onExit=/);
-assert.match(battle, /territory_adventure_session_v1:/);
-assert.match(battle, /return !keys\.some\(prefix => !!localStorage\.getItem\(prefix \+ userId\)\)/,
-  'New cave must defer to pending server battles, starts and settlements');
+assert.match(battle, /const \[cavePreviewOptIn, setCavePreviewOptIn\] = useState\(false\)/,
+  'Normal cave entry must open the recoverable server floors; DEMO is an explicit choice');
 assert.doesNotMatch(battle, /get\('cave-preview'\)/,
   'New Cave should open from the game itself, not require special query params');
 assert.match(read('src/components/battleJourney.css'), /\.battle-cave-expedition \.cx-demo\{height:100%;min-height:0/,
@@ -102,7 +102,7 @@ assert.match(ui, /!currentProgress\.active_session_id\) throw cause/,
 assert.match(ui, /recoveredStart = true/,
   'After safe resume do not try another cave start or recovery request');
 assert.match(ui, /data-testid="territory-adventure-battle"/, 'server combat should have a visible battle scene');
-assert.match(ui, /data-testid="dark-cave-battle-background"/, 'Cave fights use their own approved cave portal instead of Arena scene');
+assert.match(scene, /data-testid="dark-cave-battle-background"/, 'Cave fights use their own approved cave portal instead of Arena scene');
 assert.match(ui, /data-testid="dark-cave-combat-panels"/, 'Cave battle provides compact equipment and elixir inspection panels');
 assert.match(ui, /<GearStrip equipped=\{game\.player\.equipped\}/, 'Only saved equipped items are displayed; do not invent combat stats');
 assert.match(ui, /<BeltCells belt=\{game\.belt\}/, 'Display the existing seven elixir slots without client-side consumption');
@@ -115,15 +115,16 @@ assert.match(ui, /getCombatAppearance\(game\.appearance\)/,
   'Cave must use the saved hero appearance, not always a male viking');
 assert.match(ui, /const fighterSrc = heroFrames\.idle;/,
   'Cave fallback art must belong to the selected hero');
-assert.match(ui, /setStrikeQueue\(old => \[\.\.\.old, \.\.\.confirmed\]\.slice\(-8\)\)/,
-  'Cave must replay multiple genuine server-confirmed hits in order');
+assert.match(scene, /queue\.current\.push\(event\)/, 'Replay multiple authenticated events in order');
+assert.match(scene, /seen\.current\.has\(event\.id\)/, 'Deduplicate receipt replay visual effects');
+assert.match(ui, /setSceneEvents\(events\)/, 'Only deduplicated server events reach the live scene');
 assert.match(ui, /data-testid="dark-cave-battle-log"/,
   'Keep confirmed damage and block events visible before optional gear panels');
 assert.match(ui, /Продолжить бой/,
   'Manual combat must show an understandable continuation control');
 assert.doesNotMatch(ui, /Умения и урон проверяет сервер|Следующий шаг боя/,
   'Remove raw debug language and unclear old action from the live player screen');
-assert.match(ui, /<FighterFigure /, 'server combat should animate the same 2D fighters used by the classic game');
+assert.match(ui, /<CaveBattleScene /, 'Actual server floors use the live scene with the selected hero');
 assert.match(ui, /getEnemyCombatFrames/, 'server enemies should use existing combat pose art');
 assert.match(ui, /battleRef\.current\?\.scrollIntoView/, 'mobile must reveal battle after tapping Start');
 assert.match(ui, /Array\.isArray\(value\.events\)/, 'animation should use only confirmed server battle events');

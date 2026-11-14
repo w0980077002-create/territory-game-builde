@@ -1,0 +1,160 @@
+{
+  "geometry": [
+    {
+      "lang": "ru",
+      "width": 320,
+      "height": 568,
+      "pause": {
+        "x": 14,
+        "y": 345,
+        "width": 94,
+        "height": 44
+      },
+      "nav": {
+        "x": 0,
+        "y": 492,
+        "width": 320,
+        "height": 70
+      }
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "height": 640,
+      "pause": {
+        "x": 14,
+        "y": 417,
+        "width": 107.328125,
+        "height": 44
+      },
+      "nav": {
+        "x": 0,
+        "y": 564,
+        "width": 360,
+        "height": 70
+      }
+    },
+    {
+      "lang": "ru",
+      "width": 390,
+      "height": 844,
+      "pause": {
+        "x": 14,
+        "y": 497,
+        "width": 117.328125,
+        "height": 44
+      },
+      "nav": {
+        "x": 0,
+        "y": 768,
+        "width": 390,
+        "height": 70
+      }
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "height": 740,
+      "pause": {
+        "x": 14,
+        "y": 393,
+        "width": 130.65625,
+        "height": 44
+      },
+      "nav": {
+        "x": 0,
+        "y": 664,
+        "width": 430,
+        "height": 70
+      }
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "height": 568,
+      "pause": {
+        "x": 14,
+        "y": 345,
+        "width": 94,
+        "height": 44
+      },
+      "nav": {
+        "x": 0,
+        "y": 492,
+        "width": 320,
+        "height": 70
+      }
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "height": 640,
+      "pause": {
+        "x": 14,
+        "y": 417,
+        "width": 107.328125,
+        "height": 44
+      },
+      "nav": {
+        "x": 0,
+        "y": 564,
+        "width": 360,
+        "height": 70
+      }
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "height": 844,
+      "pause": {
+        "x": 14,
+        "y": 497,
+        "width": 117.328125,
+        "height": 44
+      },
+      "nav": {
+        "x": 0,
+        "y": 768,
+        "width": 390,
+        "height": 70
+      }
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "height": 740,
+      "pause": {
+        "x": 14,
+        "y": 393,
+        "width": 130.65625,
+        "height": 44
+      },
+      "nav": {
+        "x": 0,
+        "y": 664,
+        "width": 430,
+        "height": 70
+      }
+    }
+  ],
+  "sessionId": "53900309-4b0d-423d-8cee-2569faac65fb",
+  "gold": 65,
+  "darkStones": 4,
+  "battleStones": 37,
+  "dosesSpent": 2,
+  "settlements": 1,
+  "pageErrors": [],
+  "autoPotionSetup": "synthetic 349 HP on the local session; actual dose action, cloud receipt and SQL debit",
+  "entryRoutes": [
+    "Campaign -> Cave",
+    "Trials -> Cave",
+    "actual MapScreen -> Cave",
+    "native nav return",
+    "reload"
+  ],
+  "externalRequests": [],
+  "backend": "ephemeral PGlite / actual service, engine, SQL, receipt adapter and CAS cloud code",
+  "missingArt": [],
+  "physicalAndroid": "unverified",
+  "telegramWebView": "unverified"
+}

@@ -56,7 +56,7 @@ function frameBounds(img: HTMLImageElement, sx: number, sy: number, sw: number, 
 function foot(img: HTMLImageElement, sx: number, sy: number, sw: number, sh: number) {
   const frame = frameBounds(img, sx, sy, sw, sh); return (frame.y + frame.height) / sh;
 }
-function sprite(c: CanvasRenderingContext2D, img: HTMLImageElement, sx: number, sy: number, sw: number, sh: number, x: number, y: number, maxWidth: number, maxHeight: number) {
+export function sprite(c: CanvasRenderingContext2D, img: HTMLImageElement, sx: number, sy: number, sw: number, sh: number, x: number, y: number, maxWidth: number, maxHeight: number) {
   const b = frameBounds(img, sx, sy, sw, sh), scale = Math.min(maxWidth / b.width, maxHeight / b.height);
   c.drawImage(img, sx + b.x, sy + b.y, b.width, b.height, x - b.width * scale / 2, y - b.height * scale, b.width * scale, b.height * scale);
 }

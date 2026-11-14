@@ -18,6 +18,8 @@ const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v ===
 const definitelyRejected = new Set([
   'combat_revision_conflict', 'combat_no_elapsed_time', 'combat_already_finished',
   'combat_catchup_required', 'combat_skill_not_available',
+  'combat_paused', 'combat_playback_not_available',
+  'combat_belt_unavailable', 'combat_belt_no_effect', 'combat_belt_changed',
   'combat_active_session_exists', 'combat_session_not_found',
   'combat_encounter_not_available', 'combat_profile_needs_reconciliation',
   'combat_profile_not_verified', 'combat_not_enabled',
@@ -188,6 +190,20 @@ export async function requestAdventureSettlement(userId: string, command: Advanc
       || (checked.action === 'advance' && data.revision !== checked.revision+1))
       throw new Error('adventure_unconfirmed');
     const terminal = ['hero_won', 'enemy_won', 'draw'].includes(String(data.state.status));
+    if (checked.action === 'advance' && checked.beltSlot !== undefined) {
+      if (terminal || !record(data.belt_save)) throw new Error('adventure_invalid_receipt');
+      // The dose debit changes the same CAS-protected save as other game
+      // modes. Adopt its token BEFORE releasing the fence or notifying stores.
+      validateAdventureStartReceipt(data.belt_save, checked.sessionId);
+      const current = await supabase.from('players').select('id,updated_at,game_state,gold,gems').eq('id', userId).maybeSingle();
+      if (current.error || !current.data) throw new Error('adventure_reload_required');
+      if (current.data.updated_at !== data.belt_save.updated_at) {
+        hooks.applyState(acceptAdventureLatestCloudSnapshot(userId, current.data, data.belt_save.updated_at));
+      } else {
+        const adopted = acceptAdventureStartReceipt(userId, data.belt_save, checked.sessionId);
+        if (adopted) hooks.applyState(adopted);
+      }
+    } else if (data.belt_save != null) throw new Error('adventure_invalid_receipt');
     if (terminal) {
       if (!record(data.settlement) || data.settlement.outcome !== data.state.status) throw new Error('adventure_invalid_receipt');
       // A replay may predate another device's save. Check the current row

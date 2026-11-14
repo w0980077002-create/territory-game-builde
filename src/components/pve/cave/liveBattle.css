@@ -1,0 +1,30 @@
+.cv-live-scene{position:relative;width:100%;min-height:180px;overflow:hidden;isolation:isolate;border:1px solid #8a6840;border-radius:12px;background:#0b0a12;box-shadow:inset 0 0 28px #0009,0 3px 12px #0006}
+.cv-live-scene canvas{display:block;width:100%;aspect-ratio:430/310;object-fit:cover}
+.cv-live-scene .cv-arena-hud{top:8px;left:8px;right:8px;gap:12px}
+.cv-scene-depth{position:absolute;bottom:8px;left:12px;color:#e3cc9d;font-size:10px;letter-spacing:.08em;text-shadow:0 1px 3px #000}
+.cv-scene-paused,.cv-scene-status{position:absolute;top:46%;left:5%;width:90%;padding:8px 12px;text-align:center;border:1px solid #b48a50aa;border-radius:10px;background:#160f0de8;color:#ffe1a2;font-size:12px;z-index:7}
+.cv-scene-paused{top:auto;bottom:28px;left:34%;width:32%;font-weight:800}
+.cv-live-controls{display:flex;gap:5px;flex-wrap:wrap}
+.cv-live-controls button{flex:1;min-width:64px;min-height:44px;font-size:11px}
+.cv-live-status{font-size:10px;color:#dbc39c;min-height:15px;text-align:center}
+.cv-live-belt{padding:6px 4px;border-top:1px solid #8a684066}
+.cv-live-belt button{min-height:36px;border-radius:8px}
+.cv-live-battle{display:flex;flex-direction:column;container-type:size;container-name:cave-battle}
+.cv-live-battle>*{flex-shrink:0}
+.cv-live-battle>*+*{margin-top:3px!important}
+.cv-live-battle .cv-live-scene{flex:1;min-height:110px}
+.cv-live-battle .cv-live-scene canvas{position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:contain}
+.cv-live-battle [data-testid="dark-cave-combat-panels"]{display:flex;flex-direction:column;max-height:210px;overflow-y:auto;overscroll-behavior:contain}
+.cv-live-battle [data-testid="dark-cave-combat-panels"]>div:first-child{order:2}
+.cv-live-battle [data-testid="dark-cave-combat-panels"]>div:last-child{order:1}
+.cv-live-battle [data-testid="dark-cave-combat-panels"]>div{flex-shrink:0}
+.cv-live-gear>div>div:first-child{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;overflow-x:visible}
+.cv-live-gear button{width:100%;height:44px;min-width:0;border-radius:7px}
+.cv-live-gear img{width:26px;height:26px}
+.cv-live-gear button span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:8px}
+@container cave-battle (max-height:470px){
+ .cv-live-battle [data-testid="dark-cave-combat-panels"]{max-height:86px}
+ .cv-live-battle .cv-live-scene{min-height:100px}
+ .cv-live-battle [data-testid="dark-cave-battle-log"]{max-height:16px;padding-top:0;padding-bottom:0;overflow-y:auto}
+}
+@media(max-height:650px){.cv-live-scene canvas{max-height:210px}.cv-live-scene{min-height:160px}.cv-live-scene canvas{object-fit:contain}.cv-live-scene .cv-arena-hud{top:4px}.cv-scene-depth{bottom:4px}}

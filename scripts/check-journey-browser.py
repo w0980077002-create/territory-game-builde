@@ -41,6 +41,7 @@ with sync_playwright() as p:
             # Actual nested BattleScreen -> demo focus -> safe return. No real transport.
             page.get_by_test_id('fixture-fight').click()
             page.get_by_role('tab',name='Dark Cave' if lang=='en' else 'Тёмная пещера').click()
+            page.get_by_test_id('dark-cave-new-expedition').click()
             page.get_by_role('button',name='Play DEMO' if lang=='en' else 'Играть DEMO').wait_for()
             saved=page.evaluate('JSON.stringify(Object.entries(localStorage).sort())')
             page.get_by_role('button',name='Play DEMO' if lang=='en' else 'Играть DEMO').tap()
@@ -55,6 +56,7 @@ with sync_playwright() as p:
             assert not page.locator('#root').evaluate('(el)=>el.inert')
             assert saved==page.evaluate('JSON.stringify(Object.entries(localStorage).sort())')
             page.reload();page.get_by_role('tab',name='Dark Cave' if lang=='en' else 'Тёмная пещера').click()
+            page.get_by_test_id('dark-cave-new-expedition').click()
             page.get_by_role('button',name='Play DEMO' if lang=='en' else 'Играть DEMO').wait_for()
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-journey-after.html?boss')
             assert page.locator('.journey-encounter__eyebrow').inner_text()
@@ -70,6 +72,7 @@ with sync_playwright() as p:
     page.route('**/cave-expedition/party-run.webp',lambda route:route.abort())
     page.goto(f'http://127.0.0.1:{server.server_port}/territory-journey-after.html')
     page.get_by_role('tab',name='Тёмная пещера').click()
+    page.get_by_test_id('dark-cave-new-expedition').click()
     page.get_by_role('button',name='Повторить загрузку').wait_for()
     assert page.get_by_text('Не удалось открыть пещеру').is_visible()
     page.unroute('**/cave-expedition/party-run.webp')

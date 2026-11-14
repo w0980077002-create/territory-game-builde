@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Check, ChevronRight, Crown, Info, Loader2, Lock, Swords, Zap } from 'lucide-react';
 import { useLanguage } from '@/game/i18n';
 import { useGame, useArena } from '@/game/actions';
@@ -21,13 +21,13 @@ import './cavePreview.css';
 import type { IdleCombatState, IdleCombatEvent } from '@/game/idleEngine/types';
 import { getCombatAppearance } from '@/game/appearance';
 import { getEnemyCombatFrames, getFollowerArt } from '@/game/combatArt';
-import type { StrikeEvent } from '@/game/useStrikeQueue';
-import { FighterFigure } from '@/components/arena/FighterFigure';
+import { CaveBattleScene } from './cave/CaveBattleScene';
+import type { CombatCommand } from '@/game/combatV1/service';
 
 type Progress = { completed_stage: number; unlocked_stage: number; dark_stones: number; active_session_id?: string | null };
 type Settlement = { outcome: string; reward?: { gold: number; xp: number }; dark_stone_refunded?: boolean };
 type Session = { session_id: string; revision: number; state: IdleCombatState; events?: IdleCombatEvent[]; settlement?: Settlement | null };
-type Props = { userId: string; onActiveChange?: (active: boolean) => void; onShop?: () => void };
+type Props = { userId: string; onActiveChange?: (active: boolean) => void; onBusyChange?: (busy: boolean) => void; onShop?: () => void };
 // The cave's own 100-floor catalog; ids follow the server encounter adventure_v1_stage_<floor>.
 const CAVE_FLOORS = buildCaveFloors();
 const floorEnemy = (stage: number, en: boolean) => { const floor = getCaveFloor(stage); return en ? floor.enemyEn : floor.enemyRu; };
@@ -76,13 +76,14 @@ function message(error: unknown, en: boolean) {
 }
 
 /** Separate V1 server campaign: NEVER computes a win, cost, loot or stats in the browser. */
-export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props) {
+export function ServerAdventureScreen({ userId, onActiveChange, onBusyChange, onShop }: Props) {
   const { language } = useLanguage();
   const en = language === 'en';
   const game = useStore(useGame);
   const arena = useStore(useArena);
-  const [gearOpen, setGearOpen] = useState(false);
-  const [elixirsOpen, setElixirsOpen] = useState(false);
+  const [gearOpen, setGearOpen] = useState(true);
+  const [elixirsOpen, setElixirsOpen] = useState(true);
+  const [autoPotions, setAutoPotions] = useState(false);
   const [selectedElixir, setSelectedElixir] = useState<number | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
@@ -105,13 +106,14 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
   const lock = useRef(false);
   const sessionRef = useRef<Session | null>(null);
   const battleRef = useRef<HTMLDivElement | null>(null);
-  const strikeId = useRef(0);
   // Resume/retry may return the same authoritative event batch more than once.
   // Event IDs belong to a single server session, not to a React render.
   const seenServerEvents = useRef<{ sessionId: string; keys: Set<string> }>({ sessionId: '', keys: new Set() });
-  const [strikeQueue, setStrikeQueue] = useState<StrikeEvent[]>([]);
-  const strike = strikeQueue[0] ?? null;
   const [battleLog, setBattleLog] = useState<string[]>([]);
+  const [sceneEvents, setSceneEvents] = useState<IdleCombatEvent[]>([]);
+  // Keep the native seven-button navigation usable between acknowledged
+  // operations. Leaving a screen never surrenders or settles its server fight.
+  useEffect(() => { onBusyChange?.(busy); return () => onBusyChange?.(false); }, [busy, onBusyChange]);
 
   const install = useCallback((value: Session) => {
     if (!mounted.current) return;
@@ -125,7 +127,6 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
     // Visual effects follow the authoritative server event stream, never invented client hits.
     if (seenServerEvents.current.sessionId !== value.session_id) {
       seenServerEvents.current = { sessionId: value.session_id, keys: new Set() };
-      setStrikeQueue([]);
       setBattleLog([]);
     }
     const events = (Array.isArray(value.events) ? value.events : []).filter((event, index) => {
@@ -134,26 +135,15 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
       seenServerEvents.current.keys.add(identity);
       return true;
     });
-    const hits = events.filter(event =>
-      ['impact', 'critical', 'block', 'dodge'].includes(event.type)
-      && (event.target === 'hero' || event.target === 'enemy')).slice(-6);
-    if (hits.length) {
-      const opponent = floorEnemy(value.state.input.stage, en);
-      const hero = useGame.get().player.name;
-      const confirmed: StrikeEvent[] = hits.map(hit => ({
-        key: ++strikeId.current,
-        attacker: hit.actor === 'hero' ? hero : opponent,
-        target: hit.target === 'hero' ? hero : opponent,
-        tone: (hit.type === 'critical' ? 'crit' : hit.type === 'block' ? 'block' :
-          hit.type === 'dodge' ? 'dodge' : 'hit') as StrikeEvent['tone'],
-        amount: typeof hit.value === 'number' ? Math.floor(hit.value) : null,
-      }));
-      setStrikeQueue(old => [...old, ...confirmed].slice(-8));
-    }
+    setSceneEvents(events);
     if (events.length) setBattleLog(old => [
       ...old,
-      ...events.filter(event => ['impact', 'critical', 'block', 'dodge', 'rune_proc'].includes(event.type))
-        .slice(-5).map(event => event.type === 'rune_proc'
+      ...events.filter(event => ['impact', 'critical', 'block', 'dodge', 'rune_proc', 'heal'].includes(event.type)
+        || event.vfxKey === 'cave_belt')
+        .slice(-5).map(event => event.vfxKey === 'cave_belt'
+          ? `${en ? 'Elixir applied' : 'Эликсир применён'}: +${Math.round((event.value ?? 0) * (event.effectId?.endsWith(':critChance') ? 100 : 1))}${event.type === 'heal' ? ' HP' : event.effectId?.endsWith(':critChance') ? '%' : ''}`
+          : event.type === 'heal' ? `${en ? 'Healing' : 'Лечение'}: +${Math.floor(event.value ?? 0)} HP`
+          : event.type === 'rune_proc'
           ? (en ? 'Rune activated' : 'Сработала руна')
           : `${event.actor === 'hero' ? (en ? 'Hero' : 'Герой') : floorEnemy(value.state.input.stage, en)}: ${event.type === 'critical' ? (en ? 'Critical hit' : 'Критический удар') : event.type === 'block' ? (en ? 'Block' : 'Блок') : event.type === 'dodge' ? (en ? 'Dodge' : 'Уклонение') : (en ? 'Hit' : 'Удар')}${typeof event.value === 'number' ? ' −' + Math.floor(event.value) : ''}`)
     ].slice(-8));
@@ -173,14 +163,6 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
     const frame = requestAnimationFrame(() => battleRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
     return () => cancelAnimationFrame(frame);
   }, [session?.session_id]);
-
-  // Only animate hits present in an authenticated server receipt. Never draw
-  // fabricated damage while waiting for the next server-confirmed step.
-  useEffect(() => {
-    if (!strike) return;
-    const timer = window.setTimeout(() => setStrikeQueue(q => q.slice(1)), 920);
-    return () => window.clearTimeout(timer);
-  }, [strike]);
 
   const readProgress = useCallback(async () => {
     const response = await supabase.rpc('territory_adventure_progress_v1');
@@ -274,14 +256,15 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
     finally { lock.current = false; if (mounted.current) setBusy(false); }
   };
 
-  const advance = useCallback(async (skillId?: string) => {
+  const advance = useCallback(async (skillId?: string, playback?: Extract<CombatCommand, { action: 'advance' }>['playback'], beltSlot?: number) => {
     const current = sessionRef.current;
     if (lock.current || !current || current.state.status !== 'fighting') return;
     lock.current = true; setBusy(true); setError('');
     try {
       const saved = restoreAdventureSaveFence(userId);
       const cmd = saved || { action: 'advance' as const, operationId: crypto.randomUUID(),
-        sessionId: current.session_id, revision: current.revision, ...(skillId ? { skillId } : {}) };
+        sessionId: current.session_id, revision: current.revision, ...(skillId ? { skillId } : {}),
+        ...(playback ? { playback } : {}), ...(beltSlot !== undefined ? { beltSlot } : {}) };
       const result = decodeSession(await requestAdventureSettlement(userId, cmd, hooks));
       install(result);
       if (result.state.status !== 'fighting') await readProgress();
@@ -292,13 +275,32 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
   }, [userId, install, readProgress, en]);
 
   useEffect(() => {
-    const onVisibilityChange = () => setVisible(document.visibilityState === 'visible');
+    const onVisibilityChange = () => {
+      const showing = document.visibilityState === 'visible';
+      setVisible(showing);
+      if (!showing && sessionRef.current?.state.caveRuntime && !sessionRef.current.state.caveRuntime.paused) {
+        setAutoFight(false);
+        void advance(undefined, 'pause');
+      }
+    };
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
-  }, []);
+  }, [advance]);
 
   useEffect(() => {
-    if (!session || session.state.status !== 'fighting' || !autoFight
+    if (!session || session.state.status !== 'fighting' || session.state.caveRuntime?.paused
+      || !autoPotions || busy || recoverable || !visible) return;
+    const hero = session.state.actors.hero.stats;
+    if (hero.hp / hero.maxHp > .35) return;
+    const slot = session.state.caveRuntime?.belt?.findIndex(charge => charge
+      && charge.item.effect.stat === 'hp' && charge.used < Math.min(5, charge.item.qty)) ?? -1;
+    if (slot < 0) return;
+    const timer = window.setTimeout(() => void advance(undefined, undefined, slot), 200);
+    return () => window.clearTimeout(timer);
+  }, [session, busy, recoverable, visible, autoPotions, advance]);
+
+  useEffect(() => {
+    if (!session || session.state.status !== 'fighting' || session.state.caveRuntime?.paused || !autoFight
       || busy || recoverable || !visible) return;
     const timer = window.setTimeout(() => { void advance(); }, 1100);
     return () => window.clearTimeout(timer);
@@ -306,10 +308,10 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
 
   const clearFinished = () => {
     if (lock.current || sessionRef.current?.state.status === 'fighting') return;
-    localStorage.removeItem(sessionKey(userId));
+    try { localStorage.removeItem(sessionKey(userId)); } catch { /* Server progress remains authoritative. */ }
     sessionRef.current = null; autoFightSession.current = '';
     seenServerEvents.current = { sessionId: '', keys: new Set() };
-    setSession(null); setStrikeQueue([]); setBattleLog([]); onActiveChange?.(false);
+    setSession(null); setSceneEvents([]); setBattleLog([]); onActiveChange?.(false);
     // A finished pinned session does not approve the new equipment. Recheck
     // before offering a new start, including on a different device.
     setReady(false);
@@ -317,13 +319,6 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
   };
 
   const currentStage = progress?.unlocked_stage ?? 1;
-  const actor = session?.state.actors;
-  const hp = (side: 'hero' | 'enemy') => {
-    const stats = actor?.[side]?.stats;
-    const left = actor?.[side]?.stats.hp ?? 0;
-    const max = Math.max(1, stats?.maxHp ?? 1);
-    return { left, max, pct: Math.max(0, Math.min(100, 100 * left / max)) };
-  };
   const finished = session && session.state.status !== 'fighting';
   const floorFocus = selectedFloor ?? currentStage;
   const highlightedFloor = getCaveFloor(floorFocus);
@@ -335,10 +330,10 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
   const fighterSrc = heroFrames.idle;
   const characterArt = (floor: CaveFloor) => import.meta.env.BASE_URL + 'assets/territory/characters/' + floor.enemyArt + '/idle.webp';
   const enemySrc = characterArt(battleFloor);
+  const enemyFrames = useMemo(() => getEnemyCombatFrames(enemySrc) ?? { ...heroFrames, idle: enemySrc }, [enemySrc, heroFrames]);
   const companion = Array.isArray(game.followers) ? selectedFollower(game) : null;
   const darkStoneArt = import.meta.env.BASE_URL + 'assets/territory/items/dark-stone.svg';
   const realmArt = import.meta.env.BASE_URL + 'assets/territory/scenes/dark-cave-realm.svg';
-  const sceneArt = import.meta.env.BASE_URL + 'assets/territory/cave/scene/';
   const depthStyle = (floor: CaveFloor) => ({ '--depth': floor.depth.hue }) as CSSProperties;
   const mayChallenge = progress !== null && floorFocus === progress.unlocked_stage && progress.completed_stage < 100;
   const floorState = (index: number): 'cleared' | 'current' | 'locked' => !progress || index > progress.unlocked_stage ? 'locked'
@@ -383,54 +378,26 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
       {en ? 'Restore fight' : 'Восстановить бой'}
     </button>}
     {busy && !session && <p role="status" className="text-center text-amber-100 text-xs"><Loader2 className="w-4 h-4 animate-spin inline mr-2"/>{en?'Connecting to fight…':'Подключаем бой…'}</p>}
-    {session ? <div ref={battleRef} data-testid="territory-adventure-battle" style={depthStyle(battleFloor)}
-      className="cv-panel min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5 space-y-1.5 scroll-mt-3">
+    {session ? <div ref={battleRef} data-testid="territory-adventure-battle" style={{ ...woodStyle(), ...depthStyle(battleFloor) }}
+      className={'cv-panel min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5 space-y-1.5 scroll-mt-3' + (!finished ? ' cv-live-battle' : '')}>
       <p className="text-center text-[11px] text-amber-200 font-bold">
         {en ? battleFloor.depth.en : battleFloor.depth.ru} · {en?'Floor':'Этаж'} {session.state.input.stage}
         {battleFloor.kind === 'boss' && <span className="ml-1 text-yellow-300">· {en ? 'BOSS' : 'БОСС'}</span>}
         {busy && <Loader2 className="ml-1.5 inline h-3 w-3 animate-spin" aria-label={en?'Confirming…':'Подтверждаем…'}/>}
       </p>
-      {/* Layers: background → back VFX → fighters → foreground → HUD. */}
-      <div className="cv-arena" data-testid="dark-cave-arena">
-        <img src={realmArt} alt="" draggable={false} className="cv-arena-bg" data-testid="dark-cave-battle-background" />
-        <div className="cv-arena-tint" />
-        <div className="cv-arena-rift" />
-        <img src={sceneArt + 'rune-circle.svg'} alt="" className="cv-arena-rune cv-arena-rune--hero" />
-        <img src={sceneArt + 'rune-circle.svg'} alt="" className="cv-arena-rune cv-arena-rune--foe" />
-        <div className="cv-arena-stage">
-          {(['hero','enemy'] as const).map(side => <div key={side} className="relative min-w-0 flex flex-col">
-            <div className="cv-fig">
-              {side === 'hero' && companion && <img src={getFollowerArt(companion.id)} alt={en ? 'Companion' : 'Спутник'} className="cv-ally" data-testid="dark-cave-companion" draggable={false} />}
-              {side === 'hero'
-                ? <FighterFigure src={fighterSrc} combatFrames={heroFrames}
-                    name={heroName} dir={1} alive={hp(side).left > 0} won={session.state.status === 'hero_won'}
-                    strike={strike} idleSeconds={3.1} scale={1.2}
-                    className="absolute right-0 bottom-0 h-full w-full object-contain object-right-bottom" />
-                : <FighterFigure src={enemySrc} combatFrames={getEnemyCombatFrames(enemySrc)}
-                    name={enemyName} dir={-1} alive={hp(side).left > 0} won={session.state.status === 'enemy_won'}
-                    strike={strike} idleSeconds={2.8}
-                    className={'absolute left-0 bottom-0 w-full object-contain object-left-bottom ' + (battleFloor.kind === 'boss' ? 'h-[96%]' : 'h-[86%]')} />}
-            </div>
-          </div>)}
-        </div>
-        <img src={sceneArt + 'foreground.svg'} alt="" className="cv-arena-front" />
-        <div className="cv-arena-hud" data-testid="dark-cave-hud">
-          {(['hero','enemy'] as const).map(side => <div key={side} className={'cv-hp' + (side === 'enemy' && battleFloor.kind === 'boss' ? ' cv-hp--boss' : '')}>
-            <p className="cv-hp-name">{side === 'enemy' && battleFloor.kind === 'boss' && <Crown size={12} className="shrink-0 text-yellow-300"/>}
-              <span className="truncate">{side === 'hero' ? heroName : enemyName}</span></p>
-            <div className={'cv-hp-bar ' + (side === 'hero' ? 'cv-hp-bar--hero' : 'cv-hp-bar--foe')}><div style={{ width: hp(side).pct + '%' }} /></div>
-            <p className="cv-hp-num">{Math.ceil(hp(side).left)}/{Math.ceil(hp(side).max)} HP</p>
-          </div>)}
-        </div>
-        <div className="cv-arena-fog" />
-        {[8, 22, 37, 55, 71, 88].map((left, i) => <span key={left} className="cv-mote" style={{ left: left + '%', bottom: (6 + (i % 3) * 9) + '%', animationDelay: (-i * 0.9) + 's' }} />)}
-        {strike && <span key={strike.key} data-testid="dark-cave-impact"
-          className={'cv-burst ' + (strike.target === heroName ? 'cv-burst--hero' : 'cv-burst--foe') + (strike.tone === 'crit' ? ' cv-burst--crit' : strike.tone === 'block' || strike.tone === 'dodge' ? ' cv-burst--block' : '')} />}
-        {strike?.tone === 'crit' && <span key={'flash-' + strike.key} className="cv-flash" />}
-      </div>
+      <CaveBattleScene sessionId={session.session_id} state={session.state} events={sceneEvents}
+        floor={battleFloor} hero={heroFrames} enemy={enemyFrames}
+        follower={companion ? getFollowerArt(companion.id) : undefined}
+        heroName={heroName} enemyName={enemyName} en={en}
+        frozen={session.state.caveRuntime?.paused === true || !visible} />
       <div className="flex items-center justify-between gap-2 text-[11px] text-amber-100">
         <span className="flex items-center gap-1"><Zap size={13}/>{en ? 'Energy' : 'Энергия'}: {Math.floor(session.state.actors.hero.energy)}/{session.state.input.rules.maxEnergy}</span>
         <span className="cv-chip">{battleFloor.kind === 'boss' ? (en?'Boss fight':'Битва с боссом') : battleFloor.kind === 'elite' ? (en?'Elite foe':'Элитный враг') : (en?'Cave dweller':'Обитатель пещеры')}</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-black/70" role="progressbar"
+        aria-label={en ? 'Hero energy' : 'Энергия героя'} aria-valuemin={0}
+        aria-valuemax={session.state.input.rules.maxEnergy} aria-valuenow={Math.floor(session.state.actors.hero.energy)}>
+        <div className="h-full rounded-full bg-gradient-to-r from-sky-700 to-cyan-200" style={{ width: Math.min(100, 100 * session.state.actors.hero.energy / Math.max(1, session.state.input.rules.maxEnergy)) + '%' }}/>
       </div>
       {!!battleLog.length && <div data-testid="dark-cave-battle-log" className="rounded-lg border border-white/10 bg-black/35 px-2 py-1 text-[11px] leading-tight text-slate-200" aria-live="polite">
         {battleLog.slice(-2).map((line, i) => <p key={i} className="truncate">{line}</p>)}
@@ -466,11 +433,27 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
             {autoFight ? (en ? 'Auto: on' : 'Авто: вкл') : (en ? 'Auto: off' : 'Авто: выкл')}
           </button>
           {session.state.input.control==='manual' && !autoFight
-            ? <button type="button" disabled={busy || recoverable} onClick={()=>void advance()} className="cv-btn cv-btn--gold min-h-11 text-sm">
+            ? <button type="button" disabled={busy || recoverable || session.state.caveRuntime?.paused} onClick={()=>void advance()} className="cv-btn cv-btn--gold min-h-11 text-sm">
                 <Swords size={17} aria-hidden="true"/>{en?'Continue battle':'Продолжить бой'}
               </button>
             : <span className="flex items-center justify-center rounded-lg border border-amber-500/25 bg-black/30 px-2 text-center text-[11px] text-amber-100/80">{en?'The hero fights automatically':'Герой сражается автоматически'}</span>}
         </div>
+        {session.state.caveRuntime && <div className="cv-live-controls" data-testid="dark-cave-playback">
+          <button type="button" className="cv-btn" disabled={busy || recoverable}
+            data-testid="dark-cave-pause" aria-pressed={session.state.caveRuntime.paused}
+            onClick={() => void advance(undefined, session.state.caveRuntime?.paused ? 'play' : 'pause')}>
+            {session.state.caveRuntime.paused ? (en ? 'Resume' : 'Продолжить') : (en ? 'Pause' : 'Пауза')}
+          </button>
+          {session.state.caveRuntime.belt && <button type="button" className="cv-btn" data-testid="dark-cave-auto-potions"
+            aria-pressed={autoPotions} onClick={() => setAutoPotions(value => !value)}>
+            {en ? 'Potions' : 'Зелья'}: {autoPotions ? (en ? 'on' : 'вкл') : (en ? 'off' : 'выкл')}
+          </button>}
+          <button type="button" className="cv-btn" disabled={busy || recoverable}
+            data-testid="dark-cave-speed" aria-pressed={session.state.caveRuntime.speed === 2}
+            onClick={() => void advance(undefined, session.state.caveRuntime?.speed === 2 ? 'normal' : 'fast')}>
+            ×{session.state.caveRuntime.speed}
+          </button>
+        </div>}
         {session.state.input.control==='manual' && !autoFight && session.state.actors.hero.loadout.skills.length > 0 && <div className="cv-skills" data-testid="dark-cave-manual-actions">
           {session.state.actors.hero.loadout.skills.map(slot=>{
             const def = session.state.input.catalog.skills.find(item => item.id === slot.skillId);
@@ -478,7 +461,7 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
             const onCooldown = (session.state.actors.hero.cooldowns[slot.skillId] ?? 0) > session.state.atMs;
             const enoughEnergy = !!rank && session.state.actors.hero.energy >= rank.energyCost;
             return <button key={slot.skillId} type="button"
-              disabled={busy || recoverable || !rank || onCooldown || !enoughEnergy}
+              disabled={busy || recoverable || session.state.caveRuntime?.paused || !rank || onCooldown || !enoughEnergy}
               onClick={()=>void advance(slot.skillId)}
               className="cv-btn min-h-11 flex-col !gap-0"
               aria-label={slot.skillId.replace(/_/g,' ')}>
@@ -492,24 +475,50 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
         <FoldSection title={en?'Equipment':'Экипировка'}
           summary={<span className="text-[10px] text-amber-100">{Object.values(game.player.equipped ?? {}).filter(Boolean).length}/7</span>}
           open={gearOpen} onToggle={() => setGearOpen(v => !v)}>
-          <GearStrip equipped={game.player.equipped}/>
+          <div className="cv-live-gear"><GearStrip equipped={game.player.equipped}/></div>
           <p className="mt-1.5 text-[10px] text-amber-100/75">
-            {en?'Your combat stats were locked when this fight started. Gear here reflects your current hero.':'Характеристики зафиксированы при входе в бой. Здесь показана текущая экипировка героя.'}
+            {en?'Fight stats are pinned on entry. Current gear shown.':'Сила зафиксирована при входе. Показана текущая экипировка.'}
           </p>
         </FoldSection>
         <FoldSection title={en?'Elixir belt':'Пояс эликсиров'}
           summary={<span className="text-[10px] text-amber-100">{game.belt.filter(Boolean).length}/7</span>}
           open={elixirsOpen} onToggle={() => setElixirsOpen(v => !v)}>
-          <BeltCells belt={game.belt} ctx={beltContext(game,arena.wins)} disabled
+          <BeltCells belt={game.belt} ctx={beltContext(game,arena.wins)} disabled={busy || finished || !session.state.caveRuntime?.belt}
             onTap={(index) => setSelectedElixir(current => current === index ? null : index)}/>
           {selectedElixir !== null && game.belt[selectedElixir] && (
             <p className="mt-1 text-[11px] text-amber-200">{game.belt[selectedElixir]?.name}</p>
           )}
-          <p className="mt-1.5 text-[10px] text-amber-100/75" role="note">
+          {!session.state.caveRuntime?.belt ? <p className="mt-1.5 text-[10px] text-amber-100/75" role="note">
             {en?'Elixirs are not available in Cave fights yet. Nothing is consumed from your belt.':'Эликсиры в Пещере пока недоступны. Ничего из пояса не расходуется.'}
-          </p>
+          </p> : <p className="mt-1 text-[10px] text-amber-100/75">{en ? '5 per kind · auto-potions at HP ≤35%.' : '5 одного вида · автозелья при HP ≤35%.'}</p>}
         </FoldSection>
       </div>
+      {selectedElixir !== null && session.state.caveRuntime?.belt && <Dialog label={en ? 'Use elixir' : 'Применить эликсир'} onClose={() => setSelectedElixir(null)} testId="dark-cave-use-elixir">
+        <h3>{game.belt[selectedElixir]?.name ?? (en ? 'Belt slot' : 'Ячейка пояса')}</h3>
+        {(() => {
+          const charge = session.state.caveRuntime.belt[selectedElixir];
+          const remaining = charge ? Math.max(0, charge.item.qty - charge.used) : 0;
+          const stats = session.state.actors.hero.stats;
+          const useful = charge?.item.effect.stat === 'hp' ? stats.hp < stats.maxHp
+            : charge?.item.effect.stat === 'critChance' ? stats.critChance < 1 : true;
+          const available = charge && remaining > 0 && !finished && !session.state.caveRuntime.paused && useful;
+          const stat = charge?.item.effect.stat;
+          const label = stat === 'hp' ? 'HP' : stat === 'attack' ? (en ? 'Attack' : 'Атака')
+            : stat === 'defense' ? (en ? 'Defense' : 'Защита') : (en ? 'Critical chance' : 'Шанс крита');
+          const before = stat ? (stat === 'critChance' ? stats.critChance * 100 : stats[stat]) : 0;
+          const after = charge ? Math.min(stat === 'hp' ? stats.maxHp : stat === 'critChance' ? 100 : 1_000_000_000,
+            before + charge.item.effect.value) : 0;
+          return <>
+            <p className="cv-note">{charge ? `${label}: ${Math.round(before)} → ${Math.round(after)}${stat === 'critChance' ? '%' : ''}`
+              : (en ? 'This dose has no verified Cave source.' : 'Источник этой дозы для Пещеры не подтверждён.')}</p>
+            <p className="cv-note">{en ? 'Doses: ' : 'Дозы: '}{remaining} → {Math.max(0, remaining - 1)}</p>
+            <button className="cv-challenge" type="button" disabled={!available || busy || recoverable}
+              data-testid="dark-cave-drink" onClick={() => { const slot = selectedElixir; setSelectedElixir(null); void advance(undefined, undefined, slot); }}>
+              {en ? 'Use · 1 dose' : 'Применить · 1 доза'}
+            </button>
+          </>;
+        })()}
+      </Dialog>}
     </div> : progress ? <>
       {caveTab === 'gear' ? <CaveUmbraScreen en={en} hero={fighterSrc} onBack={() => setCaveTab('floors')}/>
       : caveTab === 'gems' ? <CaveGemsScreen en={en} onBack={() => setCaveTab('floors')}/>
