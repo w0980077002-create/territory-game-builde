@@ -1,13 +1,18 @@
 # TERRITORY
 
-**TERRITORY** is a fantasy game played in Telegram. Its primary web delivery is **GitHub Pages**, from the `main` branch of this repository.
+Работающая фэнтезийная игра в Telegram. React, TypeScript, Vite; состояние игроков — в Supabase.
 
-Разработчику: [единые инструкции](AGENTS.md), [запуск и карта проекта](docs/DEVELOPMENT_RU.md), [Пещера: реализованный DEMO](docs/CAVE_EXPEDITION_DEMO_RU.md).
+**Играть:** https://w0980077002-create.github.io/territory-game-builde/
 
-- Game address: https://w0980077002-create.github.io/territory-game-builde/
-- GitHub Pages workflow: [Build and deploy Territory](.github/workflows/pages.yml)
-- Build command: `npm ci && npm run build`
-- Asset base: `/territory-game-builde/`
-- Player state: Supabase (never reset live accounts during testing).
+## Разработка
 
-Production builds must use GitHub Pages; the abandoned Vercel projects are not part of the deployment process. Code merged into `main` is not itself proof of a successful Pages publication—verify the published build revision before announcing the release.
+```sh
+npm ci
+npm run dev
+```
+
+Настройка тестового окружения и путь запуска: [docs/DEVELOPMENT_RU.md](docs/DEVELOPMENT_RU.md). Локальный запуск с production-настройкой обращается к настоящему серверу. Изолированный DEMO Пещеры без аккаунта и базы: `npm run build:cave-preview`.
+
+Инструкция исполнителю — [AGENTS.md](AGENTS.md). Игровые требования — [docs/GAME_REQUIREMENTS_RU.md](docs/GAME_REQUIREMENTS_RU.md). Начинать с текущей задачи, а не с исторических очередей.
+
+Проверки: `npm run typecheck`, `npm run lint`, `npm run build` и адресные `test:*` из `package.json`. Публикация `main` — только через [GitHub Pages workflow](.github/workflows/pages.yml); после выпуска автоматически проверяется опубликованный SHA. Экспериментальные агенты и периодические отчёты удалены; проверки PR и игровые регрессии сохранены.
