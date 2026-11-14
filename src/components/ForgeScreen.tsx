@@ -242,6 +242,17 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
     const cost=forgeCost(item.equipment.level);
     return state.player.gold>=cost.gold && state.forgeMaterials>=cost.materials;
   };
+  const forgeStatusLabel = (item: InventoryItem): string => {
+    if (item.equipment && item.equipment.level >= state.player.level)
+      return language === 'en'
+        ? `Hero level limit: ${state.player.level}`
+        : `Предел уровня героя: ${state.player.level}`;
+    if (isStage8Gear(item.id) && !stage8ForgeReady)
+      return language === 'en' ? 'Reconnect forge server' : 'Проверь связь с сервером';
+    if (forgeReady(item))
+      return language === 'en' ? 'Ready to upgrade' : 'Можно улучшить';
+    return language === 'en' ? 'Not enough gold or materials' : 'Не хватает золота или материалов';
+  };
   const readyCount = allEquipment.filter(forgeReady).length;
   const listed = allEquipment.filter((item) => gearFilter === 'all' || (gearFilter === 'ready' ? forgeReady(item) : item.id.startsWith('equipped_')));
   const listedWorn = listed.filter((item) => item.id.startsWith('equipped_'));
@@ -384,7 +395,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
                   {localizeText(eq.name, language)}
                 </p>
                 <p className="text-xs text-gray-500">{t('level')} {eq.level}</p>
-                <p className={`mt-1 text-[10px] ${forgeReady(item) ? 'text-emerald-300' : 'text-amber-300/70'}`}>{forgeReady(item) ? (language === 'en' ? 'Ready to upgrade' : 'Можно улучшить') : (language === 'en' ? 'Not ready' : 'Пока недоступно')}</p>
+                <p className={`mt-1 text-[10px] ${forgeReady(item) ? 'text-emerald-300' : 'text-amber-300/70'}`}>{forgeStatusLabel(item)}</p>
               </button>
             );})}
           </div>
@@ -412,7 +423,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
                   {localizeText(item.name, language)}
                 </p>
                 <p className="text-xs text-gray-500">{t('level')} {item.equipment?.level || 1}</p>
-                <p className={`mt-1 text-[10px] ${forgeReady(item) ? 'text-emerald-300' : 'text-amber-300/70'}`}>{forgeReady(item) ? (language === 'en' ? 'Ready to upgrade' : 'Можно улучшить') : (language === 'en' ? 'Not ready' : 'Пока недоступно')}</p>
+                <p className={`mt-1 text-[10px] ${forgeReady(item) ? 'text-emerald-300' : 'text-amber-300/70'}`}>{forgeStatusLabel(item)}</p>
               </button>
             ))}
           </div>
@@ -530,11 +541,15 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
             {isStage8Gear(selectedCurrent.id) && !stage8ForgeReady ? (
               <div className="rounded-lg border border-amber-500/30 bg-amber-900/20 p-3 mb-3 text-center" data-testid="stage8-forge-server-pending">
                 <p className="text-sm text-amber-200 font-medium">
-                  {language === 'en' ? 'Server-verified upgrade in preparation' : 'Защищённая заточка готовится'}
+                  {language === 'en' ? 'Forge server connection unavailable' : 'Нет связи с сервером заточки'}
                 </p>
                 <p className="text-xs text-gray-300 mt-1">
-                  {language === 'en' ? 'Your crafted item and materials are safe. Upgrades will be available after the authoritative registry is connected.' : 'Вещь и материалы сохраняются. Улучшение появится после подключения серверного учёта предметов.'}
+                  {language === 'en' ? 'Your item and materials remain safe. You can recheck the connection now.' : 'Вещь и материалы сохранены. Проверь подключение и попробуй снова.'}
                 </p>
+                <button type="button" className="mt-3 min-h-10 rounded-lg border border-amber-400/50 px-3 text-xs font-bold text-amber-100"
+                  onClick={() => { void stage8ForgeAvailable().then(setStage8ForgeReady).catch(() => setStage8ForgeReady(false)); }}>
+                  {language === 'en' ? 'Reconnect' : 'Проверить подключение'}
+                </button>
               </div>
             ) : selectedCurrent.equipment.level >= state.player.level ? (
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3 text-center">
