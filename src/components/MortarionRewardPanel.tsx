@@ -73,7 +73,8 @@ export function MortarionRewardPanel({status,en,busy,error,onClaim}:Props) {
       <strong className="text-emerald-200">{en?'Chest claimed and credited!':'Сундук открыт, награды начислены!'}</strong>
       <p>+{receipt.gold} 🪙 · +{receipt.gems} 💎 · +{receipt.materials} ⚒ · {receipt.elixirs} {en?'elixirs':'эликсиров'}</p>
       {receipt.items.map((item,i)=><p key={item.id+'-'+i}>✦ {item.name} ×{item.qty}</p>)}
-      {receipt.title && <p>🏅 {receipt.title}</p>}
+      {receipt.title && <p>♛ {receipt.title}</p>}
+      {receipt.medal && <p data-testid="mortarion-reward-medal">🏅 {receipt.medal}</p>}
     </div>}
     {status?.canClaim && <button type="button" data-testid="mortarion-claim-reward"
       disabled={busy} onClick={onClaim}
