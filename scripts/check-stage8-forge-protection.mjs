@@ -55,3 +55,8 @@ assert.match(sql,/UPDATE public\.players/);
 assert.match(sql,/REVOKE ALL ON FUNCTION public\.territory_stage8_forge_v1/);
 assert.match(sql,/GRANT EXECUTE ON FUNCTION public\.territory_stage8_forge_v1/);
 console.log('Stage8 forged items: legacy path stays closed; server path has receipt, owner lock, registry mirror and retry gate');
+
+assert.match(bridge,/recoverCompletedStage8Forge/, 'Client self-heals only server-proven previous successes');
+assert.match(screen,/stage8-forge-recovery/, 'Recovered receipt must be visible to players');
+assert.match(screen,/refreshStage8Connection/, 'Server readiness can be checked again after mobile reconnect');
+await import('./check-stage8-forge-pending-recovery.mjs');
