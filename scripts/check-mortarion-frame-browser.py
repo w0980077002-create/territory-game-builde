@@ -1,7 +1,7 @@
 """Offline real React profile, never a production save or Android/WebView test.
 MORTARION_EVIDENCE names the directory containing actual browser screenshots.
 """
-import os, threading, json
+import os, threading, json, shutil
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from playwright.sync_api import sync_playwright
@@ -19,7 +19,7 @@ threading.Thread(target=server.serve_forever,daemon=True).start()
 results=[]
 try:
     with sync_playwright() as p:
-        browser=p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
+        browser=p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or shutil.which('chromium'),args=['--no-sandbox'])
         for width in (320,360,390,430):
             page=browser.new_page(viewport={'width':width,'height':760},reduced_motion='reduce')
             errors=[]
