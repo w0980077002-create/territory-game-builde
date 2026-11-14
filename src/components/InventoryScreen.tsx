@@ -110,7 +110,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
   const close = () => { setSelected(null); setBeltNote(null); };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2 animate-fade-in">
+    <div className="territory-inventory-screen flex h-full min-h-0 flex-col gap-2 animate-fade-in">
       {(onForge || onProfessions || onMap) && <div className="grid shrink-0 grid-cols-3 gap-1.5" aria-label={language === 'en' ? 'Workshop navigation' : 'Мастерская'}>
         {onForge && <button type="button" onClick={() => onForge()} className="min-h-9 rounded-lg border border-orange-400/30 bg-orange-500/15 px-1 text-[11px] font-bold text-orange-100"><Hammer className="mr-1 inline h-3.5 w-3.5"/>{language === 'en' ? 'Forge' : 'Кузница'}</button>}
         {onProfessions && <button type="button" onClick={onProfessions} className="min-h-9 rounded-lg border border-amber-400/30 bg-amber-500/15 px-1 text-[11px] font-bold text-amber-100"><Pickaxe className="mr-1 inline h-3.5 w-3.5"/>{language === 'en' ? 'Craft' : 'Профессии'}</button>}
@@ -243,7 +243,7 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
       )}
 
       {/* Always visible directly above the game's main navigation. */}
-      <div className="z-20 grid shrink-0 grid-cols-4 gap-1.5 rounded-2xl border border-amber-700/60 bg-[#2d1a11] p-1.5 shadow-[0_-4px_18px_rgba(0,0,0,0.45)]"
+      <div className="territory-inventory-tabs z-20 grid shrink-0 grid-cols-4 gap-1.5 rounded-2xl border border-amber-700/60 bg-[#2d1a11] p-1.5 shadow-[0_-4px_18px_rgba(0,0,0,0.45)]"
         role="tablist" aria-label={language === 'en' ? 'Inventory sections' : 'Разделы инвентаря'}>
         <button type="button" role="tab" aria-selected={tab === 'equipment'} aria-controls="inventory-current-section"
           className="viking-tab min-w-0 flex flex-col items-center justify-center gap-0.5 px-0.5 py-1 text-[10px] leading-tight transition-colors sm:flex-row sm:gap-1 sm:text-xs"
