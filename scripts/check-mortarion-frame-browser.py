@@ -39,9 +39,9 @@ try:
                 assert frame.evaluate("(e)=>getComputedStyle(e).pointerEvents==='none'"),(width,rank,'Decorative asset blocks taps')
                 art_box=frame.bounding_box()
                 stage_box=stage.bounding_box()
-                assert abs(art_box['x']-stage_box['x'])<1.5,(width,rank,'Frame must cover full stage, not center portrait')
-                assert abs(art_box['width']-stage_box['width'])<1.5,(width,rank,'Wrong frame width')
-                assert abs(art_box['height']-stage_box['height'])<1.5,(width,rank,'Wrong frame height')
+                assert abs(art_box['x']-stage_box['x'])<5,(width,rank,'Frame must cover stage padding box, not center portrait')
+                assert abs(art_box['width']-stage_box['width'])<10,(width,rank,'Wrong stage width, accounting for gold border')
+                assert abs(art_box['height']-stage_box['height'])<10,(width,rank,'Wrong stage height, accounting for gold border')
                 # Pixel-level SVG alpha confirms hero's torso and boots are never
                 # covered by metal (previous frame crossed the lower legs).
                 alpha=frame.evaluate("""(img)=>{
