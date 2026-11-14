@@ -254,7 +254,7 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
         {en ? 'Available strikes' : 'Доступно ударов'}: <b>{state ? hitsLeft : '…'}/{MORTARION_HITS_PER_HOUR}</b> · {en ? 'One strike every 60 seconds' : '1 удар раз в 60 секунд'}
       </p>
       {rewardStatus && <p data-testid="mortarion-reward-teaser" className="relative mt-2 rounded-lg border border-violet-400/35 bg-violet-950/40 px-2 py-1.5 text-[11px] font-bold text-amber-100">
-        🎁 {en ? 'Your chest' : 'Твой сундук'}: {rewardStatus.tier === 'legendary' ? (en ? 'Legendary' : 'Легендарный') : rewardStatus.tier === 'hunter' ? (en ? 'Soul hunter' : 'Охотника') : (en ? 'Participant' : 'Участника')} · {rewardStatus.activeDays}/{rewardStatus.requiredDays} {en ? 'days' : 'дней'} · {rewardStatus.totalHits} {en ? 'hits' : 'ударов'}
+        🎁 {en ? 'Your chest' : 'Твой сундук'}: {rewardStatus.tier === 'legendary' ? (en ? 'Legendary' : 'Легендарный') : rewardStatus.tier === 'hunter' ? (en ? 'Soul hunter' : 'Охотника') : (en ? 'Participant' : 'Участника')} · {rewardStatus.activeDays}/{rewardStatus.requiredDays} {en ? 'days' : 'дней'}
       </p>}
       {message && <p role="alert" className="relative mt-2 rounded-lg border border-red-500/50 bg-red-950/60 px-2 py-2 text-xs text-red-100">{message}</p>}
     </section>
