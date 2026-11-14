@@ -30,6 +30,7 @@ assert.match(raid,/getMortarionRewardStatus/);
 assert.match(raid,/MortarionRewardPanel/);
 assert.match(ui,/data-testid="mortarion-rewards"/);
 assert.match(ui,/data-testid="mortarion-claim-reward"/);
+assert.match(ui,/data-testid="mortarion-reward-medal"/,'claim receipt must show earned medal');
 assert.match(api,/protectFortuneSave/);
 assert.match(api,/acceptMonopolyClaimReceipt/);
 assert.match(profile,/mortarionHonor/);
