@@ -16,7 +16,6 @@ globalThis.localStorage={
   setItem:(key,val)=>{records.set(key,val);},
   removeItem:key=>{records.delete(key);},
 };
-globalThis.crypto={randomUUID};
 let handler=async()=>{throw Error('Unexpected remote request');};
 globalThis.__forgeTestSupabase={
   auth:{getUser:async()=>({data:{user:{id:PLAYER}},error:null})},
