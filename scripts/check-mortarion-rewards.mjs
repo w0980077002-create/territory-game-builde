@@ -132,6 +132,7 @@ assert.deepEqual(tracked,[3],'human and tester hits use identical 24h day-credit
 // Never require a manual gift or edit: claim atomically restores the canonical
 // wallet amount and credits this person's own participant reward once.
 await query("UPDATE public.players SET game_state=game_state - 'forgeMaterials',forge_materials=0 WHERE id=$1",[newcomer]);
+await query("SELECT set_config('request.jwt.claim.sub',$1,false)",[newcomer]);
 const n=(await query('SELECT public.territory_mortarion_reward_claim_v1((SELECT updated_at FROM public.players WHERE id=$1)) AS r',[newcomer]))[0].r;
 assert.equal(n.success,true,'missing legacy field cannot block a participant');
 assert.equal(n.receipt.place,3,'a valid TOP-3 hit receives its rank bonus');
