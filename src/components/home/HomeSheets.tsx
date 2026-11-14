@@ -8,6 +8,7 @@ import { RewardLootStrip } from '@/components/ui/RewardLootStrip';
 import { useLive, claimMailGrant, getClaimedMailHistory, getUnseenHalloweenFinalMail, acknowledgeHalloweenFinalMail, type ClaimedMailGrant } from '@/game/live';
 import './mailVisuals.css';
 import { mailRewardVisuals } from '@/game/mailRewardVisuals';
+import { MortarionOwnerTestChestPreview, MORTARION_OWNER_TEST_MAIL_ID } from '@/components/MortarionOwnerTestChestPreview';
 import { HALLOWEEN_FINAL_SUBJECT, localizedHalloweenMail } from '@/game/halloweenMailLocalization';
 import { getFollowerArt } from '@/game/combatArt';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -235,6 +236,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
               </button>
               {expanded && <div className="border-t border-white/10 px-2 pb-2 pt-1.5">
               <p className="text-[11px] text-gray-300 leading-snug mb-2 whitespace-pre-line break-words">{copy.body}</p>
+              {m.id === MORTARION_OWNER_TEST_MAIL_ID && <MortarionOwnerTestChestPreview inventory={state.inventory} en={language === 'en'}/>}
               {previouslyClaimedFinal && <p className="mb-1 text-[10px] font-semibold text-emerald-200">
                 {language === 'en' ? 'Your rewards are already in your inventory. This is your final celebration letter.' : 'Все награды уже начислены. Это итоговое поздравление — повторно получать подарки не нужно.'}
               </p>}

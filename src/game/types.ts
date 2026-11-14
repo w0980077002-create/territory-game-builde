@@ -43,6 +43,10 @@ export interface Equipment {
 
 export interface InventoryItem {
   id: string;
+  /** Owner-only Mortarion QA copies: never real, tradable raid loot. */
+  ownerTest?: boolean;
+  testOnly?: boolean;
+  canonicalItemId?: string;
   name: string;
   icon: string;
   type: 'potion' | 'elixir' | 'material' | 'equipment' | 'arena';
@@ -216,6 +220,8 @@ export interface GameState {
   mortarionReward?: MortarionRewardReceipt | null;
   /** Permanent cosmetic title/frame/medal awarded from the final TOP-10. */
   mortarionHonor?: { eventId: string; place: number; title: string; frame: string; medal: string } | null;
+  /** Non-transferable visual QA kit, separate from the real raid receipt/honors. */
+  mortarionOwnerTestChest?: { testOnly: true; eventId: string; mailId: string; receivedAt: string; uniqueItems: number } | null;
   appearance: string;
   dailyStonesBought: number;
   dailyStonesDate: string;

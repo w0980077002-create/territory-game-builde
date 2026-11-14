@@ -277,6 +277,11 @@ export function InventoryScreen({ initialTab = 'items', userId, onForge, onProfe
               </div>
               <p className="text-sm capitalize" style={{ color: rarityColor(selected.rarity) }}>{localizeRarity(selected.rarity, language)}</p>
             </div>
+            {selected.ownerTest && <p data-testid="mortarion-inventory-test-only"
+              className="mb-2 rounded-md border border-violet-400/50 bg-violet-950/50 p-2 text-xs font-bold text-amber-100">
+              {language === 'en' ? 'TEST ONLY · Preview copy, not a transferable rare reward.'
+                : 'ТЕСТ · Образец для проверки. Это не настоящая редкая награда и не предмет для продажи.'}
+            </p>}
             <p className="text-sm text-gray-300 mb-3">{selected.id === AWAKENING_STONE_ITEM.id
               ? (language === 'en'
                 ? 'A rare awakening material. Obtaining and spending are paused; existing stones are safe.'
