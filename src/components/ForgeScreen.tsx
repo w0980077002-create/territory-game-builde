@@ -31,10 +31,22 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
   const [stage8ForgeReady, setStage8ForgeReady] = useState(false);
   useEffect(() => {
     let mounted=true;
-    void stage8ForgeAvailable().then((ready)=>{ if(mounted)setStage8ForgeReady(ready); })
-      .catch(()=>{ if(mounted)setStage8ForgeReady(false); });
-    return ()=>{mounted=false;};
-  }, []);
+    const refresh=()=>{
+      void stage8ForgeAvailable().then((ready)=>{ if(mounted)setStage8ForgeReady(ready); })
+        .catch(()=>{ if(mounted)setStage8ForgeReady(false); });
+    };
+    const onVisible=()=>{ if(document.visibilityState==='visible')refresh(); };
+    refresh();
+    // Telegram WebView can restore its auth session after the first mount.
+    // Revalidate availability when the player returns, not just once forever.
+    document.addEventListener('visibilitychange',onVisible);
+    window.addEventListener('focus',refresh);
+    return ()=>{
+      mounted=false;
+      document.removeEventListener('visibilitychange',onVisible);
+      window.removeEventListener('focus',refresh);
+    };
+  }, [userId]);
   const [error, setError] = useState<string | null>(null);
   // A forge result is not final until the server has persisted it.
   const [saveUnverified, setSaveUnverified] = useState(() => unverifiedForgeUsers.has(userId));
@@ -90,7 +102,11 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
       const receipt=await attemptStage8Forge(userId,eq.id,eq.level);
       useGame.set(receipt.state);
       setSelected(null);
-      if(receipt.upgraded){
+      if(receipt.recovered){
+        setError(language==='en'
+          ? 'Previous forge attempt synchronized safely. Open the item and tap Upgrade again for a new attempt.'
+          : 'Предыдущая заточка восстановлена по серверу. Открой вещь и нажми «Улучшить» ещё раз для новой попытки.');
+      }else if(receipt.upgraded){
         setSuccess(true);
         hapticNotify('success');
         setTimeout(()=>setSuccess(false),2200);
@@ -100,9 +116,14 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
       }
     }catch(cause){
       console.warn('Stage8 forge not verified:',cause);
-      setError(language==='en'
-        ? 'The server did not confirm this upgrade. No second roll: reopen the Forge to retry the saved operation. If progress changed, restart TERRITORY.'
-        : 'Сервер не подтвердил заточку. Не начинай новую попытку: открой Кузницу снова для безопасного повтора. Если изменился прогресс — перезапусти TERRITORY.');
+      const reason=cause instanceof Error?cause.message:'';
+      setError(reason==='stage8_forge_previous_operation_unconfirmed'
+        ? (language==='en'
+          ? 'There is an unconfirmed earlier attempt. Reopen TERRITORY before a new upgrade to protect materials.'
+          : 'Есть незавершённая предыдущая попытка. Перезапусти TERRITORY перед новой заточкой, чтобы сохранить материалы.')
+        : (language==='en'
+          ? 'The server did not confirm this upgrade. No extra roll was made. Reopen TERRITORY if the item is out of sync.'
+          : 'Сервер не подтвердил заточку. Новую попытку не списывали. Если вещь не синхронизирована — перезапусти TERRITORY.'));
       hapticNotify('error');
     }finally{
       lock.current=false;setUpgrading(false);
