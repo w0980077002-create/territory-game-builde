@@ -1,6 +1,8 @@
 /** Protected Stage8 forge. Local game_state never supplies the success roll. */
 import { supabase } from '@/game/supabase';
 import { acceptMonopolyClaimReceipt } from '@/game/cloud';
+import { fetchStage8Items } from '@/game/stage8CraftApi';
+import { isPreviouslyCommittedStage8Upgrade } from './stage8ForgeRecovery';
 import type { GameState } from './types';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -38,6 +40,29 @@ function readPending(userId:string):Pending|null{
   return p as Pending;
 }
 
+/**
+ * Self-heal the exact deadlock observed after a confirmed upgrade: an old
+ * localStorage UUID survives a server save acknowledgement, then prevents the
+ * next level (e.g. 22 -> 23, next tap 23 -> 24).
+ *
+ * We NEVER delete markers merely because they are old, because a failed roll
+ * still spends resources and must be replayed with the same operation UUID.
+ * Only an authenticated, server-owned item whose canonical level has
+ * advanced beyond the pending level proves that marker is obsolete.
+ */
+export async function recoverCompletedStage8Forge(userId: string): Promise<boolean> {
+  await verifyAccount(userId);
+  const pending = readPending(userId);
+  if (!pending) return false;
+  const owned = await fetchStage8Items();
+  if (!isPreviouslyCommittedStage8Upgrade(pending, owned)) return false;
+  const latest = readPending(userId);
+  if (!latest || latest.operationId !== pending.operationId
+      || latest.itemId !== pending.itemId || latest.level !== pending.level) return false;
+  localStorage.removeItem(PREFIX + userId);
+  return true;
+}
+
 /** Enabled only when the authenticated server RPC has actually been installed. */
 export async function stage8ForgeAvailable():Promise<boolean>{
   const {data,error}=await supabase.rpc('territory_stage8_forge_ready_v1');
@@ -51,9 +76,15 @@ export async function attemptStage8Forge(
   if(!match || !integer(expectedLevel)||expectedLevel<1||expectedLevel>499)
     throw new Error('stage8_forge_invalid_item');
   await verifyAccount(userId);
-  const pending=readPending(userId);
-  if(pending && (pending.itemId!==itemId||pending.level!==expectedLevel))
+  let pending=readPending(userId);
+  if(pending && (pending.itemId!==itemId || pending.level!==expectedLevel)){
+    if(await recoverCompletedStage8Forge(userId)){
+      // Recovery itself is READ-ONLY; never quietly initiate another paid roll.
+      // A second explicit tap may initiate the next server-authoritative roll.
+      throw new Error('stage8_forge_previous_operation_recovered');
+    }
     throw new Error('stage8_forge_other_operation_pending');
+  }
   const operationId=pending?.operationId ?? crypto.randomUUID();
   if(!pending) localStorage.setItem(PREFIX+userId,
     JSON.stringify({itemId,level:expectedLevel,operationId} satisfies Pending));
@@ -68,7 +99,7 @@ export async function attemptStage8Forge(
       'stage8_forge_insufficient_resources','stage8_forge_level_conflict',
       'stage8_forge_item_not_owned','stage8_forge_reconcile_required',
       'stage8_forge_mirror_missing_or_duplicate','stage8_forge_quality_cap_conflict',
-      'stage8_forge_bad_registry','stage8_forge_invalid_gear',
+      'stage8_forge_bad_registry','stage8_forge_partial_registry','stage8_forge_invalid_gear',
       'stage8_forge_bad_request','stage8_forge_save_unavailable',
     ]);
     if(rejectedBeforeDebit.has(error.message))localStorage.removeItem(PREFIX+userId);
