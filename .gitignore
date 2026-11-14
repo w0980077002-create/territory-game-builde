@@ -30,3 +30,6 @@ antilevel-artifacts/
 
 # Standalone cave DEMO bundles and browser evidence (published as CI artifacts).
 artifacts/cave-expedition/
+
+# Reassembled byte-verified approved art (prebuild).
+public/assets/territory/ui/honors/mortarion-lord-approved.avif

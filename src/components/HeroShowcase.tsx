@@ -12,6 +12,7 @@ import { getFollowerArt } from '@/game/combatArt';
 import type { Equipment, GameState } from '@/game/types';
 import './profileHero.css';
 import { useSceneArt } from './ui/useSceneArt';
+import { MortarionLordFrame } from './MortarionLordFrame';
 
 const HERO_HARBOR_ART = ['assets/territory/scenes/winter-peaks-approved.webp'] as const;
 
@@ -150,16 +151,9 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
           <div className="hero-showcase__character-floor" aria-hidden="true" />
         </div>
         <div className="hero-showcase__gear-column">{slots.slice(3).map(renderSlot)}</div>
-        {frameArt && <img className="hero-showcase__mortarion-frame" src={import.meta.env.BASE_URL + frameArt}
+        {displayedHonor?.frame === 'mortarion_lord' ? <MortarionLordFrame /> : frameArt && <img key={frameArt} className="hero-showcase__mortarion-frame" src={import.meta.env.BASE_URL + frameArt}
           data-testid="mortarion-forged-frame" alt="" aria-hidden="true" draggable={false}
-          onError={(event) => {
-            // Compatibility with older Android WebViews that do not decode AVIF:
-            // keep the existing local forged art rather than a broken hero.
-            if (displayedHonor?.frame === 'mortarion_lord' && event.currentTarget.dataset.fallback !== 'true') {
-              event.currentTarget.dataset.fallback = 'true';
-              event.currentTarget.src = import.meta.env.BASE_URL + 'assets/territory/ui/honors/mortarion-lord-stage.svg';
-            }
-          }} />}
+          />}
         {!harborReady && <div className="hero-showcase__art-gate" role="status" aria-live="polite">
           <span className="hero-showcase__art-gate-sigil" aria-hidden="true">ᛟ</span>
           <strong>{harborStatus==='error'

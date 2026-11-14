@@ -1084,3 +1084,62 @@
 @media (prefers-reduced-motion:reduce) {
   .territory-profile .hero-showcase__hero-art {animation:none;}
 }
+
+/* Approved TOP-1 composition: no grid, hero, badge or slot geometry changes.
+   Gems and crest are uniformly scaled image crops; gem-free rails can flex. */
+.territory-profile .mortarion-crown {
+  position:absolute;inset:0;z-index:2;pointer-events:none;user-select:none;
+  --crown-width:calc(100% - 60px);container-type:inline-size;
+  opacity:0;
+}
+.territory-profile .mortarion-crown--ready {
+  opacity:1;animation:mortarionAwaken .85s ease-out both;
+}
+.mortarion-crown:not(.mortarion-crown--ready) > span {animation-play-state:paused;}
+.mortarion-crown > svg {position:absolute;display:block;filter:drop-shadow(0 1px 1px #170909aa);}
+.mortarion-crown__loader {position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+.mortarion-crown__crest {width:var(--crown-width);height:auto;aspect-ratio:512/116;top:0;left:30px;}
+.mortarion-crown__foot {width:100%;height:auto;aspect-ratio:512/112;bottom:26px;bottom:clamp(10px,calc(69px - 15cqw),28px);left:0;}
+.mortarion-crown__left-rail,.mortarion-crown__right-rail {width:10px;}
+.mortarion-crown__left-rail {left:0;}
+.mortarion-crown__right-rail {right:0;}
+.mortarion-crown .upper-rail {top:44px;height:calc(67% - 44px);}
+.mortarion-crown .lower-rail {top:calc(67% + 19px);bottom:63px;height:calc(33% - 82px);}
+.mortarion-crown__left-gem,.mortarion-crown__right-gem {width:16px;height:auto;aspect-ratio:52/62;top:67%;}
+.mortarion-crown__left-gem {left:0;}
+.mortarion-crown__right-gem {right:0;}
+.mortarion-crown__ruby,.mortarion-crown__awakening {
+  position:absolute;left:calc(50% - 10px);top:20px;top:calc((100cqw - 60px) * .125 - 10px);
+  width:20px;height:20px;border-radius:50%;
+  background:radial-gradient(ellipse,#ffe5fb70,#d05fff45 22%,#a43afc18 43%,transparent 70%);
+}
+.mortarion-crown__ruby {animation:mortarionRuby 7.9s ease-in-out infinite;}
+.mortarion-crown__awakening {animation:mortarionRubyAwaken .85s ease-out both;}
+.mortarion-crown__reflection {
+  position:absolute;left:23%;top:23px;width:22px;height:3px;border-radius:50%;
+  background:linear-gradient(90deg,transparent,#fff4cebd,transparent);opacity:0;
+  transform:rotate(-25deg);animation:mortarionGreeting .85s ease-out both,mortarionReflection 13.7s ease-in-out 4.1s infinite;
+}
+.mortarion-crown__spark {
+  position:absolute;width:3px;height:3px;border-radius:50%;opacity:0;
+  background:#e5b2ff;box-shadow:0 0 4px 1px #ac49e58c;
+}
+.mortarion-crown__spark--one {left:5px;top:69%;animation:mortarionSoul 17.3s ease-out 2.4s infinite;}
+.mortarion-crown__spark--two {right:6px;top:69%;animation:mortarionSoul 23.1s ease-out 7.8s infinite;}
+.mortarion-crown__spark--three {left:51%;bottom:33px;animation:mortarionSoul 19.7s ease-out 11.6s infinite;}
+@keyframes mortarionAwaken {from{opacity:0;transform:translateY(2px);}to{opacity:1;transform:none;}}
+@keyframes mortarionRubyAwaken {0%,100%{opacity:0;transform:scale(.7);}35%{opacity:.85;transform:scale(1.35);}}
+@keyframes mortarionRuby {0%,100%{opacity:.22;transform:scale(.96);}50%{opacity:.42;transform:scale(1.04);}}
+@keyframes mortarionGreeting {0%,40%,100%{opacity:0;transform:translateX(0) rotate(-25deg);}60%{opacity:.55;}90%{opacity:0;transform:translateX(26px) rotate(-25deg);}}
+@keyframes mortarionReflection {0%,6%,100%{opacity:0;transform:translateX(0) rotate(-25deg);}2%{opacity:.55;}5%{opacity:0;transform:translateX(26px) rotate(-25deg);}}
+@keyframes mortarionSoul {0%,7%,100%{opacity:0;transform:translate(0,0) scale(.6);}2%{opacity:.6;}6%{opacity:0;transform:translate(2px,-9px) scale(.2);}}
+@media(min-width:601px) {
+  .territory-profile .mortarion-crown {--crown-width:calc(100% - 100px);}
+  .mortarion-crown__crest {left:50px;}
+  .mortarion-crown__ruby,.mortarion-crown__awakening {top:30px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .territory-profile .mortarion-crown,.mortarion-crown > span {animation:none;}
+  .mortarion-crown__ruby {opacity:.25;}
+  .mortarion-crown__awakening,.mortarion-crown__reflection,.mortarion-crown__spark {display:none;}
+}
