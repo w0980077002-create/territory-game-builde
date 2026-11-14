@@ -765,13 +765,15 @@
 .territory-profile > :not([hidden]) ~ :not([hidden]) { margin-top: 9px; }
 .territory-profile .hero-showcase { gap: 7px; }
 .territory-profile .hero-showcase__hero-art {
-  width: 126%;
-  transform: translateY(0) scale(1.20);
+  /* Former width 126% * 1.20 overfilled the portrait and hid the scenery.
+     Keep the real full-body art, but give it about 19% more breathing room. */
+  width: 118%;
+  transform: translateY(3px) scale(1.03);
   transform-origin: center bottom;
 }
 @keyframes territoryHeroBreathe {
-  0%,100% { transform:translateY(0) scale(1.20); }
-  50% { transform:translateY(-3px) scale(1.20); }
+  0%,100% { transform:translateY(3px) scale(1.03); }
+  50% { transform:translateY(0) scale(1.03); }
 }
 .territory-profile .hero-showcase__journey { padding:8px; }
 .territory-profile .hero-showcase__records { margin-bottom:7px; gap:5px; }
@@ -781,7 +783,7 @@
 .territory-profile .hero-showcase__companion {padding:7px;gap:7px;}
 .territory-profile .hero-showcase__companion > button {min-height:42px;}
 @media(max-width:350px) {
-  .territory-profile .hero-showcase__hero-art {width:126%;}
+  .territory-profile .hero-showcase__hero-art {width:118%;}
 }
 
 
@@ -917,13 +919,13 @@
     overflow:visible;
   }
   .territory-profile .hero-showcase__hero-art {
-    width:129%;
+    width:116%;
     height:100%;
     max-height:315px;
     object-fit:contain;
     object-position:center bottom;
     animation:territoryHeroMobileBreathe 4s ease-in-out infinite;
-    transform:scale(1.16);
+    transform:translateY(3px) scale(1.04);
   }
   .territory-profile .hero-showcase__stage-level {
     min-width:76px;
@@ -969,11 +971,11 @@
 }
 @media (max-width: 350px) {
   .territory-profile .hero-showcase__stage {height:310px;grid-template-columns:45px minmax(0,1fr) 45px;}
-  .territory-profile .hero-showcase__hero-art {width:125%;}
+  .territory-profile .hero-showcase__hero-art {width:118%;}
 }
 @keyframes territoryHeroMobileBreathe {
-  0%,100% {transform:translateY(0) scale(1.16);}
-  50% {transform:translateY(-3px) scale(1.16);}
+  0%,100% {transform:translateY(3px) scale(1.04);}
+  50% {transform:translateY(0) scale(1.04);}
 }
 @media (prefers-reduced-motion:reduce) {
   .territory-profile .hero-showcase__hero-art {animation:none;}
@@ -1037,19 +1039,46 @@
   margin-top:2px;font-size:10px;font-weight:800;color:#f3d58e;
   text-shadow:0 1px 3px #251308;
 }
-.hero-showcase__character--mortarion_lord::after,
-.hero-showcase__character--mortarion_conqueror::after,
-.hero-showcase__character--mortarion_hunter::after{
-  content:"";position:absolute;inset:5% 5% 10%;pointer-events:none;z-index:4;
-  border:3px solid #a38559;border-radius:44% 44% 24% 24%;
-  box-shadow:inset 0 0 11px #c5a35e55,0 0 13px #6c359044;
+/* Mortarion award: *actual* crafted portal artwork. No rounded oval outlines.
+   One foreground overlay, never a clickable element or change to character state.
+   The frame occupies the open center column; the seven equipment buttons stay
+   on top (z-index:3), so even a narrow 320px Telegram WebView is usable. */
+.territory-profile .hero-showcase__mortarion-frame {
+  position:absolute;
+  left:50%;
+  top:-2px;
+  width:calc(100% + 22px);
+  height:calc(100% + 1px);
+  max-width:none;
+  transform:translateX(-50%);
+  object-fit:fill;
+  z-index:2;
+  display:block;
+  user-select:none;
+  pointer-events:none;
+  filter:drop-shadow(0 3px 4px #08050bbc);
 }
-.hero-showcase__character--mortarion_lord::after{
-  border-color:#ffe2a1;box-shadow:inset 0 0 13px #f9db96,0 0 17px #c578d4;
+.territory-profile .hero-showcase__character--mortarion_lord .hero-showcase__mortarion-frame {
+  filter:drop-shadow(0 4px 5px #060407e8) drop-shadow(0 0 6px #d49d4c75);
 }
-.hero-showcase__character--mortarion_conqueror::after{
-  border-color:#beaadf;box-shadow:inset 0 0 13px #c2a5dc7c,0 0 11px #8846ac;
+.territory-profile .hero-showcase__character--mortarion_conqueror .hero-showcase__mortarion-frame {
+  filter:drop-shadow(0 3px 4px #0b0611df) drop-shadow(0 0 4px #a46bc16d);
 }
-.hero-showcase__character--mortarion_hunter::after{
-  border-color:#9b819d;box-shadow:inset 0 0 11px #a979b477,0 0 9px #553770;
+.territory-profile .hero-showcase__character--mortarion_hunter .hero-showcase__mortarion-frame {
+  filter:drop-shadow(0 3px 4px #0b0611d0);
+}
+/* Suppress the previous giant elliptical yellow aura for each ranked portrait.
+   A quiet rectangular ambient wash keeps the winter scene and armor visible. */
+.territory-profile .hero-showcase__character--mortarion_lord::before,
+.territory-profile .hero-showcase__character--mortarion_conqueror::before,
+.territory-profile .hero-showcase__character--mortarion_hunter::before {
+  inset:11% 5% 7%;
+  border-radius:0;
+  background:linear-gradient(90deg,transparent 0%,#8b527d1c 50%,transparent 100%);
+}
+@media (max-width:350px) {
+  .territory-profile .hero-showcase__mortarion-frame {width:calc(100% + 15px);}
+}
+@media (prefers-reduced-motion:reduce) {
+  .territory-profile .hero-showcase__hero-art {animation:none;}
 }
