@@ -1,4 +1,6 @@
 // Render the actual profile using an in-memory game state and no network.
+// Populate the same approved static asset used by production Vite builds.
+import './build-mortarion-approved-frame.mjs';
 import {build} from 'esbuild';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {resolve} from 'node:path';
