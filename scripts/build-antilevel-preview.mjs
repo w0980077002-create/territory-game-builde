@@ -55,7 +55,7 @@ const result = await build({
   plugins: [{
     name: 'antilevel-stubs',
     setup(b) {
-      b.onResolve({filter: /^@\/game\/(supabase|cloud)$/}, (args) => ({path: args.path, namespace: 'stub'}));
+      b.onResolve({filter: /^(?:@\/game\/(supabase|cloud)|\.\/supabase)$/}, (args) => ({path: args.path === './supabase' ? '@/game/supabase' : args.path, namespace: 'stub'}));
       b.onLoad({filter: /.*/, namespace: 'stub'}, (args) => ({contents: stubs[args.path], loader: 'js'}));
     },
   }],
