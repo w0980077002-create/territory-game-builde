@@ -1039,45 +1039,43 @@
   margin-top:2px;font-size:10px;font-weight:800;color:#f3d58e;
   text-shadow:0 1px 3px #251308;
 }
-/* Mortarion award: *actual* crafted portal artwork. No rounded oval outlines.
-   One foreground overlay, never a clickable element or change to character state.
-   The frame occupies the open center column; the seven equipment buttons stay
-   on top (z-index:3), so even a narrow 320px Telegram WebView is usable. */
+/* Prestige must live at the edges of the full stage, not imprison the hero.
+   320–430px: all seven gear buttons and stage-level badge remain interactive.
+   No opacity overlay or broad central rim covers the figure, shield or boots. */
+.territory-profile .hero-showcase__stage { isolation:isolate; }
 .territory-profile .hero-showcase__mortarion-frame {
   position:absolute;
-  left:50%;
-  top:-2px;
-  width:calc(100% + 22px);
-  height:calc(100% + 1px);
+  inset:0;
+  width:100%;
+  height:100%;
   max-width:none;
-  transform:translateX(-50%);
+  display:block;
   object-fit:fill;
   z-index:2;
-  display:block;
   user-select:none;
   pointer-events:none;
-  filter:drop-shadow(0 3px 4px #08050bbc);
+  /* Subtle metal separation from snowy scenery, not a giant glow. */
+  filter:drop-shadow(0 2px 3px #080408a3);
 }
-.territory-profile .hero-showcase__character--mortarion_lord .hero-showcase__mortarion-frame {
-  filter:drop-shadow(0 4px 5px #060407e8) drop-shadow(0 0 6px #d49d4c75);
+.territory-profile .hero-showcase__stage--mortarion_lord .hero-showcase__mortarion-frame {
+  filter:drop-shadow(0 2px 3px #0c0705c4) drop-shadow(0 0 2px #ffce8460);
 }
-.territory-profile .hero-showcase__character--mortarion_conqueror .hero-showcase__mortarion-frame {
-  filter:drop-shadow(0 3px 4px #0b0611df) drop-shadow(0 0 4px #a46bc16d);
+.territory-profile .hero-showcase__stage--mortarion_conqueror .hero-showcase__mortarion-frame {
+  filter:drop-shadow(0 2px 3px #0b0a16bb) drop-shadow(0 0 2px #bd9de85a);
 }
-.territory-profile .hero-showcase__character--mortarion_hunter .hero-showcase__mortarion-frame {
-  filter:drop-shadow(0 3px 4px #0b0611d0);
+.territory-profile .hero-showcase__stage--mortarion_hunter .hero-showcase__mortarion-frame {
+  filter:drop-shadow(0 2px 3px #130b0abf);
 }
-/* Suppress the previous giant elliptical yellow aura for each ranked portrait.
-   A quiet rectangular ambient wash keeps the winter scene and armor visible. */
+/* VFX stay very quiet: honor metal and crest must read at a glance. */
 .territory-profile .hero-showcase__character--mortarion_lord::before,
 .territory-profile .hero-showcase__character--mortarion_conqueror::before,
 .territory-profile .hero-showcase__character--mortarion_hunter::before {
-  inset:11% 5% 7%;
+  inset:12% 5% 8%;
   border-radius:0;
-  background:linear-gradient(90deg,transparent 0%,#8b527d1c 50%,transparent 100%);
+  background:linear-gradient(90deg,transparent 0%,#8b527d0f 50%,transparent 100%);
 }
 @media (max-width:350px) {
-  .territory-profile .hero-showcase__mortarion-frame {width:calc(100% + 15px);}
+  .territory-profile .hero-showcase__mortarion-frame {width:100%;}
 }
 @media (prefers-reduced-motion:reduce) {
   .territory-profile .hero-showcase__hero-art {animation:none;}
