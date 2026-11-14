@@ -30,6 +30,19 @@ assert.match(raid,/getMortarionRewardStatus/);
 assert.match(raid,/MortarionRewardPanel/);
 assert.match(ui,/data-testid="mortarion-rewards"/);
 assert.match(ui,/data-testid="mortarion-claim-reward"/);
+// The lifetime strike count is still tracked server-side for eligibility,
+// but not advertised in either reward panel (avoids misleading partial counts).
+const chestTeaser = raid.match(/data-testid="mortarion-reward-teaser"[\s\S]*?<\/p>/)?.[0];
+assert.ok(chestTeaser, 'Raid must keep the personal chest preview');
+assert.match(chestTeaser, /rewardStatus\.activeDays/, 'Chest still shows participation days');
+assert.doesNotMatch(chestTeaser, /rewardStatus\.totalHits/, 'Chest must hide total strike count');
+const participation = ui.match(/data-testid="mortarion-participation"[\s\S]*?<\/p>/)?.[0];
+assert.ok(participation, 'Reward panel must keep participation progress');
+assert.match(participation, /status\.activeDays/, 'Reward panel still shows participation days');
+assert.doesNotMatch(participation, /status\.totalHits/, 'Reward panel must hide total strike count');
+assert.match(raid, /hitsLeft/, 'Current hourly strike allowance remains available in combat');
+assert.match(claimSql, /v_part\.total_hits>=15/, 'Server-side rewards still use legitimate strike totals');
+
 assert.match(ui,/data-testid="mortarion-reward-medal"/,'claim receipt must show earned medal');
 assert.match(api,/protectFortuneSave/);
 assert.match(api,/acceptMonopolyClaimReceipt/);
