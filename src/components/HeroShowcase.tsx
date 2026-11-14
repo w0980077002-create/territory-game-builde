@@ -18,9 +18,9 @@ const HERO_HARBOR_ART = ['assets/territory/scenes/winter-peaks-approved.webp'] a
 /** Handmade inset metalwork for the three *already existing* Mortarion honors.
  * This is decorative presentation only: actual award authority stays on server. */
 const MORTARION_FRAME_ART: Record<string,string> = {
-  mortarion_lord: 'assets/territory/ui/honors/mortarion-lord-forge.svg',
-  mortarion_conqueror: 'assets/territory/ui/honors/mortarion-conqueror-forge.svg',
-  mortarion_hunter: 'assets/territory/ui/honors/mortarion-hunter-forge.svg',
+  mortarion_lord: 'assets/territory/ui/honors/mortarion-lord-stage.svg',
+  mortarion_conqueror: 'assets/territory/ui/honors/mortarion-conqueror-stage.svg',
+  mortarion_hunter: 'assets/territory/ui/honors/mortarion-hunter-stage.svg',
 };
 
 // Mirrors the LIVE Mortarion reward tier honors. QA selector is visual only:
@@ -136,7 +136,8 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
         </div>
       </div>}
 
-      <div className={'hero-showcase__stage ' + (!harborReady ? 'hero-showcase__stage--art-pending' : '')}
+      <div className={'hero-showcase__stage ' + (!harborReady ? 'hero-showcase__stage--art-pending' : '')
+        + (frameArt ? ' hero-showcase__stage--' + displayedHonor?.frame : '')}
         aria-busy={harborStatus==='loading'}
         style={{ backgroundImage: harborReady
           ? `linear-gradient(180deg, #173c5120, #4c321d40), url("${import.meta.env.BASE_URL}assets/territory/scenes/winter-peaks-approved.webp")`
@@ -146,11 +147,11 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
           (displayedHonor?.frame ? ' hero-showcase__character--' + displayedHonor.frame : '')}>
           <img className="hero-showcase__hero-art" src={getAppearanceIcon(state.appearance)}
             alt={text('Герой в полный рост', 'Full-body hero')} draggable={false} />
-          {frameArt && <img className="hero-showcase__mortarion-frame" src={import.meta.env.BASE_URL + frameArt}
-            data-testid="mortarion-forged-frame" alt="" aria-hidden="true" draggable={false} />}
           <div className="hero-showcase__character-floor" aria-hidden="true" />
         </div>
         <div className="hero-showcase__gear-column">{slots.slice(3).map(renderSlot)}</div>
+        {frameArt && <img className="hero-showcase__mortarion-frame" src={import.meta.env.BASE_URL + frameArt}
+          data-testid="mortarion-forged-frame" alt="" aria-hidden="true" draggable={false} />}
         {!harborReady && <div className="hero-showcase__art-gate" role="status" aria-live="polite">
           <span className="hero-showcase__art-gate-sigil" aria-hidden="true">ᛟ</span>
           <strong>{harborStatus==='error'
