@@ -1,0 +1,154 @@
+{
+  "environment": {
+    "viewportWidths": [
+      360,
+      390
+    ],
+    "languages": [
+      "ru",
+      "en"
+    ],
+    "cpuSlowdown": 4,
+    "chunkLatencyMs": 700,
+    "deviceMemoryGB": 4,
+    "hardwareConcurrency": 4,
+    "backend": "offline boot profile; all non-fixture network blocked",
+    "timing": "click through render plus 120 ms observation; excludes initial boot and server data"
+  },
+  "before": [
+    {
+      "width": 360,
+      "language": "ru",
+      "tab": 5,
+      "elapsedMs": 1075,
+      "chunkRequests": 7,
+      "fallbackShown": true
+    },
+    {
+      "width": 360,
+      "language": "ru",
+      "tab": 1,
+      "elapsedMs": 1044,
+      "chunkRequests": 15,
+      "fallbackShown": true
+    },
+    {
+      "width": 360,
+      "language": "ru",
+      "tab": 2,
+      "elapsedMs": 1094,
+      "chunkRequests": 11,
+      "fallbackShown": true
+    },
+    {
+      "width": 360,
+      "language": "ru",
+      "tab": 6,
+      "elapsedMs": 999,
+      "chunkRequests": 4,
+      "fallbackShown": true
+    },
+    {
+      "width": 390,
+      "language": "en",
+      "tab": 5,
+      "elapsedMs": 1077,
+      "chunkRequests": 7,
+      "fallbackShown": true
+    },
+    {
+      "width": 390,
+      "language": "en",
+      "tab": 1,
+      "elapsedMs": 1147,
+      "chunkRequests": 15,
+      "fallbackShown": true
+    },
+    {
+      "width": 390,
+      "language": "en",
+      "tab": 2,
+      "elapsedMs": 1050,
+      "chunkRequests": 11,
+      "fallbackShown": true
+    },
+    {
+      "width": 390,
+      "language": "en",
+      "tab": 6,
+      "elapsedMs": 1077,
+      "chunkRequests": 4,
+      "fallbackShown": true
+    }
+  ],
+  "after": [
+    {
+      "width": 360,
+      "language": "ru",
+      "tab": 5,
+      "elapsedMs": 455,
+      "chunkRequests": 0,
+      "fallbackShown": false
+    },
+    {
+      "width": 360,
+      "language": "ru",
+      "tab": 1,
+      "elapsedMs": 333,
+      "chunkRequests": 0,
+      "fallbackShown": false
+    },
+    {
+      "width": 360,
+      "language": "ru",
+      "tab": 2,
+      "elapsedMs": 412,
+      "chunkRequests": 0,
+      "fallbackShown": false
+    },
+    {
+      "width": 360,
+      "language": "ru",
+      "tab": 6,
+      "elapsedMs": 323,
+      "chunkRequests": 0,
+      "fallbackShown": false
+    },
+    {
+      "width": 390,
+      "language": "en",
+      "tab": 5,
+      "elapsedMs": 309,
+      "chunkRequests": 0,
+      "fallbackShown": false
+    },
+    {
+      "width": 390,
+      "language": "en",
+      "tab": 1,
+      "elapsedMs": 386,
+      "chunkRequests": 0,
+      "fallbackShown": false
+    },
+    {
+      "width": 390,
+      "language": "en",
+      "tab": 2,
+      "elapsedMs": 383,
+      "chunkRequests": 0,
+      "fallbackShown": false
+    },
+    {
+      "width": 390,
+      "language": "en",
+      "tab": 6,
+      "elapsedMs": 298,
+      "chunkRequests": 0,
+      "fallbackShown": false
+    }
+  ],
+  "fixtureStartupGzipBytes": {
+    "before": 216711,
+    "after": 285678
+  }
+}
