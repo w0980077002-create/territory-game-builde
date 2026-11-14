@@ -11,7 +11,7 @@
  *  - small cells   -> recessed dark timber, no frame (no frame on every row);
  *  - main actions  -> the chunky gold button already used by "К боссу".
  */
-.territory-shell .viking-screen:is(.viking-screen--auction,.viking-screen--clan,.viking-screen--profession-stage8) {
+.territory-shell .viking-screen:is(.viking-screen--auction,.viking-screen--clan,.viking-screen--professions,.viking-screen--profession-stage8) {
   --oak-screen-planks: url('/assets/territory/ui/approved/territory-dark-oak-mobile.webp');
   --oak-screen-frame: url('/assets/territory/ui/shop/shop-approved-product-border-v2.webp');
 }
@@ -99,21 +99,52 @@
   box-shadow: inset 0 1px #ffd99a5c, 0 2px 3px #12070399;
 }
 
-/* Tabs and filter chips: Shop-style iron when idle, gold when chosen. */
-.territory-shell .viking-screen--auction button[class*="rounded-xl"][class*="py-3"]:not([class*="bg-amber-500/20"]),
-.territory-shell .viking-screen--profession-stage8 button[aria-pressed="false"] {
-  border: 2px ridge #b2b2b7;
-  background: linear-gradient(180deg,#a4a8a8,#41434a 17%,#191b22 75%,#62646e);
-  color: #fff1d6;
-  box-shadow: inset 0 2px #ffffff8c, inset 0 -3px #0c0c15, 0 2px 3px #0c0606b3;
+/* Mail is the approved tab reference: carved dark oak when idle, warm gold
+ * when selected. Style only actual tabs/filters, never gameplay, rarity,
+ * disabled states or the coloured quest/confirmation actions. */
+.territory-shell :is(
+  .viking-screen--auction button[role="tab"],
+  .viking-screen--professions button[role="tab"],
+  .viking-screen--profession-stage8 button[aria-pressed]
+) {
+  min-width: 0;
+  min-height: 44px;
+  border: 2px solid #9d7449;
+  border-radius: 10px;
+  background-color: #28130c;
+  background-image:
+    linear-gradient(180deg, #4a281bb8 0%, #211008d9 100%),
+    var(--oak-screen-planks);
+  background-size: 100% 100%, cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: #ffe6bd;
+  font-weight: 900;
+  line-height: 1.2;
+  text-shadow: 0 1px 1px #150905;
+  box-shadow: inset 0 1px 0 #f7d29b55, inset 0 -3px 0 #100805aa,
+    0 2px 4px #110604a6;
 }
-.territory-shell .viking-screen--auction button[class*="rounded-xl"][class*="py-3"][class*="bg-amber-500/20"],
-.territory-shell .viking-screen--profession-stage8 button[aria-pressed="true"] {
-  border: 2px solid #ffe3a0;
-  background: linear-gradient(180deg,#fff1b0,#e49a36 20%,#b26211 75%,#e4ad4f);
-  color: #3a1c06;
-  text-shadow: 0 1px #ffe9a8;
-  box-shadow: inset 0 2px #fff6c9, inset 0 -3px #5b2c09, 0 0 7px #ffbd48ae;
+.territory-shell :is(
+  .viking-screen--auction button[role="tab"][aria-selected="true"],
+  .viking-screen--professions button[role="tab"][aria-selected="true"],
+  .viking-screen--profession-stage8 button[aria-pressed="true"]
+) {
+  border-color: #ffe5ad;
+  background-color: #c6872c;
+  background-image: linear-gradient(180deg, #ffefad 0%, #eab85d 22%, #ad661d 100%);
+  color: #351b09;
+  text-shadow: 0 1px 0 #ffe8b0;
+  box-shadow: inset 0 2px 0 #fff3c8, inset 0 -3px 0 #784412,
+    0 0 8px #ffc76380, 0 2px 4px #1a0b06a6;
+}
+.territory-shell :is(
+  .viking-screen--auction button[role="tab"],
+  .viking-screen--professions button[role="tab"],
+  .viking-screen--profession-stage8 button[aria-pressed]
+):focus-visible {
+  outline: 3px solid #ffe9b2;
+  outline-offset: 2px;
 }
 
 /* Cool grey helper text was unreadable on timber; use warm parchment. */
