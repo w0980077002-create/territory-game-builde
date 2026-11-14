@@ -1,0 +1,30 @@
+[
+  {
+    "width": 320,
+    "all_seven_slots": true,
+    "state_unchanged": true,
+    "geometry_unchanged": true,
+    "overflow": false
+  },
+  {
+    "width": 360,
+    "all_seven_slots": true,
+    "state_unchanged": true,
+    "geometry_unchanged": true,
+    "overflow": false
+  },
+  {
+    "width": 390,
+    "all_seven_slots": true,
+    "state_unchanged": true,
+    "geometry_unchanged": true,
+    "overflow": false
+  },
+  {
+    "width": 430,
+    "all_seven_slots": true,
+    "state_unchanged": true,
+    "geometry_unchanged": true,
+    "overflow": false
+  }
+]
