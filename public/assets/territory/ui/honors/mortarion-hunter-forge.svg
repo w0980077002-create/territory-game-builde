@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="720" viewBox="0 0 520 720" fill="none" role="img" aria-label="Mortarion rank award decorative forged metal portrait frame">
+<defs>
+  <linearGradient id="metal" x1="0" x2="1" y1=".3" y2=".7">
+    <stop stop-color="#1c151d"/><stop offset=".14" stop-color="#382a2a"/>
+    <stop offset=".31" stop-color="#9a7a77"/><stop offset=".43" stop-color="#ddc0a9"/>
+    <stop offset=".55" stop-color="#9a7a77"/><stop offset=".76" stop-color="#382a2a"/>
+    <stop offset="1" stop-color="#1c151d"/>
+  </linearGradient>
+  <linearGradient id="plate" x1="0" y1="0" x2=".8" y2="1">
+    <stop stop-color="#ddc0a9"/><stop offset=".17" stop-color="#9a7a77"/>
+    <stop offset=".48" stop-color="#382a2a"/><stop offset=".73" stop-color="#1c151d"/>
+    <stop offset=".9" stop-color="#9a7a77"/><stop offset="1" stop-color="#ddc0a9"/>
+  </linearGradient>
+  <linearGradient id="jewel" x1="0" y1="0" x2="1" y2="1">
+    <stop stop-color="#ddc0a9"/><stop offset=".23" stop-color="#784166"/>
+    <stop offset=".67" stop-color="#1c151d"/><stop offset="1" stop-color="#784166"/>
+  </linearGradient>
+  <linearGradient id="fire" x1="0" y1="1" x2="0" y2="0">
+    <stop stop-color="#e83c16"/><stop offset=".35" stop-color="#ff8e27"/>
+    <stop offset=".7" stop-color="#ffe0a0"/><stop offset="1" stop-color="#ffe9b6" stop-opacity="0"/>
+  </linearGradient>
+  <filter id="shadow" x="-25%" y="-15%" width="150%" height="140%">
+    <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#10070b" flood-opacity=".78"/>
+  </filter>
+</defs>
+<!-- Only an open metal portal, not a filled background or oval halo. -->
+<g filter="url(#shadow)" stroke-linejoin="round">
+  <!-- Structural dark-iron uprights. Wide margins leave the hero readable. -->
+  <path d="M57 116 80 116 76 613 61 655 34 624 38 133Z" fill="url(#plate)" stroke="#1c151d" stroke-width="9"/>
+  <path d="M463 116 440 116 444 613 459 655 486 624 482 133Z" fill="url(#plate)" stroke="#1c151d" stroke-width="9"/>
+  <path d="M54 156 64 156 61 599 50 611Z" fill="#ddc0a9" opacity=".8"/>
+  <path d="M466 156 456 156 459 599 470 611Z" fill="#ddc0a9" opacity=".8"/>
+  <path d="M38 129Q89 102 154 103H366Q431 102 482 129L474 158Q422 134 363 137H157Q98 134 46 158Z"
+    fill="url(#metal)" stroke="#1c151d" stroke-width="10"/>
+  <path d="M82 129Q147 108 260 117Q373 108 438 129" stroke="#ddc0a9" stroke-width="5" opacity=".85"/>
+  <!-- Forged miters keep the image rectangular/gothic, not a curved gold bubble. -->
+  <path d="m51 99 40 31-27 48-45-23 13-43Z" fill="url(#metal)" stroke="#1c151d" stroke-width="6"/>
+  <path d="m469 99-40 31 27 48 45-23-13-43Z" fill="url(#metal)" stroke="#1c151d" stroke-width="6"/>
+  <path d="m28 626 37-48 33 37 31 9-26 31H54Z" fill="url(#metal)" stroke="#1c151d" stroke-width="8"/>
+  <path d="m492 626-37-48-33 37-31 9 26 31h49Z" fill="url(#metal)" stroke="#1c151d" stroke-width="8"/>
+  <path d="M109 628Q260 649 411 628L420 664Q260 691 100 664Z"
+    fill="url(#metal)" stroke="#1c151d" stroke-width="7"/>
+  <path d="M112 638Q260 660 408 638" stroke="#ddc0a9" stroke-width="3" opacity=".9"/>
+  <!-- Four angular armored raven/dragon heads, articulated as welded parts. -->
+  <g id="wyrm">
+    <path d="M69 91 24 85 43 63 27 44 67 53 91 75 113 80 102 98 119 107 88 114 64 108Z"
+      fill="url(#plate)" stroke="#1c151d" stroke-width="5"/>
+    <path d="m38 70 30 6 22 14-20-2-21 3 6-11Z" fill="#ddc0a9" opacity=".82"/>
+    <path d="m64 103 29-6 19 8-26 5-14 11Z" fill="#382a2a" stroke="#1c151d" stroke-width="3"/>
+    <path d="m33 55-14-25 32 17M66 55l12-23 7 30" stroke="#9a7a77" stroke-width="7" stroke-linecap="round"/>
+    <path d="m80 76 8 6-9 4-7-4Z" fill="#784166" stroke="#ddc0a9" stroke-width="2"/>
+  </g>
+  <use href="#wyrm" transform="translate(520,0) scale(-1,1)"/>
+  <!-- Engraved plate facets, not flat mirrored bands. -->
+  <path d="M38 184 73 195 65 244 41 239Z M38 377 70 386 64 436 42 443Z"
+    fill="url(#metal)" stroke="#1c151d" stroke-width="5"/>
+  <path d="M482 184 447 195 455 244 479 239Z M482 377 450 386 456 436 478 443Z"
+    fill="url(#metal)" stroke="#1c151d" stroke-width="5"/>
+  <g fill="url(#jewel)" stroke="#ddc0a9" stroke-width="3">
+    <path d="m54 183 13 15-13 17-13-17Z"/><path d="m466 183-13 15 13 17 13-17Z"/>
+    <path d="m54 408 11 15-11 16-11-16Z"/><path d="m466 408-11 15 11 16 11-16Z"/>
+    <path d="m260 127 16 12-16 17-16-17Z"/>
+  </g>
+  <g fill="#ddc0a9" stroke="#1c151d" stroke-width="2.4">
+    <circle cx="56" cy="165" r="5"/><circle cx="464" cy="165" r="5"/>
+    <circle cx="52" cy="316" r="5"/><circle cx="468" cy="316" r="5"/>
+    <circle cx="51" cy="566" r="5"/><circle cx="469" cy="566" r="5"/>
+    <circle cx="92" cy="634" r="5"/><circle cx="428" cy="634" r="5"/>
+  </g>
+  <!-- Small runic shield at foot rather than large obstructive badge. -->
+  <path d="M235 638 260 617 285 638 279 666 260 678 241 666Z"
+    fill="url(#plate)" stroke="#1c151d" stroke-width="4"/>
+  <path d="M247 647 259 637 272 647 268 661 260 666 252 661Z"
+    fill="url(#jewel)" stroke="#ddc0a9" stroke-width="2"/>
+</g>
+<g filter="url(#shadow)">
+  <path d="M219 43H301L297 85 260 108 223 85Z" fill="url(#metal)" stroke="#1c151d" stroke-width="5"/>
+  <path d="M234 58H286L282 81 260 95 238 81Z" fill="url(#plate)" stroke="#ddc0a9" stroke-width="3"/>
+  <path d="m260 60 11 14-11 12-11-12Z" fill="url(#jewel)" stroke="#ddc0a9" stroke-width="3"/>
+</g>
+
+
+</svg>

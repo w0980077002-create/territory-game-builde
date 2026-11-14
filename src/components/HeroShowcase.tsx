@@ -15,6 +15,14 @@ import { useSceneArt } from './ui/useSceneArt';
 
 const HERO_HARBOR_ART = ['assets/territory/scenes/winter-peaks-approved.webp'] as const;
 
+/** Handmade inset metalwork for the three *already existing* Mortarion honors.
+ * This is decorative presentation only: actual award authority stays on server. */
+const MORTARION_FRAME_ART: Record<string,string> = {
+  mortarion_lord: 'assets/territory/ui/honors/mortarion-lord-forge.svg',
+  mortarion_conqueror: 'assets/territory/ui/honors/mortarion-conqueror-forge.svg',
+  mortarion_hunter: 'assets/territory/ui/honors/mortarion-hunter-forge.svg',
+};
+
 // Mirrors the LIVE Mortarion reward tier honors. QA selector is visual only:
 // it does not change saved title, rank, reward receipt, or player statistics.
 const MORTARION_TEST_HONORS = {
@@ -47,6 +55,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
   const previewHonor = canPreviewMortarion && mortarionPreviewRank !== 'none'
     ? MORTARION_TEST_HONORS[mortarionPreviewRank] : null;
   const displayedHonor = previewHonor ?? state.mortarionHonor;
+  const frameArt = displayedHonor?.frame ? MORTARION_FRAME_ART[displayedHonor.frame] : undefined;
 
   const { status: harborStatus, retry: retryHarbor } = useSceneArt(HERO_HARBOR_ART);
   const harborReady = harborStatus === 'ready';
@@ -137,6 +146,8 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
           (displayedHonor?.frame ? ' hero-showcase__character--' + displayedHonor.frame : '')}>
           <img className="hero-showcase__hero-art" src={getAppearanceIcon(state.appearance)}
             alt={text('Герой в полный рост', 'Full-body hero')} draggable={false} />
+          {frameArt && <img className="hero-showcase__mortarion-frame" src={import.meta.env.BASE_URL + frameArt}
+            data-testid="mortarion-forged-frame" alt="" aria-hidden="true" draggable={false} />}
           <div className="hero-showcase__character-floor" aria-hidden="true" />
         </div>
         <div className="hero-showcase__gear-column">{slots.slice(3).map(renderSlot)}</div>
