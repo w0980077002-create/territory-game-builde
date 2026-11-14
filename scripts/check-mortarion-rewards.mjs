@@ -124,7 +124,7 @@ assert.equal(h.game_state.mortarionHonor.title,'Покоритель тьмы');
 
 const count=(await query('SELECT count(*)::integer AS c FROM territory_private.mortarion_reward_receipts_v1'))[0].c;
 assert.equal(count,2,'two receipts exactly for two real participant identities');
-await query("INSERT INTO public.territory_mortarion_2026_players(event_id,player_id,total_damage,total_hits,hit_days) VALUES('mortarion_2026',$1,0,0,ARRAY[]::integer[])",[newcomer]);
+await query("INSERT INTO public.territory_mortarion_2026_players(event_id,player_id,total_damage,total_hits,hit_days) VALUES('mortarion_2026',$1,10000,0,ARRAY[]::integer[])",[newcomer]);
 await query("UPDATE public.territory_mortarion_2026_players SET total_hits=1,last_hit_at=(SELECT starts_at+interval '2 days' FROM public.territory_mortarion_2026 WHERE id='mortarion_2026') WHERE player_id=$1",[newcomer]);
 const tracked=(await query('SELECT hit_days FROM public.territory_mortarion_2026_players WHERE player_id=$1',[newcomer]))[0].hit_days;
 assert.deepEqual(tracked,[3],'human and tester hits use identical 24h day-credit trigger');
@@ -134,9 +134,10 @@ assert.deepEqual(tracked,[3],'human and tester hits use identical 24h day-credit
 await query("UPDATE public.players SET game_state=game_state - 'forgeMaterials',forge_materials=0 WHERE id=$1",[newcomer]);
 const n=(await query('SELECT public.territory_mortarion_reward_claim_v1((SELECT updated_at FROM public.players WHERE id=$1)) AS r',[newcomer]))[0].r;
 assert.equal(n.success,true,'missing legacy field cannot block a participant');
-assert.equal(n.receipt.tier,'participant');
-assert.equal(n.game_state.forgeMaterials,2,'server forge wallet restored and credited');
-assert.equal(n.game_state.player.gold,1100,'old gold is preserved plus claim');
+assert.equal(n.receipt.place,3,'a valid TOP-3 hit receives its rank bonus');
+assert.equal(n.receipt.tier,'hunter','TOP-3 gets an upgraded chest');
+assert.equal(n.game_state.forgeMaterials,9,'canonical forge wallet is restored and the TOP-3 reward is credited');
+assert.equal(n.game_state.player.gold,1500,'old gold is preserved plus the TOP-3 claim');
 assert.equal(n.game_state.player.redGems,0,'premium gems remain untouched');
 await db.close();
 console.log('MORTARION REWARDS PASS: tier progression, TOP1/TOP2 preview, legacy wallet compatibility, medal UI, no duplicates, and day trigger');
