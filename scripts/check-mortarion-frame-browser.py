@@ -66,6 +66,18 @@ try:
             owner.locator('[data-testid="mortarion-owner-preview-none"]').click()
             assert page.locator('[data-testid="mortarion-forged-frame"]').count()==0,(width,'Ordinary portrait must remain unaffected')
             page.close()
+        # Force AVIF failure in a simulated old WebView, ensuring
+        # the previously shipped SVG loads rather than a blank frame.
+        legacy=browser.new_page(viewport={'width':360,'height':760},reduced_motion='reduce')
+        legacy.route('**/mortarion-lord-approved.avif',lambda request:request.abort())
+        legacy.goto(f'http://127.0.0.1:{httpd.server_port}/territory-profile-preview.html?mortarion-preview')
+        legacy.locator('[data-testid="mortarion-owner-preview-top1"]').click()
+        legacy.wait_for_function("""() => document.querySelector('[data-testid="mortarion-forged-frame"]')
+          ?.getAttribute('src')?.endsWith('mortarion-lord-stage.svg')""")
+        legacy_frame=legacy.locator('[data-testid="mortarion-forged-frame"]')
+        assert legacy_frame.evaluate('(e) => e.complete && e.naturalWidth === 680'), 'Legacy fallback failed to load'
+        assert legacy.locator('.hero-showcase__slot').count()==7
+        legacy.close()
         browser.close()
 finally:
     httpd.shutdown()
