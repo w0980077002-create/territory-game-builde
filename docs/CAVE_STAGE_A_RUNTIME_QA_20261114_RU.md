@@ -26,6 +26,8 @@ python scripts/check-cave-runtime-browser.py
 
 Для снимка «до»: `node scripts/serve-cave-runtime-preview.mjs --before` загружает исходный `ServerAdventureScreen` из `ad487ce`, сохраняя те же тестовые данные и оболочку. Не запускать оба процесса на одном порту. Сгенерированный HTML в `artifacts/cave-runtime/` не коммитится.
 
+В локальной базе подготовлены только первые два синтетических encounter. Каталог интерфейса остаётся на 100 этажей, но этот harness не является отдельным выпуском всех 100 серверных этажей.
+
 ## Проверки
 
 PASS:
