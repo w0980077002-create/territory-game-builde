@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="660" viewBox="0 0 680 660" fill="none" aria-label="Decorative Mortarion rank corner honors">
+<defs>
+<linearGradient id="armor" x1="0" y1="0" x2="1" y2=".8">
+ <stop stop-color="#130d10"/><stop offset=".18" stop-color="#32201a"/><stop offset=".38" stop-color="#8d461d"/><stop offset=".47" stop-color="#ffe1a0"/>
+ <stop offset=".59" stop-color="#b67831"/><stop offset=".73" stop-color="#32201a"/><stop offset=".91" stop-color="#8d461d"/><stop offset="1" stop-color="#130d10"/>
+</linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2=".7" y2="1">
+ <stop stop-color="#fff1c8"/><stop offset=".13" stop-color="#ffe1a0"/><stop offset=".31" stop-color="#b67831"/><stop offset=".61" stop-color="#8d461d"/><stop offset=".88" stop-color="#32201a"/><stop offset="1" stop-color="#ffe1a0"/>
+</linearGradient>
+<linearGradient id="stone" x1="0" y1="0" x2="1" y2="1">
+ <stop stop-color="#fff1c8"/><stop offset=".13" stop-color="#a91433"/><stop offset=".46" stop-color="#32201a"/><stop offset=".75" stop-color="#a91433"/><stop offset="1" stop-color="#130d10"/>
+</linearGradient>
+<filter id="shadow" x="-30%" y="-35%" width="160%" height="180%">
+ <feDropShadow dx="0" dy="3" stdDeviation="2" flood-color="#130d10" flood-opacity=".75"/>
+</filter>
+</defs>
+<!-- Prestige belongs to the *outer stage*, not a cage around the hero.
+     Transparent center x=140..540 y=105..600, and unobstructed feet. -->
+
+<g filter="url(#shadow)">
+  <!-- Sparse upper banners, with most of the stage deliberately open. -->
+  <path d="M133 71 259 68 268 79 142 83Z" fill="url(#armor)" stroke="#32201a" stroke-width="3"/>
+  <path d="M547 71 421 68 412 79 538 83Z" fill="url(#armor)" stroke="#32201a" stroke-width="3"/>
+  <path d="M140 73 260 71 M540 73 420 71" stroke="#fff1c8" stroke-width="2" opacity=".7"/>
+  <path d="m168 71 8 8-8 7-8-7Z M512 71l8 8-8 7-8-7Z" fill="url(#stone)" stroke="#ffe1a0" stroke-width="2"/>
+  <path d="m225 73 6 8-6 6-6-6Z M455 73l6 8-6 6-6-6Z" fill="#ffe1a0"/>
+</g>
+
+
+<g id="leftCorner" filter="url(#shadow)">
+  <!-- Interleaved forged feather plates: a dimensional engraved beast-head. -->
+  <path d="M13 75 80 80 119 47 110 93 137 100 95 119 88 149 54 121 19 134Z" fill="url(#armor)" stroke="#32201a" stroke-width="4"/>
+  <path d="M20 75 93 74 125 61 104 94 57 101 17 96Z" fill="url(#gold)" stroke="#ffe1a0" stroke-width="2.5"/>
+  <path d="M14 80 33 72 58 54 56 83M48 84 68 59 75 88M80 87 100 70 94 97" fill="none" stroke="#fff1c8" stroke-width="2.3" opacity=".9"/>
+  <path d="M53 111 88 98 112 102 89 118 77 131Z" fill="url(#armor)" stroke="#32201a" stroke-width="3"/>
+  <path d="M91 106 101 103 96 111 85 114Z" fill="#a91433" stroke="#ffe1a0" stroke-width="1.7"/>
+  <path d="M40 117 54 131 37 141 23 128Z" fill="url(#gold)" stroke="#32201a" stroke-width="3"/>
+  <circle cx="39" cy="120" r="3" fill="#fff1c8"/>
+  <!-- Side column remains outside the interactive gear, not a central cage. -->
+  <path d="M21 148 33 150 31 514 22 521Z" fill="url(#armor)" stroke="#32201a" stroke-width="3"/>
+  <path d="M26 150 26 500" stroke="#ffe1a0" stroke-width="1.8" opacity=".65"/>
+  <path d="M12 167 42 169 39 187 16 184Z" fill="url(#gold)" stroke="#32201a" stroke-width="3"/>
+  <path d="M13 388 42 388 40 410 16 410Z" fill="url(#gold)" stroke="#32201a" stroke-width="3"/>
+  <path d="M18 532 54 503 85 530 57 566 28 561Z" fill="url(#armor)" stroke="#32201a" stroke-width="3.5"/>
+  <path d="M28 538 52 518 70 533 55 554 35 552Z" fill="url(#gold)" stroke="#ffe1a0" stroke-width="2"/>
+  <path d="m51 523 11 13-11 15-12-15Z" fill="url(#stone)" stroke="#fff1c8" stroke-width="2"/>
+  <path d="M16 572 55 564 80 584 114 590 105 610 56 604 22 611Z" fill="url(#gold)" stroke="#32201a" stroke-width="4"/>
+  <path d="M24 586 55 579 88 597" fill="none" stroke="#fff1c8" stroke-width="2.5" opacity=".9"/>
+  <g fill="#fff1c8" stroke="#8d461d" stroke-width="1.5"><circle cx="26" cy="171" r="3"/><circle cx="26" cy="394" r="3"/><circle cx="37" cy="594" r="3"/></g>
+  <!-- Inlaid runes mark rank without covering the hero. -->
+  <path d="M29 220 45 226 28 239 43 251M31 289 43 296 31 307 43 317M28 338 42 348 30 360" stroke="#ffe1a0" stroke-width="2" fill="none" opacity=".75"/>
+</g>
+
+<use href="#leftCorner" transform="translate(680 0) scale(-1 1)"/>
+
+<!-- Hand-cast upper crown: five distinct raised points, faceted rubies. -->
+<g filter="url(#shadow)">
+<path d="M284 63 273 25 295 43 309 12 329 39 340 8 354 39 373 13 385 43 408 25 397 63 384 75 297 75Z" fill="url(#armor)" stroke="#32201a" stroke-width="4"/>
+<path d="M290 61 398 61 389 78 299 78Z" fill="url(#gold)" stroke="#130d10" stroke-width="4"/>
+<path d="M302 59 306 43 319 59M365 59l10-15 5 15" stroke="#fff1c8" stroke-width="2.5" opacity=".9"/>
+<path d="m340 35 17 19-17 18-17-18Z" fill="url(#stone)" stroke="#fff1c8" stroke-width="2.6"/>
+<circle cx="300" cy="66" r="5" fill="#a91433" stroke="#fff1c8" stroke-width="2"/>
+<circle cx="379" cy="66" r="5" fill="#a91433" stroke="#fff1c8" stroke-width="2"/>
+<path d="M309 80H371L357 92H321Z" fill="url(#armor)" stroke="#32201a" stroke-width="3"/>
+</g>
+
+
+<g filter="url(#shadow)">
+ <!-- Corner ornaments only. NO bar over legs, boots, or level plaque. -->
+ <path d="M121 608 168 621 208 615" fill="none" stroke="#32201a" stroke-width="9" stroke-linecap="round"/>
+ <path d="M123 606 168 618 204 612" fill="none" stroke="url(#gold)" stroke-width="4" stroke-linecap="round"/>
+ <path d="M559 608 512 621 472 615" fill="none" stroke="#32201a" stroke-width="9" stroke-linecap="round"/>
+ <path d="M557 606 512 618 476 612" fill="none" stroke="url(#gold)" stroke-width="4" stroke-linecap="round"/>
+</g>
+
+<g fill="#fff1c8" opacity=".8">
+<path d="M340 0 342 6 349 8 342 10 340 17 338 10 331 8 338 6Z"/>
+<circle cx="278" cy="83" r="2"/><circle cx="401" cy="87" r="2"/>
+</g>
+</svg>
