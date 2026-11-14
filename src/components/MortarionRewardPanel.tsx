@@ -47,7 +47,7 @@ export function MortarionRewardPanel({status,en,busy,error,onClaim}:Props) {
 
     <p className="mt-2 text-xs font-bold text-amber-100" data-testid="mortarion-participation">
       {en ? 'Participation' : 'Активность'}: {status
-        ? <>{status.activeDays}/{status.requiredDays} {en?'days':'дней'} · {status.totalHits} {en?'hits':'ударов'}</>
+        ? <>{status.activeDays}/{status.requiredDays} {en?'days':'дней'}</>
         : (en?'Checking the server…':'Сверяем с сервером…')}
     </p>
     {status && <div className="mt-1 flex gap-1.5" aria-label={en?'Participation days':'Дни участия'}>
