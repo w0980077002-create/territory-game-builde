@@ -18,7 +18,7 @@ const HERO_HARBOR_ART = ['assets/territory/scenes/winter-peaks-approved.webp'] a
 /** Handmade inset metalwork for the three *already existing* Mortarion honors.
  * This is decorative presentation only: actual award authority stays on server. */
 const MORTARION_FRAME_ART: Record<string,string> = {
-  mortarion_lord: 'assets/territory/ui/honors/mortarion-lord-stage.svg',
+  mortarion_lord: 'assets/territory/ui/honors/mortarion-top1-approved.webp',
   mortarion_conqueror: 'assets/territory/ui/honors/mortarion-conqueror-stage.svg',
   mortarion_hunter: 'assets/territory/ui/honors/mortarion-hunter-stage.svg',
 };
@@ -151,7 +151,12 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
         </div>
         <div className="hero-showcase__gear-column">{slots.slice(3).map(renderSlot)}</div>
         {frameArt && <img className="hero-showcase__mortarion-frame" src={import.meta.env.BASE_URL + frameArt}
-          data-testid="mortarion-forged-frame" alt="" aria-hidden="true" draggable={false} />}
+          data-testid="mortarion-forged-frame" alt="" aria-hidden="true" draggable={false}
+          onError={event => {
+            const img = event.currentTarget;
+            const fallback = import.meta.env.BASE_URL + 'assets/territory/ui/honors/mortarion-lord-stage.svg';
+            if (displayedHonor?.frame === 'mortarion_lord' && !img.src.endsWith('mortarion-lord-stage.svg')) img.src = fallback;
+          }} />}
         {!harborReady && <div className="hero-showcase__art-gate" role="status" aria-live="polite">
           <span className="hero-showcase__art-gate-sigil" aria-hidden="true">ᛟ</span>
           <strong>{harborStatus==='error'
