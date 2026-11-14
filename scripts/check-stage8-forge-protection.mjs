@@ -40,6 +40,9 @@ assert.match(screen, /isStage8Gear\(selectedCurrent\.id\) && !stage8ForgeReady/,
 assert.match(screen, /attemptStage8Forge\(userId,eq\.id,eq\.level\)/, 'Live crafted upgrade must use authoritative RPC');
 assert.match(screen, /useGame\.set\(receipt\.state\)/, 'Verified server save replaces client preview');
 assert.match(screen, /stage8-forge-server-pending/, 'Explicit explanation, not a fake successful forge');
+assert.match(screen, /Предел уровня героя/, 'Level-capped equipment must explain why it cannot upgrade');
+assert.match(screen, /Проверить подключение/, 'Offline Stage8 forge must offer a real reconnect action');
+assert.match(screen, /stage8ForgeAvailable\(\)\.then\(setStage8ForgeReady\)/, 'Reconnect button must retry live RPC, not only change a label');
 const bridge=readFileSync('src/game/stage8ForgeApi.ts','utf8');
 const sql=readFileSync('supabase/staged/territory_stage8_forge_v1.sql','utf8');
 assert.match(bridge,/territory_stage8_forge_v1/);
