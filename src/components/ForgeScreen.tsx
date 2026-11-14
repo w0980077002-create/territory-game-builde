@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
 import { saveCloudSave } from '@/game/cloud';
-import { attemptStage8Forge, stage8ForgeAvailable } from '@/game/stage8ForgeApi';
+import { attemptStage8Forge, recoverCompletedStage8Forge, stage8ForgeAvailable } from '@/game/stage8ForgeApi';
 import { supabase } from '@/game/supabase';
 import { useLanguage, localizeText, localizeRarity } from '@/game/i18n';
 import { rarityColor, rarityGlow } from '@/game/ui';
@@ -29,12 +29,35 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
   const [upgrading, setUpgrading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [stage8ForgeReady, setStage8ForgeReady] = useState(false);
+  const [forgeRecoveryNotice, setForgeRecoveryNotice] = useState<string | null>(null);
+  const refreshStage8Connection = useCallback(async () => {
+    const ready = await stage8ForgeAvailable().catch(() => false);
+    setStage8ForgeReady(ready);
+    if (!ready) return;
+    try {
+      if (await recoverCompletedStage8Forge(userId)) {
+        setForgeRecoveryNotice(language === 'en'
+          ? 'Your previous upgrade was confirmed on the server. You can continue.'
+          : 'Предыдущая заточка подтверждена сервером. Можно продолжать улучшение.');
+      }
+    } catch (cause) {
+      // Network failures MUST NOT clear a pending paid-operation UUID.
+      console.warn('Forge pending receipt recovery postponed:', cause);
+    }
+  }, [language, userId]);
   useEffect(() => {
-    let mounted=true;
-    void stage8ForgeAvailable().then((ready)=>{ if(mounted)setStage8ForgeReady(ready); })
-      .catch(()=>{ if(mounted)setStage8ForgeReady(false); });
-    return ()=>{mounted=false;};
-  }, []);
+    void refreshStage8Connection();
+    const onFocus = () => { void refreshStage8Connection(); };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void refreshStage8Connection();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [refreshStage8Connection]);
   const [error, setError] = useState<string | null>(null);
   // A forge result is not final until the server has persisted it.
   const [saveUnverified, setSaveUnverified] = useState(() => unverifiedForgeUsers.has(userId));
@@ -85,7 +108,7 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
     if(eq.level >= useGame.get().player.level){
       setError(t('upgradeMaxLevel'));return;
     }
-    lock.current=true;setUpgrading(true);setError(null);
+    lock.current=true;setUpgrading(true);setError(null);setForgeRecoveryNotice(null);
     try{
       const receipt=await attemptStage8Forge(userId,eq.id,eq.level);
       useGame.set(receipt.state);
@@ -99,11 +122,22 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
         hapticNotify('error');
       }
     }catch(cause){
-      console.warn('Stage8 forge not verified:',cause);
-      setError(language==='en'
-        ? 'The server did not confirm this upgrade. No second roll: reopen the Forge to retry the saved operation. If progress changed, restart TERRITORY.'
-        : 'Сервер не подтвердил заточку. Не начинай новую попытку: открой Кузницу снова для безопасного повтора. Если изменился прогресс — перезапусти TERRITORY.');
-      hapticNotify('error');
+      const reason = cause instanceof Error ? cause.message : '';
+      if (reason === 'stage8_forge_previous_operation_recovered') {
+        setForgeRecoveryNotice(language === 'en'
+          ? 'The previous upgrade is already saved. Tap Upgrade once more to start a NEW attempt.'
+          : 'Прошлая заточка уже сохранена. Нажми «Улучшить» ещё раз для НОВОЙ попытки.');
+      } else if (reason === 'stage8_forge_other_operation_pending') {
+        setError(language === 'en'
+          ? 'An earlier forge operation is still unresolved. Open its item first; no new gold or materials were spent.'
+          : 'Предыдущая заточка ещё не подтверждена. Сначала открой тот предмет. Новых списаний не было.');
+      } else {
+        console.warn('Stage8 forge not verified:',cause);
+        setError(language==='en'
+          ? 'The server did not confirm this upgrade. Reopen TERRITORY before another attempt. No second roll.'
+          : 'Сервер не подтвердил заточку. Перезапусти TERRITORY перед следующей попыткой — повторное списание запрещено.');
+        hapticNotify('error');
+      }
     }finally{
       lock.current=false;setUpgrading(false);
     }
@@ -313,6 +347,11 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
         <p className="text-[10px] text-amber-300/80 mt-1">{language === 'en' ? 'Arena stats do not change.' : 'Характеристики на Арене не меняются.'}</p>
       </div>
 
+      {forgeRecoveryNotice && (
+        <div className="card text-center text-amber-200 text-sm" role="status" data-testid="stage8-forge-recovery">
+          {forgeRecoveryNotice}
+        </div>
+      )}
       {error && (
         <div className="card text-center text-red-400 text-sm animate-pop">
           {error}
@@ -509,11 +548,15 @@ export function ForgeScreen({ focusEquipmentId, onInventory, onMap, onBattle, on
             {isStage8Gear(selectedCurrent.id) && !stage8ForgeReady ? (
               <div className="rounded-lg border border-amber-500/30 bg-amber-900/20 p-3 mb-3 text-center" data-testid="stage8-forge-server-pending">
                 <p className="text-sm text-amber-200 font-medium">
-                  {language === 'en' ? 'Server-verified upgrade in preparation' : 'Защищённая заточка готовится'}
+                  {language === 'en' ? 'Forge server connection unavailable' : 'Нет связи с сервером заточки'}
                 </p>
                 <p className="text-xs text-gray-300 mt-1">
-                  {language === 'en' ? 'Your crafted item and materials are safe. Upgrades will be available after the authoritative registry is connected.' : 'Вещь и материалы сохраняются. Улучшение появится после подключения серверного учёта предметов.'}
+                  {language === 'en' ? 'Your crafted item and materials are safe. Recheck the server connection.' : 'Вещь и материалы сохранены. Повтори проверку подключения.'}
                 </p>
+                <button type="button" className="mt-3 min-h-10 rounded-lg border border-amber-400/50 px-3 text-xs font-bold text-amber-100"
+                  onClick={() => { void refreshStage8Connection(); }}>
+                  {language === 'en' ? 'Reconnect' : 'Проверить подключение'}
+                </button>
               </div>
             ) : selectedCurrent.equipment.level >= state.player.level ? (
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3 text-center">
