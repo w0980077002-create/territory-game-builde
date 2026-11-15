@@ -75,7 +75,7 @@ try:
       step(page,.35)  # Damage lands at contact, after the visible windup.
       assert page.evaluate('__caveDemo.world.enemies.reduce((n,e)=>n+e.hp,0)') < hp
       manual_control=width==390
-      if not manual_control: page.get_by_role('button',name='Авто',exact=False).tap()
+      if not manual_control: page.get_by_role('button',name='Авто навыков',exact=True).tap()
       until(page,'PORTAL_CHOICE');assert state(page)['kills']==6;screenshot(page,width,'portals-1')
       assert page.locator('.cx-portals button').count()==2
       before=state(page);step(page,2);assert state(page)['x']==before['x']
@@ -90,7 +90,7 @@ try:
       assert page.evaluate('__caveDemo.world.blocks')>0
       manual_control=False
       screenshot(page,width,'victory')
-      assert page.get_by_text('Превью возможных наград · без выдачи').is_visible()
+      assert page.get_by_text('Получено в тестовый склад · не имущество игрока').is_visible()
       page.get_by_role('button',name='Повторить забег').tap();assert state(page)['kills']==0 and state(page)['room']==0
       until(page,'FIGHT');page.evaluate('__caveDemo.world.hp=1');until(page,'DEFEAT');screenshot(page,width,'defeat')
       page.get_by_role('button',name='Повторить забег').tap();assert state(page)['hp']==900
@@ -100,7 +100,8 @@ try:
       page.evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'))")
       before=state(page);page.wait_for_timeout(250);assert state(page)==before
       page.evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'))")
-      page.wait_for_timeout(200);assert state(page)['x']>before['x']
+      page.wait_for_timeout(200);assert state(page)==before
+      page.get_by_role('button',name='Продолжить путь').tap();step(page,.3);assert state(page)['x']>before['x']
       page.evaluate('__caveDemo.unmount()');before=state(page);page.wait_for_timeout(200);assert state(page)==before
       assert not errors,errors
       assert not external,external
@@ -148,8 +149,8 @@ try:
       page.keyboard.press('Escape')
       assert page.get_by_role('button',name='Pause',exact=True).is_visible()
       assert not page.get_by_role('heading',name='Into the depths').count()
-      page.reload();page.get_by_role('button',name='Play DEMO').wait_for();assert state(page)['phase']=='LOBBY'
-      page.get_by_role('button',name='Play DEMO').tap();step(page,2);visible(page)
+      before=state(page);page.reload();page.wait_for_function('()=>window.__caveDemo');page.get_by_role('button',name='Continue',exact=True).wait_for();assert state(page)['room']==before['room']
+      page.get_by_role('button',name='Continue',exact=True).tap();step(page,.2);visible(page)
       context.close()
     # A failed image retries within the component, without reloading the game.
     context=browser.new_context(viewport={'width':360,'height':640},has_touch=True)

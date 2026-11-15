@@ -3,8 +3,12 @@ import { gemArt, gemType, parseGemKey, type GemKey } from '@/game/cave/gems';
 import { UMBRA_STATS, umbraRank, umbraSet, umbraTemplate, type StatLine, type UmbraItem, type UmbraStat } from '@/game/cave/umbra';
 import './caveUi.css';
 
-export const caveAsset = (path: string) => import.meta.env.BASE_URL + path;
+let previewAssets: ((path: string) => string) | null = null;
+/** Asset-only dependency injection for the portable, network-free playtest. */
+export function setCavePreviewAssets(resolve: ((path: string) => string) | null) { previewAssets = resolve; }
+export const caveAsset = (path: string) => previewAssets ? previewAssets(path) : import.meta.env.BASE_URL + path;
 export const ESSENCE_ART = 'assets/territory/cave-loot/2026-11-06/14-essence-flask.webp';
+export const ENHANCE_STONE_ART = 'assets/territory/cave/playtest/enhance-stone.svg';
 export const WOOD_ART = 'assets/territory/ui/shop/shop-wood-planks.webp';
 export const woodStyle = () => ({ backgroundImage: `linear-gradient(180deg, rgba(22,11,14,.70), rgba(26,12,20,.84)), url("${caveAsset(WOOD_ART)}")` });
 
@@ -20,6 +24,7 @@ export const itemName = (item: UmbraItem, en: boolean) => {
 export function reasonText(reason: string | undefined, en: boolean): string {
   const map: Record<string, [string, string]> = {
     not_enough_essence: ['Не хватает тёмной эссенции', 'Not enough dark essence'],
+    not_enough_enhance_stones: ['Не хватает камней усиления', 'Not enough enhancement stones'],
     max_enhance: ['Достигнут предел усиления', 'Enhancement limit reached'],
     item_equipped: ['Сначала сними вещь — надетое не разбирается', 'Unequip first — worn gear cannot be dismantled'],
     item_locked: ['Вещь под замком. Сними замок, чтобы изменить её', 'Item is locked. Unlock it first'],

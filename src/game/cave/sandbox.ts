@@ -36,6 +36,7 @@ export type CaveSandbox = Readonly<{
   items: readonly UmbraItem[];
   loadout: UmbraLoadout;
   essence: number;
+  enhanceStones: number;
   gems: GemInventory;
   sockets: GemSockets;
   elixirs: CaveElixirStock;
@@ -46,7 +47,7 @@ export type CaveSandbox = Readonly<{
 }>;
 
 export const emptySandbox = (): CaveSandbox => ({
-  v: 1, seq: 0, items: [], loadout: {}, essence: 0, gems: {}, sockets: emptySockets(), elixirs: {},
+  v: 1, seq: 0, items: [], loadout: {}, essence: 0, enhanceStones: 0, gems: {}, sockets: emptySockets(), elixirs: {},
   blessSlots: emptyBlessing(), fundClaimed: [], lastLoot: null, ops: [],
 });
 
@@ -104,7 +105,9 @@ function rollLoot(state: CaveSandbox, opId: string, floor: number, boss: boolean
   }
   const loot: CaveLoot = { opId, floor, items, overflow, essence, gems: dropped, boosted };
   // Sandbox proposal: installed elixirs are spent by one looted victory.
-  return { state: { ...state, seq, items: [...state.items, ...items], essence: state.essence + essence, gems, blessSlots: emptyBlessing(), lastLoot: loot }, loot };
+  return { state: { ...state, seq, items: [...state.items, ...items], essence: state.essence + essence,
+    enhanceStones: state.enhanceStones + Math.floor((boss ? 15 : floor % 5 === 0 ? 9 : 6) * (has('essence') ? 1.5 : 1)),
+    gems, blessSlots: emptyBlessing(), lastLoot: loot }, loot };
 }
 
 function reduce(state: CaveSandbox, action: CaveAction, opId: string): CaveResult {
@@ -134,24 +137,24 @@ function reduce(state: CaveSandbox, action: CaveAction, opId: string): CaveResul
       if (!item) return fail(state, 'not_owned');
       if (item.enhance >= UMBRA_MAX_ENHANCE) return fail(state, 'max_enhance');
       const cost = enhanceCost(item);
-      if (state.essence < cost) return fail(state, 'not_enough_essence');
-      return { state: { ...patchItem(state, { ...item, enhance: item.enhance + 1, spent: item.spent + cost }), essence: state.essence - cost }, ok: true, gained: -cost };
+      if (state.enhanceStones < cost) return fail(state, 'not_enough_enhance_stones');
+      return { state: { ...patchItem(state, { ...item, enhance: item.enhance + 1, enhanceStonesSpent: (item.enhanceStonesSpent ?? 0) + cost }), enhanceStones: state.enhanceStones - cost }, ok: true, gained: -cost };
     }
     case 'enhanceAll': {
-      // One-click: repeatedly raise the least enhanced WORN item while essence lasts.
+      // One-click: repeatedly raise the least enhanced WORN item while enhancement stones last.
       let next = state;
       let count = 0;
       for (;;) {
         const worn = equippedItems(next.items, next.loadout).filter(i => i.enhance < UMBRA_MAX_ENHANCE)
-          .sort((a, b) => a.enhance - b.enhance || enhanceCost(a) - enhanceCost(b));
-        const target = worn.find(i => enhanceCost(i) <= next.essence);
-        if (!target) break;
+          .sort((a, b) => a.enhance - b.enhance || UMBRA_SLOTS.findIndex(s=>s.id===a.slot) - UMBRA_SLOTS.findIndex(s=>s.id===b.slot));
+        const target = worn[0];
+        if (!target || enhanceCost(target) > next.enhanceStones) break;
         const cost = enhanceCost(target);
-        next = { ...patchItem(next, { ...target, enhance: target.enhance + 1, spent: target.spent + cost }), essence: next.essence - cost };
+        next = { ...patchItem(next, { ...target, enhance: target.enhance + 1, enhanceStonesSpent: (target.enhanceStonesSpent ?? 0) + cost }), enhanceStones: next.enhanceStones - cost };
         count++;
       }
-      if (!count) return fail(state, equippedItems(state.items, state.loadout).length ? 'not_enough_essence' : 'nothing_equipped');
-      return { state: next, ok: true, count, gained: next.essence - state.essence };
+      if (!count) return fail(state, equippedItems(state.items, state.loadout).length ? 'not_enough_enhance_stones' : 'nothing_equipped');
+      return { state: next, ok: true, count, gained: next.enhanceStones - state.enhanceStones };
     }
     case 'dismantle': {
       const ids = [...new Set(action.itemIds)];
@@ -162,7 +165,7 @@ function reduce(state: CaveSandbox, action: CaveAction, opId: string): CaveResul
       if (targets.some(i => isWorn(state, i!.id))) return fail(state, 'item_equipped');
       if (targets.some(i => i!.locked)) return fail(state, 'item_locked');
       const gained = targets.reduce((sum, i) => sum + dismantleYield(i!), 0);
-      return { state: { ...state, items: state.items.filter(i => !ids.includes(i.id)), essence: state.essence + gained }, ok: true, gained, count: ids.length };
+      return { state: { ...state, items: state.items.filter(i => !ids.includes(i.id)), enhanceStones: state.enhanceStones + gained }, ok: true, gained, count: ids.length };
     }
     case 'reforge': {
       const item = state.items.find(i => i.id === action.itemId);
@@ -266,7 +269,7 @@ export function decodeSandbox(raw: unknown): CaveSandbox {
     return isCaveElixir(id) ? id : null;
   });
   return {
-    ...base, seq: Math.max(num(data.seq), items.length), items, loadout, essence: num(data.essence), gems,
+    ...base, seq: Math.max(num(data.seq), items.length), items, loadout, essence: num(data.essence), enhanceStones: num(data.enhanceStones), gems,
     sockets: sockets as unknown as GemSockets, elixirs, blessSlots,
     fundClaimed: (Array.isArray(data.fundClaimed) ? data.fundClaimed : []).filter((n): n is number => Number.isInteger(n)),
     lastLoot: data.lastLoot && typeof data.lastLoot === 'object' && typeof (data.lastLoot as CaveLoot).opId === 'string'

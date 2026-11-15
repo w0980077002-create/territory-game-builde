@@ -17,7 +17,7 @@ with sync_playwright() as p:
     browser=p.chromium.launch(executable_path=os.getenv('CAVE_BROWSER') or shutil.which('chromium'),headless=True,args=['--no-sandbox'])
     context=browser.new_context(viewport={'width':390,'height':720},device_scale_factor=1,is_mobile=True,has_touch=True,record_video_dir=str(OUT),record_video_size={'width':390,'height':720})
     page=context.new_page();page.goto(f'http://127.0.0.1:{server.server_port}/territory-cave-demo.html')
-    page.get_by_role('button',name='Играть DEMO').tap();page.get_by_role('button',name='Авто').tap()
+    page.get_by_role('button',name='Играть DEMO').tap();page.get_by_role('button',name='Авто навыков').tap()
     began=time.monotonic();last='';rooms=0
     while time.monotonic()-began<240:
         phase=page.locator('.cx-stage').get_attribute('data-phase')

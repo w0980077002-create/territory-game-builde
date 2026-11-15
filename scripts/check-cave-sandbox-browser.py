@@ -119,10 +119,10 @@ with sync_playwright() as p:
             assert not page.get_by_test_id('umbra-power').inner_text().endswith(' 0'), 'equipping changes dark power'
             assert screen.get_by_test_id('umbra-item').count() == 5
             worn = list(sandbox(page)['loadout'].values())[0]
-            essence = sandbox(page)['essence']
+            essence = sandbox(page)['enhanceStones']
             screen.get_by_test_id('umbra-enhance-all').click()
             state = sandbox(page)
-            assert 0 <= state['essence'] < essence and next(i for i in state['items'] if i['id'] == worn)['enhance'] > 0
+            assert 0 <= state['enhanceStones'] < essence and next(i for i in state['items'] if i['id'] == worn)['enhance'] > 0
             screen.get_by_test_id('umbra-slot').locator('img').first.click()  # the worn item
             page.get_by_test_id('umbra-item-dialog').wait_for()
             assert page.get_by_test_id('umbra-dismantle').count() == 0, 'a worn item cannot be dismantled'
@@ -134,10 +134,10 @@ with sync_playwright() as p:
             page.get_by_test_id('umbra-dismantle').click()
             assert len(sandbox(page)['items']) == 6, 'a locked item is protected'
             page.get_by_test_id('umbra-lock').click()
-            before = sandbox(page)['essence']
+            before = sandbox(page)['enhanceStones']
             page.get_by_test_id('umbra-dismantle').click()
             state = sandbox(page)
-            assert len(state['items']) == 5 and state['essence'] > before
+            assert len(state['items']) == 5 and state['enhanceStones'] > before
             screen.get_by_test_id('umbra-bulk').click()
             page.get_by_test_id('umbra-bulk-bar').wait_for()
             screen.get_by_test_id('umbra-item').first.click()

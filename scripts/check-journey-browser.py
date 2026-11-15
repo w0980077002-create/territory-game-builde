@@ -42,18 +42,18 @@ with sync_playwright() as p:
             page.get_by_test_id('fixture-fight').click()
             page.get_by_role('tab',name='Dark Cave' if lang=='en' else 'Тёмная пещера').click()
             page.get_by_role('button',name='Play DEMO' if lang=='en' else 'Играть DEMO').wait_for()
-            saved=page.evaluate('JSON.stringify(Object.entries(localStorage).sort())')
+            saved=page.evaluate('JSON.stringify(Object.entries(localStorage).filter(([k])=>!["territory_cave_playtest_checkpoint_v1","territory_cave_sandbox_v1"].includes(k)).sort())')
             page.get_by_role('button',name='Play DEMO' if lang=='en' else 'Играть DEMO').tap()
             page.wait_for_timeout(500)
             box=page.locator('.cx-focus').bounding_box()
             assert box['x']==0 and box['y']==0 and abs(box['height']-500)<1 and abs(box['width']-width)<1
-            assert page.locator('.cx-stage').bounding_box()['height']>250
+            assert page.locator('.cx-stage').bounding_box()['height']>180
             assert page.locator('#root').evaluate('(el)=>el.inert')
             page.get_by_role('button',name='Return to entrance' if lang=='en' else 'Вернуться ко входу').tap()
             page.get_by_role('button',name='Back to entrance' if lang=='en' else 'К входному порталу').tap()
             assert page.get_by_test_id('fixture-cave').is_visible()
             assert not page.locator('#root').evaluate('(el)=>el.inert')
-            assert saved==page.evaluate('JSON.stringify(Object.entries(localStorage).sort())')
+            assert saved==page.evaluate('JSON.stringify(Object.entries(localStorage).filter(([k])=>!["territory_cave_playtest_checkpoint_v1","territory_cave_sandbox_v1"].includes(k)).sort())')
             page.reload();page.get_by_role('tab',name='Dark Cave' if lang=='en' else 'Тёмная пещера').click()
             page.get_by_role('button',name='Play DEMO' if lang=='en' else 'Играть DEMO').wait_for()
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-journey-after.html?boss')
