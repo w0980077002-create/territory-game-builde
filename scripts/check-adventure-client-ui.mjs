@@ -45,13 +45,16 @@ assert.match(battle, /view === 'cave' \? \(/);
 assert.match(battle, /<ServerAdventureScreen /);
 // The owner-approved side-scrolling Cave is reachable inside the actual game
 // without a special URL; genuine server floors and recovery remain available.
-assert.match(battle, /data-testid="dark-cave-live-expedition-entry"/);
-assert.match(battle, /data-testid="dark-cave-new-expedition"/);
-assert.match(battle, /data-testid="dark-cave-saved-floors"/);
-assert.match(battle, /<CaveExpeditionPreview language=\{language\} onExit=/);
+assert.match(battle, /data-testid="dark-cave-single-entry"/);
+assert.doesNotMatch(battle, /dark-cave-new-expedition|dark-cave-saved-floors|cavePreviewOptIn/,
+  'Never offer two selectable Cave games');
+assert.match(battle, /<CaveExpeditionPreview userId=\{userId\} language=\{language\}/);
+assert.match(battle, /onLegacyRecovery=\{\(\) => setCaveLegacyRecovery\(true\)\}/);
+assert.match(battle, /data-testid="dark-cave-legacy-recovery"/,
+  'Existing server receipts must remain recoverable without a second public game mode');
 assert.match(battle, /territory_adventure_session_v1:/);
-assert.match(battle, /return !keys\.some\(prefix => !!localStorage\.getItem\(prefix \+ userId\)\)/,
-  'New cave must defer to pending server battles, starts and settlements');
+assert.match(battle, /localStorage\.getItem\(prefix \+ userId\)/,
+  'Legacy pending debit must gate the single Cave entrance');
 assert.doesNotMatch(battle, /get\('cave-preview'\)/,
   'New Cave should open from the game itself, not require special query params');
 assert.match(read('src/components/battleJourney.css'), /\.battle-cave-expedition \.cx-demo\{height:100%;min-height:0/,
@@ -186,3 +189,19 @@ assert.match(darkSql, /revised_sql:=replace\(revised_sql/, 'Existing arena stone
 assert.match(darkSql, /ENABLE ROW LEVEL SECURITY/, 'Private resource table must use RLS');
 
 console.log('Dark Cave separate navigation PASS: old campaign, Trials, 3 buttons, cave stages, safe server receipts.');
+
+const cloud = read('src/game/cave/clientPve.ts');
+const cave = read('src/components/pve/CaveExpeditionPreview.tsx');
+const staged = read('supabase/staged/territory_cave_client_pve_v1.sql');
+assert.match(cave, /getCavePveStatus\(\)/, 'Cloud floor must be read on Cave entry');
+assert.match(cave, /startCavePveRun\(id, target\)/, 'Charge one stone before entering the client run');
+assert.match(cave, /finishCavePveRun\(runId\.current, won\)/, 'Save floor only after the local terminal result');
+assert.match(cave, /readCheckpoint\(userId\)/, 'Client checkpoint is per account');
+assert.match(cave, /saveCheckpoint\(world\.current, runId\.current, userId\)/, 'Save scoped checkpoint');
+assert.match(cloud, /territory_cave_pve_start_v1/);
+assert.match(cloud, /territory_cave_pve_finish_v1/);
+assert.match(staged, /CREATE UNIQUE INDEX IF NOT EXISTS cave_client_one_active_v1/);
+assert.match(staged, /dark_stone_take_v1\(u\)/);
+assert.match(staged, /completed_stage=r\.floor/);
+assert.doesNotMatch(staged, /UPDATE public\.players SET (?:gold|gems|xp|game_state)/i,
+  'Local PvE result is never allowed to grant live account currencies');
