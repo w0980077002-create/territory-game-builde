@@ -40,7 +40,8 @@ const participation = ui.match(/data-testid="mortarion-participation"[\s\S]*?<\/
 assert.ok(participation, 'Reward panel must keep participation progress');
 assert.match(participation, /status\.activeDays/, 'Reward panel still shows participation days');
 assert.doesNotMatch(participation, /status\.totalHits/, 'Reward panel must hide total strike count');
-assert.match(raid, /hitsLeft/, 'Current hourly strike allowance remains available in combat');
+assert.match(raid, /Без лимита ударов/, 'Combat shows owner-approved unlimited strikes');
+assert.match(raid, /nextHitMs === 0/, 'The 60-second cooldown still gates attacks');
 assert.match(claimSql, /v_part\.total_hits>=15/, 'Server-side rewards still use legitimate strike totals');
 
 assert.match(ui,/data-testid="mortarion-reward-medal"/,'claim receipt must show earned medal');
