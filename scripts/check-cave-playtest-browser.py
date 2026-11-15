@@ -52,6 +52,7 @@ with sync_playwright() as p:
     if phase=='PORTAL_CHOICE':page.locator('.cx-portals .cx-portal-touch').nth(0).tap()
     page.evaluate('__caveDemo.step(.75)');page.wait_for_timeout(110)
    assert page.evaluate('__caveDemo.world.phase')=='VICTORY'
+   page.wait_for_function("()=>JSON.parse(localStorage.getItem('territory_cave_sandbox_v1')).playtestWins===1")
    stock=lambda:json.loads(page.evaluate("localStorage.getItem('territory_cave_sandbox_v1')"))
    assert len(stock()['items'])==kit['items']+2 and stock()['enhanceStones']==kit['enhanceStones']+15
    page.get_by_role('button',name='Настройки',exact=True).tap();page.locator('.cx-panel').get_by_role('button',name='Почётные звания',exact=True).tap();page.get_by_role('button',name='Получить · +10 синих',exact=True).tap();assert stock()['playtestBlueDiamonds']==10;page.locator('.cx-native-nav').get_by_role('button',name='Бой',exact=True).tap()
