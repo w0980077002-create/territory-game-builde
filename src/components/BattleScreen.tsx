@@ -250,11 +250,23 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
               </p>
               <div className="min-h-0 flex-1 overflow-y-auto"><ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} onShop={onCaveShop} /></div>
               <button type="button" className="shrink-0 rounded-xl border border-amber-500 bg-amber-900/80 p-2 text-sm font-bold text-amber-100 disabled:opacity-50"
-                disabled={caveActive} onClick={() => setCaveLegacyRecovery(false)}>
+                disabled={caveActive} onClick={() => {
+                  try {
+                    if (['territory_adventure_start_v1:', 'territory_adventure_pending_v1:', 'territory_adventure_session_v1:']
+                      .some(prefix => !!localStorage.getItem(prefix + userId))) {
+                      setError(language === 'en' ? 'Finish recovering the saved fight before returning.' : 'Сначала завершите восстановление старого боя.');
+                      return;
+                    }
+                  } catch {
+                    setError(language === 'en' ? 'Cannot verify the old receipt. Try again.' : 'Не удалось проверить старую квитанцию.');
+                    return;
+                  }
+                  setError(null); setCaveLegacyRecovery(false);
+                }}>
                 {language === 'en' ? 'Return to the single Cave' : 'Вернуться в единую Пещеру'}
               </button>
             </div>
-          ) : <CaveExpeditionPreview userId={userId} language={language}
+          ) : <CaveExpeditionPreview userId={userId} language={language} heroLevel={state.player.level}
                 onLegacyRecovery={() => setCaveLegacyRecovery(true)}
                 onExit={() => onView('campaign')} />}
         </div>
