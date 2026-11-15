@@ -35,7 +35,7 @@ export function Vitals({ view, en, level, onStats }: { view: World; en: boolean;
     <Orb kind="hp" value={view.hp} max={view.maxHp} label={en ? 'Health' : 'Здоровье'} />
     <div className="cx-xp" aria-label={en ? `Hero level ${level}` : `Уровень героя ${level}`}>
       <span className="cx-lv"><b>{level}</b></span>
-      <div className="cx-hpbar"><i style={{ width: `${100 * view.hp / view.maxHp}%` }} /><u style={{ width: `${100 * Math.min(1, view.kills / 16)}%` }} />
+      <div className="cx-hpbar"><i style={{ width: `${100 * view.hp / view.maxHp}%` }} /><u style={{ width: `${100 * Math.min(1, (view.rules === 2 ? (view.phase === 'VICTORY' ? 1 : view.stars.length ? (view.stars.length - 1 + Math.min(1, (view.wave / 3))) / 5 : 0) : view.kills / 16))}%` }} />
         <span>{spaced(view.hp)}/{spaced(view.maxHp)}</span></div>
       <button type="button" className="cx-stats" aria-label={en ? 'Hero stats' : 'Характеристики героя'} onClick={onStats}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11h3v9zm5.5 0V5h3v15zM16 20v-6h3v6z" /></svg></button>

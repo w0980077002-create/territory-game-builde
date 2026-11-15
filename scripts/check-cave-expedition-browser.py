@@ -58,7 +58,7 @@ try:
       page=context.new_page(); errors=[]; external=[]
       page.on('pageerror',lambda e:errors.append(str(e)))
       page.on('request',lambda req: external.append(req.url) if not req.url.startswith((URL,'data:')) else None)
-      page.goto(URL+'/test-fixture.html');page.wait_for_function('()=>window.__caveDemo')
+      page.goto(URL+'/test-fixture.html?legacy=1');page.wait_for_function('()=>window.__caveDemo')
       screenshot(page,width,'lobby')
       page.get_by_role('button',name='В путь').tap();step(page,2)
       # 0.65 s entrance, then the hero accelerates from x=175 toward the pack waiting on the road.
@@ -121,7 +121,7 @@ try:
     # English, reduced motion, reload/re-entry, short and landscape viewports.
     for width,height in [(360,640),(320,568),(360,808),(640,360)]:
       context=browser.new_context(viewport={'width':width,'height':height},is_mobile=True,has_touch=True,device_scale_factor=2 if height==808 else 1,reduced_motion='reduce')
-      page=context.new_page();page.goto(URL+'/test-fixture.html?lang=en');page.wait_for_function('()=>window.__caveDemo')
+      page=context.new_page();page.goto(URL+'/test-fixture.html?legacy=1&lang=en');page.wait_for_function('()=>window.__caveDemo')
       page.get_by_role('button',name='Set out').tap();step(page,2);visible(page)
       if width==360 and height==640:
         # Android fullscreen native controls occupy space outside env(safe-area).
@@ -174,7 +174,7 @@ try:
         });
         return image;
       };""")
-    page.goto(URL+'/test-fixture.html?lang=en')
+    page.goto(URL+'/test-fixture.html?legacy=1&lang=en')
     page.get_by_text('Could not open the cave',exact=True).wait_for()
     sentinel=page.evaluate('window.__retrySentinel')
     page.get_by_role('button',name='Reload',exact=True).tap()

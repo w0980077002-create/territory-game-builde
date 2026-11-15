@@ -13,7 +13,7 @@ with sync_playwright() as p:
  b=p.chromium.launch(executable_path=os.environ.get('CAVE_BROWSER') or shutil.which('chromium'),args=['--no-sandbox'])
  for width in [320,360,390,430]:
   ctx=b.new_context(viewport={'width':width,'height':720},has_touch=True,is_mobile=True);page=ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-  page.goto(f'http://127.0.0.1:{s.server_port}/test-fixture.html');page.wait_for_function('()=>window.__caveDemo');page.evaluate("localStorage.setItem('territory-player-sentinel','UNCHANGED')")
+  page.goto(f'http://127.0.0.1:{s.server_port}/test-fixture.html?legacy=1');page.wait_for_function('()=>window.__caveDemo');page.evaluate("localStorage.setItem('territory-player-sentinel','UNCHANGED')")
   page.get_by_role('button',name='В путь').tap();page.evaluate('__caveDemo.step(5)');page.wait_for_timeout(150)
   # A backgrounded WebView must require explicit resume, even with a panel/help open.
   def background():

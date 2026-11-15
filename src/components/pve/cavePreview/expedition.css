@@ -224,3 +224,9 @@
   .cx-lobby small,.cx-portals small{display:none}.cx-result .cx-loot{display:none}
 }
 @media(prefers-reduced-motion:reduce){.cx-demo *{scroll-behavior:auto;transition:none!important;animation:none!important}}
+/* Three risk choices stay attached to the arches, with finger-size targets. */
+.cx-demo .cx-three-portals button{left:34%;width:19%;bottom:9%;height:17%;min-height:64px}
+.cx-demo .cx-three-portals button:nth-child(2){left:53%}
+.cx-demo .cx-three-portals button:nth-child(3){left:72%}
+.cx-three-portals b{font-size:10px}.cx-three-portals small{font-size:9px}
+.cx-result{justify-content:flex-start}.cx-result>*{flex-shrink:0}
