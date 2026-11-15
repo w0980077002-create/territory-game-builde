@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom';
 import { BIOMES, type Biome } from '../../game/cavePreviewWorld/catalog';
 import { advanceRealtime, choosePortal, portalsFor, DIFFICULTY, difficulty, collectRune, createWorld, drinkPotion, POTIONS, SKILLS, skill, skillBlock, start, type Skill, type World } from '../../game/cavePreviewWorld/engine';
 import { readCheckpoint, saveCheckpoint } from '@/game/cavePreviewWorld/checkpoint';
+import { ensurePlayerSession } from '@/game/auth';
+import { getCavePveStatus, startCavePveRun, finishCavePveRun, type CavePveStatus } from '@/game/cave/clientPve';
 import { useCaveSandbox } from '@/game/cave/sandboxStore';
 import { equippedItems, loadoutTotals, UMBRA_SLOTS, umbraTemplate, type UmbraSlotId } from '@/game/cave/umbra';
 import { gemTotals } from '@/game/cave/gems';
@@ -17,11 +19,11 @@ import './cavePreview/expedition.css';
 
 const defaultUrl = (path: string) => import.meta.env.BASE_URL + path;
 const EN_BIOMES: Record<Biome, string> = { crystal: 'Crystal rift', spore: 'Sunless garden', ember: 'Amber depths', astral: 'Star crypt', forge: 'Heart of the rift' };
-interface Props { /** Legacy checkpoint regression fixture only. */ legacyRules?: boolean; assetUrl?: (path: string) => string; onExit?: () => void; language?: string; /** Offline browser fixture only. */ onWorld?: (world: World) => void }
+interface Props { /** Legacy checkpoint regression fixture only. */ legacyRules?: boolean; assetUrl?: (path: string) => string; onExit?: () => void; language?: string; userId?: string; onLegacyRecovery?: () => void; /** Offline browser fixture only. */ onWorld?: (world: World) => void }
 const HERO_LEVEL = 6;
 /** Isolated gameplay, local checkpoint and device-local dark storage. No player APIs. */
-export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, language = 'ru', legacyRules = false }: Props) {
-  const [saved] = useState(readCheckpoint);
+export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, language = 'ru', legacyRules = false, userId, onLegacyRecovery }: Props) {
+  const [saved] = useState(() => readCheckpoint(userId));
   const world = useRef<World>(saved?.world ?? {...createWorld(), rules: legacyRules ? 1 : 2}), canvas = useRef<HTMLCanvasElement>(null), art = useRef<Images | null>(null);
   const runId = useRef(saved?.runId ?? crypto.randomUUID());
   const [bank, dispatch] = useCaveSandbox();
@@ -36,6 +38,10 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [ready, setReady] = useState(false), [error, setError] = useState(''), [help, setHelp] = useState(false), [muted, setMuted] = useState(false);
   const [view, setView] = useState(() => structuredClone(world.current));
+  const [cloud, setCloud] = useState<CavePveStatus | null>(null);
+  const [cloudBusy, setCloudBusy] = useState(false);
+  const [cloudError, setCloudError] = useState('');
+  const cloudLock = useRef(false), startPending = useRef<string | null>(null);
   const en = language === 'en', t = (ru: string, english: string) => en ? english : ru;
   const biomeName = (b: Biome) => en ? EN_BIOMES[b] : BIOMES[b].name;
   const ended = view.phase === 'VICTORY' || view.phase === 'DEFEAT', playing = view.phase !== 'LOBBY' && !ended, focused = playing || ended || panel !== null;
@@ -50,7 +56,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
       if (event.key !== 'Escape' || document.querySelector('.cv-overlay')) return;
       event.preventDefault();
       setPanel(null); world.current.paused = panelPause.current;
-      setView(structuredClone(world.current)); saveCheckpoint(world.current, runId.current);
+      setView(structuredClone(world.current)); saveCheckpoint(world.current, runId.current, userId);
     };
     document.addEventListener('keydown', escape);
     return () => document.removeEventListener('keydown', escape);
@@ -86,13 +92,58 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [bank.items, bank.loadout, bank.sockets, bank.playtestHonor]);
   useEffect(() => { setCavePreviewAssets(assetUrl); return () => setCavePreviewAssets(null); }, [assetUrl]);
+  // Production bridge is only a tiny progress/stone ledger. All combat stays client-side.
+  // An offline demo (no userId) keeps its original behavior and test fixtures.
+  useEffect(() => {
+    if (!userId) return;
+    let mounted = true;
+    void (async () => {
+      try {
+        if (!await ensurePlayerSession(userId)) throw new Error('cave_auth_required');
+        const status = await getCavePveStatus();
+        if (!mounted) return;
+        if (status.legacy_active_session_id) { onLegacyRecovery?.(); return; }
+        setCloud(status);
+        const w = world.current;
+        w.unlockedFloor = status.unlocked_stage;
+        if (status.active_run_id && status.active_run_id === runId.current && status.active_floor === w.floor) {
+          if (w.phase === 'LOBBY') {
+            w.rules = 2; start(w, status.active_floor); outfit(w); w.paused = true;
+          }
+        } else if (status.active_run_id) {
+          setCloudError(t('На другом устройстве остался незавершённый забег. Завершите его здесь перед новой попыткой.', 'Another device has an unfinished run. Close it before starting a new one.'));
+        } else if (w.phase === 'LOBBY') {
+          w.floor = status.unlocked_stage; outfit(w);
+        } else if (!['VICTORY','DEFEAT'].includes(w.phase)) {
+          // A local demo checkpoint never authorizes progress without its server run.
+          Object.assign(w, createWorld(), { floor: status.unlocked_stage, unlockedFloor: status.unlocked_stage });
+          outfit(w);
+        } else if (w.floor > status.completed_stage && w.phase === 'VICTORY') {
+          Object.assign(w, createWorld(), { floor: status.unlocked_stage, unlockedFloor: status.unlocked_stage });
+          outfit(w);
+        }
+        setView(structuredClone(w)); saveCheckpoint(w, runId.current, userId);
+      } catch {
+        if (mounted) setCloudError(t('Не удалось загрузить этажи и Тёмные камни. Прогресс не изменён.', 'Could not load Cave progress and Dark Stones. No progress was changed.'));
+      }
+    })();
+    return () => { mounted = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- read only on account change, never during local combat
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId || !cloud || !ended || cloud.active_run_id !== runId.current || cloudLock.current) return;
+    void settle(view.phase === 'VICTORY');
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only one terminal report for this active server run
+  }, [userId, cloud?.active_run_id, view.phase]);
+
   const renderedRunId = runId.current;
   useEffect(() => {
-    if (view.phase === 'VICTORY' && !bank.ops.includes('expedition:' + renderedRunId)) {
+    if (view.phase === 'VICTORY' && (!userId || (!!cloud && cloud.completed_stage >= view.floor && !cloud.active_run_id)) && !bank.ops.includes('expedition:' + renderedRunId)) {
       if (view.rules === 2) view.stars.forEach((stars, i) => dispatch({type:'loot', floor:view.floor, boss:false, lootRolls:DIFFICULTY[stars-1].lootRolls}, `floor-section:${renderedRunId}:${i}`));
       dispatch({ type: 'loot', floor: view.floor, boss: true, lootRolls: view.rules === 2 ? Math.max(...view.stars.map(n => DIFFICULTY[n-1].lootRolls)) : 1 }, 'expedition:' + renderedRunId);
     }
-  }, [view, dispatch, renderedRunId, bank.ops]);
+  }, [view, dispatch, renderedRunId, bank.ops, userId, cloud]);
   useEffect(() => {
     if (!focused) return;
     const old = document.body.style.overflow; document.body.style.overflow = 'hidden';
@@ -154,8 +205,8 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
       frame = requestAnimationFrame(loop);
     };
     frame = requestAnimationFrame(loop);
-    return () => { saveCheckpoint(w, runId.current); cancelAnimationFrame(frame); document.removeEventListener('visibilitychange', visibility); document.removeEventListener('keydown', keyboard); };
-  }, [ready, onWorld, en]);
+    return () => { saveCheckpoint(w, runId.current, userId); cancelAnimationFrame(frame); document.removeEventListener('visibilitychange', visibility); document.removeEventListener('keydown', keyboard); };
+  }, [ready, onWorld, en, userId]);
   function refresh() { setView(structuredClone(world.current)); setStorageOk(saveCheckpoint(world.current, runId.current)); }
   function outfit(w: World) {
     const stats = loadoutTotals(equippedItems(bank.items, bank.loadout)), gems = gemTotals(bank.sockets);
@@ -164,10 +215,79 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
     w.wings = bank.previewWings; w.honorBonus = bank.playtestHonor * .005;
     w.maxHp = createWorld().maxHp + Math.round((stats.hp ?? 0) + (gems.hp ?? 0) + 900 * .008 * bank.playtestHonor); w.hp = w.maxHp;
   }
-  function begin(floor = world.current.floor) {
-    world.current.rules = legacyRules ? 1 : 2; start(world.current, floor); runId.current = crypto.randomUUID(); outfit(world.current);
+  async function begin(floor = world.current.floor) {
+    if (userId) {
+      if (!cloud || cloudLock.current) return;
+      if (cloud.legacy_active_session_id) { onLegacyRecovery?.(); return; }
+      if (cloud.active_run_id && ['VICTORY','DEFEAT'].includes(world.current.phase)) {
+        setCloudError(t('Сначала подтвердите результат предыдущего боя.', 'Confirm the preceding fight result first.'));
+        return;
+      }
+      const target = cloud.active_floor ?? cloud.unlocked_stage;
+      if (floor !== target || cloud.completed_stage >= 100) {
+        setCloudError(t('Этот этаж ещё не открыт для нового забега.', 'This floor cannot be started yet.'));
+        return;
+      }
+      if (!cloud.active_run_id && cloud.dark_stones < 1) {
+        setCloudError(t('Для входа нужен один Тёмный камень.', 'One Dark Stone is required to enter.'));
+        return;
+      }
+      // Persist the same UUID before requesting the debit. A timed-out start can
+      // be retried without charging another stone. A resumed run costs nothing.
+      const id = cloud.active_run_id ?? startPending.current ?? crypto.randomUUID();
+      if (cloud.active_run_id && cloud.active_run_id !== runId.current) {
+        setCloudError(t('Сначала восстановите незавершённый забег.', 'Recover the unfinished run first.'));
+        return;
+      }
+      if (!cloud.active_run_id) {
+        startPending.current = id;
+        runId.current = id;
+        Object.assign(world.current, createWorld(), { floor: target, unlockedFloor: cloud.unlocked_stage });
+        outfit(world.current);
+        saveCheckpoint(world.current, id, userId);
+      }
+      cloudLock.current = true; setCloudBusy(true); setCloudError('');
+      try {
+        const result = await startCavePveRun(id, target);
+        if (result.active_run_id !== id || result.active_floor !== target) throw new Error('cave_start_unconfirmed');
+        startPending.current = null;
+        setCloud(result);
+        world.current.unlockedFloor = result.unlocked_stage;
+        world.current.rules = 2; start(world.current, target); outfit(world.current);
+      } catch {
+        setCloudError(t('Вход не подтверждён. Повторите с тем же номером попытки — камень второй раз не спишется.', 'Entry is not confirmed. Retry the same run; the Stone will not be charged twice.'));
+        return;
+      } finally { cloudLock.current = false; setCloudBusy(false); }
+    } else {
+      world.current.rules = legacyRules ? 1 : 2; start(world.current, floor); runId.current = crypto.randomUUID(); outfit(world.current);
+    }
     helpState.current.open = false; setHelp(false); setPanel(null); setNotice('');
     void audio.current?.unlock().catch(() => setMuted(true)); refresh();
+  }
+  async function settle(won: boolean) {
+    if (!userId || !cloud || cloud.active_run_id !== runId.current || cloudLock.current) return;
+    cloudLock.current = true; setCloudBusy(true); setCloudError('');
+    try {
+      const result = await finishCavePveRun(runId.current, won);
+      if (result.run_status !== (won ? 'won' : 'lost')) throw new Error('cave_finish_mismatch');
+      setCloud(result);
+      world.current.unlockedFloor = result.unlocked_stage;
+      refresh();
+    } catch {
+      setCloudError(t('Результат не подтверждён. Повторите сохранение; этаж и камни не будут начислены дважды.', 'Result not confirmed. Retry saving; progress and Stones are idempotent.'));
+    } finally { cloudLock.current = false; setCloudBusy(false); }
+  }
+  async function abandonRemoteRun() {
+    if (!cloud?.active_run_id || cloudLock.current || !userId) return;
+    cloudLock.current = true; setCloudBusy(true);
+    try {
+      const result = await finishCavePveRun(cloud.active_run_id, false);
+      setCloud(result); setCloudError('');
+      Object.assign(world.current, createWorld(), {floor:result.unlocked_stage,unlockedFloor:result.unlocked_stage});
+      outfit(world.current); refresh();
+    } catch {
+      setCloudError(t('Не удалось завершить старую попытку. Повторите позже.', 'Could not close the old run. Retry later.'));
+    } finally { cloudLock.current = false; setCloudBusy(false); }
   }
   function exit() { const {floor, unlockedFloor} = world.current; Object.assign(world.current, createWorld(), {floor, unlockedFloor}); outfit(world.current); helpState.current.open = false; setHelp(false); audio.current?.tick(world.current); refresh(); onExit?.(); }
   function pause() { if (!helpState.current.open) world.current.paused = !world.current.paused; refresh(); }
@@ -209,6 +329,9 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
   // Inside the main game the entrance is a plain doorway: the full cave screen opens once the road begins.
   const doorway = !!onExit && !focused;
   const power = 30 + view.attackBonus;
+  const cloudCleared = cloud?.completed_stage ?? 0;
+  const cloudFloor = cloud?.unlocked_stage ?? view.unlockedFloor;
+  const entryBlocked = !!userId && (!cloud || cloudBusy || cloudCleared >= 100 || (!!cloud.active_run_id && cloud.active_run_id !== runId.current));
   const content = <main className={`cx-demo ${focused ? 'cx-focus' : ''} ${playing ? 'cx-playing' : ''}`} lang={en ? 'en' : 'ru'} style={{ '--cx-wood': `url("${assetUrl('assets/territory/ui/wooden-plaque.webp')}")`, '--cx-planks': `url("${assetUrl('assets/territory/ui/shop/shop-wood-planks.webp')}")`, '--cx-color': BIOMES[view.biome].color } as React.CSSProperties}>
     <div className="cx-stage" data-phase={view.phase} {...(panel !== null ? { inert: '' } : {})}>
       <canvas ref={canvas} role="img" aria-label={t('Отряд движется вправо по пещере', 'The party travels right through the cave')} />
@@ -228,7 +351,8 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
       {boss && <div className="cx-boss"><strong>{t('Собор Бездны', 'Abyss Cathedral')} · {t('Фаза', 'Phase')} {view.bossPhase}/3</strong><div role="meter" aria-label={t('Здоровье босса', 'Boss health')} aria-valuenow={boss.hp} aria-valuemin={0} aria-valuemax={boss.maxHp}><i style={{ width: `${100 * boss.hp / boss.maxHp}%` }} /></div><small>{[t('Пробуждение', 'Awakening'), t('Раскол земли', 'Earth rupture'), t('Ярость Бездны', 'Abyss fury')][view.bossPhase - 1]}</small></div>}
       {warning && <div className={`cx-warning ${boss.heavy ? 'heavy' : ''}`} role="status">{boss.heavy ? [t('⚠ Обвал! Нажмите Заслон', '⚠ Collapse! Use Ward'), t('⚠ Разлом! Нажмите Заслон', '⚠ Rupture! Use Ward'), t('⚠ Дождь осколков! Заслон', '⚠ Shard rain! Use Ward')][view.bossPhase - 1] : t('Удар приближается', 'Incoming strike')}<i style={{ transform: `scaleX(${Math.max(0, (boss.impact - view.time) / (boss.heavy ? 1.45 : .95))})` }} /></div>}
       {(!ready || error) && <div className="cx-overlay"><strong>{error ? t('Не удалось открыть пещеру', 'Could not open the cave') : t('Пробуждаем пещеру…', 'Waking the cave…')}</strong>{error && <button onClick={() => setLoadAttempt(attempt => attempt + 1)}>{t('Повторить загрузку', 'Reload')}</button>}</div>}
-      {view.phase === 'LOBBY' && ready && <div className="cx-lobby"><span className="cx-eyebrow">{t('ТЁМНАЯ ПЕЩЕРА', 'DARK CAVE')}</span><h1>{t('За гранью света', 'Beyond the light')}</h1><p>{t('Четыре портала. Выберите риск. Победите Собор.', 'Four portals. Choose your risk. Defeat the Cathedral.')}</p><button className="cx-primary" onClick={() => begin()}>{t('В путь', 'Set out')} →</button><small>{t('Герой идёт и бьёт сам · умения и зелья за вами', 'The hero travels and strikes · skills and potions are yours')}</small></div>}
+      {view.phase === 'LOBBY' && ready && <div className="cx-lobby"><span className="cx-eyebrow">{t('ТЁМНАЯ ПЕЩЕРА', 'DARK CAVE')}</span><h1>{t('За гранью света', 'Beyond the light')}</h1><p>{t('Четыре портала. Выберите риск. Победите Собор.', 'Four portals. Choose your risk. Defeat the Cathedral.')}</p>{userId && cloud && <div className="cx-cloud-progress" role="status"><b>{t('Этаж', 'Floor')} {cloudFloor}/100</b><b>◆ {cloud.dark_stones} {t('Тёмных камней', 'Dark Stones')}</b><button onClick={() => navigate('floors')}>{t('Этажи пещеры', 'Cave floors')}</button></div>}<button className="cx-primary" onClick={() => void begin()} disabled={entryBlocked}>{cloudBusy ? t('Проверяем вход…', 'Checking entry…') : userId && cloudCleared >= 100 ? t('Все этажи пройдены', 'All floors cleared') : t('В путь', 'Set out')} →</button><small>{t('Герой идёт и бьёт сам · умения и зелья за вами', 'The hero travels and strikes · skills and potions are yours')}</small></div>}
+      {userId && cloudError && <div className="cx-cloud-alert" role="alert"><p>{cloudError}</p>{cloud?.active_run_id && cloud.active_run_id !== runId.current && <button onClick={() => void abandonRemoteRun()} disabled={cloudBusy}>{t('Закрыть старый забег · вернуть камень', 'Close old run · refund Stone')}</button>}{cloud?.active_run_id === runId.current && ended && <button onClick={() => void settle(view.phase === 'VICTORY')} disabled={cloudBusy}>{t('Повторить сохранение', 'Retry saving result')}</button>}{!cloud && <button onClick={() => { setCloudError(''); void getCavePveStatus().then(setCloud).catch(() => setCloudError(t('Сервер пока недоступен', 'Server unavailable'))); }}>{t('Повторить загрузку', 'Retry loading')}</button>}</div>}
       {view.phase === 'RUN_RIGHT' && !view.runeCollected && !view.paused && <button ref={rune} className="cx-rune" onClick={() => { collectRune(world.current); refresh(); }} aria-label={t('Собрать искру', 'Collect spark')}><small>+10 ✦</small></button>}
       {view.phase === 'PORTAL_CHOICE' && <div className={`cx-portals ${view.rules === 2 ? 'cx-three-portals' : ''}`} aria-label={t('Выбор портала', 'Portal choice')}>{portalsFor(view).map((p, i) => <button key={i} aria-label={`${biomeName(p.biome)}${view.rules === 2 ? ` · ${i+1} ★` : ''}`} onClick={() => { if (choosePortal(world.current, i)) refresh(); }} style={{ '--portal': view.rules === 2 ? DIFFICULTY[i].color : BIOMES[p.biome].color } as React.CSSProperties}><span className="cx-portal-touch" /><b>{biomeName(p.biome)}</b><small>{view.rules === 2 ? `${DIFFICULTY[i].count} ${t('врагов','foes')} · ${t('Добыча','Loot')} ${'↑'.repeat(i+1)}` : (en ? ['Ranged spores', 'Armoured depths', 'Sails & Cathedral', 'Depths & Cathedral'][view.room * 2 + i] : p.hint)}</small></button>)}</div>}
       {playing && view.phase !== 'PORTAL_CHOICE' && <div className="cx-actions">{(Object.keys(SKILLS) as Skill[]).map(key => {
@@ -240,7 +364,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
       })}</div>}
       {view.paused && playing && !help && panel === null && <div className="cx-overlay"><strong>{t('Привал', 'Rest stop')}</strong><p>{t('Экспедиция сохранена. Мир ждёт вашего шага.', 'The expedition is saved. The world waits for your step.')}</p><button className="cx-primary" onClick={pause}>{t('Продолжить путь', 'Continue')}</button><button onClick={() => begin()}>{t('Начать заново', 'Restart')}</button><button onClick={exit}>{t('К входному порталу', 'Back to entrance')}</button></div>}
       {help && <div className="cx-overlay cx-help"><h2>{t('Путь в глубину', 'Into the depths')}</h2><p>{t('Герой сам идёт вправо и бьёт врагов, которые ждут на дороге. Раскол бьёт группу после замаха. Заслон снижает урон на 85%. Уклон спасает от удара, если нажать перед попаданием. Источник лечит героя и живых спутников.', 'The hero travels right and strikes the foes waiting on the road. Cleave hits a group after the windup. Ward reduces damage by 85%. Use Evade just before contact to avoid a hit. Spring heals the hero and living companions.')}</p><p>{t('Энергия восстанавливается медленно. Авто применяет умения за вас и бережёт запас для защиты. Перед каждым из четырёх участков выберите арку: больше звёзд — сильнее враги и выше шанс ценной добычи. После перезагрузки экспедиция продолжается с того же места.', 'Energy recovers slowly. Auto uses skills for you and keeps a reserve for defence. Choose an arch before each of four sections: more stars mean stronger foes and a better loot chance. After a reload the expedition continues from the same place.')}</p><button onClick={closeHelp}>{t('Понятно', 'Got it')}</button></div>}
-      {ended && panel === null && <div className={`cx-result ${view.phase === 'VICTORY' ? 'cx-victory' : ''}`}><span className="cx-result-emblem">{view.phase === 'VICTORY' ? '♛' : '⛨'}</span><span className="cx-eyebrow">{view.phase === 'VICTORY' ? t('ПОБЕДА', 'VICTORY') : t('ПУТЬ ПРЕРВАН', 'DEFEAT')}</span><h1>{view.phase === 'VICTORY' ? t('Бездна отступила', 'The Abyss retreats') : t('Новый шанс ждёт', 'Another chance awaits')}</h1><p>{view.route.map(biomeName).join(' → ')}</p><p>{clock} · {t('враги', 'foes')}: {view.kills} · {t('блоки', 'blocks')}: {view.blocks} · {t('умения', 'skills')}: {view.casts}</p>{view.phase === 'VICTORY' && <div className="cx-loot">{bank.lastLoot?.items.map(item => <div key={item.id}><img src={assetUrl(umbraTemplate(item.templateId)!.art)} alt={t('Добыча', 'Loot')} /><span>{t('ур.', 'Lv.')}{item.level}</span></div>)}</div>}{view.phase === 'VICTORY' && <small>{t('Добыча ждёт в тёмном складе', 'The loot waits in the dark storage')}</small>}{view.phase === 'VICTORY' && <button className="cx-primary" onClick={() => navigate('inventory')}>{t('Открыть добычу', 'Open loot')}</button>}{view.phase === 'VICTORY' && view.unlockedFloor > view.floor && <button className="cx-primary" onClick={() => begin(world.current.floor + 1)}>{t('Следующий этаж', 'Next floor')} →</button>}<button className="cx-primary" onClick={() => begin()}>{t('Повторить забег', 'Try again')} ↻</button><button onClick={exit}>{t('К входному порталу', 'Back to entrance')}</button></div>}
+      {ended && panel === null && <div className={`cx-result ${view.phase === 'VICTORY' ? 'cx-victory' : ''}`}><span className="cx-result-emblem">{view.phase === 'VICTORY' ? '♛' : '⛨'}</span><span className="cx-eyebrow">{view.phase === 'VICTORY' ? t('ПОБЕДА', 'VICTORY') : t('ПУТЬ ПРЕРВАН', 'DEFEAT')}</span><h1>{view.phase === 'VICTORY' ? t('Бездна отступила', 'The Abyss retreats') : t('Новый шанс ждёт', 'Another chance awaits')}</h1><p>{view.route.map(biomeName).join(' → ')}</p><p>{clock} · {t('враги', 'foes')}: {view.kills} · {t('блоки', 'blocks')}: {view.blocks} · {t('умения', 'skills')}: {view.casts}</p>{view.phase === 'VICTORY' && <div className="cx-loot">{bank.lastLoot?.items.map(item => <div key={item.id}><img src={assetUrl(umbraTemplate(item.templateId)!.art)} alt={t('Добыча', 'Loot')} /><span>{t('ур.', 'Lv.')}{item.level}</span></div>)}</div>}{view.phase === 'VICTORY' && <small>{userId ? t('Тестовая добыча сохраняется только на этом устройстве', 'Test loot is saved on this device only') : t('Добыча ждёт в тёмном складе', 'The loot waits in the dark storage')}</small>}{view.phase === 'VICTORY' && <button className="cx-primary" onClick={() => navigate('inventory')}>{t('Открыть добычу', 'Open loot')}</button>}{view.phase === 'VICTORY' && (userId ? (!cloudBusy && !!cloud && !cloud.active_run_id && cloud.unlocked_stage > view.floor) : view.unlockedFloor > view.floor) && <button className="cx-primary" onClick={() => void begin(world.current.floor + 1)}>{t('Следующий этаж', 'Next floor')} →</button>}<button className="cx-primary" onClick={() => begin()}>{t('Повторить забег', 'Try again')} ↻</button><button onClick={exit}>{t('К входному порталу', 'Back to entrance')}</button></div>}
     </div>
     {!doorway && <section className="cx-controls" aria-label={t('Панель героя', 'Hero panel')} {...(panel !== null ? { inert: '' } : {})}>
       <Vitals view={view} en={en} level={HERO_LEVEL} onStats={() => navigate('hero')} />
@@ -286,8 +410,9 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
           : <CaveGemsScreen en={en} onBack={() => navigate('battle')} />}</div>
       </> : <div className="cx-camp-content">
         <span className="cx-eyebrow">{t('ТЁМНАЯ ПЕЩЕРА', 'DARK CAVE')}</span>
-        <h1>{panel === 'map' ? t('Путь в бездну', 'Into the abyss') : panel === 'hero' ? t('Герой', 'Hero') : panel === 'clan' ? t('Походный отряд', 'Expedition party') : panel === 'games' ? t('Летопись экспедиции', 'Expedition record') : t('Привал у входа', 'Entrance camp')}</h1>
-        {panel === 'map' ? <><div className="cx-route-map">{(view.rules === 2 ? [['spore','ember'], ['astral','forge'], ['spore','ember'], ['astral','forge']] : [['crystal'], ['spore', 'ember'], ['astral', 'forge']]).map((row, depth) => <div key={depth} className="cx-route-row"><small>{t('Зал', 'Hall')} {depth + 1}</small>{row.map(b => <div key={b} className={view.route[depth] === b ? (depth === view.room ? 'here' : 'done') : ''} style={{ '--tone': BIOMES[b as Biome].color } as React.CSSProperties}><b>{biomeName(b as Biome)}</b><span>{view.route[depth] === b ? (depth === view.room && playing ? '➤' : '✓') : '◇'}</span></div>)}</div>)}<div className="cx-route-row"><small>☠</small><div className={view.bossSpawned ? 'here' : ''} style={{ '--tone': '#ff8fd0' } as React.CSSProperties}><b>{t('Собор Бездны', 'Abyss Cathedral')}</b><span>{view.phase === 'VICTORY' ? '✓' : '◇'}</span></div></div></div><p>{t('Четыре обязательных участка, затем Собор Бездны. Только его победа открывает следующий этаж.', 'Four required sections, then the Abyss Cathedral. Only defeating it unlocks the next floor.')}</p></>
+        <h1>{panel === 'floors' ? t('Сто этажей Пещеры', 'One hundred Cave floors') : panel === 'map' ? t('Путь в бездну', 'Into the abyss') : panel === 'hero' ? t('Герой', 'Hero') : panel === 'clan' ? t('Походный отряд', 'Expedition party') : panel === 'games' ? t('Летопись экспедиции', 'Expedition record') : t('Привал у входа', 'Entrance camp')}</h1>
+        {panel === 'floors' ? <><p>{t('Пройденные этажи сохранены. Пока новый забег разрешён только на максимальной открытой глубине; повторный фарм подключим следующим этапом.', 'Completed floors are preserved. Only the unlocked floor can be entered now; farming cleared floors comes next.')}</p><div className="cx-floor-picker">{Array.from({length:100},(_,i)=>i+1).map(f=><button key={f} className={f<=cloudCleared?'cleared':f===cloudFloor?'current':''} disabled={!!userId && f!==cloudFloor} onClick={()=>{ navigate('battle'); void begin(f); }}><b>{t('Этаж','Floor')} {f}</b><small>{f<=cloudCleared?t('Пройден','Cleared'):f===cloudFloor?t('Текущий','Current'):t('Закрыт','Locked')}</small></button>)}</div></>
+        : panel === 'map' ? <><div className="cx-route-map">{(view.rules === 2 ? [['spore','ember'], ['astral','forge'], ['spore','ember'], ['astral','forge']] : [['crystal'], ['spore', 'ember'], ['astral', 'forge']]).map((row, depth) => <div key={depth} className="cx-route-row"><small>{t('Зал', 'Hall')} {depth + 1}</small>{row.map(b => <div key={b} className={view.route[depth] === b ? (depth === view.room ? 'here' : 'done') : ''} style={{ '--tone': BIOMES[b as Biome].color } as React.CSSProperties}><b>{biomeName(b as Biome)}</b><span>{view.route[depth] === b ? (depth === view.room && playing ? '➤' : '✓') : '◇'}</span></div>)}</div>)}<div className="cx-route-row"><small>☠</small><div className={view.bossSpawned ? 'here' : ''} style={{ '--tone': '#ff8fd0' } as React.CSSProperties}><b>{t('Собор Бездны', 'Abyss Cathedral')}</b><span>{view.phase === 'VICTORY' ? '✓' : '◇'}</span></div></div></div><p>{t('Четыре обязательных участка, затем Собор Бездны. Только его победа открывает следующий этаж.', 'Four required sections, then the Abyss Cathedral. Only defeating it unlocks the next floor.')}</p></>
         : panel === 'hero' ? <><div className="cx-hero-card"><img className="cx-camp-hero" src={assetUrl('assets/territory/characters/heroes/male_viking/idle.webp')} alt="" /><ul><li><span>{t('Уровень', 'Level')}</span><b>{HERO_LEVEL}</b></li><li><span>{t('Здоровье', 'Health')}</span><b>{Math.ceil(view.hp)}/{view.maxHp}</b></li><li><span>{t('Удар', 'Strike')}</span><b>{power}</b></li><li><span>{t('Защита', 'Defense')}</span><b>{view.defenseBonus}</b></li><li><span>{t('Энергия', 'Energy')}</span><b>{Math.floor(view.energy)}/100</b></li></ul></div><UmbraMosaic bank={bank} en={en} assetUrl={assetUrl} onOpen={openGear} /><p>{t('Тёмные вещи, самоцветы и звание усиливают героя с новой экспедиции.', 'Dark gear, gems and rank strengthen the hero from the next expedition.')}</p></>
         : panel === 'clan' ? <div className="cx-party-cards">{['northern_warrior', 'forest_healer'].map((id, i) => <div key={id}><img src={assetUrl(`assets/territory/characters/followers/${id}/idle.webp`)} alt="" /><b>{i ? t('Лесная целительница', 'Forest healer') : t('Северный воин', 'Northern warrior')}</b><p>♥ {Math.ceil(view.followerHp[i])}/{i ? 220 : 260}</p><small>{i ? t('Магические снаряды · лечится Источником', 'Magic projectiles · healed by Spring') : t('Ближний бой · поддержка в атаке', 'Melee · attack support')}</small></div>)}</div>
         : panel === 'games' ? <ul className="cx-record"><li><span>{t('Побед над Собором', 'Cathedral victories')}</span><b>{bank.playtestWins}</b></li><li><span>{t('Повержено врагов', 'Foes defeated')}</span><b>{view.kills}/{view.rules === 2 ? `${view.stars.reduce((n, s) => n + 8 + s, 1) + (4-view.stars.length)*9}${view.stars.length < 4 ? '–' + (view.stars.reduce((n,s)=>n+8+s,1)+(4-view.stars.length)*11) : ''}` : 16}</b></li><li><span>{t('Блоки · уклонения', 'Blocks · evades')}</span><b>{view.blocks} · {view.dodges}</b></li><li><span>{t('Умений применено', 'Skills used')}</span><b>{view.casts}</b></li><li><span>{t('Время в пути', 'Time on the road')}</span><b>{clock}</b></li><li><span>{t('Вещей в тёмном складе', 'Items in dark storage')}</span><b>{bank.items.length}</b></li></ul>
