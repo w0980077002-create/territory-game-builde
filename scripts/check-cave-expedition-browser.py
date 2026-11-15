@@ -116,7 +116,7 @@ try:
     context=browser.new_context(viewport={'width':360,'height':640},is_mobile=True,has_touch=True)
     page=context.new_page();page.goto(URL+'/territory-cave-demo.html');page.get_by_role('button',name='В путь').wait_for();context.set_offline(True)
     assert page.evaluate('typeof window.__caveDemo')=='undefined'
-    page.get_by_role('button',name='В путь').tap();page.wait_for_timeout(1000);visible(page)
+    page.get_by_role('button',name='В путь').tap();page.locator('.cx-portals button').first.wait_for();visible(page)
     context.close()
     # English, reduced motion, reload/re-entry, short and landscape viewports.
     for width,height in [(360,640),(320,568),(360,808),(640,360)]:
