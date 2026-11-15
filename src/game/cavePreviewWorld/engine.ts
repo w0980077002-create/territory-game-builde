@@ -19,7 +19,7 @@ export interface World {
   heroV: number; roomX: number; stopX: number; distance: number; followerV: number[]; followerStride: number[]; alertAt: number; shake: number;
 }
 /** World-space travel. One unit is one canvas pixel of the 430-wide stage. */
-export const TRAVEL = { run: 138, accel: 300, brake: 260, firstLeg: 520, leg: 640, bossLeg: 700, portalLeg: 560, aggro: 250, bossAggro: 300, follow: 190, portalScreenX: 252, followerGap: [118, 184] };
+export const TRAVEL = { run: 138, accel: 300, brake: 260, firstLeg: 520, leg: 640, bossLeg: 700, portalLeg: 560, aggro: 250, bossAggro: 300, follow: 190, portalScreenX: 262, followerGap: [118, 184] };
 /** Local demo tuning only. No relationship to live combat or the economy. */
 export const BALANCE = { maxHp: 900, regen: 1.8, killEnergy: 3, openingRun: 2.4, betweenWaves: 1.2, basicDamage: 30, cleaveDamage: 105, healing: 280, wardSeconds: 2.1, bossHp: 1500 };
 export const MAX_HP = BALANCE.maxHp;
@@ -160,33 +160,36 @@ export function update(w: World, delta: number) {
     fx(w, w.heroX + 70, '', 'slash'); w.cleaveTargets = [];
   }
   const age = w.time - w.phaseAt;
+  // One physical step per tick, even when a phase hands over to the next one inside this tick.
+  let stepped = false;
+  const go = (limit: number, top?: number) => { if (!stepped) { stepped = true; travel(w, dt, limit, top); } };
   w.shake = Math.max(0, w.shake - dt * 3.2);
   if (w.phase === 'ENTER' && age > .65) spawn(w);
   if (w.phase === 'RUN_RIGHT') {
     const lead = w.enemies.reduce<Enemy | undefined>((a, b) => b.hp > 0 && (!a || b.worldX < a.worldX) ? b : a, undefined);
     if (lead) {
       // The party is spotted: the road stops here until the pack is beaten.
-      travel(w, dt, lead.worldX - 110);
+      go(lead.worldX - 110);
       if (lead.worldX - w.heroX <= (lead.species === 'boss' ? TRAVEL.bossAggro : TRAVEL.aggro)) {
         w.alertAt = w.time; w.enemies.forEach((e, i) => { e.ready = w.time + 1 + i * .4; });
         fx(w, lead.worldX, '!', 'energy', lead.lane); phase(w, 'WAVE_SPAWN');
       }
     } else {
-      travel(w, dt, w.stopX);
+      go(w.stopX);
       if (w.heroX >= w.stopX - .05 && w.heroV === 0) { w.pose = 'idle'; phase(w, 'PORTAL_CHOICE'); }
     }
   }
   if (w.phase === 'WAVE_SPAWN') {
     const lead = w.enemies.find(e => e.hp > 0);
-    if (lead) travel(w, dt, lead.worldX - 110);
-    if (age > .25) phase(w, w.enemies.some(e => e.species === 'boss') ? 'BOSS' : 'APPROACH');
+    if (lead) go(lead.worldX - 110);
+    if (w.time - w.phaseAt > .25) phase(w, w.enemies.some(e => e.species === 'boss') ? 'BOSS' : 'APPROACH');
   }
   if (['APPROACH', 'FIGHT', 'BOSS'].includes(w.phase)) {
     const alive = w.enemies.filter(e => e.hp > 0);
     const boss = alive.find(e => e.species === 'boss');
     if (boss) w.bossPhase = boss.hp / boss.maxHp > .66 ? 1 : boss.hp / boss.maxHp > .33 ? 2 : 3;
     const nearest = alive.reduce<Enemy | undefined>((a, b) => !a || b.worldX < a.worldX ? b : a, undefined);
-    if (nearest) travel(w, dt, nearest.worldX - (nearest.species === 'boss' ? 170 : 110));
+    if (nearest) go(nearest.worldX - (nearest.species === 'boss' ? 170 : 110));
     else { w.heroV = 0; if (w.time > w.poseUntil) w.pose = 'idle'; }
     for (const e of alive) {
       const spec = CREATURES[e.species]; const gap = e.worldX - w.heroX;
@@ -258,19 +261,19 @@ export function update(w: World, delta: number) {
   }
   if (w.phase === 'CLEAR') {
     // A short breath after the fight, then the road continues from this exact spot.
-    travel(w, dt, w.heroX);
+    go(w.heroX);
     if (w.time - w.phaseAt > 1.1) {
       w.enemies = []; w.wave++;
       if (w.room === 2 && w.bossSpawned) { w.pose = 'idle'; phase(w, 'VICTORY'); }
       else if (w.room === 2) { w.bossSpawned = true; spawn(w, true); }
       else if (w.wave < 2) spawn(w);
-      else { w.portalX = w.heroX + TRAVEL.portalLeg; w.stopX = w.portalX - 96; phase(w, 'RUN_RIGHT'); }
+      else { w.portalX = w.heroX + TRAVEL.portalLeg; w.stopX = w.portalX - 128; phase(w, 'RUN_RIGHT'); }
     }
   }
   if (w.phase === 'PORTAL_CHOICE') { w.heroV = 0; w.pose = 'idle'; w.followerPose = w.followerHp.map(hp => hp > 0 ? 'idle' : 'death'); }
   if (w.phase === 'PORTAL_ENTER') {
     const target = w.portalX + (w.selected === 1 ? 112 : 0);
-    travel(w, dt, target, 150);
+    go(target, 150);
     if (w.heroX >= target - .05 && age > 1.2) phase(w, 'NEXT_ROOM');
   }
   if (w.phase === 'NEXT_ROOM' && age > .65) {
@@ -291,10 +294,10 @@ export function update(w: World, delta: number) {
   // Exact exponential smoothing: frame-rate independent and never overshoots the hero.
   const lead = w.enemies.reduce<Enemy | undefined>((a, b) => b.hp > 0 && (!a || b.worldX < a.worldX) ? b : a, undefined);
   let desired = w.heroX - TRAVEL.follow;
-  if (['APPROACH', 'FIGHT', 'BOSS', 'WAVE_SPAWN'].includes(w.phase) && lead) desired = Math.min(w.heroX - 128, Math.max(w.heroX - TRAVEL.follow, (w.heroX + lead.worldX) / 2 - 232));
+  if (['APPROACH', 'FIGHT', 'BOSS', 'WAVE_SPAWN'].includes(w.phase) && lead) desired = Math.min(w.heroX - 150, Math.max(w.heroX - TRAVEL.follow, (w.heroX + lead.worldX) / 2 - 232));
   if (w.phase === 'RUN_RIGHT' && !lead && w.portalX > w.roomX) desired = Math.min(desired, w.portalX - TRAVEL.portalScreenX);
   if (['PORTAL_CHOICE', 'PORTAL_ENTER', 'NEXT_ROOM'].includes(w.phase)) desired = w.portalX - TRAVEL.portalScreenX;
   desired = Math.max(w.roomX, desired);
-  w.cameraX += (desired - w.cameraX) * (1 - Math.exp(-4.5 * dt));
+  w.cameraX += (desired - w.cameraX) * (1 - Math.exp(-4 * dt));
   if (Math.abs(desired - w.cameraX) < .02) w.cameraX = desired;
 }

@@ -1,1 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 280"><defs><linearGradient id="f" x2=".9" y2="1"><stop stop-color="#e4ceff"/><stop offset=".4" stop-color="#7398ef"/><stop offset="1" stop-color="#211b36"/></linearGradient></defs><g fill="url(#f)" stroke="#e4ceff" stroke-width="1.5" stroke-linejoin="round"><g id="w"><path d="M195 195Q148 56 18 12Q28 75 66 110L29 89Q56 154 110 167L68 159Q113 213 184 218Z"/><path d="M184 201Q134 100 43 42M176 208Q123 149 67 118M170 214L100 180" fill="none" opacity=".65"/></g><use href="#w" transform="translate(400) scale(-1 1)"/><path d="M200 170L214 193L200 220L186 193Z"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 280"><defs>
+<linearGradient id="m" x1=".1" y1="0" x2=".8" y2="1"><stop stop-color="#d9c8ff"/><stop offset=".3" stop-color="#9a6cf4"/><stop offset=".7" stop-color="#5a2fc0"/><stop offset="1" stop-color="#24124f"/></linearGradient>
+<radialGradient id="g" cx=".78" cy=".55" r=".7"><stop stop-color="#ff9df2" stop-opacity=".75"/><stop offset=".55" stop-color="#b06cff" stop-opacity=".15"/><stop offset="1" stop-color="#b06cff" stop-opacity="0"/></radialGradient>
+<linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff4ff"/><stop offset="1" stop-color="#b9a0ee"/></linearGradient>
+</defs>
+<g id="w" stroke-linejoin="round" stroke-linecap="round">
+<path d="M190 166 L98 50 Q52 28 14 20 Q42 64 28 114 Q60 122 68 178 Q102 172 126 216 Q158 196 190 198 Z" fill="url(#m)" stroke="#1b0f3d" stroke-width="5"/>
+<path d="M190 166 L98 50 Q52 28 14 20 Q42 64 28 114 Q60 122 68 178 Q102 172 126 216 Q158 196 190 198 Z" fill="url(#g)"/>
+<path d="M30 40 Q50 70 40 104 M58 70 Q78 120 76 164 M96 96 Q118 150 128 198 M140 130 Q160 160 168 190" fill="none" stroke="#e6d6ff" stroke-width="1.6" opacity=".45"/>
+<path d="M98 50 L14 20 M98 50 L28 114 M98 50 L68 178 M98 50 L126 216" fill="none" stroke="#1b0f3d" stroke-width="8"/>
+<path d="M190 166 L98 50" fill="none" stroke="#1b0f3d" stroke-width="12"/>
+<path d="M98 50 L14 20 M98 50 L28 114 M98 50 L68 178 M98 50 L126 216" fill="none" stroke="url(#b)" stroke-width="4"/>
+<path d="M190 166 L98 50" fill="none" stroke="url(#b)" stroke-width="7.5"/>
+<path d="M98 50 Q92 26 108 14 Q110 32 104 46 Z" fill="#fff4ff" stroke="#1b0f3d" stroke-width="3.5"/>
+<circle cx="98" cy="50" r="7" fill="#ffd36b" stroke="#1b0f3d" stroke-width="3"/>
+<g fill="#fff"><path d="M60 92l2.5 7 7 2.5-7 2.5-2.5 7-2.5-7-7-2.5 7-2.5z" opacity=".9"/><path d="M112 150l1.8 5 5 1.8-5 1.8-1.8 5-1.8-5-5-1.8 5-1.8z" opacity=".8"/><path d="M150 176l1.4 4 4 1.4-4 1.4-1.4 4-1.4-4-4-1.4 4-1.4z" opacity=".7"/></g>
+</g>
+<use href="#w" transform="translate(400) scale(-1 1)"/>
+</svg>

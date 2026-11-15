@@ -11,10 +11,10 @@
 /* ---------- Stage ---------- */
 .cx-stage{position:relative;flex:1;min-height:150px;overflow:hidden;background:#081321;width:100%;max-width:640px;align-self:center}
 .cx-stage canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
-.cx-header{position:absolute;inset:0 0 auto;display:flex;align-items:flex-start;gap:4px;padding:5px 5px 14px;background:linear-gradient(#05080de0,#05080d00);z-index:3;pointer-events:none}
+.cx-header{position:absolute;inset:0 0 auto;display:flex;align-items:flex-start;gap:3px;padding:5px 5px 14px;background:linear-gradient(#05080de0,#05080d00);z-index:6;pointer-events:none}
 .cx-header>*{pointer-events:auto}
-.cx-demo .cx-header button{width:38px;min-width:38px;height:38px;min-height:38px;display:grid;place-items:center;padding:0;border-radius:50%;border:2px solid #c29a5c;background:radial-gradient(circle at 50% 30%,#5a3d24,#22160e);box-shadow:0 2px 6px #000a,inset 0 1px #ffe5b055;color:#ffe3a6}
-.cx-header button img{width:26px;height:26px;object-fit:contain}
+.cx-demo .cx-header button{width:36px;min-width:36px;height:36px;min-height:36px;display:grid;place-items:center;padding:0;border-radius:50%;border:2px solid #c29a5c;background:radial-gradient(circle at 50% 30%,#5a3d24,#22160e);box-shadow:0 2px 6px #000a,inset 0 1px #ffe5b055;color:#ffe3a6}
+.cx-header button img{width:24px;height:24px;object-fit:contain}
 .cx-chapter{flex:1;min-width:0;text-align:center;pointer-events:none;text-shadow:0 1px 3px #000,0 0 8px #000}
 .cx-chapter strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#ffe3a6;font-size:12.5px;letter-spacing:.2px}
 .cx-chapter span{display:block;font-size:10px;color:#d6e4ea;margin-top:1px;font-weight:600}
@@ -33,8 +33,8 @@
 .cx-warning.heavy{background:#4a1522f0;border-color:#ff9d85;color:#ffe2c7;animation:cx-pulse .5s ease-in-out infinite}
 .cx-warning i{display:block;height:2px;background:currentColor;margin-top:4px;transform-origin:left}
 .cx-portals{position:absolute;inset:0;pointer-events:none;z-index:2}
-.cx-demo .cx-portals button{position:absolute;left:48%;width:22%;bottom:11%;height:13%;min-height:48px;padding:2px;border:0;background:transparent;box-shadow:none;pointer-events:auto;color:var(--portal);overflow:visible}
-.cx-portals button:nth-child(2){left:74%}
+.cx-demo .cx-portals button{position:absolute;left:50%;width:22%;bottom:9%;height:13%;min-height:48px;padding:2px;border:0;background:transparent;box-shadow:none;pointer-events:auto;color:var(--portal);overflow:visible}
+.cx-portals button:nth-child(2){left:76%}
 .cx-portals b{font-size:11px;line-height:1.15;display:block;text-shadow:0 2px 3px #000,0 0 6px #000}
 .cx-portals small{font-size:8px;line-height:1.2;display:block;margin:3px -3px 0;color:#e0e8ed;text-shadow:0 2px 3px #000}
 .cx-portals .cx-portal-touch{position:absolute;left:0;right:0;bottom:100%;height:125px;display:block;border-radius:45% 45% 0 0;animation:cx-beckon 1.6s ease-in-out infinite}
@@ -43,8 +43,8 @@
 .cx-rune small{font-size:10px;font-weight:800;color:#c9fbff;text-shadow:0 0 8px #3fd5ff,0 1px 2px #000;animation:cx-pulse 1s ease-in-out infinite}
 
 /* Four skills sit on the near edge of the road, between the two orbs. */
-.cx-actions{position:absolute;left:66px;right:66px;bottom:7px;display:flex;justify-content:center;gap:clamp(4px,1.6vw,9px);z-index:2}
-.cx-demo .cx-actions button{position:relative;flex:0 1 50px;aspect-ratio:1;min-width:42px;min-height:42px;max-width:54px;padding:0 0 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border-radius:50%;border:2px solid #d8b06c;background:radial-gradient(circle at 50% 28%,#7a4b25,#2a180e 72%);box-shadow:0 3px 8px #000b,inset 0 2px #ffe9bd4d;color:#ffe2a0}
+.cx-actions{position:absolute;left:66px;right:66px;bottom:7px;display:flex;justify-content:center;gap:clamp(3px,1.6vw,9px);z-index:2}
+.cx-demo .cx-actions button{position:relative;flex:0 0 clamp(46px,13vw,54px);height:clamp(46px,13vw,54px);min-height:44px;padding:0 0 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border-radius:50%;border:2px solid #d8b06c;background:radial-gradient(circle at 50% 28%,#7a4b25,#2a180e 72%);box-shadow:0 3px 8px #000b,inset 0 2px #ffe9bd4d;color:#ffe2a0}
 .cx-demo .cx-actions .cx-skill-ward{background:radial-gradient(circle at 50% 28%,#2f6f95,#0e2230 72%);color:#c4ecff;border-color:#9fd0ea}
 .cx-demo .cx-actions .cx-skill-heal{background:radial-gradient(circle at 50% 28%,#3d8a4e,#102415 72%);color:#c8f7c0;border-color:#a3d99a}
 .cx-demo .cx-actions .cx-skill-dodge{background:radial-gradient(circle at 50% 28%,#62509f,#1b1533 72%);color:#ddd6ff;border-color:#b9acec}
@@ -61,8 +61,9 @@
 .cx-demo .cx-primary{color:#2d1c0d;background:linear-gradient(#ffe9b5,#d39a45);border:2px solid #fff0c4;min-height:46px;padding:9px 28px;font-size:15px;font-weight:800;border-radius:12px;box-shadow:0 4px 0 #7a4e1c,0 8px 16px #000a;text-shadow:0 1px #fff6}
 .cx-demo .cx-primary:active{transform:translateY(3px);box-shadow:0 1px 0 #7a4e1c,0 3px 8px #000a}
 .cx-lobby .cx-primary{animation:cx-glow 1.8s ease-in-out infinite}
-.cx-lobby small{font-size:9.5px;color:#e3ebee;margin-top:8px;padding-bottom:26px}
-.cx-overlay{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;gap:11px;text-align:center;background:#070c14e8;backdrop-filter:blur(2px);overflow:auto}
+.cx-lobby small{font-size:9.5px;color:#e3ebee;margin-top:6px}
+.cx-overlay{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;gap:11px;text-align:center;background:#070c14b8;overflow:auto}
+.cx-help{background:#070c14f0}
 .cx-overlay strong{font-size:22px;color:#ffe3a6}.cx-overlay p{font-size:12px;line-height:1.6;max-width:400px;margin:0}.cx-overlay button{padding:8px 18px;min-width:210px}.cx-help{gap:7px;justify-content:flex-start;padding-top:56px}.cx-help h2{font-size:20px;margin:0;color:#ffe3a6}
 .cx-result{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:12px;background:radial-gradient(ellipse at top,#4a3a2aee,#09101af7 70%);overflow:auto;animation:cx-result-reveal .5s ease-out both}
 .cx-result.cx-victory{background:radial-gradient(ellipse at top,#6b4d1fee,#120d16f7 72%)}
@@ -209,9 +210,9 @@
 @keyframes cx-toast{0%{opacity:0;transform:translate(-50%,-8px)}8%,82%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-6px)}}
 
 /* Narrow phones */
-@media(max-width:359px){.cx-demo .cx-header button{width:34px;min-width:34px;height:34px;min-height:34px}.cx-chapter strong{font-size:11px}.cx-chapter span{font-size:9px}.cx-orb{width:60px;height:60px;top:-30px}.cx-orb svg{width:29px;height:29px}.cx-xp{left:63px;right:63px}.cx-actions{left:60px;right:60px}.cx-control-status{grid-template-columns:minmax(0,1fr) repeat(4,40px);gap:4px}.cx-controls{padding:0 4px 4px}.cx-hpbar span{font-size:10.5px}}
+@media(max-width:359px){.cx-demo .cx-header button{width:32px;min-width:32px;height:32px;min-height:32px}.cx-chapter strong{font-size:11px}.cx-chapter span{font-size:9px}.cx-orb{width:60px;height:60px;top:-30px}.cx-orb svg{width:29px;height:29px}.cx-xp{left:63px;right:63px}.cx-actions{left:58px;right:58px}.cx-control-status{grid-template-columns:minmax(0,1fr) repeat(4,40px);gap:4px}.cx-controls{padding:0 4px 4px}.cx-hpbar span{font-size:10.5px}}
 /* Short screens: everything stays, the panel tightens. */
-@media(max-height:620px){.cx-demo{--u:clamp(34px,7dvh,44px);--nav:50px}.cx-vitals{margin-bottom:3px;height:28px}.cx-xp{top:2px}.cx-control-status{margin-top:3px;height:40px}.cx-demo .cx-control-status button{height:40px}.cx-quest img{width:30px;height:30px}.cx-belt{margin-top:3px;height:36px}.cx-controls{padding-bottom:3px}.cx-orb{width:58px;height:58px;top:-32px}.cx-orb svg{width:28px;height:28px}.cx-xp{left:62px;right:62px}.cx-actions{left:58px;right:58px;bottom:5px}.cx-demo .cx-actions button{min-width:40px;min-height:40px;flex-basis:44px}.cx-road{top:52px}.cx-boss{top:50px}.cx-warning{top:98px}.cx-result{gap:4px;padding:7px}.cx-result-emblem{display:none}.cx-result h1{font-size:19px}.cx-result .cx-eyebrow{font-size:14px}.cx-loot>div{height:60px;width:54px}.cx-loot img{width:46px;height:46px}.cx-lobby{padding-top:20px}.cx-lobby p{margin-bottom:6px}.cx-demo h1{font-size:21px}}
+@media(max-height:620px){.cx-demo{--u:clamp(34px,7dvh,44px);--nav:50px}.cx-vitals{margin-bottom:3px;height:28px}.cx-xp{top:2px}.cx-control-status{margin-top:3px;height:40px}.cx-demo .cx-control-status button{height:40px}.cx-quest img{width:30px;height:30px}.cx-belt{margin-top:3px;height:36px}.cx-controls{padding-bottom:3px}.cx-orb{width:58px;height:58px;top:-32px}.cx-orb svg{width:28px;height:28px}.cx-xp{left:62px;right:62px}.cx-actions{left:58px;right:58px;bottom:5px}.cx-demo .cx-actions button{flex-basis:46px;height:46px}.cx-road{top:52px}.cx-boss{top:50px}.cx-warning{top:98px}.cx-result{gap:4px;padding:7px}.cx-result-emblem{display:none}.cx-result h1{font-size:19px}.cx-result .cx-eyebrow{font-size:14px}.cx-loot>div{height:60px;width:54px}.cx-loot img{width:46px;height:46px}.cx-lobby{inset:52px 10px 6px}.cx-lobby p,.cx-lobby small{display:none}.cx-demo h1{font-size:21px}}
 /* Landscape phone: the stage on the left, the full hero panel on the right, navigation below both. */
 @media(max-height:460px) and (orientation:landscape){
   .cx-demo{display:grid;grid-template-columns:minmax(0,1fr) min(46%,360px);grid-template-rows:minmax(0,1fr) auto;--u:clamp(30px,10dvh,40px);--nav:44px}

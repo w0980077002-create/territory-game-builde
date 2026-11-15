@@ -151,10 +151,11 @@ function midPiece(c: Ctx, biome: Biome, seed: number, x: number, base: number, h
     c.globalAlpha = 1; light(c, '#8dff8a', 3, -stem + 8, cap * 1.5, .26 + .07 * Math.sin(time * 1.1 + seed * 30));
   } else {
     // Old mine timbering with a swinging lantern; the forge adds a hot chain.
-    const post = tall * 1.05, span = 58 + seed * 24, wood = biome === 'forge' ? '#2a1512' : '#2e2016';
-    c.globalAlpha = .9; c.fillStyle = wood;
-    c.fillRect(-span / 2 - 5, -post, 10, post); c.fillRect(span / 2 - 5, -post, 10, post); c.fillRect(-span / 2 - 12, -post - 4, span + 24, 11);
-    c.strokeStyle = '#5a3b22'; c.lineWidth = 1; c.strokeRect(-span / 2 - 12, -post - 4, span + 24, 11);
+    const post = tall * .82, span = 46 + seed * 20, wood = c.createLinearGradient(0, -post, 0, 0);
+    wood.addColorStop(0, biome === 'forge' ? '#5a3324' : '#5c4027'); wood.addColorStop(1, biome === 'forge' ? '#2b1712' : '#2c1e13');
+    c.globalAlpha = .78; c.fillStyle = wood;
+    c.fillRect(-span / 2 - 3.5, -post, 7, post); c.fillRect(span / 2 - 3.5, -post, 7, post); c.fillRect(-span / 2 - 9, -post - 3, span + 18, 8);
+    c.strokeStyle = '#8a6238'; c.lineWidth = .8; c.strokeRect(-span / 2 - 9, -post - 3, span + 18, 8);
     const swing = Math.sin(time * 1.4 + seed * 15) * .09, lx = -span * .12;
     c.save(); c.translate(lx, -post + 7); c.rotate(swing);
     c.strokeStyle = '#120c08'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, 22); c.stroke();

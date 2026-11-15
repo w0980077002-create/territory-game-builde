@@ -1,4 +1,4 @@
-import { Sword, Shield, HeartPulse, Wind, Pause, Play, ChevronLeft, RefreshCw } from 'lucide-react';
+import { Sword, Shield, HeartPulse, Wind, Pause, Play, ChevronLeft, RefreshCw, Volume2, VolumeX, CircleHelp } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BIOMES, PORTALS, type Biome } from '../../game/cavePreviewWorld/catalog';
@@ -75,6 +75,10 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
       const best = state.items.filter(item => item.slot === slot.id).sort((a, b) => b.rank - a.rank || b.level - a.level)[0];
       if (best) state = dispatch({ type: 'equip', itemId: best.id }, `starter-kit-equip-${slot.id}`).state;
     }
+    // A handful of spare finds stays in the storage; the rest becomes enhancement stones.
+    const worn = new Set(Object.values(state.loadout));
+    const spare = state.items.filter(item => !worn.has(item.id)).sort((a, b) => b.rank - a.rank || b.level - a.level).slice(9).map(item => item.id);
+    if (spare.length) dispatch({ type: 'dismantle', itemIds: spare }, 'starter-kit-tidy');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // Before a run starts the HUD already shows the hero as the dark gear makes him.
@@ -187,17 +191,21 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
   const stageLabel = view.room === 2 && view.bossSpawned ? t('Собор Бездны', 'Abyss Cathedral') : view.wave >= 2 ? t('Развилка', 'Crossroads') : `${t('Волна', 'Wave')} ${view.wave + 1}/${view.room === 2 ? 1 : 2}`;
   const travelLabel = view.phase === 'PORTAL_CHOICE' ? t('Выберите арку', 'Choose an arch') : fighting ? (boss ? t('Бой с хозяином Бездны', 'Abyss lord battle') : t('Бой', 'Battle')) : `${t('Путь', 'Road')} · ${biomeName(view.biome)}`;
   const honorReady = bank.playtestWins > 0 && bank.playtestHonor === 0;
+  // Inside the main game the entrance is a plain doorway: the full cave screen opens once the road begins.
+  const doorway = !!onExit && !focused;
   const power = 30 + view.attackBonus;
   const content = <main className={`cx-demo ${focused ? 'cx-focus' : ''} ${playing ? 'cx-playing' : ''}`} lang={en ? 'en' : 'ru'} style={{ '--cx-wood': `url("${assetUrl('assets/territory/ui/wooden-plaque.webp')}")`, '--cx-planks': `url("${assetUrl('assets/territory/ui/shop/shop-wood-planks.webp')}")`, '--cx-color': BIOMES[view.biome].color } as React.CSSProperties}>
-    <div className="cx-stage" data-phase={view.phase}>
+    <div className="cx-stage" data-phase={view.phase} {...(panel !== null ? { inert: '' } : {})}>
       <canvas ref={canvas} role="img" aria-label={t('Отряд движется вправо по пещере', 'The party travels right through the cave')} />
       <header className="cx-header">
         <button aria-label={t('Вернуться ко входу', 'Return to entrance')} onClick={playing ? pause : exit}><ChevronLeft size={20} /></button>
         <div className="cx-chapter">
           <div className="cx-pips" aria-hidden="true">{[0, 1, 2, 3, 4, 5].map(i => <i key={i} className={i < stage ? 'done' : i === stage && playing ? 'now' : ''}>{i === 5 ? '☠' : ''}</i>)}</div>
-          <strong>{t('Тёмная пещера', 'Dark Cave')} · {biomeName(view.biome)}</strong>
+          <strong>{biomeName(view.biome)}</strong>
           <span>{t('Зал', 'Hall')} {view.room + 1}/3 · {stageLabel}{playing ? ` · ${clock}` : ''}</span>
         </div>
+        <button aria-label={t('Звук', 'Sound')} aria-pressed={!muted} onClick={toggleSound}>{muted ? <VolumeX size={17} /> : <Volume2 size={17} />}</button>
+        <button aria-label={t('Как играть', 'How to play')} onClick={openHelp}><CircleHelp size={17} /></button>
         <button aria-label={t('Настройки', 'Settings')} onClick={() => navigate('settings')}><img src={assetUrl('ic-settings.webp')} alt="" /></button>
         {playing && <button onClick={pause} aria-label={t(view.paused ? 'Возобновить' : 'Пауза', view.paused ? 'Resume' : 'Pause')}>{view.paused ? <Play size={17} /> : <Pause size={17} />}</button>}
       </header>
@@ -208,7 +216,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
       {view.phase === 'LOBBY' && ready && <div className="cx-lobby"><span className="cx-eyebrow">{t('ТЁМНАЯ ПЕЩЕРА', 'DARK CAVE')}</span><h1>{t('За гранью света', 'Beyond the light')}</h1><p>{t('Три зала. Две развилки. Один Собор.', 'Three halls. Two crossroads. One Cathedral.')}</p><button className="cx-primary" onClick={begin}>{t('В путь', 'Set out')} →</button><small>{t('Герой идёт и бьёт сам · умения и зелья за вами', 'The hero travels and strikes · skills and potions are yours')}</small></div>}
       {view.phase === 'RUN_RIGHT' && !view.runeCollected && !view.paused && <button ref={rune} className="cx-rune" onClick={() => { collectRune(world.current); refresh(); }} aria-label={t('Собрать искру', 'Collect spark')}><small>+10 ✦</small></button>}
       {view.phase === 'PORTAL_CHOICE' && <div className="cx-portals" aria-label={t('Выбор портала', 'Portal choice')}>{PORTALS[view.room].map((p, i) => <button key={p.biome} aria-label={biomeName(p.biome)} onClick={() => { if (choosePortal(world.current, i)) refresh(); }} style={{ '--portal': BIOMES[p.biome].color } as React.CSSProperties}><span className="cx-portal-touch" /><b>{biomeName(p.biome)}</b><small>{en ? ['Ranged spores', 'Armoured depths', 'Sails & Cathedral', 'Depths & Cathedral'][view.room * 2 + i] : p.hint}</small></button>)}</div>}
-      {playing && <div className="cx-actions">{(Object.keys(SKILLS) as Skill[]).map(key => {
+      {playing && view.phase !== 'PORTAL_CHOICE' && <div className="cx-actions">{(Object.keys(SKILLS) as Skill[]).map(key => {
         const left = Math.max(0, view.cooldown[key] - view.time), cd = Math.ceil(left), Icon = icons[key];
         return <button key={key} className={`cx-skill-${key}`} aria-label={names[key]} title={`${hints[key]} · ${SKILLS[key].cost}✦`} disabled={skillBlock(view, key) !== null} onClick={() => { skill(world.current, key); refresh(); }}
           style={{ '--cd': left / SKILLS[key].cooldown } as React.CSSProperties}>
@@ -219,13 +227,13 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
       {help && <div className="cx-overlay cx-help"><h2>{t('Путь в глубину', 'Into the depths')}</h2><p>{t('Герой сам идёт вправо и бьёт врагов, которые ждут на дороге. Раскол бьёт группу после замаха. Заслон снижает урон на 85%. Уклон спасает от удара, если нажать перед попаданием. Источник лечит героя и живых спутников.', 'The hero travels right and strikes the foes waiting on the road. Cleave hits a group after the windup. Ward reduces damage by 85%. Use Evade just before contact to avoid a hit. Spring heals the hero and living companions.')}</p><p>{t('Энергия восстанавливается медленно. Авто применяет умения за вас и бережёт запас для защиты. Две арки ведут в разные залы. После перезагрузки экспедиция продолжается с того же места.', 'Energy recovers slowly. Auto uses skills for you and keeps a reserve for defence. The two arches lead to different halls. After a reload the expedition continues from the same place.')}</p><button onClick={closeHelp}>{t('Понятно', 'Got it')}</button></div>}
       {ended && panel === null && <div className={`cx-result ${view.phase === 'VICTORY' ? 'cx-victory' : ''}`}><span className="cx-result-emblem">{view.phase === 'VICTORY' ? '♛' : '⛨'}</span><span className="cx-eyebrow">{view.phase === 'VICTORY' ? t('ПОБЕДА', 'VICTORY') : t('ПУТЬ ПРЕРВАН', 'DEFEAT')}</span><h1>{view.phase === 'VICTORY' ? t('Бездна отступила', 'The Abyss retreats') : t('Новый шанс ждёт', 'Another chance awaits')}</h1><p>{view.route.map(biomeName).join(' → ')}</p><p>{clock} · {view.kills} {t('врагов', 'foes')} · {view.blocks} {t('блоков', 'blocks')} · {view.casts} {t('умений', 'skills')}</p>{view.phase === 'VICTORY' && <div className="cx-loot">{bank.lastLoot?.items.map(item => <div key={item.id}><img src={assetUrl(umbraTemplate(item.templateId)!.art)} alt={t('Добыча', 'Loot')} /><span>{t('ур.', 'Lv.')}{item.level}</span></div>)}</div>}{view.phase === 'VICTORY' && <small>{t('Добыча ждёт в тёмном складе', 'The loot waits in the dark storage')}</small>}{view.phase === 'VICTORY' && <button className="cx-primary" onClick={() => navigate('inventory')}>{t('Открыть добычу', 'Open loot')}</button>}<button className="cx-primary" onClick={begin}>{t('Повторить забег', 'Try again')} ↻</button><button onClick={exit}>{t('К входному порталу', 'Back to entrance')}</button></div>}
     </div>
-    <section className="cx-controls" aria-label={t('Панель героя', 'Hero panel')}>
+    {!doorway && <section className="cx-controls" aria-label={t('Панель героя', 'Hero panel')} {...(panel !== null ? { inert: '' } : {})}>
       <Vitals view={view} en={en} level={HERO_LEVEL} onStats={() => navigate('hero')} />
       <UmbraMosaic bank={bank} en={en} assetUrl={assetUrl} onOpen={openGear} />
       <div className="cx-control-status">
         <button className="cx-quest" onClick={() => navigate(honorReady ? 'honor' : 'map')} aria-label={t('Цель экспедиции', 'Expedition goal')}>
           <img src={assetUrl('assets/territory/cave-loot/2026-11-06/15-rune-emblem.webp')} alt="" />
-          <span><b>{t('Цель: Собор Бездны', 'Goal: Abyss Cathedral')}</b>{honorReady ? <em>{t('Получить награду!', 'Claim reward!')}</em> : <small>{t('Повержено', 'Defeated')} {view.kills}/16 · {t('зал', 'hall')} {view.room + 1}/3</small>}</span>
+          <span><b>{t('Собор Бездны', 'Abyss Cathedral')}</b>{honorReady ? <em>{t('Получить награду!', 'Claim reward!')}</em> : <small>{t('Повержено', 'Defeated')} {view.kills}/16</small>}</span>
         </button>
         <button className="cx-speed" aria-label={t('Скорость', 'Speed')} aria-pressed={view.speed === 2} onClick={() => { world.current.speed = world.current.speed === 1 ? 2 : 1; refresh(); }}><b>x{view.speed}</b></button>
         <button className={view.auto ? 'cx-auto active' : 'cx-auto'} title={t('Автоматически применять умения', 'Use skills automatically')} onClick={() => { world.current.auto = !world.current.auto; refresh(); }} aria-label={t('Авто навыков', 'Auto skills')} aria-pressed={view.auto}><RefreshCw size={21} strokeWidth={2.4} /></button>
@@ -233,7 +241,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
         <button className="cx-icon-button" aria-label={t('Благословение', 'Blessing')} onClick={() => navigate('blessing')}><img src={assetUrl('ic-blessing.webp')} alt="" />{bank.blessSlots.some(Boolean) && <i className="on" />}</button>
       </div>
       <Belt world={view} en={en} assetUrl={assetUrl} onDrink={drink} onAuto={() => { world.current.autoPotions = !world.current.autoPotions; refresh(); }} />
-    </section>
+    </section>}
     {!storageOk && <p className="cx-save-note" role="status">{t('Хранилище недоступно — экспедиция только до закрытия страницы.', 'Storage unavailable — this visit only.')}</p>}
     {notice && <button className="cx-receipt" onClick={() => setNotice('')} aria-label={t('Закрыть уведомление', 'Dismiss notification')}>{notice}</button>}
     {panel !== null && <section className="cx-panel" aria-label={t('Раздел', 'Section')}>
@@ -273,7 +281,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
         {(panel === 'city' || panel === 'games') && <button onClick={() => { if (!playing || confirm(t('Начать экспедицию заново?', 'Restart the expedition?'))) begin(); }}>{t('Новая экспедиция', 'New expedition')}</button>}
       </div>}
     </section>}
-    <Nav assetUrl={assetUrl} en={en} active={panel === 'inventory' || panel === 'hero' || panel === 'map' || panel === 'games' || panel === 'clan' || panel === 'city' ? panel : 'battle'} onNavigate={navigate} />
+    {!doorway && <Nav assetUrl={assetUrl} en={en} active={panel === 'inventory' || panel === 'hero' || panel === 'map' || panel === 'games' || panel === 'clan' || panel === 'city' ? panel : 'battle'} onNavigate={navigate} />}
   </main>;
   return focused ? createPortal(content, document.body) : content;
 }

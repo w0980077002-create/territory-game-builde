@@ -22,6 +22,28 @@ for(const first of [0,1])for(const second of [0,1]){
  start(w);assert.equal(w.kills,0);assert.equal(w.hp,MAX_HP);assert.equal(w.route.length,1);assert.equal(w.enemies.length,0);
  console.log(`✓ complete 3-room route ${first}/${second}, 16 deaths, boss, restart`);
 }
+
+// Living travel: the party covers real world distance, foes wait ahead on the road, nothing is rewound.
+{
+ const w=createWorld();start(w);w.auto=true;let lastX=w.heroX,lastCam=w.cameraX,maxStep=0,maxCam=0,sawWaiting=false,stops=0,wasMoving=false,rooms=[w.roomX];
+ for(let i=0;i<40000&&w.phase!=='VICTORY';i++){
+  if(w.phase==='PORTAL_CHOICE')choosePortal(w,i%2);
+  const room=w.room;update(w,.025);
+  if(w.room===room){assert.ok(w.heroX>=lastX-1e-9,'Hero never slides backwards');maxStep=Math.max(maxStep,w.heroX-lastX);maxCam=Math.max(maxCam,Math.abs(w.cameraX-lastCam));}
+  else{assert.ok(w.roomX>rooms.at(-1)+1500,'A new hall continues the same world further right');rooms.push(w.roomX);assert.ok(w.heroX>lastX,'World coordinates keep growing through the arch');}
+  if(w.phase==='RUN_RIGHT'&&w.enemies.some(e=>e.hp>0)){sawWaiting=true;assert.ok(w.enemies.every(e=>e.pose==='idle'&&e.worldX>w.heroX+100),'Foes wait ahead in the world; the hero walks to them');}
+  if(['FIGHT','BOSS'].includes(w.phase))for(const e of w.enemies)if(e.hp>0)assert.ok(e.worldX-w.heroX>60,'The hero brakes before contact instead of walking through a foe');
+  if(wasMoving&&w.heroV===0)stops++;wasMoving=w.heroV>0;
+  assert.ok(w.followerHp[0]<=0||w.heroX-w.followerX[0]>70,'Companion keeps its place behind the hero');
+  assert.ok(w.cameraX>=w.roomX&&(['PORTAL_ENTER','NEXT_ROOM'].includes(w.phase)||w.heroX-w.cameraX>80&&w.heroX-w.cameraX<300),`Camera keeps the hero framed (${w.phase} ${w.heroX-w.cameraX})`);
+  lastX=w.heroX;lastCam=w.cameraX;
+ }
+ assert.equal(w.phase,'VICTORY');assert.ok(sawWaiting);assert.equal(rooms.length,3);
+ assert.ok(maxStep<=150*.025+1e-6,`No teleporting inside a hall (${maxStep})`);assert.ok(maxCam<8,`Camera eases, never snaps inside a hall (${maxCam})`);
+ assert.ok(w.distance>3800,`Real travelled distance, got ${w.distance}`);assert.ok(stops>=9,'The road stops for every pack, the crossroads and the Cathedral');
+ const frozen=createWorld();start(frozen);for(let t=0;t<1.5;t+=.025)update(frozen,.025);frozen.paused=true;const snap=JSON.stringify(frozen);for(let t=0;t<5;t+=.025)update(frozen,.025);assert.equal(JSON.stringify(frozen),snap,'Pause freezes hero, camera, companions, energy and timers');
+ console.log(`✓ living travel: ${Math.round(w.distance)} world units walked, ${stops} real stops, foes waiting ahead, monotonic coordinates, eased camera, frozen pause`);
+}
 const manual=createWorld();start(manual);until(manual,w=>w.phase==='FIGHT');const energy=manual.energy;assert.ok(skill(manual,'cleave'));assert.ok(manual.energy<energy);assert.equal(skill(manual,'cleave'),false,'Cooldown prevents repeat');manual.hp=300;manual.energy=100;assert.ok(skill(manual,'heal'));assert.equal(manual.hp,580);manual.energy=100;assert.ok(skill(manual,'ward'));const hp=manual.hp;step(manual,.5);assert.ok(manual.hp>=hp-10,'Ward reduces incoming damage');
 // HUD availability and authoritative input must agree at every rejection boundary.
 for (const [key, reason, setup] of [
