@@ -51,7 +51,7 @@ assert.match(battle, /data-testid="battle-open-quests"/, 'Battle opens real ques
 assert.match(battle, /EQUIPMENT_SLOTS\.filter/, 'Battle readiness uses saved equipped slots, not decorative placeholders');
 assert.match(battle, /getComputedStats\(state\)\.attack/, 'Battle preview shows computed classic PvE stats');
 assert.match(battle, /caveRecoveryNeeded/, 'Unresolved cave receipts remain guarded');
-assert.match(battle, /<ServerAdventureScreen userId=\{userId\}/, 'Server Cave route remains untouched');
+assert.match(battle, /<ServerAdventureScreen\b[^>]*recoveryOnly[^>]*userId=\{userId\}/, 'Old Cave receipts remain bound to the account in recovery-only mode');
 assert.match(forge, /disabled=\{upgrading \|\| saveUnverified\}/, 'No navigation away from unconfirmed forge');
 assert.match(forge, /data-testid="forge-journey-navigation"/, 'Forge navigation visible');
 assert.match(forge, /const saved = await saveCloudSave\(userId, result\.next\)/, 'Forge receipt path unchanged');
