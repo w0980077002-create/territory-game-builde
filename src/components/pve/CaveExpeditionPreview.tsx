@@ -40,6 +40,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
   const [view, setView] = useState(() => structuredClone(world.current));
   const [cloud, setCloud] = useState<CavePveStatus | null>(null);
   const [cloudBusy, setCloudBusy] = useState(false);
+  const [cloudReload, setCloudReload] = useState(0);
   const [cloudError, setCloudError] = useState('');
   const cloudLock = useRef(false), startPending = useRef<string | null>(null);
   const en = language === 'en', t = (ru: string, english: string) => en ? english : ru;
@@ -102,6 +103,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
         if (!await ensurePlayerSession(userId)) throw new Error('cave_auth_required');
         const status = await getCavePveStatus();
         if (!mounted) return;
+        setCloudError('');
         if (status.legacy_active_session_id) { onLegacyRecovery?.(); return; }
         setCloud(status);
         const w = world.current;
@@ -128,8 +130,8 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
       }
     })();
     return () => { mounted = false; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- read only on account change, never during local combat
-  }, [userId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- explicit reload rehydrates the confirmed server floor
+  }, [userId, cloudReload]);
 
   useEffect(() => {
     if (!userId || !cloud || !ended || cloud.active_run_id !== runId.current || cloudLock.current) return;
@@ -352,7 +354,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
       {warning && <div className={`cx-warning ${boss.heavy ? 'heavy' : ''}`} role="status">{boss.heavy ? [t('⚠ Обвал! Нажмите Заслон', '⚠ Collapse! Use Ward'), t('⚠ Разлом! Нажмите Заслон', '⚠ Rupture! Use Ward'), t('⚠ Дождь осколков! Заслон', '⚠ Shard rain! Use Ward')][view.bossPhase - 1] : t('Удар приближается', 'Incoming strike')}<i style={{ transform: `scaleX(${Math.max(0, (boss.impact - view.time) / (boss.heavy ? 1.45 : .95))})` }} /></div>}
       {(!ready || error) && <div className="cx-overlay"><strong>{error ? t('Не удалось открыть пещеру', 'Could not open the cave') : t('Пробуждаем пещеру…', 'Waking the cave…')}</strong>{error && <button onClick={() => setLoadAttempt(attempt => attempt + 1)}>{t('Повторить загрузку', 'Reload')}</button>}</div>}
       {view.phase === 'LOBBY' && ready && <div className="cx-lobby"><span className="cx-eyebrow">{t('ТЁМНАЯ ПЕЩЕРА', 'DARK CAVE')}</span><h1>{t('За гранью света', 'Beyond the light')}</h1><p>{t('Четыре портала. Выберите риск. Победите Собор.', 'Four portals. Choose your risk. Defeat the Cathedral.')}</p>{userId && cloud && <div className="cx-cloud-progress" role="status"><b>{t('Этаж', 'Floor')} {cloudFloor}/100</b><b>◆ {cloud.dark_stones} {t('Тёмных камней', 'Dark Stones')}</b><button onClick={() => navigate('floors')}>{t('Этажи пещеры', 'Cave floors')}</button></div>}<button className="cx-primary" onClick={() => void begin()} disabled={entryBlocked}>{cloudBusy ? t('Проверяем вход…', 'Checking entry…') : userId && cloudCleared >= 100 ? t('Все этажи пройдены', 'All floors cleared') : t('В путь', 'Set out')} →</button><small>{t('Герой идёт и бьёт сам · умения и зелья за вами', 'The hero travels and strikes · skills and potions are yours')}</small></div>}
-      {userId && cloudError && <div className="cx-cloud-alert" role="alert"><p>{cloudError}</p>{cloud?.active_run_id && cloud.active_run_id !== runId.current && <button onClick={() => { if (confirm(t('Это прервёт текущий забег на другом устройстве. Вернуть камень и закрыть попытку?', 'This ends a run on another device. Refund the Stone and close it?'))) void abandonRemoteRun(); }} disabled={cloudBusy}>{t('Закрыть старый забег · вернуть камень', 'Close old run · refund Stone')}</button>}{cloud?.active_run_id === runId.current && ended && <button onClick={() => void settle(view.phase === 'VICTORY')} disabled={cloudBusy}>{t('Повторить сохранение', 'Retry saving result')}</button>}{!cloud && <button onClick={() => { setCloudError(''); void getCavePveStatus().then(setCloud).catch(() => setCloudError(t('Сервер пока недоступен', 'Server unavailable'))); }}>{t('Повторить загрузку', 'Retry loading')}</button>}</div>}
+      {userId && cloudError && <div className="cx-cloud-alert" role="alert"><p>{cloudError}</p>{cloud?.active_run_id && cloud.active_run_id !== runId.current && <button onClick={() => { if (confirm(t('Это прервёт текущий забег на другом устройстве. Вернуть камень и закрыть попытку?', 'This ends a run on another device. Refund the Stone and close it?'))) void abandonRemoteRun(); }} disabled={cloudBusy}>{t('Закрыть старый забег · вернуть камень', 'Close old run · refund Stone')}</button>}{cloud?.active_run_id === runId.current && ended && <button onClick={() => void settle(view.phase === 'VICTORY')} disabled={cloudBusy}>{t('Повторить сохранение', 'Retry saving result')}</button>}{!cloud && <button onClick={() => { setCloudError(''); setCloudReload(n => n + 1); }}>{t('Повторить загрузку', 'Retry loading')}</button>}</div>}
       {view.phase === 'RUN_RIGHT' && !view.runeCollected && !view.paused && <button ref={rune} className="cx-rune" onClick={() => { collectRune(world.current); refresh(); }} aria-label={t('Собрать искру', 'Collect spark')}><small>+10 ✦</small></button>}
       {view.phase === 'PORTAL_CHOICE' && <div className={`cx-portals ${view.rules === 2 ? 'cx-three-portals' : ''}`} aria-label={t('Выбор портала', 'Portal choice')}>{portalsFor(view).map((p, i) => <button key={i} aria-label={`${biomeName(p.biome)}${view.rules === 2 ? ` · ${i+1} ★` : ''}`} onClick={() => { if (choosePortal(world.current, i)) refresh(); }} style={{ '--portal': view.rules === 2 ? DIFFICULTY[i].color : BIOMES[p.biome].color } as React.CSSProperties}><span className="cx-portal-touch" /><b>{biomeName(p.biome)}</b><small>{view.rules === 2 ? `${DIFFICULTY[i].count} ${t('врагов','foes')} · ${t('Добыча','Loot')} ${'↑'.repeat(i+1)}` : (en ? ['Ranged spores', 'Armoured depths', 'Sails & Cathedral', 'Depths & Cathedral'][view.room * 2 + i] : p.hint)}</small></button>)}</div>}
       {playing && view.phase !== 'PORTAL_CHOICE' && <div className="cx-actions">{(Object.keys(SKILLS) as Skill[]).map(key => {
