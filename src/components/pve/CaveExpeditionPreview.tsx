@@ -86,12 +86,13 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [bank.items, bank.loadout, bank.sockets, bank.playtestHonor]);
   useEffect(() => { setCavePreviewAssets(assetUrl); return () => setCavePreviewAssets(null); }, [assetUrl]);
+  const renderedRunId = runId.current;
   useEffect(() => {
-    if (view.phase === 'VICTORY') {
-      if (world.current.rules === 2) world.current.stars.forEach((stars, i) => dispatch({type:'loot', floor:world.current.floor, boss:false, lootRolls:DIFFICULTY[stars-1].lootRolls}, `floor-section:${runId.current}:${i}`));
-      dispatch({ type: 'loot', floor: world.current.floor, boss: true, lootRolls: world.current.rules === 2 ? Math.max(...world.current.stars.map(n => DIFFICULTY[n-1].lootRolls)) : 1 }, 'expedition:' + runId.current);
+    if (view.phase === 'VICTORY' && !bank.ops.includes('expedition:' + renderedRunId)) {
+      if (view.rules === 2) view.stars.forEach((stars, i) => dispatch({type:'loot', floor:view.floor, boss:false, lootRolls:DIFFICULTY[stars-1].lootRolls}, `floor-section:${renderedRunId}:${i}`));
+      dispatch({ type: 'loot', floor: view.floor, boss: true, lootRolls: view.rules === 2 ? Math.max(...view.stars.map(n => DIFFICULTY[n-1].lootRolls)) : 1 }, 'expedition:' + renderedRunId);
     }
-  }, [view.phase, dispatch]);
+  }, [view, dispatch, renderedRunId, bank.ops]);
   useEffect(() => {
     if (!focused) return;
     const old = document.body.style.overflow; document.body.style.overflow = 'hidden';

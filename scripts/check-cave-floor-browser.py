@@ -42,6 +42,9 @@ with sync_playwright() as p:
   before=bank();assert before['playtestWins']==1
   page.reload();page.wait_for_function('()=>window.__caveDemo');page.wait_for_timeout(150);assert bank()==before
   page.get_by_role('button',name='Открыть добычу',exact=True).tap();page.get_by_test_id('umbra-item').first.tap();page.get_by_test_id('umbra-dismantle').tap();assert len(bank()['items'])==len(before['items'])-1
+  remaining=bank();page.locator('.cx-native-nav').get_by_role('button',name='Бой',exact=True).tap();page.get_by_role('button',name='Следующий этаж').tap()
+  assert page.evaluate('__caveDemo.world.floor')==2 and page.evaluate('__caveDemo.world.stars.length')==0
+  assert bank()==remaining,'Starting next floor must preserve the preceding reward receipt'
   assert page.evaluate("localStorage.getItem('player-sentinel')")=='unchanged';assert not errors,errors;assert not requests,requests
   reports.append({'width':width,'route':route,'kills':w['kills'],'reload':restored,'external_requests':len(requests),'result':'PASS'});print(reports[-1],flush=True);ctx.close()
  for width,height in [(320,568),(640,360)]:
