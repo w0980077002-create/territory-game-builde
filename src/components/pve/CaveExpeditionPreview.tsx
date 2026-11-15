@@ -218,8 +218,8 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
     const stats = loadoutTotals(equippedItems(bank.items, bank.loadout)), gems = gemTotals(bank.sockets);
     // Preserve the approved scene units: starter account 100 HP / 20 attack maps to 900 / 30.
     // Gear, forge-set bonuses, growth and critical stats come from the same heroSide as classic PvE.
-    w.critChance = Math.max(0, Math.min(100, heroStats?.critChance ?? 0));
-    w.critDamage = Math.max(0, Math.min(10000, heroStats?.critDamage ?? 50));
+    w.critChance = Math.max(0, Math.min(100, (heroStats?.critChance ?? 0) + (stats.crit ?? 0) + (gems.crit ?? 0)));
+    w.critDamage = Math.max(0, Math.min(10000, (heroStats?.critDamage ?? 50) + (stats.critDamage ?? 0)));
     w.attackBonus = Math.round((heroStats ? heroStats.attack * 1.5 - 30 : 0) + (stats.attack ?? 0) + (gems.attack ?? 0) + 30 * .005 * bank.playtestHonor);
     w.defenseBonus = Math.round((heroStats?.defense ?? 0) + (stats.defense ?? 0) + (gems.defense ?? 0));
     w.wings = bank.previewWings; w.honorBonus = bank.playtestHonor * .005;
