@@ -5,7 +5,7 @@ import { BIOMES, type Biome } from '../../game/cavePreviewWorld/catalog';
 import { advanceRealtime, choosePortal, portalsFor, DIFFICULTY, difficulty, collectRune, createWorld, drinkPotion, POTIONS, SKILLS, skill, skillBlock, start, type Skill, type World } from '../../game/cavePreviewWorld/engine';
 import { readCheckpoint, saveCheckpoint } from '@/game/cavePreviewWorld/checkpoint';
 import { ensurePlayerSession } from '@/game/auth';
-import { getCavePveStatus, startCavePveRun, finishCavePveRun, type CavePveStatus } from '@/game/cave/clientPve';
+import { getCavePveStatus, startCavePveRun, finishCavePveRun, type CavePveStatus } from '@/game/caveCloudPve';
 import { useCaveSandbox } from '@/game/cave/sandboxStore';
 import { equippedItems, loadoutTotals, UMBRA_SLOTS, umbraTemplate, type UmbraSlotId } from '@/game/cave/umbra';
 import { gemTotals } from '@/game/cave/gems';
