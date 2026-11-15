@@ -24,6 +24,16 @@ function allow(p) {
     p === 'scripts/build-cave-expedition-preview.mjs';
 }
 try {
+  // Do not let a syntactically valid cave-only change slip into main or the second game.
+  const expectedBranch = 'feat/cave-live-travel-claude';
+  const actualBranch = git('branch', '--show-current');
+  if (actualBranch !== expectedBranch) {
+    throw new Error(`WRONG BRANCH: expected ${expectedBranch}, got ${actualBranch || '(detached HEAD)'}`);
+  }
+  const repoOrigin = git('remote', 'get-url', 'origin');
+  if (!/(?:^|[/:])w0980077002-create\\/territory-game-builde(?:\\.git)?$/.test(repoOrigin)) {
+    throw new Error(`WRONG REPOSITORY: expected territory-game-builde; origin is ${repoOrigin}`);
+  }
   let base;
   for (const ref of ['origin/main','main']) {
     try { base = git('merge-base', ref, 'HEAD'); if (base) break; } catch { /* try next ref */ }
