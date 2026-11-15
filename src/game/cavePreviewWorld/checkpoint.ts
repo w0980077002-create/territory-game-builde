@@ -49,14 +49,16 @@ export function decodeCheckpoint(raw: string): Checkpoint | null {
     return data as unknown as Checkpoint;
   } catch { return null; }
 }
-export function readCheckpoint(): Checkpoint | null {
+/** Account-owned checkpoint when integrated; no accidental cross-account cave continuation. */
+export const caveCheckpointKey = (userId?: string) => userId ? CAVE_CHECKPOINT_KEY + ':' + userId : CAVE_CHECKPOINT_KEY;
+export function readCheckpoint(userId?: string): Checkpoint | null {
   try {
-    const raw = localStorage.getItem(CAVE_CHECKPOINT_KEY), saved = raw ? decodeCheckpoint(raw) : null;
+    const raw = localStorage.getItem(caveCheckpointKey(userId)), saved = raw ? decodeCheckpoint(raw) : null;
     if (saved && !['LOBBY', 'VICTORY', 'DEFEAT'].includes(saved.world.phase)) saved.world.paused = true;
     return saved;
   } catch { return null; }
 }
-export function saveCheckpoint(world: World, runId: string): boolean {
-  try { localStorage.setItem(CAVE_CHECKPOINT_KEY, JSON.stringify({ version: 1, runId, world })); return true; }
+export function saveCheckpoint(world: World, runId: string, userId?: string): boolean {
+  try { localStorage.setItem(caveCheckpointKey(userId), JSON.stringify({ version: 1, runId, world })); return true; }
   catch { return false; }
 }
