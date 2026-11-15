@@ -19,7 +19,7 @@ with sync_playwright() as p:
     page=context.new_page();page.goto(f'http://127.0.0.1:{server.server_port}/territory-cave-demo.html')
     page.get_by_role('button',name='В путь').tap();page.get_by_role('button',name='Авто навыков').tap()
     began=time.monotonic();last='';rooms=0
-    while time.monotonic()-began<240:
+    while time.monotonic()-began<480:
         phase=page.locator('.cx-stage').get_attribute('data-phase')
         if phase!=last:
             print(f'{time.monotonic()-began:.1f}s {phase}',flush=True);last=phase

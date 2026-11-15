@@ -13,7 +13,7 @@ with sync_playwright() as p:
  b=p.chromium.launch(executable_path=os.environ.get('CAVE_BROWSER') or shutil.which('chromium'),args=['--no-sandbox'])
  for width in [320,360,390,430]:
   ctx=b.new_context(viewport={'width':width,'height':720},has_touch=True,is_mobile=True);page=ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-  page.goto(f'http://127.0.0.1:{s.server_port}/test-fixture.html');page.wait_for_function('()=>window.__caveDemo');page.evaluate("localStorage.setItem('territory-player-sentinel','UNCHANGED')")
+  page.goto(f'http://127.0.0.1:{s.server_port}/test-fixture.html?legacy=1');page.wait_for_function('()=>window.__caveDemo');page.evaluate("localStorage.setItem('territory-player-sentinel','UNCHANGED')")
   page.get_by_role('button',name='В путь').tap();page.evaluate('__caveDemo.step(5)');page.wait_for_timeout(150)
   # A backgrounded WebView must require explicit resume, even with a panel/help open.
   def background():
@@ -52,6 +52,7 @@ with sync_playwright() as p:
     if phase=='PORTAL_CHOICE':page.locator('.cx-portals .cx-portal-touch').nth(0).tap()
     page.evaluate('__caveDemo.step(.75)');page.wait_for_timeout(110)
    assert page.evaluate('__caveDemo.world.phase')=='VICTORY'
+   page.wait_for_function("()=>JSON.parse(localStorage.getItem('territory_cave_sandbox_v1')).playtestWins===1")
    stock=lambda:json.loads(page.evaluate("localStorage.getItem('territory_cave_sandbox_v1')"))
    assert len(stock()['items'])==kit['items']+2 and stock()['enhanceStones']==kit['enhanceStones']+15
    page.get_by_role('button',name='Настройки',exact=True).tap();page.locator('.cx-panel').get_by_role('button',name='Почётные звания',exact=True).tap();page.get_by_role('button',name='Получить · +10 синих',exact=True).tap();assert stock()['playtestBlueDiamonds']==10;page.locator('.cx-native-nav').get_by_role('button',name='Бой',exact=True).tap()

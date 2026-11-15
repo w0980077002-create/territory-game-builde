@@ -1,6 +1,7 @@
+import { portalsFor, portalOffset, DIFFICULTY } from '../../../game/cavePreviewWorld/engine';
 import { drawHero, HERO_PARTS } from './heroRig';
 import { CaveLife, drawBackdrop, drawForeground, light, stageLayout } from './world';
-import { BIOMES, CREATURES, PORTALS } from '../../../game/cavePreviewWorld/catalog';
+import { BIOMES, CREATURES } from '../../../game/cavePreviewWorld/catalog';
 import type { World, Pose } from '../../../game/cavePreviewWorld/engine';
 export const ASSET_ROOT = 'assets/territory/';
 export const PARTY = ['heroes/male_viking', 'followers/northern_warrior', 'followers/forest_healer'];
@@ -114,11 +115,11 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
   const isPortal = w.portalX > w.roomX && w.portalX - w.cameraX < 620;
   if (w.phase === 'LOBBY') portal(c, 318, floor - 22 * actorScale, '#a485ff', performance.now() / 1000, 1.25 * actorScale);
   if (isPortal) {
-    PORTALS[Math.min(w.room, 1)].forEach((p, i) => {
-      const x = w.portalX + i * 112 - w.cameraX;
+    portalsFor(w).forEach((p, i) => {
+      const x = w.portalX + portalOffset(w, i) - w.cameraX;
       c.save(); c.globalAlpha = w.selected !== null && w.selected !== i ? .38 : 1;
-      portal(c, x, floor - 14 * actorScale, BIOMES[p.biome].color, w.time, (w.selected === i ? 1.08 : .98) * actorScale);
-      text(c, p.symbol, x, floor - 150 * actorScale, 22, BIOMES[p.biome].color); c.restore();
+      portal(c, x, floor - 14 * actorScale, (w.rules === 2 ? DIFFICULTY[i].color : BIOMES[p.biome].color), w.time, (w.selected === i ? 1.08 : .98) * actorScale);
+      text(c, w.rules === 2 ? '★'.repeat(i + 1) : p.symbol, x, floor - 150 * actorScale, 22, (w.rules === 2 ? DIFFICULTY[i].color : BIOMES[p.biome].color)); c.restore();
     });
   }
   const heroX = w.heroX - w.cameraX;
@@ -209,7 +210,7 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
   // Stepping through an arch: the chosen light floods the screen, then the next vault opens.
   if (w.phase === 'ENTER' || w.phase === 'NEXT_ROOM') {
     const k = w.phase === 'ENTER' ? Math.max(0, 1 - (w.time - w.phaseAt) / .65) : Math.min(1, (w.time - w.phaseAt) / .6);
-    const tone = w.phase === 'NEXT_ROOM' && w.selected !== null ? BIOMES[PORTALS[Math.min(w.room, 1)][w.selected].biome].color : theme.color;
+    const tone = w.phase === 'NEXT_ROOM' && w.selected !== null ? BIOMES[portalsFor(w)[w.selected].biome].color : theme.color;
     c.fillStyle = `rgba(8,5,20,${k})`; c.fillRect(0, 0, 430, h);
     c.globalAlpha = k * .55; light(c, tone, w.phase === 'ENTER' ? w.roomX + 96 - w.cameraX : w.heroX - w.cameraX, floor - 70, 120 + k * 420, 1); c.globalAlpha = 1;
   }

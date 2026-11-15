@@ -56,7 +56,7 @@ export const emptySandbox = (): CaveSandbox => ({
 export type CaveAction =
   | { type: 'claimPlaytestHonor' }
   | { type: 'wings'; style: 'none' | 'astral' | 'ember' }
-  | { type: 'loot'; floor: number; boss: boolean }
+  | { type: 'loot'; floor: number; boss: boolean; lootRolls?: number }
   | { type: 'equip'; itemId: string }
   | { type: 'unequip'; slot: UmbraSlotId }
   | { type: 'lock'; itemId: string; locked: boolean }
@@ -82,7 +82,7 @@ const patchItem = (state: CaveSandbox, item: UmbraItem): CaveSandbox =>
   ({ ...state, items: state.items.map(i => i.id === item.id ? item : i) });
 
 /** Sandbox loot roll. Illustrative only — NOT a live drop table or rate. */
-function rollLoot(state: CaveSandbox, opId: string, floor: number, boss: boolean): { state: CaveSandbox; loot: CaveLoot } {
+function rollLoot(state: CaveSandbox, opId: string, floor: number, boss: boolean, lootRolls = 1): { state: CaveSandbox; loot: CaveLoot } {
   const rng: Rng = seededRng('cave-loot:' + opId);
   const boosted = boostedCategories(state.blessSlots);
   const has = (c: CaveLootCategory) => boosted.includes(c);
@@ -91,7 +91,12 @@ function rollLoot(state: CaveSandbox, opId: string, floor: number, boss: boolean
   let overflow = 0;
   const wanted = (boss ? 2 : 1) + (has('gear') ? 1 : 0);
   for (let i = 0; i < wanted; i++) {
-    const item = rollUmbraItem(rng, { id: `umbra-${++seq}`, floor, boss, forceSet: has('sets'), source: opId });
+    let item = rollUmbraItem(rng, { id: `umbra-${++seq}`, floor, boss, forceSet: has('sets'), source: opId });
+    // Extra independent existing-table rolls improve opportunity, never guarantee rarity.
+    for (let roll = 1; roll < lootRolls; roll++) {
+      const candidate = rollUmbraItem(rng, { id: item.id, floor, boss, forceSet: has('sets'), source: opId });
+      if (candidate.rank > item.rank) item = candidate;
+    }
     if (state.items.length + items.length >= UMBRA_STORAGE_CAP) overflow++; else items.push(item);
   }
   const essence = Math.round((5 + Math.floor(floor / 5)) * (boss ? 2 : 1) * (has('essence') ? 1.5 : 1));
@@ -118,7 +123,8 @@ function reduce(state: CaveSandbox, action: CaveAction, opId: string): CaveResul
   switch (action.type) {
     case 'loot': {
       if (!Number.isInteger(action.floor) || action.floor < 1 || action.floor > 100) return fail(state, 'invalid_floor');
-      return { state: rollLoot(state, opId, action.floor, action.boss).state, ok: true };
+      if (action.lootRolls !== undefined && ![1,2,3].includes(action.lootRolls)) return fail(state, 'invalid_rolls');
+      return { state: rollLoot(state, opId, action.floor, action.boss, action.lootRolls).state, ok: true };
     }
     case 'equip': {
       const item = state.items.find(i => i.id === action.itemId);
@@ -239,7 +245,11 @@ export function applyCaveAction(state: CaveSandbox, action: CaveAction, opId: st
   if (state.ops.includes(opId)) return { state, ok: true, replay: true };
   const result = reduce(state, action, opId);
   if (!result.ok) return result;
-  return { ...result, state: { ...result.state, ops: action.type === 'reset' ? [] : [...result.state.ops, opId].slice(-OPS_KEPT) } };
+  // Victory receipts must outlive ordinary inventory operations and page reloads.
+  const durable = (id: string) => id.startsWith('expedition:') || id.startsWith('floor-section:');
+  const all = [...result.state.ops, opId];
+  const ops = [...all.filter(durable), ...all.filter(id => !durable(id)).slice(-OPS_KEPT)];
+  return { ...result, state: { ...result.state, ops: action.type === 'reset' ? [] : ops } };
 }
 
 /** Defensive decode of a stored sandbox; anything malformed starts clean. */
@@ -284,6 +294,6 @@ export function decodeSandbox(raw: unknown): CaveSandbox {
     fundClaimed: (Array.isArray(data.fundClaimed) ? data.fundClaimed : []).filter((n): n is number => Number.isInteger(n)),
     lastLoot: data.lastLoot && typeof data.lastLoot === 'object' && typeof (data.lastLoot as CaveLoot).opId === 'string'
       && Array.isArray((data.lastLoot as CaveLoot).items) ? data.lastLoot as CaveLoot : null,
-    ops: (Array.isArray(data.ops) ? data.ops : []).filter((o): o is string => typeof o === 'string').slice(-OPS_KEPT),
+    ops: (Array.isArray(data.ops) ? data.ops : []).filter((o): o is string => typeof o === 'string'),
   };
 }

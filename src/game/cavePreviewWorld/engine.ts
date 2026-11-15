@@ -5,6 +5,7 @@ export type Skill = 'cleave' | 'ward' | 'heal' | 'dodge';
 export interface Enemy { id: number; species: Species; worldX: number; hp: number; maxHp: number; pose: Pose; poseUntil: number; ready: number; impact: number; deathAt: number; lane: number; attacks: number; heavy: boolean }
 export interface Effect { x: number; lane: number; text: string; kind: 'hit' | 'block' | 'heal' | 'slash' | 'shock' | 'energy' | 'dodge' | 'impact'; born: number }
 export interface World {
+  rules: 1 | 2; floor: number; unlockedFloor: number; stars: number[];
   honorBonus: number;
   wings: 'none' | 'astral' | 'ember';
   speed: 1 | 2; autoPotions: boolean; belt: number[]; beltUsed: number[];
@@ -25,7 +26,7 @@ export const BALANCE = { maxHp: 900, regen: 1.8, killEnergy: 3, openingRun: 2.4,
 export const MAX_HP = BALANCE.maxHp;
 export const SKILLS = { cleave: { cost: 32, cooldown: 6 }, ward: { cost: 22, cooldown: 5 }, heal: { cost: 35, cooldown: 12 }, dodge: { cost: 18, cooldown: 5 } };
 export function createWorld(): World {
-  return { honorBonus: 0, wings: 'none', speed: 1, autoPotions: false, belt: Array(7).fill(5), beltUsed: Array(7).fill(0), potionReady: 0, furyUntil: 0, maxHp: MAX_HP, attackBonus: 0, defenseBonus: 0,
+  return { rules: 2, floor: 1, unlockedFloor: 1, stars: [], honorBonus: 0, wings: 'none', speed: 1, autoPotions: false, belt: Array(7).fill(5), beltUsed: Array(7).fill(0), potionReady: 0, furyUntil: 0, maxHp: MAX_HP, attackBonus: 0, defenseBonus: 0,
     phase: 'LOBBY', phaseAt: 0, time: 0, room: 0, wave: 0, biome: 'crystal', route: ['crystal'], heroX: 175, cameraX: 0, hp: MAX_HP, energy: 65,
     pose: 'idle', poseUntil: 0, heroReady: 0, heroImpact: 0, target: -1, shieldUntil: 0, enemies: [], effects: [], auto: false, paused: false, kills: 0, nextId: 0,
     selected: null, portalX: 0, cooldown: { cleave: 0, ward: 0, heal: 0, dodge: 0 }, followerReady: [0, .6], followerX: [175 - TRAVEL.followerGap[0], 175 - TRAVEL.followerGap[1]], followerHp: [260, 220], followerPose: ['idle', 'idle'], followerUntil: [0, 0], bossSpawned: false, bossPhase: 1, blocks: 0, casts: 0, hitStop: 0, runeCollected: false,
@@ -37,7 +38,15 @@ const might = (w: World) => (BALANCE.basicDamage + w.attackBonus) / BALANCE.basi
 const vigor = (w: World) => w.maxHp / MAX_HP;
 const depth = (ratio: number) => 1 + (ratio - 1) * .85;
 function phase(w: World, value: Phase) { w.phase = value; w.phaseAt = w.time; }
-export function start(w: World) { Object.assign(w, createWorld()); phase(w, 'ENTER'); }
+export function start(w: World, floor = w.floor) { const { rules, unlockedFloor } = w; Object.assign(w, createWorld()); w.rules = rules; w.unlockedFloor = unlockedFloor; w.floor = Math.max(1, Math.min(unlockedFloor, floor)); if (rules === 2) { w.portalX = w.heroX + 250; w.stopX = w.portalX - 128; phase(w, 'RUN_RIGHT'); } else phase(w, 'ENTER'); }
+export const DIFFICULTY = [
+  { stars: 1, count: 9, hp: 1, damage: 1, resistance: 1, lootRolls: 1, color: '#80e7a3' },
+  { stars: 2, count: 10, hp: 1.12, damage: 1.12, resistance: 1.04, lootRolls: 2, color: '#64c9ff' },
+  { stars: 3, count: 11, hp: 1.25, damage: 1.25, resistance: 1.08, lootRolls: 3, color: '#d4a0ff' },
+] as const; // Isolated tuning proposal; no production drop percentages.
+export const difficulty = (w: World) => DIFFICULTY[(w.stars[w.stars.length - 1] ?? 1) - 1];
+export const portalsFor = (w: World) => w.rules === 1 ? PORTALS[Math.min(w.room, 1)] : DIFFICULTY.map((d, i) => ({ ...(i === 2 ? {biome: 'crystal' as Biome, title: BIOMES.crystal.name, hint: '', symbol: '◆'} : PORTALS[Math.min(w.stars.length % 2, 1)][i]), stars: d.stars, color: d.color }));
+export const portalOffset = (w: World, i: number) => i * (w.rules === 2 ? 82 : 112);
 export const POTIONS = [
   { id: 'small', ru: 'Малое лечение', en: 'Small heal', effectRu: '+120 HP', effectEn: '+120 HP', color: '#d35b55' },
   { id: 'large', ru: 'Большое лечение', en: 'Greater heal', effectRu: '+240 HP', effectEn: '+240 HP', color: '#f17b67' },
@@ -80,7 +89,7 @@ export function advanceRealtime(w: World, delta: number) {
   while (remaining > .000001) { const step = Math.min(.025, remaining); update(w, step); remaining -= step; }
 }
 export function choosePortal(w: World, index: number) {
-  if (w.paused || w.phase !== 'PORTAL_CHOICE' || (index !== 0 && index !== 1)) return false;
+  if (w.paused || w.phase !== 'PORTAL_CHOICE' || (!Number.isInteger(index) || index < 0 || index > (w.rules === 2 ? 2 : 1))) return false;
   w.selected = index; phase(w, 'PORTAL_ENTER'); return true;
 }
 export function collectRune(w: World) {
@@ -90,6 +99,7 @@ export function collectRune(w: World) {
 function fx(w: World, x: number, text: string, kind: Effect['kind'], lane = 0) { w.effects.push({ x, text, kind, born: w.time, lane }); }
 function hurt(w: World, enemy: Enemy, damage: number) {
   if (enemy.hp <= 0) return;
+  damage = Math.round(damage / (w.rules === 2 && enemy.species !== 'boss' ? difficulty(w).resistance : 1));
   enemy.hp = Math.max(0, enemy.hp - damage);
   w.hitStop = .025;
   if (!enemy.hp || !enemy.impact) { enemy.pose = enemy.hp ? 'hit' : 'death'; enemy.poseUntil = w.time + .32; }
@@ -128,9 +138,10 @@ export function skill(w: World, key: Skill) {
 }
 /** Enemies are placed ahead on the road and wait there; the hero has to physically reach them. */
 function spawn(w: World, boss = false) {
-  const species: Species[] = boss ? ['boss'] : BIOMES[w.biome].enemies;
+  const pool = BIOMES[w.biome].enemies;
+  const species: Species[] = boss ? ['boss'] : w.rules === 2 ? Array.from({ length: w.wave === 2 ? difficulty(w).count - 6 : 3 }, (_, i) => pool[i % pool.length]) : pool;
   const leg = boss ? TRAVEL.bossLeg : w.wave === 0 ? TRAVEL.firstLeg : TRAVEL.leg;
-  species.forEach((s, i) => { const spec = CREATURES[s]; w.enemies.push({ id: w.nextId++, species: s, hp: Math.round((boss ? BALANCE.bossHp : spec.hp) * depth(might(w))), maxHp: Math.round((boss ? BALANCE.bossHp : spec.hp) * depth(might(w))), worldX: w.heroX + leg + i * 85, pose: 'idle', poseUntil: 0, ready: 0, impact: 0, deathAt: 0, lane: i % 3, attacks: 0, heavy: false }); });
+  species.forEach((s, i) => { const spec = CREATURES[s]; w.enemies.push({ id: w.nextId++, species: s, hp: Math.round((boss ? BALANCE.bossHp : spec.hp) * depth(might(w)) * (w.rules === 2 && !boss ? difficulty(w).hp : 1)), maxHp: Math.round((boss ? BALANCE.bossHp : spec.hp) * depth(might(w)) * (w.rules === 2 && !boss ? difficulty(w).hp : 1)), worldX: w.heroX + leg + i * 85, pose: 'idle', poseUntil: 0, ready: 0, impact: 0, deathAt: 0, lane: i % 3, attacks: 0, heavy: false }); });
   w.stopX = w.heroX + leg; phase(w, 'RUN_RIGHT');
 }
 const toward = (value: number, target: number, amount: number) => value < target ? Math.min(target, value + amount) : Math.max(target, value - amount);
@@ -205,7 +216,7 @@ export function update(w: World, delta: number) {
         e.impact = 0;
         if (Math.abs(e.worldX - w.heroX) <= spec.range + 35) {
           const dodged = w.time < w.dodgeUntil;
-          const blocked = !dodged && w.time < w.shieldUntil; const rawPower = Math.round((e.species === 'boss' ? (e.heavy ? 125 + w.bossPhase * 30 : 45 + w.bossPhase * 12) : spec.damage) * depth(vigor(w)));
+          const blocked = !dodged && w.time < w.shieldUntil; const rawPower = Math.round((e.species === 'boss' ? (e.heavy ? 125 + w.bossPhase * 30 : 45 + w.bossPhase * 12) : spec.damage) * depth(vigor(w)) * (w.rules === 2 && e.species !== 'boss' ? difficulty(w).damage : 1));
           const power = Math.max(1, (rawPower - Math.floor(w.defenseBonus / 15)) / (1 + w.honorBonus)); const damage = dodged ? 0 : blocked ? Math.ceil(power * .15) : power;
           if (blocked) w.blocks++;
           if (dodged) w.dodges++;
@@ -264,7 +275,11 @@ export function update(w: World, delta: number) {
     go(w.heroX);
     if (w.time - w.phaseAt > 1.1) {
       w.enemies = []; w.wave++;
-      if (w.room === 2 && w.bossSpawned) { w.pose = 'idle'; phase(w, 'VICTORY'); }
+      if (w.rules === 2 && w.bossSpawned) { w.unlockedFloor = Math.max(w.unlockedFloor, Math.min(100, w.floor + 1)); w.pose = 'idle'; phase(w, 'VICTORY'); }
+      else if (w.rules === 2 && w.wave < 3) spawn(w);
+      else if (w.rules === 2 && w.stars.length === 4) { w.bossSpawned = true; spawn(w, true); }
+      else if (w.rules === 2) { w.portalX = w.heroX + TRAVEL.portalLeg; w.stopX = w.portalX - 128; phase(w, 'RUN_RIGHT'); }
+      else if (w.room === 2 && w.bossSpawned) { w.pose = 'idle'; phase(w, 'VICTORY'); }
       else if (w.room === 2) { w.bossSpawned = true; spawn(w, true); }
       else if (w.wave < 2) spawn(w);
       else { w.portalX = w.heroX + TRAVEL.portalLeg; w.stopX = w.portalX - 128; phase(w, 'RUN_RIGHT'); }
@@ -272,13 +287,14 @@ export function update(w: World, delta: number) {
   }
   if (w.phase === 'PORTAL_CHOICE') { w.heroV = 0; w.pose = 'idle'; w.followerPose = w.followerHp.map(hp => hp > 0 ? 'idle' : 'death'); }
   if (w.phase === 'PORTAL_ENTER') {
-    const target = w.portalX + (w.selected === 1 ? 112 : 0);
+    const target = w.portalX + portalOffset(w, w.selected ?? 0);
     go(target, 150);
     if (w.heroX >= target - .05 && age > 1.2) phase(w, 'NEXT_ROOM');
   }
   if (w.phase === 'NEXT_ROOM' && age > .65) {
     // The arch opens on a new stretch of the same world: coordinates keep growing, nothing is rewound.
-    w.biome = PORTALS[w.room][w.selected ?? 0].biome; w.route.push(w.biome); w.room++; w.wave = 0; w.runeCollected = false;
+    w.biome = portalsFor(w)[w.selected ?? 0].biome;
+    if (w.rules === 2) { w.stars.push((w.selected ?? 0) + 1); w.room = w.stars.length - 1; if (w.stars.length === 1) w.route = [w.biome]; else w.route.push(w.biome); } else { w.route.push(w.biome); w.room++; } w.wave = 0; w.runeCollected = false;
     w.roomX = Math.ceil((w.portalX + 900) / 100) * 100; w.heroX = w.roomX + 175; w.heroV = 0;
     w.followerX = w.followerHp.map((hp, i) => hp > 0 ? w.heroX - TRAVEL.followerGap[i] : -100000); w.followerV = [0, 0];
     w.cameraX = w.roomX; w.selected = null; w.enemies = []; phase(w, 'ENTER');
@@ -295,8 +311,8 @@ export function update(w: World, delta: number) {
   const lead = w.enemies.reduce<Enemy | undefined>((a, b) => b.hp > 0 && (!a || b.worldX < a.worldX) ? b : a, undefined);
   let desired = w.heroX - TRAVEL.follow;
   if (['APPROACH', 'FIGHT', 'BOSS', 'WAVE_SPAWN'].includes(w.phase) && lead) desired = Math.min(w.heroX - 150, Math.max(w.heroX - TRAVEL.follow, (w.heroX + lead.worldX) / 2 - 232));
-  if (w.phase === 'RUN_RIGHT' && !lead && w.portalX > w.roomX) desired = Math.min(desired, w.portalX - TRAVEL.portalScreenX);
-  if (['PORTAL_CHOICE', 'PORTAL_ENTER', 'NEXT_ROOM'].includes(w.phase)) desired = w.portalX - TRAVEL.portalScreenX;
+  if (w.phase === 'RUN_RIGHT' && !lead && w.portalX > w.roomX) desired = Math.min(desired, w.portalX - (w.rules === 2 ? 190 : TRAVEL.portalScreenX));
+  if (['PORTAL_CHOICE', 'PORTAL_ENTER', 'NEXT_ROOM'].includes(w.phase)) desired = w.portalX - (w.rules === 2 ? 190 : TRAVEL.portalScreenX);
   desired = Math.max(w.roomX, desired);
   w.cameraX += (desired - w.cameraX) * (1 - Math.exp(-4 * dt));
   if (Math.abs(desired - w.cameraX) < .02) w.cameraX = desired;

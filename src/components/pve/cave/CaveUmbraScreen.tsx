@@ -170,6 +170,7 @@ export function CaveUmbraScreen({ en, hero, onBack, focus }: { en: boolean; hero
     {detail && <Dialog label={itemName(detail, en)} onClose={() => setView(null)} testId="umbra-item-dialog">
       <p className="cv-kicker">{detailWorn ? (en ? 'Equipped dark item' : 'Надетая тёмная вещь') : (en ? 'Compare: equipped vs new' : 'Сравнение: надето / новое')}</p>
       <h3>{itemName(detail, en)}</h3>
+      {box.items.filter(item => item.templateId === detail.templateId).length > 1 && <p className="cv-note">{en ? 'Copies in storage' : 'Копий в складе'}: {box.items.filter(item => item.templateId === detail.templateId).length}</p>}
       {cmp ? <>
         {cmp.current
           ? <div className="cv-compare">{card(cmp.current, 'worn')}{card(detail, 'new')}</div>

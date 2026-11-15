@@ -58,7 +58,7 @@ try:
       page=context.new_page(); errors=[]; external=[]
       page.on('pageerror',lambda e:errors.append(str(e)))
       page.on('request',lambda req: external.append(req.url) if not req.url.startswith((URL,'data:')) else None)
-      page.goto(URL+'/test-fixture.html');page.wait_for_function('()=>window.__caveDemo')
+      page.goto(URL+'/test-fixture.html?legacy=1');page.wait_for_function('()=>window.__caveDemo')
       screenshot(page,width,'lobby')
       page.get_by_role('button',name='В путь').tap();step(page,2)
       # 0.65 s entrance, then the hero accelerates from x=175 toward the pack waiting on the road.
@@ -75,7 +75,11 @@ try:
       until(page,'FIGHT');screenshot(page,width,'fight')
       hp=page.evaluate('__caveDemo.world.enemies.reduce((n,e)=>n+e.hp,0)')
       page.get_by_role('button',name='Раскол',exact=True).tap()
-      step(page,.35)  # Damage lands at contact, after the visible windup.
+      # Hit-stop freezes the simulation clock, including the pending contact.
+      for _ in range(20):
+        if not page.evaluate('__caveDemo.world.cleaveImpact'): break
+        step(page,.025)
+      assert page.evaluate('__caveDemo.world.cleaveImpact')==0
       assert page.evaluate('__caveDemo.world.enemies.reduce((n,e)=>n+e.hp,0)') < hp
       manual_control=width==390
       if not manual_control: page.get_by_role('button',name='Авто навыков',exact=True).tap()
@@ -116,12 +120,12 @@ try:
     context=browser.new_context(viewport={'width':360,'height':640},is_mobile=True,has_touch=True)
     page=context.new_page();page.goto(URL+'/territory-cave-demo.html');page.get_by_role('button',name='В путь').wait_for();context.set_offline(True)
     assert page.evaluate('typeof window.__caveDemo')=='undefined'
-    page.get_by_role('button',name='В путь').tap();page.wait_for_timeout(1000);visible(page)
+    page.get_by_role('button',name='В путь').tap();page.locator('.cx-portals button').first.wait_for();visible(page)
     context.close()
     # English, reduced motion, reload/re-entry, short and landscape viewports.
     for width,height in [(360,640),(320,568),(360,808),(640,360)]:
       context=browser.new_context(viewport={'width':width,'height':height},is_mobile=True,has_touch=True,device_scale_factor=2 if height==808 else 1,reduced_motion='reduce')
-      page=context.new_page();page.goto(URL+'/test-fixture.html?lang=en');page.wait_for_function('()=>window.__caveDemo')
+      page=context.new_page();page.goto(URL+'/test-fixture.html?legacy=1&lang=en');page.wait_for_function('()=>window.__caveDemo')
       page.get_by_role('button',name='Set out').tap();step(page,2);visible(page)
       if width==360 and height==640:
         # Android fullscreen native controls occupy space outside env(safe-area).
@@ -174,7 +178,7 @@ try:
         });
         return image;
       };""")
-    page.goto(URL+'/test-fixture.html?lang=en')
+    page.goto(URL+'/test-fixture.html?legacy=1&lang=en')
     page.get_by_text('Could not open the cave',exact=True).wait_for()
     sentinel=page.evaluate('window.__retrySentinel')
     page.get_by_role('button',name='Reload',exact=True).tap()

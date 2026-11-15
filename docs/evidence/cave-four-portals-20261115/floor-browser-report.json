@@ -1,0 +1,54 @@
+[
+  {
+    "width": 320,
+    "route": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "kills": 37,
+    "reload": true,
+    "external_requests": 0,
+    "result": "PASS"
+  },
+  {
+    "width": 360,
+    "route": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "kills": 41,
+    "reload": true,
+    "external_requests": 0,
+    "result": "PASS"
+  },
+  {
+    "width": 390,
+    "route": [
+      2,
+      2,
+      2,
+      2
+    ],
+    "kills": 45,
+    "reload": true,
+    "external_requests": 0,
+    "result": "PASS"
+  },
+  {
+    "width": 430,
+    "route": [
+      0,
+      2,
+      1,
+      2
+    ],
+    "kills": 42,
+    "reload": true,
+    "external_requests": 0,
+    "result": "PASS"
+  }
+]
