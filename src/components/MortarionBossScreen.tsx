@@ -13,7 +13,6 @@ import './mortarionBoss.css';
 
 const MORTARION_HP = 100_000_000;
 const MORTARION_EVENT_DAYS = 5;
-const MORTARION_HITS_PER_HOUR = 5;
 
 function shortClock(ms: number) {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -35,7 +34,6 @@ function eventCountdown(ms: number, en: boolean) {
 
 function errorText(error: unknown, en: boolean) {
   const raw = error instanceof Error ? error.message : String(error);
-  if (/mortarion_hourly_limit/.test(raw)) return en ? 'All five strikes used. Return after the hour resets.' : 'Пять ударов израсходованы. Дождись обновления лимита.';
   if (/mortarion_cooldown/.test(raw)) return en ? 'One minute must pass between strikes.' : 'Между ударами должна пройти минута.';
   if (/mortarion_event_closed/.test(raw)) return en ? 'This raid is not active.' : 'Рейд ещё не начался или уже завершился.';
   if (/mortarion_defeated/.test(raw)) return en ? 'Mortarion has been defeated!' : 'Мортарион повержен!';
@@ -43,7 +41,7 @@ function errorText(error: unknown, en: boolean) {
   return en ? 'Could not contact the raid server. Your progress is safe.' : 'Нет связи с сервером рейда. Твой прогресс сохранён.';
 }
 
-/** Actual global raid; HP, per-player hit limits and leaderboard come only from RPC. */
+/** Actual global raid; HP, 60-second cooldown and leaderboard come only from RPC. */
 export function MortarionBossScreen({ playerId }: { playerId: string }) {
   const { language } = useLanguage();
   const en = language === 'en';
@@ -144,7 +142,7 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
   const attack = async () => {
     if (!state?.active || busyRef.current) return;
     const when = clock + skew;
-    if (state.hitsInHour >= 5 || (state.nextHitAt && Date.parse(state.nextHitAt) > when)) return;
+    if (state.nextHitAt && Date.parse(state.nextHitAt) > when) return;
     busyRef.current = true;
     requestNumber.current++;
     setAttacking(true);
@@ -193,8 +191,7 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
   const defeated = Boolean(state?.enabled && health <= 0);
   const expired = Boolean(state?.enabled && serverNow >= Date.parse(state.endsAt));
   const nextHitMs = state?.nextHitAt ? Math.max(0, Date.parse(state.nextHitAt)-serverNow) : 0;
-  const hitsLeft = Math.max(0, MORTARION_HITS_PER_HOUR - (state?.hitsInHour ?? 0));
-  const canHit = Boolean(state?.active && !attacking && hitsLeft > 0 && nextHitMs === 0);
+  const canHit = Boolean(state?.active && !attacking && nextHitMs === 0);
   const durationMs = state?.enabled ? Date.parse(state.endsAt) - serverNow : MORTARION_EVENT_DAYS * 86400000;
 
   return <div className="mortarion-raid mx-auto w-full max-w-[430px] space-y-3 pb-8 text-amber-50" data-testid="mortarion-boss-live">
@@ -248,10 +245,10 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
 
       <button type="button" onClick={() => void attack()} disabled={!canHit} className="mortarion-raid__attack relative mt-2 flex w-full min-h-11 items-center justify-center gap-2 rounded-xl border-2 border-yellow-300 bg-gradient-to-b from-amber-400 via-orange-600 to-red-800 px-3 py-2 text-sm font-black text-white [text-shadow:0_2px_2px_#5c1c06] active:translate-y-1 disabled:cursor-not-allowed" data-testid="mortarion-attack">
         <Sword size={18} aria-hidden="true"/>
-        {loading ? (en ? 'LOADING…' : 'ЗАГРУЗКА…') : defeated ? (en ? 'BOSS DEFEATED' : 'БОСС ПОВЕРЖЕН') : !state?.active ? (en ? 'RAID NOT ACTIVE' : 'РЕЙД НЕ АКТИВЕН') : attacking ? (en ? 'STRIKING…' : 'НАНОСИМ УДАР…') : nextHitMs > 0 ? (en ? `NEXT STRIKE IN ${shortClock(nextHitMs)}` : `УДАР ЧЕРЕЗ ${shortClock(nextHitMs)}`) : hitsLeft === 0 ? (en ? 'HIT LIMIT REACHED' : 'ЛИМИТ УДАРОВ') : (en ? 'STRIKE THE BOSS!' : 'УДАРИТЬ БОССА!')}
+        {loading ? (en ? 'LOADING…' : 'ЗАГРУЗКА…') : defeated ? (en ? 'BOSS DEFEATED' : 'БОСС ПОВЕРЖЕН') : !state?.active ? (en ? 'RAID NOT ACTIVE' : 'РЕЙД НЕ АКТИВЕН') : attacking ? (en ? 'STRIKING…' : 'НАНОСИМ УДАР…') : nextHitMs > 0 ? (en ? `NEXT STRIKE IN ${shortClock(nextHitMs)}` : `УДАР ЧЕРЕЗ ${shortClock(nextHitMs)}`) : (en ? 'STRIKE THE BOSS!' : 'УДАРИТЬ БОССА!')}
       </button>
       <p className="relative mt-1.5 text-[11px] text-amber-100/85">
-        {en ? 'Available strikes' : 'Доступно ударов'}: <b>{state ? hitsLeft : '…'}/{MORTARION_HITS_PER_HOUR}</b> · {en ? 'One strike every 60 seconds' : '1 удар раз в 60 секунд'}
+        <b>{en ? 'Unlimited strikes' : 'Без лимита ударов'}</b> · {en ? 'One strike every 60 seconds' : '1 удар раз в 60 секунд'}
       </p>
       {rewardStatus && <p data-testid="mortarion-reward-teaser" className="relative mt-2 rounded-lg border border-violet-400/35 bg-violet-950/40 px-2 py-1.5 text-[11px] font-bold text-amber-100">
         🎁 {en ? 'Your chest' : 'Твой сундук'}: {rewardStatus.tier === 'legendary' ? (en ? 'Legendary' : 'Легендарный') : rewardStatus.tier === 'hunter' ? (en ? 'Soul hunter' : 'Охотника') : (en ? 'Participant' : 'Участника')} · {rewardStatus.activeDays}/{rewardStatus.requiredDays} {en ? 'days' : 'дней'}
