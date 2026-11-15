@@ -8,6 +8,7 @@ import { useCaveSandbox } from '@/game/cave/sandboxStore';
 import { equippedItems, loadoutTotals, umbraTemplate } from '@/game/cave/umbra';
 import { gemTotals } from '@/game/cave/gems';
 import { CaveUmbraScreen } from './cave/CaveUmbraScreen';
+import { CaveBlessingSlots, CaveElixirShelf } from './cave/CavePanels';
 import { CaveGemsScreen } from './cave/CaveGemsScreen';
 import { setCavePreviewAssets } from './cave/caveShared';
 import { PlaytestBelt, PlaytestGear, PlaytestNav, TEST_GEAR } from './cavePreview/playtestHud';
@@ -60,6 +61,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
     return () => { mounted = false; };
   }, [assetUrl, loadAttempt]);
   useEffect(() => { const sound = new CaveAudio(); audio.current = sound; return () => { sound.close(); }; }, []);
+  useEffect(() => { world.current.wings = bank.previewWings; }, [bank.previewWings]);
   useEffect(() => { setCavePreviewAssets(assetUrl); return () => setCavePreviewAssets(null); }, [assetUrl]);
   useEffect(() => {
     if (view.phase === 'VICTORY') dispatch({ type: 'loot', floor: 6, boss: true }, 'expedition:' + runId.current);
@@ -125,7 +127,10 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
     const stats = loadoutTotals(equippedItems(bank.items, bank.loadout)), gems = gemTotals(bank.sockets);
     world.current.attackBonus = Math.round((stats.attack ?? 0) + (gems.attack ?? 0));
     world.current.defenseBonus = Math.round((stats.defense ?? 0) + (gems.defense ?? 0));
-    world.current.maxHp += Math.round((stats.hp ?? 0) + (gems.hp ?? 0)); world.current.hp = world.current.maxHp;
+    world.current.wings = bank.previewWings;
+    world.current.honorBonus = bank.playtestHonor * .005;
+    world.current.attackBonus += 30 * .005 * bank.playtestHonor;
+    world.current.maxHp += Math.round((stats.hp ?? 0) + (gems.hp ?? 0) + 900 * .008 * bank.playtestHonor); world.current.hp = world.current.maxHp;
     helpState.current.open = false; setHelp(false); setPanel(null); setInspectGear(null); setNotice('');
     void audio.current?.unlock().catch(() => setMuted(true)); refresh();
   }
@@ -156,7 +161,12 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
   const warning = boss && boss.impact > view.time;
   const clock = `${Math.floor(view.time / 60)}:${String(Math.floor(view.time % 60)).padStart(2, '0')}`;
   const content = <main className={`cx-demo ${focused ? 'cx-focus' : ''} ${playing ? 'cx-playing' : ''}`} lang={en ? 'en' : 'ru'} style={{ '--cx-wood': `url("${assetUrl('assets/territory/ui/wooden-plaque.webp')}")`, '--cx-color': BIOMES[view.biome].color } as React.CSSProperties}>
-    <header className="cx-header"><button aria-label={t('Вернуться ко входу', 'Return to entrance')} onClick={playing ? pause : exit}><ChevronLeft size={20} /></button><div><strong>{biomeName(view.biome)}</strong><span><em>{t('ТЕСТ', 'TEST')}</em> · {t('Без настоящей добычи', 'No real rewards')}</span></div><button aria-label={t('Звук', 'Sound')} aria-pressed={!muted} onClick={() => { const next = !muted; setMuted(next); audio.current?.mute(next); if (!next) void audio.current?.unlock().catch(() => setMuted(true)); }}>{muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button><button aria-label={t('Как играть', 'How to play')} onClick={openHelp}><CircleHelp size={18} /></button>{playing && <button onClick={pause} aria-label={t(view.paused ? 'Возобновить' : 'Пауза', view.paused ? 'Resume' : 'Pause')}>{view.paused ? <Play size={18} /> : <Pause size={18} />}</button>}</header>
+    <header className="cx-header"><button aria-label={t('Вернуться ко входу', 'Return to entrance')} onClick={playing ? pause : exit}><ChevronLeft size={20} /></button><div><strong>{biomeName(view.biome)}</strong><span><em>{t('ТЕСТ', 'TEST')}</em> · {t('Без настоящей добычи', 'No real rewards')}</span></div><button aria-label={t('Звук', 'Sound')} aria-pressed={!muted} onClick={() => { const next = !muted; setMuted(next); audio.current?.mute(next); if (!next) void audio.current?.unlock().catch(() => setMuted(true)); }}>{muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button><button aria-label={t('Как играть', 'How to play')} onClick={openHelp}><CircleHelp size={18} /></button><button aria-label={t('Настройки', 'Settings')} onClick={() => navigate('settings')}>⚙</button>{playing && <button onClick={pause} aria-label={t(view.paused ? 'Возобновить' : 'Пауза', view.paused ? 'Resume' : 'Pause')}>{view.paused ? <Play size={18} /> : <Pause size={18} />}</button>}</header>
+    <div className="cx-top-vitals" aria-label={t('Состояние героя', 'Hero status')}>        <div className="cx-bars">
+          <div><span><HeartPulse size={11} /> {Math.ceil(view.hp)}/{view.maxHp}</span><div className="cx-meter"><i style={{ width: `${100 * view.hp / view.maxHp}%` }} /></div></div>
+          <div><span>✦ {Math.floor(view.energy)}/100</span><div className="cx-meter cx-energy"><i style={{ width: `${view.energy}%` }} /></div></div>
+        </div>
+<span className="cx-level">{t('Ур.6', 'Hero Lv.6')}<progress max={16} value={view.kills}/></span></div>
     {playing && <PlaytestGear assetUrl={assetUrl} en={en} onInspect={i => { panelPause.current = world.current.paused; world.current.paused = true; setInspectGear(i); refresh(); }}/>}
     <div className="cx-stage" data-phase={view.phase}>
       <canvas ref={canvas} role="img" aria-label={t('Отряд движется вправо по пещере', 'The party travels right through the cave')} />
@@ -173,10 +183,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
     </div>
     {playing && <footer className="cx-controls">
       <div className="cx-control-status">
-        <div className="cx-bars">
-          <div><span><HeartPulse size={11} /> {Math.ceil(view.hp)}/{view.maxHp}</span><div className="cx-meter"><i style={{ width: `${100 * view.hp / view.maxHp}%` }} /></div></div>
-          <div><span>✦ {Math.floor(view.energy)}/100</span><div className="cx-meter cx-energy"><i style={{ width: `${view.energy}%` }} /></div></div>
-        </div>
+        <button className="cx-dark-open" onClick={() => navigate('inventory')}>{t('Тёмное снаряжение', 'Dark gear')}</button>
         <button disabled={view.paused} className={view.auto ? 'cx-auto active' : 'cx-auto'} title={t('Автоматически применять умения', 'Use skills automatically')} onClick={() => { world.current.auto = !world.current.auto; refresh(); }} aria-label={t('Авто навыков', 'Auto skills')} aria-pressed={view.auto}>
           <span>{t('Авто', 'Auto')}</span><b>{view.auto ? t('ВКЛ', 'ON') : t('ВЫКЛ', 'OFF')}</b>
         </button>
@@ -205,8 +212,9 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
       <button onClick={() => { world.current.paused = panel !== null || panelPause.current; setInspectGear(null); refresh(); }}>{t('Закрыть', 'Close')}</button>
     </div>}
     {panel !== null && <section className="cx-panel" aria-label={t('Тестовый раздел', 'Test section')}>
-      <div className="cx-panel-heading"><b>{t('ТЕСТ · бой на паузе', 'TEST · battle paused')}</b><button onClick={() => navigate('battle')}>← {t('В бой', 'To battle')}</button></div>
-      {panel === 'inventory' ? <>
+      <div className="cx-panel-heading"><b>{t('ТЕСТ · пауза', 'TEST · paused')} · HP {Math.ceil(view.hp)} · ✦{Math.floor(view.energy)} · {view.room+1}/3</b><button onClick={() => navigate('battle')}>← {t('В бой', 'To battle')}</button></div>
+      {panel === 'blessing' ? <div className="cx-camp cx-blessing-panel"><h1>{t('Благословение Пещеры', 'Cave Blessing')}</h1><CaveBlessingSlots en={en} floor={6}/><CaveElixirShelf en={en}/><p>{t('Эти эликсиры меняют категории тестовой добычи следующей победы. Городское Благословение качества — отдельная система; здесь оно не изменяется.', 'These elixirs affect test loot categories on your next victory. City quality Blessing is separate and remains unchanged.')}</p></div> : panel === 'settings' ? <div className="cx-camp"><h1>{t('Настройки', 'Settings')}</h1>    <div className="cx-utilities"><button onClick={() => navigate('blessing')}>{t('Благословение', 'Blessing')}</button><button onClick={() => navigate('honor')}>{t('Почётные звания', 'Honor ranks')}</button><button onClick={() => navigate('inventory')}>{t('Тёмное снаряжение', 'Dark gear')}</button></div>
+<button aria-pressed={!muted} onClick={() => {const next=!muted;setMuted(next);audio.current?.mute(next);if(!next)void audio.current?.unlock().catch(() => setMuted(true));}}>{t('Звук', 'Sound')} · {muted ? 'OFF' : 'ON'}</button><button onClick={() => {world.current.speed=world.current.speed===1?2:1;refresh();}}>{t('Скорость', 'Speed')} ×{view.speed}</button><button aria-pressed={view.autoPotions} onClick={() => {world.current.autoPotions=!world.current.autoPotions;refresh();}}>{t('Автозелья', 'Auto potions')} · {view.autoPotions ? 'ON':'OFF'}</button><p>{t('Сохраняется только тест на этом устройстве.', 'Only the playtest is saved on this device.')}</p></div> : panel === 'honor' ? <div className="cx-camp"><h1>{t('Почётные звания', 'Honor ranks')}</h1><p>{t('Тестовый ранг', 'Test rank')} {bank.playtestHonor} → {bank.playtestHonor+1}</p><p>{t('Атака и защита', 'Attack & defense')}: +{bank.playtestHonor*.5}% → +{(bank.playtestHonor+1)*.5}%<br/>HP: +{bank.playtestHonor*.8}% → +{((bank.playtestHonor+1)*.8).toFixed(1)}%</p><ul className="cx-honor-conditions"><li>{t('Герой', 'Hero')} 6/{bank.playtestHonor ? 10 : 5} {bank.playtestHonor ? '◇' : '✓'}</li><li>{t('Пройденные комнаты', 'Cleared rooms')} {bank.playtestWins ? 3 : 0}/{bank.playtestHonor ? 5 : 3} {bank.playtestWins && !bank.playtestHonor ? '✓':'◇'}</li><li>{t('Благословение качества', 'Quality Blessing')} 0/{bank.playtestHonor ? 1 : 0} {bank.playtestHonor ? '◇':'✓'}</li></ul><p>◆ {bank.playtestBlueDiamonds} {t('тестовых синих алмазов', 'test blue diamonds')}</p><button disabled={bank.playtestHonor>0 || bank.playtestWins===0} onClick={() => {const result=dispatch({type:'claimPlaytestHonor'});if(result.ok)setNotice(t('Ранг получен · +10 тестовых синих алмазов', 'Rank claimed · +10 test blue diamonds'));}}>{bank.playtestHonor ? t('Ранг 1 получен', 'Rank 1 claimed') : t('Получить · +10 синих', 'Claim · +10 blue')}</button><small>{t('Первый тестовый ранг. HP и атака действуют со следующего забега; условия следующих рангов требуют расширения тестовой кампании. Это не звание аккаунта.', 'First test rank. HP and attack apply next run; further ranks require an extended test campaign. This is separate from account titles.')}</small></div> : panel === 'inventory' ? <>
         <div className="cx-inventory-tabs"><button aria-pressed={inventoryTab === 'gear'} onClick={() => setInventoryTab('gear')}>{t('Тёмная энергия', 'Dark energy')}</button><button aria-pressed={inventoryTab === 'gems'} onClick={() => setInventoryTab('gems')}>{t('Самоцветы', 'Gems')}</button></div>
         <div className="cx-inventory-content">{inventoryTab === 'gear'
           ? <CaveUmbraScreen en={en} hero={assetUrl('assets/territory/characters/heroes/male_viking/idle.webp')} onBack={() => navigate('battle')}/>

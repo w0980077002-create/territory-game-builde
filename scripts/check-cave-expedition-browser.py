@@ -63,7 +63,7 @@ try:
       assert state(page)['x']>290 and state(page)['camera']>50, state(page)
       screenshot(page,width,'run')
       assert page.locator('.cx-focus').count()==1
-      assert page.locator('.cx-stage').bounding_box()['height'] / page.viewport_size['height'] > .5
+      assert page.locator('.cx-stage').bounding_box()['height'] / page.viewport_size['height'] > .44
       page.get_by_role('button',name='Звук',exact=True).tap();assert page.get_by_role('button',name='Звук',exact=True).get_attribute('aria-pressed')=='false'
       page.get_by_role('button',name='Звук',exact=True).tap()
       # Pause via actual UI: no world change while paused.

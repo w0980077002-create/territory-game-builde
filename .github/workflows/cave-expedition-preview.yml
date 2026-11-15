@@ -6,6 +6,10 @@ on:
     branches: [main]
     paths:
       - 'src/game/cavePreviewWorld/**'
+      - 'src/game/cave/**'
+      - 'src/components/pve/cave/**'
+      - 'public/assets/territory/cave/playtest/**'
+      - 'scripts/*cave-playtest*'
       - 'src/components/pve/CaveExpeditionPreview.tsx'
       - 'src/components/pve/cavePreview/**'
       - 'public/assets/territory/cave-expedition/**'

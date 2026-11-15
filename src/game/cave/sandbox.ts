@@ -37,6 +37,8 @@ export type CaveSandbox = Readonly<{
   loadout: UmbraLoadout;
   essence: number;
   enhanceStones: number;
+  playtestWins: number; playtestHonor: number; playtestBlueDiamonds: number;
+  previewWings: 'none' | 'astral' | 'ember';
   gems: GemInventory;
   sockets: GemSockets;
   elixirs: CaveElixirStock;
@@ -47,11 +49,13 @@ export type CaveSandbox = Readonly<{
 }>;
 
 export const emptySandbox = (): CaveSandbox => ({
-  v: 1, seq: 0, items: [], loadout: {}, essence: 0, enhanceStones: 0, gems: {}, sockets: emptySockets(), elixirs: {},
+  v: 1, seq: 0, items: [], loadout: {}, essence: 0, enhanceStones: 0, previewWings: 'none', playtestWins: 0, playtestHonor: 0, playtestBlueDiamonds: 0, gems: {}, sockets: emptySockets(), elixirs: {},
   blessSlots: emptyBlessing(), fundClaimed: [], lastLoot: null, ops: [],
 });
 
 export type CaveAction =
+  | { type: 'claimPlaytestHonor' }
+  | { type: 'wings'; style: 'none' | 'astral' | 'ember' }
   | { type: 'loot'; floor: number; boss: boolean }
   | { type: 'equip'; itemId: string }
   | { type: 'unequip'; slot: UmbraSlotId }
@@ -105,7 +109,7 @@ function rollLoot(state: CaveSandbox, opId: string, floor: number, boss: boolean
   }
   const loot: CaveLoot = { opId, floor, items, overflow, essence, gems: dropped, boosted };
   // Sandbox proposal: installed elixirs are spent by one looted victory.
-  return { state: { ...state, seq, items: [...state.items, ...items], essence: state.essence + essence,
+  return { state: { ...state, seq, playtestWins: state.playtestWins + (opId.startsWith('expedition:') ? 1 : 0), items: [...state.items, ...items], essence: state.essence + essence,
     enhanceStones: state.enhanceStones + Math.floor((boss ? 15 : floor % 5 === 0 ? 9 : 6) * (has('essence') ? 1.5 : 1)),
     gems, blessSlots: emptyBlessing(), lastLoot: loot }, loot };
 }
@@ -132,6 +136,12 @@ function reduce(state: CaveSandbox, action: CaveAction, opId: string): CaveResul
       if (!item) return fail(state, 'not_owned');
       return { state: patchItem(state, { ...item, locked: action.locked }), ok: true };
     }
+    case 'claimPlaytestHonor': {
+      if (state.playtestHonor > 0) return fail(state,'already_claimed');
+      if (state.playtestWins < 1) return fail(state,'not_reached');
+      return {state:{...state,playtestHonor:1,playtestBlueDiamonds:state.playtestBlueDiamonds+10},ok:true};
+    }
+    case 'wings': return ['none','astral','ember'].includes(action.style) ? {state:{...state,previewWings:action.style},ok:true} : fail(state,'invalid_style');
     case 'enhance': {
       const item = state.items.find(i => i.id === action.itemId);
       if (!item) return fail(state, 'not_owned');
@@ -269,7 +279,7 @@ export function decodeSandbox(raw: unknown): CaveSandbox {
     return isCaveElixir(id) ? id : null;
   });
   return {
-    ...base, seq: Math.max(num(data.seq), items.length), items, loadout, essence: num(data.essence), enhanceStones: num(data.enhanceStones), gems,
+    ...base, seq: Math.max(num(data.seq), items.length), items, loadout, essence: num(data.essence), enhanceStones: num(data.enhanceStones), playtestWins: num(data.playtestWins), playtestHonor: data.playtestHonor === 1 ? 1 : 0, playtestBlueDiamonds: num(data.playtestBlueDiamonds), previewWings: data.previewWings === 'astral' || data.previewWings === 'ember' ? data.previewWings : 'none', gems,
     sockets: sockets as unknown as GemSockets, elixirs, blessSlots,
     fundClaimed: (Array.isArray(data.fundClaimed) ? data.fundClaimed : []).filter((n): n is number => Number.isInteger(n)),
     lastLoot: data.lastLoot && typeof data.lastLoot === 'object' && typeof (data.lastLoot as CaveLoot).opId === 'string'

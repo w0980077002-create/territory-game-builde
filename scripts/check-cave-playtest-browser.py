@@ -19,9 +19,12 @@ with sync_playwright() as p:
    before=page.evaluate('__caveDemo.world.time');page.wait_for_timeout(120);assert page.evaluate('__caveDemo.world.time')==before
    if name=='Инвентарь':
     assert page.get_by_test_id('umbra-slot').count()==12
+    page.get_by_test_id('wings-astral').tap();assert page.get_by_test_id('umbra-slot').count()==12;assert page.evaluate('__caveDemo.world.wings')=='astral'
     page.screenshot(path=str(out/f'{width}-inventory.png'))
     page.get_by_role('button',name='Самоцветы',exact=True).tap();page.screenshot(path=str(out/f'{width}-gems.png'));page.get_by_role('button',name='Тёмная энергия',exact=True).tap()
    page.locator('.cx-native-nav').get_by_role('button',name='Бой',exact=True).tap();assert not page.evaluate('__caveDemo.world.paused')
+  page.get_by_role('button',name='Настройки',exact=True).tap();page.get_by_role('button',name='Благословение',exact=True).tap();assert page.get_by_test_id('cave-blessing-slot').count()==3;page.locator('.cx-native-nav').get_by_role('button',name='Бой',exact=True).tap()
+  page.get_by_role('button',name='Настройки',exact=True).tap();page.get_by_role('button',name='Почётные звания',exact=True).tap();assert page.locator('.cx-honor-conditions li').count()==3;page.locator('.cx-native-nav').get_by_role('button',name='Бой',exact=True).tap()
   page.evaluate('__caveDemo.world.hp=400');page.wait_for_timeout(150);page.locator('.cx-belt button').nth(0).tap();assert page.evaluate('__caveDemo.world.belt[0]')==4
   page.get_by_role('button',name='Пауза',exact=True).tap();hp=page.evaluate('__caveDemo.world.hp');page.reload();page.wait_for_function('()=>window.__caveDemo');page.get_by_role('button',name='Продолжить путь').wait_for();assert page.evaluate('__caveDemo.world.hp')==hp;assert page.evaluate('__caveDemo.world.belt[0]')==4
   if width==390:
@@ -35,6 +38,7 @@ with sync_playwright() as p:
    assert page.evaluate('__caveDemo.world.phase')=='VICTORY'
    stock=lambda:json.loads(page.evaluate("localStorage.getItem('territory_cave_sandbox_v1')"))
    assert len(stock()['items'])==2 and stock()['enhanceStones']==15
+   page.get_by_role('button',name='Настройки',exact=True).tap();page.get_by_role('button',name='Почётные звания',exact=True).tap();page.get_by_role('button',name='Получить · +10 синих',exact=True).tap();assert stock()['playtestBlueDiamonds']==10;page.locator('.cx-native-nav').get_by_role('button',name='Бой',exact=True).tap()
    page.get_by_role('button',name='Открыть добычу').tap();page.get_by_test_id('umbra-item').first.tap();page.get_by_test_id('umbra-equip').tap()
    assert len(stock()['loadout'])==1
    page.get_by_test_id('umbra-enhance-all').tap();assert stock()['enhanceStones']==0 and max(i['enhance'] for i in stock()['items'])==15

@@ -7,6 +7,7 @@ export const POSES = ['idle', 'attack', 'hit', 'block', 'dodge', 'death'] as con
 export function assetPaths() {
   return ['cave-expedition/creatures.webp', 'cave-expedition/chambers.webp', 'cave-expedition/biomes.webp', 'cave-expedition/party-run.webp', 'cave-expedition/crystal-chamber.webp', 'ui/wooden-plaque.webp',
     ...['helmet','amulet','armor','weapon','shield','ring','boots'].map(slot => `ui/equipment/${slot}.webp`),
+    ...['astral','ember'].map(id => `cave/playtest/wings-${id}.svg`),
     ...['small','large','energy','ward','fury','spring','focus'].map(id => `cave/playtest/potion-${id}.svg`),
     ...HERO_PARTS.map(part => `combat2d/male_viking/${part}.webp`),
     ...PARTY.flatMap(p => POSES.map(s => `characters/${p}/${s}.webp`)),
@@ -154,6 +155,10 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
   }
   shadow(c, heroX, floor, 160);
   c.save(); c.globalAlpha = fading;
+  if (w.wings !== 'none') {
+    const wings = images.get(`assets/territory/cave/playtest/wings-${w.wings}.svg`);
+    if (wings) c.drawImage(wings, heroX - 150 * actorScale, floor - (225 + Math.sin(w.time * 2) * 3) * actorScale, 300 * actorScale, 210 * actorScale);
+  }
   drawHero(c, images, w.pose, Math.max(0, w.time - (w.pose === 'death' ? w.phaseAt : w.heroActionAt)), w.time, w.combo, heroX, floor, 220 * actorScale, reduced);
   c.restore();
   if (w.shieldUntil > w.time) {

@@ -87,13 +87,22 @@ export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: strin
 
     <div className="cv-doll" aria-label={en ? 'Twelve additional equipment slots' : '12 дополнительных слотов'}>
       <div className="cv-doll-col">{UMBRA_SLOTS.slice(0, 6).map(renderSlot)}</div>
-      <div className="cv-doll-hero">
+      <div className="cv-doll-hero" style={{position:'relative'}}>
+        {box.previewWings !== 'none' && <img className="cv-test-wings" src={caveAsset(`assets/territory/cave/playtest/wings-${box.previewWings}.svg`)} alt=""/>}
         <span className="cv-power" data-testid="umbra-power">{en ? 'Dark power' : 'Сила тьмы'}: {loadoutPower(worn)}</span>
         <img className="cv-doll-rune" src={caveAsset('assets/territory/cave/scene/rune-circle.svg')} alt="" />
         <img className="cv-doll-figure" src={hero} alt={en ? 'Your hero' : 'Твой герой'} draggable={false} />
       </div>
       <div className="cv-doll-col">{UMBRA_SLOTS.slice(6).map(renderSlot)}</div>
     </div>
+
+    <section className="cv-wing-card" aria-label={en ? 'Independent wings slot' : 'Отдельный слот крыльев'}>
+      <b>♢ {en ? 'Wings · separate from 12 Umbra' : 'Крылья · отдельно от 12 Umbra'}</b>
+      <small>{en ? 'Free visual fitting · no stats or currency' : 'Бесплатная примерка · без характеристик и валют'}</small>
+      <div className="cv-row">{(['none','astral','ember'] as const).map(style => <button className="cv-btn" key={style} aria-pressed={box.previewWings === style} data-testid={'wings-'+style} onClick={() => dispatch({type:'wings',style})}>
+        {style === 'none' ? (en ? 'Remove' : 'Снять') : <><img src={caveAsset(`assets/territory/cave/playtest/wings-${style}.svg`)} alt="" style={{width:48,height:32}}/>{style === 'astral' ? (en ? 'Astral' : 'Звёздные') : (en ? 'Ember' : 'Янтарные')}</>}
+      </button>)}</div>
+    </section>
 
     {sets.length > 0 && <div className="cv-sets" data-testid="umbra-sets">{sets.map(p => <div key={p.set.id} className="cv-set">
       <b>{en ? p.set.en : p.set.ru} ({p.have}/{p.size})</b>

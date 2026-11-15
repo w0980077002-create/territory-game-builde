@@ -5,6 +5,8 @@ export type Skill = 'cleave' | 'ward' | 'heal' | 'dodge';
 export interface Enemy { id: number; species: Species; worldX: number; hp: number; maxHp: number; pose: Pose; poseUntil: number; ready: number; impact: number; deathAt: number; lane: number; attacks: number; heavy: boolean }
 export interface Effect { x: number; lane: number; text: string; kind: 'hit' | 'block' | 'heal' | 'slash' | 'shock' | 'energy' | 'dodge' | 'impact'; born: number }
 export interface World {
+  honorBonus: number;
+  wings: 'none' | 'astral' | 'ember';
   speed: 1 | 2; autoPotions: boolean; belt: number[]; beltUsed: number[];
   potionReady: number; furyUntil: number; maxHp: number; attackBonus: number; defenseBonus: number;
   phase: Phase; phaseAt: number; time: number; room: number; wave: number; biome: Biome; route: Biome[]; heroX: number; cameraX: number;
@@ -19,7 +21,7 @@ export const BALANCE = { maxHp: 900, regen: 1.8, killEnergy: 3, openingRun: 2.4,
 export const MAX_HP = BALANCE.maxHp;
 export const SKILLS = { cleave: { cost: 32, cooldown: 6 }, ward: { cost: 22, cooldown: 5 }, heal: { cost: 35, cooldown: 12 }, dodge: { cost: 18, cooldown: 5 } };
 export function createWorld(): World {
-  return { speed: 1, autoPotions: false, belt: Array(7).fill(5), beltUsed: Array(7).fill(0), potionReady: 0, furyUntil: 0, maxHp: MAX_HP, attackBonus: 0, defenseBonus: 0,
+  return { honorBonus: 0, wings: 'none', speed: 1, autoPotions: false, belt: Array(7).fill(5), beltUsed: Array(7).fill(0), potionReady: 0, furyUntil: 0, maxHp: MAX_HP, attackBonus: 0, defenseBonus: 0,
     phase: 'LOBBY', phaseAt: 0, time: 0, room: 0, wave: 0, biome: 'crystal', route: ['crystal'], heroX: 175, cameraX: 0, hp: MAX_HP, energy: 65,
     pose: 'idle', poseUntil: 0, heroReady: 0, heroImpact: 0, target: -1, shieldUntil: 0, enemies: [], effects: [], auto: false, paused: false, kills: 0, nextId: 0,
     selected: null, portalX: 0, cooldown: { cleave: 0, ward: 0, heal: 0, dodge: 0 }, followerReady: [0, .6], followerX: [93, 40], followerHp: [260, 220], followerPose: ['idle', 'idle'], followerUntil: [0, 0], bossSpawned: false, bossPhase: 1, blocks: 0, casts: 0, hitStop: 0, runeCollected: false,
@@ -161,7 +163,7 @@ export function update(w: World, delta: number) {
         if (Math.abs(e.worldX - w.heroX) <= spec.range + 35) {
           const dodged = w.time < w.dodgeUntil;
           const blocked = !dodged && w.time < w.shieldUntil; const rawPower = e.species === 'boss' ? (e.heavy ? 125 + w.bossPhase * 30 : 45 + w.bossPhase * 12) : spec.damage;
-          const power = Math.max(1, rawPower - Math.floor(w.defenseBonus / 15)); const damage = dodged ? 0 : blocked ? Math.ceil(power * .15) : power;
+          const power = Math.max(1, (rawPower - Math.floor(w.defenseBonus / 15)) / (1 + w.honorBonus)); const damage = dodged ? 0 : blocked ? Math.ceil(power * .15) : power;
           if (blocked) w.blocks++;
           if (dodged) w.dodges++;
           w.hp = Math.max(0, w.hp - damage); w.pose = dodged ? 'dodge' : blocked ? 'block' : 'hit'; w.poseUntil = Math.max(w.poseUntil, w.time + .28); w.heroActionAt = w.time;

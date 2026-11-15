@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
-const built=await build({stdin:{contents:`export * as engine from './src/game/cavePreviewWorld/engine'; export * as checkpoint from './src/game/cavePreviewWorld/checkpoint'; export * as gear from './src/game/cave/umbra';`,resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
-const {engine:e,checkpoint:c,gear:g}=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
+const built=await build({stdin:{contents:`export * as engine from './src/game/cavePreviewWorld/engine'; export * as checkpoint from './src/game/cavePreviewWorld/checkpoint'; export * as gear from './src/game/cave/umbra'; export * as sandbox from './src/game/cave/sandbox';`,resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
+const {engine:e,checkpoint:c,gear:g,sandbox:s}=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
 for(let slot=0;slot<7;slot++) {
  const w=e.createWorld();e.start(w);w.phase='FIGHT';w.hp=100;w.energy=20;w.followerHp=[100,100];w.cooldown.cleave=10;
  const before=structuredClone(w);assert.ok(e.drinkPotion(w,slot));assert.equal(w.belt[slot],4);assert.equal(w.beltUsed[slot],1);
@@ -19,3 +19,8 @@ const w=e.createWorld();const raw=JSON.stringify({version:1,runId:'test-run',wor
 assert.equal(g.UMBRA_MAX_ENHANCE,500);assert.equal(g.enhanceMultiplier(100),1.15);assert.ok(Math.abs(g.enhanceMultiplier(300)-1.31)<1e-8);assert.ok(Math.abs(g.enhanceMultiplier(500)-1.39)<1e-8);
 assert.equal(Array.from({length:500},(_,enhance)=>g.enhanceCost({enhance})).reduce((a,b)=>a+b),1500);
 console.log('PASS: seven potion effects, atomic refusal, isolated checkpoint decode, auto potions without Auto, x2 at 30/60/120Hz, +500 curve and 1500-stone cost.');
+
+let bank=s.emptySandbox();const tryon=s.applyCaveAction(bank,{type:'wings',style:'astral'},'test-wings-1');assert.ok(tryon.ok);assert.deepEqual(tryon.state.loadout,{});assert.equal(tryon.state.enhanceStones,0);assert.equal(s.decodeSandbox(tryon.state).previewWings,'astral');
+assert.equal(s.applyCaveAction(bank,{type:'claimPlaytestHonor'},'rank-too-soon').ok,false);
+bank=s.applyCaveAction(bank,{type:'loot',floor:6,boss:true},'expedition:test-boss').state;assert.equal(bank.playtestWins,1);bank=s.applyCaveAction(bank,{type:'claimPlaytestHonor'},'test-rank-1').state;assert.equal(bank.playtestBlueDiamonds,10);assert.equal(s.applyCaveAction(bank,{type:'claimPlaytestHonor'},'test-rank-again').ok,false);assert.equal(bank.essence,s.decodeSandbox({...bank,enhanceStones:undefined}).essence);
+console.log('PASS: wings stay outside Umbra/economy; test honor requires victory and grants once; legacy essence preserved.');

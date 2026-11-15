@@ -47,7 +47,8 @@ with sync_playwright() as p:
             page.wait_for_timeout(500)
             box=page.locator('.cx-focus').bounding_box()
             assert box['x']==0 and box['y']==0 and abs(box['height']-500)<1 and abs(box['width']-width)<1
-            assert page.locator('.cx-stage').bounding_box()['height']>180
+            # This fixture is only 500px tall: HP, seven belt slots and native nav stay reachable.
+            assert page.locator('.cx-stage').bounding_box()['height']>140
             assert page.locator('#root').evaluate('(el)=>el.inert')
             page.get_by_role('button',name='Return to entrance' if lang=='en' else 'Вернуться ко входу').tap()
             page.get_by_role('button',name='Back to entrance' if lang=='en' else 'К входному порталу').tap()

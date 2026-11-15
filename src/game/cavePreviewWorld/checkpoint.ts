@@ -12,11 +12,14 @@ export function decodeCheckpoint(raw: string): Checkpoint | null {
     const data: unknown = JSON.parse(raw);
     if (!record(data) || data.version !== 1 || typeof data.runId !== 'string' || !/^[\w-]{1,80}$/.test(data.runId) || !record(data.world)) return null;
     const w = data.world, template = createWorld();
+    // Earlier playtest checkpoints predate cosmetic wings and the test rank.
+    if (!('wings' in w)) w.wings = 'none';
+    if (!('honorBonus' in w)) w.honorBonus = 0;
     for (const [key, value] of Object.entries(template)) {
       if (!(key in w) || (typeof value === 'number' && !finite(w[key]))
         || (typeof value === 'boolean' && typeof w[key] !== 'boolean')) return null;
     }
-    if (!phases.includes(String(w.phase)) || !poses.includes(String(w.pose)) || ![1, 2].includes(Number(w.speed))
+    if (!['none','astral','ember'].includes(String(w.wings)) || !phases.includes(String(w.phase)) || !poses.includes(String(w.pose)) || ![1, 2].includes(Number(w.speed))
       || !Number.isInteger(w.room) || Number(w.room) < 0 || Number(w.room) > 2
       || Number(w.maxHp) < 900 || Number(w.maxHp) > 1_000_000 || Number(w.hp) < 0 || Number(w.hp) > Number(w.maxHp) || Number(w.energy) < 0 || Number(w.energy) > 100
       || Number(w.time) < 0 || Number(w.time) > 86400 || (w.selected !== null && w.selected !== 0 && w.selected !== 1)) return null;
