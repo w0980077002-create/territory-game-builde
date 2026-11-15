@@ -317,3 +317,32 @@ if (isClone) {
  await assert.rejects(file('supabase/staged/territory_c1_restore_functions_DRAFT_20261031.sql'),/refuses changed functions/);
 }
 console.log('PostgreSQL 17 PASS: owner-scoped recovery, unique active session, reviewed synthetic profile, locked stages, engine victory/loss, rollback and retry, durable receipts, preserved save and real concurrent lock contention.');
+
+// The new client PvE bridge shares the existing progress/wallet; exercise its
+// row locks with independent PostgreSQL connections, beyond serialized PGlite.
+await file('supabase/staged/territory_cave_client_pve_v1.sql');
+const cavePlayer = '60000000-0000-4000-8000-000000000001';
+await sql(`INSERT INTO public.players(id,banned,game_state,gold,gems,xp,level,max_energy)
+  SELECT ${quote(cavePlayer)},false,game_state,gold,gems,xp,level,max_energy FROM public.players WHERE id=${quote(player)}`);
+const caveCall = statement => scalar(`SET ROLE authenticated; SET request.test_uid=${quote(cavePlayer)}; SELECT ${statement}`);
+const caveStart = (id, floor=1) => caveCall(`public.territory_cave_pve_start_v1(${quote(id)},${floor})`);
+const caveFinish = (id, won) => caveCall(`public.territory_cave_pve_finish_v1(${quote(id)},${won})`);
+const firstCaveRun = '70000000-0000-4000-8000-000000000001';
+const beforeCave = await scalar(`SELECT to_jsonb(p) FROM public.players p WHERE id=${quote(cavePlayer)}`);
+const entrances = await Promise.all(Array.from({length:6},()=>caveStart(firstCaveRun)));
+assert.ok(entrances.every(r=>r.active_run_id===firstCaveRun && r.dark_stones===4), 'concurrent duplicate start: one debit');
+const finishes = await Promise.all(Array.from({length:6},()=>caveFinish(firstCaveRun,true)));
+assert.ok(finishes.every(r=>r.completed_stage===1 && r.unlocked_stage===2 && r.dark_stones===4 && r.run_status==='won'), 'concurrent duplicate finish: one floor');
+const secondCaveRun = '70000000-0000-4000-8000-000000000002';
+const thirdCaveRun = '70000000-0000-4000-8000-000000000003';
+const competing = await Promise.allSettled([caveStart(secondCaveRun,1),caveStart(thirdCaveRun,2)]);
+assert.equal(competing.filter(r=>r.status==='fulfilled').length,1,'two devices cannot create two active attempts');
+assert.match(competing.find(r=>r.status==='rejected').reason.message,/cave_run_in_progress/);
+const activeCaveRun = competing.find(r=>r.status==='fulfilled').value.active_run_id;
+assert.equal((await caveFinish(firstCaveRun,true)).active_run_id,activeCaveRun,'old receipt keeps the new active run visible');
+const outcomes = await Promise.all([caveFinish(activeCaveRun,true),caveFinish(activeCaveRun,false)]);
+assert.equal(outcomes[0].run_status,outcomes[1].run_status,'first terminal outcome wins across connections');
+assert.equal(outcomes[0].dark_stones,outcomes[1].dark_stones,'no conflicting refund after a win');
+assert.deepEqual(await scalar(`SELECT to_jsonb(p) FROM public.players p WHERE id=${quote(cavePlayer)}`),beforeCave,'client PvE never changes the hero, live inventory or premium wallet');
+assert.equal(await sql(`SELECT count(*) FROM territory_private.cave_client_runs_v1 WHERE player_id=${quote(cavePlayer)} AND status='active'`),'0');
+console.log('Cave client PvE PostgreSQL 17 PASS: six concurrent starts/finishes, two-device contention, won/lost race, old receipt and unchanged player snapshot.');
