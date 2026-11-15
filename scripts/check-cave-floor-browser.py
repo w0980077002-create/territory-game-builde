@@ -44,5 +44,12 @@ with sync_playwright() as p:
   page.get_by_role('button',name='Открыть добычу',exact=True).tap();page.get_by_test_id('umbra-item').first.tap();page.get_by_test_id('umbra-dismantle').tap();assert len(bank()['items'])==len(before['items'])-1
   assert page.evaluate("localStorage.getItem('player-sentinel')")=='unchanged';assert not errors,errors;assert not requests,requests
   reports.append({'width':width,'route':route,'kills':w['kills'],'reload':restored,'external_requests':len(requests),'result':'PASS'});print(reports[-1],flush=True);ctx.close()
+ for width,height in [(320,568),(640,360)]:
+  ctx=browser.new_context(viewport={'width':width,'height':height},is_mobile=True,has_touch=True,reduced_motion='reduce');page=ctx.new_page()
+  page.goto(f'http://127.0.0.1:{server.server_port}/test-fixture.html?lang=en');page.get_by_role('button',name='Set out').tap();page.locator('.cx-portals button').first.wait_for()
+  assert page.evaluate('document.documentElement.scrollWidth<=innerWidth && document.documentElement.scrollHeight<=innerHeight+1')
+  for btn in page.locator('.cx-portals button').all():
+   box=btn.bounding_box();assert box['height']>=44 and box['x']>=0 and box['x']+box['width']<=width+1 and box['y']>=0 and box['y']+box['height']<=height+1
+  page.screenshot(path=str(out/f'{width}x{height}-floor-en.png'));ctx.close()
  browser.close()
 server.shutdown();(out/'floor-browser-report.json').write_text(json.dumps(reports,indent=2))
