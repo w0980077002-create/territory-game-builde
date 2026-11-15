@@ -75,7 +75,11 @@ try:
       until(page,'FIGHT');screenshot(page,width,'fight')
       hp=page.evaluate('__caveDemo.world.enemies.reduce((n,e)=>n+e.hp,0)')
       page.get_by_role('button',name='Раскол',exact=True).tap()
-      step(page,.35)  # Damage lands at contact, after the visible windup.
+      # Hit-stop freezes the simulation clock, including the pending contact.
+      for _ in range(20):
+        if not page.evaluate('__caveDemo.world.cleaveImpact'): break
+        step(page,.025)
+      assert page.evaluate('__caveDemo.world.cleaveImpact')==0
       assert page.evaluate('__caveDemo.world.enemies.reduce((n,e)=>n+e.hp,0)') < hp
       manual_control=width==390
       if not manual_control: page.get_by_role('button',name='Авто навыков',exact=True).tap()
