@@ -246,7 +246,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
               className={`min-h-10 rounded-lg px-2 py-1 text-xs font-black disabled:opacity-40 ${cavePreviewOptIn
                 ? 'bg-gradient-to-b from-amber-200 to-amber-600 text-[#29190b]'
                 : 'bg-[#3e2a1a] text-amber-100'}`}>
-              {language === 'en' ? 'New expedition · test' : 'Новая экспедиция · тест'}
+              {language === 'en' ? 'New expedition' : 'Новая экспедиция'}
             </button>
             <button type="button" role="tab" aria-selected={!cavePreviewOptIn}
               data-testid="dark-cave-saved-floors"

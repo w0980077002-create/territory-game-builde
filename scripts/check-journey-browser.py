@@ -41,9 +41,9 @@ with sync_playwright() as p:
             # Actual nested BattleScreen -> demo focus -> safe return. No real transport.
             page.get_by_test_id('fixture-fight').click()
             page.get_by_role('tab',name='Dark Cave' if lang=='en' else 'Тёмная пещера').click()
-            page.get_by_role('button',name='Play DEMO' if lang=='en' else 'Играть DEMO').wait_for()
+            page.get_by_role('button',name='Set out' if lang=='en' else 'В путь').wait_for()
             saved=page.evaluate('JSON.stringify(Object.entries(localStorage).filter(([k])=>!["territory_cave_playtest_checkpoint_v1","territory_cave_sandbox_v1"].includes(k)).sort())')
-            page.get_by_role('button',name='Play DEMO' if lang=='en' else 'Играть DEMO').tap()
+            page.get_by_role('button',name='Set out' if lang=='en' else 'В путь').tap()
             page.wait_for_timeout(500)
             box=page.locator('.cx-focus').bounding_box()
             assert box['x']==0 and box['y']==0 and abs(box['height']-500)<1 and abs(box['width']-width)<1
@@ -56,7 +56,7 @@ with sync_playwright() as p:
             assert not page.locator('#root').evaluate('(el)=>el.inert')
             assert saved==page.evaluate('JSON.stringify(Object.entries(localStorage).filter(([k])=>!["territory_cave_playtest_checkpoint_v1","territory_cave_sandbox_v1"].includes(k)).sort())')
             page.reload();page.get_by_role('tab',name='Dark Cave' if lang=='en' else 'Тёмная пещера').click()
-            page.get_by_role('button',name='Play DEMO' if lang=='en' else 'Играть DEMO').wait_for()
+            page.get_by_role('button',name='Set out' if lang=='en' else 'В путь').wait_for()
             page.goto(f'http://127.0.0.1:{server.server_port}/territory-journey-after.html?boss')
             assert page.locator('.journey-encounter__eyebrow').inner_text()
             assert page.locator('.journey-encounter').count() == 1
@@ -76,7 +76,7 @@ with sync_playwright() as p:
     page.unroute('**/cave-expedition/party-run.webp')
     page.get_by_role('button',name='Повторить загрузку').click()
     page.get_by_role('tab',name='Тёмная пещера').click()
-    page.get_by_role('button',name='Играть DEMO').wait_for()
+    page.get_by_role('button',name='В путь').wait_for()
     page.close()
     browser.close()
 server.shutdown()

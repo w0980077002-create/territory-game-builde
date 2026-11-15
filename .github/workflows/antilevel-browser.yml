@@ -12,7 +12,8 @@ permissions:
   contents: read
 jobs:
   preview:
-    runs-on: ubuntu-latest
+    # Pinned: the pinned Playwright cannot install Chromium dependencies on the ubuntu-26.04 image behind ubuntu-latest.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4

@@ -21,7 +21,7 @@ def state(page): return page.evaluate('({phase:__caveDemo.world.phase,room:__cav
 manual_control=False
 def step(page, seconds):
     if manual_control:
-        decision=page.evaluate("""()=>{const w=__caveDemo.world;const boss=w.enemies.find(e=>e.species==='boss'&&e.hp>0);return {ward:boss&&boss.heavy&&boss.impact>w.time&&w.shieldUntil<=w.time,heal:w.hp<600,cleave:w.enemies.filter(e=>e.hp>0).length>1&&w.energy>=54}}""")
+        decision=page.evaluate("""()=>{const w=__caveDemo.world;const boss=w.enemies.find(e=>e.species==='boss'&&e.hp>0);return {ward:boss&&boss.heavy&&boss.impact>w.time&&w.shieldUntil<=w.time,heal:w.hp<w.maxHp*.66,cleave:w.enemies.filter(e=>e.hp>0).length>1&&w.energy>=54}}""")
         for key,label in [('ward','Заслон'),('heal','Источник'),('cleave','Раскол')]:
             button=page.get_by_role('button',name=label,exact=True)
             if decision.get(key) and button.is_enabled(): button.tap()
@@ -34,10 +34,13 @@ def until(page, wanted, limit=200):
     raise AssertionError(state(page))
 def visible(page):
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth && document.documentElement.scrollHeight<=innerHeight+1'), 'No document scroll'
-    for element in page.locator('.cx-actions button, .cx-nav button, .cx-portals button').all():
+    for element in page.locator('.cx-actions button, .cx-native-nav button, .cx-portals button, .cx-control-status button, .cx-umbra button, .cx-belt button').all():
         box = element.bounding_box()
         assert box and box['x']>=0 and box['y']>=0 and box['x']+box['width']<=page.viewport_size['width']+1 and box['y']+box['height']<=page.viewport_size['height']+1
-        assert box['height'] >= 44
+        if element.evaluate("e=>!!e.closest('.cx-actions,.cx-native-nav,.cx-portals')"): assert box['height'] >= 44
+    # The cave HUD always shows 12 dark slots and a separate wings tile, never the ordinary seven.
+    assert page.locator('.cx-controls [data-testid=cx-umbra-slot]').count()==12 and page.locator('.cx-controls [data-testid=cx-wings-slot]').count()==1
+    assert page.locator('.cx-native-nav button').count()==7 and page.locator('.cx-belt button').count()==8
 
 def screenshot(page, width, name):
     # The world advances every frame; React publishes the HUD at 10 Hz.
@@ -57,8 +60,8 @@ try:
       page.on('request',lambda req: external.append(req.url) if not req.url.startswith((URL,'data:')) else None)
       page.goto(URL+'/test-fixture.html');page.wait_for_function('()=>window.__caveDemo')
       screenshot(page,width,'lobby')
-      page.get_by_role('button',name='Играть DEMO').tap();step(page,2)
-      # 0.65 s entrance + 1.35 s at 95 units/s starts at x=175 (~303).
+      page.get_by_role('button',name='В путь').tap();step(page,2)
+      # 0.65 s entrance, then the hero accelerates from x=175 toward the pack waiting on the road.
       # Do not depend on extra wall-clock RAFs during a slow test tap.
       assert state(page)['x']>290 and state(page)['camera']>50, state(page)
       screenshot(page,width,'run')
@@ -90,13 +93,14 @@ try:
       assert page.evaluate('__caveDemo.world.blocks')>0
       manual_control=False
       screenshot(page,width,'victory')
-      assert page.get_by_text('Получено в тестовый склад · не имущество игрока').is_visible()
+      assert page.get_by_text('Добыча ждёт в тёмном складе').is_visible()
+      assert not page.evaluate("/DEMO|ДЕМО|ТЕСТ|TEST|ПРЕВЬЮ|заглушк/i.test(document.body.innerText)"), 'No prototype wording in the finished UI'
       page.get_by_role('button',name='Повторить забег').tap();assert state(page)['kills']==0 and state(page)['room']==0
       until(page,'FIGHT');page.evaluate('__caveDemo.world.hp=1');until(page,'DEFEAT');screenshot(page,width,'defeat')
-      page.get_by_role('button',name='Повторить забег').tap();assert state(page)['hp']==900
+      page.get_by_role('button',name='Повторить забег').tap();assert page.evaluate('__caveDemo.world.hp===__caveDemo.world.maxHp && __caveDemo.world.kills===0')
       page.get_by_role('button',name='Вернуться ко входу').tap();page.get_by_role('button',name='К входному порталу').tap();assert state(page)['phase']=='LOBBY'
       # Test actual visibility handler and cleanup on a live loop.
-      page.get_by_role('button',name='Играть DEMO').tap();step(page,2)
+      page.get_by_role('button',name='В путь').tap();step(page,2)
       page.evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'))")
       before=state(page);page.wait_for_timeout(250);assert state(page)==before
       page.evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'))")
@@ -110,15 +114,15 @@ try:
       print(f'PASS {width}: run, 2 portal touches, 3 rooms, boss, victory, defeat, restart, visibility, unmount, 0 external requests',flush=True)
     # Delivery HTML has no debug fixture and still works with all requests blocked.
     context=browser.new_context(viewport={'width':360,'height':640},is_mobile=True,has_touch=True)
-    page=context.new_page();page.goto(URL+'/territory-cave-demo.html');page.get_by_role('button',name='Играть DEMO').wait_for();context.set_offline(True)
+    page=context.new_page();page.goto(URL+'/territory-cave-demo.html');page.get_by_role('button',name='В путь').wait_for();context.set_offline(True)
     assert page.evaluate('typeof window.__caveDemo')=='undefined'
-    page.get_by_role('button',name='Играть DEMO').tap();page.wait_for_timeout(1000);visible(page)
+    page.get_by_role('button',name='В путь').tap();page.wait_for_timeout(1000);visible(page)
     context.close()
     # English, reduced motion, reload/re-entry, short and landscape viewports.
     for width,height in [(360,640),(320,568),(360,808),(640,360)]:
       context=browser.new_context(viewport={'width':width,'height':height},is_mobile=True,has_touch=True,device_scale_factor=2 if height==808 else 1,reduced_motion='reduce')
       page=context.new_page();page.goto(URL+'/test-fixture.html?lang=en');page.wait_for_function('()=>window.__caveDemo')
-      page.get_by_role('button',name='Play DEMO').tap();step(page,2);visible(page)
+      page.get_by_role('button',name='Set out').tap();step(page,2);visible(page)
       if width==360 and height==640:
         # Android fullscreen native controls occupy space outside env(safe-area).
         page.evaluate("document.documentElement.style.setProperty('--territory-top-inset','96px');document.documentElement.style.setProperty('--territory-bottom-inset','28px')")
@@ -174,9 +178,9 @@ try:
     page.get_by_text('Could not open the cave',exact=True).wait_for()
     sentinel=page.evaluate('window.__retrySentinel')
     page.get_by_role('button',name='Reload',exact=True).tap()
-    page.get_by_role('button',name='Play DEMO').wait_for()
+    page.get_by_role('button',name='Set out').wait_for()
     assert page.evaluate('window.__retrySentinel')==sentinel, 'Retry must preserve the outer game document'
-    page.get_by_role('button',name='Play DEMO').tap();step(page,2)
+    page.get_by_role('button',name='Set out').tap();step(page,2)
     assert state(page)['phase']=='RUN_RIGHT'
     context.close()
     browser.close()
