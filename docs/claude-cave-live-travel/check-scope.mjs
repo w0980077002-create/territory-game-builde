@@ -31,7 +31,7 @@ try {
     throw new Error(`WRONG BRANCH: expected ${expectedBranch}, got ${actualBranch || '(detached HEAD)'}`);
   }
   const repoOrigin = git('remote', 'get-url', 'origin');
-  if (!/(?:^|[/:])w0980077002-create\\/territory-game-builde(?:\\.git)?$/.test(repoOrigin)) {
+  if (!repoOrigin.includes('w0980077002-create/territory-game-builde')) {
     throw new Error(`WRONG REPOSITORY: expected territory-game-builde; origin is ${repoOrigin}`);
   }
   let base;
