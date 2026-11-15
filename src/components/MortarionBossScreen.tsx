@@ -247,6 +247,18 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
         <Sword size={18} aria-hidden="true"/>
         {loading ? (en ? 'LOADING…' : 'ЗАГРУЗКА…') : defeated ? (en ? 'BOSS DEFEATED' : 'БОСС ПОВЕРЖЕН') : !state?.active ? (en ? 'RAID NOT ACTIVE' : 'РЕЙД НЕ АКТИВЕН') : attacking ? (en ? 'STRIKING…' : 'НАНОСИМ УДАР…') : nextHitMs > 0 ? (en ? `NEXT STRIKE IN ${shortClock(nextHitMs)}` : `УДАР ЧЕРЕЗ ${shortClock(nextHitMs)}`) : (en ? 'STRIKE THE BOSS!' : 'УДАРИТЬ БОССА!')}
       </button>
+      {rewardStatus?.canClaim && <button
+        type="button" data-testid="mortarion-claim-reward-primary"
+        onClick={() => void claimRewards()}
+        disabled={rewardBusy}
+        className="relative mt-3 flex w-full min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-yellow-200 bg-gradient-to-b from-amber-300 via-yellow-400 to-orange-600 px-3 py-3 text-base font-black text-[#30150b] shadow-[0_4px_16px_#e8a74755] disabled:opacity-60"
+      >
+        🎁 {rewardBusy ? (en ? 'Claiming reward…' : 'Выдаём награду…') : (en ? 'CLAIM YOUR REWARD' : 'ЗАБРАТЬ НАГРАДУ')}
+      </button>}
+      {rewardStatus?.claimed && <p data-testid="mortarion-reward-claimed-primary"
+        className="relative mt-3 rounded-lg border border-emerald-400/60 bg-emerald-950/70 p-2.5 text-center text-sm font-black text-emerald-200"
+      >✅ {en ? 'Reward collected!' : 'Награда получена!'}</p>}
+      {rewardError && <p role="alert" className="relative mt-2 rounded-lg border border-red-400/50 bg-red-950/75 p-2 text-xs text-red-100">{rewardError}</p>}
       <p className="relative mt-1.5 text-[11px] text-amber-100/85">
         <b>{en ? 'Unlimited strikes' : 'Без лимита ударов'}</b> · {en ? 'One strike every 60 seconds' : '1 удар раз в 60 секунд'}
       </p>
@@ -255,6 +267,9 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
       </p>}
       {message && <p role="alert" className="relative mt-2 rounded-lg border border-red-500/50 bg-red-950/60 px-2 py-2 text-xs text-red-100">{message}</p>}
     </section>
+
+    <MortarionRewardPanel status={rewardStatus} en={en} busy={rewardBusy}
+      error={rewardError} onClaim={() => void claimRewards()}/>
 
     <section ref={leaderboardRef} id="mortarion-top10" className="mortarion-raid__leaderboard rounded-2xl border border-amber-600/50 bg-gradient-to-b from-[#49301d] to-[#151315] p-2.5 shadow-lg" data-testid="mortarion-top10">
       <div className="flex items-center justify-between gap-2">
@@ -272,7 +287,6 @@ export function MortarionBossScreen({ playerId }: { playerId: string }) {
         })}
       </ol>
     </section>
-    <MortarionRewardPanel status={rewardStatus} en={en} busy={rewardBusy}
-      error={rewardError} onClaim={() => void claimRewards()}/>
+
   </div>;
 }
