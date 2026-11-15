@@ -97,13 +97,10 @@ export function AuctionScreen() {
     }
   };
 
-  // Trading is not installed in the live economy yet: open the usable chat
-  // instead of presenting three empty market tabs as if they were playable.
-  // Preserve those tabs when an older operation needs reconciliation.
+  // Keep navigation visible even when trading is not yet installed.
+  // Unavailable market actions remain gated by the existing server state,
+  // while players can still inspect lots/history and open the live chat.
   const marketUnavailable = !auctionLoading && auction?.enabled !== true && !pendingOperation;
-  useEffect(() => {
-    if (marketUnavailable && tab !== 'chat') setTab('chat');
-  }, [marketUnavailable, tab]);
 
   const ru = language !== 'en';
   const formatGold = (n: number) => n.toLocaleString(ru ? 'ru-RU' : 'en-US');
@@ -196,7 +193,7 @@ export function AuctionScreen() {
         </div>
       </section>
 
-      {!marketUnavailable && <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-4 gap-1.5" role="tablist" aria-label={language === 'en' ? 'Auction sections' : 'Разделы аукциона'}>
         {([
           ['lots', t('allLots')],
           ['mine', t('myLots')],
@@ -207,7 +204,7 @@ export function AuctionScreen() {
             {label}
           </button>
         ))}
-      </div>}
+      </div>
       {marketUnavailable && (
         <p role="status" className="rounded-xl border border-amber-400/20 bg-black/25 px-3 py-2 text-xs text-slate-300">
           {auctionError || t('tradingDisabled')}

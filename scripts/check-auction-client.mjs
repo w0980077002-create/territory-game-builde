@@ -46,10 +46,14 @@ const api = readFileSync('src/game/auctionApi.ts', 'utf8');
 const ui = readFileSync('src/components/AuctionScreen.tsx', 'utf8');
 assert.match(ui, /const marketUnavailable = !auctionLoading && auction\?\.enabled !== true && !pendingOperation/,
   'Only hide unavailable trade controls after status resolves, preserving pending recoveries');
-assert.match(ui, /if \(marketUnavailable && tab !== 'chat'\) setTab\('chat'\)/,
-  'Disabled trade status must take players to the working lobby chat');
-assert.match(ui, /\{!marketUnavailable && <div className="grid grid-cols-4 gap-1\.5">/,
-  'Market tabs must be hidden while the live trade backend is unavailable');
+assert.doesNotMatch(ui, /if \(marketUnavailable && tab !== 'chat'\) setTab\('chat'\)/,
+  'Unavailable trading must not force players out of their selected tab');
+assert.match(ui, /<div className="grid grid-cols-4 gap-1\.5" role="tablist"/,
+  'All four Auction tabs stay navigable even when trading is unavailable');
+assert.doesNotMatch(ui, /\{!marketUnavailable && <div/,
+  'The tab rail must never disappear based on trade service availability');
+assert.match(ui, /if \(tradeLock\.current \|\| !recoveryReady \|\| !auction\?\.enabled\) return;/,
+  'Showing the tabs must not unlock trade actions without server permission');
 assert.match(ui, /\{marketUnavailable && \([\s\S]*?<p role="status"/,
   'Display honest trading status without inventing listings');
 
