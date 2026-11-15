@@ -21,7 +21,14 @@ function allow(p) {
     p.startsWith('public/assets/territory/cave-expedition/') ||
     p.startsWith('public/assets/territory/cave/playtest/') ||
     /^scripts\/check-cave-[^/]+\.(mjs|py)$/.test(p) ||
-    p === 'scripts/build-cave-expedition-preview.mjs';
+    p === 'scripts/build-cave-expedition-preview.mjs' ||
+    // Owner-approved release fixes for PR #524 (15.11.2026): exact files only.
+    p === 'scripts/check-journey-browser.py' ||          // new start button label
+    p === 'scripts/record-cave-expedition.py' ||         // new start button label
+    p === 'src/components/BattleScreen.tsx' ||           // tab caption only
+    p === '.github/workflows/antilevel-browser.yml' ||   // runner image pin only
+    p === '.github/workflows/cave-expedition-preview.yml' ||
+    p === '.github/workflows/stage1-browser.yml';
 }
 try {
   // Do not let a syntactically valid cave-only change slip into main or the second game.
