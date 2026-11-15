@@ -25,8 +25,8 @@ export const UMBRA_SLOTS = [
 export type UmbraSlotId = (typeof UMBRA_SLOTS)[number]['id'];
 export const UMBRA_SLOT_COUNT = 12;
 /** Test-sandbox capacity; the live limit is not approved. */
-export const UMBRA_STORAGE_CAP = 60;
-export const UMBRA_MAX_ENHANCE = 15;
+export const UMBRA_STORAGE_CAP = 400;
+export const UMBRA_MAX_ENHANCE = 500;
 
 export const UMBRA_STATS = {
   attack: { ru: 'Атака', en: 'Attack', pct: false, weight: 1 },
@@ -101,6 +101,8 @@ export type UmbraItem = Readonly<{
   locked: boolean;
   /** Essence spent on enhancing; partly returned on dismantle. */
   spent: number;
+  /** Separate test enhancement-stone ledger; legacy essence is never converted. */
+  enhanceStonesSpent?: number;
   source: string;
 }>;
 
@@ -143,11 +145,12 @@ export function rollUmbraItem(rng: Rng, opts: { id: string; floor: number; boss?
   return {
     id: opts.id, templateId: template.id, slot, rank, level: floor, main,
     affixes: rollAffixes(rng, info.affixes, floor, rank, template.main),
-    setId: withSet ? pick(rng, sets).id : null, enhance: 0, locked: false, spent: 0, source: opts.source,
+    setId: withSet ? pick(rng, sets).id : null, enhance: 0, locked: false, spent: 0, enhanceStonesSpent: 0, source: opts.source,
   };
 }
 
-export const enhancedMain = (item: UmbraItem): number => round(item.main.stat, item.main.value * (1 + 0.06 * item.enhance));
+export const enhanceMultiplier = (n: number) => 1 + .0015 * Math.min(n,100) + .0008 * Math.min(Math.max(n-100,0),200) + .0004 * Math.max(n-300,0);
+export const enhancedMain = (item: UmbraItem): number => round(item.main.stat, item.main.value * enhanceMultiplier(item.enhance));
 export const itemLines = (item: UmbraItem): StatLine[] => [{ stat: item.main.stat, value: enhancedMain(item) }, ...item.affixes];
 const addLines = (totals: StatTotals, lines: readonly StatLine[]) => {
   for (const line of lines) totals[line.stat] = round(line.stat, (totals[line.stat] ?? 0) + line.value);
@@ -161,9 +164,9 @@ export function itemPower(item: UmbraItem): number {
 }
 
 /** Test-sandbox costs. */
-export const enhanceCost = (item: UmbraItem): number => 8 + item.enhance * 4 * item.rank;
+export const enhanceCost = (item: UmbraItem): number => 1 + Math.floor(item.enhance / 100);
 export const reforgeCost = (item: UmbraItem): number => 12 * item.rank;
-export const dismantleYield = (item: UmbraItem): number => 4 * item.rank + Math.floor(item.level / 5) + Math.floor(item.spent * 0.6);
+export const dismantleYield = (item: UmbraItem): number => [3,5,9,16,28][item.rank-1] + Math.min(4,Math.floor(item.level/25)) + Math.floor((item.enhanceStonesSpent ?? 0) * .6);
 
 export type UmbraLoadout = Readonly<Partial<Record<UmbraSlotId, string>>>;
 export const equippedItems = (items: readonly UmbraItem[], loadout: UmbraLoadout): UmbraItem[] =>

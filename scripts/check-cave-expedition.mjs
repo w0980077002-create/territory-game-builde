@@ -81,6 +81,8 @@ assert.ok(skill(cleave,'cleave')); assert.equal(cleave.enemies[0].hp,1000);
 step(cleave,.4); assert.equal(cleave.enemies[0].hp,895);
 console.log('✓ timed evade, expiry, no retroactive healing, contact-synced cleave and companion attacks');
 console.log('✓ manual vs idle outcomes, 3 boss phases, heavy strike counterplay, meaningful energy, two segment crossings');
-const sourceDirs=['src/game/cavePreviewWorld','src/components/pve/cavePreview'];const files=sourceDirs.flatMap(d=>readdirSync(d).filter(f=>/\.(ts|tsx)$/.test(f)).map(f=>`${d}/${f}`));files.push('src/components/pve/CaveExpeditionPreview.tsx');for(const file of files){const s=readFileSync(file,'utf8');assert.ok(!/supabase|localStorage|sessionStorage|fetch\s*\(|territory-combat|\/game\/actions/.test(s),`Isolated module ${file}`);}
+const sourceDirs=['src/game/cavePreviewWorld','src/components/pve/cavePreview'];const files=sourceDirs.flatMap(d=>readdirSync(d).filter(f=>/\.(ts|tsx)$/.test(f)).map(f=>`${d}/${f}`));files.push('src/components/pve/CaveExpeditionPreview.tsx');for(const file of files){const s=readFileSync(file,'utf8');assert.ok(file.endsWith('/checkpoint.ts') || !/localStorage/.test(s), `Storage is restricted to checkpoint: ${file}`);assert.ok(!/supabase|sessionStorage|fetch\s*\(|territory-combat|\/game\/actions/.test(s),`Isolated module ${file}`);}
 const component=readFileSync(files.at(-1),'utf8');assert.match(component,/cancelAnimationFrame/);assert.match(component,/removeEventListener\('visibilitychange'/);assert.match(component,/document.hidden/);
 console.log('✓ movement, range, impacts, manual skills, pause, delta clamp, defeat, isolation and lifecycle');
+
+const checkpoint=readFileSync('src/game/cavePreviewWorld/checkpoint.ts','utf8'); assert.match(checkpoint,/territory_cave_playtest_checkpoint_v1/); assert.equal((checkpoint.match(/localStorage\./g)||[]).length,2);

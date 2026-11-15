@@ -5,6 +5,10 @@ export type Skill = 'cleave' | 'ward' | 'heal' | 'dodge';
 export interface Enemy { id: number; species: Species; worldX: number; hp: number; maxHp: number; pose: Pose; poseUntil: number; ready: number; impact: number; deathAt: number; lane: number; attacks: number; heavy: boolean }
 export interface Effect { x: number; lane: number; text: string; kind: 'hit' | 'block' | 'heal' | 'slash' | 'shock' | 'energy' | 'dodge' | 'impact'; born: number }
 export interface World {
+  honorBonus: number;
+  wings: 'none' | 'astral' | 'ember';
+  speed: 1 | 2; autoPotions: boolean; belt: number[]; beltUsed: number[];
+  potionReady: number; furyUntil: number; maxHp: number; attackBonus: number; defenseBonus: number;
   phase: Phase; phaseAt: number; time: number; room: number; wave: number; biome: Biome; route: Biome[]; heroX: number; cameraX: number;
   hp: number; energy: number; pose: Pose; poseUntil: number; heroReady: number; heroImpact: number; target: number; shieldUntil: number;
   enemies: Enemy[]; effects: Effect[]; auto: boolean; paused: boolean; kills: number; nextId: number; selected: number | null; portalX: number;
@@ -17,13 +21,55 @@ export const BALANCE = { maxHp: 900, regen: 1.8, killEnergy: 3, openingRun: 2.4,
 export const MAX_HP = BALANCE.maxHp;
 export const SKILLS = { cleave: { cost: 32, cooldown: 6 }, ward: { cost: 22, cooldown: 5 }, heal: { cost: 35, cooldown: 12 }, dodge: { cost: 18, cooldown: 5 } };
 export function createWorld(): World {
-  return { phase: 'LOBBY', phaseAt: 0, time: 0, room: 0, wave: 0, biome: 'crystal', route: ['crystal'], heroX: 175, cameraX: 0, hp: MAX_HP, energy: 65,
+  return { honorBonus: 0, wings: 'none', speed: 1, autoPotions: false, belt: Array(7).fill(5), beltUsed: Array(7).fill(0), potionReady: 0, furyUntil: 0, maxHp: MAX_HP, attackBonus: 0, defenseBonus: 0,
+    phase: 'LOBBY', phaseAt: 0, time: 0, room: 0, wave: 0, biome: 'crystal', route: ['crystal'], heroX: 175, cameraX: 0, hp: MAX_HP, energy: 65,
     pose: 'idle', poseUntil: 0, heroReady: 0, heroImpact: 0, target: -1, shieldUntil: 0, enemies: [], effects: [], auto: false, paused: false, kills: 0, nextId: 0,
     selected: null, portalX: 0, cooldown: { cleave: 0, ward: 0, heal: 0, dodge: 0 }, followerReady: [0, .6], followerX: [93, 40], followerHp: [260, 220], followerPose: ['idle', 'idle'], followerUntil: [0, 0], bossSpawned: false, bossPhase: 1, blocks: 0, casts: 0, hitStop: 0, runeCollected: false,
     heroActionAt: 0, combo: 0, dodgeUntil: 0, dodges: 0, cleaveImpact: 0, cleaveTargets: [], followerImpact: [0, 0], followerTarget: [-1, -1] };
 }
 function phase(w: World, value: Phase) { w.phase = value; w.phaseAt = w.time; }
 export function start(w: World) { Object.assign(w, createWorld()); phase(w, 'ENTER'); }
+export const POTIONS = [
+  { id: 'small', ru: 'Малое лечение', en: 'Small heal', effectRu: '+120 HP', effectEn: '+120 HP', color: '#d35b55' },
+  { id: 'large', ru: 'Большое лечение', en: 'Greater heal', effectRu: '+240 HP', effectEn: '+240 HP', color: '#f17b67' },
+  { id: 'energy', ru: 'Энергия', en: 'Energy', effectRu: '+35 энергии', effectEn: '+35 energy', color: '#55c8ed' },
+  { id: 'ward', ru: 'Каменная кожа', en: 'Stoneskin', effectRu: 'Защита на 3 сек', effectEn: 'Guard for 3 sec', color: '#c2a77a' },
+  { id: 'fury', ru: 'Ярость', en: 'Fury', effectRu: '+10 к удару · 10 сек', effectEn: '+10 strike damage · 10 sec', color: '#ffab50' },
+  { id: 'spring', ru: 'Настой отряда', en: 'Party tonic', effectRu: '+80 HP отряду', effectEn: '+80 party HP', color: '#a4d67b' },
+  { id: 'focus', ru: 'Ясность', en: 'Clarity', effectRu: 'Откаты −3 сек', effectEn: 'Cooldowns −3 sec', color: '#b09bfa' },
+] as const;
+export function potionBlock(w: World, slot: number): string | null {
+  if (!Number.isInteger(slot) || slot < 0 || slot >= 7) return 'slot';
+  if (w.paused || !['APPROACH', 'FIGHT', 'BOSS'].includes(w.phase) || w.hp <= 0) return 'phase';
+  if (w.belt[slot] <= 0 || w.beltUsed[slot] >= 5) return 'empty';
+  if (w.time < w.potionReady) return 'cooldown';
+  if ((slot === 0 || slot === 1) && w.hp >= w.maxHp) return 'full';
+  if (slot === 2 && w.energy >= 100) return 'full';
+  if (slot === 3 && w.shieldUntil > w.time) return 'active';
+  if (slot === 4 && w.furyUntil > w.time) return 'active';
+  if (slot === 5 && w.hp >= w.maxHp && w.followerHp.every((hp, i) => hp <= 0 || hp >= (i ? 220 : 260))) return 'full';
+  if (slot === 6 && Object.values(w.cooldown).every(value => value <= w.time)) return 'full';
+  return null;
+}
+export function drinkPotion(w: World, slot: number): boolean {
+  if (potionBlock(w, slot)) return false;
+  w.belt[slot]--; w.beltUsed[slot]++; w.potionReady = w.time + .7;
+  if (slot === 0 || slot === 1 || slot === 5) {
+    const amount = Math.min(w.maxHp - w.hp, slot === 0 ? 120 : slot === 1 ? 240 : 80);
+    w.hp += amount; fx(w, w.heroX, `+${amount}`, 'heal');
+    if (slot === 5) w.followerHp = w.followerHp.map((hp, i) => hp > 0 ? Math.min(i ? 220 : 260, hp + 80) : 0);
+  }
+  if (slot === 2) { const gain = Math.min(35, 100 - w.energy); w.energy += gain; fx(w, w.heroX, `+${Math.floor(gain)} ✦`, 'energy'); }
+  if (slot === 3) { w.shieldUntil = w.time + 3; fx(w, w.heroX, 'ward', 'block'); }
+  if (slot === 4) { w.furyUntil = w.time + 10; fx(w, w.heroX, '+10', 'energy'); }
+  if (slot === 6) { for (const key of Object.keys(SKILLS) as Skill[]) w.cooldown[key] = Math.max(w.time, w.cooldown[key] - 3); fx(w, w.heroX, '−3s', 'energy'); }
+  return true;
+}
+/** Wall time is bounded and substepped. x2 remains x2 at 30/60/120 Hz. */
+export function advanceRealtime(w: World, delta: number) {
+  let remaining = Math.min(.1, Math.max(0, delta)) * w.speed;
+  while (remaining > .000001) { const step = Math.min(.025, remaining); update(w, step); remaining -= step; }
+}
 export function choosePortal(w: World, index: number) {
   if (w.paused || w.phase !== 'PORTAL_CHOICE' || (index !== 0 && index !== 1)) return false;
   w.selected = index; phase(w, 'PORTAL_ENTER'); return true;
@@ -52,7 +98,7 @@ export function skillBlock(w: World, key: Skill): SkillBlock | null {
   if (w.cooldown[key] > w.time) return 'cooldown';
   if (w.energy < spec.cost) return 'energy';
   if (key === 'cleave' && !w.enemies.some(e => e.hp > 0 && e.worldX - w.heroX < 240)) return 'no-target';
-  if (key === 'heal' && w.hp === MAX_HP && w.followerHp.every((hp, i) => hp <= 0 || hp === (i ? 220 : 260))) return 'full-health';
+  if (key === 'heal' && w.hp === w.maxHp && w.followerHp.every((hp, i) => hp <= 0 || hp === (i ? 220 : 260))) return 'full-health';
   return null;
 }
 export function skill(w: World, key: Skill) {
@@ -63,7 +109,7 @@ export function skill(w: World, key: Skill) {
   if (key === 'cleave') { w.heroImpact = 0; w.cleaveTargets = targets.map(e => e.id); w.cleaveImpact = w.time + .3; w.combo = 2; w.pose = 'attack'; w.heroReady = Math.max(w.heroReady, w.time + .7); }
   if (key === 'ward') { w.heroImpact = 0; w.followerPose = w.followerHp.map(hp => hp > 0 ? 'block' : 'death'); w.followerUntil = [w.time + .45, w.time + .45]; w.shieldUntil = w.time + BALANCE.wardSeconds; w.pose = 'block'; fx(w, w.heroX, 'ward', 'block'); }
   if (key === 'heal') {
-    const restored = Math.min(BALANCE.healing, MAX_HP - w.hp); w.hp += restored;
+    const restored = Math.min(BALANCE.healing, w.maxHp - w.hp); w.hp += restored;
     w.followerHp = w.followerHp.map((hp, i) => hp > 0 ? Math.min(i ? 220 : 260, hp + 65) : 0);
     if (w.followerHp[1] > 0) { w.followerPose[1] = 'attack'; w.followerUntil[1] = w.time + .75; }
     fx(w, w.heroX, `+${restored}`, 'heal'); return true;
@@ -83,9 +129,12 @@ export function update(w: World, delta: number) {
   w.time += dt;
   w.effects = w.effects.filter(e => w.time - e.born < 1);
   w.energy = Math.min(100, w.energy + dt * BALANCE.regen);
+  if (w.autoPotions && w.hp <= w.maxHp * .35) {
+    if (!drinkPotion(w, 1)) drinkPotion(w, 0);
+  }
   if (w.cleaveImpact && w.time >= w.cleaveImpact) {
     w.cleaveImpact = 0;
-    w.enemies.filter(e => w.cleaveTargets.includes(e.id) && e.worldX - w.heroX < 260).forEach(e => hurt(w, e, BALANCE.cleaveDamage));
+    w.enemies.filter(e => w.cleaveTargets.includes(e.id) && e.worldX - w.heroX < 260).forEach(e => hurt(w, e, BALANCE.cleaveDamage + w.attackBonus));
     fx(w, w.heroX + 70, '', 'slash'); w.cleaveTargets = [];
   }
   const age = w.time - w.phaseAt;
@@ -113,7 +162,8 @@ export function update(w: World, delta: number) {
         e.impact = 0;
         if (Math.abs(e.worldX - w.heroX) <= spec.range + 35) {
           const dodged = w.time < w.dodgeUntil;
-          const blocked = !dodged && w.time < w.shieldUntil; const power = e.species === 'boss' ? (e.heavy ? 125 + w.bossPhase * 30 : 45 + w.bossPhase * 12) : spec.damage; const damage = dodged ? 0 : blocked ? Math.ceil(power * .15) : power;
+          const blocked = !dodged && w.time < w.shieldUntil; const rawPower = e.species === 'boss' ? (e.heavy ? 125 + w.bossPhase * 30 : 45 + w.bossPhase * 12) : spec.damage;
+          const power = Math.max(1, (rawPower - Math.floor(w.defenseBonus / 15)) / (1 + w.honorBonus)); const damage = dodged ? 0 : blocked ? Math.ceil(power * .15) : power;
           if (blocked) w.blocks++;
           if (dodged) w.dodges++;
           w.hp = Math.max(0, w.hp - damage); w.pose = dodged ? 'dodge' : blocked ? 'block' : 'hit'; w.poseUntil = Math.max(w.poseUntil, w.time + .28); w.heroActionAt = w.time;
@@ -139,7 +189,7 @@ export function update(w: World, delta: number) {
     }
     if (w.heroImpact && w.time >= w.heroImpact) {
       w.heroImpact = 0; const e = w.enemies.find(e => e.id === w.target);
-      if (e && e.hp > 0 && e.worldX - w.heroX <= (e.species === 'boss' ? 195 : 158)) { hurt(w, e, BALANCE.basicDamage); fx(w, e.worldX - 25, '', 'slash', e.lane); }
+      if (e && e.hp > 0 && e.worldX - w.heroX <= (e.species === 'boss' ? 195 : 158)) { hurt(w, e, BALANCE.basicDamage + w.attackBonus + (w.furyUntil > w.time ? 10 : 0)); fx(w, e.worldX - 25, '', 'slash', e.lane); }
     }
     for (let i = 0; i < 2; i++) {
       if (w.followerHp[i] <= 0) { w.followerPose[i] = 'death'; continue; }
@@ -159,7 +209,7 @@ export function update(w: World, delta: number) {
       if (alive.some(e => e.species === 'boss' && e.heavy && e.impact > w.time && e.impact - w.time < .6) && w.shieldUntil <= w.time && w.dodgeUntil <= w.time) {
         if (!skill(w, 'ward')) skill(w, 'dodge');
       }
-      if (w.hp <= MAX_HP - BALANCE.healing) skill(w, 'heal');
+      if (w.hp <= w.maxHp - BALANCE.healing) skill(w, 'heal');
       if (alive.length >= 2 && w.energy >= SKILLS.cleave.cost + SKILLS.ward.cost) skill(w, 'cleave');
     }
     if (!w.hp) { w.pose = 'death'; w.followerHp = [0, 0]; w.followerPose = ['death', 'death']; w.heroImpact = 0; phase(w, 'DEFEAT'); return; }

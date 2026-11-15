@@ -6,7 +6,7 @@ import {
   type UmbraItem, type UmbraSlotId,
 } from '@/game/cave/umbra';
 import {
-  caveAsset, DemoNote, Dialog, ESSENCE_ART, ItemCell, itemName, reasonText, SetBadge, signed, StatLines, statLabel, statValue, useToast, woodStyle,
+  caveAsset, DemoNote, Dialog, ENHANCE_STONE_ART, ItemCell, itemName, reasonText, SetBadge, signed, StatLines, statLabel, statValue, useToast, woodStyle,
 } from './caveShared';
 
 type View = { kind: 'item'; id: string } | { kind: 'slot'; slot: UmbraSlotId } | { kind: 'guide' } | { kind: 'bulk' } | null;
@@ -87,13 +87,22 @@ export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: strin
 
     <div className="cv-doll" aria-label={en ? 'Twelve additional equipment slots' : '12 дополнительных слотов'}>
       <div className="cv-doll-col">{UMBRA_SLOTS.slice(0, 6).map(renderSlot)}</div>
-      <div className="cv-doll-hero">
+      <div className="cv-doll-hero" style={{position:'relative'}}>
+        {box.previewWings !== 'none' && <img className="cv-test-wings" src={caveAsset(`assets/territory/cave/playtest/wings-${box.previewWings}.svg`)} alt=""/>}
         <span className="cv-power" data-testid="umbra-power">{en ? 'Dark power' : 'Сила тьмы'}: {loadoutPower(worn)}</span>
         <img className="cv-doll-rune" src={caveAsset('assets/territory/cave/scene/rune-circle.svg')} alt="" />
         <img className="cv-doll-figure" src={hero} alt={en ? 'Your hero' : 'Твой герой'} draggable={false} />
       </div>
       <div className="cv-doll-col">{UMBRA_SLOTS.slice(6).map(renderSlot)}</div>
     </div>
+
+    <section className="cv-wing-card" aria-label={en ? 'Independent wings slot' : 'Отдельный слот крыльев'}>
+      <b>♢ {en ? 'Wings · separate from 12 Umbra' : 'Крылья · отдельно от 12 Umbra'}</b>
+      <small>{en ? 'Free visual fitting · no stats or currency' : 'Бесплатная примерка · без характеристик и валют'}</small>
+      <div className="cv-row">{(['none','astral','ember'] as const).map(style => <button className="cv-btn" key={style} aria-pressed={box.previewWings === style} data-testid={'wings-'+style} onClick={() => dispatch({type:'wings',style})}>
+        {style === 'none' ? (en ? 'Remove' : 'Снять') : <><img src={caveAsset(`assets/territory/cave/playtest/wings-${style}.svg`)} alt="" style={{width:48,height:32}}/>{style === 'astral' ? (en ? 'Astral' : 'Звёздные') : (en ? 'Ember' : 'Янтарные')}</>}
+      </button>)}</div>
+    </section>
 
     {sets.length > 0 && <div className="cv-sets" data-testid="umbra-sets">{sets.map(p => <div key={p.set.id} className="cv-set">
       <b>{en ? p.set.en : p.set.ru} ({p.have}/{p.size})</b>
@@ -104,7 +113,7 @@ export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: strin
 
     <div className="cv-store-head">
       <h4>{en ? 'Dark storage' : 'Тёмный склад'}</h4>
-      <span className="cv-chip"><img src={caveAsset(ESSENCE_ART)} alt="" style={{ width: 16, height: 16 }} />{en ? 'Essence' : 'Эссенция'}: <b data-testid="umbra-essence">{box.essence}</b></span>
+      <span className="cv-chip"><img src={caveAsset(ENHANCE_STONE_ART)} alt="" style={{ width: 16, height: 16 }} />{en ? 'Enhancement stones' : 'Камни усиления'}: <b data-testid="umbra-enhance-stones">{box.enhanceStones}</b></span>
       <strong data-testid="umbra-capacity">{box.items.length}/{UMBRA_STORAGE_CAP}</strong>
     </div>
     <div className="cv-row">
@@ -112,7 +121,7 @@ export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: strin
       <button type="button" className={'cv-btn' + (bulkMode ? ' cv-btn--danger' : '')} data-testid="umbra-bulk"
         onClick={() => { setPicked([]); setView(bulkMode ? null : { kind: 'bulk' }); }}>{bulkMode ? (en ? 'Cancel' : 'Отмена') : (en ? 'Dismantle' : 'Разобрать')}</button>
       <button type="button" className="cv-btn cv-btn--gold" data-testid="umbra-enhance-all"
-        onClick={() => { const r = dispatch({ type: 'enhanceAll' }); run(r, (en ? 'Enhanced: +' : 'Усилено: +') + (r.count ?? 0) + (en ? ' levels, essence ' : ' ур., эссенция ') + (r.gained ?? 0)); }}>
+        onClick={() => { const r = dispatch({ type: 'enhanceAll' }); run(r, (en ? 'Enhanced: +' : 'Усилено: +') + (r.count ?? 0) + (en ? ' levels, stones ' : ' ур., камни ') + (r.gained ?? 0)); }}>
         {en ? 'Enhance all' : 'Усилить в один клик'}</button>
     </div>
     <div className="cv-filter" role="group" aria-label={en ? 'Filter by slot' : 'Фильтр по слоту'}>
@@ -132,7 +141,7 @@ export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: strin
       <div className="cv-row" style={{ marginTop: 5, marginBottom: 0 }}>
         <button type="button" className="cv-btn" onClick={() => setPicked(shown.filter(i => !i.locked && i.rank <= 2).map(i => i.id))}>{en ? 'Pick ranks I–II' : 'Выбрать ранги I–II'}</button>
         <button type="button" className="cv-btn cv-btn--danger" disabled={!picked.length} data-testid="umbra-bulk-confirm"
-          onClick={() => { if (run(dispatch({ type: 'dismantle', itemIds: picked }), (en ? `Dismantled ${picked.length} · essence +` : `Разобрано ${picked.length} · эссенция +`) + bulkYield)) { setPicked([]); setView(null); } }}>
+          onClick={() => { if (run(dispatch({ type: 'dismantle', itemIds: picked }), (en ? `Dismantled ${picked.length} · stones +` : `Разобрано ${picked.length} · камни усиления +`) + bulkYield)) { setPicked([]); setView(null); } }}>
           {en ? `Dismantle ${picked.length} → +${bulkYield}` : `Разобрать ${picked.length} → +${bulkYield}`}</button>
       </div>
     </div>}
@@ -166,7 +175,7 @@ export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: strin
         })}</div>
       </> : card(detail, 'worn')}
       {detail.enhance < UMBRA_MAX_ENHANCE
-        ? <p className="cv-note">{en ? 'Next enhancement' : 'Следующее усиление'}: {statLabel(detail.main.stat, en)} {statValue(detail.main.stat, enhancedMain(detail))} → <b className="cv-up">{statValue(detail.main.stat, enhancedMain({ ...detail, enhance: detail.enhance + 1 }))}</b> · {en ? 'cost' : 'цена'} {enhanceCost(detail)} {en ? 'essence' : 'эссенции'} ({en ? 'have' : 'есть'} {box.essence})</p>
+        ? <p className="cv-note">{en ? 'Next enhancement' : 'Следующее усиление'}: {statLabel(detail.main.stat, en)} {statValue(detail.main.stat, enhancedMain(detail))} → <b className="cv-up">{statValue(detail.main.stat, enhancedMain({ ...detail, enhance: detail.enhance + 1 }))}</b> · {en ? 'cost' : 'цена'} {enhanceCost(detail)} {en ? 'enhancement stones' : 'камней усиления'} ({en ? 'have' : 'есть'} {box.enhanceStones})</p>
         : <p className="cv-note">{en ? 'Enhancement limit of the test build reached.' : 'Достигнут предел усиления тестовой версии.'}</p>}
       <div className="cv-actions">
         {detailWorn
@@ -175,12 +184,12 @@ export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: strin
         <button type="button" className="cv-btn cv-btn--gold" data-testid="umbra-enhance" disabled={detail.enhance >= UMBRA_MAX_ENHANCE}
           onClick={() => run(dispatch({ type: 'enhance', itemId: detail.id }), (en ? 'Enhanced to +' : 'Усилено до +') + (detail.enhance + 1))}>{en ? 'Enhance' : 'Улучшить'} · {enhanceCost(detail)}</button>
         <button type="button" className="cv-btn" data-testid="umbra-reforge"
-          onClick={() => run(dispatch({ type: 'reforge', itemId: detail.id }), en ? 'Extra attributes rerolled' : 'Дополнительные свойства перекованы')}>{en ? 'Reforge' : 'Перековать'} · {reforgeCost(detail)}</button>
+          onClick={() => run(dispatch({ type: 'reforge', itemId: detail.id }), en ? 'Extra attributes rerolled' : 'Дополнительные свойства перекованы')}>{en ? 'Reforge · essence' : 'Перековать · эссенция'} · {reforgeCost(detail)} ({box.essence})</button>
         <button type="button" className="cv-btn" data-testid="umbra-lock"
           onClick={() => run(dispatch({ type: 'lock', itemId: detail.id, locked: !detail.locked }), detail.locked ? (en ? 'Unlocked' : 'Замок снят') : (en ? 'Locked' : 'Заперто'))}>{detail.locked ? (en ? '🔓 Unlock' : '🔓 Снять замок') : (en ? '🔒 Lock' : '🔒 Запереть')}</button>
         {!detailWorn && <button type="button" className="cv-btn cv-btn--danger" data-testid="umbra-dismantle" style={{ gridColumn: '1 / -1' }}
-          onClick={() => { if (window.confirm((en ? 'Dismantle this item for essence +' : 'Разобрать вещь? Эссенция +') + dismantleYield(detail)) && run(dispatch({ type: 'dismantle', itemIds: [detail.id] }), (en ? 'Dismantled · essence +' : 'Разобрано · эссенция +') + dismantleYield(detail))) setView(null); }}>
-          {en ? 'Dismantle' : 'Разобрать'} → +{dismantleYield(detail)} {en ? 'essence' : 'эссенции'}</button>}
+          onClick={() => { if (window.confirm((en ? 'Dismantle this item for stones +' : 'Разобрать вещь? Камни усиления +') + dismantleYield(detail)) && run(dispatch({ type: 'dismantle', itemIds: [detail.id] }), (en ? 'Dismantled · stones +' : 'Разобрано · камни усиления +') + dismantleYield(detail))) setView(null); }}>
+          {en ? 'Dismantle' : 'Разобрать'} → +{dismantleYield(detail)} {en ? 'enhancement stones' : 'камней усиления'}</button>}
       </div>
       <p className="cv-note" style={{ marginTop: 6 }}>{en ? 'Reforge rerolls extra attributes and keeps the main one.' : 'Перековка меняет дополнительные свойства, основное остаётся.'}</p>
       {toast}

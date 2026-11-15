@@ -6,6 +6,10 @@ on:
     branches: [main]
     paths:
       - 'src/game/cavePreviewWorld/**'
+      - 'src/game/cave/**'
+      - 'src/components/pve/cave/**'
+      - 'public/assets/territory/cave/playtest/**'
+      - 'scripts/*cave-playtest*'
       - 'src/components/pve/CaveExpeditionPreview.tsx'
       - 'src/components/pve/cavePreview/**'
       - 'public/assets/territory/cave-expedition/**'
@@ -27,6 +31,8 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm run test:cave-expedition
+      - run: npm run test:cave-playtest
+      - run: npm run lint
       - run: node scripts/check-cave-systems.mjs
       - run: node scripts/check-cave-belt-attestation.mjs
       - run: node scripts/check-dark-stones.mjs
@@ -42,6 +48,7 @@ jobs:
         run: |
           export CAVE_BROWSER="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
           npm run test:cave-expedition:browser
+          python scripts/check-cave-playtest-browser.py
           python scripts/check-cave-expedition-performance.py
           node scripts/build-journey-preview.mjs
           python scripts/check-journey-browser.py

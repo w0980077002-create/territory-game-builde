@@ -6,9 +6,13 @@ export const PARTY = ['heroes/male_viking', 'followers/northern_warrior', 'follo
 export const POSES = ['idle', 'attack', 'hit', 'block', 'dodge', 'death'] as const;
 export function assetPaths() {
   return ['cave-expedition/creatures.webp', 'cave-expedition/chambers.webp', 'cave-expedition/biomes.webp', 'cave-expedition/party-run.webp', 'cave-expedition/crystal-chamber.webp', 'ui/wooden-plaque.webp',
+    ...['helmet','amulet','armor','weapon','shield','ring','boots'].map(slot => `ui/equipment/${slot}.webp`),
+    ...['astral','ember'].map(id => `cave/playtest/wings-${id}.svg`),
+    ...['small','large','energy','ward','fury','spring','focus'].map(id => `cave/playtest/potion-${id}.svg`),
     ...HERO_PARTS.map(part => `combat2d/male_viking/${part}.webp`),
     ...PARTY.flatMap(p => POSES.map(s => `characters/${p}/${s}.webp`)),
-    ...['01-shadow-amulet', '02-void-axe', '04-azure-crystal'].map(p => `cave-loot/2026-11-06/${p}.webp`)].map(p => ASSET_ROOT + p);
+    ...['01-shadow-amulet', '02-void-axe', '04-azure-crystal'].map(p => `cave-loot/2026-11-06/${p}.webp`)].map(p => ASSET_ROOT + p)
+    .concat(['nav-city.webp','nav-inventory.webp','nav-hero-crown.webp','nav-battle.webp','nav-map-parchment.webp','nav-games.webp','nav-clan.webp']);
 }
 export type Images = Map<string, HTMLImageElement>;
 export async function loadImages(resolve: (s: string) => string): Promise<Images> {
@@ -151,6 +155,10 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
   }
   shadow(c, heroX, floor, 160);
   c.save(); c.globalAlpha = fading;
+  if (w.wings !== 'none') {
+    const wings = images.get(`assets/territory/cave/playtest/wings-${w.wings}.svg`);
+    if (wings) c.drawImage(wings, heroX - 150 * actorScale, floor - (225 + Math.sin(w.time * 2) * 3) * actorScale, 300 * actorScale, 210 * actorScale);
+  }
   drawHero(c, images, w.pose, Math.max(0, w.time - (w.pose === 'death' ? w.phaseAt : w.heroActionAt)), w.time, w.combo, heroX, floor, 220 * actorScale, reduced);
   c.restore();
   if (w.shieldUntil > w.time) {
@@ -183,6 +191,10 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
       const life = Math.min(1, age / .28); c.globalAlpha = 1 - life;
       c.strokeStyle = '#ffe8af'; c.lineWidth = 2;
       for (let ray = 0; ray < 7; ray++) { const a = ray * .9; c.beginPath(); c.moveTo(x + Math.cos(a) * 5, y + 38 + Math.sin(a) * 5); c.lineTo(x + Math.cos(a) * (12 + life * 24), y + 38 + Math.sin(a) * (12 + life * 24)); c.stroke(); }
+      if (w.combo === 0 && age < .24) {
+        c.translate(x, y - 22 - age * 28); c.rotate(-.12);
+        text(c, en ? 'CRASH!' : 'ХРЯСЬ!', 0, 0, 23 + Math.sin(life * Math.PI) * 5, '#ffdb83');
+      }
     }
     else if (e.kind === 'heal') {
       c.strokeStyle = '#8df3ab'; c.lineWidth = 2; c.beginPath(); c.ellipse(heroX, floor, 22 + age * 60, 8 + age * 14, 0, 0, 7); c.stroke();
