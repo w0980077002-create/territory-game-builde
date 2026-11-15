@@ -1,14 +1,14 @@
 import { portalsFor, portalOffset, DIFFICULTY } from '../../../game/cavePreviewWorld/engine';
 import { drawHero, HERO_PARTS } from './heroRig';
 import { CaveLife, drawBackdrop, drawForeground, light, stageLayout } from './world';
-import { BIOMES, CREATURES } from '../../../game/cavePreviewWorld/catalog';
+import { BIOMES, CREATURES, APPROVED_CAVE_ART, caveActorArt } from '../../../game/cavePreviewWorld/catalog';
 import type { World, Pose } from '../../../game/cavePreviewWorld/engine';
 export const ASSET_ROOT = 'assets/territory/';
 export const PARTY = ['heroes/male_viking', 'followers/northern_warrior', 'followers/forest_healer'];
 export const POSES = ['idle', 'attack', 'hit', 'block', 'dodge', 'death'] as const;
 /** Canvas art plus every HUD picture, so the portable build embeds one complete set. */
 export function assetPaths() {
-  return ['cave-expedition/creatures.webp', 'cave-expedition/chambers.webp', 'cave-expedition/biomes.webp', 'cave-expedition/party-run.webp', 'cave-expedition/crystal-chamber.webp', 'ui/wooden-plaque.webp',
+  return [...APPROVED_CAVE_ART.map(id => `cave-expedition/approved/${id}.webp`), 'cave-expedition/creatures.webp', 'cave-expedition/chambers.webp', 'cave-expedition/biomes.webp', 'cave-expedition/party-run.webp', 'cave-expedition/crystal-chamber.webp', 'ui/wooden-plaque.webp',
     ...['astral','ember'].map(id => `cave/playtest/wings-${id}.svg`),
     ...['potion-mana', 'potion-fire', 'potion-green'].map(id => `ui/items/${id}.webp`),
     ...HERO_PARTS.map(part => `combat2d/male_viking/${part}.webp`),
@@ -34,7 +34,7 @@ export async function loadImages(resolve: (s: string) => string): Promise<Images
   for (const [path, img] of images) {
     const cols = path.endsWith('party-run.webp') ? 4 : path.endsWith('creatures.webp') ? 6 : 1;
     const rows = path.endsWith('party-run.webp') ? 3 : path.endsWith('creatures.webp') ? 4 : 1;
-    if (path.includes('characters/') || cols > 1) for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) foot(img, col * img.width / cols, row * img.height / rows, img.width / cols, img.height / rows);
+    if (path.includes('characters/') || path.includes('/approved/') || cols > 1) for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) foot(img, col * img.width / cols, row * img.height / rows, img.width / cols, img.height / rows);
   }
   return images;
 }
@@ -175,7 +175,17 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
     const breathe = e.pose === 'idle' && !reduced ? 1 + Math.sin(w.time * 2.2 + e.id) * .018 : 1;
     const col = e.pose === 'run' ? 1 + Math.floor(w.time * 8) % 2 : e.pose === 'attack' ? 3 : e.pose === 'hit' ? 4 : e.pose === 'death' ? 5 : 0;
     shadow(c, x, y, size); c.save(); if (e.pose === 'attack') { const duration = e.species === 'boss' ? (e.heavy ? 1.45 : .95) : .5; const progress = Math.max(0, Math.min(1, 1 - (e.impact - w.time) / duration)); c.translate(e.impact > w.time ? 10 * Math.sin(progress * Math.PI) : -18 * Math.max(0, (e.poseUntil - w.time) / .3), 0); } if (!e.hp) c.globalAlpha = Math.max(0, 1 - (w.time - e.deathAt) / 1.4);
-    sprite(c, atlas, col * atlas.width / 6, spec.row * atlas.height / 4, atlas.width / 6, atlas.height / 4, x, y, size, size * .94 * breathe);
+    const original = w.rules === 2 ? images.get(caveActorArt(e.species, w.floor)) : undefined;
+    if (original) {
+      c.translate(x, y);
+      if (!reduced) {
+        if (e.pose === 'hit') c.translate(6, 0);
+        if (e.pose === 'run') c.translate(0, -Math.abs(Math.sin(w.time * 9 + e.id)) * 3);
+        if (e.pose === 'death') c.rotate(Math.min(.65, (w.time - e.deathAt) * .9));
+        if (e.pose === 'attack') c.rotate(-.05 * Math.sin(w.time * 5));
+      }
+      sprite(c, original, 0, 0, original.width, original.height, 0, 0, size, size * .94 * breathe);
+    } else sprite(c, atlas, col * atlas.width / 6, spec.row * atlas.height / 4, atlas.width / 6, atlas.height / 4, x, y, size, size * .94 * breathe);
     c.restore();
     if (e.hp > 0 && e.species !== 'boss') { c.fillStyle = '#0a0e15'; c.fillRect(x - 26, y - size + 4, 52, 5); c.fillStyle = '#ee6f7a'; c.fillRect(x - 26, y - size + 4, 52 * e.hp / e.maxHp, 5); }
     if (e.species === 'boss' && e.hp > 0 && e.impact > w.time) {  c.fillStyle = '#f15d5d40'; c.fillRect(heroX - 40, floor - 6, 190, 10); }
@@ -187,9 +197,9 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
       const life = Math.min(1, age / .28); c.globalAlpha = 1 - life;
       c.strokeStyle = '#ffe8af'; c.lineWidth = 2;
       for (let ray = 0; ray < 7; ray++) { const a = ray * .9; c.beginPath(); c.moveTo(x + Math.cos(a) * 5, y + 38 + Math.sin(a) * 5); c.lineTo(x + Math.cos(a) * (12 + life * 24), y + 38 + Math.sin(a) * (12 + life * 24)); c.stroke(); }
-      if (w.combo === 0 && age < .24) {
+      if (age < .24) {
         c.translate(x, y - 22 - age * 28); c.rotate(-.12);
-        text(c, en ? 'CRASH!' : 'ХРЯСЬ!', 0, 0, 23 + Math.sin(life * Math.PI) * 5, '#ffdb83');
+        text(c, (en ? ['CRASH!', 'BAM!', 'BOOM!'] : ['ХРЯСЬ!', 'БАМ!', 'БДЫЩ!'])[w.combo], 0, 0, 23 + Math.sin(life * Math.PI) * 5, '#ffdb83');
       }
     }
     else if (e.kind === 'heal') {

@@ -24,3 +24,9 @@ let bank=s.emptySandbox();const tryon=s.applyCaveAction(bank,{type:'wings',style
 assert.equal(s.applyCaveAction(bank,{type:'claimPlaytestHonor'},'rank-too-soon').ok,false);
 bank=s.applyCaveAction(bank,{type:'loot',floor:6,boss:true},'expedition:test-boss').state;assert.equal(bank.playtestWins,1);bank=s.applyCaveAction(bank,{type:'claimPlaytestHonor'},'test-rank-1').state;assert.equal(bank.playtestBlueDiamonds,10);assert.equal(s.applyCaveAction(bank,{type:'claimPlaytestHonor'},'test-rank-again').ok,false);assert.equal(bank.essence,s.decodeSandbox({...bank,enhanceStones:undefined}).essence);
 console.log('PASS: wings stay outside Umbra/economy; test honor requires victory and grants once; legacy essence preserved.');
+
+const profile=e.createWorld();profile.attackBonus=60;profile.critChance=100;profile.critDamage=75;
+assert.equal(e.heroStrikeDamage(profile,99),158,'real critical damage participates in strikes');
+profile.critChance=0;assert.equal(e.heroStrikeDamage(profile,0),90,'real attack participates in strikes');
+assert.ok(c.decodeCheckpoint(JSON.stringify({version:1,runId:'hero-profile',world:profile})));
+console.log('PASS hero attack/critical profile affects actual damage and survives checkpoint decode');

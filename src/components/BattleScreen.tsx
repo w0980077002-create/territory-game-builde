@@ -16,6 +16,7 @@ import { heroSide } from '@/game/pve';
 import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
 import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
+import { CaveSandboxAccount } from '@/game/cave/sandboxStore';
 import { CaveExpeditionPreview } from './pve/CaveExpeditionPreview';
 import { Currency } from './ui/Currency';
 import { DailyShareCard } from '@/game/DailyShareCard';
@@ -34,28 +35,36 @@ interface Props {
   onShop: () => void;
   /** Opens the Shop at the Dark Cave blessing elixirs. */
   onCaveShop?: () => void;
+  onCaveCity?: () => void;
   onQuests: () => void;
   onEquipment: () => void;
   onForge?: () => void;
   onActiveChange?: (active: boolean) => void;
 }
 
-export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onCaveShop, onQuests, onEquipment, onForge, onActiveChange }: Props) {
+export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onCaveShop, onCaveCity, onQuests, onEquipment, onForge, onActiveChange }: Props) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
   const [caveActive, setCaveActive] = useState(false);
-  // Show the new playable Cave in the actual game tab by default.
-  // Unfinished server Cave receipts/sessions keep their original recovery screen.
-  // The new expedition remains a read-only sandbox: no wallet, loot or save writes.
-  const [cavePreviewOptIn, setCavePreviewOptIn] = useState(() => {
+  // ONE Cave for regular play. Only unfinished old server fights use this
+  // internal recovery path; never offer players two selectable game modes.
+  const [caveLegacyRecovery, setCaveLegacyRecovery] = useState(() => {
     try {
-      const keys = ['territory_adventure_start_v1:', 'territory_adventure_pending_v1:', 'territory_adventure_session_v1:'];
-      return !keys.some(prefix => !!localStorage.getItem(prefix + userId));
+      return ['territory_adventure_start_v1:', 'territory_adventure_pending_v1:', 'territory_adventure_session_v1:']
+        .some(prefix => !!localStorage.getItem(prefix + userId));
     } catch {
-      return false; // When storage cannot be inspected, preserve server recovery.
+      return true; // Unreadable storage cannot prove an old debit is settled.
     }
   });
+  useEffect(() => {
+    if (view !== 'cave') return;
+    try {
+      if (['territory_adventure_start_v1:', 'territory_adventure_pending_v1:', 'territory_adventure_session_v1:']
+        .some(prefix => !!localStorage.getItem(prefix + userId))) setCaveLegacyRecovery(true);
+    } catch { setCaveLegacyRecovery(true); }
+  }, [view, userId]);
+  const handleCaveRecovered = useCallback(() => setCaveLegacyRecovery(false), []);
   const handleCaveActive = useCallback((active: boolean) => {
     setCaveActive(active);
     onActiveChange?.(active);
@@ -236,32 +245,33 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         </div>
       )}
       {view === 'cave' ? (
-        <div className="flex min-h-0 flex-1 flex-col gap-1" data-testid="dark-cave-live-expedition-entry">
-          <div role="tablist" aria-label={language === 'en' ? 'Dark Cave modes' : 'Режимы Тёмной пещеры'}
-            className="grid shrink-0 grid-cols-2 gap-1 rounded-xl border border-amber-700/60 bg-[#24170f] p-1">
-            <button type="button" role="tab" aria-selected={cavePreviewOptIn}
-              data-testid="dark-cave-new-expedition"
-              disabled={caveActive && !cavePreviewOptIn}
-              onClick={() => setCavePreviewOptIn(true)}
-              className={`min-h-10 rounded-lg px-2 py-1 text-xs font-black disabled:opacity-40 ${cavePreviewOptIn
-                ? 'bg-gradient-to-b from-amber-200 to-amber-600 text-[#29190b]'
-                : 'bg-[#3e2a1a] text-amber-100'}`}>
-              {language === 'en' ? 'New expedition' : 'Новая экспедиция'}
-            </button>
-            <button type="button" role="tab" aria-selected={!cavePreviewOptIn}
-              data-testid="dark-cave-saved-floors"
-              onClick={() => setCavePreviewOptIn(false)}
-              className={`min-h-10 rounded-lg px-2 py-1 text-xs font-black ${!cavePreviewOptIn
-                ? 'bg-gradient-to-b from-amber-200 to-amber-600 text-[#29190b]'
-                : 'bg-[#3e2a1a] text-amber-100'}`}>
-              {language === 'en' ? 'My floors · rewards' : 'Мои этажи · награды'}
-            </button>
-          </div>
-          <div className="battle-cave-expedition min-h-0 flex-1 overflow-hidden" role="tabpanel">
-            {cavePreviewOptIn
-              ? <CaveExpeditionPreview language={language} onExit={() => setCavePreviewOptIn(false)} />
-              : <ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} onShop={onCaveShop} />}
-          </div>
+        <div className="battle-cave-expedition flex min-h-0 flex-1 flex-col overflow-hidden" data-testid="dark-cave-single-entry">
+          {caveLegacyRecovery ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden" data-testid="dark-cave-legacy-recovery">
+              <p role="status" className="shrink-0 px-2 py-1 text-center text-xs text-amber-100">
+                {language === 'en' ? 'Finishing a saved old Cave battle before returning to the unified expedition.' : 'Завершаем сохранённый старый бой перед входом в единую Пещеру.'}
+              </p>
+              <div className="min-h-0 flex-1 overflow-y-auto"><ServerAdventureScreen onRecovered={handleCaveRecovered} recoveryOnly userId={userId} onActiveChange={handleCaveActive} onShop={onCaveShop} /></div>
+              <button type="button" className="shrink-0 rounded-xl border border-amber-500 bg-amber-900/80 p-2 text-sm font-bold text-amber-100 disabled:opacity-50"
+                disabled={caveActive} onClick={() => {
+                  try {
+                    if (['territory_adventure_start_v1:', 'territory_adventure_pending_v1:', 'territory_adventure_session_v1:']
+                      .some(prefix => !!localStorage.getItem(prefix + userId))) {
+                      setError(language === 'en' ? 'Finish recovering the saved fight before returning.' : 'Сначала завершите восстановление старого боя.');
+                      return;
+                    }
+                  } catch {
+                    setError(language === 'en' ? 'Cannot verify the old receipt. Try again.' : 'Не удалось проверить старую квитанцию.');
+                    return;
+                  }
+                  setError(null); setCaveLegacyRecovery(false);
+                }}>
+                {language === 'en' ? 'Return to the single Cave' : 'Вернуться в единую Пещеру'}
+              </button>
+            </div>
+          ) : <CaveSandboxAccount.Provider value={userId}><CaveExpeditionPreview key={userId} userId={userId} onCity={onCaveCity} heroStats={heroSide(state)} onActiveChange={handleCaveActive} language={language} heroLevel={state.player.level}
+                onLegacyRecovery={() => setCaveLegacyRecovery(true)}
+                onExit={() => onView('campaign')} /></CaveSandboxAccount.Provider>}
         </div>
       ) : <>
       <div className="flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11">

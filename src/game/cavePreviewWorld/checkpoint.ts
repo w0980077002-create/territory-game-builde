@@ -17,10 +17,13 @@ export function decodeCheckpoint(raw: string): Checkpoint | null {
     // Earlier playtest checkpoints predate cosmetic wings and the test rank.
     if (!('wings' in w)) w.wings = 'none';
     if (!('honorBonus' in w)) w.honorBonus = 0;
+    if (!('critChance' in w)) w.critChance = 0;
+    if (!('critDamage' in w)) w.critDamage = 50;
     for (const [key, value] of Object.entries(template)) {
       if (!(key in w) || (typeof value === 'number' && !finite(w[key]))
         || (typeof value === 'boolean' && typeof w[key] !== 'boolean')) return null;
     }
+    if (Number(w.critChance) < 0 || Number(w.critChance) > 100 || Number(w.critDamage) < 0 || Number(w.critDamage) > 10000) return null;
     if (!['none','astral','ember'].includes(String(w.wings)) || !phases.includes(String(w.phase)) || !poses.includes(String(w.pose)) || ![1, 2].includes(Number(w.speed))
       || !Number.isInteger(w.room) || Number(w.room) < 0 || Number(w.room) > (w.rules === 2 ? 3 : 2)
       || Number(w.maxHp) < 900 || Number(w.maxHp) > 1_000_000 || Number(w.hp) < 0 || Number(w.hp) > Number(w.maxHp) || Number(w.energy) < 0 || Number(w.energy) > 100
@@ -49,14 +52,16 @@ export function decodeCheckpoint(raw: string): Checkpoint | null {
     return data as unknown as Checkpoint;
   } catch { return null; }
 }
-export function readCheckpoint(): Checkpoint | null {
+/** Account-owned checkpoint when integrated; no accidental cross-account cave continuation. */
+export const caveCheckpointKey = (userId?: string) => userId ? CAVE_CHECKPOINT_KEY + ':' + userId : CAVE_CHECKPOINT_KEY;
+export function readCheckpoint(userId?: string): Checkpoint | null {
   try {
-    const raw = localStorage.getItem(CAVE_CHECKPOINT_KEY), saved = raw ? decodeCheckpoint(raw) : null;
+    const raw = localStorage.getItem(caveCheckpointKey(userId)), saved = raw ? decodeCheckpoint(raw) : null;
     if (saved && !['LOBBY', 'VICTORY', 'DEFEAT'].includes(saved.world.phase)) saved.world.paused = true;
     return saved;
   } catch { return null; }
 }
-export function saveCheckpoint(world: World, runId: string): boolean {
-  try { localStorage.setItem(CAVE_CHECKPOINT_KEY, JSON.stringify({ version: 1, runId, world })); return true; }
+export function saveCheckpoint(world: World, runId: string, userId?: string): boolean {
+  try { localStorage.setItem(caveCheckpointKey(userId), JSON.stringify({ version: 1, runId, world })); return true; }
   catch { return false; }
 }

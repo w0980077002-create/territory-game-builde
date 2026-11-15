@@ -230,3 +230,18 @@
 .cx-demo .cx-three-portals button:nth-child(3){left:72%}
 .cx-three-portals b{font-size:10px}.cx-three-portals small{font-size:9px}
 .cx-result{justify-content:flex-start}.cx-result>*{flex-shrink:0}
+
+/* Single Cave: compact account progress and the existing 100-floor catalog.
+   No second combat mode. The list scrolls inside the Cave, not Telegram. */
+.cx-cloud-progress{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;font-size:10px;color:#ffe0a2;text-shadow:0 2px 5px #000}
+.cx-cloud-progress b{padding:3px 7px;border:1px solid #b78d5077;border-radius:8px;background:#21160acb}
+.cx-demo .cx-cloud-progress button{padding:3px 9px;min-height:32px;font-size:10px}
+.cx-cloud-alert{position:absolute;z-index:8;left:9px;right:9px;bottom:9px;display:flex;flex-direction:column;gap:5px;align-items:center;max-height:55%;overflow-y:auto;border:2px solid #e2b16f;border-radius:12px;padding:7px 9px;background:#29160cf2;color:#ffe3b4;box-shadow:0 4px 20px #000b}
+.cx-cloud-alert p{margin:0;text-align:center;font-size:11px;line-height:1.4}
+.cx-demo .cx-cloud-alert button{padding:4px 12px;min-height:40px;font-size:11px}
+.cx-floor-picker{width:100%;min-height:0;max-height:60dvh;overflow-y:auto;overscroll-behavior:contain;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:5px;align-content:start}
+.cx-demo .cx-floor-picker button{min-width:0;min-height:52px;padding:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px}
+.cx-floor-picker button small{font-size:9px;color:#aeb6c3}
+.cx-floor-picker button.cleared{border-color:#549871;background:linear-gradient(#213e30,#141e17)}
+.cx-floor-picker button.current{border-color:#eec77c;box-shadow:0 0 7px #e3b8677a}
+@media(max-height:620px){.cx-cloud-progress{font-size:9px}.cx-demo .cx-cloud-progress button{min-height:30px}}
