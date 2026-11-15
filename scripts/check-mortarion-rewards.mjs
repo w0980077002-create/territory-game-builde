@@ -28,6 +28,15 @@ assert.match(claimSql,/v_stone:=[\s\S]*0\.0005/);
 assert.doesNotMatch(claimSql,/redGems|UPDATE public\.territory_mortarion_2026\b|DELETE FROM public\.players/);
 assert.match(raid,/getMortarionRewardStatus/);
 assert.match(raid,/MortarionRewardPanel/);
+// Finished raid: the reward is discoverable before the large TOP-10, and
+// the prominent button invokes the very same server-authoritative claim.
+assert.match(raid, /data-testid="mortarion-claim-reward-primary"/);
+assert.match(raid, /rewardStatus\?\.canClaim && <button/);
+assert.match(raid, /data-testid="mortarion-claim-reward-primary"[\s\S]*?onClick=\{\(\) => void claimRewards\(\)\}/);
+assert.ok(raid.indexOf('data-testid="mortarion-claim-reward-primary"') < raid.indexOf('id="mortarion-top10"'), 'top-level gift action must be before rankings');
+assert.ok(raid.indexOf('<MortarionRewardPanel') < raid.indexOf('id="mortarion-top10"'), 'reward details must not be buried below rankings');
+assert.match(raid, /data-testid="mortarion-reward-claimed-primary"/);
+
 assert.match(ui,/data-testid="mortarion-rewards"/);
 assert.match(ui,/data-testid="mortarion-claim-reward"/);
 // The lifetime strike count is still tracked server-side for eligibility,
