@@ -167,7 +167,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
         helpState.current.wasPaused = true;
         setView(structuredClone(w));
       }
-      setStorageOk(saveCheckpoint(w, runId.current));
+      setStorageOk(saveCheckpoint(w, runId.current, userId));
       audio.current?.tick(w);
     };
     const keyboard = (event: KeyboardEvent) => {
@@ -200,14 +200,14 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
           }
         }
         if (now - hudAt > 100) { setView(structuredClone(w)); hudAt = now; }
-        if (now - savedAt > 1000) { setStorageOk(saveCheckpoint(w, runId.current)); savedAt = now; }
+        if (now - savedAt > 1000) { setStorageOk(saveCheckpoint(w, runId.current, userId)); savedAt = now; }
       }
       frame = requestAnimationFrame(loop);
     };
     frame = requestAnimationFrame(loop);
     return () => { saveCheckpoint(w, runId.current, userId); cancelAnimationFrame(frame); document.removeEventListener('visibilitychange', visibility); document.removeEventListener('keydown', keyboard); };
   }, [ready, onWorld, en, userId]);
-  function refresh() { setView(structuredClone(world.current)); setStorageOk(saveCheckpoint(world.current, runId.current)); }
+  function refresh() { setView(structuredClone(world.current)); setStorageOk(saveCheckpoint(world.current, runId.current, userId)); }
   function outfit(w: World) {
     const stats = loadoutTotals(equippedItems(bank.items, bank.loadout)), gems = gemTotals(bank.sockets);
     w.attackBonus = Math.round((stats.attack ?? 0) + (gems.attack ?? 0) + 30 * .005 * bank.playtestHonor);
