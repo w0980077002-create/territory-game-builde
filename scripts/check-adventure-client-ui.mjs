@@ -190,7 +190,7 @@ assert.match(darkSql, /ENABLE ROW LEVEL SECURITY/, 'Private resource table must 
 
 console.log('Dark Cave separate navigation PASS: old campaign, Trials, 3 buttons, cave stages, safe server receipts.');
 
-const cloud = read('src/game/cave/clientPve.ts');
+const cloud = read('src/game/caveCloudPve.ts');
 const cave = read('src/components/pve/CaveExpeditionPreview.tsx');
 const staged = read('supabase/staged/territory_cave_client_pve_v1.sql');
 assert.match(cave, /getCavePveStatus\(\)/, 'Cloud floor must be read on Cave entry');
