@@ -65,7 +65,7 @@ try {
     await assert.rejects(start(uuid(1), 1), /cave_run_owner_or_floor_mismatch/);
     assert.equal((await start(uuid(7), 1)).dark_stones, 4);
   });
-  await query('INSERT INTO territory_private.combat_sessions_v1(session_id,player_id,encounter_id,state) VALUES ($1,$2,$3,$4)', [uuid(9), A, 'adventure_v1_stage_2', { status: 'fighting' }]);
+  await query('INSERT INTO territory_private.combat_sessions_v1(session_id,player_id,encounter_id,state) VALUES ($1,$2,$3,$4)', [uuid(9), A, 'adventure_v1_stage_2', JSON.stringify({ status: 'fighting' })]);
   await as(A, async () => {
     assert.equal((await status()).legacy_active_session_id, uuid(9));
     await assert.rejects(start(uuid(10), 2), /cave_legacy_recovery_required/);
