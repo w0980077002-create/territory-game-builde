@@ -13,6 +13,7 @@ function git(...args) {
 function allow(p) {
   return p.startsWith('docs/claude-cave-live-travel/') ||
     p === 'docs/TERRITORY_CAVE_VISUAL_OWNER_REFERENCE_20261115_RU.md' ||
+    p === 'docs/TERRITORY_OWNER_DECISIONS_20261114_RU.md' ||
     p.startsWith('src/game/cavePreviewWorld/') ||
     p === 'src/components/pve/CaveExpeditionPreview.tsx' ||
     p.startsWith('src/components/pve/cavePreview/') ||
@@ -28,7 +29,7 @@ try {
     try { base = git('merge-base', ref, 'HEAD'); if (base) break; } catch { /* try next ref */ }
   }
   if (!base) throw new Error('main/origin/main unavailable; fetch main first');
-  const all = new Set(git('diff', '--name-only', '--diff-filter=ACMRT', base, 'HEAD').split('\n').filter(Boolean));
+  const all = new Set(git('diff', '--name-only', '--diff-filter=ACDMRT', base, 'HEAD').split('\n').filter(Boolean));
   const status = git('status','--porcelain','--untracked-files=all');
   for (const line of status.split('\n').filter(Boolean)) {
     let file = line.slice(3).trim();
