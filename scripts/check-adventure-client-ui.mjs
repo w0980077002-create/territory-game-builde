@@ -48,7 +48,7 @@ assert.match(battle, /<ServerAdventureScreen /);
 assert.match(battle, /data-testid="dark-cave-single-entry"/);
 assert.doesNotMatch(battle, /dark-cave-new-expedition|dark-cave-saved-floors|cavePreviewOptIn/,
   'Never offer two selectable Cave games');
-assert.match(battle, /<CaveExpeditionPreview userId=\{userId\} language=\{language\}/);
+assert.match(battle, /<CaveExpeditionPreview\b[^>]*userId=\{userId\}[^>]*language=\{language\}/);
 assert.match(battle, /onLegacyRecovery=\{\(\) => setCaveLegacyRecovery\(true\)\}/);
 assert.match(battle, /data-testid="dark-cave-legacy-recovery"/,
   'Existing server receipts must remain recoverable without a second public game mode');
@@ -202,6 +202,6 @@ assert.match(cloud, /territory_cave_pve_start_v1/);
 assert.match(cloud, /territory_cave_pve_finish_v1/);
 assert.match(staged, /CREATE UNIQUE INDEX IF NOT EXISTS cave_client_one_active_v1/);
 assert.match(staged, /dark_stone_take_v1\(u\)/);
-assert.match(staged, /completed_stage=r\.floor/);
+assert.match(staged, /completed_stage=greatest\(done,r\.floor\)/);
 assert.doesNotMatch(staged, /UPDATE public\.players SET (?:gold|gems|xp|game_state)/i,
   'Local PvE result is never allowed to grant live account currencies');

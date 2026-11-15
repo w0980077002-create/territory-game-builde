@@ -6,7 +6,7 @@ export interface Enemy { id: number; species: Species; worldX: number; hp: numbe
 export interface Effect { x: number; lane: number; text: string; kind: 'hit' | 'block' | 'heal' | 'slash' | 'shock' | 'energy' | 'dodge' | 'impact'; born: number }
 export interface World {
   rules: 1 | 2; floor: number; unlockedFloor: number; stars: number[];
-  honorBonus: number;
+  honorBonus: number; critChance: number; critDamage: number;
   wings: 'none' | 'astral' | 'ember';
   speed: 1 | 2; autoPotions: boolean; belt: number[]; beltUsed: number[];
   potionReady: number; furyUntil: number; maxHp: number; attackBonus: number; defenseBonus: number;
@@ -26,7 +26,7 @@ export const BALANCE = { maxHp: 900, regen: 1.8, killEnergy: 3, openingRun: 2.4,
 export const MAX_HP = BALANCE.maxHp;
 export const SKILLS = { cleave: { cost: 32, cooldown: 6 }, ward: { cost: 22, cooldown: 5 }, heal: { cost: 35, cooldown: 12 }, dodge: { cost: 18, cooldown: 5 } };
 export function createWorld(): World {
-  return { rules: 2, floor: 1, unlockedFloor: 1, stars: [], honorBonus: 0, wings: 'none', speed: 1, autoPotions: false, belt: Array(7).fill(5), beltUsed: Array(7).fill(0), potionReady: 0, furyUntil: 0, maxHp: MAX_HP, attackBonus: 0, defenseBonus: 0,
+  return { rules: 2, floor: 1, unlockedFloor: 1, stars: [], honorBonus: 0, critChance: 0, critDamage: 50, wings: 'none', speed: 1, autoPotions: false, belt: Array(7).fill(5), beltUsed: Array(7).fill(0), potionReady: 0, furyUntil: 0, maxHp: MAX_HP, attackBonus: 0, defenseBonus: 0,
     phase: 'LOBBY', phaseAt: 0, time: 0, room: 0, wave: 0, biome: 'crystal', route: ['crystal'], heroX: 175, cameraX: 0, hp: MAX_HP, energy: 65,
     pose: 'idle', poseUntil: 0, heroReady: 0, heroImpact: 0, target: -1, shieldUntil: 0, enemies: [], effects: [], auto: false, paused: false, kills: 0, nextId: 0,
     selected: null, portalX: 0, cooldown: { cleave: 0, ward: 0, heal: 0, dodge: 0 }, followerReady: [0, .6], followerX: [175 - TRAVEL.followerGap[0], 175 - TRAVEL.followerGap[1]], followerHp: [260, 220], followerPose: ['idle', 'idle'], followerUntil: [0, 0], bossSpawned: false, bossPhase: 1, blocks: 0, casts: 0, hitStop: 0, runeCollected: false,
@@ -37,6 +37,7 @@ export function createWorld(): World {
 const might = (w: World) => (BALANCE.basicDamage + w.attackBonus) / BALANCE.basicDamage;
 const vigor = (w: World) => w.maxHp / MAX_HP;
 const depth = (ratio: number) => 1 + (ratio - 1) * .85;
+export const heroStrikeDamage = (w: World, roll = Math.random() * 100) => Math.round((BALANCE.basicDamage + w.attackBonus + (w.furyUntil > w.time ? Math.round(10 * might(w)) : 0)) * (roll < w.critChance ? 1 + w.critDamage / 100 : 1));
 function phase(w: World, value: Phase) { w.phase = value; w.phaseAt = w.time; }
 export function start(w: World, floor = w.floor) { const { rules, unlockedFloor } = w; Object.assign(w, createWorld()); w.rules = rules; w.unlockedFloor = unlockedFloor; w.floor = Math.max(1, Math.min(unlockedFloor, floor)); if (rules === 2) { w.portalX = w.heroX + 250; w.stopX = w.portalX - 128; phase(w, 'RUN_RIGHT'); } else phase(w, 'ENTER'); }
 export const DIFFICULTY = [
@@ -244,7 +245,7 @@ export function update(w: World, delta: number) {
     }
     if (w.heroImpact && w.time >= w.heroImpact) {
       w.heroImpact = 0; const e = w.enemies.find(e => e.id === w.target);
-      if (e && e.hp > 0 && e.worldX - w.heroX <= (e.species === 'boss' ? 195 : 158)) { hurt(w, e, BALANCE.basicDamage + w.attackBonus + (w.furyUntil > w.time ? Math.round(10 * might(w)) : 0)); fx(w, e.worldX - 25, '', 'slash', e.lane); }
+      if (e && e.hp > 0 && e.worldX - w.heroX <= (e.species === 'boss' ? 195 : 158)) { hurt(w, e, heroStrikeDamage(w)); fx(w, e.worldX - 25, '', 'slash', e.lane); }
     }
     for (let i = 0; i < 2; i++) {
       if (w.followerHp[i] <= 0) { w.followerPose[i] = 'death'; continue; }

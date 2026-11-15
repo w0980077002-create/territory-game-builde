@@ -18,3 +18,18 @@ export const PORTALS: { biome: Biome; title: string; hint: string; symbol: strin
   [{ biome: 'spore', title: 'Сад без солнца', hint: 'Споровые паруса · дальние атаки', symbol: '✥' }, { biome: 'ember', title: 'Янтарные недра', hint: 'Глубинники · крепкая броня', symbol: '◆' }],
   [{ biome: 'astral', title: 'Звёздный склеп', hint: 'Паруса и Собор Бездны', symbol: '✧' }, { biome: 'forge', title: 'Сердце разлома', hint: 'Глубинники и Собор Бездны', symbol: '♜' }],
 ];
+
+/** Approved VIKING VS ROME originals; cosmetic selection only, no imported runtime. */
+export const APPROVED_CAVE_ART = ['04_club_raider', '07_purple_mage', '08_armored_boar', 'fungal_king', 'spider_queen', 'fire_abyss_lord'] as const;
+export function caveBoss(floor: number) {
+  const depth = Math.min(4, Math.max(0, Math.floor((floor - 1) / 20)));
+  return [
+    { art: 'fungal_king', ru: 'Грибной король', en: 'Fungal King' },
+    { art: 'spider_queen', ru: 'Паучья королева', en: 'Spider Queen' },
+    { art: 'fungal_king', ru: 'Грибной король глубин', en: 'Deep Fungal King' },
+    { art: 'fire_abyss_lord', ru: 'Огненный владыка Бездны', en: 'Fire Abyss Lord' },
+    { art: 'fire_abyss_lord', ru: 'Владыка престола Бездны', en: 'Lord of the Abyss Throne' },
+  ][depth];
+}
+export const caveActorArt = (species: Species, floor: number) =>
+  `assets/territory/cave-expedition/approved/${species === 'boss' ? caveBoss(floor).art : species === 'shardling' ? '04_club_raider' : species === 'moth' ? '07_purple_mage' : '08_armored_boar'}.webp`;

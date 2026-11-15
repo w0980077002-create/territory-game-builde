@@ -43,7 +43,20 @@ BEGIN
     ORDER BY created_at DESC LIMIT 1;
   RETURN jsonb_build_object('completed_stage',coalesce(finished,0),
     'unlocked_stage',coalesce(opened,1),'dark_stones',stones,
-    'active_run_id',r_id,'active_floor',r_floor,'legacy_active_session_id',legacy_id);
+    'active_run_id',r_id,'active_floor',r_floor,'legacy_active_session_id',legacy_id,
+    'history',coalesce((SELECT jsonb_agg(jsonb_build_object('run_id',h.id,'floor',h.floor,
+      'status',h.status,'source',h.source,'created_at',h.created_at) ORDER BY h.created_at DESC)
+      FROM (SELECT * FROM (
+        SELECT run_id id,floor,status,'client'::text source,created_at
+          FROM territory_private.cave_client_runs_v1 WHERE player_id=u AND status<>'active'
+        UNION ALL
+        SELECT session_id,substring(encounter_id FROM '^adventure_v1_stage_([1-9][0-9]{0,2})$')::integer,
+          CASE WHEN state->>'status'='hero_won' THEN 'won' ELSE 'lost' END,'legacy',created_at
+          FROM territory_private.combat_sessions_v1
+          WHERE player_id=u AND encounter_id ~ '^adventure_v1_stage_[1-9][0-9]{0,2}$'
+            AND substring(encounter_id FROM '^adventure_v1_stage_([1-9][0-9]{0,2})$')::integer BETWEEN 1 AND 100
+            AND state->>'status' IN ('hero_won','enemy_won','draw')
+      ) entries ORDER BY created_at DESC LIMIT 20) h),'[]'::jsonb));
 END $$;
 
 -- Transactional, idempotent entrance. Exactly one Dark Stone charge per run UUID.
@@ -54,7 +67,7 @@ DECLARE u uuid:=auth.uid(); done integer; opened integer; stones integer;
 BEGIN
   IF u IS NULL OR NOT EXISTS(SELECT 1 FROM public.players WHERE id=u AND NOT coalesce(banned,false))
     THEN RAISE EXCEPTION 'cave_account_unavailable'; END IF;
-  IF p_run_id IS NULL OR p_floor NOT BETWEEN 1 AND 100 THEN RAISE EXCEPTION 'cave_invalid_run'; END IF;
+  IF p_run_id IS NULL OR p_floor IS NULL OR p_floor NOT BETWEEN 1 AND 100 THEN RAISE EXCEPTION 'cave_invalid_run'; END IF;
   -- Same lock order as other wallet operations: account -> progress -> stones.
   PERFORM 1 FROM public.players WHERE id=u FOR UPDATE;
   SELECT * INTO existing FROM territory_private.cave_client_runs_v1
@@ -65,15 +78,15 @@ BEGIN
       FROM territory_private.adventure_progress_v1 WHERE player_id=u;
     stones:=territory_private.dark_stone_touch_v1(u);
     RETURN jsonb_build_object('completed_stage',coalesce(done,0),'unlocked_stage',coalesce(opened,1),
-      'dark_stones',stones,'active_run_id',CASE WHEN existing.status='active' THEN existing.run_id ELSE NULL END,
-      'active_floor',CASE WHEN existing.status='active' THEN existing.floor ELSE NULL END,
+      'dark_stones',stones,'active_run_id',(SELECT run_id FROM territory_private.cave_client_runs_v1 WHERE player_id=u AND status='active'),
+      'active_floor',(SELECT floor FROM territory_private.cave_client_runs_v1 WHERE player_id=u AND status='active'),
       'run_status',existing.status,'legacy_active_session_id',NULL);
   END IF;
   INSERT INTO territory_private.adventure_progress_v1(player_id)
     VALUES(u) ON CONFLICT DO NOTHING;
   SELECT completed_stage,unlocked_stage INTO done,opened
     FROM territory_private.adventure_progress_v1 WHERE player_id=u FOR UPDATE;
-  IF p_floor<>opened OR done>=100 THEN RAISE EXCEPTION 'cave_floor_locked'; END IF;
+  IF p_floor>opened THEN RAISE EXCEPTION 'cave_floor_locked'; END IF;
   IF EXISTS(SELECT 1 FROM territory_private.cave_client_runs_v1
     WHERE player_id=u AND status='active') THEN RAISE EXCEPTION 'cave_run_in_progress'; END IF;
   IF EXISTS(SELECT 1 FROM territory_private.combat_sessions_v1
@@ -107,10 +120,10 @@ BEGIN
     FROM territory_private.adventure_progress_v1 WHERE player_id=u FOR UPDATE;
   IF r.status='active' THEN
     IF p_won THEN
-      IF r.floor<>opened OR done>=r.floor THEN RAISE EXCEPTION 'cave_run_stage_conflict'; END IF;
+      IF r.floor>opened THEN RAISE EXCEPTION 'cave_run_stage_conflict'; END IF;
       UPDATE territory_private.adventure_progress_v1
-        SET completed_stage=r.floor,unlocked_stage=least(100,r.floor+1) WHERE player_id=u;
-      done:=r.floor; opened:=least(100,r.floor+1);
+        SET completed_stage=greatest(done,r.floor),unlocked_stage=least(100,greatest(done,r.floor)+1) WHERE player_id=u;
+      done:=greatest(done,r.floor); opened:=least(100,done+1);
     ELSE
       UPDATE territory_private.dark_stones_v1 SET balance=balance+1
         WHERE player_id=u AND balance<2147483647;
@@ -124,7 +137,8 @@ BEGIN
   END IF;
   stones:=territory_private.dark_stone_touch_v1(u);
   RETURN jsonb_build_object('completed_stage',done,'unlocked_stage',opened,'dark_stones',stones,
-    'active_run_id',NULL,'active_floor',NULL,'run_status',r.status,
+    'active_run_id',(SELECT run_id FROM territory_private.cave_client_runs_v1 WHERE player_id=u AND status='active'),
+    'active_floor',(SELECT floor FROM territory_private.cave_client_runs_v1 WHERE player_id=u AND status='active'),'run_status',r.status,
     'legacy_active_session_id',NULL);
 END $$;
 REVOKE ALL ON FUNCTION public.territory_cave_pve_status_v1(),

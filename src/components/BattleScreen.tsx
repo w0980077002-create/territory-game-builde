@@ -16,6 +16,7 @@ import { heroSide } from '@/game/pve';
 import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
 import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
+import { CaveSandboxAccount } from '@/game/cave/sandboxStore';
 import { CaveExpeditionPreview } from './pve/CaveExpeditionPreview';
 import { Currency } from './ui/Currency';
 import { DailyShareCard } from '@/game/DailyShareCard';
@@ -34,13 +35,14 @@ interface Props {
   onShop: () => void;
   /** Opens the Shop at the Dark Cave blessing elixirs. */
   onCaveShop?: () => void;
+  onCaveCity?: () => void;
   onQuests: () => void;
   onEquipment: () => void;
   onForge?: () => void;
   onActiveChange?: (active: boolean) => void;
 }
 
-export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onCaveShop, onQuests, onEquipment, onForge, onActiveChange }: Props) {
+export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandled, onShop, onCaveShop, onCaveCity, onQuests, onEquipment, onForge, onActiveChange }: Props) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const [fight, setFight] = useState<{ enemy: Enemy; kind: FightKind; id: number } | null>(null);
@@ -62,6 +64,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
         .some(prefix => !!localStorage.getItem(prefix + userId))) setCaveLegacyRecovery(true);
     } catch { setCaveLegacyRecovery(true); }
   }, [view, userId]);
+  const handleCaveRecovered = useCallback(() => setCaveLegacyRecovery(false), []);
   const handleCaveActive = useCallback((active: boolean) => {
     setCaveActive(active);
     onActiveChange?.(active);
@@ -248,7 +251,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
               <p role="status" className="shrink-0 px-2 py-1 text-center text-xs text-amber-100">
                 {language === 'en' ? 'Finishing a saved old Cave battle before returning to the unified expedition.' : 'Завершаем сохранённый старый бой перед входом в единую Пещеру.'}
               </p>
-              <div className="min-h-0 flex-1 overflow-y-auto"><ServerAdventureScreen userId={userId} onActiveChange={handleCaveActive} onShop={onCaveShop} /></div>
+              <div className="min-h-0 flex-1 overflow-y-auto"><ServerAdventureScreen onRecovered={handleCaveRecovered} recoveryOnly userId={userId} onActiveChange={handleCaveActive} onShop={onCaveShop} /></div>
               <button type="button" className="shrink-0 rounded-xl border border-amber-500 bg-amber-900/80 p-2 text-sm font-bold text-amber-100 disabled:opacity-50"
                 disabled={caveActive} onClick={() => {
                   try {
@@ -266,9 +269,9 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
                 {language === 'en' ? 'Return to the single Cave' : 'Вернуться в единую Пещеру'}
               </button>
             </div>
-          ) : <CaveExpeditionPreview userId={userId} language={language} heroLevel={state.player.level}
+          ) : <CaveSandboxAccount.Provider value={userId}><CaveExpeditionPreview key={userId} userId={userId} onCity={onCaveCity} heroStats={heroSide(state)} onActiveChange={handleCaveActive} language={language} heroLevel={state.player.level}
                 onLegacyRecovery={() => setCaveLegacyRecovery(true)}
-                onExit={() => onView('campaign')} />}
+                onExit={() => onView('campaign')} /></CaveSandboxAccount.Provider>}
         </div>
       ) : <>
       <div className="flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11">

@@ -17,10 +17,13 @@ export function decodeCheckpoint(raw: string): Checkpoint | null {
     // Earlier playtest checkpoints predate cosmetic wings and the test rank.
     if (!('wings' in w)) w.wings = 'none';
     if (!('honorBonus' in w)) w.honorBonus = 0;
+    if (!('critChance' in w)) w.critChance = 0;
+    if (!('critDamage' in w)) w.critDamage = 50;
     for (const [key, value] of Object.entries(template)) {
       if (!(key in w) || (typeof value === 'number' && !finite(w[key]))
         || (typeof value === 'boolean' && typeof w[key] !== 'boolean')) return null;
     }
+    if (Number(w.critChance) < 0 || Number(w.critChance) > 100 || Number(w.critDamage) < 0 || Number(w.critDamage) > 10000) return null;
     if (!['none','astral','ember'].includes(String(w.wings)) || !phases.includes(String(w.phase)) || !poses.includes(String(w.pose)) || ![1, 2].includes(Number(w.speed))
       || !Number.isInteger(w.room) || Number(w.room) < 0 || Number(w.room) > (w.rules === 2 ? 3 : 2)
       || Number(w.maxHp) < 900 || Number(w.maxHp) > 1_000_000 || Number(w.hp) < 0 || Number(w.hp) > Number(w.maxHp) || Number(w.energy) < 0 || Number(w.energy) > 100

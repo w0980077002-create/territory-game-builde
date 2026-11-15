@@ -27,7 +27,7 @@ import { FighterFigure } from '@/components/arena/FighterFigure';
 type Progress = { completed_stage: number; unlocked_stage: number; dark_stones: number; active_session_id?: string | null };
 type Settlement = { outcome: string; reward?: { gold: number; xp: number }; dark_stone_refunded?: boolean };
 type Session = { session_id: string; revision: number; state: IdleCombatState; events?: IdleCombatEvent[]; settlement?: Settlement | null };
-type Props = { userId: string; onActiveChange?: (active: boolean) => void; onShop?: () => void };
+type Props = { recoveryOnly?: boolean; onRecovered?: () => void; userId: string; onActiveChange?: (active: boolean) => void; onShop?: () => void };
 // The cave's own 100-floor catalog; ids follow the server encounter adventure_v1_stage_<floor>.
 const CAVE_FLOORS = buildCaveFloors();
 const floorEnemy = (stage: number, en: boolean) => { const floor = getCaveFloor(stage); return en ? floor.enemyEn : floor.enemyRu; };
@@ -76,7 +76,7 @@ function message(error: unknown, en: boolean) {
 }
 
 /** Separate V1 server campaign: NEVER computes a win, cost, loot or stats in the browser. */
-export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props) {
+export function ServerAdventureScreen({ userId, onActiveChange, onShop, recoveryOnly = false, onRecovered }: Props) {
   const { language } = useLanguage();
   const en = language === 'en';
   const game = useStore(useGame);
@@ -238,6 +238,11 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
             userId, { action: 'resume', sessionId: id }, hooks)));
         }
       }
+      if (recoveryOnly && !restoreAdventureSaveFence(userId) && !restoreAdventureStartFence(userId)
+        && sessionRef.current?.state.status !== 'fighting' && !(await readProgress()).active_session_id) {
+        localStorage.removeItem(sessionKey(userId));
+        onRecovered?.(); return;
+      }
       const prepared = await supabase.functions.invoke('territory-combat', { body: { action: 'prepare' } });
       if (prepared.error || !obj(prepared.data)) throw new Error('combat_unavailable');
       // An existing server session keeps its pinned fighter even when a later
@@ -252,7 +257,7 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
     } catch (cause) {
       if (mounted.current) { setError(message(cause, en)); setRecoverable(true); }
     } finally { lock.current = false; if (mounted.current) setBusy(false); }
-  }, [userId, runSavedStart, install, readProgress, en]);
+  }, [userId, runSavedStart, install, readProgress, en, recoveryOnly, onRecovered]);
 
   useEffect(() => {
     mounted.current = true;
@@ -261,7 +266,7 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
   }, [restore, onActiveChange]);
 
   const start = async () => {
-    if (lock.current || !ready || !progress || sessionRef.current?.state.status === 'fighting') return;
+    if (recoveryOnly || lock.current || !ready || !progress || sessionRef.current?.state.status === 'fighting') return;
     lock.current = true; setBusy(true); setError('');
     try {
       const command=restoreAdventureStartFence(userId) || {
@@ -340,7 +345,7 @@ export function ServerAdventureScreen({ userId, onActiveChange, onShop }: Props)
   const realmArt = import.meta.env.BASE_URL + 'assets/territory/scenes/dark-cave-realm.svg';
   const sceneArt = import.meta.env.BASE_URL + 'assets/territory/cave/scene/';
   const depthStyle = (floor: CaveFloor) => ({ '--depth': floor.depth.hue }) as CSSProperties;
-  const mayChallenge = progress !== null && floorFocus === progress.unlocked_stage && progress.completed_stage < 100;
+  const mayChallenge = !recoveryOnly && progress !== null && floorFocus === progress.unlocked_stage && progress.completed_stage < 100;
   const floorState = (index: number): 'cleared' | 'current' | 'locked' => !progress || index > progress.unlocked_stage ? 'locked'
     : index <= progress.completed_stage ? 'cleared' : 'current';
   // Test loot for a server-confirmed victory: keyed by the session, so a

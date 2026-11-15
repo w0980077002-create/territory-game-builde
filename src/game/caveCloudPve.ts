@@ -12,6 +12,7 @@ export interface CavePveStatus {
   active_run_id: string | null;
   active_floor: number | null;
   legacy_active_session_id: string | null;
+  history?: { run_id: string; floor: number; status: 'won' | 'lost'; source: 'client' | 'legacy'; created_at: string }[];
   run_status?: 'active' | 'won' | 'lost';
 }
 const object = (v: unknown): v is Record<string, unknown> =>
@@ -29,6 +30,10 @@ export function parseCavePveStatus(data: unknown): CavePveStatus {
     || (data.legacy_active_session_id !== null && typeof data.legacy_active_session_id !== 'string')
     || (data.run_status !== undefined && !['active','won','lost'].includes(String(data.run_status))))
     throw new Error('cave_invalid_cloud_status');
+  if (data.history !== undefined && (!Array.isArray(data.history) || data.history.length > 20 || !data.history.every(h =>
+    object(h) && typeof h.run_id === 'string' && Number.isInteger(h.floor) && Number(h.floor) >= 1 && Number(h.floor) <= 100
+    && ['won','lost'].includes(String(h.status)) && ['client','legacy'].includes(String(h.source)) && typeof h.created_at === 'string')))
+    throw new Error('cave_invalid_cloud_history');
   return data as unknown as CavePveStatus;
 }
 async function call(name: string, args?: Record<string, unknown>): Promise<CavePveStatus> {

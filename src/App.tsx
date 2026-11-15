@@ -594,6 +594,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
             autoStart={autoStart}
             onAutoStartHandled={() => setAutoStart(false)}
             onShop={() => { setShopTab('potions'); setScreen('shop'); }}
+            onCaveCity={() => setScreen('city')}
             onCaveShop={() => { setShopTab('potions'); setShopCaveFocus(true); setScreen('shop'); }}
             onQuests={() => setScreen('quests')}
             onForge={() => openForge(undefined, battleView === 'trial' ? 'trial' : 'campaign')}

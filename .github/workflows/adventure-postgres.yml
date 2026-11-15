@@ -50,7 +50,9 @@ jobs:
       - name: Ensure PostgreSQL client is available
         run: command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
       - name: Test one Cave client PvE run and Dark Stones in disposable PGlite
-        run: node scripts/check-cave-client-pve-sql.mjs
+        run: |
+          node scripts/check-cave-client-pve-sql.mjs
+          CAVE_TEST_STONE_CONTRACT=live node scripts/check-cave-client-pve-sql.mjs
       - name: Test PostgreSQL transactions with independent connections
         run: node scripts/check-adventure-postgres.mjs
         env:
