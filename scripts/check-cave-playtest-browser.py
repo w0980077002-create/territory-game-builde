@@ -5,6 +5,7 @@ from functools import partial
 from http.server import ThreadingHTTPServer,SimpleHTTPRequestHandler
 from playwright.sync_api import sync_playwright
 root=Path(__file__).resolve().parents[1];out=root/'artifacts/cave-expedition/evidence'
+out.mkdir(parents=True,exist_ok=True)
 class Quiet(SimpleHTTPRequestHandler):
  def log_message(self,*args):pass
 s=ThreadingHTTPServer(('127.0.0.1',0),partial(Quiet,directory=str(root/'artifacts/cave-expedition')));threading.Thread(target=s.serve_forever,daemon=True).start()
@@ -14,6 +15,20 @@ with sync_playwright() as p:
   ctx=b.new_context(viewport={'width':width,'height':720},has_touch=True,is_mobile=True);page=ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
   page.goto(f'http://127.0.0.1:{s.server_port}/test-fixture.html');page.wait_for_function('()=>window.__caveDemo');page.evaluate("localStorage.setItem('territory-player-sentinel','UNCHANGED')")
   page.get_by_role('button',name='В путь').tap();page.evaluate('__caveDemo.step(5)');page.wait_for_timeout(150)
+  # A backgrounded WebView must require explicit resume, even with a panel/help open.
+  def background():
+   page.evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'))")
+   page.evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'))")
+  page.get_by_role('button',name='Как играть',exact=True).tap();background()
+  page.get_by_role('button',name='Понятно',exact=True).tap();assert page.evaluate('__caveDemo.world.paused')
+  page.get_by_role('button',name='Продолжить путь',exact=True).tap()
+  page.locator('.cx-native-nav').get_by_role('button',name='Инвентарь',exact=True).tap();background()
+  page.locator('.cx-native-nav').get_by_role('button',name='Бой',exact=True).tap();assert page.evaluate('__caveDemo.world.paused')
+  page.get_by_role('button',name='Продолжить путь',exact=True).tap()
+  page.get_by_role('button',name='Как играть',exact=True).tap()
+  page.locator('.cx-native-nav').get_by_role('button',name='Инвентарь',exact=True).tap()
+  page.locator('.cx-native-nav').get_by_role('button',name='Бой',exact=True).tap()
+  assert page.locator('.cx-help').count()==0 and not page.evaluate('__caveDemo.world.paused')
   for name in ['Город','Инвентарь','Герой','Карта','Игры','Клан']:
    page.locator('.cx-native-nav').get_by_role('button',name=name,exact=True).tap();assert page.evaluate('__caveDemo.world.paused')
    before=page.evaluate('__caveDemo.world.time');page.wait_for_timeout(120);assert page.evaluate('__caveDemo.world.time')==before

@@ -105,7 +105,13 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     const visibility = () => {
       last = 0;
-      if (document.hidden && !['LOBBY','VICTORY','DEFEAT'].includes(w.phase)) w.paused = true;
+      if (document.hidden && !['LOBBY','VICTORY','DEFEAT'].includes(w.phase)) {
+        w.paused = true;
+        // Closing a panel/help after returning must not undo the background pause.
+        panelPause.current = true;
+        helpState.current.wasPaused = true;
+        setView(structuredClone(w));
+      }
       setStorageOk(saveCheckpoint(w, runId.current));
       audio.current?.tick(w);
     };
@@ -173,6 +179,11 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onWorld, 
     setHelp(false); refresh();
   }
   function navigate(id: string) {
+    if (helpState.current.open) {
+      world.current.paused = helpState.current.wasPaused;
+      helpState.current.open = false;
+      setHelp(false);
+    }
     if (id === 'battle') { if (panel !== null) world.current.paused = panelPause.current; setPanel(null); refresh(); return; }
     if (panel === null) panelPause.current = world.current.paused;
     world.current.paused = true; setPanel(id); refresh();
