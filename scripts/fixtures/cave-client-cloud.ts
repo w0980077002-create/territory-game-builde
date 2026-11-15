@@ -7,7 +7,7 @@ const projection = (s: ReturnType<typeof empty>, status?: string) => {
   const active = Object.entries(s.runs).find(([,r]) => r.status === 'active');
   return {...s, runs:undefined, active_run_id:active?.[0] ?? null,active_floor:active?.[1].floor ?? null,legacy_active_session_id:null,run_status:status};
 };
-const controls = { failStartAfterCommit:false, failFinishAfterCommit:false, failFinishBeforeCommit:false, calls:[] as string[] };
+const controls = { failStartAfterCommit:false, failFinishAfterCommit:false, failFinishBeforeCommit:false, finishDelay:0, calls:[] as string[] };
 Object.assign(window, {__caveCloud:controls});
 export const ensurePlayerSession = async () => true;
 export const getCavePveStatus = async () => { controls.calls.push('status'); return projection(read()); };
@@ -24,6 +24,7 @@ export const finishCavePveRun = async (id:string,won:boolean) => {
   controls.calls.push('finish:'+id); if(controls.failFinishBeforeCommit) throw Error('offline');
   const s=read(), r=s.runs[id]; if(!r) throw Error('unknown run');
   if(r.status==='active') { r.status=won?'won':'lost'; if(won) {s.completed_stage=Math.max(s.completed_stage,r.floor);s.unlocked_stage=Math.min(100,s.completed_stage+1);}else s.dark_stones++;write(s); }
+  if(controls.finishDelay) await new Promise(resolve=>setTimeout(resolve,controls.finishDelay));
   if(controls.failFinishAfterCommit) { controls.failFinishAfterCommit=false; throw Error('lost finish response'); }
   return projection(s,r.status);
 };

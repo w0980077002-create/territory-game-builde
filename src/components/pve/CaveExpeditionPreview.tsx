@@ -24,6 +24,8 @@ interface Props { /** Legacy checkpoint regression fixture only. */ legacyRules?
 const HERO_LEVEL = 6;
 /** Isolated gameplay, local checkpoint and device-local dark storage. No player APIs. */
 export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, onWorld, language = 'ru', legacyRules = false, userId, heroLevel = HERO_LEVEL, heroStats, onActiveChange, onLegacyRecovery }: Props) {
+  const componentLive = useRef(true);
+  useEffect(() => { componentLive.current = true; return () => { componentLive.current = false; }; }, []);
   const [saved] = useState(() => readCheckpoint(userId));
   const world = useRef<World>(saved?.world ?? {...createWorld(), rules: legacyRules ? 1 : 2}), canvas = useRef<HTMLCanvasElement>(null), art = useRef<Images | null>(null);
   const runId = useRef(saved?.runId ?? crypto.randomUUID());
@@ -259,6 +261,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
       cloudLock.current = true; setCloudBusy(true); setCloudError('');
       try {
         const result = await startCavePveRun(id, target);
+        if (!componentLive.current) return;
         if (result.run_status === 'won' || result.run_status === 'lost') {
           runId.current = crypto.randomUUID(); setCloud(result); refresh();
           setCloudError(t('Эта попытка уже завершена. Начните новый забег.', 'This run has already ended. Start a new run.')); return;
@@ -269,6 +272,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
         setConfirmedRun(null);
         world.current.rules = 2; start(world.current, target); outfit(world.current);
       } catch {
+        if (!componentLive.current) return;
         setCloudReload(n => n + 1);
         setCloudError(t('Вход не подтверждён. Повторите с тем же номером попытки — камень второй раз не спишется.', 'Entry is not confirmed. Retry the same run; the Stone will not be charged twice.'));
         return;
@@ -287,6 +291,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
     cloudLock.current = true; setCloudBusy(true); setCloudError('');
     try {
       const result = await finishCavePveRun(runId.current, won);
+      if (!componentLive.current) return false;
       if (!['won','lost'].includes(result.run_status ?? '')) throw new Error('cave_finish_mismatch');
       if (result.run_status !== (won ? 'won' : 'lost')) {
         // A second device may have closed this exact run already. Its first
@@ -307,6 +312,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
     cloudLock.current = true; setCloudBusy(true);
     try {
       const result = await finishCavePveRun(cloud.active_run_id, false);
+      if (!componentLive.current) return;
       setCloud(result); setCloudError('');
       Object.assign(world.current, createWorld(), {floor:result.unlocked_stage,unlockedFloor:result.unlocked_stage});
       outfit(world.current); refresh();

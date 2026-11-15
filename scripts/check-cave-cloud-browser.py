@@ -53,6 +53,7 @@ with sync_playwright() as pw:
  browser=pw.chromium.launch(headless=True,executable_path=os.getenv('CAVE_BROWSER') or shutil.which('chromium') or shutil.which('chromium-browser'),args=['--no-sandbox'])
  for lang in ['ru','en']:
   for width in [320,360,390,430]:
+   if os.getenv('CAVE_CASE') and os.getenv('CAVE_CASE')!=f'{lang}-{width}': continue
    ctx=browser.new_context(viewport={'width':width,'height':740},is_mobile=True,has_touch=True)
    p=ctx.new_page(); errors=[];p.on('pageerror',lambda e:errors.append(str(e)))
    p.goto(URL+'?lang='+lang);ready(p)
@@ -113,6 +114,16 @@ with sync_playwright() as pw:
    second.close()
    button(p,'Пауза','Pause',lang).click();button(p,'К входному порталу','Back to entrance',lang).click();p.wait_for_timeout(180)
    assert ledger(p)['dark_stones']==48,'first receipt wins; no repeated refund'
+   if lang=='ru' and width==320:
+    # A late ACK from a screen closed by SPA navigation cannot overwrite a later run's checkpoint.
+    if world(p)['phase']!='LOBBY': button(p,'К входному порталу','Back to entrance',lang).click()
+    button(p,'В путь →','Set out →',lang).click();p.wait_for_timeout(150)
+    p.evaluate('__caveCloud.finishDelay=800')
+    button(p,'Пауза','Pause',lang).click();button(p,'К входному порталу','Back to entrance',lang).click()
+    p.wait_for_timeout(100);p.evaluate('__caveDemo.unmount()')
+    p.evaluate('(key)=>localStorage.setItem(key,"newer-checkpoint-sentinel")',KEY)
+    p.wait_for_timeout(950)
+    assert p.evaluate('(key)=>localStorage.getItem(key)',KEY)=='newer-checkpoint-sentinel'
    assert not errors,errors
    reports.append({'language':lang,'width':width,'full_floor':True,'boss_phases':[1,2,3],'lost_start_response':True,'lost_finish_response':True,'repeat_farm':True,'offline_exit':True,'double_tap':True,'second_device':True,'no_page_errors':True})
    print('PASS',lang,width,'real full floor, replay, lost start/finish response, reload, floor farm, windows, hero stats',flush=True)
