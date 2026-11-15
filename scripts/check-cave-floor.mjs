@@ -18,13 +18,14 @@ for(const route of [[0,0,0,0],[1,1,1,1],[2,2,2,2],[0,2,1,2],[2,0,2,1]]){
  console.log('PASS full floor',route.join('/'));
 }
 for(const floor of [10,99,100]){const w=e.createWorld();w.floor=floor;w.unlockedFloor=floor;e.start(w);w.auto=true;w.autoPotions=true;for(let n=0;n<100000&&w.phase!=='VICTORY';n++){if(w.phase==='PORTAL_CHOICE')e.choosePortal(w,0);e.update(w,.025);}assert.equal(w.unlockedFloor,Math.min(100,floor+1));}
-let common=0,rare=0;for(let n=0;n<100;n++){
+let common=0,rare=0,ordinaryOnHard=false;for(let n=0;n<100;n++){
  const a=e.applyCaveAction(e.emptySandbox(),{type:'loot',floor:6,boss:true,lootRolls:1},'expedition:roll-'+n);
  const b=e.applyCaveAction(e.emptySandbox(),{type:'loot',floor:6,boss:true,lootRolls:3},'expedition:roll-'+n);
  common+=a.state.items.reduce((s,i)=>s+i.rank,0);rare+=b.state.items.reduce((s,i)=>s+i.rank,0);
+ ordinaryOnHard ||= b.state.items.some(i=>i.rank===1);
  assert.ok(b.state.items.every(i=>i.rank<=2));assert.equal(e.applyCaveAction(b.state,{type:'loot',floor:6,boss:true,lootRolls:3},'expedition:roll-'+n).replay,true);
 }
-assert.ok(rare>common);console.log('PASS rarity opportunity, no guaranteed rare and idempotency');
+assert.ok(rare>common);assert.ok(ordinaryOnHard,'Three rolls must not guarantee a rare item');console.log('PASS rarity opportunity, no guaranteed rare and idempotency');
 // Durable victory receipts survive ordinary inventory history and storage decode.
 let stock=e.applyCaveAction(e.emptySandbox(),{type:'loot',floor:6,boss:true},'expedition:durable').state;
 for(let n=0;n<300;n++)stock=e.applyCaveAction(stock,{type:'wings',style:n%2?'astral':'ember'},'ordinary-action-'+n).state;
