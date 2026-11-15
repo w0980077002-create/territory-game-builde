@@ -22,11 +22,11 @@ export function decodeCheckpoint(raw: string): Checkpoint | null {
     if (!['none','astral','ember'].includes(String(w.wings)) || !phases.includes(String(w.phase)) || !poses.includes(String(w.pose)) || ![1, 2].includes(Number(w.speed))
       || !Number.isInteger(w.room) || Number(w.room) < 0 || Number(w.room) > 2
       || Number(w.maxHp) < 900 || Number(w.maxHp) > 1_000_000 || Number(w.hp) < 0 || Number(w.hp) > Number(w.maxHp) || Number(w.energy) < 0 || Number(w.energy) > 100
-      || Number(w.time) < 0 || Number(w.time) > 86400 || (w.selected !== null && w.selected !== 0 && w.selected !== 1)) return null;
+      || Number(w.time) < 0 || Number(w.time) > 86400 || Number(w.heroV) < 0 || Number(w.heroV) > 400 || Number(w.roomX) < 0 || Number(w.heroX) < Number(w.roomX) || Number(w.cameraX) < 0 || (w.selected !== null && w.selected !== 0 && w.selected !== 1)) return null;
     const biomes = ['crystal', 'spore', 'ember', 'astral', 'forge'];
     if (!biomes.includes(String(w.biome)) || !Array.isArray(w.route) || w.route.length !== Number(w.room) + 1
       || !w.route.every(b => biomes.includes(b)) || w.route[w.route.length - 1] !== w.biome) return null;
-    for (const key of ['followerReady', 'followerX', 'followerHp', 'followerUntil', 'followerImpact', 'followerTarget'])
+    for (const key of ['followerReady', 'followerX', 'followerHp', 'followerUntil', 'followerImpact', 'followerTarget', 'followerV', 'followerStride'])
       if (!Array.isArray(w[key]) || w[key].length !== 2 || !w[key].every(finite)) return null;
     if (!Array.isArray(w.followerPose) || w.followerPose.length !== 2 || !w.followerPose.every(p => poses.includes(p))) return null;
     const cooldown = w.cooldown;

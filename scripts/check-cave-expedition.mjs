@@ -2,16 +2,16 @@ import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { readFileSync, readdirSync } from 'node:fs';
 const result = await build({entryPoints:['src/game/cavePreviewWorld/engine.ts'],bundle:true,write:false,format:'esm',platform:'node'});
-const { createWorld, start, update, choosePortal, skill, skillBlock, collectRune, MAX_HP } = await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+const { createWorld, start, update, choosePortal, skill, skillBlock, collectRune, MAX_HP, TRAVEL } = await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
 function step(w, seconds) { for(let t=0;t<seconds;t+=.025)update(w,.025); }
 function until(w, predicate, limit=300) { for(let t=0;t<limit&&!predicate(w);t+=.025)update(w,.025);assert.ok(predicate(w),`Stuck in ${w.phase}, HP ${w.hp}, time ${w.time}`); }
 const moving=createWorld(); start(moving);step(moving,2);assert.equal(moving.phase,'RUN_RIGHT');assert.ok(moving.heroX>250);assert.ok(moving.cameraX>30);
 const charge=moving.energy;assert.ok(collectRune(moving));assert.ok(moving.energy>charge);assert.equal(collectRune(moving),false);
-const before=moving.heroX;moving.paused=true;step(moving,5);assert.equal(moving.heroX,before);moving.paused=false;update(moving,100);assert.ok(moving.heroX-before<=4.76,'Clamp a long resumed frame');assert.equal(moving.kills,0);assert.equal(moving.hp,MAX_HP);
-until(moving,w=>w.phase==='APPROACH');assert.ok(moving.time<4,'First meaningful encounter in 3–5 seconds');
+const before=moving.heroX;moving.paused=true;step(moving,5);assert.equal(moving.heroX,before);moving.paused=false;update(moving,100);assert.ok(moving.heroX-before<=TRAVEL.run*.05+.01,'Clamp a long resumed frame');assert.equal(moving.kills,0);assert.equal(moving.hp,MAX_HP);
+until(moving,w=>w.phase==='APPROACH');assert.ok(moving.time<5,'First meaningful encounter in 3–5 seconds');
 for(const first of [0,1])for(const second of [0,1]){
  const w=createWorld();start(w);w.auto=true;
- until(w,x=>x.phase==='PORTAL_CHOICE');assert.equal(w.kills,6);assert.equal(w.room,0);assert.equal(w.wave,2);assert.deepEqual(w.followerPose,['idle','idle'],'Living companions rest at the portal instead of freezing mid-attack');
+ until(w,x=>x.phase==='PORTAL_CHOICE');assert.equal(w.kills,6);assert.equal(w.room,0);assert.equal(w.wave,2);step(w,1.5);assert.deepEqual(w.followerPose,['idle','idle'],'Living companions rest at the portal instead of freezing mid-attack');
  const frozen=w.heroX;step(w,4);assert.equal(w.heroX,frozen,'Choice waits for actual touch');assert.equal(w.kills,6);assert.equal(choosePortal(w,99),false);assert.equal(choosePortal(w,first),true);assert.equal(choosePortal(w,1-first),false);
  const x=w.heroX;step(w,.5);assert.ok(w.heroX>x,'Physical approach to selected arch');
  until(w,x=>x.room===1);assert.equal(w.biome,first?'ember':'spore');

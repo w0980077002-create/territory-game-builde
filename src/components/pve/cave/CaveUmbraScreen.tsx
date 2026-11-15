@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useCaveSandbox } from '@/game/cave/sandboxStore';
 import {
   compareCandidate, dismantleYield, enhanceCost, enhancedMain, equippedItems, itemLines, itemPower, loadoutPower, reforgeCost, setProgress,
@@ -17,9 +17,16 @@ type Sort = 'power' | 'level' | 'rank';
  * Works on the device-local test sandbox only; the hero's ordinary equipment
  * is neither read nor changed here.
  */
-export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: string; onBack: () => void }) {
+export function CaveUmbraScreen({ en, hero, onBack, focus }: { en: boolean; hero: string; onBack: () => void; focus?: UmbraSlotId | 'wings' | null }) {
   const [box, dispatch] = useCaveSandbox();
-  const [view, setView] = useState<View>(null);
+  // Opened from a HUD tile: go straight to that slot (or bring the separate wings card into view).
+  const [view, setView] = useState<View>(() => {
+    if (!focus || focus === 'wings') return null;
+    const id = box.loadout[focus];
+    return id && box.items.some(i => i.id === id) ? { kind: 'item', id } : { kind: 'slot', slot: focus };
+  });
+  const wingCard = useRef<HTMLElement | null>(null);
+  useEffect(() => { if (focus === 'wings') wingCard.current?.scrollIntoView({ block: 'center' }); }, [focus]);
   const [slotFilter, setSlotFilter] = useState<'all' | UmbraSlotId>('all');
   const [rankFilter, setRankFilter] = useState(0);
   const [setsOnly, setSetsOnly] = useState(false);
@@ -82,7 +89,7 @@ export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: strin
       <button type="button" className="cv-back" onClick={onBack} aria-label={en ? 'Back to cave' : 'Назад в пещеру'}>‹</button>
       <h3>{en ? 'Dark Energy gear' : 'Снаряжение Тёмной энергии'}
         <small>{en ? '12 extra slots · separate from main equipment' : '12 дополнительных слотов · отдельно от основной экипировки'}</small></h3>
-      <span className="cv-chip cv-chip--demo">{en ? 'TEST' : 'ТЕСТ'}</span>
+      {focus === undefined && <span className="cv-chip cv-chip--demo">{en ? 'TEST' : 'ТЕСТ'}</span>}
     </header>
 
     <div className="cv-doll" aria-label={en ? 'Twelve additional equipment slots' : '12 дополнительных слотов'}>
@@ -96,11 +103,11 @@ export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: strin
       <div className="cv-doll-col">{UMBRA_SLOTS.slice(6).map(renderSlot)}</div>
     </div>
 
-    <section className="cv-wing-card" aria-label={en ? 'Independent wings slot' : 'Отдельный слот крыльев'}>
-      <b>♢ {en ? 'Wings · separate from 12 Umbra' : 'Крылья · отдельно от 12 Umbra'}</b>
-      <small>{en ? 'Free visual fitting · no stats or currency' : 'Бесплатная примерка · без характеристик и валют'}</small>
+    <section ref={wingCard} className="cv-wing-card" aria-label={en ? 'Independent wings slot' : 'Отдельный слот крыльев'}>
+      <b>♢ {en ? 'Wings · a separate slot' : 'Крылья · отдельный слот'}</b>
+      <small>{en ? 'Worn over the dark set · chosen freely' : 'Надеваются поверх тёмного комплекта · выбор свободный'}</small>
       <div className="cv-row">{(['none','astral','ember'] as const).map(style => <button className="cv-btn" key={style} aria-pressed={box.previewWings === style} data-testid={'wings-'+style} onClick={() => dispatch({type:'wings',style})}>
-        {style === 'none' ? (en ? 'Remove' : 'Снять') : <><img src={caveAsset(`assets/territory/cave/playtest/wings-${style}.svg`)} alt="" style={{width:48,height:32}}/>{style === 'astral' ? (en ? 'Astral' : 'Звёздные') : (en ? 'Ember' : 'Янтарные')}</>}
+        {style === 'none' ? (en ? 'Remove' : 'Снять') : <><img src={caveAsset(`assets/territory/cave/playtest/wings-${style}.svg`)} alt="" style={{width:48,height:32}}/>{style === 'astral' ? (en ? 'Astral' : 'Звёздные') : (en ? 'Ember' : 'Огненные')}</>}
       </button>)}</div>
     </section>
 
@@ -154,10 +161,10 @@ export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: strin
     </div> : <p className="cv-empty" data-testid="umbra-empty">{box.items.length
       ? (en ? 'Nothing matches the filters.' : 'По выбранным фильтрам ничего нет.')
       : (en ? 'The storage is empty. Dark gear is found in cave fights.' : 'Склад пуст. Тёмные вещи добываются в боях Пещеры.')}</p>}
-    <div style={{ marginTop: 8 }}><DemoNote en={en} /></div>
+    {focus === undefined && <div style={{ marginTop: 8 }}><DemoNote en={en} /></div>}
     <button type="button" className="cv-btn" style={{ marginTop: 6, alignSelf: 'center' }} data-testid="umbra-reset"
-      onClick={() => { if (window.confirm(en ? 'Clear the whole test storage on this device?' : 'Очистить весь тестовый склад на этом устройстве?')) run(dispatch({ type: 'reset' }), en ? 'Test storage cleared' : 'Тестовый склад очищен'); }}>
-      {en ? 'Clear test storage' : 'Очистить тестовый склад'}</button>
+      onClick={() => { if (window.confirm(en ? 'Clear the whole dark storage on this device?' : 'Очистить весь тёмный склад на этом устройстве?')) run(dispatch({ type: 'reset' }), en ? 'Dark storage cleared' : 'Тёмный склад очищен'); }}>
+      {en ? 'Clear dark storage' : 'Очистить тёмный склад'}</button>
     {toast}
 
     {detail && <Dialog label={itemName(detail, en)} onClose={() => setView(null)} testId="umbra-item-dialog">
@@ -176,7 +183,7 @@ export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: strin
       </> : card(detail, 'worn')}
       {detail.enhance < UMBRA_MAX_ENHANCE
         ? <p className="cv-note">{en ? 'Next enhancement' : 'Следующее усиление'}: {statLabel(detail.main.stat, en)} {statValue(detail.main.stat, enhancedMain(detail))} → <b className="cv-up">{statValue(detail.main.stat, enhancedMain({ ...detail, enhance: detail.enhance + 1 }))}</b> · {en ? 'cost' : 'цена'} {enhanceCost(detail)} {en ? 'enhancement stones' : 'камней усиления'} ({en ? 'have' : 'есть'} {box.enhanceStones})</p>
-        : <p className="cv-note">{en ? 'Enhancement limit of the test build reached.' : 'Достигнут предел усиления тестовой версии.'}</p>}
+        : <p className="cv-note">{en ? 'Enhancement limit reached.' : 'Достигнут предел усиления.'}</p>}
       <div className="cv-actions">
         {detailWorn
           ? <button type="button" className="cv-btn" data-testid="umbra-unequip" onClick={() => { if (run(dispatch({ type: 'unequip', slot: detail.slot }), en ? 'Unequipped' : 'Снято')) setView(null); }}>{en ? 'Unequip' : 'Снять'}</button>
@@ -227,7 +234,6 @@ export function CaveUmbraScreen({ en, hero, onBack }: { en: boolean; hero: strin
         <span style={{ display: 'block', opacity: .8 }}>{set.slots.map(id => { const s = UMBRA_SLOTS.find(x => x.id === id)!; return en ? s.en : s.ru; }).join(' · ')}</span>
         {umbraSet(set.id)!.bonuses.map(b => <span key={b.need} className="cv-set-bonus cv-set-bonus--on">{b.need}: {b.stats.map(s => `${statLabel(s.stat, en)} +${statValue(s.stat, s.value)}`).join(', ')}</span>)}
       </div>)}</div>
-      <p className="cv-note" style={{ marginTop: 6 }}>{en ? 'All numbers are test values awaiting owner approval.' : 'Все числа — тестовые значения, ожидают утверждения владельцем.'}</p>
     </Dialog>}
   </div>;
 }
