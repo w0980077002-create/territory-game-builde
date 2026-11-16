@@ -32,7 +32,19 @@ const output={type:'equipment',name:'Изолированный меч',rarity:'
 const mirror=out=>({...out,id,qty:1,equipment:{...out.equipment,id}});
 const state=(level,items=[])=>({player:{level,gold:100000,...(fullLiveMode?{gems:17}:{}),equipped:{},stats:{attack:10,defense:5,maxHp:100,critChance:0}},
   inventory:items,belt:[],forgeMaterials:10000,...(fullLiveMode?{battleStones:10}:{} )});
-const save=async(owner,value)=>db.query('UPDATE public.players SET game_state=$2::jsonb,updated_at=clock_timestamp() WHERE id=$1 RETURNING game_state',[owner,JSON.stringify(value)]);
+const save=async(owner,value)=>{
+  if(fullLiveMode){
+    // Production economy guard enforces wallet/hero snapshot equality.
+    // A real post-forge client reloads these balances before changing gear;
+    // emulate that in this synthetic fixture instead of submitting stale gold.
+    const row=(await db.query('SELECT gold,gems,level,forge_materials FROM public.players WHERE id=$1',[owner])).rows[0];
+    assert(row,'fixture player must exist');
+    value={...value,player:{...value.player,gold:row.gold,gems:row.gems,level:row.level},
+      forgeMaterials:row.forge_materials};
+  }
+  return db.query('UPDATE public.players SET game_state=$2::jsonb,updated_at=clock_timestamp() WHERE id=$1 RETURNING game_state',
+    [owner,JSON.stringify(value)]);
+};
 const saved=async owner=>(await one('SELECT game_state FROM public.players WHERE id=$1',[owner])).game_state;
 const registry=async()=>(await one('SELECT item_output FROM public.territory_profession_stage8_items WHERE item_id=$1',[uuid])).item_output;
 const transfer=(from,to,n)=>db.query('SELECT territory_private.stage8_handoff_v3($1,$2,$3,$4)',[uuid,from,to,op(n)]);
