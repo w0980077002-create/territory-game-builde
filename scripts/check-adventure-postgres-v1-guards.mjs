@@ -95,6 +95,13 @@ await sql(`ALTER TABLE public.players
 await file('scripts/fixtures/c1-live-players-triggers.sql');
 const expectedTriggerHashes={territory_economy_audit_after_v1:'7ba019abd3d7e1d4c30811abaaa825db',territory_economy_guard_before_v1:'a67b564acce6e099c8d09bdef8bcc70d',territory_gear_guard_before_v4:'fafdd6235b112b4c43ef43cde73dcd47',territory_inventory_cleanup_guard_v1:'079cd4c81b08fff3e13f30c1616d0b66',territory_referral_after_save_v2:'f8842b0c043987c62f38687535d109ad',trigger_update_leaderboard:'4db01791882f5c35e220936d0c5e6895'};
 assert.deepEqual(await scalar(`SELECT jsonb_object_agg(t.tgname,md5(pg_get_functiondef(t.tgfoid))) FROM pg_trigger t WHERE t.tgrelid='public.players'::regclass AND NOT t.tgisinternal`),expectedTriggerHashes);
+const expectedDependencyHashes={'public.territory_gear_recompute_columns_v4':'8b4ecef423454093058fd66c6fe1c07f','public.territory_normalize_state_v4':'9d3331adb8aa70786d1d670d56ef08c3','territory_private.owner_cap_item_v1':'998d1214fec14053b9bc9e20122c80e1','territory_private.owner_cap_state_v1':'0622c5331be3ca3b43479a79c0ab8e01','territory_private.referral_try_qualify_v2':'a2d115a0e708a8454f984e80c093f636'};
+assert.deepEqual(await scalar(`SELECT jsonb_object_agg(n.nspname||'.'||p.proname,md5(pg_get_functiondef(p.oid))) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE (n.nspname='territory_private' AND p.proname IN ('owner_cap_item_v1','owner_cap_state_v1','referral_try_qualify_v2')) OR (n.nspname='public' AND p.proname IN ('territory_normalize_state_v4','territory_gear_recompute_columns_v4'))`),expectedDependencyHashes);
+assert.equal(await sql(`SET ROLE authenticated; SET request.test_uid=${quote(player)}; SELECT count(*) FROM public.players`),'1','owner RLS hides other player');
+assert.equal(await sql(`SET ROLE authenticated; SET request.test_uid=${quote(loser)}; SELECT count(*) FROM public.players WHERE id=${quote(player)}`),'0','cannot read another player');
+await sql('UPDATE public.players SET game_state=game_state');
+const normalizedSave=await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`);
+assert.equal((await scalar(`SELECT row_to_json(p) FROM public.players p WHERE id=${quote(player)}`)).attack,28);
 // No-op autosaves must not rewrite the leaderboard row or its timestamp.
 // A real display-name change must still propagate through the same trigger.
 await sql(`UPDATE public.players SET display_name=display_name WHERE id=${quote(player)}`);
@@ -109,13 +116,7 @@ assert.equal(await sql(`SELECT display_name FROM public.leaderboard WHERE player
   originalName+'_ci', 'changed visible profile data must update leaderboard');
 await sql(`UPDATE public.players SET display_name=${quote(originalName)} WHERE id=${quote(player)}`);
 
-const expectedDependencyHashes={'public.territory_gear_recompute_columns_v4':'8b4ecef423454093058fd66c6fe1c07f','public.territory_normalize_state_v4':'9d3331adb8aa70786d1d670d56ef08c3','territory_private.owner_cap_item_v1':'998d1214fec14053b9bc9e20122c80e1','territory_private.owner_cap_state_v1':'0622c5331be3ca3b43479a79c0ab8e01','territory_private.referral_try_qualify_v2':'a2d115a0e708a8454f984e80c093f636'};
-assert.deepEqual(await scalar(`SELECT jsonb_object_agg(n.nspname||'.'||p.proname,md5(pg_get_functiondef(p.oid))) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE (n.nspname='territory_private' AND p.proname IN ('owner_cap_item_v1','owner_cap_state_v1','referral_try_qualify_v2')) OR (n.nspname='public' AND p.proname IN ('territory_normalize_state_v4','territory_gear_recompute_columns_v4'))`),expectedDependencyHashes);
-assert.equal(await sql(`SET ROLE authenticated; SET request.test_uid=${quote(player)}; SELECT count(*) FROM public.players`),'1','owner RLS hides other player');
-assert.equal(await sql(`SET ROLE authenticated; SET request.test_uid=${quote(loser)}; SELECT count(*) FROM public.players WHERE id=${quote(player)}`),'0','cannot read another player');
-await sql('UPDATE public.players SET game_state=game_state');
-const normalizedSave=await scalar(`SELECT game_state FROM public.players WHERE id=${quote(player)}`);
-assert.equal((await scalar(`SELECT row_to_json(p) FROM public.players p WHERE id=${quote(player)}`)).attack,28);
+
 for (const path of ['supabase/staged/territory_v1_combat_completion.sql', 'supabase/staged/territory_v1_adventure_settlement.sql', 'supabase/staged/territory_v1_combat_profiles_reconciliation.sql', 'supabase/staged/territory_dark_stones_20261030.sql']) await file(path);
 await sql(`DROP TABLE territory_private.cave_canary_v1; ALTER TABLE territory_private.combat_config_v1 DROP COLUMN starts_enabled, DROP COLUMN canary_only;`);
 await file('scripts/fixtures/c1-live-function-baseline.sql');
