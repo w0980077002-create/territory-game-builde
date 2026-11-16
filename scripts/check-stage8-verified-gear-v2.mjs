@@ -43,6 +43,11 @@ try {
     [gearUuid,seller,JSON.stringify(outputFor(makeGear(8)))]);
   const sql = readFileSync('supabase/staged/territory_stage8_verified_gear_v2.sql','utf8');
   assert.doesNotMatch(sql,/\bUPDATE\s+public\.players\b|\bUPDATE\s+public\.territory_profession_stage8_items\b/i);
+  const realNormalizer=readFileSync('supabase/migrations/20261017_equipment_guard_v4.sql','utf8');
+  const beginNormalize=realNormalizer.indexOf('CREATE OR REPLACE FUNCTION public.territory_normalize_gear_v4(');
+  const endNormalize=realNormalizer.indexOf('$$;',beginNormalize);
+  assert(beginNormalize>=0 && endNormalize>beginNormalize,'Use exact deployed gear normalizer');
+  await db.exec(realNormalizer.slice(beginNormalize,endNormalize+3));
   await db.exec(sql);
 
   // Multiple nonconsecutive starting levels ensure no test fixture is a rule.
