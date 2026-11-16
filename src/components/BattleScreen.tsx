@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Lock, Crown, Swords, Mountain, Heart, Sword as SwordIcon, ShoppingBag, Shirt, ScrollText, ChevronRight } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
@@ -15,14 +15,20 @@ import { TrialLootCollection } from './trials/TrialLootCollection';
 import { heroSide } from '@/game/pve';
 import type { Enemy } from '@/game/types';
 import { PveFight, type FightKind } from './pve/PveFight';
-import { ServerAdventureScreen } from './pve/ServerAdventureScreen';
+
 import { CaveSandboxAccount } from '@/game/cave/sandboxStore';
-import { CaveExpeditionPreview } from './pve/CaveExpeditionPreview';
+
 import { Currency } from './ui/Currency';
 import { DailyShareCard } from '@/game/DailyShareCard';
 import { getAppearanceIcon } from '@/game/appearance';
 import { getEliteEncounterBrief } from '@/game/eliteEncounterBrief';
 import './battleJourney.css';
+
+// Heavy Cave renderer and legacy server recovery do not load during ordinary play.
+const CaveExpeditionPreview = lazy(() =>
+  import('./pve/CaveExpeditionPreview').then(({ CaveExpeditionPreview }) => ({ default: CaveExpeditionPreview })));
+const ServerAdventureScreen = lazy(() =>
+  import('./pve/ServerAdventureScreen').then(({ ServerAdventureScreen }) => ({ default: ServerAdventureScreen })));
 // Independent: the old campaign, Trials, and server-operated Dark Cave.
 export type BattleView = 'campaign' | 'trial' | 'cave';
 
@@ -246,6 +252,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
       )}
       {view === 'cave' ? (
         <div className="battle-cave-expedition flex min-h-0 flex-1 flex-col overflow-hidden" data-testid="dark-cave-single-entry">
+          <Suspense fallback={<div role="status" className="p-4 text-center text-sm text-amber-100">{language === 'en' ? 'Loading Cave…' : 'Загружаем Пещеру…'}</div>}>
           {caveLegacyRecovery ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden" data-testid="dark-cave-legacy-recovery">
               <p role="status" className="shrink-0 px-2 py-1 text-center text-xs text-amber-100">
@@ -272,6 +279,7 @@ export function BattleScreen({ userId, view, onView, autoStart, onAutoStartHandl
           ) : <CaveSandboxAccount.Provider value={userId}><CaveExpeditionPreview key={userId} userId={userId} onCity={onCaveCity} heroStats={heroSide(state)} onActiveChange={handleCaveActive} language={language} heroLevel={state.player.level}
                 onLegacyRecovery={() => setCaveLegacyRecovery(true)}
                 onExit={() => onView('campaign')} /></CaveSandboxAccount.Provider>}
+          </Suspense>
         </div>
       ) : <>
       <div className="flex items-center justify-between rounded-xl bg-black/30 border border-white/10 px-3 h-11">
