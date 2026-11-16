@@ -49,34 +49,15 @@ BEGIN
   END IF;
   v_saved_level := (p_item->>'level')::integer;
   v_canonical_level := (v_canonical->>'level')::integer;
-  -- Cutover-time, fingerprint-attested historical gear: freeze the exact
-  -- server-side snapshot. Unreviewed items CANNOT get here: quarantine rows
-  -- are private, owner/UUID scoped and installed only under activation locks.
-  -- The registry remains unchanged; forge/transfer of held UUIDs is disabled.
+  -- Fingerprint-attested historical snapshot (no client-authorized upgrade).
   SELECT q.registry_equipment,q.frozen_equipment INTO v_hold
-  FROM territory_private.stage8_historical_quarantine_v1 q
-  WHERE q.item_id=pg_catalog.substr(v_client_id,8)::uuid
-    AND q.player_id=p_player;
+    FROM territory_private.stage8_historical_quarantine_v1 q
+    WHERE q.item_id=pg_catalog.substr(v_client_id,8)::uuid
+      AND q.player_id=p_player;
   IF FOUND THEN
     IF v_hold.registry_equipment IS DISTINCT FROM v_canonical
       OR (v_hold.frozen_equipment->>'id') IS DISTINCT FROM v_client_id
-      OR (v_hold.frozen_equipment->>'level') !~ '^[1-9][0-9]{0,2}
-    -- Three historical items presently have upgrades that predate the
-    -- server ledger. Never silently replace or trust these levels.
-    RAISE EXCEPTION 'stage8_reconciliation_required' USING ERRCODE='23514';
-  END IF;
-  IF v_saved_level < 1 OR v_canonical_level NOT BETWEEN 1 AND 500 THEN
-    RAISE EXCEPTION 'stage8_invalid_level' USING ERRCODE='23514';
-  END IF;
-  -- Client-supplied attacks, levels and upgradeCount are NEVER an authority.
-  -- Return registry fields verbatim, with exactly the one verified item ID.
-  RETURN v_canonical || pg_catalog.jsonb_build_object('id',v_client_id);
-END;
-$stage8$;
-
-REVOKE ALL ON FUNCTION territory_private.stage8_verified_gear_v2(jsonb,uuid)
-  FROM PUBLIC, anon, authenticated;
-
+      OR (v_hold.frozen_equipment->>'level') !~ '^[1-9][0-9]{0,2}$'
     THEN RAISE EXCEPTION 'stage8_quarantine_snapshot_changed' USING ERRCODE='23514'; END IF;
     v_frozen_level:=(v_hold.frozen_equipment->>'level')::integer;
     IF v_saved_level > v_frozen_level THEN
