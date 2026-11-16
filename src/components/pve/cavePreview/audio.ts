@@ -7,6 +7,9 @@ export class CaveAudio {
   private lastStep = 0;
   private phase = '';
   private suspended = false;
+  private primed = false;
+  private kills = 0;
+  private actionAt = 0;
   muted = false;
   async unlock() {
     if (!this.context) {
@@ -30,10 +33,19 @@ export class CaveAudio {
   }
   tick(w: World) {
     if (!this.context) return;
+    // A restored checkpoint may contain the tail of old impacts. Establish a
+    // cursor before playing; unlocking/resuming must never replay that history.
+    if (!this.primed || w.time < this.lastStep) {
+      this.primed = true; this.lastEffect = w.time; this.lastStep = w.time;
+      this.kills = w.kills; this.actionAt = w.heroActionAt; this.phase = w.phase;
+    }
     const suspend = w.paused || document.hidden || ['LOBBY', 'VICTORY', 'DEFEAT'].includes(w.phase);
     if (suspend !== this.suspended) { this.suspended = suspend; void (suspend ? this.context.suspend() : this.context.resume()).catch(() => {}); }
     if (suspend) return;
-    if (w.time < this.lastStep) { this.lastStep = 0; this.lastEffect = -1; }
+    if (w.kills > this.kills) this.tone(145, 39, .23, .16, 'triangle');
+    this.kills = w.kills;
+    if (w.pose === 'attack' && w.heroActionAt > this.actionAt) this.tone(240, 95, .09, .08, 'triangle');
+    this.actionAt = Math.max(this.actionAt, w.heroActionAt);
     if (w.pose === 'run' && w.time - this.lastStep > .29) { this.lastStep = w.time; this.tone(90, 38, .08, .16, 'triangle'); }
     for (const effect of w.effects) {
       if (effect.born <= this.lastEffect) continue;

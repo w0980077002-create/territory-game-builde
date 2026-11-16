@@ -1,9 +1,11 @@
 import { portalsFor, portalOffset, DIFFICULTY } from '../../../game/cavePreviewWorld/engine';
-import { drawHero, HERO_PARTS } from './heroRig';
+import { drawHero, HERO_PARTS, type BladeSegment } from './heroRig';
 import { CaveLife, drawBackdrop, drawForeground, light, stageLayout } from './world';
 import { CRYSTAL_ASSETS, warmCrystalEnvironment } from './crystalEnvironment';
 import { drawPortal, PORTAL_ART, warmPortals, portalFocused, focusPortal } from './portals';
 import { BIOMES, CREATURES, APPROVED_CAVE_ART, caveActorArt } from '../../../game/cavePreviewWorld/catalog';
+import { animationPaths, prepareAnimations, drawCaveActor } from './actorAnimation';
+import { bossTelegraph, electricCut, bladeTrail, contactFlash, type VisualQuality } from './combatVfx';
 import type { World, Pose } from '../../../game/cavePreviewWorld/engine';
 export const ASSET_ROOT = 'assets/territory/';
 export const PARTY = ['heroes/male_viking', 'followers/northern_warrior', 'followers/forest_healer'];
@@ -15,13 +17,14 @@ export function assetPaths() {
     ...['potion-mana', 'potion-fire', 'potion-green'].map(id => `ui/items/${id}.webp`),
     ...HERO_PARTS.map(part => `combat2d/male_viking/${part}.webp`),
     ...PARTY.flatMap(p => POSES.map(s => `characters/${p}/${s}.webp`))].map(p => ASSET_ROOT + p)
-    .concat(['nav-city.webp','nav-inventory.webp','nav-hero-crown.webp','nav-battle.webp','nav-map-parchment.webp','nav-games.webp','nav-clan.webp',
+    .concat(animationPaths(), ['nav-city.webp','nav-inventory.webp','nav-hero-crown.webp','nav-battle.webp','nav-map-parchment.webp','nav-games.webp','nav-clan.webp',
       'ic-honor.webp', 'ic-blessing.webp', 'ic-settings.webp', 'blue-gem.webp', 'potion-hp-viking.webp', 'potion-hp-large-viking.webp', 'elixir-defense-viking.webp', 'potion-time-viking.webp']);
 }
 export type Images = Map<string, HTMLImageElement>;
-export async function loadImages(resolve: (s: string) => string): Promise<Images> {
+export async function loadImages(resolve: (s: string) => string, signal?: AbortSignal): Promise<Images> {
   const images: Images = new Map();
-  await Promise.all(assetPaths().map(path => new Promise<void>((ok, fail) => {
+  prepareAnimations(images, resolve, signal);
+  await Promise.all(assetPaths().filter(path => !animationPaths().includes(path)).map(path => new Promise<void>((ok, fail) => {
     const img = new Image(); img.onload = () => { images.set(path, img); ok(); };
     // New scenery is optional: a failed decorative download must not block the cave.
     img.onerror = () => (path === PORTAL_ART || CRYSTAL_ASSETS.some(id => path.endsWith('/' + id))) ? ok() : fail(new Error(`Не удалось загрузить ${path}`));
@@ -92,14 +95,15 @@ function party(c: CanvasRenderingContext2D, images: Images, index: number, pose:
 const life = new CaveLife();
 /** World X of the spark waiting on the first stretch of every chamber. */
 export const runeX = (w: World) => w.roomX + 455;
-export function render(c: CanvasRenderingContext2D, w: World, images: Images, height: number, en = false, reduced = false, lobbyTime = 0) {
+export function render(c: CanvasRenderingContext2D, w: World, images: Images, height: number, en = false, reduced = false, lobbyTime = 0, quality: VisualQuality = 'high') {
   const h = height; const { floor, scale: actorScale } = stageLayout(h); const theme = BIOMES[w.biome];
+  const calm = reduced || quality === 'low';
   c.clearRect(0, 0, 430, h);
-  life.step(w, h, reduced);
+  life.step(w, h, calm);
   // Impacts shake the camera, not the HUD. The offset decays on the simulation clock.
-  const shake = reduced ? 0 : w.shake;
+  const shake = reduced || quality === 'low' ? 0 : Math.min(.65, w.shake);
   c.save(); c.translate(Math.sin(w.time * 71) * 5 * shake, Math.cos(w.time * 53) * 3.5 * shake);
-  drawBackdrop(c, w, images, h, life, reduced);
+  drawBackdrop(c, w, images, h, life, calm);
   // The arch the party came through stays behind at its world address.
   if (w.phase !== 'PORTAL_CHOICE') focusPortal(-1);
   if (w.phase !== 'LOBBY') { c.save(); c.globalAlpha = .85; drawPortal(c, images, w.roomX + 96 - w.cameraX, floor - 22 * actorScale, theme.color, w.time, .86 * actorScale, {risk:1, biome:w.biome, reduced}); c.restore(); }
@@ -151,7 +155,9 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
     const wings = images.get(`assets/territory/cave/playtest/wings-${w.wings}.svg`);
     if (wings) { const beat = reduced ? 1 : 1 + Math.sin(w.time * (w.pose === 'run' ? 7 : 2.4)) * .045; c.save(); c.translate(heroX - 10 * actorScale, floor - 84 * actorScale); c.scale(beat, 2 - beat); c.drawImage(wings, -84 * actorScale, -80 * actorScale, 168 * actorScale, 118 * actorScale); c.restore(); }
   }
-  drawHero(c, images, w.pose, Math.max(0, w.time - (w.pose === 'death' ? w.phaseAt : w.heroActionAt)), w.pose === 'run' ? w.distance / 11.5 : w.time, w.combo, heroX, floor, 176 * actorScale, reduced);
+  let blade: BladeSegment | undefined;
+  drawHero(c, images, w.pose, Math.max(0, w.time - (w.pose === 'death' ? w.phaseAt : w.heroActionAt)), w.pose === 'run' ? w.distance / 11.5 : w.time, w.combo, heroX, floor, 176 * actorScale, reduced, w.rules === 2 ? segment => { blade = segment; } : undefined);
+  if (w.rules === 2) bladeTrail(c, w, blade, reduced, quality);
   c.restore();
   if (w.shieldUntil > w.time) {
     c.save(); c.strokeStyle = '#7bcfff'; c.lineWidth = 2; c.shadowColor = '#84ddff'; c.shadowBlur = 10;
@@ -164,7 +170,8 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
     const shellOffset = e.species === 'boss' ? 25 * Math.max(0, Math.min(1, (300 - (e.worldX - w.heroX)) / 130)) : 0;
     const x = e.worldX - w.cameraX - shellOffset, y = floor + (e.lane - 1) * 7 * actorScale; const spec = CREATURES[e.species];
     if (x < -150 || x > 580) continue;
-    const size = (e.species === 'boss' ? 196 : 116) * actorScale;
+    const size = (e.species === 'boss' ? 206 : 136) * actorScale;
+    if (w.rules === 2) bossTelegraph(c, w, e, x, y, heroX, actorScale, reduced, quality);
     if (e.species === 'boss' && e.hp > 0) {
       c.save(); c.strokeStyle = theme.color; c.globalAlpha = .2 + w.bossPhase * .08; c.lineWidth = 2;
       c.beginPath(); c.ellipse(x, y - 80, 70 + w.bossPhase * 8, 98, 0, 0, Math.PI * 2); c.stroke();
@@ -172,9 +179,18 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
     }
     const breathe = e.pose === 'idle' && !reduced ? 1 + Math.sin(w.time * 2.2 + e.id) * .018 : 1;
     const col = e.pose === 'run' ? 1 + Math.floor(w.time * 8) % 2 : e.pose === 'attack' ? 3 : e.pose === 'hit' ? 4 : e.pose === 'death' ? 5 : 0;
-    shadow(c, x, y, size); c.save(); if (e.pose === 'attack') { const duration = e.species === 'boss' ? (e.heavy ? 1.45 : .95) : .5; const progress = Math.max(0, Math.min(1, 1 - (e.impact - w.time) / duration)); c.translate(e.impact > w.time ? 10 * Math.sin(progress * Math.PI) : -18 * Math.max(0, (e.poseUntil - w.time) / .3), 0); } if (!e.hp) c.globalAlpha = Math.max(0, 1 - (w.time - e.deathAt) / 1.4);
+    shadow(c, x, y, size); c.save(); if (w.rules !== 2 && e.pose === 'attack') { const duration = e.species === 'boss' ? (e.heavy ? 1.45 : .95) : .5; const progress = Math.max(0, Math.min(1, 1 - (e.impact - w.time) / duration)); c.translate(e.impact > w.time ? 10 * Math.sin(progress * Math.PI) : -18 * Math.max(0, (e.poseUntil - w.time) / .3), 0); } if (!e.hp) c.globalAlpha = Math.max(0, 1 - (w.time - e.deathAt) / 1.4);
+    if (w.rules === 2 && e.hp > 0) {
+      if (e.species === 'boss' && w.phase === 'BOSS') c.globalAlpha = .45 + .55 * Math.min(1, Math.max(0, (w.time - w.phaseAt) / .8));
+      // A hit may land during a pending enemy attack. Keep the windup and its
+      // contact time intact, but still show directional armor recoil.
+      const impact = [...w.effects].reverse().find(f => f.kind === 'impact' && f.lane === e.lane && Math.abs(f.x + 20 - e.worldX) < 22 && w.time - f.born < .16);
+      if (!reduced && impact && e.pose !== 'hit') c.translate(5 * (1 - (w.time - impact.born) / .16), 0);
+    }
     const original = w.rules === 2 ? images.get(caveActorArt(e.species, w.floor)) : undefined;
-    if (original) {
+    if (w.rules === 2 && drawCaveActor(c, images, w, e, x, y, size, reduced)) {
+      // Registered animation consumed only world state; legacy art remains below.
+    } else if (original) {
       c.translate(x, y);
       if (!reduced) {
         if (e.pose === 'hit') c.translate(6, 0);
@@ -186,17 +202,19 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
     } else sprite(c, atlas, col * atlas.width / 6, spec.row * atlas.height / 4, atlas.width / 6, atlas.height / 4, x, y, size, size * .94 * breathe);
     c.restore();
     if (e.hp > 0 && e.species !== 'boss') { c.fillStyle = '#0a0e15'; c.fillRect(x - 26, y - size + 4, 52, 5); c.fillStyle = '#ee6f7a'; c.fillRect(x - 26, y - size + 4, 52 * e.hp / e.maxHp, 5); }
-    if (e.species === 'boss' && e.hp > 0 && e.impact > w.time) {  c.fillStyle = '#f15d5d40'; c.fillRect(heroX - 40, floor - 6, 190, 10); }
+    if (w.rules !== 2 && e.species === 'boss' && e.hp > 0 && e.impact > w.time) { c.fillStyle = '#f15d5d40'; c.fillRect(heroX - 40, floor - 6, 190, 10); }
   }
+  if (w.rules === 2) electricCut(c, w, floor, actorScale, reduced, quality, blade);
   for (const e of w.effects) {
     const age = w.time - e.born; const x = e.x - w.cameraX; const y = (e.lane < 0 ? followerY[-e.lane - 1] ?? floor : floor) - 92 * actorScale + Math.max(0, e.lane) * 9;
     c.save(); c.globalAlpha = 1 - age;
     if (e.kind === 'impact') {
+      if (w.rules === 2) contactFlash(c, x, y + 38, age, actorScale, reduced, quality);
       const life = Math.min(1, age / .28); c.globalAlpha = 1 - life;
       c.strokeStyle = '#ffe8af'; c.lineWidth = 2;
-      for (let ray = 0; ray < 7; ray++) { const a = ray * .9; c.beginPath(); c.moveTo(x + Math.cos(a) * 5, y + 38 + Math.sin(a) * 5); c.lineTo(x + Math.cos(a) * (12 + life * 24), y + 38 + Math.sin(a) * (12 + life * 24)); c.stroke(); }
+      if (!calm) for (let ray = 0; ray < 7; ray++) { const a = ray * .9; c.beginPath(); c.moveTo(x + Math.cos(a) * 5, y + 38 + Math.sin(a) * 5); c.lineTo(x + Math.cos(a) * (12 + life * 24), y + 38 + Math.sin(a) * (12 + life * 24)); c.stroke(); }
       if (age < .24) {
-        c.translate(x, y - 22 - age * 28); c.rotate(-.12);
+        c.translate(x, y - 22 - (reduced ? 0 : age * 28)); if (!reduced) c.rotate(-.12);
         text(c, (en ? ['CRASH!', 'BAM!', 'BOOM!'] : ['ХРЯСЬ!', 'БАМ!', 'БДЫЩ!'])[w.combo], 0, 0, 23 + Math.sin(life * Math.PI) * 5, '#ffdb83');
       }
     }
@@ -205,15 +223,16 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
       for (let p = 0; p < 5; p++) { const px = heroX - 45 + p * 23, py = floor - age * 110 - (p % 2) * 24; text(c, '+', px, py, 20, '#a4ffd1'); }
       text(c, e.text, heroX, floor - 170 - age * 30, 19, '#a4ffd1');
     }
-    else if (e.kind === 'slash') { c.translate(x, y + 25); c.rotate(-.8 + age * 3); c.strokeStyle = '#fff0ad'; c.lineWidth = 7 * (1 - age); c.shadowColor = '#f9b658'; c.shadowBlur = 16; c.beginPath(); c.arc(0, 0, 40 + age * 25, -.8, 1.4); c.stroke(); }
+    else if (e.kind === 'slash') { c.translate(x, y + 25); c.rotate(reduced ? -.4 : -.8 + age * 3); c.strokeStyle = '#fff0ad'; c.lineWidth = 7 * (1 - age); c.shadowColor = '#f9b658'; c.shadowBlur = calm ? 0 : 16; c.beginPath(); c.arc(0, 0, 40 + (reduced ? 0 : age * 25), -.8, 1.4); c.stroke(); }
     else if (e.kind === 'shock') {
+      if (reduced) { c.strokeStyle = '#f2a0ff'; c.lineWidth = 3; c.beginPath(); c.ellipse(x, floor, 85, 14, 0, 0, Math.PI * 2); c.stroke(); c.restore(); continue; }
       if (e.lane >= 2) { c.strokeStyle = theme.color; c.lineWidth = 3 * (1 - age); for (let crack = 0; crack < 5; crack++) { const px = x - 150 + crack * 65; c.beginPath(); c.moveTo(px, floor); c.lineTo(px + 20, floor - age * 60); c.lineTo(px + 10, floor - age * 90); c.stroke(); if (e.lane === 3) { c.fillStyle = theme.color; c.beginPath(); c.moveTo(px - 5, floor - 160 + age * 150); c.lineTo(px + 5, floor - 160 + age * 150); c.lineTo(px, floor - 142 + age * 150); c.fill(); } } }
       c.strokeStyle = '#f2a0ff'; c.lineWidth = 8 * (1 - age); c.beginPath(); c.ellipse(x, floor, age * 220, age * 38, 0, 0, 7); c.stroke(); }
     else if (e.text === '!') { c.globalAlpha = Math.min(1, 2.4 - age * 2.4); text(c, '!', x, y - 26 * actorScale - Math.sin(Math.min(1, age * 5) * Math.PI / 2) * 12, 30, '#ffd15c'); }
     else text(c, e.text === 'dodge' ? (en ? 'EVADE' : 'УКЛОН') : e.text === 'ward' ? (en ? 'WARD' : 'ЩИТ') : e.text === 'block' ? (en ? 'BLOCK' : 'БЛОК') : e.text, x, y - age * 46, 16, e.kind === 'energy' ? '#9eeaff' : e.kind === 'block' ? '#8fdcff' : '#ffe9be');
     c.restore();
   }
-  drawForeground(c, w, h, life, reduced, images);
+  drawForeground(c, w, h, life, calm, images);
   c.restore();
   // Stepping through an arch: the chosen light floods the screen, then the next vault opens.
   if (w.phase === 'ENTER' || w.phase === 'NEXT_ROOM') {
