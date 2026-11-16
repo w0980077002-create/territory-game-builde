@@ -454,7 +454,7 @@ BEGIN
 END; $function$;
 CREATE TRIGGER territory_reserve_trial_chest_v1 AFTER UPDATE OF game_state ON public.players FOR EACH ROW EXECUTE FUNCTION territory_private.reserve_trial_chest_v1();
 
--- trigger_update_leaderboard | update_leaderboard_entry() | md5=736feaa5c704063f07d5ec1a461f1856
+-- trigger_update_leaderboard | update_leaderboard_entry() | md5=4db01791882f5c35e220936d0c5e6895
 CREATE OR REPLACE FUNCTION public.update_leaderboard_entry()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -477,8 +477,15 @@ attack = EXCLUDED.attack,
 defense = EXCLUDED.defense,
 max_hp = EXCLUDED.max_hp,
 crit_chance = EXCLUDED.crit_chance,
-updated_at = now();
+updated_at = now()
+WHERE (leaderboard.display_name, leaderboard.level, leaderboard.arena_rating,
+       leaderboard.total_battles_won, leaderboard.arena_wins, leaderboard.photo_url,
+       leaderboard.attack, leaderboard.defense, leaderboard.max_hp, leaderboard.crit_chance)
+  IS DISTINCT FROM
+      (EXCLUDED.display_name, EXCLUDED.level, EXCLUDED.arena_rating,
+       EXCLUDED.total_battles_won, EXCLUDED.arena_wins, EXCLUDED.photo_url,
+       EXCLUDED.attack, EXCLUDED.defense, EXCLUDED.max_hp, EXCLUDED.crit_chance);
 RETURN NEW;
 END;
-$function$;
+$function$
 CREATE TRIGGER trigger_update_leaderboard AFTER INSERT OR UPDATE ON public.players FOR EACH ROW EXECUTE FUNCTION update_leaderboard_entry();
