@@ -4,7 +4,22 @@ on:
     branches: [main]
     # Do not run two PostgreSQL 17 databases for unrelated art, UI, or docs PRs.
     paths:
-      - 'src/game/**'
+      - 'src/game/actions.ts'
+      - 'src/game/store.ts'
+      - 'src/game/types.ts'
+      - 'src/game/cloud.ts'
+      - 'src/game/saveQueue.ts'
+      - 'src/game/immediateSave.ts'
+      - 'src/game/walletVersion.ts'
+      - 'src/game/economyInvariant.ts'
+      - 'src/game/equipment*.ts'
+      - 'src/game/gear*.ts'
+      - 'src/game/forge*.ts'
+      - 'src/game/craft*.ts'
+      - 'src/game/stage8*.ts'
+      - 'src/game/professions.ts'
+      - 'src/game/auctionApi.ts'
+      - 'src/game/heroGearOpportunity.ts'
       - 'src/components/ForgeScreen.tsx'
       - 'src/components/ProfessionsStage8Screen.tsx'
       - 'src/admin/**'
@@ -17,6 +32,7 @@ on:
       - 'scripts/*gear*'
       - 'scripts/*profession*'
       - 'scripts/fixtures/*stage8*'
+      - 'scripts/sql/stage8*'
       - 'package*.json'
       - '.github/workflows/stage8-preservation.yml'
   workflow_dispatch:
