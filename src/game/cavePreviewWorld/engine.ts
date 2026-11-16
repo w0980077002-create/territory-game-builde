@@ -28,7 +28,7 @@ export const SKILLS = { cleave: { cost: 32, cooldown: 6 }, ward: { cost: 22, coo
 export function createWorld(): World {
   return { rules: 2, floor: 1, unlockedFloor: 1, stars: [], honorBonus: 0, critChance: 0, critDamage: 50, wings: 'none', speed: 1, autoPotions: false, belt: Array(7).fill(5), beltUsed: Array(7).fill(0), potionReady: 0, furyUntil: 0, maxHp: MAX_HP, attackBonus: 0, defenseBonus: 0,
     phase: 'LOBBY', phaseAt: 0, time: 0, room: 0, wave: 0, biome: 'crystal', route: ['crystal'], heroX: 175, cameraX: 0, hp: MAX_HP, energy: 65,
-    pose: 'idle', poseUntil: 0, heroReady: 0, heroImpact: 0, target: -1, shieldUntil: 0, enemies: [], effects: [], auto: false, paused: false, kills: 0, nextId: 0,
+    pose: 'idle', poseUntil: 0, heroReady: 0, heroImpact: 0, target: -1, shieldUntil: 0, enemies: [], effects: [], auto: true, paused: false, kills: 0, nextId: 0,
     selected: null, portalX: 0, cooldown: { cleave: 0, ward: 0, heal: 0, dodge: 0 }, followerReady: [0, .6], followerX: [175 - TRAVEL.followerGap[0], 175 - TRAVEL.followerGap[1]], followerHp: [260, 220], followerPose: ['idle', 'idle'], followerUntil: [0, 0], bossSpawned: false, bossPhase: 1, blocks: 0, casts: 0, hitStop: 0, runeCollected: false,
     heroActionAt: 0, combo: 0, dodgeUntil: 0, dodges: 0, cleaveImpact: 0, cleaveTargets: [], followerImpact: [0, 0], followerTarget: [-1, -1],
     heroV: 0, roomX: 0, stopX: 0, distance: 0, followerV: [0, 0], followerStride: [0, 0], alertAt: -10, shake: 0 };
