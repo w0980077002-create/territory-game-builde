@@ -14,13 +14,17 @@ assert.match(sql, /FOR UPDATE OF r SKIP LOCKED/, 'Concurrent joins must not over
 assert.match(sql, /INSERT INTO public\.arena_rooms/, 'Unmatched users must receive their own room');
 assert.match(sql, /IF v_count >= v_cap THEN UPDATE public\.arena_rooms/, 'Existing start-on-full behavior must remain');
 assert.match(sql, /IF v_room IS NOT NULL THEN RETURN v_room/, 'Returning players must recover their existing arena');
-assert.match(sql, /abs\(coalesce\(a_rating, 1000\)::bigint - coalesce\(b_rating, 1000\)::bigint\) <= 700/, 'Rating range guard');
-assert.match(sql, /<= 3 \* greatest\(1, least\(coalesce\(a_hp/, 'HP ratio guard missing');
-assert.match(sql, /<= 4 \* greatest\(1, least\(coalesce\(a_attack/, 'Attack ratio guard missing');
-assert.match(sql, /<= 4 \* greatest\(1, least\(coalesce\(a_defense/, 'Defense ratio guard missing');
+// Current production policy overrides the historical October migration.
+const currentPolicy = readFileSync('supabase/migrations/20261104092555_arena_only_seven_levels_matchmaking.sql', 'utf8');
+assert.match(currentPolicy, /CREATE OR REPLACE FUNCTION public\.arena_match_compatible/, 'Current Arena matcher migration missing');
+const policyBody = currentPolicy.match(/AS \$function\$([\s\S]*?)\$function\$/)?.[1] ?? '';
+assert.match(policyBody, /SELECT abs\(greatest\(1, coalesce\(a_level, 1\)\) - greatest\(1, coalesce\(b_level, 1\)\)\) <= 7;/,
+  'Real players must match on inclusive +/-7 levels only');
+assert.doesNotMatch(policyBody, /rating|attack|defense|\bhp\b|\bAND\b/i,
+  'No rating or combat-power filters may affect matchmaking');
 assert(!/UPDATE\s+public\.players/i.test(sql), 'Do not modify any player stats or inventories');
 assert(!/DELETE\s+FROM\s+public\./i.test(sql), 'Never delete records as part of matching');
-console.log('Arena matcher: human level/rating/power separation; safe bot fallback; existing session preserved.');
+console.log('Arena matcher: ONLY level +/-7 for humans; safe bot fallback; existing session preserved.');
 
 const duelWait = readFileSync('supabase/migrations/20261104140000_arena_duel_matchmaking_20s.sql', 'utf8');
 assert(duelWait.includes('CREATE OR REPLACE FUNCTION public.arena_join(p_mode text)'),
