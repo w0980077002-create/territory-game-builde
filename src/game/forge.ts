@@ -32,6 +32,9 @@ export function forgeAttempt(state: GameState, itemId: string, expectedLevel: nu
   const equipped = equippedMode ? Object.values(state.player.equipped).find((eq) => eq?.id === actualId) : undefined;
   const item = equippedMode ? undefined : state.inventory.find((i) => i.id === actualId && i.type === 'equipment');
   const eq = equipped ?? item?.equipment;
+  // Legacy inv_* display wrappers may embed one Stage8-owned item. Never
+  // charge local forge currency against a server-owned UUID hidden inside.
+  if (eq?.id && isStage8Gear(eq.id)) return { next: state, status: 'invalid' };
   if (!eq || !Number.isSafeInteger(eq.level) || eq.level !== expectedLevel || eq.level >= state.player.level) return { next: state, status: 'invalid' };
   const cost = forgeCost(eq.level);
   if (!Number.isSafeInteger(state.player.gold) || state.player.gold < cost.gold || !Number.isSafeInteger(state.forgeMaterials) || state.forgeMaterials < cost.materials) return { next: state, status: 'invalid' };

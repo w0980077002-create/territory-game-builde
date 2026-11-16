@@ -31,14 +31,17 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
   if (!saved) return { ...defaults, player: { ...defaults.player, name } };
   const migrated = migrateGameStateBalance(saved);
   const heroLevel = migrated.player?.level ?? defaults.player.level;
-  // Match the server's permanent item-level rule, even for old locally cached saves.
+  // Stage8 is a registry mirror: loading it cannot certify or rewrite its stats.
+  // Legacy gear retains the established normalization path.
   const equipped = Object.fromEntries(Object.entries(migrated.player?.equipped ?? {}).map(
-    ([slot, eq]) => [slot, eq ? capEquipmentToHeroLevel(eq, heroLevel) : eq],
+    ([slot, eq]) => [slot, eq && !eq.id.startsWith('stage8_') ? capEquipmentToHeroLevel(eq, heroLevel) : eq],
   )) as GameState['player']['equipped'];
   const inventory = migrated.inventory?.map((item) => item.equipment
-    ? { ...item, equipment: capEquipmentToHeroLevel(item.equipment, heroLevel) } : item);
+    ? { ...item, equipment: item.equipment.id.startsWith('stage8_')
+      ? item.equipment : capEquipmentToHeroLevel(item.equipment, heroLevel) } : item);
   const belt = migrated.belt?.map((item) => item?.equipment
-    ? { ...item, equipment: capEquipmentToHeroLevel(item.equipment, heroLevel) } : item);
+    ? { ...item, equipment: item.equipment.id.startsWith('stage8_')
+      ? item.equipment : capEquipmentToHeroLevel(item.equipment, heroLevel) } : item);
   return {
     ...defaults,
     ...migrated,
