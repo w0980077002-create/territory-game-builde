@@ -16,6 +16,7 @@ import { setCavePreviewAssets } from './cave/caveShared';
 import { Belt, BlessingPanel, Nav, UmbraMosaic, Vitals } from './cavePreview/hud';
 import { loadImages, render, runeX, type Images } from './cavePreview/renderer';
 import { CaveAudio } from './cavePreview/audio';
+import { focusPortal } from './cavePreview/portals';
 import './cavePreview/expedition.css';
 
 const defaultUrl = (path: string) => import.meta.env.BASE_URL + path;
@@ -163,7 +164,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
   useEffect(() => {
     if (!ready) return;
     const w = world.current; onWorld?.(w);
-    let frame = 0, last = 0, hudAt = 0, savedAt = 0;
+    let frame = 0, last = 0, hudAt = 0, savedAt = 0, lobbyTime = 0;
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     const visibility = () => {
       last = 0;
@@ -209,6 +210,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
     const loop = (now: number) => {
       const dt = last ? (now - last) / 1000 : 0; last = now;
       if (!document.hidden) {
+        if (!w.paused && w.phase === 'LOBBY') lobbyTime += Math.min(.1, Math.max(0, dt));
         advanceRealtime(w, dt); audio.current?.tick(w);
         const node = canvas.current;
         if (node && art.current) {
@@ -217,7 +219,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
           if (width && height) {
             if (node.width !== width || node.height !== height) { node.width = width; node.height = height; }
             const context = node.getContext('2d');
-            if (context) { context.setTransform(node.width / 430, 0, 0, node.width / 430, 0, 0); render(context, w, art.current, node.height * 430 / node.width, en, motion.matches); }
+            if (context) { context.setTransform(node.width / 430, 0, 0, node.width / 430, 0, 0); render(context, w, art.current, node.height * 430 / node.width, en, motion.matches, lobbyTime); }
             // The spark is a real place on the road: its touch target follows the camera every frame.
             if (rune.current) rune.current.style.transform = `translate3d(${(runeX(w) - w.cameraX) / 430 * box.width - 37}px,0,0)`;
           }
@@ -412,7 +414,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
       {view.phase === 'LOBBY' && ready && <div className="cx-lobby"><span className="cx-eyebrow">{t('ТЁМНАЯ ПЕЩЕРА', 'DARK CAVE')}</span><h1>{t('За гранью света', 'Beyond the light')}</h1><p>{t('Четыре портала. Выберите риск. Победите Собор.', 'Four portals. Choose your risk. Defeat the Cathedral.')}</p>{userId && cloud && <div className="cx-cloud-progress" role="status"><b>{t('Этаж', 'Floor')} {cloudFloor}/100</b><button onClick={() => navigate('stones')}>◆ {cloud.dark_stones} {t('Тёмных камней', 'Dark Stones')}</button><button onClick={() => navigate('floors')}>{t('Этажи пещеры', 'Cave floors')}</button><button onClick={() => navigate('inventory')}>{t('Снаряжение', 'Equipment')}</button><button onClick={() => navigate('blessing')}>{t('Благословения', 'Blessings')}</button><button onClick={() => navigate('fund')}>{t('Фонд', 'Fund')}</button></div>}<button className="cx-primary" onClick={() => void begin()} disabled={entryBlocked}>{cloudBusy ? t('Проверяем вход…', 'Checking entry…') : t('В путь', 'Set out')} →</button><small>{t('Герой идёт и бьёт сам · умения и зелья за вами', 'The hero travels and strikes · skills and potions are yours')}</small></div>}
       {userId && cloudError && <div className="cx-cloud-alert" role="alert"><p>{cloudError}</p>{cloud?.active_run_id && cloud.active_run_id !== runId.current && <button onClick={() => { if (confirm(t('Это прервёт текущий забег на другом устройстве. Вернуть камень и закрыть попытку?', 'This ends a run on another device. Refund the Stone and close it?'))) void abandonRemoteRun(); }} disabled={cloudBusy}>{t('Закрыть старый забег · вернуть камень', 'Close old run · refund Stone')}</button>}{ended && confirmedRun !== runId.current && <button onClick={() => void settle(view.phase === 'VICTORY')} disabled={cloudBusy}>{t('Повторить сохранение', 'Retry saving result')}</button>}{!cloud && <button onClick={() => { setCloudError(''); setCloudReload(n => n + 1); }}>{t('Повторить загрузку', 'Retry loading')}</button>}</div>}
       {view.phase === 'RUN_RIGHT' && !view.runeCollected && !view.paused && <button ref={rune} className="cx-rune" onClick={() => { collectRune(world.current); refresh(); }} aria-label={t('Собрать искру', 'Collect spark')}><small>+10 ✦</small></button>}
-      {view.phase === 'PORTAL_CHOICE' && <div className={`cx-portals ${view.rules === 2 ? 'cx-three-portals' : ''}`} aria-label={t('Выбор портала', 'Portal choice')}>{portalsFor(view).map((p, i) => <button key={i} aria-label={`${biomeName(p.biome)}${view.rules === 2 ? ` · ${i+1} ★` : ''}`} onClick={() => { if (choosePortal(world.current, i)) refresh(); }} style={{ '--portal': view.rules === 2 ? DIFFICULTY[i].color : BIOMES[p.biome].color } as React.CSSProperties}><span className="cx-portal-touch" /><b>{biomeName(p.biome)}</b><small>{view.rules === 2 ? `${DIFFICULTY[i].count} ${t('врагов','foes')} · ${t('Добыча','Loot')} ${'↑'.repeat(i+1)}` : (en ? ['Ranged spores', 'Armoured depths', 'Sails & Cathedral', 'Depths & Cathedral'][view.room * 2 + i] : p.hint)}</small></button>)}</div>}
+      {view.phase === 'PORTAL_CHOICE' && <div className={`cx-portals ${view.rules === 2 ? 'cx-three-portals' : ''}`} aria-label={t('Выбор портала', 'Portal choice')}>{portalsFor(view).map((p, i) => <button key={i} aria-label={`${biomeName(p.biome)}${view.rules === 2 ? ` · ${i+1} ★` : ''}`} onPointerEnter={() => focusPortal(i)} onPointerLeave={() => focusPortal(-1)} onPointerDown={() => focusPortal(i)} onFocus={() => focusPortal(i)} onBlur={() => focusPortal(-1)} onClick={() => { if (choosePortal(world.current, i)) refresh(); }} style={{ '--portal': view.rules === 2 ? DIFFICULTY[i].color : BIOMES[p.biome].color } as React.CSSProperties}><span className="cx-portal-touch" /><b>{biomeName(p.biome)}</b><small>{view.rules === 2 ? `${DIFFICULTY[i].count} ${t('врагов','foes')} · ${t('Добыча','Loot')} ${'↑'.repeat(i+1)}` : (en ? ['Ranged spores', 'Armoured depths', 'Sails & Cathedral', 'Depths & Cathedral'][view.room * 2 + i] : p.hint)}</small></button>)}</div>}
       {playing && view.phase !== 'PORTAL_CHOICE' && <div className="cx-actions">{(Object.keys(SKILLS) as Skill[]).map(key => {
         const left = Math.max(0, view.cooldown[key] - view.time), cd = Math.ceil(left), Icon = icons[key];
         return <button key={key} className={`cx-skill-${key}`} aria-label={names[key]} title={`${hints[key]} · ${SKILLS[key].cost}✦`} disabled={skillBlock(view, key) !== null} onClick={() => { skill(world.current, key); refresh(); }}

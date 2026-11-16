@@ -5,20 +5,36 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Published main commit to verify (optional)
+        required: false
+        type: string
 permissions:
   contents: read
 jobs:
   public-http:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.workflow_run.head_sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
       - run: node scripts/check-published-pages.mjs
         env:
-          EXPECTED_PAGES_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          EXPECTED_PAGES_SHA: ${{ github.event.workflow_run.head_sha || inputs.expected_sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.58.0
+      - run: python -m playwright install --with-deps chromium
+      - run: python scripts/check-published-cave-mobile.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: published-cave-mobile-${{ github.run_id }}
+          path: artifacts/published-cave-mobile/
