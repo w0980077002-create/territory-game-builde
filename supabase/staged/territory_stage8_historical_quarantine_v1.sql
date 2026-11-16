@@ -66,11 +66,10 @@ BEGIN
       WHERE item_id=v_rec.item_id FOR UPDATE;
     IF FOUND THEN
       -- A previously frozen exact snapshot remains authoritative through
-      -- rollback/reactivation. No new client level can replace that snapshot.
+      -- rollback/reactivation, even if the player moved it between bag and\n      -- equipped. No new client level can replace that snapshot.
       IF v_prior.player_id IS DISTINCT FROM v_rec.player_id
         OR v_prior.registry_equipment IS DISTINCT FROM v_rec.registry_gear
         OR v_prior.frozen_equipment IS DISTINCT FROM v_rec.eq
-        OR v_prior.initial_location IS DISTINCT FROM v_rec.location
       THEN RAISE EXCEPTION 'stage8_quarantine_snapshot_changed'; END IF;
       v_status:=v_prior.provenance_status;
     ELSE
