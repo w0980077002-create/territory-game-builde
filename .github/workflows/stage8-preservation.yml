@@ -1,6 +1,22 @@
 name: Stage8 preservation PostgreSQL 17
 on:
   pull_request:
+    branches: [main]
+    # Do not run two PostgreSQL 17 databases for unrelated art, UI, or docs PRs.
+    paths:
+      - 'src/game/**'
+      - 'src/components/ForgeScreen.tsx'
+      - 'src/components/GearShowcase.tsx'
+      - 'src/components/Inventory*.tsx'
+      - 'src/components/Workshop*.tsx'
+      - 'supabase/migrations/**'
+      - 'supabase/staged/**'
+      - 'scripts/*stage8*'
+      - 'scripts/*gear*'
+      - 'scripts/*profession*'
+      - 'scripts/fixtures/*stage8*'
+      - 'package*.json'
+      - '.github/workflows/stage8-preservation.yml'
   workflow_dispatch:
 permissions:
   contents: read
