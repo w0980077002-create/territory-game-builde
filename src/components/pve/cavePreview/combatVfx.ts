@@ -1,6 +1,7 @@
 import type { Enemy, World } from '../../../game/cavePreviewWorld/engine';
 import { animationState, visualId } from './actorAnimation';
 import type { BladeSegment } from './heroRig';
+import { hash, light } from './kit';
 
 type Ctx = CanvasRenderingContext2D;
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
@@ -50,12 +51,42 @@ export function bossTelegraph(c: Ctx, w: World, e: Enemy, x: number, y: number, 
       const px = heroX + 6 * scale + Math.cos(a) * radius, py = y + 2 + Math.sin(a) * 13 * scale;
       c.beginPath(); c.moveTo(px - 3 * scale, py - 4 * scale); c.lineTo(px + 3 * scale, py + 4 * scale); c.stroke();
     }
-    c.globalAlpha = 1; c.fillStyle = color; c.font = `bold ${18 * scale}px system-ui`; c.textAlign = 'center';
-    c.fillText(e.heavy ? '!!' : '!', x, y - 205 * scale);
+    // The warning glyph swells with the windup; it sits above the head, never over the hero.
+    const swell = reduced ? 1 : 1 + p.preparation * .35 + (e.heavy ? Math.sin(w.time * 22) * .06 : 0);
+    c.globalAlpha = 1; c.fillStyle = color; c.font = `900 ${(e.heavy ? 26 : 21) * scale * swell}px system-ui`; c.textAlign = 'center';
+    const outlined = c as Ctx & { strokeText?: Ctx['strokeText'] };
+    if (typeof outlined.strokeText === 'function') { c.strokeStyle = '#1a0810'; c.lineWidth = 4 * scale; c.lineJoin = 'round'; outlined.strokeText(e.heavy ? '!!' : '!', x, y - 232 * scale); }
+    c.fillText(e.heavy ? '!!' : '!', x, y - 232 * scale);
   }
   c.restore();
 }
 
+/** Furthest the blade physically reaches from the hero's centre, in stage units. Beyond it
+ * the engine's already-scheduled hit is carried by the arc, so a landed blow never reads as a
+ * swing at the air. Presentation only: the hit itself was decided by the engine. */
+export const BLADE_REACH = 96;
+const canGlow = typeof document !== 'undefined';
+/** One forked lightning stroke between two points. `seed` keeps each target's bolt distinct;
+ * the shape re-rolls on the simulation clock, so a paused frame is frozen. */
+export function bolt(c: Ctx, x0: number, y0: number, x1: number, y1: number, progress: number, time: number, seed: number, scale: number, reduced: boolean, quality: VisualQuality, fade = 1) {
+  const reach = reduced ? 1 : Math.min(1, progress * 1.35), flick = Math.floor(time * 28), steps = 9;
+  const px = (s: number) => x0 + (x1 - x0) * s / steps * reach;
+  const py = (s: number) => y0 + (y1 - y0) * s / steps * reach + (s === 0 || s === steps || reduced ? 0 : (hash(seed * 7.1 + s * 3.3 + flick * 1.7) - .5) * 24 * scale * Math.sin(s / steps * Math.PI));
+  c.save(); c.lineCap = 'round';
+  if (canGlow && !reduced) { c.globalAlpha = fade * .8; light(c, '#58c8ff', x0, y0, 15 * scale, .9); }
+  for (const [width, color, alpha] of (quality === 'high' ? [[9, '#2a6fe0', .32], [4.4, '#58c8ff', .85], [1.7, '#f2fdff', 1]] : [[4.4, '#58c8ff', .85], [1.7, '#f2fdff', 1]]) as [number, string, number][]) {
+    c.globalAlpha = fade * alpha * (reduced ? .8 : .45 + progress * .55); c.strokeStyle = color; c.lineWidth = width * scale;
+    c.beginPath(); c.moveTo(px(0), py(0)); for (let s = 1; s <= steps; s++) c.lineTo(px(s), py(s)); c.stroke();
+  }
+  if (!reduced && quality === 'high') for (const at of [3, 6]) {
+    // Short forks tear off the main stroke.
+    const dir = hash(seed * 3.9 + at + flick) > .5 ? -1 : 1, len = (16 + hash(seed + at * 2.3 + flick) * 20) * scale;
+    c.globalAlpha = fade * .8 * progress; c.strokeStyle = '#bfefff'; c.lineWidth = 1.3 * scale;
+    c.beginPath(); c.moveTo(px(at), py(at)); c.lineTo(px(at) + len * .45, py(at) + dir * len * .55); c.lineTo(px(at) + len, py(at) + dir * len * .5 + (hash(at + flick) - .5) * 10 * scale); c.stroke();
+  }
+  if (canGlow) { c.globalAlpha = fade; light(c, '#9be4ff', px(steps), py(steps), (12 + progress * 16) * scale, .95); light(c, '#ffffff', px(steps), py(steps), 6 * scale * progress, 1); }
+  c.restore();
+}
 /** Blade -> named pending target. Pure projection of an ALREADY scheduled
  * hit. No target search that could grant extra range, no damage callback.
  */
@@ -65,55 +96,34 @@ export function electricCut(c: Ctx, w: World, floor: number, scale: number, redu
   if (!ids.length || contact - w.time > .19 || w.pose !== 'attack') return;
   const fromX = blade?.tip.x ?? w.heroX - w.cameraX + 47 * scale, fromY = blade?.tip.y ?? floor - 96 * scale;
   const progress = clamp(1 - (contact - w.time) / .19);
-  c.save(); c.lineCap = 'round';
   for (const id of ids) {
     const target = w.enemies.find(e => e.id === id && e.hp > 0);
-    if (!target || target.worldX - w.heroX < 135) continue;
-    const toX = target.worldX - w.cameraX - 19 * scale, toY = floor - 55 * scale + (target.lane - 1) * 7 * scale;
-    c.globalAlpha = reduced ? .7 : .4 + progress * .6;
-    if (!reduced && quality === 'high') { c.shadowColor = '#5dcfff'; c.shadowBlur = 10; }
-    for (const [width, color] of [[5, '#368feb'], [1.7, '#e1fcff']] as const) {
-      c.strokeStyle = color; c.lineWidth = width * scale; c.beginPath(); c.moveTo(fromX, fromY);
-      for (let segment = 1; segment <= 9; segment++) {
-        const t = segment / 9 * (reduced ? 1 : Math.min(1, progress * 1.3)), jitter = segment === 9 || reduced ? 0 : Math.sin(segment * 12.3 + Math.floor(w.time * 24)) * 7 * scale;
-        c.lineTo(fromX + (toX - fromX) * t, fromY + (toY - fromY) * t + jitter);
-      }
-      c.stroke();
-    }
+    if (!target || target.worldX - w.heroX < BLADE_REACH + (target.species === 'boss' ? 100 : 34)) continue;
+    const toX = target.worldX - w.cameraX - (target.species === 'boss' ? 52 : 19) * scale, toY = floor - (target.species === 'boss' ? 84 : 55) * scale + (target.lane - 1) * 7 * scale;
+    bolt(c, fromX, fromY, toX, toY, progress, w.time, id, scale, reduced, quality);
   }
-  c.restore();
 }
 
-const bladeHistory = new WeakMap<World, { action: number; time: number; blade: BladeSegment; from?: BladeSegment }>();
+const bladeHistory = new WeakMap<World, { action: number; samples: { time: number; blade: BladeSegment }[] }>();
 /** Swept blade geometry sampled from the existing rig, no synthetic arc or
  * extra timer. Paused frames cannot add trails; a new action/reload resets it.
  */
 export function bladeTrail(c: Ctx, w: World, blade: BladeSegment | undefined, reduced: boolean, quality: VisualQuality) {
-  const previous = bladeHistory.get(w);
+  let history = bladeHistory.get(w);
   if (!blade || w.pose !== 'attack' || reduced || quality === 'low') { bladeHistory.delete(w); return; }
-  const from = previous?.time === w.time ? previous.from : previous && previous.action === w.heroActionAt && w.time > previous.time && w.time - previous.time < .1 ? previous.blade : undefined;
-  if (from) {
-    c.save(); c.fillStyle = '#fff0ad'; c.globalAlpha = .24;
-    c.beginPath(); c.moveTo(from.tip.x, from.tip.y);
-    c.lineTo(blade.tip.x, blade.tip.y); c.lineTo(blade.grip.x, blade.grip.y);
-    c.lineTo(from.grip.x, from.grip.y); c.closePath(); c.fill(); c.restore();
-  }
-  bladeHistory.set(w, { action: w.heroActionAt, time: w.time, blade, from });
-}
-
-/** Small contact flash and directional chips at existing impact events only. */
-export function contactFlash(c: Ctx, x: number, y: number, age: number, scale: number, reduced: boolean, quality: VisualQuality) {
-  if (age < 0 || age > .24) return;
-  const t = clamp(age / .24);
-  c.save(); c.globalAlpha = (1 - t) * .9; c.fillStyle = '#fff4cf';
-  c.beginPath(); c.ellipse(x, y, (reduced ? 8 : 8 + t * 13) * scale, (reduced ? 8 : 12 - t * 5) * scale, -.4, 0, Math.PI * 2); c.fill();
-  if (!reduced && quality === 'high') {
-    c.strokeStyle = '#ffbe65'; c.lineWidth = 2 * scale;
-    for (let i = 0; i < 5; i++) {
-      const a = -1.4 + i * .65, distance = (10 + t * 36) * scale;
-      const px = x + Math.cos(a) * distance, py = y + Math.sin(a) * distance + t * t * 19 * scale;
-      c.beginPath(); c.moveTo(px, py); c.lineTo(px - Math.cos(a) * 5 * scale, py - Math.sin(a) * 5 * scale); c.stroke();
-    }
+  const last = history?.samples[history.samples.length - 1];
+  if (!history || history.action !== w.heroActionAt || (last && (w.time < last.time || w.time - last.time > .1))) { history = { action: w.heroActionAt, samples: [] }; bladeHistory.set(w, history); }
+  if (!history.samples.length || w.time > history.samples[history.samples.length - 1].time) history.samples.push({ time: w.time, blade });
+  while (history.samples.length > 1 && w.time - history.samples[0].time > .12) history.samples.shift();
+  const list = history.samples;
+  c.save();
+  for (let i = 1; i < list.length; i++) {
+    // A tapering ribbon: the newest sweep is brightest, older ones cool and thin out.
+    const a = list[i - 1].blade, b = list[i].blade, k = i / (list.length - 1 || 1);
+    c.globalAlpha = .1 + k * .34; c.fillStyle = k > .6 ? '#fffbe6' : '#ffd66e';
+    c.beginPath(); c.moveTo(a.tip.x, a.tip.y); c.lineTo(b.tip.x, b.tip.y);
+    c.lineTo(b.tip.x + (b.grip.x - b.tip.x) * (.35 + k * .4), b.tip.y + (b.grip.y - b.tip.y) * (.35 + k * .4));
+    c.lineTo(a.tip.x + (a.grip.x - a.tip.x) * (.2 + k * .35), a.tip.y + (a.grip.y - a.tip.y) * (.2 + k * .35)); c.closePath(); c.fill();
   }
   c.restore();
 }

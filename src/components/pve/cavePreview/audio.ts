@@ -10,6 +10,8 @@ export class CaveAudio {
   private primed = false;
   private kills = 0;
   private actionAt = 0;
+  private bossPhase = 1;
+  private bossDown = false;
   muted = false;
   async unlock() {
     if (!this.context) {
@@ -23,9 +25,9 @@ export class CaveAudio {
     await this.context.resume(); this.suspended = false;
   }
   mute(value: boolean) { this.muted = value; if (this.bus && this.context) this.bus.gain.setTargetAtTime(value ? 0 : .13, this.context.currentTime, .03); }
-  private tone(frequency: number, end: number, duration: number, volume: number, type: OscillatorType = 'sine') {
+  private tone(frequency: number, end: number, duration: number, volume: number, type: OscillatorType = 'sine', delay = 0) {
     if (!this.context || !this.bus || this.muted) return;
-    const t = this.context.currentTime, oscillator = this.context.createOscillator(), gain = this.context.createGain();
+    const t = this.context.currentTime + delay, oscillator = this.context.createOscillator(), gain = this.context.createGain();
     oscillator.type = type; oscillator.frequency.setValueAtTime(frequency, t); oscillator.frequency.exponentialRampToValueAtTime(end, t + duration);
     gain.gain.setValueAtTime(volume, t); gain.gain.exponentialRampToValueAtTime(.001, t + duration);
     oscillator.connect(gain); gain.connect(this.bus); oscillator.start(t); oscillator.stop(t + duration);
@@ -38,11 +40,12 @@ export class CaveAudio {
     if (!this.primed || w.time < this.lastStep) {
       this.primed = true; this.lastEffect = w.time; this.lastStep = w.time;
       this.kills = w.kills; this.actionAt = w.heroActionAt; this.phase = w.phase;
+      this.bossPhase = w.bossPhase; this.bossDown = w.enemies.some(e => e.species === 'boss' && e.hp <= 0);
     }
     const suspend = w.paused || document.hidden || ['LOBBY', 'VICTORY', 'DEFEAT'].includes(w.phase);
     if (suspend !== this.suspended) { this.suspended = suspend; void (suspend ? this.context.suspend() : this.context.resume()).catch(() => {}); }
     if (suspend) return;
-    if (w.kills > this.kills) this.tone(145, 39, .23, .16, 'triangle');
+    if (w.kills > this.kills) { this.tone(145, 39, .23, .16, 'triangle'); this.tone(380, 980, .2, .07, 'sine', .06); }
     this.kills = w.kills;
     if (w.pose === 'attack' && w.heroActionAt > this.actionAt) this.tone(240, 95, .09, .08, 'triangle');
     this.actionAt = Math.max(this.actionAt, w.heroActionAt);
@@ -58,9 +61,15 @@ export class CaveAudio {
       else if (effect.kind === 'energy') this.tone(580, 820, .18, .12);
     }
     if (w.effects.length) this.lastEffect = Math.max(...w.effects.map(e => e.born));
+    // Boss theatre: a growl when the phase turns, three bright notes when the master falls.
+    if (w.bossPhase !== this.bossPhase) { if (w.bossPhase > this.bossPhase) { this.tone(70, 210, .5, .45, 'sawtooth'); this.tone(520, 130, .7, .22, 'triangle', .08); } this.bossPhase = w.bossPhase; }
+    const down = w.enemies.some(e => e.species === 'boss' && e.hp <= 0);
+    if (down && !this.bossDown) { this.tone(392, 392, .16, .26, 'triangle'); this.tone(523, 523, .16, .26, 'triangle', .11); this.tone(784, 784, .26, .3, 'triangle', .22); }
+    this.bossDown = down;
     if (w.phase !== this.phase) {
       if (w.phase === 'PORTAL_ENTER') this.tone(180, 920, .9, .35);
       if (w.phase === 'BOSS') this.tone(150, 28, 1.1, .5, 'triangle');
+      if (w.phase === 'ENTER') this.tone(640, 960, .32, .14);
       this.phase = w.phase;
     }
   }
