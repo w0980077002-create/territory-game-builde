@@ -1,6 +1,7 @@
 import { refreshFortuneVip } from '@/game/fortuneVip';
 import { captureGameEvent } from '@/game/analytics';
 import { Suspense, lazy, useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth, type AuthUser } from '@/game/auth';
 import { useGame, useArena, useAccount, applyTimeEffects } from '@/game/actions';
 import { reconcileLockedBelt } from '@/game/belt';
@@ -749,8 +750,10 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         </div>
       </nav>}
 
-      {isLandscapePhone && (
-        <div role="alertdialog" aria-modal="true" className="fixed inset-0 z-[100] flex items-center justify-center bg-[#070b12]/95 p-6 text-center backdrop-blur-md" style={{ paddingTop: 'max(24px, env(safe-area-inset-top))', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+      {/* The cave is portaled directly to <body>. Keep this warning in <body>
+          as well, above every fullscreen game, otherwise cave masks it. */}
+      {isLandscapePhone && createPortal(
+        <div data-testid="territory-portrait-only-overlay" role="alertdialog" aria-modal="true" className="territory-portrait-only-overlay fixed inset-0 flex items-center justify-center bg-[#070b12]/95 p-6 text-center backdrop-blur-md" style={{ zIndex: 2147483647, paddingTop: 'max(24px, env(safe-area-inset-top))', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
           <div className="w-full max-w-sm rounded-3xl border border-sky-400/35 bg-gradient-to-b from-[#14283b] to-[#090f18] px-6 py-8 shadow-[0_0_50px_rgba(14,165,233,0.12)]">
             <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl border border-sky-300/40 bg-sky-500/10 text-sky-200"><Smartphone className="h-12 w-12 rotate-90" strokeWidth={1.7} /></div>
             <h2 className="mb-3 text-xl font-extrabold leading-tight text-white">{translate('rotateTitle')}</h2>
@@ -760,7 +763,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
               <button onClick={() => setLanguage('en')} className={`rounded-full px-4 py-1.5 text-sm font-bold ${language === 'en' ? 'bg-amber-400 text-black' : 'text-slate-300'}`}>EN</button>
             </div>
           </div>
-        </div>
+        </div>, document.body
       )}
 
       {toast && (
