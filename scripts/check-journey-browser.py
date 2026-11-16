@@ -67,6 +67,7 @@ with sync_playwright() as p:
             assert page.locator('.journey-encounter button').is_disabled()
             assert page.get_by_test_id('pending-cave-recovery').is_visible()
             page.get_by_role('button', name='Recover Dark Cave battle' if lang=='en' else 'Восстановить бой в пещере').click()
+            page.get_by_test_id('fixture-cave').wait_for(state='visible')  # async legacy recovery chunk
             assert page.get_by_test_id('fixture-cave').is_visible()
             page.close()
     page=browser.new_page(viewport={'width':360,'height':640})

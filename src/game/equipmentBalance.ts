@@ -255,7 +255,7 @@ export function setAdminEquipmentLevel(eq: Equipment, targetLevel: number): Equi
 
 
 /**
- * One rule for every gear source: an item can never exceed its owner's hero level.
+ * Explicit legacy gear scaling. Save/load paths must preserve Stage8 mirrors.
  * For boss drops, reconstruct chapter-based stats at the NEW level.
  * For catalog gear, use the canonical linear growth curve (proportional below the
  * catalog's minimum level). Custom items are scaled and slot-capped.
@@ -432,6 +432,7 @@ export function rebalanceHistoricalRarity(eq: Equipment): Equipment {
  * Generated loot or custom gear only changes if above generous slot caps.
  */
 export function normalizeEquipmentV4(eq: Equipment): Equipment {
+  if (eq.id?.startsWith('stage8_')) return eq;
   eq = rebalanceLegacyCraftedEquipment(rebalanceHistoricalRarity(eq));
   const template = [...EQUIPMENT_TEMPLATES, ...HISTORIC_SHOP_EPICS].find(
     (x) => x.name === eq.name && x.slot === eq.slot && x.rarity === eq.rarity,

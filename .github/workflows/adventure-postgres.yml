@@ -2,6 +2,38 @@ name: Adventure PostgreSQL integration
 
 on:
   pull_request:
+    branches: [main]
+    # PostgreSQL integration only when combat/PvE contracts or DB assets change.
+    paths:
+      - 'src/game/actions.ts'
+      - 'src/game/store.ts'
+      - 'src/game/types.ts'
+      - 'src/game/cloud.ts'
+      - 'src/game/caveCloudPve.ts'
+      - 'src/game/pve*.ts'
+      - 'src/game/arena*.ts'
+      - 'src/game/useArenaRoom.ts'
+      - 'src/game/useStrikeQueue.ts'
+      - 'src/game/engine.ts'
+      - 'src/game/slotAdventure.ts'
+      - 'src/game/builds/rune*.ts'
+      - 'src/game/config/*rune*'
+      - 'src/game/cave/**'
+      - 'src/components/pve/ServerAdventureScreen.tsx'
+      - 'src/components/BattleScreen.tsx'
+      - 'src/components/builds/**'
+      - 'src/admin/tabs/PlayerRunes.tsx'
+      - 'supabase/functions/admin-api/**'
+      - 'supabase/functions/territory-combat/**'
+      - 'supabase/migrations/**'
+      - 'supabase/staged/**'
+      - 'scripts/*adventure*'
+      - 'scripts/*cave-client-pve*'
+      - 'scripts/*rune*'
+      - 'scripts/*arena*'
+      - 'scripts/fixtures/**'
+      - 'package*.json'
+      - '.github/workflows/adventure-postgres.yml'
   push:
     branches:
       - copilot/runes-adventures-integration

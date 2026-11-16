@@ -6,7 +6,7 @@
 import { supabase } from './supabase';
 import blueprint from '../../supabase/staged/territory_profession_stage8_catalog.json';
 import { receiptDisplayItem } from './craftApi';
-import type { InventoryItem, ProfessionId } from './types';
+import type { Equipment, InventoryItem, ProfessionId } from './types';
 
 export type Stage8Resource = { id: string; qty: number };
 export type Stage8Recipe = {
@@ -217,9 +217,23 @@ export async function fetchStage8Items(): Promise<Stage8OwnedItem[]> {
   });
 }
 
-export function mirrorStage8Items(items: InventoryItem[],owned: readonly Stage8OwnedItem[],equippedItemIds: ReadonlySet<string> = new Set()): InventoryItem[] {
+export function mirrorStage8Items(items: InventoryItem[],owned: readonly Stage8OwnedItem[],equippedItemIds: ReadonlySet<string> = new Set(), equipped: readonly Equipment[] = []): InventoryItem[] {
+  // Inspect the original snapshot BEFORE constructing any replacement mirror.
+  // A greater saved level/count needs receipts; neither copy proves the other wrong.
+  for (const item of owned) {
+    const id=`stage8_${item.itemId}`;
+    const canonical=item.output.equipment;
+    if (!obj(canonical)) continue;
+    const copies=[...items.filter(x=>x.id===id||x.equipment?.id===id).flatMap(x=>x.equipment?[x.equipment]:[]),
+      ...equipped.filter(x=>x.id===id)];
+    for (const saved of copies) {
+      if ((Number.isFinite(saved.level) && typeof canonical.level==='number' && saved.level>canonical.level)
+        || (Number.isFinite(saved.upgradeCount) && (saved.upgradeCount??0)>(typeof canonical.upgradeCount==='number'?canonical.upgradeCount:0)))
+        throw new Error('stage8_reconciliation_required');
+    }
+  }
   const byId = new Map<string, InventoryItem>();
-  for (const item of items) if (!item.id.startsWith('stage8_')) byId.set(item.id,item);
+  for (const item of items) if (!item.id.startsWith('stage8_') && !item.equipment?.id.startsWith('stage8_')) byId.set(item.id,item);
   for (const item of owned) {
     const id=`stage8_${item.itemId}`;
     // An equipped item is not also a backpack item in the legacy view.

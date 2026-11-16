@@ -7,6 +7,19 @@
 -- Returns NULL for all non-Stage8 gear so the established legacy owner cap
 -- stays in force. Raises on stolen/unknown/corrupt Stage8 gear rather than
 -- accepting forged ownership or silently deleting real upgrades.
+CREATE TABLE IF NOT EXISTS territory_private.stage8_historical_quarantine_v1(
+  item_id uuid PRIMARY KEY,
+  player_id uuid NOT NULL,
+  registry_equipment jsonb NOT NULL,
+  frozen_equipment jsonb NOT NULL,
+  initial_location text NOT NULL CHECK(initial_location IN ('bag','equipped')),
+  provenance_status text NOT NULL CHECK(provenance_status IN ('admin_approved','unresolved')),
+  captured_at timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+ALTER TABLE territory_private.stage8_historical_quarantine_v1 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON territory_private.stage8_historical_quarantine_v1 FROM PUBLIC,anon,authenticated;
+
+
 CREATE OR REPLACE FUNCTION territory_private.stage8_verified_gear_v2(
   p_item jsonb,
   p_player uuid
@@ -21,6 +34,8 @@ DECLARE
   v_canonical jsonb;
   v_saved_level integer;
   v_canonical_level integer;
+  v_hold record;
+  v_frozen_level integer;
 BEGIN
   IF pg_catalog.jsonb_typeof(p_item) IS DISTINCT FROM 'object' THEN
     RETURN NULL;
@@ -40,12 +55,53 @@ BEGIN
   IF NOT FOUND OR pg_catalog.jsonb_typeof(v_canonical) IS DISTINCT FROM 'object' THEN
     RAISE EXCEPTION 'stage8_item_not_owned' USING ERRCODE='23514';
   END IF;
-  IF (p_item->>'level') !~ '^[0-9]{1,3}$'
+  IF (p_item->>'level') IS NULL OR (v_canonical->>'level') IS NULL
+     OR (p_item->>'level') !~ '^[0-9]{1,3}$'
      OR (v_canonical->>'level') !~ '^[0-9]{1,3}$' THEN
     RAISE EXCEPTION 'stage8_invalid_level' USING ERRCODE='23514';
   END IF;
   v_saved_level := (p_item->>'level')::integer;
   v_canonical_level := (v_canonical->>'level')::integer;
+  -- Fingerprint-attested historical snapshot (no client-authorized upgrade).
+  SELECT q.registry_equipment,q.frozen_equipment INTO v_hold
+    FROM territory_private.stage8_historical_quarantine_v1 q
+    WHERE q.item_id=pg_catalog.substr(v_client_id,8)::uuid
+      AND q.player_id=p_player;
+  IF FOUND THEN
+    IF v_hold.registry_equipment IS DISTINCT FROM v_canonical
+      OR (v_hold.frozen_equipment->>'id') IS DISTINCT FROM v_client_id
+      OR (v_hold.frozen_equipment->>'level') !~ '^[1-9][0-9]{0,2}$'
+    THEN RAISE EXCEPTION 'stage8_quarantine_snapshot_changed' USING ERRCODE='23514'; END IF;
+    v_frozen_level:=(v_hold.frozen_equipment->>'level')::integer;
+    IF v_saved_level > v_frozen_level THEN
+      RAISE EXCEPTION 'stage8_reconciliation_required' USING ERRCODE='23514';
+    END IF;
+    RETURN v_hold.frozen_equipment;
+  END IF;
+  -- Historic r2 registry rows often predate the legacy client-format
+  -- baseline fields. The old SERVER save trigger normalized them to a
+  -- zero-upgrade snapshot. Reconstruct exactly that format using trusted
+  -- registry fields, never from the incoming client. Production preflight
+  -- verified all 321 same-level Stage8 mirrors reconstruct byte-for-byte.
+  v_canonical:=public.territory_normalize_gear_v4(
+    v_canonical || pg_catalog.jsonb_build_object('id',v_client_id));
+  IF NOT(v_canonical ? 'baseStats') THEN
+    IF v_canonical ? 'baseLevel' OR v_canonical ? 'upgradeCount'
+      THEN RAISE EXCEPTION 'stage8_partial_registry_needs_review' USING ERRCODE='23514'; END IF;
+    v_canonical:=v_canonical ||
+      pg_catalog.jsonb_build_object(
+        'attack',coalesce(v_canonical->'attack','0'::jsonb),
+        'defense',coalesce(v_canonical->'defense','0'::jsonb),
+        'hp',coalesce(v_canonical->'hp','0'::jsonb),
+        'critChance',coalesce(v_canonical->'critChance','0'::jsonb)) ||
+      pg_catalog.jsonb_build_object(
+        'baseLevel',v_canonical->'level','upgradeCount',0,
+        'baseStats',pg_catalog.jsonb_build_object(
+          'attack',coalesce(v_canonical->'attack','0'::jsonb),
+          'defense',coalesce(v_canonical->'defense','0'::jsonb),
+          'hp',coalesce(v_canonical->'hp','0'::jsonb),
+          'critChance',coalesce(v_canonical->'critChance','0'::jsonb)));
+  END IF;
   IF v_saved_level > v_canonical_level THEN
     -- Three historical items presently have upgrades that predate the
     -- server ledger. Never silently replace or trust these levels.

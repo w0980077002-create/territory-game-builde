@@ -254,7 +254,8 @@ export function equipItem(state: GameState, item: InventoryItem): GameState {
   // Never downgrade an expensive traded item when the buyer is under-levelled.
   // The item remains unchanged in the backpack until the hero can equip it.
   if (item.equipment.level > state.player.level) return state;
-  const eq = capEquipmentToHeroLevel(item.equipment, state.player.level);
+  const eq = item.equipment.id.startsWith('stage8_') ? item.equipment
+    : capEquipmentToHeroLevel(item.equipment, state.player.level);
   const slot = eq.slot;
   const currentEquipped = state.player.equipped[slot];
 
@@ -262,7 +263,8 @@ export function equipItem(state: GameState, item: InventoryItem): GameState {
 
   if (currentEquipped) {
     inventory.push({
-      id: `inv_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      id: currentEquipped.id.startsWith('stage8_') ? currentEquipped.id
+        : `inv_${Date.now()}_${Math.random().toString(36).slice(2)}`,
       name: currentEquipped.name,
       icon: currentEquipped.icon,
       type: 'equipment',
@@ -287,7 +289,8 @@ export function unequipItem(state: GameState, slot: Equipment['slot']): GameStat
   if (!eq) return state;
 
   const inventory = [...state.inventory, {
-    id: `inv_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+    id: eq.id.startsWith('stage8_') ? eq.id
+      : `inv_${Date.now()}_${Math.random().toString(36).slice(2)}`,
     name: eq.name,
     icon: eq.icon,
     type: 'equipment' as const,
