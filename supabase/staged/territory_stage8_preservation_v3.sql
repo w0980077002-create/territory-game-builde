@@ -160,6 +160,9 @@ BEGIN
     WHERE item_id=p_item AND player_id=p_from FOR UPDATE;
   IF NOT FOUND OR v_output->>'type' IS DISTINCT FROM 'equipment'
     THEN RAISE EXCEPTION 'stage8_item_not_owned'; END IF;
+  IF EXISTS(SELECT 1 FROM territory_private.stage8_historical_quarantine_v1 q
+    WHERE q.item_id=p_item AND q.player_id=p_from)
+    THEN RAISE EXCEPTION 'stage8_historical_item_transfer_on_hold'; END IF;
   -- Check provenance while still owned by the sender. Reject equipped sales.
   PERFORM territory_private.stage8_preserve_state_v3(game_state,level,id)
     FROM public.players WHERE id=p_from;
