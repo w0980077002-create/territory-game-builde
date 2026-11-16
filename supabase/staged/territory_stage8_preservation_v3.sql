@@ -67,10 +67,25 @@ BEGIN
           WHERE 'stage8_'||i.item_id::text=v_id AND i.item_output->>'type'='equipment') THEN
         v_bag:=v_bag||jsonb_build_array(v_entry.item); CONTINUE;
       END IF;
-      -- Older clients used an inv_* display wrapper when unequipping.
-      -- Canonical ownership is still proven by the inner Stage8 UUID.
+      -- Two historical aliases are a second wrapper of ONE already-owned
+      -- registry UUID. Keep exact preexisting inv_* wrappers as visible
+      -- inventory entries: NEVER mint another alias, forge it or silently
+      -- delete either copy. Their inner Stage8 ID still requires ownership.
+      IF left(v_id,4)='inv_' AND left(v_entry.item#>>'{equipment,id}',7)='stage8_' THEN
+        IF v_entry.item->>'type' IS DISTINCT FROM 'equipment'
+          OR v_entry.item->'qty' IS DISTINCT FROM '1'::jsonb
+          OR (SELECT count(*) FROM jsonb_array_elements(
+            CASE WHEN jsonb_typeof(v_old->'inventory')='array' THEN v_old->'inventory' ELSE '[]'::jsonb END) prior
+            WHERE prior.value->>'id'=v_id AND prior.value=v_entry.item)<>1
+          THEN RAISE EXCEPTION 'stage8_unapproved_legacy_alias'; END IF;
+        v_eq:=territory_private.stage8_verified_gear_v2(v_entry.item->'equipment',p_player);
+        IF v_eq IS DISTINCT FROM v_entry.item->'equipment'
+          THEN RAISE EXCEPTION 'stage8_legacy_alias_modified'; END IF;
+        v_bag:=v_bag||jsonb_build_array(v_entry.item);
+        CONTINUE;
+      END IF;
       IF left(v_id,7)<>'stage8_' AND left(v_entry.item#>>'{equipment,id}',7)='stage8_' THEN
-        v_id:=v_entry.item#>>'{equipment,id}';
+        RAISE EXCEPTION 'stage8_unapproved_legacy_alias';
       END IF;
       IF v_id IS DISTINCT FROM v_entry.item#>>'{equipment,id}'
         OR v_entry.item->'qty' IS DISTINCT FROM '1'::jsonb
@@ -102,6 +117,28 @@ BEGIN
   v_clean:=jsonb_set(jsonb_set(v_state,'{inventory}',v_bag),'{player,equipped}',v_equipped);
   v_clean:=territory_private.owner_cap_state_v1(public.territory_normalize_state_v4(
     territory_private.normalize_legacy_rare_state_20261108(v_clean)),p_hero,p_player);
+  -- A stale device may omit one of the TWO historical inv_* wrappers.
+  -- Restore exact committed bytes rather than losing an apparent second
+  -- inventory entry. No new alias can enter because old must already contain
+  -- the exact item, and its inner equipment UUID must match the registry.
+  FOR v_entry IN SELECT x.value AS item FROM jsonb_array_elements(
+    CASE WHEN jsonb_typeof(v_old->'inventory')='array' THEN v_old->'inventory' ELSE '[]'::jsonb END) x
+    WHERE left(x.value->>'id',4)='inv_'
+      AND left(x.value#>>'{equipment,id}',7)='stage8_'
+  LOOP
+    IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(v_clean->'inventory') x
+      WHERE x.value->>'id'=v_entry.item->>'id') THEN
+      IF v_entry.item->>'type' IS DISTINCT FROM 'equipment'
+        OR v_entry.item->'qty' IS DISTINCT FROM '1'::jsonb
+        OR (SELECT count(*) FROM jsonb_array_elements(v_old->'inventory') x
+          WHERE x.value->>'id'=v_entry.item->>'id')<>1
+        THEN RAISE EXCEPTION 'stage8_legacy_alias_invalid_old_state'; END IF;
+      v_eq:=territory_private.stage8_verified_gear_v2(v_entry.item->'equipment',p_player);
+      IF v_eq IS DISTINCT FROM v_entry.item->'equipment'
+        THEN RAISE EXCEPTION 'stage8_legacy_alias_reconcile_required'; END IF;
+      v_clean:=jsonb_set(v_clean,'{inventory}',(v_clean->'inventory')||jsonb_build_array(v_entry.item));
+    END IF;
+  END LOOP;
   -- Registry gear is persistent ownership, not a disposable save field. Restore
   -- omissions from stale devices; never let deleting a mirror delete an item.
   FOR v_registry IN SELECT i.item_id,i.item_output FROM public.territory_profession_stage8_items i
@@ -163,6 +200,13 @@ BEGIN
   IF EXISTS(SELECT 1 FROM territory_private.stage8_historical_quarantine_v1 q
     WHERE q.item_id=p_item AND q.player_id=p_from)
     THEN RAISE EXCEPTION 'stage8_historical_item_transfer_on_hold'; END IF;
+  IF EXISTS(SELECT 1 FROM public.players p
+    CROSS JOIN LATERAL jsonb_array_elements(
+      CASE WHEN jsonb_typeof(p.game_state->'inventory')='array'
+        THEN p.game_state->'inventory' ELSE '[]'::jsonb END) x(value)
+    WHERE p.id=p_from AND left(x.value->>'id',4)='inv_'
+      AND x.value#>>'{equipment,id}'='stage8_'||p_item::text)
+  THEN RAISE EXCEPTION 'stage8_legacy_alias_transfer_on_hold'; END IF;
   -- Check provenance while still owned by the sender. Reject equipped sales.
   PERFORM territory_private.stage8_preserve_state_v3(game_state,level,id)
     FROM public.players WHERE id=p_from;
