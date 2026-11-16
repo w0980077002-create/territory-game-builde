@@ -7,33 +7,17 @@
 import { BIOMES, type Biome } from '../../../game/cavePreviewWorld/catalog';
 import type { World } from '../../../game/cavePreviewWorld/engine';
 import { drawCrystalBackdrop, drawCrystalForeground } from './crystalEnvironment';
+import { burst, clamp01, hash, light, mod, pool, starPath } from './kit';
+import { drawProp, kit as sceneryKit, type Prop } from './props';
+export { light };
 
 type Ctx = CanvasRenderingContext2D;
 type Images = Map<string, HTMLImageElement>;
 const ROOT = 'assets/territory/cave-expedition/';
-const hash = (n: number) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
-const mod = (v: number, m: number) => ((v % m) + m) % m;
 
 /** Shared stage geometry: horizon of the walkable floor and the line the party's feet stand on. */
 export function stageLayout(h: number) {
   return { horizon: h * .64, floor: h * .805, scale: Math.max(.7, Math.min(1, h / 480)) };
-}
-
-const glows = new Map<string, HTMLCanvasElement>();
-function glow(color: string) {
-  let g = glows.get(color);
-  if (!g) {
-    g = document.createElement('canvas'); g.width = g.height = 64;
-    const c = g.getContext('2d')!, r = c.createRadialGradient(32, 32, 0, 32, 32, 32);
-    r.addColorStop(0, color); r.addColorStop(.35, color + '88'); r.addColorStop(1, color + '00');
-    c.fillStyle = r; c.fillRect(0, 0, 64, 64); glows.set(color, g);
-  }
-  return g;
-}
-export function light(c: Ctx, color: string, x: number, y: number, radius: number, alpha: number) {
-  if (alpha <= .01) return;
-  const a = c.globalAlpha; c.globalAlpha = a * Math.min(1, alpha);
-  c.drawImage(glow(color), x - radius, y - radius, radius * 2, radius * 2); c.globalAlpha = a;
 }
 
 /** Walkable floor strips are cut once from the painted chambers and feathered into the far wall. */
@@ -125,94 +109,73 @@ export class CaveLife {
   }
 }
 
-/** Mid-distance set pieces (depth .5): each biome has its own silhouettes with a rim of local light. */
-function midPiece(c: Ctx, biome: Biome, seed: number, x: number, base: number, h: number, time: number) {
-  const tall = h * (.2 + seed * .17), theme = BIOMES[biome].color;
-  c.save(); c.translate(x, base);
-  if (biome === 'crystal' || biome === 'astral') {
-    const dark = biome === 'crystal' ? '#0c2a44' : '#241a4d';
-    for (let n = 0; n < 4; n++) {
-      const k = hash(seed * 31 + n), dx = (n - 1.5) * 17 + k * 8, w = 9 + k * 9, top = tall * (.5 + k * .5), lean = (k - .5) * 16;
-      const g = c.createLinearGradient(0, -top, 0, 0); g.addColorStop(0, theme); g.addColorStop(.55, dark); g.addColorStop(1, '#070d18');
-      c.fillStyle = g; c.globalAlpha = .82;
-      c.beginPath(); c.moveTo(dx - w, 0); c.lineTo(dx - w * .6 + lean, -top * .82); c.lineTo(dx + lean, -top); c.lineTo(dx + w * .7 + lean, -top * .78); c.lineTo(dx + w, 0); c.fill();
-      c.globalAlpha = .5; c.strokeStyle = '#ffffff'; c.lineWidth = .8;
-      c.beginPath(); c.moveTo(dx + lean, -top); c.lineTo(dx + w * .1, 0); c.stroke();
-    }
-    c.globalAlpha = 1; light(c, theme, 0, -tall * .35, tall * .7, .2 + .06 * Math.sin(time * 1.3 + seed * 20));
-    if (biome === 'astral') {
-      // A shard of the old vault hangs in the air and slowly turns.
-      const bob = Math.sin(time * .8 + seed * 12) * 5;
-      c.fillStyle = '#3a2d74'; c.globalAlpha = .85; c.beginPath(); c.moveTo(34, -tall - 20 + bob); c.lineTo(46, -tall - 8 + bob); c.lineTo(39, -tall + 8 + bob); c.lineTo(27, -tall - 4 + bob); c.fill();
-      light(c, '#c6a0ff', 37, -tall - 5 + bob, 16, .35);
-    }
-  } else if (biome === 'spore') {
-    const stem = tall * .9, cap = 26 + seed * 22;
-    c.globalAlpha = .88; c.strokeStyle = '#1b3a2c'; c.lineWidth = 7 + seed * 5; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-8 + seed * 14, -stem * .5, 3, -stem); c.stroke();
-    const g = c.createLinearGradient(0, -stem - cap * .55, 0, -stem + 6); g.addColorStop(0, '#2c7a4c'); g.addColorStop(1, '#a8ff9a');
-    c.fillStyle = g; c.beginPath(); c.moveTo(3 - cap, -stem + 4); c.quadraticCurveTo(3 - cap * .9, -stem - cap * .75, 3, -stem - cap * .6); c.quadraticCurveTo(3 + cap * .9, -stem - cap * .75, 3 + cap, -stem + 4); c.quadraticCurveTo(3, -stem - 5, 3 - cap, -stem + 4); c.fill();
-    c.globalAlpha = 1; light(c, '#8dff8a', 3, -stem + 8, cap * 1.5, .26 + .07 * Math.sin(time * 1.1 + seed * 30));
-  } else {
-    // Old mine timbering with a swinging lantern; the forge adds a hot chain.
-    const post = tall * .82, span = 46 + seed * 20, wood = c.createLinearGradient(0, -post, 0, 0);
-    wood.addColorStop(0, biome === 'forge' ? '#5a3324' : '#5c4027'); wood.addColorStop(1, biome === 'forge' ? '#2b1712' : '#2c1e13');
-    c.globalAlpha = .78; c.fillStyle = wood;
-    c.fillRect(-span / 2 - 3.5, -post, 7, post); c.fillRect(span / 2 - 3.5, -post, 7, post); c.fillRect(-span / 2 - 9, -post - 3, span + 18, 8);
-    c.strokeStyle = '#8a6238'; c.lineWidth = .8; c.strokeRect(-span / 2 - 9, -post - 3, span + 18, 8);
-    const swing = Math.sin(time * 1.4 + seed * 15) * .09, lx = -span * .12;
-    c.save(); c.translate(lx, -post + 7); c.rotate(swing);
-    c.strokeStyle = '#120c08'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, 22); c.stroke();
-    if (biome === 'forge') { c.strokeStyle = '#3c2a26'; c.lineWidth = 3; c.setLineDash([4, 3]); c.beginPath(); c.moveTo(span * .5, 0); c.lineTo(span * .5, post * .55); c.stroke(); c.setLineDash([]); }
-    c.fillStyle = '#1b130d'; c.fillRect(-5, 20, 10, 13); c.fillStyle = '#ffd27a'; c.fillRect(-3, 23, 6, 8);
-    c.globalAlpha = 1; light(c, biome === 'forge' ? '#ff7a45' : '#ffb85c', 0, 27, 30 + Math.sin(time * 9 + seed * 40) * 2.5, .5);
-    c.restore();
+/** A live flame on a baked brazier or furnace: three tongues that lean and flare. */
+function flame(c: Ctx, x: number, y: number, scale: number, time: number, seed: number, hot: boolean, flare: number) {
+  const flick = Math.sin(time * 11 + seed * 50) * .06 + Math.sin(time * 4.3 + seed * 9) * .05;
+  for (let n = 0; n < 3; n++) {
+    const sway = Math.sin(time * (7 + n * 2) + seed * 20 + n) * 2.5 * scale, tall = (16 + n * 6 + flick * 30) * scale * (1 + flare * .55), wide = (9 - n * 2.6) * scale;
+    c.fillStyle = (hot ? ['#ff4a22', '#ff9340', '#ffe9b0'] : ['#ff7a2e', '#ffb347', '#fff0b0'])[n]; c.globalAlpha = .92;
+    c.beginPath(); c.moveTo(x - wide, y); c.quadraticCurveTo(x - wide * .7 + sway, y - tall * .6, x + sway * 1.4, y - tall + n * 6 * scale); c.quadraticCurveTo(x + wide * .7 + sway, y - tall * .6, x + wide, y); c.fill();
   }
-  c.restore();
+  c.globalAlpha = 1; light(c, hot ? '#ff7a45' : '#ffac4d', x, y - 8 * scale, (62 + flare * 26) * scale, .5 + flick + flare * .2);
 }
-
-/** Road-side lights standing at true world addresses right behind the party (depth 1). */
-function roadLight(c: Ctx, biome: Biome, seed: number, x: number, base: number, scale: number, time: number) {
-  const theme = BIOMES[biome].color, flick = Math.sin(time * 11 + seed * 50) * .06 + Math.sin(time * 4.3 + seed * 9) * .05;
-  c.save(); c.translate(x, base); c.scale(scale, scale);
-  c.fillStyle = '#02070b66'; c.beginPath(); c.ellipse(0, 2, 20, 4.5, 0, 0, 7); c.fill();
-  if (biome === 'ember' || biome === 'forge') {
-    c.strokeStyle = '#17110d'; c.lineWidth = 3.4; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(-11, 0); c.lineTo(-4, -34); c.moveTo(11, 0); c.lineTo(4, -34); c.moveTo(0, 0); c.lineTo(0, -34); c.stroke();
-    c.fillStyle = '#241812'; c.beginPath(); c.moveTo(-14, -42); c.lineTo(14, -42); c.lineTo(9, -31); c.lineTo(-9, -31); c.fill();
-    c.strokeStyle = '#8a6a3c'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-14, -42); c.lineTo(14, -42); c.stroke();
-    for (let n = 0; n < 3; n++) {
-      const sway = Math.sin(time * (7 + n * 2) + seed * 20 + n) * 2.5, tall = 15 + n * 6 + flick * 30;
-      c.fillStyle = ['#ff7a2e', '#ffb347', '#fff0b0'][n]; c.globalAlpha = .9;
-      c.beginPath(); c.moveTo(-8 + n * 2.5, -42); c.quadraticCurveTo(-6 + sway, -42 - tall * .6, sway * 1.4, -42 - tall + n * 6); c.quadraticCurveTo(6 + sway, -42 - tall * .6, 8 - n * 2.5, -42); c.fill();
+const SPARK: Record<Biome, string[]> = {
+  crystal: ['#eaffff', '#7fe9ff', '#c9a0ff'], spore: ['#eaffc8', '#a0ef7c', '#d9a6ff'], ember: ['#fff0b0', '#ffb45b', '#ff8a3c'],
+  astral: ['#ffffff', '#c6a0ff', '#8fd0ff'], forge: ['#ffe2a8', '#ff805f', '#ff4a22'],
+};
+/** Things standing along the road at true world addresses, right behind the party. They
+ * notice the hero: lean as he passes, burn brighter while he is near and shed light after him. */
+function roadside(c: Ctx, w: World, h: number, time: number, reduced: boolean) {
+  const { horizon, scale } = stageLayout(h), cam = w.cameraX, base = horizon + h * .045, props = sceneryKit(w.biome).road, theme = BIOMES[w.biome];
+  for (let n = Math.floor((cam - w.roomX - 120) / 330); n * 330 + w.roomX - cam < 560; n++) {
+    if (n < 0) continue;
+    const seed = hash(n * 5.3 + w.room * 17 + 2), wx = w.roomX + 300 + n * 330 + seed * 120, x = wx - cam;
+    if (w.portalX > w.roomX && Math.abs(wx - w.portalX - 56) < 190) continue;
+    if (Math.abs(wx - w.roomX - 455) < 46) continue; // the spark waiting on the first stretch keeps its own stage
+    const prop = props[Math.floor(seed * 97) % props.length], size = scale * (1.02 + hash(n * 3.1 + 7) * .26);
+    const passed = w.heroX - wx, near = Math.exp(-((passed / 120) ** 2)), sway = reduced ? 0 : Math.sin(passed / 15) * .1 * Math.exp(-Math.abs(passed) / 120) + Math.sin(time * 1.1 + seed * 30) * .008;
+    const breath = reduced ? 0 : Math.sin(time * 1.6 + seed * 40);
+    c.globalAlpha = 1; c.fillStyle = '#02070b'; c.globalAlpha = .34; c.beginPath(); c.ellipse(x, base + 2, 25 * size, 5 * size, 0, 0, 7); c.fill(); c.globalAlpha = 1;
+    if (prop.glow) pool(c, prop.glow.color, x + prop.glow.x * size, base + 5, prop.glow.r * 1.5 * size, 13 * size, .3 + near * .3 + breath * .04);
+    if (!drawProp(c, prop, x, base, size, prop.fire ? 0 : sway, prop.fire ? 0 : near * .03 * (reduced ? 0 : Math.sin(passed / 9)))) continue;
+    if (prop.fire) flame(c, x + prop.fire.x * size, base + prop.fire.y * size, size, time, seed, prop.fire.hot, near);
+    else if (prop.glow) light(c, prop.glow.color, x + prop.glow.x * size, base + prop.glow.y * size, prop.glow.r * size * (1 + near * .25), .3 + near * .34 + breath * .05);
+    // Just behind the hero the prop lets go of a little light: spores, sparks, crystal dust.
+    if (!reduced && passed > 6 && passed < 190 && (prop.glow || prop.fire)) {
+      const origin = prop.glow ?? { x: 0, y: -40 };
+      burst(c, n * 9.7 + w.room * 3.1, (passed - 6) / 150, x + origin.x * size + Math.sin(time * 2 + n) * 2, base + origin.y * size, { n: 7, speed: 46, angle: -Math.PI / 2, spread: 2.6, gravity: -26, life: 1.2, size: 3, colors: SPARK[w.biome], shape: 'star', drag: 1.1, alpha: .9 }, size);
     }
-    c.globalAlpha = 1; light(c, '#ffac4d', 0, -50, 62, .5 + flick); light(c, '#ff9a3c', 0, 4, 46, .22 + flick);
-  } else if (biome === 'spore') {
-    for (let n = 0; n < 3; n++) {
-      const dx = (n - 1) * 13, tall = 15 + hash(seed * 9 + n) * 16, cap = 8 + hash(seed * 5 + n) * 5;
-      c.strokeStyle = '#d9f5c8'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(dx, 0); c.lineTo(dx + 1, -tall); c.stroke();
-      const g = c.createLinearGradient(0, -tall - cap, 0, -tall + 3); g.addColorStop(0, '#3fae63'); g.addColorStop(1, '#c9ffb0');
-      c.fillStyle = g; c.beginPath(); c.moveTo(dx - cap, -tall + 2); c.quadraticCurveTo(dx, -tall - cap * 1.5, dx + cap + 2, -tall + 2); c.quadraticCurveTo(dx, -tall - 2, dx - cap, -tall + 2); c.fill();
-    }
-    light(c, '#9dff8a', 0, -22, 52, .42 + flick); light(c, '#9dff8a', 0, 4, 40, .18);
-  } else {
-    for (let n = 0; n < 4; n++) {
-      const k = hash(seed * 13 + n), dx = (n - 1.5) * 10, w = 5 + k * 5, top = 18 + k * 30, lean = (n - 1.5) * 5;
-      const g = c.createLinearGradient(0, -top, 0, 0); g.addColorStop(0, '#f4fdff'); g.addColorStop(.4, theme); g.addColorStop(1, biome === 'astral' ? '#2b1c63' : '#0d3a5c');
-      c.fillStyle = g; c.beginPath(); c.moveTo(dx - w, 0); c.lineTo(dx - w * .5 + lean, -top * .8); c.lineTo(dx + lean, -top); c.lineTo(dx + w * .6 + lean, -top * .75); c.lineTo(dx + w, 0); c.fill();
-      c.strokeStyle = '#ffffffaa'; c.lineWidth = .7; c.beginPath(); c.moveTo(dx + lean, -top); c.lineTo(dx, 0); c.stroke();
-    }
-    light(c, theme, 0, -20, 58, .42 + flick); light(c, theme, 0, 4, 44, .2);
   }
-  c.restore();
+  // Each stride leaves a fading ring on the wet stone: the cave registers the party's steps.
+  if (!reduced && w.pose === 'run') {
+    const { floor } = stageLayout(h), stride = (w.distance / 46) % 1;
+    c.strokeStyle = theme.color; c.lineWidth = 1.4 * (1 - stride); c.globalAlpha = (1 - stride) * .55;
+    c.beginPath(); c.ellipse(w.heroX - cam - 10 - stride * 46, floor + 3, (8 + stride * 30) * scale, (2 + stride * 6) * scale, 0, 0, 7); c.stroke(); c.globalAlpha = 1;
+  }
+}
+/** Landmarks in the middle distance (depth .5): a district's own architecture and growth. */
+function landmarks(c: Ctx, w: World, h: number, time: number) {
+  const { horizon } = stageLayout(h), pieces = sceneryKit(w.biome).mid; if (!pieces.length) return;
+  const spacing = 290, shift = (w.cameraX - w.roomX) * .5, k = h / 560;
+  for (let n = Math.floor((shift - 160) / spacing); n * spacing - shift < 560; n++) {
+    const seed = hash(n * 3.7 + w.room * 41 + 5); if (seed < .14) continue;
+    const prop = pieces[Math.floor(seed * 89) % pieces.length], size = k * (.92 + hash(n * 7.3 + 1) * .42), x = n * spacing + seed * 110 - shift, base = horizon + h * .014;
+    c.globalAlpha = .9;
+    if (!drawProp(c, prop, x, base, size)) continue;
+    c.globalAlpha = 1;
+    if (prop.fire) flame(c, x + prop.fire.x * size, base + prop.fire.y * size, size * .9, time, seed, prop.fire.hot, 0);
+    if (prop.glow) light(c, prop.glow.color, x + prop.glow.x * size, base + prop.glow.y * size, prop.glow.r * size, .26 + .06 * Math.sin(time * 1.3 + seed * 20));
+  }
+  c.globalAlpha = 1;
 }
 
 /** Everything behind the party: far vault, mid silhouettes, the road and its lights. */
 export function drawBackdrop(c: Ctx, w: World, images: Images, h: number, life: CaveLife, reduced: boolean) {
+  const time = reduced ? 0 : w.time;
   if (w.biome === 'crystal' && drawCrystalBackdrop(c, w, images, h, reduced)) {
-    life.drawBats(c, w, h); return;
+    roadside(c, w, h, time, reduced); life.drawBats(c, w, h); return;
   }
-  const theme = BIOMES[w.biome], { horizon, scale } = stageLayout(h), cam = w.cameraX, time = reduced ? 0 : w.time;
+  const theme = BIOMES[w.biome], { horizon } = stageLayout(h), cam = w.cameraX;
   c.fillStyle = theme.sky; c.fillRect(0, 0, 430, h);
   // Far painted vault, depth .2.
   const wide = images.get(ROOT + 'biomes.webp')!, pw = wide.width / 2, ph = wide.height / 2;
@@ -223,24 +186,31 @@ export function drawBackdrop(c: Ctx, w: World, images: Images, h: number, life: 
     c.drawImage(wide, (theme.art % 2) * pw + 1, Math.floor(theme.art / 2) * ph + 1, pw - 2, ph * .76, 0, 0, farW + 1, farH);
     c.restore();
   });
-  if (w.biome === 'forge') { c.fillStyle = '#8f1d0a2e'; c.fillRect(0, 0, 430, farH); }
+  if (w.biome === 'forge') {
+    // The heart of the rift burns from below: the vault is lit red and breathes.
+    c.fillStyle = '#8f1d0a40'; c.fillRect(0, 0, 430, farH);
+    c.save(); c.globalCompositeOperation = 'lighter'; pool(c, '#ff5a2a', 215, horizon, 330, h * .3, .3 + (reduced ? 0 : .08 * Math.sin(w.time * 1.3))); c.restore();
+  }
+  if (w.biome === 'astral' && !reduced) {
+    // Now and then a star falls behind the broken vault.
+    const cycle = mod(w.time + w.room * 2.3, 6.5);
+    if (cycle < .55) {
+      const k = cycle / .55, sx = 380 - k * 230 - mod((cam - w.roomX) * .1, 120), sy = h * (.06 + k * .17);
+      c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#ffffff'; c.lineCap = 'round'; c.lineWidth = 1.8; c.globalAlpha = Math.sin(k * Math.PI);
+      c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + 46, sy - 22); c.stroke(); light(c, '#e8dcff', sx, sy, 9, 1); c.restore();
+    }
+  }
   // Slow light shafts between the vault and the mid wall.
   if (!reduced) {
     c.save(); c.globalCompositeOperation = 'lighter';
     for (let n = 0; n < 3; n++) {
       const x = mod(n * 190 + 60 - (cam - w.roomX) * .32, 620) - 95, sway = Math.sin(w.time * .35 + n * 2.1) * 12;
-      const g = c.createLinearGradient(x, 0, x - 70, horizon); g.addColorStop(0, theme.color + '30'); g.addColorStop(1, theme.color + '00');
+      const g = c.createLinearGradient(x, 0, x - 70, horizon); g.addColorStop(0, theme.color + '3c'); g.addColorStop(1, theme.color + '00');
       c.fillStyle = g; c.beginPath(); c.moveTo(x - 12 + sway, 0); c.lineTo(x + 30 + sway, 0); c.lineTo(x - 30, horizon + 6); c.lineTo(x - 112, horizon + 6); c.fill();
     }
     c.restore();
   }
-  // Mid set pieces, depth .5, softened by haze.
-  const spacing = 250, midShift = (cam - w.roomX) * .5;
-  for (let n = Math.floor((midShift - 90) / spacing); n * spacing - midShift < 520; n++) {
-    const seed = hash(n * 3.7 + w.room * 41 + 5);
-    if (seed < .12) continue;
-    midPiece(c, w.biome, seed, n * spacing + seed * 90 - midShift, horizon + h * .012, h, time);
-  }
+  landmarks(c, w, h, time);
   const haze = c.createLinearGradient(0, horizon - h * .2, 0, horizon + h * .06);
   haze.addColorStop(0, theme.sky + '00'); haze.addColorStop(.72, theme.sky + '8c'); haze.addColorStop(1, theme.sky + '00');
   c.fillStyle = haze; c.fillRect(0, horizon - h * .2, 430, h * .26);
@@ -252,50 +222,61 @@ export function drawBackdrop(c: Ctx, w: World, images: Images, h: number, life: 
     c.drawImage(strip, 0, 0, 768, 200, 0, 0, gw + 1, gh);
     c.restore();
   });
-  // Road-side lights and the bats above them.
-  const base = horizon + h * .045;
-  for (let n = Math.floor((cam - w.roomX - 80) / 330); n * 330 + w.roomX - cam < 510; n++) {
-    if (n < 0) continue;
-    const seed = hash(n * 5.3 + w.room * 17 + 2), x = w.roomX + 300 + n * 330 + seed * 120;
-    if (w.portalX > w.roomX && Math.abs(x - w.portalX - 56) < 170) continue;
-    roadLight(c, w.biome, seed, x - cam, base, scale, time);
+  if (w.biome === 'forge') {
+    // Molten seams run under the road and pulse like a heartbeat.
+    c.save(); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
+    for (let n = Math.floor((cam - w.roomX - 60) / 210); n * 210 + w.roomX - cam < 500; n++) {
+      const k = hash(n * 4.9 + w.room), x = w.roomX + n * 210 + k * 90 - cam, y = h * (.86 + k * .09), beat = reduced ? .6 : .55 + .45 * Math.sin(w.time * 2.2 + n) ** 2;
+      c.globalAlpha = .5 * beat; c.strokeStyle = '#ff6a2e'; c.lineWidth = 3.2;
+      c.beginPath(); c.moveTo(x - 46, y - 4); c.lineTo(x - 12, y + 3); c.lineTo(x + 10, y - 3); c.lineTo(x + 48, y + 5); c.stroke();
+      c.globalAlpha = .9 * beat; c.strokeStyle = '#ffe2a8'; c.lineWidth = 1; c.stroke();
+      pool(c, '#ff5a2a', x, y, 80, 13, .3 * beat);
+    }
+    c.restore();
   }
+  roadside(c, w, h, time, reduced);
   life.drawBats(c, w, h);
 }
 
+/** Hanging and near pieces that frame the stage (depths 1.2 and 1.4), always clear of the actors. */
+function frame(c: Ctx, w: World, h: number, time: number, reduced: boolean) {
+  const set = sceneryKit(w.biome), { scale } = stageLayout(h), cam = w.cameraX;
+  const drawSet = (list: Prop[], depth: number, gap: number, base: number, size: number, lift: number) => {
+    if (!list.length) return;
+    const shift = (cam - w.roomX) * depth;
+    for (let n = Math.floor((shift - 200) / gap); n * gap - shift < 620; n++) {
+      const seed = hash(n * 7.9 + w.room * 23 + depth * 11); if (seed < .25) continue;
+      const prop = list[Math.floor(seed * 71) % list.length], x = n * gap + seed * 150 - shift, k = size * (.85 + seed * .4);
+      const sway = lift || reduced ? 0 : Math.sin(time * .9 + seed * 20) * .018;
+      if (!drawProp(c, prop, x, base + lift * k, k, sway)) continue;
+      if (prop.glow) light(c, prop.glow.color, x + prop.glow.x * k, base + lift * k + prop.glow.y * k, prop.glow.r * k, .3 + (reduced ? 0 : .08 * Math.sin(time * 1.4 + seed * 9)));
+    }
+  };
+  drawSet(set.hang, 1.2, 400, -4, scale * .82, 0);
+  drawSet(set.near, 1.4, 470, h, scale * 1.5, 46);
+}
 /** Close foreground (depth 1.35) and atmosphere in front of the party. */
 export function drawForeground(c: Ctx, w: World, h: number, life: CaveLife, reduced: boolean, images?: Images) {
-  const theme = BIOMES[w.biome], cam = w.cameraX, { horizon, floor } = stageLayout(h);
+  const theme = BIOMES[w.biome], cam = w.cameraX, { horizon, floor } = stageLayout(h), time = reduced ? 0 : w.time;
   life.drawMotes(c, w);
-  if (w.biome === 'crystal' && images && drawCrystalForeground(c, w, images, h, reduced)) return;
-  // Drifting motes at two depths.
-  for (let i = 0; i < (reduced ? 8 : 26); i++) {
-    const depth = i % 3 === 0 ? 1.25 : .62, k = hash(i * 9.1);
-    const x = mod(i * 67.3 - (cam - w.roomX) * depth + Math.sin(w.time * .4 + i) * 14, 470) - 20;
-    const py = 30 + mod(i * 43.1, Math.max(60, floor - 40));
-    c.globalAlpha = (.14 + (Math.sin((reduced ? 0 : w.time * 2) + i) + 1) * .16) * (depth > 1 ? 1 : .7); c.fillStyle = theme.color;
-    if (w.biome === 'astral') { c.fillRect(x - 2, py, 5, 1); c.fillRect(x, py - 2, 1, 5); }
-    else if (w.biome === 'ember' || w.biome === 'forge') c.fillRect(x, py - mod(w.time * (i % 3 + 8), 35), 1.5, 4);
-    else { c.beginPath(); c.arc(x, py + Math.sin(w.time * .7 + i) * 4, w.biome === 'spore' ? 1.4 + k * 1.6 : i % 3 === 0 ? 2 : 1, 0, 7); c.fill(); }
-  }
-  c.globalAlpha = 1;
-  // Near rocks and stalactites slide past faster than the road.
-  const near = (cam - w.roomX) * 1.35, gap = 360;
-  for (let n = Math.floor((near - 140) / gap); n * gap - near < 560; n++) {
-    const seed = hash(n * 7.9 + w.room * 23 + 1), x = n * gap + seed * 150 - near;
-    c.fillStyle = '#05080dee';
-    if (seed > .34) {
-      const tall = h * (.07 + seed * .09), wide = 30 + seed * 34;
-      c.beginPath(); c.moveTo(x - wide, -2); c.lineTo(x - wide * .5, tall * .55); c.lineTo(x - wide * .2, tall * .3); c.lineTo(x + wide * .05, tall); c.lineTo(x + wide * .3, tall * .36); c.lineTo(x + wide * .62, tall * .62); c.lineTo(x + wide, -2); c.fill();
-      c.strokeStyle = theme.color + '55'; c.lineWidth = 1; c.beginPath(); c.moveTo(x + wide * .05, tall); c.lineTo(x + wide * .3, tall * .36); c.lineTo(x + wide * .62, tall * .62); c.stroke();
+  const crystal = w.biome === 'crystal' && !!images && drawCrystalForeground(c, w, images, h, reduced);
+  if (!crystal) {
+    // The air of each district: fireflies, embers, falling star dust.
+    const tones = SPARK[w.biome];
+    for (let i = 0; i < (reduced ? 8 : 24); i++) {
+      const depth = i % 3 === 0 ? 1.25 : .62, k = hash(i * 9.1), band = Math.max(60, floor - 40);
+      const x = mod(i * 67.3 - (cam - w.roomX) * depth + Math.sin(time * .4 + i) * 14, 470) - 20;
+      let py = 30 + mod(i * 43.1, band);
+      const twinkle = (.3 + (Math.sin(time * 2 + i) + 1) * .3) * (depth > 1 ? 1 : .7);
+      if (w.biome === 'ember' || w.biome === 'forge') { py = 30 + mod(i * 43.1 - time * (w.biome === 'forge' ? 26 : 14) * (.6 + k), band); light(c, tones[i % 3], x, py, (2.2 + k * 2.6) * (depth > 1 ? 1.4 : 1), twinkle); }
+      else if (w.biome === 'spore') light(c, tones[i % 3], x + Math.sin(time * 1.3 + i * 2) * 9, py + Math.cos(time * .9 + i) * 7, 3 + k * 3.2, twinkle * (.6 + .4 * Math.sin(time * 3.1 + i * 5) ** 2));
+      else { c.globalAlpha = twinkle; c.fillStyle = tones[i % 3]; starPath(c, x, py + Math.sin(time * .7 + i) * 4, 1.6 + k * 2.6, .6, 4, time * .6 + i); c.fill(); c.globalAlpha = 1; }
     }
-    if (seed < .7) {
-      const rx = x + 190, tall = h * (.035 + seed * .04), wide = 46 + seed * 50;
-      c.beginPath(); c.moveTo(rx - wide, h + 2); c.lineTo(rx - wide * .7, h - tall * .7); c.lineTo(rx - wide * .2, h - tall); c.lineTo(rx + wide * .35, h - tall * .8); c.lineTo(rx + wide, h + 2); c.fill();
-      c.strokeStyle = theme.color + '44'; c.lineWidth = 1; c.beginPath(); c.moveTo(rx - wide * .7, h - tall * .7); c.lineTo(rx - wide * .2, h - tall); c.lineTo(rx + wide * .35, h - tall * .8); c.stroke();
-      light(c, theme.color, rx, h - tall, 26, .22);
-    }
+    // Low mist rolls across the road in the district's own light.
+    if (!reduced) for (let i = 0; i < 2; i++) pool(c, theme.color, mod(i * 300 - (cam - w.roomX) * .8 + w.time * 5, 760) - 160, h * .93, 190, h * .05, .11);
   }
+  frame(c, w, h, time, reduced);
+  if (w.biome === 'forge') { c.save(); c.globalCompositeOperation = 'lighter'; pool(c, '#ff4a1c', 215, h + 6, 330, h * .13, .34 + (reduced ? 0 : .1 * Math.sin(w.time * 1.9))); c.restore(); }
   // Soft frame: keeps the eye on the road and seats the scene into the wooden HUD.
   const top = c.createLinearGradient(0, 0, 0, h * .2); top.addColorStop(0, '#04060bb0'); top.addColorStop(1, '#04060b00');
   c.fillStyle = top; c.fillRect(0, 0, 430, h * .2);
@@ -303,8 +284,10 @@ export function drawForeground(c: Ctx, w: World, h: number, life: CaveLife, redu
   c.fillStyle = low; c.fillRect(0, h * .9, 430, h * .1);
   const boss = w.enemies.find(e => e.species === 'boss' && e.hp > 0);
   if (boss && boss.worldX - cam < 520) {
+    // The hall dims around the master of the floor; the dark deepens with every phase.
+    const arrive = w.phase === 'BOSS' ? clamp01((w.time - w.phaseAt) / 1.2) : 0;
     const shade = c.createRadialGradient(215, horizon, 90, 215, horizon, 330);
-    shade.addColorStop(0, '#22133f00'); shade.addColorStop(1, `rgba(46,14,58,${.1 + w.bossPhase * .06})`);
+    shade.addColorStop(0, '#22133f00'); shade.addColorStop(1, `rgba(30,8,40,${(.16 + w.bossPhase * .1) * (.4 + .6 * arrive)})`);
     c.fillStyle = shade; c.fillRect(0, 0, 430, h);
   }
 }

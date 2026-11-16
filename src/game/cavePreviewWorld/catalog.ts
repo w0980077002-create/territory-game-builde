@@ -14,6 +14,8 @@ export const BIOMES: Record<Biome, { name: string; color: string; sky: string; e
   astral: { name: 'Звёздный склеп', color: '#c6a0ff', sky: '#1c1637', enemies: ['moth', 'shardling', 'moth'], art: 3 },
   forge: { name: 'Сердце разлома', color: '#ff805f', sky: '#30141b', enemies: ['eel', 'shardling', 'eel'], art: 2 },
 };
+/** English display names of the same five districts (presentation only). */
+export const BIOME_EN: Record<Biome, string> = { crystal: 'Crystal rift', spore: 'Sunless garden', ember: 'Amber depths', astral: 'Star crypt', forge: 'Heart of the rift' };
 export const PORTALS: { biome: Biome; title: string; hint: string; symbol: string }[][] = [
   [{ biome: 'spore', title: 'Сад без солнца', hint: 'Споровые паруса · дальние атаки', symbol: '✥' }, { biome: 'ember', title: 'Янтарные недра', hint: 'Глубинники · крепкая броня', symbol: '◆' }],
   [{ biome: 'astral', title: 'Звёздный склеп', hint: 'Паруса и Собор Бездны', symbol: '✧' }, { biome: 'forge', title: 'Сердце разлома', hint: 'Глубинники и Собор Бездны', symbol: '♜' }],
