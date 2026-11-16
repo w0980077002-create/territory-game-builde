@@ -15,6 +15,7 @@ on:
       - 'public/assets/territory/cave-expedition/**'
       - 'scripts/*cave-expedition*'
       - 'scripts/*crystal-rift*'
+      - 'scripts/*cave-portals*'
       - 'scripts/*cave-floor*'
       - 'scripts/*cave-cloud*'
       - 'scripts/fixtures/cave-client-cloud.ts'
@@ -58,6 +59,7 @@ jobs:
           python scripts/check-cave-floor-browser.py
           python scripts/check-cave-expedition-performance.py
           python scripts/check-crystal-rift-browser.py
+          python scripts/check-cave-portals-browser.py
           node scripts/build-cave-expedition-preview.mjs --cloud-test
           python scripts/check-cave-cloud-browser.py
           node scripts/build-journey-preview.mjs

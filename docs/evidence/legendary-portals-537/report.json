@@ -1,0 +1,41 @@
+[
+  {
+    "width": 320,
+    "height": 568,
+    "three_touch_targets": true,
+    "slots": 13,
+    "pause_pixels": "exact",
+    "entry_to_fight": "PASS"
+  },
+  {
+    "width": 360,
+    "height": 640,
+    "three_touch_targets": true,
+    "slots": 13,
+    "pause_pixels": "exact",
+    "entry_to_fight": "PASS"
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "three_touch_targets": true,
+    "slots": 13,
+    "pause_pixels": "exact",
+    "entry_to_fight": "PASS"
+  },
+  {
+    "width": 430,
+    "height": 740,
+    "three_touch_targets": true,
+    "slots": 13,
+    "pause_pixels": "exact",
+    "entry_to_fight": "PASS"
+  },
+  {
+    "lobby_motion": "PASS",
+    "lobby_pause": "exact",
+    "reduced_motion": "static",
+    "biomes": 5,
+    "atlas_failure": "playable"
+  }
+]

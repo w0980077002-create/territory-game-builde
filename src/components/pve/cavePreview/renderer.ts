@@ -2,6 +2,7 @@ import { portalsFor, portalOffset, DIFFICULTY } from '../../../game/cavePreviewW
 import { drawHero, HERO_PARTS } from './heroRig';
 import { CaveLife, drawBackdrop, drawForeground, light, stageLayout } from './world';
 import { CRYSTAL_ASSETS, warmCrystalEnvironment } from './crystalEnvironment';
+import { drawPortal, PORTAL_ART, warmPortals, portalFocused, focusPortal } from './portals';
 import { BIOMES, CREATURES, APPROVED_CAVE_ART, caveActorArt } from '../../../game/cavePreviewWorld/catalog';
 import type { World, Pose } from '../../../game/cavePreviewWorld/engine';
 export const ASSET_ROOT = 'assets/territory/';
@@ -9,7 +10,7 @@ export const PARTY = ['heroes/male_viking', 'followers/northern_warrior', 'follo
 export const POSES = ['idle', 'attack', 'hit', 'block', 'dodge', 'death'] as const;
 /** Canvas art plus every HUD picture, so the portable build embeds one complete set. */
 export function assetPaths() {
-  return [...APPROVED_CAVE_ART.map(id => `cave-expedition/approved/${id}.webp`), 'cave-expedition/creatures.webp', 'cave-expedition/chambers.webp', 'cave-expedition/biomes.webp', 'cave-expedition/party-run.webp', 'cave-expedition/crystal-chamber.webp', 'ui/wooden-plaque.webp', ...CRYSTAL_ASSETS.map(id => `cave-expedition/${id}`),
+  return [...APPROVED_CAVE_ART.map(id => `cave-expedition/approved/${id}.webp`), 'cave-expedition/creatures.webp', 'cave-expedition/chambers.webp', 'cave-expedition/biomes.webp', 'cave-expedition/party-run.webp', 'cave-expedition/crystal-chamber.webp', 'ui/wooden-plaque.webp', PORTAL_ART.slice(ASSET_ROOT.length), ...CRYSTAL_ASSETS.map(id => `cave-expedition/${id}`),
     ...['astral','ember'].map(id => `cave/playtest/wings-${id}.svg`),
     ...['potion-mana', 'potion-fire', 'potion-green'].map(id => `ui/items/${id}.webp`),
     ...HERO_PARTS.map(part => `combat2d/male_viking/${part}.webp`),
@@ -23,10 +24,10 @@ export async function loadImages(resolve: (s: string) => string): Promise<Images
   await Promise.all(assetPaths().map(path => new Promise<void>((ok, fail) => {
     const img = new Image(); img.onload = () => { images.set(path, img); ok(); };
     // New scenery is optional: a failed decorative download must not block the cave.
-    img.onerror = () => CRYSTAL_ASSETS.some(id => path.endsWith('/' + id)) ? ok() : fail(new Error(`Не удалось загрузить ${path}`));
+    img.onerror = () => (path === PORTAL_ART || CRYSTAL_ASSETS.some(id => path.endsWith('/' + id))) ? ok() : fail(new Error(`Не удалось загрузить ${path}`));
     img.src = resolve(path);
   })));
-  warmCrystalEnvironment(images);
+  warmCrystalEnvironment(images); warmPortals(images);
   // Generated atlases carry faint alpha haze around the figures; over the dark road it reads as a box.
   for (const path of [ASSET_ROOT + 'cave-expedition/creatures.webp', ASSET_ROOT + 'cave-expedition/party-run.webp']) {
     const img = images.get(path)!, clean = document.createElement('canvas'); clean.width = img.width; clean.height = img.height;
@@ -45,16 +46,6 @@ export async function loadImages(resolve: (s: string) => string): Promise<Images
 }
 function text(c: CanvasRenderingContext2D, value: string, x: number, y: number, size = 16, color = '#fff2c6') {
   c.fillStyle = color; c.font = `bold ${size}px system-ui`; c.textAlign = 'center'; c.shadowColor = '#050a12'; c.shadowBlur = 4; c.fillText(value, x, y); c.shadowBlur = 0;
-}
-export function portal(c: CanvasRenderingContext2D, x: number, y: number, color: string, t: number, size = 1) {
-  c.save(); c.translate(x, y); c.scale(size, size);
-  c.shadowColor = color; c.shadowBlur = 18;
-  const glow = c.createRadialGradient(0, -53, 5, 0, -53, 58); glow.addColorStop(0, '#f5edff'); glow.addColorStop(.2, color); glow.addColorStop(1, '#080c2180');
-  c.fillStyle = glow; c.beginPath(); c.ellipse(0, -50, 34, 57, 0, 0, Math.PI * 2); c.fill();
-  c.shadowBlur = 0; c.strokeStyle = '#302d38'; c.lineWidth = 13; c.beginPath(); c.ellipse(0, -50, 39, 61, 0, Math.PI, Math.PI * 2); c.lineTo(39, 0); c.moveTo(-39, -50); c.lineTo(-39, 0); c.stroke();
-  c.strokeStyle = '#b99662'; c.lineWidth = 3; c.beginPath(); c.ellipse(0, -50, 39, 61, 0, Math.PI, Math.PI * 2); c.stroke();
-  for (let i = 0; i < 9; i++) { const a = t * 1.3 + i * .7; c.fillStyle = color; c.fillRect(Math.cos(a) * 28 - 1, -50 + Math.sin(a) * 47, 3, 5); }
-  c.restore();
 }
 interface Bounds { x: number; y: number; width: number; height: number }
 const bounds = new WeakMap<HTMLImageElement, Map<string, Bounds>>();
@@ -101,7 +92,7 @@ function party(c: CanvasRenderingContext2D, images: Images, index: number, pose:
 const life = new CaveLife();
 /** World X of the spark waiting on the first stretch of every chamber. */
 export const runeX = (w: World) => w.roomX + 455;
-export function render(c: CanvasRenderingContext2D, w: World, images: Images, height: number, en = false, reduced = false) {
+export function render(c: CanvasRenderingContext2D, w: World, images: Images, height: number, en = false, reduced = false, lobbyTime = 0) {
   const h = height; const { floor, scale: actorScale } = stageLayout(h); const theme = BIOMES[w.biome];
   c.clearRect(0, 0, 430, h);
   life.step(w, h, reduced);
@@ -110,7 +101,8 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
   c.save(); c.translate(Math.sin(w.time * 71) * 5 * shake, Math.cos(w.time * 53) * 3.5 * shake);
   drawBackdrop(c, w, images, h, life, reduced);
   // The arch the party came through stays behind at its world address.
-  if (w.phase !== 'LOBBY') { c.save(); c.globalAlpha = .9; portal(c, w.roomX + 96 - w.cameraX, floor - 22 * actorScale, theme.color, w.time, .86 * actorScale); c.restore(); }
+  if (w.phase !== 'PORTAL_CHOICE') focusPortal(-1);
+  if (w.phase !== 'LOBBY') { c.save(); c.globalAlpha = .85; drawPortal(c, images, w.roomX + 96 - w.cameraX, floor - 22 * actorScale, theme.color, w.time, .86 * actorScale, {risk:1, biome:w.biome, reduced}); c.restore(); }
   if (w.phase === 'RUN_RIGHT' && !w.runeCollected && w.heroX < runeX(w) + 60) {
     const x = runeX(w) - w.cameraX, y = floor - 96 * actorScale + Math.sin(w.time * 2.6) * 5;
     light(c, '#8fe9ff', x, y, 34, .7); light(c, '#8fe9ff', x, floor, 30, .25);
@@ -118,13 +110,14 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
     c.beginPath(); for (let i = 0; i < 8; i++) { const r = i % 2 ? 4 : 12, a = i * Math.PI / 4; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.fill(); c.restore();
   }
   const isPortal = w.portalX > w.roomX && w.portalX - w.cameraX < 620;
-  if (w.phase === 'LOBBY') portal(c, 318, floor - 22 * actorScale, '#a485ff', performance.now() / 1000, 1.25 * actorScale);
+  if (w.phase === 'LOBBY') drawPortal(c, images, 318, floor - 22 * actorScale, '#a485ff', lobbyTime, 1.25 * actorScale, {risk:3, biome:w.biome, available:true, reduced});
   if (isPortal) {
     portalsFor(w).forEach((p, i) => {
       const x = w.portalX + portalOffset(w, i) - w.cameraX;
       c.save(); c.globalAlpha = w.selected !== null && w.selected !== i ? .38 : 1;
-      portal(c, x, floor - 14 * actorScale, (w.rules === 2 ? DIFFICULTY[i].color : BIOMES[p.biome].color), w.time, (w.selected === i ? 1.08 : .98) * actorScale);
-      text(c, w.rules === 2 ? '★'.repeat(i + 1) : p.symbol, x, floor - 150 * actorScale, 22, (w.rules === 2 ? DIFFICULTY[i].color : BIOMES[p.biome].color)); c.restore();
+      const age = w.selected === i ? (w.phase === 'NEXT_ROOM' ? 1.2 : 0) + w.time - w.phaseAt : null;
+      drawPortal(c, images, x, floor - 14 * actorScale, (w.rules === 2 ? DIFFICULTY[i].color : BIOMES[p.biome].color), w.time, .98 * actorScale, {risk:(w.rules === 2 ? i+1 : 2) as 1|2|3, biome:p.biome, available:w.phase==='PORTAL_CHOICE', focused:portalFocused(i), selectedAge:age, reduced});
+      text(c, w.rules === 2 ? '★'.repeat(i + 1) : p.symbol, x, floor - 177 * actorScale, 22, (w.rules === 2 ? DIFFICULTY[i].color : BIOMES[p.biome].color)); c.restore();
     });
   }
   const heroX = w.heroX - w.cameraX;

@@ -1,0 +1,26 @@
+[
+  {
+    "label": "before",
+    "scene": "three portals",
+    "cpu_throttle": 4,
+    "dpr": 2,
+    "logical_cpu": 2,
+    "frames": 124,
+    "median_ms": 50,
+    "p95_ms": 66.7,
+    "heap_bytes": 7746148,
+    "real_android": false
+  },
+  {
+    "label": "after",
+    "scene": "three portals",
+    "cpu_throttle": 4,
+    "dpr": 2,
+    "logical_cpu": 2,
+    "frames": 113,
+    "median_ms": 50,
+    "p95_ms": 66.7,
+    "heap_bytes": 6946660,
+    "real_android": false
+  }
+]
