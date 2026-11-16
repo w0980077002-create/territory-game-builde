@@ -392,3 +392,12 @@ assert.match(forgeUiSource, /data-testid="anti-level-preview"/,
 
 console.log('Balance checks passed: canonical item data, legacy normalization, old admin-level grants, idempotency, unknown-item safety, and a chapter-58 one-shot guard.');
 fs.rmSync(out, { recursive: true, force: true });
+
+// #366: local save migration/cap must preserve server-owned mirrors verbatim.
+const certifiedStage8={id:'stage8_70000000-0000-4000-8000-000000000061',
+  name:'Героический меч',slot:'weapon',rarity:'epic',level:61,attack:999,
+  baseLevel:5,upgradeCount:56,baseStats:{attack:99}};
+
+assert.deepEqual(balance.normalizeEquipmentV4(certifiedStage8),certifiedStage8);
+const oldStage8Save={balanceVersion:0,player:{level:1,equipped:{}},inventory:[{id:certifiedStage8.id,equipment:certifiedStage8}]};
+assert.deepEqual(balance.migrateGameStateBalance(oldStage8Save).inventory,oldStage8Save.inventory);

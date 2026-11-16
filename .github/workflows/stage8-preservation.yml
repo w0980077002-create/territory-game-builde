@@ -1,0 +1,34 @@
+name: Stage8 preservation PostgreSQL 17
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-gear-contract:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-only
+          POSTGRES_DB: territory_stage8_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d territory_stage8_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run test:stage8:preservation
+      - run: npm run test:stage8:pg17
+        env:
+          STAGE8_TEST_DATABASE_URL: postgresql://postgres:isolated-only@127.0.0.1:5432/territory_stage8_ci

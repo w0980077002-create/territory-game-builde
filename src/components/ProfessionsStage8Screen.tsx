@@ -56,12 +56,15 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
         const latest=useGame.get();
         const equippedIds=new Set(Object.values(latest.player.equipped).flatMap((item)=>item?[item.id]:[]));
         useGame.set({...latest,inventory:mirrorStage8Items(
-          mirrorCraftResources(latest.inventory,next.resources),owned,equippedIds),
+          mirrorCraftResources(latest.inventory,next.resources),owned,equippedIds,Object.values(latest.player.equipped).flatMap(eq=>eq?[eq]:[])),
           professions:{...(latest.professions??{active:null,masteryLevel:1,masteryXp:0,lastGatherAt:0}),
             active:next.profession,masteryLevel:next.masteryLevel,masteryXp:next.masteryXp}});
       }
       setQuality(previews);setQualityMode(mode);setStatus(next);setPending(waiting);setPurchasePending(purchaseWaiting);
-    }catch{setQuality(null);setQualityMode('unavailable');setStatus(null);setError(language==='en'?'Verified crafting is unavailable. Check saved pending operations before attempting another.':'Нет связи с защищённым ремеслом. Сначала проверь сохранённую операцию — повторную пока не начинай.');}
+    }catch(cause){setQuality(null);setQualityMode('unavailable');setStatus(null);setError(
+      cause instanceof Error && cause.message==='stage8_reconciliation_required'
+        ? (language==='en'?'Saved equipment conflicts with the verified item. Changes stopped for review.':'Сохранённая вещь расходится с подтверждённой. Изменения остановлены для проверки.')
+        : (language==='en'?'Verified crafting is unavailable. Check saved pending operations before attempting another.':'Нет связи с защищённым ремеслом. Сначала проверь сохранённую операцию — повторную пока не начинай.'));}
     finally{setLoading(false);}
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- once-on-mount server status fetch
@@ -96,7 +99,7 @@ export function ProfessionsStage8Screen({onNavigate}:{onNavigate?:(screen:'map'|
       const latest=useGame.get();
       const equippedIds=new Set(Object.values(latest.player.equipped).flatMap((item)=>item?[item.id]:[]));
       useGame.set({...latest,
-        inventory:mirrorStage8Items(mirrorCraftResources(latest.inventory,verified.resources),owned,equippedIds),
+        inventory:mirrorStage8Items(mirrorCraftResources(latest.inventory,verified.resources),owned,equippedIds,Object.values(latest.player.equipped).flatMap(eq=>eq?[eq]:[])),
         professions:{...(latest.professions??{active:null,masteryLevel:1,masteryXp:0,lastGatherAt:0}),
           active:verified.profession,masteryLevel:verified.masteryLevel,masteryXp:verified.masteryXp},
       });

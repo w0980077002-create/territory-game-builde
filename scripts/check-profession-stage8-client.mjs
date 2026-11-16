@@ -236,3 +236,16 @@ assert.doesNotMatch(screen,/territory_profession_unlock/,'Stage8 must never use 
 assert.doesNotMatch(screen,/craftItem\(|addMasteryXp\(/,'Stage8 must not grant local rewards');
 assert.doesNotMatch(code,/craftItem\(|addMasteryXp\(/,'Stage8 API must not grant local rewards');
 console.log('Stage8 client PASS: server-only status, strict version, XP cap, item/practice receipts, atomic purchase and reload-safe server inventory, persisted UUID retry, account isolation, owner-enabled UI with emergency disable.');
+
+// #366: check bag AND equipped evidence before any mirror replacement.
+const certified={itemId:uuid,recipeId:itemId,expiresAt:null,output:{
+  type:'equipment',name:'Test',rarity:'rare',equipment:{slot:'weapon',level:5,upgradeCount:0,attack:20}}};
+const upgraded={id:`stage8_${uuid}`,qty:1,type:'equipment',equipment:{id:`stage8_${uuid}`,level:61,upgradeCount:56}};
+assert.throws(()=>api.mirrorStage8Items([upgraded],[certified]),/reconciliation_required/);
+assert.throws(()=>api.mirrorStage8Items([],[certified],new Set([upgraded.id]),[upgraded.equipment]),/reconciliation_required/);
+assert.equal(upgraded.equipment.level,61,'Failure preserves original evidence');
+const legacyWrapper={...upgraded,id:'inv_old_wrapper'};
+assert.throws(()=>api.mirrorStage8Items([legacyWrapper],[certified]),/reconciliation_required/);
+const restored=api.mirrorStage8Items([{...legacyWrapper,equipment:{...legacyWrapper.equipment,level:1,upgradeCount:0}}],[certified]);
+assert.equal(restored.length,1);assert.equal(restored[0].id,upgraded.id);
+assert.deepEqual(api.mirrorStage8Items(restored,[certified]),restored);

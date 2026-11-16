@@ -54,7 +54,9 @@ DECLARE
   v_chance numeric;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'stage8_forge_not_authenticated'; END IF;
-  IF p_item IS NULL OR p_operation IS NULL OR p_expected_level NOT BETWEEN 1 AND 499
+  IF public.territory_stage8_forge_ready_v1() IS DISTINCT FROM true
+    THEN RAISE EXCEPTION 'stage8_forge_save_guard_inactive'; END IF;
+  IF p_item IS NULL OR p_operation IS NULL OR p_expected_level IS NULL OR p_expected_level NOT BETWEEN 1 AND 499
   THEN RAISE EXCEPTION 'stage8_forge_bad_request'; END IF;
 
   -- Stable lock order: owner -> operation -> item, across retries/devices.
@@ -79,7 +81,7 @@ BEGIN
   THEN RAISE EXCEPTION 'stage8_forge_item_not_owned'; END IF;
   v_gear:=v_item.item_output->'equipment';
   v_id:='stage8_'||p_item::text;
-  IF (v_gear->>'level') !~ '^[1-9][0-9]{0,2}$'
+  IF (v_gear->>'level') IS NULL OR (v_gear->>'level') !~ '^[1-9][0-9]{0,2}$'
   THEN RAISE EXCEPTION 'stage8_forge_bad_registry'; END IF;
   v_level:=(v_gear->>'level')::integer;
   IF pg_catalog.jsonb_typeof(v_gear->'baseStats')='object'
@@ -120,10 +122,10 @@ BEGIN
   THEN RAISE EXCEPTION 'stage8_forge_invalid_gear'; END IF;
 
   v_state:=v_player.game_state;
-  IF pg_catalog.jsonb_typeof(v_state->'inventory')<>'array'
-    OR pg_catalog.jsonb_typeof(v_state#>'{player,equipped}')<>'object'
-    OR (v_state#>>'{player,gold}')::integer<>v_player.gold
-    OR (v_state->>'forgeMaterials')::integer<>v_player.forge_materials
+  IF pg_catalog.jsonb_typeof(v_state->'inventory') IS DISTINCT FROM 'array'
+    OR pg_catalog.jsonb_typeof(v_state#>'{player,equipped}') IS DISTINCT FROM 'object'
+    OR (v_state#>>'{player,gold}')::integer IS DISTINCT FROM v_player.gold
+    OR (v_state->>'forgeMaterials')::integer IS DISTINCT FROM v_player.forge_materials
   THEN RAISE EXCEPTION 'stage8_forge_save_unavailable'; END IF;
   SELECT pg_catalog.count(*),pg_catalog.min(x.ordinality)::integer-1
   INTO v_found,v_position
@@ -152,7 +154,8 @@ BEGIN
 
   v_cost_gold:=50+v_level*30;
   v_cost_mat:=1+v_level/3;
-  IF v_player.gold<v_cost_gold OR v_player.forge_materials<v_cost_mat
+  IF v_player.gold IS NULL OR v_player.forge_materials IS NULL
+    OR v_player.gold<v_cost_gold OR v_player.forge_materials<v_cost_mat
   THEN RAISE EXCEPTION 'stage8_forge_insufficient_resources'; END IF;
   v_gold:=v_player.gold-v_cost_gold;
   v_mat:=v_player.forge_materials-v_cost_mat;
@@ -199,9 +202,8 @@ BEGIN
     IF pg_catalog.jsonb_typeof(v_base->'critChance')='number' THEN
       v_after:=pg_catalog.jsonb_set(v_after,'{critChance}',v_base->'critChance',true);
     END IF;
-    -- Prevent silent cap/reset of crafted quality on the existing save trigger.
-    IF public.territory_normalize_gear_v4(v_after) IS DISTINCT FROM v_after
-    THEN RAISE EXCEPTION 'stage8_forge_quality_cap_conflict'; END IF;
+    -- Registry baseStats are trusted server state. The save guard preserves
+    -- their curve; legacy shop ceilings must not rewrite certified quality.
     v_output:=pg_catalog.jsonb_set(v_item.item_output,'{equipment}',v_after,true);
     IF pg_catalog.jsonb_typeof(v_item.item_output->'description')='string' THEN
       v_output:=pg_catalog.jsonb_set(v_output,'{description}',
@@ -226,37 +228,28 @@ BEGIN
         ARRAY['player','equipped',v_equipped_key],v_after,false);
     END IF;
   ELSE
-    v_after:=v_gear||pg_catalog.jsonb_build_object('id',v_id);
+    -- Failed rolls retain the exact registry record, including legacy gear
+    -- whose immutable baseline is established only on a successful upgrade.
+    v_after:=(v_item.item_output->'equipment')||pg_catalog.jsonb_build_object('id',v_id);
   END IF;
   v_state:=pg_catalog.jsonb_set(v_state,'{player,gold}',pg_catalog.to_jsonb(v_gold),true);
   v_state:=pg_catalog.jsonb_set(v_state,'{forgeMaterials}',pg_catalog.to_jsonb(v_mat),true);
   UPDATE public.players SET gold=v_gold,forge_materials=v_mat,game_state=v_state
     WHERE id=v_uid RETURNING * INTO v_player;
 
-  IF v_player.gold<>v_gold OR v_player.forge_materials<>v_mat
-    OR (v_player.game_state#>>'{player,gold}')::integer<>v_gold
-    OR (v_player.game_state->>'forgeMaterials')::integer<>v_mat
+  IF v_player.gold IS DISTINCT FROM v_gold OR v_player.forge_materials IS DISTINCT FROM v_mat
+    OR (v_player.game_state#>>'{player,gold}')::integer IS DISTINCT FROM v_gold
+    OR (v_player.game_state->>'forgeMaterials')::integer IS DISTINCT FROM v_mat
   THEN RAISE EXCEPTION 'stage8_forge_save_not_committed'; END IF;
-  IF v_success THEN
-    IF v_found=1 THEN
-      v_mirror:=v_player.game_state#>ARRAY['inventory',v_position::text,'equipment'];
-    ELSE
-      v_mirror:=v_player.game_state#>ARRAY['player','equipped',v_equipped_key];
-    END IF;
-    IF (v_mirror->>'level')::integer<>v_level+1
-      OR (v_mirror->>'upgradeCount')::integer<>v_steps
-      OR (v_mirror->>'baseLevel') IS DISTINCT FROM (v_after->>'baseLevel')
-      OR (v_mirror->>'slot') IS DISTINCT FROM (v_after->>'slot')
-      OR (v_mirror->>'rarity') IS DISTINCT FROM (v_after->>'rarity')
-      OR (v_mirror->'baseStats') IS DISTINCT FROM (v_after->'baseStats')
-      OR (v_mirror->>'qualityVersion') IS DISTINCT FROM (v_after->>'qualityVersion')
-      OR (v_mirror->>'masteryQualityPct') IS DISTINCT FROM (v_after->>'masteryQualityPct')
-      OR (v_mirror->>'attack') IS DISTINCT FROM (v_after->>'attack')
-      OR (v_mirror->>'defense') IS DISTINCT FROM (v_after->>'defense')
-      OR (v_mirror->>'hp') IS DISTINCT FROM (v_after->>'hp')
-      OR (v_mirror->>'critChance') IS DISTINCT FROM (v_after->>'critChance')
-    THEN RAISE EXCEPTION 'stage8_forge_result_normalized'; END IF;
+  IF v_found=1 THEN
+    SELECT x.value->'equipment' INTO v_mirror
+      FROM pg_catalog.jsonb_array_elements(v_player.game_state->'inventory') x
+      WHERE x.value->>'id'=v_id;
+  ELSE
+    v_mirror:=v_player.game_state#>ARRAY['player','equipped',v_equipped_key];
   END IF;
+  IF v_mirror IS DISTINCT FROM v_after
+  THEN RAISE EXCEPTION 'stage8_forge_result_normalized'; END IF;
   v_result:=pg_catalog.jsonb_build_object(
     'success',true,'replayed',false,'item_id',p_item,'level_before',v_level,
     'level_after',CASE WHEN v_success THEN v_level+1 ELSE v_level END,
@@ -277,7 +270,14 @@ GRANT EXECUTE ON FUNCTION public.territory_stage8_forge_v1(uuid,integer,uuid)
 CREATE OR REPLACE FUNCTION public.territory_stage8_forge_ready_v1()
 RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path TO 'pg_catalog'
 AS $ready$
-  SELECT auth.uid() IS NOT NULL;
+  SELECT coalesce(auth.uid() IS NOT NULL
+    AND position('territory_private.stage8_preserve_state_v3(NEW.game_state,NEW.level,NEW.id)'
+      IN pg_get_functiondef(to_regprocedure('public.territory_gear_guard_v4()')))>0
+    AND position('territory_private.stage8_verified_gear_v2(p_item,p_player)'
+      IN (SELECT pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+        WHERE n.nspname='territory_private' AND p.proname='owner_cap_item_v1'
+          AND p.pronargs=3 AND p.proargtypes[0]='jsonb'::regtype
+          AND p.proargtypes[1]='integer'::regtype AND p.proargtypes[2]='uuid'::regtype))>0,false);
 $ready$;
 REVOKE ALL ON FUNCTION public.territory_stage8_forge_ready_v1()
   FROM PUBLIC,anon,authenticated;
