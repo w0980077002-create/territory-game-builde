@@ -40,7 +40,7 @@ with sync_playwright() as p:
    page.locator('.cx-native-nav').get_by_role('button',name='Бой',exact=True).tap();assert not page.evaluate('__caveDemo.world.paused')
   page.get_by_role('button',name='Настройки',exact=True).tap();page.locator('.cx-panel').get_by_role('button',name='Благословение',exact=True).tap();assert page.get_by_test_id('cave-blessing-slot').count()==3;page.locator('.cx-native-nav').get_by_role('button',name='Бой',exact=True).tap()
   page.get_by_role('button',name='Настройки',exact=True).tap();page.locator('.cx-panel').get_by_role('button',name='Почётные звания',exact=True).tap();assert page.locator('.cx-honor-conditions li').count()==3;page.locator('.cx-native-nav').get_by_role('button',name='Бой',exact=True).tap()
-  page.evaluate('__caveDemo.world.hp=400');page.wait_for_timeout(150);page.locator('.cx-belt button').nth(0).tap();assert page.evaluate('__caveDemo.world.belt[0]')==4
+  page.evaluate('__caveDemo.world.hp=400');page.wait_for_timeout(150);page.get_by_role('button',name='Показать эликсиры').tap();assert page.locator('.cx-belt button').count()==8;page.locator('.cx-belt button').nth(0).tap();page.get_by_role('button',name='Скрыть эликсиры').tap();assert page.evaluate('__caveDemo.world.belt[0]')==4
   page.get_by_role('button',name='Пауза',exact=True).tap();hp=page.evaluate('__caveDemo.world.hp');page.reload();page.wait_for_function('()=>window.__caveDemo');page.get_by_role('button',name='Продолжить путь').wait_for();assert page.evaluate('__caveDemo.world.hp')==hp;assert page.evaluate('__caveDemo.world.belt[0]')==4
   if width==390:
    page.on('dialog',lambda d:d.accept())
