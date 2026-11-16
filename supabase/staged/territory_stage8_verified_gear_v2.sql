@@ -78,6 +78,30 @@ BEGIN
     END IF;
     RETURN v_hold.frozen_equipment;
   END IF;
+  -- Historic r2 registry rows often predate the legacy client-format
+  -- baseline fields. The old SERVER save trigger normalized them to a
+  -- zero-upgrade snapshot. Reconstruct exactly that format using trusted
+  -- registry fields, never from the incoming client. Production preflight
+  -- verified all 321 same-level Stage8 mirrors reconstruct byte-for-byte.
+  v_canonical:=public.territory_normalize_gear_v4(
+    v_canonical || pg_catalog.jsonb_build_object('id',v_client_id));
+  IF NOT(v_canonical ? 'baseStats') THEN
+    IF v_canonical ? 'baseLevel' OR v_canonical ? 'upgradeCount'
+      THEN RAISE EXCEPTION 'stage8_partial_registry_needs_review' USING ERRCODE='23514'; END IF;
+    v_canonical:=v_canonical ||
+      pg_catalog.jsonb_build_object(
+        'attack',coalesce(v_canonical->'attack','0'::jsonb),
+        'defense',coalesce(v_canonical->'defense','0'::jsonb),
+        'hp',coalesce(v_canonical->'hp','0'::jsonb),
+        'critChance',coalesce(v_canonical->'critChance','0'::jsonb)) ||
+      pg_catalog.jsonb_build_object(
+        'baseLevel',v_canonical->'level','upgradeCount',0,
+        'baseStats',pg_catalog.jsonb_build_object(
+          'attack',coalesce(v_canonical->'attack','0'::jsonb),
+          'defense',coalesce(v_canonical->'defense','0'::jsonb),
+          'hp',coalesce(v_canonical->'hp','0'::jsonb),
+          'critChance',coalesce(v_canonical->'critChance','0'::jsonb)));
+  END IF;
   IF v_saved_level > v_canonical_level THEN
     -- Three historical items presently have upgrades that predate the
     -- server ledger. Never silently replace or trust these levels.
