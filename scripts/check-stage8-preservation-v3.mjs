@@ -250,6 +250,42 @@ try{
   await assert.rejects(()=>forge(983,5,approvedOwner,approvedUuid),/forge_on_hold/);
   assert.equal((await one('SELECT count(*)::int n FROM territory_private.stage8_historical_quarantine_v1')).n,2);
 
+  // A real historic inventory contains both stage8_<UUID> and an inv_*
+  // display wrapper with the SAME equipment UUID, not a second forged UUID.
+  // Preserve both exact preexisting entries and block newly minted aliases.
+  const aliasOwner=player(6),aliasUuid='70000000-0000-4000-8000-000000000006';
+  const aliasId='stage8_'+aliasUuid;
+  const aliasRegistry={...output,equipment:{...output.equipment,id:'alias-registry-display'}};
+  const aliasEq={...aliasRegistry.equipment,id:aliasId};
+  const aliasCanonical={...aliasRegistry,id:aliasId,qty:1,equipment:aliasEq};
+  const aliasWrapper={...aliasCanonical,id:'inv_fixture_legacy_alias'};
+  await db.query('INSERT INTO public.players(id,level,game_state) VALUES($1,$2,$3)',
+    [aliasOwner,100,JSON.stringify(state(100))]);
+  await db.query('INSERT INTO public.territory_profession_stage8_items VALUES($1,$2,$3)',
+    [aliasUuid,aliasOwner,JSON.stringify(aliasRegistry)]);
+  await db.exec('ALTER TABLE public.players DISABLE TRIGGER territory_gear_guard_before_v4');
+  await save(aliasOwner,state(100,[aliasCanonical,aliasWrapper]));
+  await db.exec('ALTER TABLE public.players ENABLE TRIGGER territory_gear_guard_before_v4');
+  await save(aliasOwner,await saved(aliasOwner));
+  let aliases=(await saved(aliasOwner)).inventory;
+  assert.deepEqual(aliases.map(x=>x.id).sort(),[aliasId,aliasWrapper.id].sort(),
+    'Both committed wrappers remain in inventory');
+  assert.deepEqual(aliases.find(x=>x.id===aliasWrapper.id),aliasWrapper);
+  await save(aliasOwner,state(100));
+  aliases=(await saved(aliasOwner)).inventory;
+  assert.deepEqual(aliases.map(x=>x.id).sort(),[aliasId,aliasWrapper.id].sort(),
+    'Stale device cannot delete the historical wrapper or canonical gear');
+  await assert.rejects(()=>save(aliasOwner,state(100,[aliasCanonical,
+    {...aliasWrapper,id:'inv_forged_new_alias'}])),/unapproved_legacy_alias/);
+  await assert.rejects(()=>save(aliasOwner,state(100,[aliasCanonical,
+    {...aliasWrapper,equipment:{...aliasEq,attack:999999}}])),/unapproved_legacy_alias/);
+  await assert.rejects(()=>forge(984,5,aliasOwner,aliasUuid),/legacy_alias_forge_on_hold/);
+  await assert.rejects(()=>db.query(
+    'SELECT territory_private.stage8_handoff_v3($1,$2,$3,$4)',
+    [aliasUuid,aliasOwner,buyer,op(985)]),/legacy_alias_transfer_on_hold/);
+  assert.deepEqual((await saved(aliasOwner)).inventory.map(x=>x.id).sort(),
+    [aliasId,aliasWrapper.id].sort());
+
   await save(seller,state(100,[mirror(output)]));
   let current=5,operation=10;
   // Actual server forge (including authoritative RNG), not direct registry UPDATE.
