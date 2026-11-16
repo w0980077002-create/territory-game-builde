@@ -290,7 +290,9 @@ try{
   canonical={...canonical,equipment:{...canonical.equipment,level:61,upgradeCount:56,attack:104}};
   await db.query('UPDATE public.territory_profession_stage8_items SET item_output=$1 WHERE item_id=$2',[JSON.stringify(canonical),uuid]);
   await save(seller,state(100,[mirror(canonical)]));
-  await db.query('UPDATE public.players SET gold=100000,forge_materials=10000 WHERE id=$1',[seller]);
+  await db.query(`UPDATE public.players SET gold=100000,forge_materials=10000,
+    game_state=jsonb_set(jsonb_set(game_state,'{player,gold}','100000'::jsonb),
+      '{forgeMaterials}','10000'::jsonb) WHERE id=$1`,[seller]);
   const beforeTransfer=await saved(seller);
   await db.exec('BEGIN'); await transfer(seller,buyer,201); await db.exec('ROLLBACK');
   assert.deepEqual(await saved(seller),beforeTransfer);assert.deepEqual(await registry(),canonical);
