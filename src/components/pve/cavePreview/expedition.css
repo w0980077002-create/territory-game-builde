@@ -245,3 +245,97 @@
 .cx-floor-picker button.cleared{border-color:#549871;background:linear-gradient(#213e30,#141e17)}
 .cx-floor-picker button.current{border-color:#eec77c;box-shadow:0 0 7px #e3b8677a}
 @media(max-height:620px){.cx-cloud-progress{font-size:9px}.cx-demo .cx-cloud-progress button{min-height:30px}}
+
+
+/* Owner-approved compact cave HUD — 360–390px Telegram Android first.
+   All 13 dark gear slots and all seven navigation tabs remain visible.
+   Visual skill glyphs are ~23px squares instead of 46–54px circles
+   (roughly 1/5 the area), with a wider transparent touch target. */
+.cx-demo{
+  --u:clamp(34px,5.6dvh,50px);
+  --nav:clamp(46px,7dvh,58px);
+}
+.cx-controls{
+  padding:0 4px 2px;
+  border-top:1px solid #956f41;
+  box-shadow:inset 0 1px #d8a45c55;
+}
+.cx-vitals{height:28px;margin-bottom:2px}
+.cx-umbra{gap:1px;height:calc(var(--u)*2 + 2px)}
+.cx-demo .cx-tile{
+  border-width:1px;border-radius:5px;
+  outline-color:#a47a4588;box-shadow:0 1px 2px #0007,inset 0 0 0 1px #fff6;
+}
+.cx-tile span{font-size:clamp(8px,2.5vw,10px);bottom:0}
+.cx-tile[data-slot=belt] span,
+.cx-tile[data-slot=ring] span,
+.cx-tile[data-slot=sigil] span,
+.cx-tile[data-slot=amulet] span,
+.cx-tile[data-slot=spear] span,
+.cx-tile[data-slot=gloves] span{font-size:clamp(7px,2vw,9px)}
+.cx-control-status{
+  grid-template-columns:minmax(0,1fr) repeat(4,clamp(35px,10.5vw,39px));
+  gap:2px;margin-top:2px;height:39px;
+}
+.cx-demo .cx-control-status button{
+  height:39px;border-width:1px;border-radius:6px;outline-offset:-2px;
+  box-shadow:inset 0 1px #ffffff14;
+}
+.cx-demo .cx-quest{gap:3px;padding:0 4px 0 2px!important;border-radius:6px!important}
+.cx-quest img{width:28px;height:28px}
+.cx-icon-button img{width:26px;height:26px}
+.cx-auto svg{width:19px;height:19px}
+.cx-speed b{font-size:16px}
+.cx-belt{height:37px;margin-top:2px;gap:2px}
+.cx-demo .cx-belt button{border-width:1px;border-radius:5px}
+.cx-native-nav{gap:2px;padding:2px 3px max(2px,env(safe-area-inset-bottom,0px));border-top-width:1px}
+.cx-demo .cx-native-nav button{border-radius:7px;padding:1px 0 2px}
+.cx-native-nav img{width:88%}
+
+/* Small pull tab sits just above the green HP line. The tray is closed
+   by default; reopening it does not alter the auto-potion state. */
+.cx-demo .cx-belt-toggle{
+  position:absolute;z-index:5;top:-24px;left:72px;
+  display:grid;place-items:center;min-width:30px;width:30px;height:28px;min-height:28px;
+  padding:0;border:1px solid #bb955d;border-radius:7px;
+  color:#fae9c6;background:linear-gradient(#493323,#22160f);
+  box-shadow:0 1px 3px #0009;
+}
+.cx-belt-toggle svg{width:15px;height:15px}
+#cx-elixir-tray[hidden]{display:none}
+
+/* Four automatic abilities: visual square 23 x 23 px. No labels.
+   Actual button hitboxes remain 35 x 34 px. */
+.cx-actions{left:64px;right:64px;bottom:0;gap:1px}
+.cx-demo .cx-actions button{
+  position:relative;flex:0 0 35px;width:35px;height:34px;min-height:34px;
+  padding:0;margin:0;display:grid;place-items:center;
+  border:0;border-radius:0;background:transparent!important;box-shadow:none;
+}
+.cx-demo .cx-actions button::before{
+  content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:23px;height:23px;border:1px solid #d8b06c;border-radius:5px;
+  background:linear-gradient(#654229,#25180f);box-shadow:0 1px 3px #000b,inset 0 1px #fff3;
+}
+.cx-demo .cx-actions button.cx-skill-ward::before{background:linear-gradient(#315f79,#0e2433);border-color:#80b9d6}
+.cx-demo .cx-actions button.cx-skill-heal::before{background:linear-gradient(#376b44,#132c19);border-color:#85bb80}
+.cx-demo .cx-actions button.cx-skill-dodge::before{background:linear-gradient(#55447f,#231b39);border-color:#ab95db}
+.cx-demo .cx-actions button svg{position:relative;z-index:1;width:15px;height:15px}
+.cx-demo .cx-actions button>i,.cx-actions .cx-skill-label{display:none}
+.cx-demo .cx-actions .cx-cooldown{
+  inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:23px;height:23px;border-radius:5px;font-size:11px;
+}
+
+@media(max-width:359px){
+  .cx-demo .cx-belt-toggle{left:64px}
+  .cx-actions{left:56px;right:56px}
+  .cx-control-status{grid-template-columns:minmax(0,1fr) repeat(4,34px);gap:2px}
+}
+@media(max-height:620px){
+  .cx-demo{--u:clamp(30px,5dvh,38px);--nav:46px}
+  .cx-demo .cx-actions button{flex-basis:35px;width:35px;height:34px;min-height:34px}
+  .cx-control-status{margin-top:2px;height:36px}
+  .cx-demo .cx-control-status button{height:36px}
+  .cx-belt{height:34px;margin-top:2px}
+}
