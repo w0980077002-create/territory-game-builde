@@ -344,6 +344,15 @@ try{
   const legacy={...output,equipment:{id:'legacy-display',name:output.name,slot:'weapon',rarity:'rare',level:7,attack:20}};
   await db.query('INSERT INTO public.territory_profession_stage8_items VALUES($1,$2,$3)',[legacyUuid,seller,JSON.stringify(legacy)]);
   await save(seller,await saved(seller));
+  // Historical Stage8 registry entries lack baseStats/upgradeCount.
+  // The server must reconstruct the same baseline displayed by old clients,
+  // without accepting any new client-provided stat or registry promotion.
+  const legacyMirror=(await saved(seller)).inventory.find(i=>i.id==='stage8_'+legacyUuid).equipment;
+  assert.equal(legacyMirror.level,7);
+  assert.equal(legacyMirror.baseLevel,7);
+  assert.equal(legacyMirror.upgradeCount,0);
+  assert.deepEqual(legacyMirror.baseStats,{attack:20,defense:0,hp:0,critChance:0});
+  assert.equal(legacyMirror.attack,20);
   const seedFor=async success=>{
     for(let n=0;n<100;n++){
       const seed=n/100;
