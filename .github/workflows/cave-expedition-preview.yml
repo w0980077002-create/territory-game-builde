@@ -14,6 +14,8 @@ on:
       - 'src/components/pve/cavePreview/**'
       - 'public/assets/territory/cave-expedition/**'
       - 'scripts/*cave-expedition*'
+      - 'scripts/*cave-animation*'
+      - 'scripts/art/import-cave-animation.py'
       - 'scripts/*crystal-rift*'
       - 'scripts/*cave-portals*'
       - 'scripts/*cave-floor*'
@@ -55,6 +57,7 @@ jobs:
         run: |
           export CAVE_BROWSER="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
           npm run test:cave-expedition:browser
+          npm run test:cave-animation:browser
           python scripts/check-cave-playtest-browser.py
           python scripts/check-cave-floor-browser.py
           python scripts/check-cave-expedition-performance.py
@@ -68,6 +71,7 @@ jobs:
         run: |
           export CAVE_BROWSER="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
           python scripts/record-cave-expedition.py
+          python scripts/record-cave-animation.py
       - name: Package only delivery files
         if: always()
         run: |

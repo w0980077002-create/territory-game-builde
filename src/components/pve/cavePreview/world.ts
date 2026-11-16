@@ -67,6 +67,9 @@ interface Bat { x: number; y: number; vx: number; vy: number; seed: number; flyi
 export class CaveLife {
   private clock = -1; private stride = 0; private room = -1; private motes: Mote[] = [];
   private bats = new Map<number, Bat[]>();
+  private moteSeed = 0;
+  // Cosmetic entropy must never consume the combat critical-strike RNG.
+  private moteRandom() { return hash(++this.moteSeed); }
   private roost(w: World, index: number) {
     const key = w.room * 100 + index; let list = this.bats.get(key);
     if (!list) {
@@ -79,7 +82,7 @@ export class CaveLife {
   }
   private near(w: World) { const i = Math.floor((w.cameraX - w.roomX - 470 + 305) / 610); return [i, i + 1].filter(n => n >= 0); }
   puff(x: number, y: number, color: string, count: number, spread = 60, up = 50) {
-    for (let n = 0; n < count; n++) this.motes.push({ x: x + (Math.random() - .5) * 14, y, vx: (Math.random() - .5) * spread, vy: -Math.random() * up, life: .45 + Math.random() * .4, max: .85, size: 2 + Math.random() * 3.5, color });
+    for (let n = 0; n < count; n++) this.motes.push({ x: x + (this.moteRandom() - .5) * 14, y, vx: (this.moteRandom() - .5) * spread, vy: -this.moteRandom() * up, life: .45 + this.moteRandom() * .4, max: .85, size: 2 + this.moteRandom() * 3.5, color });
   }
   step(w: World, h: number, reduced: boolean) {
     const dt = this.clock < 0 || w.time < this.clock ? 0 : Math.min(.1, w.time - this.clock); this.clock = w.time;

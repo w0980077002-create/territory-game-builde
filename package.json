@@ -64,6 +64,7 @@
     "build:cave-preview": "node scripts/build-cave-expedition-preview.mjs",
     "test:cave-expedition": "node scripts/check-cave-expedition.mjs && node scripts/check-cave-floor.mjs",
     "test:cave-expedition:browser": "node scripts/build-cave-expedition-preview.mjs && node scripts/build-cave-expedition-preview.mjs --test && python scripts/check-cave-expedition-browser.py",
+    "test:cave-animation:browser": "node scripts/build-cave-animation-fixture.mjs && node scripts/build-cave-expedition-preview.mjs --test && python scripts/check-cave-animation-browser.py",
     "test:cave-playtest": "node scripts/check-cave-playtest.mjs"
   },
   "dependencies": {

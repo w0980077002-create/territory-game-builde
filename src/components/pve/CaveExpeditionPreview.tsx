@@ -16,6 +16,7 @@ import { setCavePreviewAssets } from './cave/caveShared';
 import { Belt, BlessingPanel, Nav, UmbraMosaic, Vitals } from './cavePreview/hud';
 import { loadImages, render, runeX, type Images } from './cavePreview/renderer';
 import { CaveAudio } from './cavePreview/audio';
+import { CaveVisualBudget } from './cavePreview/combatVfx';
 import { focusPortal } from './cavePreview/portals';
 import './cavePreview/expedition.css';
 
@@ -73,9 +74,10 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
   }, [panel, userId]);
   useEffect(() => {
     let mounted = true;
+    const controller = new AbortController();
     setError(''); setReady(false);
-    loadImages(assetUrl).then(images => { if (mounted) { art.current = images; setReady(true); } }).catch(() => { if (mounted) setError('art'); });
-    return () => { mounted = false; };
+    loadImages(assetUrl, controller.signal).then(images => { if (mounted) { art.current = images; setReady(true); } }).catch(() => { if (mounted) setError('art'); });
+    return () => { mounted = false; controller.abort(); };
   }, [assetUrl, loadAttempt]);
   useEffect(() => { const sound = new CaveAudio(); audio.current = sound; return () => { sound.close(); }; }, []);
   useEffect(() => { world.current.wings = bank.previewWings; }, [bank.previewWings]);
@@ -166,6 +168,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
     const w = world.current; onWorld?.(w);
     let frame = 0, last = 0, hudAt = 0, savedAt = 0, lobbyTime = 0;
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
+    const budget = new CaveVisualBudget((navigator as Navigator & { deviceMemory?: number }).deviceMemory);
     const visibility = () => {
       last = 0;
       if (document.hidden && !['LOBBY','VICTORY','DEFEAT'].includes(w.phase)) {
@@ -219,7 +222,12 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
           if (width && height) {
             if (node.width !== width || node.height !== height) { node.width = width; node.height = height; }
             const context = node.getContext('2d');
-            if (context) { context.setTransform(node.width / 430, 0, 0, node.width / 430, 0, 0); render(context, w, art.current, node.height * 430 / node.width, en, motion.matches, lobbyTime); }
+            if (context) {
+              const drawingAt = performance.now();
+              context.setTransform(node.width / 430, 0, 0, node.width / 430, 0, 0);
+              render(context, w, art.current, node.height * 430 / node.width, en, motion.matches, lobbyTime, budget.quality);
+              budget.sample(performance.now() - drawingAt);
+            }
             // The spark is a real place on the road: its touch target follows the camera every frame.
             if (rune.current) rune.current.style.transform = `translate3d(${(runeX(w) - w.cameraX) / 430 * box.width - 37}px,0,0)`;
           }

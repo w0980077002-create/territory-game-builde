@@ -4,6 +4,7 @@ import type { Pose } from '../../../game/cavePreviewWorld/engine';
 export const HERO_PARTS = ['head', 'torso', 'arm-right', 'arm-left', 'leg-right', 'leg-left', 'weapon', 'shield'];
 const ROOT = 'assets/territory/combat2d/male_viking/';
 type Transform = { x: number; y: number; angle: number };
+export interface BladeSegment { tip: { x: number; y: number }; grip: { x: number; y: number } }
 const timelines = new Map<FighterMotion, { at: number; joints: Partial<Record<Joint, Transform>> }[]>();
 function timeline(motion: FighterMotion) {
   let cached = timelines.get(motion);
@@ -18,7 +19,8 @@ function timeline(motion: FighterMotion) {
 }
 /** The existing approved cutouts and joint choreography, sampled on the DEMO clock.
  * Pausing freezes bones, weapon and impact together; no CSS-only attack timer. */
-export function drawHero(c: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, pose: Pose, elapsed: number, time: number, combo: number, x: number, y: number, size: number, reduced: boolean) {
+export function drawHero(c: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, pose: Pose, elapsed: number, time: number, combo: number, x: number, y: number, size: number, reduced: boolean, onBlade?: (blade: BladeSegment) => void) {
+  const stage = onBlade ? c.getTransform() : undefined;
   const motion: FighterMotion = pose === 'attack' ? (['slash', 'thrust', 'overhead'] as const)[combo % 3] : pose === 'run' ? 'idle' : pose;
   const stops = timeline(motion);
   const ms = pose === 'hit' ? Math.min(810, 350 + elapsed * 1700) : pose === 'block' ? Math.min(500, 240 + elapsed * 800) : pose === 'dodge' ? Math.min(810, 180 + elapsed * 950) : Math.min(810, elapsed / .7 * 810);
@@ -54,7 +56,15 @@ export function drawHero(c: CanvasRenderingContext2D, images: Map<string, HTMLIm
         clip(-45, -9, 90, 84, () => image(`arm-${side}`, -34, -75, 72, 145));
         c.translate(3, 57);
         if (left) joint('shield', () => image('shield', -83, -108, 166, 222));
-        else joint('weapon', () => image('weapon', -30, -205, 65, 224));
+        else joint('weapon', () => {
+          image('weapon', -30, -205, 65, 224);
+          // Read the EXISTING joint transform. Animation, cutouts and timing are
+          // unchanged; cave VFX follows the real blade instead of guessing it.
+          if (stage && onBlade) {
+            const m = stage.inverse().multiply(c.getTransform());
+            onBlade({ tip: { x: m.a * 2.5 - m.c * 205 + m.e, y: m.b * 2.5 - m.d * 205 + m.f }, grip: { x: m.a * 2.5 + m.e, y: m.b * 2.5 + m.f } });
+          }
+        });
       });
     }); c.restore();
   };
