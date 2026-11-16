@@ -43,6 +43,12 @@ assert.match(battle, /grid-cols-3/);
 assert.match(battle, /label: language === 'en' \? 'Dark Cave' : 'Тёмная пещера'/);
 assert.match(battle, /view === 'cave' \? \(/);
 assert.match(battle, /<ServerAdventureScreen /);
+assert.match(battle, /const CaveExpeditionPreview = lazy\(\(\) =>/,
+  'Local Cave should download only on Cave entry');
+assert.match(battle, /const ServerAdventureScreen = lazy\(\(\) =>/,
+  'Legacy server combat should download only for recovery');
+assert.match(battle, /<Suspense fallback=/,
+  'Loading a Cave chunk must show an accessible fallback');
 // The owner-approved side-scrolling Cave is reachable inside the actual game
 // without a special URL; genuine server floors and recovery remain available.
 assert.match(battle, /data-testid="dark-cave-single-entry"/);
