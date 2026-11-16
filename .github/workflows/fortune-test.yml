@@ -2,11 +2,20 @@ name: Wheel of Fortune verification
 on:
   pull_request:
     paths:
-      - 'src/game/**'
-      - 'src/components/**'
-      - 'src/App.tsx'
-      - 'supabase/migrations/**'
+      # Wheel/Hall coverage stays available for actual changes and manual dispatch.
+      - 'src/components/FortuneDialog.tsx'
+      - 'src/components/WheelOfFortune.tsx'
+      - 'src/components/fortune.css'
+      - 'src/components/TreasuryInventory.tsx'
+      - 'src/components/HallPlayScreen.tsx'
+      - 'src/components/monopoly/**'
+      - 'src/game/*fortune*'
+      - 'src/game/*wheel*'
+      - 'src/game/*hall*'
+      - 'supabase/migrations/*wheel*'
+      - 'supabase/staged/*fortune*'
       - 'scripts/*fortune*'
+      - 'scripts/*monopoly*'
       - 'package*.json'
       - '.github/workflows/fortune-test.yml'
   workflow_dispatch:
