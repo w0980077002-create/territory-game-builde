@@ -280,6 +280,10 @@ try{
   assert.deepEqual(await registry(),beforeRollback);
   await assert.rejects(()=>forge(450,beforeRollback.equipment.level),/save_guard_inactive/);
   await assert.rejects(()=>save(seller,committed),/maintenance_hold/);
+  await db.query('UPDATE public.players SET updated_at=clock_timestamp() WHERE id=$1',[seller]);
+  await db.query('UPDATE public.players SET gold=gold WHERE id=$1',[seller]);
+  assert.deepEqual(await registry(),beforeRollback,'Metadata-only updates remain available during rollback');
+  await assert.rejects(()=>db.query('UPDATE public.players SET attack=attack WHERE id=$1',[seller]),/maintenance_hold/);
   assert.doesNotMatch((await one("SELECT pg_get_functiondef('public.territory_gear_guard_v4()'::regprocedure) d")).d,/stage8_preserve_state_v3/);
   await assert.rejects(()=>transfer(seller,buyer,451),/save_guard_inactive/);
   assert.deepEqual(await registry(),beforeRollback);

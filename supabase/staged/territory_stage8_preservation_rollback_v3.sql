@@ -23,7 +23,7 @@ BEGIN
   RETURN NEW;
 END $hold$;
 REVOKE ALL ON FUNCTION territory_private.stage8_hold_v3() FROM PUBLIC,anon,authenticated;
-CREATE TRIGGER aaa_stage8_maintenance_hold_v3 BEFORE INSERT OR UPDATE ON public.players
+CREATE TRIGGER aaa_stage8_maintenance_hold_v3 BEFORE INSERT OR UPDATE OF game_state, attack, defense, max_hp, crit_chance ON public.players
 FOR EACH ROW EXECUTE FUNCTION territory_private.stage8_hold_v3();
 DROP TABLE territory_private.stage8_guard_backup_v3;
 COMMIT;

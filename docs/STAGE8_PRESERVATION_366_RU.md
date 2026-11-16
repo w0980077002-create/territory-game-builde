@@ -121,3 +121,56 @@ trigger блокирует записи владельцев Stage8/Stage8 paylo
 Ни один не сливался. Здесь реализован один связный контракт с реальным save
 trigger и forge; не копируется устаревший package.json и не считается
 симуляция UPDATE готовым аукционом.
+
+## Read-only production аудит 16.11.2026 (уточняет ограничения выше)
+
+Владелец отдельно разрешил только чтение. Реальный endpoint из `.env.local` —
+`wmyrdpbwlkzsktnhookx`, PG17. Проект с названием territory-game-builde
+(`ksikzkrvuuhermhnbycn`) не содержит Stage8-реестра: выбирать по имени нельзя.
+Выполнялись только SELECT к metadata/агрегатам; записи и live-вызовы игровых
+RPC не выполнялись.
+
+Подтверждено: 324 registry gear, 321 в bag, 3 worn, отсутствующих 0; конфликты
+5→59 (2) и 1→40 (1). Для этих UUID нет совпадений ни в private legacy refund
+receipts (UUID и stage8_UUID с текущим владельцем), ни в Stage8 forge receipts
+(по UUID независимо от владельца). Это отсутствие доказательств в этих двух
+журналах, не доказательство подделки и не основание менять предмет.
+
+Live owner_cap_item/state и gear guard сохраняют destructive pipeline;
+выражения, заменяемые activation, соответствуют прочитанным live определениям.
+Live forge и ready **уже установлены**, ready проверяет только auth.uid().
+Поэтому выпуск требует замены действующих forge/ready, а не предположения об
+отсутствии RPC. Registry RLS включён, клиентских grants нет (postgres и
+service_role); players SELECT/INSERT/UPDATE policies привязаны к auth.uid(),
+UPDATE также требует banned=false с WITH CHECK.
+
+Есть 11 пользовательских player triggers, включая economy guard/audit,
+материалы, arena belt, legacy masterwork, cleanup, referral, trial reserve,
+forge spend capture и leaderboard. Проверка только gear guard не доказывает
+совместимость полного production набора. До активации требуется изолированный
+прогон полного набора определений/схемы на свежем обезличенном клоне; текущий
+fixture не выдаётся за такой клон.
+
+Замечание технического ревью PR о чрезмерном rollback HOLD принято:
+HOLD теперь совпадает с опасной областью gear trigger — INSERT либо UPDATE OF
+ game_state, attack, defense, max_hp, crit_chance. SELECT/чтение входа не
+блокируется; metadata-only updated_at и wallet-only UPDATE не блокируются
+этим HOLD. Запись game_state для прогресса/других режимов всё ещё остановится
+у Stage8-владельца: безопасно разрешить её при восстановленном destructive cap
+нельзя. Если другой trigger присоединяет game_state к UPDATE, операция также
+может остановиться. Это ограниченный режим аварийного восстановления, не
+полноценный gameplay. Тесты проверяют отказ game_state/attack, допустимость
+updated_at/gold и неизменность реестра, затем повторную активацию.
+
+**Результат: NO-GO для текущего общего activation SQL.** Он ожидаемо откажет
+на трёх конфликтах. Следующие шаги в порядке: получить доказательства
+provenance/резервные снимки для индивидуального решения (без max/min и без
+автоматического изменения); проверить полный clone trigger chain; подготовить
+точечное согласованное решение конфликтов и повторить preflight; затем в
+остановленном режиме writers одной транзакцией установить helpers + обновить
+forge/ready + activation. До COMMIT проверить definitions/grants/guards; при
+ошибке ROLLBACK всей транзакции. После COMMIT canary только на отдельно
+разрешённых тестовых данных, затем клиентский выпуск и открытие writers.
+При аварии после COMMIT — staged rollback с суженным HOLD; не удалять HOLD
+до повторного включения защиты. Эти опасные шаги данным read-only разрешением
+не разрешены и не выполнялись.
