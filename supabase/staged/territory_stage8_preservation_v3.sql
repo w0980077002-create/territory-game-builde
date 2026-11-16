@@ -67,21 +67,43 @@ BEGIN
           WHERE 'stage8_'||i.item_id::text=v_id AND i.item_output->>'type'='equipment') THEN
         v_bag:=v_bag||jsonb_build_array(v_entry.item); CONTINUE;
       END IF;
-      -- Two historical aliases are a second wrapper of ONE already-owned
-      -- registry UUID. Keep exact preexisting inv_* wrappers as visible
-      -- inventory entries: NEVER mint another alias, forge it or silently
-      -- delete either copy. Their inner Stage8 ID still requires ownership.
+      -- Legacy inv_* wrappers have TWO distinct cases:
+      -- (A) A preexisting extra alias alongside the canonical registry item:
+      --     preserve exact committed bytes, never silently delete the alias.
+      -- (B) A newly created sole display wrapper during normal unequip:
+      --     accept as ONE reference and restore the canonical Stage8 item.
+      -- Never allow a new second alias or duplicate ownership.
       IF left(v_id,4)='inv_' AND left(v_entry.item#>>'{equipment,id}',7)='stage8_' THEN
         IF v_entry.item->>'type' IS DISTINCT FROM 'equipment'
           OR v_entry.item->'qty' IS DISTINCT FROM '1'::jsonb
-          OR (SELECT count(*) FROM jsonb_array_elements(
-            CASE WHEN jsonb_typeof(v_old->'inventory')='array' THEN v_old->'inventory' ELSE '[]'::jsonb END) prior
-            WHERE prior.value->>'id'=v_id AND prior.value=v_entry.item)<>1
           THEN RAISE EXCEPTION 'stage8_unapproved_legacy_alias'; END IF;
         v_eq:=territory_private.stage8_verified_gear_v2(v_entry.item->'equipment',p_player);
-        IF v_eq IS DISTINCT FROM v_entry.item->'equipment'
-          THEN RAISE EXCEPTION 'stage8_legacy_alias_modified'; END IF;
-        v_bag:=v_bag||jsonb_build_array(v_entry.item);
+        IF EXISTS(SELECT 1 FROM jsonb_array_elements(
+            CASE WHEN jsonb_typeof(v_old->'inventory')='array'
+              THEN v_old->'inventory' ELSE '[]'::jsonb END) prior
+          WHERE prior.value->>'id'=v_id AND prior.value=v_entry.item) THEN
+          -- Exact known historical alias, verified server equipment.
+          IF v_eq IS DISTINCT FROM v_entry.item->'equipment'
+            THEN RAISE EXCEPTION 'stage8_legacy_alias_modified'; END IF;
+          v_bag:=v_bag||jsonb_build_array(v_entry.item);
+          CONTINUE;
+        END IF;
+        -- Fresh sole wrapper is an ordinary unequip, not a new item copy.
+        -- It may replace only ONE representation of the same UUID.
+        IF EXISTS(SELECT 1 FROM jsonb_array_elements(
+            CASE WHEN jsonb_typeof(v_old->'inventory')='array'
+              THEN v_old->'inventory' ELSE '[]'::jsonb END) old_alias
+          WHERE left(old_alias.value->>'id',4)='inv_'
+            AND old_alias.value#>>'{equipment,id}'=v_entry.item#>>'{equipment,id}')
+          OR (SELECT count(*) FROM jsonb_array_elements(v_state->'inventory') incoming
+              WHERE incoming.value->>'id'=v_entry.item#>>'{equipment,id}'
+                OR incoming.value#>>'{equipment,id}'=v_entry.item#>>'{equipment,id}')<>1
+          OR EXISTS(SELECT 1 FROM jsonb_each(v_equipped) e
+              WHERE e.value->>'id'=v_entry.item#>>'{equipment,id}')
+        THEN RAISE EXCEPTION 'stage8_unapproved_legacy_alias'; END IF;
+        v_id:=v_entry.item#>>'{equipment,id}';
+        IF v_id=ANY(v_seen) THEN RAISE EXCEPTION 'stage8_duplicate_item'; END IF;
+        v_seen:=array_append(v_seen,v_id);
         CONTINUE;
       END IF;
       IF left(v_id,7)<>'stage8_' AND left(v_entry.item#>>'{equipment,id}',7)='stage8_' THEN
