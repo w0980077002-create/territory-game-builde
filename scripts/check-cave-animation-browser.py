@@ -3,6 +3,7 @@ Snapshots deliberately use synthetic visual checkpoints. Full-floor regression
 and realtime gameplay recordings are separate, and never called physical TG.
 """
 import json
+import base64
 import os
 import shutil
 import threading
@@ -87,8 +88,12 @@ try:
       page.evaluate('''()=>{for(let i=0;i<60;i++)qa.draw();if(![...qa.images.keys()].some(k=>k.endsWith('/approved/08_armored_boar.webp')))throw Error('Missing fallback')}''')
       page.wait_for_timeout(100)
       assert len(optional)==1
-      before=page.locator('canvas').screenshot()
+      # Playwright 1.58 waits for document.fonts.ready even for a canvas-only
+      # screenshot; a deliberately pending image can hold that readiness gate.
+      # Read the real canvas pixels directly while transport remains delayed.
+      before=base64.b64decode(page.evaluate("document.querySelector('canvas').toDataURL().split(',')[1]"))
       assert len(before)>30000, 'Fallback scene must be drawn'
+      (OUT / f'fallback-{mode}.png').write_bytes(before)
       if mode=='cancel': page.evaluate('qa.stop()')
       page.evaluate('qa.w.paused=false;qa.update(qa.w,.025);qa.draw()')
       assert page.evaluate('qa.w.time') > 10, 'Combat continues without new art'
