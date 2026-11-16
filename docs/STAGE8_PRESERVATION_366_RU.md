@@ -92,7 +92,9 @@ Frontend PR сам по себе не устраняет действующий 
    всё ещё существуют: это не полный economy cutover/security certification.
 4. После согласованного устранения конфликтов и **отдельного разрешения на
    production SQL**, при остановленных writers, одной транзакцией установить
-   `territory_stage8_verified_gear_v2.sql`, `territory_stage8_preservation_v3.sql`,
+   `territory_stage8_verified_gear_v2.sql`,
+   `territory_stage8_historical_quarantine_v1.sql`,
+   `territory_stage8_preservation_v3.sql`,
    `territory_stage8_forge_v1.sql`, затем
    `territory_stage8_preservation_activate_v3.sql` (внешний BEGIN/COMMIT собрать
    без вложенных COMMIT из подготовительных файлов).
@@ -219,3 +221,36 @@ forge/ready + activation. До COMMIT проверить definitions/grants/guar
 неизвестные апгрейды, не удалять, не понижать и не переписывать данные.
 Обязательна проверка full live-trigger clone, re-preflight и отдельное разрешение
 на любую production-операцию.
+
+## Подготовленный staged-путь без удаления трёх предметов (после отдельного approval)
+
+Добавлен `territory_stage8_historical_quarantine_v1.sql` и связанные точечные
+изменения в `verified_gear_v2`, activation, forge и handoff.
+
+**Смысл:** в одной остановленной транзакции activation при блокировках
+`players`/`territory_profession_stage8_items` и приватного реестра
+quarantine допускаются **строго три** уже прочитанных на 16.11.2026 снимка,
+только при совпадении отпечатка из owner UUID, item UUID, старого
+registry JSON, полного сохранённого equipment JSON и местоположения.
+У первого (bag weapon) дополнительно проверяется точное `claimed` admin grant,
+private owner-test approval, слот и весь JSON. Два других помечены
+`unresolved`. При изменении состава/значений проверка падает и **не делает
+автоматическое исправление**. Данные игроков и registry активацией
+**не переписываются**.
+
+Приватный серверный snapshot для каждого UUID становится источником его
+старых параметров, а не неподтверждённая новая запись клиента. Удерживаемые
+предметы **нельзя улучшить кузницей или передать**, пока не будет отдельного
+доказательного урегулирования; другие зарегистрированные предметы продолжают
+обычный путь. Старые сохранения на устройствах восстанавливают frozen-gear.
+`adminTestLevel` в JSON клиента не даёт прав.
+
+**Порядок до production**: перепроверить все hashes / состав / новые транзакции
+после аудита 16.11, прогнать полный клон 11 live-триггеров с тестом
+admin-approved/unresolved и повторной активации, проверить сочетания
+save+reward+forge+rollback на PG17 и Telegram WebView. Новые staged SQL
+подготовлены, но не установлены в live; отсутствие успеха CI/клона = NO-GO.
+
+Реестр `territory_private.stage8_historical_quarantine_v1` и снимки не
+удаляются при аварийном rollback. Повторная activation на тех же exact snapshots
+не создаёт новых разрешений и не доверяет изменённому client JSON.
