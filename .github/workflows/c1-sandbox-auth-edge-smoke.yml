@@ -1,6 +1,5 @@
 name: C1 isolated auth and Edge smoke (not a production release gate)
 on:
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -8,7 +7,6 @@ permissions:
 
 jobs:
   sandbox-jwt-edge-smoke:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 128 }}
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
