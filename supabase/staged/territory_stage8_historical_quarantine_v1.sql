@@ -27,6 +27,7 @@ DECLARE
   v_digest text;
   v_status text;
   v_count integer:=0;
+  v_new_count integer:=0;
 BEGIN
   IF pg_catalog.jsonb_typeof(p_expected) IS DISTINCT FROM 'array'
     OR pg_catalog.jsonb_array_length(p_expected)>3
@@ -61,13 +62,27 @@ BEGIN
     v_count:=v_count+1;
     v_digest:=pg_catalog.md5(v_rec.player_id::text||':'||v_rec.item_id::text||':'
       ||v_rec.registry_gear::text||':'||v_rec.eq::text||':'||v_rec.location);
-    SELECT z.value INTO v_expected FROM pg_catalog.jsonb_array_elements(p_expected) z(value)
-      WHERE z.value->>'fingerprint'=v_digest;
-    IF NOT FOUND OR pg_catalog.jsonb_typeof(v_expected) IS DISTINCT FROM 'object'
-      THEN RAISE EXCEPTION 'stage8_reconciliation_required'; END IF;
-    v_status:=v_expected->>'status';
-    IF v_status NOT IN ('admin_approved','unresolved')
-      THEN RAISE EXCEPTION 'stage8_quarantine_invalid_status'; END IF;
+    SELECT * INTO v_prior FROM territory_private.stage8_historical_quarantine_v1
+      WHERE item_id=v_rec.item_id FOR UPDATE;
+    IF FOUND THEN
+      -- A previously frozen exact snapshot remains authoritative through
+      -- rollback/reactivation. No new client level can replace that snapshot.
+      IF v_prior.player_id IS DISTINCT FROM v_rec.player_id
+        OR v_prior.registry_equipment IS DISTINCT FROM v_rec.registry_gear
+        OR v_prior.frozen_equipment IS DISTINCT FROM v_rec.eq
+        OR v_prior.initial_location IS DISTINCT FROM v_rec.location
+      THEN RAISE EXCEPTION 'stage8_quarantine_snapshot_changed'; END IF;
+      v_status:=v_prior.provenance_status;
+    ELSE
+      SELECT z.value INTO v_expected FROM pg_catalog.jsonb_array_elements(p_expected) z(value)
+        WHERE z.value->>'fingerprint'=v_digest;
+      IF NOT FOUND OR pg_catalog.jsonb_typeof(v_expected) IS DISTINCT FROM 'object'
+        THEN RAISE EXCEPTION 'stage8_reconciliation_required'; END IF;
+      v_status:=v_expected->>'status';
+      IF v_status NOT IN ('admin_approved','unresolved')
+        THEN RAISE EXCEPTION 'stage8_quarantine_invalid_status'; END IF;
+      v_new_count:=v_new_count+1;
+    END IF;
 
     IF v_status='admin_approved' AND NOT EXISTS (
       SELECT 1 FROM public.admin_grants a
@@ -84,22 +99,15 @@ BEGIN
         AND a.payload->'adminTestEquipment'=v_rec.eq
     ) THEN RAISE EXCEPTION 'stage8_admin_evidence_missing'; END IF;
 
-    SELECT * INTO v_prior FROM territory_private.stage8_historical_quarantine_v1
-      WHERE item_id=v_rec.item_id FOR UPDATE;
-    IF FOUND THEN
-      IF v_prior.player_id IS DISTINCT FROM v_rec.player_id
-        OR v_prior.registry_equipment IS DISTINCT FROM v_rec.registry_gear
-        OR v_prior.frozen_equipment IS DISTINCT FROM v_rec.eq
-        OR v_prior.initial_location IS DISTINCT FROM v_rec.location
-        OR v_prior.provenance_status IS DISTINCT FROM v_status
-      THEN RAISE EXCEPTION 'stage8_quarantine_snapshot_changed'; END IF;
-    ELSE
+    IF v_prior.item_id IS NULL THEN
       INSERT INTO territory_private.stage8_historical_quarantine_v1
         (item_id,player_id,registry_equipment,frozen_equipment,initial_location,provenance_status)
       VALUES(v_rec.item_id,v_rec.player_id,v_rec.registry_gear,v_rec.eq,v_rec.location,v_status);
     END IF;
   END LOOP;
-  IF v_count<>pg_catalog.jsonb_array_length(p_expected)
+  -- On first activation every conflict must be listed in p_expected.
+  -- On reactivation already-frozen rows retain their exact prior evidence.
+  IF (v_new_count>0 AND v_count<>pg_catalog.jsonb_array_length(p_expected))
     OR (SELECT pg_catalog.count(*) FROM territory_private.stage8_historical_quarantine_v1)<>v_count
   THEN RAISE EXCEPTION 'stage8_reconciliation_required'; END IF;
   RETURN v_count;
