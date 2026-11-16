@@ -3,6 +3,9 @@ name: Territory - safe review checks (never deploy)
 on:
   pull_request:
     branches: [main]
+    # Documentation-only changes cannot change executable game behaviour.
+    paths-ignore:
+      - '**/*.md'
   workflow_dispatch:
 
 permissions:
