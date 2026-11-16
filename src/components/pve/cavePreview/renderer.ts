@@ -1,7 +1,7 @@
 import { portalsFor, portalOffset, DIFFICULTY } from '../../../game/cavePreviewWorld/engine';
 import { drawHero, HERO_PARTS, type BladeSegment } from './heroRig';
 import { CaveLife, drawBackdrop, drawForeground, stageLayout } from './world';
-import { clamp01, comicText, easeBack, flashDraw, hash, light, pool, starPath, burst, type Ctx } from './kit';
+import { clamp01, comicText, easeBack, flashDraw, hash, light, pool, burst, type Ctx } from './kit';
 import { StageMemory, PHASE_COLORS, bossFinale, bossPresence, bossScreen, cameraKick, comicWord, deathFlight, deathFx, districtCard, endingScreen, floatText, impactFx, irisOpen, killingBlow, phaseShiftFx, portalDive, slamFx, telegraphFx, type NumberTone } from './stageFx';
 import { CRYSTAL_ASSETS, warmCrystalEnvironment } from './crystalEnvironment';
 import { warmProps } from './props';
@@ -236,12 +236,14 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
     // A hit may land during a pending enemy attack. Keep the windup and its
     // contact time intact, but still show directional armor recoil.
     const struck = dead ? undefined : [...w.effects].reverse().find(f => f.kind === 'impact' && f.lane === e.lane && Math.abs(f.x + 20 - e.worldX) < 22 && w.time - f.born < .16);
-    let flash = struck && !reduced ? Math.max(0, 1 - (w.time - struck.born) / (isBoss ? .07 : .1)) * (isBoss ? .42 : .78) : 0, flashColor = '#ffffff';
+    // Foes flash white through the scratch surface; the large boss takes a cheap additive bloom instead.
+    let flash = struck && !reduced && !isBoss ? Math.max(0, 1 - (w.time - struck.born) / .1) * .78 : 0, flashColor = '#ffffff';
+    let bloom = struck && !reduced && isBoss ? Math.max(0, 1 - (w.time - struck.born) / .1) * .5 : 0;
     if (flight) flash = flight.white;
     if (isBoss && w.rules === 2 && !reduced) {
       const shift = w.time - memory.phaseAt;
       if (!dead && shift >= 0 && shift < .45) { flash = Math.max(flash, (1 - shift / .45) * .9); flashColor = PHASE_COLORS[w.bossPhase - 1]; }
-      if (dead) { flash = .4 + .32 * Math.sin(fallen * 38); flashColor = '#fff3c9'; }
+      if (dead) bloom = .55 + .35 * Math.sin(fallen * 38);
     }
     let alpha = 1;
     if (dead) alpha = flight ? flight.alpha : isBoss && w.rules === 2 ? clamp01((1.08 - fallen) / .16) : Math.max(0, 1 - fallen / 1.4);
@@ -270,6 +272,7 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
     c.save(); c.globalAlpha = alpha;
     if (flash > .02 && !low) flashDraw(c, x - size * .8, y - size * (flight ? 2 : 1.2), size * (flight ? 2.4 : 1.6), size * (flight ? 2.2 : 1.35), flashColor, flash, body); else body(c);
     c.restore();
+    if (bloom > .02 && !low) { c.save(); c.globalCompositeOperation = 'lighter'; light(c, '#fff1cf', x, y - size * .5, size * .52, bloom * alpha); c.restore(); }
     if (!dead && !isBoss) bar(c, x, y - size + 3, 50, e.hp / e.maxHp, '#ee6f7a');
     if (w.rules !== 2 && isBoss && !dead && e.impact > w.time) { c.fillStyle = '#f15d5d40'; c.fillRect(heroX - 40, floor - 6, 190, 10); }
   }

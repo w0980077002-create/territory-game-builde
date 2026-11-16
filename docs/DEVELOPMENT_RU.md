@@ -38,6 +38,7 @@ npm run dev
 | Единая Пещера | `src/components/pve/CaveExpeditionPreview.tsx` |
 | Движение/боевой PvE Пещеры | `src/game/cavePreviewWorld/{engine,catalog,checkpoint}.ts` |
 | Арт, движение, эффекты Пещеры | `src/components/pve/cavePreview/`, `public/assets/territory/cave-expedition/` |
+| Подача Пещеры (порталы, декорации районов, отклик боя, босс, победа) | `cavePreview/{stageFx,props,kit,portals}.ts` — см. [CAVE_WOW_RU.md](CAVE_WOW_RU.md) |
 | Серверный статус/камни/квитанции Пещеры | `src/game/caveCloudPve.ts` и существующие серверные RPC |
 | Восстановление старых попыток | `src/components/pve/ServerAdventureScreen.tsx` и прежние receipt/fence-пути; **не вход в отдельную игру** |
 | Другие PvE и Арена | `src/components/BattleScreen.tsx`, `src/components/pve/`, `src/game/pve.ts`; проверять отдельные контракты |

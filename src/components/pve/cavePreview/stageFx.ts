@@ -146,9 +146,9 @@ export function bossPresence(c: Ctx, w: World, boss: Enemy, img: HTMLImageElemen
   const arrive = w.phase === 'BOSS' ? clamp01((w.time - w.phaseAt) / .9) : boss.hp > 0 && w.phase !== 'WAVE_SPAWN' ? 1 : 0;
   const dying = boss.hp <= 0 ? clamp01((w.time - boss.deathAt) / .8) : 0, presence = arrive * (1 - dying);
   c.save();
-  if (img && presence > 0) {
+  if (img && presence > 0 && !low) {
     // The boss owns the far wall: a towering shadow that grows with every phase.
-    const shade = silhouette(img), grow = 2.05 + phase * .2 + (reduced ? 0 : Math.sin(time * .8) * .03), sw = size * grow * shade.width / shade.height * .92, sh = size * grow * .92;
+    const shade = silhouette(img), grow = 1.62 + phase * .14 + (reduced ? 0 : Math.sin(time * .8) * .03), sw = size * grow * shade.width / shade.height * .92, sh = size * grow * .92;
     const flick = phase === 3 && !reduced ? .82 + .18 * Math.sin(time * 17) * Math.sin(time * 7.3) : 1;
     c.globalAlpha = presence * (.36 + phase * .07) * flick;
     c.drawImage(shade, x - sw * .5 + 26 * scale + (reduced ? 0 : Math.sin(time * .6) * 3), horizon + 10 * scale - sh, sw, sh);
@@ -180,7 +180,7 @@ export function bossPresence(c: Ctx, w: World, boss: Enemy, img: HTMLImageElemen
       }
     }
     if (!reduced) {
-      const count = low ? 5 : 9 + phase * 3;
+      const count = low ? 4 : 6 + phase * 2;
       for (let i = 0; i < count; i++) {
         const u = (time * (.32 + phase * .08) + hash(i * 2.9)) % 1, px = x + (hash(i * 5.3 + 2) - .5) * 190 * scale + Math.sin(time * 1.4 + i) * 6, py = y - u * 215 * scale;
         light(c, color, px, py, (3 + hash(i) * 4) * scale * (1.2 - u), presence * Math.sin(u * Math.PI) * .85);
@@ -244,9 +244,9 @@ export function slamFx(c: Ctx, x: number, floorY: number, age: number, phase: nu
   c.restore();
 }
 
-function banner(c: Ctx, top: string, main: string, h: number, age: number, life: number, color: string, reduced: boolean, slam = false) {
+function banner(c: Ctx, top: string, main: string, h: number, age: number, life: number, color: string, reduced: boolean, slam = false, drop = 0) {
   if (age < 0 || age > life) return;
-  const enter = reduced ? 1 : clamp01(age / .22), exit = age > life - .4 ? clamp01((life - age) / .4) : 1, y = h * .285;
+  const enter = reduced ? 1 : clamp01(age / .22), exit = age > life - .4 ? clamp01((life - age) / .4) : 1, y = h * .285 + drop;
   c.save(); c.globalAlpha = Math.min(enter * 1.4, 1) * exit;
   // Dark ribbon so the lettering reads over any district.
   const band = c.createLinearGradient(0, y - 34, 0, y + 34); band.addColorStop(0, '#05060c00'); band.addColorStop(.5, '#05060cb8'); band.addColorStop(1, '#05060c00');
@@ -277,12 +277,12 @@ export function bossScreen(c: Ctx, w: World, memory: StageMemory, h: number, en:
         c.fillStyle = '#04050a'; c.fillRect(0, 0, 430, bars); c.fillRect(0, h - bars, 430, bars);
         c.globalAlpha = .34 * Math.exp(-age * 5); c.fillStyle = color; c.fillRect(0, 0, 430, h); c.globalAlpha = 1;
       }
-      banner(c, en ? `FLOOR ${w.floor} · MASTER OF THE DEPTH` : `ЭТАЖ ${w.floor} · ХОЗЯИН ГЛУБИНЫ`, (en ? identity.en : identity.ru).toUpperCase(), h, age, 2.5, color, reduced);
+      banner(c, en ? `FLOOR ${w.floor} · MASTER OF THE DEPTH` : `ЭТАЖ ${w.floor} · ХОЗЯИН ГЛУБИНЫ`, (en ? identity.en : identity.ru).toUpperCase(), h, age, 2.5, color, reduced, false, 20);
     }
     const shift = w.time - memory.phaseAt;
     if (shift >= 0 && shift < 2.1 && w.bossPhase > 1) {
       if (!reduced) { c.globalAlpha = .5 * Math.exp(-shift * 6); c.fillStyle = shift < .05 ? '#ffffff' : color; c.fillRect(0, 0, 430, h); c.globalAlpha = 1; }
-      banner(c, `${en ? 'PHASE' : 'ФАЗА'} ${ROMAN[w.bossPhase - 1]}`, PHASE_NAMES[lang][w.bossPhase - 1].toUpperCase(), h, shift, 2.1, color, reduced, true);
+      banner(c, `${en ? 'PHASE' : 'ФАЗА'} ${ROMAN[w.bossPhase - 1]}`, PHASE_NAMES[lang][w.bossPhase - 1].toUpperCase(), h, shift, 2.1, color, reduced, true, 20);
     }
     // Heavy attack closing in: the edges of the screen take the phase colour.
     if (boss.heavy && boss.impact > w.time) {
@@ -365,12 +365,12 @@ export function bossFinale(c: Ctx, age: number, x: number, y: number, scale: num
 export function endingScreen(c: Ctx, w: World, memory: StageMemory, idle: number, h: number, heroX: number, floor: number, reduced: boolean, low: boolean) {
   const ended = memory.endedAge(w, idle); if (ended < 0) return;
   if (w.phase === 'DEFEAT') {
-    c.globalAlpha = clamp01(ended / 1.2) * .55; c.fillStyle = '#0a0308'; c.fillRect(0, 0, 430, h); c.globalAlpha = 1; return;
+    c.globalAlpha = (reduced ? 1 : clamp01(ended / 1.2)) * .55; c.fillStyle = '#0a0308'; c.fillRect(0, 0, 430, h); c.globalAlpha = 1; return;
   }
   const finale = memory.finaleAge(w, idle);
   if (!reduced && finale >= 1.1 && finale < 2.2) { c.globalAlpha = .85 * Math.exp(-(finale - 1.1) * 4.5); c.fillStyle = '#fff6dc'; c.fillRect(0, 0, 430, h); c.globalAlpha = 1; }
   // Warm glory over the party; static under reduced motion.
-  const rise = clamp01((ended - .25) / 1.2), time = reduced ? 0 : idle;
+  const rise = reduced ? 1 : clamp01((ended - .25) / 1.2), time = reduced ? 0 : idle;
   c.save(); c.globalCompositeOperation = 'lighter';
   for (let i = 0; i < (low ? 4 : 7); i++) {
     const a = -Math.PI / 2 + (i - 3) * .23 + Math.sin(time * .35 + i) * .04, len = h * 1.1, wide = .05 + hash(i * 3.3) * .04;

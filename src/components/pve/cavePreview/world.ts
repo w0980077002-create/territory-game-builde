@@ -139,7 +139,7 @@ function roadside(c: Ctx, w: World, h: number, time: number, reduced: boolean) {
     if (prop.glow) pool(c, prop.glow.color, x + prop.glow.x * size, base + 5, prop.glow.r * 1.5 * size, 13 * size, .3 + near * .3 + breath * .04);
     if (!drawProp(c, prop, x, base, size, prop.fire ? 0 : sway, prop.fire ? 0 : near * .03 * (reduced ? 0 : Math.sin(passed / 9)))) continue;
     if (prop.fire) flame(c, x + prop.fire.x * size, base + prop.fire.y * size, size, time, seed, prop.fire.hot, near);
-    else if (prop.glow) light(c, prop.glow.color, x + prop.glow.x * size, base + prop.glow.y * size, prop.glow.r * size * (1 + near * .25), .3 + near * .34 + breath * .05);
+    else if (prop.glow && !reduced) light(c, prop.glow.color, x + prop.glow.x * size, base + prop.glow.y * size, prop.glow.r * size * (1 + near * .25), .3 + near * .34 + breath * .05);
     // Just behind the hero the prop lets go of a little light: spores, sparks, crystal dust.
     if (!reduced && passed > 6 && passed < 190 && (prop.glow || prop.fire)) {
       const origin = prop.glow ?? { x: 0, y: -40 };
@@ -154,7 +154,7 @@ function roadside(c: Ctx, w: World, h: number, time: number, reduced: boolean) {
   }
 }
 /** Landmarks in the middle distance (depth .5): a district's own architecture and growth. */
-function landmarks(c: Ctx, w: World, h: number, time: number) {
+function landmarks(c: Ctx, w: World, h: number, time: number, reduced: boolean) {
   const { horizon } = stageLayout(h), pieces = sceneryKit(w.biome).mid; if (!pieces.length) return;
   const spacing = 290, shift = (w.cameraX - w.roomX) * .5, k = h / 560;
   for (let n = Math.floor((shift - 160) / spacing); n * spacing - shift < 560; n++) {
@@ -164,7 +164,8 @@ function landmarks(c: Ctx, w: World, h: number, time: number) {
     if (!drawProp(c, prop, x, base, size)) continue;
     c.globalAlpha = 1;
     if (prop.fire) flame(c, x + prop.fire.x * size, base + prop.fire.y * size, size * .9, time, seed, prop.fire.hot, 0);
-    if (prop.glow) light(c, prop.glow.color, x + prop.glow.x * size, base + prop.glow.y * size, prop.glow.r * size, .26 + .06 * Math.sin(time * 1.3 + seed * 20));
+    // Budget: one modest halo per landmark, none on the low tier.
+    if (prop.glow && !reduced) light(c, prop.glow.color, x + prop.glow.x * size, base + prop.glow.y * size, prop.glow.r * size * .62, .34 + .07 * Math.sin(time * 1.3 + seed * 20));
   }
   c.globalAlpha = 1;
 }
@@ -189,7 +190,6 @@ export function drawBackdrop(c: Ctx, w: World, images: Images, h: number, life: 
   if (w.biome === 'forge') {
     // The heart of the rift burns from below: the vault is lit red and breathes.
     c.fillStyle = '#8f1d0a40'; c.fillRect(0, 0, 430, farH);
-    c.save(); c.globalCompositeOperation = 'lighter'; pool(c, '#ff5a2a', 215, horizon, 330, h * .3, .3 + (reduced ? 0 : .08 * Math.sin(w.time * 1.3))); c.restore();
   }
   if (w.biome === 'astral' && !reduced) {
     // Now and then a star falls behind the broken vault.
@@ -210,7 +210,7 @@ export function drawBackdrop(c: Ctx, w: World, images: Images, h: number, life: 
     }
     c.restore();
   }
-  landmarks(c, w, h, time);
+  landmarks(c, w, h, time, reduced);
   const haze = c.createLinearGradient(0, horizon - h * .2, 0, horizon + h * .06);
   haze.addColorStop(0, theme.sky + '00'); haze.addColorStop(.72, theme.sky + '8c'); haze.addColorStop(1, theme.sky + '00');
   c.fillStyle = haze; c.fillRect(0, horizon - h * .2, 430, h * .26);
@@ -249,7 +249,7 @@ function frame(c: Ctx, w: World, h: number, time: number, reduced: boolean) {
       const prop = list[Math.floor(seed * 71) % list.length], x = n * gap + seed * 150 - shift, k = size * (.85 + seed * .4);
       const sway = lift || reduced ? 0 : Math.sin(time * .9 + seed * 20) * .018;
       if (!drawProp(c, prop, x, base + lift * k, k, sway)) continue;
-      if (prop.glow) light(c, prop.glow.color, x + prop.glow.x * k, base + lift * k + prop.glow.y * k, prop.glow.r * k, .3 + (reduced ? 0 : .08 * Math.sin(time * 1.4 + seed * 9)));
+      if (prop.glow && !reduced) light(c, prop.glow.color, x + prop.glow.x * k, base + lift * k + prop.glow.y * k, prop.glow.r * k * .7, .34 + .08 * Math.sin(time * 1.4 + seed * 9));
     }
   };
   drawSet(set.hang, 1.2, 400, -4, scale * .82, 0);
@@ -263,7 +263,7 @@ export function drawForeground(c: Ctx, w: World, h: number, life: CaveLife, redu
   if (!crystal) {
     // The air of each district: fireflies, embers, falling star dust.
     const tones = SPARK[w.biome];
-    for (let i = 0; i < (reduced ? 8 : 24); i++) {
+    for (let i = 0; i < (reduced ? 8 : 18); i++) {
       const depth = i % 3 === 0 ? 1.25 : .62, k = hash(i * 9.1), band = Math.max(60, floor - 40);
       const x = mod(i * 67.3 - (cam - w.roomX) * depth + Math.sin(time * .4 + i) * 14, 470) - 20;
       let py = 30 + mod(i * 43.1, band);
@@ -276,7 +276,7 @@ export function drawForeground(c: Ctx, w: World, h: number, life: CaveLife, redu
     if (!reduced) for (let i = 0; i < 2; i++) pool(c, theme.color, mod(i * 300 - (cam - w.roomX) * .8 + w.time * 5, 760) - 160, h * .93, 190, h * .05, .11);
   }
   frame(c, w, h, time, reduced);
-  if (w.biome === 'forge') { c.save(); c.globalCompositeOperation = 'lighter'; pool(c, '#ff4a1c', 215, h + 6, 330, h * .13, .34 + (reduced ? 0 : .1 * Math.sin(w.time * 1.9))); c.restore(); }
+  if (w.biome === 'forge') { c.save(); c.globalCompositeOperation = 'lighter'; pool(c, '#ff4a1c', 215, h + 4, 240, h * .08, .42 + (reduced ? 0 : .12 * Math.sin(w.time * 1.9))); c.restore(); }
   // Soft frame: keeps the eye on the road and seats the scene into the wooden HUD.
   const top = c.createLinearGradient(0, 0, 0, h * .2); top.addColorStop(0, '#04060bb0'); top.addColorStop(1, '#04060b00');
   c.fillStyle = top; c.fillRect(0, 0, 430, h * .2);
