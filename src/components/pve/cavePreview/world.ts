@@ -6,6 +6,7 @@
  */
 import { BIOMES, type Biome } from '../../../game/cavePreviewWorld/catalog';
 import type { World } from '../../../game/cavePreviewWorld/engine';
+import { drawCrystalBackdrop, drawCrystalForeground } from './crystalEnvironment';
 
 type Ctx = CanvasRenderingContext2D;
 type Images = Map<string, HTMLImageElement>;
@@ -205,6 +206,9 @@ function roadLight(c: Ctx, biome: Biome, seed: number, x: number, base: number, 
 
 /** Everything behind the party: far vault, mid silhouettes, the road and its lights. */
 export function drawBackdrop(c: Ctx, w: World, images: Images, h: number, life: CaveLife, reduced: boolean) {
+  if (w.biome === 'crystal' && drawCrystalBackdrop(c, w, images, h, reduced)) {
+    life.drawBats(c, w, h); return;
+  }
   const theme = BIOMES[w.biome], { horizon, scale } = stageLayout(h), cam = w.cameraX, time = reduced ? 0 : w.time;
   c.fillStyle = theme.sky; c.fillRect(0, 0, 430, h);
   // Far painted vault, depth .2.
@@ -257,9 +261,10 @@ export function drawBackdrop(c: Ctx, w: World, images: Images, h: number, life: 
 }
 
 /** Close foreground (depth 1.35) and atmosphere in front of the party. */
-export function drawForeground(c: Ctx, w: World, h: number, life: CaveLife, reduced: boolean) {
+export function drawForeground(c: Ctx, w: World, h: number, life: CaveLife, reduced: boolean, images?: Images) {
   const theme = BIOMES[w.biome], cam = w.cameraX, { horizon, floor } = stageLayout(h);
   life.drawMotes(c, w);
+  if (w.biome === 'crystal' && images && drawCrystalForeground(c, w, images, h, reduced)) return;
   // Drifting motes at two depths.
   for (let i = 0; i < (reduced ? 8 : 26); i++) {
     const depth = i % 3 === 0 ? 1.25 : .62, k = hash(i * 9.1);

@@ -1,0 +1,18 @@
+[
+  {
+    "drawImage": 2263,
+    "linear": 2190,
+    "radial": 73,
+    "canvases": 0,
+    "frames": 73,
+    "label": "before"
+  },
+  {
+    "drawImage": 2628,
+    "linear": 0,
+    "radial": 73,
+    "canvases": 0,
+    "frames": 73,
+    "label": "after"
+  }
+]

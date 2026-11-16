@@ -1,6 +1,7 @@
 import { portalsFor, portalOffset, DIFFICULTY } from '../../../game/cavePreviewWorld/engine';
 import { drawHero, HERO_PARTS } from './heroRig';
 import { CaveLife, drawBackdrop, drawForeground, light, stageLayout } from './world';
+import { CRYSTAL_ASSETS, warmCrystalEnvironment } from './crystalEnvironment';
 import { BIOMES, CREATURES, APPROVED_CAVE_ART, caveActorArt } from '../../../game/cavePreviewWorld/catalog';
 import type { World, Pose } from '../../../game/cavePreviewWorld/engine';
 export const ASSET_ROOT = 'assets/territory/';
@@ -8,7 +9,7 @@ export const PARTY = ['heroes/male_viking', 'followers/northern_warrior', 'follo
 export const POSES = ['idle', 'attack', 'hit', 'block', 'dodge', 'death'] as const;
 /** Canvas art plus every HUD picture, so the portable build embeds one complete set. */
 export function assetPaths() {
-  return [...APPROVED_CAVE_ART.map(id => `cave-expedition/approved/${id}.webp`), 'cave-expedition/creatures.webp', 'cave-expedition/chambers.webp', 'cave-expedition/biomes.webp', 'cave-expedition/party-run.webp', 'cave-expedition/crystal-chamber.webp', 'ui/wooden-plaque.webp',
+  return [...APPROVED_CAVE_ART.map(id => `cave-expedition/approved/${id}.webp`), 'cave-expedition/creatures.webp', 'cave-expedition/chambers.webp', 'cave-expedition/biomes.webp', 'cave-expedition/party-run.webp', 'cave-expedition/crystal-chamber.webp', 'ui/wooden-plaque.webp', ...CRYSTAL_ASSETS.map(id => `cave-expedition/${id}`),
     ...['astral','ember'].map(id => `cave/playtest/wings-${id}.svg`),
     ...['potion-mana', 'potion-fire', 'potion-green'].map(id => `ui/items/${id}.webp`),
     ...HERO_PARTS.map(part => `combat2d/male_viking/${part}.webp`),
@@ -20,8 +21,12 @@ export type Images = Map<string, HTMLImageElement>;
 export async function loadImages(resolve: (s: string) => string): Promise<Images> {
   const images: Images = new Map();
   await Promise.all(assetPaths().map(path => new Promise<void>((ok, fail) => {
-    const img = new Image(); img.onload = () => { images.set(path, img); ok(); }; img.onerror = () => fail(new Error(`Не удалось загрузить ${path}`)); img.src = resolve(path);
+    const img = new Image(); img.onload = () => { images.set(path, img); ok(); };
+    // New scenery is optional: a failed decorative download must not block the cave.
+    img.onerror = () => CRYSTAL_ASSETS.some(id => path.endsWith('/' + id)) ? ok() : fail(new Error(`Не удалось загрузить ${path}`));
+    img.src = resolve(path);
   })));
+  warmCrystalEnvironment(images);
   // Generated atlases carry faint alpha haze around the figures; over the dark road it reads as a box.
   for (const path of [ASSET_ROOT + 'cave-expedition/creatures.webp', ASSET_ROOT + 'cave-expedition/party-run.webp']) {
     const img = images.get(path)!, clean = document.createElement('canvas'); clean.width = img.width; clean.height = img.height;
@@ -215,7 +220,7 @@ export function render(c: CanvasRenderingContext2D, w: World, images: Images, he
     else text(c, e.text === 'dodge' ? (en ? 'EVADE' : 'УКЛОН') : e.text === 'ward' ? (en ? 'WARD' : 'ЩИТ') : e.text === 'block' ? (en ? 'BLOCK' : 'БЛОК') : e.text, x, y - age * 46, 16, e.kind === 'energy' ? '#9eeaff' : e.kind === 'block' ? '#8fdcff' : '#ffe9be');
     c.restore();
   }
-  drawForeground(c, w, h, life, reduced);
+  drawForeground(c, w, h, life, reduced, images);
   c.restore();
   // Stepping through an arch: the chosen light floods the screen, then the next vault opens.
   if (w.phase === 'ENTER' || w.phase === 'NEXT_ROOM') {

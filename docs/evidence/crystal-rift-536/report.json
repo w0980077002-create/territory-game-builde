@@ -1,0 +1,55 @@
+[
+  {
+    "width": 320,
+    "height": 568,
+    "identical_state_before_after": true,
+    "slots": 13,
+    "overflow": false
+  },
+  {
+    "width": 360,
+    "height": 640,
+    "identical_state_before_after": true,
+    "slots": 13,
+    "overflow": false
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "identical_state_before_after": true,
+    "slots": 13,
+    "overflow": false
+  },
+  {
+    "width": 430,
+    "height": 740,
+    "identical_state_before_after": true,
+    "slots": 13,
+    "overflow": false
+  },
+  {
+    "four_crystal_rooms": "PASS",
+    "boss": "PASS",
+    "kills": 45
+  },
+  {
+    "label": "before",
+    "cpu_throttle": 4,
+    "dpr": 2,
+    "frames": 102,
+    "median_ms": 50.1,
+    "p95_ms": 66.8,
+    "heap_bytes": 7613556,
+    "real_android": false
+  },
+  {
+    "label": "after",
+    "cpu_throttle": 4,
+    "dpr": 2,
+    "frames": 114,
+    "median_ms": 50,
+    "p95_ms": 66.7,
+    "heap_bytes": 7428632,
+    "real_android": false
+  }
+]
