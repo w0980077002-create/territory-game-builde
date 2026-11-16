@@ -76,6 +76,20 @@ with sync_playwright() as pw:
    p.reload();ready(p); assert world(p)['paused']; assert ledger(p)['dark_stones']==49
    button(p,'Продолжить путь','Continue',lang).click()
    p.wait_for_timeout(1100)
+   if width==320 and lang=='ru':
+    # Production-style account: rotating an active floor must safely pause,
+    # journal its checkpoint and never auto-resume on return to portrait.
+    assert not world(p)['paused']
+    p.set_viewport_size({'width':740,'height':320})
+    p.wait_for_timeout(250)
+    assert world(p)['paused'], 'Cave must pause when a phone turns landscape'
+    assert p.evaluate('(key)=>!!localStorage.getItem(key)',KEY), 'Rotate must preserve checkpoint'
+    paused_time=world(p)['time']
+    p.set_viewport_size({'width':320,'height':740})
+    p.wait_for_timeout(250)
+    assert world(p)['paused'] and world(p)['time']==paused_time, 'Portrait must not auto-resume'
+    button(p,'Продолжить путь','Continue',lang).click()
+    assert not world(p)['paused']
    assert p.locator('[aria-label="'+('Уровень героя 23' if lang=='ru' else 'Hero level 23')+'"]').count()==1
    assert world(p)['maxHp']==1620 and world(p)['attackBonus']==60 and world(p)['defenseBonus']==45
    p.evaluate('__caveCloud.failFinishAfterCommit=true')

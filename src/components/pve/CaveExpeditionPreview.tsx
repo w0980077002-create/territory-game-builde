@@ -155,7 +155,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
     if (!focused) return;
     const old = document.body.style.overflow; document.body.style.overflow = 'hidden';
     const previous = document.activeElement;
-    const siblings = [...document.body.children].filter((node): node is HTMLElement => node instanceof HTMLElement && !node.classList.contains('cx-focus')).map(node => ({ node, inert: node.inert }));
+    const siblings = [...document.body.children].filter((node): node is HTMLElement => node instanceof HTMLElement && !node.classList.contains('cx-focus') && !node.classList.contains('territory-portrait-only-overlay')).map(node => ({ node, inert: node.inert }));
     siblings.forEach(({ node }) => { node.inert = true; });
     canvas.current?.closest('main')?.querySelector('button')?.focus();
     return () => { document.body.style.overflow = old; siblings.forEach(({ node, inert }) => { node.inert = inert; }); if (previous instanceof HTMLElement && previous.isConnected) previous.focus(); };
@@ -189,6 +189,22 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
       event.preventDefault();
       setView(structuredClone(w));
     };
+    // The game is portrait-only on phones. Rotating in Telegram must not
+    // allow auto-combat to continue behind the full-screen rotate warning.
+    // Never auto-resume on portrait: the player explicitly resumes the checkpoint.
+    const orientation = window.matchMedia('(orientation: landscape)');
+    const pauseForLandscape = () => {
+      if (!userId || !orientation.matches || Math.min(window.innerWidth, window.innerHeight) >= 520) return;
+      if (['LOBBY', 'VICTORY', 'DEFEAT'].includes(w.phase) || w.paused) return;
+      w.paused = true;
+      panelPause.current = true;
+      helpState.current.wasPaused = true;
+      setView(structuredClone(w));
+      setStorageOk(saveCheckpoint(w, runId.current, userId));
+    };
+    pauseForLandscape();
+    orientation.addEventListener?.('change', pauseForLandscape);
+    window.addEventListener('resize', pauseForLandscape);
     window.addEventListener('pagehide', visibility); document.addEventListener('visibilitychange', visibility); document.addEventListener('keydown', keyboard);
     const loop = (now: number) => {
       const dt = last ? (now - last) / 1000 : 0; last = now;
@@ -212,7 +228,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
       frame = requestAnimationFrame(loop);
     };
     frame = requestAnimationFrame(loop);
-    return () => { saveCheckpoint(w, runId.current, userId); cancelAnimationFrame(frame); window.removeEventListener('pagehide', visibility); document.removeEventListener('visibilitychange', visibility); document.removeEventListener('keydown', keyboard); };
+    return () => { saveCheckpoint(w, runId.current, userId); cancelAnimationFrame(frame); orientation.removeEventListener?.('change', pauseForLandscape); window.removeEventListener('resize', pauseForLandscape); window.removeEventListener('pagehide', visibility); document.removeEventListener('visibilitychange', visibility); document.removeEventListener('keydown', keyboard); };
   }, [ready, onWorld, en, userId]);
   function refresh() { setView(structuredClone(world.current)); setStorageOk(saveCheckpoint(world.current, runId.current, userId)); }
   function outfit(w: World) {
