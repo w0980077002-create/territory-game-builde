@@ -138,6 +138,45 @@ try{
   assert.equal((await one('SELECT (item_output#>>\'{equipment,level}\')::int level FROM public.territory_profession_stage8_items WHERE item_id=$1',[holdUuid])).level,5,
     'Historical quarantine MUST NOT silently promote the registry');
 
+  // Verified admin exception: client marker alone must NOT authorize a
+  // quarantine. Matching private approval and claimed exact equipment do.
+  const approvedOwner=player(5),approvedUuid='70000000-0000-4000-8000-000000000005';
+  const approvedId='stage8_'+approvedUuid;
+  const approvedBase={...output,equipment:{...output.equipment,id:'approved-registry'}};
+  const approvedMirror={...approvedBase,id:approvedId,qty:1,equipment:{
+    ...approvedBase.equipment,id:approvedId,level:59,upgradeCount:2,attack:40,adminTestLevel:true}};
+  await db.query('INSERT INTO public.players(id,level,game_state) VALUES($1,$2,$3)',
+    [approvedOwner,100,JSON.stringify(state(100))]);
+  await db.query('INSERT INTO public.territory_profession_stage8_items VALUES($1,$2,$3)',
+    [approvedUuid,approvedOwner,JSON.stringify(approvedBase)]);
+  await db.exec('ALTER TABLE public.players DISABLE TRIGGER territory_gear_guard_before_v4');
+  await save(approvedOwner,state(100,[approvedMirror]));
+  await db.exec('ALTER TABLE public.players ENABLE TRIGGER territory_gear_guard_before_v4');
+  const approvedFingerprint=(await one(`
+    SELECT md5(i.player_id::text||':'||i.item_id::text||':'||
+      (i.item_output->'equipment')::text||':'||(x.value->'equipment')::text||':bag') h
+    FROM public.territory_profession_stage8_items i
+    JOIN public.players p ON p.id=i.player_id
+    CROSS JOIN LATERAL jsonb_array_elements(p.game_state->'inventory') x(value)
+    WHERE i.item_id=$1 AND x.value->>'id'='stage8_'||i.item_id::text`,[approvedUuid])).h;
+  const approvedSet=JSON.stringify([{fingerprint:holdFingerprint,status:'unresolved'},
+    {fingerprint:approvedFingerprint,status:'admin_approved'}]);
+  await assert.rejects(
+    ()=>db.query('SELECT territory_private.stage8_prepare_historical_quarantine_v1($1::jsonb)',
+      [approvedSet]),/admin_evidence_missing/,
+    'Client adminTestLevel marker must never certify itself');
+  await db.query('INSERT INTO territory_private.owner_test_gear_v1(player_id,slot,equipment_id,target_level) VALUES($1,$2,$3,$4)',
+    [approvedOwner,'weapon',approvedId,59]);
+  await db.query(`INSERT INTO public.admin_grants(player_id,kind,payload,claimed_at)
+    VALUES($1,'adjust',$2::jsonb,clock_timestamp())`,[approvedOwner,JSON.stringify({
+      adminTestGearId:approvedId,adminTestLevel:true,
+      equipLevels:{weapon:59},adminTestEquipment:approvedMirror.equipment})]);
+  await db.query('SELECT territory_private.stage8_prepare_historical_quarantine_v1($1::jsonb)',[approvedSet]);
+  await save(approvedOwner,state(100));
+  assert.deepEqual((await saved(approvedOwner)).inventory[0].equipment,approvedMirror.equipment);
+  await assert.rejects(()=>forge(983,5,approvedOwner,approvedUuid),/forge_on_hold/);
+  assert.equal((await one('SELECT count(*)::int n FROM territory_private.stage8_historical_quarantine_v1')).n,2);
+
   await save(seller,state(100,[mirror(output)]));
   let current=5,operation=10;
   // Actual server forge (including authoritative RNG), not direct registry UPDATE.
