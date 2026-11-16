@@ -3,6 +3,9 @@ name: Build and deploy Territory to GitHub Pages
 on:
   push:
     branches: [main]
+    # Documentation-only changes do not rebuild or republish the game.
+    paths-ignore:
+      - '**/*.md'
   workflow_dispatch:
 
 permissions:
