@@ -114,7 +114,7 @@ try{
       DROP TRIGGER IF EXISTS territory_gear_guard_before_v4 ON public.players;
     `);
     const source=readFileSync('scripts/sql/stage8_live_player_trigger_snapshot_20261116.sql','utf8');
-    const expected=[...source.matchAll(/^-- ([^|]+) \| ([^|]+) \| md5=([a-f0-9]{32})$/gm)];
+    const expected=[...source.matchAll(/^-- ([^|\r\n]+) \| ([^|\r\n]+) \| md5=([a-f0-9]{32})$/gm)];
     assert.equal(expected.length,11,'Require exactly 11 source definitions');
     await db.exec(source);
     const installed=(await db.query(`
