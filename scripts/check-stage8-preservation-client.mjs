@@ -24,6 +24,10 @@ assert.deepEqual(profile.state.inventory[0].equipment,gear,'Real cloud load pres
 assert.deepEqual(raw.inventory[0],item);
 assert.strictEqual(actions.equipItem(profile.state,item),profile.state,'Level-1 owner cannot equip level-61 gear');
 const strong={...profile.state,player:{...profile.state.player,level:100}};
+const lowGear={...gear,level:1,baseLevel:1,upgradeCount:0};
+const lowItem={...item,equipment:lowGear};
+assert.deepEqual(actions.equipItem({...profile.state,inventory:[lowItem]},lowItem).player.equipped.weapon,lowGear,
+  'Equipping a certified low-level item must not apply a shop-template stat curve');
 const equipped=actions.equipItem(strong,item);
 assert.deepEqual(equipped.player.equipped.weapon,gear);
 assert.equal(equipped.inventory.length,0);
