@@ -16,7 +16,7 @@ with sync_playwright() as p:
   page.on('dialog',lambda d:d.accept());page.on('pageerror',lambda e:errors.append(str(e)));page.on('request',lambda r:requests.append(r.url) if not r.url.startswith(('http://127.0.0.1','data:')) else None)
   page.goto(f'http://127.0.0.1:{server.server_port}/test-fixture.html');page.wait_for_function('()=>window.__caveDemo')
   page.evaluate("localStorage.setItem('player-sentinel','unchanged')")
-  page.get_by_role('button',name='В путь').tap();page.get_by_role('button',name='Авто навыков',exact=True).tap()
+  page.get_by_role('button',name='В путь').tap();assert page.get_by_role('button',name='Авто навыков',exact=True).get_attribute('aria-pressed')=='true'
   choices=0;restored=False
   for step in range(1000):
    w=page.evaluate('({phase:__caveDemo.world.phase,stars:__caveDemo.world.stars,kills:__caveDemo.world.kills,hp:__caveDemo.world.hp,unlocked:__caveDemo.world.unlockedFloor})')

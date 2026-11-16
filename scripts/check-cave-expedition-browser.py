@@ -40,7 +40,9 @@ def visible(page):
         if element.evaluate("e=>!!e.closest('.cx-actions,.cx-native-nav,.cx-portals')"): assert box['height'] >= 44
     # The cave HUD always shows 12 dark slots and a separate wings tile, never the ordinary seven.
     assert page.locator('.cx-controls [data-testid=cx-umbra-slot]').count()==12 and page.locator('.cx-controls [data-testid=cx-wings-slot]').count()==1
-    assert page.locator('.cx-native-nav button').count()==7 and page.locator('.cx-belt button').count()==8
+    assert page.locator('.cx-native-nav button').count()==7
+    assert page.locator('.cx-belt-toggle').count()==1
+    assert page.locator('.cx-belt button').count()==0, 'Elixirs should be folded unless explicitly opened'
 
 def screenshot(page, width, name):
     # The world advances every frame; React publishes the HUD at 10 Hz.
@@ -60,6 +62,12 @@ try:
       page.on('request',lambda req: external.append(req.url) if not req.url.startswith((URL,'data:')) else None)
       page.goto(URL+'/test-fixture.html?legacy=1');page.wait_for_function('()=>window.__caveDemo')
       screenshot(page,width,'lobby')
+      # User-approved compact HUD: the full belt is available on demand, never deleted.
+      page.get_by_role('button',name='Показать эликсиры').tap()
+      assert page.locator('.cx-belt button').count()==8
+      assert page.get_by_role('button',name='Автозелья').count()==1
+      page.get_by_role('button',name='Скрыть эликсиры').tap()
+      assert page.locator('.cx-belt button').count()==0
       page.get_by_role('button',name='В путь').tap();step(page,2)
       # 0.65 s entrance, then the hero accelerates from x=175 toward the pack waiting on the road.
       # Do not depend on extra wall-clock RAFs during a slow test tap.

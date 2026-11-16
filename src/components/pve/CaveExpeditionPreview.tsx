@@ -1,4 +1,4 @@
-import { Sword, Shield, HeartPulse, Wind, Pause, Play, ChevronLeft, RefreshCw, Volume2, VolumeX, CircleHelp } from 'lucide-react';
+import { Sword, Shield, HeartPulse, Wind, Pause, Play, ChevronLeft, ChevronDown, ChevronUp, RefreshCw, Volume2, VolumeX, CircleHelp } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BIOMES, caveBoss, type Biome } from '../../game/cavePreviewWorld/catalog';
@@ -32,6 +32,8 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
   const [bank, dispatch] = useCaveSandbox();
   const [panel, setPanel] = useState<string | null>(null), [inventoryTab, setInventoryTab] = useState<'gear' | 'gems'>('gear');
   const [focusSlot, setFocusSlot] = useState<UmbraSlotId | 'wings' | null>(null);
+  // The seven elixirs stay functional but never occupy the battle screen by default.
+  const [beltOpen, setBeltOpen] = useState(false);
   const panelPause = useRef(false);
   const rune = useRef<HTMLButtonElement>(null);
   const [storageOk, setStorageOk] = useState(true);
@@ -55,7 +57,6 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
   useEffect(() => { onActiveChange?.(playing || (!!userId && ended && confirmedRun !== runId.current)); return () => onActiveChange?.(false); }, [playing, ended, confirmedRun, userId, onActiveChange]);
   useEffect(() => { if (!notice) return; const timer = window.setTimeout(() => setNotice(''), 2600); return () => window.clearTimeout(timer); }, [notice]);
   const names: Record<Skill, string> = { cleave: t('Раскол', 'Cleave'), ward: t('Заслон', 'Ward'), heal: t('Источник', 'Spring'), dodge: t('Уклон', 'Evade') };
-  const labels = { cleave: t('Раскол', 'Cleave'), ward: t('Защита', 'Guard'), heal: t('Лечение', 'Heal'), dodge: t('Уклон', 'Evade') };
   const icons = { cleave: Sword, ward: Shield, heal: HeartPulse, dodge: Wind };
   const hints = { cleave: t('По группе', 'Area strike'), ward: t('Снижает урон', 'Reduce damage'), heal: t('Лечение отряда', 'Party healing'), dodge: t('Избежать удара', 'Evade a hit') };
   useEffect(() => {
@@ -270,7 +271,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
         setCloud(result);
         world.current.unlockedFloor = result.unlocked_stage;
         setConfirmedRun(null);
-        world.current.rules = 2; start(world.current, target); outfit(world.current);
+        world.current.rules = 2; start(world.current, target); world.current.auto = true; outfit(world.current);
       } catch {
         if (!componentLive.current) return;
         setCloudReload(n => n + 1);
@@ -278,7 +279,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
         return;
       } finally { cloudLock.current = false; setCloudBusy(false); }
     } else {
-      world.current.rules = legacyRules ? 1 : 2; start(world.current, floor); runId.current = crypto.randomUUID(); outfit(world.current);
+      world.current.rules = legacyRules ? 1 : 2; start(world.current, floor); world.current.auto = !legacyRules; runId.current = crypto.randomUUID(); outfit(world.current);
     }
     helpState.current.open = false; setHelp(false); setPanel(null); setNotice('');
     void audio.current?.unlock().catch(() => setMuted(true)); refresh();
@@ -400,7 +401,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
         const left = Math.max(0, view.cooldown[key] - view.time), cd = Math.ceil(left), Icon = icons[key];
         return <button key={key} className={`cx-skill-${key}`} aria-label={names[key]} title={`${hints[key]} · ${SKILLS[key].cost}✦`} disabled={skillBlock(view, key) !== null} onClick={() => { skill(world.current, key); refresh(); }}
           style={{ '--cd': left / SKILLS[key].cooldown } as React.CSSProperties}>
-          <Icon size={21} strokeWidth={2} /><span className="cx-skill-label">{labels[key]}</span><i>{SKILLS[key].cost}</i>{cd > 0 && <b className="cx-cooldown">{cd}</b>}
+          <Icon size={15} strokeWidth={2.2} aria-hidden="true" />{cd > 0 && <b className="cx-cooldown">{cd}</b>}
         </button>;
       })}</div>}
       {view.paused && playing && !help && panel === null && <div className="cx-overlay"><strong>{t('Привал', 'Rest stop')}</strong><p>{t('Экспедиция сохранена. Мир ждёт вашего шага.', 'The expedition is saved. The world waits for your step.')}</p><button className="cx-primary" onClick={pause}>{t('Продолжить путь', 'Continue')}</button><button onClick={exit}>{t('К входному порталу', 'Back to entrance')}</button></div>}
@@ -408,6 +409,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
       {ended && panel === null && <div className={`cx-result ${view.phase === 'VICTORY' ? 'cx-victory' : ''}`}><span className="cx-result-emblem">{view.phase === 'VICTORY' ? '♛' : '⛨'}</span><span className="cx-eyebrow">{view.phase === 'VICTORY' ? t('ПОБЕДА', 'VICTORY') : t('ПУТЬ ПРЕРВАН', 'DEFEAT')}</span><h1>{view.phase === 'VICTORY' ? t('Бездна отступила', 'The Abyss retreats') : t('Новый шанс ждёт', 'Another chance awaits')}</h1><p>{view.route.map(biomeName).join(' → ')}</p>{userId && <p role="status">{confirmedRun === runId.current ? t('Результат сохранён', 'Result saved') : cloudBusy ? t('Сохраняем результат…', 'Saving result…') : t('Ожидает подтверждения', 'Awaiting confirmation')}</p>}<p>{clock} · {t('враги', 'foes')}: {view.kills} · {t('блоки', 'blocks')}: {view.blocks} · {t('умения', 'skills')}: {view.casts}</p>{view.phase === 'VICTORY' && (!userId || confirmedRun === runId.current) && <div className="cx-loot">{bank.lastLoot?.items.map(item => <div key={item.id}><img src={assetUrl(umbraTemplate(item.templateId)!.art)} alt={t('Добыча', 'Loot')} /><span>{t('ур.', 'Lv.')}{item.level}</span></div>)}</div>}{view.phase === 'VICTORY' && <small>{userId ? t('ТЕСТОВАЯ добыча · только на этом устройстве', 'TEST loot · on this device only') : t('Добыча ждёт в тёмном складе', 'The loot waits in the dark storage')}</small>}{view.phase === 'VICTORY' && <button className="cx-primary" onClick={() => navigate('inventory')}>{t('Открыть добычу', 'Open loot')}</button>}{view.phase === 'VICTORY' && (userId ? (!cloudBusy && !!cloud && !cloud.active_run_id && cloud.unlocked_stage > view.floor) : view.unlockedFloor > view.floor) && <button className="cx-primary" onClick={() => void begin(world.current.floor + 1)}>{t('Следующий этаж', 'Next floor')} →</button>}<button className="cx-primary" disabled={cloudBusy || (!!userId && ended && confirmedRun !== runId.current)} onClick={() => void begin()}>{t('Повторить забег', 'Try again')} ↻</button><button onClick={exit}>{t('К входному порталу', 'Back to entrance')}</button></div>}
     </div>
     {!doorway && <section className="cx-controls" aria-label={t('Панель героя', 'Hero panel')} {...(panel !== null ? { inert: '' } : {})}>
+      <button type="button" className="cx-belt-toggle" aria-expanded={beltOpen} aria-controls="cx-elixir-tray" aria-label={beltOpen ? t('Скрыть эликсиры', 'Hide elixirs') : t('Показать эликсиры', 'Show elixirs')} onClick={() => setBeltOpen(open => !open)}>{beltOpen ? <ChevronDown size={15} /> : <ChevronUp size={15} />}</button>
       <Vitals view={view} en={en} level={heroLevel} onStats={() => navigate('hero')} />
       <UmbraMosaic bank={bank} en={en} assetUrl={assetUrl} onOpen={openGear} />
       <div className="cx-control-status">
@@ -420,7 +422,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
         <button className="cx-icon-button" aria-label={t('Почётные звания', 'Honor ranks')} onClick={() => navigate('honor')}><img src={assetUrl('ic-honor.webp')} alt="" />{honorReady && <i />}</button>
         <button className="cx-icon-button" aria-label={t('Благословение', 'Blessing')} onClick={() => navigate('blessing')}><img src={assetUrl('ic-blessing.webp')} alt="" />{bank.blessSlots.some(Boolean) && <i className="on" />}</button>
       </div>
-      <Belt world={view} en={en} assetUrl={assetUrl} onDrink={drink} onAuto={() => { world.current.autoPotions = !world.current.autoPotions; refresh(); }} />
+      <div id="cx-elixir-tray" hidden={!beltOpen}>{beltOpen && <Belt world={view} en={en} assetUrl={assetUrl} onDrink={drink} onAuto={() => { world.current.autoPotions = !world.current.autoPotions; refresh(); }} />}</div>
     </section>}
     {!storageOk && <p className="cx-save-note" role="status">{t('Хранилище недоступно — экспедиция только до закрытия страницы.', 'Storage unavailable — this visit only.')}</p>}
     {notice && <button className="cx-receipt" onClick={() => setNotice('')} aria-label={t('Закрыть уведомление', 'Dismiss notification')}>{notice}</button>}

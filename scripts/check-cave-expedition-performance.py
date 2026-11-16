@@ -13,7 +13,7 @@ with sync_playwright() as p:
     browser=p.chromium.launch(executable_path=os.getenv('CAVE_BROWSER') or shutil.which('chromium'),args=['--no-sandbox'])
     context=browser.new_context(viewport={'width':360,'height':640},is_mobile=True,has_touch=True)
     page=context.new_page();page.goto(f'http://127.0.0.1:{server.server_port}/test-fixture.html')
-    page.get_by_role('button',name='В путь').tap();page.get_by_role('button',name='Авто навыков').tap()
+    page.get_by_role('button',name='В путь').tap();assert page.get_by_role('button',name='Авто навыков').get_attribute('aria-pressed')=='true'
     page.locator('.cx-portals button').nth(2).tap();page.wait_for_function("()=>__caveDemo.world.phase==='FIGHT'")
     client=context.new_cdp_session(page);client.send('Emulation.setCPUThrottlingRate',{'rate':4});client.send('Performance.enable')
     frames=page.evaluate('''()=>new Promise(resolve=>{const frames=[];let last=performance.now(),start=last;function frame(now){frames.push(now-last);last=now;if(now-start<6000)requestAnimationFrame(frame);else resolve(frames)}requestAnimationFrame(frame)})''')
