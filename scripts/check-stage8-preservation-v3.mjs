@@ -81,6 +81,7 @@ try{
   assert.equal(broken.level,1);assert.notEqual(broken.upgradeCount,56);
   await save(merchant,state(1));
   await db.exec(load('staged/territory_stage8_verified_gear_v2.sql'));
+  await db.exec(load('staged/territory_stage8_historical_quarantine_v1.sql'));
   await db.exec(load('staged/territory_stage8_preservation_v3.sql'));
   await db.exec(load('staged/territory_stage8_forge_v1.sql'));
   await assert.rejects(()=>forge(1,5),/save_guard_inactive/);
@@ -100,6 +101,43 @@ try{
   await db.exec('RESET ROLE');
   const activeDefinition=(await one("SELECT pg_get_functiondef('public.territory_gear_guard_v4()'::regprocedure) d")).d;
   assert.match(activeDefinition,/owner_test_bots_v1/,'Retain latest tester overrides');
+  // Historical quarantine is a server-side freeze, not permission to forge
+  // or transfer an unverifiable 59-level item. Run only with SYNTHETIC data.
+  const holdOwner=player(4),holdUuid='70000000-0000-4000-8000-000000000004';
+  const holdId='stage8_'+holdUuid;
+  const holdOutput={...output,equipment:{...output.equipment,id:'hold-registry'}};
+  const held={...holdOutput,id:holdId,qty:1,equipment:{
+    ...holdOutput.equipment,id:holdId,level:59,upgradeCount:54,attack:190}};
+  await db.query('INSERT INTO public.players(id,level,game_state) VALUES($1,$2,$3)',
+    [holdOwner,100,JSON.stringify(state(100))]);
+  await db.query('INSERT INTO public.territory_profession_stage8_items VALUES($1,$2,$3)',
+    [holdUuid,holdOwner,JSON.stringify(holdOutput)]);
+  // Old destructive save trigger is bypassed only in this disposable test.
+  await db.exec('ALTER TABLE public.players DISABLE TRIGGER territory_gear_guard_before_v4');
+  await save(holdOwner,state(100,[held]));
+  await db.exec('ALTER TABLE public.players ENABLE TRIGGER territory_gear_guard_before_v4');
+  const holdFingerprint=(await one(`
+    SELECT md5(i.player_id::text||':'||i.item_id::text||':'||
+      (i.item_output->'equipment')::text||':'||(x.value->'equipment')::text||':bag') h
+    FROM public.territory_profession_stage8_items i
+    JOIN public.players p ON p.id=i.player_id
+    CROSS JOIN LATERAL jsonb_array_elements(p.game_state->'inventory') x(value)
+    WHERE i.item_id=$1 AND x.value->>'id'='stage8_'||i.item_id::text`,[holdUuid])).h;
+  await db.query('SELECT territory_private.stage8_prepare_historical_quarantine_v1($1::jsonb)',
+    [JSON.stringify([{fingerprint:holdFingerprint,status:'unresolved'}])]);
+  assert.equal((await one('SELECT count(*)::int n FROM territory_private.stage8_historical_quarantine_v1')).n,1);
+  await save(holdOwner,state(100)); // missing mirror restores exact frozen gear
+  assert.deepEqual((await saved(holdOwner)).inventory[0].equipment,held.equipment);
+  const tampered={...held,equipment:{...held.equipment,level:60}};
+  await assert.rejects(()=>save(holdOwner,state(100,[tampered])),/reconciliation_required/);
+  assert.deepEqual((await saved(holdOwner)).inventory[0].equipment,held.equipment);
+  await assert.rejects(
+    ()=>db.query('SELECT territory_private.stage8_handoff_v3($1,$2,$3,$4)',
+      [holdUuid,holdOwner,buyer,op(981)]),/transfer_on_hold/);
+  await assert.rejects(()=>forge(982,5,holdOwner,holdUuid),/forge_on_hold/);
+  assert.equal((await one('SELECT (item_output#>>\'{equipment,level}\')::int level FROM public.territory_profession_stage8_items WHERE item_id=$1',[holdUuid])).level,5,
+    'Historical quarantine MUST NOT silently promote the registry');
+
   await save(seller,state(100,[mirror(output)]));
   let current=5,operation=10;
   // Actual server forge (including authoritative RNG), not direct registry UPDATE.
