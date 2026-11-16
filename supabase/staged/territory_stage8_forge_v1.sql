@@ -235,7 +235,8 @@ BEGIN
   ELSE
     -- Failed rolls retain the exact registry record, including legacy gear
     -- whose immutable baseline is established only on a successful upgrade.
-    v_after:=(v_item.item_output->'equipment')||pg_catalog.jsonb_build_object('id',v_id);
+    v_after:=territory_private.stage8_verified_gear_v2(
+      (v_item.item_output->'equipment')||pg_catalog.jsonb_build_object('id',v_id),v_uid);
   END IF;
   v_state:=pg_catalog.jsonb_set(v_state,'{player,gold}',pg_catalog.to_jsonb(v_gold),true);
   v_state:=pg_catalog.jsonb_set(v_state,'{forgeMaterials}',pg_catalog.to_jsonb(v_mat),true);
