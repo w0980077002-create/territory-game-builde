@@ -279,7 +279,7 @@ export function CaveExpeditionPreview({ assetUrl = defaultUrl, onExit, onCity, o
         return;
       } finally { cloudLock.current = false; setCloudBusy(false); }
     } else {
-      world.current.rules = legacyRules ? 1 : 2; start(world.current, floor); world.current.auto = true; runId.current = crypto.randomUUID(); outfit(world.current);
+      world.current.rules = legacyRules ? 1 : 2; start(world.current, floor); world.current.auto = !legacyRules; runId.current = crypto.randomUUID(); outfit(world.current);
     }
     helpState.current.open = false; setHelp(false); setPanel(null); setNotice('');
     void audio.current?.unlock().catch(() => setMuted(true)); refresh();
