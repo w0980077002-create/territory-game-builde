@@ -416,10 +416,17 @@ attack = EXCLUDED.attack,
 defense = EXCLUDED.defense,
 max_hp = EXCLUDED.max_hp,
 crit_chance = EXCLUDED.crit_chance,
-updated_at = now();
+updated_at = now()
+WHERE (leaderboard.display_name, leaderboard.level, leaderboard.arena_rating,
+       leaderboard.total_battles_won, leaderboard.arena_wins, leaderboard.photo_url,
+       leaderboard.attack, leaderboard.defense, leaderboard.max_hp, leaderboard.crit_chance)
+  IS DISTINCT FROM
+      (EXCLUDED.display_name, EXCLUDED.level, EXCLUDED.arena_rating,
+       EXCLUDED.total_battles_won, EXCLUDED.arena_wins, EXCLUDED.photo_url,
+       EXCLUDED.attack, EXCLUDED.defense, EXCLUDED.max_hp, EXCLUDED.crit_chance);
 RETURN NEW;
 END;
-$function$;
+$function$
 
 DROP TRIGGER IF EXISTS territory_economy_audit_after_v1 ON public.players;
 CREATE TRIGGER territory_economy_audit_after_v1 AFTER UPDATE ON public.players FOR EACH ROW EXECUTE FUNCTION territory_economy_audit_trigger_v1();
