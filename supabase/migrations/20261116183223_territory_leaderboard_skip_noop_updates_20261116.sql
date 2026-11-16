@@ -34,4 +34,4 @@ WHERE (leaderboard.display_name, leaderboard.level, leaderboard.arena_rating,
        EXCLUDED.attack, EXCLUDED.defense, EXCLUDED.max_hp, EXCLUDED.crit_chance);
 RETURN NEW;
 END;
-$function$
+$function$;
