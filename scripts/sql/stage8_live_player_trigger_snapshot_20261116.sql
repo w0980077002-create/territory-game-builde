@@ -487,5 +487,5 @@ WHERE (leaderboard.display_name, leaderboard.level, leaderboard.arena_rating,
        EXCLUDED.attack, EXCLUDED.defense, EXCLUDED.max_hp, EXCLUDED.crit_chance);
 RETURN NEW;
 END;
-$function$
+$function$;
 CREATE TRIGGER trigger_update_leaderboard AFTER INSERT OR UPDATE ON public.players FOR EACH ROW EXECUTE FUNCTION update_leaderboard_entry();
