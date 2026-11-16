@@ -277,9 +277,11 @@ try{
   await db.exec('ALTER TABLE public.players DISABLE TRIGGER territory_gear_guard_before_v4');
   const conflict=state(100,[{...mirror(canonical),equipment:{...mirror(canonical).equipment,level:59}}]);
   await save(seller,conflict);
+  const committedConflict=await saved(seller);
+  assert.equal(committedConflict.inventory[0].equipment.level,59);
   await db.exec('ALTER TABLE public.players ENABLE TRIGGER territory_gear_guard_before_v4');
   await assert.rejects(()=>save(seller,state(100)),/reconciliation_required/);
-  assert.deepEqual(await saved(seller),conflict);
+  assert.deepEqual(await saved(seller),committedConflict,'Rejected save cannot mutate prior conflict');
   await assert.rejects(()=>transfer(seller,buyer,200),/reconciliation_required/);
   await db.exec('ALTER TABLE public.players DISABLE TRIGGER territory_gear_guard_before_v4');
   await save(seller,state(100,[mirror(canonical)]));
