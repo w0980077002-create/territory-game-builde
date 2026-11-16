@@ -6,6 +6,8 @@ on:
     paths:
       - 'src/game/**'
       - 'src/components/ForgeScreen.tsx'
+      - 'src/components/ProfessionsStage8Screen.tsx'
+      - 'src/admin/**'
       - 'src/components/GearShowcase.tsx'
       - 'src/components/Inventory*.tsx'
       - 'src/components/Workshop*.tsx'
