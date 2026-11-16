@@ -3,11 +3,13 @@ name: TERRITORY permanent consumables — regression
 on:
   pull_request:
     branches: [main]
-    paths: &consumables_paths
+    paths:
       # Keep this regression for actual economy, belt and inventory changes.
       - 'src/game/**'
       - 'src/components/ForgeScreen.tsx'
       - 'src/components/GearShowcase.tsx'
+      - 'src/components/arena/BeltBar.tsx'
+      - 'src/components/ui/BeltCells.tsx'
       - 'src/components/Inventory*.tsx'
       - 'src/components/Belt*.tsx'
       - 'supabase/migrations/**'
@@ -20,7 +22,24 @@ on:
       - '.github/workflows/permanent-consumables.yml'
   push:
     branches: [main]
-    paths: *consumables_paths
+    paths:
+      # Keep this regression for actual economy, belt and inventory changes.
+      - 'src/game/**'
+      - 'src/components/ForgeScreen.tsx'
+      - 'src/components/GearShowcase.tsx'
+      - 'src/components/arena/BeltBar.tsx'
+      - 'src/components/ui/BeltCells.tsx'
+      - 'src/components/Inventory*.tsx'
+      - 'src/components/Belt*.tsx'
+      - 'supabase/migrations/**'
+      - 'supabase/staged/**'
+      - 'scripts/*elixir*'
+      - 'scripts/*belt*'
+      - 'scripts/*inventory*'
+      - 'scripts/*warehouse*'
+      - 'package*.json'
+      - '.github/workflows/permanent-consumables.yml'
+
   workflow_dispatch:
 
 permissions:
