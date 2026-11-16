@@ -79,6 +79,11 @@ BEGIN
   IF NOT FOUND OR v_item.item_output->>'type'<>'equipment'
     OR pg_catalog.jsonb_typeof(v_item.item_output->'equipment')<>'object'
   THEN RAISE EXCEPTION 'stage8_forge_item_not_owned'; END IF;
+  -- A frozen historical UUID cannot be forged from the stale registry
+  -- level, even when the caller guesses p_expected_level=registry level.
+  IF EXISTS(SELECT 1 FROM territory_private.stage8_historical_quarantine_v1 q
+      WHERE q.item_id=p_item AND q.player_id=v_uid)
+    THEN RAISE EXCEPTION 'stage8_historical_item_forge_on_hold'; END IF;
   v_gear:=v_item.item_output->'equipment';
   v_id:='stage8_'||p_item::text;
   IF (v_gear->>'level') IS NULL OR (v_gear->>'level') !~ '^[1-9][0-9]{0,2}$'
