@@ -4,6 +4,7 @@ on:
     paths:
       # Wheel/Hall coverage stays available for actual changes and manual dispatch.
       - 'src/components/FortuneDialog.tsx'
+      - 'src/components/WheelOfFortune.tsx'
       - 'src/components/fortune.css'
       - 'src/components/TreasuryInventory.tsx'
       - 'src/components/HallPlayScreen.tsx'
