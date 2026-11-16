@@ -68,6 +68,7 @@ export function drawAnimatedEnemy(c: CanvasRenderingContext2D, image: HTMLImageE
   const clip = registry.clips[id], pose = animationState(e, time, reduced);
   if (image.naturalWidth !== clip.width || image.naturalHeight !== clip.height) return false;
   const frame = clip.frames[pose.frame];
+  if (!frame || clip.frames.length !== 8) return false;
   const extent = Math.max(...clip.frames.map(f => Math.max(f.pivot[0], f.rect[2] - f.pivot[0]))) * 2;
   // Weapon sweeps extend beyond the body. Fitting the entire sweep into a
   // body-sized square would shrink the raider/mage to tiny figures.
