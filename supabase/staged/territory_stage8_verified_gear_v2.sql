@@ -7,6 +7,19 @@
 -- Returns NULL for all non-Stage8 gear so the established legacy owner cap
 -- stays in force. Raises on stolen/unknown/corrupt Stage8 gear rather than
 -- accepting forged ownership or silently deleting real upgrades.
+CREATE TABLE IF NOT EXISTS territory_private.stage8_historical_quarantine_v1(
+  item_id uuid PRIMARY KEY,
+  player_id uuid NOT NULL,
+  registry_equipment jsonb NOT NULL,
+  frozen_equipment jsonb NOT NULL,
+  initial_location text NOT NULL CHECK(initial_location IN ('bag','equipped')),
+  provenance_status text NOT NULL CHECK(provenance_status IN ('admin_approved','unresolved')),
+  captured_at timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+ALTER TABLE territory_private.stage8_historical_quarantine_v1 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON territory_private.stage8_historical_quarantine_v1 FROM PUBLIC,anon,authenticated;
+
+
 CREATE OR REPLACE FUNCTION territory_private.stage8_verified_gear_v2(
   p_item jsonb,
   p_player uuid
