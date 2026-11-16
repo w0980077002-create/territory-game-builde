@@ -305,10 +305,10 @@
 #cx-elixir-tray[hidden]{display:none}
 
 /* Four automatic abilities: visual square 23 x 23 px. No labels.
-   Actual button hitboxes remain 35 x 34 px. */
+   Actual touch hitboxes remain 44 x 44 px. */
 .cx-actions{left:64px;right:64px;bottom:0;gap:1px}
 .cx-demo .cx-actions button{
-  position:relative;flex:0 0 35px;width:35px;height:34px;min-height:34px;
+  position:relative;flex:0 0 44px;width:44px;height:44px;min-height:44px;
   padding:0;margin:0;display:grid;place-items:center;
   border:0;border-radius:0;background:transparent!important;box-shadow:none;
 }
@@ -334,7 +334,7 @@
 }
 @media(max-height:620px){
   .cx-demo{--u:clamp(30px,5dvh,38px);--nav:46px}
-  .cx-demo .cx-actions button{flex-basis:35px;width:35px;height:34px;min-height:34px}
+  .cx-demo .cx-actions button{flex-basis:44px;width:44px;height:44px;min-height:44px}
   .cx-control-status{margin-top:2px;height:36px}
   .cx-demo .cx-control-status button{height:36px}
   .cx-belt{height:34px;margin-top:2px}
