@@ -84,6 +84,12 @@ BEGIN
   IF EXISTS(SELECT 1 FROM territory_private.stage8_historical_quarantine_v1 q
       WHERE q.item_id=p_item AND q.player_id=v_uid)
     THEN RAISE EXCEPTION 'stage8_historical_item_forge_on_hold'; END IF;
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements(
+    CASE WHEN pg_catalog.jsonb_typeof(v_player.game_state->'inventory')='array'
+      THEN v_player.game_state->'inventory' ELSE '[]'::jsonb END) x(value)
+    WHERE pg_catalog.left(x.value->>'id',4)='inv_'
+      AND x.value#>>'{equipment,id}'='stage8_'||p_item::text)
+  THEN RAISE EXCEPTION 'stage8_legacy_alias_forge_on_hold'; END IF;
   v_gear:=v_item.item_output->'equipment';
   v_id:='stage8_'||p_item::text;
   IF (v_gear->>'level') IS NULL OR (v_gear->>'level') !~ '^[1-9][0-9]{0,2}$'
