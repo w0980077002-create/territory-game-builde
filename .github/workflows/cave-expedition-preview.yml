@@ -24,6 +24,12 @@ on:
       - 'src/game/caveCloudPve.ts'
       - '.github/workflows/cave-expedition-preview.yml'
   workflow_dispatch:
+    inputs:
+      record_video:
+        description: 'Record a full playable run (manual diagnostics only)'
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
 jobs:
@@ -68,6 +74,8 @@ jobs:
           node scripts/build-journey-preview.mjs
           python scripts/check-journey-browser.py
       - name: Record a real-time playable run
+        # Full video is expensive and not a release gate. Run only on an explicit manual request.
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.record_video }}
         run: |
           export CAVE_BROWSER="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
           python scripts/record-cave-expedition.py
