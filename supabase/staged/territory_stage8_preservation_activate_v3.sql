@@ -3,6 +3,19 @@
 BEGIN;
 LOCK TABLE public.players IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE public.territory_profession_stage8_items IN SHARE ROW EXCLUSIVE MODE;
+
+-- Freeze ONLY the three exact snapshots reviewed in read-only production
+-- audit on 2026-11-16. A changed UUID, owner, registry gear, saved level,
+-- location or item stat changes the fingerprint and ABORTS the transaction.
+-- One is a claimed exact admin grant, the other two remain UNRESOLVED.
+-- A freeze preserves the previous game state; it does NOT approve the upgrade.
+LOCK TABLE territory_private.stage8_historical_quarantine_v1 IN SHARE ROW EXCLUSIVE MODE;
+SELECT territory_private.stage8_prepare_historical_quarantine_v1('[
+  {"fingerprint":"018bd54a8fb39f7f5b20549be4e81fa4","status":"unresolved"},
+  {"fingerprint":"f08c9438ea0b3e4cae167d32bbea5323","status":"admin_approved"},
+  {"fingerprint":"3d569f2a92375c0b8ee9f13a99f6b0ee","status":"unresolved"}
+]'::jsonb);
+
 CREATE TABLE territory_private.stage8_guard_backup_v3(signature text PRIMARY KEY, definition text NOT NULL, activated_definition text NOT NULL);
 REVOKE ALL ON territory_private.stage8_guard_backup_v3 FROM PUBLIC,anon,authenticated;
 ALTER TABLE territory_private.stage8_guard_backup_v3 ENABLE ROW LEVEL SECURITY;
