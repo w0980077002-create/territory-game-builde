@@ -224,7 +224,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   // Absolute server deadlines survive Telegram reloads and reconnects.
   // useCountdown above already refreshes this component every second.
   const itemCooldownSeconds = game.belt.map((item) => {
-    if (!teamLive || !item) return 0;
+    if (!item) return 0;
     const action = beltAction(item);
     const code = action?.kind === 'item' ? action.code
       : action?.kind === 'time' ? 'time'
@@ -413,11 +413,9 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
                 belt={game.belt}
                 ctx={beltContext(game, arenaStats.wins)}
                 actionLabel={isActive && alive
-                  ? teamLive
-                    ? (language === 'en' ? '70s per potion kind · buffs do not stack' : '70 с на каждый вид · усиления не складываются')
-                    : (language === 'en' ? '1 potion/round · attack/defense +25%' : '1 зелье/раунд · сила/защита +25%')
+                  (language === 'en' ? 'Arena: 70s per kind · attack/defense +25% · HP 18/35%' : 'Арена: 70 с на вид · сила/защита +25% · HP 18/35%')
                   : (language === 'en' ? 'Equip potions from inventory' : 'Пополняй зелья в инвентаре')}
-                cooldowns={teamLive ? itemCooldownSeconds : undefined}
+                cooldowns={itemCooldownSeconds}
                 activeBuffs={view.me.activeBuffs ?? []}
                 disabled={!isActive || !alive || busy}
                 busyIndex={beltBusy}
