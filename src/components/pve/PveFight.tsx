@@ -395,7 +395,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     for (const skill of ['dive', 'honk'] as const) {
       if (!res.goose?.[skill]) continue;
       setGoosePose({action: skill, sequence: ++keyRef.current});
-      pushLog(skill === 'dive' ? (language === 'en' ? 'Dive! Enemy ranged strike interrupted.' : 'Пике! Дальний удар врага сорван.') : (language === 'en' ? 'HONK! Next hero strike +5%.' : 'ГА-ГА! Следующий удар героя +5%.'));
+      pushLog(skill === 'dive' ? (language === 'en' ? 'Dive! Enemy ranged strike interrupted.' : 'Пике! Дальний удар врага сорван.') : (language === 'en' ? 'HONK! Next team strikes +5%.' : 'ГА-ГА! Следующие удары команды +5%.'));
       await wait(810 * pace);
       if (!alive.current) return;
     }
@@ -583,6 +583,9 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
               : 'Хранилище телефона недоступно. Победа не записана. Не закрывай Telegram: восстанови доступ к хранилищу и повтори сохранение.'}
           </p>
         )}
+        {follower?.id === GOOSE_ID && <div className="mx-auto h-28 w-36" data-testid="pve-goose-outcome">
+          <GooseCompanion portrait action={outcome.won ? 'victory' : 'defeat'} en={language === 'en'} />
+        </div>}
         <OutcomePanel outcome={outcome} kind={kind} victoryJourney={victoryJourney}
           gearOpportunity={gearOpportunity} equippedGear={equippedGear}
           onExit={() => {

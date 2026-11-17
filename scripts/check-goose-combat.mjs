@@ -3,9 +3,9 @@ import { build } from 'esbuild';
 import { mkdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 const out='/tmp/territory-goose-combat';mkdirSync(out,{recursive:true});
-await build({entryPoints:['src/game/pve.ts','src/game/followers.ts'],bundle:true,platform:'node',format:'esm',outdir:out,define:{'import.meta.env.BASE_URL':'"/"'},plugins:[{name:'offline',setup(b){b.onResolve({filter:/\/supabase$/},()=>({path:'offline',namespace:'offline'}));b.onLoad({filter:/.*/,namespace:'offline'},()=>({contents:'export const supabase={};'}));}}]});
-const pve=await import(pathToFileURL(out+'/pve.js'));
-const f=await import(pathToFileURL(out+'/followers.js'));
+await build({entryPoints:['src/game/pve.ts','src/game/followers.ts'],bundle:true,platform:'node',format:'esm',outExtension:{'.js':'.mjs'},outdir:out,define:{'import.meta.env.BASE_URL':'"/"'},plugins:[{name:'offline',setup(b){b.onResolve({filter:/\/supabase$/},()=>({path:'offline',namespace:'offline'}));b.onLoad({filter:/.*/,namespace:'offline'},()=>({contents:'export const supabase={};'}));}}]});
+const pve=await import(pathToFileURL(out+'/pve.mjs'));
+const f=await import(pathToFileURL(out+'/followers.mjs'));
 const original=Math.random;Math.random=()=>.5;
 try {
  const hero={name:'Hero',hp:1000,maxHp:1000,attack:50,defense:0,critChance:0,critDamage:50};
@@ -19,6 +19,7 @@ try {
  memory=honk.goose.next;
  const hug=round();assert(hug.goose.hug>0&&hug.goose.hug<=12);assert.equal(hug.goose.buff,true);
  const noBuff=round(enemy,{round:3,lastDive:1});assert(hug.hits[0].amount>noBuff.hits[0].amount);
+ assert(hug.hits.find(h=>h.source==='companion').amount>noBuff.hits.find(h=>h.source==='companion').amount);
  assert.equal(round({...enemy,isBoss:true},{round:0,lastDive:-3}).goose.dive,false);
  assert.equal(round({...enemy,isBoss:true},{round:1,lastDive:-3}).goose.dive,true);
  assert.equal(round({...enemy,isBoss:true},{round:6,lastDive:2}).goose.dive,false);

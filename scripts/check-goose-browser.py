@@ -1,5 +1,5 @@
 """Production roster + PveFight, isolated transport. Chromium is NOT Android Telegram."""
-import json, mimetypes, shutil
+import json, mimetypes, shutil, re
 from pathlib import Path
 from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright
@@ -24,7 +24,7 @@ def turn(page,lang):
   btn=page.get_by_role('button',name=('Defense: ' if en else 'Защита: ')+z,exact=True)
   if btn.get_attribute('aria-pressed')!='true':btn.click()
  page.get_by_role('button',name=('Attack: Chest' if en else 'Удар: Грудь'),exact=True).click()
- page.get_by_role('button',name=('STRIKE' if en else 'УДАР'),exact=True).click()
+ page.get_by_role('button',name=re.compile('^STRIKE' if en else '^УДАР')).click()
  seen=set()
  for _ in range(65):
   seen.add(page.locator('.goose-companion').first.get_attribute('data-action'));page.wait_for_timeout(60)
@@ -49,7 +49,7 @@ with sync_playwright() as p:
    seen=turn(page,lang);assert 'commotion' in seen,seen
    assert '520/520' not in page.locator('body').inner_text(), 'Real companion/hero hits must lower enemy HP'
    assert not errors,errors
-   results.append({'width':w,'lang':lang,'actions':sorted(seen)});page.close()
+   results.append({'width':w,'lang':lang,'actions':sorted(seen)});print(f'PASS {w} {lang}',flush=True);page.close()
  page,errors=prepare(b,390,'ru','fight&boss')
  observed=set()
  for _ in range(3):observed|=turn(page,'ru')

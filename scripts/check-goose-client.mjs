@@ -4,7 +4,7 @@ globalThis.__gooseQA={state:{followers:[{id:'old',level:45,attack:91}],player:{r
 const qa=globalThis.__gooseQA;
 await build({entryPoints:['src/game/goose/api.ts'],bundle:true,platform:'node',format:'esm',outfile:output,plugins:[{name:'offline-protocol',setup(b){
  b.onResolve({filter:/\/(actions|supabase|cloud)$/},a=>({path:a.path.split('/').pop(),namespace:'qa'}));
- b.onLoad({filter:/.*/,namespace:'qa'},({path})=>({contents:path==='actions'?`const q=globalThis.__gooseQA;export const useGame={get:()=>q.state,set:s=>q.state=typeof s==='function'?s(q.state):s};`:path==='cloud'?`const q=globalThis.__gooseQA;export const saveTokens=new Map([['qa-user','2026-11-17T00:00:00Z']]);export async function saveCloudSave(){return true}export function protectFortuneSave(){q.fenced=true}export function releaseArenaRejectedAction(){q.fenced=false}export function acceptMonopolyClaimReceipt(id,r){q.fenced=false;return r.game_state}`:`const q=globalThis.__gooseQA;export const supabase={auth:{getUser:async()=>({data:{user:{id:q.uid}}})},rpc:async(name,args)=>{q.calls.push({name,args});return {data:q.receipt,error:q.error}}};`}));
+ b.onLoad({filter:/.*/,namespace:'qa'},({path})=>({contents:path==='actions'?`const q=globalThis.__gooseQA;export const useGame={get:()=>q.state,set:s=>q.state=typeof s==='function'?s(q.state):s};`:path==='cloud'?`const q=globalThis.__gooseQA;export const saveTokens=new Map([['qa-user','2026-11-17T00:00:00Z']]);export async function saveCloudSave(){return true}export function protectFortuneSave(){q.fenced=true}export function releaseArenaRejectedAction(){q.fenced=false}export function acceptMonopolyClaimReceipt(id,r){q.fenced=false;return r.game_state}`:`const q=globalThis.__gooseQA;export const supabase={auth:{getUser:async()=>({data:{user:{id:q.uid}}})},rpc:async(name,args)=>{q.calls.push({name,args});if(q.transport)return q.transport(name,args);return {data:q.receipt,error:q.error}}};`}));
 }}]});
 const api=await import(output);
 const id='follower_goose_obnimus';
@@ -19,5 +19,15 @@ qa.error=null;qa.receipt={success:true,owned:true,companion_id:'wrong',price:30,
 await assert.rejects(api.buyGoose(),/invalid_receipt/);assert.equal(qa.state.followers.length,1);
 qa.receipt={success:true,owned:true,companion_id:id,price:30,receipt:'server-receipt',game_state:{...qa.state,player:{redGems:30}}};
 await api.buyGoose();assert.equal(qa.state.player.redGems,30);assert.equal(qa.state.gooseCompanionVerified,true);assert.equal(qa.fenced,false);
+let resolveOld;
+qa.transport=()=>new Promise(resolve=>{resolveOld=resolve});
+const oldRefresh=api.refreshGoose();await new Promise(setImmediate);
+qa.transport=null;qa.receipt={owned:true,companion_id:id,price:30,receipt:'server-receipt'};
+await api.refreshGoose();resolveOld({data:{owned:false,companion_id:id,price:30},error:null});await oldRefresh;
+assert.equal(qa.state.gooseCompanionVerified,true,'An old status cannot revoke a newer server grant');
+let resolveBuy;qa.transport=()=>new Promise(resolve=>{resolveBuy=resolve});
+const pendingBuy=api.buyGoose();await new Promise(setImmediate);
+await assert.rejects(api.buyGoose(),/purchase_busy/);
+resolveBuy({data:{success:true,owned:true,companion_id:id,price:30,receipt:'server-receipt',game_state:qa.state},error:null});await pendingBuy;qa.transport=null;
 qa.receipt={owned:false,companion_id:id,price:30};await api.refreshGoose();assert.equal(qa.state.gooseCompanionVerified,false);assert.equal(qa.state.followers.length,1);assert.equal(qa.state.followers[0],old);
 console.log('PASS goose client: server-only receipt adoption, failure/uncertain save fences, forged receipts, duplicate rehydration, prior companions/wallet untouched by gift installation');

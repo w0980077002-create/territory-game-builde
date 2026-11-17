@@ -313,7 +313,7 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   damageBudget -= firstDamage;
   let enemyHp = Math.max(0, enemy.hp - firstDamage);
   if (enemyHp > 0 && followerAttack > 0 && damageBudget > 0) {
-    const companionDamage = Math.min(Math.max(0, Math.floor(followerAttack)), damageBudget, enemyHp);
+    const companionDamage = Math.min(Math.max(0, Math.floor(goose?.buff ? Math.round(followerAttack * 1.05) : followerAttack)), damageBudget, enemyHp);
     if (companionDamage > 0) {
       const f: PveHit = { source: 'companion', attacker: followerName, target: enemy.name, targetSide: 'enemy', zone: pick(ZONES).id, tone: 'hit', amount: companionDamage };
       hits.push(f);

@@ -15,21 +15,23 @@ function entitlement(data: unknown): { owned: boolean; title?: string } {
   return { owned: r.owned, title: r.title === 'Адвокат 5000 побед' ? r.title : undefined };
 }
 let entitlementEpoch = 0;
+let refreshSequence = 0;
 export async function refreshGoose(): Promise<void> {
   const epoch = entitlementEpoch;
+  const sequence = ++refreshSequence;
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) throw new Error('goose_login_required');
   const { data, error } = await supabase.rpc('territory_goose_status_v1');
   if (error) throw new Error(error.message);
   const verified = entitlement(data);
   const { data: current } = await supabase.auth.getUser();
-  if (epoch === entitlementEpoch && current.user?.id === user.id) useGame.set(s => installGoose(s, verified.owned, verified.title));
+  if (epoch === entitlementEpoch && sequence === refreshSequence && current.user?.id === user.id) useGame.set(s => installGoose(s, verified.owned, verified.title));
 }
 let busy = false;
 /** Same CAS/save fence as existing paid operations. An uncertain response keeps
  * old saves fenced. Retrying after reload reads the unique ownership ledger. */
 export async function buyGoose(): Promise<void> {
-  if (busy) return;
+  if (busy) throw new Error('goose_purchase_busy');
   busy = true;
   try {
     const { data: { user } } = await supabase.auth.getUser();

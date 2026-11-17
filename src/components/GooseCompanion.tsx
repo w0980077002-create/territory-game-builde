@@ -21,6 +21,7 @@ export function GooseCompanion({ action = 'idle', sequence = 0, speed = 1, en = 
     const ctx = c?.getContext('2d');
     if (!c || !ctx) return;
     const pose = cachedArt('animation-allies'); const run = cachedArt('run-goose_aviator');
+    const fallback = cachedArt('goose_aviator');
     let raf = 0; let lastDraw = -Infinity; const start = performance.now();
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const draw = (now: number) => {
@@ -48,7 +49,11 @@ export function GooseCompanion({ action = 'idle', sequence = 0, speed = 1, en = 
         if (action === 'victory' && !reduced) ctx.translate(0, -Math.abs(Math.sin(t * 5)) * 9);
         ctx.drawImage(img, x, y, w, h, -f.pivot[0] * scale, -f.pivot[1] * scale, w * scale, h * scale);
         ctx.restore();
+      } else if (fallback.complete && fallback.naturalWidth) {
+        const width = 245 * fallback.naturalWidth / fallback.naturalHeight;
+        ctx.drawImage(fallback, (portrait ? 160 : 220) - width / 2, 85, width, 245);
       }
+      if (reduced && img.complete && img.naturalWidth) return;
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);

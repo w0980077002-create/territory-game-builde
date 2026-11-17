@@ -1,3 +1,4 @@
+import { GooseCompanion } from './GooseCompanion';
 import { Coins, Gem, Zap, Heart, Sword, Swords, Shield, Star, ChevronRight, Shirt, Hammer, ScrollText, UsersRound } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { EQUIPMENT_SLOTS, HERO_MAX_LEVEL, generateChapter, getComputedStats } from '@/game/engine';
@@ -203,7 +204,7 @@ export function HeroShowcase({ state, stats, onEquipment, onAdventure, onForge, 
 
       <section className="hero-showcase__companion" data-testid="hero-companion-journey"
         aria-label={text('Спутник героя', 'Hero companion')}>
-        {activeCompanion?.id === HALLOWEEN_COMPANION_ID ? <span style={{gridRow:"1 / 3", width: "100%", height: 88}}><PumpkinWitch /></span> : <img src={activeCompanion ? getFollowerArt(activeCompanion.id)
+        {activeCompanion?.id === 'follower_goose_obnimus' ? <span style={{gridRow:'1 / 3',width:'100%',height:88}}><GooseCompanion portrait en={language === 'en'} /></span> : activeCompanion?.id === HALLOWEEN_COMPANION_ID ? <span style={{gridRow:"1 / 3", width: "100%", height: 88}}><PumpkinWitch /></span> : <img src={activeCompanion ? getFollowerArt(activeCompanion.id)
           : import.meta.env.BASE_URL + 'assets/territory/map/icons/companions-v1.webp'}
           alt="" loading="lazy" draggable={false}/>}
         <div className="hero-showcase__companion-copy">
