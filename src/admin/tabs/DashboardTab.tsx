@@ -3,6 +3,15 @@ import { Activity, Bot, CalendarDays, Clock3, DollarSign, RefreshCw, Settings2, 
 import { adminCall, type Settings } from '@/admin/api';
 import { ErrorLine, Loading, Panel, Switch, fmt, type Confirm } from '@/admin/ui';
 
+interface CommunityHumorStatus {
+  monitoringEnabled: boolean;
+  groupSelected: boolean;
+  humorEnabled: boolean;
+  mode: 'mentions' | 'lively';
+  sentToday: number;
+  aiConfigured: boolean;
+}
+
 interface Stats {
   totalPlayers: number;
   onlinePlayers: number;
@@ -27,10 +36,15 @@ function StatCard({ label, value, icon, tone }: { label: string; value: string; 
 export function DashboardTab({ confirm }: { confirm: Confirm }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [community, setCommunity] = useState<CommunityHumorStatus | null>(null);
+  const [communityError, setCommunityError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setError(null);
     adminCall<Stats>('stats').then(setStats).catch((e: Error) => setError(e.message));
+    adminCall<CommunityHumorStatus>('community_humor_status')
+      .then((v) => { setCommunity(v); setCommunityError(null); })
+      .catch((e: Error) => setCommunityError(e.message));
   }, []);
 
   useEffect(() => {
@@ -82,6 +96,55 @@ export function DashboardTab({ confirm }: { confirm: Confirm }) {
               <Activity className="w-4 h-4 shrink-0" /> Игра сейчас закрыта для игроков
             </p>
           )}
+        </div>
+      </Panel>
+
+      <Panel title="ИИ-бот игрового чата" icon={<Bot className="w-4 h-4" />}>
+        <div className="space-y-3">
+          {communityError && <ErrorLine text={communityError} />}
+          {community && <>
+            <Switch
+              label="Живые ответы TERRITORY AI"
+              hint={community.aiConfigured
+                ? 'Смешные ответы в Telegram, отдельно от игровых ботов. Не отвечает на жалобы о багах и потерях.'
+                : 'Пока нет AI API-ключа: включение недоступно, расходов нет.'}
+              on={community.humorEnabled}
+              tone="emerald"
+              onToggle={() => confirm(
+                community.humorEnabled ? 'Отключить ответы TERRITORY AI?' : 'Включить AI-ответы в Telegram? Сообщение об ИИ появится в группе.',
+                async () => {
+                  const state = await adminCall<CommunityHumorStatus>('community_humor_set', { enabled: !community.humorEnabled });
+                  setCommunity(state);
+                  return state.humorEnabled ? 'ИИ-ответы включены' : 'ИИ-ответы выключены';
+                }
+              )}
+            />
+            <p className="text-xs text-slate-400">
+              Группа: {community.groupSelected ? 'выбрана' : 'не выбрана'} ·
+              Мониторинг: {community.monitoringEnabled ? 'включён' : 'выключен'} ·
+              Реплик сегодня: {community.sentToday}/15
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => confirm('Отвечать только при обращении к боту?', async () => {
+                const state = await adminCall<CommunityHumorStatus>('community_humor_set', { mode: 'mentions' });
+                setCommunity(state);
+                return 'Режим: по обращению';
+              })} className={community.mode === 'mentions' ? 'h-10 rounded-lg border border-emerald-400/70 bg-emerald-500/20 text-white text-xs font-semibold' : 'h-10 rounded-lg border border-slate-700 text-slate-300 text-xs'}>
+                По обращению
+              </button>
+              <button type="button" onClick={() => confirm('Разрешить редкие шутки бота в игровых беседах?', async () => {
+                const state = await adminCall<CommunityHumorStatus>('community_humor_set', { mode: 'lively' });
+                setCommunity(state);
+                return 'Режим: живой чат';
+              })} className={community.mode === 'lively' ? 'h-10 rounded-lg border border-emerald-400/70 bg-emerald-500/20 text-white text-xs font-semibold' : 'h-10 rounded-lg border border-slate-700 text-slate-300 text-xs'}>
+                Живой чат
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Пауза 2 минуты для обращений, 15 минут между спонтанными шутками. Максимум 15 ответов в сутки.
+              Кнопка управления не меняет Арену, сохранения, валюты или игровые награды.
+            </p>
+          </>}
         </div>
       </Panel>
 
