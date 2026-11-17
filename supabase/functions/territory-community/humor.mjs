@@ -1,7 +1,7 @@
 // TERRITORY AI chat personality. Pure policy: no I/O, no game-state claims.
 const BOT_HANDLE = "@territorygameai_bot";
 const PLAYFUL = /(?:мортарион|викинг|пещер|арен[аеуы]|крыль|босс|топор|спутник|гус[ьяею]|гусь|сундук|шмотк|мортира|баттл|loot|boss|arena)/iu;
-const SERIOUS = /(?:пропал[ио]?|сняли деньги|плат[её]ж|обман|не могу зайти|не могу войти|не работает|сломан|ошибка|баг|поддержк|верните|не начислили|sos|help|не открывается)/iu;
+const SERIOUS = /(?:пропал[ио]?|сняли деньги|плат[её]ж|обман|не могу зайти|не могу войти|не работает|сломал|сломал[аоиь]|сломал[аоиь]сь|сломалось|сломалась|сломались|сломано|сломан|вылетает|лагает|зависает|ошибка|баг|поддержк|верните|не начислили|sos|help|не открывается)/iu;
 const COMMAND = /^\/(?:joke|шутка)(?:@\w+)?(?:\s|$)/iu;
 
 export function chooseHumorIntent({ text = "", messageId = 0, priority = "P3", mode = "mentions", replyToUsername = "" }) {
