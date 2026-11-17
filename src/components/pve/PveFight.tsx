@@ -1,3 +1,6 @@
+import { GooseCompanion } from '@/components/GooseCompanion';
+import { GOOSE_ID } from '@/game/followers';
+import { newGooseMemory, type GooseAction } from '@/game/goose/brain';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Shield, Sword, Check, Flag, Loader2, Trophy, Hammer, Shirt } from 'lucide-react';
 import { useStore } from '@/game/store';
@@ -119,6 +122,8 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   const arena = useStore(useArena);
   const follower = selectedFollower(state);
   const followerBonus = followerCombat(follower);
+  const gooseMemory = useRef(newGooseMemory());
+  const [goosePose, setGoosePose] = useState<{action: GooseAction; sequence: number}>({action: enemy.isBoss ? 'cower' : 'idle', sequence: 0});
   const levelAtFightStart = useRef(useGame.get().player.level);
   // Preserve chosen belt kinds even after their final dose is consumed.
   const beltAtFightStart = useRef(useGame.get().belt.map(item => item ? { ...item } : null));
@@ -187,6 +192,11 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
   // A speed change applies to the next round. Keep the current visual contact
   // aligned with the HP update scheduled from this round's original pace.
   const [roundSpeed, setRoundSpeed] = useState(() => kind === 'trial' ? 1 : useGame.get().settings.speed);
+  useEffect(() => {
+    if (goosePose.action === 'idle') return;
+    const timer = window.setTimeout(() => setGoosePose(p => ({...p, action:'idle'})), goosePose.action === 'cower' ? 1300 : 950 / roundSpeed);
+    return () => window.clearTimeout(timer);
+  }, [goosePose.action, goosePose.sequence, roundSpeed]);
   const [strike, setStrike] = useState<StrikeEvent | null>(null);
   // Cosmetic keys only. The companion moves strictly after playRound resolves
   // a real companion hit or heal; it never grants HP or creates extra damage.
@@ -355,7 +365,8 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
     // an already paid battle before its first resolved round.
     try { hapticImpact('light'); } catch { /* Continue the paid fight. */ }
     const elite = kind === 'trial' || !!enemy.isBoss;
-    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum.streak === 2, runeEffectsAtStart.current, runeAilments.current);
+    const res = playRound(heroRef.current, foeRef.current, atk, blk, followerBonus.attack, follower?.name ?? '', followerBonus.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum.streak === 2, runeEffectsAtStart.current, runeAilments.current, gooseMemory.current);
+    if (res.goose) gooseMemory.current = res.goose.next;
     if (runeEffectsAtStart.current) runeAilments.current = res.runeAilments ?? runeAilments.current;
     const currentSpeed = kind === 'trial' ? 1 : useGame.get().settings.speed;
     setRoundSpeed(currentSpeed);
@@ -367,6 +378,10 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
       if (hit.source === 'companion' && hit.amount > 0) setCompanionStrikeKey(actionKey);
       if (follower?.id === 'follower_pumpkin_witch_2026' && hit.source === 'companion' && hit.amount > 0)
         { setWitchAttack(keyRef.current); setWitchPose({kind: 'attack', sequence: keyRef.current}); }
+      if (follower?.id === GOOSE_ID) {
+        if (hit.source === 'companion' && hit.amount > 0) setGoosePose({ action: res.goose?.commotion ? 'commotion' : 'attack', sequence: actionKey });
+        else if (hit.targetSide === 'hero' && hit.amount > 0) setGoosePose({ action: res.goose?.hug ? 'hug' : 'hit', sequence: actionKey });
+      }
       await wait(350 * pace);
       if (!alive.current) return;
       if (hit.targetSide === 'enemy') setFoe((f) => ({ ...f, hp: Math.max(0, f.hp - hit.amount) }));
@@ -377,6 +392,14 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
       await wait(520 * pace);
     }
     if (!alive.current) return;
+    for (const skill of ['dive', 'honk'] as const) {
+      if (!res.goose?.[skill]) continue;
+      setGoosePose({action: skill, sequence: ++keyRef.current});
+      pushLog(skill === 'dive' ? (language === 'en' ? 'Dive! Enemy ranged strike interrupted.' : 'Пике! Дальний удар врага сорван.') : (language === 'en' ? 'HONK! Next hero strike +5%.' : 'ГА-ГА! Следующий удар героя +5%.'));
+      await wait(810 * pace);
+      if (!alive.current) return;
+    }
+    if (res.goose?.hug) pushLog(language === 'en' ? `Hug absorbed ${res.goose.hug} damage` : `Обнимусь поглотил ${res.goose.hug} урона`);
     if (res.healAmount > 0) {
       const runeHealing = res.runeHealAmount ?? 0;
       const companionHealing = res.healAmount - runeHealing;
@@ -760,12 +783,15 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                 {follower && (
                   <div
                     data-testid="pve-visible-follower"
-                    className={follower.id === 'follower_6'
+                    data-goose-action={follower.id === GOOSE_ID ? goosePose.action : undefined}
+                    style={follower.id === GOOSE_ID ? {'--goose-action-ms': `${Math.round(810 / roundSpeed)}ms`} as CSSProperties : undefined}
+                    key={follower.id === GOOSE_ID ? goosePose.sequence : follower.id}
+                    className={follower.id === GOOSE_ID ? 'absolute left-[-30%] bottom-[3%] z-30 h-[82%] w-[100%] pointer-events-none' : follower.id === 'follower_6'
                       ? 'absolute left-0 bottom-[1%] z-30 h-[58%] w-[44%] pointer-events-none'
                       : 'absolute left-0 bottom-[1%] z-30 h-[72%] w-[74%] pointer-events-none'}
                   >
                     <span aria-hidden="true" className="absolute inset-x-[10%] bottom-0 h-[25%] rounded-full bg-amber-300/15 blur-md" />
-                    {follower.id === 'follower_pumpkin_witch_2026' ? <PumpkinWitch attack={witchAttack} heal={witchHeal} pose={witchPose} preloadActions /> : <>
+                    {follower.id === GOOSE_ID ? <GooseCompanion action={hero.hp <= 0 ? 'defeat' : foe.hp <= 0 ? 'victory' : goosePose.action} sequence={goosePose.sequence} speed={roundSpeed} en={language === 'en'} /> : follower.id === 'follower_pumpkin_witch_2026' ? <PumpkinWitch attack={witchAttack} heal={witchHeal} pose={witchPose} preloadActions /> : <>
                       <div
                         data-testid="pve-companion-action"
                         data-action={strike?.key === companionStrikeKey ? 'attack' : companionHeal ? 'heal' : 'idle'}
@@ -810,7 +836,7 @@ export function PveFight({ userId, enemy, kind, onExit, onNext, onQuests, onEqui
                     strike={strike}
                     combatSpeed={busy || outcome ? roundSpeed : speed}
                     idleSeconds={3.1}
-                    className={`absolute bottom-0 h-[98%] object-contain object-right-bottom ${follower?.id === 'follower_6' ? 'right-[-5%] w-[70%]' : follower ? 'right-[-8%] w-[88%]' : 'right-0 w-full'}`}
+                    className={`absolute bottom-0 h-[98%] object-contain object-right-bottom ${follower?.id === 'follower_6' || follower?.id === GOOSE_ID ? 'right-[-5%] w-[70%]' : follower ? 'right-[-8%] w-[88%]' : 'right-0 w-full'}`}
                   />
                 </div>
               </div>

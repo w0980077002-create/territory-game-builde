@@ -161,6 +161,18 @@ function PlayerProfile({ id, confirm, onBack }: { id: string; confirm: Confirm; 
         </div>
       </Panel>
 
+      <Panel title="Гусь-Обнимусь · подарок владельца">
+        <p className="text-xs text-slate-300 break-all">player_id: {p.id} · Telegram ID: {p.telegramId ?? '—'} · @{p.username ?? '—'}</p>
+        <button type="button" disabled={!p.telegramId || p.username?.toLowerCase() !== 'amiksor' || p.banned}
+          className="mt-3 min-h-11 rounded-xl bg-amber-700 px-3 text-sm font-bold disabled:opacity-30"
+          onClick={() => confirm(`Подарить Гуся-Обнимуся @${p.username}? Цена 0. Подтверждаю player_id ${p.id} и Telegram ID ${p.telegramId}. Сервер проверит оба идентификатора повторно.`, async () => {
+            const r = await adminCall<{owned:boolean;receipt:string}>('goose_gift', {playerId:p.id,telegramId:String(p.telegramId),username:p.username,operationId:crypto.randomUUID()});
+            if (!r.owned || !r.receipt) throw new Error('Сервер не подтвердил владение');
+            loadExtra();
+            return 'Сервер подтвердил владение. Квитанция: ' + r.receipt + '. Одно письмо доставлено.';
+          })}>Подарить Гуся-Обнимуся</button>
+      </Panel>
+
       <Panel title="Предупреждение без блокировки" icon={<ShieldAlert className="w-4 h-4 text-amber-300" />}>
         <p className="text-xs text-slate-400 mb-3">Подозрительная активность не доказывает нарушение. Решение предупредить или забанить всегда принимаешь только ты. Это действие не блокирует игрока.</p>
         <textarea className={`${inputCls} h-28 py-2.5 resize-none`} maxLength={1000}

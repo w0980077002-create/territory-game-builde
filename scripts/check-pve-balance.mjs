@@ -481,7 +481,7 @@ assert.match(fightSource, /data-testid="pve-live-damage-totals"/, 'Show cumulati
 assert.match(fightSource, /data-testid="pve-riposte-ready"/, 'Show an earned manual riposte');
 assert.match(fightSource, /data-testid="pve-tactical-momentum"/, 'Show real combo progress in the existing elite fight');
 assert.match(fightSource, /setMomentum\(previous => nextTacticalMomentum\(previous, atk, report\.heroStrike, elite && !auto/, 'Combo must come from resolved hits, never guessed input');
-assert.match(fightSource, /elite && !auto && momentum\.streak === 2, runeEffectsAtStart\.current, runeAilments\.current\)/, 'Only charged manual elite rounds receive the combo bonus');
+assert.match(fightSource, /elite && !auto && momentum\.streak === 2, runeEffectsAtStart\.current, runeAilments\.current, gooseMemory\.current\)/, 'Only charged manual elite rounds receive the combo bonus');
 assert.match(fightSource, /report\.enemyStrike === 'block'/, 'Only a real enemy block grants riposte');
 assert.match(fightSource, /elite && !auto && riposteReady/, 'Auto cannot consume a fake manual riposte');
 assert.match(fightSource, /setBattleTotals\(previous => \(\{[\s\S]*report\.dealtDamage/, 'Cumulative totals must come from resolved hits');
@@ -508,7 +508,7 @@ assert.match(fightSource, /const guardedZoneLabels = committedEnemyIntent\.block
 assert.match(fightSource, /data-testid="pve-cover-threat"/, 'Trial and boss strike warning must offer a manual defense action');
 assert.match(fightSource, /setBlocks\(current => coverThreatZone\(current, enemyIntent\.attack\)\)/, 'Threat action must select a real defensive zone');
 
-assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum\.streak === 2, runeEffectsAtStart\.current, runeAilments\.current\)/, 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
+assert.match(fightSource, /followerBonus\.defense, followerBonus, committedEnemyIntent, elite && !auto && riposteReady, elite && !auto && momentum\.streak === 2, runeEffectsAtStart\.current, runeAilments\.current, gooseMemory\.current\)/, 'Pass the displayed guard and earned manual riposte to the same PvE resolver');
 assert.match(fightSource, /staggerEnemyGuard\(enemyIntent, staggerReady && !auto\)/, 'Only manual combat can consume the one-round stagger');
 assert.match(fightSource, /setStaggerReady\(elite && !auto && riposteReady && atk === 'legs'/, 'Only a real manual elite leg riposte can earn stagger');
 assert.match(fightSource, /!committedEnemyIntent\.blocks\.includes\(atk\)/, 'A guarded leg strike must not earn stagger');

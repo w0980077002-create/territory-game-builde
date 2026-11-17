@@ -593,6 +593,20 @@ async function handle(action: string, body: Row) {
         .eq("player_id", id).eq("kind", "adjust").is("claimed_at", null);
       return { player: summarize(data), pendingAdjustments: count ?? 0 };
     }
+    case "goose_gift": {
+      const id = playerId(body.playerId);
+      const tg = String(body.telegramId ?? "");
+      const username = String(body.username ?? "");
+      const operation = String(body.operationId ?? "");
+      if (!/^\d{1,16}$/.test(tg) || username.toLowerCase() !== "amiksor" || !/^[0-9a-f-]{36}$/i.test(operation))
+        throw new HttpError(400, "invalid_request");
+      const {data, error} = await db.rpc("territory_goose_gift_v1", {
+        p_player: id, p_telegram: tg, p_username: username, p_operation: operation,
+      });
+      if (error || data?.success !== true || data?.owned !== true || !data?.receipt)
+        throw new HttpError(409, "goose_gift_unconfirmed");
+      return data;
+    }
     case "set_test_gear_level": {
       const id = playerId(body.playerId);
       const slot = String(body.slot ?? "");

@@ -61,6 +61,8 @@ function mergeWithDefaults(saved: Partial<GameState> | null, name: string): Game
     followers: reconcileFollowers(migrated.followers, heroLevel),
     // Ignore client-persisted reward claims until the authenticated RPC verifies them.
     halloweenCompanionVerified: false,
+    gooseCompanionVerified: false,
+    gooseCompanionTitle: undefined,
     activeFollowerId: migrated.activeFollowerId ?? null,
     belt: Array.from({ length: 7 }, (_, i) => belt?.[i] ?? null),
     activeDays: migrated.activeDays ?? 1,

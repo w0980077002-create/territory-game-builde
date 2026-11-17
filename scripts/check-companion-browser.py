@@ -22,10 +22,10 @@ with sync_playwright() as playwright:
             panel = page.locator('[data-testid="followers-panel"]')
             panel.wait_for()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-            assert panel.locator('.followers-camp__portrait').count() == 7
+            assert panel.locator('.followers-camp__portrait').count() == 8
             assert panel.locator('.followers-camp__portrait--common').count() == 5
             assert panel.locator('.followers-camp__portrait--epic').count() == 1
-            assert panel.locator('.followers-camp__portrait--legendary').count() == 1
+            assert panel.locator('.followers-camp__portrait--legendary').count() == 2
             assert panel.locator('.followers-camp__portrait[aria-pressed="true"]').count() == 1
             assert panel.locator('.followers-camp__detail-top img').first.evaluate('(el) => el.complete && el.naturalWidth > 0')
             panel.locator('.followers-camp__portrait').nth(1).click()
@@ -37,7 +37,7 @@ with sync_playwright() as playwright:
             choose.click()
             assert choose.is_disabled()
             assert ('ACTIVE COMPANION' if language == 'en' else 'АКТИВНЫЙ СПУТНИК') in panel.locator('.followers-camp__detail').inner_text()
-            panel.locator('.followers-camp__portrait--legendary').click()
+            panel.locator('.followers-camp__portrait--legendary', has_text='Battle Cow' if language == 'en' else 'Боевая корова').click()
             assert ('Battle Cow' if language == 'en' else 'Боевая корова') in panel.locator('.followers-camp__detail h3').inner_text()
             assert panel.locator('.followers-camp__availability--locked').is_visible()
             assert ('Legendary' if language == 'en' else 'Легендарный') in panel.locator('.followers-camp__detail').inner_text()

@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';import { build } from 'esbuild';
+const output='/tmp/territory-goose-client.mjs';
+globalThis.__gooseQA={state:{followers:[{id:'old',level:45,attack:91}],player:{redGems:60},activeFollowerId:null},uid:'qa-user',calls:[],fenced:false,error:null,receipt:null};
+const qa=globalThis.__gooseQA;
+await build({entryPoints:['src/game/goose/api.ts'],bundle:true,platform:'node',format:'esm',outfile:output,plugins:[{name:'offline-protocol',setup(b){
+ b.onResolve({filter:/\/(actions|supabase|cloud)$/},a=>({path:a.path.split('/').pop(),namespace:'qa'}));
+ b.onLoad({filter:/.*/,namespace:'qa'},({path})=>({contents:path==='actions'?`const q=globalThis.__gooseQA;export const useGame={get:()=>q.state,set:s=>q.state=typeof s==='function'?s(q.state):s};`:path==='cloud'?`const q=globalThis.__gooseQA;export const saveTokens=new Map([['qa-user','2026-11-17T00:00:00Z']]);export async function saveCloudSave(){return true}export function protectFortuneSave(){q.fenced=true}export function releaseArenaRejectedAction(){q.fenced=false}export function acceptMonopolyClaimReceipt(id,r){q.fenced=false;return r.game_state}`:`const q=globalThis.__gooseQA;export const supabase={auth:{getUser:async()=>({data:{user:{id:q.uid}}})},rpc:async(name,args)=>{q.calls.push({name,args});return {data:q.receipt,error:q.error}}};`}));
+}}]});
+const api=await import(output);
+const id='follower_goose_obnimus';
+const old=qa.state.followers[0];
+const installed=api.installGoose(qa.state,true,'Адвокат 5000 побед');assert.equal(installed.followers[0],old);assert.equal(installed.player,qa.state.player);
+assert.equal(api.installGoose(installed,true).followers.filter(f=>f.id===id).length,1);
+assert.equal(api.installGoose(installed,false).followers.some(f=>f.id===id),false);
+qa.error={code:'P0001',message:'goose_insufficient_red_gems'};
+await assert.rejects(api.buyGoose(),/insufficient/);assert.equal(qa.fenced,false);assert.equal(qa.state.player.redGems,60);
+qa.error={code:'network',message:'lost response'};await assert.rejects(api.buyGoose(),/lost response/);assert.equal(qa.fenced,true);assert.equal(qa.state.followers.length,1);
+qa.error=null;qa.receipt={success:true,owned:true,companion_id:'wrong',price:30,receipt:'fake'};
+await assert.rejects(api.buyGoose(),/invalid_receipt/);assert.equal(qa.state.followers.length,1);
+qa.receipt={success:true,owned:true,companion_id:id,price:30,receipt:'server-receipt',game_state:{...qa.state,player:{redGems:30}}};
+await api.buyGoose();assert.equal(qa.state.player.redGems,30);assert.equal(qa.state.gooseCompanionVerified,true);assert.equal(qa.fenced,false);
+qa.receipt={owned:false,companion_id:id,price:30};await api.refreshGoose();assert.equal(qa.state.gooseCompanionVerified,false);assert.equal(qa.state.followers.length,1);assert.equal(qa.state.followers[0],old);
+console.log('PASS goose client: server-only receipt adoption, failure/uncertain save fences, forged receipts, duplicate rehydration, prior companions/wallet untouched by gift installation');

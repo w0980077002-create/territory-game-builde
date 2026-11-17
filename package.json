@@ -67,7 +67,9 @@
     "test:cave-animation:browser": "node scripts/build-cave-animation-fixture.mjs && node scripts/build-cave-expedition-preview.mjs --test && python scripts/check-cave-animation-browser.py",
     "test:cave-playtest": "node scripts/check-cave-playtest.mjs",
     "test:stage8:preservation": "node scripts/check-stage8-preservation-client.mjs && node scripts/check-stage8-preservation-v3.mjs",
-    "test:stage8:pg17": "node scripts/check-stage8-preservation-v3.mjs --pg17"
+    "test:stage8:pg17": "node scripts/check-stage8-preservation-v3.mjs --pg17",
+    "test:goose": "node scripts/check-goose-combat.mjs && node scripts/check-goose-client.mjs && node scripts/check-goose-sql.mjs",
+    "test:goose:browser": "node scripts/build-goose-preview.mjs && python scripts/check-goose-browser.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
