@@ -3,7 +3,7 @@ import { classifyMessage, formatAlert, messageLink, messageText } from "./rules.
 import { chooseHumorIntent, HUMOR_PERSONA, humorUserPrompt, cleanHumorOutput } from "./humor.mjs";
 
 const TABLE = "territory_community_inbox";
-const ok = (body = { ok: true }, status = 200) =>
+const ok = (body: Record<string, unknown> = { ok: true }, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 
 const env = (name: string) => (Deno.env.get(name) || "").trim();
@@ -139,7 +139,7 @@ async function humorCommand(db: ReturnType<typeof communityDb>, token: string,
   } else if (cmd === "on") {
     if (!control.enabled || !control.group_chat_id) {
       note = "Сначала выберите и включите мониторинг группы через /chatid и /enable.";
-    } else if (!env("TERRITORY_COMMUNITY_AI_API_KEY")) {
+    } else if (!env("TERRITORY_COMMUNITY_AI_API_KEY") || !env("TERRITORY_COMMUNITY_AI_MODEL")) {
       note = "Нет отдельного AI API-ключа. Юмор остался выключен; никакие платные запросы не выполнялись.";
     } else {
       await sendMessage(token, control.group_chat_id,
@@ -162,7 +162,8 @@ async function maybeHumorReply(db: ReturnType<typeof communityDb>, token: string
   analysis: { priority: string }): Promise<void> {
   if (!control.enabled || !control.humor_enabled || !control.group_chat_id) return;
   const apiKey = env("TERRITORY_COMMUNITY_AI_API_KEY");
-  if (!apiKey) return;
+  const model = env("TERRITORY_COMMUNITY_AI_MODEL");
+  if (!apiKey || !model) return;
   const intent = chooseHumorIntent({
     text: body,
     messageId: msg.message_id,
@@ -180,7 +181,6 @@ async function maybeHumorReply(db: ReturnType<typeof communityDb>, token: string
     .eq("chat_id", msg.chat.id).eq("priority", "P3")
     .lt("message_id", msg.message_id).order("message_id", { ascending: false }).limit(3);
   const context = (recent || []).map(x => x.message_text).filter(x => typeof x === "string");
-  const model = env("TERRITORY_COMMUNITY_AI_MODEL") || "gpt-6-luna";
   let response: Response;
   try {
     response = await fetch("https://api.openai.com/v1/responses", {
