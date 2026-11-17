@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { classifyMessage, formatAlert, messageLink, messageText } from "./rules.mjs";
+import { chooseHumorIntent, HUMOR_PERSONA, humorUserPrompt, cleanHumorOutput } from "./humor.mjs";
 
 const TABLE = "territory_community_inbox";
 const ok = (body = { ok: true }, status = 200) =>
@@ -15,6 +16,8 @@ type CommunityControl = {
   owner_telegram_id: number;
   group_chat_id: number | null;
   enabled: boolean;
+  humor_enabled: boolean;
+  humor_mode: "mentions" | "lively";
 };
 
 function communityDb() {
@@ -30,14 +33,16 @@ function communityDb() {
 
 async function readControl(db: ReturnType<typeof communityDb>): Promise<CommunityControl> {
   const { data, error } = await db.from("territory_community_control")
-    .select("owner_telegram_id,group_chat_id,enabled")
+    .select("owner_telegram_id,group_chat_id,enabled,humor_enabled,humor_mode")
     .eq("singleton", 1).maybeSingle();
   if (error || !data || !Number.isSafeInteger(Number(data.owner_telegram_id)))
     throw new Error("community_control_missing");
   return {
     owner_telegram_id: Number(data.owner_telegram_id),
     group_chat_id: data.group_chat_id == null ? null : Number(data.group_chat_id),
-    enabled: data.enabled === true
+    enabled: data.enabled === true,
+    humor_enabled: data.humor_enabled === true,
+    humor_mode: data.humor_mode === "lively" ? "lively" : "mentions"
   };
 }
 
@@ -49,11 +54,12 @@ async function updateControl(db: ReturnType<typeof communityDb>, patch: Record<s
 }
 
 
-async function sendMessage(token: string, chatId: number, text: string) {
+async function sendMessage(token: string, chatId: number, text: string, replyToId?: number) {
   // Token is never printed, reflected or committed.
   const response = await fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, link_preview_options: { is_disabled: true } }),
+    body: JSON.stringify({ chat_id: chatId, text, link_preview_options: { is_disabled: true },
+      ...(replyToId ? { reply_parameters: { message_id: replyToId, allow_sending_without_reply: true } } : {}) }),
     signal: AbortSignal.timeout(12000)
   });
   const reply = await response.json().catch(() => null);
@@ -120,6 +126,89 @@ async function connectWebhook(token: string, secret: string) {
     collecting: control.enabled && Boolean(control.group_chat_id) };
 }
 
+
+async function humorCommand(db: ReturnType<typeof communityDb>, token: string,
+  control: CommunityControl, input: string): Promise<void> {
+  const parts = input.trim().split(/\s+/);
+  const cmd = (parts[1] || "status").toLowerCase();
+  let note = "🤖 TERRITORY AI · Юмор: " + (control.humor_enabled ? "включён" : "выключен") +
+    "\nРежим: " + control.humor_mode + "\nКоманды: /humor on, /humor off, /humor mode lively, /humor mode mentions, /humor status";
+  if (cmd === "off") {
+    await updateControl(db, { humor_enabled: false });
+    note = "⏸️ Юмор выключен. Мониторинг критических жалоб не затронут.";
+  } else if (cmd === "on") {
+    if (!control.enabled || !control.group_chat_id) {
+      note = "Сначала выберите и включите мониторинг группы через /chatid и /enable.";
+    } else if (!env("TERRITORY_COMMUNITY_AI_API_KEY")) {
+      note = "Нет отдельного AI API-ключа. Юмор остался выключен; никакие платные запросы не выполнялись.";
+    } else {
+      await sendMessage(token, control.group_chat_id,
+        "🤖 TERRITORY AI: в чате включаются редкие ИИ-ответы и игровые шутки. " +
+        "Новые сообщения и небольшой контекст могут обрабатываться внешней моделью. " +
+        "Ответы автоматические, это не администрация. Для остановки владелец использует /humor off.");
+      await updateControl(db, { humor_enabled: true });
+      note = "✅ Юмор включён. Режим: " + control.humor_mode;
+    }
+  } else if (cmd === "mode" && ["lively","mentions"].includes(parts[2] || "")) {
+    await updateControl(db, { humor_mode: parts[2] });
+    note = "✅ Режим юмора: " + parts[2] + ". " +
+      (parts[2] === "lively" ? "Редкие уместные реплики без обращения." : "Только по обращению.");
+  }
+  await sendMessage(token, control.owner_telegram_id, note);
+}
+
+async function maybeHumorReply(db: ReturnType<typeof communityDb>, token: string,
+  control: CommunityControl, msg: Record<string, any>, body: string,
+  analysis: { priority: string }): Promise<void> {
+  if (!control.enabled || !control.humor_enabled || !control.group_chat_id) return;
+  const apiKey = env("TERRITORY_COMMUNITY_AI_API_KEY");
+  if (!apiKey) return;
+  const intent = chooseHumorIntent({
+    text: body,
+    messageId: msg.message_id,
+    priority: analysis.priority,
+    mode: control.humor_mode,
+    replyToUsername: msg.reply_to_message?.from?.username || ""
+  });
+  if (!intent) return;
+  // Transactional database claim. Daily and cross-worker cooldowns are enforced
+  // before paid inference, even when Telegram redelivers the same update.
+  const { data: claimed, error: claimError } = await db.rpc("territory_community_humor_claim_v1",
+    { p_chat_id: msg.chat.id, p_kind: intent.kind });
+  if (claimError || claimed !== true) return;
+  const { data: recent } = await db.from(TABLE).select("message_text,priority")
+    .eq("chat_id", msg.chat.id).eq("priority", "P3")
+    .lt("message_id", msg.message_id).order("message_id", { ascending: false }).limit(3);
+  const context = (recent || []).map(x => x.message_text).filter(x => typeof x === "string");
+  const model = env("TERRITORY_COMMUNITY_AI_MODEL") || "gpt-6-luna";
+  let response: Response;
+  try {
+    response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer " + apiKey },
+      body: JSON.stringify({
+        model, store: false, max_output_tokens: 180,
+        input: [
+          { role: "developer", content: HUMOR_PERSONA },
+          { role: "user", content: humorUserPrompt({
+            name: msg.from?.first_name || msg.from?.username || "игрок",
+            text: intent.text, context
+          }) }
+        ]
+      }),
+      signal: AbortSignal.timeout(9000)
+    });
+  } catch { return; }
+  if (!response.ok) return; // Fail closed, do not reveal API errors or credentials.
+  const result = await response.json().catch(() => null);
+  const raw = Array.isArray(result?.output) ?
+    result.output.flatMap((item: any) => Array.isArray(item.content) ? item.content : [])
+      .filter((part: any) => part.type === "output_text").map((part: any) => part.text).join(" ") : "";
+  const reply = cleanHumorOutput(raw);
+  if (!reply) return;
+  await sendMessage(token, msg.chat.id, reply, msg.message_id);
+}
+
 Deno.serve(async (req: Request) => {
   const token = env("TERRITORY_COMMUNITY_BOT_TOKEN");
   if (!token) return ok({ error: "bot_token_missing" }, 503);
@@ -166,6 +255,10 @@ Deno.serve(async (req: Request) => {
         "TERRITORY AI. Ваш Telegram ID: " + msg.chat.id +
         "\nДля получения уведомлений владелец должен добавить этот ID в защищённые настройки.");
     }
+    if (msg.from?.id === ownerId && /^\/humor(?:@\w+)?(?:\s|$)/i.test(text)) {
+      try { await humorCommand(db, token, control, text); }
+      catch { return ok({ error: "humor_command_failed" }, 503); }
+    }
     return ok();
   }
 
@@ -177,7 +270,7 @@ Deno.serve(async (req: Request) => {
   if (/^\/chatid(?:@\w+)?(?:\s|$)/i.test(body)) {
     if (msg.from?.id !== ownerId) return ok();
     try {
-      await updateControl(db, { group_chat_id: msg.chat.id, enabled: false });
+      await updateControl(db, { group_chat_id: msg.chat.id, enabled: false, humor_enabled: false });
       await sendMessage(token, ownerId,
         "✅ TERRITORY AI. Группа выбрана: " + (msg.chat.title || "чат") +
         "\nID: " + msg.chat.id +
@@ -204,10 +297,18 @@ Deno.serve(async (req: Request) => {
   if (/^\/disable(?:@\w+)?(?:\s|$)/i.test(body)) {
     if (msg.from?.id !== ownerId || control.group_chat_id !== msg.chat.id) return ok();
     try {
-      await updateControl(db, { enabled: false });
+      await updateControl(db, { enabled: false, humor_enabled: false });
       await sendMessage(token, ownerId, "⏸ TERRITORY AI: мониторинг группы остановлен.");
     } catch {
       return ok({ error: "monitoring_disable_failed" }, 503);
+    }
+    return ok();
+  }
+
+  if (/^\/humor(?:@\w+)?(?:\s|$)/i.test(body)) {
+    if (msg.from?.id === ownerId && control.group_chat_id === msg.chat.id) {
+      try { await humorCommand(db, token, control, body); }
+      catch { return ok({ error: "humor_command_failed" }, 503); }
     }
     return ok();
   }
@@ -236,6 +337,12 @@ Deno.serve(async (req: Request) => {
   const { error: insertError } = await db.from(TABLE).insert(record);
   if (insertError && insertError.code !== "23505")
     return ok({ error: "storage_unavailable" }, 503);
+
+  // Never delay critical alerts: P0/P1 are rejected by the humor policy.
+  if (!insertError && !edited) {
+    try { await maybeHumorReply(db, token, control, msg, body, analysis); }
+    catch { /* Jokes must never block live chat, monitoring, or alerts. */ }
+  }
 
   // Important reproducible game failures (P1) also require a private alert:
   // a group member need not use the literal word "bug" to be heard.
