@@ -1,4 +1,3 @@
-import { refreshGoose } from '@/game/goose/api';
 const GOOSE_SUBJECT = 'ПОСТАНОВЛЕНИЕ ВЕРХОВНОГО СУДА TERRITORY №5000';
 import { Check, ChevronDown, ChevronRight, Cloud, CloudOff } from 'lucide-react';
 import { useStore } from '@/game/store';
@@ -162,7 +161,7 @@ export function MailInbox({ notify, onCompanions }: { notify: (t: string) => voi
     try {
       const ok = await claimMailGrant(id);
       if (ok) {
-        void refreshGoose().catch(() => {});
+        void import('@/game/goose/api').then(({ refreshGoose }) => refreshGoose()).catch(() => {});
         // A not-yet-claimed companion-only finale was already read via the
         // normal claim action; do not show that same letter as New again.
         if (adminMail.some((mail) => mail.id === id && mail.subject === HALLOWEEN_FINAL_SUBJECT)) {
