@@ -38,6 +38,12 @@ try {
  assert.equal((await one("select has_table_privilege('authenticated','territory_private.goose_entitlements_v1','insert') as ok")).ok,false);
  await db.query("select set_config('test.uid',$1,false)",[b]);
  const revB=(await one('select updated_at from players where id=$1',[b])).updated_at;
+ // A desynchronized red wallet must not be silently reduced during a purchase.
+ await db.query('update territory_private.territory_master_license_red_wallet_v1 set balance=31 where player_id=$1',[b]);
+ await assert.rejects(buy(op,revB),/goose_wallet_desync/);
+ assert.equal((await one('select balance from territory_private.territory_master_license_red_wallet_v1 where player_id=$1',[b])).balance,31);
+ assert.equal((await one("select game_state #>> '{player,redGems}' as red from players where id=$1",[b])).red,'29');
+ await db.query('update territory_private.territory_master_license_red_wallet_v1 set balance=29 where player_id=$1',[b]);
  await assert.rejects(buy(op,revB),/insufficient_red_gems/);
  // Gift first, then buy from another device: zero total cost, one row/mail.
  await db.query("update players set username='Amiksor' where id=$1",[b]);
