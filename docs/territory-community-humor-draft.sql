@@ -15,10 +15,10 @@ CREATE OR REPLACE FUNCTION public.territory_community_humor_claim_v1(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
 DECLARE c record; n integer; cooldown interval;
 BEGIN
- IF auth.role() <> 'service_role' THEN RETURN false; END IF;
  IF p_kind NOT IN ('direct','ambient') THEN RETURN false; END IF;
  SELECT * INTO c FROM public.territory_community_control WHERE singleton=1 FOR UPDATE;
- IF NOT FOUND OR NOT c.enabled OR NOT c.humor_enabled
+ IF NOT FOUND THEN RETURN false; END IF;
+ IF NOT c.enabled OR NOT c.humor_enabled
     OR c.group_chat_id IS DISTINCT FROM p_chat_id THEN RETURN false; END IF;
  IF p_kind='ambient' AND c.humor_mode <> 'lively' THEN RETURN false; END IF;
  n := CASE WHEN c.humor_day=CURRENT_DATE THEN c.humor_sent_today ELSE 0 END;
