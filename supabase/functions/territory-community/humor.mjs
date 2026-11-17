@@ -31,6 +31,7 @@ export const HUMOR_PERSONA = [
   "Если уместной шутки нет, ответь строго [SKIP]."
 ].join("\n");
 
+/** @param {{name?: string, text: string, context?: string[]}} args */
 export function humorUserPrompt({ name = "игрок", text, context = [] }) {
   const others = context.slice(0, 3).map(x => String(x).slice(0, 180));
   return [
