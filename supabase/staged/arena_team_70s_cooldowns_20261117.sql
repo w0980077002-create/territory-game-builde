@@ -1,7 +1,6 @@
 -- TERRITORY: independent per-kind 70s potion timers for 3v3/20v20.
 -- Owner-approved 2026-11-17. No wallet/inventory reset or data migration.
 -- Source: live pg_get_functiondef of 3 existing production routines; minimal diff.
-BEGIN;
 CREATE OR REPLACE FUNCTION public.arena_use_item(p_room uuid, p_kind text)
  RETURNS void
  LANGUAGE plpgsql
@@ -370,4 +369,3 @@ FROM (SELECT * FROM arena_messages WHERE room_id = p_room AND id > COALESCE(p_af
 );
 END;
 $function$;
-COMMIT;
