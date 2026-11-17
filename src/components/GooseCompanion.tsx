@@ -45,13 +45,13 @@ export function GooseCompanion({ action = 'idle', sequence = 0, speed = 1, en = 
         const [x, y, w, h] = f.rect; const scale = 245 / set.height;
         const travel = reduced ? 0 : ['attack', 'commotion'].includes(action) ? Math.sin(Math.min(1, t / .8) * Math.PI) * 35 : action === 'dive' ? Math.sin(Math.min(1, t / .8) * Math.PI) * 52 : 0;
         const bob = reduced || action === 'defeat' ? 0 : Math.sin(t * 3) * 2;
-        ctx.save(); ctx.translate((portrait ? 160 : 220) + travel, 330 + bob - (action === 'dive' ? travel : 0));
+        ctx.save(); ctx.translate((portrait ? 154 : 220) + travel, 330 + bob - (action === 'dive' ? travel : 0));
         if (action === 'victory' && !reduced) ctx.translate(0, -Math.abs(Math.sin(t * 5)) * 9);
         ctx.drawImage(img, x, y, w, h, -f.pivot[0] * scale, -f.pivot[1] * scale, w * scale, h * scale);
         ctx.restore();
       } else if (fallback.complete && fallback.naturalWidth) {
         const width = 245 * fallback.naturalWidth / fallback.naturalHeight;
-        ctx.drawImage(fallback, (portrait ? 160 : 220) - width / 2, 85, width, 245);
+        ctx.drawImage(fallback, (portrait ? 154 : 220) - width / 2, 85, width, 245);
       }
       if (reduced && img.complete && img.naturalWidth) return;
       raf = requestAnimationFrame(draw);

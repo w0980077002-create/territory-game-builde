@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 const out='/tmp/territory-goose-combat';mkdirSync(out,{recursive:true});
 await build({entryPoints:['src/game/pve.ts','src/game/followers.ts'],bundle:true,platform:'node',format:'esm',outExtension:{'.js':'.mjs'},outdir:out,define:{'import.meta.env.BASE_URL':'"/"'},plugins:[{name:'offline',setup(b){b.onResolve({filter:/\/supabase$/},()=>({path:'offline',namespace:'offline'}));b.onLoad({filter:/.*/,namespace:'offline'},()=>({contents:'export const supabase={};'}));}}]});
 const pve=await import(pathToFileURL(out+'/pve.mjs'));
 const f=await import(pathToFileURL(out+'/followers.mjs'));
+const atlas=JSON.parse(readFileSync('src/game/goose/frames.json','utf8'));
+for(const index of [0,2,3,7]) {
+ const f=atlas.poses.frames[index],scale=245/atlas.poses.height;
+ assert(154-f.pivot[0]*scale>=0 && 154+(f.rect[2]-f.pivot[0])*scale<=320,'Portrait idle/outcome must preserve the entire sprite');
+}
 const original=Math.random;Math.random=()=>.5;
 try {
  const hero={name:'Hero',hp:1000,maxHp:1000,attack:50,defense:0,critChance:0,critDamage:50};
