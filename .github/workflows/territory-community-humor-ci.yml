@@ -26,12 +26,12 @@ jobs:
         run: |
           node scripts/check-territory-community.mjs
           node scripts/check-territory-community-humor.mjs
+      - name: Install dependencies
+        run: npm ci
       - name: Deno check webhook and admin API
         run: |
           deno check supabase/functions/territory-community/index.ts
           deno check supabase/functions/admin-api/index.ts
-      - name: Install UI dependencies
-        run: npm ci
       - name: Check admin UI
         run: |
           npm run typecheck
