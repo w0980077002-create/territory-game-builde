@@ -680,7 +680,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         }} /> : <ProfessionsScreen onMap={() => setScreen('map')} onInventory={() => { setInventoryTab('items'); setScreen('inventory'); }} onForge={() => openForge()} />)}
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} onNavigate={setScreen} />}
-        {screen === 'messages' && <MessagesScreen onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }} notify={notify} onQuests={() => setScreen('quests')} onDaily={() => setEventDailyOpen(true)} />}
+        {screen === 'messages' && <MessagesScreen notify={notify} onQuests={() => setScreen('quests')} onDaily={() => setEventDailyOpen(true)} onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }} />}
         {screen === 'events' && <EventsScreen onNavigate={setScreen} onDaily={() => setEventDailyOpen(true)} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} gatherReady={gatherReady} />}
         {screen === 'mortarion' && <MortarionBossScreen playerId={user.id} />}
         {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} onNavigate={setScreen} />}
