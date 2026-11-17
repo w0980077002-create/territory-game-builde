@@ -57,9 +57,9 @@ export function BeltBar({ belt, ctx, actionLabel, compact = false, disabled, bus
               key={i}
               disabled={busy || recharging || activeBuff}
               aria-label={item && (recharging || activeBuff)
-                ? `${localizeText(item.name, language)}: ${activeBuff
-                  ? (language === 'en' ? 'already active' : 'уже действует')
-                  : `${cooldown} ${language === 'en' ? 'seconds remaining' : 'секунд до использования'}`}`
+                ? `${localizeText(item.name, language)}: ${recharging
+                  ? `${cooldown} ${language === 'en' ? 'seconds remaining' : 'секунд до использования'}`
+                  : (language === 'en' ? 'already active' : 'уже действует')}`
                 : undefined}
               onClick={() => {
                 if (open && item && !disabled) {
@@ -88,7 +88,7 @@ export function BeltBar({ belt, ctx, actionLabel, compact = false, disabled, bus
                   {!compact && <span className="text-[8px] text-gray-400 leading-none truncate w-full px-1 text-center">{item.name}</span>}
                   {(recharging || activeBuff) && (
                     <span className="absolute inset-0 rounded-lg bg-black/75 flex items-center justify-center text-[11px] font-black tabular-nums text-amber-100" aria-hidden="true">
-                      {activeBuff ? (language === 'en' ? 'ON' : 'АКТ') : `${cooldown}с`}
+                      {recharging ? `${cooldown}с` : (language === 'en' ? 'ON' : 'АКТ')}
                     </span>
                   )}
                 </>
