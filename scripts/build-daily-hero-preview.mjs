@@ -36,6 +36,8 @@ export async function fetchSeasonStatus(){return {enabled:false};}
 export async function getArenaWeeklyStatus(){return null;}
 // Isolate the existing Mortarion event RPC from the offline mobile preview.
 export async function getMortarionBossState(){return null;}
+// Daily event fixture never checks goose ownership or contacts Supabase.
+export async function refreshGoose(){}
 `;
 
 const entry = `
@@ -65,7 +67,19 @@ const output=await build({
  plugins:[{
   name:'inert-daily-loop',
   setup(build){
-   build.onResolve({filter:new RegExp('(?:game/|[.]/)(actions|live|analytics|gameHall|slotsApi|seasonApi|arenaWeekly|mortarionBoss)$')},()=>({path:'fixture',namespace:'fixture'}));
+   build.onResolve({filter:new RegExp('(?:game/|[.]/)(actions|live|analytics|gameHall|slotsApi|seasonApi|arenaWeekly|mortarionBoss)
+   build.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:fixture,loader:'js',resolveDir:resolve('.')}));
+  },
+ }],
+});
+const compiledCss=(await postcss([tailwindcss(),autoprefixer()]).process(readFileSync('src/index.css','utf8'),{from:'src/index.css'})).css;
+const css=compiledCss+'\n'+readFileSync('src/components/ui/vikingScreenSkin.css','utf8')+'\n'+(output.outputFiles.find(f=>f.path.endsWith('.css'))?.text||'');
+const js=output.outputFiles.find(f=>f.path.endsWith('.js')).text;
+const safeJs=js.split('</script').join('<'+'\\'+'/script');
+writeFileSync('/tmp/territory-daily-hero-preview.html',`<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#121924"><style>${css}</style><div id="root"></div><script>${safeJs}</script></body></html>`);
+console.log('Offline daily loop preview built: /tmp/territory-daily-hero-preview.html');
+)},()=>({path:'fixture',namespace:'fixture'}));
+   build.onResolve({filter:/game\/goose\/api$/},()=>({path:'fixture',namespace:'fixture'}));
    build.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:fixture,loader:'js',resolveDir:resolve('.')}));
   },
  }],
