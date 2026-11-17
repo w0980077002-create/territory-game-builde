@@ -1,3 +1,4 @@
+const GOOSE_SUBJECT = 'ПОСТАНОВЛЕНИЕ ВЕРХОВНОГО СУДА TERRITORY №5000';
 import { Check, ChevronDown, ChevronRight, Cloud, CloudOff } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
@@ -81,7 +82,7 @@ export function DailySheet({ onClose, notify }: { onClose: () => void; notify: (
 }
 
 /** Compact inbox for the dedicated Messages screen; never overlays the city. */
-export function MailInbox({ notify }: { notify: (t: string) => void }) {
+export function MailInbox({ notify, onCompanions }: { notify: (t: string) => void; onCompanions?: () => void }) {
   const { t, language } = useLanguage();
   const state = useStore(useGame);
   const { mail: adminMail } = useStore(useLive);
@@ -160,6 +161,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
     try {
       const ok = await claimMailGrant(id);
       if (ok) {
+        void import('@/game/goose/api').then(({ refreshGoose }) => refreshGoose()).catch(() => {});
         // A not-yet-claimed companion-only finale was already read via the
         // normal claim action; do not show that same letter as New again.
         if (adminMail.some((mail) => mail.id === id && mail.subject === HALLOWEEN_FINAL_SUBJECT)) {
@@ -244,7 +246,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
                 {language === 'en' ? 'Claimed' : 'Получено'}: {new Date((m as ClaimedMailGrant).claimed_at).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU')}
               </p>}
               <div className="flex flex-wrap items-center justify-between gap-1.5">
-                {(rewards.length > 0 || m.subject === HALLOWEEN_FINAL_SUBJECT) && (
+                {(rewards.length > 0 || m.subject === HALLOWEEN_FINAL_SUBJECT || m.subject === GOOSE_SUBJECT) && (
                   <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1" aria-label={language === 'en' ? 'Mail rewards' : 'Награды письма'}>
                     {m.subject === HALLOWEEN_FINAL_SUBJECT && (
                       <span className="territory-mail__reward inline-flex shrink-0 items-center gap-0.5 rounded border border-purple-400/35 bg-violet-800/20 px-1 py-0.5 text-[10px] font-bold text-amber-50" title={language === 'en' ? 'Epic Pumpkin Witch · Level 100 — server entitlement' : 'Эпическая Тыквенная ведьма · уровень 100 — серверная награда'} aria-label={language === 'en' ? 'Epic Pumpkin Witch: 1' : 'Эпическая Тыквенная ведьма: 1'}>
@@ -252,6 +254,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
                         <span>×1</span>
                       </span>
                     )}
+                    {m.subject === GOOSE_SUBJECT && <span className="territory-mail__reward text-[10px] text-amber-100"><img className="inline h-7 w-7 object-contain" src={getFollowerArt('follower_goose_obnimus')} alt="" />{language === 'en' ? 'Goose Hugger ×1 · Advocate of 5,000 victories' : 'Гусь-Обнимусь ×1 · Адвокат 5000 побед'}</span>}
                     {rewards.map((reward) => {
                       const name = language === 'en' ? reward.nameEn : reward.name;
                       return (
@@ -268,6 +271,7 @@ export function MailInbox({ notify }: { notify: (t: string) => void }) {
                     })}
                   </div>
                 )}
+                {m.subject === GOOSE_SUBJECT && state.gooseCompanionVerified && onCompanions && <button type="button" className="min-h-11 px-3 rounded-lg bg-amber-600 text-[11px] font-bold" onClick={onCompanions}>{language === 'en' ? 'View companion' : 'Посмотреть спутника'}</button>}
                 {received ? (
                   <span className="shrink-0 text-[10px] text-emerald-300">✓ {t('claimed')}</span>
                 ) : previouslyClaimedFinal ? (

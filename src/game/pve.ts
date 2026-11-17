@@ -1,3 +1,4 @@
+import type { GooseMemory } from './goose/brain';
 import { ZONES, type Zone } from './arenaApi';
 import type { Enemy, GameState, InventoryItem } from './types';
 import { getComputedStats } from './engine';
@@ -5,6 +6,17 @@ import type { PveRuneTotals } from './builds/runePveEffectsV1';
 import { eliteRoundDamageCap, followerGuardDamage } from './pveBalance';
 import { followerCombat, selectedFollower } from './followers';
 import { forgeSetBonus } from './forge';
+
+export function goosePlan(memory: GooseMemory, ranged: boolean, boss: boolean) {
+  const round = memory.round + 1;
+  // Spellcasting bosses resist repeated interruption: one dive per fight,
+  // after their opening strike. Ordinary ranged enemies use four rounds.
+  const dive = ranged && (boss ? memory.lastDive < 0 && round >= 2 : round - memory.lastDive >= 4);
+  return { round, dive, hug: !dive && round % 3 === 0,
+    commotion: !dive && round % 3 === 1, honk: round % 4 === 2,
+    buff: round > 1 && (round - 1) % 4 === 2,
+    next: { round, lastDive: dive ? round : memory.lastDive } };
+}
 
 export interface PveSide {
   name: string;
@@ -17,6 +29,7 @@ export interface PveSide {
   /** PvE-only enemy metadata; optional on hero and existing test fixtures. */
   enemyId?: string;
   isBoss?: boolean;
+  ranged?: boolean;
 }
 
 export interface PveHit {
@@ -168,7 +181,7 @@ export function heroSide(state: GameState): PveSide {
 }
 
 export function enemySide(e: Enemy): PveSide {
-  return { name: e.name, hp: e.maxHp, maxHp: e.maxHp, attack: e.attack, defense: e.defense, critChance: e.isBoss ? 8 : 4, critDamage: 50, enemyId: e.id, isBoss: e.isBoss };
+  return { name: e.name, hp: e.maxHp, maxHp: e.maxHp, attack: e.attack, defense: e.defense, critChance: e.isBoss ? 8 : 4, critDamage: 50, enemyId: e.id, ranged: /(?:archer|mage|hunter|shaman|rune_mage|slinger|dark_priest|storm_lord|fire_lord|chaos_shadow)/i.test(e.art), isBoss: e.isBoss };
 }
 
 /** A rune snapshot contains basis points, never client-issued ownership. */
@@ -229,6 +242,7 @@ export const EMPTY_PVE_RUNE_AILMENTS: Readonly<PveRuneAilments> = Object.freeze(
 });
 
 export interface RoundResult {
+  goose?: { next: GooseMemory; dive: boolean; hug: number; commotion: boolean; honk: boolean; buff: boolean };
   hits: PveHit[];
   hero: PveSide;
   enemy: PveSide;
@@ -240,10 +254,12 @@ export interface RoundResult {
 }
 
 export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Zone[], followerAttack: number, followerName: string, followerDefense = 0, bonus: ReturnType<typeof followerCombat> | null = null, enemyIntent: ReturnType<typeof randomZones> | null = null, riposteReady = false, momentumReady = false, runes: PveRuneTotals | null = null,
-  priorAilments: Readonly<PveRuneAilments> = EMPTY_PVE_RUNE_AILMENTS): RoundResult {
+  priorAilments: Readonly<PveRuneAilments> = EMPTY_PVE_RUNE_AILMENTS, gooseMemory?: GooseMemory): RoundResult {
   // The visible enemy guard is the actual defense used by this round, not a decorative hint.
   // Other callers retain their original random AI by omitting enemyIntent.
   const ai = enemyIntent ?? randomZones();
+  const goose = bonus?.role === 'goose' && gooseMemory ? goosePlan(gooseMemory, enemy.ranged === true, !!enemy.isBoss) : null;
+  let gooseGuard = 0;
   const hits: PveHit[] = [];
   // Ailments only exist with a verified rune build. A rune-free round retains
   // the original combat resolution, RNG calls and reward contract.
@@ -290,17 +306,19 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
   const runeHit = attackBonusBp > 0 && comboHit.amount > 0
     ? { ...comboHit, amount: Math.round(comboHit.amount * (1 + attackBonusBp / 10000)) }
     : comboHit;
-  const firstDamage = Math.min(runeHit.amount, damageBudget, enemy.hp);
+  const honkedHit = goose?.buff && runeHit.amount > 0 ? Math.round(runeHit.amount * 1.05) : runeHit.amount;
+  const firstDamage = Math.min(honkedHit, damageBudget, enemy.hp);
   const h1 = { ...runeHit, amount: firstDamage };
   hits.push(h1);
   damageBudget -= firstDamage;
   let enemyHp = Math.max(0, enemy.hp - firstDamage);
   if (enemyHp > 0 && followerAttack > 0 && damageBudget > 0) {
-    const companionDamage = Math.min(Math.max(0, Math.floor(followerAttack)), damageBudget, enemyHp);
+    const companionDamage = Math.min(Math.max(0, Math.floor(goose?.buff ? Math.round(followerAttack * 1.05) : followerAttack)), damageBudget, enemyHp);
     if (companionDamage > 0) {
       const f: PveHit = { source: 'companion', attacker: followerName, target: enemy.name, targetSide: 'enemy', zone: pick(ZONES).id, tone: 'hit', amount: companionDamage };
       hits.push(f);
       enemyHp = Math.max(0, enemyHp - companionDamage);
+      damageBudget -= companionDamage;
     }
   }
   // Existing bleed and burn resolve after attacks, using the very same
@@ -319,7 +337,7 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
     }
   }
   let heroHp = hero.hp;
-  if (enemyHp > 0 && previous.root <= 0) {
+  if (enemyHp > 0 && previous.root <= 0 && !goose?.dive) {
     // A slowed enemy still attacks, but at reduced force. The root effect
     // above is stronger and can skip a strike for its remaining duration.
     const actingEnemy = previous.slow > 0
@@ -333,7 +351,9 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
     const defenseBonusBp = Math.min(2500,
       runeBp(runes, 'guard_absorb_bp') + runeBp(runes, 'rune_combat_guard_bp')
       + (momentumReady ? runeBp(runes, 'rage_damage_reduction_bp') : 0));
-    const mitigated = Math.round(followerMitigated * (1 - defenseBonusBp / 10000));
+    const beforeGoose = Math.round(followerMitigated * (1 - defenseBonusBp / 10000));
+    gooseGuard = goose?.hug ? Math.min(12, Math.floor(beforeGoose * .2)) : goose?.commotion && hits.some(h => h.source === 'companion' && h.amount > 0) ? Math.min(4, Math.floor(beforeGoose * .05)) : 0;
+    const mitigated = beforeGoose - gooseGuard;
     // Only actual HP loss belongs in the hit log and tactical damage counters.
     const h2 = { ...rawEnemyHit, amount: Math.min(mitigated, heroHp) };
     hits.push(h2);
@@ -372,7 +392,8 @@ export function playRound(hero: PveSide, enemy: PveSide, attack: Zone, blocks: Z
       Math.max(ailments.root, 1 + Math.floor(runeBp(runes, 'root_duration_bp') / 1000));
   }
   return { hits, hero: { ...hero, hp: heroHp + healAmount }, enemy: { ...enemy, hp: enemyHp },
-    healAmount, runeHealAmount, runeAilments: ailments };
+    healAmount, runeHealAmount, runeAilments: ailments,
+    ...(goose ? { goose: { next: goose.next, dive: goose.dive && enemyHp > 0 && previous.root <= 0, hug: goose.hug ? gooseGuard : 0, commotion: goose.commotion && hits.some(h => h.source === 'companion' && h.amount > 0), honk: goose.honk && heroHp > 0 && enemyHp > 0, buff: goose.buff && firstDamage > 0 } } : {}) };
 }
 
 export type PotionUse =

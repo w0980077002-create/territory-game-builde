@@ -1,0 +1,74 @@
+[
+  {
+    "width": 320,
+    "lang": "ru",
+    "actions": [
+      "commotion",
+      "hit",
+      "idle"
+    ]
+  },
+  {
+    "width": 320,
+    "lang": "en",
+    "actions": [
+      "commotion",
+      "hit",
+      "idle"
+    ]
+  },
+  {
+    "width": 360,
+    "lang": "ru",
+    "actions": [
+      "commotion",
+      "hit",
+      "idle"
+    ]
+  },
+  {
+    "width": 360,
+    "lang": "en",
+    "actions": [
+      "commotion",
+      "hit",
+      "idle"
+    ]
+  },
+  {
+    "width": 390,
+    "lang": "ru",
+    "actions": [
+      "commotion",
+      "hit",
+      "idle"
+    ]
+  },
+  {
+    "width": 390,
+    "lang": "en",
+    "actions": [
+      "commotion",
+      "hit",
+      "idle"
+    ]
+  },
+  {
+    "width": 430,
+    "lang": "ru",
+    "actions": [
+      "commotion",
+      "hit",
+      "idle"
+    ]
+  },
+  {
+    "width": 430,
+    "lang": "en",
+    "actions": [
+      "commotion",
+      "hit",
+      "idle"
+    ]
+  }
+]

@@ -2,6 +2,7 @@ const URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-api`;
 const TOKEN_KEY = 'territory_admin_token';
 
 const ERRORS: Record<string, string> = {
+  goose_gift_unconfirmed: 'Выдача не подтверждена. Проверьте идентификаторы и серверную установку; повтор не создаёт второго спутника.',
   network: 'Нет связи с сервером. Повторите тот же запрос после восстановления сети.',
   runes_unavailable: 'Сервер рун недоступен. Повторите тот же запрос после восстановления связи.',
   rune_still_equipped: 'Сначала игрок должен снять эту руну.',

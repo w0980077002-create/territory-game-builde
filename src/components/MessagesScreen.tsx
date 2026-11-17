@@ -4,7 +4,7 @@ import { WoodenPlaque } from '@/components/ui/WoodenPlaque';
 import { useLanguage } from '@/game/i18n';
 
 /** Private mailbox. The existing server history and claim flows remain in MailInbox. */
-export function MessagesScreen({ notify, onQuests, onDaily }: { notify: (message: string) => void; onQuests: () => void; onDaily: () => void }) {
+export function MessagesScreen({ notify, onQuests, onDaily, onCompanions }: { notify: (message: string) => void; onQuests: () => void; onDaily: () => void; onCompanions?: () => void }) {
   const { language } = useLanguage();
   const en = language === 'en';
   return (
@@ -17,7 +17,7 @@ export function MessagesScreen({ notify, onQuests, onDaily }: { notify: (message
         </div>
       </header>
       <RewardJourney active="messages" onDaily={onDaily} onQuests={onQuests} />
-      <div className="mt-3"><MailInbox notify={notify} /></div>
+      <div className="mt-3"><MailInbox notify={notify} onCompanions={onCompanions} /></div>
     </div>
   );
 }

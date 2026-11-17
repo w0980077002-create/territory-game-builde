@@ -29,6 +29,7 @@ const gear = read('src/components/arena/GearStrip.tsx');
 const effects = read('src/index.css');
 
 assert.match(arena, /combatFrames=\{getCombatAppearance\(enemy\.appearance\)\}/, 'PvP opponent animations disconnected');
+assert.match(arena, /const portraitFollower = selectedCompanion\?\.id === GOOSE_ID \? null : selectedCompanion/, 'Goose must stay outside Arena, even as a cosmetic spectator');
 assert.match(arena, /portraitFollower &&/, 'Companion must not appear before unlocking');
 assert.match(arena, /getFollowerCombatFrames\(portraitFollower\.id\)/, 'Companion animation frames missing');
 const followerLane = arena.match(/data-testid="arena-visible-follower"[\s\S]*?className="([^"]*)"/)?.[1] ?? '';
@@ -206,7 +207,7 @@ assert.doesNotMatch(pve, /ArticulatedCow|pve-companion-action--jointed/,
   'Rejected joint-cutout Cow must not return to the live PvE renderer');
 assert.match(pve, /h-\[58%\] w-\[44%\]/,
   'Battle Cow must stay in a compact companion-only lane');
-assert.match(pve, /follower\?\.id === 'follower_6' \? 'right-\[-5%\] w-\[70%\]'/,
+assert.match(pve, /follower\?\.id === 'follower_6' \|\| follower\?\.id === GOOSE_ID \? 'right-\[-5%\] w-\[70%\]'/,
   'Hero should retain a separate visible lane with the Cow selected');
 
 console.log('Battle visuals OK: all character poses/assets, opponent, companion, sword, chat and seven-slot UI.');

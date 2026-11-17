@@ -6,7 +6,7 @@ import { reconcileElixirExpiry } from './elixirExpiry';
  * exactly one active companion. PvP Arena snapshots never use these bonuses.
  * Training is a client-side gameplay feature, NOT an anti-cheat boundary.
  */
-export type FollowerRole = 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage' | 'crystal' | 'pumpkin';
+export type FollowerRole = 'guardian' | 'warrior' | 'healer' | 'hunter' | 'mage' | 'crystal' | 'pumpkin' | 'goose';
 /** Presentation rarity is derived from the trusted roster ID, never from editable saved data. */
 export type FollowerRarity = 'common' | 'rare' | 'epic' | 'legendary';
 export const FOLLOWER_RARITY_ORDER: readonly FollowerRarity[] = ['common', 'rare', 'epic', 'legendary'];
@@ -88,8 +88,18 @@ export const HALLOWEEN_COMPANION_TEMPLATE: FollowerTemplate = {
   description: 'Эпический спутник за участие в рейде 2026. Уровень 100, атака выше максимально прокачанного обычного воина и лечение героя.',
   descriptionEn: 'Epic Halloween 2026 raid companion. Level 100; more direct damage than a max-trained common warrior, plus healing.',
 };
+export const GOOSE_ID = 'follower_goose_obnimus';
+export const GOOSE_PRICE = 30;
+export const GOOSE_TEMPLATE: FollowerTemplate = {
+  id: GOOSE_ID, role: 'goose', rarity: 'legendary', unlockLevel: 1,
+  name: 'Гусь-Обнимусь', nameEn: 'Goose Hugger', icon: '🪿', attack: 7, defense: 0,
+  description: 'Пике срывает дальний удар. Обнимусь прикрывает героя, переполох отвлекает врага, а ГА-ГА! усиливает следующий удар. Только PvE.',
+  descriptionEn: 'Dive interrupts a ranged strike. Hug protects the hero, Commotion distracts enemies, and HONK! boosts the next strike. PvE only.',
+};
+export const GOOSE_FOLLOWER: Follower = { ...GOOSE_TEMPLATE, level: 1, unlocked: true };
+
 export const DISPLAY_FOLLOWER_TEMPLATES: FollowerTemplate[] = [
-  ...FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_TEMPLATE,
+  ...FOLLOWER_TEMPLATES, HALLOWEEN_COMPANION_TEMPLATE, GOOSE_TEMPLATE,
 ].sort((a, b) => FOLLOWER_RARITY_ORDER.indexOf(a.rarity) - FOLLOWER_RARITY_ORDER.indexOf(b.rarity));
 
 /** Rare is supported but reserved for future companions; the five launch companions stay Common. */
@@ -106,7 +116,7 @@ export function initialFollowers(): Follower[] {
 
 /** Preserve legacy training and all custom follower fields. Existing Loyal Shield
  * level, attack and defense values must never be reset by this migration. */
-export function reconcileFollowers(saved: Follower[] | undefined, heroLevel: number, halloweenVerified = false): Follower[] {
+export function reconcileFollowers(saved: Follower[] | undefined, heroLevel: number, halloweenVerified = false, gooseVerified = false): Follower[] {
   const current = Array.isArray(saved) ? saved : [];
   const templates = initialFollowers();
   return templates.map((fresh, index) => {
@@ -118,16 +128,18 @@ export function reconcileFollowers(saved: Follower[] | undefined, heroLevel: num
       // Never relock a legacy follower; newly unlocked companions follow hero level.
       unlocked: old.unlocked === true || heroLevel >= template.unlockLevel,
     };
-  }).concat(current.filter((old) => old && old.id !== HALLOWEEN_COMPANION_ID && !templates.some((f) => f.id === old.id)))
-    .concat(halloweenVerified ? [{ ...PUMPKIN_WITCH_TEMPLATE }] : []);
+  }).concat(current.filter((old) => old && old.id !== HALLOWEEN_COMPANION_ID && old.id !== GOOSE_ID && !templates.some((f) => f.id === old.id)))
+    .concat(halloweenVerified ? [{ ...PUMPKIN_WITCH_TEMPLATE }] : [])
+    .concat(gooseVerified ? [{ ...GOOSE_FOLLOWER }] : []);
 }
 
-export function selectedFollower(state: Pick<GameState, 'followers' | 'activeFollowerId'>): Follower | null {
-  const active = state.followers.find((f) => f.unlocked && f.id === state.activeFollowerId);
-  return active ?? state.followers.find((f) => f.unlocked) ?? null;
+export function selectedFollower(state: Pick<GameState, 'followers' | 'activeFollowerId'> & Partial<Pick<GameState, 'gooseCompanionVerified'>>): Follower | null {
+  const active = state.followers.find((f) => f.unlocked && (f.id !== GOOSE_ID || state.gooseCompanionVerified === true) && f.id === state.activeFollowerId);
+  return active ?? state.followers.find((f) => f.unlocked && (f.id !== GOOSE_ID || state.gooseCompanionVerified === true)) ?? null;
 }
 
 export function selectFollower(state: GameState, followerId: string): GameState | null {
+  if (followerId === GOOSE_ID && state.gooseCompanionVerified !== true) return null;
   const target = state.followers.find((f) => f.id === followerId && f.unlocked && DISPLAY_FOLLOWER_TEMPLATES.some((x) => x.id === f.id));
   return target ? { ...state, activeFollowerId: target.id } : null;
 }
@@ -189,6 +201,7 @@ export function trainFollower(state: GameState, followerId: string): GameState |
 /** Bounded combat effects (client-side PvE only). Untrusted saved stats do not
  * yield unbounded buffs; full server economy enforcement is a separate release. */
 export function followerCombat(follower: Follower | null) {
+  if (follower?.id === GOOSE_ID) return { role: 'goose' as const, attack: 11, defense: 0, heal: 0, crit: 0, pierce: 0 };
   if (follower?.id === HALLOWEEN_COMPANION_ID) {
     // No skill effects on PvP. Epic level-100 raid companion exceeds the
     // highest direct-damage Common follower; heal retains its existing 16 HP.

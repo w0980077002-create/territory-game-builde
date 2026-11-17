@@ -123,7 +123,7 @@ export function addXp(state: GameState, amount: number): Partial<GameState> {
     xpToNext = 0;
   }
 
-  const followers = reconcileFollowers(state.followers, level, state.halloweenCompanionVerified === true);
+  const followers = reconcileFollowers(state.followers, level, state.halloweenCompanionVerified === true, state.gooseCompanionVerified === true);
 
   return {
     player: {

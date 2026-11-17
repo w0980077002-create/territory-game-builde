@@ -46,6 +46,7 @@ jobs:
       - run: npm run build
       - run: node scripts/check-pages-build-sha.mjs
       - run: npm run test:balance
+      - run: npm run test:goose
       - run: npm run test:pve
       - run: node scripts/check-trial-reload-integrity.mjs
       - run: node scripts/check-pve-next-navigation.mjs

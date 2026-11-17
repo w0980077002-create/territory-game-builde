@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import { build } from 'esbuild';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+const out='/tmp/territory-goose-combat';mkdirSync(out,{recursive:true});
+await build({entryPoints:['src/game/pve.ts','src/game/followers.ts'],bundle:true,platform:'node',format:'esm',outExtension:{'.js':'.mjs'},outdir:out,define:{'import.meta.env.BASE_URL':'"/"'},plugins:[{name:'offline',setup(b){b.onResolve({filter:/\/supabase$/},()=>({path:'offline',namespace:'offline'}));b.onLoad({filter:/.*/,namespace:'offline'},()=>({contents:'export const supabase={};'}));}}]});
+const pve=await import(pathToFileURL(out+'/pve.mjs'));
+const f=await import(pathToFileURL(out+'/followers.mjs'));
+const atlas=JSON.parse(readFileSync('src/game/goose/frames.json','utf8'));
+for(const index of [0,2,3,7]) {
+ const f=atlas.poses.frames[index],scale=245/atlas.poses.height;
+ assert(154-f.pivot[0]*scale>=0 && 154+(f.rect[2]-f.pivot[0])*scale<=320,'Portrait idle/outcome must preserve the entire sprite');
+}
+const original=Math.random;Math.random=()=>.5;
+try {
+ const hero={name:'Hero',hp:1000,maxHp:1000,attack:50,defense:0,critChance:0,critDamage:50};
+ const enemy={...hero,name:'Enemy',attack:100,hp:5000,maxHp:5000,ranged:true};
+ const bonus=f.followerCombat(f.GOOSE_FOLLOWER);
+ let memory={round:0,lastDive:-3};
+ const round=(e=enemy,mem=memory,b=bonus)=>pve.playRound(hero,e,'head',[],11,'Goose',0,b,{attack:'chest',blocks:['belly','legs']},false,false,null,undefined,mem);
+ const dive=round();assert.equal(dive.goose.dive,true);assert.equal(dive.hero.hp,1000);assert(dive.enemy.hp<enemy.hp);
+ memory=dive.goose.next;
+ const honk=round();assert.equal(honk.goose.honk,true);assert.equal(honk.goose.dive,false);
+ memory=honk.goose.next;
+ const hug=round();assert(hug.goose.hug>0&&hug.goose.hug<=12);assert.equal(hug.goose.buff,true);
+ const noBuff=round(enemy,{round:3,lastDive:1});assert(hug.hits[0].amount>noBuff.hits[0].amount);
+ assert(hug.hits.find(h=>h.source==='companion').amount>noBuff.hits.find(h=>h.source==='companion').amount);
+ assert.equal(round({...enemy,isBoss:true},{round:0,lastDive:-3}).goose.dive,false);
+ assert.equal(round({...enemy,isBoss:true},{round:1,lastDive:-3}).goose.dive,true);
+ assert.equal(round({...enemy,isBoss:true},{round:6,lastDive:2}).goose.dive,false);
+ assert.equal(round({...enemy,ranged:false},{round:0,lastDive:-3}).goose.dive,false);
+ const lethal=round({...enemy,hp:1});assert.equal(lethal.goose.dive,false);assert(!lethal.hits.some(h=>h.source==='companion'));
+ const boss=round({...enemy,isBoss:true,maxHp:100,hp:100});assert(boss.hits.filter(h=>h.targetSide==='enemy').reduce((s,h)=>s+h.amount,0)<=40);
+ assert.equal(f.DISPLAY_FOLLOWER_TEMPLATES.filter(t=>t.id===f.GOOSE_ID).length,1);
+ assert.equal(f.selectFollower({followers:[f.GOOSE_FOLLOWER],activeFollowerId:null},f.GOOSE_ID),null);
+ assert.equal(f.selectedFollower({followers:[f.GOOSE_FOLLOWER],activeFollowerId:f.GOOSE_ID}),null);
+ const forged=[{...f.GOOSE_FOLLOWER,attack:99999,level:100}];
+ assert.equal(f.reconcileFollowers(forged,61).some(x=>x.id===f.GOOSE_ID),false);
+ assert.equal(f.reconcileFollowers(forged,61,false,true).filter(x=>x.id===f.GOOSE_ID).length,1);
+ assert.equal(f.reconcileFollowers(forged,61,false,true).find(x=>x.id===f.GOOSE_ID).level,1);
+ console.log('PASS goose combat: real interrupt, ranged/boss constraints, guard cap, next-strike buff, lethal/cap, single roster, forged save rejection');
+} finally {Math.random=original;}

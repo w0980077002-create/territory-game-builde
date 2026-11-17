@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { GooseCompanion } from './GooseCompanion';
+import { GOOSE_ID, GOOSE_PRICE, GOOSE_FOLLOWER } from '@/game/followers';
+import { buyGoose, refreshGoose } from '@/game/goose/api';
+import { useEffect, useState } from 'react';
 import { Check, Coins, Crown, Heart, LockKeyhole, Shield, Sparkles, Swords, Wrench } from 'lucide-react';
 import { useStore } from '@/game/store';
 import { useGame } from '@/game/actions';
@@ -22,6 +25,21 @@ export function FollowersPanel() {
   const active = selectedFollower(state);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [buying, setBuying] = useState(false);
+  const [gooseOnline, setGooseOnline] = useState(false);
+  useEffect(() => {
+    let live = true;
+    const refresh = () => { void refreshGoose().then(() => { if (live) setGooseOnline(true); }).catch(() => { if (live) setGooseOnline(false); }); };
+    refresh(); window.addEventListener('online', refresh);
+    return () => { live = false; window.removeEventListener('online', refresh); };
+  }, []);
+  const purchase = async () => {
+    if (buying) return;
+    setBuying(true);
+    try { await buyGoose(); setNote(en ? 'Goose Hugger is yours!' : 'Гусь-Обнимусь теперь с вами!'); }
+    catch { setNote(en ? 'Purchase unconfirmed. Reopen the game to check ownership before retrying.' : 'Покупка не подтверждена. Перезайдите для проверки владения перед повтором.'); }
+    finally { setBuying(false); }
+  };
   const [witchAppearance, setWitchAppearance] = useState(0);
 
   const choose = (id: string) => {
@@ -47,17 +65,18 @@ export function FollowersPanel() {
   const currentId = selectedId ?? active?.id ?? FOLLOWER_TEMPLATES[0].id;
   const template = DISPLAY_FOLLOWER_TEMPLATES.find(f => f.id === currentId) ?? FOLLOWER_TEMPLATES[0];
   const follower = state.followers.find(f => f.id === template.id)
-    ?? (template.id === HALLOWEEN_COMPANION_ID ? { ...PUMPKIN_WITCH_TEMPLATE, unlocked: false } : undefined);
+    ?? (template.id === GOOSE_ID ? { ...GOOSE_FOLLOWER, unlocked: false } : template.id === HALLOWEEN_COMPANION_ID ? { ...PUMPKIN_WITCH_TEMPLATE, unlocked: false } : undefined);
   const unlocked = follower?.unlocked === true;
   const selected = active?.id === follower?.id && unlocked;
+  const isGoose = template.id === GOOSE_ID;
   const isCow = template.id === 'follower_6';
   const isSeasonal = template.id === HALLOWEEN_COMPANION_ID;
   const stoneCount = cowStonesOwned(state);
   const stonePrice = follower ? cowAwakeningCost(follower.level) : 1;
-  const maxed = !!follower && (isSeasonal ? true : isCow ? follower.level >= MAX_BATTLE_COW_LEVEL : (follower.level >= state.player.level || follower.level >= MAX_FOLLOWER_LEVEL));
+  const maxed = !!follower && (isSeasonal || isGoose ? true : isCow ? follower.level >= MAX_BATTLE_COW_LEVEL : (follower.level >= state.player.level || follower.level >= MAX_FOLLOWER_LEVEL));
   const price = follower ? followerTrainingCost(follower.level) : { gold: 0, materials: 0 };
   const canTrain = unlocked && !maxed && !isCow && state.player.gold >= price.gold && state.forgeMaterials >= price.materials;
-  const cap = isSeasonal ? 100 : isCow ? MAX_BATTLE_COW_LEVEL : Math.max(1, Math.min(state.player.level, MAX_FOLLOWER_LEVEL));
+  const cap = isGoose ? 1 : isSeasonal ? 100 : isCow ? MAX_BATTLE_COW_LEVEL : Math.max(1, Math.min(state.player.level, MAX_FOLLOWER_LEVEL));
   const progress = follower ? Math.min(100, Math.round(follower.level / cap * 100)) : 0;
   const nextUnlock = FOLLOWER_TEMPLATES.find(f => !state.followers.find(x => x.id === f.id)?.unlocked);
 
@@ -74,7 +93,7 @@ export function FollowersPanel() {
     <div className="followers-camp__active">
       {active ? <>
         <div className="followers-camp__active-art">
-          {active.id === HALLOWEEN_COMPANION_ID ? <PumpkinWitch /> : <img src={getFollowerArt(active.id)} loading="lazy" alt="" draggable={false}/>}
+          {active.id === GOOSE_ID ? <GooseCompanion portrait en={en} /> : active.id === HALLOWEEN_COMPANION_ID ? <PumpkinWitch /> : <img src={getFollowerArt(active.id)} loading="lazy" alt="" draggable={false}/>}
         </div>
         <div className="followers-camp__active-info">
           <span className="followers-camp__eyebrow"><Check size={13}/>{en ? 'ACTIVE IN PvE' : 'АКТИВЕН В PvE'}</span>
@@ -90,7 +109,7 @@ export function FollowersPanel() {
 
     {follower && <section className={`followers-camp__detail ${isSeasonal ? "followers-camp__detail--seasonal" : ""}`} aria-live="polite">
       <div className={`followers-camp__detail-top ${isSeasonal ? "followers-camp__detail-top--seasonal" : ""}`}>
-        <div className="followers-camp__detail-art">{isSeasonal ? <PumpkinWitch appear={witchAppearance} /> : <img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/>}</div>
+        <div className="followers-camp__detail-art">{isGoose ? <GooseCompanion portrait en={en} /> : isSeasonal ? <PumpkinWitch appear={witchAppearance} /> : <img src={getFollowerArt(follower.id)} alt="" loading="lazy" draggable={false}/>}</div>
         <div>
           <span className="followers-camp__eyebrow"><Sparkles size={12}/>{selected
             ? (en ? 'ACTIVE COMPANION' : 'АКТИВНЫЙ СПУТНИК')
@@ -101,13 +120,19 @@ export function FollowersPanel() {
           {isSeasonal && <span className="followers-camp__raid-tag">{en ? 'RAID · 2026' : 'РЕЙД · 2026'}</span>}
           <p>{isSeasonal ? (en ? 'An epic companion for Halloween raid fighters.' : 'Эпический спутник за участие в Хэллоуинском рейде.') : (en ? template.descriptionEn : template.description)}</p>
           <span className={unlocked ? 'followers-camp__availability' : 'followers-camp__availability followers-camp__availability--locked'}>
-            {unlocked ? en ? 'Unlocked' : 'Открыт' : isSeasonal
+            {unlocked ? en ? 'Unlocked' : 'Открыт' : isGoose ? (en ? '30 red diamonds · one-time purchase' : '30 красных алмазов · навсегда') : isSeasonal
               ? (en ? 'Halloween 2026 raid participation reward' : 'Награда за участие в Хэллоуинском рейде 2026')
               : `${en ? 'Unlocks at hero level' : 'Откроется на уровне героя'} ${template.unlockLevel}`}
           </span>
         </div>
       </div>
 
+      {isGoose && <>
+        {state.gooseCompanionTitle && <p className="followers-camp__special">{en ? 'Advocate of 5,000 victories' : state.gooseCompanionTitle}</p>}
+        {!unlocked && <button type="button" className="followers-camp__choose" disabled={buying || !gooseOnline} onClick={() => void purchase()}>
+          {buying ? (en ? 'Confirming…' : 'Подтверждаем…') : gooseOnline ? (en ? `Buy · ${GOOSE_PRICE} red diamonds` : `Купить · ${GOOSE_PRICE} красных алмазов`) : (en ? 'Server purchase unavailable' : 'Серверная покупка недоступна')}
+        </button>}
+      </>}
       {isSeasonal && !unlocked && <p className="followers-camp__footnote">{en
         ? 'After the raid ends, every fighter with at least one server-confirmed hit receives this level-100 companion. No rank requirement.'
         : 'После окончания рейда этот спутник 100-го уровня достанется каждому, кто нанёс хотя бы один подтверждённый удар. Место в рейтинге не важно.'}</p>}
@@ -126,7 +151,7 @@ export function FollowersPanel() {
             className="followers-camp__choose">
             <Check size={16}/>{selected ? en ? 'Selected' : 'Выбран' : en ? 'Choose' : 'Выбрать'}
           </button>
-          {!isSeasonal && <button type="button" onClick={() => train(follower.id)} disabled={!canTrain}
+          {!isSeasonal && !isGoose && <button type="button" onClick={() => train(follower.id)} disabled={!canTrain}
             className="followers-camp__train">
             {isCow ? <Sparkles size={16}/> : <Wrench size={16}/>}{maxed ? en ? 'Level cap' : 'Лимит уровня' : isCow ? (en ? 'Awakening unavailable' : 'Пробуждение закрыто') : en ? 'Train' : 'Обучить'}
           </button>}
@@ -159,7 +184,7 @@ export function FollowersPanel() {
         const focus = candidate.id === template.id;
         return <button key={candidate.id} type="button" onClick={() => { setSelectedId(candidate.id); setNote(''); }}
           className={`followers-camp__portrait followers-camp__portrait--${candidate.rarity} ${focus ? 'followers-camp__portrait--focus' : ''} ${isActive ? 'followers-camp__portrait--active' : ''}`}
-          aria-pressed={focus} aria-label={`${en ? candidate.nameEn : candidate.name} — ${localizeRarity(candidate.rarity, language)} — ${unit?.unlocked ? (en ? 'Level' : 'Уровень') + ' ' + unit.level : candidate.id === HALLOWEEN_COMPANION_ID ? (en ? 'Halloween reward' : 'Награда Хэллоуина') : (en ? 'Unlocks at level' : 'Откроется на уровне') + ' ' + candidate.unlockLevel}`}>
+          aria-pressed={focus} aria-label={`${en ? candidate.nameEn : candidate.name} — ${localizeRarity(candidate.rarity, language)} — ${unit?.unlocked ? (en ? 'Level' : 'Уровень') + ' ' + unit.level : candidate.id === GOOSE_ID ? (en ? '30 red diamonds' : '30 красных алмазов') : candidate.id === HALLOWEEN_COMPANION_ID ? (en ? 'Halloween reward' : 'Награда Хэллоуина') : (en ? 'Unlocks at level' : 'Откроется на уровне') + ' ' + candidate.unlockLevel}`}>
           <span className={`followers-camp__rarity followers-camp__rarity--${candidate.rarity} followers-camp__portrait-rarity`}>{localizeRarity(candidate.rarity, language)}</span>
           <img src={getFollowerArt(candidate.id)} loading="lazy" draggable={false} alt=""
             className={unit?.unlocked ? '' : 'followers-camp__portrait-img--locked'}/>

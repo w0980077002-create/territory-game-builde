@@ -1,3 +1,4 @@
+import { GooseCompanion } from '@/components/GooseCompanion';
 import { PumpkinWitch } from '@/components/PumpkinWitch';
 import { getFollowerArt } from '@/game/combatArt';
 
@@ -5,6 +6,7 @@ import { getFollowerArt } from '@/game/combatArt';
  * The Witch has a real alternate blink frame and particle layers. Do not
  * play attack/heal poses here: those require a confirmed battle event. */
 export function CityLivingFollower({ id, name }: { id: string; name: string }) {
+  if (id === 'follower_goose_obnimus') return <span className="relative block w-full max-h-full aspect-square" aria-label={name}><GooseCompanion portrait /></span>;
   if (id === 'follower_pumpkin_witch_2026') {
     return <span data-testid="city-living-witch" role="img" aria-label={name}
       className="relative block w-full max-h-full aspect-square">

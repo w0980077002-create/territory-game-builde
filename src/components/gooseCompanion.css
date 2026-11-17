@@ -1,0 +1,16 @@
+.goose-companion{position:relative;display:block;width:100%;height:100%;pointer-events:none;isolation:isolate}
+.goose-companion canvas{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 5px 3px #0007)}
+.goose-companion__call{position:absolute;left:0;right:0;top:7%;text-align:center;font-size:clamp(9px,2.8vw,14px);color:#fff2b5;text-shadow:0 2px 3px #241207;animation:goose-call .8s ease-out both}
+.goose-companion[data-action=hug]::after{content:'';position:absolute;inset:28% 8% 4%;border:2px solid #8debe3;border-radius:50%;box-shadow:0 0 13px #65e7ca;animation:goose-call .9s ease-out both}
+@keyframes goose-call{0%{opacity:0;transform:translateY(5px) scale(.8)}25%,75%{opacity:1}100%{opacity:0;transform:translateY(-9px)}}
+@media(prefers-reduced-motion:reduce){.goose-companion__call,.goose-companion::after{animation:none}}
+
+[data-goose-action=attack],[data-goose-action=commotion]{animation:goose-contact var(--goose-action-ms,810ms) cubic-bezier(.2,.6,.3,1) both;z-index:45}
+[data-goose-action=dive]{animation:goose-dive var(--goose-action-ms,810ms) ease-in-out both;z-index:45}
+@keyframes goose-contact{0%,100%{transform:translate(0,0)}25%{transform:translate(30%,-30%)}43%,55%{transform:translate(125%,0)}75%{transform:translate(45%,-25%)}}
+@keyframes goose-dive{0%,100%{transform:translate(0,0)}28%{transform:translate(65%,-45%) rotate(-18deg)}46%,55%{transform:translate(125%,-10%) rotate(12deg)}}
+@media(prefers-reduced-motion:reduce){[data-goose-action]{animation:none}}
+
+[data-goose-action=hug]{animation:goose-hug var(--goose-action-ms,810ms) ease-in-out both}
+@keyframes goose-hug{0%,100%{transform:translateX(0)}30%,70%{transform:translateX(45%)}}
+@media(prefers-reduced-motion:reduce){[data-goose-action=hug]{animation:none}}

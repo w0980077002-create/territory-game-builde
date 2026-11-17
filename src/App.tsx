@@ -1,3 +1,4 @@
+import { refreshGoose } from '@/game/goose/api';
 import { refreshFortuneVip } from '@/game/fortuneVip';
 import { captureGameEvent } from '@/game/analytics';
 import { Suspense, lazy, useState, useEffect, useCallback, useRef } from 'react';
@@ -384,6 +385,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         useAccount.set({ vip: profile.vip, permanentVip:profile.vip, vipUntil:null, vipRemaining:0, vipCheckedAt:performance.now() });
         void refreshFortuneVip();
         setLoaded(true);
+        void refreshGoose().catch(() => { /* Old server: never trust persisted ownership. */ });
         // The server owns the deadline; resume events and a server-supplied
         // delay refresh a still-open session without trusting the device clock.
         removeCompanionOnline = watchPumpkinEntitlement(readPumpkinWitchEntitlement, () => {
@@ -678,7 +680,7 @@ function GameShell({ user, isAdmin }: { user: AuthUser; isAdmin: boolean }) {
         }} /> : <ProfessionsScreen onMap={() => setScreen('map')} onInventory={() => { setInventoryTab('items'); setScreen('inventory'); }} onForge={() => openForge()} />)}
         {screen === 'auction' && <AuctionScreen />}
         {screen === 'friends' && <FriendsScreen user={user} onHero={() => setScreen('hero')} onNavigate={setScreen} />}
-        {screen === 'messages' && <MessagesScreen notify={notify} onQuests={() => setScreen('quests')} onDaily={() => setEventDailyOpen(true)} />}
+        {screen === 'messages' && <MessagesScreen notify={notify} onQuests={() => setScreen('quests')} onDaily={() => setEventDailyOpen(true)} onCompanions={() => { setInventoryTab('followers'); setScreen('inventory'); }} />}
         {screen === 'events' && <EventsScreen onNavigate={setScreen} onDaily={() => setEventDailyOpen(true)} onSeason={() => { setLeaderboardInitialTab('season'); setScreen('leaderboard'); }} gatherReady={gatherReady} />}
         {screen === 'mortarion' && <MortarionBossScreen playerId={user.id} />}
         {screen === 'clan' && <ClanScreen userId={user.id} notify={notify} onNavigate={setScreen} />}
