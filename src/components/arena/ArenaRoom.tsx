@@ -413,7 +413,7 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
                 belt={game.belt}
                 ctx={beltContext(game, arenaStats.wins)}
                 actionLabel={isActive && alive
-                  (language === 'en' ? 'Arena: 70s per kind · attack/defense +25% · HP 18/35%' : 'Арена: 70 с на вид · сила/защита +25% · HP 18/35%')
+                  ? (language === 'en' ? 'Arena: 70s per kind · attack/defense +25% · HP 18/35%' : 'Арена: 70 с на вид · сила/защита +25% · HP 18/35%')
                   : (language === 'en' ? 'Equip potions from inventory' : 'Пополняй зелья в инвентаре')}
                 cooldowns={itemCooldownSeconds}
                 activeBuffs={view.me.activeBuffs ?? []}
