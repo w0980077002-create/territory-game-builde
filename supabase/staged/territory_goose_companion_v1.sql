@@ -45,7 +45,10 @@ BEGIN
    THEN RAISE EXCEPTION 'goose_invalid_wallet'; END IF;
   legacy:=(p.game_state #>> '{player,redGems}')::numeric;
   SELECT w.balance INTO v_balance FROM territory_private.territory_master_license_red_wallet_v1 w WHERE player_id=p.id FOR UPDATE;
-  v_balance:=least(coalesce(v_balance,0),legacy)::integer;
+  IF NOT FOUND THEN RAISE EXCEPTION 'goose_red_wallet_unavailable'; END IF;
+  -- Do not silently lower a paid balance when an older save disagrees with the trusted wallet.
+  -- A disagreement needs an audited reconciliation, not an implicit adjustment during checkout.
+  IF v_balance::numeric <> legacy THEN RAISE EXCEPTION 'goose_wallet_desync'; END IF;
   IF v_balance<30 THEN RAISE EXCEPTION 'goose_insufficient_red_gems'; END IF;
   UPDATE territory_private.territory_master_license_red_wallet_v1 SET balance=v_balance-30 WHERE player_id=p.id;
   UPDATE public.players SET game_state=jsonb_set(game_state,'{player,redGems}',to_jsonb(v_balance-30)),
