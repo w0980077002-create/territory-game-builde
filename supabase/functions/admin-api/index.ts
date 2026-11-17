@@ -385,6 +385,72 @@ async function handle(action: string, body: Row) {
       await audit("bots_update", { slot, changedFields: Object.keys(patch as Row) });
       return { saved: true };
     }
+    case "community_humor_status": {
+      const { data, error } = await db.from("territory_community_control")
+        .select("group_chat_id,enabled,humor_enabled,humor_mode,humor_day,humor_sent_today")
+        .eq("singleton", 1).maybeSingle();
+      if (error || !data) throw new HttpError(503, "community_humor_unavailable");
+      return {
+        monitoringEnabled: data.enabled === true,
+        groupSelected: data.group_chat_id != null,
+        humorEnabled: data.humor_enabled === true,
+        mode: data.humor_mode === "lively" ? "lively" : "mentions",
+        sentToday: data.humor_day === new Date().toISOString().slice(0, 10) ? Number(data.humor_sent_today || 0) : 0,
+        aiConfigured: Boolean(Deno.env.get("TERRITORY_COMMUNITY_AI_API_KEY"))
+      };
+    }
+    case "community_humor_set": {
+      // This handler runs only after existing owner admin-token verification.
+      const hasEnabled = typeof body.enabled === "boolean";
+      const hasMode = body.mode === "mentions" || body.mode === "lively";
+      if (hasEnabled === hasMode) throw new HttpError(400, "invalid_request");
+      const { data, error } = await db.from("territory_community_control")
+        .select("group_chat_id,enabled,humor_enabled,humor_mode")
+        .eq("singleton", 1).maybeSingle();
+      if (error || !data) throw new HttpError(503, "community_humor_unavailable");
+      const patch: Record<string, unknown> = {};
+      if (hasMode) {
+        patch.humor_mode = body.mode;
+      } else {
+        if (body.enabled === true && data.humor_enabled !== true) {
+          if (!data.enabled || data.group_chat_id == null) throw new HttpError(409, "community_group_not_ready");
+          if (!Deno.env.get("TERRITORY_COMMUNITY_AI_API_KEY")) throw new HttpError(503, "community_ai_key_missing");
+          const botToken = Deno.env.get("TERRITORY_COMMUNITY_BOT_TOKEN");
+          if (!botToken) throw new HttpError(503, "community_bot_missing");
+          const notice = await fetch("https://api.telegram.org/bot" + botToken + "/sendMessage", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              chat_id: data.group_chat_id,
+              text: "🤖 TERRITORY AI: включаются ИИ-ответы и редкие игровые шутки. " +
+                "Новые сообщения и небольшой контекст могут обрабатываться внешней моделью. " +
+                "Бот отвечает автоматически и не представляет администрацию. " +
+                "Владелец может отключить ответы в любое время."
+            }),
+            signal: AbortSignal.timeout(12000)
+          });
+          const sent = await notice.json().catch(() => null);
+          if (!notice.ok || sent?.ok !== true) throw new HttpError(503, "community_notice_failed");
+        }
+        patch.humor_enabled = body.enabled;
+      }
+      const { error: updateError } = await db.from("territory_community_control")
+        .update({ ...patch, updated_at: new Date().toISOString() }).eq("singleton", 1);
+      if (updateError) throw new HttpError(503, "community_humor_update_failed");
+      await audit("community_humor_set", { changed: Object.keys(patch), humorEnabled: body.enabled, mode: body.mode });
+      const { data: after, error: afterErr } = await db.from("territory_community_control")
+        .select("enabled,group_chat_id,humor_enabled,humor_mode,humor_day,humor_sent_today")
+        .eq("singleton", 1).maybeSingle();
+      if (afterErr || !after) throw new HttpError(503, "community_humor_unavailable");
+      return {
+        monitoringEnabled: after.enabled === true,
+        groupSelected: after.group_chat_id != null,
+        humorEnabled: after.humor_enabled === true,
+        mode: after.humor_mode === "lively" ? "lively" : "mentions",
+        sentToday: after.humor_day === new Date().toISOString().slice(0, 10) ? Number(after.humor_sent_today || 0) : 0,
+        aiConfigured: Boolean(Deno.env.get("TERRITORY_COMMUNITY_AI_API_KEY"))
+      };
+    }
     case "stats": {
       const [total, online, today, week, newToday, newWeek, todayDon, settings] = await Promise.all([
         db.from("players").select("id", { count: "exact", head: true }),
