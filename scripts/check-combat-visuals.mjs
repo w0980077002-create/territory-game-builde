@@ -29,6 +29,7 @@ const gear = read('src/components/arena/GearStrip.tsx');
 const effects = read('src/index.css');
 
 assert.match(arena, /combatFrames=\{getCombatAppearance\(enemy\.appearance\)\}/, 'PvP opponent animations disconnected');
+assert.match(arena, /const portraitFollower = selectedCompanion\?\.id === GOOSE_ID \? null : selectedCompanion/, 'Goose must stay outside Arena, even as a cosmetic spectator');
 assert.match(arena, /portraitFollower &&/, 'Companion must not appear before unlocking');
 assert.match(arena, /getFollowerCombatFrames\(portraitFollower\.id\)/, 'Companion animation frames missing');
 const followerLane = arena.match(/data-testid="arena-visible-follower"[\s\S]*?className="([^"]*)"/)?.[1] ?? '';
