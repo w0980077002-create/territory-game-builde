@@ -14,6 +14,8 @@ interface Props {
   compact?: boolean;
   disabled?: boolean;
   busyIndex?: number | null;
+  cooldowns?: readonly number[];
+  activeBuffs?: readonly string[];
   onAction: (index: number) => void;
 }
 
@@ -32,7 +34,7 @@ function arenaItemBonus(item: InventoryItem, language: string): string | null {
   }
 }
 
-export function BeltBar({ belt, ctx, actionLabel, compact = false, disabled, busyIndex, onAction }: Props) {
+export function BeltBar({ belt, ctx, actionLabel, compact = false, disabled, busyIndex, cooldowns, activeBuffs = [], onAction }: Props) {
   const { language } = useLanguage();
   const [info, setInfo] = useState<number | null>(null);
   const shown = info !== null ? { rule: BELT_RULES[info], check: BELT_RULES[info].check(ctx), item: belt[info] } : null;
@@ -45,10 +47,20 @@ export function BeltBar({ belt, ctx, actionLabel, compact = false, disabled, bus
           const item = open ? belt[i] : null;
           const color = item ? rarityColor(item.rarity) : undefined;
           const busy = busyIndex === i;
+          const cooldown = Math.max(0, cooldowns?.[i] ?? 0);
+          const action = item ? beltAction(item) : null;
+          const activeBuff = action?.kind === 'item' &&
+            ['attack', 'defense', 'crit'].includes(action.code) && activeBuffs.includes(action.code);
+          const recharging = cooldown > 0;
           return (
             <button
               key={i}
-              disabled={busy}
+              disabled={busy || recharging || activeBuff}
+              aria-label={item && (recharging || activeBuff)
+                ? `${localizeText(item.name, language)}: ${recharging
+                  ? `${cooldown} ${language === 'en' ? 'seconds remaining' : 'секунд до использования'}`
+                  : (language === 'en' ? 'already active' : 'уже действует')}`
+                : undefined}
               onClick={() => {
                 if (open && item && !disabled) {
                   setInfo(null);
@@ -74,6 +86,11 @@ export function BeltBar({ belt, ctx, actionLabel, compact = false, disabled, bus
                   <ItemArt item={item} size={compact ? 22 : 33} dim={!!disabled} />
                   <span className={compact ? "absolute bottom-0 right-0 rounded bg-black/85 px-0.5 text-[9px] font-black text-white tabular-nums leading-none" : "text-[10px] font-bold text-white tabular-nums leading-tight mt-0.5"}>x{item.qty}</span>
                   {!compact && <span className="text-[8px] text-gray-400 leading-none truncate w-full px-1 text-center">{item.name}</span>}
+                  {(recharging || activeBuff) && (
+                    <span className="absolute inset-0 rounded-lg bg-black/75 flex items-center justify-center text-[11px] font-black tabular-nums text-amber-100" aria-hidden="true">
+                      {recharging ? `${cooldown}с` : (language === 'en' ? 'ON' : 'АКТ')}
+                    </span>
+                  )}
                 </>
               ) : (
                 <span className="text-[9px] text-gray-500">{language === 'en' ? 'empty' : 'пусто'}</span>

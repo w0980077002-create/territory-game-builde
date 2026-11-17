@@ -185,7 +185,12 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
       after?.();
       refresh();
     } catch (e) {
-      setActionError(localizeText((e as Error).message, language));
+      const message = (e as Error).message;
+      setActionError(message.includes('arena_item_cooldown_70')
+        ? (language === 'en' ? 'This potion needs 70 seconds to recharge.' : 'Этот вид зелья перезаряжается 70 секунд.')
+        : message.includes('arena_item_fight_limit')
+          ? (language === 'en' ? 'Maximum 5 of this kind per fight.' : 'Не больше 5 штук одного вида за бой.')
+          : localizeText(message, language));
     } finally {
       actionFlight.current = false;
       setBusy(false);
@@ -216,6 +221,18 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
   };
 
   const adrenalineSlot = game.belt.findIndex((s) => !!s && s.arenaEffect === 'adrenaline');
+  // Absolute server deadlines survive Telegram reloads and reconnects.
+  // useCountdown above already refreshes this component every second.
+  const itemCooldownSeconds = game.belt.map((item) => {
+    if (!teamLive || !item) return 0;
+    const action = beltAction(item);
+    const code = action?.kind === 'item' ? action.code
+      : action?.kind === 'time' ? 'time'
+      : action?.kind === 'revive' ? 'adrenaline' : null;
+    const readyAt = code ? view?.me.itemCooldowns?.[code] : undefined;
+    return typeof readyAt === 'number' && Number.isFinite(readyAt)
+      ? Math.max(0, Math.ceil((readyAt - (Date.now() + clockOffset)) / 1000)) : 0;
+  });
 
   const runBelt = async (index: number, fn: () => Promise<unknown>) => {
     if (actionFlight.current || busy) return;
@@ -395,7 +412,13 @@ export function ArenaRoom({ roomId, onExit, onActiveChange }: { roomId: string; 
                 compact
                 belt={game.belt}
                 ctx={beltContext(game, arenaStats.wins)}
-                actionLabel={isActive && alive ? (language === 'en' ? '1 potion/round · attack/defense +25%' : '1 зелье/раунд · сила/защита +25%') : (language === 'en' ? 'Equip potions from inventory' : 'Пополняй зелья в инвентаре')}
+                actionLabel={isActive && alive
+                  ? teamLive
+                    ? (language === 'en' ? '70s per potion kind · buffs do not stack' : '70 с на каждый вид · усиления не складываются')
+                    : (language === 'en' ? '1 potion/round · attack/defense +25%' : '1 зелье/раунд · сила/защита +25%')
+                  : (language === 'en' ? 'Equip potions from inventory' : 'Пополняй зелья в инвентаре')}
+                cooldowns={teamLive ? itemCooldownSeconds : undefined}
+                activeBuffs={view.me.activeBuffs ?? []}
                 disabled={!isActive || !alive || busy}
                 busyIndex={beltBusy}
                 onAction={pressBeltSlot}
