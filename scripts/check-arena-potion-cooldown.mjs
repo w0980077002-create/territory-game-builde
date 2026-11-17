@@ -1,0 +1,32 @@
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const sql = readFileSync(new URL('../supabase/staged/arena_team_70s_cooldowns_20261117.sql', import.meta.url), 'utf8');
+const arenaApi = readFileSync(new URL('../src/game/arenaApi.ts', import.meta.url), 'utf8');
+const room = readFileSync(new URL('../src/components/arena/ArenaRoom.tsx', import.meta.url), 'utf8');
+const belt = readFileSync(new URL('../src/components/arena/BeltBar.tsx', import.meta.url), 'utf8');
+assert.equal((sql.match(/CREATE OR REPLACE FUNCTION/g) ?? []).length, 3);
+assert.match(sql, /IF NOT v_room\.team_live_v1 AND v_me\.item_round = v_room\.round_no/);
+assert.match(sql, /u\.room_id=p_room AND u\.player_id=v_uid AND u\.item_kind=p_kind/);
+assert.match(sql, /u\.used_at > clock_timestamp\(\) - interval '70 seconds'/);
+assert.match(sql, /IF v_r\.team_live_v1 AND EXISTS/);
+assert.match(sql, /arena_item_fight_limit/);
+assert.match(sql, /arena_item_cooldown_70/);
+assert.match(sql, /max\(u\.used_at\) AS last_used/);
+assert.match(sql, /'activeBuffs', COALESCE\(v_me\.buffs/);
+assert.match(arenaApi, /itemCooldowns\?:/);
+assert.match(room, /itemCooldownSeconds/);
+assert.match(room, /cooldowns=\{teamLive \? itemCooldownSeconds : undefined\}/);
+assert.match(belt, /disabled=\{busy \|\| recharging \|\| activeBuff\}/);
+const remaining = (events, roomId, playerId, kind, at) => {
+  const recent = events.filter(e => e.room === roomId && e.player === playerId && e.kind === kind)
+    .reduce((last, e) => Math.max(last, e.usedAt), -Infinity);
+  return Math.max(0, Math.ceil((recent + 70_000 - at) / 1000));
+};
+const events = [{room:'r1',player:'a',kind:'heal_large',usedAt:100_000}];
+assert.equal(remaining(events,'r1','a','heal_large',100_000),70);
+assert.equal(remaining(events,'r1','a','heal_large',169_001),1);
+assert.equal(remaining(events,'r1','a','heal_large',170_000),0);
+assert.equal(remaining(events,'r1','a','attack',100_000),0);
+assert.equal(remaining(events,'r1','b','heal_large',100_000),0);
+assert.equal(remaining(events,'r2','a','heal_large',100_000),0);
+console.log('Arena 70s cooldown contract: PASS');
