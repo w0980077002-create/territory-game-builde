@@ -64,6 +64,10 @@ export interface ArenaView {
     auto: boolean;
     vip: number;
     autoMinVip: number;
+    /** Per-kind server UTC cooldown deadline (team/chaos only). */
+    itemCooldowns?: Partial<Record<ArenaItemCode | 'time' | 'adrenaline', number>>;
+    /** Existing one-time attack, defense, crit buffs; no repeat stacking. */
+    activeBuffs?: string[];
   };
   participants: ArenaFighter[];
   messages: ArenaMessage[];
