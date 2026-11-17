@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const sql = readFileSync(new URL('../supabase/staged/arena_team_70s_cooldowns_20261117.sql', import.meta.url), 'utf8');
+const allModesSql = readFileSync(new URL('../supabase/staged/arena_all_modes_70s_cooldown_20261117.sql', import.meta.url), 'utf8');
 const arenaApi = readFileSync(new URL('../src/game/arenaApi.ts', import.meta.url), 'utf8');
 const room = readFileSync(new URL('../src/components/arena/ArenaRoom.tsx', import.meta.url), 'utf8');
 const belt = readFileSync(new URL('../src/components/arena/BeltBar.tsx', import.meta.url), 'utf8');
@@ -15,8 +16,19 @@ assert.match(sql, /max\(u\.used_at\) AS last_used/);
 assert.match(sql, /'activeBuffs', COALESCE\(v_me\.buffs/);
 assert.match(arenaApi, /itemCooldowns\?:/);
 assert.match(room, /itemCooldownSeconds/);
-assert.match(room, /cooldowns=\{teamLive \? itemCooldownSeconds : undefined\}/);
+assert.match(room, /cooldowns=\{itemCooldownSeconds\}/);
 assert.match(belt, /disabled=\{busy \|\| recharging \|\| activeBuff\}/);
+// A guarded server patch extends per-kind 70s timers to duels, without changing PvE.
+assert.ok(allModesSql.includes("v_old_cooldown text := 'IF v_r.team_live_v1 AND EXISTS ('"));
+assert.ok(allModesSql.includes("EXECUTE replace(v_secure, v_old_cooldown, 'IF EXISTS (')"));
+assert.ok(allModesSql.includes("v_old_visibility text := '''itemCooldowns'', CASE WHEN v_room.team_live_v1 THEN"));
+assert.ok(allModesSql.includes("v_room.status=''active'' THEN"));
+assert.ok(allModesSql.includes("v_me.item_round = v_room.round_no"));
+assert.ok(allModesSql.includes("arena_70s_all_modes_conflicting_server_version"));
+assert.doesNotMatch(room, /if \(!teamLive \|\| !item\) return 0/);
+assert.match(room, /Арена: 70 с на вид/);
+assert.match(belt, /На арене: \+25% атаки/);
+assert.match(belt, /На арене: лечение 35% от макс\. HP/);
 const remaining = (events, roomId, playerId, kind, at) => {
   const recent = events.filter(e => e.room === roomId && e.player === playerId && e.kind === kind)
     .reduce((last, e) => Math.max(last, e.usedAt), -Infinity);
