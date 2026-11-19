@@ -54,12 +54,10 @@ export function MortarionCityShortcut({ onOpen }: { onOpen: () => void }) {
   if (remaining === null) return null;
   const defeated = raid.hp === 0;
   const closed = defeated || remaining === 0;
+  if (closed) return null;
   const startsInFuture = Date.parse(raid.startsAt) > Date.parse(raid.serverNow) + Math.max(0, now - receivedAt);
-  const detail = defeated
-    ? (en ? 'DEFEATED · REWARDS' : 'ПОБЕЖДЁН · НАГРАДЫ')
-    : closed ? (en ? 'FINISHED · REWARDS' : 'ЗАВЕРШЁН · НАГРАДЫ')
-      : startsInFuture ? (en ? 'STARTING SOON' : 'СКОРО НАЧНЁТСЯ')
-        : formatMortarionCityCountdown(remaining, en);
+  const detail = startsInFuture ? (en ? 'STARTING SOON' : 'СКОРО НАЧНЁТСЯ')
+    : formatMortarionCityCountdown(remaining, en);
 
   return <div className="home-mortarion-shortcut">
     <button type="button" onClick={onOpen} data-testid="city-mortarion-raid"
