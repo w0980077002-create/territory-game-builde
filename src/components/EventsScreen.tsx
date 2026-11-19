@@ -13,9 +13,10 @@ import { captureGameEvent } from '@/game/analytics';
 import { RewardLootStrip } from '@/components/ui/RewardLootStrip';
 import { kyivSeasonWeekKey, seasonCountdown } from '@/game/seasonCalendar';
 import { SHOW_WEEKLY_CHAMPIONSHIP } from '@/game/uiFeatureFlags';
+import { getMortarionBossState } from '@/game/mortarionBoss';
 import './eventsBoard.css';
 
-export type EventDestination = 'city' | 'quests' | 'games' | 'map' | 'arena' | 'leaderboard' | 'messages' | 'clan';
+export type EventDestination = 'city' | 'quests' | 'games' | 'map' | 'arena' | 'leaderboard' | 'messages' | 'clan' | 'mortarion';
 type CardStatus = 'ready' | 'done' | 'active' | 'unknown';
 
 function EventCard({ icon: Icon, image, name, description, detail, status, action, actionId, onClick, en }: {
@@ -98,6 +99,7 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
   const [hall, setHall] = useState<HallState | null>(null);
   const [season, setSeason] = useState<SeasonStatus | null>(null);
   const [arena, setArena] = useState<ArenaWeeklyStatus | null>(null);
+  const [finishedRaid, setFinishedRaid] = useState(false);
   const [checking, setChecking] = useState(false);
   const [failed, setFailed] = useState({ hall: false, season: false, arena: false });
   const tabRef = useRef<'daily' | 'weekly'>('daily');
@@ -114,6 +116,9 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
     const checks = view === 'daily' ? [
       withEventStatusTimeout(hallStatus()).then(value => { if (request === currentRequest.current) setHall(value); })
         .catch(() => { if (request === currentRequest.current) { setHall(null); setFailed(v => ({ ...v, hall: true })); } }),
+      withEventStatusTimeout(getMortarionBossState()).then(raid => {
+        if (request === currentRequest.current) setFinishedRaid(!!raid?.enabled && (raid.hp === 0 || Date.parse(raid.endsAt) <= Date.parse(raid.serverNow)));
+      }).catch(() => { /* Optional completed-raid status; keep the last confirmed value. */ }),
     ] : [
       ...(SHOW_WEEKLY_CHAMPIONSHIP ? [withEventStatusTimeout(fetchSeasonStatus()).then(value => { if (request === currentRequest.current) setSeason(value); })
         .catch(() => { if (request === currentRequest.current) { setSeason(null); setFailed(v => ({ ...v, season: true })); } })] : []),
@@ -221,6 +226,9 @@ export function EventsScreen({ onNavigate, onDaily, onSeason, gatherReady }: {
     </div>
 
     {tab === 'daily' ? <div id="territory-events-daily-panel" className="territory-events__list" role="tabpanel" aria-labelledby="territory-events-daily-tab">
+      {finishedRaid && <EventCard icon={Trophy} image="assets/territory/events/mortarion-boss-layer.webp" name={en ? 'Mortarion · completed raid' : 'Мортарион · завершённый рейд'}
+        description={en ? 'View the results and collect any earned reward.' : 'Просмотри итоги и забери заслуженную награду.'}
+        status="done" action={en ? 'Open raid results' : 'Итоги и награды'} actionId="mortarion-results" onClick={visit('mortarion')} en={en}/>}
       <SevenDayJourney dayIndex={daily.dayIndex} claimedToday={daily.claimedToday} rewards={DAILY_REWARDS} onOpen={onDaily} en={en}/>
       <EventCard icon={Gift} image="ic-daily.webp" name={en ? 'Daily login gift' : 'Ежедневный подарок'}
         description={en ? `Day ${daily.dayIndex + 1} of 7. Open the reward calendar.` : `День ${daily.dayIndex + 1} из 7. Забери подарок в календаре.`}
