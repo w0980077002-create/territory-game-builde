@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the repository's split v2 art package, optionally extract for local QA.
+"""Verify the archived split v2 art package, optionally extract for local QA.
 
 No downloads, game integration, production access or execution of archive scripts.
 """
@@ -14,10 +14,10 @@ EXPECTED_SHA = 'd8bd7c242accd3396232a53cae7fe47478c4b6aae558b95dbad0c68edf5c1fa1
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def verify(extract_to=None):
+def verify(archive_dir=ROOT, extract_to=None):
     parts = []
     for number in range(1, 4):
-        with zipfile.ZipFile(ROOT / f'TERRITORY_art_v2_Codex_{number}_of_3.zip') as transport:
+        with zipfile.ZipFile(Path(archive_dir) / f'TERRITORY_art_v2_Codex_{number}_of_3.zip') as transport:
             matches = [n for n in transport.namelist() if n.endswith(f'.part{number:02}')]
             if len(matches) != 1:
                 raise ValueError(f'Expected one part {number}, got {matches}')
@@ -58,6 +58,7 @@ def verify(extract_to=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--archive-dir', type=Path, required=True, help='Directory with the three historical transport ZIPs; see docs/DEVELOPMENT_RU.md')
     parser.add_argument('--extract-to', help='New local directory; fails if it already exists')
     args = parser.parse_args()
-    verify(args.extract_to)
+    verify(args.archive_dir, args.extract_to)
