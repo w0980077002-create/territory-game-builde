@@ -41,13 +41,16 @@ assert.ok(home.indexOf('<MortarionCityShortcut') < home.indexOf('home-side-stack
 assert.match(home, /'events' \| 'mortarion'/, 'City opens Mortarion through normal route');
 assert.match(app, /screen === 'mortarion' && <MortarionBossScreen playerId=\{user.id\}/,
   'City route continues to display the existing live boss and reward screen');
-assert.doesNotMatch(events, /[Mm]ortarion|Мортарион|bossPreview|onBossPreview/,
-  'Events must not render or poll the removed Mortarion event card');
+assert.match(events, /finishedRaid && <EventCard/, 'Only the completed raid is presented in Events');
+assert.match(events, /raid\.hp === 0 \|\| Date\.parse\(raid\.endsAt\) <= Date\.parse\(raid\.serverNow\)/,
+  'Archive visibility follows the authoritative defeated or expired state');
+assert.match(events, /onClick=\{visit\('mortarion'\)\}/, 'Existing reward route remains reachable');
 assert.match(city, /getMortarionBossState\(\)/, 'Shortcut reads real server state');
 assert.match(city, /if \(!snapshot\?\.raid\.enabled\) return null/,
   'Disabled raids are not advertised');
 assert.match(city, /\.active|const closed = defeated \|\| remaining === 0/,
-  'Finished raids must retain an entry for rewards');
+  'Finished raids are detected from actual server state');
+assert.match(city, /if \(closed\) return null;/, 'Do not advertise finished raids in City');
 assert.match(city, /setInterval\(refresh, 30_000\)/, 'A long City session refreshes raid status');
 assert.match(city, /document\.addEventListener\('visibilitychange', resume\)/,
   'Timer refreshes after Telegram is foregrounded');
