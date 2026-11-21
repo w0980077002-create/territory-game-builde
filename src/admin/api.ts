@@ -4,6 +4,12 @@ const TOKEN_KEY = 'territory_admin_token';
 const ERRORS: Record<string, string> = {
   goose_gift_unconfirmed: 'Выдача не подтверждена. Проверьте идентификаторы и серверную установку; повтор не создаёт второго спутника.',
   network: 'Нет связи с сервером. Повторите тот же запрос после восстановления сети.',
+  community_humor_unavailable: 'Управление чатом пока не установлено на сервере. ИИ-ответы выключены.',
+  community_humor_update_failed: 'Не удалось изменить режим бота. Попробуй ещё раз.',
+  community_ai_key_missing: 'Не настроен отдельный AI API-ключ. Ответы не включены.',
+  community_bot_missing: 'Нет отдельного Telegram-токена community-бота.',
+  community_notice_failed: 'Не удалось предупредить игроков в чате, поэтому ИИ-ответы не включены.',
+  community_group_not_ready: 'Сначала выбери и включи мониторинг группы в Telegram.',
   runes_unavailable: 'Сервер рун недоступен. Повторите тот же запрос после восстановления связи.',
   rune_still_equipped: 'Сначала игрок должен снять эту руну.',
   rune_operation_reused: 'Идентификатор операции уже использован для другого запроса.',
